@@ -2,145 +2,148 @@
 alwaysApply: true
 ---
 
-LockFlow 프로젝트 규칙 (구조 · 상태관리 · 데이터 · Expo)
+LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상태관리 · 데이터 · Expo
 
-1. 상위 디렉토리 역할
+이 프로젝트는 FSD를 **그 자체로** 지향하며, 아래 레이어 구조와 의존성 규칙을 따른다.
 
-- src/entities
-  - 도메인 엔티티, 타입, 모델, 비즈니스 로직을 둔다.
-  - 외부 UI나 라우팅에 의존하지 않고, 가능한 한 순수 TS/비즈니스 코드로 유지한다.
-  - 예: 잠금/노트/태그/루틴/세션 등의 도메인 모델, 도메인 서비스, 밸리데이션 로직 등.
+---
 
-- src/features
-  - 사용자의 “기능 단위”를 위한 코드 묶음.
-  - 하나 이상의 entities 를 사용해 실제 유즈케이스를 구현한다.
-  - feature 폴더 안에는 보통 `model/`, `ui/`, `lib/` 구조를 따른다.
-    - model: feature 전용 상태, hooks, 스토리지/네트워크 접근 등
-    - ui: 이 feature에서만 쓰이는 컴포넌트
-    - lib: feature 전용 유틸
-  - 예: `src/features/lock-list`, `src/features/lock-detail`, `src/features/auth-login`,
-        `src/features/today-dashboard`, `src/features/discover-routines`, `src/features/routine-setup` 등.
+## 1. FSD 레이어 구조 및 의존성
 
-- src/pages
-  - 라우트(스크린) 단위 페이지 컴포넌트.
-  - 주 역할은 features 를 조합해서 화면을 구성하는 것.
-  - 복잡한 비즈니스 로직은 pages 가 아니라 entities/features 안에 두고,
-    pages 에서는 최대한 “배선(wiring)”만 담당한다.
-  - 예: `src/pages/home`, `src/pages/today`, `src/pages/discover`, `src/pages/routines`, `src/pages/profile` 등.
+**레이어 순서 (상위 → 하위):**  
+`app` → `processes` → `pages` → `widgets` → `features` → `entities` → `shared`
 
-- src/shared
-  - 어떤 도메인에도 특정되지 않는 “진짜 공용” 코드만 둔다.
-  - 예: 공용 UI, 훅, 유틸, 테마, 라우팅 헬퍼 등.
-  - 하위 예시:
-    - `src/shared/ui`: 디자인 시스템/공용 컴포넌트 (예: `ThemedText`)
-    - `src/shared/lib`: 공용 hooks, 유틸 함수
-    - `src/shared/config`: 테마, 환경설정 등
+**의존성 규칙:**  
+상위 레이어만 하위 레이어를 import 할 수 있다. 하위 레이어는 상위 레이어를 import 하지 않는다.  
+(예: `pages`는 `widgets`, `features`, `entities`, `shared` 사용 가능. `shared`는 그 어떤 상위 레이어도 import 하지 않음.)
 
-2. 경로/alias 사용 원칙
+**경로 alias (tsconfig):**
+- `@app/*` → `src/app/*`
+- `@processes/*` → `src/processes/*`
+- `@pages/*` → `src/pages/*`
+- `@widgets/*` → `src/widgets/*`
+- `@features/*` → `src/features/*`
+- `@entities/*` → `src/entities/*`
+- `@shared/*` → `src/shared/*`
 
-- `@shared/...` 경로는 shared 계층에만 사용한다.
-  - 예: `@shared/lib/hooks/use-theme-color`, `@shared/ui/themed-text/ThemedText`
-- feature, entity 내부에서 shared 를 참조하는 것은 허용되지만,
-  shared 가 feature 또는 entity 에 의존하도록 만들지 않는다(순환 참조 금지).
+---
 
-3. 새 코드 추가 시 위치 결정 규칙
+## 2. 각 레이어의 역할
 
-- 새로운 도메인 개념/모델/핵심 규칙이 생기면:
-  - 먼저 `src/entities` 에 타입/모델/서비스를 추가한다.
-- 특정 유저 기능(예: “홈 피드 보기”, “잠금 추가”, “루틴 실행”, “루틴 편집”)을 구현할 때는:
-  - `src/features/<도메인-기능>` 폴더를 만들고, 그 안에 model/ui/lib 를 구성한다.
-- 실제 라우팅되는 화면(예: 홈 탭, Discover, Routine Setup, 프로필)을 만들 때는:
-  - `src/pages/<route-name>` 에 페이지 컴포넌트를 만들고,
-  - 필요한 feature 컴포넌트들을 import 해서 조합한다.
-- 공용으로 재사용될 가능성이 높은 컴포넌트/훅/유틸은:
-  - 처음부터 `src/shared` 아래에 정의하거나,
-  - 처음엔 feature 전용으로 만들었다가 충분히 재사용성이 확인되면 shared 로 승격한다.
+### 2.1 app (`src/app`)
 
-4. 도메인 정의 (entities 기준)
+- 앱 **진입·전역** 관련 로직.
+- 전역 프로바이더, 스타일, 테마 래퍼 등.
+- Expo Router의 루트 `app/` 은 **라우팅/파일기반 라우팅**만 담당하고, 앱 레벨 로직·프로바이더는 가능한 한 `src/app` 에서 export 하여 사용한다.
 
-- Routine (루틴)
-  - 하루 또는 특정 시간대를 위한 반복 가능 단위.
-  - 예시 필드: id, title, description, category, tags, color, icon, defaultTasks[].
-- RoutineTask (루틴 안의 개별 태스크)
-  - 루틴을 구성하는 세부 액션.
-  - 예시 필드: id, routineId, title, type(habit/health/etc), duration, order, isLocked.
-- Session (실행 세션)
-  - 실제로 실행 중인 루틴 인스턴스.
-  - 예시 필드: id, routineId, startTime, endTime, progress, currentTaskId.
-- Stats (통계/기록)
-  - 일별/주별 루틴 완료율, 태스크 수행 기록 등.
+### 2.2 processes (`src/processes`)
 
-이 네 가지를 `src/entities` 아래에 정의하는 것을 기본으로 한다.
+- **여러 페이지/feature를 넘나드는 복합 시나리오.**
+- 온보딩, 멀티스텝 설정, “루틴 만들기 → 태스크 추가 → 완료” 같은 흐름 전체.
+- 라우팅·단계 전환·프로세스 단위 공유 상태 등.
+- 필요할 때만 슬라이스를 추가한다 (예: `routine-onboarding`, `session-flow`).
 
-5. 주요 기능(feature) 정의
+### 2.3 pages (`src/pages`)
 
-- Today / 홈 대시보드 (`src/features/today-dashboard`)
-  - 오늘의 루틴 진행 상태, 남은 시간, 현재 태스크 등을 보여준다.
-  - 락스크린 위젯 느낌의 “현재 세션 카드”를 메인으로 구성한다.
-- Discover (`src/features/discover-routines`)
-  - 추천 루틴 리스트, 카테고리별 필터, 배너 카드 등.
-- Routine Setup (`src/features/routine-setup`)
-  - 루틴 생성/편집 UI (태스크 리스트, 순서 변경, 시간/카테고리 설정 등).
-- Archive/History 등은 필요 시 별도 feature 로 추가한다.
+- **라우트(스크린) 단위** 페이지 컴포넌트.
+- `widgets`·`features`·`entities`·`shared` 를 **조합**하여 화면을 구성.
+- 복잡한 비즈니스 로직은 넣지 않고, 배선(wiring)과 레이아웃에 집중.
+- 예: `src/pages/today`, `src/pages/discover`, `src/pages/routines`, `src/pages/insight`.
 
-각 feature 는 내부에 `ui/`, `model/`, `lib/` 구조를 가질 수 있다.
+### 2.4 widgets (`src/widgets`)
 
-6. 페이지/탭 구조 (pages)
+- **여러 feature/entity를 조합한 복합 UI 블록.**
+- 한 페이지 안에서 반복 사용되는 “큰 덩어리” (예: 오늘 요약 대시보드 블록, 루틴 리스트+필터 블록).
+- 단일 feature보다 크고, 페이지 전체보다 작은 단위.
+- 슬라이스별로 `ui/`, `model/` 등 FSD 세그먼트 구조를 가질 수 있다.
 
-- 하단 탭(안드로이드/iOS) 기준 예시:
-  - `src/pages/today` → Today/홈 화면 (현재 세션 + 오늘의 계획)
-  - `src/pages/discover` → Discover 화면 (루틴 추천 리스트)
-  - `src/pages/routines` → 내가 만든 루틴 리스트/관리
-  - `src/pages/profile` 또는 `src/pages/settings` → 설정/계정 관련
+### 2.5 features (`src/features`)
 
-각 페이지는 위에서 정의한 feature 들을 조합만 하고, 로직은 feature/model 또는 entities 로 내려 보낸다.
+- 사용자 **기능 단위** (액션, 유즈케이스).
+- 하나 이상의 `entities`·`shared` 를 사용해 실제 동작을 구현.
+- 내부 구조: `model/`, `ui/`, `lib/` 등.
+  - model: feature 전용 상태, hooks, 스토리지/네트워크 접근
+  - ui: 해당 feature 전용 컴포넌트
+  - lib: feature 전용 유틸
+- 예: `today-dashboard`, `discover-routines`, `routine-setup`, `insight-dashboard`.
 
-7. UI 스타일 가이드 (레퍼런스 이미지 기반)
+### 2.6 entities (`src/entities`)
 
-- 카드 기반 레이아웃:
-  - 중요한 정보(현재 루틴, 추천 루틴)는 “큰 카드”로 표현하고,
-    나머지는 섹션별 카드 리스트로 구성한다.
-- 섹션 헤더:
-  - “Recommended for you”, “Morning Energy” 등 섹션 헤더 + “See all” 패턴을 기본으로 삼는다.
-- 필터/칩:
-  - 상단에 All/Morning/Focus 등 칩 형태의 필터를 사용하는 것을 기본 패턴으로 한다.
-- 주요 CTA 버튼:
-  - 화면 하단 또는 카드 하단에 대비가 강한(primary) 버튼을 두고,
-    보조 액션은 회색/outline 스타일의 secondary 버튼으로 둔다.
-- 진행도/퍼센트:
-  - 루틴 진행도는 프로그레스 바 + % 텍스트로 항상 보여준다.
+- **도메인 엔티티, 타입, 모델, 비즈니스 로직.**
+- UI·라우팅에 의존하지 않고, 순수 TypeScript/도메인 코드로 유지.
+- 예: Routine, RoutineTask, Session, Stats 의 타입·인터페이스·도메인 서비스·밸리데이션.
+- 스토어는 도메인 단위 상태일 때 `src/entities/<domain>/model/<domain>Store.ts` 에 둔다.
 
-8. 상태관리 (Zustand)
+### 2.7 shared (`src/shared`)
 
-- 전역 또는 여러 페이지/feature 에서 공유되는 상태는 기본적으로 zustand 스토어로 관리한다.
-- 스토어 위치 규칙:
-  - 도메인 레벨 상태 → `src/entities/<domain>/model/<domain>Store.ts`
-    - 예: `src/entities/routine/model/routineStore.ts`, `src/entities/session/model/sessionStore.ts`
-  - 특정 feature 에만 쓰이는 상태 → `src/features/<feature-name>/model/<feature-name>Store.ts`
-- React 컴포넌트 안에서는 직접 비즈니스 로직을 두지 않고,
-  가능한 한 zustand 스토어의 action 에 로직을 몰아넣는다.
-- zustand 스토어는 “서버 상태 캐시” 대신 “클라이언트 도메인 상태/뷰 상태”를 표현하는 데 집중한다.
+- **도메인 무관 공용** 코드.
+- UI 컴포넌트, 훅, 유틸, 테마, 스토리지 클라이언트 등.
+- `entities`·`features`·`widgets`·`pages`·`processes`·`app` 에 의존하지 않는다 (순환 참조 금지).
+- 예: `shared/ui`, `shared/lib`, `shared/config`.
 
-9. 데이터베이스/영속화 (LocalStorage 기반)
+---
 
-- LockFlow 는 별도 백엔드 없이 LocalStorage 를 1차 데이터베이스로 사용한다.
-- 영속화 대상:
-  - 루틴, 루틴 태스크, 세션 기록, 간단한 통계 요약 등.
-- LocalStorage 접근은 직접 `window.localStorage` 를 호출하지 않고,
-  항상 공용 스토리지 모듈을 통해서만 한다:
-  - 위치 예: `src/shared/lib/storage` 또는 `src/shared/lib/persistence`.
-- 스토리지 키 네이밍:
-  - 예: `lockflow:routines`, `lockflow:sessions`, `lockflow:settings` 등 프로젝트 prefix 를 붙인다.
-- LocalStorage 에 저장되는 데이터 구조는 `src/entities` 의 타입/모델 정의를 그대로 따른다
-  (저장/로드 시 해당 타입으로 직렬화/역직렬화).
+## 3. 새 코드 추가 시 위치 (FSD 기준)
 
-10. Expo 명령어 사용 정책
+- **도메인 개념/모델/핵심 규칙** → `src/entities` 에 타입·모델·서비스 추가.
+- **사용자 기능(액션/유즈케이스)** → `src/features/<feature-name>` 에 model/ui/lib 구성.
+- **페이지를 구성하는 복합 블록** → `src/widgets/<widget-name>`.
+- **라우트되는 전체 화면** → `src/pages/<route-name>`, 필요한 widgets/features 조합.
+- **여러 화면을 거치는 흐름** → `src/processes/<process-name>`.
+- **앱 전역 프로바이더/스타일** → `src/app`.
+- **도메인 무관 공용** → `src/shared`.
 
-- 에이전트는 **사용자의 명시적인 허락 없이 어떤 Expo CLI 명령도 실행하지 않는다.**
-  - 예: `expo start`, `expo prebuild`, `expo build`, `npx expo install ...` 등.
-- Expo 관련 작업이 필요해 보일 때는:
-  - (1) 어떤 명령을 왜 실행해야 하는지 설명하고,
-  - (2) 해당 명령을 실행해도 될지 명시적으로 확인한다.
-- 사용자가 허락하지 않거나 답이 없을 경우:
-  - Expo 명령은 실행하지 않고,
-  - 사용자가 직접 터미널에서 실행할 수 있도록 명령어만 텍스트로 안내한다.
+---
+
+## 4. LockFlow 도메인 (entities)
+
+- **Routine**: 반복 가능한 루틴 단위. id, title, description, category, tags, color, icon, defaultTasks[] 등.
+- **RoutineTask**: 루틴 내 개별 태스크. id, routineId, title, type, duration, order, isLocked 등.
+- **Session**: 실행 중인 루틴 인스턴스. id, routineId, startTime, endTime, progress, currentTaskId 등.
+- **Stats**: 일/주 단위 완료율, 태스크 수행 기록 등 (필요 시).
+
+위 네 가지는 `src/entities` 아래에 정의하는 것을 기본으로 한다.
+
+---
+
+## 5. 상태관리 (Zustand)
+
+- 전역·여러 레이어에서 공유되는 상태는 zustand 스토어로 관리.
+- **위치:**
+  - 도메인 레벨 → `src/entities/<domain>/model/<domain>Store.ts`
+  - feature 전용 → `src/features/<feature>/model/<feature>Store.ts`
+- 컴포넌트에는 비즈니스 로직을 두지 않고, 스토어의 actions/selectors 로 처리.
+- 스토어는 클라이언트 도메인/뷰 상태에 집중 (서버 캐시 대신).
+
+---
+
+## 6. 데이터 영속화 (LocalStorage)
+
+- 백엔드 없이 **LocalStorage** 를 1차 저장소로 사용.
+- 접근은 **공용 모듈**을 통해서만: `src/shared/lib/storage` 또는 `src/shared/lib/persistence`.
+- 키 예: `lockflow:routines`, `lockflow:sessions`, `lockflow:settings`.
+- 저장 구조는 `src/entities` 의 타입/모델과 일치시킨다.
+
+---
+
+## 7. UI 스타일 가이드
+
+- 카드 기반 레이아웃; 중요한 정보는 큰 카드, 나머지는 섹션별 카드 리스트.
+- 섹션 헤더 + “See all” 패턴.
+- 필터: 상단 칩 (All / Morning / Focus 등).
+- CTA: primary 강조, 보조는 outline/secondary.
+- 진행도: 프로그레스 바 + % 텍스트로 표시.
+
+---
+
+## 8. Expo CLI 정책
+
+- 에이전트는 **사용자 명시적 허락 없이** Expo CLI 명령을 실행하지 않는다.
+- 필요 시 (1) 명령과 이유 설명, (2) 실행 여부 확인 후 진행. 허락 없으면 명령어만 안내.
+
+---
+
+## 9. 기타
+
+- 로그인/회원 시스템은 현재 계획에 없음. auth-login, profile, settings 등은 필요 시 추가하는 예시로만 언급.
+- LockFlow 는 “루틴의 흐름을 존중하는 잠금 화면 스타일 집중 앱” 방향을 유지한다.
