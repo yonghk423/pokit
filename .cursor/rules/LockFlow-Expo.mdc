@@ -11,15 +11,48 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 ## 1. FSD 레이어 구조 및 의존성
 
 **레이어 순서 (상위 → 하위):**  
-`app` → `processes` → `pages` → `widgets` → `features` → `entities` → `shared`
+`app` → `pages` → `widgets` → `features` → `entities` → `shared`
 
 **의존성 규칙:**  
 상위 레이어만 하위 레이어를 import 할 수 있다. 하위 레이어는 상위 레이어를 import 하지 않는다.  
 (예: `pages`는 `widgets`, `features`, `entities`, `shared` 사용 가능. `shared`는 그 어떤 상위 레이어도 import 하지 않음.)
 
+**슬라이스(Slices) 규칙: 레이어 내부 import 금지**
+- 각 레이어에서 비즈니스 슬라이스는 “슬라이스로 쓰는 비즈니스 도메인 폴더(일반적으로 해당 레이어 하위의 1차 디렉터리)”로 본다.
+  - 예: `src/features/today-dashboard/*`, `src/entities/routine-execution/*`, `src/widgets/<widget-name>/*`
+- 같은 레이어 안에서 서로 다른 슬라이스로의 import 는 금지한다.
+  - 예: `src/features/today-dashboard/*` 가 `src/features/discover-routines/*` 를 import 하는 형태는 금지
+- import가 꼭 필요하면 다음 중 하나로 해결한다.
+  - (1) 정말 공통인 비즈니스 로직/타입을 `src/entities` 또는 `src/shared` 로 승격
+  - (2) 여러 슬라이스를 조합하는 레벨에서(주로 `pages` 또는 `widgets`) import 하도록 구조를 조정
+
+**Slice Grouping 허용(너무 많은 슬라이스 방지)**
+- 동일 도메인의 라우트/기능이 너무 많아지면, 해당 레이어 하위에 `slice-group` 폴더를 두고 그 아래에 여러 슬라이스를 둔다.
+  - 예: `src/pages/<slice-group>/<slice>/...`
+- 이때 import 금지 규칙은 **슬라이스 단위**로 적용한다.
+  - 즉, `slice-group` 간(또는 같은 `slice-group` 내에서도) 서로 다른 슬라이스로의 import는 금지다.
+  - 공용 로직은 `src/entities` 또는 `src/shared` 로 승격하거나, 조합 레벨(`pages`/`widgets`)에서 조립한다.
+
+**세그먼트(Segments) 네이밍 규칙: 목적 기반**
+- 세그먼트 폴더명은 “기술적 목적”만 드러내야 한다.
+  - 권장: `ui`, `model`, `lib`, `api`, `config`
+- `components`, `hooks`, `utils` 처럼 “코드 성격”을 나타내는 네이밍은 지양한다.
+
+**App 레이어 규칙: slice 없이 segment만**
+- `app`(= `src/application`) 레이어는 슬라이스(비즈니스 도메인 단위 디렉터리)를 두지 않고,
+  전역에 영향을 주는 **segment**(예: provider/wrapper, 전역 스타일, entry 관련)만 둔다.
+
+**레이어별 권장 segments 범위(가이드)**
+- `pages`: `ui`(스크린/레이아웃 배선), 필요 시 `api`/`model`(페이지 전용 비즈니스 처리)
+- `widgets`: `ui`(복합 UI 블록) 중심 + 필요 시 `model`
+- `features`: `ui` + `model` + (기타는) `lib` 중심
+- `entities`: 도메인 타입/규칙 `model` 중심 (필요 시 `api`)
+- `shared`: `ui` + `lib` + `config` 중심 (전역 공용 성격)
+
+**Expo의 `app` 보호:** 프로젝트 루트의 `app/` 디렉터리는 **Expo Router 전용**이며, Expo 고유의 이름이므로 변경하거나 FSD 레이어로 사용하지 않는다. 라우트·레이아웃은 항상 루트 `app/` 에만 둔다.
+
 **경로 alias (tsconfig):**
-- `@app/*` → `src/app/*`
-- `@processes/*` → `src/processes/*`
+- `@app/*` → `src/application/*` (FSD app 레이어, 루트 `app/` 과 구분)
 - `@pages/*` → `src/pages/*`
 - `@widgets/*` → `src/widgets/*`
 - `@features/*` → `src/features/*`
@@ -30,20 +63,14 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 ## 2. 각 레이어의 역할
 
-### 2.1 app (`src/app`)
+### 2.1 app (`src/application`)
 
 - 앱 **진입·전역** 관련 로직.
 - 전역 프로바이더, 스타일, 테마 래퍼 등.
-- Expo Router의 루트 `app/` 은 **라우팅/파일기반 라우팅**만 담당하고, 앱 레벨 로직·프로바이더는 가능한 한 `src/app` 에서 export 하여 사용한다.
+- **Expo의 `app`**: 루트 `app/` 은 Expo Router 전용으로 두고 변경하지 않는다. 라우팅·파일 기반 라우팅만 여기서 담당한다.
+- **FSD app 레이어**: Expo 고유 이름 `app` 과 충돌하지 않도록 `src/application` 디렉터리를 사용한다.
 
-### 2.2 processes (`src/processes`)
-
-- **여러 페이지/feature를 넘나드는 복합 시나리오.**
-- 온보딩, 멀티스텝 설정, “루틴 만들기 → 태스크 추가 → 완료” 같은 흐름 전체.
-- 라우팅·단계 전환·프로세스 단위 공유 상태 등.
-- 필요할 때만 슬라이스를 추가한다 (예: `routine-onboarding`, `session-flow`).
-
-### 2.3 pages (`src/pages`)
+### 2.2 pages (`src/pages`)
 
 - **라우트(스크린) 단위** 페이지 컴포넌트.
 - `widgets`·`features`·`entities`·`shared` 를 **조합**하여 화면을 구성.
@@ -71,14 +98,14 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 - **도메인 엔티티, 타입, 모델, 비즈니스 로직.**
 - UI·라우팅에 의존하지 않고, 순수 TypeScript/도메인 코드로 유지.
-- 예: Routine, RoutineTask, Session, Stats 의 타입·인터페이스·도메인 서비스·밸리데이션.
+- 예: Routine, RoutineTask, RoutineExecution, Stats 의 타입·인터페이스·도메인 서비스·밸리데이션.
 - 스토어는 도메인 단위 상태일 때 `src/entities/<domain>/model/<domain>Store.ts` 에 둔다.
 
 ### 2.7 shared (`src/shared`)
 
 - **도메인 무관 공용** 코드.
 - UI 컴포넌트, 훅, 유틸, 테마, 스토리지 클라이언트 등.
-- `entities`·`features`·`widgets`·`pages`·`processes`·`app` 에 의존하지 않는다 (순환 참조 금지).
+- `entities`·`features`·`widgets`·`pages`·`app` 에 의존하지 않는다 (순환 참조 금지).
 - 예: `shared/ui`, `shared/lib`, `shared/config`.
 
 ---
@@ -89,8 +116,7 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 - **사용자 기능(액션/유즈케이스)** → `src/features/<feature-name>` 에 model/ui/lib 구성.
 - **페이지를 구성하는 복합 블록** → `src/widgets/<widget-name>`.
 - **라우트되는 전체 화면** → `src/pages/<route-name>`, 필요한 widgets/features 조합.
-- **여러 화면을 거치는 흐름** → `src/processes/<process-name>`.
-- **앱 전역 프로바이더/스타일** → `src/app`.
+- **앱 전역 프로바이더/스타일** → `src/application`.
 - **도메인 무관 공용** → `src/shared`.
 
 ---
@@ -99,7 +125,7 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 - **Routine**: 반복 가능한 루틴 단위. id, title, description, category, tags, color, icon, defaultTasks[] 등.
 - **RoutineTask**: 루틴 내 개별 태스크. id, routineId, title, type, duration, order, isLocked 등.
-- **Session**: 실행 중인 루틴 인스턴스. id, routineId, startTime, endTime, progress, currentTaskId 등.
+- **RoutineExecution**: 실행 중인 루틴 인스턴스(루틴 한 번 실행). id, routineId, startTime, endTime, progress, currentTaskId 등.
 - **Stats**: 일/주 단위 완료율, 태스크 수행 기록 등 (필요 시).
 
 위 네 가지는 `src/entities` 아래에 정의하는 것을 기본으로 한다.
@@ -121,7 +147,7 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 - 백엔드 없이 **LocalStorage** 를 1차 저장소로 사용.
 - 접근은 **공용 모듈**을 통해서만: `src/shared/lib/storage` 또는 `src/shared/lib/persistence`.
-- 키 예: `lockflow:routines`, `lockflow:sessions`, `lockflow:settings`.
+- 키 예: `lockflow:routines`, `lockflow:routine-executions`, `lockflow:settings`.
 - 저장 구조는 `src/entities` 의 타입/모델과 일치시킨다.
 
 ---

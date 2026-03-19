@@ -41,18 +41,18 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
 ### 2.1 Today / 홈 화면 관련 요청
 
 - **사용 도메인**
-  - `Session`, `Routine`, `RoutineTask`
+  - `RoutineExecution`, `Routine`, `RoutineTask`
 - **기본 경로**
-  - 도메인 타입/로직 → `src/entities/session`, `src/entities/routine`
-  - 전역 상태(zustand) → `src/entities/session/model/sessionStore.ts`
+  - 도메인 타입/로직 → `src/entities/routine-execution`, `src/entities/routine`
+  - 전역 상태(zustand) → `src/entities/routine-execution/model/routineExecutionStore.ts`
   - Today 전용 UI/상태 → `src/features/today-dashboard/ui`, `src/features/today-dashboard/model`
   - 페이지 → `src/pages/today`
 
 ### 2.1.1 제안 원칙
 
-- Today 관련 UI를 만들 때는 **락스크린 위젯 느낌의 `CurrentSessionCard` 스타일 컴포넌트**를 우선 제안한다.
+- Today 관련 UI를 만들 때는 **락스크린 위젯 느낌의 `CurrentRoutineExecutionCard` 스타일 컴포넌트**를 우선 제안한다.
 - **남은 시간/진행률 계산**은 React 컴포넌트가 아니라
-  - `sessionStore` 의 **selector** 또는
+  - `routineExecutionStore` 의 **selector** 또는
   - 별도의 **helper 함수**
   에서 계산하도록 설계한다.
 - 컴포넌트는 **스토어 훅을 구독해 이미 계산된 값(진행률 %, 남은 시간 텍스트 등)을 받는 형태**로 제안한다.
@@ -116,8 +116,8 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
 ### 3.2 스토어 설계 패턴
 
 - **도메인 스토어 (entities 레벨)**
-  - `SessionStore`
-    - 현재 세션, 남은 시간, 진행률, 현재 태스크 id 등
+  - `RoutineExecutionStore`
+    - 현재 루틴 실행, 남은 시간, 진행률, 현재 태스크 id 등
   - `RoutineStore`
     - 사용자의 루틴 목록, 선택된 루틴, 편집 중인 루틴 등
 - **feature 스토어**
@@ -128,8 +128,8 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
 
 에이전트가 스토어를 설계할 때는 다음 요소를 포함해 제안한다.
 
-- **원시 상태 필드** (예: `sessions`, `currentSessionId`, `editingRoutine` 등)
-- **상태를 변경하는 action** (예: `startSession`, `completeTask`, `updateRoutine` 등)
+- **원시 상태 필드** (예: `routineExecutions`, `currentRoutineExecutionId`, `editingRoutine` 등)
+- **상태를 변경하는 action** (예: `startRoutineExecution`, `completeTask`, `updateRoutine` 등)
 - **뷰에서 자주 쓰는 파생 값 selector**
   - 예: 진행도 %, 남은 시간 텍스트, 오늘 해야 할 태스크 리스트 등
 
@@ -138,7 +138,7 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
 상태가 복잡해 보이거나 여러 컴포넌트에서 공유될 것 같으면, 에이전트는 다음 순서를 따른다.
 
 1. **zustand 스토어의 위치/이름을 먼저 제안**
-   - 예: `src/entities/session/model/sessionStore.ts`
+   - 예: `src/entities/routine-execution/model/routineExecutionStore.ts`
 2. **해당 스토어가 가져야 할 상태/액션/selector 를 설계**
 3. 그 다음에 **컴포넌트 코드에서는 스토어 훅만 사용하는 형태**로 예시 코드를 제공한다.
 
@@ -180,7 +180,7 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
 사용자가 “데이터를 저장/불러오기” 기능을 요청하면, 에이전트는 다음 순서를 따른다.
 
 1. **어떤 도메인 엔티티를 쓸지 결정**
-   - 예: `Routine`, `Session`, `Stats` 등
+   - 예: `Routine`, `RoutineExecution`, `Stats` 등
 2. 해당 도메인에 맞는 **zustand 스토어 + storage 헬퍼 모듈 위치를 제안**
 3. 컴포넌트에서는 **스토어 훅만 사용**하도록 코드를 제안하고,
    LocalStorage 접근은 항상 공용 스토리지 모듈을 경유하도록 유도한다.

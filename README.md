@@ -10,7 +10,7 @@
 ### 1.1 목표
 
 - 사용자가 **하루 루틴을 정의**하고  
-- 그 루틴을 **실제 세션(Session) 단위로 실행**하며  
+- 그 루틴을 **실제 루틴 실행(RoutineExecution) 단위로 실행**하며  
 - 잠금 화면 위젯 같은 **가벼운 카드 UI** 로 진행 상황을 확인할 수 있게 한다.
 - 별도 서버 없이 **로컬(LocalStorage)** 기반으로 빠르게 동작하는 **개인 집중 루틴 도구**를 지향한다.
 
@@ -18,11 +18,11 @@
 
 - **Routine**: 아침, 점심, 저녁, Deep Work 등 시간대/상황별 “템플릿”
 - **RoutineTask**: 루틴에 포함된 세부 액션들의 리스트
-- **Session**: 특정 시간에 실제로 실행되는 루틴 인스턴스
-- **Today 대시보드**: 오늘 진행 중/예정된 세션들을 한눈에 보여주는 홈 화면
+- **RoutineExecution**: 특정 시간에 실제로 실행되는 루틴 인스턴스(루틴 한 번 실행)
+- **Today 대시보드**: 오늘 진행 중/예정된 루틴 실행들을 한눈에 보여주는 홈 화면
 
 LockFlow 는 “해야 할 일을 많이 적는 투두 앱”이 아니라,  
-**미리 정의된 루틴을 세션으로 실행하며 흐름(flow)에 들어가는 앱**이다.
+**미리 정의된 루틴을 실행(RoutineExecution)하며 흐름(flow)에 들어가는 앱**이다.
 
 ---
 
@@ -62,7 +62,7 @@ LockFlow 는 “해야 할 일을 많이 적는 투두 앱”이 아니라,
 2. 루틴 이름/카테고리/아이콘/색상을 정한다. (예: Morning Energy)
 3. 태스크들을 순서대로 추가한다. (예: 물 마시기 5분, 스트레칭 10분, 계획 세우기 10분)
 4. 태스크 순서와 예상 소요 시간으로 **전체 루틴 길이**를 확인한다.
-5. 저장 후, 이 루틴을 Today 대시보드에서 세션으로 실행할 수 있다.
+5. 저장 후, 이 루틴을 Today 대시보드에서 루틴 실행으로 실행할 수 있다.
 
 ### 3.3 추천 루틴 둘러보기 (Discover)
 
@@ -82,8 +82,8 @@ LockFlow 의 핵심 도메인 엔티티는 다음과 같다. (실제 타입/모�
 - **RoutineTask**
   - 루틴을 구성하는 개별 태스크
   - 예시 필드: `id`, `routineId`, `title`, `type`, `duration`, `order`, `isLocked`
-- **Session**
-  - 실제 실행 중인 루틴 인스턴스 (시작/종료, 진행률, 현재 태스크 등)
+- **RoutineExecution**
+  - 실제 실행 중인 루틴 인스턴스(루틴 한 번 실행). 시작/종료, 진행률, 현재 태스크 등
   - 예시 필드: `id`, `routineId`, `startTime`, `endTime`, `progress`, `currentTaskId`
 - **Stats**
   - 일별/주별 루틴 완료율, 태스크 수행 기록 등 요약 통계
@@ -98,7 +98,7 @@ React/라우팅에 의존하지 않는 **순수 TypeScript 비즈니스 로직**
 ### 5.1 탭/페이지 구조
 
 - `Today` 탭 (`src/pages/today`)
-  - 오늘의 세션, 현재 진행 중인 루틴 카드
+  - 오늘의 루틴 실행, 현재 진행 중인 루틴 카드
 - `Discover` 탭 (`src/pages/discover`)
   - 추천 루틴 리스트, 카테고리/태그 필터
 - `Routines` 탭 (`src/pages/routines`)
@@ -111,7 +111,7 @@ React/라우팅에 의존하지 않는 **순수 TypeScript 비즈니스 로직**
 
 ### 5.2 카드 기반 레이아웃
 
-- **큰 카드**로 현재 세션/추천 루틴을 강조
+- **큰 카드**로 현재 루틴 실행/추천 루틴을 강조
 - 섹션별 **카드 리스트**로 나머지 컨텐츠를 배치
 - 섹션 헤더 + “See all” 패턴을 기본으로 사용
 - 진행도는 항상 **프로그레스 바 + % 텍스트**로 표시
@@ -119,9 +119,9 @@ React/라우팅에 의존하지 않는 **순수 TypeScript 비즈니스 로직**
 
 ### 5.3 주요 컴포넌트 아이디어
 
-- `CurrentSessionCard`
+- `CurrentRoutineExecutionCard`
   - Today 화면의 핵심 카드
-  - 현재 세션 제목, 남은 시간, 진행률, 다음 태스크 등을 보여줌
+  - 현재 루틴 실행 제목, 남은 시간, 진행률, 다음 태스크 등을 보여줌
 - `RoutineSummaryCard`
   - 루틴 리스트/추천 리스트에서 사용
   - 카테고리/색상/예상 소요 시간/태스크 수 등 요약 정보 제공
@@ -136,7 +136,7 @@ LockFlow 는 `entities / features / pages / shared` 4단계 구조를 따른다.
 
 - `src/entities`
   - 도메인 엔티티, 타입, 모델, 비즈니스 로직
-  - 예: `routine`, `routineTask`, `session`, `stats` 등의 모델과 도메인 서비스
+  - 예: `routine`, `routineTask`, `routineExecution`, `stats` 등의 모델과 도메인 서비스
 - `src/features`
   - 사용자 기능 단위 (Today 대시보드, Discover, Routine Setup 등)
   - 내부 구조: `model/`, `ui/`, `lib/`
@@ -164,8 +164,8 @@ LockFlow 는 `entities / features / pages / shared` 4단계 구조를 따른다.
 
 ### 7.2 예시 스토어
 
-- `SessionStore`
-  - 현재 세션, 남은 시간, 진행률, 현재 태스크 id
+- `RoutineExecutionStore`
+  - 현재 루틴 실행, 남은 시간, 진행률, 현재 태스크 id
 - `RoutineStore`
   - 루틴 목록, 선택된 루틴, 편집 중 루틴
 - `TodayDashboardStore`
@@ -194,13 +194,13 @@ LockFlow 는 `entities / features / pages / shared` 4단계 구조를 따른다.
 
 - `src/shared/lib/storage/localStorageClient`
   - `getItem`, `setItem`, `removeItem` 등의 안전한 래퍼 (try/catch, JSON 직렬화 포함)
-- 도메인별 storage 헬퍼 (예: `routineStorage`, `sessionStorage`)
+- 도메인별 storage 헬퍼 (예: `routineStorage`, `routineExecutionStorage`)
   - `loadRoutines`, `saveRoutines` 등 도메인 단위 API 제공
 
 키 네이밍 규칙:
 
 - `lockflow:routines`
-- `lockflow:sessions`
+- `lockflow:routine-executions`
 - `lockflow:settings`
 
 LocalStorage 에 저장되는 데이터 구조는 `src/entities` 의 타입/모델 정의를 그대로 따른다.
@@ -224,7 +224,7 @@ npx expo start
 
 ## 10. 앞으로의 확장 아이디어
 
-- 세션/루틴 기반 **간단한 통계 화면** (주간 완료율, 가장 많이 실행한 루틴 등)
+- 루틴 실행/루틴 기반 **간단한 통계 화면** (주간 완료율, 가장 많이 실행한 루틴 등)
 - 루틴 공유/템플릿 갤러리 (초기에는 로컬만, 이후 서버 연동 고려)
 - 알림/리마인더와의 연동 (아침 루틴 시작 알림 등)
 
