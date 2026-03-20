@@ -160,6 +160,31 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 - CTA: primary 강조, 보조는 outline/secondary.
 - 진행도: 프로그레스 바 + % 텍스트로 표시.
 
+### 7.0 브랜드 컬러 (Primary)
+
+- **앱 기본 강조색**: `rgb(249, 115, 22)` (Tailwind orange 계열).
+- 코드에서는 `rgba(249, 115, 22, alpha)` 형태로 사용. 전역 값은 `src/shared/config/theme.ts`의 `Colors.primary`, `PrimaryColor` 참고.
+- 버튼, FAB, 탭 활성, 아이콘 강조 등 primary 역할에 이 색을 사용한다.
+
+### 7.0.1 UI 표시 언어 (한글)
+
+- **앱 이름 "LockFlow"를 제외한** 모든 사용자 대면 UI 텍스트는 **한글**로 표시한다.
+- 화면 문구, 버튼 라벨, 빈 상태 메시지, 탭 제목, 설정 항목, 에러/토스트 문구 등 모두 한글.
+- 예: "Start Building" → "시작하기", "Create Your First Routine" → "첫 루틴 만들기", "Welcome to LockFlow!" → "LockFlow에 오신 것을 환영해요!" (앱명만 유지).
+- 코드/주석/변수명은 기존 프로젝트 컨벤션을 따르고, **화면에 보이는 문자열만 한글**을 원칙으로 한다.
+
+## 7.1 초기 화면(Empty State) 규칙 — 첫 루틴 온보딩
+
+- 앱 최초 진입 또는 `Routine`이 0개일 때, Today 화면은 “빈 상태 온보딩 UI”를 노출한다.
+  - 목표: 사용자의 첫 행동을 **“Create Your First Routine / Start Building”**으로 수렴시키기
+- 빈 상태 온보딩 UI는 아래 3 블록을 기본으로 구성한다.
+  - **Welcome 섹션**: 앱 컨셉 1줄 + 다음 행동 힌트
+  - **메인 CTA 카드**: “첫 루틴 만들기” 버튼(Primary)
+  - **보조 플레이스홀더**: Insights(데이터 없음) / Timeline(빈 슬롯) 같은 기대감 카드
+- 네비게이션(라우팅) 규칙:
+  - `features`의 UI는 `onStartBuilding()` 같은 콜백만 받고, **expo-router 이동 자체는 `pages` 또는 `app/` 라우트에서 처리**한다.
+  - 즉, `features`는 라우팅을 직접 import/호출하지 않는다.
+
 ---
 
 ## 8. Expo CLI 정책

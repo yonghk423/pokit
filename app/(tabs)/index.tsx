@@ -1,5 +1,5 @@
-import { HomePage } from '@pages/home';
+import { TodayPage } from '@pages/today';
 
 export default function HomeScreen() {
-  return <HomePage />;
+  return <TodayPage />;
 }
