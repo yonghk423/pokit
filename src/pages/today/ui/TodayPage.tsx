@@ -1,7 +1,7 @@
+import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useTodayDashboard } from '@features/today-dashboard';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -13,16 +13,12 @@ const BLUE_ACCENT = '#60a5fa';
 const EMERALD_ACCENT = '#34d399';
 
 export function TodayPage() {
-  const { routines, addSampleRoutine, startRoutineExecution } = useTodayDashboard();
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
   const onCta = () => {
-    if (routines.length === 0) {
-      addSampleRoutine();
-      return;
-    }
-    startRoutineExecution(routines[0]);
+    router.push('/day-plan');
   };
 
   const glassSurface = isDark ? styles.glassDark : styles.glassLight;
@@ -106,7 +102,7 @@ export function TodayPage() {
           {/* Marketing */}
           <View style={styles.marketingSection}>
             <ThemedText style={[styles.marketingHeadline, { color: onSurface }]}>
-              당신의 flow를 찾으세요.{'\n'}
+              당신의 리듬을 찾으세요.{'\n'}
               <ThemedText style={styles.marketingAccent}>하루를 마스터하세요.</ThemedText>
             </ThemedText>
           </View>
@@ -114,7 +110,7 @@ export function TodayPage() {
           {/* CTA */}
           <View style={styles.ctaSection}>
             <Pressable style={styles.ctaButton} onPress={onCta}>
-              <ThemedText style={styles.ctaButtonText}>flow 시작하기</ThemedText>
+              <ThemedText style={styles.ctaButtonText}>시작하기</ThemedText>
               <IconSymbol name="arrow.forward" size={22} color="#fff" />
             </Pressable>
           </View>

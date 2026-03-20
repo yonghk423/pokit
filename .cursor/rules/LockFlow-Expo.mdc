@@ -75,12 +75,12 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 - **라우트(스크린) 단위** 페이지 컴포넌트.
 - `widgets`·`features`·`entities`·`shared` 를 **조합**하여 화면을 구성.
 - 복잡한 비즈니스 로직은 넣지 않고, 배선(wiring)과 레이아웃에 집중.
-- 예: `src/pages/today`, `src/pages/discover`, `src/pages/routines`, `src/pages/insight`.
+- 예: `src/pages/today`, `src/pages/discover`, `src/pages/routines`, `src/pages/settings`.
 
 ### 2.4 widgets (`src/widgets`)
 
 - **여러 feature/entity를 조합한 복합 UI 블록.**
-- 한 페이지 안에서 반복 사용되는 “큰 덩어리” (예: 오늘 요약 대시보드 블록, 루틴 리스트+필터 블록).
+- 한 페이지 안에서 반복 사용되는 “큰 덩어리” (예: 오늘 요약 대시보드 블록, 리듬 리스트+필터 블록).
 - 단일 feature보다 크고, 페이지 전체보다 작은 단위.
 - 슬라이스별로 `ui/`, `model/` 등 FSD 세그먼트 구조를 가질 수 있다.
 
@@ -170,16 +170,17 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 - **앱 이름 "LockFlow"를 제외한** 모든 사용자 대면 UI 텍스트는 **한글**로 표시한다.
 - 화면 문구, 버튼 라벨, 빈 상태 메시지, 탭 제목, 설정 항목, 에러/토스트 문구 등 모두 한글.
-- 예: "Start Building" → "시작하기", "Create Your First Routine" → "첫 루틴 만들기", "Welcome to LockFlow!" → "LockFlow에 오신 것을 환영해요!" (앱명만 유지).
+- 예: "Start Building" → "시작하기", "Create Your First Routine" → "첫 리듬 만들기", "Welcome to LockFlow!" → "LockFlow에 오신 것을 환영해요!" (앱명만 유지).
+- 사용자 대면 카피에서는 **「리듬」**을 기본 용어로 쓴다(다른 앱의 「루틴」과 구분). 코드 도메인 타입명 `Routine` 등은 유지해도 됨.
 - 코드/주석/변수명은 기존 프로젝트 컨벤션을 따르고, **화면에 보이는 문자열만 한글**을 원칙으로 한다.
 
-## 7.1 초기 화면(Empty State) 규칙 — 첫 루틴 온보딩
+## 7.1 초기 화면(Empty State) 규칙 — 첫 리듬 온보딩
 
 - 앱 최초 진입 또는 `Routine`이 0개일 때, Today 화면은 “빈 상태 온보딩 UI”를 노출한다.
   - 목표: 사용자의 첫 행동을 **“Create Your First Routine / Start Building”**으로 수렴시키기
 - 빈 상태 온보딩 UI는 아래 3 블록을 기본으로 구성한다.
   - **Welcome 섹션**: 앱 컨셉 1줄 + 다음 행동 힌트
-  - **메인 CTA 카드**: “첫 루틴 만들기” 버튼(Primary)
+  - **메인 CTA 카드**: “첫 리듬 만들기” 버튼(Primary)
   - **보조 플레이스홀더**: Insights(데이터 없음) / Timeline(빈 슬롯) 같은 기대감 카드
 - 네비게이션(라우팅) 규칙:
   - `features`의 UI는 `onStartBuilding()` 같은 콜백만 받고, **expo-router 이동 자체는 `pages` 또는 `app/` 라우트에서 처리**한다.
@@ -196,5 +197,5 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 ## 9. 기타
 
-- 로그인/회원 시스템은 현재 계획에 없음. auth-login, profile, settings 등은 필요 시 추가하는 예시로만 언급.
-- LockFlow 는 “루틴의 흐름을 존중하는 잠금 화면 스타일 집중 앱” 방향을 유지한다.
+- 로그인/회원·**Profile(프로필)** 은 현재 계획에 없음. 앱 설정은 **`src/pages/settings`**(Settings 탭)으로 둔다.
+- LockFlow 는 “일상의 **리듬**을 존중하는 잠금 화면 스타일 집중 앱” 방향을 유지한다.

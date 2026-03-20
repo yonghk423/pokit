@@ -41,7 +41,7 @@ export function createSampleRoutine(): Routine {
   return {
     id: routineId,
     title: 'Morning Energy',
-    description: '가볍게 시작하는 아침 루틴',
+    description: '가볍게 시작하는 아침 리듬',
     category: 'Morning',
     tags: ['morning', 'energy'],
     color: '#2F80ED',

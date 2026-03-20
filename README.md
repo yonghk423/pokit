@@ -103,8 +103,8 @@ React/라우팅에 의존하지 않는 **순수 TypeScript 비즈니스 로직**
   - 추천 루틴 리스트, 카테고리/태그 필터
 - `Routines` 탭 (`src/pages/routines`)
   - 내가 만든 루틴 리스트 및 관리
-- `Profile/Settings` 탭 (`src/pages/profile` 또는 `src/pages/settings`)
-  - 계정/환경 설정 (필요 시)
+- `Settings` 탭 (`src/pages/settings`)
+  - 앱 환경 설정 (알림, 테마 등). 로그인/Profile은 계획 없음.
 
 각 페이지는 feature 들을 조합해 화면을 구성하고,  
 복잡한 비즈니스 로직은 `entities`/`features` 레벨에 둔다.

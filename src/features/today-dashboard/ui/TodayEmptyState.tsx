@@ -6,15 +6,15 @@ import { ThemedView } from '@shared/ui/themed-view';
 type Props = {
   onStartBuilding: () => void;
   dateLabel?: string;
-  /** 루틴이 이미 있을 때 메인 카드 제목 (기본: 첫 루틴 만들기) */
+  /** 리듬이 이미 있을 때 메인 카드 제목 (기본: 첫 리듬 만들기) */
   mainCtaTitle?: string;
-  /** 루틴이 이미 있을 때 메인 카드 설명 */
+  /** 리듬이 이미 있을 때 메인 카드 설명 */
   mainCtaDescription?: string;
   /** 메인 CTA 버튼 라벨 (기본: 시작하기) */
   primaryButtonLabel?: string;
 };
 
-const DEFAULT_MAIN_TITLE = '첫 루틴 만들기';
+const DEFAULT_MAIN_TITLE = '첫 리듬 만들기';
 const DEFAULT_MAIN_DESC =
   '집중과 균형을 위한 습관 순서를 설계해 보세요.';
 const DEFAULT_PRIMARY_LABEL = '시작하기';
@@ -33,7 +33,7 @@ export function TodayEmptyState({
           LockFlow에 오신 것을 환영해요!
         </ThemedText>
         <ThemedText style={styles.welcomeSub}>
-          첫 루틴을 시작해서 흐름을 찾아보세요.
+          첫 리듬을 시작해 보세요.
         </ThemedText>
       </View>
 
@@ -67,7 +67,7 @@ export function TodayEmptyState({
             <View style={[styles.skeletonLine, { width: 64 }]} />
             <View style={[styles.skeletonLine, { width: 48, marginTop: 8 }]} />
             <ThemedText style={styles.sideHint}>
-              아직 데이터가 없어요. 첫 루틴을 완료하면 통계를 볼 수 있어요.
+              아직 데이터가 없어요. 첫 리듬을 완료하면 통계를 볼 수 있어요.
             </ThemedText>
           </View>
         </ThemedView>
