@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,13 +9,27 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useShallow } from 'zustand/react/shallow';
 
+import {
+  formatBlockTimeRange,
+  getBlockTimelineIcon,
+  parseHHmmToMinutes,
+  sortDayPlanBlocks,
+  totalPlannedMinutes,
+} from '@entities/day-plan';
+import { selectFirstPendingBlock, useDayPlanStore } from '@entities/day-plan/model';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
+import type { DayPlanBlock } from '@entities/day-plan';
+
 const PRIMARY = 'rgb(249, 115, 22)';
+
+/** 카테고리 UI 제거 시 신규 블록에 붙는 고정 라벨 */
+const DEFAULT_BLOCK_CATEGORY = '리듬';
 
 export function DayPlanPage() {
   const router = useRouter();
@@ -22,6 +37,47 @@ export function DayPlanPage() {
   const isDark = colorScheme === 'dark';
 
   const [newTaskName, setNewTaskName] = useState('');
+  const [startTimeStr, setStartTimeStr] = useState('09:00');
+  const [endTimeStr, setEndTimeStr] = useState('09:30');
+
+  const { blocks, completedBlockIds, skippedBlockIds, addBlock, removeBlock } = useDayPlanStore(
+    useShallow((s) => ({
+      blocks: s.blocks,
+      completedBlockIds: s.completedBlockIds,
+      skippedBlockIds: s.skippedBlockIds,
+      addBlock: s.addBlock,
+      removeBlock: s.removeBlock,
+    })),
+  );
+
+  const firstPending = useDayPlanStore(selectFirstPendingBlock);
+
+  useEffect(() => {
+    useDayPlanStore.getState().hydrate();
+  }, []);
+
+  const sortedBlocks = useMemo(() => sortDayPlanBlocks(blocks), [blocks]);
+
+  const progressPercent = useMemo(() => {
+    const n = sortedBlocks.length;
+    if (n === 0) return 0;
+    return Math.round((completedBlockIds.length / n) * 100);
+  }, [sortedBlocks.length, completedBlockIds.length]);
+
+  const plannedMinutes = useMemo(() => totalPlannedMinutes(sortedBlocks), [sortedBlocks]);
+
+  const progressLabel = useMemo(() => {
+    const n = sortedBlocks.length;
+    return `${completedBlockIds.length}/${n} 태스크`;
+  }, [sortedBlocks.length, completedBlockIds.length]);
+
+  const helperText = useMemo(() => {
+    if (sortedBlocks.length === 0) {
+      return '오늘 일정을 추가해 보세요.';
+    }
+    const h = (plannedMinutes / 60).toFixed(1);
+    return `오늘 약 ${h}시간 분량으로 계획했어요. 시작할까요?`;
+  }, [sortedBlocks.length, plannedMinutes]);
 
   const bg = isDark ? '#0f172a' : '#f8fafc';
   const surface = isDark ? '#1e293b' : '#ffffff';
@@ -30,6 +86,171 @@ export function DayPlanPage() {
   const text = isDark ? '#f1f5f9' : '#0f172a';
   const chipSoftBg = isDark ? 'rgba(249,115,22,0.15)' : 'rgba(249,115,22,0.12)';
   const lineBg = isDark ? '#334155' : '#e2e8f0';
+
+  const onStartDay = () => {
+    if (!firstPending) return;
+    router.push({
+      pathname: '/activity-session',
+      params: { blockId: firstPending.id },
+    });
+  };
+
+  const resetEditorForm = () => {
+    setNewTaskName('');
+    setStartTimeStr('09:00');
+    setEndTimeStr('09:30');
+  };
+
+  const onAddTask = () => {
+    const title = newTaskName.trim();
+    if (!title) {
+      Alert.alert('입력 필요', '리듬 이름을 입력해 주세요.');
+      return;
+    }
+    const startMin = parseHHmmToMinutes(startTimeStr);
+    if (startMin === null) {
+      Alert.alert('시각 형식', '시작 시각은 09:00 형식(24시간)으로 입력해 주세요.');
+      return;
+    }
+    const endMin = parseHHmmToMinutes(endTimeStr);
+    if (endMin === null) {
+      Alert.alert('시각 형식', '종료 시각은 09:00 형식(24시간)으로 입력해 주세요.');
+      return;
+    }
+    if (endMin <= startMin) {
+      Alert.alert('시간 구간', '종료 시각은 시작 시각보다 늦어야 합니다.');
+      return;
+    }
+
+    const result = addBlock({
+      title,
+      category: DEFAULT_BLOCK_CATEGORY,
+      startMinutes: startMin,
+      endMinutes: endMin,
+    });
+
+    if (!result.ok) {
+      if (result.reason === 'overlap') {
+        const r = formatBlockTimeRange(result.conflicting);
+        Alert.alert(
+          '시간 중복',
+          `「${result.conflicting.title}」(${r})와 겹치는 시간입니다.\n다른 시각을 선택해 주세요.`,
+        );
+      } else if (result.reason === 'invalid_range') {
+        Alert.alert('시간 구간', '종료 시각은 시작 시각보다 늦어야 합니다.');
+      }
+      return;
+    }
+
+    resetEditorForm();
+  };
+
+  const onCancelEditor = () => {
+    resetEditorForm();
+  };
+
+  const confirmRemoveBlock = (block: DayPlanBlock) => {
+    Alert.alert(
+      '리듬 삭제',
+      `「${block.title}」을(를) 오늘 일정에서 삭제할까요?`,
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: () => removeBlock(block.id),
+        },
+      ],
+    );
+  };
+
+  const renderBlockRow = (block: DayPlanBlock) => {
+    const completed = completedBlockIds.includes(block.id);
+    const skipped = skippedBlockIds.includes(block.id);
+    const isCurrent = firstPending?.id === block.id;
+    const iconName = getBlockTimelineIcon(block);
+    const timeRange = formatBlockTimeRange(block);
+
+    let dot: ReactNode;
+    if (completed) {
+      dot = (
+        <View style={[styles.dotFilled, { backgroundColor: isDark ? '#334155' : '#e2e8f0' }]}>
+          <IconSymbol name="checkmark" size={18} color={PRIMARY} />
+        </View>
+      );
+    } else if (skipped) {
+      dot = (
+        <View style={[styles.dotDashed, { borderColor: muted, backgroundColor: chipSoftBg }]}>
+          <IconSymbol name="forward.fill" size={16} color={muted} />
+        </View>
+      );
+    } else if (isCurrent) {
+      dot = (
+        <View style={[styles.dotRing, { borderColor: PRIMARY, backgroundColor: surface }]}>
+          <IconSymbol name={iconName} size={20} color={PRIMARY} />
+        </View>
+      );
+    } else {
+      dot = (
+        <View style={[styles.dotMuted, { backgroundColor: isDark ? '#334155' : '#f1f5f9' }]}>
+          <IconSymbol name={iconName} size={20} color={muted} />
+        </View>
+      );
+    }
+
+    const cardMuted = !isCurrent && !completed && !skipped;
+
+    return (
+      <View key={block.id} style={styles.timelineRow}>
+        <View style={styles.dotCol}>{dot}</View>
+        <View
+          style={[
+            styles.timelineCard,
+            {
+              backgroundColor: surface,
+              borderColor: border,
+              opacity: completed || skipped ? (isDark ? 0.85 : 0.9) : 1,
+            },
+            cardMuted && styles.timelineCardMuted,
+          ]}>
+          <View style={styles.cardRow}>
+            <View style={cardMuted ? { opacity: 0.65 } : undefined}>
+              <ThemedText style={[styles.cardTitle, { color: text }]}>{block.title}</ThemedText>
+              <ThemedText
+                style={[
+                  styles.cardTime,
+                  { color: cardTimeColor(completed, skipped, isCurrent, muted) },
+                ]}>
+                {timeRange}
+              </ThemedText>
+            </View>
+            <View style={styles.cardRowRight}>
+              <View
+                style={[
+                  styles.badge,
+                  {
+                    backgroundColor: badgeBg(completed, skipped, chipSoftBg, isDark),
+                  },
+                ]}>
+                <ThemedText
+                  style={[styles.badgeText, { color: badgeTextColor(completed, skipped, PRIMARY, muted) }]}>
+                  {badgeLabel(block.category, completed, skipped)}
+                </ThemedText>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${block.title} 삭제`}
+                hitSlop={8}
+                style={styles.deleteIconBtn}
+                onPress={() => confirmRemoveBlock(block)}>
+                <IconSymbol name="trash" size={18} color={muted} />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: bg }]}>
@@ -61,89 +282,23 @@ export function DayPlanPage() {
                 <ThemedText style={[styles.sectionTitle, { color: text }]}>리듬을 확정하세요</ThemedText>
               </View>
               <View style={styles.progressNums}>
-                <ThemedText style={[styles.percentText, { color: text }]}>30%</ThemedText>
-                <ThemedText style={[styles.tasksHint, { color: muted }]}>3/10 태스크</ThemedText>
+                <ThemedText style={[styles.percentText, { color: text }]}>{progressPercent}%</ThemedText>
+                <ThemedText style={[styles.tasksHint, { color: muted }]}>{progressLabel}</ThemedText>
               </View>
             </View>
             <View style={[styles.progressTrack, { backgroundColor: lineBg }]}>
-              <View style={[styles.progressFill, { width: '30%' }]} />
+              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
             </View>
-            <ThemedText style={[styles.helper, { color: muted }]}>
-              오늘 약 6시간 분량으로 계획했어요. 시작할까요?
-            </ThemedText>
+            <ThemedText style={[styles.helper, { color: muted }]}>{helperText}</ThemedText>
           </View>
-
-          {/* Category chips */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipsRow}
-            style={styles.chipsScroll}>
-            <Pressable style={[styles.chip, styles.chipPrimary]}>
-              <IconSymbol name="plus" size={18} color="#fff" />
-              <ThemedText style={styles.chipPrimaryText}>새 맞춤</ThemedText>
-            </Pressable>
-            <Pressable style={[styles.chip, styles.chipOutline, { borderColor: `${PRIMARY}33`, backgroundColor: chipSoftBg }]}>
-              <IconSymbol name="heart.fill" size={18} color={PRIMARY} />
-              <ThemedText style={[styles.chipOutlineText, { color: PRIMARY }]}>건강</ThemedText>
-            </Pressable>
-            <Pressable style={[styles.chip, styles.chipOutline, { borderColor: `${PRIMARY}33`, backgroundColor: chipSoftBg }]}>
-              <IconSymbol name="sparkles" size={18} color={PRIMARY} />
-              <ThemedText style={[styles.chipOutlineText, { color: PRIMARY }]}>습관</ThemedText>
-            </Pressable>
-            <Pressable style={[styles.chip, styles.chipOutline, { borderColor: `${PRIMARY}33`, backgroundColor: chipSoftBg }]}>
-              <IconSymbol name="bolt.fill" size={18} color={PRIMARY} />
-              <ThemedText style={[styles.chipOutlineText, { color: PRIMARY }]}>딥워크</ThemedText>
-            </Pressable>
-          </ScrollView>
 
           {/* Timeline */}
           <View style={styles.timelineWrap}>
             <View style={[styles.timelineLine, { backgroundColor: lineBg, left: 19 }]} />
 
-            {/* Item 1 */}
-            <View style={styles.timelineRow}>
-              <View style={styles.dotCol}>
-                <View style={[styles.dotFilled, { backgroundColor: PRIMARY }]}>
-                  <IconSymbol name="sun.max.fill" size={20} color="#fff" />
-                </View>
-              </View>
-              <View style={[styles.timelineCard, { backgroundColor: surface, borderColor: border }]}>
-                <View style={styles.cardRow}>
-                  <View>
-                    <ThemedText style={[styles.cardTitle, { color: text }]}>기상</ThemedText>
-                    <ThemedText style={[styles.cardTime, { color: PRIMARY }]}>오전 7:00</ThemedText>
-                  </View>
-                  <View style={[styles.badge, { backgroundColor: isDark ? '#334155' : '#f1f5f9' }]}>
-                    <ThemedText style={[styles.badgeText, { color: muted }]}>습관</ThemedText>
-                  </View>
-                </View>
-              </View>
-            </View>
+            {sortedBlocks.map((block) => renderBlockRow(block))}
 
-            {/* Item 2 */}
-            <View style={styles.timelineRow}>
-              <View style={styles.dotCol}>
-                <View style={[styles.dotRing, { borderColor: PRIMARY, backgroundColor: surface }]}>
-                  <IconSymbol name="figure.run" size={20} color={PRIMARY} />
-                </View>
-              </View>
-              <View style={[styles.timelineCard, { backgroundColor: surface, borderColor: border }]}>
-                <View style={styles.cardRow}>
-                  <View>
-                    <ThemedText style={[styles.cardTitle, { color: text }]}>아침 조깅</ThemedText>
-                    <ThemedText style={[styles.cardTime, { color: PRIMARY }]}>
-                      오전 7:30 — 오전 8:15
-                    </ThemedText>
-                  </View>
-                  <View style={[styles.badge, { backgroundColor: chipSoftBg }]}>
-                    <ThemedText style={[styles.badgeText, { color: PRIMARY }]}>건강</ThemedText>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Add new card */}
+            {/* 새 리듬 추가 → dayPlanStore.addBlock */}
             <View style={styles.timelineRow}>
               <View style={styles.dotCol}>
                 <View style={[styles.dotDashed, { borderColor: PRIMARY, backgroundColor: chipSoftBg }]}>
@@ -167,9 +322,11 @@ export function DayPlanPage() {
                   <View style={styles.timeCol}>
                     <ThemedText style={[styles.inputLabel, { color: muted }]}>시작 시각</ThemedText>
                     <TextInput
-                      defaultValue="09:00"
+                      value={startTimeStr}
+                      onChangeText={setStartTimeStr}
                       placeholder="09:00"
                       placeholderTextColor={muted}
+                      keyboardType="numbers-and-punctuation"
                       style={[
                         styles.input,
                         { color: text, borderColor: border, backgroundColor: surface },
@@ -177,47 +334,39 @@ export function DayPlanPage() {
                     />
                   </View>
                   <View style={styles.timeCol}>
-                    <ThemedText style={[styles.inputLabel, { color: muted }]}>카테고리</ThemedText>
-                    <View style={[styles.selectLike, { borderColor: border, backgroundColor: surface }]}>
-                      <ThemedText style={{ color: text, fontSize: 14 }}>생산성</ThemedText>
-                      <IconSymbol name="chevron.down" size={16} color={muted} />
-                    </View>
+                    <ThemedText style={[styles.inputLabel, { color: muted }]}>종료 시각</ThemedText>
+                    <TextInput
+                      value={endTimeStr}
+                      onChangeText={setEndTimeStr}
+                      placeholder="10:30"
+                      placeholderTextColor={muted}
+                      keyboardType="numbers-and-punctuation"
+                      style={[
+                        styles.input,
+                        { color: text, borderColor: border, backgroundColor: surface },
+                      ]}
+                    />
                   </View>
                 </View>
+                <ThemedText style={[styles.editorHint, { color: muted }]}>
+                  같은 날 기준 · 종료는 시작보다 늦게(24:00까지)
+                </ThemedText>
                 <View style={styles.editorActions}>
-                  <Pressable style={[styles.addTaskBtn, { backgroundColor: PRIMARY }]}>
-                    <ThemedText style={styles.addTaskBtnText}>태스크 추가</ThemedText>
+                  <Pressable
+                    accessibilityRole="button"
+                    style={[styles.addTaskBtn, { backgroundColor: PRIMARY }]}
+                    onPress={onAddTask}>
+                    <ThemedText style={styles.addTaskBtnText}>리듬 추가</ThemedText>
                   </Pressable>
                   <Pressable
+                    accessibilityRole="button"
                     style={[
                       styles.cancelBtn,
                       { backgroundColor: isDark ? '#334155' : '#e2e8f0' },
-                    ]}>
+                    ]}
+                    onPress={onCancelEditor}>
                     <ThemedText style={[styles.cancelBtnText, { color: text }]}>취소</ThemedText>
                   </Pressable>
-                </View>
-              </View>
-            </View>
-
-            {/* Future item */}
-            <View style={styles.timelineRow}>
-              <View style={styles.dotCol}>
-                <View style={[styles.dotMuted, { backgroundColor: isDark ? '#334155' : '#f1f5f9' }]}>
-                  <IconSymbol name="moon.stars.fill" size={20} color={muted} />
-                </View>
-              </View>
-              <View
-                style={[
-                  styles.timelineCard,
-                  styles.timelineCardMuted,
-                  { borderColor: border, backgroundColor: isDark ? 'rgba(30,41,59,0.5)' : '#f8fafc' },
-                ]}>
-                <View style={styles.cardRow}>
-                  <View style={{ opacity: 0.65 }}>
-                    <ThemedText style={[styles.cardTitle, { color: text }]}>취침</ThemedText>
-                    <ThemedText style={[styles.cardTimeMuted, { color: muted }]}>오후 10:30</ThemedText>
-                  </View>
-                  <IconSymbol name="lock.fill" size={20} color={muted} />
                 </View>
               </View>
             </View>
@@ -229,26 +378,47 @@ export function DayPlanPage() {
           <SafeAreaView edges={['bottom']}>
             <Pressable
               accessibilityRole="button"
-              style={[styles.startDayBtn, { backgroundColor: PRIMARY }]}
-              onPress={() =>
-                router.push({
-                  pathname: '/activity-session',
-                  params: {
-                    title: '아침 조깅',
-                    category: '건강',
-                    nextTitle: '딥워크 세션',
-                    nextTime: '오전 9:00 — 오전 10:30',
-                  },
-                })
-              }>
+              accessibilityState={{ disabled: !firstPending }}
+              style={[
+                styles.startDayBtn,
+                { backgroundColor: PRIMARY },
+                !firstPending && styles.startDayBtnDisabled,
+              ]}
+              onPress={onStartDay}
+              disabled={!firstPending}>
               <IconSymbol name="play.fill" size={22} color="#fff" />
-              <ThemedText style={styles.startDayText}>하루 시작하기</ThemedText>
+              <ThemedText style={styles.startDayText}>
+                {firstPending ? '하루 시작하기' : '남은 일정이 없어요'}
+              </ThemedText>
             </Pressable>
           </SafeAreaView>
         </View>
       </SafeAreaView>
     </ThemedView>
   );
+}
+
+function cardTimeColor(completed: boolean, skipped: boolean, _isCurrent: boolean, muted: string) {
+  if (skipped || completed) return muted;
+  return PRIMARY;
+}
+
+function badgeBg(completed: boolean, skipped: boolean, chipSoftBg: string, isDark: boolean) {
+  if (skipped) return isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.15)';
+  if (completed) return isDark ? '#334155' : '#f1f5f9';
+  return chipSoftBg;
+}
+
+function badgeTextColor(completed: boolean, skipped: boolean, primary: string, muted: string) {
+  if (skipped) return muted;
+  if (completed) return muted;
+  return primary;
+}
+
+function badgeLabel(category: string, completed: boolean, skipped: boolean) {
+  if (skipped) return '건너뜀';
+  if (completed) return '완료';
+  return category;
 }
 
 const styles = StyleSheet.create({
@@ -330,39 +500,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  chipsScroll: {
-    maxHeight: 48,
-    marginBottom: 8,
-  },
-  chipsRow: {
-    paddingHorizontal: 16,
-    gap: 8,
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-  },
-  chipPrimary: {
-    backgroundColor: PRIMARY,
-  },
-  chipPrimaryText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  chipOutline: {
-    borderWidth: 1,
-  },
-  chipOutlineText: {
-    fontWeight: '600',
-    fontSize: 14,
-  },
   timelineWrap: {
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -440,17 +577,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    gap: 8,
+  },
+  cardRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  deleteIconBtn: {
+    padding: 6,
+    marginRight: -4,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
   },
   cardTime: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 4,
-  },
-  cardTimeMuted: {
     fontSize: 14,
     fontWeight: '600',
     marginTop: 4,
@@ -479,6 +621,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 8,
   },
+  editorHint: {
+    fontSize: 11,
+    marginTop: 8,
+    lineHeight: 16,
+  },
   inputLabel: {
     fontSize: 11,
     fontWeight: '600',
@@ -500,16 +647,6 @@ const styles = StyleSheet.create({
   },
   timeCol: {
     flex: 1,
-  },
-  selectLike: {
-    marginTop: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
   editorActions: {
     flexDirection: 'row',
@@ -557,6 +694,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
+  },
+  startDayBtnDisabled: {
+    opacity: 0.45,
   },
   startDayText: {
     color: '#fff',

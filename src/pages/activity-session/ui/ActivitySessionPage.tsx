@@ -1,8 +1,15 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useShallow } from 'zustand/react/shallow';
 
+import {
+  blockDurationSec,
+  formatBlockTimeRange,
+  getNextPendingAfter,
+} from '@entities/day-plan';
+import { useDayPlanStore } from '@entities/day-plan/model';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -13,11 +20,6 @@ import { SessionProgressRing } from './SessionProgressRing';
 const PRIMARY = 'rgb(249, 115, 22)';
 const RING_SIZE = 232;
 const RING_STROKE = 14;
-
-/** 목업: 45분 세션 중 약 42% 진행 */
-const DEMO_SESSION_TOTAL_SEC = 45 * 60;
-const DEMO_PROGRESS = 0.42;
-const DEMO_REMAINING_SEC = Math.round(DEMO_SESSION_TOTAL_SEC * (1 - DEMO_PROGRESS));
 
 function pickParam(value: string | string[] | undefined, fallback: string): string {
   if (typeof value === 'string' && value.length > 0) return value;
@@ -35,20 +37,32 @@ function formatClock(totalSeconds: number): string {
 
 export function ActivitySessionPage() {
   const router = useRouter();
-  const params = useLocalSearchParams<{
-    title?: string;
-    category?: string;
-    nextTitle?: string;
-    nextTime?: string;
-  }>();
+  const params = useLocalSearchParams<{ blockId?: string }>();
+  const blockId = pickParam(params.blockId, '');
+
+  const { blocks, completedBlockIds, skippedBlockIds, completeBlock, skipBlock } = useDayPlanStore(
+    useShallow((s) => ({
+      blocks: s.blocks,
+      completedBlockIds: s.completedBlockIds,
+      skippedBlockIds: s.skippedBlockIds,
+      completeBlock: s.completeBlock,
+      skipBlock: s.skipBlock,
+    })),
+  );
+
+  const block = useMemo(
+    () => (blockId ? blocks.find((b) => b.id === blockId) : undefined),
+    [blocks, blockId],
+  );
+
+  const totalSec = block ? blockDurationSec(block) : 0;
+
+  const [remainingSec, setRemainingSec] = useState(totalSec);
+  const [isPaused, setIsPaused] = useState(false);
+  const autoFinishTriggeredRef = useRef(false);
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-
-  const activityTitle = pickParam(params.title, '아침 조깅');
-  const categoryLabel = pickParam(params.category, '건강');
-  const nextTitle = pickParam(params.nextTitle, '딥워크 세션');
-  const nextTime = pickParam(params.nextTime, '오전 9:00 — 오전 10:30');
 
   const bg = isDark ? '#0f172a' : '#f8fafc';
   const surface = isDark ? '#1e293b' : '#ffffff';
@@ -58,7 +72,90 @@ export function ActivitySessionPage() {
   const chipSoftBg = isDark ? 'rgba(249,115,22,0.15)' : 'rgba(249,115,22,0.12)';
   const ringTrack = isDark ? '#334155' : '#e2e8f0';
 
-  const [isPaused, setIsPaused] = useState(false);
+  const activityTitle = block?.title ?? '';
+  const categoryLabel = block?.category ?? '';
+  const timeRange = block ? formatBlockTimeRange(block) : '';
+
+  const nextBlock = useMemo(() => {
+    if (!block) return null;
+    return getNextPendingAfter(blocks, block.id, completedBlockIds, skippedBlockIds);
+  }, [block, blocks, completedBlockIds, skippedBlockIds]);
+
+  const progress = useMemo(() => {
+    if (totalSec <= 0) return 0;
+    return Math.min(1, Math.max(0, (totalSec - remainingSec) / totalSec));
+  }, [totalSec, remainingSec]);
+
+  const navigateAfterComplete = useCallback(() => {
+    if (!block) {
+      router.back();
+      return;
+    }
+    completeBlock(block.id);
+    const s = useDayPlanStore.getState();
+    const next = getNextPendingAfter(s.blocks, block.id, s.completedBlockIds, s.skippedBlockIds);
+    if (next) {
+      router.replace({ pathname: '/activity-session', params: { blockId: next.id } });
+    } else {
+      router.back();
+    }
+  }, [block, completeBlock, router]);
+
+  const navigateAfterSkip = useCallback(() => {
+    if (!block) {
+      router.back();
+      return;
+    }
+    skipBlock(block.id);
+    const s = useDayPlanStore.getState();
+    const next = getNextPendingAfter(s.blocks, block.id, s.completedBlockIds, s.skippedBlockIds);
+    if (next) {
+      router.replace({ pathname: '/activity-session', params: { blockId: next.id } });
+    } else {
+      router.back();
+    }
+  }, [block, router, skipBlock]);
+
+  useEffect(() => {
+    if (!blockId) {
+      router.back();
+      return;
+    }
+    if (!block) {
+      router.back();
+    }
+  }, [block, blockId, router]);
+
+  useEffect(() => {
+    autoFinishTriggeredRef.current = false;
+    setIsPaused(false);
+    setRemainingSec(block ? blockDurationSec(block) : 0);
+  }, [block?.id, block]);
+
+  useEffect(() => {
+    if (!block || isPaused) return;
+
+    const id = setInterval(() => {
+      setRemainingSec((prev) => {
+        if (prev <= 1) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [block?.id, isPaused, block]);
+
+  useEffect(() => {
+    if (!block || isPaused) return;
+    if (remainingSec > 0) return;
+    if (autoFinishTriggeredRef.current) return;
+    autoFinishTriggeredRef.current = true;
+    navigateAfterComplete();
+  }, [remainingSec, block, isPaused, navigateAfterComplete]);
+
+  if (!block) {
+    return null;
+  }
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: bg }]}>
@@ -80,6 +177,7 @@ export function ActivitySessionPage() {
                 {categoryLabel}
               </ThemedText>
             </View>
+            <ThemedText style={[styles.subMeta, { color: muted }]}>{timeRange}</ThemedText>
           </View>
           <Pressable accessibilityRole="button" style={styles.headerIconBtn}>
             <IconSymbol name="gearshape" size={22} color={text} />
@@ -92,13 +190,13 @@ export function ActivitySessionPage() {
               <SessionProgressRing
                 size={RING_SIZE}
                 strokeWidth={RING_STROKE}
-                progress={DEMO_PROGRESS}
+                progress={progress}
                 trackColor={ringTrack}
                 accentColor={PRIMARY}
               />
               <View style={styles.ringCenter} pointerEvents="none">
                 <ThemedText style={[styles.timeLarge, { color: text }]}>
-                  {formatClock(DEMO_REMAINING_SEC)}
+                  {formatClock(remainingSec)}
                 </ThemedText>
                 <ThemedText style={[styles.timeHint, { color: muted }]}>남은 시간</ThemedText>
                 {isPaused ? (
@@ -114,7 +212,7 @@ export function ActivitySessionPage() {
             <Pressable
               accessibilityRole="button"
               style={[styles.primaryBtn, { backgroundColor: PRIMARY }]}
-              onPress={() => router.back()}>
+              onPress={navigateAfterComplete}>
               <IconSymbol name="stop.fill" size={20} color="#fff" />
               <ThemedText style={styles.primaryBtnText}>활동 종료</ThemedText>
             </Pressable>
@@ -141,26 +239,36 @@ export function ActivitySessionPage() {
                 style={[
                   styles.secondaryBtn,
                   { borderColor: border, backgroundColor: surface },
-                ]}>
+                ]}
+                onPress={navigateAfterSkip}>
                 <IconSymbol name="forward.fill" size={18} color={muted} />
                 <ThemedText style={[styles.secondaryBtnText, { color: muted }]}>건너뛰기</ThemedText>
               </Pressable>
             </View>
           </View>
 
-          <View style={[styles.nextCard, { backgroundColor: surface, borderColor: border }]}>
-            <ThemedText style={[styles.nextKicker, { color: muted }]}>다음 단계</ThemedText>
-            <View style={styles.nextRow}>
-              <View style={[styles.nextIconWrap, { backgroundColor: chipSoftBg }]}>
-                <IconSymbol name="bolt.fill" size={22} color={PRIMARY} />
+          {nextBlock ? (
+            <View style={[styles.nextCard, { backgroundColor: surface, borderColor: border }]}>
+              <ThemedText style={[styles.nextKicker, { color: muted }]}>다음 단계</ThemedText>
+              <View style={styles.nextRow}>
+                <View style={[styles.nextIconWrap, { backgroundColor: chipSoftBg }]}>
+                  <IconSymbol name="bolt.fill" size={22} color={PRIMARY} />
+                </View>
+                <View style={styles.nextTextCol}>
+                  <ThemedText style={[styles.nextTitle, { color: text }]}>{nextBlock.title}</ThemedText>
+                  <ThemedText style={[styles.nextMeta, { color: PRIMARY }]}>
+                    {formatBlockTimeRange(nextBlock)}
+                  </ThemedText>
+                </View>
+                <IconSymbol name="chevron.right" size={18} color={muted} />
               </View>
-              <View style={styles.nextTextCol}>
-                <ThemedText style={[styles.nextTitle, { color: text }]}>{nextTitle}</ThemedText>
-                <ThemedText style={[styles.nextMeta, { color: PRIMARY }]}>{nextTime}</ThemedText>
-              </View>
-              <IconSymbol name="chevron.right" size={18} color={muted} />
             </View>
-          </View>
+          ) : (
+            <View style={[styles.nextCard, { backgroundColor: surface, borderColor: border }]}>
+              <ThemedText style={[styles.nextKicker, { color: muted }]}>다음 단계</ThemedText>
+              <ThemedText style={[styles.nextEmpty, { color: muted }]}>오늘 남은 일정이 없습니다</ThemedText>
+            </View>
+          )}
         </View>
       </SafeAreaView>
     </ThemedView>
@@ -190,6 +298,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 999,
+    marginTop: 2,
   },
   headerCenter: {
     flex: 1,
@@ -217,6 +326,12 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  subMeta: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   body: {
     flex: 1,
@@ -340,6 +455,10 @@ const styles = StyleSheet.create({
   },
   nextMeta: {
     fontSize: 13,
+    fontWeight: '600',
+  },
+  nextEmpty: {
+    fontSize: 14,
     fontWeight: '600',
   },
 });
