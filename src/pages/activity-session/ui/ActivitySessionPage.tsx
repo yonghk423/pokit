@@ -1,7 +1,7 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
@@ -10,6 +10,7 @@ import {
   getNextPendingAfter,
 } from '@entities/day-plan';
 import { useDayPlanStore } from '@entities/day-plan/model';
+import { endLockFlowLiveActivity, useLiveActivitySync } from '@features/live-activity-sync';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -37,8 +38,9 @@ function formatClock(totalSeconds: number): string {
 
 export function ActivitySessionPage() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ blockId?: string }>();
+  const params = useLocalSearchParams<{ blockId?: string; liveAction?: string }>();
   const blockId = pickParam(params.blockId, '');
+  const liveAction = pickParam(params.liveAction, '');
 
   const { blocks, completedBlockIds, skippedBlockIds, completeBlock, skipBlock } = useDayPlanStore(
     useShallow((s) => ({
@@ -59,9 +61,12 @@ export function ActivitySessionPage() {
 
   const [remainingSec, setRemainingSec] = useState(totalSec);
   const [isPaused, setIsPaused] = useState(false);
+  const [runningEndAtMs, setRunningEndAtMs] = useState<number | null>(null);
   const autoFinishTriggeredRef = useRef(false);
+  const handledLiveActionRef = useRef<string | null>(null);
 
   const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
   const isDark = colorScheme === 'dark';
 
   const bg = isDark ? '#0f172a' : '#f8fafc';
@@ -86,6 +91,41 @@ export function ActivitySessionPage() {
     return Math.min(1, Math.max(0, (totalSec - remainingSec) / totalSec));
   }, [totalSec, remainingSec]);
 
+  const pausedRemainingSeconds = isPaused ? remainingSec : null;
+
+  /** runningEndAtMs는 block 전환 직후 useEffect 이전에 null일 수 있어, 첫 동기화에서도 타이머가 깨지지 않게 블록 기준 종료 시각을 둔다. */
+  const endsAtIsoForLiveActivity = useMemo(() => {
+    if (!block || isPaused) return null;
+    if (runningEndAtMs != null) return new Date(runningEndAtMs).toISOString();
+    return new Date(Date.now() + blockDurationSec(block) * 1000).toISOString();
+  }, [block, isPaused, runningEndAtMs]);
+
+  const liveActivityPayload = useMemo(() => {
+    if (!block) return null;
+
+    return {
+      blockId: block.id,
+      title: activityTitle,
+      category: categoryLabel,
+      timeRangeLabel: timeRange,
+      totalSeconds: totalSec,
+      pausedRemainingSeconds,
+      endsAtIso: endsAtIsoForLiveActivity,
+      status: isPaused ? 'paused' : 'active',
+    } as const;
+  }, [
+    activityTitle,
+    block,
+    categoryLabel,
+    endsAtIsoForLiveActivity,
+    isPaused,
+    pausedRemainingSeconds,
+    timeRange,
+    totalSec,
+  ]);
+
+  useLiveActivitySync(liveActivityPayload);
+
   const navigateAfterComplete = useCallback(() => {
     if (!block) {
       router.back();
@@ -97,6 +137,7 @@ export function ActivitySessionPage() {
     if (next) {
       router.replace({ pathname: '/activity-session', params: { blockId: next.id } });
     } else {
+      void endLockFlowLiveActivity();
       router.back();
     }
   }, [block, completeBlock, router]);
@@ -112,9 +153,45 @@ export function ActivitySessionPage() {
     if (next) {
       router.replace({ pathname: '/activity-session', params: { blockId: next.id } });
     } else {
+      void endLockFlowLiveActivity();
       router.back();
     }
   }, [block, router, skipBlock]);
+
+  const togglePause = useCallback(() => {
+    if (!block) return;
+
+    if (isPaused) {
+      setRunningEndAtMs(Date.now() + remainingSec * 1000);
+      setIsPaused(false);
+      return;
+    }
+
+    const nextRemaining =
+      runningEndAtMs === null ? remainingSec : Math.max(0, Math.ceil((runningEndAtMs - Date.now()) / 1000));
+    setRemainingSec(nextRemaining);
+    setRunningEndAtMs(null);
+    setIsPaused(true);
+  }, [block, isPaused, remainingSec, runningEndAtMs]);
+
+  useEffect(() => {
+    if (!block) return;
+    if (!liveAction) return;
+
+    const token = `${block.id}:${liveAction}`;
+    if (handledLiveActionRef.current === token) return;
+    handledLiveActionRef.current = token;
+
+    if (liveAction === 'togglePause') {
+      togglePause();
+      router.replace({ pathname: '/activity-session', params: { blockId: block.id } });
+      return;
+    }
+
+    if (liveAction === 'complete') {
+      navigateAfterComplete();
+    }
+  }, [block, liveAction, navigateAfterComplete, router, togglePause]);
 
   useEffect(() => {
     if (!blockId) {
@@ -122,6 +199,7 @@ export function ActivitySessionPage() {
       return;
     }
     if (!block) {
+      void endLockFlowLiveActivity();
       router.back();
     }
   }, [block, blockId, router]);
@@ -130,20 +208,19 @@ export function ActivitySessionPage() {
     autoFinishTriggeredRef.current = false;
     setIsPaused(false);
     setRemainingSec(block ? blockDurationSec(block) : 0);
+    setRunningEndAtMs(block ? Date.now() + blockDurationSec(block) * 1000 : null);
   }, [block?.id, block]);
 
   useEffect(() => {
-    if (!block || isPaused) return;
+    if (!block || isPaused || runningEndAtMs === null) return;
 
     const id = setInterval(() => {
-      setRemainingSec((prev) => {
-        if (prev <= 1) return 0;
-        return prev - 1;
-      });
+      const nextRemaining = Math.max(0, Math.ceil((runningEndAtMs - Date.now()) / 1000));
+      setRemainingSec(nextRemaining);
     }, 1000);
 
     return () => clearInterval(id);
-  }, [block?.id, isPaused, block]);
+  }, [block?.id, isPaused, block, runningEndAtMs]);
 
   useEffect(() => {
     if (!block || isPaused) return;
@@ -159,8 +236,15 @@ export function ActivitySessionPage() {
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: bg }]}>
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <View style={[styles.header, { borderBottomColor: border }]}>
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: border,
+              paddingTop: Math.max(insets.top, 8),
+            },
+          ]}>
           <Pressable
             accessibilityRole="button"
             style={styles.headerIconBtn}
@@ -224,7 +308,7 @@ export function ActivitySessionPage() {
                   styles.secondaryBtn,
                   { borderColor: border, backgroundColor: surface },
                 ]}
-                onPress={() => setIsPaused((p) => !p)}>
+                onPress={togglePause}>
                 <IconSymbol
                   name={isPaused ? 'play.fill' : 'pause.fill'}
                   size={18}
@@ -288,7 +372,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 8,
     paddingBottom: 12,
-    paddingTop: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 8,
   },

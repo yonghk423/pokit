@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Alert,
   Pressable,
@@ -14,11 +14,12 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   formatBlockTimeRange,
   getBlockTimelineIcon,
+  getFirstPendingBlock,
   parseHHmmToMinutes,
   sortDayPlanBlocks,
   totalPlannedMinutes,
 } from '@entities/day-plan';
-import { selectFirstPendingBlock, useDayPlanStore } from '@entities/day-plan/model';
+import { useDayPlanStore } from '@entities/day-plan/model';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -31,6 +32,7 @@ const PRIMARY = 'rgb(249, 115, 22)';
 /** 카테고리 UI 제거 시 신규 블록에 붙는 고정 라벨 */
 const DEFAULT_BLOCK_CATEGORY = '리듬';
 
+/** 첫 미완료 블록은 `getFirstPendingBlock`으로 계산 (구 `selectFirstPendingBlock` 구독 제거) */
 export function DayPlanPage() {
   const router = useRouter();
   const colorScheme = useColorScheme();
@@ -39,6 +41,8 @@ export function DayPlanPage() {
   const [newTaskName, setNewTaskName] = useState('');
   const [startTimeStr, setStartTimeStr] = useState('09:00');
   const [endTimeStr, setEndTimeStr] = useState('09:30');
+  /** 연속 탭으로 addBlock이 두 번 들어가는 것 방지 */
+  const addTaskInFlightRef = useRef(false);
 
   const { blocks, completedBlockIds, skippedBlockIds, addBlock, removeBlock } = useDayPlanStore(
     useShallow((s) => ({
@@ -50,13 +54,17 @@ export function DayPlanPage() {
     })),
   );
 
-  const firstPending = useDayPlanStore(selectFirstPendingBlock);
-
   useEffect(() => {
     useDayPlanStore.getState().hydrate();
   }, []);
 
   const sortedBlocks = useMemo(() => sortDayPlanBlocks(blocks), [blocks]);
+
+  /** 같은 스토어 구독(blocks·완료·건너뜀)에서 직접 계산 — selector 분리로 인한 불일치 방지 */
+  const firstPending = useMemo(
+    () => getFirstPendingBlock(blocks, completedBlockIds, skippedBlockIds),
+    [blocks, completedBlockIds, skippedBlockIds],
+  );
 
   const progressPercent = useMemo(() => {
     const n = sortedBlocks.length;
@@ -88,7 +96,14 @@ export function DayPlanPage() {
   const lineBg = isDark ? '#334155' : '#e2e8f0';
 
   const onStartDay = () => {
-    if (!firstPending) return;
+    if (!firstPending) {
+      if (sortedBlocks.length === 0) {
+        Alert.alert('리듬 없음', '먼저 아래에서 리듬을 추가해 주세요.');
+      } else {
+        Alert.alert('시작할 리듬 없음', '오늘 일정이 모두 완료되었거나 건너뛰었습니다.');
+      }
+      return;
+    }
     router.push({
       pathname: '/activity-session',
       params: { blockId: firstPending.id },
@@ -102,23 +117,30 @@ export function DayPlanPage() {
   };
 
   const onAddTask = () => {
+    if (addTaskInFlightRef.current) return;
+    addTaskInFlightRef.current = true;
+
     const title = newTaskName.trim();
     if (!title) {
       Alert.alert('입력 필요', '리듬 이름을 입력해 주세요.');
+      addTaskInFlightRef.current = false;
       return;
     }
     const startMin = parseHHmmToMinutes(startTimeStr);
     if (startMin === null) {
       Alert.alert('시각 형식', '시작 시각은 09:00 형식(24시간)으로 입력해 주세요.');
+      addTaskInFlightRef.current = false;
       return;
     }
     const endMin = parseHHmmToMinutes(endTimeStr);
     if (endMin === null) {
       Alert.alert('시각 형식', '종료 시각은 09:00 형식(24시간)으로 입력해 주세요.');
+      addTaskInFlightRef.current = false;
       return;
     }
     if (endMin <= startMin) {
       Alert.alert('시간 구간', '종료 시각은 시작 시각보다 늦어야 합니다.');
+      addTaskInFlightRef.current = false;
       return;
     }
 
@@ -139,10 +161,12 @@ export function DayPlanPage() {
       } else if (result.reason === 'invalid_range') {
         Alert.alert('시간 구간', '종료 시각은 시작 시각보다 늦어야 합니다.');
       }
+      addTaskInFlightRef.current = false;
       return;
     }
 
     resetEditorForm();
+    addTaskInFlightRef.current = false;
   };
 
   const onCancelEditor = () => {
@@ -384,8 +408,7 @@ export function DayPlanPage() {
                 { backgroundColor: PRIMARY },
                 !firstPending && styles.startDayBtnDisabled,
               ]}
-              onPress={onStartDay}
-              disabled={!firstPending}>
+              onPress={onStartDay}>
               <IconSymbol name="play.fill" size={22} color="#fff" />
               <ThemedText style={styles.startDayText}>
                 {firstPending ? '하루 시작하기' : '남은 일정이 없어요'}
@@ -453,7 +476,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 120,
   },
   section: {
     padding: 16,
@@ -682,6 +705,8 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
     paddingTop: 12,
+    zIndex: 2,
+    elevation: 8,
   },
   startDayBtn: {
     flexDirection: 'row',

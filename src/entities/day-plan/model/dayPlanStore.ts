@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 
-import { DEFAULT_DAY_PLAN_BLOCKS } from '@entities/day-plan/lib/defaultBlocks';
 import {
   findOverlappingDayPlanBlock,
   getFirstPendingBlock,
@@ -39,7 +38,7 @@ function normalizePersisted(persisted: {
   if (persisted.dateKey !== today) {
     return {
       dateKey: today,
-      blocks: persisted.blocks.length > 0 ? persisted.blocks : [...DEFAULT_DAY_PLAN_BLOCKS],
+      blocks: persisted.blocks.length > 0 ? persisted.blocks : [],
       completedBlockIds: [],
       skippedBlockIds: [],
     };
@@ -105,7 +104,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
 
       const raw = loadDayPlan<DayPlanBlock>();
       let dateKey = getLocalDateKey();
-      let blocks: DayPlanBlock[] = [...DEFAULT_DAY_PLAN_BLOCKS];
+      let blocks: DayPlanBlock[] = [];
       let completedBlockIds: string[] = [];
       let skippedBlockIds: string[] = [];
 
