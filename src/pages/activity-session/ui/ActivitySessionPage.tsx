@@ -1,6 +1,6 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -268,7 +268,12 @@ export function ActivitySessionPage() {
           </Pressable>
         </View>
 
-        <View style={styles.body}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces>
           <View style={styles.bodyMain}>
             <View style={styles.ringBlock}>
               <SessionProgressRing
@@ -353,7 +358,7 @@ export function ActivitySessionPage() {
               <ThemedText style={[styles.nextEmpty, { color: muted }]}>오늘 남은 일정이 없습니다</ThemedText>
             </View>
           )}
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -416,17 +421,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  body: {
+  scroll: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 12,
+    paddingBottom: 20,
     gap: 16,
+    flexGrow: 1,
   },
   bodyMain: {
-    flex: 1,
-    justifyContent: 'center',
     gap: 18,
-    minHeight: 0,
+    paddingBottom: 4,
   },
   ringBlock: {
     alignSelf: 'center',

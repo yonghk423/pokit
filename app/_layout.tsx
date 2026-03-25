@@ -26,6 +26,11 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="day-plan" options={{ headerShown: false, presentation: 'card' }} />
           <Stack.Screen
+            name="goal-detail-settings"
+            options={{ headerShown: false, presentation: 'card' }}
+          />
+          <Stack.Screen name="widget-settings" options={{ headerShown: false, presentation: 'card' }} />
+          <Stack.Screen
             name="activity-session"
             options={{ headerShown: false, presentation: 'fullScreenModal' }}
           />

@@ -23,27 +23,23 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
+      {/* 보류 기능: 둘러보기/내 리듬/설정 탭은 추후 개발 시 다시 노출 */}
       <Tabs.Screen
         name="discover"
         options={{
-          title: '둘러보기',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="magnifyingglass" color={color} />,
+          href: null,
         }}
       />
       <Tabs.Screen
         name="routines"
         options={{
-          title: '내 리듬',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="list.bullet.rectangle" color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: '설정',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
+          href: null,
         }}
       />
     </Tabs>

@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import {
   findOverlappingDayPlanBlock,
   getFirstPendingBlock,
+  getLocalMinutesOfDayNow,
   sortDayPlanBlocks,
 } from '@entities/day-plan/lib/dayPlanTime';
 import type { DayPlanBlock } from '@entities/day-plan/model/types';
@@ -49,7 +50,8 @@ function normalizePersisted(persisted: {
 export type AddBlockResult =
   | { ok: true }
   | { ok: false; reason: 'overlap'; conflicting: DayPlanBlock }
-  | { ok: false; reason: 'invalid_range' };
+  | { ok: false; reason: 'invalid_range' }
+  | { ok: false; reason: 'in_the_past' };
 
 export type DayPlanStoreState = {
   dateKey: string;
@@ -174,6 +176,11 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
 
       if (end <= start) {
         return { ok: false, reason: 'invalid_range' };
+      }
+
+      const nowMin = getLocalMinutesOfDayNow();
+      if (end <= nowMin) {
+        return { ok: false, reason: 'in_the_past' };
       }
 
       const current = get().blocks;

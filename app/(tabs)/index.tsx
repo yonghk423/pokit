@@ -1,5 +1,5 @@
-import { TodayPage } from '@pages/today';
+import { Redirect } from 'expo-router';
 
 export default function HomeScreen() {
-  return <TodayPage />;
+  return <Redirect href="/day-plan" />;
 }

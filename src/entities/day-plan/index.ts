@@ -11,6 +11,7 @@ export {
   formatBlockTimeRange,
   formatMinuteOfDayKo,
   getFirstPendingBlock,
+  getLocalMinutesOfDayNow,
   getNextPendingAfter,
   sortDayPlanBlocks,
   totalPlannedMinutes,

@@ -1,56 +1,71 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
-import {
-  formatBlockTimeRange,
-  getBlockTimelineIcon,
-  getFirstPendingBlock,
-  parseHHmmToMinutes,
-  sortDayPlanBlocks,
-  totalPlannedMinutes,
-} from '@entities/day-plan';
+import { parseHHmmToMinutes } from '@entities/day-plan';
 import { useDayPlanStore } from '@entities/day-plan/model';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
-import type { DayPlanBlock } from '@entities/day-plan';
+import {
+  CATEGORIES,
+  PRIMARY,
+  defaultEditorBlockTimesFromNow,
+  makeBlockId,
+  rangesOverlapMinutes,
+  sortBlocksByCategoryOrder,
+  type PlanMode,
+  type PriorityTask,
+  type TimeBlock,
+} from '../lib/dayPlanEditorShared';
+import { palette } from '../lib/dayPlanPalette';
+import { PlanModeSwitch } from './PlanModeSwitch';
+import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
+import { TimeBasedPlanSection } from './TimeBasedPlanSection';
 
-const PRIMARY = 'rgb(249, 115, 22)';
-
-/** 카테고리 UI 제거 시 신규 블록에 붙는 고정 라벨 */
-const DEFAULT_BLOCK_CATEGORY = '리듬';
-
-/** 첫 미완료 블록은 `getFirstPendingBlock`으로 계산 (구 `selectFirstPendingBlock` 구독 제거) */
 export function DayPlanPage() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { width: winW } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
-  const [newTaskName, setNewTaskName] = useState('');
-  const [startTimeStr, setStartTimeStr] = useState('09:00');
-  const [endTimeStr, setEndTimeStr] = useState('09:30');
-  /** 연속 탭으로 addBlock이 두 번 들어가는 것 방지 */
-  const addTaskInFlightRef = useRef(false);
+  const [title, setTitle] = useState('');
+  const [planMode, setPlanMode] = useState<PlanMode>('time');
 
-  const { blocks, completedBlockIds, skippedBlockIds, addBlock, removeBlock } = useDayPlanStore(
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+
+  const [priorityStart, setPriorityStart] = useState('09:00');
+  const [priorityEnd, setPriorityEnd] = useState('12:00');
+  const [priorityCategoryKey, setPriorityCategoryKey] = useState('work');
+  const [priorityTasks, setPriorityTasks] = useState<PriorityTask[]>(() => [
+    { id: makeBlockId(), title: '중요 이메일 회신 및 일정 정리' },
+    { id: makeBlockId(), title: '신규 프로젝트 제안서 초안 작성' },
+  ]);
+  const [priorityTaskDraft, setPriorityTaskDraft] = useState('');
+
+  const [startNotifOn, setStartNotifOn] = useState(true);
+  const [endNotifOn, setEndNotifOn] = useState(false);
+  const [notifTiming, setNotifTiming] = useState<'5min' | 'atStart'>('5min');
+  const [notes, setNotes] = useState('');
+
+  const { addBlock } = useDayPlanStore(
     useShallow((s) => ({
-      blocks: s.blocks,
-      completedBlockIds: s.completedBlockIds,
-      skippedBlockIds: s.skippedBlockIds,
       addBlock: s.addBlock,
-      removeBlock: s.removeBlock,
     })),
   );
 
@@ -58,362 +73,363 @@ export function DayPlanPage() {
     useDayPlanStore.getState().hydrate();
   }, []);
 
-  const sortedBlocks = useMemo(() => sortDayPlanBlocks(blocks), [blocks]);
+  const c = useMemo(() => palette(isDark), [isDark]);
 
-  /** 같은 스토어 구독(blocks·완료·건너뜀)에서 직접 계산 — selector 분리로 인한 불일치 방지 */
-  const firstPending = useMemo(
-    () => getFirstPendingBlock(blocks, completedBlockIds, skippedBlockIds),
-    [blocks, completedBlockIds, skippedBlockIds],
-  );
+  const sortedBlocks = useMemo(() => sortBlocksByCategoryOrder(timeBlocks), [timeBlocks]);
 
-  const progressPercent = useMemo(() => {
-    const n = sortedBlocks.length;
-    if (n === 0) return 0;
-    return Math.round((completedBlockIds.length / n) * 100);
-  }, [sortedBlocks.length, completedBlockIds.length]);
+  const gridGap = 12;
+  const padH = 24;
+  const cellW = Math.floor((winW - padH * 2 - gridGap * 3) / 4);
 
-  const plannedMinutes = useMemo(() => totalPlannedMinutes(sortedBlocks), [sortedBlocks]);
+  const bottomBarReserve = useMemo(() => {
+    const extra =
+      planMode === 'time' ? timeBlocks.length * 12 : 24 + priorityTasks.length * 10;
+    return 160 + extra + insets.bottom;
+  }, [insets.bottom, timeBlocks.length, planMode, priorityTasks.length]);
 
-  const progressLabel = useMemo(() => {
-    const n = sortedBlocks.length;
-    return `${completedBlockIds.length}/${n} 태스크`;
-  }, [sortedBlocks.length, completedBlockIds.length]);
-
-  const helperText = useMemo(() => {
-    if (sortedBlocks.length === 0) {
-      return '오늘 일정을 추가해 보세요.';
-    }
-    const h = (plannedMinutes / 60).toFixed(1);
-    return `오늘 약 ${h}시간 분량으로 계획했어요. 시작할까요?`;
-  }, [sortedBlocks.length, plannedMinutes]);
-
-  const bg = isDark ? '#0f172a' : '#f8fafc';
-  const surface = isDark ? '#1e293b' : '#ffffff';
-  const border = isDark ? '#334155' : '#e2e8f0';
-  const muted = isDark ? '#94a3b8' : '#64748b';
-  const text = isDark ? '#f1f5f9' : '#0f172a';
-  const chipSoftBg = isDark ? 'rgba(249,115,22,0.15)' : 'rgba(249,115,22,0.12)';
-  const lineBg = isDark ? '#334155' : '#e2e8f0';
-
-  const onStartDay = () => {
-    if (!firstPending) {
-      if (sortedBlocks.length === 0) {
-        Alert.alert('리듬 없음', '먼저 아래에서 리듬을 추가해 주세요.');
-      } else {
-        Alert.alert('시작할 리듬 없음', '오늘 일정이 모두 완료되었거나 건너뛰었습니다.');
+  const handleCategoryPress = (categoryKey: string) => {
+    const existing = timeBlocks.find((b) => b.categoryKey === categoryKey);
+    if (existing) {
+      if (selectedBlockId === existing.id) {
+        const next = timeBlocks.filter((b) => b.id !== existing.id);
+        const sorted = sortBlocksByCategoryOrder(next);
+        setTimeBlocks(next);
+        setSelectedBlockId(sorted[0]?.id ?? null);
+        return;
       }
+      setSelectedBlockId(existing.id);
       return;
     }
-    router.push({
-      pathname: '/activity-session',
-      params: { blockId: firstPending.id },
+    const id = makeBlockId();
+    const { startTime, endTime } = defaultEditorBlockTimesFromNow();
+    setTimeBlocks((prev) => [...prev, { id, categoryKey, startTime, endTime }]);
+    setSelectedBlockId(id);
+  };
+
+  const updateBlock = (id: string, patch: Partial<Pick<TimeBlock, 'startTime' | 'endTime'>>) => {
+    setTimeBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+  };
+
+  const removeBlock = (id: string) => {
+    setTimeBlocks((prev) => {
+      const next = prev.filter((b) => b.id !== id);
+      const sorted = sortBlocksByCategoryOrder(next);
+      setSelectedBlockId((cur) => {
+        if (cur !== id) return cur;
+        return sorted[0]?.id ?? null;
+      });
+      return next;
     });
   };
 
-  const resetEditorForm = () => {
-    setNewTaskName('');
-    setStartTimeStr('09:00');
-    setEndTimeStr('09:30');
+  const addPriorityTaskRow = () => {
+    const t = priorityTaskDraft.trim();
+    if (!t) return;
+    setPriorityTasks((prev) => [...prev, { id: makeBlockId(), title: t }]);
+    setPriorityTaskDraft('');
   };
 
-  const onAddTask = () => {
-    if (addTaskInFlightRef.current) return;
-    addTaskInFlightRef.current = true;
+  const updatePriorityTask = (id: string, text: string) => {
+    setPriorityTasks((prev) => prev.map((p) => (p.id === id ? { ...p, title: text } : p)));
+  };
 
-    const title = newTaskName.trim();
-    if (!title) {
+  const removePriorityTask = (id: string) => {
+    setPriorityTasks((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((p) => p.id !== id);
+    });
+  };
+
+  const onSave = () => {
+    const trimmedTitle = title.trim();
+
+    if (!trimmedTitle) {
       Alert.alert('입력 필요', '리듬 이름을 입력해 주세요.');
-      addTaskInFlightRef.current = false;
-      return;
-    }
-    const startMin = parseHHmmToMinutes(startTimeStr);
-    if (startMin === null) {
-      Alert.alert('시각 형식', '시작 시각은 09:00 형식(24시간)으로 입력해 주세요.');
-      addTaskInFlightRef.current = false;
-      return;
-    }
-    const endMin = parseHHmmToMinutes(endTimeStr);
-    if (endMin === null) {
-      Alert.alert('시각 형식', '종료 시각은 09:00 형식(24시간)으로 입력해 주세요.');
-      addTaskInFlightRef.current = false;
-      return;
-    }
-    if (endMin <= startMin) {
-      Alert.alert('시간 구간', '종료 시각은 시작 시각보다 늦어야 합니다.');
-      addTaskInFlightRef.current = false;
       return;
     }
 
-    const result = addBlock({
-      title,
-      category: DEFAULT_BLOCK_CATEGORY,
-      startMinutes: startMin,
-      endMinutes: endMin,
+    if (planMode === 'priority') {
+      const ps = parseHHmmToMinutes(priorityStart);
+      const pe = parseHHmmToMinutes(priorityEnd);
+      if (ps === null || pe === null) {
+        Alert.alert('시각 형식', '시작·종료 시각은 09:00 형식으로 입력해 주세요.');
+        return;
+      }
+      if (pe <= ps) {
+        Alert.alert('시간 구간', '종료 시각은 시작 시각보다 늦어야 합니다.');
+        return;
+      }
+      const catLabel = CATEGORIES.find((x) => x.key === priorityCategoryKey)?.label ?? '리듬';
+      const lines = priorityTasks.map((p) => p.title.trim()).filter(Boolean);
+      const blockTitle =
+        lines.length > 0
+          ? `${trimmedTitle}\n${lines.map((line, i) => `${i + 1}. ${line}`).join('\n')}`
+          : trimmedTitle;
+
+      const result = addBlock({
+        title: blockTitle,
+        startMinutes: ps,
+        endMinutes: pe,
+        category: catLabel,
+      });
+
+      if (!result.ok) {
+        if (result.reason === 'overlap') {
+          Alert.alert('시간 중복', '기존 일정과 겹칩니다. 시간대를 조정해 주세요.');
+          return;
+        }
+        if (result.reason === 'in_the_past') {
+          Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 리듬만 저장할 수 있어요.');
+          return;
+        }
+        Alert.alert('저장 실패', '입력값을 확인해 주세요.');
+        return;
+      }
+
+      router.push({
+        pathname: '/goal-detail-settings',
+        params: { rhythmTitle: trimmedTitle },
+      });
+      return;
+    }
+
+    if (timeBlocks.length === 0) {
+      Alert.alert('카테고리 필요', '최소 한 개의 카테고리를 선택해 주세요.');
+      return;
+    }
+
+    const resolved = sortedBlocks.map((block) => {
+      const parsedStart = parseHHmmToMinutes(block.startTime);
+      const parsedEnd = parseHHmmToMinutes(block.endTime);
+      const catLabel = CATEGORIES.find((x) => x.key === block.categoryKey)?.label ?? '리듬';
+      return { block, parsedStart, parsedEnd, catLabel };
     });
 
-    if (!result.ok) {
-      if (result.reason === 'overlap') {
-        const r = formatBlockTimeRange(result.conflicting);
-        Alert.alert(
-          '시간 중복',
-          `「${result.conflicting.title}」(${r})와 겹치는 시간입니다.\n다른 시각을 선택해 주세요.`,
-        );
-      } else if (result.reason === 'invalid_range') {
-        Alert.alert('시간 구간', '종료 시각은 시작 시각보다 늦어야 합니다.');
+    for (const r of resolved) {
+      if (r.parsedStart === null || r.parsedEnd === null) {
+        Alert.alert('시각 형식', `「${r.catLabel}」블록의 시각은 09:00 형식으로 입력해 주세요.`);
+        return;
       }
-      addTaskInFlightRef.current = false;
-      return;
+      if (r.parsedEnd <= r.parsedStart) {
+        Alert.alert('시간 구간', `「${r.catLabel}」블록의 종료 시각은 시작보다 늦어야 합니다.`);
+        return;
+      }
     }
 
-    resetEditorForm();
-    addTaskInFlightRef.current = false;
-  };
-
-  const onCancelEditor = () => {
-    resetEditorForm();
-  };
-
-  const confirmRemoveBlock = (block: DayPlanBlock) => {
-    Alert.alert(
-      '리듬 삭제',
-      `「${block.title}」을(를) 오늘 일정에서 삭제할까요?`,
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: () => removeBlock(block.id),
-        },
-      ],
-    );
-  };
-
-  const renderBlockRow = (block: DayPlanBlock) => {
-    const completed = completedBlockIds.includes(block.id);
-    const skipped = skippedBlockIds.includes(block.id);
-    const isCurrent = firstPending?.id === block.id;
-    const iconName = getBlockTimelineIcon(block);
-    const timeRange = formatBlockTimeRange(block);
-
-    let dot: ReactNode;
-    if (completed) {
-      dot = (
-        <View style={[styles.dotFilled, { backgroundColor: isDark ? '#334155' : '#e2e8f0' }]}>
-          <IconSymbol name="checkmark" size={18} color={PRIMARY} />
-        </View>
-      );
-    } else if (skipped) {
-      dot = (
-        <View style={[styles.dotDashed, { borderColor: muted, backgroundColor: chipSoftBg }]}>
-          <IconSymbol name="forward.fill" size={16} color={muted} />
-        </View>
-      );
-    } else if (isCurrent) {
-      dot = (
-        <View style={[styles.dotRing, { borderColor: PRIMARY, backgroundColor: surface }]}>
-          <IconSymbol name={iconName} size={20} color={PRIMARY} />
-        </View>
-      );
-    } else {
-      dot = (
-        <View style={[styles.dotMuted, { backgroundColor: isDark ? '#334155' : '#f1f5f9' }]}>
-          <IconSymbol name={iconName} size={20} color={muted} />
-        </View>
-      );
+    const intervals = resolved.map((r) => ({ s: r.parsedStart!, e: r.parsedEnd! }));
+    for (let i = 0; i < intervals.length; i++) {
+      for (let j = i + 1; j < intervals.length; j++) {
+        if (rangesOverlapMinutes(intervals[i], intervals[j])) {
+          Alert.alert(
+            '블록 시간 겹침',
+            '선택한 블록들의 시간이 서로 겹칩니다. 각 블록의 시작·종료를 조정해 주세요.',
+          );
+          return;
+        }
+      }
     }
 
-    const cardMuted = !isCurrent && !completed && !skipped;
+    for (const r of resolved) {
+      const result = addBlock({
+        title: trimmedTitle,
+        startMinutes: r.parsedStart!,
+        endMinutes: r.parsedEnd!,
+        category: r.catLabel,
+      });
 
-    return (
-      <View key={block.id} style={styles.timelineRow}>
-        <View style={styles.dotCol}>{dot}</View>
-        <View
-          style={[
-            styles.timelineCard,
-            {
-              backgroundColor: surface,
-              borderColor: border,
-              opacity: completed || skipped ? (isDark ? 0.85 : 0.9) : 1,
-            },
-            cardMuted && styles.timelineCardMuted,
-          ]}>
-          <View style={styles.cardRow}>
-            <View style={cardMuted ? { opacity: 0.65 } : undefined}>
-              <ThemedText style={[styles.cardTitle, { color: text }]}>{block.title}</ThemedText>
-              <ThemedText
-                style={[
-                  styles.cardTime,
-                  { color: cardTimeColor(completed, skipped, isCurrent, muted) },
-                ]}>
-                {timeRange}
-              </ThemedText>
-            </View>
-            <View style={styles.cardRowRight}>
-              <View
-                style={[
-                  styles.badge,
-                  {
-                    backgroundColor: badgeBg(completed, skipped, chipSoftBg, isDark),
-                  },
-                ]}>
-                <ThemedText
-                  style={[styles.badgeText, { color: badgeTextColor(completed, skipped, PRIMARY, muted) }]}>
-                  {badgeLabel(block.category, completed, skipped)}
-                </ThemedText>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${block.title} 삭제`}
-                hitSlop={8}
-                style={styles.deleteIconBtn}
-                onPress={() => confirmRemoveBlock(block)}>
-                <IconSymbol name="trash" size={18} color={muted} />
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </View>
-    );
+      if (!result.ok) {
+        if (result.reason === 'overlap') {
+          Alert.alert(
+            '시간 중복',
+            `「${r.catLabel}」저장 시 기존 일정과 겹칩니다.\n다른 시간대로 조정해 주세요.`,
+          );
+          return;
+        }
+        if (result.reason === 'in_the_past') {
+          Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 블록만 저장할 수 있어요.');
+          return;
+        }
+        Alert.alert('저장 실패', '입력값을 확인해 주세요.');
+        return;
+      }
+    }
+
+    router.push({
+      pathname: '/goal-detail-settings',
+      params: { rhythmTitle: trimmedTitle },
+    });
   };
 
   return (
-    <ThemedView style={[styles.screen, { backgroundColor: bg }]}>
+    <ThemedView style={[styles.screen, { backgroundColor: c.bg }]} darkColor={c.bg} lightColor={c.bg}>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: border, backgroundColor: bg }]}>
-          <Pressable
-            accessibilityRole="button"
-            style={styles.headerIconBtn}
-            onPress={() => router.back()}>
-            <IconSymbol name="chevron.left" size={22} color={text} />
+        <View style={[styles.header, { backgroundColor: c.headerBg, borderBottomColor: c.border }]}>
+          <Pressable onPress={() => router.back()} style={styles.headerIconBtn} hitSlop={8}>
+            <IconSymbol name="xmark" size={20} color={c.onSurface} />
           </Pressable>
-          <ThemedText style={[styles.headerTitle, { color: text }]}>오늘 리듬 구성</ThemedText>
-          <Pressable accessibilityRole="button" style={styles.headerIconBtn}>
-            <IconSymbol name="ellipsis" size={22} color={text} />
+          <ThemedText style={[styles.headerTitle, { color: c.onSurface }]}>새 리듬 설정</ThemedText>
+          <Pressable onPress={onSave} hitSlop={8}>
+            <ThemedText style={styles.saveText}>저장</ThemedText>
           </Pressable>
         </View>
 
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomBarReserve }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
-          {/* Progress */}
-          <View style={styles.section}>
-            <View style={styles.progressHeaderRow}>
-              <View>
-                <ThemedText style={[styles.kicker, { color: PRIMARY }]}>오늘을 위한 계획</ThemedText>
-                <ThemedText style={[styles.sectionTitle, { color: text }]}>리듬을 확정하세요</ThemedText>
-              </View>
-              <View style={styles.progressNums}>
-                <ThemedText style={[styles.percentText, { color: text }]}>{progressPercent}%</ThemedText>
-                <ThemedText style={[styles.tasksHint, { color: muted }]}>{progressLabel}</ThemedText>
+          <View style={styles.block}>
+            <ThemedText style={[styles.labelUpper, { color: c.onVariant }]}>리듬 이름</ThemedText>
+            <View style={[styles.namePill, { backgroundColor: c.containerLowest, shadowColor: c.shadow }]}>
+              <TextInput
+                value={title}
+                onChangeText={setTitle}
+                placeholder="무엇에 집중하시겠어요?"
+                placeholderTextColor={c.outline}
+                style={[styles.nameInput, { color: c.onSurface }]}
+              />
+              <View style={styles.nameHintRow}>
+                <IconSymbol name="pencil" size={14} color={PRIMARY} />
+                <ThemedText style={[styles.nameHint, { color: c.onVariant }]}>활동 명칭</ThemedText>
               </View>
             </View>
-            <View style={[styles.progressTrack, { backgroundColor: lineBg }]}>
-              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
-            </View>
-            <ThemedText style={[styles.helper, { color: muted }]}>{helperText}</ThemedText>
           </View>
 
-          {/* Timeline */}
-          <View style={styles.timelineWrap}>
-            <View style={[styles.timelineLine, { backgroundColor: lineBg, left: 19 }]} />
+          <PlanModeSwitch
+            planMode={planMode}
+            onSelectTime={() => setPlanMode('time')}
+            onSelectPriority={() => setPlanMode('priority')}
+            c={c}
+          />
 
-            {sortedBlocks.map((block) => renderBlockRow(block))}
+          {planMode === 'time' ? (
+            <TimeBasedPlanSection
+              c={c}
+              cellW={cellW}
+              gridGap={gridGap}
+              timeBlocks={timeBlocks}
+              selectedBlockId={selectedBlockId}
+              onPressCategory={handleCategoryPress}
+              onSelectBlock={setSelectedBlockId}
+              onUpdateBlock={updateBlock}
+              onRemoveBlock={removeBlock}
+            />
+          ) : (
+            <PriorityBasedPlanSection
+              c={c}
+              priorityStart={priorityStart}
+              priorityEnd={priorityEnd}
+              onChangePriorityStart={setPriorityStart}
+              onChangePriorityEnd={setPriorityEnd}
+              priorityCategoryKey={priorityCategoryKey}
+              onSelectCategory={setPriorityCategoryKey}
+              priorityTasks={priorityTasks}
+              priorityTaskDraft={priorityTaskDraft}
+              onChangePriorityTaskDraft={setPriorityTaskDraft}
+              onUpdatePriorityTask={updatePriorityTask}
+              onRemovePriorityTask={removePriorityTask}
+              onAddPriorityTaskRow={addPriorityTaskRow}
+            />
+          )}
 
-            {/* 새 리듬 추가 → dayPlanStore.addBlock */}
-            <View style={styles.timelineRow}>
-              <View style={styles.dotCol}>
-                <View style={[styles.dotDashed, { borderColor: PRIMARY, backgroundColor: chipSoftBg }]}>
-                  <IconSymbol name="plus" size={20} color={PRIMARY} />
-                </View>
-              </View>
-              <View style={[styles.editorCard, { borderColor: PRIMARY, backgroundColor: chipSoftBg }]}>
-                <ThemedText style={[styles.editorKicker, { color: PRIMARY }]}>새 리듬 추가</ThemedText>
-                <ThemedText style={[styles.inputLabel, { color: muted }]}>리듬 이름</ThemedText>
-                <TextInput
-                  value={newTaskName}
-                  onChangeText={setNewTaskName}
-                  placeholder="딥워크 세션"
-                  placeholderTextColor={muted}
-                  style={[
-                    styles.input,
-                    { color: text, borderColor: border, backgroundColor: surface },
-                  ]}
-                />
-                <View style={styles.timeRow}>
-                  <View style={styles.timeCol}>
-                    <ThemedText style={[styles.inputLabel, { color: muted }]}>시작 시각</ThemedText>
-                    <TextInput
-                      value={startTimeStr}
-                      onChangeText={setStartTimeStr}
-                      placeholder="09:00"
-                      placeholderTextColor={muted}
-                      keyboardType="numbers-and-punctuation"
-                      style={[
-                        styles.input,
-                        { color: text, borderColor: border, backgroundColor: surface },
-                      ]}
-                    />
+          <View style={styles.block}>
+            <ThemedText style={[styles.labelUpper, { color: c.onVariant, marginBottom: 4 }]}>
+              알림 설정
+            </ThemedText>
+            <View style={styles.notifCol}>
+              <View style={[styles.notifCard, { backgroundColor: c.containerLow }]}>
+                <View style={styles.notifCardTop}>
+                  <View style={styles.notifLeft}>
+                    <IconSymbol name="clock.fill" size={20} color={PRIMARY} />
+                    <ThemedText style={[styles.notifTitle, { color: c.onSurface }]}>
+                      리듬 시작 알림
+                    </ThemedText>
                   </View>
-                  <View style={styles.timeCol}>
-                    <ThemedText style={[styles.inputLabel, { color: muted }]}>종료 시각</ThemedText>
-                    <TextInput
-                      value={endTimeStr}
-                      onChangeText={setEndTimeStr}
-                      placeholder="10:30"
-                      placeholderTextColor={muted}
-                      keyboardType="numbers-and-punctuation"
-                      style={[
-                        styles.input,
-                        { color: text, borderColor: border, backgroundColor: surface },
-                      ]}
-                    />
-                  </View>
+                  <Switch
+                    trackColor={{ true: PRIMARY, false: c.trackOff }}
+                    thumbColor="#fff"
+                    value={startNotifOn}
+                    onValueChange={setStartNotifOn}
+                  />
                 </View>
-                <ThemedText style={[styles.editorHint, { color: muted }]}>
-                  같은 날 기준 · 종료는 시작보다 늦게(24:00까지)
-                </ThemedText>
-                <View style={styles.editorActions}>
+                <View style={[styles.chipRow, { backgroundColor: c.containerLowest }]}>
                   <Pressable
-                    accessibilityRole="button"
-                    style={[styles.addTaskBtn, { backgroundColor: PRIMARY }]}
-                    onPress={onAddTask}>
-                    <ThemedText style={styles.addTaskBtnText}>리듬 추가</ThemedText>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
+                    onPress={() => setNotifTiming('5min')}
                     style={[
-                      styles.cancelBtn,
-                      { backgroundColor: isDark ? '#334155' : '#e2e8f0' },
-                    ]}
-                    onPress={onCancelEditor}>
-                    <ThemedText style={[styles.cancelBtnText, { color: text }]}>취소</ThemedText>
+                      styles.chip,
+                      notifTiming === '5min' && { backgroundColor: '#fff', ...styles.chipShadow },
+                    ]}>
+                    <ThemedText
+                      style={[
+                        styles.chipText,
+                        { color: notifTiming === '5min' ? PRIMARY : c.onVariant },
+                      ]}>
+                      5분 전
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setNotifTiming('atStart')}
+                    style={[
+                      styles.chip,
+                      notifTiming === 'atStart' && { backgroundColor: '#fff', ...styles.chipShadow },
+                    ]}>
+                    <ThemedText
+                      style={[
+                        styles.chipText,
+                        { color: notifTiming === 'atStart' ? PRIMARY : c.onVariant },
+                      ]}>
+                      시작 시각
+                    </ThemedText>
                   </Pressable>
                 </View>
               </View>
+
+              <View style={[styles.notifRowPill, { backgroundColor: c.containerLow }]}>
+                <View style={styles.notifLeft}>
+                  <IconSymbol name="timer" size={20} color={PRIMARY} />
+                  <ThemedText style={[styles.notifTitle, { color: c.onSurface }]}>
+                    리듬 종료 알림
+                  </ThemedText>
+                </View>
+                <Switch
+                  trackColor={{ true: PRIMARY, false: c.trackOff }}
+                  thumbColor="#fff"
+                  value={endNotifOn}
+                  onValueChange={setEndNotifOn}
+                />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.block}>
+            <ThemedText style={[styles.labelUpper, { color: c.onVariant }]}>메모 및 목표</ThemedText>
+            <View
+              style={[
+                styles.notesBox,
+                { backgroundColor: c.containerLowest, borderColor: 'transparent', shadowColor: c.shadow },
+              ]}>
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="이번 세션의 핵심 집중 영역을 정의하세요..."
+                placeholderTextColor={c.outline}
+                multiline
+                textAlignVertical="top"
+                style={[styles.notesInput, { color: c.onSurface }]}
+              />
             </View>
           </View>
         </ScrollView>
 
-        {/* Bottom CTA */}
-        <View style={[styles.bottomBar, { borderTopColor: border, backgroundColor: bg }]}>
-          <SafeAreaView edges={['bottom']}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !firstPending }}
-              style={[
-                styles.startDayBtn,
-                { backgroundColor: PRIMARY },
-                !firstPending && styles.startDayBtnDisabled,
-              ]}
-              onPress={onStartDay}>
-              <IconSymbol name="play.fill" size={22} color="#fff" />
-              <ThemedText style={styles.startDayText}>
-                {firstPending ? '하루 시작하기' : '남은 일정이 없어요'}
-              </ThemedText>
+        <View style={[styles.bottomDock, { backgroundColor: c.bg }]}>
+          <View style={[styles.bottomFade, { backgroundColor: c.bg }]} />
+          <SafeAreaView edges={['bottom']} style={styles.bottomInner}>
+            <Pressable style={styles.primaryCta} onPress={onSave}>
+              <ThemedText style={styles.primaryCtaText}>리듬 설정 완료</ThemedText>
             </Pressable>
+            <ThemedText style={[styles.bottomTagline, { color: c.outline }]}>
+              모멘텀은 지금부터입니다
+            </ThemedText>
           </SafeAreaView>
         </View>
       </SafeAreaView>
@@ -421,311 +437,155 @@ export function DayPlanPage() {
   );
 }
 
-function cardTimeColor(completed: boolean, skipped: boolean, _isCurrent: boolean, muted: string) {
-  if (skipped || completed) return muted;
-  return PRIMARY;
-}
-
-function badgeBg(completed: boolean, skipped: boolean, chipSoftBg: string, isDark: boolean) {
-  if (skipped) return isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.15)';
-  if (completed) return isDark ? '#334155' : '#f1f5f9';
-  return chipSoftBg;
-}
-
-function badgeTextColor(completed: boolean, skipped: boolean, primary: string, muted: string) {
-  if (skipped) return muted;
-  if (completed) return muted;
-  return primary;
-}
-
-function badgeLabel(category: string, completed: boolean, skipped: boolean) {
-  if (skipped) return '건너뜀';
-  if (completed) return '완료';
-  return category;
-}
-
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  safe: {
-    flex: 1,
-  },
+  screen: { flex: 1 },
+  safe: { flex: 1 },
   header: {
+    height: 64,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingHorizontal: 24,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    shadowColor: 'rgba(45,47,47,0.06)',
+    shadowOpacity: 1,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 4,
   },
   headerIconBtn: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 999,
   },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 120,
-  },
-  section: {
-    padding: 16,
-    gap: 12,
-  },
-  progressHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  kicker: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  progressNums: {
-    alignItems: 'flex-end',
-  },
-  percentText: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  tasksHint: {
+  headerTitle: { fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
+  saveText: { color: PRIMARY, fontSize: 18, fontWeight: '700', letterSpacing: -0.2 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 20, gap: 32 },
+  block: { gap: 12 },
+  labelUpper: {
     fontSize: 11,
-    marginTop: 2,
-  },
-  progressTrack: {
-    height: 10,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: PRIMARY,
-  },
-  helper: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  timelineWrap: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    position: 'relative',
-  },
-  timelineLine: {
-    position: 'absolute',
-    top: 24,
-    bottom: 48,
-    width: 2,
-  },
-  timelineRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 28,
-  },
-  dotCol: {
-    width: 40,
-    alignItems: 'center',
-  },
-  dotFilled: {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-    shadowColor: PRIMARY,
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  dotRing: {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
-  dotDashed: {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
-  dotMuted: {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
-  timelineCard: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  timelineCardMuted: {
-    borderStyle: 'dashed',
-  },
-  cardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  cardRowRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  deleteIconBtn: {
-    padding: 6,
-    marginRight: -4,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cardTime: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 4,
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 2,
     textTransform: 'uppercase',
+    paddingHorizontal: 4,
   },
-  editorCard: {
-    flex: 1,
+  namePill: {
+    borderRadius: 999,
+    paddingHorizontal: 22,
+    paddingVertical: 20,
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 2,
+  },
+  nameInput: {
+    fontSize: 22,
+    fontWeight: '800',
+    padding: 0,
+  },
+  nameHintRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  nameHint: { fontSize: 12, fontWeight: '600' },
+  notifCol: { gap: 12 },
+  notifCard: {
+    borderRadius: 28,
     padding: 18,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderStyle: 'dashed',
+    gap: 14,
+  },
+  notifCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  notifLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  notifTitle: { fontSize: 14, fontWeight: '800' },
+  chipRow: {
+    flexDirection: 'row',
+    borderRadius: 999,
+    padding: 4,
     gap: 4,
   },
-  editorKicker: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
-  editorHint: {
-    fontSize: 11,
-    marginTop: 8,
-    lineHeight: 16,
-  },
-  inputLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 8,
-    marginLeft: 4,
-  },
-  input: {
-    marginTop: 4,
-    paddingHorizontal: 14,
+  chip: {
+    flex: 1,
+    minHeight: 36,
     paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    fontSize: 14,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 4,
-  },
-  timeCol: {
-    flex: 1,
-  },
-  editorActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-    alignItems: 'center',
-  },
-  addTaskBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    shadowColor: PRIMARY,
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  addTaskBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  cancelBtn: {
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  cancelBtnText: {
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  bottomBar: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    zIndex: 2,
-    elevation: 8,
-  },
-  startDayBtn: {
-    flexDirection: 'row',
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
-    borderRadius: 14,
+  },
+  chipShadow: {
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  chipText: { fontSize: 10, fontWeight: '800' },
+  notifRowPill: {
+    borderRadius: 999,
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  notesBox: {
+    borderRadius: 28,
+    padding: 22,
+    borderWidth: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 2,
+  },
+  notesInput: {
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 22,
+    minHeight: 100,
+    padding: 0,
+  },
+  bottomDock: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 20,
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: -40,
+    height: 40,
+    opacity: 0.95,
+  },
+  bottomInner: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  primaryCta: {
+    backgroundColor: PRIMARY,
+    borderRadius: 999,
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: PRIMARY,
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
-  startDayBtnDisabled: {
-    opacity: 0.45,
-  },
-  startDayText: {
+  primaryCtaText: {
     color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  bottomTagline: {
+    textAlign: 'center',
+    marginTop: 14,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
 });
