@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import {
   findOverlappingDayPlanBlock,
+  findOverlappingDayPlanBlocks,
   getFirstPendingBlock,
   getLocalMinutesOfDayNow,
   sortDayPlanBlocks,
@@ -48,7 +49,7 @@ function normalizePersisted(persisted: {
 }
 
 export type AddBlockResult =
-  | { ok: true }
+  | { ok: true; blockId: string }
   | { ok: false; reason: 'overlap'; conflicting: DayPlanBlock }
   | { ok: false; reason: 'invalid_range' }
   | { ok: false; reason: 'in_the_past' };
@@ -71,12 +72,14 @@ export type DayPlanStoreState = {
   /**
    * 새 타임라인 블록 추가. order는 기존 최대값+1.
    * endMinutes는 시작보다 커야 함 (같은 날 0~1440 분).
+   * `replaceOverlapping`: true면 겹치는 기존 블록을 제거한 뒤 추가 (새 리듬으로 덮어쓰기).
    */
   addBlock: (input: {
     title: string;
     category: string;
     startMinutes: number;
     endMinutes: number;
+    replaceOverlapping?: boolean;
   }) => AddBlockResult;
 
   /** 블록 제거 + 완료/건너뛰기 id 정리 */
@@ -183,10 +186,21 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         return { ok: false, reason: 'in_the_past' };
       }
 
-      const current = get().blocks;
-      const conflicting = findOverlappingDayPlanBlock(current, start, end);
-      if (conflicting) {
-        return { ok: false, reason: 'overlap', conflicting };
+      let { blocks: current, completedBlockIds, skippedBlockIds } = get();
+
+      if (input.replaceOverlapping) {
+        const overlapping = findOverlappingDayPlanBlocks(current, start, end);
+        if (overlapping.length > 0) {
+          const removeIds = new Set(overlapping.map((b) => b.id));
+          current = current.filter((b) => !removeIds.has(b.id));
+          completedBlockIds = completedBlockIds.filter((id) => !removeIds.has(id));
+          skippedBlockIds = skippedBlockIds.filter((id) => !removeIds.has(id));
+        }
+      } else {
+        const conflicting = findOverlappingDayPlanBlock(current, start, end);
+        if (conflicting) {
+          return { ok: false, reason: 'overlap', conflicting };
+        }
       }
 
       const maxOrder = current.reduce((acc, b) => Math.max(acc, b.order), -1);
@@ -201,9 +215,9 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
       };
 
       const next = sortDayPlanBlocks([...current, block]);
-      set({ blocks: next });
+      set({ blocks: next, completedBlockIds, skippedBlockIds });
       persist();
-      return { ok: true };
+      return { ok: true, blockId: block.id };
     },
 
     removeBlock: (blockId) => {

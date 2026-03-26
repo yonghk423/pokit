@@ -58,6 +58,20 @@ export function findOverlappingDayPlanBlock(
   return found ?? null;
 }
 
+/** 구간과 시간이 겹치는 모든 기존 블록 (교체 저장 시 일괄 제거용) */
+export function findOverlappingDayPlanBlocks(
+  blocks: DayPlanBlock[],
+  startMinutes: number,
+  endMinutes: number,
+  excludeBlockId?: string,
+): DayPlanBlock[] {
+  return blocks.filter(
+    (b) =>
+      b.id !== excludeBlockId &&
+      dayPlanTimeRangesOverlap(startMinutes, endMinutes, b.startMinutes, b.endMinutes),
+  );
+}
+
 /** 표시용: 일정 블록들의 총 분 길이 */
 export function totalPlannedMinutes(blocks: DayPlanBlock[]): number {
   return blocks.reduce((sum, b) => sum + Math.max(0, b.endMinutes - b.startMinutes), 0);

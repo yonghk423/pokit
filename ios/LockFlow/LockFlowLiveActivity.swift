@@ -2,14 +2,22 @@ import ActivityKit
 import Foundation
 
 private struct LiveActivityPayload: Decodable {
+  struct ReadingDataConfigPayload: Decodable {
+    let startPage: Int
+    let targetPage: Int
+    let selectedMetrics: [String]
+  }
+
   let blockId: String
   let title: String
   let category: String
+  let categoryKey: String?
   let timeRangeLabel: String
   let totalSeconds: Int
   let pausedRemainingSeconds: Int?
   let endsAtIso: String?
   let status: String
+  let readingDataConfig: ReadingDataConfigPayload?
 }
 
 /// `upsert`가 동시에 여러 번 들어오면 둘 다 "기존 Activity 없음"으로 판단해 `request`가 두 번 나가
@@ -30,11 +38,19 @@ private actor LockFlowLiveActivityCoordinator {
       let state = LockFlowLiveActivityAttributes.ContentState(
         title: payload.title,
         category: payload.category,
+        categoryKey: payload.categoryKey,
         timeRangeLabel: payload.timeRangeLabel,
         totalSeconds: payload.totalSeconds,
         pausedRemainingSeconds: payload.pausedRemainingSeconds,
         endsAt: isoDate(from: payload.endsAtIso),
-        status: payload.status
+        status: payload.status,
+        readingDataConfig: payload.readingDataConfig.map {
+          .init(
+            startPage: $0.startPage,
+            targetPage: $0.targetPage,
+            selectedMetrics: $0.selectedMetrics
+          )
+        }
       )
 
       if let activity = Activity<LockFlowLiveActivityAttributes>.activities.first(

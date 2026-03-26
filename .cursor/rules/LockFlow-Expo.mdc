@@ -238,6 +238,71 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 - `shared` 레이어는 `entities/features/pages`를 import 하지 않는다.
 - 사용자 대면 텍스트는 한글 원칙을 유지한다.
 
+### 7.2.6 Live Activity 잠금화면 UI·크기 기준 (canonical, Swift 기준)
+
+잠금화면 Live Activity의 **최종 레이아웃·행간·적응형 폴백(Preferred/Compact) 기준은 iOS SwiftUI(ActivityKit)** 이다.
+
+- **목표 상세 설정의 미리보기 UI**는 별도 디자인 시스템을 두지 않고, **Live Activity와 같은 정보 구조·구성·색/타이포 의도**를 따른다. Swift 쪽을 수정하면 미리보기도 같이 수정한다(아래 §7.2.7).
+- 기기에서는 시스템 머티리얼·다크모드에 따라 실제 픽셀이 미세하게 달라질 수 있으나, **미리보기는 잠금화면에서 사용자가 보는 톤**(검정 바, iOS 보조 라벨색 등)에 맞춘다.
+
+**구현 위치**
+
+- 잠금화면 배너 본문: `ios/LockFlowLiveActivity/LockFlowLiveActivityWidget.swift` 의 `LockFlowLiveActivityView`
+- `ContentState`·payload 타입: `ios/LockFlowShared/LockFlowLiveActivityAttributes.swift`
+- RN → 네이티브 upsert: `ios/LockFlow/LockFlowLiveActivity.swift` 및 `src/features/live-activity-sync/*`
+
+**높이·폭(시스템)**
+
+- 배너의 **전체 높이·폭 상한**은 Apple이 정한다. 개발자가 임의로 “2배 높이” 등으로 뷰 컨테이너를 늘리는 API는 없다.
+- **가능한 한 크게** 보이게 하려면 **내용의 intrinsic 높이**(폰트·패딩·행 수·버튼 높이)를 키우되, 작은 기기·큰 텍스트 크기에서는 **잘림**이 나지 않게 해야 한다.
+
+**적응형 레이아웃(필수 패턴)**
+
+- 독서 등 **카테고리 전용** 잠금화면 UI는 **`ViewThatFits(in: .vertical)`** 로 구성한다.
+  - **1순위(Preferred)**: 시스템이 수용할 수 있는 범위에서 **최대 비주얼**(큰 숫자·넉넉한 세로 간격·버튼 `compact: false` 등).
+  - **2순위(Compact)**: 공간이 부족할 때만 쓰는 **축소 레이아웃**(작은 폰트·얇은 진행 바·버튼 `compact: true` 등).
+- 기기 모델명으로 분기하지 않는다. **SwiftUI가 제안하는 공간**과 `ViewThatFits`가 자동으로 최적 후보를 고른다.
+- 가로는 **`maxWidth: .infinity`**·`HStack` 균등 분 등으로 **주어진 폭을 최대 활용**한다.
+
+**현재 LockFlow “기준 스펙”(독서 모드, Preferred 대략치)**
+
+아래는 에이전트/인간이 Live Activity 독서 카드를 손볼 때의 **기본 앵커**다. 세부 수치는 출시 전조정 가능하되, **Preferred ↔ Compact 2단 + 세로 `ViewThatFits`** 구조는 유지한다.
+
+- 카드: 둥근 사각형, 배경 `Color.black.opacity(0.40)` 전후, 코너 반경 **~16**
+- 카드 패딩: 가로 **~12**, 세로 **~11**
+- 헤더 행: 책 아이콘 **30×30**, 키커 **~9pt**, 제목 **~15pt heavy**, 우측 **컴팩트 타이머 ~17pt** (카운트다운은 동일 스타일 유지)
+- 지표 행: 큰 값 **~26pt** / 보조 **~22pt**, 라벨 **~9pt**, 지표 1~3개 가로 분할
+- 진행 바: 트랙 높이 **~6**, 채움·트랙 대비는 밝은 흰색 계열
+- 액션: `일시정지`·`완료` — **Preferred** 에서는 `.caption`·세로 패딩 **~7**, **Compact** 에서는 `.caption2`·패딩 축소
+
+**커스텀 카테고리 확장**
+
+- 카테고리별 UI는 `categoryKey`(및 필요 시 전용 payload, 예: `readingDataConfig`)로 분기한다.
+- 새 카테고리 추가 시에도 **동일 원칙**: SwiftUI 단일 진실, RN 미리보기는 payload 동일, **세로 `ViewThatFits` + Preferred/Compact** 권장.
+
+### 7.2.7 목표 상세 설정 미리보기 ↔ Live Activity 동기화 (필수 워크플로)
+
+**원칙:** Swift에서 Live Activity UI(레이아웃, 문구, 지표 노출, 버튼, 색·대비 의도)를 바꾸면, **같은 PR/작업**에서 목표 상세 설정 화면의 **미리보기**도 Live Activity 기준으로 맞춘다. 미리보기만 따로 “앱용 스타일”로 drifting 하지 않는다.
+
+**RN 미리보기 위치 (현재)**
+
+- 독서 카테고리: `src/pages/goal-detail-settings/ui/category/study/ui/StudyPreview.tsx`
+- 페이지에서 조립: `src/pages/goal-detail-settings/ui/GoalDetailSettingsPage.tsx`의 `Preview` 슬롯
+- 다른 `categoryKey`에 Live Activity 전용 레이아웃이 생기면, 동일 패턴으로 `ui/category/<도메인>/ui/*Preview.tsx`를 두고 §7.2.6과 동기화한다.
+
+**미리보기 구현 규칙**
+
+- **폰 목업**(베젤·배경화면·시계 등)은 넣지 않는다. **잠금화면에 보이는 카드(배너 본문)** 만 렌더링한다.
+- 레이아웃·폰트 크기·패딩·진행 바·액션 버튼 구역은 Swift **`readingPreferredLockScreenBody`**(및 해당 카테고리의 Preferred 블록)를 기준으로 맞춘다. Compact(`readingCompactLockScreenBody`)는 필요 시 별도 분기·주석으로 Swift와 대응 관계를 적어 둔다.
+- **색:** 실기 잠금화면 스크린샷·iOS 시스템 톤에 맞춘다(예: 카드 면 검정, 보조 텍스트·타이머 `#8E8E93`, 슬롯/트랙·일시정지 `#3A3A3C`, 완료 `#FF9500` 등). Swift 코드의 `Color.black.opacity(...)` 와 픽셀 동일이 아니어도 되나, **사용자가 잠금화면에서 보는 대비**를 해치지 않게 한다.
+- 앱 전역 **브랜드 primary**(`theme.ts`의 `rgb(249, 115, 22)`)와 Live Activity의 시스템 오렌지가 다를 수 있다. **미리보기는 Live Activity 기준**을 우선한다.
+
+**에이전트/리뷰 체크리스트**
+
+- [ ] `LockFlowLiveActivityWidget.swift` 배너 UI를 수정했는가? → `StudyPreview.tsx`(또는 해당 카테고리 Preview) 동일 의도로 갱신했는가?
+- [ ] 새 지표·버튼·카테고리 분기를 Swift에 추가했는가? → 미리보기에 payload/`dataConfig` 반영 가능한가?
+- [ ] 한글 카피·라벨은 Swift와 RN 미리보기가 동일한가?
+
 ---
 
 ## 8. Expo CLI 정책

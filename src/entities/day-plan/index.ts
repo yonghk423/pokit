@@ -8,6 +8,7 @@ export {
   blockDurationSec,
   dayPlanTimeRangesOverlap,
   findOverlappingDayPlanBlock,
+  findOverlappingDayPlanBlocks,
   formatBlockTimeRange,
   formatMinuteOfDayKo,
   getFirstPendingBlock,
@@ -16,3 +17,14 @@ export {
   sortDayPlanBlocks,
   totalPlannedMinutes,
 } from './lib/dayPlanTime';
+export type {
+  ReadingLiveActivityConfig,
+  ReadingMetricKey,
+} from './lib/readingLiveActivityConfig';
+export {
+  DEFAULT_READING_LIVE_ACTIVITY_CONFIG,
+  deriveReadingProgress,
+  getInitialReadingLiveActivityConfig,
+  normalizeReadingLiveActivityConfig,
+  normalizeReadingMetricSelection,
+} from './lib/readingLiveActivityConfig';

@@ -22,9 +22,9 @@ import { ThemedView } from '@shared/ui/themed-view';
 
 import {
   CATEGORIES,
-  PRIMARY,
   defaultEditorBlockTimesFromNow,
   makeBlockId,
+  PRIMARY,
   rangesOverlapMinutes,
   sortBlocksByCategoryOrder,
   type PlanMode,
@@ -171,6 +171,7 @@ export function DayPlanPage() {
         startMinutes: ps,
         endMinutes: pe,
         category: catLabel,
+        replaceOverlapping: true,
       });
 
       if (!result.ok) {
@@ -188,7 +189,11 @@ export function DayPlanPage() {
 
       router.push({
         pathname: '/goal-detail-settings',
-        params: { rhythmTitle: trimmedTitle },
+        params: {
+          rhythmTitle: trimmedTitle,
+          categoryKey: priorityCategoryKey,
+          startBlockId: result.blockId,
+        },
       });
       return;
     }
@@ -229,12 +234,14 @@ export function DayPlanPage() {
       }
     }
 
+    const addedBlockIds: string[] = [];
     for (const r of resolved) {
       const result = addBlock({
         title: trimmedTitle,
         startMinutes: r.parsedStart!,
         endMinutes: r.parsedEnd!,
         category: r.catLabel,
+        replaceOverlapping: true,
       });
 
       if (!result.ok) {
@@ -252,11 +259,28 @@ export function DayPlanPage() {
         Alert.alert('저장 실패', '입력값을 확인해 주세요.');
         return;
       }
+      addedBlockIds.push(result.blockId);
     }
 
+    const selectedCategoryKey =
+      selectedBlockId != null
+        ? timeBlocks.find((b) => b.id === selectedBlockId)?.categoryKey
+        : null;
+    const selectedIdx =
+      selectedCategoryKey != null
+        ? resolved.findIndex((r) => r.block.categoryKey === selectedCategoryKey)
+        : -1;
+    const startBlockId =
+      selectedIdx >= 0 && selectedIdx < addedBlockIds.length
+        ? addedBlockIds[selectedIdx]
+        : addedBlockIds[0];
     router.push({
       pathname: '/goal-detail-settings',
-      params: { rhythmTitle: trimmedTitle },
+      params: {
+        rhythmTitle: trimmedTitle,
+        categoryKey: selectedCategoryKey ?? 'other',
+        startBlockId,
+      },
     });
   };
 
@@ -264,13 +288,13 @@ export function DayPlanPage() {
     <ThemedView style={[styles.screen, { backgroundColor: c.bg }]} darkColor={c.bg} lightColor={c.bg}>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={[styles.header, { backgroundColor: c.headerBg, borderBottomColor: c.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.headerIconBtn} hitSlop={8}>
-            <IconSymbol name="xmark" size={20} color={c.onSurface} />
-          </Pressable>
+          <View style={styles.headerEdge} />
           <ThemedText style={[styles.headerTitle, { color: c.onSurface }]}>새 리듬 설정</ThemedText>
-          <Pressable onPress={onSave} hitSlop={8}>
-            <ThemedText style={styles.saveText}>저장</ThemedText>
-          </Pressable>
+          <View style={styles.headerEdge}>
+            <Pressable onPress={onSave} hitSlop={8}>
+              <ThemedText style={styles.saveText}>저장</ThemedText>
+            </Pressable>
+          </View>
         </View>
 
         <ScrollView
@@ -453,13 +477,19 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 12 },
     elevation: 4,
   },
-  headerIconBtn: {
-    width: 40,
-    height: 40,
+  headerEdge: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    minWidth: 0,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
   saveText: { color: PRIMARY, fontSize: 18, fontWeight: '700', letterSpacing: -0.2 },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 24, paddingTop: 20, gap: 32 },

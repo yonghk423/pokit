@@ -5,6 +5,7 @@ export const PRIMARY = 'rgb(249, 115, 22)';
 export const CATEGORIES = [
   { key: 'run', label: '러닝', icon: 'figure.run' as const },
   { key: 'work', label: '업무', icon: 'briefcase.fill' as const },
+  { key: 'reading', label: '독서', icon: 'book.fill' as const },
   { key: 'study', label: '공부', icon: 'book.closed.fill' as const },
   { key: 'meditation', label: '명상', icon: 'brain.head.profile' as const },
   { key: 'yoga', label: '요가', icon: 'figure.yoga' as const },

@@ -8,10 +8,12 @@ import {
   blockDurationSec,
   formatBlockTimeRange,
   getNextPendingAfter,
+  normalizeReadingLiveActivityConfig,
 } from '@entities/day-plan';
 import { useDayPlanStore } from '@entities/day-plan/model';
 import { endLockFlowLiveActivity, useLiveActivitySync } from '@features/live-activity-sync';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -21,6 +23,19 @@ import { SessionProgressRing } from './SessionProgressRing';
 const PRIMARY = 'rgb(249, 115, 22)';
 const RING_SIZE = 232;
 const RING_STROKE = 14;
+const CATEGORY_KEY_BY_LABEL: Record<string, string> = {
+  러닝: 'run',
+  업무: 'work',
+  독서: 'reading',
+  공부: 'study',
+  명상: 'meditation',
+  요가: 'yoga',
+  휴식: 'rest',
+  수분: 'water',
+  '약 복용': 'medicine',
+  스트레칭: 'stretch',
+  기타: 'other',
+};
 
 function pickParam(value: string | string[] | undefined, fallback: string): string {
   if (typeof value === 'string' && value.length > 0) return value;
@@ -34,6 +49,11 @@ function formatClock(totalSeconds: number): string {
   const m = Math.floor(s / 60);
   const r = s % 60;
   return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+}
+
+function resolveCategoryKeyFromLabel(label: string): string | null {
+  if (!label) return null;
+  return CATEGORY_KEY_BY_LABEL[label] ?? null;
 }
 
 export function ActivitySessionPage() {
@@ -79,7 +99,14 @@ export function ActivitySessionPage() {
 
   const activityTitle = block?.title ?? '';
   const categoryLabel = block?.category ?? '';
+  const categoryKey = resolveCategoryKeyFromLabel(categoryLabel);
   const timeRange = block ? formatBlockTimeRange(block) : '';
+
+  const readingDataConfig = useMemo(() => {
+    if (categoryKey !== 'reading') return null;
+    const persisted = loadGoalDetailCategoryConfig('reading');
+    return normalizeReadingLiveActivityConfig(persisted);
+  }, [categoryKey]);
 
   const nextBlock = useMemo(() => {
     if (!block) return null;
@@ -107,19 +134,23 @@ export function ActivitySessionPage() {
       blockId: block.id,
       title: activityTitle,
       category: categoryLabel,
+      categoryKey,
       timeRangeLabel: timeRange,
       totalSeconds: totalSec,
       pausedRemainingSeconds,
       endsAtIso: endsAtIsoForLiveActivity,
       status: isPaused ? 'paused' : 'active',
+      readingDataConfig,
     } as const;
   }, [
     activityTitle,
     block,
     categoryLabel,
+    categoryKey,
     endsAtIsoForLiveActivity,
     isPaused,
     pausedRemainingSeconds,
+    readingDataConfig,
     timeRange,
     totalSec,
   ]);
