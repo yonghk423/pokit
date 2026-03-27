@@ -3,6 +3,7 @@ import { StorageKeys } from './storageKeys';
 
 type GoalDetailSettingsStorageShape = {
   byCategory?: Record<string, unknown>;
+  byBlockId?: Record<string, unknown>;
 };
 
 function readRoot(): GoalDetailSettingsStorageShape {
@@ -30,5 +31,28 @@ export function saveGoalDetailCategoryConfig(
   const root = readRoot();
   const byCategory = { ...(root.byCategory ?? {}) };
   byCategory[categoryKey] = config;
-  localStorageClient.setJson(StorageKeys.goalDetailSettings, { byCategory });
+  localStorageClient.setJson(StorageKeys.goalDetailSettings, {
+    byCategory,
+    byBlockId: root.byBlockId ?? {},
+  });
+}
+
+export function loadGoalDetailBlockConfig(blockId: string): unknown | null {
+  if (!blockId) return null;
+  const root = readRoot();
+  const byBlockId = root.byBlockId ?? {};
+  return Object.prototype.hasOwnProperty.call(byBlockId, blockId)
+    ? byBlockId[blockId]
+    : null;
+}
+
+export function saveGoalDetailBlockConfig(blockId: string, config: unknown): void {
+  if (!blockId) return;
+  const root = readRoot();
+  const byBlockId = { ...(root.byBlockId ?? {}) };
+  byBlockId[blockId] = config;
+  localStorageClient.setJson(StorageKeys.goalDetailSettings, {
+    byCategory: root.byCategory ?? {},
+    byBlockId,
+  });
 }

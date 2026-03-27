@@ -23,7 +23,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
-      {/* 보류 기능: 둘러보기/내 리듬/설정 탭은 추후 개발 시 다시 노출 */}
+      {/* 보류 기능: 둘러보기/내 플로우/설정 탭은 추후 개발 시 다시 노출 */}
       <Tabs.Screen
         name="discover"
         options={{

@@ -11,7 +11,6 @@ import {
   PRIMARY,
   normalizeBlockTimeRange,
   shiftBlockStartToNowKeepingDuration,
-  sortBlocksByCategoryOrder,
   type TimeBlock,
 } from '../lib/dayPlanEditorShared';
 import { TimeRangeTimeline } from './TimeRangeTimeline';
@@ -24,8 +23,12 @@ type Props = {
   selectedBlockId: string | null;
   onPressCategory: (categoryKey: string) => void;
   onSelectBlock: (blockId: string) => void;
-  onUpdateBlock: (id: string, patch: Partial<Pick<TimeBlock, 'startTime' | 'endTime'>>) => void;
+  onUpdateBlock: (
+    id: string,
+    patch: Partial<Pick<TimeBlock, 'startTime' | 'endTime' | 'title'>>,
+  ) => void;
   onRemoveBlock: (id: string) => void;
+  onCommitBlock: (id: string) => void;
 };
 
 export function TimeBasedPlanSection({
@@ -38,8 +41,12 @@ export function TimeBasedPlanSection({
   onSelectBlock,
   onUpdateBlock,
   onRemoveBlock,
+  onCommitBlock,
 }: Props) {
-  const sortedBlocks = sortBlocksByCategoryOrder(timeBlocks);
+  const sortedBlocks = useMemo(
+    () => [...timeBlocks].sort((a, b) => (a.addedSeq ?? 0) - (b.addedSeq ?? 0)),
+    [timeBlocks],
+  );
   const selectedBlock =
     selectedBlockId != null ? (timeBlocks.find((b) => b.id === selectedBlockId) ?? null) : null;
 
@@ -77,7 +84,7 @@ export function TimeBasedPlanSection({
   };
 
   const cat = selectedBlock ? CATEGORIES.find((x) => x.key === selectedBlock.categoryKey) : null;
-  const label = cat?.label ?? '리듬';
+  const label = cat?.label ?? '플로우';
   const otherBlocks = selectedBlock
     ? sortedBlocks.filter((b) => b.id !== selectedBlock.id)
     : [];
@@ -88,14 +95,16 @@ export function TimeBasedPlanSection({
         <ThemedText style={[styles.labelUpper, { color: c.onVariant }]}>카테고리 선택</ThemedText>
         <ThemedText style={[styles.catHint, { color: c.outline }]}>
           {timeBlocks.length === 0
-            ? '먼저 카테고리를 눌러 시간을 설정할 블록을 추가하세요. 추가되면 아래에 시간 설정이 나타납니다.'
-            : '카테고리를 누르면 선택·추가되고, 선택된 항목을 한 번 더 누르면 취소(제거)됩니다. 다른 카테고리는 눌러 전환할 수 있어요.'}
+            ? '먼저 카테고리를 눌러 블록을 추가하세요. 시간을 맞춘 뒤 「시간 확정」을 누르면 일정에 반영되고, 같은 카테고리를 여러 번 넣을 수 있어요.'
+            : '한 번에 하나의 블록만 편집합니다. 편집 중(미확정) 카테고리를 다시 누르면 취소되고, 확정 후 다시 누르면 같은 카테고리 블록을 추가할 수 있어요.'}
         </ThemedText>
         <View style={[styles.catGrid, { gap: gridGap }]}>
           {CATEGORIES.map((catItem) => {
-            const blockForCat = timeBlocks.find((b) => b.categoryKey === catItem.key);
-            const hasBlock = Boolean(blockForCat);
-            const isSelected = Boolean(selectedBlock && blockForCat?.id === selectedBlock.id);
+            const blocksHere = timeBlocks.filter((b) => b.categoryKey === catItem.key);
+            const count = blocksHere.length;
+            const hasBlock = count > 0;
+            const isSelected =
+              selectedBlockId != null && blocksHere.some((b) => b.id === selectedBlockId);
             return (
               <Pressable
                 key={catItem.key}
@@ -107,9 +116,14 @@ export function TimeBasedPlanSection({
                     height: cellW,
                     backgroundColor: hasBlock ? c.containerLowest : c.containerLow,
                     borderColor: isSelected ? PRIMARY : hasBlock ? PRIMARY : c.catBorderIdle,
-                    borderWidth: isSelected ? 3 : 2,
+                    borderWidth: isSelected ? 3 : hasBlock ? 2 : 2,
                   },
                 ]}>
+                {count > 1 ? (
+                  <View style={[styles.catCountBadge, { backgroundColor: PRIMARY }]}>
+                    <ThemedText style={styles.catCountBadgeText}>{count}</ThemedText>
+                  </View>
+                ) : null}
                 <IconSymbol
                   name={catItem.icon}
                   size={22}
@@ -124,6 +138,63 @@ export function TimeBasedPlanSection({
           })}
         </View>
       </View>
+
+      {timeBlocks.length > 0 ? (
+        <View style={styles.block}>
+          <ThemedText style={[styles.labelUpper, { color: c.onVariant }]}>
+            추가한 순서
+          </ThemedText>
+          <ThemedText style={[styles.orderHint, { color: c.outline }]}>
+            위에서 먼저 넣은 블록이 위에 표시됩니다. 항목을 누면 해당 블록의 시간을 수정할 수 있어요.
+          </ThemedText>
+          <View style={styles.orderList}>
+            {sortedBlocks.map((b) => {
+              const cc = CATEGORIES.find((x) => x.key === b.categoryKey);
+              const name = cc?.label ?? '플로우';
+              const rowTitle = (b.title ?? '').trim() || name;
+              const seq = b.addedSeq ?? 0;
+              const active = selectedBlockId === b.id;
+              const committed = b.timeCommitted === true;
+              return (
+                <Pressable
+                  key={b.id}
+                  onPress={() => onSelectBlock(b.id)}
+                  style={[
+                    styles.orderRow,
+                    {
+                      backgroundColor: active ? c.containerLow : c.containerLowest,
+                      borderColor: active ? PRIMARY : c.border,
+                    },
+                  ]}>
+                  <View style={styles.orderRowLeft}>
+                    <ThemedText style={[styles.orderSeq, { color: c.onVariant }]}>{seq}</ThemedText>
+                    {cc ? (
+                      <View style={[styles.orderIconWrap, { backgroundColor: c.containerHigh }]}>
+                        <IconSymbol name={cc.icon} size={16} color={PRIMARY} />
+                      </View>
+                    ) : null}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <ThemedText style={[styles.orderTitle, { color: c.onSurface }]} numberOfLines={1}>
+                        {rowTitle}
+                      </ThemedText>
+                      <ThemedText style={[styles.orderTime, { color: c.outline }]} numberOfLines={1}>
+                        {b.startTime} – {b.endTime}
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <ThemedText
+                    style={[
+                      styles.orderStatus,
+                      { color: committed ? PRIMARY : c.outline },
+                    ]}>
+                    {committed ? '확정' : '편집 중'}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
 
       {selectedBlock ? (
         <View style={styles.block}>
@@ -144,7 +215,8 @@ export function TimeBasedPlanSection({
             </View>
           </View>
           <ThemedText style={[styles.timeSectionSub, { color: c.outline }]}>
-            선택한 블록 · 총 {timeBlocks.length}개 · 하루 타임라인 기준
+            선택한 블록 · 총 {timeBlocks.length}개 · 확정{' '}
+            {timeBlocks.filter((b) => b.timeCommitted === true).length}개
           </ThemedText>
 
           {otherBlocks.length > 0 ? (
@@ -153,7 +225,7 @@ export function TimeBasedPlanSection({
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
                 {otherBlocks.map((b) => {
                   const cc = CATEGORIES.find((x) => x.key === b.categoryKey);
-                  const name = cc?.label ?? '리듬';
+                  const name = cc?.label ?? '플로우';
                   return (
                     <Pressable
                       key={b.id}
@@ -177,20 +249,38 @@ export function TimeBasedPlanSection({
                     <IconSymbol name={cat.icon} size={18} color={PRIMARY} />
                   </View>
                 ) : null}
-                <View style={{ flex: 1 }}>
-                  <ThemedText style={[styles.blockTitle, { color: c.onSurface }]}>{label}</ThemedText>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <ThemedText style={[styles.blockCatLabel, { color: c.outline }]}>{label}</ThemedText>
+                  <TextInput
+                    value={selectedBlock.title ?? ''}
+                    onChangeText={(t) => onUpdateBlock(selectedBlock.id, { title: t })}
+                    placeholder="플로우 제목 / 할 일"
+                    placeholderTextColor={c.outline}
+                    style={[styles.blockTitleInput, { color: c.onSurface }]}
+                  />
                   <ThemedText style={[styles.blockSub, { color: c.outline }]}>
                     시작·종료 시각을 입력하거나 아래 바를 드래그하세요
                   </ThemedText>
                 </View>
               </View>
-              <Pressable
-                accessibilityLabel={`${label} 블록 삭제`}
-                hitSlop={8}
-                onPress={() => onRemoveBlock(selectedBlock.id)}
-                style={styles.blockRemove}>
-                <IconSymbol name="trash" size={18} color={c.outline} />
-              </Pressable>
+              <View style={styles.timeHeadActions}>
+                {selectedBlock.timeCommitted === false ? (
+                  <Pressable
+                    accessibilityLabel="시간 확정"
+                    hitSlop={8}
+                    onPress={() => onCommitBlock(selectedBlock.id)}
+                    style={[styles.commitBtn, { borderColor: PRIMARY }]}>
+                    <ThemedText style={[styles.commitBtnText, { color: PRIMARY }]}>시간 확정</ThemedText>
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  accessibilityLabel={`${label} 블록 삭제`}
+                  hitSlop={8}
+                  onPress={() => onRemoveBlock(selectedBlock.id)}
+                  style={styles.blockRemove}>
+                  <IconSymbol name="trash" size={18} color={c.outline} />
+                </Pressable>
+              </View>
             </View>
 
             <View style={styles.timeRowTop}>
@@ -272,14 +362,52 @@ const styles = StyleSheet.create({
     alignContent: 'flex-start',
   },
   catCell: {
+    position: 'relative',
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   catLabel: { fontSize: 10, fontWeight: '800' },
+  catCountBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  catCountBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
   catHint: { fontSize: 12, lineHeight: 18, paddingHorizontal: 4, marginBottom: 4 },
+  orderHint: { fontSize: 12, lineHeight: 18, paddingHorizontal: 4, marginBottom: 8 },
+  orderList: { gap: 8 },
+  orderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 10,
+  },
+  orderRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
+  orderSeq: { fontSize: 14, fontWeight: '900', width: 22, textAlign: 'center' },
+  orderIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  orderTitle: { fontSize: 15, fontWeight: '800' },
+  orderTime: { fontSize: 12, fontWeight: '600', marginTop: 2 },
+  orderStatus: { fontSize: 12, fontWeight: '800' },
   timeSectionSub: { fontSize: 11, fontWeight: '600', paddingHorizontal: 4, marginBottom: 8 },
   timeHeaderRow: {
     flexDirection: 'row',
@@ -333,6 +461,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 4,
   },
+  timeHeadActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  commitBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 2,
+  },
+  commitBtnText: { fontSize: 12, fontWeight: '900' },
   timeBlockHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   blockIconWrap: {
     width: 40,
@@ -341,8 +477,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  blockCatLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
+  blockTitleInput: {
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    padding: 0,
+    marginTop: 4,
+    minHeight: 24,
+  },
   blockTitle: { fontSize: 16, fontWeight: '900', letterSpacing: -0.3 },
-  blockSub: { fontSize: 12, fontWeight: '600', marginTop: 4, lineHeight: 18 },
+  blockSub: { fontSize: 12, fontWeight: '600', marginTop: 6, lineHeight: 18 },
   blockRemove: { padding: 8 },
   timeRowTop: {
     flexDirection: 'row',

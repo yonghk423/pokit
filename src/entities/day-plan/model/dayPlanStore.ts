@@ -72,7 +72,7 @@ export type DayPlanStoreState = {
   /**
    * 새 타임라인 블록 추가. order는 기존 최대값+1.
    * endMinutes는 시작보다 커야 함 (같은 날 0~1440 분).
-   * `replaceOverlapping`: true면 겹치는 기존 블록을 제거한 뒤 추가 (새 리듬으로 덮어쓰기).
+   * `replaceOverlapping`: true면 겹치는 기존 블록을 제거한 뒤 추가 (새 플로우로 덮어쓰기).
    */
   addBlock: (input: {
     title: string;

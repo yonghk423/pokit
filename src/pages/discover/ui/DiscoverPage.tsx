@@ -3,12 +3,12 @@ import { StyleSheet } from 'react-native';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
-/** 둘러보기 — 추천 리듬 탐색 (플레이스홀더) */
+/** 둘러보기 — 추천 플로우 탐색 (플레이스홀더) */
 export function DiscoverPage() {
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title">둘러보기</ThemedText>
-      <ThemedText style={styles.sub}>추천 리듬을 찾는 화면입니다. 곧 연결됩니다.</ThemedText>
+      <ThemedText style={styles.sub}>추천 플로우를 찾는 화면입니다. 곧 연결됩니다.</ThemedText>
     </ThemedView>
   );
 }

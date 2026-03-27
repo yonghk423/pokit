@@ -4,7 +4,9 @@ export { loadRoutines, saveRoutines } from './routineStorage';
 export { loadRoutineExecutions, saveRoutineExecutions } from './routineExecutionStorage';
 export { loadDayPlan, saveDayPlan } from './dayPlanStorage';
 export {
+  loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
+  saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
 } from './goalDetailSettingsStorage';
 export type { PersistedDayPlan } from './dayPlanStorage';

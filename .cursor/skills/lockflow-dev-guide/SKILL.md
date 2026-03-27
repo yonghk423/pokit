@@ -14,6 +14,8 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
 
 에이전트는 아래 규칙을 항상 우선 적용한다.
 
+**한글 사용자 대면 문구**는 `.cursor/rules/LockFlow-Expo.mdc` §7.0.1에 따라 **「플로우」**를 쓴다(「루틴」「리듬」표기 금지). 코드·타입·스토어 이름의 `Routine` / `routine` 등은 기존대로 둔다.
+
 ---
 
 ## 1. 위치 결정 가이드
@@ -65,7 +67,7 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
   - `Routine` (+ 추천/태그/카테고리 메타 정보)
 - **기본 경로**
   - 추천/소팅/필터 로직 → `src/features/discover-routines/model`
-  - 루틴 리스트/카드/필터 칩 UI → `src/features/discover-routines/ui`
+  - 플로우(추천 Routine) 리스트/카드/필터 칩 UI → `src/features/discover-routines/ui`
   - 페이지 → `src/pages/discover`
 
 ### 2.2.1 제안 원칙
@@ -76,7 +78,7 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
 
 ---
 
-### 2.3 Routine Setup(루틴 생성/편집) 관련 요청
+### 2.3 Routine Setup(사용자 카피: 플로우 생성/편집) 관련 요청
 
 - **사용 도메인**
   - `Routine`, `RoutineTask`
@@ -87,7 +89,7 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
 
 ### 2.3.1 제안 원칙
 
-- 루틴 편집 중 상태(태스크 리스트, 순서, 임시 입력 값 등)는
+- Routine 편집 중 상태(태스크 리스트, 순서, 임시 입력 값 등)는
   - `Routine` 도메인 스토어 또는
   - `RoutineSetup` feature 전용 스토어
   로 분리해서 설계한다.
@@ -99,7 +101,7 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
 
 ## 3. Zustand 사용 가이드
 
-### 3.1 새 기능 설계 시 상태 플로우
+### 3.1 새 기능 설계 시 상태·스토어 판단 순서
 
 에이전트는 상태가 등장하면 아래 순서로 판단하고 제안한다.
 
@@ -107,7 +109,7 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
    - 예: 특정 모달 열림 여부, 일회성 폼 입력
    - → `useState` 또는 `useReducer` 로 **로컬 상태**부터 시작 제안
 2. **여러 feature/page 에서 공유되거나, 앱 전반에 중요한 도메인 상태인지?**
-   - 예: 현재 세션, 루틴 목록, 오늘의 계획, 사용자 설정 등
+   - 예: 현재 세션, 플로우 목록, 오늘의 계획, 사용자 설정 등
    - → 해당 도메인 또는 feature 의 **zustand 스토어**를 설계/추가하도록 제안
 3. **비즈니스 규칙/검증/파생 값 계산 위치**
    - React 컴포넌트 안이 아니라
@@ -117,9 +119,9 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
 
 - **도메인 스토어 (entities 레벨)**
   - `RoutineExecutionStore`
-    - 현재 루틴 실행, 남은 시간, 진행률, 현재 태스크 id 등
+    - 현재 플로우 실행, 남은 시간, 진행률, 현재 태스크 id 등
   - `RoutineStore`
-    - 사용자의 루틴 목록, 선택된 루틴, 편집 중인 루틴 등
+    - 사용자의 플로우 목록, 선택된 플로우, 편집 중인 플로우 등
 - **feature 스토어**
   - `TodayDashboardStore`
     - Today 화면 전용 UI 상태 (예: 모달 열림 여부, 선택된 카드 등)

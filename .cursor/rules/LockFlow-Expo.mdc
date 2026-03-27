@@ -80,7 +80,7 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 ### 2.4 widgets (`src/widgets`)
 
 - **여러 feature/entity를 조합한 복합 UI 블록.**
-- 한 페이지 안에서 반복 사용되는 “큰 덩어리” (예: 오늘 요약 대시보드 블록, 리듬 리스트+필터 블록).
+- 한 페이지 안에서 반복 사용되는 “큰 덩어리” (예: 오늘 요약 대시보드 블록, 플로우 리스트+필터 블록).
 - 단일 feature보다 크고, 페이지 전체보다 작은 단위.
 - 슬라이스별로 `ui/`, `model/` 등 FSD 세그먼트 구조를 가질 수 있다.
 
@@ -123,9 +123,9 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 ## 4. LockFlow 도메인 (entities)
 
-- **Routine**: 반복 가능한 루틴 단위. id, title, description, category, tags, color, icon, defaultTasks[] 등.
-- **RoutineTask**: 루틴 내 개별 태스크. id, routineId, title, type, duration, order, isLocked 등.
-- **RoutineExecution**: 실행 중인 루틴 인스턴스(루틴 한 번 실행). id, routineId, startTime, endTime, progress, currentTaskId 등.
+- **Routine**: 코드·저장소·타입명으로 쓰는 반복 실행 단위 엔티티. id, title, description, category, tags, color, icon, defaultTasks[] 등.
+- **RoutineTask**: Routine 내 개별 태스크. id, routineId, title, type, duration, order, isLocked 등.
+- **RoutineExecution**: 실행 중인 Routine 인스턴스(한 번의 실행 세션). id, routineId, startTime, endTime, progress, currentTaskId 등.
 - **Stats**: 일/주 단위 완료율, 태스크 수행 기록 등 (필요 시).
 
 위 네 가지는 `src/entities` 아래에 정의하는 것을 기본으로 한다.
@@ -170,25 +170,25 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 - **앱 이름 "LockFlow"를 제외한** 모든 사용자 대면 UI 텍스트는 **한글**로 표시한다.
 - 화면 문구, 버튼 라벨, 빈 상태 메시지, 탭 제목, 설정 항목, 에러/토스트 문구 등 모두 한글.
-- 예: "Start Building" → "시작하기", "Create Your First Routine" → "첫 리듬 만들기", "Welcome to LockFlow!" → "LockFlow에 오신 것을 환영해요!" (앱명만 유지).
-- 사용자 대면 카피에서는 **「리듬」**을 기본 용어로 쓴다(다른 앱의 「루틴」과 구분). 코드 도메인 타입명 `Routine` 등은 유지해도 됨.
+- 예: "Start Building" → "시작하기", "Create Your First Routine" → "첫 플로우 만들기", "Welcome to LockFlow!" → "LockFlow에 오신 것을 환영해요!" (앱명만 유지).
+- 사용자 대면 카피에서는 **「플로우」**를 기본 용어로 쓴다. 한글 UI에서 **「루틴」「리듬」** 표기는 쓰지 않는다. 코드·API·파일명의 `Routine` / `routine` 등 **영문 도메인 식별자는 기존과 같이 유지**해도 된다.
 - 코드/주석/변수명은 기존 프로젝트 컨벤션을 따르고, **화면에 보이는 문자열만 한글**을 원칙으로 한다.
 
-## 7.1 초기 화면(Empty State) 규칙 — 첫 리듬 온보딩
+## 7.1 초기 화면(Empty State) 규칙 — 첫 플로우 온보딩
 
 - 앱 최초 진입 또는 `Routine`이 0개일 때, Today 화면은 “빈 상태 온보딩 UI”를 노출한다.
   - 목표: 사용자의 첫 행동을 **“Create Your First Routine / Start Building”**으로 수렴시키기
 - 빈 상태 온보딩 UI는 아래 3 블록을 기본으로 구성한다.
   - **Welcome 섹션**: 앱 컨셉 1줄 + 다음 행동 힌트
-  - **메인 CTA 카드**: “첫 리듬 만들기” 버튼(Primary)
+  - **메인 CTA 카드**: “첫 플로우 만들기” 버튼(Primary)
   - **보조 플레이스홀더**: Insights(데이터 없음) / Timeline(빈 슬롯) 같은 기대감 카드
 - 네비게이션(라우팅) 규칙:
   - `features`의 UI는 `onStartBuilding()` 같은 콜백만 받고, **expo-router 이동 자체는 `pages` 또는 `app/` 라우트에서 처리**한다.
   - 즉, `features`는 라우팅을 직접 import/호출하지 않는다.
 
-## 7.2 iOS 잠금화면 실시간 리듬 규칙 (핵심 경험)
+## 7.2 iOS 잠금화면 실시간 플로우 규칙 (핵심 경험)
 
-- LockFlow의 핵심 경험은 **iOS 잠금화면에서 현재 리듬을 즉시 확인·제어**하는 것이다.
+- LockFlow의 핵심 경험은 **iOS 잠금화면에서 현재 플로우를 즉시 확인·제어**하는 것이다.
 - **구현 목표(1차):** 잠금화면 경험은 **ActivityKit `Live Activity`** 로 구성한다. (동적 섬·배너 등 시스템이 노출하는 표면은 Live Activity와 함께 다룬다.)
 - **구분:** **WidgetKit 잠금화면 위젯**(주기적 갱신 위젯)과 별개이며, LockFlow의 핵심 납품물은 **실시간 세션을 잠금화면에 올리는 Live Activity** 이다.
 - Android 잠금화면 구현은 현재 범위에서 제외하며, iOS 우선으로 설계·구현한다.
@@ -196,7 +196,7 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 ### 7.2.1 제품 목표 (What)
 
 - 사용자는 **Live Activity가 표시되는 잠금화면**에서 아래를 즉시 확인할 수 있어야 한다.
-  - 현재 리듬 제목/보조 정보
+  - 현재 플로우 제목/보조 정보
   - 남은 시간(실시간)
   - 진행도(프로그레스)
   - 핵심 액션(일시정지/완료)
@@ -227,9 +227,9 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 ### 7.2.4 구현 우선순위 (MVP)
 
-- 1단계: 현재 리듬 + 남은 시간 + 진행도 표시
+- 1단계: 현재 플로우 + 남은 시간 + 진행도 표시
 - 2단계: Live Activity(잠금화면) 액션(일시정지/완료) 연동
-- 3단계: 완료/건너뛰기 시 다음 리듬 자동 반영
+- 3단계: 완료/건너뛰기 시 다음 플로우 자동 반영
 - 4단계: 세부 코칭 텍스트/점수/고급 시각효과
 
 ### 7.2.5 코드 작성 원칙
@@ -286,7 +286,7 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 **RN 미리보기 위치 (현재)**
 
-- 독서 카테고리: `src/pages/goal-detail-settings/ui/category/study/ui/StudyPreview.tsx`
+- 독서 카테고리: `src/pages/goal-detail-settings/ui/category/reading/ui/ReadingPreview.tsx`
 - 페이지에서 조립: `src/pages/goal-detail-settings/ui/GoalDetailSettingsPage.tsx`의 `Preview` 슬롯
 - 다른 `categoryKey`에 Live Activity 전용 레이아웃이 생기면, 동일 패턴으로 `ui/category/<도메인>/ui/*Preview.tsx`를 두고 §7.2.6과 동기화한다.
 
@@ -299,7 +299,7 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 **에이전트/리뷰 체크리스트**
 
-- [ ] `LockFlowLiveActivityWidget.swift` 배너 UI를 수정했는가? → `StudyPreview.tsx`(또는 해당 카테고리 Preview) 동일 의도로 갱신했는가?
+- [ ] `LockFlowLiveActivityWidget.swift` 배너 UI를 수정했는가? → `ReadingPreview.tsx`(또는 해당 카테고리 Preview) 동일 의도로 갱신했는가?
 - [ ] 새 지표·버튼·카테고리 분기를 Swift에 추가했는가? → 미리보기에 payload/`dataConfig` 반영 가능한가?
 - [ ] 한글 카피·라벨은 Swift와 RN 미리보기가 동일한가?
 
@@ -318,4 +318,4 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 ## 9. 기타
 
 - 로그인/회원·**Profile(프로필)** 은 현재 계획에 없음. 앱 설정은 **`src/pages/settings`**(Settings 탭)으로 둔다.
-- LockFlow 는 “일상의 **리듬**을 존중하는 잠금 화면 스타일 집중 앱” 방향을 유지한다.
+- LockFlow 는 “일상의 **플로우**를 존중하는 잠금 화면 스타일 집중 앱” 방향을 유지한다.

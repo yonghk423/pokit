@@ -1,11 +1,13 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
   ScrollView,
   StyleSheet,
   Switch,
+  // Metro·React Compiler(shallow 번들)에서 하위 UI가 이 모듈 스코프의 TextInput을 참조할 수 있어 import 유지
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 위 호환용
   TextInput,
   useWindowDimensions,
   View,
@@ -22,11 +24,15 @@ import { ThemedView } from '@shared/ui/themed-view';
 
 import {
   CATEGORIES,
+  defaultEditorBlockTimesAfterPreviousEnd,
   defaultEditorBlockTimesFromNow,
+  defaultPriorityWindowFromNow,
+  getOrderedPriorityLines,
   makeBlockId,
+  MIN_BLOCK_DURATION_MINUTES,
   PRIMARY,
   rangesOverlapMinutes,
-  sortBlocksByCategoryOrder,
+  sortBlocksByAddedSeq,
   type PlanMode,
   type PriorityTask,
   type TimeBlock,
@@ -43,25 +49,27 @@ export function DayPlanPage() {
   const { width: winW } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
-  const [title, setTitle] = useState('');
   const [planMode, setPlanMode] = useState<PlanMode>('time');
 
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
-  const [priorityStart, setPriorityStart] = useState('09:00');
-  const [priorityEnd, setPriorityEnd] = useState('12:00');
+  const [priorityStart, setPriorityStart] = useState(
+    () => defaultPriorityWindowFromNow().startTime,
+  );
+  const [priorityEnd, setPriorityEnd] = useState(() => defaultPriorityWindowFromNow().endTime);
+  /** 카테고리를 누른 순서(플로 순서). 첫 항목이 일정 블록의 대표 카테고리로 쓰입니다. */
+  const [priorityCategoryOrder, setPriorityCategoryOrder] = useState<string[]>(() => ['work']);
   const [priorityCategoryKey, setPriorityCategoryKey] = useState('work');
   const [priorityTasks, setPriorityTasks] = useState<PriorityTask[]>(() => [
-    { id: makeBlockId(), title: '중요 이메일 회신 및 일정 정리' },
-    { id: makeBlockId(), title: '신규 프로젝트 제안서 초안 작성' },
+    { id: makeBlockId(), title: '중요 이메일 회신 및 일정 정리', categoryKey: 'work' },
+    { id: makeBlockId(), title: '신규 프로젝트 제안서 초안 작성', categoryKey: 'work' },
   ]);
   const [priorityTaskDraft, setPriorityTaskDraft] = useState('');
 
   const [startNotifOn, setStartNotifOn] = useState(true);
   const [endNotifOn, setEndNotifOn] = useState(false);
   const [notifTiming, setNotifTiming] = useState<'5min' | 'atStart'>('5min');
-  const [notes, setNotes] = useState('');
 
   const { addBlock } = useDayPlanStore(
     useShallow((s) => ({
@@ -73,13 +81,22 @@ export function DayPlanPage() {
     useDayPlanStore.getState().hydrate();
   }, []);
 
+  useEffect(() => {
+    if (planMode !== 'priority') return;
+    const w = defaultPriorityWindowFromNow();
+    setPriorityStart(w.startTime);
+    setPriorityEnd(w.endTime);
+  }, [planMode]);
+
   const c = useMemo(() => palette(isDark), [isDark]);
 
-  const sortedBlocks = useMemo(() => sortBlocksByCategoryOrder(timeBlocks), [timeBlocks]);
+  const blocksInAddOrder = useMemo(() => sortBlocksByAddedSeq(timeBlocks), [timeBlocks]);
 
   const gridGap = 12;
   const padH = 24;
-  const cellW = Math.floor((winW - padH * 2 - gridGap * 3) / 4);
+  const safeWinW = Number.isFinite(winW) && winW > 0 ? winW : 390;
+  const rawCellW = Math.floor((safeWinW - padH * 2 - gridGap * 3) / 4);
+  const cellW = Number.isFinite(rawCellW) ? Math.max(48, rawCellW) : 72;
 
   const bottomBarReserve = useMemo(() => {
     const extra =
@@ -88,32 +105,117 @@ export function DayPlanPage() {
   }, [insets.bottom, timeBlocks.length, planMode, priorityTasks.length]);
 
   const handleCategoryPress = (categoryKey: string) => {
-    const existing = timeBlocks.find((b) => b.categoryKey === categoryKey);
-    if (existing) {
-      if (selectedBlockId === existing.id) {
-        const next = timeBlocks.filter((b) => b.id !== existing.id);
-        const sorted = sortBlocksByCategoryOrder(next);
-        setTimeBlocks(next);
+    const selected = selectedBlockId != null ? timeBlocks.find((b) => b.id === selectedBlockId) : null;
+    // 같은 카테고리 재탭:
+    // - 미확정 블록이면 취소(제거)
+    // - 확정 블록이면 "중복 추가" 의도로 간주해 아래 추가 로직으로 진행
+    if (selected && selected.categoryKey === categoryKey && selected.timeCommitted === false) {
+      setTimeBlocks((prev) => {
+        const next = prev.filter((b) => b.id !== selected.id);
+        const sorted = sortBlocksByAddedSeq(next);
         setSelectedBlockId(sorted[0]?.id ?? null);
-        return;
-      }
-      setSelectedBlockId(existing.id);
+        return next;
+      });
       return;
     }
+
+    const drafts = timeBlocks.filter((b) => b.timeCommitted === false);
+    const sameCatDraft = drafts.find((b) => b.categoryKey === categoryKey);
+    if (sameCatDraft) {
+      setSelectedBlockId(sameCatDraft.id);
+      return;
+    }
+    if (drafts.length > 0) {
+      const d = drafts[0];
+      Alert.alert(
+        '시간 먼저 확정',
+        '편집 중인 블록의 「시간 확정」을 눌러 일정에 반영한 뒤, 같은 카테고리를 추가하거나 다른 카테고리를 고를 수 있어요.',
+        [{ text: '확인', onPress: () => setSelectedBlockId(d.id) }],
+      );
+      return;
+    }
+
     const id = makeBlockId();
-    const { startTime, endTime } = defaultEditorBlockTimesFromNow();
-    setTimeBlocks((prev) => [...prev, { id, categoryKey, startTime, endTime }]);
+    const nextSeq = Math.max(0, ...timeBlocks.map((b) => b.addedSeq ?? 0)) + 1;
+    let startTime: string;
+    let endTime: string;
+    if (timeBlocks.length === 0) {
+      const t = defaultEditorBlockTimesFromNow();
+      startTime = t.startTime;
+      endTime = t.endTime;
+    } else {
+      const ordered = sortBlocksByAddedSeq(timeBlocks);
+      const prev = ordered[ordered.length - 1];
+      const chained = defaultEditorBlockTimesAfterPreviousEnd(prev.endTime);
+      if (chained) {
+        startTime = chained.startTime;
+        endTime = chained.endTime;
+      } else {
+        const t = defaultEditorBlockTimesFromNow();
+        startTime = t.startTime;
+        endTime = t.endTime;
+      }
+    }
+    setTimeBlocks((prev) => [
+      ...prev,
+      {
+        id,
+        categoryKey,
+        startTime,
+        endTime,
+        title: '',
+        timeCommitted: false,
+        addedSeq: nextSeq,
+      },
+    ]);
     setSelectedBlockId(id);
   };
 
-  const updateBlock = (id: string, patch: Partial<Pick<TimeBlock, 'startTime' | 'endTime'>>) => {
+  const commitBlockTime = (id: string) => {
+    const block = timeBlocks.find((b) => b.id === id);
+    if (!block || block.timeCommitted !== false) return;
+
+    const ps = parseHHmmToMinutes(block.startTime);
+    const pe = parseHHmmToMinutes(block.endTime);
+    if (ps === null || pe === null || pe <= ps) {
+      Alert.alert('시간 구간', '시작·종료 시각을 올바르게 입력한 뒤 확정해 주세요.');
+      return;
+    }
+    if (pe - ps < MIN_BLOCK_DURATION_MINUTES) {
+      Alert.alert(
+        '최소 시간',
+        `블록은 최소 ${MIN_BLOCK_DURATION_MINUTES}분 이상이어야 확정할 수 있어요.`,
+      );
+      return;
+    }
+
+    for (const other of timeBlocks) {
+      if (other.id === block.id) continue;
+      const os = parseHHmmToMinutes(other.startTime);
+      const oe = parseHHmmToMinutes(other.endTime);
+      if (os === null || oe === null || oe <= os) continue;
+      if (rangesOverlapMinutes({ s: ps, e: pe }, { s: os, e: oe })) {
+        Alert.alert('시간 겹침', '다른 블록과 겹치지 않게 조정한 뒤 확정해 주세요.');
+        return;
+      }
+    }
+
+    setTimeBlocks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, timeCommitted: true } : b)),
+    );
+  };
+
+  const updateBlock = (
+    id: string,
+    patch: Partial<Pick<TimeBlock, 'startTime' | 'endTime' | 'title'>>,
+  ) => {
     setTimeBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
   };
 
   const removeBlock = (id: string) => {
     setTimeBlocks((prev) => {
       const next = prev.filter((b) => b.id !== id);
-      const sorted = sortBlocksByCategoryOrder(next);
+      const sorted = sortBlocksByAddedSeq(next);
       setSelectedBlockId((cur) => {
         if (cur !== id) return cur;
         return sorted[0]?.id ?? null;
@@ -122,10 +224,18 @@ export function DayPlanPage() {
     });
   };
 
+  const handlePriorityCategoryPress = useCallback((key: string) => {
+    setPriorityCategoryKey(key);
+    setPriorityCategoryOrder((prev) => (prev.includes(key) ? prev : [...prev, key]));
+  }, []);
+
   const addPriorityTaskRow = () => {
     const t = priorityTaskDraft.trim();
     if (!t) return;
-    setPriorityTasks((prev) => [...prev, { id: makeBlockId(), title: t }]);
+    setPriorityTasks((prev) => [
+      ...prev,
+      { id: makeBlockId(), title: t, categoryKey: priorityCategoryKey },
+    ]);
     setPriorityTaskDraft('');
   };
 
@@ -140,14 +250,10 @@ export function DayPlanPage() {
     });
   };
 
+  /** 목표 상세 설정에서 사용자가 입력한 플로우 이름으로 덮어쓰기 전 임시 제목 */
+  const TEMP_FLOW_BLOCK_TITLE = '플로우';
+
   const onSave = () => {
-    const trimmedTitle = title.trim();
-
-    if (!trimmedTitle) {
-      Alert.alert('입력 필요', '리듬 이름을 입력해 주세요.');
-      return;
-    }
-
     if (planMode === 'priority') {
       const ps = parseHHmmToMinutes(priorityStart);
       const pe = parseHHmmToMinutes(priorityEnd);
@@ -159,12 +265,13 @@ export function DayPlanPage() {
         Alert.alert('시간 구간', '종료 시각은 시작 시각보다 늦어야 합니다.');
         return;
       }
-      const catLabel = CATEGORIES.find((x) => x.key === priorityCategoryKey)?.label ?? '리듬';
-      const lines = priorityTasks.map((p) => p.title.trim()).filter(Boolean);
+      const headKey = priorityCategoryOrder[0] ?? priorityCategoryKey;
+      const catLabel = CATEGORIES.find((x) => x.key === headKey)?.label ?? '플로우';
+      const lines = getOrderedPriorityLines(priorityCategoryOrder, priorityTasks);
       const blockTitle =
         lines.length > 0
-          ? `${trimmedTitle}\n${lines.map((line, i) => `${i + 1}. ${line}`).join('\n')}`
-          : trimmedTitle;
+          ? lines.map((line, i) => `${i + 1}. ${line}`).join('\n')
+          : TEMP_FLOW_BLOCK_TITLE;
 
       const result = addBlock({
         title: blockTitle,
@@ -180,7 +287,7 @@ export function DayPlanPage() {
           return;
         }
         if (result.reason === 'in_the_past') {
-          Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 리듬만 저장할 수 있어요.');
+          Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 플로우만 저장할 수 있어요.');
           return;
         }
         Alert.alert('저장 실패', '입력값을 확인해 주세요.');
@@ -190,9 +297,9 @@ export function DayPlanPage() {
       router.push({
         pathname: '/goal-detail-settings',
         params: {
-          rhythmTitle: trimmedTitle,
-          categoryKey: priorityCategoryKey,
+          categoryKey: headKey,
           startBlockId: result.blockId,
+          blockIds: JSON.stringify([result.blockId]),
         },
       });
       return;
@@ -203,10 +310,18 @@ export function DayPlanPage() {
       return;
     }
 
-    const resolved = sortedBlocks.map((block) => {
+    if (timeBlocks.some((b) => b.timeCommitted !== true)) {
+      Alert.alert(
+        '미확정 블록',
+        '모든 블록에 대해 「시간 확정」을 눌러 일정에 반영한 뒤 저장해 주세요.',
+      );
+      return;
+    }
+
+    const resolved = blocksInAddOrder.map((block) => {
       const parsedStart = parseHHmmToMinutes(block.startTime);
       const parsedEnd = parseHHmmToMinutes(block.endTime);
-      const catLabel = CATEGORIES.find((x) => x.key === block.categoryKey)?.label ?? '리듬';
+      const catLabel = CATEGORIES.find((x) => x.key === block.categoryKey)?.label ?? '플로우';
       return { block, parsedStart, parsedEnd, catLabel };
     });
 
@@ -234,10 +349,20 @@ export function DayPlanPage() {
       }
     }
 
+    for (const r of resolved) {
+      if (!(r.block.title ?? '').trim()) {
+        Alert.alert(
+          '제목 필요',
+          `「${r.catLabel}」블록에 플로우 제목을 입력해 주세요. 시간 설정 카드에서 제목을 적을 수 있어요.`,
+        );
+        return;
+      }
+    }
+
     const addedBlockIds: string[] = [];
     for (const r of resolved) {
       const result = addBlock({
-        title: trimmedTitle,
+        title: (r.block.title ?? '').trim(),
         startMinutes: r.parsedStart!,
         endMinutes: r.parsedEnd!,
         category: r.catLabel,
@@ -262,24 +387,16 @@ export function DayPlanPage() {
       addedBlockIds.push(result.blockId);
     }
 
-    const selectedCategoryKey =
-      selectedBlockId != null
-        ? timeBlocks.find((b) => b.id === selectedBlockId)?.categoryKey
-        : null;
-    const selectedIdx =
-      selectedCategoryKey != null
-        ? resolved.findIndex((r) => r.block.categoryKey === selectedCategoryKey)
-        : -1;
-    const startBlockId =
-      selectedIdx >= 0 && selectedIdx < addedBlockIds.length
-        ? addedBlockIds[selectedIdx]
-        : addedBlockIds[0];
+    // 시간 모드는 "추가 순서"가 기준이므로 항상 가장 먼저 추가된 블록부터 시작한다.
+    const firstResolved = resolved[0];
+    const startBlockId = addedBlockIds[0];
+    const startBlockCategoryKey = firstResolved?.block.categoryKey ?? 'other';
     router.push({
       pathname: '/goal-detail-settings',
       params: {
-        rhythmTitle: trimmedTitle,
-        categoryKey: selectedCategoryKey ?? 'other',
+        categoryKey: startBlockCategoryKey ?? 'other',
         startBlockId,
+        blockIds: JSON.stringify(addedBlockIds),
       },
     });
   };
@@ -289,7 +406,7 @@ export function DayPlanPage() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={[styles.header, { backgroundColor: c.headerBg, borderBottomColor: c.border }]}>
           <View style={styles.headerEdge} />
-          <ThemedText style={[styles.headerTitle, { color: c.onSurface }]}>새 리듬 설정</ThemedText>
+          <ThemedText style={[styles.headerTitle, { color: c.onSurface }]}>새 플로우 설정</ThemedText>
           <View style={styles.headerEdge}>
             <Pressable onPress={onSave} hitSlop={8}>
               <ThemedText style={styles.saveText}>저장</ThemedText>
@@ -302,23 +419,6 @@ export function DayPlanPage() {
           contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomBarReserve }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
-          <View style={styles.block}>
-            <ThemedText style={[styles.labelUpper, { color: c.onVariant }]}>리듬 이름</ThemedText>
-            <View style={[styles.namePill, { backgroundColor: c.containerLowest, shadowColor: c.shadow }]}>
-              <TextInput
-                value={title}
-                onChangeText={setTitle}
-                placeholder="무엇에 집중하시겠어요?"
-                placeholderTextColor={c.outline}
-                style={[styles.nameInput, { color: c.onSurface }]}
-              />
-              <View style={styles.nameHintRow}>
-                <IconSymbol name="pencil" size={14} color={PRIMARY} />
-                <ThemedText style={[styles.nameHint, { color: c.onVariant }]}>활동 명칭</ThemedText>
-              </View>
-            </View>
-          </View>
-
           <PlanModeSwitch
             planMode={planMode}
             onSelectTime={() => setPlanMode('time')}
@@ -337,6 +437,7 @@ export function DayPlanPage() {
               onSelectBlock={setSelectedBlockId}
               onUpdateBlock={updateBlock}
               onRemoveBlock={removeBlock}
+              onCommitBlock={commitBlockTime}
             />
           ) : (
             <PriorityBasedPlanSection
@@ -345,8 +446,9 @@ export function DayPlanPage() {
               priorityEnd={priorityEnd}
               onChangePriorityStart={setPriorityStart}
               onChangePriorityEnd={setPriorityEnd}
+              priorityCategoryOrder={priorityCategoryOrder}
               priorityCategoryKey={priorityCategoryKey}
-              onSelectCategory={setPriorityCategoryKey}
+              onSelectCategory={handlePriorityCategoryPress}
               priorityTasks={priorityTasks}
               priorityTaskDraft={priorityTaskDraft}
               onChangePriorityTaskDraft={setPriorityTaskDraft}
@@ -366,7 +468,7 @@ export function DayPlanPage() {
                   <View style={styles.notifLeft}>
                     <IconSymbol name="clock.fill" size={20} color={PRIMARY} />
                     <ThemedText style={[styles.notifTitle, { color: c.onSurface }]}>
-                      리듬 시작 알림
+                      플로우 시작 알림
                     </ThemedText>
                   </View>
                   <Switch
@@ -412,7 +514,7 @@ export function DayPlanPage() {
                 <View style={styles.notifLeft}>
                   <IconSymbol name="timer" size={20} color={PRIMARY} />
                   <ThemedText style={[styles.notifTitle, { color: c.onSurface }]}>
-                    리듬 종료 알림
+                    플로우 종료 알림
                   </ThemedText>
                 </View>
                 <Switch
@@ -424,32 +526,13 @@ export function DayPlanPage() {
               </View>
             </View>
           </View>
-
-          <View style={styles.block}>
-            <ThemedText style={[styles.labelUpper, { color: c.onVariant }]}>메모 및 목표</ThemedText>
-            <View
-              style={[
-                styles.notesBox,
-                { backgroundColor: c.containerLowest, borderColor: 'transparent', shadowColor: c.shadow },
-              ]}>
-              <TextInput
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="이번 세션의 핵심 집중 영역을 정의하세요..."
-                placeholderTextColor={c.outline}
-                multiline
-                textAlignVertical="top"
-                style={[styles.notesInput, { color: c.onSurface }]}
-              />
-            </View>
-          </View>
         </ScrollView>
 
         <View style={[styles.bottomDock, { backgroundColor: c.bg }]}>
           <View style={[styles.bottomFade, { backgroundColor: c.bg }]} />
           <SafeAreaView edges={['bottom']} style={styles.bottomInner}>
             <Pressable style={styles.primaryCta} onPress={onSave}>
-              <ThemedText style={styles.primaryCtaText}>리듬 설정 완료</ThemedText>
+              <ThemedText style={styles.primaryCtaText}>플로우 설정 완료</ThemedText>
             </Pressable>
             <ThemedText style={[styles.bottomTagline, { color: c.outline }]}>
               모멘텀은 지금부터입니다
@@ -501,22 +584,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     paddingHorizontal: 4,
   },
-  namePill: {
-    borderRadius: 999,
-    paddingHorizontal: 22,
-    paddingVertical: 20,
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 2,
-  },
-  nameInput: {
-    fontSize: 22,
-    fontWeight: '800',
-    padding: 0,
-  },
-  nameHintRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
-  nameHint: { fontSize: 12, fontWeight: '600' },
   notifCol: { gap: 12 },
   notifCard: {
     borderRadius: 28,
@@ -555,22 +622,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  notesBox: {
-    borderRadius: 28,
-    padding: 22,
-    borderWidth: 2,
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 2,
-  },
-  notesInput: {
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 22,
-    minHeight: 100,
-    padding: 0,
   },
   bottomDock: {
     position: 'absolute',
