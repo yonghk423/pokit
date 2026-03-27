@@ -1,4 +1,4 @@
-export type { DayPlanBlock } from './model/types';
+export type { DayPlanBlock, DayPlanQuickMemo } from './model/types';
 export type { AddBlockResult } from './model';
 export { useDayPlanStore, selectFirstPendingBlock } from './model';
 export { DEFAULT_DAY_PLAN_BLOCKS } from './lib/defaultBlocks';

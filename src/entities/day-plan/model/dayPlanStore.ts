@@ -7,7 +7,7 @@ import {
   getLocalMinutesOfDayNow,
   sortDayPlanBlocks,
 } from '@entities/day-plan/lib/dayPlanTime';
-import type { DayPlanBlock } from '@entities/day-plan/model/types';
+import type { DayPlanBlock, DayPlanQuickMemo } from '@entities/day-plan/model/types';
 import { loadDayPlan, saveDayPlan } from '@shared/lib/storage/dayPlanStorage';
 
 function getLocalDateKey(): string {
@@ -30,11 +30,13 @@ function normalizePersisted(persisted: {
   blocks: DayPlanBlock[];
   completedBlockIds: string[];
   skippedBlockIds: string[];
+  quickMemos?: DayPlanQuickMemo[];
 }): {
   dateKey: string;
   blocks: DayPlanBlock[];
   completedBlockIds: string[];
   skippedBlockIds: string[];
+  quickMemos: DayPlanQuickMemo[];
 } {
   const today = getLocalDateKey();
   if (persisted.dateKey !== today) {
@@ -43,9 +45,17 @@ function normalizePersisted(persisted: {
       blocks: persisted.blocks.length > 0 ? persisted.blocks : [],
       completedBlockIds: [],
       skippedBlockIds: [],
+      quickMemos: [],
     };
   }
-  return persisted;
+  const qm = persisted.quickMemos;
+  return {
+    dateKey: persisted.dateKey,
+    blocks: persisted.blocks,
+    completedBlockIds: persisted.completedBlockIds,
+    skippedBlockIds: persisted.skippedBlockIds,
+    quickMemos: Array.isArray(qm) ? qm : [],
+  };
 }
 
 export type AddBlockResult =
@@ -59,6 +69,7 @@ export type DayPlanStoreState = {
   blocks: DayPlanBlock[];
   completedBlockIds: string[];
   skippedBlockIds: string[];
+  quickMemos: DayPlanQuickMemo[];
   isHydrated: boolean;
 
   hydrate: () => void;
@@ -68,6 +79,11 @@ export type DayPlanStoreState = {
   skipBlock: (blockId: string) => void;
 
   setBlocks: (blocks: DayPlanBlock[]) => void;
+
+  addQuickMemo: (text: string) => void;
+  updateQuickMemoText: (id: string, text: string) => void;
+  removeQuickMemo: (id: string) => void;
+  toggleQuickMemoDone: (id: string) => void;
 
   /**
    * 새 타임라인 블록 추가. order는 기존 최대값+1.
@@ -94,6 +110,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
       blocks: s.blocks,
       completedBlockIds: s.completedBlockIds,
       skippedBlockIds: s.skippedBlockIds,
+      quickMemos: s.quickMemos,
     });
   };
 
@@ -102,6 +119,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
     blocks: [],
     completedBlockIds: [],
     skippedBlockIds: [],
+    quickMemos: [],
     isHydrated: false,
 
     hydrate: () => {
@@ -112,18 +130,22 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
       let blocks: DayPlanBlock[] = [];
       let completedBlockIds: string[] = [];
       let skippedBlockIds: string[] = [];
+      let quickMemos: DayPlanQuickMemo[] = [];
 
-      if (raw && Array.isArray(raw.blocks) && raw.blocks.length > 0) {
+      if (raw) {
+        const blocksRaw = Array.isArray(raw.blocks) ? raw.blocks : [];
         const n = normalizePersisted({
           dateKey: raw.dateKey ?? dateKey,
-          blocks: raw.blocks,
+          blocks: blocksRaw,
           completedBlockIds: Array.isArray(raw.completedBlockIds) ? raw.completedBlockIds : [],
           skippedBlockIds: Array.isArray(raw.skippedBlockIds) ? raw.skippedBlockIds : [],
+          quickMemos: raw.quickMemos,
         });
         dateKey = n.dateKey;
         blocks = sortDayPlanBlocks(n.blocks);
         completedBlockIds = n.completedBlockIds;
         skippedBlockIds = n.skippedBlockIds;
+        quickMemos = n.quickMemos;
       }
 
       set({
@@ -131,6 +153,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         blocks,
         completedBlockIds,
         skippedBlockIds,
+        quickMemos,
         isHydrated: true,
       });
       persist();
@@ -169,6 +192,40 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
 
     setBlocks: (blocks) => {
       set({ blocks: sortDayPlanBlocks(blocks) });
+      persist();
+    },
+
+    addQuickMemo: (text) => {
+      const t = text.trim();
+      if (!t) return;
+      const memo: DayPlanQuickMemo = {
+        id: createBlockId(),
+        text: t,
+        createdAt: Date.now(),
+        isDone: false,
+      };
+      set({ quickMemos: [...get().quickMemos, memo] });
+      persist();
+    },
+
+    updateQuickMemoText: (id, text) => {
+      set({
+        quickMemos: get().quickMemos.map((m) => (m.id === id ? { ...m, text } : m)),
+      });
+      persist();
+    },
+
+    removeQuickMemo: (id) => {
+      set({ quickMemos: get().quickMemos.filter((m) => m.id !== id) });
+      persist();
+    },
+
+    toggleQuickMemoDone: (id) => {
+      set({
+        quickMemos: get().quickMemos.map((m) =>
+          m.id === id ? { ...m, isDone: !m.isDone } : m,
+        ),
+      });
       persist();
     },
 

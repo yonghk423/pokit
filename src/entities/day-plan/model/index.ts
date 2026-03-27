@@ -1,3 +1,3 @@
 export { useDayPlanStore, selectFirstPendingBlock } from './dayPlanStore';
 export type { AddBlockResult, DayPlanStoreState } from './dayPlanStore';
-export type { DayPlanBlock } from './types';
+export type { DayPlanBlock, DayPlanQuickMemo } from './types';

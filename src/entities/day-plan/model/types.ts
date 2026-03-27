@@ -1,3 +1,11 @@
+/** 새 플로우 설정 — 퀵메모 모드에서 캡처만 하다가 시간/우선순위로 옮길 수 있는 항목 */
+export type DayPlanQuickMemo = {
+  id: string;
+  text: string;
+  createdAt: number;
+  isDone: boolean;
+};
+
 /**
  * 오늘 하루 일정(타임라인)의 최소 단위.
  * Day Plan 화면과 Activity Session이 같은 배열을 공유합니다.

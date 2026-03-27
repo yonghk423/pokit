@@ -70,7 +70,7 @@ export function getOrderedPriorityLines(categoryOrder: string[], tasks: Priority
   return out;
 }
 
-export type PlanMode = 'time' | 'priority';
+export type PlanMode = 'time' | 'priority' | 'quickMemo';
 
 /** 블록 최소 길이(분). 드래그·검증에 공통 사용 */
 export const MIN_BLOCK_DURATION_MINUTES = 15;

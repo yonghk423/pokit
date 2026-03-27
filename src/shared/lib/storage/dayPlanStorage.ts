@@ -6,6 +6,13 @@ export type PersistedDayPlan<TBlock = unknown> = {
   blocks: TBlock[];
   completedBlockIds: string[];
   skippedBlockIds: string[];
+  /** 당일 퀵메모(없으면 빈 배열). 이전 저장본과 호환 */
+  quickMemos?: Array<{
+    id: string;
+    text: string;
+    createdAt: number;
+    isDone: boolean;
+  }>;
 };
 
 export function loadDayPlan<TBlock = unknown>(): PersistedDayPlan<TBlock> | null {

@@ -40,6 +40,7 @@ import {
 import { palette } from '../lib/dayPlanPalette';
 import { PlanModeSwitch } from './PlanModeSwitch';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
+import { QuickMemoPlanSection } from './QuickMemoPlanSection';
 import { TimeBasedPlanSection } from './TimeBasedPlanSection';
 
 export function DayPlanPage() {
@@ -66,16 +67,22 @@ export function DayPlanPage() {
     { id: makeBlockId(), title: '신규 프로젝트 제안서 초안 작성', categoryKey: 'work' },
   ]);
   const [priorityTaskDraft, setPriorityTaskDraft] = useState('');
+  const [quickMemoDraft, setQuickMemoDraft] = useState('');
 
   const [startNotifOn, setStartNotifOn] = useState(true);
   const [endNotifOn, setEndNotifOn] = useState(false);
   const [notifTiming, setNotifTiming] = useState<'5min' | 'atStart'>('5min');
 
-  const { addBlock } = useDayPlanStore(
-    useShallow((s) => ({
-      addBlock: s.addBlock,
-    })),
-  );
+  const { addBlock, quickMemos, updateQuickMemoText, removeQuickMemo, toggleQuickMemoDone } =
+    useDayPlanStore(
+      useShallow((s) => ({
+        addBlock: s.addBlock,
+        quickMemos: s.quickMemos,
+        updateQuickMemoText: s.updateQuickMemoText,
+        removeQuickMemo: s.removeQuickMemo,
+        toggleQuickMemoDone: s.toggleQuickMemoDone,
+      })),
+    );
 
   useEffect(() => {
     useDayPlanStore.getState().hydrate();
@@ -100,9 +107,13 @@ export function DayPlanPage() {
 
   const bottomBarReserve = useMemo(() => {
     const extra =
-      planMode === 'time' ? timeBlocks.length * 12 : 24 + priorityTasks.length * 10;
+      planMode === 'time'
+        ? timeBlocks.length * 12
+        : planMode === 'priority'
+          ? 24 + priorityTasks.length * 10
+          : 140 + quickMemos.length * 72;
     return 160 + extra + insets.bottom;
-  }, [insets.bottom, timeBlocks.length, planMode, priorityTasks.length]);
+  }, [insets.bottom, timeBlocks.length, planMode, priorityTasks.length, quickMemos.length]);
 
   const handleCategoryPress = (categoryKey: string) => {
     const selected = selectedBlockId != null ? timeBlocks.find((b) => b.id === selectedBlockId) : null;
@@ -254,6 +265,54 @@ export function DayPlanPage() {
   const TEMP_FLOW_BLOCK_TITLE = '플로우';
 
   const onSave = () => {
+    if (planMode === 'quickMemo') {
+      const lines = [
+        ...quickMemos
+        .filter((m) => !m.isDone)
+        .map((m) => m.text.trim())
+        .filter((t) => t.length > 0),
+        quickMemoDraft.trim(),
+      ].filter((t) => t.length > 0);
+      if (lines.length === 0) {
+        Alert.alert('메모 필요', '라이브 액티비티에 표시할 빠른 메모를 하나 이상 입력해 주세요.');
+        return;
+      }
+
+      const w = defaultPriorityWindowFromNow();
+      const ps = parseHHmmToMinutes(w.startTime);
+      const pe = parseHHmmToMinutes(w.endTime);
+      if (ps === null || pe === null || pe <= ps) {
+        Alert.alert('저장 실패', '기본 시간대를 계산하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+
+      const blockTitle = lines.map((line, i) => `${i + 1}. ${line}`).join('\n');
+      const result = addBlock({
+        title: blockTitle,
+        startMinutes: ps,
+        endMinutes: pe,
+        category: '기타',
+        replaceOverlapping: true,
+      });
+
+      if (!result.ok) {
+        if (result.reason === 'in_the_past') {
+          Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 플로우만 저장할 수 있어요.');
+          return;
+        }
+        Alert.alert('저장 실패', '빠른 메모를 플로우로 저장하지 못했습니다.');
+        return;
+      }
+
+      for (const m of quickMemos) {
+        removeQuickMemo(m.id);
+      }
+      setQuickMemoDraft('');
+
+      router.replace({ pathname: '/activity-session', params: { blockId: result.blockId } });
+      return;
+    }
+
     if (planMode === 'priority') {
       const ps = parseHHmmToMinutes(priorityStart);
       const pe = parseHHmmToMinutes(priorityEnd);
@@ -423,6 +482,7 @@ export function DayPlanPage() {
             planMode={planMode}
             onSelectTime={() => setPlanMode('time')}
             onSelectPriority={() => setPlanMode('priority')}
+            onSelectQuickMemo={() => setPlanMode('quickMemo')}
             c={c}
           />
 
@@ -439,7 +499,7 @@ export function DayPlanPage() {
               onRemoveBlock={removeBlock}
               onCommitBlock={commitBlockTime}
             />
-          ) : (
+          ) : planMode === 'priority' ? (
             <PriorityBasedPlanSection
               c={c}
               priorityStart={priorityStart}
@@ -455,6 +515,16 @@ export function DayPlanPage() {
               onUpdatePriorityTask={updatePriorityTask}
               onRemovePriorityTask={removePriorityTask}
               onAddPriorityTaskRow={addPriorityTaskRow}
+            />
+          ) : (
+            <QuickMemoPlanSection
+              c={c}
+              memos={quickMemos}
+              draft={quickMemoDraft}
+              onChangeDraft={setQuickMemoDraft}
+              onUpdateText={updateQuickMemoText}
+              onToggleDone={toggleQuickMemoDone}
+              onRemove={removeQuickMemo}
             />
           )}
 
