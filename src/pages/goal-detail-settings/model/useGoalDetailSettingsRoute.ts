@@ -69,6 +69,7 @@ function isGoalDetailCategoryKey(v: string): v is GoalDetailCategoryKey {
     v === 'meditation' ||
     v === 'yoga' ||
     v === 'rest' ||
+    v === 'fasting' ||
     v === 'water' ||
     v === 'medicine' ||
     v === 'stretch' ||

@@ -15,14 +15,14 @@ export function StretchPreview({
     <LockActivityPreviewCard
       icon="dumbbell.fill"
       rhythmTitle={rhythmTitle}
-      fallbackTitle="스트레칭"
+      fallbackTitle="피트티스"
       metrics={[
         { value: `${c.totalSets}세트`, label: '목표' },
         { value: `${c.holdSec}초`, label: '유지', valueSize: 'small' },
         { value: `${c.doneSets}세트`, label: '완료', valueSize: 'small' },
       ]}
       progressPct={progressPct}
-      footerCaption="스트레칭 플로우 잠금화면 미리보기"
+      footerCaption="피트티스 플로우 잠금화면 미리보기"
     />
   );
 }

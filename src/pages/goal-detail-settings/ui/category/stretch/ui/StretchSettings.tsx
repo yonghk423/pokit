@@ -43,7 +43,7 @@ export function StretchSettings({
 
   return (
     <View style={[styles.inner, { backgroundColor: c.surfaceLow }]}>
-      <ThemedText style={[styles.title, { color: c.onSurface }]}>스트레칭 세트</ThemedText>
+      <ThemedText style={[styles.title, { color: c.onSurface }]}>피트티스 세트</ThemedText>
       <ThemedText style={[styles.sub, { color: c.onVariant }]}>
         총 세트 수·한 자세 유지 시간(초)·완료한 세트 수를 입력해 주세요.
       </ThemedText>

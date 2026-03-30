@@ -13,14 +13,14 @@ export function OtherPreview({
 
   return (
     <LockActivityPreviewCard
-      icon="ellipsis"
+      icon="person.fill"
       iconWeight="bold"
       rhythmTitle={rhythmTitle}
-      fallbackTitle="기타"
+      fallbackTitle="사용자"
       noteBelowHeader={note}
       metrics={[]}
       progressPct={0}
-      footerCaption="기타 플로우 잠금화면 미리보기"
+      footerCaption="사용자 플로우 잠금화면 미리보기"
     />
   );
 }

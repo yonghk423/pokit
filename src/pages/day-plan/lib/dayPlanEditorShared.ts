@@ -10,11 +10,15 @@ export const CATEGORIES = [
   { key: 'meditation', label: '명상', icon: 'brain.head.profile' as const },
   { key: 'yoga', label: '요가', icon: 'figure.yoga' as const },
   { key: 'rest', label: '휴식', icon: 'moon.zzz.fill' as const },
+  { key: 'fasting', label: '단식', icon: 'timer' as const },
   { key: 'water', label: '수분', icon: 'drop.fill' as const },
   { key: 'medicine', label: '약 복용', icon: 'cross.case.fill' as const },
-  { key: 'stretch', label: '스트레칭', icon: 'dumbbell.fill' as const },
-  { key: 'other', label: '기타', icon: 'ellipsis' as const },
+  { key: 'stretch', label: '피트티스', icon: 'dumbbell.fill' as const },
+  { key: 'other', label: '사용자', icon: 'person.fill' as const },
 ];
+
+/** 새 플로우 설정에서 임시로 숨길 카테고리 */
+export const PICKER_CATEGORIES = CATEGORIES.filter((c) => c.key !== 'meditation' && c.key !== 'yoga');
 
 export type TimeBlock = {
   id: string;
@@ -52,7 +56,7 @@ export function getPriorityDisplaySections(
   const fullOrder = [...order, ...orphanKeys];
   return fullOrder.map((ck) => ({
     categoryKey: ck,
-    label: CATEGORIES.find((c) => c.key === ck)?.label ?? '기타',
+    label: CATEGORIES.find((c) => c.key === ck)?.label ?? '사용자',
     tasks: tasks.filter((t) => t.categoryKey === ck),
   }));
 }

@@ -6,6 +6,7 @@ export type GoalDetailCategoryKey =
   | 'meditation'
   | 'yoga'
   | 'rest'
+  | 'fasting'
   | 'water'
   | 'medicine'
   | 'stretch'

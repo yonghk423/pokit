@@ -7,6 +7,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import {
   CATEGORIES,
+  PICKER_CATEGORIES,
   PRIMARY,
   amPmKorean,
   displayHour12,
@@ -117,7 +118,7 @@ export function PriorityBasedPlanSection({
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.priorityCatScroll}>
-          {CATEGORIES.map((cat) => {
+          {PICKER_CATEGORIES.map((cat) => {
             const orderPos = priorityCategoryOrder.indexOf(cat.key);
             const inOrder = orderPos >= 0;
             const active = priorityCategoryKey === cat.key;

@@ -65,6 +65,7 @@ function inferCategoryKeyFromLabel(category: string): GoalDetailCategoryKey {
   if (t === '명상') return 'meditation';
   if (t === '요가') return 'yoga';
   if (t === '휴식') return 'rest';
+  if (t === '단식') return 'fasting';
   if (t === '수분') return 'water';
   if (t === '약 복용') return 'medicine';
   if (t === '스트레칭') return 'stretch';
@@ -201,9 +202,9 @@ export function GoalDetailSettingsPage() {
             <IconSymbol name="chevron.left" size={22} color={c.onSurface} />
           </Pressable>
           <ThemedText style={[styles.headerTitle, { color: c.onSurface }]}>목표 상세 설정</ThemedText>
-          <Pressable onPress={() => router.push('/widget-settings')} style={styles.headerBtn} hitSlop={8}>
-            <IconSymbol name="gearshape" size={20} color={PRIMARY} />
-          </Pressable>
+          {/* 위젯 설정 기능은 현재 계획이 없어 비활성화.
+              단, 헤더 `space-between` 레이아웃에서 타이틀 위치가 흔들리지 않도록 오른쪽 자리는 placeholder로 남겨둡니다. */}
+          <View style={styles.headerBtn} pointerEvents="none" />
         </View>
 
         <ScrollView

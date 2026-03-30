@@ -291,7 +291,7 @@ export function DayPlanPage() {
         title: blockTitle,
         startMinutes: ps,
         endMinutes: pe,
-        category: '기타',
+        category: '사용자',
         replaceOverlapping: true,
       });
 
@@ -467,9 +467,10 @@ export function DayPlanPage() {
           <View style={styles.headerEdge} />
           <ThemedText style={[styles.headerTitle, { color: c.onSurface }]}>새 플로우 설정</ThemedText>
           <View style={styles.headerEdge}>
-            <Pressable onPress={onSave} hitSlop={8}>
+            {/* 새 플로우 설정 저장 버튼은 현재 계획이 없어 비활성화 */}
+            {/* <Pressable onPress={onSave} hitSlop={8}>
               <ThemedText style={styles.saveText}>저장</ThemedText>
-            </Pressable>
+            </Pressable> */}
           </View>
         </View>
 

@@ -37,7 +37,7 @@ export function OtherSettings({
 
   return (
     <View style={[styles.inner, { backgroundColor: c.surfaceLow }]}>
-      <ThemedText style={[styles.title, { color: c.onSurface }]}>기타 메모</ThemedText>
+      <ThemedText style={[styles.title, { color: c.onSurface }]}>사용자 메모</ThemedText>
       <ThemedText style={[styles.sub, { color: c.onVariant }]}>
         잠금화면에 보여 줄 짧은 메모를 적어 주세요.
       </ThemedText>

@@ -31,10 +31,15 @@ const CATEGORY_KEY_BY_LABEL: Record<string, string> = {
   명상: 'meditation',
   요가: 'yoga',
   휴식: 'rest',
+  단식: 'fasting',
   수분: 'water',
   '약 복용': 'medicine',
   스트레칭: 'stretch',
+  피트티스: 'stretch',
+  // Backward compatibility: 기존에 저장된 라벨(`기타`)도 인식합니다.
   기타: 'other',
+  사용자: 'other',
+  사용쟈: 'other',
 };
 
 function pickParam(value: string | string[] | undefined, fallback: string): string {
@@ -98,7 +103,8 @@ export function ActivitySessionPage() {
   const ringTrack = isDark ? '#334155' : '#e2e8f0';
 
   const activityTitle = block?.title ?? '';
-  const categoryLabel = block?.category ?? '';
+  const rawCategoryLabel = block?.category ?? '';
+  const categoryLabel = rawCategoryLabel === '사용쟈' ? '사용자' : rawCategoryLabel;
   const categoryKey = resolveCategoryKeyFromLabel(categoryLabel);
   const timeRange = block ? formatBlockTimeRange(block) : '';
 

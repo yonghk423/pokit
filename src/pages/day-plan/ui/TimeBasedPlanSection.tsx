@@ -8,6 +8,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import {
   CATEGORIES,
+  PICKER_CATEGORIES,
   PRIMARY,
   normalizeBlockTimeRange,
   shiftBlockStartToNowKeepingDuration,
@@ -99,7 +100,7 @@ export function TimeBasedPlanSection({
             : '한 번에 하나의 블록만 편집합니다. 편집 중(미확정) 카테고리를 다시 누르면 취소되고, 확정 후 다시 누르면 같은 카테고리 블록을 추가할 수 있어요.'}
         </ThemedText>
         <View style={[styles.catGrid, { gap: gridGap }]}>
-          {CATEGORIES.map((catItem) => {
+          {PICKER_CATEGORIES.map((catItem) => {
             const blocksHere = timeBlocks.filter((b) => b.categoryKey === catItem.key);
             const count = blocksHere.length;
             const hasBlock = count > 0;

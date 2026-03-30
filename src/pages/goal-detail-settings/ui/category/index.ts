@@ -1,5 +1,6 @@
 import type { GoalDetailCategoryKey } from '../../model/types';
 
+import { FastingPreview, FastingSettings, getInitialFastingDataConfig } from './fasting';
 import { MeditationPreview, MeditationSettings, getInitialMeditationDataConfig } from './meditation';
 import { MedicinePreview, MedicineSettings, getInitialMedicineDataConfig } from './medicine';
 import { OtherPreview, OtherSettings, getInitialOtherDataConfig } from './other';
@@ -63,6 +64,13 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
     Preview: RestPreview,
     Settings: RestSettings,
   },
+  fasting: {
+    key: 'fasting',
+    titleKo: '단식',
+    getInitialDataConfig: getInitialFastingDataConfig,
+    Preview: FastingPreview,
+    Settings: FastingSettings,
+  },
   water: {
     key: 'water',
     titleKo: '수분',
@@ -79,14 +87,14 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
   },
   stretch: {
     key: 'stretch',
-    titleKo: '스트레칭',
+    titleKo: '피트티스',
     getInitialDataConfig: getInitialStretchDataConfig,
     Preview: StretchPreview,
     Settings: StretchSettings,
   },
   other: {
     key: 'other',
-    titleKo: '기타',
+    titleKo: '사용자',
     getInitialDataConfig: getInitialOtherDataConfig,
     Preview: OtherPreview,
     Settings: OtherSettings,
