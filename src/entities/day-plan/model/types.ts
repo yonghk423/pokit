@@ -22,4 +22,14 @@ export type DayPlanBlock = {
   endMinutes: number;
   /** 타임라인 표시 순서 */
   order: number;
+  /** 빠른 메모 저장으로만 만들어진 블록 — 잠금화면 전용 레이아웃에 사용 */
+  blockOrigin?: 'quickMemo';
+};
+
+export type DayPlanStartNotificationTiming = '5min' | 'atStart';
+
+export type DayPlanNotificationSettings = {
+  startEnabled: boolean;
+  endEnabled: boolean;
+  startTiming: DayPlanStartNotificationTiming;
 };

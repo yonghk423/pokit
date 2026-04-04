@@ -1,4 +1,12 @@
-import { LockActivityPreviewCard } from '../../lib/LockActivityPreviewCard';
+import { View } from 'react-native';
+
+import { MeditationSessionCard } from '@widgets/active-session-card';
+
+import {
+  SESSION_PREVIEW_PROGRESS01,
+  SessionPreviewFootnote,
+  sessionPreviewRemainingSec,
+} from '../../lib/sessionPreviewShared';
 import { normalizeMeditationDetailConfig } from './meditationConfig';
 
 export function MeditationPreview({
@@ -9,19 +17,16 @@ export function MeditationPreview({
   dataConfig: unknown;
 }) {
   const c = normalizeMeditationDetailConfig(dataConfig);
-  const progressPct = c.sessionMin > 0 ? (c.elapsedMin / c.sessionMin) * 100 : 0;
 
   return (
-    <LockActivityPreviewCard
-      icon="brain.head.profile"
-      rhythmTitle={rhythmTitle}
-      fallbackTitle="명상"
-      metrics={[
-        { value: `${c.sessionMin}분`, label: '세션' },
-        { value: `${c.elapsedMin}분`, label: '경과', valueSize: 'small' },
-      ]}
-      progressPct={progressPct}
-      footerCaption="명상 플로우 잠금화면 미리보기"
-    />
+    <View style={{ gap: 10 }}>
+      <MeditationSessionCard
+        data={c}
+        remainingSec={sessionPreviewRemainingSec()}
+        progress01={SESSION_PREVIEW_PROGRESS01}
+        isPaused={false}
+      />
+      <SessionPreviewFootnote rhythmTitle={rhythmTitle} />
+    </View>
   );
 }

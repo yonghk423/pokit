@@ -61,29 +61,27 @@ export function RunSettings({
   const initial = normalizeRunDetailConfig(dataConfig ?? getInitialRunDataConfig());
 
   const [targetKmStr, setTargetKmStr] = useState(String(initial.targetKm));
-  const [goalMinStr, setGoalMinStr] = useState(String(initial.goalMin));
-  const [doneKmStr, setDoneKmStr] = useState(String(initial.doneKm));
+  const [caloriesStr, setCaloriesStr] = useState(String(initial.caloriesGoalKcal));
   const lastRef = useRef<string | null>(null);
 
   useEffect(() => {
     const n = normalizeRunDetailConfig({
       targetKm: parseFloat(targetKmStr) || 0,
-      goalMin: parseInt(goalMinStr, 10) || 0,
-      doneKm: parseFloat(doneKmStr) || 0,
+      caloriesGoalKcal: parseInt(caloriesStr, 10) || 0,
     });
     const payload: RunDetailDataConfig = n;
     const s = JSON.stringify(payload);
     if (lastRef.current === s) return;
     lastRef.current = s;
     onChangeDataConfig(payload);
-  }, [targetKmStr, goalMinStr, doneKmStr, onChangeDataConfig]);
+  }, [targetKmStr, caloriesStr, onChangeDataConfig]);
 
   return (
     <View style={styles.wrap}>
       <View style={[styles.card, { backgroundColor: c.surfaceLow }]}>
         <ThemedText style={[styles.title, { color: c.onSurface }]}>러닝 목표</ThemedText>
         <ThemedText style={[styles.sub, { color: c.onVariant }]}>
-          오늘 달리기 거리·시간·현재까지 진행 거리를 정해 주세요.
+          목표 거리와 칼로리만 정해 주세요.
         </ThemedText>
         <View style={styles.row}>
           <Field
@@ -94,20 +92,13 @@ export function RunSettings({
             c={c}
           />
           <Field
-            label="목표 시간(분)"
-            value={goalMinStr}
-            onChangeText={setGoalMinStr}
+            label="목표 칼로리(kcal)"
+            value={caloriesStr}
+            onChangeText={setCaloriesStr}
             keyboardType="number-pad"
             c={c}
           />
         </View>
-        <Field
-          label="현재까지(km)"
-          value={doneKmStr}
-          onChangeText={setDoneKmStr}
-          keyboardType="decimal-pad"
-          c={c}
-        />
       </View>
     </View>
   );

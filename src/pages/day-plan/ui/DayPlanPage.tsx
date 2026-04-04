@@ -6,17 +6,24 @@ import {
   ScrollView,
   StyleSheet,
   Switch,
-  // Metro·React Compiler(shallow 번들)에서 하위 UI가 이 모듈 스코프의 TextInput을 참조할 수 있어 import 유지
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 위 호환용
-  TextInput,
   useWindowDimensions,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
-import { parseHHmmToMinutes } from '@entities/day-plan';
-import { useDayPlanStore } from '@entities/day-plan/model';
+import {
+  filterDayPlanFlowBlocks,
+  parseHHmmToMinutes,
+  useDayPlanNotificationStore,
+  useDayPlanStore,
+} from '@entities/day-plan';
+import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
+import {
+  buildLiveActivityPayloadForBlock,
+  reconcileLiveActivityFromPlan,
+  upsertLiveActivityAndDismiss,
+} from '@features/live-activity-sync';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -30,6 +37,7 @@ import {
   getOrderedPriorityLines,
   makeBlockId,
   MIN_BLOCK_DURATION_MINUTES,
+  normalizeBlockTimeRange,
   PRIMARY,
   rangesOverlapMinutes,
   sortBlocksByAddedSeq,
@@ -42,6 +50,7 @@ import { PlanModeSwitch } from './PlanModeSwitch';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
 import { TimeBasedPlanSection } from './TimeBasedPlanSection';
+import { TodayFlowLockPreviewCard } from './TodayFlowLockPreviewCard';
 
 export function DayPlanPage() {
   const router = useRouter();
@@ -69,24 +78,45 @@ export function DayPlanPage() {
   const [priorityTaskDraft, setPriorityTaskDraft] = useState('');
   const [quickMemoDraft, setQuickMemoDraft] = useState('');
 
-  const [startNotifOn, setStartNotifOn] = useState(true);
-  const [endNotifOn, setEndNotifOn] = useState(false);
-  const [notifTiming, setNotifTiming] = useState<'5min' | 'atStart'>('5min');
-
-  const { addBlock, quickMemos, updateQuickMemoText, removeQuickMemo, toggleQuickMemoDone } =
-    useDayPlanStore(
-      useShallow((s) => ({
-        addBlock: s.addBlock,
-        quickMemos: s.quickMemos,
-        updateQuickMemoText: s.updateQuickMemoText,
-        removeQuickMemo: s.removeQuickMemo,
-        toggleQuickMemoDone: s.toggleQuickMemoDone,
-      })),
-    );
+  const { addBlock, quickMemos, removeQuickMemo } = useDayPlanStore(
+    useShallow((s) => ({
+      addBlock: s.addBlock,
+      quickMemos: s.quickMemos,
+      removeQuickMemo: s.removeQuickMemo,
+    })),
+  );
+  const { dayPlanBlocks, completedBlockIds, skippedBlockIds, dayPlanHydrated } = useDayPlanStore(
+    useShallow((s) => ({
+      dayPlanBlocks: s.blocks,
+      completedBlockIds: s.completedBlockIds,
+      skippedBlockIds: s.skippedBlockIds,
+      dayPlanHydrated: s.isHydrated,
+    })),
+  );
+  const {
+    startNotifOn,
+    endNotifOn,
+    notifTiming,
+    setStartNotifOn,
+    setEndNotifOn,
+    setNotifTiming,
+    hydrate: hydrateNotificationSettings,
+  } = useDayPlanNotificationStore(
+    useShallow((s) => ({
+      startNotifOn: s.startNotifOn,
+      endNotifOn: s.endNotifOn,
+      notifTiming: s.notifTiming,
+      setStartNotifOn: s.setStartNotifOn,
+      setEndNotifOn: s.setEndNotifOn,
+      setNotifTiming: s.setNotifTiming,
+      hydrate: s.hydrate,
+    })),
+  );
 
   useEffect(() => {
     useDayPlanStore.getState().hydrate();
-  }, []);
+    hydrateNotificationSettings();
+  }, [hydrateNotificationSettings]);
 
   useEffect(() => {
     if (planMode !== 'priority') return;
@@ -96,6 +126,24 @@ export function DayPlanPage() {
   }, [planMode]);
 
   const c = useMemo(() => palette(isDark), [isDark]);
+
+  /** 시간·우선순위 플로우만 — 빠른 메모 블록은 목록·알림 대상에서 제외 */
+  const flowPlanBlocks = useMemo(
+    () => filterDayPlanFlowBlocks(dayPlanBlocks),
+    [dayPlanBlocks],
+  );
+
+  const syncScheduledNotifications = useCallback(() => {
+    const dayPlanState = useDayPlanStore.getState();
+    const notifState = useDayPlanNotificationStore.getState();
+    void rescheduleDayPlanNotifications({
+      dateKey: dayPlanState.dateKey,
+      blocks: dayPlanState.blocks,
+      settings: notifState.toSettings(),
+      completedBlockIds: dayPlanState.completedBlockIds,
+      skippedBlockIds: dayPlanState.skippedBlockIds,
+    });
+  }, []);
 
   const blocksInAddOrder = useMemo(() => sortBlocksByAddedSeq(timeBlocks), [timeBlocks]);
 
@@ -111,9 +159,9 @@ export function DayPlanPage() {
         ? timeBlocks.length * 12
         : planMode === 'priority'
           ? 24 + priorityTasks.length * 10
-          : 140 + quickMemos.length * 72;
+          : 48;
     return 160 + extra + insets.bottom;
-  }, [insets.bottom, timeBlocks.length, planMode, priorityTasks.length, quickMemos.length]);
+  }, [insets.bottom, timeBlocks.length, planMode, priorityTasks.length]);
 
   const handleCategoryPress = (categoryKey: string) => {
     const selected = selectedBlockId != null ? timeBlocks.find((b) => b.id === selectedBlockId) : null;
@@ -182,9 +230,17 @@ export function DayPlanPage() {
     setSelectedBlockId(id);
   };
 
-  const commitBlockTime = (id: string) => {
-    const block = timeBlocks.find((b) => b.id === id);
+  const commitBlockTime = (
+    id: string,
+    latestTimes?: { startTime: string; endTime: string },
+  ) => {
+    let block = timeBlocks.find((b) => b.id === id);
     if (!block || block.timeCommitted !== false) return;
+
+    if (latestTimes) {
+      const n = normalizeBlockTimeRange(latestTimes.startTime, latestTimes.endTime);
+      if (n) block = { ...block, ...n };
+    }
 
     const ps = parseHHmmToMinutes(block.startTime);
     const pe = parseHHmmToMinutes(block.endTime);
@@ -212,7 +268,7 @@ export function DayPlanPage() {
     }
 
     setTimeBlocks((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, timeCommitted: true } : b)),
+      prev.map((b) => (b.id === id ? { ...block!, timeCommitted: true } : b)),
     );
   };
 
@@ -266,13 +322,15 @@ export function DayPlanPage() {
 
   const onSave = () => {
     if (planMode === 'quickMemo') {
-      const lines = [
-        ...quickMemos
+      const draftLines = quickMemoDraft
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((t) => t.length > 0);
+      const memoLines = quickMemos
         .filter((m) => !m.isDone)
         .map((m) => m.text.trim())
-        .filter((t) => t.length > 0),
-        quickMemoDraft.trim(),
-      ].filter((t) => t.length > 0);
+        .filter((t) => t.length > 0);
+      const lines = draftLines.length > 0 ? draftLines : memoLines;
       if (lines.length === 0) {
         Alert.alert('메모 필요', '라이브 액티비티에 표시할 빠른 메모를 하나 이상 입력해 주세요.');
         return;
@@ -293,6 +351,7 @@ export function DayPlanPage() {
         endMinutes: pe,
         category: '사용자',
         replaceOverlapping: true,
+        blockOrigin: 'quickMemo',
       });
 
       if (!result.ok) {
@@ -307,9 +366,17 @@ export function DayPlanPage() {
       for (const m of quickMemos) {
         removeQuickMemo(m.id);
       }
-      setQuickMemoDraft('');
 
-      router.replace({ pathname: '/activity-session', params: { blockId: result.blockId } });
+      syncScheduledNotifications();
+      reconcileLiveActivityFromPlan();
+
+      const payload = buildLiveActivityPayloadForBlock({
+        blockId: result.blockId,
+        status: 'active',
+      });
+      if (payload) {
+        void upsertLiveActivityAndDismiss(payload);
+      }
       return;
     }
 
@@ -476,7 +543,13 @@ export function DayPlanPage() {
 
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomBarReserve }]}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingBottom: bottomBarReserve,
+              gap: planMode === 'quickMemo' ? 16 : 32,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
           <PlanModeSwitch
@@ -486,6 +559,15 @@ export function DayPlanPage() {
             onSelectQuickMemo={() => setPlanMode('quickMemo')}
             c={c}
           />
+
+          {dayPlanHydrated && flowPlanBlocks.length > 0 && planMode !== 'quickMemo' ? (
+            <TodayFlowLockPreviewCard
+              c={c}
+              blocks={flowPlanBlocks}
+              completedBlockIds={completedBlockIds}
+              skippedBlockIds={skippedBlockIds}
+            />
+          ) : null}
 
           {planMode === 'time' ? (
             <TimeBasedPlanSection
@@ -523,91 +605,94 @@ export function DayPlanPage() {
               memos={quickMemos}
               draft={quickMemoDraft}
               onChangeDraft={setQuickMemoDraft}
-              onUpdateText={updateQuickMemoText}
-              onToggleDone={toggleQuickMemoDone}
-              onRemove={removeQuickMemo}
             />
           )}
 
-          <View style={styles.block}>
-            <ThemedText style={[styles.labelUpper, { color: c.onVariant, marginBottom: 4 }]}>
-              알림 설정
-            </ThemedText>
-            <View style={styles.notifCol}>
-              <View style={[styles.notifCard, { backgroundColor: c.containerLow }]}>
-                <View style={styles.notifCardTop}>
+          {planMode !== 'quickMemo' ? (
+            <View style={styles.block}>
+              <ThemedText style={[styles.labelUpper, { color: c.onVariant, marginBottom: 4 }]}>
+                알림 설정
+              </ThemedText>
+              <View style={styles.notifCol}>
+                <View style={[styles.notifCard, { backgroundColor: c.containerLow }]}>
+                  <View style={styles.notifCardTop}>
+                    <View style={styles.notifLeft}>
+                      <IconSymbol name="clock.fill" size={20} color={PRIMARY} />
+                      <ThemedText style={[styles.notifTitle, { color: c.onSurface }]}>
+                        플로우 시작 알림
+                      </ThemedText>
+                    </View>
+                    <Switch
+                      trackColor={{ true: PRIMARY, false: c.trackOff }}
+                      thumbColor="#fff"
+                      value={startNotifOn}
+                      onValueChange={setStartNotifOn}
+                    />
+                  </View>
+                  <View style={[styles.chipRow, { backgroundColor: c.containerLowest }]}>
+                    <Pressable
+                      onPress={() => setNotifTiming('5min')}
+                      style={[
+                        styles.chip,
+                        notifTiming === '5min' && { backgroundColor: '#fff', ...styles.chipShadow },
+                      ]}>
+                      <ThemedText
+                        style={[
+                          styles.chipText,
+                          { color: notifTiming === '5min' ? PRIMARY : c.onVariant },
+                        ]}>
+                        5분 전
+                      </ThemedText>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setNotifTiming('atStart')}
+                      style={[
+                        styles.chip,
+                        notifTiming === 'atStart' && { backgroundColor: '#fff', ...styles.chipShadow },
+                      ]}>
+                      <ThemedText
+                        style={[
+                          styles.chipText,
+                          { color: notifTiming === 'atStart' ? PRIMARY : c.onVariant },
+                        ]}>
+                        시작 시각
+                      </ThemedText>
+                    </Pressable>
+                  </View>
+                </View>
+
+                <View style={[styles.notifRowPill, { backgroundColor: c.containerLow }]}>
                   <View style={styles.notifLeft}>
-                    <IconSymbol name="clock.fill" size={20} color={PRIMARY} />
+                    <IconSymbol name="timer" size={20} color={PRIMARY} />
                     <ThemedText style={[styles.notifTitle, { color: c.onSurface }]}>
-                      플로우 시작 알림
+                      플로우 종료 알림
                     </ThemedText>
                   </View>
                   <Switch
                     trackColor={{ true: PRIMARY, false: c.trackOff }}
                     thumbColor="#fff"
-                    value={startNotifOn}
-                    onValueChange={setStartNotifOn}
+                    value={endNotifOn}
+                    onValueChange={setEndNotifOn}
                   />
                 </View>
-                <View style={[styles.chipRow, { backgroundColor: c.containerLowest }]}>
-                  <Pressable
-                    onPress={() => setNotifTiming('5min')}
-                    style={[
-                      styles.chip,
-                      notifTiming === '5min' && { backgroundColor: '#fff', ...styles.chipShadow },
-                    ]}>
-                    <ThemedText
-                      style={[
-                        styles.chipText,
-                        { color: notifTiming === '5min' ? PRIMARY : c.onVariant },
-                      ]}>
-                      5분 전
-                    </ThemedText>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => setNotifTiming('atStart')}
-                    style={[
-                      styles.chip,
-                      notifTiming === 'atStart' && { backgroundColor: '#fff', ...styles.chipShadow },
-                    ]}>
-                    <ThemedText
-                      style={[
-                        styles.chipText,
-                        { color: notifTiming === 'atStart' ? PRIMARY : c.onVariant },
-                      ]}>
-                      시작 시각
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              </View>
-
-              <View style={[styles.notifRowPill, { backgroundColor: c.containerLow }]}>
-                <View style={styles.notifLeft}>
-                  <IconSymbol name="timer" size={20} color={PRIMARY} />
-                  <ThemedText style={[styles.notifTitle, { color: c.onSurface }]}>
-                    플로우 종료 알림
-                  </ThemedText>
-                </View>
-                <Switch
-                  trackColor={{ true: PRIMARY, false: c.trackOff }}
-                  thumbColor="#fff"
-                  value={endNotifOn}
-                  onValueChange={setEndNotifOn}
-                />
               </View>
             </View>
-          </View>
+          ) : null}
         </ScrollView>
 
         <View style={[styles.bottomDock, { backgroundColor: c.bg }]}>
           <View style={[styles.bottomFade, { backgroundColor: c.bg }]} />
           <SafeAreaView edges={['bottom']} style={styles.bottomInner}>
             <Pressable style={styles.primaryCta} onPress={onSave}>
-              <ThemedText style={styles.primaryCtaText}>플로우 설정 완료</ThemedText>
+              <ThemedText style={styles.primaryCtaText}>
+                {planMode === 'quickMemo' ? '메모 저장' : '플로우 설정 완료'}
+              </ThemedText>
             </Pressable>
-            <ThemedText style={[styles.bottomTagline, { color: c.outline }]}>
-              모멘텀은 지금부터입니다
-            </ThemedText>
+            {planMode !== 'quickMemo' ? (
+              <ThemedText style={[styles.bottomTagline, { color: c.outline }]}>
+                모멘텀은 지금부터입니다
+              </ThemedText>
+            ) : null}
           </SafeAreaView>
         </View>
       </SafeAreaView>

@@ -1,4 +1,12 @@
-import { LockActivityPreviewCard } from '../../lib/LockActivityPreviewCard';
+import { View } from 'react-native';
+
+import { StretchSessionCard } from '@widgets/active-session-card';
+
+import {
+  SESSION_PREVIEW_PROGRESS01,
+  SessionPreviewFootnote,
+  sessionPreviewRemainingSec,
+} from '../../lib/sessionPreviewShared';
 import { normalizeStretchDetailConfig } from './stretchConfig';
 
 export function StretchPreview({
@@ -9,20 +17,16 @@ export function StretchPreview({
   dataConfig: unknown;
 }) {
   const c = normalizeStretchDetailConfig(dataConfig);
-  const progressPct = c.totalSets > 0 ? (c.doneSets / c.totalSets) * 100 : 0;
 
   return (
-    <LockActivityPreviewCard
-      icon="dumbbell.fill"
-      rhythmTitle={rhythmTitle}
-      fallbackTitle="피트티스"
-      metrics={[
-        { value: `${c.totalSets}세트`, label: '목표' },
-        { value: `${c.holdSec}초`, label: '유지', valueSize: 'small' },
-        { value: `${c.doneSets}세트`, label: '완료', valueSize: 'small' },
-      ]}
-      progressPct={progressPct}
-      footerCaption="피트티스 플로우 잠금화면 미리보기"
-    />
+    <View style={{ gap: 10 }}>
+      <StretchSessionCard
+        data={c}
+        remainingSec={sessionPreviewRemainingSec()}
+        progress01={SESSION_PREVIEW_PROGRESS01}
+        isPaused={false}
+      />
+      <SessionPreviewFootnote rhythmTitle={rhythmTitle} />
+    </View>
   );
 }

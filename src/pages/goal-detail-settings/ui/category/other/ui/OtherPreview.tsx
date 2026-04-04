@@ -1,4 +1,12 @@
-import { LockActivityPreviewCard } from '../../lib/LockActivityPreviewCard';
+import { View } from 'react-native';
+
+import { OtherSessionCard } from '@widgets/active-session-card';
+
+import {
+  SESSION_PREVIEW_PROGRESS01,
+  SessionPreviewFootnote,
+  sessionPreviewRemainingSec,
+} from '../../lib/sessionPreviewShared';
 import { normalizeOtherDetailConfig } from './otherConfig';
 
 export function OtherPreview({
@@ -9,18 +17,16 @@ export function OtherPreview({
   dataConfig: unknown;
 }) {
   const c = normalizeOtherDetailConfig(dataConfig);
-  const note = c.memo || '메모를 설정에서 적어 보세요.';
 
   return (
-    <LockActivityPreviewCard
-      icon="person.fill"
-      iconWeight="bold"
-      rhythmTitle={rhythmTitle}
-      fallbackTitle="사용자"
-      noteBelowHeader={note}
-      metrics={[]}
-      progressPct={0}
-      footerCaption="사용자 플로우 잠금화면 미리보기"
-    />
+    <View style={{ gap: 10 }}>
+      <OtherSessionCard
+        data={c}
+        remainingSec={sessionPreviewRemainingSec()}
+        progress01={SESSION_PREVIEW_PROGRESS01}
+        isPaused={false}
+      />
+      <SessionPreviewFootnote rhythmTitle={rhythmTitle} />
+    </View>
   );
 }

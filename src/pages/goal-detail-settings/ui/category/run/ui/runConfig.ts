@@ -1,22 +1,6 @@
-export type RunDetailDataConfig = {
-  targetKm: number;
-  goalMin: number;
-  doneKm: number;
-};
-
-function asObj(raw: unknown): Record<string, unknown> {
-  return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-}
-
-export function normalizeRunDetailConfig(raw: unknown): RunDetailDataConfig {
-  const o = asObj(raw);
-  return {
-    targetKm: Math.max(0.1, Math.min(999, Number(o.targetKm) || 5)),
-    goalMin: Math.max(1, Math.min(600, Number(o.goalMin) || 30)),
-    doneKm: Math.max(0, Math.min(999, Number(o.doneKm) || 0)),
-  };
-}
-
-export function getInitialRunDataConfig(): RunDetailDataConfig {
-  return { targetKm: 5, goalMin: 30, doneKm: 0 };
-}
+/** entity 구현을 pages 기존 경로 `./runConfig`로 그대로 노출 */
+export {
+  getInitialRunDataConfig,
+  normalizeRunDetailConfig,
+  type RunDetailDataConfig,
+} from '@entities/day-plan';

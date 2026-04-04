@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { filterDayPlanFlowBlocks } from '@entities/day-plan/lib/dayPlanFlowBlock';
 import {
   findOverlappingDayPlanBlock,
   findOverlappingDayPlanBlocks,
@@ -9,6 +10,7 @@ import {
 } from '@entities/day-plan/lib/dayPlanTime';
 import type { DayPlanBlock, DayPlanQuickMemo } from '@entities/day-plan/model/types';
 import { loadDayPlan, saveDayPlan } from '@shared/lib/storage/dayPlanStorage';
+import { syncDayPlanToWidget } from '@shared/lib/storage/widgetDayPlanSync';
 
 function getLocalDateKey(): string {
   const d = new Date();
@@ -69,11 +71,14 @@ export type DayPlanStoreState = {
   blocks: DayPlanBlock[];
   completedBlockIds: string[];
   skippedBlockIds: string[];
+  /** 잠금화면 체크리스트에서 강조할 블록(null이면 세션 블록 등 기본 규칙). */
+  liveActivityChecklistFocusBlockId: string | null;
   quickMemos: DayPlanQuickMemo[];
   isHydrated: boolean;
 
   hydrate: () => void;
   resetTodayProgress: () => void;
+  setLiveActivityChecklistFocusBlockId: (blockId: string | null) => void;
 
   completeBlock: (blockId: string) => void;
   skipBlock: (blockId: string) => void;
@@ -96,6 +101,7 @@ export type DayPlanStoreState = {
     startMinutes: number;
     endMinutes: number;
     replaceOverlapping?: boolean;
+    blockOrigin?: 'quickMemo';
   }) => AddBlockResult;
 
   /** 블록 제거 + 완료/건너뛰기 id 정리 */
@@ -105,13 +111,16 @@ export type DayPlanStoreState = {
 export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
   const persist = () => {
     const s = get();
-    saveDayPlan({
+    const payload = {
       dateKey: s.dateKey,
       blocks: s.blocks,
       completedBlockIds: s.completedBlockIds,
       skippedBlockIds: s.skippedBlockIds,
+      liveActivityChecklistFocusBlockId: s.liveActivityChecklistFocusBlockId,
       quickMemos: s.quickMemos,
-    });
+    };
+    saveDayPlan(payload);
+    syncDayPlanToWidget(payload);
   };
 
   return {
@@ -119,6 +128,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
     blocks: [],
     completedBlockIds: [],
     skippedBlockIds: [],
+    liveActivityChecklistFocusBlockId: null,
     quickMemos: [],
     isHydrated: false,
 
@@ -131,6 +141,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
       let completedBlockIds: string[] = [];
       let skippedBlockIds: string[] = [];
       let quickMemos: DayPlanQuickMemo[] = [];
+      let liveActivityChecklistFocusBlockId: string | null = null;
 
       if (raw) {
         const blocksRaw = Array.isArray(raw.blocks) ? raw.blocks : [];
@@ -146,6 +157,18 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         completedBlockIds = n.completedBlockIds;
         skippedBlockIds = n.skippedBlockIds;
         quickMemos = n.quickMemos;
+        const savedFocus =
+          typeof raw.liveActivityChecklistFocusBlockId === 'string'
+            ? raw.liveActivityChecklistFocusBlockId
+            : null;
+        if (
+          savedFocus &&
+          blocks.some((b) => b.id === savedFocus) &&
+          !completedBlockIds.includes(savedFocus) &&
+          !skippedBlockIds.includes(savedFocus)
+        ) {
+          liveActivityChecklistFocusBlockId = savedFocus;
+        }
       }
 
       set({
@@ -153,6 +176,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         blocks,
         completedBlockIds,
         skippedBlockIds,
+        liveActivityChecklistFocusBlockId,
         quickMemos,
         isHydrated: true,
       });
@@ -163,12 +187,18 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
       set({
         completedBlockIds: [],
         skippedBlockIds: [],
+        liveActivityChecklistFocusBlockId: null,
       });
       persist();
     },
 
+    setLiveActivityChecklistFocusBlockId: (blockId) => {
+      set({ liveActivityChecklistFocusBlockId: blockId });
+      persist();
+    },
+
     completeBlock: (blockId) => {
-      const { completedBlockIds, skippedBlockIds } = get();
+      const { completedBlockIds, skippedBlockIds, liveActivityChecklistFocusBlockId } = get();
       if (completedBlockIds.includes(blockId)) return;
 
       const nextCompleted = [...completedBlockIds, blockId];
@@ -176,22 +206,38 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
       set({
         completedBlockIds: nextCompleted,
         skippedBlockIds: nextSkipped,
+        liveActivityChecklistFocusBlockId:
+          liveActivityChecklistFocusBlockId === blockId
+            ? null
+            : liveActivityChecklistFocusBlockId,
       });
       persist();
     },
 
     skipBlock: (blockId) => {
-      const { completedBlockIds, skippedBlockIds } = get();
+      const { completedBlockIds, skippedBlockIds, liveActivityChecklistFocusBlockId } = get();
       if (skippedBlockIds.includes(blockId) || completedBlockIds.includes(blockId)) return;
 
       set({
         skippedBlockIds: [...skippedBlockIds, blockId],
+        liveActivityChecklistFocusBlockId:
+          liveActivityChecklistFocusBlockId === blockId
+            ? null
+            : liveActivityChecklistFocusBlockId,
       });
       persist();
     },
 
     setBlocks: (blocks) => {
-      set({ blocks: sortDayPlanBlocks(blocks) });
+      const sorted = sortDayPlanBlocks(blocks);
+      const { liveActivityChecklistFocusBlockId } = get();
+      const focusOk =
+        liveActivityChecklistFocusBlockId != null &&
+        sorted.some((b) => b.id === liveActivityChecklistFocusBlockId);
+      set({
+        blocks: sorted,
+        liveActivityChecklistFocusBlockId: focusOk ? liveActivityChecklistFocusBlockId : null,
+      });
       persist();
     },
 
@@ -269,6 +315,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         startMinutes: start,
         endMinutes: end,
         order: maxOrder + 1,
+        ...(input.blockOrigin === 'quickMemo' ? { blockOrigin: 'quickMemo' as const } : {}),
       };
 
       const next = sortDayPlanBlocks([...current, block]);
@@ -278,7 +325,8 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
     },
 
     removeBlock: (blockId) => {
-      const { blocks, completedBlockIds, skippedBlockIds } = get();
+      const { blocks, completedBlockIds, skippedBlockIds, liveActivityChecklistFocusBlockId } =
+        get();
       const nextBlocks = blocks.filter((b) => b.id !== blockId);
       if (nextBlocks.length === blocks.length) return;
 
@@ -286,6 +334,10 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         blocks: nextBlocks,
         completedBlockIds: completedBlockIds.filter((id) => id !== blockId),
         skippedBlockIds: skippedBlockIds.filter((id) => id !== blockId),
+        liveActivityChecklistFocusBlockId:
+          liveActivityChecklistFocusBlockId === blockId
+            ? null
+            : liveActivityChecklistFocusBlockId,
       });
       persist();
     },
@@ -293,5 +345,6 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
 });
 
 export function selectFirstPendingBlock(state: DayPlanStoreState): DayPlanBlock | null {
-  return getFirstPendingBlock(state.blocks, state.completedBlockIds, state.skippedBlockIds);
+  const flowBlocks = filterDayPlanFlowBlocks(state.blocks);
+  return getFirstPendingBlock(flowBlocks, state.completedBlockIds, state.skippedBlockIds);
 }

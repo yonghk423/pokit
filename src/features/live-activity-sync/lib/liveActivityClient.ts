@@ -5,6 +5,7 @@ import type { LockFlowLiveActivityPayload } from '../model/types';
 type LiveActivityNativeModule = {
   upsertActivity?: (payloadJson: string) => Promise<void> | void;
   endActivity?: () => Promise<void> | void;
+  upsertAndSuspend?: (payloadJson: string) => Promise<void> | void;
   isAvailable?: () => Promise<boolean> | boolean;
 };
 
@@ -46,6 +47,21 @@ export async function upsertLockFlowLiveActivity(
   if (!(await checkAvailable(module))) return false;
 
   await module.upsertActivity(JSON.stringify(payload));
+  return true;
+}
+
+/**
+ * Live Activity를 upsert하고, 완료 후 앱을 백그라운드(잠금화면)로 보낸다.
+ * Swift에서 upsert → suspend를 원자적으로 실행하므로 upsert 누락이 없다.
+ */
+export async function upsertLiveActivityAndDismiss(
+  payload: LockFlowLiveActivityPayload,
+): Promise<boolean> {
+  const module = getNativeModule();
+  if (!module?.upsertAndSuspend) return false;
+  if (!(await checkAvailable(module))) return false;
+
+  await module.upsertAndSuspend(JSON.stringify(payload));
   return true;
 }
 

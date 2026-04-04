@@ -1,4 +1,12 @@
-import { LockActivityPreviewCard } from '../../lib/LockActivityPreviewCard';
+import { View } from 'react-native';
+
+import { YogaSessionCard } from '@widgets/active-session-card';
+
+import {
+  SESSION_PREVIEW_PROGRESS01,
+  SessionPreviewFootnote,
+  sessionPreviewRemainingSec,
+} from '../../lib/sessionPreviewShared';
 import { normalizeYogaDetailConfig } from './yogaConfig';
 
 export function YogaPreview({
@@ -9,20 +17,16 @@ export function YogaPreview({
   dataConfig: unknown;
 }) {
   const c = normalizeYogaDetailConfig(dataConfig);
-  const progressPct = c.sessionMin > 0 ? (c.elapsedMin / c.sessionMin) * 100 : 0;
 
   return (
-    <LockActivityPreviewCard
-      icon="figure.yoga"
-      rhythmTitle={rhythmTitle}
-      fallbackTitle="요가"
-      noteBelowHeader={c.flowLabel}
-      metrics={[
-        { value: `${c.sessionMin}분`, label: '세션' },
-        { value: `${c.elapsedMin}분`, label: '경과', valueSize: 'small' },
-      ]}
-      progressPct={progressPct}
-      footerCaption="요가 플로우 잠금화면 미리보기"
-    />
+    <View style={{ gap: 10 }}>
+      <YogaSessionCard
+        data={c}
+        remainingSec={sessionPreviewRemainingSec()}
+        progress01={SESSION_PREVIEW_PROGRESS01}
+        isPaused={false}
+      />
+      <SessionPreviewFootnote rhythmTitle={rhythmTitle} />
+    </View>
   );
 }

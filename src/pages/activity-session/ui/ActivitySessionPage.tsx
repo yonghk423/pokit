@@ -6,17 +6,40 @@ import { useShallow } from 'zustand/react/shallow';
 
 import {
   blockDurationSec,
+  emptyCategorySessionConfigs,
+  filterDayPlanFlowBlocks,
   formatBlockTimeRange,
   getNextPendingAfter,
+  parseNumberedFlowLines,
+  normalizeFastingDetailConfig,
+  normalizeMedicineDetailConfig,
+  normalizeMeditationDetailConfig,
+  normalizeOtherDetailConfig,
   normalizeReadingLiveActivityConfig,
+  normalizeRestDetailConfig,
+  normalizeRunDetailConfig,
+  normalizeStretchDetailConfig,
+  normalizeStudyDetailConfig,
+  normalizeWaterDetailConfig,
+  normalizeWorkDetailConfig,
+  normalizeYogaDetailConfig,
+  useDayPlanRuntimeStore,
 } from '@entities/day-plan';
-import { useDayPlanStore } from '@entities/day-plan/model';
-import { endLockFlowLiveActivity, useLiveActivitySync } from '@features/live-activity-sync';
+import { useDayPlanNotificationStore, useDayPlanStore } from '@entities/day-plan';
+import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
+import {
+  buildLiveActivityChecklistRows,
+  buildLiveActivityPayloadForBlock,
+  endLockFlowLiveActivity,
+  upsertFinishedLiveActivityForBlockId,
+  useLiveActivitySync,
+} from '@features/live-activity-sync';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
+import { ActiveSessionCard } from '@widgets/active-session-card';
 
 import { SessionProgressRing } from './SessionProgressRing';
 
@@ -36,7 +59,6 @@ const CATEGORY_KEY_BY_LABEL: Record<string, string> = {
   '약 복용': 'medicine',
   스트레칭: 'stretch',
   피트티스: 'stretch',
-  // Backward compatibility: 기존에 저장된 라벨(`기타`)도 인식합니다.
   기타: 'other',
   사용자: 'other',
   사용쟈: 'other',
@@ -81,8 +103,20 @@ export function ActivitySessionPage() {
     () => (blockId ? blocks.find((b) => b.id === blockId) : undefined),
     [blocks, blockId],
   );
+  const runtimeTiming = useDayPlanRuntimeStore((s) => (blockId ? s.timelineByBlockId[blockId] : undefined));
+  const startTicker = useDayPlanRuntimeStore((s) => s.startTicker);
+  const stopTicker = useDayPlanRuntimeStore((s) => s.stopTicker);
+  const setActiveBlockId = useDayPlanRuntimeStore((s) => s.setActiveBlockId);
+  const setLiveActivityChecklistFocusBlockId = useDayPlanStore((s) => s.setLiveActivityChecklistFocusBlockId);
 
   const totalSec = block ? blockDurationSec(block) : 0;
+  const startAtMs = runtimeTiming?.startAtMs ?? null;
+  const endAtMs = runtimeTiming?.endAtMs ?? null;
+
+  const [phaseNowMs, setPhaseNowMs] = useState(Date.now);
+  const isWaitingToStart = startAtMs != null && phaseNowMs < startAtMs;
+  const waitRemainingSec =
+    startAtMs != null ? Math.max(0, Math.ceil((startAtMs - phaseNowMs) / 1000)) : 0;
 
   const [remainingSec, setRemainingSec] = useState(totalSec);
   const [isPaused, setIsPaused] = useState(false);
@@ -107,61 +141,115 @@ export function ActivitySessionPage() {
   const categoryLabel = rawCategoryLabel === '사용쟈' ? '사용자' : rawCategoryLabel;
   const categoryKey = resolveCategoryKeyFromLabel(categoryLabel);
   const timeRange = block ? formatBlockTimeRange(block) : '';
+  const isQuickMemoSession = block?.blockOrigin === 'quickMemo';
 
-  const readingDataConfig = useMemo(() => {
-    if (categoryKey !== 'reading') return null;
-    const persisted = loadGoalDetailCategoryConfig('reading');
-    return normalizeReadingLiveActivityConfig(persisted);
+  const categoryConfigs = useMemo(() => {
+    const base = emptyCategorySessionConfigs();
+    if (!categoryKey) return base;
+    const raw = loadGoalDetailCategoryConfig(categoryKey);
+    switch (categoryKey) {
+      case 'reading':
+        return { ...base, reading: normalizeReadingLiveActivityConfig(raw) };
+      case 'run':
+        return { ...base, run: normalizeRunDetailConfig(raw ?? {}) };
+      case 'work':
+        return { ...base, work: normalizeWorkDetailConfig(raw ?? {}) };
+      case 'study':
+        return { ...base, study: normalizeStudyDetailConfig(raw ?? {}) };
+      case 'meditation':
+        return { ...base, meditation: normalizeMeditationDetailConfig(raw ?? {}) };
+      case 'yoga':
+        return { ...base, yoga: normalizeYogaDetailConfig(raw ?? {}) };
+      case 'rest':
+        return { ...base, rest: normalizeRestDetailConfig(raw ?? {}) };
+      case 'fasting':
+        return { ...base, fasting: normalizeFastingDetailConfig(raw ?? {}) };
+      case 'water':
+        return { ...base, water: normalizeWaterDetailConfig(raw ?? {}) };
+      case 'medicine':
+        return { ...base, medicine: normalizeMedicineDetailConfig(raw ?? {}) };
+      case 'stretch':
+        return { ...base, stretch: normalizeStretchDetailConfig(raw ?? {}) };
+      case 'other':
+        return { ...base, other: normalizeOtherDetailConfig(raw ?? {}) };
+      default:
+        return base;
+    }
   }, [categoryKey]);
 
+  const flowBlocks = useMemo(() => filterDayPlanFlowBlocks(blocks), [blocks]);
+
   const nextBlock = useMemo(() => {
-    if (!block) return null;
-    return getNextPendingAfter(blocks, block.id, completedBlockIds, skippedBlockIds);
-  }, [block, blocks, completedBlockIds, skippedBlockIds]);
+    if (!block || block.blockOrigin === 'quickMemo') return null;
+    return getNextPendingAfter(flowBlocks, block.id, completedBlockIds, skippedBlockIds);
+  }, [block, flowBlocks, completedBlockIds, skippedBlockIds]);
 
   const progress = useMemo(() => {
+    if (isQuickMemoSession) return 0;
     if (totalSec <= 0) return 0;
     return Math.min(1, Math.max(0, (totalSec - remainingSec) / totalSec));
-  }, [totalSec, remainingSec]);
+  }, [isQuickMemoSession, totalSec, remainingSec]);
 
   const pausedRemainingSeconds = isPaused ? remainingSec : null;
-
-  /** runningEndAtMs는 block 전환 직후 useEffect 이전에 null일 수 있어, 첫 동기화에서도 타이머가 깨지지 않게 블록 기준 종료 시각을 둔다. */
-  const endsAtIsoForLiveActivity = useMemo(() => {
-    if (!block || isPaused) return null;
-    if (runningEndAtMs != null) return new Date(runningEndAtMs).toISOString();
-    return new Date(Date.now() + blockDurationSec(block) * 1000).toISOString();
-  }, [block, isPaused, runningEndAtMs]);
+  const checklist = useMemo(
+    () =>
+      block
+        ? buildLiveActivityChecklistRows({
+            focusBlockId: block.id,
+            status: isWaitingToStart ? 'standby' : isPaused ? 'paused' : 'active',
+          })
+        : {
+            checklistTitle: '오늘 플로우 목록',
+            checklistCountLabel: '0개',
+            checklistRows: [],
+            checklistSummaryLine1: '완료 0개 · 건너뜀 0개 · 남은 0개',
+            checklistSummaryLine2: '오늘 남은 플로우가 없어요',
+          },
+    [block, isPaused, isWaitingToStart],
+  );
 
   const liveActivityPayload = useMemo(() => {
     if (!block) return null;
-
-    return {
+    const status = isWaitingToStart ? 'standby' : isPaused ? 'paused' : 'active';
+    const base = buildLiveActivityPayloadForBlock({
       blockId: block.id,
-      title: activityTitle,
-      category: categoryLabel,
-      categoryKey,
-      timeRangeLabel: timeRange,
-      totalSeconds: totalSec,
-      pausedRemainingSeconds,
-      endsAtIso: endsAtIsoForLiveActivity,
-      status: isPaused ? 'paused' : 'active',
-      readingDataConfig,
-    } as const;
+      status,
+      pausedRemainingSeconds: isWaitingToStart ? null : pausedRemainingSeconds,
+    });
+    if (!base) return null;
+    if (categoryKey === 'reading' && categoryConfigs.reading) {
+      return { ...base, readingDataConfig: categoryConfigs.reading };
+    }
+    return base;
   }, [
-    activityTitle,
     block,
-    categoryLabel,
+    categoryConfigs.reading,
     categoryKey,
-    endsAtIsoForLiveActivity,
+    checklist,
     isPaused,
+    isWaitingToStart,
     pausedRemainingSeconds,
-    readingDataConfig,
-    timeRange,
-    totalSec,
   ]);
 
   useLiveActivitySync(liveActivityPayload);
+
+  useEffect(() => {
+    const id = setInterval(() => setPhaseNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    startTicker();
+    return () => stopTicker();
+  }, [startTicker, stopTicker]);
+
+  useEffect(() => {
+    setActiveBlockId(block?.id ?? null);
+  }, [block?.id, setActiveBlockId]);
+
+  useEffect(() => {
+    if (block?.id) setLiveActivityChecklistFocusBlockId(block.id);
+  }, [block?.id, setLiveActivityChecklistFocusBlockId]);
 
   const navigateAfterComplete = useCallback(() => {
     if (!block) {
@@ -170,7 +258,19 @@ export function ActivitySessionPage() {
     }
     completeBlock(block.id);
     const s = useDayPlanStore.getState();
-    const next = getNextPendingAfter(s.blocks, block.id, s.completedBlockIds, s.skippedBlockIds);
+    void rescheduleDayPlanNotifications({
+      dateKey: s.dateKey,
+      blocks: s.blocks,
+      settings: useDayPlanNotificationStore.getState().toSettings(),
+      completedBlockIds: s.completedBlockIds,
+      skippedBlockIds: s.skippedBlockIds,
+    });
+    const next = getNextPendingAfter(
+      filterDayPlanFlowBlocks(s.blocks),
+      block.id,
+      s.completedBlockIds,
+      s.skippedBlockIds,
+    );
     if (next) {
       router.replace({ pathname: '/activity-session', params: { blockId: next.id } });
     } else {
@@ -186,7 +286,19 @@ export function ActivitySessionPage() {
     }
     skipBlock(block.id);
     const s = useDayPlanStore.getState();
-    const next = getNextPendingAfter(s.blocks, block.id, s.completedBlockIds, s.skippedBlockIds);
+    void rescheduleDayPlanNotifications({
+      dateKey: s.dateKey,
+      blocks: s.blocks,
+      settings: useDayPlanNotificationStore.getState().toSettings(),
+      completedBlockIds: s.completedBlockIds,
+      skippedBlockIds: s.skippedBlockIds,
+    });
+    const next = getNextPendingAfter(
+      filterDayPlanFlowBlocks(s.blocks),
+      block.id,
+      s.completedBlockIds,
+      s.skippedBlockIds,
+    );
     if (next) {
       router.replace({ pathname: '/activity-session', params: { blockId: next.id } });
     } else {
@@ -197,6 +309,8 @@ export function ActivitySessionPage() {
 
   const togglePause = useCallback(() => {
     if (!block) return;
+    if (block.blockOrigin === 'quickMemo') return;
+    if (isWaitingToStart) return;
 
     if (isPaused) {
       setRunningEndAtMs(Date.now() + remainingSec * 1000);
@@ -209,12 +323,11 @@ export function ActivitySessionPage() {
     setRemainingSec(nextRemaining);
     setRunningEndAtMs(null);
     setIsPaused(true);
-  }, [block, isPaused, remainingSec, runningEndAtMs]);
+  }, [block, isPaused, isWaitingToStart, remainingSec, runningEndAtMs]);
 
   useEffect(() => {
     if (!block) return;
     if (!liveAction) return;
-
     const token = `${block.id}:${liveAction}`;
     if (handledLiveActionRef.current === token) return;
     handledLiveActionRef.current = token;
@@ -244,12 +357,26 @@ export function ActivitySessionPage() {
   useEffect(() => {
     autoFinishTriggeredRef.current = false;
     setIsPaused(false);
-    setRemainingSec(block ? blockDurationSec(block) : 0);
-    setRunningEndAtMs(block ? Date.now() + blockDurationSec(block) * 1000 : null);
-  }, [block?.id, block]);
+    if (!block) {
+      setRemainingSec(0);
+      setRunningEndAtMs(null);
+      return;
+    }
+    if (block.blockOrigin === 'quickMemo') {
+      setRemainingSec(0);
+      setRunningEndAtMs(null);
+      return;
+    }
+    const bootEndAtMs = runtimeTiming?.endAtMs ?? Date.now() + blockDurationSec(block) * 1000;
+    setRemainingSec(Math.max(0, Math.ceil((bootEndAtMs - Date.now()) / 1000)));
+    setRunningEndAtMs(
+      bootEndAtMs,
+    );
+  }, [block?.id, block, runtimeTiming?.endAtMs]);
 
   useEffect(() => {
-    if (!block || isPaused || runningEndAtMs === null) return;
+    if (!block || block.blockOrigin === 'quickMemo') return;
+    if (isPaused || runningEndAtMs === null) return;
 
     const id = setInterval(() => {
       const nextRemaining = Math.max(0, Math.ceil((runningEndAtMs - Date.now()) / 1000));
@@ -260,16 +387,39 @@ export function ActivitySessionPage() {
   }, [block?.id, isPaused, block, runningEndAtMs]);
 
   useEffect(() => {
-    if (!block || isPaused) return;
+    if (!block || block.blockOrigin === 'quickMemo') return;
+    if (isPaused) return;
     if (remainingSec > 0) return;
     if (autoFinishTriggeredRef.current) return;
     autoFinishTriggeredRef.current = true;
+    void upsertFinishedLiveActivityForBlockId(block.id);
     navigateAfterComplete();
   }, [remainingSec, block, isPaused, navigateAfterComplete]);
 
   if (!block) {
     return null;
   }
+
+  const memoLines = parseNumberedFlowLines(block.title);
+
+  const usesHeroBeforeButtons =
+    !isQuickMemoSession && categoryKey !== null && categoryKey !== 'reading';
+
+  const sessionCardProps = {
+    categoryKey,
+    categoryConfigs,
+    title: activityTitle,
+    remainingSec,
+    progressPct: Math.round(progress * 100),
+    isPaused,
+    isWaitingToStart,
+    waitRemainingSec,
+    checklistTitle: checklist.checklistTitle,
+    checklistCountLabel: checklist.checklistCountLabel,
+    checklistRows: checklist.checklistRows,
+    checklistSummaryLine1: checklist.checklistSummaryLine1,
+    checklistSummaryLine2: checklist.checklistSummaryLine2,
+  } as const;
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: bg }]}>
@@ -298,7 +448,9 @@ export function ActivitySessionPage() {
                 {categoryLabel}
               </ThemedText>
             </View>
-            <ThemedText style={[styles.subMeta, { color: muted }]}>{timeRange}</ThemedText>
+            <ThemedText style={[styles.subMeta, { color: muted }]}>
+              {isQuickMemoSession ? '빠른 메모' : timeRange}
+            </ThemedText>
           </View>
           <Pressable accessibilityRole="button" style={styles.headerIconBtn}>
             <IconSymbol name="gearshape" size={22} color={text} />
@@ -311,29 +463,57 @@ export function ActivitySessionPage() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           bounces>
+          {usesHeroBeforeButtons ? (
+            <ActiveSessionCard {...sessionCardProps} segment="categoryOnly" />
+          ) : null}
+
           <View style={styles.bodyMain}>
-            <View style={styles.ringBlock}>
-              <SessionProgressRing
-                size={RING_SIZE}
-                strokeWidth={RING_STROKE}
-                progress={progress}
-                trackColor={ringTrack}
-                accentColor={PRIMARY}
-              />
-              <View style={styles.ringCenter} pointerEvents="none">
-                <ThemedText style={[styles.timeLarge, { color: text }]}>
-                  {formatClock(remainingSec)}
-                </ThemedText>
-                <ThemedText style={[styles.timeHint, { color: muted }]}>남은 시간</ThemedText>
-                {isPaused ? (
-                  <View style={[styles.pauseBadge, { backgroundColor: chipSoftBg }]}>
-                    <ThemedText style={[styles.pauseBadgeText, { color: PRIMARY }]}>
-                      일시정지됨
-                    </ThemedText>
+            {isQuickMemoSession ? (
+              <View style={[styles.memoBlock, { borderColor: border, backgroundColor: surface }]}>
+                {memoLines.map((line, idx) => (
+                  <ThemedText key={`${idx}-${line.slice(0, 8)}`} style={[styles.memoLine, { color: text }]}>
+                    {line}
+                  </ThemedText>
+                ))}
+                {isWaitingToStart ? (
+                  <View style={[styles.pauseBadge, { backgroundColor: chipSoftBg, alignSelf: 'center' }]}>
+                    <ThemedText style={[styles.pauseBadgeText, { color: PRIMARY }]}>시작 대기</ThemedText>
                   </View>
                 ) : null}
               </View>
-            </View>
+            ) : !usesHeroBeforeButtons ? (
+              <View style={styles.ringBlock}>
+                <SessionProgressRing
+                  size={RING_SIZE}
+                  strokeWidth={RING_STROKE}
+                  progress={progress}
+                  trackColor={ringTrack}
+                  accentColor={PRIMARY}
+                />
+                <View style={styles.ringCenter} pointerEvents="none">
+                  <ThemedText style={[styles.timeLarge, { color: text }]}>
+                    {formatClock(remainingSec)}
+                  </ThemedText>
+                  <ThemedText style={[styles.timeHint, { color: muted }]}>
+                    {isWaitingToStart ? '대기+실행 남은 시간' : '남은 시간'}
+                  </ThemedText>
+                  {isWaitingToStart ? (
+                    <View style={[styles.pauseBadge, { backgroundColor: chipSoftBg }]}>
+                      <ThemedText style={[styles.pauseBadgeText, { color: PRIMARY }]}>
+                        시작까지 {formatClock(waitRemainingSec)}
+                      </ThemedText>
+                    </View>
+                  ) : null}
+                  {isPaused ? (
+                    <View style={[styles.pauseBadge, { backgroundColor: chipSoftBg }]}>
+                      <ThemedText style={[styles.pauseBadgeText, { color: PRIMARY }]}>
+                        일시정지됨
+                      </ThemedText>
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
 
             <Pressable
               accessibilityRole="button"
@@ -344,22 +524,26 @@ export function ActivitySessionPage() {
             </Pressable>
 
             <View style={styles.secondaryRow}>
-              <Pressable
-                accessibilityRole="button"
-                style={[
-                  styles.secondaryBtn,
-                  { borderColor: border, backgroundColor: surface },
-                ]}
-                onPress={togglePause}>
-                <IconSymbol
-                  name={isPaused ? 'play.fill' : 'pause.fill'}
-                  size={18}
-                  color={text}
-                />
-                <ThemedText style={[styles.secondaryBtnText, { color: text }]}>
-                  {isPaused ? '계속하기' : '일시정지'}
-                </ThemedText>
-              </Pressable>
+              {!isQuickMemoSession ? (
+                <Pressable
+                  accessibilityRole="button"
+                  style={[
+                    styles.secondaryBtn,
+                    { borderColor: border, backgroundColor: surface },
+                    isWaitingToStart && { opacity: 0.5 },
+                  ]}
+                  disabled={isWaitingToStart}
+                  onPress={togglePause}>
+                  <IconSymbol
+                    name={isPaused ? 'play.fill' : 'pause.fill'}
+                    size={18}
+                    color={text}
+                  />
+                  <ThemedText style={[styles.secondaryBtnText, { color: text }]}>
+                    {isPaused ? '계속하기' : '일시정지'}
+                  </ThemedText>
+                </Pressable>
+              ) : null}
               <Pressable
                 accessibilityRole="button"
                 style={[
@@ -372,6 +556,11 @@ export function ActivitySessionPage() {
               </Pressable>
             </View>
           </View>
+
+          <ActiveSessionCard
+            {...sessionCardProps}
+            segment={usesHeroBeforeButtons ? 'checklistOnly' : 'full'}
+          />
 
           {nextBlock ? (
             <View style={[styles.nextCard, { backgroundColor: surface, borderColor: border }]}>
@@ -471,6 +660,19 @@ const styles = StyleSheet.create({
   bodyMain: {
     gap: 18,
     paddingBottom: 4,
+  },
+  memoBlock: {
+    alignSelf: 'stretch',
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 18,
+    paddingVertical: 20,
+    gap: 12,
+  },
+  memoLine: {
+    fontSize: 17,
+    lineHeight: 24,
+    fontWeight: '600',
   },
   ringBlock: {
     alignSelf: 'center',

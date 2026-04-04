@@ -6,4 +6,6 @@ RCT_EXTERN_METHOD(upsertActivity:(NSString *)payloadJson)
 
 RCT_EXTERN_METHOD(endActivity)
 
+RCT_EXTERN_METHOD(upsertAndSuspend:(NSString *)payloadJson)
+
 @end

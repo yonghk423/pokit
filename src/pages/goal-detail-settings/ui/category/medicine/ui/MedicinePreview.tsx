@@ -1,4 +1,12 @@
-import { LockActivityPreviewCard } from '../../lib/LockActivityPreviewCard';
+import { View } from 'react-native';
+
+import { MedicineSessionCard } from '@widgets/active-session-card';
+
+import {
+  SESSION_PREVIEW_PROGRESS01,
+  SessionPreviewFootnote,
+  sessionPreviewRemainingSec,
+} from '../../lib/sessionPreviewShared';
 import { normalizeMedicineDetailConfig } from './medicineConfig';
 
 export function MedicinePreview({
@@ -9,20 +17,16 @@ export function MedicinePreview({
   dataConfig: unknown;
 }) {
   const c = normalizeMedicineDetailConfig(dataConfig);
-  const progressPct = c.dosesPerDay > 0 ? (c.takenCount / c.dosesPerDay) * 100 : 0;
 
   return (
-    <LockActivityPreviewCard
-      icon="cross.case.fill"
-      rhythmTitle={rhythmTitle}
-      fallbackTitle="약 복용"
-      noteBelowHeader={c.doseLabel}
-      metrics={[
-        { value: `${c.dosesPerDay}회`, label: '하루 횟수' },
-        { value: `${c.takenCount}회`, label: '복용함', valueSize: 'small' },
-      ]}
-      progressPct={progressPct}
-      footerCaption="약 복용 플로우 잠금화면 미리보기"
-    />
+    <View style={{ gap: 10 }}>
+      <MedicineSessionCard
+        data={c}
+        remainingSec={sessionPreviewRemainingSec()}
+        progress01={SESSION_PREVIEW_PROGRESS01}
+        isPaused={false}
+      />
+      <SessionPreviewFootnote rhythmTitle={rhythmTitle} />
+    </View>
   );
 }

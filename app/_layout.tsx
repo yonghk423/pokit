@@ -1,11 +1,10 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
-import { useDayPlanStore } from '@entities/day-plan/model';
+import { useAppBootstrap } from '@app/index';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 
 export const unstable_settings = {
@@ -15,9 +14,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
-  useEffect(() => {
-    useDayPlanStore.getState().hydrate();
-  }, []);
+  useAppBootstrap();
 
   return (
     <SafeAreaProvider>
@@ -29,6 +26,7 @@ export default function RootLayout() {
             name="goal-detail-settings"
             options={{ headerShown: false, presentation: 'card' }}
           />
+          <Stack.Screen name="flow-standby" options={{ headerShown: false, presentation: 'card' }} />
           <Stack.Screen name="widget-settings" options={{ headerShown: false, presentation: 'card' }} />
           <Stack.Screen
             name="activity-session"

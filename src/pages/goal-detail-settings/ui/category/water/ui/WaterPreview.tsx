@@ -1,4 +1,12 @@
-import { LockActivityPreviewCard } from '../../lib/LockActivityPreviewCard';
+import { View } from 'react-native';
+
+import { WaterSessionCard } from '@widgets/active-session-card';
+
+import {
+  SESSION_PREVIEW_PROGRESS01,
+  SessionPreviewFootnote,
+  sessionPreviewRemainingSec,
+} from '../../lib/sessionPreviewShared';
 import { normalizeWaterDetailConfig } from './waterConfig';
 
 export function WaterPreview({
@@ -9,19 +17,16 @@ export function WaterPreview({
   dataConfig: unknown;
 }) {
   const c = normalizeWaterDetailConfig(dataConfig);
-  const progressPct = c.goalMl > 0 ? (c.drankMl / c.goalMl) * 100 : 0;
 
   return (
-    <LockActivityPreviewCard
-      icon="drop.fill"
-      rhythmTitle={rhythmTitle}
-      fallbackTitle="수분"
-      metrics={[
-        { value: `${c.goalMl}ml`, label: '목표' },
-        { value: `${c.drankMl}ml`, label: '섭취', valueSize: 'small' },
-      ]}
-      progressPct={progressPct}
-      footerCaption="수분 플로우 잠금화면 미리보기"
-    />
+    <View style={{ gap: 10 }}>
+      <WaterSessionCard
+        data={c}
+        remainingSec={sessionPreviewRemainingSec()}
+        progress01={SESSION_PREVIEW_PROGRESS01}
+        isPaused={false}
+      />
+      <SessionPreviewFootnote rhythmTitle={rhythmTitle} />
+    </View>
   );
 }

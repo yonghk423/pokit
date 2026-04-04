@@ -29,7 +29,7 @@ type Props = {
     patch: Partial<Pick<TimeBlock, 'startTime' | 'endTime' | 'title'>>,
   ) => void;
   onRemoveBlock: (id: string) => void;
-  onCommitBlock: (id: string) => void;
+  onCommitBlock: (id: string, latestTimes?: { startTime: string; endTime: string }) => void;
 };
 
 export function TimeBasedPlanSection({
@@ -269,7 +269,12 @@ export function TimeBasedPlanSection({
                   <Pressable
                     accessibilityLabel="시간 확정"
                     hitSlop={8}
-                    onPress={() => onCommitBlock(selectedBlock.id)}
+                    onPress={() =>
+                      onCommitBlock(selectedBlock.id, {
+                        startTime: localStart,
+                        endTime: localEnd,
+                      })
+                    }
                     style={[styles.commitBtn, { borderColor: PRIMARY }]}>
                     <ThemedText style={[styles.commitBtnText, { color: PRIMARY }]}>시간 확정</ThemedText>
                   </Pressable>

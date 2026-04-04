@@ -1,4 +1,12 @@
-import { LockActivityPreviewCard } from '../../lib/LockActivityPreviewCard';
+import { View } from 'react-native';
+
+import { StudySessionCard } from '@widgets/active-session-card';
+
+import {
+  SESSION_PREVIEW_PROGRESS01,
+  SessionPreviewFootnote,
+  sessionPreviewRemainingSec,
+} from '../../lib/sessionPreviewShared';
 import { normalizeStudyDetailConfig } from './studyConfig';
 
 export function StudyPreview({
@@ -9,20 +17,16 @@ export function StudyPreview({
   dataConfig: unknown;
 }) {
   const c = normalizeStudyDetailConfig(dataConfig);
-  const note = c.goalMemo || undefined;
 
   return (
-    <LockActivityPreviewCard
-      icon="book.closed.fill"
-      rhythmTitle={rhythmTitle}
-      fallbackTitle="공부"
-      noteBelowHeader={note}
-      metrics={[
-        { value: '—', label: '세부 지표', valueSize: 'small' },
-        { value: '준비 중', label: '추적', valueSize: 'small' },
-      ]}
-      progressPct={0}
-      footerCaption="공부 플로우 전용 레이아웃은 차례로 Live Activity와 맞출 예정이에요."
-    />
+    <View style={{ gap: 10 }}>
+      <StudySessionCard
+        data={c}
+        remainingSec={sessionPreviewRemainingSec()}
+        progress01={SESSION_PREVIEW_PROGRESS01}
+        isPaused={false}
+      />
+      <SessionPreviewFootnote rhythmTitle={rhythmTitle} />
+    </View>
   );
 }
