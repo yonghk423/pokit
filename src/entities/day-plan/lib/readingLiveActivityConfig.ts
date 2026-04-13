@@ -10,8 +10,8 @@ export type ReadingLiveActivityConfig = {
 
 export const DEFAULT_READING_LIVE_ACTIVITY_CONFIG: ReadingLiveActivityConfig = {
   bookTitle: '',
-  startPage: 24,
-  targetPage: 120,
+  startPage: 1,
+  targetPage: 100,
   /** 잠금화면 지표 — 전부 해제 가능 */
   selectedMetrics: [],
 };

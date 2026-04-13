@@ -72,7 +72,6 @@ export function WorkSettings({
   return (
     <View style={styles.root}>
       <View style={styles.heading}>
-        <ThemedText style={[styles.kicker, { color: PRIMARY }]}>WORK FOCUS</ThemedText>
         <ThemedText style={[styles.title, { color: c.onSurface }]}>
           작업 몰입 설정
         </ThemedText>
@@ -179,13 +178,6 @@ export function WorkSettings({
 const styles = StyleSheet.create({
   root: { gap: 22 },
   heading: { gap: 6 },
-  kicker: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginLeft: 2,
-  },
   title: { fontSize: 24, fontWeight: '900', letterSpacing: -0.5, lineHeight: 28 },
   sub: { fontSize: 13, lineHeight: 19, fontWeight: '600' },
   taskCard: {
@@ -264,10 +256,9 @@ const styles = StyleSheet.create({
   },
   memoSection: { gap: 8 },
   sectionLabel: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.8,
-    textTransform: 'uppercase',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: -0.1,
     marginLeft: 2,
   },
   memoField: {

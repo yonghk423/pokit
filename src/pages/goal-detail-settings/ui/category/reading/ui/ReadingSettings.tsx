@@ -85,16 +85,12 @@ export function ReadingSettings({
   }, [onChangeDataConfig, bookTitleStr, cfg.selectedMetrics, startPage, targetPage]);
 
   const rangeLine = `${startPage}p ~ ${targetPage}p`;
-  const flowNameLine = rhythmTitle.trim() || '없음';
-
   const cardBg = READING_SCREEN_BG;
   const borderC = 'rgba(16,185,129,0.25)';
   const fieldBg = '#ffffff';
   const muted = '#64748b';
   const onSurface = '#0f172a';
   const outline = '#94a3b8';
-
-  const kickerColor = 'rgb(5, 122, 85)';
 
   return (
     <View style={styles.wrap}>
@@ -123,21 +119,13 @@ export function ReadingSettings({
             multiline
             style={[styles.bookTitleInput, { color: onSurface }]}
           />
-          <ThemedText style={[styles.bookFieldHint, { color: muted }]}>
-            비워 두면 일정 플로우 이름「{flowNameLine}」이 세션에 표시돼요.
-          </ThemedText>
         </View>
 
-        <ThemedText style={[styles.bookKicker, { color: kickerColor }]}>몰입 미리보기</ThemedText>
         <Text style={[styles.bookTitle, { color: onSurface }]} numberOfLines={4}>
           {sessionPreviewTitle}
         </Text>
-        <ThemedText style={[styles.contextHint, { color: muted }]}>
-          독서 세션에는 큰 타이머와 함께, 아래 목표 범위가 강조돼요.
-        </ThemedText>
 
         <View style={styles.rangeBlock}>
-          <ThemedText style={[styles.rangeLabel, { color: muted }]}>오늘의 목표 범위</ThemedText>
           <Text style={[styles.rangeValue, { color: READING_EMERALD_TEXT }]}>{rangeLine}</Text>
         </View>
 
@@ -158,9 +146,6 @@ export function ReadingSettings({
 
         <View style={[styles.inputPanel, { backgroundColor: fieldBg, borderColor: borderC }]}>
           <ThemedText style={[styles.inputPanelTitle, { color: onSurface }]}>페이지 입력</ThemedText>
-          <ThemedText style={[styles.inputPanelSub, { color: muted }]}>
-            숫자를 바꾸면 위 미리보기·세션·잠금화면 표시가 함께 갱신돼요.
-          </ThemedText>
           <View style={styles.grid2}>
             <View style={styles.fieldCol}>
               <ThemedText style={[styles.fieldLabel, { color: muted }]}>시작 페이지</ThemedText>
@@ -172,7 +157,7 @@ export function ReadingSettings({
                 <TextInput
                   value={startPageStr}
                   onChangeText={setStartPageStr}
-                  placeholder="24"
+                  placeholder="1"
                   placeholderTextColor={outline}
                   keyboardType="number-pad"
                   style={[styles.fieldInput, { color: onSurface }]}
@@ -190,7 +175,7 @@ export function ReadingSettings({
                 <TextInput
                   value={targetPageStr}
                   onChangeText={setTargetPageStr}
-                  placeholder="120"
+                  placeholder="100"
                   placeholderTextColor={outline}
                   keyboardType="number-pad"
                   style={[styles.fieldInput, { color: onSurface }]}
@@ -206,22 +191,22 @@ export function ReadingSettings({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 18 },
+  wrap: { gap: 12 },
   sessionCard: {
     borderRadius: 20,
-    padding: 22,
-    gap: 16,
+    padding: 16,
+    gap: 12,
     borderWidth: 1,
     alignItems: 'center',
   },
   bookIconWrap: {
-    marginBottom: 4,
+    marginBottom: 2,
     alignItems: 'center',
   },
   bookCircle: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -233,68 +218,41 @@ const styles = StyleSheet.create({
   bookFieldPanel: {
     width: '100%',
     borderRadius: 16,
-    padding: 14,
-    gap: 8,
+    padding: 12,
+    gap: 6,
     borderWidth: 1,
   },
   bookFieldLabel: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: -0.1,
   },
   bookTitleInput: {
-    minHeight: 44,
-    fontSize: 17,
+    minHeight: 40,
+    fontSize: 16,
     fontWeight: '700',
-    lineHeight: 24,
-    paddingVertical: 8,
+    lineHeight: 22,
+    paddingVertical: 4,
     paddingHorizontal: 0,
     textAlignVertical: 'top',
   },
-  bookFieldHint: {
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: '500',
-  },
-  bookKicker: {
-    fontSize: 11,
-    lineHeight: 14,
-    fontWeight: '600',
-    letterSpacing: 2.4,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-  },
   bookTitle: {
-    fontSize: 26,
-    lineHeight: 32,
+    fontSize: 20,
+    lineHeight: 26,
     fontWeight: '800',
     letterSpacing: -0.4,
     textAlign: 'center',
     paddingHorizontal: 4,
   },
-  contextHint: {
-    fontSize: 13,
-    lineHeight: 20,
-    fontWeight: '500',
-    textAlign: 'center',
-    paddingHorizontal: 8,
-  },
   rangeBlock: {
     alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
+    gap: 6,
+    marginTop: 0,
     width: '100%',
   },
-  rangeLabel: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
   rangeValue: {
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 24,
+    lineHeight: 30,
     fontWeight: '700',
     letterSpacing: -0.5,
     textAlign: 'center',
@@ -304,25 +262,24 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 10,
     width: '100%',
-    marginTop: 4,
+    marginTop: 0,
   },
   metricCol: { flex: 1, gap: 4, alignItems: 'center' },
-  valBig: { fontSize: 24, fontWeight: '800', letterSpacing: -0.4, textAlign: 'center' },
-  valSmall: { fontSize: 22, fontWeight: '800', letterSpacing: -0.35, textAlign: 'center' },
+  valBig: { fontSize: 18, fontWeight: '800', letterSpacing: -0.4, textAlign: 'center' },
+  valSmall: { fontSize: 18, fontWeight: '800', letterSpacing: -0.35, textAlign: 'center' },
   metricLabel: { fontSize: 9, fontWeight: '700', textAlign: 'center' },
   inputPanel: {
     width: '100%',
-    marginTop: 8,
+    marginTop: 2,
     borderRadius: 16,
-    padding: 16,
-    gap: 10,
+    padding: 12,
+    gap: 8,
     borderWidth: 1,
   },
-  inputPanelTitle: { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
-  inputPanelSub: { fontSize: 12, lineHeight: 18, fontWeight: '500' },
+  inputPanelTitle: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
   grid2: { flexDirection: 'row', gap: 12 },
   fieldCol: { flex: 1, gap: 8 },
-  fieldLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase' },
+  fieldLabel: { fontSize: 12, fontWeight: '700', letterSpacing: -0.1 },
   fieldWrap: {
     borderRadius: 12,
     paddingVertical: 10,
@@ -333,5 +290,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   fieldInput: { flex: 1, fontSize: 17, fontWeight: '800', padding: 0 },
-  fieldSuffix: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase' },
+  fieldSuffix: { fontSize: 12, fontWeight: '700', letterSpacing: -0.1 },
 });

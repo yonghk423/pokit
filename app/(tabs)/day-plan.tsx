@@ -1,5 +1,5 @@
 import { DayPlanPage } from '@pages/day-plan';
 
-export default function DayPlanScreen() {
+export default function DayPlanTabScreen() {
   return <DayPlanPage />;
 }

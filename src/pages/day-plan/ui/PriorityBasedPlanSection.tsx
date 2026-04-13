@@ -443,6 +443,9 @@ type Props = {
 function OrderRow({
   icon,
   label,
+  priorityLabel,
+  isTopPriority,
+  priorityColor,
   isDark,
   ink,
   inkMuted,
@@ -452,6 +455,9 @@ function OrderRow({
 }: {
   icon: string;
   label: string;
+  priorityLabel?: string;
+  isTopPriority?: boolean;
+  priorityColor?: { bg: string; fg: string };
   isDark: boolean;
   ink: string;
   inkMuted: string;
@@ -461,6 +467,24 @@ function OrderRow({
 }) {
   return (
     <View style={[styles.orderRowRoman, { borderBottomColor: line }]}>
+      {priorityLabel ? (
+        <View
+          style={[
+            styles.inlineRankPill,
+            {
+              backgroundColor:
+                priorityColor?.bg ?? (isTopPriority ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.08)'),
+            },
+          ]}>
+          <ThemedText
+            style={[
+              styles.inlineRankPillText,
+              { color: priorityColor?.fg ?? (isTopPriority ? '#fff' : ink) },
+            ]}>
+            {priorityLabel}
+          </ThemedText>
+        </View>
+      ) : null}
       <IconSymbol name={icon as any} size={20} color={ink} />
       <View style={styles.orderRowRomanText}>
         <ThemedText
@@ -538,6 +562,26 @@ function CatalogListRow({
       )}
     </Pressable>
   );
+}
+
+function priorityLabelByIndex(index: number): string {
+  return String(index + 1);
+}
+
+function priorityColorByIndex(index: number): { bg: string; fg: string } {
+  const palette: Array<{ bg: string; fg: string }> = [
+    { bg: '#ef4444', fg: '#ffffff' }, // red
+    { bg: '#f97316', fg: '#ffffff' }, // orange
+    { bg: '#f59e0b', fg: '#111827' }, // amber
+    { bg: '#eab308', fg: '#111827' }, // yellow
+    { bg: '#84cc16', fg: '#052e16' }, // lime
+    { bg: '#22c55e', fg: '#052e16' }, // green
+    { bg: '#14b8a6', fg: '#042f2e' }, // teal
+    { bg: '#06b6d4', fg: '#083344' }, // cyan
+    { bg: '#3b82f6', fg: '#ffffff' }, // blue
+    { bg: '#8b5cf6', fg: '#ffffff' }, // violet
+  ];
+  return palette[index % palette.length];
 }
 
 /* ─── 메인 ─── */
@@ -688,11 +732,14 @@ export function PriorityBasedPlanSection({
                     </View>
                   </View>
                 ) : (
-                  selectedItems.map((cat) => (
+                  selectedItems.map((cat, idx) => (
                     <OrderRow
                       key={cat.key}
                       icon={cat.icon}
                       label={cat.label}
+                      priorityLabel={priorityLabelByIndex(idx)}
+                      isTopPriority={idx === 0}
+                      priorityColor={priorityColorByIndex(idx)}
                       isDark={isDark}
                       ink={editorial.ink}
                       inkMuted={editorial.muted}
@@ -898,6 +945,16 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 0,
     borderBottomWidth: 1,
+  },
+  inlineRankPill: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  inlineRankPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: -0.1,
   },
   orderRowRomanText: {
     flex: 1,

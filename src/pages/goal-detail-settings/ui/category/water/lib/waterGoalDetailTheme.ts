@@ -12,11 +12,7 @@ export const WATER_GOAL_DETAIL_THEME = {
   surfaceContainerLow: 'rgba(0, 0, 0, 0.03)',
   surfaceContainerHigh: 'rgba(0, 0, 0, 0.06)',
   surfaceContainerHighest: '#e4e4e7',
-  /** 잠금화면 미리보기 위젯 카드 */
-  glassPreview: '#ffffff',
   glassPreviewBorder: 'rgba(0, 0, 0, 0.08)',
-  /** 잠금화면 목업 배경 (밝은 블루 틴트) */
-  lockDeep: '#e8f4fc',
   primary: '#22d3ee',
   primarySoft: 'rgba(34, 211, 238, 0.14)',
   progressFill: '#22d3ee',

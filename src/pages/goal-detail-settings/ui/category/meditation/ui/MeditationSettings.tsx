@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   sub: { fontSize: 12, lineHeight: 18 },
   row: { flexDirection: 'row', gap: 12 },
   col: { flex: 1, gap: 8 },
-  label: { fontSize: 10, fontWeight: '900', letterSpacing: 1.2, textTransform: 'uppercase' },
+  label: { fontSize: 12, fontWeight: '700', letterSpacing: -0.1 },
   field: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 },
   input: { fontSize: 16, fontWeight: '800', padding: 0 },
 });

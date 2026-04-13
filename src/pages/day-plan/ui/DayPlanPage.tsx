@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ComponentRef } from 'react';
 import {
   Alert,
   Keyboard,
@@ -14,17 +14,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  Extrapolation,
-  interpolate,
-  interpolateColor,
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import * as Haptics from 'expo-haptics';
 import { useShallow } from 'zustand/react/shallow';
 
 import { parseHHmmToMinutes, useDayPlanNotificationStore, useDayPlanStore } from '@entities/day-plan';
@@ -43,106 +32,14 @@ import {
   CATEGORIES,
   defaultPriorityWindowFromNow,
   PRIMARY,
-  type PlanMode,
 } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
+import { useDayPlanDraftStore } from '../model/dayPlanDraftStore';
+import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
+import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
 import { PlanModeSwitch } from './PlanModeSwitch';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
-
-/* ─── Zipper Slider (Slide-to-confirm) ─── */
-
-const SLIDER_H = 64;
-const THUMB_SZ = 52;
-const SLIDER_PAD = 6;
-
-function ZipperSlider({
-  onComplete,
-  disabled = false,
-}: {
-  onComplete: () => void;
-  disabled?: boolean;
-}) {
-  const trackWidth = useSharedValue(0);
-  const translateX = useSharedValue(0);
-  const isCompleted = useSharedValue(false);
-
-  const onLayout = useCallback(
-    (e: { nativeEvent: { layout: { width: number } } }) => {
-      trackWidth.value = e.nativeEvent.layout.width;
-    },
-    [trackWidth],
-  );
-
-  const fireComplete = useCallback(() => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    onComplete();
-  }, [onComplete]);
-
-  const panGesture = Gesture.Pan()
-    .enabled(!disabled)
-    .onUpdate((e) => {
-      if (isCompleted.value) return;
-      const maxX = trackWidth.value - THUMB_SZ - SLIDER_PAD * 2;
-      translateX.value = Math.max(0, Math.min(e.translationX, maxX));
-    })
-    .onEnd(() => {
-      if (isCompleted.value) return;
-      const maxX = trackWidth.value - THUMB_SZ - SLIDER_PAD * 2;
-      if (translateX.value > maxX * 0.85) {
-        isCompleted.value = true;
-        translateX.value = withSpring(maxX, { damping: 16, stiffness: 300 });
-        runOnJS(fireComplete)();
-      } else {
-        translateX.value = withSpring(0, { damping: 20, stiffness: 350 });
-      }
-    });
-
-  const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  const textOpacity = useAnimatedStyle(() => {
-    const maxX = trackWidth.value - THUMB_SZ - SLIDER_PAD * 2;
-    return {
-      opacity: maxX > 0
-        ? interpolate(translateX.value, [0, maxX * 0.5], [1, 0], Extrapolation.CLAMP)
-        : 1,
-    };
-  });
-
-  const trackFillStyle = useAnimatedStyle(() => {
-    const maxX = trackWidth.value - THUMB_SZ - SLIDER_PAD * 2;
-    return {
-      backgroundColor: maxX > 0
-        ? interpolateColor(
-            translateX.value,
-            [0, maxX],
-            ['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.28)'],
-          )
-        : 'rgba(0,0,0,0.08)',
-    };
-  });
-
-  return (
-    <View style={[styles.zipperTrackOuter, disabled && styles.zipperDisabled]}>
-      <Animated.View
-        style={[styles.zipperTrack, trackFillStyle]}
-        onLayout={onLayout}>
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.zipperThumb, disabled && styles.zipperThumbDisabled, thumbStyle]}>
-            <IconSymbol name="chevron.right.2" size={20} color={disabled ? 'rgba(255,255,255,0.4)' : '#fff'} />
-          </Animated.View>
-        </GestureDetector>
-        <Animated.View style={[styles.zipperLabelWrap, textOpacity]}>
-          <ThemedText style={[styles.zipperLabel, disabled && styles.zipperLabelDisabled]}>
-            {disabled ? '카테고리를 담아주세요' : '시작하기'}
-          </ThemedText>
-        </Animated.View>
-      </Animated.View>
-    </View>
-  );
-}
 
 export function DayPlanPage() {
   const router = useRouter();
@@ -150,15 +47,31 @@ export function DayPlanPage() {
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
 
-  const [planMode, setPlanMode] = useState<PlanMode>('priority');
-
-  const [priorityStart, setPriorityStart] = useState(
-    () => defaultPriorityWindowFromNow().startTime,
+  const {
+    planMode,
+    priorityStart,
+    priorityEnd,
+    priorityCategoryOrder,
+    quickMemoDraft,
+    setPlanMode,
+    setPriorityStart,
+    setPriorityEnd,
+    setPriorityCategoryOrder,
+    setQuickMemoDraft,
+  } = useDayPlanDraftStore(
+    useShallow((s) => ({
+      planMode: s.planMode,
+      priorityStart: s.priorityStart,
+      priorityEnd: s.priorityEnd,
+      priorityCategoryOrder: s.priorityCategoryOrder,
+      quickMemoDraft: s.quickMemoDraft,
+      setPlanMode: s.setPlanMode,
+      setPriorityStart: s.setPriorityStart,
+      setPriorityEnd: s.setPriorityEnd,
+      setPriorityCategoryOrder: s.setPriorityCategoryOrder,
+      setQuickMemoDraft: s.setQuickMemoDraft,
+    })),
   );
-  const [priorityEnd, setPriorityEnd] = useState(() => defaultPriorityWindowFromNow().endTime);
-  /** 카테고리를 누른 순서(플로 순서). 첫 항목이 일정 블록의 대표 카테고리로 쓰입니다. */
-  const [priorityCategoryOrder, setPriorityCategoryOrder] = useState<string[]>(() => []);
-  const [quickMemoDraft, setQuickMemoDraft] = useState('');
   const quickMemoInputRef = useRef<TextInput>(null);
   const dayPlanScrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
 
@@ -203,10 +116,14 @@ export function DayPlanPage() {
 
   useEffect(() => {
     if (planMode !== 'priority') return;
+    if (priorityCategoryOrder.length > 0) return;
+    const hasValidRange =
+      parseHHmmToMinutes(priorityStart) !== null && parseHHmmToMinutes(priorityEnd) !== null;
+    if (hasValidRange) return;
     const w = defaultPriorityWindowFromNow();
     setPriorityStart(w.startTime);
     setPriorityEnd(w.endTime);
-  }, [planMode]);
+  }, [planMode, priorityCategoryOrder.length, priorityEnd, priorityStart, setPriorityEnd, setPriorityStart]);
 
   const c = useMemo(() => palette(isDark), [isDark]);
 
@@ -222,16 +139,22 @@ export function DayPlanPage() {
     });
   }, []);
 
-  const scrollContentBottomPad = useMemo(() => 28 + insets.bottom, [insets.bottom]);
+  /** 하단 커스텀 탭 바 높이 + 홈 인디케이터 — 스크롤 끝이 가려지지 않게 */
+  const scrollContentBottomPad = useMemo(
+    () => 24 + DAY_PLAN_TAB_BAR_ROW_HEIGHT + insets.bottom,
+    [insets.bottom],
+  );
 
-  const handlePriorityCategoryPress = useCallback((key: string) => {
-    setPriorityCategoryOrder((prev) => {
-      if (prev.includes(key)) {
-        return prev.filter((k) => k !== key);
-      }
-      return [...prev, key];
-    });
-  }, []);
+  const handlePriorityCategoryPress = useCallback(
+    (key: string) => {
+      setPriorityCategoryOrder(
+        priorityCategoryOrder.includes(key)
+          ? priorityCategoryOrder.filter((k) => k !== key)
+          : [...priorityCategoryOrder, key],
+      );
+    },
+    [priorityCategoryOrder, setPriorityCategoryOrder],
+  );
 
   const handleOpenCategorySettings = useCallback(
     (categoryKey: string) => {
@@ -359,6 +282,17 @@ export function DayPlanPage() {
       return;
     }
   };
+
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+
+  const tabBridge = useDayPlanTabBridge();
+  useEffect(() => {
+    const disabled = planMode === 'priority' && priorityCategoryOrder.length === 0;
+    const label = planMode === 'quickMemo' ? '메모 저장' : '시작하기';
+    tabBridge.registerPrimaryAction(() => onSaveRef.current(), { disabled, label });
+    return () => tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기' });
+  }, [tabBridge, planMode, priorityCategoryOrder.length]);
 
   /** on-drag 만 쓰면 키보드만 내려가고 포커스는 남아, 다음 터치에 패드가 다시 뜨는 경우가 있어 스크롤 시 blur 로 포커스를 끈다. */
   const onQuickMemoScrollBeginDrag = useCallback(() => {
@@ -538,36 +472,6 @@ export function DayPlanPage() {
                 </View>
               ) : null}
             </ScrollView>
-
-            <View style={[styles.bottomDock, { backgroundColor: shellBg }]}>
-              <Pressable
-                style={[styles.bottomFade, { backgroundColor: shellBg }]}
-                onPress={() => planMode === 'quickMemo' && Keyboard.dismiss()}
-              />
-              <SafeAreaView
-                edges={['bottom']}
-                style={[styles.bottomInner, planMode === 'quickMemo' && styles.bottomInnerQuickMemo]}>
-                {planMode === 'quickMemo' ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="메모 저장"
-                    style={[
-                      styles.primaryCta,
-                      styles.primaryCtaQuickMemo,
-                      styles.primaryCtaSaveIconOnly,
-                      { backgroundColor: c.containerHigh, borderColor: c.border },
-                    ]}
-                    onPress={onSave}>
-                    <IconSymbol name="square.and.arrow.down" size={26} color={c.onSurface} />
-                  </Pressable>
-                ) : (
-                  <ZipperSlider
-                    onComplete={onSave}
-                    disabled={priorityCategoryOrder.length === 0}
-                  />
-                )}
-              </SafeAreaView>
-            </View>
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -579,7 +483,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
   keyboardColumn: { flex: 1 },
-  /** 스크롤 + 하단 CTA를 세로로 쌓아 키보드 회피 시 버튼이 키보드 위로 올라가게 함 */
+  /** 키보드 회피 시 본문이 위로 밀리도록 */
   mainColumn: { flex: 1 },
   saveText: { color: PRIMARY, fontSize: 18, fontWeight: '700', letterSpacing: -0.2 },
   scroll: { flex: 1 },
@@ -636,112 +540,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  bottomDock: {
-    position: 'relative',
-    width: '100%',
-    zIndex: 20,
-  },
-  bottomFade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: -40,
-    height: 40,
-    opacity: 0.95,
-  },
-  bottomInner: {
-    paddingHorizontal: 0,
-    paddingTop: 16,
-    paddingBottom: 4,
-  },
-  bottomInnerQuickMemo: {
-    paddingHorizontal: 20,
-  },
-  primaryCta: {
-    backgroundColor: PRIMARY,
-    borderRadius: 12,
-    paddingVertical: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: 'rgba(0, 0, 0, 0.25)',
-    shadowOpacity: 1,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 16 },
-    elevation: 8,
-  },
-  /** 빠른 메모: 검정·흰 글자 대신 면 톤만 사용 */
-  primaryCtaQuickMemo: {
-    borderWidth: 1,
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 0,
-  },
-  /** 메모 저장: 텍스트 대신 아이콘만 — 터치 영역 유지 */
-  primaryCtaSaveIconOnly: {
-    paddingVertical: 16,
-    minHeight: 52,
-  },
-  primaryCtaText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  bottomTagline: {
-    textAlign: 'center',
-    marginTop: 14,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  zipperTrackOuter: {
-    borderRadius: SLIDER_H / 2,
-    overflow: 'hidden',
-  },
-  zipperTrack: {
-    height: SLIDER_H,
-    borderRadius: SLIDER_H / 2,
-    padding: SLIDER_PAD,
-    justifyContent: 'center',
-  },
-  zipperThumb: {
-    width: THUMB_SZ,
-    height: THUMB_SZ,
-    borderRadius: THUMB_SZ / 2,
-    backgroundColor: PRIMARY,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: 'rgba(0, 0, 0, 0.35)',
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
-    zIndex: 2,
-  },
-  zipperLabelWrap: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  zipperLabel: {
-    color: PRIMARY,
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  zipperDisabled: {
-    opacity: 0.45,
-  },
-  zipperThumbDisabled: {
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  zipperLabelDisabled: {
-    color: 'rgba(0,0,0,0.35)',
   },
 });

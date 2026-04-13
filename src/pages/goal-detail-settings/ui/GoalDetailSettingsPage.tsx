@@ -14,14 +14,6 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
 import {
-  normalizeFastingDetailConfig,
-  normalizeMedicineDetailConfig,
-  normalizeMeditationDetailConfig,
-  normalizeOtherDetailConfig,
-  normalizeReadingLiveActivityConfig,
-  normalizeWaterDetailConfig,
-  normalizeWorkDetailConfig,
-  normalizeYogaDetailConfig,
   useDayPlanNotificationStore,
   isDayPlanFlowBlock,
   useDayPlanRuntimeStore,
@@ -87,79 +79,6 @@ function toHHmm(minutes: number): string {
 
 function blockTimeLabel(block: DayPlanBlock): string {
   return `${toHHmm(block.startMinutes)} - ${toHHmm(block.endMinutes)}`;
-}
-
-function fmtDurationMinForSummary(min: number): string {
-  const m = Math.max(0, Math.round(min));
-  if (m >= 60) {
-    const h = Math.floor(m / 60);
-    const r = m % 60;
-    return r === 0 ? `${h}시간` : `${h}시간 ${r}분`;
-  }
-  return `${m}분`;
-}
-
-/** 목표 상세 접기 영역용 한 줄 요약 — 동일 파일에 두어 Metro/React Compiler 분할 번들에서 import 누락 방지 */
-function goalDetailSettingsSummaryLine(
-  categoryKey: GoalDetailCategoryKey,
-  dataConfig: unknown,
-): string {
-  switch (categoryKey) {
-    case 'work': {
-      const c = normalizeWorkDetailConfig(dataConfig);
-      const taskCount = c.tasks.length;
-      const taskHint = taskCount > 0 ? `작업 ${taskCount}개` : '작업 미입력';
-      const memoHint = c.focusMemo ? ' · 메모 있음' : '';
-      return `${taskHint}${memoHint}`;
-    }
-    case 'reading': {
-      const c = normalizeReadingLiveActivityConfig(dataConfig);
-      const book = c.bookTitle.trim();
-      const bookPart = book ? ` · ${book}` : '';
-      return `페이지 ${c.startPage}p → ${c.targetPage}p${bookPart}`;
-    }
-    case 'meditation': {
-      const c = normalizeMeditationDetailConfig(dataConfig);
-      return `명상 ${c.sessionMin}분 · 누적 ${c.elapsedMin}분`;
-    }
-    case 'yoga': {
-      const c = normalizeYogaDetailConfig(dataConfig);
-      return `「${c.flowLabel}」 ${c.sessionMin}분 · 진행 ${c.elapsedMin}분`;
-    }
-    case 'fasting': {
-      const c = normalizeFastingDetailConfig(dataConfig);
-      return `단식 목표 ${fmtDurationMinForSummary(c.fastingMin)} · 경과 ${fmtDurationMinForSummary(c.elapsedMin)}`;
-    }
-    case 'water': {
-      const c = normalizeWaterDetailConfig(dataConfig);
-      const goalL = (c.goalMl / 1000).toFixed(1);
-      const rem =
-        c.reminderPreset === '120'
-          ? '2시간마다'
-          : c.reminderPreset === 'custom'
-            ? `${c.reminderCustomMin}분마다`
-            : '1시간마다';
-      const smart = c.smartNotification ? '스마트 알림' : '스마트 끔';
-      return `목표 ${goalL}L · 섭취 ${c.drankMl}ml · ${rem} · ${smart}`;
-    }
-    case 'medicine': {
-      const c = normalizeMedicineDetailConfig(dataConfig);
-      const parts: string[] = [];
-      if (c.morningOn) parts.push(`아침 ${c.morningTime}`);
-      if (c.lunchOn) parts.push(`점심 ${c.lunchTime}`);
-      if (c.dinnerOn) parts.push(`저녁 ${c.dinnerTime}`);
-      const sched = parts.length > 0 ? parts.join(' · ') : '시간 미설정';
-      const bell = c.medicationNotify ? '알림 켜짐' : '알림 꺼짐';
-      return `「${c.doseLabel.trim() || '약'}」 ${sched} · ${bell} · 복용 ${c.takenCount}/${c.dosesPerDay}회`;
-    }
-    case 'other': {
-      const c = normalizeOtherDetailConfig(dataConfig);
-      const memo = c.memo.trim();
-      return memo ? `메모: ${memo}` : '메모 없음 · 실행 중 카드에 표시할 메모를 적어 주세요';
-    }
-    default:
-      return '설정을 확인해 주세요';
-  }
 }
 
 export function GoalDetailSettingsPage() {
@@ -343,18 +262,6 @@ export function GoalDetailSettingsPage() {
           ]}
           keyboardShouldPersistTaps="handled">
           <View style={[styles.padded, waterOnlyUi && styles.paddedWater]}>
-            {!waterOnlyUi ? (
-              <View
-                style={[
-                  styles.summaryCard,
-                  { backgroundColor: 'rgba(0,0,0,0.06)' },
-                ]}>
-                <ThemedText style={[styles.summaryTitle, { color: c.onSurface }]}>
-                  총 {targets.length}개 플로우 설정
-                </ThemedText>
-              </View>
-            ) : null}
-
             {sortedTargets.length > 1 ? (
               <View
                 style={[
@@ -365,10 +272,10 @@ export function GoalDetailSettingsPage() {
                   },
                 ]}>
                 <ThemedText style={[styles.startPickerTitle, { color: c.onSurface }]}>
-                  잠금화면에서 먼저 진행할 플로우
+                  먼저 진행할 플로우
                 </ThemedText>
                 <ThemedText style={[styles.startPickerSub, { color: c.onVariant }]}>
-                  선택한 블록이 Live Activity 체크리스트 맨 위·진행 중으로 표시돼요.
+                  선택한 블록이 체크리스트 맨 위·진행 중으로 표시돼요.
                 </ThemedText>
                 <View style={styles.startPickerList}>
                   {sortedTargets.map((t) => {
@@ -436,44 +343,8 @@ export function GoalDetailSettingsPage() {
               const Settings = module.Settings;
               const dataConfig = dataByBlockId[t.blockId] ?? module.getInitialDataConfig?.() ?? {};
               const previewTitle = previewTitleForBlock(t.blockId);
-              const hideWaterListChrome = waterOnlyUi && t.categoryKey === 'water';
               return (
                 <View key={`${t.blockId}-${idx}`} style={styles.blockSection}>
-                  {!hideWaterListChrome ? (
-                    <View style={styles.blockSectionHead}>
-                      <ThemedText
-                        style={[styles.blockOrder, { color: PRIMARY }]}>
-                        {idx + 1}
-                      </ThemedText>
-                      <View style={{ flex: 1 }}>
-                        <ThemedText style={[styles.blockTitle, { color: c.onSurface }]}>
-                          {module.titleKo}
-                        </ThemedText>
-                        <ThemedText style={[styles.blockSub, { color: c.onVariant }]}>
-                          {t.timeLabel}
-                        </ThemedText>
-                      </View>
-                    </View>
-                  ) : null}
-
-                  {!hideWaterListChrome ? (
-                    <View
-                      style={[
-                        styles.compactSummaryCard,
-                        {
-                          borderColor: c.border,
-                          backgroundColor: 'rgba(0,0,0,0.03)',
-                        },
-                      ]}>
-                      <ThemedText style={[styles.compactSummaryLine, { color: c.onSurface }]}>
-                        {goalDetailSettingsSummaryLine(t.categoryKey, dataConfig)}
-                      </ThemedText>
-                      <ThemedText style={[styles.compactSummaryHint, { color: c.onVariant }]}>
-                        실행 중에는 세션 화면에서 큰 타이머와 카드 레이아웃이 적용돼요.
-                      </ThemedText>
-                    </View>
-                  ) : null}
-
                   <Settings
                     rhythmTitle={previewTitle}
                     dataConfig={dataConfig}
@@ -518,22 +389,7 @@ const styles = StyleSheet.create({
   scrollContent: {},
   padded: { paddingHorizontal: 24, gap: 22, marginTop: 18 },
   paddedWater: { marginTop: 8, gap: 20 },
-  summaryCard: { borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: 'rgba(0,0,0,0.06)' },
-  summaryTitle: { fontSize: 16, fontWeight: '800' },
   blockSection: { gap: 14, paddingVertical: 8 },
-  compactSummaryCard: {
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    gap: 8,
-  },
-  compactSummaryLine: { fontSize: 14, fontWeight: '700', lineHeight: 20 },
-  compactSummaryHint: { fontSize: 11, lineHeight: 16, fontWeight: '600' },
-  blockSectionHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
-  blockOrder: { fontSize: 22, fontWeight: '900', width: 24, textAlign: 'center' },
-  blockTitle: { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
-  blockSub: { fontSize: 12, marginTop: 2 },
   startPickerCard: {
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,

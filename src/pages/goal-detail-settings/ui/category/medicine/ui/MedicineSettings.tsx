@@ -132,7 +132,7 @@ export function MedicineSettings({
       </View>
 
       <View style={styles.block}>
-        <ThemedText style={[styles.kicker, { color: c.onVariant }]}>약 이름 입력</ThemedText>
+        <ThemedText style={[styles.sectionHeading, { color: c.onSurface }]}>약 이름 입력</ThemedText>
         <View style={[styles.nameField, { backgroundColor: fieldBg, borderColor: fieldBorder }]}>
           <TextInput
             value={draft.doseLabel}
@@ -148,7 +148,7 @@ export function MedicineSettings({
       </View>
 
       <View style={styles.block}>
-        <ThemedText style={[styles.kicker, { color: c.onVariant }]}>복용 시간 설정</ThemedText>
+        <ThemedText style={[styles.sectionHeading, { color: c.onSurface }]}>복용 시간 설정</ThemedText>
         <View style={styles.slotGrid}>
           {SLOT_GRID.map((slot) => {
             const on = slotOn(draft, slot.key);
@@ -174,7 +174,7 @@ export function MedicineSettings({
       </View>
 
       <View style={styles.block}>
-        <ThemedText style={[styles.kicker, { color: c.onVariant }]}>상세 시간 커스텀</ThemedText>
+        <ThemedText style={[styles.sectionHeading, { color: c.onSurface }]}>상세 시간 커스텀</ThemedText>
         <View style={styles.customList}>
           {SLOT_GRID.map((slot) => {
             if (!slotOn(draft, slot.key)) return null;
@@ -244,11 +244,10 @@ const styles = StyleSheet.create({
   heroAccent: { color: PRIMARY, fontSize: 28, fontWeight: '900', letterSpacing: -0.8 },
   heroSub: { fontSize: 14, fontWeight: '600', lineHeight: 21 },
   block: { gap: 12 },
-  kicker: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
+  sectionHeading: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
     marginLeft: 4,
   },
   nameField: {
@@ -318,7 +317,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   customTextCol: { flex: 1, gap: 4, minWidth: 0 },
-  customMicro: { fontSize: 10, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
+  customMicro: { fontSize: 12, fontWeight: '700', letterSpacing: -0.1 },
   customTimeInput: {
     fontSize: 26,
     fontWeight: '800',

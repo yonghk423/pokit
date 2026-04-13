@@ -51,7 +51,6 @@ export default function RootLayout() {
               contentStyle: { backgroundColor: rootBg },
             }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="day-plan" options={{ headerShown: false, presentation: 'card' }} />
             <Stack.Screen
               name="goal-detail-settings"
               options={{ headerShown: false, presentation: 'card' }}
