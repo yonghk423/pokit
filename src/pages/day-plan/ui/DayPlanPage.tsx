@@ -20,8 +20,9 @@ import { parseHHmmToMinutes, useDayPlanNotificationStore, useDayPlanStore } from
 import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
 import {
   buildLiveActivityPayloadForBlock,
+  endLockFlowLiveActivity,
   reconcileLiveActivityFromPlan,
-  upsertLiveActivityAndDismiss,
+  upsertLockFlowLiveActivity,
 } from '@features/live-activity-sync';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -49,11 +50,13 @@ export function DayPlanPage() {
 
   const {
     planMode,
+    isFocusStarted,
     priorityStart,
     priorityEnd,
     priorityCategoryOrder,
     quickMemoDraft,
     setPlanMode,
+    setIsFocusStarted,
     setPriorityStart,
     setPriorityEnd,
     setPriorityCategoryOrder,
@@ -61,11 +64,13 @@ export function DayPlanPage() {
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       planMode: s.planMode,
+      isFocusStarted: s.isFocusStarted,
       priorityStart: s.priorityStart,
       priorityEnd: s.priorityEnd,
       priorityCategoryOrder: s.priorityCategoryOrder,
       quickMemoDraft: s.quickMemoDraft,
       setPlanMode: s.setPlanMode,
+      setIsFocusStarted: s.setIsFocusStarted,
       setPriorityStart: s.setPriorityStart,
       setPriorityEnd: s.setPriorityEnd,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
@@ -147,13 +152,14 @@ export function DayPlanPage() {
 
   const handlePriorityCategoryPress = useCallback(
     (key: string) => {
+      setIsFocusStarted(false);
       setPriorityCategoryOrder(
         priorityCategoryOrder.includes(key)
           ? priorityCategoryOrder.filter((k) => k !== key)
           : [...priorityCategoryOrder, key],
       );
     },
-    [priorityCategoryOrder, setPriorityCategoryOrder],
+    [priorityCategoryOrder, setIsFocusStarted, setPriorityCategoryOrder],
   );
 
   const handleOpenCategorySettings = useCallback(
@@ -166,8 +172,33 @@ export function DayPlanPage() {
     [router],
   );
 
-  /** 목표 상세 설정에서 사용자가 입력한 플로우 이름으로 덮어쓰기 전 임시 제목 */
-  const TEMP_FLOW_BLOCK_TITLE = '플로우';
+  const handleOpenFocusDetail = useCallback(
+    (categoryKey: string) => {
+      const ps = parseHHmmToMinutes(priorityStart);
+      const pe = parseHHmmToMinutes(priorityEnd);
+      if (ps === null || pe === null || pe <= ps) {
+        Alert.alert('시각 형식', '시작·종료 시각을 먼저 확인해 주세요.');
+        return;
+      }
+      const label = CATEGORIES.find((x) => x.key === categoryKey)?.label ?? '플로우';
+      const result = addBlock({
+        title: label,
+        startMinutes: ps,
+        endMinutes: pe,
+        category: label,
+        replaceOverlapping: true,
+      });
+      if (!result.ok) {
+        Alert.alert('열기 실패', '해당 카테고리 몰입 화면을 열지 못했습니다.');
+        return;
+      }
+      router.push({
+        pathname: '/activity-session',
+        params: { blockId: result.blockId },
+      });
+    },
+    [addBlock, priorityEnd, priorityStart, router],
+  );
 
   const onSave = () => {
     if (planMode === 'quickMemo') {
@@ -224,7 +255,7 @@ export function DayPlanPage() {
         status: 'active',
       });
       if (payload) {
-        void upsertLiveActivityAndDismiss(payload);
+        void upsertLockFlowLiveActivity(payload);
       }
       return;
     }
@@ -252,7 +283,7 @@ export function DayPlanPage() {
       const blockTitle =
         orderedLabels.length > 0
           ? orderedLabels.map((line, i) => `${i + 1}. ${line}`).join('\n')
-          : TEMP_FLOW_BLOCK_TITLE;
+          : '플로우';
 
       const result = addBlock({
         title: blockTitle,
@@ -271,14 +302,21 @@ export function DayPlanPage() {
           Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 플로우만 저장할 수 있어요.');
           return;
         }
-        Alert.alert('저장 실패', '입력값을 확인해 주세요.');
+        Alert.alert('시작 실패', '우선순위 플로우를 시작하지 못했습니다.');
         return;
       }
 
-      router.push({
-        pathname: '/activity-session',
-        params: { blockId: result.blockId },
+      syncScheduledNotifications();
+      reconcileLiveActivityFromPlan();
+
+      const payload = buildLiveActivityPayloadForBlock({
+        blockId: result.blockId,
+        status: 'active',
       });
+      if (payload) {
+        void upsertLockFlowLiveActivity(payload);
+      }
+      setIsFocusStarted(true);
       return;
     }
   };
@@ -286,13 +324,36 @@ export function DayPlanPage() {
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
 
+  const handleStopFocus = useCallback(() => {
+    Alert.alert('플로우 종료', '지금 진행 중인 플로우를 종료할까요?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '종료',
+        style: 'destructive',
+        onPress: () => {
+          setIsFocusStarted(false);
+          void endLockFlowLiveActivity();
+        },
+      },
+    ]);
+  }, [setIsFocusStarted]);
+
+  const handleAllFocusCompleted = useCallback(() => {
+    setIsFocusStarted(false);
+    void endLockFlowLiveActivity();
+  }, [setIsFocusStarted]);
+
   const tabBridge = useDayPlanTabBridge();
   useEffect(() => {
     const disabled = planMode === 'priority' && priorityCategoryOrder.length === 0;
+    if (planMode === 'priority' && isFocusStarted) {
+      tabBridge.registerPrimaryAction(handleStopFocus, { disabled: false, label: '정지' });
+      return () => tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기' });
+    }
     const label = planMode === 'quickMemo' ? '메모 저장' : '시작하기';
     tabBridge.registerPrimaryAction(() => onSaveRef.current(), { disabled, label });
     return () => tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기' });
-  }, [tabBridge, planMode, priorityCategoryOrder.length]);
+  }, [tabBridge, planMode, priorityCategoryOrder.length, isFocusStarted, handleStopFocus]);
 
   /** on-drag 만 쓰면 키보드만 내려가고 포커스는 남아, 다음 터치에 패드가 다시 뜨는 경우가 있어 스크롤 시 blur 로 포커스를 끈다. */
   const onQuickMemoScrollBeginDrag = useCallback(() => {
@@ -370,6 +431,7 @@ export function DayPlanPage() {
                   {planModeSwitchEl}
                   <PriorityBasedPlanSection
                     c={c}
+                    isFocusStarted={isFocusStarted}
                     priorityStart={priorityStart}
                     priorityEnd={priorityEnd}
                     onChangePriorityStart={setPriorityStart}
@@ -377,6 +439,8 @@ export function DayPlanPage() {
                     priorityCategoryOrder={priorityCategoryOrder}
                     onSelectCategory={handlePriorityCategoryPress}
                     onOpenCategorySettings={handleOpenCategorySettings}
+                    onOpenFocusDetail={handleOpenFocusDetail}
+                    onAllFocusCompleted={handleAllFocusCompleted}
                   />
                 </View>
               )}

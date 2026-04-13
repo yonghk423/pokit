@@ -75,13 +75,26 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
               opacity: pressed && !centerDisabled ? 0.92 : 1,
             },
           ]}>
-          <ThemedText
-            style={[styles.centerLabel, { color: centerDisabled ? c.onVariant : '#fff' }]}
-            lightColor={centerDisabled ? c.onVariant : '#fff'}
-            darkColor={centerDisabled ? c.onVariant : '#fff'}
-            numberOfLines={1}>
-            {bridge.primaryLabel}
-          </ThemedText>
+          {bridge.primaryLabel === '정지' ? (
+            <View style={styles.centerStopRow}>
+              <IconSymbol name="stop.fill" size={14} color={centerDisabled ? c.onVariant : '#fff'} />
+              <ThemedText
+                style={[styles.centerLabel, { color: centerDisabled ? c.onVariant : '#fff' }]}
+                lightColor={centerDisabled ? c.onVariant : '#fff'}
+                darkColor={centerDisabled ? c.onVariant : '#fff'}
+                numberOfLines={1}>
+                정지
+              </ThemedText>
+            </View>
+          ) : (
+            <ThemedText
+              style={[styles.centerLabel, { color: centerDisabled ? c.onVariant : '#fff' }]}
+              lightColor={centerDisabled ? c.onVariant : '#fff'}
+              darkColor={centerDisabled ? c.onVariant : '#fff'}
+              numberOfLines={1}>
+              {bridge.primaryLabel}
+            </ThemedText>
+          )}
         </Pressable>
 
         <Pressable
@@ -144,5 +157,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: -0.2,
+  },
+  centerStopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
 });

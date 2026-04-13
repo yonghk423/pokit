@@ -428,6 +428,7 @@ function bookColors(c: DayPlanPalette, isDark: boolean) {
 
 type Props = {
   c: DayPlanPalette;
+  isFocusStarted: boolean;
   priorityStart: string;
   priorityEnd: string;
   onChangePriorityStart: (v: string) => void;
@@ -436,35 +437,72 @@ type Props = {
   onSelectCategory: (key: string) => void;
   /** 목록 행에서 상세 설정 열기 — categoryKey를 전달 */
   onOpenCategorySettings?: (categoryKey: string) => void;
+  /** 시작 후 목록 행에서 몰입 상세 열기 */
+  onOpenFocusDetail?: (categoryKey: string) => void;
+  /** 진행 중 모든 항목 완료 시 호출 */
+  onAllFocusCompleted?: () => void;
 };
 
 /* ─── 왼쪽 페이지: 우선 순위 목록 ─── */
 
 function OrderRow({
+  categoryKey,
   icon,
   label,
   priorityLabel,
   isTopPriority,
   priorityColor,
+  isFocusStarted,
   isDark,
   ink,
   inkMuted,
   line,
   onRemove,
+  onComplete,
   onSettings,
+  onFocusDetail,
 }: {
+  categoryKey: string;
   icon: string;
   label: string;
   priorityLabel?: string;
   isTopPriority?: boolean;
   priorityColor?: { bg: string; fg: string };
+  isFocusStarted?: boolean;
   isDark: boolean;
   ink: string;
   inkMuted: string;
   line: string;
   onRemove: () => void;
+  onComplete?: () => void;
   onSettings?: () => void;
+  onFocusDetail?: () => void;
 }) {
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!isFocusStarted) {
+      pulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 0.5,
+          duration: 650,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 650,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [isFocusStarted, pulse]);
+
   return (
     <View style={[styles.orderRowRoman, { borderBottomColor: line }]}>
       {priorityLabel ? (
@@ -485,7 +523,19 @@ function OrderRow({
           </ThemedText>
         </View>
       ) : null}
-      <IconSymbol name={icon as any} size={20} color={ink} />
+      {isFocusStarted && categoryKey === 'medicine' ? (
+        <Animated.View style={[styles.medicineIconBadge, { opacity: pulse }]}>
+          <IconSymbol name="cross.fill" size={12} color="#ef4444" />
+        </Animated.View>
+      ) : (
+        <Animated.View style={isFocusStarted ? { opacity: pulse } : undefined}>
+          <IconSymbol
+            name={icon as any}
+            size={20}
+            color={isFocusStarted ? activeIconColorByCategory(categoryKey) : ink}
+          />
+        </Animated.View>
+      )}
       <View style={styles.orderRowRomanText}>
         <ThemedText
           style={[styles.orderRowRomanTitle, { color: ink }]}
@@ -496,7 +546,16 @@ function OrderRow({
         </ThemedText>
       </View>
       <View style={styles.orderRowActions}>
-        {onSettings ? (
+        {isFocusStarted && onFocusDetail ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${label} 몰입 화면 자세히 보기`}
+            hitSlop={10}
+            onPress={onFocusDetail}
+            style={[styles.orderSettingsBtn, { borderColor: line }]}>
+            <IconSymbol name="chevron.right.circle" size={16} color={isDark ? inkMuted : ink} />
+          </Pressable>
+        ) : onSettings ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${label} 상세 설정`}
@@ -508,11 +567,15 @@ function OrderRow({
         ) : null}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${label} 제거`}
+          accessibilityLabel={isFocusStarted ? `${label} 완료` : `${label} 제거`}
           hitSlop={12}
-          onPress={onRemove}
+          onPress={isFocusStarted ? onComplete : onRemove}
           style={[styles.orderRemoveRoman, { borderColor: line }]}>
-          <IconSymbol name="xmark" size={12} color={isDark ? inkMuted : ink} />
+          <IconSymbol
+            name={isFocusStarted ? 'checkmark.circle.fill' : 'xmark'}
+            size={isFocusStarted ? 15 : 12}
+            color={isDark ? inkMuted : ink}
+          />
         </Pressable>
       </View>
     </View>
@@ -584,10 +647,20 @@ function priorityColorByIndex(index: number): { bg: string; fg: string } {
   return palette[index % palette.length];
 }
 
+function activeIconColorByCategory(categoryKey: string): string {
+  if (categoryKey === 'work') return '#1e3a8a';
+  if (categoryKey === 'reading') return '#22c55e';
+  if (categoryKey === 'fasting') return '#8b5a2b';
+  if (categoryKey === 'water') return '#7dd3fc';
+  if (categoryKey === 'other') return '#f97316';
+  return PRIMARY;
+}
+
 /* ─── 메인 ─── */
 
 export function PriorityBasedPlanSection({
   c,
+  isFocusStarted,
   priorityStart,
   priorityEnd,
   onChangePriorityStart,
@@ -595,6 +668,8 @@ export function PriorityBasedPlanSection({
   priorityCategoryOrder,
   onSelectCategory,
   onOpenCategorySettings,
+  onOpenFocusDetail,
+  onAllFocusCompleted,
 }: Props) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -609,6 +684,24 @@ export function PriorityBasedPlanSection({
   );
 
   const bagCount = selectedItems.length;
+  const [completedCategoryKeys, setCompletedCategoryKeys] = useState<string[]>([]);
+
+  useEffect(() => {
+    setCompletedCategoryKeys((prev) => prev.filter((k) => priorityCategoryOrder.includes(k)));
+  }, [priorityCategoryOrder]);
+
+  useEffect(() => {
+    if (!isFocusStarted) {
+      setCompletedCategoryKeys((prev) => (prev.length === 0 ? prev : []));
+      return;
+    }
+    if (priorityCategoryOrder.length === 0) return;
+    const done = priorityCategoryOrder.every((k) => completedCategoryKeys.includes(k));
+    if (done) {
+      onAllFocusCompleted?.();
+      setCompletedCategoryKeys([]);
+    }
+  }, [isFocusStarted, priorityCategoryOrder, completedCategoryKeys, onAllFocusCompleted]);
 
   /** 라이트: 대표 톤은 `dayPlanPalette` 그레이(containerLow)·진한 글자(onSurface) — 순백·채도 높은 다크 면 아님 */
   const editorial = useMemo(() => {
@@ -689,7 +782,9 @@ export function PriorityBasedPlanSection({
               style={[styles.pagePriorityIntro, { color: editorial.ink }]}
               lightColor={editorial.ink}
               darkColor={editorial.ink}>
-              여기에는 오늘 플로의 우선 순위를 담아요.
+              {isFocusStarted
+                ? '진행 중인 플로우예요. 각 항목에서 자세히 보기를 누르면 몰입 화면으로 이동해요.'
+                : '여기에는 오늘 플로의 우선 순위를 담아요.'}
             </ThemedText>
             <View style={[styles.pageScrollContent, { backgroundColor: surfaceBg }]}>
               <View
@@ -735,17 +830,25 @@ export function PriorityBasedPlanSection({
                   selectedItems.map((cat, idx) => (
                     <OrderRow
                       key={cat.key}
+                      categoryKey={cat.key}
                       icon={cat.icon}
                       label={cat.label}
                       priorityLabel={priorityLabelByIndex(idx)}
                       isTopPriority={idx === 0}
                       priorityColor={priorityColorByIndex(idx)}
+                      isFocusStarted={isFocusStarted}
                       isDark={isDark}
                       ink={editorial.ink}
                       inkMuted={editorial.muted}
                       line={editorial.line}
                       onRemove={() => handleRemove(cat.key)}
+                      onComplete={() =>
+                        setCompletedCategoryKeys((prev) =>
+                          prev.includes(cat.key) ? prev : [...prev, cat.key],
+                        )
+                      }
                       onSettings={onOpenCategorySettings ? () => onOpenCategorySettings(cat.key) : undefined}
+                      onFocusDetail={onOpenFocusDetail ? () => onOpenFocusDetail(cat.key) : undefined}
                     />
                   ))
                 )}
@@ -955,6 +1058,14 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: -0.1,
+  },
+  medicineIconBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   orderRowRomanText: {
     flex: 1,
