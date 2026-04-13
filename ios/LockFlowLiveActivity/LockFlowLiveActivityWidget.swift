@@ -589,10 +589,8 @@ private struct LockFlowLiveActivityView: View {
 
   @ViewBuilder
   private func quickMemoLockScreenBody() -> some View {
-    ViewThatFits(in: .vertical) {
-      QuickMemoModeLiveActivityView.lockScreenBody(context: context, compact: false)
-      QuickMemoModeLiveActivityView.lockScreenBody(context: context, compact: true)
-    }
+    /// ViewThatFits + compact(4줄) 폴백이 카드 높이는 남는데 본문만 일찍 말줄임되는 경우가 있어 단일 레이아웃만 사용한다.
+    QuickMemoModeLiveActivityView.lockScreenBody(context: context)
   }
 
   // MARK: - Body

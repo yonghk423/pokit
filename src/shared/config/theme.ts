@@ -1,21 +1,21 @@
 /**
  * Theme colors and fonts for light/dark mode (iOS).
- * 브랜드 primary: rgb(249, 115, 22) — 앱 기본 강조색.
+ * 브랜드 primary: 모노크롬 기준 검정(#000) — UI 레퍼런스와 동일 톤.
  */
 
-/** 앱 기본 강조색 (Primary) — rgb(249, 115, 22) */
+/** 앱 기본 강조색 (Primary) — 순수 검정 */
 export const PrimaryColor = {
-  rgb: 'rgb(249, 115, 22)',
-  rgba: (alpha: number) => `rgba(249, 115, 22, ${alpha})`,
+  rgb: 'rgb(0, 0, 0)',
+  rgba: (alpha: number) => `rgba(0, 0, 0, ${alpha})`,
 } as const;
 
-const tintColorLight = '#0a7ea4';
+const tintColorLight = '#000000';
 const tintColorDark = '#fff';
 
 export const Colors = {
   /** 라이트/다크 공통 primary (탭, CTA, 강조 요소) */
-  primary: 'rgba(249, 115, 22, 0.95)',
-  primarySolid: 'rgb(249, 115, 22)',
+  primary: 'rgba(0, 0, 0, 0.95)',
+  primarySolid: 'rgb(0, 0, 0)',
   light: {
     text: '#11181C',
     background: '#fff',

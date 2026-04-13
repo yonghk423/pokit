@@ -60,7 +60,7 @@ export function ReadingSessionCard({
   const titleText = title?.trim() || '딥 리딩';
 
   return (
-    <SessionDarkShell accent="forest">
+    <SessionDarkShell>
       <View style={styles.inner}>
         <Text style={styles.heroKicker}>{isPaused ? '일시정지' : '독서 세션'}</Text>
         <Text style={styles.heroTitle} numberOfLines={2}>
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 2,
-    color: 'rgba(249, 115, 22, 0.75)',
+    color: 'rgba(255, 255, 255, 0.45)',
     textTransform: 'uppercase',
     textAlign: 'center',
   },

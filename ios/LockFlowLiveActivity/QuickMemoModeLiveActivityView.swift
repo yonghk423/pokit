@@ -9,11 +9,10 @@ enum QuickMemoModeLiveActivityView {
 
   @ViewBuilder
   static func lockScreenBody(
-    context: ActivityViewContext<LockFlowLiveActivityAttributes>,
-    compact: Bool
+    context: ActivityViewContext<LockFlowLiveActivityAttributes>
   ) -> some View {
     if let q = context.state.quickMemoLive {
-      quickMemoCard(q: q, compact: compact)
+      quickMemoCard(q: q)
     } else {
       EmptyView()
     }
@@ -21,16 +20,15 @@ enum QuickMemoModeLiveActivityView {
 
   @ViewBuilder
   private static func quickMemoCard(
-    q: LockFlowLiveActivityAttributes.ContentState.QuickMemoLiveContent,
-    compact: Bool
+    q: LockFlowLiveActivityAttributes.ContentState.QuickMemoLiveContent
   ) -> some View {
-    let headline: CGFloat = compact ? 15 : 17
-    let label: CGFloat = compact ? 9 : 10
+    let headline: CGFloat = 17
+    let label: CGFloat = 10
 
-    VStack(alignment: .leading, spacing: compact ? 8 : 10) {
+    VStack(alignment: .leading, spacing: 10) {
       HStack(alignment: .center, spacing: 6) {
         Image(systemName: "note.text")
-          .font(.system(size: compact ? 12 : 14, weight: .semibold))
+          .font(.system(size: 14, weight: .semibold))
           .foregroundStyle(orange)
         Text("빠른 메모")
           .font(.system(size: label, weight: .heavy))
@@ -43,12 +41,12 @@ enum QuickMemoModeLiveActivityView {
       Text(q.bodyText)
         .font(.system(size: headline, weight: .semibold))
         .foregroundStyle(.white)
-        .lineSpacing(3)
-        .lineLimit(compact ? 4 : 6)
-        .minimumScaleFactor(0.68)
+        .lineSpacing(2)
+        /// 잠금 카드 세로 여유는 있는데 4~6줄에서 잘리던 것을 늘려 실제 영역을 쓴다(시스템 상한은 그대로).
+        .lineLimit(18)
+        .minimumScaleFactor(0.62)
         .multilineTextAlignment(.leading)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }

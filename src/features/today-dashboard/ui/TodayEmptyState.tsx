@@ -151,13 +151,13 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: 'rgba(249,115,22,0.18)',
+    backgroundColor: 'rgba(0,0,0,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconBadgeText: {
     fontSize: 26,
-    color: 'rgba(249,115,22,0.95)',
+    color: 'rgba(0,0,0,0.92)',
   },
   mainTitle: {
     marginTop: 6,
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 14,
-    backgroundColor: 'rgba(249,115,22,0.95)',
+    backgroundColor: 'rgba(0,0,0,0.92)',
   },
   mainBtnText: {
     color: '#fff',

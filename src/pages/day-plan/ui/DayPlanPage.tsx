@@ -1,23 +1,33 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import {
   Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Switch,
-  useWindowDimensions,
-  View
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  interpolateColor,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import * as Haptics from 'expo-haptics';
 import { useShallow } from 'zustand/react/shallow';
 
-import {
-  filterDayPlanFlowBlocks,
-  parseHHmmToMinutes,
-  useDayPlanNotificationStore,
-  useDayPlanStore,
-} from '@entities/day-plan';
+import { parseHHmmToMinutes, useDayPlanNotificationStore, useDayPlanStore } from '@entities/day-plan';
 import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
 import {
   buildLiveActivityPayloadForBlock,
@@ -31,52 +41,126 @@ import { ThemedView } from '@shared/ui/themed-view';
 
 import {
   CATEGORIES,
-  defaultEditorBlockTimesAfterPreviousEnd,
-  defaultEditorBlockTimesFromNow,
   defaultPriorityWindowFromNow,
-  getOrderedPriorityLines,
-  makeBlockId,
-  MIN_BLOCK_DURATION_MINUTES,
-  normalizeBlockTimeRange,
   PRIMARY,
-  rangesOverlapMinutes,
-  sortBlocksByAddedSeq,
   type PlanMode,
-  type PriorityTask,
-  type TimeBlock,
 } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
 import { PlanModeSwitch } from './PlanModeSwitch';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
-import { TimeBasedPlanSection } from './TimeBasedPlanSection';
-import { TodayFlowLockPreviewCard } from './TodayFlowLockPreviewCard';
+
+/* ─── Zipper Slider (Slide-to-confirm) ─── */
+
+const SLIDER_H = 64;
+const THUMB_SZ = 52;
+const SLIDER_PAD = 6;
+
+function ZipperSlider({
+  onComplete,
+  disabled = false,
+}: {
+  onComplete: () => void;
+  disabled?: boolean;
+}) {
+  const trackWidth = useSharedValue(0);
+  const translateX = useSharedValue(0);
+  const isCompleted = useSharedValue(false);
+
+  const onLayout = useCallback(
+    (e: { nativeEvent: { layout: { width: number } } }) => {
+      trackWidth.value = e.nativeEvent.layout.width;
+    },
+    [trackWidth],
+  );
+
+  const fireComplete = useCallback(() => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onComplete();
+  }, [onComplete]);
+
+  const panGesture = Gesture.Pan()
+    .enabled(!disabled)
+    .onUpdate((e) => {
+      if (isCompleted.value) return;
+      const maxX = trackWidth.value - THUMB_SZ - SLIDER_PAD * 2;
+      translateX.value = Math.max(0, Math.min(e.translationX, maxX));
+    })
+    .onEnd(() => {
+      if (isCompleted.value) return;
+      const maxX = trackWidth.value - THUMB_SZ - SLIDER_PAD * 2;
+      if (translateX.value > maxX * 0.85) {
+        isCompleted.value = true;
+        translateX.value = withSpring(maxX, { damping: 16, stiffness: 300 });
+        runOnJS(fireComplete)();
+      } else {
+        translateX.value = withSpring(0, { damping: 20, stiffness: 350 });
+      }
+    });
+
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const textOpacity = useAnimatedStyle(() => {
+    const maxX = trackWidth.value - THUMB_SZ - SLIDER_PAD * 2;
+    return {
+      opacity: maxX > 0
+        ? interpolate(translateX.value, [0, maxX * 0.5], [1, 0], Extrapolation.CLAMP)
+        : 1,
+    };
+  });
+
+  const trackFillStyle = useAnimatedStyle(() => {
+    const maxX = trackWidth.value - THUMB_SZ - SLIDER_PAD * 2;
+    return {
+      backgroundColor: maxX > 0
+        ? interpolateColor(
+            translateX.value,
+            [0, maxX],
+            ['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.28)'],
+          )
+        : 'rgba(0,0,0,0.08)',
+    };
+  });
+
+  return (
+    <View style={[styles.zipperTrackOuter, disabled && styles.zipperDisabled]}>
+      <Animated.View
+        style={[styles.zipperTrack, trackFillStyle]}
+        onLayout={onLayout}>
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[styles.zipperThumb, disabled && styles.zipperThumbDisabled, thumbStyle]}>
+            <IconSymbol name="chevron.right.2" size={20} color={disabled ? 'rgba(255,255,255,0.4)' : '#fff'} />
+          </Animated.View>
+        </GestureDetector>
+        <Animated.View style={[styles.zipperLabelWrap, textOpacity]}>
+          <ThemedText style={[styles.zipperLabel, disabled && styles.zipperLabelDisabled]}>
+            {disabled ? '카테고리를 담아주세요' : '시작하기'}
+          </ThemedText>
+        </Animated.View>
+      </Animated.View>
+    </View>
+  );
+}
 
 export function DayPlanPage() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { width: winW } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
-  const [planMode, setPlanMode] = useState<PlanMode>('time');
-
-  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [planMode, setPlanMode] = useState<PlanMode>('priority');
 
   const [priorityStart, setPriorityStart] = useState(
     () => defaultPriorityWindowFromNow().startTime,
   );
   const [priorityEnd, setPriorityEnd] = useState(() => defaultPriorityWindowFromNow().endTime);
   /** 카테고리를 누른 순서(플로 순서). 첫 항목이 일정 블록의 대표 카테고리로 쓰입니다. */
-  const [priorityCategoryOrder, setPriorityCategoryOrder] = useState<string[]>(() => ['work']);
-  const [priorityCategoryKey, setPriorityCategoryKey] = useState('work');
-  const [priorityTasks, setPriorityTasks] = useState<PriorityTask[]>(() => [
-    { id: makeBlockId(), title: '중요 이메일 회신 및 일정 정리', categoryKey: 'work' },
-    { id: makeBlockId(), title: '신규 프로젝트 제안서 초안 작성', categoryKey: 'work' },
-  ]);
-  const [priorityTaskDraft, setPriorityTaskDraft] = useState('');
+  const [priorityCategoryOrder, setPriorityCategoryOrder] = useState<string[]>(() => []);
   const [quickMemoDraft, setQuickMemoDraft] = useState('');
+  const quickMemoInputRef = useRef<TextInput>(null);
+  const dayPlanScrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
 
   const { addBlock, quickMemos, removeQuickMemo } = useDayPlanStore(
     useShallow((s) => ({
@@ -85,12 +169,11 @@ export function DayPlanPage() {
       removeQuickMemo: s.removeQuickMemo,
     })),
   );
-  const { dayPlanBlocks, completedBlockIds, skippedBlockIds, dayPlanHydrated } = useDayPlanStore(
+  const { dayPlanBlocks, completedBlockIds, skippedBlockIds } = useDayPlanStore(
     useShallow((s) => ({
       dayPlanBlocks: s.blocks,
       completedBlockIds: s.completedBlockIds,
       skippedBlockIds: s.skippedBlockIds,
-      dayPlanHydrated: s.isHydrated,
     })),
   );
   const {
@@ -127,12 +210,6 @@ export function DayPlanPage() {
 
   const c = useMemo(() => palette(isDark), [isDark]);
 
-  /** 시간·우선순위 플로우만 — 빠른 메모 블록은 목록·알림 대상에서 제외 */
-  const flowPlanBlocks = useMemo(
-    () => filterDayPlanFlowBlocks(dayPlanBlocks),
-    [dayPlanBlocks],
-  );
-
   const syncScheduledNotifications = useCallback(() => {
     const dayPlanState = useDayPlanStore.getState();
     const notifState = useDayPlanNotificationStore.getState();
@@ -145,177 +222,26 @@ export function DayPlanPage() {
     });
   }, []);
 
-  const blocksInAddOrder = useMemo(() => sortBlocksByAddedSeq(timeBlocks), [timeBlocks]);
-
-  const gridGap = 12;
-  const padH = 24;
-  const safeWinW = Number.isFinite(winW) && winW > 0 ? winW : 390;
-  const rawCellW = Math.floor((safeWinW - padH * 2 - gridGap * 3) / 4);
-  const cellW = Number.isFinite(rawCellW) ? Math.max(48, rawCellW) : 72;
-
-  const bottomBarReserve = useMemo(() => {
-    const extra =
-      planMode === 'time'
-        ? timeBlocks.length * 12
-        : planMode === 'priority'
-          ? 24 + priorityTasks.length * 10
-          : 48;
-    return 160 + extra + insets.bottom;
-  }, [insets.bottom, timeBlocks.length, planMode, priorityTasks.length]);
-
-  const handleCategoryPress = (categoryKey: string) => {
-    const selected = selectedBlockId != null ? timeBlocks.find((b) => b.id === selectedBlockId) : null;
-    // 같은 카테고리 재탭:
-    // - 미확정 블록이면 취소(제거)
-    // - 확정 블록이면 "중복 추가" 의도로 간주해 아래 추가 로직으로 진행
-    if (selected && selected.categoryKey === categoryKey && selected.timeCommitted === false) {
-      setTimeBlocks((prev) => {
-        const next = prev.filter((b) => b.id !== selected.id);
-        const sorted = sortBlocksByAddedSeq(next);
-        setSelectedBlockId(sorted[0]?.id ?? null);
-        return next;
-      });
-      return;
-    }
-
-    const drafts = timeBlocks.filter((b) => b.timeCommitted === false);
-    const sameCatDraft = drafts.find((b) => b.categoryKey === categoryKey);
-    if (sameCatDraft) {
-      setSelectedBlockId(sameCatDraft.id);
-      return;
-    }
-    if (drafts.length > 0) {
-      const d = drafts[0];
-      Alert.alert(
-        '시간 먼저 확정',
-        '편집 중인 블록의 「시간 확정」을 눌러 일정에 반영한 뒤, 같은 카테고리를 추가하거나 다른 카테고리를 고를 수 있어요.',
-        [{ text: '확인', onPress: () => setSelectedBlockId(d.id) }],
-      );
-      return;
-    }
-
-    const id = makeBlockId();
-    const nextSeq = Math.max(0, ...timeBlocks.map((b) => b.addedSeq ?? 0)) + 1;
-    let startTime: string;
-    let endTime: string;
-    if (timeBlocks.length === 0) {
-      const t = defaultEditorBlockTimesFromNow();
-      startTime = t.startTime;
-      endTime = t.endTime;
-    } else {
-      const ordered = sortBlocksByAddedSeq(timeBlocks);
-      const prev = ordered[ordered.length - 1];
-      const chained = defaultEditorBlockTimesAfterPreviousEnd(prev.endTime);
-      if (chained) {
-        startTime = chained.startTime;
-        endTime = chained.endTime;
-      } else {
-        const t = defaultEditorBlockTimesFromNow();
-        startTime = t.startTime;
-        endTime = t.endTime;
-      }
-    }
-    setTimeBlocks((prev) => [
-      ...prev,
-      {
-        id,
-        categoryKey,
-        startTime,
-        endTime,
-        title: '',
-        timeCommitted: false,
-        addedSeq: nextSeq,
-      },
-    ]);
-    setSelectedBlockId(id);
-  };
-
-  const commitBlockTime = (
-    id: string,
-    latestTimes?: { startTime: string; endTime: string },
-  ) => {
-    let block = timeBlocks.find((b) => b.id === id);
-    if (!block || block.timeCommitted !== false) return;
-
-    if (latestTimes) {
-      const n = normalizeBlockTimeRange(latestTimes.startTime, latestTimes.endTime);
-      if (n) block = { ...block, ...n };
-    }
-
-    const ps = parseHHmmToMinutes(block.startTime);
-    const pe = parseHHmmToMinutes(block.endTime);
-    if (ps === null || pe === null || pe <= ps) {
-      Alert.alert('시간 구간', '시작·종료 시각을 올바르게 입력한 뒤 확정해 주세요.');
-      return;
-    }
-    if (pe - ps < MIN_BLOCK_DURATION_MINUTES) {
-      Alert.alert(
-        '최소 시간',
-        `블록은 최소 ${MIN_BLOCK_DURATION_MINUTES}분 이상이어야 확정할 수 있어요.`,
-      );
-      return;
-    }
-
-    for (const other of timeBlocks) {
-      if (other.id === block.id) continue;
-      const os = parseHHmmToMinutes(other.startTime);
-      const oe = parseHHmmToMinutes(other.endTime);
-      if (os === null || oe === null || oe <= os) continue;
-      if (rangesOverlapMinutes({ s: ps, e: pe }, { s: os, e: oe })) {
-        Alert.alert('시간 겹침', '다른 블록과 겹치지 않게 조정한 뒤 확정해 주세요.');
-        return;
-      }
-    }
-
-    setTimeBlocks((prev) =>
-      prev.map((b) => (b.id === id ? { ...block!, timeCommitted: true } : b)),
-    );
-  };
-
-  const updateBlock = (
-    id: string,
-    patch: Partial<Pick<TimeBlock, 'startTime' | 'endTime' | 'title'>>,
-  ) => {
-    setTimeBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
-  };
-
-  const removeBlock = (id: string) => {
-    setTimeBlocks((prev) => {
-      const next = prev.filter((b) => b.id !== id);
-      const sorted = sortBlocksByAddedSeq(next);
-      setSelectedBlockId((cur) => {
-        if (cur !== id) return cur;
-        return sorted[0]?.id ?? null;
-      });
-      return next;
-    });
-  };
+  const scrollContentBottomPad = useMemo(() => 28 + insets.bottom, [insets.bottom]);
 
   const handlePriorityCategoryPress = useCallback((key: string) => {
-    setPriorityCategoryKey(key);
-    setPriorityCategoryOrder((prev) => (prev.includes(key) ? prev : [...prev, key]));
+    setPriorityCategoryOrder((prev) => {
+      if (prev.includes(key)) {
+        return prev.filter((k) => k !== key);
+      }
+      return [...prev, key];
+    });
   }, []);
 
-  const addPriorityTaskRow = () => {
-    const t = priorityTaskDraft.trim();
-    if (!t) return;
-    setPriorityTasks((prev) => [
-      ...prev,
-      { id: makeBlockId(), title: t, categoryKey: priorityCategoryKey },
-    ]);
-    setPriorityTaskDraft('');
-  };
-
-  const updatePriorityTask = (id: string, text: string) => {
-    setPriorityTasks((prev) => prev.map((p) => (p.id === id ? { ...p, title: text } : p)));
-  };
-
-  const removePriorityTask = (id: string) => {
-    setPriorityTasks((prev) => {
-      if (prev.length <= 1) return prev;
-      return prev.filter((p) => p.id !== id);
-    });
-  };
+  const handleOpenCategorySettings = useCallback(
+    (categoryKey: string) => {
+      router.push({
+        pathname: '/goal-detail-settings',
+        params: { categoryKey },
+      });
+    },
+    [router],
+  );
 
   /** 목표 상세 설정에서 사용자가 입력한 플로우 이름으로 덮어쓰기 전 임시 제목 */
   const TEMP_FLOW_BLOCK_TITLE = '플로우';
@@ -381,6 +307,10 @@ export function DayPlanPage() {
     }
 
     if (planMode === 'priority') {
+      if (priorityCategoryOrder.length === 0) {
+        Alert.alert('카테고리 필요', '저장하려면 카테고리를 하나 이상 선택해 주세요.');
+        return;
+      }
       const ps = parseHHmmToMinutes(priorityStart);
       const pe = parseHHmmToMinutes(priorityEnd);
       if (ps === null || pe === null) {
@@ -391,12 +321,14 @@ export function DayPlanPage() {
         Alert.alert('시간 구간', '종료 시각은 시작 시각보다 늦어야 합니다.');
         return;
       }
-      const headKey = priorityCategoryOrder[0] ?? priorityCategoryKey;
+      const headKey = priorityCategoryOrder[0]!;
       const catLabel = CATEGORIES.find((x) => x.key === headKey)?.label ?? '플로우';
-      const lines = getOrderedPriorityLines(priorityCategoryOrder, priorityTasks);
+      const orderedLabels = priorityCategoryOrder.map(
+        (key) => CATEGORIES.find((x) => x.key === key)?.label ?? '사용자',
+      );
       const blockTitle =
-        lines.length > 0
-          ? lines.map((line, i) => `${i + 1}. ${line}`).join('\n')
+        orderedLabels.length > 0
+          ? orderedLabels.map((line, i) => `${i + 1}. ${line}`).join('\n')
           : TEMP_FLOW_BLOCK_TITLE;
 
       const result = addBlock({
@@ -421,280 +353,223 @@ export function DayPlanPage() {
       }
 
       router.push({
-        pathname: '/goal-detail-settings',
-        params: {
-          categoryKey: headKey,
-          startBlockId: result.blockId,
-          blockIds: JSON.stringify([result.blockId]),
-        },
+        pathname: '/activity-session',
+        params: { blockId: result.blockId },
       });
       return;
     }
-
-    if (timeBlocks.length === 0) {
-      Alert.alert('카테고리 필요', '최소 한 개의 카테고리를 선택해 주세요.');
-      return;
-    }
-
-    if (timeBlocks.some((b) => b.timeCommitted !== true)) {
-      Alert.alert(
-        '미확정 블록',
-        '모든 블록에 대해 「시간 확정」을 눌러 일정에 반영한 뒤 저장해 주세요.',
-      );
-      return;
-    }
-
-    const resolved = blocksInAddOrder.map((block) => {
-      const parsedStart = parseHHmmToMinutes(block.startTime);
-      const parsedEnd = parseHHmmToMinutes(block.endTime);
-      const catLabel = CATEGORIES.find((x) => x.key === block.categoryKey)?.label ?? '플로우';
-      return { block, parsedStart, parsedEnd, catLabel };
-    });
-
-    for (const r of resolved) {
-      if (r.parsedStart === null || r.parsedEnd === null) {
-        Alert.alert('시각 형식', `「${r.catLabel}」블록의 시각은 09:00 형식으로 입력해 주세요.`);
-        return;
-      }
-      if (r.parsedEnd <= r.parsedStart) {
-        Alert.alert('시간 구간', `「${r.catLabel}」블록의 종료 시각은 시작보다 늦어야 합니다.`);
-        return;
-      }
-    }
-
-    const intervals = resolved.map((r) => ({ s: r.parsedStart!, e: r.parsedEnd! }));
-    for (let i = 0; i < intervals.length; i++) {
-      for (let j = i + 1; j < intervals.length; j++) {
-        if (rangesOverlapMinutes(intervals[i], intervals[j])) {
-          Alert.alert(
-            '블록 시간 겹침',
-            '선택한 블록들의 시간이 서로 겹칩니다. 각 블록의 시작·종료를 조정해 주세요.',
-          );
-          return;
-        }
-      }
-    }
-
-    for (const r of resolved) {
-      if (!(r.block.title ?? '').trim()) {
-        Alert.alert(
-          '제목 필요',
-          `「${r.catLabel}」블록에 플로우 제목을 입력해 주세요. 시간 설정 카드에서 제목을 적을 수 있어요.`,
-        );
-        return;
-      }
-    }
-
-    const addedBlockIds: string[] = [];
-    for (const r of resolved) {
-      const result = addBlock({
-        title: (r.block.title ?? '').trim(),
-        startMinutes: r.parsedStart!,
-        endMinutes: r.parsedEnd!,
-        category: r.catLabel,
-        replaceOverlapping: true,
-      });
-
-      if (!result.ok) {
-        if (result.reason === 'overlap') {
-          Alert.alert(
-            '시간 중복',
-            `「${r.catLabel}」저장 시 기존 일정과 겹칩니다.\n다른 시간대로 조정해 주세요.`,
-          );
-          return;
-        }
-        if (result.reason === 'in_the_past') {
-          Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 블록만 저장할 수 있어요.');
-          return;
-        }
-        Alert.alert('저장 실패', '입력값을 확인해 주세요.');
-        return;
-      }
-      addedBlockIds.push(result.blockId);
-    }
-
-    // 시간 모드는 "추가 순서"가 기준이므로 항상 가장 먼저 추가된 블록부터 시작한다.
-    const firstResolved = resolved[0];
-    const startBlockId = addedBlockIds[0];
-    const startBlockCategoryKey = firstResolved?.block.categoryKey ?? 'other';
-    router.push({
-      pathname: '/goal-detail-settings',
-      params: {
-        categoryKey: startBlockCategoryKey ?? 'other',
-        startBlockId,
-        blockIds: JSON.stringify(addedBlockIds),
-      },
-    });
   };
 
+  /** on-drag 만 쓰면 키보드만 내려가고 포커스는 남아, 다음 터치에 패드가 다시 뜨는 경우가 있어 스크롤 시 blur 로 포커스를 끈다. */
+  const onQuickMemoScrollBeginDrag = useCallback(() => {
+    quickMemoInputRef.current?.blur();
+    Keyboard.dismiss();
+  }, []);
+
+  /** 엔터로 줄이 늘어난 뒤 레이아웃이 반영되면 맨 아래로 스크롤 (내부 TextInput 스크롤 비활성화와 함께 사용) */
+  const onQuickMemoInputContentSizeChange = useCallback(() => {
+    requestAnimationFrame(() => {
+      dayPlanScrollRef.current?.scrollToEnd({ animated: true });
+    });
+  }, []);
+
+  const planModeSwitchEl = (
+    <PlanModeSwitch
+      planMode={planMode}
+      onSelectPriority={() => setPlanMode('priority')}
+      onSelectQuickMemo={() => setPlanMode('quickMemo')}
+      c={c}
+    />
+  );
+
+  /** 스위치·본문·하단을 한 면으로 — c.bg(#fafafa) 대신 containerLow로 틈·밝은 띠 제거 */
+  const shellBg = c.containerLow;
+  const notifPalette = c;
+
   return (
-    <ThemedView style={[styles.screen, { backgroundColor: c.bg }]} darkColor={c.bg} lightColor={c.bg}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={[styles.header, { backgroundColor: c.headerBg, borderBottomColor: c.border }]}>
-          <View style={styles.headerEdge} />
-          <ThemedText style={[styles.headerTitle, { color: c.onSurface }]}>새 플로우 설정</ThemedText>
-          <View style={styles.headerEdge}>
-            {/* 새 플로우 설정 저장 버튼은 현재 계획이 없어 비활성화 */}
-            {/* <Pressable onPress={onSave} hitSlop={8}>
-              <ThemedText style={styles.saveText}>저장</ThemedText>
-            </Pressable> */}
-          </View>
-        </View>
-
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={[
-            styles.scrollContent,
-            {
-              paddingBottom: bottomBarReserve,
-              gap: planMode === 'quickMemo' ? 16 : 32,
-            },
-          ]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled">
-          <PlanModeSwitch
-            planMode={planMode}
-            onSelectTime={() => setPlanMode('time')}
-            onSelectPriority={() => setPlanMode('priority')}
-            onSelectQuickMemo={() => setPlanMode('quickMemo')}
-            c={c}
-          />
-
-          {dayPlanHydrated && flowPlanBlocks.length > 0 && planMode !== 'quickMemo' ? (
-            <TodayFlowLockPreviewCard
-              c={c}
-              blocks={flowPlanBlocks}
-              completedBlockIds={completedBlockIds}
-              skippedBlockIds={skippedBlockIds}
-            />
-          ) : null}
-
-          {planMode === 'time' ? (
-            <TimeBasedPlanSection
-              c={c}
-              cellW={cellW}
-              gridGap={gridGap}
-              timeBlocks={timeBlocks}
-              selectedBlockId={selectedBlockId}
-              onPressCategory={handleCategoryPress}
-              onSelectBlock={setSelectedBlockId}
-              onUpdateBlock={updateBlock}
-              onRemoveBlock={removeBlock}
-              onCommitBlock={commitBlockTime}
-            />
-          ) : planMode === 'priority' ? (
-            <PriorityBasedPlanSection
-              c={c}
-              priorityStart={priorityStart}
-              priorityEnd={priorityEnd}
-              onChangePriorityStart={setPriorityStart}
-              onChangePriorityEnd={setPriorityEnd}
-              priorityCategoryOrder={priorityCategoryOrder}
-              priorityCategoryKey={priorityCategoryKey}
-              onSelectCategory={handlePriorityCategoryPress}
-              priorityTasks={priorityTasks}
-              priorityTaskDraft={priorityTaskDraft}
-              onChangePriorityTaskDraft={setPriorityTaskDraft}
-              onUpdatePriorityTask={updatePriorityTask}
-              onRemovePriorityTask={removePriorityTask}
-              onAddPriorityTaskRow={addPriorityTaskRow}
-            />
-          ) : (
-            <QuickMemoPlanSection
-              c={c}
-              memos={quickMemos}
-              draft={quickMemoDraft}
-              onChangeDraft={setQuickMemoDraft}
-            />
-          )}
-
-          {planMode !== 'quickMemo' ? (
-            <View style={styles.block}>
-              <ThemedText style={[styles.labelUpper, { color: c.onVariant, marginBottom: 4 }]}>
-                알림 설정
-              </ThemedText>
-              <View style={styles.notifCol}>
-                <View style={[styles.notifCard, { backgroundColor: c.containerLow }]}>
-                  <View style={styles.notifCardTop}>
-                    <View style={styles.notifLeft}>
-                      <IconSymbol name="clock.fill" size={20} color={PRIMARY} />
-                      <ThemedText style={[styles.notifTitle, { color: c.onSurface }]}>
-                        플로우 시작 알림
-                      </ThemedText>
+    <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: shellBg }]} edges={['top']}>
+        <KeyboardAvoidingView
+          style={[styles.keyboardColumn, { backgroundColor: shellBg }]}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}>
+          <View style={[styles.mainColumn, { backgroundColor: shellBg }]}>
+            <ScrollView
+              ref={dayPlanScrollRef}
+              style={[styles.scroll, { backgroundColor: shellBg }]}
+              contentContainerStyle={[
+                styles.scrollContent,
+                {
+                  /** 우선순위 모드: 상단 패딩이 ScrollView 기본(흰색) 위에 c.bg 띠로 보임 → 0 */
+                  paddingTop: planMode === 'quickMemo' ? 12 : 0,
+                  paddingBottom: scrollContentBottomPad,
+                  ...(planMode === 'quickMemo' ? { flexGrow: 1 } : {}),
+                },
+              ]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="none"
+              onScrollBeginDrag={planMode === 'quickMemo' ? onQuickMemoScrollBeginDrag : undefined}>
+              {planMode === 'quickMemo' ? (
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                  <View style={styles.quickMemoDismissWrap} collapsable={false}>
+                    {planModeSwitchEl}
+                    <View style={styles.contentPad}>
+                      <QuickMemoPlanSection
+                        ref={quickMemoInputRef}
+                        c={c}
+                        memos={quickMemos}
+                        draft={quickMemoDraft}
+                        onChangeDraft={setQuickMemoDraft}
+                        onInputContentSizeChange={onQuickMemoInputContentSizeChange}
+                      />
                     </View>
-                    <Switch
-                      trackColor={{ true: PRIMARY, false: c.trackOff }}
-                      thumbColor="#fff"
-                      value={startNotifOn}
-                      onValueChange={setStartNotifOn}
-                    />
                   </View>
-                  <View style={[styles.chipRow, { backgroundColor: c.containerLowest }]}>
-                    <Pressable
-                      onPress={() => setNotifTiming('5min')}
-                      style={[
-                        styles.chip,
-                        notifTiming === '5min' && { backgroundColor: '#fff', ...styles.chipShadow },
-                      ]}>
-                      <ThemedText
-                        style={[
-                          styles.chipText,
-                          { color: notifTiming === '5min' ? PRIMARY : c.onVariant },
-                        ]}>
-                        5분 전
-                      </ThemedText>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => setNotifTiming('atStart')}
-                      style={[
-                        styles.chip,
-                        notifTiming === 'atStart' && { backgroundColor: '#fff', ...styles.chipShadow },
-                      ]}>
-                      <ThemedText
-                        style={[
-                          styles.chipText,
-                          { color: notifTiming === 'atStart' ? PRIMARY : c.onVariant },
-                        ]}>
-                        시작 시각
-                      </ThemedText>
-                    </Pressable>
-                  </View>
-                </View>
-
-                <View style={[styles.notifRowPill, { backgroundColor: c.containerLow }]}>
-                  <View style={styles.notifLeft}>
-                    <IconSymbol name="timer" size={20} color={PRIMARY} />
-                    <ThemedText style={[styles.notifTitle, { color: c.onSurface }]}>
-                      플로우 종료 알림
-                    </ThemedText>
-                  </View>
-                  <Switch
-                    trackColor={{ true: PRIMARY, false: c.trackOff }}
-                    thumbColor="#fff"
-                    value={endNotifOn}
-                    onValueChange={setEndNotifOn}
+                </TouchableWithoutFeedback>
+              ) : (
+                <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
+                  {/*
+                    ScrollView `gap`이 플로팅 스위치와 다이어리 사이에 c.bg(거의 흰색) 띠를 만듦.
+                    한 컬럼으로 묶어 두 블록 사이 간격 제거.
+                    동일 톤 배경으로 서브픽셀/레이어 사이 밝은 끊김 완화.
+                  */}
+                  {planModeSwitchEl}
+                  <PriorityBasedPlanSection
+                    c={c}
+                    priorityStart={priorityStart}
+                    priorityEnd={priorityEnd}
+                    onChangePriorityStart={setPriorityStart}
+                    onChangePriorityEnd={setPriorityEnd}
+                    priorityCategoryOrder={priorityCategoryOrder}
+                    onSelectCategory={handlePriorityCategoryPress}
+                    onOpenCategorySettings={handleOpenCategorySettings}
                   />
                 </View>
-              </View>
-            </View>
-          ) : null}
-        </ScrollView>
+              )}
 
-        <View style={[styles.bottomDock, { backgroundColor: c.bg }]}>
-          <View style={[styles.bottomFade, { backgroundColor: c.bg }]} />
-          <SafeAreaView edges={['bottom']} style={styles.bottomInner}>
-            <Pressable style={styles.primaryCta} onPress={onSave}>
-              <ThemedText style={styles.primaryCtaText}>
-                {planMode === 'quickMemo' ? '메모 저장' : '플로우 설정 완료'}
-              </ThemedText>
-            </Pressable>
-            {planMode !== 'quickMemo' ? (
-              <ThemedText style={[styles.bottomTagline, { color: c.outline }]}>
-                모멘텀은 지금부터입니다
-              </ThemedText>
-            ) : null}
-          </SafeAreaView>
-        </View>
+              {planMode !== 'quickMemo' ? (
+                <View style={[styles.contentPad, styles.block]}>
+                  <ThemedText
+                    style={[styles.labelUpper, { color: notifPalette.onVariant, marginBottom: 4 }]}
+                    lightColor={notifPalette.onVariant}
+                    darkColor={notifPalette.onVariant}>
+                    알림 설정
+                  </ThemedText>
+                  <View style={styles.notifCol}>
+                    <View style={[styles.notifCard, { backgroundColor: notifPalette.containerLow }]}>
+                      <View style={styles.notifCardTop}>
+                        <View style={styles.notifLeft}>
+                          <IconSymbol name="clock.fill" size={20} color={PRIMARY} />
+                          <ThemedText
+                            style={[styles.notifTitle, { color: notifPalette.onSurface }]}
+                            lightColor={notifPalette.onSurface}
+                            darkColor={notifPalette.onSurface}>
+                            플로우 시작 알림
+                          </ThemedText>
+                        </View>
+                        <Switch
+                          trackColor={{
+                            true: PRIMARY,
+                            false: notifPalette.trackOff,
+                          }}
+                          thumbColor="#fff"
+                          value={startNotifOn}
+                          onValueChange={setStartNotifOn}
+                        />
+                      </View>
+                      <View style={[styles.chipRow, { backgroundColor: notifPalette.containerLowest }]}>
+                        <Pressable
+                          onPress={() => setNotifTiming('5min')}
+                          style={[
+                            styles.chip,
+                            notifTiming === '5min' && { backgroundColor: '#fff', ...styles.chipShadow },
+                          ]}>
+                          <ThemedText
+                            style={[
+                              styles.chipText,
+                              {
+                                color: notifTiming === '5min' ? PRIMARY : notifPalette.onVariant,
+                              },
+                            ]}>
+                            5분 전
+                          </ThemedText>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => setNotifTiming('atStart')}
+                          style={[
+                            styles.chip,
+                            notifTiming === 'atStart' && { backgroundColor: '#fff', ...styles.chipShadow },
+                          ]}>
+                          <ThemedText
+                            style={[
+                              styles.chipText,
+                              {
+                                color:
+                                  notifTiming === 'atStart' ? PRIMARY : notifPalette.onVariant,
+                              },
+                            ]}>
+                            시작 시각
+                          </ThemedText>
+                        </Pressable>
+                      </View>
+                    </View>
+
+                    <View style={[styles.notifRowPill, { backgroundColor: notifPalette.containerLow }]}>
+                      <View style={styles.notifLeft}>
+                        <IconSymbol name="timer" size={20} color={PRIMARY} />
+                        <ThemedText
+                          style={[styles.notifTitle, { color: notifPalette.onSurface }]}
+                          lightColor={notifPalette.onSurface}
+                          darkColor={notifPalette.onSurface}>
+                          플로우 종료 알림
+                        </ThemedText>
+                      </View>
+                      <Switch
+                        trackColor={{
+                          true: PRIMARY,
+                          false: notifPalette.trackOff,
+                        }}
+                        thumbColor="#fff"
+                        value={endNotifOn}
+                        onValueChange={setEndNotifOn}
+                      />
+                    </View>
+                  </View>
+                </View>
+              ) : null}
+            </ScrollView>
+
+            <View style={[styles.bottomDock, { backgroundColor: shellBg }]}>
+              <Pressable
+                style={[styles.bottomFade, { backgroundColor: shellBg }]}
+                onPress={() => planMode === 'quickMemo' && Keyboard.dismiss()}
+              />
+              <SafeAreaView
+                edges={['bottom']}
+                style={[styles.bottomInner, planMode === 'quickMemo' && styles.bottomInnerQuickMemo]}>
+                {planMode === 'quickMemo' ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="메모 저장"
+                    style={[
+                      styles.primaryCta,
+                      styles.primaryCtaQuickMemo,
+                      styles.primaryCtaSaveIconOnly,
+                      { backgroundColor: c.containerHigh, borderColor: c.border },
+                    ]}
+                    onPress={onSave}>
+                    <IconSymbol name="square.and.arrow.down" size={26} color={c.onSurface} />
+                  </Pressable>
+                ) : (
+                  <ZipperSlider
+                    onComplete={onSave}
+                    disabled={priorityCategoryOrder.length === 0}
+                  />
+                )}
+              </SafeAreaView>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -703,35 +578,18 @@ export function DayPlanPage() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
-  header: {
-    height: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    shadowColor: 'rgba(45,47,47,0.06)',
-    shadowOpacity: 1,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 4,
-  },
-  headerEdge: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    minWidth: 0,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    textAlign: 'center',
-  },
+  keyboardColumn: { flex: 1 },
+  /** 스크롤 + 하단 CTA를 세로로 쌓아 키보드 회피 시 버튼이 키보드 위로 올라가게 함 */
+  mainColumn: { flex: 1 },
   saveText: { color: PRIMARY, fontSize: 18, fontWeight: '700', letterSpacing: -0.2 },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 24, paddingTop: 20, gap: 32 },
+  /** paddingTop은 quickMemo만(12). 우선순위는 0 — 상단이 ScrollView 흰 배경 위에 띠처럼 보이는 문제 방지 */
+  scrollContent: { paddingHorizontal: 0, gap: 16 },
+  priorityModeStack: { width: '100%', gap: 0 },
+  /** 다이어리 등 풀블리드 섹션 제외 영역만 좌우 여백 */
+  contentPad: { paddingHorizontal: 24 },
+  /** 빠른 메모: 스크롤 영역을 채워 빈 곳 탭 시 키보드 dismiss 가 먹도록 */
+  quickMemoDismissWrap: { gap: 10, flexGrow: 1 },
   block: { gap: 12 },
   labelUpper: {
     fontSize: 11,
@@ -780,10 +638,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   bottomDock: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+    position: 'relative',
+    width: '100%',
     zIndex: 20,
   },
   bottomFade: {
@@ -795,26 +651,42 @@ const styles = StyleSheet.create({
     opacity: 0.95,
   },
   bottomInner: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 0,
     paddingTop: 16,
     paddingBottom: 4,
   },
+  bottomInnerQuickMemo: {
+    paddingHorizontal: 20,
+  },
   primaryCta: {
     backgroundColor: PRIMARY,
-    borderRadius: 999,
-    paddingVertical: 18,
+    borderRadius: 12,
+    paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: PRIMARY,
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 6,
+    shadowColor: 'rgba(0, 0, 0, 0.25)',
+    shadowOpacity: 1,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 16 },
+    elevation: 8,
+  },
+  /** 빠른 메모: 검정·흰 글자 대신 면 톤만 사용 */
+  primaryCtaQuickMemo: {
+    borderWidth: 1,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
+  },
+  /** 메모 저장: 텍스트 대신 아이콘만 — 터치 영역 유지 */
+  primaryCtaSaveIconOnly: {
+    paddingVertical: 16,
+    minHeight: 52,
   },
   primaryCtaText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: '900',
+    fontWeight: '800',
     letterSpacing: 0.5,
   },
   bottomTagline: {
@@ -824,5 +696,52 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 2,
     textTransform: 'uppercase',
+  },
+  zipperTrackOuter: {
+    borderRadius: SLIDER_H / 2,
+    overflow: 'hidden',
+  },
+  zipperTrack: {
+    height: SLIDER_H,
+    borderRadius: SLIDER_H / 2,
+    padding: SLIDER_PAD,
+    justifyContent: 'center',
+  },
+  zipperThumb: {
+    width: THUMB_SZ,
+    height: THUMB_SZ,
+    borderRadius: THUMB_SZ / 2,
+    backgroundColor: PRIMARY,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.35)',
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+    zIndex: 2,
+  },
+  zipperLabelWrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  zipperLabel: {
+    color: PRIMARY,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  zipperDisabled: {
+    opacity: 0.45,
+  },
+  zipperThumbDisabled: {
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  zipperLabelDisabled: {
+    color: 'rgba(0,0,0,0.35)',
   },
 });

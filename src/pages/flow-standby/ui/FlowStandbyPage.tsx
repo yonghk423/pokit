@@ -18,7 +18,7 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
-const PRIMARY = 'rgb(249, 115, 22)';
+const PRIMARY = 'rgb(0, 0, 0)';
 
 function pickParam(value: string | string[] | undefined, fallback: string): string {
   if (typeof value === 'string' && value.length > 0) return value;

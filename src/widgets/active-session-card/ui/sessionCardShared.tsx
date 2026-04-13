@@ -3,8 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
-export const ORANGE = 'rgb(249, 115, 22)';
-export const ORANGE_SOFT = 'rgba(249, 115, 22, 0.22)';
+/** 다크 세션 카드 위 모노크롬 강조(밝은 전경) — 검정 배경에서 가독성 유지 */
+export const ORANGE = '#FAFAFA';
+export const ORANGE_SOFT = 'rgba(250, 250, 250, 0.14)';
 export const GLASS_BG = 'rgba(255,255,255,0.06)';
 export const GLASS_BORDER = 'rgba(255,255,255,0.12)';
 export const META = 'rgba(255,255,255,0.45)';
@@ -41,6 +42,15 @@ export type SessionHeroProps = {
 
 type HeroProps = SessionHeroProps;
 
+export type HeroTimerAccent = 'ember' | 'aqua';
+
+const HERO_TIMER_ACCENT: Record<HeroTimerAccent, { kicker: string; fill: string }> = {
+  ember: { kicker: 'rgba(255, 255, 255, 0.5)', fill: '#F5F5F5' },
+  aqua: { kicker: 'rgba(34, 211, 238, 0.88)', fill: '#22d3ee' },
+};
+
+type HeroTimerBlockProps = HeroProps & { accent?: HeroTimerAccent };
+
 export function HeroTimerBlock({
   remainingSec,
   progress01,
@@ -48,14 +58,16 @@ export function HeroTimerBlock({
   isWaitingToStart = false,
   waitRemainingSec = 0,
   flowTitle,
-}: HeroProps) {
+  accent = 'ember',
+}: HeroTimerBlockProps) {
   const heroSec = isWaitingToStart ? waitRemainingSec : remainingSec;
   const p = isWaitingToStart ? 0 : Math.min(1, Math.max(0, progress01));
   const head = typeof flowTitle === 'string' ? flowTitle.trim() : '';
+  const tone = HERO_TIMER_ACCENT[accent];
 
   return (
     <View style={heroStyles.hero}>
-      <Text style={heroStyles.heroKicker}>
+      <Text style={[heroStyles.heroKicker, { color: tone.kicker }]}>
         {isPaused ? '일시정지' : isWaitingToStart ? '시작 대기' : '활성 세션'}
       </Text>
       {head.length > 0 ? (
@@ -67,7 +79,7 @@ export function HeroTimerBlock({
         {formatClock(heroSec)}
       </Text>
       <View style={heroStyles.heroTrack}>
-        <View style={[heroStyles.heroFill, { width: `${Math.round(p * 100)}%` }]} />
+        <View style={[heroStyles.heroFill, { width: `${Math.round(p * 100)}%`, backgroundColor: tone.fill }]} />
       </View>
     </View>
   );
@@ -77,7 +89,7 @@ export function HeroTimerBlock({
 export type SessionShellAccent = 'ember' | 'amethyst' | 'forest' | 'aqua' | 'none';
 
 const ACCENT_BLOB: Record<Exclude<SessionShellAccent, 'none'>, string> = {
-  ember: 'rgba(249, 115, 22, 0.2)',
+  ember: 'rgba(255, 255, 255, 0.08)',
   amethyst: 'rgba(139, 92, 246, 0.22)',
   forest: 'rgba(34, 197, 94, 0.16)',
   aqua: 'rgba(56, 189, 248, 0.18)',
@@ -241,7 +253,6 @@ const heroStyles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 2.2,
-    color: 'rgba(249, 115, 22, 0.75)',
     textTransform: 'uppercase',
     marginBottom: 10,
   },
@@ -274,7 +285,6 @@ const heroStyles = StyleSheet.create({
   heroFill: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: ORANGE,
   },
 });
 

@@ -5,26 +5,15 @@ import { MeditationPreview, MeditationSettings, getInitialMeditationDataConfig }
 import { MedicinePreview, MedicineSettings, getInitialMedicineDataConfig } from './medicine';
 import { OtherPreview, OtherSettings, getInitialOtherDataConfig } from './other';
 import { ReadingPreview, ReadingSettings, getInitialReadingDataConfig } from './reading';
-import { RestPreview, RestSettings, getInitialRestDataConfig } from './rest';
-import { RunPreview, RunSettings, getInitialRunDataConfig } from './run';
-import { StretchPreview, StretchSettings, getInitialStretchDataConfig } from './stretch';
 import type { GoalDetailCategoryModule } from './types';
-import { StudyPreview, StudySettings, getInitialStudyDataConfig } from './study';
 import { WaterPreview, WaterSettings, getInitialWaterDataConfig } from './water';
 import { WorkPreview, WorkSettings, getInitialWorkDataConfig } from './work';
 import { YogaPreview, YogaSettings, getInitialYogaDataConfig } from './yoga';
 
 const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
-  run: {
-    key: 'run',
-    titleKo: '러닝',
-    getInitialDataConfig: getInitialRunDataConfig,
-    Preview: RunPreview,
-    Settings: RunSettings,
-  },
   work: {
     key: 'work',
-    titleKo: '업무',
+    titleKo: '작업',
     getInitialDataConfig: getInitialWorkDataConfig,
     Preview: WorkPreview,
     Settings: WorkSettings,
@@ -35,13 +24,6 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
     getInitialDataConfig: getInitialReadingDataConfig,
     Preview: ReadingPreview,
     Settings: ReadingSettings,
-  },
-  study: {
-    key: 'study',
-    titleKo: '공부',
-    getInitialDataConfig: getInitialStudyDataConfig,
-    Preview: StudyPreview,
-    Settings: StudySettings,
   },
   meditation: {
     key: 'meditation',
@@ -57,13 +39,6 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
     Preview: YogaPreview,
     Settings: YogaSettings,
   },
-  rest: {
-    key: 'rest',
-    titleKo: '휴식',
-    getInitialDataConfig: getInitialRestDataConfig,
-    Preview: RestPreview,
-    Settings: RestSettings,
-  },
   fasting: {
     key: 'fasting',
     titleKo: '단식',
@@ -73,7 +48,7 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
   },
   water: {
     key: 'water',
-    titleKo: '수분',
+    titleKo: '수분섭취',
     getInitialDataConfig: getInitialWaterDataConfig,
     Preview: WaterPreview,
     Settings: WaterSettings,
@@ -84,13 +59,6 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
     getInitialDataConfig: getInitialMedicineDataConfig,
     Preview: MedicinePreview,
     Settings: MedicineSettings,
-  },
-  stretch: {
-    key: 'stretch',
-    titleKo: '피트티스',
-    getInitialDataConfig: getInitialStretchDataConfig,
-    Preview: StretchPreview,
-    Settings: StretchSettings,
   },
   other: {
     key: 'other',

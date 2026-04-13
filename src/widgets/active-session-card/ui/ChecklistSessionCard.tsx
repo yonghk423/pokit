@@ -4,7 +4,8 @@ import type { LockFlowLiveActivityChecklistRow } from '@features/live-activity-s
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
 const CARD_FILL = '#000000';
-const IOS_ORANGE = '#FF9500';
+/** 다크 카드 위 강조 — 모노크롬(밝은 전경) */
+const ACCENT_FG = '#FAFAFA';
 
 type Props = {
   checklistTitle: string;
@@ -32,7 +33,7 @@ function stateMeta(state: LockFlowLiveActivityChecklistRow['state']) {
     case 'completed':
       return { color: 'rgba(255,255,255,0.40)' };
     case 'current':
-      return { color: IOS_ORANGE };
+      return { color: ACCENT_FG };
     case 'skipped':
       return { color: 'rgba(255,255,255,0.30)' };
     default:
@@ -74,7 +75,7 @@ export function ChecklistSessionCard({
                 <View style={styles.rowLeft}>
                   {isDone ? (
                     <View style={styles.doneIcon}>
-                      <IconSymbol name="checkmark.circle.fill" size={22} color={IOS_ORANGE} />
+                      <IconSymbol name="checkmark.circle.fill" size={22} color={ACCENT_FG} />
                     </View>
                   ) : isCurrent ? (
                     <View style={styles.currentIcon}>
@@ -102,7 +103,7 @@ export function ChecklistSessionCard({
                     </Text>
                     <View style={styles.metaLine}>
                       {isCurrent && (
-                        <IconSymbol name="clock" size={10} color={IOS_ORANGE} />
+                        <IconSymbol name="clock" size={10} color={ACCENT_FG} />
                       )}
                       <Text style={[styles.metaText, { color: meta.color }]}>
                         {row.timeLabel} · {stateLabel(row.state)}
@@ -110,7 +111,7 @@ export function ChecklistSessionCard({
                     </View>
                   </View>
                 </View>
-                <Text style={[styles.chevron, isCurrent && { color: IOS_ORANGE }]}>
+                <Text style={[styles.chevron, isCurrent && { color: ACCENT_FG }]}>
                   {isCurrent ? '▶' : '›'}
                 </Text>
               </View>
@@ -144,10 +145,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: IOS_ORANGE },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: ACCENT_FG },
   headerTitle: {
     flex: 1,
-    color: IOS_ORANGE,
+    color: ACCENT_FG,
     fontSize: 13,
     fontWeight: '800',
     letterSpacing: 0.3,
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: IOS_ORANGE,
+    borderColor: ACCENT_FG,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: IOS_ORANGE,
+    backgroundColor: ACCENT_FG,
   },
   pendingIcon: {
     width: 32,

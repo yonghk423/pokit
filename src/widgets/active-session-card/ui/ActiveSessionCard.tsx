@@ -5,15 +5,11 @@ import type { LockFlowLiveActivityChecklistRow } from '@features/live-activity-s
 
 import { ChecklistSessionCard } from './ChecklistSessionCard';
 import { ReadingSessionCard } from './ReadingSessionCard';
-import { RunningSessionCard } from './RunningSessionCard';
 import {
   FastingSessionCard,
   MedicineSessionCard,
   MeditationSessionCard,
   OtherSessionCard,
-  RestSessionCard,
-  StretchSessionCard,
-  StudySessionCard,
   WaterSessionCard,
   WorkSessionCard,
   YogaSessionCard,
@@ -77,23 +73,14 @@ export function ActiveSessionCard({
             isPaused={isPaused}
           />
         ) : null}
-        {categoryKey === 'run' && categoryConfigs.run ? (
-          <RunningSessionCard dataConfig={categoryConfigs.run} {...hero} />
-        ) : null}
         {categoryKey === 'work' && categoryConfigs.work ? (
           <WorkSessionCard data={categoryConfigs.work} {...hero} />
-        ) : null}
-        {categoryKey === 'study' && categoryConfigs.study ? (
-          <StudySessionCard data={categoryConfigs.study} {...hero} />
         ) : null}
         {categoryKey === 'meditation' && categoryConfigs.meditation ? (
           <MeditationSessionCard data={categoryConfigs.meditation} {...hero} />
         ) : null}
         {categoryKey === 'yoga' && categoryConfigs.yoga ? (
           <YogaSessionCard data={categoryConfigs.yoga} {...hero} />
-        ) : null}
-        {categoryKey === 'rest' && categoryConfigs.rest ? (
-          <RestSessionCard data={categoryConfigs.rest} {...hero} />
         ) : null}
         {categoryKey === 'fasting' && categoryConfigs.fasting ? (
           <FastingSessionCard data={categoryConfigs.fasting} {...hero} />
@@ -103,9 +90,6 @@ export function ActiveSessionCard({
         ) : null}
         {categoryKey === 'medicine' && categoryConfigs.medicine ? (
           <MedicineSessionCard data={categoryConfigs.medicine} {...hero} />
-        ) : null}
-        {categoryKey === 'stretch' && categoryConfigs.stretch ? (
-          <StretchSessionCard data={categoryConfigs.stretch} {...hero} />
         ) : null}
         {categoryKey === 'other' && categoryConfigs.other ? (
           <OtherSessionCard data={categoryConfigs.other} {...hero} />

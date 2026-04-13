@@ -19,17 +19,17 @@ export function minuteOffsetToDateMs(dateKey: string, minuteOffset: number): num
 
 export function resolveCategoryKeyFromLabel(label: string): string | null {
   const t = label.trim();
-  if (t === '러닝') return 'run';
-  if (t === '업무') return 'work';
+  if (t === '러닝') return 'other';
+  if (t === '업무' || t === '작업') return 'work';
   if (t === '독서') return 'reading';
-  if (t === '공부') return 'study';
+  if (t === '공부') return 'other';
   if (t === '명상') return 'meditation';
   if (t === '요가') return 'yoga';
-  if (t === '휴식') return 'rest';
+  if (t === '휴식' || t === '사용자' || t === '플로우') return 'other';
   if (t === '단식') return 'fasting';
-  if (t === '수분') return 'water';
+  if (t === '수분' || t === '수분섭취') return 'water';
   if (t === '약 복용') return 'medicine';
-  if (t === '스트레칭' || t === '피트티스') return 'stretch';
+  if (t === '스트레칭' || t === '피트티스') return 'other';
   return null;
 }
 

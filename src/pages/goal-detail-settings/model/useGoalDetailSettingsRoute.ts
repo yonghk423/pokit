@@ -62,17 +62,13 @@ export function useGoalDetailSettingsRoute(): {
 
 function isGoalDetailCategoryKey(v: string): v is GoalDetailCategoryKey {
   return (
-    v === 'run' ||
     v === 'work' ||
     v === 'reading' ||
-    v === 'study' ||
     v === 'meditation' ||
     v === 'yoga' ||
-    v === 'rest' ||
     v === 'fasting' ||
     v === 'water' ||
     v === 'medicine' ||
-    v === 'stretch' ||
     v === 'other'
   );
 }

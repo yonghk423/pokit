@@ -1,7 +1,7 @@
 /** 목표 상세(플로우별) 저장 구조 — 세션·위젯에서 공용으로 사용 */
 
 import type { ReadingLiveActivityConfig } from './readingLiveActivityConfig';
-import type { RunDetailDataConfig } from './runDetailConfig';
+import { parseHHmmToMinutes } from './parseTime';
 
 function asObj(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -13,30 +13,36 @@ function clampStr(s: unknown, max: number): string {
 }
 
 // --- work ---
-export type WorkDetailDataConfig = { planMin: number; doneMin: number };
+export type WorkTask = { id: string; text: string; done: boolean };
+
+export type WorkDetailDataConfig = {
+  planMin: number;
+  doneMin: number;
+  tasks: WorkTask[];
+  focusMemo: string;
+};
 
 export function normalizeWorkDetailConfig(raw: unknown): WorkDetailDataConfig {
   const o = asObj(raw);
   const planMin = Math.max(15, Math.min(720, Number(o.planMin) || 120));
   const doneRaw = Number(o.doneMin);
   const doneMin = Math.max(0, Math.min(planMin, Number.isFinite(doneRaw) ? doneRaw : 0));
-  return { planMin, doneMin };
+  const tasks: WorkTask[] = Array.isArray(o.tasks)
+    ? (o.tasks as unknown[])
+        .filter((t): t is Record<string, unknown> => t != null && typeof t === 'object')
+        .map((t) => ({
+          id: typeof t.id === 'string' ? t.id : `t-${Math.random().toString(36).slice(2, 8)}`,
+          text: clampStr(t.text, 120),
+          done: typeof t.done === 'boolean' ? t.done : false,
+        }))
+        .filter((t) => t.text.length > 0)
+    : [];
+  const focusMemo = clampStr(o.focusMemo, 200);
+  return { planMin, doneMin, tasks, focusMemo };
 }
 
 export function getInitialWorkDataConfig(): WorkDetailDataConfig {
-  return { planMin: 120, doneMin: 0 };
-}
-
-// --- study ---
-export type StudyDetailDataConfig = { goalMemo: string };
-
-export function normalizeStudyDetailConfig(raw: unknown): StudyDetailDataConfig {
-  const o = asObj(raw);
-  return { goalMemo: clampStr(o.goalMemo, 80) };
-}
-
-export function getInitialStudyDataConfig(): StudyDetailDataConfig {
-  return { goalMemo: '' };
+  return { planMin: 120, doneMin: 0, tasks: [], focusMemo: '' };
 }
 
 // --- meditation ---
@@ -74,21 +80,6 @@ export function getInitialYogaDataConfig(): YogaDetailDataConfig {
   return { sessionMin: 40, elapsedMin: 0, flowLabel: '플로우' };
 }
 
-// --- rest ---
-export type RestDetailDataConfig = { restMin: number; elapsedMin: number };
-
-export function normalizeRestDetailConfig(raw: unknown): RestDetailDataConfig {
-  const o = asObj(raw);
-  const restMin = Math.max(1, Math.min(240, Number(o.restMin) || 20));
-  const elapsedRaw = Number(o.elapsedMin);
-  const elapsedMin = Math.max(0, Math.min(restMin, Number.isFinite(elapsedRaw) ? elapsedRaw : 0));
-  return { restMin, elapsedMin };
-}
-
-export function getInitialRestDataConfig(): RestDetailDataConfig {
-  return { restMin: 20, elapsedMin: 0 };
-}
-
 // --- fasting ---
 export type FastingDetailDataConfig = { fastingMin: number; elapsedMin: number };
 
@@ -108,54 +99,142 @@ export function getInitialFastingDataConfig(): FastingDetailDataConfig {
 }
 
 // --- water ---
-export type WaterDetailDataConfig = { goalMl: number; drankMl: number };
+export type WaterReminderPreset = '60' | '120' | 'custom';
+
+export type WaterDetailDataConfig = {
+  goalMl: number;
+  drankMl: number;
+  /** 60=1시간, 120=2시간, custom=reminderCustomMin 사용 */
+  reminderPreset: WaterReminderPreset;
+  reminderCustomMin: number;
+  smartNotification: boolean;
+};
 
 export function normalizeWaterDetailConfig(raw: unknown): WaterDetailDataConfig {
   const o = asObj(raw);
   const goalMl = Math.max(100, Math.min(10000, Number(o.goalMl) || 2000));
   const drankRaw = Number(o.drankMl);
   const drankMl = Math.max(0, Math.min(goalMl, Number.isFinite(drankRaw) ? drankRaw : 0));
-  return { goalMl, drankMl };
+
+  let reminderPreset: WaterReminderPreset = '60';
+  if (o.reminderPreset === '120' || o.reminderPreset === 'custom') {
+    reminderPreset = o.reminderPreset;
+  }
+  const customRaw = Number(o.reminderCustomMin);
+  const reminderCustomMin = Math.max(
+    15,
+    Math.min(24 * 60, Number.isFinite(customRaw) ? Math.round(customRaw) : 90),
+  );
+
+  const smartNotification =
+    typeof o.smartNotification === 'boolean' ? o.smartNotification : true;
+
+  return { goalMl, drankMl, reminderPreset, reminderCustomMin, smartNotification };
 }
 
 export function getInitialWaterDataConfig(): WaterDetailDataConfig {
-  return { goalMl: 2000, drankMl: 0 };
+  return {
+    goalMl: 2000,
+    drankMl: 0,
+    reminderPreset: '60',
+    reminderCustomMin: 90,
+    smartNotification: true,
+  };
 }
 
 // --- medicine ---
+function formatHHmmFromMinutes(totalMinutes: number): string {
+  const m = Math.max(0, Math.min(24 * 60, Math.round(totalMinutes)));
+  const h = Math.floor(m / 60);
+  const min = m % 60;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
+
+function normalizeMedicineHHmm(raw: unknown, fallback: string): string {
+  const t = typeof raw === 'string' ? raw.trim() : '';
+  const parsed = parseHHmmToMinutes(t.length > 0 ? t : fallback);
+  if (parsed === null) return fallback;
+  return formatHHmmFromMinutes(parsed);
+}
+
 export type MedicineDetailDataConfig = {
+  /** 약 이름(표시용) */
   doseLabel: string;
+  /** 활성화된 복용 슬롯 수와 동기화 */
   dosesPerDay: number;
   takenCount: number;
+  morningOn: boolean;
+  lunchOn: boolean;
+  dinnerOn: boolean;
+  morningTime: string;
+  lunchTime: string;
+  dinnerTime: string;
+  medicationNotify: boolean;
 };
 
 export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataConfig {
   const o = asObj(raw);
   const doseLabel = clampStr(o.doseLabel, 48) || '비타민';
-  const dosesPerDay = Math.max(1, Math.min(12, Number(o.dosesPerDay) || 3));
+
+  const hasSlotKeys = 'morningOn' in o || 'lunchOn' in o || 'dinnerOn' in o;
+  const legacyDoses = Math.max(1, Math.min(12, Number(o.dosesPerDay) || 3));
+
+  let morningOn: boolean;
+  let lunchOn: boolean;
+  let dinnerOn: boolean;
+  if (hasSlotKeys) {
+    morningOn = typeof o.morningOn === 'boolean' ? o.morningOn : true;
+    lunchOn = typeof o.lunchOn === 'boolean' ? o.lunchOn : true;
+    dinnerOn = typeof o.dinnerOn === 'boolean' ? o.dinnerOn : true;
+  } else {
+    /** 예전 `{ dosesPerDay, takenCount }` 만 있던 데이터: 횟수만큼 아침→점심→저녁 순으로 켬 */
+    morningOn = legacyDoses >= 1;
+    lunchOn = legacyDoses >= 2;
+    dinnerOn = legacyDoses >= 3;
+  }
+  if (!morningOn && !lunchOn && !dinnerOn) {
+    morningOn = true;
+  }
+
+  const morningTime = normalizeMedicineHHmm(o.morningTime, '08:30');
+  const lunchTime = normalizeMedicineHHmm(o.lunchTime, '12:30');
+  const dinnerTime = normalizeMedicineHHmm(o.dinnerTime, '19:30');
+
+  const enabledCount = [morningOn, lunchOn, dinnerOn].filter(Boolean).length;
+  const dosesPerDay = Math.max(1, Math.min(12, enabledCount));
+
   const takenRaw = Number(o.takenCount);
   const takenCount = Math.max(0, Math.min(dosesPerDay, Number.isFinite(takenRaw) ? takenRaw : 0));
-  return { doseLabel, dosesPerDay, takenCount };
+
+  const medicationNotify = typeof o.medicationNotify === 'boolean' ? o.medicationNotify : true;
+
+  return {
+    doseLabel,
+    dosesPerDay,
+    takenCount,
+    morningOn,
+    lunchOn,
+    dinnerOn,
+    morningTime,
+    lunchTime,
+    dinnerTime,
+    medicationNotify,
+  };
 }
 
 export function getInitialMedicineDataConfig(): MedicineDetailDataConfig {
-  return { doseLabel: '비타민', dosesPerDay: 3, takenCount: 0 };
-}
-
-// --- stretch ---
-export type StretchDetailDataConfig = { totalSets: number; holdSec: number; doneSets: number };
-
-export function normalizeStretchDetailConfig(raw: unknown): StretchDetailDataConfig {
-  const o = asObj(raw);
-  const totalSets = Math.max(1, Math.min(50, Number(o.totalSets) || 8));
-  const holdSec = Math.max(5, Math.min(300, Number(o.holdSec) || 30));
-  const doneRaw = Number(o.doneSets);
-  const doneSets = Math.max(0, Math.min(totalSets, Number.isFinite(doneRaw) ? doneRaw : 0));
-  return { totalSets, holdSec, doneSets };
-}
-
-export function getInitialStretchDataConfig(): StretchDetailDataConfig {
-  return { totalSets: 8, holdSec: 30, doneSets: 0 };
+  return {
+    doseLabel: '비타민',
+    dosesPerDay: 3,
+    takenCount: 0,
+    morningOn: true,
+    lunchOn: true,
+    dinnerOn: true,
+    morningTime: '08:30',
+    lunchTime: '12:30',
+    dinnerTime: '19:30',
+    medicationNotify: true,
+  };
 }
 
 // --- other ---
@@ -173,32 +252,24 @@ export function getInitialOtherDataConfig(): OtherDetailDataConfig {
 /** 액티브 세션 화면: 현재 블록 카테고리에 맞춰 하나만 채움 */
 export type CategoryConfigsForActiveSession = {
   reading: ReadingLiveActivityConfig | null;
-  run: RunDetailDataConfig | null;
   work: WorkDetailDataConfig | null;
-  study: StudyDetailDataConfig | null;
   meditation: MeditationDetailDataConfig | null;
   yoga: YogaDetailDataConfig | null;
-  rest: RestDetailDataConfig | null;
   fasting: FastingDetailDataConfig | null;
   water: WaterDetailDataConfig | null;
   medicine: MedicineDetailDataConfig | null;
-  stretch: StretchDetailDataConfig | null;
   other: OtherDetailDataConfig | null;
 };
 
 export function emptyCategorySessionConfigs(): CategoryConfigsForActiveSession {
   return {
     reading: null,
-    run: null,
     work: null,
-    study: null,
     meditation: null,
     yoga: null,
-    rest: null,
     fasting: null,
     water: null,
     medicine: null,
-    stretch: null,
     other: null,
   };
 }

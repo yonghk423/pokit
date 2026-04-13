@@ -16,7 +16,7 @@ export function TopAppBar({ title = 'LockFlow', onPressBrand, style, ...rest }: 
         accessibilityRole={onPressBrand ? 'button' : undefined}
         onPress={onPressBrand}
         style={styles.brand}>
-        <IconSymbol name="lock.open" size={22} color="rgba(249,115,22,0.95)" />
+        <IconSymbol name="lock.open" size={22} color="rgba(0,0,0,0.9)" />
         <ThemedText type="defaultSemiBold" style={styles.brandText}>
           {title}
         </ThemedText>
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   brandText: {
-    color: 'rgba(249,115,22,0.95)',
+    color: 'rgba(0,0,0,0.9)',
     fontSize: 18,
     letterSpacing: -0.4,
   },

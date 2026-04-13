@@ -7,7 +7,7 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
-const PRIMARY = 'rgb(249, 115, 22)';
+const PRIMARY = 'rgb(0, 0, 0)';
 const BG = '#09090b';
 const SURFACE = '#151518';
 const SURFACE_CARD = '#1e1e23';

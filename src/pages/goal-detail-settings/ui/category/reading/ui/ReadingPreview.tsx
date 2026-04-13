@@ -1,6 +1,10 @@
 import { View } from 'react-native';
 
-import { deriveReadingProgress, normalizeReadingLiveActivityConfig } from '@entities/day-plan';
+import {
+  deriveReadingProgress,
+  normalizeReadingLiveActivityConfig,
+  readingDisplayTitle,
+} from '@entities/day-plan';
 import { ReadingSessionCard } from '@widgets/active-session-card';
 
 import {
@@ -17,6 +21,7 @@ export function ReadingPreview({
   dataConfig: unknown;
 }) {
   const cfg = normalizeReadingLiveActivityConfig(dataConfig);
+  const displayTitle = readingDisplayTitle(rhythmTitle, cfg);
   const { progressPct: progressRaw } = deriveReadingProgress(cfg);
   const progressPct = Number.isFinite(progressRaw)
     ? Math.max(0, Math.min(100, Math.round(progressRaw)))
@@ -25,7 +30,7 @@ export function ReadingPreview({
   return (
     <View style={{ gap: 10 }}>
       <ReadingSessionCard
-        title={rhythmTitle}
+        title={displayTitle}
         dataConfig={cfg}
         remainingSec={sessionPreviewRemainingSec()}
         progressPct={progressPct}

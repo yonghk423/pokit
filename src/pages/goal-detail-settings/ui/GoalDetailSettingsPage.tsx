@@ -1,9 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
@@ -15,22 +14,15 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
 import {
-  getLocalMinutesOfDayNow,
   normalizeFastingDetailConfig,
   normalizeMedicineDetailConfig,
   normalizeMeditationDetailConfig,
   normalizeOtherDetailConfig,
   normalizeReadingLiveActivityConfig,
-  normalizeReadingMetricSelection,
-  normalizeRestDetailConfig,
-  normalizeRunDetailConfig,
-  normalizeStretchDetailConfig,
-  normalizeStudyDetailConfig,
   normalizeWaterDetailConfig,
   normalizeWorkDetailConfig,
   normalizeYogaDetailConfig,
   useDayPlanNotificationStore,
-  filterDayPlanFlowBlocks,
   isDayPlanFlowBlock,
   useDayPlanRuntimeStore,
   useDayPlanStore,
@@ -42,6 +34,7 @@ import { reconcileLiveActivityFromPlan } from '@features/live-activity-sync';
 import { useGoalDetailSettingsRoute } from '../model/useGoalDetailSettingsRoute';
 import type { GoalDetailCategoryKey } from '../model/types';
 import { getGoalDetailCategoryModule } from './category';
+import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
 
 function palette(isDark: boolean) {
   if (isDark) {
@@ -54,7 +47,7 @@ function palette(isDark: boolean) {
     };
   }
   return {
-    bg: '#fafafa',
+    bg: '#ffffff',
     onSurface: '#18181b',
     onVariant: '#52525b',
     outline: '#a1a1aa',
@@ -62,7 +55,7 @@ function palette(isDark: boolean) {
   };
 }
 
-const PRIMARY = 'rgb(249, 115, 22)';
+const PRIMARY = 'rgb(0, 0, 0)';
 
 type EditingTarget = {
   blockId: string;
@@ -72,17 +65,16 @@ type EditingTarget = {
 
 function inferCategoryKeyFromLabel(category: string): GoalDetailCategoryKey {
   const t = category.trim();
-  if (t === '러닝') return 'run';
-  if (t === '업무') return 'work';
+  if (t === '러닝') return 'other';
+  if (t === '업무' || t === '작업') return 'work';
   if (t === '독서') return 'reading';
-  if (t === '공부') return 'study';
+  if (t === '공부') return 'other';
   if (t === '명상') return 'meditation';
   if (t === '요가') return 'yoga';
-  if (t === '휴식') return 'rest';
+  if (t === '휴식') return 'other';
   if (t === '단식') return 'fasting';
-  if (t === '수분') return 'water';
+  if (t === '수분' || t === '수분섭취') return 'water';
   if (t === '약 복용') return 'medicine';
-  if (t === '스트레칭' || t === '피트티스') return 'stretch';
   return 'other';
 }
 
@@ -113,27 +105,18 @@ function goalDetailSettingsSummaryLine(
   dataConfig: unknown,
 ): string {
   switch (categoryKey) {
-    case 'run': {
-      const c = normalizeRunDetailConfig(dataConfig ?? {});
-      const place = c.placeName.trim();
-      return place
-        ? `코스 「${place}」 · 목표 ${c.targetKm}km · ${c.caloriesGoalKcal}kcal`
-        : `목표 ${c.targetKm}km · ${c.caloriesGoalKcal}kcal`;
-    }
     case 'work': {
       const c = normalizeWorkDetailConfig(dataConfig);
-      return `집중 플랜 ${c.planMin}분 · 누적 기록 ${c.doneMin}분`;
+      const taskCount = c.tasks.length;
+      const taskHint = taskCount > 0 ? `작업 ${taskCount}개` : '작업 미입력';
+      const memoHint = c.focusMemo ? ' · 메모 있음' : '';
+      return `${taskHint}${memoHint}`;
     }
     case 'reading': {
       const c = normalizeReadingLiveActivityConfig(dataConfig);
-      const n = normalizeReadingMetricSelection(c.selectedMetrics).length;
-      const metricHint = n > 0 ? ` · 표시 지표 ${n}개` : '';
-      return `페이지 ${c.startPage}p → ${c.targetPage}p${metricHint}`;
-    }
-    case 'study': {
-      const c = normalizeStudyDetailConfig(dataConfig);
-      const memo = c.goalMemo.trim();
-      return memo ? `메모: ${memo}` : '학습 메모 없음 · 실행 후 카드에 표시할 내용을 적어 주세요';
+      const book = c.bookTitle.trim();
+      const bookPart = book ? ` · ${book}` : '';
+      return `페이지 ${c.startPage}p → ${c.targetPage}p${bookPart}`;
     }
     case 'meditation': {
       const c = normalizeMeditationDetailConfig(dataConfig);
@@ -143,25 +126,31 @@ function goalDetailSettingsSummaryLine(
       const c = normalizeYogaDetailConfig(dataConfig);
       return `「${c.flowLabel}」 ${c.sessionMin}분 · 진행 ${c.elapsedMin}분`;
     }
-    case 'rest': {
-      const c = normalizeRestDetailConfig(dataConfig);
-      return `휴식 ${c.restMin}분 · 누적 ${c.elapsedMin}분`;
-    }
     case 'fasting': {
       const c = normalizeFastingDetailConfig(dataConfig);
       return `단식 목표 ${fmtDurationMinForSummary(c.fastingMin)} · 경과 ${fmtDurationMinForSummary(c.elapsedMin)}`;
     }
     case 'water': {
       const c = normalizeWaterDetailConfig(dataConfig);
-      return `목표 ${c.goalMl}ml · 섭취 ${c.drankMl}ml`;
+      const goalL = (c.goalMl / 1000).toFixed(1);
+      const rem =
+        c.reminderPreset === '120'
+          ? '2시간마다'
+          : c.reminderPreset === 'custom'
+            ? `${c.reminderCustomMin}분마다`
+            : '1시간마다';
+      const smart = c.smartNotification ? '스마트 알림' : '스마트 끔';
+      return `목표 ${goalL}L · 섭취 ${c.drankMl}ml · ${rem} · ${smart}`;
     }
     case 'medicine': {
       const c = normalizeMedicineDetailConfig(dataConfig);
-      return `「${c.doseLabel}」 하루 ${c.dosesPerDay}회 · 복용 ${c.takenCount}회`;
-    }
-    case 'stretch': {
-      const c = normalizeStretchDetailConfig(dataConfig);
-      return `세트 ${c.doneSets}/${c.totalSets} · 홀드 ${c.holdSec}초`;
+      const parts: string[] = [];
+      if (c.morningOn) parts.push(`아침 ${c.morningTime}`);
+      if (c.lunchOn) parts.push(`점심 ${c.lunchTime}`);
+      if (c.dinnerOn) parts.push(`저녁 ${c.dinnerTime}`);
+      const sched = parts.length > 0 ? parts.join(' · ') : '시간 미설정';
+      const bell = c.medicationNotify ? '알림 켜짐' : '알림 꺼짐';
+      return `「${c.doseLabel.trim() || '약'}」 ${sched} · ${bell} · 복용 ${c.takenCount}/${c.dosesPerDay}회`;
     }
     case 'other': {
       const c = normalizeOtherDetailConfig(dataConfig);
@@ -175,9 +164,9 @@ function goalDetailSettingsSummaryLine(
 
 export function GoalDetailSettingsPage() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const c = useMemo(() => palette(isDark), [isDark]);
+  const insets = useSafeAreaInsets();
+  /** 목표 상세는 항상 라이트(화이트) 기준 UI */
+  const c = useMemo(() => palette(false), []);
 
   const { categoryKey, startBlockId, blockIds } = useGoalDetailSettingsRoute();
 
@@ -251,10 +240,6 @@ export function GoalDetailSettingsPage() {
   }, [validTargets, sortedTargets, setLiveActivityChecklistFocusBlockId]);
 
   const [dataByBlockId, setDataByBlockId] = useState<Record<string, unknown>>({});
-  /** 목표 상세는 기본 접음 — 풀 세션 미리보기는 원할 때만 */
-  const [sessionPreviewOpenByBlock, setSessionPreviewOpenByBlock] = useState<Record<string, boolean>>(
-    {},
-  );
 
   useEffect(() => {
     const next: Record<string, unknown> = {};
@@ -291,31 +276,22 @@ export function GoalDetailSettingsPage() {
         skippedBlockIds: dayPlanState.skippedBlockIds,
       });
 
-      const routeBlockIds = [
-        ...(blockIds.length > 0 ? blockIds : []),
-        ...(startBlockId?.trim() ? [startBlockId.trim()] : []),
-      ];
-      const uiBlockIds = sortedTargets.map((t) => t.blockId);
-      /** `router.push` 시 넘긴 id 가 스택/직렬화 과정에서 비어도, 편집 중인 블록은 sortedTargets 에 남아 있음 */
-      const idSet = new Set([...routeBlockIds, ...uiBlockIds]);
-      const candidates = filterDayPlanFlowBlocks(dayPlanState.blocks)
-        .filter((b) => idSet.has(b.id))
-        .sort((a, b) => a.startMinutes - b.startMinutes);
-      const nowMin = getLocalMinutesOfDayNow();
-      const focusId = dayPlanState.liveActivityChecklistFocusBlockId;
-      const targetBlock =
-        (focusId ? candidates.find((b) => b.id === focusId) : undefined) ??
-        candidates.find((b) => b.startMinutes >= nowMin) ??
-        candidates[0];
-      const targetBlockId = targetBlock?.id;
-
-      if (targetBlockId) {
-        router.replace({ pathname: '/activity-session', params: { blockId: targetBlockId } });
-      } else {
+      const ids = sortedTargets.map((t) => t.blockId).filter(Boolean);
+      if (ids.length === 0) {
         router.replace('/day-plan');
+        return;
       }
+      const focusId = dayPlanState.liveActivityChecklistFocusBlockId;
+      const startForReview = focusId && ids.includes(focusId) ? focusId : ids[0];
+      router.replace({
+        pathname: '/flow-review',
+        params: {
+          startBlockId: startForReview,
+          blockIds: JSON.stringify(ids),
+        },
+      });
     })();
-  }, [router, startBlockId, blockIds, sortedTargets]);
+  }, [router, sortedTargets]);
 
   const previewTitleForBlock = useCallback(
     (blockId: string) => {
@@ -326,21 +302,34 @@ export function GoalDetailSettingsPage() {
     [blocks],
   );
 
+  const waterOnlyUi =
+    sortedTargets.length > 0 && sortedTargets.every((t) => t.categoryKey === 'water');
+  const immersive = waterOnlyUi ? WATER : null;
+  const screenBg = c.bg;
+  const headerBg = c.bg;
+  const headerBorder = c.border;
+  const headerFg = c.onSurface;
+
   return (
-    <ThemedView style={[styles.screen, { backgroundColor: c.bg }]} darkColor={c.bg} lightColor={c.bg}>
+    <ThemedView
+      style={[styles.screen, { backgroundColor: screenBg }]}
+      darkColor={screenBg}
+      lightColor={screenBg}>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View
           style={[
             styles.header,
             {
-              backgroundColor: isDark ? 'rgba(9,9,11,0.92)' : 'rgba(255,255,255,0.92)',
-              borderBottomColor: c.border,
+              backgroundColor: headerBg,
+              borderBottomColor: headerBorder,
             },
           ]}>
           <Pressable onPress={() => router.back()} style={styles.headerBtn} hitSlop={8}>
-            <IconSymbol name="chevron.left" size={22} color={c.onSurface} />
+            <IconSymbol name="chevron.left" size={22} color={headerFg} />
           </Pressable>
-          <ThemedText style={[styles.headerTitle, { color: c.onSurface }]}>목표 상세 설정</ThemedText>
+          <ThemedText style={[styles.headerTitle, { color: headerFg }]}>
+            {waterOnlyUi ? '수분섭취 상세 설정' : '목표 상세 설정'}
+          </ThemedText>
           {/* 위젯 설정 기능은 현재 계획이 없어 비활성화.
               단, 헤더 `space-between` 레이아웃에서 타이틀 위치가 흔들리지 않도록 오른쪽 자리는 placeholder로 남겨둡니다. */}
           <View style={styles.headerBtn} pointerEvents="none" />
@@ -348,20 +337,33 @@ export function GoalDetailSettingsPage() {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: Math.max(insets.bottom, 12) + 48, backgroundColor: c.bg },
+          ]}
           keyboardShouldPersistTaps="handled">
-          <View style={styles.padded}>
-            <View style={styles.summaryCard}>
-              <ThemedText style={[styles.summaryTitle, { color: c.onSurface }]}>
-                총 {targets.length}개 플로우 설정
-              </ThemedText>
-              <ThemedText style={[styles.summarySub, { color: c.onVariant }]}>
-                입력은 짧게 — 실행 중 화면에서 타이머·목표 카드가 크게 보여요.
-              </ThemedText>
-            </View>
+          <View style={[styles.padded, waterOnlyUi && styles.paddedWater]}>
+            {!waterOnlyUi ? (
+              <View
+                style={[
+                  styles.summaryCard,
+                  { backgroundColor: 'rgba(0,0,0,0.06)' },
+                ]}>
+                <ThemedText style={[styles.summaryTitle, { color: c.onSurface }]}>
+                  총 {targets.length}개 플로우 설정
+                </ThemedText>
+              </View>
+            ) : null}
 
             {sortedTargets.length > 1 ? (
-              <View style={[styles.startPickerCard, { borderColor: c.border }]}>
+              <View
+                style={[
+                  styles.startPickerCard,
+                  {
+                    borderColor: c.border,
+                    backgroundColor: 'rgba(0,0,0,0.02)',
+                  },
+                ]}>
                 <ThemedText style={[styles.startPickerTitle, { color: c.onSurface }]}>
                   잠금화면에서 먼저 진행할 플로우
                 </ThemedText>
@@ -382,20 +384,35 @@ export function GoalDetailSettingsPage() {
                         style={({ pressed }) => [
                           styles.startPickerRow,
                           {
-                            borderColor: selected ? PRIMARY : c.border,
+                            borderColor: selected
+                              ? immersive?.primary ?? PRIMARY
+                              : c.border,
                             backgroundColor: selected
-                              ? 'rgba(249,115,22,0.10)'
+                              ? waterOnlyUi
+                                ? 'rgba(34,211,238,0.16)'
+                                : 'rgba(0,0,0,0.08)'
                               : pressed
-                                ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)')
+                                ? 'rgba(0,0,0,0.04)'
                                 : 'transparent',
                           },
                         ]}>
                         <View
                           style={[
                             styles.radioOuter,
-                            { borderColor: selected ? PRIMARY : c.outline },
+                            {
+                              borderColor: selected
+                                ? immersive?.primary ?? PRIMARY
+                                : c.outline,
+                            },
                           ]}>
-                          {selected ? <View style={styles.radioInner} /> : null}
+                          {selected ? (
+                            <View
+                              style={[
+                                styles.radioInner,
+                                immersive && { backgroundColor: immersive.primary },
+                              ]}
+                            />
+                          ) : null}
                         </View>
                         <View style={styles.startPickerRowText}>
                           <ThemedText
@@ -412,80 +429,50 @@ export function GoalDetailSettingsPage() {
                   })}
                 </View>
               </View>
-            ) : sortedTargets.length === 1 ? (
-              <View style={[styles.startPickerHint, { backgroundColor: 'rgba(249,115,22,0.08)' }]}>
-                <ThemedText style={[styles.startPickerHintText, { color: c.onVariant }]}>
-                  잠금화면 체크리스트는 이 플로우를 기준으로 표시돼요.
-                </ThemedText>
-              </View>
             ) : null}
 
             {targets.map((t, idx) => {
               const module = getGoalDetailCategoryModule(t.categoryKey);
-              const Preview = module.Preview;
               const Settings = module.Settings;
               const dataConfig = dataByBlockId[t.blockId] ?? module.getInitialDataConfig?.() ?? {};
               const previewTitle = previewTitleForBlock(t.blockId);
-              const summaryLine = goalDetailSettingsSummaryLine(t.categoryKey, dataConfig);
-              const sessionPreviewOpen = sessionPreviewOpenByBlock[t.blockId] === true;
+              const hideWaterListChrome = waterOnlyUi && t.categoryKey === 'water';
               return (
                 <View key={`${t.blockId}-${idx}`} style={styles.blockSection}>
-                  <View style={styles.blockSectionHead}>
-                    <ThemedText style={[styles.blockOrder, { color: PRIMARY }]}>
-                      {idx + 1}
-                    </ThemedText>
-                    <View style={{ flex: 1 }}>
-                      <ThemedText style={[styles.blockTitle, { color: c.onSurface }]}>
-                        {module.titleKo}
+                  {!hideWaterListChrome ? (
+                    <View style={styles.blockSectionHead}>
+                      <ThemedText
+                        style={[styles.blockOrder, { color: PRIMARY }]}>
+                        {idx + 1}
                       </ThemedText>
-                      <ThemedText style={[styles.blockSub, { color: c.onVariant }]}>
-                        {t.timeLabel}
+                      <View style={{ flex: 1 }}>
+                        <ThemedText style={[styles.blockTitle, { color: c.onSurface }]}>
+                          {module.titleKo}
+                        </ThemedText>
+                        <ThemedText style={[styles.blockSub, { color: c.onVariant }]}>
+                          {t.timeLabel}
+                        </ThemedText>
+                      </View>
+                    </View>
+                  ) : null}
+
+                  {!hideWaterListChrome ? (
+                    <View
+                      style={[
+                        styles.compactSummaryCard,
+                        {
+                          borderColor: c.border,
+                          backgroundColor: 'rgba(0,0,0,0.03)',
+                        },
+                      ]}>
+                      <ThemedText style={[styles.compactSummaryLine, { color: c.onSurface }]}>
+                        {goalDetailSettingsSummaryLine(t.categoryKey, dataConfig)}
+                      </ThemedText>
+                      <ThemedText style={[styles.compactSummaryHint, { color: c.onVariant }]}>
+                        실행 중에는 세션 화면에서 큰 타이머와 카드 레이아웃이 적용돼요.
                       </ThemedText>
                     </View>
-                  </View>
-
-                  <View
-                    style={[
-                      styles.compactSummaryCard,
-                      {
-                        borderColor: c.border,
-                        backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-                      },
-                    ]}>
-                    <ThemedText style={[styles.compactSummaryLine, { color: c.onSurface }]}>
-                      {summaryLine}
-                    </ThemedText>
-                    <ThemedText style={[styles.compactSummaryHint, { color: c.onVariant }]}>
-                      실행 중에는 세션 화면에서 큰 타이머와 카드 레이아웃이 적용돼요.
-                    </ThemedText>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityState={{ expanded: sessionPreviewOpen }}
-                      onPress={() =>
-                        setSessionPreviewOpenByBlock((prev) => ({
-                          ...prev,
-                          [t.blockId]: !prev[t.blockId],
-                        }))
-                      }
-                      style={({ pressed }) => [
-                        styles.sessionPreviewToggle,
-                        { opacity: pressed ? 0.72 : 1 },
-                      ]}>
-                      <ThemedText style={[styles.sessionPreviewToggleText, { color: PRIMARY }]}>
-                        {sessionPreviewOpen ? '세션 화면 예시 접기' : '세션 화면 예시 보기'}
-                      </ThemedText>
-                      <IconSymbol
-                        name={sessionPreviewOpen ? 'chevron.up' : 'chevron.down'}
-                        size={16}
-                        color={PRIMARY}
-                      />
-                    </Pressable>
-                    {sessionPreviewOpen ? (
-                      <View style={[styles.sessionPreviewBody, { borderTopColor: c.border }]}>
-                        <Preview rhythmTitle={previewTitle} dataConfig={dataConfig} />
-                      </View>
-                    ) : null}
-                  </View>
+                  ) : null}
 
                   <Settings
                     rhythmTitle={previewTitle}
@@ -495,8 +482,15 @@ export function GoalDetailSettingsPage() {
                 </View>
               );
             })}
-            <Pressable style={styles.cta} onPress={handleCompleteAndStart}>
-              <ThemedText style={styles.ctaText}>설정 완료</ThemedText>
+            <Pressable
+              style={[styles.cta, waterOnlyUi && styles.ctaWater]}
+              onPress={handleCompleteAndStart}>
+              <ThemedText
+                style={[styles.ctaText, waterOnlyUi && styles.ctaTextWater]}
+                lightColor={waterOnlyUi ? WATER.ctaText : '#fff'}
+                darkColor={waterOnlyUi ? WATER.ctaText : '#fff'}>
+                {waterOnlyUi ? '플로우 설정 완료' : '설정 완료'}
+              </ThemedText>
             </Pressable>
             <ThemedText style={[styles.ctaFootnote, { color: c.outline }]}>
               설정한 시간에 플로우 시작 알림이 도착합니다.
@@ -521,11 +515,11 @@ const styles = StyleSheet.create({
   },
   headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
-  scrollContent: { paddingBottom: 48 },
+  scrollContent: {},
   padded: { paddingHorizontal: 24, gap: 22, marginTop: 18 },
-  summaryCard: { borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: 'rgba(249,115,22,0.08)' },
+  paddedWater: { marginTop: 8, gap: 20 },
+  summaryCard: { borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: 'rgba(0,0,0,0.06)' },
   summaryTitle: { fontSize: 16, fontWeight: '800' },
-  summarySub: { fontSize: 12, lineHeight: 18, marginTop: 4 },
   blockSection: { gap: 14, paddingVertical: 8 },
   compactSummaryCard: {
     borderRadius: 14,
@@ -536,20 +530,6 @@ const styles = StyleSheet.create({
   },
   compactSummaryLine: { fontSize: 14, fontWeight: '700', lineHeight: 20 },
   compactSummaryHint: { fontSize: 11, lineHeight: 16, fontWeight: '600' },
-  sessionPreviewToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    marginTop: 2,
-  },
-  sessionPreviewToggleText: { fontSize: 13, fontWeight: '800' },
-  sessionPreviewBody: {
-    marginTop: 4,
-    paddingTop: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
   blockSectionHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
   blockOrder: { fontSize: 22, fontWeight: '900', width: 24, textAlign: 'center' },
   blockTitle: { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
@@ -590,8 +570,6 @@ const styles = StyleSheet.create({
   startPickerRowText: { flex: 1, minWidth: 0, gap: 2 },
   startPickerRowTitle: { fontSize: 15, fontWeight: '700' },
   startPickerRowMeta: { fontSize: 12, fontWeight: '600' },
-  startPickerHint: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 },
-  startPickerHintText: { fontSize: 12, lineHeight: 18, textAlign: 'center' },
   cta: {
     marginTop: 8,
     backgroundColor: PRIMARY,
@@ -604,6 +582,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     elevation: 6,
   },
+  ctaWater: {
+    backgroundColor: WATER.ctaBg,
+    shadowColor: '#0891b2',
+    shadowOpacity: 0.38,
+  },
   ctaText: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  ctaTextWater: {
+    color: WATER.ctaText,
+  },
   ctaFootnote: { textAlign: 'center', fontSize: 12, marginTop: -16, lineHeight: 18 },
 });

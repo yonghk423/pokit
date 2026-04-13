@@ -36,9 +36,8 @@ export {
   getInitialReadingLiveActivityConfig,
   normalizeReadingLiveActivityConfig,
   normalizeReadingMetricSelection,
+  readingDisplayTitle,
 } from './lib/readingLiveActivityConfig';
-export type { RunDetailDataConfig } from './lib/runDetailConfig';
-export { getInitialRunDataConfig, normalizeRunDetailConfig } from './lib/runDetailConfig';
 export * from './lib/goalCategorySessionConfig';
 export {
   isPriorityCompoundBlockTitle,

@@ -162,8 +162,8 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 ### 7.0 브랜드 컬러 (Primary)
 
-- **앱 기본 강조색**: `rgb(249, 115, 22)` (Tailwind orange 계열).
-- 코드에서는 `rgba(249, 115, 22, alpha)` 형태로 사용. 전역 값은 `src/shared/config/theme.ts`의 `Colors.primary`, `PrimaryColor` 참고.
+- **앱 기본 강조색**: 모노크롬 기준 `rgb(0, 0, 0)` (순수 검정). 다크 배경 위 강조는 별도로 밝은 전경(`#FAFAFA` 등)을 둔다.
+- 코드에서는 `rgba(0, 0, 0, alpha)` 형태로 사용. 전역 값은 `src/shared/config/theme.ts`의 `Colors.primary`, `PrimaryColor` 참고.
 - 버튼, FAB, 탭 활성, 아이콘 강조 등 primary 역할에 이 색을 사용한다.
 
 ### 7.0.1 UI 표시 언어 (한글)
@@ -186,64 +186,63 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
   - `features`의 UI는 `onStartBuilding()` 같은 콜백만 받고, **expo-router 이동 자체는 `pages` 또는 `app/` 라우트에서 처리**한다.
   - 즉, `features`는 라우팅을 직접 import/호출하지 않는다.
 
-## 7.2 iOS 잠금화면 실시간 플로우 규칙 (핵심 경험)
+## 7.2 플로우·세션 경험 (현재 제품 기준)
 
-- LockFlow의 핵심 경험은 **iOS 잠금화면에서 현재 플로우를 즉시 확인·제어**하는 것이다.
-- **구현 목표(1차):** 잠금화면 경험은 **ActivityKit `Live Activity`** 로 구성한다. (동적 섬·배너 등 시스템이 노출하는 표면은 Live Activity와 함께 다룬다.)
-- **구분:** **WidgetKit 잠금화면 위젯**(주기적 갱신 위젯)과 별개이며, LockFlow의 핵심 납품물은 **실시간 세션을 잠금화면에 올리는 Live Activity** 이다.
-- Android 잠금화면 구현은 현재 범위에서 제외하며, iOS 우선으로 설계·구현한다.
+- **현재 컨셉:** 사용자는 **오늘 일정(`day-plan`)**에서 시간 블록·플로우를 쌓고, 실행 중에는 **앱 내 `activity-session`** 화면에서 타이머·진행도·카테고리별 카드로 세션을 이어 간다. 이것이 **주 경험**이다.
+- **Live Activity / ActivityKit:** **현재 제품 스코프에서 제외**되었다. 저장소에 `live-activity-sync`·iOS Live Activity 타깃 등이 **남아 있을 수 있으나**, 신규 기능·우선순위·카피를 설계할 때 **“잠금화면이 핵심”**이라는 전제를 두지 않는다.
+- Android 잠금화면 등은 현재 범위에서 제외한다.
 
-### 7.2.1 제품 목표 (What)
+### 7.2.1 제품 목표 (What) — 앱 내 세션
 
-- 사용자는 **Live Activity가 표시되는 잠금화면**에서 아래를 즉시 확인할 수 있어야 한다.
+- 사용자는 **`activity-session`**(및 관련 위젯 카드)에서 아래를 확인·제어할 수 있어야 한다.
   - 현재 플로우 제목/보조 정보
   - 남은 시간(실시간)
   - 진행도(프로그레스)
-  - 핵심 액션(일시정지/완료)
-- 앱 내부 세션 화면은 보조 수단이며, 잠금화면이 주 경험이다.
+  - 핵심 액션(일시정지/완료 등)
+- 잠금화면 Live Activity를 **전제로 한 UX 요구사항은 적용하지 않는다** (아래 §7.2.6 이하는 **레거시 참고**).
 
 ### 7.2.2 FSD 책임 분리 (Where)
 
 - `entities` (도메인 규칙·타입)
   - `day-plan`: 오늘 블록(순서·구간) 및 다음 블록 파생 규칙
   - `routine-execution`: 실행 상태(진행/일시정지/완료)와 진행 계산
-  - `live-session`(필요 시 추가): 잠금화면 전달 payload 타입/변환 규칙
 - `features` (유즈케이스)
   - `session-control`: 시작/일시정지/재개/완료/건너뛰기
-  - `live-activity-sync`(iOS): 도메인 상태를 Live Activity로 반영
+  - `live-activity-sync`(iOS): **레거시/재도입 대비** 코드가 있을 수 있으나, **현재 제품 필수 경로 아님**
 - `pages` (조립)
   - `day-plan`: 시작점 선택/배선
-  - `activity-session`: 상세/디버그용 보조 화면
+  - `activity-session`: **실행 중 세션의 주 화면**
 - `app` (`src/application`)
   - 전역 hydrate 및 동기화 부트스트랩
 
-### 7.2.3 실시간 동기화 원칙 (How)
+### 7.2.3 실시간·상태 원칙 (How)
 
 - 타이머는 “초 감소값”만 신뢰하지 말고, 가능한 한 **절대 시각 기반 계산**을 우선한다.
-- 상태 변경 이벤트(`pause/resume/finish/skip`) 발생 시:
-  - (1) 도메인 상태를 먼저 갱신
-  - (2) Live Activity를 즉시 업데이트
-- 앱 재진입/재실행 시 도메인 상태에서 잠금화면 상태를 복원·재동기화한다.
+- 상태 변경 이벤트(`pause/resume/finish/skip`) 발생 시 **도메인 상태를 먼저 갱신**한다.
+- Live Activity를 다시 쓰게 되면, 그때 **네이티브 표면과의 동기화**를 별도 규칙으로 정한다 (현재는 필수 아님).
+- 앱 재진입 시 **도메인 상태**를 기준으로 세션 UI를 복원한다.
 
-### 7.2.4 구현 우선순위 (MVP)
+### 7.2.4 구현 우선순위 (MVP, 앱 내)
 
-- 1단계: 현재 플로우 + 남은 시간 + 진행도 표시
-- 2단계: Live Activity(잠금화면) 액션(일시정지/완료) 연동
-- 3단계: 완료/건너뛰기 시 다음 플로우 자동 반영
+- 1단계: 현재 플로우 + 남은 시간 + 진행도 표시 (`activity-session`·카드)
+- 2단계: 세션 액션(일시정지/완료 등)과 일정/스토어 연동 안정화
+- 3단계: 완료/건너뛰기 시 다음 플로우 반영 등 흐름 고도화
 - 4단계: 세부 코칭 텍스트/점수/고급 시각효과
 
 ### 7.2.5 코드 작성 원칙
 
-- 잠금화면 전용 브리지 코드는 feature/lib 영역에 두고, 페이지 UI 코드와 결합하지 않는다.
+- 세션·일정 연동 로직은 `features`·`entities`에 두고, **페이지는 배선** 위주로 유지한다.
 - `shared` 레이어는 `entities/features/pages`를 import 하지 않는다.
 - 사용자 대면 텍스트는 한글 원칙을 유지한다.
 
-### 7.2.6 Live Activity 잠금화면 UI·크기 기준 (canonical, Swift 기준)
+### 7.2.6 (레거시 참고) Live Activity 잠금화면 UI·크기 기준 — ActivityKit / Swift
+
+**현재 제품에서 Live Activity를 필수로 구현하지 않는다.** 다시 잠금화면 배너를 다룰 때 아래를 참고한다.
 
 잠금화면 Live Activity의 **최종 레이아웃·행간·적응형 폴백(Preferred/Compact) 기준은 iOS SwiftUI(ActivityKit)** 이다.
 
-- **목표 상세 설정의 미리보기 UI**는 별도 디자인 시스템을 두지 않고, **Live Activity와 같은 정보 구조·구성·색/타이포 의도**를 따른다. Swift 쪽을 수정하면 미리보기도 같이 수정한다(아래 §7.2.7).
-- 기기에서는 시스템 머티리얼·다크모드에 따라 실제 픽셀이 미세하게 달라질 수 있으나, **미리보기는 잠금화면에서 사용자가 보는 톤**(검정 바, iOS 보조 라벨색 등)에 맞춘다.
+- **(재도입 시)** 목표 상세의 **잠금화면형 미리보기**는 별도 디자인 시스템을 두지 않고, **Live Activity와 같은 정보 구조·구성·색/타이포 의도**를 따른다. Swift 쪽을 수정하면 미리보기도 같이 수정한다(아래 §7.2.7).
+- 기기에서는 시스템 머티리얼·다크모드에 따라 실제 픽셀이 미세하게 달라질 수 있으나, 위 미리보기를 쓸 때는 **잠금화면 톤**에 맞춘다.
 
 **구현 위치**
 
@@ -280,9 +279,9 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 - 카테고리별 UI는 `categoryKey`(및 필요 시 전용 payload, 예: `readingDataConfig`)로 분기한다.
 - 새 카테고리 추가 시에도 **동일 원칙**: SwiftUI 단일 진실, RN 미리보기는 payload 동일, **세로 `ViewThatFits` + Preferred/Compact** 권장.
 
-### 7.2.7 목표 상세 설정 미리보기 ↔ Live Activity 동기화 (필수 워크플로)
+### 7.2.7 (레거시 참고) 목표 상세 미리보기 ↔ Live Activity 동기화
 
-**원칙:** Swift에서 Live Activity UI(레이아웃, 문구, 지표 노출, 버튼, 색·대비 의도)를 바꾸면, **같은 PR/작업**에서 목표 상세 설정 화면의 **미리보기**도 Live Activity 기준으로 맞춘다. 미리보기만 따로 “앱용 스타일”로 drifting 하지 않는다.
+**Live Activity를 다시 켤 때 적용:** Swift에서 Live Activity UI(레이아웃, 문구, 지표 노출, 버튼, 색·대비 의도)를 바꾸면, **같은 PR/작업**에서 목표 상세의 **잠금화면형 미리보기**도 동일 의도로 맞춘다. **현재는** 목표 상세·세션 카드는 **앱 UI 일관성**을 우선한다.
 
 **RN 미리보기 위치 (현재)**
 
@@ -295,13 +294,22 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 - **폰 목업**(베젤·배경화면·시계 등)은 넣지 않는다. **잠금화면에 보이는 카드(배너 본문)** 만 렌더링한다.
 - 레이아웃·폰트 크기·패딩·진행 바·액션 버튼 구역은 Swift **`readingPreferredLockScreenBody`**(및 해당 카테고리의 Preferred 블록)를 기준으로 맞춘다. Compact(`readingCompactLockScreenBody`)는 필요 시 별도 분기·주석으로 Swift와 대응 관계를 적어 둔다.
 - **색:** 실기 잠금화면 스크린샷·iOS 시스템 톤에 맞춘다(예: 카드 면 검정, 보조 텍스트·타이머 `#8E8E93`, 슬롯/트랙·일시정지 `#3A3A3C`, 완료 `#FF9500` 등). Swift 코드의 `Color.black.opacity(...)` 와 픽셀 동일이 아니어도 되나, **사용자가 잠금화면에서 보는 대비**를 해치지 않게 한다.
-- 앱 전역 **브랜드 primary**(`theme.ts`의 `rgb(249, 115, 22)`)와 Live Activity의 시스템 오렌지가 다를 수 있다. **미리보기는 Live Activity 기준**을 우선한다.
+- 앱 전역 **브랜드 primary**(`theme.ts`의 `rgb(0, 0, 0)`)와 Live Activity의 시스템 색이 다를 수 있다. **미리보기는 Live Activity 기준**을 우선한다.
 
 **에이전트/리뷰 체크리스트**
 
 - [ ] `LockFlowLiveActivityWidget.swift` 배너 UI를 수정했는가? → `ReadingPreview.tsx`(또는 해당 카테고리 Preview) 동일 의도로 갱신했는가?
 - [ ] 새 지표·버튼·카테고리 분기를 Swift에 추가했는가? → 미리보기에 payload/`dataConfig` 반영 가능한가?
 - [ ] 한글 카피·라벨은 Swift와 RN 미리보기가 동일한가?
+
+### 7.2.8 목표 상세 설정 — 배경 원형·블롭(Ornament) 금지
+
+**적용 범위:** `src/pages/goal-detail-settings/**` 및 여기에 조립되는 카테고리별 설정 UI(예: `ui/category/*/ui/*Settings.tsx`).
+
+- **금지:** 화면·섹션 **뒤쪽**에 깔리는 장식용 **원형 UI**(큰 원·타원, `borderRadius`로 만든 **블롭**, 코너에 두는 **글로우 오브 / kinetic orb**, `absolute` + `blur` 조합의 **장식용 원형 레이어** 등). “시안에 있어서”라도 목표 상세 설정에서는 **넣지 않는다**.
+- **허용:** 카드·행·버튼 등 **콘텐츠 자체**의 일부로서의 작은 아이콘 배경 원, **목표 상세·미리보기 카드 내부**의 정보 UI는 본 항의 “배경 장식”과 구분한다.
+- **대안:** 배경은 **단색 또는 단순 평면**(`backgroundColor`), 구분은 **카드/보더/섀도우**로만 표현한다.
+- **유지보수:** 이미 들어간 배경용 원형 레이어는 **제거**하는 것이 원칙이다.
 
 ---
 
