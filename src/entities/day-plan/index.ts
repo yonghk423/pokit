@@ -14,6 +14,7 @@ export { filterDayPlanFlowBlocks, isDayPlanFlowBlock } from './lib/dayPlanFlowBl
 export {
   blockDurationSec,
   dayPlanTimeRangesOverlap,
+  effectiveEndMinutesExclusive,
   findOverlappingDayPlanBlock,
   findOverlappingDayPlanBlocks,
   formatBlockTimeRange,
@@ -25,7 +26,19 @@ export {
   totalPlannedMinutes,
 } from './lib/dayPlanTime';
 export type { DayPlanRuntimeTiming } from './lib/dayPlanRuntimeTime';
-export { minuteOffsetToDateMs, resolveCategoryKeyFromLabel, toRuntimeTiming } from './lib/dayPlanRuntimeTime';
+export {
+  blockEndWallTimeMs,
+  isBlockEndInPastForDateKey,
+  minuteOffsetToDateMs,
+  resolveCategoryKeyFromLabel,
+  toRuntimeTiming,
+} from './lib/dayPlanRuntimeTime';
+export {
+  addDaysToLocalDateKey,
+  getLocalDateKey,
+  localDateToDateKey,
+  parseLocalDateKeyToDate,
+} from './lib/localDateKey';
 export type {
   ReadingLiveActivityConfig,
   ReadingMetricKey,

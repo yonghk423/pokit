@@ -146,9 +146,12 @@ function slotMinuteForTaskIndex(
   endMinutes: number,
   taskIndex: number,
   totalTasks: number,
+  endsNextCalendarDay?: boolean,
 ): number {
   if (totalTasks <= 1) return startMinutes;
-  const span = endMinutes - startMinutes;
+  const span = endsNextCalendarDay
+    ? 24 * 60 - startMinutes + endMinutes
+    : endMinutes - startMinutes;
   return startMinutes + Math.round((span * taskIndex) / (totalTasks - 1));
 }
 
@@ -215,6 +218,7 @@ function buildPriorityLiveContent(
       block.endMinutes,
       slotIdx,
       lines.length,
+      block.endsNextCalendarDay,
     );
     return {
       order: activeIdx + 2 + j,

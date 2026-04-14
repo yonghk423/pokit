@@ -356,6 +356,12 @@ export function OtherSessionCard({
   data,
   ...hero
 }: SessionHeroProps & { data: OtherDetailDataConfig }) {
+  const doneCount = data.checklist.filter((x) => x.done).length;
+  const pendingCount = data.checklist.length - doneCount;
+  const checklistTop = data.checklist
+    .slice(0, 3)
+    .map((x) => `${x.done ? '✓' : '•'} ${x.text}`)
+    .join('\n');
   return (
     <SessionDarkShell>
       <HeroTimerBlock {...hero} />
@@ -364,8 +370,16 @@ export function OtherSessionCard({
           icon="star.fill"
           label="플로우 메모"
           badge="사용자"
-          body={data.memo.trim() || '목표 상세에서 메모를 적어 주세요.'}
+          body={
+            checklistTop ||
+            data.memo.trim() ||
+            '목표 상세에서 체크리스트 또는 메모를 입력해 주세요.'
+          }
         />
+        <BentoRow>
+          <BentoHalfMetric icon="checkmark.seal.fill" label="완료" value={String(doneCount)} unit="개" />
+          <BentoHalfMetric icon="list.bullet" label="남은 작업" value={String(Math.max(0, pendingCount))} unit="개" />
+        </BentoRow>
       </BentoGap>
     </SessionDarkShell>
   );

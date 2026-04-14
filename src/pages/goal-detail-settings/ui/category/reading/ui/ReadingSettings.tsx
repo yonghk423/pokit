@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   DEFAULT_READING_LIVE_ACTIVITY_CONFIG,
@@ -10,12 +10,9 @@ import {
   type ReadingLiveActivityConfig,
 } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { ThemedText } from '@shared/ui/themed-text';
 
-/** 액센트는 세션과 맞추고, 배경은 목표 상세 공통 화이트 */
 const READING_EMERALD_TEXT = 'rgb(52, 211, 153)';
 const READING_EMERALD = 'rgb(16, 185, 129)';
-const READING_SCREEN_BG = '#ffffff';
 
 export type ReadingDetailDataConfig = ReadingLiveActivityConfig;
 export const DEFAULT_READING_DATA_CONFIG = DEFAULT_READING_LIVE_ACTIVITY_CONFIG;
@@ -85,210 +82,154 @@ export function ReadingSettings({
   }, [onChangeDataConfig, bookTitleStr, cfg.selectedMetrics, startPage, targetPage]);
 
   const rangeLine = `${startPage}p ~ ${targetPage}p`;
-  const cardBg = READING_SCREEN_BG;
-  const borderC = 'rgba(16,185,129,0.25)';
-  const fieldBg = '#ffffff';
-  const muted = '#64748b';
-  const onSurface = '#0f172a';
-  const outline = '#94a3b8';
+  const muted = '#6b7280';
+  const onSurface = '#111827';
+  const outline = '#9ca3af';
 
   return (
-    <View style={styles.wrap}>
-      <View style={[styles.sessionCard, { backgroundColor: cardBg, borderColor: borderC }]}>
-        <View style={styles.bookIconWrap}>
-          <View
-            style={[
-              styles.bookCircle,
-              {
-                backgroundColor: 'rgba(16,185,129,0.10)',
-                borderColor: 'rgba(16,185,129,0.20)',
-              },
-            ]}>
-            <IconSymbol name="book.fill" size={44} color={READING_EMERALD_TEXT} weight="light" />
-          </View>
-        </View>
+    <View style={styles.shell}>
+      <View style={styles.header}>
+        <Text style={[styles.brand, { color: onSurface }]}>LOCKFLOW READING</Text>
+      </View>
 
-        <View style={[styles.bookFieldPanel, { backgroundColor: fieldBg, borderColor: borderC }]}>
-          <ThemedText style={[styles.bookFieldLabel, { color: muted }]}>읽는 책</ThemedText>
+      <View style={styles.about}>
+        <Text style={[styles.sectionKicker, { color: muted }]}>ABOUT BOOK FLOW</Text>
+        <Text style={[styles.aboutText, { color: onSurface }]}>
+          한 권을 끝까지 밀어붙이도록 페이지 목표와 구간을 명확하게 설계합니다.
+        </Text>
+      </View>
+
+      <View style={styles.listHeader}>
+        <Text style={[styles.sectionKicker, { color: muted }]}>CATEGORIES ||</Text>
+        <Text style={[styles.mainTitle, { color: onSurface }]}>Reading</Text>
+      </View>
+
+      <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: '#d1d5db' }]}>
+        <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: onSurface }]}>{startPage}</Text>
+          <Text style={[styles.metricLabel, { color: muted }]}>시작</Text>
+        </View>
+        <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: onSurface }]}>{targetPage}</Text>
+          <Text style={[styles.metricLabel, { color: muted }]}>목표</Text>
+        </View>
+        <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: READING_EMERALD }]}>{pagesToRead}</Text>
+          <Text style={[styles.metricLabel, { color: muted }]}>읽을 분량</Text>
+        </View>
+      </View>
+
+      <View style={[styles.rowsWrap, { borderTopColor: '#000' }]}>
+        <View style={[styles.row, { borderBottomColor: '#d1d5db' }]}>
+          <Text style={[styles.rowTitle, { color: onSurface }]}>책 제목</Text>
           <TextInput
             value={bookTitleStr}
             onChangeText={setBookTitleStr}
-            placeholder="책 제목을 입력하세요"
+            placeholder="책 제목 입력"
             placeholderTextColor={outline}
             maxLength={120}
             multiline
-            style={[styles.bookTitleInput, { color: onSurface }]}
+            style={[styles.rowInput, { color: onSurface }]}
           />
         </View>
 
-        <Text style={[styles.bookTitle, { color: onSurface }]} numberOfLines={4}>
-          {sessionPreviewTitle}
-        </Text>
-
-        <View style={styles.rangeBlock}>
-          <Text style={[styles.rangeValue, { color: READING_EMERALD_TEXT }]}>{rangeLine}</Text>
-        </View>
-
-        <View style={styles.metricRow}>
-          <View style={styles.metricCol}>
-            <Text style={[styles.valBig, { color: onSurface }]}>{startPage}</Text>
-            <ThemedText style={[styles.metricLabel, { color: muted }]}>시작 페이지</ThemedText>
-          </View>
-          <View style={styles.metricCol}>
-            <Text style={[styles.valSmall, { color: onSurface }]}>{targetPage}</Text>
-            <ThemedText style={[styles.metricLabel, { color: muted }]}>목표 페이지</ThemedText>
-          </View>
-          <View style={styles.metricCol}>
-            <Text style={[styles.valBig, { color: onSurface }]}>{pagesToRead}</Text>
-            <ThemedText style={[styles.metricLabel, { color: muted }]}>읽을 페이지</ThemedText>
+        <View style={[styles.row, { borderBottomColor: '#d1d5db' }]}>
+          <Text style={[styles.rowTitle, { color: onSurface }]}>시작 페이지</Text>
+          <View style={styles.inlineInputWrap}>
+            <TextInput
+              value={startPageStr}
+              onChangeText={setStartPageStr}
+              placeholder="1"
+              placeholderTextColor={outline}
+              keyboardType="number-pad"
+              style={[styles.inlineInput, { color: onSurface }]}
+            />
+            <Text style={[styles.inlineSuffix, { color: muted }]}>p</Text>
           </View>
         </View>
 
-        <View style={[styles.inputPanel, { backgroundColor: fieldBg, borderColor: borderC }]}>
-          <ThemedText style={[styles.inputPanelTitle, { color: onSurface }]}>페이지 입력</ThemedText>
-          <View style={styles.grid2}>
-            <View style={styles.fieldCol}>
-              <ThemedText style={[styles.fieldLabel, { color: muted }]}>시작 페이지</ThemedText>
-              <View
-                style={[
-                  styles.fieldWrap,
-                  { backgroundColor: '#f1f5f9', borderColor: borderC },
-                ]}>
-                <TextInput
-                  value={startPageStr}
-                  onChangeText={setStartPageStr}
-                  placeholder="1"
-                  placeholderTextColor={outline}
-                  keyboardType="number-pad"
-                  style={[styles.fieldInput, { color: onSurface }]}
-                />
-                <ThemedText style={[styles.fieldSuffix, { color: muted }]}>p</ThemedText>
-              </View>
-            </View>
-            <View style={styles.fieldCol}>
-              <ThemedText style={[styles.fieldLabel, { color: muted }]}>목표 페이지</ThemedText>
-              <View
-                style={[
-                  styles.fieldWrap,
-                  { backgroundColor: '#f1f5f9', borderColor: borderC },
-                ]}>
-                <TextInput
-                  value={targetPageStr}
-                  onChangeText={setTargetPageStr}
-                  placeholder="100"
-                  placeholderTextColor={outline}
-                  keyboardType="number-pad"
-                  style={[styles.fieldInput, { color: onSurface }]}
-                />
-                <ThemedText style={[styles.fieldSuffix, { color: muted }]}>p</ThemedText>
-              </View>
-            </View>
+        <View style={[styles.row, { borderBottomColor: '#d1d5db' }]}>
+          <Text style={[styles.rowTitle, { color: onSurface }]}>목표 페이지</Text>
+          <View style={styles.inlineInputWrap}>
+            <TextInput
+              value={targetPageStr}
+              onChangeText={setTargetPageStr}
+              placeholder="100"
+              placeholderTextColor={outline}
+              keyboardType="number-pad"
+              style={[styles.inlineInput, { color: onSurface }]}
+            />
+            <Text style={[styles.inlineSuffix, { color: muted }]}>p</Text>
           </View>
         </View>
       </View>
+
+      <View style={[styles.rangeCard, { borderColor: 'rgba(16,185,129,0.25)' }]}>
+        <IconSymbol name="book.fill" size={20} color={READING_EMERALD_TEXT} />
+        <Text style={[styles.rangeText, { color: READING_EMERALD_TEXT }]}>{rangeLine}</Text>
+      </View>
+
+      <Pressable style={[styles.previewCard, { borderColor: '#d1d5db' }]}>
+        <Text style={[styles.previewKicker, { color: muted }]}>PREVIEW</Text>
+        <Text style={[styles.previewTitle, { color: onSurface }]} numberOfLines={3}>
+          {sessionPreviewTitle}
+        </Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 12 },
-  sessionCard: {
-    borderRadius: 20,
-    padding: 16,
-    gap: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  bookIconWrap: {
-    marginBottom: 2,
-    alignItems: 'center',
-  },
-  bookCircle: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    shadowColor: READING_EMERALD,
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  bookFieldPanel: {
-    width: '100%',
-    borderRadius: 16,
-    padding: 12,
-    gap: 6,
-    borderWidth: 1,
-  },
-  bookFieldLabel: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: -0.1,
-  },
-  bookTitleInput: {
-    minHeight: 40,
-    fontSize: 16,
-    fontWeight: '700',
-    lineHeight: 22,
-    paddingVertical: 4,
-    paddingHorizontal: 0,
-    textAlignVertical: 'top',
-  },
-  bookTitle: {
-    fontSize: 20,
-    lineHeight: 26,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-    textAlign: 'center',
-    paddingHorizontal: 4,
-  },
-  rangeBlock: {
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 0,
-    width: '100%',
-  },
-  rangeValue: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-    textAlign: 'center',
-  },
-  metricRow: {
+  shell: { gap: 16, paddingVertical: 6 },
+  header: { flexDirection: 'row', alignItems: 'flex-start' },
+  brand: { fontSize: 12, fontWeight: '700', letterSpacing: 0.4 },
+  about: { gap: 8 },
+  sectionKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
+  aboutText: { fontSize: 20, lineHeight: 28, fontWeight: '600', letterSpacing: -0.3 },
+  listHeader: { gap: 6, paddingTop: 2 },
+  mainTitle: { fontSize: 42, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },
+  metricBar: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 10,
-    width: '100%',
-    marginTop: 0,
-  },
-  metricCol: { flex: 1, gap: 4, alignItems: 'center' },
-  valBig: { fontSize: 18, fontWeight: '800', letterSpacing: -0.4, textAlign: 'center' },
-  valSmall: { fontSize: 18, fontWeight: '800', letterSpacing: -0.35, textAlign: 'center' },
-  metricLabel: { fontSize: 9, fontWeight: '700', textAlign: 'center' },
-  inputPanel: {
-    width: '100%',
-    marginTop: 2,
-    borderRadius: 16,
-    padding: 12,
-    gap: 8,
-    borderWidth: 1,
-  },
-  inputPanelTitle: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
-  grid2: { flexDirection: 'row', gap: 12 },
-  fieldCol: { flex: 1, gap: 8 },
-  fieldLabel: { fontSize: 12, fontWeight: '700', letterSpacing: -0.1 },
-  fieldWrap: {
-    borderRadius: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     paddingVertical: 10,
+  },
+  metricItem: { flex: 1, alignItems: 'center', gap: 2 },
+  metricValue: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4 },
+  metricLabel: { fontSize: 11, fontWeight: '600' },
+  rowsWrap: { borderTopWidth: 1 },
+  row: {
+    minHeight: 60,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingVertical: 8,
+  },
+  rowTitle: { fontSize: 16, fontWeight: '600' },
+  rowInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'right',
+    minHeight: 32,
+    maxWidth: '70%',
+  },
+  inlineInputWrap: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  inlineInput: { minWidth: 62, fontSize: 18, fontWeight: '700', textAlign: 'right', padding: 0 },
+  inlineSuffix: { fontSize: 13, fontWeight: '600' },
+  rangeCard: {
+    borderWidth: 1,
+    borderRadius: 12,
     paddingHorizontal: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    borderWidth: 1,
   },
-  fieldInput: { flex: 1, fontSize: 17, fontWeight: '800', padding: 0 },
-  fieldSuffix: { fontSize: 12, fontWeight: '700', letterSpacing: -0.1 },
+  rangeText: { fontSize: 18, fontWeight: '700', letterSpacing: -0.2 },
+  previewCard: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, padding: 12, gap: 8 },
+  previewKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1 },
+  previewTitle: { fontSize: 20, lineHeight: 26, fontWeight: '700', letterSpacing: -0.3 },
 });

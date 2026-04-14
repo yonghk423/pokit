@@ -199,7 +199,7 @@ export function ActivitySessionPage() {
   const insets = useSafeAreaInsets();
   const isDark = colorScheme === 'dark';
 
-  const bg = isDark ? '#0f172a' : '#f8fafc';
+  const bg = isDark ? '#0f172a' : '#ffffff';
   const surface = isDark ? '#1e293b' : '#ffffff';
   const border = isDark ? '#334155' : '#e2e8f0';
   const muted = isDark ? '#94a3b8' : '#64748b';
@@ -258,12 +258,19 @@ export function ActivitySessionPage() {
 
   const addWaterIntakeMl = useCallback(
     (deltaMl: number) => {
-      if (!block || categoryKey !== 'water' || !categoryConfigs.water || deltaMl <= 0) return;
-      const w = categoryConfigs.water;
+      if (
+        !block ||
+        categoryKey !== 'water' ||
+        !categoryConfigs.water ||
+        deltaMl <= 0
+      ) {
+        return;
+      }
+      const source = categoryConfigs.water;
       setWaterSessionDrankMl((prev) => {
-        const base = prev ?? w.drankMl;
-        const next = Math.max(0, Math.min(w.goalMl, base + deltaMl));
-        const payload = normalizeWaterDetailConfig({ ...w, drankMl: next });
+        const base = prev ?? source.drankMl;
+        const next = Math.max(0, Math.min(source.goalMl, base + deltaMl));
+        const payload = normalizeWaterDetailConfig({ ...source, drankMl: next });
         saveGoalDetailCategoryConfig('water', payload);
         saveGoalDetailBlockConfig(block.id, payload);
         return next;

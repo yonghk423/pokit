@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Platform,
   Pressable,
   StyleSheet,
   Switch,
+  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -90,7 +90,6 @@ export function MedicineSettings({
 }) {
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
-  const isDark = scheme === 'dark';
 
   const [draft, setDraft] = useState<MedicineDetailDataConfig>(() =>
     normalizeMedicineDetailConfig(dataConfig ?? getInitialMedicineDataConfig()),
@@ -113,235 +112,144 @@ export function MedicineSettings({
     onChangeDataConfig(payload);
   }, [draft, onChangeDataConfig]);
 
-  const fieldBg = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
-  const fieldBorder = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)';
-  const cardBg = isDark ? 'rgba(255,255,255,0.05)' : '#f1f1f3';
-  const slotOffBg = isDark ? 'rgba(255,255,255,0.06)' : '#ececef';
-  const slotOffBorder = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)';
-  const slotOffText = isDark ? c.onSurface : '#18181b';
-
   return (
-    <View style={styles.root}>
-      <View style={styles.hero}>
-        <ThemedText style={[styles.heroTitle, { color: c.onSurface }]}>
-          약 복용 <ThemedText style={styles.heroAccent}>플로우 설정</ThemedText>
-        </ThemedText>
-        <ThemedText style={[styles.heroSub, { color: c.onVariant }]}>
-          건강한 하루를 위해 복용할 약과 시간을 정확히 설정해 주세요.
-        </ThemedText>
+    <View style={styles.shell}>
+      <View style={styles.header}>
+        <Text style={[styles.brand, { color: c.onSurface }]}>LOCKFLOW MEDICINE</Text>
       </View>
 
-      <View style={styles.block}>
-        <ThemedText style={[styles.sectionHeading, { color: c.onSurface }]}>약 이름 입력</ThemedText>
-        <View style={[styles.nameField, { backgroundColor: fieldBg, borderColor: fieldBorder }]}>
+      <View style={styles.about}>
+        <Text style={[styles.sectionKicker, { color: c.onVariant }]}>ABOUT MEDICATION</Text>
+        <Text style={[styles.aboutText, { color: c.onSurface }]}>
+          하루 복용 스케줄을 간결하게 정리하고, 세션 중 바로 확인할 수 있게 설정합니다.
+        </Text>
+      </View>
+
+      <View style={styles.listHeader}>
+        <Text style={[styles.sectionKicker, { color: c.onVariant }]}>CATEGORIES ||</Text>
+        <Text style={[styles.mainTitle, { color: c.onSurface }]}>Medicine</Text>
+      </View>
+
+      <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: c.outline }]}>
+        <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: c.onSurface }]}>{draft.dosesPerDay}</Text>
+          <Text style={[styles.metricLabel, { color: c.onVariant }]}>복용 횟수</Text>
+        </View>
+        <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: c.onSurface }]}>{draft.takenCount}</Text>
+          <Text style={[styles.metricLabel, { color: c.onVariant }]}>완료</Text>
+        </View>
+      </View>
+
+      <View style={[styles.rowsWrap, { borderTopColor: '#000' }]}>
+        <View style={[styles.row, { borderBottomColor: c.outline }]}>
+          <View style={styles.rowLeft}>
+            <IconSymbol name="cross.case.fill" size={18} color={PRIMARY} />
+            <Text style={[styles.rowTitle, { color: c.onSurface }]}>약 이름</Text>
+          </View>
           <TextInput
             value={draft.doseLabel}
             onChangeText={(t) => setDraft((prev) => ({ ...prev, doseLabel: t }))}
             placeholder="예: 타이레놀 500mg"
             placeholderTextColor={c.outline}
-            style={[styles.nameInput, { color: c.onSurface }]}
+            style={[styles.rowInput, { color: c.onSurface }]}
           />
-          <View style={styles.nameIcon}>
-            <IconSymbol name="cross.case.fill" size={26} color={PRIMARY} />
+        </View>
+
+        <View style={[styles.row, { borderBottomColor: c.outline }]}>
+          <Text style={[styles.rowTitle, { color: c.onSurface }]}>복용 슬롯</Text>
+          <View style={styles.slotRow}>
+            {SLOT_GRID.map((slot) => {
+              const on = slotOn(draft, slot.key);
+              return (
+                <Pressable
+                  key={slot.key}
+                  onPress={() => setDraft((prev) => setSlot(prev, slot.key, !slotOn(prev, slot.key)))}
+                  style={[styles.slotChip, { backgroundColor: on ? PRIMARY : c.surfaceLowest }]}>
+                  <Text style={[styles.slotChipText, { color: on ? '#fff' : c.onSurface }]}>
+                    {slot.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
-      </View>
 
-      <View style={styles.block}>
-        <ThemedText style={[styles.sectionHeading, { color: c.onSurface }]}>복용 시간 설정</ThemedText>
-        <View style={styles.slotGrid}>
-          {SLOT_GRID.map((slot) => {
-            const on = slotOn(draft, slot.key);
-            return (
-              <Pressable
-                key={slot.key}
-                onPress={() => setDraft((prev) => setSlot(prev, slot.key, !slotOn(prev, slot.key)))}
-                style={[
-                  styles.slotCell,
-                  on
-                    ? styles.slotCellOn
-                    : [styles.slotCellOff, { backgroundColor: slotOffBg, borderColor: slotOffBorder }],
-                  on && { shadowColor: PRIMARY },
-                ]}>
-                <IconSymbol name={slot.icon} size={26} color={on ? '#fff' : PRIMARY} />
-                <ThemedText style={[styles.slotLabel, { color: on ? '#fff' : slotOffText }]}>
-                  {slot.label}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      <View style={styles.block}>
-        <ThemedText style={[styles.sectionHeading, { color: c.onSurface }]}>상세 시간 커스텀</ThemedText>
-        <View style={styles.customList}>
-          {SLOT_GRID.map((slot) => {
-            if (!slotOn(draft, slot.key)) return null;
-            return (
-              <View
-                key={slot.key}
-                style={[styles.customCard, { backgroundColor: cardBg, borderColor: fieldBorder }]}>
-                <View style={[styles.customAccent, { backgroundColor: PRIMARY }]} />
-                <View style={styles.customMain}>
-                  <View style={[styles.customIconWrap, { backgroundColor: `${PRIMARY}22` }]}>
-                    <IconSymbol name={slot.icon} size={22} color="#fff" />
-                  </View>
-                  <View style={styles.customTextCol}>
-                    <ThemedText style={[styles.customMicro, { color: c.onVariant }]}>
-                      {slot.cardSub}
-                    </ThemedText>
-                    <TextInput
-                      value={timeField(draft, slot.key)}
-                      onChangeText={(t) => setDraft((prev) => withTime(prev, slot.key, t))}
-                      onBlur={() =>
-                        setDraft((prev) => withTime(prev, slot.key, timeField(prev, slot.key)))
-                      }
-                      keyboardType="numbers-and-punctuation"
-                      placeholder="08:30"
-                      placeholderTextColor={c.outline}
-                      style={[styles.customTimeInput, { color: c.onSurface }]}
-                      {...(Platform.OS === 'ios' ? { fontVariant: ['tabular-nums' as const] } : {})}
-                    />
-                  </View>
-                </View>
-                <IconSymbol name="pencil" size={18} color={PRIMARY} />
+        {SLOT_GRID.map((slot) => {
+          if (!slotOn(draft, slot.key)) return null;
+          return (
+            <View key={slot.key} style={[styles.row, { borderBottomColor: c.outline }]}>
+              <Text style={[styles.rowTitle, { color: c.onSurface }]}>{slot.cardSub}</Text>
+              <View style={styles.inlineInputWrap}>
+                <TextInput
+                  value={timeField(draft, slot.key)}
+                  onChangeText={(t) => setDraft((prev) => withTime(prev, slot.key, t))}
+                  onBlur={() => setDraft((prev) => withTime(prev, slot.key, timeField(prev, slot.key)))}
+                  keyboardType="numbers-and-punctuation"
+                  placeholder="08:30"
+                  placeholderTextColor={c.outline}
+                  style={[styles.inlineInput, { color: c.onSurface }]}
+                />
               </View>
-            );
-          })}
+            </View>
+          );
+        })}
+
+        <View style={[styles.row, { borderBottomColor: c.outline }]}>
+          <Text style={[styles.rowTitle, { color: c.onSurface }]}>복용 알림</Text>
+          <Switch
+            value={draft.medicationNotify}
+            onValueChange={(v) => setDraft((prev) => normalizeMedicineDetailConfig({ ...prev, medicationNotify: v }))}
+            trackColor={{ true: PRIMARY, false: 'rgba(0,0,0,0.12)' }}
+            thumbColor="#fff"
+          />
         </View>
       </View>
 
-      <View style={[styles.notifyCard, { backgroundColor: cardBg, borderColor: fieldBorder }]}>
-        <View style={[styles.notifyIcon, { backgroundColor: 'rgba(0,0,0,0.12)' }]}>
-          <IconSymbol name="bell.fill" size={22} color={PRIMARY} />
-        </View>
-        <View style={styles.notifyTextCol}>
-          <ThemedText style={[styles.notifyTitle, { color: c.onSurface }]}>복용 알림</ThemedText>
-          <ThemedText style={[styles.notifySub, { color: c.onVariant }]}>
-            지정된 시간에 푸시 알림을 보냅니다.
-          </ThemedText>
-        </View>
-        <Switch
-          value={draft.medicationNotify}
-          onValueChange={(v) => setDraft((prev) => normalizeMedicineDetailConfig({ ...prev, medicationNotify: v }))}
-          trackColor={{ true: PRIMARY, false: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)' }}
-          thumbColor="#fff"
-        />
-      </View>
-
-      <ThemedText style={[styles.footerHint, { color: c.outline }]}>
-        아래 「설정 완료」를 누르면 저장되고 플로우가 이어져요.
-      </ThemedText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { gap: 28 },
-  hero: { gap: 8 },
-  heroTitle: { fontSize: 28, fontWeight: '900', letterSpacing: -0.8, lineHeight: 34 },
-  heroAccent: { color: PRIMARY, fontSize: 28, fontWeight: '900', letterSpacing: -0.8 },
-  heroSub: { fontSize: 14, fontWeight: '600', lineHeight: 21 },
-  block: { gap: 12 },
-  sectionHeading: {
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-    marginLeft: 4,
+  shell: { gap: 16, paddingVertical: 6 },
+  header: { flexDirection: 'row', alignItems: 'flex-start' },
+  brand: { fontSize: 12, fontWeight: '700', letterSpacing: 0.4 },
+  about: { gap: 8 },
+  sectionKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
+  aboutText: { fontSize: 20, lineHeight: 28, fontWeight: '600', letterSpacing: -0.3 },
+  listHeader: { gap: 6, paddingTop: 2 },
+  mainTitle: { fontSize: 42, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },
+  metricBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 10,
   },
-  nameField: {
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
+  metricItem: { flex: 1, alignItems: 'center', gap: 2 },
+  metricValue: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4 },
+  metricLabel: { fontSize: 11, fontWeight: '600' },
+  rowsWrap: { borderTopWidth: 1 },
+  row: {
+    minHeight: 62,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 4,
-    paddingRight: 14,
-    minHeight: 56,
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingVertical: 10,
   },
-  nameInput: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-  },
-  nameIcon: { paddingVertical: 4 },
-  slotGrid: { flexDirection: 'row', gap: 12 },
-  slotCell: {
-    flex: 1,
-    aspectRatio: 1,
-    borderRadius: 18,
+  rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rowTitle: { fontSize: 16, fontWeight: '600' },
+  rowInput: { flex: 1, fontSize: 16, fontWeight: '600', textAlign: 'right', minHeight: 32, maxWidth: '70%' },
+  slotRow: { flexDirection: 'row', gap: 6 },
+  slotChip: {
+    minWidth: 42,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 999,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: StyleSheet.hairlineWidth,
   },
-  slotCellOff: {
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-  },
-  slotCellOn: {
-    backgroundColor: PRIMARY,
-    borderColor: 'rgba(255,255,255,0.12)',
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
-  },
-  slotLabel: { fontSize: 14, fontWeight: '800' },
-  customList: { gap: 12 },
-  customCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    gap: 12,
-    overflow: 'hidden',
-  },
-  customAccent: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
-  },
-  customMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 14, minWidth: 0 },
-  customIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  customTextCol: { flex: 1, gap: 4, minWidth: 0 },
-  customMicro: { fontSize: 12, fontWeight: '700', letterSpacing: -0.1 },
-  customTimeInput: {
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    padding: 0,
-    minWidth: 0,
-  },
-  notifyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 18,
-    gap: 14,
-  },
-  notifyIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  notifyTextCol: { flex: 1, gap: 4, minWidth: 0 },
-  notifyTitle: { fontSize: 15, fontWeight: '800' },
-  notifySub: { fontSize: 12, fontWeight: '600', lineHeight: 16 },
-  footerHint: { fontSize: 12, fontWeight: '600', lineHeight: 18, textAlign: 'center', marginTop: -8 },
+  slotChipText: { fontSize: 12, fontWeight: '800' },
+  inlineInputWrap: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  inlineInput: { minWidth: 72, fontSize: 18, fontWeight: '700', textAlign: 'right', padding: 0 },
 });

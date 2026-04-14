@@ -3,16 +3,8 @@ import SwiftUI
 import WidgetKit
 
 @available(iOS 16.1, *)
-private func priorityModeDayPlanURL() -> URL? {
-  var components = URLComponents()
-  components.scheme = "lockflow"
-  components.host = "day-plan"
-  return components.url
-}
-
-@available(iOS 16.1, *)
 enum PriorityModeLiveActivityView {
-  private static let orange = Color.orange
+  private static let orange = Color(red: 0.78, green: 0.78, blue: 0.82)
 
   @ViewBuilder
   static func lockScreenBody(
@@ -24,6 +16,52 @@ enum PriorityModeLiveActivityView {
     } else {
       EmptyView()
     }
+  }
+
+  @ViewBuilder
+  static func lockScreenFallbackBody(
+    context: ActivityViewContext<LockFlowLiveActivityAttributes>,
+    compact: Bool
+  ) -> some View {
+    let rows = context.state.checklistRows
+    let totalFromLabel = parseTotalCount(context.state.checklistCountLabel)
+    let total = max(rows.count, totalFromLabel)
+    let completedCount = rows.filter { $0.state == "completed" }.count
+    let progress01 = total > 0 ? Double(completedCount) / Double(total) : 0
+
+    let currentIndex = rows.firstIndex(where: { $0.state == "current" }) ?? 0
+    let fallbackTitle = context.state.title.trimmingCharacters(in: .whitespacesAndNewlines)
+    let activeTitle: String = {
+      if rows.indices.contains(currentIndex) {
+        let rowTitle = rows[currentIndex].title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !rowTitle.isEmpty { return rowTitle }
+      }
+      return fallbackTitle.isEmpty ? "활성 플로우" : fallbackTitle
+    }()
+
+    let window = context.state.timeRangeLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+    let windowLabel = window.isEmpty ? context.state.checklistTitle : window
+
+    let upcomingRows: [LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow] =
+      Array(rows.enumerated().prefix(4)).map { idx, row in
+        .init(order: idx + 1, title: row.title, timeLabel: row.timeLabel)
+      }
+
+    let p = LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent(
+      windowLabel: windowLabel,
+      activeTitle: activeTitle,
+      activeOrder: min(max(1, currentIndex + 1), max(1, total)),
+      totalTasks: max(1, total),
+      progress01: progress01,
+      upcoming: upcomingRows
+    )
+
+    priorityContent(context: context, p: p, compact: compact)
+  }
+
+  private static func parseTotalCount(_ label: String) -> Int {
+    let digits = label.filter(\.isNumber)
+    return Int(digits) ?? 0
   }
 
   @ViewBuilder
@@ -125,17 +163,12 @@ enum PriorityModeLiveActivityView {
               style: StrokeStyle(lineWidth: ringStroke, lineCap: .round)
             )
             .rotationEffect(.degrees(-90))
-          if let url = priorityModeDayPlanURL() {
-            Link(destination: url) {
-              Image(systemName: "play.fill")
-                .font(.system(size: playIcon, weight: .bold))
-                .foregroundStyle(.black.opacity(0.88))
-                .frame(width: playInner, height: playInner)
-                .background(.white, in: Circle())
-                .shadow(color: .black.opacity(0.28), radius: 3, y: 1)
-            }
-            .buttonStyle(.plain)
-          }
+          Image(systemName: "play.fill")
+            .font(.system(size: playIcon, weight: .bold))
+            .foregroundStyle(.black.opacity(0.88))
+            .frame(width: playInner, height: playInner)
+            .background(.white, in: Circle())
+            .shadow(color: .black.opacity(0.28), radius: 3, y: 1)
         }
         .frame(width: ringSize, height: ringSize)
 
@@ -209,17 +242,6 @@ enum PriorityModeLiveActivityView {
         }
       }
 
-      if let url = priorityModeDayPlanURL() {
-        Link(destination: url) {
-          Text("앱에서 보기")
-            .font(.system(size: compact ? 10 : 10.5, weight: .semibold))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, compact ? 4 : 5)
-            .background(Color.orange, in: RoundedRectangle(cornerRadius: 7))
-        }
-        .buttonStyle(.plain)
-      }
     }
     .padding(.horizontal, padH)
     .padding(.vertical, padV)

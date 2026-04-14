@@ -22,6 +22,7 @@ import {
   buildLiveActivityPayloadForBlock,
   endLockFlowLiveActivity,
   reconcileLiveActivityFromPlan,
+  upsertLiveActivityAndDismiss,
   upsertLockFlowLiveActivity,
 } from '@features/live-activity-sync';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -32,6 +33,8 @@ import { ThemedView } from '@shared/ui/themed-view';
 import {
   CATEGORIES,
   defaultPriorityWindowFromNow,
+  isOvernightHhmmRange,
+  pickPlanDateKeyForPriorityBlock,
   PRIMARY,
 } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
@@ -51,12 +54,19 @@ export function DayPlanPage() {
   const {
     planMode,
     isFocusStarted,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+    priorityPlanExplicitMultiDay,
     priorityStart,
     priorityEnd,
     priorityCategoryOrder,
     quickMemoDraft,
     setPlanMode,
     setIsFocusStarted,
+    setPriorityPlanDateKey,
+    setPriorityPlanDateKeyEnd,
+    applyPriorityPlanCalendarRange,
+    syncOvernightPriorityPlanDates,
     setPriorityStart,
     setPriorityEnd,
     setPriorityCategoryOrder,
@@ -65,17 +75,45 @@ export function DayPlanPage() {
     useShallow((s) => ({
       planMode: s.planMode,
       isFocusStarted: s.isFocusStarted,
+      priorityPlanDateKey: s.priorityPlanDateKey,
+      priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
+      priorityPlanExplicitMultiDay: s.priorityPlanExplicitMultiDay,
       priorityStart: s.priorityStart,
       priorityEnd: s.priorityEnd,
       priorityCategoryOrder: s.priorityCategoryOrder,
       quickMemoDraft: s.quickMemoDraft,
       setPlanMode: s.setPlanMode,
       setIsFocusStarted: s.setIsFocusStarted,
+      setPriorityPlanDateKey: s.setPriorityPlanDateKey,
+      setPriorityPlanDateKeyEnd: s.setPriorityPlanDateKeyEnd,
+      applyPriorityPlanCalendarRange: s.applyPriorityPlanCalendarRange,
+      syncOvernightPriorityPlanDates: s.syncOvernightPriorityPlanDates,
       setPriorityStart: s.setPriorityStart,
       setPriorityEnd: s.setPriorityEnd,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
       setQuickMemoDraft: s.setQuickMemoDraft,
     })),
+  );
+
+  useEffect(() => {
+    syncOvernightPriorityPlanDates();
+  }, [
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+    priorityStart,
+    priorityEnd,
+    syncOvernightPriorityPlanDates,
+  ]);
+
+  const priorityPlanDateForBlock = useMemo(
+    () =>
+      pickPlanDateKeyForPriorityBlock(
+        priorityPlanDateKey,
+        priorityPlanDateKeyEnd,
+        priorityStart,
+        priorityEnd,
+      ),
+    [priorityPlanDateKey, priorityPlanDateKeyEnd, priorityStart, priorityEnd],
   );
   const quickMemoInputRef = useRef<TextInput>(null);
   const dayPlanScrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
@@ -176,7 +214,12 @@ export function DayPlanPage() {
     (categoryKey: string) => {
       const ps = parseHHmmToMinutes(priorityStart);
       const pe = parseHHmmToMinutes(priorityEnd);
-      if (ps === null || pe === null || pe <= ps) {
+      const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
+      if (ps === null || pe === null) {
+        Alert.alert('시각 형식', '시작·종료 시각을 먼저 확인해 주세요.');
+        return;
+      }
+      if (!overnight && pe <= ps) {
         Alert.alert('시각 형식', '시작·종료 시각을 먼저 확인해 주세요.');
         return;
       }
@@ -185,8 +228,10 @@ export function DayPlanPage() {
         title: label,
         startMinutes: ps,
         endMinutes: pe,
+        endsNextCalendarDay: overnight,
         category: label,
         replaceOverlapping: true,
+        planDateKey: priorityPlanDateForBlock,
       });
       if (!result.ok) {
         Alert.alert('열기 실패', '해당 카테고리 몰입 화면을 열지 못했습니다.');
@@ -197,7 +242,7 @@ export function DayPlanPage() {
         params: { blockId: result.blockId },
       });
     },
-    [addBlock, priorityEnd, priorityStart, router],
+    [addBlock, priorityEnd, priorityPlanDateForBlock, priorityStart, router],
   );
 
   const onSave = () => {
@@ -255,7 +300,12 @@ export function DayPlanPage() {
         status: 'active',
       });
       if (payload) {
-        void upsertLockFlowLiveActivity(payload);
+        void (async () => {
+          const dismissed = await upsertLiveActivityAndDismiss(payload);
+          if (!dismissed) {
+            await upsertLockFlowLiveActivity(payload);
+          }
+        })();
       }
       return;
     }
@@ -267,11 +317,12 @@ export function DayPlanPage() {
       }
       const ps = parseHHmmToMinutes(priorityStart);
       const pe = parseHHmmToMinutes(priorityEnd);
+      const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
       if (ps === null || pe === null) {
         Alert.alert('시각 형식', '시작·종료 시각은 09:00 형식으로 입력해 주세요.');
         return;
       }
-      if (pe <= ps) {
+      if (!overnight && pe <= ps) {
         Alert.alert('시간 구간', '종료 시각은 시작 시각보다 늦어야 합니다.');
         return;
       }
@@ -289,8 +340,10 @@ export function DayPlanPage() {
         title: blockTitle,
         startMinutes: ps,
         endMinutes: pe,
+        endsNextCalendarDay: overnight,
         category: catLabel,
         replaceOverlapping: true,
+        planDateKey: priorityPlanDateForBlock,
       });
 
       if (!result.ok) {
@@ -432,6 +485,12 @@ export function DayPlanPage() {
                   <PriorityBasedPlanSection
                     c={c}
                     isFocusStarted={isFocusStarted}
+                    priorityPlanDateKey={priorityPlanDateKey}
+                    onChangePriorityPlanDateKey={setPriorityPlanDateKey}
+                    priorityPlanDateKeyEnd={priorityPlanDateKeyEnd}
+                    onChangePriorityPlanDateKeyEnd={setPriorityPlanDateKeyEnd}
+                    applyPriorityPlanCalendarRange={applyPriorityPlanCalendarRange}
+                    priorityPlanExplicitMultiDay={priorityPlanExplicitMultiDay}
                     priorityStart={priorityStart}
                     priorityEnd={priorityEnd}
                     onChangePriorityStart={setPriorityStart}

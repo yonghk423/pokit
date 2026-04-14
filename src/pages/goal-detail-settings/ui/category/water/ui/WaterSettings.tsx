@@ -111,124 +111,127 @@ export function WaterSettings({
 
   return (
     <View style={styles.shell}>
-      <View style={styles.wrap}>
-        <View style={styles.heading}>
-          <Text style={styles.title}>수분섭취 몰입 설정</Text>
+      <View style={styles.header}>
+        <Text style={styles.brand}>LOCKFLOW WATER</Text>
+      </View>
+
+      <View style={styles.about}>
+        <Text style={styles.sectionKicker}>ABOUT HYDRATION</Text>
+        <Text style={styles.aboutText}>
+          하루 수분 목표와 알림 흐름을 한 화면에서 빠르게 조정해 집중 플로우를 유지합니다.
+        </Text>
+      </View>
+
+      <View style={styles.listHeader}>
+        <Text style={styles.sectionKicker}>CATEGORIES ||</Text>
+        <Text style={styles.mainTitle}>Hydration</Text>
+      </View>
+
+      <View style={styles.metricBar}>
+        <View style={styles.metricItem}>
+          <Text style={styles.metricValue}>{(goalMl / 1000).toFixed(1)}</Text>
+          <Text style={styles.metricLabel}>목표(L)</Text>
         </View>
+        <View style={styles.metricItem}>
+          <Text style={styles.metricValue}>{Math.max(0, goalMl - initialDrankMl)}</Text>
+          <Text style={styles.metricLabel}>남은(ml)</Text>
+        </View>
+      </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>목표 설정</Text>
-          <View style={styles.goalList}>
-            <View style={styles.goalRow}>
-              <View style={styles.goalLeft}>
-                <View style={styles.goalIconWrap}>
-                  <IconSymbol name="drop.fill" size={22} color={T.primary} />
-                </View>
-                <Text style={styles.goalLabel}>하루 목표</Text>
-              </View>
-              <View style={styles.goalInputWrap}>
-                <TextInput
-                  value={goalLStr}
-                  onChangeText={setGoalLStr}
-                  onBlur={onBlurGoalL}
-                  keyboardType="decimal-pad"
-                  placeholder="2.0"
-                  placeholderTextColor={T.placeholder}
-                  style={[styles.goalInput, styles.goalInputText]}
-                />
-                <Text style={styles.goalUnit}>L</Text>
-              </View>
-            </View>
-
-            <View style={styles.presetBlock}>
-              <Text style={styles.presetHint}>빠른 선택</Text>
-              <View style={styles.presetRow}>
-                {[
-                  { ml: 1500, label: '1.5L' },
-                  { ml: 2000, label: '2.0L' },
-                  { ml: 2500, label: '2.5L' },
-                ].map((p) => {
-                  const active = goalMl === p.ml;
-                  return (
-                    <Pressable
-                      key={p.ml}
-                      onPress={() => onPickPresetMl(p.ml)}
-                      style={[
-                        styles.presetChip,
-                        active && styles.presetChipOn,
-                      ]}>
-                      <Text style={[styles.presetChipText, active && styles.presetChipTextOn]}>
-                        {p.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
+      <View style={styles.rowsWrap}>
+        <View style={styles.row}>
+          <View style={styles.rowLeft}>
+            <IconSymbol name="drop.fill" size={18} color={T.primary} />
+            <Text style={styles.rowTitle}>하루 목표</Text>
+          </View>
+          <View style={styles.inlineInputWrap}>
+            <TextInput
+              value={goalLStr}
+              onChangeText={setGoalLStr}
+              onBlur={onBlurGoalL}
+              keyboardType="decimal-pad"
+              placeholder="2.0"
+              placeholderTextColor={T.placeholder}
+              style={styles.inlineInput}
+            />
+            <Text style={styles.inlineSuffix}>L</Text>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>알림</Text>
-          <View style={[styles.reminderCard, { borderColor: T.glassPreviewBorder }]}>
-            <View style={styles.reminderList}>
-              {reminderRows.map((row) => {
-                const selected = reminderPreset === row.key;
-                return (
-                  <Pressable
-                    key={row.key}
-                    onPress={() => setReminderPreset(row.key)}
-                    style={[
-                      styles.reminderBtn,
-                      selected && { backgroundColor: T.surfaceContainerHigh },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.reminderBtnText,
-                        { color: selected ? T.onSurface : T.onSurfaceVariant },
-                      ]}>
-                      {row.label}
-                    </Text>
-                    {row.key === 'custom' ? (
-                      <IconSymbol
-                        name="chevron.right"
-                        size={20}
-                        color={selected ? T.primary : T.onSurfaceVariant}
-                      />
-                    ) : selected ? (
-                      <IconSymbol name="checkmark.circle.fill" size={22} color={T.primary} />
-                    ) : (
-                      <View style={[styles.radioOuter, { borderColor: T.onSurfaceVariant }]} />
-                    )}
-                  </Pressable>
-                );
-              })}
-            </View>
-            {reminderPreset === 'custom' ? (
-              <View style={[styles.customRow, { borderTopColor: T.outline }]}>
-                <Text style={styles.customLabel}>간격 (분)</Text>
-                <TextInput
-                  value={reminderCustomMin}
-                  onChangeText={(t) => setReminderCustomMin(t.replace(/[^0-9]/g, ''))}
-                  keyboardType="number-pad"
-                  style={styles.customInput}
-                />
-              </View>
-            ) : null}
-            <View style={[styles.smartRow, { borderTopColor: T.outline }]}>
-              <View style={styles.smartTextCol}>
-                <Text style={styles.smartTitle}>스마트 알림</Text>
-                <Text style={styles.smartSub}>수면 시간에는 알림을 보내지 않도록 할 예정이에요.</Text>
-              </View>
-              <Switch
-                value={smartNotification}
-                onValueChange={setSmartNotification}
-                trackColor={{ false: T.surfaceContainerHighest, true: T.primary }}
-                thumbColor="#fff"
-                ios_backgroundColor={T.surfaceContainerHighest}
-              />
-            </View>
+        <View style={styles.row}>
+          <Text style={styles.rowTitle}>빠른 선택</Text>
+          <View style={styles.presetRow}>
+            {[
+              { ml: 1500, label: '1.5' },
+              { ml: 2000, label: '2.0' },
+              { ml: 2500, label: '2.5' },
+            ].map((p) => {
+              const active = goalMl === p.ml;
+              return (
+                <Pressable
+                  key={p.ml}
+                  onPress={() => onPickPresetMl(p.ml)}
+                  style={[styles.presetChip, active && styles.presetChipOn]}>
+                  <Text style={[styles.presetChipText, active && styles.presetChipTextOn]}>
+                    {p.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.rowTitle}>알림 주기</Text>
+          <View style={styles.reminderList}>
+            {reminderRows.map((row) => {
+              const selected = reminderPreset === row.key;
+              return (
+                <Pressable
+                  key={row.key}
+                  onPress={() => setReminderPreset(row.key)}
+                  style={styles.reminderBtn}>
+                  <Text style={[styles.reminderBtnText, selected && styles.reminderBtnTextOn]}>
+                    {row.label}
+                  </Text>
+                  {row.key === 'custom' ? (
+                    <IconSymbol
+                      name="chevron.right"
+                      size={18}
+                      color={selected ? T.primary : T.onSurfaceVariant}
+                    />
+                  ) : selected ? (
+                    <IconSymbol name="checkmark.circle.fill" size={20} color={T.primary} />
+                  ) : (
+                    <View style={styles.radioOuter} />
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        {reminderPreset === 'custom' ? (
+          <View style={styles.row}>
+            <Text style={styles.rowTitle}>커스텀(분)</Text>
+            <TextInput
+              value={reminderCustomMin}
+              onChangeText={(t) => setReminderCustomMin(t.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              style={styles.customInput}
+            />
+          </View>
+        ) : null}
+
+        <View style={styles.row}>
+          <Text style={styles.rowTitle}>스마트 알림</Text>
+          <Switch
+            value={smartNotification}
+            onValueChange={setSmartNotification}
+            trackColor={{ false: T.surfaceContainerHighest, true: T.primary }}
+            thumbColor="#fff"
+            ios_backgroundColor={T.surfaceContainerHighest}
+          />
         </View>
       </View>
     </View>
@@ -242,147 +245,76 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 8,
     backgroundColor: T.screenBg,
-    overflow: 'hidden',
+    gap: 16,
   },
-  wrap: { gap: 28 },
-  heading: { gap: 6 },
-  title: {
-    fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: -0.5,
-    lineHeight: 28,
-    color: T.onSurface,
-  },
-  section: { gap: 14 },
-  sectionTitle: {
+  header: { flexDirection: 'row', alignItems: 'flex-start' },
+  brand: { fontSize: 12, fontWeight: '700', letterSpacing: 0.4, color: T.onSurface },
+  about: { gap: 8 },
+  sectionKicker: {
     color: T.onSurfaceVariant,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: -0.2,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.4,
   },
-  goalList: { gap: 10 },
-  goalRow: {
+  aboutText: {
+    color: T.onSurface,
+    fontSize: 20,
+    lineHeight: 28,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+  },
+  listHeader: { gap: 6, paddingTop: 2 },
+  mainTitle: { color: T.onSurface, fontSize: 42, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },
+  metricBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#000',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: T.outline,
+    paddingVertical: 10,
+  },
+  metricItem: { flex: 1, alignItems: 'center', gap: 2 },
+  metricValue: { color: T.onSurface, fontSize: 22, fontWeight: '800', letterSpacing: -0.4 },
+  metricLabel: { color: T.onSurfaceVariant, fontSize: 11, fontWeight: '600' },
+  rowsWrap: { borderTopWidth: 1, borderTopColor: '#000' },
+  row: {
+    minHeight: 62,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: T.outline,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: T.glassPreviewBorder,
-    backgroundColor: T.surfaceContainerLow,
-    paddingVertical: 18,
-    paddingHorizontal: 18,
-  },
-  goalLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    flex: 1,
-    minWidth: 0,
-  },
-  goalIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: T.surfaceContainerHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  goalLabel: {
-    color: T.onSurface,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  goalInputWrap: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-  },
-  goalInput: {
-    minWidth: 56,
-    maxWidth: 88,
-  },
-  goalInputText: {
-    fontSize: 26,
-    fontWeight: '900',
-    textAlign: 'right',
-    padding: 0,
-    color: T.onSurface,
-  },
-  goalUnit: {
-    color: T.onSurfaceVariant,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  presetBlock: {
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: T.glassPreviewBorder,
-    backgroundColor: T.surfaceContainerLow,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
     gap: 10,
+    paddingVertical: 10,
   },
-  presetHint: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-    color: T.onSurfaceVariant,
-  },
-  presetRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rowTitle: { color: T.onSurface, fontSize: 16, fontWeight: '600' },
+  inlineInputWrap: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  inlineInput: { minWidth: 62, fontSize: 18, fontWeight: '700', textAlign: 'right', padding: 0, color: T.onSurface },
+  inlineSuffix: { color: T.onSurfaceVariant, fontSize: 13, fontWeight: '600' },
+  presetRow: { flexDirection: 'row', gap: 6 },
   presetChip: {
-    flex: 1,
-    paddingVertical: 12,
+    minWidth: 44,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: T.surfaceContainerHigh,
+    alignItems: 'center',
   },
   presetChipOn: {
     backgroundColor: T.primarySoft,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: 'rgba(34, 211, 238, 0.35)',
   },
-  presetChipText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: T.onSurfaceVariant,
-  },
-  presetChipTextOn: {
-    color: T.primary,
-    fontWeight: '900',
-  },
-  reminderCard: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    backgroundColor: T.surfaceContainerLow,
-  },
-  reminderList: { padding: 8, gap: 4 },
-  reminderBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-  },
-  reminderBtnText: { fontSize: 16, fontWeight: '800' },
-  radioOuter: { width: 22, height: 22, borderRadius: 11, borderWidth: 2 },
-  customRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    gap: 12,
-  },
-  customLabel: { fontSize: 14, fontWeight: '700', color: T.onSurfaceVariant },
+  presetChipText: { fontSize: 12, fontWeight: '700', color: T.onSurfaceVariant },
+  presetChipTextOn: { color: T.primary, fontWeight: '900' },
+  reminderList: { minWidth: 170, gap: 6 },
+  reminderBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  reminderBtnText: { fontSize: 14, fontWeight: '700', color: T.onSurfaceVariant },
+  reminderBtnTextOn: { color: T.onSurface },
+  radioOuter: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: T.onSurfaceVariant },
   customInput: {
-    minWidth: 72,
+    minWidth: 80,
     borderWidth: 1,
     borderColor: T.glassPreviewBorder,
     borderRadius: 10,
@@ -394,15 +326,4 @@ const styles = StyleSheet.create({
     color: T.onSurface,
     backgroundColor: T.surfaceContainerHigh,
   },
-  smartRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 18,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  smartTextCol: { flex: 1, gap: 4 },
-  smartTitle: { fontSize: 16, fontWeight: '800', color: T.onSurface },
-  smartSub: { fontSize: 11, lineHeight: 16, fontWeight: '500', color: T.onSurfaceVariant },
 });

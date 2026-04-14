@@ -2,16 +2,16 @@
 export function goalDetailSettingsPalette(isDark: boolean) {
   if (isDark) {
     return {
-      surfaceLow: '#18181b',
-      surfaceLowest: '#0f0f12',
-      onSurface: '#fafafa',
-      onVariant: '#a1a1aa',
-      outline: '#71717a',
-      outlineVariant: 'rgba(255,255,255,0.12)',
+      surfaceLow: '#ffffff',
+      surfaceLowest: '#ffffff',
+      onSurface: '#18181b',
+      onVariant: '#52525b',
+      outline: '#a1a1aa',
+      outlineVariant: 'rgba(0,0,0,0.10)',
     };
   }
   return {
-    surfaceLow: '#f4f4f5',
+    surfaceLow: '#ffffff',
     surfaceLowest: '#ffffff',
     onSurface: '#18181b',
     onVariant: '#52525b',

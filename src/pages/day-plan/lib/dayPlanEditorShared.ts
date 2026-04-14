@@ -1,4 +1,9 @@
-import { getLocalMinutesOfDayNow, parseHHmmToMinutes } from '@entities/day-plan';
+import {
+  addDaysToLocalDateKey,
+  getLocalDateKey,
+  getLocalMinutesOfDayNow,
+  parseHHmmToMinutes,
+} from '@entities/day-plan';
 
 export const PRIMARY = 'rgb(0, 0, 0)';
 
@@ -13,8 +18,10 @@ export const CATEGORIES = [
   { key: 'other', label: '사용자', icon: 'person.fill' as const },
 ];
 
-/** 새 플로우 설정에서 임시로 숨길 카테고리 */
-export const PICKER_CATEGORIES = CATEGORIES.filter((c) => c.key !== 'meditation' && c.key !== 'yoga');
+/** 새 플로우 설정에서 임시로 숨길 카테고리 (도메인은 유지, UI에서만 비노출) */
+export const PICKER_CATEGORIES = CATEGORIES.filter(
+  (c) => c.key !== 'work' && c.key !== 'meditation' && c.key !== 'yoga',
+);
 
 export type PriorityTask = { id: string; title: string; categoryKey: string };
 
@@ -130,4 +137,103 @@ export function displayHour12(hhmm: string): string {
   const min = m % 60;
   const h12 = h % 12 === 0 ? 12 : h % 12;
   return `${h12}:${String(min).padStart(2, '0')}`;
+}
+
+/** `YYYY-MM-DD` → 화면용 한글 날짜 */
+export function formatDateKeyDisplayKo(dateKey: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
+  if (!m) return dateKey;
+  const y = m[1];
+  const mo = parseInt(m[2], 10);
+  const d = parseInt(m[3], 10);
+  return `${y}년 ${mo}월 ${d}일`;
+}
+
+/** 시계 박스 등 짧은 표기 — `4월 14일` */
+export function formatDateKeyCompactKo(dateKey: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
+  if (!m) return dateKey;
+  const mo = parseInt(m[2], 10);
+  const d = parseInt(m[3], 10);
+  return `${mo}월 ${d}일`;
+}
+
+/** 우선순위 플로 소개 문구 — 단일일·기간 */
+export function planDayIntroFromRange(todayKey: string, startKey: string, endKey: string): string {
+  const lo = startKey <= endKey ? startKey : endKey;
+  const hi = startKey <= endKey ? endKey : startKey;
+  if (lo === hi) {
+    return lo === todayKey ? '오늘' : formatDateKeyDisplayKo(lo);
+  }
+  return `${formatDateKeyDisplayKo(lo)} ~ ${formatDateKeyDisplayKo(hi)}`;
+}
+
+/**
+ * 블록을 어느 날짜 플랜에 넣을지 — 기간 안에 오늘이 있으면 오늘, 없으면 기간 시작일.
+ */
+export function pickPlanDateKeyForBlock(startKey: string, endKey: string): string {
+  const today = getLocalDateKey();
+  const lo = startKey <= endKey ? startKey : endKey;
+  const hi = startKey <= endKey ? endKey : startKey;
+  if (today >= lo && today <= hi) return today;
+  return lo;
+}
+
+export function sortedPlanDateRange(startKey: string, endKey: string): { lo: string; hi: string } {
+  return startKey <= endKey ? { lo: startKey, hi: endKey } : { lo: endKey, hi: startKey };
+}
+
+/**
+ * 시각만 볼 때 자정을 넘기는 구간(예: 오후 1시 ~ 다음날 새벽 1시).
+ * 당일 24:00 종료(당일 끝까지)는 익일로 보지 않음.
+ */
+export function isOvernightHhmmRange(start: string, end: string): boolean {
+  const ps = parseHHmmToMinutes(start.trim());
+  const pe = parseHHmmToMinutes(end.trim());
+  if (ps === null || pe === null) return false;
+  if (pe === ps) return false;
+  if (pe === 24 * 60 && pe > ps) return false;
+  return pe < ps;
+}
+
+/**
+ * 달력 다중일일 때 시작 시계 아래 날짜 — 구간 첫날.
+ */
+export function priorityClockCaptionDateKeyStart(rangeLo: string): string {
+  return rangeLo;
+}
+
+/**
+ * 달력 다중일일 때 종료 시계 아래 날짜.
+ * 오전/오후·시분에 따라 자정을 넘기면 종료 시각은 적용 기간 **마지막 날의 다음날** 새벽으로 본다.
+ */
+export function priorityClockCaptionDateKeyEnd(
+  rangeHi: string,
+  priorityStart: string,
+  priorityEnd: string,
+): string {
+  const ps = parseHHmmToMinutes(priorityStart.trim());
+  const pe = parseHHmmToMinutes(priorityEnd.trim());
+  if (ps === null || pe === null) return rangeHi;
+  if (pe === 24 * 60 && pe > ps) return rangeHi;
+  if (pe < ps) {
+    return addDaysToLocalDateKey(rangeHi, 1);
+  }
+  return rangeHi;
+}
+
+/**
+ * 우선순위 플로우 블록을 붙일 날짜. 자정 넘김이면 적용 기간의 시작일(저녁~새벽의 ‘저녁’ 날짜)을 씁니다.
+ */
+export function pickPlanDateKeyForPriorityBlock(
+  startKey: string,
+  endKey: string,
+  priorityStart: string,
+  priorityEnd: string,
+): string {
+  const { lo } = sortedPlanDateRange(startKey, endKey);
+  if (isOvernightHhmmRange(priorityStart, priorityEnd)) {
+    return lo;
+  }
+  return pickPlanDateKeyForBlock(startKey, endKey);
 }

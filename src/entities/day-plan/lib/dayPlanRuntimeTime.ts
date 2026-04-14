@@ -1,5 +1,7 @@
 import type { DayPlanBlock } from '@entities/day-plan/model/types';
 
+import { addDaysToLocalDateKey } from './localDateKey';
+
 function parseDateKey(dateKey: string): { year: number; month: number; day: number } | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
   if (!m) return null;
@@ -15,6 +17,29 @@ export function minuteOffsetToDateMs(dateKey: string, minuteOffset: number): num
   if (!parsed) return null;
   const base = new Date(parsed.year, parsed.month - 1, parsed.day, 0, 0, 0, 0);
   return base.getTime() + minuteOffset * 60 * 1000;
+}
+
+/** 블록 종료 시각(익일 종료 포함)의 epoch ms */
+export function blockEndWallTimeMs(
+  dateKey: string,
+  block: Pick<DayPlanBlock, 'endMinutes' | 'endsNextCalendarDay'>,
+): number | null {
+  if (block.endsNextCalendarDay) {
+    const nextKey = addDaysToLocalDateKey(dateKey, 1);
+    return minuteOffsetToDateMs(nextKey, block.endMinutes);
+  }
+  return minuteOffsetToDateMs(dateKey, block.endMinutes);
+}
+
+/** 해당 날짜의 블록 기준으로 종료 시각이 이미 지났는지 (종료 시각 ≤ 지금) */
+export function isBlockEndInPastForDateKey(
+  dateKey: string,
+  block: Pick<DayPlanBlock, 'endMinutes' | 'endsNextCalendarDay'>,
+  nowMs: number = Date.now(),
+): boolean {
+  const endMs = blockEndWallTimeMs(dateKey, block);
+  if (endMs == null) return true;
+  return endMs <= nowMs;
 }
 
 export function resolveCategoryKeyFromLabel(label: string): string | null {
@@ -41,7 +66,7 @@ export type DayPlanRuntimeTiming = {
 
 export function toRuntimeTiming(dateKey: string, block: DayPlanBlock): DayPlanRuntimeTiming | null {
   const startAtMs = minuteOffsetToDateMs(dateKey, block.startMinutes);
-  const endAtMs = minuteOffsetToDateMs(dateKey, block.endMinutes);
+  const endAtMs = blockEndWallTimeMs(dateKey, block);
   if (startAtMs == null || endAtMs == null) return null;
   if (endAtMs <= startAtMs) return null;
   return {

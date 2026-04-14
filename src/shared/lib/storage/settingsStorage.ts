@@ -71,10 +71,10 @@ export function loadDayPlanScheduledNotifications(): DayPlanScheduledNotificatio
     (row): row is DayPlanScheduledNotification =>
       Boolean(
         row &&
-          typeof row === 'object' &&
-          typeof row.notificationId === 'string' &&
-          typeof row.blockId === 'string' &&
-          (row.kind === 'start' || row.kind === 'end'),
+        typeof row === 'object' &&
+        typeof row.notificationId === 'string' &&
+        typeof row.blockId === 'string' &&
+        (row.kind === 'start' || row.kind === 'end'),
       ),
   );
 }

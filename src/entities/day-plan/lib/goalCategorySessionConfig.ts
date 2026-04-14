@@ -238,15 +238,56 @@ export function getInitialMedicineDataConfig(): MedicineDetailDataConfig {
 }
 
 // --- other ---
-export type OtherDetailDataConfig = { memo: string };
+export type OtherChecklistTask = {
+  id: string;
+  text: string;
+  done: boolean;
+};
+
+export type OtherDetailDataConfig = {
+  memo: string;
+  checklist: OtherChecklistTask[];
+  helperTools: {
+    enableDuplicate: boolean;
+    enableShare: boolean;
+  };
+};
 
 export function normalizeOtherDetailConfig(raw: unknown): OtherDetailDataConfig {
   const o = asObj(raw);
-  return { memo: clampStr(o.memo, 120) };
+  const memo = clampStr(o.memo, 300);
+  const checklist: OtherChecklistTask[] = Array.isArray(o.checklist)
+    ? (o.checklist as unknown[])
+        .filter((t): t is Record<string, unknown> => t != null && typeof t === 'object')
+        .map((t) => ({
+          id: typeof t.id === 'string' ? t.id : `o_${Math.random().toString(36).slice(2, 8)}`,
+          text: clampStr(t.text, 160),
+          done: typeof t.done === 'boolean' ? t.done : false,
+        }))
+        .filter((t) => t.text.length > 0)
+    : [];
+
+  const helperRaw = asObj(o.helperTools);
+  return {
+    memo,
+    checklist,
+    helperTools: {
+      enableDuplicate:
+        typeof helperRaw.enableDuplicate === 'boolean' ? helperRaw.enableDuplicate : true,
+      enableShare: typeof helperRaw.enableShare === 'boolean' ? helperRaw.enableShare : true,
+    },
+  };
 }
 
 export function getInitialOtherDataConfig(): OtherDetailDataConfig {
-  return { memo: '' };
+  return {
+    memo: '',
+    checklist: [],
+    helperTools: {
+      enableDuplicate: true,
+      enableShare: true,
+    },
+  };
 }
 
 /** 액티브 세션 화면: 현재 블록 카테고리에 맞춰 하나만 채움 */

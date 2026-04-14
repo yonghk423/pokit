@@ -20,6 +20,11 @@ export type DayPlanBlock = {
    */
   startMinutes: number;
   endMinutes: number;
+  /**
+   * true면 `endMinutes`는 시작일 **다음 날**의 시각(0~1439)입니다.
+   * (예: 당일 13:00 ~ 익일 01:00)
+   */
+  endsNextCalendarDay?: boolean;
   /** 타임라인 표시 순서 */
   order: number;
   /** 빠른 메모 저장으로만 만들어진 블록 — 잠금화면 전용 레이아웃에 사용 */

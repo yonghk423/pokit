@@ -5,7 +5,18 @@ export function getLocalMinutesOfDayNow(now: Date = new Date()): number {
   return now.getHours() * 60 + now.getMinutes();
 }
 
+/** 겹침·길이 계산용 — 익일 종료 블록은 당일 자정 이후 분까지 합산 */
+export function effectiveEndMinutesExclusive(block: DayPlanBlock): number {
+  if (block.endsNextCalendarDay) {
+    return 24 * 60 + block.endMinutes;
+  }
+  return block.endMinutes;
+}
+
 export function blockDurationSec(block: DayPlanBlock): number {
+  if (block.endsNextCalendarDay) {
+    return Math.max(0, (24 * 60 - block.startMinutes + block.endMinutes) * 60);
+  }
   return Math.max(0, (block.endMinutes - block.startMinutes) * 60);
 }
 
@@ -23,6 +34,9 @@ export function formatMinuteOfDayKo(minutes: number): string {
 }
 
 export function formatBlockTimeRange(block: DayPlanBlock): string {
+  if (block.endsNextCalendarDay) {
+    return `${formatMinuteOfDayKo(block.startMinutes)} — 다음날 ${formatMinuteOfDayKo(block.endMinutes)}`;
+  }
   return `${formatMinuteOfDayKo(block.startMinutes)} — ${formatMinuteOfDayKo(block.endMinutes)}`;
 }
 
@@ -49,11 +63,13 @@ export function findOverlappingDayPlanBlock(
   startMinutes: number,
   endMinutes: number,
   excludeBlockId?: string,
+  endsNextCalendarDay?: boolean,
 ): DayPlanBlock | null {
+  const endEff = endsNextCalendarDay ? 24 * 60 + endMinutes : endMinutes;
   const found = blocks.find(
     (b) =>
       b.id !== excludeBlockId &&
-      dayPlanTimeRangesOverlap(startMinutes, endMinutes, b.startMinutes, b.endMinutes),
+      dayPlanTimeRangesOverlap(startMinutes, endEff, b.startMinutes, effectiveEndMinutesExclusive(b)),
   );
   return found ?? null;
 }
@@ -64,17 +80,19 @@ export function findOverlappingDayPlanBlocks(
   startMinutes: number,
   endMinutes: number,
   excludeBlockId?: string,
+  endsNextCalendarDay?: boolean,
 ): DayPlanBlock[] {
+  const endEff = endsNextCalendarDay ? 24 * 60 + endMinutes : endMinutes;
   return blocks.filter(
     (b) =>
       b.id !== excludeBlockId &&
-      dayPlanTimeRangesOverlap(startMinutes, endMinutes, b.startMinutes, b.endMinutes),
+      dayPlanTimeRangesOverlap(startMinutes, endEff, b.startMinutes, effectiveEndMinutesExclusive(b)),
   );
 }
 
 /** 표시용: 일정 블록들의 총 분 길이 */
 export function totalPlannedMinutes(blocks: DayPlanBlock[]): number {
-  return blocks.reduce((sum, b) => sum + Math.max(0, b.endMinutes - b.startMinutes), 0);
+  return blocks.reduce((sum, b) => sum + Math.max(0, blockDurationSec(b) / 60), 0);
 }
 
 /** 완료·건너뛰기에 포함되지 않은 블록 중 order 기준 첫 항목 */

@@ -14,6 +14,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
 import {
+  formatBlockTimeRange,
   useDayPlanNotificationStore,
   isDayPlanFlowBlock,
   useDayPlanRuntimeStore,
@@ -70,15 +71,8 @@ function inferCategoryKeyFromLabel(category: string): GoalDetailCategoryKey {
   return 'other';
 }
 
-function toHHmm(minutes: number): string {
-  const m = Math.max(0, Math.min(24 * 60, Math.floor(minutes)));
-  const h = Math.floor(m / 60);
-  const min = m % 60;
-  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-}
-
 function blockTimeLabel(block: DayPlanBlock): string {
-  return `${toHHmm(block.startMinutes)} - ${toHHmm(block.endMinutes)}`;
+  return formatBlockTimeRange(block);
 }
 
 export function GoalDetailSettingsPage() {
@@ -223,6 +217,8 @@ export function GoalDetailSettingsPage() {
 
   const waterOnlyUi =
     sortedTargets.length > 0 && sortedTargets.every((t) => t.categoryKey === 'water');
+  const medicineOnlyUi =
+    sortedTargets.length === 1 && sortedTargets.every((t) => t.categoryKey === 'medicine');
   const immersive = waterOnlyUi ? WATER : null;
   const screenBg = c.bg;
   const headerBg = c.bg;
@@ -255,10 +251,15 @@ export function GoalDetailSettingsPage() {
         </View>
 
         <ScrollView
+          scrollEnabled={!medicineOnlyUi}
+          bounces={!medicineOnlyUi}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: Math.max(insets.bottom, 12) + 48, backgroundColor: c.bg },
+            {
+              paddingBottom: 20,
+              backgroundColor: c.bg,
+            },
           ]}
           keyboardShouldPersistTaps="handled">
           <View style={[styles.padded, waterOnlyUi && styles.paddedWater]}>
@@ -268,7 +269,7 @@ export function GoalDetailSettingsPage() {
                   styles.startPickerCard,
                   {
                     borderColor: c.border,
-                    backgroundColor: 'rgba(0,0,0,0.02)',
+                    backgroundColor: '#ffffff',
                   },
                 ]}>
                 <ThemedText style={[styles.startPickerTitle, { color: c.onSurface }]}>
@@ -297,9 +298,9 @@ export function GoalDetailSettingsPage() {
                             backgroundColor: selected
                               ? waterOnlyUi
                                 ? 'rgba(34,211,238,0.16)'
-                                : 'rgba(0,0,0,0.08)'
+                                : '#ffffff'
                               : pressed
-                                ? 'rgba(0,0,0,0.04)'
+                                ? 'rgba(0,0,0,0.02)'
                                 : 'transparent',
                           },
                         ]}>
@@ -353,21 +354,28 @@ export function GoalDetailSettingsPage() {
                 </View>
               );
             })}
-            <Pressable
-              style={[styles.cta, waterOnlyUi && styles.ctaWater]}
-              onPress={handleCompleteAndStart}>
-              <ThemedText
-                style={[styles.ctaText, waterOnlyUi && styles.ctaTextWater]}
-                lightColor={waterOnlyUi ? WATER.ctaText : '#fff'}
-                darkColor={waterOnlyUi ? WATER.ctaText : '#fff'}>
-                {waterOnlyUi ? '플로우 설정 완료' : '설정 완료'}
-              </ThemedText>
-            </Pressable>
-            <ThemedText style={[styles.ctaFootnote, { color: c.outline }]}>
-              설정한 시간에 플로우 시작 알림이 도착합니다.
-            </ThemedText>
           </View>
         </ScrollView>
+        <View
+          style={[
+            styles.footerFixed,
+            {
+              backgroundColor: c.bg,
+              borderTopColor: c.border,
+              paddingBottom: Math.max(insets.bottom, 12),
+            },
+          ]}>
+          <Pressable
+            style={[styles.cta, waterOnlyUi && styles.ctaWater]}
+            onPress={handleCompleteAndStart}>
+            <ThemedText
+              style={[styles.ctaText, waterOnlyUi && styles.ctaTextWater]}
+              lightColor={waterOnlyUi ? WATER.ctaText : '#fff'}
+              darkColor={waterOnlyUi ? WATER.ctaText : '#fff'}>
+              {waterOnlyUi ? '플로우 설정 완료' : '설정 완료'}
+            </ThemedText>
+          </Pressable>
+        </View>
       </SafeAreaView>
     </ThemedView>
   );
@@ -447,5 +455,9 @@ const styles = StyleSheet.create({
   ctaTextWater: {
     color: WATER.ctaText,
   },
-  ctaFootnote: { textAlign: 'center', fontSize: 12, marginTop: -16, lineHeight: 18 },
+  footerFixed: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 24,
+    paddingTop: 10,
+  },
 });

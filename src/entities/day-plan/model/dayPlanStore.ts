@@ -1,24 +1,17 @@
 import { create } from 'zustand';
 
 import { filterDayPlanFlowBlocks } from '@entities/day-plan/lib/dayPlanFlowBlock';
+import { isBlockEndInPastForDateKey } from '@entities/day-plan/lib/dayPlanRuntimeTime';
+import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 import {
   findOverlappingDayPlanBlock,
   findOverlappingDayPlanBlocks,
   getFirstPendingBlock,
-  getLocalMinutesOfDayNow,
   sortDayPlanBlocks,
 } from '@entities/day-plan/lib/dayPlanTime';
 import type { DayPlanBlock, DayPlanQuickMemo } from '@entities/day-plan/model/types';
 import { loadDayPlan, saveDayPlan } from '@shared/lib/storage/dayPlanStorage';
 import { syncDayPlanToWidget } from '@shared/lib/storage/widgetDayPlanSync';
-
-function getLocalDateKey(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
 
 function createBlockId(): string {
   const cryptoAny = globalThis as unknown as { crypto?: { randomUUID?: () => string } };
@@ -41,22 +34,38 @@ function normalizePersisted(persisted: {
   quickMemos: DayPlanQuickMemo[];
 } {
   const today = getLocalDateKey();
-  if (persisted.dateKey !== today) {
+  const dk = persisted.dateKey;
+
+  if (dk === today) {
+    const qm = persisted.quickMemos;
     return {
-      dateKey: today,
-      blocks: persisted.blocks.length > 0 ? persisted.blocks : [],
-      completedBlockIds: [],
-      skippedBlockIds: [],
-      quickMemos: [],
+      dateKey: dk,
+      blocks: persisted.blocks,
+      completedBlockIds: persisted.completedBlockIds,
+      skippedBlockIds: persisted.skippedBlockIds,
+      quickMemos: Array.isArray(qm) ? qm : [],
     };
   }
-  const qm = persisted.quickMemos;
+
+  /** 미래 날짜에 잡아 둔 일정은 그대로 복원 (날짜·블록 유지) */
+  if (dk > today) {
+    const qm = persisted.quickMemos;
+    return {
+      dateKey: dk,
+      blocks: Array.isArray(persisted.blocks) ? persisted.blocks : [],
+      completedBlockIds: Array.isArray(persisted.completedBlockIds) ? persisted.completedBlockIds : [],
+      skippedBlockIds: Array.isArray(persisted.skippedBlockIds) ? persisted.skippedBlockIds : [],
+      quickMemos: Array.isArray(qm) ? qm : [],
+    };
+  }
+
+  /** 과거 스냅샷 → 오늘 기준으로 초기화 */
   return {
-    dateKey: persisted.dateKey,
-    blocks: persisted.blocks,
-    completedBlockIds: persisted.completedBlockIds,
-    skippedBlockIds: persisted.skippedBlockIds,
-    quickMemos: Array.isArray(qm) ? qm : [],
+    dateKey: today,
+    blocks: [],
+    completedBlockIds: [],
+    skippedBlockIds: [],
+    quickMemos: [],
   };
 }
 
@@ -100,8 +109,12 @@ export type DayPlanStoreState = {
     category: string;
     startMinutes: number;
     endMinutes: number;
+    /** true면 `endMinutes`는 익일 0~1440 시각 */
+    endsNextCalendarDay?: boolean;
     replaceOverlapping?: boolean;
     blockOrigin?: 'quickMemo';
+    /** 지정 시 해당 날짜 기준으로 종료 시각 검증·스토어 dateKey 정렬 (우선순위 플로우 등) */
+    planDateKey?: string;
   }) => AddBlockResult;
 
   /** 블록 제거 + 완료/건너뛰기 id 정리 */
@@ -279,20 +292,44 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
       const start = Math.max(0, Math.min(Math.floor(input.startMinutes), 24 * 60 - 1));
       let end = Math.floor(input.endMinutes);
       end = Math.max(0, Math.min(end, 24 * 60));
+      const endsNext = Boolean(input.endsNextCalendarDay);
 
-      if (end <= start) {
-        return { ok: false, reason: 'invalid_range' };
+      if (!endsNext) {
+        if (end <= start) {
+          return { ok: false, reason: 'invalid_range' };
+        }
+      } else {
+        if (end >= 24 * 60) {
+          return { ok: false, reason: 'invalid_range' };
+        }
+        if (end >= start) {
+          return { ok: false, reason: 'invalid_range' };
+        }
+        const spanMin = 24 * 60 - start + end;
+        if (spanMin < 1) {
+          return { ok: false, reason: 'invalid_range' };
+        }
       }
 
-      const nowMin = getLocalMinutesOfDayNow();
-      if (end <= nowMin) {
+      if (input.planDateKey && input.planDateKey !== get().dateKey) {
+        set({
+          dateKey: input.planDateKey,
+          blocks: [],
+          completedBlockIds: [],
+          skippedBlockIds: [],
+        });
+        persist();
+      }
+
+      const dateKeyForBlock = get().dateKey;
+      if (isBlockEndInPastForDateKey(dateKeyForBlock, { endMinutes: end, endsNextCalendarDay: endsNext })) {
         return { ok: false, reason: 'in_the_past' };
       }
 
       let { blocks: current, completedBlockIds, skippedBlockIds } = get();
 
       if (input.replaceOverlapping) {
-        const overlapping = findOverlappingDayPlanBlocks(current, start, end);
+        const overlapping = findOverlappingDayPlanBlocks(current, start, end, undefined, endsNext);
         if (overlapping.length > 0) {
           const removeIds = new Set(overlapping.map((b) => b.id));
           current = current.filter((b) => !removeIds.has(b.id));
@@ -300,7 +337,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
           skippedBlockIds = skippedBlockIds.filter((id) => !removeIds.has(id));
         }
       } else {
-        const conflicting = findOverlappingDayPlanBlock(current, start, end);
+        const conflicting = findOverlappingDayPlanBlock(current, start, end, undefined, endsNext);
         if (conflicting) {
           return { ok: false, reason: 'overlap', conflicting };
         }
@@ -315,6 +352,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         startMinutes: start,
         endMinutes: end,
         order: maxOrder + 1,
+        ...(endsNext ? { endsNextCalendarDay: true as const } : {}),
         ...(input.blockOrigin === 'quickMemo' ? { blockOrigin: 'quickMemo' as const } : {}),
       };
 

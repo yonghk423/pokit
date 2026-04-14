@@ -1,5 +1,5 @@
 import type { DayPlanBlock, DayPlanNotificationSettings } from '@entities/day-plan';
-import { filterDayPlanFlowBlocks } from '@entities/day-plan';
+import { blockEndWallTimeMs, filterDayPlanFlowBlocks } from '@entities/day-plan';
 import {
   cancelLocalNotificationsById,
   ensureLocalNotificationPermission,
@@ -95,7 +95,8 @@ export async function rescheduleDayPlanNotifications(input: {
     }
 
     if (input.settings.endEnabled) {
-      const endAt = minuteOffsetToDate(input.dateKey, block.endMinutes);
+      const endMs = blockEndWallTimeMs(input.dateKey, block);
+      const endAt = endMs != null ? new Date(endMs) : null;
       if (endAt && isFutureDate(endAt)) {
         const id = await scheduleLocalNotification({
           title: '플로우 종료 알림',

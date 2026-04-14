@@ -4,7 +4,9 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
+  blockDurationSec,
   filterDayPlanFlowBlocks,
+  formatMinuteOfDayKo,
   resolveCategoryKeyFromLabel,
   useDayPlanStore,
   type DayPlanBlock,
@@ -101,7 +103,7 @@ export function FlowReviewPage() {
       .filter((block): block is DayPlanBlock => Boolean(block))
       .map((block) => {
         const categoryKey = resolveCategoryKeyFromLabel(block.category) ?? 'other';
-        const durationMin = Math.max(0, block.endMinutes - block.startMinutes);
+        const durationMin = Math.max(0, Math.round(blockDurationSec(block) / 60));
         const copy = getReviewCopy(block);
         return { block, categoryKey, durationMin, ...copy };
       });
@@ -229,7 +231,12 @@ export function FlowReviewPage() {
 
                     <View style={styles.cardRight}>
                       <ThemedText style={styles.cardTimeStart}>{toHHmm(row.block.startMinutes)}</ThemedText>
-                      <ThemedText style={styles.cardTimeEnd}>- {toHHmm(row.block.endMinutes)}</ThemedText>
+                      <ThemedText style={styles.cardTimeEnd}>
+                        -{' '}
+                        {row.block.endsNextCalendarDay
+                          ? `다음날 ${formatMinuteOfDayKo(row.block.endMinutes)}`
+                          : toHHmm(row.block.endMinutes)}
+                      </ThemedText>
                     </View>
                   </View>
 

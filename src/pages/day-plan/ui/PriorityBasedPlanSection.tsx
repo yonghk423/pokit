@@ -1,14 +1,38 @@
 // @ts-nocheck — RN Web에서 StyleSheet.create 타입이 TextStyle|ViewStyle로 합쳐져 Reanimated·제스처와 충돌함
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import {
+  Animated,
+  Platform,
+  Modal,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import {
+  getLocalDateKey,
+  localDateToDateKey,
+  parseHHmmToMinutes,
+  parseLocalDateKeyToDate,
+} from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { parseHHmmToMinutes } from '@entities/day-plan';
-import { formatMinutesToHHmm, PICKER_CATEGORIES, PRIMARY } from '../lib/dayPlanEditorShared';
+import {
+  formatDateKeyCompactKo,
+  formatMinutesToHHmm,
+  isOvernightHhmmRange,
+  planDayIntroFromRange,
+  PICKER_CATEGORIES,
+  PRIMARY,
+  priorityClockCaptionDateKeyEnd,
+  priorityClockCaptionDateKeyStart,
+  sortedPlanDateRange,
+} from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
 /**
@@ -50,6 +74,48 @@ function from12hPartsToTotal(h12: number, min: number, ap: '오전' | '오후'):
   return h24 * 60 + m;
 }
 
+function toMonthStart(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function addMonths(date: Date, delta: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + delta, 1);
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function buildCalendarDays(monthStart: Date): Date[] {
+  const firstWeekdayMondayZero = (monthStart.getDay() + 6) % 7;
+  const gridStart = new Date(monthStart);
+  gridStart.setDate(monthStart.getDate() - firstWeekdayMondayZero);
+  return Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    return d;
+  });
+}
+
+function normalizeToDate(value: unknown, fallback: Date): Date {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value;
+  if (typeof value === 'string') {
+    const parsedFromKey = parseLocalDateKeyToDate(value);
+    if (parsedFromKey) return parsedFromKey;
+    const parsedNative = new Date(value);
+    if (Number.isFinite(parsedNative.getTime())) return parsedNative;
+  }
+  if (typeof value === 'number') {
+    const parsedNative = new Date(value);
+    if (Number.isFinite(parsedNative.getTime())) return parsedNative;
+  }
+  return fallback;
+}
+
 /** 합쳐진 시계 면 가운데 — 사각 점 두 개(콜론) + 느린 깜빡임 */
 const COLON_BLINK_MS = 1100;
 
@@ -89,9 +155,15 @@ function BlinkingTimeColon() {
 function FlipClockTimePair({
   value,
   onChange,
+  nextDayHint,
+  dateCaption,
 }: {
   value: string;
   onChange: (hhmm: string) => void;
+  /** 자정 넘김만(달력 다중일 아님) — 우측 상단 「다음날」 */
+  nextDayHint?: boolean;
+  /** 달력으로 기간을 나눈 경우에만 — 박스 하단에 `M월 D일` */
+  dateCaption?: string;
 }) {
   const totalMin = useMemo(() => {
     const p = parseHHmmToMinutes(value.trim());
@@ -228,6 +300,18 @@ function FlipClockTimePair({
     <View style={flipStyles.pairRow}>
       <View style={flipStyles.mergedOuter}>
         <View style={[flipStyles.mergedFace, { backgroundColor: CLOCK_CARD_DARK }]}>
+          {nextDayHint ? (
+            <View pointerEvents="none" style={flipStyles.nextDayBadge}>
+              <ThemedText style={[flipStyles.nextDayText, { color: CLOCK_AMPM_GREY }]}>다음날</ThemedText>
+            </View>
+          ) : null}
+          {dateCaption ? (
+            <View pointerEvents="none" style={flipStyles.dateCaptionFooter}>
+              <ThemedText style={[flipStyles.dateCaptionText, { color: CLOCK_AMPM_GREY }]}>
+                {dateCaption}
+              </ThemedText>
+            </View>
+          ) : null}
           <View style={flipStyles.halfCell}>
             <Pressable
               onPress={toggleAp}
@@ -272,14 +356,18 @@ function FlipClockTimePair({
 const flipStyles = StyleSheet.create({
   /** 시·분 한 면으로 합침 — 바깥은 그림자만 */
   pairRow: {
+    alignSelf: 'stretch',
     width: '100%',
+    minWidth: 0,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'stretch',
     paddingHorizontal: 0,
   },
   mergedOuter: {
     width: '100%',
-    maxWidth: 408,
+    maxWidth: '100%',
+    minWidth: 0,
+    alignSelf: 'stretch',
     borderRadius: 16,
     shadowColor: '#000',
     shadowOpacity: 0,
@@ -306,7 +394,7 @@ const flipStyles = StyleSheet.create({
   colonGutter: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: 18,
+    width: 12,
     flexShrink: 0,
   },
   colonStrip: {
@@ -380,6 +468,31 @@ const flipStyles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.2,
   },
+  nextDayBadge: {
+    position: 'absolute',
+    top: '7%',
+    right: '7%',
+    zIndex: 13,
+  },
+  nextDayText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  dateCaptionFooter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: '7%',
+    zIndex: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateCaptionText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
   /** clock-digit — lineHeight 없으면 세로 클리핑으로 ‘가운데 잘린 선’처럼 보일 수 있음 */
   digitInput: {
     fontSize: 40,
@@ -389,7 +502,8 @@ const flipStyles = StyleSheet.create({
     padding: 0,
     margin: 0,
     textAlign: 'center',
-    minWidth: 72,
+    minWidth: 0,
+    width: '100%',
     zIndex: 0,
   },
   digitInput2400: {
@@ -429,6 +543,16 @@ function bookColors(c: DayPlanPalette, isDark: boolean) {
 type Props = {
   c: DayPlanPalette;
   isFocusStarted: boolean;
+  /** 플로우 적용 기간 시작일 (YYYY-MM-DD) */
+  priorityPlanDateKey: string;
+  onChangePriorityPlanDateKey: (v: string) => void;
+  /** 플로우 적용 기간 종료일 (YYYY-MM-DD) */
+  priorityPlanDateKeyEnd: string;
+  onChangePriorityPlanDateKeyEnd: (v: string) => void;
+  /** 달력에서 기간 적용 시(명시 다중일·자동 플래그 포함) */
+  applyPriorityPlanCalendarRange: (lo: string, hi: string) => void;
+  /** 달력에서 서로 다른 날짜로 구간을 잡은 경우 — 시계 박스에만 짧은 날짜 표시 */
+  priorityPlanExplicitMultiDay: boolean;
   priorityStart: string;
   priorityEnd: string;
   onChangePriorityStart: (v: string) => void;
@@ -661,6 +785,12 @@ function activeIconColorByCategory(categoryKey: string): string {
 export function PriorityBasedPlanSection({
   c,
   isFocusStarted,
+  priorityPlanDateKey,
+  onChangePriorityPlanDateKey,
+  priorityPlanDateKeyEnd,
+  onChangePriorityPlanDateKeyEnd,
+  applyPriorityPlanCalendarRange,
+  priorityPlanExplicitMultiDay,
   priorityStart,
   priorityEnd,
   onChangePriorityStart,
@@ -673,7 +803,136 @@ export function PriorityBasedPlanSection({
 }: Props) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
   const bc = bookColors(c, isDark);
+
+  const todayKey = getLocalDateKey();
+
+  const [iosDateModalOpen, setIosDateModalOpen] = useState(false);
+  const [monthCursor, setMonthCursor] = useState(() => toMonthStart(new Date()));
+  const [draftRangeStart, setDraftRangeStart] = useState(priorityPlanDateKey);
+  const [draftRangeEnd, setDraftRangeEnd] = useState(priorityPlanDateKeyEnd);
+  /** null이 아니면 첫 번째로 택한 날(스토어 미반영) — 다음 탭이 범위의 다른 끝 */
+  const [calendarRangeAnchor, setCalendarRangeAnchor] = useState<string | null>(null);
+
+  const monthFallbackDate = useMemo(() => {
+    const lo =
+      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd;
+    return parseLocalDateKeyToDate(lo) ?? new Date();
+  }, [priorityPlanDateKey, priorityPlanDateKeyEnd]);
+
+  const safeMonthCursor = useMemo(
+    () => toMonthStart(normalizeToDate(monthCursor, monthFallbackDate)),
+    [monthCursor, monthFallbackDate],
+  );
+
+  const clockFaceHints = useMemo(() => {
+    const explicit = priorityPlanExplicitMultiDay;
+    const { lo, hi } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
+    const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
+    const startKey = priorityClockCaptionDateKeyStart(lo);
+    const endKey = priorityClockCaptionDateKeyEnd(hi, priorityStart, priorityEnd);
+    return {
+      startDateCaption: explicit ? formatDateKeyCompactKo(startKey) : undefined,
+      endDateCaption: explicit ? formatDateKeyCompactKo(endKey) : undefined,
+      /** 달력 다중일이 아닐 때만 자정 넘김 → 「다음날」 */
+      endNextDayOnlyBadge: overnight && !explicit,
+    };
+  }, [
+    priorityPlanExplicitMultiDay,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+    priorityStart,
+    priorityEnd,
+  ]);
+
+  const openPlanDatePicker = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const lo =
+      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd;
+    const hi =
+      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKeyEnd : priorityPlanDateKey;
+    setDraftRangeStart(lo);
+    setDraftRangeEnd(hi);
+    /** 하루만 잡혀 있으면 열자마자 「시작」 단계로 두어, 바로 시작 UI가 보이게 함 */
+    setCalendarRangeAnchor(lo === hi ? lo : null);
+    setMonthCursor(toMonthStart(parseLocalDateKeyToDate(lo) ?? new Date()));
+    setIosDateModalOpen(true);
+  }, [priorityPlanDateKey, priorityPlanDateKeyEnd]);
+
+  const onDraftDayPress = useCallback(
+    (dateKey: string) => {
+      void Haptics.selectionAsync();
+      if (calendarRangeAnchor === null) {
+        setDraftRangeStart(dateKey);
+        setDraftRangeEnd(dateKey);
+        setCalendarRangeAnchor(dateKey);
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        return;
+      }
+      const lo = dateKey < calendarRangeAnchor ? dateKey : calendarRangeAnchor;
+      const hi = dateKey < calendarRangeAnchor ? calendarRangeAnchor : dateKey;
+      setDraftRangeStart(lo);
+      setDraftRangeEnd(hi);
+      setCalendarRangeAnchor(null);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    },
+    [calendarRangeAnchor],
+  );
+
+  const onConfirmCalendarRange = useCallback(() => {
+    const lo = draftRangeStart <= draftRangeEnd ? draftRangeStart : draftRangeEnd;
+    const hi = draftRangeStart <= draftRangeEnd ? draftRangeEnd : draftRangeStart;
+    applyPriorityPlanCalendarRange(lo, hi);
+    setCalendarRangeAnchor(null);
+    setIosDateModalOpen(false);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [draftRangeStart, draftRangeEnd, applyPriorityPlanCalendarRange]);
+
+  const jumpToTodayInCalendar = useCallback(() => {
+    const now = new Date();
+    setMonthCursor(toMonthStart(now));
+    void Haptics.selectionAsync();
+    onDraftDayPress(getLocalDateKey(now));
+  }, [onDraftDayPress]);
+
+  /** 모달 안 선택만 오늘 하루·시작 단계로 되돌림 (스토어 반영은 설정 완료 시) */
+  const resetCalendarDraftToToday = useCallback(() => {
+    const now = new Date();
+    const tk = getLocalDateKey(now);
+    setMonthCursor(toMonthStart(now));
+    setDraftRangeStart(tk);
+    setDraftRangeEnd(tk);
+    setCalendarRangeAnchor(tk);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, []);
+
+  const modalDraftRange = useMemo(() => {
+    const lo = draftRangeStart <= draftRangeEnd ? draftRangeStart : draftRangeEnd;
+    const hi = draftRangeStart <= draftRangeEnd ? draftRangeEnd : draftRangeStart;
+    return {
+      lo,
+      hi,
+      loCompact: formatDateKeyCompactKo(lo),
+      hiCompact: formatDateKeyCompactKo(hi),
+      isSingle: lo === hi,
+    };
+  }, [draftRangeStart, draftRangeEnd]);
+
+  useEffect(() => {
+    if (iosDateModalOpen) return;
+    const lo =
+      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd;
+    const hi =
+      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKeyEnd : priorityPlanDateKey;
+    setDraftRangeStart(lo);
+    setDraftRangeEnd(hi);
+    setCalendarRangeAnchor(null);
+  }, [priorityPlanDateKey, priorityPlanDateKeyEnd, iosDateModalOpen]);
+
+  const calendarDays = useMemo(() => buildCalendarDays(safeMonthCursor), [safeMonthCursor]);
+  const monthTitle = `${safeMonthCursor.getFullYear()}년 ${safeMonthCursor.getMonth() + 1}월`;
+  const weekdayLabels = ['월', '화', '수', '목', '금', '토', '일'];
 
   const selectedItems = useMemo(
     () =>
@@ -742,6 +1001,169 @@ export function PriorityBasedPlanSection({
 
   return (
     <View style={[styles.prioritySectionRoot, { backgroundColor: surfaceBg }]}>
+      <Modal
+        visible={iosDateModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIosDateModalOpen(false)}>
+        <View style={styles.dateModalRoot} accessibilityViewIsModal>
+          <Pressable
+            style={styles.dateModalDimTouch}
+            onPress={() => setIosDateModalOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel="닫기"
+          />
+          <View
+            style={[
+              styles.dateModalSheet,
+              {
+                backgroundColor: c.containerLow,
+                paddingBottom: Math.max(insets.bottom, 12) + 8,
+                paddingHorizontal: 20,
+              },
+            ]}>
+            <View
+              style={[
+                styles.dateModalGrabber,
+                { backgroundColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)' },
+              ]}
+              accessibilityLabel="시트"
+            />
+            <ThemedText style={[styles.dateModalTitle, { color: c.onSurface }]}>적용 기간 선택</ThemedText>
+            <ThemedText style={[styles.dateModalRangeSummary, { color: c.onSurface }]}>
+              {calendarRangeAnchor !== null
+                ? `시작: ${formatDateKeyCompactKo(calendarRangeAnchor)} · 다른 날을 탭하면 그날까지 범위로 잡혀요`
+                : modalDraftRange.isSingle
+                  ? `${modalDraftRange.loCompact} 하루 · 설정 완료를 눌러 주세요`
+                  : `현재 기간: ${modalDraftRange.loCompact} ~ ${modalDraftRange.hiCompact} · 바꾸려면 날짜를 탭하세요`}
+            </ThemedText>
+            <ThemedText style={[styles.dateModalHint, { color: c.onVariant }]}>
+              첫 탭은 시작일, 두 번째 탭은 끝 날짜예요. 범위가 맞으면 설정 완료를 눌러 주세요. 하루만 쓰면 한 번 탭한 뒤 바로 설정 완료하면 돼요.
+            </ThemedText>
+            <View style={styles.dateMonthHeader}>
+              <View style={styles.dateMonthHeaderSide}>
+                <Pressable
+                  style={[styles.dateMonthNavBtn, { borderColor: c.catBorderIdle }]}
+                  onPress={() => {
+                    setMonthCursor((prev) =>
+                      addMonths(toMonthStart(normalizeToDate(prev, safeMonthCursor)), -1),
+                    );
+                  }}>
+                  <ThemedText style={[styles.dateMonthNavText, { color: c.onSurface }]}>‹</ThemedText>
+                </Pressable>
+              </View>
+              <View style={styles.dateMonthTitleWrap}>
+                <ThemedText style={[styles.dateMonthTitle, { color: c.onSurface }]} numberOfLines={1}>
+                  {monthTitle}
+                </ThemedText>
+              </View>
+              <View style={styles.dateMonthHeaderSide}>
+                <Pressable
+                  style={[styles.dateMonthNavBtn, { borderColor: c.catBorderIdle }]}
+                  onPress={() => {
+                    setMonthCursor((prev) =>
+                      addMonths(toMonthStart(normalizeToDate(prev, safeMonthCursor)), 1),
+                    );
+                  }}>
+                  <ThemedText style={[styles.dateMonthNavText, { color: c.onSurface }]}>›</ThemedText>
+                </Pressable>
+              </View>
+            </View>
+            <View style={[styles.calendarFrame, { borderColor: c.catBorderIdle }]}>
+              <View style={styles.calendarTodayRow}>
+                <Pressable
+                  onPress={resetCalendarDraftToToday}
+                  accessibilityRole="button"
+                  accessibilityLabel="적용 기간 선택을 오늘 하루로 초기화"
+                  style={[
+                    styles.calendarTodayBtn,
+                    {
+                      borderColor: c.catBorderIdle,
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                    },
+                  ]}>
+                  <ThemedText style={[styles.calendarTodayBtnText, { color: c.onSurface }]}>초기화</ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={jumpToTodayInCalendar}
+                  accessibilityRole="button"
+                  accessibilityLabel="오늘로 이동해 선택"
+                  style={[
+                    styles.calendarTodayBtn,
+                    {
+                      borderColor: c.catBorderIdle,
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                    },
+                  ]}>
+                  <ThemedText style={[styles.calendarTodayBtnText, { color: c.onSurface }]}>오늘</ThemedText>
+                </Pressable>
+              </View>
+              <View style={styles.calendarWeekHeaderRow}>
+                {weekdayLabels.map((label) => (
+                  <ThemedText key={label} style={[styles.calendarWeekHeaderText, { color: c.onVariant }]}>
+                    {label}
+                  </ThemedText>
+                ))}
+              </View>
+              <View style={styles.calendarGrid}>
+                {(() => {
+                  const rangeLo = draftRangeStart <= draftRangeEnd ? draftRangeStart : draftRangeEnd;
+                  const rangeHi = draftRangeStart <= draftRangeEnd ? draftRangeEnd : draftRangeStart;
+                  return calendarDays.map((d) => {
+                    const dk = localDateToDateKey(d);
+                    const inCurrentMonth = d.getMonth() === safeMonthCursor.getMonth();
+                    const isToday = isSameDay(d, new Date());
+                    const inRange = dk >= rangeLo && dk <= rangeHi;
+                    const isEndpoint = inRange && (dk === rangeLo || dk === rangeHi);
+                    const isMiddle = inRange && rangeLo !== rangeHi && dk !== rangeLo && dk !== rangeHi;
+                    return (
+                      <Pressable
+                        key={`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`}
+                        onPress={() => onDraftDayPress(dk)}
+                        style={[
+                          styles.calendarDayCell,
+                          isEndpoint && styles.calendarDayCellSelected,
+                          isMiddle && {
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.07)',
+                          },
+                          !inCurrentMonth && styles.calendarDayCellOutMonth,
+                        ]}>
+                        <ThemedText
+                          style={[
+                            styles.calendarDayText,
+                            { color: inCurrentMonth ? c.onSurface : c.onVariant },
+                            isEndpoint && styles.calendarDayTextSelected,
+                            isMiddle && { color: c.onSurface },
+                            isToday && !isEndpoint && !isMiddle && { color: PRIMARY },
+                          ]}>
+                          {d.getDate()}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  });
+                })()}
+              </View>
+            </View>
+            <View style={styles.dateActionRow}>
+              <Pressable
+                style={[styles.dateActionBtn, styles.dateActionGhost, { borderColor: c.catBorderIdle }]}
+                onPress={() => setIosDateModalOpen(false)}
+                accessibilityRole="button"
+                accessibilityLabel="취소하고 닫기">
+                <ThemedText style={[styles.dateActionText, { color: c.onSurface }]}>취소</ThemedText>
+              </Pressable>
+              <Pressable
+                style={[styles.dateActionBtn, styles.dateActionPrimary]}
+                onPress={onConfirmCalendarRange}
+                accessibilityRole="button"
+                accessibilityLabel="선택한 기간 적용">
+                <ThemedText style={[styles.dateActionText, { color: '#fff' }]}>설정 완료</ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <View style={[styles.bookOuter, { backgroundColor: surfaceBg }]}>
         {/* 목표 시간 */}
         <View
@@ -757,14 +1179,30 @@ export function PriorityBasedPlanSection({
           <View style={[styles.timeRibbonInner, { backgroundColor: surfaceBg }]}>
             <View style={styles.timeFlipColumn}>
               <ThemedText style={[styles.timeKicker, { color: editorial.muted }]}>시작</ThemedText>
-              <FlipClockTimePair value={priorityStart} onChange={onChangePriorityStart} />
+              <FlipClockTimePair
+                value={priorityStart}
+                onChange={onChangePriorityStart}
+                dateCaption={clockFaceHints.startDateCaption}
+              />
             </View>
-            <View style={styles.timeArrowColumn}>
-              <IconSymbol name="arrow.right" size={18} color={editorial.muted} />
+            <View style={styles.timeCalendarBetweenColumn}>
+              <Pressable
+                onPress={openPlanDatePicker}
+                hitSlop={12}
+                style={styles.timeCalendarHit}
+                accessibilityRole="button"
+                accessibilityLabel={`적용 기간 선택, 현재 ${planDayIntroFromRange(todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd)}`}>
+                <IconSymbol name="calendar" size={22} color={editorial.muted} />
+              </Pressable>
             </View>
             <View style={styles.timeFlipColumn}>
               <ThemedText style={[styles.timeKicker, { color: editorial.muted }]}>종료</ThemedText>
-              <FlipClockTimePair value={priorityEnd} onChange={onChangePriorityEnd} />
+              <FlipClockTimePair
+                value={priorityEnd}
+                onChange={onChangePriorityEnd}
+                nextDayHint={clockFaceHints.endNextDayOnlyBadge}
+                dateCaption={clockFaceHints.endDateCaption}
+              />
             </View>
           </View>
         </View>
@@ -784,7 +1222,7 @@ export function PriorityBasedPlanSection({
               darkColor={editorial.ink}>
               {isFocusStarted
                 ? '진행 중인 플로우예요. 각 항목에서 자세히 보기를 누르면 몰입 화면으로 이동해요.'
-                : '여기에는 오늘 플로의 우선 순위를 담아요.'}
+                : '여기에는 플로의 우선 순위를 담아요.'}
             </ThemedText>
             <View style={[styles.pageScrollContent, { backgroundColor: surfaceBg }]}>
               <View
@@ -910,23 +1348,200 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     marginBottom: 0,
   },
+  /** 시작·종료 플립 시계 + 가운데 달력 (예전 화살표 자리) */
   timeRibbonInner: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    justifyContent: 'space-between',
     gap: 6,
+    width: '100%',
   },
   timeFlipColumn: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
     minWidth: 0,
     gap: 10,
-    alignItems: 'center',
+    alignItems: 'stretch',
+    overflow: 'hidden',
   },
-  timeArrowColumn: {
-    width: 28,
+  /** 좁은 고정폭 — 시계 두 열이 동일 비율로 남은 폭 분할 */
+  timeCalendarBetweenColumn: {
+    width: 36,
+    flexShrink: 0,
     justifyContent: 'center',
+    alignItems: 'center',
     alignSelf: 'stretch',
     paddingHorizontal: 2,
+  },
+  timeCalendarHit: {
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** 바깥 Pressable 한 겹이 자식 높이를 0으로 만드는 경우가 있어 View + 전역 덮는 Pressable로 분리 */
+  dateModalRoot: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  dateModalDimTouch: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  dateModalSheet: {
+    width: '100%',
+    maxHeight: '88%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 6,
+    overflow: 'hidden',
+    alignItems: 'stretch',
+  },
+  dateModalGrabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: 10,
+  },
+  dateModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  dateModalRangeSummary: {
+    marginTop: 10,
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+  dateModalHint: {
+    marginTop: 8,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '500',
+  },
+  dateMonthHeader: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateMonthHeaderSide: {
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateMonthTitleWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    minWidth: 0,
+  },
+  dateMonthNavBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateMonthNavText: {
+    fontSize: 20,
+    lineHeight: 24,
+    fontWeight: '700',
+    marginTop: -2,
+  },
+  dateMonthTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    textAlign: 'center',
+  },
+  calendarFrame: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 6,
+    alignSelf: 'stretch',
+  },
+  calendarTodayRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+    paddingHorizontal: 2,
+  },
+  calendarTodayBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  calendarTodayBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  calendarWeekHeaderRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  calendarWeekHeaderText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: '100%',
+  },
+  calendarDayCell: {
+    width: '14.2857%',
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  calendarDayCellSelected: {
+    backgroundColor: PRIMARY,
+  },
+  calendarDayCellOutMonth: {
+    opacity: 0.45,
+  },
+  calendarDayText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  calendarDayTextSelected: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  dateActionRow: {
+    marginTop: 12,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  dateActionBtn: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateActionGhost: {
+    borderWidth: 1,
+  },
+  dateActionPrimary: {
+    backgroundColor: PRIMARY,
+  },
+  dateActionText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   timeKicker: {
     fontSize: 10,

@@ -23,7 +23,11 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   const bridge = useDayPlanTabBridge();
 
   const focusedRoute = state.routes[state.index]?.name;
-  const isDayPlanFocused = focusedRoute === 'day-plan';
+  /**
+   * Expo Router에서 탭 초기 진입 시 `index`가 포커스로 남는 케이스가 있어
+   * 가운데 액션 버튼이 눌리지 않는 문제를 막기 위해 동일 화면으로 취급한다.
+   */
+  const isDayPlanFocused = focusedRoute === 'day-plan' || focusedRoute === 'index';
   const isSettingsFocused = focusedRoute === 'settings';
 
   const centerDisabled = !isDayPlanFocused || bridge.primaryDisabled;

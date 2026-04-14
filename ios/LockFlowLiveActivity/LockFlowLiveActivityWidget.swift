@@ -20,6 +20,9 @@ private func lockFlowFormatClock(_ totalSeconds: Int) -> String {
   return String(format: "%02d:%02d", minutes, seconds)
 }
 
+@available(iOS 16.1, *)
+private let liveGrayAccent = Color(red: 0.78, green: 0.78, blue: 0.82)
+
 // MARK: - Reading helpers
 
 @available(iOS 16.1, *)
@@ -163,11 +166,11 @@ private struct LockFlowLiveActivityView: View {
     HStack(spacing: 6) {
       Image(systemName: "lock.fill")
         .font(.system(size: 11, weight: .semibold))
-        .foregroundStyle(.orange)
+        .foregroundStyle(liveGrayAccent)
 
       Text(context.state.category.uppercased())
         .font(.system(size: 11, weight: .bold))
-        .foregroundStyle(.orange)
+        .foregroundStyle(liveGrayAccent)
         .lineLimit(1)
     }
   }
@@ -181,21 +184,8 @@ private struct LockFlowLiveActivityView: View {
   }
 
   @ViewBuilder
-  private func lockScreenOpenAppButton(compact: Bool) -> some View {
-    let vPad: CGFloat = compact ? 5 : 7
-    let font: Font = compact ? .caption2.weight(.semibold) : .caption.weight(.semibold)
-
-    if let url = lockFlowDayPlanURL() {
-      Link(destination: url) {
-        Text("앱에서 보기")
-          .font(font)
-          .foregroundStyle(.white)
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, vPad)
-          .background(Color.orange, in: RoundedRectangle(cornerRadius: 8))
-      }
-      .buttonStyle(.plain)
-    }
+  private func lockScreenOpenAppButton(compact _: Bool) -> some View {
+    EmptyView()
   }
 
   private func checklistIconName(
@@ -218,7 +208,7 @@ private struct LockFlowLiveActivityView: View {
   ) -> Color {
     switch row.state {
     case "completed", "current":
-      return .orange
+      return liveGrayAccent
     default:
       return .white.opacity(0.34)
     }
@@ -244,7 +234,7 @@ private struct LockFlowLiveActivityView: View {
   ) -> Color {
     switch row.state {
     case "current":
-      return Color.orange
+      return liveGrayAccent
     case "completed":
       return Color.white.opacity(0.34)
     default:
@@ -277,7 +267,7 @@ private struct LockFlowLiveActivityView: View {
         )
         .overlay(
           RoundedRectangle(cornerRadius: iconBox / 2)
-            .stroke(isCurrent ? Color.orange.opacity(0.38) : Color.white.opacity(0.08), lineWidth: 1)
+            .stroke(isCurrent ? liveGrayAccent.opacity(0.38) : Color.white.opacity(0.08), lineWidth: 1)
         )
 
       VStack(alignment: .leading, spacing: compact ? 1 : 2) {
@@ -292,7 +282,7 @@ private struct LockFlowLiveActivityView: View {
           if isCurrent {
             Image(systemName: "clock")
               .font(.system(size: compact ? 8 : 9, weight: .semibold))
-              .foregroundStyle(Color.orange)
+              .foregroundStyle(liveGrayAccent)
           }
           Text("\(row.timeLabel) • \(checklistStateLabel(row))")
             .font(.system(size: metaSize, weight: .bold))
@@ -306,7 +296,7 @@ private struct LockFlowLiveActivityView: View {
 
       Image(systemName: isCurrent ? "play.fill" : "chevron.right")
         .font(.system(size: isCurrent ? (compact ? 11 : 12) : (compact ? 10 : 11), weight: .semibold))
-        .foregroundStyle(isCurrent ? Color.orange : Color.white.opacity(0.12))
+        .foregroundStyle(isCurrent ? liveGrayAccent : Color.white.opacity(0.12))
     }
     .padding(.horizontal, rowHPad)
     .padding(.vertical, isCurrent ? (compact ? 4 : 5) : 0)
@@ -327,32 +317,8 @@ private struct LockFlowLiveActivityView: View {
   }
 
   @ViewBuilder
-  private func checklistFooterLink(hiddenCount: Int, compact: Bool) -> some View {
-    let label = hiddenCount > 0 ? "+ \(hiddenCount)개 해야 될 플로우" : "앱에서 보기"
-    if let url = lockFlowDayPlanURL() {
-      Link(destination: url) {
-        HStack(spacing: 4) {
-          Text(label)
-            .font(compact ? .caption2.weight(.bold) : .system(size: 11, weight: .bold))
-            .foregroundStyle(.white.opacity(0.55))
-            .lineLimit(1)
-          Image(systemName: "chevron.down")
-            .font(compact ? .system(size: 9, weight: .bold) : .system(size: 10, weight: .bold))
-            .foregroundStyle(Color.orange.opacity(0.95))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, compact ? 4 : 5)
-        .background(
-          Capsule()
-            .fill(Color.white.opacity(0.06))
-        )
-        .overlay(
-          Capsule()
-            .stroke(Color.white.opacity(0.08), lineWidth: 1)
-        )
-      }
-      .buttonStyle(.plain)
-    }
+  private func checklistFooterLink(hiddenCount _: Int, compact _: Bool) -> some View {
+    EmptyView()
   }
 
   // MARK: - Reading layouts (unchanged, always "active" style)
@@ -503,11 +469,11 @@ private struct LockFlowLiveActivityView: View {
     VStack(alignment: .leading, spacing: 9) {
       HStack(alignment: .center, spacing: 8) {
         Circle()
-          .fill(Color.orange)
+          .fill(liveGrayAccent)
           .frame(width: 8, height: 8)
         Text(context.state.checklistTitle.uppercased())
           .font(.system(size: 10, weight: .heavy))
-          .foregroundStyle(Color.orange)
+          .foregroundStyle(liveGrayAccent)
           .lineLimit(1)
         Spacer()
         Text(context.state.checklistCountLabel.uppercased())
@@ -541,11 +507,11 @@ private struct LockFlowLiveActivityView: View {
     VStack(alignment: .leading, spacing: 6) {
       HStack(alignment: .center, spacing: 6) {
         Circle()
-          .fill(Color.orange)
+          .fill(liveGrayAccent)
           .frame(width: 7, height: 7)
         Text(context.state.checklistTitle.uppercased())
           .font(.system(size: 9, weight: .heavy))
-          .foregroundStyle(Color.orange)
+          .foregroundStyle(liveGrayAccent)
           .lineLimit(1)
         Spacer()
         Text(context.state.checklistCountLabel.uppercased())
@@ -588,6 +554,14 @@ private struct LockFlowLiveActivityView: View {
   }
 
   @ViewBuilder
+  private func priorityFallbackLockScreenBody() -> some View {
+    ViewThatFits(in: .vertical) {
+      PriorityModeLiveActivityView.lockScreenFallbackBody(context: context, compact: false)
+      PriorityModeLiveActivityView.lockScreenFallbackBody(context: context, compact: true)
+    }
+  }
+
+  @ViewBuilder
   private func quickMemoLockScreenBody() -> some View {
     /// ViewThatFits + compact(4줄) 폴백이 카드 높이는 남는데 본문만 일찍 말줄임되는 경우가 있어 단일 레이아웃만 사용한다.
     QuickMemoModeLiveActivityView.lockScreenBody(context: context)
@@ -607,13 +581,8 @@ private struct LockFlowLiveActivityView: View {
           quickMemoLockScreenBody()
         } else if isPriorityMode {
           priorityLockScreenBody()
-        } else if isReadingMode, let reading = context.state.readingDataConfig {
-          ViewThatFits(in: .vertical) {
-            readingPreferredLockScreenBody(config: reading)
-            readingCompactLockScreenBody(config: reading)
-          }
         } else {
-          defaultLockScreenBody()
+          priorityFallbackLockScreenBody()
         }
       }
       /// 빠른 메모: 안쪽 카드 없이 부모 `Color.black`만 쓰므로, 여기 패딩이 화면과 본문 사이 유일한 여백이다.
@@ -677,8 +646,8 @@ struct LockFlowLiveActivityWidget: Widget {
       LockFlowLiveActivityView(context: context)
         // 내용 뷰가 `ZStack`으로 영역 전체를 불투명하게 채움 — 여기는 이중 틴트만 막는다.
         .activityBackgroundTint(.clear)
-        .activitySystemActionForegroundColor(.orange)
-        .widgetURL(lockFlowDayPlanURL())
+        .activitySystemActionForegroundColor(liveGrayAccent)
+        .widgetURL(nil)
     } dynamicIsland: { context in
       if context.state.planMode == "quickMemo", let q = context.state.quickMemoLive {
         let isFinished = context.state.status == "finished"
@@ -711,11 +680,11 @@ struct LockFlowLiveActivityWidget: Widget {
             HStack(alignment: .center, spacing: 6) {
               Image(systemName: "note.text")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.orange)
+                .foregroundStyle(liveGrayAccent)
               VStack(alignment: .leading, spacing: 1) {
                 Text("빠른 메모")
                   .font(.caption2.weight(.bold))
-                  .foregroundStyle(Color.orange)
+                  .foregroundStyle(liveGrayAccent)
                   .lineLimit(1)
                 Text(expandedTopPreview)
                   .font(.caption2.weight(.semibold))
@@ -735,23 +704,6 @@ struct LockFlowLiveActivityWidget: Widget {
                 .minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-              if let openURL = lockFlowDayPlanURL() {
-                Link(destination: openURL) {
-                  HStack(spacing: 4) {
-                    Text("앱에서 보기")
-                      .font(.caption2.weight(.bold))
-                      .foregroundStyle(.white.opacity(0.55))
-                    Image(systemName: "chevron.down")
-                      .font(.system(size: 9, weight: .bold))
-                      .foregroundStyle(Color.orange.opacity(0.95))
-                  }
-                  .frame(maxWidth: .infinity)
-                  .padding(.vertical, 5)
-                  .background(Capsule().fill(Color.white.opacity(0.06)))
-                  .overlay(Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-              }
             }
             .padding(.horizontal, 6)
             .padding(.bottom, 4)
@@ -759,20 +711,55 @@ struct LockFlowLiveActivityWidget: Widget {
         } compactLeading: {
           Image(systemName: isFinished ? "checkmark" : "note.text")
             .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(Color.orange)
+            .foregroundStyle(liveGrayAccent)
         } compactTrailing: {
           Text(compactTrailingLabel)
             .font(.caption2.weight(.bold))
-            .foregroundStyle(isFinished ? Color.secondary : Color.orange)
+            .foregroundStyle(isFinished ? Color.secondary : liveGrayAccent)
             .lineLimit(1)
         } minimal: {
           Image(systemName: isFinished ? "checkmark" : "note.text")
-            .foregroundStyle(Color.orange)
+            .foregroundStyle(liveGrayAccent)
         }
-        .widgetURL(lockFlowDayPlanURL())
+        .widgetURL(nil)
       }
 
-      if context.state.planMode == "priority", let p = context.state.priorityLive {
+      let fallbackPriorityLive: LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent = {
+        let rows = context.state.checklistRows
+        let totalFromLabel = Int(context.state.checklistCountLabel.filter(\.isNumber)) ?? 0
+        let totalTasks = max(1, max(rows.count, totalFromLabel))
+        let completed = rows.filter { $0.state == "completed" }.count
+        let progress01 = totalTasks > 0 ? Double(completed) / Double(totalTasks) : 0
+        let currentIndex = rows.firstIndex(where: { $0.state == "current" }) ?? 0
+        let activeTitle: String = {
+          if rows.indices.contains(currentIndex) {
+            let title = rows[currentIndex].title.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !title.isEmpty { return title }
+          }
+          let fallback = context.state.title.trimmingCharacters(in: .whitespacesAndNewlines)
+          return fallback.isEmpty ? "활성 플로우" : fallback
+        }()
+        let windowRaw = context.state.timeRangeLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let windowLabel = windowRaw.isEmpty ? context.state.checklistTitle : windowRaw
+        let upcoming = Array(rows.enumerated().prefix(3)).map { idx, row in
+          LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow(
+            order: idx + 1,
+            title: row.title,
+            timeLabel: row.timeLabel
+          )
+        }
+        return LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent(
+          windowLabel: windowLabel,
+          activeTitle: activeTitle,
+          activeOrder: min(max(1, currentIndex + 1), totalTasks),
+          totalTasks: totalTasks,
+          progress01: progress01,
+          upcoming: upcoming
+        )
+      }()
+
+      if context.state.planMode != "quickMemo" {
+        let p = context.state.priorityLive ?? fallbackPriorityLive
         let isStandby = context.state.status == "standby"
         let isFinished = context.state.status == "finished"
         let isPaused = context.state.status == "paused"
@@ -783,10 +770,10 @@ struct LockFlowLiveActivityWidget: Widget {
             HStack(spacing: 8) {
               Image(systemName: "list.number")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Color.orange)
+                .foregroundStyle(liveGrayAccent)
               Text(p.windowLabel)
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color.orange)
+                .foregroundStyle(liveGrayAccent)
                 .lineLimit(1)
             }
           }
@@ -794,7 +781,7 @@ struct LockFlowLiveActivityWidget: Widget {
             VStack(alignment: .trailing, spacing: 2) {
               Text(isFinished ? "완료" : "\(p.activeOrder)/\(max(1, p.totalTasks))")
                 .font(.caption2.weight(.bold))
-                .foregroundStyle(isFinished ? Color.secondary : Color.orange)
+                .foregroundStyle(isFinished ? Color.secondary : liveGrayAccent)
                 .lineLimit(1)
               Text(context.state.timeRangeLabel)
                 .font(.caption2.weight(.semibold))
@@ -815,7 +802,7 @@ struct LockFlowLiveActivityWidget: Widget {
                   HStack(alignment: .center, spacing: 10) {
                     Text("\(row.order)")
                       .font(.caption2.weight(.bold))
-                      .foregroundStyle(Color.orange)
+                      .foregroundStyle(liveGrayAccent)
                       .frame(width: 18, alignment: .center)
                     Text(row.title)
                       .font(.caption.weight(.semibold))
@@ -836,30 +823,13 @@ struct LockFlowLiveActivityWidget: Widget {
                   .foregroundStyle(.secondary)
               }
 
-              if let openURL = lockFlowDayPlanURL() {
-                Link(destination: openURL) {
-                  HStack(spacing: 4) {
-                    Text("앱에서 보기")
-                      .font(.caption2.weight(.bold))
-                      .foregroundStyle(.white.opacity(0.55))
-                    Image(systemName: "chevron.down")
-                      .font(.system(size: 9, weight: .bold))
-                      .foregroundStyle(Color.orange.opacity(0.95))
-                  }
-                  .frame(maxWidth: .infinity)
-                  .padding(.vertical, 5)
-                  .background(Capsule().fill(Color.white.opacity(0.06)))
-                  .overlay(Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-              }
             }
             .padding(.horizontal, 6)
             .padding(.bottom, 4)
           }
         } compactLeading: {
           Image(systemName: "list.number")
-            .foregroundStyle(Color.orange)
+            .foregroundStyle(liveGrayAccent)
         } compactTrailing: {
           islandCountdownText(
             startsAt: context.state.startsAt,
@@ -869,12 +839,12 @@ struct LockFlowLiveActivityWidget: Widget {
             pausedRemainingSeconds: context.state.pausedRemainingSeconds,
             font: .caption2.weight(.bold)
           )
-          .foregroundStyle(isFinished ? Color.secondary : Color.orange)
+          .foregroundStyle(isFinished ? Color.secondary : liveGrayAccent)
         } minimal: {
           Image(systemName: isFinished ? "checkmark" : (standbyStartCountdown ? "clock" : "list.number"))
-            .foregroundStyle(Color.orange)
+            .foregroundStyle(liveGrayAccent)
         }
-        .widgetURL(lockFlowDayPlanURL())
+        .widgetURL(nil)
       }
 
       let isStandby = context.state.status == "standby"
@@ -900,9 +870,9 @@ struct LockFlowLiveActivityWidget: Widget {
       func rowIconTint(_ state: String) -> Color {
         switch state {
         case "completed":
-          return .orange
+          return liveGrayAccent
         case "current":
-          return .orange
+          return liveGrayAccent
         case "skipped":
           return .secondary
         default:
@@ -914,11 +884,11 @@ struct LockFlowLiveActivityWidget: Widget {
         DynamicIslandExpandedRegion(.leading) {
           HStack(spacing: 8) {
             Circle()
-              .fill(Color.orange)
+              .fill(liveGrayAccent)
               .frame(width: 8, height: 8)
             Text(context.state.checklistTitle)
               .font(.caption2.weight(.semibold))
-              .foregroundStyle(Color.orange)
+              .foregroundStyle(liveGrayAccent)
               .lineLimit(1)
           }
         }
@@ -926,7 +896,7 @@ struct LockFlowLiveActivityWidget: Widget {
           VStack(alignment: .trailing, spacing: 2) {
             Text(isFinished ? "완료" : context.state.checklistCountLabel)
               .font(.caption2.weight(.bold))
-              .foregroundStyle(isFinished ? Color.secondary : Color.orange)
+              .foregroundStyle(isFinished ? Color.secondary : liveGrayAccent)
               .lineLimit(1)
             Text(context.state.timeRangeLabel)
               .font(.caption2.weight(.semibold))
@@ -960,7 +930,7 @@ struct LockFlowLiveActivityWidget: Widget {
 
                   Text(row.state == "skipped" ? "건너뜀 · \(row.timeLabel)" : row.timeLabel)
                     .font(.caption2.weight(.bold))
-                    .foregroundStyle(row.state == "current" ? Color.orange : Color.secondary)
+                    .foregroundStyle(row.state == "current" ? liveGrayAccent : Color.secondary)
                     .lineLimit(1)
                 }
               }
@@ -972,23 +942,6 @@ struct LockFlowLiveActivityWidget: Widget {
                 .foregroundStyle(.secondary)
             }
 
-            if let openURL = lockFlowDayPlanURL() {
-              Link(destination: openURL) {
-                HStack(spacing: 4) {
-                  Text("앱에서 보기")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.white.opacity(0.55))
-                  Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Color.orange.opacity(0.95))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 5)
-                .background(Capsule().fill(Color.white.opacity(0.06)))
-                .overlay(Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1))
-              }
-              .buttonStyle(.plain)
-            }
           }
           .padding(.horizontal, 6)
           .padding(.bottom, 4)
@@ -999,16 +952,16 @@ struct LockFlowLiveActivityWidget: Widget {
             .foregroundStyle(rowIconTint(r.state))
         } else {
           Image(systemName: "lock.fill")
-            .foregroundStyle(Color.orange)
+            .foregroundStyle(liveGrayAccent)
         }
       } compactTrailing: {
         Text(isFinished ? "완료" : context.state.checklistCountLabel)
           .font(.caption2.weight(.bold))
-          .foregroundStyle(isFinished ? Color.secondary : Color.orange)
+          .foregroundStyle(isFinished ? Color.secondary : liveGrayAccent)
       } minimal: {
         Image(systemName: isFinished ? "checkmark" : (standbyStartCountdown ? "clock" : "lock.fill"))
       }
-      .widgetURL(lockFlowDayPlanURL())
+      .widgetURL(nil)
     }
   }
 }
