@@ -1,11 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { LockFlowLiveActivityChecklistRow } from '@features/live-activity-sync';
+import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
-const CARD_FILL = '#000000';
-/** 다크 카드 위 강조 — 모노크롬(밝은 전경) */
-const ACCENT_FG = '#FAFAFA';
+const E = CategoryImmersionTheme.editorial;
+const ON = E.onDark;
+const MUTED = E.meta;
+const BORDER = E.glassBorder;
+const PRIMARY = CategoryImmersionTheme.work.accent;
 
 type Props = {
   checklistTitle: string;
@@ -31,13 +34,13 @@ function stateLabel(state: LockFlowLiveActivityChecklistRow['state']): string {
 function stateMeta(state: LockFlowLiveActivityChecklistRow['state']) {
   switch (state) {
     case 'completed':
-      return { color: 'rgba(255,255,255,0.40)' };
+      return { color: MUTED };
     case 'current':
-      return { color: ACCENT_FG };
+      return { color: PRIMARY };
     case 'skipped':
-      return { color: 'rgba(255,255,255,0.30)' };
+      return { color: 'rgba(0,0,0,0.35)' };
     default:
-      return { color: 'rgba(255,255,255,0.50)' };
+      return { color: MUTED };
   }
 }
 
@@ -75,7 +78,7 @@ export function ChecklistSessionCard({
                 <View style={styles.rowLeft}>
                   {isDone ? (
                     <View style={styles.doneIcon}>
-                      <IconSymbol name="checkmark.circle.fill" size={22} color={ACCENT_FG} />
+                      <IconSymbol name="checkmark.circle.fill" size={22} color={PRIMARY} />
                     </View>
                   ) : isCurrent ? (
                     <View style={styles.currentIcon}>
@@ -83,7 +86,7 @@ export function ChecklistSessionCard({
                     </View>
                   ) : isSkip ? (
                     <View style={styles.pendingIcon}>
-                      <IconSymbol name="minus.circle" size={22} color="rgba(255,255,255,0.20)" />
+                      <IconSymbol name="minus.circle" size={22} color="rgba(0,0,0,0.22)" />
                     </View>
                   ) : (
                     <View style={styles.pendingIcon}>
@@ -102,16 +105,14 @@ export function ChecklistSessionCard({
                       {row.title}
                     </Text>
                     <View style={styles.metaLine}>
-                      {isCurrent && (
-                        <IconSymbol name="clock" size={10} color={ACCENT_FG} />
-                      )}
+                      {isCurrent && <IconSymbol name="clock" size={10} color={PRIMARY} />}
                       <Text style={[styles.metaText, { color: meta.color }]}>
                         {row.timeLabel} · {stateLabel(row.state)}
                       </Text>
                     </View>
                   </View>
                 </View>
-                <Text style={[styles.chevron, isCurrent && { color: ACCENT_FG }]}>
+                <Text style={[styles.chevron, isCurrent && { color: PRIMARY }]}>
                   {isCurrent ? '▶' : '›'}
                 </Text>
               </View>
@@ -131,7 +132,9 @@ export function ChecklistSessionCard({
 const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
-    backgroundColor: CARD_FILL,
+    backgroundColor: E.glassBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: BORDER,
     overflow: 'hidden',
   },
   inner: {
@@ -145,16 +148,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: ACCENT_FG },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: PRIMARY },
   headerTitle: {
     flex: 1,
-    color: ACCENT_FG,
+    color: ON,
     fontSize: 13,
     fontWeight: '800',
     letterSpacing: 0.3,
   },
   headerCount: {
-    color: 'rgba(255,255,255,0.40)',
+    color: MUTED,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.6,
@@ -170,9 +173,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginHorizontal: -4,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(0,0,0,0.04)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: BORDER,
   },
   rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 },
   textCol: { flex: 1, minWidth: 0, gap: 2 },
@@ -181,8 +184,8 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: BORDER,
+    backgroundColor: 'rgba(0,0,0,0.03)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -191,7 +194,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: ACCENT_FG,
+    borderColor: PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -199,14 +202,14 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: ACCENT_FG,
+    backgroundColor: PRIMARY,
   },
   pendingIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.20)',
+    borderColor: 'rgba(0,0,0,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -214,35 +217,35 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.20)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
   rowTitle: {
-    color: 'rgba(255,255,255,0.82)',
+    color: ON,
     fontSize: 15,
     fontWeight: '600',
   },
   doneTitle: {
-    color: 'rgba(255,255,255,0.40)',
+    color: MUTED,
     textDecorationLine: 'line-through',
   },
   activeTitle: {
-    color: '#fff',
+    color: ON,
     fontWeight: '700',
   },
   skipTitle: {
-    color: 'rgba(255,255,255,0.30)',
+    color: 'rgba(0,0,0,0.35)',
   },
   metaLine: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontSize: 11, fontWeight: '700' },
-  chevron: { color: 'rgba(255,255,255,0.10)', fontSize: 18, fontWeight: '700' },
+  chevron: { color: 'rgba(0,0,0,0.15)', fontSize: 18, fontWeight: '700' },
   summaryBox: {
     paddingTop: 4,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: BORDER,
     gap: 2,
   },
   summaryText: {
-    color: 'rgba(255,255,255,0.35)',
+    color: MUTED,
     fontSize: 11,
     fontWeight: '600',
   },

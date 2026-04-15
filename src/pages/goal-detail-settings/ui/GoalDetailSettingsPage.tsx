@@ -1,9 +1,19 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  formatBlockTimeRange,
+  normalizeMedicineDetailConfig,
+  useDayPlanNotificationStore,
+  isDayPlanFlowBlock,
+  useDayPlanRuntimeStore,
+  useDayPlanStore,
+  type DayPlanBlock,
+} from '@entities/day-plan';
+import {
+  appendGoalDetailCommittedCategoryKeys,
   loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
   saveGoalDetailBlockConfig,
@@ -12,15 +22,7 @@ import {
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
-
-import {
-  formatBlockTimeRange,
-  useDayPlanNotificationStore,
-  isDayPlanFlowBlock,
-  useDayPlanRuntimeStore,
-  useDayPlanStore,
-  type DayPlanBlock,
-} from '@entities/day-plan';
+import { appendPriorityCategoryKeysIfMissing } from '@pages/day-plan/model/dayPlanDraftStore';
 import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
 import { reconcileLiveActivityFromPlan } from '@features/live-activity-sync';
 
@@ -174,6 +176,18 @@ export function GoalDetailSettingsPage() {
   }, []);
 
   const handleCompleteAndStart = useCallback(() => {
+    const keysToAppend: string[] = [];
+    for (const t of targets) {
+      const data = dataByBlockId[t.blockId];
+      if (t.categoryKey === 'medicine') {
+        const cfg = normalizeMedicineDetailConfig(data ?? {});
+        if (cfg.dosesPerDay <= 0) continue;
+      }
+      keysToAppend.push(t.categoryKey);
+    }
+    appendPriorityCategoryKeysIfMissing([...new Set(keysToAppend)]);
+    appendGoalDetailCommittedCategoryKeys(keysToAppend);
+
     void (async () => {
       const dayPlanState = useDayPlanStore.getState();
       useDayPlanRuntimeStore.getState().buildTimelineFromBlocks({
@@ -204,7 +218,7 @@ export function GoalDetailSettingsPage() {
         },
       });
     })();
-  }, [router, sortedTargets]);
+  }, [dataByBlockId, router, sortedTargets, targets]);
 
   const previewTitleForBlock = useCallback(
     (blockId: string) => {
@@ -225,12 +239,19 @@ export function GoalDetailSettingsPage() {
   const headerBorder = c.border;
   const headerFg = c.onSurface;
 
+  const topInset =
+    insets.top >= 1
+      ? insets.top
+      : Platform.OS === 'ios'
+        ? 59
+        : Number(StatusBar.currentHeight) || 24;
+
   return (
     <ThemedView
       style={[styles.screen, { backgroundColor: screenBg }]}
       darkColor={screenBg}
       lightColor={screenBg}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={[styles.safe, { paddingTop: topInset }]}>
         <View
           style={[
             styles.header,
@@ -239,7 +260,12 @@ export function GoalDetailSettingsPage() {
               borderBottomColor: headerBorder,
             },
           ]}>
-          <Pressable onPress={() => router.back()} style={styles.headerBtn} hitSlop={8}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.headerBtn}
+            hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+            accessibilityRole="button"
+            accessibilityLabel="뒤로가기">
             <IconSymbol name="chevron.left" size={22} color={headerFg} />
           </Pressable>
           <ThemedText style={[styles.headerTitle, { color: headerFg }]}>
@@ -251,6 +277,7 @@ export function GoalDetailSettingsPage() {
         </View>
 
         <ScrollView
+          style={styles.scrollFlex}
           scrollEnabled={!medicineOnlyUi}
           bounces={!medicineOnlyUi}
           showsVerticalScrollIndicator={false}
@@ -376,7 +403,7 @@ export function GoalDetailSettingsPage() {
             </ThemedText>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     </ThemedView>
   );
 }
@@ -384,6 +411,7 @@ export function GoalDetailSettingsPage() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
+  scrollFlex: { flex: 1 },
   header: {
     height: 56,
     flexDirection: 'row',

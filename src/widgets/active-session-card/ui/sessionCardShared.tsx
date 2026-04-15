@@ -1,7 +1,10 @@
 import type { SymbolViewProps } from 'expo-symbols';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+
+const E = CategoryImmersionTheme.editorial;
 
 /** 다크 세션 카드 위 모노크롬 강조(밝은 전경) — 검정 배경에서 가독성 유지 */
 export const ORANGE = '#FAFAFA';
@@ -49,7 +52,15 @@ const HERO_TIMER_ACCENT: Record<HeroTimerAccent, { kicker: string; fill: string 
   aqua: { kicker: 'rgba(34, 211, 238, 0.88)', fill: '#22d3ee' },
 };
 
-type HeroTimerBlockProps = HeroProps & { accent?: HeroTimerAccent };
+type HeroSurface = 'dark' | 'light';
+
+type HeroTimerBlockProps = HeroProps & {
+  accent?: HeroTimerAccent;
+  /** 기본 dark — 목표 상세와 맞춘 라이트 에디토리얼 */
+  surface?: HeroSurface;
+  /** surface=light 일 때 진행 막대 채움색 (수분=시안 등) */
+  progressFillColor?: string;
+};
 
 export function HeroTimerBlock({
   remainingSec,
@@ -59,27 +70,38 @@ export function HeroTimerBlock({
   waitRemainingSec = 0,
   flowTitle,
   accent = 'ember',
+  surface = 'dark',
+  progressFillColor,
 }: HeroTimerBlockProps) {
   const heroSec = isWaitingToStart ? waitRemainingSec : remainingSec;
   const p = isWaitingToStart ? 0 : Math.min(1, Math.max(0, progress01));
   const head = typeof flowTitle === 'string' ? flowTitle.trim() : '';
   const tone = HERO_TIMER_ACCENT[accent];
+  const light = surface === 'light';
+  const fillColor = light
+    ? progressFillColor ?? CategoryImmersionTheme.work.accent
+    : tone.fill;
+  const kickerColor = light ? E.meta : tone.kicker;
 
   return (
     <View style={heroStyles.hero}>
-      <Text style={[heroStyles.heroKicker, { color: tone.kicker }]}>
-        {isPaused ? '일시정지' : isWaitingToStart ? '시작 대기' : '활성 세션'}
+      <Text style={[heroStyles.heroKicker, { color: kickerColor }]}>
+        {isPaused ? '일시정지' : isWaitingToStart ? '시작 대기' : light ? '세션' : '활성 세션'}
       </Text>
       {head.length > 0 ? (
-        <Text style={heroStyles.heroFocus} numberOfLines={2}>
+        <Text style={[heroStyles.heroFocus, light && heroStyles.heroFocusLight]} numberOfLines={2}>
           {head}
         </Text>
       ) : null}
-      <Text style={heroStyles.heroTime} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.35}>
+      <Text
+        style={[heroStyles.heroTime, light && heroStyles.heroTimeLight]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.35}>
         {formatClock(heroSec)}
       </Text>
-      <View style={heroStyles.heroTrack}>
-        <View style={[heroStyles.heroFill, { width: `${Math.round(p * 100)}%`, backgroundColor: tone.fill }]} />
+      <View style={[heroStyles.heroTrack, light && heroStyles.heroTrackLight]}>
+        <View style={[heroStyles.heroFill, { width: `${Math.round(p * 100)}%`, backgroundColor: fillColor }]} />
       </View>
     </View>
   );
@@ -115,6 +137,52 @@ export function SessionDarkShell({
   );
 }
 
+/** 목표 상세 설정과 동일한 라이트 카드 셸 (배경 블롭 없음) */
+export function SessionEditorialShell({
+  children,
+  leftAccentColor,
+}: {
+  children: React.ReactNode;
+  /** 카테고리 액센트 왼쪽 강조선 */
+  leftAccentColor?: string;
+}) {
+  return (
+    <View
+      style={[
+        editorialShellStyles.shell,
+        leftAccentColor != null ? { borderLeftWidth: 3, borderLeftColor: leftAccentColor } : null,
+      ]}>
+      {children}
+    </View>
+  );
+}
+
+export function EditorialCategoryHeader({
+  brand,
+  aboutKicker,
+}: {
+  brand: string;
+  aboutKicker?: string;
+}) {
+  return (
+    <View style={editorialShellStyles.brandBlock}>
+      <Text style={editorialShellStyles.brand}>{brand}</Text>
+      {aboutKicker ? <Text style={editorialShellStyles.aboutKicker}>{aboutKicker}</Text> : null}
+    </View>
+  );
+}
+
+export function EditorialSimpleHeader({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <View style={editorialShellStyles.simpleHeader}>
+      <Text style={editorialShellStyles.simpleTitle}>{title}</Text>
+      <Text style={editorialShellStyles.simpleSub}>{subtitle}</Text>
+    </View>
+  );
+}
+
+type BentoSurface = 'dark' | 'light';
+
 type WideProps = {
   icon: SymbolViewProps['name'];
   label: string;
@@ -125,6 +193,8 @@ type WideProps = {
   trackProgress01?: number;
   /** 시안처럼 주요 카드 왼쪽 강조선 */
   featured?: boolean;
+  surface?: BentoSurface;
+  accentColor?: string;
 };
 
 export function BentoWideMetric({
@@ -135,30 +205,47 @@ export function BentoWideMetric({
   unit,
   trackProgress01,
   featured = false,
+  surface = 'dark',
+  accentColor,
 }: WideProps) {
   const tp = trackProgress01 != null ? Math.min(1, Math.max(0, trackProgress01)) : null;
+  const light = surface === 'light';
+  const iconColor = light ? accentColor ?? CategoryImmersionTheme.work.accent : ORANGE;
+  const glass = light ? editorialShellStyles.glassLight : sharedStyles.glass;
+  const feat = featured && (light ? editorialShellStyles.cardFeaturedLight : sharedStyles.cardFeatured);
+  const featTint = featured && light && accentColor ? { borderLeftColor: accentColor } : null;
+
   return (
-    <View style={[sharedStyles.cardWide, sharedStyles.glass, featured && sharedStyles.cardFeatured]}>
+    <View style={[sharedStyles.cardWide, glass, feat, featTint]}>
       <View style={sharedStyles.cardTopRow}>
         <View style={sharedStyles.cardTopLeft}>
-          <IconSymbol name={icon} size={22} color={ORANGE} />
-          <Text style={sharedStyles.labelUpper}>{label}</Text>
+          <IconSymbol name={icon} size={22} color={iconColor} />
+          <Text style={[sharedStyles.labelUpper, light && editorialShellStyles.labelUpperLight]}>{label}</Text>
         </View>
         {badge ? (
-          <View style={sharedStyles.badge}>
-            <Text style={sharedStyles.badgeText}>{badge}</Text>
+          <View style={[sharedStyles.badge, light && editorialShellStyles.badgeLight]}>
+            <Text style={[sharedStyles.badgeText, light && editorialShellStyles.badgeTextLight]}>{badge}</Text>
           </View>
         ) : (
           <View style={{ width: 1 }} />
         )}
       </View>
       <View style={sharedStyles.metricBigRow}>
-        <Text style={sharedStyles.metricHuge}>{value}</Text>
-        {unit ? <Text style={sharedStyles.metricUnit}>{unit}</Text> : null}
+        <Text style={[sharedStyles.metricHuge, light && editorialShellStyles.metricHugeLight]}>{value}</Text>
+        {unit ? (
+          <Text style={[sharedStyles.metricUnit, light && editorialShellStyles.metricUnitLight]}>{unit}</Text>
+        ) : null}
       </View>
       {tp != null ? (
-        <View style={sharedStyles.subTrack}>
-          <View style={[sharedStyles.subFill, { width: `${Math.round(tp * 100)}%` }]} />
+        <View style={[sharedStyles.subTrack, light && editorialShellStyles.subTrackLight]}>
+          <View
+            style={[
+              sharedStyles.subFill,
+              light && editorialShellStyles.subFillLight,
+              { width: `${Math.round(tp * 100)}%` },
+              light && accentColor ? { backgroundColor: accentColor, opacity: 0.35 } : null,
+            ]}
+          />
         </View>
       ) : null}
     </View>
@@ -170,26 +257,33 @@ export function BentoWideText({
   label,
   body,
   badge,
+  surface = 'dark',
+  accentColor,
 }: {
   icon: SymbolViewProps['name'];
   label: string;
   body: string;
   badge?: string;
+  surface?: BentoSurface;
+  accentColor?: string;
 }) {
+  const light = surface === 'light';
+  const glass = light ? editorialShellStyles.glassLight : sharedStyles.glass;
+  const iconColor = light ? accentColor ?? CategoryImmersionTheme.work.accent : ORANGE;
   return (
-    <View style={[sharedStyles.cardWide, sharedStyles.glass, { minHeight: 100 }]}>
+    <View style={[sharedStyles.cardWide, glass, { minHeight: 100 }]}>
       <View style={sharedStyles.cardTopRow}>
         <View style={sharedStyles.cardTopLeft}>
-          <IconSymbol name={icon} size={22} color={ORANGE} />
-          <Text style={sharedStyles.labelUpper}>{label}</Text>
+          <IconSymbol name={icon} size={22} color={iconColor} />
+          <Text style={[sharedStyles.labelUpper, light && editorialShellStyles.labelUpperLight]}>{label}</Text>
         </View>
         {badge ? (
-          <View style={sharedStyles.badge}>
-            <Text style={sharedStyles.badgeText}>{badge}</Text>
+          <View style={[sharedStyles.badge, light && editorialShellStyles.badgeLight]}>
+            <Text style={[sharedStyles.badgeText, light && editorialShellStyles.badgeTextLight]}>{badge}</Text>
           </View>
         ) : null}
       </View>
-      <Text style={textBodyStyle} numberOfLines={6}>
+      <Text style={[textBodyStyle, light && textBodyLight]} numberOfLines={6}>
         {body || '—'}
       </Text>
     </View>
@@ -204,21 +298,32 @@ const textBodyStyle = {
   lineHeight: 22,
 };
 
+const textBodyLight = {
+  color: E.onDark,
+};
+
 type HalfProps = {
   icon: SymbolViewProps['name'];
   label: string;
   value: string;
   unit?: string;
+  surface?: BentoSurface;
+  accentColor?: string;
 };
 
-export function BentoHalfMetric({ icon, label, value, unit }: HalfProps) {
+export function BentoHalfMetric({ icon, label, value, unit, surface = 'dark', accentColor }: HalfProps) {
+  const light = surface === 'light';
+  const glass = light ? editorialShellStyles.glassLight : sharedStyles.glass;
+  const iconColor = light ? accentColor ?? CategoryImmersionTheme.work.accent : ORANGE;
   return (
-    <View style={[sharedStyles.cardHalf, sharedStyles.glass]}>
-      <IconSymbol name={icon} size={20} color={ORANGE} />
-      <Text style={[sharedStyles.labelUpper, { marginTop: 8 }]}>{label}</Text>
+    <View style={[sharedStyles.cardHalf, glass]}>
+      <IconSymbol name={icon} size={20} color={iconColor} />
+      <Text style={[sharedStyles.labelUpper, light && editorialShellStyles.labelUpperLight, { marginTop: 8 }]}>
+        {label}
+      </Text>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 10 }}>
-        <Text style={halfValueStyle}>{value}</Text>
-        {unit ? <Text style={halfUnitStyle}>{unit}</Text> : null}
+        <Text style={[halfValueStyle, light && halfValueLight]}>{value}</Text>
+        {unit ? <Text style={[halfUnitStyle, light && halfUnitLight]}>{unit}</Text> : null}
       </View>
     </View>
   );
@@ -230,10 +335,18 @@ const halfValueStyle = {
   fontWeight: '800' as const,
 };
 
+const halfValueLight = {
+  color: E.onDark,
+};
+
 const halfUnitStyle = {
   color: META,
   fontSize: 12,
   fontWeight: '700' as const,
+};
+
+const halfUnitLight = {
+  color: E.meta,
 };
 
 export function BentoRow({ children }: { children: React.ReactNode }) {
@@ -266,6 +379,9 @@ const heroStyles = StyleSheet.create({
     paddingHorizontal: 6,
     lineHeight: 28,
   },
+  heroFocusLight: {
+    color: E.onDark,
+  },
   heroTime: {
     color: '#fff',
     fontSize: 86,
@@ -273,6 +389,12 @@ const heroStyles = StyleSheet.create({
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
     letterSpacing: -3,
+  },
+  heroTimeLight: {
+    color: '#000000',
+    fontSize: 72,
+    lineHeight: 76,
+    letterSpacing: -2.5,
   },
   heroTrack: {
     marginTop: 22,
@@ -282,9 +404,87 @@ const heroStyles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.12)',
     overflow: 'hidden',
   },
+  heroTrackLight: {
+    backgroundColor: 'rgba(0,0,0,0.08)',
+  },
   heroFill: {
     height: '100%',
     borderRadius: 999,
+  },
+});
+
+const editorialShellStyles = StyleSheet.create({
+  shell: {
+    borderRadius: 20,
+    backgroundColor: E.glassBg,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: E.glassBorder,
+    overflow: 'hidden',
+  },
+  brandBlock: {
+    gap: 6,
+    marginBottom: 8,
+  },
+  brand: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    color: E.onDark,
+  },
+  aboutKicker: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    color: E.meta,
+  },
+  simpleHeader: {
+    gap: 6,
+    marginBottom: 10,
+  },
+  simpleTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    color: E.onDark,
+  },
+  simpleSub: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: E.meta,
+  },
+  glassLight: {
+    backgroundColor: E.glassBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: E.glassBorder,
+    borderRadius: 16,
+  },
+  cardFeaturedLight: {
+    borderLeftWidth: 3,
+    borderLeftColor: CategoryImmersionTheme.work.accent,
+  },
+  labelUpperLight: {
+    color: E.meta,
+  },
+  metricHugeLight: {
+    color: E.onDark,
+  },
+  metricUnitLight: {
+    color: E.meta,
+  },
+  subTrackLight: {
+    backgroundColor: 'rgba(0,0,0,0.08)',
+  },
+  subFillLight: {
+    backgroundColor: CategoryImmersionTheme.work.accent,
+    opacity: 0.25,
+  },
+  badgeLight: {
+    backgroundColor: 'rgba(0,0,0,0.06)',
+  },
+  badgeTextLight: {
+    color: E.onDark,
   },
 });
 

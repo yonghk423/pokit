@@ -7,7 +7,7 @@ import type {
   WorkDetailDataConfig,
   YogaDetailDataConfig,
 } from '@entities/day-plan';
-
+import { CategoryImmersionTheme as T } from '@shared/config/categoryImmersionTheme';
 import { StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -16,19 +16,18 @@ import {
   BentoRow,
   BentoWideMetric,
   BentoWideText,
+  EditorialCategoryHeader,
+  EditorialSimpleHeader,
   formatDurationMinKo,
-  GLASS_BG,
-  GLASS_BORDER,
   HeroTimerBlock,
-  META,
-  SessionDarkShell,
+  SessionEditorialShell,
   type SessionHeroProps,
 } from './sessionCardShared';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
-/** 수분섭취 세션 카드 전용 액센트 */
-const WATER_CYAN = '#22d3ee';
-const WATER_SOFT = 'rgba(34, 211, 238, 0.22)';
+/** 수분 — 목표 상세 시안과 동일 시안 */
+const WATER_CYAN = T.water.accent;
+const WATER_SOFT = T.water.accentSoft;
 
 export type { SessionHeroProps };
 
@@ -38,11 +37,17 @@ export function WorkSessionCard({
 }: SessionHeroProps & { data: WorkDetailDataConfig }) {
   const planProg = data.planMin > 0 ? Math.min(1, data.doneMin / data.planMin) : 0;
   return (
-    <SessionDarkShell>
-      <HeroTimerBlock {...hero} />
+    <SessionEditorialShell leftAccentColor={T.work.accent}>
+      <EditorialSimpleHeader
+        title="작업 몰입"
+        subtitle="집중 플랜과 할 일을 세션 화면에서 바로 확인해요."
+      />
+      <HeroTimerBlock {...hero} surface="light" accent="ember" />
       <BentoGap>
         <BentoWideMetric
           featured
+          surface="light"
+          accentColor={T.work.accent}
           icon="desktopcomputer"
           label="집중 플랜"
           badge="목표"
@@ -51,8 +56,17 @@ export function WorkSessionCard({
           trackProgress01={Math.max(planProg, hero.progress01)}
         />
         <BentoRow>
-          <BentoHalfMetric icon="clock.arrow.circlepath" label="기록 진행" value={String(data.doneMin)} unit="분" />
           <BentoHalfMetric
+            surface="light"
+            accentColor={T.work.accent}
+            icon="clock.arrow.circlepath"
+            label="기록 진행"
+            value={String(data.doneMin)}
+            unit="분"
+          />
+          <BentoHalfMetric
+            surface="light"
+            accentColor={T.work.accent}
             icon="gauge.with.dots.needle.67percent"
             label="세션 진행"
             value={String(Math.round(hero.progress01 * 100))}
@@ -60,7 +74,7 @@ export function WorkSessionCard({
           />
         </BentoRow>
       </BentoGap>
-    </SessionDarkShell>
+    </SessionEditorialShell>
   );
 }
 
@@ -70,11 +84,13 @@ export function MeditationSessionCard({
 }: SessionHeroProps & { data: MeditationDetailDataConfig }) {
   const goalProg = data.sessionMin > 0 ? Math.min(1, data.elapsedMin / data.sessionMin) : 0;
   return (
-    <SessionDarkShell>
-      <HeroTimerBlock {...hero} />
+    <SessionEditorialShell>
+      <EditorialSimpleHeader title="명상 세션" subtitle="한 세션 길이와 누적 호흡을 분 단위로 맞춰요." />
+      <HeroTimerBlock {...hero} surface="light" accent="ember" />
       <BentoGap>
         <BentoWideMetric
           featured
+          surface="light"
           icon="leaf.fill"
           label="명상 세션"
           badge="목표"
@@ -83,8 +99,9 @@ export function MeditationSessionCard({
           trackProgress01={Math.max(goalProg, hero.progress01)}
         />
         <BentoRow>
-          <BentoHalfMetric icon="timer" label="누적 호흡" value={String(data.elapsedMin)} unit="분" />
+          <BentoHalfMetric surface="light" icon="timer" label="누적 호흡" value={String(data.elapsedMin)} unit="분" />
           <BentoHalfMetric
+            surface="light"
             icon="waveform.path"
             label="세션 진행"
             value={String(Math.round(hero.progress01 * 100))}
@@ -92,7 +109,7 @@ export function MeditationSessionCard({
           />
         </BentoRow>
       </BentoGap>
-    </SessionDarkShell>
+    </SessionEditorialShell>
   );
 }
 
@@ -102,11 +119,13 @@ export function YogaSessionCard({
 }: SessionHeroProps & { data: YogaDetailDataConfig }) {
   const goalProg = data.sessionMin > 0 ? Math.min(1, data.elapsedMin / data.sessionMin) : 0;
   return (
-    <SessionDarkShell>
-      <HeroTimerBlock {...hero} />
+    <SessionEditorialShell>
+      <EditorialSimpleHeader title="요가 세션" subtitle="오늘의 플로우 이름과 세션 길이를 함께 봐요." />
+      <HeroTimerBlock {...hero} surface="light" accent="ember" />
       <BentoGap>
         <BentoWideMetric
           featured
+          surface="light"
           icon="figure.yoga"
           label={data.flowLabel || '요가 플로우'}
           badge="세션"
@@ -115,8 +134,9 @@ export function YogaSessionCard({
           trackProgress01={Math.max(goalProg, hero.progress01)}
         />
         <BentoRow>
-          <BentoHalfMetric icon="flame" label="진행 시간" value={String(data.elapsedMin)} unit="분" />
+          <BentoHalfMetric surface="light" icon="flame" label="진행 시간" value={String(data.elapsedMin)} unit="분" />
           <BentoHalfMetric
+            surface="light"
             icon="circle.circle"
             label="세션 진행"
             value={String(Math.round(hero.progress01 * 100))}
@@ -124,7 +144,7 @@ export function YogaSessionCard({
           />
         </BentoRow>
       </BentoGap>
-    </SessionDarkShell>
+    </SessionEditorialShell>
   );
 }
 
@@ -134,11 +154,14 @@ export function FastingSessionCard({
 }: SessionHeroProps & { data: FastingDetailDataConfig }) {
   const goalProg = data.fastingMin > 0 ? Math.min(1, data.elapsedMin / data.fastingMin) : 0;
   return (
-    <SessionDarkShell>
-      <HeroTimerBlock {...hero} />
+    <SessionEditorialShell leftAccentColor={T.fasting.accent}>
+      <EditorialCategoryHeader brand={T.fasting.brand} aboutKicker={T.fasting.aboutKicker} />
+      <HeroTimerBlock {...hero} surface="light" accent="ember" />
       <BentoGap>
         <BentoWideMetric
           featured
+          surface="light"
+          accentColor={T.fasting.accent}
           icon="clock.badge.checkmark"
           label="단식 목표"
           badge="금식"
@@ -146,8 +169,16 @@ export function FastingSessionCard({
           trackProgress01={Math.max(goalProg, hero.progress01)}
         />
         <BentoRow>
-          <BentoHalfMetric icon="hourglass" label="경과" value={formatDurationMinKo(data.elapsedMin)} />
           <BentoHalfMetric
+            surface="light"
+            accentColor={T.fasting.accent}
+            icon="hourglass"
+            label="경과"
+            value={formatDurationMinKo(data.elapsedMin)}
+          />
+          <BentoHalfMetric
+            surface="light"
+            accentColor={T.fasting.accent}
             icon="chart.line.uptrend.xyaxis"
             label="세션 진행"
             value={String(Math.round(hero.progress01 * 100))}
@@ -155,7 +186,7 @@ export function FastingSessionCard({
           />
         </BentoRow>
       </BentoGap>
-    </SessionDarkShell>
+    </SessionEditorialShell>
   );
 }
 
@@ -171,8 +202,9 @@ export function WaterSessionCard({
   const sessionPct = Math.round(hero.progress01 * 100);
 
   return (
-    <SessionDarkShell accent="aqua">
-      <HeroTimerBlock {...hero} accent="aqua" />
+    <SessionEditorialShell leftAccentColor={WATER_CYAN}>
+      <EditorialCategoryHeader brand={T.water.brand} aboutKicker={T.water.aboutKicker} />
+      <HeroTimerBlock {...hero} surface="light" accent="aqua" progressFillColor={WATER_CYAN} />
       <BentoGap>
         <View style={[waterCardStyles.cardWide, waterCardStyles.glass, waterCardStyles.cardFeatured]}>
           <View style={waterCardStyles.cardTopRow}>
@@ -215,15 +247,15 @@ export function WaterSessionCard({
           </View>
         </BentoRow>
       </BentoGap>
-    </SessionDarkShell>
+    </SessionEditorialShell>
   );
 }
 
 const waterCardStyles = StyleSheet.create({
   glass: {
-    backgroundColor: GLASS_BG,
+    backgroundColor: T.editorial.glassBg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: GLASS_BORDER,
+    borderColor: T.water.border,
     borderRadius: 16,
   },
   cardWide: { padding: 18 },
@@ -250,7 +282,7 @@ const waterCardStyles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   labelUpper: {
-    color: META,
+    color: T.water.muted,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.6,
@@ -262,19 +294,19 @@ const waterCardStyles = StyleSheet.create({
     marginTop: 18,
   },
   metricHuge: {
-    color: '#fff',
+    color: T.water.onSurface,
     fontSize: 44,
     fontWeight: '800',
     letterSpacing: -1,
   },
   metricUnit: {
-    color: META,
+    color: T.water.muted,
     fontSize: 20,
     fontWeight: '600',
   },
   goalSub: {
     marginTop: 8,
-    color: 'rgba(255,255,255,0.42)',
+    color: T.water.muted,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -282,14 +314,14 @@ const waterCardStyles = StyleSheet.create({
     marginTop: 14,
     height: 4,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(0,0,0,0.08)',
     overflow: 'hidden',
   },
   subFill: {
     height: '100%',
     borderRadius: 999,
     backgroundColor: WATER_CYAN,
-    opacity: 0.55,
+    opacity: 0.45,
   },
   cardHalf: {
     flex: 1,
@@ -303,12 +335,12 @@ const waterCardStyles = StyleSheet.create({
     marginTop: 10,
   },
   halfValue: {
-    color: '#fff',
+    color: T.water.onSurface,
     fontSize: 26,
     fontWeight: '800',
   },
   halfUnit: {
-    color: META,
+    color: T.water.muted,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -320,10 +352,12 @@ export function MedicineSessionCard({
 }: SessionHeroProps & { data: MedicineDetailDataConfig }) {
   const doseProg = data.dosesPerDay > 0 ? Math.min(1, data.takenCount / data.dosesPerDay) : 0;
   return (
-    <SessionDarkShell>
-      <HeroTimerBlock {...hero} />
+    <SessionEditorialShell leftAccentColor={T.medicine.accent}>
+      <EditorialCategoryHeader brand={T.medicine.brand} aboutKicker={T.medicine.aboutKicker} />
+      <HeroTimerBlock {...hero} surface="light" accent="ember" />
       <BentoGap>
         <BentoWideText
+          surface="light"
           icon="cross.case.fill"
           label="복용 항목"
           badge="지금"
@@ -331,6 +365,8 @@ export function MedicineSessionCard({
         />
         <BentoWideMetric
           featured
+          surface="light"
+          accentColor={T.medicine.accent}
           icon="pill.fill"
           label="오늘 복용"
           badge="진행"
@@ -339,8 +375,17 @@ export function MedicineSessionCard({
           trackProgress01={Math.max(doseProg, hero.progress01)}
         />
         <BentoRow>
-          <BentoHalfMetric icon="calendar" label="하루 횟수" value={String(data.dosesPerDay)} unit="회" />
           <BentoHalfMetric
+            surface="light"
+            accentColor={T.medicine.accent}
+            icon="calendar"
+            label="하루 횟수"
+            value={String(data.dosesPerDay)}
+            unit="회"
+          />
+          <BentoHalfMetric
+            surface="light"
+            accentColor={T.medicine.accent}
             icon="checkmark.seal.fill"
             label="세션 진행"
             value={String(Math.round(hero.progress01 * 100))}
@@ -348,7 +393,7 @@ export function MedicineSessionCard({
           />
         </BentoRow>
       </BentoGap>
-    </SessionDarkShell>
+    </SessionEditorialShell>
   );
 }
 
@@ -363,10 +408,12 @@ export function OtherSessionCard({
     .map((x) => `${x.done ? '✓' : '•'} ${x.text}`)
     .join('\n');
   return (
-    <SessionDarkShell>
-      <HeroTimerBlock {...hero} />
+    <SessionEditorialShell leftAccentColor={T.other.accent}>
+      <EditorialCategoryHeader brand={T.other.brand} aboutKicker={T.other.aboutKicker} />
+      <HeroTimerBlock {...hero} surface="light" accent="ember" />
       <BentoGap>
         <BentoWideText
+          surface="light"
           icon="star.fill"
           label="플로우 메모"
           badge="사용자"
@@ -377,10 +424,10 @@ export function OtherSessionCard({
           }
         />
         <BentoRow>
-          <BentoHalfMetric icon="checkmark.seal.fill" label="완료" value={String(doneCount)} unit="개" />
-          <BentoHalfMetric icon="list.bullet" label="남은 작업" value={String(Math.max(0, pendingCount))} unit="개" />
+          <BentoHalfMetric surface="light" icon="checkmark.seal.fill" label="완료" value={String(doneCount)} unit="개" />
+          <BentoHalfMetric surface="light" icon="list.bullet" label="남은 작업" value={String(Math.max(0, pendingCount))} unit="개" />
         </BentoRow>
       </BentoGap>
-    </SessionDarkShell>
+    </SessionEditorialShell>
   );
 }

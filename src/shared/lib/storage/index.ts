@@ -1,10 +1,12 @@
 export { loadDayPlan, saveDayPlan } from './dayPlanStorage';
 export type { PersistedDayPlan } from './dayPlanStorage';
 export {
+  appendGoalDetailCommittedCategoryKeys,
+  hasGoalDetailCommittedCategory,
   loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
   saveGoalDetailBlockConfig,
-  saveGoalDetailCategoryConfig
+  saveGoalDetailCategoryConfig,
 } from './goalDetailSettingsStorage';
 export { localStorageClient } from './localStorageClient';
 export { loadRoutineExecutions, saveRoutineExecutions } from './routineExecutionStorage';

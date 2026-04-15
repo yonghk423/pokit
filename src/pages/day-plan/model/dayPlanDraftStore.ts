@@ -117,3 +117,19 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   setQuickMemoDraft: (value) => set({ quickMemoDraft: value }),
 }));
 
+/** 목표 상세 설정 완료 시 오늘 우선순위 목록에 카테고리가 없으면 끝에 추가 */
+export function appendPriorityCategoryKeysIfMissing(keys: string[]): void {
+  const trimmed = keys.map((k) => k.trim()).filter(Boolean);
+  if (trimmed.length === 0) return;
+  const { priorityCategoryOrder, setPriorityCategoryOrder } = useDayPlanDraftStore.getState();
+  const next = [...priorityCategoryOrder];
+  let changed = false;
+  for (const k of trimmed) {
+    if (!next.includes(k)) {
+      next.push(k);
+      changed = true;
+    }
+  }
+  if (changed) setPriorityCategoryOrder(next);
+}
+

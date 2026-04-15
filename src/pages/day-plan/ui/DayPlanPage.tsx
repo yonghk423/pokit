@@ -134,19 +134,15 @@ export function DayPlanPage() {
   );
   const {
     startNotifOn,
-    endNotifOn,
     notifTiming,
     setStartNotifOn,
-    setEndNotifOn,
     setNotifTiming,
     hydrate: hydrateNotificationSettings,
   } = useDayPlanNotificationStore(
     useShallow((s) => ({
       startNotifOn: s.startNotifOn,
-      endNotifOn: s.endNotifOn,
       notifTiming: s.notifTiming,
       setStartNotifOn: s.setStartNotifOn,
-      setEndNotifOn: s.setEndNotifOn,
       setNotifTiming: s.setNotifTiming,
       hydrate: s.hydrate,
     })),
@@ -190,14 +186,12 @@ export function DayPlanPage() {
 
   const handlePriorityCategoryPress = useCallback(
     (key: string) => {
-      setIsFocusStarted(false);
-      setPriorityCategoryOrder(
-        priorityCategoryOrder.includes(key)
-          ? priorityCategoryOrder.filter((k) => k !== key)
-          : [...priorityCategoryOrder, key],
-      );
+      const nextOrder = priorityCategoryOrder.includes(key)
+        ? priorityCategoryOrder.filter((k) => k !== key)
+        : [...priorityCategoryOrder, key];
+      setPriorityCategoryOrder(nextOrder);
     },
-    [priorityCategoryOrder, setIsFocusStarted, setPriorityCategoryOrder],
+    [priorityCategoryOrder, setPriorityCategoryOrder],
   );
 
   const handleOpenCategorySettings = useCallback(
@@ -571,26 +565,6 @@ export function DayPlanPage() {
                       </View>
                     </View>
 
-                    <View style={[styles.notifRowPill, { backgroundColor: notifPalette.containerLow }]}>
-                      <View style={styles.notifLeft}>
-                        <IconSymbol name="timer" size={20} color={PRIMARY} />
-                        <ThemedText
-                          style={[styles.notifTitle, { color: notifPalette.onSurface }]}
-                          lightColor={notifPalette.onSurface}
-                          darkColor={notifPalette.onSurface}>
-                          플로우 종료 알림
-                        </ThemedText>
-                      </View>
-                      <Switch
-                        trackColor={{
-                          true: PRIMARY,
-                          false: notifPalette.trackOff,
-                        }}
-                        thumbColor="#fff"
-                        value={endNotifOn}
-                        onValueChange={setEndNotifOn}
-                      />
-                    </View>
                   </View>
                 </View>
               ) : null}

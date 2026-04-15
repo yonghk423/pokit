@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Platform,
   Pressable,
   StyleSheet,
   Switch,
@@ -50,11 +51,8 @@ function setSlot(
     lunchOn: key === 'lunch' ? on : cfg.lunchOn,
     dinnerOn: key === 'dinner' ? on : cfg.dinnerOn,
   };
-  if (!next.morningOn && !next.lunchOn && !next.dinnerOn) {
-    next.morningOn = true;
-  }
   const enabled = [next.morningOn, next.lunchOn, next.dinnerOn].filter(Boolean).length;
-  next.dosesPerDay = Math.max(1, Math.min(12, enabled));
+  next.dosesPerDay = Math.max(0, Math.min(12, enabled));
   next.takenCount = Math.min(next.takenCount, next.dosesPerDay);
   return normalizeMedicineDetailConfig(next);
 }
@@ -94,21 +92,22 @@ export function MedicineSettings({
   const [draft, setDraft] = useState<MedicineDetailDataConfig>(() =>
     normalizeMedicineDetailConfig(dataConfig ?? getInitialMedicineDataConfig()),
   );
-  const lastSerialized = useRef<string | null>(null);
+  /** 부모 `dataConfig`와 동일한 JSON이면 재적용·재전송 생략 (두 effect 간 간섭 방지) */
+  const lastSyncedJsonRef = useRef<string | null>(null);
 
   useEffect(() => {
     const incoming = normalizeMedicineDetailConfig(dataConfig ?? getInitialMedicineDataConfig());
     const s = JSON.stringify(incoming);
-    if (lastSerialized.current === s) return;
-    lastSerialized.current = s;
+    if (lastSyncedJsonRef.current === s) return;
+    lastSyncedJsonRef.current = s;
     setDraft(incoming);
   }, [dataConfig]);
 
   useEffect(() => {
     const payload = normalizeMedicineDetailConfig(draft);
     const s = JSON.stringify(payload);
-    if (lastSerialized.current === s) return;
-    lastSerialized.current = s;
+    if (lastSyncedJsonRef.current === s) return;
+    lastSyncedJsonRef.current = s;
     onChangeDataConfig(payload);
   }, [draft, onChangeDataConfig]);
 
@@ -156,22 +155,39 @@ export function MedicineSettings({
           />
         </View>
 
-        <View style={[styles.row, { borderBottomColor: c.outline }]}>
-          <Text style={[styles.rowTitle, { color: c.onSurface }]}>복용 슬롯</Text>
-          <View style={styles.slotRow}>
-            {SLOT_GRID.map((slot) => {
-              const on = slotOn(draft, slot.key);
-              return (
-                <Pressable
-                  key={slot.key}
-                  onPress={() => setDraft((prev) => setSlot(prev, slot.key, !slotOn(prev, slot.key)))}
-                  style={[styles.slotChip, { backgroundColor: on ? PRIMARY : c.surfaceLowest }]}>
-                  <Text style={[styles.slotChipText, { color: on ? '#fff' : c.onSurface }]}>
-                    {slot.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+        <View style={[styles.row, styles.slotRowWrap, { borderBottomColor: c.outline }]}>
+          <View style={styles.slotColumn}>
+            <Text style={[styles.rowTitle, { color: c.onSurface }]}>복용 슬롯</Text>
+            <Text style={[styles.slotHint, { color: c.outline }]}>
+              버튼을 눌러 복용 시간대를 추가·해제해요. 아래 「설정 완료」를 누르면 오늘 일정의 우선순위 목록에 이 카테고리가 담겨요. 켠 슬롯과 시각은 플로우 시작 후 목록에만 표시돼요.
+            </Text>
+            <View style={styles.slotRow}>
+              {SLOT_GRID.map((slot) => {
+                const on = slotOn(draft, slot.key);
+                return (
+                  <Pressable
+                    key={slot.key}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    accessibilityLabel={`${slot.label} 복용 ${on ? '켜짐' : '꺼짐'}`}
+                    android_ripple={{ color: 'rgba(0,0,0,0.12)' }}
+                    onPress={() => setDraft((prev) => setSlot(prev, slot.key, !slotOn(prev, slot.key)))}
+                    style={({ pressed }) => [
+                      styles.slotChip,
+                      on ? styles.slotChipSelected : styles.slotChipIdle,
+                      {
+                        borderColor: on ? PRIMARY : 'rgba(0,0,0,0.18)',
+                        backgroundColor: on ? PRIMARY : '#f4f4f5',
+                      },
+                      pressed && (on ? styles.slotChipPressedOn : styles.slotChipPressedOff),
+                    ]}>
+                    <Text style={[styles.slotChipText, { color: on ? '#fff' : c.onSurface }]}>
+                      {slot.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         </View>
 
@@ -229,6 +245,19 @@ const styles = StyleSheet.create({
   metricValue: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4 },
   metricLabel: { fontSize: 11, fontWeight: '600' },
   rowsWrap: { borderTopWidth: 1 },
+  slotRowWrap: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    minHeight: 0,
+    paddingVertical: 12,
+  },
+  slotColumn: { gap: 8, width: '100%' },
+  slotHint: {
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+  },
   row: {
     minHeight: 62,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -241,15 +270,42 @@ const styles = StyleSheet.create({
   rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rowTitle: { fontSize: 16, fontWeight: '600' },
   rowInput: { flex: 1, fontSize: 16, fontWeight: '600', textAlign: 'right', minHeight: 32, maxWidth: '70%' },
-  slotRow: { flexDirection: 'row', gap: 6 },
+  slotRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 4,
+  },
   slotChip: {
-    minWidth: 42,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    minWidth: 80,
+    minHeight: 44,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     borderRadius: 999,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 2 },
+      },
+      default: { elevation: 2 },
+    }),
   },
-  slotChipText: { fontSize: 12, fontWeight: '800' },
+  slotChipIdle: {},
+  slotChipSelected: {},
+  slotChipPressedOff: {
+    opacity: 0.88,
+    transform: [{ scale: 0.98 }],
+  },
+  slotChipPressedOn: {
+    opacity: 0.92,
+    transform: [{ scale: 0.98 }],
+  },
+  slotChipText: { fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
   inlineInputWrap: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   inlineInput: { minWidth: 72, fontSize: 18, fontWeight: '700', textAlign: 'right', padding: 0 },
 });

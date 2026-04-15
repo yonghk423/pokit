@@ -1,5 +1,5 @@
 import type { DayPlanBlock, DayPlanNotificationSettings } from '@entities/day-plan';
-import { blockEndWallTimeMs, filterDayPlanFlowBlocks } from '@entities/day-plan';
+import { filterDayPlanFlowBlocks } from '@entities/day-plan';
 import {
   cancelLocalNotificationsById,
   ensureLocalNotificationPermission,
@@ -35,12 +35,6 @@ function makeStartBody(block: DayPlanBlock): string {
   return `${title} 플로우를 시작할 시간이에요.`;
 }
 
-function makeEndBody(block: DayPlanBlock): string {
-  const title = block.title.trim();
-  if (!title) return `${block.category} 플로우 종료 시각입니다.`;
-  return `${title} 플로우 종료 시각입니다.`;
-}
-
 function isFutureDate(dt: Date): boolean {
   return dt.getTime() > Date.now();
 }
@@ -59,7 +53,7 @@ export async function rescheduleDayPlanNotifications(input: {
   }
   saveDayPlanScheduledNotifications([]);
 
-  if (!input.settings.startEnabled && !input.settings.endEnabled) {
+  if (!input.settings.startEnabled) {
     return true;
   }
 
@@ -94,21 +88,6 @@ export async function rescheduleDayPlanNotifications(input: {
       }
     }
 
-    if (input.settings.endEnabled) {
-      const endMs = blockEndWallTimeMs(input.dateKey, block);
-      const endAt = endMs != null ? new Date(endMs) : null;
-      if (endAt && isFutureDate(endAt)) {
-        const id = await scheduleLocalNotification({
-          title: '플로우 종료 알림',
-          body: makeEndBody(block),
-          triggerAt: endAt,
-          data: { blockId: block.id, eventType: 'end' },
-        });
-        if (id) {
-          rows.push({ notificationId: id, blockId: block.id, kind: 'end' });
-        }
-      }
-    }
   }
 
   saveDayPlanScheduledNotifications(rows);

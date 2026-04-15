@@ -6,22 +6,15 @@ import {
   type ReadingLiveActivityConfig,
   type ReadingMetricKey,
 } from '@entities/day-plan';
+import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
-import { ORANGE, SessionDarkShell } from './sessionCardShared';
+import { EditorialCategoryHeader, formatClock, SessionEditorialShell } from './sessionCardShared';
 
-const IOS_SECONDARY = '#8E8E93';
-const IOS_TERTIARY = '#3A3A3C';
+const R = CategoryImmersionTheme.reading;
 
 function formatPagesP(n: number) {
   return `${Math.max(0, Math.round(n))}p`;
-}
-
-function formatClock(totalSeconds: number): string {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
 }
 
 function getMetricDisplay(
@@ -58,72 +51,89 @@ export function ReadingSessionCard({
 }: Props) {
   const selected = normalizeReadingMetricSelection(dataConfig.selectedMetrics);
   const titleText = title?.trim() || '딥 리딩';
+  const { pagesRead: pagesToRead } = deriveReadingProgress(dataConfig);
 
   return (
-    <SessionDarkShell>
-      <View style={styles.inner}>
-        <Text style={styles.heroKicker}>{isPaused ? '일시정지' : '독서 세션'}</Text>
-        <Text style={styles.heroTitle} numberOfLines={2}>
-          {titleText}
-        </Text>
+    <SessionEditorialShell leftAccentColor={R.accent}>
+      <EditorialCategoryHeader brand={R.brand} aboutKicker={R.aboutKicker} />
+      <Text style={styles.flowTitle} numberOfLines={2}>
+        {titleText}
+      </Text>
 
-        <View style={styles.headerRow}>
-          <View style={styles.iconBox}>
-            <IconSymbol name="book.fill" size={16} color="#fff" weight="semibold" />
-          </View>
-          <View style={styles.headerSpacer} />
-          <Text style={styles.timerHero}>{formatClock(remainingSec)}</Text>
+      <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: R.border }]}>
+        <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: R.onSurface }]}>{dataConfig.startPage}</Text>
+          <Text style={[styles.metricLabel, { color: R.muted }]}>시작</Text>
         </View>
-
-        {selected.length > 0 && (
-          <View style={styles.metricRow}>
-            {selected.map((key, i) => {
-              const m = getMetricDisplay(key, dataConfig);
-              return (
-                <View key={`${key}-${i}`} style={styles.metricCol}>
-                  <Text style={m.big ? styles.valBig : styles.valSmall} numberOfLines={1}>
-                    {m.value}
-                  </Text>
-                  <Text style={styles.metricLabel} numberOfLines={1}>
-                    {m.label}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        <View style={styles.trackOuter}>
-          <View
-            style={[styles.trackFill, { width: `${Math.min(100, Math.max(0, progressPct))}%` }]}
-          />
+        <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: R.onSurface }]}>{dataConfig.targetPage}</Text>
+          <Text style={[styles.metricLabel, { color: R.muted }]}>목표</Text>
+        </View>
+        <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: R.accent }]}>{pagesToRead}</Text>
+          <Text style={[styles.metricLabel, { color: R.muted }]}>읽을 분량</Text>
         </View>
       </View>
-    </SessionDarkShell>
+
+      <View style={styles.headerRow}>
+        <View style={styles.iconBox}>
+          <IconSymbol name="book.fill" size={18} color="#fff" weight="semibold" />
+        </View>
+        <View style={styles.headerSpacer} />
+        <Text style={styles.timerHero}>{formatClock(remainingSec)}</Text>
+      </View>
+      <Text style={styles.statusLine}>
+        {isPaused ? '일시정지' : '독서 세션'}
+      </Text>
+
+      {selected.length > 0 && (
+        <View style={styles.metricRow}>
+          {selected.map((key, i) => {
+            const m = getMetricDisplay(key, dataConfig);
+            return (
+              <View key={`${key}-${i}`} style={styles.metricCol}>
+                <Text style={m.big ? styles.valBig : styles.valSmall} numberOfLines={1}>
+                  {m.value}
+                </Text>
+                <Text style={styles.metricLabelSmall} numberOfLines={1}>
+                  {m.label}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      <View style={styles.trackOuter}>
+        <View
+          style={[styles.trackFill, { width: `${Math.min(100, Math.max(0, progressPct))}%` }]}
+        />
+      </View>
+    </SessionEditorialShell>
   );
 }
 
 const styles = StyleSheet.create({
-  inner: {
-    gap: 14,
-  },
-  heroKicker: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 2,
-    color: 'rgba(255, 255, 255, 0.45)',
-    textTransform: 'uppercase',
-    textAlign: 'center',
-  },
-  heroTitle: {
-    color: '#fff',
+  flowTitle: {
     fontSize: 22,
+    lineHeight: 28,
     fontWeight: '800',
     letterSpacing: -0.35,
+    color: R.onSurface,
     textAlign: 'center',
-    lineHeight: 28,
+    marginBottom: 14,
     paddingHorizontal: 4,
   },
+  metricBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  metricItem: { flex: 1, alignItems: 'center', gap: 2 },
+  metricValue: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4 },
+  metricLabel: { fontSize: 11, fontWeight: '600' },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -133,32 +143,40 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: IOS_TERTIARY,
+    backgroundColor: R.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerSpacer: { flex: 1 },
   timerHero: {
-    color: IOS_SECONDARY,
-    fontSize: 28,
+    color: R.onSurface,
+    fontSize: 36,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
     letterSpacing: -1,
   },
-  metricRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
+  statusLine: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: '700',
+    color: R.muted,
+    textAlign: 'center',
+  },
+  metricRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginTop: 16 },
   metricCol: { flex: 1, gap: 2 },
-  valBig: { color: '#fff', fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
-  valSmall: { color: '#fff', fontSize: 22, fontWeight: '800', letterSpacing: -0.4 },
-  metricLabel: { fontSize: 9, fontWeight: '700', color: IOS_SECONDARY },
+  valBig: { color: R.onSurface, fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
+  valSmall: { color: R.onSurface, fontSize: 20, fontWeight: '800', letterSpacing: -0.4 },
+  metricLabelSmall: { fontSize: 9, fontWeight: '700', color: R.muted },
   trackOuter: {
+    marginTop: 16,
     height: 6,
     borderRadius: 999,
-    backgroundColor: IOS_TERTIARY,
+    backgroundColor: 'rgba(0,0,0,0.08)',
     overflow: 'hidden',
   },
   trackFill: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: ORANGE,
+    backgroundColor: R.accent,
   },
 });

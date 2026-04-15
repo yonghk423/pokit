@@ -98,7 +98,7 @@ export function FastingSettings({
                     styles.presetChip,
                     {
                       backgroundColor: selected ? 'rgba(0,0,0,0.9)' : c.surfaceLowest,
-                      borderColor: selected ? 'rgba(0,0,0,0.9)' : c.border,
+                      borderColor: selected ? 'rgba(0,0,0,0.9)' : c.outlineVariant,
                     },
                   ]}>
                   <Text style={[styles.presetChipText, { color: selected ? '#fff' : c.onSurface }]}>
@@ -136,12 +136,12 @@ export function FastingSettings({
         </View>
       </View>
 
-      <View style={[styles.progressCard, { borderColor: c.border, backgroundColor: c.surfaceLowest }]}>
+      <View style={[styles.progressCard, { borderColor: c.outlineVariant, backgroundColor: c.surfaceLowest }]}>
         <View style={styles.progressHeader}>
           <Text style={[styles.progressTitle, { color: c.onSurface }]}>진행 현황</Text>
           <Text style={[styles.progressPct, { color: c.onVariant }]}>{Math.round(progress01 * 100)}%</Text>
         </View>
-        <View style={[styles.track, { backgroundColor: c.border }]}>
+        <View style={[styles.track, { backgroundColor: c.outlineVariant }]}>
           <View style={[styles.fill, { width: `${Math.round(progress01 * 100)}%` }]} />
         </View>
       </View>

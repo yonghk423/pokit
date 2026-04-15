@@ -160,7 +160,7 @@ function normalizeMedicineHHmm(raw: unknown, fallback: string): string {
 export type MedicineDetailDataConfig = {
   /** 약 이름(표시용) */
   doseLabel: string;
-  /** 활성화된 복용 슬롯 수와 동기화 */
+  /** 활성화된 복용 슬롯 수(0이면 슬롯 미설정) */
   dosesPerDay: number;
   takenCount: number;
   morningOn: boolean;
@@ -177,23 +177,27 @@ export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataC
   const doseLabel = clampStr(o.doseLabel, 48) || '비타민';
 
   const hasSlotKeys = 'morningOn' in o || 'lunchOn' in o || 'dinnerOn' in o;
+  const hasLegacyDoseFields = 'dosesPerDay' in o || 'takenCount' in o;
   const legacyDoses = Math.max(1, Math.min(12, Number(o.dosesPerDay) || 3));
 
   let morningOn: boolean;
   let lunchOn: boolean;
   let dinnerOn: boolean;
   if (hasSlotKeys) {
-    morningOn = typeof o.morningOn === 'boolean' ? o.morningOn : true;
-    lunchOn = typeof o.lunchOn === 'boolean' ? o.lunchOn : true;
-    dinnerOn = typeof o.dinnerOn === 'boolean' ? o.dinnerOn : true;
-  } else {
+    /** 명시 키가 있으면 기본은 끔 — 사용자가 탭으로 슬롯을 켜도록 함 */
+    morningOn = typeof o.morningOn === 'boolean' ? o.morningOn : false;
+    lunchOn = typeof o.lunchOn === 'boolean' ? o.lunchOn : false;
+    dinnerOn = typeof o.dinnerOn === 'boolean' ? o.dinnerOn : false;
+  } else if (hasLegacyDoseFields) {
     /** 예전 `{ dosesPerDay, takenCount }` 만 있던 데이터: 횟수만큼 아침→점심→저녁 순으로 켬 */
     morningOn = legacyDoses >= 1;
     lunchOn = legacyDoses >= 2;
     dinnerOn = legacyDoses >= 3;
-  }
-  if (!morningOn && !lunchOn && !dinnerOn) {
-    morningOn = true;
+  } else {
+    /** 새/빈 데이터는 기본 슬롯을 자동 활성화하지 않음 */
+    morningOn = false;
+    lunchOn = false;
+    dinnerOn = false;
   }
 
   const morningTime = normalizeMedicineHHmm(o.morningTime, '08:30');
@@ -201,10 +205,13 @@ export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataC
   const dinnerTime = normalizeMedicineHHmm(o.dinnerTime, '19:30');
 
   const enabledCount = [morningOn, lunchOn, dinnerOn].filter(Boolean).length;
-  const dosesPerDay = Math.max(1, Math.min(12, enabledCount));
+  const dosesPerDay = Math.max(0, Math.min(12, enabledCount));
 
   const takenRaw = Number(o.takenCount);
-  const takenCount = Math.max(0, Math.min(dosesPerDay, Number.isFinite(takenRaw) ? takenRaw : 0));
+  const takenCount = Math.max(
+    0,
+    Math.min(dosesPerDay, Number.isFinite(takenRaw) ? takenRaw : 0),
+  );
 
   const medicationNotify = typeof o.medicationNotify === 'boolean' ? o.medicationNotify : true;
 
@@ -225,11 +232,11 @@ export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataC
 export function getInitialMedicineDataConfig(): MedicineDetailDataConfig {
   return {
     doseLabel: '비타민',
-    dosesPerDay: 3,
+    dosesPerDay: 0,
     takenCount: 0,
-    morningOn: true,
-    lunchOn: true,
-    dinnerOn: true,
+    morningOn: false,
+    lunchOn: false,
+    dinnerOn: false,
     morningTime: '08:30',
     lunchTime: '12:30',
     dinnerTime: '19:30',

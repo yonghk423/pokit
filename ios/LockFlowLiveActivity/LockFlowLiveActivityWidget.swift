@@ -639,6 +639,57 @@ private func islandCountdownText(
   }
 }
 
+/// 다이나믹 아일랜드 **컴팩트** trailing 전용 — `Text(..., style: .timer)` 는 intrinsic 폭이 커져 알약이 화면 너비에 가깝게 늘어난다.
+/// 짧은 고정 포맷 + 최대 너비로 제한한다.
+@available(iOS 16.1, *)
+private struct IslandCompactCountdownView: View {
+  let startsAt: Date?
+  let endsAt: Date?
+  let isFinished: Bool
+  let isPaused: Bool
+  let pausedRemainingSeconds: Int?
+
+  var body: some View {
+    TimelineView(.periodic(from: .now, by: 1.0)) { _ in
+      Text(compactLabel)
+        .font(.caption2.weight(.bold))
+        .monospacedDigit()
+        .lineLimit(1)
+        .minimumScaleFactor(0.62)
+        .frame(maxWidth: 52, alignment: .trailing)
+    }
+  }
+
+  private var compactLabel: String {
+    if isFinished { return "완료" }
+    if let startsAt, isPaused == false, endsAt == nil || (startsAt.timeIntervalSinceNow > 0) {
+      let sec = max(0, Int(ceil(startsAt.timeIntervalSinceNow)))
+      return formatCompactCountdown(sec)
+    }
+    if let endsAt, !isPaused {
+      let sec = max(0, Int(ceil(endsAt.timeIntervalSinceNow)))
+      return formatCompactCountdown(sec)
+    }
+    if let paused = pausedRemainingSeconds {
+      return lockFlowFormatClock(paused)
+    }
+    return "--:--"
+  }
+
+  /// 1시간 미만: `MM:SS` / 1시간 이상: `H:MM` (초 생략으로 폭 축소)
+  private func formatCompactCountdown(_ totalSeconds: Int) -> String {
+    let s = max(0, totalSeconds)
+    if s >= 3600 {
+      let h = s / 3600
+      let m = (s % 3600) / 60
+      return String(format: "%d:%02d", h, m)
+    }
+    let m = s / 60
+    let r = s % 60
+    return String(format: "%d:%02d", m, r)
+  }
+}
+
 @available(iOS 16.1, *)
 struct LockFlowLiveActivityWidget: Widget {
   var body: some WidgetConfiguration {
@@ -712,11 +763,14 @@ struct LockFlowLiveActivityWidget: Widget {
           Image(systemName: isFinished ? "checkmark" : "note.text")
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(liveGrayAccent)
+            .fixedSize(horizontal: true, vertical: false)
         } compactTrailing: {
           Text(compactTrailingLabel)
             .font(.caption2.weight(.bold))
             .foregroundStyle(isFinished ? Color.secondary : liveGrayAccent)
             .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .frame(maxWidth: 44, alignment: .trailing)
         } minimal: {
           Image(systemName: isFinished ? "checkmark" : "note.text")
             .foregroundStyle(liveGrayAccent)
@@ -829,15 +883,16 @@ struct LockFlowLiveActivityWidget: Widget {
           }
         } compactLeading: {
           Image(systemName: "list.number")
+            .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(liveGrayAccent)
+            .fixedSize(horizontal: true, vertical: false)
         } compactTrailing: {
-          islandCountdownText(
+          IslandCompactCountdownView(
             startsAt: context.state.startsAt,
             endsAt: context.state.endsAt,
             isFinished: isFinished,
             isPaused: isPaused,
-            pausedRemainingSeconds: context.state.pausedRemainingSeconds,
-            font: .caption2.weight(.bold)
+            pausedRemainingSeconds: context.state.pausedRemainingSeconds
           )
           .foregroundStyle(isFinished ? Color.secondary : liveGrayAccent)
         } minimal: {
@@ -949,15 +1004,22 @@ struct LockFlowLiveActivityWidget: Widget {
       } compactLeading: {
         if let r = currentRow {
           Image(systemName: rowIconName(r.state))
+            .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(rowIconTint(r.state))
+            .fixedSize(horizontal: true, vertical: false)
         } else {
           Image(systemName: "lock.fill")
+            .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(liveGrayAccent)
+            .fixedSize(horizontal: true, vertical: false)
         }
       } compactTrailing: {
         Text(isFinished ? "완료" : context.state.checklistCountLabel)
           .font(.caption2.weight(.bold))
           .foregroundStyle(isFinished ? Color.secondary : liveGrayAccent)
+          .lineLimit(1)
+          .minimumScaleFactor(0.7)
+          .frame(maxWidth: 48, alignment: .trailing)
       } minimal: {
         Image(systemName: isFinished ? "checkmark" : (standbyStartCountdown ? "clock" : "lock.fill"))
       }

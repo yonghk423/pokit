@@ -1,17 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   DEFAULT_READING_LIVE_ACTIVITY_CONFIG,
   deriveReadingProgress,
   getInitialReadingLiveActivityConfig,
   normalizeReadingMetricSelection,
-  readingDisplayTitle,
   type ReadingLiveActivityConfig,
 } from '@entities/day-plan';
-import { IconSymbol } from '@shared/ui/icon-symbol';
-
-const READING_EMERALD_TEXT = 'rgb(52, 211, 153)';
 const READING_EMERALD = 'rgb(16, 185, 129)';
 
 export type ReadingDetailDataConfig = ReadingLiveActivityConfig;
@@ -19,7 +15,7 @@ export const DEFAULT_READING_DATA_CONFIG = DEFAULT_READING_LIVE_ACTIVITY_CONFIG;
 export const getInitialReadingDataConfig = getInitialReadingLiveActivityConfig;
 
 export function ReadingSettings({
-  rhythmTitle,
+  rhythmTitle: _rhythmTitle,
   dataConfig,
   onChangeDataConfig,
 }: {
@@ -62,8 +58,6 @@ export function ReadingSettings({
     [bookTitleStr, cfg.selectedMetrics, startPage, targetPage],
   );
 
-  const sessionPreviewTitle = readingDisplayTitle(rhythmTitle, draftReading);
-
   const { pagesRead: pagesToRead } = deriveReadingProgress(draftReading);
 
   useEffect(() => {
@@ -81,7 +75,6 @@ export function ReadingSettings({
     onChangeDataConfig(payload);
   }, [onChangeDataConfig, bookTitleStr, cfg.selectedMetrics, startPage, targetPage]);
 
-  const rangeLine = `${startPage}p ~ ${targetPage}p`;
   const muted = '#6b7280';
   const onSurface = '#111827';
   const outline = '#9ca3af';
@@ -106,11 +99,17 @@ export function ReadingSettings({
 
       <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: '#d1d5db' }]}>
         <View style={styles.metricItem}>
-          <Text style={[styles.metricValue, { color: onSurface }]}>{startPage}</Text>
+          <Text style={[styles.metricValue, { color: onSurface }]}>
+            {startPage}
+            <Text style={styles.metricPageSuffix}>P</Text>
+          </Text>
           <Text style={[styles.metricLabel, { color: muted }]}>시작</Text>
         </View>
         <View style={styles.metricItem}>
-          <Text style={[styles.metricValue, { color: onSurface }]}>{targetPage}</Text>
+          <Text style={[styles.metricValue, { color: onSurface }]}>
+            {targetPage}
+            <Text style={styles.metricPageSuffix}>P</Text>
+          </Text>
           <Text style={[styles.metricLabel, { color: muted }]}>목표</Text>
         </View>
         <View style={styles.metricItem}>
@@ -144,7 +143,7 @@ export function ReadingSettings({
               keyboardType="number-pad"
               style={[styles.inlineInput, { color: onSurface }]}
             />
-            <Text style={[styles.inlineSuffix, { color: muted }]}>p</Text>
+            <Text style={[styles.inlineSuffix, { color: muted }]}>P</Text>
           </View>
         </View>
 
@@ -159,22 +158,10 @@ export function ReadingSettings({
               keyboardType="number-pad"
               style={[styles.inlineInput, { color: onSurface }]}
             />
-            <Text style={[styles.inlineSuffix, { color: muted }]}>p</Text>
+            <Text style={[styles.inlineSuffix, { color: muted }]}>P</Text>
           </View>
         </View>
       </View>
-
-      <View style={[styles.rangeCard, { borderColor: 'rgba(16,185,129,0.25)' }]}>
-        <IconSymbol name="book.fill" size={20} color={READING_EMERALD_TEXT} />
-        <Text style={[styles.rangeText, { color: READING_EMERALD_TEXT }]}>{rangeLine}</Text>
-      </View>
-
-      <Pressable style={[styles.previewCard, { borderColor: '#d1d5db' }]}>
-        <Text style={[styles.previewKicker, { color: muted }]}>PREVIEW</Text>
-        <Text style={[styles.previewTitle, { color: onSurface }]} numberOfLines={3}>
-          {sessionPreviewTitle}
-        </Text>
-      </Pressable>
     </View>
   );
 }
@@ -196,6 +183,7 @@ const styles = StyleSheet.create({
   },
   metricItem: { flex: 1, alignItems: 'center', gap: 2 },
   metricValue: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4 },
+  metricPageSuffix: { fontSize: 14, fontWeight: '800', letterSpacing: 0 },
   metricLabel: { fontSize: 11, fontWeight: '600' },
   rowsWrap: { borderTopWidth: 1 },
   row: {
@@ -219,17 +207,4 @@ const styles = StyleSheet.create({
   inlineInputWrap: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   inlineInput: { minWidth: 62, fontSize: 18, fontWeight: '700', textAlign: 'right', padding: 0 },
   inlineSuffix: { fontSize: 13, fontWeight: '600' },
-  rangeCard: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  rangeText: { fontSize: 18, fontWeight: '700', letterSpacing: -0.2 },
-  previewCard: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, padding: 12, gap: 8 },
-  previewKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1 },
-  previewTitle: { fontSize: 20, lineHeight: 26, fontWeight: '700', letterSpacing: -0.3 },
 });

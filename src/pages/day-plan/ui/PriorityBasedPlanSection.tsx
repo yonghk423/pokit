@@ -1,5 +1,6 @@
 // @ts-nocheck — RN Web에서 StyleSheet.create 타입이 TextStyle|ViewStyle로 합쳐져 Reanimated·제스처와 충돌함
 import * as Haptics from 'expo-haptics';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -13,12 +14,16 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  filterDayPlanFlowBlocks,
   getLocalDateKey,
   localDateToDateKey,
   parseHHmmToMinutes,
   parseLocalDateKeyToDate,
+  resolveCategoryKeyFromLabel,
+  useDayPlanStore,
 } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { hasGoalDetailCommittedCategory } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -34,6 +39,7 @@ import {
   sortedPlanDateRange,
 } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
+import { getPriorityCategoryGoalHint } from '../lib/priorityCategoryGoalHints';
 
 /**
  * 플립 시계 레퍼런스: 카드 다크 배경 · 밝은 회색 숫자 · 숫자 가운데 검정 힌지선(flip-divider)
@@ -573,10 +579,12 @@ function OrderRow({
   categoryKey,
   icon,
   label,
+  subtitle,
   priorityLabel,
   isTopPriority,
   priorityColor,
   isFocusStarted,
+  isCompleted,
   isDark,
   ink,
   inkMuted,
@@ -589,10 +597,13 @@ function OrderRow({
   categoryKey: string;
   icon: string;
   label: string;
+  /** 목표 상세에서 온 부가 한 줄 (책 제목·단식 누적·수분·약 복용 등) */
+  subtitle?: string | null;
   priorityLabel?: string;
   isTopPriority?: boolean;
   priorityColor?: { bg: string; fg: string };
   isFocusStarted?: boolean;
+  isCompleted?: boolean;
   isDark: boolean;
   ink: string;
   inkMuted: string;
@@ -603,9 +614,10 @@ function OrderRow({
   onFocusDetail?: () => void;
 }) {
   const pulse = useRef(new Animated.Value(1)).current;
+  const shouldPulse = Boolean(isFocusStarted && !isCompleted);
 
   useEffect(() => {
-    if (!isFocusStarted) {
+    if (!shouldPulse) {
       pulse.setValue(1);
       return;
     }
@@ -625,7 +637,7 @@ function OrderRow({
     );
     loop.start();
     return () => loop.stop();
-  }, [isFocusStarted, pulse]);
+  }, [shouldPulse, pulse]);
 
   return (
     <View style={[styles.orderRowRoman, { borderBottomColor: line }]}>
@@ -647,27 +659,40 @@ function OrderRow({
           </ThemedText>
         </View>
       ) : null}
-      {isFocusStarted && categoryKey === 'medicine' ? (
+      {shouldPulse && categoryKey === 'medicine' ? (
         <Animated.View style={[styles.medicineIconBadge, { opacity: pulse }]}>
           <IconSymbol name="cross.fill" size={12} color="#ef4444" />
         </Animated.View>
       ) : (
-        <Animated.View style={isFocusStarted ? { opacity: pulse } : undefined}>
+        <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
           <IconSymbol
             name={icon as any}
             size={20}
-            color={isFocusStarted ? activeIconColorByCategory(categoryKey) : ink}
+            color={shouldPulse ? activeIconColorByCategory(categoryKey) : ink}
           />
         </Animated.View>
       )}
       <View style={styles.orderRowRomanText}>
         <ThemedText
-          style={[styles.orderRowRomanTitle, { color: ink }]}
+          style={[styles.orderRowRomanTitle, { color: ink }, isCompleted && styles.orderRowRomanTitleDone]}
           numberOfLines={1}
           lightColor={ink}
           darkColor={ink}>
           {label}
         </ThemedText>
+        {subtitle ? (
+          <ThemedText
+            style={[
+              styles.orderRowRomanSubtitle,
+              { color: inkMuted },
+              isCompleted && styles.orderRowRomanTitleDone,
+            ]}
+            numberOfLines={1}
+            lightColor={inkMuted}
+            darkColor={inkMuted}>
+            {subtitle}
+          </ThemedText>
+        ) : null}
       </View>
       <View style={styles.orderRowActions}>
         {isFocusStarted && onFocusDetail ? (
@@ -711,6 +736,7 @@ function OrderRow({
 function CatalogListRow({
   icon,
   label,
+  subtitle,
   selected,
   ink,
   muted,
@@ -719,6 +745,7 @@ function CatalogListRow({
 }: {
   icon: string;
   label: string;
+  subtitle?: string | null;
   selected: boolean;
   ink: string;
   muted: string;
@@ -729,17 +756,30 @@ function CatalogListRow({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      accessibilityLabel={`${label}, ${selected ? '담김' : '담기'}`}
+      accessibilityLabel={
+        subtitle ? `${label}. ${subtitle}, ${selected ? '담김' : '담기'}` : `${label}, ${selected ? '담김' : '담기'}`
+      }
       onPress={onPress}
       style={[styles.catalogRow, { borderBottomColor: line }]}>
       <IconSymbol name={icon as any} size={22} color={selected ? PRIMARY : muted} />
-      <ThemedText
-        style={[styles.catalogRowLabel, { color: selected ? ink : muted }]}
-        lightColor={selected ? ink : muted}
-        darkColor={selected ? ink : muted}
-        numberOfLines={1}>
-        {label}
-      </ThemedText>
+      <View style={styles.catalogRowTextCol}>
+        <ThemedText
+          style={[styles.catalogRowLabel, { color: selected ? ink : muted }]}
+          lightColor={selected ? ink : muted}
+          darkColor={selected ? ink : muted}
+          numberOfLines={1}>
+          {label}
+        </ThemedText>
+        {subtitle ? (
+          <ThemedText
+            style={[styles.catalogRowSubtitle, { color: muted }]}
+            lightColor={muted}
+            darkColor={muted}
+            numberOfLines={1}>
+            {subtitle}
+          </ThemedText>
+        ) : null}
+      </View>
       {selected ? (
         <View style={[styles.catalogRowBadge, { backgroundColor: PRIMARY }]}>
           <IconSymbol name="checkmark" size={11} color="#fff" />
@@ -942,25 +982,83 @@ export function PriorityBasedPlanSection({
     [priorityCategoryOrder],
   );
 
+  /** 목표 상세 저장소 기준 부가 한 줄 — 설정 화면에서 돌아올 때 갱신 */
+  const [categoryHintTick, setCategoryHintTick] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      setCategoryHintTick((n) => n + 1);
+    }, []),
+  );
+
+  const categoryKeysForHints = useMemo(
+    () => [...new Set([...priorityCategoryOrder, ...PICKER_CATEGORIES.map((c) => c.key)])],
+    [priorityCategoryOrder],
+  );
+
+  const categoryGoalHints = useMemo(() => {
+    void categoryHintTick;
+    const out: Record<string, string | null> = {};
+    for (const k of categoryKeysForHints) {
+      out[k] = getPriorityCategoryGoalHint(k, { isFocusStarted });
+    }
+    return out;
+  }, [categoryKeysForHints, categoryHintTick, isFocusStarted]);
+
+  const categoryUnsetHints = useMemo<Record<string, string>>(
+    () => ({
+      reading: '책 선정 안 함',
+      fasting: '목표 시간 설정 안 함',
+      water: '섭취 목표 설정 안 함',
+      medicine: '복용 슬롯 설정 안 함',
+      other: '보조 도구 설정 안 함',
+    }),
+    [],
+  );
+
+  const categorySubtitleByKey = useCallback(
+    (categoryKey: string): string | null => {
+      const fallback = categoryUnsetHints[categoryKey] ?? '설정 안 함';
+      if (!hasGoalDetailCommittedCategory(categoryKey)) return fallback;
+      return categoryGoalHints[categoryKey] ?? fallback;
+    },
+    [categoryGoalHints, categoryUnsetHints],
+  );
+
   const bagCount = selectedItems.length;
   const [completedCategoryKeys, setCompletedCategoryKeys] = useState<string[]>([]);
+  const planBlocks = useDayPlanStore((s) => s.blocks);
+  const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
+  const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
+
+  const completedCategoryKeysFromPlan = useMemo(() => {
+    const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
+    const doneCategoryKeys = new Set<string>();
+    const flowBlocks = filterDayPlanFlowBlocks(planBlocks);
+    flowBlocks.forEach((block) => {
+      if (!doneBlockIds.has(block.id)) return;
+      const key = resolveCategoryKeyFromLabel(block.category ?? '');
+      if (key) doneCategoryKeys.add(key);
+    });
+    return [...doneCategoryKeys];
+  }, [planBlocks, completedBlockIds, skippedBlockIds]);
+
+  const effectiveCompletedCategoryKeys = useMemo(
+    () => [...new Set([...completedCategoryKeys, ...completedCategoryKeysFromPlan])],
+    [completedCategoryKeys, completedCategoryKeysFromPlan],
+  );
 
   useEffect(() => {
     setCompletedCategoryKeys((prev) => prev.filter((k) => priorityCategoryOrder.includes(k)));
   }, [priorityCategoryOrder]);
 
   useEffect(() => {
-    if (!isFocusStarted) {
-      setCompletedCategoryKeys((prev) => (prev.length === 0 ? prev : []));
-      return;
-    }
+    if (!isFocusStarted) return;
     if (priorityCategoryOrder.length === 0) return;
-    const done = priorityCategoryOrder.every((k) => completedCategoryKeys.includes(k));
+    const done = priorityCategoryOrder.every((k) => effectiveCompletedCategoryKeys.includes(k));
     if (done) {
       onAllFocusCompleted?.();
-      setCompletedCategoryKeys([]);
     }
-  }, [isFocusStarted, priorityCategoryOrder, completedCategoryKeys, onAllFocusCompleted]);
+  }, [isFocusStarted, priorityCategoryOrder, effectiveCompletedCategoryKeys, onAllFocusCompleted]);
 
   /** 라이트: 대표 톤은 `dayPlanPalette` 그레이(containerLow)·진한 글자(onSurface) — 순백·채도 높은 다크 면 아님 */
   const editorial = useMemo(() => {
@@ -1271,10 +1369,12 @@ export function PriorityBasedPlanSection({
                       categoryKey={cat.key}
                       icon={cat.icon}
                       label={cat.label}
+                      subtitle={categorySubtitleByKey(cat.key)}
                       priorityLabel={priorityLabelByIndex(idx)}
                       isTopPriority={idx === 0}
                       priorityColor={priorityColorByIndex(idx)}
                       isFocusStarted={isFocusStarted}
+                      isCompleted={effectiveCompletedCategoryKeys.includes(cat.key)}
                       isDark={isDark}
                       ink={editorial.ink}
                       inkMuted={editorial.muted}
@@ -1316,6 +1416,7 @@ export function PriorityBasedPlanSection({
                     key={cat.key}
                     icon={cat.icon}
                     label={cat.label}
+                    subtitle={null}
                     selected={false}
                     ink={editorial.ink}
                     muted={editorial.muted}
@@ -1692,6 +1793,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.3,
   },
+  orderRowRomanSubtitle: {
+    marginTop: 3,
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+    lineHeight: 16,
+  },
+  orderRowRomanTitleDone: {
+    textDecorationLine: 'line-through',
+    textDecorationStyle: 'solid',
+    opacity: 0.52,
+  },
   orderRowActions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1727,12 +1840,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     borderBottomWidth: 1,
   },
-  catalogRowLabel: {
+  catalogRowTextCol: {
     flex: 1,
     minWidth: 0,
+    gap: 2,
+  },
+  catalogRowLabel: {
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: -0.3,
+  },
+  catalogRowSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+    lineHeight: 16,
   },
   catalogRowBadge: {
     width: 24,

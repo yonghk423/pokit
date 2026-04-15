@@ -1,6 +1,6 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -14,11 +14,13 @@ import {
   normalizeMedicineDetailConfig,
   normalizeMeditationDetailConfig,
   normalizeOtherDetailConfig,
+  deriveReadingProgress,
   normalizeReadingLiveActivityConfig,
   readingDisplayTitle,
   normalizeWaterDetailConfig,
   normalizeWorkDetailConfig,
   normalizeYogaDetailConfig,
+  parseHHmmToMinutes,
   parseNumberedFlowLines,
   useDayPlanNotificationStore,
   useDayPlanRuntimeStore,
@@ -32,8 +34,10 @@ import {
   upsertFinishedLiveActivityForBlockId,
   useLiveActivitySync,
 } from '@features/live-activity-sync';
+import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
+  loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
   saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
@@ -44,15 +48,25 @@ import { ThemedView } from '@shared/ui/themed-view';
 import { ActiveSessionCard } from '@widgets/active-session-card';
 import { formatDurationMinKo } from '@widgets/active-session-card/ui/sessionCardShared';
 
-import { FastingGradientRing } from './FastingGradientRing';
+import {
+  ImmersionBottomControls,
+  ImmersionCardShell,
+  ImmersionHalfCard,
+  ImmersionSplitRow,
+  SessionImmersionLayout,
+} from './SessionImmersionLayout';
 import { SessionProgressRing } from './SessionProgressRing';
 
 const PRIMARY = 'rgb(0, 0, 0)';
 /** 수분섭취 풀스크린 세션 */
-const WATER_SESSION_BG = '#070f1a';
+const WATER_SESSION_BG = CategoryImmersionTheme.water.screenBg;
 const WATER_CYAN = '#22d3ee';
-const MED_PRIMARY = '#1a1a1a';
-const MED_PRIMARY_DIM = '#525252';
+/** 약 복용 몰입 화면 액센트 (수분과 구분되는 청록) */
+const MED_TEAL = '#0d9488';
+const MED_TEAL_GLOW = 'rgba(13, 148, 136, 0.18)';
+/** 단식 몰입 화면 액센트 */
+const FAST_ACCENT = '#f97316';
+const FAST_GLOW = 'rgba(249, 115, 22, 0.18)';
 /** 독서 풀스크린 — Tailwind emerald-400/500 계열 */
 const READING_EMERALD_TEXT = 'rgb(52, 211, 153)';
 const READING_EMERALD = 'rgb(16, 185, 129)';
@@ -144,11 +158,25 @@ function formatMeridiemClock(minuteOfDay: number): { hhmm: string; meridiem: 'AM
   return { hhmm: `${String(h12).padStart(2, '0')}:${String(mm).padStart(2, '0')}`, meridiem };
 }
 
-function medicineSlotKo(index: number): string {
-  if (index === 0) return '아침';
-  if (index === 1) return '점심';
-  if (index === 2) return '저녁';
-  return '추가';
+/** 목표 상세에 저장된 아침·점심·저녁(켜진 슬롯만, 순서 고정) */
+function buildMedicineEnabledSlots(medCfg: {
+  morningOn: boolean;
+  lunchOn: boolean;
+  dinnerOn: boolean;
+  morningTime: string;
+  lunchTime: string;
+  dinnerTime: string;
+}): Array<{ key: string; labelKo: string; timeRaw: string; minutes: number }> {
+  const out: Array<{ key: string; labelKo: string; timeRaw: string; minutes: number }> = [];
+  const add = (key: string, labelKo: string, timeRaw: string) => {
+    const m = parseHHmmToMinutes(timeRaw);
+    const minutes = m != null ? m : 0;
+    out.push({ key, labelKo, timeRaw, minutes });
+  };
+  if (medCfg.morningOn) add('m', '아침', medCfg.morningTime);
+  if (medCfg.lunchOn) add('l', '점심', medCfg.lunchTime);
+  if (medCfg.dinnerOn) add('d', '저녁', medCfg.dinnerTime);
+  return out;
 }
 
 export function ActivitySessionPage() {
@@ -157,13 +185,12 @@ export function ActivitySessionPage() {
   const blockId = pickParam(params.blockId, '');
   const liveAction = pickParam(params.liveAction, '');
 
-  const { blocks, completedBlockIds, skippedBlockIds, completeBlock, skipBlock } = useDayPlanStore(
+  const { blocks, completedBlockIds, skippedBlockIds, completeBlock } = useDayPlanStore(
     useShallow((s) => ({
       blocks: s.blocks,
       completedBlockIds: s.completedBlockIds,
       skippedBlockIds: s.skippedBlockIds,
       completeBlock: s.completeBlock,
-      skipBlock: s.skipBlock,
     })),
   );
 
@@ -192,6 +219,8 @@ export function ActivitySessionPage() {
   const [workTasks, setWorkTasks] = useState<{ id: string; text: string; done: boolean }[] | null>(null);
   /** 수분섭취 세션에서 목표 상세 저장과 동기화되는 섭취량(ml) */
   const [waterSessionDrankMl, setWaterSessionDrankMl] = useState<number | null>(null);
+  /** 목표 상세 저장 후 동일 categoryKey로 useMemo가 갱신되도록 함 */
+  const [goalDetailStorageTick, setGoalDetailStorageTick] = useState(0);
   const autoFinishTriggeredRef = useRef(false);
   const handledLiveActionRef = useRef<string | null>(null);
 
@@ -214,10 +243,19 @@ export function ActivitySessionPage() {
   const timeRange = block ? formatBlockTimeRange(block) : '';
   const isQuickMemoSession = block?.blockOrigin === 'quickMemo';
 
+  useFocusEffect(
+    useCallback(() => {
+      setGoalDetailStorageTick((n) => n + 1);
+    }, []),
+  );
+
   const categoryConfigs = useMemo(() => {
     const base = emptyCategorySessionConfigs();
     if (!categoryKey) return base;
-    const raw = loadGoalDetailCategoryConfig(categoryKey);
+    const raw =
+      block?.id != null
+        ? loadGoalDetailBlockConfig(block.id) ?? loadGoalDetailCategoryConfig(categoryKey)
+        : loadGoalDetailCategoryConfig(categoryKey);
     switch (categoryKey) {
       case 'reading':
         return { ...base, reading: normalizeReadingLiveActivityConfig(raw) };
@@ -238,7 +276,7 @@ export function ActivitySessionPage() {
       default:
         return base;
     }
-  }, [categoryKey]);
+  }, [categoryKey, block?.id, goalDetailStorageTick]);
 
   useEffect(() => {
     if (categoryKey !== 'work' || !categoryConfigs.work) {
@@ -396,33 +434,30 @@ export function ActivitySessionPage() {
     }
   }, [block, completeBlock, router]);
 
-  const navigateAfterSkip = useCallback(() => {
-    if (!block) {
-      safeRouterBack(router);
-      return;
-    }
-    skipBlock(block.id);
-    const s = useDayPlanStore.getState();
-    void rescheduleDayPlanNotifications({
-      dateKey: s.dateKey,
-      blocks: s.blocks,
-      settings: useDayPlanNotificationStore.getState().toSettings(),
-      completedBlockIds: s.completedBlockIds,
-      skippedBlockIds: s.skippedBlockIds,
-    });
-    const next = getNextPendingAfter(
-      filterDayPlanFlowBlocks(s.blocks),
-      block.id,
-      s.completedBlockIds,
-      s.skippedBlockIds,
-    );
-    if (next) {
-      router.replace({ pathname: '/activity-session', params: { blockId: next.id } });
-    } else {
-      void endLockFlowLiveActivity();
-      safeRouterBack(router);
-    }
-  }, [block, router, skipBlock]);
+  /** 약 복용 기록 증감(체크/취소) — 저장소 반영 */
+  const updateMedicineTakenCount = useCallback(
+    (delta: 1 | -1) => {
+      if (!block || !categoryConfigs.medicine || isWaitingToStart) return;
+      const source = categoryConfigs.medicine;
+      const totalDoses = buildMedicineEnabledSlots(source).length;
+      if (totalDoses === 0) return;
+      const nextTaken = Math.max(0, Math.min(totalDoses, source.takenCount + delta));
+      if (nextTaken === source.takenCount) return;
+      const payload = normalizeMedicineDetailConfig({ ...source, takenCount: nextTaken });
+      saveGoalDetailCategoryConfig('medicine', payload);
+      saveGoalDetailBlockConfig(block.id, payload);
+      setGoalDetailStorageTick((n) => n + 1);
+    },
+    [block, categoryConfigs.medicine, isWaitingToStart],
+  );
+
+  const onMedicineDoseCheck = useCallback(() => {
+    updateMedicineTakenCount(1);
+  }, [updateMedicineTakenCount]);
+
+  const onMedicineDoseUndo = useCallback(() => {
+    updateMedicineTakenCount(-1);
+  }, [updateMedicineTakenCount]);
 
   const togglePause = useCallback(() => {
     if (!block) return;
@@ -538,67 +573,120 @@ export function ActivitySessionPage() {
         : checklist.checklistRows;
     const workRemainingCount = workRows.filter((r) => r.state !== 'completed' && r.state !== 'skipped').length;
 
+    const WK = CategoryImmersionTheme.work;
+    const planProg = workCfg.planMin > 0 ? Math.min(1, workCfg.doneMin / workCfg.planMin) : 0;
+    const planTrack01 = Math.max(planProg, progress);
+
     return (
-      <View style={workStyles.screen}>
-        <SafeAreaView style={workStyles.safe} edges={['top', 'bottom']}>
-          <View style={workStyles.topBar}>
-            <View style={workStyles.headerBtn} />
-            <ThemedText style={workStyles.topBarTitle} numberOfLines={1}>
-              {activityTitle || '작업'}
-            </ThemedText>
-            <View style={workStyles.headerBtn} />
-          </View>
-
-          <ScrollView
-            style={workStyles.scroll}
-            contentContainerStyle={workStyles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            bounces>
-            <View style={workStyles.anchorOuter}>
-              <IconSymbol name="briefcase.fill" size={100} color="rgba(255,255,255,0.85)" weight="light" />
-              <View style={workStyles.motionLines}>
-                <View style={[workStyles.motionLine, { width: 40 }]} />
-                <View style={[workStyles.motionLine, { width: 64 }]} />
-                <View style={[workStyles.motionLine, { width: 48 }]} />
-              </View>
-            </View>
-
-            <View style={workStyles.timerBlock}>
-              <ThemedText
-                style={workStyles.timerHMS}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.45}>
-                {formatClockHMS(timerSec)}
+      <SessionImmersionLayout
+        backgroundColor={WK.screenBg}
+        accentColor={WK.accent}
+        accentGlow="rgba(0, 0, 0, 0.07)"
+        onSurface={WK.onSurface}
+        muted={WK.muted}
+        brand={WK.brand}
+        aboutKicker={WK.aboutKicker}
+        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '작업 집중'}
+        iconName="briefcase.fill"
+        iconSize={92}
+        sessionKicker="작업 세션"
+        timerDisplay={
+          <ThemedText
+            style={waterStyles.timerHms}
+            lightColor={WK.onSurface}
+            darkColor={WK.onSurface}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.35}>
+            {formatClock(timerSec)}
+          </ThemedText>
+        }
+        flowCaption={activityTitle.trim() || '오늘 할 일에 집중해요'}
+        onBack={() => safeRouterBack(router)}
+        scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
+        bottomBar={
+          <ImmersionBottomControls
+            accentColor={WK.accent}
+            borderColor={WK.border}
+            paddingBottom={Math.max(insets.bottom, 14)}
+            onEndSession={navigateAfterComplete}
+            completeLabel="작업 완료"
+          />
+        }>
+            <ImmersionCardShell borderColor={WK.border}>
+              <ThemedText style={waterStyles.statLabel} lightColor={WK.muted} darkColor={WK.muted}>
+                집중 플랜
               </ThemedText>
-              <View style={workStyles.focusRow}>
-                <View style={workStyles.pulseDot} />
-                <ThemedText style={workStyles.focusKicker}>
-                  {isPaused
-                    ? '작업 일시정지'
-                    : isWaitingToStart
-                      ? '시작 대기'
-                      : '작업에 집중 중'}
+              <View style={waterStyles.goalRow}>
+                <ThemedText style={waterStyles.goalValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
+                  {String(workCfg.planMin)}
+                </ThemedText>
+                <ThemedText style={waterStyles.goalUnit} lightColor={WK.muted} darkColor={WK.muted}>
+                  분
                 </ThemedText>
               </View>
-              {workCfg.planMin > 0 ? (
-                <ThemedText style={workStyles.planHint}>
-                  집중 플랜 {workCfg.planMin}분 · 기록 {workCfg.doneMin}분
+              <ThemedText style={waterStyles.metaLine} lightColor={WK.muted} darkColor={WK.muted}>
+                기록 {workCfg.doneMin}분 · 세션 {Math.round(progress * 100)}%
+              </ThemedText>
+              <View style={waterStyles.hydrateTrack}>
+                <View
+                  style={[
+                    waterStyles.hydrateFill,
+                    { width: `${Math.round(planTrack01 * 100)}%`, backgroundColor: WK.accent, opacity: 0.35 },
+                  ]}
+                />
+              </View>
+            </ImmersionCardShell>
+
+            <ImmersionSplitRow>
+              <ImmersionHalfCard borderColor={WK.border}>
+                <ThemedText style={waterStyles.halfLabel} lightColor={WK.muted} darkColor={WK.muted}>
+                  기록 진행
                 </ThemedText>
-              ) : null}
-            </View>
+                <ThemedText style={waterStyles.halfValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
+                  {String(workCfg.doneMin)}
+                </ThemedText>
+                <ThemedText style={waterStyles.halfUnit} lightColor={WK.muted} darkColor={WK.muted}>
+                  분
+                </ThemedText>
+              </ImmersionHalfCard>
+              <ImmersionHalfCard borderColor={WK.border}>
+                <ThemedText style={waterStyles.halfLabel} lightColor={WK.muted} darkColor={WK.muted}>
+                  플로우 진행
+                </ThemedText>
+                <ThemedText style={waterStyles.halfValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
+                  {String(Math.round(progress * 100))}
+                </ThemedText>
+                <ThemedText style={waterStyles.halfUnit} lightColor={WK.muted} darkColor={WK.muted}>
+                  %
+                </ThemedText>
+              </ImmersionHalfCard>
+            </ImmersionSplitRow>
 
             <View style={workStyles.checklistSection}>
               <View style={workStyles.checklistHeaderRow}>
-                <ThemedText style={workStyles.checklistTitle}>해야 할 작업 리스트</ThemedText>
-                <ThemedText style={workStyles.checklistRemain}>
+                <ThemedText
+                  style={workStyles.checklistTitle}
+                  lightColor={CategoryImmersionTheme.work.onSurface}
+                  darkColor={CategoryImmersionTheme.work.onSurface}>
+                  해야 할 작업 리스트
+                </ThemedText>
+                <ThemedText
+                  style={workStyles.checklistRemain}
+                  lightColor={CategoryImmersionTheme.work.muted}
+                  darkColor={CategoryImmersionTheme.work.muted}>
                   남은 {workRemainingCount}개
                 </ThemedText>
               </View>
               <View style={workStyles.checklistList}>
                 {workRows.length === 0 ? (
                   <View style={[workStyles.glassPanel, workStyles.checklistEmpty]}>
-                    <ThemedText style={workStyles.checklistEmptyText}>표시할 플로우가 없습니다</ThemedText>
+                    <ThemedText
+                      style={workStyles.checklistEmptyText}
+                      lightColor={CategoryImmersionTheme.work.muted}
+                      darkColor={CategoryImmersionTheme.work.muted}>
+                      표시할 플로우가 없습니다
+                    </ThemedText>
                   </View>
                 ) : (
                   workRows.map((row) => {
@@ -620,11 +708,17 @@ export function ActivitySessionPage() {
                               done && workStyles.checklistItemTitleDone,
                               skipped && workStyles.checklistItemTitleSkip,
                             ]}
+                            lightColor={CategoryImmersionTheme.work.onSurface}
+                            darkColor={CategoryImmersionTheme.work.onSurface}
                             numberOfLines={2}>
                             {row.title}
                           </ThemedText>
                           {row.timeLabel ? (
-                            <ThemedText style={workStyles.checklistItemMeta} numberOfLines={1}>
+                            <ThemedText
+                              style={workStyles.checklistItemMeta}
+                              lightColor={CategoryImmersionTheme.work.muted}
+                              darkColor={CategoryImmersionTheme.work.muted}
+                              numberOfLines={1}>
                               {row.timeLabel}
                             </ThemedText>
                           ) : null}
@@ -645,8 +739,8 @@ export function ActivitySessionPage() {
                               done
                                 ? PRIMARY
                                 : skipped
-                                  ? 'rgba(255,255,255,0.12)'
-                                  : 'rgba(255,255,255,0.2)'
+                                  ? 'rgba(0,0,0,0.12)'
+                                  : 'rgba(0,0,0,0.22)'
                             }
                           />
                         </Pressable>
@@ -656,33 +750,7 @@ export function ActivitySessionPage() {
                 )}
               </View>
             </View>
-
-            <View style={workStyles.actionRow}>
-              <Pressable
-                accessibilityRole="button"
-                style={[workStyles.btnSecondary, isWaitingToStart && { opacity: 0.5 }]}
-                onPress={togglePause}
-                disabled={isWaitingToStart}>
-                <IconSymbol
-                  name={isPaused ? 'play.circle' : 'pause.circle'}
-                  size={22}
-                  color="#fff"
-                />
-                <ThemedText style={workStyles.btnSecondaryText}>
-                  {isPaused ? '계속하기' : '잠시 휴식'}
-                </ThemedText>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                style={workStyles.btnPrimary}
-                onPress={navigateAfterComplete}>
-                <IconSymbol name="power" size={22} color="#fff" />
-                <ThemedText style={workStyles.btnPrimaryText}>작업 종료</ThemedText>
-              </Pressable>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </View>
+      </SessionImmersionLayout>
     );
   }
 
@@ -691,82 +759,123 @@ export function ActivitySessionPage() {
     const readingCfg = categoryConfigs.reading;
     const timerSec = isWaitingToStart ? waitRemainingSec : remainingSec;
     const bookTitle = readingDisplayTitle(activityTitle, readingCfg);
-    const pageRange = `${readingCfg.startPage}p ~ ${readingCfg.targetPage}p`;
+    const pageRange = `${readingCfg.startPage}P ~ ${readingCfg.targetPage}P`;
+    const { pagesRead: pagesToRead, progressPct: readingProgressPct } = deriveReadingProgress(readingCfg);
+    const R = CategoryImmersionTheme.reading;
+    const readTrack01 = Math.max(progress, Math.min(1, Math.max(0, readingProgressPct) / 100));
 
     return (
-      <View style={readStyles.screen}>
-        <SafeAreaView style={readStyles.safe} edges={['top', 'bottom']}>
-          <View style={readStyles.topBar}>
-            <View style={readStyles.headerBtn} />
-            <ThemedText style={readStyles.topBarTitle} numberOfLines={1}>
-              독서
+      <SessionImmersionLayout
+        backgroundColor={R.screenBg}
+        accentColor={READING_EMERALD}
+        accentGlow="rgba(16, 185, 129, 0.16)"
+        onSurface={R.onSurface}
+        muted={R.muted}
+        brand={R.brand}
+        aboutKicker={R.aboutKicker}
+        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '독서 집중'}
+        iconName="book.fill"
+        iconSize={92}
+        sessionKicker="독서 세션"
+        timerDisplay={
+          <ThemedText
+            style={waterStyles.timerHms}
+            lightColor={R.onSurface}
+            darkColor={R.onSurface}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.35}>
+            {formatClock(timerSec)}
+          </ThemedText>
+        }
+        flowCaption={activityTitle.trim() || '독서'}
+        onBack={() => safeRouterBack(router)}
+        scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
+        bottomBar={
+          <ImmersionBottomControls
+            accentColor={READING_EMERALD}
+            borderColor={R.border}
+            paddingBottom={Math.max(insets.bottom, 14)}
+            onEndSession={navigateAfterComplete}
+            completeLabel="독서 완료"
+          />
+        }>
+        <ImmersionCardShell borderColor={R.border}>
+          <ThemedText style={waterStyles.statLabel} lightColor={R.muted} darkColor={R.muted}>
+            오늘 읽기 구간
+          </ThemedText>
+          <View style={waterStyles.goalRow}>
+            <ThemedText style={waterStyles.goalValue} lightColor={R.onSurface} darkColor={R.onSurface}>
+              {pageRange}
             </ThemedText>
-            <View style={readStyles.headerBtn} />
           </View>
+          <ThemedText style={waterStyles.metaLine} lightColor={R.muted} darkColor={R.muted} numberOfLines={2}>
+            {bookTitle}
+          </ThemedText>
+          <View style={waterStyles.hydrateTrack}>
+            <View
+              style={[
+                waterStyles.hydrateFill,
+                {
+                  width: `${Math.round(readTrack01 * 100)}%`,
+                  backgroundColor: READING_EMERALD,
+                  opacity: 0.45,
+                },
+              ]}
+            />
+          </View>
+        </ImmersionCardShell>
 
-          <ScrollView
-            style={readStyles.scroll}
-            contentContainerStyle={readStyles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            bounces>
-            <View style={readStyles.bookIconWrap}>
-              <View style={readStyles.bookCircle}>
-                <IconSymbol name="book.fill" size={56} color={READING_EMERALD_TEXT} weight="light" />
-              </View>
-            </View>
+        <ImmersionSplitRow>
+          <ImmersionHalfCard borderColor={R.border}>
+            <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
+              시작 페이지
+            </ThemedText>
+            <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
+              {String(readingCfg.startPage)}
+            </ThemedText>
+            <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
+              p
+            </ThemedText>
+          </ImmersionHalfCard>
+          <ImmersionHalfCard borderColor={R.border}>
+            <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
+              읽을 분량
+            </ThemedText>
+            <ThemedText style={waterStyles.halfValue} lightColor={R.accent} darkColor={R.accent}>
+              {String(pagesToRead)}
+            </ThemedText>
+            <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
+              p
+            </ThemedText>
+          </ImmersionHalfCard>
+        </ImmersionSplitRow>
 
-            <View style={readStyles.infoBlock}>
-              <ThemedText style={readStyles.bookKicker}>몰입 중인 도서</ThemedText>
-              <ThemedText style={readStyles.bookTitle}>{bookTitle}</ThemedText>
-
-              <View style={readStyles.rangeBlock}>
-                <ThemedText style={readStyles.rangeLabel}>오늘의 목표 범위</ThemedText>
-                <ThemedText style={readStyles.rangeValue}>{pageRange}</ThemedText>
-              </View>
-            </View>
-
-            <View style={readStyles.timerSection}>
-              <ThemedText
-                style={readStyles.timerHMS}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.4}>
-                {formatClockHMS(timerSec)}
-              </ThemedText>
-              <View style={readStyles.readingStatusRow}>
-                <View style={readStyles.pulseDotReading} />
-                <ThemedText style={readStyles.readingStatusText}>
-                  {isPaused ? '독서 일시정지' : isWaitingToStart ? '시작 대기' : '독서 중'}
-                </ThemedText>
-              </View>
-            </View>
-
-            <View style={readStyles.actionRow}>
-              <Pressable
-                accessibilityRole="button"
-                style={[readStyles.btnSecondary, isWaitingToStart && { opacity: 0.5 }]}
-                onPress={togglePause}
-                disabled={isWaitingToStart}>
-                <IconSymbol
-                  name={isPaused ? 'play.circle' : 'pause.circle'}
-                  size={22}
-                  color="#fff"
-                />
-                <ThemedText style={readStyles.btnSecondaryText}>
-                  {isPaused ? '계속하기' : '잠시 멈춤'}
-                </ThemedText>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                style={readStyles.btnPrimaryReading}
-                onPress={navigateAfterComplete}>
-                <IconSymbol name="checkmark.circle.fill" size={22} color="#fff" />
-                <ThemedText style={readStyles.btnPrimaryReadingText}>독서 완료</ThemedText>
-              </Pressable>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </View>
+        <ImmersionSplitRow>
+          <ImmersionHalfCard borderColor={R.border}>
+            <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
+              목표 페이지
+            </ThemedText>
+            <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
+              {String(readingCfg.targetPage)}
+            </ThemedText>
+            <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
+              p
+            </ThemedText>
+          </ImmersionHalfCard>
+          <ImmersionHalfCard borderColor={R.border}>
+            <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
+              플로우 진행
+            </ThemedText>
+            <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
+              {String(Math.round(progress * 100))}
+            </ThemedText>
+            <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
+              %
+            </ThemedText>
+          </ImmersionHalfCard>
+        </ImmersionSplitRow>
+      </SessionImmersionLayout>
     );
   }
 
@@ -776,227 +885,327 @@ export function ActivitySessionPage() {
     const elapsedSec = isWaitingToStart ? 0 : Math.max(0, totalSec - remainingSec);
     const goalSec = Math.max(60, fastingCfg.fastingMin * 60);
     const fastProgress = Math.min(1, elapsedSec / goalSec);
-    const ringStroke = 20;
-    const ringSize = 288;
+    const F = CategoryImmersionTheme.fasting;
 
     return (
-      <View style={fastStyles.screen}>
-        <SafeAreaView style={fastStyles.safe} edges={['top', 'bottom']}>
-          <View style={fastStyles.topBar}>
-            <Pressable accessibilityRole="button" style={fastStyles.headerBtn} onPress={() => safeRouterBack(router)}>
-              <IconSymbol name="chevron.left" size={22} color={PRIMARY} />
-            </Pressable>
-            <ThemedText style={fastStyles.topBarTitle} numberOfLines={1}>
-              단식
+      <SessionImmersionLayout
+        backgroundColor={F.screenBg}
+        accentColor={FAST_ACCENT}
+        accentGlow={FAST_GLOW}
+        onSurface={F.onSurface}
+        muted={F.muted}
+        brand={F.brand}
+        aboutKicker={F.aboutKicker}
+        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '단식'}
+        iconName="hourglass"
+        iconSize={88}
+        sessionKicker="단식 세션"
+        timerDisplay={
+          <ThemedText
+            style={waterStyles.timerHms}
+            lightColor={F.onSurface}
+            darkColor={F.onSurface}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.35}>
+            {formatClockHMS(elapsedSec)}
+          </ThemedText>
+        }
+        flowCaption={activityTitle.trim() ? activityTitle : '목표까지 타이머로 맞춰요'}
+        onBack={() => safeRouterBack(router)}
+        scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
+        bottomBar={
+          <ImmersionBottomControls
+            accentColor={FAST_ACCENT}
+            borderColor={F.border}
+            paddingBottom={Math.max(insets.bottom, 14)}
+            onEndSession={navigateAfterComplete}
+            completeLabel="단식 완료"
+          />
+        }>
+        <ImmersionCardShell borderColor={F.border}>
+          <ThemedText style={waterStyles.statLabel} lightColor={F.muted} darkColor={F.muted}>
+            단식 목표
+          </ThemedText>
+          <View style={waterStyles.goalRow}>
+            <ThemedText style={waterStyles.goalValue} lightColor={F.onSurface} darkColor={F.onSurface}>
+              {formatDurationMinKo(fastingCfg.fastingMin)}
             </ThemedText>
-            <View style={fastStyles.headerBtn} />
           </View>
+          <ThemedText style={waterStyles.metaLine} lightColor={F.muted} darkColor={F.muted}>
+            {elapsedSec < 60
+              ? '방금 시작 · 목표까지 타이머를 따라가요'
+              : `${formatDurationMinKo(Math.floor(elapsedSec / 60))} 경과 · ${fastingGoalLabelKo(fastingCfg.fastingMin)}`}
+          </ThemedText>
+          <View style={waterStyles.hydrateTrack}>
+            <View
+              style={[
+                waterStyles.hydrateFill,
+                { width: `${Math.round(fastProgress * 100)}%`, backgroundColor: FAST_ACCENT },
+              ]}
+            />
+          </View>
+        </ImmersionCardShell>
 
-          <ScrollView
-            style={fastStyles.scroll}
-            contentContainerStyle={fastStyles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            bounces>
-            <View style={[fastStyles.ringWrap, { width: ringSize, height: ringSize }]}>
-              <FastingGradientRing
-                size={ringSize}
-                strokeWidth={ringStroke}
-                progress={fastProgress}
-                gradientId={`fastingRing-${block.id}`}
-              />
-              <View style={fastStyles.ringIconOverlay} pointerEvents="none">
-                <View style={fastStyles.ringCenterIcon}>
-                  <IconSymbol name="clock.badge.checkmark" size={40} color="rgba(255,255,255,0.85)" />
-                </View>
-              </View>
-            </View>
-
-            <View style={fastStyles.timerBlock}>
-              <ThemedText
-                style={fastStyles.timerHMS}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.45}>
-                {formatClockHMS(elapsedSec)}
-              </ThemedText>
-              <ThemedText style={fastStyles.timerCaption}>단식 진행 시간</ThemedText>
-            </View>
-
-            <View style={fastStyles.cards}>
-              <View style={[fastStyles.glassCard, fastStyles.cardRow]}>
-                <View style={fastStyles.cardIconWrap}>
-                  <IconSymbol name="hourglass" size={26} color="rgb(251, 146, 60)" />
-                </View>
-                <View style={fastStyles.cardTextCol}>
-                  <ThemedText style={fastStyles.cardLabel}>마지막 식사</ThemedText>
-                  <ThemedText style={fastStyles.cardValue}>
-                    {elapsedSec < 60
-                      ? '방금 시작'
-                      : `${formatDurationMinKo(Math.floor(elapsedSec / 60))} 경과`}
-                  </ThemedText>
-                </View>
-              </View>
-
-              <View style={[fastStyles.glassCard, fastStyles.cardRow]}>
-                <View style={[fastStyles.cardIconWrap, fastStyles.cardIconWrapPrimary]}>
-                  <IconSymbol name="chart.line.uptrend.xyaxis" size={26} color={PRIMARY} />
-                </View>
-                <View style={fastStyles.cardTextCol}>
-                  <ThemedText style={fastStyles.cardLabel}>현재 상태</ThemedText>
-                  <ThemedText style={[fastStyles.cardValue, fastStyles.cardValuePrimary]}>
-                    {fastingStageLabelKo(fastProgress)}
-                  </ThemedText>
-                </View>
-              </View>
-
-              <View style={[fastStyles.glassCard, fastStyles.cardRow]}>
-                <View style={fastStyles.cardIconWrap}>
-                  <IconSymbol name="clock.badge.checkmark" size={26} color={PRIMARY} />
-                </View>
-                <View style={fastStyles.cardTextCol}>
-                  <ThemedText style={fastStyles.cardLabel}>목표 시간</ThemedText>
-                  <ThemedText style={fastStyles.cardValue}>
-                    {fastingGoalLabelKo(fastingCfg.fastingMin)}
-                  </ThemedText>
-                </View>
-              </View>
-            </View>
-
-            <View style={fastStyles.actionRow}>
-              <Pressable
-                accessibilityRole="button"
-                style={[fastStyles.btnSecondary, isWaitingToStart && { opacity: 0.5 }]}
-                onPress={togglePause}
-                disabled={isWaitingToStart}>
-                <IconSymbol
-                  name={isPaused ? 'play.circle' : 'pause.circle'}
-                  size={22}
-                  color="#fff"
-                />
-                <ThemedText style={fastStyles.btnSecondaryText}>
-                  {isPaused ? '계속하기' : '잠시 멈춤'}
-                </ThemedText>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                style={fastStyles.btnPrimaryFast}
-                onPress={navigateAfterComplete}>
-                <IconSymbol name="checkmark.circle.fill" size={22} color="#fff" />
-                <ThemedText style={fastStyles.btnPrimaryFastText}>단식 완료</ThemedText>
-              </Pressable>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </View>
+        <ImmersionSplitRow>
+          <ImmersionHalfCard borderColor={F.border}>
+            <ThemedText style={waterStyles.halfLabel} lightColor={F.muted} darkColor={F.muted}>
+              현재 단계
+            </ThemedText>
+            <ThemedText
+              style={[waterStyles.halfValue, { fontSize: 17, lineHeight: 22, fontWeight: '800' }]}
+              lightColor={FAST_ACCENT}
+              darkColor={FAST_ACCENT}
+              numberOfLines={2}
+              adjustsFontSizeToFit>
+              {fastingStageLabelKo(fastProgress)}
+            </ThemedText>
+          </ImmersionHalfCard>
+          <ImmersionHalfCard borderColor={F.border}>
+            <ThemedText style={waterStyles.halfLabel} lightColor={F.muted} darkColor={F.muted}>
+              진행도
+            </ThemedText>
+            <ThemedText style={waterStyles.halfValue} lightColor={F.onSurface} darkColor={F.onSurface}>
+              {Math.round(fastProgress * 100)}
+            </ThemedText>
+            <ThemedText style={waterStyles.halfUnit} lightColor={F.muted} darkColor={F.muted}>
+              %
+            </ThemedText>
+          </ImmersionHalfCard>
+        </ImmersionSplitRow>
+      </SessionImmersionLayout>
     );
   }
 
   // ── Full-screen medicine session (약 복용) ──
   if (categoryKey === 'medicine' && !isQuickMemoSession && categoryConfigs.medicine) {
     const medCfg = categoryConfigs.medicine;
-    const totalDoses = Math.max(1, medCfg.dosesPerDay);
-    const takenCount = Math.max(0, Math.min(totalDoses, medCfg.takenCount));
-    const activeIndex = Math.min(takenCount, totalDoses - 1);
-    const scheduleLimit = Math.min(totalDoses, 4);
-    const intervalMin = Math.max(60, Math.floor((24 * 60) / totalDoses));
-    const progressWidth = `${Math.max(8, Math.round((takenCount / totalDoses) * 100))}%` as `${number}%`;
-    const currentSlot = medicineSlotKo(activeIndex);
-    const scheduleRows = Array.from({ length: scheduleLimit }, (_, idx) => {
-      const slotIndex = idx;
-      const atMinutes = (block.startMinutes + intervalMin * slotIndex) % (24 * 60);
-      const clock = formatMeridiemClock(atMinutes);
-      const status = slotIndex < takenCount ? '완료' : slotIndex === activeIndex ? '진행중' : '예정';
+    const enabledSlots = buildMedicineEnabledSlots(medCfg);
+    const totalDoses = enabledSlots.length;
+    const takenCount =
+      totalDoses === 0 ? 0 : Math.max(0, Math.min(totalDoses, medCfg.takenCount));
+    const progressWidth = (
+      totalDoses === 0 ? '0%' : `${Math.max(8, Math.round((takenCount / totalDoses) * 100))}%`
+    ) as `${number}%`;
+    const currentSlotLabel =
+      totalDoses === 0
+        ? '슬롯 없음'
+        : takenCount < totalDoses
+          ? enabledSlots[takenCount]?.labelKo ?? '—'
+          : '오늘 분량 완료';
+    const scheduleRows = enabledSlots.map((slot, slotIndex) => {
+      const clock = formatMeridiemClock(slot.minutes);
+      const isDone = slotIndex < takenCount;
+      const isCurrent = !isDone && slotIndex === takenCount;
+      const isScheduled = slotIndex > takenCount;
       return {
-        key: `${slotIndex}-${atMinutes}`,
+        key: slot.key,
         hhmm: clock.hhmm,
-        title: `${medicineSlotKo(slotIndex)} 약 복용`,
-        status,
-        isActive: slotIndex === activeIndex,
-        isDone: slotIndex < takenCount,
+        meridiem: clock.meridiem,
+        title: `${slot.labelKo} 약 복용`,
+        isDone,
+        isCurrent,
+        isScheduled,
+        isActive: isCurrent,
+        timeRaw: slot.timeRaw,
       };
     });
+    /** 아직 복용하지 않은 일정 중, 지금 차례 이후(예정)만 */
+    const upcomingNotTaken = enabledSlots.filter((_, i) => i > takenCount);
+    const upcomingSummaryLine =
+      upcomingNotTaken.length > 0
+        ? upcomingNotTaken.map((s) => `${s.labelKo} ${s.timeRaw}`).join(' · ')
+        : null;
     const headerClock = formatMeridiemClock(block.startMinutes);
 
+    const M = CategoryImmersionTheme.medicine;
+
     return (
-      <View style={medStyles.screen}>
-        <SafeAreaView style={medStyles.safe} edges={['top', 'bottom']}>
-          <ScrollView
-            style={medStyles.scroll}
-            contentContainerStyle={medStyles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            bounces={false}>
-            <View style={medStyles.timerSection}>
-              <ThemedText style={medStyles.timerText}>
-                {headerClock.hhmm}{' '}
-                <ThemedText style={medStyles.timerMeridiem}>{headerClock.meridiem}</ThemedText>
+      <SessionImmersionLayout
+        backgroundColor={M.screenBg}
+        accentColor={MED_TEAL}
+        accentGlow={MED_TEAL_GLOW}
+        onSurface={M.onSurface}
+        muted={M.muted}
+        brand={M.brand}
+        aboutKicker={M.aboutKicker}
+        headerTitle={
+          isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : activityTitle.trim() || '약 복용'
+        }
+        iconName="pills.fill"
+        iconSize={88}
+        sessionKicker="예약된 시간"
+        timerDisplay={
+          <ThemedText
+            style={waterStyles.timerHms}
+            lightColor={M.onSurface}
+            darkColor={M.onSurface}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.35}>
+            {headerClock.hhmm}
+            <ThemedText
+              style={{ fontSize: 26, lineHeight: 32, fontWeight: '600', letterSpacing: 0.5 }}
+              lightColor={M.muted}
+              darkColor={M.muted}>
+              {` ${headerClock.meridiem}`}
+            </ThemedText>
+          </ThemedText>
+        }
+        flowCaption={`${medCfg.doseLabel.trim() || '약'} · ${
+          totalDoses === 0 ? '목표 상세에서 슬롯을 추가해 주세요' : currentSlotLabel
+        }`}
+        onBack={() => safeRouterBack(router)}
+        scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
+        bottomBar={
+          <ImmersionBottomControls
+            accentColor={MED_TEAL}
+            borderColor={M.border}
+            paddingBottom={Math.max(insets.bottom, 14)}
+            onEndSession={navigateAfterComplete}
+            completeLabel="복용 완료"
+            disabled={isWaitingToStart}
+          />
+        }>
+        <ImmersionCardShell borderColor={M.border}>
+          <ThemedText style={waterStyles.statLabel} lightColor={M.muted} darkColor={M.muted}>
+            오늘 복용
+          </ThemedText>
+          <View style={waterStyles.goalRow}>
+            <ThemedText style={waterStyles.goalValue} lightColor={M.onSurface} darkColor={M.onSurface}>
+              {takenCount}
+            </ThemedText>
+            <ThemedText style={waterStyles.goalUnit} lightColor={M.muted} darkColor={M.muted}>
+              {` / ${totalDoses}회`}
+            </ThemedText>
+          </View>
+          <ThemedText style={waterStyles.metaLine} lightColor={M.muted} darkColor={M.muted}>
+            {medCfg.doseLabel} · 복용 시간입니다
+          </ThemedText>
+          <View style={waterStyles.hydrateTrack}>
+            <View
+              style={[
+                waterStyles.hydrateFill,
+                { width: progressWidth, backgroundColor: MED_TEAL },
+              ]}
+            />
+          </View>
+        </ImmersionCardShell>
+
+        <ImmersionSplitRow>
+          <ImmersionHalfCard borderColor={M.border}>
+            <ThemedText style={waterStyles.halfLabel} lightColor={M.muted} darkColor={M.muted}>
+              현재 슬롯
+            </ThemedText>
+            <ThemedText style={waterStyles.halfValue} lightColor={M.onSurface} darkColor={M.onSurface}>
+              {currentSlotLabel}
+            </ThemedText>
+          </ImmersionHalfCard>
+          <ImmersionHalfCard borderColor={M.border}>
+            <ThemedText style={waterStyles.halfLabel} lightColor={M.muted} darkColor={M.muted}>
+              남은 복용
+            </ThemedText>
+            <ThemedText style={waterStyles.halfValue} lightColor={M.onSurface} darkColor={M.onSurface}>
+              {Math.max(0, totalDoses - takenCount)}
+            </ThemedText>
+            <ThemedText style={waterStyles.halfUnit} lightColor={M.muted} darkColor={M.muted}>
+              회
+            </ThemedText>
+          </ImmersionHalfCard>
+        </ImmersionSplitRow>
+
+        <ImmersionCardShell borderColor={M.border}>
+          <ThemedText style={medScheduleStyles.scheduleHeading} lightColor={M.muted} darkColor={M.muted}>
+            오늘의 일정
+          </ThemedText>
+          {upcomingSummaryLine ? (
+            <ThemedText style={medScheduleStyles.scheduleUpcomingLine} lightColor={M.onSurface} darkColor={M.onSurface}>
+              이후 예정 · {upcomingSummaryLine}
+            </ThemedText>
+          ) : null}
+          <View style={medScheduleStyles.scheduleList}>
+            {scheduleRows.length === 0 ? (
+              <ThemedText style={medScheduleStyles.scheduleEmpty} lightColor={M.muted} darkColor={M.muted}>
+                복용 슬롯이 없어요. 목표 상세 설정에서 아침·점심·저녁을 켜 주세요.
               </ThemedText>
-              <ThemedText style={medStyles.timerCaption}>예약 시간</ThemedText>
-            </View>
-
-            <View style={medStyles.mainCard}>
-              <View style={medStyles.cardGlow} />
-              <View style={medStyles.cardInner}>
-                <View style={medStyles.pillCircle}>
-                  <IconSymbol name="pills.fill" size={36} color="#fff" />
-                </View>
-
-                <View style={medStyles.titleBlock}>
-                  <View style={medStyles.badge}>
-                    <ThemedText style={medStyles.badgeText}>복용 시간입니다</ThemedText>
+            ) : null}
+            {scheduleRows.map((row, rowIndex) => (
+              <View
+                key={row.key}
+                style={[
+                  medScheduleStyles.scheduleCard,
+                  row.isCurrent && medScheduleStyles.scheduleCardActive,
+                  row.isScheduled && medScheduleStyles.scheduleCardUpcoming,
+                ]}>
+                <View
+                  style={[medScheduleStyles.scheduleLeft, row.isDone && medScheduleStyles.scheduleLeftMuted]}>
+                  <View style={medScheduleStyles.scheduleTimeRow}>
+                    <ThemedText
+                      style={medScheduleStyles.scheduleTime}
+                      lightColor={row.isCurrent ? MED_TEAL : row.isScheduled ? M.onSurface : M.muted}
+                      darkColor={row.isCurrent ? MED_TEAL : row.isScheduled ? M.onSurface : M.muted}>
+                      {row.hhmm}
+                    </ThemedText>
+                    <ThemedText
+                      style={medScheduleStyles.scheduleMeridiem}
+                      lightColor={row.isCurrent ? MED_TEAL : M.muted}
+                      darkColor={row.isCurrent ? MED_TEAL : M.muted}>
+                      {row.meridiem}
+                    </ThemedText>
                   </View>
-                  <ThemedText style={medStyles.title}>{medCfg.doseLabel}</ThemedText>
-                  <ThemedText style={medStyles.subtitle}>
-                    {medCfg.doseLabel} ({currentSlot} 복용)
-                  </ThemedText>
-                </View>
-
-                <View style={medStyles.progressTrack}>
-                  <View style={[medStyles.progressFill, { width: progressWidth }]} />
-                </View>
-              </View>
-            </View>
-
-            <View style={medStyles.scheduleSection}>
-              <ThemedText style={medStyles.scheduleHeading}>오늘의 일정</ThemedText>
-              <View style={medStyles.scheduleList}>
-                {scheduleRows.map((row) => (
-                  <View
-                    key={row.key}
-                    style={[medStyles.scheduleCard, row.isActive && medStyles.scheduleCardActive]}>
-                    <View style={[medStyles.scheduleLeft, !row.isActive && medStyles.scheduleLeftMuted]}>
-                      <ThemedText style={[medStyles.scheduleTime, row.isActive && medStyles.scheduleTimeActive]}>
-                        {row.hhmm}
-                      </ThemedText>
-                      <View>
-                        <ThemedText style={medStyles.scheduleTitle}>{row.title}</ThemedText>
-                        <ThemedText style={medStyles.scheduleMeta}>
-                          {row.isDone ? '완료' : row.isActive ? '현재 복용' : '예정'}
-                        </ThemedText>
-                      </View>
-                    </View>
-                    <IconSymbol
-                      name={row.isDone || row.isActive ? 'checkmark.circle.fill' : 'clock'}
-                      size={20}
-                      color={row.isDone || row.isActive ? MED_PRIMARY : 'rgba(156,163,175,0.9)'}
-                    />
+                  <View>
+                    <ThemedText
+                      style={medScheduleStyles.scheduleTitle}
+                      lightColor={M.onSurface}
+                      darkColor={M.onSurface}>
+                      {row.title}
+                    </ThemedText>
+                    <ThemedText
+                      style={medScheduleStyles.scheduleMeta}
+                      lightColor={row.isScheduled ? MED_TEAL : M.muted}
+                      darkColor={row.isScheduled ? MED_TEAL : M.muted}>
+                      {row.isDone ? '완료' : row.isCurrent ? '현재 복용' : '예정 · 아직 복용 전'}
+                    </ThemedText>
                   </View>
-                ))}
+                </View>
+                {row.isDone ? (
+                  rowIndex === takenCount - 1 ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${row.title} 복용 체크 취소`}
+                      disabled={isWaitingToStart}
+                      onPress={onMedicineDoseUndo}
+                      style={[
+                        medScheduleStyles.scheduleUndoBtn,
+                        isWaitingToStart && medScheduleStyles.scheduleCheckBtnDisabled,
+                      ]}>
+                      <IconSymbol name="arrow.uturn.backward" size={12} color={MED_TEAL} />
+                      <ThemedText style={medScheduleStyles.scheduleUndoBtnText}>취소</ThemedText>
+                    </Pressable>
+                  ) : (
+                    <IconSymbol name="checkmark.circle.fill" size={20} color={MED_TEAL} />
+                  )
+                ) : row.isCurrent ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${row.title} 복용 체크`}
+                    disabled={isWaitingToStart}
+                    onPress={onMedicineDoseCheck}
+                    style={[
+                      medScheduleStyles.scheduleCheckBtn,
+                      isWaitingToStart && medScheduleStyles.scheduleCheckBtnDisabled,
+                    ]}>
+                    <IconSymbol name="checkmark" size={13} color="#ffffff" />
+                    <ThemedText style={medScheduleStyles.scheduleCheckBtnText}>복용 체크</ThemedText>
+                  </Pressable>
+                ) : (
+                  <IconSymbol name="clock" size={20} color="rgba(13, 148, 136, 0.55)" />
+                )}
               </View>
-            </View>
-
-            <View style={medStyles.actionRow}>
-              <Pressable accessibilityRole="button" style={medStyles.btnGhost} onPress={() => safeRouterBack(router)}>
-                <IconSymbol name="chevron.left" size={20} color="#fff" />
-                <ThemedText style={medStyles.btnGhostText}>뒤로</ThemedText>
-              </Pressable>
-              <Pressable accessibilityRole="button" style={medStyles.btnPrimary} onPress={navigateAfterComplete}>
-                <IconSymbol name="checkmark.circle.fill" size={22} color="#fff" />
-                <ThemedText style={medStyles.btnPrimaryText}>복용 완료</ThemedText>
-              </Pressable>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </View>
+            ))}
+          </View>
+        </ImmersionCardShell>
+      </SessionImmersionLayout>
     );
   }
 
@@ -1012,105 +1221,131 @@ export function ActivitySessionPage() {
     const timerSec = isWaitingToStart ? waitRemainingSec : remainingSec;
     const addIntakeDisabled = isWaitingToStart || (wCfg.goalMl > 0 && drank >= wCfg.goalMl);
 
+    const W = CategoryImmersionTheme.water;
+
     return (
-      <View style={waterStyles.screen}>
-        <SafeAreaView style={waterStyles.safe} edges={['top', 'bottom']}>
-          <View style={waterStyles.topHeader}>
-            <Pressable
-              accessibilityRole="button"
-              style={waterStyles.headerBtn}
-              onPress={() => safeRouterBack(router)}>
-              <IconSymbol name="chevron.left" size={22} color={WATER_CYAN} />
-            </Pressable>
-            <ThemedText style={waterStyles.topHeaderTitle} lightColor="#f4f4f5" darkColor="#f4f4f5">
-              {isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '수분섭취 집중'}
-            </ThemedText>
-            <View style={waterStyles.headerBtn} />
-          </View>
-
-          <ScrollView
-            style={waterStyles.scroll}
-            contentContainerStyle={[
-              waterStyles.scrollContent,
-              { paddingBottom: Math.max(insets.bottom, 16) + 120 },
-            ]}
-            showsVerticalScrollIndicator={false}
-            bounces={false}>
-            <View style={waterStyles.anchorOuter}>
-              <View style={waterStyles.anchorGlow} />
-              <View style={waterStyles.anchorWrap}>
-                <IconSymbol name="drop.fill" size={92} color="#ecfeff" weight="light" />
-              </View>
-              <View style={waterStyles.rippleRow}>
-                <View style={[waterStyles.ripple, { width: 36 }]} />
-                <View style={[waterStyles.ripple, { width: 56 }]} />
-                <View style={[waterStyles.ripple, { width: 44 }]} />
-              </View>
-            </View>
-
-            <View style={waterStyles.timerBlock}>
-              <ThemedText style={waterStyles.timerKicker} lightColor="rgba(34,211,238,0.85)" darkColor="rgba(34,211,238,0.85)">
-                수분섭취 세션
-              </ThemedText>
-              <ThemedText style={waterStyles.timerHms} lightColor="#fff" darkColor="#fff">
-                {formatClock(timerSec)}
-              </ThemedText>
-              <ThemedText style={waterStyles.flowCaption} lightColor="rgba(161,161,170,0.95)" darkColor="rgba(161,161,170,0.95)">
-                {activityTitle.trim() ? activityTitle : '오늘의 물 목표에 맞춰요'}
-              </ThemedText>
-            </View>
-
-            <View style={waterStyles.grid}>
-              <View style={[waterStyles.glass, waterStyles.mainStatCard]}>
-                <ThemedText style={waterStyles.statLabel} lightColor="rgba(165,243,252,0.65)" darkColor="rgba(165,243,252,0.65)">
+      <SessionImmersionLayout
+        backgroundColor={W.screenBg}
+        accentColor={WATER_CYAN}
+        accentGlow="rgba(34, 211, 238, 0.18)"
+        onSurface={W.onSurface}
+        muted={W.muted}
+        brand={W.brand}
+        aboutKicker={W.aboutKicker}
+        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '수분섭취 집중'}
+        iconName="drop.fill"
+        iconSize={92}
+        sessionKicker="수분섭취 세션"
+        timerDisplay={
+          <ThemedText
+            style={waterStyles.timerHms}
+            lightColor={W.onSurface}
+            darkColor={W.onSurface}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.35}>
+            {formatClock(timerSec)}
+          </ThemedText>
+        }
+        flowCaption={activityTitle.trim() ? activityTitle : '오늘의 물 목표에 맞춰요'}
+        onBack={() => safeRouterBack(router)}
+        scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
+        bottomBar={
+          <ImmersionBottomControls
+            accentColor={WATER_CYAN}
+            borderColor={W.border}
+            paddingBottom={Math.max(insets.bottom, 14)}
+            onEndSession={navigateAfterComplete}
+            completeLabel="수분 완료"
+          />
+        }>
+        <View style={waterStyles.grid}>
+              <ImmersionCardShell borderColor={W.border}>
+                <ThemedText
+                  style={waterStyles.statLabel}
+                  lightColor={W.muted}
+                  darkColor={W.muted}>
                   하루 물 목표
                 </ThemedText>
                 <View style={waterStyles.goalRow}>
-                  <ThemedText style={waterStyles.goalValue} lightColor="#fff" darkColor="#fff">
+                  <ThemedText
+                    style={waterStyles.goalValue}
+                    lightColor={W.onSurface}
+                    darkColor={W.onSurface}>
                     {goalL}
                   </ThemedText>
-                  <ThemedText style={waterStyles.goalUnit} lightColor="rgba(255,255,255,0.55)" darkColor="rgba(255,255,255,0.55)">
+                  <ThemedText
+                    style={waterStyles.goalUnit}
+                    lightColor={W.muted}
+                    darkColor={W.muted}>
                     L
                   </ThemedText>
                 </View>
-                <ThemedText style={waterStyles.metaLine} lightColor="rgba(161,161,170,0.95)" darkColor="rgba(161,161,170,0.95)">
+                <ThemedText
+                  style={waterStyles.metaLine}
+                  lightColor={W.muted}
+                  darkColor={W.muted}>
                   {wCfg.goalMl}ml 기준 · 섭취 {drank}ml · 남은 {remL}L
                 </ThemedText>
                 <View style={waterStyles.hydrateTrack}>
                   <View style={[waterStyles.hydrateFill, { width: `${Math.round(hydrateTrack * 100)}%` }]} />
                 </View>
-              </View>
+              </ImmersionCardShell>
 
-              <View style={waterStyles.splitRow}>
-                <View style={[waterStyles.glass, waterStyles.halfCard]}>
-                  <ThemedText style={waterStyles.halfLabel} lightColor="rgba(161,161,170,0.9)" darkColor="rgba(161,161,170,0.9)">
+              <ImmersionSplitRow>
+                <ImmersionHalfCard borderColor={W.border}>
+                  <ThemedText
+                    style={waterStyles.halfLabel}
+                    lightColor={W.muted}
+                    darkColor={W.muted}>
                     섭취량
                   </ThemedText>
-                  <ThemedText style={waterStyles.halfValue} lightColor="#fff" darkColor="#fff">
+                  <ThemedText
+                    style={waterStyles.halfValue}
+                    lightColor={W.onSurface}
+                    darkColor={W.onSurface}>
                     {drank}
                   </ThemedText>
-                  <ThemedText style={waterStyles.halfUnit} lightColor="rgba(161,161,170,0.85)" darkColor="rgba(161,161,170,0.85)">
+                  <ThemedText
+                    style={waterStyles.halfUnit}
+                    lightColor={W.muted}
+                    darkColor={W.muted}>
                     ml
                   </ThemedText>
-                </View>
-                <View style={[waterStyles.glass, waterStyles.halfCard]}>
-                  <ThemedText style={waterStyles.halfLabel} lightColor="rgba(161,161,170,0.9)" darkColor="rgba(161,161,170,0.9)">
+                </ImmersionHalfCard>
+                <ImmersionHalfCard borderColor={W.border}>
+                  <ThemedText
+                    style={waterStyles.halfLabel}
+                    lightColor={W.muted}
+                    darkColor={W.muted}>
                     플로우 진행
                   </ThemedText>
-                  <ThemedText style={waterStyles.halfValue} lightColor="#fff" darkColor="#fff">
+                  <ThemedText
+                    style={waterStyles.halfValue}
+                    lightColor={W.onSurface}
+                    darkColor={W.onSurface}>
                     {Math.round(progress * 100)}
                   </ThemedText>
-                  <ThemedText style={waterStyles.halfUnit} lightColor="rgba(161,161,170,0.85)" darkColor="rgba(161,161,170,0.85)">
+                  <ThemedText
+                    style={waterStyles.halfUnit}
+                    lightColor={W.muted}
+                    darkColor={W.muted}>
                     %
                   </ThemedText>
-                </View>
-              </View>
+                </ImmersionHalfCard>
+              </ImmersionSplitRow>
 
               <View style={waterStyles.addSection}>
-                <ThemedText style={waterStyles.addSectionTitle} lightColor="#f4f4f5" darkColor="#f4f4f5">
+                <ThemedText
+                  style={waterStyles.addSectionTitle}
+                  lightColor={CategoryImmersionTheme.water.onSurface}
+                  darkColor={CategoryImmersionTheme.water.onSurface}>
                   섭취 추가
                 </ThemedText>
-                <ThemedText style={waterStyles.addSectionHint} lightColor="rgba(161,161,170,0.95)" darkColor="rgba(161,161,170,0.95)">
+                <ThemedText
+                  style={waterStyles.addSectionHint}
+                  lightColor={CategoryImmersionTheme.water.muted}
+                  darkColor={CategoryImmersionTheme.water.muted}>
                   마신 만큼 눌러 오늘 할당량에 반영해요. 목표량을 넘기지 않아요.
                 </ThemedText>
                 <View style={waterStyles.addChipWrap}>
@@ -1128,233 +1363,153 @@ export function ActivitySessionPage() {
                       ]}>
                       <ThemedText
                         style={waterStyles.addChipText}
-                        lightColor={addIntakeDisabled ? 'rgba(255,255,255,0.35)' : WATER_CYAN}
-                        darkColor={addIntakeDisabled ? 'rgba(255,255,255,0.35)' : WATER_CYAN}>
+                        lightColor={addIntakeDisabled ? 'rgba(0,0,0,0.28)' : WATER_CYAN}
+                        darkColor={addIntakeDisabled ? 'rgba(0,0,0,0.28)' : WATER_CYAN}>
                         +{ml}ml
                       </ThemedText>
                     </Pressable>
                   ))}
                 </View>
               </View>
-            </View>
-          </ScrollView>
-
-          <View style={[waterStyles.bottomBar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
-            <Pressable
-              accessibilityRole="button"
-              style={[waterStyles.glass, waterStyles.stopBtn]}
-              onPress={navigateAfterComplete}>
-              <IconSymbol name="stop.circle" size={28} color="#fff" />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              style={[waterStyles.pauseBtn, isWaitingToStart && { opacity: 0.5 }]}
-              onPress={togglePause}
-              disabled={isWaitingToStart}>
-              <IconSymbol
-                name={isPaused ? 'play.circle.fill' : 'pause.circle.fill'}
-                size={44}
-                color="#fff"
-              />
-            </Pressable>
-          </View>
-        </SafeAreaView>
-      </View>
+        </View>
+      </SessionImmersionLayout>
     );
   }
 
   const memoLines = parseNumberedFlowLines(block.title);
-
-  const usesHeroBeforeButtons =
-    !isQuickMemoSession &&
-    categoryKey !== null &&
-    categoryKey !== 'reading' &&
-    categoryKey !== 'work' &&
-    categoryKey !== 'fasting' &&
-    categoryKey !== 'water';
-
-  const sessionCardProps = {
-    categoryKey,
-    categoryConfigs,
-    title: activityTitle,
-    remainingSec,
-    progressPct: Math.round(progress * 100),
-    isPaused,
-    isWaitingToStart,
-    waitRemainingSec,
-    checklistTitle: checklist.checklistTitle,
-    checklistCountLabel: checklist.checklistCountLabel,
-    checklistRows: checklist.checklistRows,
-    checklistSummaryLine1: checklist.checklistSummaryLine1,
-    checklistSummaryLine2: checklist.checklistSummaryLine2,
-  } as const;
+  const timerSec = isWaitingToStart ? waitRemainingSec : remainingSec;
+  const O = CategoryImmersionTheme.other;
+  const sessionTitle =
+    categoryKey === 'meditation'
+      ? '명상 집중'
+      : categoryKey === 'yoga'
+        ? '요가 집중'
+        : activityTitle.trim() || '활동 집중';
 
   return (
-    <ThemedView style={[styles.screen, { backgroundColor: bg }]}>
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
-        <View
-          style={[
-            styles.header,
-            {
-              borderBottomColor: border,
-              paddingTop: Math.max(insets.top, 8),
-            },
-          ]}>
-          <Pressable
-            accessibilityRole="button"
-            style={styles.headerIconBtn}
-            onPress={() => safeRouterBack(router)}>
-            <IconSymbol name="chevron.left" size={22} color={text} />
-          </Pressable>
-          <View style={styles.headerCenter}>
-            <ThemedText style={[styles.kicker, { color: PRIMARY }]}>현재 활동</ThemedText>
-            <ThemedText style={[styles.headerTitle, { color: text }]} numberOfLines={1}>
-              {activityTitle}
-            </ThemedText>
-            <View style={[styles.categoryChip, { backgroundColor: chipSoftBg }]}>
-              <ThemedText style={[styles.categoryChipText, { color: PRIMARY }]}>
-                {categoryLabel}
+    <SessionImmersionLayout
+      backgroundColor={O.screenBg}
+      accentColor={PRIMARY}
+      accentGlow="rgba(0, 0, 0, 0.14)"
+      onSurface={O.onSurface}
+      muted={O.muted}
+      brand={O.brand}
+      aboutKicker={O.aboutKicker}
+      headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : sessionTitle}
+      iconName="star.fill"
+      iconSize={82}
+      sessionKicker={isQuickMemoSession ? '빠른 메모' : '세션'}
+      timerDisplay={
+        <ThemedText
+          style={waterStyles.timerHms}
+          lightColor={O.onSurface}
+          darkColor={O.onSurface}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.35}>
+          {formatClock(timerSec)}
+        </ThemedText>
+      }
+      flowCaption={isQuickMemoSession ? '메모를 기반으로 흐름을 정리해요' : activityTitle}
+      onBack={() => safeRouterBack(router)}
+      scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
+      bottomBar={
+        <ImmersionBottomControls
+          accentColor={PRIMARY}
+          borderColor={O.border}
+          paddingBottom={Math.max(insets.bottom, 14)}
+          onEndSession={navigateAfterComplete}
+          completeLabel="활동 완료"
+        />
+      }>
+      <ImmersionCardShell borderColor={O.border}>
+        <ThemedText style={waterStyles.statLabel} lightColor={O.muted} darkColor={O.muted}>
+          플로우 메모
+        </ThemedText>
+        <ThemedText style={[waterStyles.metaLine, { marginTop: 4 }]} lightColor={O.onSurface} darkColor={O.onSurface}>
+          {checklist.checklistSummaryLine1 || '목표 상세에서 체크리스트 또는 메모를 입력해 주세요.'}
+        </ThemedText>
+        {checklist.checklistSummaryLine2 ? (
+          <ThemedText style={waterStyles.metaLine} lightColor={O.muted} darkColor={O.muted}>
+            {checklist.checklistSummaryLine2}
+          </ThemedText>
+        ) : null}
+        {isQuickMemoSession && memoLines.length > 0 ? (
+          <View style={{ marginTop: 12, gap: 6 }}>
+            {memoLines.slice(0, 3).map((line, idx) => (
+              <ThemedText key={`${idx}-${line.slice(0, 8)}`} style={waterStyles.addSectionHint} lightColor={O.onSurface} darkColor={O.onSurface}>
+                {`• ${line}`}
               </ThemedText>
-            </View>
-            <ThemedText style={[styles.subMeta, { color: muted }]}>
-              {isQuickMemoSession ? '빠른 메모' : timeRange}
-            </ThemedText>
+            ))}
           </View>
-          <Pressable accessibilityRole="button" style={styles.headerIconBtn}>
-            <IconSymbol name="gearshape" size={22} color={text} />
-          </Pressable>
-        </View>
+        ) : null}
+      </ImmersionCardShell>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          bounces>
-          {usesHeroBeforeButtons ? (
-            <ActiveSessionCard {...sessionCardProps} segment="categoryOnly" />
-          ) : null}
+      <ImmersionSplitRow>
+        <ImmersionHalfCard borderColor={O.border}>
+          <ThemedText style={waterStyles.halfLabel} lightColor={O.muted} darkColor={O.muted}>
+            완료
+          </ThemedText>
+          <ThemedText style={waterStyles.halfValue} lightColor={O.onSurface} darkColor={O.onSurface}>
+            {checklist.checklistRows.filter((row) => row.state === 'completed').length}
+          </ThemedText>
+          <ThemedText style={waterStyles.halfUnit} lightColor={O.muted} darkColor={O.muted}>
+            개
+          </ThemedText>
+        </ImmersionHalfCard>
+        <ImmersionHalfCard borderColor={O.border}>
+          <ThemedText style={waterStyles.halfLabel} lightColor={O.muted} darkColor={O.muted}>
+            남은 작업
+          </ThemedText>
+          <ThemedText style={waterStyles.halfValue} lightColor={O.onSurface} darkColor={O.onSurface}>
+            {checklist.checklistRows.filter((row) => row.state !== 'completed').length}
+          </ThemedText>
+          <ThemedText style={waterStyles.halfUnit} lightColor={O.muted} darkColor={O.muted}>
+            개
+          </ThemedText>
+        </ImmersionHalfCard>
+      </ImmersionSplitRow>
 
-          <View style={styles.bodyMain}>
-            {isQuickMemoSession ? (
-              <View style={[styles.memoBlock, { borderColor: border, backgroundColor: surface }]}>
-                {memoLines.map((line, idx) => (
-                  <ThemedText key={`${idx}-${line.slice(0, 8)}`} style={[styles.memoLine, { color: text }]}>
-                    {line}
-                  </ThemedText>
-                ))}
-                {isWaitingToStart ? (
-                  <View style={[styles.pauseBadge, { backgroundColor: chipSoftBg, alignSelf: 'center' }]}>
-                    <ThemedText style={[styles.pauseBadgeText, { color: PRIMARY }]}>시작 대기</ThemedText>
-                  </View>
-                ) : null}
+      <ImmersionCardShell borderColor={O.border}>
+        <ThemedText style={waterStyles.statLabel} lightColor={O.muted} darkColor={O.muted}>
+          오늘 플로우 목록
+        </ThemedText>
+        <View style={medScheduleStyles.scheduleList}>
+          <View style={medScheduleStyles.scheduleCard}>
+            <View style={medScheduleStyles.scheduleLeft}>
+              <ThemedText style={medScheduleStyles.scheduleTime} lightColor={PRIMARY} darkColor={PRIMARY}>
+                •
+              </ThemedText>
+              <View>
+                <ThemedText style={medScheduleStyles.scheduleTitle} lightColor={O.onSurface} darkColor={O.onSurface}>
+                  {activityTitle}
+                </ThemedText>
+                <ThemedText style={medScheduleStyles.scheduleMeta} lightColor={O.muted} darkColor={O.muted}>
+                  {timeRange}
+                </ThemedText>
               </View>
-            ) : !usesHeroBeforeButtons ? (
-              <View style={styles.ringBlock}>
-                <SessionProgressRing
-                  size={RING_SIZE}
-                  strokeWidth={RING_STROKE}
-                  progress={progress}
-                  trackColor={ringTrack}
-                  accentColor={PRIMARY}
-                />
-                <View style={styles.ringCenter} pointerEvents="none">
-                  <ThemedText style={[styles.timeLarge, { color: text }]}>
-                    {formatClock(remainingSec)}
-                  </ThemedText>
-                  <ThemedText style={[styles.timeHint, { color: muted }]}>
-                    {isWaitingToStart ? '대기+실행 남은 시간' : '남은 시간'}
-                  </ThemedText>
-                  {isWaitingToStart ? (
-                    <View style={[styles.pauseBadge, { backgroundColor: chipSoftBg }]}>
-                      <ThemedText style={[styles.pauseBadgeText, { color: PRIMARY }]}>
-                        시작까지 {formatClock(waitRemainingSec)}
-                      </ThemedText>
-                    </View>
-                  ) : null}
-                  {isPaused ? (
-                    <View style={[styles.pauseBadge, { backgroundColor: chipSoftBg }]}>
-                      <ThemedText style={[styles.pauseBadgeText, { color: PRIMARY }]}>
-                        일시정지됨
-                      </ThemedText>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-            ) : null}
-
-            <Pressable
-              accessibilityRole="button"
-              style={[styles.primaryBtn, { backgroundColor: PRIMARY }]}
-              onPress={navigateAfterComplete}>
-              <IconSymbol name="stop.fill" size={20} color="#fff" />
-              <ThemedText style={styles.primaryBtnText}>활동 종료</ThemedText>
-            </Pressable>
-
-            <View style={styles.secondaryRow}>
-              {!isQuickMemoSession ? (
-                <Pressable
-                  accessibilityRole="button"
-                  style={[
-                    styles.secondaryBtn,
-                    { borderColor: border, backgroundColor: surface },
-                    isWaitingToStart && { opacity: 0.5 },
-                  ]}
-                  disabled={isWaitingToStart}
-                  onPress={togglePause}>
-                  <IconSymbol
-                    name={isPaused ? 'play.fill' : 'pause.fill'}
-                    size={18}
-                    color={text}
-                  />
-                  <ThemedText style={[styles.secondaryBtnText, { color: text }]}>
-                    {isPaused ? '계속하기' : '일시정지'}
-                  </ThemedText>
-                </Pressable>
-              ) : null}
-              <Pressable
-                accessibilityRole="button"
-                style={[
-                  styles.secondaryBtn,
-                  { borderColor: border, backgroundColor: surface },
-                ]}
-                onPress={navigateAfterSkip}>
-                <IconSymbol name="forward.fill" size={18} color={muted} />
-                <ThemedText style={[styles.secondaryBtnText, { color: muted }]}>건너뛰기</ThemedText>
-              </Pressable>
             </View>
           </View>
-
-          <ActiveSessionCard
-            {...sessionCardProps}
-            segment={usesHeroBeforeButtons ? 'checklistOnly' : 'full'}
-          />
-
           {nextBlock ? (
-            <View style={[styles.nextCard, { backgroundColor: surface, borderColor: border }]}>
-              <ThemedText style={[styles.nextKicker, { color: muted }]}>다음 단계</ThemedText>
-              <View style={styles.nextRow}>
-                <View style={[styles.nextIconWrap, { backgroundColor: chipSoftBg }]}>
-                  <IconSymbol name="bolt.fill" size={22} color={PRIMARY} />
-                </View>
-                <View style={styles.nextTextCol}>
-                  <ThemedText style={[styles.nextTitle, { color: text }]}>{nextBlock.title}</ThemedText>
-                  <ThemedText style={[styles.nextMeta, { color: PRIMARY }]}>
+            <View style={medScheduleStyles.scheduleCard}>
+              <View style={medScheduleStyles.scheduleLeft}>
+                <ThemedText style={medScheduleStyles.scheduleTime} lightColor={O.muted} darkColor={O.muted}>
+                  •
+                </ThemedText>
+                <View>
+                  <ThemedText style={medScheduleStyles.scheduleTitle} lightColor={O.onSurface} darkColor={O.onSurface}>
+                    {nextBlock.title}
+                  </ThemedText>
+                  <ThemedText style={medScheduleStyles.scheduleMeta} lightColor={O.muted} darkColor={O.muted}>
                     {formatBlockTimeRange(nextBlock)}
                   </ThemedText>
                 </View>
-                <IconSymbol name="chevron.right" size={18} color={muted} />
               </View>
             </View>
-          ) : (
-            <View style={[styles.nextCard, { backgroundColor: surface, borderColor: border }]}>
-              <ThemedText style={[styles.nextKicker, { color: muted }]}>다음 단계</ThemedText>
-              <ThemedText style={[styles.nextEmpty, { color: muted }]}>오늘 남은 일정이 없습니다</ThemedText>
-            </View>
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+          ) : null}
+        </View>
+      </ImmersionCardShell>
+    </SessionImmersionLayout>
   );
 }
 
@@ -1560,8 +1715,8 @@ const styles = StyleSheet.create({
   },
 });
 
-/* ── Full-screen work session (작업) ── */
-const WORK_BG = '#020617';
+/* ── Full-screen work session (작업) — WorkSettings 라이트 카드 톤 ── */
+const WORK_BG = CategoryImmersionTheme.work.screenBg;
 
 const workStyles = StyleSheet.create({
   screen: {
@@ -1587,7 +1742,7 @@ const workStyles = StyleSheet.create({
   topBarTitle: {
     flex: 1,
     marginHorizontal: 8,
-    color: '#fff',
+    color: CategoryImmersionTheme.work.onSurface,
     fontSize: 17,
     lineHeight: 22,
     fontWeight: '700',
@@ -1620,13 +1775,13 @@ const workStyles = StyleSheet.create({
     right: -20,
     top: '50%',
     gap: 8,
-    opacity: 0.2,
+    opacity: 0.35,
     transform: [{ translateY: -20 }],
   },
   motionLine: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgb(251, 146, 60)',
+    backgroundColor: 'rgba(0,0,0,0.12)',
   },
 
   timerBlock: {
@@ -1635,15 +1790,12 @@ const workStyles = StyleSheet.create({
     width: '100%',
   },
   timerHMS: {
-    color: '#fff',
+    color: CategoryImmersionTheme.work.onSurface,
     fontSize: 64,
     lineHeight: 72,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
     letterSpacing: -2,
-    textShadowColor: 'rgba(255,255,255,0.12)',
-    textShadowRadius: 24,
-    textShadowOffset: { width: 0, height: 0 },
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -1660,16 +1812,16 @@ const workStyles = StyleSheet.create({
     backgroundColor: PRIMARY,
   },
   focusKicker: {
-    color: PRIMARY,
+    color: CategoryImmersionTheme.work.muted,
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '700',
-    letterSpacing: 4,
+    letterSpacing: 2,
     textTransform: 'uppercase',
   },
   planHint: {
     marginTop: 12,
-    color: 'rgba(148,163,184,0.9)',
+    color: CategoryImmersionTheme.work.muted,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -1685,7 +1837,7 @@ const workStyles = StyleSheet.create({
     marginBottom: 18,
   },
   checklistTitle: {
-    color: '#fff',
+    color: CategoryImmersionTheme.work.onSurface,
     fontSize: 22,
     lineHeight: 28,
     fontWeight: '700',
@@ -1694,7 +1846,7 @@ const workStyles = StyleSheet.create({
     marginRight: 12,
   },
   checklistRemain: {
-    color: 'rgba(148,163,184,0.95)',
+    color: CategoryImmersionTheme.work.muted,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 2,
@@ -1705,9 +1857,9 @@ const workStyles = StyleSheet.create({
     width: '100%',
   },
   glassPanel: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: 'rgba(0,0,0,0.08)',
     borderRadius: 10,
   },
   checklistItem: {
@@ -1718,8 +1870,8 @@ const workStyles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   checklistItemCurrent: {
-    borderColor: 'rgba(255,255,255,0.2)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderColor: 'rgba(0,0,0,0.14)',
+    backgroundColor: 'rgba(0,0,0,0.04)',
   },
   checklistItemTextCol: {
     flex: 1,
@@ -1727,20 +1879,20 @@ const workStyles = StyleSheet.create({
     gap: 4,
   },
   checklistItemTitle: {
-    color: 'rgba(255,255,255,0.92)',
+    color: CategoryImmersionTheme.work.onSurface,
     fontSize: 17,
     lineHeight: 22,
     fontWeight: '600',
   },
   checklistItemTitleDone: {
-    color: 'rgba(255,255,255,0.45)',
+    color: CategoryImmersionTheme.work.muted,
     textDecorationLine: 'line-through',
   },
   checklistItemTitleSkip: {
-    color: 'rgba(255,255,255,0.35)',
+    color: 'rgba(0,0,0,0.35)',
   },
   checklistItemMeta: {
-    color: 'rgba(148,163,184,0.95)',
+    color: CategoryImmersionTheme.work.muted,
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 1,
@@ -1751,7 +1903,7 @@ const workStyles = StyleSheet.create({
     height: 40,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(0,0,0,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1760,7 +1912,7 @@ const workStyles = StyleSheet.create({
     alignItems: 'center',
   },
   checklistEmptyText: {
-    color: 'rgba(148,163,184,0.9)',
+    color: CategoryImmersionTheme.work.muted,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1776,7 +1928,7 @@ const workStyles = StyleSheet.create({
     height: 56,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: CategoryImmersionTheme.work.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1784,7 +1936,7 @@ const workStyles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   btnSecondaryText: {
-    color: '#fff',
+    color: CategoryImmersionTheme.work.onSurface,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -1797,8 +1949,8 @@ const workStyles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     backgroundColor: PRIMARY,
-    shadowColor: '#7c2d12',
-    shadowOpacity: 0.45,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
   },
@@ -1809,13 +1961,13 @@ const workStyles = StyleSheet.create({
   },
 });
 
-/* ── Full-screen reading session (독서) ── */
-const READING_BG = '#09090b';
+/* ── Full-screen reading session (독서) — 목표 상세(ReadingSettings) 라이트 에디토리얼 ── */
+const READING_SCREEN_BG = CategoryImmersionTheme.reading.screenBg;
 
 const readStyles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: READING_BG,
+    backgroundColor: READING_SCREEN_BG,
   },
   safe: {
     flex: 1,
@@ -1836,7 +1988,7 @@ const readStyles = StyleSheet.create({
   topBarTitle: {
     flex: 1,
     marginHorizontal: 8,
-    color: '#fff',
+    color: CategoryImmersionTheme.reading.onSurface,
     fontSize: 17,
     lineHeight: 22,
     fontWeight: '700',
@@ -1848,17 +2000,68 @@ const readStyles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 8,
     paddingBottom: 48,
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'flex-start',
     maxWidth: 448,
     width: '100%',
     alignSelf: 'center',
   },
+  editorialHeader: {
+    gap: 8,
+    marginBottom: 8,
+  },
+  brand: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    color: CategoryImmersionTheme.reading.onSurface,
+  },
+  aboutKicker: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    color: CategoryImmersionTheme.reading.muted,
+  },
+  listHeader: {
+    gap: 6,
+    paddingTop: 2,
+    marginBottom: 8,
+  },
+  sectionKicker: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    color: CategoryImmersionTheme.reading.muted,
+  },
+  mainTitle: {
+    fontSize: 42,
+    lineHeight: 46,
+    fontWeight: '700',
+    letterSpacing: -1.2,
+    color: CategoryImmersionTheme.reading.onSurface,
+  },
+  metricBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#000',
+    borderBottomColor: CategoryImmersionTheme.reading.border,
+    paddingVertical: 10,
+    marginBottom: 28,
+  },
+  metricItem: { flex: 1, alignItems: 'center', gap: 2 },
+  metricValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    color: CategoryImmersionTheme.reading.onSurface,
+  },
+  metricLabel: { fontSize: 11, fontWeight: '600', color: CategoryImmersionTheme.reading.muted },
 
   bookIconWrap: {
-    marginBottom: 40,
+    marginBottom: 32,
     alignItems: 'center',
   },
   bookCircle: {
@@ -1869,21 +2072,21 @@ const readStyles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(16,185,129,0.10)',
     borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.20)',
+    borderColor: 'rgba(16,185,129,0.22)',
     shadowColor: READING_EMERALD,
-    shadowOpacity: 0.12,
-    shadowRadius: 28,
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
     shadowOffset: { width: 0, height: 0 },
   },
 
   infoBlock: {
     width: '100%',
     alignItems: 'center',
-    marginBottom: 48,
-    gap: 24,
+    marginBottom: 40,
+    gap: 16,
   },
   bookKicker: {
-    color: 'rgba(52,211,153,0.60)',
+    color: CategoryImmersionTheme.reading.muted,
     fontSize: 11,
     lineHeight: 14,
     fontWeight: '600',
@@ -1892,33 +2095,30 @@ const readStyles = StyleSheet.create({
     textAlign: 'center',
   },
   bookTitle: {
-    color: '#fff',
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 28,
+    lineHeight: 36,
     fontWeight: '800',
     letterSpacing: -0.5,
     textAlign: 'center',
     paddingHorizontal: 8,
   },
-  rangeBlock: {
+  rangeCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.25)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     marginTop: 4,
+    alignSelf: 'stretch',
+    maxWidth: 360,
   },
-  rangeLabel: {
-    color: 'rgb(113, 113, 122)',
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  rangeValue: {
-    color: READING_EMERALD_TEXT,
-    fontSize: 34,
-    lineHeight: 42,
+  rangeCardText: {
+    fontSize: 18,
     fontWeight: '700',
-    letterSpacing: -0.5,
-    textAlign: 'center',
+    letterSpacing: -0.2,
   },
 
   timerSection: {
@@ -1928,9 +2128,8 @@ const readStyles = StyleSheet.create({
     gap: 10,
   },
   timerHMS: {
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: 56,
-    lineHeight: 64,
+    fontSize: 52,
+    lineHeight: 58,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
     letterSpacing: -2,
@@ -1949,7 +2148,6 @@ const readStyles = StyleSheet.create({
     backgroundColor: READING_EMERALD,
   },
   readingStatusText: {
-    color: READING_EMERALD_TEXT,
     fontSize: 18,
     lineHeight: 24,
     fontWeight: '600',
@@ -1966,7 +2164,7 @@ const readStyles = StyleSheet.create({
     height: 56,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: CategoryImmersionTheme.reading.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1974,7 +2172,6 @@ const readStyles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   btnSecondaryText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -1988,7 +2185,7 @@ const readStyles = StyleSheet.create({
     gap: 10,
     backgroundColor: READING_EMERALD,
     shadowColor: '#064e3b',
-    shadowOpacity: 0.45,
+    shadowOpacity: 0.25,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
   },
@@ -1999,343 +2196,39 @@ const readStyles = StyleSheet.create({
   },
 });
 
-/* ── Full-screen fasting session (단식) ── */
-const FAST_BG = '#09090b';
-
-const fastStyles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: FAST_BG,
-  },
-  safe: {
-    flex: 1,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  headerBtn: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topBarTitle: {
-    flex: 1,
-    marginHorizontal: 8,
-    color: '#fff',
-    fontSize: 17,
-    lineHeight: 22,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 48,
-    alignItems: 'center',
-    maxWidth: 400,
-    width: '100%',
-    alignSelf: 'center',
-  },
-
-  ringWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 40,
-  },
-  ringIconOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringCenterIcon: {
-    padding: 28,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-  },
-
-  timerBlock: {
-    alignItems: 'center',
-    marginBottom: 36,
-    width: '100%',
-  },
-  timerHMS: {
-    color: '#fff',
-    fontSize: 52,
-    lineHeight: 60,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -1.5,
-    textAlign: 'center',
-  },
-  timerCaption: {
-    marginTop: 10,
-    color: 'rgba(255,255,255,0.45)',
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
-
-  cards: {
-    width: '100%',
-    gap: 12,
-    marginBottom: 28,
-  },
-  glassCard: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 16,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    padding: 16,
-  },
-  cardIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardIconWrapPrimary: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  cardTextCol: {
-    flex: 1,
-    gap: 4,
-  },
-  cardLabel: {
-    color: 'rgba(255,255,255,0.45)',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '600',
-  },
-  cardValue: {
-    color: '#fff',
-    fontSize: 16,
-    lineHeight: 21,
-    fontWeight: '700',
-  },
-  cardValuePrimary: {
-    color: PRIMARY,
-  },
-
-  actionRow: {
-    flexDirection: 'row',
-    gap: 14,
-    width: '100%',
-    marginTop: 8,
-  },
-  btnSecondary: {
-    flex: 1,
-    height: 56,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: 'transparent',
-  },
-  btnSecondaryText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  btnPrimaryFast: {
-    flex: 1,
-    height: 56,
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: '#ff7b04',
-    shadowColor: '#7c2d12',
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-  },
-  btnPrimaryFastText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-});
-
-/* ── Full-screen medicine session (약 복용) ── */
-const medStyles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#0b0d12',
-  },
-  safe: {
-    flex: 1,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 40,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 440,
-    alignSelf: 'center',
-  },
-  timerSection: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  timerText: {
-    color: 'rgba(255,255,255,0.96)',
-    fontSize: 64,
-    lineHeight: 70,
-    fontWeight: '800',
-    letterSpacing: -2,
-    fontVariant: ['tabular-nums'],
-    textAlign: 'center',
-  },
-  timerMeridiem: {
-    color: 'rgba(148,163,184,0.9)',
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: '300',
-  },
-  timerCaption: {
-    marginTop: 6,
-    color: MED_PRIMARY,
-    fontSize: 11,
-    lineHeight: 16,
-    fontWeight: '700',
-    letterSpacing: 1.8,
-  },
-  mainCard: {
-    width: '100%',
-    borderRadius: 16,
-    padding: 1,
-    backgroundColor: 'rgba(36, 38, 46, 0.72)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.05)',
-    overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOpacity: 0.16,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: -6 },
-  },
-  cardGlow: {
-    position: 'absolute',
-    top: -80,
-    right: -80,
-    width: 180,
-    height: 180,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.12)',
-  },
-  cardInner: {
-    paddingHorizontal: 24,
-    paddingVertical: 28,
-    alignItems: 'center',
-    gap: 20,
-    backgroundColor: 'rgba(28, 30, 38, 0.72)',
-  },
-  pillCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: MED_PRIMARY,
-  },
-  titleBlock: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  badge: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.14)',
-  },
-  badgeText: {
-    color: '#ff8a4c',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '800',
-  },
-  title: {
-    color: '#fff',
-    fontSize: 32,
-    lineHeight: 38,
-    fontWeight: '800',
-    letterSpacing: -0.6,
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: 'rgba(166, 173, 189, 0.95)',
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  progressTrack: {
-    width: '100%',
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(50, 54, 67, 0.78)',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: MED_PRIMARY_DIM,
-  },
-  scheduleSection: {
-    width: '100%',
-    marginTop: 30,
-  },
+/** 약 복용 세션 — 일정 리스트만 전용 스타일 (쉘은 SessionImmersionLayout + waterStyles 토큰) */
+const medScheduleStyles = StyleSheet.create({
   scheduleHeading: {
-    color: 'rgba(156,163,175,0.95)',
     fontSize: 11,
     lineHeight: 16,
     fontWeight: '700',
     letterSpacing: 2,
     textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  scheduleUpcomingLine: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '600',
+    letterSpacing: -0.2,
     marginBottom: 12,
-    paddingHorizontal: 2,
+  },
+  scheduleEmpty: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    paddingVertical: 8,
   },
   scheduleList: {
     gap: 10,
+    width: '100%',
   },
   scheduleCard: {
     borderRadius: 12,
-    backgroundColor: 'rgba(38, 42, 54, 0.58)',
+    backgroundColor: '#ffffff',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderColor: CategoryImmersionTheme.medicine.border,
     paddingHorizontal: 14,
     paddingVertical: 14,
     flexDirection: 'row',
@@ -2344,8 +2237,12 @@ const medStyles = StyleSheet.create({
   },
   scheduleCardActive: {
     borderLeftWidth: 4,
-    borderLeftColor: MED_PRIMARY,
-    backgroundColor: 'rgba(52, 56, 70, 0.62)',
+    borderLeftColor: MED_TEAL,
+    backgroundColor: 'rgba(13, 148, 136, 0.06)',
+  },
+  scheduleCardUpcoming: {
+    borderColor: 'rgba(13, 148, 136, 0.35)',
+    backgroundColor: 'rgba(13, 148, 136, 0.04)',
   },
   scheduleLeft: {
     flexDirection: 'row',
@@ -2356,68 +2253,75 @@ const medStyles = StyleSheet.create({
   scheduleLeftMuted: {
     opacity: 0.62,
   },
+  scheduleTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 5,
+    width: 86,
+    flexShrink: 0,
+  },
   scheduleTime: {
-    color: 'rgba(156,163,175,0.95)',
     fontSize: 21,
     lineHeight: 26,
     fontWeight: '800',
-    width: 58,
+    fontVariant: ['tabular-nums'],
   },
-  scheduleTimeActive: {
-    color: MED_PRIMARY,
+  scheduleMeridiem: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   scheduleTitle: {
-    color: '#fff',
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '700',
   },
   scheduleMeta: {
     marginTop: 2,
-    color: 'rgba(156,163,175,0.95)',
     fontSize: 11,
     lineHeight: 16,
     fontWeight: '700',
   },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-    marginTop: 20,
-  },
-  btnGhost: {
-    flex: 1,
-    height: 54,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+  scheduleCheckBtn: {
+    minWidth: 78,
+    height: 34,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    backgroundColor: MED_TEAL,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: 'transparent',
+    gap: 5,
   },
-  btnGhostText: {
-    color: '#fff',
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '700',
+  scheduleCheckBtnDisabled: {
+    opacity: 0.45,
   },
-  btnPrimary: {
-    flex: 1.5,
-    height: 54,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: MED_PRIMARY,
-  },
-  btnPrimaryText: {
-    color: '#fff',
-    fontSize: 15,
-    lineHeight: 20,
+  scheduleCheckBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: '800',
+    letterSpacing: -0.1,
+  },
+  scheduleUndoBtn: {
+    minWidth: 62,
+    height: 34,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(13, 148, 136, 0.35)',
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  scheduleUndoBtnText: {
+    color: MED_TEAL,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '800',
+    letterSpacing: -0.1,
   },
 });
 
@@ -2456,6 +2360,24 @@ const waterStyles = StyleSheet.create({
     maxWidth: 448,
     width: '100%',
     alignSelf: 'center',
+  },
+  editorialHeader: {
+    width: '100%',
+    gap: 8,
+    marginBottom: 12,
+    alignSelf: 'stretch',
+  },
+  brand: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    color: CategoryImmersionTheme.water.onSurface,
+  },
+  aboutKicker: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    color: CategoryImmersionTheme.water.muted,
   },
   anchorOuter: {
     position: 'relative',
@@ -2520,9 +2442,9 @@ const waterStyles = StyleSheet.create({
     gap: 12,
   },
   glass: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#ffffff',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(34, 211, 238, 0.18)',
+    borderColor: CategoryImmersionTheme.water.border,
     borderRadius: 14,
   },
   mainStatCard: {
@@ -2561,7 +2483,7 @@ const waterStyles = StyleSheet.create({
     marginTop: 16,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(0,0,0,0.08)',
     overflow: 'hidden',
   },
   hydrateFill: {
@@ -2654,6 +2576,9 @@ const waterStyles = StyleSheet.create({
     gap: 24,
     paddingTop: 12,
     paddingHorizontal: 24,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: CategoryImmersionTheme.water.border,
+    backgroundColor: CategoryImmersionTheme.water.screenBg,
   },
   stopBtn: {
     width: 56,
