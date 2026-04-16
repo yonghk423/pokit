@@ -116,10 +116,6 @@ enum PriorityModeLiveActivityView {
     p: LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent,
     compact: Bool
   ) -> some View {
-    let isFinished = context.state.status == "finished"
-    let isPaused = context.state.status == "paused"
-    let isStandby = context.state.status == "standby"
-    let standbyStartCountdown = isStandby && ((context.state.startsAt?.timeIntervalSinceNow ?? -1) > 0)
     let ringProgress = CGFloat(min(1, max(0, p.progress01)))
 
     let padH: CGFloat = compact ? 8 : 10
@@ -134,21 +130,15 @@ enum PriorityModeLiveActivityView {
     VStack(alignment: .leading, spacing: compact ? 6 : 7) {
       HStack(alignment: .center, spacing: 6) {
         HStack(spacing: compact ? 4 : 5) {
-          Image(systemName: "lock.open.fill")
+          Image(systemName: "briefcase.fill")
             .font(.system(size: compact ? 11 : 12, weight: .semibold))
             .foregroundStyle(orange)
-          Text("LockFlow")
+          Text("POKIT")
             .font(.system(size: compact ? 12 : 12.5, weight: .heavy))
             .foregroundStyle(.white)
             .tracking(-0.2)
         }
         Spacer(minLength: 0)
-        Text("우선순위 모드")
-          .font(.system(size: compact ? 7.5 : 8.5, weight: .heavy))
-          .foregroundStyle(orange)
-          .padding(.horizontal, compact ? 6 : 8)
-          .padding(.vertical, compact ? 3 : 3.5)
-          .background(orange.opacity(0.12), in: Capsule())
       }
 
       /// 링 옆에는 제목만 넓게 — 타이머는 아래 행으로 내려 잘림 방지
@@ -182,64 +172,12 @@ enum PriorityModeLiveActivityView {
           Text(p.activeTitle)
             .font(.system(size: titleSize, weight: .bold))
             .foregroundStyle(.white)
-            .lineLimit(3)
+            .lineLimit(compact ? 3 : 4)
+            .truncationMode(.tail)
             .minimumScaleFactor(0.72)
             .fixedSize(horizontal: false, vertical: true)
-
-          HStack(alignment: .center, spacing: 4) {
-            Circle()
-              .fill(orange)
-              .frame(width: 4, height: 4)
-            Text(
-              isFinished ? "완료" : (isPaused ? "일시정지" : (isStandby ? "시작 대기" : "집중 중"))
-            )
-            .font(.system(size: compact ? 10 : 10.5, weight: .semibold))
-            .foregroundStyle(orange.opacity(0.92))
-            .lineLimit(1)
-            Spacer(minLength: 4)
-            priorityTimerBlock(
-              context: context,
-              isFinished: isFinished,
-              isPaused: isPaused,
-              isStandby: isStandby,
-              standbyStartCountdown: standbyStartCountdown,
-              compact: compact
-            )
-            .layoutPriority(1)
-          }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-      }
-
-      Rectangle()
-        .fill(Color.white.opacity(0.06))
-        .frame(height: 1)
-
-      VStack(alignment: .leading, spacing: compact ? 5 : 6) {
-        ForEach(Array(p.upcoming.enumerated()), id: \.offset) { _, row in
-          HStack(alignment: .center, spacing: 8) {
-            Text("\(row.order)")
-              .font(.system(size: compact ? 11 : 11.5, weight: .heavy))
-              .foregroundStyle(.white.opacity(0.40))
-              .frame(width: compact ? 22 : 24, height: compact ? 22 : 24)
-              .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 6))
-            VStack(alignment: .leading, spacing: 1) {
-              Text(row.title)
-                .font(.system(size: compact ? 11.5 : 12, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.90))
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
-              Text(row.timeLabel.uppercased())
-                .font(.system(size: 7.5, weight: .heavy))
-                .foregroundStyle(.white.opacity(0.30))
-                .tracking(0.6)
-            }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-              .font(.system(size: 9, weight: .semibold))
-              .foregroundStyle(.white.opacity(0.14))
-          }
-        }
       }
 
     }

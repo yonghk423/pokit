@@ -5,7 +5,7 @@ import WidgetKit
 /// 빠른 메모 — 잠금화면에서 본문 텍스트 우선(상태줄·장식 UI 없음).
 @available(iOS 16.1, *)
 enum QuickMemoModeLiveActivityView {
-  private static let orange = Color.orange
+  private static let accent = Color(red: 0.78, green: 0.78, blue: 0.82)
 
   @ViewBuilder
   static func lockScreenBody(
@@ -29,10 +29,10 @@ enum QuickMemoModeLiveActivityView {
       HStack(alignment: .center, spacing: 6) {
         Image(systemName: "note.text")
           .font(.system(size: 14, weight: .semibold))
-          .foregroundStyle(orange)
-        Text("빠른 메모")
+          .foregroundStyle(accent)
+        Text("POKIT")
           .font(.system(size: label, weight: .heavy))
-          .foregroundStyle(orange)
+          .foregroundStyle(accent)
           .tracking(0.3)
           .lineLimit(1)
         Spacer(minLength: 0)

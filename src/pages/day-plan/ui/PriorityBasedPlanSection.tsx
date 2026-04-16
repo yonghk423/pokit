@@ -4,14 +4,18 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Platform,
+  Easing,
+  LayoutAnimation,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   TextInput,
+  UIManager,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useShallow } from 'zustand/react/shallow';
 
 import {
   filterDayPlanFlowBlocks,
@@ -31,8 +35,8 @@ import {
   formatDateKeyCompactKo,
   formatMinutesToHHmm,
   isOvernightHhmmRange,
-  planDayIntroFromRange,
   PICKER_CATEGORIES,
+  planDayIntroFromRange,
   PRIMARY,
   priorityClockCaptionDateKeyEnd,
   priorityClockCaptionDateKeyStart,
@@ -40,6 +44,7 @@ import {
 } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { getPriorityCategoryGoalHint } from '../lib/priorityCategoryGoalHints';
+import { useDayPlanDraftStore } from '../model/dayPlanDraftStore';
 
 /**
  * 플립 시계 레퍼런스: 카드 다크 배경 · 밝은 회색 숫자 · 숫자 가운데 검정 힌지선(flip-divider)
@@ -461,11 +466,11 @@ const flipStyles = StyleSheet.create({
     marginTop: -1,
     zIndex: 10,
   },
-  /** ampm: absolute top-[8%] left-[8%] */
+  /** ampm: 숫자 영역과 시각 중심을 맞추기 위해 x축을 약간 오른쪽으로 이동 */
   ampmBadge: {
     position: 'absolute',
     top: '8%',
-    left: '8%',
+    left: '12%',
     zIndex: 12,
   },
   /** ampm-label + text-clock-grey opacity-80 → CLOCK_AMPM_GREY에 이미 0.8 */
@@ -593,6 +598,8 @@ function OrderRow({
   onComplete,
   onSettings,
   onFocusDetail,
+  animateOnMount,
+  isRemoving,
 }: {
   categoryKey: string;
   icon: string;
@@ -612,9 +619,36 @@ function OrderRow({
   onComplete?: () => void;
   onSettings?: () => void;
   onFocusDetail?: () => void;
+  animateOnMount?: boolean;
+  isRemoving?: boolean;
 }) {
+  const enter = useRef(new Animated.Value(animateOnMount ? 0 : 1)).current;
   const pulse = useRef(new Animated.Value(1)).current;
   const shouldPulse = Boolean(isFocusStarted && !isCompleted);
+
+  useEffect(() => {
+    if (!animateOnMount) {
+      enter.setValue(1);
+      return;
+    }
+    Animated.spring(enter, {
+      toValue: 1,
+      damping: 16,
+      stiffness: 180,
+      mass: 0.9,
+      useNativeDriver: true,
+    }).start();
+  }, [animateOnMount, enter]);
+
+  useEffect(() => {
+    if (!isRemoving) return;
+    Animated.timing(enter, {
+      toValue: 0,
+      duration: 170,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [isRemoving, enter]);
 
   useEffect(() => {
     if (!shouldPulse) {
@@ -640,20 +674,30 @@ function OrderRow({
   }, [shouldPulse, pulse]);
 
   return (
-    <View style={[styles.orderRowRoman, { borderBottomColor: line }]}>
+    <Animated.View
+      style={[
+        styles.orderRowRoman,
+        { borderBottomColor: line },
+        {
+          opacity: enter,
+          transform: [
+            { translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) },
+            { scale: enter.interpolate({ inputRange: [0, 1], outputRange: [0.992, 1] }) },
+          ],
+        },
+      ]}>
       {priorityLabel ? (
         <View
           style={[
             styles.inlineRankPill,
             {
-              backgroundColor:
-                priorityColor?.bg ?? (isTopPriority ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.08)'),
+              backgroundColor: 'transparent',
             },
           ]}>
           <ThemedText
             style={[
               styles.inlineRankPillText,
-              { color: priorityColor?.fg ?? (isTopPriority ? '#fff' : ink) },
+              { color: '#111111' },
             ]}>
             {priorityLabel}
           </ThemedText>
@@ -727,7 +771,7 @@ function OrderRow({
           />
         </Pressable>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -796,19 +840,8 @@ function priorityLabelByIndex(index: number): string {
 }
 
 function priorityColorByIndex(index: number): { bg: string; fg: string } {
-  const palette: Array<{ bg: string; fg: string }> = [
-    { bg: '#ef4444', fg: '#ffffff' }, // red
-    { bg: '#f97316', fg: '#ffffff' }, // orange
-    { bg: '#f59e0b', fg: '#111827' }, // amber
-    { bg: '#eab308', fg: '#111827' }, // yellow
-    { bg: '#84cc16', fg: '#052e16' }, // lime
-    { bg: '#22c55e', fg: '#052e16' }, // green
-    { bg: '#14b8a6', fg: '#042f2e' }, // teal
-    { bg: '#06b6d4', fg: '#083344' }, // cyan
-    { bg: '#3b82f6', fg: '#ffffff' }, // blue
-    { bg: '#8b5cf6', fg: '#ffffff' }, // violet
-  ];
-  return palette[index % palette.length];
+  void index;
+  return { bg: '#111111', fg: '#ffffff' };
 }
 
 function activeIconColorByCategory(categoryKey: string): string {
@@ -841,6 +874,21 @@ export function PriorityBasedPlanSection({
   onOpenFocusDetail,
   onAllFocusCompleted,
 }: Props) {
+  useEffect(() => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
+  const animateListMutation = useCallback(() => {
+    LayoutAnimation.configureNext({
+      duration: 220,
+      create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+      update: { type: LayoutAnimation.Types.easeInEaseOut },
+      delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+    });
+  }, []);
+
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
@@ -1025,7 +1073,36 @@ export function PriorityBasedPlanSection({
   );
 
   const bagCount = selectedItems.length;
-  const [completedCategoryKeys, setCompletedCategoryKeys] = useState<string[]>([]);
+  const {
+    completedFocusCategoryKeys,
+    planCompletionDismissedKeys,
+    addFocusCategoryCompleted,
+    filterCompletedFocusKeysToPriorityOrder,
+    addPlanCompletionDismissedKey,
+    clearPlanCompletionDismissedKeys,
+  } = useDayPlanDraftStore(
+    useShallow((s) => ({
+      completedFocusCategoryKeys: s.completedFocusCategoryKeys,
+      planCompletionDismissedKeys: s.planCompletionDismissedKeys,
+      addFocusCategoryCompleted: s.addFocusCategoryCompleted,
+      filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
+      addPlanCompletionDismissedKey: s.addPlanCompletionDismissedKey,
+      clearPlanCompletionDismissedKeys: s.clearPlanCompletionDismissedKeys,
+    })),
+  );
+  const [lastAddedCategoryKey, setLastAddedCategoryKey] = useState<string | null>(null);
+  const [removingCategoryKey, setRemovingCategoryKey] = useState<string | null>(null);
+  const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (removeTimerRef.current) {
+        clearTimeout(removeTimerRef.current);
+        removeTimerRef.current = null;
+      }
+    },
+    [],
+  );
   const planBlocks = useDayPlanStore((s) => s.blocks);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
   const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
@@ -1042,23 +1119,46 @@ export function PriorityBasedPlanSection({
     return [...doneCategoryKeys];
   }, [planBlocks, completedBlockIds, skippedBlockIds]);
 
-  const effectiveCompletedCategoryKeys = useMemo(
-    () => [...new Set([...completedCategoryKeys, ...completedCategoryKeysFromPlan])],
-    [completedCategoryKeys, completedCategoryKeysFromPlan],
-  );
+  /** 플로우 종료 시 플랜 완료 무시 목록 초기화 — 다음 세션에서 다시 일정 완료 반영 */
+  useEffect(() => {
+    if (!isFocusStarted) {
+      clearPlanCompletionDismissedKeys();
+    }
+  }, [isFocusStarted, clearPlanCompletionDismissedKeys]);
 
   useEffect(() => {
-    setCompletedCategoryKeys((prev) => prev.filter((k) => priorityCategoryOrder.includes(k)));
-  }, [priorityCategoryOrder]);
+    filterCompletedFocusKeysToPriorityOrder(priorityCategoryOrder);
+  }, [priorityCategoryOrder, filterCompletedFocusKeysToPriorityOrder]);
+
+  useEffect(() => {
+    if (!lastAddedCategoryKey) return;
+    if (priorityCategoryOrder.includes(lastAddedCategoryKey)) return;
+    setLastAddedCategoryKey(null);
+  }, [lastAddedCategoryKey, priorityCategoryOrder]);
+
+  const isPriorityRowCompleted = useCallback(
+    (categoryKey: string) => {
+      if (completedFocusCategoryKeys.includes(categoryKey)) return true;
+      if (!isFocusStarted) return false;
+      if (planCompletionDismissedKeys.includes(categoryKey)) return false;
+      return completedCategoryKeysFromPlan.includes(categoryKey);
+    },
+    [
+      completedFocusCategoryKeys,
+      completedCategoryKeysFromPlan,
+      isFocusStarted,
+      planCompletionDismissedKeys,
+    ],
+  );
 
   useEffect(() => {
     if (!isFocusStarted) return;
     if (priorityCategoryOrder.length === 0) return;
-    const done = priorityCategoryOrder.every((k) => effectiveCompletedCategoryKeys.includes(k));
+    const done = priorityCategoryOrder.every((k) => isPriorityRowCompleted(k));
     if (done) {
       onAllFocusCompleted?.();
     }
-  }, [isFocusStarted, priorityCategoryOrder, effectiveCompletedCategoryKeys, onAllFocusCompleted]);
+  }, [isFocusStarted, priorityCategoryOrder, isPriorityRowCompleted, onAllFocusCompleted]);
 
   /** 라이트: 대표 톤은 `dayPlanPalette` 그레이(containerLow)·진한 글자(onSurface) — 순백·채도 높은 다크 면 아님 */
   const editorial = useMemo(() => {
@@ -1080,18 +1180,29 @@ export function PriorityBasedPlanSection({
 
   const handleRemove = useCallback(
     (key: string) => {
+      if (removingCategoryKey) return;
+      setRemovingCategoryKey(key);
+      setLastAddedCategoryKey(null);
+      addPlanCompletionDismissedKey(key);
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      onSelectCategory(key);
+      removeTimerRef.current = setTimeout(() => {
+        animateListMutation();
+        onSelectCategory(key);
+        setRemovingCategoryKey((curr) => (curr === key ? null : curr));
+        removeTimerRef.current = null;
+      }, 170);
     },
-    [onSelectCategory],
+    [addPlanCompletionDismissedKey, animateListMutation, onSelectCategory, removingCategoryKey],
   );
 
   const onCatalogTap = useCallback(
     (key: string) => {
+      animateListMutation();
+      setLastAddedCategoryKey(key);
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onSelectCategory(key);
     },
-    [onSelectCategory],
+    [animateListMutation, onSelectCategory],
   );
 
   /** c.containerLow 한 값을 모든 컨테이너에 직접 지정 — 중간 View 투명 영역에서 톤 차이 원천 제거 */
@@ -1374,19 +1485,17 @@ export function PriorityBasedPlanSection({
                       isTopPriority={idx === 0}
                       priorityColor={priorityColorByIndex(idx)}
                       isFocusStarted={isFocusStarted}
-                      isCompleted={effectiveCompletedCategoryKeys.includes(cat.key)}
+                      isCompleted={isPriorityRowCompleted(cat.key)}
                       isDark={isDark}
                       ink={editorial.ink}
                       inkMuted={editorial.muted}
                       line={editorial.line}
                       onRemove={() => handleRemove(cat.key)}
-                      onComplete={() =>
-                        setCompletedCategoryKeys((prev) =>
-                          prev.includes(cat.key) ? prev : [...prev, cat.key],
-                        )
-                      }
+                      onComplete={() => addFocusCategoryCompleted(cat.key)}
                       onSettings={onOpenCategorySettings ? () => onOpenCategorySettings(cat.key) : undefined}
                       onFocusDetail={onOpenFocusDetail ? () => onOpenFocusDetail(cat.key) : undefined}
+                      animateOnMount={lastAddedCategoryKey === cat.key}
+                      isRemoving={removingCategoryKey === cat.key}
                     />
                   ))
                 )}
@@ -1718,18 +1827,18 @@ const styles = StyleSheet.create({
   /** 우선 순위 0개 — 목록 영역 안에서만 안내(배경 장식 원 금지 규칙 준수) */
   priorityEmpty: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: 14,
     paddingHorizontal: 8,
-    gap: 8,
+    gap: 6,
   },
   priorityEmptyIconFrame: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   priorityEmptyTitle: {
     fontSize: 15,
@@ -1740,7 +1849,7 @@ const styles = StyleSheet.create({
   priorityEmptyHint: {
     fontSize: 13,
     fontWeight: '500',
-    lineHeight: 19,
+    lineHeight: 18,
     textAlign: 'center',
     maxWidth: 280,
   },
@@ -1748,7 +1857,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 6,
+    marginTop: 2,
     opacity: 0.9,
   },
   priorityEmptyCueText: {
@@ -1767,11 +1876,12 @@ const styles = StyleSheet.create({
   },
   inlineRankPill: {
     borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   inlineRankPillText: {
-    fontSize: 10,
+    fontSize: 22,
+    lineHeight: 24,
     fontWeight: '800',
     letterSpacing: -0.1,
   },

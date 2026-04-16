@@ -11,22 +11,22 @@
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		5030F36FA407208EADC84060 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C6F2085864CBC917219DC28E /* PrivacyInfo.xcprivacy */; };
 		7F35267344FF99A771C67C14 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC9D6768CC3FBEDC6F0885B /* ExpoModulesProvider.swift */; };
-		A1B2C301D4E5F60011223344 /* LockFlowLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C311D4E5F60011223344 /* LockFlowLiveActivity.swift */; };
-		A1B2C302D4E5F60011223344 /* LockFlowLiveActivityBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C312D4E5F60011223344 /* LockFlowLiveActivityBridge.m */; };
+		A1B2C301D4E5F60011223344 /* LockFlow/LockFlowLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C311D4E5F60011223344 /* LockFlow/LockFlowLiveActivity.swift */; };
+		A1B2C302D4E5F60011223344 /* LockFlow/LockFlowLiveActivityBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C312D4E5F60011223344 /* LockFlow/LockFlowLiveActivityBridge.m */; };
 		A1B2C303D4E5F60011223344 /* LockFlowLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C314D4E5F60011223344 /* LockFlowLiveActivityWidget.swift */; };
 		A1B2C305D4E5F60011223344 /* LockFlowLiveActivity.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A1B2C316D4E5F60011223344 /* LockFlowLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A1B2C306D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C317D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift */; };
 		A1B2C307D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C317D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift */; };
 		B2C3D4A1D4E5F60011223344 /* LockFlowAppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A3D4E5F60011223344 /* LockFlowAppGroup.swift */; };
 		B2C3D4A2D4E5F60011223344 /* LockFlowAppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A3D4E5F60011223344 /* LockFlowAppGroup.swift */; };
-		B2C3D4A4D4E5F60011223344 /* LockFlowWidgetSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A5D4E5F60011223344 /* LockFlowWidgetSync.swift */; };
-		B2C3D4A6D4E5F60011223344 /* LockFlowWidgetSyncBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A7D4E5F60011223344 /* LockFlowWidgetSyncBridge.m */; };
+		B2C3D4A4D4E5F60011223344 /* LockFlow/LockFlowWidgetSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A5D4E5F60011223344 /* LockFlow/LockFlowWidgetSync.swift */; };
+		B2C3D4A6D4E5F60011223344 /* LockFlow/LockFlowWidgetSyncBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A7D4E5F60011223344 /* LockFlow/LockFlowWidgetSyncBridge.m */; };
 		B2C3D4A8D4E5F60011223344 /* DayPlanLockWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A9D4E5F60011223344 /* DayPlanLockWidget.swift */; };
-		E1F2A3B4D4E5F60011223344 /* PriorityModeLiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B5D4E5F60011223344 /* PriorityModeLiveActivityView.swift */; };
-		F1E2D3C4D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		D73C07F3CB831ED61BE484C7 /* libPods-LockFlow.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BD13F38BBCD4B0A6A5254B82 /* libPods-LockFlow.a */; };
+		E1F2A3B4D4E5F60011223344 /* PriorityModeLiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B5D4E5F60011223344 /* PriorityModeLiveActivityView.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		F1E2D3C4D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,27 +59,27 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = LockFlow/Info.plist; sourceTree = "<group>"; };
 		663375D503B62B1BD7492B57 /* Pods-LockFlow.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LockFlow.release.xcconfig"; path = "Target Support Files/Pods-LockFlow/Pods-LockFlow.release.xcconfig"; sourceTree = "<group>"; };
 		6CC9D6768CC3FBEDC6F0885B /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-LockFlow/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		A1B2C311D4E5F60011223344 /* LockFlowLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockFlow/LockFlowLiveActivity.swift; sourceTree = "<group>"; };
-		A1B2C312D4E5F60011223344 /* LockFlowLiveActivityBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = LockFlow/LockFlowLiveActivityBridge.m; sourceTree = "<group>"; };
+		A1B2C311D4E5F60011223344 /* LockFlow/LockFlowLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockFlow/LockFlowLiveActivity.swift; sourceTree = "<group>"; };
+		A1B2C312D4E5F60011223344 /* LockFlow/LockFlowLiveActivityBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = LockFlow/LockFlowLiveActivityBridge.m; sourceTree = "<group>"; };
 		A1B2C313D4E5F60011223344 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1B2C314D4E5F60011223344 /* LockFlowLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockFlowLiveActivityWidget.swift; sourceTree = "<group>"; };
 		A1B2C316D4E5F60011223344 /* LockFlowLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LockFlowLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1B2C317D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockFlowLiveActivityAttributes.swift; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = LockFlow/SplashScreen.storyboard; sourceTree = "<group>"; };
 		B2C3D4A3D4E5F60011223344 /* LockFlowAppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockFlowAppGroup.swift; sourceTree = "<group>"; };
-		B2C3D4A5D4E5F60011223344 /* LockFlowWidgetSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockFlow/LockFlowWidgetSync.swift; sourceTree = "<group>"; };
-		B2C3D4A7D4E5F60011223344 /* LockFlowWidgetSyncBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = LockFlow/LockFlowWidgetSyncBridge.m; sourceTree = "<group>"; };
+		B2C3D4A5D4E5F60011223344 /* LockFlow/LockFlowWidgetSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockFlow/LockFlowWidgetSync.swift; sourceTree = "<group>"; };
+		B2C3D4A7D4E5F60011223344 /* LockFlow/LockFlowWidgetSyncBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = LockFlow/LockFlowWidgetSyncBridge.m; sourceTree = "<group>"; };
 		B2C3D4A9D4E5F60011223344 /* DayPlanLockWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanLockWidget.swift; sourceTree = "<group>"; };
-		E1F2A3B5D4E5F60011223344 /* PriorityModeLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriorityModeLiveActivityView.swift; sourceTree = "<group>"; };
-		F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMemoModeLiveActivityView.swift; sourceTree = "<group>"; };
 		B2C3D4AAD4E5F60011223344 /* LockFlowLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LockFlowLiveActivity.entitlements; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		BD13F38BBCD4B0A6A5254B82 /* libPods-LockFlow.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-LockFlow.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C6F2085864CBC917219DC28E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = LockFlow/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		CAE95808112387BA5F3DC33A /* Pods-LockFlow.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LockFlow.debug.xcconfig"; path = "Target Support Files/Pods-LockFlow/Pods-LockFlow.debug.xcconfig"; sourceTree = "<group>"; };
+		E1F2A3B5D4E5F60011223344 /* PriorityModeLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriorityModeLiveActivityView.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = LockFlow/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* LockFlow-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "LockFlow-Bridging-Header.h"; path = "LockFlow/LockFlow-Bridging-Header.h"; sourceTree = "<group>"; };
+		F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMemoModeLiveActivityView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -105,10 +105,10 @@
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
-				A1B2C311D4E5F60011223344 /* LockFlowLiveActivity.swift */,
-				A1B2C312D4E5F60011223344 /* LockFlowLiveActivityBridge.m */,
-				B2C3D4A5D4E5F60011223344 /* LockFlowWidgetSync.swift */,
-				B2C3D4A7D4E5F60011223344 /* LockFlowWidgetSyncBridge.m */,
+				A1B2C311D4E5F60011223344 /* LockFlow/LockFlowLiveActivity.swift */,
+				A1B2C312D4E5F60011223344 /* LockFlow/LockFlowLiveActivityBridge.m */,
+				B2C3D4A5D4E5F60011223344 /* LockFlow/LockFlowWidgetSync.swift */,
+				B2C3D4A7D4E5F60011223344 /* LockFlow/LockFlowWidgetSyncBridge.m */,
 				F11748442D0722820044C1D9 /* LockFlow-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
@@ -454,10 +454,10 @@
 			files = (
 				A1B2C306D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift in Sources */,
 				B2C3D4A1D4E5F60011223344 /* LockFlowAppGroup.swift in Sources */,
-				A1B2C301D4E5F60011223344 /* LockFlowLiveActivity.swift in Sources */,
-				A1B2C302D4E5F60011223344 /* LockFlowLiveActivityBridge.m in Sources */,
-				B2C3D4A4D4E5F60011223344 /* LockFlowWidgetSync.swift in Sources */,
-				B2C3D4A6D4E5F60011223344 /* LockFlowWidgetSyncBridge.m in Sources */,
+				A1B2C301D4E5F60011223344 /* LockFlow/LockFlowLiveActivity.swift in Sources */,
+				A1B2C302D4E5F60011223344 /* LockFlow/LockFlowLiveActivityBridge.m in Sources */,
+				B2C3D4A4D4E5F60011223344 /* LockFlow/LockFlowWidgetSync.swift in Sources */,
+				B2C3D4A6D4E5F60011223344 /* LockFlow/LockFlowWidgetSyncBridge.m in Sources */,
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
 				7F35267344FF99A771C67C14 /* ExpoModulesProvider.swift in Sources */,
 			);
@@ -514,7 +514,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.LockFlow;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.pokit;
 				PRODUCT_NAME = LockFlow;
 				SWIFT_OBJC_BRIDGING_HEADER = "LockFlow/LockFlow-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -546,7 +546,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.LockFlow;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.pokit;
 				PRODUCT_NAME = LockFlow;
 				SWIFT_OBJC_BRIDGING_HEADER = "LockFlow/LockFlow-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -691,7 +691,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.LockFlow.LiveActivity;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.pokit.LiveActivity;
 				PRODUCT_NAME = LockFlowLiveActivity;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -717,7 +717,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.LockFlow.LiveActivity;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.pokit.LiveActivity;
 				PRODUCT_NAME = LockFlowLiveActivity;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;

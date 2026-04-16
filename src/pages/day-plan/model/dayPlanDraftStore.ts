@@ -12,6 +12,8 @@ type DayPlanDraftState = {
   planMode: PlanMode;
   isFocusStarted: boolean;
   completedFocusCategoryKeys: string[];
+  /** 우선순위에서 항목을 뺐다가 다시 담을 때 플랜 완료만으로 취소선이 남지 않게 막는 키 */
+  planCompletionDismissedKeys: string[];
   /** 우선순위 플로우 적용 기간 시작일 (YYYY-MM-DD) */
   priorityPlanDateKey: string;
   /** 우선순위 플로우 적용 기간 종료일 (YYYY-MM-DD) */
@@ -30,7 +32,13 @@ type DayPlanDraftState = {
   setPlanMode: (mode: PlanMode) => void;
   setIsFocusStarted: (value: boolean) => void;
   toggleFocusCategoryCompleted: (categoryKey: string) => void;
+  /** 완료 체크(한 번만 추가) — 우선순위 행 완료 UI */
+  addFocusCategoryCompleted: (categoryKey: string) => void;
+  /** 우선순위 목록 변경 시 목록 밖 키 제거 */
+  filterCompletedFocusKeysToPriorityOrder: (order: string[]) => void;
   clearCompletedFocusCategoryKeys: () => void;
+  addPlanCompletionDismissedKey: (key: string) => void;
+  clearPlanCompletionDismissedKeys: () => void;
   setPriorityPlanDateKey: (value: string) => void;
   setPriorityPlanDateKeyEnd: (value: string) => void;
   /** 달력 적용 시 명시 구간·자동 플래그까지 한 번에 */
@@ -52,6 +60,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   planMode: 'priority',
   isFocusStarted: false,
   completedFocusCategoryKeys: [],
+  planCompletionDismissedKeys: [],
   priorityPlanDateKey: getLocalDateKey(),
   priorityPlanDateKeyEnd: getLocalDateKey(),
   priorityPlanExplicitMultiDay: false,
@@ -67,7 +76,25 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         ? s.completedFocusCategoryKeys.filter((k) => k !== categoryKey)
         : [...s.completedFocusCategoryKeys, categoryKey],
     })),
+  addFocusCategoryCompleted: (categoryKey) =>
+    set((s) => {
+      if (s.completedFocusCategoryKeys.includes(categoryKey)) return s;
+      return {
+        completedFocusCategoryKeys: [...s.completedFocusCategoryKeys, categoryKey],
+      };
+    }),
+  filterCompletedFocusKeysToPriorityOrder: (order) =>
+    set((s) => ({
+      completedFocusCategoryKeys: s.completedFocusCategoryKeys.filter((k) => order.includes(k)),
+    })),
   clearCompletedFocusCategoryKeys: () => set({ completedFocusCategoryKeys: [] }),
+  addPlanCompletionDismissedKey: (key) =>
+    set((s) => ({
+      planCompletionDismissedKeys: s.planCompletionDismissedKeys.includes(key)
+        ? s.planCompletionDismissedKeys
+        : [...s.planCompletionDismissedKeys, key],
+    })),
+  clearPlanCompletionDismissedKeys: () => set({ planCompletionDismissedKeys: [] }),
   setPriorityPlanDateKey: (value) => set({ priorityPlanDateKey: value }),
   setPriorityPlanDateKeyEnd: (value) => set({ priorityPlanDateKeyEnd: value }),
   applyPriorityPlanCalendarRange: (lo, hi) =>

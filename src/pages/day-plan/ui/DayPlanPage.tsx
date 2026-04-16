@@ -442,10 +442,10 @@ export function DayPlanPage() {
               contentContainerStyle={[
                 styles.scrollContent,
                 {
-                  /** 우선순위 모드: 상단 패딩이 ScrollView 기본(흰색) 위에 c.bg 띠로 보임 → 0 */
-                  paddingTop: planMode === 'quickMemo' ? 12 : 0,
+                  /** 메모/우선순위 동일 상단 inset — 모드 전환 시 토글 세로 위치 고정 */
+                  paddingTop: 12,
                   paddingBottom: scrollContentBottomPad,
-                  ...(planMode === 'quickMemo' ? { flexGrow: 1 } : {}),
+                  flexGrow: 1,
                 },
               ]}
               showsVerticalScrollIndicator={false}

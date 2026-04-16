@@ -87,10 +87,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    /** Switch·아이콘 행 높이 고정 — 모드/상태 전환 시 세로 점프 완화 */
+    minHeight: 52,
   },
   iconHit: {
     flex: 1,
     minWidth: 0,
+    minHeight: 40,
     paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'center',

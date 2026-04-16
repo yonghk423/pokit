@@ -46,12 +46,12 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
       style={[
         styles.wrapper,
         {
-          paddingBottom: insets.bottom,
           backgroundColor: c.containerLow,
           borderTopColor: c.border,
         },
       ]}>
-      <View style={[styles.row, { minHeight: DAY_PLAN_TAB_BAR_ROW_HEIGHT }]}>
+      <View style={[styles.row, { minHeight: DAY_PLAN_TAB_BAR_ROW_HEIGHT + insets.bottom }]}>
+        {/* 추후 재사용 예정: 홈(오늘) 탭 버튼 임시 비노출
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: isDayPlanFocused }}
@@ -66,6 +66,8 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
             오늘
           </ThemedText>
         </Pressable>
+        */}
+        <View style={styles.sidePlaceholder} />
 
         <Pressable
           accessibilityRole="button"
@@ -101,6 +103,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
           )}
         </Pressable>
 
+        {/* 추후 재사용 예정: 설정 탭 버튼 임시 비노출
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: isSettingsFocused }}
@@ -119,6 +122,8 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
             설정
           </ThemedText>
         </Pressable>
+        */}
+        <View style={styles.sidePlaceholder} />
       </View>
     </View>
   );
@@ -141,6 +146,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
     paddingVertical: 6,
+  },
+  sidePlaceholder: {
+    flex: 1,
   },
   tabLabel: {
     fontSize: 10,

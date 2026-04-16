@@ -9,7 +9,7 @@ type Props = ViewProps & {
   onPressBrand?: () => void;
 };
 
-export function TopAppBar({ title = 'LockFlow', onPressBrand, style, ...rest }: Props) {
+export function TopAppBar({ title = 'POKIT', onPressBrand, style, ...rest }: Props) {
   return (
     <ThemedView style={[styles.root, style]} {...rest}>
       <Pressable

@@ -54,7 +54,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
         value={draft}
         onChangeText={onChangeDraft}
         onContentSizeChange={() => onInputContentSizeChange?.()}
-        placeholder="지금 어떤 생각이 드나요?"
+        placeholder="빠르게 메모해보세요"
         placeholderTextColor={c.outline}
         multiline
         /** 내부 스크롤을 끄면 엔터로 줄이 늘어날 때 바깥 ScrollView·키보드 회피 레이아웃이 따라간다 */

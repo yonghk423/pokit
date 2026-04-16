@@ -150,10 +150,6 @@ private actor LockFlowLiveActivityCoordinator {
           endsLog
         )
       } else {
-        for existing in Activity<LockFlowLiveActivityAttributes>.activities {
-          await existing.end(dismissalPolicy: .immediate)
-        }
-
         let attributes = LockFlowLiveActivityAttributes(blockId: payload.blockId)
         _ = try Activity.request(
           attributes: attributes,

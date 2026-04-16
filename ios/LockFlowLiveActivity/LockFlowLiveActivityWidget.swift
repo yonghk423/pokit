@@ -7,7 +7,7 @@ import WidgetKit
 @available(iOS 16.1, *)
 private func lockFlowDayPlanURL() -> URL? {
   var components = URLComponents()
-  components.scheme = "lockflow"
+  components.scheme = "pokit"
   components.host = "day-plan"
   return components.url
 }
@@ -733,7 +733,7 @@ struct LockFlowLiveActivityWidget: Widget {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(liveGrayAccent)
               VStack(alignment: .leading, spacing: 1) {
-                Text("빠른 메모")
+                Text("메모")
                   .font(.caption2.weight(.bold))
                   .foregroundStyle(liveGrayAccent)
                   .lineLimit(1)
