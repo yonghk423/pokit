@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, Share, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { Alert, Pressable, Share, StyleSheet, TextInput, View } from 'react-native';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -25,34 +25,21 @@ export function OtherSettings({
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
   const initial = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
 
-  const [memo, setMemo] = useState(initial.memo);
   const [draftTask, setDraftTask] = useState('');
   const [checklist, setChecklist] = useState(initial.checklist);
-  const [enableDuplicate, setEnableDuplicate] = useState(initial.helperTools.enableDuplicate);
-  const [enableShare, setEnableShare] = useState(initial.helperTools.enableShare);
   const lastRef = useRef<string | null>(null);
 
   useEffect(() => {
-    setMemo(initial.memo);
     setChecklist(initial.checklist);
-    setEnableDuplicate(initial.helperTools.enableDuplicate);
-    setEnableShare(initial.helperTools.enableShare);
   }, [dataConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({
-      memo,
-      checklist,
-      helperTools: {
-        enableDuplicate,
-        enableShare,
-      },
-    });
+    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({ checklist });
     const s = JSON.stringify(payload);
     if (lastRef.current === s) return;
     lastRef.current = s;
     onChangeDataConfig(payload);
-  }, [memo, checklist, enableDuplicate, enableShare, onChangeDataConfig]);
+  }, [checklist, onChangeDataConfig]);
 
   const addTask = () => {
     const text = draftTask.trim();
@@ -69,8 +56,7 @@ export function OtherSettings({
   };
 
   const buildShareText = () => {
-    const items = checklist.length > 0 ? checklist : [{ id: 'memo', text: memo.trim(), done: false }];
-    return items
+    return checklist
       .filter((x) => x.text.trim().length > 0)
       .map((x, i) => `${i + 1}. ${x.done ? '[완료] ' : ''}${x.text.trim()}`)
       .join('\n');
@@ -79,7 +65,7 @@ export function OtherSettings({
   const onShare = async () => {
     const content = buildShareText();
     if (!content) {
-      Alert.alert('공유할 내용 없음', '체크리스트 또는 메모를 먼저 입력해 주세요.');
+      Alert.alert('공유할 내용 없음', '체크리스트를 먼저 입력해 주세요.');
       return;
     }
     await Share.share({
@@ -109,11 +95,9 @@ export function OtherSettings({
       </View>
 
       <View style={[styles.toolbar, { borderTopColor: c.onSurface, borderBottomColor: c.outline }]}>
-        <Pressable style={styles.toolbarBtn} onPress={onShare} disabled={!enableShare}>
-          <IconSymbol name="square.and.arrow.up" size={16} color={enableShare ? c.onSurface : c.outline} />
-          <ThemedText style={[styles.toolbarText, { color: enableShare ? c.onSurface : c.outline }]}>
-            공유
-          </ThemedText>
+        <Pressable style={styles.toolbarBtn} onPress={onShare}>
+          <IconSymbol name="square.and.arrow.up" size={16} color={c.onSurface} />
+          <ThemedText style={[styles.toolbarText, { color: c.onSurface }]}>공유</ThemedText>
         </Pressable>
         <ThemedText style={[styles.counter, { color: c.onVariant }]}>
           완료 {doneCount} · 남음 {pendingCount}
@@ -155,18 +139,16 @@ export function OtherSettings({
               </ThemedText>
             </Pressable>
             <View style={styles.rowActions}>
-              {enableDuplicate ? (
-                <Pressable
-                  onPress={() =>
-                    setChecklist((prev) => [
-                      ...prev,
-                      { ...task, id: `copy_${Date.now()}_${Math.random().toString(16).slice(2, 6)}`, done: false },
-                    ])
-                  }
-                  style={styles.iconBtn}>
-                  <IconSymbol name="doc.on.doc" size={17} color={c.onSurface} />
-                </Pressable>
-              ) : null}
+              <Pressable
+                onPress={() =>
+                  setChecklist((prev) => [
+                    ...prev,
+                    { ...task, id: `copy_${Date.now()}_${Math.random().toString(16).slice(2, 6)}`, done: false },
+                  ])
+                }
+                style={styles.iconBtn}>
+                <IconSymbol name="doc.on.doc" size={17} color={c.onSurface} />
+              </Pressable>
               <Pressable
                 onPress={() => setChecklist((prev) => prev.filter((x) => x.id !== task.id))}
                 style={styles.iconBtn}>
@@ -177,28 +159,6 @@ export function OtherSettings({
         ))}
       </View>
 
-      <View style={[styles.helperCard, { backgroundColor: c.surfaceLowest, borderColor: c.outline }]}>
-        <View style={styles.helperRow}>
-          <ThemedText style={[styles.helperLabel, { color: c.onSurface }]}>복사 기능 사용</ThemedText>
-          <Switch value={enableDuplicate} onValueChange={setEnableDuplicate} />
-        </View>
-        <View style={styles.helperRow}>
-          <ThemedText style={[styles.helperLabel, { color: c.onSurface }]}>공유 기능 사용</ThemedText>
-          <Switch value={enableShare} onValueChange={setEnableShare} />
-        </View>
-      </View>
-
-      <View style={[styles.memoWrap, { borderTopColor: c.outline }]}>
-        <ThemedText style={[styles.sectionKicker, { color: c.onVariant }]}>NOTES</ThemedText>
-        <TextInput
-          value={memo}
-          onChangeText={setMemo}
-          placeholder="보조 메모를 입력해 주세요"
-          placeholderTextColor={c.outline}
-          multiline
-          style={[styles.memoInput, { color: c.onSurface }]}
-        />
-      </View>
     </View>
   );
 }
@@ -241,15 +201,4 @@ const styles = StyleSheet.create({
   rowTitleDone: { textDecorationLine: 'line-through' },
   rowActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   iconBtn: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
-  helperCard: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  helperRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  helperLabel: { fontSize: 14, fontWeight: '700' },
-  memoWrap: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 12, gap: 10 },
-  memoInput: { minHeight: 92, fontSize: 14, lineHeight: 20, fontWeight: '500', textAlignVertical: 'top' },
 });

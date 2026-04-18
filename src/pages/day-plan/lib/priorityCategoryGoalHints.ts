@@ -1,6 +1,7 @@
 import {
   normalizeFastingDetailConfig,
   normalizeMedicineDetailConfig,
+  normalizeOtherDetailConfig,
   normalizeReadingLiveActivityConfig,
   normalizeWaterDetailConfig,
 } from '@entities/day-plan';
@@ -69,6 +70,15 @@ export function getPriorityCategoryGoalHint(
       const idx = Math.min(cfg.takenCount - 1, slots.length - 1);
       const last = slots[idx] ?? slots[slots.length - 1];
       return `${line} · ${last} 복용 · ${cfg.takenCount}/${cfg.dosesPerDay}회`;
+    }
+    case 'other': {
+      const cfg = normalizeOtherDetailConfig(raw ?? {});
+      const total = cfg.checklist.length;
+      const done = cfg.checklist.filter((x) => x.done).length;
+      if (total > 0) {
+        return done > 0 ? `작업 ${total}개 · 완료 ${done}` : `작업 ${total}개`;
+      }
+      return '사용자 플로우 준비됨';
     }
     default:
       return null;

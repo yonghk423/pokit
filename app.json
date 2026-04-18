@@ -26,6 +26,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-mail-composer",
       [
         "expo-splash-screen",
         {
@@ -46,8 +47,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "118534a4-6966-4542-942f-203215c605e9"
+        "projectId": "cf511aec-1358-4869-ac51-99875807f10a"
       }
-    }
+    },
+    "owner": "yonghee"
   }
 }

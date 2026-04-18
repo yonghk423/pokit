@@ -415,13 +415,9 @@ export function OtherSessionCard({
         <BentoWideText
           surface="light"
           icon="star.fill"
-          label="플로우 메모"
+          label="플로우 체크리스트"
           badge="사용자"
-          body={
-            checklistTop ||
-            data.memo.trim() ||
-            '목표 상세에서 체크리스트 또는 메모를 입력해 주세요.'
-          }
+          body={checklistTop || '목표 상세에서 체크리스트를 입력해 주세요.'}
         />
         <BentoRow>
           <BentoHalfMetric surface="light" icon="checkmark.seal.fill" label="완료" value={String(doneCount)} unit="개" />

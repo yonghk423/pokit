@@ -252,17 +252,11 @@ export type OtherChecklistTask = {
 };
 
 export type OtherDetailDataConfig = {
-  memo: string;
   checklist: OtherChecklistTask[];
-  helperTools: {
-    enableDuplicate: boolean;
-    enableShare: boolean;
-  };
 };
 
 export function normalizeOtherDetailConfig(raw: unknown): OtherDetailDataConfig {
   const o = asObj(raw);
-  const memo = clampStr(o.memo, 300);
   const checklist: OtherChecklistTask[] = Array.isArray(o.checklist)
     ? (o.checklist as unknown[])
         .filter((t): t is Record<string, unknown> => t != null && typeof t === 'object')
@@ -274,26 +268,12 @@ export function normalizeOtherDetailConfig(raw: unknown): OtherDetailDataConfig 
         .filter((t) => t.text.length > 0)
     : [];
 
-  const helperRaw = asObj(o.helperTools);
-  return {
-    memo,
-    checklist,
-    helperTools: {
-      enableDuplicate:
-        typeof helperRaw.enableDuplicate === 'boolean' ? helperRaw.enableDuplicate : true,
-      enableShare: typeof helperRaw.enableShare === 'boolean' ? helperRaw.enableShare : true,
-    },
-  };
+  return { checklist };
 }
 
 export function getInitialOtherDataConfig(): OtherDetailDataConfig {
   return {
-    memo: '',
     checklist: [],
-    helperTools: {
-      enableDuplicate: true,
-      enableShare: true,
-    },
   };
 }
 

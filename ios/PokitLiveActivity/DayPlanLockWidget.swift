@@ -64,7 +64,7 @@ private struct FlatPlanModel {
 private func buildFlatModel(snapshot: DayPlanSnapshotJson?) -> FlatPlanModel {
   guard let snapshot else {
     return FlatPlanModel(
-      headerTitle: "LockFlow",
+      headerTitle: "POKIT",
       countLabel: "",
       rows: [],
       emptyMessage: "일정을 불러올 수 없어요"

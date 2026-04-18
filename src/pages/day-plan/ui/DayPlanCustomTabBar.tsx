@@ -29,6 +29,8 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
    */
   const isDayPlanFocused = focusedRoute === 'day-plan' || focusedRoute === 'index';
   const isSettingsFocused = focusedRoute === 'settings';
+  const activeTabIconColor = '#6B7280';
+  const inactiveTabIconColor = '#9CA3AF';
 
   const centerDisabled = !isDayPlanFocused || bridge.primaryDisabled;
 
@@ -51,23 +53,18 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
         },
       ]}>
       <View style={[styles.row, { minHeight: DAY_PLAN_TAB_BAR_ROW_HEIGHT + insets.bottom }]}>
-        {/* 추후 재사용 예정: 홈(오늘) 탭 버튼 임시 비노출
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: isDayPlanFocused }}
-          accessibilityLabel="오늘"
+          accessibilityLabel="홈"
           onPress={() => navigation.navigate('day-plan')}
           style={({ pressed }) => [styles.sideTab, pressed && { opacity: 0.7 }]}>
-          <IconSymbol name="house.fill" size={24} color={isDayPlanFocused ? PRIMARY : c.onVariant} />
-          <ThemedText
-            style={[styles.tabLabel, { color: isDayPlanFocused ? PRIMARY : c.onVariant }]}
-            lightColor={isDayPlanFocused ? PRIMARY : c.onVariant}
-            darkColor={isDayPlanFocused ? PRIMARY : c.onVariant}>
-            오늘
-          </ThemedText>
+          <IconSymbol
+            name="bag.fill"
+            size={24}
+            color={isDayPlanFocused ? activeTabIconColor : inactiveTabIconColor}
+          />
         </Pressable>
-        */}
-        <View style={styles.sidePlaceholder} />
 
         <Pressable
           accessibilityRole="button"
@@ -103,7 +100,6 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
           )}
         </Pressable>
 
-        {/* 추후 재사용 예정: 설정 탭 버튼 임시 비노출
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: isSettingsFocused }}
@@ -111,19 +107,11 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
           onPress={() => navigation.navigate('settings')}
           style={({ pressed }) => [styles.sideTab, pressed && { opacity: 0.7 }]}>
           <IconSymbol
-            name="gearshape.fill"
+            name="person.fill"
             size={24}
-            color={isSettingsFocused ? PRIMARY : c.onVariant}
+            color={isSettingsFocused ? activeTabIconColor : inactiveTabIconColor}
           />
-          <ThemedText
-            style={[styles.tabLabel, { color: isSettingsFocused ? PRIMARY : c.onVariant }]}
-            lightColor={isSettingsFocused ? PRIMARY : c.onVariant}
-            darkColor={isSettingsFocused ? PRIMARY : c.onVariant}>
-            설정
-          </ThemedText>
         </Pressable>
-        */}
-        <View style={styles.sidePlaceholder} />
       </View>
     </View>
   );
@@ -146,14 +134,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
     paddingVertical: 6,
-  },
-  sidePlaceholder: {
-    flex: 1,
-  },
-  tabLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.2,
   },
   centerBtn: {
     flexShrink: 0,

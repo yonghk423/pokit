@@ -11,19 +11,19 @@
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		5030F36FA407208EADC84060 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C6F2085864CBC917219DC28E /* PrivacyInfo.xcprivacy */; };
 		7F35267344FF99A771C67C14 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC9D6768CC3FBEDC6F0885B /* ExpoModulesProvider.swift */; };
-		A1B2C301D4E5F60011223344 /* LockFlow/LockFlowLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C311D4E5F60011223344 /* LockFlow/LockFlowLiveActivity.swift */; };
-		A1B2C302D4E5F60011223344 /* LockFlow/LockFlowLiveActivityBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C312D4E5F60011223344 /* LockFlow/LockFlowLiveActivityBridge.m */; };
-		A1B2C303D4E5F60011223344 /* LockFlowLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C314D4E5F60011223344 /* LockFlowLiveActivityWidget.swift */; };
-		A1B2C305D4E5F60011223344 /* LockFlowLiveActivity.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A1B2C316D4E5F60011223344 /* LockFlowLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		A1B2C306D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C317D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift */; };
-		A1B2C307D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C317D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift */; };
+		A1B2C301D4E5F60011223344 /* PokitLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C311D4E5F60011223344 /* PokitLiveActivity.swift */; };
+		A1B2C302D4E5F60011223344 /* PokitLiveActivityBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C312D4E5F60011223344 /* PokitLiveActivityBridge.m */; };
+		A1B2C303D4E5F60011223344 /* PokitLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C314D4E5F60011223344 /* PokitLiveActivityWidget.swift */; };
+		A1B2C305D4E5F60011223344 /* PokitLiveActivity.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A1B2C316D4E5F60011223344 /* PokitLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A1B2C306D4E5F60011223344 /* PokitLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C317D4E5F60011223344 /* PokitLiveActivityAttributes.swift */; };
+		A1B2C307D4E5F60011223344 /* PokitLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C317D4E5F60011223344 /* PokitLiveActivityAttributes.swift */; };
 		B2C3D4A1D4E5F60011223344 /* LockFlowAppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A3D4E5F60011223344 /* LockFlowAppGroup.swift */; };
 		B2C3D4A2D4E5F60011223344 /* LockFlowAppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A3D4E5F60011223344 /* LockFlowAppGroup.swift */; };
-		B2C3D4A4D4E5F60011223344 /* LockFlow/LockFlowWidgetSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A5D4E5F60011223344 /* LockFlow/LockFlowWidgetSync.swift */; };
-		B2C3D4A6D4E5F60011223344 /* LockFlow/LockFlowWidgetSyncBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A7D4E5F60011223344 /* LockFlow/LockFlowWidgetSyncBridge.m */; };
+		B2C3D4A4D4E5F60011223344 /* LockFlowWidgetSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A5D4E5F60011223344 /* LockFlowWidgetSync.swift */; };
+		B2C3D4A6D4E5F60011223344 /* LockFlowWidgetSyncBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A7D4E5F60011223344 /* LockFlowWidgetSyncBridge.m */; };
 		B2C3D4A8D4E5F60011223344 /* DayPlanLockWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A9D4E5F60011223344 /* DayPlanLockWidget.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		D73C07F3CB831ED61BE484C7 /* libPods-LockFlow.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BD13F38BBCD4B0A6A5254B82 /* libPods-LockFlow.a */; };
+		D73C07F3CB831ED61BE484C7 /* libPods-Pokit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BD13F38BBCD4B0A6A5254B82 /* libPods-Pokit.a */; };
 		E1F2A3B4D4E5F60011223344 /* PriorityModeLiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B5D4E5F60011223344 /* PriorityModeLiveActivityView.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		F1E2D3C4D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */; };
@@ -35,7 +35,7 @@
 			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = A1B2C333D4E5F60011223344;
-			remoteInfo = LockFlowLiveActivity;
+			remoteInfo = PokitLiveActivity;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -46,7 +46,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				A1B2C305D4E5F60011223344 /* LockFlowLiveActivity.appex in Embed App Extensions */,
+				A1B2C305D4E5F60011223344 /* PokitLiveActivity.appex in Embed App Extensions */,
 			);
 			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -54,31 +54,31 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		13B07F961A680F5B00A75B9A /* LockFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LockFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = LockFlow/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = LockFlow/Info.plist; sourceTree = "<group>"; };
-		663375D503B62B1BD7492B57 /* Pods-LockFlow.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LockFlow.release.xcconfig"; path = "Target Support Files/Pods-LockFlow/Pods-LockFlow.release.xcconfig"; sourceTree = "<group>"; };
-		6CC9D6768CC3FBEDC6F0885B /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-LockFlow/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		A1B2C311D4E5F60011223344 /* LockFlow/LockFlowLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockFlow/LockFlowLiveActivity.swift; sourceTree = "<group>"; };
-		A1B2C312D4E5F60011223344 /* LockFlow/LockFlowLiveActivityBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = LockFlow/LockFlowLiveActivityBridge.m; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* Pokit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pokit.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Pokit/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Pokit/Info.plist; sourceTree = "<group>"; };
+		663375D503B62B1BD7492B57 /* Pods-Pokit.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pokit.release.xcconfig"; path = "Target Support Files/Pods-Pokit/Pods-Pokit.release.xcconfig"; sourceTree = "<group>"; };
+		6CC9D6768CC3FBEDC6F0885B /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Pokit/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		A1B2C311D4E5F60011223344 /* PokitLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pokit/PokitLiveActivity.swift; sourceTree = "<group>"; };
+		A1B2C312D4E5F60011223344 /* PokitLiveActivityBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Pokit/PokitLiveActivityBridge.m; sourceTree = "<group>"; };
 		A1B2C313D4E5F60011223344 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A1B2C314D4E5F60011223344 /* LockFlowLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockFlowLiveActivityWidget.swift; sourceTree = "<group>"; };
-		A1B2C316D4E5F60011223344 /* LockFlowLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LockFlowLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		A1B2C317D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockFlowLiveActivityAttributes.swift; sourceTree = "<group>"; };
-		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = LockFlow/SplashScreen.storyboard; sourceTree = "<group>"; };
+		A1B2C314D4E5F60011223344 /* PokitLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokitLiveActivityWidget.swift; sourceTree = "<group>"; };
+		A1B2C316D4E5F60011223344 /* PokitLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PokitLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C317D4E5F60011223344 /* PokitLiveActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokitLiveActivityAttributes.swift; sourceTree = "<group>"; };
+		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Pokit/SplashScreen.storyboard; sourceTree = "<group>"; };
 		B2C3D4A3D4E5F60011223344 /* LockFlowAppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockFlowAppGroup.swift; sourceTree = "<group>"; };
-		B2C3D4A5D4E5F60011223344 /* LockFlow/LockFlowWidgetSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockFlow/LockFlowWidgetSync.swift; sourceTree = "<group>"; };
-		B2C3D4A7D4E5F60011223344 /* LockFlow/LockFlowWidgetSyncBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = LockFlow/LockFlowWidgetSyncBridge.m; sourceTree = "<group>"; };
+		B2C3D4A5D4E5F60011223344 /* LockFlowWidgetSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pokit/LockFlowWidgetSync.swift; sourceTree = "<group>"; };
+		B2C3D4A7D4E5F60011223344 /* LockFlowWidgetSyncBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Pokit/LockFlowWidgetSyncBridge.m; sourceTree = "<group>"; };
 		B2C3D4A9D4E5F60011223344 /* DayPlanLockWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanLockWidget.swift; sourceTree = "<group>"; };
-		B2C3D4AAD4E5F60011223344 /* LockFlowLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LockFlowLiveActivity.entitlements; sourceTree = "<group>"; };
+		B2C3D4AAD4E5F60011223344 /* PokitLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PokitLiveActivity.entitlements; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		BD13F38BBCD4B0A6A5254B82 /* libPods-LockFlow.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-LockFlow.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		C6F2085864CBC917219DC28E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = LockFlow/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		CAE95808112387BA5F3DC33A /* Pods-LockFlow.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LockFlow.debug.xcconfig"; path = "Target Support Files/Pods-LockFlow/Pods-LockFlow.debug.xcconfig"; sourceTree = "<group>"; };
+		BD13F38BBCD4B0A6A5254B82 /* libPods-Pokit.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Pokit.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C6F2085864CBC917219DC28E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Pokit/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		CAE95808112387BA5F3DC33A /* Pods-Pokit.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pokit.debug.xcconfig"; path = "Target Support Files/Pods-Pokit/Pods-Pokit.debug.xcconfig"; sourceTree = "<group>"; };
 		E1F2A3B5D4E5F60011223344 /* PriorityModeLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriorityModeLiveActivityView.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = LockFlow/AppDelegate.swift; sourceTree = "<group>"; };
-		F11748442D0722820044C1D9 /* LockFlow-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "LockFlow-Bridging-Header.h"; path = "LockFlow/LockFlow-Bridging-Header.h"; sourceTree = "<group>"; };
+		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Pokit/AppDelegate.swift; sourceTree = "<group>"; };
+		F11748442D0722820044C1D9 /* Pokit-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Pokit-Bridging-Header.h"; path = "Pokit/Pokit-Bridging-Header.h"; sourceTree = "<group>"; };
 		F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMemoModeLiveActivityView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -87,7 +87,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D73C07F3CB831ED61BE484C7 /* libPods-LockFlow.a in Frameworks */,
+				D73C07F3CB831ED61BE484C7 /* libPods-Pokit.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,29 +101,29 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		13B07FAE1A68108700A75B9A /* LockFlow */ = {
+		13B07FAE1A68108700A75B9A /* Pokit */ = {
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
-				A1B2C311D4E5F60011223344 /* LockFlow/LockFlowLiveActivity.swift */,
-				A1B2C312D4E5F60011223344 /* LockFlow/LockFlowLiveActivityBridge.m */,
-				B2C3D4A5D4E5F60011223344 /* LockFlow/LockFlowWidgetSync.swift */,
-				B2C3D4A7D4E5F60011223344 /* LockFlow/LockFlowWidgetSyncBridge.m */,
-				F11748442D0722820044C1D9 /* LockFlow-Bridging-Header.h */,
+				A1B2C311D4E5F60011223344 /* PokitLiveActivity.swift */,
+				A1B2C312D4E5F60011223344 /* PokitLiveActivityBridge.m */,
+				B2C3D4A5D4E5F60011223344 /* LockFlowWidgetSync.swift */,
+				B2C3D4A7D4E5F60011223344 /* LockFlowWidgetSyncBridge.m */,
+				F11748442D0722820044C1D9 /* Pokit-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				C6F2085864CBC917219DC28E /* PrivacyInfo.xcprivacy */,
 			);
-			name = LockFlow;
+			name = Pokit;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				BD13F38BBCD4B0A6A5254B82 /* libPods-LockFlow.a */,
+				BD13F38BBCD4B0A6A5254B82 /* libPods-Pokit.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -138,9 +138,9 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				13B07FAE1A68108700A75B9A /* LockFlow */,
-				A1B2C321D4E5F60011223344 /* LockFlowLiveActivity */,
-				A1B2C322D4E5F60011223344 /* LockFlowShared */,
+				13B07FAE1A68108700A75B9A /* Pokit */,
+				A1B2C321D4E5F60011223344 /* PokitLiveActivity */,
+				A1B2C322D4E5F60011223344 /* PokitShared */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
@@ -155,40 +155,40 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* LockFlow.app */,
-				A1B2C316D4E5F60011223344 /* LockFlowLiveActivity.appex */,
+				13B07F961A680F5B00A75B9A /* Pokit.app */,
+				A1B2C316D4E5F60011223344 /* PokitLiveActivity.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A02B44763DE17B2987F35EF5 /* LockFlow */ = {
+		A02B44763DE17B2987F35EF5 /* Pokit */ = {
 			isa = PBXGroup;
 			children = (
 				6CC9D6768CC3FBEDC6F0885B /* ExpoModulesProvider.swift */,
 			);
-			name = LockFlow;
+			name = Pokit;
 			sourceTree = "<group>";
 		};
-		A1B2C321D4E5F60011223344 /* LockFlowLiveActivity */ = {
+		A1B2C321D4E5F60011223344 /* PokitLiveActivity */ = {
 			isa = PBXGroup;
 			children = (
-				A1B2C314D4E5F60011223344 /* LockFlowLiveActivityWidget.swift */,
+				A1B2C314D4E5F60011223344 /* PokitLiveActivityWidget.swift */,
 				E1F2A3B5D4E5F60011223344 /* PriorityModeLiveActivityView.swift */,
 				F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */,
 				B2C3D4A9D4E5F60011223344 /* DayPlanLockWidget.swift */,
 				A1B2C313D4E5F60011223344 /* Info.plist */,
-				B2C3D4AAD4E5F60011223344 /* LockFlowLiveActivity.entitlements */,
+				B2C3D4AAD4E5F60011223344 /* PokitLiveActivity.entitlements */,
 			);
-			path = LockFlowLiveActivity;
+			path = PokitLiveActivity;
 			sourceTree = "<group>";
 		};
-		A1B2C322D4E5F60011223344 /* LockFlowShared */ = {
+		A1B2C322D4E5F60011223344 /* PokitShared */ = {
 			isa = PBXGroup;
 			children = (
 				B2C3D4A3D4E5F60011223344 /* LockFlowAppGroup.swift */,
-				A1B2C317D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift */,
+				A1B2C317D4E5F60011223344 /* PokitLiveActivityAttributes.swift */,
 			);
-			path = LockFlowShared;
+			path = PokitShared;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -197,14 +197,14 @@
 				BB2F792C24A3F905000567C9 /* Expo.plist */,
 			);
 			name = Supporting;
-			path = LockFlow/Supporting;
+			path = Pokit/Supporting;
 			sourceTree = "<group>";
 		};
 		CFE4594F85C4E05F8BC07B43 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				CAE95808112387BA5F3DC33A /* Pods-LockFlow.debug.xcconfig */,
-				663375D503B62B1BD7492B57 /* Pods-LockFlow.release.xcconfig */,
+				CAE95808112387BA5F3DC33A /* Pods-Pokit.debug.xcconfig */,
+				663375D503B62B1BD7492B57 /* Pods-Pokit.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -212,7 +212,7 @@
 		F6C10BA990D9B8B23E85D372 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				A02B44763DE17B2987F35EF5 /* LockFlow */,
+				A02B44763DE17B2987F35EF5 /* Pokit */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
@@ -220,9 +220,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13B07F861A680F5B00A75B9A /* LockFlow */ = {
+		13B07F861A680F5B00A75B9A /* Pokit */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "LockFlow" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Pokit" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
 				7C5B31FF09D2485FE8993F7E /* [Expo] Configure project */,
@@ -239,14 +239,14 @@
 			dependencies = (
 				A1B2C337D4E5F60011223344 /* PBXTargetDependency */,
 			);
-			name = LockFlow;
-			productName = LockFlow;
-			productReference = 13B07F961A680F5B00A75B9A /* LockFlow.app */;
+			name = Pokit;
+			productName = Pokit;
+			productReference = 13B07F961A680F5B00A75B9A /* Pokit.app */;
 			productType = "com.apple.product-type.application";
 		};
-		A1B2C333D4E5F60011223344 /* LockFlowLiveActivity */ = {
+		A1B2C333D4E5F60011223344 /* PokitLiveActivity */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A1B2C343D4E5F60011223344 /* Build configuration list for PBXNativeTarget "LockFlowLiveActivity" */;
+			buildConfigurationList = A1B2C343D4E5F60011223344 /* Build configuration list for PBXNativeTarget "PokitLiveActivity" */;
 			buildPhases = (
 				A1B2C335D4E5F60011223344 /* Sources */,
 				A1B2C332D4E5F60011223344 /* Frameworks */,
@@ -256,9 +256,9 @@
 			);
 			dependencies = (
 			);
-			name = LockFlowLiveActivity;
-			productName = LockFlowLiveActivity;
-			productReference = A1B2C316D4E5F60011223344 /* LockFlowLiveActivity.appex */;
+			name = PokitLiveActivity;
+			productName = PokitLiveActivity;
+			productReference = A1B2C316D4E5F60011223344 /* PokitLiveActivity.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -277,7 +277,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "LockFlow" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "Pokit" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -290,8 +290,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* LockFlow */,
-				A1B2C333D4E5F60011223344 /* LockFlowLiveActivity */,
+				13B07F861A680F5B00A75B9A /* Pokit */,
+				A1B2C333D4E5F60011223344 /* PokitLiveActivity */,
 			);
 		};
 /* End PBXProject section */
@@ -350,7 +350,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-LockFlow-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-Pokit-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -368,18 +368,18 @@
 			inputPaths = (
 				"$(SRCROOT)/.xcode.env",
 				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/LockFlow/LockFlow.entitlements",
-				"$(SRCROOT)/Pods/Target Support Files/Pods-LockFlow/expo-configure-project.sh",
+				"$(SRCROOT)/Pokit/Pokit.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-Pokit/expo-configure-project.sh",
 			);
 			name = "[Expo] Configure project";
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(SRCROOT)/Pods/Target Support Files/Pods-LockFlow/ExpoModulesProvider.swift",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-Pokit/ExpoModulesProvider.swift",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-LockFlow/expo-configure-project.sh\"\n";
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Pokit/expo-configure-project.sh\"\n";
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -387,11 +387,12 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-LockFlow/Pods-LockFlow-resources.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-Pokit/Pods-Pokit-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXApplication/ExpoApplication_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXNotifications/ExpoNotifications_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoDevice/ExpoDevice_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoSystemUI/ExpoSystemUI_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNCAsyncStorage/RNCAsyncStorage_resources.bundle",
@@ -408,6 +409,7 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoNotifications_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoDevice_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoSystemUI_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNCAsyncStorage_resources.bundle",
@@ -420,7 +422,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-LockFlow/Pods-LockFlow-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Pokit/Pods-Pokit-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		F5190BAD86C9265DB199E421 /* [CP] Embed Pods Frameworks */ = {
@@ -429,7 +431,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-LockFlow/Pods-LockFlow-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-Pokit/Pods-Pokit-frameworks.sh",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
@@ -442,7 +444,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-LockFlow/Pods-LockFlow-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Pokit/Pods-Pokit-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -452,12 +454,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1B2C306D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift in Sources */,
+				A1B2C306D4E5F60011223344 /* PokitLiveActivityAttributes.swift in Sources */,
 				B2C3D4A1D4E5F60011223344 /* LockFlowAppGroup.swift in Sources */,
-				A1B2C301D4E5F60011223344 /* LockFlow/LockFlowLiveActivity.swift in Sources */,
-				A1B2C302D4E5F60011223344 /* LockFlow/LockFlowLiveActivityBridge.m in Sources */,
-				B2C3D4A4D4E5F60011223344 /* LockFlow/LockFlowWidgetSync.swift in Sources */,
-				B2C3D4A6D4E5F60011223344 /* LockFlow/LockFlowWidgetSyncBridge.m in Sources */,
+				A1B2C301D4E5F60011223344 /* PokitLiveActivity.swift in Sources */,
+				A1B2C302D4E5F60011223344 /* PokitLiveActivityBridge.m in Sources */,
+				B2C3D4A4D4E5F60011223344 /* LockFlowWidgetSync.swift in Sources */,
+				B2C3D4A6D4E5F60011223344 /* LockFlowWidgetSyncBridge.m in Sources */,
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
 				7F35267344FF99A771C67C14 /* ExpoModulesProvider.swift in Sources */,
 			);
@@ -467,9 +469,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1B2C307D4E5F60011223344 /* LockFlowLiveActivityAttributes.swift in Sources */,
+				A1B2C307D4E5F60011223344 /* PokitLiveActivityAttributes.swift in Sources */,
 				B2C3D4A2D4E5F60011223344 /* LockFlowAppGroup.swift in Sources */,
-				A1B2C303D4E5F60011223344 /* LockFlowLiveActivityWidget.swift in Sources */,
+				A1B2C303D4E5F60011223344 /* PokitLiveActivityWidget.swift in Sources */,
 				E1F2A3B4D4E5F60011223344 /* PriorityModeLiveActivityView.swift in Sources */,
 				F1E2D3C4D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift in Sources */,
 				B2C3D4A8D4E5F60011223344 /* DayPlanLockWidget.swift in Sources */,
@@ -481,7 +483,7 @@
 /* Begin PBXTargetDependency section */
 		A1B2C337D4E5F60011223344 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = A1B2C333D4E5F60011223344 /* LockFlowLiveActivity */;
+			target = A1B2C333D4E5F60011223344 /* PokitLiveActivity */;
 			targetProxy = A1B2C336D4E5F60011223344 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -489,11 +491,11 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = CAE95808112387BA5F3DC33A /* Pods-LockFlow.debug.xcconfig */;
+			baseConfigurationReference = CAE95808112387BA5F3DC33A /* Pods-Pokit.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = LockFlow/LockFlow.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Pokit/Pokit.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7Z957H35S5;
 				ENABLE_BITCODE = NO;
@@ -501,7 +503,7 @@
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
 				);
-				INFOPLIST_FILE = LockFlow/Info.plist;
+				INFOPLIST_FILE = Pokit/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -515,8 +517,8 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.pokit;
-				PRODUCT_NAME = LockFlow;
-				SWIFT_OBJC_BRIDGING_HEADER = "LockFlow/LockFlow-Bridging-Header.h";
+				PRODUCT_NAME = Pokit;
+				SWIFT_OBJC_BRIDGING_HEADER = "Pokit/Pokit-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -526,14 +528,14 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 663375D503B62B1BD7492B57 /* Pods-LockFlow.release.xcconfig */;
+			baseConfigurationReference = 663375D503B62B1BD7492B57 /* Pods-Pokit.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = LockFlow/LockFlow.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Pokit/Pokit.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7Z957H35S5;
-				INFOPLIST_FILE = LockFlow/Info.plist;
+				INFOPLIST_FILE = Pokit/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -547,8 +549,8 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.pokit;
-				PRODUCT_NAME = LockFlow;
-				SWIFT_OBJC_BRIDGING_HEADER = "LockFlow/LockFlow-Bridging-Header.h";
+				PRODUCT_NAME = Pokit;
+				SWIFT_OBJC_BRIDGING_HEADER = "Pokit/Pokit-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
@@ -677,12 +679,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = LockFlowLiveActivity/LockFlowLiveActivity.entitlements;
+				CODE_SIGN_ENTITLEMENTS = PokitLiveActivity/PokitLiveActivity.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7Z957H35S5;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = LockFlowLiveActivity/Info.plist;
+				INFOPLIST_FILE = PokitLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -692,7 +694,7 @@
 				MARKETING_VERSION = 1.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.pokit.LiveActivity;
-				PRODUCT_NAME = LockFlowLiveActivity;
+				PRODUCT_NAME = PokitLiveActivity;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -703,12 +705,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = LockFlowLiveActivity/LockFlowLiveActivity.entitlements;
+				CODE_SIGN_ENTITLEMENTS = PokitLiveActivity/PokitLiveActivity.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7Z957H35S5;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = LockFlowLiveActivity/Info.plist;
+				INFOPLIST_FILE = PokitLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -718,7 +720,7 @@
 				MARKETING_VERSION = 1.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.pokit.LiveActivity;
-				PRODUCT_NAME = LockFlowLiveActivity;
+				PRODUCT_NAME = PokitLiveActivity;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -728,7 +730,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "LockFlow" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Pokit" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
@@ -737,7 +739,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "LockFlow" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "Pokit" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,
@@ -746,7 +748,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A1B2C343D4E5F60011223344 /* Build configuration list for PBXNativeTarget "LockFlowLiveActivity" */ = {
+		A1B2C343D4E5F60011223344 /* Build configuration list for PBXNativeTarget "PokitLiveActivity" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1B2C341D4E5F60011223344 /* Debug */,

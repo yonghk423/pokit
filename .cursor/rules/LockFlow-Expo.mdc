@@ -246,9 +246,9 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 **구현 위치**
 
-- 잠금화면 배너 본문: `ios/LockFlowLiveActivity/LockFlowLiveActivityWidget.swift` 의 `LockFlowLiveActivityView`
-- `ContentState`·payload 타입: `ios/LockFlowShared/LockFlowLiveActivityAttributes.swift`
-- RN → 네이티브 upsert: `ios/LockFlow/LockFlowLiveActivity.swift` 및 `src/features/live-activity-sync/*`
+- 잠금화면 배너 본문: `ios/PokitLiveActivity/PokitLiveActivityWidget.swift` 의 `LockFlowLiveActivityView`
+- `ContentState`·payload 타입: `ios/PokitShared/PokitLiveActivityAttributes.swift`
+- RN → 네이티브 upsert: `ios/Pokit/PokitLiveActivity.swift` 및 `src/features/live-activity-sync/*`
 
 **높이·폭(시스템)**
 
@@ -298,7 +298,7 @@ LockFlow 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상�
 
 **에이전트/리뷰 체크리스트**
 
-- [ ] `LockFlowLiveActivityWidget.swift` 배너 UI를 수정했는가? → `ReadingPreview.tsx`(또는 해당 카테고리 Preview) 동일 의도로 갱신했는가?
+- [ ] `PokitLiveActivityWidget.swift` 배너 UI를 수정했는가? → `ReadingPreview.tsx`(또는 해당 카테고리 Preview) 동일 의도로 갱신했는가?
 - [ ] 새 지표·버튼·카테고리 분기를 Swift에 추가했는가? → 미리보기에 payload/`dataConfig` 반영 가능한가?
 - [ ] 한글 카피·라벨은 Swift와 RN 미리보기가 동일한가?
 
