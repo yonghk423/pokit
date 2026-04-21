@@ -1,10 +1,14 @@
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import {
+  BottomTabBarHeightCallbackContext,
+  type BottomTabBarProps,
+} from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useContext, useMemo } from 'react';
+import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -12,15 +16,32 @@ import { PRIMARY } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 
-/** DayPlan 스크롤 하단 여백과 맞출 때 사용 */
-export const DAY_PLAN_TAB_BAR_ROW_HEIGHT = 52;
+/** DayPlan 탭 행 `minHeight` 기준(레이아웃·타이핑용) */
+export const DAY_PLAN_TAB_BAR_ROW_HEIGHT = 56;
+
+/**
+ * Bottom tabs 네비게이터가 씬과 탭바를 이미 나누므로, 스크롤 `paddingBottom`에 탭 높이·세이프를
+ * 한 번 더 넣으면 리스트 아래에 큰 빈 면이 생긴다. 끝에서 숨 쉴 여백만 둔다.
+ */
+export function tabBarScrollBottomInset(_safeBottomInset: number, endGapPx = 6): number {
+  return endGapPx;
+}
 
 export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const onTabBarHeightChange = useContext(BottomTabBarHeightCallbackContext);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const c = useMemo(() => palette(isDark), [isDark]);
+  const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
   const bridge = useDayPlanTabBridge();
+
+  const handleBarLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      onTabBarHeightChange?.(e.nativeEvent.layout.height);
+    },
+    [onTabBarHeightChange],
+  );
 
   const focusedRoute = state.routes[state.index]?.name;
   /**
@@ -28,9 +49,9 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
    * 가운데 액션 버튼이 눌리지 않는 문제를 막기 위해 동일 화면으로 취급한다.
    */
   const isDayPlanFocused = focusedRoute === 'day-plan' || focusedRoute === 'index';
+  const isCatalogFocused = focusedRoute === 'priority-catalog';
   const isSettingsFocused = focusedRoute === 'settings';
-  const activeTabIconColor = '#6B7280';
-  const inactiveTabIconColor = '#9CA3AF';
+  const hideCenterButton = bridge.primaryHidden;
 
   const centerDisabled = !isDayPlanFocused || bridge.primaryDisabled;
 
@@ -45,51 +66,76 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
 
   return (
     <View
+      onLayout={handleBarLayout}
       style={[
         styles.wrapper,
         {
           backgroundColor: c.containerLow,
           borderTopColor: c.border,
+          /** 세이프는 행 밖으로만 — 행에 minHeight+insets를 같이 쓰면 아이콘이 세로 중앙에 뜨며 위쪽에 큰 빈 면이 생김 */
+          paddingBottom: insets.bottom,
         },
       ]}>
-      <View style={[styles.row, { minHeight: DAY_PLAN_TAB_BAR_ROW_HEIGHT + insets.bottom }]}>
+      <View style={[styles.row, { minHeight: DAY_PLAN_TAB_BAR_ROW_HEIGHT }]}>
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: isDayPlanFocused }}
-          accessibilityLabel="홈"
-          onPress={() => navigation.navigate('day-plan')}
-          style={({ pressed }) => [styles.sideTab, pressed && { opacity: 0.7 }]}>
+          accessibilityLabel="오늘"
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('day-plan');
+          }}
+          style={({ pressed }) => [
+            styles.tabPill,
+            {
+              backgroundColor: isDayPlanFocused ? tabColors.activeBg : tabColors.inactiveBg,
+              borderColor: isDayPlanFocused ? tabColors.activeBorder : tabColors.inactiveBorder,
+            },
+            pressed && { opacity: 0.92 },
+          ]}>
           <IconSymbol
             name="bag.fill"
             size={24}
-            color={isDayPlanFocused ? activeTabIconColor : inactiveTabIconColor}
+            color={isDayPlanFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
           />
         </Pressable>
 
         <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={bridge.primaryLabel}
-          accessibilityState={{ disabled: centerDisabled }}
-          onPress={onCenterPress}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: isCatalogFocused }}
+          accessibilityLabel="담기, 오늘 집중할 것 고르기"
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('priority-catalog');
+          }}
           style={({ pressed }) => [
-            styles.centerBtn,
+            styles.tabPill,
             {
-              backgroundColor: centerDisabled ? c.containerHigh : PRIMARY,
-              opacity: pressed && !centerDisabled ? 0.92 : 1,
+              backgroundColor: isCatalogFocused ? tabColors.activeBg : tabColors.inactiveBg,
+              borderColor: isCatalogFocused ? tabColors.activeBorder : tabColors.inactiveBorder,
             },
+            pressed && { opacity: 0.92 },
           ]}>
-          {bridge.primaryLabel === '정지' ? (
-            <View style={styles.centerStopRow}>
-              <IconSymbol name="stop.fill" size={14} color={centerDisabled ? c.onVariant : '#fff'} />
-              <ThemedText
-                style={[styles.centerLabel, { color: centerDisabled ? c.onVariant : '#fff' }]}
-                lightColor={centerDisabled ? c.onVariant : '#fff'}
-                darkColor={centerDisabled ? c.onVariant : '#fff'}
-                numberOfLines={1}>
-                정지
-              </ThemedText>
-            </View>
-          ) : (
+          <IconSymbol
+            name="square.grid.2x2.fill"
+            size={22}
+            color={isCatalogFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
+          />
+        </Pressable>
+
+        {hideCenterButton ? null : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={bridge.primaryLabel}
+            accessibilityState={{ disabled: centerDisabled }}
+            onPress={onCenterPress}
+            style={({ pressed }) => [
+              styles.centerBtn,
+              {
+                backgroundColor: centerDisabled ? c.containerHigh : PRIMARY,
+                opacity: pressed && !centerDisabled ? 0.92 : 1,
+              },
+            ]}>
             <ThemedText
               style={[styles.centerLabel, { color: centerDisabled ? c.onVariant : '#fff' }]}
               lightColor={centerDisabled ? c.onVariant : '#fff'}
@@ -97,19 +143,29 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
               numberOfLines={1}>
               {bridge.primaryLabel}
             </ThemedText>
-          )}
-        </Pressable>
+          </Pressable>
+        )}
 
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: isSettingsFocused }}
           accessibilityLabel="설정"
-          onPress={() => navigation.navigate('settings')}
-          style={({ pressed }) => [styles.sideTab, pressed && { opacity: 0.7 }]}>
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('settings');
+          }}
+          style={({ pressed }) => [
+            styles.tabPill,
+            {
+              backgroundColor: isSettingsFocused ? tabColors.activeBg : tabColors.inactiveBg,
+              borderColor: isSettingsFocused ? tabColors.activeBorder : tabColors.inactiveBorder,
+            },
+            pressed && { opacity: 0.92 },
+          ]}>
           <IconSymbol
             name="person.fill"
             size={24}
-            color={isSettingsFocused ? activeTabIconColor : inactiveTabIconColor}
+            color={isSettingsFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
           />
         </Pressable>
       </View>
@@ -125,15 +181,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     gap: 8,
   },
-  sideTab: {
+  tabPill: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 6,
+    minHeight: 44,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    borderWidth: 1,
   },
   centerBtn: {
     flexShrink: 0,
@@ -149,10 +208,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: -0.2,
-  },
-  centerStopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
   },
 });

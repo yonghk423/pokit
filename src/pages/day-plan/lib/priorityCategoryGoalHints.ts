@@ -1,4 +1,5 @@
 import {
+  isGoalDetailChecklistDerivedCategoryKey,
   normalizeFastingDetailConfig,
   normalizeMedicineDetailConfig,
   normalizeOtherDetailConfig,
@@ -23,7 +24,7 @@ export type PriorityGoalHintOptions = {
 };
 
 /**
- * 우선순위 목록·도구 카탈로그에 표시할 목표 상세 한 줄 (저장소 기준).
+ * 우선순위 목록·담기 탭에 표시할 목표 상세 한 줄 (저장소 기준).
  * 세션 중 실시간 값은 별도 스토어가 없으면 목표 상세에 반영된 값을 사용한다.
  */
 export function getPriorityCategoryGoalHint(
@@ -78,9 +79,17 @@ export function getPriorityCategoryGoalHint(
       if (total > 0) {
         return done > 0 ? `작업 ${total}개 · 완료 ${done}` : `작업 ${total}개`;
       }
-      return '사용자 플로우 준비됨';
+      return '맞춤 항목 준비됨';
     }
-    default:
-      return null;
+    default: {
+      if (!isGoalDetailChecklistDerivedCategoryKey(categoryKey)) return null;
+      const cfg = normalizeOtherDetailConfig(raw ?? {});
+      const total = cfg.checklist.length;
+      const done = cfg.checklist.filter((x) => x.done).length;
+      if (total > 0) {
+        return done > 0 ? `작업 ${total}개 · 완료 ${done}` : `작업 ${total}개`;
+      }
+      return '맞춤 항목 준비됨';
+    }
   }
 }

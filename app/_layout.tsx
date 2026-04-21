@@ -68,6 +68,10 @@ export default function RootLayout() {
             <Stack.Screen name="flow-standby" options={{ headerShown: false, presentation: 'card' }} />
             <Stack.Screen name="widget-settings" options={{ headerShown: false, presentation: 'card' }} />
             <Stack.Screen
+              name="daily-rhythm-settings"
+              options={{ headerShown: false, presentation: 'card' }}
+            />
+            <Stack.Screen
               name="activity-session"
               options={{ headerShown: false, presentation: 'fullScreenModal' }}
             />

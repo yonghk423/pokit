@@ -163,7 +163,7 @@ export function FastingSessionCard({
           surface="light"
           accentColor={T.fasting.accent}
           icon="clock.badge.checkmark"
-          label="단식 목표"
+          label="목표 단식"
           badge="금식"
           value={formatDurationMinKo(data.fastingMin)}
           trackProgress01={Math.max(goalProg, hero.progress01)}
@@ -416,7 +416,7 @@ export function OtherSessionCard({
           surface="light"
           icon="star.fill"
           label="플로우 체크리스트"
-          badge="사용자"
+          badge="맞춤 플로우"
           body={checklistTop || '목표 상세에서 체크리스트를 입력해 주세요.'}
         />
         <BentoRow>

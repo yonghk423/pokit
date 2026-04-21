@@ -47,14 +47,24 @@ export function resolveCategoryKeyFromLabel(label: string): string | null {
   if (t === '러닝') return 'other';
   if (t === '업무' || t === '작업') return 'work';
   if (t === '독서') return 'reading';
-  if (t === '공부') return 'other';
+  if (t === '공부' || t === '공부·학습') return 'study';
+  if (t === '스트레칭하기' || t === '스트레칭') return 'stretching';
+  if (t === '허리펴기') return 'straightenBack';
+  if (t === '거북목 바르게하기') return 'neckPosture';
   if (t === '명상') return 'meditation';
   if (t === '요가') return 'yoga';
-  if (t === '휴식' || t === '사용자' || t === '플로우') return 'other';
-  if (t === '단식') return 'fasting';
+  if (t === '하루·주간 정리' || t === '하루 정리' || t === '주간 정리') return 'planning';
+  if (t === '글쓰기') return 'writing';
+  if (t === '일기') return 'journal';
+  if (t === '언어 학습') return 'language';
+  if (t === '회고·점검' || t === '회고') return 'other';
+  if (t === '창작·아이디어' || t === '창작') return 'creative';
+  if (t === '메일·소통 정리' || t === '메일 정리') return 'inbox';
+  if (t === '휴식' || t === '사용자' || t === '맞춤 플로우' || t === '플로우') return 'other';
+  if (t === '단식' || t === '체중관리') return 'fasting';
   if (t === '수분' || t === '수분섭취') return 'water';
   if (t === '약 복용') return 'medicine';
-  if (t === '스트레칭' || t === '피트티스') return 'other';
+  if (t === '피트티스') return 'other';
   return null;
 }
 

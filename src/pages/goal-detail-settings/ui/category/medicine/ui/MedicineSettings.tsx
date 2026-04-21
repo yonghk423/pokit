@@ -1,15 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Platform,
-  Pressable,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -87,7 +80,9 @@ export function MedicineSettings({
   onChangeDataConfig: (next: unknown) => void;
 }) {
   const scheme = useColorScheme();
-  const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
+  const isDark = scheme === 'dark';
+  const c = useMemo(() => goalDetailSettingsPalette(isDark), [isDark]);
+  const pill = useMemo(() => tabPillColors(isDark), [isDark]);
 
   const [draft, setDraft] = useState<MedicineDetailDataConfig>(() =>
     normalizeMedicineDetailConfig(dataConfig ?? getInitialMedicineDataConfig()),
@@ -113,22 +108,6 @@ export function MedicineSettings({
 
   return (
     <View style={styles.shell}>
-      <View style={styles.header}>
-        <Text style={[styles.brand, { color: c.onSurface }]}>LOCKFLOW MEDICINE</Text>
-      </View>
-
-      <View style={styles.about}>
-        <Text style={[styles.sectionKicker, { color: c.onVariant }]}>ABOUT MEDICATION</Text>
-        <Text style={[styles.aboutText, { color: c.onSurface }]}>
-          하루 복용 스케줄을 간결하게 정리하고, 세션 중 바로 확인할 수 있게 설정합니다.
-        </Text>
-      </View>
-
-      <View style={styles.listHeader}>
-        <Text style={[styles.sectionKicker, { color: c.onVariant }]}>CATEGORIES ||</Text>
-        <Text style={[styles.mainTitle, { color: c.onSurface }]}>Medicine</Text>
-      </View>
-
       <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: c.outline }]}>
         <View style={styles.metricItem}>
           <Text style={[styles.metricValue, { color: c.onSurface }]}>{draft.dosesPerDay}</Text>
@@ -158,12 +137,12 @@ export function MedicineSettings({
         <View style={[styles.row, styles.slotRowWrap, { borderBottomColor: c.outline }]}>
           <View style={styles.slotColumn}>
             <Text style={[styles.rowTitle, { color: c.onSurface }]}>복용 슬롯</Text>
-            <Text style={[styles.slotHint, { color: c.outline }]}>
-              버튼을 눌러 복용 시간대를 추가·해제해요. 아래 「설정 완료」를 누르면 오늘 일정의 우선순위 목록에 이 카테고리가 담겨요. 켠 슬롯과 시각은 플로우 시작 후 목록에만 표시돼요.
-            </Text>
             <View style={styles.slotRow}>
               {SLOT_GRID.map((slot) => {
                 const on = slotOn(draft, slot.key);
+                const bg = on ? pill.activeBg : pill.inactiveBg;
+                const borderCol = on ? pill.activeBorder : pill.inactiveBorder;
+                const fg = on ? pill.activeIcon : pill.inactiveIcon;
                 return (
                   <Pressable
                     key={slot.key}
@@ -174,16 +153,10 @@ export function MedicineSettings({
                     onPress={() => setDraft((prev) => setSlot(prev, slot.key, !slotOn(prev, slot.key)))}
                     style={({ pressed }) => [
                       styles.slotChip,
-                      on ? styles.slotChipSelected : styles.slotChipIdle,
-                      {
-                        borderColor: on ? PRIMARY : 'rgba(0,0,0,0.18)',
-                        backgroundColor: on ? PRIMARY : '#f4f4f5',
-                      },
-                      pressed && (on ? styles.slotChipPressedOn : styles.slotChipPressedOff),
+                      { flex: 1, backgroundColor: bg, borderColor: borderCol },
+                      pressed && { opacity: 0.88 },
                     ]}>
-                    <Text style={[styles.slotChipText, { color: on ? '#fff' : c.onSurface }]}>
-                      {slot.label}
-                    </Text>
+                    <Text style={[styles.slotChipText, { color: fg }]}>{slot.label}</Text>
                   </Pressable>
                 );
               })}
@@ -228,13 +201,6 @@ export function MedicineSettings({
 
 const styles = StyleSheet.create({
   shell: { gap: 16, paddingVertical: 6 },
-  header: { flexDirection: 'row', alignItems: 'flex-start' },
-  brand: { fontSize: 12, fontWeight: '700', letterSpacing: 0.4 },
-  about: { gap: 8 },
-  sectionKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
-  aboutText: { fontSize: 20, lineHeight: 28, fontWeight: '600', letterSpacing: -0.3 },
-  listHeader: { gap: 6, paddingTop: 2 },
-  mainTitle: { fontSize: 42, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },
   metricBar: {
     flexDirection: 'row',
     borderTopWidth: 1,
@@ -252,12 +218,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   slotColumn: { gap: 8, width: '100%' },
-  slotHint: {
-    fontSize: 12,
-    lineHeight: 17,
-    fontWeight: '500',
-    letterSpacing: -0.1,
-  },
   row: {
     minHeight: 62,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -272,40 +232,21 @@ const styles = StyleSheet.create({
   rowInput: { flex: 1, fontSize: 16, fontWeight: '600', textAlign: 'right', minHeight: 32, maxWidth: '70%' },
   slotRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+    flexWrap: 'nowrap',
+    gap: 8,
     marginTop: 4,
+    alignSelf: 'stretch',
   },
   slotChip: {
-    minWidth: 80,
     minHeight: 44,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-        shadowOffset: { width: 0, height: 2 },
-      },
-      default: { elevation: 2 },
-    }),
+    borderWidth: 1,
   },
-  slotChipIdle: {},
-  slotChipSelected: {},
-  slotChipPressedOff: {
-    opacity: 0.88,
-    transform: [{ scale: 0.98 }],
-  },
-  slotChipPressedOn: {
-    opacity: 0.92,
-    transform: [{ scale: 0.98 }],
-  },
-  slotChipText: { fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
+  slotChipText: { fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
   inlineInputWrap: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   inlineInput: { minWidth: 72, fontSize: 18, fontWeight: '700', textAlign: 'right', padding: 0 },
 });

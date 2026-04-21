@@ -71,6 +71,35 @@ export async function scheduleLocalNotification(params: {
   });
 }
 
+/** 매일 같은 시·분에 울리는 로컬 알림 (하루 시작 등). */
+export async function scheduleDailyLocalNotification(params: {
+  title: string;
+  body: string;
+  hour: number;
+  minute: number;
+  data?: Record<string, unknown>;
+}): Promise<string | null> {
+  if (!isNativeNotificationPlatform()) return null;
+  await ensureConfigured();
+
+  const hour = Math.max(0, Math.min(23, Math.floor(params.hour)));
+  const minute = Math.max(0, Math.min(59, Math.floor(params.minute)));
+
+  return Notifications.scheduleNotificationAsync({
+    content: {
+      title: params.title,
+      body: params.body,
+      sound: true,
+      data: params.data,
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+    },
+  });
+}
+
 export async function sendImmediateNotification(params: {
   title: string;
   body: string;

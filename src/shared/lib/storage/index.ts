@@ -8,21 +8,27 @@ export {
   saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
 } from './goalDetailSettingsStorage';
+export {
+  loadPriorityCatalogFixedRoutineKeys,
+  savePriorityCatalogFixedRoutineKeys,
+} from './priorityCatalogFixedRoutinesStorage';
 export { localStorageClient } from './localStorageClient';
 export { loadRoutineExecutions, saveRoutineExecutions } from './routineExecutionStorage';
 export { loadRoutines, saveRoutines } from './routineStorage';
 export {
-  getDefaultDayPlanNotificationSettings,
-  loadDayPlanNotificationSettings,
   loadDayPlanScheduledNotifications,
-  saveDayPlanNotificationSettings,
-  saveDayPlanScheduledNotifications
+  loadPriorityDayStartAlarm,
+  saveDayPlanScheduledNotifications,
+  savePriorityDayStartAlarm,
 } from './settingsStorage';
 export type {
-  DayPlanNotificationSettings,
   DayPlanScheduledNotification,
-  DayPlanStartNotificationTiming
+  PriorityDayStartAlarmPersisted,
 } from './settingsStorage';
 export { StorageKeys } from './storageKeys';
+export {
+  loadDailyRhythmOnboardingCompleted,
+  markDailyRhythmOnboardingCompleted,
+} from './dailyRhythmOnboardingStorage';
 export { syncDayPlanToWidget } from './widgetDayPlanSync';
 

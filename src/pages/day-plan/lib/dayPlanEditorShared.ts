@@ -10,18 +10,38 @@ export const PRIMARY = 'rgb(0, 0, 0)';
 export const CATEGORIES = [
   { key: 'work', label: '작업', icon: 'briefcase.fill' as const },
   { key: 'reading', label: '독서', icon: 'book.fill' as const },
-  { key: 'meditation', label: '명상', icon: 'brain.head.profile' as const },
-  { key: 'yoga', label: '요가', icon: 'figure.yoga' as const },
-  { key: 'fasting', label: '단식', icon: 'timer' as const },
+  { key: 'study', label: '공부·학습', icon: 'graduationcap.fill' as const },
+  { key: 'stretching', label: '스트레칭하기', icon: 'figure.run' as const },
+  { key: 'straightenBack', label: '허리펴기', icon: 'figure.yoga' as const },
+  { key: 'neckPosture', label: '거북목 바르게하기', icon: 'tortoise.fill' as const },
+  { key: 'planning', label: '하루·주간 정리', icon: 'calendar.badge.clock' as const },
+  { key: 'writing', label: '글쓰기', icon: 'square.and.pencil' as const },
+  { key: 'language', label: '언어 학습', icon: 'character.bubble' as const },
+  { key: 'creative', label: '창작·아이디어', icon: 'paintpalette.fill' as const },
+  { key: 'inbox', label: '메일·소통 정리', icon: 'tray.2.fill' as const },
+  { key: 'fasting', label: '체중관리', icon: 'figure.stand' as const },
   { key: 'water', label: '수분섭취', icon: 'drop.fill' as const },
   { key: 'medicine', label: '약 복용', icon: 'cross.case.fill' as const },
-  { key: 'other', label: '사용자', icon: 'person.fill' as const },
+  { key: 'other', label: '맞춤 플로우', icon: 'person.fill' as const },
 ];
 
-/** 새 플로우 설정에서 임시로 숨길 카테고리 (도메인은 유지, UI에서만 비노출) */
-export const PICKER_CATEGORIES = CATEGORIES.filter(
-  (c) => c.key !== 'work' && c.key !== 'meditation' && c.key !== 'yoga',
-);
+/** 담기·우선순위에서 고를 수 있는 카테고리(전체) */
+export const PICKER_CATEGORIES = [...CATEGORIES];
+
+export type PickerCategoryItem = (typeof PICKER_CATEGORIES)[number];
+
+/** 제거됐지만 저장된 우선순위·고정 루틴에 남을 수 있는 키 — 행 표시용 */
+const LEGACY_PICKER_BY_KEY: Record<string, PickerCategoryItem> = {
+  review: {
+    key: 'review',
+    label: '회고·점검',
+    icon: 'chart.bar.doc.horizontal',
+  } as unknown as PickerCategoryItem,
+};
+
+export function getPickerCategoryItem(key: string): PickerCategoryItem | undefined {
+  return PICKER_CATEGORIES.find((c) => c.key === key) ?? LEGACY_PICKER_BY_KEY[key];
+}
 
 export type PriorityTask = { id: string; title: string; categoryKey: string };
 
@@ -43,7 +63,7 @@ export function getPriorityDisplaySections(
   const fullOrder = [...order, ...orphanKeys];
   return fullOrder.map((ck) => ({
     categoryKey: ck,
-    label: CATEGORIES.find((c) => c.key === ck)?.label ?? '사용자',
+    label: getPickerCategoryItem(ck)?.label ?? '사용자',
     tasks: tasks.filter((t) => t.categoryKey === ck),
   }));
 }
@@ -222,18 +242,3 @@ export function priorityClockCaptionDateKeyEnd(
   return rangeHi;
 }
 
-/**
- * 우선순위 플로우 블록을 붙일 날짜. 자정 넘김이면 적용 기간의 시작일(저녁~새벽의 ‘저녁’ 날짜)을 씁니다.
- */
-export function pickPlanDateKeyForPriorityBlock(
-  startKey: string,
-  endKey: string,
-  priorityStart: string,
-  priorityEnd: string,
-): string {
-  const { lo } = sortedPlanDateRange(startKey, endKey);
-  if (isOvernightHhmmRange(priorityStart, priorityEnd)) {
-    return lo;
-  }
-  return pickPlanDateKeyForBlock(startKey, endKey);
-}

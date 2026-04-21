@@ -1,5 +1,12 @@
+import type { GoalDetailChecklistDerivedCategoryKey } from '@entities/day-plan';
+
 import type { GoalDetailCategoryKey } from '../../model/types';
 
+import {
+  NeckPostureSettings,
+  StraightenBackSettings,
+  StretchingSettings,
+} from './body-habit-checklist';
 import { FastingPreview, FastingSettings, getInitialFastingDataConfig } from './fasting';
 import { MeditationPreview, MeditationSettings, getInitialMeditationDataConfig } from './meditation';
 import { MedicinePreview, MedicineSettings, getInitialMedicineDataConfig } from './medicine';
@@ -9,6 +16,83 @@ import type { GoalDetailCategoryModule } from './types';
 import { WaterPreview, WaterSettings, getInitialWaterDataConfig } from './water';
 import { WorkPreview, WorkSettings, getInitialWorkDataConfig } from './work';
 import { YogaPreview, YogaSettings, getInitialYogaDataConfig } from './yoga';
+
+/** 체크리스트형 목표 상세 — `other`와 동일 UI·저장 구조, 키만 분리 */
+const CHECKLIST_STYLE_CATEGORY_MODULES: Record<
+  GoalDetailChecklistDerivedCategoryKey,
+  GoalDetailCategoryModule
+> = {
+  study: {
+    key: 'study',
+    titleKo: '공부·학습',
+    getInitialDataConfig: getInitialOtherDataConfig,
+    Preview: OtherPreview,
+    Settings: OtherSettings,
+  },
+  stretching: {
+    key: 'stretching',
+    titleKo: '스트레칭하기',
+    getInitialDataConfig: getInitialOtherDataConfig,
+    Preview: OtherPreview,
+    Settings: StretchingSettings,
+  },
+  straightenBack: {
+    key: 'straightenBack',
+    titleKo: '허리펴기',
+    getInitialDataConfig: getInitialOtherDataConfig,
+    Preview: OtherPreview,
+    Settings: StraightenBackSettings,
+  },
+  neckPosture: {
+    key: 'neckPosture',
+    titleKo: '거북목 바르게하기',
+    getInitialDataConfig: getInitialOtherDataConfig,
+    Preview: OtherPreview,
+    Settings: NeckPostureSettings,
+  },
+  planning: {
+    key: 'planning',
+    titleKo: '하루·주간 정리',
+    getInitialDataConfig: getInitialOtherDataConfig,
+    Preview: OtherPreview,
+    Settings: OtherSettings,
+  },
+  writing: {
+    key: 'writing',
+    titleKo: '글쓰기',
+    getInitialDataConfig: getInitialOtherDataConfig,
+    Preview: OtherPreview,
+    Settings: OtherSettings,
+  },
+  journal: {
+    key: 'journal',
+    titleKo: '일기',
+    getInitialDataConfig: getInitialOtherDataConfig,
+    Preview: OtherPreview,
+    Settings: OtherSettings,
+  },
+  language: {
+    key: 'language',
+    titleKo: '언어 학습',
+    getInitialDataConfig: getInitialOtherDataConfig,
+    Preview: OtherPreview,
+    Settings: OtherSettings,
+  },
+  creative: {
+    key: 'creative',
+    titleKo: '창작·아이디어',
+    getInitialDataConfig: getInitialOtherDataConfig,
+    Preview: OtherPreview,
+    Settings: OtherSettings,
+  },
+  inbox: {
+    key: 'inbox',
+    titleKo: '메일·소통 정리',
+    getInitialDataConfig: getInitialOtherDataConfig,
+    Preview: OtherPreview,
+    Settings: OtherSettings,
+  },
+};
 
 const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
   work: {
@@ -41,7 +125,7 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
   },
   fasting: {
     key: 'fasting',
-    titleKo: '단식',
+    titleKo: '체중관리',
     getInitialDataConfig: getInitialFastingDataConfig,
     Preview: FastingPreview,
     Settings: FastingSettings,
@@ -62,11 +146,12 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
   },
   other: {
     key: 'other',
-    titleKo: '사용자',
+    titleKo: '맞춤 플로우',
     getInitialDataConfig: getInitialOtherDataConfig,
     Preview: OtherPreview,
     Settings: OtherSettings,
   },
+  ...CHECKLIST_STYLE_CATEGORY_MODULES,
 };
 
 export function getGoalDetailCategoryModule(key: GoalDetailCategoryKey): GoalDetailCategoryModule {

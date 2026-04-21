@@ -1,5 +1,5 @@
 export {
   cancelDayPlanNotificationsForBlock,
   rescheduleDayPlanNotifications,
-  sendFlowStartNow,
 } from './model/dayPlanNotificationScheduler';
+export { syncPriorityDayStartAlarm } from './model/priorityDayStartAlarmScheduler';

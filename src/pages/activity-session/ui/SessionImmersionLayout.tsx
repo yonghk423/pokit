@@ -3,46 +3,55 @@ import type { ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PrimaryColor } from '@shared/config/theme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
+/** 목표 상세 설정 화면과 동일 톤의 라이트 셸 */
+const SHELL_BG = '#ffffff';
+const ON_SURFACE = '#18181b';
+const MUTED = '#52525b';
+const BORDER = 'rgba(0, 0, 0, 0.08)';
+
 type Props = {
+  /** 호환용 — 셸은 항상 라이트 흰색(상세 설정과 통일) */
   backgroundColor?: string;
   accentColor: string;
-  /** 원형 히어로 뒤 소프트 글로우 (예: rgba(34,211,238,0.18)) */
+  /** 더 이상 사용하지 않음(호환용) */
   accentGlow: string;
   onSurface: string;
   muted: string;
+  /** 더 이상 사용하지 않음(호환용) */
   brand: string;
+  /** 더 이상 사용하지 않음(호환용) */
   aboutKicker: string;
   headerTitle: string;
   iconName: SymbolViewProps['name'];
   iconSize?: number;
   sessionKicker: string;
-  /** 큰 타이머 영역 — 문자열 또는 커스텀 노드 */
+  /** 남은 시간 등 */
   timerDisplay: ReactNode;
   flowCaption: string;
   onBack: () => void;
   scrollBottomPadding: number;
-  children: React.ReactNode;
-  bottomBar: React.ReactNode;
+  children: ReactNode;
+  bottomBar: ReactNode;
 };
 
 /**
- * 수분섭취 몰입 화면과 동일한 골격:
- * 상단 헤더(뒤로·제목) → LOCKFLOW/ABOUT → 원형 아이콘+리플 → 세션 키커+타이머+플로우 캡션 → 본문 → 하단 컨트롤
+ * 하루 일과(세션) 셸 — 목표 상세 설정과 동일한 헤더·여백·카드형 요약.
+ * 예전 몰입용 대형 아이콘·글로우·리플 레이어는 제거했다.
  */
 export function SessionImmersionLayout({
-  backgroundColor = '#ffffff',
   accentColor,
-  accentGlow,
-  onSurface,
-  muted,
-  brand,
-  aboutKicker,
+  accentGlow: _accentGlow,
+  onSurface: _onSurface,
+  muted: _muted,
+  brand: _brand,
+  aboutKicker: _aboutKicker,
   headerTitle,
   iconName,
-  iconSize = 88,
+  iconSize = 26,
   sessionKicker,
   timerDisplay,
   flowCaption,
@@ -52,7 +61,6 @@ export function SessionImmersionLayout({
   bottomBar,
 }: Props) {
   const insets = useSafeAreaInsets();
-  /** `presentation: 'fullScreenModal'` 등에서 SafeAreaView 상단이 0으로 나오는 경우 대비 */
   const topInset =
     insets.top >= 1
       ? insets.top
@@ -61,21 +69,21 @@ export function SessionImmersionLayout({
         : Number(StatusBar.currentHeight) || 24;
 
   return (
-    <View style={[styles.screen, { backgroundColor }]}>
+    <View style={[styles.screen, { backgroundColor: SHELL_BG }]}>
       <View style={[styles.flex, { paddingTop: topInset }]}>
-        <View style={styles.topHeader}>
+        <View style={[styles.header, { borderBottomColor: BORDER }]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="뒤로가기"
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             style={styles.headerBtn}
             onPress={onBack}>
-            <IconSymbol name="chevron.left" size={22} color={accentColor} />
+            <IconSymbol name="chevron.left" size={22} color={PrimaryColor.rgb} />
           </Pressable>
           <ThemedText
-            style={styles.topHeaderTitle}
-            lightColor={onSurface}
-            darkColor={onSurface}
+            style={styles.headerTitle}
+            lightColor={ON_SURFACE}
+            darkColor={ON_SURFACE}
             numberOfLines={1}>
             {headerTitle}
           </ThemedText>
@@ -87,32 +95,16 @@ export function SessionImmersionLayout({
           contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollBottomPadding }]}
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          bounces={false}>
-          <View style={styles.editorialHeader}>
-            <Text style={[styles.brand, { color: onSurface }]}>{brand}</Text>
-            <Text style={[styles.aboutKicker, { color: muted }]}>{aboutKicker}</Text>
-          </View>
-
-          <View style={styles.anchorOuter}>
-            <View style={[styles.anchorGlow, { backgroundColor: accentGlow }]} />
-            <View style={styles.anchorWrap}>
-              <IconSymbol name={iconName} size={iconSize} color={accentColor} weight="light" />
+          bounces>
+          <View style={[styles.summaryCard, { borderColor: BORDER }]}>
+            <IconSymbol name={iconName} size={iconSize} color={accentColor} />
+            <View style={styles.summaryTexts}>
+              <Text style={[styles.sessionKicker, { color: MUTED }]}>{sessionKicker}</Text>
+              <View style={styles.timerSlot}>{timerDisplay}</View>
+              <ThemedText style={styles.flowCaption} lightColor={MUTED} darkColor={MUTED} numberOfLines={3}>
+                {flowCaption}
+              </ThemedText>
             </View>
-            <View style={styles.rippleRow}>
-              <View style={[styles.ripple, { width: 36, backgroundColor: accentColor }]} />
-              <View style={[styles.ripple, { width: 56, backgroundColor: accentColor }]} />
-              <View style={[styles.ripple, { width: 44, backgroundColor: accentColor }]} />
-            </View>
-          </View>
-
-          <View style={styles.timerBlock}>
-            <ThemedText style={styles.timerKicker} lightColor={accentColor} darkColor={accentColor}>
-              {sessionKicker}
-            </ThemedText>
-            <View style={styles.timerSlot}>{timerDisplay}</View>
-            <ThemedText style={styles.flowCaption} lightColor={muted} darkColor={muted}>
-              {flowCaption}
-            </ThemedText>
           </View>
 
           {children}
@@ -130,11 +122,10 @@ type BottomProps = {
   paddingBottom: number;
   onEndSession: () => void;
   completeLabel?: string;
-  /** true면 탭 비활성(예: 세션 시작 대기) */
   disabled?: boolean;
 };
 
-/** 하단 액션은 완료 버튼 하나만 유지 */
+/** 목표 상세 하단 CTA와 동일한 필(가로 꽉 찬 강조 버튼) */
 export function ImmersionBottomControls({
   accentColor,
   borderColor,
@@ -144,7 +135,7 @@ export function ImmersionBottomControls({
   disabled = false,
 }: BottomProps) {
   return (
-    <View style={[styles.bottomBar, { borderTopColor: borderColor, paddingBottom }]}>
+    <View style={[styles.bottomBar, { borderTopColor: borderColor, paddingBottom, backgroundColor: SHELL_BG }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ disabled }}
@@ -162,7 +153,6 @@ export function ImmersionBottomControls({
   );
 }
 
-/** 카드 톤 — 수분 메인/하프 카드와 동일 */
 export function ImmersionCardShell({
   borderColor,
   padded = true,
@@ -170,21 +160,14 @@ export function ImmersionCardShell({
 }: {
   borderColor: string;
   padded?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <View
-      style={[
-        styles.cardShell,
-        { borderColor },
-        padded ? styles.cardShellPad : null,
-      ]}>
-      {children}
-    </View>
+    <View style={[styles.cardShell, { borderColor }, padded ? styles.cardShellPad : null]}>{children}</View>
   );
 }
 
-export function ImmersionSplitRow({ children }: { children: React.ReactNode }) {
+export function ImmersionSplitRow({ children }: { children: ReactNode }) {
   return <View style={styles.splitRow}>{children}</View>;
 }
 
@@ -193,128 +176,81 @@ export function ImmersionHalfCard({
   children,
 }: {
   borderColor: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <View
-      style={[
-        styles.cardShell,
-        styles.halfCardInner,
-        { borderColor, flex: 1 },
-      ]}>
-      {children}
-    </View>
+    <View style={[styles.cardShell, styles.halfCardInner, { borderColor, flex: 1 }]}>{children}</View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   flex: { flex: 1 },
-  topHeader: {
+  header: {
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    zIndex: 10,
+    paddingHorizontal: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerBtn: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  topHeaderTitle: {
+  headerTitle: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '700',
     letterSpacing: -0.3,
   },
   scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 4,
-    alignItems: 'center',
-    maxWidth: 448,
-    width: '100%',
-    alignSelf: 'center',
+    paddingTop: 18,
     gap: 12,
-  },
-  editorialHeader: {
+    alignItems: 'stretch',
     width: '100%',
-    gap: 8,
-    marginBottom: 4,
-    alignSelf: 'stretch',
   },
-  brand: {
+  summaryCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+    width: '100%',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: SHELL_BG,
+  },
+  summaryTexts: {
+    flex: 1,
+    minWidth: 0,
+    gap: 6,
+  },
+  sessionKicker: {
     fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-  },
-  aboutKicker: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.4,
-  },
-  anchorOuter: {
-    position: 'relative',
-    width: 260,
-    height: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    marginTop: 4,
-  },
-  anchorGlow: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-  },
-  anchorWrap: {
-    zIndex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rippleRow: {
-    position: 'absolute',
-    right: -8,
-    top: '46%',
-    gap: 8,
-    opacity: 0.35,
-  },
-  ripple: {
-    height: 4,
-    borderRadius: 2,
-  },
-  timerBlock: {
-    alignItems: 'center',
-    marginBottom: 16,
-    width: '100%',
-  },
-  timerKicker: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 2,
-    marginBottom: 8,
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
   timerSlot: {
-    minHeight: 70,
+    minHeight: 44,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     width: '100%',
   },
   flowCaption: {
-    marginTop: 10,
     fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-    paddingHorizontal: 12,
+    fontWeight: '500',
+    lineHeight: 20,
+    letterSpacing: -0.15,
   },
   cardShell: {
     width: '100%',
-    backgroundColor: '#ffffff',
+    backgroundColor: SHELL_BG,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 14,
   },
@@ -327,7 +263,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   halfCardInner: {
-    minHeight: 128,
+    minHeight: 120,
     paddingTop: 16,
     paddingHorizontal: 14,
     paddingBottom: 18,
@@ -335,25 +271,28 @@ const styles = StyleSheet.create({
   bottomBar: {
     alignItems: 'stretch',
     justifyContent: 'flex-end',
-    paddingTop: 8,
+    paddingTop: 10,
     paddingHorizontal: 24,
     borderTopWidth: StyleSheet.hairlineWidth,
-    backgroundColor: '#ffffff',
   },
   completeBtn: {
+    marginTop: 8,
     height: 54,
-    borderRadius: 14,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: PrimaryColor.rgb,
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
   completeBtnText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
+    letterSpacing: -0.2,
   },
 });

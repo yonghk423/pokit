@@ -57,20 +57,8 @@ export function FastingSettings({
 
   return (
     <View style={styles.shell}>
-      <View style={styles.header}>
-        <Text style={[styles.brand, { color: c.onSurface }]}>LOCKFLOW FASTING</Text>
-      </View>
-
-      <View style={styles.about}>
-        <Text style={[styles.sectionKicker, { color: c.onVariant }]}>ABOUT FASTING</Text>
-        <Text style={[styles.aboutText, { color: c.onSurface }]}>
-          단식 시간을 계획하고 남은 시간을 한 번에 확인해 세션 리듬을 안정적으로 유지합니다.
-        </Text>
-      </View>
-
       <View style={styles.listHeader}>
-        <Text style={[styles.sectionKicker, { color: c.onVariant }]}>CATEGORIES ||</Text>
-        <Text style={[styles.mainTitle, { color: c.onSurface }]}>Fasting</Text>
+        <Text style={[styles.mainTitle, { color: c.onSurface }]}>단식</Text>
       </View>
 
       <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: c.outline }]}>
@@ -151,11 +139,6 @@ export function FastingSettings({
 
 const styles = StyleSheet.create({
   shell: { gap: 16, paddingVertical: 6 },
-  header: { flexDirection: 'row', alignItems: 'flex-start' },
-  brand: { fontSize: 12, fontWeight: '700', letterSpacing: 0.4 },
-  about: { gap: 8 },
-  sectionKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
-  aboutText: { fontSize: 20, lineHeight: 28, fontWeight: '600', letterSpacing: -0.3 },
   listHeader: { gap: 6, paddingTop: 2 },
   mainTitle: { fontSize: 42, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },
   metricBar: {

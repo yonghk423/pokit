@@ -78,19 +78,7 @@ export function OtherSettings({
 
   return (
     <View style={styles.shell}>
-      <View style={styles.header}>
-        <ThemedText style={[styles.brand, { color: c.onSurface }]}>LOCKFLOW OTHER</ThemedText>
-      </View>
-
-      <View style={styles.about}>
-        <ThemedText style={[styles.sectionKicker, { color: c.onVariant }]}>ABOUT TOOLS</ThemedText>
-        <ThemedText style={[styles.aboutText, { color: c.onSurface }]}>
-          체크리스트, 복사본 생성, 공유 기능으로 사용자 플로우를 디테일하게 운영할 수 있어요.
-        </ThemedText>
-      </View>
-
       <View style={styles.listHeader}>
-        <ThemedText style={[styles.sectionKicker, { color: c.onVariant }]}>TOOLS ||</ThemedText>
         <ThemedText style={[styles.mainTitle, { color: c.onSurface }]}>Tasks</ThemedText>
       </View>
 
@@ -165,11 +153,6 @@ export function OtherSettings({
 
 const styles = StyleSheet.create({
   shell: { gap: 18, paddingVertical: 6 },
-  header: { flexDirection: 'row', alignItems: 'flex-start' },
-  brand: { fontSize: 12, fontWeight: '700', letterSpacing: 0.4 },
-  about: { gap: 8 },
-  sectionKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
-  aboutText: { fontSize: 20, lineHeight: 28, fontWeight: '600', letterSpacing: -0.3 },
   listHeader: { gap: 6, paddingTop: 2 },
   mainTitle: { fontSize: 42, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },
   toolbar: {

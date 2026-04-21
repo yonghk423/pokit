@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, type ComponentRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import {
   Alert,
   Keyboard,
@@ -8,7 +8,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   TextInput,
   TouchableWithoutFeedback,
   View,
@@ -16,8 +15,16 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
-import { parseHHmmToMinutes, useDayPlanNotificationStore, useDayPlanStore } from '@entities/day-plan';
-import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
+import {
+  getLocalDateKey,
+  getLocalMinutesOfDayNow,
+  parseHHmmToMinutes,
+  useDayPlanStore,
+} from '@entities/day-plan';
+import {
+  rescheduleDayPlanNotifications,
+  syncPriorityDayStartAlarm,
+} from '@features/day-plan-notifications';
 import {
   buildLiveActivityPayloadForBlock,
   endLockFlowLiveActivity,
@@ -26,21 +33,30 @@ import {
   upsertLockFlowLiveActivity,
 } from '@features/live-activity-sync';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import {
+  loadDailyRhythmOnboardingCompleted,
+  loadPriorityCatalogFixedRoutineKeys,
+  loadPriorityDayStartAlarm,
+  markDailyRhythmOnboardingCompleted,
+} from '@shared/lib/storage';
+import { openSupportMailComposer } from '@shared/lib/support';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
 import {
-  CATEGORIES,
   defaultPriorityWindowFromNow,
+  getPickerCategoryItem,
   isOvernightHhmmRange,
-  pickPlanDateKeyForPriorityBlock,
   PRIMARY,
 } from '../lib/dayPlanEditorShared';
+import { ensureFixedRoutinesInPriorityOrder } from '../lib/ensureFixedRoutinesInPriorityOrder';
+import { normalizeFixedRoutineCategoryKeys } from '../lib/normalizeFixedRoutineCategoryKeys';
 import { palette } from '../lib/dayPlanPalette';
 import { useDayPlanDraftStore } from '../model/dayPlanDraftStore';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
-import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
+import { DailyRhythmOnboardingGate } from './DailyRhythmOnboardingGate';
+import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
 import { PlanModeSwitch } from './PlanModeSwitch';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
@@ -50,6 +66,9 @@ export function DayPlanPage() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
+  const [rhythmGateOpen, setRhythmGateOpen] = useState(
+    () => !loadDailyRhythmOnboardingCompleted(),
+  );
 
   const {
     planMode,
@@ -60,6 +79,7 @@ export function DayPlanPage() {
     priorityStart,
     priorityEnd,
     priorityCategoryOrder,
+    priorityCatalogFixedRoutineEpoch,
     quickMemoDraft,
     setPlanMode,
     setIsFocusStarted,
@@ -81,6 +101,7 @@ export function DayPlanPage() {
       priorityStart: s.priorityStart,
       priorityEnd: s.priorityEnd,
       priorityCategoryOrder: s.priorityCategoryOrder,
+      priorityCatalogFixedRoutineEpoch: s.priorityCatalogFixedRoutineEpoch,
       quickMemoDraft: s.quickMemoDraft,
       setPlanMode: s.setPlanMode,
       setIsFocusStarted: s.setIsFocusStarted,
@@ -105,18 +126,21 @@ export function DayPlanPage() {
     syncOvernightPriorityPlanDates,
   ]);
 
-  const priorityPlanDateForBlock = useMemo(
-    () =>
-      pickPlanDateKeyForPriorityBlock(
-        priorityPlanDateKey,
-        priorityPlanDateKeyEnd,
-        priorityStart,
-        priorityEnd,
-      ),
-    [priorityPlanDateKey, priorityPlanDateKeyEnd, priorityStart, priorityEnd],
-  );
   const quickMemoInputRef = useRef<TextInput>(null);
   const dayPlanScrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const lastPriorityAutostartAttemptKey = useRef('');
+
+  const priorityAutostartKey = useMemo(
+    () =>
+      `${priorityPlanDateKey}|${priorityPlanDateKeyEnd}|${priorityStart}|${priorityEnd}|${priorityCategoryOrder.join('>')}`,
+    [
+      priorityPlanDateKey,
+      priorityPlanDateKeyEnd,
+      priorityStart,
+      priorityEnd,
+      priorityCategoryOrder,
+    ],
+  );
 
   const { addBlock, quickMemos, removeQuickMemo } = useDayPlanStore(
     useShallow((s) => ({
@@ -132,26 +156,15 @@ export function DayPlanPage() {
       skippedBlockIds: s.skippedBlockIds,
     })),
   );
-  const {
-    startNotifOn,
-    notifTiming,
-    setStartNotifOn,
-    setNotifTiming,
-    hydrate: hydrateNotificationSettings,
-  } = useDayPlanNotificationStore(
-    useShallow((s) => ({
-      startNotifOn: s.startNotifOn,
-      notifTiming: s.notifTiming,
-      setStartNotifOn: s.setStartNotifOn,
-      setNotifTiming: s.setNotifTiming,
-      hydrate: s.hydrate,
-    })),
-  );
-
   useEffect(() => {
     useDayPlanStore.getState().hydrate();
-    hydrateNotificationSettings();
-  }, [hydrateNotificationSettings]);
+  }, []);
+
+  /** 데이플랜에서 시작 시각만 바꿔도 알람 시각이 따라가게 */
+  useEffect(() => {
+    if (!loadPriorityDayStartAlarm().enabled) return;
+    void syncPriorityDayStartAlarm({ enabled: true, startHhmm: priorityStart });
+  }, [priorityStart]);
 
   useEffect(() => {
     if (planMode !== 'priority') return;
@@ -164,25 +177,54 @@ export function DayPlanPage() {
     setPriorityEnd(w.endTime);
   }, [planMode, priorityCategoryOrder.length, priorityEnd, priorityStart, setPriorityEnd, setPriorityStart]);
 
+  /** 당일(우선 순위 적용 구간에 오늘이 포함될 때) 고정 루틴 키를 우선 순위 목록 앞에 자동 보강 */
+  useEffect(() => {
+    if (planMode !== 'priority') return;
+    const today = getLocalDateKey();
+    if (today < priorityPlanDateKey || today > priorityPlanDateKeyEnd) return;
+
+    const fixedRaw = loadPriorityCatalogFixedRoutineKeys();
+    const fixedOrder = normalizeFixedRoutineCategoryKeys(fixedRaw);
+    if (fixedOrder.length === 0) return;
+
+    setPriorityCategoryOrder((prev) => {
+      const next = ensureFixedRoutinesInPriorityOrder(prev, fixedOrder);
+      if (next.length === prev.length && next.every((k, i) => k === prev[i])) return prev;
+      return next;
+    });
+  }, [
+    planMode,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+    priorityCategoryOrder,
+    priorityCatalogFixedRoutineEpoch,
+    setPriorityCategoryOrder,
+  ]);
+
   const c = useMemo(() => palette(isDark), [isDark]);
 
-  const syncScheduledNotifications = useCallback(() => {
-    const dayPlanState = useDayPlanStore.getState();
-    const notifState = useDayPlanNotificationStore.getState();
-    void rescheduleDayPlanNotifications({
-      dateKey: dayPlanState.dateKey,
-      blocks: dayPlanState.blocks,
-      settings: notifState.toSettings(),
-      completedBlockIds: dayPlanState.completedBlockIds,
-      skippedBlockIds: dayPlanState.skippedBlockIds,
-    });
+  const handleRhythmConfirm = useCallback(
+    (start: string, end: string) => {
+      setPriorityStart(start);
+      setPriorityEnd(end);
+      syncOvernightPriorityPlanDates();
+      markDailyRhythmOnboardingCompleted();
+      setRhythmGateOpen(false);
+    },
+    [setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
+  );
+
+  const handleRhythmSkip = useCallback(() => {
+    markDailyRhythmOnboardingCompleted();
+    setRhythmGateOpen(false);
   }, []);
 
-  /** 하단 커스텀 탭 바 높이 + 홈 인디케이터 — 스크롤 끝이 가려지지 않게 */
-  const scrollContentBottomPad = useMemo(
-    () => 24 + DAY_PLAN_TAB_BAR_ROW_HEIGHT + insets.bottom,
-    [insets.bottom],
-  );
+  const syncScheduledNotifications = useCallback(() => {
+    void rescheduleDayPlanNotifications();
+  }, []);
+
+  /** 씬은 탭 아래까지 이미 분리됨 — 스크롤 말줄임만 최소(기본 6px) */
+  const scrollContentBottomPad = useMemo(() => tabBarScrollBottomInset(insets.bottom), [insets.bottom]);
 
   const handlePriorityCategoryPress = useCallback(
     (key: string) => {
@@ -217,7 +259,7 @@ export function DayPlanPage() {
         Alert.alert('시각 형식', '시작·종료 시각을 먼저 확인해 주세요.');
         return;
       }
-      const label = CATEGORIES.find((x) => x.key === categoryKey)?.label ?? '플로우';
+      const label = getPickerCategoryItem(categoryKey)?.label ?? '항목';
       const result = addBlock({
         title: label,
         startMinutes: ps,
@@ -225,7 +267,7 @@ export function DayPlanPage() {
         endsNextCalendarDay: overnight,
         category: label,
         replaceOverlapping: true,
-        planDateKey: priorityPlanDateForBlock,
+        planDateKey: getLocalDateKey(),
       });
       if (!result.ok) {
         Alert.alert('열기 실패', '해당 카테고리 몰입 화면을 열지 못했습니다.');
@@ -236,7 +278,7 @@ export function DayPlanPage() {
         params: { blockId: result.blockId },
       });
     },
-    [addBlock, priorityEnd, priorityPlanDateForBlock, priorityStart, router],
+    [addBlock, priorityEnd, priorityStart, router],
   );
 
   const onSave = () => {
@@ -263,7 +305,7 @@ export function DayPlanPage() {
         return;
       }
 
-      const blockTitle = lines.map((line, i) => `${i + 1}. ${line}`).join('\n');
+      const blockTitle = lines.join('\n');
       const result = addBlock({
         title: blockTitle,
         startMinutes: ps,
@@ -275,10 +317,10 @@ export function DayPlanPage() {
 
       if (!result.ok) {
         if (result.reason === 'in_the_past') {
-          Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 플로우만 저장할 수 있어요.');
+          Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 일정만 저장할 수 있어요.');
           return;
         }
-        Alert.alert('저장 실패', '빠른 메모를 플로우로 저장하지 못했습니다.');
+        Alert.alert('저장 실패', '빠른 메모를 일정으로 저장하지 못했습니다.');
         return;
       }
 
@@ -321,14 +363,11 @@ export function DayPlanPage() {
         return;
       }
       const headKey = priorityCategoryOrder[0]!;
-      const catLabel = CATEGORIES.find((x) => x.key === headKey)?.label ?? '플로우';
+      const catLabel = getPickerCategoryItem(headKey)?.label ?? '항목';
       const orderedLabels = priorityCategoryOrder.map(
-        (key) => CATEGORIES.find((x) => x.key === key)?.label ?? '사용자',
+        (key) => getPickerCategoryItem(key)?.label ?? '사용자',
       );
-      const blockTitle =
-        orderedLabels.length > 0
-          ? orderedLabels.map((line, i) => `${i + 1}. ${line}`).join('\n')
-          : '플로우';
+      const blockTitle = orderedLabels.length > 0 ? orderedLabels.join('\n') : '항목';
 
       const result = addBlock({
         title: blockTitle,
@@ -337,7 +376,7 @@ export function DayPlanPage() {
         endsNextCalendarDay: overnight,
         category: catLabel,
         replaceOverlapping: true,
-        planDateKey: priorityPlanDateForBlock,
+        planDateKey: getLocalDateKey(),
       });
 
       if (!result.ok) {
@@ -346,10 +385,10 @@ export function DayPlanPage() {
           return;
         }
         if (result.reason === 'in_the_past') {
-          Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 플로우만 저장할 수 있어요.');
+          Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 일정만 저장할 수 있어요.');
           return;
         }
-        Alert.alert('시작 실패', '우선순위 플로우를 시작하지 못했습니다.');
+        Alert.alert('시작 실패', '우선 순위 일정을 시작하지 못했습니다.');
         return;
       }
 
@@ -371,36 +410,93 @@ export function DayPlanPage() {
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
 
-  const handleStopFocus = useCallback(() => {
-    Alert.alert('플로우 종료', '지금 진행 중인 플로우를 종료할까요?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '종료',
-        style: 'destructive',
-        onPress: () => {
-          setIsFocusStarted(false);
-          void endLockFlowLiveActivity();
-        },
-      },
-    ]);
-  }, [setIsFocusStarted]);
+  /**
+   * 우선순위 모드 자동 시작:
+   * - 적용일 범위 안이고 집중 구간이 아직 끝나지 않았으면(시작 시각 이전 포함) 카테고리만 있어도 바로 시작
+   * - 구간이 끝난 뒤·적용일 밖이면 자동 정지
+   */
+  useEffect(() => {
+    if (planMode !== 'priority') return;
+    const ps = parseHHmmToMinutes(priorityStart);
+    const pe = parseHHmmToMinutes(priorityEnd);
+    if (ps === null || pe === null) return;
+    if (priorityCategoryOrder.length === 0) {
+      lastPriorityAutostartAttemptKey.current = '';
+      if (isFocusStarted) {
+        setIsFocusStarted(false);
+        void endLockFlowLiveActivity();
+      }
+      return;
+    }
 
-  const handleAllFocusCompleted = useCallback(() => {
-    setIsFocusStarted(false);
-    void endLockFlowLiveActivity();
-  }, [setIsFocusStarted]);
+    const rangeLo =
+      priorityPlanDateKey <= priorityPlanDateKeyEnd
+        ? priorityPlanDateKey
+        : priorityPlanDateKeyEnd;
+    const rangeHi =
+      priorityPlanDateKey <= priorityPlanDateKeyEnd
+        ? priorityPlanDateKeyEnd
+        : priorityPlanDateKey;
+    const nowKey = getLocalDateKey();
+    const nowMin = getLocalMinutesOfDayNow();
+    const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
+
+    const inRange = nowKey >= rangeLo && nowKey <= rangeHi;
+    /** 구간 종료 전까지는 '시작됨' 유지(시작 시각 이전에도 담기·우선순위 UI가 집중 모드로 보이게) */
+    let stillInPrioritySegment = false;
+    if (inRange) {
+      if (!overnight) {
+        stillInPrioritySegment = nowMin < pe;
+      } else if (nowKey === rangeLo) {
+        // 자정 넘김: 첫날은 시작 시각 이전이어도 구간 종료 전(말일 아침 pe 이전)과 동일하게 집중 UI 유지
+        stillInPrioritySegment = true;
+      } else if (nowKey === rangeHi) {
+        stillInPrioritySegment = nowMin < pe;
+      } else {
+        stillInPrioritySegment = nowKey > rangeLo && nowKey < rangeHi;
+      }
+    }
+
+    if (inRange && stillInPrioritySegment) {
+      if (!isFocusStarted) {
+        if (lastPriorityAutostartAttemptKey.current !== priorityAutostartKey) {
+          lastPriorityAutostartAttemptKey.current = priorityAutostartKey;
+          onSaveRef.current();
+        }
+      }
+      return;
+    }
+
+    lastPriorityAutostartAttemptKey.current = '';
+    if (isFocusStarted) {
+      setIsFocusStarted(false);
+      void endLockFlowLiveActivity();
+    }
+  }, [
+    planMode,
+    priorityStart,
+    priorityEnd,
+    priorityCategoryOrder.length,
+    priorityAutostartKey,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+    isFocusStarted,
+    setIsFocusStarted,
+  ]);
 
   const tabBridge = useDayPlanTabBridge();
   useEffect(() => {
-    const disabled = planMode === 'priority' && priorityCategoryOrder.length === 0;
-    if (planMode === 'priority' && isFocusStarted) {
-      tabBridge.registerPrimaryAction(handleStopFocus, { disabled: false, label: '정지' });
-      return () => tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기' });
+    if (planMode === 'priority') {
+      tabBridge.registerPrimaryAction(null, { disabled: true, label: '자동 시작', hidden: true });
+      return () => tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
     }
-    const label = planMode === 'quickMemo' ? '메모 저장' : '시작하기';
-    tabBridge.registerPrimaryAction(() => onSaveRef.current(), { disabled, label });
-    return () => tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기' });
-  }, [tabBridge, planMode, priorityCategoryOrder.length, isFocusStarted, handleStopFocus]);
+    if (planMode === 'quickMemo') {
+      tabBridge.registerPrimaryAction(null, { disabled: true, label: '메모 저장', hidden: true });
+      return () => tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
+    }
+    tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
+    return () => tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
+  }, [tabBridge, planMode]);
 
   /** on-drag 만 쓰면 키보드만 내려가고 포커스는 남아, 다음 터치에 패드가 다시 뜨는 경우가 있어 스크롤 시 blur 로 포커스를 끈다. */
   const onQuickMemoScrollBeginDrag = useCallback(() => {
@@ -426,7 +522,6 @@ export function DayPlanPage() {
 
   /** 스위치·본문·하단을 한 면으로 — c.bg(#fafafa) 대신 containerLow로 틈·밝은 띠 제거 */
   const shellBg = c.containerLow;
-  const notifPalette = c;
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
@@ -445,13 +540,34 @@ export function DayPlanPage() {
                   /** 메모/우선순위 동일 상단 inset — 모드 전환 시 토글 세로 위치 고정 */
                   paddingTop: 12,
                   paddingBottom: scrollContentBottomPad,
-                  flexGrow: 1,
+                  /** 우선순위: 타임라인·탭 사이 불필요한 세로 간격 축소 */
+                  ...(planMode === 'priority' ? { gap: 6 } : null),
+                  /**
+                   * flexGrow: 1 은 콘텐츠가 짧아도 스크롤 영역을 화면 높이로 늘려 **빈 스크롤**이 생김.
+                   * 빠른 메모만(빈 곳 탭으로 키보드 내리기) 영역을 채우기 위해 사용.
+                   */
+                  ...(planMode === 'quickMemo' ? { flexGrow: 1 } : null),
                 },
               ]}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="none"
               onScrollBeginDrag={planMode === 'quickMemo' ? onQuickMemoScrollBeginDrag : undefined}>
+              <View style={[styles.contentPad, styles.supportActionRow]}>
+                <Pressable
+                  onPress={() => void openSupportMailComposer()}
+                  accessibilityRole="button"
+                  accessibilityLabel="문의하기"
+                  style={[
+                    styles.supportIconButton,
+                    {
+                      borderColor: c.catBorderIdle,
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+                    },
+                  ]}>
+                  <IconSymbol name="paperplane.fill" size={16} color={c.onSurface} />
+                </Pressable>
+              </View>
               {planMode === 'quickMemo' ? (
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
                   <View style={styles.quickMemoDismissWrap} collapsable={false}>
@@ -460,10 +576,12 @@ export function DayPlanPage() {
                       <QuickMemoPlanSection
                         ref={quickMemoInputRef}
                         c={c}
+                        isDark={isDark}
                         memos={quickMemos}
                         draft={quickMemoDraft}
                         onChangeDraft={setQuickMemoDraft}
                         onInputContentSizeChange={onQuickMemoInputContentSizeChange}
+                        onSavePress={() => onSaveRef.current()}
                       />
                     </View>
                   </View>
@@ -493,85 +611,20 @@ export function DayPlanPage() {
                     onSelectCategory={handlePriorityCategoryPress}
                     onOpenCategorySettings={handleOpenCategorySettings}
                     onOpenFocusDetail={handleOpenFocusDetail}
-                    onAllFocusCompleted={handleAllFocusCompleted}
                   />
                 </View>
               )}
-
-              {planMode !== 'quickMemo' ? (
-                <View style={[styles.contentPad, styles.block]}>
-                  <ThemedText
-                    style={[styles.labelUpper, { color: notifPalette.onVariant, marginBottom: 4 }]}
-                    lightColor={notifPalette.onVariant}
-                    darkColor={notifPalette.onVariant}>
-                    알림 설정
-                  </ThemedText>
-                  <View style={styles.notifCol}>
-                    <View style={[styles.notifCard, { backgroundColor: notifPalette.containerLow }]}>
-                      <View style={styles.notifCardTop}>
-                        <View style={styles.notifLeft}>
-                          <IconSymbol name="clock.fill" size={20} color={PRIMARY} />
-                          <ThemedText
-                            style={[styles.notifTitle, { color: notifPalette.onSurface }]}
-                            lightColor={notifPalette.onSurface}
-                            darkColor={notifPalette.onSurface}>
-                            플로우 시작 알림
-                          </ThemedText>
-                        </View>
-                        <Switch
-                          trackColor={{
-                            true: PRIMARY,
-                            false: notifPalette.trackOff,
-                          }}
-                          thumbColor="#fff"
-                          value={startNotifOn}
-                          onValueChange={setStartNotifOn}
-                        />
-                      </View>
-                      <View style={[styles.chipRow, { backgroundColor: notifPalette.containerLowest }]}>
-                        <Pressable
-                          onPress={() => setNotifTiming('5min')}
-                          style={[
-                            styles.chip,
-                            notifTiming === '5min' && { backgroundColor: '#fff', ...styles.chipShadow },
-                          ]}>
-                          <ThemedText
-                            style={[
-                              styles.chipText,
-                              {
-                                color: notifTiming === '5min' ? PRIMARY : notifPalette.onVariant,
-                              },
-                            ]}>
-                            5분 전
-                          </ThemedText>
-                        </Pressable>
-                        <Pressable
-                          onPress={() => setNotifTiming('atStart')}
-                          style={[
-                            styles.chip,
-                            notifTiming === 'atStart' && { backgroundColor: '#fff', ...styles.chipShadow },
-                          ]}>
-                          <ThemedText
-                            style={[
-                              styles.chipText,
-                              {
-                                color:
-                                  notifTiming === 'atStart' ? PRIMARY : notifPalette.onVariant,
-                              },
-                            ]}>
-                            시작 시각
-                          </ThemedText>
-                        </Pressable>
-                      </View>
-                    </View>
-
-                  </View>
-                </View>
-              ) : null}
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
+      <DailyRhythmOnboardingGate
+        visible={rhythmGateOpen}
+        isDark={isDark}
+        c={c}
+        onConfirm={handleRhythmConfirm}
+        onSkip={handleRhythmSkip}
+      />
     </ThemedView>
   );
 }
@@ -586,56 +639,22 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   /** paddingTop은 quickMemo만(12). 우선순위는 0 — 상단이 ScrollView 흰 배경 위에 띠처럼 보이는 문제 방지 */
   scrollContent: { paddingHorizontal: 0, gap: 16 },
+  supportActionRow: {
+    width: '100%',
+    alignItems: 'flex-end',
+    marginBottom: -6,
+  },
+  supportIconButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   priorityModeStack: { width: '100%', gap: 0 },
   /** 다이어리 등 풀블리드 섹션 제외 영역만 좌우 여백 */
   contentPad: { paddingHorizontal: 24 },
   /** 빠른 메모: 스크롤 영역을 채워 빈 곳 탭 시 키보드 dismiss 가 먹도록 */
   quickMemoDismissWrap: { gap: 10, flexGrow: 1 },
-  block: { gap: 12 },
-  labelUpper: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    paddingHorizontal: 4,
-  },
-  notifCol: { gap: 12 },
-  notifCard: {
-    borderRadius: 28,
-    padding: 18,
-    gap: 14,
-  },
-  notifCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  notifLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  notifTitle: { fontSize: 14, fontWeight: '800' },
-  chipRow: {
-    flexDirection: 'row',
-    borderRadius: 999,
-    padding: 4,
-    gap: 4,
-  },
-  chip: {
-    flex: 1,
-    minHeight: 36,
-    paddingVertical: 10,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipShadow: {
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  chipText: { fontSize: 10, fontWeight: '800' },
-  notifRowPill: {
-    borderRadius: 999,
-    paddingHorizontal: 22,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
 });

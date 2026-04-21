@@ -10,6 +10,7 @@ import {
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
   getNextPendingAfter,
+  isGoalDetailChecklistStyleCategoryKey,
   normalizeFastingDetailConfig,
   normalizeMedicineDetailConfig,
   normalizeMeditationDetailConfig,
@@ -22,7 +23,6 @@ import {
   normalizeYogaDetailConfig,
   parseHHmmToMinutes,
   parseNumberedFlowLines,
-  useDayPlanNotificationStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
 } from '@entities/day-plan';
@@ -45,7 +45,6 @@ import {
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
-import { ActiveSessionCard } from '@widgets/active-session-card';
 import { formatDurationMinKo } from '@widgets/active-session-card/ui/sessionCardShared';
 
 import {
@@ -55,7 +54,6 @@ import {
   ImmersionSplitRow,
   SessionImmersionLayout,
 } from './SessionImmersionLayout';
-import { SessionProgressRing } from './SessionProgressRing';
 
 const PRIMARY = 'rgb(0, 0, 0)';
 /** 수분섭취 풀스크린 세션 */
@@ -64,7 +62,7 @@ const WATER_CYAN = '#22d3ee';
 /** 약 복용 몰입 화면 액센트 (수분과 구분되는 청록) */
 const MED_TEAL = '#0d9488';
 const MED_TEAL_GLOW = 'rgba(13, 148, 136, 0.18)';
-/** 단식 몰입 화면 액센트 */
+/** 체중관리(단식) 몰입 화면 액센트 */
 const FAST_ACCENT = '#f97316';
 const FAST_GLOW = 'rgba(249, 115, 22, 0.18)';
 /** 독서 풀스크린 — Tailwind emerald-400/500 계열 */
@@ -81,10 +79,22 @@ const CATEGORY_KEY_BY_LABEL: Record<string, string> = {
   운동: 'other',
   피트니스: 'other',
   공부: 'other',
+  '공부·학습': 'study',
+  '하루·주간 정리': 'planning',
+  글쓰기: 'writing',
+  일기: 'journal',
+  '언어 학습': 'language',
+  '회고·점검': 'other',
+  회고: 'other',
+  '창작·아이디어': 'creative',
+  창작: 'creative',
+  '메일·소통 정리': 'inbox',
+  '메일 정리': 'inbox',
   명상: 'meditation',
   요가: 'yoga',
   휴식: 'other',
   단식: 'fasting',
+  체중관리: 'fasting',
   수분: 'water',
   수분섭취: 'water',
   '약 복용': 'medicine',
@@ -92,6 +102,7 @@ const CATEGORY_KEY_BY_LABEL: Record<string, string> = {
   피트티스: 'other',
   기타: 'other',
   사용자: 'other',
+  '맞춤 플로우': 'other',
   사용쟈: 'other',
 };
 
@@ -274,6 +285,9 @@ export function ActivitySessionPage() {
       case 'other':
         return { ...base, other: normalizeOtherDetailConfig(raw ?? {}) };
       default:
+        if (isGoalDetailChecklistStyleCategoryKey(categoryKey)) {
+          return { ...base, other: normalizeOtherDetailConfig(raw ?? {}) };
+        }
         return base;
     }
   }, [categoryKey, block?.id, goalDetailStorageTick]);
@@ -413,13 +427,7 @@ export function ActivitySessionPage() {
     }
     completeBlock(block.id);
     const s = useDayPlanStore.getState();
-    void rescheduleDayPlanNotifications({
-      dateKey: s.dateKey,
-      blocks: s.blocks,
-      settings: useDayPlanNotificationStore.getState().toSettings(),
-      completedBlockIds: s.completedBlockIds,
-      skippedBlockIds: s.skippedBlockIds,
-    });
+    void rescheduleDayPlanNotifications();
     const next = getNextPendingAfter(
       filterDayPlanFlowBlocks(s.blocks),
       block.id,
@@ -879,7 +887,7 @@ export function ActivitySessionPage() {
     );
   }
 
-  // ── Full-screen fasting session (단식) ──
+  // ── Full-screen 체중관리 세션 (단식 타이머) ──
   if (categoryKey === 'fasting' && !isQuickMemoSession && categoryConfigs.fasting) {
     const fastingCfg = categoryConfigs.fasting;
     const elapsedSec = isWaitingToStart ? 0 : Math.max(0, totalSec - remainingSec);
@@ -896,10 +904,10 @@ export function ActivitySessionPage() {
         muted={F.muted}
         brand={F.brand}
         aboutKicker={F.aboutKicker}
-        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '단식'}
+        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '체중관리'}
         iconName="hourglass"
         iconSize={88}
-        sessionKicker="단식 세션"
+        sessionKicker="단식 · 집중"
         timerDisplay={
           <ThemedText
             style={waterStyles.timerHms}

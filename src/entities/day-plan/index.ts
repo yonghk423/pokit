@@ -1,11 +1,6 @@
-export type {
-  DayPlanBlock,
-  DayPlanNotificationSettings,
-  DayPlanQuickMemo,
-  DayPlanStartNotificationTiming,
-} from './model/types';
+export type { DayPlanBlock, DayPlanQuickMemo } from './model/types';
 export type { AddBlockResult } from './model';
-export { useDayPlanNotificationStore, useDayPlanStore, selectFirstPendingBlock } from './model';
+export { useDayPlanStore, selectFirstPendingBlock } from './model';
 export { useDayPlanRuntimeStore } from './model';
 export { DEFAULT_DAY_PLAN_BLOCKS } from './lib/defaultBlocks';
 export { getBlockTimelineIcon } from './lib/blockIcons';
@@ -18,6 +13,7 @@ export {
   findOverlappingDayPlanBlock,
   findOverlappingDayPlanBlocks,
   formatBlockTimeRange,
+  formatHhmmClockKo,
   formatMinuteOfDayKo,
   getFirstPendingBlock,
   getLocalMinutesOfDayNow,
@@ -53,6 +49,13 @@ export {
 } from './lib/readingLiveActivityConfig';
 export * from './lib/goalCategorySessionConfig';
 export {
+  GOAL_DETAIL_CHECKLIST_DERIVED_CATEGORY_KEYS,
+  type GoalDetailChecklistDerivedCategoryKey,
+  isGoalDetailChecklistDerivedCategoryKey,
+  isGoalDetailChecklistStyleCategoryKey,
+} from './lib/goalDetailChecklistCategoryKeys';
+export {
   isPriorityCompoundBlockTitle,
   parseNumberedFlowLines,
 } from './lib/priorityBlockTitle';
+export { blockMatchesPriorityHhmmWindow } from './lib/priorityWindowBlockMatch';

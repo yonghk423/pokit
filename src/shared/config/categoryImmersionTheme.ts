@@ -39,8 +39,8 @@ export const CategoryImmersionTheme = {
     outline: '#a1a1aa',
     border: 'rgba(0, 0, 0, 0.08)',
     accent: 'rgb(0, 0, 0)',
-    brand: 'LOCKFLOW FASTING',
-    aboutKicker: 'ABOUT FASTING',
+    brand: 'LOCKFLOW WEIGHT',
+    aboutKicker: 'ABOUT WEIGHT',
   },
   medicine: {
     screenBg: '#ffffff',

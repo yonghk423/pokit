@@ -1,18 +1,22 @@
 import { forwardRef, useEffect, useRef, type ForwardedRef } from 'react';
-import { StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 
 import type { DayPlanQuickMemo } from '@entities/day-plan';
+import { IconSymbol } from '@shared/ui/icon-symbol';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
+import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 
 type Props = {
   c: DayPlanPalette;
+  isDark: boolean;
   /** 기존 저장소에 남아 있을 수 있는 줄 단위 메모 — 최초 한 번만 초안에 합침 */
   memos: DayPlanQuickMemo[];
   draft: string;
   onChangeDraft: (v: string) => void;
   /** 줄바꿈 등으로 입력 높이가 바뀔 때 바깥 ScrollView 가 따라 내려가도록 */
   onInputContentSizeChange?: () => void;
+  onSavePress: () => void;
 };
 
 /**
@@ -20,11 +24,12 @@ type Props = {
  * 줄바꿈마다 하나의 할 일이 됩니다.
  */
 export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
-  { c, memos, draft, onChangeDraft, onInputContentSizeChange }: Props,
+  { c, isDark, memos, draft, onChangeDraft, onInputContentSizeChange, onSavePress }: Props,
   ref: ForwardedRef<TextInput>,
 ) {
   const { width } = useWindowDimensions();
   const hydratedRef = useRef(false);
+  const pill = tabPillColors(isDark);
 
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -72,6 +77,20 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
         ]}
       />
       <View style={styles.gradientHint} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="메모 저장"
+        onPress={onSavePress}
+        style={({ pressed }) => [
+          styles.saveBtn,
+          {
+            backgroundColor: pill.activeBg,
+            borderColor: pill.activeBorder,
+          },
+          pressed && { opacity: 0.92 },
+        ]}>
+        <IconSymbol name="square.and.arrow.down" size={22} color={pill.activeIcon} />
+      </Pressable>
     </View>
   );
 });
@@ -101,5 +120,16 @@ const styles = StyleSheet.create({
     marginTop: 12,
     alignSelf: 'stretch',
     backgroundColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  saveBtn: {
+    marginTop: 18,
+    alignSelf: 'stretch',
+    minHeight: 44,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

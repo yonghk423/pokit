@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
@@ -6,7 +7,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   formatBlockTimeRange,
   normalizeMedicineDetailConfig,
-  useDayPlanNotificationStore,
   isDayPlanFlowBlock,
   useDayPlanRuntimeStore,
   useDayPlanStore,
@@ -19,6 +19,7 @@ import {
   saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
 } from '@shared/lib/storage';
+import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -63,11 +64,18 @@ function inferCategoryKeyFromLabel(category: string): GoalDetailCategoryKey {
   if (t === '러닝') return 'other';
   if (t === '업무' || t === '작업') return 'work';
   if (t === '독서') return 'reading';
-  if (t === '공부') return 'other';
+  if (t === '공부' || t === '공부·학습') return 'study';
   if (t === '명상') return 'meditation';
   if (t === '요가') return 'yoga';
+  if (t === '하루·주간 정리' || t === '하루 정리' || t === '주간 정리') return 'planning';
+  if (t === '글쓰기') return 'writing';
+  if (t === '일기') return 'journal';
+  if (t === '언어 학습') return 'language';
+  if (t === '회고·점검' || t === '회고') return 'other';
+  if (t === '창작·아이디어' || t === '창작') return 'creative';
+  if (t === '메일·소통 정리' || t === '메일 정리') return 'inbox';
   if (t === '휴식') return 'other';
-  if (t === '단식') return 'fasting';
+  if (t === '단식' || t === '체중관리') return 'fasting';
   if (t === '수분' || t === '수분섭취') return 'water';
   if (t === '약 복용') return 'medicine';
   return 'other';
@@ -87,7 +95,6 @@ export function GoalDetailSettingsPage() {
 
   useEffect(() => {
     useDayPlanStore.getState().hydrate();
-    useDayPlanNotificationStore.getState().hydrate();
   }, []);
   const blocks = useDayPlanStore((s) => s.blocks);
 
@@ -194,14 +201,7 @@ export function GoalDetailSettingsPage() {
         dateKey: dayPlanState.dateKey,
         blocks: dayPlanState.blocks,
       });
-      const notifState = useDayPlanNotificationStore.getState();
-      await rescheduleDayPlanNotifications({
-        dateKey: dayPlanState.dateKey,
-        blocks: dayPlanState.blocks,
-        settings: notifState.toSettings(),
-        completedBlockIds: dayPlanState.completedBlockIds,
-        skippedBlockIds: dayPlanState.skippedBlockIds,
-      });
+      await rescheduleDayPlanNotifications();
 
       const ids = sortedTargets.map((t) => t.blockId).filter(Boolean);
       if (ids.length === 0) {
@@ -238,6 +238,8 @@ export function GoalDetailSettingsPage() {
   const headerBg = c.bg;
   const headerBorder = c.border;
   const headerFg = c.onSurface;
+  /** 목표 상세는 라이트 고정 — 하단 탭과 동일 pill 톤 */
+  const tabPill = useMemo(() => tabPillColors(false), []);
 
   const topInset =
     insets.top >= 1
@@ -261,7 +263,10 @@ export function GoalDetailSettingsPage() {
             },
           ]}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            }}
             style={styles.headerBtn}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             accessibilityRole="button"
@@ -313,6 +318,7 @@ export function GoalDetailSettingsPage() {
                       <Pressable
                         key={t.blockId}
                         onPress={() => {
+                          void Haptics.selectionAsync();
                           setLiveActivityChecklistFocusBlockId(t.blockId);
                           reconcileLiveActivityFromPlan();
                         }}
@@ -393,14 +399,26 @@ export function GoalDetailSettingsPage() {
             },
           ]}>
           <Pressable
-            style={[styles.cta, waterOnlyUi && styles.ctaWater]}
-            onPress={handleCompleteAndStart}>
-            <ThemedText
-              style={[styles.ctaText, waterOnlyUi && styles.ctaTextWater]}
-              lightColor={waterOnlyUi ? WATER.ctaText : '#fff'}
-              darkColor={waterOnlyUi ? WATER.ctaText : '#fff'}>
-              {waterOnlyUi ? '플로우 설정 완료' : '설정 완료'}
-            </ThemedText>
+            accessibilityRole="button"
+            accessibilityLabel={waterOnlyUi ? '플로우 설정 완료' : '설정 완료'}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              handleCompleteAndStart();
+            }}
+            style={({ pressed }) => [
+              styles.footerCompletePill,
+              {
+                backgroundColor: tabPill.activeBg,
+                borderColor: waterOnlyUi ? WATER.primary : tabPill.activeBorder,
+              },
+              waterOnlyUi && { backgroundColor: WATER.primarySoft },
+              pressed && { opacity: 0.92 },
+            ]}>
+            <IconSymbol
+              name="checkmark.circle.fill"
+              size={26}
+              color={waterOnlyUi ? WATER.primary : tabPill.activeIcon}
+            />
           </Pressable>
         </View>
       </View>
@@ -462,30 +480,21 @@ const styles = StyleSheet.create({
   startPickerRowText: { flex: 1, minWidth: 0, gap: 2 },
   startPickerRowTitle: { fontSize: 15, fontWeight: '700' },
   startPickerRowMeta: { fontSize: 12, fontWeight: '600' },
-  cta: {
-    marginTop: 8,
-    backgroundColor: PRIMARY,
-    paddingVertical: 18,
-    borderRadius: 999,
+  /** `DayPlanCustomTabBar` 의 `tabPill` 과 동일 치수·모서리 */
+  footerCompletePill: {
+    marginTop: 4,
+    alignSelf: 'stretch',
     alignItems: 'center',
-    shadowColor: PRIMARY,
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 6,
-  },
-  ctaWater: {
-    backgroundColor: WATER.ctaBg,
-    shadowColor: '#0891b2',
-    shadowOpacity: 0.38,
-  },
-  ctaText: { color: '#fff', fontSize: 18, fontWeight: '800' },
-  ctaTextWater: {
-    color: WATER.ctaText,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    borderWidth: 1,
   },
   footerFixed: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 24,
+    paddingHorizontal: 10,
     paddingTop: 10,
   },
 });

@@ -1,5 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 
+import { isGoalDetailChecklistDerivedCategoryKey } from '@entities/day-plan';
+
 import type { GoalDetailCategoryKey } from './types';
 
 type Params = {
@@ -62,6 +64,7 @@ export function useGoalDetailSettingsRoute(): {
 
 function isGoalDetailCategoryKey(v: string): v is GoalDetailCategoryKey {
   return (
+    isGoalDetailChecklistDerivedCategoryKey(v) ||
     v === 'work' ||
     v === 'reading' ||
     v === 'meditation' ||

@@ -1,18 +1,31 @@
+import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useShallow } from 'zustand/react/shallow';
 
+import { formatHhmmClockKo } from '@entities/day-plan';
+import { useDayPlanDraftStore } from '@pages/day-plan';
+import {
+  getDisplayedAppVersionLabel,
+  openSupportMailComposer,
+  SUPPORT_EMAIL,
+} from '@shared/lib/support';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
-import { openSupportMailComposer } from '../lib/openSupportMail';
-import { getDisplayedAppVersionLabel, SUPPORT_EMAIL } from '../lib/supportMailContent';
-
 /** 앱 설정 (로그인·Profile 없음). 문의하기 탭 시 네이티브 메일 작성을 바로 엽니다. */
 export function SettingsPage() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const appVersionLabel = getDisplayedAppVersionLabel();
-
+  const { priorityStart, priorityEnd } = useDayPlanDraftStore(
+    useShallow((s) => ({
+      priorityStart: s.priorityStart,
+      priorityEnd: s.priorityEnd,
+    })),
+  );
   return (
     <ThemedView style={styles.root}>
       <ScrollView
@@ -24,11 +37,28 @@ export function SettingsPage() {
           },
         ]}
         showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <ThemedText type="title">설정</ThemedText>
-          <ThemedText style={styles.sub}>
-            앱 사용 중 불편한 점은 고객센터에서 빠르게 도움받을 수 있어요.
-          </ThemedText>
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>데이플랜</ThemedText>
+
+          <Pressable
+            style={styles.item}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/daily-rhythm-settings');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="시작과 마무리 시간 설정">
+            <View style={styles.itemLeft}>
+              <IconSymbol name="sun.horizon.fill" size={20} color="#6B7280" />
+              <View style={styles.itemTextWrap}>
+                <ThemedText style={styles.itemTitle}>시작·마무리</ThemedText>
+                <ThemedText style={styles.itemDesc}>
+                  {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
+                </ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
+          </Pressable>
         </View>
 
         <View style={styles.section}>
@@ -36,11 +66,14 @@ export function SettingsPage() {
 
           <Pressable
             style={styles.item}
-            onPress={() => void openSupportMailComposer()}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              void openSupportMailComposer();
+            }}
             accessibilityRole="button"
             accessibilityLabel="문의 메일 작성">
             <View style={styles.itemLeft}>
-              <IconSymbol name="envelope" size={20} color="#6B7280" />
+              <IconSymbol name="paperplane.fill" size={20} color="#6B7280" />
               <View style={styles.itemTextWrap}>
                 <ThemedText style={styles.itemTitle}>문의하기</ThemedText>
                 <ThemedText style={styles.itemDesc}>{SUPPORT_EMAIL}</ThemedText>
@@ -71,14 +104,6 @@ const styles = StyleSheet.create({
   container: {
     padding: 24,
     gap: 20,
-  },
-  header: {
-    gap: 8,
-  },
-  sub: {
-    opacity: 0.65,
-    fontSize: 14,
-    lineHeight: 20,
   },
   section: {
     borderWidth: StyleSheet.hairlineWidth,

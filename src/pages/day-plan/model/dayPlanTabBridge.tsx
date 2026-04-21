@@ -11,11 +11,14 @@ import {
 export type DayPlanPrimaryMeta = {
   disabled: boolean;
   label: string;
+  /** true면 하단 탭 가운데 액션 칸을 렌더하지 않음(화면 안의 버튼으로 대체) */
+  hidden?: boolean;
 };
 
 type Ctx = {
   primaryDisabled: boolean;
   primaryLabel: string;
+  primaryHidden: boolean;
   invokePrimary: () => void;
   registerPrimaryAction: (run: (() => void) | null, meta: DayPlanPrimaryMeta) => void;
 };
@@ -24,7 +27,7 @@ const DayPlanTabBridgeContext = createContext<Ctx | null>(null);
 
 export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) {
   const runRef = useRef<(() => void) | null>(null);
-  const [meta, setMeta] = useState<DayPlanPrimaryMeta>({ disabled: true, label: '시작하기' });
+  const [meta, setMeta] = useState<DayPlanPrimaryMeta>({ disabled: true, label: '시작하기', hidden: false });
 
   const registerPrimaryAction = useCallback((run: (() => void) | null, m: DayPlanPrimaryMeta) => {
     runRef.current = run;
@@ -40,10 +43,11 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
     () => ({
       primaryDisabled: meta.disabled,
       primaryLabel: meta.label,
+      primaryHidden: Boolean(meta.hidden),
       invokePrimary,
       registerPrimaryAction,
     }),
-    [meta.disabled, meta.label, invokePrimary, registerPrimaryAction],
+    [meta.disabled, meta.hidden, meta.label, invokePrimary, registerPrimaryAction],
   );
 
   return <DayPlanTabBridgeContext.Provider value={value}>{children}</DayPlanTabBridgeContext.Provider>;

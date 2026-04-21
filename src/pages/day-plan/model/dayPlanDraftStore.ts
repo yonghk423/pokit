@@ -14,9 +14,9 @@ type DayPlanDraftState = {
   completedFocusCategoryKeys: string[];
   /** 우선순위에서 항목을 뺐다가 다시 담을 때 플랜 완료만으로 취소선이 남지 않게 막는 키 */
   planCompletionDismissedKeys: string[];
-  /** 우선순위 플로우 적용 기간 시작일 (YYYY-MM-DD) */
+  /** 우선 순위 일정 적용 기간 시작일 (YYYY-MM-DD) */
   priorityPlanDateKey: string;
-  /** 우선순위 플로우 적용 기간 종료일 (YYYY-MM-DD) */
+  /** 우선 순위 일정 적용 기간 종료일 (YYYY-MM-DD) */
   priorityPlanDateKeyEnd: string;
   /**
    * 달력에서 시작·끝을 다르게 잡은 적 있음(여러 날짜 구간).
@@ -28,6 +28,8 @@ type DayPlanDraftState = {
   priorityStart: string;
   priorityEnd: string;
   priorityCategoryOrder: string[];
+  /** 고정 루틴 저장소가 바뀌면 증가 — 당일 자동 병합 effect가 다시 돈다 */
+  priorityCatalogFixedRoutineEpoch: number;
   quickMemoDraft: string;
   setPlanMode: (mode: PlanMode) => void;
   setIsFocusStarted: (value: boolean) => void;
@@ -47,7 +49,8 @@ type DayPlanDraftState = {
   syncOvernightPriorityPlanDates: () => void;
   setPriorityStart: (value: string) => void;
   setPriorityEnd: (value: string) => void;
-  setPriorityCategoryOrder: (value: string[]) => void;
+  setPriorityCategoryOrder: (value: string[] | ((prev: string[]) => string[])) => void;
+  bumpPriorityCatalogFixedRoutineEpoch: () => void;
   setQuickMemoDraft: (value: string) => void;
 };
 
@@ -67,6 +70,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   priorityOvernightEndAuto: false,
   ...createInitialPriorityWindow(),
   priorityCategoryOrder: [],
+  priorityCatalogFixedRoutineEpoch: 0,
   quickMemoDraft: '',
   setPlanMode: (mode) => set({ planMode: mode }),
   setIsFocusStarted: (value) => set({ isFocusStarted: value }),
@@ -140,7 +144,12 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   },
   setPriorityStart: (value) => set({ priorityStart: value }),
   setPriorityEnd: (value) => set({ priorityEnd: value }),
-  setPriorityCategoryOrder: (value) => set({ priorityCategoryOrder: value }),
+  setPriorityCategoryOrder: (value) =>
+    set((s) => ({
+      priorityCategoryOrder: typeof value === 'function' ? value(s.priorityCategoryOrder) : value,
+    })),
+  bumpPriorityCatalogFixedRoutineEpoch: () =>
+    set((s) => ({ priorityCatalogFixedRoutineEpoch: s.priorityCatalogFixedRoutineEpoch + 1 })),
   setQuickMemoDraft: (value) => set({ quickMemoDraft: value }),
 }));
 

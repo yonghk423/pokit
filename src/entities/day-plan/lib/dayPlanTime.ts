@@ -1,5 +1,7 @@
 import type { DayPlanBlock } from '@entities/day-plan/model/types';
 
+import { parseHHmmToMinutes } from './parseTime';
+
 /** 로컬 기준 오늘 자정부터의 “현재” 분 (0 ~ 1439, 초는 버림) */
 export function getLocalMinutesOfDayNow(now: Date = new Date()): number {
   return now.getHours() * 60 + now.getMinutes();
@@ -31,6 +33,18 @@ export function formatMinuteOfDayKo(minutes: number): string {
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
   const prefix = isAm ? '오전' : '오후';
   return `${prefix} ${h12}:${String(min).padStart(2, '0')}`;
+}
+
+/**
+ * 저장용 `HH:mm` → 화면용 한글 시각 (`formatMinuteOfDayKo`와 동일 규칙).
+ * `24:00`(당일 끝)은 집중 구간 표기와 맞춰 `24:00(자정)`.
+ */
+export function formatHhmmClockKo(hhmm: string): string {
+  const t = hhmm.trim();
+  if (t === '24:00') return '24:00(자정)';
+  const m = parseHHmmToMinutes(t);
+  if (m === null) return hhmm;
+  return formatMinuteOfDayKo(m);
 }
 
 export function formatBlockTimeRange(block: DayPlanBlock): string {

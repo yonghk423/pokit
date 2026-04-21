@@ -4,36 +4,46 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Easing,
   LayoutAnimation,
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   UIManager,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
+  addDaysToLocalDateKey,
+  blockMatchesPriorityHhmmWindow,
   filterDayPlanFlowBlocks,
+  formatBlockTimeRange,
+  formatMinuteOfDayKo,
   getLocalDateKey,
+  isPriorityCompoundBlockTitle,
   localDateToDateKey,
   parseHHmmToMinutes,
   parseLocalDateKeyToDate,
   resolveCategoryKeyFromLabel,
-  useDayPlanStore,
+  sortDayPlanBlocks,
+  useDayPlanStore
 } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { hasGoalDetailCommittedCategory } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
+import { PriorityOrderRow } from '@widgets/day-plan-priority-order';
 import {
   formatDateKeyCompactKo,
+  formatDateKeyDisplayKo,
   formatMinutesToHHmm,
+  getPickerCategoryItem,
   isOvernightHhmmRange,
   PICKER_CATEGORIES,
   planDayIntroFromRange,
@@ -45,6 +55,11 @@ import {
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { getPriorityCategoryGoalHint } from '../lib/priorityCategoryGoalHints';
 import { useDayPlanDraftStore } from '../model/dayPlanDraftStore';
+
+import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
+
+/** 타임라인 내부 스크롤 하단 — 리스트와 카드 둥근 하단 사이 최소만 */
+const TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM = 8;
 
 /**
  * 플립 시계 레퍼런스: 카드 다크 배경 · 밝은 회색 숫자 · 숫자 가운데 검정 힌지선(flip-divider)
@@ -99,6 +114,49 @@ function isSameDay(a: Date, b: Date): boolean {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
+}
+
+const WEEKDAY_SHORT_KO = ['일', '월', '화', '수', '목', '금', '토'] as const;
+
+function weekdayShortKoFromDateKey(dk: string): string {
+  const d = parseLocalDateKeyToDate(dk);
+  if (!d) return '';
+  return WEEKDAY_SHORT_KO[d.getDay()];
+}
+
+const WEEKDAY_LONG_KO = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'] as const;
+
+/** 카드 헤더 — 모의안 `Monday, 5th April` 대응: `월요일, 4월 18일` */
+function formatTimelineHeaderDateKo(dateKey: string): string {
+  const d = parseLocalDateKeyToDate(dateKey);
+  if (!d) return formatDateKeyDisplayKo(dateKey);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
+  const mo = m ? parseInt(m[2], 10) : d.getMonth() + 1;
+  const day = m ? parseInt(m[3], 10) : d.getDate();
+  return `${WEEKDAY_LONG_KO[d.getDay()]}, ${mo}월 ${day}일`;
+}
+
+/** 우선 순위 집중 구간 한 줄 (시계 모달과 동일 기준) */
+function formatPriorityWindowLine(start: string, end: string): string {
+  const overnight = isOvernightHhmmRange(start, end);
+  const ps = parseHHmmToMinutes(start.trim());
+  const pe = parseHHmmToMinutes(end.trim());
+  if (ps === null || pe === null) return '';
+  const eStr = pe === 24 * 60 ? '24:00(자정)' : formatMinuteOfDayKo(pe);
+  if (overnight) {
+    return `${formatMinuteOfDayKo(ps)} — 다음날 ${eStr}`;
+  }
+  return `${formatMinuteOfDayKo(ps)} — ${eStr}`;
+}
+
+/** 자정 넘김 ‘종료일’ 열 — 이날 새벽에 끝나는 시각만 강조(다음날 문구 없이) */
+function formatOvernightTailEndHeadline(end: string): string {
+  const pe = parseHHmmToMinutes(end.trim());
+  if (pe === null) return '';
+  if (pe === 24 * 60) {
+    return '자정(24:00)';
+  }
+  return formatMinuteOfDayKo(pe);
 }
 
 function buildCalendarDays(monthStart: Date): Date[] {
@@ -162,6 +220,16 @@ function BlinkingTimeColon() {
   );
 }
 
+function flipClockInitialDrafts(v: string): { hour: string; min: string } {
+  const p = parseHHmmToMinutes(v.trim());
+  const tm = p !== null ? p : 9 * 60;
+  if (tm === 24 * 60) return { hour: '24', min: '00' };
+  const h24v = Math.floor(tm / 60);
+  const mv = tm % 60;
+  const { h12: h12v } = h24To12(h24v);
+  return { hour: String(h12v).padStart(2, '0'), min: String(mv).padStart(2, '0') };
+}
+
 /** 플립 시계형 시·분 카드 (저장은 `HH:mm` 24h) — 색은 CLOCK_* 스펙 고정 */
 function FlipClockTimePair({
   value,
@@ -188,13 +256,17 @@ function FlipClockTimePair({
   const { ap, h12 } = h24To12(h24);
 
   /** 완전 제어 value만 쓰면 한 글자 지울 때·선행 0 입력 시 onChange 미호출로 입력이 튕김 → 편집 중 문자열 분리 */
-  const [hourDraft, setHourDraft] = useState(() => String(h12).padStart(2, '0'));
-  const [minDraft, setMinDraft] = useState(() => String(min).padStart(2, '0'));
+  const [hourDraft, setHourDraft] = useState(() => flipClockInitialDrafts(value).hour);
+  const [minDraft, setMinDraft] = useState(() => flipClockInitialDrafts(value).min);
 
   useEffect(() => {
     const p = parseHHmmToMinutes(value.trim());
     const tm = p !== null ? p : 9 * 60;
-    if (tm === 24 * 60) return;
+    if (tm === 24 * 60) {
+      setHourDraft('24');
+      setMinDraft('00');
+      return;
+    }
     const h24v = Math.floor(tm / 60);
     const mv = tm % 60;
     const { h12: h12v } = h24To12(h24v);
@@ -213,13 +285,34 @@ function FlipClockTimePair({
   );
 
   const onHourText = (t: string) => {
+    const atMidnight = parseHHmmToMinutes(value.trim()) === 24 * 60;
     const d = t.replace(/\D/g, '').slice(0, 2);
     setHourDraft(d);
     if (d === '') return;
-    /** 선행 0만 있으면 10~12·01~09 입력 대기 (기존 max(1,0)→1로 튀던 문제 제거) */
     if (d === '0') return;
     const n = parseInt(d, 10);
     if (!Number.isFinite(n)) return;
+
+    if (atMidnight) {
+      const mv = parseInt(minDraft.replace(/\D/g, ''), 10);
+      const mm = Number.isFinite(mv) ? Math.min(59, Math.max(0, mv)) : 0;
+      if (d.length === 1) {
+        if (n >= 1 && n <= 9) {
+          onChange(formatMinutesToHHmm(n * 60 + mm));
+        }
+        return;
+      }
+      if (n === 24) {
+        onChange('24:00');
+        setMinDraft('00');
+        return;
+      }
+      if (n <= 23) {
+        onChange(formatMinutesToHHmm(n * 60 + mm));
+      }
+      return;
+    }
+
     if (d.length === 1) {
       if (n >= 1 && n <= 9) {
         commit({ h12: n });
@@ -231,7 +324,35 @@ function FlipClockTimePair({
   };
 
   const onHourBlur = () => {
+    const atMidnight = parseHHmmToMinutes(value.trim()) === 24 * 60;
     const d = hourDraft.replace(/\D/g, '').slice(0, 2);
+    if (atMidnight) {
+      if (d === '' || d === '0') {
+        setHourDraft('24');
+        return;
+      }
+      const n = parseInt(d, 10);
+      if (!Number.isFinite(n)) {
+        setHourDraft('24');
+        return;
+      }
+      if (n === 24) {
+        onChange('24:00');
+        setHourDraft('24');
+        setMinDraft('00');
+        return;
+      }
+      if (n <= 23) {
+        const mv = parseInt(minDraft.replace(/\D/g, ''), 10);
+        const mm = Number.isFinite(mv) ? Math.min(59, Math.max(0, mv)) : 0;
+        onChange(formatMinutesToHHmm(n * 60 + mm));
+        setHourDraft(String(n).padStart(2, '0'));
+        return;
+      }
+      setHourDraft('24');
+      return;
+    }
+
     if (d === '' || d === '0') {
       setHourDraft(String(h12).padStart(2, '0'));
       return;
@@ -247,12 +368,31 @@ function FlipClockTimePair({
   };
 
   const onMinuteText = (t: string) => {
+    const atMidnight = parseHHmmToMinutes(value.trim()) === 24 * 60;
     const d = t.replace(/\D/g, '').slice(0, 2);
     setMinDraft(d);
     if (d === '') return;
     if (d === '0') return;
     const n = parseInt(d, 10);
     if (!Number.isFinite(n)) return;
+
+    if (atMidnight) {
+      if (d.length === 1) {
+        if (n > 0) {
+          onChange(formatMinutesToHHmm(23 * 60 + n));
+        }
+        return;
+      }
+      const nm = Math.min(59, Math.max(0, n));
+      if (nm === 0) {
+        onChange('24:00');
+        setMinDraft('00');
+      } else {
+        onChange(formatMinutesToHHmm(23 * 60 + nm));
+      }
+      return;
+    }
+
     if (d.length === 1) {
       if (n >= 0 && n <= 9) {
         commit({ min: n });
@@ -264,7 +404,29 @@ function FlipClockTimePair({
   };
 
   const onMinuteBlur = () => {
+    const atMidnight = parseHHmmToMinutes(value.trim()) === 24 * 60;
     const d = minDraft.replace(/\D/g, '').slice(0, 2);
+    if (atMidnight) {
+      if (d === '' || d === '0') {
+        setMinDraft('00');
+        return;
+      }
+      const n = parseInt(d, 10);
+      if (!Number.isFinite(n)) {
+        setMinDraft('00');
+        return;
+      }
+      const nm = Math.min(59, Math.max(0, n));
+      if (nm === 0) {
+        onChange('24:00');
+        setMinDraft('00');
+      } else {
+        onChange(formatMinutesToHHmm(23 * 60 + nm));
+        setMinDraft(String(nm).padStart(2, '0'));
+      }
+      return;
+    }
+
     if (d === '' || d === '0') {
       setMinDraft(String(min).padStart(2, '0'));
       return;
@@ -280,32 +442,10 @@ function FlipClockTimePair({
   };
 
   const toggleAp = () => {
+    if (is2400) return;
     void Haptics.selectionAsync();
     commit({ ap: ap === '오전' ? '오후' : '오전' });
   };
-
-  if (is2400) {
-    return (
-      <View style={flipStyles.pairRow}>
-        <View style={[flipStyles.card2400, { backgroundColor: CLOCK_CARD_DARK }]}>
-          <TextInput
-            value="24:00"
-            editable
-            selectTextOnFocus
-            keyboardType="numbers-and-punctuation"
-            placeholder="24:00"
-            placeholderTextColor={CLOCK_TEXT_GREY}
-            onChangeText={(tx) => {
-              const p = parseHHmmToMinutes(tx.trim());
-              if (p !== null) onChange(formatMinutesToHHmm(p));
-            }}
-            style={[flipStyles.digitInput2400, digitInputNoArtifact, { color: CLOCK_TEXT_GREY }]}
-          />
-          <View pointerEvents="none" style={[flipStyles.flipHinge, { backgroundColor: CLOCK_FLIP_HINGE }]} />
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={flipStyles.pairRow}>
@@ -324,14 +464,24 @@ function FlipClockTimePair({
             </View>
           ) : null}
           <View style={flipStyles.halfCell}>
-            <Pressable
-              onPress={toggleAp}
-              hitSlop={8}
-              style={flipStyles.ampmBadge}
-              accessibilityRole="button"
-              accessibilityLabel={ap === '오전' ? '오전, 탭하면 오후로 전환' : '오후, 탭하면 오전으로 전환'}>
-              <ThemedText style={[flipStyles.ampmText, { color: CLOCK_AMPM_GREY }]}>{ap}</ThemedText>
-            </Pressable>
+            {is2400 ? (
+              <View
+                pointerEvents="none"
+                style={flipStyles.ampmBadge}
+                accessibilityRole="text"
+                accessibilityLabel="자정, 하루의 끝(24시)">
+                <ThemedText style={[flipStyles.ampmText, { color: CLOCK_AMPM_GREY }]}>자정</ThemedText>
+              </View>
+            ) : (
+              <Pressable
+                onPress={toggleAp}
+                hitSlop={8}
+                style={flipStyles.ampmBadge}
+                accessibilityRole="button"
+                accessibilityLabel={ap === '오전' ? '오전, 탭하면 오후로 전환' : '오후, 탭하면 오전으로 전환'}>
+                <ThemedText style={[flipStyles.ampmText, { color: CLOCK_AMPM_GREY }]}>{ap}</ThemedText>
+              </Pressable>
+            )}
             <TextInput
               value={hourDraft}
               onChangeText={onHourText}
@@ -424,7 +574,7 @@ const flipStyles = StyleSheet.create({
     height: 6,
     borderRadius: 0,
   },
-  /** (레거시) 개별 카드 — 24:00 단일 입력 등에서 참조 가능 */
+  /** (레거시) 개별 카드 */
   card: {
     flex: 1,
     minWidth: 0,
@@ -434,22 +584,6 @@ const flipStyles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 0,
-  },
-  card2400: {
-    flex: 1,
-    minWidth: 0,
-    width: '100%',
-    minHeight: 72,
-    borderRadius: 16,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
     shadowColor: '#000',
     shadowOpacity: 0,
     shadowRadius: 0,
@@ -517,16 +651,6 @@ const flipStyles = StyleSheet.create({
     width: '100%',
     zIndex: 0,
   },
-  digitInput2400: {
-    fontSize: 36,
-    lineHeight: 44,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-    padding: 0,
-    margin: 0,
-    textAlign: 'center',
-    width: '100%',
-  },
 });
 
 /** 다이어리 북 — 배경은 `dayPlanPalette` zinc 회색 컨테이너 톤(검정 단색 고정 없음) */
@@ -554,10 +678,10 @@ function bookColors(c: DayPlanPalette, isDark: boolean) {
 type Props = {
   c: DayPlanPalette;
   isFocusStarted: boolean;
-  /** 플로우 적용 기간 시작일 (YYYY-MM-DD) */
+  /** 우선 순위 일정 적용 기간 시작일 (YYYY-MM-DD) */
   priorityPlanDateKey: string;
   onChangePriorityPlanDateKey: (v: string) => void;
-  /** 플로우 적용 기간 종료일 (YYYY-MM-DD) */
+  /** 우선 순위 일정 적용 기간 종료일 (YYYY-MM-DD) */
   priorityPlanDateKeyEnd: string;
   onChangePriorityPlanDateKeyEnd: (v: string) => void;
   /** 달력에서 기간 적용 시(명시 다중일·자동 플래그 포함) */
@@ -574,266 +698,7 @@ type Props = {
   onOpenCategorySettings?: (categoryKey: string) => void;
   /** 시작 후 목록 행에서 몰입 상세 열기 */
   onOpenFocusDetail?: (categoryKey: string) => void;
-  /** 진행 중 모든 항목 완료 시 호출 */
-  onAllFocusCompleted?: () => void;
 };
-
-/* ─── 왼쪽 페이지: 우선 순위 목록 ─── */
-
-function OrderRow({
-  categoryKey,
-  icon,
-  label,
-  subtitle,
-  priorityLabel,
-  isTopPriority,
-  priorityColor,
-  isFocusStarted,
-  isCompleted,
-  isDark,
-  ink,
-  inkMuted,
-  line,
-  onRemove,
-  onComplete,
-  onSettings,
-  onFocusDetail,
-  animateOnMount,
-  isRemoving,
-}: {
-  categoryKey: string;
-  icon: string;
-  label: string;
-  /** 목표 상세에서 온 부가 한 줄 (책 제목·단식 누적·수분·약 복용 등) */
-  subtitle?: string | null;
-  priorityLabel?: string;
-  isTopPriority?: boolean;
-  priorityColor?: { bg: string; fg: string };
-  isFocusStarted?: boolean;
-  isCompleted?: boolean;
-  isDark: boolean;
-  ink: string;
-  inkMuted: string;
-  line: string;
-  onRemove: () => void;
-  onComplete?: () => void;
-  onSettings?: () => void;
-  onFocusDetail?: () => void;
-  animateOnMount?: boolean;
-  isRemoving?: boolean;
-}) {
-  const enter = useRef(new Animated.Value(animateOnMount ? 0 : 1)).current;
-  const pulse = useRef(new Animated.Value(1)).current;
-  const shouldPulse = Boolean(isFocusStarted && !isCompleted);
-
-  useEffect(() => {
-    if (!animateOnMount) {
-      enter.setValue(1);
-      return;
-    }
-    Animated.spring(enter, {
-      toValue: 1,
-      damping: 16,
-      stiffness: 180,
-      mass: 0.9,
-      useNativeDriver: true,
-    }).start();
-  }, [animateOnMount, enter]);
-
-  useEffect(() => {
-    if (!isRemoving) return;
-    Animated.timing(enter, {
-      toValue: 0,
-      duration: 170,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-  }, [isRemoving, enter]);
-
-  useEffect(() => {
-    if (!shouldPulse) {
-      pulse.setValue(1);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 0.5,
-          duration: 650,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 650,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [shouldPulse, pulse]);
-
-  return (
-    <Animated.View
-      style={[
-        styles.orderRowRoman,
-        { borderBottomColor: line },
-        {
-          opacity: enter,
-          transform: [
-            { translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) },
-            { scale: enter.interpolate({ inputRange: [0, 1], outputRange: [0.992, 1] }) },
-          ],
-        },
-      ]}>
-      {priorityLabel ? (
-        <View
-          style={[
-            styles.inlineRankPill,
-            {
-              backgroundColor: 'transparent',
-            },
-          ]}>
-          <ThemedText
-            style={[
-              styles.inlineRankPillText,
-              { color: '#111111' },
-            ]}>
-            {priorityLabel}
-          </ThemedText>
-        </View>
-      ) : null}
-      {shouldPulse && categoryKey === 'medicine' ? (
-        <Animated.View style={[styles.medicineIconBadge, { opacity: pulse }]}>
-          <IconSymbol name="cross.fill" size={12} color="#ef4444" />
-        </Animated.View>
-      ) : (
-        <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
-          <IconSymbol
-            name={icon as any}
-            size={20}
-            color={shouldPulse ? activeIconColorByCategory(categoryKey) : ink}
-          />
-        </Animated.View>
-      )}
-      <View style={styles.orderRowRomanText}>
-        <ThemedText
-          style={[styles.orderRowRomanTitle, { color: ink }, isCompleted && styles.orderRowRomanTitleDone]}
-          numberOfLines={1}
-          lightColor={ink}
-          darkColor={ink}>
-          {label}
-        </ThemedText>
-        {subtitle ? (
-          <ThemedText
-            style={[
-              styles.orderRowRomanSubtitle,
-              { color: inkMuted },
-              isCompleted && styles.orderRowRomanTitleDone,
-            ]}
-            numberOfLines={1}
-            lightColor={inkMuted}
-            darkColor={inkMuted}>
-            {subtitle}
-          </ThemedText>
-        ) : null}
-      </View>
-      <View style={styles.orderRowActions}>
-        {isFocusStarted && onFocusDetail ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${label} 몰입 화면 자세히 보기`}
-            hitSlop={10}
-            onPress={onFocusDetail}
-            style={[styles.orderSettingsBtn, { borderColor: line }]}>
-            <IconSymbol name="chevron.right.circle" size={16} color={isDark ? inkMuted : ink} />
-          </Pressable>
-        ) : onSettings ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${label} 상세 설정`}
-            hitSlop={10}
-            onPress={onSettings}
-            style={[styles.orderSettingsBtn, { borderColor: line }]}>
-            <IconSymbol name="slider.horizontal.3" size={14} color={isDark ? inkMuted : ink} />
-          </Pressable>
-        ) : null}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={isFocusStarted ? `${label} 완료` : `${label} 제거`}
-          hitSlop={12}
-          onPress={isFocusStarted ? onComplete : onRemove}
-          style={[styles.orderRemoveRoman, { borderColor: line }]}>
-          <IconSymbol
-            name={isFocusStarted ? 'checkmark.circle.fill' : 'xmark'}
-            size={isFocusStarted ? 15 : 12}
-            color={isDark ? inkMuted : ink}
-          />
-        </Pressable>
-      </View>
-    </Animated.View>
-  );
-}
-
-/* ─── 도구 카탈로그 — 세로 목록(추가형) ─── */
-
-function CatalogListRow({
-  icon,
-  label,
-  subtitle,
-  selected,
-  ink,
-  muted,
-  line,
-  onPress,
-}: {
-  icon: string;
-  label: string;
-  subtitle?: string | null;
-  selected: boolean;
-  ink: string;
-  muted: string;
-  line: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      accessibilityLabel={
-        subtitle ? `${label}. ${subtitle}, ${selected ? '담김' : '담기'}` : `${label}, ${selected ? '담김' : '담기'}`
-      }
-      onPress={onPress}
-      style={[styles.catalogRow, { borderBottomColor: line }]}>
-      <IconSymbol name={icon as any} size={22} color={selected ? PRIMARY : muted} />
-      <View style={styles.catalogRowTextCol}>
-        <ThemedText
-          style={[styles.catalogRowLabel, { color: selected ? ink : muted }]}
-          lightColor={selected ? ink : muted}
-          darkColor={selected ? ink : muted}
-          numberOfLines={1}>
-          {label}
-        </ThemedText>
-        {subtitle ? (
-          <ThemedText
-            style={[styles.catalogRowSubtitle, { color: muted }]}
-            lightColor={muted}
-            darkColor={muted}
-            numberOfLines={1}>
-            {subtitle}
-          </ThemedText>
-        ) : null}
-      </View>
-      {selected ? (
-        <View style={[styles.catalogRowBadge, { backgroundColor: PRIMARY }]}>
-          <IconSymbol name="checkmark" size={11} color="#fff" />
-        </View>
-      ) : (
-        <IconSymbol name="plus.circle" size={22} color={muted} />
-      )}
-    </Pressable>
-  );
-}
 
 function priorityLabelByIndex(index: number): string {
   return String(index + 1);
@@ -842,15 +707,6 @@ function priorityLabelByIndex(index: number): string {
 function priorityColorByIndex(index: number): { bg: string; fg: string } {
   void index;
   return { bg: '#111111', fg: '#ffffff' };
-}
-
-function activeIconColorByCategory(categoryKey: string): string {
-  if (categoryKey === 'work') return '#1e3a8a';
-  if (categoryKey === 'reading') return '#22c55e';
-  if (categoryKey === 'fasting') return '#8b5a2b';
-  if (categoryKey === 'water') return '#7dd3fc';
-  if (categoryKey === 'other') return '#f97316';
-  return PRIMARY;
 }
 
 /* ─── 메인 ─── */
@@ -872,7 +728,6 @@ export function PriorityBasedPlanSection({
   onSelectCategory,
   onOpenCategorySettings,
   onOpenFocusDetail,
-  onAllFocusCompleted,
 }: Props) {
   useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -892,11 +747,13 @@ export function PriorityBasedPlanSection({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const bc = bookColors(c, isDark);
 
   const todayKey = getLocalDateKey();
 
   const [iosDateModalOpen, setIosDateModalOpen] = useState(false);
+  const [priorityTimeModalOpen, setPriorityTimeModalOpen] = useState(false);
   const [monthCursor, setMonthCursor] = useState(() => toMonthStart(new Date()));
   const [draftRangeStart, setDraftRangeStart] = useState(priorityPlanDateKey);
   const [draftRangeEnd, setDraftRangeEnd] = useState(priorityPlanDateKeyEnd);
@@ -1025,7 +882,7 @@ export function PriorityBasedPlanSection({
   const selectedItems = useMemo(
     () =>
       priorityCategoryOrder
-        .map((key) => PICKER_CATEGORIES.find((cat) => cat.key === key))
+        .map((key) => getPickerCategoryItem(key))
         .filter(Boolean) as (typeof PICKER_CATEGORIES)[number][],
     [priorityCategoryOrder],
   );
@@ -1055,10 +912,17 @@ export function PriorityBasedPlanSection({
   const categoryUnsetHints = useMemo<Record<string, string>>(
     () => ({
       reading: '책 선정 안 함',
-      fasting: '목표 시간 설정 안 함',
+      fasting: '단식 목표 미설정',
       water: '섭취 목표 설정 안 함',
       medicine: '복용 슬롯 설정 안 함',
-      other: '보조 도구 설정 안 함',
+      work: '작업 목표 미설정',
+      study: '학습 체크리스트 미작성',
+      planning: '정리 체크리스트 미작성',
+      writing: '글쓰기 체크리스트 미작성',
+      language: '언어 학습 체크리스트 미작성',
+      creative: '창작 체크리스트 미작성',
+      inbox: '정리 체크리스트 미작성',
+      other: '맞춤 체크리스트 미작성',
     }),
     [],
   );
@@ -1077,6 +941,7 @@ export function PriorityBasedPlanSection({
     completedFocusCategoryKeys,
     planCompletionDismissedKeys,
     addFocusCategoryCompleted,
+    toggleFocusCategoryCompleted,
     filterCompletedFocusKeysToPriorityOrder,
     addPlanCompletionDismissedKey,
     clearPlanCompletionDismissedKeys,
@@ -1085,25 +950,15 @@ export function PriorityBasedPlanSection({
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
       planCompletionDismissedKeys: s.planCompletionDismissedKeys,
       addFocusCategoryCompleted: s.addFocusCategoryCompleted,
+      toggleFocusCategoryCompleted: s.toggleFocusCategoryCompleted,
       filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
       addPlanCompletionDismissedKey: s.addPlanCompletionDismissedKey,
       clearPlanCompletionDismissedKeys: s.clearPlanCompletionDismissedKeys,
     })),
   );
   const [lastAddedCategoryKey, setLastAddedCategoryKey] = useState<string | null>(null);
-  const [removingCategoryKey, setRemovingCategoryKey] = useState<string | null>(null);
-  const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (removeTimerRef.current) {
-        clearTimeout(removeTimerRef.current);
-        removeTimerRef.current = null;
-      }
-    },
-    [],
-  );
   const planBlocks = useDayPlanStore((s) => s.blocks);
+  const dayPlanDateKey = useDayPlanStore((s) => s.dateKey);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
   const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
 
@@ -1119,7 +974,7 @@ export function PriorityBasedPlanSection({
     return [...doneCategoryKeys];
   }, [planBlocks, completedBlockIds, skippedBlockIds]);
 
-  /** 플로우 종료 시 플랜 완료 무시 목록 초기화 — 다음 세션에서 다시 일정 완료 반영 */
+  /** 집중 종료 시 플랜 완료 무시 목록 초기화 — 다음 세션에서 다시 일정 완료 반영 */
   useEffect(() => {
     if (!isFocusStarted) {
       clearPlanCompletionDismissedKeys();
@@ -1151,14 +1006,34 @@ export function PriorityBasedPlanSection({
     ],
   );
 
-  useEffect(() => {
-    if (!isFocusStarted) return;
-    if (priorityCategoryOrder.length === 0) return;
-    const done = priorityCategoryOrder.every((k) => isPriorityRowCompleted(k));
-    if (done) {
-      onAllFocusCompleted?.();
-    }
-  }, [isFocusStarted, priorityCategoryOrder, isPriorityRowCompleted, onAllFocusCompleted]);
+  const undoPriorityRowCompletion = useCallback(
+    (categoryKey: string) => {
+      if (completedFocusCategoryKeys.includes(categoryKey)) {
+        toggleFocusCategoryCompleted(categoryKey);
+        return;
+      }
+      if (completedCategoryKeysFromPlan.includes(categoryKey)) {
+        addPlanCompletionDismissedKey(categoryKey);
+      }
+    },
+    [
+      addPlanCompletionDismissedKey,
+      completedCategoryKeysFromPlan,
+      completedFocusCategoryKeys,
+      toggleFocusCategoryCompleted,
+    ],
+  );
+
+  const handleTogglePriorityRowComplete = useCallback(
+    (categoryKey: string) => {
+      if (isPriorityRowCompleted(categoryKey)) {
+        undoPriorityRowCompletion(categoryKey);
+      } else {
+        addFocusCategoryCompleted(categoryKey);
+      }
+    },
+    [addFocusCategoryCompleted, isPriorityRowCompleted, undoPriorityRowCompletion],
+  );
 
   /** 라이트: 대표 톤은 `dayPlanPalette` 그레이(containerLow)·진한 글자(onSurface) — 순백·채도 높은 다크 면 아님 */
   const editorial = useMemo(() => {
@@ -1178,32 +1053,62 @@ export function PriorityBasedPlanSection({
     };
   }, [isDark, bc.cover, bc.ink, bc.inkMuted, c.catBorderIdle]);
 
-  const handleRemove = useCallback(
-    (key: string) => {
-      if (removingCategoryKey) return;
-      setRemovingCategoryKey(key);
-      setLastAddedCategoryKey(null);
-      addPlanCompletionDismissedKey(key);
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      removeTimerRef.current = setTimeout(() => {
-        animateListMutation();
-        onSelectCategory(key);
-        setRemovingCategoryKey((curr) => (curr === key ? null : curr));
-        removeTimerRef.current = null;
-      }, 170);
-    },
-    [addPlanCompletionDismissedKey, animateListMutation, onSelectCategory, removingCategoryKey],
+  /** 전날 · 당일(오늘) · 다음날 — 당일은 메인, 자정 넘김 종료일은 연장 카드 */
+  const timelineThreeDayKeys = useMemo(
+    () => [
+      addDaysToLocalDateKey(todayKey, -1),
+      todayKey,
+      addDaysToLocalDateKey(todayKey, 1),
+    ],
+    [todayKey],
   );
 
-  const onCatalogTap = useCallback(
-    (key: string) => {
-      animateListMutation();
-      setLastAddedCategoryKey(key);
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      onSelectCategory(key);
-    },
-    [animateListMutation, onSelectCategory],
+  const sortedTimelineFlowBlocks = useMemo(
+    () => sortDayPlanBlocks(filterDayPlanFlowBlocks(planBlocks)),
+    [planBlocks],
   );
+
+  const priorityWindowHhmm = useMemo(() => {
+    const ps = parseHHmmToMinutes(priorityStart.trim());
+    const pe = parseHHmmToMinutes(priorityEnd.trim());
+    const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
+    return { ps, pe, overnight };
+  }, [priorityStart, priorityEnd]);
+
+  const priorityWindowLine = useMemo(
+    () => formatPriorityWindowLine(priorityStart, priorityEnd),
+    [priorityStart, priorityEnd],
+  );
+
+  const { lo: planRangeLo, hi: planRangeHi } = useMemo(
+    () => sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd),
+    [priorityPlanDateKey, priorityPlanDateKeyEnd],
+  );
+
+  /**
+   * 타임라인 카드 높이 = 사용 가능한 세로를 거의 꽉 채움(리스트·탭 사이 빈 면 최소화).
+   * 내부 ScrollView가 긴 목록을 스크롤하고, 카드는 항상 이 높이를 씀.
+   */
+  const timelineCardHeight = useMemo(() => {
+    const aboveCard =
+      insets.top +
+      /** DayPlan: scroll paddingTop·문의·모드 스위치·섹션 간격 */
+      110;
+    const belowCard = DAY_PLAN_TAB_BAR_ROW_HEIGHT + insets.bottom + 2;
+    const outerVertical = 12; // priorityTimelineOuter padding (상·하)
+    return Math.max(240, windowHeight - aboveCard - belowCard - outerVertical);
+  }, [windowHeight, insets.top, insets.bottom]);
+
+  const timelineCardSubtitle = useMemo(
+    () =>
+      `${planDayIntroFromRange(todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd)} · ${priorityWindowLine}`,
+    [todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd, priorityWindowLine],
+  );
+
+  const openPriorityTimeModal = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setPriorityTimeModalOpen(true);
+  }, []);
 
   /** c.containerLow 한 값을 모든 컨테이너에 직접 지정 — 중간 View 투명 영역에서 톤 차이 원천 제거 */
   const surfaceBg = c.containerLow;
@@ -1373,167 +1278,420 @@ export function PriorityBasedPlanSection({
         </View>
       </Modal>
 
-      <View style={[styles.bookOuter, { backgroundColor: surfaceBg }]}>
-        {/* 목표 시간 */}
-        <View
-          style={[
-            styles.timeRibbon,
-            styles.timeRibbonInBook,
-            {
-              backgroundColor: surfaceBg,
-              borderBottomColor: editorial.line,
-              borderBottomWidth: StyleSheet.hairlineWidth,
-            },
-          ]}>
-          <View style={[styles.timeRibbonInner, { backgroundColor: surfaceBg }]}>
-            <View style={styles.timeFlipColumn}>
-              <ThemedText style={[styles.timeKicker, { color: editorial.muted }]}>시작</ThemedText>
-              <FlipClockTimePair
-                value={priorityStart}
-                onChange={onChangePriorityStart}
-                dateCaption={clockFaceHints.startDateCaption}
-              />
+      <Modal
+        visible={priorityTimeModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPriorityTimeModalOpen(false)}>
+        <View style={styles.dateModalRoot} accessibilityViewIsModal>
+          <Pressable
+            style={styles.dateModalDimTouch}
+            onPress={() => setPriorityTimeModalOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel="닫기"
+          />
+          <View
+            style={[
+              styles.dateModalSheet,
+              {
+                backgroundColor: c.containerLow,
+                paddingBottom: Math.max(insets.bottom, 12) + 8,
+                paddingHorizontal: 20,
+              },
+            ]}>
+            <View
+              style={[
+                styles.dateModalGrabber,
+                { backgroundColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)' },
+              ]}
+              accessibilityLabel="시트"
+            />
+            <ThemedText style={[styles.dateModalTitle, { color: c.onSurface }]}>집중 구간 시간</ThemedText>
+            <ThemedText style={[styles.dateModalHint, { color: c.onVariant }]}>
+              시작·종료를 맞추면 타임라인에도 같은 구간이 표시돼요.
+            </ThemedText>
+            <View style={[styles.timeModalFlipWrap, { marginTop: 14 }]}>
+              <View style={[styles.timeRibbonInner, { backgroundColor: 'transparent' }]}>
+                <View style={styles.timeFlipColumn}>
+                  <ThemedText style={[styles.timeKicker, { color: editorial.muted }]}>시작</ThemedText>
+                  <FlipClockTimePair
+                    value={priorityStart}
+                    onChange={onChangePriorityStart}
+                    dateCaption={clockFaceHints.startDateCaption}
+                  />
+                </View>
+                <View style={styles.timeFlipColumn}>
+                  <ThemedText style={[styles.timeKicker, { color: editorial.muted }]}>종료</ThemedText>
+                  <FlipClockTimePair
+                    value={priorityEnd}
+                    onChange={onChangePriorityEnd}
+                    nextDayHint={clockFaceHints.endNextDayOnlyBadge}
+                    dateCaption={clockFaceHints.endDateCaption}
+                  />
+                </View>
+              </View>
             </View>
-            <View style={styles.timeCalendarBetweenColumn}>
+            <View style={styles.dateActionRow}>
               <Pressable
-                onPress={openPlanDatePicker}
-                hitSlop={12}
-                style={styles.timeCalendarHit}
+                style={[styles.dateActionBtn, styles.dateActionGhost, { borderColor: c.catBorderIdle }]}
+                onPress={() => setPriorityTimeModalOpen(false)}
                 accessibilityRole="button"
-                accessibilityLabel={`적용 기간 선택, 현재 ${planDayIntroFromRange(todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd)}`}>
-                <IconSymbol name="calendar" size={22} color={editorial.muted} />
+                accessibilityLabel="닫기">
+                <ThemedText style={[styles.dateActionText, { color: c.onSurface }]}>닫기</ThemedText>
               </Pressable>
-            </View>
-            <View style={styles.timeFlipColumn}>
-              <ThemedText style={[styles.timeKicker, { color: editorial.muted }]}>종료</ThemedText>
-              <FlipClockTimePair
-                value={priorityEnd}
-                onChange={onChangePriorityEnd}
-                nextDayHint={clockFaceHints.endNextDayOnlyBadge}
-                dateCaption={clockFaceHints.endDateCaption}
-              />
             </View>
           </View>
         </View>
+      </Modal>
 
-        <View style={[styles.bookSpread, { backgroundColor: surfaceBg }]}>
-          {/* ① 우선 순위 목록 */}
+      <View style={[styles.bookOuter, { backgroundColor: surfaceBg }]}>
+        {/* 기간·집중 구간 — 다일 타임라인 카드 (달력·시계는 각각 모달) */}
+        <View style={styles.priorityTimelineOuter}>
           <View
             style={[
-              styles.pageBlock,
-              styles.pageTop,
-              styles.pageTopEditorial,
-              { backgroundColor: surfaceBg },
+              styles.priorityTimelineCard,
+              {
+                height: timelineCardHeight,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.72)',
+                borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+              },
             ]}>
-            <ThemedText
-              style={[styles.pagePriorityIntro, { color: editorial.ink }]}
-              lightColor={editorial.ink}
-              darkColor={editorial.ink}>
-              {isFocusStarted
-                ? '진행 중인 플로우예요. 각 항목에서 자세히 보기를 누르면 몰입 화면으로 이동해요.'
-                : '여기에는 플로의 우선 순위를 담아요.'}
-            </ThemedText>
-            <View style={[styles.pageScrollContent, { backgroundColor: surfaceBg }]}>
-              <View
-                style={[
-                  styles.orderListFrame,
-                  { borderTopColor: editorial.line, backgroundColor: surfaceBg },
-                ]}>
-                {bagCount === 0 ? (
-                  <View
-                    style={[styles.priorityEmpty, { backgroundColor: surfaceBg }]}
-                    accessibilityRole="text"
-                    accessibilityLabel="우선 순위가 비어 있음. 아래 도구 카탈로그에서 항목을 담을 수 있음">
-                    <View
-                      style={[
-                        styles.priorityEmptyIconFrame,
-                        { borderColor: editorial.line },
-                      ]}>
-                      <IconSymbol name="square.stack" size={26} color={editorial.muted} />
-                    </View>
-                    <ThemedText
-                      style={[styles.priorityEmptyTitle, { color: editorial.ink }]}
-                      lightColor={editorial.ink}
-                      darkColor={editorial.ink}>
-                      아직 담긴 항목이 없어요
-                    </ThemedText>
-                    <ThemedText
-                      style={[styles.priorityEmptyHint, { color: editorial.muted }]}
-                      lightColor={editorial.muted}
-                      darkColor={editorial.muted}>
-                      아래 도구 카탈로그에서 항목을 탭하면 여기에 순서대로 쌓여요.
-                    </ThemedText>
-                    <View style={styles.priorityEmptyCue}>
-                      <IconSymbol name="arrow.down" size={14} color={editorial.muted} />
-                      <ThemedText
-                        style={[styles.priorityEmptyCueText, { color: editorial.muted }]}
-                        lightColor={editorial.muted}
-                        darkColor={editorial.muted}>
-                        아래에서 담기
-                      </ThemedText>
-                    </View>
-                  </View>
-                ) : (
-                  selectedItems.map((cat, idx) => (
-                    <OrderRow
-                      key={cat.key}
-                      categoryKey={cat.key}
-                      icon={cat.icon}
-                      label={cat.label}
-                      subtitle={categorySubtitleByKey(cat.key)}
-                      priorityLabel={priorityLabelByIndex(idx)}
-                      isTopPriority={idx === 0}
-                      priorityColor={priorityColorByIndex(idx)}
-                      isFocusStarted={isFocusStarted}
-                      isCompleted={isPriorityRowCompleted(cat.key)}
-                      isDark={isDark}
-                      ink={editorial.ink}
-                      inkMuted={editorial.muted}
-                      line={editorial.line}
-                      onRemove={() => handleRemove(cat.key)}
-                      onComplete={() => addFocusCategoryCompleted(cat.key)}
-                      onSettings={onOpenCategorySettings ? () => onOpenCategorySettings(cat.key) : undefined}
-                      onFocusDetail={onOpenFocusDetail ? () => onOpenFocusDetail(cat.key) : undefined}
-                      animateOnMount={lastAddedCategoryKey === cat.key}
-                      isRemoving={removingCategoryKey === cat.key}
-                    />
-                  ))
-                )}
+            <View style={styles.priorityTimelineHeader}>
+              <View style={styles.priorityTimelineHeaderText}>
+                <ThemedText
+                  style={[styles.priorityTimelineTitle, { color: editorial.ink }]}
+                  lightColor={editorial.ink}
+                  darkColor={editorial.ink}
+                  numberOfLines={2}>
+                  {formatTimelineHeaderDateKo(todayKey)}
+                </ThemedText>
+                <ThemedText
+                  style={[styles.priorityTimelineSub, { color: editorial.muted }]}
+                  lightColor={editorial.muted}
+                  darkColor={editorial.muted}
+                  numberOfLines={3}>
+                  {timelineCardSubtitle}
+                </ThemedText>
+              </View>
+              <View style={styles.priorityTimelineHeaderActions}>
+                <Pressable
+                  onPress={openPlanDatePicker}
+                  hitSlop={12}
+                  style={styles.timeCalendarTopLeftHit}
+                  accessibilityRole="button"
+                  accessibilityLabel={`적용 기간 선택, 현재 ${planDayIntroFromRange(todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd)}`}>
+                  {/* 임시 주석처리 <IconSymbol name="calendar" size={22} color={editorial.muted} /> */}
+                </Pressable>
+                <Pressable
+                  onPress={openPriorityTimeModal}
+                  hitSlop={12}
+                  style={styles.timeCalendarTopLeftHit}
+                  accessibilityRole="button"
+                  accessibilityLabel="집중 구간 시간 설정">
+                  {/* 임시 주석처리 <IconSymbol name="clock.fill" size={22} color={editorial.muted} /> */}
+                </Pressable>
               </View>
             </View>
-          </View>
+            <ScrollView
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+              style={styles.priorityTimelineScroll}
+              contentContainerStyle={[
+                styles.priorityTimelineScrollContent,
+                { paddingBottom: TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM },
+              ]}>
+              {timelineThreeDayKeys.map((dk) => {
+                const d = parseLocalDateKeyToDate(dk);
+                const dayNum = d ? d.getDate() : '';
+                const wd = weekdayShortKoFromDateKey(dk);
+                const isPastDay = dk < todayKey;
+                const isMainDay = dk === todayKey;
+                const isStoreDay = dk === dayPlanDateKey;
+                const blocks = isStoreDay ? sortedTimelineFlowBlocks : [];
+                const overnightWindow = isOvernightHhmmRange(priorityStart, priorityEnd);
+                const tomorrowDk = addDaysToLocalDateKey(todayKey, 1);
+                const todayWithinPriorityPlan = todayKey >= planRangeLo && todayKey <= planRangeHi;
+                /** 자정 넘김 종료일(다음날 새벽) — 전날과 같은 우선순위를 ‘연장’ 블록으로 표시 */
+                const isOvernightTailDay =
+                  overnightWindow && todayWithinPriorityPlan && dk === tomorrowDk;
+                const showPriorityInMainTimeline = bagCount > 0 && isMainDay;
+                const showOvernightPriorityContinuation = isOvernightTailDay && bagCount > 0;
+                const showPriorityListBelow =
+                  showPriorityInMainTimeline || showOvernightPriorityContinuation;
+                /** 오늘 + 자정 넘김 종료일(꼬리) — 동일한 ‘활성’ 톤·레이아웃 */
+                const isPriorityStripPrimary = isMainDay || showOvernightPriorityContinuation;
+                const eventTitleColor = isPastDay
+                  ? editorial.muted
+                  : isPriorityStripPrimary
+                    ? editorial.ink
+                    : editorial.muted;
+                const borderTopStrong = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.14)';
+                const timeColW = isPriorityStripPrimary ? 100 : 58;
+                const timeFont = isPriorityStripPrimary ? 11 : 10;
+                const titleFont = isPriorityStripPrimary ? 15 : 12;
+                const titleWeight: '500' | '600' | '700' = isPriorityStripPrimary ? '600' : '500';
+                const dayLeftW = isPriorityStripPrimary ? 52 : 34;
+                const wdFont = isPriorityStripPrimary ? 11 : 9;
+                const wdLetter = isPriorityStripPrimary ? 1.4 : 0.4;
+                const numSize = isPriorityStripPrimary ? undefined : 14;
+                /** 다줄 합본·집중 구간과 동일 시각의 우선순위 블록은 타임라인 행에서 숨기고 아래 목록만 사용 */
+                const timelineBlocksForDay = blocks.filter((b) => {
+                  if (isPriorityCompoundBlockTitle(b.title)) return false;
+                  if (
+                    showPriorityInMainTimeline &&
+                    priorityWindowHhmm.ps !== null &&
+                    priorityWindowHhmm.pe !== null &&
+                    blockMatchesPriorityHhmmWindow(
+                      b,
+                      priorityWindowHhmm.ps,
+                      priorityWindowHhmm.pe,
+                      priorityWindowHhmm.overnight,
+                    )
+                  ) {
+                    return false;
+                  }
+                  return true;
+                });
+                return (
+                  <View
+                    key={dk}
+                    style={[
+                      styles.priorityTimelineDayRow,
+                      isPriorityStripPrimary
+                        ? styles.priorityTimelineDayRowMain
+                        : styles.priorityTimelineDayRowSide,
+                      isPastDay && styles.priorityTimelineDayPast,
+                      !isPriorityStripPrimary && !isPastDay && styles.priorityTimelineDayFutureSide,
+                    ]}>
+                    <View style={[styles.priorityTimelineDayLeft, { width: dayLeftW }]}>
+                      <ThemedText
+                        style={[
+                          styles.priorityTimelineWd,
+                          {
+                            color: isPriorityStripPrimary ? editorial.ink : editorial.muted,
+                            fontWeight: isPriorityStripPrimary ? '800' : '600',
+                            letterSpacing: wdLetter,
+                            fontSize: wdFont,
+                          },
+                        ]}
+                        lightColor={isPriorityStripPrimary ? editorial.ink : editorial.muted}
+                        darkColor={isPriorityStripPrimary ? editorial.ink : editorial.muted}>
+                        {wd}
+                      </ThemedText>
+                      <ThemedText
+                        style={[
+                          styles.priorityTimelineDayNum,
+                          numSize != null && { fontSize: numSize, fontWeight: '700', letterSpacing: -0.3 },
+                          { color: editorial.ink },
+                          isPriorityStripPrimary && styles.priorityTimelineDayNumToday,
+                        ]}
+                        lightColor={editorial.ink}
+                        darkColor={editorial.ink}>
+                        {dayNum}
+                      </ThemedText>
+                    </View>
+                    <View
+                      style={[
+                        styles.priorityTimelineDayRight,
+                        isPriorityStripPrimary
+                          ? styles.priorityTimelineDayRightMain
+                          : styles.priorityTimelineDayRightSide,
+                        {
+                          borderTopColor: isPriorityStripPrimary ? borderTopStrong : editorial.line,
+                          borderTopWidth: StyleSheet.hairlineWidth,
+                          paddingTop: isPriorityStripPrimary ? 12 : 4,
+                        },
+                      ]}>
+                      {timelineBlocksForDay.length > 0
+                        ? timelineBlocksForDay.map((block, bi) => {
+                          const dotTone =
+                            bi % 4 === 0
+                              ? isDark
+                                ? 'rgba(255,255,255,0.95)'
+                                : 'rgba(0,0,0,0.85)'
+                              : bi % 4 === 1
+                                ? isDark
+                                  ? 'rgba(255,255,255,0.55)'
+                                  : 'rgba(0,0,0,0.45)'
+                                : bi % 4 === 2
+                                  ? isDark
+                                    ? 'rgba(255,255,255,0.4)'
+                                    : 'rgba(0,0,0,0.35)'
+                                  : isDark
+                                    ? 'rgba(255,255,255,0.7)'
+                                    : 'rgba(0,0,0,0.55)';
+                          const dotTop = isPriorityStripPrimary ? 6 : 4;
+                          return (
+                            <View key={block.id} style={styles.priorityTimelineEventRowHoriz}>
+                              <ThemedText
+                                style={[
+                                  styles.priorityTimelineEventTimeCol,
+                                  { color: editorial.muted, width: timeColW, fontSize: timeFont },
+                                ]}
+                                lightColor={editorial.muted}
+                                darkColor={editorial.muted}
+                                numberOfLines={3}>
+                                {formatBlockTimeRange(block)}
+                              </ThemedText>
+                              <View
+                                style={[styles.priorityTimelineDot, { backgroundColor: dotTone, marginTop: dotTop }]}
+                              />
+                              <ThemedText
+                                style={[
+                                  styles.priorityTimelineEventTitleHoriz,
+                                  {
+                                    color: eventTitleColor,
+                                    fontWeight: titleWeight,
+                                    fontSize: titleFont,
+                                    lineHeight: isPriorityStripPrimary ? 19 : 17,
+                                  },
+                                ]}
+                                lightColor={eventTitleColor}
+                                darkColor={eventTitleColor}
+                                numberOfLines={2}>
+                                {block.title}
+                              </ThemedText>
+                            </View>
+                          );
+                        })
+                        : null}
 
-          {/* 구분선 */}
-          <View style={[styles.pageDivider, { backgroundColor: editorial.line }]} />
+                      {showPriorityInMainTimeline ? (
+                        <View
+                          style={[
+                            styles.priorityInlineList,
+                            timelineBlocksForDay.length > 0 && { marginTop: 8 },
+                          ]}>
+                          {blocks.length === 0 ? (
+                            <ThemedText
+                              style={[styles.priorityTimelineKicker, { color: editorial.muted }]}
+                              lightColor={editorial.muted}
+                              darkColor={editorial.muted}
+                              numberOfLines={2}>
+                              {priorityWindowLine}
+                            </ThemedText>
+                          ) : null}
+                          {selectedItems.map((cat, idx) => (
+                            <PriorityOrderRow
+                              key={cat.key}
+                              categoryKey={cat.key}
+                              icon={cat.icon}
+                              label={cat.label}
+                              subtitle={categorySubtitleByKey(cat.key)}
+                              priorityLabel={priorityLabelByIndex(idx)}
+                              isTopPriority={idx === 0}
+                              priorityColor={priorityColorByIndex(idx)}
+                              isFocusStarted={isFocusStarted}
+                              isCompleted={isPriorityRowCompleted(cat.key)}
+                              isDark={isDark}
+                              ink={editorial.ink}
+                              inkMuted={editorial.muted}
+                              line={editorial.line}
+                              onToggleFocusComplete={() => handleTogglePriorityRowComplete(cat.key)}
+                              onSettings={
+                                onOpenCategorySettings ? () => onOpenCategorySettings(cat.key) : undefined
+                              }
+                              onFocusDetail={onOpenFocusDetail ? () => onOpenFocusDetail(cat.key) : undefined}
+                              animateOnMount={lastAddedCategoryKey === cat.key}
+                            />
+                          ))}
+                        </View>
+                      ) : null}
 
-          {/* ② 도구 카탈로그 */}
-          <View
-            style={[
-              styles.pageBlock,
-              styles.pageBottom,
-              styles.pageBottomEditorial,
-              { backgroundColor: surfaceBg },
-            ]}>
-            <View style={styles.pageHeader}>
-              <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>도구 카탈로그</ThemedText>
-            </View>
-            <View style={[styles.catalogListFrame, { borderTopColor: editorial.line }]}>
-              {PICKER_CATEGORIES
-                .filter((cat) => !priorityCategoryOrder.includes(cat.key))
-                .map((cat) => (
-                  <CatalogListRow
-                    key={cat.key}
-                    icon={cat.icon}
-                    label={cat.label}
-                    subtitle={null}
-                    selected={false}
-                    ink={editorial.ink}
-                    muted={editorial.muted}
-                    line={editorial.line}
-                    onPress={() => onCatalogTap(cat.key)}
-                  />
-                ))}
-            </View>
+                      {showOvernightPriorityContinuation ? (
+                        <View
+                          style={[
+                            styles.overnightContinuationBlock,
+                            timelineBlocksForDay.length > 0 || showPriorityInMainTimeline
+                              ? { marginTop: 12 }
+                              : null,
+                          ]}>
+                          <View style={styles.overnightTailHeadBlock}>
+                            <ThemedText
+                              style={[styles.overnightTailEndTime, { color: editorial.ink }]}
+                              lightColor={editorial.ink}
+                              darkColor={editorial.ink}
+                              numberOfLines={1}>
+                              {formatOvernightTailEndHeadline(priorityEnd)}
+                            </ThemedText>
+                            <View
+                              style={[
+                                styles.overnightTailDivider,
+                                { backgroundColor: editorial.line },
+                              ]}
+                            />
+                          </View>
+                        </View>
+                      ) : null}
+
+                      {blocks.length === 0 &&
+                        !showPriorityInMainTimeline &&
+                        !(isOvernightTailDay && bagCount > 0) ? (
+                        <View style={styles.priorityTimelineEventRowHoriz}>
+                          <ThemedText
+                            style={[
+                              styles.priorityTimelineEventTimeCol,
+                              { color: editorial.muted, width: timeColW, fontSize: timeFont },
+                            ]}
+                            lightColor={editorial.muted}
+                            darkColor={editorial.muted}
+                            numberOfLines={1}>
+                            —
+                          </ThemedText>
+                          <View
+                            style={[
+                              styles.priorityTimelineDot,
+                              {
+                                backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)',
+                                marginTop: isPriorityStripPrimary ? 6 : 4,
+                              },
+                            ]}
+                          />
+                          <View style={styles.priorityTimelineEventTextStack}>
+                            <ThemedText
+                              style={[
+                                styles.priorityTimelineEventTitleHoriz,
+                                {
+                                  color: eventTitleColor,
+                                  fontSize: isPriorityStripPrimary ? 14 : 11,
+                                  lineHeight: isPriorityStripPrimary ? 19 : 15,
+                                },
+                              ]}
+                              lightColor={eventTitleColor}
+                              darkColor={eventTitleColor}
+                              numberOfLines={isPriorityStripPrimary ? 2 : 1}>
+                              {priorityWindowLine}
+                            </ThemedText>
+                            <ThemedText
+                              style={[
+                                styles.priorityTimelinePlaceholder,
+                                {
+                                  color: editorial.muted,
+                                  fontSize: isPriorityStripPrimary ? 12 : 10,
+                                  lineHeight: isPriorityStripPrimary ? 16 : 14,
+                                },
+                              ]}
+                              lightColor={editorial.muted}
+                              darkColor={editorial.muted}
+                              numberOfLines={isPriorityStripPrimary ? 2 : 1}>
+                              {isStoreDay
+                                ? isMainDay
+                                  ? '이 날에 담긴 플로우가 없어요. 담기에서 골라 보세요.'
+                                  : '플로우 없음'
+                                : isMainDay
+                                  ? '일정이 다른 날을 가리키면 여기 내용이 바뀌어요.'
+                                  : isOvernightTailDay
+                                    ? '전날 밤에 이어진 집중 구간이에요.'
+                                    : '다른 날 일정'}
+                            </ThemedText>
+                          </View>
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
           </View>
         </View>
       </View>
@@ -1546,19 +1704,195 @@ const styles = StyleSheet.create({
   prioritySectionRoot: {
     width: '100%',
   },
-  /** 시계 블록 — 둥근 박스·사방 테두리 제거로 레이어·흰 띠 감소 */
-  timeRibbon: {
-    borderRadius: 0,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 6,
-  },
-  timeRibbonInBook: {
+  priorityTimelineOuter: {
     width: '100%',
-    alignSelf: 'stretch',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  priorityTimelineCard: {
+    width: '100%',
+    borderRadius: 40,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+    flexDirection: 'column',
+  },
+  priorityTimelineHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 14,
+  },
+  priorityTimelineHeaderText: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  priorityTimelineTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.35,
+  },
+  priorityTimelineSub: {
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 17,
+    letterSpacing: -0.1,
+  },
+  priorityTimelineHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingTop: 2,
+  },
+  priorityTimelineScroll: {
+    flex: 1,
+    minHeight: 0,
+    width: '100%',
+  },
+  priorityTimelineScrollContent: {
+    paddingHorizontal: 6,
+    gap: 10,
+  },
+  priorityTimelineDayRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 8,
+  },
+  /** 당일(오늘) — 넓은 간격·큰 터치 영역 */
+  priorityTimelineDayRowMain: {
+    paddingVertical: 10,
+    gap: 12,
+    marginBottom: 2,
+  },
+  /** 전날·다음날 — 압축 */
+  priorityTimelineDayRowSide: {
+    paddingVertical: 2,
+    gap: 10,
     marginBottom: 0,
   },
-  /** 시작·종료 플립 시계 + 가운데 달력 (예전 화살표 자리) */
+  priorityTimelineDayPast: {
+    opacity: 0.32,
+  },
+  priorityTimelineDayFutureSide: {
+    opacity: 0.52,
+  },
+  priorityTimelineDayLeft: {
+    alignItems: 'center',
+    paddingTop: 2,
+    gap: 2,
+  },
+  priorityTimelineWd: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+  priorityTimelineDayNum: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.4,
+  },
+  priorityTimelineDayNumToday: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.6,
+  },
+  priorityTimelineDayRight: {
+    flex: 1,
+    minWidth: 0,
+  },
+  priorityTimelineDayRightMain: {
+    gap: 12,
+  },
+  priorityTimelineDayRightSide: {
+    gap: 8,
+  },
+  /** 모의안: 한 줄에 시간(w-20) · 점 · 제목 */
+  priorityTimelineEventRowHoriz: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    width: '100%',
+  },
+  priorityTimelineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    flexShrink: 0,
+  },
+  priorityTimelineEventTimeCol: {
+    flexShrink: 0,
+    fontWeight: '500',
+    paddingTop: 2,
+    letterSpacing: -0.05,
+  },
+  priorityTimelineEventTitleHoriz: {
+    flex: 1,
+    minWidth: 0,
+    letterSpacing: -0.15,
+  },
+  priorityTimelineEventTextStack: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  /** 오늘 행 안에 우선순위 OrderRow 목록 */
+  priorityInlineList: {
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  /** 자정 넘김 꼬리 날 — 시각+선만(배경·테두리 없이 본문과 동일 톤) */
+  overnightContinuationBlock: {
+    width: '100%',
+    alignSelf: 'stretch',
+    paddingHorizontal: 0,
+    paddingVertical: 2,
+    gap: 0,
+  },
+  overnightTailHeadBlock: {
+    width: '100%',
+    gap: 10,
+    marginBottom: 4,
+  },
+  /** 꼬리 날 — 스케줄 참고: 시각 한 줄 + 구분선만 */
+  overnightTailEndTime: {
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: -0.15,
+    lineHeight: 18,
+  },
+  overnightTailDivider: {
+    width: '100%',
+    height: StyleSheet.hairlineWidth,
+    minHeight: 1,
+    alignSelf: 'stretch',
+  },
+  priorityTimelineKicker: {
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 15,
+    letterSpacing: -0.05,
+    marginBottom: 8,
+  },
+  priorityTimelinePlaceholder: {
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16,
+    letterSpacing: -0.05,
+  },
+  timeModalFlipWrap: {
+    width: '100%',
+    paddingBottom: 4,
+  },
+  timeCalendarTopLeftHit: {
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** 시작·종료 플립 시계 두 열 */
   timeRibbonInner: {
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -1573,20 +1907,6 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: 'stretch',
     overflow: 'hidden',
-  },
-  /** 좁은 고정폭 — 시계 두 열이 동일 비율로 남은 폭 분할 */
-  timeCalendarBetweenColumn: {
-    width: 36,
-    flexShrink: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    paddingHorizontal: 2,
-  },
-  timeCalendarHit: {
-    padding: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   /** 바깥 Pressable 한 겹이 자식 높이를 0으로 만드는 경우가 있어 View + 전역 덮는 Pressable로 분리 */
   dateModalRoot: {
@@ -1786,30 +2106,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   pageTop: {
-    minHeight: 120,
+    minHeight: 96,
     paddingTop: 0,
   },
   pageTopEditorial: {
     borderRadius: 0,
-  },
-  pageBottom: {
-    paddingBottom: 14,
-    paddingTop: 4,
-  },
-  pageBottomEditorial: {
-    borderRadius: 0,
-  },
-  pageDivider: {
-    height: StyleSheet.hairlineWidth,
-    width: '100%',
-    marginVertical: 0,
-  },
-  pageHeader: { marginBottom: 10, gap: 2 },
-  pageTitle: {
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
   /** 우선 순위 목록 — 무엇을 담는 영역인지 한 줄 설명 */
   pagePriorityIntro: {
@@ -1820,157 +2121,4 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   pageScrollContent: { gap: 0, paddingBottom: 4 },
-  orderListFrame: {
-    width: '100%',
-    borderTopWidth: 1,
-  },
-  /** 우선 순위 0개 — 목록 영역 안에서만 안내(배경 장식 원 금지 규칙 준수) */
-  priorityEmpty: {
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    gap: 6,
-  },
-  priorityEmptyIconFrame: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
-  },
-  priorityEmptyTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-    textAlign: 'center',
-  },
-  priorityEmptyHint: {
-    fontSize: 13,
-    fontWeight: '500',
-    lineHeight: 18,
-    textAlign: 'center',
-    maxWidth: 280,
-  },
-  priorityEmptyCue: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 2,
-    opacity: 0.9,
-  },
-  priorityEmptyCueText: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  orderRowRoman: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 0,
-    borderBottomWidth: 1,
-  },
-  inlineRankPill: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  inlineRankPillText: {
-    fontSize: 22,
-    lineHeight: 24,
-    fontWeight: '800',
-    letterSpacing: -0.1,
-  },
-  medicineIconBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orderRowRomanText: {
-    flex: 1,
-    minWidth: 0,
-    paddingRight: 8,
-  },
-  orderRowRomanTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    letterSpacing: -0.3,
-  },
-  orderRowRomanSubtitle: {
-    marginTop: 3,
-    fontSize: 12,
-    fontWeight: '500',
-    letterSpacing: -0.1,
-    lineHeight: 16,
-  },
-  orderRowRomanTitleDone: {
-    textDecorationLine: 'line-through',
-    textDecorationStyle: 'solid',
-    opacity: 0.52,
-  },
-  orderRowActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  orderSettingsBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orderRemoveRoman: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  catalogListFrame: {
-    width: '100%',
-    borderTopWidth: 1,
-    paddingBottom: 4,
-  },
-  catalogRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 0,
-    borderBottomWidth: 1,
-  },
-  catalogRowTextCol: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  catalogRowLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: -0.3,
-  },
-  catalogRowSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    letterSpacing: -0.1,
-    lineHeight: 16,
-  },
-  catalogRowBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

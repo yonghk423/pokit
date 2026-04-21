@@ -1,66 +1,26 @@
 import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 
-export type DayPlanStartNotificationTiming = '5min' | 'atStart';
-
-export type DayPlanNotificationSettings = {
-  startEnabled: boolean;
-  endEnabled: boolean;
-  startTiming: DayPlanStartNotificationTiming;
-};
-
 export type DayPlanScheduledNotification = {
   notificationId: string;
   blockId: string;
   kind: 'start' | 'end';
 };
 
-type SettingsStorageShape = {
-  dayPlanNotifications?: DayPlanNotificationSettings;
-  dayPlanScheduledNotifications?: DayPlanScheduledNotification[];
+export type PriorityDayStartAlarmPersisted = {
+  enabled: boolean;
+  notificationId: string | null;
 };
 
-const DEFAULT_DAY_PLAN_NOTIFICATION_SETTINGS: DayPlanNotificationSettings = {
-  startEnabled: true,
-  endEnabled: false,
-  startTiming: 'atStart',
+type SettingsStorageShape = {
+  dayPlanScheduledNotifications?: DayPlanScheduledNotification[];
+  priorityDayStartAlarm?: PriorityDayStartAlarmPersisted;
 };
 
 function readRoot(): SettingsStorageShape {
   const raw =
     localStorageClient.getJson<SettingsStorageShape>(StorageKeys.settings) ?? {};
   return raw && typeof raw === 'object' ? raw : {};
-}
-
-export function getDefaultDayPlanNotificationSettings(): DayPlanNotificationSettings {
-  return { ...DEFAULT_DAY_PLAN_NOTIFICATION_SETTINGS };
-}
-
-export function loadDayPlanNotificationSettings(): DayPlanNotificationSettings {
-  const root = readRoot();
-  const settings = root.dayPlanNotifications;
-  if (!settings || typeof settings !== 'object') {
-    return getDefaultDayPlanNotificationSettings();
-  }
-
-  const startTiming: DayPlanStartNotificationTiming =
-    settings.startTiming === 'atStart' ? 'atStart' : '5min';
-
-  return {
-    startEnabled: Boolean(settings.startEnabled),
-    endEnabled: Boolean(settings.endEnabled),
-    startTiming,
-  };
-}
-
-export function saveDayPlanNotificationSettings(
-  settings: DayPlanNotificationSettings,
-): void {
-  const root = readRoot();
-  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
-    ...root,
-    dayPlanNotifications: settings,
-  });
 }
 
 export function loadDayPlanScheduledNotifications(): DayPlanScheduledNotification[] {
@@ -86,5 +46,33 @@ export function saveDayPlanScheduledNotifications(
   localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
     ...root,
     dayPlanScheduledNotifications: rows,
+  });
+}
+
+const DEFAULT_PRIORITY_DAY_START_ALARM: PriorityDayStartAlarmPersisted = {
+  enabled: false,
+  notificationId: null,
+};
+
+export function loadPriorityDayStartAlarm(): PriorityDayStartAlarmPersisted {
+  const root = readRoot();
+  const v = root.priorityDayStartAlarm;
+  if (!v || typeof v !== 'object') {
+    return { ...DEFAULT_PRIORITY_DAY_START_ALARM };
+  }
+  return {
+    enabled: Boolean(v.enabled),
+    notificationId: typeof v.notificationId === 'string' ? v.notificationId : null,
+  };
+}
+
+export function savePriorityDayStartAlarm(next: PriorityDayStartAlarmPersisted): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    priorityDayStartAlarm: {
+      enabled: next.enabled,
+      notificationId: next.notificationId,
+    },
   });
 }

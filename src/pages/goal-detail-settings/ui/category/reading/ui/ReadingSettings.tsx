@@ -81,19 +81,7 @@ export function ReadingSettings({
 
   return (
     <View style={styles.shell}>
-      <View style={styles.header}>
-        <Text style={[styles.brand, { color: onSurface }]}>LOCKFLOW READING</Text>
-      </View>
-
-      <View style={styles.about}>
-        <Text style={[styles.sectionKicker, { color: muted }]}>ABOUT BOOK FLOW</Text>
-        <Text style={[styles.aboutText, { color: onSurface }]}>
-          한 권을 끝까지 밀어붙이도록 페이지 목표와 구간을 명확하게 설계합니다.
-        </Text>
-      </View>
-
       <View style={styles.listHeader}>
-        <Text style={[styles.sectionKicker, { color: muted }]}>CATEGORIES ||</Text>
         <Text style={[styles.mainTitle, { color: onSurface }]}>Reading</Text>
       </View>
 
@@ -168,11 +156,6 @@ export function ReadingSettings({
 
 const styles = StyleSheet.create({
   shell: { gap: 16, paddingVertical: 6 },
-  header: { flexDirection: 'row', alignItems: 'flex-start' },
-  brand: { fontSize: 12, fontWeight: '700', letterSpacing: 0.4 },
-  about: { gap: 8 },
-  sectionKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
-  aboutText: { fontSize: 20, lineHeight: 28, fontWeight: '600', letterSpacing: -0.3 },
   listHeader: { gap: 6, paddingTop: 2 },
   mainTitle: { fontSize: 42, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },
   metricBar: {

@@ -2,7 +2,10 @@ import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
-import { useDayPlanNotificationStore, useDayPlanStore } from '@entities/day-plan/model';
+import { useDayPlanStore } from '@entities/day-plan/model';
+import { syncPriorityDayStartAlarm } from '@features/day-plan-notifications';
+import { useDayPlanDraftStore } from '@pages/day-plan';
+import { loadPriorityDayStartAlarm } from '@shared/lib/storage';
 import {
   reconcileLiveActivityFromPlan,
   syncLiveActivityIfSessionInProgress,
@@ -21,7 +24,12 @@ export function useAppBootstrap() {
 
   useEffect(() => {
     useDayPlanStore.getState().hydrate();
-    useDayPlanNotificationStore.getState().hydrate();
+  }, []);
+
+  useEffect(() => {
+    const { enabled } = loadPriorityDayStartAlarm();
+    const start = useDayPlanDraftStore.getState().priorityStart;
+    void syncPriorityDayStartAlarm({ enabled, startHhmm: start });
   }, []);
 
   useEffect(() => {

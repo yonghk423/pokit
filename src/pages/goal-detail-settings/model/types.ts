@@ -1,3 +1,5 @@
+import type { GoalDetailChecklistDerivedCategoryKey } from '@entities/day-plan';
+
 export type GoalDetailCategoryKey =
   | 'work'
   | 'reading'
@@ -6,5 +8,6 @@ export type GoalDetailCategoryKey =
   | 'fasting'
   | 'water'
   | 'medicine'
-  | 'other';
+  | 'other'
+  | GoalDetailChecklistDerivedCategoryKey;
 

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -31,6 +31,7 @@ export function PlanModeSwitch({
         : null;
 
   const isQuickMemo = planMode === 'quickMemo';
+  const isPriority = !isQuickMemo;
   const iconPriority = !isQuickMemo ? PRIMARY : c.onVariant;
   const iconQuickMemo = isQuickMemo ? PRIMARY : c.onVariant;
 
@@ -39,29 +40,36 @@ export function PlanModeSwitch({
       {/* 풀폭: DayPlanPage에서 contentPad 밖에 두어 좌우 c.bg 띠 제거 */}
       <View style={styles.bleed}>
         <View style={[styles.row, { backgroundColor: c.containerLow, borderBottomColor: c.border }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="우선순위 기반"
-          onPress={onSelectPriority}
-          style={({ pressed }) => [styles.iconHit, pressed && { opacity: 0.75 }]}>
-          <IconSymbol name="list.number" size={24} color={iconPriority} />
-        </Pressable>
-
-        <Switch
-          value={isQuickMemo}
-          onValueChange={(v) => (v ? onSelectQuickMemo() : onSelectPriority())}
-          trackColor={{ false: c.trackOff, true: PRIMARY }}
-          thumbColor={c.containerHigh}
-          ios_backgroundColor={c.trackOff}
-        />
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="빠른 메모"
-          onPress={onSelectQuickMemo}
-          style={({ pressed }) => [styles.iconHit, pressed && { opacity: 0.75 }]}>
-          <IconSymbol name="note.text" size={24} color={iconQuickMemo} />
-        </Pressable>
+          <View style={styles.leftButtonGroup}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="우선순위 기반"
+              onPress={onSelectPriority}
+              style={({ pressed }) => [
+                styles.iconHit,
+                {
+                  backgroundColor: isPriority ? 'rgba(0,0,0,0.07)' : c.containerLowest,
+                  borderColor: isPriority ? PRIMARY : c.border,
+                },
+                pressed && styles.iconPressed,
+              ]}>
+              <IconSymbol name="list.number" size={20} color={iconPriority} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="빠른 메모"
+              onPress={onSelectQuickMemo}
+              style={({ pressed }) => [
+                styles.iconHit,
+                {
+                  backgroundColor: isQuickMemo ? 'rgba(0,0,0,0.07)' : c.containerLowest,
+                  borderColor: isQuickMemo ? PRIMARY : c.border,
+                },
+                pressed && styles.iconPressed,
+              ]}>
+              <IconSymbol name="note.text" size={20} color={iconQuickMemo} />
+            </Pressable>
+          </View>
         </View>
       </View>
       {hint != null && hint !== '' ? (
@@ -82,26 +90,35 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    paddingVertical: 12,
+    justifyContent: 'flex-start',
+    paddingVertical: 6,
     paddingHorizontal: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    /** Switch·아이콘 행 높이 고정 — 모드/상태 전환 시 세로 점프 완화 */
-    minHeight: 52,
+    /** 상단 모드 아이콘 행 — 과한 세로 여백 없이 터치 영역만 유지 */
+    minHeight: 40,
+  },
+  leftButtonGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   iconHit: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 40,
+    minWidth: 46,
+    minHeight: 34,
+    paddingHorizontal: 10,
     paddingVertical: 6,
+    borderRadius: 11,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconPressed: {
+    opacity: 0.72,
   },
   modeHint: {
     fontSize: 13,
     lineHeight: 20,
     paddingHorizontal: 24,
-    marginTop: 8,
+    marginTop: 6,
   },
 });

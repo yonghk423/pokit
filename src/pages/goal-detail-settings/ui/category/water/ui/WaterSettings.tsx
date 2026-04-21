@@ -111,19 +111,7 @@ export function WaterSettings({
 
   return (
     <View style={styles.shell}>
-      <View style={styles.header}>
-        <Text style={styles.brand}>LOCKFLOW WATER</Text>
-      </View>
-
-      <View style={styles.about}>
-        <Text style={styles.sectionKicker}>ABOUT HYDRATION</Text>
-        <Text style={styles.aboutText}>
-          하루 수분 목표와 알림 흐름을 한 화면에서 빠르게 조정해 집중 플로우를 유지합니다.
-        </Text>
-      </View>
-
       <View style={styles.listHeader}>
-        <Text style={styles.sectionKicker}>CATEGORIES ||</Text>
         <Text style={styles.mainTitle}>Hydration</Text>
       </View>
 
@@ -246,22 +234,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     backgroundColor: T.screenBg,
     gap: 16,
-  },
-  header: { flexDirection: 'row', alignItems: 'flex-start' },
-  brand: { fontSize: 12, fontWeight: '700', letterSpacing: 0.4, color: T.onSurface },
-  about: { gap: 8 },
-  sectionKicker: {
-    color: T.onSurfaceVariant,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.4,
-  },
-  aboutText: {
-    color: T.onSurface,
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: '600',
-    letterSpacing: -0.3,
   },
   listHeader: { gap: 6, paddingTop: 2 },
   mainTitle: { color: T.onSurface, fontSize: 42, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },

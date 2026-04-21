@@ -1,6 +1,9 @@
 import { View } from 'react-native';
 
-import type { CategoryConfigsForActiveSession } from '@entities/day-plan';
+import {
+  type CategoryConfigsForActiveSession,
+  isGoalDetailChecklistStyleCategoryKey,
+} from '@entities/day-plan';
 import type { LockFlowLiveActivityChecklistRow } from '@features/live-activity-sync';
 
 import { ChecklistSessionCard } from './ChecklistSessionCard';
@@ -91,7 +94,7 @@ export function ActiveSessionCard({
         {categoryKey === 'medicine' && categoryConfigs.medicine ? (
           <MedicineSessionCard data={categoryConfigs.medicine} {...hero} />
         ) : null}
-        {categoryKey === 'other' && categoryConfigs.other ? (
+        {isGoalDetailChecklistStyleCategoryKey(categoryKey) && categoryConfigs.other ? (
           <OtherSessionCard data={categoryConfigs.other} {...hero} />
         ) : null}
       </>

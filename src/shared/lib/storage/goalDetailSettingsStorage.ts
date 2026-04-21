@@ -4,7 +4,7 @@ import { StorageKeys } from './storageKeys';
 type GoalDetailSettingsStorageShape = {
   byCategory?: Record<string, unknown>;
   byBlockId?: Record<string, unknown>;
-  /** 「설정 완료」로 확정된 카테고리 — 도구 카탈로그 부제 표시 */
+  /** 「설정 완료」로 확정된 카테고리 — 담기 탭·목록 부제 표시 */
   committedCategoryKeys?: string[];
   /** 구 저장분을 committed로 한 번 옮김 */
   committedCategoryKeysMigrated?: boolean;
@@ -49,7 +49,7 @@ export function loadGoalDetailCategoryConfig(categoryKey: string): unknown | nul
     : null;
 }
 
-/** 도구 카탈로그 부제: 목표 상세에서 「설정 완료」를 누른 카테고리만 */
+/** 담기 탭·우선순위 목록 부제: 목표 상세에서 「설정 완료」를 누른 카테고리만 */
 export function hasGoalDetailCommittedCategory(categoryKey: string): boolean {
   ensureCommittedCategoryMigration();
   const root = readRoot();
