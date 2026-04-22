@@ -547,18 +547,17 @@ private struct LockFlowLiveActivityView: View {
 
   @ViewBuilder
   private func priorityLockScreenBody() -> some View {
-    ViewThatFits(in: .vertical) {
-      PriorityModeLiveActivityView.lockScreenBody(context: context, compact: false)
-      PriorityModeLiveActivityView.lockScreenBody(context: context, compact: true)
-    }
+    /// QuickMemo와 동일하게 단일 레이아웃을 사용해 시스템이 허용한 높이를 적극적으로 채운다.
+    /// `ViewThatFits`는 짧은 intrinsic 높이 후보를 먼저 채택해 본문 줄 수가 적게 보이는 경우가 있다.
+    PriorityModeLiveActivityView.lockScreenBody(context: context, compact: false)
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 
   @ViewBuilder
   private func priorityFallbackLockScreenBody() -> some View {
-    ViewThatFits(in: .vertical) {
-      PriorityModeLiveActivityView.lockScreenFallbackBody(context: context, compact: false)
-      PriorityModeLiveActivityView.lockScreenFallbackBody(context: context, compact: true)
-    }
+    /// priority payload가 없을 때도 동일 원칙 적용: 단일 레이아웃으로 가용 높이를 최대 사용.
+    PriorityModeLiveActivityView.lockScreenFallbackBody(context: context, compact: false)
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 
   @ViewBuilder
@@ -795,20 +794,24 @@ struct LockFlowLiveActivityWidget: Widget {
         }()
         let windowRaw = context.state.timeRangeLabel.trimmingCharacters(in: .whitespacesAndNewlines)
         let windowLabel = windowRaw.isEmpty ? context.state.checklistTitle : windowRaw
-        let upcoming = Array(rows.enumerated().prefix(3)).map { idx, row in
+        let listRows = rows.enumerated().map { idx, row in
           LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow(
             order: idx + 1,
             title: row.title,
             timeLabel: row.timeLabel
           )
         }
+        /// 다이나믹 아일랜드 확장 하단은 `upcoming`만 쓰므로, **전체 `listRows`에서 현재 이후 슬라이스**만 넘긴다.
+        /// 예전처럼 `enumerated().dropFirst` 후 `order: idx+1`로 다시 매기면 순번이 깨진다.
+        let upcoming = Array(listRows.dropFirst(currentIndex + 1))
         return LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent(
           windowLabel: windowLabel,
           activeTitle: activeTitle,
           activeOrder: min(max(1, currentIndex + 1), totalTasks),
           totalTasks: totalTasks,
           progress01: progress01,
-          upcoming: upcoming
+          upcoming: upcoming,
+          listRows: listRows
         )
       }()
 

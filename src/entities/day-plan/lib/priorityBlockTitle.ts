@@ -1,3 +1,5 @@
+import { resolveCategoryKeyFromLabel } from './dayPlanRuntimeTime';
+
 const NUMBERED_LINE = /^\s*(\d+)\.\s*(.+?)\s*$/;
 
 /**
@@ -31,4 +33,17 @@ export function parseNumberedFlowLines(title: string): string[] {
 /** 우선순위 모드 합본 블록(할 일이 2개 이상). */
 export function isPriorityCompoundBlockTitle(title: string): boolean {
   return parseNumberedFlowLines(title).length >= 2;
+}
+
+/**
+ * 제목이 비줄바꿈 한 줄이면서, 담기(우선순위) 카탈로그에 해당하는 라벨인지.
+ * 집중 구간과 동일 시각의 단일 항목 블록은 담기를 비운 뒤에도 타임라인에 다시 뜨지 않게 구분할 때 사용.
+ */
+export function isLikelyPriorityCatalogMonolineTitle(title: string): boolean {
+  const rawLines = (title ?? '')
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  if (rawLines.length !== 1) return false;
+  return resolveCategoryKeyFromLabel(rawLines[0]!) !== null;
 }

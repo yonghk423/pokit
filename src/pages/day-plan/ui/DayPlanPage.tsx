@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import {
   Alert,
@@ -128,19 +129,43 @@ export function DayPlanPage() {
 
   const quickMemoInputRef = useRef<TextInput>(null);
   const dayPlanScrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
-  const lastPriorityAutostartAttemptKey = useRef('');
 
-  const priorityAutostartKey = useMemo(
-    () =>
-      `${priorityPlanDateKey}|${priorityPlanDateKeyEnd}|${priorityStart}|${priorityEnd}|${priorityCategoryOrder.join('>')}`,
-    [
-      priorityPlanDateKey,
-      priorityPlanDateKeyEnd,
-      priorityStart,
-      priorityEnd,
-      priorityCategoryOrder,
-    ],
-  );
+  /** 우선순위 적용일·집중 구간 안이면 true — FAB 노출·자동 종료 판단에 공통 사용 */
+  const priorityWindowEligible = useMemo(() => {
+    if (planMode !== 'priority') return false;
+    const ps = parseHHmmToMinutes(priorityStart);
+    const pe = parseHHmmToMinutes(priorityEnd);
+    if (ps === null || pe === null) return false;
+
+    const rangeLo =
+      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd;
+    const rangeHi =
+      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKeyEnd : priorityPlanDateKey;
+    const nowKey = getLocalDateKey();
+    const nowMin = getLocalMinutesOfDayNow();
+    const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
+
+    const inRange = nowKey >= rangeLo && nowKey <= rangeHi;
+    let stillInPrioritySegment = false;
+    if (inRange) {
+      if (!overnight) {
+        stillInPrioritySegment = nowMin < pe;
+      } else if (nowKey === rangeLo) {
+        stillInPrioritySegment = true;
+      } else if (nowKey === rangeHi) {
+        stillInPrioritySegment = nowMin < pe;
+      } else {
+        stillInPrioritySegment = nowKey > rangeLo && nowKey < rangeHi;
+      }
+    }
+    return inRange && stillInPrioritySegment;
+  }, [
+    planMode,
+    priorityStart,
+    priorityEnd,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+  ]);
 
   const { addBlock, quickMemos, removeQuickMemo } = useDayPlanStore(
     useShallow((s) => ({
@@ -411,17 +436,12 @@ export function DayPlanPage() {
   onSaveRef.current = onSave;
 
   /**
-   * 우선순위 모드 자동 시작:
-   * - 적용일 범위 안이고 집중 구간이 아직 끝나지 않았으면(시작 시각 이전 포함) 카테고리만 있어도 바로 시작
-   * - 구간이 끝난 뒤·적용일 밖이면 자동 정지
+   * 우선순위 모드: 일정 블록·Live Activity는 **「오늘 루틴 시작」FAB**에서만 시작한다.
+   * 적용일·집중 구간 밖이거나 담기가 비면 집중 상태·Live Activity를 자동으로 정리한다.
    */
   useEffect(() => {
     if (planMode !== 'priority') return;
-    const ps = parseHHmmToMinutes(priorityStart);
-    const pe = parseHHmmToMinutes(priorityEnd);
-    if (ps === null || pe === null) return;
     if (priorityCategoryOrder.length === 0) {
-      lastPriorityAutostartAttemptKey.current = '';
       if (isFocusStarted) {
         setIsFocusStarted(false);
         void endLockFlowLiveActivity();
@@ -429,74 +449,72 @@ export function DayPlanPage() {
       return;
     }
 
-    const rangeLo =
-      priorityPlanDateKey <= priorityPlanDateKeyEnd
-        ? priorityPlanDateKey
-        : priorityPlanDateKeyEnd;
-    const rangeHi =
-      priorityPlanDateKey <= priorityPlanDateKeyEnd
-        ? priorityPlanDateKeyEnd
-        : priorityPlanDateKey;
-    const nowKey = getLocalDateKey();
-    const nowMin = getLocalMinutesOfDayNow();
-    const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
-
-    const inRange = nowKey >= rangeLo && nowKey <= rangeHi;
-    /** 구간 종료 전까지는 '시작됨' 유지(시작 시각 이전에도 담기·우선순위 UI가 집중 모드로 보이게) */
-    let stillInPrioritySegment = false;
-    if (inRange) {
-      if (!overnight) {
-        stillInPrioritySegment = nowMin < pe;
-      } else if (nowKey === rangeLo) {
-        // 자정 넘김: 첫날은 시작 시각 이전이어도 구간 종료 전(말일 아침 pe 이전)과 동일하게 집중 UI 유지
-        stillInPrioritySegment = true;
-      } else if (nowKey === rangeHi) {
-        stillInPrioritySegment = nowMin < pe;
-      } else {
-        stillInPrioritySegment = nowKey > rangeLo && nowKey < rangeHi;
-      }
-    }
-
-    if (inRange && stillInPrioritySegment) {
-      if (!isFocusStarted) {
-        if (lastPriorityAutostartAttemptKey.current !== priorityAutostartKey) {
-          lastPriorityAutostartAttemptKey.current = priorityAutostartKey;
-          onSaveRef.current();
-        }
-      }
+    if (priorityWindowEligible) {
       return;
     }
 
-    lastPriorityAutostartAttemptKey.current = '';
     if (isFocusStarted) {
       setIsFocusStarted(false);
       void endLockFlowLiveActivity();
     }
   }, [
     planMode,
-    priorityStart,
-    priorityEnd,
     priorityCategoryOrder.length,
-    priorityAutostartKey,
-    priorityPlanDateKey,
-    priorityPlanDateKeyEnd,
+    priorityWindowEligible,
     isFocusStarted,
     setIsFocusStarted,
   ]);
 
-  const tabBridge = useDayPlanTabBridge();
+  const { registerRoutineStartFab, registerPrimaryAction } = useDayPlanTabBridge();
+
+  /** 탭 위 플로팅 — 우선순위·구간 안·아직 시작 전일 때만 FAB 노출 */
+  useEffect(() => {
+    const idleFabMeta = {
+      visible: false,
+      disabled: true,
+      label: '오늘 루틴 시작',
+    } as const;
+
+    if (planMode !== 'priority') {
+      registerRoutineStartFab(null, { ...idleFabMeta });
+      return () => registerRoutineStartFab(null, { ...idleFabMeta });
+    }
+
+    const visible =
+      priorityWindowEligible && priorityCategoryOrder.length > 0 && !isFocusStarted;
+
+    registerRoutineStartFab(
+      () => {
+        onSaveRef.current();
+      },
+      {
+        visible,
+        disabled: !visible,
+        label: '오늘 루틴 시작',
+      },
+    );
+
+    return () => registerRoutineStartFab(null, { ...idleFabMeta });
+  }, [
+    planMode,
+    registerRoutineStartFab,
+    priorityWindowEligible,
+    priorityCategoryOrder.length,
+    isFocusStarted,
+  ]);
+
   useEffect(() => {
     if (planMode === 'priority') {
-      tabBridge.registerPrimaryAction(null, { disabled: true, label: '자동 시작', hidden: true });
-      return () => tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
+      registerPrimaryAction(null, { disabled: true, label: '자동 시작', hidden: true });
+      return () => registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
     }
     if (planMode === 'quickMemo') {
-      tabBridge.registerPrimaryAction(null, { disabled: true, label: '메모 저장', hidden: true });
-      return () => tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
+      registerPrimaryAction(null, { disabled: true, label: '메모 저장', hidden: true });
+      return () => registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
     }
-    tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
-    return () => tabBridge.registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
-  }, [tabBridge, planMode]);
+    registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
+    return () => registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
+  }, [registerPrimaryAction, planMode]);
 
   /** on-drag 만 쓰면 키보드만 내려가고 포커스는 남아, 다음 터치에 패드가 다시 뜨는 경우가 있어 스크롤 시 blur 로 포커스를 끈다. */
   const onQuickMemoScrollBeginDrag = useCallback(() => {
@@ -517,6 +535,24 @@ export function DayPlanPage() {
       onSelectPriority={() => setPlanMode('priority')}
       onSelectQuickMemo={() => setPlanMode('quickMemo')}
       c={c}
+      trailing={
+        <Pressable
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            void openSupportMailComposer();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="문의하기"
+          style={[
+            styles.supportIconButton,
+            {
+              borderColor: c.catBorderIdle,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+            },
+          ]}>
+          <IconSymbol name="paperplane.fill" size={16} color={c.onSurface} />
+        </Pressable>
+      }
     />
   );
 
@@ -553,21 +589,6 @@ export function DayPlanPage() {
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="none"
               onScrollBeginDrag={planMode === 'quickMemo' ? onQuickMemoScrollBeginDrag : undefined}>
-              <View style={[styles.contentPad, styles.supportActionRow]}>
-                <Pressable
-                  onPress={() => void openSupportMailComposer()}
-                  accessibilityRole="button"
-                  accessibilityLabel="문의하기"
-                  style={[
-                    styles.supportIconButton,
-                    {
-                      borderColor: c.catBorderIdle,
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-                    },
-                  ]}>
-                  <IconSymbol name="paperplane.fill" size={16} color={c.onSurface} />
-                </Pressable>
-              </View>
               {planMode === 'quickMemo' ? (
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
                   <View style={styles.quickMemoDismissWrap} collapsable={false}>
@@ -639,11 +660,6 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   /** paddingTop은 quickMemo만(12). 우선순위는 0 — 상단이 ScrollView 흰 배경 위에 띠처럼 보이는 문제 방지 */
   scrollContent: { paddingHorizontal: 0, gap: 16 },
-  supportActionRow: {
-    width: '100%',
-    alignItems: 'flex-end',
-    marginBottom: -6,
-  },
   supportIconButton: {
     width: 34,
     height: 34,

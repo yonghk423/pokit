@@ -1,14 +1,20 @@
 import { StyleSheet } from 'react-native';
 
 export const orderRowStyles = StyleSheet.create({
+  /** 바깥 띠(보더·세로 패딩만) — 드래그 시 잘리지 않게 flex 행은 `orderRowDragShell` */
   orderRowRoman: {
+    width: '100%',
+    paddingVertical: 10,
+    paddingHorizontal: 0,
+    borderBottomWidth: 1,
+  },
+  /** 아이콘·제목과 액션 버튼을 한 줄로 — 리오더 시 전체가 함께 움직임 */
+  orderRowDragShell: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 0,
-    borderBottomWidth: 1,
+    width: '100%',
   },
   inlineRankPill: {
     borderRadius: 999,
@@ -28,6 +34,14 @@ export const orderRowStyles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  /** 순위·아이콘·제목 — 길게 눌러 순서 변경 제스처 영역 */
+  orderRowReorderMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minWidth: 0,
   },
   orderRowRomanText: {
     flex: 1,
@@ -69,6 +83,14 @@ export const orderRowStyles = StyleSheet.create({
     alignSelf: 'center',
     width: 28,
     height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** 완료 행 — 담기에서 제거(아이콘) */
+  orderBagEndIconHit: {
+    alignSelf: 'center',
+    width: 30,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
   },

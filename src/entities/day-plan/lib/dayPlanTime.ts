@@ -48,9 +48,6 @@ export function formatHhmmClockKo(hhmm: string): string {
 }
 
 export function formatBlockTimeRange(block: DayPlanBlock): string {
-  if (block.endsNextCalendarDay) {
-    return `${formatMinuteOfDayKo(block.startMinutes)} — 다음날 ${formatMinuteOfDayKo(block.endMinutes)}`;
-  }
   return `${formatMinuteOfDayKo(block.startMinutes)} — ${formatMinuteOfDayKo(block.endMinutes)}`;
 }
 

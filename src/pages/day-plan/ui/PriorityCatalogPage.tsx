@@ -156,6 +156,11 @@ export function PriorityCatalogPage() {
 
   const onCatalogTap = useCallback(
     (key: string) => {
+      const alreadyIn = priorityCategoryOrder.includes(key);
+      if (isFocusStarted && alreadyIn) {
+        void Haptics.selectionAsync();
+        return;
+      }
       animateListMutation();
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const nextOrder = priorityCategoryOrder.includes(key)
@@ -163,18 +168,22 @@ export function PriorityCatalogPage() {
         : [...priorityCategoryOrder, key];
       setPriorityCategoryOrder(nextOrder);
     },
-    [animateListMutation, priorityCategoryOrder, setPriorityCategoryOrder],
+    [animateListMutation, isFocusStarted, priorityCategoryOrder, setPriorityCategoryOrder],
   );
 
   const onOpenCategorySettings = useCallback(
     (categoryKey: string) => {
+      if (isFocusStarted && priorityCategoryOrder.includes(categoryKey)) {
+        void Haptics.selectionAsync();
+        return;
+      }
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       router.push({
         pathname: '/goal-detail-settings',
         params: { categoryKey },
       });
     },
-    [router],
+    [isFocusStarted, priorityCategoryOrder, router],
   );
 
   return (

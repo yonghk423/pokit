@@ -7,6 +7,7 @@ import {
   type ReadingMetricKey,
 } from '@entities/day-plan';
 import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
+import { GoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
 import { EditorialCategoryHeader, formatClock, SessionEditorialShell } from './sessionCardShared';
@@ -60,7 +61,11 @@ export function ReadingSessionCard({
         {titleText}
       </Text>
 
-      <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: R.border }]}>
+      <View
+        style={[
+          styles.metricBar,
+          { borderTopColor: '#000000', borderBottomColor: GoalDetailSessionUi.readingMetricBorder },
+        ]}>
         <View style={styles.metricItem}>
           <Text style={[styles.metricValue, { color: R.onSurface }]}>{dataConfig.startPage}</Text>
           <Text style={[styles.metricLabel, { color: R.muted }]}>시작</Text>
@@ -143,7 +148,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: R.accent,
+    backgroundColor: GoalDetailSessionUi.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -27,6 +27,7 @@ import { appendPriorityCategoryKeysIfMissing } from '@pages/day-plan/model/dayPl
 import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
 import { reconcileLiveActivityFromPlan } from '@features/live-activity-sync';
 
+import { GoalDetailCategoryStartReminderCard } from './GoalDetailCategoryStartReminderCard';
 import { useGoalDetailSettingsRoute } from '../model/useGoalDetailSettingsRoute';
 import type { GoalDetailCategoryKey } from '../model/types';
 import { getGoalDetailCategoryModule } from './category';
@@ -229,6 +230,11 @@ export function GoalDetailSettingsPage() {
     [blocks],
   );
 
+  const reminderCategoryKeys = useMemo(() => {
+    const list = sortedTargets.length > 0 ? sortedTargets : targets;
+    return [...new Set(list.map((t) => t.categoryKey))];
+  }, [sortedTargets, targets]);
+
   const waterOnlyUi =
     sortedTargets.length > 0 && sortedTargets.every((t) => t.categoryKey === 'water');
   const medicineOnlyUi =
@@ -371,6 +377,10 @@ export function GoalDetailSettingsPage() {
                 </View>
               </View>
             ) : null}
+
+            {reminderCategoryKeys.map((key) => (
+              <GoalDetailCategoryStartReminderCard key={key} categoryKey={key} />
+            ))}
 
             {targets.map((t, idx) => {
               const module = getGoalDetailCategoryModule(t.categoryKey);

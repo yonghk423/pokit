@@ -70,6 +70,8 @@ public struct LockFlowLiveActivityAttributes: ActivityAttributes {
       public let totalTasks: Int
       public let progress01: Double
       public let upcoming: [UpcomingRow]
+      /// RN에서 내려주는 전체 할 일 줄(잠금화면 리스트). 구버전 페이로드에는 없을 수 있음.
+      public let listRows: [UpcomingRow]?
 
       public init(
         windowLabel: String,
@@ -77,7 +79,8 @@ public struct LockFlowLiveActivityAttributes: ActivityAttributes {
         activeOrder: Int,
         totalTasks: Int,
         progress01: Double,
-        upcoming: [UpcomingRow]
+        upcoming: [UpcomingRow],
+        listRows: [UpcomingRow]? = nil
       ) {
         self.windowLabel = windowLabel
         self.activeTitle = activeTitle
@@ -85,6 +88,7 @@ public struct LockFlowLiveActivityAttributes: ActivityAttributes {
         self.totalTasks = totalTasks
         self.progress01 = progress01
         self.upcoming = upcoming
+        self.listRows = listRows
       }
     }
 

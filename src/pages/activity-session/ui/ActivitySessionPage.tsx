@@ -1,7 +1,7 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
@@ -35,7 +35,7 @@ import {
   useLiveActivitySync,
 } from '@features/live-activity-sync';
 import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
-import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { GoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
 import {
   loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
@@ -44,7 +44,6 @@ import {
 } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import { ThemedView } from '@shared/ui/themed-view';
 import { formatDurationMinKo } from '@widgets/active-session-card/ui/sessionCardShared';
 
 import {
@@ -59,15 +58,8 @@ const PRIMARY = 'rgb(0, 0, 0)';
 /** 수분섭취 풀스크린 세션 */
 const WATER_SESSION_BG = CategoryImmersionTheme.water.screenBg;
 const WATER_CYAN = '#22d3ee';
-/** 약 복용 몰입 화면 액센트 (수분과 구분되는 청록) */
-const MED_TEAL = '#0d9488';
-const MED_TEAL_GLOW = 'rgba(13, 148, 136, 0.18)';
-/** 체중관리(단식) 몰입 화면 액센트 */
-const FAST_ACCENT = '#f97316';
-const FAST_GLOW = 'rgba(249, 115, 22, 0.18)';
-/** 독서 풀스크린 — Tailwind emerald-400/500 계열 */
-const READING_EMERALD_TEXT = 'rgb(52, 211, 153)';
-const READING_EMERALD = 'rgb(16, 185, 129)';
+/** 독서 진행 막대·요약 포인트 — ReadingSettings 와 동일 */
+const READING_EMERALD = GoalDetailSessionUi.readingAccent;
 const RING_SIZE = 232;
 const RING_STROKE = 14;
 const CATEGORY_KEY_BY_LABEL: Record<string, string> = {
@@ -235,17 +227,7 @@ export function ActivitySessionPage() {
   const autoFinishTriggeredRef = useRef(false);
   const handledLiveActionRef = useRef<string | null>(null);
 
-  const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
-  const isDark = colorScheme === 'dark';
-
-  const bg = isDark ? '#0f172a' : '#ffffff';
-  const surface = isDark ? '#1e293b' : '#ffffff';
-  const border = isDark ? '#334155' : '#e2e8f0';
-  const muted = isDark ? '#94a3b8' : '#64748b';
-  const text = isDark ? '#f1f5f9' : '#0f172a';
-  const chipSoftBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
-  const ringTrack = isDark ? '#334155' : '#e2e8f0';
 
   const activityTitle = block?.title ?? '';
   const rawCategoryLabel = block?.category ?? '';
@@ -596,7 +578,7 @@ export function ActivitySessionPage() {
         aboutKicker={WK.aboutKicker}
         headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '작업 집중'}
         iconName="briefcase.fill"
-        iconSize={92}
+        iconSize={28}
         sessionKicker="작업 세션"
         timerDisplay={
           <ThemedText
@@ -775,15 +757,15 @@ export function ActivitySessionPage() {
     return (
       <SessionImmersionLayout
         backgroundColor={R.screenBg}
-        accentColor={READING_EMERALD}
-        accentGlow="rgba(16, 185, 129, 0.16)"
+        accentColor={PRIMARY}
+        accentGlow="rgba(0, 0, 0, 0.08)"
         onSurface={R.onSurface}
         muted={R.muted}
         brand={R.brand}
         aboutKicker={R.aboutKicker}
         headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '독서 집중'}
         iconName="book.fill"
-        iconSize={92}
+        iconSize={28}
         sessionKicker="독서 세션"
         timerDisplay={
           <ThemedText
@@ -801,7 +783,7 @@ export function ActivitySessionPage() {
         scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
         bottomBar={
           <ImmersionBottomControls
-            accentColor={READING_EMERALD}
+            accentColor={PRIMARY}
             borderColor={R.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
@@ -898,15 +880,15 @@ export function ActivitySessionPage() {
     return (
       <SessionImmersionLayout
         backgroundColor={F.screenBg}
-        accentColor={FAST_ACCENT}
-        accentGlow={FAST_GLOW}
+        accentColor={PRIMARY}
+        accentGlow="rgba(0, 0, 0, 0.08)"
         onSurface={F.onSurface}
         muted={F.muted}
         brand={F.brand}
         aboutKicker={F.aboutKicker}
         headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '체중관리'}
         iconName="hourglass"
-        iconSize={88}
+        iconSize={28}
         sessionKicker="단식 · 집중"
         timerDisplay={
           <ThemedText
@@ -924,7 +906,7 @@ export function ActivitySessionPage() {
         scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
         bottomBar={
           <ImmersionBottomControls
-            accentColor={FAST_ACCENT}
+            accentColor={PRIMARY}
             borderColor={F.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
@@ -949,7 +931,11 @@ export function ActivitySessionPage() {
             <View
               style={[
                 waterStyles.hydrateFill,
-                { width: `${Math.round(fastProgress * 100)}%`, backgroundColor: FAST_ACCENT },
+                {
+                  width: `${Math.round(fastProgress * 100)}%`,
+                  backgroundColor: PRIMARY,
+                  opacity: 0.35,
+                },
               ]}
             />
           </View>
@@ -962,8 +948,8 @@ export function ActivitySessionPage() {
             </ThemedText>
             <ThemedText
               style={[waterStyles.halfValue, { fontSize: 17, lineHeight: 22, fontWeight: '800' }]}
-              lightColor={FAST_ACCENT}
-              darkColor={FAST_ACCENT}
+              lightColor={F.onSurface}
+              darkColor={F.onSurface}
               numberOfLines={2}
               adjustsFontSizeToFit>
               {fastingStageLabelKo(fastProgress)}
@@ -1031,8 +1017,8 @@ export function ActivitySessionPage() {
     return (
       <SessionImmersionLayout
         backgroundColor={M.screenBg}
-        accentColor={MED_TEAL}
-        accentGlow={MED_TEAL_GLOW}
+        accentColor={PRIMARY}
+        accentGlow="rgba(0, 0, 0, 0.08)"
         onSurface={M.onSurface}
         muted={M.muted}
         brand={M.brand}
@@ -1041,7 +1027,7 @@ export function ActivitySessionPage() {
           isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : activityTitle.trim() || '약 복용'
         }
         iconName="pills.fill"
-        iconSize={88}
+        iconSize={28}
         sessionKicker="예약된 시간"
         timerDisplay={
           <ThemedText
@@ -1067,7 +1053,7 @@ export function ActivitySessionPage() {
         scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
         bottomBar={
           <ImmersionBottomControls
-            accentColor={MED_TEAL}
+            accentColor={PRIMARY}
             borderColor={M.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
@@ -1094,7 +1080,7 @@ export function ActivitySessionPage() {
             <View
               style={[
                 waterStyles.hydrateFill,
-                { width: progressWidth, backgroundColor: MED_TEAL },
+                { width: progressWidth, backgroundColor: PRIMARY },
               ]}
             />
           </View>
@@ -1150,14 +1136,14 @@ export function ActivitySessionPage() {
                   <View style={medScheduleStyles.scheduleTimeRow}>
                     <ThemedText
                       style={medScheduleStyles.scheduleTime}
-                      lightColor={row.isCurrent ? MED_TEAL : row.isScheduled ? M.onSurface : M.muted}
-                      darkColor={row.isCurrent ? MED_TEAL : row.isScheduled ? M.onSurface : M.muted}>
+                      lightColor={row.isCurrent ? PRIMARY : row.isScheduled ? M.onSurface : M.muted}
+                      darkColor={row.isCurrent ? PRIMARY : row.isScheduled ? M.onSurface : M.muted}>
                       {row.hhmm}
                     </ThemedText>
                     <ThemedText
                       style={medScheduleStyles.scheduleMeridiem}
-                      lightColor={row.isCurrent ? MED_TEAL : M.muted}
-                      darkColor={row.isCurrent ? MED_TEAL : M.muted}>
+                      lightColor={row.isCurrent ? PRIMARY : M.muted}
+                      darkColor={row.isCurrent ? PRIMARY : M.muted}>
                       {row.meridiem}
                     </ThemedText>
                   </View>
@@ -1170,8 +1156,8 @@ export function ActivitySessionPage() {
                     </ThemedText>
                     <ThemedText
                       style={medScheduleStyles.scheduleMeta}
-                      lightColor={row.isScheduled ? MED_TEAL : M.muted}
-                      darkColor={row.isScheduled ? MED_TEAL : M.muted}>
+                      lightColor={M.muted}
+                      darkColor={M.muted}>
                       {row.isDone ? '완료' : row.isCurrent ? '현재 복용' : '예정 · 아직 복용 전'}
                     </ThemedText>
                   </View>
@@ -1187,11 +1173,11 @@ export function ActivitySessionPage() {
                         medScheduleStyles.scheduleUndoBtn,
                         isWaitingToStart && medScheduleStyles.scheduleCheckBtnDisabled,
                       ]}>
-                      <IconSymbol name="arrow.uturn.backward" size={12} color={MED_TEAL} />
+                      <IconSymbol name="arrow.uturn.backward" size={12} color={PRIMARY} />
                       <ThemedText style={medScheduleStyles.scheduleUndoBtnText}>취소</ThemedText>
                     </Pressable>
                   ) : (
-                    <IconSymbol name="checkmark.circle.fill" size={20} color={MED_TEAL} />
+                    <IconSymbol name="checkmark.circle.fill" size={20} color={PRIMARY} />
                   )
                 ) : row.isCurrent ? (
                   <Pressable
@@ -1207,7 +1193,7 @@ export function ActivitySessionPage() {
                     <ThemedText style={medScheduleStyles.scheduleCheckBtnText}>복용 체크</ThemedText>
                   </Pressable>
                 ) : (
-                  <IconSymbol name="clock" size={20} color="rgba(13, 148, 136, 0.55)" />
+                  <IconSymbol name="clock" size={20} color="rgba(0, 0, 0, 0.28)" />
                 )}
               </View>
             ))}
@@ -1242,7 +1228,7 @@ export function ActivitySessionPage() {
         aboutKicker={W.aboutKicker}
         headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '수분섭취 집중'}
         iconName="drop.fill"
-        iconSize={92}
+        iconSize={28}
         sessionKicker="수분섭취 세션"
         timerDisplay={
           <ThemedText
@@ -1265,6 +1251,7 @@ export function ActivitySessionPage() {
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
             completeLabel="수분 완료"
+            completeForeground={GoalDetailSessionUi.waterCtaOnAccent}
           />
         }>
         <View style={waterStyles.grid}>
@@ -1405,7 +1392,7 @@ export function ActivitySessionPage() {
       aboutKicker={O.aboutKicker}
       headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : sessionTitle}
       iconName="star.fill"
-      iconSize={82}
+      iconSize={28}
       sessionKicker={isQuickMemoSession ? '빠른 메모' : '세션'}
       timerDisplay={
         <ThemedText
@@ -2245,12 +2232,12 @@ const medScheduleStyles = StyleSheet.create({
   },
   scheduleCardActive: {
     borderLeftWidth: 4,
-    borderLeftColor: MED_TEAL,
-    backgroundColor: 'rgba(13, 148, 136, 0.06)',
+    borderLeftColor: PRIMARY,
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
   },
   scheduleCardUpcoming: {
-    borderColor: 'rgba(13, 148, 136, 0.35)',
-    backgroundColor: 'rgba(13, 148, 136, 0.04)',
+    borderColor: GoalDetailSessionUi.border,
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
   },
   scheduleLeft: {
     flexDirection: 'row',
@@ -2295,7 +2282,7 @@ const medScheduleStyles = StyleSheet.create({
     height: 34,
     paddingHorizontal: 10,
     borderRadius: 999,
-    backgroundColor: MED_TEAL,
+    backgroundColor: PRIMARY,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2317,7 +2304,7 @@ const medScheduleStyles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(13, 148, 136, 0.35)',
+    borderColor: GoalDetailSessionUi.border,
     backgroundColor: '#ffffff',
     flexDirection: 'row',
     alignItems: 'center',
@@ -2325,7 +2312,7 @@ const medScheduleStyles = StyleSheet.create({
     gap: 4,
   },
   scheduleUndoBtnText: {
-    color: MED_TEAL,
+    color: PRIMARY,
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '800',

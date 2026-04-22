@@ -3,15 +3,16 @@ import type { ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
 import { PrimaryColor } from '@shared/config/theme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 /** 목표 상세 설정 화면과 동일 톤의 라이트 셸 */
 const SHELL_BG = '#ffffff';
-const ON_SURFACE = '#18181b';
-const MUTED = '#52525b';
-const BORDER = 'rgba(0, 0, 0, 0.08)';
+const ON_SURFACE = GoalDetailSessionUi.onSurface;
+const MUTED = GoalDetailSessionUi.muted;
+const BORDER = GoalDetailSessionUi.border;
 
 type Props = {
   /** 호환용 — 셸은 항상 라이트 흰색(상세 설정과 통일) */
@@ -122,6 +123,8 @@ type BottomProps = {
   paddingBottom: number;
   onEndSession: () => void;
   completeLabel?: string;
+  /** 수분 등 밝은 액센트 위 전경색 (기본: 흰색) */
+  completeForeground?: string;
   disabled?: boolean;
 };
 
@@ -132,6 +135,7 @@ export function ImmersionBottomControls({
   paddingBottom,
   onEndSession,
   completeLabel = '완료',
+  completeForeground = '#fff',
   disabled = false,
 }: BottomProps) {
   return (
@@ -146,8 +150,8 @@ export function ImmersionBottomControls({
         ]}
         disabled={disabled}
         onPress={onEndSession}>
-        <IconSymbol name="checkmark.circle.fill" size={20} color="#fff" />
-        <ThemedText style={styles.completeBtnText}>{completeLabel}</ThemedText>
+        <IconSymbol name="checkmark.circle.fill" size={20} color={completeForeground} />
+        <ThemedText style={[styles.completeBtnText, { color: completeForeground }]}>{completeLabel}</ThemedText>
       </Pressable>
     </View>
   );
@@ -290,7 +294,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   completeBtnText: {
-    color: '#fff',
     fontSize: 17,
     fontWeight: '800',
     letterSpacing: -0.2,

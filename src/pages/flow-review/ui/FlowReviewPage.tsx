@@ -237,7 +237,7 @@ export function FlowReviewPage() {
                       <ThemedText style={styles.cardTimeEnd}>
                         -{' '}
                         {row.block.endsNextCalendarDay
-                          ? `다음날 ${formatMinuteOfDayKo(row.block.endMinutes)}`
+                          ? formatMinuteOfDayKo(row.block.endMinutes)
                           : toHHmm(row.block.endMinutes)}
                       </ThemedText>
                     </View>

@@ -4,7 +4,6 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  LayoutAnimation,
   Modal,
   Platform,
   Pressable,
@@ -16,6 +15,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Reanimated, { Easing, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
@@ -25,6 +25,7 @@ import {
   formatBlockTimeRange,
   formatMinuteOfDayKo,
   getLocalDateKey,
+  isLikelyPriorityCatalogMonolineTitle,
   isPriorityCompoundBlockTitle,
   localDateToDateKey,
   parseHHmmToMinutes,
@@ -34,11 +35,19 @@ import {
   useDayPlanStore
 } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { hasGoalDetailCommittedCategory } from '@shared/lib/storage';
+import {
+  hasGoalDetailCommittedCategory,
+  loadPriorityBagRemoveConfirmSkip,
+  savePriorityBagRemoveConfirmSkip,
+} from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { PriorityOrderRow } from '@widgets/day-plan-priority-order';
+
+/** 우선순위 행 완료 제거 시: 페이드 아웃 + 아래 행이 부드럽게 올라오는 레이아웃 전환 */
+const PRIORITY_ROW_EXITING = FadeOut.duration(280).easing(Easing.out(Easing.cubic));
+const PRIORITY_ROW_LAYOUT = LinearTransition.duration(320).easing(Easing.out(Easing.cubic));
 import {
   formatDateKeyCompactKo,
   formatDateKeyDisplayKo,
@@ -55,7 +64,6 @@ import {
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { getPriorityCategoryGoalHint } from '../lib/priorityCategoryGoalHints';
 import { useDayPlanDraftStore } from '../model/dayPlanDraftStore';
-
 import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
 
 /** 타임라인 내부 스크롤 하단 — 리스트와 카드 둥근 하단 사이 최소만 */
@@ -735,15 +743,6 @@ export function PriorityBasedPlanSection({
     }
   }, []);
 
-  const animateListMutation = useCallback(() => {
-    LayoutAnimation.configureNext({
-      duration: 220,
-      create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
-      update: { type: LayoutAnimation.Types.easeInEaseOut },
-      delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
-    });
-  }, []);
-
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
@@ -945,6 +944,8 @@ export function PriorityBasedPlanSection({
     filterCompletedFocusKeysToPriorityOrder,
     addPlanCompletionDismissedKey,
     clearPlanCompletionDismissedKeys,
+    removeCompletedPriorityBagRows,
+    setPriorityCategoryOrder,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
@@ -954,9 +955,19 @@ export function PriorityBasedPlanSection({
       filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
       addPlanCompletionDismissedKey: s.addPlanCompletionDismissedKey,
       clearPlanCompletionDismissedKeys: s.clearPlanCompletionDismissedKeys,
+      removeCompletedPriorityBagRows: s.removeCompletedPriorityBagRows,
+      setPriorityCategoryOrder: s.setPriorityCategoryOrder,
     })),
   );
   const [lastAddedCategoryKey, setLastAddedCategoryKey] = useState<string | null>(null);
+  const [skipRemovePriorityBagConfirm, setSkipRemovePriorityBagConfirm] = useState(false);
+  const [removeConfirmCategoryKey, setRemoveConfirmCategoryKey] = useState<string | null>(null);
+  const [draggingPriorityKey, setDraggingPriorityKey] = useState<string | null>(null);
+  const priorityBagRowHeightRef = useRef(52);
+
+  useEffect(() => {
+    setSkipRemovePriorityBagConfirm(loadPriorityBagRemoveConfirmSkip());
+  }, []);
   const planBlocks = useDayPlanStore((s) => s.blocks);
   const dayPlanDateKey = useDayPlanStore((s) => s.dateKey);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
@@ -1006,6 +1017,47 @@ export function PriorityBasedPlanSection({
     ],
   );
 
+  /**
+   * 미완료는 위쪽·원래 담기 순서 유지, 완료(취소선)는 맨 아래로 모음.
+   * 완료 행에는 순위 숫자를 붙이지 않음 — `priorityLabel` 생략.
+   */
+  const orderedSelectedItemsForDisplay = useMemo(() => {
+    const active = selectedItems.filter((cat) => !isPriorityRowCompleted(cat.key));
+    const done = selectedItems.filter((cat) => isPriorityRowCompleted(cat.key));
+    return [...active, ...done];
+  }, [selectedItems, isPriorityRowCompleted]);
+
+  const dragReorderDelta = useCallback((translationY: number, rowHeight: number): number => {
+    const threshold = rowHeight * 0.75;
+    const absY = Math.abs(translationY);
+    if (absY < threshold) return 0;
+    const beyond = absY - threshold;
+    const steps = 1 + Math.trunc(beyond / rowHeight);
+    return translationY < 0 ? -steps : steps;
+  }, []);
+
+  const commitPriorityDisplayReorderFromDrag = useCallback(
+    (categoryKey: string, translationY: number) => {
+      const displayKeys = orderedSelectedItemsForDisplay.map((c) => c.key);
+      const len = displayKeys.length;
+      if (len < 2) return;
+      const from = displayKeys.indexOf(categoryKey);
+      if (from < 0) return;
+      const h = Math.max(36, priorityBagRowHeightRef.current);
+      const delta = dragReorderDelta(translationY, h);
+      const to = Math.max(0, Math.min(len - 1, from + delta));
+      if (to === from) return;
+      const moved = [...displayKeys];
+      const [item] = moved.splice(from, 1);
+      moved.splice(to, 0, item);
+      const active = moved.filter((k) => !isPriorityRowCompleted(k));
+      const done = moved.filter((k) => isPriorityRowCompleted(k));
+      setPriorityCategoryOrder([...active, ...done]);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [dragReorderDelta, isPriorityRowCompleted, orderedSelectedItemsForDisplay, setPriorityCategoryOrder],
+  );
+
   const undoPriorityRowCompletion = useCallback(
     (categoryKey: string) => {
       if (completedFocusCategoryKeys.includes(categoryKey)) {
@@ -1028,12 +1080,71 @@ export function PriorityBasedPlanSection({
     (categoryKey: string) => {
       if (isPriorityRowCompleted(categoryKey)) {
         undoPriorityRowCompletion(categoryKey);
-      } else {
-        addFocusCategoryCompleted(categoryKey);
+        return;
       }
+      addFocusCategoryCompleted(categoryKey);
     },
     [addFocusCategoryCompleted, isPriorityRowCompleted, undoPriorityRowCompletion],
   );
+
+  const commitRemoveOneCompletedFromPriorityBag = useCallback(
+    (categoryKey: string) => {
+      if (!isPriorityRowCompleted(categoryKey)) return;
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const planDismissKeys =
+        isFocusStarted && completedCategoryKeysFromPlan.includes(categoryKey) ? [categoryKey] : [];
+      removeCompletedPriorityBagRows([categoryKey], planDismissKeys);
+    },
+    [
+      completedCategoryKeysFromPlan,
+      isFocusStarted,
+      isPriorityRowCompleted,
+      removeCompletedPriorityBagRows,
+    ],
+  );
+
+  const requestRemoveOneCompletedFromPriorityBag = useCallback(
+    (categoryKey: string) => {
+      if (!isPriorityRowCompleted(categoryKey)) return;
+      if (skipRemovePriorityBagConfirm) {
+        commitRemoveOneCompletedFromPriorityBag(categoryKey);
+        return;
+      }
+      setRemoveConfirmCategoryKey(categoryKey);
+    },
+    [
+      commitRemoveOneCompletedFromPriorityBag,
+      isPriorityRowCompleted,
+      skipRemovePriorityBagConfirm,
+    ],
+  );
+
+  const closeRemovePriorityBagConfirm = useCallback(() => {
+    setRemoveConfirmCategoryKey(null);
+  }, []);
+
+  const confirmRemoveFromPriorityBagOnce = useCallback(() => {
+    if (!removeConfirmCategoryKey) return;
+    commitRemoveOneCompletedFromPriorityBag(removeConfirmCategoryKey);
+    closeRemovePriorityBagConfirm();
+  }, [closeRemovePriorityBagConfirm, commitRemoveOneCompletedFromPriorityBag, removeConfirmCategoryKey]);
+
+  const confirmRemoveFromPriorityBagAndDontAskAgain = useCallback(() => {
+    if (!removeConfirmCategoryKey) return;
+    savePriorityBagRemoveConfirmSkip(true);
+    setSkipRemovePriorityBagConfirm(true);
+    commitRemoveOneCompletedFromPriorityBag(removeConfirmCategoryKey);
+    closeRemovePriorityBagConfirm();
+  }, [
+    closeRemovePriorityBagConfirm,
+    commitRemoveOneCompletedFromPriorityBag,
+    removeConfirmCategoryKey,
+  ]);
+
+  const removeConfirmLabel = useMemo(() => {
+    if (!removeConfirmCategoryKey) return '항목';
+    return getPickerCategoryItem(removeConfirmCategoryKey)?.label ?? '항목';
+  }, [removeConfirmCategoryKey]);
 
   /** 라이트: 대표 톤은 `dayPlanPalette` 그레이(containerLow)·진한 글자(onSurface) — 순백·채도 높은 다크 면 아님 */
   const editorial = useMemo(() => {
@@ -1088,14 +1199,21 @@ export function PriorityBasedPlanSection({
   /**
    * 타임라인 카드 높이 = 사용 가능한 세로를 거의 꽉 채움(리스트·탭 사이 빈 면 최소화).
    * 내부 ScrollView가 긴 목록을 스크롤하고, 카드는 항상 이 높이를 씀.
+   *
+   * `useWindowDimensions`는 **전체 창** 높이라, 커스텀 탭바(`DayPlanCustomTabBar`: 행 minHeight +
+   * wrapper `paddingBottom: insets.bottom`)만큼은 반드시 빼야 카드가 탭을 덮지 않음.
+   * 추가 여백은 두지 않아 탭과의 간격을 최소로 둔다(겹침이 보이면 +2~4px만 조정).
    */
   const timelineCardHeight = useMemo(() => {
     const aboveCard =
       insets.top +
       /** DayPlan: scroll paddingTop·문의·모드 스위치·섹션 간격 */
       110;
-    const belowCard = DAY_PLAN_TAB_BAR_ROW_HEIGHT + insets.bottom + 2;
-    const outerVertical = 12; // priorityTimelineOuter padding (상·하)
+    const tabBarReserve = DAY_PLAN_TAB_BAR_ROW_HEIGHT + insets.bottom;
+    /** 탭 씬이 창 전체 기준이면 살짝 과하게 빼는 경우가 있어, 탭 직전까지 카드를 늘린다(겹침 시 +4~8 조정). */
+    const belowCard = Math.max(tabBarReserve - 10, DAY_PLAN_TAB_BAR_ROW_HEIGHT + 8);
+    /** `priorityTimelineOuter` 상·하 패딩 합과 동기화 */
+    const outerVertical = 0;
     return Math.max(240, windowHeight - aboveCard - belowCard - outerVertical);
   }, [windowHeight, insets.top, insets.bottom]);
 
@@ -1344,6 +1462,66 @@ export function PriorityBasedPlanSection({
         </View>
       </Modal>
 
+      <Modal
+        visible={removeConfirmCategoryKey !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={closeRemovePriorityBagConfirm}>
+        <View style={styles.removeConfirmModalRoot} accessibilityViewIsModal>
+          <Pressable
+            style={styles.removeConfirmModalDim}
+            onPress={closeRemovePriorityBagConfirm}
+            accessibilityRole="button"
+            accessibilityLabel="닫기"
+          />
+          <View
+            style={[
+              styles.removeConfirmCard,
+              {
+                zIndex: 2,
+                elevation: 14,
+                backgroundColor: c.containerLow,
+                borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+              },
+            ]}>
+            <ThemedText style={[styles.removeConfirmTitle, { color: editorial.ink }]} numberOfLines={2}>
+              담기에서 뺄까요?
+            </ThemedText>
+            <ThemedText style={[styles.removeConfirmBody, { color: editorial.muted }]} numberOfLines={4}>
+              완료한 「{removeConfirmLabel}」을(를) 목록에서 빼면, 담기 화면에서 다시 고를 수 있어요.
+            </ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="담기에서 빼기, 다음부터는 확인하지 않기"
+              onPress={confirmRemoveFromPriorityBagAndDontAskAgain}
+              style={[styles.removeConfirmDontAskBtn, { borderColor: editorial.line }]}>
+              <ThemedText style={[styles.removeConfirmDontAskBtnText, { color: editorial.ink }]}>
+                빼기 · 다음부터 묻지 않기
+              </ThemedText>
+            </Pressable>
+            <View style={styles.removeConfirmActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="취소"
+                onPress={closeRemovePriorityBagConfirm}
+                style={[
+                  styles.removeConfirmGhostBtn,
+                  { borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.18)' },
+                ]}>
+                <ThemedText style={[styles.removeConfirmActionText, { color: editorial.ink }]}>취소</ThemedText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="담기에서 빼기"
+                onPress={confirmRemoveFromPriorityBagOnce}
+                style={[styles.removeConfirmPrimaryBtn, { backgroundColor: PRIMARY }]}>
+                <ThemedText style={styles.removeConfirmPrimaryBtnText}>빼기</ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <View style={[styles.bookOuter, { backgroundColor: surfaceBg }]}>
         {/* 기간·집중 구간 — 다일 타임라인 카드 (달력·시계는 각각 모달) */}
         <View style={styles.priorityTimelineOuter}>
@@ -1353,7 +1531,8 @@ export function PriorityBasedPlanSection({
               {
                 height: timelineCardHeight,
                 backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.72)',
-                borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+                /** 드래그 시작 시 React 상태 토글로 제스처가 취소되는 문제를 막기 위해 항상 visible */
+                overflow: 'visible',
               },
             ]}>
             <View style={styles.priorityTimelineHeader}>
@@ -1425,7 +1604,6 @@ export function PriorityBasedPlanSection({
                   : isPriorityStripPrimary
                     ? editorial.ink
                     : editorial.muted;
-                const borderTopStrong = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.14)';
                 const timeColW = isPriorityStripPrimary ? 100 : 58;
                 const timeFont = isPriorityStripPrimary ? 11 : 10;
                 const titleFont = isPriorityStripPrimary ? 15 : 12;
@@ -1437,8 +1615,8 @@ export function PriorityBasedPlanSection({
                 /** 다줄 합본·집중 구간과 동일 시각의 우선순위 블록은 타임라인 행에서 숨기고 아래 목록만 사용 */
                 const timelineBlocksForDay = blocks.filter((b) => {
                   if (isPriorityCompoundBlockTitle(b.title)) return false;
-                  if (
-                    showPriorityInMainTimeline &&
+                  const matchesPriorityWindow =
+                    isMainDay &&
                     priorityWindowHhmm.ps !== null &&
                     priorityWindowHhmm.pe !== null &&
                     blockMatchesPriorityHhmmWindow(
@@ -1446,64 +1624,68 @@ export function PriorityBasedPlanSection({
                       priorityWindowHhmm.ps,
                       priorityWindowHhmm.pe,
                       priorityWindowHhmm.overnight,
-                    )
-                  ) {
-                    return false;
-                  }
+                    );
+                  if (!matchesPriorityWindow) return true;
+                  /** 담기가 비면 showPriority가 꺼져 단일 카탈로그 줄 블록이 다시 노출되는 것을 막음 */
+                  if (showPriorityInMainTimeline) return false;
+                  if (isLikelyPriorityCatalogMonolineTitle(b.title)) return false;
                   return true;
                 });
                 return (
                   <View
                     key={dk}
                     style={[
-                      styles.priorityTimelineDayRow,
-                      isPriorityStripPrimary
-                        ? styles.priorityTimelineDayRowMain
-                        : styles.priorityTimelineDayRowSide,
+                      styles.priorityTimelineDayColumn,
+                      isPriorityStripPrimary && styles.priorityTimelineDayColumnMain,
                       isPastDay && styles.priorityTimelineDayPast,
                       !isPriorityStripPrimary && !isPastDay && styles.priorityTimelineDayFutureSide,
                     ]}>
-                    <View style={[styles.priorityTimelineDayLeft, { width: dayLeftW }]}>
-                      <ThemedText
-                        style={[
-                          styles.priorityTimelineWd,
-                          {
-                            color: isPriorityStripPrimary ? editorial.ink : editorial.muted,
-                            fontWeight: isPriorityStripPrimary ? '800' : '600',
-                            letterSpacing: wdLetter,
-                            fontSize: wdFont,
-                          },
-                        ]}
-                        lightColor={isPriorityStripPrimary ? editorial.ink : editorial.muted}
-                        darkColor={isPriorityStripPrimary ? editorial.ink : editorial.muted}>
-                        {wd}
-                      </ThemedText>
-                      <ThemedText
-                        style={[
-                          styles.priorityTimelineDayNum,
-                          numSize != null && { fontSize: numSize, fontWeight: '700', letterSpacing: -0.3 },
-                          { color: editorial.ink },
-                          isPriorityStripPrimary && styles.priorityTimelineDayNumToday,
-                        ]}
-                        lightColor={editorial.ink}
-                        darkColor={editorial.ink}>
-                        {dayNum}
-                      </ThemedText>
-                    </View>
                     <View
                       style={[
-                        styles.priorityTimelineDayRight,
+                        styles.priorityTimelineDayRow,
                         isPriorityStripPrimary
-                          ? styles.priorityTimelineDayRightMain
-                          : styles.priorityTimelineDayRightSide,
-                        {
-                          borderTopColor: isPriorityStripPrimary ? borderTopStrong : editorial.line,
-                          borderTopWidth: StyleSheet.hairlineWidth,
-                          paddingTop: isPriorityStripPrimary ? 12 : 4,
-                        },
+                          ? styles.priorityTimelineDayRowMain
+                          : styles.priorityTimelineDayRowSide,
                       ]}>
-                      {timelineBlocksForDay.length > 0
-                        ? timelineBlocksForDay.map((block, bi) => {
+                      <View style={[styles.priorityTimelineDayLeft, { width: dayLeftW }]}>
+                        <ThemedText
+                          style={[
+                            styles.priorityTimelineWd,
+                            {
+                              color: isPriorityStripPrimary ? editorial.ink : editorial.muted,
+                              fontWeight: isPriorityStripPrimary ? '800' : '600',
+                              letterSpacing: wdLetter,
+                              fontSize: wdFont,
+                            },
+                          ]}
+                          lightColor={isPriorityStripPrimary ? editorial.ink : editorial.muted}
+                          darkColor={isPriorityStripPrimary ? editorial.ink : editorial.muted}>
+                          {wd}
+                        </ThemedText>
+                        <ThemedText
+                          style={[
+                            styles.priorityTimelineDayNum,
+                            numSize != null && { fontSize: numSize, fontWeight: '700', letterSpacing: -0.3 },
+                            { color: editorial.ink },
+                            isPriorityStripPrimary && styles.priorityTimelineDayNumToday,
+                          ]}
+                          lightColor={editorial.ink}
+                          darkColor={editorial.ink}>
+                          {dayNum}
+                        </ThemedText>
+                      </View>
+                      <View
+                        style={[
+                          styles.priorityTimelineDayRight,
+                          isPriorityStripPrimary
+                            ? styles.priorityTimelineDayRightMain
+                            : styles.priorityTimelineDayRightSide,
+                          {
+                            paddingTop: isPriorityStripPrimary ? 12 : 4,
+                          },
+                        ]}>
+                        {timelineBlocksForDay.length > 0
+                          ? timelineBlocksForDay.map((block, bi) => {
                           const dotTone =
                             bi % 4 === 0
                               ? isDark
@@ -1556,49 +1738,7 @@ export function PriorityBasedPlanSection({
                         })
                         : null}
 
-                      {showPriorityInMainTimeline ? (
-                        <View
-                          style={[
-                            styles.priorityInlineList,
-                            timelineBlocksForDay.length > 0 && { marginTop: 8 },
-                          ]}>
-                          {blocks.length === 0 ? (
-                            <ThemedText
-                              style={[styles.priorityTimelineKicker, { color: editorial.muted }]}
-                              lightColor={editorial.muted}
-                              darkColor={editorial.muted}
-                              numberOfLines={2}>
-                              {priorityWindowLine}
-                            </ThemedText>
-                          ) : null}
-                          {selectedItems.map((cat, idx) => (
-                            <PriorityOrderRow
-                              key={cat.key}
-                              categoryKey={cat.key}
-                              icon={cat.icon}
-                              label={cat.label}
-                              subtitle={categorySubtitleByKey(cat.key)}
-                              priorityLabel={priorityLabelByIndex(idx)}
-                              isTopPriority={idx === 0}
-                              priorityColor={priorityColorByIndex(idx)}
-                              isFocusStarted={isFocusStarted}
-                              isCompleted={isPriorityRowCompleted(cat.key)}
-                              isDark={isDark}
-                              ink={editorial.ink}
-                              inkMuted={editorial.muted}
-                              line={editorial.line}
-                              onToggleFocusComplete={() => handleTogglePriorityRowComplete(cat.key)}
-                              onSettings={
-                                onOpenCategorySettings ? () => onOpenCategorySettings(cat.key) : undefined
-                              }
-                              onFocusDetail={onOpenFocusDetail ? () => onOpenFocusDetail(cat.key) : undefined}
-                              animateOnMount={lastAddedCategoryKey === cat.key}
-                            />
-                          ))}
-                        </View>
-                      ) : null}
-
-                      {showOvernightPriorityContinuation ? (
+                        {showOvernightPriorityContinuation ? (
                         <View
                           style={[
                             styles.overnightContinuationBlock,
@@ -1687,7 +1827,100 @@ export function PriorityBasedPlanSection({
                           </View>
                         </View>
                       ) : null}
+                      </View>
                     </View>
+
+                    {showPriorityInMainTimeline ? (
+                      <View
+                        style={[
+                          styles.priorityInlineListUnderDate,
+                          isPriorityStripPrimary && styles.priorityInlineListUnderDateMain,
+                          timelineBlocksForDay.length > 0 && styles.priorityInlineListUnderDateAfterEvents,
+                        ]}>
+                        {blocks.length === 0 ? (
+                          <ThemedText
+                            style={[styles.priorityTimelineKicker, { color: editorial.muted }]}
+                            lightColor={editorial.muted}
+                            darkColor={editorial.muted}
+                            numberOfLines={2}>
+                            {priorityWindowLine}
+                          </ThemedText>
+                        ) : null}
+                        <View style={styles.priorityInlineList}>
+                          {orderedSelectedItemsForDisplay.map((cat, idx) => {
+                            const rowDone = isPriorityRowCompleted(cat.key);
+                            const activeIndexBefore = orderedSelectedItemsForDisplay
+                              .slice(0, idx)
+                              .filter((c) => !isPriorityRowCompleted(c.key)).length;
+                            const priorityLabel = rowDone ? undefined : priorityLabelByIndex(activeIndexBefore);
+                            const isTopPriority = !rowDone && activeIndexBefore === 0;
+                            const allowBagReorder = orderedSelectedItemsForDisplay.length >= 2;
+                            return (
+                              <Reanimated.View
+                                key={cat.key}
+                                layout={PRIORITY_ROW_LAYOUT}
+                                exiting={PRIORITY_ROW_EXITING}
+                                style={[
+                                  styles.priorityOrderRowAnimWrap,
+                                  draggingPriorityKey === cat.key
+                                    ? styles.priorityOrderRowAnimWrapDragging
+                                    : null,
+                                ]}
+                                onLayout={(e) => {
+                                  const h = e.nativeEvent.layout.height;
+                                  if (h > 0) {
+                                    priorityBagRowHeightRef.current = h;
+                                  }
+                                }}>
+                                <PriorityOrderRow
+                                  categoryKey={cat.key}
+                                  icon={cat.icon}
+                                  label={cat.label}
+                                  subtitle={categorySubtitleByKey(cat.key)}
+                                  priorityLabel={priorityLabel}
+                                  isTopPriority={isTopPriority}
+                                  priorityColor={rowDone ? undefined : priorityColorByIndex(activeIndexBefore)}
+                                  isFocusStarted={isFocusStarted}
+                                  isCompleted={rowDone}
+                                  isDark={isDark}
+                                  ink={editorial.ink}
+                                  inkMuted={editorial.muted}
+                                  line={editorial.line}
+                                  onToggleFocusComplete={() => handleTogglePriorityRowComplete(cat.key)}
+                                  onRemoveCompletedFromPriorityBag={
+                                    rowDone
+                                      ? () => requestRemoveOneCompletedFromPriorityBag(cat.key)
+                                      : undefined
+                                  }
+                                  onReorderDragTranslationEnd={
+                                    allowBagReorder
+                                      ? (ty) => commitPriorityDisplayReorderFromDrag(cat.key, ty)
+                                      : undefined
+                                  }
+                                  onReorderDragActiveChange={
+                                    allowBagReorder
+                                      ? (active) => {
+                                          setDraggingPriorityKey((prev) => {
+                                            if (active) return cat.key;
+                                            if (prev === cat.key) return null;
+                                            return prev;
+                                          });
+                                        }
+                                      : undefined
+                                  }
+                                  reorderDragSurface={allowBagReorder ? editorial.surface : undefined}
+                                  onSettings={
+                                    onOpenCategorySettings ? () => onOpenCategorySettings(cat.key) : undefined
+                                  }
+                                  onFocusDetail={onOpenFocusDetail ? () => onOpenFocusDetail(cat.key) : undefined}
+                                  animateOnMount={lastAddedCategoryKey === cat.key}
+                                />
+                              </Reanimated.View>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    ) : null}
                   </View>
                 );
               })}
@@ -1706,14 +1939,15 @@ const styles = StyleSheet.create({
   },
   priorityTimelineOuter: {
     width: '100%',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 4,
+    alignSelf: 'stretch',
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   priorityTimelineCard: {
     width: '100%',
-    borderRadius: 40,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 28,
+    borderWidth: 0,
     overflow: 'hidden',
     flexDirection: 'column',
   },
@@ -1722,7 +1956,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 10,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 14,
   },
@@ -1754,13 +1988,21 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   priorityTimelineScrollContent: {
-    paddingHorizontal: 6,
+    paddingHorizontal: 10,
+    gap: 10,
+  },
+  /** 날짜 행 아래에 우선순위 리스트를 두기 위한 세로 래퍼 */
+  priorityTimelineDayColumn: {
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  priorityTimelineDayColumnMain: {
     gap: 10,
   },
   priorityTimelineDayRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
   },
   /** 당일(오늘) — 넓은 간격·큰 터치 영역 */
   priorityTimelineDayRowMain: {
@@ -1843,6 +2085,27 @@ const styles = StyleSheet.create({
   priorityInlineList: {
     width: '100%',
     alignSelf: 'stretch',
+  },
+  /** Reanimated layout/exit — 드래그 중 `translateY`가 잘리지 않도록 visible */
+  priorityOrderRowAnimWrap: {
+    width: '100%',
+    overflow: 'visible',
+  },
+  priorityOrderRowAnimWrapDragging: {
+    zIndex: 300,
+    elevation: 30,
+  },
+  /** 날짜(요일·일) 열과 같은 좌측 시작선 — 리스트를 그 아래 전체 너비로 */
+  priorityInlineListUnderDate: {
+    width: '100%',
+    alignSelf: 'stretch',
+    paddingHorizontal: 10,
+  },
+  priorityInlineListUnderDateMain: {
+    paddingBottom: 2,
+  },
+  priorityInlineListUnderDateAfterEvents: {
+    marginTop: 8,
   },
   /** 자정 넘김 꼬리 날 — 시각+선만(배경·테두리 없이 본문과 동일 톤) */
   overnightContinuationBlock: {
@@ -2121,4 +2384,78 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   pageScrollContent: { gap: 0, paddingBottom: 4 },
+  removeConfirmModalRoot: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  removeConfirmModalDim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  removeConfirmCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 22,
+    gap: 14,
+    maxWidth: 400,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  removeConfirmTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.35,
+  },
+  removeConfirmBody: {
+    fontSize: 15,
+    fontWeight: '500',
+    lineHeight: 22,
+    letterSpacing: -0.2,
+  },
+  removeConfirmDontAskBtn: {
+    marginTop: 2,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeConfirmDontAskBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.25,
+    textAlign: 'center',
+  },
+  removeConfirmActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  removeConfirmGhostBtn: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeConfirmPrimaryBtn: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeConfirmActionText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  removeConfirmPrimaryBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
 });

@@ -31,6 +31,8 @@ export type PriorityLiveActivityContent = {
   /** 블록 구간 내 진행 0~1 (링·활성 할 일 인덱스에 사용) */
   progress01: number;
   upcoming: PriorityLiveActivityUpcomingRow[];
+  /** 복합 블록 전체 줄(순서·시간). 잠금화면에서 최대 4줄 + 생략 표시에 사용 */
+  listRows: PriorityLiveActivityUpcomingRow[];
 };
 
 /** 빠른 메모로 저장된 블록 전용 잠금화면 카드(타이머 없음) */

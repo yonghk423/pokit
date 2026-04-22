@@ -39,6 +39,14 @@ type DayPlanDraftState = {
   /** 우선순위 목록 변경 시 목록 밖 키 제거 */
   filterCompletedFocusKeysToPriorityOrder: (order: string[]) => void;
   clearCompletedFocusCategoryKeys: () => void;
+  /**
+   * 완료(취소선) 처리된 담기 행을 순서에서 제거하고, 체크 완료 기록을 지움.
+   * 집중 중이면 일정 완료만으로 취소선이 남는 경우를 위해 `planCompletionDismissForKeys`에 넣은 키는 담기 화면에서도 완료 표시를 끈다.
+   */
+  removeCompletedPriorityBagRows: (
+    removeKeys: string[],
+    planCompletionDismissForKeys: string[],
+  ) => void;
   addPlanCompletionDismissedKey: (key: string) => void;
   clearPlanCompletionDismissedKeys: () => void;
   setPriorityPlanDateKey: (value: string) => void;
@@ -92,6 +100,22 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       completedFocusCategoryKeys: s.completedFocusCategoryKeys.filter((k) => order.includes(k)),
     })),
   clearCompletedFocusCategoryKeys: () => set({ completedFocusCategoryKeys: [] }),
+  removeCompletedPriorityBagRows: (removeKeys, planCompletionDismissForKeys) =>
+    set((s) => {
+      if (removeKeys.length === 0) return s;
+      const remove = new Set(removeKeys);
+      const nextOrder = s.priorityCategoryOrder.filter((k) => !remove.has(k));
+      const nextFocus = s.completedFocusCategoryKeys.filter((k) => !remove.has(k));
+      const nextDismissed = [...s.planCompletionDismissedKeys];
+      for (const k of planCompletionDismissForKeys) {
+        if (!nextDismissed.includes(k)) nextDismissed.push(k);
+      }
+      return {
+        priorityCategoryOrder: nextOrder,
+        completedFocusCategoryKeys: nextFocus,
+        planCompletionDismissedKeys: nextDismissed,
+      };
+    }),
   addPlanCompletionDismissedKey: (key) =>
     set((s) => ({
       planCompletionDismissedKeys: s.planCompletionDismissedKeys.includes(key)

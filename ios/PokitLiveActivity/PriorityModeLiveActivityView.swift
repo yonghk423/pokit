@@ -42,10 +42,13 @@ enum PriorityModeLiveActivityView {
     let window = context.state.timeRangeLabel.trimmingCharacters(in: .whitespacesAndNewlines)
     let windowLabel = window.isEmpty ? context.state.checklistTitle : window
 
-    let upcomingRows: [LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow] =
-      Array(rows.enumerated().prefix(4)).map { idx, row in
-        .init(order: idx + 1, title: row.title, timeLabel: row.timeLabel)
-      }
+    let listRows = rows.enumerated().map { idx, row in
+      LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow(
+        order: idx + 1,
+        title: row.title,
+        timeLabel: row.timeLabel
+      )
+    }
 
     let p = LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent(
       windowLabel: windowLabel,
@@ -53,7 +56,9 @@ enum PriorityModeLiveActivityView {
       activeOrder: min(max(1, currentIndex + 1), max(1, total)),
       totalTasks: max(1, total),
       progress01: progress01,
-      upcoming: upcomingRows
+      /// 잠금화면은 `listRows` 전체만 쓴다. `upcoming`(현재 이후만)과 이중으로 쓰면 `priorityLockListSource`에서 꼬일 수 있음.
+      upcoming: [],
+      listRows: listRows
     )
 
     priorityContent(context: context, p: p, compact: compact)
@@ -62,6 +67,29 @@ enum PriorityModeLiveActivityView {
   private static func parseTotalCount(_ label: String) -> Int {
     let digits = label.filter(\.isNumber)
     return Int(digits) ?? 0
+  }
+
+  /// 잠금화면 리스트 소스 — 우선순위 단순화:
+  /// 1) `p.listRows`가 있으면 **항상 전체** 사용 (RN·폴백 모두 여기에 전체를 넣는다)
+  /// 2) 없으면 레거시 `p.upcoming`
+  /// 3) 그것도 없으면 `context.state.checklistRows`를 그대로 매핑
+  private static func priorityLockListSource(
+    context: ActivityViewContext<LockFlowLiveActivityAttributes>,
+    p: LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent
+  ) -> [LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow] {
+    if let rows = p.listRows, !rows.isEmpty {
+      return rows
+    }
+    if !p.upcoming.isEmpty {
+      return p.upcoming
+    }
+    return context.state.checklistRows.enumerated().map { idx, row in
+      LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow(
+        order: idx + 1,
+        title: row.title.trimmingCharacters(in: .whitespacesAndNewlines),
+        timeLabel: row.timeLabel
+      )
+    }
   }
 
   @ViewBuilder
@@ -116,19 +144,34 @@ enum PriorityModeLiveActivityView {
     p: LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent,
     compact: Bool
   ) -> some View {
-    let ringProgress = CGFloat(min(1, max(0, p.progress01)))
+    let listSource = priorityLockListSource(context: context, p: p)
+    /// 잠금화면 배너 허용 높이를 최대한 쓰고, 넘치면 `…` 말줄임을 붙인다.
+    /// 숫자가 너무 작으면 내용이 적을 때도 일찍 말줄임됨 → 넉넉히 20.
+    let maxListLines = 20
 
-    let padH: CGFloat = compact ? 8 : 10
-    let padV: CGFloat = compact ? 6 : 8
-    let ringSize: CGFloat = compact ? 48 : 54
-    let ringStroke: CGFloat = compact ? 3.5 : 4
-    let playInner: CGFloat = compact ? 28 : 30
-    let playIcon: CGFloat = compact ? 12 : 13
-    let titleSize: CGFloat = compact ? 13 : 14
-    let windowSize: CGFloat = compact ? 8 : 8.5
+    let padH: CGFloat = compact ? 10 : 12
+    let padV: CGFloat = compact ? 8 : 10
+    let windowSize: CGFloat = compact ? 9 : 10
+    let listTitleSize: CGFloat = compact ? 13 : 14.5
 
-    VStack(alignment: .leading, spacing: compact ? 6 : 7) {
-      HStack(alignment: .center, spacing: 6) {
+    let visibleRows = Array(listSource.prefix(maxListLines))
+    let hasMore = listSource.count > visibleRows.count
+    /// QuickMemo와 동일하게 `Text`의 줄바꿈·`lineSpacing`으로 intrinsic 세로 높이를 쌓는다.
+    /// `ForEach` 한 줄 행만 두면 Live Activity가 얇은 intrinsic 높이로 잡는 경우가 많다.
+    let listBodyFont = Font.system(size: listTitleSize, weight: .semibold)
+    let listLineSpacing: CGFloat = compact ? 5 : 6
+    let listMultiline: String = {
+      if visibleRows.isEmpty { return "" }
+      /// 행별 시각은 헤더 `windowLabel`에 이미 있으므로 본문에서는 제목만 줄 단위로 쌓는다(퀵메모의 `\n`과 동일한 효과).
+      var lines = visibleRows.map { row in
+        row.title.trimmingCharacters(in: .whitespacesAndNewlines)
+      }
+      if hasMore { lines.append("…") }
+      return lines.joined(separator: "\n")
+    }()
+
+    VStack(alignment: .leading, spacing: compact ? 6 : 8) {
+      HStack(alignment: .center, spacing: 8) {
         HStack(spacing: compact ? 4 : 5) {
           Image(systemName: "briefcase.fill")
             .font(.system(size: compact ? 11 : 12, weight: .semibold))
@@ -138,51 +181,35 @@ enum PriorityModeLiveActivityView {
             .foregroundStyle(.white)
             .tracking(-0.2)
         }
-        Spacer(minLength: 0)
+        Spacer(minLength: 6)
+        Text(p.windowLabel)
+          .font(.system(size: windowSize, weight: .bold))
+          .foregroundStyle(.white.opacity(0.55))
+          .lineLimit(1)
+          .minimumScaleFactor(0.7)
       }
 
-      /// 링 옆에는 제목만 넓게 — 타이머는 아래 행으로 내려 잘림 방지
-      HStack(alignment: .top, spacing: compact ? 8 : 10) {
-        ZStack {
-          Circle()
-            .stroke(Color.white.opacity(0.08), lineWidth: ringStroke)
-          Circle()
-            .trim(from: 0, to: ringProgress)
-            .stroke(
-              orange,
-              style: StrokeStyle(lineWidth: ringStroke, lineCap: .round)
-            )
-            .rotationEffect(.degrees(-90))
-          Image(systemName: "play.fill")
-            .font(.system(size: playIcon, weight: .bold))
-            .foregroundStyle(.black.opacity(0.88))
-            .frame(width: playInner, height: playInner)
-            .background(.white, in: Circle())
-            .shadow(color: .black.opacity(0.28), radius: 3, y: 1)
-        }
-        .frame(width: ringSize, height: ringSize)
-
-        VStack(alignment: .leading, spacing: compact ? 2 : 3) {
-          Text(p.windowLabel.uppercased())
-            .font(.system(size: windowSize, weight: .heavy))
-            .foregroundStyle(.white.opacity(0.40))
-            .tracking(0.85)
-            .lineLimit(1)
-            .minimumScaleFactor(0.75)
-          Text(p.activeTitle)
-            .font(.system(size: titleSize, weight: .bold))
-            .foregroundStyle(.white)
-            .lineLimit(compact ? 3 : 4)
-            .truncationMode(.tail)
-            .minimumScaleFactor(0.72)
-            .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+      if !listSource.isEmpty {
+        Text(listMultiline)
+          .font(listBodyFont)
+          .foregroundStyle(.white)
+          .lineSpacing(listLineSpacing)
+          .lineLimit(maxListLines + 1)
+          .minimumScaleFactor(0.72)
+          .multilineTextAlignment(.leading)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+      } else {
+        Text(p.activeTitle)
+          .font(.system(size: listTitleSize + 1, weight: .bold))
+          .foregroundStyle(.white)
+          .lineLimit(2)
+          .minimumScaleFactor(0.78)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       }
-
     }
     .padding(.horizontal, padH)
     .padding(.vertical, padV)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 
   private static func formatClock(_ totalSeconds: Int) -> String {

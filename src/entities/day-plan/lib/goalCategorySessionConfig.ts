@@ -81,7 +81,14 @@ export function getInitialYogaDataConfig(): YogaDetailDataConfig {
 }
 
 // --- fasting ---
-export type FastingDetailDataConfig = { fastingMin: number; elapsedMin: number };
+export type FastingDetailDataConfig = {
+  fastingMin: number;
+  elapsedMin: number;
+  currentWeightKg: number;
+  targetWeightKg: number;
+  weeklyLossTargetKg: number;
+  fastingEnabled: boolean;
+};
 
 const FASTING_MIN = 60;
 const FASTING_MAX = 48 * 60;
@@ -91,11 +98,41 @@ export function normalizeFastingDetailConfig(raw: unknown): FastingDetailDataCon
   const fastingMin = Math.max(FASTING_MIN, Math.min(FASTING_MAX, Number(o.fastingMin) || 16 * 60));
   const elapsedRaw = Number(o.elapsedMin);
   const elapsedMin = Math.max(0, Math.min(fastingMin, Number.isFinite(elapsedRaw) ? elapsedRaw : 0));
-  return { fastingMin, elapsedMin };
+  const currentWeightRaw = Number(o.currentWeightKg);
+  const currentWeightKg = Math.max(
+    30,
+    Math.min(250, Number.isFinite(currentWeightRaw) ? currentWeightRaw : 70),
+  );
+  const targetWeightRaw = Number(o.targetWeightKg);
+  const targetWeightKg = Math.max(
+    30,
+    Math.min(250, Number.isFinite(targetWeightRaw) ? targetWeightRaw : currentWeightKg - 5),
+  );
+  const weeklyLossRaw = Number(o.weeklyLossTargetKg);
+  const weeklyLossTargetKg = Math.max(
+    0.1,
+    Math.min(2, Number.isFinite(weeklyLossRaw) ? weeklyLossRaw : 0.5),
+  );
+  const fastingEnabled = typeof o.fastingEnabled === 'boolean' ? o.fastingEnabled : true;
+  return {
+    fastingMin,
+    elapsedMin,
+    currentWeightKg,
+    targetWeightKg,
+    weeklyLossTargetKg,
+    fastingEnabled,
+  };
 }
 
 export function getInitialFastingDataConfig(): FastingDetailDataConfig {
-  return { fastingMin: 16 * 60, elapsedMin: 0 };
+  return {
+    fastingMin: 16 * 60,
+    elapsedMin: 0,
+    currentWeightKg: 70,
+    targetWeightKg: 65,
+    weeklyLossTargetKg: 0.5,
+    fastingEnabled: true,
+  };
 }
 
 // --- water ---

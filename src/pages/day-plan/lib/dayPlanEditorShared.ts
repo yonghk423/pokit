@@ -159,14 +159,13 @@ export function displayHour12(hhmm: string): string {
   return `${h12}:${String(min).padStart(2, '0')}`;
 }
 
-/** `YYYY-MM-DD` → 화면용 한글 날짜 */
+/** `YYYY-MM-DD` → 화면용 한글 날짜(연도 생략 — 앱 내 당해·근접 일정 위주) */
 export function formatDateKeyDisplayKo(dateKey: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
   if (!m) return dateKey;
-  const y = m[1];
   const mo = parseInt(m[2], 10);
   const d = parseInt(m[3], 10);
-  return `${y}년 ${mo}월 ${d}일`;
+  return `${mo}월 ${d}일`;
 }
 
 /** 시계 박스 등 짧은 표기 — `4월 14일` */
@@ -178,14 +177,31 @@ export function formatDateKeyCompactKo(dateKey: string): string {
   return `${mo}월 ${d}일`;
 }
 
-/** 우선순위 플로 소개 문구 — 단일일·기간 */
+function parseDateKeyYmd(dateKey: string): { y: string; mo: number; d: number } | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
+  if (!m) return null;
+  return { y: m[1], mo: parseInt(m[2], 10), d: parseInt(m[3], 10) };
+}
+
+/** 우선순위 플로 소개 문구 — 단일일·기간(연도 생략, 해가 다를 때만 연도 표기) */
 export function planDayIntroFromRange(todayKey: string, startKey: string, endKey: string): string {
   const lo = startKey <= endKey ? startKey : endKey;
   const hi = startKey <= endKey ? endKey : startKey;
   if (lo === hi) {
     return lo === todayKey ? '오늘' : formatDateKeyDisplayKo(lo);
   }
-  return `${formatDateKeyDisplayKo(lo)} ~ ${formatDateKeyDisplayKo(hi)}`;
+  const a = parseDateKeyYmd(lo);
+  const b = parseDateKeyYmd(hi);
+  if (!a || !b) {
+    return `${formatDateKeyDisplayKo(lo)} ~ ${formatDateKeyDisplayKo(hi)}`;
+  }
+  if (a.y !== b.y) {
+    return `${a.y}년 ${a.mo}월 ${a.d}일 ~ ${b.y}년 ${b.mo}월 ${b.d}일`;
+  }
+  if (a.mo !== b.mo) {
+    return `${a.mo}월 ${a.d}일 ~ ${b.mo}월 ${b.d}일`;
+  }
+  return `${a.mo}월 ${a.d}일 ~ ${b.d}일`;
 }
 
 /**

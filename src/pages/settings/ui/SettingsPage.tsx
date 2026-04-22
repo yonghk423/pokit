@@ -59,6 +59,24 @@ export function SettingsPage() {
             </View>
             <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
           </Pressable>
+
+          <Pressable
+            style={styles.item}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/category-reminder-settings');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="카테고리별 알림 시간">
+            <View style={styles.itemLeft}>
+              <IconSymbol name="bell.fill" size={20} color="#6B7280" />
+              <View style={styles.itemTextWrap}>
+                <ThemedText style={styles.itemTitle}>카테고리 알림</ThemedText>
+                <ThemedText style={styles.itemDesc}>항목마다 매일 울릴 시각을 정해요</ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
+          </Pressable>
         </View>
 
         <View style={styles.section}>

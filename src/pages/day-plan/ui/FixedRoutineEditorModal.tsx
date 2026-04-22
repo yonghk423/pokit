@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -13,6 +8,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import { PICKER_CATEGORIES, PRIMARY } from '../lib/dayPlanEditorShared';
 import { filterCatalogPickerCategories } from '../lib/priorityCatalogSections';
+import { FixedRoutineDraftOrderList } from './FixedRoutineDraftOrderList';
 
 type Props = {
   visible: boolean;
@@ -25,14 +21,6 @@ type Props = {
   line: string;
   surface: string;
 };
-
-function moveIndex(keys: string[], from: number, to: number): string[] {
-  if (to < 0 || to >= keys.length || from === to) return keys;
-  const next = [...keys];
-  const [item] = next.splice(from, 1);
-  next.splice(to, 0, item);
-  return next;
-}
 
 export function FixedRoutineEditorModal({
   visible,
@@ -55,6 +43,7 @@ export function FixedRoutineEditorModal({
     [catalogCategories],
   );
   const [draft, setDraft] = useState<string[]>([]);
+  const [fixedOrderDragging, setFixedOrderDragging] = useState(false);
 
   useEffect(() => {
     if (visible) setDraft(initialKeys.filter((k) => catalogCategoryKeySet.has(k)));
@@ -65,10 +54,6 @@ export function FixedRoutineEditorModal({
     () => catalogCategories.filter((c) => !draft.includes(c.key)),
     [catalogCategories, draft],
   );
-
-  const onMove = useCallback((idx: number, dir: -1 | 1) => {
-    setDraft((prev) => moveIndex(prev, idx, idx + dir));
-  }, []);
 
   const onRemove = useCallback((key: string) => {
     setDraft((prev) => prev.filter((k) => k !== key));
@@ -87,12 +72,13 @@ export function FixedRoutineEditorModal({
         <View style={[styles.sheetHeader, { borderBottomColor: border }]}>
           <ThemedText style={[styles.sheetTitle, { color: ink }]}>내 고정 루틴</ThemedText>
           <ThemedText style={[styles.sheetLead, { color: muted }]}>
-            담기 탭 위쪽에 모아 둘 항목과 순서를 정해요. 비워 두면 아래는 건강·몸 관리(수분·약·체중·스트레칭·자세 등)와 생산성 도구로만 나뉘어 보여요.
+            담기 탭 위쪽에 모아 둘 항목을 고르세요. 고정 순서는 왼쪽 줄을 길게 누른 뒤 위아래로 끌어 바꿀 수 있어요. 비워 두면 아래는 건강·몸 관리(수분·약·체중·스트레칭·자세 등)와 생산성 도구로만 나뉘어 보여요.
           </ThemedText>
         </View>
 
         <ScrollView
           style={styles.scroll}
+          scrollEnabled={!fixedOrderDragging}
           contentContainerStyle={{ paddingBottom: 24 + insets.bottom, paddingHorizontal: 20, gap: 20 }}
           keyboardShouldPersistTaps="handled">
           <View style={styles.block}>
@@ -100,57 +86,17 @@ export function FixedRoutineEditorModal({
             {draft.length === 0 ? (
               <ThemedText style={[styles.emptyLine, { color: muted }]}>아직 없어요. 아래에서 항목을 추가해 주세요.</ThemedText>
             ) : (
-              <View style={{ borderTopWidth: 1, borderTopColor: line }}>
-                {draft.map((key, idx) => {
-                  const cat = byKey.get(key);
-                  if (!cat) return null;
-                  return (
-                    <View key={key} style={[styles.orderRow, { borderBottomColor: line }]}>
-                      <ThemedText style={[styles.orderIdx, { color: muted }]}>{idx + 1}</ThemedText>
-                      <IconSymbol name={cat.icon as any} size={20} color={muted} />
-                      <ThemedText style={[styles.orderLabel, { color: ink }]} numberOfLines={1}>
-                        {cat.label}
-                      </ThemedText>
-                      <View style={styles.orderActions}>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`${cat.label} 위로`}
-                          hitSlop={8}
-                          disabled={idx === 0}
-                          onPress={() => onMove(idx, -1)}
-                          style={styles.iconHit}>
-                          <IconSymbol
-                            name="chevron.up"
-                            size={18}
-                            color={idx === 0 ? 'rgba(128,128,128,0.35)' : muted}
-                          />
-                        </Pressable>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`${cat.label} 아래로`}
-                          hitSlop={8}
-                          disabled={idx === draft.length - 1}
-                          onPress={() => onMove(idx, 1)}
-                          style={styles.iconHit}>
-                          <IconSymbol
-                            name="chevron.down"
-                            size={18}
-                            color={idx === draft.length - 1 ? 'rgba(128,128,128,0.35)' : muted}
-                          />
-                        </Pressable>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`${cat.label} 고정에서 빼기`}
-                          hitSlop={8}
-                          onPress={() => onRemove(key)}
-                          style={styles.iconHit}>
-                          <IconSymbol name="trash" size={18} color={muted} />
-                        </Pressable>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
+              <FixedRoutineDraftOrderList
+                orderedKeys={draft}
+                byKey={byKey}
+                ink={ink}
+                muted={muted}
+                line={line}
+                surface={surface}
+                onReorder={setDraft}
+                onRemove={onRemove}
+                onDragActiveChange={setFixedOrderDragging}
+              />
             )}
           </View>
 
@@ -225,17 +171,7 @@ const styles = StyleSheet.create({
   block: { gap: 10 },
   blockTitle: { fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
   emptyLine: { fontSize: 14, fontWeight: '500', lineHeight: 20 },
-  orderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  orderIdx: { width: 22, fontSize: 13, fontWeight: '700', textAlign: 'center' },
   orderLabel: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: '600', letterSpacing: -0.3 },
-  orderActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  iconHit: { padding: 6 },
   addRow: {
     flexDirection: 'row',
     alignItems: 'center',

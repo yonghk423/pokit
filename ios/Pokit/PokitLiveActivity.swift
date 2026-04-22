@@ -45,6 +45,7 @@ private struct LiveActivityPayload: Decodable {
     let totalTasks: Int
     let progress01: Double
     let upcoming: [Upcoming]
+    let listRows: [Upcoming]?
   }
   let priorityLive: PriorityLivePayload?
   struct QuickMemoLivePayload: Decodable {
@@ -83,6 +84,16 @@ private actor LockFlowLiveActivityCoordinator {
   func upsert(payloadJson: String) async {
     do {
       let payload = try decodePayload(from: payloadJson)
+      /// 현재 payload와 다른 blockId로 살아 있는 이전 Live Activity는 모두 종료한다.
+      /// 그렇지 않으면 블록 전환 때 잠금화면에 단일 카드/리스트 카드가 동시에 남을 수 있다.
+      let staleActivities = Activity<LockFlowLiveActivityAttributes>.activities.filter {
+        $0.attributes.blockId != payload.blockId
+      }
+      for stale in staleActivities {
+        await stale.end(dismissalPolicy: .immediate)
+        NSLog("[LockFlowLA] ended stale blockId=%@", stale.attributes.blockId)
+      }
+
       let state = LockFlowLiveActivityAttributes.ContentState(
         title: payload.title,
         category: payload.category,
@@ -121,6 +132,9 @@ private actor LockFlowLiveActivityCoordinator {
             totalTasks: pl.totalTasks,
             progress01: pl.progress01,
             upcoming: pl.upcoming.map {
+              .init(order: $0.order, title: $0.title, timeLabel: $0.timeLabel)
+            },
+            listRows: pl.listRows?.map {
               .init(order: $0.order, title: $0.title, timeLabel: $0.timeLabel)
             }
           )

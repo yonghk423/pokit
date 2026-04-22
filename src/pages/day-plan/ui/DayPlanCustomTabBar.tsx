@@ -64,18 +64,31 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
     bridge.invokePrimary();
   };
 
+  const onRoutineFabPress = () => {
+    if (!bridge.routineStartFab.visible || bridge.routineStartFab.disabled) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    bridge.invokeRoutineStartFab();
+  };
+
+  const showRoutineFab =
+    isDayPlanFocused && bridge.routineStartFab.visible && !bridge.routineStartFab.disabled;
+
   return (
-    <View
-      onLayout={handleBarLayout}
-      style={[
-        styles.wrapper,
-        {
-          backgroundColor: c.containerLow,
-          borderTopColor: c.border,
-          /** 세이프는 행 밖으로만 — 행에 minHeight+insets를 같이 쓰면 아이콘이 세로 중앙에 뜨며 위쪽에 큰 빈 면이 생김 */
-          paddingBottom: insets.bottom,
-        },
-      ]}>
+    <View style={styles.tabShell}>
+      <View
+        onLayout={handleBarLayout}
+        style={[
+          styles.wrapper,
+          {
+            backgroundColor: c.containerLow,
+            borderTopColor: c.border,
+            /** 세이프는 행 밖으로만 — 행에 minHeight+insets를 같이 쓰면 아이콘이 세로 중앙에 뜨며 위쪽에 큰 빈 면이 생김 */
+            paddingBottom: insets.bottom,
+          },
+        ]}>
       <View style={[styles.row, { minHeight: DAY_PLAN_TAB_BAR_ROW_HEIGHT }]}>
         <Pressable
           accessibilityRole="tab"
@@ -170,10 +183,38 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
         </Pressable>
       </View>
     </View>
+
+      {showRoutineFab ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={bridge.routineStartFab.label}
+          onPress={onRoutineFabPress}
+          style={({ pressed }) => [
+            styles.routineStartFab,
+            {
+              bottom: insets.bottom + DAY_PLAN_TAB_BAR_ROW_HEIGHT + 10,
+              backgroundColor: PRIMARY,
+              opacity: pressed ? 0.92 : 1,
+              shadowColor: '#000',
+            },
+          ]}>
+          <ThemedText
+            style={styles.routineStartFabLabel}
+            lightColor="#fff"
+            darkColor="#fff"
+            numberOfLines={2}>
+            {bridge.routineStartFab.label}
+          </ThemedText>
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  tabShell: {
+    position: 'relative',
+  },
   wrapper: {
     borderTopWidth: StyleSheet.hairlineWidth,
   },
@@ -208,5 +249,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: -0.2,
+  },
+  routineStartFab: {
+    position: 'absolute',
+    right: 12,
+    maxWidth: '56%',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+  },
+  routineStartFabLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: -0.25,
+    textAlign: 'center',
   },
 });

@@ -34,6 +34,22 @@ async function ensureConfigured(): Promise<void> {
   }
 }
 
+/** 웹 등 비네이티브 — 스토어·UI에서 구분용 */
+export type LocalNotificationPermissionSnapshot = 'unknown' | 'undetermined' | 'granted' | 'denied';
+
+/**
+ * OS에 질의만 하고 권한 요청 다이얼로그는 띄우지 않습니다.
+ * (전역 스토어 동기화·설정 화면 표시용)
+ */
+export async function getLocalNotificationPermissionSnapshot(): Promise<LocalNotificationPermissionSnapshot> {
+  if (!isNativeNotificationPlatform()) return 'unknown';
+  await ensureConfigured();
+  const res = await Notifications.getPermissionsAsync();
+  if (res.granted) return 'granted';
+  if (res.status === 'denied') return 'denied';
+  return 'undetermined';
+}
+
 export async function ensureLocalNotificationPermission(): Promise<boolean> {
   if (!isNativeNotificationPlatform()) return false;
   await ensureConfigured();

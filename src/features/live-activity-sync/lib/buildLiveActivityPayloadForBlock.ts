@@ -87,8 +87,12 @@ export function buildLiveActivityChecklistRows(input: {
   /** 체크리스트에서 `진행 중`으로 표시할 블록: 사용자 지정(highlight) 우선, 없으면 세션 블록. */
   const rowCurrentId = highlightId ?? focusBlockId;
 
-  /** 잠금화면에 맞춰 최대 4줄. 블록이 4개 이하면 전부 페이로드에 넣는다(2개만 있을 때 두 번째만 진행 중이면 첫 줄이 잘리던 문제 방지). 5개 이상이면 진행 블록을 맨 위에 두는 윈도만 자른다. */
-  const maxVisible = 4;
+  /**
+   * 잠금화면 허용 높이만큼 최대한 많이 보여주기 위해 페이로드는 넉넉히 내려준다.
+   * 실제로 잘리는 것은 iOS Widget 뷰가 담당한다(`ViewThatFits` + `prefix(maxListLines)` + `…`).
+   * 너무 큰 payload는 ActivityKit 전송 한도를 넘길 수 있어 넉넉하되 상한은 둔다.
+   */
+  const maxVisible = 20;
   let visible: typeof ordered;
   if (ordered.length <= maxVisible) {
     visible = ordered;
@@ -99,29 +103,53 @@ export function buildLiveActivityChecklistRows(input: {
     visible = ordered.slice(windowStart, windowStart + maxVisible);
   }
 
-  const checklistRows = visible.map<LockFlowLiveActivityChecklistRow>((block) => {
-    let state: LockFlowLiveActivityChecklistRow['state'] = 'upcoming';
+  const checklistRows: LockFlowLiveActivityChecklistRow[] = [];
+  for (const block of visible) {
+    let parentState: LockFlowLiveActivityChecklistRow['state'] = 'upcoming';
     if (completed.has(block.id)) {
-      state = 'completed';
+      parentState = 'completed';
     } else if (skipped.has(block.id)) {
-      state = 'skipped';
+      parentState = 'skipped';
     } else if (block.id === focusBlockId && status === 'finished') {
-      state = 'completed';
+      parentState = 'completed';
     } else if (block.id === rowCurrentId) {
-      state = 'current';
+      parentState = 'current';
     }
 
-    return {
-      blockId: block.id,
-      title: block.title.trim() || '플로우',
-      timeLabel: formatChecklistTime(block.startMinutes),
-      state,
-    };
-  });
+    const compoundLines = parseNumberedFlowLines(block.title);
+    const isCompound = isPriorityCompoundBlockTitle(block.title);
+
+    if (isCompound) {
+      compoundLines.forEach((lineTitle, idx) => {
+        const t = (lineTitle ?? '').trim();
+        const title = t.length > 0 ? t : '플로우';
+        let state: LockFlowLiveActivityChecklistRow['state'] = parentState;
+        if (parentState === 'current' && idx > 0) {
+          state = 'upcoming';
+        }
+        checklistRows.push({
+          blockId: `${block.id}__la${idx}`,
+          title,
+          /** 본문 줄 단위 표시는 잠금화면에서 시각 없이 쌓음(헤더 구간으로 충분). */
+          timeLabel: '',
+          state,
+        });
+      });
+    } else {
+      const firstLine = block.title.split(/\r?\n/)[0]?.trim() ?? '';
+      const rowTitle = firstLine.length > 0 ? firstLine : '플로우';
+      checklistRows.push({
+        blockId: block.id,
+        title: rowTitle,
+        timeLabel: formatChecklistTime(block.startMinutes),
+        state: parentState,
+      });
+    }
+  }
 
   return {
     checklistTitle: '오늘 플로우 목록',
-    checklistCountLabel: `${ordered.length}개`,
+    checklistCountLabel: `${checklistRows.length}개`,
     checklistRows,
     checklistSummaryLine1,
     checklistSummaryLine2,
@@ -226,6 +254,20 @@ function buildPriorityLiveContent(
       timeLabel: formatChecklistTime(minute),
     };
   });
+  const listRows = lines.map((title, idx) => {
+    const minute = slotMinuteForTaskIndex(
+      block.startMinutes,
+      block.endMinutes,
+      idx,
+      lines.length,
+      block.endsNextCalendarDay,
+    );
+    return {
+      order: idx + 1,
+      title,
+      timeLabel: formatChecklistTime(minute),
+    };
+  });
   return {
     windowLabel: formatBlockTimeRange(block),
     activeTitle,
@@ -233,6 +275,7 @@ function buildPriorityLiveContent(
     totalTasks: lines.length,
     progress01: elapsed01,
     upcoming,
+    listRows,
   };
 }
 

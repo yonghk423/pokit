@@ -2,6 +2,7 @@ import type { SymbolViewProps } from 'expo-symbols';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
+import { GoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
 const E = CategoryImmersionTheme.editorial;
@@ -391,7 +392,7 @@ const heroStyles = StyleSheet.create({
     letterSpacing: -3,
   },
   heroTimeLight: {
-    color: '#000000',
+    color: GoalDetailSessionUi.onSurface,
     fontSize: 72,
     lineHeight: 76,
     letterSpacing: -2.5,
@@ -415,7 +416,7 @@ const heroStyles = StyleSheet.create({
 
 const editorialShellStyles = StyleSheet.create({
   shell: {
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: E.glassBg,
     paddingVertical: 20,
     paddingHorizontal: 16,
@@ -458,7 +459,7 @@ const editorialShellStyles = StyleSheet.create({
     backgroundColor: E.glassBg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: E.glassBorder,
-    borderRadius: 16,
+    borderRadius: 14,
   },
   cardFeaturedLight: {
     borderLeftWidth: 3,

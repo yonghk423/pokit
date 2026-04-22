@@ -12,16 +12,27 @@ export {
   loadPriorityCatalogFixedRoutineKeys,
   savePriorityCatalogFixedRoutineKeys,
 } from './priorityCatalogFixedRoutinesStorage';
+export {
+  loadPriorityBagRemoveConfirmSkip,
+  savePriorityBagRemoveConfirmSkip,
+} from './priorityBagRemoveConfirmStorage';
 export { localStorageClient } from './localStorageClient';
 export { loadRoutineExecutions, saveRoutineExecutions } from './routineExecutionStorage';
 export { loadRoutines, saveRoutines } from './routineStorage';
 export {
+  loadCategoryReminderRules,
+  loadCategoryReminderScheduled,
   loadDayPlanScheduledNotifications,
   loadPriorityDayStartAlarm,
+  saveCategoryReminderRules,
+  saveCategoryReminderScheduled,
   saveDayPlanScheduledNotifications,
   savePriorityDayStartAlarm,
 } from './settingsStorage';
 export type {
+  CategoryReminderRuleRow,
+  CategoryReminderRules,
+  CategoryReminderScheduledRow,
   DayPlanScheduledNotification,
   PriorityDayStartAlarmPersisted,
 } from './settingsStorage';

@@ -10,12 +10,12 @@ type Props = {
   gradientId?: string;
 };
 
-/** 단식 세션 — #954400 → #ff7b04 그라데이션 링 */
+/** 단식 세션 — 목표 상세와 동일한 모노크롬 링(레거시 API 유지) */
 export const FastingGradientRing = memo(function FastingGradientRing({
   size,
   strokeWidth,
   progress,
-  trackColor = 'rgba(255,255,255,0.05)',
+  trackColor = 'rgba(0,0,0,0.08)',
   gradientId = 'fastingRingGrad',
 }: Props) {
   const r = (size - strokeWidth) / 2;
@@ -29,8 +29,8 @@ export const FastingGradientRing = memo(function FastingGradientRing({
     <Svg width={size} height={size}>
       <Defs>
         <LinearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor="#954400" />
-          <Stop offset="100%" stopColor="#ff7b04" />
+          <Stop offset="0%" stopColor="rgba(0,0,0,0.45)" />
+          <Stop offset="100%" stopColor="rgba(0,0,0,0.75)" />
         </LinearGradient>
       </Defs>
       <G transform={`rotate(-90 ${cx} ${cy})`}>
