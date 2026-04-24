@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useShallow } from 'zustand/react/shallow';
 
+import {
+  buildWaterRoutineReminderSlots,
+  formatHhmmClockKo,
+  formatMinuteOfDayKo,
+  waterReminderIntervalMinutes,
+} from '@entities/day-plan';
+import { useDayPlanDraftStore } from '@pages/day-plan/model/dayPlanDraftStore';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-
 import { WATER_GOAL_DETAIL_THEME as T } from '../lib/waterGoalDetailTheme';
 
 import {
@@ -109,10 +116,34 @@ export function WaterSettings({
     { key: 'custom', label: '직접 설정' },
   ];
 
+  const { priorityStart, priorityEnd } = useDayPlanDraftStore(
+    useShallow((s) => ({ priorityStart: s.priorityStart, priorityEnd: s.priorityEnd })),
+  );
+
+  const reminderSlotLabels = useMemo(() => {
+    if (!smartNotification) return [];
+    const interval = waterReminderIntervalMinutes({
+      reminderPreset,
+      reminderCustomMin: customMinNum,
+    });
+    const slots = buildWaterRoutineReminderSlots({
+      routineStartHhmm: priorityStart,
+      routineEndHhmm: priorityEnd,
+      intervalMinutes: interval,
+    });
+    return slots.map((s) => formatMinuteOfDayKo(s.wallMinuteOfDay));
+  }, [
+    customMinNum,
+    priorityEnd,
+    priorityStart,
+    reminderPreset,
+    smartNotification,
+  ]);
+
   return (
     <View style={styles.shell}>
       <View style={styles.listHeader}>
-        <Text style={styles.mainTitle}>Hydration</Text>
+        <Text style={styles.mainTitle}>수분 관리</Text>
       </View>
 
       <View style={styles.metricBar}>
@@ -120,16 +151,11 @@ export function WaterSettings({
           <Text style={styles.metricValue}>{(goalMl / 1000).toFixed(1)}</Text>
           <Text style={styles.metricLabel}>목표(L)</Text>
         </View>
-        <View style={styles.metricItem}>
-          <Text style={styles.metricValue}>{Math.max(0, goalMl - initialDrankMl)}</Text>
-          <Text style={styles.metricLabel}>남은(ml)</Text>
-        </View>
       </View>
 
       <View style={styles.rowsWrap}>
         <View style={styles.row}>
           <View style={styles.rowLeft}>
-            <IconSymbol name="drop.fill" size={18} color={T.primary} />
             <Text style={styles.rowTitle}>하루 목표</Text>
           </View>
           <View style={styles.inlineInputWrap}>
@@ -210,6 +236,24 @@ export function WaterSettings({
             />
           </View>
         ) : null}
+
+        <View style={styles.reminderPreviewBlock}>
+          <Text style={styles.reminderPreviewTitle}>담기 구간 기준 알림 시각</Text>
+          <Text style={styles.reminderPreviewSub}>
+            {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
+          </Text>
+          {!smartNotification ? (
+            <Text style={styles.reminderPreviewMuted}>
+              스마트 알림을 켜면 위 구간에서 주기 알림이 예약돼요.
+            </Text>
+          ) : reminderSlotLabels.length === 0 ? (
+            <Text style={styles.reminderPreviewMuted}>
+              이 구간과 주기 조합으로는 표시할 알림 시각이 없어요.
+            </Text>
+          ) : (
+            <Text style={styles.reminderPreviewBody}>{reminderSlotLabels.join(', ')}</Text>
+          )}
+        </View>
 
         <View style={styles.row}>
           <Text style={styles.rowTitle}>스마트 알림</Text>
@@ -298,4 +342,15 @@ const styles = StyleSheet.create({
     color: T.onSurface,
     backgroundColor: T.surfaceContainerHigh,
   },
+  reminderPreviewBlock: {
+    paddingVertical: 12,
+    paddingHorizontal: 2,
+    gap: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: T.outline,
+  },
+  reminderPreviewTitle: { color: T.onSurface, fontSize: 14, fontWeight: '700' },
+  reminderPreviewSub: { color: T.onSurfaceVariant, fontSize: 12, fontWeight: '600' },
+  reminderPreviewBody: { color: T.onSurface, fontSize: 13, fontWeight: '600', lineHeight: 20 },
+  reminderPreviewMuted: { color: T.onSurfaceVariant, fontSize: 12, fontWeight: '600', lineHeight: 18 },
 });

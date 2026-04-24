@@ -72,7 +72,7 @@ export default function RootLayout() {
               options={{ headerShown: false, presentation: 'card' }}
             />
             <Stack.Screen
-              name="category-reminder-settings"
+              name="goal-detail-incomplete-reminder-settings"
               options={{ headerShown: false, presentation: 'card' }}
             />
             <Stack.Screen

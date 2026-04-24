@@ -29,6 +29,7 @@ export {
   resolveCategoryKeyFromLabel,
   toRuntimeTiming,
 } from './lib/dayPlanRuntimeTime';
+export { buildCompletedCountByCategoryKey } from './lib/dayPlanCompletionStats';
 export {
   addDaysToLocalDateKey,
   getLocalDateKey,
@@ -65,3 +66,12 @@ export {
   parseNumberedFlowLines,
 } from './lib/priorityBlockTitle';
 export { blockMatchesPriorityHhmmWindow } from './lib/priorityWindowBlockMatch';
+export {
+  clampHhmmToPriorityWindow,
+  isOvernightPriorityWindow,
+} from './lib/priorityRoutineWindow';
+export {
+  buildWaterRoutineReminderSlots,
+  waterReminderIntervalMinutes,
+  type WaterRoutineReminderSlot,
+} from './lib/waterReminderRoutineSlots';

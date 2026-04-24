@@ -63,8 +63,6 @@ export function WorkSettings({
     setTasks((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const doneCount = useMemo(() => tasks.filter((t) => t.done).length, [tasks]);
-
   const cardBg = '#ffffff';
   const itemBg = 'rgba(0,0,0,0.03)';
   const itemBorder = 'rgba(0,0,0,0.06)';
@@ -89,9 +87,6 @@ export function WorkSettings({
               해야 할 작업
             </ThemedText>
           </View>
-          <ThemedText style={[styles.taskCardCount, { color: c.onVariant }]}>
-            {doneCount}/{tasks.length}개 완료
-          </ThemedText>
         </View>
 
         {tasks.length > 0 ? (
@@ -192,7 +187,6 @@ const styles = StyleSheet.create({
   },
   taskCardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   taskCardTitle: { fontSize: 16, fontWeight: '800' },
-  taskCardCount: { fontSize: 12, fontWeight: '700' },
   taskList: { gap: 8 },
   taskRow: {
     flexDirection: 'row',

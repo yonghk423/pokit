@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -9,6 +9,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
+import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -33,6 +34,7 @@ type RowProps = {
   muted: string;
   line: string;
   surface: string;
+  tabColors: ReturnType<typeof tabPillColors>;
   onRowMeasured: (height: number) => void;
   onDragActiveChange: (active: boolean) => void;
   onCommitReorder: (fromIndex: number, translationY: number) => void;
@@ -47,6 +49,7 @@ function DraggableFixedRoutineRow({
   muted,
   line,
   surface,
+  tabColors,
   onRowMeasured,
   onDragActiveChange,
   onCommitReorder,
@@ -56,7 +59,7 @@ function DraggableFixedRoutineRow({
   const dragging = useSharedValue(0);
 
   const triggerDragStart = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onDragActiveChange(true);
   }, [onDragActiveChange]);
 
@@ -125,9 +128,19 @@ function DraggableFixedRoutineRow({
           accessibilityRole="button"
           accessibilityLabel={`${cat.label} 고정에서 빼기`}
           hitSlop={8}
-          onPress={() => onRemove(categoryKey)}
-          style={styles.iconHit}>
-          <IconSymbol name="trash" size={18} color={muted} />
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onRemove(categoryKey);
+          }}
+          style={({ pressed }) => [
+            styles.trashPill,
+            {
+              backgroundColor: tabColors.inactiveBg,
+              borderColor: tabColors.inactiveBorder,
+              opacity: pressed ? 0.92 : 1,
+            },
+          ]}>
+          <IconSymbol name="trash" size={18} color={tabColors.inactiveIcon} />
         </Pressable>
       </View>
     </Animated.View>
@@ -137,6 +150,7 @@ function DraggableFixedRoutineRow({
 type Props = {
   orderedKeys: string[];
   byKey: Map<string, PickerCategoryItem>;
+  isDark: boolean;
   ink: string;
   muted: string;
   line: string;
@@ -149,6 +163,7 @@ type Props = {
 export function FixedRoutineDraftOrderList({
   orderedKeys,
   byKey,
+  isDark,
   ink,
   muted,
   line,
@@ -157,6 +172,7 @@ export function FixedRoutineDraftOrderList({
   onRemove,
   onDragActiveChange,
 }: Props) {
+  const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
   const keysRef = useRef(orderedKeys);
   const rowHeightRef = useRef(52);
   keysRef.current = orderedKeys;
@@ -176,7 +192,7 @@ export function FixedRoutineDraftOrderList({
       const delta = Math.round(translationY / h);
       const to = Math.max(0, Math.min(len - 1, fromIndex + delta));
       if (to !== fromIndex) {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         onReorder(moveIndex(keys, fromIndex, to));
       }
     },
@@ -198,6 +214,7 @@ export function FixedRoutineDraftOrderList({
             muted={muted}
             line={line}
             surface={surface}
+            tabColors={tabColors}
             onRowMeasured={onRowMeasured}
             onDragActiveChange={onDragActiveChange}
             onCommitReorder={onCommitReorder}
@@ -234,5 +251,11 @@ const styles = StyleSheet.create({
   orderIdx: { width: 22, fontSize: 13, fontWeight: '700', textAlign: 'center' },
   orderLabel: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: '600', letterSpacing: -0.3 },
   orderActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  iconHit: { padding: 6 },
+  trashPill: {
+    padding: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

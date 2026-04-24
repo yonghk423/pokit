@@ -219,18 +219,8 @@ export function sortedPlanDateRange(startKey: string, endKey: string): { lo: str
   return startKey <= endKey ? { lo: startKey, hi: endKey } : { lo: endKey, hi: startKey };
 }
 
-/**
- * 시각만 볼 때 자정을 넘기는 구간(예: 오후 1시 ~ 다음날 새벽 1시).
- * 당일 24:00 종료(당일 끝까지)는 익일로 보지 않음.
- */
-export function isOvernightHhmmRange(start: string, end: string): boolean {
-  const ps = parseHHmmToMinutes(start.trim());
-  const pe = parseHHmmToMinutes(end.trim());
-  if (ps === null || pe === null) return false;
-  if (pe === ps) return false;
-  if (pe === 24 * 60 && pe > ps) return false;
-  return pe < ps;
-}
+/** @deprecated 이름 호환 — `isOvernightPriorityWindow`와 동일 */
+export { isOvernightPriorityWindow as isOvernightHhmmRange } from '@entities/day-plan';
 
 /**
  * 달력 다중일일 때 시작 시계 아래 날짜 — 구간 첫날.

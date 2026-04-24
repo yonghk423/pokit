@@ -16,6 +16,7 @@ export default function TabLayout() {
         <Tabs.Screen name="index" options={{ href: null }} />
         <Tabs.Screen name="day-plan" options={{ title: '오늘' }} />
         <Tabs.Screen name="priority-catalog" options={{ title: '담기' }} />
+        <Tabs.Screen name="day-plan-statistics" options={{ title: '통계' }} />
         <Tabs.Screen name="discover" options={{ href: null }} />
         <Tabs.Screen name="routines" options={{ href: null }} />
         <Tabs.Screen name="settings" options={{ title: '설정' }} />

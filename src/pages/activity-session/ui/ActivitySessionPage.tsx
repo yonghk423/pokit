@@ -1074,7 +1074,7 @@ export function ActivitySessionPage() {
             </ThemedText>
           </View>
           <ThemedText style={waterStyles.metaLine} lightColor={M.muted} darkColor={M.muted}>
-            {medCfg.doseLabel} · 복용 시간입니다
+            {medCfg.doseLabel.trim() || '약'} · 복용 시간입니다
           </ThemedText>
           <View style={waterStyles.hydrateTrack}>
             <View
@@ -1250,7 +1250,7 @@ export function ActivitySessionPage() {
             borderColor={W.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
-            completeLabel="수분 완료"
+            completeLabel="수분 섭취 완료"
             completeForeground={GoalDetailSessionUi.waterCtaOnAccent}
           />
         }>

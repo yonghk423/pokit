@@ -35,6 +35,7 @@ import {
   useDayPlanStore
 } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import {
   hasGoalDetailCommittedCategory,
   loadPriorityBagRemoveConfirmSkip,
@@ -745,6 +746,7 @@ export function PriorityBasedPlanSection({
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const bc = bookColors(c, isDark);
@@ -962,6 +964,7 @@ export function PriorityBasedPlanSection({
   const [lastAddedCategoryKey, setLastAddedCategoryKey] = useState<string | null>(null);
   const [skipRemovePriorityBagConfirm, setSkipRemovePriorityBagConfirm] = useState(false);
   const [removeConfirmCategoryKey, setRemoveConfirmCategoryKey] = useState<string | null>(null);
+  const [removeConfirmSkipNextChecked, setRemoveConfirmSkipNextChecked] = useState(false);
   const [draggingPriorityKey, setDraggingPriorityKey] = useState<string | null>(null);
   const priorityBagRowHeightRef = useRef(52);
 
@@ -1121,24 +1124,22 @@ export function PriorityBasedPlanSection({
 
   const closeRemovePriorityBagConfirm = useCallback(() => {
     setRemoveConfirmCategoryKey(null);
+    setRemoveConfirmSkipNextChecked(false);
   }, []);
 
   const confirmRemoveFromPriorityBagOnce = useCallback(() => {
     if (!removeConfirmCategoryKey) return;
-    commitRemoveOneCompletedFromPriorityBag(removeConfirmCategoryKey);
-    closeRemovePriorityBagConfirm();
-  }, [closeRemovePriorityBagConfirm, commitRemoveOneCompletedFromPriorityBag, removeConfirmCategoryKey]);
-
-  const confirmRemoveFromPriorityBagAndDontAskAgain = useCallback(() => {
-    if (!removeConfirmCategoryKey) return;
-    savePriorityBagRemoveConfirmSkip(true);
-    setSkipRemovePriorityBagConfirm(true);
+    if (removeConfirmSkipNextChecked) {
+      savePriorityBagRemoveConfirmSkip(true);
+      setSkipRemovePriorityBagConfirm(true);
+    }
     commitRemoveOneCompletedFromPriorityBag(removeConfirmCategoryKey);
     closeRemovePriorityBagConfirm();
   }, [
     closeRemovePriorityBagConfirm,
     commitRemoveOneCompletedFromPriorityBag,
     removeConfirmCategoryKey,
+    removeConfirmSkipNextChecked,
   ]);
 
   const removeConfirmLabel = useMemo(() => {
@@ -1488,15 +1489,41 @@ export function PriorityBasedPlanSection({
               담기에서 뺄까요?
             </ThemedText>
             <ThemedText style={[styles.removeConfirmBody, { color: editorial.muted }]} numberOfLines={4}>
-              완료한 「{removeConfirmLabel}」을(를) 목록에서 빼면, 담기 화면에서 다시 고를 수 있어요.
+              완료한 「{removeConfirmLabel}」을 목록에서 빼요. 필요하면 담기 화면에서 다시 추가할 수 있어요.
             </ThemedText>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="담기에서 빼기, 다음부터는 확인하지 않기"
-              onPress={confirmRemoveFromPriorityBagAndDontAskAgain}
-              style={[styles.removeConfirmDontAskBtn, { borderColor: editorial.line }]}>
+              accessibilityLabel={
+                removeConfirmSkipNextChecked ? '다음부터 묻지 않기 해제' : '다음부터 묻지 않기 선택'
+              }
+              onPress={() => setRemoveConfirmSkipNextChecked((v) => !v)}
+              style={[
+                styles.removeConfirmDontAskBtn,
+                {
+                  borderColor: removeConfirmSkipNextChecked ? PRIMARY : editorial.line,
+                  backgroundColor: removeConfirmSkipNextChecked
+                    ? isDark
+                      ? 'rgba(255,255,255,0.08)'
+                      : 'rgba(0,0,0,0.05)'
+                    : 'transparent',
+                },
+              ]}>
+              <View
+                style={[
+                  styles.removeConfirmCheckChip,
+                  {
+                    borderColor: removeConfirmSkipNextChecked ? PRIMARY : editorial.line,
+                    backgroundColor: removeConfirmSkipNextChecked ? PRIMARY : 'transparent',
+                  },
+                ]}>
+                <IconSymbol
+                  name="checkmark"
+                  size={12}
+                  color={removeConfirmSkipNextChecked ? '#fff' : 'transparent'}
+                />
+              </View>
               <ThemedText style={[styles.removeConfirmDontAskBtnText, { color: editorial.ink }]}>
-                빼기 · 다음부터 묻지 않기
+                다음부터 묻지 않기
               </ThemedText>
             </Pressable>
             <View style={styles.removeConfirmActions}>
@@ -1506,16 +1533,29 @@ export function PriorityBasedPlanSection({
                 onPress={closeRemovePriorityBagConfirm}
                 style={[
                   styles.removeConfirmGhostBtn,
-                  { borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.18)' },
+                  {
+                    borderColor: tabColors.inactiveBorder,
+                    backgroundColor: tabColors.inactiveBg,
+                  },
                 ]}>
-                <ThemedText style={[styles.removeConfirmActionText, { color: editorial.ink }]}>취소</ThemedText>
+                <ThemedText style={[styles.removeConfirmActionText, { color: tabColors.inactiveIcon }]}>
+                  취소
+                </ThemedText>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="담기에서 빼기"
                 onPress={confirmRemoveFromPriorityBagOnce}
-                style={[styles.removeConfirmPrimaryBtn, { backgroundColor: PRIMARY }]}>
-                <ThemedText style={styles.removeConfirmPrimaryBtnText}>빼기</ThemedText>
+                style={[
+                  styles.removeConfirmPrimaryBtn,
+                  {
+                    backgroundColor: tabColors.activeBg,
+                    borderColor: tabColors.activeBorder,
+                  },
+                ]}>
+                <ThemedText style={[styles.removeConfirmPrimaryBtnText, { color: tabColors.activeIcon }]}>
+                  빼기
+                </ThemedText>
               </Pressable>
             </View>
           </View>
@@ -2416,18 +2456,29 @@ const styles = StyleSheet.create({
   },
   removeConfirmDontAskBtn: {
     marginTop: 2,
+    minHeight: 50,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    borderRadius: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  removeConfirmCheckChip: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   removeConfirmDontAskBtnText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
-    letterSpacing: -0.25,
-    textAlign: 'center',
+    letterSpacing: -0.2,
+    textAlign: 'left',
   },
   removeConfirmActions: {
     flexDirection: 'row',
@@ -2436,16 +2487,17 @@ const styles = StyleSheet.create({
   },
   removeConfirmGhostBtn: {
     flex: 1,
-    minHeight: 48,
-    borderRadius: 12,
+    minHeight: 46,
+    borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   removeConfirmPrimaryBtn: {
     flex: 1,
-    minHeight: 48,
-    borderRadius: 12,
+    minHeight: 46,
+    borderRadius: 14,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2456,6 +2508,5 @@ const styles = StyleSheet.create({
   removeConfirmPrimaryBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
   },
 });

@@ -77,9 +77,6 @@ export function BodyHabitChecklistSettings({
     });
   };
 
-  const doneCount = checklist.filter((x) => x.done).length;
-  const pendingCount = checklist.length - doneCount;
-
   return (
     <View style={styles.shell}>
       <View style={styles.listHeader}>
@@ -91,9 +88,6 @@ export function BodyHabitChecklistSettings({
           <IconSymbol name="square.and.arrow.up" size={16} color={c.onSurface} />
           <ThemedText style={[styles.toolbarText, { color: c.onSurface }]}>공유</ThemedText>
         </Pressable>
-        <ThemedText style={[styles.counter, { color: c.onVariant }]}>
-          완료 {doneCount} · 남음 {pendingCount}
-        </ThemedText>
       </View>
 
       <View style={styles.inputRow}>
@@ -192,7 +186,6 @@ const styles = StyleSheet.create({
   },
   toolbarBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   toolbarText: { fontSize: 13, fontWeight: '700' },
-  counter: { fontSize: 12, fontWeight: '600' },
   inputRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   taskInput: { flex: 1, borderBottomWidth: 1, paddingVertical: 10, fontSize: 15, fontWeight: '600' },
   addBtn: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },

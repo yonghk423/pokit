@@ -1,19 +1,13 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { DailyRhythmStyleAlarmRow, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
-import {
-  formatMinutesToHHmm,
-  isOvernightHhmmRange,
-  PRIMARY,
-  snapMinutes,
-  TIME_SNAP_MINUTES,
-} from '../lib/dayPlanEditorShared';
+import { isOvernightHhmmRange, PRIMARY } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 
@@ -69,28 +63,6 @@ export type DailyRhythmTimeEditorBodyProps = {
   onDayStartAlarmChange?: (value: boolean) => void;
 };
 
-function hhmmToPickerDate(hhmm: string): Date {
-  const m = parseHHmmToMinutes(hhmm);
-  const d = new Date();
-  if (m === null) {
-    d.setHours(8, 0, 0, 0);
-    return d;
-  }
-  if (m >= 24 * 60) {
-    d.setHours(23, 55, 0, 0);
-    return d;
-  }
-  d.setHours(Math.floor(m / 60), m % 60, 0, 0);
-  return d;
-}
-
-function pickerDateToSnappedHhmm(d: Date): string {
-  const raw = d.getHours() * 60 + d.getMinutes();
-  const snapped = snapMinutes(raw, TIME_SNAP_MINUTES);
-  const max = 23 * 60 + 55;
-  return formatMinutesToHHmm(Math.min(Math.max(0, snapped), max));
-}
-
 export function DailyRhythmTimeEditorBody({
   c,
   isDark,
@@ -114,9 +86,6 @@ export function DailyRhythmTimeEditorBody({
     setEndHhmm(seedEnd);
     setPickerTarget(null);
   }, [seedKey, seedStart, seedEnd]);
-
-  const startDate = useMemo(() => hhmmToPickerDate(startHhmm), [startHhmm]);
-  const endDate = useMemo(() => hhmmToPickerDate(endHhmm), [endHhmm]);
 
   const applyPreset = useCallback((start: string, end: string) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -144,33 +113,14 @@ export function DailyRhythmTimeEditorBody({
     onPrimaryPress(startHhmm, endHhmm);
   }, [endHhmm, onPrimaryPress, startHhmm]);
 
-  const onIosTimeChange = useCallback(
-    (_: unknown, date?: Date) => {
-      if (!date || !pickerTarget) return;
-      if (pickerTarget === 'start') {
-        setStartHhmm(pickerDateToSnappedHhmm(date));
-      } else {
-        setEndHhmm(pickerDateToSnappedHhmm(date));
-      }
-    },
-    [pickerTarget],
-  );
-
-  const onAndroidTimeChange = useCallback(
-    (event: { type?: string }, date?: Date) => {
-      if (event.type === 'dismissed') {
-        setPickerTarget(null);
-        return;
-      }
-      if (!date || !pickerTarget) return;
-      if (pickerTarget === 'start') {
-        setStartHhmm(pickerDateToSnappedHhmm(date));
-      } else {
-        setEndHhmm(pickerDateToSnappedHhmm(date));
-      }
-      setPickerTarget(null);
-    },
-    [pickerTarget],
+  const timePickerPalette = useMemo(
+    () => ({
+      onSurface: c.onSurface,
+      onVariant: c.onVariant,
+      border: c.border,
+      containerLowest: c.containerLowest,
+    }),
+    [c],
   );
 
   const title =
@@ -284,86 +234,48 @@ export function DailyRhythmTimeEditorBody({
         </View>
 
         <View style={[styles.card, { backgroundColor: c.containerLow, borderColor: c.border }]}>
-          <TimeRow
+          <SnappedTimePickerField
             label="하루 시작"
             hint="첫 집중·플로우를 켜기 좋은 시각"
-            value={formatHhmmClockKo(startHhmm)}
-            active={pickerTarget === 'start'}
-            c={c}
-            onPress={() => {
-              void Haptics.selectionAsync();
-              setPickerTarget((t) => (t === 'start' ? null : 'start'));
-            }}
+            valueHhmm={startHhmm}
+            onChangeHhmm={setStartHhmm}
+            expanded={pickerTarget === 'start'}
+            onToggleExpand={() => setPickerTarget((t) => (t === 'start' ? null : 'start'))}
+            isDark={isDark}
+            palette={timePickerPalette}
+            snapStepMinutes={1}
           />
-          {Platform.OS === 'ios' && pickerTarget === 'start' ? (
-            <DateTimePicker
-              value={startDate}
-              mode="time"
-              display="spinner"
-              themeVariant={isDark ? 'dark' : 'light'}
-              onChange={onIosTimeChange}
-            />
-          ) : null}
 
           <View style={[styles.divider, { backgroundColor: c.border }]} />
 
-          <TimeRow
+          <SnappedTimePickerField
             label="하루 마무리"
             hint="오늘 목표 구간이 끝나는 시각"
-            value={formatHhmmClockKo(endHhmm)}
-            active={pickerTarget === 'end'}
-            c={c}
-            onPress={() => {
-              void Haptics.selectionAsync();
-              setPickerTarget((t) => (t === 'end' ? null : 'end'));
-            }}
+            valueHhmm={endHhmm}
+            onChangeHhmm={setEndHhmm}
+            expanded={pickerTarget === 'end'}
+            onToggleExpand={() => setPickerTarget((t) => (t === 'end' ? null : 'end'))}
+            isDark={isDark}
+            palette={timePickerPalette}
+            snapStepMinutes={1}
           />
-          {Platform.OS === 'ios' && pickerTarget === 'end' ? (
-            <DateTimePicker
-              value={endDate}
-              mode="time"
-              display="spinner"
-              themeVariant={isDark ? 'dark' : 'light'}
-              onChange={onIosTimeChange}
-            />
-          ) : null}
         </View>
-
-        {Platform.OS === 'android' && pickerTarget ? (
-          <DateTimePicker
-            value={pickerTarget === 'start' ? startDate : endDate}
-            mode="time"
-            display="default"
-            onChange={onAndroidTimeChange}
-          />
-        ) : null}
 
         {variant === 'settings' &&
         typeof dayStartAlarmOn === 'boolean' &&
         onDayStartAlarmChange ? (
           <View style={[styles.card, { backgroundColor: c.containerLow, borderColor: c.border }]}>
-            <View style={styles.alarmRow}>
-              <View style={styles.alarmTextCol}>
-                <ThemedText
-                  style={[styles.alarmTitle, { color: c.onSurface }]}
-                  lightColor={c.onSurface}
-                  darkColor={c.onSurface}>
-                  하루 시작 알림
-                </ThemedText>
-                <ThemedText
-                  style={[styles.alarmHint, { color: c.onVariant }]}
-                  lightColor={c.onVariant}
-                  darkColor={c.onVariant}>
-                  위에서 정한「하루 시작」시각에 매일 알려 드려요.
-                </ThemedText>
-              </View>
-              <Switch
-                trackColor={{ true: PRIMARY, false: c.trackOff }}
-                thumbColor="#fff"
-                value={dayStartAlarmOn}
-                onValueChange={onDayStartAlarmChange}
-              />
-            </View>
+            <DailyRhythmStyleAlarmRow
+              title="하루 시작 알림"
+              hint="위에서 정한「하루 시작」시각에 매일 알려 드려요."
+              value={dayStartAlarmOn}
+              onValueChange={onDayStartAlarmChange}
+              palette={{
+                onSurface: c.onSurface,
+                onVariant: c.onVariant,
+                trackOff: c.trackOff,
+              }}
+            />
           </View>
         ) : null}
       </View>
@@ -405,58 +317,6 @@ export function DailyRhythmTimeEditorBody({
         ) : null}
       </View>
     </ScrollView>
-  );
-}
-
-function TimeRow({
-  label,
-  hint,
-  value,
-  active,
-  c,
-  onPress,
-}: {
-  label: string;
-  hint: string;
-  value: string;
-  active: boolean;
-  c: DayPlanPalette;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={() => {
-        void Haptics.selectionAsync();
-        onPress();
-      }}
-      style={({ pressed }) => [styles.timeRow, pressed && { opacity: 0.9 }]}>
-      <View style={styles.timeRowLeft}>
-        <ThemedText
-          style={[styles.timeRowLabel, { color: c.onSurface }]}
-          lightColor={c.onSurface}
-          darkColor={c.onSurface}>
-          {label}
-        </ThemedText>
-        <ThemedText
-          style={[styles.timeRowHint, { color: c.onVariant }]}
-          lightColor={c.onVariant}
-          darkColor={c.onVariant}>
-          {hint}
-        </ThemedText>
-      </View>
-      <View
-        style={[
-          styles.timePill,
-          { backgroundColor: c.containerLowest, borderColor: active ? PRIMARY : c.border },
-        ]}>
-        <ThemedText
-          style={[styles.timePillText, { color: c.onSurface }]}
-          lightColor={c.onSurface}
-          darkColor={c.onSurface}>
-          {value}
-        </ThemedText>
-      </View>
-    </Pressable>
   );
 }
 
@@ -584,33 +444,6 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 8,
   },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  timeRowLeft: { flex: 1, gap: 2 },
-  timeRowLabel: { fontSize: 14, fontWeight: '700' },
-  timeRowHint: { fontSize: 11, fontWeight: '500', lineHeight: 14 },
-  timePill: {
-    minWidth: 128,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-  },
-  timePillText: { fontSize: 16, fontWeight: '800', letterSpacing: -0.25 },
-  alarmRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 14,
-  },
-  alarmTextCol: { flex: 1, minWidth: 0, gap: 6 },
-  alarmTitle: { fontSize: 15, fontWeight: '800' },
-  alarmHint: { fontSize: 11, fontWeight: '500', lineHeight: 15 },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
   primaryBtn: {
     alignSelf: 'stretch',

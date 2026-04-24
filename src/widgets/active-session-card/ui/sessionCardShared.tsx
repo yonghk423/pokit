@@ -16,9 +16,13 @@ export const META = 'rgba(255,255,255,0.45)';
 
 export function formatClock(totalSeconds: number): string {
   const s = Math.max(0, Math.floor(totalSeconds));
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+  const totalMinutes = Math.floor(s / 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  if (h <= 0) {
+    return `${m}분`;
+  }
+  return `${h}시간 ${m}분`;
 }
 
 /** 분 단위를 한글 표기 (단식·휴식 등) */

@@ -206,12 +206,15 @@ export type MedicineDetailDataConfig = {
   morningTime: string;
   lunchTime: string;
   dinnerTime: string;
-  medicationNotify: boolean;
+  /** 슬롯별 매일 로컬 알림(슬롯이 켜져 있을 때만 적용) */
+  morningNotify: boolean;
+  lunchNotify: boolean;
+  dinnerNotify: boolean;
 };
 
 export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataConfig {
   const o = asObj(raw);
-  const doseLabel = clampStr(o.doseLabel, 48) || '비타민';
+  const doseLabel = clampStr(o.doseLabel, 48);
 
   const hasSlotKeys = 'morningOn' in o || 'lunchOn' in o || 'dinnerOn' in o;
   const hasLegacyDoseFields = 'dosesPerDay' in o || 'takenCount' in o;
@@ -250,7 +253,30 @@ export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataC
     Math.min(dosesPerDay, Number.isFinite(takenRaw) ? takenRaw : 0),
   );
 
-  const medicationNotify = typeof o.medicationNotify === 'boolean' ? o.medicationNotify : true;
+  const legacyMedicationNotify =
+    typeof o.medicationNotify === 'boolean' ? o.medicationNotify : undefined;
+
+  let morningNotify: boolean;
+  let lunchNotify: boolean;
+  let dinnerNotify: boolean;
+  if (
+    typeof o.morningNotify === 'boolean' ||
+    typeof o.lunchNotify === 'boolean' ||
+    typeof o.dinnerNotify === 'boolean'
+  ) {
+    const fallbackLegacy = legacyMedicationNotify !== false;
+    morningNotify = typeof o.morningNotify === 'boolean' ? o.morningNotify : fallbackLegacy;
+    lunchNotify = typeof o.lunchNotify === 'boolean' ? o.lunchNotify : fallbackLegacy;
+    dinnerNotify = typeof o.dinnerNotify === 'boolean' ? o.dinnerNotify : fallbackLegacy;
+  } else if (legacyMedicationNotify === false) {
+    morningNotify = false;
+    lunchNotify = false;
+    dinnerNotify = false;
+  } else {
+    morningNotify = true;
+    lunchNotify = true;
+    dinnerNotify = true;
+  }
 
   return {
     doseLabel,
@@ -262,13 +288,15 @@ export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataC
     morningTime,
     lunchTime,
     dinnerTime,
-    medicationNotify,
+    morningNotify,
+    lunchNotify,
+    dinnerNotify,
   };
 }
 
 export function getInitialMedicineDataConfig(): MedicineDetailDataConfig {
   return {
-    doseLabel: '비타민',
+    doseLabel: '',
     dosesPerDay: 0,
     takenCount: 0,
     morningOn: false,
@@ -277,7 +305,9 @@ export function getInitialMedicineDataConfig(): MedicineDetailDataConfig {
     morningTime: '08:30',
     lunchTime: '12:30',
     dinnerTime: '19:30',
-    medicationNotify: true,
+    morningNotify: true,
+    lunchNotify: true,
+    dinnerNotify: true,
   };
 }
 

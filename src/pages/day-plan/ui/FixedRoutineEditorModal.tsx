@@ -1,12 +1,14 @@
+import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { PICKER_CATEGORIES, PRIMARY } from '../lib/dayPlanEditorShared';
+import { PICKER_CATEGORIES } from '../lib/dayPlanEditorShared';
 import { filterCatalogPickerCategories } from '../lib/priorityCatalogSections';
 import { FixedRoutineDraftOrderList } from './FixedRoutineDraftOrderList';
 
@@ -34,6 +36,7 @@ export function FixedRoutineEditorModal({
   surface,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
   const catalogCategories = useMemo(
     () => filterCatalogPickerCategories(PICKER_CATEGORIES),
     [],
@@ -60,11 +63,11 @@ export function FixedRoutineEditorModal({
   }, []);
 
   const onAdd = useCallback((key: string) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDraft((prev) => (prev.includes(key) ? prev : [...prev, key]));
   }, []);
 
   const border = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)';
-  const btnGhostBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.18)';
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -89,6 +92,7 @@ export function FixedRoutineEditorModal({
               <FixedRoutineDraftOrderList
                 orderedKeys={draft}
                 byKey={byKey}
+                isDark={isDark}
                 ink={ink}
                 muted={muted}
                 line={line}
@@ -105,19 +109,30 @@ export function FixedRoutineEditorModal({
             {addable.length === 0 ? (
               <ThemedText style={[styles.emptyLine, { color: muted }]}>추가할 수 있는 항목이 없어요.</ThemedText>
             ) : (
-              <View style={{ borderTopWidth: 1, borderTopColor: line }}>
+              <View style={styles.addableList}>
                 {addable.map((cat) => (
                   <Pressable
                     key={cat.key}
                     accessibilityRole="button"
                     accessibilityLabel={`${cat.label} 고정 루틴에 추가`}
                     onPress={() => onAdd(cat.key)}
-                    style={[styles.addRow, { borderBottomColor: line }]}>
-                    <IconSymbol name={cat.icon as any} size={20} color={muted} />
+                    style={({ pressed }) => [styles.addRow, pressed && { opacity: 0.72 }]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}>
+                    <IconSymbol name={cat.icon as any} size={20} color={tabColors.inactiveIcon} />
                     <ThemedText style={[styles.orderLabel, { color: ink }]} numberOfLines={1}>
                       {cat.label}
                     </ThemedText>
-                    <IconSymbol name="plus.circle.fill" size={22} color={PRIMARY} />
+                    <View
+                      style={[
+                        styles.rowTrailingIconPill,
+                        {
+                          backgroundColor: tabColors.inactiveBg,
+                          borderColor: tabColors.inactiveBorder,
+                        },
+                      ]}
+                      pointerEvents="none">
+                      <IconSymbol name="plus" size={16} color={tabColors.inactiveIcon} />
+                    </View>
                   </Pressable>
                 ))}
               </View>
@@ -137,19 +152,41 @@ export function FixedRoutineEditorModal({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="취소"
-            onPress={onClose}
-            style={[styles.footerBtn, { borderColor: btnGhostBorder }]}>
-            <ThemedText style={[styles.footerBtnText, { color: ink }]}>취소</ThemedText>
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onClose();
+            }}
+            style={({ pressed }) => [
+              styles.footerTabPill,
+              {
+                backgroundColor: tabColors.inactiveBg,
+                borderColor: tabColors.inactiveBorder,
+                opacity: pressed ? 0.92 : 1,
+              },
+            ]}>
+            <ThemedText style={[styles.footerTabLabel, { color: tabColors.inactiveIcon }]}>
+              취소
+            </ThemedText>
           </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="저장"
             onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               onSave(draft);
               onClose();
             }}
-            style={[styles.footerBtnPrimary, { backgroundColor: PRIMARY }]}>
-            <ThemedText style={styles.footerBtnTextPrimary}>저장</ThemedText>
+            style={({ pressed }) => [
+              styles.footerTabPill,
+              {
+                backgroundColor: tabColors.activeBg,
+                borderColor: tabColors.activeBorder,
+                opacity: pressed ? 0.92 : 1,
+              },
+            ]}>
+            <ThemedText style={[styles.footerTabLabel, { color: tabColors.activeIcon }]}>
+              저장
+            </ThemedText>
           </Pressable>
         </View>
       </View>
@@ -172,35 +209,47 @@ const styles = StyleSheet.create({
   blockTitle: { fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
   emptyLine: { fontSize: 14, fontWeight: '500', lineHeight: 20 },
   orderLabel: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: '600', letterSpacing: -0.3 },
+  addableList: {
+    paddingTop: 6,
+    gap: 12,
+  },
   addRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    borderTopWidth: 1,
-  },
-  footerBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingVertical: 14,
+    paddingHorizontal: 4,
+    borderRadius: 12,
+  },
+  rowTrailingIconPill: {
+    padding: 8,
     borderRadius: 12,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  footerBtnPrimary: {
+  /** `DayPlanCustomTabBar` 의 `row` + `tabPill` 과 동일 간격·치수 */
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+  },
+  footerTabPill: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
+    minHeight: 44,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    borderWidth: 1,
   },
-  footerBtnText: { fontSize: 16, fontWeight: '700' },
-  footerBtnTextPrimary: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  footerTabLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
 });

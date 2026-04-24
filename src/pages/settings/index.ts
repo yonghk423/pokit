@@ -1,2 +1,2 @@
-export { CategoryReminderSettingsPage } from './ui/CategoryReminderSettingsPage';
+export { GoalDetailIncompleteReminderSettingsPage } from './ui/GoalDetailIncompleteReminderSettingsPage';
 export { SettingsPage } from './ui/SettingsPage';

@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
+import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
@@ -306,8 +307,7 @@ export function PriorityCatalogPanel({
     userFixedRoutineOrder,
   );
 
-  const editBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)';
-  const editBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+  const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
 
   return (
     <View style={styles.root}>
@@ -342,8 +342,17 @@ export function PriorityCatalogPanel({
                       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       onOpenFixedRoutineEditor();
                     }}
-                    style={[styles.fixedCta, { borderColor: editBorder, backgroundColor: editBg }]}>
-                    <ThemedText style={[styles.fixedCtaText, { color: editorial.ink }]}>고정 루틴 만들기</ThemedText>
+                    style={({ pressed }) => [
+                      styles.fixedCta,
+                      {
+                        backgroundColor: tabColors.activeBg,
+                        borderColor: tabColors.activeBorder,
+                        opacity: pressed ? 0.92 : 1,
+                      },
+                    ]}>
+                    <ThemedText style={[styles.fixedCtaText, { color: tabColors.activeIcon }]}>
+                      고정 루틴 만들기
+                    </ThemedText>
                   </Pressable>
                 </View>
               </View>
@@ -367,8 +376,17 @@ export function PriorityCatalogPanel({
                       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       onOpenFixedRoutineEditor();
                     }}
-                    style={[styles.fixedCta, { borderColor: editBorder, backgroundColor: editBg }]}>
-                    <ThemedText style={[styles.fixedCtaText, { color: editorial.ink }]}>고정 루틴 바꾸기</ThemedText>
+                    style={({ pressed }) => [
+                      styles.fixedCta,
+                      {
+                        backgroundColor: tabColors.activeBg,
+                        borderColor: tabColors.activeBorder,
+                        opacity: pressed ? 0.92 : 1,
+                      },
+                    ]}>
+                    <ThemedText style={[styles.fixedCtaText, { color: tabColors.activeIcon }]}>
+                      고정 루틴 바꾸기
+                    </ThemedText>
                   </Pressable>
                 </View>
               </View>
@@ -385,8 +403,17 @@ export function PriorityCatalogPanel({
                       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       onOpenFixedRoutineEditor();
                     }}
-                    style={[styles.fixedCta, { borderColor: editBorder, backgroundColor: editBg }]}>
-                    <ThemedText style={[styles.fixedCtaText, { color: editorial.ink }]}>고정 루틴 바꾸기</ThemedText>
+                    style={({ pressed }) => [
+                      styles.fixedCta,
+                      {
+                        backgroundColor: tabColors.activeBg,
+                        borderColor: tabColors.activeBorder,
+                        opacity: pressed ? 0.92 : 1,
+                      },
+                    ]}>
+                    <ThemedText style={[styles.fixedCtaText, { color: tabColors.activeIcon }]}>
+                      고정 루틴 바꾸기
+                    </ThemedText>
                   </Pressable>
                 </View>
               </View>
@@ -488,10 +515,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   fixedCta: {
-    alignSelf: 'flex-start',
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
   },
   fixedCtaText: {

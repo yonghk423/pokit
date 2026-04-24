@@ -3,8 +3,8 @@ import {
   type BottomTabBarProps,
 } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
-import { useCallback, useContext, useMemo } from 'react';
-import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
+import { Animated, Easing, LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -50,6 +50,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
    */
   const isDayPlanFocused = focusedRoute === 'day-plan' || focusedRoute === 'index';
   const isCatalogFocused = focusedRoute === 'priority-catalog';
+  const isStatisticsFocused = focusedRoute === 'day-plan-statistics';
   const isSettingsFocused = focusedRoute === 'settings';
   const hideCenterButton = bridge.primaryHidden;
 
@@ -69,12 +70,39 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
     }
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     bridge.invokeRoutineStartFab();
   };
 
   const showRoutineFab =
     isDayPlanFocused && bridge.routineStartFab.visible && !bridge.routineStartFab.disabled;
+  const fabPulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!showRoutineFab) {
+      fabPulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(fabPulse, {
+          toValue: 1.06,
+          duration: 780,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(fabPulse, {
+          toValue: 1,
+          duration: 760,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [fabPulse, showRoutineFab]);
 
   return (
     <View style={styles.tabShell}>
@@ -136,6 +164,29 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
           />
         </Pressable>
 
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{ selected: isStatisticsFocused }}
+          accessibilityLabel="통계"
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('day-plan-statistics');
+          }}
+          style={({ pressed }) => [
+            styles.tabPill,
+            {
+              backgroundColor: isStatisticsFocused ? tabColors.activeBg : tabColors.inactiveBg,
+              borderColor: isStatisticsFocused ? tabColors.activeBorder : tabColors.inactiveBorder,
+            },
+            pressed && { opacity: 0.92 },
+          ]}>
+          <IconSymbol
+            name="chart.bar.fill"
+            size={22}
+            color={isStatisticsFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
+          />
+        </Pressable>
+
         {hideCenterButton ? null : (
           <Pressable
             accessibilityRole="button"
@@ -185,27 +236,32 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
     </View>
 
       {showRoutineFab ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={bridge.routineStartFab.label}
-          onPress={onRoutineFabPress}
-          style={({ pressed }) => [
-            styles.routineStartFab,
+        <Animated.View
+          pointerEvents="box-none"
+          style={[
+            styles.routineStartFabWrap,
             {
               bottom: insets.bottom + DAY_PLAN_TAB_BAR_ROW_HEIGHT + 10,
-              backgroundColor: PRIMARY,
-              opacity: pressed ? 0.92 : 1,
-              shadowColor: '#000',
+              transform: [{ scale: fabPulse }],
             },
           ]}>
-          <ThemedText
-            style={styles.routineStartFabLabel}
-            lightColor="#fff"
-            darkColor="#fff"
-            numberOfLines={2}>
-            {bridge.routineStartFab.label}
-          </ThemedText>
-        </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={bridge.routineStartFab.label}
+            onPress={onRoutineFabPress}
+            style={({ pressed }) => [
+              styles.routineStartFab,
+              {
+                backgroundColor: tabColors.activeBg,
+                borderColor: tabColors.activeBorder,
+                shadowColor: '#000',
+                opacity: pressed ? 0.9 : 1,
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+              },
+            ]}>
+            <IconSymbol name="play.fill" size={20} color={tabColors.activeIcon} />
+          </Pressable>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -237,9 +293,9 @@ const styles = StyleSheet.create({
   },
   centerBtn: {
     flexShrink: 0,
-    minWidth: 120,
-    maxWidth: 160,
-    paddingHorizontal: 16,
+    minWidth: 100,
+    maxWidth: 148,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 999,
     alignItems: 'center',
@@ -250,24 +306,20 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.2,
   },
-  routineStartFab: {
+  routineStartFabWrap: {
     position: 'absolute',
     right: 12,
-    maxWidth: '56%',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  },
+  routineStartFab: {
+    width: 58,
+    height: 58,
     borderRadius: 999,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 8,
+    elevation: 10,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
-  },
-  routineStartFabLabel: {
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: -0.25,
-    textAlign: 'center',
+    shadowOpacity: 0.24,
+    shadowRadius: 9,
   },
 });

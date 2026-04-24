@@ -64,15 +64,17 @@ export function SettingsPage() {
             style={styles.item}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/category-reminder-settings');
+              router.push('/goal-detail-incomplete-reminder-settings');
             }}
             accessibilityRole="button"
-            accessibilityLabel="카테고리별 알림 시간">
+            accessibilityLabel="목표 상세 알림">
             <View style={styles.itemLeft}>
-              <IconSymbol name="bell.fill" size={20} color="#6B7280" />
+              <IconSymbol name="doc.text.fill" size={20} color="#6B7280" />
               <View style={styles.itemTextWrap}>
-                <ThemedText style={styles.itemTitle}>카테고리 알림</ThemedText>
-                <ThemedText style={styles.itemDesc}>항목마다 매일 울릴 시각을 정해요</ThemedText>
+                <ThemedText style={styles.itemTitle}>목표 상세 알림</ThemedText>
+                <ThemedText style={styles.itemDesc}>
+                  상세 설정을 아직 하지 않았거나 기록 체크가 필요할 때, 정한 시각에 가볍게 알려 드려요
+                </ThemedText>
               </View>
             </View>
             <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />

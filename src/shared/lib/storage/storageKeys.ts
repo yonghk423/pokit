@@ -3,6 +3,8 @@ export const StorageKeys = {
   routineExecutions: 'lockflow:routine-executions',
   settings: 'lockflow:settings',
   dayPlan: 'lockflow:day-plan',
+  /** 일별 완료 카테고리 횟수(통계 탭·히스토리) */
+  dayPlanStatsHistory: 'lockflow:day-plan-stats-history',
   goalDetailSettings: 'lockflow:goal-detail-settings',
   /** 담기 탭 상단「내 고정 루틴」에 넣을 카테고리 키 순서(사용자 구성) */
   priorityCatalogFixedRoutines: 'lockflow:priority-catalog-fixed-routines',

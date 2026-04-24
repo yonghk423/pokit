@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -23,8 +23,15 @@ import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
-import { appendPriorityCategoryKeysIfMissing } from '@pages/day-plan/model/dayPlanDraftStore';
-import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
+import {
+  appendPriorityCategoryKeysIfMissing,
+  useDayPlanDraftStore,
+} from '@pages/day-plan/model/dayPlanDraftStore';
+import {
+  rescheduleDayPlanNotifications,
+  syncMedicineReminderNotifications,
+  syncWaterReminderNotifications,
+} from '@features/day-plan-notifications';
 import { reconcileLiveActivityFromPlan } from '@features/live-activity-sync';
 
 import { GoalDetailCategoryStartReminderCard } from './GoalDetailCategoryStartReminderCard';
@@ -163,6 +170,20 @@ export function GoalDetailSettingsPage() {
   }, [validTargets, sortedTargets, setLiveActivityChecklistFocusBlockId]);
 
   const [dataByBlockId, setDataByBlockId] = useState<Record<string, unknown>>({});
+  const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const waterReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (medicineReminderSyncTimerRef.current) {
+        clearTimeout(medicineReminderSyncTimerRef.current);
+      }
+      if (waterReminderSyncTimerRef.current) {
+        clearTimeout(waterReminderSyncTimerRef.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     const next: Record<string, unknown> = {};
@@ -181,6 +202,28 @@ export function GoalDetailSettingsPage() {
     saveGoalDetailBlockConfig(target.blockId, next);
     // 기존 카테고리 단위 데이터도 함께 갱신(하위 호환)
     saveGoalDetailCategoryConfig(target.categoryKey, next);
+    if (target.categoryKey === 'medicine') {
+      if (medicineReminderSyncTimerRef.current) {
+        clearTimeout(medicineReminderSyncTimerRef.current);
+      }
+      medicineReminderSyncTimerRef.current = setTimeout(() => {
+        medicineReminderSyncTimerRef.current = null;
+        void syncMedicineReminderNotifications();
+      }, 450);
+    }
+    if (target.categoryKey === 'water') {
+      if (waterReminderSyncTimerRef.current) {
+        clearTimeout(waterReminderSyncTimerRef.current);
+      }
+      waterReminderSyncTimerRef.current = setTimeout(() => {
+        waterReminderSyncTimerRef.current = null;
+        const { priorityStart, priorityEnd } = useDayPlanDraftStore.getState();
+        void syncWaterReminderNotifications({
+          routineStartHhmm: priorityStart,
+          routineEndHhmm: priorityEnd,
+        });
+      }, 450);
+    }
   }, []);
 
   const handleCompleteAndStart = useCallback(() => {
@@ -203,6 +246,14 @@ export function GoalDetailSettingsPage() {
         blocks: dayPlanState.blocks,
       });
       await rescheduleDayPlanNotifications();
+      await syncMedicineReminderNotifications();
+      {
+        const { priorityStart, priorityEnd } = useDayPlanDraftStore.getState();
+        await syncWaterReminderNotifications({
+          routineStartHhmm: priorityStart,
+          routineEndHhmm: priorityEnd,
+        });
+      }
 
       const ids = sortedTargets.map((t) => t.blockId).filter(Boolean);
       if (ids.length === 0) {
@@ -232,8 +283,19 @@ export function GoalDetailSettingsPage() {
 
   const reminderCategoryKeys = useMemo(() => {
     const list = sortedTargets.length > 0 ? sortedTargets : targets;
-    return [...new Set(list.map((t) => t.categoryKey))];
-  }, [sortedTargets, targets]);
+    const keys = [...new Set(list.map((t) => t.categoryKey))].filter(
+      (key) => key !== 'water' && key !== 'medicine',
+    );
+    /** 수분·약은 전용 알림 UI만 사용 — 시작 알림 카드 제외 */
+    if (
+      categoryKey !== 'water' &&
+      categoryKey !== 'medicine' &&
+      !keys.includes(categoryKey)
+    ) {
+      keys.push(categoryKey);
+    }
+    return keys;
+  }, [sortedTargets, targets, categoryKey]);
 
   const waterOnlyUi =
     sortedTargets.length > 0 && sortedTargets.every((t) => t.categoryKey === 'water');

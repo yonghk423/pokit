@@ -25,6 +25,7 @@ import {
 import {
   rescheduleDayPlanNotifications,
   syncPriorityDayStartAlarm,
+  syncWaterReminderNotifications,
 } from '@features/day-plan-notifications';
 import {
   buildLiveActivityPayloadForBlock,
@@ -191,6 +192,14 @@ export function DayPlanPage() {
     void syncPriorityDayStartAlarm({ enabled: true, startHhmm: priorityStart });
   }, [priorityStart]);
 
+  /** 담기 구간이 바뀌면 수분 주기 알림(매일) 재예약 */
+  useEffect(() => {
+    void syncWaterReminderNotifications({
+      routineStartHhmm: priorityStart,
+      routineEndHhmm: priorityEnd,
+    });
+  }, [priorityStart, priorityEnd]);
+
   useEffect(() => {
     if (planMode !== 'priority') return;
     if (priorityCategoryOrder.length > 0) return;
@@ -202,7 +211,7 @@ export function DayPlanPage() {
     setPriorityEnd(w.endTime);
   }, [planMode, priorityCategoryOrder.length, priorityEnd, priorityStart, setPriorityEnd, setPriorityStart]);
 
-  /** 당일(우선 순위 적용 구간에 오늘이 포함될 때) 고정 루틴 키를 우선 순위 목록 앞에 자동 보강 */
+  /** 당일(적용 구간에 오늘이 포함될 때) 고정 루틴을 담기 앞쪽에 자동 보강 — FAB·시작 시에는 담기 순서만 쓴다. */
   useEffect(() => {
     if (planMode !== 'priority') return;
     const today = getLocalDateKey();

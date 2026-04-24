@@ -26,11 +26,39 @@ export type CategoryReminderScheduledRow = {
   notificationId: string;
 };
 
+/** 약 복용 슬롯별 매일 알림 예약 — `${blockId}:morning|lunch|dinner` */
+export type MedicineReminderScheduledRow = {
+  slotKey: string;
+  notificationId: string;
+};
+
+/** 수분 주기 알림(매일) — `water:HH:mm` 등 */
+export type WaterReminderScheduledRow = {
+  slotKey: string;
+  notificationId: string;
+};
+
+/** 목표 상세 점검 알림(매일) — 카테고리 알림과 동일하게 시각만 저장 */
+export type GoalDetailIncompleteReminderRule = {
+  enabled: boolean;
+  times: string[];
+};
+
+/** `incomplete:${HH:mm}` */
+export type GoalDetailIncompleteReminderScheduledRow = {
+  slotKey: string;
+  notificationId: string;
+};
+
 type SettingsStorageShape = {
   dayPlanScheduledNotifications?: DayPlanScheduledNotification[];
   priorityDayStartAlarm?: PriorityDayStartAlarmPersisted;
   categoryReminderRules?: CategoryReminderRules;
   categoryReminderScheduled?: CategoryReminderScheduledRow[];
+  medicineReminderScheduled?: MedicineReminderScheduledRow[];
+  waterReminderScheduled?: WaterReminderScheduledRow[];
+  goalDetailIncompleteReminderRule?: GoalDetailIncompleteReminderRule;
+  goalDetailIncompleteReminderScheduled?: GoalDetailIncompleteReminderScheduledRow[];
 };
 
 function readRoot(): SettingsStorageShape {
@@ -141,5 +169,109 @@ export function saveCategoryReminderScheduled(rows: CategoryReminderScheduledRow
   localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
     ...root,
     categoryReminderScheduled: rows,
+  });
+}
+
+export function loadMedicineReminderScheduled(): MedicineReminderScheduledRow[] {
+  const root = readRoot();
+  const rows = root.medicineReminderScheduled;
+  if (!Array.isArray(rows)) return [];
+  return rows.filter(
+    (row): row is MedicineReminderScheduledRow =>
+      Boolean(
+        row &&
+        typeof row === 'object' &&
+        typeof (row as MedicineReminderScheduledRow).slotKey === 'string' &&
+        typeof (row as MedicineReminderScheduledRow).notificationId === 'string',
+      ),
+  );
+}
+
+export function saveMedicineReminderScheduled(rows: MedicineReminderScheduledRow[]): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    medicineReminderScheduled: rows,
+  });
+}
+
+export function loadWaterReminderScheduled(): WaterReminderScheduledRow[] {
+  const root = readRoot();
+  const rows = root.waterReminderScheduled;
+  if (!Array.isArray(rows)) return [];
+  return rows.filter(
+    (row): row is WaterReminderScheduledRow =>
+      Boolean(
+        row &&
+        typeof row === 'object' &&
+        typeof (row as WaterReminderScheduledRow).slotKey === 'string' &&
+        typeof (row as WaterReminderScheduledRow).notificationId === 'string',
+      ),
+  );
+}
+
+export function saveWaterReminderScheduled(rows: WaterReminderScheduledRow[]): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    waterReminderScheduled: rows,
+  });
+}
+
+function isGoalDetailIncompleteReminderRule(v: unknown): v is GoalDetailIncompleteReminderRule {
+  if (!v || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  if (typeof o.enabled !== 'boolean') return false;
+  if (!Array.isArray(o.times)) return false;
+  return o.times.every((t) => typeof t === 'string');
+}
+
+const DEFAULT_GOAL_DETAIL_INCOMPLETE_REMINDER: GoalDetailIncompleteReminderRule = {
+  enabled: false,
+  times: [],
+};
+
+export function loadGoalDetailIncompleteReminderRule(): GoalDetailIncompleteReminderRule {
+  const root = readRoot();
+  const v = root.goalDetailIncompleteReminderRule;
+  if (!v || !isGoalDetailIncompleteReminderRule(v)) {
+    return { ...DEFAULT_GOAL_DETAIL_INCOMPLETE_REMINDER };
+  }
+  return { enabled: v.enabled, times: [...v.times] };
+}
+
+export function saveGoalDetailIncompleteReminderRule(next: GoalDetailIncompleteReminderRule): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    goalDetailIncompleteReminderRule: {
+      enabled: next.enabled,
+      times: [...next.times],
+    },
+  });
+}
+
+export function loadGoalDetailIncompleteReminderScheduled(): GoalDetailIncompleteReminderScheduledRow[] {
+  const root = readRoot();
+  const rows = root.goalDetailIncompleteReminderScheduled;
+  if (!Array.isArray(rows)) return [];
+  return rows.filter(
+    (row): row is GoalDetailIncompleteReminderScheduledRow =>
+      Boolean(
+        row &&
+        typeof row === 'object' &&
+        typeof (row as GoalDetailIncompleteReminderScheduledRow).slotKey === 'string' &&
+        typeof (row as GoalDetailIncompleteReminderScheduledRow).notificationId === 'string',
+      ),
+  );
+}
+
+export function saveGoalDetailIncompleteReminderScheduled(
+  rows: GoalDetailIncompleteReminderScheduledRow[],
+): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    goalDetailIncompleteReminderScheduled: rows,
   });
 }

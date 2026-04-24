@@ -1,6 +1,11 @@
 export { loadDayPlan, saveDayPlan } from './dayPlanStorage';
 export type { PersistedDayPlan } from './dayPlanStorage';
 export {
+  loadDayPlanStatsHistory,
+  mergeDayPlanStatsDay,
+} from './dayPlanStatsHistoryStorage';
+export type { DayPlanStatsDayRow } from './dayPlanStatsHistoryStorage';
+export {
   appendGoalDetailCommittedCategoryKeys,
   hasGoalDetailCommittedCategory,
   loadGoalDetailBlockConfig,
@@ -23,10 +28,18 @@ export {
   loadCategoryReminderRules,
   loadCategoryReminderScheduled,
   loadDayPlanScheduledNotifications,
+  loadGoalDetailIncompleteReminderRule,
+  loadGoalDetailIncompleteReminderScheduled,
+  loadMedicineReminderScheduled,
+  loadWaterReminderScheduled,
   loadPriorityDayStartAlarm,
   saveCategoryReminderRules,
   saveCategoryReminderScheduled,
   saveDayPlanScheduledNotifications,
+  saveGoalDetailIncompleteReminderRule,
+  saveGoalDetailIncompleteReminderScheduled,
+  saveMedicineReminderScheduled,
+  saveWaterReminderScheduled,
   savePriorityDayStartAlarm,
 } from './settingsStorage';
 export type {
@@ -34,6 +47,10 @@ export type {
   CategoryReminderRules,
   CategoryReminderScheduledRow,
   DayPlanScheduledNotification,
+  GoalDetailIncompleteReminderRule,
+  GoalDetailIncompleteReminderScheduledRow,
+  MedicineReminderScheduledRow,
+  WaterReminderScheduledRow,
   PriorityDayStartAlarmPersisted,
 } from './settingsStorage';
 export { StorageKeys } from './storageKeys';

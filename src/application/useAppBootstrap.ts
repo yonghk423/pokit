@@ -5,7 +5,12 @@ import { AppState } from 'react-native';
 import { useDayPlanStore } from '@entities/day-plan/model';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { syncCategoryReminderNotifications } from '@features/category-reminder-notifications';
-import { syncPriorityDayStartAlarm } from '@features/day-plan-notifications';
+import {
+  syncGoalDetailIncompleteReminderNotifications,
+  syncMedicineReminderNotifications,
+  syncPriorityDayStartAlarm,
+  syncWaterReminderNotifications,
+} from '@features/day-plan-notifications';
 import { useLocalNotifications } from '@features/local-notifications';
 import { useDayPlanDraftStore } from '@pages/day-plan';
 import { loadPriorityDayStartAlarm } from '@shared/lib/storage';
@@ -32,10 +37,16 @@ export function useAppBootstrap() {
 
   useEffect(() => {
     const { enabled } = loadPriorityDayStartAlarm();
-    const start = useDayPlanDraftStore.getState().priorityStart;
+    const { priorityStart, priorityEnd } = useDayPlanDraftStore.getState();
     void (async () => {
-      await syncPriorityDayStartAlarm({ enabled, startHhmm: start });
+      await syncPriorityDayStartAlarm({ enabled, startHhmm: priorityStart });
       await syncCategoryReminderNotifications();
+      await syncMedicineReminderNotifications();
+      await syncWaterReminderNotifications({
+        routineStartHhmm: priorityStart,
+        routineEndHhmm: priorityEnd,
+      });
+      await syncGoalDetailIncompleteReminderNotifications();
     })();
   }, []);
 
@@ -43,6 +54,28 @@ export function useAppBootstrap() {
     return addLocalNotificationResponseListener((data) => {
       if (data.eventType === 'categoryReminder') {
         router.push('/(tabs)/day-plan');
+        return;
+      }
+      if (data.eventType === 'goalDetailIncompleteReminder') {
+        router.push('/(tabs)/day-plan');
+        return;
+      }
+      if (data.eventType === 'medicineDoseReminder') {
+        const bid = typeof data.blockId === 'string' ? data.blockId : '';
+        if (bid) {
+          router.push({ pathname: '/activity-session', params: { blockId: bid } });
+        } else {
+          router.push('/(tabs)/day-plan');
+        }
+        return;
+      }
+      if (data.eventType === 'waterIntervalReminder') {
+        const bid = typeof data.blockId === 'string' ? data.blockId : '';
+        if (bid) {
+          router.push({ pathname: '/activity-session', params: { blockId: bid } });
+        } else {
+          router.push('/(tabs)/day-plan');
+        }
         return;
       }
       const blockId = typeof data.blockId === 'string' ? data.blockId : '';
@@ -68,6 +101,10 @@ export function useAppBootstrap() {
         syncLiveActivityIfSessionInProgress();
         void useLocalNotificationsStore.getState().refreshPermission();
         void syncCategoryReminderNotifications();
+        void syncMedicineReminderNotifications();
+        const { priorityStart: ps, priorityEnd: pe } = useDayPlanDraftStore.getState();
+        void syncWaterReminderNotifications({ routineStartHhmm: ps, routineEndHhmm: pe });
+        void syncGoalDetailIncompleteReminderNotifications();
       }
     });
     return () => sub.remove();
