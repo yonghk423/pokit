@@ -84,16 +84,6 @@ private actor LockFlowLiveActivityCoordinator {
   func upsert(payloadJson: String) async {
     do {
       let payload = try decodePayload(from: payloadJson)
-      /// 현재 payload와 다른 blockId로 살아 있는 이전 Live Activity는 모두 종료한다.
-      /// 그렇지 않으면 블록 전환 때 잠금화면에 단일 카드/리스트 카드가 동시에 남을 수 있다.
-      let staleActivities = Activity<LockFlowLiveActivityAttributes>.activities.filter {
-        $0.attributes.blockId != payload.blockId
-      }
-      for stale in staleActivities {
-        await stale.end(dismissalPolicy: .immediate)
-        NSLog("[LockFlowLA] ended stale blockId=%@", stale.attributes.blockId)
-      }
-
       let state = LockFlowLiveActivityAttributes.ContentState(
         title: payload.title,
         category: payload.category,
@@ -189,6 +179,13 @@ private actor LockFlowLiveActivityCoordinator {
     }
   }
 
+  func endActivity(blockId: String) async {
+    guard !blockId.isEmpty else { return }
+    for activity in Activity<LockFlowLiveActivityAttributes>.activities where activity.attributes.blockId == blockId {
+      await activity.end(dismissalPolicy: .immediate)
+    }
+  }
+
   private func decodePayload(from payloadJson: String) throws -> LiveActivityPayload {
     let data = Data(payloadJson.utf8)
     return try decoder.decode(LiveActivityPayload.self, from: data)
@@ -225,6 +222,14 @@ final class LockFlowLiveActivity: NSObject {
 
     Task {
       await LockFlowLiveActivityCoordinator.shared.endAllActivities()
+    }
+  }
+
+  @objc(endActivityByBlockId:)
+  func endActivityByBlockId(_ blockId: String) {
+    guard #available(iOS 16.1, *) else { return }
+    Task {
+      await LockFlowLiveActivityCoordinator.shared.endActivity(blockId: blockId)
     }
   }
 

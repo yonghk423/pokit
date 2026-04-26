@@ -20,6 +20,7 @@ import {
   getLocalDateKey,
   getLocalMinutesOfDayNow,
   parseHHmmToMinutes,
+  useDayPlanRuntimeStore,
   useDayPlanStore,
 } from '@entities/day-plan';
 import {
@@ -448,12 +449,21 @@ export function DayPlanPage() {
    * 우선순위 모드: 일정 블록·Live Activity는 **「오늘 루틴 시작」FAB**에서만 시작한다.
    * 적용일·집중 구간 밖이거나 담기가 비면 집중 상태·Live Activity를 자동으로 정리한다.
    */
+  const endFocusedLiveActivity = useCallback(() => {
+    const activeBlockId = useDayPlanRuntimeStore.getState().activeBlockId;
+    const focusBlockId = useDayPlanStore.getState().liveActivityChecklistFocusBlockId;
+    const target = activeBlockId ?? focusBlockId;
+    if (target) {
+      void endLockFlowLiveActivity(target);
+    }
+  }, []);
+
   useEffect(() => {
     if (planMode !== 'priority') return;
     if (priorityCategoryOrder.length === 0) {
       if (isFocusStarted) {
         setIsFocusStarted(false);
-        void endLockFlowLiveActivity();
+        endFocusedLiveActivity();
       }
       return;
     }
@@ -464,7 +474,7 @@ export function DayPlanPage() {
 
     if (isFocusStarted) {
       setIsFocusStarted(false);
-      void endLockFlowLiveActivity();
+      endFocusedLiveActivity();
     }
   }, [
     planMode,
@@ -472,6 +482,7 @@ export function DayPlanPage() {
     priorityWindowEligible,
     isFocusStarted,
     setIsFocusStarted,
+    endFocusedLiveActivity,
   ]);
 
   const { registerRoutineStartFab, registerPrimaryAction } = useDayPlanTabBridge();

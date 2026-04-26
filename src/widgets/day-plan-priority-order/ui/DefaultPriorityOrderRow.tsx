@@ -202,14 +202,14 @@ export function DefaultPriorityOrderRow({
 
   const actionsColumn = (
     <View style={styles.orderRowActions}>
-      {isFocusStarted && onFocusDetail ? (
+      {onSettings ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${label} 몰입 화면 자세히 보기`}
+          accessibilityLabel={`${label} 상세 설정`}
           hitSlop={10}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onFocusDetail();
+            onSettings();
           }}
           style={[
             styles.orderSettingsBtn,
@@ -220,14 +220,14 @@ export function DefaultPriorityOrderRow({
           ]}>
           <IconSymbol name="slider.horizontal.3" size={14} color={isDark ? '#FAFAFA' : primary} />
         </Pressable>
-      ) : onSettings ? (
+      ) : isFocusStarted && onFocusDetail ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${label} 상세 설정`}
+          accessibilityLabel={`${label} 몰입 화면 자세히 보기`}
           hitSlop={10}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onSettings();
+            onFocusDetail();
           }}
           style={[
             styles.orderSettingsBtn,

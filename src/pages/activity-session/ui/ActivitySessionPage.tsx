@@ -23,6 +23,7 @@ import {
   normalizeYogaDetailConfig,
   parseHHmmToMinutes,
   parseNumberedFlowLines,
+  toRuntimeTiming,
   useDayPlanRuntimeStore,
   useDayPlanStore,
 } from '@entities/day-plan';
@@ -188,8 +189,9 @@ export function ActivitySessionPage() {
   const blockId = pickParam(params.blockId, '');
   const liveAction = pickParam(params.liveAction, '');
 
-  const { blocks, completedBlockIds, skippedBlockIds, completeBlock } = useDayPlanStore(
+  const { dateKey, blocks, completedBlockIds, skippedBlockIds, completeBlock } = useDayPlanStore(
     useShallow((s) => ({
+      dateKey: s.dateKey,
       blocks: s.blocks,
       completedBlockIds: s.completedBlockIds,
       skippedBlockIds: s.skippedBlockIds,
@@ -202,14 +204,18 @@ export function ActivitySessionPage() {
     [blocks, blockId],
   );
   const runtimeTiming = useDayPlanRuntimeStore((s) => (blockId ? s.timelineByBlockId[blockId] : undefined));
+  const fallbackRuntimeTiming = useMemo(() => {
+    if (!block) return undefined;
+    return toRuntimeTiming(dateKey, block) ?? undefined;
+  }, [block, dateKey]);
   const startTicker = useDayPlanRuntimeStore((s) => s.startTicker);
   const stopTicker = useDayPlanRuntimeStore((s) => s.stopTicker);
   const setActiveBlockId = useDayPlanRuntimeStore((s) => s.setActiveBlockId);
   const setLiveActivityChecklistFocusBlockId = useDayPlanStore((s) => s.setLiveActivityChecklistFocusBlockId);
 
   const totalSec = block ? blockDurationSec(block) : 0;
-  const startAtMs = runtimeTiming?.startAtMs ?? null;
-  const endAtMs = runtimeTiming?.endAtMs ?? null;
+  const startAtMs = runtimeTiming?.startAtMs ?? fallbackRuntimeTiming?.startAtMs ?? null;
+  const endAtMs = runtimeTiming?.endAtMs ?? fallbackRuntimeTiming?.endAtMs ?? null;
 
   const [phaseNowMs, setPhaseNowMs] = useState(Date.now);
   const isWaitingToStart = startAtMs != null && phaseNowMs < startAtMs;
@@ -419,7 +425,7 @@ export function ActivitySessionPage() {
     if (next) {
       router.replace({ pathname: '/activity-session', params: { blockId: next.id } });
     } else {
-      void endLockFlowLiveActivity();
+      void endLockFlowLiveActivity(block.id);
       safeRouterBack(router);
     }
   }, [block, completeBlock, router]);
@@ -491,7 +497,7 @@ export function ActivitySessionPage() {
       return;
     }
     if (!block) {
-      void endLockFlowLiveActivity();
+      if (blockId) void endLockFlowLiveActivity(blockId);
       safeRouterBack(router);
     }
   }, [block, blockId, router]);
@@ -542,8 +548,11 @@ export function ActivitySessionPage() {
     return null;
   }
 
+  /** 카테고리별 시간 카운팅 전용 UI는 제거하고 공통 세션 UI만 사용 */
+  const enableCategoryTimedUi = false;
+
   // ── Full-screen work session ──
-  if (categoryKey === 'work' && !isQuickMemoSession && categoryConfigs.work) {
+  if (enableCategoryTimedUi && categoryKey === 'work' && !isQuickMemoSession && categoryConfigs.work) {
     const workCfg = categoryConfigs.work;
     const timerSec = isWaitingToStart ? waitRemainingSec : remainingSec;
     const effectiveTasks = workTasks ?? workCfg.tasks;
@@ -745,7 +754,7 @@ export function ActivitySessionPage() {
   }
 
   // ── Full-screen reading session (독서) ──
-  if (categoryKey === 'reading' && !isQuickMemoSession && categoryConfigs.reading) {
+  if (enableCategoryTimedUi && categoryKey === 'reading' && !isQuickMemoSession && categoryConfigs.reading) {
     const readingCfg = categoryConfigs.reading;
     const timerSec = isWaitingToStart ? waitRemainingSec : remainingSec;
     const bookTitle = readingDisplayTitle(activityTitle, readingCfg);
@@ -870,7 +879,7 @@ export function ActivitySessionPage() {
   }
 
   // ── Full-screen 체중관리 세션 (단식 타이머) ──
-  if (categoryKey === 'fasting' && !isQuickMemoSession && categoryConfigs.fasting) {
+  if (enableCategoryTimedUi && categoryKey === 'fasting' && !isQuickMemoSession && categoryConfigs.fasting) {
     const fastingCfg = categoryConfigs.fasting;
     const elapsedSec = isWaitingToStart ? 0 : Math.max(0, totalSec - remainingSec);
     const goalSec = Math.max(60, fastingCfg.fastingMin * 60);
@@ -972,7 +981,7 @@ export function ActivitySessionPage() {
   }
 
   // ── Full-screen medicine session (약 복용) ──
-  if (categoryKey === 'medicine' && !isQuickMemoSession && categoryConfigs.medicine) {
+  if (enableCategoryTimedUi && categoryKey === 'medicine' && !isQuickMemoSession && categoryConfigs.medicine) {
     const medCfg = categoryConfigs.medicine;
     const enabledSlots = buildMedicineEnabledSlots(medCfg);
     const totalDoses = enabledSlots.length;
@@ -1204,7 +1213,7 @@ export function ActivitySessionPage() {
   }
 
   // ── Full-screen water session (수분섭취) ──
-  if (categoryKey === 'water' && !isQuickMemoSession && categoryConfigs.water) {
+  if (enableCategoryTimedUi && categoryKey === 'water' && !isQuickMemoSession && categoryConfigs.water) {
     const wCfg = categoryConfigs.water;
     const drank = waterSessionDrankMl ?? wCfg.drankMl;
     const drinkProg = wCfg.goalMl > 0 ? Math.min(1, drank / wCfg.goalMl) : 0;
@@ -1402,7 +1411,7 @@ export function ActivitySessionPage() {
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.35}>
-          {formatClock(timerSec)}
+          {isPaused ? '잠시 멈춤' : isWaitingToStart ? '시작 전' : '세션'}
         </ThemedText>
       }
       flowCaption={isQuickMemoSession ? '메모를 기반으로 흐름을 정리해요' : activityTitle}

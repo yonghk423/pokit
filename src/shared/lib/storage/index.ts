@@ -21,7 +21,11 @@ export {
   loadPriorityBagRemoveConfirmSkip,
   savePriorityBagRemoveConfirmSkip,
 } from './priorityBagRemoveConfirmStorage';
-export { localStorageClient } from './localStorageClient';
+export {
+  flushLocalStorageClientWrites,
+  initLocalStorageClient,
+  localStorageClient,
+} from './localStorageClient';
 export { loadRoutineExecutions, saveRoutineExecutions } from './routineExecutionStorage';
 export { loadRoutines, saveRoutines } from './routineStorage';
 export {
@@ -59,4 +63,6 @@ export {
   markDailyRhythmOnboardingCompleted,
 } from './dailyRhythmOnboardingStorage';
 export { syncDayPlanToWidget } from './widgetDayPlanSync';
+export { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
+export type { PersistedDayPlanDraft } from './dayPlanDraftStorage';
 

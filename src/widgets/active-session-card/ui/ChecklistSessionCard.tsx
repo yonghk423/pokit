@@ -18,19 +18,6 @@ type Props = {
   checklistSummaryLine2: string;
 };
 
-function stateLabel(state: LockFlowLiveActivityChecklistRow['state']): string {
-  switch (state) {
-    case 'completed':
-      return '완료';
-    case 'current':
-      return '진행 중';
-    case 'skipped':
-      return '건너뜀';
-    default:
-      return '다음 예정';
-  }
-}
-
 function stateMeta(state: LockFlowLiveActivityChecklistRow['state']) {
   switch (state) {
     case 'completed':
@@ -106,9 +93,7 @@ export function ChecklistSessionCard({
                     </Text>
                     <View style={styles.metaLine}>
                       {isCurrent && <IconSymbol name="clock" size={10} color={PRIMARY} />}
-                      <Text style={[styles.metaText, { color: meta.color }]}>
-                        {row.timeLabel} · {stateLabel(row.state)}
-                      </Text>
+                      <Text style={[styles.metaText, { color: meta.color }]}>{row.timeLabel}</Text>
                     </View>
                   </View>
                 </View>

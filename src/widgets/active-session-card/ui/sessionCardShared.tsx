@@ -68,46 +68,25 @@ type HeroTimerBlockProps = HeroProps & {
 };
 
 export function HeroTimerBlock({
-  remainingSec,
-  progress01,
-  isPaused,
-  isWaitingToStart = false,
-  waitRemainingSec = 0,
+  isPaused: _isPaused,
+  isWaitingToStart: _isWaitingToStart = false,
   flowTitle,
-  accent = 'ember',
   surface = 'dark',
-  progressFillColor,
 }: HeroTimerBlockProps) {
-  const heroSec = isWaitingToStart ? waitRemainingSec : remainingSec;
-  const p = isWaitingToStart ? 0 : Math.min(1, Math.max(0, progress01));
   const head = typeof flowTitle === 'string' ? flowTitle.trim() : '';
-  const tone = HERO_TIMER_ACCENT[accent];
   const light = surface === 'light';
-  const fillColor = light
-    ? progressFillColor ?? CategoryImmersionTheme.work.accent
-    : tone.fill;
-  const kickerColor = light ? E.meta : tone.kicker;
+  const kickerColor = light ? E.meta : HERO_TIMER_ACCENT.ember.kicker;
 
   return (
     <View style={heroStyles.hero}>
       <Text style={[heroStyles.heroKicker, { color: kickerColor }]}>
-        {isPaused ? '일시정지' : isWaitingToStart ? '시작 대기' : light ? '세션' : '활성 세션'}
+        {light ? '세션' : '활성 세션'}
       </Text>
       {head.length > 0 ? (
         <Text style={[heroStyles.heroFocus, light && heroStyles.heroFocusLight]} numberOfLines={2}>
           {head}
         </Text>
       ) : null}
-      <Text
-        style={[heroStyles.heroTime, light && heroStyles.heroTimeLight]}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.35}>
-        {formatClock(heroSec)}
-      </Text>
-      <View style={[heroStyles.heroTrack, light && heroStyles.heroTrackLight]}>
-        <View style={[heroStyles.heroFill, { width: `${Math.round(p * 100)}%`, backgroundColor: fillColor }]} />
-      </View>
     </View>
   );
 }
@@ -386,35 +365,6 @@ const heroStyles = StyleSheet.create({
   },
   heroFocusLight: {
     color: E.onDark,
-  },
-  heroTime: {
-    color: '#fff',
-    fontSize: 86,
-    lineHeight: 90,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -3,
-  },
-  heroTimeLight: {
-    color: GoalDetailSessionUi.onSurface,
-    fontSize: 72,
-    lineHeight: 76,
-    letterSpacing: -2.5,
-  },
-  heroTrack: {
-    marginTop: 22,
-    width: 192,
-    height: 5,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    overflow: 'hidden',
-  },
-  heroTrackLight: {
-    backgroundColor: 'rgba(0,0,0,0.08)',
-  },
-  heroFill: {
-    height: '100%',
-    borderRadius: 999,
   },
 });
 

@@ -52,8 +52,6 @@ function CatalogListRow({
 }) {
   const settingsBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)';
   const settingsBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
-  /** 집중 실행 중이어도 ‘이미 담긴’ 행만 잠금 — 미담김은 추가·설정 가능 */
-  const runningLockedRow = Boolean(isFocusStarted && selected);
   const shouldPulse = Boolean(selected && isFocusStarted && !isCompleted);
   const pulse = useRef(new Animated.Value(1)).current;
 
@@ -96,17 +94,13 @@ function CatalogListRow({
     <View style={[styles.catalogRow, { borderBottomColor: line }]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ selected, disabled: runningLockedRow }}
+        accessibilityState={{ selected }}
         accessibilityLabel={
-          runningLockedRow
-            ? `${label}, 집중 중이라 이미 담긴 항목은 여기서 빼거나 바꿀 수 없어요`
-            : subtitle
-              ? `${label}. ${subtitle}, 우선 순위에 ${selected ? '담김' : '담기'}`
-              : `${label}, 우선 순위에 ${selected ? '담김' : '담기'}`
+          subtitle
+            ? `${label}. ${subtitle}, 우선 순위에 ${selected ? '담김' : '담기'}`
+            : `${label}, 우선 순위에 ${selected ? '담김' : '담기'}`
         }
-        disabled={runningLockedRow}
         onPress={() => {
-          if (runningLockedRow) return;
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onAddPress();
         }}
@@ -152,16 +146,9 @@ function CatalogListRow({
       <View style={styles.catalogRowActions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ disabled: runningLockedRow }}
-          accessibilityLabel={
-            runningLockedRow
-              ? `${label} 목표 상세 설정, 집중 중에는 이미 담긴 항목만 바꿀 수 없어요`
-              : `${label} 목표 상세 설정`
-          }
+          accessibilityLabel={`${label} 목표 상세 설정`}
           hitSlop={10}
-          disabled={runningLockedRow}
           onPress={() => {
-            if (runningLockedRow) return;
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onOpenSettings();
           }}
@@ -170,41 +157,27 @@ function CatalogListRow({
             {
               borderColor: settingsBorder,
               backgroundColor: settingsBg,
-              opacity: runningLockedRow ? 0.45 : 1,
             },
           ]}>
           <IconSymbol
             name="slider.horizontal.3"
             size={16}
-            color={
-              runningLockedRow
-                ? isDark
-                  ? 'rgba(250,250,250,0.35)'
-                  : '#AEAEB2'
-                : isDark
-                  ? '#FAFAFA'
-                  : PRIMARY
-            }
+            color={isDark ? '#FAFAFA' : PRIMARY}
           />
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ disabled: runningLockedRow }}
           accessibilityLabel={
-            runningLockedRow
-              ? `${label} 우선 순위, 집중 중에는 이미 담긴 항목만 바꿀 수 없어요`
-              : selected
-                ? `${label} 우선 순위에서 빼기`
-                : `${label} 우선 순위에 담기`
+            selected
+              ? `${label} 우선 순위에서 빼기`
+              : `${label} 우선 순위에 담기`
           }
           hitSlop={10}
-          disabled={runningLockedRow}
           onPress={() => {
-            if (runningLockedRow) return;
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onAddPress();
           }}
-          style={[styles.catalogAddHit, runningLockedRow && styles.catalogAddHitLocked]}>
+          style={styles.catalogAddHit}>
           {selected ? (
             <View style={[styles.catalogRowBadge, { backgroundColor: PRIMARY }]}>
               <IconSymbol name="checkmark" size={11} color="#fff" />
@@ -580,9 +553,6 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  catalogAddHitLocked: {
-    opacity: 0.48,
   },
   catalogRowTextCol: {
     flex: 1,

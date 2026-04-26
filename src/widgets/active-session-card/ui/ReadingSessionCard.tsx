@@ -10,7 +10,7 @@ import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
 import { GoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
-import { EditorialCategoryHeader, formatClock, SessionEditorialShell } from './sessionCardShared';
+import { EditorialCategoryHeader, SessionEditorialShell } from './sessionCardShared';
 
 const R = CategoryImmersionTheme.reading;
 
@@ -46,9 +46,9 @@ type Props = {
 export function ReadingSessionCard({
   title,
   dataConfig,
-  remainingSec,
+  remainingSec: _remainingSec,
   progressPct,
-  isPaused,
+  isPaused: _isPaused,
 }: Props) {
   const selected = normalizeReadingMetricSelection(dataConfig.selectedMetrics);
   const titleText = title?.trim() || '딥 리딩';
@@ -85,10 +85,9 @@ export function ReadingSessionCard({
           <IconSymbol name="book.fill" size={18} color="#fff" weight="semibold" />
         </View>
         <View style={styles.headerSpacer} />
-        <Text style={styles.timerHero}>{formatClock(remainingSec)}</Text>
       </View>
       <Text style={styles.statusLine}>
-        {isPaused ? '일시정지' : '독서 세션'}
+        독서 세션
       </Text>
 
       {selected.length > 0 && (
@@ -153,13 +152,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerSpacer: { flex: 1 },
-  timerHero: {
-    color: R.onSurface,
-    fontSize: 36,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -1,
-  },
   statusLine: {
     marginTop: 8,
     fontSize: 12,

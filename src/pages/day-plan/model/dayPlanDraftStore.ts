@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { addDaysToLocalDateKey, getLocalDateKey } from '@entities/day-plan';
+import { loadDayPlanDraft, saveDayPlanDraft } from '@shared/lib/storage';
 
 import {
   defaultPriorityWindowFromNow,
@@ -31,6 +32,8 @@ type DayPlanDraftState = {
   /** 고정 루틴 저장소가 바뀌면 증가 — 당일 자동 병합 effect가 다시 돈다 */
   priorityCatalogFixedRoutineEpoch: number;
   quickMemoDraft: string;
+  isHydrated: boolean;
+  hydrate: () => void;
   setPlanMode: (mode: PlanMode) => void;
   setIsFocusStarted: (value: boolean) => void;
   toggleFocusCategoryCompleted: (categoryKey: string) => void;
@@ -67,27 +70,82 @@ function createInitialPriorityWindow() {
   return { priorityStart: w.startTime, priorityEnd: w.endTime };
 }
 
+function createInitialState() {
+  return {
+    planMode: 'priority' as PlanMode,
+    isFocusStarted: false,
+    completedFocusCategoryKeys: [] as string[],
+    planCompletionDismissedKeys: [] as string[],
+    priorityPlanDateKey: getLocalDateKey(),
+    priorityPlanDateKeyEnd: getLocalDateKey(),
+    priorityPlanExplicitMultiDay: false,
+    priorityOvernightEndAuto: false,
+    ...createInitialPriorityWindow(),
+    priorityCategoryOrder: [] as string[],
+    priorityCatalogFixedRoutineEpoch: 0,
+    quickMemoDraft: '',
+  };
+}
+
 export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
-  planMode: 'priority',
-  isFocusStarted: false,
-  completedFocusCategoryKeys: [],
-  planCompletionDismissedKeys: [],
-  priorityPlanDateKey: getLocalDateKey(),
-  priorityPlanDateKeyEnd: getLocalDateKey(),
-  priorityPlanExplicitMultiDay: false,
-  priorityOvernightEndAuto: false,
-  ...createInitialPriorityWindow(),
-  priorityCategoryOrder: [],
-  priorityCatalogFixedRoutineEpoch: 0,
-  quickMemoDraft: '',
-  setPlanMode: (mode) => set({ planMode: mode }),
-  setIsFocusStarted: (value) => set({ isFocusStarted: value }),
+  ...createInitialState(),
+  isHydrated: false,
+  hydrate: () => {
+    if (get().isHydrated) return;
+    const raw = loadDayPlanDraft();
+    if (!raw) {
+      set({ isHydrated: true });
+      return;
+    }
+
+    const today = getLocalDateKey();
+    const rangeLo =
+      raw.priorityPlanDateKey <= raw.priorityPlanDateKeyEnd
+        ? raw.priorityPlanDateKey
+        : raw.priorityPlanDateKeyEnd;
+    const rangeHi =
+      raw.priorityPlanDateKey <= raw.priorityPlanDateKeyEnd
+        ? raw.priorityPlanDateKeyEnd
+        : raw.priorityPlanDateKey;
+    const keepRange = rangeHi >= today;
+
+    set({
+      planMode: raw.planMode === 'quickMemo' ? 'quickMemo' : 'priority',
+      isFocusStarted: Boolean(raw.isFocusStarted),
+      completedFocusCategoryKeys: Array.isArray(raw.completedFocusCategoryKeys)
+        ? raw.completedFocusCategoryKeys
+        : [],
+      planCompletionDismissedKeys: Array.isArray(raw.planCompletionDismissedKeys)
+        ? raw.planCompletionDismissedKeys
+        : [],
+      priorityPlanDateKey: keepRange ? raw.priorityPlanDateKey : today,
+      priorityPlanDateKeyEnd: keepRange ? raw.priorityPlanDateKeyEnd : today,
+      priorityPlanExplicitMultiDay: keepRange ? Boolean(raw.priorityPlanExplicitMultiDay) : false,
+      priorityOvernightEndAuto: keepRange ? Boolean(raw.priorityOvernightEndAuto) : false,
+      priorityStart: typeof raw.priorityStart === 'string' ? raw.priorityStart : get().priorityStart,
+      priorityEnd: typeof raw.priorityEnd === 'string' ? raw.priorityEnd : get().priorityEnd,
+      priorityCategoryOrder: Array.isArray(raw.priorityCategoryOrder) ? raw.priorityCategoryOrder : [],
+      quickMemoDraft: typeof raw.quickMemoDraft === 'string' ? raw.quickMemoDraft : '',
+      isHydrated: true,
+    });
+  },
+  setPlanMode: (mode) => {
+    set({ planMode: mode });
+    persistDayPlanDraft();
+  },
+  setIsFocusStarted: (value) => {
+    set({ isFocusStarted: value });
+    persistDayPlanDraft();
+  },
   toggleFocusCategoryCompleted: (categoryKey) =>
-    set((s) => ({
-      completedFocusCategoryKeys: s.completedFocusCategoryKeys.includes(categoryKey)
-        ? s.completedFocusCategoryKeys.filter((k) => k !== categoryKey)
-        : [...s.completedFocusCategoryKeys, categoryKey],
-    })),
+    set((s) => {
+      const next = {
+        completedFocusCategoryKeys: s.completedFocusCategoryKeys.includes(categoryKey)
+          ? s.completedFocusCategoryKeys.filter((k) => k !== categoryKey)
+          : [...s.completedFocusCategoryKeys, categoryKey],
+      };
+      return next;
+    }),
   addFocusCategoryCompleted: (categoryKey) =>
     set((s) => {
       if (s.completedFocusCategoryKeys.includes(categoryKey)) return s;
@@ -176,6 +234,43 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     set((s) => ({ priorityCatalogFixedRoutineEpoch: s.priorityCatalogFixedRoutineEpoch + 1 })),
   setQuickMemoDraft: (value) => set({ quickMemoDraft: value }),
 }));
+
+useDayPlanDraftStore.subscribe((state) => {
+  if (!state.isHydrated) return;
+  saveDayPlanDraft({
+    planMode: state.planMode,
+    isFocusStarted: state.isFocusStarted,
+    completedFocusCategoryKeys: state.completedFocusCategoryKeys,
+    planCompletionDismissedKeys: state.planCompletionDismissedKeys,
+    priorityPlanDateKey: state.priorityPlanDateKey,
+    priorityPlanDateKeyEnd: state.priorityPlanDateKeyEnd,
+    priorityPlanExplicitMultiDay: state.priorityPlanExplicitMultiDay,
+    priorityOvernightEndAuto: state.priorityOvernightEndAuto,
+    priorityStart: state.priorityStart,
+    priorityEnd: state.priorityEnd,
+    priorityCategoryOrder: state.priorityCategoryOrder,
+    quickMemoDraft: state.quickMemoDraft,
+  });
+});
+
+function persistDayPlanDraft(): void {
+  const s = useDayPlanDraftStore.getState();
+  if (!s.isHydrated) return;
+  saveDayPlanDraft({
+    planMode: s.planMode,
+    isFocusStarted: s.isFocusStarted,
+    completedFocusCategoryKeys: s.completedFocusCategoryKeys,
+    planCompletionDismissedKeys: s.planCompletionDismissedKeys,
+    priorityPlanDateKey: s.priorityPlanDateKey,
+    priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
+    priorityPlanExplicitMultiDay: s.priorityPlanExplicitMultiDay,
+    priorityOvernightEndAuto: s.priorityOvernightEndAuto,
+    priorityStart: s.priorityStart,
+    priorityEnd: s.priorityEnd,
+    priorityCategoryOrder: s.priorityCategoryOrder,
+    quickMemoDraft: s.quickMemoDraft,
+  });
+}
 
 /** 목표 상세 설정 완료 시 오늘 우선순위 목록에 카테고리가 없으면 끝에 추가 */
 export function appendPriorityCategoryKeysIfMissing(keys: string[]): void {

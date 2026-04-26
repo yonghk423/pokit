@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
-import { useDayPlanStore } from '@entities/day-plan/model';
+import { useDayPlanRuntimeStore, useDayPlanStore } from '@entities/day-plan/model';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { syncCategoryReminderNotifications } from '@features/category-reminder-notifications';
 import {
@@ -13,7 +13,11 @@ import {
 } from '@features/day-plan-notifications';
 import { useLocalNotifications } from '@features/local-notifications';
 import { useDayPlanDraftStore } from '@pages/day-plan';
-import { loadPriorityDayStartAlarm } from '@shared/lib/storage';
+import {
+  flushLocalStorageClientWrites,
+  initLocalStorageClient,
+  loadPriorityDayStartAlarm,
+} from '@shared/lib/storage';
 import {
   reconcileLiveActivityFromPlan,
   syncLiveActivityIfSessionInProgress,
@@ -30,12 +34,32 @@ import {
 export function useAppBootstrap() {
   const router = useRouter();
   useLocalNotifications();
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    useDayPlanStore.getState().hydrate();
+    let cancelled = false;
+    void (async () => {
+      await initLocalStorageClient();
+      if (cancelled) return;
+
+      useDayPlanStore.getState().hydrate();
+      useDayPlanDraftStore.getState().hydrate();
+
+      const plan = useDayPlanStore.getState();
+      useDayPlanRuntimeStore.getState().buildTimelineFromBlocks({
+        dateKey: plan.dateKey,
+        blocks: plan.blocks,
+      });
+      if (!cancelled) setIsReady(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     const { enabled } = loadPriorityDayStartAlarm();
     const { priorityStart, priorityEnd } = useDayPlanDraftStore.getState();
     void (async () => {
@@ -48,9 +72,10 @@ export function useAppBootstrap() {
       });
       await syncGoalDetailIncompleteReminderNotifications();
     })();
-  }, []);
+  }, [isReady]);
 
   useEffect(() => {
+    if (!isReady) return;
     return addLocalNotificationResponseListener((data) => {
       if (data.eventType === 'categoryReminder') {
         router.push('/(tabs)/day-plan');
@@ -82,9 +107,10 @@ export function useAppBootstrap() {
       if (!blockId) return;
       router.push({ pathname: '/activity-session', params: { blockId } });
     });
-  }, [router]);
+  }, [isReady, router]);
 
   useEffect(() => {
+    if (!isReady) return;
     return addLocalNotificationReceivedListener((data) => {
       if (data.eventType !== 'start') return;
       if (data.startNotifyKind === 'reminder5m') return;
@@ -92,9 +118,10 @@ export function useAppBootstrap() {
       if (!blockId) return;
       reconcileLiveActivityFromPlan();
     });
-  }, []);
+  }, [isReady]);
 
   useEffect(() => {
+    if (!isReady) return;
     syncLiveActivityIfSessionInProgress();
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
@@ -105,8 +132,13 @@ export function useAppBootstrap() {
         const { priorityStart: ps, priorityEnd: pe } = useDayPlanDraftStore.getState();
         void syncWaterReminderNotifications({ routineStartHhmm: ps, routineEndHhmm: pe });
         void syncGoalDetailIncompleteReminderNotifications();
+      } else {
+        /** 백그라운드/비활성 전환 시 대기 중인 저장 write를 즉시 정리 */
+        void flushLocalStorageClientWrites();
       }
     });
     return () => sub.remove();
-  }, []);
+  }, [isReady]);
+
+  return isReady;
 }

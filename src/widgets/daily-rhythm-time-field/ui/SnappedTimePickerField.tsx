@@ -131,14 +131,26 @@ export function SnappedTimePickerField({
         </View>
       </Pressable>
       {Platform.OS === 'ios' && expanded ? (
-        <DateTimePicker
-          value={pickerDate}
-          mode="time"
-          display="spinner"
-          themeVariant={isDark ? 'dark' : 'light'}
-          minuteInterval={toIosMinuteInterval(snapStepMinutes)}
-          onChange={onIosTimeChange}
-        />
+        <View style={styles.iosPickerBlock}>
+          <DateTimePicker
+            value={pickerDate}
+            mode="time"
+            display="spinner"
+            themeVariant={isDark ? 'dark' : 'light'}
+            minuteInterval={toIosMinuteInterval(snapStepMinutes)}
+            onChange={onIosTimeChange}
+          />
+          <Pressable
+            onPress={() => {
+              void Haptics.selectionAsync();
+              onToggleExpand();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`${label} 시간 선택 확인`}
+            style={({ pressed }) => [styles.confirmBtn, pressed && { opacity: 0.86 }]}>
+            <ThemedText style={styles.confirmBtnText}>확인</ThemedText>
+          </Pressable>
+        </View>
       ) : null}
       {Platform.OS === 'android' && expanded ? (
         <DateTimePicker
@@ -171,4 +183,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timePillText: { fontSize: 16, fontWeight: '800', letterSpacing: -0.25 },
+  iosPickerBlock: {
+    paddingTop: 6,
+    gap: 2,
+  },
+  confirmBtn: {
+    alignSelf: 'flex-end',
+    minWidth: 68,
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+  },
+  confirmBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: PRIMARY,
+    letterSpacing: -0.1,
+  },
 });

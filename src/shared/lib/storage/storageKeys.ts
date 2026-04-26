@@ -12,6 +12,8 @@ export const StorageKeys = {
   dailyRhythmOnboarding: 'lockflow:daily-rhythm-onboarding',
   /** 우선순위 완료 행 X(담기에서 빼기) 확인창 생략 여부 */
   priorityBagRemoveConfirmSkip: 'lockflow:priority-bag-remove-confirm-skip',
+  /** 데이플랜 화면 드래프트(모드/시작·마무리/순서 등) */
+  dayPlanDraft: 'lockflow:day-plan-draft',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

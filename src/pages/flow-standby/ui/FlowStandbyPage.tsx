@@ -95,7 +95,7 @@ export function FlowStandbyPage() {
   useEffect(() => {
     if (!block || startAtMs == null) return;
     if (Date.now() >= startAtMs) return;
-    void endLockFlowLiveActivity();
+    void endLockFlowLiveActivity(block.id);
   }, [block?.id, startAtMs]);
 
   useEffect(() => {
@@ -140,13 +140,13 @@ export function FlowStandbyPage() {
   }, [block, router]);
 
   const handleCancel = useCallback(() => {
-    void endLockFlowLiveActivity();
+    if (block?.id) void endLockFlowLiveActivity(block.id);
     if (router.canGoBack()) {
       router.back();
     } else {
       router.replace('/day-plan');
     }
-  }, [router]);
+  }, [block?.id, router]);
 
   if (!block) {
     return (

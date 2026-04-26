@@ -51,7 +51,8 @@ export function ActiveSessionCard({
   checklistSummaryLine1,
   checklistSummaryLine2,
 }: Props) {
-  const showCategory = segment !== 'checklistOnly';
+  /** 카테고리별 시간 카운팅 카드 UI 제거: 체크리스트 중심 공통 카드만 유지 */
+  const showCategory = false;
   const showChecklist = segment !== 'categoryOnly';
 
   const progress01 = progressPct / 100;

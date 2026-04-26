@@ -49,7 +49,9 @@ export default function RootLayout() {
 
   const rootBg = isDark ? APP_SURFACE_DARK : APP_SURFACE_LIGHT;
 
-  useAppBootstrap();
+  const appReady = useAppBootstrap();
+
+  if (!appReady) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: rootBg }}>

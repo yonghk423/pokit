@@ -5,6 +5,7 @@ import type { LockFlowLiveActivityPayload } from '../model/types';
 type LiveActivityNativeModule = {
   upsertActivity?: (payloadJson: string) => Promise<void> | void;
   endActivity?: () => Promise<void> | void;
+  endActivityByBlockId?: (blockId: string) => Promise<void> | void;
   upsertAndSuspend?: (payloadJson: string) => Promise<void> | void;
   isAvailable?: () => Promise<boolean> | boolean;
 };
@@ -65,11 +66,17 @@ export async function upsertLiveActivityAndDismiss(
   return true;
 }
 
-export async function endLockFlowLiveActivity(): Promise<boolean> {
+export async function endLockFlowLiveActivity(blockId?: string): Promise<boolean> {
   const module = getNativeModule();
-  if (!module?.endActivity) return false;
+  if (!module) return false;
   if (!(await checkAvailable(module))) return false;
 
+  const target = typeof blockId === 'string' ? blockId.trim() : '';
+  if (target.length > 0 && module.endActivityByBlockId) {
+    await module.endActivityByBlockId(target);
+    return true;
+  }
+  if (!module.endActivity) return false;
   await module.endActivity();
   return true;
 }
