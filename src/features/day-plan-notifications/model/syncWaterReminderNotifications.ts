@@ -75,7 +75,7 @@ function collectSlots(
         hour,
         minute,
         title: '수분 알림',
-        body: `${label} · ${formatHhmmClockKo(hhmm)}에 알림이 울려요.`,
+        body: `${label} · ${formatHhmmClockKo(hhmm)} 시간 입니다.`,
       });
     }
   }

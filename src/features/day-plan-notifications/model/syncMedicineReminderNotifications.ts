@@ -73,7 +73,7 @@ function collectFromBlocks(): CollectedSlot[] {
         hour,
         minute,
         title: '복용 알림',
-        body: `${doseName} · ${labelKo} 복용 ${formatHhmmClockKo(row.hhmm.trim())}이에요.`,
+        body: `${doseName} · ${labelKo} 복용 ${formatHhmmClockKo(row.hhmm.trim())} 시간 입니다.`,
       });
     }
   }

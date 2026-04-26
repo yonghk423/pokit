@@ -60,7 +60,7 @@ export async function syncCategoryReminderNotifications(): Promise<void> {
         hour,
         minute,
         title: '카테고리 알림',
-        body: `${label} · ${formatHhmmClockKo(hhmm.trim())}이에요. 오늘 일정을 확인해 보세요.`,
+        body: `${label} · ${formatHhmmClockKo(hhmm.trim())} 시간 입니다.`,
       });
     }
   }

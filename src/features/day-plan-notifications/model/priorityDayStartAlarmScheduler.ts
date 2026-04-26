@@ -43,7 +43,7 @@ export async function syncPriorityDayStartAlarm(input: {
     const startLabel = formatHhmmClockKo(input.startHhmm);
     const nid = await scheduleDailyLocalNotification({
       title: '오늘이 시작됐어요',
-      body: `${startLabel}이에요. 오늘 하루를 가볍게 시작해 볼까요?`,
+      body: `하루 시작 · ${startLabel} 시간 입니다.`,
       hour,
       minute,
       data: { eventType: 'priorityDayStart' },
