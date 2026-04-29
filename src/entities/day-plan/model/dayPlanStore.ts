@@ -89,6 +89,8 @@ export type DayPlanStoreState = {
 
   hydrate: () => void;
   resetTodayProgress: () => void;
+  /** 오늘 기준 종료 시각이 지난 블록을 자동 정리 */
+  prunePastEndedBlocks: () => void;
   setLiveActivityChecklistFocusBlockId: (blockId: string | null) => void;
 
   completeBlock: (blockId: string) => void;
@@ -217,6 +219,40 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         completedBlockIds: [],
         skippedBlockIds: [],
         liveActivityChecklistFocusBlockId: null,
+      });
+      persist();
+    },
+
+    prunePastEndedBlocks: () => {
+      const {
+        dateKey,
+        blocks,
+        completedBlockIds,
+        skippedBlockIds,
+        liveActivityChecklistFocusBlockId,
+      } = get();
+      if (blocks.length === 0) return;
+
+      const expiredIds = new Set(
+        blocks
+          .filter((b) =>
+            isBlockEndInPastForDateKey(dateKey, {
+              endMinutes: b.endMinutes,
+              endsNextCalendarDay: b.endsNextCalendarDay,
+            }),
+          )
+          .map((b) => b.id),
+      );
+      if (expiredIds.size === 0) return;
+
+      set({
+        blocks: blocks.filter((b) => !expiredIds.has(b.id)),
+        completedBlockIds: completedBlockIds.filter((id) => !expiredIds.has(id)),
+        skippedBlockIds: skippedBlockIds.filter((id) => !expiredIds.has(id)),
+        liveActivityChecklistFocusBlockId:
+          liveActivityChecklistFocusBlockId && expiredIds.has(liveActivityChecklistFocusBlockId)
+            ? null
+            : liveActivityChecklistFocusBlockId,
       });
       persist();
     },

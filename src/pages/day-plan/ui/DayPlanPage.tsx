@@ -93,6 +93,8 @@ export function DayPlanPage() {
     setPriorityStart,
     setPriorityEnd,
     setPriorityCategoryOrder,
+    clearCompletedFocusCategoryKeys,
+    clearPlanCompletionDismissedKeys,
     setQuickMemoDraft,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
@@ -115,6 +117,8 @@ export function DayPlanPage() {
       setPriorityStart: s.setPriorityStart,
       setPriorityEnd: s.setPriorityEnd,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
+      clearCompletedFocusCategoryKeys: s.clearCompletedFocusCategoryKeys,
+      clearPlanCompletionDismissedKeys: s.clearPlanCompletionDismissedKeys,
       setQuickMemoDraft: s.setQuickMemoDraft,
     })),
   );
@@ -169,11 +173,43 @@ export function DayPlanPage() {
     priorityPlanDateKeyEnd,
   ]);
 
+  /** 당일 기준으로 집중 구간이 이미 끝났는지(시작 전 아님) */
+  const priorityWindowEndedForToday = useMemo(() => {
+    if (planMode !== 'priority') return false;
+    const ps = parseHHmmToMinutes(priorityStart);
+    const pe = parseHHmmToMinutes(priorityEnd);
+    if (ps === null || pe === null) return false;
+
+    const rangeLo =
+      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd;
+    const rangeHi =
+      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKeyEnd : priorityPlanDateKey;
+    const nowKey = getLocalDateKey();
+    const nowMin = getLocalMinutesOfDayNow();
+    const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
+    const inRange = nowKey >= rangeLo && nowKey <= rangeHi;
+    if (!inRange) return false;
+
+    if (!overnight) {
+      return nowMin >= pe;
+    }
+    if (nowKey === rangeLo) return false;
+    if (nowKey === rangeHi) return nowMin >= pe;
+    return false;
+  }, [
+    planMode,
+    priorityStart,
+    priorityEnd,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+  ]);
+
   const { addBlock, quickMemos, removeQuickMemo } = useDayPlanStore(
     useShallow((s) => ({
       addBlock: s.addBlock,
       quickMemos: s.quickMemos,
       removeQuickMemo: s.removeQuickMemo,
+      prunePastEndedBlocks: s.prunePastEndedBlocks,
     })),
   );
   const { dayPlanBlocks, completedBlockIds, skippedBlockIds } = useDayPlanStore(
@@ -185,6 +221,16 @@ export function DayPlanPage() {
   );
   useEffect(() => {
     useDayPlanStore.getState().hydrate();
+  }, []);
+
+  /** 종료 시각이 지난 항목은 리스트에서 자동 정리 */
+  useEffect(() => {
+    const run = () => {
+      useDayPlanStore.getState().prunePastEndedBlocks();
+    };
+    run();
+    const id = setInterval(run, 30 * 1000);
+    return () => clearInterval(id);
   }, []);
 
   /** 데이플랜에서 시작 시각만 바꿔도 알람 시각이 따라가게 */
@@ -474,6 +520,9 @@ export function DayPlanPage() {
 
     if (isFocusStarted) {
       setIsFocusStarted(false);
+      clearCompletedFocusCategoryKeys();
+      clearPlanCompletionDismissedKeys();
+      setPriorityCategoryOrder([]);
       endFocusedLiveActivity();
     }
   }, [
@@ -482,6 +531,31 @@ export function DayPlanPage() {
     priorityWindowEligible,
     isFocusStarted,
     setIsFocusStarted,
+    clearCompletedFocusCategoryKeys,
+    clearPlanCompletionDismissedKeys,
+    setPriorityCategoryOrder,
+    endFocusedLiveActivity,
+  ]);
+
+  /** 집중 종료 시점이 지났다면(포커스 상태와 무관하게) 담기 리스트를 초기화 */
+  useEffect(() => {
+    if (planMode !== 'priority') return;
+    if (!priorityWindowEndedForToday) return;
+    if (priorityCategoryOrder.length === 0) return;
+
+    setIsFocusStarted(false);
+    clearCompletedFocusCategoryKeys();
+    clearPlanCompletionDismissedKeys();
+    setPriorityCategoryOrder([]);
+    endFocusedLiveActivity();
+  }, [
+    planMode,
+    priorityWindowEndedForToday,
+    priorityCategoryOrder.length,
+    setIsFocusStarted,
+    clearCompletedFocusCategoryKeys,
+    clearPlanCompletionDismissedKeys,
+    setPriorityCategoryOrder,
     endFocusedLiveActivity,
   ]);
 
@@ -500,8 +574,7 @@ export function DayPlanPage() {
       return () => registerRoutineStartFab(null, { ...idleFabMeta });
     }
 
-    const visible =
-      priorityWindowEligible && priorityCategoryOrder.length > 0 && !isFocusStarted;
+    const visible = !isFocusStarted;
 
     registerRoutineStartFab(
       () => {
@@ -509,7 +582,7 @@ export function DayPlanPage() {
       },
       {
         visible,
-        disabled: !visible,
+        disabled: !visible || priorityCategoryOrder.length === 0,
         label: '오늘 루틴 시작',
       },
     );
@@ -518,7 +591,6 @@ export function DayPlanPage() {
   }, [
     planMode,
     registerRoutineStartFab,
-    priorityWindowEligible,
     priorityCategoryOrder.length,
     isFocusStarted,
   ]);

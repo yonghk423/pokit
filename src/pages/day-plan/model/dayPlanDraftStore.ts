@@ -168,10 +168,12 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       for (const k of planCompletionDismissForKeys) {
         if (!nextDismissed.includes(k)) nextDismissed.push(k);
       }
+      const emptied = nextOrder.length === 0;
       return {
         priorityCategoryOrder: nextOrder,
-        completedFocusCategoryKeys: nextFocus,
-        planCompletionDismissedKeys: nextDismissed,
+        completedFocusCategoryKeys: emptied ? [] : nextFocus,
+        planCompletionDismissedKeys: emptied ? [] : nextDismissed,
+        isFocusStarted: emptied ? false : s.isFocusStarted,
       };
     }),
   addPlanCompletionDismissedKey: (key) =>

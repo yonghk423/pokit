@@ -1724,6 +1724,31 @@ export function PriorityBasedPlanSection({
                             paddingTop: isPriorityStripPrimary ? 12 : 4,
                           },
                         ]}>
+                        {isMainDay && bagCount === 0 ? (
+                          <View
+                            style={[
+                              styles.priorityMainEmptyHint,
+                              {
+                                borderColor: editorial.line,
+                                backgroundColor: isDark
+                                  ? 'rgba(255,255,255,0.03)'
+                                  : 'rgba(0,0,0,0.025)',
+                              },
+                            ]}>
+                            <ThemedText
+                              style={[styles.priorityMainEmptyHintTitle, { color: editorial.ink }]}
+                              lightColor={editorial.ink}
+                              darkColor={editorial.ink}>
+                              담기 목록이 비어 있어요
+                            </ThemedText>
+                            <ThemedText
+                              style={[styles.priorityMainEmptyHintBody, { color: editorial.muted }]}
+                              lightColor={editorial.muted}
+                              darkColor={editorial.muted}>
+                              아래에서 항목을 추가해 주세요.
+                            </ThemedText>
+                          </View>
+                        ) : null}
                         {timelineBlocksForDay.length > 0
                           ? timelineBlocksForDay.map((block, bi) => {
                           const dotTone =
@@ -2185,6 +2210,25 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 16,
     letterSpacing: -0.05,
+  },
+  priorityMainEmptyHint: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    gap: 2,
+    marginBottom: 10,
+  },
+  priorityMainEmptyHintTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  priorityMainEmptyHintBody: {
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16,
+    letterSpacing: -0.1,
   },
   timeModalFlipWrap: {
     width: '100%',
