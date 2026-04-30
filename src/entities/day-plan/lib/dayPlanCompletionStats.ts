@@ -1,5 +1,5 @@
 import { filterDayPlanFlowBlocks } from './dayPlanFlowBlock';
-import { resolveCategoryKeyFromLabel } from './dayPlanRuntimeTime';
+import { resolveBlockCategoryKey } from './dayPlanRuntimeTime';
 import type { DayPlanBlock } from '../model/types';
 
 /** 완료 처리된 플로우 블록만 — 카테고리 키별 완료 횟수 */
@@ -13,7 +13,7 @@ export function buildCompletedCountByCategoryKey(
   for (const id of completedBlockIds) {
     const b = byId.get(id);
     if (!b) continue;
-    const k = resolveCategoryKeyFromLabel(b.category ?? '') ?? 'other';
+    const k = resolveBlockCategoryKey(b) ?? 'other';
     counts[k] = (counts[k] ?? 0) + 1;
   }
   return counts;

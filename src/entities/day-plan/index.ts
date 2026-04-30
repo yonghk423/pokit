@@ -26,9 +26,21 @@ export {
   blockEndWallTimeMs,
   isBlockEndInPastForDateKey,
   minuteOffsetToDateMs,
+  resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
   toRuntimeTiming,
 } from './lib/dayPlanRuntimeTime';
+export {
+  registerCategoryKeyByDisplayNameResolver,
+  resolveRegisteredCategoryKeyByDisplayName,
+} from './lib/categoryKeyByDisplayNameResolver';
+export {
+  createCustomFlowCategoryId,
+  CUSTOM_FLOW_CATEGORY_PREFIX,
+  defaultCustomFlowPickerLabel,
+  isCustomFlowCategoryKey,
+  type CustomFlowCategoryKey,
+} from './lib/customFlowCategoryKey';
 export { buildCompletedCountByCategoryKey } from './lib/dayPlanCompletionStats';
 export {
   addDaysToLocalDateKey,

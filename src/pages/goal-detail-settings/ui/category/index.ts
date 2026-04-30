@@ -1,5 +1,7 @@
 import type { GoalDetailChecklistDerivedCategoryKey } from '@entities/day-plan';
 
+import { isCustomFlowCategoryKey } from '@entities/day-plan';
+
 import type { GoalDetailCategoryKey } from '../../model/types';
 
 import {
@@ -146,7 +148,7 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
   },
   other: {
     key: 'other',
-    titleKo: '맞춤 플로우',
+    titleKo: '플로우 직접 설정',
     getInitialDataConfig: getInitialOtherDataConfig,
     Preview: OtherPreview,
     Settings: OtherSettings,
@@ -155,5 +157,9 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
 };
 
 export function getGoalDetailCategoryModule(key: GoalDetailCategoryKey): GoalDetailCategoryModule {
-  return registry[key];
+  if (isCustomFlowCategoryKey(key)) {
+    const base = registry.other;
+    return { ...base, key };
+  }
+  return registry[key as keyof typeof registry];
 }

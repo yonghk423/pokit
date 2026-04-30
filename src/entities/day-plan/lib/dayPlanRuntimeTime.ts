@@ -1,6 +1,7 @@
 import type { DayPlanBlock } from '@entities/day-plan/model/types';
 
 import { addDaysToLocalDateKey } from './localDateKey';
+import { resolveRegisteredCategoryKeyByDisplayName } from './categoryKeyByDisplayNameResolver';
 
 function parseDateKey(dateKey: string): { year: number; month: number; day: number } | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
@@ -44,6 +45,8 @@ export function isBlockEndInPastForDateKey(
 
 export function resolveCategoryKeyFromLabel(label: string): string | null {
   const t = label.trim();
+  const fromRegistry = resolveRegisteredCategoryKeyByDisplayName(label);
+  if (fromRegistry) return fromRegistry;
   if (t === '러닝') return 'other';
   if (t === '업무' || t === '작업') return 'work';
   if (t === '독서') return 'reading';
@@ -60,12 +63,36 @@ export function resolveCategoryKeyFromLabel(label: string): string | null {
   if (t === '회고·점검' || t === '회고') return 'other';
   if (t === '창작·아이디어' || t === '창작') return 'creative';
   if (t === '메일·소통 정리' || t === '메일 정리') return 'inbox';
-  if (t === '휴식' || t === '사용자' || t === '맞춤 플로우' || t === '플로우') return 'other';
+  if (
+    t === '휴식' ||
+    t === '사용자' ||
+    t === '사용쟈' ||
+    t === '맞춤 플로우' ||
+    t === '카테고리 만들기' ||
+    t === '루틴 만들기' ||
+    t === '플로우 직접 설정' ||
+    t === '플로우' ||
+    t === '헬스' ||
+    t === '운동' ||
+    t === '피트니스' ||
+    t === '기타'
+  ) {
+    return 'other';
+  }
   if (t === '단식' || t === '체중관리') return 'fasting';
   if (t === '수분' || t === '수분섭취') return 'water';
   if (t === '약 복용') return 'medicine';
   if (t === '피트티스') return 'other';
   return null;
+}
+
+/** 블록에 저장된 `categoryKey`가 있으면 우선, 없으면 표시명(`category`)으로 키 추론 */
+export function resolveBlockCategoryKey(
+  block: Pick<DayPlanBlock, 'category' | 'categoryKey'>,
+): string | null {
+  const ck = typeof block.categoryKey === 'string' ? block.categoryKey.trim() : '';
+  if (ck) return ck;
+  return resolveCategoryKeyFromLabel(block.category ?? '');
 }
 
 export type DayPlanRuntimeTiming = {
@@ -82,6 +109,6 @@ export function toRuntimeTiming(dateKey: string, block: DayPlanBlock): DayPlanRu
   return {
     startAtMs,
     endAtMs,
-    categoryKey: resolveCategoryKeyFromLabel(block.category),
+    categoryKey: resolveBlockCategoryKey(block),
   };
 }

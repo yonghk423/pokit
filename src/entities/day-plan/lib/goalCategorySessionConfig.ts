@@ -319,11 +319,30 @@ export type OtherChecklistTask = {
 };
 
 export type OtherDetailDataConfig = {
+  /** 비어 있으면 담기·목록 등에서 기본 문구(`OTHER_CATEGORY_PICKER_FALLBACK_KO`) 사용 */
+  displayName: string;
   checklist: OtherChecklistTask[];
 };
 
+/** 담기·일정 등에서 `other` 키의 기본 표기(사용자가 이름을 비운 경우) */
+export const OTHER_CATEGORY_PICKER_FALLBACK_KO = '플로우 직접 설정';
+
+export function getOtherCategoryResolvedDisplayLabel(raw: unknown | null): string {
+  const cfg = normalizeOtherDetailConfig(raw ?? getInitialOtherDataConfig());
+  const d = cfg.displayName.trim();
+  return d.length > 0 ? d : OTHER_CATEGORY_PICKER_FALLBACK_KO;
+}
+
+/** `resolveCategoryKeyFromLabel`용 — 사용자가 지정한 이름만(없으면 null) */
+export function readTrimmedOtherCustomDisplayNameFromRaw(raw: unknown | null): string | null {
+  const cfg = normalizeOtherDetailConfig(raw ?? getInitialOtherDataConfig());
+  const d = cfg.displayName.trim();
+  return d.length > 0 ? d : null;
+}
+
 export function normalizeOtherDetailConfig(raw: unknown): OtherDetailDataConfig {
   const o = asObj(raw);
+  const displayName = clampStr(o.displayName, 40);
   const checklist: OtherChecklistTask[] = Array.isArray(o.checklist)
     ? (o.checklist as unknown[])
         .filter((t): t is Record<string, unknown> => t != null && typeof t === 'object')
@@ -335,11 +354,12 @@ export function normalizeOtherDetailConfig(raw: unknown): OtherDetailDataConfig 
         .filter((t) => t.text.length > 0)
     : [];
 
-  return { checklist };
+  return { displayName, checklist };
 }
 
 export function getInitialOtherDataConfig(): OtherDetailDataConfig {
   return {
+    displayName: '',
     checklist: [],
   };
 }

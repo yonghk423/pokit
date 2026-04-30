@@ -7,7 +7,7 @@ export function activeIconColorByCategory(categoryKey: string): string {
   if (categoryKey === 'medicine') return '#dc2626';
   if (categoryKey === 'fasting') return '#8b5a2b';
   if (categoryKey === 'water') return '#7dd3fc';
-  if (categoryKey === 'other') return '#f97316';
+  if (categoryKey === 'other' || categoryKey.startsWith('customFlow:')) return '#f97316';
   if (categoryKey === 'stretching') return '#0d9488';
   if (categoryKey === 'straightenBack') return '#6366f1';
   if (categoryKey === 'neckPosture') return '#a855f7';

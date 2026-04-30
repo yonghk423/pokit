@@ -14,6 +14,8 @@ export const StorageKeys = {
   priorityBagRemoveConfirmSkip: 'lockflow:priority-bag-remove-confirm-skip',
   /** 데이플랜 화면 드래프트(모드/시작·마무리/순서 등) */
   dayPlanDraft: 'lockflow:day-plan-draft',
+  /** 사용자 정의 플로우(`customFlow:…`) 카탈로그 순서 */
+  customFlowCatalog: 'lockflow:custom-flow-catalog',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

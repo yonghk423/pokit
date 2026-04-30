@@ -6,8 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   formatBlockTimeRange,
-  normalizeMedicineDetailConfig,
+  isCustomFlowCategoryKey,
   isDayPlanFlowBlock,
+  normalizeMedicineDetailConfig,
+  resolveBlockCategoryKey,
+  resolveCategoryKeyFromLabel,
   useDayPlanRuntimeStore,
   useDayPlanStore,
   type DayPlanBlock,
@@ -27,6 +30,7 @@ import {
   appendPriorityCategoryKeysIfMissing,
   useDayPlanDraftStore,
 } from '@pages/day-plan/model/dayPlanDraftStore';
+import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
   rescheduleDayPlanNotifications,
   syncMedicineReminderNotifications,
@@ -68,25 +72,7 @@ type EditingTarget = {
 };
 
 function inferCategoryKeyFromLabel(category: string): GoalDetailCategoryKey {
-  const t = category.trim();
-  if (t === '러닝') return 'other';
-  if (t === '업무' || t === '작업') return 'work';
-  if (t === '독서') return 'reading';
-  if (t === '공부' || t === '공부·학습') return 'study';
-  if (t === '명상') return 'meditation';
-  if (t === '요가') return 'yoga';
-  if (t === '하루·주간 정리' || t === '하루 정리' || t === '주간 정리') return 'planning';
-  if (t === '글쓰기') return 'writing';
-  if (t === '일기') return 'journal';
-  if (t === '언어 학습') return 'language';
-  if (t === '회고·점검' || t === '회고') return 'other';
-  if (t === '창작·아이디어' || t === '창작') return 'creative';
-  if (t === '메일·소통 정리' || t === '메일 정리') return 'inbox';
-  if (t === '휴식') return 'other';
-  if (t === '단식' || t === '체중관리') return 'fasting';
-  if (t === '수분' || t === '수분섭취') return 'water';
-  if (t === '약 복용') return 'medicine';
-  return 'other';
+  return (resolveCategoryKeyFromLabel(category) ?? 'other') as GoalDetailCategoryKey;
 }
 
 function blockTimeLabel(block: DayPlanBlock): string {
@@ -103,6 +89,7 @@ export function GoalDetailSettingsPage() {
 
   useEffect(() => {
     useDayPlanStore.getState().hydrate();
+    registerOtherCategoryResolverFromStorage();
   }, []);
   const blocks = useDayPlanStore((s) => s.blocks);
 
@@ -117,7 +104,8 @@ export function GoalDetailSettingsPage() {
       if (!b || !isDayPlanFlowBlock(b)) continue;
       rows.push({
         blockId: b.id,
-        categoryKey: inferCategoryKeyFromLabel(b.category),
+        categoryKey: (resolveBlockCategoryKey(b) ??
+          inferCategoryKeyFromLabel(b.category)) as GoalDetailCategoryKey,
         timeLabel: blockTimeLabel(b),
       });
     }
@@ -202,6 +190,9 @@ export function GoalDetailSettingsPage() {
     saveGoalDetailBlockConfig(target.blockId, next);
     // 기존 카테고리 단위 데이터도 함께 갱신(하위 호환)
     saveGoalDetailCategoryConfig(target.categoryKey, next);
+    if (target.categoryKey === 'other' || isCustomFlowCategoryKey(target.categoryKey)) {
+      registerOtherCategoryResolverFromStorage();
+    }
     if (target.categoryKey === 'medicine') {
       if (medicineReminderSyncTimerRef.current) {
         clearTimeout(medicineReminderSyncTimerRef.current);
@@ -236,7 +227,20 @@ export function GoalDetailSettingsPage() {
       }
       keysToAppend.push(t.categoryKey);
     }
-    appendPriorityCategoryKeysIfMissing([...new Set(keysToAppend)]);
+    const uniqueKeys = [...new Set(keysToAppend)];
+
+    const hasRealBlockTarget = targets.some((t) =>
+      blocks.some((b) => b.id === t.blockId && isDayPlanFlowBlock(b)),
+    );
+    /** 담기에서 만든 `customFlow:`만 편집한 경우(일정 블록 없음) — 오늘 루틴에 자동 담지 않음 */
+    const skipAutoAddToPriorityBag =
+      !hasRealBlockTarget &&
+      uniqueKeys.length > 0 &&
+      uniqueKeys.every((k) => isCustomFlowCategoryKey(k));
+
+    if (!skipAutoAddToPriorityBag) {
+      appendPriorityCategoryKeysIfMissing(uniqueKeys);
+    }
     appendGoalDetailCommittedCategoryKeys(keysToAppend);
 
     void (async () => {
@@ -255,7 +259,14 @@ export function GoalDetailSettingsPage() {
         });
       }
 
-      const ids = sortedTargets.map((t) => t.blockId).filter(Boolean);
+      const ids = sortedTargets
+        .map((t) => t.blockId)
+        .filter(
+          (id) =>
+            Boolean(id) &&
+            id !== 'single' &&
+            blocks.some((b) => b.id === id && isDayPlanFlowBlock(b)),
+        );
       if (ids.length === 0) {
         router.replace('/day-plan');
         return;
@@ -270,7 +281,7 @@ export function GoalDetailSettingsPage() {
         },
       });
     })();
-  }, [dataByBlockId, router, sortedTargets, targets]);
+  }, [blocks, dataByBlockId, router, sortedTargets, targets]);
 
   const previewTitleForBlock = useCallback(
     (blockId: string) => {

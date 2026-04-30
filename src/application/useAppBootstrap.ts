@@ -13,6 +13,7 @@ import {
 } from '@features/day-plan-notifications';
 import { useLocalNotifications } from '@features/local-notifications';
 import { useDayPlanDraftStore } from '@pages/day-plan';
+import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
   flushLocalStorageClientWrites,
   initLocalStorageClient,
@@ -44,6 +45,7 @@ export function useAppBootstrap() {
 
       useDayPlanStore.getState().hydrate();
       useDayPlanDraftStore.getState().hydrate();
+      registerOtherCategoryResolverFromStorage();
 
       const plan = useDayPlanStore.getState();
       useDayPlanRuntimeStore.getState().buildTimelineFromBlocks({
@@ -132,6 +134,7 @@ export function useAppBootstrap() {
         const { priorityStart: ps, priorityEnd: pe } = useDayPlanDraftStore.getState();
         void syncWaterReminderNotifications({ routineStartHhmm: ps, routineEndHhmm: pe });
         void syncGoalDetailIncompleteReminderNotifications();
+        registerOtherCategoryResolverFromStorage();
       } else {
         /** 백그라운드/비활성 전환 시 대기 중인 저장 write를 즉시 정리 */
         void flushLocalStorageClientWrites();

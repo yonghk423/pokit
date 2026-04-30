@@ -1,9 +1,15 @@
 import {
   addDaysToLocalDateKey,
+  defaultCustomFlowPickerLabel,
+  getInitialOtherDataConfig,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
+  getOtherCategoryResolvedDisplayLabel,
+  isCustomFlowCategoryKey,
+  normalizeOtherDetailConfig,
   parseHHmmToMinutes,
 } from '@entities/day-plan';
+import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 
 export const PRIMARY = 'rgb(0, 0, 0)';
 
@@ -22,7 +28,7 @@ export const CATEGORIES = [
   { key: 'fasting', label: '체중관리', icon: 'figure.stand' as const },
   { key: 'water', label: '수분섭취', icon: 'drop.fill' as const },
   { key: 'medicine', label: '약 복용', icon: 'cross.case.fill' as const },
-  { key: 'other', label: '맞춤 플로우', icon: 'person.fill' as const },
+  { key: 'other', label: '플로우 직접 설정', icon: 'person.fill' as const },
 ];
 
 /** 담기·우선순위에서 고를 수 있는 카테고리(전체) */
@@ -40,7 +46,34 @@ const LEGACY_PICKER_BY_KEY: Record<string, PickerCategoryItem> = {
 };
 
 export function getPickerCategoryItem(key: string): PickerCategoryItem | undefined {
+  if (isCustomFlowCategoryKey(key)) {
+    return {
+      key,
+      label: getPickerCategoryLabel(key),
+      icon: 'person.fill',
+    } as PickerCategoryItem;
+  }
   return PICKER_CATEGORIES.find((c) => c.key === key) ?? LEGACY_PICKER_BY_KEY[key];
+}
+
+/** `other`·`customFlow:…`는 목표 상세 저장값 기준 표시명을 쓴다. */
+export function getPickerCategoryLabel(
+  key: string,
+  otherDetailConfig: unknown | null | undefined = undefined,
+): string {
+  if (isCustomFlowCategoryKey(key)) {
+    const raw =
+      otherDetailConfig !== undefined ? otherDetailConfig : loadGoalDetailCategoryConfig(key);
+    const cfg = normalizeOtherDetailConfig(raw ?? getInitialOtherDataConfig());
+    const d = cfg.displayName.trim();
+    return d.length > 0 ? d : defaultCustomFlowPickerLabel(key);
+  }
+  if (key === 'other') {
+    const raw =
+      otherDetailConfig !== undefined ? otherDetailConfig : loadGoalDetailCategoryConfig('other');
+    return getOtherCategoryResolvedDisplayLabel(raw);
+  }
+  return getPickerCategoryItem(key)?.label ?? '사용자';
 }
 
 export type PriorityTask = { id: string; title: string; categoryKey: string };
@@ -63,7 +96,7 @@ export function getPriorityDisplaySections(
   const fullOrder = [...order, ...orphanKeys];
   return fullOrder.map((ck) => ({
     categoryKey: ck,
-    label: getPickerCategoryItem(ck)?.label ?? '사용자',
+    label: getPickerCategoryLabel(ck),
     tasks: tasks.filter((t) => t.categoryKey === ck),
   }));
 }

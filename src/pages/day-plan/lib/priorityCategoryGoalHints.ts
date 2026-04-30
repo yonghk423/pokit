@@ -1,4 +1,5 @@
 import {
+  isCustomFlowCategoryKey,
   isGoalDetailChecklistDerivedCategoryKey,
   normalizeFastingDetailConfig,
   normalizeMedicineDetailConfig,
@@ -14,6 +15,16 @@ function medicineEnabledSlots(cfg: ReturnType<typeof normalizeMedicineDetailConf
   if (cfg.lunchOn) out.push('점심');
   if (cfg.dinnerOn) out.push('저녁');
   return out;
+}
+
+function hintFromOtherStyleRaw(raw: unknown): string {
+  const cfg = normalizeOtherDetailConfig(raw ?? {});
+  const total = cfg.checklist.length;
+  const done = cfg.checklist.filter((x) => x.done).length;
+  if (total > 0) {
+    return done > 0 ? `작업 ${total}개 · 완료 ${done}` : `작업 ${total}개`;
+  }
+  return '체크리스트 항목 준비됨';
 }
 
 export type PriorityGoalHintOptions = {
@@ -72,24 +83,12 @@ export function getPriorityCategoryGoalHint(
       const last = slots[idx] ?? slots[slots.length - 1];
       return `${line} · ${last} 복용 · ${cfg.takenCount}/${cfg.dosesPerDay}회`;
     }
-    case 'other': {
-      const cfg = normalizeOtherDetailConfig(raw ?? {});
-      const total = cfg.checklist.length;
-      const done = cfg.checklist.filter((x) => x.done).length;
-      if (total > 0) {
-        return done > 0 ? `작업 ${total}개 · 완료 ${done}` : `작업 ${total}개`;
-      }
-      return '맞춤 항목 준비됨';
-    }
+    case 'other':
+      return hintFromOtherStyleRaw(raw);
     default: {
+      if (isCustomFlowCategoryKey(categoryKey)) return hintFromOtherStyleRaw(raw);
       if (!isGoalDetailChecklistDerivedCategoryKey(categoryKey)) return null;
-      const cfg = normalizeOtherDetailConfig(raw ?? {});
-      const total = cfg.checklist.length;
-      const done = cfg.checklist.filter((x) => x.done).length;
-      if (total > 0) {
-        return done > 0 ? `작업 ${total}개 · 완료 ${done}` : `작업 ${total}개`;
-      }
-      return '맞춤 항목 준비됨';
+      return hintFromOtherStyleRaw(raw);
     }
   }
 }

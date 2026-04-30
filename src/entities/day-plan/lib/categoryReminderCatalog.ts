@@ -1,3 +1,4 @@
+import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 import { GOAL_DETAIL_CHECKLIST_DERIVED_CATEGORY_KEYS } from './goalDetailChecklistCategoryKeys';
 
 /** 카테고리별 반복 알림 설정 UI·스케줄에 쓰는 키 순서 */
@@ -37,5 +38,6 @@ const LABELS: Record<string, string> = {
 };
 
 export function categoryReminderLabelKo(key: string): string {
+  if (isCustomFlowCategoryKey(key)) return '나만의 플로우';
   return LABELS[key] ?? key;
 }

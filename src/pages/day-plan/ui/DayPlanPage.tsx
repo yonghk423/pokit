@@ -49,7 +49,7 @@ import { ThemedView } from '@shared/ui/themed-view';
 
 import {
   defaultPriorityWindowFromNow,
-  getPickerCategoryItem,
+  getPickerCategoryLabel,
   isOvernightHhmmRange,
   PRIMARY,
 } from '../lib/dayPlanEditorShared';
@@ -340,13 +340,14 @@ export function DayPlanPage() {
         Alert.alert('시각 형식', '시작·종료 시각을 먼저 확인해 주세요.');
         return;
       }
-      const label = getPickerCategoryItem(categoryKey)?.label ?? '항목';
+      const label = getPickerCategoryLabel(categoryKey);
       const result = addBlock({
         title: label,
         startMinutes: ps,
         endMinutes: pe,
         endsNextCalendarDay: overnight,
         category: label,
+        categoryKey: categoryKey,
         replaceOverlapping: true,
         planDateKey: getLocalDateKey(),
       });
@@ -444,10 +445,8 @@ export function DayPlanPage() {
         return;
       }
       const headKey = priorityCategoryOrder[0]!;
-      const catLabel = getPickerCategoryItem(headKey)?.label ?? '항목';
-      const orderedLabels = priorityCategoryOrder.map(
-        (key) => getPickerCategoryItem(key)?.label ?? '사용자',
-      );
+      const catLabel = getPickerCategoryLabel(headKey);
+      const orderedLabels = priorityCategoryOrder.map((key) => getPickerCategoryLabel(key));
       const blockTitle = orderedLabels.length > 0 ? orderedLabels.join('\n') : '항목';
 
       const result = addBlock({
@@ -456,6 +455,7 @@ export function DayPlanPage() {
         endMinutes: pe,
         endsNextCalendarDay: overnight,
         category: catLabel,
+        categoryKey: headKey,
         replaceOverlapping: true,
         planDateKey: getLocalDateKey(),
       });

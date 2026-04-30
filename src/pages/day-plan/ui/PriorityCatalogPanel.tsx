@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useMemo, useRef } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
@@ -259,6 +260,10 @@ type Props = {
   onOpenFixedRoutineEditor: () => void;
   onCatalogTap: (key: string) => void;
   onOpenCategorySettings: (categoryKey: string) => void;
+  /** 저장된 사용자 플로우 — 생산성 섹션에 나열 */
+  customFlowPickerItems: PickerCategoryItem[];
+  /** 새 `customFlow:` 항목 생성 후 목표 상세로 이동 */
+  onCreateCustomFlow: () => void;
   isDark: boolean;
 };
 
@@ -272,19 +277,32 @@ export function PriorityCatalogPanel({
   onOpenFixedRoutineEditor,
   onCatalogTap,
   onOpenCategorySettings,
+  customFlowPickerItems,
+  onCreateCustomFlow,
   isDark,
 }: Props) {
-  const visibleCatalogCategories = filterCatalogPickerCategories(PICKER_CATEGORIES);
+  const [catalogLabelTick, setCatalogLabelTick] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      setCatalogLabelTick((n) => n + 1);
+    }, []),
+  );
+
+  const visibleCatalogCategories = useMemo(() => {
+    void catalogLabelTick;
+    return filterCatalogPickerCategories(PICKER_CATEGORIES);
+  }, [catalogLabelTick]);
   const { fixedFlows, healthBodyFlows, productivityTools } = splitAvailableCatalogCategories(
     visibleCatalogCategories,
     userFixedRoutineOrder,
+    customFlowPickerItems,
   );
 
   const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
 
   return (
     <View style={styles.root}>
-      {visibleCatalogCategories.length === 0 ? (
+      {visibleCatalogCategories.length === 0 && customFlowPickerItems.length === 0 ? (
         <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
           <View style={styles.emptyWrap} accessibilityRole="text">
             <ThemedText style={[styles.emptyTitle, { color: editorial.ink }]}>더 담을 항목이 없어요</ThemedText>
@@ -416,28 +434,59 @@ export function PriorityCatalogPanel({
             </View>
           ) : null}
 
-          {productivityTools.length > 0 ? (
-            <View style={[styles.sectionBlock, styles.sectionBlockFollows]}>
+          <View style={[styles.sectionBlock, styles.sectionBlockFollows]}>
               <CatalogSectionHeader
                 title="생산성을 높이는 도구"
-                subtitle="독서·공부·정리·창작 등 집중에 쓸 항목을 골라 담아요."
+                subtitle="독서·공부·정리·창작 등 집중에 쓸 항목을 골라 담아요. 직접 만든 루틴은 아래에서 계속 추가할 수 있어요."
                 ink={editorial.ink}
                 muted={editorial.muted}
               />
               <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
-                {renderRows(
-                  productivityTools,
-                  editorial,
-                  isDark,
-                  priorityCategoryOrder,
-                  isFocusStarted,
-                  isCatalogRowCompleted,
-                  onCatalogTap,
-                  onOpenCategorySettings,
-                )}
+                {productivityTools.length > 0
+                  ? renderRows(
+                      productivityTools,
+                      editorial,
+                      isDark,
+                      priorityCategoryOrder,
+                      isFocusStarted,
+                      isCatalogRowCompleted,
+                      onCatalogTap,
+                      onOpenCategorySettings,
+                    )
+                  : null}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="루틴 만들기, 새 루틴 만들기"
+                  onPress={() => {
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    onCreateCustomFlow();
+                  }}
+                  style={({ pressed }) => [
+                    styles.catalogRow,
+                    { borderBottomColor: editorial.line, opacity: pressed ? 0.88 : 1 },
+                  ]}>
+                  <View style={styles.catalogRowMainHit}>
+                    <IconSymbol name="plus.circle.fill" size={22} color={editorial.muted} />
+                    <View style={styles.catalogRowTextCol}>
+                      <ThemedText
+                        style={[styles.catalogRowLabel, { color: editorial.ink }]}
+                        lightColor={editorial.ink}
+                        darkColor={editorial.ink}
+                        numberOfLines={1}>
+                        루틴 만들기
+                      </ThemedText>
+                      <ThemedText
+                        style={[styles.catalogRowSubtitle, { color: editorial.muted }]}
+                        lightColor={editorial.muted}
+                        darkColor={editorial.muted}
+                        numberOfLines={2}>
+                        새 루틴을 만들고 이름·체크리스트를 정할 수 있어요
+                      </ThemedText>
+                    </View>
+                  </View>
+                </Pressable>
               </View>
             </View>
-          ) : null}
         </>
       )}
     </View>

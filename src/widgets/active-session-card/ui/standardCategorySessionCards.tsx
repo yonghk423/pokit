@@ -1,11 +1,12 @@
-import type {
-  FastingDetailDataConfig,
-  MedicineDetailDataConfig,
-  MeditationDetailDataConfig,
-  OtherDetailDataConfig,
-  WaterDetailDataConfig,
-  WorkDetailDataConfig,
-  YogaDetailDataConfig,
+import {
+  getOtherCategoryResolvedDisplayLabel,
+  type FastingDetailDataConfig,
+  type MedicineDetailDataConfig,
+  type MeditationDetailDataConfig,
+  type OtherDetailDataConfig,
+  type WaterDetailDataConfig,
+  type WorkDetailDataConfig,
+  type YogaDetailDataConfig,
 } from '@entities/day-plan';
 import { CategoryImmersionTheme as T } from '@shared/config/categoryImmersionTheme';
 import { StyleSheet, Text, View } from 'react-native';
@@ -416,7 +417,7 @@ export function OtherSessionCard({
           surface="light"
           icon="star.fill"
           label="플로우 체크리스트"
-          badge="맞춤 플로우"
+          badge={getOtherCategoryResolvedDisplayLabel(data)}
           body={checklistTop || '목표 상세에서 체크리스트를 입력해 주세요.'}
         />
         <BentoRow>

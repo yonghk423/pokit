@@ -1,23 +1,31 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
+  createCustomFlowCategoryId,
   filterDayPlanFlowBlocks,
+  getInitialOtherDataConfig,
+  resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
   useDayPlanStore,
 } from '@entities/day-plan';
+import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
+  appendCustomFlowCatalogId,
+  listCustomFlowCatalogIds,
   loadPriorityCatalogFixedRoutineKeys,
+  saveGoalDetailCategoryConfig,
   savePriorityCatalogFixedRoutineKeys,
 } from '@shared/lib/storage';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
+import { getPickerCategoryLabel } from '../lib/dayPlanEditorShared';
 import { normalizeFixedRoutineCategoryKeys } from '../lib/normalizeFixedRoutineCategoryKeys';
 import { palette, type DayPlanPalette } from '../lib/dayPlanPalette';
 import { useDayPlanDraftStore } from '../model/dayPlanDraftStore';
@@ -105,17 +113,46 @@ export function PriorityCatalogPage() {
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
   const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
 
+  const [customCatalogEpoch, setCustomCatalogEpoch] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      setCustomCatalogEpoch((n) => n + 1);
+    }, []),
+  );
+
+  const customFlowPickerItems = useMemo(() => {
+    void customCatalogEpoch;
+    return listCustomFlowCatalogIds().map((id) => ({
+      key: id,
+      label: getPickerCategoryLabel(id),
+      icon: 'person.fill' as const,
+    }));
+  }, [customCatalogEpoch]);
+
   const completedCategoryKeysFromPlan = useMemo(() => {
     const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
     const doneCategoryKeys = new Set<string>();
     const flowBlocks = filterDayPlanFlowBlocks(planBlocks);
     flowBlocks.forEach((block) => {
       if (!doneBlockIds.has(block.id)) return;
-      const key = resolveCategoryKeyFromLabel(block.category ?? '');
+      const key = resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category ?? '');
       if (key) doneCategoryKeys.add(key);
     });
     return [...doneCategoryKeys];
   }, [planBlocks, completedBlockIds, skippedBlockIds]);
+
+  const onCreateCustomFlow = useCallback(() => {
+    const id = createCustomFlowCategoryId();
+    appendCustomFlowCatalogId(id);
+    saveGoalDetailCategoryConfig(id, getInitialOtherDataConfig());
+    registerOtherCategoryResolverFromStorage();
+    setCustomCatalogEpoch((n) => n + 1);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.push({
+      pathname: '/goal-detail-settings',
+      params: { categoryKey: id },
+    });
+  }, [router]);
 
   const isCatalogRowCompleted = useCallback(
     (categoryKey: string) => {
@@ -223,6 +260,8 @@ export function PriorityCatalogPage() {
             onOpenFixedRoutineEditor={() => setFixedEditorOpen(true)}
             onCatalogTap={onCatalogTap}
             onOpenCategorySettings={onOpenCategorySettings}
+            customFlowPickerItems={customFlowPickerItems}
+            onCreateCustomFlow={onCreateCustomFlow}
             isDark={isDark}
           />
         </ScrollView>

@@ -1,4 +1,4 @@
-import type { GoalDetailChecklistDerivedCategoryKey } from '@entities/day-plan';
+import type { CustomFlowCategoryKey, GoalDetailChecklistDerivedCategoryKey } from '@entities/day-plan';
 
 export type GoalDetailCategoryKey =
   | 'work'
@@ -9,5 +9,6 @@ export type GoalDetailCategoryKey =
   | 'water'
   | 'medicine'
   | 'other'
-  | GoalDetailChecklistDerivedCategoryKey;
+  | GoalDetailChecklistDerivedCategoryKey
+  | CustomFlowCategoryKey;
 

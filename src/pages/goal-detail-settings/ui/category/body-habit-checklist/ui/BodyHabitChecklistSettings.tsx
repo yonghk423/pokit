@@ -38,12 +38,16 @@ export function BodyHabitChecklistSettings({
   }, [dataConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({ checklist });
+    const parent = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
+    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({
+      displayName: parent.displayName,
+      checklist,
+    });
     const s = JSON.stringify(payload);
     if (lastRef.current === s) return;
     lastRef.current = s;
     onChangeDataConfig(payload);
-  }, [checklist, onChangeDataConfig]);
+  }, [checklist, dataConfig, onChangeDataConfig]);
 
   const addTask = () => {
     const text = draftTask.trim();

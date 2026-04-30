@@ -65,4 +65,9 @@ export {
 export { syncDayPlanToWidget } from './widgetDayPlanSync';
 export { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
 export type { PersistedDayPlanDraft } from './dayPlanDraftStorage';
+export {
+  appendCustomFlowCatalogId,
+  listCustomFlowCatalogIds,
+  removeCustomFlowCatalogId,
+} from './customFlowCatalogStorage';
 

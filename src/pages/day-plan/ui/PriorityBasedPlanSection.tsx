@@ -30,6 +30,8 @@ import {
   localDateToDateKey,
   parseHHmmToMinutes,
   parseLocalDateKeyToDate,
+  isCustomFlowCategoryKey,
+  resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
   sortDayPlanBlocks,
   useDayPlanStore
@@ -54,6 +56,7 @@ import {
   formatDateKeyDisplayKo,
   formatMinutesToHHmm,
   getPickerCategoryItem,
+  getPickerCategoryLabel,
   isOvernightHhmmRange,
   PICKER_CATEGORIES,
   planDayIntroFromRange,
@@ -64,6 +67,8 @@ import {
 } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { getPriorityCategoryGoalHint } from '../lib/priorityCategoryGoalHints';
+import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
+
 import { useDayPlanDraftStore } from '../model/dayPlanDraftStore';
 import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
 
@@ -880,20 +885,28 @@ export function PriorityBasedPlanSection({
   const monthTitle = `${safeMonthCursor.getFullYear()}년 ${safeMonthCursor.getMonth() + 1}월`;
   const weekdayLabels = ['월', '화', '수', '목', '금', '토', '일'];
 
-  const selectedItems = useMemo(
-    () =>
-      priorityCategoryOrder
-        .map((key) => getPickerCategoryItem(key))
-        .filter(Boolean) as (typeof PICKER_CATEGORIES)[number][],
-    [priorityCategoryOrder],
-  );
-
   /** 목표 상세 저장소 기준 부가 한 줄 — 설정 화면에서 돌아올 때 갱신 */
   const [categoryHintTick, setCategoryHintTick] = useState(0);
   useFocusEffect(
     useCallback(() => {
+      registerOtherCategoryResolverFromStorage();
       setCategoryHintTick((n) => n + 1);
     }, []),
+  );
+
+  const selectedItems = useMemo(
+    () =>
+      priorityCategoryOrder
+        .map((key) => {
+          const base = getPickerCategoryItem(key);
+          if (!base) return null;
+          if (key === 'other' || isCustomFlowCategoryKey(key)) {
+            return { ...base, label: getPickerCategoryLabel(key) };
+          }
+          return base;
+        })
+        .filter(Boolean) as (typeof PICKER_CATEGORIES)[number][],
+    [priorityCategoryOrder, categoryHintTick],
   );
 
   const categoryKeysForHints = useMemo(
@@ -923,7 +936,7 @@ export function PriorityBasedPlanSection({
       language: '언어 학습 체크리스트 미작성',
       creative: '창작 체크리스트 미작성',
       inbox: '정리 체크리스트 미작성',
-      other: '맞춤 체크리스트 미작성',
+      other: '체크리스트 미작성',
     }),
     [],
   );
@@ -982,7 +995,7 @@ export function PriorityBasedPlanSection({
     const flowBlocks = filterDayPlanFlowBlocks(planBlocks);
     flowBlocks.forEach((block) => {
       if (!doneBlockIds.has(block.id)) return;
-      const key = resolveCategoryKeyFromLabel(block.category ?? '');
+      const key = resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category ?? '');
       if (key) doneCategoryKeys.add(key);
     });
     return [...doneCategoryKeys];
@@ -1144,8 +1157,8 @@ export function PriorityBasedPlanSection({
 
   const removeConfirmLabel = useMemo(() => {
     if (!removeConfirmCategoryKey) return '항목';
-    return getPickerCategoryItem(removeConfirmCategoryKey)?.label ?? '항목';
-  }, [removeConfirmCategoryKey]);
+    return getPickerCategoryLabel(removeConfirmCategoryKey);
+  }, [removeConfirmCategoryKey, categoryHintTick]);
 
   /** 라이트: 대표 톤은 `dayPlanPalette` 그레이(containerLow)·진한 글자(onSurface) — 순백·채도 높은 다크 면 아님 */
   const editorial = useMemo(() => {
@@ -1829,69 +1842,6 @@ export function PriorityBasedPlanSection({
                         </View>
                       ) : null}
 
-                      {blocks.length === 0 &&
-                        !showPriorityInMainTimeline &&
-                        !(isOvernightTailDay && bagCount > 0) ? (
-                        <View style={styles.priorityTimelineEventRowHoriz}>
-                          <ThemedText
-                            style={[
-                              styles.priorityTimelineEventTimeCol,
-                              { color: editorial.muted, width: timeColW, fontSize: timeFont },
-                            ]}
-                            lightColor={editorial.muted}
-                            darkColor={editorial.muted}
-                            numberOfLines={1}>
-                            —
-                          </ThemedText>
-                          <View
-                            style={[
-                              styles.priorityTimelineDot,
-                              {
-                                backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)',
-                                marginTop: isPriorityStripPrimary ? 6 : 4,
-                              },
-                            ]}
-                          />
-                          <View style={styles.priorityTimelineEventTextStack}>
-                            <ThemedText
-                              style={[
-                                styles.priorityTimelineEventTitleHoriz,
-                                {
-                                  color: eventTitleColor,
-                                  fontSize: isPriorityStripPrimary ? 14 : 11,
-                                  lineHeight: isPriorityStripPrimary ? 19 : 15,
-                                },
-                              ]}
-                              lightColor={eventTitleColor}
-                              darkColor={eventTitleColor}
-                              numberOfLines={isPriorityStripPrimary ? 2 : 1}>
-                              {priorityWindowLine}
-                            </ThemedText>
-                            <ThemedText
-                              style={[
-                                styles.priorityTimelinePlaceholder,
-                                {
-                                  color: editorial.muted,
-                                  fontSize: isPriorityStripPrimary ? 12 : 10,
-                                  lineHeight: isPriorityStripPrimary ? 16 : 14,
-                                },
-                              ]}
-                              lightColor={editorial.muted}
-                              darkColor={editorial.muted}
-                              numberOfLines={isPriorityStripPrimary ? 2 : 1}>
-                              {isStoreDay
-                                ? isMainDay
-                                  ? '이 날에 담긴 플로우가 없어요. 담기에서 골라 보세요.'
-                                  : '플로우 없음'
-                                : isMainDay
-                                  ? '일정이 다른 날을 가리키면 여기 내용이 바뀌어요.'
-                                  : isOvernightTailDay
-                                    ? '전날 밤에 이어진 집중 구간이에요.'
-                                    : '다른 날 일정'}
-                            </ThemedText>
-                          </View>
-                        </View>
-                      ) : null}
                       </View>
                     </View>
 

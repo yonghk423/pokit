@@ -7,10 +7,13 @@ import {
   blockDurationSec,
   filterDayPlanFlowBlocks,
   formatMinuteOfDayKo,
+  getOtherCategoryResolvedDisplayLabel,
+  resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
   useDayPlanStore,
   type DayPlanBlock,
 } from '@entities/day-plan';
+import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -36,7 +39,7 @@ const CATEGORY_META: Record<string, { icon: Parameters<typeof IconSymbol>[0]['na
   fasting: { icon: 'figure.stand', label: '체중관리' },
   water: { icon: 'drop.fill', label: '수분섭취' },
   medicine: { icon: 'cross.case.fill', label: '약 복용' },
-  other: { icon: 'person.fill', label: '플로우' },
+  other: { icon: 'person.fill', label: '플로우 직접 설정' },
 };
 
 type ReviewRow = {
@@ -54,13 +57,15 @@ function toHHmm(minutes: number): string {
   return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
 }
 
-function getReviewCopy(block: DayPlanBlock): { title: string; subtitle: string } {
+function getReviewCopy(block: DayPlanBlock, otherLabelFallback: string): { title: string; subtitle: string } {
   const lines = block.title
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const categoryFallback = CATEGORY_META[resolveCategoryKeyFromLabel(block.category) ?? 'other']?.label ?? '플로우';
+  const catKey = resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category) ?? 'other';
+  const categoryFallback =
+    catKey === 'other' ? otherLabelFallback : (CATEGORY_META[catKey]?.label ?? '플로우');
   const first = lines[0] ?? '';
   const looksNumbered = /^\d+\.\s/.test(first);
 
@@ -98,6 +103,9 @@ export function FlowReviewPage() {
   const removeBlock = useDayPlanStore((s) => s.removeBlock);
 
   const rows = useMemo<ReviewRow[]>(() => {
+    const otherLabelFallback = getOtherCategoryResolvedDisplayLabel(
+      loadGoalDetailCategoryConfig('other'),
+    );
     const byId = new Map(filterDayPlanFlowBlocks(blocks).map((block) => [block.id, block]));
     const ids = blockIds.length > 0 ? blockIds : startBlockId ? [startBlockId] : [];
 
@@ -105,9 +113,10 @@ export function FlowReviewPage() {
       .map((id) => byId.get(id))
       .filter((block): block is DayPlanBlock => Boolean(block))
       .map((block) => {
-        const categoryKey = resolveCategoryKeyFromLabel(block.category) ?? 'other';
+        const categoryKey =
+          resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category) ?? 'other';
         const durationMin = Math.max(0, Math.round(blockDurationSec(block) / 60));
-        const copy = getReviewCopy(block);
+        const copy = getReviewCopy(block, otherLabelFallback);
         return { block, categoryKey, durationMin, ...copy };
       });
   }, [blocks, blockIds, startBlockId]);

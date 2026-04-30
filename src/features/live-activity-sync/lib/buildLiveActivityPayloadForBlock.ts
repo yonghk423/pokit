@@ -7,6 +7,7 @@ import {
   isPriorityCompoundBlockTitle,
   normalizeReadingLiveActivityConfig,
   parseNumberedFlowLines,
+  resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
 } from '@entities/day-plan';
 import { useDayPlanRuntimeStore, useDayPlanStore } from '@entities/day-plan';
@@ -304,7 +305,9 @@ export function buildLiveActivityPayloadForBlock(input: {
   if (!timing) return null;
 
   const categoryLabel = normalizeCategoryLabel(block.category ?? '');
-  const categoryKey = resolveCategoryKeyFromLabel(categoryLabel);
+  const categoryKey =
+    resolveBlockCategoryKey({ ...block, category: categoryLabel }) ??
+    resolveCategoryKeyFromLabel(categoryLabel);
   const title = block.title?.trim() ?? '';
   const readingDataConfig =
     categoryKey === 'reading'

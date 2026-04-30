@@ -25,21 +25,24 @@ export function OtherSettings({
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
   const initial = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
 
+  const [displayName, setDisplayName] = useState(initial.displayName);
   const [draftTask, setDraftTask] = useState('');
   const [checklist, setChecklist] = useState(initial.checklist);
   const lastRef = useRef<string | null>(null);
 
   useEffect(() => {
-    setChecklist(initial.checklist);
+    const next = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
+    setDisplayName(next.displayName);
+    setChecklist(next.checklist);
   }, [dataConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({ checklist });
+    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({ displayName, checklist });
     const s = JSON.stringify(payload);
     if (lastRef.current === s) return;
     lastRef.current = s;
     onChangeDataConfig(payload);
-  }, [checklist, onChangeDataConfig]);
+  }, [displayName, checklist, onChangeDataConfig]);
 
   const addTask = () => {
     const text = draftTask.trim();
@@ -75,6 +78,22 @@ export function OtherSettings({
 
   return (
     <View style={styles.shell}>
+      <View style={styles.nameBlock}>
+        <ThemedText style={[styles.fieldLabel, { color: c.onVariant }]}>카테고리 이름</ThemedText>
+        <TextInput
+          value={displayName}
+          onChangeText={setDisplayName}
+          placeholder="이 카테고리에 붙일 이름"
+          placeholderTextColor={c.outline}
+          style={[styles.nameInput, { color: c.onSurface, borderBottomColor: c.outline }]}
+          maxLength={40}
+          returnKeyType="done"
+        />
+        <ThemedText style={[styles.nameHint, { color: c.onVariant }]}>
+          비워 두면 담기·일정에는 「플로우 직접 설정」으로 보여요.
+        </ThemedText>
+      </View>
+
       <View style={styles.listHeader}>
         <ThemedText style={[styles.mainTitle, { color: c.onSurface }]}>Tasks</ThemedText>
       </View>
@@ -147,6 +166,15 @@ export function OtherSettings({
 
 const styles = StyleSheet.create({
   shell: { gap: 18, paddingVertical: 6 },
+  nameBlock: { gap: 8, paddingTop: 2 },
+  fieldLabel: { fontSize: 13, fontWeight: '700', letterSpacing: -0.2 },
+  nameInput: {
+    fontSize: 17,
+    fontWeight: '600',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  nameHint: { fontSize: 12, fontWeight: '500', lineHeight: 16 },
   listHeader: { gap: 6, paddingTop: 2 },
   mainTitle: { fontSize: 42, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },
   toolbar: {

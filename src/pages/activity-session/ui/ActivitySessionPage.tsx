@@ -10,6 +10,7 @@ import {
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
   getNextPendingAfter,
+  isCustomFlowCategoryKey,
   isGoalDetailChecklistStyleCategoryKey,
   normalizeFastingDetailConfig,
   normalizeMedicineDetailConfig,
@@ -23,6 +24,7 @@ import {
   normalizeYogaDetailConfig,
   parseHHmmToMinutes,
   parseNumberedFlowLines,
+  resolveBlockCategoryKey,
   toRuntimeTiming,
   useDayPlanRuntimeStore,
   useDayPlanStore,
@@ -46,6 +48,7 @@ import {
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { formatDurationMinKo } from '@widgets/active-session-card/ui/sessionCardShared';
+import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 
 import {
   ImmersionBottomControls,
@@ -63,42 +66,6 @@ const WATER_CYAN = '#22d3ee';
 const READING_EMERALD = GoalDetailSessionUi.readingAccent;
 const RING_SIZE = 232;
 const RING_STROKE = 14;
-const CATEGORY_KEY_BY_LABEL: Record<string, string> = {
-  러닝: 'other',
-  업무: 'work',
-  작업: 'work',
-  독서: 'reading',
-  헬스: 'other',
-  운동: 'other',
-  피트니스: 'other',
-  공부: 'other',
-  '공부·학습': 'study',
-  '하루·주간 정리': 'planning',
-  글쓰기: 'writing',
-  일기: 'journal',
-  '언어 학습': 'language',
-  '회고·점검': 'other',
-  회고: 'other',
-  '창작·아이디어': 'creative',
-  창작: 'creative',
-  '메일·소통 정리': 'inbox',
-  '메일 정리': 'inbox',
-  명상: 'meditation',
-  요가: 'yoga',
-  휴식: 'other',
-  단식: 'fasting',
-  체중관리: 'fasting',
-  수분: 'water',
-  수분섭취: 'water',
-  '약 복용': 'medicine',
-  스트레칭: 'other',
-  피트티스: 'other',
-  기타: 'other',
-  사용자: 'other',
-  '맞춤 플로우': 'other',
-  사용쟈: 'other',
-};
-
 function pickParam(value: string | string[] | undefined, fallback: string): string {
   if (typeof value === 'string' && value.length > 0) return value;
   if (Array.isArray(value) && value[0]) return value[0];
@@ -128,11 +95,6 @@ function formatClockHMS(totalSeconds: number): string {
   const m = Math.floor((s % 3600) / 60);
   const r = s % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
-}
-
-function resolveCategoryKeyFromLabel(label: string): string | null {
-  if (!label) return null;
-  return CATEGORY_KEY_BY_LABEL[label] ?? null;
 }
 
 function fastingGoalLabelKo(fastingMin: number): string {
@@ -238,12 +200,16 @@ export function ActivitySessionPage() {
   const activityTitle = block?.title ?? '';
   const rawCategoryLabel = block?.category ?? '';
   const categoryLabel = rawCategoryLabel === '사용쟈' ? '사용자' : rawCategoryLabel;
-  const categoryKey = resolveCategoryKeyFromLabel(categoryLabel);
+  const categoryKey =
+    block != null
+      ? resolveBlockCategoryKey({ category: categoryLabel, categoryKey: block.categoryKey }) ?? 'other'
+      : 'other';
   const timeRange = block ? formatBlockTimeRange(block) : '';
   const isQuickMemoSession = block?.blockOrigin === 'quickMemo';
 
   useFocusEffect(
     useCallback(() => {
+      registerOtherCategoryResolverFromStorage();
       setGoalDetailStorageTick((n) => n + 1);
     }, []),
   );
@@ -273,7 +239,7 @@ export function ActivitySessionPage() {
       case 'other':
         return { ...base, other: normalizeOtherDetailConfig(raw ?? {}) };
       default:
-        if (isGoalDetailChecklistStyleCategoryKey(categoryKey)) {
+        if (isGoalDetailChecklistStyleCategoryKey(categoryKey) || isCustomFlowCategoryKey(categoryKey)) {
           return { ...base, other: normalizeOtherDetailConfig(raw ?? {}) };
         }
         return base;

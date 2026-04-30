@@ -11,6 +11,8 @@ export const CATALOG_REMOVED_KEYS = new Set<string>([
   /** 담기 카탈로그에서 제외(모호한 구분) — 기존 일정에 키가 남아 있으면 그대로 표시될 수 있음 */
   'work',
   'review',
+  /** 단일 `other` 대신 사용자 플로우(`customFlow:…`)를 반복 생성 */
+  'other',
 ]);
 
 export function filterCatalogPickerCategories(cats: PickerCategoryItem[]): PickerCategoryItem[] {
@@ -66,6 +68,8 @@ function orderByKeys(cats: PickerCategoryItem[], order: readonly string[]): Pick
 export function splitAvailableCatalogCategories(
   available: PickerCategoryItem[],
   userFixedRoutineOrder: string[],
+  /** 사용자 정의 플로우(`customFlow:…`) — 생산성 묶음 하단에 이어 붙임 */
+  customFlowPickerItems: PickerCategoryItem[] = [],
 ): {
   fixedFlows: PickerCategoryItem[];
   healthBodyFlows: PickerCategoryItem[];
@@ -83,10 +87,11 @@ export function splitAvailableCatalogCategories(
   const productivityCandidates = afterFixed.filter((c) => !healthSet.has(c.key));
   const productivityOrdered = orderByKeys(productivityCandidates, CATALOG_PRODUCTIVITY_ORDER);
   const orphan = productivityCandidates.filter((c) => !productivityOrderSet.has(c.key));
+  const customFlows = customFlowPickerItems.filter((c) => Boolean(c.key));
 
   return {
     fixedFlows,
     healthBodyFlows,
-    productivityTools: [...productivityOrdered, ...orphan],
+    productivityTools: [...productivityOrdered, ...customFlows, ...orphan],
   };
 }

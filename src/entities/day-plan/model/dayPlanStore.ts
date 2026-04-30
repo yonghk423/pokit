@@ -111,6 +111,7 @@ export type DayPlanStoreState = {
   addBlock: (input: {
     title: string;
     category: string;
+    categoryKey?: string;
     startMinutes: number;
     endMinutes: number;
     /** true면 `endMinutes`는 익일 0~1440 시각 */
@@ -397,6 +398,11 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
 
       const maxOrder = current.reduce((acc, b) => Math.max(acc, b.order), -1);
 
+      const ck =
+        typeof input.categoryKey === 'string' && input.categoryKey.trim().length > 0
+          ? input.categoryKey.trim()
+          : undefined;
+
       const block: DayPlanBlock = {
         id: createBlockId(),
         title: input.title.trim(),
@@ -406,6 +412,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         order: maxOrder + 1,
         ...(endsNext ? { endsNextCalendarDay: true as const } : {}),
         ...(input.blockOrigin === 'quickMemo' ? { blockOrigin: 'quickMemo' as const } : {}),
+        ...(ck ? { categoryKey: ck } : {}),
       };
 
       const next = sortDayPlanBlocks([...current, block]);

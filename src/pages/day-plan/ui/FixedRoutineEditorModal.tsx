@@ -4,11 +4,12 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { listCustomFlowCatalogIds } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { PICKER_CATEGORIES } from '../lib/dayPlanEditorShared';
+import { getPickerCategoryLabel, PICKER_CATEGORIES } from '../lib/dayPlanEditorShared';
 import { filterCatalogPickerCategories } from '../lib/priorityCatalogSections';
 import { FixedRoutineDraftOrderList } from './FixedRoutineDraftOrderList';
 
@@ -37,10 +38,21 @@ export function FixedRoutineEditorModal({
 }: Props) {
   const insets = useSafeAreaInsets();
   const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
-  const catalogCategories = useMemo(
-    () => filterCatalogPickerCategories(PICKER_CATEGORIES),
-    [],
-  );
+  const [catalogLabelTick, setCatalogLabelTick] = useState(0);
+  useEffect(() => {
+    if (visible) setCatalogLabelTick((n) => n + 1);
+  }, [visible]);
+
+  const catalogCategories = useMemo(() => {
+    void catalogLabelTick;
+    const base = filterCatalogPickerCategories(PICKER_CATEGORIES);
+    const customs = listCustomFlowCatalogIds().map((id) => ({
+      key: id,
+      label: getPickerCategoryLabel(id),
+      icon: 'person.fill' as const,
+    }));
+    return [...base, ...customs];
+  }, [catalogLabelTick]);
   const catalogCategoryKeySet = useMemo(
     () => new Set(catalogCategories.map((c) => c.key)),
     [catalogCategories],
