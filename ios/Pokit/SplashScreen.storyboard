@@ -26,8 +26,8 @@
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="Rmq-lb-GrQ"/>
                         <constraints>
-                            <constraint firstItem="EXPO-SplashLabel" firstAttribute="centerX" secondItem="EXPO-ContainerView" secondAttribute="centerX" id="cad2ab56f97c5429bf29decf850647a4216861d4"/>
-                            <constraint firstItem="EXPO-SplashLabel" firstAttribute="centerY" secondItem="EXPO-ContainerView" secondAttribute="centerY" id="1a145271b085b6ce89b1405a310f5b1bb7656595"/>
+                            <constraint firstItem="EXPO-SplashLabel" firstAttribute="centerX" secondItem="EXPO-ContainerView" secondAttribute="centerX" id="cJv-vd-xoX"/>
+                            <constraint firstItem="EXPO-SplashLabel" firstAttribute="centerY" secondItem="EXPO-ContainerView" secondAttribute="centerY" id="qWF-2S-Z3V"/>
                         </constraints>
                         <color key="backgroundColor" name="SplashScreenBackground"/>
                     </view>
