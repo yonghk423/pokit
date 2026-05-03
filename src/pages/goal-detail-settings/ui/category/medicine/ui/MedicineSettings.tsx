@@ -9,7 +9,7 @@ import {
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { ThemedText } from '@shared/ui/themed-text';
+import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 
@@ -152,6 +152,20 @@ export function MedicineSettings({
     [priorityEnd, priorityStart],
   );
 
+  const timePickerPalette = useMemo(() => paletteForReminderTimeCard(isDark).timeField, [isDark]);
+  const [expandedMedicineTimeKey, setExpandedMedicineTimeKey] = useState<
+    'morning' | 'lunch' | 'dinner' | null
+  >(null);
+
+  useEffect(() => {
+    if (
+      expandedMedicineTimeKey &&
+      !slotOn(draft, expandedMedicineTimeKey)
+    ) {
+      setExpandedMedicineTimeKey(null);
+    }
+  }, [draft, expandedMedicineTimeKey]);
+
   return (
     <View style={styles.shell}>
       <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: c.outline }]}>
@@ -216,29 +230,24 @@ export function MedicineSettings({
           const notifyOn = slotNotify(draft, slot.key);
           return (
             <View key={slot.key} style={[styles.slotDetailBlock, { borderBottomColor: c.outline }]}>
-              <View style={[styles.row, styles.rowInSlotGroup]}>
-                <Text style={[styles.rowTitle, { color: c.onSurface }]}>{slot.cardSub}</Text>
-                <View style={styles.inlineInputWrap}>
-                  <TextInput
-                    value={timeField(draft, slot.key)}
-                    onChangeText={(t) => setDraft((prev) => withTime(prev, slot.key, t))}
-                    onBlur={() =>
-                      setDraft((prev) => {
-                        const normalized = withTime(prev, slot.key, timeField(prev, slot.key));
-                        const cur = timeField(normalized, slot.key);
-                        return withTime(
-                          normalized,
-                          slot.key,
-                          clampHhmmToPriorityWindow(cur, priorityStart, priorityEnd, 1),
-                        );
-                      })
-                    }
-                    keyboardType="numbers-and-punctuation"
-                    placeholder="08:30"
-                    placeholderTextColor={c.outline}
-                    style={[styles.inlineInput, { color: c.onSurface }]}
-                  />
-                </View>
+              <View style={styles.medicineTimePickerRow}>
+                <SnappedTimePickerField
+                  label={slot.cardSub}
+                  hint={`담기 구간 ${routineWindowLine} 안에서만 선택돼요`}
+                  valueHhmm={timeField(draft, slot.key)}
+                  onChangeHhmm={(next) =>
+                    setDraft((prev) => withTime(prev, slot.key, next))
+                  }
+                  expanded={expandedMedicineTimeKey === slot.key}
+                  onToggleExpand={() =>
+                    setExpandedMedicineTimeKey((cur) => (cur === slot.key ? null : slot.key))
+                  }
+                  isDark={isDark}
+                  palette={timePickerPalette}
+                  snapStepMinutes={1}
+                  routineDayStartHhmm={priorityStart}
+                  routineDayEndHhmm={priorityEnd}
+                />
               </View>
               <View style={[styles.row, styles.rowInSlotGroup, styles.slotNotifyRow]}>
                 <Text style={[styles.rowSubTitle, { color: c.onVariant }]}>{slot.cardSub} 알림</Text>
@@ -328,6 +337,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   slotChipText: { fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
-  inlineInputWrap: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-  inlineInput: { minWidth: 72, fontSize: 18, fontWeight: '700', textAlign: 'right', padding: 0 },
+  medicineTimePickerRow: {
+    paddingVertical: 4,
+  },
 });

@@ -570,8 +570,8 @@ export function DayPlanPage() {
     } as const;
 
     if (planMode !== 'priority') {
-      registerRoutineStartFab(null, { ...idleFabMeta });
-      return () => registerRoutineStartFab(null, { ...idleFabMeta });
+      registerRoutineStartFab(null, idleFabMeta);
+      return;
     }
 
     const visible = !isFocusStarted;
@@ -586,8 +586,6 @@ export function DayPlanPage() {
         label: '오늘 루틴 시작',
       },
     );
-
-    return () => registerRoutineStartFab(null, { ...idleFabMeta });
   }, [
     planMode,
     registerRoutineStartFab,
@@ -595,17 +593,24 @@ export function DayPlanPage() {
     isFocusStarted,
   ]);
 
+  /** 마운트 해제 시에만 FAB·primary 를 idle로 되돌림 */
+  useEffect(() => {
+    return () => {
+      registerRoutineStartFab(null, { visible: false, disabled: true, label: '오늘 루틴 시작' });
+      registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
+    };
+  }, [registerRoutineStartFab, registerPrimaryAction]);
+
   useEffect(() => {
     if (planMode === 'priority') {
       registerPrimaryAction(null, { disabled: true, label: '자동 시작', hidden: true });
-      return () => registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
+      return;
     }
     if (planMode === 'quickMemo') {
       registerPrimaryAction(null, { disabled: true, label: '메모 저장', hidden: true });
-      return () => registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
+      return;
     }
     registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
-    return () => registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
   }, [registerPrimaryAction, planMode]);
 
   /** on-drag 만 쓰면 키보드만 내려가고 포커스는 남아, 다음 터치에 패드가 다시 뜨는 경우가 있어 스크롤 시 blur 로 포커스를 끈다. */

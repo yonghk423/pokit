@@ -40,11 +40,12 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
   const [meta, setMeta] = useState<DayPlanPrimaryMeta>({ disabled: true, label: '시작하기', hidden: false });
 
   const routineRunRef = useRef<(() => void) | null>(null);
-  const [routineFabMeta, setRoutineFabMeta] = useState<DayPlanRoutineStartFabMeta>({
+  const routineFabRef = useRef<DayPlanRoutineStartFabMeta>({
     visible: false,
     disabled: true,
     label: '오늘 루틴 시작',
   });
+  const [fabVer, setFabVer] = useState(0);
 
   const registerPrimaryAction = useCallback((run: (() => void) | null, m: DayPlanPrimaryMeta) => {
     runRef.current = run;
@@ -62,12 +63,12 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
 
   const registerRoutineStartFab = useCallback((run: (() => void) | null, m: DayPlanRoutineStartFabMeta) => {
     routineRunRef.current = run;
-    setRoutineFabMeta((prev) => {
-      if (prev.visible === m.visible && prev.disabled === m.disabled && prev.label === m.label) {
-        return prev;
-      }
-      return m;
-    });
+    const prev = routineFabRef.current;
+    if (prev.visible === m.visible && prev.disabled === m.disabled && prev.label === m.label) {
+      return;
+    }
+    routineFabRef.current = m;
+    setFabVer((v) => v + 1);
   }, []);
 
   const invokePrimary = useCallback(() => {
@@ -76,9 +77,10 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
   }, [meta.disabled]);
 
   const invokeRoutineStartFab = useCallback(() => {
-    if (!routineFabMeta.visible || routineFabMeta.disabled) return;
+    const fab = routineFabRef.current;
+    if (!fab.visible || fab.disabled) return;
     routineRunRef.current?.();
-  }, [routineFabMeta.visible, routineFabMeta.disabled]);
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -87,7 +89,7 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
       primaryHidden: Boolean(meta.hidden),
       invokePrimary,
       registerPrimaryAction,
-      routineStartFab: routineFabMeta,
+      routineStartFab: routineFabRef.current,
       invokeRoutineStartFab,
       registerRoutineStartFab,
     }),
@@ -97,7 +99,7 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
       meta.label,
       invokePrimary,
       registerPrimaryAction,
-      routineFabMeta,
+      fabVer,
       invokeRoutineStartFab,
       registerRoutineStartFab,
     ],

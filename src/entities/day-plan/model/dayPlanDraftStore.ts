@@ -152,10 +152,23 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       };
     }),
   filterCompletedFocusKeysToPriorityOrder: (order) =>
-    set((s) => ({
-      completedFocusCategoryKeys: s.completedFocusCategoryKeys.filter((k) => order.includes(k)),
-    })),
-  clearCompletedFocusCategoryKeys: () => set({ completedFocusCategoryKeys: [] }),
+    set((s) => {
+      const next = s.completedFocusCategoryKeys.filter((k) => order.includes(k));
+      if (
+        next.length === s.completedFocusCategoryKeys.length &&
+        next.every((k, i) => k === s.completedFocusCategoryKeys[i])
+      ) {
+        return s;
+      }
+      return {
+        completedFocusCategoryKeys: next,
+      };
+    }),
+  clearCompletedFocusCategoryKeys: () =>
+    set((s) => {
+      if (s.completedFocusCategoryKeys.length === 0) return s;
+      return { completedFocusCategoryKeys: [] };
+    }),
   removeCompletedPriorityBagRows: (removeKeys, planCompletionDismissForKeys) =>
     set((s) => {
       if (removeKeys.length === 0) return s;
@@ -180,7 +193,11 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         ? s.planCompletionDismissedKeys
         : [...s.planCompletionDismissedKeys, key],
     })),
-  clearPlanCompletionDismissedKeys: () => set({ planCompletionDismissedKeys: [] }),
+  clearPlanCompletionDismissedKeys: () =>
+    set((s) => {
+      if (s.planCompletionDismissedKeys.length === 0) return s;
+      return { planCompletionDismissedKeys: [] };
+    }),
   setPriorityPlanDateKey: (value) => set({ priorityPlanDateKey: value }),
   setPriorityPlanDateKeyEnd: (value) => set({ priorityPlanDateKeyEnd: value }),
   applyPriorityPlanCalendarRange: (lo, hi) =>

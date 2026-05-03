@@ -106,10 +106,6 @@ export function DayPlanStatisticsPage() {
           },
         ]}
         showsVerticalScrollIndicator={false}>
-        <ThemedText type="title" style={styles.headline}>
-          통계
-        </ThemedText>
-
         <View style={[styles.segmentShell, segmentWrap]}>
           <Pressable
             accessibilityRole="tab"
@@ -217,9 +213,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     gap: 14,
-  },
-  headline: {
-    letterSpacing: -0.6,
   },
   segmentShell: {
     flexDirection: 'row',
