@@ -1,7 +1,20 @@
 export type { DayPlanBlock, DayPlanQuickMemo } from './model/types';
-export type { AddBlockResult } from './model';
+export type { AddBlockResult, PlanMode } from './model';
 export { useDayPlanStore, selectFirstPendingBlock } from './model';
 export { useDayPlanRuntimeStore } from './model';
+export {
+  appendPriorityCategoryKeysIfMissing,
+  useDayPlanDraftStore,
+} from './model';
+export {
+  defaultEditorBlockTimesFromNow,
+  defaultPriorityWindowFromNow,
+  formatMinutesToHHmm,
+  MIN_BLOCK_DURATION_MINUTES,
+  PRIORITY_WINDOW_DEFAULT_SPAN_MINUTES,
+  snapMinutes,
+  TIME_SNAP_MINUTES,
+} from './lib/dayPlanTimeMath';
 export { DEFAULT_DAY_PLAN_BLOCKS } from './lib/defaultBlocks';
 export { getBlockTimelineIcon } from './lib/blockIcons';
 export { parseHHmmToMinutes } from './lib/parseTime';
@@ -41,6 +54,13 @@ export {
   isCustomFlowCategoryKey,
   type CustomFlowCategoryKey,
 } from './lib/customFlowCategoryKey';
+export {
+  isSystemCatalogGroupKey,
+  SYSTEM_CATALOG_GROUP_KEYS,
+  SYSTEM_CATALOG_GROUP_LABEL_KO,
+  SYSTEM_CATALOG_GROUP_SUBTITLE_KO,
+  type SystemCatalogGroupKey,
+} from './lib/customCatalogGroup';
 export { buildCompletedCountByCategoryKey } from './lib/dayPlanCompletionStats';
 export {
   addDaysToLocalDateKey,

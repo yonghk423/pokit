@@ -135,7 +135,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
             pressed && { opacity: 0.92 },
           ]}>
           <IconSymbol
-            name="bag.fill"
+            name="book.closed.fill"
             size={24}
             color={isDayPlanFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
           />
@@ -270,9 +270,13 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
 const styles = StyleSheet.create({
   tabShell: {
     position: 'relative',
+    zIndex: 1000,
+    elevation: 1000,
   },
   wrapper: {
     borderTopWidth: StyleSheet.hairlineWidth,
+    zIndex: 1001,
+    elevation: 1001,
   },
   row: {
     flexDirection: 'row',

@@ -1,3 +1,13 @@
+import {
+  isSystemCatalogGroupKey,
+  SYSTEM_CATALOG_GROUP_LABEL_KO,
+  SYSTEM_CATALOG_GROUP_SUBTITLE_KO,
+} from '@entities/day-plan';
+import type {
+  CustomCatalogGroup,
+  CustomFlowCatalogEntry,
+} from '@shared/lib/storage';
+
 import { PICKER_CATEGORIES, type PickerCategoryItem } from './dayPlanEditorShared';
 
 export type { PickerCategoryItem };
@@ -19,11 +29,8 @@ export function filterCatalogPickerCategories(cats: PickerCategoryItem[]): Picke
   return cats.filter((c) => !CATALOG_REMOVED_KEYS.has(c.key));
 }
 
-/**
- * 고정 루틴에 넣지 않은 항목 중 「건강·몸 관리」 묶음(수분·복약·체중·스트레칭·자세).
- * 사용자 고정 루틴과 겹치지 않을 때만 이 섹션에 노출된다.
- */
-export const CATALOG_HEALTH_BODY_ORDER = [
+/** 시스템 그룹 「건강·몸 관리」에 속하는 표준 카탈로그 키 순서 */
+export const HEALTH_GROUP_SYSTEM_ORDER = [
   'water',
   'medicine',
   'fasting',
@@ -32,23 +39,21 @@ export const CATALOG_HEALTH_BODY_ORDER = [
   'neckPosture',
 ] as const satisfies ReadonlyArray<PickerCategoryItem['key']>;
 
-/**
- * 고정·건강 묶음에 넣지 않은 나머지 — 「생산성을 높이는 도구」 권장 순서.
- */
-export const CATALOG_PRODUCTIVITY_ORDER = [
-  'work',
+/** 시스템 그룹 「생산성을 높이는 도구」에 속하는 표준 카탈로그 키 순서 */
+export const PRODUCTIVITY_GROUP_SYSTEM_ORDER = [
   'reading',
   'study',
   'planning',
-  'writing',
-  'language',
-  'creative',
-  'inbox',
-  'other',
 ] as const satisfies ReadonlyArray<PickerCategoryItem['key']>;
 
-const healthBodyOrderSet = new Set<string>(CATALOG_HEALTH_BODY_ORDER);
-const productivityOrderSet = new Set<string>(CATALOG_PRODUCTIVITY_ORDER);
+const HEALTH_GROUP_KEYS = new Set<string>(HEALTH_GROUP_SYSTEM_ORDER);
+const PRODUCTIVITY_GROUP_KEYS = new Set<string>(PRODUCTIVITY_GROUP_SYSTEM_ORDER);
+
+/** 표준 카탈로그 키 → 기본 시스템 그룹 매핑 */
+export function defaultSystemGroupForCatalogKey(key: string): 'health' | 'productivity' {
+  if (HEALTH_GROUP_KEYS.has(key)) return 'health';
+  return 'productivity';
+}
 
 function orderByKeys(cats: PickerCategoryItem[], order: readonly string[]): PickerCategoryItem[] {
   const byKey = new Map(cats.map((c) => [c.key, c]));
@@ -60,38 +65,128 @@ function orderByKeys(cats: PickerCategoryItem[], order: readonly string[]): Pick
   return out;
 }
 
-/**
- * `PICKER_CATEGORIES` 중 아직 담기지 않은 항목을 묶는다.
- * 1) 사용자 고정 루틴 순 · 2) 건강·몸 · 3) 생산성(나머지).
- * @param userFixedRoutineOrder — 사용자가 저장한 고정 루틴 키 순서
- */
-export function splitAvailableCatalogCategories(
-  available: PickerCategoryItem[],
-  userFixedRoutineOrder: string[],
-  /** 사용자 정의 플로우(`customFlow:…`) — 생산성 묶음 하단에 이어 붙임 */
-  customFlowPickerItems: PickerCategoryItem[] = [],
-): {
-  fixedFlows: PickerCategoryItem[];
-  healthBodyFlows: PickerCategoryItem[];
-  productivityTools: PickerCategoryItem[];
-} {
-  const visibleAvailable = filterCatalogPickerCategories(available);
-  const visibleFixedOrder = userFixedRoutineOrder.filter((k) => !CATALOG_REMOVED_KEYS.has(k));
-  const fixedSet = new Set(visibleFixedOrder);
-  const fixedFlows = orderByKeys(visibleAvailable, visibleFixedOrder);
-
-  const afterFixed = visibleAvailable.filter((c) => !fixedSet.has(c.key));
-  const healthBodyFlows = orderByKeys(afterFixed, CATALOG_HEALTH_BODY_ORDER);
-
-  const healthSet = healthBodyOrderSet;
-  const productivityCandidates = afterFixed.filter((c) => !healthSet.has(c.key));
-  const productivityOrdered = orderByKeys(productivityCandidates, CATALOG_PRODUCTIVITY_ORDER);
-  const orphan = productivityCandidates.filter((c) => !productivityOrderSet.has(c.key));
-  const customFlows = customFlowPickerItems.filter((c) => Boolean(c.key));
-
-  return {
-    fixedFlows,
-    healthBodyFlows,
-    productivityTools: [...productivityOrdered, ...customFlows, ...orphan],
-  };
+/** 고정 루틴 순서 — 표준 카탈로그와 `customFlow:…` 항목을 같은 키 맵에서 조회 */
+function orderFixedFlows(
+  visibleAvailable: PickerCategoryItem[],
+  customFlowPickerItems: PickerCategoryItem[],
+  order: string[],
+): PickerCategoryItem[] {
+  const byKey = new Map<string, PickerCategoryItem>();
+  for (const c of visibleAvailable) byKey.set(c.key, c);
+  for (const c of customFlowPickerItems) {
+    if (c.key) byKey.set(c.key, c);
+  }
+  const out: PickerCategoryItem[] = [];
+  for (const k of order) {
+    const c = byKey.get(k);
+    if (c) out.push(c);
+  }
+  return out;
 }
+
+export type PriorityCatalogGroupSection = {
+  groupKey: string;
+  title: string;
+  subtitle?: string;
+  items: PickerCategoryItem[];
+  /** 사용자 정의 그룹은 비어 있어도 노출(편집 가능) */
+  isCustomGroup: boolean;
+};
+
+export type PriorityCatalogSectionsResult = {
+  fixedFlows: PickerCategoryItem[];
+  groupSections: PriorityCatalogGroupSection[];
+};
+
+export type PriorityCatalogSectionsInput = {
+  available: PickerCategoryItem[];
+  userFixedRoutineOrder: string[];
+  customFlowPickerItems: PickerCategoryItem[];
+  customFlowEntries: CustomFlowCatalogEntry[];
+  customGroups: CustomCatalogGroup[];
+};
+
+/**
+ * 담기 카탈로그를 「내 고정 루틴」과 「상위 그룹별 항목」으로 분리한다.
+ *
+ * - 시스템 그룹(`health`, `productivity`)은 항목이 없어도 노출(생성성을 높이는 도구는 「루틴 만들기」 행을 항상 둠)
+ * - 사용자 정의 그룹은 항목이 없어도 노출(이름·항목 편집을 위해)
+ * - 표준 카탈로그 항목은 시스템 그룹에만 표시되며, `customFlow:` 항목은 자기 `groupKey` 섹션에 표시
+ */
+export function buildPriorityCatalogSections(
+  input: PriorityCatalogSectionsInput,
+): PriorityCatalogSectionsResult {
+  const visibleAvailable = filterCatalogPickerCategories(input.available);
+  const visibleFixedOrder = input.userFixedRoutineOrder.filter((k) => !CATALOG_REMOVED_KEYS.has(k));
+  const fixedSet = new Set(visibleFixedOrder);
+
+  const fixedFlows = orderFixedFlows(visibleAvailable, input.customFlowPickerItems, visibleFixedOrder);
+  const afterFixed = visibleAvailable.filter((c) => !fixedSet.has(c.key));
+
+  /** customFlow id → 소속 group key */
+  const groupByCustomFlowId = new Map<string, string>();
+  for (const e of input.customFlowEntries) {
+    if (!fixedSet.has(e.id)) groupByCustomFlowId.set(e.id, e.groupKey);
+  }
+
+  const customByGroup = new Map<string, PickerCategoryItem[]>();
+  const orphanCustomFlows: PickerCategoryItem[] = [];
+  for (const item of input.customFlowPickerItems) {
+    if (!item.key || fixedSet.has(item.key)) continue;
+    const groupKey = groupByCustomFlowId.get(item.key) ?? 'productivity';
+    if (
+      !isSystemCatalogGroupKey(groupKey) &&
+      !input.customGroups.some((g) => g.key === groupKey)
+    ) {
+      orphanCustomFlows.push(item);
+      continue;
+    }
+    const list = customByGroup.get(groupKey) ?? [];
+    list.push(item);
+    customByGroup.set(groupKey, list);
+  }
+
+  const sections: PriorityCatalogGroupSection[] = [];
+
+  const healthSystemItems = orderByKeys(afterFixed, HEALTH_GROUP_SYSTEM_ORDER);
+  const healthCustomItems = customByGroup.get('health') ?? [];
+  sections.push({
+    groupKey: 'health',
+    title: SYSTEM_CATALOG_GROUP_LABEL_KO.health,
+    subtitle: SYSTEM_CATALOG_GROUP_SUBTITLE_KO.health,
+    items: [...healthSystemItems, ...healthCustomItems],
+    isCustomGroup: false,
+  });
+
+  const productivitySystemItems = orderByKeys(afterFixed, PRODUCTIVITY_GROUP_SYSTEM_ORDER);
+  const productivityCustomItems = customByGroup.get('productivity') ?? [];
+  /** 표준에도 시스템 그룹에도 속하지 않은 키(레거시·정의 변경 등)는 생산성 끝에 모음 */
+  const productivityOrphans = afterFixed.filter(
+    (c) => !HEALTH_GROUP_KEYS.has(c.key) && !PRODUCTIVITY_GROUP_KEYS.has(c.key),
+  );
+  sections.push({
+    groupKey: 'productivity',
+    title: SYSTEM_CATALOG_GROUP_LABEL_KO.productivity,
+    subtitle: SYSTEM_CATALOG_GROUP_SUBTITLE_KO.productivity,
+    items: [
+      ...productivitySystemItems,
+      ...productivityCustomItems,
+      ...productivityOrphans,
+      ...orphanCustomFlows,
+    ],
+    isCustomGroup: false,
+  });
+
+  for (const g of input.customGroups) {
+    sections.push({
+      groupKey: g.key,
+      title: g.label,
+      subtitle: undefined,
+      items: customByGroup.get(g.key) ?? [],
+      isCustomGroup: true,
+    });
+  }
+
+  return { fixedFlows, groupSections: sections };
+}
+

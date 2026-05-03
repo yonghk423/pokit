@@ -4,8 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
-import { formatHhmmClockKo } from '@entities/day-plan';
-import { useDayPlanDraftStore } from '@pages/day-plan';
+import { formatHhmmClockKo, useDayPlanDraftStore } from '@entities/day-plan';
 import {
   getDisplayedAppVersionLabel,
   openSupportMailComposer,

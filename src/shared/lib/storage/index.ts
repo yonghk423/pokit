@@ -8,8 +8,10 @@ export type { DayPlanStatsDayRow } from './dayPlanStatsHistoryStorage';
 export {
   appendGoalDetailCommittedCategoryKeys,
   hasGoalDetailCommittedCategory,
+  listGoalDetailCategoryConfigKeys,
   loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
+  removeGoalDetailCategoryConfig,
   saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
 } from './goalDetailSettingsStorage';
@@ -66,8 +68,22 @@ export { syncDayPlanToWidget } from './widgetDayPlanSync';
 export { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
 export type { PersistedDayPlanDraft } from './dayPlanDraftStorage';
 export {
+  appendCustomFlowCatalogEntry,
   appendCustomFlowCatalogId,
+  DEFAULT_CUSTOM_FLOW_GROUP_KEY,
+  listCustomFlowCatalogEntries,
   listCustomFlowCatalogIds,
+  reassignCustomFlowGroup,
   removeCustomFlowCatalogId,
+  updateCustomFlowCatalogGroup,
 } from './customFlowCatalogStorage';
+export type { CustomFlowCatalogEntry } from './customFlowCatalogStorage';
+export {
+  createCustomCatalogGroup,
+  isCustomCatalogGroupKey,
+  listCustomCatalogGroups,
+  removeCustomCatalogGroup,
+  renameCustomCatalogGroup,
+} from './customCatalogGroupStorage';
+export type { CustomCatalogGroup } from './customCatalogGroupStorage';
 

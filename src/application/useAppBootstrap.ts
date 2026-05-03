@@ -2,7 +2,11 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
-import { useDayPlanRuntimeStore, useDayPlanStore } from '@entities/day-plan/model';
+import {
+  useDayPlanDraftStore,
+  useDayPlanRuntimeStore,
+  useDayPlanStore,
+} from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { syncCategoryReminderNotifications } from '@features/category-reminder-notifications';
 import {
@@ -12,7 +16,6 @@ import {
   syncWaterReminderNotifications,
 } from '@features/day-plan-notifications';
 import { useLocalNotifications } from '@features/local-notifications';
-import { useDayPlanDraftStore } from '@pages/day-plan';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
   flushLocalStorageClientWrites,

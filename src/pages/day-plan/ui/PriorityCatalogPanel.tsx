@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
+import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -11,9 +12,10 @@ import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import { PICKER_CATEGORIES, PRIMARY } from '../lib/dayPlanEditorShared';
 import {
+  buildPriorityCatalogSections,
   filterCatalogPickerCategories,
-  splitAvailableCatalogCategories,
   type PickerCategoryItem,
+  type PriorityCatalogGroupSection,
 } from '../lib/priorityCatalogSections';
 
 export type PriorityCatalogEditorial = {
@@ -260,12 +262,115 @@ type Props = {
   onOpenFixedRoutineEditor: () => void;
   onCatalogTap: (key: string) => void;
   onOpenCategorySettings: (categoryKey: string) => void;
-  /** 저장된 사용자 플로우 — 생산성 섹션에 나열 */
+  /** 저장된 사용자 플로우(picker용 메타) — 라벨/아이콘 해석에 사용 */
   customFlowPickerItems: PickerCategoryItem[];
-  /** 새 `customFlow:` 항목 생성 후 목표 상세로 이동 */
-  onCreateCustomFlow: () => void;
+  /** 사용자 플로우 ↔ 그룹 매핑(저장소) */
+  customFlowEntries: CustomFlowCatalogEntry[];
+  /** 사용자 정의 그룹 목록 */
+  customGroups: CustomCatalogGroup[];
   isDark: boolean;
+  /** 사용자 정의 상위 묶음 — 이름 편집 시트 열기 */
+  onRenameCustomGroup?: (groupKey: string, currentLabel: string) => void;
+  /** 사용자 정의 상위 묶음 — 삭제 확인 후 처리 */
+  onDeleteCustomGroup?: (groupKey: string, currentLabel: string) => void;
 };
+
+function GroupSectionBlock({
+  section,
+  editorial,
+  isDark,
+  priorityCategoryOrder,
+  isFocusStarted,
+  isCatalogRowCompleted,
+  onCatalogTap,
+  onOpenCategorySettings,
+  onRenameCustomGroup,
+  onDeleteCustomGroup,
+  isFirst,
+}: {
+  section: PriorityCatalogGroupSection;
+  editorial: PriorityCatalogEditorial;
+  isDark: boolean;
+  priorityCategoryOrder: string[];
+  isFocusStarted: boolean;
+  isCatalogRowCompleted: (categoryKey: string) => boolean;
+  onCatalogTap: (key: string) => void;
+  onOpenCategorySettings: (key: string) => void;
+  onRenameCustomGroup?: (groupKey: string, currentLabel: string) => void;
+  onDeleteCustomGroup?: (groupKey: string, currentLabel: string) => void;
+  isFirst: boolean;
+}) {
+  const groupHeaderTrailing =
+    section.isCustomGroup && onRenameCustomGroup && onDeleteCustomGroup ? (
+      <View style={styles.customGroupHeaderActions}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="묶음 이름 바꾸기"
+          hitSlop={8}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onRenameCustomGroup(section.groupKey, section.title);
+          }}
+          style={[
+            styles.customGroupHeaderIconBtn,
+            {
+              borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+            },
+          ]}>
+          <IconSymbol name="pencil" size={16} color={isDark ? '#FAFAFA' : PRIMARY} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="묶음 삭제"
+          hitSlop={8}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onDeleteCustomGroup(section.groupKey, section.title);
+          }}
+          style={[
+            styles.customGroupHeaderIconBtn,
+            {
+              borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+            },
+          ]}>
+          <IconSymbol name="trash" size={16} color={isDark ? '#FAFAFA' : PRIMARY} />
+        </Pressable>
+      </View>
+    ) : undefined;
+
+  return (
+    <View style={[styles.sectionBlock, !isFirst && styles.sectionBlockFollows]}>
+      <CatalogSectionHeader
+        title={section.title}
+        subtitle={
+          section.subtitle ??
+          (section.isCustomGroup
+            ? '직접 만든 묶음이에요. 아래에 두고 싶은 루틴을 오른쪽 아래 + 버튼으로 추가할 수 있어요.'
+            : '')
+        }
+        ink={editorial.ink}
+        muted={editorial.muted}
+        trailing={groupHeaderTrailing}
+      />
+      <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
+        {section.items.length > 0
+          ? renderRows(
+              section.items,
+              editorial,
+              isDark,
+              priorityCategoryOrder,
+              isFocusStarted,
+              isCatalogRowCompleted,
+              onCatalogTap,
+              onOpenCategorySettings,
+            )
+          : null}
+      </View>
+    </View>
+  );
+}
 
 /** 오늘 우선 순위에 담을 수 있는 항목 — 매일 이어가기 루틴(필요 시 하단 보조 묶음) */
 export function PriorityCatalogPanel({
@@ -278,8 +383,11 @@ export function PriorityCatalogPanel({
   onCatalogTap,
   onOpenCategorySettings,
   customFlowPickerItems,
-  onCreateCustomFlow,
+  customFlowEntries,
+  customGroups,
   isDark,
+  onRenameCustomGroup,
+  onDeleteCustomGroup,
 }: Props) {
   const [catalogLabelTick, setCatalogLabelTick] = useState(0);
   useFocusEffect(
@@ -292,203 +400,143 @@ export function PriorityCatalogPanel({
     void catalogLabelTick;
     return filterCatalogPickerCategories(PICKER_CATEGORIES);
   }, [catalogLabelTick]);
-  const { fixedFlows, healthBodyFlows, productivityTools } = splitAvailableCatalogCategories(
-    visibleCatalogCategories,
-    userFixedRoutineOrder,
-    customFlowPickerItems,
+
+  const { fixedFlows, groupSections } = useMemo(
+    () =>
+      buildPriorityCatalogSections({
+        available: visibleCatalogCategories,
+        userFixedRoutineOrder,
+        customFlowPickerItems,
+        customFlowEntries,
+        customGroups,
+      }),
+    [
+      visibleCatalogCategories,
+      userFixedRoutineOrder,
+      customFlowPickerItems,
+      customFlowEntries,
+      customGroups,
+    ],
   );
 
   const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
 
   return (
     <View style={styles.root}>
-      {visibleCatalogCategories.length === 0 && customFlowPickerItems.length === 0 ? (
-        <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
-          <View style={styles.emptyWrap} accessibilityRole="text">
-            <ThemedText style={[styles.emptyTitle, { color: editorial.ink }]}>더 담을 항목이 없어요</ThemedText>
-            <ThemedText style={[styles.emptyHint, { color: editorial.muted }]}>
-              고른 항목이 모두 우선 순위에 들어가 있어요. 오늘 탭에서 순서를 바꾸거나 빼낼 수 있어요.
-            </ThemedText>
+      <View style={styles.sectionBlock}>
+        <CatalogSectionHeader
+          title="내 고정 루틴"
+          subtitle="매일 이어가고 싶은 항목을 위에 모아요. 비어 있으면 아래에서 골라 넣을 수 있어요."
+          ink={editorial.ink}
+          muted={editorial.muted}
+        />
+        {userFixedRoutineOrder.length === 0 ? (
+          <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
+            <View style={styles.fixedEmptyInner}>
+              <ThemedText style={[styles.fixedEmptyText, { color: editorial.muted }]}>
+                아직 고정 루틴이 없어요. 아래에서 수분·약·스트레칭처럼 자주 쓰는 항목을 골라 주세요.
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="고정 루틴 만들기"
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onOpenFixedRoutineEditor();
+                }}
+                style={({ pressed }) => [
+                  styles.fixedCta,
+                  {
+                    backgroundColor: tabColors.activeBg,
+                    borderColor: tabColors.activeBorder,
+                    opacity: pressed ? 0.92 : 1,
+                  },
+                ]}>
+                <ThemedText style={[styles.fixedCtaText, { color: tabColors.activeIcon }]}>
+                  고정 루틴 만들기
+                </ThemedText>
+              </Pressable>
+            </View>
           </View>
-        </View>
-      ) : (
-        <>
-          <View style={styles.sectionBlock}>
-            <CatalogSectionHeader
-              title="내 고정 루틴"
-              subtitle="매일 이어가고 싶은 항목을 위에 모아요. 비어 있으면 아래에서 골라 넣을 수 있어요."
-              ink={editorial.ink}
-              muted={editorial.muted}
-            />
-            {userFixedRoutineOrder.length === 0 ? (
-              <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
-                <View style={styles.fixedEmptyInner}>
-                  <ThemedText style={[styles.fixedEmptyText, { color: editorial.muted }]}>
-                    아직 고정 루틴이 없어요. 아래에서 수분·약·스트레칭처럼 자주 쓰는 항목을 골라 주세요.
-                  </ThemedText>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="고정 루틴 만들기"
-                    onPress={() => {
-                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      onOpenFixedRoutineEditor();
-                    }}
-                    style={({ pressed }) => [
-                      styles.fixedCta,
-                      {
-                        backgroundColor: tabColors.activeBg,
-                        borderColor: tabColors.activeBorder,
-                        opacity: pressed ? 0.92 : 1,
-                      },
-                    ]}>
-                    <ThemedText style={[styles.fixedCtaText, { color: tabColors.activeIcon }]}>
-                      고정 루틴 만들기
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              </View>
-            ) : fixedFlows.length > 0 ? (
-              <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
-                {renderRows(
-                  fixedFlows,
-                  editorial,
-                  isDark,
-                  priorityCategoryOrder,
-                  isFocusStarted,
-                  isCatalogRowCompleted,
-                  onCatalogTap,
-                  onOpenCategorySettings,
-                )}
-                <View style={styles.fixedSectionFooter}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="고정 루틴 바꾸기"
-                    onPress={() => {
-                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      onOpenFixedRoutineEditor();
-                    }}
-                    style={({ pressed }) => [
-                      styles.fixedCta,
-                      {
-                        backgroundColor: tabColors.activeBg,
-                        borderColor: tabColors.activeBorder,
-                        opacity: pressed ? 0.92 : 1,
-                      },
-                    ]}>
-                    <ThemedText style={[styles.fixedCtaText, { color: tabColors.activeIcon }]}>
-                      고정 루틴 바꾸기
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              </View>
-            ) : (
-              <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
-                <View style={styles.fixedEmptyInner}>
-                  <ThemedText style={[styles.fixedEmptyText, { color: editorial.muted }]}>
-                    고정으로 둔 항목을 모두 우선 순위에 담았어요. 오늘 탭에서 빼낸 뒤 아래에서 고정 목록을 바꿀 수 있어요.
-                  </ThemedText>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="고정 루틴 바꾸기"
-                    onPress={() => {
-                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      onOpenFixedRoutineEditor();
-                    }}
-                    style={({ pressed }) => [
-                      styles.fixedCta,
-                      {
-                        backgroundColor: tabColors.activeBg,
-                        borderColor: tabColors.activeBorder,
-                        opacity: pressed ? 0.92 : 1,
-                      },
-                    ]}>
-                    <ThemedText style={[styles.fixedCtaText, { color: tabColors.activeIcon }]}>
-                      고정 루틴 바꾸기
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              </View>
+        ) : fixedFlows.length > 0 ? (
+          <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
+            {renderRows(
+              fixedFlows,
+              editorial,
+              isDark,
+              priorityCategoryOrder,
+              isFocusStarted,
+              isCatalogRowCompleted,
+              onCatalogTap,
+              onOpenCategorySettings,
             )}
+            <View style={styles.fixedSectionFooter}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="고정 루틴 바꾸기"
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onOpenFixedRoutineEditor();
+                }}
+                style={({ pressed }) => [
+                  styles.fixedCta,
+                  {
+                    backgroundColor: tabColors.activeBg,
+                    borderColor: tabColors.activeBorder,
+                    opacity: pressed ? 0.92 : 1,
+                  },
+                ]}>
+                <ThemedText style={[styles.fixedCtaText, { color: tabColors.activeIcon }]}>
+                  고정 루틴 바꾸기
+                </ThemedText>
+              </Pressable>
+            </View>
           </View>
-
-          {healthBodyFlows.length > 0 ? (
-            <View style={[styles.sectionBlock, styles.sectionBlockFollows]}>
-              <CatalogSectionHeader
-                title="건강·몸 관리"
-                subtitle="수분·복약·체중과 스트레칭·허리·목 자세를 오늘 몸에 맞게 골라 담아요. 약은 필요할 때만 써도 괜찮아요."
-                ink={editorial.ink}
-                muted={editorial.muted}
-              />
-              <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
-                {renderRows(
-                  healthBodyFlows,
-                  editorial,
-                  isDark,
-                  priorityCategoryOrder,
-                  isFocusStarted,
-                  isCatalogRowCompleted,
-                  onCatalogTap,
-                  onOpenCategorySettings,
-                )}
-              </View>
+        ) : (
+          <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
+            <View style={styles.fixedEmptyInner}>
+              <ThemedText style={[styles.fixedEmptyText, { color: editorial.muted }]}>
+                고정으로 둔 항목을 모두 우선 순위에 담았어요. 오늘 탭에서 빼낸 뒤 아래에서 고정 목록을 바꿀 수 있어요.
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="고정 루틴 바꾸기"
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onOpenFixedRoutineEditor();
+                }}
+                style={({ pressed }) => [
+                  styles.fixedCta,
+                  {
+                    backgroundColor: tabColors.activeBg,
+                    borderColor: tabColors.activeBorder,
+                    opacity: pressed ? 0.92 : 1,
+                  },
+                ]}>
+                <ThemedText style={[styles.fixedCtaText, { color: tabColors.activeIcon }]}>
+                  고정 루틴 바꾸기
+                </ThemedText>
+              </Pressable>
             </View>
-          ) : null}
+          </View>
+        )}
+      </View>
 
-          <View style={[styles.sectionBlock, styles.sectionBlockFollows]}>
-              <CatalogSectionHeader
-                title="생산성을 높이는 도구"
-                subtitle="독서·공부·정리·창작 등 집중에 쓸 항목을 골라 담아요. 직접 만든 루틴은 아래에서 계속 추가할 수 있어요."
-                ink={editorial.ink}
-                muted={editorial.muted}
-              />
-              <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
-                {productivityTools.length > 0
-                  ? renderRows(
-                      productivityTools,
-                      editorial,
-                      isDark,
-                      priorityCategoryOrder,
-                      isFocusStarted,
-                      isCatalogRowCompleted,
-                      onCatalogTap,
-                      onOpenCategorySettings,
-                    )
-                  : null}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="루틴 만들기, 새 루틴 만들기"
-                  onPress={() => {
-                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    onCreateCustomFlow();
-                  }}
-                  style={({ pressed }) => [
-                    styles.catalogRow,
-                    { borderBottomColor: editorial.line, opacity: pressed ? 0.88 : 1 },
-                  ]}>
-                  <View style={styles.catalogRowMainHit}>
-                    <IconSymbol name="plus.circle.fill" size={22} color={editorial.muted} />
-                    <View style={styles.catalogRowTextCol}>
-                      <ThemedText
-                        style={[styles.catalogRowLabel, { color: editorial.ink }]}
-                        lightColor={editorial.ink}
-                        darkColor={editorial.ink}
-                        numberOfLines={1}>
-                        루틴 만들기
-                      </ThemedText>
-                      <ThemedText
-                        style={[styles.catalogRowSubtitle, { color: editorial.muted }]}
-                        lightColor={editorial.muted}
-                        darkColor={editorial.muted}
-                        numberOfLines={2}>
-                        새 루틴을 만들고 이름·체크리스트를 정할 수 있어요
-                      </ThemedText>
-                    </View>
-                  </View>
-                </Pressable>
-              </View>
-            </View>
-        </>
-      )}
+      {groupSections.map((section) => (
+        <GroupSectionBlock
+          key={section.groupKey}
+          section={section}
+          editorial={editorial}
+          isDark={isDark}
+          priorityCategoryOrder={priorityCategoryOrder}
+          isFocusStarted={isFocusStarted}
+          isCatalogRowCompleted={isCatalogRowCompleted}
+          onCatalogTap={onCatalogTap}
+          onOpenCategorySettings={onOpenCategorySettings}
+          onRenameCustomGroup={onRenameCustomGroup}
+          onDeleteCustomGroup={onDeleteCustomGroup}
+          isFirst={false}
+        />
+      ))}
     </View>
   );
 }
@@ -519,6 +567,19 @@ const styles = StyleSheet.create({
   },
   sectionHeaderTrailing: {
     paddingTop: 2,
+  },
+  customGroupHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  customGroupHeaderIconBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fixedSectionFooter: {
     paddingHorizontal: 4,

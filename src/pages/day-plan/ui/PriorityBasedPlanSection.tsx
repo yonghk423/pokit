@@ -69,7 +69,7 @@ import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { getPriorityCategoryGoalHint } from '../lib/priorityCategoryGoalHints';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 
-import { useDayPlanDraftStore } from '../model/dayPlanDraftStore';
+import { useDayPlanDraftStore } from '@entities/day-plan';
 import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
 
 /** 타임라인 내부 스크롤 하단 — 리스트와 카드 둥근 하단 사이 최소만 */

@@ -49,6 +49,12 @@ export function loadGoalDetailCategoryConfig(categoryKey: string): unknown | nul
     : null;
 }
 
+/** 저장된 카테고리 설정 키 목록(사용자 정의 `customFlow:` 복구에 사용) */
+export function listGoalDetailCategoryConfigKeys(): string[] {
+  const root = readRoot();
+  return Object.keys(root.byCategory ?? {});
+}
+
 /** 담기 탭·우선순위 목록 부제: 목표 상세에서 「설정 완료」를 누른 카테고리만 */
 export function hasGoalDetailCommittedCategory(categoryKey: string): boolean {
   ensureCommittedCategoryMigration();
@@ -81,6 +87,24 @@ export function saveGoalDetailCategoryConfig(
     ...root,
     byCategory,
     byBlockId: root.byBlockId ?? {},
+  });
+}
+
+/** 카테고리 설정/확정 표시를 제거한다. (`byBlockId`는 블록 단위라 유지) */
+export function removeGoalDetailCategoryConfig(categoryKey: string): void {
+  const key = categoryKey.trim();
+  if (!key) return;
+  const root = readRoot();
+  const byCategory = { ...(root.byCategory ?? {}) };
+  if (Object.prototype.hasOwnProperty.call(byCategory, key)) {
+    delete byCategory[key];
+  }
+  const committedCategoryKeys = (root.committedCategoryKeys ?? []).filter((k) => k !== key);
+  localStorageClient.setJson(StorageKeys.goalDetailSettings, {
+    ...root,
+    byCategory,
+    byBlockId: root.byBlockId ?? {},
+    committedCategoryKeys,
   });
 }
 

@@ -13,7 +13,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
 import { palette } from '../lib/dayPlanPalette';
-import { useDayPlanDraftStore } from '../model/dayPlanDraftStore';
+import { useDayPlanDraftStore } from '@entities/day-plan';
 import { DailyRhythmTimeEditorBody } from './DailyRhythmTimeEditorBody';
 
 /** 설정 탭에서 우선순위 데이플랜의 하루 시작·마무리 시각을 바꿀 때 */

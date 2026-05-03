@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, Share, StyleSheet, TextInput, View } from 'react-native';
 
+import { isCustomFlowCategoryKey } from '@entities/day-plan';
+
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+
+import type { GoalDetailCategoryKey } from '../../../../model/types';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 
@@ -16,10 +20,14 @@ import {
 export function OtherSettings({
   dataConfig,
   onChangeDataConfig,
+  categoryKey,
+  onDeleteCategory,
 }: {
   rhythmTitle: string;
+  categoryKey?: GoalDetailCategoryKey;
   dataConfig: unknown;
   onChangeDataConfig: (next: unknown) => void;
+  onDeleteCategory?: () => void;
 }) {
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
@@ -35,6 +43,14 @@ export function OtherSettings({
     setDisplayName(next.displayName);
     setChecklist(next.checklist);
   }, [dataConfig]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** 입력란에는 저장된 이름만 둔다. 내부 ID 기반 구분명은 담기 목록에서만 쓰며, 값으로 넣으면 ‘자동 생성된 이름’처럼 보인다. */
+  const categoryNameHint = useMemo(() => {
+    if (categoryKey && isCustomFlowCategoryKey(categoryKey)) {
+      return '이름을 비워 두면 담기·일정에는 내부 구분용 이름(플로우 ···)으로 보여요. 원하면 여기서 직접 이름을 정할 수 있어요.';
+    }
+    return '비워 두면 담기·일정에는 「플로우 직접 설정」으로 보여요.';
+  }, [categoryKey]);
 
   useEffect(() => {
     const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({ displayName, checklist });
@@ -89,9 +105,35 @@ export function OtherSettings({
           maxLength={40}
           returnKeyType="done"
         />
-        <ThemedText style={[styles.nameHint, { color: c.onVariant }]}>
-          비워 두면 담기·일정에는 「플로우 직접 설정」으로 보여요.
-        </ThemedText>
+        <ThemedText style={[styles.nameHint, { color: c.onVariant }]}>{categoryNameHint}</ThemedText>
+        {categoryKey && isCustomFlowCategoryKey(categoryKey) ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="루틴 삭제"
+            onPress={() => {
+              Alert.alert(
+                '루틴 삭제',
+                '이 루틴을 삭제할까요? 담기·고정 목록과 설정에서 함께 제거됩니다.',
+                [
+                  { text: '취소', style: 'cancel' },
+                  {
+                    text: '삭제',
+                    style: 'destructive',
+                    onPress: () => onDeleteCategory?.(),
+                  },
+                ],
+              );
+            }}
+            style={({ pressed }) => [
+              styles.deleteBtn,
+              {
+                borderColor: 'rgba(239,68,68,0.42)',
+                backgroundColor: pressed ? 'rgba(239,68,68,0.08)' : 'transparent',
+              },
+            ]}>
+            <ThemedText style={styles.deleteBtnText}>루틴 삭제</ThemedText>
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.listHeader}>
@@ -175,6 +217,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   nameHint: { fontSize: 12, fontWeight: '500', lineHeight: 16 },
+  deleteBtn: {
+    marginTop: 2,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  deleteBtnText: {
+    color: '#dc2626',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
   listHeader: { gap: 6, paddingTop: 2 },
   mainTitle: { fontSize: 42, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },
   toolbar: {

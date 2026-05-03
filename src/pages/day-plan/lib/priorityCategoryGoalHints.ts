@@ -17,14 +17,15 @@ function medicineEnabledSlots(cfg: ReturnType<typeof normalizeMedicineDetailConf
   return out;
 }
 
-function hintFromOtherStyleRaw(raw: unknown): string {
+/** 체크리스트가 비어 있으면 null — 목록 부제는 `설정 안 함` 등 미설정 문구로 떨어진다. */
+function hintFromOtherStyleRaw(raw: unknown): string | null {
   const cfg = normalizeOtherDetailConfig(raw ?? {});
   const total = cfg.checklist.length;
   const done = cfg.checklist.filter((x) => x.done).length;
   if (total > 0) {
     return done > 0 ? `작업 ${total}개 · 완료 ${done}` : `작업 ${total}개`;
   }
-  return '체크리스트 항목 준비됨';
+  return null;
 }
 
 export type PriorityGoalHintOptions = {

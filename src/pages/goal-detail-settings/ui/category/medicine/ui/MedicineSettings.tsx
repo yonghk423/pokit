@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
-import { clampHhmmToPriorityWindow, formatHhmmClockKo } from '@entities/day-plan';
-import { useDayPlanDraftStore } from '@pages/day-plan/model/dayPlanDraftStore';
+import {
+  clampHhmmToPriorityWindow,
+  formatHhmmClockKo,
+  useDayPlanDraftStore,
+} from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';

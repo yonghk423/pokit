@@ -1,13 +1,11 @@
 import { create } from 'zustand';
 
-import { addDaysToLocalDateKey, getLocalDateKey } from '@entities/day-plan';
 import { loadDayPlanDraft, saveDayPlanDraft } from '@shared/lib/storage';
 
-import {
-  defaultPriorityWindowFromNow,
-  isOvernightHhmmRange,
-  type PlanMode,
-} from '../lib/dayPlanEditorShared';
+import { defaultPriorityWindowFromNow } from '../lib/dayPlanTimeMath';
+import { addDaysToLocalDateKey, getLocalDateKey } from '../lib/localDateKey';
+import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
+import type { PlanMode } from './planMode';
 
 type DayPlanDraftState = {
   planMode: PlanMode;
@@ -203,7 +201,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       s.priorityPlanDateKey <= s.priorityPlanDateKeyEnd
         ? s.priorityPlanDateKeyEnd
         : s.priorityPlanDateKey;
-    const overnight = isOvernightHhmmRange(s.priorityStart, s.priorityEnd);
+    const overnight = isOvernightPriorityWindow(s.priorityStart, s.priorityEnd);
     if (overnight) {
       if (rangeLo === rangeHi) {
         const wantEnd = addDaysToLocalDateKey(rangeLo, 1);
@@ -289,4 +287,3 @@ export function appendPriorityCategoryKeysIfMissing(keys: string[]): void {
   }
   if (changed) setPriorityCategoryOrder(next);
 }
-

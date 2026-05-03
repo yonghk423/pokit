@@ -1,5 +1,20 @@
 import type { DayPlanStatsDayRow } from '@shared/lib/storage/dayPlanStatsHistoryStorage';
 
+function mergeCompletedByCategoryMax(
+  a: Record<string, number>,
+  b: Record<string, number>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const source of [a, b]) {
+    for (const [key, raw] of Object.entries(source ?? {})) {
+      const n = Math.max(0, Math.floor(Number(raw) || 0));
+      if (n <= 0) continue;
+      out[key] = Math.max(out[key] ?? 0, n);
+    }
+  }
+  return out;
+}
+
 export function mergeHistoryWithTodayRow(
   history: DayPlanStatsDayRow[],
   today: DayPlanStatsDayRow,
@@ -8,7 +23,13 @@ export function mergeHistoryWithTodayRow(
   for (const r of history) {
     m.set(r.dateKey, r);
   }
-  m.set(today.dateKey, today);
+  const prevToday = m.get(today.dateKey);
+  m.set(today.dateKey, {
+    dateKey: today.dateKey,
+    completedByCategory: prevToday
+      ? mergeCompletedByCategoryMax(prevToday.completedByCategory, today.completedByCategory)
+      : today.completedByCategory,
+  });
   return [...m.values()].sort((a, b) => b.dateKey.localeCompare(a.dateKey));
 }
 

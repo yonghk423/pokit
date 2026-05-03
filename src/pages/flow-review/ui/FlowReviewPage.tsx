@@ -29,7 +29,7 @@ const TEXT = '#18181b';
 const PRIMARY = '#000000';
 
 const CATEGORY_META: Record<string, { icon: Parameters<typeof IconSymbol>[0]['name']; label: string }> = {
-  work: { icon: 'briefcase.fill', label: '작업' },
+  work: { icon: 'bag.fill', label: '작업' },
   reading: { icon: 'book.fill', label: '독서' },
   meditation: { icon: 'brain.head.profile', label: '명상' },
   yoga: { icon: 'figure.yoga', label: '요가' },

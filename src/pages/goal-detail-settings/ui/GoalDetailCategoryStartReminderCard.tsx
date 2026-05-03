@@ -2,9 +2,13 @@ import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
-import { categoryReminderLabelKo, clampHhmmToPriorityWindow, formatHhmmClockKo } from '@entities/day-plan';
+import {
+  categoryReminderLabelKo,
+  clampHhmmToPriorityWindow,
+  formatHhmmClockKo,
+  useDayPlanDraftStore,
+} from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
-import { useDayPlanDraftStore } from '@pages/day-plan/model/dayPlanDraftStore';
 import {
   parseReminderTimesInput,
   persistSingleCategoryReminderRule,

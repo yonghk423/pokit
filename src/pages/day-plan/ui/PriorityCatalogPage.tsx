@@ -1,37 +1,70 @@
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  Alert,
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  UIManager,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
   createCustomFlowCategoryId,
   filterDayPlanFlowBlocks,
   getInitialOtherDataConfig,
+  isSystemCatalogGroupKey,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
+  useDayPlanDraftStore,
   useDayPlanStore,
 } from '@entities/day-plan';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
-  appendCustomFlowCatalogId,
-  listCustomFlowCatalogIds,
+  appendCustomFlowCatalogEntry,
+  DEFAULT_CUSTOM_FLOW_GROUP_KEY,
+  isCustomCatalogGroupKey,
+  listCustomCatalogGroups,
+  listCustomFlowCatalogEntries,
+  listGoalDetailCategoryConfigKeys,
+  loadGoalDetailCategoryConfig,
   loadPriorityCatalogFixedRoutineKeys,
+  reassignCustomFlowGroup,
+  removeCustomCatalogGroup,
+  renameCustomCatalogGroup,
   saveGoalDetailCategoryConfig,
   savePriorityCatalogFixedRoutineKeys,
+  type CustomCatalogGroup,
+  type CustomFlowCatalogEntry,
 } from '@shared/lib/storage';
+import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
-import { getPickerCategoryLabel } from '../lib/dayPlanEditorShared';
+import { getPickerCategoryLabel, PRIMARY } from '../lib/dayPlanEditorShared';
+
+/** 시트에서 넘긴 그룹 키를 저장용으로 확정 — 검증 실패 시에만 기본 생산성 그룹 */
+function resolveCatalogGroupKeyForPersist(raw: string): string {
+  const t = typeof raw === 'string' ? raw.trim() : '';
+  if (!t) return DEFAULT_CUSTOM_FLOW_GROUP_KEY;
+  if (isSystemCatalogGroupKey(t)) return t;
+  if (listCustomCatalogGroups().some((g) => g.key === t)) return t;
+  if (isCustomCatalogGroupKey(t)) return t;
+  return DEFAULT_CUSTOM_FLOW_GROUP_KEY;
+}
 import { normalizeFixedRoutineCategoryKeys } from '../lib/normalizeFixedRoutineCategoryKeys';
 import { palette, type DayPlanPalette } from '../lib/dayPlanPalette';
-import { useDayPlanDraftStore } from '../model/dayPlanDraftStore';
+import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
 import { FixedRoutineEditorModal } from './FixedRoutineEditorModal';
 import { PriorityCatalogPanel } from './PriorityCatalogPanel';
+import { RenameCustomGroupSheet } from './RenameCustomGroupSheet';
 
 function bookColors(c: DayPlanPalette, isDark: boolean) {
   if (isDark) {
@@ -113,21 +146,38 @@ export function PriorityCatalogPage() {
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
   const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
 
-  const [customCatalogEpoch, setCustomCatalogEpoch] = useState(0);
+  const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
+  const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
+
+  const reloadCatalogData = useCallback(() => {
+    const stored = listCustomFlowCatalogEntries();
+    const known = new Map(stored.map((e) => [e.id, e] as const));
+    /** 저장소 키만 있고 catalog 항목이 없는 경우(레거시) 보강 */
+    for (const id of listGoalDetailCategoryConfigKeys()) {
+      if (!id.startsWith('customFlow:') || known.has(id)) continue;
+      known.set(id, { id, groupKey: DEFAULT_CUSTOM_FLOW_GROUP_KEY });
+    }
+    setCustomFlowEntries([...known.values()]);
+    setCustomGroups(listCustomCatalogGroups());
+  }, []);
+
+  useEffect(() => {
+    reloadCatalogData();
+  }, [reloadCatalogData]);
+
   useFocusEffect(
     useCallback(() => {
-      setCustomCatalogEpoch((n) => n + 1);
-    }, []),
+      reloadCatalogData();
+    }, [reloadCatalogData]),
   );
 
   const customFlowPickerItems = useMemo(() => {
-    void customCatalogEpoch;
-    return listCustomFlowCatalogIds().map((id) => ({
-      key: id,
-      label: getPickerCategoryLabel(id),
+    return customFlowEntries.map((e) => ({
+      key: e.id,
+      label: getPickerCategoryLabel(e.id),
       icon: 'person.fill' as const,
     }));
-  }, [customCatalogEpoch]);
+  }, [customFlowEntries]);
 
   const completedCategoryKeysFromPlan = useMemo(() => {
     const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
@@ -141,18 +191,39 @@ export function PriorityCatalogPage() {
     return [...doneCategoryKeys];
   }, [planBlocks, completedBlockIds, skippedBlockIds]);
 
-  const onCreateCustomFlow = useCallback(() => {
-    const id = createCustomFlowCategoryId();
-    appendCustomFlowCatalogId(id);
-    saveGoalDetailCategoryConfig(id, getInitialOtherDataConfig());
-    registerOtherCategoryResolverFromStorage();
-    setCustomCatalogEpoch((n) => n + 1);
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.push({
-      pathname: '/goal-detail-settings',
-      params: { categoryKey: id },
-    });
-  }, [router]);
+  const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  const [createSheetGroupKey, setCreateSheetGroupKey] = useState<string | undefined>(undefined);
+  const [renameGroupSheet, setRenameGroupSheet] = useState<{
+    groupKey: string;
+    label: string;
+  } | null>(null);
+
+  const openCreateSheet = useCallback((groupKey?: string) => {
+    const safe =
+      groupKey && (isSystemCatalogGroupKey(groupKey) || isCustomCatalogGroupKey(groupKey))
+        ? groupKey
+        : 'productivity';
+    setCreateSheetGroupKey(safe);
+    setCreateSheetOpen(true);
+  }, []);
+
+  const handleCreateCustomFlow = useCallback(
+    ({ name, groupKey }: { name: string; groupKey: string }) => {
+      const id = createCustomFlowCategoryId();
+      const safeGroupKey = resolveCatalogGroupKeyForPersist(groupKey);
+      const initial = getInitialOtherDataConfig();
+      const trimmed = name.trim();
+      const next = trimmed.length > 0 ? { ...initial, displayName: trimmed } : initial;
+      saveGoalDetailCategoryConfig(id, next);
+      appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
+      registerOtherCategoryResolverFromStorage();
+      void loadGoalDetailCategoryConfig(id);
+      reloadCatalogData();
+      setCreateSheetOpen(false);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [reloadCatalogData],
+  );
 
   const isCatalogRowCompleted = useCallback(
     (categoryKey: string) => {
@@ -187,7 +258,10 @@ export function PriorityCatalogPage() {
     [bumpPriorityCatalogFixedRoutineEpoch],
   );
 
-  const scrollBottomPad = useMemo(() => tabBarScrollBottomInset(insets.bottom), [insets.bottom]);
+  const scrollBottomPad = useMemo(
+    () => tabBarScrollBottomInset(insets.bottom) + 88,
+    [insets.bottom],
+  );
 
   const shellBg = c.containerLow;
 
@@ -223,6 +297,50 @@ export function PriorityCatalogPage() {
     [isFocusStarted, priorityCategoryOrder, router],
   );
 
+  const onRenameCustomGroup = useCallback((groupKey: string, currentLabel: string) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setRenameGroupSheet({ groupKey, label: currentLabel });
+  }, []);
+
+  const onSaveRenameCustomGroup = useCallback(
+    (trimmedLabel: string) => {
+      if (!renameGroupSheet) return;
+      if (trimmedLabel.length === 0) {
+        Alert.alert('이름을 입력해 주세요', '묶음 이름은 한 글자 이상이어야 해요.');
+        return;
+      }
+      renameCustomCatalogGroup(renameGroupSheet.groupKey, trimmedLabel);
+      reloadCatalogData();
+      setRenameGroupSheet(null);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [reloadCatalogData, renameGroupSheet],
+  );
+
+  const onDeleteCustomGroup = useCallback(
+    (groupKey: string, currentLabel: string) => {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Alert.alert(
+        '묶음 삭제',
+        `「${currentLabel}」 묶음을 삭제할까요? 이 안에 있던 항목은 생산성 묶음으로 옮겨져요.`,
+        [
+          { text: '취소', style: 'cancel' },
+          {
+            text: '삭제',
+            style: 'destructive',
+            onPress: () => {
+              reassignCustomFlowGroup(groupKey, DEFAULT_CUSTOM_FLOW_GROUP_KEY);
+              removeCustomCatalogGroup(groupKey);
+              reloadCatalogData();
+              void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            },
+          },
+        ],
+      );
+    },
+    [reloadCatalogData],
+  );
+
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
       <FixedRoutineEditorModal
@@ -236,13 +354,17 @@ export function PriorityCatalogPage() {
         line={editorial.line}
         surface={shellBg}
       />
-      <SafeAreaView style={[styles.safe, { backgroundColor: shellBg }]} edges={['top']}>
+      <View style={[styles.safe, { backgroundColor: shellBg }]}>
         <ScrollView
           style={[styles.scroll, { backgroundColor: shellBg }]}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: scrollBottomPad, paddingTop: 16 },
+            {
+              paddingBottom: scrollBottomPad,
+              paddingTop: insets.top + 16,
+            },
           ]}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View style={styles.headerBlock}>
             <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>오늘 집중할 것</ThemedText>
@@ -261,14 +383,58 @@ export function PriorityCatalogPage() {
             onCatalogTap={onCatalogTap}
             onOpenCategorySettings={onOpenCategorySettings}
             customFlowPickerItems={customFlowPickerItems}
-            onCreateCustomFlow={onCreateCustomFlow}
+            customFlowEntries={customFlowEntries}
+            customGroups={customGroups}
             isDark={isDark}
+            onRenameCustomGroup={onRenameCustomGroup}
+            onDeleteCustomGroup={onDeleteCustomGroup}
           />
         </ScrollView>
-      </SafeAreaView>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="새 루틴 만들기"
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            openCreateSheet();
+          }}
+          style={({ pressed }) => [
+            styles.fab,
+            {
+              bottom: Math.max(insets.bottom, 12) + 12,
+              opacity: pressed ? 0.92 : 1,
+            },
+          ]}>
+          <View style={styles.fabInner}>
+            <IconSymbol name="plus" size={26} color="#FAFAFA" />
+          </View>
+        </Pressable>
+      </View>
+      <CreateCustomFlowSheet
+        visible={createSheetOpen}
+        onClose={() => setCreateSheetOpen(false)}
+        onCreate={handleCreateCustomFlow}
+        initialGroupKey={createSheetGroupKey}
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        line={editorial.line}
+        surface={shellBg}
+      />
+      <RenameCustomGroupSheet
+        visible={renameGroupSheet != null}
+        onClose={() => setRenameGroupSheet(null)}
+        initialLabel={renameGroupSheet?.label ?? ''}
+        onSave={onSaveRenameCustomGroup}
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        surface={shellBg}
+      />
     </ThemedView>
   );
 }
+
+const FAB_SIZE = 56;
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
@@ -277,6 +443,26 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     gap: 16,
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    borderRadius: FAB_SIZE / 2,
+    zIndex: 30,
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+  },
+  fabInner: {
+    flex: 1,
+    borderRadius: FAB_SIZE / 2,
+    backgroundColor: PRIMARY,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerBlock: {
     gap: 8,

@@ -21,6 +21,21 @@ function normalizeRow(row: DayPlanStatsDayRow): DayPlanStatsDayRow {
   return { dateKey: row.dateKey.trim(), completedByCategory };
 }
 
+function mergeCompletedByCategoryMax(
+  a: Record<string, number>,
+  b: Record<string, number>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const source of [a, b]) {
+    for (const [key, raw] of Object.entries(source ?? {})) {
+      const n = Math.max(0, Math.floor(Number(raw) || 0));
+      if (n <= 0) continue;
+      out[key] = Math.max(out[key] ?? 0, n);
+    }
+  }
+  return out;
+}
+
 export function loadDayPlanStatsHistory(): DayPlanStatsDayRow[] {
   const raw = localStorageClient.getJson<Persisted>(StorageKeys.dayPlanStatsHistory);
   if (!raw || raw.v !== 1 || !Array.isArray(raw.days)) return [];
@@ -39,9 +54,17 @@ function saveDays(days: DayPlanStatsDayRow[]): void {
   localStorageClient.setJson(StorageKeys.dayPlanStatsHistory, { v: 1, days: capped });
 }
 
-/** 같은 `dateKey`는 최신 행으로 덮어씁니다. */
+/** 같은 `dateKey`는 카테고리별 최대 완료 수를 보존해, 지난 블록 정리로 기록이 줄지 않게 한다. */
 export function mergeDayPlanStatsDay(row: DayPlanStatsDayRow): void {
-  const next = loadDayPlanStatsHistory().filter((d) => d.dateKey !== row.dateKey);
-  next.push(normalizeRow(row));
+  const incoming = normalizeRow(row);
+  const history = loadDayPlanStatsHistory();
+  const prev = history.find((d) => d.dateKey === incoming.dateKey);
+  const next = history.filter((d) => d.dateKey !== incoming.dateKey);
+  next.push({
+    dateKey: incoming.dateKey,
+    completedByCategory: prev
+      ? mergeCompletedByCategoryMax(prev.completedByCategory, incoming.completedByCategory)
+      : incoming.completedByCategory,
+  });
   saveDays(next);
 }

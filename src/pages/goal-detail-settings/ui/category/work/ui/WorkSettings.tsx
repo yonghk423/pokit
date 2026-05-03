@@ -82,7 +82,7 @@ export function WorkSettings({
       <View style={[styles.taskCard, { backgroundColor: cardBg }]}>
         <View style={styles.taskCardHeader}>
           <View style={styles.taskCardHeaderLeft}>
-            <IconSymbol name="briefcase.fill" size={20} color={PRIMARY} />
+            <IconSymbol name="bag.fill" size={20} color={PRIMARY} />
             <ThemedText style={[styles.taskCardTitle, { color: c.onSurface }]}>
               해야 할 작업
             </ThemedText>

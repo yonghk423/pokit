@@ -7,8 +7,11 @@ export type GoalDetailCategoryModule = {
   Preview: React.ComponentType<{ rhythmTitle: string; dataConfig: unknown }>;
   Settings: React.ComponentType<{
     rhythmTitle: string;
+    /** 담기·일정과 동일한 표시명을 쓰기 위해(특히 `customFlow:` 빈 이름) */
+    categoryKey?: GoalDetailCategoryKey;
     dataConfig: unknown;
     onChangeDataConfig: (next: unknown) => void;
+    onDeleteCategory?: () => void;
   }>;
 };
 

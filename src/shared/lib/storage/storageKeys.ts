@@ -16,6 +16,8 @@ export const StorageKeys = {
   dayPlanDraft: 'lockflow:day-plan-draft',
   /** 사용자 정의 플로우(`customFlow:…`) 카탈로그 순서 */
   customFlowCatalog: 'lockflow:custom-flow-catalog',
+  /** 사용자 정의 카탈로그 그룹(상위 카테고리) 라벨 목록 */
+  customCatalogGroups: 'lockflow:custom-catalog-groups',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

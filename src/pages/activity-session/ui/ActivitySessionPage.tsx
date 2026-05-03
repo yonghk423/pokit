@@ -552,7 +552,7 @@ export function ActivitySessionPage() {
         brand={WK.brand}
         aboutKicker={WK.aboutKicker}
         headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '작업 집중'}
-        iconName="briefcase.fill"
+        iconName="bag.fill"
         iconSize={28}
         sessionKicker="작업 세션"
         timerDisplay={

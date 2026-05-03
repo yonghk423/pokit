@@ -2,9 +2,9 @@
   "expo": {
     "name": "POKIT",
     "slug": "pokit",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/pokit2.png",
     "scheme": "pokit",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -15,14 +15,15 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#000000",
-        "foregroundImage": "./assets/icon.png"
+        "foregroundImage": "./assets/pokit2.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.yonghee.pokit"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/icon.png"
+      "favicon": "./assets/pokit2.png"
     },
     "plugins": [
       "expo-router",

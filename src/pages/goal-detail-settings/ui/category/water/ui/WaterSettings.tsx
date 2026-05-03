@@ -6,9 +6,9 @@ import {
   buildWaterRoutineReminderSlots,
   formatHhmmClockKo,
   formatMinuteOfDayKo,
+  useDayPlanDraftStore,
   waterReminderIntervalMinutes,
 } from '@entities/day-plan';
-import { useDayPlanDraftStore } from '@pages/day-plan/model/dayPlanDraftStore';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { WATER_GOAL_DETAIL_THEME as T } from '../lib/waterGoalDetailTheme';
 

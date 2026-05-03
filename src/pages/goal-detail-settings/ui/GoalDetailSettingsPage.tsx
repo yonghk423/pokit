@@ -6,9 +6,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   formatBlockTimeRange,
+  getInitialOtherDataConfig,
   isCustomFlowCategoryKey,
   isDayPlanFlowBlock,
+  isGoalDetailChecklistStyleCategoryKey,
   normalizeMedicineDetailConfig,
+  normalizeOtherDetailConfig,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
   useDayPlanRuntimeStore,
@@ -17,8 +20,12 @@ import {
 } from '@entities/day-plan';
 import {
   appendGoalDetailCommittedCategoryKeys,
+  loadPriorityCatalogFixedRoutineKeys,
   loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
+  removeCustomFlowCatalogId,
+  removeGoalDetailCategoryConfig,
+  savePriorityCatalogFixedRoutineKeys,
   saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
 } from '@shared/lib/storage';
@@ -29,7 +36,7 @@ import { ThemedView } from '@shared/ui/themed-view';
 import {
   appendPriorityCategoryKeysIfMissing,
   useDayPlanDraftStore,
-} from '@pages/day-plan/model/dayPlanDraftStore';
+} from '@entities/day-plan';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
   rescheduleDayPlanNotifications,
@@ -77,6 +84,25 @@ function inferCategoryKeyFromLabel(category: string): GoalDetailCategoryKey {
 
 function blockTimeLabel(block: DayPlanBlock): string {
   return formatBlockTimeRange(block);
+}
+
+/** 블록 저장값이 `{}`처럼 truthy면 `byBlock ?? byCategory`만으로는 카테고리 이름이 가려진다 — 병합한다. */
+function mergeOtherStyleGoalDetailData(
+  blockRaw: unknown | null,
+  categoryRaw: unknown | null,
+  fallback: unknown,
+): unknown {
+  const fb = normalizeOtherDetailConfig(fallback ?? getInitialOtherDataConfig());
+  const b = blockRaw != null ? normalizeOtherDetailConfig(blockRaw) : null;
+  const c = categoryRaw != null ? normalizeOtherDetailConfig(categoryRaw) : null;
+  const dnBlock = (b?.displayName ?? '').trim();
+  const dnCat = (c?.displayName ?? '').trim();
+  const displayName =
+    dnBlock.length > 0 ? b!.displayName : dnCat.length > 0 ? c!.displayName : '';
+  const bl = b?.checklist ?? [];
+  const cl = c?.checklist ?? [];
+  const checklist = bl.length >= cl.length ? bl : cl.length > 0 ? cl : bl;
+  return normalizeOtherDetailConfig({ displayName, checklist });
 }
 
 export function GoalDetailSettingsPage() {
@@ -180,7 +206,14 @@ export function GoalDetailSettingsPage() {
       const fallback = module.getInitialDataConfig?.() ?? {};
       const byBlock = loadGoalDetailBlockConfig(t.blockId);
       const byCategory = loadGoalDetailCategoryConfig(t.categoryKey);
-      next[t.blockId] = byBlock ?? byCategory ?? fallback;
+      if (
+        isGoalDetailChecklistStyleCategoryKey(t.categoryKey) ||
+        isCustomFlowCategoryKey(t.categoryKey)
+      ) {
+        next[t.blockId] = mergeOtherStyleGoalDetailData(byBlock, byCategory, fallback);
+      } else {
+        next[t.blockId] = byBlock ?? byCategory ?? fallback;
+      }
     }
     setDataByBlockId(next);
   }, [targets]);
@@ -216,6 +249,23 @@ export function GoalDetailSettingsPage() {
       }, 450);
     }
   }, []);
+
+  const handleDeleteCustomFlow = useCallback(
+    (categoryKey: GoalDetailCategoryKey) => {
+      if (!isCustomFlowCategoryKey(categoryKey)) return;
+      removeCustomFlowCatalogId(categoryKey);
+      removeGoalDetailCategoryConfig(categoryKey);
+      const nextFixed = [...new Set(loadPriorityCatalogFixedRoutineKeys().filter((k) => k !== categoryKey))];
+      savePriorityCatalogFixedRoutineKeys(nextFixed);
+      const draft = useDayPlanDraftStore.getState();
+      const nextOrder = draft.priorityCategoryOrder.filter((k) => k !== categoryKey);
+      draft.setPriorityCategoryOrder(nextOrder);
+      draft.filterCompletedFocusKeysToPriorityOrder(nextOrder);
+      registerOtherCategoryResolverFromStorage();
+      router.back();
+    },
+    [router],
+  );
 
   const handleCompleteAndStart = useCallback(() => {
     const keysToAppend: string[] = [];
@@ -268,7 +318,11 @@ export function GoalDetailSettingsPage() {
             blocks.some((b) => b.id === id && isDayPlanFlowBlock(b)),
         );
       if (ids.length === 0) {
-        router.replace('/day-plan');
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/day-plan');
+        }
         return;
       }
       const focusId = dayPlanState.liveActivityChecklistFocusBlockId;
@@ -464,8 +518,10 @@ export function GoalDetailSettingsPage() {
                 <View key={`${t.blockId}-${idx}`} style={styles.blockSection}>
                   <Settings
                     rhythmTitle={previewTitle}
+                    categoryKey={t.categoryKey}
                     dataConfig={dataConfig}
                     onChangeDataConfig={(next) => handleChangeDataConfig(t, next)}
+                    onDeleteCategory={() => handleDeleteCustomFlow(t.categoryKey)}
                   />
                 </View>
               );

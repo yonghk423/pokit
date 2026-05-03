@@ -173,7 +173,7 @@ enum PriorityModeLiveActivityView {
     VStack(alignment: .leading, spacing: compact ? 6 : 8) {
       HStack(alignment: .center, spacing: 8) {
         HStack(spacing: compact ? 4 : 5) {
-          Image(systemName: "briefcase.fill")
+          Image(systemName: "bag.fill")
             .font(.system(size: compact ? 11 : 12, weight: .semibold))
             .foregroundStyle(orange)
           Text("POKIT")

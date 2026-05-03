@@ -12,9 +12,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { clampHhmmToPriorityWindow, formatHhmmClockKo } from '@entities/day-plan';
+import {
+  clampHhmmToPriorityWindow,
+  formatHhmmClockKo,
+  useDayPlanDraftStore,
+} from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
-import { useDayPlanDraftStore } from '@pages/day-plan/model/dayPlanDraftStore';
 import { parseReminderTimesInput } from '@features/category-reminder-notifications';
 import { syncGoalDetailIncompleteReminderNotifications } from '@features/day-plan-notifications';
 import { ensureLocalNotificationPermission } from '@shared/lib/notifications';

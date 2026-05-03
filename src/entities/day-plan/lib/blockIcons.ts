@@ -7,6 +7,6 @@ export function getBlockTimelineIcon(block: DayPlanBlock): SymbolViewProps['name
   if (block.title.includes('기상')) return 'sun.max.fill';
   if (block.category === '건강') return 'heart.fill';
   if (block.category === '딥워크') return 'bolt.fill';
-  if (block.category === '생산성') return 'briefcase.fill';
+  if (block.category === '생산성') return 'bag.fill';
   return 'clock.fill';
 }
