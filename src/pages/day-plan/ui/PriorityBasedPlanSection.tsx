@@ -1,6 +1,7 @@
 // @ts-nocheck — RN Web에서 StyleSheet.create 타입이 TextStyle|ViewStyle로 합쳐져 Reanimated·제스처와 충돌함
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -11,11 +12,11 @@ import {
   StyleSheet,
   TextInput,
   UIManager,
-  View,
   useWindowDimensions,
+  View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { Easing, FadeOut, LinearTransition } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
@@ -25,32 +26,29 @@ import {
   formatBlockTimeRange,
   formatMinuteOfDayKo,
   getLocalDateKey,
+  isCustomFlowCategoryKey,
   isLikelyPriorityCatalogMonolineTitle,
   isPriorityCompoundBlockTitle,
   localDateToDateKey,
   parseHHmmToMinutes,
   parseLocalDateKeyToDate,
-  isCustomFlowCategoryKey,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
   sortDayPlanBlocks,
   useDayPlanStore
 } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import {
   hasGoalDetailCommittedCategory,
   loadPriorityBagRemoveConfirmSkip,
   savePriorityBagRemoveConfirmSkip,
 } from '@shared/lib/storage';
+import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
+import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { PriorityOrderRow } from '@widgets/day-plan-priority-order';
-
-/** 우선순위 행 완료 제거 시: 페이드 아웃 + 아래 행이 부드럽게 올라오는 레이아웃 전환 */
-const PRIORITY_ROW_EXITING = FadeOut.duration(280).easing(Easing.out(Easing.cubic));
-const PRIORITY_ROW_LAYOUT = LinearTransition.duration(320).easing(Easing.out(Easing.cubic));
 import {
   formatDateKeyCompactKo,
   formatDateKeyDisplayKo,
@@ -67,7 +65,10 @@ import {
 } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { getPriorityCategoryGoalHint } from '../lib/priorityCategoryGoalHints';
-import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
+
+/** 우선순위 행 완료 제거 시: 페이드 아웃 + 아래 행이 부드럽게 올라오는 레이아웃 전환 */
+const PRIORITY_ROW_EXITING = FadeOut.duration(280).easing(Easing.out(Easing.cubic));
+const PRIORITY_ROW_LAYOUT = LinearTransition.duration(320).easing(Easing.out(Easing.cubic));
 
 import { useDayPlanDraftStore } from '@entities/day-plan';
 import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
@@ -753,6 +754,7 @@ export function PriorityBasedPlanSection({
   const isDark = colorScheme === 'dark';
   const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
   const insets = useSafeAreaInsets();
+  const bottomTabBarHeight = useBottomTabBarHeight();
   const { height: windowHeight } = useWindowDimensions();
   const bc = bookColors(c, isDark);
 
@@ -1178,10 +1180,9 @@ export function PriorityBasedPlanSection({
     };
   }, [isDark, bc.cover, bc.ink, bc.inkMuted, c.catBorderIdle]);
 
-  /** 전날 · 당일(오늘) · 다음날 — 당일은 메인, 자정 넘김 종료일은 연장 카드 */
+  /** 당일(오늘) · 다음날 — 전날 열은 제외하고, 자정 넘김 종료일만 연장 카드로 표시 */
   const timelineThreeDayKeys = useMemo(
     () => [
-      addDaysToLocalDateKey(todayKey, -1),
       todayKey,
       addDaysToLocalDateKey(todayKey, 1),
     ],
@@ -1214,22 +1215,28 @@ export function PriorityBasedPlanSection({
    * 타임라인 카드 높이 = 사용 가능한 세로를 거의 꽉 채움(리스트·탭 사이 빈 면 최소화).
    * 내부 ScrollView가 긴 목록을 스크롤하고, 카드는 항상 이 높이를 씀.
    *
-   * `useWindowDimensions`는 **전체 창** 높이라, 커스텀 탭바(`DayPlanCustomTabBar`: 행 minHeight +
-   * wrapper `paddingBottom: insets.bottom`)만큼은 반드시 빼야 카드가 탭을 덮지 않음.
-   * 추가 여백은 두지 않아 탭과의 간격을 최소로 둔다(겹침이 보이면 +2~4px만 조정).
+   * `useWindowDimensions`는 **전체 창** 높이라 탭바 실제 높이를 반영하지 않으면
+   * 실기기에서 카드가 탭 터치 영역을 덮을 수 있다.
+   * `useBottomTabBarHeight()`를 우선 사용하고, 초기 측정 전에는 보수적인 fallback을 쓴다.
    */
   const timelineCardHeight = useMemo(() => {
     const aboveCard =
       insets.top +
       /** DayPlan: scroll paddingTop·문의·모드 스위치·섹션 간격 */
       110;
-    const tabBarReserve = DAY_PLAN_TAB_BAR_ROW_HEIGHT + insets.bottom;
-    /** 탭 씬이 창 전체 기준이면 살짝 과하게 빼는 경우가 있어, 탭 직전까지 카드를 늘린다(겹침 시 +4~8 조정). */
-    const belowCard = Math.max(tabBarReserve - 10, DAY_PLAN_TAB_BAR_ROW_HEIGHT + 8);
+    const tabBarReserve = Math.max(
+      bottomTabBarHeight,
+      DAY_PLAN_TAB_BAR_ROW_HEIGHT + insets.bottom,
+    );
+    /** 실기기 탭 hit area는 보존하면서, 본문 하단의 과한 빈 여백을 줄인다. */
+    const belowCard = tabBarReserve + 14;
     /** `priorityTimelineOuter` 상·하 패딩 합과 동기화 */
     const outerVertical = 0;
-    return Math.max(240, windowHeight - aboveCard - belowCard - outerVertical);
-  }, [windowHeight, insets.top, insets.bottom]);
+    const availableHeight = windowHeight - aboveCard - belowCard - outerVertical;
+    /** 큰 기기에서 카드가 과도하게 커져 하단이 비어 보이지 않도록 상한을 둔다. */
+    const cappedHeight = Math.min(availableHeight, 410);
+    return Math.max(240, cappedHeight);
+  }, [windowHeight, insets.top, insets.bottom, bottomTabBarHeight]);
 
   const timelineCardSubtitle = useMemo(
     () =>
@@ -1582,7 +1589,6 @@ export function PriorityBasedPlanSection({
             style={[
               styles.priorityTimelineCard,
               {
-                height: timelineCardHeight,
                 backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.72)',
                 /** 드래그 시작 시 React 상태 토글로 제스처가 취소되는 문제를 막기 위해 항상 visible */
                 overflow: 'visible',
@@ -1764,83 +1770,83 @@ export function PriorityBasedPlanSection({
                         ) : null}
                         {timelineBlocksForDay.length > 0
                           ? timelineBlocksForDay.map((block, bi) => {
-                          const dotTone =
-                            bi % 4 === 0
-                              ? isDark
-                                ? 'rgba(255,255,255,0.95)'
-                                : 'rgba(0,0,0,0.85)'
-                              : bi % 4 === 1
+                            const dotTone =
+                              bi % 4 === 0
                                 ? isDark
-                                  ? 'rgba(255,255,255,0.55)'
-                                  : 'rgba(0,0,0,0.45)'
-                                : bi % 4 === 2
+                                  ? 'rgba(255,255,255,0.95)'
+                                  : 'rgba(0,0,0,0.85)'
+                                : bi % 4 === 1
                                   ? isDark
-                                    ? 'rgba(255,255,255,0.4)'
-                                    : 'rgba(0,0,0,0.35)'
-                                  : isDark
-                                    ? 'rgba(255,255,255,0.7)'
-                                    : 'rgba(0,0,0,0.55)';
-                          const dotTop = isPriorityStripPrimary ? 6 : 4;
-                          return (
-                            <View key={block.id} style={styles.priorityTimelineEventRowHoriz}>
-                              <ThemedText
-                                style={[
-                                  styles.priorityTimelineEventTimeCol,
-                                  { color: editorial.muted, width: timeColW, fontSize: timeFont },
-                                ]}
-                                lightColor={editorial.muted}
-                                darkColor={editorial.muted}
-                                numberOfLines={3}>
-                                {formatBlockTimeRange(block)}
-                              </ThemedText>
-                              <View
-                                style={[styles.priorityTimelineDot, { backgroundColor: dotTone, marginTop: dotTop }]}
-                              />
-                              <ThemedText
-                                style={[
-                                  styles.priorityTimelineEventTitleHoriz,
-                                  {
-                                    color: eventTitleColor,
-                                    fontWeight: titleWeight,
-                                    fontSize: titleFont,
-                                    lineHeight: isPriorityStripPrimary ? 19 : 17,
-                                  },
-                                ]}
-                                lightColor={eventTitleColor}
-                                darkColor={eventTitleColor}
-                                numberOfLines={2}>
-                                {block.title}
-                              </ThemedText>
-                            </View>
-                          );
-                        })
-                        : null}
+                                    ? 'rgba(255,255,255,0.55)'
+                                    : 'rgba(0,0,0,0.45)'
+                                  : bi % 4 === 2
+                                    ? isDark
+                                      ? 'rgba(255,255,255,0.4)'
+                                      : 'rgba(0,0,0,0.35)'
+                                    : isDark
+                                      ? 'rgba(255,255,255,0.7)'
+                                      : 'rgba(0,0,0,0.55)';
+                            const dotTop = isPriorityStripPrimary ? 6 : 4;
+                            return (
+                              <View key={block.id} style={styles.priorityTimelineEventRowHoriz}>
+                                <ThemedText
+                                  style={[
+                                    styles.priorityTimelineEventTimeCol,
+                                    { color: editorial.muted, width: timeColW, fontSize: timeFont },
+                                  ]}
+                                  lightColor={editorial.muted}
+                                  darkColor={editorial.muted}
+                                  numberOfLines={3}>
+                                  {formatBlockTimeRange(block)}
+                                </ThemedText>
+                                <View
+                                  style={[styles.priorityTimelineDot, { backgroundColor: dotTone, marginTop: dotTop }]}
+                                />
+                                <ThemedText
+                                  style={[
+                                    styles.priorityTimelineEventTitleHoriz,
+                                    {
+                                      color: eventTitleColor,
+                                      fontWeight: titleWeight,
+                                      fontSize: titleFont,
+                                      lineHeight: isPriorityStripPrimary ? 19 : 17,
+                                    },
+                                  ]}
+                                  lightColor={eventTitleColor}
+                                  darkColor={eventTitleColor}
+                                  numberOfLines={2}>
+                                  {block.title}
+                                </ThemedText>
+                              </View>
+                            );
+                          })
+                          : null}
 
                         {showOvernightPriorityContinuation ? (
-                        <View
-                          style={[
-                            styles.overnightContinuationBlock,
-                            timelineBlocksForDay.length > 0 || showPriorityInMainTimeline
-                              ? { marginTop: 12 }
-                              : null,
-                          ]}>
-                          <View style={styles.overnightTailHeadBlock}>
-                            <ThemedText
-                              style={[styles.overnightTailEndTime, { color: editorial.ink }]}
-                              lightColor={editorial.ink}
-                              darkColor={editorial.ink}
-                              numberOfLines={1}>
-                              {formatOvernightTailEndHeadline(priorityEnd)}
-                            </ThemedText>
-                            <View
-                              style={[
-                                styles.overnightTailDivider,
-                                { backgroundColor: editorial.line },
-                              ]}
-                            />
+                          <View
+                            style={[
+                              styles.overnightContinuationBlock,
+                              timelineBlocksForDay.length > 0 || showPriorityInMainTimeline
+                                ? { marginTop: 12 }
+                                : null,
+                            ]}>
+                            <View style={styles.overnightTailHeadBlock}>
+                              <ThemedText
+                                style={[styles.overnightTailEndTime, { color: editorial.ink }]}
+                                lightColor={editorial.ink}
+                                darkColor={editorial.ink}
+                                numberOfLines={1}>
+                                {formatOvernightTailEndHeadline(priorityEnd)}
+                              </ThemedText>
+                              <View
+                                style={[
+                                  styles.overnightTailDivider,
+                                  { backgroundColor: editorial.line },
+                                ]}
+                              />
+                            </View>
                           </View>
-                        </View>
-                      ) : null}
+                        ) : null}
 
                       </View>
                     </View>
@@ -1915,12 +1921,12 @@ export function PriorityBasedPlanSection({
                                   onReorderDragActiveChange={
                                     allowBagReorder
                                       ? (active) => {
-                                          setDraggingPriorityKey((prev) => {
-                                            if (active) return cat.key;
-                                            if (prev === cat.key) return null;
-                                            return prev;
-                                          });
-                                        }
+                                        setDraggingPriorityKey((prev) => {
+                                          if (active) return cat.key;
+                                          if (prev === cat.key) return null;
+                                          return prev;
+                                        });
+                                      }
                                       : undefined
                                   }
                                   reorderDragSurface={allowBagReorder ? editorial.surface : undefined}
@@ -1951,6 +1957,7 @@ const styles = StyleSheet.create({
   /** Fragment 대신 단일 루트 — 부모 ScrollView gap·자식 평탄화로 생기는 밝은 띠 방지 */
   prioritySectionRoot: {
     width: '100%',
+    overflow: 'hidden',
   },
   priorityTimelineOuter: {
     width: '100%',

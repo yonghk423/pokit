@@ -117,123 +117,123 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
             paddingBottom: insets.bottom,
           },
         ]}>
-      <View style={[styles.row, { minHeight: DAY_PLAN_TAB_BAR_ROW_HEIGHT }]}>
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityState={{ selected: isDayPlanFocused }}
-          accessibilityLabel="오늘"
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate('day-plan');
-          }}
-          style={({ pressed }) => [
-            styles.tabPill,
-            {
-              backgroundColor: isDayPlanFocused ? tabColors.activeBg : tabColors.inactiveBg,
-              borderColor: isDayPlanFocused ? tabColors.activeBorder : tabColors.inactiveBorder,
-            },
-            pressed && { opacity: 0.92 },
-          ]}>
-          <IconSymbol
-            name="book.closed.fill"
-            size={24}
-            color={isDayPlanFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
-          />
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityState={{ selected: isCatalogFocused }}
-          accessibilityLabel="담기, 오늘 집중할 것 고르기"
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate('priority-catalog');
-          }}
-          style={({ pressed }) => [
-            styles.tabPill,
-            {
-              backgroundColor: isCatalogFocused ? tabColors.activeBg : tabColors.inactiveBg,
-              borderColor: isCatalogFocused ? tabColors.activeBorder : tabColors.inactiveBorder,
-            },
-            pressed && { opacity: 0.92 },
-          ]}>
-          <IconSymbol
-            name="square.grid.2x2.fill"
-            size={22}
-            color={isCatalogFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
-          />
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityState={{ selected: isStatisticsFocused }}
-          accessibilityLabel="통계"
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate('day-plan-statistics');
-          }}
-          style={({ pressed }) => [
-            styles.tabPill,
-            {
-              backgroundColor: isStatisticsFocused ? tabColors.activeBg : tabColors.inactiveBg,
-              borderColor: isStatisticsFocused ? tabColors.activeBorder : tabColors.inactiveBorder,
-            },
-            pressed && { opacity: 0.92 },
-          ]}>
-          <IconSymbol
-            name="chart.bar.fill"
-            size={22}
-            color={isStatisticsFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
-          />
-        </Pressable>
-
-        {hideCenterButton ? null : (
+        <View style={[styles.row, { minHeight: DAY_PLAN_TAB_BAR_ROW_HEIGHT }]}>
           <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={bridge.primaryLabel}
-            accessibilityState={{ disabled: centerDisabled }}
-            onPress={onCenterPress}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isDayPlanFocused }}
+            accessibilityLabel="오늘"
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate('day-plan');
+            }}
             style={({ pressed }) => [
-              styles.centerBtn,
+              styles.tabPill,
               {
-                backgroundColor: centerDisabled ? c.containerHigh : PRIMARY,
-                opacity: pressed && !centerDisabled ? 0.92 : 1,
+                backgroundColor: isDayPlanFocused ? tabColors.activeBg : tabColors.inactiveBg,
+                borderColor: isDayPlanFocused ? tabColors.activeBorder : tabColors.inactiveBorder,
               },
+              pressed && { opacity: 0.92 },
             ]}>
-            <ThemedText
-              style={[styles.centerLabel, { color: centerDisabled ? c.onVariant : '#fff' }]}
-              lightColor={centerDisabled ? c.onVariant : '#fff'}
-              darkColor={centerDisabled ? c.onVariant : '#fff'}
-              numberOfLines={1}>
-              {bridge.primaryLabel}
-            </ThemedText>
+            <IconSymbol
+              name="book.closed.fill"
+              size={24}
+              color={isDayPlanFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
+            />
           </Pressable>
-        )}
 
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityState={{ selected: isSettingsFocused }}
-          accessibilityLabel="설정"
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate('settings');
-          }}
-          style={({ pressed }) => [
-            styles.tabPill,
-            {
-              backgroundColor: isSettingsFocused ? tabColors.activeBg : tabColors.inactiveBg,
-              borderColor: isSettingsFocused ? tabColors.activeBorder : tabColors.inactiveBorder,
-            },
-            pressed && { opacity: 0.92 },
-          ]}>
-          <IconSymbol
-            name="person.fill"
-            size={24}
-            color={isSettingsFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
-          />
-        </Pressable>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isCatalogFocused }}
+            accessibilityLabel="담기, 오늘 집중할 것 고르기"
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate('priority-catalog');
+            }}
+            style={({ pressed }) => [
+              styles.tabPill,
+              {
+                backgroundColor: isCatalogFocused ? tabColors.activeBg : tabColors.inactiveBg,
+                borderColor: isCatalogFocused ? tabColors.activeBorder : tabColors.inactiveBorder,
+              },
+              pressed && { opacity: 0.92 },
+            ]}>
+            <IconSymbol
+              name="square.grid.2x2.fill"
+              size={22}
+              color={isCatalogFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
+            />
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isStatisticsFocused }}
+            accessibilityLabel="통계"
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate('day-plan-statistics');
+            }}
+            style={({ pressed }) => [
+              styles.tabPill,
+              {
+                backgroundColor: isStatisticsFocused ? tabColors.activeBg : tabColors.inactiveBg,
+                borderColor: isStatisticsFocused ? tabColors.activeBorder : tabColors.inactiveBorder,
+              },
+              pressed && { opacity: 0.92 },
+            ]}>
+            <IconSymbol
+              name="chart.bar.fill"
+              size={22}
+              color={isStatisticsFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
+            />
+          </Pressable>
+
+          {hideCenterButton ? null : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={bridge.primaryLabel}
+              accessibilityState={{ disabled: centerDisabled }}
+              onPress={onCenterPress}
+              style={({ pressed }) => [
+                styles.centerBtn,
+                {
+                  backgroundColor: centerDisabled ? c.containerHigh : PRIMARY,
+                  opacity: pressed && !centerDisabled ? 0.92 : 1,
+                },
+              ]}>
+              <ThemedText
+                style={[styles.centerLabel, { color: centerDisabled ? c.onVariant : '#fff' }]}
+                lightColor={centerDisabled ? c.onVariant : '#fff'}
+                darkColor={centerDisabled ? c.onVariant : '#fff'}
+                numberOfLines={1}>
+                {bridge.primaryLabel}
+              </ThemedText>
+            </Pressable>
+          )}
+
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isSettingsFocused }}
+            accessibilityLabel="설정"
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate('settings');
+            }}
+            style={({ pressed }) => [
+              styles.tabPill,
+              {
+                backgroundColor: isSettingsFocused ? tabColors.activeBg : tabColors.inactiveBg,
+                borderColor: isSettingsFocused ? tabColors.activeBorder : tabColors.inactiveBorder,
+              },
+              pressed && { opacity: 0.92 },
+            ]}>
+            <IconSymbol
+              name="person.fill"
+              size={24}
+              color={isSettingsFocused ? tabColors.activeIcon : tabColors.inactiveIcon}
+            />
+          </Pressable>
+        </View>
       </View>
-    </View>
 
       {showRoutineFab ? (
         <Animated.View
