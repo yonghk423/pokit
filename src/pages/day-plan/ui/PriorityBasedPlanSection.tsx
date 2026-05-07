@@ -1,7 +1,7 @@
 // @ts-nocheck — RN Web에서 StyleSheet.create 타입이 TextStyle|ViewStyle로 합쳐져 Reanimated·제스처와 충돌함
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,

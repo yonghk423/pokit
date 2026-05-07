@@ -26,7 +26,11 @@ type Ctx = {
   primaryDisabled: boolean;
   primaryLabel: string;
   primaryHidden: boolean;
+  tabBarHeight: number;
+  isDayPlanFocused: boolean;
   invokePrimary: () => void;
+  registerTabBarHeight: (height: number) => void;
+  registerIsDayPlanFocused: (focused: boolean) => void;
   registerPrimaryAction: (run: (() => void) | null, meta: DayPlanPrimaryMeta) => void;
   routineStartFab: DayPlanRoutineStartFabMeta;
   invokeRoutineStartFab: () => void;
@@ -38,6 +42,8 @@ const DayPlanTabBridgeContext = createContext<Ctx | null>(null);
 export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) {
   const runRef = useRef<(() => void) | null>(null);
   const [meta, setMeta] = useState<DayPlanPrimaryMeta>({ disabled: true, label: '시작하기', hidden: false });
+  const [tabBarHeight, setTabBarHeight] = useState(0);
+  const [isDayPlanFocused, setIsDayPlanFocused] = useState(false);
 
   const routineRunRef = useRef<(() => void) | null>(null);
   const routineFabRef = useRef<DayPlanRoutineStartFabMeta>({
@@ -71,6 +77,15 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
     setFabVer((v) => v + 1);
   }, []);
 
+  const registerTabBarHeight = useCallback((height: number) => {
+    const safeHeight = Number.isFinite(height) ? Math.max(0, height) : 0;
+    setTabBarHeight((prev) => (Math.abs(prev - safeHeight) < 0.5 ? prev : safeHeight));
+  }, []);
+
+  const registerIsDayPlanFocused = useCallback((focused: boolean) => {
+    setIsDayPlanFocused((prev) => (prev === focused ? prev : focused));
+  }, []);
+
   const invokePrimary = useCallback(() => {
     if (meta.disabled) return;
     runRef.current?.();
@@ -87,7 +102,11 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
       primaryDisabled: meta.disabled,
       primaryLabel: meta.label,
       primaryHidden: Boolean(meta.hidden),
+      tabBarHeight,
+      isDayPlanFocused,
       invokePrimary,
+      registerTabBarHeight,
+      registerIsDayPlanFocused,
       registerPrimaryAction,
       routineStartFab: routineFabRef.current,
       invokeRoutineStartFab,
@@ -97,7 +116,11 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
       meta.disabled,
       meta.hidden,
       meta.label,
+      tabBarHeight,
+      isDayPlanFocused,
       invokePrimary,
+      registerTabBarHeight,
+      registerIsDayPlanFocused,
       registerPrimaryAction,
       fabVer,
       invokeRoutineStartFab,
