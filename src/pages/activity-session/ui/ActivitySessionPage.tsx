@@ -9,9 +9,12 @@ import {
   emptyCategorySessionConfigs,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
+  getLocalDateKey,
+  getLocalMinutesOfDayNow,
   getNextPendingAfter,
   isCustomFlowCategoryKey,
   isGoalDetailChecklistStyleCategoryKey,
+  isOvernightPriorityWindow,
   normalizeFastingDetailConfig,
   normalizeMedicineDetailConfig,
   normalizeMeditationDetailConfig,
@@ -26,6 +29,7 @@ import {
   parseNumberedFlowLines,
   resolveBlockCategoryKey,
   toRuntimeTiming,
+  useDayPlanDraftStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
 } from '@entities/day-plan';
@@ -509,6 +513,51 @@ export function ActivitySessionPage() {
     void upsertFinishedLiveActivityForBlockId(block.id);
     navigateAfterComplete();
   }, [remainingSec, block, isPaused, navigateAfterComplete]);
+
+  /** 전체 루틴 시간(priorityEnd) 만료 시 현재 세션도 강제 종료 */
+  useEffect(() => {
+    if (!block || block.blockOrigin === 'quickMemo') return;
+
+    const check = () => {
+      const draft = useDayPlanDraftStore.getState();
+      if (draft.planMode !== 'priority') return false;
+      const ps = parseHHmmToMinutes(draft.priorityStart);
+      const pe = parseHHmmToMinutes(draft.priorityEnd);
+      if (ps === null || pe === null) return false;
+
+      const rangeLo =
+        draft.priorityPlanDateKey <= draft.priorityPlanDateKeyEnd
+          ? draft.priorityPlanDateKey
+          : draft.priorityPlanDateKeyEnd;
+      const rangeHi =
+        draft.priorityPlanDateKey <= draft.priorityPlanDateKeyEnd
+          ? draft.priorityPlanDateKeyEnd
+          : draft.priorityPlanDateKey;
+      const nowKey = getLocalDateKey();
+      const nowMin = getLocalMinutesOfDayNow();
+      const inRange = nowKey >= rangeLo && nowKey <= rangeHi;
+      if (!inRange) return false;
+
+      const overnight = isOvernightPriorityWindow(draft.priorityStart, draft.priorityEnd);
+      if (!overnight) return nowMin >= pe;
+      if (nowKey === rangeLo) return false;
+      if (nowKey === rangeHi) return nowMin >= pe;
+      return false;
+    };
+
+    if (check()) {
+      navigateAfterComplete();
+      return;
+    }
+
+    const id = setInterval(() => {
+      if (check()) {
+        clearInterval(id);
+        navigateAfterComplete();
+      }
+    }, 10_000);
+    return () => clearInterval(id);
+  }, [block, navigateAfterComplete]);
 
   if (!block) {
     return null;

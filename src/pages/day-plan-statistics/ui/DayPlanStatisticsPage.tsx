@@ -199,7 +199,7 @@ export function DayPlanStatisticsPage() {
         )}
 
         <ThemedText style={styles.footnote} lightColor="#71717a" darkColor="#71717a">
-          「완료」는 타임라인 플로우 블록이 집중 세션에서 사용자가 완료했을 때만 올라가요. 시간이 지나도 자동으로 완료 처리되지는 않아요. 날짜가 바뀌면 전날 일정은 히스토리에 남고, 오늘은 실시간으로 반영돼요.
+          「완료」는 집중 세션에서 완료하거나, 지정한 루틴 시간이 끝나면 자동으로 올라가요. 날짜가 바뀌면 전날 일정은 히스토리에 남고, 오늘은 실시간으로 반영돼요.
         </ThemedText>
       </ScrollView>
     </ThemedView>

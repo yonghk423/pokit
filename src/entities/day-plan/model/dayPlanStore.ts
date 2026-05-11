@@ -94,6 +94,8 @@ export type DayPlanStoreState = {
   setLiveActivityChecklistFocusBlockId: (blockId: string | null) => void;
 
   completeBlock: (blockId: string) => void;
+  /** 여러 블록을 한 번에 완료 처리 (단일 set + persist) */
+  completeBlocks: (blockIds: string[]) => void;
   skipBlock: (blockId: string) => void;
 
   setBlocks: (blocks: DayPlanBlock[]) => void;
@@ -246,9 +248,25 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
       );
       if (expiredIds.size === 0) return;
 
+      const done = new Set([...completedBlockIds, ...skippedBlockIds]);
+      const expiredPendingFlowIds = filterDayPlanFlowBlocks(blocks)
+        .filter((b) => expiredIds.has(b.id) && !done.has(b.id))
+        .map((b) => b.id);
+
+      const allCompleted = expiredPendingFlowIds.length > 0
+        ? [...completedBlockIds, ...expiredPendingFlowIds]
+        : completedBlockIds;
+
+      if (expiredPendingFlowIds.length > 0) {
+        mergeDayPlanStatsDay({
+          dateKey,
+          completedByCategory: buildCompletedCountByCategoryKey(blocks, allCompleted),
+        });
+      }
+
       set({
         blocks: blocks.filter((b) => !expiredIds.has(b.id)),
-        completedBlockIds: completedBlockIds.filter((id) => !expiredIds.has(id)),
+        completedBlockIds: allCompleted.filter((id) => !expiredIds.has(id)),
         skippedBlockIds: skippedBlockIds.filter((id) => !expiredIds.has(id)),
         liveActivityChecklistFocusBlockId:
           liveActivityChecklistFocusBlockId && expiredIds.has(liveActivityChecklistFocusBlockId)
@@ -274,6 +292,27 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         skippedBlockIds: nextSkipped,
         liveActivityChecklistFocusBlockId:
           liveActivityChecklistFocusBlockId === blockId
+            ? null
+            : liveActivityChecklistFocusBlockId,
+      });
+      persist();
+    },
+
+    completeBlocks: (blockIds) => {
+      if (blockIds.length === 0) return;
+      const { completedBlockIds, skippedBlockIds, liveActivityChecklistFocusBlockId } = get();
+      const existing = new Set(completedBlockIds);
+      const newIds = blockIds.filter((id) => !existing.has(id));
+      if (newIds.length === 0) return;
+
+      const nextCompleted = [...completedBlockIds, ...newIds];
+      const newSet = new Set(newIds);
+      const nextSkipped = skippedBlockIds.filter((id) => !newSet.has(id));
+      set({
+        completedBlockIds: nextCompleted,
+        skippedBlockIds: nextSkipped,
+        liveActivityChecklistFocusBlockId:
+          liveActivityChecklistFocusBlockId != null && newSet.has(liveActivityChecklistFocusBlockId)
             ? null
             : liveActivityChecklistFocusBlockId,
       });

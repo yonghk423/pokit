@@ -6,13 +6,10 @@ import {
   DayPlanTabBridgeProvider,
 } from '@pages/day-plan';
 import { DayPlanTabFab } from '@pages/day-plan/ui/DayPlanTabFab';
-import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { HapticTab } from '@shared/ui/haptic-tab';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-
   return (
     <DayPlanTabBridgeProvider>
       <View style={{ flex: 1 }}>
@@ -21,8 +18,12 @@ export default function TabLayout() {
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: false,
-            tabBarActiveTintColor: isDark ? '#FAFAFA' : '#000000',
-            tabBarInactiveTintColor: isDark ? '#A1A1AA' : '#666666',
+            tabBarButton: (props) => <HapticTab {...props} />,
+            tabBarStyle: {
+              backgroundColor: '#FFFFFF',
+            },
+            tabBarActiveTintColor: '#000000',
+            tabBarInactiveTintColor: '#666666',
           }}>
           <Tabs.Screen name="index" options={{ href: null }} />
           <Tabs.Screen

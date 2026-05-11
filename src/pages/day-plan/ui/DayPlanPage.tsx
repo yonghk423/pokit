@@ -17,6 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useShallow } from 'zustand/react/shallow';
 
 import {
+  filterDayPlanFlowBlocks,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
   parseHHmmToMinutes,
@@ -136,6 +137,12 @@ export function DayPlanPage() {
   const quickMemoInputRef = useRef<TextInput>(null);
   const dayPlanScrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
 
+  const [nowTick, setNowTick] = useState(Date.now);
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 10_000);
+    return () => clearInterval(id);
+  }, []);
+
   /** 우선순위 적용일·집중 구간 안이면 true — FAB 노출·자동 종료 판단에 공통 사용 */
   const priorityWindowEligible = useMemo(() => {
     if (planMode !== 'priority') return false;
@@ -171,6 +178,7 @@ export function DayPlanPage() {
     priorityEnd,
     priorityPlanDateKey,
     priorityPlanDateKeyEnd,
+    nowTick,
   ]);
 
   /** 당일 기준으로 집중 구간이 이미 끝났는지(시작 전 아님) */
@@ -202,14 +210,16 @@ export function DayPlanPage() {
     priorityEnd,
     priorityPlanDateKey,
     priorityPlanDateKeyEnd,
+    nowTick,
   ]);
 
-  const { addBlock, quickMemos, removeQuickMemo } = useDayPlanStore(
+  const { addBlock, quickMemos, removeQuickMemo, completeBlocks } = useDayPlanStore(
     useShallow((s) => ({
       addBlock: s.addBlock,
       quickMemos: s.quickMemos,
       removeQuickMemo: s.removeQuickMemo,
       prunePastEndedBlocks: s.prunePastEndedBlocks,
+      completeBlocks: s.completeBlocks,
     })),
   );
   const { dayPlanBlocks, completedBlockIds, skippedBlockIds } = useDayPlanStore(
@@ -537,20 +547,38 @@ export function DayPlanPage() {
     endFocusedLiveActivity,
   ]);
 
-  /** 집중 종료 시점이 지났다면(포커스 상태와 무관하게) 담기 리스트를 초기화 */
+  /** 전체 루틴 시간 만료 → 진행 중 블록 자동 완료 + 담기 리스트 초기화 */
+  const priorityWindowAutoFinishedRef = useRef(false);
+  useEffect(() => {
+    if (priorityWindowEndedForToday) return;
+    priorityWindowAutoFinishedRef.current = false;
+  }, [priorityWindowEndedForToday]);
+
   useEffect(() => {
     if (planMode !== 'priority') return;
     if (!priorityWindowEndedForToday) return;
-    if (priorityCategoryOrder.length === 0) return;
+    if (priorityWindowAutoFinishedRef.current) return;
+    priorityWindowAutoFinishedRef.current = true;
 
-    setIsFocusStarted(false);
-    clearCompletedFocusCategoryKeys();
-    clearPlanCompletionDismissedKeys();
-    setPriorityCategoryOrder([]);
+    const { blocks, completedBlockIds: cIds, skippedBlockIds: sIds } = useDayPlanStore.getState();
+    const done = new Set([...cIds, ...sIds]);
+    const pendingFlowBlocks = filterDayPlanFlowBlocks(blocks).filter((b) => !done.has(b.id));
+    if (pendingFlowBlocks.length > 0) {
+      completeBlocks(pendingFlowBlocks.map((b) => b.id));
+      void rescheduleDayPlanNotifications();
+    }
+
+    if (priorityCategoryOrder.length > 0) {
+      setIsFocusStarted(false);
+      clearCompletedFocusCategoryKeys();
+      clearPlanCompletionDismissedKeys();
+      setPriorityCategoryOrder([]);
+    }
     endFocusedLiveActivity();
   }, [
     planMode,
     priorityWindowEndedForToday,
+    completeBlocks,
     priorityCategoryOrder.length,
     setIsFocusStarted,
     clearCompletedFocusCategoryKeys,
