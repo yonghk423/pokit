@@ -17,6 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useShallow } from 'zustand/react/shallow';
 
 import {
+  addDaysToLocalDateKey,
   filterDayPlanFlowBlocks,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
@@ -83,6 +84,8 @@ export function DayPlanPage() {
     priorityStart,
     priorityEnd,
     priorityCategoryOrder,
+    priorityBagDismissedDateKey,
+    priorityBagDismissedKeys,
     priorityCatalogFixedRoutineEpoch,
     quickMemoDraft,
     setPlanMode,
@@ -107,6 +110,8 @@ export function DayPlanPage() {
       priorityStart: s.priorityStart,
       priorityEnd: s.priorityEnd,
       priorityCategoryOrder: s.priorityCategoryOrder,
+      priorityBagDismissedDateKey: s.priorityBagDismissedDateKey,
+      priorityBagDismissedKeys: s.priorityBagDismissedKeys,
       priorityCatalogFixedRoutineEpoch: s.priorityCatalogFixedRoutineEpoch,
       quickMemoDraft: s.quickMemoDraft,
       setPlanMode: s.setPlanMode,
@@ -275,7 +280,9 @@ export function DayPlanPage() {
     if (today < priorityPlanDateKey || today > priorityPlanDateKeyEnd) return;
 
     const fixedRaw = loadPriorityCatalogFixedRoutineKeys();
-    const fixedOrder = normalizeFixedRoutineCategoryKeys(fixedRaw);
+    const todayDismissed =
+      priorityBagDismissedDateKey === today ? new Set(priorityBagDismissedKeys) : new Set<string>();
+    const fixedOrder = normalizeFixedRoutineCategoryKeys(fixedRaw).filter((key) => !todayDismissed.has(key));
     if (fixedOrder.length === 0) return;
 
     setPriorityCategoryOrder((prev) => {
@@ -288,6 +295,8 @@ export function DayPlanPage() {
     priorityPlanDateKey,
     priorityPlanDateKeyEnd,
     priorityCategoryOrder,
+    priorityBagDismissedDateKey,
+    priorityBagDismissedKeys,
     priorityCatalogFixedRoutineEpoch,
     setPriorityCategoryOrder,
   ]);
@@ -443,9 +452,27 @@ export function DayPlanPage() {
         Alert.alert('카테고리 필요', '저장하려면 카테고리를 하나 이상 선택해 주세요.');
         return;
       }
-      const ps = parseHHmmToMinutes(priorityStart);
-      const pe = parseHHmmToMinutes(priorityEnd);
-      const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
+      const today = getLocalDateKey();
+      let effectiveStart = priorityStart;
+      let effectiveEnd = priorityEnd;
+      if (!priorityWindowEligible) {
+        const fresh = defaultPriorityWindowFromNow();
+        effectiveStart = fresh.startTime;
+        effectiveEnd = fresh.endTime;
+        const freshOvernight = isOvernightHhmmRange(effectiveStart, effectiveEnd);
+        setPriorityStart(effectiveStart);
+        setPriorityEnd(effectiveEnd);
+        applyPriorityPlanCalendarRange(
+          today,
+          freshOvernight ? addDaysToLocalDateKey(today, 1) : today,
+        );
+        clearCompletedFocusCategoryKeys();
+        clearPlanCompletionDismissedKeys();
+      }
+
+      const ps = parseHHmmToMinutes(effectiveStart);
+      const pe = parseHHmmToMinutes(effectiveEnd);
+      const overnight = isOvernightHhmmRange(effectiveStart, effectiveEnd);
       if (ps === null || pe === null) {
         Alert.alert('시각 형식', '시작·종료 시각은 09:00 형식으로 입력해 주세요.');
         return;
@@ -467,7 +494,7 @@ export function DayPlanPage() {
         category: catLabel,
         categoryKey: headKey,
         replaceOverlapping: true,
-        planDateKey: getLocalDateKey(),
+        planDateKey: today,
       });
 
       if (!result.ok) {

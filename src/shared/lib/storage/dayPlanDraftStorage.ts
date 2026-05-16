@@ -6,6 +6,8 @@ export type PersistedDayPlanDraft = {
   isFocusStarted: boolean;
   completedFocusCategoryKeys: string[];
   planCompletionDismissedKeys: string[];
+  priorityBagDismissedDateKey?: string;
+  priorityBagDismissedKeys?: string[];
   priorityPlanDateKey: string;
   priorityPlanDateKeyEnd: string;
   priorityPlanExplicitMultiDay: boolean;

@@ -13,6 +13,9 @@ type DayPlanDraftState = {
   completedFocusCategoryKeys: string[];
   /** 우선순위에서 항목을 뺐다가 다시 담을 때 플랜 완료만으로 취소선이 남지 않게 막는 키 */
   planCompletionDismissedKeys: string[];
+  /** 오늘 담기에서 사용자가 직접 뺀 항목. 고정 플로우 자동 보강에서 제외한다. */
+  priorityBagDismissedDateKey: string;
+  priorityBagDismissedKeys: string[];
   /** 우선 순위 일정 적용 기간 시작일 (YYYY-MM-DD) */
   priorityPlanDateKey: string;
   /** 우선 순위 일정 적용 기간 종료일 (YYYY-MM-DD) */
@@ -48,6 +51,7 @@ type DayPlanDraftState = {
     removeKeys: string[],
     planCompletionDismissForKeys: string[],
   ) => void;
+  clearPriorityBagDismissedKeys: () => void;
   addPlanCompletionDismissedKey: (key: string) => void;
   clearPlanCompletionDismissedKeys: () => void;
   setPriorityPlanDateKey: (value: string) => void;
@@ -74,6 +78,8 @@ function createInitialState() {
     isFocusStarted: false,
     completedFocusCategoryKeys: [] as string[],
     planCompletionDismissedKeys: [] as string[],
+    priorityBagDismissedDateKey: getLocalDateKey(),
+    priorityBagDismissedKeys: [] as string[],
     priorityPlanDateKey: getLocalDateKey(),
     priorityPlanDateKeyEnd: getLocalDateKey(),
     priorityPlanExplicitMultiDay: false,
@@ -107,6 +113,10 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         : raw.priorityPlanDateKey;
     const keepRange = rangeHi >= today;
 
+    const dismissedDateKey =
+      typeof raw.priorityBagDismissedDateKey === 'string' ? raw.priorityBagDismissedDateKey : today;
+    const keepDismissed = dismissedDateKey === today;
+
     set({
       planMode: raw.planMode === 'quickMemo' ? 'quickMemo' : 'priority',
       isFocusStarted: Boolean(raw.isFocusStarted),
@@ -116,6 +126,11 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       planCompletionDismissedKeys: Array.isArray(raw.planCompletionDismissedKeys)
         ? raw.planCompletionDismissedKeys
         : [],
+      priorityBagDismissedDateKey: today,
+      priorityBagDismissedKeys:
+        keepDismissed && Array.isArray(raw.priorityBagDismissedKeys)
+          ? raw.priorityBagDismissedKeys.filter((k): k is string => typeof k === 'string' && k.trim().length > 0)
+          : [],
       priorityPlanDateKey: keepRange ? raw.priorityPlanDateKey : today,
       priorityPlanDateKeyEnd: keepRange ? raw.priorityPlanDateKeyEnd : today,
       priorityPlanExplicitMultiDay: keepRange ? Boolean(raw.priorityPlanExplicitMultiDay) : false,
@@ -176,16 +191,29 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       const nextOrder = s.priorityCategoryOrder.filter((k) => !remove.has(k));
       const nextFocus = s.completedFocusCategoryKeys.filter((k) => !remove.has(k));
       const nextDismissed = [...s.planCompletionDismissedKeys];
+      const today = getLocalDateKey();
+      const currentBagDismissed = s.priorityBagDismissedDateKey === today ? s.priorityBagDismissedKeys : [];
+      const nextBagDismissed = [...currentBagDismissed];
       for (const k of planCompletionDismissForKeys) {
         if (!nextDismissed.includes(k)) nextDismissed.push(k);
+      }
+      for (const k of removeKeys) {
+        if (!nextBagDismissed.includes(k)) nextBagDismissed.push(k);
       }
       const emptied = nextOrder.length === 0;
       return {
         priorityCategoryOrder: nextOrder,
         completedFocusCategoryKeys: emptied ? [] : nextFocus,
         planCompletionDismissedKeys: emptied ? [] : nextDismissed,
+        priorityBagDismissedDateKey: today,
+        priorityBagDismissedKeys: nextBagDismissed,
         isFocusStarted: emptied ? false : s.isFocusStarted,
       };
+    }),
+  clearPriorityBagDismissedKeys: () =>
+    set({
+      priorityBagDismissedDateKey: getLocalDateKey(),
+      priorityBagDismissedKeys: [],
     }),
   addPlanCompletionDismissedKey: (key) =>
     set((s) => ({
@@ -259,6 +287,8 @@ useDayPlanDraftStore.subscribe((state) => {
     isFocusStarted: state.isFocusStarted,
     completedFocusCategoryKeys: state.completedFocusCategoryKeys,
     planCompletionDismissedKeys: state.planCompletionDismissedKeys,
+    priorityBagDismissedDateKey: state.priorityBagDismissedDateKey,
+    priorityBagDismissedKeys: state.priorityBagDismissedKeys,
     priorityPlanDateKey: state.priorityPlanDateKey,
     priorityPlanDateKeyEnd: state.priorityPlanDateKeyEnd,
     priorityPlanExplicitMultiDay: state.priorityPlanExplicitMultiDay,
@@ -278,6 +308,8 @@ function persistDayPlanDraft(): void {
     isFocusStarted: s.isFocusStarted,
     completedFocusCategoryKeys: s.completedFocusCategoryKeys,
     planCompletionDismissedKeys: s.planCompletionDismissedKeys,
+    priorityBagDismissedDateKey: s.priorityBagDismissedDateKey,
+    priorityBagDismissedKeys: s.priorityBagDismissedKeys,
     priorityPlanDateKey: s.priorityPlanDateKey,
     priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
     priorityPlanExplicitMultiDay: s.priorityPlanExplicitMultiDay,
