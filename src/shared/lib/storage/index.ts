@@ -61,6 +61,20 @@ export type {
 } from './settingsStorage';
 export { StorageKeys } from './storageKeys';
 export {
+  clearHistoryStorage,
+  loadHistoryAchievements,
+  loadHistoryDailyStats,
+  loadHistoryMeta,
+  saveHistoryAchievements,
+  saveHistoryDailyStats,
+  saveHistoryMeta,
+} from './historyStorage';
+export type {
+  HistoryAchievementRow,
+  HistoryDailyStatRow,
+  HistoryMetaRow,
+} from './historyStorage';
+export {
   loadDailyRhythmOnboardingCompleted,
   markDailyRhythmOnboardingCompleted,
 } from './dailyRhythmOnboardingStorage';

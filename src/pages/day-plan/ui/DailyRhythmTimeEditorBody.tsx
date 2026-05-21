@@ -2,14 +2,14 @@ import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
+import { addDaysToLocalDateKey, formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { DailyRhythmStyleAlarmRow, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
-import { isOvernightHhmmRange, PRIMARY } from '../lib/dayPlanEditorShared';
-import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { formatDateKeyCompactKo, isOvernightHhmmRange, PRIMARY } from '../lib/dayPlanEditorShared';
+import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
 type PickerTarget = 'start' | 'end' | null;
 
@@ -61,6 +61,18 @@ export type DailyRhythmTimeEditorBodyProps = {
   /** 설정 화면 전용: 하루 시작 시각에 맞춰 매일 알림 */
   dayStartAlarmOn?: boolean;
   onDayStartAlarmChange?: (value: boolean) => void;
+  /** 편집 전 구간이 다음 날로 이어진 상태인지 */
+  currentSpansMultiDay?: boolean;
+  /** 종료 시각 모호성(당일/다음 날) 확정 콜백 */
+  onEndDateChoice?: (startHhmm: string, endHhmm: string, target: 'today' | 'nextDay') => void;
+  /** 당일 선택 라벨(예: 당일 · 5월 21일) */
+  endDateChoiceTodayLabel?: string;
+  /** 다음 날 선택 라벨(예: 다음 날 · 5월 22일) */
+  endDateChoiceNextDayLabel?: string;
+  /** 마무리 시각이 속한 달력일(범위 시작일) */
+  priorityPlanRangeLo?: string;
+  /** 마무리 시각이 속한 달력일(범위 종료일) */
+  priorityPlanRangeHi?: string;
 };
 
 export function DailyRhythmTimeEditorBody({
@@ -76,21 +88,53 @@ export function DailyRhythmTimeEditorBody({
   onSecondaryPress,
   dayStartAlarmOn,
   onDayStartAlarmChange,
+  currentSpansMultiDay = false,
+  onEndDateChoice,
+  endDateChoiceTodayLabel = '당일',
+  endDateChoiceNextDayLabel = '다음 날',
+  priorityPlanRangeLo,
+  priorityPlanRangeHi,
 }: DailyRhythmTimeEditorBodyProps) {
   const [startHhmm, setStartHhmm] = useState(seedStart);
   const [endHhmm, setEndHhmm] = useState(seedEnd);
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
+  const [showEndDateChoice, setShowEndDateChoice] = useState(false);
 
   useEffect(() => {
     setStartHhmm(seedStart);
     setEndHhmm(seedEnd);
     setPickerTarget(null);
+    setShowEndDateChoice(false);
   }, [seedKey, seedStart, seedEnd]);
+
+  const setEndHhmmWithChoiceCheck = useCallback(
+    (nextEnd: string) => {
+      const startMin = parseHHmmToMinutes(startHhmm.trim());
+      const nextEndMin = parseHHmmToMinutes(nextEnd.trim());
+      const wasOvernight = isOvernightHhmmRange(startHhmm, endHhmm);
+      const isNowNonOvernight =
+        startMin !== null &&
+        nextEndMin !== null &&
+        !isOvernightHhmmRange(startHhmm, nextEnd) &&
+        nextEndMin >= startMin;
+
+      setEndHhmm(nextEnd);
+
+      // "기존에는 다음 날 맥락(명시 다일 or 자정 넘김)이었는데 지금은 당일/다음 날 모두 해석 가능한" 경우 선택 노출
+      if ((currentSpansMultiDay || wasOvernight) && isNowNonOvernight) {
+        setShowEndDateChoice(true);
+        return;
+      }
+      setShowEndDateChoice(false);
+    },
+    [currentSpansMultiDay, endHhmm, startHhmm],
+  );
 
   const applyPreset = useCallback((start: string, end: string) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setStartHhmm(start);
     setEndHhmm(end);
+    setShowEndDateChoice(false);
     setPickerTarget(null);
   }, []);
 
@@ -112,6 +156,23 @@ export function DailyRhythmTimeEditorBody({
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onPrimaryPress(startHhmm, endHhmm);
   }, [endHhmm, onPrimaryPress, startHhmm]);
+
+  const startPillDateCaption = useMemo(() => {
+    if (!priorityPlanRangeLo) return undefined;
+    return formatDateKeyCompactKo(priorityPlanRangeLo);
+  }, [priorityPlanRangeLo]);
+
+  const endPillDateCaption = useMemo(() => {
+    if (!priorityPlanRangeLo) return undefined;
+    const lo = priorityPlanRangeLo;
+    const hi = priorityPlanRangeHi ?? lo;
+    if (showEndDateChoice) return undefined;
+    if (hi > lo) return formatDateKeyCompactKo(hi);
+    if (isOvernightHhmmRange(startHhmm, endHhmm)) {
+      return formatDateKeyCompactKo(addDaysToLocalDateKey(lo, 1));
+    }
+    return formatDateKeyCompactKo(lo);
+  }, [endHhmm, priorityPlanRangeHi, priorityPlanRangeLo, showEndDateChoice, startHhmm]);
 
   const timePickerPalette = useMemo(
     () => ({
@@ -244,6 +305,7 @@ export function DailyRhythmTimeEditorBody({
             isDark={isDark}
             palette={timePickerPalette}
             snapStepMinutes={1}
+            dateCaption={startPillDateCaption}
           />
 
           <View style={[styles.divider, { backgroundColor: c.border }]} />
@@ -252,18 +314,72 @@ export function DailyRhythmTimeEditorBody({
             label="하루 마무리"
             hint="오늘 목표 구간이 끝나는 시각"
             valueHhmm={endHhmm}
-            onChangeHhmm={setEndHhmm}
+            onChangeHhmm={setEndHhmmWithChoiceCheck}
             expanded={pickerTarget === 'end'}
             onToggleExpand={() => setPickerTarget((t) => (t === 'end' ? null : 'end'))}
             isDark={isDark}
             palette={timePickerPalette}
             snapStepMinutes={1}
+            dateCaption={endPillDateCaption}
           />
+
+          {showEndDateChoice && onEndDateChoice ? (
+            <View style={styles.endDateChoiceInline}>
+              <ThemedText
+                style={[styles.endDateChoiceQuestion, { color: c.onVariant }]}
+                lightColor={c.onVariant}
+                darkColor={c.onVariant}>
+                당일 기준으로 끝나나요, 다음 날로 이어지나요?
+              </ThemedText>
+              <View style={styles.endDateChoiceBtnRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="당일로 설정"
+                  onPress={() => {
+                    onEndDateChoice(startHhmm, endHhmm, 'today');
+                    setShowEndDateChoice(false);
+                    void Haptics.selectionAsync();
+                  }}
+                  style={({ pressed }) => [
+                    styles.endDateChoiceBtn,
+                    { backgroundColor: pill.inactiveBg, borderColor: pill.inactiveBorder },
+                    pressed && { opacity: 0.9 },
+                  ]}>
+                  <ThemedText
+                    style={[styles.endDateChoiceBtnText, { color: pill.inactiveIcon }]}
+                    lightColor={pill.inactiveIcon}
+                    darkColor={pill.inactiveIcon}>
+                    {endDateChoiceTodayLabel}
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="다음 날로 설정"
+                  onPress={() => {
+                    onEndDateChoice(startHhmm, endHhmm, 'nextDay');
+                    setShowEndDateChoice(false);
+                    void Haptics.selectionAsync();
+                  }}
+                  style={({ pressed }) => [
+                    styles.endDateChoiceBtn,
+                    { backgroundColor: pill.activeBg, borderColor: pill.activeBorder },
+                    pressed && { opacity: 0.9 },
+                  ]}>
+                  <ThemedText
+                    style={[styles.endDateChoiceBtnText, { color: pill.activeIcon }]}
+                    lightColor={pill.activeIcon}
+                    darkColor={pill.activeIcon}>
+                    {endDateChoiceNextDayLabel}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
         </View>
 
         {variant === 'settings' &&
-        typeof dayStartAlarmOn === 'boolean' &&
-        onDayStartAlarmChange ? (
+          typeof dayStartAlarmOn === 'boolean' &&
+          onDayStartAlarmChange ? (
           <View style={[styles.card, { backgroundColor: c.containerLow, borderColor: c.border }]}>
             <DailyRhythmStyleAlarmRow
               title="하루 시작 알림"
@@ -339,6 +455,32 @@ const styles = StyleSheet.create({
   },
   topBlock: { gap: 18, paddingBottom: 4 },
   topBlockOnboarding: { gap: 12 },
+  endDateChoiceInline: {
+    marginTop: 10,
+    gap: 10,
+  },
+  endDateChoiceQuestion: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  endDateChoiceBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  endDateChoiceBtn: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  endDateChoiceBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
   footer: {
     flexShrink: 0,
     gap: 2,

@@ -1,11 +1,12 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
   blockDurationSec,
+  deriveReadingProgress,
   emptyCategorySessionConfigs,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
@@ -19,20 +20,20 @@ import {
   normalizeMedicineDetailConfig,
   normalizeMeditationDetailConfig,
   normalizeOtherDetailConfig,
-  deriveReadingProgress,
   normalizeReadingLiveActivityConfig,
-  readingDisplayTitle,
   normalizeWaterDetailConfig,
   normalizeWorkDetailConfig,
   normalizeYogaDetailConfig,
   parseHHmmToMinutes,
   parseNumberedFlowLines,
+  readingDisplayTitle,
   resolveBlockCategoryKey,
   toRuntimeTiming,
   useDayPlanDraftStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
 } from '@entities/day-plan';
+import { useHistoryStore } from '@entities/history';
 import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
 import {
   buildLiveActivityChecklistRows,
@@ -41,6 +42,7 @@ import {
   upsertFinishedLiveActivityForBlockId,
   useLiveActivitySync,
 } from '@features/live-activity-sync';
+import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
 import { GoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
 import {
@@ -52,7 +54,6 @@ import {
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { formatDurationMinKo } from '@widgets/active-session-card/ui/sessionCardShared';
-import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 
 import {
   ImmersionBottomControls,
@@ -383,6 +384,18 @@ export function ActivitySessionPage() {
       safeRouterBack(router);
       return;
     }
+    if (block.blockOrigin !== 'quickMemo') {
+      const history = useHistoryStore.getState();
+      history.hydrate();
+      history.recordFocusSession({
+        dateKey,
+        minutes: Math.max(1, Math.ceil(blockDurationSec(block) / 60)),
+        categoryKey,
+        completed: true,
+        plannedCountForDay: flowBlocks.length,
+      });
+      history.recomputeAchievements();
+    }
     completeBlock(block.id);
     const s = useDayPlanStore.getState();
     void rescheduleDayPlanNotifications();
@@ -398,7 +411,7 @@ export function ActivitySessionPage() {
       void endLockFlowLiveActivity(block.id);
       safeRouterBack(router);
     }
-  }, [block, completeBlock, router]);
+  }, [block, categoryKey, completeBlock, dateKey, flowBlocks.length, router]);
 
   /** 약 복용 기록 증감(체크/취소) — 저장소 반영 */
   const updateMedicineTakenCount = useCallback(
@@ -575,15 +588,15 @@ export function ActivitySessionPage() {
     const workRows =
       useTaskChecklist
         ? effectiveTasks.map((task, idx) => ({
-            blockId: task.id || `work-task-${idx}`,
-            title: task.text,
-            timeLabel: '',
-            state: (task.done ? 'completed' : 'upcoming') as
-              | 'upcoming'
-              | 'completed'
-              | 'skipped'
-              | 'current',
-          }))
+          blockId: task.id || `work-task-${idx}`,
+          title: task.text,
+          timeLabel: '',
+          state: (task.done ? 'completed' : 'upcoming') as
+            | 'upcoming'
+            | 'completed'
+            | 'skipped'
+            | 'current',
+        }))
         : checklist.checklistRows;
     const workRemainingCount = workRows.filter((r) => r.state !== 'completed' && r.state !== 'skipped').length;
 
@@ -627,143 +640,143 @@ export function ActivitySessionPage() {
             completeLabel="작업 완료"
           />
         }>
-            <ImmersionCardShell borderColor={WK.border}>
-              <ThemedText style={waterStyles.statLabel} lightColor={WK.muted} darkColor={WK.muted}>
-                집중 플랜
-              </ThemedText>
-              <View style={waterStyles.goalRow}>
-                <ThemedText style={waterStyles.goalValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
-                  {String(workCfg.planMin)}
-                </ThemedText>
-                <ThemedText style={waterStyles.goalUnit} lightColor={WK.muted} darkColor={WK.muted}>
-                  분
-                </ThemedText>
-              </View>
-              <ThemedText style={waterStyles.metaLine} lightColor={WK.muted} darkColor={WK.muted}>
-                기록 {workCfg.doneMin}분 · 세션 {Math.round(progress * 100)}%
-              </ThemedText>
-              <View style={waterStyles.hydrateTrack}>
-                <View
-                  style={[
-                    waterStyles.hydrateFill,
-                    { width: `${Math.round(planTrack01 * 100)}%`, backgroundColor: WK.accent, opacity: 0.35 },
-                  ]}
-                />
-              </View>
-            </ImmersionCardShell>
+        <ImmersionCardShell borderColor={WK.border}>
+          <ThemedText style={waterStyles.statLabel} lightColor={WK.muted} darkColor={WK.muted}>
+            집중 플랜
+          </ThemedText>
+          <View style={waterStyles.goalRow}>
+            <ThemedText style={waterStyles.goalValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
+              {String(workCfg.planMin)}
+            </ThemedText>
+            <ThemedText style={waterStyles.goalUnit} lightColor={WK.muted} darkColor={WK.muted}>
+              분
+            </ThemedText>
+          </View>
+          <ThemedText style={waterStyles.metaLine} lightColor={WK.muted} darkColor={WK.muted}>
+            기록 {workCfg.doneMin}분 · 세션 {Math.round(progress * 100)}%
+          </ThemedText>
+          <View style={waterStyles.hydrateTrack}>
+            <View
+              style={[
+                waterStyles.hydrateFill,
+                { width: `${Math.round(planTrack01 * 100)}%`, backgroundColor: WK.accent, opacity: 0.35 },
+              ]}
+            />
+          </View>
+        </ImmersionCardShell>
 
-            <ImmersionSplitRow>
-              <ImmersionHalfCard borderColor={WK.border}>
-                <ThemedText style={waterStyles.halfLabel} lightColor={WK.muted} darkColor={WK.muted}>
-                  기록 진행
-                </ThemedText>
-                <ThemedText style={waterStyles.halfValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
-                  {String(workCfg.doneMin)}
-                </ThemedText>
-                <ThemedText style={waterStyles.halfUnit} lightColor={WK.muted} darkColor={WK.muted}>
-                  분
-                </ThemedText>
-              </ImmersionHalfCard>
-              <ImmersionHalfCard borderColor={WK.border}>
-                <ThemedText style={waterStyles.halfLabel} lightColor={WK.muted} darkColor={WK.muted}>
-                  플로우 진행
-                </ThemedText>
-                <ThemedText style={waterStyles.halfValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
-                  {String(Math.round(progress * 100))}
-                </ThemedText>
-                <ThemedText style={waterStyles.halfUnit} lightColor={WK.muted} darkColor={WK.muted}>
-                  %
-                </ThemedText>
-              </ImmersionHalfCard>
-            </ImmersionSplitRow>
+        <ImmersionSplitRow>
+          <ImmersionHalfCard borderColor={WK.border}>
+            <ThemedText style={waterStyles.halfLabel} lightColor={WK.muted} darkColor={WK.muted}>
+              기록 진행
+            </ThemedText>
+            <ThemedText style={waterStyles.halfValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
+              {String(workCfg.doneMin)}
+            </ThemedText>
+            <ThemedText style={waterStyles.halfUnit} lightColor={WK.muted} darkColor={WK.muted}>
+              분
+            </ThemedText>
+          </ImmersionHalfCard>
+          <ImmersionHalfCard borderColor={WK.border}>
+            <ThemedText style={waterStyles.halfLabel} lightColor={WK.muted} darkColor={WK.muted}>
+              플로우 진행
+            </ThemedText>
+            <ThemedText style={waterStyles.halfValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
+              {String(Math.round(progress * 100))}
+            </ThemedText>
+            <ThemedText style={waterStyles.halfUnit} lightColor={WK.muted} darkColor={WK.muted}>
+              %
+            </ThemedText>
+          </ImmersionHalfCard>
+        </ImmersionSplitRow>
 
-            <View style={workStyles.checklistSection}>
-              <View style={workStyles.checklistHeaderRow}>
+        <View style={workStyles.checklistSection}>
+          <View style={workStyles.checklistHeaderRow}>
+            <ThemedText
+              style={workStyles.checklistTitle}
+              lightColor={CategoryImmersionTheme.work.onSurface}
+              darkColor={CategoryImmersionTheme.work.onSurface}>
+              해야 할 작업 리스트
+            </ThemedText>
+            <ThemedText
+              style={workStyles.checklistRemain}
+              lightColor={CategoryImmersionTheme.work.muted}
+              darkColor={CategoryImmersionTheme.work.muted}>
+              남은 {workRemainingCount}개
+            </ThemedText>
+          </View>
+          <View style={workStyles.checklistList}>
+            {workRows.length === 0 ? (
+              <View style={[workStyles.glassPanel, workStyles.checklistEmpty]}>
                 <ThemedText
-                  style={workStyles.checklistTitle}
-                  lightColor={CategoryImmersionTheme.work.onSurface}
-                  darkColor={CategoryImmersionTheme.work.onSurface}>
-                  해야 할 작업 리스트
-                </ThemedText>
-                <ThemedText
-                  style={workStyles.checklistRemain}
+                  style={workStyles.checklistEmptyText}
                   lightColor={CategoryImmersionTheme.work.muted}
                   darkColor={CategoryImmersionTheme.work.muted}>
-                  남은 {workRemainingCount}개
+                  표시할 플로우가 없습니다
                 </ThemedText>
               </View>
-              <View style={workStyles.checklistList}>
-                {workRows.length === 0 ? (
-                  <View style={[workStyles.glassPanel, workStyles.checklistEmpty]}>
-                    <ThemedText
-                      style={workStyles.checklistEmptyText}
-                      lightColor={CategoryImmersionTheme.work.muted}
-                      darkColor={CategoryImmersionTheme.work.muted}>
-                      표시할 플로우가 없습니다
-                    </ThemedText>
-                  </View>
-                ) : (
-                  workRows.map((row) => {
-                    const done = row.state === 'completed';
-                    const current = row.state === 'current';
-                    const skipped = row.state === 'skipped';
-                    return (
-                      <View
-                        key={row.blockId}
+            ) : (
+              workRows.map((row) => {
+                const done = row.state === 'completed';
+                const current = row.state === 'current';
+                const skipped = row.state === 'skipped';
+                return (
+                  <View
+                    key={row.blockId}
+                    style={[
+                      workStyles.glassPanel,
+                      workStyles.checklistItem,
+                      current && workStyles.checklistItemCurrent,
+                    ]}>
+                    <View style={workStyles.checklistItemTextCol}>
+                      <ThemedText
                         style={[
-                          workStyles.glassPanel,
-                          workStyles.checklistItem,
-                          current && workStyles.checklistItemCurrent,
-                        ]}>
-                        <View style={workStyles.checklistItemTextCol}>
-                          <ThemedText
-                            style={[
-                              workStyles.checklistItemTitle,
-                              done && workStyles.checklistItemTitleDone,
-                              skipped && workStyles.checklistItemTitleSkip,
-                            ]}
-                            lightColor={CategoryImmersionTheme.work.onSurface}
-                            darkColor={CategoryImmersionTheme.work.onSurface}
-                            numberOfLines={2}>
-                            {row.title}
-                          </ThemedText>
-                          {row.timeLabel ? (
-                            <ThemedText
-                              style={workStyles.checklistItemMeta}
-                              lightColor={CategoryImmersionTheme.work.muted}
-                              darkColor={CategoryImmersionTheme.work.muted}
-                              numberOfLines={1}>
-                              {row.timeLabel}
-                            </ThemedText>
-                          ) : null}
-                        </View>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={done ? '작업 체크 해제' : '작업 체크'}
-                          disabled={!useTaskChecklist}
-                          onPress={() => {
-                            if (!useTaskChecklist) return;
-                            toggleWorkTaskDone(row.blockId);
-                          }}
-                          style={workStyles.checkBox}>
-                          <IconSymbol
-                            name={done ? 'checkmark' : skipped ? 'minus' : 'checkmark'}
-                            size={22}
-                            color={
-                              done
-                                ? PRIMARY
-                                : skipped
-                                  ? 'rgba(0,0,0,0.12)'
-                                  : 'rgba(0,0,0,0.22)'
-                            }
-                          />
-                        </Pressable>
-                      </View>
-                    );
-                  })
-                )}
-              </View>
-            </View>
+                          workStyles.checklistItemTitle,
+                          done && workStyles.checklistItemTitleDone,
+                          skipped && workStyles.checklistItemTitleSkip,
+                        ]}
+                        lightColor={CategoryImmersionTheme.work.onSurface}
+                        darkColor={CategoryImmersionTheme.work.onSurface}
+                        numberOfLines={2}>
+                        {row.title}
+                      </ThemedText>
+                      {row.timeLabel ? (
+                        <ThemedText
+                          style={workStyles.checklistItemMeta}
+                          lightColor={CategoryImmersionTheme.work.muted}
+                          darkColor={CategoryImmersionTheme.work.muted}
+                          numberOfLines={1}>
+                          {row.timeLabel}
+                        </ThemedText>
+                      ) : null}
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={done ? '작업 체크 해제' : '작업 체크'}
+                      disabled={!useTaskChecklist}
+                      onPress={() => {
+                        if (!useTaskChecklist) return;
+                        toggleWorkTaskDone(row.blockId);
+                      }}
+                      style={workStyles.checkBox}>
+                      <IconSymbol
+                        name={done ? 'checkmark' : skipped ? 'minus' : 'checkmark'}
+                        size={22}
+                        color={
+                          done
+                            ? PRIMARY
+                            : skipped
+                              ? 'rgba(0,0,0,0.12)'
+                              : 'rgba(0,0,0,0.22)'
+                        }
+                      />
+                    </Pressable>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        </View>
       </SessionImmersionLayout>
     );
   }
@@ -1070,9 +1083,8 @@ export function ActivitySessionPage() {
             </ThemedText>
           </ThemedText>
         }
-        flowCaption={`${medCfg.doseLabel.trim() || '약'} · ${
-          totalDoses === 0 ? '목표 상세에서 슬롯을 추가해 주세요' : currentSlotLabel
-        }`}
+        flowCaption={`${medCfg.doseLabel.trim() || '약'} · ${totalDoses === 0 ? '목표 상세에서 슬롯을 추가해 주세요' : currentSlotLabel
+          }`}
         onBack={() => safeRouterBack(router)}
         scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
         bottomBar={
@@ -1279,117 +1291,117 @@ export function ActivitySessionPage() {
           />
         }>
         <View style={waterStyles.grid}>
-              <ImmersionCardShell borderColor={W.border}>
-                <ThemedText
-                  style={waterStyles.statLabel}
-                  lightColor={W.muted}
-                  darkColor={W.muted}>
-                  하루 물 목표
-                </ThemedText>
-                <View style={waterStyles.goalRow}>
-                  <ThemedText
-                    style={waterStyles.goalValue}
-                    lightColor={W.onSurface}
-                    darkColor={W.onSurface}>
-                    {goalL}
-                  </ThemedText>
-                  <ThemedText
-                    style={waterStyles.goalUnit}
-                    lightColor={W.muted}
-                    darkColor={W.muted}>
-                    L
-                  </ThemedText>
-                </View>
-                <ThemedText
-                  style={waterStyles.metaLine}
-                  lightColor={W.muted}
-                  darkColor={W.muted}>
-                  {wCfg.goalMl}ml 기준 · 섭취 {drank}ml · 남은 {remL}L
-                </ThemedText>
-                <View style={waterStyles.hydrateTrack}>
-                  <View style={[waterStyles.hydrateFill, { width: `${Math.round(hydrateTrack * 100)}%` }]} />
-                </View>
-              </ImmersionCardShell>
+          <ImmersionCardShell borderColor={W.border}>
+            <ThemedText
+              style={waterStyles.statLabel}
+              lightColor={W.muted}
+              darkColor={W.muted}>
+              하루 물 목표
+            </ThemedText>
+            <View style={waterStyles.goalRow}>
+              <ThemedText
+                style={waterStyles.goalValue}
+                lightColor={W.onSurface}
+                darkColor={W.onSurface}>
+                {goalL}
+              </ThemedText>
+              <ThemedText
+                style={waterStyles.goalUnit}
+                lightColor={W.muted}
+                darkColor={W.muted}>
+                L
+              </ThemedText>
+            </View>
+            <ThemedText
+              style={waterStyles.metaLine}
+              lightColor={W.muted}
+              darkColor={W.muted}>
+              {wCfg.goalMl}ml 기준 · 섭취 {drank}ml · 남은 {remL}L
+            </ThemedText>
+            <View style={waterStyles.hydrateTrack}>
+              <View style={[waterStyles.hydrateFill, { width: `${Math.round(hydrateTrack * 100)}%` }]} />
+            </View>
+          </ImmersionCardShell>
 
-              <ImmersionSplitRow>
-                <ImmersionHalfCard borderColor={W.border}>
-                  <ThemedText
-                    style={waterStyles.halfLabel}
-                    lightColor={W.muted}
-                    darkColor={W.muted}>
-                    섭취량
-                  </ThemedText>
-                  <ThemedText
-                    style={waterStyles.halfValue}
-                    lightColor={W.onSurface}
-                    darkColor={W.onSurface}>
-                    {drank}
-                  </ThemedText>
-                  <ThemedText
-                    style={waterStyles.halfUnit}
-                    lightColor={W.muted}
-                    darkColor={W.muted}>
-                    ml
-                  </ThemedText>
-                </ImmersionHalfCard>
-                <ImmersionHalfCard borderColor={W.border}>
-                  <ThemedText
-                    style={waterStyles.halfLabel}
-                    lightColor={W.muted}
-                    darkColor={W.muted}>
-                    플로우 진행
-                  </ThemedText>
-                  <ThemedText
-                    style={waterStyles.halfValue}
-                    lightColor={W.onSurface}
-                    darkColor={W.onSurface}>
-                    {Math.round(progress * 100)}
-                  </ThemedText>
-                  <ThemedText
-                    style={waterStyles.halfUnit}
-                    lightColor={W.muted}
-                    darkColor={W.muted}>
-                    %
-                  </ThemedText>
-                </ImmersionHalfCard>
-              </ImmersionSplitRow>
+          <ImmersionSplitRow>
+            <ImmersionHalfCard borderColor={W.border}>
+              <ThemedText
+                style={waterStyles.halfLabel}
+                lightColor={W.muted}
+                darkColor={W.muted}>
+                섭취량
+              </ThemedText>
+              <ThemedText
+                style={waterStyles.halfValue}
+                lightColor={W.onSurface}
+                darkColor={W.onSurface}>
+                {drank}
+              </ThemedText>
+              <ThemedText
+                style={waterStyles.halfUnit}
+                lightColor={W.muted}
+                darkColor={W.muted}>
+                ml
+              </ThemedText>
+            </ImmersionHalfCard>
+            <ImmersionHalfCard borderColor={W.border}>
+              <ThemedText
+                style={waterStyles.halfLabel}
+                lightColor={W.muted}
+                darkColor={W.muted}>
+                플로우 진행
+              </ThemedText>
+              <ThemedText
+                style={waterStyles.halfValue}
+                lightColor={W.onSurface}
+                darkColor={W.onSurface}>
+                {Math.round(progress * 100)}
+              </ThemedText>
+              <ThemedText
+                style={waterStyles.halfUnit}
+                lightColor={W.muted}
+                darkColor={W.muted}>
+                %
+              </ThemedText>
+            </ImmersionHalfCard>
+          </ImmersionSplitRow>
 
-              <View style={waterStyles.addSection}>
-                <ThemedText
-                  style={waterStyles.addSectionTitle}
-                  lightColor={CategoryImmersionTheme.water.onSurface}
-                  darkColor={CategoryImmersionTheme.water.onSurface}>
-                  섭취 추가
-                </ThemedText>
-                <ThemedText
-                  style={waterStyles.addSectionHint}
-                  lightColor={CategoryImmersionTheme.water.muted}
-                  darkColor={CategoryImmersionTheme.water.muted}>
-                  마신 만큼 눌러 오늘 할당량에 반영해요. 목표량을 넘기지 않아요.
-                </ThemedText>
-                <View style={waterStyles.addChipWrap}>
-                  {[100, 200, 250, 500].map((ml) => (
-                    <Pressable
-                      key={ml}
-                      accessibilityRole="button"
-                      accessibilityLabel={`물 ${ml}밀리리터 추가`}
-                      onPress={() => addWaterIntakeMl(ml)}
-                      disabled={addIntakeDisabled}
-                      style={({ pressed }) => [
-                        waterStyles.addChip,
-                        addIntakeDisabled && waterStyles.addChipDisabled,
-                        pressed && !addIntakeDisabled && waterStyles.addChipPressed,
-                      ]}>
-                      <ThemedText
-                        style={waterStyles.addChipText}
-                        lightColor={addIntakeDisabled ? 'rgba(0,0,0,0.28)' : WATER_CYAN}
-                        darkColor={addIntakeDisabled ? 'rgba(0,0,0,0.28)' : WATER_CYAN}>
-                        +{ml}ml
-                      </ThemedText>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
+          <View style={waterStyles.addSection}>
+            <ThemedText
+              style={waterStyles.addSectionTitle}
+              lightColor={CategoryImmersionTheme.water.onSurface}
+              darkColor={CategoryImmersionTheme.water.onSurface}>
+              섭취 추가
+            </ThemedText>
+            <ThemedText
+              style={waterStyles.addSectionHint}
+              lightColor={CategoryImmersionTheme.water.muted}
+              darkColor={CategoryImmersionTheme.water.muted}>
+              마신 만큼 눌러 오늘 할당량에 반영해요. 목표량을 넘기지 않아요.
+            </ThemedText>
+            <View style={waterStyles.addChipWrap}>
+              {[100, 200, 250, 500].map((ml) => (
+                <Pressable
+                  key={ml}
+                  accessibilityRole="button"
+                  accessibilityLabel={`물 ${ml}밀리리터 추가`}
+                  onPress={() => addWaterIntakeMl(ml)}
+                  disabled={addIntakeDisabled}
+                  style={({ pressed }) => [
+                    waterStyles.addChip,
+                    addIntakeDisabled && waterStyles.addChipDisabled,
+                    pressed && !addIntakeDisabled && waterStyles.addChipPressed,
+                  ]}>
+                  <ThemedText
+                    style={waterStyles.addChipText}
+                    lightColor={addIntakeDisabled ? 'rgba(0,0,0,0.28)' : WATER_CYAN}
+                    darkColor={addIntakeDisabled ? 'rgba(0,0,0,0.28)' : WATER_CYAN}>
+                    +{ml}ml
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          </View>
         </View>
       </SessionImmersionLayout>
     );

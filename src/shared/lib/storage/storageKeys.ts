@@ -5,6 +5,12 @@ export const StorageKeys = {
   dayPlan: 'lockflow:day-plan',
   /** 일별 완료 카테고리 횟수(통계 탭·히스토리) */
   dayPlanStatsHistory: 'lockflow:day-plan-stats-history',
+  /** 히스토리 일별 지표(집중 시간/완료 수/카테고리 분포) */
+  historyDailyStats: 'lockflow:history-daily-stats',
+  /** 히스토리 배지/마일스톤 달성 내역 */
+  historyAchievements: 'lockflow:history-achievements',
+  /** 히스토리 메타(최근 계산 시각/버전 등) */
+  historyMeta: 'lockflow:history-meta',
   goalDetailSettings: 'lockflow:goal-detail-settings',
   /** 담기 탭 상단「내 고정 루틴」에 넣을 카테고리 키 순서(사용자 구성) */
   priorityCatalogFixedRoutines: 'lockflow:priority-catalog-fixed-routines',

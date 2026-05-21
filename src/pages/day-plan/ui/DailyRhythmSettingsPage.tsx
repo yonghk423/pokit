@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
@@ -12,8 +12,9 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
+import { addDaysToLocalDateKey, useDayPlanDraftStore } from '@entities/day-plan';
 import { palette } from '../lib/dayPlanPalette';
-import { useDayPlanDraftStore } from '@entities/day-plan';
+import { formatDateKeyCompactKo } from '../lib/dayPlanEditorShared';
 import { DailyRhythmTimeEditorBody } from './DailyRhythmTimeEditorBody';
 
 /** 설정 탭에서 우선순위 데이플랜의 하루 시작·마무리 시각을 바꿀 때 */
@@ -24,21 +25,47 @@ export function DailyRhythmSettingsPage() {
   const insets = useSafeAreaInsets();
   const c = palette(isDark);
 
-  const { priorityStart, priorityEnd, setPriorityStart, setPriorityEnd, syncOvernightPriorityPlanDates } =
-    useDayPlanDraftStore(
-      useShallow((s) => ({
-        priorityStart: s.priorityStart,
-        priorityEnd: s.priorityEnd,
-        setPriorityStart: s.setPriorityStart,
-        setPriorityEnd: s.setPriorityEnd,
-        syncOvernightPriorityPlanDates: s.syncOvernightPriorityPlanDates,
-      })),
-    );
+  const {
+    priorityStart,
+    priorityEnd,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+    setPriorityStart,
+    setPriorityEnd,
+    applyPriorityPlanCalendarRange,
+    syncOvernightPriorityPlanDates,
+  } = useDayPlanDraftStore(
+    useShallow((s) => ({
+      priorityStart: s.priorityStart,
+      priorityEnd: s.priorityEnd,
+      priorityPlanDateKey: s.priorityPlanDateKey,
+      priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
+      setPriorityStart: s.setPriorityStart,
+      setPriorityEnd: s.setPriorityEnd,
+      applyPriorityPlanCalendarRange: s.applyPriorityPlanCalendarRange,
+      syncOvernightPriorityPlanDates: s.syncOvernightPriorityPlanDates,
+    })),
+  );
 
   const [seedStart, setSeedStart] = useState(priorityStart);
   const [seedEnd, setSeedEnd] = useState(priorityEnd);
   const [seedKey, setSeedKey] = useState(0);
   const [dayStartAlarmOn, setDayStartAlarmOn] = useState(false);
+  const planRangeLo = useMemo(
+    () =>
+      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd,
+    [priorityPlanDateKey, priorityPlanDateKeyEnd],
+  );
+  const planRangeHi = useMemo(
+    () =>
+      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKeyEnd : priorityPlanDateKey,
+    [priorityPlanDateKey, priorityPlanDateKeyEnd],
+  );
+  const todayChoiceLabel = useMemo(() => `당일 · ${formatDateKeyCompactKo(planRangeLo)}`, [planRangeLo]);
+  const nextDayChoiceLabel = useMemo(
+    () => `다음 날 · ${formatDateKeyCompactKo(addDaysToLocalDateKey(planRangeLo, 1))}`,
+    [planRangeLo],
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -72,6 +99,16 @@ export function DailyRhythmSettingsPage() {
       router.back();
     },
     [dayStartAlarmOn, router, setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
+  );
+
+  const handleEndDateChoice = useCallback(
+    (start: string, end: string, target: 'today' | 'nextDay') => {
+      setPriorityStart(start);
+      setPriorityEnd(end);
+      const endDate = target === 'nextDay' ? addDaysToLocalDateKey(planRangeLo, 1) : planRangeLo;
+      applyPriorityPlanCalendarRange(planRangeLo, endDate);
+    },
+    [applyPriorityPlanCalendarRange, planRangeLo, setPriorityEnd, setPriorityStart],
   );
 
   return (
@@ -111,6 +148,12 @@ export function DailyRhythmSettingsPage() {
           variant="settings"
           primaryLabel="저장"
           onPrimaryPress={handleSave}
+          currentSpansMultiDay={planRangeHi > planRangeLo}
+          onEndDateChoice={handleEndDateChoice}
+          endDateChoiceTodayLabel={todayChoiceLabel}
+          endDateChoiceNextDayLabel={nextDayChoiceLabel}
+          priorityPlanRangeLo={planRangeLo}
+          priorityPlanRangeHi={planRangeHi}
           dayStartAlarmOn={dayStartAlarmOn}
           onDayStartAlarmChange={setDayStartAlarmOn}
         />

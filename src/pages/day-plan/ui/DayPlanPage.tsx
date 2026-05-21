@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import {
   Alert,
@@ -18,13 +18,16 @@ import { useShallow } from 'zustand/react/shallow';
 
 import {
   addDaysToLocalDateKey,
+  blockDurationSec,
   filterDayPlanFlowBlocks,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
   parseHHmmToMinutes,
+  resolveBlockCategoryKey,
   useDayPlanRuntimeStore,
   useDayPlanStore,
 } from '@entities/day-plan';
+import { useHistoryStore } from '@entities/history';
 import {
   rescheduleDayPlanNotifications,
   syncPriorityDayStartAlarm,
@@ -46,19 +49,18 @@ import {
 } from '@shared/lib/storage';
 import { openSupportMailComposer } from '@shared/lib/support';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
+import { useDayPlanDraftStore } from '@entities/day-plan';
 import {
   defaultPriorityWindowFromNow,
   getPickerCategoryLabel,
   isOvernightHhmmRange,
   PRIMARY,
 } from '../lib/dayPlanEditorShared';
+import { palette } from '../lib/dayPlanPalette';
 import { ensureFixedRoutinesInPriorityOrder } from '../lib/ensureFixedRoutinesInPriorityOrder';
 import { normalizeFixedRoutineCategoryKeys } from '../lib/normalizeFixedRoutineCategoryKeys';
-import { palette } from '../lib/dayPlanPalette';
-import { useDayPlanDraftStore } from '@entities/day-plan';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { DailyRhythmOnboardingGate } from './DailyRhythmOnboardingGate';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
@@ -589,8 +591,24 @@ export function DayPlanPage() {
 
     const { blocks, completedBlockIds: cIds, skippedBlockIds: sIds } = useDayPlanStore.getState();
     const done = new Set([...cIds, ...sIds]);
-    const pendingFlowBlocks = filterDayPlanFlowBlocks(blocks).filter((b) => !done.has(b.id));
+    const todayFlowBlocks = filterDayPlanFlowBlocks(blocks);
+    const pendingFlowBlocks = todayFlowBlocks.filter((b) => !done.has(b.id));
     if (pendingFlowBlocks.length > 0) {
+      const history = useHistoryStore.getState();
+      history.hydrate();
+      const plannedCountForDay = todayFlowBlocks.length;
+      for (const block of pendingFlowBlocks) {
+        const categoryKey =
+          resolveBlockCategoryKey({ category: block.category, categoryKey: block.categoryKey }) ?? 'other';
+        history.recordFocusSession({
+          dateKey: useDayPlanStore.getState().dateKey,
+          minutes: Math.max(1, Math.ceil(blockDurationSec(block) / 60)),
+          categoryKey,
+          completed: true,
+          plannedCountForDay,
+        });
+      }
+      history.recomputeAchievements();
       completeBlocks(pendingFlowBlocks.map((b) => b.id));
       void rescheduleDayPlanNotifications();
     }

@@ -44,6 +44,8 @@ export type SnappedTimePickerFieldProps = {
   /** 데이플랜「시작~마무리」안으로만 시각이 잡힘(둘 다 유효할 때만) */
   routineDayStartHhmm?: string;
   routineDayEndHhmm?: string;
+  /** 시각 pill 왼쪽에 표시할 날짜(예: 5월 21일) */
+  dateCaption?: string;
 };
 
 export function SnappedTimePickerField({
@@ -58,6 +60,7 @@ export function SnappedTimePickerField({
   snapStepMinutes = TIME_SNAP_MINUTES,
   routineDayStartHhmm,
   routineDayEndHhmm,
+  dateCaption,
 }: SnappedTimePickerFieldProps) {
   const pickerDate = useMemo(() => hhmmToPickerDate(valueHhmm), [valueHhmm]);
 
@@ -114,20 +117,31 @@ export function SnappedTimePickerField({
             {hint}
           </ThemedText>
         </View>
-        <View
-          style={[
-            styles.timePill,
-            {
-              backgroundColor: palette.containerLowest,
-              borderColor: expanded ? PRIMARY : palette.border,
-            },
-          ]}>
-          <ThemedText
-            style={[styles.timePillText, { color: palette.onSurface }]}
-            lightColor={palette.onSurface}
-            darkColor={palette.onSurface}>
-            {formatHhmmClockKo(valueHhmm)}
-          </ThemedText>
+        <View style={styles.timeRowRight}>
+          {dateCaption ? (
+            <ThemedText
+              style={[styles.timeDateAside, { color: palette.onVariant }]}
+              lightColor={palette.onVariant}
+              darkColor={palette.onVariant}
+              numberOfLines={1}>
+              {dateCaption}
+            </ThemedText>
+          ) : null}
+          <View
+            style={[
+              styles.timePill,
+              {
+                backgroundColor: palette.containerLowest,
+                borderColor: expanded ? PRIMARY : palette.border,
+              },
+            ]}>
+            <ThemedText
+              style={[styles.timePillText, { color: palette.onSurface }]}
+              lightColor={palette.onSurface}
+              darkColor={palette.onSurface}>
+              {formatHhmmClockKo(valueHhmm)}
+            </ThemedText>
+          </View>
         </View>
       </Pressable>
       {Platform.OS === 'ios' && expanded ? (
@@ -171,11 +185,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  timeRowLeft: { flex: 1, gap: 2 },
+  timeRowLeft: { flex: 1, gap: 2, minWidth: 0 },
   timeRowLabel: { fontSize: 14, fontWeight: '700' },
   timeRowHint: { fontSize: 11, fontWeight: '500', lineHeight: 14 },
+  timeRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  timeDateAside: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+    textAlign: 'right',
+  },
   timePill: {
-    minWidth: 128,
+    minWidth: 108,
     paddingHorizontal: 12,
     paddingVertical: 9,
     borderRadius: 12,
