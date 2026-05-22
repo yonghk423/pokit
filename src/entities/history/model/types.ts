@@ -2,12 +2,16 @@ export type HistoryAchievementKind = 'streak' | 'minutes' | 'completion';
 
 export type HistoryDailyStat = {
   dateKey: string;
+  /** @deprecated UI·집계에서 사용하지 않음. 하위 호환용 */
   focusMinutes: number;
   completedFlowCount: number;
   sessionCount: number;
-  /** 0..1 */
+  /** 0..1 — 정해진 루틴 대비 달성 비율 */
   completionRate: number;
+  /** @deprecated categoryCompletions 사용 */
   categoryMinutes: Record<string, number>;
+  /** 카테고리별 완료(달성) 횟수 */
+  categoryCompletions: Record<string, number>;
 };
 
 export type HistoryAchievement = {
@@ -20,7 +24,8 @@ export type HistoryAchievement = {
 
 export type HistorySessionRecordInput = {
   dateKey: string;
-  minutes: number;
+  /** @deprecated 기록하지 않음 */
+  minutes?: number;
   categoryKey: string;
   completed?: boolean;
   plannedCountForDay?: number;
@@ -33,27 +38,26 @@ export type HistoryRange = {
 
 export type HistoryCategoryBreakdownRow = {
   categoryKey: string;
-  minutes: number;
+  completions: number;
   ratio: number;
 };
 
 export type HistoryHeatMapCell = {
   dateKey: string;
-  minutes: number;
   completedFlowCount: number;
+  completionRate: number;
   level: 0 | 1 | 2 | 3;
 };
 
 export type HistoryWeekdayConsistencyRow = {
   weekday: 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  averageMinutes: number;
+  averageCompletions: number;
   averageCompletionRate: number;
 };
 
 export type HistoryGrowthSummary = {
-  currentWeekMinutes: number;
-  previousWeekMinutes: number;
-  diffMinutes: number;
+  currentWeekCompletions: number;
+  previousWeekCompletions: number;
+  diffCompletions: number;
   diffRatio: number;
 };
-

@@ -1,3 +1,4 @@
+export { getCategoryCompletions, dayHasCompletionActivity } from './lib/historyCompletionMetrics';
 export { useHistoryStore } from './model';
 export type { HistoryStoreState } from './model';
 export type {

@@ -1673,6 +1673,7 @@ export function PriorityBasedPlanSection({
                 const numSize = isPriorityStripPrimary ? undefined : 14;
                 /** 다줄 합본·집중 구간과 동일 시각의 우선순위 블록은 타임라인 행에서 숨기고 아래 목록만 사용 */
                 const timelineBlocksForDay = blocks.filter((b) => {
+                  if (b.blockOrigin === 'prioritySession') return false;
                   if (isPriorityCompoundBlockTitle(b.title)) return false;
                   const matchesPriorityWindow =
                     isMainDay &&

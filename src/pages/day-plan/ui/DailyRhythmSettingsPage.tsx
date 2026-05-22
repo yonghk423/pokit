@@ -50,7 +50,7 @@ export function DailyRhythmSettingsPage() {
   const [seedStart, setSeedStart] = useState(priorityStart);
   const [seedEnd, setSeedEnd] = useState(priorityEnd);
   const [seedKey, setSeedKey] = useState(0);
-  const [dayStartAlarmOn, setDayStartAlarmOn] = useState(false);
+  const [dayStartAlarmOn, setDayStartAlarmOn] = useState(true);
   const planRangeLo = useMemo(
     () =>
       priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd,
@@ -83,6 +83,7 @@ export function DailyRhythmSettingsPage() {
       : Platform.OS === 'ios'
         ? 59
         : Number(StatusBar.currentHeight) || 24;
+  const bottomInset = Math.max(insets.bottom, 16);
 
   const headerFg = c.onSurface;
 
@@ -113,7 +114,7 @@ export function DailyRhythmSettingsPage() {
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: c.bg }]} darkColor={c.bg} lightColor={c.bg}>
-      <View style={[styles.safe, { paddingTop: topInset }]}>
+      <View style={[styles.safe, { paddingTop: topInset, paddingBottom: bottomInset }]}>
         <View
           style={[
             styles.header,

@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 
 import {
-  clearHistoryStorage,
   loadHistoryAchievements,
   loadHistoryDailyStats,
   loadHistoryMeta,
@@ -9,6 +8,8 @@ import {
   saveHistoryDailyStats,
   saveHistoryMeta,
 } from '@shared/lib/storage';
+
+import { dayHasCompletionActivity, getCategoryCompletions } from '../lib/historyCompletionMetrics';
 
 import type {
   HistoryAchievement,
@@ -74,25 +75,20 @@ function emptyDaily(dateKey: string): HistoryDailyStat {
     sessionCount: 0,
     completionRate: 0,
     categoryMinutes: {},
+    categoryCompletions: {},
   };
 }
 
 function normalizeDaily(row: HistoryDailyStat): HistoryDailyStat {
-  const categoryMinutes: Record<string, number> = {};
-  for (const [key, value] of Object.entries(row.categoryMinutes ?? {})) {
-    const k = key.trim();
-    if (!k) continue;
-    const n = clampInt(value, 0);
-    if (n <= 0) continue;
-    categoryMinutes[k] = n;
-  }
+  const categoryCompletions = getCategoryCompletions(row);
   return {
     dateKey: row.dateKey.trim(),
-    focusMinutes: clampInt(row.focusMinutes, 0),
+    focusMinutes: 0,
     completedFlowCount: clampInt(row.completedFlowCount, 0),
     sessionCount: clampInt(row.sessionCount, 0),
     completionRate: clampRate(row.completionRate),
-    categoryMinutes,
+    categoryMinutes: {},
+    categoryCompletions,
   };
 }
 
@@ -131,18 +127,18 @@ function computeCurrentStreak(
   let cursor = anchorDateKey;
   while (true) {
     const row = map[cursor];
-    if (!row || row.focusMinutes <= 0) break;
+    if (!dayHasCompletionActivity(row)) break;
     streak += 1;
     cursor = addDays(cursor, -1);
   }
   return streak;
 }
 
-function heatLevel(minutes: number): 0 | 1 | 2 | 3 {
-  if (minutes <= 0) return 0;
-  if (minutes < 20) return 1;
-  if (minutes < 60) return 2;
-  return 3;
+function heatLevel(completedCount: number, completionRate: number): 0 | 1 | 2 | 3 {
+  if (completedCount <= 0 && completionRate <= 0) return 0;
+  if (completionRate >= 0.85 || completedCount >= 5) return 3;
+  if (completionRate >= 0.55 || completedCount >= 3) return 2;
+  return 1;
 }
 
 function toWeekday(dateKey: string): 0 | 1 | 2 | 3 | 4 | 5 | 6 {
@@ -175,7 +171,6 @@ export type HistoryStoreState = {
   upsertDailyStat: (row: HistoryDailyStat) => void;
   recordAchievement: (row: HistoryAchievement) => void;
   recomputeAchievements: () => void;
-  clearHistory: () => void;
 
   selectCurrentStreak: (anchorDateKey?: string) => number;
   selectWeeklyHeatMap: (weeks?: number, anchorDateKey?: string) => HistoryHeatMapCell[];
@@ -208,15 +203,20 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
     if (!dateKey) return;
 
     const prev = get().dailyStatsByDate[dateKey] ?? emptyDaily(dateKey);
+    const categoryKey = input.categoryKey.trim();
+    const completed = Boolean(input.completed);
+    const categoryCompletions = { ...getCategoryCompletions(prev) };
+    if (completed && categoryKey) {
+      categoryCompletions[categoryKey] = clampInt(categoryCompletions[categoryKey] || 0, 0) + 1;
+    }
+
     const next: HistoryDailyStat = {
       ...prev,
-      focusMinutes: prev.focusMinutes + clampInt(input.minutes, 0),
+      focusMinutes: 0,
       sessionCount: prev.sessionCount + 1,
-      completedFlowCount: prev.completedFlowCount + (input.completed ? 1 : 0),
-      categoryMinutes: {
-        ...prev.categoryMinutes,
-        [input.categoryKey]: clampInt(prev.categoryMinutes[input.categoryKey] || 0, 0) + clampInt(input.minutes, 0),
-      },
+      completedFlowCount: prev.completedFlowCount + (completed ? 1 : 0),
+      categoryMinutes: {},
+      categoryCompletions,
     };
 
     if (typeof input.plannedCountForDay === 'number' && input.plannedCountForDay > 0) {
@@ -262,15 +262,18 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
   recomputeAchievements: () => {
     let achievements = [...get().achievements];
     const streak = get().selectCurrentStreak();
-    const totalMinutes = Object.values(get().dailyStatsByDate).reduce((sum, row) => sum + row.focusMinutes, 0);
+    const totalCompletions = Object.values(get().dailyStatsByDate).reduce(
+      (sum, row) => sum + row.completedFlowCount,
+      0,
+    );
 
     if (streak >= 7) {
       achievements = ensureAchievement(achievements, {
         id: 'streak-7',
         kind: 'streak',
         unlockedAt: new Date().toISOString(),
-        title: '7일 연속 집중',
-        description: '일주일 연속으로 플로우를 이어갔어요.',
+        title: '7일 연속 달성',
+        description: '일주일 연속으로 루틴을 달성했어요.',
       });
     }
     if (streak >= 30) {
@@ -278,31 +281,22 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
         id: 'streak-30',
         kind: 'streak',
         unlockedAt: new Date().toISOString(),
-        title: '30일 연속 집중',
-        description: '한 달 연속으로 흐름을 지켰어요.',
+        title: '30일 연속 달성',
+        description: '한 달 연속으로 루틴을 지켰어요.',
       });
     }
-    if (totalMinutes >= 50 * 60) {
+    if (totalCompletions >= 50) {
       achievements = ensureAchievement(achievements, {
-        id: 'minutes-3000',
-        kind: 'minutes',
+        id: 'completions-50',
+        kind: 'completion',
         unlockedAt: new Date().toISOString(),
-        title: '누적 50시간',
-        description: '누적 집중 시간이 50시간을 넘었어요.',
+        title: '누적 50회 달성',
+        description: '누적 완료가 50회를 넘었어요.',
       });
     }
 
     set({ achievements });
     saveHistoryAchievements(achievements);
-  },
-
-  clearHistory: () => {
-    set({
-      dailyStatsByDate: {},
-      achievements: [],
-      lastUpdatedAt: new Date().toISOString(),
-    });
-    clearHistoryStorage();
   },
 
   selectCurrentStreak: (anchorDateKey) => {
@@ -319,49 +313,51 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
     for (let i = 0; i < totalDays; i += 1) {
       const dateKey = addDays(firstDay, i);
       const row = get().dailyStatsByDate[dateKey];
-      const minutes = row?.focusMinutes ?? 0;
+      const completedFlowCount = row?.completedFlowCount ?? 0;
+      const completionRate = row?.completionRate ?? 0;
       out.push({
         dateKey,
-        minutes,
-        completedFlowCount: row?.completedFlowCount ?? 0,
-        level: heatLevel(minutes),
+        completedFlowCount,
+        completionRate,
+        level: heatLevel(completedFlowCount, completionRate),
       });
     }
     return out;
   },
 
   selectCategoryBreakdown: (range) => {
-    const minutesByCategory: Record<string, number> = {};
+    const completionsByCategory: Record<string, number> = {};
     let total = 0;
     for (const row of Object.values(get().dailyStatsByDate)) {
       if (!isBetween(row.dateKey, range)) continue;
-      for (const [key, minutes] of Object.entries(row.categoryMinutes)) {
-        const n = clampInt(minutes, 0);
+      for (const [key, count] of Object.entries(getCategoryCompletions(row))) {
+        const n = clampInt(count, 0);
         if (n <= 0) continue;
-        minutesByCategory[key] = (minutesByCategory[key] || 0) + n;
+        completionsByCategory[key] = (completionsByCategory[key] || 0) + n;
         total += n;
       }
     }
     if (total <= 0) return [];
-    return Object.entries(minutesByCategory)
-      .map(([categoryKey, minutes]) => ({
+    return Object.entries(completionsByCategory)
+      .map(([categoryKey, completions]) => ({
         categoryKey,
-        minutes,
-        ratio: minutes / total,
+        completions,
+        ratio: completions / total,
       }))
-      .sort((a, b) => b.minutes - a.minutes);
+      .sort((a, b) => b.completions - a.completions);
   },
 
   selectConsistencyByWeekday: (range) => {
-    const bucket: Record<number, { days: number; minutes: number; completionRateTotal: number }> = {};
+    const bucket: Record<number, { days: number; completions: number; completionRateTotal: number }> =
+      {};
     for (let i = 0; i < 7; i += 1) {
-      bucket[i] = { days: 0, minutes: 0, completionRateTotal: 0 };
+      bucket[i] = { days: 0, completions: 0, completionRateTotal: 0 };
     }
     for (const row of Object.values(get().dailyStatsByDate)) {
       if (!isBetween(row.dateKey, range)) continue;
       const weekday = toWeekday(row.dateKey);
       bucket[weekday].days += 1;
-      bucket[weekday].minutes += row.focusMinutes;
+      bucket[weekday].completions += row.completedFlowCount;
       bucket[weekday].completionRateTotal += row.completionRate;
     }
     const out: HistoryWeekdayConsistencyRow[] = [];
@@ -370,7 +366,7 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
       const days = Math.max(item.days, 1);
       out.push({
         weekday: weekday as 0 | 1 | 2 | 3 | 4 | 5 | 6,
-        averageMinutes: Math.round(item.minutes / days),
+        averageCompletions: Math.round(item.completions / days),
         averageCompletionRate: clampRate(item.completionRateTotal / days),
       });
     }
@@ -384,22 +380,27 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
     const currentWeekEnd = addDays(currentWeekStart, 6);
     const prevWeekEnd = addDays(prevWeekStart, 6);
 
-    let currentWeekMinutes = 0;
-    let previousWeekMinutes = 0;
+    let currentWeekCompletions = 0;
+    let previousWeekCompletions = 0;
     for (const row of Object.values(get().dailyStatsByDate)) {
       if (row.dateKey >= currentWeekStart && row.dateKey <= currentWeekEnd) {
-        currentWeekMinutes += row.focusMinutes;
+        currentWeekCompletions += row.completedFlowCount;
       } else if (row.dateKey >= prevWeekStart && row.dateKey <= prevWeekEnd) {
-        previousWeekMinutes += row.focusMinutes;
+        previousWeekCompletions += row.completedFlowCount;
       }
     }
 
-    const diffMinutes = currentWeekMinutes - previousWeekMinutes;
-    const diffRatio = previousWeekMinutes > 0 ? diffMinutes / previousWeekMinutes : currentWeekMinutes > 0 ? 1 : 0;
+    const diffCompletions = currentWeekCompletions - previousWeekCompletions;
+    const diffRatio =
+      previousWeekCompletions > 0
+        ? diffCompletions / previousWeekCompletions
+        : currentWeekCompletions > 0
+          ? 1
+          : 0;
     return {
-      currentWeekMinutes,
-      previousWeekMinutes,
-      diffMinutes,
+      currentWeekCompletions,
+      previousWeekCompletions,
+      diffCompletions,
       diffRatio,
     };
   },

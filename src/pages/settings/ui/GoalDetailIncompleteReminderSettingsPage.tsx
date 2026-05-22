@@ -47,14 +47,14 @@ export function GoalDetailIncompleteReminderSettingsPage() {
   const priorityStart = useDayPlanDraftStore((s) => s.priorityStart);
   const priorityEnd = useDayPlanDraftStore((s) => s.priorityEnd);
 
-  const [enabled, setEnabled] = useState(false);
+  const [enabled, setEnabled] = useState(true);
   const [times, setTimes] = useState<string[]>(['09:00']);
   const [openSlotIndex, setOpenSlotIndex] = useState<number | null>(null);
 
   const loadDraft = useCallback(() => {
     const r = loadGoalDetailIncompleteReminderRule();
     const list = Array.isArray(r?.times) ? [...r.times] : [];
-    const on = Boolean(r?.enabled && list.length > 0);
+    const on = Boolean(r?.enabled);
     const rawList = list.length > 0 ? list : ['09:00'];
     const clamped = rawList.map((t) => clampHhmmToPriorityWindow(t, priorityStart, priorityEnd, 1));
     setEnabled(on);

@@ -29,6 +29,10 @@ export type DayPlanBlock = {
   endsNextCalendarDay?: boolean;
   /** 타임라인 표시 순서 */
   order: number;
-  /** 빠른 메모 저장으로만 만들어진 블록 — 잠금화면 전용 레이아웃에 사용 */
-  blockOrigin?: 'quickMemo';
+  /**
+   * 블록 생성 출처.
+   * - `quickMemo`: 빠른 메모 저장 블록(메모 전용 표시)
+   * - `prioritySession`: 우선순위 시작 시 내부 세션/동기화용 블록(타임라인 행에는 노출하지 않음)
+   */
+  blockOrigin?: 'quickMemo' | 'prioritySession';
 };

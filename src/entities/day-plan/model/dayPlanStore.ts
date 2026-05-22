@@ -119,7 +119,7 @@ export type DayPlanStoreState = {
     /** true면 `endMinutes`는 익일 0~1440 시각 */
     endsNextCalendarDay?: boolean;
     replaceOverlapping?: boolean;
-    blockOrigin?: 'quickMemo';
+    blockOrigin?: 'quickMemo' | 'prioritySession';
     /** 지정 시 해당 날짜 기준으로 종료 시각 검증·스토어 dateKey 정렬 (우선순위 플로우 등) */
     planDateKey?: string;
   }) => AddBlockResult;
@@ -450,7 +450,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         endMinutes: end,
         order: maxOrder + 1,
         ...(endsNext ? { endsNextCalendarDay: true as const } : {}),
-        ...(input.blockOrigin === 'quickMemo' ? { blockOrigin: 'quickMemo' as const } : {}),
+        ...(input.blockOrigin ? { blockOrigin: input.blockOrigin } : {}),
         ...(ck ? { categoryKey: ck } : {}),
       };
 

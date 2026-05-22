@@ -8,6 +8,7 @@ export type HistoryDailyStatRow = {
   sessionCount: number;
   completionRate: number;
   categoryMinutes: Record<string, number>;
+  categoryCompletions?: Record<string, number>;
 };
 
 export type HistoryAchievementRow = {
@@ -54,14 +55,38 @@ function normalizeCategoryMinutes(source: Record<string, number> | null | undefi
   return out;
 }
 
+function normalizeCategoryCounts(
+  source: Record<string, number> | null | undefined,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [key, raw] of Object.entries(source ?? {})) {
+    const k = key.trim();
+    if (!k) continue;
+    const n = clampInt(raw, 0);
+    if (n <= 0) continue;
+    out[k] = n;
+  }
+  return out;
+}
+
 function normalizeDaily(row: HistoryDailyStatRow): HistoryDailyStatRow {
+  const categoryCompletions = normalizeCategoryCounts(row.categoryCompletions);
+  const legacyMinutes = normalizeCategoryMinutes(row.categoryMinutes);
+  const mergedCompletions =
+    Object.keys(categoryCompletions).length > 0
+      ? categoryCompletions
+      : Object.fromEntries(
+          Object.keys(legacyMinutes).map((key) => [key, 1]),
+        );
+
   return {
     dateKey: row.dateKey.trim(),
-    focusMinutes: clampInt(row.focusMinutes, 0),
+    focusMinutes: 0,
     completedFlowCount: clampInt(row.completedFlowCount, 0),
     sessionCount: clampInt(row.sessionCount, 0),
     completionRate: clampRate(row.completionRate),
-    categoryMinutes: normalizeCategoryMinutes(row.categoryMinutes),
+    categoryMinutes: {},
+    categoryCompletions: mergedCompletions,
   };
 }
 

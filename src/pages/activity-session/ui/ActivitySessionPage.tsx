@@ -389,12 +389,10 @@ export function ActivitySessionPage() {
       history.hydrate();
       history.recordFocusSession({
         dateKey,
-        minutes: Math.max(1, Math.ceil(blockDurationSec(block) / 60)),
         categoryKey,
         completed: true,
         plannedCountForDay: flowBlocks.length,
       });
-      history.recomputeAchievements();
     }
     completeBlock(block.id);
     const s = useDayPlanStore.getState();

@@ -483,6 +483,7 @@ export function DayPlanPage() {
         Alert.alert('시간 구간', '종료 시각은 시작 시각보다 늦어야 합니다.');
         return;
       }
+
       const headKey = priorityCategoryOrder[0]!;
       const catLabel = getPickerCategoryLabel(headKey);
       const orderedLabels = priorityCategoryOrder.map((key) => getPickerCategoryLabel(key));
@@ -496,6 +497,7 @@ export function DayPlanPage() {
         category: catLabel,
         categoryKey: headKey,
         replaceOverlapping: true,
+        blockOrigin: 'prioritySession',
         planDateKey: today,
       });
 
@@ -514,7 +516,6 @@ export function DayPlanPage() {
 
       syncScheduledNotifications();
       reconcileLiveActivityFromPlan();
-
       const payload = buildLiveActivityPayloadForBlock({
         blockId: result.blockId,
         status: 'active',
@@ -602,13 +603,11 @@ export function DayPlanPage() {
           resolveBlockCategoryKey({ category: block.category, categoryKey: block.categoryKey }) ?? 'other';
         history.recordFocusSession({
           dateKey: useDayPlanStore.getState().dateKey,
-          minutes: Math.max(1, Math.ceil(blockDurationSec(block) / 60)),
           categoryKey,
           completed: true,
           plannedCountForDay,
         });
       }
-      history.recomputeAchievements();
       completeBlocks(pendingFlowBlocks.map((b) => b.id));
       void rescheduleDayPlanNotifications();
     }

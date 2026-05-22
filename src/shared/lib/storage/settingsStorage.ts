@@ -94,7 +94,7 @@ export function saveDayPlanScheduledNotifications(
 }
 
 const DEFAULT_PRIORITY_DAY_START_ALARM: PriorityDayStartAlarmPersisted = {
-  enabled: false,
+  enabled: true,
   notificationId: null,
 };
 
@@ -227,8 +227,8 @@ function isGoalDetailIncompleteReminderRule(v: unknown): v is GoalDetailIncomple
 }
 
 const DEFAULT_GOAL_DETAIL_INCOMPLETE_REMINDER: GoalDetailIncompleteReminderRule = {
-  enabled: false,
-  times: [],
+  enabled: true,
+  times: ['09:00'],
 };
 
 export function loadGoalDetailIncompleteReminderRule(): GoalDetailIncompleteReminderRule {

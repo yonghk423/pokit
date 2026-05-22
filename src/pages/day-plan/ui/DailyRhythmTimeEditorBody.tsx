@@ -185,14 +185,11 @@ export function DailyRhythmTimeEditorBody({
   );
 
   const title =
-    variant === 'onboarding'
-      ? '하루 일과에 맞춰 정하기'
-      : '시작·마무리 시간';
+    variant === 'onboarding' ? '하루 일과에 맞춰 정하기' : null;
   const subtitle =
     variant === 'onboarding'
       ? '하루가 돌아가는 시작·마무리만 잡아도 데이플랜이 맞춰져요. 나중에 설정에서 바꿀 수 있어요.'
       : '우선순위 데이플랜의 하루 시작·마무리 시각입니다. 저장하면 바로 반영돼요.';
-
   const heroKicker = variant === 'onboarding' ? '하루 일과 시간' : '데이플랜';
   const presetRuleColor = isDark ? 'rgba(250, 250, 250, 0.92)' : PRIMARY;
   const pill = useMemo(() => tabPillColors(isDark), [isDark]);
@@ -210,8 +207,18 @@ export function DailyRhythmTimeEditorBody({
       alwaysBounceVertical={false}
       keyboardShouldPersistTaps="handled"
       scrollEnabled={variant === 'settings' || pickerTarget !== null}>
-      <View style={[styles.topBlock, variant === 'onboarding' && styles.topBlockOnboarding]}>
-        <View style={[styles.hero, variant === 'onboarding' && styles.heroOnboarding]}>
+      <View
+        style={[
+          styles.topBlock,
+          variant === 'onboarding' && styles.topBlockOnboarding,
+          variant === 'settings' && styles.topBlockSettings,
+        ]}>
+        <View
+          style={[
+            styles.hero,
+            variant === 'onboarding' && styles.heroOnboarding,
+            variant === 'settings' && styles.heroSettings,
+          ]}>
           <View style={styles.heroHeaderRow}>
             <ThemedText
               style={[styles.heroKicker, { color: c.onVariant }]}
@@ -223,17 +230,19 @@ export function DailyRhythmTimeEditorBody({
               <IconSymbol name="sun.horizon.fill" size={18} color={PRIMARY} />
             </View>
           </View>
-          <ThemedText
-            style={[
-              styles.title,
-              { color: c.onSurface },
-              variant === 'onboarding' && styles.titleOnboarding,
-            ]}
-            lightColor={c.onSurface}
-            darkColor={c.onSurface}
-            numberOfLines={variant === 'onboarding' ? 2 : 3}>
-            {title}
-          </ThemedText>
+          {title ? (
+            <ThemedText
+              style={[
+                styles.title,
+                { color: c.onSurface },
+                variant === 'onboarding' && styles.titleOnboarding,
+              ]}
+              lightColor={c.onSurface}
+              darkColor={c.onSurface}
+              numberOfLines={2}>
+              {title}
+            </ThemedText>
+          ) : null}
           <ThemedText
             style={[
               styles.subtitle,
@@ -242,7 +251,7 @@ export function DailyRhythmTimeEditorBody({
             ]}
             lightColor={c.onVariant}
             darkColor={c.onVariant}
-            numberOfLines={variant === 'onboarding' ? 3 : 6}>
+            numberOfLines={variant === 'onboarding' ? 3 : 4}>
             {subtitle}
           </ThemedText>
         </View>
@@ -449,12 +458,14 @@ const styles = StyleSheet.create({
   scrollContentOnboarding: {
     paddingTop: 4,
   },
-  /** 설정: 헤더 아래 스크롤 허용 */
+  /** 설정: 네비 제목만 사용, 상단 여백 최소화 */
   scrollContentSettings: {
-    paddingTop: 4,
+    paddingTop: 0,
+    paddingBottom: 4,
   },
   topBlock: { gap: 18, paddingBottom: 4 },
   topBlockOnboarding: { gap: 12 },
+  topBlockSettings: { gap: 12, paddingBottom: 0 },
   endDateChoiceInline: {
     marginTop: 10,
     gap: 10,
@@ -490,6 +501,11 @@ const styles = StyleSheet.create({
   /** 온보딩: 히어로 세로 밀도 */
   heroOnboarding: {
     paddingTop: 2,
+  },
+  /** 설정: 큰 타이틀 없이 키커·설명만 */
+  heroSettings: {
+    gap: 6,
+    marginBottom: 0,
   },
   heroHeaderRow: {
     flexDirection: 'row',

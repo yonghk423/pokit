@@ -11,6 +11,7 @@ import {
   buildDaysInCalendarMonthSeries,
   countDaysInMonth,
 } from '../lib/buildDaysInCalendarMonthSeries';
+import { getChartGrassPalette } from '../lib/chartGrassColors';
 import { parseDayPlanDateKey, resolveYearMonthFromDateKey } from '../lib/planDateKeyParse';
 
 const CHART_HEIGHT = 196;
@@ -149,8 +150,7 @@ export function StatisticsTrendChartCard({
     };
   }, [chartW, highlightDayIndex, maxY, series]);
 
-  const lineStroke = isDark ? '#4ade80' : '#16a34a';
-  const areaTop = isDark ? '#4ade80' : '#22c55e';
+  const { lineStroke, areaTop } = getChartGrassPalette(isDark);
   const gridStroke = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
   const headerInk = isDark ? '#a1a1aa' : '#71717a';
 
