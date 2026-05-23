@@ -5,6 +5,7 @@ import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  appendPriorityCategoryKeysIfMissing,
   formatBlockTimeRange,
   getInitialOtherDataConfig,
   isCustomFlowCategoryKey,
@@ -14,42 +15,39 @@ import {
   normalizeOtherDetailConfig,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
+  useDayPlanDraftStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
   type DayPlanBlock,
 } from '@entities/day-plan';
-import {
-  appendGoalDetailCommittedCategoryKeys,
-  loadPriorityCatalogFixedRoutineKeys,
-  loadGoalDetailBlockConfig,
-  loadGoalDetailCategoryConfig,
-  removeCustomFlowCatalogId,
-  removeGoalDetailCategoryConfig,
-  savePriorityCatalogFixedRoutineKeys,
-  saveGoalDetailBlockConfig,
-  saveGoalDetailCategoryConfig,
-} from '@shared/lib/storage';
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
-import { IconSymbol } from '@shared/ui/icon-symbol';
-import { ThemedText } from '@shared/ui/themed-text';
-import { ThemedView } from '@shared/ui/themed-view';
-import {
-  appendPriorityCategoryKeysIfMissing,
-  useDayPlanDraftStore,
-} from '@entities/day-plan';
-import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
   rescheduleDayPlanNotifications,
   syncMedicineReminderNotifications,
   syncWaterReminderNotifications,
 } from '@features/day-plan-notifications';
 import { reconcileLiveActivityFromPlan } from '@features/live-activity-sync';
+import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
+import {
+  appendGoalDetailCommittedCategoryKeys,
+  loadGoalDetailBlockConfig,
+  loadGoalDetailCategoryConfig,
+  loadPriorityCatalogFixedRoutineKeys,
+  removeCustomFlowCatalogId,
+  removeGoalDetailCategoryConfig,
+  saveGoalDetailBlockConfig,
+  saveGoalDetailCategoryConfig,
+  savePriorityCatalogFixedRoutineKeys,
+} from '@shared/lib/storage';
+import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { IconSymbol } from '@shared/ui/icon-symbol';
+import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedView } from '@shared/ui/themed-view';
 
-import { GoalDetailCategoryStartReminderCard } from './GoalDetailCategoryStartReminderCard';
-import { useGoalDetailSettingsRoute } from '../model/useGoalDetailSettingsRoute';
 import type { GoalDetailCategoryKey } from '../model/types';
+import { useGoalDetailSettingsRoute } from '../model/useGoalDetailSettingsRoute';
 import { getGoalDetailCategoryModule } from './category';
 import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
+import { GoalDetailCategoryStartReminderCard } from './GoalDetailCategoryStartReminderCard';
 
 function palette(isDark: boolean) {
   if (isDark) {
@@ -225,6 +223,7 @@ export function GoalDetailSettingsPage() {
     saveGoalDetailCategoryConfig(target.categoryKey, next);
     if (target.categoryKey === 'other' || isCustomFlowCategoryKey(target.categoryKey)) {
       registerOtherCategoryResolverFromStorage();
+      useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
     }
     if (target.categoryKey === 'medicine') {
       if (medicineReminderSyncTimerRef.current) {

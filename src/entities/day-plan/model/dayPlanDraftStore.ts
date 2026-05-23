@@ -32,6 +32,8 @@ type DayPlanDraftState = {
   priorityCategoryOrder: string[];
   /** 고정 루틴 저장소가 바뀌면 증가 — 당일 자동 병합 effect가 다시 돈다 */
   priorityCatalogFixedRoutineEpoch: number;
+  /** 카테고리 표시명이 변경되면 증가 — 오늘 루틴 목록 라벨 재조회 */
+  categoryLabelEpoch: number;
   quickMemoDraft: string;
   isHydrated: boolean;
   hydrate: () => void;
@@ -64,6 +66,7 @@ type DayPlanDraftState = {
   setPriorityEnd: (value: string) => void;
   setPriorityCategoryOrder: (value: string[] | ((prev: string[]) => string[])) => void;
   bumpPriorityCatalogFixedRoutineEpoch: () => void;
+  bumpCategoryLabelEpoch: () => void;
   setQuickMemoDraft: (value: string) => void;
 };
 
@@ -87,6 +90,7 @@ function createInitialState() {
     ...createInitialPriorityWindow(),
     priorityCategoryOrder: [] as string[],
     priorityCatalogFixedRoutineEpoch: 0,
+    categoryLabelEpoch: 0,
     quickMemoDraft: '',
   };
 }
@@ -277,6 +281,8 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     })),
   bumpPriorityCatalogFixedRoutineEpoch: () =>
     set((s) => ({ priorityCatalogFixedRoutineEpoch: s.priorityCatalogFixedRoutineEpoch + 1 })),
+  bumpCategoryLabelEpoch: () =>
+    set((s) => ({ categoryLabelEpoch: s.categoryLabelEpoch + 1 })),
   setQuickMemoDraft: (value) => set({ quickMemoDraft: value }),
 }));
 

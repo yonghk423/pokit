@@ -889,6 +889,7 @@ export function PriorityBasedPlanSection({
 
   /** 목표 상세 저장소 기준 부가 한 줄 — 설정 화면에서 돌아올 때 갱신 */
   const [categoryHintTick, setCategoryHintTick] = useState(0);
+  const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
   useFocusEffect(
     useCallback(() => {
       registerOtherCategoryResolverFromStorage();
@@ -908,7 +909,7 @@ export function PriorityBasedPlanSection({
           return base;
         })
         .filter(Boolean) as (typeof PICKER_CATEGORIES)[number][],
-    [priorityCategoryOrder, categoryHintTick],
+    [priorityCategoryOrder, categoryHintTick, categoryLabelEpoch],
   );
 
   const categoryKeysForHints = useMemo(

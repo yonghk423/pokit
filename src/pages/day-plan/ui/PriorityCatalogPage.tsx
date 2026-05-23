@@ -48,6 +48,13 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
 import { getPickerCategoryLabel, PRIMARY } from '../lib/dayPlanEditorShared';
+import { palette, type DayPlanPalette } from '../lib/dayPlanPalette';
+import { normalizeFixedRoutineCategoryKeys } from '../lib/normalizeFixedRoutineCategoryKeys';
+import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
+import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
+import { FixedRoutineEditorModal } from './FixedRoutineEditorModal';
+import { PriorityCatalogPanel } from './PriorityCatalogPanel';
+import { RenameCustomGroupSheet } from './RenameCustomGroupSheet';
 
 /** 시트에서 넘긴 그룹 키를 저장용으로 확정 — 검증 실패 시에만 기본 생산성 그룹 */
 function resolveCatalogGroupKeyForPersist(raw: string): string {
@@ -58,13 +65,6 @@ function resolveCatalogGroupKeyForPersist(raw: string): string {
   if (isCustomCatalogGroupKey(t)) return t;
   return DEFAULT_CUSTOM_FLOW_GROUP_KEY;
 }
-import { normalizeFixedRoutineCategoryKeys } from '../lib/normalizeFixedRoutineCategoryKeys';
-import { palette, type DayPlanPalette } from '../lib/dayPlanPalette';
-import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
-import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
-import { FixedRoutineEditorModal } from './FixedRoutineEditorModal';
-import { PriorityCatalogPanel } from './PriorityCatalogPanel';
-import { RenameCustomGroupSheet } from './RenameCustomGroupSheet';
 
 function bookColors(c: DayPlanPalette, isDark: boolean) {
   if (isDark) {

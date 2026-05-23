@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import {
   Alert,
@@ -99,6 +99,7 @@ export function DayPlanPage() {
     setPriorityStart,
     setPriorityEnd,
     setPriorityCategoryOrder,
+    bumpCategoryLabelEpoch,
     clearCompletedFocusCategoryKeys,
     clearPlanCompletionDismissedKeys,
     setQuickMemoDraft,
@@ -125,10 +126,21 @@ export function DayPlanPage() {
       setPriorityStart: s.setPriorityStart,
       setPriorityEnd: s.setPriorityEnd,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
+      bumpCategoryLabelEpoch: s.bumpCategoryLabelEpoch,
       clearCompletedFocusCategoryKeys: s.clearCompletedFocusCategoryKeys,
       clearPlanCompletionDismissedKeys: s.clearPlanCompletionDismissedKeys,
       setQuickMemoDraft: s.setQuickMemoDraft,
     })),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      // 목표 상세(모달)에서 복귀할 때 카테고리 라벨 즉시 재평가
+      bumpCategoryLabelEpoch();
+      // 탭 전환/화면 freeze 이후에도 담기 순서 키를 최신 스토어 스냅샷으로 동기화
+      const latestOrder = useDayPlanDraftStore.getState().priorityCategoryOrder;
+      setPriorityCategoryOrder([...latestOrder]);
+    }, [bumpCategoryLabelEpoch, setPriorityCategoryOrder]),
   );
 
   useEffect(() => {
