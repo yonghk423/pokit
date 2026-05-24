@@ -64,7 +64,7 @@ export function WidgetSettingsPage() {
                   <View style={styles.widgetBottom}>
                     <View>
                       <ThemedText style={styles.kmText}>4.2km</ThemedText>
-                      <ThemedText style={styles.paceText}>Pace: 5'12"/km</ThemedText>
+                      <ThemedText style={styles.paceText}>{'Pace: 5\'12"/km'}</ThemedText>
                     </View>
                     <View style={styles.percentCircle}>
                       <ThemedText style={styles.percentText}>75%</ThemedText>

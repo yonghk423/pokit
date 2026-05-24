@@ -10,6 +10,10 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --ci",
+    "test:watch": "jest --watchAll",
+    "ci": "npm run lint && npm run typecheck && npm run test",
     "sync-ios-assets": "bash scripts/sync-ios-app-icon-from-assets.sh"
   },
   "dependencies": {
@@ -50,9 +54,12 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@types/jest": "29.5.14",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "jest": "~29.7.0",
+    "jest-expo": "~54.0.17",
     "typescript": "~5.9.2"
   },
   "private": true
