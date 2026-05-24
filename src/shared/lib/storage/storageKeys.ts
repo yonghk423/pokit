@@ -1,10 +1,6 @@
 export const StorageKeys = {
-  routines: 'pokit:routines',
-  routineExecutions: 'pokit:routine-executions',
   settings: 'pokit:settings',
   dayPlan: 'pokit:day-plan',
-  /** 일별 완료 카테고리 횟수(통계 탭·히스토리) */
-  dayPlanStatsHistory: 'pokit:day-plan-stats-history',
   /** 히스토리 일별 지표(집중 시간/완료 수/카테고리 분포) */
   historyDailyStats: 'pokit:history-daily-stats',
   /** 배지/마일스톤 달성 내역 */
@@ -33,11 +29,8 @@ export const STORAGE_MIGRATION_FLAG_KEY = 'pokit:storage-migration-v1';
 
 /** 레거시 AsyncStorage 키 (마이그레이션 전용) */
 export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
-  routines: 'lockflow:routines',
-  routineExecutions: 'lockflow:routine-executions',
   settings: 'lockflow:settings',
   dayPlan: 'lockflow:day-plan',
-  dayPlanStatsHistory: 'lockflow:day-plan-stats-history',
   historyDailyStats: 'lockflow:history-daily-stats',
   historyAchievements: 'lockflow:history-achievements',
   historyMeta: 'lockflow:history-meta',

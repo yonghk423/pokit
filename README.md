@@ -72,6 +72,7 @@ pokit은 하루 일과를 **시간대별 블록 배치가 아니라**, **우선�
 1. 사용자는 카테고리별 목표 상세 설정 화면으로 진입한다.
 2. 카테고리 특화 옵션(예: 물, 독서, 복약 등)을 조정한다.
 3. 저장 시 해당 목표 설정이 Day Plan/세션 표시 규칙에 반영된다.
+4. 설정 완료 후 필요하면 `flow-review` 화면에서 검토·시작으로 이어진다.
 
 ---
 
@@ -90,10 +91,17 @@ pokit은 하루 일과를 **시간대별 블록 배치가 아니라**, **우선�
   - 세션·알림·표시를 위해 시작/종료 시각 등이 붙을 수 있으나, **기획상 사용자의 1차 입력은 “시간대 채우기”가 아니라 순서·메모 중심**이다.
 - `Session` 관련 상태
   - 실행 중 여부, 일시정지 상태, 진행률, 남은 시간 계산 정보
+  - `dayPlanRuntimeStore`에서 관리
+- `History`
+  - 일별 집중 시간·완료 수·카테고리 분포, 배지/마일스톤
+  - 통계 화면(`day-plan-statistics`)의 데이터 원천
 - `GoalCategory` 설정
   - 카테고리별 UI/행동 규칙(물, 독서, 복약, 금식, 기타 등)
+  - 목표 상세는 `*Settings.tsx` 설정 UI만 제공(미리보기 UI 없음)
 
 도메인 로직은 React 컴포넌트와 분리하고, 가능한 한 순수 함수/스토어 액션 중심으로 유지한다.
+
+**제거된 레거시:** `Routine` / `RoutineExecution` 엔티티, `dayPlanStatsHistory`, Discover/Routines/Today 대시보드 플로우는 현재 코드베이스에 없다.
 
 ---
 
@@ -133,6 +141,27 @@ pokit은 아래 레이어를 따른다.
 - 같은 레이어 내 서로 다른 슬라이스 직접 import를 피한다.
 - 공통화가 필요하면 `entities` 또는 `shared`로 승격한다.
 
+### 4.4 현재 코드베이스 스냅샷 (2025-05 기준)
+
+**Expo Router (`app/`)**
+
+| 구분 | 라우트 | 페이지 |
+|------|--------|--------|
+| 탭 | `day-plan`, `priority-catalog`, `day-plan-statistics`, `settings` | `@pages/day-plan`, `@pages/settings` 등 |
+| 스택 | `activity-session`, `goal-detail-settings`, `flow-review`, `widget-settings`, `daily-rhythm-settings`, `goal-detail-incomplete-reminder-settings` | 각 `@pages/*` |
+
+**features (6)**
+
+- `day-plan-notifications`, `category-reminder-notifications`, `local-notifications`, `other-category-resolve`, `live-activity-sync`(레거시)
+
+**widgets (2)**
+
+- `day-plan-priority-order`, `daily-rhythm-time-field`
+
+**entities 스토어**
+
+- `dayPlanStore`, `dayPlanDraftStore`, `dayPlanRuntimeStore`, `historyStore`, `localNotificationsStore`
+
 ---
 
 ## 5. 상태 관리 (Zustand)
@@ -146,7 +175,10 @@ pokit은 아래 레이어를 따른다.
 ### 5.2 스토어 위치
 
 - 도메인 전역 상태: `src/entities/<domain>/model/*Store.ts`
-- 기능 전용 상태: `src/features/<feature>/model/*Store.ts`
+  - `day-plan`: `dayPlanStore`, `dayPlanDraftStore`, `dayPlanRuntimeStore`
+  - `history`: `historyStore`
+  - `local-notifications`: `localNotificationsStore`
+- 기능 전용 상태: `src/features/<feature>/model/*Store.ts` (현재는 feature 전용 zustand 스토어 없음)
 
 ### 5.3 상태 전이 규칙
 
@@ -172,8 +204,9 @@ pokit은 아래 레이어를 따른다.
 ### 6.3 키 원칙
 
 - `pokit:*` 네임스페이스를 사용한다.
+- 주요 키: `pokit:day-plan`, `pokit:day-plan-draft`, `pokit:history-daily-stats`, `pokit:history-achievements`, `pokit:history-meta`, `pokit:goal-detail-settings`, `pokit:settings` (전체 목록은 `src/shared/lib/storage/storageKeys.ts` 참고)
 - 저장 구조는 엔티티 타입과 동일한 형태를 유지한다.
-- 마이그레이션이 필요하면 버전 필드를 통해 점진적으로 처리한다.
+- `lockflow:*` → `pokit:*` 1회 마이그레이션은 `migrateLegacyStorageKeys`로 처리한다.
 
 ---
 

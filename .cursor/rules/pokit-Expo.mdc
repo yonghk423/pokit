@@ -24,9 +24,9 @@ pokit 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상태�
 
 **슬라이스(Slices) 규칙: 레이어 내부 import 금지**
 - 각 레이어에서 비즈니스 슬라이스는 “슬라이스로 쓰는 비즈니스 도메인 폴더(일반적으로 해당 레이어 하위의 1차 디렉터리)”로 본다.
-  - 예: `src/features/today-dashboard/*`, `src/entities/routine-execution/*`, `src/widgets/<widget-name>/*`
+  - 예: `src/features/day-plan-notifications/*`, `src/entities/day-plan/*`, `src/widgets/<widget-name>/*`
 - 같은 레이어 안에서 서로 다른 슬라이스로의 import 는 금지한다.
-  - 예: `src/features/today-dashboard/*` 가 `src/features/discover-routines/*` 를 import 하는 형태는 금지
+  - 예: `src/features/day-plan-notifications/*` 가 `src/features/live-activity-sync/*` 를 import 하는 형태는 금지
 - import가 꼭 필요하면 다음 중 하나로 해결한다.
   - (1) 정말 공통인 비즈니스 로직/타입을 `src/entities` 또는 `src/shared` 로 승격
   - (2) 여러 슬라이스를 조합하는 레벨에서(주로 `pages` 또는 `widgets`) import 하도록 구조를 조정
@@ -80,14 +80,15 @@ pokit 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상태�
 - **라우트(스크린) 단위** 페이지 컴포넌트.
 - `widgets`·`features`·`entities`·`shared` 를 **조합**하여 화면을 구성.
 - 복잡한 비즈니스 로직은 넣지 않고, 배선(wiring)과 레이아웃에 집중.
-- 예: `src/pages/today`, `src/pages/discover`, `src/pages/routines`, `src/pages/settings`.
+- 예: `src/pages/day-plan`, `src/pages/activity-session`, `src/pages/goal-detail-settings`, `src/pages/settings`.
 
 ### 2.4 widgets (`src/widgets`)
 
 - **여러 feature/entity를 조합한 복합 UI 블록.**
-- 한 페이지 안에서 반복 사용되는 “큰 덩어리” (예: 오늘 요약 대시보드 블록, 플로우 리스트+필터 블록).
+- 한 페이지 안에서 반복 사용되는 “큰 덩어리” (예: 데이플랜 우선순위 순서 편집, 하루 주기 시간 필드).
 - 단일 feature보다 크고, 페이지 전체보다 작은 단위.
 - 슬라이스별로 `ui/`, `model/` 등 FSD 세그먼트 구조를 가질 수 있다.
+- 예: `day-plan-priority-order`, `daily-rhythm-time-field`.
 
 ### 2.5 features (`src/features`)
 
@@ -97,13 +98,13 @@ pokit 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상태�
   - model: feature 전용 상태, hooks, 스토리지/네트워크 접근
   - ui: 해당 feature 전용 컴포넌트
   - lib: feature 전용 유틸
-- 예: `today-dashboard`, `discover-routines`, `routine-setup`, `insight-dashboard`.
+- 예: `day-plan-notifications`, `category-reminder-notifications`, `local-notifications`, `other-category-resolve`, `live-activity-sync`(레거시).
 
 ### 2.6 entities (`src/entities`)
 
 - **도메인 엔티티, 타입, 모델, 비즈니스 로직.**
 - UI·라우팅에 의존하지 않고, 순수 TypeScript/도메인 코드로 유지.
-- 예: Routine, RoutineTask, RoutineExecution, Stats 의 타입·인터페이스·도메인 서비스·밸리데이션.
+- 예: `day-plan`, `history`, `goal-detail-settings`, `local-notifications` 의 타입·인터페이스·도메인 서비스·밸리데이션.
 - 스토어는 도메인 단위 상태일 때 `src/entities/<domain>/model/<domain>Store.ts` 에 둔다.
 
 ### 2.7 shared (`src/shared`)
@@ -128,12 +129,12 @@ pokit 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상태�
 
 ## 4. pokit 도메인 (entities)
 
-- **Routine**: 코드·저장소·타입명으로 쓰는 반복 실행 단위 엔티티. id, title, description, category, tags, color, icon, defaultTasks[] 등.
-- **RoutineTask**: Routine 내 개별 태스크. id, routineId, title, type, duration, order, isLocked 등.
-- **RoutineExecution**: 실행 중인 Routine 인스턴스(한 번의 실행 세션). id, routineId, startTime, endTime, progress, currentTaskId 등.
-- **Stats**: 일/주 단위 완료율, 태스크 수행 기록 등 (필요 시).
+- **DayPlan**: 오늘 일정(시간 블록·우선순위·실행 상태). `dayPlanStore`, `dayPlanDraftStore`, `dayPlanRuntimeStore`로 분리.
+- **History**: 일별 집중·완료 지표, 배지/마일스톤. `historyStore`.
+- **GoalDetailSettings**: 카테고리별 목표 상세 설정(독서·운동 등). `goalDetailSettingsStore` 및 per-category 설정 모듈.
+- **LocalNotifications**: OS 알림 권한 상태. `localNotificationsStore`.
 
-위 네 가지는 `src/entities` 아래에 정의하는 것을 기본으로 한다.
+위 도메인은 `src/entities` 아래에 정의한다. **레거시 Routine/RoutineExecution 엔티티는 제거**되었으며, 제품 핵심은 **데이플랜 → 앱 내 세션(`activity-session`)** 흐름이다.
 
 ---
 
@@ -152,7 +153,7 @@ pokit 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상태�
 
 - 백엔드 없이 **LocalStorage** 를 1차 저장소로 사용.
 - 접근은 **공용 모듈**을 통해서만: `src/shared/lib/storage` 또는 `src/shared/lib/persistence`.
-- 키 예: `pokit:routines`, `pokit:routine-executions`, `pokit:settings`.
+- 키 예: `pokit:day-plan`, `pokit:history-daily-stats`, `pokit:goal-detail-settings`, `pokit:settings`.
 - 저장 구조는 `src/entities` 의 타입/모델과 일치시킨다.
 
 ---
@@ -176,20 +177,16 @@ pokit 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상태�
 - **앱 이름 "POKIT"을 제외한** 모든 사용자 대면 UI 텍스트는 **한글**로 표시한다.
 - 화면 문구, 버튼 라벨, 빈 상태 메시지, 탭 제목, 설정 항목, 에러/토스트 문구 등 모두 한글.
 - 예: "Start Building" → "시작하기", "Create Your First Routine" → "첫 플로우 만들기", "Welcome to POKIT!" → "POKIT에 오신 것을 환영해요!" (앱명만 유지).
-- 한글 UI에서 **「루틴」「리듬」** 표기는 쓰지 않는다. **「플로우」**는 쓸 수 있으나, 기획서·제품 톤에 맞춰 데이플랜·알림 등에서는 **「일정」「항목」「집중」** 등으로 통일해도 된다. 코드·API·파일명의 `Routine` / `routine` 등 **영문 도메인 식별자는 기존과 같이 유지**해도 된다.
+- 한글 UI에서 **「루틴」「리듬」** 표기는 쓰지 않는다. **「플로우」**는 쓸 수 있으나, 데이플랜·알림 등에서는 **「일정」「항목」「집중」** 등으로 통일해도 된다. 코드·API·파일명의 레거시 `Routine` 식별자는 점진적으로 `day-plan`·`flow` 용어로 정리한다.
 - 코드/주석/변수명은 기존 프로젝트 컨벤션을 따르고, **화면에 보이는 문자열만 한글**을 원칙으로 한다.
 
-## 7.1 초기 화면(Empty State) 규칙 — 첫 플로우 온보딩
+## 7.1 초기 화면(Empty State) 규칙 — 데이플랜 온보딩
 
-- 앱 최초 진입 또는 `Routine`이 0개일 때, Today 화면은 “빈 상태 온보딩 UI”를 노출한다.
-  - 목표: 사용자의 첫 행동을 **“Create Your First Routine / Start Building”**으로 수렴시키기
-- 빈 상태 온보딩 UI는 아래 3 블록을 기본으로 구성한다.
-  - **Welcome 섹션**: 앱 컨셉 1줄 + 다음 행동 힌트
-  - **메인 CTA 카드**: “첫 플로우 만들기” 버튼(Primary)
-  - **보조 플레이스홀더**: Insights(데이터 없음) / Timeline(빈 슬롯) 같은 기대감 카드
+- 앱 최초 진입 또는 **하루 주기(시작·마무리 시각) 온보딩**이 완료되지 않았을 때, `day-plan` 화면은 `DailyRhythmOnboardingGate`로 첫 설정을 유도한다.
+- 데이플랜 본문이 비어 있을 때는 섹션별 빈 상태 힌트(우선순위·고정 항목 등)로 다음 행동을 안내한다.
 - 네비게이션(라우팅) 규칙:
-  - `features`의 UI는 `onStartBuilding()` 같은 콜백만 받고, **expo-router 이동 자체는 `pages` 또는 `app/` 라우트에서 처리**한다.
-  - 즉, `features`는 라우팅을 직접 import/호출하지 않는다.
+  - `features`·`widgets`의 UI는 콜백만 받고, **expo-router 이동 자체는 `pages` 또는 `app/` 라우트에서 처리**한다.
+  - 즉, `features`·`widgets`는 라우팅을 직접 import/호출하지 않는다.
 
 ## 7.2 플로우·세션 경험 (현재 제품 기준)
 
@@ -209,16 +206,18 @@ pokit 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상태�
 ### 7.2.2 FSD 책임 분리 (Where)
 
 - `entities` (도메인 규칙·타입)
-  - `day-plan`: 오늘 블록(순서·구간) 및 다음 블록 파생 규칙
-  - `routine-execution`: 실행 상태(진행/일시정지/완료)와 진행 계산
+  - `day-plan`: 오늘 블록(순서·구간) 및 다음 블록 파생 규칙, 실행 런타임 상태
+  - `history`: 완료·집중 지표 집계
 - `features` (유즈케이스)
-  - `session-control`: 시작/일시정지/재개/완료/건너뛰기
+  - `day-plan-notifications` 등: 알림 동기화
   - `live-activity-sync`(iOS): **레거시/재도입 대비** 코드가 있을 수 있으나, **현재 제품 필수 경로 아님**
 - `pages` (조립)
   - `day-plan`: 시작점 선택/배선
-  - `activity-session`: **실행 중 세션의 주 화면**
+  - `activity-session`: **실행 중 세션의 주 화면**(세션 UI는 현재 페이지 내부에 구현)
+  - `goal-detail-settings`: 카테고리별 설정만(미리보기 UI 없음)
+  - `flow-review`: 목표 설정 완료 후 검토·시작
 - `app` (`src/application`)
-  - 전역 hydrate 및 동기화 부트스트랩
+  - 전역 hydrate 및 동기화 부트스트랩(`useAppBootstrap`)
 
 ### 7.2.3 실시간·상태 원칙 (How)
 
@@ -229,7 +228,7 @@ pokit 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상태�
 
 ### 7.2.4 구현 우선순위 (MVP, 앱 내)
 
-- 1단계: 현재 플로우 + 남은 시간 + 진행도 표시 (`activity-session`·카드)
+- 1단계: 현재 플로우 + 남은 시간 + 진행도 표시 (`activity-session` 화면)
 - 2단계: 세션 액션(일시정지/완료 등)과 일정/스토어 연동 안정화
 - 3단계: 완료/건너뛰기 시 다음 플로우 반영 등 흐름 고도화
 - 4단계: 세부 코칭 텍스트/점수/고급 시각효과

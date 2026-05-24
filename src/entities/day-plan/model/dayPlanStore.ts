@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 
-import { buildCompletedCountByCategoryKey } from '@entities/day-plan/lib/dayPlanCompletionStats';
 import { filterDayPlanFlowBlocks } from '@entities/day-plan/lib/dayPlanFlowBlock';
 import { isBlockEndInPastForDateKey } from '@entities/day-plan/lib/dayPlanRuntimeTime';
 import {
@@ -11,7 +10,6 @@ import {
 } from '@entities/day-plan/lib/dayPlanTime';
 import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 import type { DayPlanBlock, DayPlanQuickMemo } from '@entities/day-plan/model/types';
-import { mergeDayPlanStatsDay } from '@shared/lib/storage/dayPlanStatsHistoryStorage';
 import { loadDayPlan, saveDayPlan } from '@shared/lib/storage/dayPlanStorage';
 import { syncDayPlanToWidget } from '@shared/lib/storage/widgetDayPlanSync';
 
@@ -141,10 +139,6 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
     };
     saveDayPlan(payload);
     syncDayPlanToWidget(payload);
-    mergeDayPlanStatsDay({
-      dateKey: s.dateKey,
-      completedByCategory: buildCompletedCountByCategoryKey(s.blocks, s.completedBlockIds),
-    });
   };
 
   return {
@@ -169,16 +163,6 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
 
       if (raw) {
         const blocksRaw = Array.isArray(raw.blocks) ? raw.blocks : [];
-        const persistedDateKey = typeof raw.dateKey === 'string' && raw.dateKey ? raw.dateKey : dateKey;
-        if (persistedDateKey < dateKey) {
-          mergeDayPlanStatsDay({
-            dateKey: persistedDateKey,
-            completedByCategory: buildCompletedCountByCategoryKey(
-              blocksRaw,
-              Array.isArray(raw.completedBlockIds) ? raw.completedBlockIds : [],
-            ),
-          });
-        }
         const n = normalizePersisted({
           dateKey: raw.dateKey ?? dateKey,
           blocks: blocksRaw,
@@ -256,13 +240,6 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
       const allCompleted = expiredPendingFlowIds.length > 0
         ? [...completedBlockIds, ...expiredPendingFlowIds]
         : completedBlockIds;
-
-      if (expiredPendingFlowIds.length > 0) {
-        mergeDayPlanStatsDay({
-          dateKey,
-          completedByCategory: buildCompletedCountByCategoryKey(blocks, allCompleted),
-        });
-      }
 
       set({
         blocks: blocks.filter((b) => !expiredIds.has(b.id)),

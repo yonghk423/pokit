@@ -9,12 +9,12 @@ description: pokit 프로젝트에서 디렉토리 구조, 도메인 모델, zus
 
 - pokit 프로젝트에서 **새 기능을 설계**하거나 코드를 제안해야 할 때
 - **상태 관리(zustand) 위치/설계**, **LocalStorage 기반 영속화 방식**, **디렉토리 구조**를 함께 고민해야 할 때
-- Today/홈, Discover, Routine Setup 등 **주요 플로우 관련 코드**를 작성·수정할 때
+- Day Plan, `activity-session`, 목표 상세 설정, 통계 등 **주요 플로우 관련 코드**를 작성·수정할 때
 - Expo 기반이지만 **CLI 명령 실행은 피하고 코드 레벨 제안**에 집중해야 할 때
 
 에이전트는 아래 규칙을 항상 우선 적용한다.
 
-**한글 사용자 대면 문구**는 `.cursor/rules/pokit-Expo.mdc` §7.0.1에 따라 **「플로우」**를 쓴다(「루틴」「리듬」표기 금지). 코드·타입·스토어 이름의 `Routine` / `routine` 등은 기존대로 둔다.
+**한글 사용자 대면 문구**는 `.cursor/rules/pokit-Expo.mdc` §7.0.1에 따라 **「플로우」**를 쓴다(「루틴」「리듬」표기 금지). 코드·타입·스토어 이름은 `day-plan`, `flow` 등 현재 도메인 용어를 따른다.
 
 ---
 
@@ -40,62 +40,66 @@ description: pokit 프로젝트에서 디렉토리 구조, 도메인 모델, zus
 
 ## 2. 주요 플로우별 동작 가이드
 
-### 2.1 Today / 홈 화면 관련 요청
+### 2.1 Day Plan (`day-plan`) 관련 요청
 
 - **사용 도메인**
-  - `RoutineExecution`, `Routine`, `RoutineTask`
+  - `DayPlan`, `DayPlanBlock`, `dayPlanDraftStore`, `dayPlanRuntimeStore`
 - **기본 경로**
-  - 도메인 타입/로직 → `src/entities/routine-execution`, `src/entities/routine`
-  - 전역 상태(zustand) → `src/entities/routine-execution/model/routineExecutionStore.ts`
-  - Today 전용 UI/상태 → `src/features/today-dashboard/ui`, `src/features/today-dashboard/model`
-  - 페이지 → `src/pages/today`
+  - 도메인 타입/로직 → `src/entities/day-plan`
+  - 전역 상태(zustand) → `src/entities/day-plan/model/dayPlanStore.ts`, `dayPlanDraftStore.ts`, `dayPlanRuntimeStore.ts`
+  - 알림 동기화 → `src/features/day-plan-notifications`, `src/features/category-reminder-notifications`
+  - 페이지 → `src/pages/day-plan`
+  - 복합 UI → `src/widgets/day-plan-priority-order`, `src/widgets/daily-rhythm-time-field`
 
 ### 2.1.1 제안 원칙
 
-- Today 관련 UI를 만들 때는 **락스크린 위젯 느낌의 `CurrentRoutineExecutionCard` 스타일 컴포넌트**를 우선 제안한다.
-- **남은 시간/진행률 계산**은 React 컴포넌트가 아니라
-  - `routineExecutionStore` 의 **selector** 또는
-  - 별도의 **helper 함수**
-  에서 계산하도록 설계한다.
-- 컴포넌트는 **스토어 훅을 구독해 이미 계산된 값(진행률 %, 남은 시간 텍스트 등)을 받는 형태**로 제안한다.
+- 데이플랜 UI는 **우선순위 순서·담기(카탈로그)·빠른 메모** 중심으로 설계한다. 시간표를 촘촘히 채우는 UX를 기본으로 두지 않는다.
+- **하루 시작·마무리 시각**은 `DailyRhythmOnboardingGate`·설정·데이플랜 에디터에서 설정하며, 저장은 `HH:mm`, 표시는 한글 시계 규칙을 따른다.
+- 남은 시간·진행률·다음 블록 파생 값은 React 컴포넌트가 아니라 **스토어 selector 또는 `entities/day-plan/lib` 헬퍼**에서 계산한다.
+- 라우팅(`expo-router`)은 **페이지(`src/pages`) 또는 `app/`** 에서만 처리하고, feature/widget은 콜백 props만 받는다.
 
 ---
 
-### 2.2 Discover 관련 요청
+### 2.2 Activity Session (`activity-session`) 관련 요청
 
 - **사용 도메인**
-  - `Routine` (+ 추천/태그/카테고리 메타 정보)
+  - `dayPlanRuntimeStore`(실행 중 블록), `dayPlanStore`(일정 갱신)
 - **기본 경로**
-  - 추천/소팅/필터 로직 → `src/features/discover-routines/model`
-  - 플로우(추천 Routine) 리스트/카드/필터 칩 UI → `src/features/discover-routines/ui`
-  - 페이지 → `src/pages/discover`
+  - 세션 UI·배선 → `src/pages/activity-session/ui/ActivitySessionPage.tsx`
+  - Live Activity 동기화(레거시, 필수 아님) → `src/features/live-activity-sync`
+  - 공용 포맷 → `src/shared/lib/formatDurationMinKo.ts` 등
 
 ### 2.2.1 제안 원칙
 
-- Discover UI는 기본적으로 **카드 리스트 + 상단 검색/필터 바(칩)** 패턴을 사용한다.
-- 추천/정렬/필터링 로직은 **zustand 스토어 또는 feature `model` 레벨 함수**로 두고,
-  컴포넌트에서는 **필터 상태와 결과 리스트를 props/훅으로만 소비**하게 제안한다.
+- 세션 화면이 **제품의 주 실행 경험**이다. 타이머·진행도·일시정지/완료는 **절대 시각·도메인 상태** 기반으로 계산한다.
+- 세션 UI를 재사용 가능한 블록으로 분리할 때는 `widgets` 슬라이스를 새로 두되, **같은 레이어 슬라이스 간 import는 금지**한다.
+- 과거 `active-session-card` 위젯·목표 상세 `*Preview.tsx`는 **제거됨**. 미리보기 UI를 다시 만들지 않는다.
 
 ---
 
-### 2.3 Routine Setup(사용자 카피: 플로우 생성/편집) 관련 요청
+### 2.3 목표 상세 설정 (`goal-detail-settings`) 관련 요청
 
 - **사용 도메인**
-  - `Routine`, `RoutineTask`
+  - `GoalDetailSettings`, 카테고리별 설정 모듈(`reading`, `water`, `medicine` 등)
 - **기본 경로**
-  - 폼 상태/검증/정렬 로직(zustand 포함) → `src/features/routine-setup/model`
-  - 태스크 리스트/타임라인/입력 폼 UI → `src/features/routine-setup/ui`
-  - 페이지 또는 라우트 → `src/pages/routines` 하위 (예: 상세/모달)
+  - 페이지 조립 → `src/pages/goal-detail-settings/ui/GoalDetailSettingsPage.tsx`
+  - 카테고리별 설정 UI → `src/pages/goal-detail-settings/ui/category/<category>/ui/*Settings.tsx`
+  - 완료 후 검토·시작 → `src/pages/flow-review` (`goal-detail-settings` 완료 핸들러에서 이동)
 
 ### 2.3.1 제안 원칙
 
-- Routine 편집 중 상태(태스크 리스트, 순서, 임시 입력 값 등)는
-  - `Routine` 도메인 스토어 또는
-  - `RoutineSetup` feature 전용 스토어
-  로 분리해서 설계한다.
-- “오늘 계획 30% 완료” 같은 요약 값은
-  - 가능하면 **Today 대시보드와 공유 가능한 selector/헬퍼**로 설계하고,
-  - 중복 로직을 페이지/컴포넌트 안에 직접 쓰지 않는다.
+- 목표 상세는 **설정(`*Settings.tsx`)만** 제공한다. 잠금화면형/세션형 RN 미리보기는 현재 스코프에 없다.
+- 배경 장식용 원형·블롭 UI는 `.cursor/rules/pokit-Expo.mdc` §7.2.8에 따라 **금지**한다.
+
+---
+
+### 2.4 통계·설정·기타 화면
+
+- **통계** → `src/pages/day-plan-statistics`, `src/entities/history` (`historyStore`)
+- **설정** → `src/pages/settings`, `src/shared/lib/storage`의 `settings` 키
+- **담기(우선순위 카탈로그)** → `app/(tabs)/priority-catalog.tsx` → `src/pages/day-plan` 내 패널/탭 연동
+- **위젯 설정** → `src/pages/widget-settings`
+- **하루 주기 설정** → `app/daily-rhythm-settings.tsx`
 
 ---
 
@@ -118,29 +122,27 @@ description: pokit 프로젝트에서 디렉토리 구조, 도메인 모델, zus
 ### 3.2 스토어 설계 패턴
 
 - **도메인 스토어 (entities 레벨)**
-  - `RoutineExecutionStore`
-    - 현재 플로우 실행, 남은 시간, 진행률, 현재 태스크 id 등
-  - `RoutineStore`
-    - 사용자의 플로우 목록, 선택된 플로우, 편집 중인 플로우 등
+  - `dayPlanStore` — 오늘 일정 본문(블록·우선순위·완료 상태 등)
+  - `dayPlanDraftStore` — 데이플랜 화면 드래프트(모드·시작·마무리·순서 등)
+  - `dayPlanRuntimeStore` — 실행 중 세션 런타임(현재 블록, 일시정지, 타이머 기준 시각)
+  - `historyStore` — 일별 집중·완료 지표, 배지/마일스톤
+  - `localNotificationsStore` — OS 알림 권한 상태
 - **feature 스토어**
-  - `TodayDashboardStore`
-    - Today 화면 전용 UI 상태 (예: 모달 열림 여부, 선택된 카드 등)
-  - `RoutineSetupStore`
-    - 편집 중 태스크 리스트, 드래그 정렬 정보, 유효성 여부 등
+  - 현재 feature 전용 zustand 스토어는 두지 않는 것을 기본으로 한다. 알림·Live Activity 등은 `lib` + bootstrap/page 배선으로 처리한다.
 
 에이전트가 스토어를 설계할 때는 다음 요소를 포함해 제안한다.
 
-- **원시 상태 필드** (예: `routineExecutions`, `currentRoutineExecutionId`, `editingRoutine` 등)
-- **상태를 변경하는 action** (예: `startRoutineExecution`, `completeTask`, `updateRoutine` 등)
+- **원시 상태 필드** (예: `blocks`, `activeBlockId`, `pausedAt` 등)
+- **상태를 변경하는 action** (예: `startBlock`, `pauseSession`, `completeBlock` 등)
 - **뷰에서 자주 쓰는 파생 값 selector**
-  - 예: 진행도 %, 남은 시간 텍스트, 오늘 해야 할 태스크 리스트 등
+  - 예: 진행도 %, 남은 시간 텍스트, 다음 우선 블록 등
 
 ### 3.3 제안 시 행동
 
 상태가 복잡해 보이거나 여러 컴포넌트에서 공유될 것 같으면, 에이전트는 다음 순서를 따른다.
 
 1. **zustand 스토어의 위치/이름을 먼저 제안**
-   - 예: `src/entities/routine-execution/model/routineExecutionStore.ts`
+   - 예: `src/entities/day-plan/model/dayPlanRuntimeStore.ts`
 2. **해당 스토어가 가져야 할 상태/액션/selector 를 설계**
 3. 그 다음에 **컴포넌트 코드에서는 스토어 훅만 사용하는 형태**로 예시 코드를 제공한다.
 
@@ -171,9 +173,13 @@ description: pokit 프로젝트에서 디렉토리 구조, 도메인 모델, zus
 - `src/shared/lib/storage/localStorageClient`
   - `getItem`, `setItem`, `removeItem` 등 안전한 래퍼
   - try/catch, JSON 직렬화/역직렬화 포함
-- `src/shared/lib/storage/routineStorage`
-  - `loadRoutines`, `saveRoutines` 등 도메인별 저장/로드 헬퍼
-- 각 도메인/feature 의 zustand 스토어
+- `src/shared/lib/storage/storageKeys.ts`
+  - `pokit:day-plan`, `pokit:history-daily-stats`, `pokit:goal-detail-settings` 등 키 상수
+- 도메인별 storage 헬퍼 (예: `dayPlanStorage.ts`, `historyStorage.ts`, `goalDetailSettingsStorage.ts`)
+  - `loadXxx`, `saveXxx` 등
+- `src/application/useAppBootstrap.ts`
+  - 앱 시작 시 storage → zustand hydrate, 알림·Live Activity(레거시) 동기화
+- 각 도메인 zustand 스토어
   - 초기화 시 `loadXXX` 를 사용해 LocalStorage 값을 불러온다.
   - action 내부에서 `saveXXX` 를 호출해 LocalStorage 와 동기화한다.
 
@@ -182,7 +188,7 @@ description: pokit 프로젝트에서 디렉토리 구조, 도메인 모델, zus
 사용자가 “데이터를 저장/불러오기” 기능을 요청하면, 에이전트는 다음 순서를 따른다.
 
 1. **어떤 도메인 엔티티를 쓸지 결정**
-   - 예: `Routine`, `RoutineExecution`, `Stats` 등
+   - 예: `DayPlan`, `History`, `GoalDetailSettings` 등
 2. 해당 도메인에 맞는 **zustand 스토어 + storage 헬퍼 모듈 위치를 제안**
 3. 컴포넌트에서는 **스토어 훅만 사용**하도록 코드를 제안하고,
    LocalStorage 접근은 항상 공용 스토리지 모듈을 경유하도록 유도한다.

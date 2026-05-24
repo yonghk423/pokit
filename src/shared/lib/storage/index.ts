@@ -1,11 +1,6 @@
 export { loadDayPlan, saveDayPlan } from './dayPlanStorage';
 export type { PersistedDayPlan } from './dayPlanStorage';
 export {
-  loadDayPlanStatsHistory,
-  mergeDayPlanStatsDay,
-} from './dayPlanStatsHistoryStorage';
-export type { DayPlanStatsDayRow } from './dayPlanStatsHistoryStorage';
-export {
   appendGoalDetailCommittedCategoryKeys,
   hasGoalDetailCommittedCategory,
   listGoalDetailCategoryConfigKeys,
@@ -28,8 +23,6 @@ export {
   initLocalStorageClient,
   localStorageClient,
 } from './localStorageClient';
-export { loadRoutineExecutions, saveRoutineExecutions } from './routineExecutionStorage';
-export { loadRoutines, saveRoutines } from './routineStorage';
 export {
   loadCategoryReminderRules,
   loadCategoryReminderScheduled,

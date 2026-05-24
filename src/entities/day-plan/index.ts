@@ -61,7 +61,6 @@ export {
   SYSTEM_CATALOG_GROUP_SUBTITLE_KO,
   type SystemCatalogGroupKey,
 } from './lib/customCatalogGroup';
-export { buildCompletedCountByCategoryKey } from './lib/dayPlanCompletionStats';
 export {
   addDaysToLocalDateKey,
   getLocalDateKey,
