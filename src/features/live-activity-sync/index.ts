@@ -1,7 +1,7 @@
 export {
-  endLockFlowLiveActivity,
+  endPokitLiveActivity,
   upsertLiveActivityAndDismiss,
-  upsertLockFlowLiveActivity,
+  upsertPokitLiveActivity,
 } from './lib/liveActivityClient';
 export { upsertActiveLiveActivityForBlockId } from './lib/upsertActiveLiveActivityForBlock';
 export { upsertFinishedLiveActivityForBlockId } from './lib/upsertFinishedLiveActivityForBlock';
@@ -13,10 +13,10 @@ export {
 } from './lib/buildLiveActivityPayloadForBlock';
 export { useLiveActivitySync } from './model/useLiveActivitySync';
 export type {
-  LockFlowLiveActivityChecklistRow,
-  LockFlowLiveActivityPayload,
-  LockFlowLiveActivityPlanMode,
+  PokitLiveActivityChecklistRow,
+  PokitLiveActivityPayload,
+  PokitLiveActivityPlanMode,
   PriorityLiveActivityContent,
   QuickMemoLiveActivityContent,
-  LockFlowLiveActivityStatus,
+  PokitLiveActivityStatus,
 } from './model/types';

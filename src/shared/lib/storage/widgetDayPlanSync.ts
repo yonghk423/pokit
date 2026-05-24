@@ -2,13 +2,13 @@ import { NativeModules, Platform } from 'react-native';
 
 import type { PersistedDayPlan } from './dayPlanStorage';
 
-type LockFlowWidgetSyncNative = {
+type PokitWidgetSyncNative = {
   syncDayPlanJson: (json: string) => void;
 };
 
 export function syncDayPlanToWidget(snapshot: PersistedDayPlan): void {
   if (Platform.OS !== 'ios') return;
-  const mod = NativeModules.LockFlowWidgetSync as LockFlowWidgetSyncNative | undefined;
+  const mod = NativeModules.PokitWidgetSync as PokitWidgetSyncNative | undefined;
   if (!mod?.syncDayPlanJson) return;
   try {
     mod.syncDayPlanJson(JSON.stringify(snapshot));

@@ -46,7 +46,7 @@ private func lockFlowNormalizeReadingMetrics(_ metrics: [String]) -> [String] {
 
 @available(iOS 16.1, *)
 private func lockFlowReadingDerived(
-  _ config: LockFlowLiveActivityAttributes.ContentState.ReadingDataConfig
+  _ config: PokitLiveActivityAttributes.ContentState.ReadingDataConfig
 ) -> (startPage: Int, targetPage: Int, spanPages: Int, progressPct: Int) {
   let startPage = max(0, config.startPage)
   let targetPage = max(0, config.targetPage)
@@ -63,7 +63,7 @@ private func lockFlowReadingDerived(
 @available(iOS 16.1, *)
 private func lockFlowReadingMetricItem(
   for key: String,
-  config: LockFlowLiveActivityAttributes.ContentState.ReadingDataConfig
+  config: PokitLiveActivityAttributes.ContentState.ReadingDataConfig
 ) -> ReadingMetricItem {
   let derived = lockFlowReadingDerived(config)
   switch key {
@@ -91,8 +91,8 @@ private func lockFlowReadingMetricItem(
 // MARK: - Unified Lock Screen View
 
 @available(iOS 16.1, *)
-private struct LockFlowLiveActivityView: View {
-  let context: ActivityViewContext<LockFlowLiveActivityAttributes>
+private struct PokitLiveActivityView: View {
+  let context: ActivityViewContext<PokitLiveActivityAttributes>
 
   private var isReadingMode: Bool {
     context.state.categoryKey == "reading" && context.state.readingDataConfig != nil
@@ -189,7 +189,7 @@ private struct LockFlowLiveActivityView: View {
   }
 
   private func checklistIconName(
-    _ row: LockFlowLiveActivityAttributes.ContentState.ChecklistRow
+    _ row: PokitLiveActivityAttributes.ContentState.ChecklistRow
   ) -> String {
     switch row.state {
     case "completed":
@@ -204,7 +204,7 @@ private struct LockFlowLiveActivityView: View {
   }
 
   private func checklistIconTint(
-    _ row: LockFlowLiveActivityAttributes.ContentState.ChecklistRow
+    _ row: PokitLiveActivityAttributes.ContentState.ChecklistRow
   ) -> Color {
     switch row.state {
     case "completed", "current":
@@ -215,7 +215,7 @@ private struct LockFlowLiveActivityView: View {
   }
 
   private func checklistStateLabel(
-    _ row: LockFlowLiveActivityAttributes.ContentState.ChecklistRow
+    _ row: PokitLiveActivityAttributes.ContentState.ChecklistRow
   ) -> String {
     switch row.state {
     case "completed":
@@ -230,7 +230,7 @@ private struct LockFlowLiveActivityView: View {
   }
 
   private func checklistMetaTint(
-    _ row: LockFlowLiveActivityAttributes.ContentState.ChecklistRow
+    _ row: PokitLiveActivityAttributes.ContentState.ChecklistRow
   ) -> Color {
     switch row.state {
     case "current":
@@ -244,7 +244,7 @@ private struct LockFlowLiveActivityView: View {
 
   @ViewBuilder
   private func checklistRow(
-    _ row: LockFlowLiveActivityAttributes.ContentState.ChecklistRow,
+    _ row: PokitLiveActivityAttributes.ContentState.ChecklistRow,
     compact: Bool
   ) -> some View {
     let isCompleted = row.state == "completed"
@@ -325,7 +325,7 @@ private struct LockFlowLiveActivityView: View {
 
   @ViewBuilder
   private func readingCompactLockScreenBody(
-    config: LockFlowLiveActivityAttributes.ContentState.ReadingDataConfig
+    config: PokitLiveActivityAttributes.ContentState.ReadingDataConfig
   ) -> some View {
     let metrics = lockFlowNormalizeReadingMetrics(config.selectedMetrics)
     let progressPct = lockFlowReadingDerived(config).progressPct
@@ -393,7 +393,7 @@ private struct LockFlowLiveActivityView: View {
 
   @ViewBuilder
   private func readingPreferredLockScreenBody(
-    config: LockFlowLiveActivityAttributes.ContentState.ReadingDataConfig
+    config: PokitLiveActivityAttributes.ContentState.ReadingDataConfig
   ) -> some View {
     let metrics = lockFlowNormalizeReadingMetrics(config.selectedMetrics)
     let progressPct = lockFlowReadingDerived(config).progressPct
@@ -598,10 +598,10 @@ private struct LockFlowLiveActivityView: View {
 // MARK: - Dynamic Island (unified)
 
 @available(iOS 16.1, *)
-struct LockFlowLiveActivityWidget: Widget {
+struct PokitLiveActivityWidget: Widget {
   var body: some WidgetConfiguration {
-    ActivityConfiguration(for: LockFlowLiveActivityAttributes.self) { context in
-      LockFlowLiveActivityView(context: context)
+    ActivityConfiguration(for: PokitLiveActivityAttributes.self) { context in
+      PokitLiveActivityView(context: context)
         // 내용 뷰가 `ZStack`으로 영역 전체를 불투명하게 채움 — 여기는 이중 틴트만 막는다.
         .activityBackgroundTint(.clear)
         .activitySystemActionForegroundColor(liveGrayAccent)
@@ -685,7 +685,7 @@ struct LockFlowLiveActivityWidget: Widget {
         .widgetURL(nil)
       }
 
-      let fallbackPriorityLive: LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent = {
+      let fallbackPriorityLive: PokitLiveActivityAttributes.ContentState.PriorityLiveContent = {
         let rows = context.state.checklistRows
         let totalFromLabel = Int(context.state.checklistCountLabel.filter(\.isNumber)) ?? 0
         let totalTasks = max(1, max(rows.count, totalFromLabel))
@@ -703,7 +703,7 @@ struct LockFlowLiveActivityWidget: Widget {
         let windowRaw = context.state.timeRangeLabel.trimmingCharacters(in: .whitespacesAndNewlines)
         let windowLabel = windowRaw.isEmpty ? context.state.checklistTitle : windowRaw
         let listRows = rows.enumerated().map { idx, row in
-          LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow(
+          PokitLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow(
             order: idx + 1,
             title: row.title,
             timeLabel: row.timeLabel
@@ -712,7 +712,7 @@ struct LockFlowLiveActivityWidget: Widget {
         /// 다이나믹 아일랜드 확장 하단은 `upcoming`만 쓰므로, **전체 `listRows`에서 현재 이후 슬라이스**만 넘긴다.
         /// 예전처럼 `enumerated().dropFirst` 후 `order: idx+1`로 다시 매기면 순번이 깨진다.
         let upcoming = Array(listRows.dropFirst(currentIndex + 1))
-        return LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent(
+        return PokitLiveActivityAttributes.ContentState.PriorityLiveContent(
           windowLabel: windowLabel,
           activeTitle: activeTitle,
           activeOrder: min(max(1, currentIndex + 1), totalTasks),
@@ -934,9 +934,9 @@ struct LockFlowLiveActivityWidget: Widget {
 
 @available(iOS 16.1, *)
 @main
-struct LockFlowLiveActivityBundle: WidgetBundle {
+struct PokitLiveActivityBundle: WidgetBundle {
   var body: some Widget {
-    LockFlowLiveActivityWidget()
+    PokitLiveActivityWidget()
     DayPlanLockWidget()
   }
 }

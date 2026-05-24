@@ -1,6 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 
-import type { LockFlowLiveActivityPayload } from '../model/types';
+import type { PokitLiveActivityPayload } from '../model/types';
 
 type LiveActivityNativeModule = {
   upsertActivity?: (payloadJson: string) => Promise<void> | void;
@@ -10,7 +10,7 @@ type LiveActivityNativeModule = {
   isAvailable?: () => Promise<boolean> | boolean;
 };
 
-const MODULE_NAME = 'LockFlowLiveActivity';
+const MODULE_NAME = 'PokitLiveActivity';
 
 let hasWarnedMissingModule = false;
 
@@ -40,8 +40,8 @@ async function checkAvailable(module: LiveActivityNativeModule): Promise<boolean
   }
 }
 
-export async function upsertLockFlowLiveActivity(
-  payload: LockFlowLiveActivityPayload,
+export async function upsertPokitLiveActivity(
+  payload: PokitLiveActivityPayload,
 ): Promise<boolean> {
   const module = getNativeModule();
   if (!module?.upsertActivity) return false;
@@ -56,7 +56,7 @@ export async function upsertLockFlowLiveActivity(
  * Swift에서 upsert → suspend를 원자적으로 실행하므로 upsert 누락이 없다.
  */
 export async function upsertLiveActivityAndDismiss(
-  payload: LockFlowLiveActivityPayload,
+  payload: PokitLiveActivityPayload,
 ): Promise<boolean> {
   const module = getNativeModule();
   if (!module?.upsertAndSuspend) return false;
@@ -66,7 +66,7 @@ export async function upsertLiveActivityAndDismiss(
   return true;
 }
 
-export async function endLockFlowLiveActivity(blockId?: string): Promise<boolean> {
+export async function endPokitLiveActivity(blockId?: string): Promise<boolean> {
   const module = getNativeModule();
   if (!module) return false;
   if (!(await checkAvailable(module))) return false;

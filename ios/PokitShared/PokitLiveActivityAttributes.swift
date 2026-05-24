@@ -2,7 +2,7 @@ import ActivityKit
 import Foundation
 
 @available(iOS 16.1, *)
-public struct LockFlowLiveActivityAttributes: ActivityAttributes {
+public struct PokitLiveActivityAttributes: ActivityAttributes {
   public struct ContentState: Codable, Hashable {
     public struct ChecklistRow: Codable, Hashable {
       public let blockId: String

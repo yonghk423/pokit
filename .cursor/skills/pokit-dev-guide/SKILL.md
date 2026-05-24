@@ -1,20 +1,20 @@
 ---
-name: lockflow-dev-guide
-description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, zustand 상태관리, LocalStorage 영속화, Expo CLI 사용 정책을 모두 고려해 코드를 설계·제안할 때 사용한다. LockFlow 관련 기능 추가, 리팩터링, 데이터 저장/불러오기, 화면 설계, 상태 분리 위치를 물을 때 이 스킬을 적용한다.
+name: pokit-dev-guide
+description: pokit 프로젝트에서 디렉토리 구조, 도메인 모델, zustand 상태관리, LocalStorage 영속화, Expo CLI 사용 정책을 모두 고려해 코드를 설계·제안할 때 사용한다. pokit 관련 기능 추가, 리팩터링, 데이터 저장/불러오기, 화면 설계, 상태 분리 위치를 물을 때 이 스킬을 적용한다.
 ---
 
-# LockFlow 개발 가이드 (구조 · 상태 · 데이터 · Expo)
+# pokit 개발 가이드 (구조 · 상태 · 데이터 · Expo)
 
 ## 사용 시점
 
-- LockFlow 프로젝트에서 **새 기능을 설계**하거나 코드를 제안해야 할 때
+- pokit 프로젝트에서 **새 기능을 설계**하거나 코드를 제안해야 할 때
 - **상태 관리(zustand) 위치/설계**, **LocalStorage 기반 영속화 방식**, **디렉토리 구조**를 함께 고민해야 할 때
 - Today/홈, Discover, Routine Setup 등 **주요 플로우 관련 코드**를 작성·수정할 때
 - Expo 기반이지만 **CLI 명령 실행은 피하고 코드 레벨 제안**에 집중해야 할 때
 
 에이전트는 아래 규칙을 항상 우선 적용한다.
 
-**한글 사용자 대면 문구**는 `.cursor/rules/LockFlow-Expo.mdc` §7.0.1에 따라 **「플로우」**를 쓴다(「루틴」「리듬」표기 금지). 코드·타입·스토어 이름의 `Routine` / `routine` 등은 기존대로 둔다.
+**한글 사용자 대면 문구**는 `.cursor/rules/pokit-Expo.mdc` §7.0.1에 따라 **「플로우」**를 쓴다(「루틴」「리듬」표기 금지). 코드·타입·스토어 이름의 `Routine` / `routine` 등은 기존대로 둔다.
 
 ---
 
@@ -193,7 +193,7 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
 
 ### 5.1 기본 정책
 
-- LockFlow 가 Expo 기반이라도, 에이전트는 **코드/구조 설명과 수정 제안**에 우선 집중한다.
+- pokit 가 Expo 기반이라도, 에이전트는 **코드/구조 설명과 수정 제안**에 우선 집중한다.
 - **사용자의 명시적인 허락 없이 어떤 Expo CLI 명령도 실행하지 않는다.**
   - 예: `expo start`, `expo prebuild`, `expo build`, `npx expo install ...` 등
 
@@ -210,7 +210,7 @@ description: LockFlow 프로젝트에서 디렉토리 구조, 도메인 모델, 
 
 ## 6. 응답 스타일 가이드
 
-LockFlow 관련 요청에 이 스킬을 사용할 때, 에이전트는 다음을 따른다.
+pokit 관련 요청에 이 스킬을 사용할 때, 에이전트는 다음을 따른다.
 
 - **항상 한국어로 응답**한다.
 - 코드 제안 시

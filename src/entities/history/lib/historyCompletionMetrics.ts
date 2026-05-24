@@ -1,4 +1,9 @@
-import type { HistoryDailyStat } from '../model/types';
+import type { HistoryDailyStat, HistoryDailyStatInput } from '../model/types';
+
+export type HistoryDailyStatCategorySource = Pick<
+  HistoryDailyStat,
+  'categoryMinutes'
+> & Pick<HistoryDailyStatInput, 'categoryCompletions'>;
 
 /** 해당 날짜에 루틴 달성 기록이 있는지 */
 export function dayHasCompletionActivity(row: HistoryDailyStat | undefined): boolean {
@@ -7,7 +12,7 @@ export function dayHasCompletionActivity(row: HistoryDailyStat | undefined): boo
 }
 
 /** 카테고리별 완료 횟수(구버전 categoryMinutes는 1회로 환산) */
-export function getCategoryCompletions(row: HistoryDailyStat): Record<string, number> {
+export function getCategoryCompletions(row: HistoryDailyStatCategorySource): Record<string, number> {
   const out: Record<string, number> = {};
   for (const [key, raw] of Object.entries(row.categoryCompletions ?? {})) {
     const k = key.trim();

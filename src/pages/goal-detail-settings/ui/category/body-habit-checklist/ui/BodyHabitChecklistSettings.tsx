@@ -77,7 +77,7 @@ export function BodyHabitChecklistSettings({
       return;
     }
     await Share.share({
-      message: `LockFlow\n\n${content}`,
+      message: `POKIT\n\n${content}`,
     });
   };
 

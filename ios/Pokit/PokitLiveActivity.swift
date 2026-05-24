@@ -58,8 +58,8 @@ private struct LiveActivityPayload: Decodable {
 /// `upsert`가 동시에 여러 번 들어오면 둘 다 "기존 Activity 없음"으로 판단해 `request`가 두 번 나가
 /// 잠금화면에 동일 카드가 두 줄로 쌓일 수 있음 → actor로 직렬화한다.
 @available(iOS 16.1, *)
-private actor LockFlowLiveActivityCoordinator {
-  static let shared = LockFlowLiveActivityCoordinator()
+private actor PokitLiveActivityCoordinator {
+  static let shared = PokitLiveActivityCoordinator()
 
   private let decoder: JSONDecoder = {
     let decoder = JSONDecoder()
@@ -84,7 +84,7 @@ private actor LockFlowLiveActivityCoordinator {
   func upsert(payloadJson: String) async {
     do {
       let payload = try decodePayload(from: payloadJson)
-      let state = LockFlowLiveActivityAttributes.ContentState(
+      let state = PokitLiveActivityAttributes.ContentState(
         title: payload.title,
         category: payload.category,
         categoryKey: payload.categoryKey,
@@ -115,7 +115,7 @@ private actor LockFlowLiveActivityCoordinator {
         checklistSummaryLine2: payload.checklistSummaryLine2,
         planMode: payload.planMode,
         priorityLive: payload.priorityLive.map { pl in
-          LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent(
+          PokitLiveActivityAttributes.ContentState.PriorityLiveContent(
             windowLabel: pl.windowLabel,
             activeTitle: pl.activeTitle,
             activeOrder: pl.activeOrder,
@@ -130,7 +130,7 @@ private actor LockFlowLiveActivityCoordinator {
           )
         },
         quickMemoLive: payload.quickMemoLive.map {
-          LockFlowLiveActivityAttributes.ContentState.QuickMemoLiveContent(
+          PokitLiveActivityAttributes.ContentState.QuickMemoLiveContent(
             bodyText: $0.bodyText,
             statusLabel: $0.statusLabel
           )
@@ -142,26 +142,26 @@ private actor LockFlowLiveActivityCoordinator {
       let startsLog = state.startsAt.map { fmt.string(from: $0) } ?? "nil"
       let endsLog = state.endsAt.map { fmt.string(from: $0) } ?? "nil"
 
-      if let activity = Activity<LockFlowLiveActivityAttributes>.activities.first(
+      if let activity = Activity<PokitLiveActivityAttributes>.activities.first(
         where: { $0.attributes.blockId == payload.blockId }
       ) {
         await activity.update(using: state)
         NSLog(
-          "[LockFlowLA] upsert update blockId=%@ status=%@ startsAt=%@ endsAt=%@",
+          "[PokitLA] upsert update blockId=%@ status=%@ startsAt=%@ endsAt=%@",
           payload.blockId,
           state.status,
           startsLog,
           endsLog
         )
       } else {
-        let attributes = LockFlowLiveActivityAttributes(blockId: payload.blockId)
+        let attributes = PokitLiveActivityAttributes(blockId: payload.blockId)
         _ = try Activity.request(
           attributes: attributes,
           contentState: state,
           pushType: nil
         )
         NSLog(
-          "[LockFlowLA] upsert request blockId=%@ status=%@ startsAt=%@ endsAt=%@",
+          "[PokitLA] upsert request blockId=%@ status=%@ startsAt=%@ endsAt=%@",
           payload.blockId,
           state.status,
           startsLog,
@@ -174,14 +174,14 @@ private actor LockFlowLiveActivityCoordinator {
   }
 
   func endAllActivities() async {
-    for activity in Activity<LockFlowLiveActivityAttributes>.activities {
+    for activity in Activity<PokitLiveActivityAttributes>.activities {
       await activity.end(dismissalPolicy: .immediate)
     }
   }
 
   func endActivity(blockId: String) async {
     guard !blockId.isEmpty else { return }
-    for activity in Activity<LockFlowLiveActivityAttributes>.activities where activity.attributes.blockId == blockId {
+    for activity in Activity<PokitLiveActivityAttributes>.activities where activity.attributes.blockId == blockId {
       await activity.end(dismissalPolicy: .immediate)
     }
   }
@@ -200,8 +200,8 @@ private actor LockFlowLiveActivityCoordinator {
   }
 }
 
-@objc(LockFlowLiveActivity)
-final class LockFlowLiveActivity: NSObject {
+@objc(PokitLiveActivity)
+final class PokitLiveActivity: NSObject {
   @objc
   static func requiresMainQueueSetup() -> Bool {
     false
@@ -212,7 +212,7 @@ final class LockFlowLiveActivity: NSObject {
     guard #available(iOS 16.1, *) else { return }
 
     Task {
-      await LockFlowLiveActivityCoordinator.shared.upsert(payloadJson: payloadJson)
+      await PokitLiveActivityCoordinator.shared.upsert(payloadJson: payloadJson)
     }
   }
 
@@ -221,7 +221,7 @@ final class LockFlowLiveActivity: NSObject {
     guard #available(iOS 16.1, *) else { return }
 
     Task {
-      await LockFlowLiveActivityCoordinator.shared.endAllActivities()
+      await PokitLiveActivityCoordinator.shared.endAllActivities()
     }
   }
 
@@ -229,7 +229,7 @@ final class LockFlowLiveActivity: NSObject {
   func endActivityByBlockId(_ blockId: String) {
     guard #available(iOS 16.1, *) else { return }
     Task {
-      await LockFlowLiveActivityCoordinator.shared.endActivity(blockId: blockId)
+      await PokitLiveActivityCoordinator.shared.endActivity(blockId: blockId)
     }
   }
 
@@ -241,7 +241,7 @@ final class LockFlowLiveActivity: NSObject {
     guard #available(iOS 16.1, *) else { return }
 
     Task {
-      await LockFlowLiveActivityCoordinator.shared.upsert(payloadJson: payloadJson)
+      await PokitLiveActivityCoordinator.shared.upsert(payloadJson: payloadJson)
       await MainActor.run {
         UIApplication.shared.perform(NSSelectorFromString("suspend"))
       }

@@ -1,21 +1,21 @@
 import type { ReadingLiveActivityConfig } from '@entities/day-plan';
 
-export type LockFlowLiveActivityStatus = 'active' | 'paused' | 'standby' | 'finished';
+export type PokitLiveActivityStatus = 'active' | 'paused' | 'standby' | 'finished';
 
-export type LockFlowLiveActivityChecklistRowState =
+export type PokitLiveActivityChecklistRowState =
   | 'completed'
   | 'current'
   | 'upcoming'
   | 'skipped';
 
-export type LockFlowLiveActivityChecklistRow = {
+export type PokitLiveActivityChecklistRow = {
   blockId: string;
   title: string;
   timeLabel: string;
-  state: LockFlowLiveActivityChecklistRowState;
+  state: PokitLiveActivityChecklistRowState;
 };
 
-export type LockFlowLiveActivityPlanMode = 'time' | 'priority' | 'quickMemo';
+export type PokitLiveActivityPlanMode = 'time' | 'priority' | 'quickMemo';
 
 export type PriorityLiveActivityUpcomingRow = {
   order: number;
@@ -43,7 +43,7 @@ export type QuickMemoLiveActivityContent = {
   statusLabel: string;
 };
 
-export type LockFlowLiveActivityPayload = {
+export type PokitLiveActivityPayload = {
   blockId: string;
   title: string;
   category: string;
@@ -53,15 +53,15 @@ export type LockFlowLiveActivityPayload = {
   pausedRemainingSeconds: number | null;
   endsAtIso: string | null;
   startsAtIso: string | null;
-  status: LockFlowLiveActivityStatus;
+  status: PokitLiveActivityStatus;
   readingDataConfig: ReadingLiveActivityConfig | null;
   checklistTitle: string;
   checklistCountLabel: string;
-  checklistRows: LockFlowLiveActivityChecklistRow[];
+  checklistRows: PokitLiveActivityChecklistRow[];
   checklistSummaryLine1: string;
   checklistSummaryLine2: string;
   /** `priority` 일 때 `priorityLive`, `quickMemo` 일 때 `quickMemoLive` */
-  planMode: LockFlowLiveActivityPlanMode;
+  planMode: PokitLiveActivityPlanMode;
   priorityLive: PriorityLiveActivityContent | null;
   quickMemoLive: QuickMemoLiveActivityContent | null;
 };

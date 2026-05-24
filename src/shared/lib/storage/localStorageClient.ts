@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
+import { migrateLegacyStorageKeys } from './migrateLegacyStorageKeys';
+
 type StorageLike = {
   getItem: (key: string) => string | null;
   setItem: (key: string, value: string) => void;
@@ -47,6 +49,7 @@ export async function initLocalStorageClient(): Promise<void> {
 
   nativeInitPromise = (async () => {
     try {
+      await migrateLegacyStorageKeys();
       const keys = await AsyncStorage.getAllKeys();
       if (keys.length > 0) {
         const rows = await AsyncStorage.multiGet(keys);

@@ -21,8 +21,8 @@ private struct DayPlanSnapshotJson: Decodable {
 }
 
 private func loadSnapshot() -> DayPlanSnapshotJson? {
-  guard let ud = UserDefaults(suiteName: LockFlowAppGroup.identifier),
-        let raw = ud.string(forKey: LockFlowAppGroup.dayPlanJsonKey),
+  guard let ud = UserDefaults(suiteName: PokitAppGroup.identifier),
+        let raw = PokitAppGroup.readDayPlanJson(from: ud),
         !raw.isEmpty,
         let data = raw.data(using: .utf8)
   else { return nil }
@@ -252,7 +252,7 @@ private struct DayPlanLockWidgetEntryView: View {
 }
 
 struct DayPlanLockWidget: Widget {
-  private let kind = "LockFlowDayPlanWidget"
+  private let kind = "PokitDayPlanWidget"
 
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: kind, provider: DayPlanProvider()) { entry in

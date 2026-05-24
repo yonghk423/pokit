@@ -30,7 +30,7 @@ export function TodayEmptyState({
     <View style={styles.root}>
       <View style={styles.welcome}>
         <ThemedText type="title" style={styles.welcomeTitle}>
-          LockFlow에 오신 것을 환영해요!
+          POKIT에 오신 것을 환영해요!
         </ThemedText>
         <ThemedText style={styles.welcomeSub}>
           첫 플로우를 시작해 보세요.

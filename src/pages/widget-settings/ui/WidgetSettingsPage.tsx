@@ -41,7 +41,7 @@ export function WidgetSettingsPage() {
             <Pressable onPress={() => router.back()} style={styles.iconTap}>
               <IconSymbol name="arrow.backward" size={20} color={PRIMARY} />
             </Pressable>
-            <ThemedText style={styles.topTitle}>LockFlow 맞춤 설정</ThemedText>
+            <ThemedText style={styles.topTitle}>POKIT 맞춤 설정</ThemedText>
           </View>
           <Pressable style={styles.saveTopButton}>
             <ThemedText style={styles.saveTopText}>저장</ThemedText>

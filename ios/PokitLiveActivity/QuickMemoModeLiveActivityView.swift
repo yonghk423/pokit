@@ -9,7 +9,7 @@ enum QuickMemoModeLiveActivityView {
 
   @ViewBuilder
   static func lockScreenBody(
-    context: ActivityViewContext<LockFlowLiveActivityAttributes>
+    context: ActivityViewContext<PokitLiveActivityAttributes>
   ) -> some View {
     if let q = context.state.quickMemoLive {
       quickMemoCard(q: q)
@@ -20,7 +20,7 @@ enum QuickMemoModeLiveActivityView {
 
   @ViewBuilder
   private static func quickMemoCard(
-    q: LockFlowLiveActivityAttributes.ContentState.QuickMemoLiveContent
+    q: PokitLiveActivityAttributes.ContentState.QuickMemoLiveContent
   ) -> some View {
     let headline: CGFloat = 17
     let label: CGFloat = 10

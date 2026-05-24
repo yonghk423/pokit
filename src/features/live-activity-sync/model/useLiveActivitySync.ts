@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
-import { upsertLockFlowLiveActivity } from '../lib/liveActivityClient';
-import type { LockFlowLiveActivityPayload } from './types';
+import { upsertPokitLiveActivity } from '../lib/liveActivityClient';
+import type { PokitLiveActivityPayload } from './types';
 
 /**
  * React 18 Strict Mode(dev)에서 effect가 두 번 돌면 `useRef`가 초기화되어
@@ -9,7 +9,7 @@ import type { LockFlowLiveActivityPayload } from './types';
  */
 let lastSerializedLiveActivityPayload: string | null = null;
 
-export function useLiveActivitySync(payload: LockFlowLiveActivityPayload | null): void {
+export function useLiveActivitySync(payload: PokitLiveActivityPayload | null): void {
   useEffect(() => {
     if (!payload) {
       lastSerializedLiveActivityPayload = null;
@@ -22,6 +22,6 @@ export function useLiveActivitySync(payload: LockFlowLiveActivityPayload | null)
     }
 
     lastSerializedLiveActivityPayload = nextSerialized;
-    void upsertLockFlowLiveActivity(payload);
+    void upsertPokitLiveActivity(payload);
   }, [payload]);
 }

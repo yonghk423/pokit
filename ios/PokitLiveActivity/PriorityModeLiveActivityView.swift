@@ -8,7 +8,7 @@ enum PriorityModeLiveActivityView {
 
   @ViewBuilder
   static func lockScreenBody(
-    context: ActivityViewContext<LockFlowLiveActivityAttributes>,
+    context: ActivityViewContext<PokitLiveActivityAttributes>,
     compact: Bool
   ) -> some View {
     if let p = context.state.priorityLive {
@@ -20,7 +20,7 @@ enum PriorityModeLiveActivityView {
 
   @ViewBuilder
   static func lockScreenFallbackBody(
-    context: ActivityViewContext<LockFlowLiveActivityAttributes>,
+    context: ActivityViewContext<PokitLiveActivityAttributes>,
     compact: Bool
   ) -> some View {
     let rows = context.state.checklistRows
@@ -43,14 +43,14 @@ enum PriorityModeLiveActivityView {
     let windowLabel = window.isEmpty ? context.state.checklistTitle : window
 
     let listRows = rows.enumerated().map { idx, row in
-      LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow(
+      PokitLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow(
         order: idx + 1,
         title: row.title,
         timeLabel: row.timeLabel
       )
     }
 
-    let p = LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent(
+    let p = PokitLiveActivityAttributes.ContentState.PriorityLiveContent(
       windowLabel: windowLabel,
       activeTitle: activeTitle,
       activeOrder: min(max(1, currentIndex + 1), max(1, total)),
@@ -74,9 +74,9 @@ enum PriorityModeLiveActivityView {
   /// 2) 없으면 레거시 `p.upcoming`
   /// 3) 그것도 없으면 `context.state.checklistRows`를 그대로 매핑
   private static func priorityLockListSource(
-    context: ActivityViewContext<LockFlowLiveActivityAttributes>,
-    p: LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent
-  ) -> [LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow] {
+    context: ActivityViewContext<PokitLiveActivityAttributes>,
+    p: PokitLiveActivityAttributes.ContentState.PriorityLiveContent
+  ) -> [PokitLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow] {
     if let rows = p.listRows, !rows.isEmpty {
       return rows
     }
@@ -84,7 +84,7 @@ enum PriorityModeLiveActivityView {
       return p.upcoming
     }
     return context.state.checklistRows.enumerated().map { idx, row in
-      LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow(
+      PokitLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow(
         order: idx + 1,
         title: row.title.trimmingCharacters(in: .whitespacesAndNewlines),
         timeLabel: row.timeLabel
@@ -94,7 +94,7 @@ enum PriorityModeLiveActivityView {
 
   @ViewBuilder
   private static func priorityTimerBlock(
-    context: ActivityViewContext<LockFlowLiveActivityAttributes>,
+    context: ActivityViewContext<PokitLiveActivityAttributes>,
     isFinished: Bool,
     isPaused: Bool,
     isStandby: Bool,
@@ -140,8 +140,8 @@ enum PriorityModeLiveActivityView {
 
   @ViewBuilder
   private static func priorityContent(
-    context: ActivityViewContext<LockFlowLiveActivityAttributes>,
-    p: LockFlowLiveActivityAttributes.ContentState.PriorityLiveContent,
+    context: ActivityViewContext<PokitLiveActivityAttributes>,
+    p: PokitLiveActivityAttributes.ContentState.PriorityLiveContent,
     compact: Bool
   ) -> some View {
     let listSource = priorityLockListSource(context: context, p: p)

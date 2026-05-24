@@ -9,12 +9,16 @@ import {
   saveHistoryMeta,
 } from '@shared/lib/storage';
 
-import { dayHasCompletionActivity, getCategoryCompletions } from '../lib/historyCompletionMetrics';
+import {
+  dayHasCompletionActivity,
+  getCategoryCompletions,
+} from '../lib/historyCompletionMetrics';
 
 import type {
   HistoryAchievement,
   HistoryCategoryBreakdownRow,
   HistoryDailyStat,
+  HistoryDailyStatInput,
   HistoryGrowthSummary,
   HistoryHeatMapCell,
   HistoryRange,
@@ -79,7 +83,7 @@ function emptyDaily(dateKey: string): HistoryDailyStat {
   };
 }
 
-function normalizeDaily(row: HistoryDailyStat): HistoryDailyStat {
+function normalizeDaily(row: HistoryDailyStatInput): HistoryDailyStat {
   const categoryCompletions = getCategoryCompletions(row);
   return {
     dateKey: row.dateKey.trim(),
@@ -105,7 +109,7 @@ function normalizeAchievement(row: HistoryAchievement): HistoryAchievement | nul
   };
 }
 
-function buildDailyMap(rows: HistoryDailyStat[]): Record<string, HistoryDailyStat> {
+function buildDailyMap(rows: HistoryDailyStatInput[]): Record<string, HistoryDailyStat> {
   const out: Record<string, HistoryDailyStat> = {};
   for (const row of rows) {
     const normalized = normalizeDaily(row);

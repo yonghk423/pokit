@@ -2,8 +2,8 @@ import type { DayPlanBlock, DayPlanRuntimeTiming } from '@entities/day-plan';
 import { filterDayPlanFlowBlocks, useDayPlanRuntimeStore, useDayPlanStore } from '@entities/day-plan';
 
 import { buildLiveActivityPayloadForBlock } from './buildLiveActivityPayloadForBlock';
-import { endLockFlowLiveActivity, upsertLockFlowLiveActivity } from './liveActivityClient';
-import type { LockFlowLiveActivityStatus } from '../model/types';
+import { endPokitLiveActivity, upsertPokitLiveActivity } from './liveActivityClient';
+import type { PokitLiveActivityStatus } from '../model/types';
 
 type PendingWithTiming = { block: DayPlanBlock; t: DayPlanRuntimeTiming };
 
@@ -19,7 +19,7 @@ export function reconcileLiveActivityFromPlan(): void {
   const flowBlocks = filterDayPlanFlowBlocks(blocks);
 
   if (!dateKey || blocks.length === 0) {
-    void endLockFlowLiveActivity();
+    void endPokitLiveActivity();
     return;
   }
 
@@ -54,7 +54,7 @@ export function reconcileLiveActivityFromPlan(): void {
     if (hasPendingQuickMemo) {
       return;
     }
-    void endLockFlowLiveActivity();
+    void endPokitLiveActivity();
     return;
   }
 
@@ -87,18 +87,18 @@ export function reconcileLiveActivityFromPlan(): void {
         blockId: ended[0].block.id,
         status: 'finished',
       });
-      if (payload) void upsertLockFlowLiveActivity(payload);
+      if (payload) void upsertPokitLiveActivity(payload);
     } else {
-      void endLockFlowLiveActivity();
+      void endPokitLiveActivity();
     }
     return;
   }
 
-  let status: LockFlowLiveActivityStatus;
+  let status: PokitLiveActivityStatus;
   if (now >= pick.t.endAtMs) status = 'finished';
   else if (now < pick.t.startAtMs) status = 'standby';
   else status = 'active';
 
   const payload = buildLiveActivityPayloadForBlock({ blockId: pick.block.id, status });
-  if (payload) void upsertLockFlowLiveActivity(payload);
+  if (payload) void upsertPokitLiveActivity(payload);
 }

@@ -14,6 +14,11 @@ export type HistoryDailyStat = {
   categoryCompletions: Record<string, number>;
 };
 
+/** 저장소·레거시 행 등 categoryCompletions가 없을 수 있는 입력 */
+export type HistoryDailyStatInput = Omit<HistoryDailyStat, 'categoryCompletions'> & {
+  categoryCompletions?: Record<string, number>;
+};
+
 export type HistoryAchievement = {
   id: string;
   kind: HistoryAchievementKind;

@@ -38,7 +38,7 @@ import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications
 import {
   buildLiveActivityChecklistRows,
   buildLiveActivityPayloadForBlock,
-  endLockFlowLiveActivity,
+  endPokitLiveActivity,
   upsertFinishedLiveActivityForBlockId,
   useLiveActivitySync,
 } from '@features/live-activity-sync';
@@ -53,7 +53,7 @@ import {
 } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import { formatDurationMinKo } from '@widgets/active-session-card/ui/sessionCardShared';
+import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
 
 import {
   ImmersionBottomControls,
@@ -406,7 +406,7 @@ export function ActivitySessionPage() {
     if (next) {
       router.replace({ pathname: '/activity-session', params: { blockId: next.id } });
     } else {
-      void endLockFlowLiveActivity(block.id);
+      void endPokitLiveActivity(block.id);
       safeRouterBack(router);
     }
   }, [block, categoryKey, completeBlock, dateKey, flowBlocks.length, router]);
@@ -478,7 +478,7 @@ export function ActivitySessionPage() {
       return;
     }
     if (!block) {
-      if (blockId) void endLockFlowLiveActivity(blockId);
+      if (blockId) void endPokitLiveActivity(blockId);
       safeRouterBack(router);
     }
   }, [block, blockId, router]);

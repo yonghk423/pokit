@@ -47,8 +47,6 @@ export default function TabLayout() {
               tabBarIcon: ({ color }) => <IconSymbol name="chart.bar.fill" size={22} color={color} />,
             }}
           />
-          <Tabs.Screen name="discover" options={{ href: null }} />
-          <Tabs.Screen name="routines" options={{ href: null }} />
           <Tabs.Screen
             name="settings"
             options={{

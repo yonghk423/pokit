@@ -35,10 +35,10 @@ import {
 } from '@features/day-plan-notifications';
 import {
   buildLiveActivityPayloadForBlock,
-  endLockFlowLiveActivity,
+  endPokitLiveActivity,
   reconcileLiveActivityFromPlan,
   upsertLiveActivityAndDismiss,
-  upsertLockFlowLiveActivity,
+  upsertPokitLiveActivity,
 } from '@features/live-activity-sync';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
@@ -454,7 +454,7 @@ export function DayPlanPage() {
         void (async () => {
           const dismissed = await upsertLiveActivityAndDismiss(payload);
           if (!dismissed) {
-            await upsertLockFlowLiveActivity(payload);
+            await upsertPokitLiveActivity(payload);
           }
         })();
       }
@@ -533,7 +533,7 @@ export function DayPlanPage() {
         status: 'active',
       });
       if (payload) {
-        void upsertLockFlowLiveActivity(payload);
+        void upsertPokitLiveActivity(payload);
       }
       setIsFocusStarted(true);
       return;
@@ -552,7 +552,7 @@ export function DayPlanPage() {
     const focusBlockId = useDayPlanStore.getState().liveActivityChecklistFocusBlockId;
     const target = activeBlockId ?? focusBlockId;
     if (target) {
-      void endLockFlowLiveActivity(target);
+      void endPokitLiveActivity(target);
     }
   }, []);
 

@@ -88,7 +88,7 @@ export function OtherSettings({
       return;
     }
     await Share.share({
-      message: `LockFlow 사용자 플로우\n\n${content}`,
+      message: `POKIT 사용자 플로우\n\n${content}`,
     });
   };
 

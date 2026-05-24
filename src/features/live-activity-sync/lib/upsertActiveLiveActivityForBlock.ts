@@ -1,7 +1,7 @@
 import { useDayPlanRuntimeStore, useDayPlanStore } from '@entities/day-plan';
 
 import { buildLiveActivityPayloadForBlock } from './buildLiveActivityPayloadForBlock';
-import { upsertLockFlowLiveActivity } from './liveActivityClient';
+import { upsertPokitLiveActivity } from './liveActivityClient';
 
 /**
  * 예약 시작 시각이 지난 뒤 활성 페이로드로 Live Activity를 맞춥니다.
@@ -27,5 +27,5 @@ export async function upsertActiveLiveActivityForBlockId(blockId: string): Promi
   if (!timing || Date.now() < timing.startAtMs) return;
 
   const payload = buildLiveActivityPayloadForBlock({ blockId, status: 'active' });
-  if (payload) await upsertLockFlowLiveActivity(payload);
+  if (payload) await upsertPokitLiveActivity(payload);
 }

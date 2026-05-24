@@ -14,9 +14,9 @@ import { useDayPlanRuntimeStore, useDayPlanStore } from '@entities/day-plan';
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 
 import type {
-  LockFlowLiveActivityChecklistRow,
-  LockFlowLiveActivityPayload,
-  LockFlowLiveActivityStatus,
+  PokitLiveActivityChecklistRow,
+  PokitLiveActivityPayload,
+  PokitLiveActivityStatus,
   PriorityLiveActivityContent,
   QuickMemoLiveActivityContent,
 } from '../model/types';
@@ -32,11 +32,11 @@ function formatChecklistTime(minutes: number): string {
 
 export function buildLiveActivityChecklistRows(input: {
   focusBlockId: string;
-  status: LockFlowLiveActivityStatus;
+  status: PokitLiveActivityStatus;
 }): {
   checklistTitle: string;
   checklistCountLabel: string;
-  checklistRows: LockFlowLiveActivityChecklistRow[];
+  checklistRows: PokitLiveActivityChecklistRow[];
   checklistSummaryLine1: string;
   checklistSummaryLine2: string;
 } {
@@ -104,9 +104,9 @@ export function buildLiveActivityChecklistRows(input: {
     visible = ordered.slice(windowStart, windowStart + maxVisible);
   }
 
-  const checklistRows: LockFlowLiveActivityChecklistRow[] = [];
+  const checklistRows: PokitLiveActivityChecklistRow[] = [];
   for (const block of visible) {
-    let parentState: LockFlowLiveActivityChecklistRow['state'] = 'upcoming';
+    let parentState: PokitLiveActivityChecklistRow['state'] = 'upcoming';
     if (completed.has(block.id)) {
       parentState = 'completed';
     } else if (skipped.has(block.id)) {
@@ -124,7 +124,7 @@ export function buildLiveActivityChecklistRows(input: {
       compoundLines.forEach((lineTitle, idx) => {
         const t = (lineTitle ?? '').trim();
         const title = t.length > 0 ? t : '플로우';
-        let state: LockFlowLiveActivityChecklistRow['state'] = parentState;
+        let state: PokitLiveActivityChecklistRow['state'] = parentState;
         if (parentState === 'current' && idx > 0) {
           state = 'upcoming';
         }
@@ -157,7 +157,7 @@ export function buildLiveActivityChecklistRows(input: {
   };
 }
 
-function quickMemoStatusLabel(status: LockFlowLiveActivityStatus): string {
+function quickMemoStatusLabel(status: PokitLiveActivityStatus): string {
   switch (status) {
     case 'finished':
       return '완료';
@@ -188,7 +188,7 @@ function blockElapsed01(input: {
   nowMs: number;
   startAtMs: number;
   endAtMs: number;
-  status: LockFlowLiveActivityStatus;
+  status: PokitLiveActivityStatus;
   totalSeconds: number;
   pausedRemainingSeconds: number | null | undefined;
 }): number {
@@ -208,7 +208,7 @@ function blockElapsed01(input: {
 }
 
 function priorityActiveTaskIndex(
-  status: LockFlowLiveActivityStatus,
+  status: PokitLiveActivityStatus,
   taskCount: number,
   elapsed01: number,
 ): number {
@@ -221,7 +221,7 @@ function priorityActiveTaskIndex(
 
 function buildPriorityLiveContent(
   block: DayPlanBlock,
-  status: LockFlowLiveActivityStatus,
+  status: PokitLiveActivityStatus,
   timing: { startAtMs: number; endAtMs: number },
   pausedRemainingSeconds: number | null,
   totalSec: number,
@@ -285,10 +285,10 @@ function buildPriorityLiveContent(
  */
 export function buildLiveActivityPayloadForBlock(input: {
   blockId: string;
-  status: LockFlowLiveActivityStatus;
+  status: PokitLiveActivityStatus;
   /** status === `paused` 일 때만 사용 */
   pausedRemainingSeconds?: number | null;
-}): LockFlowLiveActivityPayload | null {
+}): PokitLiveActivityPayload | null {
   const { blockId, status, pausedRemainingSeconds = null } = input;
 
   const plan = useDayPlanStore.getState();
