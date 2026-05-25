@@ -10,6 +10,8 @@ export const StorageKeys = {
   goalDetailSettings: 'pokit:goal-detail-settings',
   /** 담기 탭 상단「내 고정 루틴」에 넣을 카테고리 키 순서(사용자 구성) */
   priorityCatalogFixedRoutines: 'pokit:priority-catalog-fixed-routines',
+  /** 고정 플로우 세트(여러 세트/활성 세트/세트별 항목) */
+  fixedFlowSets: 'pokit:fixed-flow-sets',
   /** 첫 실행 하루 주기(시작·마무리 시각) 온보딩 완료 여부 */
   dailyRhythmOnboarding: 'pokit:daily-rhythm-onboarding',
   /** 우선순위 완료 행 X(담기에서 빼기) 확인창 생략 여부 */
@@ -36,6 +38,7 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   historyMeta: 'lockflow:history-meta',
   goalDetailSettings: 'lockflow:goal-detail-settings',
   priorityCatalogFixedRoutines: 'lockflow:priority-catalog-fixed-routines',
+  fixedFlowSets: 'lockflow:fixed-flow-sets',
   dailyRhythmOnboarding: 'lockflow:daily-rhythm-onboarding',
   priorityBagRemoveConfirmSkip: 'lockflow:priority-bag-remove-confirm-skip',
   dayPlanDraft: 'lockflow:day-plan-draft',

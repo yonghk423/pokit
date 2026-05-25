@@ -13,7 +13,7 @@ import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import type { PickerCategoryItem } from '../lib/dayPlanEditorShared';
+
 
 const LONG_PRESS_MS = 420;
 const SPRING = { damping: 20, stiffness: 280, mass: 0.85 };
@@ -26,9 +26,11 @@ function moveIndex(keys: string[], from: number, to: number): string[] {
   return next;
 }
 
+type CatalogEntry = { key: string; label: string; icon: string };
+
 type RowProps = {
   categoryKey: string;
-  cat: PickerCategoryItem;
+  cat: CatalogEntry;
   index: number;
   ink: string;
   muted: string;
@@ -126,7 +128,7 @@ function DraggableFixedRoutineRow({
       <View style={styles.orderActions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${cat.label} 고정에서 빼기`}
+          accessibilityLabel={`${cat.label} 세트에서 빼기`}
           hitSlop={8}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -149,7 +151,7 @@ function DraggableFixedRoutineRow({
 
 type Props = {
   orderedKeys: string[];
-  byKey: Map<string, PickerCategoryItem>;
+  byKey: Map<string, CatalogEntry>;
   isDark: boolean;
   ink: string;
   muted: string;

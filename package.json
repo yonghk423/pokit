@@ -12,6 +12,7 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest --ci",
+    "test:coverage": "jest --ci --coverage",
     "test:watch": "jest --watchAll",
     "ci": "npm run lint && npm run typecheck && npm run test",
     "sync-ios-assets": "bash scripts/sync-ios-app-icon-from-assets.sh"

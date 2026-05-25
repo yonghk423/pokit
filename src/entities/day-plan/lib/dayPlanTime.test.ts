@@ -1,10 +1,17 @@
 import { DayPlanBlock } from '@entities/day-plan/model/types';
 
 import {
+  blockDurationSec,
   dayPlanTimeRangesOverlap,
+  effectiveEndMinutesExclusive,
   findOverlappingDayPlanBlock,
+  findOverlappingDayPlanBlocks,
+  formatHhmmClockKo,
+  formatMinuteOfDayKo,
   getFirstPendingBlock,
   getNextPendingAfter,
+  sortDayPlanBlocks,
+  totalPlannedMinutes,
 } from './dayPlanTime';
 
 function block(partial: Partial<DayPlanBlock> & Pick<DayPlanBlock, 'id'>): DayPlanBlock {
@@ -42,6 +49,57 @@ describe('findOverlappingDayPlanBlock', () => {
   it('excludes block by id', () => {
     const hit = findOverlappingDayPlanBlock(blocks, 9 * 60, 10 * 60, 'a');
     expect(hit).toBeNull();
+  });
+});
+
+describe('block duration and formatting', () => {
+  it('computes duration for same-day and overnight blocks', () => {
+    expect(
+      blockDurationSec(block({ id: 'd1', startMinutes: 9 * 60, endMinutes: 10 * 60 })),
+    ).toBe(60 * 60);
+    expect(
+      blockDurationSec(
+        block({
+          id: 'd2',
+          startMinutes: 22 * 60,
+          endMinutes: 2 * 60,
+          endsNextCalendarDay: true,
+        }),
+      ),
+    ).toBe((24 * 60 - 22 * 60 + 2 * 60) * 60);
+    expect(effectiveEndMinutesExclusive(block({ id: 'd3', endMinutes: 10 * 60 }))).toBe(10 * 60);
+    expect(
+      effectiveEndMinutesExclusive(
+        block({ id: 'd4', endMinutes: 2 * 60, endsNextCalendarDay: true }),
+      ),
+    ).toBe(24 * 60 + 2 * 60);
+  });
+
+  it('formats Korean clock strings', () => {
+    expect(formatMinuteOfDayKo(9 * 60)).toBe('오전 9:00');
+    expect(formatHhmmClockKo('24:00')).toBe('24:00(자정)');
+    expect(formatHhmmClockKo('14:30')).toContain('오후');
+  });
+
+  it('sums planned minutes and sorts by order', () => {
+    const blocks = [
+      block({ id: 'b', order: 2, startMinutes: 0, endMinutes: 30 }),
+      block({ id: 'a', order: 1, startMinutes: 0, endMinutes: 60 }),
+    ];
+    expect(totalPlannedMinutes(blocks)).toBe(90);
+    expect(sortDayPlanBlocks(blocks).map((b) => b.id)).toEqual(['a', 'b']);
+  });
+});
+
+describe('findOverlappingDayPlanBlocks', () => {
+  it('returns all overlapping blocks', () => {
+    const blocks = [
+      block({ id: 'a', startMinutes: 9 * 60, endMinutes: 10 * 60, order: 0 }),
+      block({ id: 'b', startMinutes: 9 * 60 + 15, endMinutes: 10 * 60 + 15, order: 1 }),
+      block({ id: 'c', startMinutes: 14 * 60, endMinutes: 15 * 60, order: 2 }),
+    ];
+    const hits = findOverlappingDayPlanBlocks(blocks, 9 * 60 + 30, 10 * 60 + 30);
+    expect(hits.map((b) => b.id).sort()).toEqual(['a', 'b']);
   });
 });
 

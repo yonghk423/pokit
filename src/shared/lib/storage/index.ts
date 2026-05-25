@@ -15,6 +15,17 @@ export {
   savePriorityCatalogFixedRoutineKeys,
 } from './priorityCatalogFixedRoutinesStorage';
 export {
+  getActiveFixedFlowSet,
+  loadActiveFixedFlowCategoryKeys,
+  loadFixedFlowSetsState,
+  normalizeFixedFlowSetsState,
+  saveFixedFlowSetsState,
+  type FixedFlowSet,
+  type FixedFlowSetItem,
+  type FixedFlowSetsState,
+} from './fixedFlowSetsStorage';
+export { createDefaultFixedFlowSetsState } from './defaultFixedFlowSets';
+export {
   loadPriorityBagRemoveConfirmSkip,
   savePriorityBagRemoveConfirmSkip,
 } from './priorityBagRemoveConfirmStorage';

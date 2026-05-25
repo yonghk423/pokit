@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
 import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
@@ -257,9 +256,6 @@ type Props = {
   isFocusStarted: boolean;
   /** 오늘 탭 `OrderRow`와 동일한 완료 판별 */
   isCatalogRowCompleted: (categoryKey: string) => boolean;
-  /** 사용자 저장 고정 루틴 키 순서(비어 있으면 상단 묶음은 안내·만들기만) */
-  userFixedRoutineOrder: string[];
-  onOpenFixedRoutineEditor: () => void;
   onCatalogTap: (key: string) => void;
   onOpenCategorySettings: (categoryKey: string) => void;
   /** 저장된 사용자 플로우(picker용 메타) — 라벨/아이콘 해석에 사용 */
@@ -372,14 +368,12 @@ function GroupSectionBlock({
   );
 }
 
-/** 오늘 우선 순위에 담을 수 있는 항목 — 매일 이어가기 루틴(필요 시 하단 보조 묶음) */
+/** 오늘 우선 순위에 담을 수 있는 항목 — 상위 그룹별 카탈로그 */
 export function PriorityCatalogPanel({
   editorial,
   priorityCategoryOrder,
   isFocusStarted,
   isCatalogRowCompleted,
-  userFixedRoutineOrder,
-  onOpenFixedRoutineEditor,
   onCatalogTap,
   onOpenCategorySettings,
   customFlowPickerItems,
@@ -401,127 +395,20 @@ export function PriorityCatalogPanel({
     return filterCatalogPickerCategories(PICKER_CATEGORIES);
   }, [catalogLabelTick]);
 
-  const { fixedFlows, groupSections } = useMemo(
+  const { groupSections } = useMemo(
     () =>
       buildPriorityCatalogSections({
         available: visibleCatalogCategories,
-        userFixedRoutineOrder,
         customFlowPickerItems,
         customFlowEntries,
         customGroups,
       }),
-    [
-      visibleCatalogCategories,
-      userFixedRoutineOrder,
-      customFlowPickerItems,
-      customFlowEntries,
-      customGroups,
-    ],
+    [visibleCatalogCategories, customFlowPickerItems, customFlowEntries, customGroups],
   );
-
-  const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
 
   return (
     <View style={styles.root}>
-      <View style={styles.sectionBlock}>
-        <CatalogSectionHeader
-          title="내 고정 루틴"
-          subtitle="매일 이어가고 싶은 항목을 위에 모아요. 비어 있으면 아래에서 골라 넣을 수 있어요."
-          ink={editorial.ink}
-          muted={editorial.muted}
-        />
-        {userFixedRoutineOrder.length === 0 ? (
-          <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
-            <View style={styles.fixedEmptyInner}>
-              <ThemedText style={[styles.fixedEmptyText, { color: editorial.muted }]}>
-                아직 고정 루틴이 없어요. 아래에서 수분·약·스트레칭처럼 자주 쓰는 항목을 골라 주세요.
-              </ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="고정 루틴 만들기"
-                onPress={() => {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onOpenFixedRoutineEditor();
-                }}
-                style={({ pressed }) => [
-                  styles.fixedCta,
-                  {
-                    backgroundColor: tabColors.activeBg,
-                    borderColor: tabColors.activeBorder,
-                    opacity: pressed ? 0.92 : 1,
-                  },
-                ]}>
-                <ThemedText style={[styles.fixedCtaText, { color: tabColors.activeIcon }]}>
-                  고정 루틴 만들기
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
-        ) : fixedFlows.length > 0 ? (
-          <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
-            {renderRows(
-              fixedFlows,
-              editorial,
-              isDark,
-              priorityCategoryOrder,
-              isFocusStarted,
-              isCatalogRowCompleted,
-              onCatalogTap,
-              onOpenCategorySettings,
-            )}
-            <View style={styles.fixedSectionFooter}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="고정 루틴 바꾸기"
-                onPress={() => {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onOpenFixedRoutineEditor();
-                }}
-                style={({ pressed }) => [
-                  styles.fixedCta,
-                  {
-                    backgroundColor: tabColors.activeBg,
-                    borderColor: tabColors.activeBorder,
-                    opacity: pressed ? 0.92 : 1,
-                  },
-                ]}>
-                <ThemedText style={[styles.fixedCtaText, { color: tabColors.activeIcon }]}>
-                  고정 루틴 바꾸기
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
-        ) : (
-          <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
-            <View style={styles.fixedEmptyInner}>
-              <ThemedText style={[styles.fixedEmptyText, { color: editorial.muted }]}>
-                고정으로 둔 항목을 모두 우선 순위에 담았어요. 오늘 탭에서 빼낸 뒤 아래에서 고정 목록을 바꿀 수 있어요.
-              </ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="고정 루틴 바꾸기"
-                onPress={() => {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onOpenFixedRoutineEditor();
-                }}
-                style={({ pressed }) => [
-                  styles.fixedCta,
-                  {
-                    backgroundColor: tabColors.activeBg,
-                    borderColor: tabColors.activeBorder,
-                    opacity: pressed ? 0.92 : 1,
-                  },
-                ]}>
-                <ThemedText style={[styles.fixedCtaText, { color: tabColors.activeIcon }]}>
-                  고정 루틴 바꾸기
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
-        )}
-      </View>
-
-      {groupSections.map((section) => (
+      {groupSections.map((section, index) => (
         <GroupSectionBlock
           key={section.groupKey}
           section={section}
@@ -534,7 +421,7 @@ export function PriorityCatalogPanel({
           onOpenCategorySettings={onOpenCategorySettings}
           onRenameCustomGroup={onRenameCustomGroup}
           onDeleteCustomGroup={onDeleteCustomGroup}
-          isFirst={false}
+          isFirst={index === 0}
         />
       ))}
     </View>
@@ -580,37 +467,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  fixedSectionFooter: {
-    paddingHorizontal: 4,
-    paddingTop: 12,
-    paddingBottom: 14,
-  },
-  fixedEmptyInner: {
-    paddingVertical: 18,
-    paddingHorizontal: 4,
-    gap: 14,
-  },
-  fixedEmptyText: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
-    letterSpacing: -0.2,
-  },
-  fixedCta: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  fixedCtaText: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.25,
   },
   sectionTitle: {
     fontSize: 13,

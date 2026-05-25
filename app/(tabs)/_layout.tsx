@@ -41,6 +41,13 @@ export default function TabLayout() {
             }}
           />
           <Tabs.Screen
+            name="fixed-routines"
+            options={{
+              title: '나만의',
+              tabBarIcon: ({ color }) => <IconSymbol name="bookmark.fill" size={22} color={color} />,
+            }}
+          />
+          <Tabs.Screen
             name="day-plan-statistics"
             options={{
               title: '통계',

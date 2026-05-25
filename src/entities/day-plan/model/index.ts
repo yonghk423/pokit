@@ -1,5 +1,6 @@
 export { useDayPlanStore, selectFirstPendingBlock } from './dayPlanStore';
 export { useDayPlanRuntimeStore } from './dayPlanRuntimeStore';
+export { useFixedFlowSetsStore } from './fixedFlowSetsStore';
 export {
   appendPriorityCategoryKeysIfMissing,
   useDayPlanDraftStore,

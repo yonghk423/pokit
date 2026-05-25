@@ -2,6 +2,7 @@ export type { DayPlanBlock, DayPlanQuickMemo } from './model/types';
 export type { AddBlockResult, PlanMode } from './model';
 export { useDayPlanStore, selectFirstPendingBlock } from './model';
 export { useDayPlanRuntimeStore } from './model';
+export { useFixedFlowSetsStore } from './model';
 export {
   appendPriorityCategoryKeysIfMissing,
   useDayPlanDraftStore,
@@ -54,6 +55,13 @@ export {
   isCustomFlowCategoryKey,
   type CustomFlowCategoryKey,
 } from './lib/customFlowCategoryKey';
+export {
+  CATALOG_REMOVED_KEYS,
+  filterKeysToPriorityCatalog,
+  getPriorityCatalogAllowedKeySet,
+  getPriorityCatalogStandardKeys,
+  isPriorityCatalogAllowedKey,
+} from './lib/priorityCatalogRegistry';
 export {
   isSystemCatalogGroupKey,
   SYSTEM_CATALOG_GROUP_KEYS,

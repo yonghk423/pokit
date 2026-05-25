@@ -34,12 +34,10 @@ import {
   listCustomFlowCatalogEntries,
   listGoalDetailCategoryConfigKeys,
   loadGoalDetailCategoryConfig,
-  loadPriorityCatalogFixedRoutineKeys,
   reassignCustomFlowGroup,
   removeCustomCatalogGroup,
   renameCustomCatalogGroup,
   saveGoalDetailCategoryConfig,
-  savePriorityCatalogFixedRoutineKeys,
   type CustomCatalogGroup,
   type CustomFlowCatalogEntry,
 } from '@shared/lib/storage';
@@ -49,10 +47,8 @@ import { ThemedView } from '@shared/ui/themed-view';
 
 import { getPickerCategoryLabel, PRIMARY } from '../lib/dayPlanEditorShared';
 import { palette, type DayPlanPalette } from '../lib/dayPlanPalette';
-import { normalizeFixedRoutineCategoryKeys } from '../lib/normalizeFixedRoutineCategoryKeys';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
-import { FixedRoutineEditorModal } from './FixedRoutineEditorModal';
 import { PriorityCatalogPanel } from './PriorityCatalogPanel';
 import { RenameCustomGroupSheet } from './RenameCustomGroupSheet';
 
@@ -127,7 +123,6 @@ export function PriorityCatalogPage() {
   const {
     priorityCategoryOrder,
     setPriorityCategoryOrder,
-    bumpPriorityCatalogFixedRoutineEpoch,
     isFocusStarted,
     completedFocusCategoryKeys,
     planCompletionDismissedKeys,
@@ -135,7 +130,6 @@ export function PriorityCatalogPage() {
     useShallow((s) => ({
       priorityCategoryOrder: s.priorityCategoryOrder,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
-      bumpPriorityCatalogFixedRoutineEpoch: s.bumpPriorityCatalogFixedRoutineEpoch,
       isFocusStarted: s.isFocusStarted,
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
       planCompletionDismissedKeys: s.planCompletionDismissedKeys,
@@ -240,24 +234,6 @@ export function PriorityCatalogPage() {
     ],
   );
 
-  const [fixedRoutineKeys, setFixedRoutineKeys] = useState<string[]>([]);
-  const [fixedEditorOpen, setFixedEditorOpen] = useState(false);
-
-  useEffect(() => {
-    const raw = loadPriorityCatalogFixedRoutineKeys();
-    setFixedRoutineKeys(normalizeFixedRoutineCategoryKeys(raw));
-  }, []);
-
-  const persistFixedRoutineKeys = useCallback(
-    (next: string[]) => {
-      const normalized = normalizeFixedRoutineCategoryKeys(next);
-      setFixedRoutineKeys(normalized);
-      savePriorityCatalogFixedRoutineKeys(normalized);
-      bumpPriorityCatalogFixedRoutineEpoch();
-    },
-    [bumpPriorityCatalogFixedRoutineEpoch],
-  );
-
   const scrollBottomPad = useMemo(
     () => tabBarScrollBottomInset(insets.bottom) + 88,
     [insets.bottom],
@@ -343,17 +319,6 @@ export function PriorityCatalogPage() {
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
-      <FixedRoutineEditorModal
-        visible={fixedEditorOpen}
-        onClose={() => setFixedEditorOpen(false)}
-        initialKeys={fixedRoutineKeys}
-        onSave={persistFixedRoutineKeys}
-        isDark={isDark}
-        ink={editorial.ink}
-        muted={editorial.muted}
-        line={editorial.line}
-        surface={shellBg}
-      />
       <View style={[styles.safe, { backgroundColor: shellBg }]}>
         <ScrollView
           style={[styles.scroll, { backgroundColor: shellBg }]}
@@ -378,8 +343,6 @@ export function PriorityCatalogPage() {
             priorityCategoryOrder={priorityCategoryOrder}
             isFocusStarted={isFocusStarted}
             isCatalogRowCompleted={isCatalogRowCompleted}
-            userFixedRoutineOrder={fixedRoutineKeys}
-            onOpenFixedRoutineEditor={() => setFixedEditorOpen(true)}
             onCatalogTap={onCatalogTap}
             onOpenCategorySettings={onOpenCategorySettings}
             customFlowPickerItems={customFlowPickerItems}

@@ -85,9 +85,9 @@ export function FixedRoutineEditorModal({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.sheet, { backgroundColor: surface, paddingTop: insets.top + 8 }]}>
         <View style={[styles.sheetHeader, { borderBottomColor: border }]}>
-          <ThemedText style={[styles.sheetTitle, { color: ink }]}>내 고정 루틴</ThemedText>
+          <ThemedText style={[styles.sheetTitle, { color: ink }]}>나만의 루틴</ThemedText>
           <ThemedText style={[styles.sheetLead, { color: muted }]}>
-            담기 탭 위쪽에 모아 둘 항목을 고르세요. 고정 순서는 왼쪽 줄을 길게 누른 뒤 위아래로 끌어 바꿀 수 있어요. 비워 두면 아래는 건강·몸 관리(수분·약·체중·스트레칭·자세 등)와 생산성 도구로만 나뉘어 보여요.
+            담기 탭 위쪽에 모아 둘 항목을 고르세요. 순서는 왼쪽 줄을 길게 누른 뒤 위아래로 끌어 바꿀 수 있어요. 비워 두면 아래는 건강·몸 관리(수분·약·체중·스트레칭·자세 등)와 생산성 도구로만 나뉘어 보여요.
           </ThemedText>
         </View>
 
@@ -97,7 +97,7 @@ export function FixedRoutineEditorModal({
           contentContainerStyle={{ paddingBottom: 24 + insets.bottom, paddingHorizontal: 20, gap: 20 }}
           keyboardShouldPersistTaps="handled">
           <View style={styles.block}>
-            <ThemedText style={[styles.blockTitle, { color: ink }]}>고정 순서</ThemedText>
+            <ThemedText style={[styles.blockTitle, { color: ink }]}>이 세트에 넣은 순서</ThemedText>
             {draft.length === 0 ? (
               <ThemedText style={[styles.emptyLine, { color: muted }]}>아직 없어요. 아래에서 항목을 추가해 주세요.</ThemedText>
             ) : (
@@ -126,7 +126,7 @@ export function FixedRoutineEditorModal({
                   <Pressable
                     key={cat.key}
                     accessibilityRole="button"
-                    accessibilityLabel={`${cat.label} 고정 루틴에 추가`}
+                    accessibilityLabel={`${cat.label} 나만의 루틴 세트에 추가`}
                     onPress={() => onAdd(cat.key)}
                     style={({ pressed }) => [styles.addRow, pressed && { opacity: 0.72 }]}
                     android_ripple={{ color: 'rgba(0,0,0,0.06)' }}>
