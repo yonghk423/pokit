@@ -64,9 +64,11 @@ import { normalizeFixedRoutineCategoryKeys } from '../lib/normalizeFixedRoutineC
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { DailyRhythmOnboardingGate } from './DailyRhythmOnboardingGate';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
+import { MonthlyPlanSection } from './MonthlyPlanSection';
 import { PlanModeSwitch } from './PlanModeSwitch';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
+import { WeeklyPlanSection } from './WeeklyPlanSection';
 
 export function DayPlanPage() {
   const router = useRouter();
@@ -713,8 +715,7 @@ export function DayPlanPage() {
   const planModeSwitchEl = (
     <PlanModeSwitch
       planMode={planMode}
-      onSelectPriority={() => setPlanMode('priority')}
-      onSelectQuickMemo={() => setPlanMode('quickMemo')}
+      onSelectMode={setPlanMode}
       c={c}
       trailing={
         <Pressable
@@ -788,13 +789,18 @@ export function DayPlanPage() {
                     </View>
                   </View>
                 </TouchableWithoutFeedback>
+              ) : planMode === 'weekly' ? (
+                <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
+                  {planModeSwitchEl}
+                  <WeeklyPlanSection c={c} isDark={isDark} />
+                </View>
+              ) : planMode === 'monthly' ? (
+                <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
+                  {planModeSwitchEl}
+                  <MonthlyPlanSection c={c} isDark={isDark} />
+                </View>
               ) : (
                 <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
-                  {/*
-                    ScrollView `gap`이 플로팅 스위치와 다이어리 사이에 c.bg(거의 흰색) 띠를 만듦.
-                    한 컬럼으로 묶어 두 블록 사이 간격 제거.
-                    동일 톤 배경으로 서브픽셀/레이어 사이 밝은 끊김 완화.
-                  */}
                   {planModeSwitchEl}
                   <PriorityBasedPlanSection
                     c={c}

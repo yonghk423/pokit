@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -9,10 +10,26 @@ import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import type { PlanMode } from '../lib/dayPlanEditorShared';
 import { PRIMARY } from '../lib/dayPlanEditorShared';
 
+type ModeButton = {
+  mode: PlanMode;
+  icon: string;
+  label: string;
+};
+
+const MODE_BUTTONS: ModeButton[] = [
+  { mode: 'priority', icon: 'list.number', label: '데일리' },
+  { mode: 'weekly', icon: 'calendar', label: '위클리' },
+  { mode: 'monthly', icon: 'calendar.badge.clock', label: '먼슬리' },
+  { mode: 'quickMemo', icon: 'note.text', label: '메모' },
+];
+
 type Props = {
   planMode: PlanMode;
-  onSelectPriority: () => void;
-  onSelectQuickMemo: () => void;
+  onSelectMode: (mode: PlanMode) => void;
+  /** @deprecated onSelectPriority — onSelectMode 사용 */
+  onSelectPriority?: () => void;
+  /** @deprecated onSelectQuickMemo — onSelectMode 사용 */
+  onSelectQuickMemo?: () => void;
   c: DayPlanPalette;
   /** `null`이면 하단 설명 숨김 */
   description?: string | null;
@@ -22,6 +39,7 @@ type Props = {
 
 export function PlanModeSwitch({
   planMode,
+  onSelectMode,
   onSelectPriority,
   onSelectQuickMemo,
   c,
@@ -32,17 +50,25 @@ export function PlanModeSwitch({
     description !== undefined
       ? description
       : planMode === 'quickMemo'
-        ? '떠오른 할 일을 빠르게 기록하고 저장하면 라이브 액티비티로 반영됩니다.'
+        ? '떠오른 할 일을 빠르게 기록해 두세요.'
         : null;
 
-  const isQuickMemo = planMode === 'quickMemo';
-  const isPriority = !isQuickMemo;
-  const iconPriority = !isQuickMemo ? PRIMARY : c.onVariant;
-  const iconQuickMemo = isQuickMemo ? PRIMARY : c.onVariant;
+  const handleSelect = useCallback(
+    (mode: PlanMode) => {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (onSelectMode) {
+        onSelectMode(mode);
+      } else if (mode === 'priority' && onSelectPriority) {
+        onSelectPriority();
+      } else if (mode === 'quickMemo' && onSelectQuickMemo) {
+        onSelectQuickMemo();
+      }
+    },
+    [onSelectMode, onSelectPriority, onSelectQuickMemo],
+  );
 
   return (
     <View style={styles.root}>
-      {/* 풀폭: DayPlanPage에서 contentPad 밖에 두어 좌우 c.bg 띠 제거 */}
       <View style={styles.bleed}>
         <View
           style={[
@@ -51,40 +77,33 @@ export function PlanModeSwitch({
             trailing ? styles.rowWithTrailing : null,
           ]}>
           <View style={styles.leftButtonGroup}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="우선순위 기반"
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onSelectPriority();
-              }}
-              style={({ pressed }) => [
-                styles.iconHit,
-                {
-                  backgroundColor: isPriority ? 'rgba(0,0,0,0.07)' : c.containerLowest,
-                  borderColor: isPriority ? PRIMARY : c.border,
-                },
-                pressed && styles.iconPressed,
-              ]}>
-              <IconSymbol name="list.number" size={20} color={iconPriority} />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="빠른 메모"
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onSelectQuickMemo();
-              }}
-              style={({ pressed }) => [
-                styles.iconHit,
-                {
-                  backgroundColor: isQuickMemo ? 'rgba(0,0,0,0.07)' : c.containerLowest,
-                  borderColor: isQuickMemo ? PRIMARY : c.border,
-                },
-                pressed && styles.iconPressed,
-              ]}>
-              <IconSymbol name="note.text" size={20} color={iconQuickMemo} />
-            </Pressable>
+            {MODE_BUTTONS.map((btn) => {
+              const active = planMode === btn.mode;
+              return (
+                <Pressable
+                  key={btn.mode}
+                  accessibilityRole="button"
+                  accessibilityLabel={btn.label}
+                  onPress={() => handleSelect(btn.mode)}
+                  style={({ pressed }) => [
+                    styles.iconHit,
+                    {
+                      backgroundColor: active ? 'rgba(0,0,0,0.07)' : c.containerLowest,
+                      borderColor: active ? PRIMARY : c.border,
+                    },
+                    pressed && styles.iconPressed,
+                  ]}>
+                  <IconSymbol name={btn.icon as any} size={18} color={active ? PRIMARY : c.onVariant} />
+                  <ThemedText
+                    style={[
+                      styles.modeLabel,
+                      { color: active ? PRIMARY : c.onVariant },
+                    ]}>
+                    {btn.label}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
           </View>
           {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
         </View>
@@ -127,14 +146,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconHit: {
-    minWidth: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     minHeight: 34,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 11,
     borderWidth: 1,
-    alignItems: 'center',
     justifyContent: 'center',
+  },
+  modeLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   iconPressed: {
     opacity: 0.72,

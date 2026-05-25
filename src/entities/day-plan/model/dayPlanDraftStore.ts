@@ -122,7 +122,14 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     const keepDismissed = dismissedDateKey === today;
 
     set({
-      planMode: raw.planMode === 'quickMemo' ? 'quickMemo' : 'priority',
+      planMode:
+        raw.planMode === 'quickMemo'
+          ? 'quickMemo'
+          : raw.planMode === 'weekly'
+            ? 'weekly'
+            : raw.planMode === 'monthly'
+              ? 'monthly'
+              : 'priority',
       isFocusStarted: Boolean(raw.isFocusStarted),
       completedFocusCategoryKeys: Array.isArray(raw.completedFocusCategoryKeys)
         ? raw.completedFocusCategoryKeys
