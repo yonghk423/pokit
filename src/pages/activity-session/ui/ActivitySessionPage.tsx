@@ -1427,7 +1427,7 @@ export function ActivitySessionPage() {
       headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : sessionTitle}
       iconName="star.fill"
       iconSize={28}
-      sessionKicker={isQuickMemoSession ? '빠른 메모' : '세션'}
+      sessionKicker={isQuickMemoSession ? '잠금화면 메모' : '세션'}
       timerDisplay={
         <ThemedText
           style={waterStyles.timerHms}
@@ -1439,7 +1439,7 @@ export function ActivitySessionPage() {
           {isPaused ? '잠시 멈춤' : isWaitingToStart ? '시작 전' : '세션'}
         </ThemedText>
       }
-      flowCaption={isQuickMemoSession ? '메모를 기반으로 흐름을 정리해요' : activityTitle}
+      flowCaption={isQuickMemoSession ? '잠금화면 메모를 기반으로 흐름을 정리해요' : activityTitle}
       onBack={() => safeRouterBack(router)}
       scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
       bottomBar={

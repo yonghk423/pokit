@@ -10,7 +10,7 @@ import {
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { syncCategoryReminderNotifications } from '@features/category-reminder-notifications';
 import {
-  syncGoalDetailIncompleteReminderNotifications,
+  // syncGoalDetailIncompleteReminderNotifications, // 목표 상세 알림 — 잠시 비활성
   syncMedicineReminderNotifications,
   syncPriorityDayStartAlarm,
   syncWaterReminderNotifications,
@@ -75,7 +75,7 @@ export function useAppBootstrap() {
         routineStartHhmm: priorityStart,
         routineEndHhmm: priorityEnd,
       });
-      await syncGoalDetailIncompleteReminderNotifications();
+      // await syncGoalDetailIncompleteReminderNotifications(); // 목표 상세 알림 — 잠시 비활성
     })();
   }, [isReady]);
 
@@ -86,10 +86,10 @@ export function useAppBootstrap() {
         router.push('/(tabs)/day-plan');
         return;
       }
-      if (data.eventType === 'goalDetailIncompleteReminder') {
-        router.push('/(tabs)/day-plan');
-        return;
-      }
+      // if (data.eventType === 'goalDetailIncompleteReminder') {
+      //   router.push('/(tabs)/day-plan');
+      //   return;
+      // }
       if (data.eventType === 'medicineDoseReminder') {
         const bid = typeof data.blockId === 'string' ? data.blockId : '';
         if (bid) {
@@ -136,7 +136,7 @@ export function useAppBootstrap() {
         void syncMedicineReminderNotifications();
         const { priorityStart: ps, priorityEnd: pe } = useDayPlanDraftStore.getState();
         void syncWaterReminderNotifications({ routineStartHhmm: ps, routineEndHhmm: pe });
-        void syncGoalDetailIncompleteReminderNotifications();
+        // void syncGoalDetailIncompleteReminderNotifications(); // 목표 상세 알림 — 잠시 비활성
         registerOtherCategoryResolverFromStorage();
       } else {
         /** 백그라운드/비활성 전환 시 대기 중인 저장 write를 즉시 정리 */

@@ -9,6 +9,7 @@ import {
   categoryReminderLabelKo,
   getLocalDateKey,
 } from '@entities/day-plan';
+import { useHorizonCompletionStore } from '@entities/horizon-completion';
 import { getCategoryCompletions, useHistoryStore } from '@entities/history';
 
 import {
@@ -20,12 +21,15 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
+import { StatisticsCompletionList } from './StatisticsCompletionList';
+
 /** 하단 탭바 아래 끝 여백 — `DayPlanCustomTabBar`가 세이프 영역을 이미 담당 */
 const SCROLL_END_GAP_PX = 6;
 
 type ConsistencyMode = 'week' | 'month';
 type CategorySortMode = 'share' | 'growth' | 'recent';
-type StatisticsMainTab = 'history' | 'categoryAnalysis';
+type StatisticsMainTab = 'daily' | 'weekly' | 'monthly';
+type StatisticsDailySubTab = 'overview' | 'category';
 
 const WEEKDAY_LABELS_KO = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
@@ -51,12 +55,13 @@ function formatRatePercent(rate: number): string {
   return `${pct}%`;
 }
 
-/** 데이플랜 하단 탭 — 히스토리 대시보드 */
+/** 데이플랜 하단 탭 — 통계 대시보드 */
 export function DayPlanStatisticsPage() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const [mainTab, setMainTab] = useState<StatisticsMainTab>('history');
+  const [mainTab, setMainTab] = useState<StatisticsMainTab>('daily');
+  const [dailySubTab, setDailySubTab] = useState<StatisticsDailySubTab>('overview');
   const [consistencyMode, setConsistencyMode] = useState<ConsistencyMode>('week');
   const [categorySortMode, setCategorySortMode] = useState<CategorySortMode>('share');
   const [selectedHeatDateKey, setSelectedHeatDateKey] = useState<string | null>(null);
@@ -89,10 +94,25 @@ export function DayPlanStatisticsPage() {
     hydrate();
   }, [hydrate]);
 
+  const hydrateHorizonCompletions = useHorizonCompletionStore((s) => s.hydrate);
+  const weeklyByKey = useHorizonCompletionStore((s) => s.weeklyByKey);
+  const monthlyByKey = useHorizonCompletionStore((s) => s.monthlyByKey);
+  const weeklyCompletions = useMemo(
+    () =>
+      Object.values(weeklyByKey).sort((a, b) => b.completedAt.localeCompare(a.completedAt)),
+    [weeklyByKey],
+  );
+  const monthlyCompletions = useMemo(
+    () =>
+      Object.values(monthlyByKey).sort((a, b) => b.completedAt.localeCompare(a.completedAt)),
+    [monthlyByKey],
+  );
+
   useFocusEffect(
     useCallback(() => {
       hydrate();
-    }, []),
+      hydrateHorizonCompletions();
+    }, [hydrate, hydrateHorizonCompletions]),
   );
 
   const todayDateKey = getLocalDateKey();
@@ -268,7 +288,7 @@ export function DayPlanStatisticsPage() {
     ...consistencyRows.map((row) => row.averageCompletions),
   );
   const coachingMessage = useMemo(() => {
-    if (!isHydrated) return '히스토리를 불러오는 중이에요.';
+    if (!isHydrated) return '통계를 불러오는 중이에요.';
     if (streak >= 14) return `연속 ${streak}일째에요. 지금 페이스를 유지하면 이번 달 최고 기록을 만들 수 있어요.`;
     if (growth.diffCompletions > 0) {
       return `지난주보다 ${formatCountKo(growth.diffCompletions)} 더 달성했어요. 완료 흐름이 좋아요.`;
@@ -276,7 +296,7 @@ export function DayPlanStatisticsPage() {
     if (growth.diffCompletions < 0) {
       return `지난주보다 ${formatCountKo(Math.abs(growth.diffCompletions))} 줄었어요. 오늘 한 가지라도 완료하면 회복이 빨라요.`;
     }
-    return '오늘 첫 완료를 만들면 히스토리 그래프가 더 선명해져요.';
+    return '오늘 첫 완료를 만들면 통계 그래프가 더 선명해져요.';
   }, [growth.diffCompletions, isHydrated, streak]);
   const streakRiskMessage = useMemo(() => {
     const todayCompletions = dailyStatsByDate[todayDateKey]?.completedFlowCount ?? 0;
@@ -359,40 +379,88 @@ export function DayPlanStatisticsPage() {
         ]}
         showsVerticalScrollIndicator={false}>
         <View style={styles.mainTabRow}>
-          <Pressable
-            onPress={() => setMainTab('history')}
-            style={[
-              styles.mainTabBtn,
-              mainTab === 'history' && {
-                backgroundColor: isDark ? '#fafafa' : '#18181b',
-              },
-            ]}>
-            <ThemedText
-              style={styles.mainTabLabel}
-              lightColor={mainTab === 'history' ? '#ffffff' : '#52525b'}
-              darkColor={mainTab === 'history' ? '#18181b' : '#a1a1aa'}>
-              히스토리
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            onPress={() => setMainTab('categoryAnalysis')}
-            style={[
-              styles.mainTabBtn,
-              mainTab === 'categoryAnalysis' && {
-                backgroundColor: isDark ? '#fafafa' : '#18181b',
-              },
-            ]}>
-            <ThemedText
-              style={styles.mainTabLabel}
-              lightColor={mainTab === 'categoryAnalysis' ? '#ffffff' : '#52525b'}
-              darkColor={mainTab === 'categoryAnalysis' ? '#18181b' : '#a1a1aa'}>
-              카테고리 분석
-            </ThemedText>
-          </Pressable>
+          {(
+            [
+              { id: 'daily' as const, label: '데일리' },
+              { id: 'weekly' as const, label: '위클리' },
+              { id: 'monthly' as const, label: '먼슬리' },
+            ] as const
+          ).map((tab) => (
+            <Pressable
+              key={tab.id}
+              onPress={() => setMainTab(tab.id)}
+              style={[
+                styles.mainTabBtn,
+                mainTab === tab.id && {
+                  backgroundColor: isDark ? '#fafafa' : '#18181b',
+                },
+              ]}>
+              <ThemedText
+                style={styles.mainTabLabel}
+                lightColor={mainTab === tab.id ? '#ffffff' : '#52525b'}
+                darkColor={mainTab === tab.id ? '#18181b' : '#a1a1aa'}>
+                {tab.label}
+              </ThemedText>
+            </Pressable>
+          ))}
         </View>
-        {mainTab === 'history' ? (
+
+        {mainTab === 'weekly' ? (
+          <StatisticsCompletionList
+            title="위클리 완료 목록"
+            emptyHint="아직 완료한 주가 없어요. 오늘 탭에서 주간 전략을 작성한 뒤 하단 완료를 눌러 주세요."
+            entries={weeklyCompletions}
+            tone={tone}
+          />
+        ) : null}
+
+        {mainTab === 'monthly' ? (
+          <StatisticsCompletionList
+            title="먼슬리 완료 목록"
+            emptyHint="아직 완료한 달이 없어요. 오늘 탭에서 월간 전략을 작성한 뒤 하단 완료를 눌러 주세요."
+            entries={monthlyCompletions}
+            tone={tone}
+          />
+        ) : null}
+
+        {mainTab === 'daily' ? (
+          <View style={styles.dailySubTabRow}>
+            <Pressable
+              onPress={() => setDailySubTab('overview')}
+              style={[
+                styles.dailySubTabBtn,
+                dailySubTab === 'overview' && {
+                  backgroundColor: isDark ? '#fafafa' : '#18181b',
+                },
+              ]}>
+              <ThemedText
+                style={styles.dailySubTabLabel}
+                lightColor={dailySubTab === 'overview' ? '#ffffff' : '#52525b'}
+                darkColor={dailySubTab === 'overview' ? '#18181b' : '#a1a1aa'}>
+                요약
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={() => setDailySubTab('category')}
+              style={[
+                styles.dailySubTabBtn,
+                dailySubTab === 'category' && {
+                  backgroundColor: isDark ? '#fafafa' : '#18181b',
+                },
+              ]}>
+              <ThemedText
+                style={styles.dailySubTabLabel}
+                lightColor={dailySubTab === 'category' ? '#ffffff' : '#52525b'}
+                darkColor={dailySubTab === 'category' ? '#18181b' : '#a1a1aa'}>
+                카테고리
+              </ThemedText>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {mainTab === 'daily' && dailySubTab === 'overview' ? (
           <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
-          <ThemedText style={styles.sectionTitle}>오늘의 히스토리 요약</ThemedText>
+          <ThemedText style={styles.sectionTitle}>오늘의 통계 요약</ThemedText>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <ThemedText style={styles.summaryValue}>{streak}일</ThemedText>
@@ -433,7 +501,7 @@ export function DayPlanStatisticsPage() {
           </View>
         ) : null}
 
-        {mainTab === 'categoryAnalysis' ? (
+        {mainTab === 'daily' && dailySubTab === 'category' ? (
           <>
             <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
           <ThemedText style={styles.sectionTitle}>카테고리 성장</ThemedText>
@@ -523,7 +591,7 @@ export function DayPlanStatisticsPage() {
             </View>
 
             <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
-          <ThemedText style={styles.sectionTitle}>카테고리별 히스토리 분석</ThemedText>
+          <ThemedText style={styles.sectionTitle}>카테고리별 통계 분석</ThemedText>
           <ThemedText style={styles.sectionDesc} lightColor={tone.muted} darkColor={tone.muted}>
             누적 완료, 활동 일수, 최근 7일 완료를 함께 비교해요.
           </ThemedText>
@@ -569,7 +637,7 @@ export function DayPlanStatisticsPage() {
           </>
         ) : null}
 
-        {mainTab === 'history' ? (
+        {mainTab === 'daily' && dailySubTab === 'overview' ? (
           <>
           <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
           <ThemedText style={styles.sectionTitle}>주간 활동</ThemedText>
@@ -705,9 +773,15 @@ export function DayPlanStatisticsPage() {
           </>
         ) : null}
 
-        <ThemedText style={styles.footnote} lightColor={tone.muted} darkColor={tone.muted}>
-          히스토리는 루틴 완료 여부를 기준으로 쌓여요. 정해진 시간 안에 달성한 기록이 스트릭과 성장 지표에 반영됩니다.
-        </ThemedText>
+        {mainTab === 'daily' ? (
+          <ThemedText style={styles.footnote} lightColor={tone.muted} darkColor={tone.muted}>
+            데일리 통계는 일정 완료를 기준으로 쌓여요. 위클리·먼슬리는 각 기간 하단 완료 버튼으로 기록됩니다.
+          </ThemedText>
+        ) : (
+          <ThemedText style={styles.footnote} lightColor={tone.muted} darkColor={tone.muted}>
+            위클리·먼슬리 완료는 오늘 탭에서 전략을 작성한 뒤 하단 완료로 남길 수 있어요.
+          </ThemedText>
+        )}
       </ScrollView>
 
       <Modal
@@ -805,6 +879,22 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     gap: 8,
+    marginBottom: 12,
+  },
+  dailySubTabRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  dailySubTabBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  dailySubTabLabel: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   mainTabBtn: {
     flex: 1,

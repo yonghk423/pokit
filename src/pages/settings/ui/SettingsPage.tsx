@@ -59,6 +59,7 @@ export function SettingsPage() {
             <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
           </Pressable>
 
+          {/* 목표 상세 알림 — 잠시 비활성
           <Pressable
             style={styles.item}
             onPress={() => {
@@ -78,6 +79,7 @@ export function SettingsPage() {
             </View>
             <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
           </Pressable>
+          */}
         </View>
 
         <View style={styles.section}>

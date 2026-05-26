@@ -20,7 +20,7 @@ const MODE_BUTTONS: ModeButton[] = [
   { mode: 'priority', icon: 'list.number', label: '데일리' },
   { mode: 'weekly', icon: 'calendar', label: '위클리' },
   { mode: 'monthly', icon: 'calendar.badge.clock', label: '먼슬리' },
-  { mode: 'quickMemo', icon: 'note.text', label: '메모' },
+  { mode: 'quickMemo', icon: 'note.text', label: '잠금화면 메모' },
 ];
 
 type Props = {
@@ -50,7 +50,7 @@ export function PlanModeSwitch({
     description !== undefined
       ? description
       : planMode === 'quickMemo'
-        ? '떠오른 할 일을 빠르게 기록해 두세요.'
+        ? '잠금화면에서 상시 확인할 메모를 적어 두세요.'
         : null;
 
   const handleSelect = useCallback(

@@ -94,6 +94,8 @@ export async function scheduleDailyLocalNotification(params: {
   hour: number;
   minute: number;
   data?: Record<string, unknown>;
+  /** 동일 ID로 재예약하면 기존 알림을 대체합니다. */
+  identifier?: string;
 }): Promise<string | null> {
   if (!isNativeNotificationPlatform()) return null;
   await ensureConfigured();
@@ -102,6 +104,7 @@ export async function scheduleDailyLocalNotification(params: {
   const minute = Math.max(0, Math.min(59, Math.floor(params.minute)));
 
   return Notifications.scheduleNotificationAsync({
+    identifier: params.identifier,
     content: {
       title: params.title,
       body: params.body,
@@ -114,6 +117,35 @@ export async function scheduleDailyLocalNotification(params: {
       minute,
     },
   });
+}
+
+export async function cancelScheduledNotificationByIdentifier(
+  identifier: string,
+): Promise<void> {
+  if (!isNativeNotificationPlatform() || !identifier) return;
+  await ensureConfigured();
+  await Notifications.cancelScheduledNotificationAsync(identifier);
+}
+
+/** `data.eventType`이 일치하는 예약 알림을 모두 취소(고아 알림 정리). */
+export async function cancelScheduledNotificationsByEventType(
+  eventType: string,
+): Promise<void> {
+  if (!isNativeNotificationPlatform() || !eventType) return;
+  await ensureConfigured();
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    scheduled
+      .filter((req) => {
+        const data = req.content.data;
+        return (
+          data &&
+          typeof data === 'object' &&
+          (data as Record<string, unknown>).eventType === eventType
+        );
+      })
+      .map((req) => Notifications.cancelScheduledNotificationAsync(req.identifier)),
+  );
 }
 
 export async function sendImmediateNotification(params: {

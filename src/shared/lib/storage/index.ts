@@ -86,6 +86,47 @@ export { syncDayPlanToWidget } from './widgetDayPlanSync';
 export { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
 export type { PersistedDayPlanDraft } from './dayPlanDraftStorage';
 export {
+  listMonthlyCompletions,
+  listWeeklyCompletions,
+  loadMonthlyCompletion,
+  loadWeeklyCompletion,
+  clearMonthlyCompletion,
+  clearWeeklyCompletion,
+  saveMonthlyCompletion,
+  saveWeeklyCompletion,
+  type HorizonCompletionEntry,
+  type HorizonCompletionKind,
+} from './horizonCompletionsStorage';
+export {
+  horizonWeeklyDayMemoHasContent,
+  loadHorizonWeeklyDayMemo,
+  saveHorizonWeeklyDayMemo,
+} from './horizonWeeklyDayMemosStorage';
+export {
+  loadMonthlyGoalDocument,
+  loadMonthlyGoalText,
+  loadWeeklyGoalDocument,
+  loadWeeklyGoalText,
+  saveMonthlyGoalDocument,
+  saveMonthlyGoalText,
+  saveWeeklyGoalDocument,
+  saveWeeklyGoalText,
+} from './horizonGoalsStorage';
+export type {
+  HorizonBlockType,
+  HorizonGoalBlock,
+  HorizonGoalDocument,
+} from './horizonGoalBlocks';
+export {
+  createHorizonBlock,
+  EMPTY_HORIZON_DOCUMENT,
+  estimateHorizonDocumentProgress,
+  HORIZON_BLOCK_TYPE_LABELS,
+  horizonDocumentHasContent,
+  horizonDocumentToPlainText,
+  parseHorizonGoalDocument,
+} from './horizonGoalBlocks';
+export {
   appendCustomFlowCatalogEntry,
   appendCustomFlowCatalogId,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,

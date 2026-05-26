@@ -18,6 +18,12 @@ export const StorageKeys = {
   priorityBagRemoveConfirmSkip: 'pokit:priority-bag-remove-confirm-skip',
   /** 데이플랜 화면 드래프트(모드/시작·마무리/순서 등) */
   dayPlanDraft: 'pokit:day-plan-draft',
+  /** 위클리·먼슬리 목표 텍스트(주 시작일·연-월 키) */
+  horizonGoals: 'pokit:horizon-goals',
+  /** 위클리·먼슬리 기간 완료 기록(통계 목록) */
+  horizonCompletions: 'pokit:horizon-completions',
+  /** 위클리 화면 — 요일별 간단 메모 (`YYYY-MM-DD` → 텍스트) */
+  horizonWeeklyDayMemos: 'pokit:horizon-weekly-day-memos',
   /** 사용자 정의 플로우(`customFlow:…`) 카탈로그 순서 */
   customFlowCatalog: 'pokit:custom-flow-catalog',
   /** 사용자 정의 카탈로그 그룹(상위 카테고리) 라벨 목록 */
@@ -42,6 +48,9 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   dailyRhythmOnboarding: 'lockflow:daily-rhythm-onboarding',
   priorityBagRemoveConfirmSkip: 'lockflow:priority-bag-remove-confirm-skip',
   dayPlanDraft: 'lockflow:day-plan-draft',
+  horizonGoals: 'lockflow:horizon-goals',
+  horizonCompletions: 'lockflow:horizon-completions',
+  horizonWeeklyDayMemos: 'lockflow:horizon-weekly-day-memos',
   customFlowCatalog: 'lockflow:custom-flow-catalog',
   customCatalogGroups: 'lockflow:custom-catalog-groups',
 };

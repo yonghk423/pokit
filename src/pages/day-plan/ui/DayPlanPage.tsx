@@ -264,10 +264,16 @@ export function DayPlanPage() {
     return () => clearInterval(id);
   }, []);
 
-  /** 데이플랜에서 시작 시각만 바꿔도 알람 시각이 따라가게 */
+  /** 데이플랜에서 시작 시각만 바꿔도 알람 시각이 따라가게 (연속 호출·중복 예약 방지) */
+  const priorityStartAlarmSyncRef = useRef<string | null>(null);
   useEffect(() => {
     if (!loadPriorityDayStartAlarm().enabled) return;
-    void syncPriorityDayStartAlarm({ enabled: true, startHhmm: priorityStart });
+    const timer = setTimeout(() => {
+      if (priorityStartAlarmSyncRef.current === priorityStart) return;
+      priorityStartAlarmSyncRef.current = priorityStart;
+      void syncPriorityDayStartAlarm({ enabled: true, startHhmm: priorityStart });
+    }, 400);
+    return () => clearTimeout(timer);
   }, [priorityStart]);
 
   /** 담기 구간이 바뀌면 수분 주기 알림(매일) 재예약 */
@@ -410,7 +416,7 @@ export function DayPlanPage() {
         .filter((t) => t.length > 0);
       const lines = draftLines.length > 0 ? draftLines : memoLines;
       if (lines.length === 0) {
-        Alert.alert('메모 필요', '라이브 액티비티에 표시할 빠른 메모를 하나 이상 입력해 주세요.');
+        Alert.alert('메모 필요', '잠금화면에 표시할 메모를 하나 이상 입력해 주세요.');
         return;
       }
 
@@ -437,7 +443,7 @@ export function DayPlanPage() {
           Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 일정만 저장할 수 있어요.');
           return;
         }
-        Alert.alert('저장 실패', '빠른 메모를 일정으로 저장하지 못했습니다.');
+        Alert.alert('저장 실패', '잠금화면 메모를 일정으로 저장하지 못했습니다.');
         return;
       }
 
@@ -693,7 +699,10 @@ export function DayPlanPage() {
       return;
     }
     if (planMode === 'quickMemo') {
-      registerPrimaryAction(null, { disabled: true, label: '메모 저장', hidden: true });
+      registerPrimaryAction(null, { disabled: true, label: '잠금화면 메모 저장', hidden: true });
+      return;
+    }
+    if (planMode === 'weekly' || planMode === 'monthly') {
       return;
     }
     registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });

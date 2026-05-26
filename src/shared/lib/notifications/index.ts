@@ -2,6 +2,8 @@ export {
   addLocalNotificationReceivedListener,
   addLocalNotificationResponseListener,
   cancelLocalNotificationsById,
+  cancelScheduledNotificationByIdentifier,
+  cancelScheduledNotificationsByEventType,
   ensureLocalNotificationPermission,
   getLocalNotificationPermissionSnapshot,
   scheduleDailyLocalNotification,

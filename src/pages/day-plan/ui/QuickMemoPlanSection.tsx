@@ -59,7 +59,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
         value={draft}
         onChangeText={onChangeDraft}
         onContentSizeChange={() => onInputContentSizeChange?.()}
-        placeholder="빠르게 메모해보세요"
+        placeholder="잠금화면에 표시할 메모를 입력하세요"
         placeholderTextColor={c.outline}
         multiline
         /** 내부 스크롤을 끄면 엔터로 줄이 늘어날 때 바깥 ScrollView·키보드 회피 레이아웃이 따라간다 */
@@ -79,7 +79,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
       <View style={styles.gradientHint} />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="메모 저장"
+        accessibilityLabel="잠금화면 메모 저장"
         onPress={onSavePress}
         style={({ pressed }) => [
           styles.saveBtn,

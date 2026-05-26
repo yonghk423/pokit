@@ -2,10 +2,32 @@ import { formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import {
   cancelLocalNotificationsById,
+  cancelScheduledNotificationByIdentifier,
+  cancelScheduledNotificationsByEventType,
   ensureLocalNotificationPermission,
   scheduleDailyLocalNotification,
 } from '@shared/lib/notifications';
 import { loadPriorityDayStartAlarm, savePriorityDayStartAlarm } from '@shared/lib/storage';
+
+/** OS 예약 ID — 재예약 시 동일 ID로 덮어써 중복 방지 */
+export const PRIORITY_DAY_START_NOTIFICATION_ID = 'pokit:priority-day-start';
+const PRIORITY_DAY_START_EVENT_TYPE = 'priorityDayStart';
+
+let syncInFlight: Promise<boolean> | null = null;
+let lastSyncedAlarmKey = '';
+
+function buildSyncKey(enabled: boolean, startHhmm: string): string {
+  return `${enabled ? '1' : '0'}:${startHhmm.trim()}`;
+}
+
+async function cancelAllPriorityDayStartNotifications(): Promise<void> {
+  const prev = loadPriorityDayStartAlarm();
+  await cancelScheduledNotificationByIdentifier(PRIORITY_DAY_START_NOTIFICATION_ID);
+  if (prev.notificationId && prev.notificationId !== PRIORITY_DAY_START_NOTIFICATION_ID) {
+    await cancelLocalNotificationsById([prev.notificationId]);
+  }
+  await cancelScheduledNotificationsByEventType(PRIORITY_DAY_START_EVENT_TYPE);
+}
 
 /**
  * 저장된「하루 시작」알림을 끄거나, `startHhmm`에 맞춰 매일 반복 알림을 다시 예약합니다.
@@ -15,48 +37,68 @@ export async function syncPriorityDayStartAlarm(input: {
   enabled: boolean;
   startHhmm: string;
 }): Promise<boolean> {
-  try {
-    const prev = loadPriorityDayStartAlarm();
-    if (prev.notificationId) {
-      await cancelLocalNotificationsById([prev.notificationId]);
-    }
-
-    if (!input.enabled) {
-      savePriorityDayStartAlarm({ enabled: false, notificationId: null });
-      return true;
-    }
-
-    const m = parseHHmmToMinutes(input.startHhmm);
-    if (m === null || m >= 24 * 60) {
-      savePriorityDayStartAlarm({ enabled: false, notificationId: null });
-      return false;
-    }
-
-    const permitted = await ensureLocalNotificationPermission();
-    if (!permitted) {
-      savePriorityDayStartAlarm({ enabled: false, notificationId: null });
-      return false;
-    }
-
-    const hour = Math.floor(m / 60);
-    const minute = m % 60;
-    const startLabel = formatHhmmClockKo(input.startHhmm);
-    const nid = await scheduleDailyLocalNotification({
-      title: '오늘이 시작됐어요',
-      body: `하루 시작 · ${startLabel} 시간 입니다.`,
-      hour,
-      minute,
-      data: { eventType: 'priorityDayStart' },
-    });
-
-    if (!nid) {
-      savePriorityDayStartAlarm({ enabled: false, notificationId: null });
-      return false;
-    }
-
-    savePriorityDayStartAlarm({ enabled: true, notificationId: nid });
-    return true;
-  } finally {
-    void useLocalNotificationsStore.getState().refreshPermission();
+  const syncKey = buildSyncKey(input.enabled, input.startHhmm);
+  if (syncInFlight) {
+    return syncInFlight;
   }
+
+  syncInFlight = (async () => {
+    try {
+      if (syncKey === lastSyncedAlarmKey) {
+        return true;
+      }
+
+      await cancelAllPriorityDayStartNotifications();
+
+      if (!input.enabled) {
+        savePriorityDayStartAlarm({ enabled: false, notificationId: null });
+        lastSyncedAlarmKey = syncKey;
+        return true;
+      }
+
+      const m = parseHHmmToMinutes(input.startHhmm);
+      if (m === null || m >= 24 * 60) {
+        savePriorityDayStartAlarm({ enabled: false, notificationId: null });
+        lastSyncedAlarmKey = syncKey;
+        return false;
+      }
+
+      const permitted = await ensureLocalNotificationPermission();
+      if (!permitted) {
+        savePriorityDayStartAlarm({ enabled: false, notificationId: null });
+        lastSyncedAlarmKey = syncKey;
+        return false;
+      }
+
+      const hour = Math.floor(m / 60);
+      const minute = m % 60;
+      const startLabel = formatHhmmClockKo(input.startHhmm);
+      const nid = await scheduleDailyLocalNotification({
+        identifier: PRIORITY_DAY_START_NOTIFICATION_ID,
+        title: '오늘이 시작됐어요',
+        body: `하루 시작 · ${startLabel} 시간 입니다.`,
+        hour,
+        minute,
+        data: { eventType: PRIORITY_DAY_START_EVENT_TYPE },
+      });
+
+      if (!nid) {
+        savePriorityDayStartAlarm({ enabled: false, notificationId: null });
+        lastSyncedAlarmKey = syncKey;
+        return false;
+      }
+
+      savePriorityDayStartAlarm({
+        enabled: true,
+        notificationId: nid,
+      });
+      lastSyncedAlarmKey = syncKey;
+      return true;
+    } finally {
+      syncInFlight = null;
+      void useLocalNotificationsStore.getState().refreshPermission();
+    }
+  })();
+
+  return syncInFlight;
 }

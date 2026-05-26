@@ -1,43 +1,28 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { addDaysToLocalDateKey, getLocalDateKey, parseLocalDateKeyToDate } from '@entities/day-plan';
-import { IconSymbol } from '@shared/ui/icon-symbol';
-import { ThemedText } from '@shared/ui/themed-text';
+import { addDaysToLocalDateKey, getLocalDateKey } from '@entities/day-plan';
+import { useHorizonCompletionStore } from '@entities/horizon-completion';
+import {
+  horizonDocumentHasContent,
+  horizonDocumentToPlainText,
+  horizonWeeklyDayMemoHasContent,
+  loadHorizonWeeklyDayMemo,
+  loadWeeklyGoalDocument,
+  saveHorizonWeeklyDayMemo,
+  saveWeeklyGoalDocument,
+  type HorizonGoalDocument,
+} from '@shared/lib/storage';
 
+import { buildHorizonWeekDays, getHorizonWeekStartKey } from '../lib/buildHorizonWeekDays';
+import { formatWeekPeriodBadge } from '../lib/formatHorizonPeriod';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
-
-const WEEKDAY_KO = ['일', '월', '화', '수', '목', '금', '토'] as const;
-
-function getWeekRange(dateKey: string): { start: string; end: string; days: string[] } {
-  const d = parseLocalDateKeyToDate(dateKey);
-  if (!d) return { start: dateKey, end: dateKey, days: [dateKey] };
-  const dow = d.getDay();
-  const mondayOffset = dow === 0 ? -6 : 1 - dow;
-  const monday = addDaysToLocalDateKey(dateKey, mondayOffset);
-  const days: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    days.push(addDaysToLocalDateKey(monday, i));
-  }
-  return { start: days[0], end: days[6], days };
-}
-
-function parseDayNum(dateKey: string): number {
-  const m = /^\d{4}-\d{2}-(\d{2})$/.exec(dateKey);
-  return m ? parseInt(m[1], 10) : 0;
-}
-
-function formatWeekHeader(start: string, end: string): string {
-  const sm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(start);
-  const em = /^(\d{4})-(\d{2})-(\d{2})$/.exec(end);
-  if (!sm || !em) return '';
-  const sMonth = parseInt(sm[2], 10);
-  const sDay = parseInt(sm[3], 10);
-  const eMonth = parseInt(em[2], 10);
-  const eDay = parseInt(em[3], 10);
-  if (sMonth === eMonth) return `${sMonth}월 ${sDay}일 ~ ${eDay}일`;
-  return `${sMonth}월 ${sDay}일 ~ ${eMonth}월 ${eDay}일`;
-}
+import { HorizonCalendarSheet } from './horizon/HorizonCalendarSheet';
+import { HorizonFocusCard } from './horizon/HorizonFocusCard';
+import { HorizonPeriodHeader } from './horizon/HorizonPeriodHeader';
+import { HorizonWeekDayMemoCard } from './horizon/HorizonWeekDayMemoCard';
+import { HorizonWeekDayStrip } from './horizon/HorizonWeekDayStrip';
 
 type Props = {
   c: DayPlanPalette;
@@ -48,92 +33,192 @@ export function WeeklyPlanSection({ c, isDark }: Props) {
   const todayKey = useMemo(() => getLocalDateKey(), []);
   const [anchorDate, setAnchorDate] = useState(todayKey);
 
-  const { start, end, days } = useMemo(() => getWeekRange(anchorDate), [anchorDate]);
+  const weekStart = useMemo(() => getHorizonWeekStartKey(anchorDate), [anchorDate]);
 
-  const [selectedDay, setSelectedDay] = useState(todayKey);
+  const [document, setDocument] = useState<HorizonGoalDocument>(() =>
+    loadWeeklyGoalDocument(weekStart),
+  );
+  const [syncTick, setSyncTick] = useState(0);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [dayMemoDraft, setDayMemoDraft] = useState(() => loadHorizonWeeklyDayMemo(todayKey));
+  const [dayMemoSyncTick, setDayMemoSyncTick] = useState(0);
+  const anchorDateRef = useRef(anchorDate);
+  const dayMemoDraftRef = useRef(dayMemoDraft);
+  const dayMemoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const goWeek = useCallback(
-    (delta: number) => {
-      setAnchorDate((prev) => addDaysToLocalDateKey(prev, delta * 7));
+  useEffect(() => {
+    dayMemoDraftRef.current = dayMemoDraft;
+  }, [dayMemoDraft]);
+
+  useEffect(() => {
+    const leaving = anchorDateRef.current;
+    if (leaving !== anchorDate) {
+      if (dayMemoSaveTimerRef.current) {
+        clearTimeout(dayMemoSaveTimerRef.current);
+        dayMemoSaveTimerRef.current = null;
+      }
+      saveHorizonWeeklyDayMemo(leaving, dayMemoDraftRef.current);
+      setDayMemoSyncTick((t) => t + 1);
+      anchorDateRef.current = anchorDate;
+    }
+    setDayMemoDraft(loadHorizonWeeklyDayMemo(anchorDate));
+  }, [anchorDate]);
+
+  useEffect(
+    () => () => {
+      if (dayMemoSaveTimerRef.current) clearTimeout(dayMemoSaveTimerRef.current);
+      saveHorizonWeeklyDayMemo(anchorDateRef.current, dayMemoDraftRef.current);
     },
     [],
   );
 
-  const pillBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
-  const selectedBg = c.onSurface;
-  const selectedText = isDark ? '#09090b' : '#ffffff';
-  const todayRing = c.onSurface;
+  const onChangeDayMemo = useCallback(
+    (next: string) => {
+      setDayMemoDraft(next);
+      if (dayMemoSaveTimerRef.current) clearTimeout(dayMemoSaveTimerRef.current);
+      dayMemoSaveTimerRef.current = setTimeout(() => {
+        saveHorizonWeeklyDayMemo(anchorDateRef.current, next);
+        setDayMemoSyncTick((t) => t + 1);
+      }, 400);
+    },
+    [],
+  );
+
+  const dayMemoSyncLabel = dayMemoSyncTick > 0 ? '방금 저장됨' : '자동 저장';
+
+  useEffect(() => {
+    setDocument(loadWeeklyGoalDocument(weekStart));
+  }, [weekStart]);
+
+  const persistDocument = useCallback(
+    (next: HorizonGoalDocument) => {
+      saveWeeklyGoalDocument(weekStart, next);
+      setSyncTick((t) => t + 1);
+    },
+    [weekStart],
+  );
+
+  const onChangeDocument = useCallback(
+    (next: HorizonGoalDocument) => {
+      setDocument(next);
+      persistDocument(next);
+    },
+    [persistDocument],
+  );
+
+  const goWeek = useCallback((delta: number) => {
+    setAnchorDate((prev) => addDaysToLocalDateKey(prev, delta * 7));
+  }, []);
+
+  const syncLabel = syncTick > 0 ? '방금 저장됨' : '자동 저장';
+
+  const periodLabel = formatWeekPeriodBadge(weekStart);
+  const weekDays = useMemo(() => buildHorizonWeekDays(weekStart), [weekStart]);
+  const selectedDayCell = useMemo(
+    () => weekDays.find((day) => day.dateKey === anchorDate) ?? weekDays[0],
+    [anchorDate, weekDays],
+  );
+  const memoDateKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const day of weekDays) {
+      if (day.dateKey === anchorDate) {
+        if (dayMemoDraft.trim().length > 0) keys.add(day.dateKey);
+      } else if (horizonWeeklyDayMemoHasContent(day.dateKey)) {
+        keys.add(day.dateKey);
+      }
+    }
+    return keys;
+  }, [weekDays, dayMemoSyncTick, anchorDate, dayMemoDraft]);
+  const hasContent = useMemo(() => horizonDocumentHasContent(document), [document]);
+
+  const hydrateCompletions = useHorizonCompletionStore((s) => s.hydrate);
+  const markWeeklyComplete = useHorizonCompletionStore((s) => s.markWeeklyComplete);
+  const cancelWeeklyComplete = useHorizonCompletionStore((s) => s.cancelWeeklyComplete);
+  const weeklyCompletion = useHorizonCompletionStore((s) => s.weeklyByKey[weekStart]);
+  const isCompleted = Boolean(weeklyCompletion);
+
+  useEffect(() => {
+    hydrateCompletions();
+  }, [hydrateCompletions]);
+
+  const onCompletePress = useCallback(() => {
+    if (isCompleted) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      cancelWeeklyComplete(weekStart);
+      return;
+    }
+    if (!hasContent) return;
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    markWeeklyComplete({
+      periodKey: weekStart,
+      label: periodLabel,
+      completedAt: new Date().toISOString(),
+      summaryText: horizonDocumentToPlainText(document),
+    });
+  }, [
+    cancelWeeklyComplete,
+    document,
+    hasContent,
+    isCompleted,
+    markWeeklyComplete,
+    periodLabel,
+    weekStart,
+  ]);
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="이전 주"
-          hitSlop={12}
-          onPress={() => goWeek(-1)}>
-          <IconSymbol name="chevron.left" size={18} color={c.onVariant} />
-        </Pressable>
-        <ThemedText style={[styles.headerTitle, { color: c.onSurface }]}>
-          {formatWeekHeader(start, end)}
-        </ThemedText>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="다음 주"
-          hitSlop={12}
-          onPress={() => goWeek(1)}>
-          <IconSymbol name="chevron.right" size={18} color={c.onVariant} />
-        </Pressable>
-      </View>
-
-      <View style={styles.weekRow}>
-        {days.map((dayKey, i) => {
-          const isSelected = dayKey === selectedDay;
-          const isToday = dayKey === todayKey;
-          const dayNum = parseDayNum(dayKey);
-          const dow = WEEKDAY_KO[parseLocalDateKeyToDate(dayKey)?.getDay() ?? 0];
-
-          return (
-            <Pressable
-              key={dayKey}
-              accessibilityRole="button"
-              accessibilityLabel={`${dayNum}일 ${dow}요일`}
-              onPress={() => setSelectedDay(dayKey)}
-              style={[
-                styles.dayCell,
-                isSelected && { backgroundColor: selectedBg },
-                !isSelected && isToday && { borderColor: todayRing, borderWidth: 1.5 },
-                !isSelected && !isToday && { backgroundColor: pillBg },
-              ]}>
-              <ThemedText
-                style={[
-                  styles.dayLabel,
-                  { color: isSelected ? selectedText : c.onVariant },
-                  (i === 0 || i === 6) && !isSelected && { color: c.outline },
-                ]}>
-                {dow}
-              </ThemedText>
-              <ThemedText
-                style={[
-                  styles.dayNum,
-                  { color: isSelected ? selectedText : c.onSurface },
-                  (i === 0 || i === 6) && !isSelected && { color: c.outline },
-                ]}>
-                {dayNum}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={[styles.contentArea, { borderColor: c.catBorderIdle }]}>
-        <ThemedText style={[styles.selectedDateTitle, { color: c.onSurface }]}>
-          {parseDayNum(selectedDay)}일 {WEEKDAY_KO[parseLocalDateKeyToDate(selectedDay)?.getDay() ?? 0]}요일
-        </ThemedText>
-        <ThemedText style={[styles.emptyHint, { color: c.onVariant }]}>
-          이 날의 루틴과 목표를 여기에 표시할 예정이에요.
-        </ThemedText>
-      </View>
+      <HorizonPeriodHeader
+        c={c}
+        isDark={isDark}
+        label={periodLabel}
+        onPrev={() => goWeek(-1)}
+        onNext={() => goWeek(1)}
+        onOpenCalendar={() => setCalendarOpen(true)}
+      />
+      <HorizonCalendarSheet
+        c={c}
+        isDark={isDark}
+        visible={calendarOpen}
+        mode="day"
+        focusDateKey={anchorDate}
+        todayDateKey={todayKey}
+        onClose={() => setCalendarOpen(false)}
+        onSelectDay={setAnchorDate}
+        onSelectMonth={() => {}}
+      />
+      <HorizonWeekDayStrip
+        c={c}
+        isDark={isDark}
+        days={weekDays}
+        selectedDateKey={anchorDate}
+        todayDateKey={todayKey}
+        memoDateKeys={memoDateKeys}
+        onSelectDate={setAnchorDate}
+      />
+      {selectedDayCell ? (
+        <HorizonWeekDayMemoCard
+          c={c}
+          isDark={isDark}
+          dateKey={selectedDayCell.dateKey}
+          weekdayLabel={selectedDayCell.weekdayLabel}
+          text={dayMemoDraft}
+          onChangeText={onChangeDayMemo}
+          syncLabel={dayMemoSyncLabel}
+        />
+      ) : null}
+      <HorizonFocusCard
+        c={c}
+        isDark={isDark}
+        strategyEyebrow="주간 전략"
+        document={document}
+        onChangeDocument={onChangeDocument}
+        syncLabel={syncLabel}
+        showCompleteButton
+        completeLabel={isCompleted ? '완료 취소' : '완료'}
+        completeTone={isCompleted ? 'ghost' : 'primary'}
+        completeDisabled={!isCompleted && !hasContent}
+        onCompletePress={onCompletePress}
+      />
     </View>
   );
 }
@@ -141,55 +226,7 @@ export function WeeklyPlanSection({ c, isDark }: Props) {
 const styles = StyleSheet.create({
   root: {
     width: '100%',
-    paddingHorizontal: 20,
-    gap: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  weekRow: {
-    flexDirection: 'row',
-    gap: 6,
-    justifyContent: 'space-between',
-  },
-  dayCell: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  dayLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  dayNum: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  contentArea: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 20,
-    gap: 8,
-    minHeight: 160,
-  },
-  selectedDateTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  emptyHint: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
 });
