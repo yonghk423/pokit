@@ -8,7 +8,8 @@ export type HistoryDailyStatCategorySource = Pick<
 /** 해당 날짜에 루틴 달성 기록이 있는지 */
 export function dayHasCompletionActivity(row: HistoryDailyStat | undefined): boolean {
   if (!row) return false;
-  return row.completedFlowCount > 0 || row.completionRate > 0;
+  const completionsFromCategories = sumCategoryCompletions(getCategoryCompletions(row));
+  return row.completedFlowCount > 0 || completionsFromCategories > 0 || row.completionRate > 0;
 }
 
 /** 카테고리별 완료 횟수(구버전 categoryMinutes는 1회로 환산) */

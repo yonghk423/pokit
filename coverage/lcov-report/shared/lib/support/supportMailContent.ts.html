@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">68.42% </span>
+                <span class="strong">89.47% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>13/19</span>
+                <span class='fraction'>17/19</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">26.66% </span>
+                <span class="strong">46.66% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>8/30</span>
+                <span class='fraction'>14/30</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">70.58% </span>
+                <span class="strong">88.23% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>12/17</span>
+                <span class='fraction'>15/17</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -121,11 +121,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -133,28 +133,28 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -186,15 +186,15 @@ export function getSupportMailSubject(): string {
  */
 export function getSupportMailBody(): string {
   const deviceLine = (() =&gt; {
-    <span class="missing-if-branch" title="else path not taken" >E</span>if (Platform.OS === 'ios') {
+    if (Platform.OS === 'ios') {
       const id = Device.modelId;
       const name = Device.modelName;
-      <span class="missing-if-branch" title="else path not taken" >E</span>if (id &amp;&amp; name) return `${name} (${id})`;
-<span class="cstat-no" title="statement not covered" >      if (id) <span class="cstat-no" title="statement not covered" >return id;</span></span>
+      if (id &amp;&amp; name) return `${name} (${id})`;
+      <span class="missing-if-branch" title="else path not taken" >E</span>if (id) return id;
 <span class="cstat-no" title="statement not covered" >      return name ?? '—';</span>
     }
-<span class="cstat-no" title="statement not covered" >    if (Platform.OS === 'android') {</span>
-<span class="cstat-no" title="statement not covered" >      return [Device.manufacturer, Device.modelName].filter(Boolean).join(' ') || '—';</span>
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (Platform.OS === 'android') {
+      return [Device.manufacturer, Device.modelName].filter(Boolean).join(' ') || <span class="branch-1 cbranch-no" title="branch not covered" >'—';</span>
     }
 <span class="cstat-no" title="statement not covered" >    return Device.modelName ?? '—';</span>
   })();
@@ -204,7 +204,7 @@ export function getSupportMailBody(): string {
     (<span class="branch-1 cbranch-no" title="branch not covered" >Platform.OS === 'ios' ? 'iOS' : Platform.OS === 'android' ? 'Android' : Platform.OS)</span>;
   const osVer = Device.osVersion ?? <span class="branch-1 cbranch-no" title="branch not covered" >String(Platform.Version);</span>
 &nbsp;
-  const appVer = Application.nativeApplicationVersion ?? <span class="branch-1 cbranch-no" title="branch not covered" >Constants.expoConfig?.version </span>?? <span class="branch-2 cbranch-no" title="branch not covered" >'—';</span>
+  const appVer = Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? <span class="branch-2 cbranch-no" title="branch not covered" >'—';</span>
 &nbsp;
   return [
     '문의 내용을 아래에 적어 주세요.',
@@ -226,7 +226,7 @@ export function getDisplayedAppVersionLabel(): string {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-24T15:05:07.586Z
+                at 2026-05-27T04:03:09.701Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -1,4 +1,8 @@
-import { getLocalDateKey, localDateToDateKey, parseLocalDateKeyToDate } from '@entities/day-plan';
+import {
+  getLocalDateKey,
+  localDateToDateKey,
+  parseLocalDateKeyToDate,
+} from '@entities/day-plan/lib/localDateKey';
 
 export function toMonthStart(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1, 12, 0, 0, 0);

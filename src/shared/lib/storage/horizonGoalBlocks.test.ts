@@ -2,6 +2,7 @@ import {
   createHorizonBlock,
   estimateHorizonDocumentProgress,
   getNumberedBlockOrder,
+  horizonDocumentHasContent,
   horizonDocumentToPlainText,
   parseHorizonGoalDocument,
 } from './horizonGoalBlocks';
@@ -57,5 +58,39 @@ describe('horizonGoalBlocks', () => {
       ],
     });
     expect(estimateHorizonDocumentProgress(doc)).toBe(50);
+  });
+
+  it('detects empty document', () => {
+    expect(horizonDocumentHasContent(parseHorizonGoalDocument(''))).toBe(false);
+    expect(
+      horizonDocumentHasContent(
+        parseHorizonGoalDocument({
+          version: 2,
+          blocks: [createHorizonBlock('paragraph', { text: '   ' })],
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it('serializes bullet and checklist blocks', () => {
+    const doc = parseHorizonGoalDocument({
+      version: 2,
+      blocks: [
+        createHorizonBlock('bullet', { text: '항목' }),
+        createHorizonBlock('checklist', { text: '할 일', checked: false }),
+      ],
+    });
+    expect(horizonDocumentToPlainText(doc)).toBe('• 항목\n[ ] 할 일');
+  });
+
+  it('estimates line-based progress when no checklist', () => {
+    const doc = parseHorizonGoalDocument({
+      version: 2,
+      blocks: [
+        createHorizonBlock('paragraph', { text: 'a' }),
+        createHorizonBlock('paragraph', { text: 'b' }),
+      ],
+    });
+    expect(estimateHorizonDocumentProgress(doc)).toBe(22);
   });
 });

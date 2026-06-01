@@ -573,7 +573,7 @@ private struct PokitLiveActivityView: View {
     /// 안쪽에 또 `RoundedRectangle` 배경을 두면 가장자리에 배경이 비쳐 "투명 링"처럼 보인다.
     /// → 배경은 이 뷰 전체를 한 번에 채우고, 내용만 안쪽 패딩으로 배치한다.
     ZStack(alignment: .topLeading) {
-      Color.black.opacity(0.94)
+      QuickMemoModeLiveActivityView.lockScreenBackground
 
       Group {
         if isQuickMemoMode {
@@ -584,12 +584,7 @@ private struct PokitLiveActivityView: View {
           priorityFallbackLockScreenBody()
         }
       }
-      /// 빠른 메모: 안쪽 카드 없이 부모 `Color.black`만 쓰므로, 여기 패딩이 화면과 본문 사이 유일한 여백이다.
-      .padding(
-        isQuickMemoMode
-          ? EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12)
-          : EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10)
-      )
+      .padding(QuickMemoModeLiveActivityView.lockScreenContentInsets)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }

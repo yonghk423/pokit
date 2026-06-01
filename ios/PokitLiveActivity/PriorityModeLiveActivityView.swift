@@ -5,6 +5,8 @@ import WidgetKit
 @available(iOS 16.1, *)
 enum PriorityModeLiveActivityView {
   private static let orange = Color(red: 0.78, green: 0.78, blue: 0.82)
+  private static let headlineColor = Color(red: 0.10, green: 0.10, blue: 0.10)
+  private static let mutedColor = headlineColor.opacity(0.55)
 
   @ViewBuilder
   static func lockScreenBody(
@@ -148,18 +150,15 @@ enum PriorityModeLiveActivityView {
     /// 잠금화면 배너 허용 높이를 최대한 쓰고, 넘치면 `…` 말줄임을 붙인다.
     /// 숫자가 너무 작으면 내용이 적을 때도 일찍 말줄임됨 → 넉넉히 20.
     let maxListLines = 20
-
-    let padH: CGFloat = compact ? 10 : 12
-    let padV: CGFloat = compact ? 8 : 10
-    let windowSize: CGFloat = compact ? 9 : 10
-    let listTitleSize: CGFloat = compact ? 13 : 14.5
+    let listTitleSize: CGFloat = 19
+    let pokitLabelSize: CGFloat = 11
 
     let visibleRows = Array(listSource.prefix(maxListLines))
     let hasMore = listSource.count > visibleRows.count
     /// QuickMemo와 동일하게 `Text`의 줄바꿈·`lineSpacing`으로 intrinsic 세로 높이를 쌓는다.
     /// `ForEach` 한 줄 행만 두면 Live Activity가 얇은 intrinsic 높이로 잡는 경우가 많다.
-    let listBodyFont = Font.system(size: listTitleSize, weight: .semibold)
-    let listLineSpacing: CGFloat = compact ? 5 : 6
+    let listBodyFont = Font.system(size: listTitleSize, weight: .bold)
+    let listLineSpacing: CGFloat = 2
     let listMultiline: String = {
       if visibleRows.isEmpty { return "" }
       /// 행별 시각은 헤더 `windowLabel`에 이미 있으므로 본문에서는 제목만 줄 단위로 쌓는다(퀵메모의 `\n`과 동일한 효과).
@@ -169,46 +168,46 @@ enum PriorityModeLiveActivityView {
       if hasMore { lines.append("…") }
       return lines.joined(separator: "\n")
     }()
+    let window = p.windowLabel.trimmingCharacters(in: .whitespacesAndNewlines)
 
-    VStack(alignment: .leading, spacing: compact ? 6 : 8) {
+    VStack(alignment: .leading, spacing: 8) {
       HStack(alignment: .center, spacing: 8) {
-        HStack(spacing: compact ? 4 : 5) {
-          Image(systemName: "bag.fill")
-            .font(.system(size: compact ? 11 : 12, weight: .semibold))
-            .foregroundStyle(orange)
-          Text("POKIT")
-            .font(.system(size: compact ? 12 : 12.5, weight: .heavy))
-            .foregroundStyle(.white)
-            .tracking(-0.2)
-        }
-        Spacer(minLength: 6)
-        Text(p.windowLabel)
-          .font(.system(size: windowSize, weight: .bold))
-          .foregroundStyle(.white.opacity(0.55))
+        Image(systemName: "bag.fill")
+          .font(.system(size: 12, weight: .semibold))
+          .foregroundStyle(orange)
+        Text("POKIT")
+          .font(.system(size: pokitLabelSize, weight: .heavy))
+          .foregroundStyle(headlineColor.opacity(0.60))
+          .tracking(-0.2)
           .lineLimit(1)
-          .minimumScaleFactor(0.7)
+      }
+
+      if !window.isEmpty {
+        Text(window)
+          .font(.system(size: 10, weight: .bold))
+          .foregroundStyle(mutedColor)
+          .lineLimit(1)
+          .minimumScaleFactor(0.75)
       }
 
       if !listSource.isEmpty {
         Text(listMultiline)
           .font(listBodyFont)
-          .foregroundStyle(.white)
+          .foregroundStyle(headlineColor)
           .lineSpacing(listLineSpacing)
           .lineLimit(maxListLines + 1)
-          .minimumScaleFactor(0.72)
+          .minimumScaleFactor(0.80)
           .multilineTextAlignment(.leading)
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       } else {
         Text(p.activeTitle)
-          .font(.system(size: listTitleSize + 1, weight: .bold))
-          .foregroundStyle(.white)
+          .font(listBodyFont)
+          .foregroundStyle(headlineColor)
           .lineLimit(2)
-          .minimumScaleFactor(0.78)
+          .minimumScaleFactor(0.80)
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       }
     }
-    .padding(.horizontal, padH)
-    .padding(.vertical, padV)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 

@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/16</span>
+                <span class='fraction'>16/16</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">90% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>9/10</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -115,26 +115,26 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">32x</span>
+<span class="cline-any cline-yes">32x</span>
+<span class="cline-any cline-yes">32x</span>
+<span class="cline-any cline-yes">64x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">32x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -152,27 +152,27 @@ import {
  * `lockflow:*` 키를 `pokit:*`로 1회 복사한다.
  * 신규 키에 값이 없고 레거시 키에만 있을 때만 이전한다.
  */
-export async function <span class="fstat-no" title="function not covered" >migrateLegacyStorageKeys(</span>): Promise&lt;void&gt; {
-<span class="cstat-no" title="statement not covered" >  if (Platform.OS === 'web') <span class="cstat-no" title="statement not covered" >return;</span></span>
+export async function migrateLegacyStorageKeys(): Promise&lt;void&gt; {
+  if (Platform.OS === 'web') return;
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  try {</span>
-    const alreadyMigrated = <span class="cstat-no" title="statement not covered" >await AsyncStorage.getItem(STORAGE_MIGRATION_FLAG_KEY);</span>
-<span class="cstat-no" title="statement not covered" >    if (alreadyMigrated === '1') <span class="cstat-no" title="statement not covered" >return;</span></span>
+  try {
+    const alreadyMigrated = await AsyncStorage.getItem(STORAGE_MIGRATION_FLAG_KEY);
+    if (alreadyMigrated === '1') return;
 &nbsp;
-    const pairs = <span class="cstat-no" title="statement not covered" >Object.keys(StorageKeys) as (keyof typeof StorageKeys)[];</span>
-<span class="cstat-no" title="statement not covered" >    for (const name of pairs) {</span>
-      const nextKey = <span class="cstat-no" title="statement not covered" >StorageKeys[name];</span>
-      const legacyKey = <span class="cstat-no" title="statement not covered" >LegacyStorageKeys[name];</span>
-      const [nextValue, legacyValue] = <span class="cstat-no" title="statement not covered" >await AsyncStorage.multiGet([nextKey, legacyKey]).then(</span>
-<span class="fstat-no" title="function not covered" >        (r</span>ows) =&gt; <span class="cstat-no" title="statement not covered" >rows.map(<span class="fstat-no" title="function not covered" >([</span>, value]) =&gt; <span class="cstat-no" title="statement not covered" >value)</span>,</span>
+    const pairs = Object.keys(StorageKeys) as (keyof typeof StorageKeys)[];
+    for (const name of pairs) {
+      const nextKey = StorageKeys[name];
+      const legacyKey = LegacyStorageKeys[name];
+      const [nextValue, legacyValue] = await AsyncStorage.multiGet([nextKey, legacyKey]).then(
+        (rows) =&gt; rows.map(([, value]) =&gt; value),
       );
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      if ((nextValue == null || nextValue === '') &amp;&amp; legacyValue != null &amp;&amp; legacyValue !== '') {</span>
-<span class="cstat-no" title="statement not covered" >        await AsyncStorage.setItem(nextKey, legacyValue);</span>
+      if ((nextValue == null || <span class="branch-1 cbranch-no" title="branch not covered" >nextValue === '')</span> &amp;&amp; legacyValue != null &amp;&amp; legacyValue !== '') {
+        await AsyncStorage.setItem(nextKey, legacyValue);
       }
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    await AsyncStorage.setItem(STORAGE_MIGRATION_FLAG_KEY, '1');</span>
+    await AsyncStorage.setItem(STORAGE_MIGRATION_FLAG_KEY, '1');
   } catch {
     // 마이그레이션 실패는 앱 기동을 막지 않음
   }
@@ -184,7 +184,7 @@ export async function <span class="fstat-no" title="function not covered" >migra
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-24T15:05:07.586Z
+                at 2026-05-27T04:03:09.701Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

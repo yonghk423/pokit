@@ -9,17 +9,27 @@ import {
   categoryReminderLabelKo,
   getLocalDateKey,
 } from '@entities/day-plan';
+import { getCategoryCompletions, useHistoryStore, buildWeeklyHeatMapCells, buildConsistencyByWeekday, buildCategoryBreakdown } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
-import { getCategoryCompletions, useHistoryStore } from '@entities/history';
 
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedView } from '@shared/ui/themed-view';
+import {
+  aggregatePeriodActivities,
+  formatPeriodActivityLines,
+  getMonthlyPeriodRange,
+  getWeeklyPeriodRange,
+} from '../lib/periodActivitySummary';
+import {
+  resolveMonthlyCompletionDocument,
+  resolveWeeklyCompletionDocument,
+} from '@shared/lib/storage';
 import {
   buildCategoryGrowthDisplayRows,
   sortCategoryBreakdownRows,
 } from '../lib/categoryGrowthDisplay';
 import { getChartGrassPalette } from '../lib/chartGrassColors';
-import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { ThemedText } from '@shared/ui/themed-text';
-import { ThemedView } from '@shared/ui/themed-view';
 
 import { StatisticsCompletionList } from './StatisticsCompletionList';
 
@@ -71,21 +81,17 @@ export function DayPlanStatisticsPage() {
   const {
     isHydrated,
     hydrate,
+    reloadFromStorage,
     dailyStatsByDate,
     selectCurrentStreak,
-    selectWeeklyHeatMap,
-    selectCategoryBreakdown,
-    selectConsistencyByWeekday,
     selectGrowthVsPreviousWeek,
   } = useHistoryStore(
     useShallow((s) => ({
       isHydrated: s.isHydrated,
       hydrate: s.hydrate,
+      reloadFromStorage: s.reloadFromStorage,
       dailyStatsByDate: s.dailyStatsByDate,
       selectCurrentStreak: s.selectCurrentStreak,
-      selectWeeklyHeatMap: s.selectWeeklyHeatMap,
-      selectCategoryBreakdown: s.selectCategoryBreakdown,
-      selectConsistencyByWeekday: s.selectConsistencyByWeekday,
       selectGrowthVsPreviousWeek: s.selectGrowthVsPreviousWeek,
     })),
   );
@@ -94,7 +100,7 @@ export function DayPlanStatisticsPage() {
     hydrate();
   }, [hydrate]);
 
-  const hydrateHorizonCompletions = useHorizonCompletionStore((s) => s.hydrate);
+  const reloadHorizonCompletions = useHorizonCompletionStore((s) => s.reloadFromStorage);
   const weeklyByKey = useHorizonCompletionStore((s) => s.weeklyByKey);
   const monthlyByKey = useHorizonCompletionStore((s) => s.monthlyByKey);
   const weeklyCompletions = useMemo(
@@ -110,9 +116,9 @@ export function DayPlanStatisticsPage() {
 
   useFocusEffect(
     useCallback(() => {
-      hydrate();
-      hydrateHorizonCompletions();
-    }, [hydrate, hydrateHorizonCompletions]),
+      reloadFromStorage();
+      reloadHorizonCompletions();
+    }, [reloadFromStorage, reloadHorizonCompletions]),
   );
 
   const todayDateKey = getLocalDateKey();
@@ -152,8 +158,8 @@ export function DayPlanStatisticsPage() {
     [dailyStatsByDate, selectGrowthVsPreviousWeek, todayDateKey],
   );
   const heatMapCells = useMemo(
-    () => selectWeeklyHeatMap(4, todayDateKey),
-    [dailyStatsByDate, selectWeeklyHeatMap, todayDateKey],
+    () => buildWeeklyHeatMapCells(dailyStatsByDate, 4, todayDateKey),
+    [dailyStatsByDate, todayDateKey],
   );
   const heatMapRows = useMemo(() => {
     const rows: typeof heatMapCells[] = [];
@@ -163,8 +169,8 @@ export function DayPlanStatisticsPage() {
     return rows;
   }, [heatMapCells]);
   const categoryRowsBase = useMemo(
-    () => selectCategoryBreakdown(monthRange),
-    [dailyStatsByDate, monthRange, selectCategoryBreakdown],
+    () => buildCategoryBreakdown(dailyStatsByDate, monthRange),
+    [dailyStatsByDate, monthRange],
   );
   const currentWeekCategoryCompletions = useMemo(() => {
     const map: Record<string, number> = {};
@@ -258,9 +264,9 @@ export function DayPlanStatisticsPage() {
     () =>
       detailSheetRow
         ? Object.entries(getCategoryCompletions(detailSheetRow))
-            .map(([categoryKey, completions]) => ({ categoryKey, completions }))
-            .filter((row) => row.completions > 0)
-            .sort((a, b) => b.completions - a.completions)
+          .map(([categoryKey, completions]) => ({ categoryKey, completions }))
+          .filter((row) => row.completions > 0)
+          .sort((a, b) => b.completions - a.completions)
         : [],
     [detailSheetRow],
   );
@@ -279,8 +285,28 @@ export function DayPlanStatisticsPage() {
   }, [dailyStatsByDate, detailCategoryKey, detailSheetDateKey]);
   const detailCategoryMax = Math.max(1, ...detailCategorySeries.map((row) => row.completions));
   const consistencyRows = useMemo(
-    () => selectConsistencyByWeekday(consistencyMode === 'week' ? weekRange : monthRange),
-    [consistencyMode, dailyStatsByDate, monthRange, selectConsistencyByWeekday, weekRange],
+    () => buildConsistencyByWeekday(dailyStatsByDate, consistencyMode === 'week' ? weekRange : monthRange),
+    [consistencyMode, dailyStatsByDate, monthRange, weekRange],
+  );
+
+  const resolveWeeklyActivityLines = useCallback(
+    (periodKey: string) => {
+      const range = getWeeklyPeriodRange(periodKey);
+      return formatPeriodActivityLines(
+        aggregatePeriodActivities(dailyStatsByDate, range.startDateKey, range.endDateKey),
+      );
+    },
+    [dailyStatsByDate],
+  );
+
+  const resolveMonthlyActivityLines = useCallback(
+    (periodKey: string) => {
+      const range = getMonthlyPeriodRange(periodKey);
+      return formatPeriodActivityLines(
+        aggregatePeriodActivities(dailyStatsByDate, range.startDateKey, range.endDateKey),
+      );
+    },
+    [dailyStatsByDate],
   );
 
   const consistencyMax = Math.max(
@@ -411,6 +437,9 @@ export function DayPlanStatisticsPage() {
             emptyHint="아직 완료한 주가 없어요. 오늘 탭에서 주간 전략을 작성한 뒤 하단 완료를 눌러 주세요."
             entries={weeklyCompletions}
             tone={tone}
+            isDark={isDark}
+            resolveDocument={resolveWeeklyCompletionDocument}
+            resolveActivityLines={(entry) => resolveWeeklyActivityLines(entry.periodKey)}
           />
         ) : null}
 
@@ -420,6 +449,9 @@ export function DayPlanStatisticsPage() {
             emptyHint="아직 완료한 달이 없어요. 오늘 탭에서 월간 전략을 작성한 뒤 하단 완료를 눌러 주세요."
             entries={monthlyCompletions}
             tone={tone}
+            isDark={isDark}
+            resolveDocument={resolveMonthlyCompletionDocument}
+            resolveActivityLines={(entry) => resolveMonthlyActivityLines(entry.periodKey)}
           />
         ) : null}
 
@@ -460,316 +492,320 @@ export function DayPlanStatisticsPage() {
 
         {mainTab === 'daily' && dailySubTab === 'overview' ? (
           <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
-          <ThemedText style={styles.sectionTitle}>오늘의 통계 요약</ThemedText>
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
-              <ThemedText style={styles.summaryValue}>{streak}일</ThemedText>
-              <ThemedText style={styles.summaryLabel} lightColor={tone.muted} darkColor={tone.muted}>
-                연속 달성
-              </ThemedText>
+            <ThemedText style={styles.sectionTitle}>오늘의 통계 요약</ThemedText>
+            <View style={styles.summaryRow}>
+              <View style={styles.summaryItem}>
+                <ThemedText style={styles.summaryValue}>{streak}일</ThemedText>
+                <ThemedText style={styles.summaryLabel} lightColor={tone.muted} darkColor={tone.muted}>
+                  연속 달성
+                </ThemedText>
+              </View>
+              <View style={styles.summaryItem}>
+                <ThemedText style={styles.summaryValue}>
+                  {formatCountKo(growth.currentWeekCompletions)}
+                </ThemedText>
+                <ThemedText style={styles.summaryLabel} lightColor={tone.muted} darkColor={tone.muted}>
+                  이번 주 완료
+                </ThemedText>
+              </View>
+              <View style={styles.summaryItem}>
+                <ThemedText style={styles.summaryValue}>
+                  {growth.previousWeekCompletions <= 0
+                    ? growth.currentWeekCompletions > 0
+                      ? '+100%'
+                      : '0%'
+                    : `${Math.round(growth.diffRatio * 100)}%`}
+                </ThemedText>
+                <ThemedText style={styles.summaryLabel} lightColor={tone.muted} darkColor={tone.muted}>
+                  지난주 대비
+                </ThemedText>
+              </View>
             </View>
-            <View style={styles.summaryItem}>
-              <ThemedText style={styles.summaryValue}>
-                {formatCountKo(growth.currentWeekCompletions)}
-              </ThemedText>
-              <ThemedText style={styles.summaryLabel} lightColor={tone.muted} darkColor={tone.muted}>
-                이번 주 완료
-              </ThemedText>
-            </View>
-            <View style={styles.summaryItem}>
-              <ThemedText style={styles.summaryValue}>
-                {growth.previousWeekCompletions <= 0
-                  ? growth.currentWeekCompletions > 0
-                    ? '+100%'
-                    : '0%'
-                  : `${Math.round(growth.diffRatio * 100)}%`}
-              </ThemedText>
-              <ThemedText style={styles.summaryLabel} lightColor={tone.muted} darkColor={tone.muted}>
-                지난주 대비
-              </ThemedText>
-            </View>
-          </View>
-          <ThemedText style={styles.coachingMessage} lightColor={tone.muted} darkColor={tone.muted}>
-            {coachingMessage}
-          </ThemedText>
-          <View style={[styles.riskCard, { borderColor: tone.border, backgroundColor: tone.level0 }]}>
-            <ThemedText style={styles.riskTitle}>스트릭 리스크</ThemedText>
-            <ThemedText style={styles.riskBody} lightColor={tone.muted} darkColor={tone.muted}>
-              {streakRiskMessage}
+            <ThemedText style={styles.coachingMessage} lightColor={tone.muted} darkColor={tone.muted}>
+              {coachingMessage}
             </ThemedText>
-          </View>
+            <View style={[styles.riskCard, { borderColor: tone.border, backgroundColor: tone.level0 }]}>
+              <ThemedText style={styles.riskTitle}>스트릭 리스크</ThemedText>
+              <ThemedText style={styles.riskBody} lightColor={tone.muted} darkColor={tone.muted}>
+                {streakRiskMessage}
+              </ThemedText>
+            </View>
           </View>
         ) : null}
 
         {mainTab === 'daily' && dailySubTab === 'category' ? (
           <>
             <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
-          <ThemedText style={styles.sectionTitle}>카테고리 성장</ThemedText>
-          <ThemedText style={styles.sectionDesc} lightColor={tone.muted} darkColor={tone.muted}>
-            {categorySortDesc}
-          </ThemedText>
-          <View style={styles.categorySortRow}>
-            <Pressable
-              onPress={() => setCategorySortMode('share')}
-              style={[
-                styles.categorySortBtn,
-                categorySortMode === 'share' && { backgroundColor: isDark ? '#fafafa' : '#18181b' },
-              ]}>
-              <ThemedText
-                style={styles.categorySortLabel}
-                lightColor={categorySortMode === 'share' ? '#ffffff' : '#52525b'}
-                darkColor={categorySortMode === 'share' ? '#18181b' : '#a1a1aa'}>
-                비중순
+              <ThemedText style={styles.sectionTitle}>카테고리 성장</ThemedText>
+              <ThemedText style={styles.sectionDesc} lightColor={tone.muted} darkColor={tone.muted}>
+                {categorySortDesc}
               </ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={() => setCategorySortMode('growth')}
-              style={[
-                styles.categorySortBtn,
-                categorySortMode === 'growth' && { backgroundColor: isDark ? '#fafafa' : '#18181b' },
-              ]}>
-              <ThemedText
-                style={styles.categorySortLabel}
-                lightColor={categorySortMode === 'growth' ? '#ffffff' : '#52525b'}
-                darkColor={categorySortMode === 'growth' ? '#18181b' : '#a1a1aa'}>
-                성장률순
-              </ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={() => setCategorySortMode('recent')}
-              style={[
-                styles.categorySortBtn,
-                categorySortMode === 'recent' && { backgroundColor: isDark ? '#fafafa' : '#18181b' },
-              ]}>
-              <ThemedText
-                style={styles.categorySortLabel}
-                lightColor={categorySortMode === 'recent' ? '#ffffff' : '#52525b'}
-                darkColor={categorySortMode === 'recent' ? '#18181b' : '#a1a1aa'}>
-                최근활동순
-              </ThemedText>
-            </Pressable>
-          </View>
-          {!isHydrated ? (
-            <ThemedText style={styles.emptyNote} lightColor={tone.muted} darkColor={tone.muted}>
-              불러오는 중…
-            </ThemedText>
-          ) : categoryRows.length === 0 ? (
-            <ThemedText style={styles.emptyNote} lightColor={tone.muted} darkColor={tone.muted}>
-              아직 기록이 없어요. 오늘 플로우를 완료하면 성장 그래프가 시작돼요.
-            </ThemedText>
-          ) : (
-            categoryRows.map((row) => (
-              <View key={row.categoryKey} style={styles.categoryRow}>
-                <View style={styles.categoryHeader}>
-                  <ThemedText style={styles.categoryTitle}>
-                    {categoryReminderLabelKo(row.categoryKey)}
+              <View style={styles.categorySortRow}>
+                <Pressable
+                  onPress={() => setCategorySortMode('share')}
+                  style={[
+                    styles.categorySortBtn,
+                    categorySortMode === 'share' && { backgroundColor: isDark ? '#fafafa' : '#18181b' },
+                  ]}>
+                  <ThemedText
+                    style={styles.categorySortLabel}
+                    lightColor={categorySortMode === 'share' ? '#ffffff' : '#52525b'}
+                    darkColor={categorySortMode === 'share' ? '#18181b' : '#a1a1aa'}>
+                    비중순
                   </ThemedText>
-                  <View style={styles.categoryStatCol}>
-                    <ThemedText style={styles.categoryValue}>{row.primaryLabel}</ThemedText>
-                    <ThemedText
-                      style={styles.categoryDelta}
-                      lightColor={tone.muted}
-                      darkColor={tone.muted}>
-                      {row.secondaryLabel}
-                    </ThemedText>
-                  </View>
-                </View>
-                <View style={[styles.track, { backgroundColor: tone.barTrack }]}>
-                  <View
-                    style={[
-                      styles.fill,
-                      {
-                        width: `${row.barPercent}%`,
-                        backgroundColor: tone.barFill,
-                      },
-                    ]}
-                  />
-                </View>
+                </Pressable>
+                <Pressable
+                  onPress={() => setCategorySortMode('growth')}
+                  style={[
+                    styles.categorySortBtn,
+                    categorySortMode === 'growth' && { backgroundColor: isDark ? '#fafafa' : '#18181b' },
+                  ]}>
+                  <ThemedText
+                    style={styles.categorySortLabel}
+                    lightColor={categorySortMode === 'growth' ? '#ffffff' : '#52525b'}
+                    darkColor={categorySortMode === 'growth' ? '#18181b' : '#a1a1aa'}>
+                    성장률순
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={() => setCategorySortMode('recent')}
+                  style={[
+                    styles.categorySortBtn,
+                    categorySortMode === 'recent' && { backgroundColor: isDark ? '#fafafa' : '#18181b' },
+                  ]}>
+                  <ThemedText
+                    style={styles.categorySortLabel}
+                    lightColor={categorySortMode === 'recent' ? '#ffffff' : '#52525b'}
+                    darkColor={categorySortMode === 'recent' ? '#18181b' : '#a1a1aa'}>
+                    최근활동순
+                  </ThemedText>
+                </Pressable>
               </View>
-            ))
-          )}
+              {!isHydrated ? (
+                <ThemedText style={styles.emptyNote} lightColor={tone.muted} darkColor={tone.muted}>
+                  불러오는 중…
+                </ThemedText>
+              ) : categoryRows.length === 0 ? (
+                <ThemedText style={styles.emptyNote} lightColor={tone.muted} darkColor={tone.muted}>
+                  아직 기록이 없어요. 오늘 플로우를 완료하면 성장 그래프가 시작돼요.
+                </ThemedText>
+              ) : (
+                categoryRows.map((row) => (
+                  <View key={row.categoryKey} style={styles.categoryRow}>
+                    <View style={styles.categoryHeader}>
+                      <ThemedText style={styles.categoryTitle}>
+                        {categoryReminderLabelKo(row.categoryKey)}
+                      </ThemedText>
+                      <View style={styles.categoryStatCol}>
+                        <ThemedText style={styles.categoryValue}>{row.primaryLabel}</ThemedText>
+                        <ThemedText
+                          style={styles.categoryDelta}
+                          lightColor={tone.muted}
+                          darkColor={tone.muted}>
+                          {row.secondaryLabel}
+                        </ThemedText>
+                      </View>
+                    </View>
+                    <View style={[styles.track, { backgroundColor: tone.barTrack }]}>
+                      <View
+                        style={[
+                          styles.fill,
+                          {
+                            width: `${row.barPercent}%`,
+                            backgroundColor: tone.barFill,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </View>
+                ))
+              )}
             </View>
 
             <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
-          <ThemedText style={styles.sectionTitle}>카테고리별 통계 분석</ThemedText>
-          <ThemedText style={styles.sectionDesc} lightColor={tone.muted} darkColor={tone.muted}>
-            누적 완료, 활동 일수, 최근 7일 완료를 함께 비교해요.
-          </ThemedText>
-          {categoryAnalysisRows.length === 0 ? (
-            <ThemedText style={styles.emptyNote} lightColor={tone.muted} darkColor={tone.muted}>
-              분석할 카테고리 기록이 아직 없어요.
-            </ThemedText>
-          ) : (
-            <>
-              <View style={styles.analysisHeaderRow}>
-                <ThemedText style={[styles.analysisHeaderCell, styles.analysisColCategory]} lightColor={tone.muted} darkColor={tone.muted}>
-                  카테고리
+              <ThemedText style={styles.sectionTitle}>카테고리별 통계 분석</ThemedText>
+              <ThemedText style={styles.sectionDesc} lightColor={tone.muted} darkColor={tone.muted}>
+                누적 완료, 활동 일수, 최근 7일 완료를 함께 비교해요.
+              </ThemedText>
+              {categoryAnalysisRows.length === 0 ? (
+                <ThemedText style={styles.emptyNote} lightColor={tone.muted} darkColor={tone.muted}>
+                  분석할 카테고리 기록이 아직 없어요.
                 </ThemedText>
-                <ThemedText style={[styles.analysisHeaderCell, styles.analysisColNum]} lightColor={tone.muted} darkColor={tone.muted}>
-                  누적완료
-                </ThemedText>
-                <ThemedText style={[styles.analysisHeaderCell, styles.analysisColNum]} lightColor={tone.muted} darkColor={tone.muted}>
-                  활동일
-                </ThemedText>
-                <ThemedText style={[styles.analysisHeaderCell, styles.analysisColNum]} lightColor={tone.muted} darkColor={tone.muted}>
-                  최근7일
-                </ThemedText>
-              </View>
-              {categoryAnalysisRows.map((row) => (
-                <View key={row.categoryKey} style={[styles.analysisRow, { borderTopColor: tone.border }]}>
-                  <ThemedText style={[styles.analysisCell, styles.analysisColCategory]} numberOfLines={1}>
-                    {categoryReminderLabelKo(row.categoryKey)}
-                  </ThemedText>
-                  <ThemedText style={[styles.analysisCell, styles.analysisColNum]}>
-                    {formatCountKo(row.totalCompletions)}
-                  </ThemedText>
-                  <ThemedText style={[styles.analysisCell, styles.analysisColNum]}>
-                    {row.activeDays}일
-                  </ThemedText>
-                  <ThemedText style={[styles.analysisCell, styles.analysisColNum]}>
-                    {formatCountKo(row.last7Completions)}
-                  </ThemedText>
-                </View>
-              ))}
-            </>
-          )}
+              ) : (
+                <>
+                  <View style={styles.analysisHeaderRow}>
+                    <ThemedText style={[styles.analysisHeaderCell, styles.analysisColCategory]} lightColor={tone.muted} darkColor={tone.muted}>
+                      카테고리
+                    </ThemedText>
+                    <ThemedText style={[styles.analysisHeaderCell, styles.analysisColNum]} lightColor={tone.muted} darkColor={tone.muted}>
+                      누적완료
+                    </ThemedText>
+                    <ThemedText style={[styles.analysisHeaderCell, styles.analysisColNum]} lightColor={tone.muted} darkColor={tone.muted}>
+                      활동일
+                    </ThemedText>
+                    <ThemedText style={[styles.analysisHeaderCell, styles.analysisColNum]} lightColor={tone.muted} darkColor={tone.muted}>
+                      최근7일
+                    </ThemedText>
+                  </View>
+                  {categoryAnalysisRows.map((row) => (
+                    <View key={row.categoryKey} style={[styles.analysisRow, { borderTopColor: tone.border }]}>
+                      <ThemedText style={[styles.analysisCell, styles.analysisColCategory]} numberOfLines={1}>
+                        {categoryReminderLabelKo(row.categoryKey)}
+                      </ThemedText>
+                      <ThemedText style={[styles.analysisCell, styles.analysisColNum]}>
+                        {formatCountKo(row.totalCompletions)}
+                      </ThemedText>
+                      <ThemedText style={[styles.analysisCell, styles.analysisColNum]}>
+                        {row.activeDays}일
+                      </ThemedText>
+                      <ThemedText style={[styles.analysisCell, styles.analysisColNum]}>
+                        {formatCountKo(row.last7Completions)}
+                      </ThemedText>
+                    </View>
+                  ))}
+                </>
+              )}
             </View>
           </>
         ) : null}
 
         {mainTab === 'daily' && dailySubTab === 'overview' ? (
           <>
-          <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
-          <ThemedText style={styles.sectionTitle}>주간 활동</ThemedText>
-          <ThemedText style={styles.sectionDesc} lightColor={tone.muted} darkColor={tone.muted}>
-            최근 4주 히트맵이에요. 잔디색이 진할수록 그날 달성이 많아요.
-          </ThemedText>
-          <View style={styles.heatMapWrap}>
-            {heatMapRows.map((week, rowIdx) => (
-              <View key={`week-${rowIdx}`} style={styles.heatMapRow}>
-                {week.map((cell) => {
-                  const levelColor = tone.heatGrass[cell.level] ?? tone.heatGrass[0];
-                  const selected = selectedHeatDateKey === cell.dateKey;
-                  return (
-                    <Pressable
-                      key={cell.dateKey}
-                      onPress={() => setSelectedHeatDateKey(cell.dateKey)}
-                      onLongPress={() => setDetailSheetDateKey(cell.dateKey)}
-                      style={[
-                        styles.heatCell,
-                        { backgroundColor: levelColor },
-                        selected && { borderColor: tone.ink, borderWidth: 1.5 },
-                      ]}
-                    />
-                  );
-                })}
-              </View>
-            ))}
-          </View>
-          <View style={[styles.selectedDayCard, { borderColor: tone.border }]}>
-            <View style={styles.selectedDayHeader}>
-              <ThemedText style={styles.selectedDayTitle}>
-                {formatDateKeyKo(selectedHeatDetail.dateKey)}
+            <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
+              <ThemedText style={styles.sectionTitle}>주간 활동</ThemedText>
+              <ThemedText style={styles.sectionDesc} lightColor={tone.muted} darkColor={tone.muted}>
+                최근 4주 히트맵이에요. 잔디색이 진할수록 그날 달성이 많아요.
               </ThemedText>
-              <View style={styles.selectedDayBadgeRow}>
-                {selectedIsToday ? (
-                  <View style={[styles.dayBadge, { backgroundColor: tone.level2 }]}>
-                    <ThemedText style={styles.dayBadgeText}>오늘</ThemedText>
+              <View style={styles.heatMapWrap}>
+                {heatMapRows.map((week, rowIdx) => (
+                  <View key={`week-${rowIdx}`} style={styles.heatMapRow}>
+                    {week.map((cell) => {
+                      const levelColor = tone.heatGrass[cell.level] ?? tone.heatGrass[0];
+                      const selected = selectedHeatDateKey === cell.dateKey;
+                      return (
+                        <Pressable
+                          key={cell.dateKey}
+                          onPress={() => setSelectedHeatDateKey(cell.dateKey)}
+                          onLongPress={() => setDetailSheetDateKey(cell.dateKey)}
+                          style={[
+                            styles.heatCell,
+                            { backgroundColor: levelColor },
+                            selected && { borderColor: tone.ink, borderWidth: 1.5 },
+                          ]}
+                        />
+                      );
+                    })}
                   </View>
-                ) : null}
-                <View style={[styles.dayBadge, { backgroundColor: tone.level1 }]}>
-                  <ThemedText style={styles.dayBadgeText}>선택일</ThemedText>
-                </View>
-              </View>
-            </View>
-            <ThemedText style={styles.selectedDayMeta} lightColor={tone.muted} darkColor={tone.muted}>
-              완료 {formatCountKo(selectedHeatDetail.completedFlowCount)} · 달성률 {formatRatePercent(selectedHeatDetail.completionRate)}
-            </ThemedText>
-            <ThemedText style={styles.selectedDayMeta} lightColor={tone.muted} darkColor={tone.muted}>
-              전일 대비 {selectedHeatDiffCompletions >= 0 ? '+' : ''}
-              {formatCountKo(Math.abs(selectedHeatDiffCompletions))}
-            </ThemedText>
-            {selectedHeatTopCategories.length > 0 ? (
-              <View style={styles.dayTopCategoryList}>
-                {selectedHeatTopCategories.map((row, idx) => (
-                  <ThemedText
-                    key={`${row.categoryKey}-${idx}`}
-                    style={styles.dayTopCategoryRow}
-                    lightColor={tone.muted}
-                    darkColor={tone.muted}>
-                    {`${idx + 1}. ${categoryReminderLabelKo(row.categoryKey)} · ${formatCountKo(row.completions)}`}
-                  </ThemedText>
                 ))}
               </View>
-            ) : (
-              <ThemedText style={styles.dayTopCategoryRow} lightColor={tone.muted} darkColor={tone.muted}>
-                아직 카테고리 기록이 없어요.
-              </ThemedText>
-            )}
-          </View>
-          <ThemedText style={styles.streakHint} lightColor={tone.ink} darkColor={tone.ink}>
-            연속 {streak}일째 기록 중입니다. 작은 완수도 꾸준히 쌓여요.
-          </ThemedText>
-          </View>
-
-          <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
-          <ThemedText style={styles.sectionTitle}>요일별 활동성</ThemedText>
-          <View style={styles.consistencySegment}>
-            <Pressable
-              onPress={() => setConsistencyMode('week')}
-              style={[
-                styles.consistencySegmentBtn,
-                consistencyMode === 'week' && {
-                  backgroundColor: isDark ? '#fafafa' : '#18181b',
-                },
-              ]}>
-              <ThemedText
-                style={styles.consistencySegmentLabel}
-                lightColor={consistencyMode === 'week' ? '#ffffff' : '#52525b'}
-                darkColor={consistencyMode === 'week' ? '#18181b' : '#a1a1aa'}>
-                주간
-              </ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={() => setConsistencyMode('month')}
-              style={[
-                styles.consistencySegmentBtn,
-                consistencyMode === 'month' && {
-                  backgroundColor: isDark ? '#fafafa' : '#18181b',
-                },
-              ]}>
-              <ThemedText
-                style={styles.consistencySegmentLabel}
-                lightColor={consistencyMode === 'month' ? '#ffffff' : '#52525b'}
-                darkColor={consistencyMode === 'month' ? '#18181b' : '#a1a1aa'}>
-                월간
-              </ThemedText>
-            </Pressable>
-          </View>
-          <View style={styles.consistencyBarList}>
-            {consistencyRows.map((row) => (
-              <View key={`weekday-${row.weekday}`} style={styles.consistencyBarRow}>
-                <ThemedText style={styles.consistencyDay} lightColor={tone.muted} darkColor={tone.muted}>
-                  {WEEKDAY_LABELS_KO[row.weekday]}
-                </ThemedText>
-                <View style={[styles.consistencyTrack, { backgroundColor: tone.barTrack }]}>
-                  <View
-                    style={[
-                      styles.consistencyFill,
-                      {
-                        width: `${Math.max(4, Math.round((row.averageCompletions / consistencyMax) * 100))}%`,
-                        backgroundColor: tone.barFill,
-                      },
-                    ]}
-                  />
+              <View style={[styles.selectedDayCard, { borderColor: tone.border }]}>
+                <View style={styles.selectedDayHeader}>
+                  <ThemedText style={styles.selectedDayTitle}>
+                    {formatDateKeyKo(selectedHeatDetail.dateKey)}
+                  </ThemedText>
+                  <View style={styles.selectedDayBadgeRow}>
+                    {selectedIsToday ? (
+                      <View style={[styles.dayBadge, { backgroundColor: tone.level2 }]}>
+                        <ThemedText style={styles.dayBadgeText}>오늘</ThemedText>
+                      </View>
+                    ) : null}
+                    <View style={[styles.dayBadge, { backgroundColor: tone.level1 }]}>
+                      <ThemedText style={styles.dayBadgeText}>선택일</ThemedText>
+                    </View>
+                  </View>
                 </View>
-                <ThemedText style={styles.consistencyValue}>
-                  {formatCountKo(row.averageCompletions)}
+                <ThemedText style={styles.selectedDayMeta} lightColor={tone.muted} darkColor={tone.muted}>
+                  완료 {formatCountKo(selectedHeatDetail.completedFlowCount)} · 달성률 {formatRatePercent(selectedHeatDetail.completionRate)}
                 </ThemedText>
+                <ThemedText style={styles.selectedDayMeta} lightColor={tone.muted} darkColor={tone.muted}>
+                  전일 대비 {selectedHeatDiffCompletions >= 0 ? '+' : ''}
+                  {formatCountKo(Math.abs(selectedHeatDiffCompletions))}
+                </ThemedText>
+                {selectedHeatTopCategories.length > 0 ? (
+                  <View style={styles.dayTopCategoryList}>
+                    {selectedHeatTopCategories.map((row, idx) => (
+                      <ThemedText
+                        key={`${row.categoryKey}-${idx}`}
+                        style={styles.dayTopCategoryRow}
+                        lightColor={tone.muted}
+                        darkColor={tone.muted}>
+                        {`${idx + 1}. ${categoryReminderLabelKo(row.categoryKey)} · ${formatCountKo(row.completions)}`}
+                      </ThemedText>
+                    ))}
+                  </View>
+                ) : (
+                  <ThemedText style={styles.dayTopCategoryRow} lightColor={tone.muted} darkColor={tone.muted}>
+                    아직 카테고리 기록이 없어요.
+                  </ThemedText>
+                )}
               </View>
-            ))}
-          </View>
-          </View>
+              <ThemedText style={styles.streakHint} lightColor={tone.ink} darkColor={tone.ink}>
+                연속 {streak}일째 기록 중입니다. 작은 완수도 꾸준히 쌓여요.
+              </ThemedText>
+            </View>
+
+            <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
+              <ThemedText style={styles.sectionTitle}>요일별 활동성</ThemedText>
+              <View style={styles.consistencySegment}>
+                <Pressable
+                  onPress={() => setConsistencyMode('week')}
+                  style={[
+                    styles.consistencySegmentBtn,
+                    consistencyMode === 'week' && {
+                      backgroundColor: isDark ? '#fafafa' : '#18181b',
+                    },
+                  ]}>
+                  <ThemedText
+                    style={styles.consistencySegmentLabel}
+                    lightColor={consistencyMode === 'week' ? '#ffffff' : '#52525b'}
+                    darkColor={consistencyMode === 'week' ? '#18181b' : '#a1a1aa'}>
+                    주간
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={() => setConsistencyMode('month')}
+                  style={[
+                    styles.consistencySegmentBtn,
+                    consistencyMode === 'month' && {
+                      backgroundColor: isDark ? '#fafafa' : '#18181b',
+                    },
+                  ]}>
+                  <ThemedText
+                    style={styles.consistencySegmentLabel}
+                    lightColor={consistencyMode === 'month' ? '#ffffff' : '#52525b'}
+                    darkColor={consistencyMode === 'month' ? '#18181b' : '#a1a1aa'}>
+                    월간
+                  </ThemedText>
+                </Pressable>
+              </View>
+              <View style={styles.consistencyBarList}>
+                {consistencyRows.map((row) => (
+                  <View key={`weekday-${row.weekday}`} style={styles.consistencyBarRow}>
+                    <ThemedText style={styles.consistencyDay} lightColor={tone.muted} darkColor={tone.muted}>
+                      {WEEKDAY_LABELS_KO[row.weekday]}
+                    </ThemedText>
+                    <View style={[styles.consistencyTrack, { backgroundColor: tone.barTrack }]}>
+                      <View
+                        style={[
+                          styles.consistencyFill,
+                          {
+                            width: `${
+                              row.averageCompletions <= 0
+                                ? 0
+                                : Math.max(4, Math.round((row.averageCompletions / consistencyMax) * 100))
+                            }%`,
+                            backgroundColor: tone.barFill,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <ThemedText style={styles.consistencyValue}>
+                      {formatCountKo(row.averageCompletions)}
+                    </ThemedText>
+                  </View>
+                ))}
+              </View>
+            </View>
           </>
         ) : null}
 

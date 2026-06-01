@@ -12,7 +12,6 @@ type Props = {
   c: DayPlanPalette;
   isDark: boolean;
   strategyEyebrow: string;
-  emptyTitleHint?: string;
   document: HorizonGoalDocument;
   onChangeDocument: (doc: HorizonGoalDocument) => void;
   syncLabel?: string;
@@ -29,7 +28,6 @@ export function HorizonFocusCard({
   c,
   isDark,
   strategyEyebrow,
-  emptyTitleHint,
   document,
   onChangeDocument,
   syncLabel,
@@ -60,7 +58,6 @@ export function HorizonFocusCard({
           c={c}
           isDark={isDark}
           strategyEyebrow={strategyEyebrow}
-          emptyTitleHint={emptyTitleHint}
           document={document}
           onChangeDocument={onChangeDocument}
         />

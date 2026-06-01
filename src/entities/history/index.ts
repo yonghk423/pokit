@@ -1,6 +1,8 @@
-export { getCategoryCompletions, dayHasCompletionActivity } from './lib/historyCompletionMetrics';
+export { dayHasCompletionActivity, getCategoryCompletions } from './lib/historyCompletionMetrics';
+export { buildWeeklyHeatMapCells } from './lib/buildWeeklyHeatMap';
+export { buildCategoryBreakdown } from './lib/buildCategoryBreakdown';
+export { buildConsistencyByWeekday } from './lib/buildConsistencyByWeekday';
 export { useHistoryStore } from './model';
-export type { HistoryStoreState } from './model';
 export type {
   HistoryAchievement,
   HistoryAchievementKind,
@@ -9,7 +11,6 @@ export type {
   HistoryGrowthSummary,
   HistoryHeatMapCell,
   HistoryRange,
-  HistorySessionRecordInput,
-  HistoryWeekdayConsistencyRow,
+  HistorySessionRecordInput, HistoryStoreState, HistoryWeekdayConsistencyRow
 } from './model';
 

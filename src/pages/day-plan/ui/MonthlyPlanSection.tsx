@@ -108,6 +108,7 @@ export function MonthlyPlanSection({ c, isDark }: Props) {
       label: listLabel,
       completedAt: new Date().toISOString(),
       summaryText: horizonDocumentToPlainText(document),
+      document,
     });
   }, [
     cancelMonthlyComplete,
@@ -147,7 +148,6 @@ export function MonthlyPlanSection({ c, isDark }: Props) {
         c={c}
         isDark={isDark}
         strategyEyebrow="월간 전략"
-        emptyTitleHint="이번 달 핵심 전략"
         document={document}
         onChangeDocument={onChangeDocument}
         syncLabel={syncLabel}

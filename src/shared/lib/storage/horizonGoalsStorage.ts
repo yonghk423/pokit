@@ -76,3 +76,7 @@ export function loadMonthlyGoalText(monthKey: string): string {
 export function saveMonthlyGoalText(monthKey: string, text: string): void {
   saveMonthlyGoalDocument(monthKey, parseHorizonGoalDocument(text));
 }
+
+export function clearHorizonGoalsStorage(): void {
+  localStorageClient.removeItem(StorageKeys.horizonGoals);
+}

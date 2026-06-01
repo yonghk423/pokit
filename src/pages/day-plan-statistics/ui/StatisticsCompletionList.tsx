@@ -2,7 +2,9 @@ import * as Haptics from 'expo-haptics';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { horizonDocumentHasContent, type HorizonGoalDocument } from '@shared/lib/storage/horizonGoalBlocks';
 import type { HorizonCompletionEntry } from '@shared/lib/storage/horizonCompletionsStorage';
+import { HorizonDocumentReadView } from '@shared/ui/horizon-document-read-view';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -18,6 +20,9 @@ type Props = {
   emptyHint: string;
   entries: HorizonCompletionEntry[];
   tone: Tone;
+  isDark: boolean;
+  resolveDocument?: (entry: HorizonCompletionEntry) => HorizonGoalDocument;
+  resolveActivityLines?: (entry: HorizonCompletionEntry) => string[];
 };
 
 function formatCompletedAt(iso: string): string {
@@ -29,12 +34,28 @@ function formatCompletedAt(iso: string): string {
 type RowProps = {
   row: HorizonCompletionEntry;
   tone: Tone;
+  isDark: boolean;
   isFirst: boolean;
   expanded: boolean;
   onToggle: () => void;
+  document: HorizonGoalDocument;
+  activityLines: string[];
 };
 
-function CompletionAccordionRow({ row, tone, isFirst, expanded, onToggle }: RowProps) {
+function CompletionAccordionRow({
+  row,
+  tone,
+  isDark,
+  isFirst,
+  expanded,
+  onToggle,
+  document,
+  activityLines,
+}: RowProps) {
+  const hasDocument = horizonDocumentHasContent(document);
+  const hasActivity = activityLines.length > 0;
+  const hasSummary = Boolean(row.summaryText?.trim());
+
   return (
     <View
       style={[
@@ -60,22 +81,66 @@ function CompletionAccordionRow({ row, tone, isFirst, expanded, onToggle }: RowP
           <ThemedText style={styles.rowMeta} lightColor={tone.muted} darkColor={tone.muted}>
             {formatCompletedAt(row.completedAt)}
           </ThemedText>
-          {row.summaryText?.trim() ? (
-            <ThemedText style={styles.rowSummary} lightColor={tone.ink} darkColor={tone.ink}>
-              {row.summaryText.trim()}
-            </ThemedText>
-          ) : (
-            <ThemedText style={styles.rowSummaryMissing} lightColor={tone.muted} darkColor={tone.muted}>
-              완료 당시 본문이 저장되지 않았어요.
-            </ThemedText>
-          )}
+
+          {hasDocument ? (
+            <View style={styles.section}>
+              <ThemedText style={styles.sectionLabel} lightColor={tone.muted} darkColor={tone.muted}>
+                전략 기록
+              </ThemedText>
+              <HorizonDocumentReadView
+                document={document}
+                ink={tone.ink}
+                muted={tone.muted}
+                isDark={isDark}
+              />
+            </View>
+          ) : null}
+
+          {hasActivity ? (
+            <View style={styles.section}>
+              <ThemedText style={styles.sectionLabel} lightColor={tone.muted} darkColor={tone.muted}>
+                데일리 활동
+              </ThemedText>
+              <View style={styles.activityList}>
+                {activityLines.map((line) => (
+                  <ThemedText
+                    key={`${row.periodKey}-${line}`}
+                    style={styles.activityLine}
+                    lightColor={tone.ink}
+                    darkColor={tone.ink}>
+                    {line}
+                  </ThemedText>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {!hasDocument && !hasActivity ? (
+            hasSummary ? (
+              <ThemedText style={styles.rowSummary} lightColor={tone.ink} darkColor={tone.ink}>
+                {row.summaryText?.trim()}
+              </ThemedText>
+            ) : (
+              <ThemedText style={styles.rowSummaryMissing} lightColor={tone.muted} darkColor={tone.muted}>
+                이 기간에 남은 기록이 없어요.
+              </ThemedText>
+            )
+          ) : null}
         </View>
       ) : null}
     </View>
   );
 }
 
-export function StatisticsCompletionList({ title, emptyHint, entries, tone }: Props) {
+export function StatisticsCompletionList({
+  title,
+  emptyHint,
+  entries,
+  tone,
+  isDark,
+  resolveDocument,
+  resolveActivityLines,
+}: Props) {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(() => new Set());
 
   const toggleKey = useCallback((periodKey: string) => {
@@ -104,9 +169,12 @@ export function StatisticsCompletionList({ title, emptyHint, entries, tone }: Pr
             key={row.periodKey}
             row={row}
             tone={tone}
+            isDark={isDark}
             isFirst={index === 0}
             expanded={expandedKeys.has(row.periodKey)}
             onToggle={() => toggleKey(row.periodKey)}
+            document={resolveDocument?.(row) ?? { version: 2, blocks: [] }}
+            activityLines={resolveActivityLines?.(row) ?? []}
           />
         ))
       )}
@@ -145,8 +213,16 @@ const styles = StyleSheet.create({
   body: {
     paddingBottom: 14,
     paddingTop: 4,
-    gap: 8,
+    gap: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  section: {
+    gap: 6,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
   },
   rowSummary: {
     fontSize: 14,
@@ -158,6 +234,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     lineHeight: 19,
+  },
+  activityList: {
+    gap: 4,
+  },
+  activityLine: {
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 21,
+    letterSpacing: -0.1,
   },
   rowLabel: {
     fontSize: 16,

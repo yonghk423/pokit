@@ -1,0 +1,1 @@
+export { HorizonDocumentReadView } from './HorizonDocumentReadView';

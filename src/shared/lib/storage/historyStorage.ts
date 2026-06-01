@@ -79,11 +79,19 @@ function normalizeDaily(row: HistoryDailyStatRow): HistoryDailyStatRow {
           Object.keys(legacyMinutes).map((key) => [key, 1]),
         );
 
+  const completedFlowCountRaw = clampInt(row.completedFlowCount, 0);
+  const completedFlowCountFromCategories = Object.values(mergedCompletions).reduce(
+    (sum, n) => sum + clampInt(n, 0),
+    0,
+  );
+  const completedFlowCount = Math.max(completedFlowCountRaw, completedFlowCountFromCategories);
+  const sessionCount = Math.max(clampInt(row.sessionCount, 0), completedFlowCount);
+
   return {
     dateKey: row.dateKey.trim(),
     focusMinutes: 0,
-    completedFlowCount: clampInt(row.completedFlowCount, 0),
-    sessionCount: clampInt(row.sessionCount, 0),
+    completedFlowCount,
+    sessionCount,
     completionRate: clampRate(row.completionRate),
     categoryMinutes: {},
     categoryCompletions: mergedCompletions,

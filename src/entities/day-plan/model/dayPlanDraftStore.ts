@@ -34,6 +34,8 @@ type DayPlanDraftState = {
   priorityCatalogFixedRoutineEpoch: number;
   /** 카테고리 표시명이 변경되면 증가 — 오늘 루틴 목록 라벨 재조회 */
   categoryLabelEpoch: number;
+  /** 수분 알림 재동기화 요청 시 증가 — 실제 동기화는 앱 부트스트랩에서 단일 실행 */
+  waterReminderSyncEpoch: number;
   quickMemoDraft: string;
   isHydrated: boolean;
   hydrate: () => void;
@@ -67,6 +69,7 @@ type DayPlanDraftState = {
   setPriorityCategoryOrder: (value: string[] | ((prev: string[]) => string[])) => void;
   bumpPriorityCatalogFixedRoutineEpoch: () => void;
   bumpCategoryLabelEpoch: () => void;
+  bumpWaterReminderSyncEpoch: () => void;
   setQuickMemoDraft: (value: string) => void;
 };
 
@@ -91,6 +94,7 @@ function createInitialState() {
     priorityCategoryOrder: [] as string[],
     priorityCatalogFixedRoutineEpoch: 0,
     categoryLabelEpoch: 0,
+    waterReminderSyncEpoch: 0,
     quickMemoDraft: '',
   };
 }
@@ -290,6 +294,8 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     set((s) => ({ priorityCatalogFixedRoutineEpoch: s.priorityCatalogFixedRoutineEpoch + 1 })),
   bumpCategoryLabelEpoch: () =>
     set((s) => ({ categoryLabelEpoch: s.categoryLabelEpoch + 1 })),
+  bumpWaterReminderSyncEpoch: () =>
+    set((s) => ({ waterReminderSyncEpoch: s.waterReminderSyncEpoch + 1 })),
   setQuickMemoDraft: (value) => set({ quickMemoDraft: value }),
 }));
 

@@ -154,6 +154,7 @@ export function WeeklyPlanSection({ c, isDark }: Props) {
       label: periodLabel,
       completedAt: new Date().toISOString(),
       summaryText: horizonDocumentToPlainText(document),
+      document,
     });
   }, [
     cancelWeeklyComplete,

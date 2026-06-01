@@ -5,3 +5,4 @@ export { IconSymbol } from './icon-symbol';
 export { ThemedText } from './themed-text';
 export { ThemedView } from './themed-view';
 export { TopAppBar } from './top-app-bar';
+export { HorizonDocumentReadView } from './horizon-document-read-view';

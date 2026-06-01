@@ -21,6 +21,10 @@ import {
 const MAX_WATER_REMINDER_SLOTS = 48;
 
 const WATER_CATEGORY_LABEL = '수분섭취';
+const WATER_NOTIFICATION_ID_PREFIX = 'pokit:water-reminder:';
+
+let syncInFlight: Promise<void> | null = null;
+let lastSyncedWaterReminderKey = '';
 
 type CollectedSlot = {
   slotKey: string;
@@ -30,6 +34,21 @@ type CollectedSlot = {
   title: string;
   body: string;
 };
+
+function buildWaterReminderSyncKey(
+  opts: { routineStartHhmm: string; routineEndHhmm: string },
+  slots: CollectedSlot[],
+): string {
+  const rangeKey = `${opts.routineStartHhmm.trim()}~${opts.routineEndHhmm.trim()}`;
+  const slotKey = slots
+    .map((s) => `${s.slotKey}:${s.blockId}:${s.hour}:${s.minute}:${s.title}:${s.body}`)
+    .join('|');
+  return `${rangeKey}::${slotKey}`;
+}
+
+function buildWaterReminderIdentifier(slotKey: string): string {
+  return `${WATER_NOTIFICATION_ID_PREFIX}${slotKey}`;
+}
 
 function wallMinuteToHhmm(m: number): string {
   const x = Math.max(0, Math.min(24 * 60 - 1, Math.floor(m)));
@@ -90,35 +109,60 @@ export async function syncWaterReminderNotifications(opts: {
   routineStartHhmm: string;
   routineEndHhmm: string;
 }): Promise<void> {
-  const prev = loadWaterReminderScheduled();
-  if (prev.length > 0) {
-    await cancelLocalNotificationsById(prev.map((r) => r.notificationId));
-  }
-  saveWaterReminderScheduled([]);
-
-  await useLocalNotificationsStore.getState().refreshPermission();
-  if (useLocalNotificationsStore.getState().permission !== 'granted') {
-    return;
+  if (syncInFlight) {
+    return syncInFlight;
   }
 
-  const collected = collectSlots(opts.routineStartHhmm, opts.routineEndHhmm).slice(
-    0,
-    MAX_WATER_REMINDER_SLOTS,
-  );
-  const nextRows: { slotKey: string; notificationId: string }[] = [];
+  syncInFlight = (async () => {
+    try {
+      await useLocalNotificationsStore.getState().refreshPermission();
+      if (useLocalNotificationsStore.getState().permission !== 'granted') {
+        const deniedSyncKey = `denied:${opts.routineStartHhmm.trim()}~${opts.routineEndHhmm.trim()}`;
+        if (deniedSyncKey === lastSyncedWaterReminderKey) return;
+        const prev = loadWaterReminderScheduled();
+        if (prev.length > 0) {
+          await cancelLocalNotificationsById(prev.map((r) => r.notificationId));
+        }
+        saveWaterReminderScheduled([]);
+        lastSyncedWaterReminderKey = deniedSyncKey;
+        return;
+      }
 
-  for (const s of collected) {
-    const nid = await scheduleDailyLocalNotification({
-      title: s.title,
-      body: s.body,
-      hour: s.hour,
-      minute: s.minute,
-      data: { eventType: 'waterIntervalReminder', blockId: s.blockId },
-    });
-    if (nid) {
-      nextRows.push({ slotKey: s.slotKey, notificationId: nid });
+      const collected = collectSlots(opts.routineStartHhmm, opts.routineEndHhmm).slice(
+        0,
+        MAX_WATER_REMINDER_SLOTS,
+      );
+      const syncKey = `granted:${buildWaterReminderSyncKey(opts, collected)}`;
+      if (syncKey === lastSyncedWaterReminderKey) return;
+
+      const prev = loadWaterReminderScheduled();
+      if (prev.length > 0) {
+        await cancelLocalNotificationsById(prev.map((r) => r.notificationId));
+      }
+      saveWaterReminderScheduled([]);
+
+      const nextRows: { slotKey: string; notificationId: string }[] = [];
+
+      for (const s of collected) {
+        const nid = await scheduleDailyLocalNotification({
+          identifier: buildWaterReminderIdentifier(s.slotKey),
+          title: s.title,
+          body: s.body,
+          hour: s.hour,
+          minute: s.minute,
+          data: { eventType: 'waterIntervalReminder', blockId: s.blockId },
+        });
+        if (nid) {
+          nextRows.push({ slotKey: s.slotKey, notificationId: nid });
+        }
+      }
+
+      saveWaterReminderScheduled(nextRows);
+      lastSyncedWaterReminderKey = syncKey;
+    } finally {
+      syncInFlight = null;
     }
-  }
+  })();
 
-  saveWaterReminderScheduled(nextRows);
+  return syncInFlight;
 }

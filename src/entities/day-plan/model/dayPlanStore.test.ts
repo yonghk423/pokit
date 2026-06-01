@@ -1,4 +1,4 @@
-import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
+import { addDaysToLocalDateKey, getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 import type { DayPlanBlock } from '@entities/day-plan/model/types';
 import { loadDayPlan, saveDayPlan } from '@shared/lib/storage/dayPlanStorage';
 
@@ -110,14 +110,184 @@ describe('dayPlanStore', () => {
     expect(useDayPlanStore.getState().skippedBlockIds).toContain('b');
   });
 
+  it('replaces overlapping blocks when requested', () => {
+    resetStore({
+      blocks: [block({ id: 'old', startMinutes: 14 * 60, endMinutes: 15 * 60 })],
+    });
+    const result = useDayPlanStore.getState().addBlock({
+      title: '새 일정',
+      category: '독서',
+      startMinutes: 14 * 60 + 15,
+      endMinutes: 15 * 60 + 15,
+      planDateKey: '2099-06-01',
+      replaceOverlapping: true,
+    });
+    expect(result.ok).toBe(true);
+    expect(useDayPlanStore.getState().blocks).toHaveLength(1);
+    expect(useDayPlanStore.getState().blocks[0]?.title).toBe('새 일정');
+  });
+
+  it('resets today progress', () => {
+    resetStore({
+      blocks: [block({ id: 'a' })],
+      completedBlockIds: ['a'],
+      skippedBlockIds: [],
+      liveActivityChecklistFocusBlockId: 'a',
+    });
+    useDayPlanStore.getState().resetTodayProgress();
+    expect(useDayPlanStore.getState().completedBlockIds).toEqual([]);
+    expect(useDayPlanStore.getState().liveActivityChecklistFocusBlockId).toBeNull();
+  });
+
+  it('completes multiple blocks at once', () => {
+    resetStore({ blocks: [block({ id: 'a' }), block({ id: 'b', order: 1 })] });
+    useDayPlanStore.getState().completeBlocks(['a', 'b']);
+    expect(useDayPlanStore.getState().completedBlockIds).toEqual(['a', 'b']);
+  });
+
   it('manages quick memos', () => {
     useDayPlanStore.getState().addQuickMemo('  메모  ');
     expect(useDayPlanStore.getState().quickMemos).toHaveLength(1);
     const id = useDayPlanStore.getState().quickMemos[0]!.id;
     useDayPlanStore.getState().toggleQuickMemoDone(id);
     expect(useDayPlanStore.getState().quickMemos[0]!.isDone).toBe(true);
+    useDayPlanStore.getState().updateQuickMemoText(id, '수정');
+    expect(useDayPlanStore.getState().quickMemos[0]!.text).toBe('수정');
     useDayPlanStore.getState().removeQuickMemo(id);
     expect(useDayPlanStore.getState().quickMemos).toHaveLength(0);
+  });
+
+  it('hydrates future plan without resetting blocks', () => {
+    const future = addDaysToLocalDateKey(getLocalDateKey(), 3);
+    mockedLoad.mockReturnValue({
+      dateKey: future,
+      blocks: [block({ id: 'f1', order: 0 })],
+      completedBlockIds: ['f1'],
+      skippedBlockIds: [],
+      quickMemos: [{ id: 'm1', text: '메모', createdAt: 1, isDone: false }],
+    });
+    resetStore({ isHydrated: false });
+    useDayPlanStore.getState().hydrate();
+    expect(useDayPlanStore.getState().dateKey).toBe(future);
+    expect(useDayPlanStore.getState().blocks).toHaveLength(1);
+    expect(useDayPlanStore.getState().quickMemos).toHaveLength(1);
+  });
+
+  it('resets past snapshot to today on hydrate', () => {
+    const past = addDaysToLocalDateKey(getLocalDateKey(), -5);
+    mockedLoad.mockReturnValue({
+      dateKey: past,
+      blocks: [block({ id: 'old', order: 0 })],
+      completedBlockIds: [],
+      skippedBlockIds: [],
+    });
+    resetStore({ isHydrated: false });
+    useDayPlanStore.getState().hydrate();
+    expect(useDayPlanStore.getState().dateKey).toBe(getLocalDateKey());
+    expect(useDayPlanStore.getState().blocks).toEqual([]);
+  });
+
+  it('restores checklist focus id when block is still pending', () => {
+    mockedLoad.mockReturnValue({
+      dateKey: getLocalDateKey(),
+      blocks: [block({ id: 'focus', order: 0 })],
+      completedBlockIds: [],
+      skippedBlockIds: [],
+      liveActivityChecklistFocusBlockId: 'focus',
+    });
+    resetStore({ isHydrated: false });
+    useDayPlanStore.getState().hydrate();
+    expect(useDayPlanStore.getState().liveActivityChecklistFocusBlockId).toBe('focus');
+  });
+
+  it('prunes past-ended flow blocks and auto-completes pending ones', () => {
+    const today = getLocalDateKey();
+    resetStore({
+      dateKey: today,
+      blocks: [
+        block({ id: 'expired', startMinutes: 0, endMinutes: 1 }),
+        block({ id: 'later', startMinutes: 23 * 60, endMinutes: 23 * 60 + 30 }),
+      ],
+      liveActivityChecklistFocusBlockId: 'expired',
+    });
+    useDayPlanStore.getState().prunePastEndedBlocks();
+    expect(useDayPlanStore.getState().blocks.map((b) => b.id)).toEqual(['later']);
+    expect(useDayPlanStore.getState().completedBlockIds).not.toContain('expired');
+    expect(useDayPlanStore.getState().liveActivityChecklistFocusBlockId).toBeNull();
+  });
+
+  it('removes block and clears related ids', () => {
+    resetStore({
+      blocks: [block({ id: 'rm' })],
+      completedBlockIds: ['rm'],
+      skippedBlockIds: [],
+      liveActivityChecklistFocusBlockId: 'rm',
+    });
+    useDayPlanStore.getState().removeBlock('rm');
+    expect(useDayPlanStore.getState().blocks).toHaveLength(0);
+    expect(useDayPlanStore.getState().completedBlockIds).toEqual([]);
+    expect(useDayPlanStore.getState().liveActivityChecklistFocusBlockId).toBeNull();
+  });
+
+  it('setBlocks drops invalid checklist focus', () => {
+    resetStore({
+      blocks: [block({ id: 'a' })],
+      liveActivityChecklistFocusBlockId: 'missing',
+    });
+    useDayPlanStore.getState().setBlocks([block({ id: 'b', order: 0 })]);
+    expect(useDayPlanStore.getState().blocks[0]?.id).toBe('b');
+    expect(useDayPlanStore.getState().liveActivityChecklistFocusBlockId).toBeNull();
+  });
+
+  it('adds overnight block and rejects past end', () => {
+    const today = getLocalDateKey();
+    resetStore({ dateKey: today });
+    const overnight = useDayPlanStore.getState().addBlock({
+      title: '야간',
+      category: '독서',
+      startMinutes: 22 * 60,
+      endMinutes: 6 * 60,
+      endsNextCalendarDay: true,
+      planDateKey: today,
+    });
+    expect(overnight.ok).toBe(true);
+
+    const past = useDayPlanStore.getState().addBlock({
+      title: '지남',
+      category: '독서',
+      startMinutes: 0,
+      endMinutes: 1,
+      planDateKey: today,
+    });
+    expect(past).toEqual({ ok: false, reason: 'in_the_past' });
+  });
+
+  it('switches date when adding block for another plan day', () => {
+    const future = addDaysToLocalDateKey(getLocalDateKey(), 2);
+    const result = useDayPlanStore.getState().addBlock({
+      title: '미래',
+      category: '독서',
+      startMinutes: 10 * 60,
+      endMinutes: 11 * 60,
+      planDateKey: future,
+    });
+    expect(result.ok).toBe(true);
+    expect(useDayPlanStore.getState().dateKey).toBe(future);
+  });
+
+  it('skips idempotent complete/skip paths', () => {
+    resetStore({
+      blocks: [block({ id: 'x' }), block({ id: 'y', order: 1 })],
+      completedBlockIds: ['x'],
+      skippedBlockIds: ['y'],
+      liveActivityChecklistFocusBlockId: 'y',
+    });
+    useDayPlanStore.getState().completeBlock('x');
+    useDayPlanStore.getState().skipBlock('x');
+    useDayPlanStore.getState().skipBlock('y');
+    expect(useDayPlanStore.getState().skippedBlockIds).toEqual(['y']);
+    useDayPlanStore.getState().setLiveActivityChecklistFocusBlockId('x');
+    expect(useDayPlanStore.getState().liveActivityChecklistFocusBlockId).toBe('x');
   });
 });
 

@@ -23,7 +23,6 @@ import {
 import {
   rescheduleDayPlanNotifications,
   syncMedicineReminderNotifications,
-  syncWaterReminderNotifications,
 } from '@features/day-plan-notifications';
 import { reconcileLiveActivityFromPlan } from '@features/live-activity-sync';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
@@ -183,15 +182,11 @@ export function GoalDetailSettingsPage() {
 
   const [dataByBlockId, setDataByBlockId] = useState<Record<string, unknown>>({});
   const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const waterReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
     () => () => {
       if (medicineReminderSyncTimerRef.current) {
         clearTimeout(medicineReminderSyncTimerRef.current);
-      }
-      if (waterReminderSyncTimerRef.current) {
-        clearTimeout(waterReminderSyncTimerRef.current);
       }
     },
     [],
@@ -235,17 +230,7 @@ export function GoalDetailSettingsPage() {
       }, 450);
     }
     if (target.categoryKey === 'water') {
-      if (waterReminderSyncTimerRef.current) {
-        clearTimeout(waterReminderSyncTimerRef.current);
-      }
-      waterReminderSyncTimerRef.current = setTimeout(() => {
-        waterReminderSyncTimerRef.current = null;
-        const { priorityStart, priorityEnd } = useDayPlanDraftStore.getState();
-        void syncWaterReminderNotifications({
-          routineStartHhmm: priorityStart,
-          routineEndHhmm: priorityEnd,
-        });
-      }, 450);
+      useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
     }
   }, []);
 
@@ -300,13 +285,7 @@ export function GoalDetailSettingsPage() {
       });
       await rescheduleDayPlanNotifications();
       await syncMedicineReminderNotifications();
-      {
-        const { priorityStart, priorityEnd } = useDayPlanDraftStore.getState();
-        await syncWaterReminderNotifications({
-          routineStartHhmm: priorityStart,
-          routineEndHhmm: priorityEnd,
-        });
-      }
+      useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
 
       const ids = sortedTargets
         .map((t) => t.blockId)

@@ -1,6 +1,8 @@
 import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 
+import type { HorizonGoalDocument } from './horizonGoalBlocks';
+
 export type HorizonCompletionKind = 'weekly' | 'monthly';
 
 export type HorizonCompletionEntry = {
@@ -9,6 +11,8 @@ export type HorizonCompletionEntry = {
   completedAt: string;
   /** 완료 시점 전략 본문 스냅샷(통계 목록 표시용) */
   summaryText?: string;
+  /** 완료 시점 블록 문서(제목·리스트·강조·밑줄 등 서식 포함) */
+  document?: HorizonGoalDocument;
 };
 
 type Persisted = {
@@ -77,4 +81,8 @@ export function listWeeklyCompletions(): HorizonCompletionEntry[] {
 
 export function listMonthlyCompletions(): HorizonCompletionEntry[] {
   return sortEntries(loadAll().monthly);
+}
+
+export function clearHorizonCompletionsStorage(): void {
+  localStorageClient.removeItem(StorageKeys.horizonCompletions);
 }

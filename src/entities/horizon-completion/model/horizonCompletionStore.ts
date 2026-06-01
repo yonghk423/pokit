@@ -20,6 +20,7 @@ type State = {
 
 type Actions = {
   hydrate: () => void;
+  reloadFromStorage: () => void;
   markWeeklyComplete: (entry: HorizonCompletionEntry) => void;
   markMonthlyComplete: (entry: HorizonCompletionEntry) => void;
   cancelWeeklyComplete: (weekStartKey: string) => void;
@@ -45,7 +46,7 @@ export const useHorizonCompletionStore = create<HorizonCompletionStore>((set, ge
   weeklyByKey: {},
   monthlyByKey: {},
 
-  hydrate: () => {
+  reloadFromStorage: () => {
     const weekly = listWeeklyCompletions();
     const monthly = listMonthlyCompletions();
     set({
@@ -53,6 +54,10 @@ export const useHorizonCompletionStore = create<HorizonCompletionStore>((set, ge
       weeklyByKey: toMap(weekly),
       monthlyByKey: toMap(monthly),
     });
+  },
+
+  hydrate: () => {
+    get().reloadFromStorage();
   },
 
   markWeeklyComplete: (entry) => {

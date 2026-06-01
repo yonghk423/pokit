@@ -19,7 +19,6 @@ type Props = {
   c: DayPlanPalette;
   isDark: boolean;
   strategyEyebrow: string;
-  emptyTitleHint?: string;
   document: HorizonGoalDocument;
   onChangeDocument: (doc: HorizonGoalDocument) => void;
 };
@@ -28,7 +27,6 @@ export function HorizonBlockEditor({
   c,
   isDark,
   strategyEyebrow,
-  emptyTitleHint = '이번 주 핵심 전략',
   document,
   onChangeDocument,
 }: Props) {
@@ -145,9 +143,6 @@ export function HorizonBlockEditor({
 
         {blocks.length === 0 ? (
           <Pressable accessibilityRole="button" onPress={startDocument} style={styles.emptyTap}>
-            <ThemedText style={[styles.emptyTitle, { color: c.onSurface }]}>
-              {emptyTitleHint}
-            </ThemedText>
             <ThemedText style={[styles.emptyHint, { color: c.onVariant }]}>
               탭하여 작성을 시작하세요
             </ThemedText>
@@ -222,13 +217,6 @@ const styles = StyleSheet.create({
   },
   emptyTap: {
     paddingVertical: 8,
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.6,
-    opacity: 0.35,
   },
   emptyHint: {
     fontSize: 15,

@@ -1,6 +1,8 @@
 import {
   emptyCategorySessionConfigs,
+  getInitialFastingDataConfig,
   getInitialMedicineDataConfig,
+  getInitialMeditationDataConfig,
   getInitialOtherDataConfig,
   getInitialWaterDataConfig,
   getInitialWorkDataConfig,
@@ -38,6 +40,7 @@ describe('normalizeMeditationDetailConfig', () => {
     const cfg = normalizeMeditationDetailConfig({ sessionMin: 999, elapsedMin: 50 });
     expect(cfg.sessionMin).toBe(180);
     expect(cfg.elapsedMin).toBe(50);
+    expect(getInitialMeditationDataConfig()).toEqual({ sessionMin: 15, elapsedMin: 0 });
   });
 });
 
@@ -47,6 +50,7 @@ describe('normalizeFastingDetailConfig', () => {
     expect(cfg.fastingMin).toBe(16 * 60);
     expect(cfg.currentWeightKg).toBe(70);
     expect(cfg.fastingEnabled).toBe(true);
+    expect(getInitialFastingDataConfig().targetWeightKg).toBe(65);
   });
 });
 
@@ -66,6 +70,27 @@ describe('normalizeYogaDetailConfig', () => {
 });
 
 describe('normalizeMedicineDetailConfig', () => {
+  it('uses per-slot notify flags when provided', () => {
+    const cfg = normalizeMedicineDetailConfig({
+      morningOn: true,
+      morningNotify: false,
+      lunchOn: true,
+      lunchNotify: true,
+      dinnerOn: false,
+      medicationNotify: false,
+    });
+    expect(cfg.morningNotify).toBe(false);
+    expect(cfg.lunchNotify).toBe(true);
+    expect(cfg.dinnerNotify).toBe(false);
+  });
+
+  it('defaults empty slots without legacy dose fields', () => {
+    const cfg = normalizeMedicineDetailConfig({});
+    expect(cfg.morningOn).toBe(false);
+    expect(cfg.dosesPerDay).toBe(0);
+    expect(cfg.morningNotify).toBe(true);
+  });
+
   it('maps legacy dosesPerDay to slots', () => {
     const cfg = normalizeMedicineDetailConfig({ dosesPerDay: 2, takenCount: 1 });
     expect(cfg.morningOn).toBe(true);
@@ -87,6 +112,15 @@ describe('normalizeMedicineDetailConfig', () => {
 });
 
 describe('normalizeOtherDetailConfig', () => {
+  it('normalizes checklist tasks', () => {
+    const cfg = normalizeOtherDetailConfig({
+      displayName: '나만의',
+      checklist: [{ id: '1', text: '할 일', done: true }, { text: '' }],
+    });
+    expect(cfg.checklist).toHaveLength(1);
+    expect(cfg.checklist[0]?.done).toBe(true);
+  });
+
   it('resolves display label fallback', () => {
     expect(getOtherCategoryResolvedDisplayLabel(null)).toBe(OTHER_CATEGORY_PICKER_FALLBACK_KO);
     expect(

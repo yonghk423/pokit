@@ -65,4 +65,24 @@ describe('dayPlanRuntimeStore', () => {
     useDayPlanRuntimeStore.getState().syncNow(t);
     expect(useDayPlanRuntimeStore.getState().nowMs).toBe(t);
   });
+
+  it('starts and stops runtime ticker', () => {
+    jest.useFakeTimers();
+    const startMs = 1_700_000_000_000;
+    jest.setSystemTime(startMs);
+
+    useDayPlanRuntimeStore.getState().startTicker();
+    expect(useDayPlanRuntimeStore.getState().tickerRunning).toBe(true);
+    expect(useDayPlanRuntimeStore.getState().nowMs).toBe(startMs);
+
+    useDayPlanRuntimeStore.getState().startTicker();
+    jest.advanceTimersByTime(1000);
+    expect(useDayPlanRuntimeStore.getState().nowMs).toBe(startMs + 1000);
+
+    useDayPlanRuntimeStore.getState().stopTicker();
+    expect(useDayPlanRuntimeStore.getState().tickerRunning).toBe(false);
+    useDayPlanRuntimeStore.getState().stopTicker();
+
+    jest.useRealTimers();
+  });
 });

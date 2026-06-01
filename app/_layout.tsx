@@ -1,11 +1,11 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useAppBootstrap } from '@app/index';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -31,21 +31,21 @@ export default function RootLayout() {
 
   const navigationTheme = isDark
     ? {
-        ...DarkTheme,
-        colors: {
-          ...DarkTheme.colors,
-          background: APP_SURFACE_DARK,
-          card: APP_SURFACE_DARK,
-        },
-      }
+      ...DarkTheme,
+      colors: {
+        ...DarkTheme.colors,
+        background: APP_SURFACE_DARK,
+        card: APP_SURFACE_DARK,
+      },
+    }
     : {
-        ...DefaultTheme,
-        colors: {
-          ...DefaultTheme.colors,
-          background: APP_SURFACE_LIGHT,
-          card: APP_SURFACE_LIGHT,
-        },
-      };
+      ...DefaultTheme,
+      colors: {
+        ...DefaultTheme.colors,
+        background: APP_SURFACE_LIGHT,
+        card: APP_SURFACE_LIGHT,
+      },
+    };
 
   const rootBg = isDark ? APP_SURFACE_DARK : APP_SURFACE_LIGHT;
 
@@ -70,10 +70,6 @@ export default function RootLayout() {
             <Stack.Screen name="widget-settings" options={{ headerShown: false, presentation: 'card' }} />
             <Stack.Screen
               name="daily-rhythm-settings"
-              options={{ headerShown: false, presentation: 'card' }}
-            />
-            <Stack.Screen
-              name="goal-detail-incomplete-reminder-settings"
               options={{ headerShown: false, presentation: 'card' }}
             />
             <Stack.Screen

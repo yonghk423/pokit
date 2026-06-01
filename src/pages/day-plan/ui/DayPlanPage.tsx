@@ -18,20 +18,18 @@ import { useShallow } from 'zustand/react/shallow';
 
 import {
   addDaysToLocalDateKey,
-  blockDurationSec,
   filterDayPlanFlowBlocks,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
   parseHHmmToMinutes,
   resolveBlockCategoryKey,
   useDayPlanRuntimeStore,
-  useDayPlanStore,
+  useDayPlanStore
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import {
   rescheduleDayPlanNotifications,
   syncPriorityDayStartAlarm,
-  syncWaterReminderNotifications,
 } from '@features/day-plan-notifications';
 import {
   buildLiveActivityPayloadForBlock,
@@ -275,14 +273,6 @@ export function DayPlanPage() {
     }, 400);
     return () => clearTimeout(timer);
   }, [priorityStart]);
-
-  /** 담기 구간이 바뀌면 수분 주기 알림(매일) 재예약 */
-  useEffect(() => {
-    void syncWaterReminderNotifications({
-      routineStartHhmm: priorityStart,
-      routineEndHhmm: priorityEnd,
-    });
-  }, [priorityStart, priorityEnd]);
 
   useEffect(() => {
     if (planMode !== 'priority') return;

@@ -10,26 +10,26 @@ import {
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { syncCategoryReminderNotifications } from '@features/category-reminder-notifications';
 import {
-  // syncGoalDetailIncompleteReminderNotifications, // 목표 상세 알림 — 잠시 비활성
   syncMedicineReminderNotifications,
   syncPriorityDayStartAlarm,
   syncWaterReminderNotifications,
 } from '@features/day-plan-notifications';
+import {
+  reconcileLiveActivityFromPlan,
+  syncLiveActivityIfSessionInProgress,
+} from '@features/live-activity-sync';
 import { useLocalNotifications } from '@features/local-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
+import {
+  addLocalNotificationReceivedListener,
+  addLocalNotificationResponseListener,
+} from '@shared/lib/notifications';
 import {
   flushLocalStorageClientWrites,
   initLocalStorageClient,
   loadPriorityDayStartAlarm,
 } from '@shared/lib/storage';
-import {
-  reconcileLiveActivityFromPlan,
-  syncLiveActivityIfSessionInProgress,
-} from '@features/live-activity-sync';
-import {
-  addLocalNotificationReceivedListener,
-  addLocalNotificationResponseListener,
-} from '@shared/lib/notifications';
+import { useDevSeedMenu } from './useDevSeedMenu';
 
 /**
  * 앱 전역 부트스트랩: hydrate + 알림 리스너 + Live Activity 동기화.
@@ -38,7 +38,11 @@ import {
 export function useAppBootstrap() {
   const router = useRouter();
   useLocalNotifications();
+  useDevSeedMenu();
   const [isReady, setIsReady] = useState(false);
+  const priorityStart = useDayPlanDraftStore((s) => s.priorityStart);
+  const priorityEnd = useDayPlanDraftStore((s) => s.priorityEnd);
+  const waterReminderSyncEpoch = useDayPlanDraftStore((s) => s.waterReminderSyncEpoch);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,18 +70,21 @@ export function useAppBootstrap() {
   useEffect(() => {
     if (!isReady) return;
     const { enabled } = loadPriorityDayStartAlarm();
-    const { priorityStart, priorityEnd } = useDayPlanDraftStore.getState();
+    const { priorityStart: initialPriorityStart } = useDayPlanDraftStore.getState();
     void (async () => {
-      await syncPriorityDayStartAlarm({ enabled, startHhmm: priorityStart });
+      await syncPriorityDayStartAlarm({ enabled, startHhmm: initialPriorityStart });
       await syncCategoryReminderNotifications();
       await syncMedicineReminderNotifications();
-      await syncWaterReminderNotifications({
-        routineStartHhmm: priorityStart,
-        routineEndHhmm: priorityEnd,
-      });
-      // await syncGoalDetailIncompleteReminderNotifications(); // 목표 상세 알림 — 잠시 비활성
     })();
   }, [isReady]);
+
+  useEffect(() => {
+    if (!isReady) return;
+    void syncWaterReminderNotifications({
+      routineStartHhmm: priorityStart,
+      routineEndHhmm: priorityEnd,
+    });
+  }, [isReady, priorityStart, priorityEnd, waterReminderSyncEpoch]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -86,10 +93,6 @@ export function useAppBootstrap() {
         router.push('/(tabs)/day-plan');
         return;
       }
-      // if (data.eventType === 'goalDetailIncompleteReminder') {
-      //   router.push('/(tabs)/day-plan');
-      //   return;
-      // }
       if (data.eventType === 'medicineDoseReminder') {
         const bid = typeof data.blockId === 'string' ? data.blockId : '';
         if (bid) {
@@ -134,9 +137,7 @@ export function useAppBootstrap() {
         void useLocalNotificationsStore.getState().refreshPermission();
         void syncCategoryReminderNotifications();
         void syncMedicineReminderNotifications();
-        const { priorityStart: ps, priorityEnd: pe } = useDayPlanDraftStore.getState();
-        void syncWaterReminderNotifications({ routineStartHhmm: ps, routineEndHhmm: pe });
-        // void syncGoalDetailIncompleteReminderNotifications(); // 목표 상세 알림 — 잠시 비활성
+        useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
         registerOtherCategoryResolverFromStorage();
       } else {
         /** 백그라운드/비활성 전환 시 대기 중인 저장 write를 즉시 정리 */
