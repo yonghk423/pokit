@@ -28,6 +28,8 @@ type Props = {
   ink: string;
   muted: string;
   surface: string;
+  title?: string;
+  placeholder?: string;
 };
 
 export function RenameCustomGroupSheet({
@@ -39,6 +41,8 @@ export function RenameCustomGroupSheet({
   ink,
   muted,
   surface,
+  title = '묶음 이름 바꾸기',
+  placeholder = '묶음 이름',
 }: Props) {
   const insets = useSafeAreaInsets();
   const [label, setLabel] = useState('');
@@ -98,7 +102,7 @@ export function RenameCustomGroupSheet({
 
           <View style={styles.body}>
             <View style={styles.headerRow}>
-              <ThemedText style={[styles.title, { color: ink }]}>묶음 이름 바꾸기</ThemedText>
+              <ThemedText style={[styles.title, { color: ink }]}>{title}</ThemedText>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="닫기"
@@ -117,7 +121,7 @@ export function RenameCustomGroupSheet({
               <TextInput
                 value={label}
                 onChangeText={(v) => setLabel(v.slice(0, LABEL_MAX))}
-                placeholder="묶음 이름"
+                placeholder={placeholder}
                 placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
                 maxLength={LABEL_MAX}
                 returnKeyType="done"

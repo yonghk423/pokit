@@ -1,12 +1,13 @@
 import {
+  collectActiveFixedFlowCategoryKeys,
   getActiveFixedFlowSet,
   normalizeFixedFlowSetsState,
 } from './fixedFlowSetsStorage';
 
 describe('fixedFlowSetsStorage', () => {
-  it('normalizes sets and picks valid active set', () => {
+  it('normalizes sets and migrates legacy activeSetId to activeSetIds', () => {
     const state = normalizeFixedFlowSetsState({
-      activeSetId: 'missing',
+      activeSetId: 'set_a',
       sets: [
         {
           id: 'set_a',
@@ -18,20 +19,44 @@ describe('fixedFlowSetsStorage', () => {
         },
       ],
     });
-    expect(state.activeSetId).toBe('set_a');
+    expect(state.activeSetIds).toEqual(['set_a']);
     expect(state.sets[0]?.items).toEqual([{ categoryKey: 'reading', enabled: true }]);
   });
 
-  it('returns null active set when id is missing', () => {
-    const state = normalizeFixedFlowSetsState({ activeSetId: null, sets: [] });
-    expect(getActiveFixedFlowSet(state)).toBeNull();
+  it('ignores invalid active set ids', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetId: 'missing',
+      sets: [{ id: 'set_a', name: 'A', items: [] }],
+    });
+    expect(state.activeSetIds).toEqual([]);
   });
 
-  it('returns active set by id', () => {
+  it('merges category keys from multiple active sets', () => {
     const state = normalizeFixedFlowSetsState({
-      activeSetId: 'set_b',
-      sets: [{ id: 'set_b', name: 'B', items: [{ categoryKey: 'water', enabled: true }] }],
+      activeSetIds: ['set_a', 'set_b'],
+      sets: [
+        { id: 'set_a', name: 'A', items: [{ categoryKey: 'water', enabled: true }] },
+        {
+          id: 'set_b',
+          name: 'B',
+          items: [
+            { categoryKey: 'reading', enabled: true },
+            { categoryKey: 'water', enabled: true },
+          ],
+        },
+      ],
     });
-    expect(getActiveFixedFlowSet(state)?.name).toBe('B');
+    expect(collectActiveFixedFlowCategoryKeys(state)).toEqual(['water', 'reading']);
+  });
+
+  it('returns first active set for legacy getter', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: ['set_b', 'set_a'],
+      sets: [
+        { id: 'set_a', name: 'A', items: [] },
+        { id: 'set_b', name: 'B', items: [] },
+      ],
+    });
+    expect(getActiveFixedFlowSet(state)?.id).toBe('set_a');
   });
 });

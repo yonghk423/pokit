@@ -112,6 +112,7 @@ export function GoalDetailSettingsPage() {
 
   useEffect(() => {
     useDayPlanStore.getState().hydrate();
+    useDayPlanDraftStore.getState().hydrate();
     registerOtherCategoryResolverFromStorage();
   }, []);
   const blocks = useDayPlanStore((s) => s.blocks);

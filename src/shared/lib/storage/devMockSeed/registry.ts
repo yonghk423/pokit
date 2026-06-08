@@ -4,8 +4,8 @@ import { horizonCompletionMockSeed } from './modules/horizonCompletionMockSeed';
 
 /**
  * __DEV__ 목업 seed 모듈 목록.
- * 새 도메인 추가: `modules/`에 DevMockSeedModule 구현 → 여기에 등록 → version 올리기.
- * 의존 순서대로 배열한다 (예: horizon은 history-daily 뒤).
+ * 담기 카탈로그(기본 그룹·플로우)는 앱 기본값(`ensureDefaultPriorityCatalog`)으로만 둔다.
+ * Dev Menu seed는 통계·호라이즌 등 데모용 데이터만 추가한다.
  */
 export const DEV_MOCK_SEED_MODULES: readonly DevMockSeedModule[] = [
   historyDailyMockSeed,

@@ -60,6 +60,13 @@ describe('normalizeWaterDetailConfig', () => {
     expect(cfg.drankMl).toBe(2000);
     expect(getInitialWaterDataConfig().reminderPreset).toBe('60');
   });
+
+  it('does not default smart notification or reminder times', () => {
+    const cfg = normalizeWaterDetailConfig({});
+    expect(cfg.smartNotification).toBe(false);
+    expect(cfg.reminderTimes).toEqual([]);
+    expect(getInitialWaterDataConfig().reminderTimes).toEqual([]);
+  });
 });
 
 describe('normalizeYogaDetailConfig', () => {

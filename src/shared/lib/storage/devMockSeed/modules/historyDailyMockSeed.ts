@@ -5,7 +5,7 @@ import type { DevMockSeedModule } from '../types';
 
 export const historyDailyMockSeed: DevMockSeedModule = {
   id: 'history-daily',
-  version: 3,
+  version: 8,
   async seed() {
     const historyDays = await seedHistoryData();
     return { historyDays };

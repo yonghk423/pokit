@@ -25,6 +25,7 @@ import {
   addLocalNotificationResponseListener,
 } from '@shared/lib/notifications';
 import {
+  ensureDefaultPriorityCatalog,
   flushLocalStorageClientWrites,
   initLocalStorageClient,
   loadPriorityDayStartAlarm,
@@ -49,6 +50,8 @@ export function useAppBootstrap() {
     void (async () => {
       await initLocalStorageClient();
       if (cancelled) return;
+
+      ensureDefaultPriorityCatalog();
 
       useDayPlanStore.getState().hydrate();
       useDayPlanDraftStore.getState().hydrate();

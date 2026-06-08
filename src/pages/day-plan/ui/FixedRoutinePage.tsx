@@ -20,7 +20,7 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   createCustomFlowCategoryId,
   getInitialOtherDataConfig,
-  SYSTEM_CATALOG_GROUP_LABEL_KO,
+  isCustomFlowCategoryKey,
   useFixedFlowSetsStore,
 } from '@entities/day-plan';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
@@ -40,8 +40,8 @@ import { ThemedView } from '@shared/ui/themed-view';
 import { getPickerCategoryLabel } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
 import { buildPriorityCatalogRows, type PriorityCatalogRow } from '../lib/priorityCatalog';
-import { defaultSystemGroupForCatalogKey } from '../lib/priorityCatalogSections';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
+import { RenameCustomGroupSheet } from './RenameCustomGroupSheet';
 
 if (
   Platform.OS === 'android' &&
@@ -50,86 +50,82 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-function categoryTagLabel(key: string, isCustom: boolean): string {
-  if (isCustom) return '나만의';
-  const group = defaultSystemGroupForCatalogKey(key);
-  return SYSTEM_CATALOG_GROUP_LABEL_KO[group];
-}
-
 type FlowCardProps = {
   item: FixedFlowSetItem;
   catalog: PriorityCatalogRow | undefined;
-  setName: string;
   isDark: boolean;
   ink: string;
   muted: string;
-  cardBg: string;
+  line: string;
   iconBoxBg: string;
   onToggleEnabled: (enabled: boolean) => void;
+  onRename: () => void;
+  onDelete: () => void;
 };
 
 function FlowItemCard({
   item,
   catalog,
-  setName,
   isDark,
   ink,
   muted,
-  cardBg,
+  line,
   iconBoxBg,
   onToggleEnabled,
+  onRename,
+  onDelete,
 }: FlowCardProps) {
   const label = catalog?.label ?? getPickerCategoryLabel(item.categoryKey);
   const icon = catalog?.icon ?? 'person.fill';
   const enabled = item.enabled !== false;
   const trackOff = isDark ? '#3f3f46' : '#e5e7eb';
-  const categoryLabel = categoryTagLabel(item.categoryKey, catalog?.isCustom ?? false);
 
   return (
     <View
       style={[
-        styles.flowCard,
-        {
-          backgroundColor: cardBg,
-          opacity: enabled ? 1 : 0.55,
-        },
+        styles.flowRow,
+        { borderBottomColor: line, opacity: enabled ? 1 : 0.5 },
       ]}>
-      <View style={styles.flowCardTopRow}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${label} 이름 변경`}
+        onPress={onRename}
+        style={({ pressed }) => [
+          styles.flowRowMain,
+          pressed && { opacity: 0.72 },
+        ]}>
         <View style={[styles.flowIconBox, { backgroundColor: iconBoxBg }]}>
-          <IconSymbol name={icon as any} size={22} color={ink} />
+          <IconSymbol name={icon as any} size={15} color={enabled ? ink : muted} />
         </View>
-        <View style={styles.flowCardTitleCol}>
-          <ThemedText style={[styles.flowCardTitle, { color: ink }]} numberOfLines={1}>
-            {label}
-          </ThemedText>
-          <ThemedText style={[styles.flowCardDesc, { color: muted }]} numberOfLines={2}>
-            {enabled ? '오늘 일정 자동 보강에 포함' : '꺼 두면 오늘 자동 보강에서 제외'}
-          </ThemedText>
-        </View>
-        <Switch
-          accessibilityLabel={`${label} ${enabled ? '켜짐' : '꺼짐'}`}
-          value={enabled}
-          onValueChange={(next) => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onToggleEnabled(next);
-          }}
-          trackColor={{ false: trackOff, true: '#000000' }}
-          thumbColor="#FFFFFF"
-          ios_backgroundColor={trackOff}
-        />
-      </View>
-      <View style={styles.tagRow}>
-        <View style={[styles.tagPrimary, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)' }]}>
-          <ThemedText style={[styles.tagPrimaryText, { color: ink }]} numberOfLines={1}>
-            {setName}
-          </ThemedText>
-        </View>
-        <View style={[styles.tagSecondary, { backgroundColor: iconBoxBg }]}>
-          <ThemedText style={[styles.tagSecondaryText, { color: muted }]} numberOfLines={1}>
-            {categoryLabel}
-          </ThemedText>
-        </View>
-      </View>
+        <ThemedText
+          style={[styles.flowRowTitle, { color: enabled ? ink : muted }]}
+          numberOfLines={1}>
+          {label}
+        </ThemedText>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${label} 삭제`}
+        onPress={onDelete}
+        style={({ pressed }) => [
+          styles.rowDeleteBtn,
+          { backgroundColor: iconBoxBg, borderColor: line },
+          pressed && { opacity: 0.72 },
+        ]}>
+        <IconSymbol name="trash" size={14} color={muted} />
+      </Pressable>
+      <Switch
+        accessibilityLabel={`${label} ${enabled ? '켜짐' : '꺼짐'}`}
+        value={enabled}
+        onValueChange={(next) => {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onToggleEnabled(next);
+        }}
+        trackColor={{ false: trackOff, true: '#000000' }}
+        thumbColor="#FFFFFF"
+        ios_backgroundColor={trackOff}
+        style={styles.flowSwitch}
+      />
     </View>
   );
 }
@@ -143,7 +139,7 @@ type AddItemModalProps = {
   surface: string;
   line: string;
   onClose: () => void;
-  onPick: (key: string) => void;
+  onConfirm: (keys: string[]) => void;
   onCreateCustom: () => void;
 };
 
@@ -156,10 +152,34 @@ function AddItemModal({
   surface,
   line,
   onClose,
-  onPick,
+  onConfirm,
   onCreateCustom,
 }: AddItemModalProps) {
   const insets = useSafeAreaInsets();
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (visible) setSelectedKeys(new Set());
+  }, [visible]);
+
+  const selectedCount = selectedKeys.size;
+
+  const toggleSelection = useCallback((key: string) => {
+    void Haptics.selectionAsync();
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  const handleConfirm = useCallback(() => {
+    if (selectedCount === 0) return;
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onConfirm([...selectedKeys]);
+    onClose();
+  }, [onClose, onConfirm, selectedCount, selectedKeys]);
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -171,7 +191,8 @@ function AddItemModal({
           </Pressable>
         </View>
         <ScrollView
-          contentContainerStyle={{ paddingBottom: 24 + insets.bottom, paddingHorizontal: 20, gap: 4 }}
+          style={styles.modalScroll}
+          contentContainerStyle={{ paddingBottom: 12, paddingHorizontal: 20, gap: 2 }}
           keyboardShouldPersistTaps="handled">
           <Pressable
             accessibilityRole="button"
@@ -181,31 +202,76 @@ function AddItemModal({
               onCreateCustom();
             }}
             style={({ pressed }) => [styles.modalCreateRow, pressed && { opacity: 0.72 }]}>
-            <IconSymbol name="plus.circle.fill" size={22} color={ink} />
+            <IconSymbol name="plus.circle.fill" size={20} color={ink} />
             <ThemedText style={[styles.modalRowLabel, { color: ink }]}>내 플로우 만들기</ThemedText>
           </Pressable>
-          {addable.map((cat) => (
-            <Pressable
-              key={cat.key}
-              accessibilityRole="button"
-              accessibilityLabel={`${cat.label} 추가`}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onPick(cat.key);
-                onClose();
-              }}
-              style={({ pressed }) => [styles.modalPickRow, { borderBottomColor: line }, pressed && { opacity: 0.72 }]}>
-              <IconSymbol name={cat.icon as any} size={20} color={muted} />
-              <ThemedText style={[styles.modalRowLabel, { color: ink }]}>{cat.label}</ThemedText>
-              <IconSymbol name="plus" size={16} color={muted} />
-            </Pressable>
-          ))}
+          {addable.map((cat) => {
+            const selected = selectedKeys.has(cat.key);
+            return (
+              <Pressable
+                key={cat.key}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+                accessibilityLabel={`${cat.label} ${selected ? '선택됨' : '선택'}`}
+                onPress={() => toggleSelection(cat.key)}
+                style={({ pressed }) => [
+                  styles.modalPickRow,
+                  {
+                    borderBottomColor: line,
+                    backgroundColor: selected
+                      ? isDark
+                        ? 'rgba(255,255,255,0.08)'
+                        : 'rgba(0,0,0,0.04)'
+                      : 'transparent',
+                  },
+                  pressed && { opacity: 0.72 },
+                ]}>
+                <IconSymbol name={cat.icon as any} size={18} color={muted} />
+                <ThemedText style={[styles.modalRowLabel, { color: ink }]}>{cat.label}</ThemedText>
+                <IconSymbol
+                  name={selected ? 'checkmark.circle.fill' : 'circle'}
+                  size={18}
+                  color={selected ? ink : muted}
+                />
+              </Pressable>
+            );
+          })}
           {addable.length === 0 ? (
             <ThemedText style={[styles.modalEmpty, { color: muted }]}>
               추가할 수 있는 항목이 없어요. 위에서 새 플로우를 만들어 보세요.
             </ThemedText>
           ) : null}
         </ScrollView>
+        <View
+          style={[
+            styles.modalFooter,
+            {
+              borderTopColor: line,
+              paddingBottom: Math.max(insets.bottom, 12),
+              backgroundColor: surface,
+            },
+          ]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={selectedCount > 0 ? `${selectedCount}개 항목 추가` : '항목을 선택해 주세요'}
+            disabled={selectedCount === 0}
+            onPress={handleConfirm}
+            style={({ pressed }) => [
+              styles.modalConfirmBtn,
+              {
+                backgroundColor: selectedCount > 0 ? ink : isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+                opacity: pressed && selectedCount > 0 ? 0.9 : 1,
+              },
+            ]}>
+            <ThemedText
+              style={[
+                styles.modalConfirmLabel,
+                { color: selectedCount > 0 ? (isDark ? '#09090b' : '#fff') : muted },
+              ]}>
+              {selectedCount > 0 ? `${selectedCount}개 추가` : '항목을 선택해 주세요'}
+            </ThemedText>
+          </Pressable>
+        </View>
       </View>
     </Modal>
   );
@@ -223,11 +289,13 @@ type GroupAccordionProps = {
   cardBg: string;
   iconBoxBg: string;
   sectionBg: string;
-  dashedBorder: string;
   onToggleExpand: () => void;
-  onSetActiveForToday: () => void;
+  onToggleActiveForToday: () => void;
+  onRenameSet: () => void;
   onDeleteSet: () => void;
   onToggleItem: (categoryKey: string, enabled: boolean) => void;
+  onRenameItem: (categoryKey: string, currentLabel: string) => void;
+  onDeleteItem: (categoryKey: string, label: string) => void;
   onOpenAddItem: () => void;
 };
 
@@ -243,11 +311,13 @@ function GroupAccordion({
   cardBg,
   iconBoxBg,
   sectionBg,
-  dashedBorder,
   onToggleExpand,
-  onSetActiveForToday,
+  onToggleActiveForToday,
+  onRenameSet,
   onDeleteSet,
   onToggleItem,
+  onRenameItem,
+  onDeleteItem,
   onOpenAddItem,
 }: GroupAccordionProps) {
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
@@ -255,84 +325,114 @@ function GroupAccordion({
 
   return (
     <View style={[styles.accordionSection, { backgroundColor: sectionBg, borderColor: line }]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${setItem.name} ${isExpanded ? '접기' : '펼치기'}`}
-        onPress={onToggleExpand}
-        onLongPress={onDeleteSet}
-        style={({ pressed }) => [styles.accordionHeader, pressed && { opacity: 0.85 }]}>
-        <View style={styles.accordionHeaderLeft}>
-          <ThemedText style={[styles.accordionTitle, { color: ink }]}>{setItem.name}</ThemedText>
-          {isActiveForToday ? (
-            <View style={[styles.todayBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)' }]}>
-              <ThemedText style={[styles.todayBadgeText, { color: ink }]}>오늘 적용</ThemedText>
-            </View>
-          ) : null}
+      <View style={styles.accordionHeader}>
+        <View style={styles.accordionHeaderMain}>
+          <ThemedText
+            style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
+            numberOfLines={1}>
+            {setItem.name}
+          </ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${setItem.name} 이름 변경`}
+            onPress={onRenameSet}
+            hitSlop={6}
+            style={({ pressed }) => [
+              styles.headerRenameBtn,
+              pressed && { opacity: 0.72 },
+            ]}>
+            <IconSymbol name="pencil" size={12} color={muted} />
+          </Pressable>
         </View>
-        <View style={styles.accordionHeaderRight}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={isActiveForToday ? '오늘 적용 해제' : '오늘 적용'}
+          onPress={onToggleActiveForToday}
+          style={({ pressed }) => [
+            styles.headerApplyChip,
+            {
+              borderColor: isActiveForToday ? ink : line,
+              backgroundColor: isActiveForToday
+                ? isDark
+                  ? 'rgba(255,255,255,0.14)'
+                  : 'rgba(0,0,0,0.08)'
+                : isDark
+                  ? 'rgba(255,255,255,0.06)'
+                  : 'rgba(0,0,0,0.03)',
+              opacity: pressed ? 0.88 : 1,
+            },
+          ]}>
+          <ThemedText
+            style={[
+              styles.headerApplyChipLabel,
+              { color: isActiveForToday ? ink : muted },
+            ]}
+            numberOfLines={1}>
+            {isActiveForToday ? '적용 중' : '오늘 적용'}
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${setItem.name} 그룹 삭제`}
+          onPress={onDeleteSet}
+          style={({ pressed }) => [
+            styles.headerDeleteBtn,
+            { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' },
+            pressed && { opacity: 0.72 },
+          ]}>
+          <IconSymbol name="trash" size={13} color={muted} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${setItem.name} ${isExpanded ? '접기' : '펼치기'}`}
+          onPress={onToggleExpand}
+          style={({ pressed }) => [styles.accordionHeaderRight, pressed && { opacity: 0.85 }]}>
           <View style={[styles.countPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
             <ThemedText style={[styles.countPillText, { color: muted }]}>
               {enabledCount}/{totalCount}
             </ThemedText>
           </View>
-          <IconSymbol name={isExpanded ? 'chevron.up' : 'chevron.down'} size={14} color={muted} />
-        </View>
-      </Pressable>
+          <IconSymbol name={isExpanded ? 'chevron.up' : 'chevron.down'} size={12} color={muted} />
+        </Pressable>
+      </View>
 
       {isExpanded ? (
         <View style={[styles.accordionBody, { borderTopColor: line }]}>
-          {!isActiveForToday ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="이 그룹을 오늘에 적용"
-              onPress={onSetActiveForToday}
-              style={({ pressed }) => [
-                styles.applyTodayBtn,
-                {
-                  borderColor: line,
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
-                  opacity: pressed ? 0.88 : 1,
-                },
-              ]}>
-              <ThemedText style={[styles.applyTodayLabel, { color: ink }]}>이 그룹을 오늘에 적용</ThemedText>
-            </Pressable>
-          ) : null}
           {totalCount === 0 ? (
             <ThemedText style={[styles.accordionEmpty, { color: muted }]}>
               아직 항목이 없어요. 아래에서 추가해 주세요.
             </ThemedText>
           ) : null}
-          <View style={styles.cardList}>
-            {setItem.items.map((item) => (
-              <FlowItemCard
-                key={item.categoryKey}
-                item={item}
-                catalog={catalogByKey.get(item.categoryKey)}
-                setName={setItem.name}
-                isDark={isDark}
-                ink={ink}
-                muted={muted}
-                cardBg={cardBg}
-                iconBoxBg={iconBoxBg}
-                onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
-              />
-            ))}
+          <View style={[styles.cardList, { backgroundColor: cardBg, borderColor: line }]}>
+            {setItem.items.map((item) => {
+              const cat = catalogByKey.get(item.categoryKey);
+              const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
+              return (
+                <FlowItemCard
+                  key={item.categoryKey}
+                  item={item}
+                  catalog={cat}
+                  isDark={isDark}
+                  ink={ink}
+                  muted={muted}
+                  line={line}
+                  iconBoxBg={iconBoxBg}
+                  onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
+                  onRename={() => onRenameItem(item.categoryKey, itemLabel)}
+                  onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
+                />
+              );
+            })}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="새 항목 추가"
               onPress={onOpenAddItem}
               style={({ pressed }) => [
-                styles.addCard,
-                {
-                  borderColor: dashedBorder,
-                  backgroundColor: iconBoxBg,
-                  opacity: pressed ? 0.88 : 1,
-                },
+                styles.addRow,
+                { opacity: pressed ? 0.88 : 1 },
               ]}>
-              <View style={[styles.addCardIconCircle, { backgroundColor: cardBg }]}>
-                <IconSymbol name="plus" size={20} color={ink} />
-              </View>
-              <ThemedText style={[styles.addCardLabel, { color: ink }]}>새 항목 추가</ThemedText>
+              <IconSymbol name="plus" size={14} color={muted} />
+              <ThemedText style={[styles.addRowLabel, { color: muted }]}>새 항목 추가</ThemedText>
             </Pressable>
           </View>
         </View>
@@ -347,7 +447,7 @@ export function FixedRoutinePage() {
   const isDark = colorScheme === 'dark';
   const c = useMemo(() => palette(isDark), [isDark]);
 
-  const horizontalPad = 24;
+  const horizontalPad = 16;
 
   const [catalogTick, setCatalogTick] = useState(0);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -356,26 +456,39 @@ export function FixedRoutinePage() {
   const [addItemSetId, setAddItemSetId] = useState<string | null>(null);
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+  const [renameSetSheet, setRenameSetSheet] = useState<{ setId: string; label: string } | null>(
+    null,
+  );
+  const [renameItemSheet, setRenameItemSheet] = useState<{
+    setId: string;
+    categoryKey: string;
+    label: string;
+  } | null>(null);
   const targetSetIdRef = useRef<string | null>(null);
+  const hasInitializedExpandedRef = useRef(false);
 
   const {
     sets,
-    activeSetId,
+    activeSetIds,
     hydrate,
     addSet,
-    selectSet,
+    toggleSetForToday,
     removeSet,
+    renameSet,
     addCategoryToSet,
+    removeCategoryFromSet,
     setCategoryEnabledInSet,
   } = useFixedFlowSetsStore(
     useShallow((s) => ({
       sets: s.sets,
-      activeSetId: s.activeSetId,
+      activeSetIds: s.activeSetIds,
       hydrate: s.hydrate,
       addSet: s.addSet,
-      selectSet: s.selectSet,
+      toggleSetForToday: s.toggleSetForToday,
       removeSet: s.removeSet,
+      renameSet: s.renameSet,
       addCategoryToSet: s.addCategoryToSet,
+      removeCategoryFromSet: s.removeCategoryFromSet,
       setCategoryEnabledInSet: s.setCategoryEnabledInSet,
     })),
   );
@@ -389,11 +502,12 @@ export function FixedRoutinePage() {
 
   useFocusEffect(useCallback(() => reloadCatalog(), [reloadCatalog]));
 
+  /** 최초 진입 시 모든 그룹 펼침 — 이후 사용자가 접은 상태는 유지 */
   useEffect(() => {
-    if (sets.length === 0 || expandedIds.size > 0) return;
-    const first = activeSetId && sets.some((s) => s.id === activeSetId) ? activeSetId : sets[0].id;
-    setExpandedIds(new Set([first]));
-  }, [sets, activeSetId, expandedIds.size]);
+    if (sets.length === 0 || hasInitializedExpandedRef.current) return;
+    hasInitializedExpandedRef.current = true;
+    setExpandedIds(new Set(sets.map((s) => s.id)));
+  }, [sets]);
 
   const catalog = useMemo(() => {
     void catalogTick;
@@ -457,9 +571,8 @@ export function FixedRoutinePage() {
     if (created) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setExpandedIds((prev) => new Set([...prev, created.id]));
-      selectSet(created.id);
     }
-  }, [addSet, newGroupName, selectSet]);
+  }, [addSet, newGroupName]);
 
   const handleCreateCustomFlow = useCallback(
     ({ name, groupKey }: { name: string; groupKey: string }) => {
@@ -476,12 +589,12 @@ export function FixedRoutinePage() {
       registerOtherCategoryResolverFromStorage();
       void loadGoalDetailCategoryConfig(id);
       reloadCatalog();
-      const targetSetId = targetSetIdRef.current ?? addItemSetId ?? activeSetId;
+      const targetSetId = targetSetIdRef.current ?? addItemSetId ?? sets[0]?.id;
       if (targetSetId) addCategoryToSet(targetSetId, id);
       setCreateSheetOpen(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
-    [addCategoryToSet, activeSetId, addItemSetId, reloadCatalog],
+    [addCategoryToSet, sets, addItemSetId, reloadCatalog],
   );
 
   const shellBg = c.bg;
@@ -498,9 +611,9 @@ export function FixedRoutinePage() {
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{
-          paddingBottom: 32 + insets.bottom,
+          paddingBottom: 24 + insets.bottom,
           paddingHorizontal: horizontalPad,
-          paddingTop: insets.top + 20,
+          paddingTop: insets.top + 8,
         }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
@@ -510,7 +623,7 @@ export function FixedRoutinePage() {
               key={setItem.id}
               setItem={setItem}
               isExpanded={expandedIds.has(setItem.id)}
-              isActiveForToday={setItem.id === activeSetId}
+              isActiveForToday={activeSetIds.includes(setItem.id)}
               catalogByKey={catalogByKey}
               isDark={isDark}
               ink={ink}
@@ -519,15 +632,40 @@ export function FixedRoutinePage() {
               cardBg={cardBg}
               iconBoxBg={iconBoxBg}
               sectionBg={sectionBg}
-              dashedBorder={dashedBorder}
               onToggleExpand={() => toggleExpanded(setItem.id)}
-              onSetActiveForToday={() => {
+              onToggleActiveForToday={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                selectSet(setItem.id);
+                toggleSetForToday(setItem.id);
+              }}
+              onRenameSet={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setRenameSetSheet({ setId: setItem.id, label: setItem.name });
               }}
               onDeleteSet={() => handleDeleteSet(setItem.id)}
               onToggleItem={(categoryKey, enabled) => {
                 setCategoryEnabledInSet(setItem.id, categoryKey, enabled);
+              }}
+              onRenameItem={(categoryKey, currentLabel) => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setRenameItemSheet({ setId: setItem.id, categoryKey, label: currentLabel });
+              }}
+              onDeleteItem={(categoryKey, itemLabel) => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                Alert.alert(
+                  `"${itemLabel}" 삭제`,
+                  '이 항목을 그룹에서 삭제할까요?',
+                  [
+                    { text: '취소', style: 'cancel' },
+                    {
+                      text: '삭제',
+                      style: 'destructive',
+                      onPress: () => {
+                        removeCategoryFromSet(setItem.id, categoryKey);
+                        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      },
+                    },
+                  ],
+                );
               }}
               onOpenAddItem={() => {
                 targetSetIdRef.current = setItem.id;
@@ -583,7 +721,7 @@ export function FixedRoutinePage() {
             <IconSymbol name="plus" size={18} color={muted} />
             <ThemedText style={[styles.addGroupTriggerLabel, { color: muted }]}>그룹 추가</ThemedText>
             <ThemedText style={[styles.addGroupHint, { color: muted }]}>
-              그룹 이름을 길게 누르면 삭제할 수 있어요
+              이름을 눌러 바꾸고, 휴지통으로 삭제할 수 있어요
             </ThemedText>
           </Pressable>
         )}
@@ -601,8 +739,9 @@ export function FixedRoutinePage() {
           setAddItemModalOpen(false);
           setAddItemSetId(null);
         }}
-        onPick={(key) => {
-          if (addItemSetId) addCategoryToSet(addItemSetId, key);
+        onConfirm={(keys) => {
+          if (!addItemSetId) return;
+          keys.forEach((key) => addCategoryToSet(addItemSetId, key));
         }}
         onCreateCustom={() => {
           targetSetIdRef.current = addItemSetId;
@@ -621,6 +760,58 @@ export function FixedRoutinePage() {
         line={line}
         surface={cardBg}
       />
+
+      <RenameCustomGroupSheet
+        visible={renameSetSheet != null}
+        onClose={() => setRenameSetSheet(null)}
+        initialLabel={renameSetSheet?.label ?? ''}
+        title="그룹 이름 바꾸기"
+        placeholder="그룹 이름"
+        onSave={(trimmedLabel) => {
+          if (!renameSetSheet) return;
+          renameSet(renameSetSheet.setId, trimmedLabel);
+          setRenameSetSheet(null);
+        }}
+        isDark={isDark}
+        ink={ink}
+        muted={muted}
+        surface={cardBg}
+      />
+
+      <RenameCustomGroupSheet
+        visible={renameItemSheet != null}
+        onClose={() => setRenameItemSheet(null)}
+        initialLabel={renameItemSheet?.label ?? ''}
+        title="항목 이름 바꾸기"
+        placeholder="항목 이름"
+        onSave={(trimmedLabel) => {
+          if (!renameItemSheet) return;
+          const { categoryKey } = renameItemSheet;
+          if (isCustomFlowCategoryKey(categoryKey)) {
+            const existing = loadGoalDetailCategoryConfig(categoryKey);
+            const base =
+              existing && typeof existing === 'object' ? (existing as Record<string, unknown>) : {};
+            saveGoalDetailCategoryConfig(categoryKey, {
+              ...base,
+              displayName: trimmedLabel,
+            });
+          } else {
+            const existing = loadGoalDetailCategoryConfig(categoryKey);
+            const base =
+              existing && typeof existing === 'object' ? (existing as Record<string, unknown>) : {};
+            saveGoalDetailCategoryConfig(categoryKey, {
+              ...base,
+              displayName: trimmedLabel,
+            });
+          }
+          reloadCatalog();
+          setRenameItemSheet(null);
+        }}
+        isDark={isDark}
+        ink={ink}
+        muted={muted}
+        surface={cardBg}
+      />
     </ThemedView>
   );
 }
@@ -629,111 +820,123 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { flex: 1 },
   accordionList: {
-    gap: 12,
-    marginBottom: 20,
+    gap: 6,
+    marginBottom: 12,
   },
   accordionSection: {
     width: '100%',
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
     overflow: 'hidden',
   },
   accordionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    gap: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
-  accordionHeaderLeft: {
+  accordionHeaderMain: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+  },
+  headerRenameBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  accordionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.28,
+  },
+  accordionTitleText: {
     flex: 1,
     minWidth: 0,
   },
-  accordionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.35,
-  },
-  todayBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  headerApplyChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 999,
+    borderWidth: 1,
+    flexShrink: 0,
   },
-  todayBadgeText: {
+  headerApplyChipLabel: {
     fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: -0.2,
+    fontWeight: '700',
+    letterSpacing: -0.15,
+  },
+  headerDeleteBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   accordionHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    minHeight: 32,
+    paddingLeft: 2,
+    flexShrink: 0,
   },
   countPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
     borderRadius: 999,
   },
   countPillText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
   },
   accordionBody: {
     width: '100%',
     borderTopWidth: 1,
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 14,
-    gap: 12,
-  },
-  applyTodayBtn: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  applyTodayLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    paddingHorizontal: 8,
+    paddingTop: 6,
+    paddingBottom: 6,
+    gap: 4,
   },
   accordionEmpty: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   addGroupTrigger: {
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderRadius: 14,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   addGroupTriggerLabel: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   addGroupHint: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
   },
   addGroupCard: {
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderRadius: 14,
-    padding: 16,
-    gap: 12,
+    borderRadius: 12,
+    padding: 12,
+    gap: 10,
   },
   addGroupInput: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   addGroupActions: {
     flexDirection: 'row',
@@ -746,9 +949,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addGroupSubmit: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 9,
   },
   addGroupSubmitLabel: {
     fontSize: 14,
@@ -756,94 +959,69 @@ const styles = StyleSheet.create({
   },
   cardList: {
     width: '100%',
-    gap: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
-  flowCard: {
-    width: '100%',
-    borderRadius: 14,
-    padding: 14,
-    gap: 10,
-  },
-  flowCardTopRow: {
+  flowRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    minHeight: 40,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  flowIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  flowRowMain: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rowDeleteBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  flowCardTitleCol: {
+  flowIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  flowRowTitle: {
     flex: 1,
     minWidth: 0,
-    gap: 3,
-  },
-  flowCardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    lineHeight: 21,
-  },
-  flowCardDesc: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
-    letterSpacing: -0.1,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  tagPrimary: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  tagPrimaryText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.2,
-  },
-  tagSecondary: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  tagSecondaryText: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
-  addCard: {
-    width: '100%',
-    borderRadius: 14,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-  },
-  addCardIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addCardLabel: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
     letterSpacing: -0.25,
   },
+  flowSwitch: {
+    transform: [{ scaleX: 0.82 }, { scaleY: 0.82 }],
+  },
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    minHeight: 32,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  addRowLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
   modalSheet: { flex: 1 },
+  modalScroll: { flex: 1 },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -853,28 +1031,48 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
-    letterSpacing: -0.35,
+    letterSpacing: -0.3,
   },
   modalCreateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 16,
+    paddingVertical: 12,
   },
   modalPickRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   modalRowLabel: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    letterSpacing: -0.3,
+    letterSpacing: -0.25,
+  },
+  modalFooter: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    borderTopWidth: 1,
+  },
+  modalConfirmBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  modalConfirmLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   modalEmpty: {
     fontSize: 14,

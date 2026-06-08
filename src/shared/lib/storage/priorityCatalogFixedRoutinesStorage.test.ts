@@ -40,7 +40,7 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
   it('skips legacy migration when normalized keys are empty', () => {
     const loadMock = jest
       .spyOn(fixedFlowSetsStorage, 'loadFixedFlowSetsState')
-      .mockReturnValueOnce({ activeSetId: null, sets: [] });
+      .mockReturnValueOnce({ activeSetIds: [], sets: [] });
     localStorageClient.setJson(StorageKeys.priorityCatalogFixedRoutines, {
       categoryKeys: [null, '', '   '],
     });
@@ -55,11 +55,11 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
     });
     const loadMock = jest
       .spyOn(fixedFlowSetsStorage, 'loadFixedFlowSetsState')
-      .mockReturnValueOnce({ activeSetId: null, sets: [] });
+      .mockReturnValueOnce({ activeSetIds: [], sets: [] });
     const saveMock = jest.spyOn(fixedFlowSetsStorage, 'saveFixedFlowSetsState');
     loadPriorityCatalogFixedRoutineKeys();
     expect(saveMock).toHaveBeenCalledWith({
-      activeSetId: 'default',
+      activeSetIds: ['default'],
       sets: [
         {
           id: 'default',
@@ -77,13 +77,13 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
 
   it('appends active set when saved id is missing from sets', () => {
     jest.spyOn(fixedFlowSetsStorage, 'loadFixedFlowSetsState').mockReturnValue({
-      activeSetId: 'orphan',
+      activeSetIds: ['orphan'],
       sets: [{ id: 'set_a', name: '주중', items: [{ categoryKey: 'reading', enabled: true }] }],
     });
     const saveSpy = jest.spyOn(fixedFlowSetsStorage, 'saveFixedFlowSetsState');
     savePriorityCatalogFixedRoutineKeys(['water', '']);
     expect(saveSpy).toHaveBeenCalledWith({
-      activeSetId: 'orphan',
+      activeSetIds: ['orphan'],
       sets: [
         { id: 'set_a', name: '주중', items: [{ categoryKey: 'reading', enabled: true }] },
         {
@@ -97,12 +97,29 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
 
   it('updates existing active set name when saving keys', () => {
     localStorageClient.setJson(StorageKeys.fixedFlowSets, {
-      activeSetId: 'set_a',
+      activeSetIds: ['set_a'],
       sets: [{ id: 'set_a', name: '주중', items: [{ categoryKey: 'reading', enabled: true }] }],
     });
     savePriorityCatalogFixedRoutineKeys(['water']);
     const active = loadFixedFlowSetsState().sets.find((s) => s.id === 'set_a');
     expect(active?.name).toBe('주중');
     expect(active?.items.map((x) => x.categoryKey)).toEqual(['water']);
+  });
+
+  it('preserves multiple active set ids when saving keys', () => {
+    jest.spyOn(fixedFlowSetsStorage, 'loadFixedFlowSetsState').mockReturnValue({
+      activeSetIds: ['set_a', 'set_b'],
+      sets: [
+        { id: 'set_a', name: 'A', items: [{ categoryKey: 'reading', enabled: true }] },
+        { id: 'set_b', name: 'B', items: [{ categoryKey: 'water', enabled: true }] },
+      ],
+    });
+    const saveSpy = jest.spyOn(fixedFlowSetsStorage, 'saveFixedFlowSetsState');
+    savePriorityCatalogFixedRoutineKeys(['water']);
+    expect(saveSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeSetIds: ['set_a', 'set_b'],
+      }),
+    );
   });
 });

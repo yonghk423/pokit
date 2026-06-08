@@ -45,7 +45,12 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
-import { getPickerCategoryLabel, PRIMARY } from '../lib/dayPlanEditorShared';
+import {
+  getPickerCategoryItem,
+  getPickerCategoryLabel,
+  PICKER_CATEGORIES,
+  PRIMARY,
+} from '../lib/dayPlanEditorShared';
 import { palette, type DayPlanPalette } from '../lib/dayPlanPalette';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
@@ -166,11 +171,14 @@ export function PriorityCatalogPage() {
   );
 
   const customFlowPickerItems = useMemo(() => {
-    return customFlowEntries.map((e) => ({
-      key: e.id,
-      label: getPickerCategoryLabel(e.id),
-      icon: 'person.fill' as const,
-    }));
+    return customFlowEntries.map((e) => {
+      const item = getPickerCategoryItem(e.id);
+      return {
+        key: e.id,
+        label: getPickerCategoryLabel(e.id),
+        icon: (item?.icon ?? 'person.fill') as typeof PICKER_CATEGORIES[number]['icon'],
+      };
+    });
   }, [customFlowEntries]);
 
   const completedCategoryKeysFromPlan = useMemo(() => {

@@ -13,6 +13,7 @@ import {
 } from '../../horizonGoalsStorage';
 import { loadHistoryDailyStats, type HistoryDailyStatRow } from '../../historyStorage';
 
+import { SEED_CATEGORY_LABEL_KO } from '../seedCatalogConstants';
 import type { DevMockSeedModule } from '../types';
 
 const WEEKLY_SEED_COUNT = 12;
@@ -93,15 +94,7 @@ function aggregateCategoryCounts(
     .sort((a, b) => b.count - a.count);
 }
 
-const CATEGORY_LABEL_KO: Record<string, string> = {
-  reading: '독서',
-  study: '공부',
-  stretching: '스트레칭',
-  water: '물 마시기',
-  planning: '하루·주간 정리',
-  fasting: '체중 관리',
-  medicine: '약 챙기기',
-};
+const CATEGORY_LABEL_KO: Record<string, string> = SEED_CATEGORY_LABEL_KO;
 
 function formatActivitySummary(rows: HistoryDailyStatRow[], startDateKey: string, endDateKey: string): string {
   const top = aggregateCategoryCounts(rows, startDateKey, endDateKey).slice(0, 3);
@@ -116,7 +109,7 @@ function buildWeeklyStrategyDocument(weekIndex: number): HorizonGoalDocument {
     {
       version: 2,
       blocks: [
-        createHorizonBlock('heading1', { text: '이번 주 핵심 전략', bold: true }),
+        createHorizonBlock('heading1', { text: '섹션제목1', bold: true }),
         createHorizonBlock('paragraph', { text: '아침 30분 집중 루틴을 지키기', underline: true }),
         createHorizonBlock('heading3', { text: '집중 항목' }),
         createHorizonBlock('bullet', { text: '독서 3회 이상' }),
@@ -156,7 +149,7 @@ function buildMonthlyStrategyDocument(monthIndex: number): HorizonGoalDocument {
     {
       version: 2,
       blocks: [
-        createHorizonBlock('heading1', { text: '이번 달 한 줄 목표', bold: true }),
+        createHorizonBlock('heading1', { text: '섹션제목1', bold: true }),
         createHorizonBlock('paragraph', { text: '꾸준함보다 회복력 — 놓친 날 바로 이어가기', underline: true }),
         createHorizonBlock('heading2', { text: '월간 우선순위' }),
         createHorizonBlock('numbered', { text: '독서 12권 분량' }),
@@ -232,7 +225,7 @@ function seedHorizonCompletions(historyRows: HistoryDailyStatRow[]): { weekly: n
 /** history-daily 모듈 이후에 실행해야 한다. */
 export const horizonCompletionMockSeed: DevMockSeedModule = {
   id: 'horizon-completions',
-  version: 4,
+  version: 5,
   async seed() {
     const historyRows = loadHistoryDailyStats();
     const horizon = seedHorizonCompletions(historyRows);

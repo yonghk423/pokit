@@ -1,9 +1,7 @@
 import { create } from 'zustand';
 
-import { isPriorityCatalogAllowedKey } from '../lib/priorityCatalogRegistry';
-import { sanitizeFixedFlowSetItems } from '../lib/sanitizeFixedFlowSetItems';
-import { useDayPlanDraftStore } from './dayPlanDraftStore';
 import {
+  collectActiveFixedFlowCategoryKeys,
   createDefaultFixedFlowSetsState,
   getActiveFixedFlowSet,
   loadFixedFlowSetsState,
@@ -11,24 +9,25 @@ import {
   type FixedFlowSet,
   type FixedFlowSetItem,
 } from '@shared/lib/storage';
+import { isPriorityCatalogAllowedKey } from '../lib/priorityCatalogRegistry';
+import { sanitizeFixedFlowSetItems } from '../lib/sanitizeFixedFlowSetItems';
+import { useDayPlanDraftStore } from './dayPlanDraftStore';
 
-function sanitizeSetsState(state: { activeSetId: string | null; sets: FixedFlowSet[] }): {
-  activeSetId: string | null;
+function sanitizeSetsState(state: { activeSetIds: string[]; sets: FixedFlowSet[] }): {
+  activeSetIds: string[];
   sets: FixedFlowSet[];
 } {
   const sets = state.sets.map((s) => ({
     ...s,
     items: sanitizeFixedFlowSetItems(s.items),
   }));
-  const activeSetId =
-    state.activeSetId && sets.some((s) => s.id === state.activeSetId)
-      ? state.activeSetId
-      : sets[0]?.id ?? null;
-  return { activeSetId, sets };
+  const valid = new Set(sets.map((s) => s.id));
+  const activeSetIds = state.activeSetIds.filter((id) => valid.has(id));
+  return { activeSetIds, sets };
 }
 
 type FixedFlowSetsStoreState = {
-  activeSetId: string | null;
+  activeSetIds: string[];
   sets: FixedFlowSet[];
   isHydrated: boolean;
 
@@ -36,15 +35,15 @@ type FixedFlowSetsStoreState = {
   addSet: (name?: string) => void;
   renameSet: (setId: string, nextName: string) => void;
   removeSet: (setId: string) => void;
-  selectSet: (setId: string) => void;
+  /** 오늘 적용 그룹 토글 — 여러 그룹 동시 적용 가능 */
+  toggleSetForToday: (setId: string) => void;
 
-  /** per-set CRUD — 아코디언 UI에서 세트별 조작 */
   addCategoryToSet: (setId: string, categoryKey: string) => void;
   removeCategoryFromSet: (setId: string, categoryKey: string) => void;
   setSetOrder: (setId: string, categoryKeys: string[]) => void;
   setCategoryEnabledInSet: (setId: string, categoryKey: string, enabled: boolean) => void;
 
-  /** @deprecated activeSet 전용 — 기존 코드 호환 */
+  /** @deprecated 첫 적용 그룹 전용 — 기존 코드 호환 */
   setActiveSetOrder: (categoryKeys: string[]) => void;
   addCategoryToActiveSet: (categoryKey: string) => void;
   removeCategoryFromActiveSet: (categoryKey: string) => void;
@@ -57,8 +56,8 @@ function createSetId(): string {
   return uuid ?? `set_${Date.now().toString(16)}_${Math.random().toString(16).slice(2, 8)}`;
 }
 
-function persistState(activeSetId: string | null, sets: FixedFlowSet[]): void {
-  saveFixedFlowSetsState({ activeSetId, sets });
+function persistState(activeSetIds: string[], sets: FixedFlowSet[]): void {
+  saveFixedFlowSetsState({ activeSetIds, sets });
   useDayPlanDraftStore.getState().bumpPriorityCatalogFixedRoutineEpoch();
 }
 
@@ -76,7 +75,7 @@ function nextSetName(existing: FixedFlowSet[]): string {
 }
 
 export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) => ({
-  activeSetId: null,
+  activeSetIds: [],
   sets: [],
   isHydrated: false,
 
@@ -96,14 +95,14 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       saveFixedFlowSetsState(sanitized);
     }
     set({
-      activeSetId: sanitized.activeSetId,
+      activeSetIds: sanitized.activeSetIds,
       sets: sanitized.sets,
       isHydrated: true,
     });
   },
 
   addSet: (name) => {
-    const { sets, activeSetId } = get();
+    const { sets, activeSetIds } = get();
     const labelRaw = typeof name === 'string' ? name.trim() : '';
     const nextName = labelRaw.length > 0 ? labelRaw.slice(0, 24) : nextSetName(sets);
     const nextSet: FixedFlowSet = {
@@ -112,41 +111,42 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       items: [],
     };
     const nextSets = [...sets, nextSet];
-    const nextActive = activeSetId ?? nextSet.id;
-    set({ sets: nextSets, activeSetId: nextSet.id });
-    persistState(nextActive === nextSet.id ? nextSet.id : nextActive, nextSets);
+    set({ sets: nextSets });
+    persistState(activeSetIds, nextSets);
   },
 
   renameSet: (setId, nextName) => {
     const name = nextName.trim();
     if (!name) return;
-    const { sets, activeSetId } = get();
+    const { sets, activeSetIds } = get();
     const nextSets = sets.map((s) => (s.id === setId ? { ...s, name: name.slice(0, 24) } : s));
     set({ sets: nextSets });
-    persistState(activeSetId, nextSets);
+    persistState(activeSetIds, nextSets);
   },
 
   removeSet: (setId) => {
-    const { sets, activeSetId } = get();
+    const { sets, activeSetIds } = get();
     const nextSets = sets.filter((s) => s.id !== setId);
-    const nextActive =
-      activeSetId === setId ? nextSets[0]?.id ?? null : activeSetId;
-    set({ sets: nextSets, activeSetId: nextActive });
+    const nextActive = activeSetIds.filter((id) => id !== setId);
+    set({ sets: nextSets, activeSetIds: nextActive });
     persistState(nextActive, nextSets);
   },
 
-  selectSet: (setId) => {
-    const { sets } = get();
+  toggleSetForToday: (setId) => {
+    const { sets, activeSetIds } = get();
     if (!sets.some((s) => s.id === setId)) return;
-    set({ activeSetId: setId });
-    persistState(setId, sets);
+    const nextActive = activeSetIds.includes(setId)
+      ? activeSetIds.filter((id) => id !== setId)
+      : [...activeSetIds, setId];
+    set({ activeSetIds: nextActive });
+    persistState(nextActive, sets);
   },
 
   addCategoryToSet: (setId, categoryKey) => {
     const key = categoryKey.trim();
     if (!key) return;
     if (!isPriorityCatalogAllowedKey(key)) return;
-    const { sets, activeSetId } = get();
+    const { sets, activeSetIds } = get();
     const target = sets.find((s) => s.id === setId);
     if (!target) return;
     if (target.items.some((x) => x.categoryKey === key)) return;
@@ -154,24 +154,24 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       s.id === setId ? { ...s, items: [...s.items, { categoryKey: key, enabled: true }] } : s,
     );
     set({ sets: nextSets });
-    persistState(activeSetId, nextSets);
+    persistState(activeSetIds, nextSets);
   },
 
   removeCategoryFromSet: (setId, categoryKey) => {
     const key = categoryKey.trim();
     if (!key) return;
-    const { sets, activeSetId } = get();
+    const { sets, activeSetIds } = get();
     const target = sets.find((s) => s.id === setId);
     if (!target) return;
     const nextSets = sets.map((s) =>
       s.id === setId ? { ...s, items: s.items.filter((x) => x.categoryKey !== key) } : s,
     );
     set({ sets: nextSets });
-    persistState(activeSetId, nextSets);
+    persistState(activeSetIds, nextSets);
   },
 
   setSetOrder: (setId, categoryKeys) => {
-    const { sets, activeSetId } = get();
+    const { sets, activeSetIds } = get();
     const target = sets.find((s) => s.id === setId);
     if (!target) return;
     const existing = mapSetItems(target.items);
@@ -186,32 +186,30 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     }
     const nextSets = sets.map((s) => (s.id === setId ? { ...s, items } : s));
     set({ sets: nextSets });
-    persistState(activeSetId, nextSets);
+    persistState(activeSetIds, nextSets);
   },
 
   setCategoryEnabledInSet: (setId, categoryKey, enabled) => {
     const key = categoryKey.trim();
     if (!key) return;
-    const { sets, activeSetId } = get();
+    const { sets, activeSetIds } = get();
     const target = sets.find((s) => s.id === setId);
     if (!target) return;
     const nextSets = sets.map((s) =>
       s.id === setId
         ? {
             ...s,
-            items: s.items.map((x) =>
-              x.categoryKey === key ? { ...x, enabled } : x,
-            ),
+            items: s.items.map((x) => (x.categoryKey === key ? { ...x, enabled } : x)),
           }
         : s,
     );
     set({ sets: nextSets });
-    persistState(activeSetId, nextSets);
+    persistState(activeSetIds, nextSets);
   },
 
   setActiveSetOrder: (categoryKeys) => {
-    const { sets, activeSetId } = get();
-    const active = getActiveFixedFlowSet({ activeSetId, sets });
+    const { sets, activeSetIds } = get();
+    const active = getActiveFixedFlowSet({ activeSetIds, sets });
     if (!active) return;
     const existing = mapSetItems(active.items);
     const seen = new Set<string>();
@@ -225,53 +223,57 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     }
     const nextSets = sets.map((s) => (s.id === active.id ? { ...s, items } : s));
     set({ sets: nextSets });
-    persistState(activeSetId, nextSets);
+    persistState(activeSetIds, nextSets);
   },
 
   addCategoryToActiveSet: (categoryKey) => {
     const key = categoryKey.trim();
     if (!key) return;
-    const { sets, activeSetId } = get();
-    const active = getActiveFixedFlowSet({ activeSetId, sets });
+    const { sets, activeSetIds } = get();
+    const active = getActiveFixedFlowSet({ activeSetIds, sets });
     if (!active) return;
     if (active.items.some((x) => x.categoryKey === key)) return;
     const nextSets = sets.map((s) =>
       s.id === active.id ? { ...s, items: [...s.items, { categoryKey: key, enabled: true }] } : s,
     );
     set({ sets: nextSets });
-    persistState(activeSetId, nextSets);
+    persistState(activeSetIds, nextSets);
   },
 
   removeCategoryFromActiveSet: (categoryKey) => {
     const key = categoryKey.trim();
     if (!key) return;
-    const { sets, activeSetId } = get();
-    const active = getActiveFixedFlowSet({ activeSetId, sets });
+    const { sets, activeSetIds } = get();
+    const active = getActiveFixedFlowSet({ activeSetIds, sets });
     if (!active) return;
     const nextSets = sets.map((s) =>
       s.id === active.id ? { ...s, items: s.items.filter((x) => x.categoryKey !== key) } : s,
     );
     set({ sets: nextSets });
-    persistState(activeSetId, nextSets);
+    persistState(activeSetIds, nextSets);
   },
 
   setCategoryEnabled: (categoryKey, enabled) => {
     const key = categoryKey.trim();
     if (!key) return;
-    const { sets, activeSetId } = get();
-    const active = getActiveFixedFlowSet({ activeSetId, sets });
+    const { sets, activeSetIds } = get();
+    const active = getActiveFixedFlowSet({ activeSetIds, sets });
     if (!active) return;
     const nextSets = sets.map((s) =>
       s.id === active.id
         ? {
             ...s,
-            items: s.items.map((x) =>
-              x.categoryKey === key ? { ...x, enabled } : x,
-            ),
+            items: s.items.map((x) => (x.categoryKey === key ? { ...x, enabled } : x)),
           }
         : s,
     );
     set({ sets: nextSets });
-    persistState(activeSetId, nextSets);
+    persistState(activeSetIds, nextSets);
   },
 }));
+
+/** 스토어 밖에서 적용 키 목록이 필요할 때 */
+export function selectMergedActiveFixedFlowCategoryKeys(): string[] {
+  const { activeSetIds, sets } = useFixedFlowSetsStore.getState();
+  return collectActiveFixedFlowCategoryKeys({ activeSetIds, sets });
+}

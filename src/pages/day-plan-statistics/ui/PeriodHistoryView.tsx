@@ -1,0 +1,792 @@
+import { useMemo } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
+
+import { addDaysToLocalDateKey, categoryReminderLabelKo } from '@entities/day-plan';
+import { getCategoryCompletions, type HistoryDailyStat } from '@entities/history';
+import type { HorizonCompletionEntry } from '@shared/lib/storage/horizonCompletionsStorage';
+
+import { IconSymbol } from '@shared/ui/icon-symbol';
+import { ThemedText } from '@shared/ui/themed-text';
+
+import { buildMonthlyRateDeltaLabel } from '../lib/monthlyMilestone';
+import { buildWeeklyCoreGoals } from '../lib/weeklyCoreGoals';
+import {
+  buildWeeklyAxisScores,
+  buildWeeklyEditorialInsight,
+  type WeeklyAxisRow,
+} from '../lib/weeklyBalanceRadar';
+
+type Tone = {
+  card: string;
+  border: string;
+  muted: string;
+  ink: string;
+  level0: string;
+  barTrack: string;
+  barFill: string;
+  heat: string[];
+};
+
+type Props = {
+  tone: Tone;
+  anchorDateKey: string;
+  flowMonthPrefix: string;
+  weekRange: { startDateKey: string; endDateKey: string };
+  prevWeekRange: { startDateKey: string; endDateKey: string };
+  monthRange: { startDateKey: string; endDateKey: string };
+  weeklyBalanceRows: WeeklyAxisRow[];
+  weeklyBalanceScore: number;
+  monthlyRate: number;
+  previousMonthlyRate: number;
+  streak: number;
+  dailyStatsByDate: Record<string, HistoryDailyStat>;
+  weeklyCompletionEntries: HorizonCompletionEntry[];
+  monthlyCompletionEntries: HorizonCompletionEntry[];
+  canGoPrevMonth: boolean;
+  canGoNextMonth: boolean;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onOpenMonthPicker: () => void;
+  onSelectDateKey: (dateKey: string) => void;
+  todayDateKey: string;
+  formatDateKeyKo: (dateKey: string) => string;
+  formatMonthLabelKo: (dateKey: string) => string;
+  formatCountKo: (count: number) => string;
+};
+
+type MonthDay = {
+  dateKey: string;
+  day: number;
+  inMonth: boolean;
+  completionRate: number;
+  completedFlowCount: number;
+  level: number;
+};
+
+const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+const RING_SIZE = 44;
+const RING_RADIUS = 18;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+function parseDateKey(dateKey: string): Date {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
+  if (!m) return new Date();
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0, 0);
+}
+
+function toDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function addDays(date: Date, dayDelta: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + dayDelta);
+  return next;
+}
+
+function formatRatePercent(rate: number): string {
+  return `${Math.round(Math.max(0, Math.min(1, rate)) * 100)}%`;
+}
+
+function completionLevel(completedFlowCount: number): number {
+  if (completedFlowCount >= 6) return 4;
+  if (completedFlowCount >= 4) return 3;
+  if (completedFlowCount >= 2) return 2;
+  if (completedFlowCount >= 1) return 1;
+  return 0;
+}
+
+function buildMonthCalendarDays(
+  monthStartDateKey: string,
+  dailyStatsByDate: Record<string, HistoryDailyStat>,
+): MonthDay[] {
+  const monthStart = parseDateKey(monthStartDateKey);
+  const gridStart = addDays(monthStart, -monthStart.getDay());
+  return Array.from({ length: 42 }, (_, idx) => {
+    const date = addDays(gridStart, idx);
+    const dateKey = toDateKey(date);
+    const row = dailyStatsByDate[dateKey];
+    const count = row?.completedFlowCount ?? 0;
+    return {
+      dateKey,
+      day: date.getDate(),
+      inMonth: date.getMonth() === monthStart.getMonth(),
+      completionRate: row?.completionRate ?? 0,
+      completedFlowCount: count,
+      level: completionLevel(count),
+    };
+  });
+}
+
+function buildTrendPath(
+  dailyStatsByDate: Record<string, HistoryDailyStat>,
+  startDateKey: string,
+  endDateKey: string,
+  width = 100,
+  height = 40,
+): { d: string; endX: number; endY: number } {
+  const keys: string[] = [];
+  let cursor = startDateKey;
+  while (cursor <= endDateKey) {
+    keys.push(cursor);
+    if (cursor === endDateKey) break;
+    cursor = addDaysToLocalDateKey(cursor, 1);
+  }
+  const pointCount = Math.min(keys.length, 14);
+  const step = Math.max(1, Math.floor(Math.max(1, keys.length - 1) / Math.max(1, pointCount - 1)));
+  const values = Array.from({ length: pointCount }, (_, idx) => {
+    const key = keys[Math.min(keys.length - 1, idx * step)];
+    const row = key ? dailyStatsByDate[key] : null;
+    return row ? Math.max(0, Math.min(1, Number(row.completionRate) || 0)) : 0;
+  });
+  if (values.every((v) => v === 0)) {
+    return { d: `M0 ${height - 4} L${width} ${height - 4}`, endX: width, endY: height - 4 };
+  }
+  const max = Math.max(0.01, ...values);
+  const xStep = values.length <= 1 ? width : width / (values.length - 1);
+  const coords = values.map((v, idx) => ({
+    x: idx * xStep,
+    y: height - 4 - (v / max) * (height - 10),
+  }));
+  let d = `M${coords[0].x} ${coords[0].y}`;
+  for (let idx = 1; idx < coords.length; idx += 1) {
+    const prev = coords[idx - 1];
+    const curr = coords[idx];
+    const cx = (prev.x + curr.x) / 2;
+    d += ` Q${cx} ${prev.y}, ${curr.x} ${curr.y}`;
+  }
+  const last = coords[coords.length - 1];
+  return { d, endX: last.x, endY: last.y };
+}
+
+function buildTopCategories(
+  dailyStatsByDate: Record<string, HistoryDailyStat>,
+  startDateKey: string,
+  endDateKey: string,
+) {
+  const totals = new Map<string, number>();
+  for (const row of Object.values(dailyStatsByDate)) {
+    if (row.dateKey < startDateKey || row.dateKey > endDateKey) continue;
+    for (const [key, count] of Object.entries(getCategoryCompletions(row))) {
+      if (count <= 0) continue;
+      totals.set(key, (totals.get(key) ?? 0) + count);
+    }
+  }
+  const ranked = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const max = Math.max(1, ranked[0]?.[1] ?? 0);
+  return ranked.map(([categoryKey, count]) => ({
+    categoryKey,
+    label: categoryReminderLabelKo(categoryKey),
+    count,
+    percent: Math.max(8, Math.round((count / max) * 100)),
+  }));
+}
+
+function streakSubtitle(streak: number): string {
+  if (streak >= 14) return '장기 흐름이 자리 잡고 있어요';
+  if (streak >= 7) return '꾸준히 이어가는 중이에요';
+  if (streak > 0) return '흐름을 쌓는 중이에요';
+  return '오늘부터 시작해 보세요';
+}
+
+export function PeriodHistoryView({
+  tone,
+  anchorDateKey,
+  flowMonthPrefix,
+  weekRange,
+  prevWeekRange,
+  monthRange,
+  weeklyBalanceRows,
+  weeklyBalanceScore,
+  monthlyRate,
+  previousMonthlyRate,
+  streak,
+  dailyStatsByDate,
+  canGoPrevMonth,
+  canGoNextMonth,
+  onPrevMonth,
+  onNextMonth,
+  onOpenMonthPicker,
+  onSelectDateKey,
+  todayDateKey,
+  formatDateKeyKo,
+  formatMonthLabelKo,
+  formatCountKo,
+}: Props) {
+  const monthCalendarDays = useMemo(
+    () => buildMonthCalendarDays(monthRange.startDateKey, dailyStatsByDate),
+    [dailyStatsByDate, monthRange.startDateKey],
+  );
+  const topCategories = useMemo(
+    () => buildTopCategories(dailyStatsByDate, monthRange.startDateKey, monthRange.endDateKey),
+    [dailyStatsByDate, monthRange.endDateKey, monthRange.startDateKey],
+  );
+  const monthDeltaLabel = useMemo(
+    () => buildMonthlyRateDeltaLabel(monthlyRate, previousMonthlyRate),
+    [monthlyRate, previousMonthlyRate],
+  );
+  const trendPath = useMemo(
+    () => buildTrendPath(dailyStatsByDate, monthRange.startDateKey, monthRange.endDateKey),
+    [dailyStatsByDate, monthRange.endDateKey, monthRange.startDateKey],
+  );
+  const coreGoals = useMemo(
+    () =>
+      buildWeeklyCoreGoals({
+        dailyStatsByDate,
+        weekStartKey: weekRange.startDateKey,
+        weekEndKey: weekRange.endDateKey,
+        prevWeekStartKey: prevWeekRange.startDateKey,
+        prevWeekEndKey: prevWeekRange.endDateKey,
+        categoryLabel: categoryReminderLabelKo,
+        limit: 3,
+      }),
+    [dailyStatsByDate, prevWeekRange, weekRange],
+  );
+  const axisScores = useMemo(() => buildWeeklyAxisScores(weeklyBalanceRows), [weeklyBalanceRows]);
+  const editorial = useMemo(
+    () => buildWeeklyEditorialInsight(axisScores, streak),
+    [axisScores, streak],
+  );
+  const rateDeltaPositive = !monthDeltaLabel.startsWith('-');
+
+  return (
+    <>
+      {/* Month Nav + Calendar with gradient heatmap */}
+      <View style={styles.section}>
+        <View style={styles.monthNavRow}>
+          <Pressable
+            disabled={!canGoPrevMonth}
+            onPress={onPrevMonth}
+            hitSlop={8}
+            style={({ pressed }) => [styles.monthNavBtn, pressed && canGoPrevMonth && { opacity: 0.6 }]}
+            accessibilityRole="button"
+            accessibilityLabel="이전 달">
+            <IconSymbol name="chevron.left" size={16} color={canGoPrevMonth ? tone.ink : tone.muted} />
+          </Pressable>
+          <Pressable
+            onPress={onOpenMonthPicker}
+            style={({ pressed }) => [styles.monthNavLabelBtn, pressed && { opacity: 0.7 }]}
+            accessibilityRole="button"
+            accessibilityLabel="월 선택">
+            <ThemedText style={styles.monthNavLabel}>
+              {formatMonthLabelKo(`${flowMonthPrefix}-01`)}
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            disabled={!canGoNextMonth}
+            onPress={onNextMonth}
+            hitSlop={8}
+            style={({ pressed }) => [styles.monthNavBtn, pressed && canGoNextMonth && { opacity: 0.6 }]}
+            accessibilityRole="button"
+            accessibilityLabel="다음 달">
+            <IconSymbol name="chevron.right" size={16} color={canGoNextMonth ? tone.ink : tone.muted} />
+          </Pressable>
+        </View>
+        <View style={[styles.calendarCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
+          <View style={styles.calendarGrid}>
+            {WEEKDAY_LABELS.map((label) => (
+              <ThemedText key={label} style={styles.weekdayLabel} lightColor={tone.muted} darkColor={tone.muted}>
+                {label}
+              </ThemedText>
+            ))}
+            {monthCalendarDays.map((day) => {
+              const selected = day.dateKey === anchorDateKey;
+              const disabled = !day.inMonth || day.dateKey > todayDateKey;
+              const bgColor = selected
+                ? tone.barFill
+                : day.inMonth && day.level > 0
+                  ? tone.heat[day.level]
+                  : undefined;
+              const cell = (
+                <ThemedText
+                  style={styles.calendarDayText}
+                  lightColor={selected ? '#ffffff' : day.level >= 3 ? '#ffffff' : tone.ink}
+                  darkColor={selected ? '#18181b' : day.level >= 3 ? '#18181b' : tone.ink}>
+                  {day.day}
+                </ThemedText>
+              );
+              if (disabled) {
+                return (
+                  <View
+                    key={day.dateKey}
+                    style={[styles.calendarDay, { backgroundColor: bgColor }, !day.inMonth && { opacity: 0.2 }]}>
+                    {cell}
+                  </View>
+                );
+              }
+              return (
+                <Pressable
+                  key={day.dateKey}
+                  onPress={() => onSelectDateKey(day.dateKey)}
+                  style={({ pressed }) => [
+                    styles.calendarDay,
+                    { backgroundColor: bgColor },
+                    pressed && !selected && { opacity: 0.7 },
+                  ]}>
+                  {cell}
+                </Pressable>
+              );
+            })}
+          </View>
+          <View style={styles.legendRow}>
+            <ThemedText style={styles.legendText} lightColor={tone.muted} darkColor={tone.muted}>
+              적음
+            </ThemedText>
+            {tone.heat.map((color, idx) => (
+              <View key={`legend-${idx}`} style={[styles.legendCell, { backgroundColor: color }]} />
+            ))}
+            <ThemedText style={styles.legendText} lightColor={tone.muted} darkColor={tone.muted}>
+              많음
+            </ThemedText>
+          </View>
+        </View>
+      </View>
+
+      {/* Growth Trend Graph */}
+      <View style={[styles.trendCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
+        <View style={styles.trendHeader}>
+          <View style={styles.trendCopy}>
+            <ThemedText style={styles.kicker} lightColor={tone.muted} darkColor={tone.muted}>
+              달성률
+            </ThemedText>
+            <View style={styles.trendRateRow}>
+              <ThemedText style={styles.trendRateValue}>{formatRatePercent(monthlyRate)}</ThemedText>
+              <View style={styles.trendDelta}>
+                <IconSymbol
+                  name={rateDeltaPositive ? 'arrow.up.right' : 'arrow.down.right'}
+                  size={12}
+                  color={tone.barFill}
+                />
+                <ThemedText style={[styles.trendDeltaText, { color: tone.barFill }]}>
+                  {monthDeltaLabel}
+                </ThemedText>
+              </View>
+            </View>
+          </View>
+          <View style={styles.streakBadge}>
+            <IconSymbol name="flame.fill" size={16} color={tone.barFill} />
+            <ThemedText style={styles.streakValue}>{streak}</ThemedText>
+            <ThemedText style={styles.streakUnit} lightColor={tone.muted} darkColor={tone.muted}>일</ThemedText>
+          </View>
+        </View>
+        <View style={styles.trendGraphWrap}>
+          <Svg width="100%" height={52} viewBox="0 0 100 40" preserveAspectRatio="none">
+            <Path d={trendPath.d} fill="none" stroke={tone.barFill} strokeWidth={2.5} opacity={0.25} />
+            <Path d={trendPath.d} fill="none" stroke={tone.barFill} strokeWidth={2.5} strokeLinecap="round" />
+            <Circle cx={trendPath.endX} cy={trendPath.endY} r={3} fill={tone.barFill} />
+          </Svg>
+        </View>
+        <ThemedText style={styles.trendCaption} lightColor={tone.muted} darkColor={tone.muted}>
+          {streakSubtitle(streak)}
+        </ThemedText>
+      </View>
+
+      {/* Weekly Core Goals */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <ThemedText style={styles.sectionTitle}>주간 핵심 목표</ThemedText>
+          <ThemedText style={styles.sectionChip} lightColor={tone.muted} darkColor={tone.muted}>
+            {formatDateKeyKo(weekRange.startDateKey)} – {formatDateKeyKo(weekRange.endDateKey)}
+          </ThemedText>
+        </View>
+        {coreGoals.length === 0 ? (
+          <View style={[styles.emptyCard, { backgroundColor: tone.level0 }]}>
+            <ThemedText style={styles.emptyText} lightColor={tone.muted} darkColor={tone.muted}>
+              이번 주 완료 기록이 쌓이면 핵심 목표가 표시돼요.
+            </ThemedText>
+          </View>
+        ) : (
+          coreGoals.map((goal) => {
+            const progress = Math.min(100, Math.round((goal.completed / Math.max(1, goal.target)) * 100));
+            return (
+              <View key={goal.categoryKey} style={[styles.goalCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
+                <View style={styles.goalTop}>
+                  <View style={[styles.goalIconWrap, { backgroundColor: tone.level0 }]}>
+                    <IconSymbol name={goal.icon} size={18} color={tone.barFill} />
+                  </View>
+                  <View style={styles.goalMeta}>
+                    <ThemedText style={styles.goalTitle}>{goal.title}</ThemedText>
+                    <ThemedText style={styles.goalSub} lightColor={tone.muted} darkColor={tone.muted}>
+                      {formatCountKo(goal.completed)} / {formatCountKo(goal.target)} · {goal.deltaLabel}
+                    </ThemedText>
+                  </View>
+                  <ThemedText style={styles.goalPercent}>{progress}%</ThemedText>
+                </View>
+                <View style={[styles.goalTrack, { backgroundColor: tone.barTrack }]}>
+                  <View style={[styles.goalFill, { width: `${progress}%`, backgroundColor: tone.barFill }]} />
+                </View>
+              </View>
+            );
+          })
+        )}
+      </View>
+
+      {/* Monthly Categories */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <ThemedText style={styles.sectionTitle}>상위 카테고리</ThemedText>
+          <ThemedText style={styles.sectionChip} lightColor={tone.muted} darkColor={tone.muted}>
+            {formatMonthLabelKo(`${flowMonthPrefix}-01`)}
+          </ThemedText>
+        </View>
+        {topCategories.length === 0 ? (
+          <View style={[styles.emptyCard, { backgroundColor: tone.level0 }]}>
+            <ThemedText style={styles.emptyText} lightColor={tone.muted} darkColor={tone.muted}>
+              완료 기록이 쌓이면 상위 카테고리가 표시돼요.
+            </ThemedText>
+          </View>
+        ) : (
+          <View style={[styles.categoryCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
+            {topCategories.map((category, idx) => (
+              <View key={category.categoryKey} style={styles.categoryRow}>
+                <View
+                  style={[
+                    styles.categoryDot,
+                    { backgroundColor: idx === 0 ? tone.barFill : idx === 1 ? tone.muted : tone.border },
+                  ]}
+                />
+                <View style={styles.categoryMeta}>
+                  <View style={styles.categoryTop}>
+                    <ThemedText style={styles.categoryLabel}>{category.label}</ThemedText>
+                    <ThemedText style={styles.categoryCount} lightColor={tone.muted} darkColor={tone.muted}>
+                      {formatCountKo(category.count)}
+                    </ThemedText>
+                  </View>
+                  <View style={[styles.categoryTrack, { backgroundColor: tone.barTrack }]}>
+                    <View
+                      style={[
+                        styles.categoryFill,
+                        { width: `${category.percent}%`, backgroundColor: idx === 0 ? tone.barFill : tone.muted },
+                      ]}
+                    />
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Weekly Balance + Editorial */}
+      <View style={[styles.editorialCard, { backgroundColor: tone.barFill }]}>
+        <View style={styles.editorialTop}>
+          <ThemedText style={styles.editorialKicker}>에디토리얼 인사이트</ThemedText>
+          <View style={styles.editorialBadge}>
+            <ThemedText style={styles.editorialBadgeText}>밸런스 {weeklyBalanceScore}%</ThemedText>
+          </View>
+        </View>
+        <ThemedText style={styles.editorialTitle}>{editorial.title}</ThemedText>
+        <ThemedText style={styles.editorialBody}>{editorial.body}</ThemedText>
+        {editorial.recommendPriority ? (
+          <View style={styles.editorialFooter}>
+            <IconSymbol name="lightbulb.fill" size={14} color="#FAFAFA" />
+            <ThemedText style={styles.editorialFooterText}>우선순위 변경 권장</ThemedText>
+          </View>
+        ) : null}
+      </View>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  section: {
+    gap: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+  sectionChip: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  kicker: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
+  monthNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  monthNavBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthNavLabelBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  monthNavLabel: {
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+  },
+  calendarCard: {
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 14,
+    gap: 14,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: 6,
+  },
+  weekdayLabel: {
+    width: `${100 / 7}%`,
+    textAlign: 'center',
+    fontSize: 10,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  calendarDay: {
+    width: `${100 / 7}%`,
+    minHeight: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarDayText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingTop: 4,
+  },
+  legendCell: {
+    width: 14,
+    height: 14,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: 9,
+    fontWeight: '800',
+    marginHorizontal: 2,
+  },
+  trendCard: {
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 20,
+    gap: 14,
+  },
+  trendHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  trendCopy: {
+    gap: 6,
+  },
+  trendRateRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+  },
+  trendRateValue: {
+    fontSize: 34,
+    fontWeight: '900',
+    letterSpacing: -1.2,
+    lineHeight: 38,
+  },
+  trendDelta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  trendDeltaText: {
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  streakValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  streakUnit: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  trendGraphWrap: {
+    width: '100%',
+    height: 52,
+  },
+  trendCaption: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  goalCard: {
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 14,
+    gap: 10,
+  },
+  goalTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  goalIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goalMeta: {
+    flex: 1,
+    gap: 2,
+  },
+  goalTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  goalSub: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  goalPercent: {
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  goalTrack: {
+    height: 5,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  goalFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  categoryCard: {
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 16,
+    gap: 14,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  categoryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+  },
+  categoryMeta: {
+    flex: 1,
+    gap: 6,
+  },
+  categoryTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  categoryLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  categoryCount: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  categoryTrack: {
+    height: 5,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  categoryFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  emptyCard: {
+    borderRadius: 14,
+    padding: 16,
+  },
+  emptyText: {
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  editorialCard: {
+    borderRadius: 18,
+    padding: 22,
+    gap: 12,
+  },
+  editorialTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  editorialKicker: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+    color: 'rgba(250,250,250,0.7)',
+    textTransform: 'uppercase',
+  },
+  editorialBadge: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  editorialBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#FAFAFA',
+  },
+  editorialTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    lineHeight: 26,
+    color: '#FAFAFA',
+  },
+  editorialBody: {
+    fontSize: 13,
+    lineHeight: 21,
+    fontWeight: '600',
+    color: 'rgba(250,250,250,0.82)',
+  },
+  editorialFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  editorialFooterText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FAFAFA',
+  },
+});

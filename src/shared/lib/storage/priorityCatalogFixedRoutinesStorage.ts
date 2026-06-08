@@ -39,7 +39,7 @@ function ensureMigratedFromLegacy(): void {
   const legacyKeys = normalizeLegacyKeys(legacy?.categoryKeys);
   if (legacyKeys.length === 0) return;
   saveFixedFlowSetsState({
-    activeSetId: 'default',
+    activeSetIds: ['default'],
     sets: [createDefaultSet(legacyKeys)],
   });
 }
@@ -52,7 +52,7 @@ export function loadPriorityCatalogFixedRoutineKeys(): string[] {
 export function savePriorityCatalogFixedRoutineKeys(categoryKeys: string[]): void {
   ensureMigratedFromLegacy();
   const state = loadFixedFlowSetsState();
-  const activeId = state.activeSetId ?? state.sets[0]?.id ?? 'default';
+  const activeId = state.activeSetIds[0] ?? state.sets[0]?.id ?? 'default';
   const seen = new Set<string>();
   const normalized = categoryKeys
     .map((k) => k.trim())
@@ -68,7 +68,9 @@ export function savePriorityCatalogFixedRoutineKeys(categoryKeys: string[]): voi
   updated.name = sets[idx]?.name ?? '기본 세트';
   if (idx >= 0) sets[idx] = updated;
   else sets.push(updated);
-  saveFixedFlowSetsState({ activeSetId: activeId, sets });
+  const activeSetIds =
+    state.activeSetIds.length > 0 ? state.activeSetIds : [activeId];
+  saveFixedFlowSetsState({ activeSetIds, sets });
   localStorageClient.setJson(StorageKeys.priorityCatalogFixedRoutines, {
     categoryKeys: [...normalized],
   });

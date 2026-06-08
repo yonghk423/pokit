@@ -1,14 +1,24 @@
-import { useHorizonCompletionStore } from '@entities/horizon-completion';
+import { useFixedFlowSetsStore } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
+import { useHorizonCompletionStore } from '@entities/horizon-completion';
+import { ensureDefaultPriorityCatalog, loadFixedFlowSetsState } from '@shared/lib/storage';
 import { runDevMockClear, runDevMockSeed, type DevMockSeedResult } from '@shared/lib/storage/devMockSeed';
 
 function reloadStoresAfterDevMockChange(): void {
   useHistoryStore.getState().reloadFromStorage();
   useHistoryStore.getState().recomputeAchievements();
   useHorizonCompletionStore.getState().reloadFromStorage();
+
+  const fixed = loadFixedFlowSetsState();
+  useFixedFlowSetsStore.setState({
+    activeSetIds: fixed.activeSetIds,
+    sets: fixed.sets,
+    isHydrated: true,
+  });
 }
 
 export async function runDevMockSeedWithStoreSync(): Promise<DevMockSeedResult> {
+  ensureDefaultPriorityCatalog();
   const result = await runDevMockSeed();
   reloadStoresAfterDevMockChange();
   return result;

@@ -1,6 +1,11 @@
 import { listCustomFlowCatalogEntries } from '@shared/lib/storage';
 
-import { getPickerCategoryLabel, PICKER_CATEGORIES, type PickerCategoryItem } from './dayPlanEditorShared';
+import {
+  getPickerCategoryItem,
+  getPickerCategoryLabel,
+  PICKER_CATEGORIES,
+  type PickerCategoryItem,
+} from './dayPlanEditorShared';
 import { filterCatalogPickerCategories } from './priorityCatalogSections';
 
 export type PriorityCatalogRow = {
@@ -21,7 +26,7 @@ export function buildPriorityCatalogRows(): PriorityCatalogRow[] {
   const customs = listCustomFlowCatalogEntries().map((entry) => ({
     key: entry.id,
     label: getPickerCategoryLabel(entry.id),
-    icon: 'person.fill',
+    icon: getPickerCategoryItem(entry.id)?.icon ?? 'person.fill',
     isCustom: true,
   }));
   return [...base, ...customs];

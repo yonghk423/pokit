@@ -16,6 +16,15 @@ describe('generateHistorySeedRows', () => {
     expect(rows.at(-1)?.dateKey).toBe(anchorDateKey);
   });
 
+  it('boosts the recent 7 days with custom flow completions', () => {
+    const rows = generateHistorySeedRows(anchor);
+    const recent = rows.slice(-7);
+    const hasCustomFlow = recent.some((row) =>
+      Object.keys(row.categoryCompletions ?? {}).some((k) => k.startsWith('customFlow:')),
+    );
+    expect(hasCustomFlow).toBe(true);
+  });
+
   it('keeps a long consecutive streak through anchor day', () => {
     const rows = generateHistorySeedRows(anchor);
     const map = Object.fromEntries(rows.map((row) => [row.dateKey, row]));

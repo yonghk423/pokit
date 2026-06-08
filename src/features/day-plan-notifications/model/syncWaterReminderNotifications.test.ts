@@ -20,6 +20,14 @@ jest.mock('@entities/day-plan', () => ({
   waterReminderIntervalMinutes: (...args: unknown[]) => mockWaterReminderIntervalMinutes(...args),
   buildWaterRoutineReminderSlots: (...args: unknown[]) => mockBuildWaterRoutineReminderSlots(...args),
   formatHhmmClockKo: (...args: unknown[]) => mockFormatHhmmClockKo(...args),
+  parseHHmmToMinutes: (hhmm: string) => {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm).trim());
+    if (!m) return null;
+    const h = Number(m[1]);
+    const min = Number(m[2]);
+    if (h > 23 || min > 59) return null;
+    return h * 60 + min;
+  },
   useDayPlanStore: {
     getState: () => mockUseDayPlanStoreGetState(),
   },
@@ -70,6 +78,7 @@ describe('syncWaterReminderNotifications', () => {
     mockLoadGoalDetailCategoryConfig.mockReturnValue({});
     mockNormalizeWaterDetailConfig.mockReturnValue({
       smartNotification: true,
+      reminderTimes: ['10:00'],
       reminderPreset: '60',
       reminderCustomMin: 60,
     });

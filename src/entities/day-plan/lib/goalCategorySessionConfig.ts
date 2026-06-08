@@ -1,6 +1,7 @@
 /** 목표 상세(플로우별) 저장 구조 — 세션·위젯에서 공용으로 사용 */
 
 import type { ReadingLiveActivityConfig } from './readingLiveActivityConfig';
+import { normalizeWaterReminderTimes } from './normalizeWaterReminderTimes';
 import { parseHHmmToMinutes } from './parseTime';
 
 function asObj(raw: unknown): Record<string, unknown> {
@@ -141,10 +142,12 @@ export type WaterReminderPreset = '60' | '120' | 'custom';
 export type WaterDetailDataConfig = {
   goalMl: number;
   drankMl: number;
-  /** 60=1시간, 120=2시간, custom=reminderCustomMin 사용 */
+  /** 60=1시간, 120=2시간, custom=reminderCustomMin — 「시각 일괄 채우기」에만 사용 */
   reminderPreset: WaterReminderPreset;
   reminderCustomMin: number;
   smartNotification: boolean;
+  /** 사용자가 직접 추가한 알림 시각(HH:mm). 비어 있으면 예약하지 않음 */
+  reminderTimes: string[];
 };
 
 export function normalizeWaterDetailConfig(raw: unknown): WaterDetailDataConfig {
@@ -164,9 +167,18 @@ export function normalizeWaterDetailConfig(raw: unknown): WaterDetailDataConfig 
   );
 
   const smartNotification =
-    typeof o.smartNotification === 'boolean' ? o.smartNotification : true;
+    typeof o.smartNotification === 'boolean' ? o.smartNotification : false;
 
-  return { goalMl, drankMl, reminderPreset, reminderCustomMin, smartNotification };
+  const reminderTimes = normalizeWaterReminderTimes(o.reminderTimes);
+
+  return {
+    goalMl,
+    drankMl,
+    reminderPreset,
+    reminderCustomMin,
+    smartNotification,
+    reminderTimes,
+  };
 }
 
 export function getInitialWaterDataConfig(): WaterDetailDataConfig {
@@ -175,7 +187,8 @@ export function getInitialWaterDataConfig(): WaterDetailDataConfig {
     drankMl: 0,
     reminderPreset: '60',
     reminderCustomMin: 90,
-    smartNotification: true,
+    smartNotification: false,
+    reminderTimes: [],
   };
 }
 

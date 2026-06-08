@@ -27,6 +27,7 @@ export const HEALTH_GROUP_SYSTEM_ORDER = [
   'stretching',
   'straightenBack',
   'neckPosture',
+  'meditation',
 ] as const satisfies ReadonlyArray<PickerCategoryItem['key']>;
 
 /** 시스템 그룹 「생산성을 높이는 도구」에 속하는 표준 카탈로그 키 순서 */
@@ -34,6 +35,9 @@ export const PRODUCTIVITY_GROUP_SYSTEM_ORDER = [
   'reading',
   'study',
   'planning',
+  'writing',
+  'deepwork',
+  'journal',
 ] as const satisfies ReadonlyArray<PickerCategoryItem['key']>;
 
 const HEALTH_GROUP_KEYS = new Set<string>(HEALTH_GROUP_SYSTEM_ORDER);

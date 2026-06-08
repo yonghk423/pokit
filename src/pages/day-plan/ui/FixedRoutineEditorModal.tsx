@@ -9,7 +9,7 @@ import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { getPickerCategoryLabel, PICKER_CATEGORIES } from '../lib/dayPlanEditorShared';
+import { getPickerCategoryItem, getPickerCategoryLabel, PICKER_CATEGORIES } from '../lib/dayPlanEditorShared';
 import { filterCatalogPickerCategories } from '../lib/priorityCatalogSections';
 import { FixedRoutineDraftOrderList } from './FixedRoutineDraftOrderList';
 
@@ -46,11 +46,14 @@ export function FixedRoutineEditorModal({
   const catalogCategories = useMemo(() => {
     void catalogLabelTick;
     const base = filterCatalogPickerCategories(PICKER_CATEGORIES);
-    const customs = listCustomFlowCatalogIds().map((id) => ({
-      key: id,
-      label: getPickerCategoryLabel(id),
-      icon: 'person.fill' as const,
-    }));
+    const customs = listCustomFlowCatalogIds().map((id) => {
+      const item = getPickerCategoryItem(id);
+      return {
+        key: id,
+        label: getPickerCategoryLabel(id),
+        icon: (item?.icon ?? 'person.fill') as typeof PICKER_CATEGORIES[number]['icon'],
+      };
+    });
     return [...base, ...customs];
   }, [catalogLabelTick]);
   const catalogCategoryKeySet = useMemo(

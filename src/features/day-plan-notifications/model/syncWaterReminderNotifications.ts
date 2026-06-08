@@ -1,10 +1,9 @@
 import {
-  buildWaterRoutineReminderSlots,
   filterDayPlanFlowBlocks,
   formatHhmmClockKo,
   normalizeWaterDetailConfig,
+  parseHHmmToMinutes,
   useDayPlanStore,
-  waterReminderIntervalMinutes,
 } from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import {
@@ -57,10 +56,7 @@ function wallMinuteToHhmm(m: number): string {
   return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
 }
 
-function collectSlots(
-  routineStartHhmm: string,
-  routineEndHhmm: string,
-): CollectedSlot[] {
+function collectSlots(): CollectedSlot[] {
   const blocks = useDayPlanStore.getState().blocks;
   const byClock = new Map<string, CollectedSlot>();
 
@@ -68,31 +64,23 @@ function collectSlots(
     if (b.category.trim() !== WATER_CATEGORY_LABEL) continue;
     const raw = loadGoalDetailBlockConfig(b.id) ?? loadGoalDetailCategoryConfig('water');
     const cfg = normalizeWaterDetailConfig(raw ?? {});
-    if (!cfg.smartNotification) continue;
-
-    const interval = waterReminderIntervalMinutes(cfg);
-    const slots = buildWaterRoutineReminderSlots({
-      routineStartHhmm,
-      routineEndHhmm,
-      intervalMinutes: interval,
-    });
+    if (!cfg.smartNotification || cfg.reminderTimes.length === 0) continue;
 
     const firstLine = b.title?.trim().split('\n')[0]?.trim() ?? '';
     const label = firstLine.length > 0 ? firstLine : '수분';
 
-    for (const s of slots) {
-      const hhmm = wallMinuteToHhmm(s.wallMinuteOfDay);
-      const clockKey = hhmm;
+    for (const hhmmRaw of cfg.reminderTimes) {
+      const hhmm = hhmmRaw.trim();
+      const wall = parseHHmmToMinutes(hhmm);
+      if (wall === null || wall >= 24 * 60) continue;
+      const clockKey = wallMinuteToHhmm(wall);
       if (byClock.has(clockKey)) continue;
 
-      const hour = Math.floor(s.wallMinuteOfDay / 60);
-      const minute = s.wallMinuteOfDay % 60;
-      const slotKey = `water:${clockKey}`;
       byClock.set(clockKey, {
-        slotKey,
+        slotKey: `water:${clockKey}`,
         blockId: b.id,
-        hour,
-        minute,
+        hour: Math.floor(wall / 60),
+        minute: wall % 60,
         title: '수분 알림',
         body: `${label} · ${formatHhmmClockKo(hhmm)} 시간 입니다.`,
       });
@@ -103,7 +91,7 @@ function collectSlots(
 }
 
 /**
- * 담기 구간과 일정의 수분 블록 설정을 읽어, 수분 주기 알림(매일 동일 시각)을 다시 예약합니다.
+ * 일정의 수분 블록에 저장된 **사용자 지정 알림 시각**만 읽어 매일 알림을 다시 예약합니다.
  */
 export async function syncWaterReminderNotifications(opts: {
   routineStartHhmm: string;
@@ -128,7 +116,7 @@ export async function syncWaterReminderNotifications(opts: {
         return;
       }
 
-      const collected = collectSlots(opts.routineStartHhmm, opts.routineEndHhmm).slice(
+      const collected = collectSlots().slice(
         0,
         MAX_WATER_REMINDER_SLOTS,
       );

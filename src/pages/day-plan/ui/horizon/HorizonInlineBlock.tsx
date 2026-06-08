@@ -36,11 +36,11 @@ function baseInputStyle(type: HorizonGoalBlock['type']) {
 function placeholderForType(type: HorizonGoalBlock['type']): string {
   switch (type) {
     case 'heading1':
-      return '이번 주 핵심 전략';
+      return '섹션제목1';
     case 'heading2':
-      return '섹션 제목';
+      return '섹션제목2';
     case 'heading3':
-      return '소제목';
+      return '섹션제목3';
     case 'bullet':
       return '리스트 항목';
     case 'numbered':

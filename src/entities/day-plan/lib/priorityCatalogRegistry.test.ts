@@ -12,18 +12,21 @@ describe('priorityCatalogRegistry', () => {
     const standard = getPriorityCatalogStandardKeys();
     expect(standard).toContain('reading');
     expect(standard).toContain('water');
-    expect(standard).not.toContain('creative');
-    expect(standard).not.toContain('work');
-    expect(standard).not.toContain('inbox');
+    expect(standard).toContain('meditation');
+    expect(standard).toContain('deepwork');
+    expect(standard).not.toContain('other');
+    expect(standard).not.toContain('yoga');
+    expect(standard).not.toContain('coding');
   });
 
   it('filters fixed set keys to catalog-only', () => {
     const filtered = filterKeysToPriorityCatalog([
       'reading',
-      'creative',
-      'work',
+      'yoga',
+      'coding',
       'water',
       'water',
+      'other',
     ]);
     expect(filtered).toEqual(['reading', 'water']);
   });

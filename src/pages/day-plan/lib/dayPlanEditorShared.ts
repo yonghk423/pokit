@@ -8,7 +8,7 @@ import {
   normalizeOtherDetailConfig,
   parseHHmmToMinutes,
 } from '@entities/day-plan';
-import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
+import { loadGoalDetailCategoryConfig, resolveCustomFlowCatalogIcon } from '@shared/lib/storage';
 
 export {
   defaultEditorBlockTimesFromNow,
@@ -24,20 +24,43 @@ export type { PlanMode } from '@entities/day-plan';
 export const PRIMARY = 'rgb(0, 0, 0)';
 
 export const CATEGORIES = [
-  { key: 'work', label: '작업', icon: 'bag.fill' as const },
-  { key: 'reading', label: '독서', icon: 'book.fill' as const },
-  { key: 'study', label: '공부·학습', icon: 'graduationcap.fill' as const },
+  // ─── 건강·몸 관리 ───
+  { key: 'water', label: '수분섭취', icon: 'drop.fill' as const },
+  { key: 'medicine', label: '약 복용', icon: 'cross.case.fill' as const },
+  { key: 'fasting', label: '체중관리', icon: 'figure.stand' as const },
   { key: 'stretching', label: '스트레칭하기', icon: 'figure.run' as const },
   { key: 'straightenBack', label: '허리펴기', icon: 'figure.yoga' as const },
   { key: 'neckPosture', label: '거북목 바르게하기', icon: 'tortoise.fill' as const },
+  { key: 'meditation', label: '명상', icon: 'brain.head.profile' as const },
+  { key: 'workout', label: '운동', icon: 'dumbbell.fill' as const },
+  { key: 'walking', label: '산책', icon: 'figure.walk' as const },
+  { key: 'yoga', label: '요가', icon: 'figure.mind.and.body' as const },
+  { key: 'sleep', label: '수면 관리', icon: 'moon.fill' as const },
+  { key: 'breathing', label: '호흡 운동', icon: 'wind' as const },
+  { key: 'skincare', label: '피부 관리', icon: 'sparkles' as const },
+  { key: 'vitamins', label: '영양제 챙기기', icon: 'pill.fill' as const },
+  { key: 'posture', label: '자세 교정', icon: 'figure.stand.line.dotted.figure.stand' as const },
+  { key: 'eyerest', label: '눈 휴식', icon: 'eye' as const },
+
+  // ─── 생산성을 높이는 도구 ───
+  { key: 'reading', label: '독서', icon: 'book.fill' as const },
+  { key: 'study', label: '공부·학습', icon: 'graduationcap.fill' as const },
   { key: 'planning', label: '하루·주간 정리', icon: 'calendar.badge.clock' as const },
   { key: 'writing', label: '글쓰기', icon: 'square.and.pencil' as const },
   { key: 'language', label: '언어 학습', icon: 'character.bubble' as const },
   { key: 'creative', label: '창작·아이디어', icon: 'paintpalette.fill' as const },
   { key: 'inbox', label: '메일·소통 정리', icon: 'tray.2.fill' as const },
-  { key: 'fasting', label: '체중관리', icon: 'figure.stand' as const },
-  { key: 'water', label: '수분섭취', icon: 'drop.fill' as const },
-  { key: 'medicine', label: '약 복용', icon: 'cross.case.fill' as const },
+  { key: 'deepwork', label: '딥 워크', icon: 'brain' as const },
+  { key: 'journal', label: '일기 쓰기', icon: 'book.closed.fill' as const },
+  { key: 'pomodoro', label: '포모도로 집중', icon: 'timer' as const },
+  { key: 'review', label: '회고·복습', icon: 'arrow.counterclockwise' as const },
+  { key: 'news', label: '뉴스·정보 수집', icon: 'newspaper.fill' as const },
+  { key: 'organize', label: '정리정돈', icon: 'tray.and.arrow.down.fill' as const },
+  { key: 'podcast', label: '팟캐스트·강의', icon: 'headphones' as const },
+  { key: 'work', label: '업무 집중', icon: 'bag.fill' as const },
+  { key: 'coding', label: '코딩·개발', icon: 'chevron.left.forwardslash.chevron.right' as const },
+
+  // ─── 레거시 호환 ───
   { key: 'other', label: '플로우 직접 설정', icon: 'person.fill' as const },
 ];
 
@@ -60,7 +83,7 @@ export function getPickerCategoryItem(key: string): PickerCategoryItem | undefin
     return {
       key,
       label: getPickerCategoryLabel(key),
-      icon: 'person.fill',
+      icon: resolveCustomFlowCatalogIcon(key),
     } as PickerCategoryItem;
   }
   return PICKER_CATEGORIES.find((c) => c.key === key) ?? LEGACY_PICKER_BY_KEY[key];

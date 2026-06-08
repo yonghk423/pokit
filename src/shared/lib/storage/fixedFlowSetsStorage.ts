@@ -14,11 +14,15 @@ export type FixedFlowSet = {
 };
 
 export type FixedFlowSetsState = {
-  activeSetId: string | null;
+  /** 오늘 담기에 적용 중인 그룹 id (여러 개 가능) */
+  activeSetIds: string[];
   sets: FixedFlowSet[];
 };
 
-type PersistedShape = Partial<FixedFlowSetsState>;
+type PersistedShape = Partial<FixedFlowSetsState> & {
+  /** 레거시 단일 적용 id — 읽기 전용 마이그레이션 */
+  activeSetId?: string | null;
+};
 
 function normalizeItems(raw: unknown): FixedFlowSetItem[] {
   if (!Array.isArray(raw)) return [];
@@ -56,15 +60,54 @@ function normalizeSets(raw: unknown): FixedFlowSet[] {
   return out;
 }
 
+function normalizeActiveSetIds(raw: PersistedShape, sets: FixedFlowSet[]): string[] {
+  const valid = new Set(sets.map((s) => s.id));
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  const pushId = (id: string) => {
+    if (!valid.has(id) || seen.has(id)) return;
+    seen.add(id);
+    out.push(id);
+  };
+
+  if (Array.isArray(raw.activeSetIds)) {
+    for (const row of raw.activeSetIds) {
+      if (typeof row !== 'string') continue;
+      pushId(row.trim());
+    }
+    return out;
+  }
+
+  const legacy =
+    typeof raw.activeSetId === 'string' ? raw.activeSetId.trim() : '';
+  if (legacy) pushId(legacy);
+  return out;
+}
+
 export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState {
   const raw = input && typeof input === 'object' ? (input as PersistedShape) : {};
   const sets = normalizeSets(raw.sets);
-  const activeSetIdRaw = typeof raw.activeSetId === 'string' ? raw.activeSetId.trim() : null;
-  const activeSetId =
-    activeSetIdRaw && sets.some((s) => s.id === activeSetIdRaw)
-      ? activeSetIdRaw
-      : sets[0]?.id ?? null;
-  return { activeSetId, sets };
+  const activeSetIds = normalizeActiveSetIds(raw, sets);
+  return { activeSetIds, sets };
+}
+
+/** 적용 중인 그룹들의 활성 항목 키 — 그룹 순서·항목 순서 유지, 중복 제거 */
+export function collectActiveFixedFlowCategoryKeys(state: FixedFlowSetsState): string[] {
+  const active = new Set(state.activeSetIds);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const set of state.sets) {
+    if (!active.has(set.id)) continue;
+    for (const item of set.items) {
+      if (item.enabled === false) continue;
+      const key = item.categoryKey.trim();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(key);
+    }
+  }
+  return out;
 }
 
 export function loadFixedFlowSetsState(): FixedFlowSetsState {
@@ -85,7 +128,7 @@ export function loadFixedFlowSetsState(): FixedFlowSetsState {
     return defaults;
   }
   const migrated: FixedFlowSetsState = {
-    activeSetId: 'default',
+    activeSetIds: ['default'],
     sets: [
       {
         id: 'default',
@@ -103,14 +146,15 @@ export function saveFixedFlowSetsState(next: FixedFlowSetsState): void {
   localStorageClient.setJson(StorageKeys.fixedFlowSets, normalized);
 }
 
+/** @deprecated 첫 번째 적용 그룹 — 레거시 단일 세트 API용 */
 export function getActiveFixedFlowSet(state: FixedFlowSetsState): FixedFlowSet | null {
-  if (!state.activeSetId) return null;
-  return state.sets.find((s) => s.id === state.activeSetId) ?? null;
+  for (const set of state.sets) {
+    if (state.activeSetIds.includes(set.id)) return set;
+  }
+  return null;
 }
 
 export function loadActiveFixedFlowCategoryKeys(): string[] {
   const state = loadFixedFlowSetsState();
-  const active = getActiveFixedFlowSet(state);
-  if (!active) return [];
-  return active.items.filter((x) => x.enabled).map((x) => x.categoryKey);
+  return collectActiveFixedFlowCategoryKeys(state);
 }

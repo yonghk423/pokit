@@ -7,12 +7,12 @@ describe('createDefaultFixedFlowSetsState', () => {
     expect(state.sets.map((s) => s.name)).toEqual(['데일리', '주말', '출근 준비']);
     const weekend = state.sets.find((s) => s.id === 'set_weekend');
     expect(weekend?.items.map((x) => x.categoryKey)).toEqual([
+      'meditation',
       'reading',
-      'study',
-      'planning',
-      'stretching',
+      'journal',
+      'writing',
     ]);
-    expect(state.activeSetId).toBe('set_daily');
+    expect(state.activeSetIds).toEqual([]);
   });
 
   it('enables all items in each set', () => {

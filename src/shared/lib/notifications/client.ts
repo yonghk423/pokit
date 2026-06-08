@@ -148,6 +148,16 @@ export async function cancelScheduledNotificationsByEventType(
   );
 }
 
+/** 현재 앱이 예약한 로컬 알림을 전부 취소합니다. */
+export async function cancelAllScheduledLocalNotifications(): Promise<void> {
+  if (!isNativeNotificationPlatform()) return;
+  await ensureConfigured();
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    scheduled.map((req) => Notifications.cancelScheduledNotificationAsync(req.identifier)),
+  );
+}
+
 export async function sendImmediateNotification(params: {
   title: string;
   body: string;

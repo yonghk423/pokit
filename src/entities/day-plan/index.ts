@@ -97,6 +97,7 @@ export {
 export {
   CATEGORY_REMINDER_KEYS,
   categoryReminderLabelKo,
+  categoryReminderIconName,
   type CategoryReminderCatalogKey,
 } from './lib/categoryReminderCatalog';
 export {
@@ -114,3 +115,7 @@ export {
   waterReminderIntervalMinutes,
   type WaterRoutineReminderSlot,
 } from './lib/waterReminderRoutineSlots';
+export {
+  MAX_WATER_REMINDER_TIMES,
+  normalizeWaterReminderTimes,
+} from './lib/normalizeWaterReminderTimes';

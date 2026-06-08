@@ -55,14 +55,14 @@ export function HorizonFormatToolbar({
       ]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="제목1"
+        accessibilityLabel="섹션제목1"
         onPress={() => tap(() => onPickType('heading1'))}
         style={[styles.textBtn, selectedType === 'heading1' && [styles.textBtnActive, { backgroundColor: activeBg }]]}>
         <ThemedText style={[styles.toolText, { color: ink }]}>T1</ThemedText>
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="제목2"
+        accessibilityLabel="섹션제목2"
         onPress={() => tap(() => onPickType('heading2'))}
         style={[styles.textBtn, selectedType === 'heading2' && [styles.textBtnActive, { backgroundColor: activeBg }]]}>
         <ThemedText style={[styles.toolText, { color: ink }]}>T2</ThemedText>
