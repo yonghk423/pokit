@@ -1,9 +1,9 @@
-import { CUSTOM_FLOW_CATEGORY_PREFIX } from './customFlowCategoryKey';
 import {
+  CATEGORY_REMINDER_KEYS,
   categoryReminderIconName,
   categoryReminderLabelKo,
-  CATEGORY_REMINDER_KEYS,
 } from './categoryReminderCatalog';
+import { CUSTOM_FLOW_CATEGORY_PREFIX } from './customFlowCategoryKey';
 
 describe('categoryReminderCatalog', () => {
   it('includes core reminder keys', () => {

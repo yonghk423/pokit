@@ -7,8 +7,8 @@ export {
 } from './customCatalogGroupStorage';
 export type { CustomCatalogGroup } from './customCatalogGroupStorage';
 export {
-  appendCustomFlowCatalogEntry,
-  appendCustomFlowCatalogId, DEFAULT_CUSTOM_FLOW_GROUP_KEY, listCustomFlowCatalogEntries,
+  DEFAULT_CUSTOM_FLOW_GROUP_KEY, appendCustomFlowCatalogEntry,
+  appendCustomFlowCatalogId, listCustomFlowCatalogEntries,
   listCustomFlowCatalogIds,
   reassignCustomFlowGroup,
   removeCustomFlowCatalogId,
@@ -33,14 +33,12 @@ export {
   DEFAULT_CUSTOM_FLOW_COLOR,
   DEFAULT_CUSTOM_FLOW_ICON,
   resolveCustomFlowCatalogColor,
-  resolveCustomFlowCatalogIcon,
+  resolveCustomFlowCatalogIcon
 } from './defaultPriorityCatalog';
 export type { BuiltinCustomFlowDef } from './defaultPriorityCatalog';
 export { ensureDefaultPriorityCatalog } from './ensureDefaultPriorityCatalog';
 export {
-  getActiveFixedFlowSet,
-  collectActiveFixedFlowCategoryKeys,
-  loadActiveFixedFlowCategoryKeys,
+  collectActiveFixedFlowCategoryKeys, getActiveFixedFlowSet, loadActiveFixedFlowCategoryKeys,
   loadFixedFlowSetsState,
   normalizeFixedFlowSetsState,
   saveFixedFlowSetsState,
@@ -83,7 +81,7 @@ export {
   type HorizonCompletionKind
 } from './horizonCompletionsStorage';
 export {
-  createHorizonBlock, EMPTY_HORIZON_DOCUMENT, estimateHorizonDocumentProgress, HORIZON_BLOCK_TYPE_LABELS, horizonDocumentHasContent,
+  EMPTY_HORIZON_DOCUMENT, HORIZON_BLOCK_TYPE_LABELS, createHorizonBlock, estimateHorizonDocumentProgress, horizonDocumentHasContent,
   horizonDocumentToPlainText,
   parseHorizonGoalDocument
 } from './horizonGoalBlocks';
@@ -112,7 +110,6 @@ export {
   initLocalStorageClient,
   localStorageClient
 } from './localStorageClient';
-export { resetAppLocalData } from './resetAppLocalData';
 export {
   loadPriorityBagRemoveConfirmSkip,
   savePriorityBagRemoveConfirmSkip
@@ -121,6 +118,7 @@ export {
   loadPriorityCatalogFixedRoutineKeys,
   savePriorityCatalogFixedRoutineKeys
 } from './priorityCatalogFixedRoutinesStorage';
+export { resetAppLocalData } from './resetAppLocalData';
 export {
   resolveMonthlyCompletionDocument,
   resolveWeeklyCompletionDocument
