@@ -161,11 +161,9 @@ export function WeeklyHistoryView({
                     </View>
                   </View>
                   <View style={styles.goalRight}>
-                    <ThemedText style={styles.goalFraction}>
-                      {goal.completed}/{goal.target}
-                    </ThemedText>
+                    <ThemedText style={styles.goalFraction}>{goal.completed}회</ThemedText>
                     <ThemedText style={styles.goalFractionLabel} lightColor={tone.muted} darkColor={tone.muted}>
-                      {goal.metricSubtitle}
+                      {goal.deltaLabel}
                     </ThemedText>
                   </View>
                 </View>

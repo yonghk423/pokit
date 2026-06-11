@@ -19,6 +19,8 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   addDaysToLocalDateKey,
   filterDayPlanFlowBlocks,
+  getFlowCompletionCategoryKeysForBlock,
+  getFlowCompletionUnitCountForBlock,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
   parseHHmmToMinutes,
@@ -607,16 +609,24 @@ export function DayPlanPage() {
     if (pendingFlowBlocks.length > 0) {
       const history = useHistoryStore.getState();
       history.hydrate();
-      const plannedCountForDay = todayFlowBlocks.length;
+      const plannedUnitCount = todayFlowBlocks.reduce((sum, flowBlock) => {
+        const units = getFlowCompletionUnitCountForBlock(flowBlock);
+        return sum + (Number.isFinite(units) && units > 0 ? units : 1);
+      }, 0);
+      const plannedCountForDay = Math.max(1, plannedUnitCount);
       for (const block of pendingFlowBlocks) {
-        const categoryKey =
+        const categoryKeysRaw = getFlowCompletionCategoryKeysForBlock(block);
+        const fallbackCategoryKey =
           resolveBlockCategoryKey({ category: block.category, categoryKey: block.categoryKey }) ?? 'other';
-        history.recordFocusSession({
-          dateKey: useDayPlanStore.getState().dateKey,
-          categoryKey,
-          completed: true,
-          plannedCountForDay,
-        });
+        const categoryKeys = categoryKeysRaw.length > 0 ? categoryKeysRaw : [fallbackCategoryKey];
+        for (const categoryKey of categoryKeys) {
+          history.recordFocusSession({
+            dateKey: useDayPlanStore.getState().dateKey,
+            categoryKey,
+            completed: true,
+            plannedCountForDay,
+          });
+        }
       }
       completeBlocks(pendingFlowBlocks.map((b) => b.id));
       void rescheduleDayPlanNotifications();

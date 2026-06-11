@@ -3,6 +3,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { DayPlanTabBridgeProvider, DayPlanTabFab } from '@pages/day-plan';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { HapticTab } from '@shared/ui/haptic-tab/HapticTab';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
@@ -15,6 +16,8 @@ const TAB_ICONS: Record<string, string> = {
 };
 
 export default function TabLayout() {
+  const isDark = useColorScheme() === 'dark';
+
   return (
     <DayPlanTabBridgeProvider>
       <View style={{ flex: 1 }}>
@@ -23,8 +26,8 @@ export default function TabLayout() {
           screenOptions={({ route }) => ({
             headerShown: false,
             tabBarButton: HapticTab,
-            tabBarActiveTintColor: '#000000',
-            tabBarInactiveTintColor: '#999999',
+            tabBarActiveTintColor: isDark ? '#FAFAFA' : '#000000',
+            tabBarInactiveTintColor: isDark ? '#8E8E93' : '#999999',
             tabBarIcon: ({ color }) => {
               const icon = TAB_ICONS[route.name] ?? 'circle';
               return <IconSymbol name={icon as any} size={24} color={color} />;

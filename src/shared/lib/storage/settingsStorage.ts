@@ -38,6 +38,8 @@ export type WaterReminderScheduledRow = {
   notificationId: string;
 };
 
+export type AppearanceMode = 'light' | 'dark';
+
 type SettingsStorageShape = {
   dayPlanScheduledNotifications?: DayPlanScheduledNotification[];
   priorityDayStartAlarm?: PriorityDayStartAlarmPersisted;
@@ -45,6 +47,7 @@ type SettingsStorageShape = {
   categoryReminderScheduled?: CategoryReminderScheduledRow[];
   medicineReminderScheduled?: MedicineReminderScheduledRow[];
   waterReminderScheduled?: WaterReminderScheduledRow[];
+  appearanceMode?: AppearanceMode;
 };
 
 function readRoot(): SettingsStorageShape {
@@ -201,5 +204,18 @@ export function saveWaterReminderScheduled(rows: WaterReminderScheduledRow[]): v
   localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
     ...root,
     waterReminderScheduled: rows,
+  });
+}
+
+export function loadAppearanceMode(): AppearanceMode {
+  const root = readRoot();
+  return root.appearanceMode === 'dark' ? 'dark' : 'light';
+}
+
+export function saveAppearanceMode(mode: AppearanceMode): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    appearanceMode: mode,
   });
 }

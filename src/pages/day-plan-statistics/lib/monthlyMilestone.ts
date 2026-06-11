@@ -95,6 +95,7 @@ export function buildGrowthTrendPath(
   pointCount = 6,
   width = 100,
   height = 40,
+  padX = 5,
 ): { d: string; endX: number; endY: number } {
   const values: number[] = [];
   const span = 30;
@@ -106,13 +107,15 @@ export function buildGrowthTrendPath(
     const rate = row ? Math.max(0, Math.min(1, Number(row.completionRate) || 0)) : 0;
     values.push(rate);
   }
+  const innerWidth = width - padX * 2;
   if (values.every((v) => v === 0)) {
-    return { d: `M0 ${height - 4} L${width} ${height - 4}`, endX: width, endY: height - 4 };
+    const y = height - 4;
+    return { d: `M${padX} ${y} L${width - padX} ${y}`, endX: width - padX, endY: y };
   }
   const max = Math.max(0.01, ...values);
-  const xStep = values.length <= 1 ? width : width / (values.length - 1);
+  const xStep = values.length <= 1 ? 0 : innerWidth / (values.length - 1);
   const coords = values.map((v, i) => {
-    const x = i * xStep;
+    const x = padX + i * xStep;
     const y = height - 4 - (v / max) * (height - 10);
     return { x, y };
   });

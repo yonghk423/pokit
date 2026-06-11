@@ -30,6 +30,10 @@ type Tone = {
   barTrack: string;
   barFill: string;
   heat: string[];
+  highlightCard: string;
+  highlightCardBorder: string;
+  highlightFg: string;
+  highlightMuted: string;
 };
 
 type Props = {
@@ -206,9 +210,18 @@ export function MonthlyHistoryView({
                   {showZenBadge ? '집중 마스터' : '다음 목표'}
                 </ThemedText>
               </View>
-              <View style={[styles.flowSideCard, styles.flowSidePrimary, { backgroundColor: tone.barFill }]}>
-                <IconSymbol name="bolt.fill" size={22} color="#FAFAFA" />
-                <ThemedText style={styles.flowSideLabelPrimary}>
+              <View
+                style={[
+                  styles.flowSideCard,
+                  styles.flowSidePrimary,
+                  {
+                    backgroundColor: tone.highlightCard,
+                    borderColor: tone.highlightCardBorder,
+                    borderWidth: tone.highlightCardBorder === 'transparent' ? 0 : StyleSheet.hairlineWidth,
+                  },
+                ]}>
+                <IconSymbol name="bolt.fill" size={22} color={tone.highlightFg} />
+                <ThemedText style={[styles.flowSideLabelPrimary, { color: tone.highlightFg }]}>
                   {showPowerBadge ? '파워 스트릭' : '스트릭 쌓기'}
                 </ThemedText>
               </View>
@@ -490,7 +503,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     textAlign: 'center',
-    color: '#FAFAFA',
   },
   emptyCard: {
     borderRadius: 14,

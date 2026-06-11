@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -17,17 +17,18 @@ import {
 import { useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
-import {
-  getDisplayedAppVersionLabel,
-  openSupportMailComposer,
-  SUPPORT_EMAIL,
-} from '@shared/lib/support';
+import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import {
   createDefaultFixedFlowSetsState,
   ensureDefaultPriorityCatalog,
   resetAppLocalData,
   saveFixedFlowSetsState,
 } from '@shared/lib/storage';
+import {
+  getDisplayedAppVersionLabel,
+  openSupportMailComposer,
+  SUPPORT_EMAIL,
+} from '@shared/lib/support';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -38,6 +39,8 @@ export function SettingsPage() {
   const insets = useSafeAreaInsets();
   const appVersionLabel = getDisplayedAppVersionLabel();
   const [isResettingData, setIsResettingData] = useState(false);
+  const appearanceMode = useAppearanceStore((s) => s.mode);
+  const appearanceLabel = appearanceMode === 'dark' ? '다크 모드' : '라이트 모드';
   const { priorityStart, priorityEnd } = useDayPlanDraftStore(
     useShallow((s) => ({
       priorityStart: s.priorityStart,
@@ -151,6 +154,28 @@ export function SettingsPage() {
                 <ThemedText style={styles.itemDesc}>
                   {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
                 </ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
+          </Pressable>
+        </View>
+
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>화면</ThemedText>
+
+          <Pressable
+            style={styles.item}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/appearance-settings');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="화면 테마 설정">
+            <View style={styles.itemLeft}>
+              <IconSymbol name="paintbrush.fill" size={20} color="#6B7280" />
+              <View style={styles.itemTextWrap}>
+                <ThemedText style={styles.itemTitle}>화면 테마</ThemedText>
+                <ThemedText style={styles.itemDesc}>{appearanceLabel}</ThemedText>
               </View>
             </View>
             <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />

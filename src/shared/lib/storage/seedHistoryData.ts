@@ -9,9 +9,19 @@ import { flushLocalStorageClientWrites } from './localStorageClient';
 
 export const HISTORY_SEED_DAYS = 85;
 
+/** Dev Menu 목업 — 통계 UI 미리보기용 시나리오 */
+export type HistorySeedProfile = 'strong' | 'mixed' | 'low';
+
+export const HISTORY_SEED_PROFILE_LABEL_KO: Record<HistorySeedProfile, string> = {
+  strong: '고달성',
+  mixed: '혼합',
+  low: '저달성',
+};
+
 const SEED_CATEGORIES = SEED_CATEGORY_POOL;
 
 type DayIntensity = 'light' | 'normal' | 'heavy';
+type DayOutcome = 'empty' | 'low' | 'medium' | 'high';
 
 /** 최근 7일 — 도넛·핵심 목표 UI 데모용 고정 부스트 (10그룹 골고루) */
 const RECENT_WEEK_BOOSTS: ReadonlyArray<Record<string, number>> = [
@@ -103,7 +113,7 @@ function pickDeterministicCategories(dateKey: string, count: number): Array<(typ
   return picked;
 }
 
-/** 쉼 없이 매일 활동 — 히트맵·스트릭 데모용 */
+/** 고달성 프로필 — 쉼 없이 매일 활동 */
 function pickIntensity(dateKey: string, dayOfWeek: number): DayIntensity {
   const rand = unitFloat(`${dateKey}:intensity`);
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
@@ -116,6 +126,42 @@ function pickIntensity(dateKey: string, dayOfWeek: number): DayIntensity {
   if (rand < 0.15) return 'light';
   if (rand < 0.55) return 'normal';
   return 'heavy';
+}
+
+function pickMixedOutcome(dateKey: string): DayOutcome {
+  const r = unitFloat(`${dateKey}:outcome`);
+  if (r < 0.12) return 'empty';
+  if (r < 0.37) return 'low';
+  if (r < 0.72) return 'medium';
+  return 'high';
+}
+
+function pickDayOutcome(
+  dateKey: string,
+  profile: HistorySeedProfile,
+  daysFromAnchor: number,
+): DayOutcome {
+  if (profile === 'strong') {
+    return 'high';
+  }
+
+  if (profile === 'low') {
+    if (daysFromAnchor <= 13) {
+      const r = unitFloat(`${dateKey}:low-recent`);
+      if (r < 0.55) return 'empty';
+      if (r < 0.9) return 'low';
+      return 'medium';
+    }
+    if (daysFromAnchor <= 30) {
+      const r = unitFloat(`${dateKey}:low-mid`);
+      if (r < 0.2) return 'empty';
+      if (r < 0.7) return 'low';
+      return 'medium';
+    }
+    return pickMixedOutcome(dateKey);
+  }
+
+  return pickMixedOutcome(dateKey);
 }
 
 function mergeCategoryCompletions(
@@ -154,6 +200,49 @@ function applyRecentWeekBoost(
     completedFlowCount,
     sessionCount: completedFlowCount,
     completionRate,
+  };
+}
+
+function buildEmptyRow(dateKey: string): HistoryDailyStatRow {
+  return {
+    dateKey,
+    focusMinutes: 0,
+    completedFlowCount: 0,
+    sessionCount: 0,
+    completionRate: 0,
+    categoryMinutes: {},
+    categoryCompletions: {},
+  };
+}
+
+function buildCompletionRow(
+  dateKey: string,
+  categoryCount: number,
+  countPerCategory: { min: number; max: number },
+  plannedExtra: { min: number; max: number },
+): HistoryDailyStatRow {
+  const categories = pickDeterministicCategories(dateKey, categoryCount);
+  const categoryCompletions: Record<string, number> = {};
+  let totalCompleted = 0;
+
+  for (const cat of categories) {
+    const count = deterministicInt(`${dateKey}:${cat}:count`, countPerCategory.min, countPerCategory.max);
+    categoryCompletions[cat] = count;
+    totalCompleted += count;
+  }
+
+  const totalPlanned = totalCompleted + deterministicInt(`${dateKey}:planned`, plannedExtra.min, plannedExtra.max);
+  const completionRate =
+    totalPlanned > 0 ? Math.round((totalCompleted / totalPlanned) * 100) / 100 : 0;
+
+  return {
+    dateKey,
+    focusMinutes: 0,
+    completedFlowCount: totalCompleted,
+    sessionCount: totalCompleted,
+    completionRate,
+    categoryMinutes: {},
+    categoryCompletions,
   };
 }
 
@@ -210,23 +299,58 @@ function generateRow(dateKey: string, intensity: DayIntensity): HistoryDailyStat
   };
 }
 
-/** 오늘 기준 HISTORY_SEED_DAYS — 매일 1행, dateKey마다 항상 같은 패턴 */
-export function generateHistorySeedRows(anchorDate: Date = new Date()): HistoryDailyStatRow[] {
+function generateRowForOutcome(dateKey: string, outcome: DayOutcome): HistoryDailyStatRow {
+  if (outcome === 'empty') {
+    return buildEmptyRow(dateKey);
+  }
+  if (outcome === 'low') {
+    return buildCompletionRow(dateKey, deterministicInt(`${dateKey}:lowCats`, 1, 2), { min: 1, max: 1 }, { min: 3, max: 6 });
+  }
+  if (outcome === 'medium') {
+    return buildCompletionRow(dateKey, deterministicInt(`${dateKey}:medCats`, 3, 4), { min: 1, max: 2 }, { min: 1, max: 3 });
+  }
+  const intensity = pickIntensity(dateKey, parseDateKeyForDow(dateKey));
+  return generateRow(dateKey, intensity);
+}
+
+function parseDateKeyForDow(dateKey: string): number {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
+  if (!m) return 0;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0, 0).getDay();
+}
+
+/** 오늘 기준 HISTORY_SEED_DAYS — dateKey마다 항상 같은 패턴 */
+export function generateHistorySeedRows(
+  anchorDate: Date = new Date(),
+  profile: HistorySeedProfile = 'mixed',
+): HistoryDailyStatRow[] {
   const anchorDateKey = formatDateKey(anchorDate);
   const rows: HistoryDailyStatRow[] = [];
 
   for (let i = HISTORY_SEED_DAYS - 1; i >= 0; i -= 1) {
     const d = addDaysToDate(anchorDate, -i);
     const dateKey = formatDateKey(d);
-    const base = generateRow(dateKey, pickIntensity(dateKey, d.getDay()));
-    rows.push(applyRecentWeekBoost(base, dateKey, anchorDateKey));
+    const daysFromAnchor = daysBetween(dateKey, anchorDateKey);
+
+    let row: HistoryDailyStatRow;
+    if (profile === 'strong') {
+      row = generateRow(dateKey, pickIntensity(dateKey, d.getDay()));
+      row = applyRecentWeekBoost(row, dateKey, anchorDateKey);
+    } else {
+      const outcome = pickDayOutcome(dateKey, profile, daysFromAnchor);
+      row = generateRowForOutcome(dateKey, outcome);
+      if (profile === 'mixed' && outcome === 'high' && daysFromAnchor <= 6) {
+        row = applyRecentWeekBoost(row, dateKey, anchorDateKey);
+      }
+    }
+    rows.push(row);
   }
 
   return rows;
 }
 
-export async function seedHistoryData(): Promise<number> {
-  const rows = generateHistorySeedRows();
+export async function seedHistoryData(profile: HistorySeedProfile = 'mixed'): Promise<number> {
+  const rows = generateHistorySeedRows(new Date(), profile);
   saveHistoryDailyStats(rows);
   saveHistoryMeta({ lastUpdatedAt: new Date().toISOString(), schemaVersion: 1 });
   await flushLocalStorageClientWrites();

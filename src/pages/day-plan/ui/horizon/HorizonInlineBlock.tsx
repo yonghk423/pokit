@@ -84,6 +84,9 @@ export function HorizonInlineBlock({
   const handleTextChange = (nextText: string) => {
     if (!nextText.includes('\n')) {
       onChange({ ...block, text: nextText });
+      if (nextText.length === 0) {
+        setTimeout(() => localRef.current?.focus(), 0);
+      }
       return;
     }
     const [head, ...rest] = nextText.split('\n');

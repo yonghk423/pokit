@@ -3,34 +3,23 @@ import type { ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
-import { PrimaryColor } from '@shared/config/theme';
+import { getGoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-/** 목표 상세 설정 화면과 동일 톤의 라이트 셸 */
-const SHELL_BG = '#ffffff';
-const ON_SURFACE = GoalDetailSessionUi.onSurface;
-const MUTED = GoalDetailSessionUi.muted;
-const BORDER = GoalDetailSessionUi.border;
-
 type Props = {
-  /** 호환용 — 셸은 항상 라이트 흰색(상세 설정과 통일) */
   backgroundColor?: string;
   accentColor: string;
-  /** 더 이상 사용하지 않음(호환용) */
   accentGlow: string;
   onSurface: string;
   muted: string;
-  /** 더 이상 사용하지 않음(호환용) */
   brand: string;
-  /** 더 이상 사용하지 않음(호환용) */
   aboutKicker: string;
   headerTitle: string;
   iconName: SymbolViewProps['name'];
   iconSize?: number;
   sessionKicker: string;
-  /** 남은 시간 등 */
   timerDisplay: ReactNode;
   flowCaption: string;
   onBack: () => void;
@@ -39,17 +28,10 @@ type Props = {
   bottomBar: ReactNode;
 };
 
-/**
- * 하루 일과(세션) 셸 — 목표 상세 설정과 동일한 헤더·여백·카드형 요약.
- * 예전 몰입용 대형 아이콘·글로우·리플 레이어는 제거했다.
- */
 export function SessionImmersionLayout({
   accentColor,
-  accentGlow: _accentGlow,
-  onSurface: _onSurface,
-  muted: _muted,
-  brand: _brand,
-  aboutKicker: _aboutKicker,
+  onSurface,
+  muted,
   headerTitle,
   iconName,
   iconSize = 26,
@@ -61,6 +43,8 @@ export function SessionImmersionLayout({
   children,
   bottomBar,
 }: Props) {
+  const isDark = useColorScheme() === 'dark';
+  const ui = getGoalDetailSessionUi(isDark);
   const insets = useSafeAreaInsets();
   const topInset =
     insets.top >= 1
@@ -70,21 +54,21 @@ export function SessionImmersionLayout({
         : Number(StatusBar.currentHeight) || 24;
 
   return (
-    <View style={[styles.screen, { backgroundColor: SHELL_BG }]}>
+    <View style={[styles.screen, { backgroundColor: ui.screenBg }]}>
       <View style={[styles.flex, { paddingTop: topInset }]}>
-        <View style={[styles.header, { borderBottomColor: BORDER }]}>
+        <View style={[styles.header, { borderBottomColor: ui.border }]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="뒤로가기"
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             style={styles.headerBtn}
             onPress={onBack}>
-            <IconSymbol name="chevron.left" size={22} color={PrimaryColor.rgb} />
+            <IconSymbol name="chevron.left" size={22} color={ui.primary} />
           </Pressable>
           <ThemedText
             style={styles.headerTitle}
-            lightColor={ON_SURFACE}
-            darkColor={ON_SURFACE}
+            lightColor={onSurface}
+            darkColor={onSurface}
             numberOfLines={1}>
             {headerTitle}
           </ThemedText>
@@ -97,12 +81,12 @@ export function SessionImmersionLayout({
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           bounces>
-          <View style={[styles.summaryCard, { borderColor: BORDER }]}>
+          <View style={[styles.summaryCard, { borderColor: ui.border, backgroundColor: ui.cardBg }]}>
             <IconSymbol name={iconName} size={iconSize} color={accentColor} />
             <View style={styles.summaryTexts}>
-              <Text style={[styles.sessionKicker, { color: MUTED }]}>{sessionKicker}</Text>
+              <Text style={[styles.sessionKicker, { color: muted }]}>{sessionKicker}</Text>
               <View style={styles.timerSlot}>{timerDisplay}</View>
-              <ThemedText style={styles.flowCaption} lightColor={MUTED} darkColor={MUTED} numberOfLines={3}>
+              <ThemedText style={styles.flowCaption} lightColor={muted} darkColor={muted} numberOfLines={3}>
                 {flowCaption}
               </ThemedText>
             </View>
@@ -123,35 +107,37 @@ type BottomProps = {
   paddingBottom: number;
   onEndSession: () => void;
   completeLabel?: string;
-  /** 수분 등 밝은 액센트 위 전경색 (기본: 흰색) */
   completeForeground?: string;
   disabled?: boolean;
 };
 
-/** 목표 상세 하단 CTA와 동일한 필(가로 꽉 찬 강조 버튼) */
 export function ImmersionBottomControls({
   accentColor,
   borderColor,
   paddingBottom,
   onEndSession,
   completeLabel = '완료',
-  completeForeground = '#fff',
+  completeForeground,
   disabled = false,
 }: BottomProps) {
+  const isDark = useColorScheme() === 'dark';
+  const ui = getGoalDetailSessionUi(isDark);
+  const fg = completeForeground ?? ui.primaryOnAccent;
+
   return (
-    <View style={[styles.bottomBar, { borderTopColor: borderColor, paddingBottom, backgroundColor: SHELL_BG }]}>
+    <View style={[styles.bottomBar, { borderTopColor: borderColor, paddingBottom, backgroundColor: ui.screenBg }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ disabled }}
         style={[
           styles.completeBtn,
-          { backgroundColor: accentColor },
+          { backgroundColor: accentColor, shadowColor: isDark ? '#000' : accentColor },
           disabled ? { opacity: 0.45 } : null,
         ]}
         disabled={disabled}
         onPress={onEndSession}>
-        <IconSymbol name="checkmark.circle.fill" size={20} color={completeForeground} />
-        <ThemedText style={[styles.completeBtnText, { color: completeForeground }]}>{completeLabel}</ThemedText>
+        <IconSymbol name="checkmark.circle.fill" size={20} color={fg} />
+        <ThemedText style={[styles.completeBtnText, { color: fg }]}>{completeLabel}</ThemedText>
       </Pressable>
     </View>
   );
@@ -166,8 +152,13 @@ export function ImmersionCardShell({
   padded?: boolean;
   children: ReactNode;
 }) {
+  const isDark = useColorScheme() === 'dark';
+  const ui = getGoalDetailSessionUi(isDark);
+
   return (
-    <View style={[styles.cardShell, { borderColor }, padded ? styles.cardShellPad : null]}>{children}</View>
+    <View style={[styles.cardShell, { borderColor, backgroundColor: ui.cardBg }, padded ? styles.cardShellPad : null]}>
+      {children}
+    </View>
   );
 }
 
@@ -182,8 +173,13 @@ export function ImmersionHalfCard({
   borderColor: string;
   children: ReactNode;
 }) {
+  const isDark = useColorScheme() === 'dark';
+  const ui = getGoalDetailSessionUi(isDark);
+
   return (
-    <View style={[styles.cardShell, styles.halfCardInner, { borderColor, flex: 1 }]}>{children}</View>
+    <View style={[styles.cardShell, styles.halfCardInner, { borderColor, backgroundColor: ui.cardBg, flex: 1 }]}>
+      {children}
+    </View>
   );
 }
 
@@ -228,7 +224,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
-    backgroundColor: SHELL_BG,
   },
   summaryTexts: {
     flex: 1,
@@ -254,7 +249,6 @@ const styles = StyleSheet.create({
   },
   cardShell: {
     width: '100%',
-    backgroundColor: SHELL_BG,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 14,
   },
@@ -287,7 +281,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
-    shadowColor: PrimaryColor.rgb,
     shadowOpacity: 0.22,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },

@@ -7,8 +7,8 @@ export {
 } from './customCatalogGroupStorage';
 export type { CustomCatalogGroup } from './customCatalogGroupStorage';
 export {
-  DEFAULT_CUSTOM_FLOW_GROUP_KEY, appendCustomFlowCatalogEntry,
-  appendCustomFlowCatalogId, listCustomFlowCatalogEntries,
+  appendCustomFlowCatalogEntry,
+  appendCustomFlowCatalogId, DEFAULT_CUSTOM_FLOW_GROUP_KEY, listCustomFlowCatalogEntries,
   listCustomFlowCatalogIds,
   reassignCustomFlowGroup,
   removeCustomFlowCatalogId,
@@ -81,7 +81,7 @@ export {
   type HorizonCompletionKind
 } from './horizonCompletionsStorage';
 export {
-  EMPTY_HORIZON_DOCUMENT, HORIZON_BLOCK_TYPE_LABELS, createHorizonBlock, estimateHorizonDocumentProgress, horizonDocumentHasContent,
+  createHorizonBlock, EMPTY_HORIZON_DOCUMENT, estimateHorizonDocumentProgress, HORIZON_BLOCK_TYPE_LABELS, horizonDocumentHasContent,
   horizonDocumentToPlainText,
   parseHorizonGoalDocument
 } from './horizonGoalBlocks';
@@ -124,15 +124,19 @@ export {
   resolveWeeklyCompletionDocument
 } from './resolveHorizonCompletionDocument';
 export {
+  loadAppearanceMode,
   loadCategoryReminderRules,
   loadCategoryReminderScheduled,
   loadDayPlanScheduledNotifications,
-  loadMedicineReminderScheduled, loadPriorityDayStartAlarm, loadWaterReminderScheduled, saveCategoryReminderRules,
+  loadMedicineReminderScheduled, loadPriorityDayStartAlarm, loadWaterReminderScheduled,
+  saveAppearanceMode,
+  saveCategoryReminderRules,
   saveCategoryReminderScheduled,
   saveDayPlanScheduledNotifications,
   saveMedicineReminderScheduled, savePriorityDayStartAlarm, saveWaterReminderScheduled
 } from './settingsStorage';
 export type {
+  AppearanceMode,
   CategoryReminderRuleRow,
   CategoryReminderRules,
   CategoryReminderScheduledRow,

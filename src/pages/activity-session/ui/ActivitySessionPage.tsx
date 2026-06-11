@@ -10,6 +10,8 @@ import {
   emptyCategorySessionConfigs,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
+  getFlowCompletionCategoryKeysForBlock,
+  getFlowCompletionUnitCountForBlock,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
   getNextPendingAfter,
@@ -45,6 +47,7 @@ import {
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
 import { GoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
+import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
 import {
   loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
@@ -53,7 +56,6 @@ import {
 } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
 
 import {
   ImmersionBottomControls,
@@ -387,12 +389,24 @@ export function ActivitySessionPage() {
     if (block.blockOrigin !== 'quickMemo') {
       const history = useHistoryStore.getState();
       history.hydrate();
-      history.recordFocusSession({
-        dateKey,
-        categoryKey,
-        completed: true,
-        plannedCountForDay: flowBlocks.length,
-      });
+      const plannedUnitCount = flowBlocks.reduce((sum, flowBlock) => {
+        const units = getFlowCompletionUnitCountForBlock(flowBlock);
+        return sum + (Number.isFinite(units) && units > 0 ? units : 1);
+      }, 0);
+      const plannedCountForDay = Math.max(1, plannedUnitCount);
+      const completionCategoryKeysRaw = getFlowCompletionCategoryKeysForBlock(block);
+      const completionCategoryKeys =
+        completionCategoryKeysRaw.length > 0
+          ? completionCategoryKeysRaw
+          : [categoryKey || 'other'];
+      for (const completionCategoryKey of completionCategoryKeys) {
+        history.recordFocusSession({
+          dateKey,
+          categoryKey: completionCategoryKey,
+          completed: true,
+          plannedCountForDay,
+        });
+      }
     }
     completeBlock(block.id);
     const s = useDayPlanStore.getState();
@@ -409,7 +423,7 @@ export function ActivitySessionPage() {
       void endPokitLiveActivity(block.id);
       safeRouterBack(router);
     }
-  }, [block, categoryKey, completeBlock, dateKey, flowBlocks.length, router]);
+  }, [block, completeBlock, dateKey, flowBlocks, router]);
 
   /** 약 복용 기록 증감(체크/취소) — 저장소 반영 */
   const updateMedicineTakenCount = useCallback(

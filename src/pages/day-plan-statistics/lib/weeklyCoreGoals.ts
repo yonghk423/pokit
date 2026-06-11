@@ -38,10 +38,16 @@ function buildSparklinePath(values: number[], width = 40, height = 10): string {
 }
 
 function formatDeltaLabel(current: number, prev: number): string {
-  if (prev <= 0) return current > 0 ? '+100%' : '0%';
-  const pct = Math.round(((current - prev) / prev) * 100);
-  if (pct > 0) return `+${pct}%`;
-  return `${pct}%`;
+  const diff = current - prev;
+  if (diff === 0) return '지난주와 동일';
+  if (diff > 0) return `지난주보다 +${diff}회`;
+  return `지난주보다 ${diff}회`;
+}
+
+/** 진행률 기준 — 지난주 실적 대비, 없으면 이번 주 완료만 반영 */
+function resolveWeeklyGoalTarget(completed: number, prev: number): number {
+  if (prev > 0) return Math.max(prev, completed, 1);
+  return Math.max(completed, 1);
 }
 
 export function buildWeeklyCoreGoals(input: {
@@ -76,7 +82,7 @@ export function buildWeeklyCoreGoals(input: {
 
   return ranked.map(([categoryKey, completed]) => {
     const prev = prevTotals.get(categoryKey) ?? 0;
-    const target = Math.max(completed + 1, prev > 0 ? Math.ceil(prev * 1.15) : 5, 5);
+    const target = resolveWeeklyGoalTarget(completed, prev);
     const dayValues: number[] = [];
     for (let i = 0; i < 7; i += 1) {
       const dateKey = addDaysToLocalDateKey(weekStartKey, i);

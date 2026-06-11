@@ -5,19 +5,47 @@ describe('generateHistorySeedRows', () => {
   const anchorDateKey = '2026-06-01';
 
   it('produces the same rows on repeated calls', () => {
-    const first = generateHistorySeedRows(anchor);
-    const second = generateHistorySeedRows(anchor);
+    const first = generateHistorySeedRows(anchor, 'mixed');
+    const second = generateHistorySeedRows(anchor, 'mixed');
     expect(first).toEqual(second);
   });
 
   it('generates exactly HISTORY_SEED_DAYS rows', () => {
-    const rows = generateHistorySeedRows(anchor);
+    const rows = generateHistorySeedRows(anchor, 'mixed');
     expect(rows).toHaveLength(HISTORY_SEED_DAYS);
     expect(rows.at(-1)?.dateKey).toBe(anchorDateKey);
   });
 
-  it('boosts the recent 7 days with custom flow completions', () => {
-    const rows = generateHistorySeedRows(anchor);
+  it('mixed profile includes empty and low completion days', () => {
+    const rows = generateHistorySeedRows(anchor, 'mixed');
+    const emptyDays = rows.filter((row) => row.completedFlowCount <= 0).length;
+    const lowDays = rows.filter(
+      (row) => row.completedFlowCount > 0 && row.completionRate > 0 && row.completionRate < 0.5,
+    ).length;
+    expect(emptyDays).toBeGreaterThan(0);
+    expect(lowDays).toBeGreaterThan(0);
+  });
+
+  it('low profile makes recent days mostly underachieved', () => {
+    const rows = generateHistorySeedRows(anchor, 'low');
+    const map = Object.fromEntries(rows.map((row) => [row.dateKey, row]));
+    const recentKeys = Array.from({ length: 14 }, (_, idx) => {
+      const d = new Date(2026, 5, 1 - idx, 12, 0, 0, 0);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    });
+    const weakRecent = recentKeys.filter((key) => {
+      const row = map[key];
+      if (!row) return false;
+      return row.completedFlowCount <= 0 || row.completionRate < 0.55;
+    }).length;
+    expect(weakRecent).toBeGreaterThanOrEqual(10);
+  });
+
+  it('strong profile boosts the recent 7 days with custom flow completions', () => {
+    const rows = generateHistorySeedRows(anchor, 'strong');
     const recent = rows.slice(-7);
     const hasCustomFlow = recent.some((row) =>
       Object.keys(row.categoryCompletions ?? {}).some((k) => k.startsWith('customFlow:')),
@@ -25,8 +53,8 @@ describe('generateHistorySeedRows', () => {
     expect(hasCustomFlow).toBe(true);
   });
 
-  it('keeps a long consecutive streak through anchor day', () => {
-    const rows = generateHistorySeedRows(anchor);
+  it('strong profile keeps a long consecutive streak through anchor day', () => {
+    const rows = generateHistorySeedRows(anchor, 'strong');
     const map = Object.fromEntries(rows.map((row) => [row.dateKey, row]));
 
     let streak = 0;

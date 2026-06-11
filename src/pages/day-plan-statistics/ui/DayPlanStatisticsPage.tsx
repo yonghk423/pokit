@@ -43,8 +43,6 @@ type HistoryFeedRow = {
   summary: string;
   rateLabel: string;
   categoryLabel: string;
-  completedFlowCount: number;
-  focusLabel: string;
 };
 
 function formatDateKeyKo(dateKey: string): string {
@@ -79,15 +77,6 @@ function formatCountKo(count: number): string {
 function formatRatePercent(rate: number): string {
   const pct = Math.round(Math.max(0, Math.min(1, Number(rate) || 0)) * 100);
   return `${pct}%`;
-}
-
-function formatDurationKo(totalMinutes: number): string {
-  const mins = Math.max(0, Math.floor(totalMinutes));
-  const hour = Math.floor(mins / 60);
-  const minute = mins % 60;
-  if (hour <= 0) return `${minute}분`;
-  if (minute === 0) return `${hour}시간`;
-  return `${hour}시간 ${minute}분`;
 }
 
 function resolveHistoryHeadline(rate: number, completedCount: number): string {
@@ -192,6 +181,11 @@ export function DayPlanStatisticsPage() {
       level0: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
       barTrack: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
       barFill: isDark ? 'rgba(255,255,255,0.78)' : 'rgba(0,0,0,0.72)',
+      highlightCard: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.72)',
+      highlightCardBorder: isDark ? 'rgba(255,255,255,0.1)' : 'transparent',
+      highlightFg: isDark ? '#f5f5f5' : '#FAFAFA',
+      highlightMuted: isDark ? 'rgba(245,245,245,0.7)' : 'rgba(250,250,250,0.75)',
+      highlightBadge: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.15)',
       heat: isDark
         ? ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.18)', 'rgba(255,255,255,0.34)', 'rgba(255,255,255,0.52)', 'rgba(255,255,255,0.72)']
         : ['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.14)', 'rgba(0,0,0,0.26)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.62)'],
@@ -203,6 +197,14 @@ export function DayPlanStatisticsPage() {
   const growth = useMemo(
     () => selectGrowthVsPreviousWeek(todayDateKey),
     [dailyStatsByDate, selectGrowthVsPreviousWeek, todayDateKey],
+  );
+  const weeklyCompletionRate = useMemo(
+    () => buildMonthlyCompletionRate(dailyStatsByDate, weekRange.startDateKey, weekRange.endDateKey),
+    [dailyStatsByDate, weekRange.endDateKey, weekRange.startDateKey],
+  );
+  const previousWeeklyCompletionRate = useMemo(
+    () => buildMonthlyCompletionRate(dailyStatsByDate, prevWeekRange.startDateKey, prevWeekRange.endDateKey),
+    [dailyStatsByDate, prevWeekRange.endDateKey, prevWeekRange.startDateKey],
   );
   const monthlyRate = useMemo(
     () => buildMonthlyCompletionRate(dailyStatsByDate, monthRange.startDateKey, monthRange.endDateKey),
@@ -267,8 +269,6 @@ export function DayPlanStatisticsPage() {
             summary: resolveHistorySummary(row.completionRate, row.completedFlowCount),
             rateLabel: formatRatePercent(row.completionRate),
             categoryLabel: topCategory ? categoryReminderLabelKo(topCategory[0]) : '기록 없음',
-            completedFlowCount: row.completedFlowCount,
-            focusLabel: formatDurationKo(row.focusMinutes),
           };
         }),
     [dailyStatsByDate],
@@ -299,7 +299,6 @@ export function DayPlanStatisticsPage() {
   }, [historyFilter, historyQuery, historyRows]);
   const todayRow = dailyStatsByDate[selectedDateKey] ?? {
     dateKey: selectedDateKey,
-    focusMinutes: 0,
     completedFlowCount: 0,
     sessionCount: 0,
     completionRate: 0,
@@ -400,14 +399,14 @@ export function DayPlanStatisticsPage() {
         ]}
         showsVerticalScrollIndicator={false}>
         <ThemedText style={styles.pageDesc} lightColor={tone.muted} darkColor={tone.muted}>
-          데일리로 오늘을 보고, 흐름에서 주간과 월간 패턴을 함께 확인해요.
+          데일리로 오늘을 보고, 위클리 · 먼슬리에서 주간과 월간 패턴을 함께 확인해요.
         </ThemedText>
 
         <View style={styles.mainTabRow}>
           {(
             [
               { id: 'today' as const, label: '데일리' },
-              { id: 'flow' as const, label: '흐름' },
+              { id: 'flow' as const, label: '위클리 · 먼슬리' },
               { id: 'insights' as const, label: '인사이트' },
             ] as const
           ).map((tab) => (
@@ -546,20 +545,6 @@ export function DayPlanStatisticsPage() {
                       </View>
                     ))}
                   </ScrollView>
-                  <View style={[styles.dailyStatCard, { backgroundColor: tone.level0, borderColor: tone.border }]}>
-                    <View style={styles.dailyStatRow}>
-                      <ThemedText style={styles.dailyStatLabel} lightColor={tone.muted} darkColor={tone.muted}>
-                        오늘 완료 수
-                      </ThemedText>
-                      <ThemedText style={styles.dailyStatValue}>{formatCountKo(todayRow.completedFlowCount)}</ThemedText>
-                    </View>
-                    <View style={[styles.dailyStatRow, styles.dailyStatRowDivider, { borderTopColor: tone.border }]}>
-                      <ThemedText style={styles.dailyStatLabel} lightColor={tone.muted} darkColor={tone.muted}>
-                        집중 지속 시간
-                      </ThemedText>
-                      <ThemedText style={styles.dailyStatValue}>{formatDurationKo(todayRow.focusMinutes)}</ThemedText>
-                    </View>
-                  </View>
                 </>
               )}
             </View>
@@ -588,6 +573,8 @@ export function DayPlanStatisticsPage() {
             todayCompletionRate={todayRow.completionRate}
             todayCompletedCount={todayRow.completedFlowCount}
             sameWeekdayAverageScore={sameWeekdayAverageScore}
+            weeklyCompletionRate={weeklyCompletionRate}
+            previousWeeklyCompletionRate={previousWeeklyCompletionRate}
             weeklyBalanceScore={weeklyBalanceScore}
             weeklyBalanceRows={weeklyBalanceRows}
             monthlyRate={monthlyRate}
@@ -603,7 +590,6 @@ export function DayPlanStatisticsPage() {
             historyFilterChips={historyFilterChips}
             filteredHistoryRows={filteredHistoryRows}
             formatDateKeyKo={formatDateKeyKo}
-            formatCountKo={formatCountKo}
           />
         ) : null}
 
@@ -706,7 +692,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   mainTabLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
   },
   periodPickerRow: {
@@ -829,31 +815,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     lineHeight: 13,
-  },
-  dailyStatCard: {
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 6,
-  },
-  dailyStatRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  dailyStatRowDivider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 8,
-  },
-  dailyStatLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  dailyStatValue: {
-    fontSize: 13,
-    fontWeight: '800',
   },
   reportRow: {
     borderTopWidth: StyleSheet.hairlineWidth,

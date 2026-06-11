@@ -73,11 +73,15 @@ export default function RootLayout() {
               options={{ headerShown: false, presentation: 'card' }}
             />
             <Stack.Screen
+              name="appearance-settings"
+              options={{ headerShown: false, presentation: 'card' }}
+            />
+            <Stack.Screen
               name="activity-session"
               options={{ headerShown: false, presentation: 'fullScreenModal' }}
             />
           </Stack>
-          <StatusBar style="dark" />
+          <StatusBar style={isDark ? 'light' : 'dark'} />
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

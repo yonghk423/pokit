@@ -105,6 +105,10 @@ export {
   isPriorityCompoundBlockTitle,
   parseNumberedFlowLines,
 } from './lib/priorityBlockTitle';
+export {
+  getFlowCompletionCategoryKeysForBlock,
+  getFlowCompletionUnitCountForBlock,
+} from './lib/flowCompletionUnits';
 export { blockMatchesPriorityHhmmWindow } from './lib/priorityWindowBlockMatch';
 export {
   clampHhmmToPriorityWindow,

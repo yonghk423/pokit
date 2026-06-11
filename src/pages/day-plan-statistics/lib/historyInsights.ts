@@ -32,6 +32,8 @@ export function buildHistoryInsights(input: {
   todayCompletionRate: number;
   todayCompletedCount: number;
   sameWeekdayAverageScore: number;
+  weeklyCompletionRate: number;
+  previousWeeklyCompletionRate: number;
   weeklyBalanceScore: number;
   weeklyBalanceRows: WeeklyAxisRow[];
   monthlyRate: number;
@@ -41,7 +43,7 @@ export function buildHistoryInsights(input: {
   weekCompletionDelta: number;
 }): HistoryInsightsReport {
   const dailyScore = pct(input.todayCompletionRate);
-  const weeklyScore = Math.max(0, Math.min(100, input.weeklyBalanceScore));
+  const weeklyScore = pct(input.weeklyCompletionRate);
   const monthlyScore = pct(input.monthlyRate);
 
   const axisScores = buildWeeklyAxisScores(input.weeklyBalanceRows);
@@ -50,6 +52,7 @@ export function buildHistoryInsights(input: {
   const weakAxis = sortedAxis[sortedAxis.length - 1];
 
   const weekdayDelta = dailyScore - input.sameWeekdayAverageScore;
+  const weekRateDelta = weeklyScore - pct(input.previousWeeklyCompletionRate);
   const monthRateDelta = pct(input.monthlyRate) - pct(input.previousMonthlyRate);
 
   const hasData =
@@ -76,9 +79,15 @@ export function buildHistoryInsights(input: {
       scopeLabel: '위클리',
       score: weeklyScore,
       caption:
-        strongAxis && strongAxis.percent > 0
-          ? `${strongAxis.label} 영역이 가장 두터움`
-          : '이번 주간 완료가 아직 적음',
+        weeklyScore <= 0
+          ? '이번 주 완료 기록 없음'
+          : weekRateDelta >= 8
+            ? `지난주 대비 +${weekRateDelta}%p`
+            : weekRateDelta <= -8
+              ? `지난주 대비 ${weekRateDelta}%p`
+              : strongAxis && strongAxis.percent > 0
+                ? `${strongAxis.label} 영역 중심`
+                : '이번 주 완료율 반영',
     },
     {
       scope: 'monthly',
@@ -172,11 +181,11 @@ export function buildHistoryInsights(input: {
     });
   }
 
-  if (weeklyScore > 0 && weeklyScore < 45) {
+  if (input.weeklyBalanceScore > 0 && input.weeklyBalanceScore < 45) {
     weaknesses.push({
       kind: 'weakness',
-      title: '위클리 정렬도가 낮아요',
-      detail: '여러 영역 중 일부만 몰려 있어요. 한 축씩 번갈아 채워 보세요.',
+      title: '위클리 밸런스가 한쪽으로 쏠렸어요',
+      detail: '건강·생산성 등 여러 영역 중 일부만 몰려 있어요. 한 축씩 번갈아 채워 보세요.',
     });
   }
 

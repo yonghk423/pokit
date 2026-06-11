@@ -49,9 +49,9 @@ export function HorizonBlockEditor({
 
   const focusBlock = useCallback((id: string) => {
     setActiveBlockId(id);
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       inputRefs.current[id]?.focus();
-    });
+    }, 60);
   }, []);
 
   const updateBlock = useCallback(
@@ -63,14 +63,28 @@ export function HorizonBlockEditor({
 
   const removeBlock = useCallback(
     (id: string) => {
+      const idx = blocks.findIndex((b) => b.id === id);
+      if (idx < 0) return;
+
+      // 마지막 남은 블록은 삭제하지 않고 빈 상태로 유지해 포커스를 잃지 않게 한다.
+      if (blocks.length === 1) {
+        setBlocks([{ ...blocks[0], text: '' }]);
+        focusBlock(blocks[0].id);
+        return;
+      }
+
       const next = blocks.filter((b) => b.id !== id);
       setBlocks(next);
+
       if (activeBlockIdRef.current === id) {
-        const fallback = next[next.length - 1]?.id ?? null;
-        setActiveBlockId(fallback);
+        const focusIdx = idx > 0 ? idx - 1 : 0;
+        const focusId = next[focusIdx]?.id;
+        if (focusId) {
+          focusBlock(focusId);
+        }
       }
     },
-    [blocks, setBlocks],
+    [blocks, focusBlock, setBlocks],
   );
 
   const insertBlock = useCallback(

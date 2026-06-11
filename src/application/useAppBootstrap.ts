@@ -24,6 +24,7 @@ import {
   addLocalNotificationReceivedListener,
   addLocalNotificationResponseListener,
 } from '@shared/lib/notifications';
+import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import {
   ensureDefaultPriorityCatalog,
   flushLocalStorageClientWrites,
@@ -52,6 +53,7 @@ export function useAppBootstrap() {
       if (cancelled) return;
 
       ensureDefaultPriorityCatalog();
+      useAppearanceStore.getState().hydrate();
 
       useDayPlanStore.getState().hydrate();
       useDayPlanDraftStore.getState().hydrate();

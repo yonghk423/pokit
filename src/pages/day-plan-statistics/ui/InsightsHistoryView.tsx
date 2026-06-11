@@ -14,6 +14,10 @@ type Tone = {
   ink: string;
   level0: string;
   barFill: string;
+  highlightCard: string;
+  highlightCardBorder: string;
+  highlightFg: string;
+  highlightMuted: string;
 };
 
 type HistoryFeedRow = {
@@ -22,8 +26,6 @@ type HistoryFeedRow = {
   summary: string;
   rateLabel: string;
   categoryLabel: string;
-  completedFlowCount: number;
-  focusLabel: string;
 };
 
 type Props = {
@@ -33,6 +35,8 @@ type Props = {
   todayCompletionRate: number;
   todayCompletedCount: number;
   sameWeekdayAverageScore: number;
+  weeklyCompletionRate: number;
+  previousWeeklyCompletionRate: number;
   weeklyBalanceScore: number;
   weeklyBalanceRows: WeeklyAxisRow[];
   monthlyRate: number;
@@ -48,7 +52,6 @@ type Props = {
   historyFilterChips: string[];
   filteredHistoryRows: HistoryFeedRow[];
   formatDateKeyKo: (dateKey: string) => string;
-  formatCountKo: (count: number) => string;
 };
 
 export function InsightsHistoryView({
@@ -58,6 +61,8 @@ export function InsightsHistoryView({
   todayCompletionRate,
   todayCompletedCount,
   sameWeekdayAverageScore,
+  weeklyCompletionRate,
+  previousWeeklyCompletionRate,
   weeklyBalanceScore,
   weeklyBalanceRows,
   monthlyRate,
@@ -73,7 +78,6 @@ export function InsightsHistoryView({
   historyFilterChips,
   filteredHistoryRows,
   formatDateKeyKo,
-  formatCountKo,
 }: Props) {
   const [dayLogOpen, setDayLogOpen] = useState(false);
 
@@ -83,6 +87,8 @@ export function InsightsHistoryView({
         todayCompletionRate,
         todayCompletedCount,
         sameWeekdayAverageScore,
+        weeklyCompletionRate,
+        previousWeeklyCompletionRate,
         weeklyBalanceScore,
         weeklyBalanceRows,
         monthlyRate,
@@ -102,6 +108,8 @@ export function InsightsHistoryView({
       weekCompletionDelta,
       weeklyBalanceRows,
       weeklyBalanceScore,
+      weeklyCompletionRate,
+      previousWeeklyCompletionRate,
     ],
   );
 
@@ -181,9 +189,17 @@ export function InsightsHistoryView({
         )}
       </View>
 
-      <View style={[styles.nextCard, { backgroundColor: tone.barFill }]}>
-        <ThemedText style={styles.nextKicker}>다음 제안</ThemedText>
-        <ThemedText style={styles.nextBody}>{report.nextStep}</ThemedText>
+      <View
+        style={[
+          styles.nextCard,
+          {
+            backgroundColor: tone.highlightCard,
+            borderColor: tone.highlightCardBorder,
+            borderWidth: tone.highlightCardBorder === 'transparent' ? 0 : StyleSheet.hairlineWidth,
+          },
+        ]}>
+        <ThemedText style={[styles.nextKicker, { color: tone.highlightMuted }]}>다음 제안</ThemedText>
+        <ThemedText style={[styles.nextBody, { color: tone.highlightFg }]}>{report.nextStep}</ThemedText>
       </View>
 
       <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
@@ -260,9 +276,6 @@ export function InsightsHistoryView({
                     <View style={[styles.feedChip, { backgroundColor: tone.level0 }]}>
                       <ThemedText style={styles.feedChipText}>{row.categoryLabel}</ThemedText>
                     </View>
-                    <ThemedText style={styles.feedMetaText} lightColor={tone.muted} darkColor={tone.muted}>
-                      완료 {formatCountKo(row.completedFlowCount)} · 집중 {row.focusLabel}
-                    </ThemedText>
                   </View>
                 </View>
               ))
@@ -393,13 +406,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: 'rgba(250,250,250,0.75)',
   },
   nextBody: {
     fontSize: 15,
     lineHeight: 22,
     fontWeight: '600',
-    color: '#FAFAFA',
   },
   card: {
     borderRadius: 14,
@@ -488,11 +499,5 @@ const styles = StyleSheet.create({
   feedChipText: {
     fontSize: 11,
     fontWeight: '700',
-  },
-  feedMetaText: {
-    fontSize: 11,
-    fontWeight: '600',
-    flex: 1,
-    textAlign: 'right',
   },
 });

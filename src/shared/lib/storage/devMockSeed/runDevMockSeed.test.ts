@@ -17,7 +17,7 @@ describe('devMockSeed', () => {
   });
 
   it('getDevMockSeedBundleVersion reflects registered modules', () => {
-    expect(getDevMockSeedBundleVersion()).toBe('history-daily@8+horizon-completions@5');
+    expect(getDevMockSeedBundleVersion()).toBe('history-daily@9+horizon-completions@5');
   });
 
   it('runDevMockSeed writes bundle version key', async () => {

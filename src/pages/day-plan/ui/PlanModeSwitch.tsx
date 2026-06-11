@@ -3,12 +3,13 @@ import { useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import type { PlanMode } from '../lib/dayPlanEditorShared';
-import { PRIMARY } from '../lib/dayPlanEditorShared';
 
 type ModeButton = {
   mode: PlanMode;
@@ -46,6 +47,9 @@ export function PlanModeSwitch({
   description,
   trailing,
 }: Props) {
+  const isDark = useColorScheme() === 'dark';
+  const pill = tabPillColors(isDark);
+
   const hint =
     description !== undefined
       ? description
@@ -88,16 +92,20 @@ export function PlanModeSwitch({
                   style={({ pressed }) => [
                     styles.iconHit,
                     {
-                      backgroundColor: active ? 'rgba(0,0,0,0.07)' : c.containerLowest,
-                      borderColor: active ? PRIMARY : c.border,
+                      backgroundColor: active ? pill.activeBg : c.containerLowest,
+                      borderColor: active ? pill.activeBorder : c.border,
                     },
                     pressed && styles.iconPressed,
                   ]}>
-                  <IconSymbol name={btn.icon as any} size={18} color={active ? PRIMARY : c.onVariant} />
+                  <IconSymbol
+                    name={btn.icon as any}
+                    size={18}
+                    color={active ? pill.activeIcon : c.onVariant}
+                  />
                   <ThemedText
                     style={[
                       styles.modeLabel,
-                      { color: active ? PRIMARY : c.onVariant },
+                      { color: active ? pill.activeIcon : c.onVariant },
                     ]}>
                     {btn.label}
                   </ThemedText>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
@@ -8,6 +8,7 @@ import type { HorizonCompletionEntry } from '@shared/lib/storage/horizonCompleti
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { HorizonDocumentReadView } from '@shared/ui/horizon-document-read-view/HorizonDocumentReadView';
 
 import { buildMonthlyRateDeltaLabel } from '../lib/monthlyMilestone';
 import { buildWeeklyCoreGoals } from '../lib/weeklyCoreGoals';
@@ -26,6 +27,11 @@ type Tone = {
   barTrack: string;
   barFill: string;
   heat: string[];
+  highlightCard: string;
+  highlightCardBorder: string;
+  highlightFg: string;
+  highlightMuted: string;
+  highlightBadge: string;
 };
 
 type Props = {
@@ -128,6 +134,7 @@ function buildTrendPath(
   endDateKey: string,
   width = 100,
   height = 40,
+  padX = 5,
 ): { d: string; endX: number; endY: number } {
   const keys: string[] = [];
   let cursor = startDateKey;
@@ -143,13 +150,15 @@ function buildTrendPath(
     const row = key ? dailyStatsByDate[key] : null;
     return row ? Math.max(0, Math.min(1, Number(row.completionRate) || 0)) : 0;
   });
+  const innerWidth = width - padX * 2;
   if (values.every((v) => v === 0)) {
-    return { d: `M0 ${height - 4} L${width} ${height - 4}`, endX: width, endY: height - 4 };
+    const y = height - 4;
+    return { d: `M${padX} ${y} L${width - padX} ${y}`, endX: width - padX, endY: y };
   }
   const max = Math.max(0.01, ...values);
-  const xStep = values.length <= 1 ? width : width / (values.length - 1);
+  const xStep = values.length <= 1 ? 0 : innerWidth / (values.length - 1);
   const coords = values.map((v, idx) => ({
-    x: idx * xStep,
+    x: padX + idx * xStep,
     y: height - 4 - (v / max) * (height - 10),
   }));
   let d = `M${coords[0].x} ${coords[0].y}`;
@@ -206,6 +215,8 @@ export function PeriodHistoryView({
   previousMonthlyRate,
   streak,
   dailyStatsByDate,
+  weeklyCompletionEntries,
+  monthlyCompletionEntries,
   canGoPrevMonth,
   canGoNextMonth,
   onPrevMonth,
@@ -217,6 +228,26 @@ export function PeriodHistoryView({
   formatMonthLabelKo,
   formatCountKo,
 }: Props) {
+  const [expandedWeeklyKey, setExpandedWeeklyKey] = useState<string | null>(null);
+  const [expandedMonthlyKey, setExpandedMonthlyKey] = useState<string | null>(null);
+  const [activeHorizonTab, setActiveHorizonTab] = useState<'weekly' | 'monthly' | null>(null);
+
+  // 달력 flowMonthPrefix와 직접 연동 — 별도 탭 상태 없음
+  const filteredWeeklyEntries = useMemo(
+    () => weeklyCompletionEntries.filter((e) => e.periodKey.slice(0, 7) === flowMonthPrefix),
+    [weeklyCompletionEntries, flowMonthPrefix],
+  );
+  const filteredMonthlyEntries = useMemo(
+    () => monthlyCompletionEntries.filter((e) => e.periodKey.slice(0, 7) === flowMonthPrefix),
+    [monthlyCompletionEntries, flowMonthPrefix],
+  );
+
+  useEffect(() => {
+    setActiveHorizonTab(null);
+    setExpandedWeeklyKey(null);
+    setExpandedMonthlyKey(null);
+  }, [flowMonthPrefix]);
+
   const monthCalendarDays = useMemo(
     () => buildMonthCalendarDays(monthRange.startDateKey, dailyStatsByDate),
     [dailyStatsByDate, monthRange.startDateKey],
@@ -253,39 +284,180 @@ export function PeriodHistoryView({
   );
   const rateDeltaPositive = !monthDeltaLabel.startsWith('-');
 
+  // 공통 기록 카드 렌더러
+  const renderEntryCard = (
+    entry: (typeof filteredWeeklyEntries)[number],
+    expanded: boolean,
+    onToggle: () => void,
+  ) => (
+    <Pressable
+      key={entry.periodKey}
+      onPress={onToggle}
+      style={({ pressed }) => [
+        styles.horizonEntryCard,
+        { backgroundColor: tone.card, borderColor: tone.border },
+        pressed && { opacity: 0.8 },
+      ]}>
+      <View style={styles.horizonEntryHead}>
+        <View style={styles.horizonEntryLeft}>
+          <ThemedText style={styles.horizonEntryPeriod}>{entry.label}</ThemedText>
+          <ThemedText style={styles.horizonEntryDate} lightColor={tone.muted} darkColor={tone.muted}>
+            {new Date(entry.completedAt).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} 완료
+          </ThemedText>
+        </View>
+        <View style={[styles.horizonCompleteBadge, { backgroundColor: tone.level0 }]}>
+          <IconSymbol name="checkmark.circle.fill" size={14} color={tone.barFill} />
+          <ThemedText style={styles.horizonCompleteText} lightColor={tone.barFill} darkColor={tone.barFill}>
+            완료
+          </ThemedText>
+        </View>
+        <IconSymbol name={expanded ? 'chevron.up' : 'chevron.down'} size={14} color={tone.muted} />
+      </View>
+      {expanded && entry.document && (
+        <View style={styles.horizonEntryDoc}>
+          <HorizonDocumentReadView
+            document={entry.document}
+            ink={tone.ink}
+            muted={tone.muted}
+            isDark={false}
+          />
+        </View>
+      )}
+      {expanded && !entry.document && entry.summaryText ? (
+        <ThemedText style={styles.horizonEntrySummary} lightColor={tone.muted} darkColor={tone.muted}>
+          {entry.summaryText}
+        </ThemedText>
+      ) : null}
+    </Pressable>
+  );
+
   return (
     <>
-      {/* Month Nav + Calendar with gradient heatmap */}
-      <View style={styles.section}>
-        <View style={styles.monthNavRow}>
-          <Pressable
-            disabled={!canGoPrevMonth}
-            onPress={onPrevMonth}
-            hitSlop={8}
-            style={({ pressed }) => [styles.monthNavBtn, pressed && canGoPrevMonth && { opacity: 0.6 }]}
-            accessibilityRole="button"
-            accessibilityLabel="이전 달">
-            <IconSymbol name="chevron.left" size={16} color={canGoPrevMonth ? tone.ink : tone.muted} />
-          </Pressable>
-          <Pressable
-            onPress={onOpenMonthPicker}
-            style={({ pressed }) => [styles.monthNavLabelBtn, pressed && { opacity: 0.7 }]}
-            accessibilityRole="button"
-            accessibilityLabel="월 선택">
-            <ThemedText style={styles.monthNavLabel}>
-              {formatMonthLabelKo(`${flowMonthPrefix}-01`)}
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            disabled={!canGoNextMonth}
-            onPress={onNextMonth}
-            hitSlop={8}
-            style={({ pressed }) => [styles.monthNavBtn, pressed && canGoNextMonth && { opacity: 0.6 }]}
-            accessibilityRole="button"
-            accessibilityLabel="다음 달">
-            <IconSymbol name="chevron.right" size={16} color={canGoNextMonth ? tone.ink : tone.muted} />
-          </Pressable>
+      {/* Month Nav — < 2026년 6월 > */}
+      <View style={styles.monthNavRow}>
+        <Pressable
+          disabled={!canGoPrevMonth}
+          onPress={onPrevMonth}
+          hitSlop={8}
+          style={({ pressed }) => [styles.monthNavBtn, pressed && canGoPrevMonth && { opacity: 0.6 }]}
+          accessibilityRole="button"
+          accessibilityLabel="이전 달">
+          <IconSymbol name="chevron.left" size={16} color={canGoPrevMonth ? tone.ink : tone.muted} />
+        </Pressable>
+        <Pressable
+          onPress={onOpenMonthPicker}
+          style={({ pressed }) => [styles.monthNavLabelBtn, pressed && { opacity: 0.7 }]}
+          accessibilityRole="button"
+          accessibilityLabel="월 선택">
+          <ThemedText style={styles.monthNavLabel}>
+            {formatMonthLabelKo(`${flowMonthPrefix}-01`)}
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          disabled={!canGoNextMonth}
+          onPress={onNextMonth}
+          hitSlop={8}
+          style={({ pressed }) => [styles.monthNavBtn, pressed && canGoNextMonth && { opacity: 0.6 }]}
+          accessibilityRole="button"
+          accessibilityLabel="다음 달">
+          <IconSymbol name="chevron.right" size={16} color={canGoNextMonth ? tone.ink : tone.muted} />
+        </Pressable>
+      </View>
+
+      {/* 위클리 / 먼슬리 기록 — 가로 탭, 기본 접힘 */}
+      <View style={styles.historyTabSection}>
+        <View style={styles.historyTabRow}>
+          {(['weekly', 'monthly'] as const).map((tab) => {
+            const isWeekly = tab === 'weekly';
+            const active = activeHorizonTab === tab;
+            return (
+              <Pressable
+                key={tab}
+                onPress={() => {
+                  setActiveHorizonTab(active ? null : tab);
+                  setExpandedWeeklyKey(null);
+                  setExpandedMonthlyKey(null);
+                }}
+                style={({ pressed }) => [
+                  styles.historyTabChip,
+                  {
+                    backgroundColor: active ? tone.barFill : tone.level0,
+                    borderColor: active ? tone.barFill : tone.border,
+                  },
+                  pressed && { opacity: 0.75 },
+                ]}>
+                <ThemedText
+                  style={styles.historyTabChipText}
+                  lightColor={active ? '#ffffff' : tone.ink}
+                  darkColor={active ? '#18181b' : tone.ink}>
+                  {isWeekly ? '위클리' : '먼슬리'}
+                </ThemedText>
+                {isWeekly && filteredWeeklyEntries.length > 0 && (
+                  <View
+                    style={[
+                      styles.historyTabCount,
+                      { backgroundColor: active ? 'rgba(255,255,255,0.25)' : tone.barFill },
+                    ]}>
+                    <ThemedText
+                      style={styles.historyTabCountText}
+                      lightColor={active ? '#ffffff' : '#ffffff'}
+                      darkColor={active ? '#18181b' : '#ffffff'}>
+                      {filteredWeeklyEntries.length}
+                    </ThemedText>
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
         </View>
+
+        {activeHorizonTab === 'weekly' && (
+          <View style={styles.historyTabContent}>
+            {filteredWeeklyEntries.length === 0 ? (
+              <View style={[styles.emptyCard, { backgroundColor: tone.level0 }]}>
+                <ThemedText style={styles.emptyText} lightColor={tone.muted} darkColor={tone.muted}>
+                  {weeklyCompletionEntries.length === 0
+                    ? '위클리 탭에서 전략을 작성하고 완료하면 여기에 기록돼요.'
+                    : '이 달에 완료된 위클리 기록이 없어요.'}
+                </ThemedText>
+              </View>
+            ) : (
+              filteredWeeklyEntries.map((entry) =>
+                renderEntryCard(
+                  entry,
+                  expandedWeeklyKey === entry.periodKey,
+                  () => setExpandedWeeklyKey(expandedWeeklyKey === entry.periodKey ? null : entry.periodKey),
+                ),
+              )
+            )}
+          </View>
+        )}
+
+        {activeHorizonTab === 'monthly' && (
+          <View style={styles.historyTabContent}>
+            {filteredMonthlyEntries.length === 0 ? (
+              <View style={[styles.emptyCard, { backgroundColor: tone.level0 }]}>
+                <ThemedText style={styles.emptyText} lightColor={tone.muted} darkColor={tone.muted}>
+                  {monthlyCompletionEntries.length === 0
+                    ? '먼슬리 탭에서 전략을 작성하고 완료하면 여기에 기록돼요.'
+                    : '이 달에 완료된 먼슬리 기록이 없어요.'}
+                </ThemedText>
+              </View>
+            ) : (
+              filteredMonthlyEntries.map((entry) =>
+                renderEntryCard(
+                  entry,
+                  expandedMonthlyKey === entry.periodKey,
+                  () => setExpandedMonthlyKey(expandedMonthlyKey === entry.periodKey ? null : entry.periodKey),
+                ),
+              )
+            )}
+          </View>
+        )}
+      </View>
+
+      {/* 달력 히트맵 */}
+      <View style={styles.section}>
         <View style={[styles.calendarCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
           <View style={styles.calendarGrid}>
             {WEEKDAY_LABELS.map((label) => (
@@ -346,7 +518,7 @@ export function PeriodHistoryView({
         </View>
       </View>
 
-      {/* Growth Trend Graph */}
+      {/* 달성률 추세 그래프 */}
       <View style={[styles.trendCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
         <View style={styles.trendHeader}>
           <View style={styles.trendCopy}>
@@ -385,7 +557,7 @@ export function PeriodHistoryView({
         </ThemedText>
       </View>
 
-      {/* Weekly Core Goals */}
+      {/* 주간 핵심 목표 */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <ThemedText style={styles.sectionTitle}>주간 핵심 목표</ThemedText>
@@ -411,7 +583,7 @@ export function PeriodHistoryView({
                   <View style={styles.goalMeta}>
                     <ThemedText style={styles.goalTitle}>{goal.title}</ThemedText>
                     <ThemedText style={styles.goalSub} lightColor={tone.muted} darkColor={tone.muted}>
-                      {formatCountKo(goal.completed)} / {formatCountKo(goal.target)} · {goal.deltaLabel}
+                      이번 주 {formatCountKo(goal.completed)} · {goal.deltaLabel}
                     </ThemedText>
                   </View>
                   <ThemedText style={styles.goalPercent}>{progress}%</ThemedText>
@@ -425,7 +597,7 @@ export function PeriodHistoryView({
         )}
       </View>
 
-      {/* Monthly Categories */}
+      {/* 상위 카테고리 */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <ThemedText style={styles.sectionTitle}>상위 카테고리</ThemedText>
@@ -471,20 +643,30 @@ export function PeriodHistoryView({
         )}
       </View>
 
-      {/* Weekly Balance + Editorial */}
-      <View style={[styles.editorialCard, { backgroundColor: tone.barFill }]}>
+      {/* 에디토리얼 인사이트 */}
+      <View
+        style={[
+          styles.editorialCard,
+          {
+            backgroundColor: tone.highlightCard,
+            borderColor: tone.highlightCardBorder,
+            borderWidth: tone.highlightCardBorder === 'transparent' ? 0 : StyleSheet.hairlineWidth,
+          },
+        ]}>
         <View style={styles.editorialTop}>
-          <ThemedText style={styles.editorialKicker}>에디토리얼 인사이트</ThemedText>
-          <View style={styles.editorialBadge}>
-            <ThemedText style={styles.editorialBadgeText}>밸런스 {weeklyBalanceScore}%</ThemedText>
+          <ThemedText style={[styles.editorialKicker, { color: tone.highlightMuted }]}>에디토리얼 인사이트</ThemedText>
+          <View style={[styles.editorialBadge, { backgroundColor: tone.highlightBadge }]}>
+            <ThemedText style={[styles.editorialBadgeText, { color: tone.highlightFg }]}>
+              밸런스 {weeklyBalanceScore}%
+            </ThemedText>
           </View>
         </View>
-        <ThemedText style={styles.editorialTitle}>{editorial.title}</ThemedText>
-        <ThemedText style={styles.editorialBody}>{editorial.body}</ThemedText>
+        <ThemedText style={[styles.editorialTitle, { color: tone.highlightFg }]}>{editorial.title}</ThemedText>
+        <ThemedText style={[styles.editorialBody, { color: tone.highlightMuted }]}>{editorial.body}</ThemedText>
         {editorial.recommendPriority ? (
           <View style={styles.editorialFooter}>
-            <IconSymbol name="lightbulb.fill" size={14} color="#FAFAFA" />
-            <ThemedText style={styles.editorialFooterText}>우선순위 변경 권장</ThemedText>
+            <IconSymbol name="lightbulb.fill" size={14} color={tone.highlightFg} />
+            <ThemedText style={[styles.editorialFooterText, { color: tone.highlightFg }]}>우선순위 변경 권장</ThemedText>
           </View>
         ) : null}
       </View>
@@ -752,11 +934,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.4,
-    color: 'rgba(250,250,250,0.7)',
     textTransform: 'uppercase',
   },
   editorialBadge: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -764,19 +944,16 @@ const styles = StyleSheet.create({
   editorialBadgeText: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#FAFAFA',
   },
   editorialTitle: {
     fontSize: 20,
     fontWeight: '900',
     lineHeight: 26,
-    color: '#FAFAFA',
   },
   editorialBody: {
     fontSize: 13,
     lineHeight: 21,
     fontWeight: '600',
-    color: 'rgba(250,250,250,0.82)',
   },
   editorialFooter: {
     flexDirection: 'row',
@@ -787,6 +964,92 @@ const styles = StyleSheet.create({
   editorialFooterText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#FAFAFA',
+  },
+  horizonEntryCard: {
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 16,
+    gap: 10,
+  },
+  horizonEntryHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  horizonEntryLeft: {
+    flex: 1,
+    gap: 2,
+  },
+  horizonEntryPeriod: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  horizonEntryDate: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  horizonCompleteBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  horizonCompleteText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  horizonEntryDoc: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(128,128,128,0.15)',
+    paddingTop: 10,
+  },
+  horizonEntrySummary: {
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: '500',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(128,128,128,0.15)',
+    paddingTop: 10,
+  },
+  historyTabSection: {
+    gap: 10,
+  },
+  historyTabRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  historyTabChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  historyTabChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  historyTabCount: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  historyTabCountText: {
+    fontSize: 10,
+    lineHeight: 10,
+    fontWeight: '800',
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+  historyTabContent: {
+    gap: 8,
   },
 });
+
