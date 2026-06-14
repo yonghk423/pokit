@@ -5,6 +5,14 @@ import { loadDayPlanDraft, saveDayPlanDraft } from '@shared/lib/storage';
 import { defaultPriorityWindowFromNow } from '../lib/dayPlanTimeMath';
 import { addDaysToLocalDateKey, getLocalDateKey } from '../lib/localDateKey';
 import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
+import {
+  appendRoutineHistoryPending,
+  clearRoutineHistoryPendingForDate,
+  normalizeRoutineHistoryByDate,
+  removeRoutineHistoryPending,
+  shouldTrackRoutineHistoryForDate,
+  snapshotRoutinePlannedKeys,
+} from '../lib/routineHistorySnapshot';
 import type { PlanMode } from './planMode';
 
 type DayPlanDraftState = {
@@ -30,6 +38,10 @@ type DayPlanDraftState = {
   priorityStart: string;
   priorityEnd: string;
   priorityCategoryOrder: string[];
+  /** 히스토리 데일리 진입 시 반영할 루틴 시간대 완료(담기 체크) */
+  routineHistoryPendingByDate: Record<string, string[]>;
+  /** 당일 담기 계획 스냅샷 — 구간 종료 후에도 완료율 분모 유지 */
+  routineHistoryPlannedKeysByDate: Record<string, string[]>;
   /** 고정 루틴 저장소가 바뀌면 증가 — 당일 자동 병합 effect가 다시 돈다 */
   priorityCatalogFixedRoutineEpoch: number;
   /** 카테고리 표시명이 변경되면 증가 — 오늘 루틴 목록 라벨 재조회 */
@@ -67,6 +79,7 @@ type DayPlanDraftState = {
   setPriorityStart: (value: string) => void;
   setPriorityEnd: (value: string) => void;
   setPriorityCategoryOrder: (value: string[] | ((prev: string[]) => string[])) => void;
+  clearRoutineHistoryPendingForDate: (dateKey: string) => void;
   bumpPriorityCatalogFixedRoutineEpoch: () => void;
   bumpCategoryLabelEpoch: () => void;
   bumpWaterReminderSyncEpoch: () => void;
@@ -92,6 +105,8 @@ function createInitialState() {
     priorityOvernightEndAuto: false,
     ...createInitialPriorityWindow(),
     priorityCategoryOrder: [] as string[],
+    routineHistoryPendingByDate: {} as Record<string, string[]>,
+    routineHistoryPlannedKeysByDate: {} as Record<string, string[]>,
     priorityCatalogFixedRoutineEpoch: 0,
     categoryLabelEpoch: 0,
     waterReminderSyncEpoch: 0,
@@ -153,6 +168,8 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       priorityStart: typeof raw.priorityStart === 'string' ? raw.priorityStart : get().priorityStart,
       priorityEnd: typeof raw.priorityEnd === 'string' ? raw.priorityEnd : get().priorityEnd,
       priorityCategoryOrder: Array.isArray(raw.priorityCategoryOrder) ? raw.priorityCategoryOrder : [],
+      routineHistoryPendingByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPendingByDate),
+      routineHistoryPlannedKeysByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPlannedKeysByDate),
       quickMemoDraft: typeof raw.quickMemoDraft === 'string' ? raw.quickMemoDraft : '',
       isHydrated: true,
     });
@@ -167,18 +184,34 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   },
   toggleFocusCategoryCompleted: (categoryKey) =>
     set((s) => {
-      const next = {
-        completedFocusCategoryKeys: s.completedFocusCategoryKeys.includes(categoryKey)
-          ? s.completedFocusCategoryKeys.filter((k) => k !== categoryKey)
-          : [...s.completedFocusCategoryKeys, categoryKey],
-      };
-      return next;
+      const removing = s.completedFocusCategoryKeys.includes(categoryKey);
+      const completedFocusCategoryKeys = removing
+        ? s.completedFocusCategoryKeys.filter((k) => k !== categoryKey)
+        : [...s.completedFocusCategoryKeys, categoryKey];
+      const today = getLocalDateKey();
+      let routineHistoryPendingByDate = s.routineHistoryPendingByDate;
+      if (shouldTrackRoutineHistoryForDate(s, today)) {
+        routineHistoryPendingByDate = removing
+          ? removeRoutineHistoryPending(routineHistoryPendingByDate, today, categoryKey)
+          : appendRoutineHistoryPending(routineHistoryPendingByDate, today, categoryKey);
+      }
+      return { completedFocusCategoryKeys, routineHistoryPendingByDate };
     }),
   addFocusCategoryCompleted: (categoryKey) =>
     set((s) => {
       if (s.completedFocusCategoryKeys.includes(categoryKey)) return s;
+      const today = getLocalDateKey();
+      const completedFocusCategoryKeys = [...s.completedFocusCategoryKeys, categoryKey];
+      if (!shouldTrackRoutineHistoryForDate(s, today)) {
+        return { completedFocusCategoryKeys };
+      }
       return {
-        completedFocusCategoryKeys: [...s.completedFocusCategoryKeys, categoryKey],
+        completedFocusCategoryKeys,
+        routineHistoryPendingByDate: appendRoutineHistoryPending(
+          s.routineHistoryPendingByDate,
+          today,
+          categoryKey,
+        ),
       };
     }),
   filterCompletedFocusKeysToPriorityOrder: (order) =>
@@ -216,6 +249,14 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         if (!nextBagDismissed.includes(k)) nextBagDismissed.push(k);
       }
       const emptied = nextOrder.length === 0;
+      let routineHistoryPendingByDate = s.routineHistoryPendingByDate;
+      for (const k of removeKeys) {
+        routineHistoryPendingByDate = removeRoutineHistoryPending(
+          routineHistoryPendingByDate,
+          today,
+          k,
+        );
+      }
       return {
         priorityCategoryOrder: nextOrder,
         completedFocusCategoryKeys: emptied ? [] : nextFocus,
@@ -223,6 +264,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         priorityBagDismissedDateKey: today,
         priorityBagDismissedKeys: nextBagDismissed,
         isFocusStarted: emptied ? false : s.isFocusStarted,
+        routineHistoryPendingByDate,
       };
     }),
   clearPriorityBagDismissedKeys: () =>
@@ -287,8 +329,26 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   setPriorityStart: (value) => set({ priorityStart: value }),
   setPriorityEnd: (value) => set({ priorityEnd: value }),
   setPriorityCategoryOrder: (value) =>
+    set((s) => {
+      const priorityCategoryOrder =
+        typeof value === 'function' ? value(s.priorityCategoryOrder) : value;
+      const today = getLocalDateKey();
+      const routineHistoryPlannedKeysByDate =
+        shouldTrackRoutineHistoryForDate(s, today) && priorityCategoryOrder.length > 0
+          ? snapshotRoutinePlannedKeys(
+              s.routineHistoryPlannedKeysByDate,
+              today,
+              priorityCategoryOrder,
+            )
+          : s.routineHistoryPlannedKeysByDate;
+      return { priorityCategoryOrder, routineHistoryPlannedKeysByDate };
+    }),
+  clearRoutineHistoryPendingForDate: (dateKey) =>
     set((s) => ({
-      priorityCategoryOrder: typeof value === 'function' ? value(s.priorityCategoryOrder) : value,
+      routineHistoryPendingByDate: clearRoutineHistoryPendingForDate(
+        s.routineHistoryPendingByDate,
+        dateKey,
+      ),
     })),
   bumpPriorityCatalogFixedRoutineEpoch: () =>
     set((s) => ({ priorityCatalogFixedRoutineEpoch: s.priorityCatalogFixedRoutineEpoch + 1 })),
@@ -315,6 +375,8 @@ useDayPlanDraftStore.subscribe((state) => {
     priorityStart: state.priorityStart,
     priorityEnd: state.priorityEnd,
     priorityCategoryOrder: state.priorityCategoryOrder,
+    routineHistoryPendingByDate: state.routineHistoryPendingByDate,
+    routineHistoryPlannedKeysByDate: state.routineHistoryPlannedKeysByDate,
     quickMemoDraft: state.quickMemoDraft,
   });
 });
@@ -336,6 +398,8 @@ function persistDayPlanDraft(): void {
     priorityStart: s.priorityStart,
     priorityEnd: s.priorityEnd,
     priorityCategoryOrder: s.priorityCategoryOrder,
+    routineHistoryPendingByDate: s.routineHistoryPendingByDate,
+    routineHistoryPlannedKeysByDate: s.routineHistoryPlannedKeysByDate,
     quickMemoDraft: s.quickMemoDraft,
   });
 }

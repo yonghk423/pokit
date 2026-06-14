@@ -20,7 +20,7 @@
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="POKIT" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="EXPO-SplashLabel" userLabel="SplashTitle">
                                 <rect key="frame" x="136.5" y="409" width="120" height="38"/>
                                 <fontDescription key="fontDescription" type="boldSystem" pointSize="32"/>
-                                <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="textColor" name="SplashScreenTitle"/>
                                 <nil key="highlightedColor"/>
                             </label>
                         </subviews>
@@ -38,11 +38,14 @@
         </scene>
     </scenes>
     <resources>
+        <namedColor name="SplashScreenBackground">
+            <color alpha="1.000" blue="1" green="1" red="1" customColorSpace="sRGB" colorSpace="custom"/>
+        </namedColor>
+        <namedColor name="SplashScreenTitle">
+            <color alpha="1.000" blue="0.376470588235294" green="0.376470588235294" red="0.282352941176471" customColorSpace="sRGB" colorSpace="custom"/>
+        </namedColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
-        <namedColor name="SplashScreenBackground">
-            <color alpha="1.000" blue="0.00000000000000" green="0.00000000000000" red="0.00000000000000" customColorSpace="sRGB" colorSpace="custom"/>
-        </namedColor>
     </resources>
 </document>

@@ -1,0 +1,79 @@
+jest.mock('@shared/lib/storage', () => ({
+  loadHistoryDailyStats: jest.fn(() => []),
+  loadHistoryAchievements: jest.fn(() => []),
+  loadHistoryMeta: jest.fn(() => null),
+  saveHistoryDailyStats: jest.fn(),
+  saveHistoryMeta: jest.fn(),
+  saveHistoryAchievements: jest.fn(),
+  loadDayPlanDraft: jest.fn(() => null),
+  saveDayPlanDraft: jest.fn(),
+}));
+
+jest.mock('@entities/day-plan/lib/localDateKey', () => ({
+  getLocalDateKey: () => '2025-06-14',
+  addDaysToLocalDateKey: jest.requireActual('@entities/day-plan/lib/localDateKey').addDaysToLocalDateKey,
+}));
+
+import { useDayPlanDraftStore, useDayPlanStore } from '@entities/day-plan';
+import { useHistoryStore } from '@entities/history';
+
+import { syncRoutineWindowCompletionsToHistory } from './syncRoutineWindowCompletionsToHistory';
+
+describe('syncRoutineWindowCompletionsToHistory', () => {
+  beforeEach(() => {
+    useHistoryStore.setState({
+      dailyStatsByDate: {},
+      achievements: [],
+      lastUpdatedAt: '',
+      isHydrated: true,
+    });
+    useDayPlanDraftStore.setState({
+      ...useDayPlanDraftStore.getState(),
+      isHydrated: true,
+      planMode: 'priority',
+      priorityPlanDateKey: '2025-06-14',
+      priorityPlanDateKeyEnd: '2025-06-14',
+      priorityCategoryOrder: [],
+      completedFocusCategoryKeys: [],
+      routineHistoryPendingByDate: {
+        '2025-06-14': ['reading', 'writing'],
+      },
+      routineHistoryPlannedKeysByDate: {
+        '2025-06-14': ['reading', 'writing', 'water'],
+      },
+    });
+    useDayPlanStore.setState({
+      ...useDayPlanStore.getState(),
+      dateKey: '2025-06-14',
+      blocks: [],
+      completedBlockIds: [],
+      skippedBlockIds: [],
+    });
+  });
+
+  it('records pending routine completions when visiting history daily', () => {
+    syncRoutineWindowCompletionsToHistory('2025-06-14');
+
+    const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
+    expect(row?.categoryCompletions.reading).toBe(1);
+    expect(row?.categoryCompletions.writing).toBe(1);
+    expect(row?.completedFlowCount).toBe(2);
+    expect(useDayPlanDraftStore.getState().routineHistoryPendingByDate['2025-06-14']).toBeUndefined();
+  });
+
+  it('skips categories already present in history', () => {
+    useHistoryStore.getState().recordFocusSession({
+      dateKey: '2025-06-14',
+      categoryKey: 'reading',
+      completed: true,
+      plannedCountForDay: 3,
+    });
+
+    syncRoutineWindowCompletionsToHistory('2025-06-14');
+
+    const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
+    expect(row?.categoryCompletions.reading).toBe(1);
+    expect(row?.categoryCompletions.writing).toBe(1);
+    expect(row?.completedFlowCount).toBe(2);
+  });
+});

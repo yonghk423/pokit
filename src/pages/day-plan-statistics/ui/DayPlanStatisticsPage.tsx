@@ -13,6 +13,7 @@ import {
 } from '@entities/day-plan';
 import { getCategoryCompletions, useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
+import { syncRoutineWindowCompletionsToHistory } from '@features/history-routine-sync';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -135,12 +136,29 @@ export function DayPlanStatisticsPage() {
     hydrate();
   }, [hydrate]);
 
+  const syncDailyRoutineHistory = useCallback(
+    (dateKey: string) => {
+      syncRoutineWindowCompletionsToHistory(dateKey);
+      reloadFromStorage();
+    },
+    [reloadFromStorage],
+  );
+
   useFocusEffect(
     useCallback(() => {
-      reloadFromStorage();
+      if (period === 'today') {
+        syncDailyRoutineHistory(selectedDateKey);
+      } else {
+        reloadFromStorage();
+      }
       reloadHorizonCompletions();
-    }, [reloadFromStorage, reloadHorizonCompletions]),
+    }, [period, reloadFromStorage, reloadHorizonCompletions, selectedDateKey, syncDailyRoutineHistory]),
   );
+
+  useEffect(() => {
+    if (period !== 'today') return;
+    syncDailyRoutineHistory(selectedDateKey);
+  }, [period, selectedDateKey, syncDailyRoutineHistory]);
 
   const weekRange = useMemo(
     () => ({

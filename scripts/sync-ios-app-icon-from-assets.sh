@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# app.json 아이콘만 바꾸면 ios/ AppIcon 은 자동 갱신되지 않음 — 앱 아이콘 소스 PNG 를 1024 App Icon 으로 반영
-# 스플래시는 SplashScreen.storyboard 의 POKIT 라벨 사용(이 스크립트에서 스플래시 이미지는 건드리지 않음)
+# app.json 아이콘만 바꾸면 ios/ AppIcon 은 자동 갱신되지 않음
+# 스플래시는 SplashScreen.storyboard 의 POKIT 라벨(흰 배경 + #486060 텍스트)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ICON="$ROOT/assets/pokit2.png"
+ICON="$ROOT/assets/pokit3.png"
 APPICON="$ROOT/ios/Pokit/Images.xcassets/AppIcon.appiconset"
 
 if [[ ! -f "$ICON" ]]; then

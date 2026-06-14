@@ -30,6 +30,8 @@ function resetDraftStore() {
     priorityStart: '09:00',
     priorityEnd: '18:00',
     priorityCategoryOrder: [],
+    routineHistoryPendingByDate: {},
+    routineHistoryPlannedKeysByDate: {},
     completedFocusCategoryKeys: [],
     planCompletionDismissedKeys: [],
     priorityBagDismissedKeys: [],

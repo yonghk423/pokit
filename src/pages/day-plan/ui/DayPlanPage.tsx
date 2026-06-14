@@ -290,6 +290,7 @@ export function DayPlanPage() {
   /** 당일(적용 구간에 오늘이 포함될 때) 고정 루틴을 담기 앞쪽에 자동 보강 — FAB·시작 시에는 담기 순서만 쓴다. */
   useEffect(() => {
     if (planMode !== 'priority') return;
+    if (priorityWindowEndedForToday) return;
     const today = getLocalDateKey();
     if (today < priorityPlanDateKey || today > priorityPlanDateKeyEnd) return;
 
@@ -308,6 +309,7 @@ export function DayPlanPage() {
     planMode,
     priorityPlanDateKey,
     priorityPlanDateKeyEnd,
+    priorityWindowEndedForToday,
     priorityCategoryOrder,
     priorityBagDismissedDateKey,
     priorityBagDismissedKeys,
@@ -570,7 +572,8 @@ export function DayPlanPage() {
       return;
     }
 
-    if (isFocusStarted) {
+    // 구간 종료 후에는 집중 시작 여부와 관계없이 담기·집중 상태를 정리한다.
+    if (priorityWindowEndedForToday || isFocusStarted) {
       setIsFocusStarted(false);
       clearCompletedFocusCategoryKeys();
       clearPlanCompletionDismissedKeys();
@@ -581,6 +584,7 @@ export function DayPlanPage() {
     planMode,
     priorityCategoryOrder.length,
     priorityWindowEligible,
+    priorityWindowEndedForToday,
     isFocusStarted,
     setIsFocusStarted,
     clearCompletedFocusCategoryKeys,
@@ -590,11 +594,14 @@ export function DayPlanPage() {
   ]);
 
   /** 전체 루틴 시간 만료 → 진행 중 블록 자동 완료 + 담기 리스트 초기화 */
+  const priorityWindowScheduleKey = useMemo(
+    () => `${priorityPlanDateKey}|${priorityPlanDateKeyEnd}|${priorityStart}|${priorityEnd}`,
+    [priorityPlanDateKey, priorityPlanDateKeyEnd, priorityStart, priorityEnd],
+  );
   const priorityWindowAutoFinishedRef = useRef(false);
   useEffect(() => {
-    if (priorityWindowEndedForToday) return;
     priorityWindowAutoFinishedRef.current = false;
-  }, [priorityWindowEndedForToday]);
+  }, [priorityWindowScheduleKey]);
 
   useEffect(() => {
     if (planMode !== 'priority') return;
@@ -632,18 +639,15 @@ export function DayPlanPage() {
       void rescheduleDayPlanNotifications();
     }
 
-    if (priorityCategoryOrder.length > 0) {
-      setIsFocusStarted(false);
-      clearCompletedFocusCategoryKeys();
-      clearPlanCompletionDismissedKeys();
-      setPriorityCategoryOrder([]);
-    }
+    setIsFocusStarted(false);
+    clearCompletedFocusCategoryKeys();
+    clearPlanCompletionDismissedKeys();
+    setPriorityCategoryOrder([]);
     endFocusedLiveActivity();
   }, [
     planMode,
     priorityWindowEndedForToday,
     completeBlocks,
-    priorityCategoryOrder.length,
     setIsFocusStarted,
     clearCompletedFocusCategoryKeys,
     clearPlanCompletionDismissedKeys,
