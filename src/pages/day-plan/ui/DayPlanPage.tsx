@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import {
@@ -6,7 +5,6 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -47,8 +45,6 @@ import {
   loadPriorityDayStartAlarm,
   markDailyRhythmOnboardingCompleted,
 } from '@shared/lib/storage';
-import { openSupportMailComposer } from '@shared/lib/support';
-import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedView } from '@shared/ui/themed-view';
 
 import { useDayPlanDraftStore } from '@entities/day-plan';
@@ -726,29 +722,7 @@ export function DayPlanPage() {
   }, []);
 
   const planModeSwitchEl = (
-    <PlanModeSwitch
-      planMode={planMode}
-      onSelectMode={setPlanMode}
-      c={c}
-      trailing={
-        <Pressable
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            void openSupportMailComposer();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="문의하기"
-          style={[
-            styles.supportIconButton,
-            {
-              borderColor: c.catBorderIdle,
-              backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-            },
-          ]}>
-          <IconSymbol name="paperplane.fill" size={16} color={c.onSurface} />
-        </Pressable>
-      }
-    />
+    <PlanModeSwitch planMode={planMode} onSelectMode={setPlanMode} c={c} />
   );
 
   /** 스위치·본문·하단을 한 면으로 — c.bg(#fafafa) 대신 containerLow로 틈·밝은 띠 제거 */
@@ -860,14 +834,6 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   /** paddingTop은 quickMemo만(12). 우선순위는 0 — 상단이 ScrollView 흰 배경 위에 띠처럼 보이는 문제 방지 */
   scrollContent: { paddingHorizontal: 0, gap: 16 },
-  supportIconButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   priorityModeStack: { width: '100%', gap: 0 },
   /** 다이어리 등 풀블리드 섹션 제외 영역만 좌우 여백 */
   contentPad: { paddingHorizontal: 24 },

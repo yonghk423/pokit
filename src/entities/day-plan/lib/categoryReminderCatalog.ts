@@ -1,6 +1,7 @@
 import { resolveCustomFlowCatalogIcon } from '@shared/lib/storage';
 
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
+import { resolveCustomFlowCategoryLabelKo } from './customFlowDisplayLabel';
 import { GOAL_DETAIL_CHECKLIST_DERIVED_CATEGORY_KEYS } from './goalDetailChecklistCategoryKeys';
 
 /** 카테고리별 반복 알림 설정 UI·스케줄에 쓰는 키 순서 */
@@ -92,7 +93,7 @@ const ICONS: Record<string, string> = {
 };
 
 export function categoryReminderLabelKo(key: string): string {
-  if (isCustomFlowCategoryKey(key)) return '나만의 플로우';
+  if (isCustomFlowCategoryKey(key)) return resolveCustomFlowCategoryLabelKo(key);
   return LABELS[key] ?? key;
 }
 
