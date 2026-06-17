@@ -36,13 +36,16 @@ export function OtherSettings({
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [draftTask, setDraftTask] = useState('');
   const [checklist, setChecklist] = useState(initial.checklist);
-  const lastRef = useRef<string | null>(null);
+  const lastPersistedRef = useRef<string | null>(null);
+  const isSyncingFromPropsRef = useRef(false);
 
   useEffect(() => {
     const next = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
+    isSyncingFromPropsRef.current = true;
     setDisplayName(next.displayName);
     setChecklist(next.checklist);
-  }, [dataConfig]); // eslint-disable-line react-hooks/exhaustive-deps
+    lastPersistedRef.current = JSON.stringify(next);
+  }, [dataConfig]);
 
   /** 입력란에는 저장된 이름만 둔다. 내부 ID 기반 구분명은 담기 목록에서만 쓰며, 값으로 넣으면 ‘자동 생성된 이름’처럼 보인다. */
   const categoryNameHint = useMemo(() => {
@@ -53,10 +56,14 @@ export function OtherSettings({
   }, [categoryKey]);
 
   useEffect(() => {
+    if (isSyncingFromPropsRef.current) {
+      isSyncingFromPropsRef.current = false;
+      return;
+    }
     const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({ displayName, checklist });
-    const s = JSON.stringify(payload);
-    if (lastRef.current === s) return;
-    lastRef.current = s;
+    const serialized = JSON.stringify(payload);
+    if (lastPersistedRef.current === serialized) return;
+    lastPersistedRef.current = serialized;
     onChangeDataConfig(payload);
   }, [displayName, checklist, onChangeDataConfig]);
 

@@ -21,6 +21,8 @@ import {
   getFlowCompletionUnitCountForBlock,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
+  isPriorityWindowEligible,
+  isPriorityWindowEndedForToday,
   parseHHmmToMinutes,
   resolveBlockCategoryKey,
   useDayPlanRuntimeStore,
@@ -161,74 +163,29 @@ export function DayPlanPage() {
   }, []);
 
   /** 우선순위 적용일·집중 구간 안이면 true — FAB 노출·자동 종료 판단에 공통 사용 */
-  const priorityWindowEligible = useMemo(() => {
-    if (planMode !== 'priority') return false;
-    const ps = parseHHmmToMinutes(priorityStart);
-    const pe = parseHHmmToMinutes(priorityEnd);
-    if (ps === null || pe === null) return false;
+  const priorityWindowCtx = useMemo(
+    () => ({
+      planMode,
+      priorityStart,
+      priorityEnd,
+      priorityPlanDateKey,
+      priorityPlanDateKeyEnd,
+      nowKey: getLocalDateKey(),
+      nowMin: getLocalMinutesOfDayNow(),
+    }),
+    [planMode, priorityStart, priorityEnd, priorityPlanDateKey, priorityPlanDateKeyEnd, nowTick],
+  );
 
-    const rangeLo =
-      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd;
-    const rangeHi =
-      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKeyEnd : priorityPlanDateKey;
-    const nowKey = getLocalDateKey();
-    const nowMin = getLocalMinutesOfDayNow();
-    const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
-
-    const inRange = nowKey >= rangeLo && nowKey <= rangeHi;
-    let stillInPrioritySegment = false;
-    if (inRange) {
-      if (!overnight) {
-        stillInPrioritySegment = nowMin < pe;
-      } else if (nowKey === rangeLo) {
-        stillInPrioritySegment = true;
-      } else if (nowKey === rangeHi) {
-        stillInPrioritySegment = nowMin < pe;
-      } else {
-        stillInPrioritySegment = nowKey > rangeLo && nowKey < rangeHi;
-      }
-    }
-    return inRange && stillInPrioritySegment;
-  }, [
-    planMode,
-    priorityStart,
-    priorityEnd,
-    priorityPlanDateKey,
-    priorityPlanDateKeyEnd,
-    nowTick,
-  ]);
+  const priorityWindowEligible = useMemo(
+    () => isPriorityWindowEligible(priorityWindowCtx),
+    [priorityWindowCtx],
+  );
 
   /** 당일 기준으로 집중 구간이 이미 끝났는지(시작 전 아님) */
-  const priorityWindowEndedForToday = useMemo(() => {
-    if (planMode !== 'priority') return false;
-    const ps = parseHHmmToMinutes(priorityStart);
-    const pe = parseHHmmToMinutes(priorityEnd);
-    if (ps === null || pe === null) return false;
-
-    const rangeLo =
-      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd;
-    const rangeHi =
-      priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKeyEnd : priorityPlanDateKey;
-    const nowKey = getLocalDateKey();
-    const nowMin = getLocalMinutesOfDayNow();
-    const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
-    const inRange = nowKey >= rangeLo && nowKey <= rangeHi;
-    if (!inRange) return false;
-
-    if (!overnight) {
-      return nowMin >= pe;
-    }
-    if (nowKey === rangeLo) return false;
-    if (nowKey === rangeHi) return nowMin >= pe;
-    return false;
-  }, [
-    planMode,
-    priorityStart,
-    priorityEnd,
-    priorityPlanDateKey,
-    priorityPlanDateKeyEnd,
-    nowTick,
-  ]);
+  const priorityWindowEndedForToday = useMemo(
+    () => isPriorityWindowEndedForToday(priorityWindowCtx),
+    [priorityWindowCtx],
+  );
 
   const { addBlock, quickMemos, removeQuickMemo, completeBlocks } = useDayPlanStore(
     useShallow((s) => ({

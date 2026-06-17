@@ -131,7 +131,7 @@ export function buildHistoryInsights(input: {
     strengths.push({
       kind: 'strength',
       title: '위클리 완료가 늘었어요',
-      detail: `지난 주간보다 완료가 ${input.weekCompletionDelta}개 많아요.`,
+      detail: `지난 주간보다 완료가 ${input.weekCompletionDelta}회 많아요.`,
     });
   }
 
@@ -155,7 +155,7 @@ export function buildHistoryInsights(input: {
     weaknesses.push({
       kind: 'weakness',
       title: '데일리 기록이 비어 있어요',
-      detail: '오늘은 완료 1개만 있어도 데일리 점수와 종합 평가가 살아나요.',
+      detail: '오늘은 완료 1회만 있어도 데일리 점수와 종합 평가가 살아나요.',
     });
   }
 
@@ -177,7 +177,7 @@ export function buildHistoryInsights(input: {
     weaknesses.push({
       kind: 'weakness',
       title: '위클리 완료가 줄었어요',
-      detail: `지난 주간보다 ${Math.abs(input.weekCompletionDelta)}개 적어요.`,
+      detail: `지난 주간보다 ${Math.abs(input.weekCompletionDelta)}회 적어요.`,
     });
   }
 

@@ -20,7 +20,11 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   createCustomFlowCategoryId,
   getInitialOtherDataConfig,
+  getLocalDateKey,
+  getLocalMinutesOfDayNow,
   isCustomFlowCategoryKey,
+  isPriorityWindowEndedForToday,
+  useDayPlanDraftStore,
   useFixedFlowSetsStore,
 } from '@entities/day-plan';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
@@ -281,6 +285,7 @@ type GroupAccordionProps = {
   setItem: FixedFlowSet;
   isExpanded: boolean;
   isActiveForToday: boolean;
+  applyBlocked: boolean;
   catalogByKey: Map<string, PriorityCatalogRow>;
   isDark: boolean;
   ink: string;
@@ -291,6 +296,7 @@ type GroupAccordionProps = {
   sectionBg: string;
   onToggleExpand: () => void;
   onToggleActiveForToday: () => void;
+  onApplyBlocked: () => void;
   onRenameSet: () => void;
   onDeleteSet: () => void;
   onToggleItem: (categoryKey: string, enabled: boolean) => void;
@@ -303,6 +309,7 @@ function GroupAccordion({
   setItem,
   isExpanded,
   isActiveForToday,
+  applyBlocked,
   catalogByKey,
   isDark,
   ink,
@@ -313,6 +320,7 @@ function GroupAccordion({
   sectionBg,
   onToggleExpand,
   onToggleActiveForToday,
+  onApplyBlocked,
   onRenameSet,
   onDeleteSet,
   onToggleItem,
@@ -322,6 +330,7 @@ function GroupAccordion({
 }: GroupAccordionProps) {
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
   const totalCount = setItem.items.length;
+  const applyChipBlocked = applyBlocked && !isActiveForToday;
 
   return (
     <View style={[styles.accordionSection, { backgroundColor: sectionBg, borderColor: line }]}>
@@ -346,8 +355,21 @@ function GroupAccordion({
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={isActiveForToday ? '오늘 적용 해제' : '오늘 적용'}
-          onPress={onToggleActiveForToday}
+          accessibilityState={{ disabled: applyChipBlocked }}
+          accessibilityLabel={
+            isActiveForToday
+              ? '오늘 적용 해제'
+              : applyChipBlocked
+                ? '집중 시간이 끝나 오늘 적용할 수 없음'
+                : '오늘 적용'
+          }
+          onPress={() => {
+            if (applyChipBlocked) {
+              onApplyBlocked();
+              return;
+            }
+            onToggleActiveForToday();
+          }}
           style={({ pressed }) => [
             styles.headerApplyChip,
             {
@@ -359,7 +381,7 @@ function GroupAccordion({
                 : isDark
                   ? 'rgba(255,255,255,0.06)'
                   : 'rgba(0,0,0,0.03)',
-              opacity: pressed ? 0.88 : 1,
+              opacity: applyChipBlocked ? 0.42 : pressed ? 0.88 : 1,
             },
           ]}>
           <ThemedText
@@ -466,6 +488,57 @@ export function FixedRoutinePage() {
   } | null>(null);
   const targetSetIdRef = useRef<string | null>(null);
   const hasInitializedExpandedRef = useRef(false);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+
+  const {
+    planMode,
+    priorityStart,
+    priorityEnd,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+  } = useDayPlanDraftStore(
+    useShallow((s) => ({
+      planMode: s.planMode,
+      priorityStart: s.priorityStart,
+      priorityEnd: s.priorityEnd,
+      priorityPlanDateKey: s.priorityPlanDateKey,
+      priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
+    })),
+  );
+
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 10_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const priorityWindowEndedForToday = useMemo(
+    () =>
+      isPriorityWindowEndedForToday({
+        planMode,
+        priorityStart,
+        priorityEnd,
+        priorityPlanDateKey,
+        priorityPlanDateKeyEnd,
+        nowKey: getLocalDateKey(),
+        nowMin: getLocalMinutesOfDayNow(),
+      }),
+    [
+      planMode,
+      priorityStart,
+      priorityEnd,
+      priorityPlanDateKey,
+      priorityPlanDateKeyEnd,
+      nowTick,
+    ],
+  );
+
+  const handleApplyBlocked = useCallback(() => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Alert.alert(
+      '집중 시간이 끝났어요',
+      '오늘 집중 구간이 종료되어 지금은 적용할 수 없어요. 오늘 탭에서 집중 시간을 변경한 뒤 다시 적용해 주세요.',
+    );
+  }, []);
 
   const {
     sets,
@@ -624,6 +697,7 @@ export function FixedRoutinePage() {
               setItem={setItem}
               isExpanded={expandedIds.has(setItem.id)}
               isActiveForToday={activeSetIds.includes(setItem.id)}
+              applyBlocked={priorityWindowEndedForToday}
               catalogByKey={catalogByKey}
               isDark={isDark}
               ink={ink}
@@ -637,6 +711,7 @@ export function FixedRoutinePage() {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 toggleSetForToday(setItem.id);
               }}
+              onApplyBlocked={handleApplyBlocked}
               onRenameSet={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setRenameSetSheet({ setId: setItem.id, label: setItem.name });

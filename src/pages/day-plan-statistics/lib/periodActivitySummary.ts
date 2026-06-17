@@ -60,5 +60,5 @@ export function getMonthlyPeriodRange(monthKey: string): { startDateKey: string;
 
 export function formatPeriodActivityLines(lines: PeriodActivityLine[], limit = 5): string[] {
   if (lines.length === 0) return [];
-  return lines.slice(0, limit).map((row, idx) => `${idx + 1}. ${row.label} · ${row.completions}개`);
+  return lines.slice(0, limit).map((row, idx) => `${idx + 1}. ${row.label} · ${row.completions}회`);
 }

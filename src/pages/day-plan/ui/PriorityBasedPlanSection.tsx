@@ -1,7 +1,7 @@
 // @ts-nocheck — RN Web에서 StyleSheet.create 타입이 TextStyle|ViewStyle로 합쳐져 Reanimated·제스처와 충돌함
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -752,6 +752,7 @@ export function PriorityBasedPlanSection({
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const router = useRouter();
   const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
   const insets = useSafeAreaInsets();
   const bottomTabBarHeight = useBottomTabBarHeight();
@@ -1239,10 +1240,9 @@ export function PriorityBasedPlanSection({
     return Math.max(240, cappedHeight);
   }, [windowHeight, insets.top, insets.bottom, bottomTabBarHeight]);
 
-  const timelineCardSubtitle = useMemo(
-    () =>
-      `${planDayIntroFromRange(todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd)} · ${priorityWindowLine}`,
-    [todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd, priorityWindowLine],
+  const timelineDateIntro = useMemo(
+    () => planDayIntroFromRange(todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd),
+    [todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd],
   );
 
   const openPriorityTimeModal = useCallback(() => {
@@ -1604,32 +1604,45 @@ export function PriorityBasedPlanSection({
                   numberOfLines={2}>
                   {formatTimelineHeaderDateKo(todayKey)}
                 </ThemedText>
-                <ThemedText
-                  style={[styles.priorityTimelineSub, { color: editorial.muted }]}
-                  lightColor={editorial.muted}
-                  darkColor={editorial.muted}
-                  numberOfLines={3}>
-                  {timelineCardSubtitle}
-                </ThemedText>
+                <View style={styles.priorityTimelineSubRow}>
+                  <ThemedText
+                    style={[styles.priorityTimelineSub, { color: editorial.muted }]}
+                    lightColor={editorial.muted}
+                    darkColor={editorial.muted}>
+                    {timelineDateIntro}
+                    {' · '}
+                  </ThemedText>
+                  <Pressable
+                    onPress={openPriorityTimeModal}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`집중 구간 시간 설정, 현재 ${priorityWindowLine}`}
+                    style={({ pressed }) => [pressed && { opacity: 0.65 }]}>
+                    <ThemedText
+                      style={[
+                        styles.priorityTimelineSub,
+                        styles.priorityTimelineTimeTap,
+                        { color: editorial.ink },
+                      ]}
+                      lightColor={editorial.ink}
+                      darkColor={editorial.ink}
+                      numberOfLines={2}>
+                      {priorityWindowLine}
+                    </ThemedText>
+                  </Pressable>
+                </View>
               </View>
-              <View style={styles.priorityTimelineHeaderActions}>
-                <Pressable
-                  onPress={openPlanDatePicker}
-                  hitSlop={12}
-                  style={styles.timeCalendarTopLeftHit}
-                  accessibilityRole="button"
-                  accessibilityLabel={`적용 기간 선택, 현재 ${planDayIntroFromRange(todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd)}`}>
-                  {/* 임시 주석처리 <IconSymbol name="calendar" size={22} color={editorial.muted} /> */}
-                </Pressable>
-                <Pressable
-                  onPress={openPriorityTimeModal}
-                  hitSlop={12}
-                  style={styles.timeCalendarTopLeftHit}
-                  accessibilityRole="button"
-                  accessibilityLabel="집중 구간 시간 설정">
-                  {/* 임시 주석처리 <IconSymbol name="clock.fill" size={22} color={editorial.muted} /> */}
-                </Pressable>
-              </View>
+              <Pressable
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/(tabs)/settings');
+                }}
+                hitSlop={12}
+                style={styles.timelineHeaderSettingsBtn}
+                accessibilityRole="button"
+                accessibilityLabel="설정">
+                <IconSymbol name="gearshape" size={22} color={editorial.muted} />
+              </Pressable>
             </View>
             <ScrollView
               nestedScrollEnabled
@@ -2000,11 +2013,20 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     letterSpacing: -0.1,
   },
+  priorityTimelineSubRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  priorityTimelineTimeTap: {
+    fontWeight: '600',
+  },
   priorityTimelineHeaderActions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    alignItems: 'flex-start',
+    gap: 2,
     paddingTop: 2,
+    marginLeft: 4,
   },
   priorityTimelineScroll: {
     flex: 1,
@@ -2197,6 +2219,13 @@ const styles = StyleSheet.create({
     padding: 4,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  timelineHeaderSettingsBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
   },
   /** 시작·종료 플립 시계 두 열 */
   timeRibbonInner: {

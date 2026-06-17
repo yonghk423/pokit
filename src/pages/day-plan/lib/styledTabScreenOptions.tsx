@@ -17,19 +17,19 @@ const TAB_ICONS: Record<string, string> = {
 function tabBarColors(isDark: boolean) {
   return isDark
     ? {
-        containerBg: '#1C1C1E',
-        containerBorder: 'rgba(255,255,255,0.10)',
-        activeBg: '#3A3A3C',
-        activeIcon: '#FAFAFA',
-        inactiveIcon: '#8E8E93',
-      }
+      containerBg: '#1C1C1E',
+      containerBorder: 'rgba(255,255,255,0.10)',
+      activeBg: '#3A3A3C',
+      activeIcon: '#FAFAFA',
+      inactiveIcon: '#8E8E93',
+    }
     : {
-        containerBg: '#FFFFFF',
-        containerBorder: '#E5E5E5',
-        activeBg: '#E8E5E0',
-        activeIcon: '#1A1A1A',
-        inactiveIcon: '#999999',
-      };
+      containerBg: '#FFFFFF',
+      containerBorder: '#E5E5E5',
+      activeBg: '#E8E5E0',
+      activeIcon: '#1A1A1A',
+      inactiveIcon: '#999999',
+    };
 }
 
 export function useDayPlanStyledTabScreenOptions(): ({

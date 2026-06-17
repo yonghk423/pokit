@@ -26,6 +26,10 @@ import {
   shiftMonthPrefix,
 } from '../lib/historyCalendarGrid';
 import { buildMonthlyCompletionRate } from '../lib/monthlyMilestone';
+import {
+  formatHistoryCategoryVarietyKo,
+  formatHistoryFrequencyKo,
+} from '../lib/historyDisplayFormat';
 import { buildWeeklyGroupRows, computeBalanceScore } from '../lib/weeklyBalanceRadar';
 import { HistoryCalendarOverlay } from './HistoryCalendarOverlay';
 import { HistoryMonthPickerOverlay } from './HistoryMonthPickerOverlay';
@@ -69,10 +73,6 @@ function toDateKey(date: Date): string {
   const m = `${date.getMonth() + 1}`.padStart(2, '0');
   const d = `${date.getDate()}`.padStart(2, '0');
   return `${y}-${m}-${d}`;
-}
-
-function formatCountKo(count: number): string {
-  return `${Math.max(0, Math.round(count))}개`;
 }
 
 function formatRatePercent(rate: number): string {
@@ -351,7 +351,7 @@ export function DayPlanStatisticsPage() {
     : '핵심 플로우';
   const reflectionText =
     todayRow.completedFlowCount > 0
-      ? `${todayTopCategoryLabel} 중심으로 ${formatCountKo(todayRow.completedFlowCount)}를 마무리했어요. 현재 완료율은 ${focusScore}%이며, 내일은 오늘 가장 약했던 구간을 먼저 채워 보세요.`
+      ? `${todayTopCategoryLabel} 중심으로 ${formatHistoryFrequencyKo(todayRow.completedFlowCount)} 마무리했어요. 현재 완료율은 ${focusScore}%이며, 내일은 오늘 가장 약했던 구간을 먼저 채워 보세요.`
       : '오늘은 완료 기록이 없어요. 내일은 가장 부담이 적은 플로우 1개부터 시작해 흐름을 만들어 보세요.';
   const reflectionTags =
     todayRow.completedFlowCount > 0
@@ -526,8 +526,8 @@ export function DayPlanStatisticsPage() {
                 <ThemedText style={styles.sectionKicker} lightColor={tone.muted} darkColor={tone.muted}>
                   {todayCompletedCategories.length > 0
                     ? todayCompletedCategories.length > 5
-                      ? `오늘 ${todayCompletedCategories.length}개 · 옆으로 밀어 보기`
-                      : `오늘 ${todayCompletedCategories.length}개`
+                      ? `오늘 ${formatHistoryCategoryVarietyKo(todayCompletedCategories.length)} · 옆으로 밀어 보기`
+                      : `오늘 ${formatHistoryCategoryVarietyKo(todayCompletedCategories.length)}`
                     : '오늘 현황'}
                 </ThemedText>
               </View>
@@ -614,15 +614,13 @@ export function DayPlanStatisticsPage() {
         {period === 'flow' ? (
           <PeriodHistoryView
             tone={tone}
+            isDark={isDark}
             anchorDateKey={selectedDateKey}
             flowMonthPrefix={flowMonthPrefix}
-            weekRange={weekRange}
-            prevWeekRange={prevWeekRange}
             weeklyBalanceRows={weeklyBalanceRows}
             weeklyBalanceScore={weeklyBalanceScore}
             monthlyRate={monthlyRate}
             previousMonthlyRate={previousMonthlyRate}
-            streak={streak}
             dailyStatsByDate={dailyStatsByDate}
             weeklyCompletionEntries={weeklyCompletionEntries}
             monthRange={monthRange}
@@ -636,7 +634,6 @@ export function DayPlanStatisticsPage() {
             todayDateKey={todayDateKey}
             formatMonthLabelKo={formatMonthLabelKo}
             formatDateKeyKo={formatDateKeyKo}
-            formatCountKo={formatCountKo}
           />
         ) : null}
 

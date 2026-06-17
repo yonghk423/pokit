@@ -54,6 +54,7 @@ function CatalogListRow({
 }) {
   const settingsBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)';
   const settingsBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+  const settingsLocked = isFocusStarted && selected;
   const shouldPulse = Boolean(selected && isFocusStarted && !isCompleted);
   const pulse = useRef(new Animated.Value(1)).current;
 
@@ -148,23 +149,39 @@ function CatalogListRow({
       <View style={styles.catalogRowActions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${label} 목표 상세 설정`}
-          hitSlop={10}
+          accessibilityState={{ disabled: settingsLocked }}
+          accessibilityLabel={
+            settingsLocked
+              ? `${label} 목표 상세 설정, 집중 실행 중에는 변경할 수 없어요`
+              : `${label} 목표 상세 설정`
+          }
+          disabled={settingsLocked}
+          hitSlop={settingsLocked ? 0 : 10}
           onPress={() => {
+            if (settingsLocked) return;
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onOpenSettings();
           }}
           style={[
             styles.catalogSettingsBtn,
             {
-              borderColor: settingsBorder,
-              backgroundColor: settingsBg,
+              borderColor: settingsLocked
+                ? isDark
+                  ? 'rgba(255,255,255,0.12)'
+                  : 'rgba(0,0,0,0.08)'
+                : settingsBorder,
+              backgroundColor: settingsLocked
+                ? isDark
+                  ? 'rgba(255,255,255,0.04)'
+                  : 'rgba(0,0,0,0.02)'
+                : settingsBg,
+              opacity: settingsLocked ? 0.55 : 1,
             },
           ]}>
           <IconSymbol
-            name="slider.horizontal.3"
-            size={16}
-            color={isDark ? '#FAFAFA' : PRIMARY}
+            name={settingsLocked ? 'lock.fill' : 'slider.horizontal.3'}
+            size={settingsLocked ? 14 : 16}
+            color={settingsLocked ? muted : isDark ? '#FAFAFA' : PRIMARY}
           />
         </Pressable>
         <Pressable

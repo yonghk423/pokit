@@ -198,7 +198,7 @@ export function buildMonthlyVisualSnapshots(
     return {
       dateKey: row.dateKey,
       title: top ? categoryLabelFromKey(top[0]) : '기록된 하루',
-      subtitle: `${dateLabel} · 완료 ${row.completedFlowCount}개`,
+      subtitle: `${dateLabel} · 완료 ${row.completedFlowCount}회`,
       level: completionLevel(row.completedFlowCount),
     };
   });

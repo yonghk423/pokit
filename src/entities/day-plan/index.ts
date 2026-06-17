@@ -115,6 +115,11 @@ export {
   isOvernightPriorityWindow,
 } from './lib/priorityRoutineWindow';
 export {
+  isPriorityWindowEligible,
+  isPriorityWindowEndedForToday,
+  type PriorityWindowContext,
+} from './lib/priorityWindowEligibility';
+export {
   buildWaterRoutineReminderSlots,
   waterReminderIntervalMinutes,
   type WaterRoutineReminderSlot,

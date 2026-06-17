@@ -18,6 +18,7 @@ import {
   createCustomFlowCategoryId,
   filterDayPlanFlowBlocks,
   getInitialOtherDataConfig,
+  isPriorityWindowEndedForToday,
   isSystemCatalogGroupKey,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
@@ -131,6 +132,11 @@ export function PriorityCatalogPage() {
     isFocusStarted,
     completedFocusCategoryKeys,
     planCompletionDismissedKeys,
+    planMode,
+    priorityStart,
+    priorityEnd,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       priorityCategoryOrder: s.priorityCategoryOrder,
@@ -138,6 +144,11 @@ export function PriorityCatalogPage() {
       isFocusStarted: s.isFocusStarted,
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
       planCompletionDismissedKeys: s.planCompletionDismissedKeys,
+      planMode: s.planMode,
+      priorityStart: s.priorityStart,
+      priorityEnd: s.priorityEnd,
+      priorityPlanDateKey: s.priorityPlanDateKey,
+      priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
     })),
   );
 
@@ -256,6 +267,23 @@ export function PriorityCatalogPage() {
         void Haptics.selectionAsync();
         return;
       }
+      if (!alreadyIn) {
+        const windowEnded = isPriorityWindowEndedForToday({
+          planMode,
+          priorityStart,
+          priorityEnd,
+          priorityPlanDateKey,
+          priorityPlanDateKeyEnd,
+        });
+        if (windowEnded) {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          Alert.alert(
+            '집중 시간이 끝났어요',
+            '오늘 집중 구간이 종료되어 지금은 담을 수 없어요. 오늘 탭에서 집중 시간을 변경한 뒤 다시 담아 주세요.',
+          );
+          return;
+        }
+      }
       animateListMutation();
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const nextOrder = priorityCategoryOrder.includes(key)
@@ -263,7 +291,17 @@ export function PriorityCatalogPage() {
         : [...priorityCategoryOrder, key];
       setPriorityCategoryOrder(nextOrder);
     },
-    [animateListMutation, isFocusStarted, priorityCategoryOrder, setPriorityCategoryOrder],
+    [
+      animateListMutation,
+      isFocusStarted,
+      planMode,
+      priorityCategoryOrder,
+      priorityEnd,
+      priorityPlanDateKey,
+      priorityPlanDateKeyEnd,
+      priorityStart,
+      setPriorityCategoryOrder,
+    ],
   );
 
   const onOpenCategorySettings = useCallback(

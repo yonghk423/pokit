@@ -30,9 +30,9 @@ type TabDef = {
 const TABS: TabDef[] = [
   { route: 'day-plan', icon: 'calendar', size: 22, label: '오늘' },
   { route: 'priority-catalog', icon: 'list.bullet.rectangle', size: 22, label: '루틴' },
-  { route: 'fixed-routines', icon: 'star', size: 22, label: '나만의 루틴' },
+  { route: 'fixed-routines', icon: 'bookmark', size: 22, label: '나만의 루틴' },
   { route: 'day-plan-statistics', icon: 'clock.arrow.circlepath', size: 22, label: '히스토리' },
-  { route: 'settings', icon: 'person', size: 22, label: '설정' },
+  { route: 'pokit-story', icon: 'book', size: 22, label: '스토리' },
 ];
 
 export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {

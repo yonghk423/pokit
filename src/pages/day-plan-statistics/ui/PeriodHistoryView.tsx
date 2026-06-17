@@ -2,16 +2,35 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { addDaysToLocalDateKey, categoryReminderLabelKo } from '@entities/day-plan';
+import { addDaysToLocalDateKey, categoryReminderLabelKo, useDayPlanDraftStore } from '@entities/day-plan';
 import { getCategoryCompletions, type HistoryDailyStat } from '@entities/history';
 import type { HorizonCompletionEntry } from '@shared/lib/storage/horizonCompletionsStorage';
+import { useShallow } from 'zustand/react/shallow';
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { HorizonDocumentReadView } from '@shared/ui/horizon-document-read-view/HorizonDocumentReadView';
 
+import {
+  buildTrendDeltaContextLabel,
+  buildTrendGraphCaption,
+  buildTrendRateSubtitle,
+  countDaysInCompletionRateAverage,
+} from '../lib/historyTrendCardCopy';
+import {
+  buildDailyRoutineHistory,
+  resolveDailyRoutinePlannedKeys,
+} from '../lib/dailyRoutineHistory';
+import { formatHistoryFrequencyKo } from '../lib/historyDisplayFormat';
+import {
+  buildHistoryCalendarDensityLegend,
+  calendarDensityCellBackground,
+  calendarDensityDayTextColor,
+  completionDensityLevel,
+  getHistoryCalendarDensityColors,
+} from '../lib/historyCalendarDensity';
 import { buildMonthlyRateDeltaLabel } from '../lib/monthlyMilestone';
-import { buildWeeklyCoreGoals } from '../lib/weeklyCoreGoals';
+import { HistoryMetricsInfoSheet } from './HistoryMetricsInfoSheet';
 import {
   buildWeeklyAxisScores,
   buildWeeklyEditorialInsight,
@@ -26,7 +45,6 @@ type Tone = {
   level0: string;
   barTrack: string;
   barFill: string;
-  heat: string[];
   highlightCard: string;
   highlightCardBorder: string;
   highlightFg: string;
@@ -36,16 +54,14 @@ type Tone = {
 
 type Props = {
   tone: Tone;
+  isDark: boolean;
   anchorDateKey: string;
   flowMonthPrefix: string;
-  weekRange: { startDateKey: string; endDateKey: string };
-  prevWeekRange: { startDateKey: string; endDateKey: string };
   monthRange: { startDateKey: string; endDateKey: string };
   weeklyBalanceRows: WeeklyAxisRow[];
   weeklyBalanceScore: number;
   monthlyRate: number;
   previousMonthlyRate: number;
-  streak: number;
   dailyStatsByDate: Record<string, HistoryDailyStat>;
   weeklyCompletionEntries: HorizonCompletionEntry[];
   monthlyCompletionEntries: HorizonCompletionEntry[];
@@ -58,7 +74,6 @@ type Props = {
   todayDateKey: string;
   formatDateKeyKo: (dateKey: string) => string;
   formatMonthLabelKo: (dateKey: string) => string;
-  formatCountKo: (count: number) => string;
 };
 
 type MonthDay = {
@@ -67,7 +82,6 @@ type MonthDay = {
   inMonth: boolean;
   completionRate: number;
   completedFlowCount: number;
-  level: number;
 };
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
@@ -98,14 +112,6 @@ function formatRatePercent(rate: number): string {
   return `${Math.round(Math.max(0, Math.min(1, rate)) * 100)}%`;
 }
 
-function completionLevel(completedFlowCount: number): number {
-  if (completedFlowCount >= 6) return 4;
-  if (completedFlowCount >= 4) return 3;
-  if (completedFlowCount >= 2) return 2;
-  if (completedFlowCount >= 1) return 1;
-  return 0;
-}
-
 function buildMonthCalendarDays(
   monthStartDateKey: string,
   dailyStatsByDate: Record<string, HistoryDailyStat>,
@@ -123,7 +129,6 @@ function buildMonthCalendarDays(
       inMonth: date.getMonth() === monthStart.getMonth(),
       completionRate: row?.completionRate ?? 0,
       completedFlowCount: count,
-      level: completionLevel(count),
     };
   });
 }
@@ -195,25 +200,16 @@ function buildTopCategories(
   }));
 }
 
-function streakSubtitle(streak: number): string {
-  if (streak >= 14) return '장기 흐름이 자리 잡고 있어요';
-  if (streak >= 7) return '꾸준히 이어가는 중이에요';
-  if (streak > 0) return '흐름을 쌓는 중이에요';
-  return '오늘부터 시작해 보세요';
-}
-
 export function PeriodHistoryView({
   tone,
+  isDark,
   anchorDateKey,
   flowMonthPrefix,
-  weekRange,
-  prevWeekRange,
   monthRange,
   weeklyBalanceRows,
   weeklyBalanceScore,
   monthlyRate,
   previousMonthlyRate,
-  streak,
   dailyStatsByDate,
   weeklyCompletionEntries,
   monthlyCompletionEntries,
@@ -226,11 +222,18 @@ export function PeriodHistoryView({
   todayDateKey,
   formatDateKeyKo,
   formatMonthLabelKo,
-  formatCountKo,
 }: Props) {
   const [expandedWeeklyKey, setExpandedWeeklyKey] = useState<string | null>(null);
   const [expandedMonthlyKey, setExpandedMonthlyKey] = useState<string | null>(null);
   const [activeHorizonTab, setActiveHorizonTab] = useState<'weekly' | 'monthly' | null>(null);
+  const [metricsInfoOpen, setMetricsInfoOpen] = useState(false);
+
+  const { routineHistoryPlannedKeysByDate, priorityCategoryOrder } = useDayPlanDraftStore(
+    useShallow((s) => ({
+      routineHistoryPlannedKeysByDate: s.routineHistoryPlannedKeysByDate,
+      priorityCategoryOrder: s.priorityCategoryOrder,
+    })),
+  );
 
   // 달력 flowMonthPrefix와 직접 연동 — 별도 탭 상태 없음
   const filteredWeeklyEntries = useMemo(
@@ -264,25 +267,74 @@ export function PeriodHistoryView({
     () => buildTrendPath(dailyStatsByDate, monthRange.startDateKey, monthRange.endDateKey),
     [dailyStatsByDate, monthRange.endDateKey, monthRange.startDateKey],
   );
-  const coreGoals = useMemo(
-    () =>
-      buildWeeklyCoreGoals({
-        dailyStatsByDate,
-        weekStartKey: weekRange.startDateKey,
-        weekEndKey: weekRange.endDateKey,
-        prevWeekStartKey: prevWeekRange.startDateKey,
-        prevWeekEndKey: prevWeekRange.endDateKey,
-        categoryLabel: categoryReminderLabelKo,
-        limit: 3,
-      }),
-    [dailyStatsByDate, prevWeekRange, weekRange],
-  );
+  const dailyRoutineHistory = useMemo(() => {
+    const row = dailyStatsByDate[anchorDateKey];
+    const completedCategoryKeys = row
+      ? Object.entries(getCategoryCompletions(row))
+          .filter(([, count]) => (count ?? 0) > 0)
+          .map(([key]) => key)
+      : [];
+    const plannedCategoryKeys = resolveDailyRoutinePlannedKeys({
+      dateKey: anchorDateKey,
+      todayDateKey,
+      plannedKeysByDate: routineHistoryPlannedKeysByDate,
+      priorityCategoryOrder,
+      completedCategoryKeys,
+    });
+    return buildDailyRoutineHistory({
+      dailyStatsByDate,
+      dateKey: anchorDateKey,
+      categoryLabel: categoryReminderLabelKo,
+      plannedCategoryKeys,
+    });
+  }, [
+    anchorDateKey,
+    dailyStatsByDate,
+    priorityCategoryOrder,
+    routineHistoryPlannedKeysByDate,
+    todayDateKey,
+  ]);
   const axisScores = useMemo(() => buildWeeklyAxisScores(weeklyBalanceRows), [weeklyBalanceRows]);
+  const maxCategoryStreak = useMemo(
+    () => dailyRoutineHistory.reduce((max, row) => Math.max(max, row.consecutiveDays), 0),
+    [dailyRoutineHistory],
+  );
   const editorial = useMemo(
-    () => buildWeeklyEditorialInsight(axisScores, streak),
-    [axisScores, streak],
+    () => buildWeeklyEditorialInsight(axisScores, maxCategoryStreak),
+    [axisScores, maxCategoryStreak],
   );
   const rateDeltaPositive = !monthDeltaLabel.startsWith('-');
+  const recordedDayCount = useMemo(
+    () =>
+      countDaysInCompletionRateAverage(
+        dailyStatsByDate,
+        monthRange.startDateKey,
+        monthRange.endDateKey,
+      ),
+    [dailyStatsByDate, monthRange.endDateKey, monthRange.startDateKey],
+  );
+  const trendRateSubtitle = useMemo(
+    () =>
+      buildTrendRateSubtitle({
+        recordedDayCount,
+        startDateKey: monthRange.startDateKey,
+        endDateKey: monthRange.endDateKey,
+        formatDateKeyKo,
+      }),
+    [formatDateKeyKo, monthRange.endDateKey, monthRange.startDateKey, recordedDayCount],
+  );
+  const trendDeltaContextLabel = useMemo(
+    () => buildTrendDeltaContextLabel(monthlyRate, previousMonthlyRate),
+    [monthlyRate, previousMonthlyRate],
+  );
+  const trendGraphCaption = useMemo(
+    () => buildTrendGraphCaption(recordedDayCount),
+    [recordedDayCount],
+  );
+  const showTrendDeltaValue =
+    trendDeltaContextLabel === '지난달 대비' || monthlyRate > 0 || previousMonthlyRate > 0;
+  const calendarDensityColors = useMemo(() => getHistoryCalendarDensityColors(isDark), [isDark]);
+  const calendarDensityLegend = useMemo(() => buildHistoryCalendarDensityLegend(isDark), [isDark]);
 
   // 공통 기록 카드 렌더러
   const renderEntryCard = (
@@ -468,16 +520,20 @@ export function PeriodHistoryView({
             {monthCalendarDays.map((day) => {
               const selected = day.dateKey === anchorDateKey;
               const disabled = !day.inMonth || day.dateKey > todayDateKey;
-              const bgColor = selected
-                ? tone.barFill
-                : day.inMonth && day.level > 0
-                  ? tone.heat[day.level]
-                  : undefined;
+              const densityLevel = day.inMonth ? completionDensityLevel(day.completedFlowCount) : 0;
+              const bgColor = calendarDensityCellBackground(
+                densityLevel,
+                selected,
+                isDark,
+                calendarDensityColors,
+                tone.barFill,
+              );
+              const dayTextColor = calendarDensityDayTextColor(densityLevel, selected, isDark, tone.ink);
               const cell = (
                 <ThemedText
                   style={styles.calendarDayText}
-                  lightColor={selected ? '#ffffff' : day.level >= 3 ? '#ffffff' : tone.ink}
-                  darkColor={selected ? '#18181b' : day.level >= 3 ? '#18181b' : tone.ink}>
+                  lightColor={dayTextColor}
+                  darkColor={dayTextColor}>
                   {day.day}
                 </ThemedText>
               );
@@ -504,16 +560,15 @@ export function PeriodHistoryView({
               );
             })}
           </View>
-          <View style={styles.legendRow}>
-            <ThemedText style={styles.legendText} lightColor={tone.muted} darkColor={tone.muted}>
-              적음
-            </ThemedText>
-            {tone.heat.map((color, idx) => (
-              <View key={`legend-${idx}`} style={[styles.legendCell, { backgroundColor: color }]} />
+          <View style={styles.densityLegendRow}>
+            {calendarDensityLegend.map((item) => (
+              <View key={item.level} style={styles.densityLegendItem}>
+                <View style={[styles.densityLegendSwatch, { backgroundColor: item.color }]} />
+                <ThemedText style={styles.densityLegendLabel} lightColor={tone.muted} darkColor={tone.muted}>
+                  {item.label}
+                </ThemedText>
+              </View>
             ))}
-            <ThemedText style={styles.legendText} lightColor={tone.muted} darkColor={tone.muted}>
-              많음
-            </ThemedText>
           </View>
         </View>
       </View>
@@ -522,27 +577,42 @@ export function PeriodHistoryView({
       <View style={[styles.trendCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
         <View style={styles.trendHeader}>
           <View style={styles.trendCopy}>
-            <ThemedText style={styles.kicker} lightColor={tone.muted} darkColor={tone.muted}>
-              달성률
-            </ThemedText>
+            <View style={styles.trendKickerRow}>
+              <ThemedText style={styles.kicker} lightColor={tone.muted} darkColor={tone.muted}>
+                달성률
+              </ThemedText>
+              <Pressable
+                onPress={() => setMetricsInfoOpen(true)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="달성률 안내"
+                style={({ pressed }) => [styles.trendInfoBtn, pressed && { opacity: 0.65 }]}>
+                <IconSymbol name="info.circle" size={15} color={tone.muted} />
+              </Pressable>
+            </View>
             <View style={styles.trendRateRow}>
               <ThemedText style={styles.trendRateValue}>{formatRatePercent(monthlyRate)}</ThemedText>
               <View style={styles.trendDelta}>
-                <IconSymbol
-                  name={rateDeltaPositive ? 'arrow.up.right' : 'arrow.down.right'}
-                  size={12}
-                  color={tone.barFill}
-                />
-                <ThemedText style={[styles.trendDeltaText, { color: tone.barFill }]}>
-                  {monthDeltaLabel}
+                <ThemedText style={styles.trendDeltaContext} lightColor={tone.muted} darkColor={tone.muted}>
+                  {trendDeltaContextLabel}
                 </ThemedText>
+                {showTrendDeltaValue ? (
+                  <>
+                    <IconSymbol
+                      name={rateDeltaPositive ? 'arrow.up.right' : 'arrow.down.right'}
+                      size={12}
+                      color={tone.barFill}
+                    />
+                    <ThemedText style={[styles.trendDeltaText, { color: tone.barFill }]}>
+                      {monthDeltaLabel}
+                    </ThemedText>
+                  </>
+                ) : null}
               </View>
             </View>
-          </View>
-          <View style={styles.streakBadge}>
-            <IconSymbol name="flame.fill" size={16} color={tone.barFill} />
-            <ThemedText style={styles.streakValue}>{streak}</ThemedText>
-            <ThemedText style={styles.streakUnit} lightColor={tone.muted} darkColor={tone.muted}>일</ThemedText>
+            <ThemedText style={styles.trendSubtitle} lightColor={tone.muted} darkColor={tone.muted}>
+              {trendRateSubtitle}
+            </ThemedText>
           </View>
         </View>
         <View style={styles.trendGraphWrap}>
@@ -552,44 +622,80 @@ export function PeriodHistoryView({
             <Circle cx={trendPath.endX} cy={trendPath.endY} r={3} fill={tone.barFill} />
           </Svg>
         </View>
-        <ThemedText style={styles.trendCaption} lightColor={tone.muted} darkColor={tone.muted}>
-          {streakSubtitle(streak)}
+        <ThemedText style={styles.trendGraphCaption} lightColor={tone.muted} darkColor={tone.muted}>
+          {trendGraphCaption}
         </ThemedText>
       </View>
 
-      {/* 주간 핵심 목표 */}
+      <HistoryMetricsInfoSheet
+        visible={metricsInfoOpen}
+        sheetBg={tone.card}
+        ink={tone.ink}
+        muted={tone.muted}
+        border={tone.border}
+        onClose={() => setMetricsInfoOpen(false)}
+      />
+
+      {/* 선택한 날 루틴 기록 */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <ThemedText style={styles.sectionTitle}>주간 핵심 목표</ThemedText>
+          <ThemedText style={styles.sectionTitle}>그날 루틴 기록</ThemedText>
           <ThemedText style={styles.sectionChip} lightColor={tone.muted} darkColor={tone.muted}>
-            {formatDateKeyKo(weekRange.startDateKey)} – {formatDateKeyKo(weekRange.endDateKey)}
+            {formatDateKeyKo(anchorDateKey)}
           </ThemedText>
         </View>
-        {coreGoals.length === 0 ? (
+        {dailyRoutineHistory.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: tone.level0 }]}>
             <ThemedText style={styles.emptyText} lightColor={tone.muted} darkColor={tone.muted}>
-              이번 주 완료 기록이 쌓이면 핵심 목표가 표시돼요.
+              {anchorDateKey === todayDateKey
+                ? '오늘 담은 루틴이 없어요.'
+                : '이 날 담은 루틴 기록이 없어요.'}
             </ThemedText>
           </View>
         ) : (
-          coreGoals.map((goal) => {
-            const progress = Math.min(100, Math.round((goal.completed / Math.max(1, goal.target)) * 100));
+          dailyRoutineHistory.map((item) => {
+            const isCompleted = item.status === 'completed';
             return (
-              <View key={goal.categoryKey} style={[styles.goalCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
+              <View
+                key={item.categoryKey}
+                style={[
+                  styles.goalCard,
+                  { backgroundColor: tone.card, borderColor: tone.border },
+                  !isCompleted && { opacity: 0.88 },
+                ]}>
                 <View style={styles.goalTop}>
                   <View style={[styles.goalIconWrap, { backgroundColor: tone.level0 }]}>
-                    <IconSymbol name={goal.icon} size={18} color={tone.barFill} />
+                    <IconSymbol
+                      name={item.icon}
+                      size={18}
+                      color={isCompleted ? tone.barFill : tone.muted}
+                    />
                   </View>
                   <View style={styles.goalMeta}>
-                    <ThemedText style={styles.goalTitle}>{goal.title}</ThemedText>
-                    <ThemedText style={styles.goalSub} lightColor={tone.muted} darkColor={tone.muted}>
-                      이번 주 {formatCountKo(goal.completed)} · {goal.deltaLabel}
-                    </ThemedText>
+                    <ThemedText style={styles.goalTitle}>{item.title}</ThemedText>
+                    <View style={styles.goalStreakRow}>
+                      <IconSymbol
+                        name="flame.fill"
+                        size={12}
+                        color={item.consecutiveDays > 0 ? tone.barFill : tone.muted}
+                      />
+                      <ThemedText style={styles.goalSub} lightColor={tone.muted} darkColor={tone.muted}>
+                        {item.streakLabel}
+                      </ThemedText>
+                    </View>
                   </View>
-                  <ThemedText style={styles.goalPercent}>{progress}%</ThemedText>
+                  <ThemedText
+                    style={[
+                      styles.routineStatusBadge,
+                      { color: isCompleted ? tone.barFill : tone.muted },
+                    ]}>
+                    {item.statusLabel}
+                  </ThemedText>
                 </View>
                 <View style={[styles.goalTrack, { backgroundColor: tone.barTrack }]}>
-                  <View style={[styles.goalFill, { width: `${progress}%`, backgroundColor: tone.barFill }]} />
+                  {isCompleted ? (
+                    <View style={[styles.goalFill, { width: '100%', backgroundColor: tone.barFill }]} />
+                  ) : null}
                 </View>
               </View>
             );
@@ -625,7 +731,7 @@ export function PeriodHistoryView({
                   <View style={styles.categoryTop}>
                     <ThemedText style={styles.categoryLabel}>{category.label}</ThemedText>
                     <ThemedText style={styles.categoryCount} lightColor={tone.muted} darkColor={tone.muted}>
-                      {formatCountKo(category.count)}
+                      {formatHistoryFrequencyKo(category.count)}
                     </ThemedText>
                   </View>
                   <View style={[styles.categoryTrack, { backgroundColor: tone.barTrack }]}>
@@ -751,22 +857,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
-  legendRow: {
+  densityLegendRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    paddingTop: 4,
+    gap: 10,
+    paddingTop: 10,
   },
-  legendCell: {
+  densityLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  densityLegendSwatch: {
     width: 14,
     height: 14,
     borderRadius: 4,
   },
-  legendText: {
-    fontSize: 9,
-    fontWeight: '800',
-    marginHorizontal: 2,
+  densityLegendLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: -0.1,
   },
   trendCard: {
     borderRadius: 18,
@@ -780,12 +892,33 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   trendCopy: {
+    flex: 1,
+    minWidth: 0,
     gap: 6,
+    paddingRight: 8,
+  },
+  trendKickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  trendInfoBtn: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   trendRateRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'baseline',
     gap: 8,
+  },
+  trendSubtitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 17,
+    letterSpacing: -0.15,
   },
   trendRateValue: {
     fontSize: 34,
@@ -795,34 +928,27 @@ const styles = StyleSheet.create({
   },
   trendDelta: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
+  },
+  trendDeltaContext: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: -0.1,
   },
   trendDeltaText: {
     fontSize: 12,
     fontWeight: '900',
   },
-  streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  streakValue: {
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: -0.5,
-  },
-  streakUnit: {
-    fontSize: 11,
-    fontWeight: '800',
-  },
   trendGraphWrap: {
     width: '100%',
     height: 52,
   },
-  trendCaption: {
-    fontSize: 12,
+  trendGraphCaption: {
+    fontSize: 11,
     fontWeight: '700',
+    letterSpacing: -0.1,
   },
   goalCard: {
     borderRadius: 14,
@@ -849,6 +975,17 @@ const styles = StyleSheet.create({
   goalTitle: {
     fontSize: 14,
     fontWeight: '900',
+  },
+  goalStreakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  routineStatusBadge: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    flexShrink: 0,
   },
   goalSub: {
     fontSize: 11,

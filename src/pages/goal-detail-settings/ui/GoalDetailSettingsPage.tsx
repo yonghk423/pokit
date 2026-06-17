@@ -89,7 +89,6 @@ function mergeOtherStyleGoalDetailData(
   categoryRaw: unknown | null,
   fallback: unknown,
 ): unknown {
-  const fb = normalizeOtherDetailConfig(fallback ?? getInitialOtherDataConfig());
   const b = blockRaw != null ? normalizeOtherDetailConfig(blockRaw) : null;
   const c = categoryRaw != null ? normalizeOtherDetailConfig(categoryRaw) : null;
   const dnBlock = (b?.displayName ?? '').trim();
@@ -100,6 +99,40 @@ function mergeOtherStyleGoalDetailData(
   const cl = c?.checklist ?? [];
   const checklist = bl.length >= cl.length ? bl : cl.length > 0 ? cl : bl;
   return normalizeOtherDetailConfig({ displayName, checklist });
+}
+
+function buildLoadedDataByBlockId(targets: EditingTarget[]): Record<string, unknown> {
+  const next: Record<string, unknown> = {};
+  for (const t of targets) {
+    const module = getGoalDetailCategoryModule(t.categoryKey);
+    const fallback = module.getInitialDataConfig?.() ?? {};
+    const byBlock = loadGoalDetailBlockConfig(t.blockId);
+    const byCategory = loadGoalDetailCategoryConfig(t.categoryKey);
+    if (
+      isGoalDetailChecklistStyleCategoryKey(t.categoryKey) ||
+      isCustomFlowCategoryKey(t.categoryKey)
+    ) {
+      next[t.blockId] = mergeOtherStyleGoalDetailData(byBlock, byCategory, fallback);
+    } else {
+      next[t.blockId] = byBlock ?? byCategory ?? fallback;
+    }
+  }
+  return next;
+}
+
+/** 자동 저장 레이스로 빈 이름이 덮어쓰이는 것을 막는다. */
+function withPreservedOtherDisplayName(categoryKey: string, next: unknown): unknown {
+  if (categoryKey !== 'other' && !isCustomFlowCategoryKey(categoryKey)) return next;
+  const incoming = normalizeOtherDetailConfig(next);
+  if (incoming.displayName.trim().length > 0) return incoming;
+  const prev = normalizeOtherDetailConfig(
+    loadGoalDetailCategoryConfig(categoryKey) ?? getInitialOtherDataConfig(),
+  );
+  const kept = prev.displayName.trim();
+  if (kept.length > 0) {
+    return normalizeOtherDetailConfig({ ...incoming, displayName: kept });
+  }
+  return incoming;
 }
 
 export function GoalDetailSettingsPage() {
@@ -137,7 +170,8 @@ export function GoalDetailSettingsPage() {
     if (rows.length > 0) return rows;
     return [
       {
-        blockId: startBlockId?.trim() || 'single',
+        /** 일정 블록 없이 담기·우선순위에서만 열 때 — `single` 공유 키 대신 카테고리별로 분리 */
+        blockId: startBlockId?.trim() || categoryKey,
         categoryKey,
         timeLabel: '-',
       },
@@ -181,8 +215,18 @@ export function GoalDetailSettingsPage() {
     }
   }, [validTargets, sortedTargets, setLiveActivityChecklistFocusBlockId]);
 
-  const [dataByBlockId, setDataByBlockId] = useState<Record<string, unknown>>({});
+  const loadedDataByBlockId = useMemo(() => buildLoadedDataByBlockId(targets), [targets]);
+  const [patchByBlockId, setPatchByBlockId] = useState<Record<string, unknown>>({});
   const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setPatchByBlockId({});
+  }, [targets]);
+
+  const dataByBlockId = useMemo(
+    () => ({ ...loadedDataByBlockId, ...patchByBlockId }),
+    [loadedDataByBlockId, patchByBlockId],
+  );
 
   useEffect(
     () => () => {
@@ -193,30 +237,11 @@ export function GoalDetailSettingsPage() {
     [],
   );
 
-  useEffect(() => {
-    const next: Record<string, unknown> = {};
-    for (const t of targets) {
-      const module = getGoalDetailCategoryModule(t.categoryKey);
-      const fallback = module.getInitialDataConfig?.() ?? {};
-      const byBlock = loadGoalDetailBlockConfig(t.blockId);
-      const byCategory = loadGoalDetailCategoryConfig(t.categoryKey);
-      if (
-        isGoalDetailChecklistStyleCategoryKey(t.categoryKey) ||
-        isCustomFlowCategoryKey(t.categoryKey)
-      ) {
-        next[t.blockId] = mergeOtherStyleGoalDetailData(byBlock, byCategory, fallback);
-      } else {
-        next[t.blockId] = byBlock ?? byCategory ?? fallback;
-      }
-    }
-    setDataByBlockId(next);
-  }, [targets]);
-
   const handleChangeDataConfig = useCallback((target: EditingTarget, next: unknown) => {
-    setDataByBlockId((prev) => ({ ...prev, [target.blockId]: next }));
-    saveGoalDetailBlockConfig(target.blockId, next);
-    // 기존 카테고리 단위 데이터도 함께 갱신(하위 호환)
-    saveGoalDetailCategoryConfig(target.categoryKey, next);
+    const persisted = withPreservedOtherDisplayName(target.categoryKey, next);
+    setPatchByBlockId((prev) => ({ ...prev, [target.blockId]: persisted }));
+    saveGoalDetailBlockConfig(target.blockId, persisted);
+    saveGoalDetailCategoryConfig(target.categoryKey, persisted);
     if (target.categoryKey === 'other' || isCustomFlowCategoryKey(target.categoryKey)) {
       registerOtherCategoryResolverFromStorage();
       useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
@@ -294,6 +319,7 @@ export function GoalDetailSettingsPage() {
           (id) =>
             Boolean(id) &&
             id !== 'single' &&
+            !id.startsWith('customFlow:') &&
             blocks.some((b) => b.id === id && isDayPlanFlowBlock(b)),
         );
       if (ids.length === 0) {

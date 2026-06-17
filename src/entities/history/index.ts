@@ -1,4 +1,8 @@
 export { dayHasCompletionActivity, getCategoryCompletions } from './lib/historyCompletionMetrics';
+export {
+  computeCategoryCompletionStreak,
+  formatCategoryStreakLabel,
+} from './lib/categoryCompletionStreak';
 export { buildWeeklyHeatMapCells } from './lib/buildWeeklyHeatMap';
 export { buildCategoryBreakdown } from './lib/buildCategoryBreakdown';
 export { buildConsistencyByWeekday } from './lib/buildConsistencyByWeekday';
