@@ -5,6 +5,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -763,6 +765,8 @@ export function PriorityBasedPlanSection({
 
   const [iosDateModalOpen, setIosDateModalOpen] = useState(false);
   const [priorityTimeModalOpen, setPriorityTimeModalOpen] = useState(false);
+  const [draftPriorityStart, setDraftPriorityStart] = useState(priorityStart);
+  const [draftPriorityEnd, setDraftPriorityEnd] = useState(priorityEnd);
   const [monthCursor, setMonthCursor] = useState(() => toMonthStart(new Date()));
   const [draftRangeStart, setDraftRangeStart] = useState(priorityPlanDateKey);
   const [draftRangeEnd, setDraftRangeEnd] = useState(priorityPlanDateKeyEnd);
@@ -780,24 +784,23 @@ export function PriorityBasedPlanSection({
     [monthCursor, monthFallbackDate],
   );
 
-  const clockFaceHints = useMemo(() => {
+  const modalClockFaceHints = useMemo(() => {
     const explicit = priorityPlanExplicitMultiDay;
     const { lo, hi } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
-    const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
+    const overnight = isOvernightHhmmRange(draftPriorityStart, draftPriorityEnd);
     const startKey = priorityClockCaptionDateKeyStart(lo);
-    const endKey = priorityClockCaptionDateKeyEnd(hi, priorityStart, priorityEnd);
+    const endKey = priorityClockCaptionDateKeyEnd(hi, draftPriorityStart, draftPriorityEnd);
     return {
       startDateCaption: explicit ? formatDateKeyCompactKo(startKey) : undefined,
       endDateCaption: explicit ? formatDateKeyCompactKo(endKey) : undefined,
-      /** 달력 다중일이 아닐 때만 자정 넘김 → 「다음날」 */
       endNextDayOnlyBadge: overnight && !explicit,
     };
   }, [
-    priorityPlanExplicitMultiDay,
+    draftPriorityEnd,
+    draftPriorityStart,
     priorityPlanDateKey,
     priorityPlanDateKeyEnd,
-    priorityStart,
-    priorityEnd,
+    priorityPlanExplicitMultiDay,
   ]);
 
   const openPlanDatePicker = useCallback(() => {
@@ -1247,8 +1250,23 @@ export function PriorityBasedPlanSection({
 
   const openPriorityTimeModal = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDraftPriorityStart(priorityStart);
+    setDraftPriorityEnd(priorityEnd);
     setPriorityTimeModalOpen(true);
+  }, [priorityEnd, priorityStart]);
+
+  const closePriorityTimeModal = useCallback(() => {
+    Keyboard.dismiss();
+    setPriorityTimeModalOpen(false);
   }, []);
+
+  const confirmPriorityTimeModal = useCallback(() => {
+    Keyboard.dismiss();
+    onChangePriorityStart(draftPriorityStart);
+    onChangePriorityEnd(draftPriorityEnd);
+    setPriorityTimeModalOpen(false);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [draftPriorityEnd, draftPriorityStart, onChangePriorityEnd, onChangePriorityStart]);
 
   /** c.containerLow 한 값을 모든 컨테이너에 직접 지정 — 중간 View 투명 영역에서 톤 차이 원천 제거 */
   const surfaceBg = c.containerLow;
@@ -1422,51 +1440,46 @@ export function PriorityBasedPlanSection({
         visible={priorityTimeModalOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => setPriorityTimeModalOpen(false)}>
-        <View style={styles.dateModalRoot} accessibilityViewIsModal>
+        onRequestClose={closePriorityTimeModal}>
+        <KeyboardAvoidingView
+          style={styles.timeModalRoot}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={insets.top + 12}>
           <Pressable
-            style={styles.dateModalDimTouch}
-            onPress={() => setPriorityTimeModalOpen(false)}
+            style={styles.timeModalDim}
+            onPress={closePriorityTimeModal}
             accessibilityRole="button"
             accessibilityLabel="닫기"
           />
           <View
             style={[
-              styles.dateModalSheet,
+              styles.timeModalCard,
               {
                 backgroundColor: c.containerLow,
-                paddingBottom: Math.max(insets.bottom, 12) + 8,
-                paddingHorizontal: 20,
+                borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
               },
             ]}>
-            <View
-              style={[
-                styles.dateModalGrabber,
-                { backgroundColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)' },
-              ]}
-              accessibilityLabel="시트"
-            />
             <ThemedText style={[styles.dateModalTitle, { color: c.onSurface }]}>집중 구간 시간</ThemedText>
             <ThemedText style={[styles.dateModalHint, { color: c.onVariant }]}>
-              시작·종료를 맞추면 타임라인에도 같은 구간이 표시돼요.
+              시작·종료를 맞춘 뒤 설정 완료를 눌러 주세요.
             </ThemedText>
-            <View style={[styles.timeModalFlipWrap, { marginTop: 14 }]}>
+            <View style={styles.timeModalFlipWrap}>
               <View style={[styles.timeRibbonInner, { backgroundColor: 'transparent' }]}>
                 <View style={styles.timeFlipColumn}>
                   <ThemedText style={[styles.timeKicker, { color: editorial.muted }]}>시작</ThemedText>
                   <FlipClockTimePair
-                    value={priorityStart}
-                    onChange={onChangePriorityStart}
-                    dateCaption={clockFaceHints.startDateCaption}
+                    value={draftPriorityStart}
+                    onChange={setDraftPriorityStart}
+                    dateCaption={modalClockFaceHints.startDateCaption}
                   />
                 </View>
                 <View style={styles.timeFlipColumn}>
                   <ThemedText style={[styles.timeKicker, { color: editorial.muted }]}>종료</ThemedText>
                   <FlipClockTimePair
-                    value={priorityEnd}
-                    onChange={onChangePriorityEnd}
-                    nextDayHint={clockFaceHints.endNextDayOnlyBadge}
-                    dateCaption={clockFaceHints.endDateCaption}
+                    value={draftPriorityEnd}
+                    onChange={setDraftPriorityEnd}
+                    nextDayHint={modalClockFaceHints.endNextDayOnlyBadge}
+                    dateCaption={modalClockFaceHints.endDateCaption}
                   />
                 </View>
               </View>
@@ -1474,14 +1487,21 @@ export function PriorityBasedPlanSection({
             <View style={styles.dateActionRow}>
               <Pressable
                 style={[styles.dateActionBtn, styles.dateActionGhost, { borderColor: c.catBorderIdle }]}
-                onPress={() => setPriorityTimeModalOpen(false)}
+                onPress={closePriorityTimeModal}
                 accessibilityRole="button"
-                accessibilityLabel="닫기">
-                <ThemedText style={[styles.dateActionText, { color: c.onSurface }]}>닫기</ThemedText>
+                accessibilityLabel="취소하고 닫기">
+                <ThemedText style={[styles.dateActionText, { color: c.onSurface }]}>취소</ThemedText>
+              </Pressable>
+              <Pressable
+                style={[styles.dateActionBtn, styles.dateActionPrimary]}
+                onPress={confirmPriorityTimeModal}
+                accessibilityRole="button"
+                accessibilityLabel="집중 구간 시간 적용">
+                <ThemedText style={[styles.dateActionText, { color: '#fff' }]}>설정 완료</ThemedText>
               </Pressable>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal
@@ -1617,18 +1637,22 @@ export function PriorityBasedPlanSection({
                     hitSlop={8}
                     accessibilityRole="button"
                     accessibilityLabel={`집중 구간 시간 설정, 현재 ${priorityWindowLine}`}
+                    accessibilityHint="탭하면 집중 구간 시간을 변경할 수 있어요"
                     style={({ pressed }) => [pressed && { opacity: 0.65 }]}>
-                    <ThemedText
-                      style={[
-                        styles.priorityTimelineSub,
-                        styles.priorityTimelineTimeTap,
-                        { color: editorial.ink },
-                      ]}
-                      lightColor={editorial.ink}
-                      darkColor={editorial.ink}
-                      numberOfLines={2}>
-                      {priorityWindowLine}
-                    </ThemedText>
+                    <View style={styles.priorityTimelineTimeRow}>
+                      <IconSymbol name="clock" size={11} color={editorial.muted} />
+                      <ThemedText
+                        style={[
+                          styles.priorityTimelineSub,
+                          styles.priorityTimelineTimeTap,
+                          { color: editorial.ink },
+                        ]}
+                        lightColor={editorial.ink}
+                        darkColor={editorial.ink}
+                        numberOfLines={2}>
+                        {priorityWindowLine}
+                      </ThemedText>
+                    </View>
                   </Pressable>
                 </View>
               </View>
@@ -2003,9 +2027,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   priorityTimelineTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    letterSpacing: -0.35,
+    letterSpacing: -0.3,
+    lineHeight: 22,
   },
   priorityTimelineSub: {
     fontSize: 12,
@@ -2020,6 +2045,11 @@ const styles = StyleSheet.create({
   },
   priorityTimelineTimeTap: {
     fontWeight: '600',
+  },
+  priorityTimelineTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   priorityTimelineHeaderActions: {
     flexDirection: 'row',
@@ -2211,8 +2241,30 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     letterSpacing: -0.1,
   },
+  timeModalRoot: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  timeModalDim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  timeModalCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 22,
+    gap: 12,
+    maxWidth: 420,
+    width: '100%',
+    alignSelf: 'center',
+    zIndex: 2,
+    elevation: 14,
+  },
   timeModalFlipWrap: {
     width: '100%',
+    marginTop: 2,
     paddingBottom: 4,
   },
   timeCalendarTopLeftHit: {

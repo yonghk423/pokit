@@ -418,10 +418,17 @@ export function PeriodHistoryView({
 
       {/* 위클리 / 먼슬리 기록 — 가로 탭, 기본 접힘 */}
       <View style={styles.historyTabSection}>
+        <View style={styles.historyTabHeader}>
+          <ThemedText style={styles.sectionTitle}>주간 · 월간 기록</ThemedText>
+          <ThemedText style={styles.historyTabHint} lightColor={tone.muted} darkColor={tone.muted}>
+            오늘 탭에서 완료한 위클리·먼슬리 전략이 여기 모여요
+          </ThemedText>
+        </View>
         <View style={styles.historyTabRow}>
           {(['weekly', 'monthly'] as const).map((tab) => {
             const isWeekly = tab === 'weekly';
             const active = activeHorizonTab === tab;
+            const entryCount = isWeekly ? filteredWeeklyEntries.length : filteredMonthlyEntries.length;
             return (
               <Pressable
                 key={tab}
@@ -437,14 +444,26 @@ export function PeriodHistoryView({
                     borderColor: active ? tone.barFill : tone.border,
                   },
                   pressed && { opacity: 0.75 },
-                ]}>
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isWeekly
+                    ? `위클리 기록 ${entryCount}건`
+                    : `먼슬리 기록 ${entryCount}건`
+                }
+                accessibilityHint="탭하면 완료한 전략 목록을 볼 수 있어요">
+                <IconSymbol
+                  name={isWeekly ? 'calendar' : 'calendar.badge.clock'}
+                  size={13}
+                  color={active ? (isDark ? '#18181b' : '#ffffff') : tone.ink}
+                />
                 <ThemedText
                   style={styles.historyTabChipText}
                   lightColor={active ? '#ffffff' : tone.ink}
                   darkColor={active ? '#18181b' : tone.ink}>
                   {isWeekly ? '위클리' : '먼슬리'}
                 </ThemedText>
-                {isWeekly && filteredWeeklyEntries.length > 0 && (
+                {entryCount > 0 && (
                   <View
                     style={[
                       styles.historyTabCount,
@@ -454,7 +473,7 @@ export function PeriodHistoryView({
                       style={styles.historyTabCountText}
                       lightColor={active ? '#ffffff' : '#ffffff'}
                       darkColor={active ? '#18181b' : '#ffffff'}>
-                      {filteredWeeklyEntries.length}
+                      {entryCount}
                     </ThemedText>
                   </View>
                 )}
@@ -684,18 +703,26 @@ export function PeriodHistoryView({
                       </ThemedText>
                     </View>
                   </View>
-                  <ThemedText
+                  <View
                     style={[
-                      styles.routineStatusBadge,
-                      { color: isCompleted ? tone.barFill : tone.muted },
+                      styles.routineStatusChip,
+                      isCompleted
+                        ? { backgroundColor: tone.level0 }
+                        : { backgroundColor: 'transparent', borderWidth: StyleSheet.hairlineWidth, borderColor: tone.border },
                     ]}>
-                    {item.statusLabel}
-                  </ThemedText>
-                </View>
-                <View style={[styles.goalTrack, { backgroundColor: tone.barTrack }]}>
-                  {isCompleted ? (
-                    <View style={[styles.goalFill, { width: '100%', backgroundColor: tone.barFill }]} />
-                  ) : null}
+                    <IconSymbol
+                      name={isCompleted ? 'checkmark.circle.fill' : 'circle'}
+                      size={14}
+                      color={isCompleted ? tone.barFill : tone.muted}
+                    />
+                    <ThemedText
+                      style={[
+                        styles.routineStatusChipText,
+                        { color: isCompleted ? tone.barFill : tone.muted },
+                      ]}>
+                      {item.statusLabel}
+                    </ThemedText>
+                  </View>
                 </View>
               </View>
             );
@@ -954,7 +981,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     padding: 14,
-    gap: 10,
   },
   goalTop: {
     flexDirection: 'row',
@@ -981,28 +1007,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  routineStatusBadge: {
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: -0.2,
+  routineStatusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 999,
     flexShrink: 0,
+  },
+  routineStatusChipText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: -0.15,
   },
   goalSub: {
     fontSize: 11,
     fontWeight: '700',
-  },
-  goalPercent: {
-    fontSize: 15,
-    fontWeight: '900',
-  },
-  goalTrack: {
-    height: 5,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  goalFill: {
-    height: '100%',
-    borderRadius: 999,
   },
   categoryCard: {
     borderRadius: 14,
@@ -1152,6 +1173,15 @@ const styles = StyleSheet.create({
   },
   historyTabSection: {
     gap: 10,
+  },
+  historyTabHeader: {
+    gap: 4,
+  },
+  historyTabHint: {
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 17,
+    letterSpacing: -0.1,
   },
   historyTabRow: {
     flexDirection: 'row',
