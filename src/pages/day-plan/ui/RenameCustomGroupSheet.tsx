@@ -231,10 +231,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 13,
+    height: 48,
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: -0.2,
+    paddingVertical: 0,
+    ...(Platform.OS === 'android'
+      ? { textAlignVertical: 'center' as const, includeFontPadding: false }
+      : {}),
   },
   ctaWrap: {
     paddingHorizontal: 22,

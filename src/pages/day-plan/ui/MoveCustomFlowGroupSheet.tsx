@@ -27,7 +27,6 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import { PRIMARY } from '../lib/dayPlanEditorShared';
 
-const NAME_MAX = 24;
 const GROUP_NAME_MAX = 24;
 
 type GroupOption = {
@@ -39,35 +38,33 @@ type GroupOption = {
 type Props = {
   visible: boolean;
   onClose: () => void;
-  onCreate: (input: { name: string; groupKey: string }) => void;
-  initialGroupKey?: string;
+  flowLabel: string;
+  initialGroupKey: string;
+  onSave: (groupKey: string) => void;
   isDark: boolean;
   ink: string;
   muted: string;
-  line: string;
   surface: string;
 };
 
-export function CreateCustomFlowSheet({
+export function MoveCustomFlowGroupSheet({
   visible,
   onClose,
-  onCreate,
+  flowLabel,
   initialGroupKey,
+  onSave,
   isDark,
   ink,
   muted,
-  line,
   surface,
 }: Props) {
   const insets = useSafeAreaInsets();
   const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
 
-  const [name, setName] = useState('');
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
-  const [selectedGroupKey, setSelectedGroupKey] = useState<string>('productivity');
+  const [selectedGroupKey, setSelectedGroupKey] = useState('productivity');
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupLabel, setNewGroupLabel] = useState('');
-  /** 모달이 이미 떠 있는 동안에는 폼·선택을 초기화하지 않음(부모 리렌더로 인한 재실행 방지) */
   const sheetWasVisibleRef = useRef(false);
 
   useEffect(() => {
@@ -81,11 +78,10 @@ export function CreateCustomFlowSheet({
     sheetWasVisibleRef.current = true;
     if (!justOpened) return;
 
-    setName('');
     setIsAddingGroup(false);
     setNewGroupLabel('');
     const fallback =
-      initialGroupKey && initialGroupKey.length > 0 ? initialGroupKey : 'productivity';
+      initialGroupKey.trim().length > 0 ? initialGroupKey.trim() : 'productivity';
     const exists =
       (SYSTEM_CATALOG_GROUP_KEYS as readonly string[]).includes(fallback) ||
       groups.some((g) => g.key === fallback);
@@ -106,8 +102,7 @@ export function CreateCustomFlowSheet({
     return [...sys, ...custom];
   }, [customGroups]);
 
-  const trimmedName = name.trim();
-  const canSubmit = trimmedName.length > 0 && selectedGroupKey.length > 0;
+  const canSave = selectedGroupKey.length > 0 && selectedGroupKey !== initialGroupKey.trim();
 
   const handleSubmitNewGroup = () => {
     const label = newGroupLabel.trim().slice(0, GROUP_NAME_MAX);
@@ -121,19 +116,16 @@ export function CreateCustomFlowSheet({
     setNewGroupLabel('');
   };
 
-  const selectedGroupKeyRef = useRef(selectedGroupKey);
-  selectedGroupKeyRef.current = selectedGroupKey;
-
-  const handleCreate = () => {
-    if (!canSubmit) return;
+  const handleSave = () => {
+    if (!canSave) return;
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    onCreate({ name: trimmedName.trim(), groupKey: selectedGroupKeyRef.current });
+    onSave(selectedGroupKey);
   };
 
-  const sheetBg = surface;
   const inputBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
   const inputBorder = isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)';
   const closeBtnBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+  const sheetBg = surface;
 
   return (
     <Modal
@@ -145,16 +137,13 @@ export function CreateCustomFlowSheet({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.kavRoot}>
-        {/* tap-to-dismiss backdrop */}
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
 
-        {/* sheet */}
         <View
           style={[
             styles.sheet,
             { backgroundColor: sheetBg, paddingBottom: Math.max(insets.bottom, 16) + 8 },
           ]}>
-          {/* handle */}
           <View style={styles.handleBar}>
             <View
               style={[
@@ -169,9 +158,13 @@ export function CreateCustomFlowSheet({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollBody}>
-            {/* header */}
             <View style={styles.headerRow}>
-              <ThemedText style={[styles.title, { color: ink }]}>새 루틴 만들기</ThemedText>
+              <View style={styles.headerTextCol}>
+                <ThemedText style={[styles.title, { color: ink }]}>묶음 옮기기</ThemedText>
+                <ThemedText style={[styles.subtitle, { color: muted }]} numberOfLines={2}>
+                  「{flowLabel}」을(를) 다른 상위 카테고리로 옮길 수 있어요
+                </ThemedText>
+              </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="닫기"
@@ -182,29 +175,10 @@ export function CreateCustomFlowSheet({
               </Pressable>
             </View>
 
-            {/* name */}
-            <View style={styles.fieldGroup}>
-              <ThemedText style={[styles.fieldLabel, { color: ink }]}>루틴 이름</ThemedText>
-              <TextInput
-                value={name}
-                onChangeText={(v) => setName(v.slice(0, NAME_MAX))}
-                placeholder="예: 푸쉬업 50개 하기"
-                placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
-                maxLength={NAME_MAX}
-                returnKeyType="done"
-                multiline={false}
-                style={[
-                  styles.input,
-                  { color: ink, backgroundColor: inputBg, borderColor: inputBorder },
-                ]}
-              />
-            </View>
-
-            {/* group picker */}
             <View style={styles.fieldGroup}>
               <ThemedText style={[styles.fieldLabel, { color: ink }]}>상위 카테고리</ThemedText>
               <ThemedText style={[styles.fieldHint, { color: muted }]}>
-                어디에 둘지 골라 주세요
+                옮길 위치를 골라 주세요
               </ThemedText>
 
               <View style={styles.chipsWrap}>
@@ -232,9 +206,7 @@ export function CreateCustomFlowSheet({
                         setSelectedGroupKey(g.key);
                       }}
                       style={[styles.chip, { borderColor: chipBorder, backgroundColor: chipBg }]}>
-                      {selected ? (
-                        <IconSymbol name="checkmark" size={11} color={ink} />
-                      ) : null}
+                      {selected ? <IconSymbol name="checkmark" size={11} color={ink} /> : null}
                       <ThemedText
                         style={[
                           styles.chipText,
@@ -261,9 +233,7 @@ export function CreateCustomFlowSheet({
                       { borderColor: inputBorder, backgroundColor: 'transparent' },
                     ]}>
                     <IconSymbol name="plus" size={11} color={muted} />
-                    <ThemedText style={[styles.chipText, { color: muted }]}>
-                      새 그룹 만들기
-                    </ThemedText>
+                    <ThemedText style={[styles.chipText, { color: muted }]}>새 그룹 만들기</ThemedText>
                   </Pressable>
                 ) : null}
               </View>
@@ -317,32 +287,27 @@ export function CreateCustomFlowSheet({
             </View>
           </ScrollView>
 
-          {/* CTA — always visible at the bottom */}
           <View style={styles.ctaWrap}>
             <Pressable
               accessibilityRole="button"
-              accessibilityState={{ disabled: !canSubmit }}
-              accessibilityLabel="만들기"
-              disabled={!canSubmit}
-              onPress={handleCreate}
+              accessibilityState={{ disabled: !canSave }}
+              accessibilityLabel="옮기기"
+              disabled={!canSave}
+              onPress={handleSave}
               style={({ pressed }) => [
                 styles.cta,
                 {
-                  backgroundColor: canSubmit ? PRIMARY : inputBg,
-                  borderColor: canSubmit
+                  backgroundColor: canSave ? PRIMARY : inputBg,
+                  borderColor: canSave
                     ? PRIMARY
                     : isDark
                       ? 'rgba(255,255,255,0.12)'
                       : 'rgba(0,0,0,0.08)',
-                  opacity: pressed && canSubmit ? 0.88 : 1,
+                  opacity: pressed && canSave ? 0.88 : 1,
                 },
               ]}>
-              <ThemedText
-                style={[
-                  styles.ctaText,
-                  { color: canSubmit ? '#FAFAFA' : muted },
-                ]}>
-                만들기
+              <ThemedText style={[styles.ctaText, { color: canSave ? '#FAFAFA' : muted }]}>
+                옮기기
               </ThemedText>
             </Pressable>
           </View>
@@ -384,14 +349,26 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     marginBottom: 20,
+    gap: 12,
+  },
+  headerTextCol: {
+    flex: 1,
+    minWidth: 0,
+    gap: 6,
   },
   title: {
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 18,
+    letterSpacing: -0.1,
   },
   closeBtn: {
     width: 28,
@@ -401,7 +378,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fieldGroup: {
-    marginBottom: 22,
+    marginBottom: 8,
     gap: 8,
   },
   fieldLabel: {
@@ -414,19 +391,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 17,
     marginTop: -4,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    height: 48,
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: -0.2,
-    paddingVertical: 0,
-    ...(Platform.OS === 'android'
-      ? { textAlignVertical: 'center' as const, includeFontPadding: false }
-      : {}),
   },
   chipsWrap: {
     flexDirection: 'row',
@@ -454,6 +418,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginTop: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 48,
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    paddingVertical: 0,
+    ...(Platform.OS === 'android'
+      ? { textAlignVertical: 'center' as const, includeFontPadding: false }
+      : {}),
   },
   newGroupBtn: {
     paddingHorizontal: 16,

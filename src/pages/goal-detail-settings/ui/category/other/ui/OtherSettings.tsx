@@ -16,18 +16,23 @@ import {
   normalizeOtherDetailConfig,
   type OtherDetailDataConfig,
 } from './otherConfig';
+import { CustomFlowGroupField } from './CustomFlowGroupField';
 
 export function OtherSettings({
   dataConfig,
   onChangeDataConfig,
   categoryKey,
   onDeleteCategory,
+  customFlowGroupKey,
+  onChangeCustomFlowGroupKey,
 }: {
   rhythmTitle: string;
   categoryKey?: GoalDetailCategoryKey;
   dataConfig: unknown;
   onChangeDataConfig: (next: unknown) => void;
   onDeleteCategory?: () => void;
+  customFlowGroupKey?: string;
+  onChangeCustomFlowGroupKey?: (groupKey: string) => void;
 }) {
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
@@ -113,6 +118,12 @@ export function OtherSettings({
           returnKeyType="done"
         />
         <ThemedText style={[styles.nameHint, { color: c.onVariant }]}>{categoryNameHint}</ThemedText>
+        {categoryKey && isCustomFlowCategoryKey(categoryKey) && customFlowGroupKey && onChangeCustomFlowGroupKey ? (
+          <CustomFlowGroupField
+            groupKey={customFlowGroupKey}
+            onChangeGroupKey={onChangeCustomFlowGroupKey}
+          />
+        ) : null}
         {categoryKey && isCustomFlowCategoryKey(categoryKey) ? (
           <Pressable
             accessibilityRole="button"

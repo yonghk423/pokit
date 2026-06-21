@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
 import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
+import { isCustomFlowCategoryKey } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
@@ -37,6 +38,7 @@ function CatalogListRow({
   isCompleted,
   onAddPress,
   onOpenSettings,
+  onMoveGroup,
 }: {
   categoryKey: string;
   icon: string;
@@ -51,6 +53,7 @@ function CatalogListRow({
   isCompleted: boolean;
   onAddPress: () => void;
   onOpenSettings: () => void;
+  onMoveGroup?: () => void;
 }) {
   const settingsBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)';
   const settingsBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
@@ -147,6 +150,25 @@ function CatalogListRow({
       </Pressable>
 
       <View style={styles.catalogRowActions}>
+        {onMoveGroup ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${label} 묶음 옮기기`}
+            hitSlop={10}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onMoveGroup();
+            }}
+            style={[
+              styles.catalogSettingsBtn,
+              {
+                borderColor: settingsBorder,
+                backgroundColor: settingsBg,
+              },
+            ]}>
+            <IconSymbol name="arrow.left.arrow.right" size={15} color={isDark ? '#FAFAFA' : PRIMARY} />
+          </Pressable>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ disabled: settingsLocked }}
@@ -245,6 +267,7 @@ function renderRows(
   isCatalogRowCompleted: (categoryKey: string) => boolean,
   onCatalogTap: (key: string) => void,
   onOpenCategorySettings: (key: string) => void,
+  onMoveCustomFlow?: (key: string, label: string) => void,
 ) {
   return cats.map((cat) => (
     <CatalogListRow
@@ -262,6 +285,11 @@ function renderRows(
       isCompleted={isCatalogRowCompleted(cat.key)}
       onAddPress={() => onCatalogTap(cat.key)}
       onOpenSettings={() => onOpenCategorySettings(cat.key)}
+      onMoveGroup={
+        onMoveCustomFlow && isCustomFlowCategoryKey(cat.key)
+          ? () => onMoveCustomFlow(cat.key, cat.label)
+          : undefined
+      }
     />
   ));
 }
@@ -286,6 +314,8 @@ type Props = {
   onRenameCustomGroup?: (groupKey: string, currentLabel: string) => void;
   /** 사용자 정의 상위 묶음 — 삭제 확인 후 처리 */
   onDeleteCustomGroup?: (groupKey: string, currentLabel: string) => void;
+  /** 사용자 루틴 — 다른 상위 묶음으로 옮기기 */
+  onMoveCustomFlow?: (categoryKey: string, label: string) => void;
 };
 
 function GroupSectionBlock({
@@ -299,6 +329,7 @@ function GroupSectionBlock({
   onOpenCategorySettings,
   onRenameCustomGroup,
   onDeleteCustomGroup,
+  onMoveCustomFlow,
   isFirst,
 }: {
   section: PriorityCatalogGroupSection;
@@ -311,6 +342,7 @@ function GroupSectionBlock({
   onOpenCategorySettings: (key: string) => void;
   onRenameCustomGroup?: (groupKey: string, currentLabel: string) => void;
   onDeleteCustomGroup?: (groupKey: string, currentLabel: string) => void;
+  onMoveCustomFlow?: (categoryKey: string, label: string) => void;
   isFirst: boolean;
 }) {
   const groupHeaderTrailing =
@@ -378,6 +410,7 @@ function GroupSectionBlock({
               isCatalogRowCompleted,
               onCatalogTap,
               onOpenCategorySettings,
+              onMoveCustomFlow,
             )
           : null}
       </View>
@@ -399,6 +432,7 @@ export function PriorityCatalogPanel({
   isDark,
   onRenameCustomGroup,
   onDeleteCustomGroup,
+  onMoveCustomFlow,
 }: Props) {
   const [catalogLabelTick, setCatalogLabelTick] = useState(0);
   useFocusEffect(
@@ -438,6 +472,7 @@ export function PriorityCatalogPanel({
           onOpenCategorySettings={onOpenCategorySettings}
           onRenameCustomGroup={onRenameCustomGroup}
           onDeleteCustomGroup={onDeleteCustomGroup}
+          onMoveCustomFlow={onMoveCustomFlow}
           isFirst={index === 0}
         />
       ))}

@@ -39,6 +39,7 @@ import {
   removeCustomCatalogGroup,
   renameCustomCatalogGroup,
   saveGoalDetailCategoryConfig,
+  updateCustomFlowCatalogGroup,
   type CustomCatalogGroup,
   type CustomFlowCatalogEntry,
 } from '@shared/lib/storage';
@@ -55,6 +56,7 @@ import {
 import { palette, type DayPlanPalette } from '../lib/dayPlanPalette';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
+import { MoveCustomFlowGroupSheet } from './MoveCustomFlowGroupSheet';
 import { PriorityCatalogPanel } from './PriorityCatalogPanel';
 import { RenameCustomGroupSheet } from './RenameCustomGroupSheet';
 
@@ -210,6 +212,11 @@ export function PriorityCatalogPage() {
     groupKey: string;
     label: string;
   } | null>(null);
+  const [moveFlowSheet, setMoveFlowSheet] = useState<{
+    categoryKey: string;
+    label: string;
+    groupKey: string;
+  } | null>(null);
 
   const openCreateSheet = useCallback((groupKey?: string) => {
     const safe =
@@ -363,6 +370,31 @@ export function PriorityCatalogPage() {
     [reloadCatalogData],
   );
 
+  const onMoveCustomFlow = useCallback(
+    (categoryKey: string, label: string) => {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const entry = customFlowEntries.find((e) => e.id === categoryKey);
+      setMoveFlowSheet({
+        categoryKey,
+        label,
+        groupKey: entry?.groupKey ?? DEFAULT_CUSTOM_FLOW_GROUP_KEY,
+      });
+    },
+    [customFlowEntries],
+  );
+
+  const onSaveMoveCustomFlow = useCallback(
+    (groupKey: string) => {
+      if (!moveFlowSheet) return;
+      const safeGroupKey = resolveCatalogGroupKeyForPersist(groupKey);
+      updateCustomFlowCatalogGroup(moveFlowSheet.categoryKey, safeGroupKey);
+      reloadCatalogData();
+      setMoveFlowSheet(null);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [moveFlowSheet, reloadCatalogData],
+  );
+
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
       <View style={[styles.safe, { backgroundColor: shellBg }]}>
@@ -397,6 +429,7 @@ export function PriorityCatalogPage() {
             isDark={isDark}
             onRenameCustomGroup={onRenameCustomGroup}
             onDeleteCustomGroup={onDeleteCustomGroup}
+            onMoveCustomFlow={onMoveCustomFlow}
           />
         </ScrollView>
         <Pressable
@@ -434,6 +467,17 @@ export function PriorityCatalogPage() {
         onClose={() => setRenameGroupSheet(null)}
         initialLabel={renameGroupSheet?.label ?? ''}
         onSave={onSaveRenameCustomGroup}
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        surface={shellBg}
+      />
+      <MoveCustomFlowGroupSheet
+        visible={moveFlowSheet != null}
+        onClose={() => setMoveFlowSheet(null)}
+        flowLabel={moveFlowSheet?.label ?? ''}
+        initialGroupKey={moveFlowSheet?.groupKey ?? DEFAULT_CUSTOM_FLOW_GROUP_KEY}
+        onSave={onSaveMoveCustomFlow}
         isDark={isDark}
         ink={editorial.ink}
         muted={editorial.muted}

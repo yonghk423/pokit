@@ -11,5 +11,8 @@ export type GoalDetailCategoryModule = {
     dataConfig: unknown;
     onChangeDataConfig: (next: unknown) => void;
     onDeleteCategory?: () => void;
+    /** `customFlow:` 전용 — 카탈로그 상위 묶음 */
+    customFlowGroupKey?: string;
+    onChangeCustomFlowGroupKey?: (groupKey: string) => void;
   }>;
 };

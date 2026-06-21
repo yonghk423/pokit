@@ -28,14 +28,17 @@ import { reconcileLiveActivityFromPlan } from '@features/live-activity-sync';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
   appendGoalDetailCommittedCategoryKeys,
+  DEFAULT_CUSTOM_FLOW_GROUP_KEY,
   loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
+  listCustomFlowCatalogEntries,
   loadPriorityCatalogFixedRoutineKeys,
   removeCustomFlowCatalogId,
   removeGoalDetailCategoryConfig,
   saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
   savePriorityCatalogFixedRoutineKeys,
+  updateCustomFlowCatalogGroup,
 } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -135,6 +138,12 @@ function withPreservedOtherDisplayName(categoryKey: string, next: unknown): unkn
   return incoming;
 }
 
+function resolveCustomFlowGroupKey(categoryKey: string): string {
+  if (!isCustomFlowCategoryKey(categoryKey)) return DEFAULT_CUSTOM_FLOW_GROUP_KEY;
+  const entry = listCustomFlowCatalogEntries().find((e) => e.id === categoryKey);
+  return entry?.groupKey ?? DEFAULT_CUSTOM_FLOW_GROUP_KEY;
+}
+
 export function GoalDetailSettingsPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -217,10 +226,23 @@ export function GoalDetailSettingsPage() {
 
   const loadedDataByBlockId = useMemo(() => buildLoadedDataByBlockId(targets), [targets]);
   const [patchByBlockId, setPatchByBlockId] = useState<Record<string, unknown>>({});
+  const [customFlowGroupByCategoryKey, setCustomFlowGroupByCategoryKey] = useState<
+    Record<string, string>
+  >({});
   const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setPatchByBlockId({});
+  }, [targets]);
+
+  useEffect(() => {
+    const next: Record<string, string> = {};
+    for (const t of targets) {
+      if (isCustomFlowCategoryKey(t.categoryKey)) {
+        next[t.categoryKey] = resolveCustomFlowGroupKey(t.categoryKey);
+      }
+    }
+    setCustomFlowGroupByCategoryKey(next);
   }, [targets]);
 
   const dataByBlockId = useMemo(
@@ -275,6 +297,15 @@ export function GoalDetailSettingsPage() {
       router.back();
     },
     [router],
+  );
+
+  const handleChangeCustomFlowGroup = useCallback(
+    (categoryKey: GoalDetailCategoryKey, groupKey: string) => {
+      if (!isCustomFlowCategoryKey(categoryKey)) return;
+      updateCustomFlowCatalogGroup(categoryKey, groupKey);
+      setCustomFlowGroupByCategoryKey((prev) => ({ ...prev, [categoryKey]: groupKey }));
+    },
+    [],
   );
 
   const handleCompleteAndStart = useCallback(() => {
@@ -527,6 +558,17 @@ export function GoalDetailSettingsPage() {
                     dataConfig={dataConfig}
                     onChangeDataConfig={(next) => handleChangeDataConfig(t, next)}
                     onDeleteCategory={() => handleDeleteCustomFlow(t.categoryKey)}
+                    customFlowGroupKey={
+                      isCustomFlowCategoryKey(t.categoryKey)
+                        ? (customFlowGroupByCategoryKey[t.categoryKey] ??
+                          resolveCustomFlowGroupKey(t.categoryKey))
+                        : undefined
+                    }
+                    onChangeCustomFlowGroupKey={
+                      isCustomFlowCategoryKey(t.categoryKey)
+                        ? (groupKey) => handleChangeCustomFlowGroup(t.categoryKey, groupKey)
+                        : undefined
+                    }
                   />
                 </View>
               );
