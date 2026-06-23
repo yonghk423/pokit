@@ -2,8 +2,10 @@ import { create } from 'zustand';
 
 import { loadDayPlanDraft, saveDayPlanDraft } from '@shared/lib/storage';
 
+import { getLocalMinutesOfDayNow } from '../lib/dayPlanTime';
 import { defaultPriorityWindowFromNow } from '../lib/dayPlanTimeMath';
 import { addDaysToLocalDateKey, getLocalDateKey } from '../lib/localDateKey';
+import { parseHHmmToMinutes } from '../lib/parseTime';
 import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
 import {
   appendRoutineHistoryPending,
@@ -76,6 +78,12 @@ type DayPlanDraftState = {
   applyPriorityPlanCalendarRange: (lo: string, hi: string) => void;
   /** 시작·종료 시각과 단일/다중일 플래그에 맞춰 종료일 자동 보정 */
   syncOvernightPriorityPlanDates: () => void;
+  /**
+   * 적용 구간(종료일·종료 시각)이 현재보다 완전히 지났으면 오늘 기준 구간으로 전진.
+   * 시작·종료 시각은 유지하고, 자정 넘김이면 종료일을 +1일로 설정한다.
+   * 새 하루로 넘어가므로 담기·집중 상태도 초기화한다.
+   */
+  rollPriorityPlanForwardIfEnded: (now?: { nowKey?: string; nowMin?: number }) => void;
   setPriorityStart: (value: string) => void;
   setPriorityEnd: (value: string) => void;
   setPriorityCategoryOrder: (value: string[] | ((prev: string[]) => string[])) => void;
@@ -325,6 +333,43 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         priorityOvernightEndAuto: false,
       });
     }
+  },
+  rollPriorityPlanForwardIfEnded: (now) => {
+    const s = get();
+    if (s.planMode !== 'priority') return;
+    const ps = parseHHmmToMinutes(s.priorityStart);
+    const pe = parseHHmmToMinutes(s.priorityEnd);
+    if (ps === null || pe === null) return;
+
+    const today = now?.nowKey ?? getLocalDateKey();
+    const nowMin = now?.nowMin ?? getLocalMinutesOfDayNow();
+    const rangeHi =
+      s.priorityPlanDateKey <= s.priorityPlanDateKeyEnd
+        ? s.priorityPlanDateKeyEnd
+        : s.priorityPlanDateKey;
+
+    // 구간 종료 시각이 현재보다 과거인지 (00:00 종료는 종료일 00:00과 동일하게 취급)
+    const ended = today > rangeHi || (today === rangeHi && nowMin >= pe);
+    if (!ended) return;
+
+    const overnight = isOvernightPriorityWindow(s.priorityStart, s.priorityEnd);
+    const nextStart = today;
+    const nextEnd = overnight ? addDaysToLocalDateKey(today, 1) : today;
+    // 같은 날 일찍 끝난 경우(아직 날짜가 안 넘어감)는 그대로 둔다.
+    if (s.priorityPlanDateKey === nextStart && s.priorityPlanDateKeyEnd === nextEnd) return;
+
+    set({
+      priorityPlanDateKey: nextStart,
+      priorityPlanDateKeyEnd: nextEnd,
+      priorityPlanExplicitMultiDay: false,
+      priorityOvernightEndAuto: overnight,
+      priorityCategoryOrder: [],
+      completedFocusCategoryKeys: [],
+      planCompletionDismissedKeys: [],
+      priorityBagDismissedDateKey: today,
+      priorityBagDismissedKeys: [],
+      isFocusStarted: false,
+    });
   },
   setPriorityStart: (value) => set({ priorityStart: value }),
   setPriorityEnd: (value) => set({ priorityEnd: value }),

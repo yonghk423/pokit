@@ -117,6 +117,92 @@ describe('dayPlanDraftStore', () => {
     expect(useDayPlanDraftStore.getState().priorityPlanDateKeyEnd).toBe('2025-05-28');
   });
 
+  it('rolls a past same-day window forward to today', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      planMode: 'priority',
+      priorityPlanDateKey: '2025-05-25',
+      priorityPlanDateKeyEnd: '2025-05-25',
+      priorityPlanExplicitMultiDay: false,
+      priorityOvernightEndAuto: false,
+      priorityStart: '09:00',
+      priorityEnd: '18:00',
+      priorityCategoryOrder: ['reading'],
+      completedFocusCategoryKeys: ['reading'],
+      isFocusStarted: true,
+    });
+    useDayPlanDraftStore
+      .getState()
+      .rollPriorityPlanForwardIfEnded({ nowKey: '2025-05-26', nowMin: 8 * 60 });
+    const s = useDayPlanDraftStore.getState();
+    expect(s.priorityPlanDateKey).toBe('2025-05-26');
+    expect(s.priorityPlanDateKeyEnd).toBe('2025-05-26');
+    expect(s.priorityCategoryOrder).toEqual([]);
+    expect(s.completedFocusCategoryKeys).toEqual([]);
+    expect(s.isFocusStarted).toBe(false);
+  });
+
+  it('rolls an overnight window forward and extends end to next day', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      planMode: 'priority',
+      priorityPlanDateKey: '2025-05-25',
+      priorityPlanDateKeyEnd: '2025-05-26',
+      priorityPlanExplicitMultiDay: false,
+      priorityOvernightEndAuto: true,
+      priorityStart: '06:30',
+      priorityEnd: '00:00',
+      priorityCategoryOrder: ['reading'],
+    });
+    // 06:30~00:00 종료 시각(00:00)이 지난 오전 시점
+    useDayPlanDraftStore
+      .getState()
+      .rollPriorityPlanForwardIfEnded({ nowKey: '2025-05-26', nowMin: 8 * 60 });
+    const s = useDayPlanDraftStore.getState();
+    expect(s.priorityPlanDateKey).toBe('2025-05-26');
+    expect(s.priorityPlanDateKeyEnd).toBe('2025-05-27');
+    expect(s.priorityOvernightEndAuto).toBe(true);
+    expect(s.priorityCategoryOrder).toEqual([]);
+  });
+
+  it('does not roll forward while the window is still active', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      planMode: 'priority',
+      priorityPlanDateKey: '2025-05-26',
+      priorityPlanDateKeyEnd: '2025-05-26',
+      priorityStart: '09:00',
+      priorityEnd: '18:00',
+      priorityCategoryOrder: ['reading'],
+    });
+    useDayPlanDraftStore
+      .getState()
+      .rollPriorityPlanForwardIfEnded({ nowKey: '2025-05-26', nowMin: 12 * 60 });
+    const s = useDayPlanDraftStore.getState();
+    expect(s.priorityPlanDateKey).toBe('2025-05-26');
+    expect(s.priorityCategoryOrder).toEqual(['reading']);
+  });
+
+  it('keeps a same-day window that ended earlier today (no date change)', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      planMode: 'priority',
+      priorityPlanDateKey: '2025-05-26',
+      priorityPlanDateKeyEnd: '2025-05-26',
+      priorityStart: '09:00',
+      priorityEnd: '18:00',
+      priorityCategoryOrder: ['reading'],
+    });
+    // 오늘 18:00 종료가 지난 20:00 — 날짜는 그대로(오늘), 담기 유지
+    useDayPlanDraftStore
+      .getState()
+      .rollPriorityPlanForwardIfEnded({ nowKey: '2025-05-26', nowMin: 20 * 60 });
+    const s = useDayPlanDraftStore.getState();
+    expect(s.priorityPlanDateKey).toBe('2025-05-26');
+    expect(s.priorityPlanDateKeyEnd).toBe('2025-05-26');
+    expect(s.priorityCategoryOrder).toEqual(['reading']);
+  });
+
   it('collapses overnight auto end when window becomes same-day', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,

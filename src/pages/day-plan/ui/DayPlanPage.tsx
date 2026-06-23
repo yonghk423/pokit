@@ -96,6 +96,7 @@ export function DayPlanPage() {
     setPriorityPlanDateKeyEnd,
     applyPriorityPlanCalendarRange,
     syncOvernightPriorityPlanDates,
+    rollPriorityPlanForwardIfEnded,
     setPriorityStart,
     setPriorityEnd,
     setPriorityCategoryOrder,
@@ -123,6 +124,7 @@ export function DayPlanPage() {
       setPriorityPlanDateKeyEnd: s.setPriorityPlanDateKeyEnd,
       applyPriorityPlanCalendarRange: s.applyPriorityPlanCalendarRange,
       syncOvernightPriorityPlanDates: s.syncOvernightPriorityPlanDates,
+      rollPriorityPlanForwardIfEnded: s.rollPriorityPlanForwardIfEnded,
       setPriorityStart: s.setPriorityStart,
       setPriorityEnd: s.setPriorityEnd,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
@@ -135,12 +137,14 @@ export function DayPlanPage() {
 
   useFocusEffect(
     useCallback(() => {
+      // 적용 구간이 지난 날짜에 끝났다면 오늘 기준으로 날짜를 전진
+      rollPriorityPlanForwardIfEnded();
       // 목표 상세(모달)에서 복귀할 때 카테고리 라벨 즉시 재평가
       bumpCategoryLabelEpoch();
       // 탭 전환/화면 freeze 이후에도 담기 순서 키를 최신 스토어 스냅샷으로 동기화
       const latestOrder = useDayPlanDraftStore.getState().priorityCategoryOrder;
       setPriorityCategoryOrder([...latestOrder]);
-    }, [bumpCategoryLabelEpoch, setPriorityCategoryOrder]),
+    }, [bumpCategoryLabelEpoch, rollPriorityPlanForwardIfEnded, setPriorityCategoryOrder]),
   );
 
   useEffect(() => {
@@ -161,6 +165,11 @@ export function DayPlanPage() {
     const id = setInterval(() => setNowTick(Date.now()), 10_000);
     return () => clearInterval(id);
   }, []);
+
+  /** 구간이 완전히 끝났으면(지난 날짜 종료 포함) 오늘 기준으로 날짜 전진 — 앱이 떠 있는 채 자정/종료를 넘겨도 갱신 */
+  useEffect(() => {
+    rollPriorityPlanForwardIfEnded();
+  }, [nowTick, planMode, rollPriorityPlanForwardIfEnded]);
 
   /** 우선순위 적용일·집중 구간 안이면 true — FAB 노출·자동 종료 판단에 공통 사용 */
   const priorityWindowCtx = useMemo(
