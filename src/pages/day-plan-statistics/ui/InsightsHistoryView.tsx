@@ -3,9 +3,16 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { activeIconColorByCategory, categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
 
 import { buildHistoryInsights } from '../lib/historyInsights';
-import type { WeeklyAxisRow } from '../lib/weeklyBalanceRadar';
+import {
+  insightCatalogGroupColor,
+  insightCatalogGroupPastel,
+  insightScopeColor,
+  insightScopePastel,
+} from '../lib/insightAccentColors';
+import { buildWeeklyAxisScores, type WeeklyAxisRow } from '../lib/weeklyBalanceRadar';
 
 type Tone = {
   card: string;
@@ -26,6 +33,7 @@ type HistoryFeedRow = {
   summary: string;
   rateLabel: string;
   categoryLabel: string;
+  categoryKey: string | null;
 };
 
 type Props = {
@@ -52,6 +60,7 @@ type Props = {
   historyFilterChips: string[];
   filteredHistoryRows: HistoryFeedRow[];
   formatDateKeyKo: (dateKey: string) => string;
+  topCompletedCategoryKey: string | null;
 };
 
 export function InsightsHistoryView({
@@ -78,8 +87,30 @@ export function InsightsHistoryView({
   historyFilterChips,
   filteredHistoryRows,
   formatDateKeyKo,
+  topCompletedCategoryKey,
 }: Props) {
   const [dayLogOpen, setDayLogOpen] = useState(false);
+
+  const axisScores = useMemo(() => buildWeeklyAxisScores(weeklyBalanceRows), [weeklyBalanceRows]);
+  const strongAxis = useMemo(
+    () => [...axisScores].sort((a, b) => b.percent - a.percent)[0],
+    [axisScores],
+  );
+
+  const heroAccentColor = useMemo(() => {
+    if (topCompletedCategoryKey) return activeIconColorByCategory(topCompletedCategoryKey);
+    if (strongAxis && strongAxis.percent > 0) return insightCatalogGroupColor(strongAxis.key);
+    return tone.barFill;
+  }, [strongAxis, tone.barFill, topCompletedCategoryKey]);
+  const heroAccentPastel = useMemo(
+    () =>
+      topCompletedCategoryKey
+        ? categoryAccentColorPastel(topCompletedCategoryKey)
+        : strongAxis && strongAxis.percent > 0
+          ? insightCatalogGroupPastel(strongAxis.key)
+          : tone.level0,
+    [strongAxis, tone.level0, topCompletedCategoryKey],
+  );
 
   const report = useMemo(
     () =>
@@ -126,7 +157,7 @@ export function InsightsHistoryView({
         <ThemedText style={styles.heroKicker} lightColor={tone.muted} darkColor={tone.muted}>
           종합 점수
         </ThemedText>
-        <ThemedText style={styles.heroScore}>{report.overallScore}%</ThemedText>
+        <ThemedText style={[styles.heroScore, { color: heroAccentColor }]}>{report.overallScore}%</ThemedText>
         <ThemedText style={styles.heroTitle}>{report.overallTitle}</ThemedText>
         <ThemedText style={styles.heroCaption} lightColor={tone.muted} darkColor={tone.muted}>
           {report.overallCaption}
@@ -134,22 +165,29 @@ export function InsightsHistoryView({
       </View>
 
       <View style={styles.dimensionRow}>
-        {report.dimensions.map((dim) => (
-          <View key={dim.scope} style={[styles.dimensionCard, { backgroundColor: tone.level0, borderColor: tone.border }]}>
-            <ThemedText style={styles.dimensionScope} lightColor={tone.muted} darkColor={tone.muted}>
-              {dim.scopeLabel}
-            </ThemedText>
-            <ThemedText style={styles.dimensionScore}>{dim.score}%</ThemedText>
-            <ThemedText style={styles.dimensionCaption} lightColor={tone.muted} darkColor={tone.muted}>
-              {dim.caption}
-            </ThemedText>
-          </View>
-        ))}
+        {report.dimensions.map((dim) => {
+          const scopeColor = insightScopeColor(dim.scope);
+          const scopePastel = insightScopePastel(dim.scope);
+          return (
+            <View
+              key={dim.scope}
+              style={[
+                styles.dimensionCard,
+                { backgroundColor: scopePastel, borderColor: `${scopeColor}33` },
+              ]}>
+              <ThemedText style={[styles.dimensionScope, { color: scopeColor }]}>{dim.scopeLabel}</ThemedText>
+              <ThemedText style={[styles.dimensionScore, { color: scopeColor }]}>{dim.score}%</ThemedText>
+              <ThemedText style={styles.dimensionCaption} lightColor={tone.muted} darkColor={tone.muted}>
+                {dim.caption}
+              </ThemedText>
+            </View>
+          );
+        })}
       </View>
 
       <View style={[styles.blockCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
         <View style={styles.blockHead}>
-          <IconSymbol name="hand.thumbsup.fill" size={18} color={tone.barFill} />
+          <IconSymbol name="hand.thumbsup.fill" size={18} color={insightScopeColor('daily')} />
           <ThemedText style={styles.blockTitle}>잘하고 있어요</ThemedText>
         </View>
         {report.strengths.length === 0 ? (
@@ -159,7 +197,10 @@ export function InsightsHistoryView({
         ) : (
           report.strengths.map((item) => (
             <View key={item.title} style={styles.bulletRow}>
-              <ThemedText style={styles.bulletTitle}>{item.title}</ThemedText>
+              <View style={styles.bulletTitleRow}>
+                <View style={[styles.bulletDot, { backgroundColor: insightScopeColor('daily') }]} />
+                <ThemedText style={styles.bulletTitle}>{item.title}</ThemedText>
+              </View>
               <ThemedText style={styles.bulletDetail} lightColor={tone.muted} darkColor={tone.muted}>
                 {item.detail}
               </ThemedText>
@@ -170,7 +211,7 @@ export function InsightsHistoryView({
 
       <View style={[styles.blockCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
         <View style={styles.blockHead}>
-          <IconSymbol name="exclamationmark.circle" size={18} color={tone.muted} />
+          <IconSymbol name="exclamationmark.circle" size={18} color={insightScopeColor('monthly')} />
           <ThemedText style={styles.blockTitle}>아쉬운 점</ThemedText>
         </View>
         {report.weaknesses.length === 0 ? (
@@ -180,7 +221,10 @@ export function InsightsHistoryView({
         ) : (
           report.weaknesses.map((item) => (
             <View key={item.title} style={styles.bulletRow}>
-              <ThemedText style={styles.bulletTitle}>{item.title}</ThemedText>
+              <View style={styles.bulletTitleRow}>
+                <View style={[styles.bulletDot, { backgroundColor: insightScopeColor('monthly') }]} />
+                <ThemedText style={styles.bulletTitle}>{item.title}</ThemedText>
+              </View>
               <ThemedText style={styles.bulletDetail} lightColor={tone.muted} darkColor={tone.muted}>
                 {item.detail}
               </ThemedText>
@@ -193,13 +237,18 @@ export function InsightsHistoryView({
         style={[
           styles.nextCard,
           {
-            backgroundColor: tone.highlightCard,
-            borderColor: tone.highlightCardBorder,
-            borderWidth: tone.highlightCardBorder === 'transparent' ? 0 : StyleSheet.hairlineWidth,
+            backgroundColor: report.hasData ? heroAccentPastel : tone.highlightCard,
+            borderColor: report.hasData ? `${heroAccentColor}44` : tone.highlightCardBorder,
+            borderWidth: StyleSheet.hairlineWidth,
           },
         ]}>
-        <ThemedText style={[styles.nextKicker, { color: tone.highlightMuted }]}>다음 제안</ThemedText>
-        <ThemedText style={[styles.nextBody, { color: tone.highlightFg }]}>{report.nextStep}</ThemedText>
+        <ThemedText
+          style={[styles.nextKicker, { color: report.hasData ? heroAccentColor : tone.highlightMuted }]}>
+          다음 제안
+        </ThemedText>
+        <ThemedText style={[styles.nextBody, { color: report.hasData ? tone.ink : tone.highlightFg }]}>
+          {report.nextStep}
+        </ThemedText>
       </View>
 
       <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
@@ -260,25 +309,33 @@ export function InsightsHistoryView({
                 조건에 맞는 기록이 없어요.
               </ThemedText>
             ) : (
-              filteredHistoryRows.slice(0, 30).map((row) => (
-                <View key={row.dateKey} style={[styles.feedRow, { borderTopColor: tone.border }]}>
-                  <View style={styles.feedTop}>
-                    <ThemedText style={styles.feedDate} lightColor={tone.muted} darkColor={tone.muted}>
-                      {formatDateKeyKo(row.dateKey)}
+              filteredHistoryRows.slice(0, 30).map((row) => {
+                const chipColor = row.categoryKey ? activeIconColorByCategory(row.categoryKey) : tone.ink;
+                return (
+                  <View key={row.dateKey} style={[styles.feedRow, { borderTopColor: tone.border }]}>
+                    <View style={styles.feedTop}>
+                      <ThemedText style={styles.feedDate} lightColor={tone.muted} darkColor={tone.muted}>
+                        {formatDateKeyKo(row.dateKey)}
+                      </ThemedText>
+                      <ThemedText style={[styles.feedRate, { color: chipColor }]}>{row.rateLabel}</ThemedText>
+                    </View>
+                    <ThemedText style={styles.feedHeadline}>{row.headline}</ThemedText>
+                    <ThemedText style={styles.feedSummary} lightColor={tone.muted} darkColor={tone.muted}>
+                      {row.summary}
                     </ThemedText>
-                    <ThemedText style={styles.feedRate}>{row.rateLabel}</ThemedText>
-                  </View>
-                  <ThemedText style={styles.feedHeadline}>{row.headline}</ThemedText>
-                  <ThemedText style={styles.feedSummary} lightColor={tone.muted} darkColor={tone.muted}>
-                    {row.summary}
-                  </ThemedText>
-                  <View style={styles.feedMetaRow}>
-                    <View style={[styles.feedChip, { backgroundColor: tone.level0 }]}>
-                      <ThemedText style={styles.feedChipText}>{row.categoryLabel}</ThemedText>
+                    <View style={styles.feedMetaRow}>
+                      <View style={[styles.feedChip, { backgroundColor: tone.level0 }]}>
+                        <ThemedText
+                          style={styles.feedChipText}
+                          lightColor={chipColor}
+                          darkColor={chipColor}>
+                          {row.categoryLabel}
+                        </ThemedText>
+                      </View>
                     </View>
                   </View>
-                </View>
-              ))
+                );
+              })
             )}
           </>
         ) : (
@@ -385,6 +442,16 @@ const styles = StyleSheet.create({
   },
   bulletRow: {
     gap: 4,
+  },
+  bulletTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bulletDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 999,
   },
   bulletTitle: {
     fontSize: 15,

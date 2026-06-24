@@ -8,6 +8,7 @@ import type { HorizonCompletionEntry } from '@shared/lib/storage/horizonCompleti
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import {
   buildGrowthTrendPath,
@@ -195,7 +196,11 @@ export function MonthlyHistoryView({
                 <IconSymbol name="rosette" size={12} color="#FAFAFA" />
                 <ThemedText style={styles.flowBadgeText}>최장 연속 달성</ThemedText>
               </View>
-              <IconSymbol name={topFlow.icon} size={30} color={tone.barFill} />
+              <IconSymbol
+                name={topFlow.icon}
+                size={30}
+                color={activeIconColorByCategory(topFlow.categoryKey)}
+              />
               <View style={styles.flowHeroCopy}>
                 <ThemedText style={styles.flowHeroTitle}>{topFlow.title}</ThemedText>
                 <ThemedText style={styles.flowHeroSub} lightColor={tone.muted} darkColor={tone.muted}>

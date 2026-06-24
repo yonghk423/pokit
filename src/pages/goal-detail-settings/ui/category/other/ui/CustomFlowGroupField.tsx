@@ -5,11 +5,11 @@ import { Pressable, StyleSheet, TextInput, View, Platform } from 'react-native';
 import {
   isSystemCatalogGroupKey,
   SYSTEM_CATALOG_GROUP_KEYS,
-  SYSTEM_CATALOG_GROUP_LABEL_KO,
 } from '@entities/day-plan';
 import {
   createCustomCatalogGroup,
   listCustomCatalogGroups,
+  resolveSystemCatalogGroupLabel,
   type CustomCatalogGroup,
 } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
@@ -48,7 +48,7 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
   const groupOptions: GroupOption[] = useMemo(() => {
     const sys: GroupOption[] = (SYSTEM_CATALOG_GROUP_KEYS as readonly string[]).map((k) => ({
       key: k,
-      label: SYSTEM_CATALOG_GROUP_LABEL_KO[k as 'health' | 'productivity'],
+      label: resolveSystemCatalogGroupLabel(k),
     }));
     const custom: GroupOption[] = customGroups.map((g) => ({ key: g.key, label: g.label }));
     return [...sys, ...custom];
@@ -71,7 +71,7 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
 
   const currentLabel = useMemo(() => {
     if (isSystemCatalogGroupKey(groupKey)) {
-      return SYSTEM_CATALOG_GROUP_LABEL_KO[groupKey as 'health' | 'productivity'];
+      return resolveSystemCatalogGroupLabel(groupKey);
     }
     return customGroups.find((g) => g.key === groupKey)?.label ?? '생산성';
   }, [customGroups, groupKey]);

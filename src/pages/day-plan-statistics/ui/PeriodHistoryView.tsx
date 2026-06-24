@@ -9,6 +9,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { categoryAccentColorPastel, activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 import { HorizonDocumentReadView } from '@shared/ui/horizon-document-read-view/HorizonDocumentReadView';
 
 import {
@@ -197,6 +198,7 @@ function buildTopCategories(
     label: categoryReminderLabelKo(categoryKey),
     count,
     percent: Math.max(8, Math.round((count / max) * 100)),
+    color: categoryAccentColorPastel(categoryKey),
   }));
 }
 
@@ -299,6 +301,14 @@ export function PeriodHistoryView({
     () => dailyRoutineHistory.reduce((max, row) => Math.max(max, row.consecutiveDays), 0),
     [dailyRoutineHistory],
   );
+  const completedRoutineHistory = useMemo(
+    () => dailyRoutineHistory.filter((row) => row.status === 'completed'),
+    [dailyRoutineHistory],
+  );
+  const incompleteRoutineHistory = useMemo(
+    () => dailyRoutineHistory.filter((row) => row.status === 'incomplete'),
+    [dailyRoutineHistory],
+  );
   const editorial = useMemo(
     () => buildWeeklyEditorialInsight(axisScores, maxCategoryStreak),
     [axisScores, maxCategoryStreak],
@@ -335,6 +345,44 @@ export function PeriodHistoryView({
     trendDeltaContextLabel === '지난달 대비' || monthlyRate > 0 || previousMonthlyRate > 0;
   const calendarDensityColors = useMemo(() => getHistoryCalendarDensityColors(isDark), [isDark]);
   const calendarDensityLegend = useMemo(() => buildHistoryCalendarDensityLegend(isDark), [isDark]);
+
+  const renderRoutineHistoryTile = (item: (typeof dailyRoutineHistory)[number]) => {
+    const isCompleted = item.status === 'completed';
+    const categoryColor = activeIconColorByCategory(item.categoryKey);
+    return (
+      <View key={item.categoryKey} style={styles.routineHistoryTile}>
+        <View style={[styles.routineHistoryIconWrap, { backgroundColor: tone.level0 }]}>
+          <IconSymbol
+            name={item.icon}
+            size={20}
+            color={isCompleted ? categoryColor : tone.muted}
+          />
+        </View>
+        <ThemedText
+          style={styles.routineHistoryLabel}
+          lightColor={tone.ink}
+          darkColor={tone.ink}
+          numberOfLines={2}>
+          {item.title}
+        </ThemedText>
+      </View>
+    );
+  };
+
+  const renderRoutineHistoryGroup = (
+    label: '완료' | '미완료',
+    items: typeof dailyRoutineHistory,
+  ) => (
+    <View style={styles.routineHistoryGroup}>
+      <ThemedText
+        style={styles.routineHistoryGroupLabel}
+        lightColor={label === '완료' ? tone.ink : tone.muted}
+        darkColor={label === '완료' ? tone.ink : tone.muted}>
+        {label}
+      </ThemedText>
+      <View style={styles.routineHistoryGrid}>{items.map(renderRoutineHistoryTile)}</View>
+    </View>
+  );
 
   // 공통 기록 카드 렌더러
   const renderEntryCard = (
@@ -672,61 +720,18 @@ export function PeriodHistoryView({
             </ThemedText>
           </View>
         ) : (
-          dailyRoutineHistory.map((item) => {
-            const isCompleted = item.status === 'completed';
-            return (
-              <View
-                key={item.categoryKey}
-                style={[
-                  styles.goalCard,
-                  { backgroundColor: tone.card, borderColor: tone.border },
-                  !isCompleted && { opacity: 0.88 },
-                ]}>
-                <View style={styles.goalTop}>
-                  <View style={[styles.goalIconWrap, { backgroundColor: tone.level0 }]}>
-                    <IconSymbol
-                      name={item.icon}
-                      size={18}
-                      color={isCompleted ? tone.barFill : tone.muted}
-                    />
-                  </View>
-                  <View style={styles.goalMeta}>
-                    <ThemedText style={styles.goalTitle}>{item.title}</ThemedText>
-                    <View style={styles.goalStreakRow}>
-                      <IconSymbol
-                        name="flame.fill"
-                        size={12}
-                        color={item.consecutiveDays > 0 ? tone.barFill : tone.muted}
-                      />
-                      <ThemedText style={styles.goalSub} lightColor={tone.muted} darkColor={tone.muted}>
-                        {item.streakLabel}
-                      </ThemedText>
-                    </View>
-                  </View>
-                  <View
-                    style={[
-                      styles.routineStatusChip,
-                      isCompleted
-                        ? { backgroundColor: tone.level0 }
-                        : { backgroundColor: 'transparent', borderWidth: StyleSheet.hairlineWidth, borderColor: tone.border },
-                    ]}>
-                    <IconSymbol
-                      name={isCompleted ? 'checkmark.circle.fill' : 'circle'}
-                      size={14}
-                      color={isCompleted ? tone.barFill : tone.muted}
-                    />
-                    <ThemedText
-                      style={[
-                        styles.routineStatusChipText,
-                        { color: isCompleted ? tone.barFill : tone.muted },
-                      ]}>
-                      {item.statusLabel}
-                    </ThemedText>
-                  </View>
-                </View>
-              </View>
-            );
-          })
+          <View
+            style={[
+              styles.routineHistoryCard,
+              { backgroundColor: tone.card, borderColor: tone.border },
+            ]}>
+            {completedRoutineHistory.length > 0
+              ? renderRoutineHistoryGroup('완료', completedRoutineHistory)
+              : null}
+            {incompleteRoutineHistory.length > 0
+              ? renderRoutineHistoryGroup('미완료', incompleteRoutineHistory)
+              : null}
+          </View>
         )}
       </View>
 
@@ -746,14 +751,9 @@ export function PeriodHistoryView({
           </View>
         ) : (
           <View style={[styles.categoryCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
-            {topCategories.map((category, idx) => (
+            {topCategories.map((category) => (
               <View key={category.categoryKey} style={styles.categoryRow}>
-                <View
-                  style={[
-                    styles.categoryDot,
-                    { backgroundColor: idx === 0 ? tone.barFill : idx === 1 ? tone.muted : tone.border },
-                  ]}
-                />
+                <View style={[styles.categoryDot, { backgroundColor: category.color }]} />
                 <View style={styles.categoryMeta}>
                   <View style={styles.categoryTop}>
                     <ThemedText style={styles.categoryLabel}>{category.label}</ThemedText>
@@ -765,7 +765,7 @@ export function PeriodHistoryView({
                     <View
                       style={[
                         styles.categoryFill,
-                        { width: `${category.percent}%`, backgroundColor: idx === 0 ? tone.barFill : tone.muted },
+                        { width: `${category.percent}%`, backgroundColor: category.color },
                       ]}
                     />
                   </View>
@@ -977,53 +977,50 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.1,
   },
-  goalCard: {
+  routineHistoryCard: {
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    gap: 14,
   },
-  goalTop: {
+  routineHistoryGroup: {
+    gap: 8,
+  },
+  routineHistoryGroupLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: -0.1,
+    lineHeight: 14,
+  },
+  routineHistoryGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  goalIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+  routineHistoryTile: {
+    flexGrow: 0,
+    flexBasis: '22%',
+    maxWidth: '25%',
+    minWidth: 72,
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 2,
+  },
+  routineHistoryIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  goalMeta: {
-    flex: 1,
-    gap: 2,
-  },
-  goalTitle: {
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  goalStreakRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  routineStatusChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 999,
-    flexShrink: 0,
-  },
-  routineStatusChipText: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: -0.15,
-  },
-  goalSub: {
+  routineHistoryLabel: {
+    width: '100%',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
+    textAlign: 'center',
+    lineHeight: 14,
+    letterSpacing: -0.15,
   },
   categoryCard: {
     borderRadius: 14,

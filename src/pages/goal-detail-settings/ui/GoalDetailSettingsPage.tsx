@@ -28,17 +28,16 @@ import { reconcileLiveActivityFromPlan } from '@features/live-activity-sync';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
   appendGoalDetailCommittedCategoryKeys,
-  DEFAULT_CUSTOM_FLOW_GROUP_KEY,
   loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
-  listCustomFlowCatalogEntries,
   loadPriorityCatalogFixedRoutineKeys,
   removeCustomFlowCatalogId,
   removeGoalDetailCategoryConfig,
   saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
   savePriorityCatalogFixedRoutineKeys,
-  updateCustomFlowCatalogGroup,
+  resolveCatalogItemGroupKey,
+  updateCatalogItemGroup,
 } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -48,6 +47,7 @@ import { ThemedView } from '@shared/ui/themed-view';
 import type { GoalDetailCategoryKey } from '../model/types';
 import { useGoalDetailSettingsRoute } from '../model/useGoalDetailSettingsRoute';
 import { getGoalDetailCategoryModule } from './category';
+import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
 import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
 import { GoalDetailCategoryStartReminderCard } from './GoalDetailCategoryStartReminderCard';
 
@@ -138,10 +138,8 @@ function withPreservedOtherDisplayName(categoryKey: string, next: unknown): unkn
   return incoming;
 }
 
-function resolveCustomFlowGroupKey(categoryKey: string): string {
-  if (!isCustomFlowCategoryKey(categoryKey)) return DEFAULT_CUSTOM_FLOW_GROUP_KEY;
-  const entry = listCustomFlowCatalogEntries().find((e) => e.id === categoryKey);
-  return entry?.groupKey ?? DEFAULT_CUSTOM_FLOW_GROUP_KEY;
+function resolveCatalogGroupKeyForSettings(categoryKey: string): string {
+  return resolveCatalogItemGroupKey(categoryKey);
 }
 
 export function GoalDetailSettingsPage() {
@@ -238,9 +236,7 @@ export function GoalDetailSettingsPage() {
   useEffect(() => {
     const next: Record<string, string> = {};
     for (const t of targets) {
-      if (isCustomFlowCategoryKey(t.categoryKey)) {
-        next[t.categoryKey] = resolveCustomFlowGroupKey(t.categoryKey);
-      }
+      next[t.categoryKey] = resolveCatalogGroupKeyForSettings(t.categoryKey);
     }
     setCustomFlowGroupByCategoryKey(next);
   }, [targets]);
@@ -299,10 +295,9 @@ export function GoalDetailSettingsPage() {
     [router],
   );
 
-  const handleChangeCustomFlowGroup = useCallback(
+  const handleChangeCatalogGroup = useCallback(
     (categoryKey: GoalDetailCategoryKey, groupKey: string) => {
-      if (!isCustomFlowCategoryKey(categoryKey)) return;
-      updateCustomFlowCatalogGroup(categoryKey, groupKey);
+      updateCatalogItemGroup(categoryKey, groupKey);
       setCustomFlowGroupByCategoryKey((prev) => ({ ...prev, [categoryKey]: groupKey }));
     },
     [],
@@ -545,6 +540,18 @@ export function GoalDetailSettingsPage() {
               <GoalDetailCategoryStartReminderCard key={key} categoryKey={key} />
             ))}
 
+            {targets.length === 1 ? (
+              <View style={styles.blockSection}>
+                <CustomFlowGroupField
+                  groupKey={
+                    customFlowGroupByCategoryKey[categoryKey] ??
+                    resolveCatalogGroupKeyForSettings(categoryKey)
+                  }
+                  onChangeGroupKey={(groupKey) => handleChangeCatalogGroup(categoryKey, groupKey)}
+                />
+              </View>
+            ) : null}
+
             {targets.map((t, idx) => {
               const module = getGoalDetailCategoryModule(t.categoryKey);
               const Settings = module.Settings;
@@ -558,17 +565,6 @@ export function GoalDetailSettingsPage() {
                     dataConfig={dataConfig}
                     onChangeDataConfig={(next) => handleChangeDataConfig(t, next)}
                     onDeleteCategory={() => handleDeleteCustomFlow(t.categoryKey)}
-                    customFlowGroupKey={
-                      isCustomFlowCategoryKey(t.categoryKey)
-                        ? (customFlowGroupByCategoryKey[t.categoryKey] ??
-                          resolveCustomFlowGroupKey(t.categoryKey))
-                        : undefined
-                    }
-                    onChangeCustomFlowGroupKey={
-                      isCustomFlowCategoryKey(t.categoryKey)
-                        ? (groupKey) => handleChangeCustomFlowGroup(t.categoryKey, groupKey)
-                        : undefined
-                    }
                   />
                 </View>
               );

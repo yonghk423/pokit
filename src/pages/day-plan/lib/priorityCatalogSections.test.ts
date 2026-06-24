@@ -1,9 +1,17 @@
+import { localStorageClient } from '@shared/lib/storage/localStorageClient';
+import { StorageKeys } from '@shared/lib/storage/storageKeys';
+import { updateStandardCatalogGroup } from '@shared/lib/storage/catalogItemGroupStorage';
+
 import {
   buildPriorityCatalogSections,
   defaultSystemGroupForCatalogKey,
 } from './priorityCatalogSections';
 
 describe('priorityCatalogSections', () => {
+  beforeEach(() => {
+    localStorageClient.removeItem(StorageKeys.standardCatalogGroupOverrides);
+  });
+
   it('maps standard keys to system groups', () => {
     expect(defaultSystemGroupForCatalogKey('water')).toBe('health');
     expect(defaultSystemGroupForCatalogKey('reading')).toBe('productivity');
@@ -32,5 +40,23 @@ describe('priorityCatalogSections', () => {
     const custom = result.groupSections.find((s) => s.groupKey === 'customGroup:1');
     expect(custom?.isCustomGroup).toBe(true);
     expect(custom?.items).toHaveLength(0);
+  });
+
+  it('places standard items in overridden groups', () => {
+    updateStandardCatalogGroup('reading', 'health');
+    const result = buildPriorityCatalogSections({
+      available: [
+        { key: 'water', label: '수분', icon: 'drop.fill' },
+        { key: 'reading', label: '독서', icon: 'book.fill' },
+      ],
+      customFlowPickerItems: [],
+      customFlowEntries: [],
+      customGroups: [],
+    });
+
+    const health = result.groupSections.find((s) => s.groupKey === 'health');
+    const productivity = result.groupSections.find((s) => s.groupKey === 'productivity');
+    expect(health?.items.map((i) => i.key)).toEqual(['water', 'reading']);
+    expect(productivity?.items).toEqual([]);
   });
 });

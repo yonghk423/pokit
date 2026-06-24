@@ -28,6 +28,10 @@ export const StorageKeys = {
   customFlowCatalog: 'pokit:custom-flow-catalog',
   /** 사용자 정의 카탈로그 그룹(상위 카테고리) 라벨 목록 */
   customCatalogGroups: 'pokit:custom-catalog-groups',
+  /** 표준 카탈로그 키의 상위 묶음 재배치(기본 그룹 덮어쓰기) */
+  standardCatalogGroupOverrides: 'pokit:standard-catalog-group-overrides',
+  /** 시스템 상위 묶음(건강·생산성) 제목·설명 사용자 편집 */
+  systemCatalogGroupMeta: 'pokit:system-catalog-group-meta',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];
@@ -53,4 +57,6 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   horizonWeeklyDayMemos: 'lockflow:horizon-weekly-day-memos',
   customFlowCatalog: 'lockflow:custom-flow-catalog',
   customCatalogGroups: 'lockflow:custom-catalog-groups',
+  standardCatalogGroupOverrides: 'lockflow:standard-catalog-group-overrides',
+  systemCatalogGroupMeta: 'lockflow:system-catalog-group-meta',
 };

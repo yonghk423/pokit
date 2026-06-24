@@ -5,12 +5,14 @@ export type CustomCatalogGroup = {
   /** `customGroup:<uuid>` 형식 */
   key: string;
   label: string;
+  subtitle?: string;
 };
 
 type Shape = { groups?: CustomCatalogGroup[] };
 
 const PREFIX = 'customGroup:' as const;
 const MAX_LABEL = 24;
+const MAX_SUBTITLE = 120;
 
 /** `:` 뒤에 최소 1글자만 있으면 사용자 정의 그룹 키로 인정 (길이 상한은 저장 시 생성 로직에서 보장) */
 export function isCustomCatalogGroupKey(k: string): boolean {
@@ -42,9 +44,14 @@ function normalize(raw: Shape): CustomCatalogGroup[] {
     if (!g || typeof g !== 'object') continue;
     const key = typeof g.key === 'string' ? g.key.trim() : '';
     const label = typeof g.label === 'string' ? g.label.trim().slice(0, MAX_LABEL) : '';
+    const subtitleRaw = typeof g.subtitle === 'string' ? g.subtitle.trim().slice(0, MAX_SUBTITLE) : '';
     if (!isCustomCatalogGroupKey(key) || seen.has(key) || label.length === 0) continue;
     seen.add(key);
-    out.push({ key, label });
+    out.push({
+      key,
+      label,
+      ...(subtitleRaw.length > 0 ? { subtitle: subtitleRaw } : {}),
+    });
   }
   return out;
 }
@@ -65,16 +72,35 @@ export function createCustomCatalogGroup(label: string): CustomCatalogGroup | nu
   return next;
 }
 
-export function renameCustomCatalogGroup(key: string, label: string): void {
-  const trimmed = label.trim().slice(0, MAX_LABEL);
-  if (trimmed.length === 0) return;
+export function updateCustomCatalogGroup(
+  key: string,
+  input: { label: string; subtitle?: string },
+): void {
+  const trimmedLabel = input.label.trim().slice(0, MAX_LABEL);
+  if (trimmedLabel.length === 0) return;
+  const trimmedSubtitle =
+    typeof input.subtitle === 'string' ? input.subtitle.trim().slice(0, MAX_SUBTITLE) : '';
   const cur = listCustomCatalogGroups();
   const idx = cur.findIndex((g) => g.key === key);
   if (idx < 0) return;
-  if (cur[idx].label === trimmed) return;
+  const nextEntry: CustomCatalogGroup = {
+    key,
+    label: trimmedLabel,
+    ...(trimmedSubtitle.length > 0 ? { subtitle: trimmedSubtitle } : {}),
+  };
+  const prev = cur[idx];
+  if (prev.label === nextEntry.label && (prev.subtitle ?? '') === (nextEntry.subtitle ?? '')) {
+    return;
+  }
   const next = cur.slice();
-  next[idx] = { key, label: trimmed };
+  next[idx] = nextEntry;
   writeRoot(next);
+}
+
+export function renameCustomCatalogGroup(key: string, label: string): void {
+  const cur = listCustomCatalogGroups();
+  const existing = cur.find((g) => g.key === key);
+  updateCustomCatalogGroup(key, { label, subtitle: existing?.subtitle });
 }
 
 export function removeCustomCatalogGroup(key: string): void {

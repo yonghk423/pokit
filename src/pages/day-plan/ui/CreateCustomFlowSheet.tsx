@@ -14,11 +14,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   SYSTEM_CATALOG_GROUP_KEYS,
-  SYSTEM_CATALOG_GROUP_LABEL_KO,
 } from '@entities/day-plan';
 import {
   createCustomCatalogGroup,
   listCustomCatalogGroups,
+  resolveSystemCatalogGroupLabel,
   type CustomCatalogGroup,
 } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
@@ -95,7 +95,7 @@ export function CreateCustomFlowSheet({
   const groupOptions: GroupOption[] = useMemo(() => {
     const sys: GroupOption[] = (SYSTEM_CATALOG_GROUP_KEYS as readonly string[]).map((k) => ({
       key: k,
-      label: SYSTEM_CATALOG_GROUP_LABEL_KO[k as 'health' | 'productivity'],
+      label: resolveSystemCatalogGroupLabel(k),
       isSystem: true,
     }));
     const custom: GroupOption[] = customGroups.map((g) => ({

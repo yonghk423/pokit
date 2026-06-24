@@ -3,7 +3,8 @@ export {
   isCustomCatalogGroupKey,
   listCustomCatalogGroups,
   removeCustomCatalogGroup,
-  renameCustomCatalogGroup
+  renameCustomCatalogGroup,
+  updateCustomCatalogGroup,
 } from './customCatalogGroupStorage';
 export type { CustomCatalogGroup } from './customCatalogGroupStorage';
 export {
@@ -14,6 +15,18 @@ export {
   removeCustomFlowCatalogId,
   updateCustomFlowCatalogGroup
 } from './customFlowCatalogStorage';
+export {
+  loadStandardCatalogGroupOverrides,
+  resolveCatalogItemGroupKey,
+  updateCatalogItemGroup,
+  updateStandardCatalogGroup,
+} from './catalogItemGroupStorage';
+export {
+  loadSystemCatalogGroupMeta,
+  resolveSystemCatalogGroupLabel,
+  resolveSystemCatalogGroupSubtitle,
+  updateSystemCatalogGroupMeta,
+} from './systemCatalogGroupMetaStorage';
 export type { CustomFlowCatalogEntry } from './customFlowCatalogStorage';
 export {
   loadDailyRhythmOnboardingCompleted,

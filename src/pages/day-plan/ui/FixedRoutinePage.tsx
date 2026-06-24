@@ -3,6 +3,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
   LayoutAnimation,
   Modal,
   Platform,
@@ -19,12 +20,16 @@ import { useShallow } from 'zustand/react/shallow';
 
 import {
   createCustomFlowCategoryId,
+  filterDayPlanFlowBlocks,
   getInitialOtherDataConfig,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
   isCustomFlowCategoryKey,
   isPriorityWindowEndedForToday,
+  resolveBlockCategoryKey,
+  resolveCategoryKeyFromLabel,
   useDayPlanDraftStore,
+  useDayPlanStore,
   useFixedFlowSetsStore,
 } from '@entities/day-plan';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
@@ -40,8 +45,9 @@ import {
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
+import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
-import { getPickerCategoryLabel } from '../lib/dayPlanEditorShared';
+import { getPickerCategoryLabel, PRIMARY } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
 import { buildPriorityCatalogRows, type PriorityCatalogRow } from '../lib/priorityCatalog';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
@@ -62,6 +68,9 @@ type FlowCardProps = {
   muted: string;
   line: string;
   iconBoxBg: string;
+  isFocusStarted: boolean;
+  isInTodayPlan: boolean;
+  isCompleted: boolean;
   onToggleEnabled: (enabled: boolean) => void;
   onRename: () => void;
   onDelete: () => void;
@@ -75,6 +84,9 @@ function FlowItemCard({
   muted,
   line,
   iconBoxBg,
+  isFocusStarted,
+  isInTodayPlan,
+  isCompleted,
   onToggleEnabled,
   onRename,
   onDelete,
@@ -82,7 +94,44 @@ function FlowItemCard({
   const label = catalog?.label ?? getPickerCategoryLabel(item.categoryKey);
   const icon = catalog?.icon ?? 'person.fill';
   const enabled = item.enabled !== false;
+  const categoryKey = item.categoryKey;
   const trackOff = isDark ? '#3f3f46' : '#e5e7eb';
+  const shouldPulse = Boolean(isInTodayPlan && isFocusStarted && enabled && !isCompleted);
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!shouldPulse) {
+      pulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 0.5,
+          duration: 650,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 650,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [shouldPulse, pulse]);
+
+  const selectedIconColor = isDark ? ink : PRIMARY;
+  const iconColor = shouldPulse
+    ? activeIconColorByCategory(categoryKey)
+    : isInTodayPlan && enabled
+      ? isCompleted
+        ? muted
+        : selectedIconColor
+      : muted;
+  const labelColor =
+    isInTodayPlan && enabled ? (isCompleted ? muted : ink) : muted;
 
   return (
     <View
@@ -99,10 +148,18 @@ function FlowItemCard({
           pressed && { opacity: 0.72 },
         ]}>
         <View style={[styles.flowIconBox, { backgroundColor: iconBoxBg }]}>
-          <IconSymbol name={icon as any} size={15} color={enabled ? ink : muted} />
+          {shouldPulse && categoryKey === 'medicine' ? (
+            <Animated.View style={{ opacity: pulse }}>
+              <IconSymbol name="cross.fill" size={12} color="#ef4444" />
+            </Animated.View>
+          ) : (
+            <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
+              <IconSymbol name={icon as any} size={15} color={iconColor} />
+            </Animated.View>
+          )}
         </View>
         <ThemedText
-          style={[styles.flowRowTitle, { color: enabled ? ink : muted }]}
+          style={[styles.flowRowTitle, { color: labelColor }]}
           numberOfLines={1}>
           {label}
         </ThemedText>
@@ -294,6 +351,9 @@ type GroupAccordionProps = {
   cardBg: string;
   iconBoxBg: string;
   sectionBg: string;
+  isFocusStarted: boolean;
+  isCategoryInTodayPlan: (categoryKey: string) => boolean;
+  isCategoryCompleted: (categoryKey: string) => boolean;
   onToggleExpand: () => void;
   onToggleActiveForToday: () => void;
   onApplyBlocked: () => void;
@@ -318,6 +378,9 @@ function GroupAccordion({
   cardBg,
   iconBoxBg,
   sectionBg,
+  isFocusStarted,
+  isCategoryInTodayPlan,
+  isCategoryCompleted,
   onToggleExpand,
   onToggleActiveForToday,
   onApplyBlocked,
@@ -439,6 +502,9 @@ function GroupAccordion({
                   muted={muted}
                   line={line}
                   iconBoxBg={iconBoxBg}
+                  isFocusStarted={isFocusStarted}
+                  isInTodayPlan={isCategoryInTodayPlan(item.categoryKey)}
+                  isCompleted={isCategoryCompleted(item.categoryKey)}
                   onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
                   onRename={() => onRenameItem(item.categoryKey, itemLabel)}
                   onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
@@ -496,6 +562,10 @@ export function FixedRoutinePage() {
     priorityEnd,
     priorityPlanDateKey,
     priorityPlanDateKeyEnd,
+    isFocusStarted,
+    priorityCategoryOrder,
+    completedFocusCategoryKeys,
+    planCompletionDismissedKeys,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       planMode: s.planMode,
@@ -503,7 +573,47 @@ export function FixedRoutinePage() {
       priorityEnd: s.priorityEnd,
       priorityPlanDateKey: s.priorityPlanDateKey,
       priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
+      isFocusStarted: s.isFocusStarted,
+      priorityCategoryOrder: s.priorityCategoryOrder,
+      completedFocusCategoryKeys: s.completedFocusCategoryKeys,
+      planCompletionDismissedKeys: s.planCompletionDismissedKeys,
     })),
+  );
+
+  const planBlocks = useDayPlanStore((s) => s.blocks);
+  const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
+  const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
+
+  const completedCategoryKeysFromPlan = useMemo(() => {
+    const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
+    const doneCategoryKeys = new Set<string>();
+    const flowBlocks = filterDayPlanFlowBlocks(planBlocks);
+    flowBlocks.forEach((block) => {
+      if (!doneBlockIds.has(block.id)) return;
+      const key = resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category ?? '');
+      if (key) doneCategoryKeys.add(key);
+    });
+    return [...doneCategoryKeys];
+  }, [planBlocks, completedBlockIds, skippedBlockIds]);
+
+  const isCategoryCompleted = useCallback(
+    (categoryKey: string) => {
+      if (completedFocusCategoryKeys.includes(categoryKey)) return true;
+      if (!isFocusStarted) return false;
+      if (planCompletionDismissedKeys.includes(categoryKey)) return false;
+      return completedCategoryKeysFromPlan.includes(categoryKey);
+    },
+    [
+      completedCategoryKeysFromPlan,
+      completedFocusCategoryKeys,
+      isFocusStarted,
+      planCompletionDismissedKeys,
+    ],
+  );
+
+  const isCategoryInTodayPlan = useCallback(
+    (categoryKey: string) => priorityCategoryOrder.includes(categoryKey),
+    [priorityCategoryOrder],
   );
 
   useEffect(() => {
@@ -706,6 +816,9 @@ export function FixedRoutinePage() {
               cardBg={cardBg}
               iconBoxBg={iconBoxBg}
               sectionBg={sectionBg}
+              isFocusStarted={isFocusStarted}
+              isCategoryInTodayPlan={isCategoryInTodayPlan}
+              isCategoryCompleted={isCategoryCompleted}
               onToggleExpand={() => toggleExpanded(setItem.id)}
               onToggleActiveForToday={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

@@ -97,6 +97,34 @@ describe('dailyRoutineHistory', () => {
     });
   });
 
+  it('uses the same icon mapping as the routine catalog', () => {
+    const rows = buildDailyRoutineHistory({
+      dateKey: '2026-06-18',
+      categoryLabel: (key) => key,
+      plannedCategoryKeys: ['vitamins', 'walking', 'stretching', 'neckPosture', 'fasting'],
+      dailyStatsByDate: {
+        '2026-06-18': {
+          dateKey: '2026-06-18',
+          categoryCompletions: {
+            vitamins: 1,
+            walking: 1,
+            stretching: 1,
+            neckPosture: 1,
+            fasting: 1,
+          },
+        } as any,
+      },
+    });
+
+    expect(rows.map((row) => ({ key: row.categoryKey, icon: row.icon }))).toEqual([
+      { key: 'vitamins', icon: 'pill.fill' },
+      { key: 'walking', icon: 'figure.walk' },
+      { key: 'stretching', icon: 'figure.run' },
+      { key: 'neckPosture', icon: 'tortoise.fill' },
+      { key: 'fasting', icon: 'figure.stand' },
+    ]);
+  });
+
   it('returns empty when the day has no record and no plan', () => {
     expect(
       buildDailyRoutineHistory({

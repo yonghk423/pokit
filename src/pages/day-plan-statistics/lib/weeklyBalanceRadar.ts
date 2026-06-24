@@ -1,5 +1,9 @@
-import { SYSTEM_CATALOG_GROUP_LABEL_KO, isSystemCatalogGroupKey } from '@entities/day-plan';
-import { listCustomCatalogGroups, listCustomFlowCatalogEntries } from '@shared/lib/storage';
+import { SYSTEM_CATALOG_GROUP_KEYS, isSystemCatalogGroupKey } from '@entities/day-plan';
+import {
+  listCustomCatalogGroups,
+  resolveCatalogItemGroupKey,
+  resolveSystemCatalogGroupLabel,
+} from '@shared/lib/storage';
 
 export type WeeklyAxisRow = {
   key: string;
@@ -15,27 +19,12 @@ export type WeeklyAxisScore = WeeklyAxisRow & {
 // 카탈로그 그룹 기반 집계
 // ──────────────────────────────────────────────────────────────────────────
 
-const HEALTH_KEYS = new Set([
-  'water', 'medicine', 'vitamins', 'fasting', 'stretching', 'straightenBack', 'neckPosture',
-  'posture', 'meditation', 'workout', 'walking', 'yoga', 'sleep', 'breathing', 'skincare', 'eyerest',
-]);
-const PRODUCTIVITY_KEYS = new Set([
-  'reading', 'study', 'planning', 'writing', 'language', 'creative', 'deepwork',
-  'journal', 'pomodoro', 'review', 'news', 'organize', 'podcast', 'inbox', 'work', 'coding',
-]);
-
 /**
  * categoryKey → 소속 그룹 키를 반환.
- * customFlow 항목은 저장된 groupKey로, 표준 항목은 시스템 그룹 매핑으로 결정.
+ * 표준·customFlow 모두 저장된 담기 카탈로그 그룹 설정을 따른다.
  */
 function resolveCategoryGroup(categoryKey: string): string {
-  if (categoryKey.startsWith('customFlow:')) {
-    const entries = listCustomFlowCatalogEntries();
-    const entry = entries.find((e) => e.id === categoryKey);
-    return entry?.groupKey ?? 'productivity';
-  }
-  if (HEALTH_KEYS.has(categoryKey)) return 'health';
-  return 'productivity';
+  return resolveCatalogItemGroupKey(categoryKey);
 }
 
 /**
@@ -59,8 +48,9 @@ export function buildWeeklyGroupRows(weeklyCategoryCompletions: Record<string, n
   }
 
   const labelMap = new Map<string, string>();
-  labelMap.set('health', SYSTEM_CATALOG_GROUP_LABEL_KO.health);
-  labelMap.set('productivity', SYSTEM_CATALOG_GROUP_LABEL_KO.productivity);
+  for (const key of SYSTEM_CATALOG_GROUP_KEYS) {
+    labelMap.set(key, resolveSystemCatalogGroupLabel(key));
+  }
   for (const g of customGroups) {
     labelMap.set(g.key, g.label);
   }

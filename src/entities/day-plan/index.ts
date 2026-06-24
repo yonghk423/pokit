@@ -70,6 +70,11 @@ export {
   type SystemCatalogGroupKey,
 } from './lib/customCatalogGroup';
 export {
+  defaultSystemGroupForCatalogKey,
+  HEALTH_GROUP_SYSTEM_ORDER,
+  PRODUCTIVITY_GROUP_SYSTEM_ORDER,
+} from './lib/catalogItemGroup';
+export {
   addDaysToLocalDateKey,
   getLocalDateKey,
   localDateToDateKey,

@@ -37,9 +37,11 @@ import {
   loadGoalDetailCategoryConfig,
   reassignCustomFlowGroup,
   removeCustomCatalogGroup,
-  renameCustomCatalogGroup,
+  resolveCatalogItemGroupKey,
   saveGoalDetailCategoryConfig,
-  updateCustomFlowCatalogGroup,
+  updateCatalogItemGroup,
+  updateCustomCatalogGroup,
+  updateSystemCatalogGroupMeta,
   type CustomCatalogGroup,
   type CustomFlowCatalogEntry,
 } from '@shared/lib/storage';
@@ -56,9 +58,9 @@ import {
 import { palette, type DayPlanPalette } from '../lib/dayPlanPalette';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
+import { EditCatalogGroupSheet } from './EditCatalogGroupSheet';
 import { MoveCustomFlowGroupSheet } from './MoveCustomFlowGroupSheet';
 import { PriorityCatalogPanel } from './PriorityCatalogPanel';
-import { RenameCustomGroupSheet } from './RenameCustomGroupSheet';
 
 /** 시트에서 넘긴 그룹 키를 저장용으로 확정 — 검증 실패 시에만 기본 생산성 그룹 */
 function resolveCatalogGroupKeyForPersist(raw: string): string {
@@ -208,9 +210,11 @@ export function PriorityCatalogPage() {
 
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [createSheetGroupKey, setCreateSheetGroupKey] = useState<string | undefined>(undefined);
-  const [renameGroupSheet, setRenameGroupSheet] = useState<{
+  const [editGroupSheet, setEditGroupSheet] = useState<{
     groupKey: string;
     label: string;
+    subtitle: string;
+    isSystemGroup: boolean;
   } | null>(null);
   const [moveFlowSheet, setMoveFlowSheet] = useState<{
     categoryKey: string;
@@ -326,24 +330,36 @@ export function PriorityCatalogPage() {
     [isFocusStarted, priorityCategoryOrder, router],
   );
 
-  const onRenameCustomGroup = useCallback((groupKey: string, currentLabel: string) => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setRenameGroupSheet({ groupKey, label: currentLabel });
-  }, []);
+  const onEditCatalogGroup = useCallback(
+    (groupKey: string, currentLabel: string, currentSubtitle: string) => {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setEditGroupSheet({
+        groupKey,
+        label: currentLabel,
+        subtitle: currentSubtitle,
+        isSystemGroup: isSystemCatalogGroupKey(groupKey),
+      });
+    },
+    [],
+  );
 
-  const onSaveRenameCustomGroup = useCallback(
-    (trimmedLabel: string) => {
-      if (!renameGroupSheet) return;
-      if (trimmedLabel.length === 0) {
-        Alert.alert('이름을 입력해 주세요', '묶음 이름은 한 글자 이상이어야 해요.');
+  const onSaveEditCatalogGroup = useCallback(
+    ({ label, subtitle }: { label: string; subtitle: string }) => {
+      if (!editGroupSheet) return;
+      if (label.length === 0 || subtitle.length === 0) {
+        Alert.alert('입력 확인', '이름과 설명을 모두 입력해 주세요.');
         return;
       }
-      renameCustomCatalogGroup(renameGroupSheet.groupKey, trimmedLabel);
+      if (editGroupSheet.isSystemGroup && isSystemCatalogGroupKey(editGroupSheet.groupKey)) {
+        updateSystemCatalogGroupMeta(editGroupSheet.groupKey, { label, subtitle });
+      } else {
+        updateCustomCatalogGroup(editGroupSheet.groupKey, { label, subtitle });
+      }
       reloadCatalogData();
-      setRenameGroupSheet(null);
+      setEditGroupSheet(null);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
-    [reloadCatalogData, renameGroupSheet],
+    [editGroupSheet, reloadCatalogData],
   );
 
   const onDeleteCustomGroup = useCallback(
@@ -370,24 +386,20 @@ export function PriorityCatalogPage() {
     [reloadCatalogData],
   );
 
-  const onMoveCustomFlow = useCallback(
-    (categoryKey: string, label: string) => {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const entry = customFlowEntries.find((e) => e.id === categoryKey);
-      setMoveFlowSheet({
-        categoryKey,
-        label,
-        groupKey: entry?.groupKey ?? DEFAULT_CUSTOM_FLOW_GROUP_KEY,
-      });
-    },
-    [customFlowEntries],
-  );
+  const onMoveCatalogFlow = useCallback((categoryKey: string, label: string) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setMoveFlowSheet({
+      categoryKey,
+      label,
+      groupKey: resolveCatalogItemGroupKey(categoryKey),
+    });
+  }, []);
 
-  const onSaveMoveCustomFlow = useCallback(
+  const onSaveMoveCatalogFlow = useCallback(
     (groupKey: string) => {
       if (!moveFlowSheet) return;
       const safeGroupKey = resolveCatalogGroupKeyForPersist(groupKey);
-      updateCustomFlowCatalogGroup(moveFlowSheet.categoryKey, safeGroupKey);
+      updateCatalogItemGroup(moveFlowSheet.categoryKey, safeGroupKey);
       reloadCatalogData();
       setMoveFlowSheet(null);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -427,9 +439,9 @@ export function PriorityCatalogPage() {
             customFlowEntries={customFlowEntries}
             customGroups={customGroups}
             isDark={isDark}
-            onRenameCustomGroup={onRenameCustomGroup}
+            onRenameCustomGroup={onEditCatalogGroup}
             onDeleteCustomGroup={onDeleteCustomGroup}
-            onMoveCustomFlow={onMoveCustomFlow}
+            onMoveCustomFlow={onMoveCatalogFlow}
           />
         </ScrollView>
         <Pressable
@@ -462,11 +474,12 @@ export function PriorityCatalogPage() {
         line={editorial.line}
         surface={shellBg}
       />
-      <RenameCustomGroupSheet
-        visible={renameGroupSheet != null}
-        onClose={() => setRenameGroupSheet(null)}
-        initialLabel={renameGroupSheet?.label ?? ''}
-        onSave={onSaveRenameCustomGroup}
+      <EditCatalogGroupSheet
+        visible={editGroupSheet != null}
+        onClose={() => setEditGroupSheet(null)}
+        initialLabel={editGroupSheet?.label ?? ''}
+        initialSubtitle={editGroupSheet?.subtitle ?? ''}
+        onSave={onSaveEditCatalogGroup}
         isDark={isDark}
         ink={editorial.ink}
         muted={editorial.muted}
@@ -477,7 +490,7 @@ export function PriorityCatalogPage() {
         onClose={() => setMoveFlowSheet(null)}
         flowLabel={moveFlowSheet?.label ?? ''}
         initialGroupKey={moveFlowSheet?.groupKey ?? DEFAULT_CUSTOM_FLOW_GROUP_KEY}
-        onSave={onSaveMoveCustomFlow}
+        onSave={onSaveMoveCatalogFlow}
         isDark={isDark}
         ink={editorial.ink}
         muted={editorial.muted}

@@ -1,3 +1,4 @@
+import { categoryReminderIconName } from '@entities/day-plan';
 import {
   computeCategoryCompletionStreak,
   formatCategoryStreakLabel,
@@ -10,25 +11,13 @@ export type DailyRoutineHistoryStatus = 'completed' | 'incomplete';
 export type DailyRoutineHistoryRow = {
   categoryKey: string;
   title: string;
-  icon: 'book.fill' | 'figure.run' | 'drop.fill' | 'brain.head.profile' | 'bag.fill' | 'star.fill';
+  icon: string;
   status: DailyRoutineHistoryStatus;
   statusLabel: '완료' | '미완료';
   consecutiveDays: number;
   streakLabel: string;
   barPercent: number;
 };
-
-function categoryIcon(categoryKey: string): DailyRoutineHistoryRow['icon'] {
-  const k = categoryKey.toLowerCase();
-  if (k.includes('reading') || k.includes('study')) return 'book.fill';
-  if (k.includes('workout') || k.includes('stretch') || k.includes('yoga') || k.includes('fitness')) {
-    return 'figure.run';
-  }
-  if (k.includes('water') || k.includes('medicine')) return 'drop.fill';
-  if (k.includes('meditation') || k.includes('mind') || k.includes('journal')) return 'brain.head.profile';
-  if (k.includes('work') || k.includes('planning')) return 'bag.fill';
-  return 'star.fill';
-}
 
 export function resolveDailyRoutinePlannedKeys(input: {
   dateKey: string;
@@ -97,7 +86,7 @@ export function buildDailyRoutineHistory(input: {
     return {
       categoryKey,
       title: input.categoryLabel(categoryKey),
-      icon: categoryIcon(categoryKey),
+      icon: categoryReminderIconName(categoryKey),
       status: isCompleted ? 'completed' : 'incomplete',
       statusLabel: isCompleted ? '완료' : '미완료',
       consecutiveDays,

@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
 import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
-import { isCustomFlowCategoryKey } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
@@ -286,9 +285,7 @@ function renderRows(
       onAddPress={() => onCatalogTap(cat.key)}
       onOpenSettings={() => onOpenCategorySettings(cat.key)}
       onMoveGroup={
-        onMoveCustomFlow && isCustomFlowCategoryKey(cat.key)
-          ? () => onMoveCustomFlow(cat.key, cat.label)
-          : undefined
+        onMoveCustomFlow ? () => onMoveCustomFlow(cat.key, cat.label) : undefined
       }
     />
   ));
@@ -311,7 +308,7 @@ type Props = {
   customGroups: CustomCatalogGroup[];
   isDark: boolean;
   /** 사용자 정의 상위 묶음 — 이름 편집 시트 열기 */
-  onRenameCustomGroup?: (groupKey: string, currentLabel: string) => void;
+  onRenameCustomGroup?: (groupKey: string, currentLabel: string, currentSubtitle: string) => void;
   /** 사용자 정의 상위 묶음 — 삭제 확인 후 처리 */
   onDeleteCustomGroup?: (groupKey: string, currentLabel: string) => void;
   /** 사용자 루틴 — 다른 상위 묶음으로 옮기기 */
@@ -340,48 +337,56 @@ function GroupSectionBlock({
   isCatalogRowCompleted: (categoryKey: string) => boolean;
   onCatalogTap: (key: string) => void;
   onOpenCategorySettings: (key: string) => void;
-  onRenameCustomGroup?: (groupKey: string, currentLabel: string) => void;
+  onRenameCustomGroup?: (groupKey: string, currentLabel: string, currentSubtitle: string) => void;
   onDeleteCustomGroup?: (groupKey: string, currentLabel: string) => void;
   onMoveCustomFlow?: (categoryKey: string, label: string) => void;
   isFirst: boolean;
 }) {
   const groupHeaderTrailing =
-    section.isCustomGroup && onRenameCustomGroup && onDeleteCustomGroup ? (
+    onRenameCustomGroup || (section.isCustomGroup && onDeleteCustomGroup) ? (
       <View style={styles.customGroupHeaderActions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="묶음 이름 바꾸기"
-          hitSlop={8}
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onRenameCustomGroup(section.groupKey, section.title);
-          }}
-          style={[
-            styles.customGroupHeaderIconBtn,
-            {
-              borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
-              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-            },
-          ]}>
-          <IconSymbol name="pencil" size={16} color={isDark ? '#FAFAFA' : PRIMARY} />
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="묶음 삭제"
-          hitSlop={8}
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onDeleteCustomGroup(section.groupKey, section.title);
-          }}
-          style={[
-            styles.customGroupHeaderIconBtn,
-            {
-              borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
-              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-            },
-          ]}>
-          <IconSymbol name="trash" size={16} color={isDark ? '#FAFAFA' : PRIMARY} />
-        </Pressable>
+        {onRenameCustomGroup ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="묶음 편집"
+            hitSlop={8}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onRenameCustomGroup(
+                section.groupKey,
+                section.title,
+                section.subtitle ?? '',
+              );
+            }}
+            style={[
+              styles.customGroupHeaderIconBtn,
+              {
+                borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              },
+            ]}>
+            <IconSymbol name="pencil" size={16} color={isDark ? '#FAFAFA' : PRIMARY} />
+          </Pressable>
+        ) : null}
+        {section.isCustomGroup && onDeleteCustomGroup ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="묶음 삭제"
+            hitSlop={8}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onDeleteCustomGroup(section.groupKey, section.title);
+            }}
+            style={[
+              styles.customGroupHeaderIconBtn,
+              {
+                borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              },
+            ]}>
+            <IconSymbol name="trash" size={16} color={isDark ? '#FAFAFA' : PRIMARY} />
+          </Pressable>
+        ) : null}
       </View>
     ) : undefined;
 
@@ -389,12 +394,7 @@ function GroupSectionBlock({
     <View style={[styles.sectionBlock, !isFirst && styles.sectionBlockFollows]}>
       <CatalogSectionHeader
         title={section.title}
-        subtitle={
-          section.subtitle ??
-          (section.isCustomGroup
-            ? '직접 만든 묶음이에요. 아래에 두고 싶은 루틴을 오른쪽 아래 + 버튼으로 추가할 수 있어요.'
-            : '')
-        }
+        subtitle={section.subtitle ?? ''}
         ink={editorial.ink}
         muted={editorial.muted}
         trailing={groupHeaderTrailing}

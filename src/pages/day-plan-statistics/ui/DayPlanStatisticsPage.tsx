@@ -19,6 +19,7 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
+import { activeIconColorByCategory, categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
 
 import {
   buildMonthRangeFromPrefix,
@@ -48,6 +49,7 @@ type HistoryFeedRow = {
   summary: string;
   rateLabel: string;
   categoryLabel: string;
+  categoryKey: string | null;
 };
 
 function formatDateKeyKo(dateKey: string): string {
@@ -287,6 +289,7 @@ export function DayPlanStatisticsPage() {
             summary: resolveHistorySummary(row.completionRate, row.completedFlowCount),
             rateLabel: formatRatePercent(row.completionRate),
             categoryLabel: topCategory ? categoryReminderLabelKo(topCategory[0]) : '기록 없음',
+            categoryKey: topCategory ? topCategory[0] : null,
           };
         }),
     [dailyStatsByDate],
@@ -340,12 +343,20 @@ export function DayPlanStatisticsPage() {
     () =>
       Object.entries(getCategoryCompletions(todayRow))
         .filter(([, count]) => count > 0)
-        .map(([categoryKey]) => ({ categoryKey }))
-        .sort((a, b) =>
-          categoryReminderLabelKo(a.categoryKey).localeCompare(categoryReminderLabelKo(b.categoryKey), 'ko'),
+        .map(([categoryKey, count]) => ({ categoryKey, count }))
+        .sort(
+          (a, b) =>
+            b.count - a.count ||
+            categoryReminderLabelKo(a.categoryKey).localeCompare(
+              categoryReminderLabelKo(b.categoryKey),
+              'ko',
+            ),
         ),
     [todayRow],
   );
+  const dailyHeroAccentColor = todayCompletedCategories[0]
+    ? activeIconColorByCategory(todayCompletedCategories[0].categoryKey)
+    : tone.barFill;
   const todayTopCategoryLabel = todayCompletedCategories[0]
     ? categoryReminderLabelKo(todayCompletedCategories[0].categoryKey)
     : '핵심 플로우';
@@ -495,7 +506,7 @@ export function DayPlanStatisticsPage() {
                       cx={90}
                       cy={90}
                       r={76}
-                      stroke={tone.barFill}
+                      stroke={dailyHeroAccentColor}
                       strokeWidth={8}
                       fill="none"
                       strokeDasharray={`${2 * Math.PI * 76}`}
@@ -513,7 +524,11 @@ export function DayPlanStatisticsPage() {
               </View>
               <ThemedText style={styles.focusDeltaText} lightColor={tone.muted} darkColor={tone.muted}>
                 오늘 집중도는 최근 동일 요일 평균보다{' '}
-                <ThemedText style={styles.focusDeltaEmphasis}>
+                <ThemedText
+                  style={[
+                    styles.focusDeltaEmphasis,
+                    todayCompletedCategories.length > 0 && { color: dailyHeroAccentColor },
+                  ]}>
                   {focusDelta >= 0 ? `+${focusDelta}%` : `${focusDelta}%`}
                 </ThemedText>{' '}
                 {focusDelta >= 0 ? '높아요.' : '낮아요.'}
@@ -537,31 +552,34 @@ export function DayPlanStatisticsPage() {
                 </ThemedText>
               ) : (
                 <>
+                  <ThemedText style={styles.dailyActivityGroupLabel} lightColor={tone.ink} darkColor={tone.ink}>
+                    완료
+                  </ThemedText>
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.dailyActivityScroll}>
-                    {todayCompletedCategories.map((row) => (
-                      <View key={row.categoryKey} style={styles.dailyActivityCol}>
-                        <View style={styles.dailyActivityIconSlot}>
+                    {todayCompletedCategories.map((row) => {
+                      const categoryColor = activeIconColorByCategory(row.categoryKey);
+                      return (
+                        <View key={row.categoryKey} style={styles.dailyActivityCol}>
                           <View style={[styles.dailyActivityIconWrap, { backgroundColor: tone.level0 }]}>
                             <IconSymbol
                               name={categoryReminderIconName(row.categoryKey) as never}
-                              size={28}
-                              color={tone.barFill}
+                              size={22}
+                              color={categoryColor}
                             />
                           </View>
-                          <ThemedText style={[styles.dailyActivityDone, { color: tone.barFill }]}>완료</ThemedText>
+                          <ThemedText
+                            style={styles.dailyActivityLabel}
+                            lightColor={tone.ink}
+                            darkColor={tone.ink}
+                            numberOfLines={2}>
+                            {categoryReminderLabelKo(row.categoryKey)}
+                          </ThemedText>
                         </View>
-                        <ThemedText
-                          style={styles.dailyActivityLabel}
-                          lightColor={tone.muted}
-                          darkColor={tone.muted}
-                          numberOfLines={2}>
-                          {categoryReminderLabelKo(row.categoryKey)}
-                        </ThemedText>
-                      </View>
-                    ))}
+                      );
+                    })}
                   </ScrollView>
                 </>
               )}
@@ -571,9 +589,30 @@ export function DayPlanStatisticsPage() {
               <ThemedText style={styles.sectionTitle}>오늘의 성찰</ThemedText>
               <ThemedText style={styles.reflectionBody}>{reflectionText}</ThemedText>
               <View style={styles.reflectionTags}>
-                {reflectionTags.map((tag) => (
-                  <View key={tag} style={[styles.reflectionTag, { backgroundColor: tone.level0 }]}>
-                    <ThemedText style={styles.reflectionTagText} lightColor={tone.muted} darkColor={tone.muted}>
+                {reflectionTags.map((tag, index) => (
+                  <View
+                    key={tag}
+                    style={[
+                      styles.reflectionTag,
+                      {
+                        backgroundColor:
+                          index === 0 && todayCompletedCategories.length > 0
+                            ? categoryAccentColorPastel(todayCompletedCategories[0].categoryKey)
+                            : tone.level0,
+                      },
+                    ]}>
+                    <ThemedText
+                      style={styles.reflectionTagText}
+                      lightColor={
+                        index === 0 && todayCompletedCategories.length > 0
+                          ? activeIconColorByCategory(todayCompletedCategories[0].categoryKey)
+                          : tone.muted
+                      }
+                      darkColor={
+                        index === 0 && todayCompletedCategories.length > 0
+                          ? activeIconColorByCategory(todayCompletedCategories[0].categoryKey)
+                          : tone.muted
+                      }>
                       {tag}
                     </ThemedText>
                   </View>
@@ -608,6 +647,7 @@ export function DayPlanStatisticsPage() {
             historyFilterChips={historyFilterChips}
             filteredHistoryRows={filteredHistoryRows}
             formatDateKeyKo={formatDateKeyKo}
+            topCompletedCategoryKey={todayCompletedCategories[0]?.categoryKey ?? null}
           />
         ) : null}
 
@@ -799,23 +839,17 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingRight: 4,
   },
+  dailyActivityGroupLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: -0.1,
+    lineHeight: 14,
+    marginBottom: 4,
+  },
   dailyActivityCol: {
     width: 72,
     alignItems: 'center',
     gap: 8,
-  },
-  dailyActivityIconSlot: {
-    width: '100%',
-    minHeight: 96,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  dailyActivityDone: {
-    fontSize: 11,
-    fontWeight: '800',
-    lineHeight: 14,
-    letterSpacing: 0.2,
   },
   dailyActivityIconWrap: {
     width: 52,
