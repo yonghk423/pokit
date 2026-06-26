@@ -692,6 +692,11 @@ export function FixedRoutinePage() {
     setExpandedIds(new Set(sets.map((s) => s.id)));
   }, [sets]);
 
+  /** 항목 추가 모달이 열릴 때마다 카탈로그를 최신으로 갱신 */
+  useEffect(() => {
+    if (addItemModalOpen) reloadCatalog();
+  }, [addItemModalOpen, reloadCatalog]);
+
   const catalog = useMemo(() => {
     void catalogTick;
     return buildPriorityCatalogRows();
