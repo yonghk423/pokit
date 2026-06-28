@@ -19,7 +19,9 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
-import { activeIconColorByCategory, categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
+import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
+
+import { historyUiAccent, historyUiAccentPastel } from '../lib/historyBrandAccent';
 
 import {
   buildMonthRangeFromPrefix,
@@ -200,7 +202,7 @@ export function DayPlanStatisticsPage() {
       ink: isDark ? '#f5f5f5' : '#1f2937',
       level0: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
       barTrack: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
-      barFill: isDark ? 'rgba(255,255,255,0.78)' : 'rgba(0,0,0,0.72)',
+      barFill: isDark ? 'rgba(157, 176, 157, 0.88)' : historyUiAccent,
       highlightCard: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.72)',
       highlightCardBorder: isDark ? 'rgba(255,255,255,0.1)' : 'transparent',
       highlightFg: isDark ? '#f5f5f5' : '#FAFAFA',
@@ -354,9 +356,8 @@ export function DayPlanStatisticsPage() {
         ),
     [todayRow],
   );
-  const dailyHeroAccentColor = todayCompletedCategories[0]
-    ? activeIconColorByCategory(todayCompletedCategories[0].categoryKey)
-    : tone.barFill;
+  const dailyHeroAccentColor =
+    todayCompletedCategories.length > 0 ? historyUiAccent : tone.barFill;
   const todayTopCategoryLabel = todayCompletedCategories[0]
     ? categoryReminderLabelKo(todayCompletedCategories[0].categoryKey)
     : '핵심 플로우';
@@ -597,7 +598,7 @@ export function DayPlanStatisticsPage() {
                       {
                         backgroundColor:
                           index === 0 && todayCompletedCategories.length > 0
-                            ? categoryAccentColorPastel(todayCompletedCategories[0].categoryKey)
+                            ? historyUiAccentPastel
                             : tone.level0,
                       },
                     ]}>
@@ -605,12 +606,12 @@ export function DayPlanStatisticsPage() {
                       style={styles.reflectionTagText}
                       lightColor={
                         index === 0 && todayCompletedCategories.length > 0
-                          ? activeIconColorByCategory(todayCompletedCategories[0].categoryKey)
+                          ? historyUiAccent
                           : tone.muted
                       }
                       darkColor={
                         index === 0 && todayCompletedCategories.length > 0
-                          ? activeIconColorByCategory(todayCompletedCategories[0].categoryKey)
+                          ? historyUiAccent
                           : tone.muted
                       }>
                       {tag}

@@ -3,12 +3,9 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import { activeIconColorByCategory, categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
-
 import { buildHistoryInsights } from '../lib/historyInsights';
+import { historyUiAccent, historyUiAccentPastel } from '../lib/historyBrandAccent';
 import {
-  insightCatalogGroupColor,
-  insightCatalogGroupPastel,
   insightScopeColor,
   insightScopePastel,
 } from '../lib/insightAccentColors';
@@ -97,21 +94,6 @@ export function InsightsHistoryView({
     [axisScores],
   );
 
-  const heroAccentColor = useMemo(() => {
-    if (topCompletedCategoryKey) return activeIconColorByCategory(topCompletedCategoryKey);
-    if (strongAxis && strongAxis.percent > 0) return insightCatalogGroupColor(strongAxis.key);
-    return tone.barFill;
-  }, [strongAxis, tone.barFill, topCompletedCategoryKey]);
-  const heroAccentPastel = useMemo(
-    () =>
-      topCompletedCategoryKey
-        ? categoryAccentColorPastel(topCompletedCategoryKey)
-        : strongAxis && strongAxis.percent > 0
-          ? insightCatalogGroupPastel(strongAxis.key)
-          : tone.level0,
-    [strongAxis, tone.level0, topCompletedCategoryKey],
-  );
-
   const report = useMemo(
     () =>
       buildHistoryInsights({
@@ -142,6 +124,15 @@ export function InsightsHistoryView({
       weeklyCompletionRate,
       previousWeeklyCompletionRate,
     ],
+  );
+
+  const heroAccentColor = useMemo(() => {
+    if (report.hasData) return historyUiAccent;
+    return tone.barFill;
+  }, [report.hasData, tone.barFill]);
+  const heroAccentPastel = useMemo(
+    () => (report.hasData ? historyUiAccentPastel : tone.level0),
+    [report.hasData, tone.level0],
   );
 
   return (
@@ -310,7 +301,7 @@ export function InsightsHistoryView({
               </ThemedText>
             ) : (
               filteredHistoryRows.slice(0, 30).map((row) => {
-                const chipColor = row.categoryKey ? activeIconColorByCategory(row.categoryKey) : tone.ink;
+                const chipColor = row.categoryKey ? historyUiAccent : tone.ink;
                 return (
                   <View key={row.dateKey} style={[styles.feedRow, { borderTopColor: tone.border }]}>
                     <View style={styles.feedTop}>

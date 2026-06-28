@@ -51,7 +51,6 @@ import { getPickerCategoryLabel, PRIMARY } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
 import { buildPriorityCatalogRows, type PriorityCatalogRow } from '../lib/priorityCatalog';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
-import { RenameCustomGroupSheet } from './RenameCustomGroupSheet';
 
 if (
   Platform.OS === 'android' &&
@@ -72,7 +71,6 @@ type FlowCardProps = {
   isInTodayPlan: boolean;
   isCompleted: boolean;
   onToggleEnabled: (enabled: boolean) => void;
-  onRename: () => void;
   onDelete: () => void;
 };
 
@@ -88,7 +86,6 @@ function FlowItemCard({
   isInTodayPlan,
   isCompleted,
   onToggleEnabled,
-  onRename,
   onDelete,
 }: FlowCardProps) {
   const label = catalog?.label ?? getPickerCategoryLabel(item.categoryKey);
@@ -139,14 +136,7 @@ function FlowItemCard({
         styles.flowRow,
         { borderBottomColor: line, opacity: enabled ? 1 : 0.5 },
       ]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${label} 이름 변경`}
-        onPress={onRename}
-        style={({ pressed }) => [
-          styles.flowRowMain,
-          pressed && { opacity: 0.72 },
-        ]}>
+      <View style={styles.flowRowMain}>
         <View style={[styles.flowIconBox, { backgroundColor: iconBoxBg }]}>
           {shouldPulse && categoryKey === 'medicine' ? (
             <Animated.View style={{ opacity: pulse }}>
@@ -163,7 +153,7 @@ function FlowItemCard({
           numberOfLines={1}>
           {label}
         </ThemedText>
-      </Pressable>
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label} 삭제`}
@@ -357,10 +347,8 @@ type GroupAccordionProps = {
   onToggleExpand: () => void;
   onToggleActiveForToday: () => void;
   onApplyBlocked: () => void;
-  onRenameSet: () => void;
   onDeleteSet: () => void;
   onToggleItem: (categoryKey: string, enabled: boolean) => void;
-  onRenameItem: (categoryKey: string, currentLabel: string) => void;
   onDeleteItem: (categoryKey: string, label: string) => void;
   onOpenAddItem: () => void;
 };
@@ -384,10 +372,8 @@ function GroupAccordion({
   onToggleExpand,
   onToggleActiveForToday,
   onApplyBlocked,
-  onRenameSet,
   onDeleteSet,
   onToggleItem,
-  onRenameItem,
   onDeleteItem,
   onOpenAddItem,
 }: GroupAccordionProps) {
@@ -404,17 +390,6 @@ function GroupAccordion({
             numberOfLines={1}>
             {setItem.name}
           </ThemedText>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${setItem.name} 이름 변경`}
-            onPress={onRenameSet}
-            hitSlop={6}
-            style={({ pressed }) => [
-              styles.headerRenameBtn,
-              pressed && { opacity: 0.72 },
-            ]}>
-            <IconSymbol name="pencil" size={12} color={muted} />
-          </Pressable>
         </View>
         <Pressable
           accessibilityRole="button"
@@ -506,7 +481,6 @@ function GroupAccordion({
                   isInTodayPlan={isCategoryInTodayPlan(item.categoryKey)}
                   isCompleted={isCategoryCompleted(item.categoryKey)}
                   onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
-                  onRename={() => onRenameItem(item.categoryKey, itemLabel)}
                   onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
                 />
               );
@@ -544,14 +518,6 @@ export function FixedRoutinePage() {
   const [addItemSetId, setAddItemSetId] = useState<string | null>(null);
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
-  const [renameSetSheet, setRenameSetSheet] = useState<{ setId: string; label: string } | null>(
-    null,
-  );
-  const [renameItemSheet, setRenameItemSheet] = useState<{
-    setId: string;
-    categoryKey: string;
-    label: string;
-  } | null>(null);
   const targetSetIdRef = useRef<string | null>(null);
   const hasInitializedExpandedRef = useRef(false);
   const [nowTick, setNowTick] = useState(() => Date.now());
@@ -657,7 +623,6 @@ export function FixedRoutinePage() {
     addSet,
     toggleSetForToday,
     removeSet,
-    renameSet,
     addCategoryToSet,
     removeCategoryFromSet,
     setCategoryEnabledInSet,
@@ -669,7 +634,6 @@ export function FixedRoutinePage() {
       addSet: s.addSet,
       toggleSetForToday: s.toggleSetForToday,
       removeSet: s.removeSet,
-      renameSet: s.renameSet,
       addCategoryToSet: s.addCategoryToSet,
       removeCategoryFromSet: s.removeCategoryFromSet,
       setCategoryEnabledInSet: s.setCategoryEnabledInSet,
@@ -830,17 +794,9 @@ export function FixedRoutinePage() {
                 toggleSetForToday(setItem.id);
               }}
               onApplyBlocked={handleApplyBlocked}
-              onRenameSet={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setRenameSetSheet({ setId: setItem.id, label: setItem.name });
-              }}
               onDeleteSet={() => handleDeleteSet(setItem.id)}
               onToggleItem={(categoryKey, enabled) => {
                 setCategoryEnabledInSet(setItem.id, categoryKey, enabled);
-              }}
-              onRenameItem={(categoryKey, currentLabel) => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setRenameItemSheet({ setId: setItem.id, categoryKey, label: currentLabel });
               }}
               onDeleteItem={(categoryKey, itemLabel) => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -954,57 +910,6 @@ export function FixedRoutinePage() {
         surface={cardBg}
       />
 
-      <RenameCustomGroupSheet
-        visible={renameSetSheet != null}
-        onClose={() => setRenameSetSheet(null)}
-        initialLabel={renameSetSheet?.label ?? ''}
-        title="그룹 이름 바꾸기"
-        placeholder="그룹 이름"
-        onSave={(trimmedLabel) => {
-          if (!renameSetSheet) return;
-          renameSet(renameSetSheet.setId, trimmedLabel);
-          setRenameSetSheet(null);
-        }}
-        isDark={isDark}
-        ink={ink}
-        muted={muted}
-        surface={cardBg}
-      />
-
-      <RenameCustomGroupSheet
-        visible={renameItemSheet != null}
-        onClose={() => setRenameItemSheet(null)}
-        initialLabel={renameItemSheet?.label ?? ''}
-        title="항목 이름 바꾸기"
-        placeholder="항목 이름"
-        onSave={(trimmedLabel) => {
-          if (!renameItemSheet) return;
-          const { categoryKey } = renameItemSheet;
-          if (isCustomFlowCategoryKey(categoryKey)) {
-            const existing = loadGoalDetailCategoryConfig(categoryKey);
-            const base =
-              existing && typeof existing === 'object' ? (existing as Record<string, unknown>) : {};
-            saveGoalDetailCategoryConfig(categoryKey, {
-              ...base,
-              displayName: trimmedLabel,
-            });
-          } else {
-            const existing = loadGoalDetailCategoryConfig(categoryKey);
-            const base =
-              existing && typeof existing === 'object' ? (existing as Record<string, unknown>) : {};
-            saveGoalDetailCategoryConfig(categoryKey, {
-              ...base,
-              displayName: trimmedLabel,
-            });
-          }
-          reloadCatalog();
-          setRenameItemSheet(null);
-        }}
-        isDark={isDark}
-        ink={ink}
-        muted={muted}
-        surface={cardBg}
-      />
     </ThemedView>
   );
 }
@@ -1035,13 +940,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-  },
-  headerRenameBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
   },
   accordionTitle: {
     fontSize: 14,

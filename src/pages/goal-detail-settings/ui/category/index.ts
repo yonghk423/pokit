@@ -84,6 +84,12 @@ const CHECKLIST_STYLE_CATEGORY_MODULES: Record<
     getInitialDataConfig: getInitialOtherDataConfig,
     Settings: OtherSettings,
   },
+  deepwork: {
+    key: 'deepwork',
+    titleKo: '딥 워크',
+    getInitialDataConfig: getInitialOtherDataConfig,
+    Settings: OtherSettings,
+  },
 };
 
 const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {

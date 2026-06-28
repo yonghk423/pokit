@@ -1,9 +1,10 @@
+import { PokitIconPalette } from '@shared/config/theme';
 import { toPastelColor } from '@shared/lib/ui/toPastelColor';
 
 export function insightScopeColor(scope: 'daily' | 'weekly' | 'monthly'): string {
-  if (scope === 'daily') return '#22c55e';
-  if (scope === 'weekly') return '#6366f1';
-  return '#f97316';
+  if (scope === 'daily') return PokitIconPalette.sage;
+  if (scope === 'weekly') return PokitIconPalette.teal;
+  return PokitIconPalette.tealMuted;
 }
 
 export function insightScopePastel(scope: 'daily' | 'weekly' | 'monthly'): string {
@@ -11,10 +12,10 @@ export function insightScopePastel(scope: 'daily' | 'weekly' | 'monthly'): strin
 }
 
 export function insightCatalogGroupColor(groupKey: string): string {
-  if (groupKey === 'health') return '#22c55e';
-  if (groupKey === 'productivity') return '#2563eb';
-  if (groupKey.startsWith('customGroup:')) return '#a855f7';
-  return '#64748b';
+  if (groupKey === 'health') return PokitIconPalette.sage;
+  if (groupKey === 'productivity') return PokitIconPalette.teal;
+  if (groupKey.startsWith('customGroup:')) return PokitIconPalette.sageMuted;
+  return PokitIconPalette.tealMuted;
 }
 
 export function insightCatalogGroupPastel(groupKey: string): string {

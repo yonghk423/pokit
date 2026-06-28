@@ -13,6 +13,7 @@ export const GOAL_DETAIL_CHECKLIST_DERIVED_CATEGORY_KEYS = [
   'language',
   'creative',
   'inbox',
+  'deepwork',
 ] as const;
 
 export type GoalDetailChecklistDerivedCategoryKey =

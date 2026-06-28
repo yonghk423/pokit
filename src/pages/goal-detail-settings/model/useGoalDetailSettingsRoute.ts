@@ -9,6 +9,7 @@ type Params = {
   categoryKey?: string;
   startBlockId?: string;
   blockIds?: string;
+  source?: string;
 };
 
 function parseBlockIds(raw: string | undefined): string[] {
@@ -48,6 +49,8 @@ export function useGoalDetailSettingsRoute(): {
   startBlockId: string | undefined;
   /** 목표 상세를 한 번에 편집할 블록 id 목록 */
   blockIds: string[];
+  /** 이 페이지를 연 출처 ('today' = 오늘 루틴 탭) */
+  source: string | undefined;
 } {
   const params = useLocalSearchParams<Params>();
   const rhythmTitle =
@@ -58,8 +61,9 @@ export function useGoalDetailSettingsRoute(): {
 
   const startBlockId = pickParam(params.startBlockId);
   const blockIds = parseBlockIds(pickParam(params.blockIds));
+  const source = pickParam(params.source);
 
-  return { rhythmTitle, categoryKey, startBlockId, blockIds };
+  return { rhythmTitle, categoryKey, startBlockId, blockIds, source };
 }
 
 function isGoalDetailCategoryKey(v: string): v is GoalDetailCategoryKey {

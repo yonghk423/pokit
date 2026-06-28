@@ -318,7 +318,7 @@ export function DayPlanPage() {
     (categoryKey: string) => {
       router.push({
         pathname: '/goal-detail-settings',
-        params: { categoryKey },
+        params: { categoryKey, source: 'today' },
       });
     },
     [router],

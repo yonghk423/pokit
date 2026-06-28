@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   appendPriorityCategoryKeysIfMissing,
+  filterDayPlanFlowBlocks,
   formatBlockTimeRange,
   getInitialOtherDataConfig,
   isCustomFlowCategoryKey,
@@ -17,6 +18,7 @@ import {
   resolveCategoryKeyFromLabel,
   useDayPlanDraftStore,
   useDayPlanRuntimeStore,
+  categoryReminderLabelKo,
   useDayPlanStore,
   type DayPlanBlock,
 } from '@entities/day-plan';
@@ -148,7 +150,7 @@ export function GoalDetailSettingsPage() {
   /** 목표 상세는 항상 라이트(화이트) 기준 UI */
   const c = useMemo(() => palette(false), []);
 
-  const { categoryKey, startBlockId, blockIds } = useGoalDetailSettingsRoute();
+  const { categoryKey, startBlockId, blockIds, source } = useGoalDetailSettingsRoute();
 
   useEffect(() => {
     useDayPlanStore.getState().hydrate();
@@ -156,6 +158,56 @@ export function GoalDetailSettingsPage() {
     registerOtherCategoryResolverFromStorage();
   }, []);
   const blocks = useDayPlanStore((s) => s.blocks);
+  const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
+  const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
+  const isFocusStarted = useDayPlanDraftStore((s) => s.isFocusStarted);
+  const priorityCategoryOrder = useDayPlanDraftStore((s) => s.priorityCategoryOrder);
+  const completedFocusCategoryKeys = useDayPlanDraftStore((s) => s.completedFocusCategoryKeys);
+  const planCompletionDismissedKeys = useDayPlanDraftStore((s) => s.planCompletionDismissedKeys);
+
+  const completedCategoryKeysFromPlan = useMemo(() => {
+    const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
+    const doneCategoryKeys = new Set<string>();
+    const flowBlocks = filterDayPlanFlowBlocks(blocks);
+    flowBlocks.forEach((block) => {
+      if (!doneBlockIds.has(block.id)) return;
+      const key =
+        resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category ?? '');
+      if (key) doneCategoryKeys.add(key);
+    });
+    return [...doneCategoryKeys];
+  }, [blocks, completedBlockIds, skippedBlockIds]);
+
+  const isCategoryRunning = useCallback(
+    (key: string) => {
+      if (!isFocusStarted) return false;
+      if (!priorityCategoryOrder.includes(key)) return false;
+      if (completedFocusCategoryKeys.includes(key)) return false;
+      if (planCompletionDismissedKeys.includes(key)) return false;
+      if (completedCategoryKeysFromPlan.includes(key)) return false;
+      return true;
+    },
+    [
+      completedCategoryKeysFromPlan,
+      completedFocusCategoryKeys,
+      isFocusStarted,
+      planCompletionDismissedKeys,
+      priorityCategoryOrder,
+    ],
+  );
+
+  const resolveRenameAccess = useCallback(
+    (key: string) => {
+      if (source === 'today') {
+        return { allowRename: false, renameLockedReason: 'today' as const };
+      }
+      if (isCategoryRunning(key)) {
+        return { allowRename: false, renameLockedReason: 'running' as const };
+      }
+      return { allowRename: true, renameLockedReason: null as const };
+    },
+    [isCategoryRunning, source],
+  );
 
   const targets = useMemo<EditingTarget[]>(() => {
     const byId = new Map(blocks.map((b) => [b.id, b]));
@@ -369,10 +421,12 @@ export function GoalDetailSettingsPage() {
   }, [blocks, dataByBlockId, router, sortedTargets, targets]);
 
   const previewTitleForBlock = useCallback(
-    (blockId: string) => {
+    (blockId: string, fallbackCategoryKey?: string) => {
       const b = blocks.find((x) => x.id === blockId);
       const firstLine = b?.title?.trim().split('\n')[0]?.trim() ?? '';
-      return firstLine || '플로우';
+      if (firstLine) return firstLine;
+      if (fallbackCategoryKey) return categoryReminderLabelKo(fallbackCategoryKey);
+      return '';
     },
     [blocks],
   );
@@ -476,7 +530,7 @@ export function GoalDetailSettingsPage() {
                 </ThemedText>
                 <View style={styles.startPickerList}>
                   {sortedTargets.map((t) => {
-                    const title = previewTitleForBlock(t.blockId);
+                    const title = previewTitleForBlock(t.blockId, t.categoryKey);
                     const selected = liveActivityChecklistFocusBlockId === t.blockId;
                     return (
                       <Pressable
@@ -556,7 +610,8 @@ export function GoalDetailSettingsPage() {
               const module = getGoalDetailCategoryModule(t.categoryKey);
               const Settings = module.Settings;
               const dataConfig = dataByBlockId[t.blockId] ?? module.getInitialDataConfig?.() ?? {};
-              const previewTitle = previewTitleForBlock(t.blockId);
+              const previewTitle = previewTitleForBlock(t.blockId, t.categoryKey);
+              const { allowRename, renameLockedReason } = resolveRenameAccess(t.categoryKey);
               return (
                 <View key={`${t.blockId}-${idx}`} style={styles.blockSection}>
                   <Settings
@@ -565,6 +620,8 @@ export function GoalDetailSettingsPage() {
                     dataConfig={dataConfig}
                     onChangeDataConfig={(next) => handleChangeDataConfig(t, next)}
                     onDeleteCategory={() => handleDeleteCustomFlow(t.categoryKey)}
+                    allowRename={allowRename}
+                    renameLockedReason={renameLockedReason}
                   />
                 </View>
               );

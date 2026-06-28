@@ -14,5 +14,9 @@ export type GoalDetailCategoryModule = {
     /** `customFlow:` 전용 — 카탈로그 상위 묶음 */
     customFlowGroupKey?: string;
     onChangeCustomFlowGroupKey?: (groupKey: string) => void;
+    /** 루틴 이름 편집 허용 여부 */
+    allowRename?: boolean;
+    /** 이름 편집이 막힌 이유 — UI 안내용 */
+    renameLockedReason?: 'running' | 'today' | null;
   }>;
 };

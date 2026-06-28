@@ -6,6 +6,7 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { RoutineTitleField } from '../../lib/RoutineTitleField';
 import {
   getInitialOtherDataConfig,
   normalizeOtherDetailConfig,
@@ -14,40 +15,53 @@ import {
 
 import { BODY_HABIT_CHECKLIST_COPY, type BodyHabitChecklistVariant } from '../lib/bodyHabitCopy';
 
+type SharedSettingsProps = {
+  rhythmTitle: string;
+  dataConfig: unknown;
+  onChangeDataConfig: (next: unknown) => void;
+  allowRename?: boolean;
+  renameLockedReason?: 'running' | 'today' | null;
+};
+
 export function BodyHabitChecklistSettings({
   variant,
   dataConfig,
   onChangeDataConfig,
-}: {
+  allowRename = true,
+  renameLockedReason = null,
+}: SharedSettingsProps & {
   variant: BodyHabitChecklistVariant;
-  rhythmTitle: string;
-  dataConfig: unknown;
-  onChangeDataConfig: (next: unknown) => void;
 }) {
   const copy = BODY_HABIT_CHECKLIST_COPY[variant];
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
   const initial = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
 
+  const [displayName, setDisplayName] = useState(initial.displayName);
   const [draftTask, setDraftTask] = useState('');
   const [checklist, setChecklist] = useState(initial.checklist);
   const lastRef = useRef<string | null>(null);
+  const isSyncingFromPropsRef = useRef(false);
 
   useEffect(() => {
-    setChecklist(initial.checklist);
-  }, [dataConfig]); // eslint-disable-line react-hooks/exhaustive-deps
+    const next = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
+    isSyncingFromPropsRef.current = true;
+    setDisplayName(next.displayName);
+    setChecklist(next.checklist);
+    lastRef.current = JSON.stringify(next);
+  }, [dataConfig]);
 
   useEffect(() => {
-    const parent = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
-    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({
-      displayName: parent.displayName,
-      checklist,
-    });
-    const s = JSON.stringify(payload);
-    if (lastRef.current === s) return;
-    lastRef.current = s;
+    if (isSyncingFromPropsRef.current) {
+      isSyncingFromPropsRef.current = false;
+      return;
+    }
+    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({ displayName, checklist });
+    const serialized = JSON.stringify(payload);
+    if (lastRef.current === serialized) return;
+    lastRef.current = serialized;
     onChangeDataConfig(payload);
-  }, [checklist, dataConfig, onChangeDataConfig]);
+  }, [displayName, checklist, onChangeDataConfig]);
 
   const addTask = () => {
     const text = draftTask.trim();
@@ -83,9 +97,15 @@ export function BodyHabitChecklistSettings({
 
   return (
     <View style={styles.shell}>
-      <View style={styles.listHeader}>
-        <ThemedText style={[styles.mainTitle, { color: c.onSurface }]}>{copy.listTitle}</ThemedText>
-      </View>
+      <RoutineTitleField
+        value={displayName}
+        onChangeValue={setDisplayName}
+        fallback={copy.listTitle}
+        allowRename={allowRename}
+        renameLockedReason={renameLockedReason}
+        palette={c}
+        size="compact"
+      />
 
       <View style={[styles.toolbar, { borderTopColor: c.onSurface, borderBottomColor: c.outline }]}>
         <Pressable style={styles.toolbarBtn} onPress={onShare}>
@@ -152,34 +172,20 @@ export function BodyHabitChecklistSettings({
   );
 }
 
-export function StretchingSettings(props: {
-  rhythmTitle: string;
-  dataConfig: unknown;
-  onChangeDataConfig: (next: unknown) => void;
-}) {
+export function StretchingSettings(props: SharedSettingsProps) {
   return <BodyHabitChecklistSettings variant="stretching" {...props} />;
 }
 
-export function StraightenBackSettings(props: {
-  rhythmTitle: string;
-  dataConfig: unknown;
-  onChangeDataConfig: (next: unknown) => void;
-}) {
+export function StraightenBackSettings(props: SharedSettingsProps) {
   return <BodyHabitChecklistSettings variant="straightenBack" {...props} />;
 }
 
-export function NeckPostureSettings(props: {
-  rhythmTitle: string;
-  dataConfig: unknown;
-  onChangeDataConfig: (next: unknown) => void;
-}) {
+export function NeckPostureSettings(props: SharedSettingsProps) {
   return <BodyHabitChecklistSettings variant="neckPosture" {...props} />;
 }
 
 const styles = StyleSheet.create({
   shell: { gap: 18, paddingVertical: 6 },
-  listHeader: { gap: 6, paddingTop: 2 },
-  mainTitle: { fontSize: 22, lineHeight: 28, fontWeight: '800', letterSpacing: -0.4 },
   toolbar: {
     borderTopWidth: 1,
     borderBottomWidth: StyleSheet.hairlineWidth,

@@ -9,7 +9,9 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import { categoryAccentColorPastel, activeIconColorByCategory } from '@widgets/day-plan-priority-order';
+import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
+
+import { historyUiRankedPastel, historyUiAccent } from '../lib/historyBrandAccent';
 import { HorizonDocumentReadView } from '@shared/ui/horizon-document-read-view/HorizonDocumentReadView';
 
 import {
@@ -193,12 +195,12 @@ function buildTopCategories(
   }
   const ranked = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
   const max = Math.max(1, ranked[0]?.[1] ?? 0);
-  return ranked.map(([categoryKey, count]) => ({
+  return ranked.map(([categoryKey, count], index) => ({
     categoryKey,
     label: categoryReminderLabelKo(categoryKey),
     count,
     percent: Math.max(8, Math.round((count / max) * 100)),
-    color: categoryAccentColorPastel(categoryKey),
+    color: historyUiRankedPastel(index),
   }));
 }
 

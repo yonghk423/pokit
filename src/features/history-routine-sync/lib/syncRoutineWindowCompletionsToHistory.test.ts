@@ -76,4 +76,20 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
     expect(row?.categoryCompletions.writing).toBe(1);
     expect(row?.completedFlowCount).toBe(2);
   });
+
+  it('removes cancelled routine completions from history on resync', () => {
+    syncRoutineWindowCompletionsToHistory('2025-06-14');
+
+    useDayPlanDraftStore.setState({
+      completedFocusCategoryKeys: ['reading'],
+      routineHistoryPendingByDate: {},
+    });
+
+    syncRoutineWindowCompletionsToHistory('2025-06-14');
+
+    const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
+    expect(row?.categoryCompletions.reading).toBe(1);
+    expect(row?.categoryCompletions.writing).toBeUndefined();
+    expect(row?.completedFlowCount).toBe(1);
+  });
 });

@@ -9,6 +9,7 @@ describe('goalDetailChecklistCategoryKeys', () => {
     expect(isGoalDetailChecklistDerivedCategoryKey('study')).toBe(true);
     expect(isGoalDetailChecklistDerivedCategoryKey('reading')).toBe(false);
     expect(GOAL_DETAIL_CHECKLIST_DERIVED_CATEGORY_KEYS).toContain('inbox');
+    expect(isGoalDetailChecklistDerivedCategoryKey('deepwork')).toBe(true);
   });
 
   it('treats other and derived as checklist style', () => {

@@ -10,6 +10,8 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
+import { historyUiAccent } from '../lib/historyBrandAccent';
+
 import { buildWeeklyCoreGoals } from '../lib/weeklyCoreGoals';
 import {
   buildWeeklyAxisScores,
@@ -136,7 +138,8 @@ export function WeeklyHistoryView({
         ) : (
           coreGoals.map((goal) => {
             const progress = Math.min(100, Math.round((goal.completed / Math.max(1, goal.target)) * 100));
-            const categoryColor = activeIconColorByCategory(goal.categoryKey);
+            const iconColor = activeIconColorByCategory(goal.categoryKey);
+            const chartAccent = historyUiAccent;
             return (
               <View
                 key={goal.categoryKey}
@@ -144,7 +147,7 @@ export function WeeklyHistoryView({
                 <View style={styles.goalTop}>
                   <View style={styles.goalLeft}>
                     <View style={[styles.goalIconWrap, { backgroundColor: tone.level0 }]}>
-                      <IconSymbol name={goal.icon} size={20} color={categoryColor} />
+                      <IconSymbol name={goal.icon} size={20} color={iconColor} />
                     </View>
                     <View style={styles.goalMeta}>
                       <ThemedText style={styles.goalName}>{goal.title}</ThemedText>
@@ -153,12 +156,12 @@ export function WeeklyHistoryView({
                           <Path
                             d={goal.sparklinePath}
                             fill="none"
-                            stroke={categoryColor}
+                            stroke={chartAccent}
                             strokeWidth={1.5}
                             strokeLinecap="round"
                           />
                         </Svg>
-                        <ThemedText style={[styles.sparkDelta, { color: categoryColor }]}>{goal.deltaLabel}</ThemedText>
+                        <ThemedText style={[styles.sparkDelta, { color: chartAccent }]}>{goal.deltaLabel}</ThemedText>
                       </View>
                     </View>
                   </View>
@@ -170,7 +173,7 @@ export function WeeklyHistoryView({
                   </View>
                 </View>
                 <View style={[styles.goalTrack, { backgroundColor: tone.barTrack }]}>
-                  <View style={[styles.goalFill, { width: `${progress}%`, backgroundColor: categoryColor }]} />
+                  <View style={[styles.goalFill, { width: `${progress}%`, backgroundColor: chartAccent }]} />
                 </View>
               </View>
             );
