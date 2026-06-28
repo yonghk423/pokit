@@ -157,5 +157,6 @@ export type {
   MedicineReminderScheduledRow, PriorityDayStartAlarmPersisted, WaterReminderScheduledRow
 } from './settingsStorage';
 export { StorageKeys } from './storageKeys';
-export { syncDayPlanToWidget } from './widgetDayPlanSync';
+export { syncDayPlanToWidget, syncWidgetTimelineFromStorage } from './widgetDayPlanSync';
+export type { WidgetDayPlanPayload } from './widgetDayPlanSync';
 

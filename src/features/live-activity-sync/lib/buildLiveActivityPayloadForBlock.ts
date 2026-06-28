@@ -1,4 +1,3 @@
-import type { DayPlanBlock } from '@entities/day-plan';
 import {
   filterDayPlanFlowBlocks,
   formatMinuteOfDayKo,
@@ -17,7 +16,6 @@ import type {
   PokitLiveActivityChecklistRow,
   PokitLiveActivityPayload,
   PokitLiveActivityStatus,
-  PriorityLiveActivityContent,
   QuickMemoLiveActivityContent,
 } from '../model/types';
 
@@ -170,116 +168,6 @@ function quickMemoStatusLabel(status: PokitLiveActivityStatus): string {
   }
 }
 
-function slotMinuteForTaskIndex(
-  startMinutes: number,
-  endMinutes: number,
-  taskIndex: number,
-  totalTasks: number,
-  endsNextCalendarDay?: boolean,
-): number {
-  if (totalTasks <= 1) return startMinutes;
-  const span = endsNextCalendarDay
-    ? 24 * 60 - startMinutes + endMinutes
-    : endMinutes - startMinutes;
-  return startMinutes + Math.round((span * taskIndex) / (totalTasks - 1));
-}
-
-function blockElapsed01(input: {
-  nowMs: number;
-  startAtMs: number;
-  endAtMs: number;
-  status: PokitLiveActivityStatus;
-  totalSeconds: number;
-  pausedRemainingSeconds: number | null | undefined;
-}): number {
-  const { nowMs, startAtMs, endAtMs, status, totalSeconds, pausedRemainingSeconds } = input;
-  if (status === 'finished' || nowMs >= endAtMs) return 1;
-  if (
-    status === 'paused' &&
-    pausedRemainingSeconds != null &&
-    totalSeconds > 0
-  ) {
-    return Math.min(1, Math.max(0, (totalSeconds - pausedRemainingSeconds) / totalSeconds));
-  }
-  if (nowMs <= startAtMs) return 0;
-  const span = endAtMs - startAtMs;
-  if (span <= 0) return 1;
-  return Math.min(1, Math.max(0, (nowMs - startAtMs) / span));
-}
-
-function priorityActiveTaskIndex(
-  status: PokitLiveActivityStatus,
-  taskCount: number,
-  elapsed01: number,
-): number {
-  if (taskCount <= 0) return 0;
-  if (status === 'standby') return 0;
-  if (status === 'finished') return taskCount - 1;
-  const idx = Math.floor(elapsed01 * taskCount);
-  return Math.min(taskCount - 1, Math.max(0, idx));
-}
-
-function buildPriorityLiveContent(
-  block: DayPlanBlock,
-  status: PokitLiveActivityStatus,
-  timing: { startAtMs: number; endAtMs: number },
-  pausedRemainingSeconds: number | null,
-  totalSec: number,
-): PriorityLiveActivityContent | null {
-  const lines = parseNumberedFlowLines(block.title);
-  if (lines.length < 2) return null;
-  const nowMs = Date.now();
-  const pausedForElapsed = status === 'paused' ? pausedRemainingSeconds : null;
-  const elapsed01 = blockElapsed01({
-    nowMs,
-    startAtMs: timing.startAtMs,
-    endAtMs: timing.endAtMs,
-    status,
-    totalSeconds: totalSec,
-    pausedRemainingSeconds: pausedForElapsed,
-  });
-  const activeIdx = priorityActiveTaskIndex(status, lines.length, elapsed01);
-  const activeTitle = lines[activeIdx] ?? '플로우';
-  const upcoming = lines.slice(activeIdx + 1).map((t, j) => {
-    const slotIdx = activeIdx + 1 + j;
-    const minute = slotMinuteForTaskIndex(
-      block.startMinutes,
-      block.endMinutes,
-      slotIdx,
-      lines.length,
-      block.endsNextCalendarDay,
-    );
-    return {
-      order: activeIdx + 2 + j,
-      title: t,
-      timeLabel: formatChecklistTime(minute),
-    };
-  });
-  const listRows = lines.map((title, idx) => {
-    const minute = slotMinuteForTaskIndex(
-      block.startMinutes,
-      block.endMinutes,
-      idx,
-      lines.length,
-      block.endsNextCalendarDay,
-    );
-    return {
-      order: idx + 1,
-      title,
-      timeLabel: formatChecklistTime(minute),
-    };
-  });
-  return {
-    windowLabel: formatBlockTimeRange(block),
-    activeTitle,
-    activeOrder: activeIdx + 1,
-    totalTasks: lines.length,
-    progress01: elapsed01,
-    upcoming,
-    listRows,
-  };
-}
-
 /**
  * 일정·타임라인 기준 Live Activity 페이로드 조립 (세션 화면의 일시정지는 별도).
  */
@@ -317,6 +205,13 @@ export function buildLiveActivityPayloadForBlock(input: {
   const isQuickMemoBlock =
     block.blockOrigin === 'quickMemo' && numberedLines.length >= 1;
 
+  if (
+    !isQuickMemoBlock &&
+    (block.blockOrigin === 'prioritySession' || isPriorityCompoundBlockTitle(block.title))
+  ) {
+    return null;
+  }
+
   const totalSec = isQuickMemoBlock ? 0 : Math.round(blockDurationSec(block));
 
   const startsAtIso =
@@ -345,23 +240,8 @@ export function buildLiveActivityPayloadForBlock(input: {
       }
     : null;
 
-  const priorityLive =
-    !isQuickMemoBlock &&
-    categoryKey !== 'reading' &&
-    isPriorityCompoundBlockTitle(block.title)
-      ? buildPriorityLiveContent(
-          block,
-          status,
-          timing,
-          status === 'paused' ? pausedRemainingSeconds : null,
-          totalSec,
-        )
-      : null;
-
-  const planMode =
-    quickMemoLive != null ? 'quickMemo' : priorityLive != null ? 'priority' : 'time';
-  const readingForLa =
-    planMode === 'priority' || planMode === 'quickMemo' ? null : readingDataConfig;
+  const planMode = quickMemoLive != null ? 'quickMemo' : 'time';
+  const readingForLa = planMode === 'quickMemo' ? null : readingDataConfig;
 
   return {
     blockId: block.id,
@@ -382,7 +262,7 @@ export function buildLiveActivityPayloadForBlock(input: {
     checklistSummaryLine1: checklist.checklistSummaryLine1,
     checklistSummaryLine2: checklist.checklistSummaryLine2,
     planMode,
-    priorityLive,
+    priorityLive: null,
     quickMemoLive,
   };
 }

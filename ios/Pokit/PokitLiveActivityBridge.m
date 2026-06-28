@@ -9,4 +9,8 @@ RCT_EXTERN_METHOD(endActivityByBlockId:(NSString *)blockId)
 
 RCT_EXTERN_METHOD(upsertAndSuspend:(NSString *)payloadJson)
 
+RCT_EXTERN_METHOD(endAndSuspend)
+
+RCT_EXTERN_METHOD(suspendApp)
+
 @end

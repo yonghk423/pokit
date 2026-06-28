@@ -22,6 +22,8 @@
 		B2C3D4A4D4E5F60011223344 /* PokitWidgetSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A5D4E5F60011223344 /* PokitWidgetSync.swift */; };
 		B2C3D4A6D4E5F60011223344 /* PokitWidgetSyncBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A7D4E5F60011223344 /* PokitWidgetSyncBridge.m */; };
 		B2C3D4A8D4E5F60011223344 /* DayPlanLockWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4A9D4E5F60011223344 /* DayPlanLockWidget.swift */; };
+		B2C3D4B0D4E5F60011223344 /* DayPlanWidgetSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4B1D4E5F60011223344 /* DayPlanWidgetSupport.swift */; };
+		B2C3D4B2D4E5F60011223344 /* DayPlanHomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4B3D4E5F60011223344 /* DayPlanHomeWidget.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		D73C07F3CB831ED61BE484C7 /* libPods-Pokit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BD13F38BBCD4B0A6A5254B82 /* libPods-Pokit.a */; };
 		E1F2A3B4D4E5F60011223344 /* PriorityModeLiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B5D4E5F60011223344 /* PriorityModeLiveActivityView.swift */; };
@@ -70,6 +72,8 @@
 		B2C3D4A5D4E5F60011223344 /* PokitWidgetSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pokit/PokitWidgetSync.swift; sourceTree = "<group>"; };
 		B2C3D4A7D4E5F60011223344 /* PokitWidgetSyncBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Pokit/PokitWidgetSyncBridge.m; sourceTree = "<group>"; };
 		B2C3D4A9D4E5F60011223344 /* DayPlanLockWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanLockWidget.swift; sourceTree = "<group>"; };
+		B2C3D4B1D4E5F60011223344 /* DayPlanWidgetSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanWidgetSupport.swift; sourceTree = "<group>"; };
+		B2C3D4B3D4E5F60011223344 /* DayPlanHomeWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanHomeWidget.swift; sourceTree = "<group>"; };
 		B2C3D4AAD4E5F60011223344 /* PokitLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PokitLiveActivity.entitlements; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		BD13F38BBCD4B0A6A5254B82 /* libPods-Pokit.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Pokit.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -176,6 +180,8 @@
 				E1F2A3B5D4E5F60011223344 /* PriorityModeLiveActivityView.swift */,
 				F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */,
 				B2C3D4A9D4E5F60011223344 /* DayPlanLockWidget.swift */,
+				B2C3D4B3D4E5F60011223344 /* DayPlanHomeWidget.swift */,
+				B2C3D4B1D4E5F60011223344 /* DayPlanWidgetSupport.swift */,
 				A1B2C313D4E5F60011223344 /* Info.plist */,
 				B2C3D4AAD4E5F60011223344 /* PokitLiveActivity.entitlements */,
 			);
@@ -475,6 +481,8 @@
 				E1F2A3B4D4E5F60011223344 /* PriorityModeLiveActivityView.swift in Sources */,
 				F1E2D3C4D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift in Sources */,
 				B2C3D4A8D4E5F60011223344 /* DayPlanLockWidget.swift in Sources */,
+				B2C3D4B0D4E5F60011223344 /* DayPlanWidgetSupport.swift in Sources */,
+				B2C3D4B2D4E5F60011223344 /* DayPlanHomeWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

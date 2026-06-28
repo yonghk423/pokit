@@ -10,5 +10,6 @@ class PokitWidgetSync: NSObject {
     ud.set(json, forKey: PokitAppGroup.dayPlanJsonKey)
     ud.synchronize()
     WidgetCenter.shared.reloadTimelines(ofKind: "PokitDayPlanWidget")
+    WidgetCenter.shared.reloadTimelines(ofKind: "PokitDayPlanHomeWidget")
   }
 }

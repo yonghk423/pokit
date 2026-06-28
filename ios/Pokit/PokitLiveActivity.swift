@@ -247,4 +247,32 @@ final class PokitLiveActivity: NSObject {
       }
     }
   }
+
+  /// 잠금화면 Live Activity를 모두 종료한 뒤 앱을 백그라운드로 보낸다(빠른 메모 삭제 저장).
+  @objc(endAndSuspend)
+  func endAndSuspend() {
+    guard #available(iOS 16.1, *) else {
+      Self.suspendApplication()
+      return
+    }
+
+    Task {
+      await PokitLiveActivityCoordinator.shared.endAllActivities()
+      await MainActor.run {
+        Self.suspendApplication()
+      }
+    }
+  }
+
+  /// 앱을 백그라운드(잠금화면)로 보낸다.
+  @objc(suspendApp)
+  func suspendApp() {
+    Self.suspendApplication()
+  }
+
+  private static func suspendApplication() {
+    DispatchQueue.main.async {
+      UIApplication.shared.perform(NSSelectorFromString("suspend"))
+    }
+  }
 }

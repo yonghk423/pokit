@@ -1,6 +1,7 @@
 jest.mock('@shared/lib/storage', () => ({
   loadDayPlanDraft: jest.fn(),
   saveDayPlanDraft: jest.fn(),
+  syncWidgetTimelineFromStorage: jest.fn(),
 }));
 
 jest.mock('../lib/localDateKey', () => ({

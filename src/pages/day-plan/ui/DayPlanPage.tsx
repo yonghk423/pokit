@@ -8,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,8 +34,10 @@ import {
 } from '@features/day-plan-notifications';
 import {
   buildLiveActivityPayloadForBlock,
+  endLiveActivityAndDismiss,
   endPokitLiveActivity,
   reconcileLiveActivityFromPlan,
+  suspendPokitApp,
   upsertLiveActivityAndDismiss,
   upsertPokitLiveActivity,
 } from '@features/live-activity-sync';
@@ -366,13 +367,23 @@ export function DayPlanPage() {
         .split(/\r?\n/)
         .map((l) => l.trim())
         .filter((t) => t.length > 0);
-      const memoLines = quickMemos
-        .filter((m) => !m.isDone)
-        .map((m) => m.text.trim())
-        .filter((t) => t.length > 0);
-      const lines = draftLines.length > 0 ? draftLines : memoLines;
-      if (lines.length === 0) {
-        Alert.alert('메모 필요', '잠금화면에 표시할 메모를 하나 이상 입력해 주세요.');
+      if (draftLines.length === 0) {
+        const planState = useDayPlanStore.getState();
+        for (const block of [...planState.blocks].filter((b) => b.blockOrigin === 'quickMemo')) {
+          planState.removeBlock(block.id);
+        }
+        for (const memo of [...planState.quickMemos]) {
+          planState.removeQuickMemo(memo.id);
+        }
+        setQuickMemoDraft('');
+        syncScheduledNotifications();
+        reconcileLiveActivityFromPlan();
+        void (async () => {
+          const dismissed = await endLiveActivityAndDismiss();
+          if (!dismissed) {
+            await suspendPokitApp();
+          }
+        })();
         return;
       }
 
@@ -384,7 +395,7 @@ export function DayPlanPage() {
         return;
       }
 
-      const blockTitle = lines.join('\n');
+      const blockTitle = draftLines.join('\n');
       const result = addBlock({
         title: blockTitle,
         startMinutes: ps,
@@ -491,14 +502,7 @@ export function DayPlanPage() {
       }
 
       syncScheduledNotifications();
-      reconcileLiveActivityFromPlan();
-      const payload = buildLiveActivityPayloadForBlock({
-        blockId: result.blockId,
-        status: 'active',
-      });
-      if (payload) {
-        void upsertPokitLiveActivity(payload);
-      }
+      endFocusedLiveActivity();
       setIsFocusStarted(true);
       return;
     }
@@ -506,6 +510,12 @@ export function DayPlanPage() {
 
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
+
+  const handleQuickMemoSavePress = useCallback(() => {
+    quickMemoInputRef.current?.blur();
+    Keyboard.dismiss();
+    onSaveRef.current();
+  }, []);
 
   /**
    * 우선순위 모드: 일정 블록·Live Activity는 **「오늘 루틴 시작」FAB**에서만 시작한다.
@@ -721,15 +731,14 @@ export function DayPlanPage() {
                 },
               ]}
               showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
+              keyboardShouldPersistTaps={planMode === 'quickMemo' ? 'always' : 'handled'}
               keyboardDismissMode="none"
               onScrollBeginDrag={planMode === 'quickMemo' ? onQuickMemoScrollBeginDrag : undefined}>
               {planMode === 'quickMemo' ? (
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                  <View style={styles.quickMemoDismissWrap} collapsable={false}>
-                    {planModeSwitchEl}
-                    <View style={styles.contentPad}>
-                      <QuickMemoPlanSection
+                <View style={styles.quickMemoDismissWrap} collapsable={false}>
+                  {planModeSwitchEl}
+                  <View style={styles.contentPad}>
+                    <QuickMemoPlanSection
                         ref={quickMemoInputRef}
                         c={c}
                         isDark={isDark}
@@ -737,11 +746,10 @@ export function DayPlanPage() {
                         draft={quickMemoDraft}
                         onChangeDraft={setQuickMemoDraft}
                         onInputContentSizeChange={onQuickMemoInputContentSizeChange}
-                        onSavePress={() => onSaveRef.current()}
+                        onSavePress={handleQuickMemoSavePress}
                       />
-                    </View>
                   </View>
-                </TouchableWithoutFeedback>
+                </View>
               ) : planMode === 'weekly' ? (
                 <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
                   {planModeSwitchEl}

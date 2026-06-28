@@ -10,19 +10,13 @@ import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 type Props = {
   c: DayPlanPalette;
   isDark: boolean;
-  /** 기존 저장소에 남아 있을 수 있는 줄 단위 메모 — 최초 한 번만 초안에 합침 */
   memos: DayPlanQuickMemo[];
   draft: string;
   onChangeDraft: (v: string) => void;
-  /** 줄바꿈 등으로 입력 높이가 바뀔 때 바깥 ScrollView 가 따라 내려가도록 */
   onInputContentSizeChange?: () => void;
   onSavePress: () => void;
 };
 
-/**
- * 빠른 메모: 한 화면에 큰 입력만 두고 빠르게 적는 UX(불필요한 카드·체크리스트 제거).
- * 줄바꿈마다 하나의 할 일이 됩니다.
- */
 export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
   { c, isDark, memos, draft, onChangeDraft, onInputContentSizeChange, onSavePress }: Props,
   ref: ForwardedRef<TextInput>,
@@ -62,7 +56,6 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
         placeholder="잠금화면에 표시할 메모를 입력하세요"
         placeholderTextColor={c.outline}
         multiline
-        /** 내부 스크롤을 끄면 엔터로 줄이 늘어날 때 바깥 ScrollView·키보드 회피 레이아웃이 따라간다 */
         scrollEnabled={false}
         textAlignVertical="top"
         autoFocus
@@ -80,6 +73,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="잠금화면 메모 저장"
+        hitSlop={8}
         onPress={onSavePress}
         style={({ pressed }) => [
           styles.saveBtn,
@@ -96,7 +90,6 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
 });
 
 const styles = StyleSheet.create({
-  /** shell(containerLow)보다 한 단계만 밝은 입력 면 — 순백 아님 */
   root: {
     minHeight: 300,
     flexGrow: 1,

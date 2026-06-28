@@ -30,8 +30,8 @@ enum QuickMemoModeLiveActivityView {
   private static func quickMemoCard(
     q: PokitLiveActivityAttributes.ContentState.QuickMemoLiveContent
   ) -> some View {
-    let bodySize: CGFloat = 19
-    let labelSize: CGFloat = 11
+    let bodySize: CGFloat = 10
+    let labelSize: CGFloat = 10
 
     VStack(alignment: .leading, spacing: 8) {
       HStack(alignment: .center, spacing: 8) {
@@ -44,15 +44,14 @@ enum QuickMemoModeLiveActivityView {
               .foregroundStyle(.white)
           )
 
-        Text("POKIT")
-          .font(.system(size: labelSize, weight: .black))
+        Text("빠른 메모")
+          .font(.system(size: labelSize, weight: .semibold))
           .foregroundStyle(headlineColor.opacity(0.60))
-          .tracking(1.1)
           .lineLimit(1)
       }
 
       Text(q.bodyText)
-        .font(.system(size: bodySize, weight: .bold))
+        .font(.system(size: bodySize, weight: .semibold))
         .foregroundStyle(headlineColor)
         .lineSpacing(1)
         .lineLimit(8)
@@ -60,6 +59,5 @@ enum QuickMemoModeLiveActivityView {
         .multilineTextAlignment(.leading)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 }

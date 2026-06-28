@@ -1,5 +1,7 @@
 export {
+  endLiveActivityAndDismiss,
   endPokitLiveActivity,
+  suspendPokitApp,
   upsertLiveActivityAndDismiss,
   upsertPokitLiveActivity,
 } from './lib/liveActivityClient';

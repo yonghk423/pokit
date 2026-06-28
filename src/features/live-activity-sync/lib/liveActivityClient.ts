@@ -7,6 +7,8 @@ type LiveActivityNativeModule = {
   endActivity?: () => Promise<void> | void;
   endActivityByBlockId?: (blockId: string) => Promise<void> | void;
   upsertAndSuspend?: (payloadJson: string) => Promise<void> | void;
+  endAndSuspend?: () => Promise<void> | void;
+  suspendApp?: () => Promise<void> | void;
   isAvailable?: () => Promise<boolean> | boolean;
 };
 
@@ -64,6 +66,36 @@ export async function upsertLiveActivityAndDismiss(
 
   await module.upsertAndSuspend(JSON.stringify(payload));
   return true;
+}
+
+/**
+ * 앱을 백그라운드(잠금화면)로 보낸다.
+ */
+export async function suspendPokitApp(): Promise<boolean> {
+  const module = getNativeModule();
+  if (!module?.suspendApp) return false;
+
+  await module.suspendApp();
+  return true;
+}
+
+/**
+ * Live Activity를 모두 종료하고, 완료 후 앱을 백그라운드(잠금화면)로 보낸다.
+ * 빠른 메모를 비워 저장(삭제)할 때 사용한다.
+ */
+export async function endLiveActivityAndDismiss(): Promise<boolean> {
+  const module = getNativeModule();
+  if (!module) return false;
+
+  if (module.endAndSuspend) {
+    await module.endAndSuspend();
+    return true;
+  }
+
+  if (module.endActivity) {
+    await module.endActivity();
+  }
+  return suspendPokitApp();
 }
 
 export async function endPokitLiveActivity(blockId?: string): Promise<boolean> {

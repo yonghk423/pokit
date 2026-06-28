@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { loadDayPlanDraft, saveDayPlanDraft } from '@shared/lib/storage';
+import { loadDayPlanDraft, saveDayPlanDraft, syncWidgetTimelineFromStorage } from '@shared/lib/storage';
 
 import { getLocalMinutesOfDayNow } from '../lib/dayPlanTime';
 import { defaultPriorityWindowFromNow } from '../lib/dayPlanTimeMath';
@@ -424,6 +424,7 @@ useDayPlanDraftStore.subscribe((state) => {
     routineHistoryPlannedKeysByDate: state.routineHistoryPlannedKeysByDate,
     quickMemoDraft: state.quickMemoDraft,
   });
+  syncWidgetTimelineFromStorage();
 });
 
 function persistDayPlanDraft(): void {

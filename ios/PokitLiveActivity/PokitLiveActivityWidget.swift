@@ -566,27 +566,27 @@ private struct PokitLiveActivityView: View {
     QuickMemoModeLiveActivityView.lockScreenBody(context: context)
   }
 
+  @ViewBuilder
+  private func quickMemoLockScreenContainer() -> some View {
+    /// 잠금화면 Live Activity는 시스템이 **콘텐츠 intrinsic 높이**로 하단 슬롯 크기를 정한다.
+    /// `maxHeight: .infinity`로 영역을 늘리면 시뮬레이터 등에서 상단 대형 배너처럼 배치될 수 있다.
+    quickMemoLockScreenBody()
+      .padding(QuickMemoModeLiveActivityView.lockScreenContentInsets)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(QuickMemoModeLiveActivityView.lockScreenBackground)
+      .fixedSize(horizontal: false, vertical: true)
+  }
+
   // MARK: - Body
 
   var body: some View {
-    /// 시스템이 주는 Live Activity 영역은 이미 둥근 카드 형태다.
-    /// 안쪽에 또 `RoundedRectangle` 배경을 두면 가장자리에 배경이 비쳐 "투명 링"처럼 보인다.
-    /// → 배경은 이 뷰 전체를 한 번에 채우고, 내용만 안쪽 패딩으로 배치한다.
-    ZStack(alignment: .topLeading) {
-      QuickMemoModeLiveActivityView.lockScreenBackground
-
-      Group {
-        if isQuickMemoMode {
-          quickMemoLockScreenBody()
-        } else if isPriorityMode {
-          priorityLockScreenBody()
-        } else {
-          priorityFallbackLockScreenBody()
-        }
+    Group {
+      if isQuickMemoMode {
+        quickMemoLockScreenContainer()
+      } else {
+        EmptyView()
       }
-      .padding(QuickMemoModeLiveActivityView.lockScreenContentInsets)
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 }
 
@@ -680,247 +680,16 @@ struct PokitLiveActivityWidget: Widget {
         .widgetURL(nil)
       }
 
-      let fallbackPriorityLive: PokitLiveActivityAttributes.ContentState.PriorityLiveContent = {
-        let rows = context.state.checklistRows
-        let totalFromLabel = Int(context.state.checklistCountLabel.filter(\.isNumber)) ?? 0
-        let totalTasks = max(1, max(rows.count, totalFromLabel))
-        let completed = rows.filter { $0.state == "completed" }.count
-        let progress01 = totalTasks > 0 ? Double(completed) / Double(totalTasks) : 0
-        let currentIndex = rows.firstIndex(where: { $0.state == "current" }) ?? 0
-        let activeTitle: String = {
-          if rows.indices.contains(currentIndex) {
-            let title = rows[currentIndex].title.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !title.isEmpty { return title }
-          }
-          let fallback = context.state.title.trimmingCharacters(in: .whitespacesAndNewlines)
-          return fallback.isEmpty ? "활성 플로우" : fallback
-        }()
-        let windowRaw = context.state.timeRangeLabel.trimmingCharacters(in: .whitespacesAndNewlines)
-        let windowLabel = windowRaw.isEmpty ? context.state.checklistTitle : windowRaw
-        let listRows = rows.enumerated().map { idx, row in
-          PokitLiveActivityAttributes.ContentState.PriorityLiveContent.UpcomingRow(
-            order: idx + 1,
-            title: row.title,
-            timeLabel: row.timeLabel
-          )
-        }
-        /// 다이나믹 아일랜드 확장 하단은 `upcoming`만 쓰므로, **전체 `listRows`에서 현재 이후 슬라이스**만 넘긴다.
-        /// 예전처럼 `enumerated().dropFirst` 후 `order: idx+1`로 다시 매기면 순번이 깨진다.
-        let upcoming = Array(listRows.dropFirst(currentIndex + 1))
-        return PokitLiveActivityAttributes.ContentState.PriorityLiveContent(
-          windowLabel: windowLabel,
-          activeTitle: activeTitle,
-          activeOrder: min(max(1, currentIndex + 1), totalTasks),
-          totalTasks: totalTasks,
-          progress01: progress01,
-          upcoming: upcoming,
-          listRows: listRows
-        )
-      }()
-
-      if context.state.planMode != "quickMemo" {
-        let p = context.state.priorityLive ?? fallbackPriorityLive
-        let isStandby = context.state.status == "standby"
-        let isFinished = context.state.status == "finished"
-        let isPaused = context.state.status == "paused"
-        let standbyStartCountdown = isStandby && ((context.state.startsAt?.timeIntervalSinceNow ?? -1) > 0)
-
-        return DynamicIsland {
-          DynamicIslandExpandedRegion(.leading) {
-            HStack(spacing: 8) {
-              Image(systemName: "list.number")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(liveGrayAccent)
-              Text(p.windowLabel)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(liveGrayAccent)
-                .lineLimit(1)
-            }
-          }
-          DynamicIslandExpandedRegion(.trailing) {
-            VStack(alignment: .trailing, spacing: 2) {
-              Text(isFinished ? "완료" : "\(p.activeOrder)/\(max(1, p.totalTasks))")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(isFinished ? Color.secondary : liveGrayAccent)
-                .lineLimit(1)
-              Text(context.state.timeRangeLabel)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color.secondary)
-                .lineLimit(1)
-            }
-          }
-          DynamicIslandExpandedRegion(.bottom) {
-            VStack(alignment: .leading, spacing: 8) {
-              Text(p.activeTitle)
-                .font(.system(size: 15, weight: .semibold))
-                .lineLimit(2)
-                .minimumScaleFactor(0.85)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-              if !p.upcoming.isEmpty {
-                ForEach(Array(p.upcoming.prefix(2).enumerated()), id: \.offset) { _, row in
-                  HStack(alignment: .center, spacing: 10) {
-                    Text("\(row.order)")
-                      .font(.caption2.weight(.bold))
-                      .foregroundStyle(liveGrayAccent)
-                      .frame(width: 18, alignment: .center)
-                    Text(row.title)
-                      .font(.caption.weight(.semibold))
-                      .foregroundStyle(Color.white)
-                      .lineLimit(1)
-                    Spacer(minLength: 0)
-                    Text(row.timeLabel)
-                      .font(.caption2.weight(.bold))
-                      .foregroundStyle(Color.secondary)
-                      .lineLimit(1)
-                  }
-                }
-              }
-
-              if isFinished {
-                Text("플로우가 완료되었습니다")
-                  .font(.caption.weight(.semibold))
-                  .foregroundStyle(.secondary)
-              }
-
-            }
-            .padding(.horizontal, 6)
-            .padding(.bottom, 4)
-          }
-        } compactLeading: {
-          Image(systemName: "list.number")
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(liveGrayAccent)
-            .fixedSize(horizontal: true, vertical: false)
-        } compactTrailing: {
-          EmptyView()
-        } minimal: {
-          Image(systemName: isFinished ? "checkmark" : (standbyStartCountdown ? "clock" : "list.number"))
-            .foregroundStyle(liveGrayAccent)
-        }
-        .widgetURL(nil)
-      }
-
-      let isStandby = context.state.status == "standby"
-      let isFinished = context.state.status == "finished"
-      let standbyStartCountdown = isStandby && ((context.state.startsAt?.timeIntervalSinceNow ?? -1) > 0)
-
-      let rows = context.state.checklistRows
-      let currentRow = rows.first(where: { $0.state == "current" }) ?? rows.first
-
-      func rowIconName(_ state: String) -> String {
-        switch state {
-        case "completed":
-          return "checkmark.circle.fill"
-        case "skipped":
-          return "minus.circle"
-        case "current":
-          return "circle.inset.filled"
-        default:
-          return "circle"
-        }
-      }
-
-      func rowIconTint(_ state: String) -> Color {
-        switch state {
-        case "completed":
-          return liveGrayAccent
-        case "current":
-          return liveGrayAccent
-        case "skipped":
-          return .secondary
-        default:
-          return .secondary
-        }
-      }
-
       return DynamicIsland {
-        DynamicIslandExpandedRegion(.leading) {
-          HStack(spacing: 8) {
-            Circle()
-              .fill(liveGrayAccent)
-              .frame(width: 8, height: 8)
-            Text(context.state.checklistTitle)
-              .font(.caption2.weight(.semibold))
-              .foregroundStyle(liveGrayAccent)
-              .lineLimit(1)
-          }
-        }
-        DynamicIslandExpandedRegion(.trailing) {
-          VStack(alignment: .trailing, spacing: 2) {
-            Text(isFinished ? "완료" : context.state.checklistCountLabel)
-              .font(.caption2.weight(.bold))
-              .foregroundStyle(isFinished ? Color.secondary : liveGrayAccent)
-              .lineLimit(1)
-            Text(context.state.timeRangeLabel)
-              .font(.caption2.weight(.semibold))
-              .foregroundStyle(Color.secondary)
-              .lineLimit(1)
-          }
-        }
-        DynamicIslandExpandedRegion(.bottom) {
-          VStack(alignment: .leading, spacing: 8) {
-            if rows.isEmpty {
-              Text(context.state.title.isEmpty ? "\u{2003}" : context.state.title)
-                .font(.system(size: 15, weight: .semibold))
-                .lineLimit(2)
-                .minimumScaleFactor(0.85)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-              ForEach(Array(rows.prefix(2)), id: \.blockId) { row in
-                HStack(alignment: .center, spacing: 10) {
-                  Image(systemName: rowIconName(row.state))
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(rowIconTint(row.state))
-                    .frame(width: 18, alignment: .center)
-
-                  Text(row.title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(row.state == "completed" ? Color.secondary : Color.white)
-                    .lineLimit(1)
-                    .strikethrough(row.state == "completed")
-
-                  Spacer(minLength: 0)
-
-                  Text(row.state == "skipped" ? "건너뜀 · \(row.timeLabel)" : row.timeLabel)
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(row.state == "current" ? liveGrayAccent : Color.secondary)
-                    .lineLimit(1)
-                }
-              }
-            }
-
-            if isFinished {
-              Text("플로우가 완료되었습니다")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            }
-
-          }
-          .padding(.horizontal, 6)
-          .padding(.bottom, 4)
+        DynamicIslandExpandedRegion(.center) {
+          EmptyView()
         }
       } compactLeading: {
-        if let r = currentRow {
-          Image(systemName: rowIconName(r.state))
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(rowIconTint(r.state))
-            .fixedSize(horizontal: true, vertical: false)
-        } else {
-          Image(systemName: "lock.fill")
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(liveGrayAccent)
-            .fixedSize(horizontal: true, vertical: false)
-        }
+        EmptyView()
       } compactTrailing: {
-        Text(isFinished ? "완료" : context.state.checklistCountLabel)
-          .font(.caption2.weight(.bold))
-          .foregroundStyle(isFinished ? Color.secondary : liveGrayAccent)
-          .lineLimit(1)
-          .minimumScaleFactor(0.7)
-          .frame(maxWidth: 48, alignment: .trailing)
+        EmptyView()
       } minimal: {
-        Image(systemName: isFinished ? "checkmark" : (standbyStartCountdown ? "clock" : "lock.fill"))
+        EmptyView()
       }
       .widgetURL(nil)
     }
@@ -933,5 +702,6 @@ struct PokitLiveActivityBundle: WidgetBundle {
   var body: some Widget {
     PokitLiveActivityWidget()
     DayPlanLockWidget()
+    DayPlanHomeWidget()
   }
 }
