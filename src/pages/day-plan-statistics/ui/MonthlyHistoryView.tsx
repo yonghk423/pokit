@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
 
 import { addDaysToLocalDateKey } from '@entities/day-plan';
 import type { HistoryDailyStat } from '@entities/history';
@@ -11,7 +10,6 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import {
-  buildGrowthTrendPath,
   buildMonthlyClosingNote,
   buildMonthlyCompletionRate,
   buildMonthlyHeatCells,
@@ -21,6 +19,8 @@ import {
   buildMonthlyVisualSnapshots,
   chunkHeatRows,
 } from '../lib/monthlyMilestone';
+import { buildGrowthTrendChartPaths } from '../lib/completionTrendChart';
+import { CompletionTrendChart } from './CompletionTrendChart';
 
 type Tone = {
   card: string;
@@ -76,7 +76,10 @@ export function MonthlyHistoryView({
 
   const heatCells = useMemo(() => buildMonthlyHeatCells(todayDateKey, dailyStatsByDate), [dailyStatsByDate, todayDateKey]);
   const heatRows = useMemo(() => chunkHeatRows(heatCells, 7), [heatCells]);
-  const growthTrend = useMemo(() => buildGrowthTrendPath(dailyStatsByDate, todayDateKey), [dailyStatsByDate, todayDateKey]);
+  const growthTrend = useMemo(
+    () => buildGrowthTrendChartPaths(dailyStatsByDate, todayDateKey),
+    [dailyStatsByDate, todayDateKey],
+  );
   const rateDeltaLabel = useMemo(
     () => buildMonthlyRateDeltaLabel(monthRate, previousMonthRate),
     [monthRate, previousMonthRate],
@@ -130,11 +133,14 @@ export function MonthlyHistoryView({
             </View>
           </View>
           <View style={styles.trendWrap}>
-            <Svg width={120} height={48} viewBox="0 0 100 40">
-              <Path d={growthTrend.d} fill="none" stroke={tone.barFill} strokeWidth={2.5} opacity={0.35} />
-              <Path d={growthTrend.d} fill="none" stroke={tone.barFill} strokeWidth={2.5} strokeLinecap="round" />
-              <Circle cx={growthTrend.endX} cy={growthTrend.endY} r={3} fill={tone.barFill} />
-            </Svg>
+            <CompletionTrendChart
+              paths={growthTrend}
+              stroke={tone.barFill}
+              trackColor={tone.barTrack}
+              surfaceColor={tone.level0}
+              height={52}
+              style={styles.trendSparkline}
+            />
             <ThemedText style={styles.trendCaption} lightColor={tone.muted} darkColor={tone.muted}>
               성장 트렌드
             </ThemedText>
@@ -366,6 +372,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 2,
     marginBottom: 4,
+  },
+  trendSparkline: {
+    width: 124,
   },
   trendCaption: {
     fontSize: 10,

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
 
 import { addDaysToLocalDateKey, categoryReminderLabelKo, useDayPlanDraftStore } from '@entities/day-plan';
 import { getCategoryCompletions, type HistoryDailyStat } from '@entities/history';
@@ -33,6 +32,8 @@ import {
   getHistoryCalendarDensityColors,
 } from '../lib/historyCalendarDensity';
 import { buildMonthlyRateDeltaLabel } from '../lib/monthlyMilestone';
+import { buildCompletionTrendChartPaths } from '../lib/completionTrendChart';
+import { CompletionTrendChart } from './CompletionTrendChart';
 import { HistoryMetricsInfoSheet } from './HistoryMetricsInfoSheet';
 import {
   buildWeeklyAxisScores,
@@ -136,50 +137,6 @@ function buildMonthCalendarDays(
   });
 }
 
-function buildTrendPath(
-  dailyStatsByDate: Record<string, HistoryDailyStat>,
-  startDateKey: string,
-  endDateKey: string,
-  width = 100,
-  height = 40,
-  padX = 5,
-): { d: string; endX: number; endY: number } {
-  const keys: string[] = [];
-  let cursor = startDateKey;
-  while (cursor <= endDateKey) {
-    keys.push(cursor);
-    if (cursor === endDateKey) break;
-    cursor = addDaysToLocalDateKey(cursor, 1);
-  }
-  const pointCount = Math.min(keys.length, 14);
-  const step = Math.max(1, Math.floor(Math.max(1, keys.length - 1) / Math.max(1, pointCount - 1)));
-  const values = Array.from({ length: pointCount }, (_, idx) => {
-    const key = keys[Math.min(keys.length - 1, idx * step)];
-    const row = key ? dailyStatsByDate[key] : null;
-    return row ? Math.max(0, Math.min(1, Number(row.completionRate) || 0)) : 0;
-  });
-  const innerWidth = width - padX * 2;
-  if (values.every((v) => v === 0)) {
-    const y = height - 4;
-    return { d: `M${padX} ${y} L${width - padX} ${y}`, endX: width - padX, endY: y };
-  }
-  const max = Math.max(0.01, ...values);
-  const xStep = values.length <= 1 ? 0 : innerWidth / (values.length - 1);
-  const coords = values.map((v, idx) => ({
-    x: padX + idx * xStep,
-    y: height - 4 - (v / max) * (height - 10),
-  }));
-  let d = `M${coords[0].x} ${coords[0].y}`;
-  for (let idx = 1; idx < coords.length; idx += 1) {
-    const prev = coords[idx - 1];
-    const curr = coords[idx];
-    const cx = (prev.x + curr.x) / 2;
-    d += ` Q${cx} ${prev.y}, ${curr.x} ${curr.y}`;
-  }
-  const last = coords[coords.length - 1];
-  return { d, endX: last.x, endY: last.y };
-}
-
 function buildTopCategories(
   dailyStatsByDate: Record<string, HistoryDailyStat>,
   startDateKey: string,
@@ -268,7 +225,12 @@ export function PeriodHistoryView({
     [monthlyRate, previousMonthlyRate],
   );
   const trendPath = useMemo(
-    () => buildTrendPath(dailyStatsByDate, monthRange.startDateKey, monthRange.endDateKey),
+    () =>
+      buildCompletionTrendChartPaths(
+        dailyStatsByDate,
+        monthRange.startDateKey,
+        monthRange.endDateKey,
+      ),
     [dailyStatsByDate, monthRange.endDateKey, monthRange.startDateKey],
   );
   const dailyRoutineHistory = useMemo(() => {
@@ -684,13 +646,12 @@ export function PeriodHistoryView({
             </ThemedText>
           </View>
         </View>
-        <View style={styles.trendGraphWrap}>
-          <Svg width="100%" height={52} viewBox="0 0 100 40" preserveAspectRatio="none">
-            <Path d={trendPath.d} fill="none" stroke={tone.barFill} strokeWidth={2.5} opacity={0.25} />
-            <Path d={trendPath.d} fill="none" stroke={tone.barFill} strokeWidth={2.5} strokeLinecap="round" />
-            <Circle cx={trendPath.endX} cy={trendPath.endY} r={3} fill={tone.barFill} />
-          </Svg>
-        </View>
+        <CompletionTrendChart
+          paths={trendPath}
+          stroke={tone.barFill}
+          trackColor={tone.barTrack}
+          surfaceColor={tone.level0}
+        />
         <ThemedText style={styles.trendGraphCaption} lightColor={tone.muted} darkColor={tone.muted}>
           {trendGraphCaption}
         </ThemedText>
@@ -970,14 +931,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
   },
-  trendGraphWrap: {
-    width: '100%',
-    height: 52,
-  },
   trendGraphCaption: {
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: -0.1,
+    marginTop: 2,
   },
   routineHistoryCard: {
     borderRadius: 14,

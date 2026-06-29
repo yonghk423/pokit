@@ -3,7 +3,9 @@ import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
+  Platform,
   Pressable,
+  RefreshControl,
   StyleSheet,
   View,
   type StyleProp,
@@ -20,6 +22,8 @@ type Props = {
   uri: string;
   allowedHostSuffixes?: readonly string[];
   onMessage?: (data: unknown) => void;
+  /** 기본 true — 스토리 WebView 등에서 당겨서 새로고침 */
+  pullToRefreshEnabled?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -38,9 +42,17 @@ function shouldOpenExternally(url: string): boolean {
   return url.startsWith('mailto:') || url.startsWith('tel:');
 }
 
-export function WebViewScreen({ uri, allowedHostSuffixes = [], onMessage, style }: Props) {
+export function WebViewScreen({
+  uri,
+  allowedHostSuffixes = [],
+  onMessage,
+  pullToRefreshEnabled = true,
+  style,
+}: Props) {
   const webViewRef = useRef<WebView>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
   const backgroundColor = useThemeColor({}, 'background');
@@ -77,6 +89,21 @@ export function WebViewScreen({ uri, allowedHostSuffixes = [], onMessage, style 
 
   const handleGoBack = useCallback(() => {
     webViewRef.current?.goBack();
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    if (hasError) {
+      handleRetry();
+      return;
+    }
+    setIsRefreshing(true);
+    webViewRef.current?.reload();
+  }, [hasError, handleRetry]);
+
+  const handleLoadEnd = useCallback(() => {
+    setIsLoading(false);
+    setIsRefreshing(false);
+    setHasLoadedOnce(true);
   }, []);
 
   const handleMessage = useCallback(
@@ -134,11 +161,17 @@ export function WebViewScreen({ uri, allowedHostSuffixes = [], onMessage, style 
             source={{ uri }}
             style={[styles.webView, { backgroundColor }]}
             originWhitelist={['https://*', 'http://*']}
+            pullToRefreshEnabled={pullToRefreshEnabled}
+            refreshControl={
+              pullToRefreshEnabled && Platform.OS === 'android' ? (
+                <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+              ) : undefined
+            }
             onLoadStart={() => {
               setIsLoading(true);
               setHasError(false);
             }}
-            onLoadEnd={() => setIsLoading(false)}
+            onLoadEnd={handleLoadEnd}
             onError={() => {
               setHasError(true);
               setIsLoading(false);
@@ -157,7 +190,7 @@ export function WebViewScreen({ uri, allowedHostSuffixes = [], onMessage, style 
           />
         )}
 
-        {isLoading && !hasError ? (
+        {isLoading && !hasError && !hasLoadedOnce ? (
           <View style={styles.loadingOverlay} pointerEvents="none">
             <ActivityIndicator size="large" color={tintColor} />
           </View>

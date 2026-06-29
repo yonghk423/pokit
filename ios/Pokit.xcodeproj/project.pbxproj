@@ -72,9 +72,9 @@
 		B2C3D4A5D4E5F60011223344 /* PokitWidgetSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pokit/PokitWidgetSync.swift; sourceTree = "<group>"; };
 		B2C3D4A7D4E5F60011223344 /* PokitWidgetSyncBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Pokit/PokitWidgetSyncBridge.m; sourceTree = "<group>"; };
 		B2C3D4A9D4E5F60011223344 /* DayPlanLockWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanLockWidget.swift; sourceTree = "<group>"; };
+		B2C3D4AAD4E5F60011223344 /* PokitLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PokitLiveActivity.entitlements; sourceTree = "<group>"; };
 		B2C3D4B1D4E5F60011223344 /* DayPlanWidgetSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanWidgetSupport.swift; sourceTree = "<group>"; };
 		B2C3D4B3D4E5F60011223344 /* DayPlanHomeWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanHomeWidget.swift; sourceTree = "<group>"; };
-		B2C3D4AAD4E5F60011223344 /* PokitLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PokitLiveActivity.entitlements; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		BD13F38BBCD4B0A6A5254B82 /* libPods-Pokit.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Pokit.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C6F2085864CBC917219DC28E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Pokit/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
