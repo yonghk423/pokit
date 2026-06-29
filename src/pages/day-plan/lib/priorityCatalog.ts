@@ -38,7 +38,7 @@ function listAllCustomFlowEntries(): CustomFlowCatalogEntry[] {
 export function buildPriorityCatalogRows(): PriorityCatalogRow[] {
   const base = filterCatalogPickerCategories(PICKER_CATEGORIES).map((cat) => ({
     key: cat.key,
-    label: cat.label,
+    label: getPickerCategoryLabel(cat.key),
     icon: cat.icon as string,
     isCustom: false,
   }));

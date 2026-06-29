@@ -8,6 +8,15 @@ import {
   normalizeReadingMetricSelection,
   type ReadingLiveActivityConfig,
 } from '@entities/day-plan';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+
+import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
+import { RoutineTitleField } from '../../lib/RoutineTitleField';
+import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
+
+import type { GoalDetailCategoryKey } from '../../../../model/types';
+
 const READING_EMERALD = 'rgb(16, 185, 129)';
 
 export type ReadingDetailDataConfig = ReadingLiveActivityConfig;
@@ -15,20 +24,35 @@ export const DEFAULT_READING_DATA_CONFIG = DEFAULT_READING_LIVE_ACTIVITY_CONFIG;
 export const getInitialReadingDataConfig = getInitialReadingLiveActivityConfig;
 
 export function ReadingSettings({
-  rhythmTitle: _rhythmTitle,
+  rhythmTitle,
+  categoryKey = 'reading',
   dataConfig,
   onChangeDataConfig,
+  allowRename = true,
+  renameLockedReason = null,
 }: {
   rhythmTitle: string;
+  categoryKey?: GoalDetailCategoryKey;
   dataConfig: unknown;
   onChangeDataConfig: (next: unknown) => void;
+  allowRename?: boolean;
+  renameLockedReason?: 'running' | 'today' | null;
 }) {
   const cfg = {
     ...DEFAULT_READING_DATA_CONFIG,
     ...(dataConfig as Partial<ReadingDetailDataConfig> | null | undefined),
   } as ReadingDetailDataConfig;
 
+  const scheme = useColorScheme();
+  const palette = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
+  const titleFallback = useMemo(
+    () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
+    [categoryKey, rhythmTitle],
+  );
+
+  const [displayName, setDisplayName] = useState(cfg.displayName ?? '');
   const [bookTitleStr, setBookTitleStr] = useState(cfg.bookTitle);
+  const [summary, setSummary] = useState(cfg.summary ?? '');
   const [startPageStr, setStartPageStr] = useState(String(cfg.startPage));
   const [targetPageStr, setTargetPageStr] = useState(String(cfg.targetPage));
 
@@ -45,27 +69,39 @@ export function ReadingSettings({
     setTargetPageStr((prev) => (prev === tp ? prev : tp));
   }, [cfg.startPage, cfg.targetPage]);
 
+  useEffect(() => {
+    setDisplayName((prev) => (prev === (cfg.displayName ?? '') ? prev : (cfg.displayName ?? '')));
+  }, [cfg.displayName]);
+
+  useEffect(() => {
+    setSummary((prev) => (prev === (cfg.summary ?? '') ? prev : (cfg.summary ?? '')));
+  }, [cfg.summary]);
+
   const startPage = Math.max(0, parseInt(startPageStr, 10) || 0);
   const targetPage = Math.max(0, parseInt(targetPageStr, 10) || 0);
 
   const draftReading = useMemo(
     (): ReadingLiveActivityConfig => ({
+      displayName,
       bookTitle: bookTitleStr,
       startPage,
       targetPage,
       selectedMetrics: normalizeReadingMetricSelection(cfg.selectedMetrics),
+      summary,
     }),
-    [bookTitleStr, cfg.selectedMetrics, startPage, targetPage],
+    [bookTitleStr, cfg.selectedMetrics, displayName, startPage, summary, targetPage],
   );
 
   const { pagesRead: pagesToRead } = deriveReadingProgress(draftReading);
 
   useEffect(() => {
     const payload = {
+      displayName: displayName.trim(),
       bookTitle: bookTitleStr.trim(),
       startPage,
       targetPage,
       selectedMetrics: normalizeReadingMetricSelection(cfg.selectedMetrics),
+      summary: summary.trim(),
     };
     const serialized = JSON.stringify(payload);
     if (lastPushedPayloadRef.current === serialized) {
@@ -73,7 +109,7 @@ export function ReadingSettings({
     }
     lastPushedPayloadRef.current = serialized;
     onChangeDataConfig(payload);
-  }, [onChangeDataConfig, bookTitleStr, cfg.selectedMetrics, startPage, targetPage]);
+  }, [onChangeDataConfig, bookTitleStr, cfg.selectedMetrics, displayName, startPage, summary, targetPage]);
 
   const muted = '#6b7280';
   const onSurface = '#111827';
@@ -81,9 +117,16 @@ export function ReadingSettings({
 
   return (
     <View style={styles.shell}>
-      <View style={styles.listHeader}>
-        <Text style={[styles.mainTitle, { color: onSurface }]}>Reading</Text>
-      </View>
+      <RoutineTitleField
+        value={displayName}
+        onChangeValue={setDisplayName}
+        fallback={titleFallback}
+        allowRename={allowRename}
+        renameLockedReason={renameLockedReason}
+        palette={palette}
+      />
+
+      <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={palette} />
 
       <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: '#d1d5db' }]}>
         <View style={styles.metricItem}>

@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
+import { persistRoutineDisplayName } from '@entities/day-plan/lib/routineDisplayName';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -8,11 +10,17 @@ import type { goalDetailSettingsPalette } from './settingsPalette';
 export type RoutineRenameLockedReason = 'running' | 'today';
 
 const LOCK_MESSAGES: Record<RoutineRenameLockedReason, string> = {
-  running: '루틴이 실행 중일 때는 변경할 수 없어요',
-  today: '오늘 루틴에서는 이름을 변경할 수 없어요',
+  running: '실행 중일 때는 이름을 변경할 수 없어요',
+  today: '오늘 일정에서는 이름을 변경할 수 없어요',
 };
 
 type Palette = ReturnType<typeof goalDetailSettingsPalette>;
+
+function resolveIdleTitle(value: string, fallback: string): string {
+  const stored = value.trim();
+  const fb = fallback.trim();
+  return stored.length > 0 ? value : fb;
+}
 
 export function RoutineTitleField({
   value,
@@ -22,7 +30,7 @@ export function RoutineTitleField({
   renameLockedReason = null,
   palette,
   size = 'large',
-  placeholder = '루틴 이름 입력',
+  placeholder = '',
 }: {
   value: string;
   onChangeValue: (next: string) => void;
@@ -35,19 +43,58 @@ export function RoutineTitleField({
 }) {
   const titleStyle = size === 'large' ? styles.mainTitleLarge : styles.mainTitleCompact;
   const titleInputStyle = size === 'large' ? styles.mainTitleInputLarge : styles.mainTitleInputCompact;
-  const displayTitle = value.trim() || fallback;
+  const fallbackTrimmed = fallback.trim();
+  const idleTitle = resolveIdleTitle(value, fallbackTrimmed);
+
+  const [draft, setDraft] = useState(idleTitle);
+  const [focused, setFocused] = useState(false);
+  const syncKeyRef = useRef(`${value}\0${fallbackTrimmed}`);
+
+  useEffect(() => {
+    const nextKey = `${value}\0${fallbackTrimmed}`;
+    if (focused || syncKeyRef.current === nextKey) return;
+    syncKeyRef.current = nextKey;
+    setDraft(idleTitle);
+  }, [value, fallbackTrimmed, focused, idleTitle]);
+
+  const commitDraft = (raw: string) => {
+    const persisted = persistRoutineDisplayName(raw, fallbackTrimmed);
+    syncKeyRef.current = `${persisted}\0${fallbackTrimmed}`;
+    onChangeValue(persisted);
+    setDraft(persisted.length > 0 ? persisted : fallbackTrimmed);
+  };
+
+  const handleFocus = () => {
+    setFocused(true);
+    setDraft(value.trim().length > 0 ? value : fallbackTrimmed);
+  };
+
+  const handleBlur = () => {
+    setFocused(false);
+    commitDraft(draft);
+  };
+
+  const handleChangeText = (text: string) => {
+    setDraft(text);
+    onChangeValue(text);
+  };
+
+  const inputValue = focused ? draft : idleTitle;
 
   return (
     <View style={styles.listHeader}>
       {allowRename ? (
         <TextInput
-          value={value}
-          onChangeText={onChangeValue}
+          value={inputValue}
+          onChangeText={handleChangeText}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           placeholder={placeholder}
           placeholderTextColor={palette.outline}
           style={[titleInputStyle, { color: palette.onSurface }]}
           maxLength={40}
           returnKeyType="done"
+          onSubmitEditing={handleBlur}
         />
       ) : (
         <ThemedText
@@ -55,7 +102,7 @@ export function RoutineTitleField({
             titleStyle,
             { color: renameLockedReason ? palette.onVariant : palette.onSurface },
           ]}>
-          {displayTitle}
+          {idleTitle}
         </ThemedText>
       )}
       {renameLockedReason ? (

@@ -8,6 +8,10 @@ import {
   normalizeWaterDetailConfig,
 } from '@entities/day-plan';
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
+import {
+  formatRoutineSummaryHint,
+  readRoutineSummaryFromConfig,
+} from '@entities/day-plan/lib/routineSummary';
 
 function medicineEnabledSlots(cfg: ReturnType<typeof normalizeMedicineDetailConfig>): string[] {
   const out: string[] = [];
@@ -44,6 +48,8 @@ export function getPriorityCategoryGoalHint(
   options?: PriorityGoalHintOptions,
 ): string | null {
   const raw = loadGoalDetailCategoryConfig(categoryKey);
+  const summaryHint = formatRoutineSummaryHint(readRoutineSummaryFromConfig(raw));
+  if (summaryHint) return summaryHint;
 
   switch (categoryKey) {
     case 'reading': {

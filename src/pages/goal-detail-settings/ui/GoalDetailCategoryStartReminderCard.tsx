@@ -46,7 +46,11 @@ function buildReminderRow(reminderOn: boolean, times: string[]): CategoryReminde
 export function GoalDetailCategoryStartReminderCard({ categoryKey }: Props) {
   const priorityStart = useDayPlanDraftStore((s) => s.priorityStart);
   const priorityEnd = useDayPlanDraftStore((s) => s.priorityEnd);
-  const label = useMemo(() => categoryReminderLabelKo(categoryKey), [categoryKey]);
+  const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
+  const label = useMemo(
+    () => categoryReminderLabelKo(categoryKey),
+    [categoryKey, categoryLabelEpoch],
+  );
   const startHint = useMemo(
     () => `${label} — 매일 지정한 시각에 일정 확인 알림을 받아요. 아래 담기 구간 안에서만 골라요.`,
     [label],

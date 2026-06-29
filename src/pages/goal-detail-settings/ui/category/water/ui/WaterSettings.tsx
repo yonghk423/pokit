@@ -13,9 +13,17 @@ import {
   waterReminderIntervalMinutes,
 } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
+import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
+import { RoutineTitleField } from '../../lib/RoutineTitleField';
+import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
+
 import { WATER_GOAL_DETAIL_THEME as T } from '../lib/waterGoalDetailTheme';
+
+import type { GoalDetailCategoryKey } from '../../../../model/types';
 
 import {
   getInitialWaterDataConfig,
@@ -46,14 +54,26 @@ function clampWaterTimes(times: string[], routineStart: string, routineEnd: stri
 }
 
 export function WaterSettings({
-  rhythmTitle: _rhythmTitle,
+  rhythmTitle,
+  categoryKey = 'water',
   dataConfig,
   onChangeDataConfig,
+  allowRename = true,
+  renameLockedReason = null,
 }: {
   rhythmTitle: string;
+  categoryKey?: GoalDetailCategoryKey;
   dataConfig: unknown;
   onChangeDataConfig: (next: unknown) => void;
+  allowRename?: boolean;
+  renameLockedReason?: 'running' | 'today' | null;
 }) {
+  const scheme = useColorScheme();
+  const palette = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
+  const titleFallback = useMemo(
+    () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
+    [categoryKey, rhythmTitle],
+  );
   const timeFieldPalette = useMemo(() => paletteForReminderTimeCard(false).timeField, []);
 
   const normalizedKey = useMemo(
@@ -71,6 +91,8 @@ export function WaterSettings({
   );
   const [smartNotification, setSmartNotification] = useState(() => seedWater(dataConfig).smartNotification);
   const [reminderTimes, setReminderTimes] = useState<string[]>(() => seedWater(dataConfig).reminderTimes);
+  const [summary, setSummary] = useState(() => seedWater(dataConfig).summary);
+  const [displayName, setDisplayName] = useState(() => seedWater(dataConfig).displayName);
   const [openSlotIndex, setOpenSlotIndex] = useState<number | null>(null);
 
   const lastRef = useRef<string | null>(null);
@@ -99,6 +121,8 @@ export function WaterSettings({
     setReminderCustomMin(String(next.reminderCustomMin));
     setSmartNotification(next.smartNotification);
     setReminderTimes(clampWaterTimes(next.reminderTimes, priorityStart, priorityEnd));
+    setSummary(next.summary);
+    setDisplayName(next.displayName);
     setOpenSlotIndex(null);
   }, [dataConfig, normalizedKey, priorityEnd, priorityStart]);
 
@@ -117,6 +141,8 @@ export function WaterSettings({
       reminderCustomMin: customMinNum,
       smartNotification,
       reminderTimes: clampWaterTimes(reminderTimes, priorityStart, priorityEnd),
+      summary,
+      displayName,
     });
     const s = JSON.stringify(payload);
     if (lastRef.current === s) return;
@@ -129,6 +155,8 @@ export function WaterSettings({
     customMinNum,
     smartNotification,
     reminderTimes,
+    summary,
+    displayName,
     priorityEnd,
     priorityStart,
     onChangeDataConfig,
@@ -220,9 +248,16 @@ export function WaterSettings({
 
   return (
     <View style={styles.shell}>
-      <View style={styles.listHeader}>
-        <Text style={styles.mainTitle}>수분 관리</Text>
-      </View>
+      <RoutineTitleField
+        value={displayName}
+        onChangeValue={setDisplayName}
+        fallback={titleFallback}
+        allowRename={allowRename}
+        renameLockedReason={renameLockedReason}
+        palette={palette}
+      />
+
+      <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={palette} />
 
       <View style={styles.metricBar}>
         <View style={styles.metricItem}>

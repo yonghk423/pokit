@@ -5,6 +5,11 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
+import { RoutineTitleField } from '../../lib/RoutineTitleField';
+import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
+
+import type { GoalDetailCategoryKey } from '../../../../model/types';
 
 import {
   getInitialWorkDataConfig,
@@ -20,33 +25,48 @@ function makeTaskId() {
 }
 
 export function WorkSettings({
+  rhythmTitle,
+  categoryKey = 'work',
   dataConfig,
   onChangeDataConfig,
+  allowRename = true,
+  renameLockedReason = null,
 }: {
   rhythmTitle: string;
+  categoryKey?: GoalDetailCategoryKey;
   dataConfig: unknown;
   onChangeDataConfig: (next: unknown) => void;
+  allowRename?: boolean;
+  renameLockedReason?: 'running' | 'today' | null;
 }) {
   const c = useMemo(() => goalDetailSettingsPalette(false), []);
+  const titleFallback = useMemo(
+    () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
+    [categoryKey, rhythmTitle],
+  );
 
   const initial = normalizeWorkDetailConfig(dataConfig ?? getInitialWorkDataConfig());
+  const [displayName, setDisplayName] = useState(initial.displayName);
   const [tasks, setTasks] = useState<WorkTask[]>(initial.tasks);
   const [focusMemo, setFocusMemo] = useState(initial.focusMemo);
+  const [summary, setSummary] = useState(initial.summary);
   const [draft, setDraft] = useState('');
   const lastRef = useRef<string | null>(null);
 
   useEffect(() => {
     const payload: WorkDetailDataConfig = normalizeWorkDetailConfig({
+      displayName,
       planMin: initial.planMin,
       doneMin: initial.doneMin,
       tasks,
       focusMemo,
+      summary,
     });
     const s = JSON.stringify(payload);
     if (lastRef.current === s) return;
     lastRef.current = s;
     onChangeDataConfig(payload);
-  }, [tasks, focusMemo, initial.planMin, initial.doneMin, onChangeDataConfig]);
+  }, [displayName, tasks, focusMemo, summary, initial.planMin, initial.doneMin, onChangeDataConfig]);
 
   const addTask = () => {
     const text = draft.trim();
@@ -69,6 +89,15 @@ export function WorkSettings({
 
   return (
     <View style={styles.root}>
+      <RoutineTitleField
+        value={displayName}
+        onChangeValue={setDisplayName}
+        fallback={titleFallback}
+        allowRename={allowRename}
+        renameLockedReason={renameLockedReason}
+        palette={c}
+      />
+
       <View style={styles.heading}>
         <ThemedText style={[styles.title, { color: c.onSurface }]}>
           작업 몰입 설정
@@ -78,6 +107,8 @@ export function WorkSettings({
           세션 화면에서 체크리스트로 확인할 수 있어요.
         </ThemedText>
       </View>
+
+      <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
 
       <View style={[styles.taskCard, { backgroundColor: cardBg }]}>
         <View style={styles.taskCardHeader}>

@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, Share, StyleSheet, TextInput, View } from 'react-native';
 
 import {
-  categoryReminderLabelKo,
-  getOtherCategoryResolvedDisplayLabel,
   isCustomFlowCategoryKey,
 } from '@entities/day-plan';
 
@@ -15,6 +13,8 @@ import type { GoalDetailCategoryKey } from '../../../../model/types';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
+import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
+import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
 
 import {
   getInitialOtherDataConfig,
@@ -44,6 +44,7 @@ export function OtherSettings({
   const initial = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
 
   const [displayName, setDisplayName] = useState(initial.displayName);
+  const [summary, setSummary] = useState(initial.summary);
   const [draftTask, setDraftTask] = useState('');
   const [checklist, setChecklist] = useState(initial.checklist);
   const lastPersistedRef = useRef<string | null>(null);
@@ -53,6 +54,7 @@ export function OtherSettings({
     const next = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
     isSyncingFromPropsRef.current = true;
     setDisplayName(next.displayName);
+    setSummary(next.summary);
     setChecklist(next.checklist);
     lastPersistedRef.current = JSON.stringify(next);
   }, [dataConfig]);
@@ -62,12 +64,16 @@ export function OtherSettings({
       isSyncingFromPropsRef.current = false;
       return;
     }
-    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({ displayName, checklist });
+    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({
+      displayName,
+      summary,
+      checklist,
+    });
     const serialized = JSON.stringify(payload);
     if (lastPersistedRef.current === serialized) return;
     lastPersistedRef.current = serialized;
     onChangeDataConfig(payload);
-  }, [displayName, checklist, onChangeDataConfig]);
+  }, [displayName, summary, checklist, onChangeDataConfig]);
 
   const addTask = () => {
     const text = draftTask.trim();
@@ -101,14 +107,10 @@ export function OtherSettings({
     });
   };
 
-  const titleFallback = useMemo(() => {
-    const fromRhythm = rhythmTitle.trim();
-    if (fromRhythm) return fromRhythm;
-    if (!categoryKey || categoryKey === 'other') {
-      return getOtherCategoryResolvedDisplayLabel(null);
-    }
-    return categoryReminderLabelKo(categoryKey);
-  }, [categoryKey, rhythmTitle]);
+  const titleFallback = useMemo(
+    () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
+    [categoryKey, rhythmTitle],
+  );
 
   return (
     <View style={styles.shell}>
@@ -152,6 +154,8 @@ export function OtherSettings({
         palette={c}
         size="large"
       />
+
+      <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
 
       <View style={[styles.toolbar, { borderTopColor: c.onSurface, borderBottomColor: c.outline }]}>
         <Pressable style={styles.toolbarBtn} onPress={onShare}>

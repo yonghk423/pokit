@@ -4,6 +4,11 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
+import { RoutineTitleField } from '../../lib/RoutineTitleField';
+import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
+
+import type { GoalDetailCategoryKey } from '../../../../model/types';
 
 import {
   getInitialFastingDataConfig,
@@ -12,36 +17,51 @@ import {
 } from './fastingConfig';
 
 export function FastingSettings({
+  rhythmTitle,
+  categoryKey = 'fasting',
   dataConfig,
   onChangeDataConfig,
+  allowRename = true,
+  renameLockedReason = null,
 }: {
   rhythmTitle: string;
+  categoryKey?: GoalDetailCategoryKey;
   dataConfig: unknown;
   onChangeDataConfig: (next: unknown) => void;
+  allowRename?: boolean;
+  renameLockedReason?: 'running' | 'today' | null;
 }) {
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
+  const titleFallback = useMemo(
+    () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
+    [categoryKey, rhythmTitle],
+  );
   const initial = normalizeFastingDetailConfig(dataConfig ?? getInitialFastingDataConfig());
 
+  const [displayName, setDisplayName] = useState(initial.displayName);
   const [fastingStr, setFastingStr] = useState(String(initial.fastingMin));
   const [currentWeightStr, setCurrentWeightStr] = useState(String(initial.currentWeightKg));
   const [targetWeightStr, setTargetWeightStr] = useState(String(initial.targetWeightKg));
   const [weeklyLossStr, setWeeklyLossStr] = useState(String(initial.weeklyLossTargetKg));
   const [fastingEnabled, setFastingEnabled] = useState(initial.fastingEnabled);
+  const [summary, setSummary] = useState(initial.summary);
   const lastRef = useRef<string | null>(null);
   const presetMinutes = [12 * 60, 14 * 60, 16 * 60, 18 * 60, 20 * 60];
 
   const parsed = useMemo(
     () =>
       normalizeFastingDetailConfig({
+        displayName,
         fastingMin: parseInt(fastingStr, 10) || 0,
         elapsedMin: initial.elapsedMin,
         currentWeightKg: parseFloat(currentWeightStr) || 0,
         targetWeightKg: parseFloat(targetWeightStr) || 0,
         weeklyLossTargetKg: parseFloat(weeklyLossStr) || 0,
         fastingEnabled,
+        summary,
       }),
-    [currentWeightStr, fastingEnabled, fastingStr, initial.elapsedMin, targetWeightStr, weeklyLossStr],
+    [currentWeightStr, displayName, fastingEnabled, fastingStr, initial.elapsedMin, summary, targetWeightStr, weeklyLossStr],
   );
   const progress01 = parsed.fastingMin > 0 ? Math.min(1, parsed.elapsedMin / parsed.fastingMin) : 0;
   const remainingMin = Math.max(0, parsed.fastingMin - parsed.elapsedMin);
@@ -65,9 +85,16 @@ export function FastingSettings({
 
   return (
     <View style={styles.shell}>
-      <View style={styles.listHeader}>
-        <Text style={[styles.mainTitle, { color: c.onSurface }]}>체중 관리</Text>
-      </View>
+      <RoutineTitleField
+        value={displayName}
+        onChangeValue={setDisplayName}
+        fallback={titleFallback}
+        allowRename={allowRename}
+        renameLockedReason={renameLockedReason}
+        palette={c}
+      />
+
+      <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
 
       <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: c.outline }]}>
         <View style={styles.metricItem}>

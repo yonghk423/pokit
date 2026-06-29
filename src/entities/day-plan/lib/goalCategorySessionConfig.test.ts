@@ -40,7 +40,12 @@ describe('normalizeMeditationDetailConfig', () => {
     const cfg = normalizeMeditationDetailConfig({ sessionMin: 999, elapsedMin: 50 });
     expect(cfg.sessionMin).toBe(180);
     expect(cfg.elapsedMin).toBe(50);
-    expect(getInitialMeditationDataConfig()).toEqual({ sessionMin: 15, elapsedMin: 0 });
+    expect(getInitialMeditationDataConfig()).toEqual({
+      displayName: '',
+      sessionMin: 15,
+      elapsedMin: 0,
+      summary: '',
+    });
   });
 });
 
@@ -122,10 +127,12 @@ describe('normalizeOtherDetailConfig', () => {
   it('normalizes checklist tasks', () => {
     const cfg = normalizeOtherDetailConfig({
       displayName: '나만의',
+      summary: '짧은 요약',
       checklist: [{ id: '1', text: '할 일', done: true }, { text: '' }],
     });
     expect(cfg.checklist).toHaveLength(1);
     expect(cfg.checklist[0]?.done).toBe(true);
+    expect(cfg.summary).toBe('짧은 요약');
   });
 
   it('resolves display label fallback', () => {

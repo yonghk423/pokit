@@ -3,6 +3,8 @@
 import type { ReadingLiveActivityConfig } from './readingLiveActivityConfig';
 import { normalizeWaterReminderTimes } from './normalizeWaterReminderTimes';
 import { parseHHmmToMinutes } from './parseTime';
+import { normalizeRoutineDisplayName } from './routineDisplayName';
+import { normalizeRoutineSummary } from './routineSummary';
 
 function asObj(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -17,10 +19,12 @@ function clampStr(s: unknown, max: number): string {
 export type WorkTask = { id: string; text: string; done: boolean };
 
 export type WorkDetailDataConfig = {
+  displayName: string;
   planMin: number;
   doneMin: number;
   tasks: WorkTask[];
   focusMemo: string;
+  summary: string;
 };
 
 export function normalizeWorkDetailConfig(raw: unknown): WorkDetailDataConfig {
@@ -39,33 +43,44 @@ export function normalizeWorkDetailConfig(raw: unknown): WorkDetailDataConfig {
         .filter((t) => t.text.length > 0)
     : [];
   const focusMemo = clampStr(o.focusMemo, 200);
-  return { planMin, doneMin, tasks, focusMemo };
+  const summary = normalizeRoutineSummary(o.summary);
+  const displayName = normalizeRoutineDisplayName(o.displayName);
+  return { displayName, planMin, doneMin, tasks, focusMemo, summary };
 }
 
 export function getInitialWorkDataConfig(): WorkDetailDataConfig {
-  return { planMin: 120, doneMin: 0, tasks: [], focusMemo: '' };
+  return { displayName: '', planMin: 120, doneMin: 0, tasks: [], focusMemo: '', summary: '' };
 }
 
 // --- meditation ---
-export type MeditationDetailDataConfig = { sessionMin: number; elapsedMin: number };
+export type MeditationDetailDataConfig = {
+  displayName: string;
+  sessionMin: number;
+  elapsedMin: number;
+  summary: string;
+};
 
 export function normalizeMeditationDetailConfig(raw: unknown): MeditationDetailDataConfig {
   const o = asObj(raw);
   const sessionMin = Math.max(1, Math.min(180, Number(o.sessionMin) || 15));
   const elapsedRaw = Number(o.elapsedMin);
   const elapsedMin = Math.max(0, Math.min(sessionMin, Number.isFinite(elapsedRaw) ? elapsedRaw : 0));
-  return { sessionMin, elapsedMin };
+  const summary = normalizeRoutineSummary(o.summary);
+  const displayName = normalizeRoutineDisplayName(o.displayName);
+  return { displayName, sessionMin, elapsedMin, summary };
 }
 
 export function getInitialMeditationDataConfig(): MeditationDetailDataConfig {
-  return { sessionMin: 15, elapsedMin: 0 };
+  return { displayName: '', sessionMin: 15, elapsedMin: 0, summary: '' };
 }
 
 // --- yoga ---
 export type YogaDetailDataConfig = {
+  displayName: string;
   sessionMin: number;
   elapsedMin: number;
   flowLabel: string;
+  summary: string;
 };
 
 export function normalizeYogaDetailConfig(raw: unknown): YogaDetailDataConfig {
@@ -74,21 +89,25 @@ export function normalizeYogaDetailConfig(raw: unknown): YogaDetailDataConfig {
   const elapsedRaw = Number(o.elapsedMin);
   const elapsedMin = Math.max(0, Math.min(sessionMin, Number.isFinite(elapsedRaw) ? elapsedRaw : 0));
   const flowLabel = clampStr(o.flowLabel, 40) || '플로우';
-  return { sessionMin, elapsedMin, flowLabel };
+  const summary = normalizeRoutineSummary(o.summary);
+  const displayName = normalizeRoutineDisplayName(o.displayName);
+  return { displayName, sessionMin, elapsedMin, flowLabel, summary };
 }
 
 export function getInitialYogaDataConfig(): YogaDetailDataConfig {
-  return { sessionMin: 40, elapsedMin: 0, flowLabel: '플로우' };
+  return { displayName: '', sessionMin: 40, elapsedMin: 0, flowLabel: '플로우', summary: '' };
 }
 
 // --- fasting ---
 export type FastingDetailDataConfig = {
+  displayName: string;
   fastingMin: number;
   elapsedMin: number;
   currentWeightKg: number;
   targetWeightKg: number;
   weeklyLossTargetKg: number;
   fastingEnabled: boolean;
+  summary: string;
 };
 
 const FASTING_MIN = 60;
@@ -115,24 +134,30 @@ export function normalizeFastingDetailConfig(raw: unknown): FastingDetailDataCon
     Math.min(2, Number.isFinite(weeklyLossRaw) ? weeklyLossRaw : 0.5),
   );
   const fastingEnabled = typeof o.fastingEnabled === 'boolean' ? o.fastingEnabled : true;
+  const summary = normalizeRoutineSummary(o.summary);
+  const displayName = normalizeRoutineDisplayName(o.displayName);
   return {
+    displayName,
     fastingMin,
     elapsedMin,
     currentWeightKg,
     targetWeightKg,
     weeklyLossTargetKg,
     fastingEnabled,
+    summary,
   };
 }
 
 export function getInitialFastingDataConfig(): FastingDetailDataConfig {
   return {
+    displayName: '',
     fastingMin: 16 * 60,
     elapsedMin: 0,
     currentWeightKg: 70,
     targetWeightKg: 65,
     weeklyLossTargetKg: 0.5,
     fastingEnabled: true,
+    summary: '',
   };
 }
 
@@ -140,6 +165,7 @@ export function getInitialFastingDataConfig(): FastingDetailDataConfig {
 export type WaterReminderPreset = '60' | '120' | 'custom';
 
 export type WaterDetailDataConfig = {
+  displayName: string;
   goalMl: number;
   drankMl: number;
   /** 60=1시간, 120=2시간, custom=reminderCustomMin — 「시각 일괄 채우기」에만 사용 */
@@ -148,6 +174,7 @@ export type WaterDetailDataConfig = {
   smartNotification: boolean;
   /** 사용자가 직접 추가한 알림 시각(HH:mm). 비어 있으면 예약하지 않음 */
   reminderTimes: string[];
+  summary: string;
 };
 
 export function normalizeWaterDetailConfig(raw: unknown): WaterDetailDataConfig {
@@ -170,25 +197,31 @@ export function normalizeWaterDetailConfig(raw: unknown): WaterDetailDataConfig 
     typeof o.smartNotification === 'boolean' ? o.smartNotification : false;
 
   const reminderTimes = normalizeWaterReminderTimes(o.reminderTimes);
+  const summary = normalizeRoutineSummary(o.summary);
+  const displayName = normalizeRoutineDisplayName(o.displayName);
 
   return {
+    displayName,
     goalMl,
     drankMl,
     reminderPreset,
     reminderCustomMin,
     smartNotification,
     reminderTimes,
+    summary,
   };
 }
 
 export function getInitialWaterDataConfig(): WaterDetailDataConfig {
   return {
+    displayName: '',
     goalMl: 2000,
     drankMl: 0,
     reminderPreset: '60',
     reminderCustomMin: 90,
     smartNotification: false,
     reminderTimes: [],
+    summary: '',
   };
 }
 
@@ -208,6 +241,7 @@ function normalizeMedicineHHmm(raw: unknown, fallback: string): string {
 }
 
 export type MedicineDetailDataConfig = {
+  displayName: string;
   /** 약 이름(표시용) */
   doseLabel: string;
   /** 활성화된 복용 슬롯 수(0이면 슬롯 미설정) */
@@ -223,6 +257,7 @@ export type MedicineDetailDataConfig = {
   morningNotify: boolean;
   lunchNotify: boolean;
   dinnerNotify: boolean;
+  summary: string;
 };
 
 export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataConfig {
@@ -292,6 +327,7 @@ export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataC
   }
 
   return {
+    displayName: normalizeRoutineDisplayName(o.displayName),
     doseLabel,
     dosesPerDay,
     takenCount,
@@ -304,11 +340,13 @@ export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataC
     morningNotify,
     lunchNotify,
     dinnerNotify,
+    summary: normalizeRoutineSummary(o.summary),
   };
 }
 
 export function getInitialMedicineDataConfig(): MedicineDetailDataConfig {
   return {
+    displayName: '',
     doseLabel: '',
     dosesPerDay: 0,
     takenCount: 0,
@@ -321,6 +359,7 @@ export function getInitialMedicineDataConfig(): MedicineDetailDataConfig {
     morningNotify: true,
     lunchNotify: true,
     dinnerNotify: true,
+    summary: '',
   };
 }
 
@@ -334,6 +373,8 @@ export type OtherChecklistTask = {
 export type OtherDetailDataConfig = {
   /** 비어 있으면 담기·목록 등에서 기본 문구(`OTHER_CATEGORY_PICKER_FALLBACK_KO`) 사용 */
   displayName: string;
+  /** 루틴 한 줄 요약 — 담기·목표 상세 부제 등에 표시 */
+  summary: string;
   checklist: OtherChecklistTask[];
 };
 
@@ -355,7 +396,8 @@ export function readTrimmedOtherCustomDisplayNameFromRaw(raw: unknown | null): s
 
 export function normalizeOtherDetailConfig(raw: unknown): OtherDetailDataConfig {
   const o = asObj(raw);
-  const displayName = clampStr(o.displayName, 40);
+  const displayName = normalizeRoutineDisplayName(o.displayName);
+  const summary = normalizeRoutineSummary(o.summary);
   const checklist: OtherChecklistTask[] = Array.isArray(o.checklist)
     ? (o.checklist as unknown[])
         .filter((t): t is Record<string, unknown> => t != null && typeof t === 'object')
@@ -367,12 +409,13 @@ export function normalizeOtherDetailConfig(raw: unknown): OtherDetailDataConfig 
         .filter((t) => t.text.length > 0)
     : [];
 
-  return { displayName, checklist };
+  return { displayName, summary, checklist };
 }
 
 export function getInitialOtherDataConfig(): OtherDetailDataConfig {
   return {
     displayName: '',
+    summary: '',
     checklist: [],
   };
 }

@@ -5,7 +5,6 @@ import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  appendPriorityCategoryKeysIfMissing,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
   getInitialOtherDataConfig,
@@ -22,6 +21,7 @@ import {
   useDayPlanStore,
   type DayPlanBlock,
 } from '@entities/day-plan';
+import { readRoutineDisplayNameFromConfig } from '@entities/day-plan/lib/routineDisplayName';
 import {
   rescheduleDayPlanNotifications,
   syncMedicineReminderNotifications,
@@ -103,7 +103,11 @@ function mergeOtherStyleGoalDetailData(
   const bl = b?.checklist ?? [];
   const cl = c?.checklist ?? [];
   const checklist = bl.length >= cl.length ? bl : cl.length > 0 ? cl : bl;
-  return normalizeOtherDetailConfig({ displayName, checklist });
+  const summaryBlock = (b?.summary ?? '').trim();
+  const summaryCat = (c?.summary ?? '').trim();
+  const summary =
+    summaryBlock.length > 0 ? b!.summary : summaryCat.length > 0 ? c!.summary : '';
+  return normalizeOtherDetailConfig({ displayName, summary, checklist });
 }
 
 function buildLoadedDataByBlockId(targets: EditingTarget[]): Record<string, unknown> {
@@ -125,19 +129,14 @@ function buildLoadedDataByBlockId(targets: EditingTarget[]): Record<string, unkn
   return next;
 }
 
-/** 자동 저장 레이스로 빈 이름이 덮어쓰이는 것을 막는다. */
-function withPreservedOtherDisplayName(categoryKey: string, next: unknown): unknown {
-  if (categoryKey !== 'other' && !isCustomFlowCategoryKey(categoryKey)) return next;
-  const incoming = normalizeOtherDetailConfig(next);
-  if (incoming.displayName.trim().length > 0) return incoming;
-  const prev = normalizeOtherDetailConfig(
-    loadGoalDetailCategoryConfig(categoryKey) ?? getInitialOtherDataConfig(),
-  );
-  const kept = prev.displayName.trim();
-  if (kept.length > 0) {
-    return normalizeOtherDetailConfig({ ...incoming, displayName: kept });
-  }
-  return incoming;
+/** 자동 저장 레이스로 `displayName` 필드가 빠진 페이로드가 이전 이름을 지우는 것을 막는다. */
+function withPreservedRoutineDisplayName(categoryKey: string, next: unknown): unknown {
+  if (!next || typeof next !== 'object') return next;
+  const o = next as Record<string, unknown>;
+  if ('displayName' in o) return next;
+  const prev = readRoutineDisplayNameFromConfig(loadGoalDetailCategoryConfig(categoryKey));
+  if (prev.length === 0) return next;
+  return { ...o, displayName: prev };
 }
 
 function resolveCatalogGroupKeyForSettings(categoryKey: string): string {
@@ -308,11 +307,19 @@ export function GoalDetailSettingsPage() {
   );
 
   const handleChangeDataConfig = useCallback((target: EditingTarget, next: unknown) => {
-    const persisted = withPreservedOtherDisplayName(target.categoryKey, next);
+    const persisted = withPreservedRoutineDisplayName(target.categoryKey, next);
+    const prevDisplayName = readRoutineDisplayNameFromConfig(
+      loadGoalDetailCategoryConfig(target.categoryKey),
+    );
+    const nextDisplayName = readRoutineDisplayNameFromConfig(persisted);
     setPatchByBlockId((prev) => ({ ...prev, [target.blockId]: persisted }));
     saveGoalDetailBlockConfig(target.blockId, persisted);
     saveGoalDetailCategoryConfig(target.categoryKey, persisted);
-    if (target.categoryKey === 'other' || isCustomFlowCategoryKey(target.categoryKey)) {
+    if (
+      target.categoryKey === 'other' ||
+      isCustomFlowCategoryKey(target.categoryKey) ||
+      prevDisplayName !== nextDisplayName
+    ) {
       registerOtherCategoryResolverFromStorage();
       useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
     }
@@ -364,20 +371,6 @@ export function GoalDetailSettingsPage() {
         if (cfg.dosesPerDay <= 0) continue;
       }
       keysToAppend.push(t.categoryKey);
-    }
-    const uniqueKeys = [...new Set(keysToAppend)];
-
-    const hasRealBlockTarget = targets.some((t) =>
-      blocks.some((b) => b.id === t.blockId && isDayPlanFlowBlock(b)),
-    );
-    /** 담기에서 만든 `customFlow:`만 편집한 경우(일정 블록 없음) — 오늘 루틴에 자동 담지 않음 */
-    const skipAutoAddToPriorityBag =
-      !hasRealBlockTarget &&
-      uniqueKeys.length > 0 &&
-      uniqueKeys.every((k) => isCustomFlowCategoryKey(k));
-
-    if (!skipAutoAddToPriorityBag) {
-      appendPriorityCategoryKeysIfMissing(uniqueKeys);
     }
     appendGoalDetailCommittedCategoryKeys(keysToAppend);
 

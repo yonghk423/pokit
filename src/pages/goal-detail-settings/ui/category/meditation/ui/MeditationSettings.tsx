@@ -5,6 +5,11 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
+import { RoutineTitleField } from '../../lib/RoutineTitleField';
+import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
+
+import type { GoalDetailCategoryKey } from '../../../../model/types';
 
 import {
   getInitialMeditationDataConfig,
@@ -13,38 +18,62 @@ import {
 } from './meditationConfig';
 
 export function MeditationSettings({
+  rhythmTitle,
+  categoryKey = 'meditation',
   dataConfig,
   onChangeDataConfig,
+  allowRename = true,
+  renameLockedReason = null,
 }: {
   rhythmTitle: string;
+  categoryKey?: GoalDetailCategoryKey;
   dataConfig: unknown;
   onChangeDataConfig: (next: unknown) => void;
+  allowRename?: boolean;
+  renameLockedReason?: 'running' | 'today' | null;
 }) {
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
+  const titleFallback = useMemo(
+    () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
+    [categoryKey, rhythmTitle],
+  );
   const initial = normalizeMeditationDetailConfig(dataConfig ?? getInitialMeditationDataConfig());
 
+  const [displayName, setDisplayName] = useState(initial.displayName);
   const [sessionStr, setSessionStr] = useState(String(initial.sessionMin));
   const [elapsedStr, setElapsedStr] = useState(String(initial.elapsedMin));
+  const [summary, setSummary] = useState(initial.summary);
   const lastRef = useRef<string | null>(null);
 
   useEffect(() => {
     const payload: MeditationDetailDataConfig = normalizeMeditationDetailConfig({
+      displayName,
       sessionMin: parseInt(sessionStr, 10) || 0,
       elapsedMin: parseInt(elapsedStr, 10) || 0,
+      summary,
     });
     const s = JSON.stringify(payload);
     if (lastRef.current === s) return;
     lastRef.current = s;
     onChangeDataConfig(payload);
-  }, [sessionStr, elapsedStr, onChangeDataConfig]);
+  }, [displayName, sessionStr, elapsedStr, summary, onChangeDataConfig]);
 
   return (
     <View style={[styles.inner, { backgroundColor: c.surfaceLow }]}>
-      <ThemedText style={[styles.title, { color: c.onSurface }]}>명상 세션</ThemedText>
+      <RoutineTitleField
+        value={displayName}
+        onChangeValue={setDisplayName}
+        fallback={titleFallback}
+        allowRename={allowRename}
+        renameLockedReason={renameLockedReason}
+        palette={c}
+        size="compact"
+      />
       <ThemedText style={[styles.sub, { color: c.onVariant }]}>
         한 세션 길이와 지금까지 진행된 시간을 분 단위로 적어 주세요.
       </ThemedText>
+      <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
       <View style={styles.row}>
         <View style={styles.col}>
           <ThemedText style={[styles.label, { color: c.onVariant }]}>세션(분)</ThemedText>

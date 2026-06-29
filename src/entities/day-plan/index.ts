@@ -101,10 +101,15 @@ export {
 } from './lib/goalDetailChecklistCategoryKeys';
 export {
   CATEGORY_REMINDER_KEYS,
+  builtinCategoryLabelKo,
   categoryReminderLabelKo,
   categoryReminderIconName,
   type CategoryReminderCatalogKey,
 } from './lib/categoryReminderCatalog';
+export {
+  getPriorityCatalogPickerLabel,
+  PRIORITY_CATALOG_PICKER_LABELS,
+} from './lib/priorityCatalogPickerLabels';
 export {
   isLikelyPriorityCatalogMonolineTitle,
   isPriorityCompoundBlockTitle,

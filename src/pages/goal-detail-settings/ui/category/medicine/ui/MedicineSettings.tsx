@@ -12,6 +12,11 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
+import { RoutineTitleField } from '../../lib/RoutineTitleField';
+import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
+
+import type { GoalDetailCategoryKey } from '../../../../model/types';
 
 import {
   getInitialMedicineDataConfig,
@@ -110,16 +115,27 @@ function clampMedicineTimesToRoutine(
 }
 
 export function MedicineSettings({
+  rhythmTitle,
+  categoryKey = 'medicine',
   dataConfig,
   onChangeDataConfig,
+  allowRename = true,
+  renameLockedReason = null,
 }: {
   rhythmTitle: string;
+  categoryKey?: GoalDetailCategoryKey;
   dataConfig: unknown;
   onChangeDataConfig: (next: unknown) => void;
+  allowRename?: boolean;
+  renameLockedReason?: 'running' | 'today' | null;
 }) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const c = useMemo(() => goalDetailSettingsPalette(isDark), [isDark]);
+  const titleFallback = useMemo(
+    () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
+    [categoryKey, rhythmTitle],
+  );
   const pill = useMemo(() => tabPillColors(isDark), [isDark]);
   const priorityStart = useDayPlanDraftStore((s) => s.priorityStart);
   const priorityEnd = useDayPlanDraftStore((s) => s.priorityEnd);
@@ -168,6 +184,21 @@ export function MedicineSettings({
 
   return (
     <View style={styles.shell}>
+      <RoutineTitleField
+        value={draft.displayName}
+        onChangeValue={(displayName) => setDraft((prev) => ({ ...prev, displayName }))}
+        fallback={titleFallback}
+        allowRename={allowRename}
+        renameLockedReason={renameLockedReason}
+        palette={c}
+      />
+
+      <RoutineSummaryField
+        value={draft.summary}
+        onChangeValue={(summary) => setDraft((prev) => ({ ...prev, summary }))}
+        palette={c}
+      />
+
       <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: c.outline }]}>
         <View style={styles.metricItem}>
           <Text style={[styles.metricValue, { color: c.onSurface }]}>{draft.dosesPerDay}</Text>

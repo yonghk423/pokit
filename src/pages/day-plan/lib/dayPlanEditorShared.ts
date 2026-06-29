@@ -7,6 +7,7 @@ import {
   isCustomFlowCategoryKey,
   normalizeOtherDetailConfig,
   parseHHmmToMinutes,
+  PRIORITY_CATALOG_PICKER_LABELS,
 } from '@entities/day-plan';
 import { loadGoalDetailCategoryConfig, resolveCustomFlowCatalogIcon } from '@shared/lib/storage';
 
@@ -23,45 +24,45 @@ export type { PlanMode } from '@entities/day-plan';
 
 export const PRIMARY = 'rgb(0, 0, 0)';
 
-export const CATEGORIES = [
+export const CATEGORIES: { key: string; label: string; icon: string }[] = [
   // ─── 건강·몸 관리 ───
-  { key: 'water', label: '수분섭취', icon: 'drop.fill' as const },
-  { key: 'medicine', label: '약 복용', icon: 'cross.case.fill' as const },
-  { key: 'fasting', label: '체중관리', icon: 'figure.stand' as const },
-  { key: 'stretching', label: '스트레칭하기', icon: 'figure.run' as const },
-  { key: 'straightenBack', label: '허리펴기', icon: 'figure.yoga' as const },
-  { key: 'neckPosture', label: '거북목 바르게하기', icon: 'tortoise.fill' as const },
-  { key: 'meditation', label: '명상', icon: 'brain.head.profile' as const },
-  { key: 'workout', label: '운동', icon: 'dumbbell.fill' as const },
-  { key: 'walking', label: '산책', icon: 'figure.walk' as const },
-  { key: 'yoga', label: '요가', icon: 'figure.mind.and.body' as const },
-  { key: 'sleep', label: '수면 관리', icon: 'moon.fill' as const },
-  { key: 'breathing', label: '호흡 운동', icon: 'wind' as const },
-  { key: 'skincare', label: '피부 관리', icon: 'sparkles' as const },
-  { key: 'vitamins', label: '영양제 챙기기', icon: 'pill.fill' as const },
-  { key: 'posture', label: '자세 교정', icon: 'figure.stand.line.dotted.figure.stand' as const },
-  { key: 'eyerest', label: '눈 휴식', icon: 'eye' as const },
+  { key: 'water', label: PRIORITY_CATALOG_PICKER_LABELS.water, icon: 'drop.fill' },
+  { key: 'medicine', label: PRIORITY_CATALOG_PICKER_LABELS.medicine, icon: 'cross.case.fill' },
+  { key: 'fasting', label: PRIORITY_CATALOG_PICKER_LABELS.fasting, icon: 'figure.stand' },
+  { key: 'stretching', label: PRIORITY_CATALOG_PICKER_LABELS.stretching, icon: 'figure.run' },
+  { key: 'straightenBack', label: PRIORITY_CATALOG_PICKER_LABELS.straightenBack, icon: 'figure.yoga' },
+  { key: 'neckPosture', label: PRIORITY_CATALOG_PICKER_LABELS.neckPosture, icon: 'tortoise.fill' },
+  { key: 'meditation', label: PRIORITY_CATALOG_PICKER_LABELS.meditation, icon: 'brain.head.profile' },
+  { key: 'workout', label: PRIORITY_CATALOG_PICKER_LABELS.workout, icon: 'dumbbell.fill' },
+  { key: 'walking', label: PRIORITY_CATALOG_PICKER_LABELS.walking, icon: 'figure.walk' },
+  { key: 'yoga', label: PRIORITY_CATALOG_PICKER_LABELS.yoga, icon: 'figure.mind.and.body' },
+  { key: 'sleep', label: PRIORITY_CATALOG_PICKER_LABELS.sleep, icon: 'moon.fill' },
+  { key: 'breathing', label: PRIORITY_CATALOG_PICKER_LABELS.breathing, icon: 'wind' },
+  { key: 'skincare', label: PRIORITY_CATALOG_PICKER_LABELS.skincare, icon: 'sparkles' },
+  { key: 'vitamins', label: PRIORITY_CATALOG_PICKER_LABELS.vitamins, icon: 'pill.fill' },
+  { key: 'posture', label: PRIORITY_CATALOG_PICKER_LABELS.posture, icon: 'figure.stand.line.dotted.figure.stand' },
+  { key: 'eyerest', label: PRIORITY_CATALOG_PICKER_LABELS.eyerest, icon: 'eye' },
 
   // ─── 생산성을 높이는 도구 ───
-  { key: 'reading', label: '독서', icon: 'book.fill' as const },
-  { key: 'study', label: '공부·학습', icon: 'graduationcap.fill' as const },
-  { key: 'planning', label: '하루·주간 정리', icon: 'calendar.badge.clock' as const },
-  { key: 'writing', label: '글쓰기', icon: 'square.and.pencil' as const },
-  { key: 'language', label: '언어 학습', icon: 'character.bubble' as const },
-  { key: 'creative', label: '창작·아이디어', icon: 'paintpalette.fill' as const },
-  { key: 'inbox', label: '메일·소통 정리', icon: 'tray.2.fill' as const },
-  { key: 'deepwork', label: '딥 워크', icon: 'brain' as const },
-  { key: 'journal', label: '일기 쓰기', icon: 'book.closed.fill' as const },
-  { key: 'pomodoro', label: '포모도로 집중', icon: 'timer' as const },
-  { key: 'review', label: '회고·복습', icon: 'arrow.counterclockwise' as const },
-  { key: 'news', label: '뉴스·정보 수집', icon: 'newspaper.fill' as const },
-  { key: 'organize', label: '정리정돈', icon: 'tray.and.arrow.down.fill' as const },
-  { key: 'podcast', label: '팟캐스트·강의', icon: 'headphones' as const },
-  { key: 'work', label: '업무 집중', icon: 'bag.fill' as const },
-  { key: 'coding', label: '코딩·개발', icon: 'chevron.left.forwardslash.chevron.right' as const },
+  { key: 'reading', label: PRIORITY_CATALOG_PICKER_LABELS.reading, icon: 'book.fill' },
+  { key: 'study', label: PRIORITY_CATALOG_PICKER_LABELS.study, icon: 'graduationcap.fill' },
+  { key: 'planning', label: PRIORITY_CATALOG_PICKER_LABELS.planning, icon: 'calendar.badge.clock' },
+  { key: 'writing', label: PRIORITY_CATALOG_PICKER_LABELS.writing, icon: 'square.and.pencil' },
+  { key: 'language', label: PRIORITY_CATALOG_PICKER_LABELS.language, icon: 'character.bubble' },
+  { key: 'creative', label: PRIORITY_CATALOG_PICKER_LABELS.creative, icon: 'paintpalette.fill' },
+  { key: 'inbox', label: PRIORITY_CATALOG_PICKER_LABELS.inbox, icon: 'tray.2.fill' },
+  { key: 'deepwork', label: PRIORITY_CATALOG_PICKER_LABELS.deepwork, icon: 'brain' },
+  { key: 'journal', label: PRIORITY_CATALOG_PICKER_LABELS.journal, icon: 'book.closed.fill' },
+  { key: 'pomodoro', label: PRIORITY_CATALOG_PICKER_LABELS.pomodoro, icon: 'timer' },
+  { key: 'review', label: PRIORITY_CATALOG_PICKER_LABELS.review, icon: 'arrow.counterclockwise' },
+  { key: 'news', label: PRIORITY_CATALOG_PICKER_LABELS.news, icon: 'newspaper.fill' },
+  { key: 'organize', label: PRIORITY_CATALOG_PICKER_LABELS.organize, icon: 'tray.and.arrow.down.fill' },
+  { key: 'podcast', label: PRIORITY_CATALOG_PICKER_LABELS.podcast, icon: 'headphones' },
+  { key: 'work', label: PRIORITY_CATALOG_PICKER_LABELS.work, icon: 'bag.fill' },
+  { key: 'coding', label: PRIORITY_CATALOG_PICKER_LABELS.coding, icon: 'chevron.left.forwardslash.chevron.right' },
 
   // ─── 레거시 호환 ───
-  { key: 'other', label: '플로우 직접 설정', icon: 'person.fill' as const },
+  { key: 'other', label: PRIORITY_CATALOG_PICKER_LABELS.other, icon: 'person.fill' },
 ];
 
 /** 담기·우선순위에서 고를 수 있는 카테고리(전체) */
@@ -89,7 +90,7 @@ export function getPickerCategoryItem(key: string): PickerCategoryItem | undefin
   return PICKER_CATEGORIES.find((c) => c.key === key) ?? LEGACY_PICKER_BY_KEY[key];
 }
 
-/** `other`·`customFlow:…`는 목표 상세 저장값 기준 표시명을 쓴다. */
+/** 모든 카테고리에서 사용자 지정 이름을 우선 사용한다. */
 export function getPickerCategoryLabel(
   key: string,
   otherDetailConfig: unknown | null | undefined = undefined,
@@ -105,6 +106,13 @@ export function getPickerCategoryLabel(
     const raw =
       otherDetailConfig !== undefined ? otherDetailConfig : loadGoalDetailCategoryConfig('other');
     return getOtherCategoryResolvedDisplayLabel(raw);
+  }
+  const raw =
+    otherDetailConfig !== undefined ? otherDetailConfig : loadGoalDetailCategoryConfig(key);
+  if (raw && typeof raw === 'object') {
+    const dn = ((raw as Record<string, unknown>).displayName ?? '') as string;
+    const trimmed = typeof dn === 'string' ? dn.trim() : '';
+    if (trimmed.length > 0) return trimmed;
   }
   return getPickerCategoryItem(key)?.label ?? '사용자';
 }

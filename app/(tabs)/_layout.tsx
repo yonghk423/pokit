@@ -10,7 +10,7 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 const TAB_ICONS: Record<string, string> = {
   'day-plan': 'calendar',
   'priority-catalog': 'list.bullet.rectangle',
-  'fixed-routines': 'bookmark',
+  'fixed-routines': 'figure.walk',
   'day-plan-statistics': 'clock.arrow.circlepath',
   'pokit-story': 'book',
 };

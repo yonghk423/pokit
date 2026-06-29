@@ -9,7 +9,7 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
-import { PICKER_CATEGORIES, PRIMARY } from '../lib/dayPlanEditorShared';
+import { getPickerCategoryLabel, PICKER_CATEGORIES, PRIMARY } from '../lib/dayPlanEditorShared';
 import {
   buildPriorityCatalogSections,
   filterCatalogPickerCategories,
@@ -443,7 +443,10 @@ export function PriorityCatalogPanel({
 
   const visibleCatalogCategories = useMemo(() => {
     void catalogLabelTick;
-    return filterCatalogPickerCategories(PICKER_CATEGORIES);
+    return filterCatalogPickerCategories(PICKER_CATEGORIES).map((item) => ({
+      ...item,
+      label: getPickerCategoryLabel(item.key),
+    }));
   }, [catalogLabelTick]);
 
   const { groupSections } = useMemo(

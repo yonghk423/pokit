@@ -6,17 +6,22 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
+import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
 import {
   getInitialOtherDataConfig,
   normalizeOtherDetailConfig,
   type OtherDetailDataConfig,
 } from '../../other/ui/otherConfig';
 
+import type { GoalDetailCategoryKey } from '../../../../model/types';
+
 import { BODY_HABIT_CHECKLIST_COPY, type BodyHabitChecklistVariant } from '../lib/bodyHabitCopy';
 
 type SharedSettingsProps = {
   rhythmTitle: string;
+  categoryKey?: GoalDetailCategoryKey;
   dataConfig: unknown;
   onChangeDataConfig: (next: unknown) => void;
   allowRename?: boolean;
@@ -25,6 +30,8 @@ type SharedSettingsProps = {
 
 export function BodyHabitChecklistSettings({
   variant,
+  rhythmTitle,
+  categoryKey,
   dataConfig,
   onChangeDataConfig,
   allowRename = true,
@@ -35,9 +42,14 @@ export function BodyHabitChecklistSettings({
   const copy = BODY_HABIT_CHECKLIST_COPY[variant];
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
+  const titleFallback = useMemo(
+    () => resolveRoutineTitleFallback(categoryKey ?? variant, rhythmTitle),
+    [categoryKey, rhythmTitle, variant],
+  );
   const initial = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
 
   const [displayName, setDisplayName] = useState(initial.displayName);
+  const [summary, setSummary] = useState(initial.summary);
   const [draftTask, setDraftTask] = useState('');
   const [checklist, setChecklist] = useState(initial.checklist);
   const lastRef = useRef<string | null>(null);
@@ -47,6 +59,7 @@ export function BodyHabitChecklistSettings({
     const next = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
     isSyncingFromPropsRef.current = true;
     setDisplayName(next.displayName);
+    setSummary(next.summary);
     setChecklist(next.checklist);
     lastRef.current = JSON.stringify(next);
   }, [dataConfig]);
@@ -56,12 +69,16 @@ export function BodyHabitChecklistSettings({
       isSyncingFromPropsRef.current = false;
       return;
     }
-    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({ displayName, checklist });
+    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({
+      displayName,
+      summary,
+      checklist,
+    });
     const serialized = JSON.stringify(payload);
     if (lastRef.current === serialized) return;
     lastRef.current = serialized;
     onChangeDataConfig(payload);
-  }, [displayName, checklist, onChangeDataConfig]);
+  }, [displayName, summary, checklist, onChangeDataConfig]);
 
   const addTask = () => {
     const text = draftTask.trim();
@@ -100,12 +117,14 @@ export function BodyHabitChecklistSettings({
       <RoutineTitleField
         value={displayName}
         onChangeValue={setDisplayName}
-        fallback={copy.listTitle}
+        fallback={titleFallback}
         allowRename={allowRename}
         renameLockedReason={renameLockedReason}
         palette={c}
         size="compact"
       />
+
+      <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
 
       <View style={[styles.toolbar, { borderTopColor: c.onSurface, borderBottomColor: c.outline }]}>
         <Pressable style={styles.toolbarBtn} onPress={onShare}>

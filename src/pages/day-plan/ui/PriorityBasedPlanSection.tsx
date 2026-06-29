@@ -28,7 +28,6 @@ import {
   formatBlockTimeRange,
   formatMinuteOfDayKo,
   getLocalDateKey,
-  isCustomFlowCategoryKey,
   isLikelyPriorityCatalogMonolineTitle,
   isPriorityCompoundBlockTitle,
   localDateToDateKey,
@@ -907,10 +906,7 @@ export function PriorityBasedPlanSection({
         .map((key) => {
           const base = getPickerCategoryItem(key);
           if (!base) return null;
-          if (key === 'other' || isCustomFlowCategoryKey(key)) {
-            return { ...base, label: getPickerCategoryLabel(key) };
-          }
-          return base;
+          return { ...base, label: getPickerCategoryLabel(key) };
         })
         .filter(Boolean) as (typeof PICKER_CATEGORIES)[number][],
     [priorityCategoryOrder, categoryHintTick, categoryLabelEpoch],

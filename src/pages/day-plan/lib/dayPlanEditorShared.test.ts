@@ -7,11 +7,13 @@ jest.mock('@entities/day-plan', () => {
   const parse = jest.requireActual('@entities/day-plan/lib/parseTime');
   const priority = jest.requireActual('@entities/day-plan/lib/priorityRoutineWindow');
   const math = jest.requireActual('@entities/day-plan/lib/dayPlanTimeMath');
+  const labels = jest.requireActual('@entities/day-plan/lib/priorityCatalogPickerLabels');
   return {
     ...local,
     ...parse,
     ...priority,
     ...math,
+    ...labels,
     getLocalDateKey: () => '2025-05-26',
     defaultCustomFlowPickerLabel: () => '사용자',
     getInitialOtherDataConfig: () => ({}),

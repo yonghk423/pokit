@@ -19,6 +19,7 @@ import { ThemedView } from '@shared/ui/themed-view';
 type Props = {
   uri: string;
   allowedHostSuffixes?: readonly string[];
+  onMessage?: (data: unknown) => void;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -37,7 +38,7 @@ function shouldOpenExternally(url: string): boolean {
   return url.startsWith('mailto:') || url.startsWith('tel:');
 }
 
-export function WebViewScreen({ uri, allowedHostSuffixes = [], style }: Props) {
+export function WebViewScreen({ uri, allowedHostSuffixes = [], onMessage, style }: Props) {
   const webViewRef = useRef<WebView>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -77,6 +78,19 @@ export function WebViewScreen({ uri, allowedHostSuffixes = [], style }: Props) {
   const handleGoBack = useCallback(() => {
     webViewRef.current?.goBack();
   }, []);
+
+  const handleMessage = useCallback(
+    (event: { nativeEvent: { data: string } }) => {
+      if (!onMessage) return;
+      try {
+        const parsed = JSON.parse(event.nativeEvent.data);
+        onMessage(parsed);
+      } catch {
+        /* invalid JSON — ignore */
+      }
+    },
+    [onMessage],
+  );
 
   return (
     <ThemedView style={[styles.container, style]}>
@@ -135,6 +149,7 @@ export function WebViewScreen({ uri, allowedHostSuffixes = [], style }: Props) {
             }}
             onNavigationStateChange={handleNavigationStateChange}
             onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+            onMessage={onMessage ? handleMessage : undefined}
             startInLoadingState
             allowsBackForwardNavigationGestures
             sharedCookiesEnabled

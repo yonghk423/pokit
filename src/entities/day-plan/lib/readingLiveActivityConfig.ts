@@ -1,19 +1,26 @@
+import { normalizeRoutineDisplayName } from './routineDisplayName';
+import { normalizeRoutineSummary } from './routineSummary';
+
 export type ReadingMetricKey = 'pages_read' | 'pages_left' | 'focus_level';
 
 export type ReadingLiveActivityConfig = {
+  displayName: string;
   /** 비어 있으면 플로우(일정 블록) 제목을 세션에 표시합니다. */
   bookTitle: string;
   startPage: number;
   targetPage: number;
   selectedMetrics: ReadingMetricKey[];
+  summary: string;
 };
 
 export const DEFAULT_READING_LIVE_ACTIVITY_CONFIG: ReadingLiveActivityConfig = {
+  displayName: '',
   bookTitle: '',
   startPage: 1,
   targetPage: 100,
   /** 잠금화면 지표 — 전부 해제 가능 */
   selectedMetrics: [],
+  summary: '',
 };
 
 const READING_METRIC_SET = new Set<ReadingMetricKey>([
@@ -46,10 +53,12 @@ export function readingDisplayTitle(
 
 export function getInitialReadingLiveActivityConfig(): ReadingLiveActivityConfig {
   return {
+    displayName: '',
     bookTitle: DEFAULT_READING_LIVE_ACTIVITY_CONFIG.bookTitle,
     startPage: DEFAULT_READING_LIVE_ACTIVITY_CONFIG.startPage,
     targetPage: DEFAULT_READING_LIVE_ACTIVITY_CONFIG.targetPage,
     selectedMetrics: [...DEFAULT_READING_LIVE_ACTIVITY_CONFIG.selectedMetrics],
+    summary: '',
   };
 }
 
@@ -77,6 +86,7 @@ export function normalizeReadingLiveActivityConfig(input: unknown): ReadingLiveA
       : {};
 
   return {
+    displayName: normalizeRoutineDisplayName(raw.displayName),
     bookTitle: clampReadingBookTitle(raw.bookTitle, 120),
     startPage: toNonNegativeInt(
       raw.startPage,
@@ -87,6 +97,7 @@ export function normalizeReadingLiveActivityConfig(input: unknown): ReadingLiveA
       DEFAULT_READING_LIVE_ACTIVITY_CONFIG.targetPage,
     ),
     selectedMetrics: normalizeReadingMetricSelection(raw.selectedMetrics),
+    summary: normalizeRoutineSummary(raw.summary),
   };
 }
 
