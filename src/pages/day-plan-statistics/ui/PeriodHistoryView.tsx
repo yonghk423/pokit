@@ -433,7 +433,7 @@ export function PeriodHistoryView({
         <View style={styles.historyTabHeader}>
           <ThemedText style={styles.sectionTitle}>주간 · 월간 기록</ThemedText>
           <ThemedText style={styles.historyTabHint} lightColor={tone.muted} darkColor={tone.muted}>
-            오늘 탭에서 완료한 위클리·먼슬리 전략이 여기 모여요
+            오늘 탭에서 완료한 위클리·먼슬리 스토리가 여기 모여요
           </ThemedText>
         </View>
         <View style={styles.historyTabRow}>
@@ -463,7 +463,7 @@ export function PeriodHistoryView({
                     ? `위클리 기록 ${entryCount}건`
                     : `먼슬리 기록 ${entryCount}건`
                 }
-                accessibilityHint="탭하면 완료한 전략 목록을 볼 수 있어요">
+                accessibilityHint="탭하면 완료한 스토리 목록을 볼 수 있어요">
                 <IconSymbol
                   name={isWeekly ? 'calendar' : 'calendar.badge.clock'}
                   size={13}
@@ -500,7 +500,7 @@ export function PeriodHistoryView({
               <View style={[styles.emptyCard, { backgroundColor: tone.level0 }]}>
                 <ThemedText style={styles.emptyText} lightColor={tone.muted} darkColor={tone.muted}>
                   {weeklyCompletionEntries.length === 0
-                    ? '위클리 탭에서 전략을 작성하고 완료하면 여기에 기록돼요.'
+                    ? '위클리 탭에서 스토리를 작성하고 완료하면 여기에 기록돼요.'
                     : '이 달에 완료된 위클리 기록이 없어요.'}
                 </ThemedText>
               </View>
@@ -522,7 +522,7 @@ export function PeriodHistoryView({
               <View style={[styles.emptyCard, { backgroundColor: tone.level0 }]}>
                 <ThemedText style={styles.emptyText} lightColor={tone.muted} darkColor={tone.muted}>
                   {monthlyCompletionEntries.length === 0
-                    ? '먼슬리 탭에서 전략을 작성하고 완료하면 여기에 기록돼요.'
+                    ? '먼슬리 탭에서 스토리를 작성하고 완료하면 여기에 기록돼요.'
                     : '이 달에 완료된 먼슬리 기록이 없어요.'}
                 </ThemedText>
               </View>

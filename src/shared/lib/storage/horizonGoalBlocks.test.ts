@@ -5,6 +5,7 @@ import {
   horizonDocumentHasContent,
   horizonDocumentToPlainText,
   parseHorizonGoalDocument,
+  patchHorizonBlockType,
 } from './horizonGoalBlocks';
 
 describe('horizonGoalBlocks', () => {
@@ -27,6 +28,17 @@ describe('horizonGoalBlocks', () => {
     const doc = parseHorizonGoalDocument('1. 첫 항목\n2. 둘째 항목');
     expect(doc.blocks.filter((b) => b.type === 'numbered')).toHaveLength(2);
     expect(doc.blocks[0].text).toBe('첫 항목');
+  });
+
+  it('patchHorizonBlockType clears checklist-only fields', () => {
+    const checklist = createHorizonBlock('checklist', { text: '할 일', checked: true });
+    const paragraph = patchHorizonBlockType(checklist, 'paragraph');
+    expect(paragraph.type).toBe('paragraph');
+    expect(paragraph.checked).toBeUndefined();
+
+    const back = patchHorizonBlockType(paragraph, 'checklist');
+    expect(back.type).toBe('checklist');
+    expect(back.checked).toBe(false);
   });
 
   it('assigns sequential order for consecutive numbered blocks', () => {

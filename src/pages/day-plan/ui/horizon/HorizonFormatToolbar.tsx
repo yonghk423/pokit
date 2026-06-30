@@ -56,14 +56,14 @@ export function HorizonFormatToolbar({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="섹션제목1"
-        onPress={() => tap(() => onPickType('heading1'))}
+        onPressIn={() => tap(() => onPickType('heading1'))}
         style={[styles.textBtn, selectedType === 'heading1' && [styles.textBtnActive, { backgroundColor: activeBg }]]}>
         <ThemedText style={[styles.toolText, { color: ink }]}>T1</ThemedText>
       </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="섹션제목2"
-        onPress={() => tap(() => onPickType('heading2'))}
+        onPressIn={() => tap(() => onPickType('heading2'))}
         style={[styles.textBtn, selectedType === 'heading2' && [styles.textBtnActive, { backgroundColor: activeBg }]]}>
         <ThemedText style={[styles.toolText, { color: ink }]}>T2</ThemedText>
       </Pressable>
@@ -73,21 +73,21 @@ export function HorizonFormatToolbar({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="체크리스트"
-        onPress={() => tap(() => onPickType('checklist'))}
+        onPressIn={() => tap(() => onPickType('checklist'))}
         style={[styles.iconBtn, selectedType === 'checklist' && [styles.textBtnActive, { backgroundColor: activeBg }]]}>
         <IconSymbol name="checklist" size={20} color={selectedType === 'checklist' ? PRIMARY : muted} />
       </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="리스트"
-        onPress={() => tap(() => onPickType('bullet'))}
+        onPressIn={() => tap(() => onPickType('bullet'))}
         style={[styles.iconBtn, selectedType === 'bullet' && [styles.textBtnActive, { backgroundColor: activeBg }]]}>
         <IconSymbol name="list.bullet" size={20} color={selectedType === 'bullet' ? PRIMARY : muted} />
       </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="번호 리스트"
-        onPress={() => tap(() => onPickType('numbered'))}
+        onPressIn={() => tap(() => onPickType('numbered'))}
         style={[styles.iconBtn, selectedType === 'numbered' && [styles.textBtnActive, { backgroundColor: activeBg }]]}>
         <IconSymbol name="list.number" size={20} color={selectedType === 'numbered' ? PRIMARY : muted} />
       </Pressable>
@@ -97,7 +97,7 @@ export function HorizonFormatToolbar({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="굵게"
-        onPress={() => tap(onToggleBold)}
+        onPressIn={() => tap(onToggleBold)}
         style={[
           styles.textBtn,
           boldActive && [styles.textBtnActive, { backgroundColor: activeBg }],
@@ -107,7 +107,7 @@ export function HorizonFormatToolbar({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="밑줄"
-        onPress={() => tap(onToggleUnderline)}
+        onPressIn={() => tap(onToggleUnderline)}
         style={[
           styles.textBtn,
           underlineActive && [styles.textBtnActive, { backgroundColor: activeBg }],
@@ -118,7 +118,7 @@ export function HorizonFormatToolbar({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="블록 추가"
-        onPress={() => tap(onAddBlock)}
+        onPressIn={() => tap(onAddBlock)}
         style={[styles.plusBtn, { backgroundColor: isDark ? '#fafafa' : PRIMARY }]}>
         <IconSymbol name="plus" size={20} color={isDark ? '#09090b' : '#ffffff'} />
       </Pressable>

@@ -67,6 +67,20 @@ export function createHorizonBlock(
   };
 }
 
+/** 에디터 툴바 — 블록 타입만 바꿀 때 checklist 전용 필드 정리 */
+export function patchHorizonBlockType(
+  block: HorizonGoalBlock,
+  type: HorizonBlockType,
+): HorizonGoalBlock {
+  const next: HorizonGoalBlock = { ...block, type };
+  if (type === 'checklist') {
+    next.checked = Boolean(block.checked);
+  } else {
+    delete next.checked;
+  }
+  return next;
+}
+
 function normalizeBlock(raw: unknown): HorizonGoalBlock | null {
   if (!raw || typeof raw !== 'object') return null;
   const o = raw as Record<string, unknown>;

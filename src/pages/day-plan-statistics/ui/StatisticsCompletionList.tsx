@@ -85,7 +85,7 @@ function CompletionAccordionRow({
           {hasDocument ? (
             <View style={styles.section}>
               <ThemedText style={styles.sectionLabel} lightColor={tone.muted} darkColor={tone.muted}>
-                전략 기록
+                스토리 기록
               </ThemedText>
               <HorizonDocumentReadView
                 document={document}

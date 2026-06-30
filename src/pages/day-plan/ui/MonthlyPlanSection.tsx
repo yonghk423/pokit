@@ -147,7 +147,7 @@ export function MonthlyPlanSection({ c, isDark }: Props) {
       <HorizonFocusCard
         c={c}
         isDark={isDark}
-        strategyEyebrow="월간 전략"
+        strategyEyebrow="월간 스토리"
         document={document}
         onChangeDocument={onChangeDocument}
         syncLabel={syncLabel}

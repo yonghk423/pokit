@@ -210,7 +210,7 @@ export function WeeklyPlanSection({ c, isDark }: Props) {
       <HorizonFocusCard
         c={c}
         isDark={isDark}
-        strategyEyebrow="주간 전략"
+        strategyEyebrow="주간 스토리"
         document={document}
         onChangeDocument={onChangeDocument}
         syncLabel={syncLabel}

@@ -41,7 +41,7 @@ import {
   resolveCatalogItemGroupKey,
   updateCatalogItemGroup,
 } from '@shared/lib/storage';
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { PokitIconPalette } from '@shared/config/theme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -451,8 +451,6 @@ export function GoalDetailSettingsPage() {
   const headerBg = c.bg;
   const headerBorder = c.border;
   const headerFg = c.onSurface;
-  /** 목표 상세는 라이트 고정 — 하단 탭과 동일 pill 톤 */
-  const tabPill = useMemo(() => tabPillColors(false), []);
 
   const topInset =
     insets.top >= 1
@@ -635,9 +633,7 @@ export function GoalDetailSettingsPage() {
           style={[
             styles.footerFixed,
             {
-              backgroundColor: c.bg,
-              borderTopColor: c.border,
-              paddingBottom: Math.max(insets.bottom, 12),
+              paddingBottom: Math.max(insets.bottom, 10),
             },
           ]}>
           <Pressable
@@ -648,18 +644,18 @@ export function GoalDetailSettingsPage() {
               handleCompleteAndStart();
             }}
             style={({ pressed }) => [
-              styles.footerCompletePill,
+              styles.footerCompleteCircle,
               {
-                backgroundColor: tabPill.activeBg,
-                borderColor: waterOnlyUi ? WATER.primary : tabPill.activeBorder,
+                backgroundColor: waterOnlyUi ? WATER.ctaBg : PokitIconPalette.teal,
+                shadowColor: waterOnlyUi ? WATER.ctaBg : PokitIconPalette.teal,
               },
-              waterOnlyUi && { backgroundColor: WATER.primarySoft },
-              pressed && { opacity: 0.92 },
+              pressed && { opacity: 0.9, transform: [{ scale: 0.94 }] },
             ]}>
             <IconSymbol
-              name="checkmark.circle.fill"
-              size={26}
-              color={waterOnlyUi ? WATER.primary : tabPill.activeIcon}
+              name="checkmark"
+              size={22}
+              weight="bold"
+              color={waterOnlyUi ? WATER.ctaText : '#FAFAFA'}
             />
           </Pressable>
         </View>
@@ -722,21 +718,20 @@ const styles = StyleSheet.create({
   startPickerRowText: { flex: 1, minWidth: 0, gap: 2 },
   startPickerRowTitle: { fontSize: 15, fontWeight: '700' },
   startPickerRowMeta: { fontSize: 12, fontWeight: '600' },
-  /** `DayPlanCustomTabBar` 의 `tabPill` 과 동일 치수·모서리 */
-  footerCompletePill: {
-    marginTop: 4,
-    alignSelf: 'stretch',
+  /** 하단 고정 완료 — 아이콘만, 중앙 원형 CTA */
+  footerCompleteCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-    borderRadius: 14,
-    borderWidth: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    elevation: 4,
   },
   footerFixed: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 10,
-    paddingTop: 10,
+    alignItems: 'center',
+    paddingTop: 8,
   },
 });

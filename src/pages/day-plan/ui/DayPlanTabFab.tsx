@@ -4,18 +4,16 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { PokitIconPalette } from '@shared/config/theme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 
+const FAB_PLAY_ICON = '#FAFAFA';
+
 export function DayPlanTabFab() {
-  const colorScheme = useColorScheme();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const isDark = colorScheme === 'dark';
-  const tabColors = tabPillColors(isDark);
   const bridge = useDayPlanTabBridge();
 
   const isMainTab = pathname === '/day-plan' || pathname === '/';
@@ -72,14 +70,13 @@ export function DayPlanTabFab() {
         style={({ pressed }) => [
           styles.fab,
           {
-            backgroundColor: tabColors.activeBg,
-            borderColor: tabColors.activeBorder,
-            shadowColor: '#000',
+            backgroundColor: PokitIconPalette.teal,
+            shadowColor: PokitIconPalette.teal,
             opacity: pressed ? 0.9 : 1,
             transform: [{ scale: pressed ? 0.95 : 1 }],
           },
         ]}>
-        <IconSymbol name="play.fill" size={20} color={tabColors.activeIcon} />
+        <IconSymbol name="play.fill" size={22} color={FAB_PLAY_ICON} />
       </Pressable>
     </Animated.View>
   );
@@ -96,7 +93,6 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 999,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 10,

@@ -27,6 +27,7 @@ import {
 } from '@entities/day-plan';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { PokitIconPalette } from '@shared/config/theme';
 import {
   appendCustomFlowCatalogEntry,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
@@ -52,7 +53,6 @@ import {
   getPickerCategoryItem,
   getPickerCategoryLabel,
   PICKER_CATEGORIES,
-  PRIMARY,
 } from '../lib/dayPlanEditorShared';
 import { palette, type DayPlanPalette } from '../lib/dayPlanPalette';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
     borderRadius: FAB_SIZE / 2,
     zIndex: 30,
     elevation: 12,
-    shadowColor: '#000',
+    shadowColor: PokitIconPalette.teal,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.28,
     shadowRadius: 8,
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
   fabInner: {
     flex: 1,
     borderRadius: FAB_SIZE / 2,
-    backgroundColor: PRIMARY,
+    backgroundColor: PokitIconPalette.teal,
     alignItems: 'center',
     justifyContent: 'center',
   },
