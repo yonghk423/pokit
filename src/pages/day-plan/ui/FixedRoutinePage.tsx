@@ -27,6 +27,7 @@ import {
   isCustomFlowCategoryKey,
   isPriorityWindowEndedForToday,
   resolveBlockCategoryKey,
+  resolveCategoryCatalogIcon,
   resolveCategoryKeyFromLabel,
   useDayPlanDraftStore,
   useDayPlanStore,
@@ -37,9 +38,13 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   appendCustomFlowCatalogEntry,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
+  listAllCustomFlowCatalogEntries,
+  listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
   saveGoalDetailCategoryConfig,
   subscribeCustomFlowCatalog,
+  type CustomCatalogGroup,
+  type CustomFlowCatalogEntry,
   type FixedFlowSet,
   type FixedFlowSetItem,
 } from '@shared/lib/storage';
@@ -50,7 +55,12 @@ import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import { getPickerCategoryLabel, PRIMARY } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
-import { buildPriorityCatalogRows, sortAddablePriorityCatalogRows, type PriorityCatalogRow } from '../lib/priorityCatalog';
+import {
+  buildAddablePriorityCatalogSections,
+  buildPriorityCatalogRows,
+  type AddablePriorityCatalogSection,
+  type PriorityCatalogRow,
+} from '../lib/priorityCatalog';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 
 if (
@@ -90,9 +100,9 @@ function FlowItemCard({
   onDelete,
 }: FlowCardProps) {
   const label = catalog?.label ?? getPickerCategoryLabel(item.categoryKey);
-  const icon = catalog?.icon ?? 'person.fill';
   const enabled = item.enabled !== false;
   const categoryKey = item.categoryKey;
+  const icon = resolveCategoryCatalogIcon(categoryKey);
   const trackOff = isDark ? '#3f3f46' : '#e5e7eb';
   const shouldPulse = Boolean(isInTodayPlan && isFocusStarted && enabled && !isCompleted);
   const pulse = useRef(new Animated.Value(1)).current;
@@ -184,7 +194,7 @@ function FlowItemCard({
 
 type AddItemModalProps = {
   visible: boolean;
-  addable: PriorityCatalogRow[];
+  sections: AddablePriorityCatalogSection[];
   isDark: boolean;
   ink: string;
   muted: string;
@@ -195,21 +205,9 @@ type AddItemModalProps = {
   onCreateCustom: () => void;
 };
 
-function addableSectionBucket(row: PriorityCatalogRow): 'user' | 'standard' | 'builtin' {
-  if (row.isCustom && !row.key.includes('builtin_')) return 'user';
-  if (!row.isCustom) return 'standard';
-  return 'builtin';
-}
-
-function addableSectionTitle(bucket: 'user' | 'standard' | 'builtin'): string {
-  if (bucket === 'user') return '내가 만든 루틴';
-  if (bucket === 'standard') return '기본 항목';
-  return '추천 루틴';
-}
-
 function AddItemModal({
   visible,
-  addable,
+  sections,
   isDark,
   ink,
   muted,
@@ -260,56 +258,58 @@ function AddItemModal({
           keyboardShouldPersistTaps="handled">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="내 플로우 만들기"
+            accessibilityLabel="새로운 루틴 만들기"
             onPress={() => {
               onClose();
               onCreateCustom();
             }}
             style={({ pressed }) => [styles.modalCreateRow, pressed && { opacity: 0.72 }]}>
             <IconSymbol name="plus.circle.fill" size={20} color={ink} />
-            <ThemedText style={[styles.modalRowLabel, { color: ink }]}>내 플로우 만들기</ThemedText>
+            <ThemedText style={[styles.modalRowLabel, { color: ink }]}>새로운 루틴 만들기</ThemedText>
           </Pressable>
-          {addable.map((cat, index) => {
-            const selected = selectedKeys.has(cat.key);
-            const bucket = addableSectionBucket(cat);
-            const prevBucket = index > 0 ? addableSectionBucket(addable[index - 1]!) : null;
-            const sectionTitle = bucket !== prevBucket ? addableSectionTitle(bucket) : null;
-            return (
-              <View key={cat.key}>
-                {sectionTitle ? (
-                  <ThemedText style={[styles.modalSectionTitle, { color: muted }]}>{sectionTitle}</ThemedText>
-                ) : null}
-                <Pressable
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: selected }}
-                  accessibilityLabel={`${cat.label} ${selected ? '선택됨' : '선택'}`}
-                  onPress={() => toggleSelection(cat.key)}
-                  style={({ pressed }) => [
-                    styles.modalPickRow,
-                    {
-                      borderBottomColor: line,
-                      backgroundColor: selected
-                        ? isDark
-                          ? 'rgba(255,255,255,0.08)'
-                          : 'rgba(0,0,0,0.04)'
-                        : 'transparent',
-                    },
-                    pressed && { opacity: 0.72 },
-                  ]}>
-                  <IconSymbol name={cat.icon as any} size={18} color={muted} />
-                  <ThemedText style={[styles.modalRowLabel, { color: ink }]}>{cat.label}</ThemedText>
-                  <IconSymbol
-                    name={selected ? 'checkmark.circle.fill' : 'circle'}
-                    size={18}
-                    color={selected ? ink : muted}
-                  />
-                </Pressable>
-              </View>
-            );
-          })}
-          {addable.length === 0 ? (
+          {sections.map((section) => (
+            <View key={section.groupKey}>
+              <ThemedText style={[styles.modalSectionTitle, { color: muted }]}>{section.title}</ThemedText>
+              {section.items.map((cat) => {
+                const selected = selectedKeys.has(cat.key);
+                return (
+                  <Pressable
+                    key={cat.key}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
+                    accessibilityLabel={`${cat.label} ${selected ? '선택됨' : '선택'}`}
+                    onPress={() => toggleSelection(cat.key)}
+                    style={({ pressed }) => [
+                      styles.modalPickRow,
+                      {
+                        borderBottomColor: line,
+                        backgroundColor: selected
+                          ? isDark
+                            ? 'rgba(255,255,255,0.08)'
+                            : 'rgba(0,0,0,0.04)'
+                          : 'transparent',
+                      },
+                      pressed && { opacity: 0.72 },
+                    ]}>
+                    <IconSymbol
+                      name={resolveCategoryCatalogIcon(cat.key) as any}
+                      size={18}
+                      color={activeIconColorByCategory(cat.key)}
+                    />
+                    <ThemedText style={[styles.modalRowLabel, { color: ink }]}>{cat.label}</ThemedText>
+                    <IconSymbol
+                      name={selected ? 'checkmark.circle.fill' : 'circle'}
+                      size={18}
+                      color={selected ? ink : muted}
+                    />
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
+          {sections.length === 0 ? (
             <ThemedText style={[styles.modalEmpty, { color: muted }]}>
-              추가할 수 있는 항목이 없어요. 위에서 새 플로우를 만들어 보세요.
+              추가할 수 있는 항목이 없어요. 위에서 새로운 루틴을 만들어 보세요.
             </ThemedText>
           ) : null}
         </ScrollView>
@@ -532,6 +532,8 @@ export function FixedRoutinePage() {
   const horizontalPad = 16;
 
   const [catalogTick, setCatalogTick] = useState(0);
+  const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
+  const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [addItemModalOpen, setAddItemModalOpen] = useState(false);
@@ -660,7 +662,11 @@ export function FixedRoutinePage() {
     })),
   );
 
-  const reloadCatalog = useCallback(() => setCatalogTick((n) => n + 1), []);
+  const reloadCatalog = useCallback(() => {
+    setCatalogTick((n) => n + 1);
+    setCustomFlowEntries(listAllCustomFlowCatalogEntries());
+    setCustomGroups(listCustomCatalogGroups());
+  }, []);
 
   useEffect(() => {
     hydrate();
@@ -689,12 +695,17 @@ export function FixedRoutinePage() {
   }, [catalogTick]);
   const catalogByKey = useMemo(() => new Map(catalog.map((x) => [x.key, x])), [catalog]);
 
-  const addableForModal = useMemo(() => {
+  const addableSectionsForModal = useMemo(() => {
     const setItem = sets.find((s) => s.id === addItemSetId);
     if (!setItem) return [];
-    const inSet = new Set(setItem.items.map((x) => x.categoryKey));
-    return sortAddablePriorityCatalogRows(catalog.filter((c) => !inSet.has(c.key)));
-  }, [catalog, sets, addItemSetId]);
+    const excludedKeys = new Set(setItem.items.map((x) => x.categoryKey));
+    void catalogTick;
+    return buildAddablePriorityCatalogSections({
+      excludedKeys,
+      customFlowEntries,
+      customGroups,
+    });
+  }, [catalogTick, customFlowEntries, customGroups, sets, addItemSetId]);
 
   const toggleExpanded = useCallback((setId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -913,7 +924,7 @@ export function FixedRoutinePage() {
 
       <AddItemModal
         visible={addItemModalOpen}
-        addable={addableForModal}
+        sections={addableSectionsForModal}
         isDark={isDark}
         ink={ink}
         muted={muted}

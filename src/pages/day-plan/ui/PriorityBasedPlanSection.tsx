@@ -1,7 +1,7 @@
 // @ts-nocheck — RN Web에서 StyleSheet.create 타입이 TextStyle|ViewStyle로 합쳐져 Reanimated·제스처와 충돌함
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -753,7 +753,6 @@ export function PriorityBasedPlanSection({
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const router = useRouter();
   const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
   const insets = useSafeAreaInsets();
   const bottomTabBarHeight = useBottomTabBarHeight();
@@ -1652,17 +1651,6 @@ export function PriorityBasedPlanSection({
                   </Pressable>
                 </View>
               </View>
-              <Pressable
-                onPress={() => {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push('/(tabs)/settings');
-                }}
-                hitSlop={12}
-                style={styles.timelineHeaderSettingsBtn}
-                accessibilityRole="button"
-                accessibilityLabel="설정">
-                <IconSymbol name="gearshape" size={22} color={editorial.muted} />
-              </Pressable>
             </View>
             <ScrollView
               nestedScrollEnabled
@@ -2267,13 +2255,6 @@ const styles = StyleSheet.create({
     padding: 4,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  timelineHeaderSettingsBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
   },
   /** 시작·종료 플립 시계 두 열 */
   timeRibbonInner: {

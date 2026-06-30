@@ -4,8 +4,10 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { listCustomFlowCatalogIds } from '@shared/lib/storage';
+import { resolveCategoryCatalogIcon } from '@entities/day-plan';
+import { listAllCustomFlowCatalogEntries } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -46,11 +48,11 @@ export function FixedRoutineEditorModal({
   const catalogCategories = useMemo(() => {
     void catalogLabelTick;
     const base = filterCatalogPickerCategories(PICKER_CATEGORIES);
-    const customs = listCustomFlowCatalogIds().map((id) => {
-      const item = getPickerCategoryItem(id);
+    const customs = listAllCustomFlowCatalogEntries().map((entry) => {
+      const item = getPickerCategoryItem(entry.id);
       return {
-        key: id,
-        label: getPickerCategoryLabel(id),
+        key: entry.id,
+        label: getPickerCategoryLabel(entry.id),
         icon: (item?.icon ?? 'person.fill') as typeof PICKER_CATEGORIES[number]['icon'],
       };
     });
@@ -133,7 +135,11 @@ export function FixedRoutineEditorModal({
                     onPress={() => onAdd(cat.key)}
                     style={({ pressed }) => [styles.addRow, pressed && { opacity: 0.72 }]}
                     android_ripple={{ color: 'rgba(0,0,0,0.06)' }}>
-                    <IconSymbol name={cat.icon as any} size={20} color={tabColors.inactiveIcon} />
+                    <IconSymbol
+                      name={resolveCategoryCatalogIcon(cat.key) as any}
+                      size={20}
+                      color={activeIconColorByCategory(cat.key)}
+                    />
                     <ThemedText style={[styles.orderLabel, { color: ink }]} numberOfLines={1}>
                       {cat.label}
                     </ThemedText>

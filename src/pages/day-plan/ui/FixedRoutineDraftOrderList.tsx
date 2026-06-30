@@ -9,7 +9,9 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
+import { resolveCategoryCatalogIcon } from '@entities/day-plan';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -119,7 +121,11 @@ function DraggableFixedRoutineRow({
           accessibilityRole="adjustable"
           accessibilityLabel={`${cat.label}, 길게 눌러 순서를 바꿀 수 있어요`}>
           <ThemedText style={[styles.orderIdx, { color: muted }]}>{index + 1}</ThemedText>
-          <IconSymbol name={cat.icon as any} size={20} color={muted} />
+          <IconSymbol
+            name={resolveCategoryCatalogIcon(categoryKey) as any}
+            size={20}
+            color={activeIconColorByCategory(categoryKey)}
+          />
           <ThemedText style={[styles.orderLabel, { color: ink }]} numberOfLines={1}>
             {cat.label}
           </ThemedText>

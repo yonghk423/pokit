@@ -209,11 +209,11 @@ export function GoalDetailSettingsPage() {
 
   const resolveRenameAccess = useCallback(
     (key: string) => {
-      if (source === 'today') {
-        return { allowRename: false, renameLockedReason: 'today' as const };
-      }
       if (isCategoryRunning(key)) {
         return { allowRename: false, renameLockedReason: 'running' as const };
+      }
+      if (source === 'today') {
+        return { allowRename: false, renameLockedReason: 'today' as const };
       }
       return { allowRename: true, renameLockedReason: null as const };
     },
@@ -596,14 +596,16 @@ export function GoalDetailSettingsPage() {
                   }
                   onChangeGroupKey={(groupKey) => handleChangeCatalogGroup(categoryKey, groupKey)}
                 />
-                <RoutineAppearanceField
-                  categoryKey={categoryKey}
-                  previewLabel={categoryReminderLabelKo(categoryKey)}
-                  dataConfig={dataByBlockId[targets[0].blockId]}
-                  onChangeDataConfig={(next) => handleChangeDataConfig(targets[0], next)}
-                  ink={c.onSurface}
-                  muted={c.onVariant}
-                />
+                {!isCategoryRunning(categoryKey) ? (
+                  <RoutineAppearanceField
+                    categoryKey={categoryKey}
+                    previewLabel={categoryReminderLabelKo(categoryKey)}
+                    dataConfig={dataByBlockId[targets[0].blockId]}
+                    onChangeDataConfig={(next) => handleChangeDataConfig(targets[0], next)}
+                    ink={c.onSurface}
+                    muted={c.onVariant}
+                  />
+                ) : null}
               </View>
             ) : null}
 

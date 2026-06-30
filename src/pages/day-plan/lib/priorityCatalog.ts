@@ -1,3 +1,5 @@
+import { isCustomFlowCategoryKey } from '@entities/day-plan';
+import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
 import { listAllCustomFlowCatalogEntries } from '@shared/lib/storage';
 
 import {
@@ -6,7 +8,7 @@ import {
   PICKER_CATEGORIES,
   type PickerCategoryItem,
 } from './dayPlanEditorShared';
-import { filterCatalogPickerCategories } from './priorityCatalogSections';
+import { buildPriorityCatalogSections, filterCatalogPickerCategories } from './priorityCatalogSections';
 
 export type PriorityCatalogRow = {
   key: string;
@@ -15,21 +17,49 @@ export type PriorityCatalogRow = {
   isCustom: boolean;
 };
 
+export type AddablePriorityCatalogSection = {
+  groupKey: string;
+  title: string;
+  items: PriorityCatalogRow[];
+};
+
+function pickerItemToRow(item: PickerCategoryItem): PriorityCatalogRow {
+  const resolved = getPickerCategoryItem(item.key);
+  return {
+    key: item.key,
+    label: item.label,
+    icon: (resolved?.icon ?? item.icon) as string,
+    isCustom: isCustomFlowCategoryKey(item.key),
+  };
+}
+
+function dedupeRowsByKey(rows: PriorityCatalogRow[]): PriorityCatalogRow[] {
+  const seen = new Set<string>();
+  const out: PriorityCatalogRow[] = [];
+  for (const row of rows) {
+    if (seen.has(row.key)) continue;
+    seen.add(row.key);
+    out.push(row);
+  }
+  return out;
+}
+
 /** 담기·나만의 탭이 공유하는 카탈로그 행 목록 */
 export function buildPriorityCatalogRows(): PriorityCatalogRow[] {
-  const base = filterCatalogPickerCategories(PICKER_CATEGORIES).map((cat) => ({
-    key: cat.key,
-    label: getPickerCategoryLabel(cat.key),
-    icon: cat.icon as string,
-    isCustom: false,
-  }));
-  const customs = listAllCustomFlowCatalogEntries().map((entry) => ({
-    key: entry.id,
-    label: getPickerCategoryLabel(entry.id),
-    icon: getPickerCategoryItem(entry.id)?.icon ?? 'person.fill',
-    isCustom: true,
-  }));
-  return [...base, ...customs];
+  const base = filterCatalogPickerCategories(PICKER_CATEGORIES).map((cat) =>
+    pickerItemToRow({
+      ...cat,
+      label: getPickerCategoryLabel(cat.key),
+    }),
+  );
+  const customs = listAllCustomFlowCatalogEntries().map((entry) =>
+    pickerItemToRow({
+      key: entry.id,
+      label: getPickerCategoryLabel(entry.id),
+      icon: (getPickerCategoryItem(entry.id)?.icon ?? 'person.fill') as typeof PICKER_CATEGORIES[number]['icon'],
+    }),
+  );
+  return dedupeRowsByKey([...base, ...customs]);
 }
 
 export function buildPriorityCatalogByKey(): Map<string, PriorityCatalogRow> {
@@ -40,7 +70,51 @@ export function getPriorityCatalogPickerItems(): PickerCategoryItem[] {
   return filterCatalogPickerCategories(PICKER_CATEGORIES);
 }
 
-/** 나만의 루틴 추가 모달 — 사용자 플로우를 상단에 두고 기본 항목은 그다음 */
+function buildRoutineTabCatalogPickerItems(
+  customFlowEntries: CustomFlowCatalogEntry[],
+): PickerCategoryItem[] {
+  return customFlowEntries.map((entry) => {
+    const item = getPickerCategoryItem(entry.id);
+    return {
+      key: entry.id,
+      label: getPickerCategoryLabel(entry.id),
+      icon: (item?.icon ?? 'person.fill') as typeof PICKER_CATEGORIES[number]['icon'],
+    };
+  });
+}
+
+/** 루틴 탭과 동일한 상위 그룹 구조 — 나만의 루틴 항목 추가 모달용 */
+export function buildAddablePriorityCatalogSections(input: {
+  excludedKeys: ReadonlySet<string>;
+  customFlowEntries: CustomFlowCatalogEntry[];
+  customGroups: CustomCatalogGroup[];
+}): AddablePriorityCatalogSection[] {
+  const visibleCatalogCategories = filterCatalogPickerCategories(PICKER_CATEGORIES).map((item) => ({
+    ...item,
+    label: getPickerCategoryLabel(item.key),
+  }));
+
+  const customFlowPickerItems = buildRoutineTabCatalogPickerItems(input.customFlowEntries);
+
+  const { groupSections } = buildPriorityCatalogSections({
+    available: visibleCatalogCategories,
+    customFlowPickerItems,
+    customFlowEntries: input.customFlowEntries,
+    customGroups: input.customGroups,
+  });
+
+  return groupSections
+    .map((section) => ({
+      groupKey: section.groupKey,
+      title: section.title,
+      items: section.items
+        .filter((item) => !input.excludedKeys.has(item.key))
+        .map((item) => pickerItemToRow(item)),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
+/** @deprecated 항목 추가 모달은 `buildAddablePriorityCatalogSections` 사용 */
 export function sortAddablePriorityCatalogRows(rows: PriorityCatalogRow[]): PriorityCatalogRow[] {
   const userCustom: PriorityCatalogRow[] = [];
   const standard: PriorityCatalogRow[] = [];
