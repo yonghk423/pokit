@@ -45,7 +45,7 @@ describe('categoryReminderCatalog', () => {
   it('returns catalog icon names', () => {
     expect(categoryReminderIconName('reading')).toBe('book.fill');
     expect(categoryReminderIconName('planning')).toBe('calendar.badge.clock');
-    expect(categoryReminderIconName('unknown_key')).toBe('star.fill');
+    expect(categoryReminderIconName('unknown_key')).toBe('person.fill');
     expect(categoryReminderIconName(`${CUSTOM_FLOW_CATEGORY_PREFIX}abcdefgh`)).toBe('person.fill');
     expect(categoryReminderIconName('customFlow:builtin_hobby_photo')).toBe('camera.fill');
   });

@@ -152,7 +152,6 @@ export function OtherSettings({
         allowRename={allowRename}
         renameLockedReason={renameLockedReason}
         palette={c}
-        size="large"
       />
 
       <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />

@@ -17,11 +17,15 @@ import {
 } from '@entities/day-plan';
 import {
   createCustomCatalogGroup,
+  DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
+  DEFAULT_CUSTOM_FLOW_ICON,
   listCustomCatalogGroups,
   resolveSystemCatalogGroupLabel,
   type CustomCatalogGroup,
+  type CustomFlowIconOption,
 } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { CustomFlowAppearancePicker } from '@shared/ui/custom-flow-appearance-picker';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -39,7 +43,12 @@ type GroupOption = {
 type Props = {
   visible: boolean;
   onClose: () => void;
-  onCreate: (input: { name: string; groupKey: string }) => void;
+  onCreate: (input: {
+    name: string;
+    groupKey: string;
+    icon: CustomFlowIconOption;
+    accentColor: string;
+  }) => void;
   initialGroupKey?: string;
   isDark: boolean;
   ink: string;
@@ -63,6 +72,8 @@ export function CreateCustomFlowSheet({
   const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
 
   const [name, setName] = useState('');
+  const [selectedIcon, setSelectedIcon] = useState<CustomFlowIconOption>(DEFAULT_CUSTOM_FLOW_ICON);
+  const [selectedAccentColor, setSelectedAccentColor] = useState<string>(DEFAULT_CUSTOM_FLOW_ACCENT_COLOR);
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
   const [selectedGroupKey, setSelectedGroupKey] = useState<string>('productivity');
   const [isAddingGroup, setIsAddingGroup] = useState(false);
@@ -82,6 +93,8 @@ export function CreateCustomFlowSheet({
     if (!justOpened) return;
 
     setName('');
+    setSelectedIcon(DEFAULT_CUSTOM_FLOW_ICON);
+    setSelectedAccentColor(DEFAULT_CUSTOM_FLOW_ACCENT_COLOR);
     setIsAddingGroup(false);
     setNewGroupLabel('');
     const fallback =
@@ -127,7 +140,12 @@ export function CreateCustomFlowSheet({
   const handleCreate = () => {
     if (!canSubmit) return;
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    onCreate({ name: trimmedName.trim(), groupKey: selectedGroupKeyRef.current });
+    onCreate({
+      name: trimmedName.trim(),
+      groupKey: selectedGroupKeyRef.current,
+      icon: selectedIcon,
+      accentColor: selectedAccentColor,
+    });
   };
 
   const sheetBg = surface;
@@ -197,6 +215,20 @@ export function CreateCustomFlowSheet({
                   styles.input,
                   { color: ink, backgroundColor: inputBg, borderColor: inputBorder },
                 ]}
+              />
+            </View>
+
+            {/* appearance preview + pickers */}
+            <View style={styles.fieldGroup}>
+              <CustomFlowAppearancePicker
+                icon={selectedIcon}
+                accentColor={selectedAccentColor}
+                onChangeIcon={setSelectedIcon}
+                onChangeAccentColor={setSelectedAccentColor}
+                previewLabel={trimmedName.length > 0 ? trimmedName : '미리보기'}
+                isDark={isDark}
+                ink={ink}
+                muted={muted}
               />
             </View>
 

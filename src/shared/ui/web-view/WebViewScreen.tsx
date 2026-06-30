@@ -1,5 +1,5 @@
 import { openBrowserAsync } from 'expo-web-browser';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -24,6 +24,8 @@ type Props = {
   onMessage?: (data: unknown) => void;
   /** 기본 true — 스토리 WebView 등에서 당겨서 새로고침 */
   pullToRefreshEnabled?: boolean;
+  /** 첫 로딩 중 표시 UI — 미지정 시 ActivityIndicator */
+  initialLoadingFallback?: ReactNode;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -47,6 +49,7 @@ export function WebViewScreen({
   allowedHostSuffixes = [],
   onMessage,
   pullToRefreshEnabled = true,
+  initialLoadingFallback,
   style,
 }: Props) {
   const webViewRef = useRef<WebView>(null);
@@ -191,8 +194,12 @@ export function WebViewScreen({
         )}
 
         {isLoading && !hasError && !hasLoadedOnce ? (
-          <View style={styles.loadingOverlay} pointerEvents="none">
-            <ActivityIndicator size="large" color={tintColor} />
+          <View
+            style={
+              initialLoadingFallback ? styles.loadingOverlayFill : styles.loadingOverlayCentered
+            }
+            pointerEvents="none">
+            {initialLoadingFallback ?? <ActivityIndicator size="large" color={tintColor} />}
           </View>
         ) : null}
       </SafeAreaView>
@@ -222,7 +229,10 @@ const styles = StyleSheet.create({
   webView: {
     flex: 1,
   },
-  loadingOverlay: {
+  loadingOverlayFill: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  loadingOverlayCentered: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',

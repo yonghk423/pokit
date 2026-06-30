@@ -52,6 +52,7 @@ import { getGoalDetailCategoryModule } from './category';
 import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
 import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
 import { GoalDetailCategoryStartReminderCard } from './GoalDetailCategoryStartReminderCard';
+import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
 
 function palette(isDark: boolean) {
   if (isDark) {
@@ -129,14 +130,25 @@ function buildLoadedDataByBlockId(targets: EditingTarget[]): Record<string, unkn
   return next;
 }
 
-/** 자동 저장 레이스로 `displayName` 필드가 빠진 페이로드가 이전 이름을 지우는 것을 막는다. */
-function withPreservedRoutineDisplayName(categoryKey: string, next: unknown): unknown {
+/** 자동 저장 레이스로 필드가 빠진 페이로드가 이전 값을 지우는 것을 막는다. */
+function withPreservedRoutineFields(categoryKey: string, next: unknown): unknown {
   if (!next || typeof next !== 'object') return next;
-  const o = next as Record<string, unknown>;
-  if ('displayName' in o) return next;
-  const prev = readRoutineDisplayNameFromConfig(loadGoalDetailCategoryConfig(categoryKey));
-  if (prev.length === 0) return next;
-  return { ...o, displayName: prev };
+  const o = { ...(next as Record<string, unknown>) };
+  const prev = loadGoalDetailCategoryConfig(categoryKey);
+  if (!prev || typeof prev !== 'object') return o;
+  const prevO = prev as Record<string, unknown>;
+
+  if (!('displayName' in o)) {
+    const prevName = readRoutineDisplayNameFromConfig(prev);
+    if (prevName.length > 0) o.displayName = prevName;
+  }
+  if (!('icon' in o) && typeof prevO.icon === 'string') {
+    o.icon = prevO.icon;
+  }
+  if (!('accentColor' in o) && typeof prevO.accentColor === 'string') {
+    o.accentColor = prevO.accentColor;
+  }
+  return o;
 }
 
 function resolveCatalogGroupKeyForSettings(categoryKey: string): string {
@@ -307,22 +319,12 @@ export function GoalDetailSettingsPage() {
   );
 
   const handleChangeDataConfig = useCallback((target: EditingTarget, next: unknown) => {
-    const persisted = withPreservedRoutineDisplayName(target.categoryKey, next);
-    const prevDisplayName = readRoutineDisplayNameFromConfig(
-      loadGoalDetailCategoryConfig(target.categoryKey),
-    );
-    const nextDisplayName = readRoutineDisplayNameFromConfig(persisted);
+    const persisted = withPreservedRoutineFields(target.categoryKey, next);
     setPatchByBlockId((prev) => ({ ...prev, [target.blockId]: persisted }));
     saveGoalDetailBlockConfig(target.blockId, persisted);
     saveGoalDetailCategoryConfig(target.categoryKey, persisted);
-    if (
-      target.categoryKey === 'other' ||
-      isCustomFlowCategoryKey(target.categoryKey) ||
-      prevDisplayName !== nextDisplayName
-    ) {
-      registerOtherCategoryResolverFromStorage();
-      useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
-    }
+    registerOtherCategoryResolverFromStorage();
+    useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
     if (target.categoryKey === 'medicine') {
       if (medicineReminderSyncTimerRef.current) {
         clearTimeout(medicineReminderSyncTimerRef.current);
@@ -595,6 +597,14 @@ export function GoalDetailSettingsPage() {
                     resolveCatalogGroupKeyForSettings(categoryKey)
                   }
                   onChangeGroupKey={(groupKey) => handleChangeCatalogGroup(categoryKey, groupKey)}
+                />
+                <RoutineAppearanceField
+                  categoryKey={categoryKey}
+                  previewLabel={categoryReminderLabelKo(categoryKey)}
+                  dataConfig={dataByBlockId[targets[0].blockId]}
+                  onChangeDataConfig={(next) => handleChangeDataConfig(targets[0], next)}
+                  ink={c.onSurface}
+                  muted={c.onVariant}
                 />
               </View>
             ) : null}

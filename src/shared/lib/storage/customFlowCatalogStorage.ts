@@ -1,3 +1,4 @@
+import { listGoalDetailCategoryConfigKeys } from './goalDetailSettingsStorage';
 import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 
@@ -25,6 +26,7 @@ function readRoot(): Shape {
 
 function writeRoot(items: CustomFlowCatalogEntry[]): void {
   localStorageClient.setJson(StorageKeys.customFlowCatalog, { items });
+  notifyCustomFlowCatalogChanged();
 }
 
 function normalizeEntries(raw: Shape): CustomFlowCatalogEntry[] {
@@ -66,6 +68,37 @@ export function listCustomFlowCatalogEntries(): CustomFlowCatalogEntry[] {
 /** 기존 호환 — id 만 반환 */
 export function listCustomFlowCatalogIds(): string[] {
   return listCustomFlowCatalogEntries().map((e) => e.id);
+}
+
+/**
+ * catalog 항목이 누락되었지만 goal-detail config에는 존재하는 customFlow를 보강해 반환.
+ * 담기·나만의 루틴·허용 키 판별이 동일한 목록을 쓰도록 한다.
+ */
+export function listAllCustomFlowCatalogEntries(): CustomFlowCatalogEntry[] {
+  const stored = listCustomFlowCatalogEntries();
+  const known = new Map(stored.map((e) => [e.id, e] as const));
+  for (const id of listGoalDetailCategoryConfigKeys()) {
+    if (!id.startsWith('customFlow:') || known.has(id)) continue;
+    known.set(id, { id, groupKey: DEFAULT_CUSTOM_FLOW_GROUP_KEY });
+  }
+  return [...known.values()];
+}
+
+type CustomFlowCatalogListener = () => void;
+const customFlowCatalogListeners = new Set<CustomFlowCatalogListener>();
+
+/** customFlow 카탈로그 저장소 변경 구독 — 탭 간 목록 동기화용 */
+export function subscribeCustomFlowCatalog(listener: CustomFlowCatalogListener): () => void {
+  customFlowCatalogListeners.add(listener);
+  return () => {
+    customFlowCatalogListeners.delete(listener);
+  };
+}
+
+function notifyCustomFlowCatalogChanged(): void {
+  for (const listener of customFlowCatalogListeners) {
+    listener();
+  }
 }
 
 /** 그룹 정보를 명시해서 추가 — 이미 있으면 group 만 갱신 */

@@ -8,8 +8,9 @@ import {
   normalizeOtherDetailConfig,
   parseHHmmToMinutes,
   PRIORITY_CATALOG_PICKER_LABELS,
+  resolveCategoryCatalogIcon,
 } from '@entities/day-plan';
-import { loadGoalDetailCategoryConfig, resolveCustomFlowCatalogIcon } from '@shared/lib/storage';
+import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 
 export {
   defaultEditorBlockTimesFromNow,
@@ -84,10 +85,15 @@ export function getPickerCategoryItem(key: string): PickerCategoryItem | undefin
     return {
       key,
       label: getPickerCategoryLabel(key),
-      icon: resolveCustomFlowCatalogIcon(key),
+      icon: resolveCategoryCatalogIcon(key),
     } as PickerCategoryItem;
   }
-  return PICKER_CATEGORIES.find((c) => c.key === key) ?? LEGACY_PICKER_BY_KEY[key];
+  const base = PICKER_CATEGORIES.find((c) => c.key === key) ?? LEGACY_PICKER_BY_KEY[key];
+  if (!base) return undefined;
+  return {
+    ...base,
+    icon: resolveCategoryCatalogIcon(key),
+  } as PickerCategoryItem;
 }
 
 /** 모든 카테고리에서 사용자 지정 이름을 우선 사용한다. */

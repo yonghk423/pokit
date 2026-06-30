@@ -1,9 +1,4 @@
-import {
-  DEFAULT_CUSTOM_FLOW_GROUP_KEY,
-  listCustomFlowCatalogEntries,
-  listGoalDetailCategoryConfigKeys,
-  type CustomFlowCatalogEntry,
-} from '@shared/lib/storage';
+import { listAllCustomFlowCatalogEntries } from '@shared/lib/storage';
 
 import {
   getPickerCategoryItem,
@@ -20,20 +15,6 @@ export type PriorityCatalogRow = {
   isCustom: boolean;
 };
 
-/**
- * catalog 항목이 누락되었지만 config에는 존재하는 customFlow를 보강한 뒤 반환.
- * PriorityCatalogPage.reloadCatalogData 의 legacy 보강 로직과 동일.
- */
-function listAllCustomFlowEntries(): CustomFlowCatalogEntry[] {
-  const stored = listCustomFlowCatalogEntries();
-  const known = new Map(stored.map((e) => [e.id, e] as const));
-  for (const id of listGoalDetailCategoryConfigKeys()) {
-    if (!id.startsWith('customFlow:') || known.has(id)) continue;
-    known.set(id, { id, groupKey: DEFAULT_CUSTOM_FLOW_GROUP_KEY });
-  }
-  return [...known.values()];
-}
-
 /** 담기·나만의 탭이 공유하는 카탈로그 행 목록 */
 export function buildPriorityCatalogRows(): PriorityCatalogRow[] {
   const base = filterCatalogPickerCategories(PICKER_CATEGORIES).map((cat) => ({
@@ -42,7 +23,7 @@ export function buildPriorityCatalogRows(): PriorityCatalogRow[] {
     icon: cat.icon as string,
     isCustom: false,
   }));
-  const customs = listAllCustomFlowEntries().map((entry) => ({
+  const customs = listAllCustomFlowCatalogEntries().map((entry) => ({
     key: entry.id,
     label: getPickerCategoryLabel(entry.id),
     icon: getPickerCategoryItem(entry.id)?.icon ?? 'person.fill',
@@ -57,4 +38,25 @@ export function buildPriorityCatalogByKey(): Map<string, PriorityCatalogRow> {
 
 export function getPriorityCatalogPickerItems(): PickerCategoryItem[] {
   return filterCatalogPickerCategories(PICKER_CATEGORIES);
+}
+
+/** 나만의 루틴 추가 모달 — 사용자 플로우를 상단에 두고 기본 항목은 그다음 */
+export function sortAddablePriorityCatalogRows(rows: PriorityCatalogRow[]): PriorityCatalogRow[] {
+  const userCustom: PriorityCatalogRow[] = [];
+  const standard: PriorityCatalogRow[] = [];
+  const builtinCustom: PriorityCatalogRow[] = [];
+
+  for (const row of rows) {
+    if (!row.isCustom) {
+      standard.push(row);
+      continue;
+    }
+    if (row.key.includes('builtin_')) {
+      builtinCustom.push(row);
+      continue;
+    }
+    userCustom.push(row);
+  }
+
+  return [...userCustom, ...standard, ...builtinCustom];
 }

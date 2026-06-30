@@ -1,4 +1,6 @@
 export { Collapsible } from './collapsible';
+export { CustomFlowAppearancePicker } from './custom-flow-appearance-picker';
+export { HsvColorPicker } from './hsv-color-picker';
 export { ExternalLink } from './external-link';
 export { HapticTab } from './haptic-tab';
 export { IconSymbol } from './icon-symbol';

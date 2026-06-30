@@ -3,17 +3,21 @@ import {
   appendCustomFlowCatalogEntry,
   appendCustomFlowCatalogId,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
+  listAllCustomFlowCatalogEntries,
   listCustomFlowCatalogEntries,
   listCustomFlowCatalogIds,
   reassignCustomFlowGroup,
   removeCustomFlowCatalogId,
+  subscribeCustomFlowCatalog,
   updateCustomFlowCatalogGroup,
 } from './customFlowCatalogStorage';
+import { saveGoalDetailCategoryConfig } from './goalDetailSettingsStorage';
 import { StorageKeys } from './storageKeys';
 
 describe('customFlowCatalogStorage', () => {
   beforeEach(() => {
     localStorageClient.removeItem(StorageKeys.customFlowCatalog);
+    localStorageClient.removeItem(StorageKeys.goalDetailSettings);
   });
 
   it('migrates legacy ids array to productivity group', () => {
@@ -46,5 +50,22 @@ describe('customFlowCatalogStorage', () => {
     appendCustomFlowCatalogId('customFlow:z');
     removeCustomFlowCatalogId('customFlow:z');
     expect(listCustomFlowCatalogEntries()).toHaveLength(0);
+  });
+
+  it('listAllCustomFlowCatalogEntries merges config-only customFlow keys', () => {
+    saveGoalDetailCategoryConfig('customFlow:orphan', { displayName: '고아', checklist: [] });
+    expect(listAllCustomFlowCatalogEntries()).toEqual([
+      { id: 'customFlow:orphan', groupKey: DEFAULT_CUSTOM_FLOW_GROUP_KEY },
+    ]);
+  });
+
+  it('subscribeCustomFlowCatalog notifies on write', () => {
+    const listener = jest.fn();
+    const unsubscribe = subscribeCustomFlowCatalog(listener);
+    appendCustomFlowCatalogEntry({ id: 'customFlow:notify', groupKey: 'health' });
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+    appendCustomFlowCatalogEntry({ id: 'customFlow:notify2', groupKey: 'health' });
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 });

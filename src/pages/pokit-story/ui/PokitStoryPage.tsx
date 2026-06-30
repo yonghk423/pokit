@@ -11,6 +11,7 @@ import {
   POKIT_STORY_ALLOWED_HOST_SUFFIXES,
   POKIT_STORY_URL,
 } from '../config/pokitStoryUrl';
+import { PokitStoryWebViewSkeleton } from './PokitStoryWebViewSkeleton';
 
 /** POKIT 공식 웹사이트(pokitstory.com) WebView 탭 + 루틴 추가 브릿지 */
 export function PokitStoryPage() {
@@ -32,6 +33,7 @@ export function PokitStoryPage() {
         uri={POKIT_STORY_URL}
         allowedHostSuffixes={POKIT_STORY_ALLOWED_HOST_SUFFIXES}
         onMessage={handleWebMessage}
+        initialLoadingFallback={<PokitStoryWebViewSkeleton />}
       />
       <StoryRoutineImportSheet
         visible={sheetArticle !== null}

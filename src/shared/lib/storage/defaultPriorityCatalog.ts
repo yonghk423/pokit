@@ -1,5 +1,13 @@
 /** 앱 기본 담기 카탈로그 — 커스텀 그룹·플로우(신규 설치·초기화 시 자동 반영) */
 
+import {
+  DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
+  DEFAULT_CUSTOM_FLOW_ICON,
+  normalizeCustomFlowAccentColor,
+  normalizeCustomFlowIcon,
+} from '../customFlowAppearanceCatalog';
+import { loadGoalDetailCategoryConfig } from './goalDetailSettingsStorage';
+
 export const BUILTIN_CUSTOM_GROUP_HOBBY = 'customGroup:builtin_hobby' as const;
 export const BUILTIN_CUSTOM_GROUP_FAMILY = 'customGroup:builtin_family' as const;
 export const BUILTIN_CUSTOM_GROUP_MINDSET = 'customGroup:builtin_mindset' as const;
@@ -14,8 +22,10 @@ export type BuiltinCustomFlowDef = {
   color: string;
 };
 
-export const DEFAULT_CUSTOM_FLOW_ICON = 'person.fill';
-export const DEFAULT_CUSTOM_FLOW_COLOR = '#f97316';
+export {
+  DEFAULT_CUSTOM_FLOW_ACCENT_COLOR as DEFAULT_CUSTOM_FLOW_COLOR,
+  DEFAULT_CUSTOM_FLOW_ICON,
+} from '../customFlowAppearanceCatalog';
 
 export const DEFAULT_BUILTIN_CUSTOM_GROUPS = [
   { key: BUILTIN_CUSTOM_GROUP_HOBBY, label: '취미·여가' },
@@ -54,12 +64,36 @@ const BUILTIN_CUSTOM_FLOW_COLOR_BY_ID = Object.fromEntries(
   DEFAULT_BUILTIN_CUSTOM_FLOWS.map((flow) => [flow.id, flow.color]),
 ) as Record<string, string>;
 
-/** 기본·사용자 커스텀 플로우 아이콘 — 매핑 없으면 `person.fill` */
-export function resolveCustomFlowCatalogIcon(categoryKey: string): string {
-  return BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey] ?? DEFAULT_CUSTOM_FLOW_ICON;
+function readStoredCustomFlowIcon(categoryKey: string): string | undefined {
+  const icon = normalizeCustomFlowIcon(
+    (loadGoalDetailCategoryConfig(categoryKey) as { icon?: unknown } | null)?.icon,
+  );
+  return icon;
 }
 
-/** 기본·사용자 커스텀 플로우 강조색 — 매핑 없으면 오렌지 */
+function readStoredCustomFlowAccentColor(categoryKey: string): string | undefined {
+  const accentColor = normalizeCustomFlowAccentColor(
+    (loadGoalDetailCategoryConfig(categoryKey) as { accentColor?: unknown } | null)?.accentColor,
+  );
+  return accentColor;
+}
+
+/** 기본·사용자 커스텀 플로우 아이콘 — 저장값 → builtin → `person.fill` */
+export function resolveCustomFlowCatalogIcon(categoryKey: string): string {
+  const fromConfig = readStoredCustomFlowIcon(categoryKey);
+  if (fromConfig) return fromConfig;
+  if (BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey]) {
+    return BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey];
+  }
+  return DEFAULT_CUSTOM_FLOW_ICON;
+}
+
+/** 기본·사용자 커스텀 플로우 강조색 — 저장값 → builtin → 오렌지 */
 export function resolveCustomFlowCatalogColor(categoryKey: string): string {
-  return BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey] ?? DEFAULT_CUSTOM_FLOW_COLOR;
+  const fromConfig = readStoredCustomFlowAccentColor(categoryKey);
+  if (fromConfig) return fromConfig;
+  if (BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey]) {
+    return BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey];
+  }
+  return DEFAULT_CUSTOM_FLOW_ACCENT_COLOR;
 }

@@ -363,6 +363,11 @@ export function getInitialMedicineDataConfig(): MedicineDetailDataConfig {
   };
 }
 
+import {
+  normalizeCustomFlowAccentColor,
+  normalizeCustomFlowIcon,
+} from '@shared/lib/customFlowAppearanceCatalog';
+
 // --- other ---
 export type OtherChecklistTask = {
   id: string;
@@ -376,6 +381,10 @@ export type OtherDetailDataConfig = {
   /** 루틴 한 줄 요약 — 담기·목표 상세 부제 등에 표시 */
   summary: string;
   checklist: OtherChecklistTask[];
+  /** SF Symbol — 사용자 커스텀 플로우 전용 */
+  icon?: string;
+  /** #RRGGBB — 사용자 커스텀 플로우 집중 아이콘 강조색 */
+  accentColor?: string;
 };
 
 /** 담기·일정 등에서 `other` 키의 기본 표기(사용자가 이름을 비운 경우) */
@@ -409,7 +418,16 @@ export function normalizeOtherDetailConfig(raw: unknown): OtherDetailDataConfig 
         .filter((t) => t.text.length > 0)
     : [];
 
-  return { displayName, summary, checklist };
+  const icon = normalizeCustomFlowIcon(o.icon);
+  const accentColor = normalizeCustomFlowAccentColor(o.accentColor);
+
+  return {
+    displayName,
+    summary,
+    checklist,
+    ...(icon ? { icon } : {}),
+    ...(accentColor ? { accentColor } : {}),
+  };
 }
 
 export function getInitialOtherDataConfig(): OtherDetailDataConfig {

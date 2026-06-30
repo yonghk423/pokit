@@ -1,4 +1,9 @@
+import { isPriorityCatalogAllowedKey } from './priorityCatalogRegistry';
+
 jest.mock('@shared/lib/storage', () => ({
+  listAllCustomFlowCatalogEntries: jest.fn(() => [
+    { id: 'customFlow:legacy-only', groupKey: 'productivity' },
+  ]),
   listCustomFlowCatalogEntries: jest.fn(() => []),
 }));
 
@@ -29,5 +34,9 @@ describe('priorityCatalogRegistry', () => {
       'other',
     ]);
     expect(filtered).toEqual(['reading', 'water']);
+  });
+
+  it('allows config-only customFlow keys', () => {
+    expect(isPriorityCatalogAllowedKey('customFlow:legacy-only')).toBe(true);
   });
 });

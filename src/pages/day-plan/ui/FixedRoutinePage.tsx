@@ -39,6 +39,7 @@ import {
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
   loadGoalDetailCategoryConfig,
   saveGoalDetailCategoryConfig,
+  subscribeCustomFlowCatalog,
   type FixedFlowSet,
   type FixedFlowSetItem,
 } from '@shared/lib/storage';
@@ -49,7 +50,7 @@ import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import { getPickerCategoryLabel, PRIMARY } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
-import { buildPriorityCatalogRows, type PriorityCatalogRow } from '../lib/priorityCatalog';
+import { buildPriorityCatalogRows, sortAddablePriorityCatalogRows, type PriorityCatalogRow } from '../lib/priorityCatalog';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 
 if (
@@ -194,6 +195,18 @@ type AddItemModalProps = {
   onCreateCustom: () => void;
 };
 
+function addableSectionBucket(row: PriorityCatalogRow): 'user' | 'standard' | 'builtin' {
+  if (row.isCustom && !row.key.includes('builtin_')) return 'user';
+  if (!row.isCustom) return 'standard';
+  return 'builtin';
+}
+
+function addableSectionTitle(bucket: 'user' | 'standard' | 'builtin'): string {
+  if (bucket === 'user') return '내가 만든 루틴';
+  if (bucket === 'standard') return '기본 항목';
+  return '추천 루틴';
+}
+
 function AddItemModal({
   visible,
   addable,
@@ -256,35 +269,42 @@ function AddItemModal({
             <IconSymbol name="plus.circle.fill" size={20} color={ink} />
             <ThemedText style={[styles.modalRowLabel, { color: ink }]}>내 플로우 만들기</ThemedText>
           </Pressable>
-          {addable.map((cat) => {
+          {addable.map((cat, index) => {
             const selected = selectedKeys.has(cat.key);
+            const bucket = addableSectionBucket(cat);
+            const prevBucket = index > 0 ? addableSectionBucket(addable[index - 1]!) : null;
+            const sectionTitle = bucket !== prevBucket ? addableSectionTitle(bucket) : null;
             return (
-              <Pressable
-                key={cat.key}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected }}
-                accessibilityLabel={`${cat.label} ${selected ? '선택됨' : '선택'}`}
-                onPress={() => toggleSelection(cat.key)}
-                style={({ pressed }) => [
-                  styles.modalPickRow,
-                  {
-                    borderBottomColor: line,
-                    backgroundColor: selected
-                      ? isDark
-                        ? 'rgba(255,255,255,0.08)'
-                        : 'rgba(0,0,0,0.04)'
-                      : 'transparent',
-                  },
-                  pressed && { opacity: 0.72 },
-                ]}>
-                <IconSymbol name={cat.icon as any} size={18} color={muted} />
-                <ThemedText style={[styles.modalRowLabel, { color: ink }]}>{cat.label}</ThemedText>
-                <IconSymbol
-                  name={selected ? 'checkmark.circle.fill' : 'circle'}
-                  size={18}
-                  color={selected ? ink : muted}
-                />
-              </Pressable>
+              <View key={cat.key}>
+                {sectionTitle ? (
+                  <ThemedText style={[styles.modalSectionTitle, { color: muted }]}>{sectionTitle}</ThemedText>
+                ) : null}
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: selected }}
+                  accessibilityLabel={`${cat.label} ${selected ? '선택됨' : '선택'}`}
+                  onPress={() => toggleSelection(cat.key)}
+                  style={({ pressed }) => [
+                    styles.modalPickRow,
+                    {
+                      borderBottomColor: line,
+                      backgroundColor: selected
+                        ? isDark
+                          ? 'rgba(255,255,255,0.08)'
+                          : 'rgba(0,0,0,0.04)'
+                        : 'transparent',
+                    },
+                    pressed && { opacity: 0.72 },
+                  ]}>
+                  <IconSymbol name={cat.icon as any} size={18} color={muted} />
+                  <ThemedText style={[styles.modalRowLabel, { color: ink }]}>{cat.label}</ThemedText>
+                  <IconSymbol
+                    name={selected ? 'checkmark.circle.fill' : 'circle'}
+                    size={18}
+                    color={selected ? ink : muted}
+                  />
+                </Pressable>
+              </View>
             );
           })}
           {addable.length === 0 ? (
@@ -649,6 +669,8 @@ export function FixedRoutinePage() {
 
   useFocusEffect(useCallback(() => reloadCatalog(), [reloadCatalog]));
 
+  useEffect(() => subscribeCustomFlowCatalog(reloadCatalog), [reloadCatalog]);
+
   /** 최초 진입 시 모든 그룹 펼침 — 이후 사용자가 접은 상태는 유지 */
   useEffect(() => {
     if (sets.length === 0 || hasInitializedExpandedRef.current) return;
@@ -671,7 +693,7 @@ export function FixedRoutinePage() {
     const setItem = sets.find((s) => s.id === addItemSetId);
     if (!setItem) return [];
     const inSet = new Set(setItem.items.map((x) => x.categoryKey));
-    return catalog.filter((c) => !inSet.has(c.key));
+    return sortAddablePriorityCatalogRows(catalog.filter((c) => !inSet.has(c.key)));
   }, [catalog, sets, addItemSetId]);
 
   const toggleExpanded = useCallback((setId: string) => {
@@ -727,7 +749,17 @@ export function FixedRoutinePage() {
   }, [addSet, newGroupName]);
 
   const handleCreateCustomFlow = useCallback(
-    ({ name, groupKey }: { name: string; groupKey: string }) => {
+    ({
+      name,
+      groupKey,
+      icon,
+      accentColor,
+    }: {
+      name: string;
+      groupKey: string;
+      icon: string;
+      accentColor: string;
+    }) => {
       const id = createCustomFlowCategoryId();
       const safeGroupKey =
         typeof groupKey === 'string' && groupKey.trim().length > 0
@@ -735,7 +767,10 @@ export function FixedRoutinePage() {
           : DEFAULT_CUSTOM_FLOW_GROUP_KEY;
       const initial = getInitialOtherDataConfig();
       const trimmed = name.trim();
-      const next = trimmed.length > 0 ? { ...initial, displayName: trimmed } : initial;
+      const next =
+        trimmed.length > 0
+          ? { ...initial, displayName: trimmed, icon, accentColor }
+          : { ...initial, icon, accentColor };
       saveGoalDetailCategoryConfig(id, next);
       appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
       registerOtherCategoryResolverFromStorage();
@@ -1131,6 +1166,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingVertical: 12,
+  },
+  modalSectionTitle: {
+    marginTop: 8,
+    marginBottom: 2,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: -0.15,
   },
   modalPickRow: {
     flexDirection: 'row',

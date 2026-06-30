@@ -107,6 +107,11 @@ export {
   type CategoryReminderCatalogKey,
 } from './lib/categoryReminderCatalog';
 export {
+  readEditableCategoryAppearance,
+  resolveCategoryCatalogAccentColor,
+  resolveCategoryCatalogIcon,
+} from './lib/categoryCatalogAppearance';
+export {
   getPriorityCatalogPickerLabel,
   PRIORITY_CATALOG_PICKER_LABELS,
 } from './lib/priorityCatalogPickerLabels';

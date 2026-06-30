@@ -31,9 +31,8 @@ import {
   appendCustomFlowCatalogEntry,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
   isCustomCatalogGroupKey,
+  listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
-  listCustomFlowCatalogEntries,
-  listGoalDetailCategoryConfigKeys,
   loadGoalDetailCategoryConfig,
   reassignCustomFlowGroup,
   removeCustomCatalogGroup,
@@ -164,14 +163,7 @@ export function PriorityCatalogPage() {
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
 
   const reloadCatalogData = useCallback(() => {
-    const stored = listCustomFlowCatalogEntries();
-    const known = new Map(stored.map((e) => [e.id, e] as const));
-    /** 저장소 키만 있고 catalog 항목이 없는 경우(레거시) 보강 */
-    for (const id of listGoalDetailCategoryConfigKeys()) {
-      if (!id.startsWith('customFlow:') || known.has(id)) continue;
-      known.set(id, { id, groupKey: DEFAULT_CUSTOM_FLOW_GROUP_KEY });
-    }
-    setCustomFlowEntries([...known.values()]);
+    setCustomFlowEntries(listAllCustomFlowCatalogEntries());
     setCustomGroups(listCustomCatalogGroups());
   }, []);
 
@@ -232,12 +224,25 @@ export function PriorityCatalogPage() {
   }, []);
 
   const handleCreateCustomFlow = useCallback(
-    ({ name, groupKey }: { name: string; groupKey: string }) => {
+    ({
+      name,
+      groupKey,
+      icon,
+      accentColor,
+    }: {
+      name: string;
+      groupKey: string;
+      icon: string;
+      accentColor: string;
+    }) => {
       const id = createCustomFlowCategoryId();
       const safeGroupKey = resolveCatalogGroupKeyForPersist(groupKey);
       const initial = getInitialOtherDataConfig();
       const trimmed = name.trim();
-      const next = trimmed.length > 0 ? { ...initial, displayName: trimmed } : initial;
+      const next =
+        trimmed.length > 0
+          ? { ...initial, displayName: trimmed, icon, accentColor }
+          : { ...initial, icon, accentColor };
       saveGoalDetailCategoryConfig(id, next);
       appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
       registerOtherCategoryResolverFromStorage();

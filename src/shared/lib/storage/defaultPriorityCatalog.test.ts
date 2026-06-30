@@ -4,6 +4,13 @@ import {
   resolveCustomFlowCatalogColor,
   resolveCustomFlowCatalogIcon,
 } from './defaultPriorityCatalog';
+import { saveGoalDetailCategoryConfig } from './goalDetailSettingsStorage';
+import { localStorageClient } from './localStorageClient';
+import { StorageKeys } from './storageKeys';
+
+beforeEach(() => {
+  localStorageClient.removeItem(StorageKeys.goalDetailSettings);
+});
 
 describe('resolveCustomFlowCatalogIcon', () => {
   it('returns a themed icon for builtin custom flows', () => {
@@ -14,6 +21,31 @@ describe('resolveCustomFlowCatalogIcon', () => {
 
   it('falls back to person.fill for unknown custom flows', () => {
     expect(resolveCustomFlowCatalogIcon('customFlow:user-made-01')).toBe(DEFAULT_CUSTOM_FLOW_ICON);
+  });
+
+  it('reads icon from saved goal-detail config for user custom flows', () => {
+    const id = 'customFlow:test-user-icon';
+    saveGoalDetailCategoryConfig(id, {
+      displayName: '테스트',
+      summary: '',
+      checklist: [],
+      icon: 'star.fill',
+      accentColor: '#3b82f6',
+    });
+    expect(resolveCustomFlowCatalogIcon(id)).toBe('star.fill');
+    expect(resolveCustomFlowCatalogColor(id)).toBe('#3b82f6');
+  });
+
+  it('prefers saved config over builtin defaults', () => {
+    saveGoalDetailCategoryConfig('customFlow:builtin_hobby_draw', {
+      displayName: '드로잉',
+      summary: '',
+      checklist: [],
+      icon: 'star.fill',
+      accentColor: '#dc2626',
+    });
+    expect(resolveCustomFlowCatalogIcon('customFlow:builtin_hobby_draw')).toBe('star.fill');
+    expect(resolveCustomFlowCatalogColor('customFlow:builtin_hobby_draw')).toBe('#dc2626');
   });
 });
 

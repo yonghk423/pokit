@@ -135,6 +135,16 @@ describe('normalizeOtherDetailConfig', () => {
     expect(cfg.summary).toBe('짧은 요약');
   });
 
+  it('keeps allowed custom flow icon and accent color', () => {
+    const cfg = normalizeOtherDetailConfig({
+      displayName: '루틴',
+      icon: 'heart.fill',
+      accentColor: '#22C55E',
+    });
+    expect(cfg.icon).toBe('heart.fill');
+    expect(cfg.accentColor).toBe('#22c55e');
+  });
+
   it('resolves display label fallback', () => {
     expect(getOtherCategoryResolvedDisplayLabel(null)).toBe(OTHER_CATEGORY_PICKER_FALLBACK_KO);
     expect(

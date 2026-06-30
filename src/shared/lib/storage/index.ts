@@ -1,4 +1,14 @@
 export {
+  CUSTOM_FLOW_ACCENT_COLOR_OPTIONS,
+  CUSTOM_FLOW_ICON_OPTIONS,
+  DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
+  DEFAULT_CUSTOM_FLOW_ICON,
+  normalizeCustomFlowAccentColor,
+  normalizeCustomFlowIcon,
+  type CustomFlowAccentColorOption,
+  type CustomFlowIconOption,
+} from '../customFlowAppearanceCatalog';
+export {
   createCustomCatalogGroup,
   isCustomCatalogGroupKey,
   listCustomCatalogGroups,
@@ -9,10 +19,12 @@ export {
 export type { CustomCatalogGroup } from './customCatalogGroupStorage';
 export {
   appendCustomFlowCatalogEntry,
-  appendCustomFlowCatalogId, DEFAULT_CUSTOM_FLOW_GROUP_KEY, listCustomFlowCatalogEntries,
+  appendCustomFlowCatalogId, DEFAULT_CUSTOM_FLOW_GROUP_KEY, listAllCustomFlowCatalogEntries,
+  listCustomFlowCatalogEntries,
   listCustomFlowCatalogIds,
   reassignCustomFlowGroup,
   removeCustomFlowCatalogId,
+  subscribeCustomFlowCatalog,
   updateCustomFlowCatalogGroup
 } from './customFlowCatalogStorage';
 export {
@@ -44,7 +56,6 @@ export {
   DEFAULT_BUILTIN_CUSTOM_FLOWS,
   DEFAULT_BUILTIN_CUSTOM_GROUPS,
   DEFAULT_CUSTOM_FLOW_COLOR,
-  DEFAULT_CUSTOM_FLOW_ICON,
   resolveCustomFlowCatalogColor,
   resolveCustomFlowCatalogIcon
 } from './defaultPriorityCatalog';
