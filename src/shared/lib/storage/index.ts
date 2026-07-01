@@ -83,6 +83,29 @@ export {
   type FixedFlowSetsState
 } from './fixedFlowSetsStorage';
 export {
+  buildCategoryMealSlotOverrides,
+  DAY_MEAL_SLOT_HINT,
+  DAY_MEAL_SLOT_LABEL,
+  DAY_MEAL_SLOT_ORDER,
+  groupFixedFlowItemsByMealSlot,
+  normalizeDayMealSlot,
+  resolveCurrentMealSlot,
+  resolveDefaultMealSlotForCategory,
+  resolveFixedFlowItemMealSlot,
+  resolvePriorityMealSlot,
+  type DayMealSlot,
+} from './dayMealSlot';
+export {
+  DEFAULT_DAY_MEAL_SLOT_SCHEDULE,
+  getMealSlotStartHhmm,
+  isDayMealSlotScheduleValid,
+  loadDayMealSlotSchedule,
+  normalizeDayMealSlotSchedule,
+  resolveCurrentMealSlotFromSchedule,
+  saveDayMealSlotSchedule,
+  type DayMealSlotSchedule,
+} from './dayMealSlotScheduleStorage';
+export {
   defaultWeekdaysForApplyRule,
   formatApplyWeekdaysHint,
   formatApplyWeekdaysLabel,

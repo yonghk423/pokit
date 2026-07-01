@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { loadDayPlanDraft, saveDayPlanDraft, syncWidgetTimelineFromStorage } from '@shared/lib/storage';
+import { loadDayPlanDraft, saveDayPlanDraft, syncWidgetTimelineFromStorage, normalizeDayMealSlot, type DayMealSlot } from '@shared/lib/storage';
 
 import { getLocalMinutesOfDayNow } from '../lib/dayPlanTime';
 import { defaultPriorityWindowFromNow } from '../lib/dayPlanTimeMath';
@@ -49,6 +49,10 @@ type DayPlanDraftState = {
   /** 수분 알림 재동기화 요청 시 증가 — 실제 동기화는 앱 부트스트랩에서 단일 실행 */
   waterReminderSyncEpoch: number;
   quickMemoDraft: string;
+  /** 데일리 담기 — 아침·점심·저녁 구간 헤더 레이아웃 (기본: 목록) */
+  priorityMealSlotLayoutEnabled: boolean;
+  /** 담기 목록 — 고정 루틴 외 항목 시간대 */
+  priorityMealSlotOverrides: Record<string, DayMealSlot>;
   isHydrated: boolean;
   hydrate: () => void;
   setPlanMode: (mode: PlanMode) => void;
@@ -89,11 +93,24 @@ type DayPlanDraftState = {
   bumpCategoryLabelEpoch: () => void;
   bumpWaterReminderSyncEpoch: () => void;
   setQuickMemoDraft: (value: string) => void;
+  setPriorityMealSlotLayoutEnabled: (value: boolean) => void;
+  setPriorityMealSlotOverride: (categoryKey: string, mealSlot: DayMealSlot | null) => void;
 };
 
 function createInitialPriorityWindow() {
   const w = defaultPriorityWindowFromNow();
   return { priorityStart: w.startTime, priorityEnd: w.endTime };
+}
+
+function normalizePriorityMealSlotOverrides(raw: unknown): Record<string, DayMealSlot> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, DayMealSlot> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    const trimmed = key.trim();
+    const slot = normalizeDayMealSlot(value);
+    if (trimmed && slot) out[trimmed] = slot;
+  }
+  return out;
 }
 
 function createInitialState() {
@@ -115,6 +132,8 @@ function createInitialState() {
     categoryLabelEpoch: 0,
     waterReminderSyncEpoch: 0,
     quickMemoDraft: '',
+    priorityMealSlotLayoutEnabled: false,
+    priorityMealSlotOverrides: {} as Record<string, DayMealSlot>,
   };
 }
 
@@ -175,6 +194,8 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       routineHistoryPendingByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPendingByDate),
       routineHistoryPlannedKeysByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPlannedKeysByDate),
       quickMemoDraft: typeof raw.quickMemoDraft === 'string' ? raw.quickMemoDraft : '',
+      priorityMealSlotLayoutEnabled: Boolean(raw.priorityMealSlotLayoutEnabled),
+      priorityMealSlotOverrides: normalizePriorityMealSlotOverrides(raw.priorityMealSlotOverrides),
       isHydrated: true,
     });
   },
@@ -396,6 +417,16 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   bumpWaterReminderSyncEpoch: () =>
     set((s) => ({ waterReminderSyncEpoch: s.waterReminderSyncEpoch + 1 })),
   setQuickMemoDraft: (value) => set({ quickMemoDraft: value }),
+  setPriorityMealSlotLayoutEnabled: (value) => set({ priorityMealSlotLayoutEnabled: value }),
+  setPriorityMealSlotOverride: (categoryKey, mealSlot) =>
+    set((s) => {
+      const key = categoryKey.trim();
+      if (!key) return s;
+      const next = { ...s.priorityMealSlotOverrides };
+      if (mealSlot) next[key] = mealSlot;
+      else delete next[key];
+      return { priorityMealSlotOverrides: next };
+    }),
 }));
 
 useDayPlanDraftStore.subscribe((state) => {
@@ -417,6 +448,8 @@ useDayPlanDraftStore.subscribe((state) => {
     routineHistoryPendingByDate: state.routineHistoryPendingByDate,
     routineHistoryPlannedKeysByDate: state.routineHistoryPlannedKeysByDate,
     quickMemoDraft: state.quickMemoDraft,
+    priorityMealSlotLayoutEnabled: state.priorityMealSlotLayoutEnabled,
+    priorityMealSlotOverrides: state.priorityMealSlotOverrides,
   });
   syncWidgetTimelineFromStorage();
 });
@@ -441,6 +474,8 @@ function persistDayPlanDraft(): void {
     routineHistoryPendingByDate: s.routineHistoryPendingByDate,
     routineHistoryPlannedKeysByDate: s.routineHistoryPlannedKeysByDate,
     quickMemoDraft: s.quickMemoDraft,
+    priorityMealSlotLayoutEnabled: s.priorityMealSlotLayoutEnabled,
+    priorityMealSlotOverrides: s.priorityMealSlotOverrides,
   });
 }
 

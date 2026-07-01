@@ -8,6 +8,10 @@ export function sanitizeFixedFlowSetItems(items: FixedFlowSetItem[]): FixedFlowS
   const keys = filterKeysToPriorityCatalog(items.map((x) => x.categoryKey));
   return keys.map((categoryKey) => {
     const prev = byKey.get(categoryKey);
-    return { categoryKey, enabled: prev?.enabled !== false };
+    return {
+      categoryKey,
+      enabled: prev?.enabled !== false,
+      mealSlot: prev?.mealSlot,
+    };
   });
 }

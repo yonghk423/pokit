@@ -139,4 +139,20 @@ describe('fixedFlowSetsStore', () => {
     useFixedFlowSetsStore.getState().removeSet('set_daily');
     expect(useFixedFlowSetsStore.getState().sets.some((s) => s.id === 'set_daily')).toBe(true);
   });
+
+  it('stores mealSlot when adding to a custom set', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: [],
+      sets: [{ id: 'set_a', name: 'A', applyRule: 'manual', items: [] }],
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+    useFixedFlowSetsStore.getState().addCategoryToSet('set_a', 'water', 'night');
+    expect(useFixedFlowSetsStore.getState().sets[0]?.items[0]).toEqual({
+      categoryKey: 'water',
+      enabled: true,
+      mealSlot: 'night',
+    });
+  });
 });

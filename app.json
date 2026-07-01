@@ -2,7 +2,7 @@
   "expo": {
     "name": "POKIT",
     "slug": "pokit",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "orientation": "portrait",
     "icon": "./assets/pokit3.png",
     "scheme": "pokit",
@@ -11,11 +11,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "20"
+      "buildNumber": "21"
     },
     "android": {
-      "version": "1.4.0",
-      "versionCode": 20,
+      "version": "1.4.1",
+      "versionCode": 21,
       "adaptiveIcon": {
         "backgroundColor": "#F2EDE4",
         "foregroundImage": "./assets/pokit3.png"

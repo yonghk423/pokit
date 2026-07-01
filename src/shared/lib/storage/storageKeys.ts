@@ -32,6 +32,8 @@ export const StorageKeys = {
   standardCatalogGroupOverrides: 'pokit:standard-catalog-group-overrides',
   /** 시스템 상위 묶음(건강·생산성) 제목·설명 사용자 편집 */
   systemCatalogGroupMeta: 'pokit:system-catalog-group-meta',
+  /** 데일리 시간대 구간(새벽·아침·점심·저녁·밤) 시작 시각 */
+  dayMealSlotSchedule: 'pokit:day-meal-slot-schedule',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

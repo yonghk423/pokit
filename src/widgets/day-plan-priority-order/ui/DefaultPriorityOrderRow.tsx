@@ -36,8 +36,6 @@ export function DefaultPriorityOrderRow({
   icon,
   label,
   subtitle,
-  priorityLabel,
-  isTopPriority,
   isFocusStarted,
   isCompleted,
   isDark,
@@ -156,11 +154,6 @@ export function DefaultPriorityOrderRow({
 
   const rankIconTitleBlock = (
     <>
-      {priorityLabel ? (
-        <View style={[styles.inlineRankPill, { backgroundColor: 'transparent' }]}>
-          <ThemedText style={[styles.inlineRankPillText, { color: '#111111' }]}>{priorityLabel}</ThemedText>
-        </View>
-      ) : null}
       {shouldPulse && categoryKey === 'medicine' ? (
         <Animated.View style={[styles.medicineIconBadge, { opacity: pulse }]}>
           <IconSymbol name="cross.fill" size={10} color="#ef4444" />

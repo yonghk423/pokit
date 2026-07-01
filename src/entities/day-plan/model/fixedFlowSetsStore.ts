@@ -4,7 +4,9 @@ import {
   BUILTIN_FIXED_FLOW_SET_IDS,
   getActiveFixedFlowSet,
   loadFixedFlowSetsState,
+  normalizeDayMealSlot,
   saveFixedFlowSetsState,
+  type DayMealSlot,
   type FixedFlowSet,
   type FixedFlowSetItem,
 } from '@shared/lib/storage';
@@ -44,10 +46,12 @@ type FixedFlowSetsStoreState = {
   /** 오늘 적용 그룹 토글 — 여러 그룹 동시 적용 가능 */
   toggleSetForToday: (setId: string) => void;
 
-  addCategoryToSet: (setId: string, categoryKey: string) => void;
+  addCategoryToSet: (setId: string, categoryKey: string, mealSlot?: DayMealSlot) => void;
   removeCategoryFromSet: (setId: string, categoryKey: string) => void;
   setSetOrder: (setId: string, categoryKeys: string[]) => void;
   setCategoryEnabledInSet: (setId: string, categoryKey: string, enabled: boolean) => void;
+  /** categoryKey가 속한 첫 세트의 mealSlot 갱신 — 성공 시 true */
+  setCategoryMealSlotInAnySet: (categoryKey: string, mealSlot: DayMealSlot) => boolean;
 
   /** @deprecated 첫 적용 그룹 전용 — 기존 코드 호환 */
   setActiveSetOrder: (categoryKeys: string[]) => void;
@@ -205,7 +209,7 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     persistState(set, get, nextActive, sets);
   },
 
-  addCategoryToSet: (setId, categoryKey) => {
+  addCategoryToSet: (setId, categoryKey, mealSlot) => {
     const key = categoryKey.trim();
     if (!key) return;
     if (!isPriorityCatalogAllowedKey(key)) return;
@@ -213,8 +217,13 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     const target = sets.find((s) => s.id === setId);
     if (!target) return;
     if (target.items.some((x) => x.categoryKey === key)) return;
+    const nextItem: FixedFlowSetItem = {
+      categoryKey: key,
+      enabled: true,
+      ...(mealSlot ? { mealSlot } : {}),
+    };
     const nextSets = sets.map((s) =>
-      s.id === setId ? { ...s, items: [...s.items, { categoryKey: key, enabled: true }] } : s,
+      s.id === setId ? { ...s, items: [...s.items, nextItem] } : s,
     );
     set({ sets: nextSets });
     persistState(set, get, activeSetIds, nextSets);
@@ -245,7 +254,11 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       if (!key || seen.has(key)) continue;
       seen.add(key);
       const prev = existing.get(key);
-      items.push({ categoryKey: key, enabled: prev?.enabled !== false });
+      items.push({
+        categoryKey: key,
+        enabled: prev?.enabled !== false,
+        mealSlot: prev?.mealSlot,
+      });
     }
     const nextSets = sets.map((s) => (s.id === setId ? { ...s, items } : s));
     set({ sets: nextSets });
@@ -268,6 +281,26 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     );
     set({ sets: nextSets });
     persistState(set, get, activeSetIds, nextSets);
+  },
+
+  setCategoryMealSlotInAnySet: (categoryKey, mealSlot) => {
+    const key = categoryKey.trim();
+    const normalized = normalizeDayMealSlot(mealSlot);
+    if (!key || !normalized) return false;
+    const { sets, activeSetIds } = get();
+    if (!sets.some((s) => s.items.some((x) => x.categoryKey === key))) return false;
+    const nextSets = sets.map((s) => {
+      if (!s.items.some((x) => x.categoryKey === key)) return s;
+      return {
+        ...s,
+        items: s.items.map((x) =>
+          x.categoryKey === key ? { ...x, mealSlot: normalized } : x,
+        ),
+      };
+    });
+    set({ sets: nextSets });
+    persistState(set, get, activeSetIds, nextSets);
+    return true;
   },
 
   setActiveSetOrder: (categoryKeys) => {

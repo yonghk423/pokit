@@ -20,6 +20,10 @@ export type PersistedDayPlanDraft = {
   /** 당일 담기 계획 스냅샷 — 완료율 분모 */
   routineHistoryPlannedKeysByDate?: Record<string, string[]>;
   quickMemoDraft: string;
+  /** 데일리 담기 — 아침·점심·저녁 구간 헤더 레이아웃 */
+  priorityMealSlotLayoutEnabled?: boolean;
+  /** 담기 목록 — 고정 루틴 외 항목의 시간대 지정 */
+  priorityMealSlotOverrides?: Partial<Record<string, import('./dayMealSlotScheduleStorage').DayMealSlot>>;
 };
 
 export function loadDayPlanDraft(): PersistedDayPlanDraft | null {

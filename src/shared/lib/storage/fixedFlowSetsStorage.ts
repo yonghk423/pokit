@@ -17,6 +17,9 @@ import {
 import { localStorageClient } from './localStorageClient';
 import { collectAutoScheduledCategoryKeys } from './routineApplyWeekdaysStorage';
 import { StorageKeys } from './storageKeys';
+import { normalizeDayMealSlot, type DayMealSlot } from './dayMealSlot';
+
+export type { DayMealSlot } from './dayMealSlot';
 
 export type FixedFlowSetApplyRule =
   | 'manual'
@@ -29,6 +32,8 @@ export type FixedFlowSetApplyRule =
 export type FixedFlowSetItem = {
   categoryKey: string;
   enabled: boolean;
+  /** 나만의 루틴 — 아침·점심·저녁 등 시간대 구간 */
+  mealSlot?: DayMealSlot;
 };
 
 export type FixedFlowSet = {
@@ -76,9 +81,11 @@ function normalizeItems(raw: unknown): FixedFlowSetItem[] {
     const r = row as Record<string, unknown>;
     const key = typeof r.categoryKey === 'string' ? r.categoryKey.trim() : '';
     if (!key || seen.has(key)) continue;
+    const mealSlot = normalizeDayMealSlot(r.mealSlot);
     out.push({
       categoryKey: key,
       enabled: r.enabled !== false,
+      ...(mealSlot ? { mealSlot } : {}),
     });
     seen.add(key);
   }
@@ -125,6 +132,7 @@ function mergeSetItems(
     map.set(key, {
       categoryKey: key,
       enabled: prev?.enabled !== false && item.enabled !== false,
+      mealSlot: item.mealSlot ?? prev?.mealSlot,
     });
   }
   return [...map.values()];

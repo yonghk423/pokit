@@ -26,8 +26,10 @@ import {
   blockMatchesPriorityHhmmWindow,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
+  formatHhmmClockKo,
   formatMinuteOfDayKo,
   getLocalDateKey,
+  getLocalMinutesOfDayNow,
   isLikelyPriorityCatalogMonolineTitle,
   isPriorityCompoundBlockTitle,
   localDateToDateKey,
@@ -38,6 +40,7 @@ import {
   sortDayPlanBlocks,
   useDayPlanStore
 } from '@entities/day-plan';
+import { useFixedFlowSetsStore } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   hasGoalDetailCommittedCategory,
@@ -66,6 +69,10 @@ import {
 } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { getPriorityCategoryGoalHint } from '../lib/priorityCategoryGoalHints';
+import { buildPriorityMealSlotSections, buildCategoryMealSlotOverrides, flattenPriorityMealSlotSectionKeys, inferMealSlotAfterFlatReorder, reorderFlatKeys, resolvePriorityMealSlot } from '../lib/priorityMealSlotSections';
+import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
+import { PriorityMealSlotSectionHeader } from './PriorityMealSlotSectionHeader';
+import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
 
 /** 우선순위 행 완료 제거 시: 페이드 아웃 + 아래 행이 부드럽게 올라오는 레이아웃 전환 */
 const PRIORITY_ROW_EXITING = FadeOut.duration(280).easing(Easing.out(Easing.cubic));
@@ -716,15 +723,6 @@ type Props = {
   onOpenFocusDetail?: (categoryKey: string) => void;
 };
 
-function priorityLabelByIndex(index: number): string {
-  return String(index + 1);
-}
-
-function priorityColorByIndex(index: number): { bg: string; fg: string } {
-  void index;
-  return { bg: '#111111', fg: '#ffffff' };
-}
-
 /* ─── 메인 ─── */
 
 export function PriorityBasedPlanSection({
@@ -963,6 +961,10 @@ export function PriorityBasedPlanSection({
     clearPlanCompletionDismissedKeys,
     removeCompletedPriorityBagRows,
     setPriorityCategoryOrder,
+    priorityMealSlotLayoutEnabled,
+    setPriorityMealSlotLayoutEnabled,
+    priorityMealSlotOverrides,
+    setPriorityMealSlotOverride,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
@@ -974,6 +976,10 @@ export function PriorityBasedPlanSection({
       clearPlanCompletionDismissedKeys: s.clearPlanCompletionDismissedKeys,
       removeCompletedPriorityBagRows: s.removeCompletedPriorityBagRows,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
+      priorityMealSlotLayoutEnabled: s.priorityMealSlotLayoutEnabled,
+      setPriorityMealSlotLayoutEnabled: s.setPriorityMealSlotLayoutEnabled,
+      priorityMealSlotOverrides: s.priorityMealSlotOverrides,
+      setPriorityMealSlotOverride: s.setPriorityMealSlotOverride,
     })),
   );
   const [lastAddedCategoryKey, setLastAddedCategoryKey] = useState<string | null>(null);
@@ -981,12 +987,16 @@ export function PriorityBasedPlanSection({
   const [removeConfirmCategoryKey, setRemoveConfirmCategoryKey] = useState<string | null>(null);
   const [removeConfirmSkipNextChecked, setRemoveConfirmSkipNextChecked] = useState(false);
   const [draggingPriorityKey, setDraggingPriorityKey] = useState<string | null>(null);
+  const [mealSlotScheduleOpen, setMealSlotScheduleOpen] = useState(false);
+  const { schedule: mealSlotSchedule, persistSchedule: persistMealSlotSchedule, revision: mealSlotScheduleRevision } =
+    useDayMealSlotSchedule();
   const priorityBagRowHeightRef = useRef(52);
 
   useEffect(() => {
     setSkipRemovePriorityBagConfirm(loadPriorityBagRemoveConfirmSkip());
   }, []);
   const planBlocks = useDayPlanStore((s) => s.blocks);
+  const fixedFlowSets = useFixedFlowSetsStore((s) => s.sets);
   const dayPlanDateKey = useDayPlanStore((s) => s.dateKey);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
   const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
@@ -1037,13 +1047,51 @@ export function PriorityBasedPlanSection({
 
   /**
    * 미완료는 위쪽·원래 담기 순서 유지, 완료(취소선)는 맨 아래로 모음.
-   * 완료 행에는 순위 숫자를 붙이지 않음 — `priorityLabel` 생략.
    */
   const orderedSelectedItemsForDisplay = useMemo(() => {
     const active = selectedItems.filter((cat) => !isPriorityRowCompleted(cat.key));
     const done = selectedItems.filter((cat) => isPriorityRowCompleted(cat.key));
     return [...active, ...done];
   }, [selectedItems, isPriorityRowCompleted]);
+
+  const priorityOrderIndexByKey = useMemo(
+    () => new Map(selectedItems.map((item, index) => [item.key, index])),
+    [selectedItems],
+  );
+
+  const mealSlotOverrides = useMemo(() => {
+    const map = buildCategoryMealSlotOverrides({ sets: fixedFlowSets });
+    for (const [key, slot] of Object.entries(priorityMealSlotOverrides)) {
+      map.set(key, slot);
+    }
+    return map;
+  }, [fixedFlowSets, priorityMealSlotOverrides]);
+
+  const priorityMealSlotSections = useMemo(() => {
+    if (!priorityMealSlotLayoutEnabled) return [];
+    return buildPriorityMealSlotSections(orderedSelectedItemsForDisplay, {
+      nowMin: getLocalMinutesOfDayNow(),
+      mealSlotOverrides,
+      schedule: mealSlotSchedule,
+      orderIndexByKey: priorityOrderIndexByKey,
+    });
+  }, [
+    orderedSelectedItemsForDisplay,
+    priorityOrderIndexByKey,
+    categoryHintTick,
+    priorityMealSlotLayoutEnabled,
+    mealSlotOverrides,
+    mealSlotSchedule,
+    mealSlotScheduleRevision,
+  ]);
+
+  const showMealSlotLayout =
+    priorityMealSlotLayoutEnabled && priorityMealSlotSections.length > 0;
+
+  const toggleMealSlotLayout = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setPriorityMealSlotLayoutEnabled(!priorityMealSlotLayoutEnabled);
+  }, [priorityMealSlotLayoutEnabled, setPriorityMealSlotLayoutEnabled]);
 
   const dragReorderDelta = useCallback((translationY: number, rowHeight: number): number => {
     const threshold = rowHeight * 0.75;
@@ -1056,24 +1104,50 @@ export function PriorityBasedPlanSection({
 
   const commitPriorityDisplayReorderFromDrag = useCallback(
     (categoryKey: string, translationY: number) => {
-      const displayKeys = orderedSelectedItemsForDisplay.map((c) => c.key);
-      const len = displayKeys.length;
+      const keyOrder = showMealSlotLayout
+        ? flattenPriorityMealSlotSectionKeys(priorityMealSlotSections)
+        : orderedSelectedItemsForDisplay.map((c) => c.key);
+      const len = keyOrder.length;
       if (len < 2) return;
-      const from = displayKeys.indexOf(categoryKey);
+      const from = keyOrder.indexOf(categoryKey);
       if (from < 0) return;
       const h = Math.max(36, priorityBagRowHeightRef.current);
       const delta = dragReorderDelta(translationY, h);
       const to = Math.max(0, Math.min(len - 1, from + delta));
       if (to === from) return;
-      const moved = [...displayKeys];
-      const [item] = moved.splice(from, 1);
-      moved.splice(to, 0, item);
+      const moved = reorderFlatKeys(keyOrder, from, to);
+
+      if (showMealSlotLayout) {
+        const slotOfKey = (key: string) =>
+          resolvePriorityMealSlot(key, priorityOrderIndexByKey.get(key) ?? 0, mealSlotOverrides);
+        const prevSlot = slotOfKey(categoryKey);
+        const nextSlot = inferMealSlotAfterFlatReorder(moved, categoryKey, to, slotOfKey);
+        if (nextSlot !== prevSlot) {
+          const changedInSet = useFixedFlowSetsStore
+            .getState()
+            .setCategoryMealSlotInAnySet(categoryKey, nextSlot);
+          if (!changedInSet) {
+            setPriorityMealSlotOverride(categoryKey, nextSlot);
+          }
+        }
+      }
+
       const active = moved.filter((k) => !isPriorityRowCompleted(k));
       const done = moved.filter((k) => isPriorityRowCompleted(k));
       setPriorityCategoryOrder([...active, ...done]);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
-    [dragReorderDelta, isPriorityRowCompleted, orderedSelectedItemsForDisplay, setPriorityCategoryOrder],
+    [
+      dragReorderDelta,
+      isPriorityRowCompleted,
+      mealSlotOverrides,
+      orderedSelectedItemsForDisplay,
+      priorityMealSlotSections,
+      priorityOrderIndexByKey,
+      setPriorityCategoryOrder,
+      setPriorityMealSlotOverride,
+      showMealSlotLayout,
+    ],
   );
 
   const undoPriorityRowCompletion = useCallback(
@@ -1651,6 +1725,66 @@ export function PriorityBasedPlanSection({
                   </Pressable>
                 </View>
               </View>
+              {bagCount > 0 ? (
+                <View style={styles.priorityTimelineHeaderActions}>
+                  {priorityMealSlotLayoutEnabled ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="시간대 설정"
+                      onPress={() => setMealSlotScheduleOpen(true)}
+                      style={({ pressed }) => [
+                        styles.mealSlotScheduleBtn,
+                        {
+                          backgroundColor: c.containerLowest,
+                          borderColor: c.border,
+                        },
+                        pressed && styles.mealSlotLayoutTogglePressed,
+                      ]}>
+                      <IconSymbol name="clock" size={14} color={c.onVariant} />
+                    </Pressable>
+                  ) : null}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: priorityMealSlotLayoutEnabled }}
+                    accessibilityLabel={
+                      priorityMealSlotLayoutEnabled
+                        ? '목록 보기로 전환'
+                        : '새벽·아침·점심·저녁·밤 구간으로 보기'
+                    }
+                    onPress={toggleMealSlotLayout}
+                    style={({ pressed }) => [
+                      styles.mealSlotLayoutToggle,
+                      {
+                        backgroundColor: priorityMealSlotLayoutEnabled
+                          ? tabColors.activeBg
+                          : c.containerLowest,
+                        borderColor: priorityMealSlotLayoutEnabled
+                          ? tabColors.activeBorder
+                          : c.border,
+                      },
+                      pressed && styles.mealSlotLayoutTogglePressed,
+                    ]}>
+                    <IconSymbol
+                      name="sun.horizon.fill"
+                      size={15}
+                      color={
+                        priorityMealSlotLayoutEnabled ? tabColors.activeIcon : c.onVariant
+                      }
+                    />
+                    <ThemedText
+                      style={[
+                        styles.mealSlotLayoutToggleLabel,
+                        {
+                          color: priorityMealSlotLayoutEnabled
+                            ? tabColors.activeIcon
+                            : c.onVariant,
+                        },
+                      ]}>
+                      구간
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              ) : null}
             </View>
             <ScrollView
               nestedScrollEnabled
@@ -1891,77 +2025,105 @@ export function PriorityBasedPlanSection({
                           </ThemedText>
                         ) : null}
                         <View style={styles.priorityInlineList}>
-                          {orderedSelectedItemsForDisplay.map((cat, idx) => {
-                            const rowDone = isPriorityRowCompleted(cat.key);
-                            const activeIndexBefore = orderedSelectedItemsForDisplay
-                              .slice(0, idx)
-                              .filter((c) => !isPriorityRowCompleted(c.key)).length;
-                            const priorityLabel = rowDone ? undefined : priorityLabelByIndex(activeIndexBefore);
-                            const isTopPriority = !rowDone && activeIndexBefore === 0;
+                          {(() => {
                             const allowBagReorder = orderedSelectedItemsForDisplay.length >= 2;
-                            return (
-                              <Reanimated.View
-                                key={cat.key}
-                                layout={PRIORITY_ROW_LAYOUT}
-                                exiting={PRIORITY_ROW_EXITING}
-                                style={[
-                                  styles.priorityOrderRowAnimWrap,
-                                  draggingPriorityKey === cat.key
-                                    ? styles.priorityOrderRowAnimWrapDragging
-                                    : null,
-                                ]}
-                                onLayout={(e) => {
-                                  const h = e.nativeEvent.layout.height;
-                                  if (h > 0) {
-                                    priorityBagRowHeightRef.current = h;
-                                  }
-                                }}>
-                                <PriorityOrderRow
-                                  categoryKey={cat.key}
-                                  icon={cat.icon}
-                                  label={cat.label}
-                                  subtitle={categorySubtitleByKey(cat.key)}
-                                  priorityLabel={priorityLabel}
-                                  isTopPriority={isTopPriority}
-                                  priorityColor={rowDone ? undefined : priorityColorByIndex(activeIndexBefore)}
-                                  isFocusStarted={isFocusStarted}
-                                  isCompleted={rowDone}
-                                  isDark={isDark}
+
+                            const renderBagRow = (cat: (typeof orderedSelectedItemsForDisplay)[number]) => {
+                              const rowDone = isPriorityRowCompleted(cat.key);
+
+                              return (
+                                <Reanimated.View
+                                  key={cat.key}
+                                  layout={PRIORITY_ROW_LAYOUT}
+                                  exiting={PRIORITY_ROW_EXITING}
+                                  style={[
+                                    styles.priorityOrderRowAnimWrap,
+                                    draggingPriorityKey === cat.key
+                                      ? styles.priorityOrderRowAnimWrapDragging
+                                      : null,
+                                  ]}
+                                  onLayout={(e) => {
+                                    const h = e.nativeEvent.layout.height;
+                                    if (h > 0) {
+                                      priorityBagRowHeightRef.current = h;
+                                    }
+                                  }}>
+                                  <PriorityOrderRow
+                                    categoryKey={cat.key}
+                                    icon={cat.icon}
+                                    label={cat.label}
+                                    subtitle={categorySubtitleByKey(cat.key)}
+                                    isFocusStarted={isFocusStarted}
+                                    isCompleted={rowDone}
+                                    isDark={isDark}
+                                    ink={editorial.ink}
+                                    inkMuted={editorial.muted}
+                                    line={editorial.line}
+                                    onToggleFocusComplete={() =>
+                                      handleTogglePriorityRowComplete(cat.key)
+                                    }
+                                    onRemoveCompletedFromPriorityBag={
+                                      rowDone
+                                        ? () => requestRemoveOneCompletedFromPriorityBag(cat.key)
+                                        : undefined
+                                    }
+                                    onReorderDragTranslationEnd={
+                                      allowBagReorder
+                                        ? (ty) =>
+                                            commitPriorityDisplayReorderFromDrag(cat.key, ty)
+                                        : undefined
+                                    }
+                                    onReorderDragActiveChange={
+                                      allowBagReorder
+                                        ? (active) => {
+                                            setDraggingPriorityKey((prev) => {
+                                              if (active) return cat.key;
+                                              if (prev === cat.key) return null;
+                                              return prev;
+                                            });
+                                          }
+                                        : undefined
+                                    }
+                                    reorderDragSurface={
+                                      allowBagReorder ? editorial.surface : undefined
+                                    }
+                                    onSettings={
+                                      onOpenCategorySettings
+                                        ? () => onOpenCategorySettings(cat.key)
+                                        : undefined
+                                    }
+                                    onFocusDetail={
+                                      onOpenFocusDetail
+                                        ? () => onOpenFocusDetail(cat.key)
+                                        : undefined
+                                    }
+                                    animateOnMount={lastAddedCategoryKey === cat.key}
+                                  />
+                                </Reanimated.View>
+                              );
+                            };
+
+                            if (!showMealSlotLayout) {
+                              return orderedSelectedItemsForDisplay.map((cat) =>
+                                renderBagRow(cat),
+                              );
+                            }
+
+                            return priorityMealSlotSections.map((section, sectionIndex) => (
+                              <View key={section.slot} style={styles.priorityMealSlotSection}>
+                                <PriorityMealSlotSectionHeader
+                                  title={section.title}
+                                  hintTime={formatHhmmClockKo(section.hintTime)}
                                   ink={editorial.ink}
-                                  inkMuted={editorial.muted}
+                                  muted={editorial.muted}
                                   line={editorial.line}
-                                  onToggleFocusComplete={() => handleTogglePriorityRowComplete(cat.key)}
-                                  onRemoveCompletedFromPriorityBag={
-                                    rowDone
-                                      ? () => requestRemoveOneCompletedFromPriorityBag(cat.key)
-                                      : undefined
-                                  }
-                                  onReorderDragTranslationEnd={
-                                    allowBagReorder
-                                      ? (ty) => commitPriorityDisplayReorderFromDrag(cat.key, ty)
-                                      : undefined
-                                  }
-                                  onReorderDragActiveChange={
-                                    allowBagReorder
-                                      ? (active) => {
-                                        setDraggingPriorityKey((prev) => {
-                                          if (active) return cat.key;
-                                          if (prev === cat.key) return null;
-                                          return prev;
-                                        });
-                                      }
-                                      : undefined
-                                  }
-                                  reorderDragSurface={allowBagReorder ? editorial.surface : undefined}
-                                  onSettings={
-                                    onOpenCategorySettings ? () => onOpenCategorySettings(cat.key) : undefined
-                                  }
-                                  onFocusDetail={onOpenFocusDetail ? () => onOpenFocusDetail(cat.key) : undefined}
-                                  animateOnMount={lastAddedCategoryKey === cat.key}
+                                  isCurrent={section.isCurrent}
+                                  isFirst={sectionIndex === 0}
                                 />
-                              </Reanimated.View>
-                            );
-                          })}
+                                {section.items.map((cat) => renderBagRow(cat))}
+                              </View>
+                            ));
+                          })()}
                         </View>
                       </View>
                     ) : null}
@@ -1972,6 +2134,14 @@ export function PriorityBasedPlanSection({
           </View>
         </View>
       </View>
+
+      <DayMealSlotScheduleSheet
+        visible={mealSlotScheduleOpen}
+        schedule={mealSlotSchedule}
+        isDark={isDark}
+        onClose={() => setMealSlotScheduleOpen(false)}
+        onSave={persistMealSlotSchedule}
+      />
     </View>
   );
 }
@@ -2041,6 +2211,31 @@ const styles = StyleSheet.create({
     gap: 2,
     paddingTop: 2,
     marginLeft: 4,
+  },
+  mealSlotLayoutToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  mealSlotLayoutTogglePressed: {
+    opacity: 0.72,
+  },
+  mealSlotLayoutToggleLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  mealSlotScheduleBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   priorityTimelineScroll: {
     flex: 1,
@@ -2145,6 +2340,9 @@ const styles = StyleSheet.create({
   priorityInlineList: {
     width: '100%',
     alignSelf: 'stretch',
+  },
+  priorityMealSlotSection: {
+    width: '100%',
   },
   /** Reanimated layout/exit — 드래그 중 `translateY`가 잘리지 않도록 visible */
   priorityOrderRowAnimWrap: {
