@@ -20,6 +20,7 @@ export { DEFAULT_DAY_PLAN_BLOCKS } from './lib/defaultBlocks';
 export { getBlockTimelineIcon } from './lib/blockIcons';
 export { parseHHmmToMinutes } from './lib/parseTime';
 export { filterDayPlanFlowBlocks, isDayPlanFlowBlock } from './lib/dayPlanFlowBlock';
+export { countPendingFlowBlocks } from './lib/countPendingFlowBlocks';
 export {
   blockDurationSec,
   dayPlanTimeRangesOverlap,

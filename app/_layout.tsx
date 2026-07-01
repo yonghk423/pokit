@@ -77,6 +77,14 @@ export default function RootLayout() {
               options={{ headerShown: false, presentation: 'card' }}
             />
             <Stack.Screen
+              name="notification-settings"
+              options={{ headerShown: false, presentation: 'card' }}
+            />
+            <Stack.Screen
+              name="incomplete-routine-reminder-settings"
+              options={{ headerShown: false, presentation: 'card' }}
+            />
+            <Stack.Screen
               name="activity-session"
               options={{ headerShown: false, presentation: 'fullScreenModal' }}
             />

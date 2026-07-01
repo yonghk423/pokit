@@ -12,6 +12,12 @@ export type PriorityDayStartAlarmPersisted = {
   notificationId: string | null;
 };
 
+export type IncompleteRoutineReminderPersisted = {
+  enabled: boolean;
+  reminderHhmm: string;
+  notificationId: string | null;
+};
+
 /** 카테고리별 매일 반복 알림 — 시각은 `HH:mm`(24h), 24:00 미지원 */
 export type CategoryReminderRuleRow = {
   enabled: boolean;
@@ -43,6 +49,7 @@ export type AppearanceMode = 'light' | 'dark';
 type SettingsStorageShape = {
   dayPlanScheduledNotifications?: DayPlanScheduledNotification[];
   priorityDayStartAlarm?: PriorityDayStartAlarmPersisted;
+  incompleteRoutineReminder?: IncompleteRoutineReminderPersisted;
   categoryReminderRules?: CategoryReminderRules;
   categoryReminderScheduled?: CategoryReminderScheduledRow[];
   medicineReminderScheduled?: MedicineReminderScheduledRow[];
@@ -105,6 +112,40 @@ export function savePriorityDayStartAlarm(next: PriorityDayStartAlarmPersisted):
     ...root,
     priorityDayStartAlarm: {
       enabled: next.enabled,
+      notificationId: next.notificationId,
+    },
+  });
+}
+
+const DEFAULT_INCOMPLETE_ROUTINE_REMINDER: IncompleteRoutineReminderPersisted = {
+  enabled: false,
+  reminderHhmm: '22:00',
+  notificationId: null,
+};
+
+export function loadIncompleteRoutineReminder(): IncompleteRoutineReminderPersisted {
+  const root = readRoot();
+  const v = root.incompleteRoutineReminder;
+  if (!v || typeof v !== 'object') {
+    return { ...DEFAULT_INCOMPLETE_ROUTINE_REMINDER };
+  }
+  const hhmm = typeof v.reminderHhmm === 'string' && v.reminderHhmm.trim().length > 0
+    ? v.reminderHhmm.trim()
+    : DEFAULT_INCOMPLETE_ROUTINE_REMINDER.reminderHhmm;
+  return {
+    enabled: Boolean(v.enabled),
+    reminderHhmm: hhmm,
+    notificationId: typeof v.notificationId === 'string' ? v.notificationId : null,
+  };
+}
+
+export function saveIncompleteRoutineReminder(next: IncompleteRoutineReminderPersisted): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    incompleteRoutineReminder: {
+      enabled: next.enabled,
+      reminderHhmm: next.reminderHhmm,
       notificationId: next.notificationId,
     },
   });

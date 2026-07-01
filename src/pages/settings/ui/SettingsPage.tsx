@@ -3,11 +3,9 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useShallow } from 'zustand/react/shallow';
 
 import {
   defaultPriorityWindowFromNow,
-  formatHhmmClockKo,
   getLocalDateKey,
   useDayPlanDraftStore,
   useDayPlanRuntimeStore,
@@ -41,13 +39,6 @@ export function SettingsPage() {
   const [isResettingData, setIsResettingData] = useState(false);
   const appearanceMode = useAppearanceStore((s) => s.mode);
   const appearanceLabel = appearanceMode === 'dark' ? '다크 모드' : '라이트 모드';
-  const { priorityStart, priorityEnd } = useDayPlanDraftStore(
-    useShallow((s) => ({
-      priorityStart: s.priorityStart,
-      priorityEnd: s.priorityEnd,
-    })),
-  );
-
   const runResetData = async () => {
     if (isResettingData) return;
     setIsResettingData(true);
@@ -137,23 +128,21 @@ export function SettingsPage() {
         ]}
         showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>데이플랜</ThemedText>
+          <ThemedText style={styles.sectionTitle}>알림</ThemedText>
 
           <Pressable
             style={styles.item}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/daily-rhythm-settings');
+              router.push('/notification-settings');
             }}
             accessibilityRole="button"
-            accessibilityLabel="시작과 마무리 시간 설정">
+            accessibilityLabel="알림 설정">
             <View style={styles.itemLeft}>
-              <IconSymbol name="sun.horizon.fill" size={20} color="#6B7280" />
+              <IconSymbol name="bell.fill" size={20} color="#6B7280" />
               <View style={styles.itemTextWrap}>
-                <ThemedText style={styles.itemTitle}>시작·마무리</ThemedText>
-                <ThemedText style={styles.itemDesc}>
-                  {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
-                </ThemedText>
+                <ThemedText style={styles.itemTitle}>알림</ThemedText>
+                <ThemedText style={styles.itemDesc}>나를 위한 다양한 알림 기능</ThemedText>
               </View>
             </View>
             <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />

@@ -10,6 +10,7 @@ import {
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { syncCategoryReminderNotifications } from '@features/category-reminder-notifications';
 import {
+  syncIncompleteRoutineReminderNotifications,
   syncMedicineReminderNotifications,
   syncPriorityDayStartAlarm,
   syncWaterReminderNotifications,
@@ -80,7 +81,22 @@ export function useAppBootstrap() {
       await syncPriorityDayStartAlarm({ enabled, startHhmm: initialPriorityStart });
       await syncCategoryReminderNotifications();
       await syncMedicineReminderNotifications();
+      await syncIncompleteRoutineReminderNotifications();
     })();
+  }, [isReady]);
+
+  useEffect(() => {
+    if (!isReady) return;
+    return useDayPlanStore.subscribe((state, prev) => {
+      if (
+        state.blocks !== prev.blocks ||
+        state.completedBlockIds !== prev.completedBlockIds ||
+        state.skippedBlockIds !== prev.skippedBlockIds ||
+        state.dateKey !== prev.dateKey
+      ) {
+        void syncIncompleteRoutineReminderNotifications();
+      }
+    });
   }, [isReady]);
 
   useEffect(() => {
@@ -95,6 +111,10 @@ export function useAppBootstrap() {
     if (!isReady) return;
     return addLocalNotificationResponseListener((data) => {
       if (data.eventType === 'categoryReminder') {
+        router.push('/(tabs)/day-plan');
+        return;
+      }
+      if (data.eventType === 'incompleteRoutineReminder') {
         router.push('/(tabs)/day-plan');
         return;
       }
@@ -142,6 +162,7 @@ export function useAppBootstrap() {
         void useLocalNotificationsStore.getState().refreshPermission();
         void syncCategoryReminderNotifications();
         void syncMedicineReminderNotifications();
+        void syncIncompleteRoutineReminderNotifications();
         useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
         registerOtherCategoryResolverFromStorage();
       } else {

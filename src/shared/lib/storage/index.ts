@@ -152,11 +152,13 @@ export {
   loadCategoryReminderRules,
   loadCategoryReminderScheduled,
   loadDayPlanScheduledNotifications,
+  loadIncompleteRoutineReminder,
   loadMedicineReminderScheduled, loadPriorityDayStartAlarm, loadWaterReminderScheduled,
   saveAppearanceMode,
   saveCategoryReminderRules,
   saveCategoryReminderScheduled,
   saveDayPlanScheduledNotifications,
+  saveIncompleteRoutineReminder,
   saveMedicineReminderScheduled, savePriorityDayStartAlarm, saveWaterReminderScheduled
 } from './settingsStorage';
 export type {
@@ -165,6 +167,7 @@ export type {
   CategoryReminderRules,
   CategoryReminderScheduledRow,
   DayPlanScheduledNotification,
+  IncompleteRoutineReminderPersisted,
   MedicineReminderScheduledRow, PriorityDayStartAlarmPersisted, WaterReminderScheduledRow
 } from './settingsStorage';
 export { StorageKeys } from './storageKeys';

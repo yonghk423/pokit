@@ -3,12 +3,14 @@ import {
   loadCategoryReminderRules,
   loadCategoryReminderScheduled,
   loadDayPlanScheduledNotifications,
+  loadIncompleteRoutineReminder,
   loadMedicineReminderScheduled,
   loadPriorityDayStartAlarm,
   loadWaterReminderScheduled,
   saveCategoryReminderRules,
   saveCategoryReminderScheduled,
   saveDayPlanScheduledNotifications,
+  saveIncompleteRoutineReminder,
   saveMedicineReminderScheduled,
   savePriorityDayStartAlarm,
   saveWaterReminderScheduled,
@@ -35,6 +37,27 @@ describe('settingsStorage', () => {
     expect(loadPriorityDayStartAlarm()).toEqual({
       enabled: false,
       notificationId: 'pokit:priority-day-start',
+    });
+  });
+
+  it('returns default incomplete routine reminder when missing', () => {
+    expect(loadIncompleteRoutineReminder()).toEqual({
+      enabled: false,
+      reminderHhmm: '22:00',
+      notificationId: null,
+    });
+  });
+
+  it('persists incomplete routine reminder', () => {
+    saveIncompleteRoutineReminder({
+      enabled: true,
+      reminderHhmm: '21:30',
+      notificationId: 'pokit:incomplete-routine-reminder',
+    });
+    expect(loadIncompleteRoutineReminder()).toEqual({
+      enabled: true,
+      reminderHhmm: '21:30',
+      notificationId: 'pokit:incomplete-routine-reminder',
     });
   });
 
