@@ -18,7 +18,9 @@ import {
   useDayPlanDraftStore,
   useDayPlanRuntimeStore,
   categoryReminderLabelKo,
+  notifyFixedFlowApplyScheduleChanged,
   useDayPlanStore,
+  useFixedFlowSetsStore,
   type DayPlanBlock,
 } from '@entities/day-plan';
 import { readRoutineDisplayNameFromConfig } from '@entities/day-plan/lib/routineDisplayName';
@@ -32,7 +34,6 @@ import {
   appendGoalDetailCommittedCategoryKeys,
   loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
-  loadPriorityCatalogFixedRoutineKeys,
   removeCustomFlowCatalogId,
   removeGoalDetailCategoryConfig,
   saveGoalDetailBlockConfig,
@@ -52,6 +53,7 @@ import { getGoalDetailCategoryModule } from './category';
 import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
 import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
 import { GoalDetailCategoryStartReminderCard } from './GoalDetailCategoryStartReminderCard';
+import { RoutineApplyWeekdaysField } from './RoutineApplyWeekdaysField';
 import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
 
 function palette(isDark: boolean) {
@@ -147,6 +149,9 @@ function withPreservedRoutineFields(categoryKey: string, next: unknown): unknown
   }
   if (!('accentColor' in o) && typeof prevO.accentColor === 'string') {
     o.accentColor = prevO.accentColor;
+  }
+  if (!('applyWeekdays' in o) && Array.isArray(prevO.applyWeekdays)) {
+    o.applyWeekdays = prevO.applyWeekdays;
   }
   return o;
 }
@@ -344,8 +349,16 @@ export function GoalDetailSettingsPage() {
       if (!isCustomFlowCategoryKey(categoryKey)) return;
       removeCustomFlowCatalogId(categoryKey);
       removeGoalDetailCategoryConfig(categoryKey);
-      const nextFixed = [...new Set(loadPriorityCatalogFixedRoutineKeys().filter((k) => k !== categoryKey))];
+      const fixedStore = useFixedFlowSetsStore.getState();
+      if (!fixedStore.isHydrated) fixedStore.hydrate();
+      const nextFixed = [
+        ...new Set(
+          useFixedFlowSetsStore.getState().todayAppliedCategoryKeys.filter((k) => k !== categoryKey),
+        ),
+      ];
       savePriorityCatalogFixedRoutineKeys(nextFixed);
+      useFixedFlowSetsStore.getState().reloadFromStorage();
+      notifyFixedFlowApplyScheduleChanged();
       const draft = useDayPlanDraftStore.getState();
       const nextOrder = draft.priorityCategoryOrder.filter((k) => k !== categoryKey);
       draft.setPriorityCategoryOrder(nextOrder);
@@ -586,6 +599,15 @@ export function GoalDetailSettingsPage() {
             {reminderCategoryKeys.map((key) => (
               <GoalDetailCategoryStartReminderCard key={key} categoryKey={key} />
             ))}
+
+            <RoutineApplyWeekdaysField
+              categoryKey={categoryKey}
+              ink={c.onSurface}
+              muted={c.onVariant}
+              line={c.border}
+              surface="#ffffff"
+              isDark={false}
+            />
 
             {targets.length === 1 ? (
               <View style={styles.blockSection}>

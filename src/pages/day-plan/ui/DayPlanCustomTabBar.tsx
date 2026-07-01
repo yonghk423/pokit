@@ -30,7 +30,7 @@ type TabDef = {
 const TABS: TabDef[] = [
   { route: 'day-plan', icon: 'calendar', size: 22, label: '오늘' },
   { route: 'priority-catalog', icon: 'list.bullet.rectangle', size: 22, label: '루틴' },
-  { route: 'fixed-routines', icon: 'figure.walk', size: 22, label: '나만의 루틴' },
+  { route: 'fixed-routines', icon: 'figure.walk', size: 22, label: '오늘의 루틴' },
   { route: 'day-plan-statistics', icon: 'clock.arrow.circlepath', size: 22, label: '히스토리' },
   { route: 'pokit-story', icon: 'book', size: 22, label: '스토리' },
 ];

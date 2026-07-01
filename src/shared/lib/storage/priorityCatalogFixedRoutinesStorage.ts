@@ -28,19 +28,23 @@ function createDefaultSet(categoryKeys: string[]): FixedFlowSet {
   return {
     id: 'default',
     name: '기본 세트',
+    applyRule: 'manual',
     items: categoryKeys.map((categoryKey) => ({ categoryKey, enabled: true })),
   };
 }
 
 function ensureMigratedFromLegacy(): void {
   const next = loadFixedFlowSetsState();
-  if (next.sets.length > 0) return;
   const legacy = localStorageClient.getJson<LegacyPersistedShape>(StorageKeys.priorityCatalogFixedRoutines);
   const legacyKeys = normalizeLegacyKeys(legacy?.categoryKeys);
   if (legacyKeys.length === 0) return;
+  const hasManualSet = next.sets.some((set) => set.applyRule === 'manual');
+  if (hasManualSet) return;
+  const nextSets = [...next.sets, createDefaultSet(legacyKeys)];
+  const nextActiveSetIds = [...new Set([...next.activeSetIds, 'default'])];
   saveFixedFlowSetsState({
-    activeSetIds: ['default'],
-    sets: [createDefaultSet(legacyKeys)],
+    activeSetIds: nextActiveSetIds,
+    sets: nextSets,
   });
 }
 
@@ -52,7 +56,11 @@ export function loadPriorityCatalogFixedRoutineKeys(): string[] {
 export function savePriorityCatalogFixedRoutineKeys(categoryKeys: string[]): void {
   ensureMigratedFromLegacy();
   const state = loadFixedFlowSetsState();
-  const activeId = state.activeSetIds[0] ?? state.sets[0]?.id ?? 'default';
+  const manualSet = state.sets.find((set) => set.applyRule === 'manual');
+  const activeManualId = state.activeSetIds.find((setId) =>
+    state.sets.some((set) => set.id === setId && set.applyRule === 'manual'),
+  );
+  const activeId = activeManualId ?? manualSet?.id ?? 'default';
   const seen = new Set<string>();
   const normalized = categoryKeys
     .map((k) => k.trim())
@@ -66,6 +74,7 @@ export function savePriorityCatalogFixedRoutineKeys(categoryKeys: string[]): voi
   const updated = createDefaultSet(normalized);
   updated.id = activeId;
   updated.name = sets[idx]?.name ?? '기본 세트';
+  updated.applyRule = sets[idx]?.applyRule ?? 'manual';
   if (idx >= 0) sets[idx] = updated;
   else sets.push(updated);
   const activeSetIds =

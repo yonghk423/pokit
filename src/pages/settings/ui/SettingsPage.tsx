@@ -73,7 +73,6 @@ export function SettingsPage() {
         priorityStart: defaultWindow.startTime,
         priorityEnd: defaultWindow.endTime,
         priorityCategoryOrder: [],
-        priorityCatalogFixedRoutineEpoch: 0,
         categoryLabelEpoch: 0,
         waterReminderSyncEpoch: 0,
         quickMemoDraft: '',
@@ -86,6 +85,8 @@ export function SettingsPage() {
       useFixedFlowSetsStore.setState({
         activeSetIds: defaultFixedSets.activeSetIds,
         sets: defaultFixedSets.sets,
+        todayAppliedCategoryKeys: [],
+        todayAppliedRevision: 0,
         isHydrated: true,
       });
       saveFixedFlowSetsState(defaultFixedSets);

@@ -15,12 +15,6 @@ jest.mock('@shared/lib/storage/fixedFlowSetsStorage', () => {
   };
 });
 
-jest.mock('./dayPlanDraftStore', () => ({
-  useDayPlanDraftStore: {
-    getState: () => ({ bumpPriorityCatalogFixedRoutineEpoch: jest.fn() }),
-  },
-}));
-
 const mockLoad = loadFixedFlowSetsState as jest.MockedFunction<typeof loadFixedFlowSetsState>;
 const mockSave = saveFixedFlowSetsState as jest.MockedFunction<typeof saveFixedFlowSetsState>;
 
@@ -30,6 +24,8 @@ function resetStore() {
   useFixedFlowSetsStore.setState({
     activeSetIds: [],
     sets: [],
+    todayAppliedCategoryKeys: [],
+    todayAppliedRevision: 0,
     isHydrated: false,
   });
 }
@@ -48,6 +44,7 @@ describe('fixedFlowSetsStore', () => {
         {
           id: 'set_a',
           name: 'A',
+          applyRule: 'manual',
           items: [
             { categoryKey: 'reading', enabled: true },
             { categoryKey: 'invalid_key_xyz', enabled: true },
@@ -66,6 +63,8 @@ describe('fixedFlowSetsStore', () => {
   it('adds set without auto applying to today', () => {
     useFixedFlowSetsStore.setState({
       ...baseState,
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
       isHydrated: true,
     });
     useFixedFlowSetsStore.getState().addSet('주말');
@@ -75,13 +74,36 @@ describe('fixedFlowSetsStore', () => {
     expect(mockSave).toHaveBeenCalled();
   });
 
+  it('updates todayAppliedCategoryKeys when toggling set for today', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: [],
+      sets: [
+        {
+          id: 'set_a',
+          name: 'A',
+          applyRule: 'manual',
+          items: [{ categoryKey: 'water', enabled: true }],
+        },
+      ],
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+    useFixedFlowSetsStore.getState().toggleSetForToday('set_a');
+    expect(useFixedFlowSetsStore.getState().activeSetIds).toEqual(['set_a']);
+    expect(useFixedFlowSetsStore.getState().todayAppliedCategoryKeys).toEqual(['water']);
+    expect(useFixedFlowSetsStore.getState().todayAppliedRevision).toBeGreaterThan(0);
+  });
+
   it('toggles multiple sets for today', () => {
     useFixedFlowSetsStore.setState({
       activeSetIds: [],
       sets: [
-        { id: 'set_a', name: 'A', items: [] },
-        { id: 'set_b', name: 'B', items: [] },
+        { id: 'set_a', name: 'A', applyRule: 'manual', items: [] },
+        { id: 'set_b', name: 'B', applyRule: 'manual', items: [] },
       ],
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
       isHydrated: true,
     });
     useFixedFlowSetsStore.getState().toggleSetForToday('set_a');
@@ -95,19 +117,26 @@ describe('fixedFlowSetsStore', () => {
     useFixedFlowSetsStore.setState({
       activeSetIds: ['set_a', 'set_b'],
       sets: [
-        { id: 'set_a', name: 'A', items: [] },
-        { id: 'set_b', name: 'B', items: [] },
+        { id: 'set_a', name: 'A', applyRule: 'manual', items: [] },
+        { id: 'set_b', name: 'B', applyRule: 'manual', items: [] },
       ],
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
       isHydrated: true,
     });
     useFixedFlowSetsStore.getState().removeSet('set_a');
     expect(useFixedFlowSetsStore.getState().activeSetIds).toEqual(['set_b']);
   });
 
-  it('hydrates default state when storage is empty', () => {
-    mockLoad.mockReturnValue({ activeSetIds: [], sets: [] });
-    useFixedFlowSetsStore.getState().hydrate();
-    expect(useFixedFlowSetsStore.getState().isHydrated).toBe(true);
-    expect(useFixedFlowSetsStore.getState().sets.length).toBeGreaterThan(0);
+  it('does not remove built-in preset sets', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: [],
+      sets: baseState.sets,
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+    useFixedFlowSetsStore.getState().removeSet('set_daily');
+    expect(useFixedFlowSetsStore.getState().sets.some((s) => s.id === 'set_daily')).toBe(true);
   });
 });

@@ -48,7 +48,16 @@ export { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
 export type { PersistedDayPlanDraft } from './dayPlanDraftStorage';
 export { loadDayPlan, saveDayPlan } from './dayPlanStorage';
 export type { PersistedDayPlan } from './dayPlanStorage';
-export { createDefaultFixedFlowSetsState } from './defaultFixedFlowSets';
+export {
+  BUILTIN_FIXED_FLOW_SET_IDS,
+  BUILTIN_PRESET_SCHEDULE_SET_IDS,
+  LEGACY_WEEKDAY_SET_ID,
+  REMOVED_SCHEDULED_SET_IDS,
+  createDefaultFixedFlowSetsState,
+  isBuiltinPresetScheduleSet,
+  mergeBuiltInPresetSets,
+  shouldMigrateAwayScheduledSet,
+} from './defaultFixedFlowSets';
 export {
   BUILTIN_CUSTOM_GROUP_FAMILY,
   BUILTIN_CUSTOM_GROUP_HOBBY,
@@ -63,13 +72,36 @@ export type { BuiltinCustomFlowDef } from './defaultPriorityCatalog';
 export { ensureDefaultPriorityCatalog } from './ensureDefaultPriorityCatalog';
 export {
   collectActiveFixedFlowCategoryKeys, getActiveFixedFlowSet, loadActiveFixedFlowCategoryKeys,
+  isFixedFlowSetMatchedToday,
+  isFixedFlowSetRuleMatchedToday,
   loadFixedFlowSetsState,
   normalizeFixedFlowSetsState,
   saveFixedFlowSetsState,
+  type FixedFlowSetApplyRule,
   type FixedFlowSet,
   type FixedFlowSetItem,
   type FixedFlowSetsState
 } from './fixedFlowSetsStorage';
+export {
+  defaultWeekdaysForApplyRule,
+  formatApplyWeekdaysHint,
+  formatApplyWeekdaysLabel,
+  normalizeApplyWeekdays,
+  resolveApplyWeekdays,
+  WEEKDAY_LABELS,
+  WEEKDAY_PICKER_ORDER,
+  WEEKDAY_PRESET_DAILY,
+  WEEKDAY_PRESET_WEEKDAY,
+  WEEKDAY_PRESET_WEEKEND,
+  type WeekdayIndex,
+} from './fixedFlowWeekdays';
+export {
+  clearCategoryApplyWeekdays,
+  collectAutoScheduledCategoryKeys,
+  loadCategoryApplyWeekdays,
+  readApplyWeekdaysFromConfig,
+  saveCategoryApplyWeekdays,
+} from './routineApplyWeekdaysStorage';
 export {
   appendGoalDetailCommittedCategoryKeys,
   hasGoalDetailCommittedCategory,

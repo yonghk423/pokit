@@ -24,8 +24,10 @@ import {
   isPriorityWindowEndedForToday,
   parseHHmmToMinutes,
   resolveBlockCategoryKey,
+  useDayPlanDraftStore,
   useDayPlanRuntimeStore,
-  useDayPlanStore
+  useDayPlanStore,
+  useFixedFlowSetsStore,
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import {
@@ -44,13 +46,11 @@ import {
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   loadDailyRhythmOnboardingCompleted,
-  loadPriorityCatalogFixedRoutineKeys,
   loadPriorityDayStartAlarm,
   markDailyRhythmOnboardingCompleted,
 } from '@shared/lib/storage';
 import { ThemedView } from '@shared/ui/themed-view';
 
-import { useDayPlanDraftStore } from '@entities/day-plan';
 import {
   defaultPriorityWindowFromNow,
   getPickerCategoryLabel,
@@ -89,7 +89,6 @@ export function DayPlanPage() {
     priorityCategoryOrder,
     priorityBagDismissedDateKey,
     priorityBagDismissedKeys,
-    priorityCatalogFixedRoutineEpoch,
     quickMemoDraft,
     setPlanMode,
     setIsFocusStarted,
@@ -117,7 +116,6 @@ export function DayPlanPage() {
       priorityCategoryOrder: s.priorityCategoryOrder,
       priorityBagDismissedDateKey: s.priorityBagDismissedDateKey,
       priorityBagDismissedKeys: s.priorityBagDismissedKeys,
-      priorityCatalogFixedRoutineEpoch: s.priorityCatalogFixedRoutineEpoch,
       quickMemoDraft: s.quickMemoDraft,
       setPlanMode: s.setPlanMode,
       setIsFocusStarted: s.setIsFocusStarted,
@@ -134,6 +132,30 @@ export function DayPlanPage() {
       clearPlanCompletionDismissedKeys: s.clearPlanCompletionDismissedKeys,
       setQuickMemoDraft: s.setQuickMemoDraft,
     })),
+  );
+
+  const {
+    todayAppliedCategoryKeys,
+    todayAppliedRevision,
+    hydrate: hydrateFixedFlowSets,
+    refreshTodayAppliedCategoryKeys,
+  } = useFixedFlowSetsStore(
+    useShallow((s) => ({
+      todayAppliedCategoryKeys: s.todayAppliedCategoryKeys,
+      todayAppliedRevision: s.todayAppliedRevision,
+      hydrate: s.hydrate,
+      refreshTodayAppliedCategoryKeys: s.refreshTodayAppliedCategoryKeys,
+    })),
+  );
+
+  useEffect(() => {
+    hydrateFixedFlowSets();
+  }, [hydrateFixedFlowSets]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshTodayAppliedCategoryKeys();
+    }, [refreshTodayAppliedCategoryKeys]),
   );
 
   useFocusEffect(
@@ -257,10 +279,11 @@ export function DayPlanPage() {
     const today = getLocalDateKey();
     if (today < priorityPlanDateKey || today > priorityPlanDateKeyEnd) return;
 
-    const fixedRaw = loadPriorityCatalogFixedRoutineKeys();
     const todayDismissed =
       priorityBagDismissedDateKey === today ? new Set(priorityBagDismissedKeys) : new Set<string>();
-    const fixedOrder = normalizeFixedRoutineCategoryKeys(fixedRaw).filter((key) => !todayDismissed.has(key));
+    const fixedOrder = normalizeFixedRoutineCategoryKeys(todayAppliedCategoryKeys).filter(
+      (key) => !todayDismissed.has(key),
+    );
     if (fixedOrder.length === 0) return;
 
     setPriorityCategoryOrder((prev) => {
@@ -273,10 +296,10 @@ export function DayPlanPage() {
     priorityPlanDateKey,
     priorityPlanDateKeyEnd,
     priorityWindowEndedForToday,
-    priorityCategoryOrder,
     priorityBagDismissedDateKey,
     priorityBagDismissedKeys,
-    priorityCatalogFixedRoutineEpoch,
+    todayAppliedCategoryKeys,
+    todayAppliedRevision,
     setPriorityCategoryOrder,
   ]);
 

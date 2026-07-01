@@ -16,15 +16,20 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
 
   it('saves and loads active fixed routine keys', () => {
     savePriorityCatalogFixedRoutineKeys(['reading', 'water', 'reading']);
-    expect(loadPriorityCatalogFixedRoutineKeys()).toEqual(['reading', 'water']);
+    const keys = loadPriorityCatalogFixedRoutineKeys();
+    expect(keys).toContain('reading');
+    expect(keys).toContain('water');
   });
 
   it('migrates legacy categoryKeys when fixed flow sets are empty', () => {
     localStorageClient.setJson(StorageKeys.priorityCatalogFixedRoutines, {
       categoryKeys: ['study', 'planning'],
     });
-    expect(loadPriorityCatalogFixedRoutineKeys()).toEqual(['study', 'planning']);
-    expect(loadFixedFlowSetsState().sets[0]?.items.map((x) => x.categoryKey)).toEqual([
+    const keys = loadPriorityCatalogFixedRoutineKeys();
+    expect(keys).toContain('study');
+    expect(keys).toContain('planning');
+    const migratedManualSet = loadFixedFlowSetsState().sets.find((set) => set.id === 'default');
+    expect(migratedManualSet?.items.map((x) => x.categoryKey)).toEqual([
       'study',
       'planning',
     ]);
@@ -34,7 +39,7 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
     localStorageClient.setJson(StorageKeys.priorityCatalogFixedRoutines, {
       categoryKeys: ['', '  ', 'reading', 'reading', 42, null],
     });
-    expect(loadPriorityCatalogFixedRoutineKeys()).toEqual(['reading']);
+    expect(loadPriorityCatalogFixedRoutineKeys()).toContain('reading');
   });
 
   it('skips legacy migration when normalized keys are empty', () => {
@@ -64,6 +69,7 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
         {
           id: 'default',
           name: '기본 세트',
+          applyRule: 'manual',
           items: [
             { categoryKey: 'study', enabled: true },
             { categoryKey: 'planning', enabled: true },
@@ -78,19 +84,14 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
   it('appends active set when saved id is missing from sets', () => {
     jest.spyOn(fixedFlowSetsStorage, 'loadFixedFlowSetsState').mockReturnValue({
       activeSetIds: ['orphan'],
-      sets: [{ id: 'set_a', name: '주중', items: [{ categoryKey: 'reading', enabled: true }] }],
+      sets: [{ id: 'set_a', name: '주중', applyRule: 'manual', items: [{ categoryKey: 'reading', enabled: true }] }],
     });
     const saveSpy = jest.spyOn(fixedFlowSetsStorage, 'saveFixedFlowSetsState');
     savePriorityCatalogFixedRoutineKeys(['water', '']);
     expect(saveSpy).toHaveBeenCalledWith({
       activeSetIds: ['orphan'],
       sets: [
-        { id: 'set_a', name: '주중', items: [{ categoryKey: 'reading', enabled: true }] },
-        {
-          id: 'orphan',
-          name: '기본 세트',
-          items: [{ categoryKey: 'water', enabled: true }],
-        },
+        { id: 'set_a', name: '주중', applyRule: 'manual', items: [{ categoryKey: 'water', enabled: true }] },
       ],
     });
   });
@@ -98,7 +99,7 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
   it('updates existing active set name when saving keys', () => {
     localStorageClient.setJson(StorageKeys.fixedFlowSets, {
       activeSetIds: ['set_a'],
-      sets: [{ id: 'set_a', name: '주중', items: [{ categoryKey: 'reading', enabled: true }] }],
+      sets: [{ id: 'set_a', name: '주중', applyRule: 'manual', items: [{ categoryKey: 'reading', enabled: true }] }],
     });
     savePriorityCatalogFixedRoutineKeys(['water']);
     const active = loadFixedFlowSetsState().sets.find((s) => s.id === 'set_a');
@@ -110,8 +111,8 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
     jest.spyOn(fixedFlowSetsStorage, 'loadFixedFlowSetsState').mockReturnValue({
       activeSetIds: ['set_a', 'set_b'],
       sets: [
-        { id: 'set_a', name: 'A', items: [{ categoryKey: 'reading', enabled: true }] },
-        { id: 'set_b', name: 'B', items: [{ categoryKey: 'water', enabled: true }] },
+        { id: 'set_a', name: 'A', applyRule: 'manual', items: [{ categoryKey: 'reading', enabled: true }] },
+        { id: 'set_b', name: 'B', applyRule: 'manual', items: [{ categoryKey: 'water', enabled: true }] },
       ],
     });
     const saveSpy = jest.spyOn(fixedFlowSetsStorage, 'saveFixedFlowSetsState');

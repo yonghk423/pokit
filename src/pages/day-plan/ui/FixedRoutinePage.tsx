@@ -37,7 +37,10 @@ import { registerOtherCategoryResolverFromStorage } from '@features/other-catego
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   appendCustomFlowCatalogEntry,
+  BUILTIN_PRESET_SCHEDULE_SET_IDS,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
+  isBuiltinPresetScheduleSet,
+  isFixedFlowSetMatchedToday,
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
@@ -54,6 +57,14 @@ import { ThemedView } from '@shared/ui/themed-view';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import { getPickerCategoryLabel, PRIMARY } from '../lib/dayPlanEditorShared';
+import {
+  getFixedFlowPresetScheduleHint,
+  getFixedFlowPresetScheduleLabel,
+} from '../lib/fixedFlowPresetLabels';
+import {
+  FixedRoutineSectionTabs,
+  type FixedRoutineSection,
+} from './FixedRoutineSectionTabs';
 import { palette } from '../lib/dayPlanPalette';
 import {
   buildAddablePriorityCatalogSections,
@@ -350,6 +361,7 @@ function AddItemModal({
 
 type GroupAccordionProps = {
   setItem: FixedFlowSet;
+  isPresetScheduleSet: boolean;
   isExpanded: boolean;
   isActiveForToday: boolean;
   applyBlocked: boolean;
@@ -375,6 +387,7 @@ type GroupAccordionProps = {
 
 function GroupAccordion({
   setItem,
+  isPresetScheduleSet,
   isExpanded,
   isActiveForToday,
   applyBlocked,
@@ -400,6 +413,25 @@ function GroupAccordion({
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
   const totalCount = setItem.items.length;
   const applyChipBlocked = applyBlocked && !isActiveForToday;
+  const disableApplyToggle = applyChipBlocked && !isPresetScheduleSet;
+  const applyLabel = isPresetScheduleSet
+    ? isActiveForToday
+      ? '자동 적용'
+      : '대기 중'
+    : isActiveForToday
+      ? '적용 중'
+      : '오늘 적용';
+  const applyA11yLabel = isPresetScheduleSet
+    ? isActiveForToday
+      ? '자동 적용 중'
+      : '현재 요일에서는 자동 적용 대기 중'
+    : isActiveForToday
+      ? '오늘 적용 해제'
+      : applyChipBlocked
+        ? '집중 시간이 끝나 오늘 적용할 수 없음'
+        : '오늘 적용';
+  const ruleLabel = isPresetScheduleSet ? getFixedFlowPresetScheduleLabel(setItem.applyRule) : null;
+  const scheduleHint = isPresetScheduleSet ? getFixedFlowPresetScheduleHint(setItem.applyRule) : null;
 
   return (
     <View style={[styles.accordionSection, { backgroundColor: sectionBg, borderColor: line }]}>
@@ -410,58 +442,87 @@ function GroupAccordion({
             numberOfLines={1}>
             {setItem.name}
           </ThemedText>
+          {ruleLabel ? (
+            <View style={[styles.rulePill, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
+              <ThemedText style={[styles.rulePillText, { color: muted }]}>{ruleLabel}</ThemedText>
+            </View>
+          ) : null}
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: applyChipBlocked }}
-          accessibilityLabel={
-            isActiveForToday
-              ? '오늘 적용 해제'
-              : applyChipBlocked
-                ? '집중 시간이 끝나 오늘 적용할 수 없음'
-                : '오늘 적용'
-          }
-          onPress={() => {
-            if (applyChipBlocked) {
-              onApplyBlocked();
-              return;
-            }
-            onToggleActiveForToday();
-          }}
-          style={({ pressed }) => [
-            styles.headerApplyChip,
-            {
-              borderColor: isActiveForToday ? ink : line,
-              backgroundColor: isActiveForToday
-                ? isDark
-                  ? 'rgba(255,255,255,0.14)'
-                  : 'rgba(0,0,0,0.08)'
-                : isDark
-                  ? 'rgba(255,255,255,0.06)'
-                  : 'rgba(0,0,0,0.03)',
-              opacity: applyChipBlocked ? 0.42 : pressed ? 0.88 : 1,
-            },
-          ]}>
-          <ThemedText
+        {isPresetScheduleSet ? (
+          <View
+            accessibilityRole="text"
+            accessibilityLabel={applyA11yLabel}
             style={[
-              styles.headerApplyChipLabel,
-              { color: isActiveForToday ? ink : muted },
-            ]}
-            numberOfLines={1}>
-            {isActiveForToday ? '적용 중' : '오늘 적용'}
+              styles.headerApplyChip,
+              {
+                borderColor: isActiveForToday ? ink : line,
+                backgroundColor: isActiveForToday
+                  ? isDark
+                    ? 'rgba(255,255,255,0.14)'
+                    : 'rgba(0,0,0,0.08)'
+                  : isDark
+                    ? 'rgba(255,255,255,0.06)'
+                    : 'rgba(0,0,0,0.03)',
+              },
+            ]}>
+            <ThemedText
+              style={[
+                styles.headerApplyChipLabel,
+                { color: isActiveForToday ? ink : muted },
+              ]}
+              numberOfLines={1}>
+              {applyLabel}
+            </ThemedText>
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: disableApplyToggle }}
+            accessibilityLabel={applyA11yLabel}
+            onPress={() => {
+              if (disableApplyToggle) {
+                onApplyBlocked();
+                return;
+              }
+              onToggleActiveForToday();
+            }}
+            style={({ pressed }) => [
+              styles.headerApplyChip,
+              {
+                borderColor: isActiveForToday ? ink : line,
+                backgroundColor: isActiveForToday
+                  ? isDark
+                    ? 'rgba(255,255,255,0.14)'
+                    : 'rgba(0,0,0,0.08)'
+                  : isDark
+                    ? 'rgba(255,255,255,0.06)'
+                    : 'rgba(0,0,0,0.03)',
+                opacity: disableApplyToggle ? 0.42 : pressed ? 0.88 : 1,
+              },
+            ]}>
+            <ThemedText
+              style={[
+                styles.headerApplyChipLabel,
+                { color: isActiveForToday ? ink : muted },
+              ]}
+              numberOfLines={1}>
+            {applyLabel}
           </ThemedText>
         </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${setItem.name} 그룹 삭제`}
-          onPress={onDeleteSet}
-          style={({ pressed }) => [
-            styles.headerDeleteBtn,
-            { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' },
-            pressed && { opacity: 0.72 },
-          ]}>
-          <IconSymbol name="trash" size={13} color={muted} />
-        </Pressable>
+        )}
+        {!isPresetScheduleSet ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${setItem.name} 그룹 삭제`}
+            onPress={onDeleteSet}
+            style={({ pressed }) => [
+              styles.headerDeleteBtn,
+              { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' },
+              pressed && { opacity: 0.72 },
+            ]}>
+            <IconSymbol name="trash" size={13} color={muted} />
+          </Pressable>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${setItem.name} ${isExpanded ? '접기' : '펼치기'}`}
@@ -478,6 +539,9 @@ function GroupAccordion({
 
       {isExpanded ? (
         <View style={[styles.accordionBody, { borderTopColor: line }]}>
+          {scheduleHint ? (
+            <ThemedText style={[styles.accordionRuleHint, { color: muted }]}>{scheduleHint}</ThemedText>
+          ) : null}
           {totalCount === 0 ? (
             <ThemedText style={[styles.accordionEmpty, { color: muted }]}>
               아직 항목이 없어요. 아래에서 추가해 주세요.
@@ -535,14 +599,38 @@ export function FixedRoutinePage() {
   const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [section, setSection] = useState<FixedRoutineSection>('scheduled');
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [addItemModalOpen, setAddItemModalOpen] = useState(false);
   const [addItemSetId, setAddItemSetId] = useState<string | null>(null);
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const targetSetIdRef = useRef<string | null>(null);
-  const hasInitializedExpandedRef = useRef(false);
   const [nowTick, setNowTick] = useState(() => Date.now());
+
+  const {
+    sets,
+    activeSetIds,
+    hydrate,
+    addSet,
+    toggleSetForToday,
+    removeSet,
+    addCategoryToSet,
+    removeCategoryFromSet,
+    setCategoryEnabledInSet,
+  } = useFixedFlowSetsStore(
+    useShallow((s) => ({
+      sets: s.sets,
+      activeSetIds: s.activeSetIds,
+      hydrate: s.hydrate,
+      addSet: s.addSet,
+      toggleSetForToday: s.toggleSetForToday,
+      removeSet: s.removeSet,
+      addCategoryToSet: s.addCategoryToSet,
+      removeCategoryFromSet: s.removeCategoryFromSet,
+      setCategoryEnabledInSet: s.setCategoryEnabledInSet,
+    })),
+  );
 
   const {
     planMode,
@@ -638,29 +726,26 @@ export function FixedRoutinePage() {
     );
   }, []);
 
-  const {
-    sets,
-    activeSetIds,
-    hydrate,
-    addSet,
-    toggleSetForToday,
-    removeSet,
-    addCategoryToSet,
-    removeCategoryFromSet,
-    setCategoryEnabledInSet,
-  } = useFixedFlowSetsStore(
-    useShallow((s) => ({
-      sets: s.sets,
-      activeSetIds: s.activeSetIds,
-      hydrate: s.hydrate,
-      addSet: s.addSet,
-      toggleSetForToday: s.toggleSetForToday,
-      removeSet: s.removeSet,
-      addCategoryToSet: s.addCategoryToSet,
-      removeCategoryFromSet: s.removeCategoryFromSet,
-      setCategoryEnabledInSet: s.setCategoryEnabledInSet,
-    })),
+  const presetSets = useMemo(() => {
+    return BUILTIN_PRESET_SCHEDULE_SET_IDS.map((id) =>
+      sets.find((setItem) => setItem.id === id),
+    ).filter((setItem): setItem is FixedFlowSet => Boolean(setItem));
+  }, [sets]);
+
+  const customSets = useMemo(
+    () => sets.filter((setItem) => setItem.applyRule === 'manual'),
+    [sets],
   );
+
+  const visibleSets = useMemo(
+    () => (section === 'scheduled' ? presetSets : customSets),
+    [section, presetSets, customSets],
+  );
+
+  const sectionHint =
+    section === 'scheduled'
+      ? '데일리·주말 루틴은 요일에 맞게 오늘 탭에 자동으로 추가돼요.'
+      : '원하는 그룹을 만들고 오늘 적용을 켜면 오늘 탭에 반영돼요. 개별 요일은 플로우 상세 설정에서 지정할 수 있어요.';
 
   const reloadCatalog = useCallback(() => {
     setCatalogTick((n) => n + 1);
@@ -677,12 +762,17 @@ export function FixedRoutinePage() {
 
   useEffect(() => subscribeCustomFlowCatalog(reloadCatalog), [reloadCatalog]);
 
-  /** 최초 진입 시 모든 그룹 펼침 — 이후 사용자가 접은 상태는 유지 */
   useEffect(() => {
-    if (sets.length === 0 || hasInitializedExpandedRef.current) return;
-    hasInitializedExpandedRef.current = true;
-    setExpandedIds(new Set(sets.map((s) => s.id)));
-  }, [sets]);
+    if (visibleSets.length === 0) return;
+    setExpandedIds(new Set(visibleSets.map((setItem) => setItem.id)));
+  }, [section, visibleSets]);
+
+  useEffect(() => {
+    if (section !== 'custom') {
+      setIsAddingGroup(false);
+      setNewGroupName('');
+    }
+  }, [section]);
 
   /** 항목 추가 모달이 열릴 때마다 카탈로그를 최신으로 갱신 */
   useEffect(() => {
@@ -719,6 +809,7 @@ export function FixedRoutinePage() {
 
   const handleDeleteSet = useCallback(
     (setId: string) => {
+      if (isBuiltinPresetScheduleSet({ id: setId, applyRule: 'manual' })) return;
       const target = sets.find((s) => s.id === setId);
       if (!target) return;
       Alert.alert(
@@ -803,6 +894,15 @@ export function FixedRoutinePage() {
   const muted = c.onVariant;
   const line = c.catBorderIdle;
   const dashedBorder = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)';
+  const isSetActiveForToday = useCallback(
+    (setItem: FixedFlowSet) => {
+      if (isBuiltinPresetScheduleSet(setItem)) {
+        return isFixedFlowSetMatchedToday(setItem, new Date(nowTick));
+      }
+      return activeSetIds.includes(setItem.id);
+    },
+    [activeSetIds, nowTick],
+  );
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
@@ -815,13 +915,21 @@ export function FixedRoutinePage() {
         }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
+        <FixedRoutineSectionTabs
+          section={section}
+          onSelectSection={setSection}
+          c={c}
+          isDark={isDark}
+        />
+        <ThemedText style={[styles.sectionHint, { color: muted }]}>{sectionHint}</ThemedText>
         <View style={styles.accordionList}>
-          {sets.map((setItem) => (
+          {visibleSets.map((setItem) => (
             <GroupAccordion
               key={setItem.id}
               setItem={setItem}
+              isPresetScheduleSet={isBuiltinPresetScheduleSet(setItem)}
               isExpanded={expandedIds.has(setItem.id)}
-              isActiveForToday={activeSetIds.includes(setItem.id)}
+              isActiveForToday={isSetActiveForToday(setItem)}
               applyBlocked={priorityWindowEndedForToday}
               catalogByKey={catalogByKey}
               isDark={isDark}
@@ -871,7 +979,13 @@ export function FixedRoutinePage() {
           ))}
         </View>
 
-        {isAddingGroup ? (
+        {section === 'custom' && visibleSets.length === 0 ? (
+          <ThemedText style={[styles.sectionEmpty, { color: muted }]}>
+            아직 나만의 루틴 그룹이 없어요. 아래에서 그룹을 추가해 보세요.
+          </ThemedText>
+        ) : null}
+
+        {section === 'custom' && (isAddingGroup ? (
           <View style={[styles.addGroupCard, { borderColor: dashedBorder, backgroundColor: iconBoxBg }]}>
             <TextInput
               value={newGroupName}
@@ -919,7 +1033,7 @@ export function FixedRoutinePage() {
               이름을 눌러 바꾸고, 휴지통으로 삭제할 수 있어요
             </ThemedText>
           </Pressable>
-        )}
+        ))}
       </ScrollView>
 
       <AddItemModal
@@ -963,6 +1077,18 @@ export function FixedRoutinePage() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { flex: 1 },
+  sectionHint: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '500',
+    marginBottom: 10,
+  },
+  sectionEmpty: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '500',
+    marginBottom: 10,
+  },
   accordionList: {
     gap: 6,
     marginBottom: 12,
@@ -995,6 +1121,16 @@ const styles = StyleSheet.create({
   accordionTitleText: {
     flex: 1,
     minWidth: 0,
+  },
+  rulePill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+    flexShrink: 0,
+  },
+  rulePillText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   headerApplyChip: {
     paddingHorizontal: 10,
@@ -1045,6 +1181,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     lineHeight: 18,
+  },
+  accordionRuleHint: {
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 17,
   },
   addGroupTrigger: {
     borderWidth: 2,

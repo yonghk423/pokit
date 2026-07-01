@@ -44,8 +44,6 @@ type DayPlanDraftState = {
   routineHistoryPendingByDate: Record<string, string[]>;
   /** 당일 담기 계획 스냅샷 — 구간 종료 후에도 완료율 분모 유지 */
   routineHistoryPlannedKeysByDate: Record<string, string[]>;
-  /** 고정 루틴 저장소가 바뀌면 증가 — 당일 자동 병합 effect가 다시 돈다 */
-  priorityCatalogFixedRoutineEpoch: number;
   /** 카테고리 표시명이 변경되면 증가 — 오늘 루틴 목록 라벨 재조회 */
   categoryLabelEpoch: number;
   /** 수분 알림 재동기화 요청 시 증가 — 실제 동기화는 앱 부트스트랩에서 단일 실행 */
@@ -88,7 +86,6 @@ type DayPlanDraftState = {
   setPriorityEnd: (value: string) => void;
   setPriorityCategoryOrder: (value: string[] | ((prev: string[]) => string[])) => void;
   clearRoutineHistoryPendingForDate: (dateKey: string) => void;
-  bumpPriorityCatalogFixedRoutineEpoch: () => void;
   bumpCategoryLabelEpoch: () => void;
   bumpWaterReminderSyncEpoch: () => void;
   setQuickMemoDraft: (value: string) => void;
@@ -115,7 +112,6 @@ function createInitialState() {
     priorityCategoryOrder: [] as string[],
     routineHistoryPendingByDate: {} as Record<string, string[]>,
     routineHistoryPlannedKeysByDate: {} as Record<string, string[]>,
-    priorityCatalogFixedRoutineEpoch: 0,
     categoryLabelEpoch: 0,
     waterReminderSyncEpoch: 0,
     quickMemoDraft: '',
@@ -395,8 +391,6 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         dateKey,
       ),
     })),
-  bumpPriorityCatalogFixedRoutineEpoch: () =>
-    set((s) => ({ priorityCatalogFixedRoutineEpoch: s.priorityCatalogFixedRoutineEpoch + 1 })),
   bumpCategoryLabelEpoch: () =>
     set((s) => ({ categoryLabelEpoch: s.categoryLabelEpoch + 1 })),
   bumpWaterReminderSyncEpoch: () =>

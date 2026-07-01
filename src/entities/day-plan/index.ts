@@ -2,7 +2,7 @@ export type { DayPlanBlock, DayPlanQuickMemo } from './model/types';
 export type { AddBlockResult, PlanMode } from './model';
 export { useDayPlanStore, selectFirstPendingBlock } from './model';
 export { useDayPlanRuntimeStore } from './model';
-export { useFixedFlowSetsStore } from './model';
+export { useFixedFlowSetsStore, notifyFixedFlowApplyScheduleChanged } from './model';
 export {
   appendPriorityCategoryKeysIfMissing,
   useDayPlanDraftStore,
@@ -135,6 +135,7 @@ export {
   isPriorityWindowEndedForToday,
   type PriorityWindowContext,
 } from './lib/priorityWindowEligibility';
+export { resolveTodayFixedRoutineKeys } from './lib/resolveTodayFixedRoutineKeys';
 export {
   buildWaterRoutineReminderSlots,
   waterReminderIntervalMinutes,

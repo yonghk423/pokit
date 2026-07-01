@@ -346,18 +346,15 @@ describe('dayPlanDraftStore', () => {
     expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['reading']);
   });
 
-  it('clears bag dismissed keys and bumps epochs', () => {
+  it('clears bag dismissed keys and bumps category label epoch', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,
       priorityBagDismissedKeys: ['reading'],
-      priorityCatalogFixedRoutineEpoch: 1,
       categoryLabelEpoch: 2,
     });
     useDayPlanDraftStore.getState().clearPriorityBagDismissedKeys();
     expect(useDayPlanDraftStore.getState().priorityBagDismissedKeys).toEqual([]);
-    useDayPlanDraftStore.getState().bumpPriorityCatalogFixedRoutineEpoch();
     useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
-    expect(useDayPlanDraftStore.getState().priorityCatalogFixedRoutineEpoch).toBe(2);
     expect(useDayPlanDraftStore.getState().categoryLabelEpoch).toBe(3);
   });
 
