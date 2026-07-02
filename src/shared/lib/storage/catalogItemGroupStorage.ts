@@ -1,7 +1,22 @@
-import {
-  defaultSystemGroupForCatalogKey,
-  isCustomFlowCategoryKey,
-} from '@entities/day-plan';
+const CUSTOM_FLOW_CATEGORY_PREFIX = 'customFlow:' as const;
+const HEALTH_GROUP_KEYS = new Set<string>([
+  'water',
+  'medicine',
+  'fasting',
+  'stretching',
+  'straightenBack',
+  'neckPosture',
+  'meditation',
+]);
+
+function isCustomFlowCategoryKey(k: string): k is `customFlow:${string}` {
+  return k.startsWith(CUSTOM_FLOW_CATEGORY_PREFIX) && k.length > CUSTOM_FLOW_CATEGORY_PREFIX.length + 4;
+}
+
+function defaultSystemGroupForCatalogKey(key: string): 'health' | 'productivity' {
+  if (HEALTH_GROUP_KEYS.has(key)) return 'health';
+  return 'productivity';
+}
 
 import {
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,

@@ -18,6 +18,8 @@ export const StorageKeys = {
   priorityBagRemoveConfirmSkip: 'pokit:priority-bag-remove-confirm-skip',
   /** 데이플랜 화면 드래프트(모드/시작·마무리/순서 등) */
   dayPlanDraft: 'pokit:day-plan-draft',
+  /** 투두 리스트 모드 — 날짜별 할 일 표 */
+  dayPlanTodos: 'pokit:day-plan-todos',
   /** 위클리·먼슬리 목표 텍스트(주 시작일·연-월 키) */
   horizonGoals: 'pokit:horizon-goals',
   /** 위클리·먼슬리 기간 완료 기록(통계 목록) */
@@ -32,6 +34,10 @@ export const StorageKeys = {
   standardCatalogGroupOverrides: 'pokit:standard-catalog-group-overrides',
   /** 시스템 상위 묶음(건강·생산성) 제목·설명 사용자 편집 */
   systemCatalogGroupMeta: 'pokit:system-catalog-group-meta',
+  /** 담기 화면에서 숨긴 상위 묶음 */
+  dismissedCatalogGroups: 'pokit:dismissed-catalog-groups',
+  /** 담기 목록에서 숨긴 표준 카테고리 */
+  hiddenStandardCatalogKeys: 'pokit:hidden-standard-catalog-keys',
   /** 데일리 시간대 구간(새벽·아침·점심·저녁·밤) 시작 시각 */
   dayMealSlotSchedule: 'pokit:day-meal-slot-schedule',
 } as const;
@@ -54,6 +60,7 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   dailyRhythmOnboarding: 'lockflow:daily-rhythm-onboarding',
   priorityBagRemoveConfirmSkip: 'lockflow:priority-bag-remove-confirm-skip',
   dayPlanDraft: 'lockflow:day-plan-draft',
+  dayPlanTodos: 'lockflow:day-plan-todos',
   horizonGoals: 'lockflow:horizon-goals',
   horizonCompletions: 'lockflow:horizon-completions',
   horizonWeeklyDayMemos: 'lockflow:horizon-weekly-day-memos',
@@ -61,4 +68,7 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   customCatalogGroups: 'lockflow:custom-catalog-groups',
   standardCatalogGroupOverrides: 'lockflow:standard-catalog-group-overrides',
   systemCatalogGroupMeta: 'lockflow:system-catalog-group-meta',
+  dismissedCatalogGroups: 'lockflow:dismissed-catalog-groups',
+  hiddenStandardCatalogKeys: 'lockflow:hidden-standard-catalog-keys',
+  dayMealSlotSchedule: 'lockflow:day-meal-slot-schedule',
 };

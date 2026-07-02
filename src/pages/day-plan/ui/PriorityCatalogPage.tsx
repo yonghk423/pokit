@@ -16,14 +16,19 @@ import { useShallow } from 'zustand/react/shallow';
 
 import {
   createCustomFlowCategoryId,
+  deleteCustomFlowCategory,
+  dismissCatalogGroupWithItemReassign,
   filterDayPlanFlowBlocks,
   getInitialOtherDataConfig,
+  isCustomFlowCategoryKey,
   isPriorityWindowEndedForToday,
   isSystemCatalogGroupKey,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
   useDayPlanDraftStore,
   useDayPlanStore,
+  useFixedFlowSetsStore,
+  notifyFixedFlowApplyScheduleChanged,
 } from '@entities/day-plan';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -31,12 +36,11 @@ import { PokitIconPalette } from '@shared/config/theme';
 import {
   appendCustomFlowCatalogEntry,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
+  hideStandardCatalogKey,
   isCustomCatalogGroupKey,
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
-  reassignCustomFlowGroup,
-  removeCustomCatalogGroup,
   resolveCatalogItemGroupKey,
   saveGoalDetailCategoryConfig,
   updateCatalogItemGroup,
@@ -140,6 +144,8 @@ export function PriorityCatalogPage() {
     priorityEnd,
     priorityPlanDateKey,
     priorityPlanDateKeyEnd,
+    bumpCategoryLabelEpoch,
+    filterCompletedFocusKeysToPriorityOrder,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       priorityCategoryOrder: s.priorityCategoryOrder,
@@ -152,7 +158,30 @@ export function PriorityCatalogPage() {
       priorityEnd: s.priorityEnd,
       priorityPlanDateKey: s.priorityPlanDateKey,
       priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
+      bumpCategoryLabelEpoch: s.bumpCategoryLabelEpoch,
+      filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
     })),
+  );
+
+  const runDeleteCustomFlow = useCallback(
+    (categoryKey: string) => {
+      deleteCustomFlowCategory(categoryKey, {
+        hydrateFixedFlowSets: () => useFixedFlowSetsStore.getState().hydrate(),
+        getTodayAppliedCategoryKeys: () =>
+          useFixedFlowSetsStore.getState().todayAppliedCategoryKeys,
+        reloadFixedFlowSetsFromStorage: () =>
+          useFixedFlowSetsStore.getState().reloadFromStorage(),
+        notifyFixedFlowApplyScheduleChanged,
+        getPriorityCategoryOrder: () => useDayPlanDraftStore.getState().priorityCategoryOrder,
+        setPriorityCategoryOrder: (order) =>
+          useDayPlanDraftStore.getState().setPriorityCategoryOrder(order),
+        filterCompletedFocusKeysToPriorityOrder: (order) =>
+          useDayPlanDraftStore.getState().filterCompletedFocusKeysToPriorityOrder(order),
+        registerOtherCategoryResolverFromStorage,
+        bumpCategoryLabelEpoch: () => useDayPlanDraftStore.getState().bumpCategoryLabelEpoch(),
+      });
+    },
+    [],
   );
 
   const planBlocks = useDayPlanStore((s) => s.blocks);
@@ -367,20 +396,93 @@ export function PriorityCatalogPage() {
     [editGroupSheet, reloadCatalogData],
   );
 
-  const onDeleteCustomGroup = useCallback(
+  const performDeleteCatalogGroup = useCallback(
+    (groupKey: string) => {
+      animateListMutation();
+      if (!dismissCatalogGroupWithItemReassign(groupKey)) {
+        Alert.alert(
+          '묶음을 삭제할 수 없어요',
+          '다른 묶음도 숨겨져 있어서 항목을 옮길 곳이 없어요. 먼저 숨긴 묶음을 다시 표시한 뒤 시도해 주세요.',
+        );
+        return;
+      }
+      reloadCatalogData();
+      setEditGroupSheet(null);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [animateListMutation, reloadCatalogData],
+  );
+
+  const onDeleteCatalogGroup = useCallback(
     (groupKey: string, currentLabel: string) => {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const moveTargetLabel = isSystemCatalogGroupKey(groupKey)
+        ? groupKey === 'health'
+          ? '생산성을 높이는 도구'
+          : '건강·몸 관리'
+        : '생산성을 높이는 도구';
       Alert.alert(
         '묶음 삭제',
-        `「${currentLabel}」 묶음을 삭제할까요? 이 안에 있던 항목은 생산성 묶음으로 옮겨져요.`,
+        `「${currentLabel}」 묶음을 삭제할까요? 안에 있던 항목은 「${moveTargetLabel}」 묶음으로 옮겨져요.`,
         [
           { text: '취소', style: 'cancel' },
           {
             text: '삭제',
             style: 'destructive',
+            onPress: () => performDeleteCatalogGroup(groupKey),
+          },
+        ],
+      );
+    },
+    [performDeleteCatalogGroup],
+  );
+
+  const onDeleteCatalogItem = useCallback(
+    (categoryKey: string, label: string) => {
+      if (isFocusStarted && priorityCategoryOrder.includes(categoryKey)) {
+        void Haptics.selectionAsync();
+        Alert.alert(
+          '삭제할 수 없어요',
+          '집중 실행 중인 항목은 삭제할 수 없어요. 집중을 마친 뒤 다시 시도해 주세요.',
+        );
+        return;
+      }
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (isCustomFlowCategoryKey(categoryKey)) {
+        Alert.alert(
+          '플로우 삭제',
+          `「${label}」 플로우를 삭제할까요? 담기·나만의 루틴과 설정에서 함께 제거됩니다.`,
+          [
+            { text: '취소', style: 'cancel' },
+            {
+              text: '삭제',
+              style: 'destructive',
+              onPress: () => {
+                animateListMutation();
+                runDeleteCustomFlow(categoryKey);
+                reloadCatalogData();
+                void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              },
+            },
+          ],
+        );
+        return;
+      }
+      Alert.alert(
+        '항목 숨기기',
+        `「${label}」 항목을 담기 목록에서 숨길까요? 오늘 우선 순위에 담겨 있으면 함께 빠집니다.`,
+        [
+          { text: '취소', style: 'cancel' },
+          {
+            text: '숨기기',
+            style: 'destructive',
             onPress: () => {
-              reassignCustomFlowGroup(groupKey, DEFAULT_CUSTOM_FLOW_GROUP_KEY);
-              removeCustomCatalogGroup(groupKey);
+              animateListMutation();
+              hideStandardCatalogKey(categoryKey);
+              const nextOrder = priorityCategoryOrder.filter((k) => k !== categoryKey);
+              setPriorityCategoryOrder(nextOrder);
+              filterCompletedFocusKeysToPriorityOrder(nextOrder);
+              bumpCategoryLabelEpoch();
               reloadCatalogData();
               void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             },
@@ -388,7 +490,16 @@ export function PriorityCatalogPage() {
         ],
       );
     },
-    [reloadCatalogData],
+    [
+      animateListMutation,
+      bumpCategoryLabelEpoch,
+      filterCompletedFocusKeysToPriorityOrder,
+      isFocusStarted,
+      priorityCategoryOrder,
+      reloadCatalogData,
+      runDeleteCustomFlow,
+      setPriorityCategoryOrder,
+    ],
   );
 
   const onMoveCatalogFlow = useCallback((categoryKey: string, label: string) => {
@@ -445,8 +556,9 @@ export function PriorityCatalogPage() {
             customGroups={customGroups}
             isDark={isDark}
             onRenameCustomGroup={onEditCatalogGroup}
-            onDeleteCustomGroup={onDeleteCustomGroup}
+            onDeleteCatalogGroup={onDeleteCatalogGroup}
             onMoveCustomFlow={onMoveCatalogFlow}
+            onDeleteCatalogItem={onDeleteCatalogItem}
           />
         </ScrollView>
         <Pressable
@@ -485,6 +597,19 @@ export function PriorityCatalogPage() {
         initialLabel={editGroupSheet?.label ?? ''}
         initialSubtitle={editGroupSheet?.subtitle ?? ''}
         onSave={onSaveEditCatalogGroup}
+        onDelete={
+          editGroupSheet
+            ? () => {
+                if (!editGroupSheet) return;
+                onDeleteCatalogGroup(editGroupSheet.groupKey, editGroupSheet.label);
+              }
+            : undefined
+        }
+        deleteHint={
+          editGroupSheet?.isSystemGroup
+            ? '묶음을 삭제하면 안에 있던 항목은 다른 기본 묶음으로 옮겨져요.'
+            : undefined
+        }
         isDark={isDark}
         ink={editorial.ink}
         muted={editorial.muted}

@@ -5,6 +5,7 @@ import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  deleteCustomFlowCategory,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
   getInitialOtherDataConfig,
@@ -34,11 +35,8 @@ import {
   appendGoalDetailCommittedCategoryKeys,
   loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
-  removeCustomFlowCatalogId,
-  removeGoalDetailCategoryConfig,
   saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
-  savePriorityCatalogFixedRoutineKeys,
   resolveCatalogItemGroupKey,
   updateCatalogItemGroup,
 } from '@shared/lib/storage';
@@ -110,7 +108,15 @@ function mergeOtherStyleGoalDetailData(
   const summaryCat = (c?.summary ?? '').trim();
   const summary =
     summaryBlock.length > 0 ? b!.summary : summaryCat.length > 0 ? c!.summary : '';
-  return normalizeOtherDetailConfig({ displayName, summary, checklist });
+  const icon = b?.icon ?? c?.icon;
+  const accentColor = b?.accentColor ?? c?.accentColor;
+  return normalizeOtherDetailConfig({
+    displayName,
+    summary,
+    checklist,
+    ...(icon ? { icon } : {}),
+    ...(accentColor ? { accentColor } : {}),
+  });
 }
 
 function buildLoadedDataByBlockId(targets: EditingTarget[]): Record<string, unknown> {
@@ -346,24 +352,21 @@ export function GoalDetailSettingsPage() {
 
   const handleDeleteCustomFlow = useCallback(
     (categoryKey: GoalDetailCategoryKey) => {
-      if (!isCustomFlowCategoryKey(categoryKey)) return;
-      removeCustomFlowCatalogId(categoryKey);
-      removeGoalDetailCategoryConfig(categoryKey);
-      const fixedStore = useFixedFlowSetsStore.getState();
-      if (!fixedStore.isHydrated) fixedStore.hydrate();
-      const nextFixed = [
-        ...new Set(
-          useFixedFlowSetsStore.getState().todayAppliedCategoryKeys.filter((k) => k !== categoryKey),
-        ),
-      ];
-      savePriorityCatalogFixedRoutineKeys(nextFixed);
-      useFixedFlowSetsStore.getState().reloadFromStorage();
-      notifyFixedFlowApplyScheduleChanged();
-      const draft = useDayPlanDraftStore.getState();
-      const nextOrder = draft.priorityCategoryOrder.filter((k) => k !== categoryKey);
-      draft.setPriorityCategoryOrder(nextOrder);
-      draft.filterCompletedFocusKeysToPriorityOrder(nextOrder);
-      registerOtherCategoryResolverFromStorage();
+      deleteCustomFlowCategory(categoryKey, {
+        hydrateFixedFlowSets: () => useFixedFlowSetsStore.getState().hydrate(),
+        getTodayAppliedCategoryKeys: () =>
+          useFixedFlowSetsStore.getState().todayAppliedCategoryKeys,
+        reloadFixedFlowSetsFromStorage: () =>
+          useFixedFlowSetsStore.getState().reloadFromStorage(),
+        notifyFixedFlowApplyScheduleChanged,
+        getPriorityCategoryOrder: () => useDayPlanDraftStore.getState().priorityCategoryOrder,
+        setPriorityCategoryOrder: (order) =>
+          useDayPlanDraftStore.getState().setPriorityCategoryOrder(order),
+        filterCompletedFocusKeysToPriorityOrder: (order) =>
+          useDayPlanDraftStore.getState().filterCompletedFocusKeysToPriorityOrder(order),
+        registerOtherCategoryResolverFromStorage,
+        bumpCategoryLabelEpoch: () => useDayPlanDraftStore.getState().bumpCategoryLabelEpoch(),
+      });
       router.back();
     },
     [router],

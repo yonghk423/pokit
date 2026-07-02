@@ -38,6 +38,7 @@ function CatalogListRow({
   onAddPress,
   onOpenSettings,
   onMoveGroup,
+  onDeleteItem,
 }: {
   categoryKey: string;
   icon: string;
@@ -53,6 +54,7 @@ function CatalogListRow({
   onAddPress: () => void;
   onOpenSettings: () => void;
   onMoveGroup?: () => void;
+  onDeleteItem?: () => void;
 }) {
   const settingsBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)';
   const settingsBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
@@ -149,6 +151,40 @@ function CatalogListRow({
       </Pressable>
 
       <View style={styles.catalogRowActions}>
+        {onDeleteItem ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${label} 삭제`}
+            hitSlop={10}
+            disabled={settingsLocked}
+            onPress={() => {
+              if (settingsLocked) return;
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onDeleteItem();
+            }}
+            style={[
+              styles.catalogSettingsBtn,
+              {
+                borderColor: settingsLocked
+                  ? isDark
+                    ? 'rgba(255,255,255,0.12)'
+                    : 'rgba(0,0,0,0.08)'
+                  : settingsBorder,
+                backgroundColor: settingsLocked
+                  ? isDark
+                    ? 'rgba(255,255,255,0.04)'
+                    : 'rgba(0,0,0,0.02)'
+                  : settingsBg,
+                opacity: settingsLocked ? 0.55 : 1,
+              },
+            ]}>
+            <IconSymbol
+              name="trash"
+              size={15}
+              color={settingsLocked ? muted : isDark ? '#FAFAFA' : PRIMARY}
+            />
+          </Pressable>
+        ) : null}
         {onMoveGroup ? (
           <Pressable
             accessibilityRole="button"
@@ -267,6 +303,7 @@ function renderRows(
   onCatalogTap: (key: string) => void,
   onOpenCategorySettings: (key: string) => void,
   onMoveCustomFlow?: (key: string, label: string) => void,
+  onDeleteCatalogItem?: (key: string, label: string) => void,
 ) {
   return cats.map((cat) => (
     <CatalogListRow
@@ -286,6 +323,9 @@ function renderRows(
       onOpenSettings={() => onOpenCategorySettings(cat.key)}
       onMoveGroup={
         onMoveCustomFlow ? () => onMoveCustomFlow(cat.key, cat.label) : undefined
+      }
+      onDeleteItem={
+        onDeleteCatalogItem ? () => onDeleteCatalogItem(cat.key, cat.label) : undefined
       }
     />
   ));
@@ -307,12 +347,14 @@ type Props = {
   /** 사용자 정의 그룹 목록 */
   customGroups: CustomCatalogGroup[];
   isDark: boolean;
-  /** 사용자 정의 상위 묶음 — 이름 편집 시트 열기 */
+  /** 상위 묶음 — 이름 편집 시트 열기 */
   onRenameCustomGroup?: (groupKey: string, currentLabel: string, currentSubtitle: string) => void;
-  /** 사용자 정의 상위 묶음 — 삭제 확인 후 처리 */
-  onDeleteCustomGroup?: (groupKey: string, currentLabel: string) => void;
+  /** 상위 묶음 — 삭제 확인 후 처리 */
+  onDeleteCatalogGroup?: (groupKey: string, currentLabel: string) => void;
   /** 사용자 루틴 — 다른 상위 묶음으로 옮기기 */
   onMoveCustomFlow?: (categoryKey: string, label: string) => void;
+  /** 담기 항목 — 삭제(사용자 플로우) 또는 목록에서 숨기기(표준) */
+  onDeleteCatalogItem?: (categoryKey: string, label: string) => void;
 };
 
 function GroupSectionBlock({
@@ -325,8 +367,9 @@ function GroupSectionBlock({
   onCatalogTap,
   onOpenCategorySettings,
   onRenameCustomGroup,
-  onDeleteCustomGroup,
+  onDeleteCatalogGroup,
   onMoveCustomFlow,
+  onDeleteCatalogItem,
   isFirst,
 }: {
   section: PriorityCatalogGroupSection;
@@ -338,12 +381,13 @@ function GroupSectionBlock({
   onCatalogTap: (key: string) => void;
   onOpenCategorySettings: (key: string) => void;
   onRenameCustomGroup?: (groupKey: string, currentLabel: string, currentSubtitle: string) => void;
-  onDeleteCustomGroup?: (groupKey: string, currentLabel: string) => void;
+  onDeleteCatalogGroup?: (groupKey: string, currentLabel: string) => void;
   onMoveCustomFlow?: (categoryKey: string, label: string) => void;
+  onDeleteCatalogItem?: (categoryKey: string, label: string) => void;
   isFirst: boolean;
 }) {
   const groupHeaderTrailing =
-    onRenameCustomGroup || (section.isCustomGroup && onDeleteCustomGroup) ? (
+    onRenameCustomGroup || onDeleteCatalogGroup ? (
       <View style={styles.customGroupHeaderActions}>
         {onRenameCustomGroup ? (
           <Pressable
@@ -368,14 +412,14 @@ function GroupSectionBlock({
             <IconSymbol name="pencil" size={16} color={isDark ? '#FAFAFA' : PRIMARY} />
           </Pressable>
         ) : null}
-        {section.isCustomGroup && onDeleteCustomGroup ? (
+        {onDeleteCatalogGroup ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="묶음 삭제"
             hitSlop={8}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onDeleteCustomGroup(section.groupKey, section.title);
+              onDeleteCatalogGroup(section.groupKey, section.title);
             }}
             style={[
               styles.customGroupHeaderIconBtn,
@@ -411,6 +455,7 @@ function GroupSectionBlock({
               onCatalogTap,
               onOpenCategorySettings,
               onMoveCustomFlow,
+              onDeleteCatalogItem,
             )
           : null}
       </View>
@@ -431,8 +476,9 @@ export function PriorityCatalogPanel({
   customGroups,
   isDark,
   onRenameCustomGroup,
-  onDeleteCustomGroup,
+  onDeleteCatalogGroup,
   onMoveCustomFlow,
+  onDeleteCatalogItem,
 }: Props) {
   const [catalogLabelTick, setCatalogLabelTick] = useState(0);
   useFocusEffect(
@@ -474,8 +520,9 @@ export function PriorityCatalogPanel({
           onCatalogTap={onCatalogTap}
           onOpenCategorySettings={onOpenCategorySettings}
           onRenameCustomGroup={onRenameCustomGroup}
-          onDeleteCustomGroup={onDeleteCustomGroup}
+          onDeleteCatalogGroup={onDeleteCatalogGroup}
           onMoveCustomFlow={onMoveCustomFlow}
+          onDeleteCatalogItem={onDeleteCatalogItem}
           isFirst={index === 0}
         />
       ))}

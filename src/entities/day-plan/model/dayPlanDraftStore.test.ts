@@ -48,9 +48,9 @@ describe('dayPlanDraftStore', () => {
     resetDraftStore();
   });
 
-  it('hydrates weekly plan mode from draft', () => {
+  it('migrates legacy weekly plan mode to priority on hydrate', () => {
     mockLoadDayPlanDraft.mockReturnValue({
-      planMode: 'weekly',
+      planMode: 'weekly' as never,
       isFocusStarted: false,
       completedFocusCategoryKeys: [],
       planCompletionDismissedKeys: [],
@@ -64,7 +64,7 @@ describe('dayPlanDraftStore', () => {
       quickMemoDraft: '메모',
     });
     useDayPlanDraftStore.getState().hydrate();
-    expect(useDayPlanDraftStore.getState().planMode).toBe('weekly');
+    expect(useDayPlanDraftStore.getState().planMode).toBe('priority');
     expect(useDayPlanDraftStore.getState().quickMemoDraft).toBe('메모');
   });
 
@@ -218,9 +218,9 @@ describe('dayPlanDraftStore', () => {
     expect(useDayPlanDraftStore.getState().priorityOvernightEndAuto).toBe(false);
   });
 
-  it('hydrates monthly and quick memo modes', () => {
+  it('hydrates quick memo mode and migrates legacy monthly to priority', () => {
     mockLoadDayPlanDraft.mockReturnValue({
-      planMode: 'monthly',
+      planMode: 'monthly' as never,
       isFocusStarted: false,
       completedFocusCategoryKeys: [],
       planCompletionDismissedKeys: [],
@@ -234,7 +234,7 @@ describe('dayPlanDraftStore', () => {
       quickMemoDraft: '',
     });
     useDayPlanDraftStore.getState().hydrate();
-    expect(useDayPlanDraftStore.getState().planMode).toBe('monthly');
+    expect(useDayPlanDraftStore.getState().planMode).toBe('priority');
 
     resetDraftStore();
     mockLoadDayPlanDraft.mockReturnValue({
@@ -328,7 +328,7 @@ describe('dayPlanDraftStore', () => {
 
   it('persists on plan mode and priority time changes', () => {
     useDayPlanDraftStore.setState({ isHydrated: true });
-    useDayPlanDraftStore.getState().setPlanMode('weekly');
+    useDayPlanDraftStore.getState().setPlanMode('quickMemo');
     expect(mockSaveDayPlanDraft).toHaveBeenCalled();
     mockSaveDayPlanDraft.mockClear();
     useDayPlanDraftStore.getState().setPriorityStart('08:00');

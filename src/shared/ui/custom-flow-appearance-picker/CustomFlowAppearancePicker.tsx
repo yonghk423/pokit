@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { useCallback, useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
@@ -35,6 +36,30 @@ export function CustomFlowAppearancePicker({
 }: CustomFlowAppearancePickerProps) {
   const inputBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
   const inputBorder = isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)';
+  const iconScrollRef = useRef<ScrollView>(null);
+  const ICON_CHIP_STEP = 50;
+
+  const scrollIconIntoView = useCallback((iconName: CustomFlowIconOption) => {
+    const index = CUSTOM_FLOW_ICON_OPTIONS.indexOf(iconName);
+    if (index < 0) return;
+    iconScrollRef.current?.scrollTo({
+      x: Math.max(0, index * ICON_CHIP_STEP - 24),
+      animated: true,
+    });
+  }, []);
+
+  useEffect(() => {
+    scrollIconIntoView(icon);
+  }, [icon, scrollIconIntoView]);
+
+  const handleSelectIcon = useCallback(
+    (iconName: CustomFlowIconOption) => {
+      void Haptics.selectionAsync();
+      onChangeIcon(iconName);
+      scrollIconIntoView(iconName);
+    },
+    [onChangeIcon, scrollIconIntoView],
+  );
 
   return (
     <View style={styles.root}>
@@ -64,6 +89,7 @@ export function CustomFlowAppearancePicker({
       </View>
 
       <ScrollView
+        ref={iconScrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.iconRow}
@@ -76,10 +102,7 @@ export function CustomFlowAppearancePicker({
               accessibilityRole="button"
               accessibilityState={{ selected }}
               accessibilityLabel="아이콘 선택"
-              onPress={() => {
-                void Haptics.selectionAsync();
-                onChangeIcon(iconName);
-              }}
+              onPress={() => handleSelectIcon(iconName)}
               style={[
                 styles.iconChip,
                 {

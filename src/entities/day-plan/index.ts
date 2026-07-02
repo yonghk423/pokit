@@ -1,11 +1,12 @@
-export type { DayPlanBlock, DayPlanQuickMemo } from './model/types';
+export type { DayPlanBlock, DayPlanQuickMemo, DayPlanTodoItem, TodoPriority } from './model/types';
 export type { AddBlockResult, PlanMode } from './model';
 export { useDayPlanStore, selectFirstPendingBlock } from './model';
 export { useDayPlanRuntimeStore } from './model';
-export { useFixedFlowSetsStore, notifyFixedFlowApplyScheduleChanged } from './model';
+export { useFixedFlowSetsStore, notifyFixedFlowApplyScheduleChanged, syncTodayTabWithFixedRoutineApply } from './model';
 export {
   appendPriorityCategoryKeysIfMissing,
   useDayPlanDraftStore,
+  useDayPlanTodoStore,
 } from './model';
 export {
   defaultEditorBlockTimesFromNow,
@@ -70,6 +71,8 @@ export {
   SYSTEM_CATALOG_GROUP_SUBTITLE_KO,
   type SystemCatalogGroupKey,
 } from './lib/customCatalogGroup';
+export { dismissCatalogGroupWithItemReassign } from './lib/dismissCatalogGroup';
+export { deleteCustomFlowCategory } from './lib/deleteCustomFlowCategory';
 export {
   defaultSystemGroupForCatalogKey,
   HEALTH_GROUP_SYSTEM_ORDER,
@@ -136,6 +139,10 @@ export {
   type PriorityWindowContext,
 } from './lib/priorityWindowEligibility';
 export { resolveTodayFixedRoutineKeys } from './lib/resolveTodayFixedRoutineKeys';
+export {
+  collectAllFixedFlowCategoryKeys,
+  syncPriorityOrderWithAppliedFixedRoutines,
+} from './lib/syncTodayTabWithFixedRoutineApply';
 export {
   buildWaterRoutineReminderSlots,
   waterReminderIntervalMinutes,

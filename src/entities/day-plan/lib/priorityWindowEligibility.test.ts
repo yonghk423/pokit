@@ -33,7 +33,7 @@ describe('priorityWindowEligibility', () => {
 
   it('returns false when plan mode is not priority', () => {
     expect(
-      isPriorityWindowEndedForToday({ ...base, planMode: 'weekly', nowMin: 23 * 60 }),
+      isPriorityWindowEndedForToday({ ...base, planMode: 'quickMemo', nowMin: 23 * 60 }),
     ).toBe(false);
   });
 });

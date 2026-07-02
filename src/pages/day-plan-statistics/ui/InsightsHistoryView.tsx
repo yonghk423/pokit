@@ -5,11 +5,7 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { buildHistoryInsights } from '../lib/historyInsights';
 import { historyUiAccent, historyUiAccentPastel } from '../lib/historyBrandAccent';
-import {
-  insightScopeColor,
-  insightScopePastel,
-} from '../lib/insightAccentColors';
-import { buildWeeklyAxisScores, type WeeklyAxisRow } from '../lib/weeklyBalanceRadar';
+import { insightScopeColor, insightScopePastel } from '../lib/insightAccentColors';
 
 type Tone = {
   card: string;
@@ -40,13 +36,6 @@ type Props = {
   todayCompletionRate: number;
   todayCompletedCount: number;
   sameWeekdayAverageScore: number;
-  weeklyCompletionRate: number;
-  previousWeeklyCompletionRate: number;
-  weeklyBalanceScore: number;
-  weeklyBalanceRows: WeeklyAxisRow[];
-  monthlyRate: number;
-  previousMonthlyRate: number;
-  activeDaysInMonth: number;
   streak: number;
   weekCompletionDelta: number;
   historyRows: HistoryFeedRow[];
@@ -57,7 +46,6 @@ type Props = {
   historyFilterChips: string[];
   filteredHistoryRows: HistoryFeedRow[];
   formatDateKeyKo: (dateKey: string) => string;
-  topCompletedCategoryKey: string | null;
 };
 
 export function InsightsHistoryView({
@@ -67,13 +55,6 @@ export function InsightsHistoryView({
   todayCompletionRate,
   todayCompletedCount,
   sameWeekdayAverageScore,
-  weeklyCompletionRate,
-  previousWeeklyCompletionRate,
-  weeklyBalanceScore,
-  weeklyBalanceRows,
-  monthlyRate,
-  previousMonthlyRate,
-  activeDaysInMonth,
   streak,
   weekCompletionDelta,
   historyRows,
@@ -84,15 +65,8 @@ export function InsightsHistoryView({
   historyFilterChips,
   filteredHistoryRows,
   formatDateKeyKo,
-  topCompletedCategoryKey,
 }: Props) {
   const [dayLogOpen, setDayLogOpen] = useState(false);
-
-  const axisScores = useMemo(() => buildWeeklyAxisScores(weeklyBalanceRows), [weeklyBalanceRows]);
-  const strongAxis = useMemo(
-    () => [...axisScores].sort((a, b) => b.percent - a.percent)[0],
-    [axisScores],
-  );
 
   const report = useMemo(
     () =>
@@ -100,29 +74,15 @@ export function InsightsHistoryView({
         todayCompletionRate,
         todayCompletedCount,
         sameWeekdayAverageScore,
-        weeklyCompletionRate,
-        previousWeeklyCompletionRate,
-        weeklyBalanceScore,
-        weeklyBalanceRows,
-        monthlyRate,
-        previousMonthlyRate,
-        activeDaysInMonth,
         streak,
         weekCompletionDelta,
       }),
     [
-      activeDaysInMonth,
-      monthlyRate,
-      previousMonthlyRate,
       sameWeekdayAverageScore,
       streak,
       todayCompletedCount,
       todayCompletionRate,
       weekCompletionDelta,
-      weeklyBalanceRows,
-      weeklyBalanceScore,
-      weeklyCompletionRate,
-      previousWeeklyCompletionRate,
     ],
   );
 
@@ -140,7 +100,7 @@ export function InsightsHistoryView({
       <View style={styles.header}>
         <ThemedText style={styles.headerTitle}>종합 인사이트</ThemedText>
         <ThemedText style={styles.headerDesc} lightColor={tone.muted} darkColor={tone.muted}>
-          데일리 · 위클리 · 먼슬리를 함께 보고 강점과 보완점을 정리해요.
+          데일리 완료 기록을 바탕으로 강점과 보완점을 정리해요.
         </ThemedText>
       </View>
 
@@ -202,7 +162,7 @@ export function InsightsHistoryView({
 
       <View style={[styles.blockCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
         <View style={styles.blockHead}>
-          <IconSymbol name="exclamationmark.circle" size={18} color={insightScopeColor('monthly')} />
+          <IconSymbol name="exclamationmark.circle" size={18} color={insightScopeColor('daily')} />
           <ThemedText style={styles.blockTitle}>아쉬운 점</ThemedText>
         </View>
         {report.weaknesses.length === 0 ? (
@@ -213,7 +173,7 @@ export function InsightsHistoryView({
           report.weaknesses.map((item) => (
             <View key={item.title} style={styles.bulletRow}>
               <View style={styles.bulletTitleRow}>
-                <View style={[styles.bulletDot, { backgroundColor: insightScopeColor('monthly') }]} />
+                <View style={[styles.bulletDot, { backgroundColor: insightScopeColor('daily') }]} />
                 <ThemedText style={styles.bulletTitle}>{item.title}</ThemedText>
               </View>
               <ThemedText style={styles.bulletDetail} lightColor={tone.muted} darkColor={tone.muted}>

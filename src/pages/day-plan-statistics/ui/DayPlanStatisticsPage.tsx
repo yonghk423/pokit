@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -12,38 +13,28 @@ import {
   getLocalDateKey,
 } from '@entities/day-plan';
 import { getCategoryCompletions, useHistoryStore } from '@entities/history';
-import { useHorizonCompletionStore } from '@entities/horizon-completion';
 import { syncRoutineWindowCompletionsToHistory } from '@features/history-routine-sync';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import { historyUiAccent, historyUiAccentPastel } from '../lib/historyBrandAccent';
-
-import {
-  buildMonthRangeFromPrefix,
-  previousMonthPrefixFromPrefix,
-  shiftMonthPrefix,
-} from '../lib/historyCalendarGrid';
-import { buildMonthlyCompletionRate } from '../lib/monthlyMilestone';
 import {
   formatHistoryCategoryVarietyKo,
   formatHistoryFrequencyKo,
 } from '../lib/historyDisplayFormat';
-import { buildWeeklyGroupRows, computeBalanceScore } from '../lib/weeklyBalanceRadar';
 import { HistoryCalendarOverlay } from './HistoryCalendarOverlay';
-import { HistoryMonthPickerOverlay } from './HistoryMonthPickerOverlay';
 import { InsightsHistoryView } from './InsightsHistoryView';
-import { PeriodHistoryView } from './PeriodHistoryView';
 
 /** 하단 탭바 아래 끝 여백 — `DayPlanCustomTabBar`가 세이프 영역을 이미 담당 */
 const SCROLL_END_GAP_PX = 6;
 
-/** 통계 탭 = 데일리 / 흐름(주간+월간 통합) / 인사이트(종합) */
-type HistoryPeriod = 'today' | 'flow' | 'insights';
+/** 통계 탭 = 데일리 / 인사이트 */
+type HistoryPeriod = 'today' | 'insights';
 
 type HistoryFeedRow = {
   dateKey: string;
@@ -58,25 +49,6 @@ function formatDateKeyKo(dateKey: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
   if (!m) return dateKey;
   return `${Number(m[2])}월 ${Number(m[3])}일`;
-}
-
-function formatMonthLabelKo(dateKey: string): string {
-  const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(dateKey.trim());
-  if (!m) return dateKey;
-  return `${m[1]}년 ${Number(m[2])}월`;
-}
-
-function parseDateKey(dateKey: string): Date {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
-  if (!m) return new Date();
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-}
-
-function toDateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = `${date.getMonth() + 1}`.padStart(2, '0');
-  const d = `${date.getDate()}`.padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }
 
 function formatRatePercent(rate: number): string {
@@ -108,9 +80,7 @@ export function DayPlanStatisticsPage() {
 
   const [period, setPeriod] = useState<HistoryPeriod>('today');
   const [selectedDateKey, setSelectedDateKey] = useState(todayDateKey);
-  const [flowMonthPrefix, setFlowMonthPrefix] = useState(() => todayDateKey.slice(0, 7));
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
   const [historyQuery, setHistoryQuery] = useState('');
   const [historyFilter, setHistoryFilter] = useState<string>('all');
 
@@ -132,10 +102,6 @@ export function DayPlanStatisticsPage() {
     })),
   );
 
-  const reloadHorizonCompletions = useHorizonCompletionStore((s) => s.reloadFromStorage);
-  const weeklyByKey = useHorizonCompletionStore((s) => s.weeklyByKey);
-  const monthlyByKey = useHorizonCompletionStore((s) => s.monthlyByKey);
-
   useEffect(() => {
     hydrate();
   }, [hydrate]);
@@ -155,44 +121,13 @@ export function DayPlanStatisticsPage() {
       } else {
         reloadFromStorage();
       }
-      reloadHorizonCompletions();
-    }, [period, reloadFromStorage, reloadHorizonCompletions, selectedDateKey, syncDailyRoutineHistory]),
+    }, [period, reloadFromStorage, selectedDateKey, syncDailyRoutineHistory]),
   );
 
   useEffect(() => {
     if (period !== 'today') return;
     syncDailyRoutineHistory(selectedDateKey);
   }, [period, selectedDateKey, syncDailyRoutineHistory]);
-
-  const weekRange = useMemo(
-    () => ({
-      startDateKey: addDaysToLocalDateKey(selectedDateKey, -6),
-      endDateKey: selectedDateKey,
-    }),
-    [selectedDateKey],
-  );
-  const prevWeekRange = useMemo(
-    () => ({
-      startDateKey: addDaysToLocalDateKey(selectedDateKey, -13),
-      endDateKey: addDaysToLocalDateKey(selectedDateKey, -7),
-    }),
-    [selectedDateKey],
-  );
-  const monthRange = useMemo(() => {
-    if (period === 'flow') {
-      return buildMonthRangeFromPrefix(flowMonthPrefix, todayDateKey);
-    }
-    const selected = parseDateKey(selectedDateKey);
-    const start = new Date(selected.getFullYear(), selected.getMonth(), 1);
-    const isCurrentMonth = selectedDateKey.slice(0, 7) === todayDateKey.slice(0, 7);
-    const end = isCurrentMonth
-      ? parseDateKey(todayDateKey)
-      : new Date(selected.getFullYear(), selected.getMonth() + 1, 0);
-    return {
-      startDateKey: toDateKey(start),
-      endDateKey: toDateKey(end),
-    };
-  }, [flowMonthPrefix, period, selectedDateKey, todayDateKey]);
 
   const tone = useMemo(
     () => ({
@@ -215,67 +150,12 @@ export function DayPlanStatisticsPage() {
     [isDark],
   );
 
+  const tabPill = useMemo(() => tabPillColors(isDark), [isDark]);
+
   const streak = useMemo(() => selectCurrentStreak(todayDateKey), [dailyStatsByDate, selectCurrentStreak, todayDateKey]);
   const growth = useMemo(
     () => selectGrowthVsPreviousWeek(todayDateKey),
     [dailyStatsByDate, selectGrowthVsPreviousWeek, todayDateKey],
-  );
-  const weeklyCompletionRate = useMemo(
-    () => buildMonthlyCompletionRate(dailyStatsByDate, weekRange.startDateKey, weekRange.endDateKey),
-    [dailyStatsByDate, weekRange.endDateKey, weekRange.startDateKey],
-  );
-  const previousWeeklyCompletionRate = useMemo(
-    () => buildMonthlyCompletionRate(dailyStatsByDate, prevWeekRange.startDateKey, prevWeekRange.endDateKey),
-    [dailyStatsByDate, prevWeekRange.endDateKey, prevWeekRange.startDateKey],
-  );
-  const monthlyRate = useMemo(
-    () => buildMonthlyCompletionRate(dailyStatsByDate, monthRange.startDateKey, monthRange.endDateKey),
-    [dailyStatsByDate, monthRange.endDateKey, monthRange.startDateKey],
-  );
-  const previousMonthlyRate = useMemo(() => {
-    const prefix =
-      period === 'flow' ? flowMonthPrefix : selectedDateKey.slice(0, 7);
-    const prevPrefix = previousMonthPrefixFromPrefix(prefix);
-    const prevRange = buildMonthRangeFromPrefix(prevPrefix, todayDateKey);
-    return buildMonthlyCompletionRate(
-      dailyStatsByDate,
-      prevRange.startDateKey,
-      prevRange.endDateKey,
-    );
-  }, [dailyStatsByDate, flowMonthPrefix, period, selectedDateKey, todayDateKey]);
-  const activeDaysInMonth = useMemo(() => {
-    let count = 0;
-    for (const row of Object.values(dailyStatsByDate)) {
-      if (row.dateKey < monthRange.startDateKey || row.dateKey > monthRange.endDateKey) continue;
-      if (row.completedFlowCount > 0 || row.completionRate > 0) count += 1;
-    }
-    return count;
-  }, [dailyStatsByDate, monthRange.endDateKey, monthRange.startDateKey]);
-
-  const weeklyCategoryCompletions = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const row of Object.values(dailyStatsByDate)) {
-      if (row.dateKey < weekRange.startDateKey || row.dateKey > weekRange.endDateKey) continue;
-      for (const [key, count] of Object.entries(getCategoryCompletions(row))) {
-        map[key] = (map[key] ?? 0) + count;
-      }
-    }
-    return map;
-  }, [dailyStatsByDate, weekRange.endDateKey, weekRange.startDateKey]);
-  const weeklyBalanceRows = useMemo(
-    () => buildWeeklyGroupRows(weeklyCategoryCompletions),
-    [weeklyCategoryCompletions],
-  );
-
-  const weeklyBalanceScore = useMemo(() => computeBalanceScore(weeklyBalanceRows), [weeklyBalanceRows]);
-
-  const weeklyCompletionEntries = useMemo(
-    () => Object.values(weeklyByKey).sort((a, b) => b.completedAt.localeCompare(a.completedAt)),
-    [weeklyByKey],
-  );
-  const monthlyCompletionEntries = useMemo(
-    () => Object.values(monthlyByKey).sort((a, b) => b.completedAt.localeCompare(a.completedAt)),
-    [monthlyByKey],
   );
 
   const historyRows = useMemo<HistoryFeedRow[]>(
@@ -371,50 +251,12 @@ export function DayPlanStatisticsPage() {
       : ['재정비', '작은시작'];
   const periodLabel = formatDateKeyKo(selectedDateKey);
   const calendarHint = '날짜를 선택하면 해당 날의 기록을 보여요.';
-  const historyMinYear = useMemo(() => {
-    const keys = Object.keys(dailyStatsByDate);
-    const currentYear = Number(todayDateKey.slice(0, 4));
-    if (keys.length === 0) return currentYear;
-    const minFromData = keys.reduce((min, key) => Math.min(min, Number(key.slice(0, 4))), currentYear);
-    return Math.min(minFromData, currentYear);
-  }, [dailyStatsByDate, todayDateKey]);
-  const canFlowGoPrevMonth = useMemo(() => {
-    const prev = shiftMonthPrefix(flowMonthPrefix, -1);
-    return Number(prev.slice(0, 4)) >= historyMinYear;
-  }, [flowMonthPrefix, historyMinYear]);
-  const canFlowGoNextMonth = flowMonthPrefix < todayDateKey.slice(0, 7);
   const onSelectCalendarDateKey = useCallback(
     (dateKey: string) => {
       const next = dateKey > todayDateKey ? todayDateKey : dateKey;
       setSelectedDateKey(next);
-      if (period === 'flow') {
-        setFlowMonthPrefix(next.slice(0, 7));
-      }
-    },
-    [period, todayDateKey],
-  );
-  const applyFlowMonthPrefix = useCallback(
-    (prefix: string) => {
-      if (prefix > todayDateKey.slice(0, 7)) return;
-      setFlowMonthPrefix(prefix);
-      const range = buildMonthRangeFromPrefix(prefix, todayDateKey);
-      setSelectedDateKey(range.endDateKey);
     },
     [todayDateKey],
-  );
-  const onFlowPrevMonth = useCallback(() => {
-    if (!canFlowGoPrevMonth) return;
-    applyFlowMonthPrefix(shiftMonthPrefix(flowMonthPrefix, -1));
-  }, [applyFlowMonthPrefix, canFlowGoPrevMonth, flowMonthPrefix]);
-  const onFlowNextMonth = useCallback(() => {
-    if (!canFlowGoNextMonth) return;
-    applyFlowMonthPrefix(shiftMonthPrefix(flowMonthPrefix, 1));
-  }, [applyFlowMonthPrefix, canFlowGoNextMonth, flowMonthPrefix]);
-  const onSelectFlowMonth = useCallback(
-    (year: number, month: number) => {
-      applyFlowMonthPrefix(`${year}-${String(month).padStart(2, '0')}`);
-    },
-    [applyFlowMonthPrefix],
   );
 
   return (
@@ -429,63 +271,63 @@ export function DayPlanStatisticsPage() {
         ]}
         showsVerticalScrollIndicator={false}>
         <ThemedText style={styles.pageDesc} lightColor={tone.muted} darkColor={tone.muted}>
-          데일리로 오늘을 보고, 위클리 · 먼슬리에서 주간과 월간 패턴을 함께 확인해요.
+          데일리 완료 기록과 인사이트로 오늘의 패턴을 확인해요.
         </ThemedText>
 
         <View style={styles.mainTabRow}>
           {(
             [
               { id: 'today' as const, label: '데일리' },
-              { id: 'flow' as const, label: '위클리 · 먼슬리' },
               { id: 'insights' as const, label: '인사이트' },
             ] as const
-          ).map((tab) => (
+          ).map((tab) => {
+            const active = period === tab.id;
+            return (
             <Pressable
               key={tab.id}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={tab.label}
               onPress={() => {
+                if (active) return;
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setPeriod(tab.id);
-                if (tab.id === 'flow') {
-                  setFlowMonthPrefix(selectedDateKey.slice(0, 7));
-                }
               }}
-              style={[
+              style={({ pressed }) => [
                 styles.mainTabBtn,
-                { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' },
-                period === tab.id && { backgroundColor: isDark ? '#fafafa' : '#18181b' },
+                {
+                  backgroundColor: active ? tabPill.activeBg : tabPill.inactiveBg,
+                  borderColor: active ? tabPill.activeBorder : tabPill.inactiveBorder,
+                },
+                pressed && !active && { opacity: 0.88 },
               ]}>
               <ThemedText
-                style={styles.mainTabLabel}
-                lightColor={period === tab.id ? '#ffffff' : '#52525b'}
-                darkColor={period === tab.id ? '#18181b' : '#a1a1aa'}>
+                style={[
+                  styles.mainTabLabel,
+                  { color: active ? tone.ink : tone.muted },
+                ]}
+                lightColor={active ? tone.ink : tone.muted}
+                darkColor={active ? tone.ink : tone.muted}
+                numberOfLines={1}>
                 {tab.label}
               </ThemedText>
             </Pressable>
-          ))}
+            );
+          })}
         </View>
-        {period === 'today' || period === 'flow' ? (
+        {period === 'today' ? (
           <View style={styles.periodPickerRow}>
             <ThemedText style={styles.periodPickerDate} lightColor={tone.muted} darkColor={tone.muted}>
-              {period === 'flow' ? formatMonthLabelKo(`${flowMonthPrefix}-01`) : periodLabel}
+              {periodLabel}
             </ThemedText>
-            {period === 'today' ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="날짜 선택"
-                onPress={() => setIsDatePickerOpen(true)}
-                hitSlop={8}
-                style={({ pressed }) => [styles.periodPickerIconBtn, pressed && { opacity: 0.6 }]}>
-                <IconSymbol name="calendar" size={15} color={tone.muted} />
-              </Pressable>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="월 선택"
-                onPress={() => setIsMonthPickerOpen(true)}
-                hitSlop={8}
-                style={({ pressed }) => [styles.periodPickerIconBtn, pressed && { opacity: 0.6 }]}>
-                <IconSymbol name="line.3.horizontal.decrease.circle" size={15} color={tone.muted} />
-              </Pressable>
-            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="날짜 선택"
+              onPress={() => setIsDatePickerOpen(true)}
+              hitSlop={8}
+              style={({ pressed }) => [styles.periodPickerIconBtn, pressed && { opacity: 0.6 }]}>
+              <IconSymbol name="calendar" size={15} color={tone.muted} />
+            </Pressable>
           </View>
         ) : null}
 
@@ -631,13 +473,6 @@ export function DayPlanStatisticsPage() {
             todayCompletionRate={todayRow.completionRate}
             todayCompletedCount={todayRow.completedFlowCount}
             sameWeekdayAverageScore={sameWeekdayAverageScore}
-            weeklyCompletionRate={weeklyCompletionRate}
-            previousWeeklyCompletionRate={previousWeeklyCompletionRate}
-            weeklyBalanceScore={weeklyBalanceScore}
-            weeklyBalanceRows={weeklyBalanceRows}
-            monthlyRate={monthlyRate}
-            previousMonthlyRate={previousMonthlyRate}
-            activeDaysInMonth={activeDaysInMonth}
             streak={streak}
             weekCompletionDelta={growth.diffCompletions}
             historyRows={historyRows}
@@ -647,33 +482,6 @@ export function DayPlanStatisticsPage() {
             onHistoryFilterChange={setHistoryFilter}
             historyFilterChips={historyFilterChips}
             filteredHistoryRows={filteredHistoryRows}
-            formatDateKeyKo={formatDateKeyKo}
-            topCompletedCategoryKey={todayCompletedCategories[0]?.categoryKey ?? null}
-          />
-        ) : null}
-
-        {period === 'flow' ? (
-          <PeriodHistoryView
-            tone={tone}
-            isDark={isDark}
-            anchorDateKey={selectedDateKey}
-            flowMonthPrefix={flowMonthPrefix}
-            weeklyBalanceRows={weeklyBalanceRows}
-            weeklyBalanceScore={weeklyBalanceScore}
-            monthlyRate={monthlyRate}
-            previousMonthlyRate={previousMonthlyRate}
-            dailyStatsByDate={dailyStatsByDate}
-            weeklyCompletionEntries={weeklyCompletionEntries}
-            monthRange={monthRange}
-            monthlyCompletionEntries={monthlyCompletionEntries}
-            canGoPrevMonth={canFlowGoPrevMonth}
-            canGoNextMonth={canFlowGoNextMonth}
-            onPrevMonth={onFlowPrevMonth}
-            onNextMonth={onFlowNextMonth}
-            onOpenMonthPicker={() => setIsMonthPickerOpen(true)}
-            onSelectDateKey={onSelectCalendarDateKey}
-            todayDateKey={todayDateKey}
-            formatMonthLabelKo={formatMonthLabelKo}
             formatDateKeyKo={formatDateKeyKo}
           />
         ) : null}
@@ -696,21 +504,6 @@ export function DayPlanStatisticsPage() {
           hint={calendarHint}
           onClose={() => setIsDatePickerOpen(false)}
           onSelectDateKey={onSelectCalendarDateKey}
-        />
-      ) : null}
-      {period === 'flow' ? (
-        <HistoryMonthPickerOverlay
-          visible={isMonthPickerOpen}
-          isDark={isDark}
-          selectedMonthPrefix={flowMonthPrefix}
-          todayDateKey={todayDateKey}
-          minYear={historyMinYear}
-          sheetBg={tone.card}
-          ink={tone.ink}
-          muted={tone.muted}
-          border={tone.border}
-          onClose={() => setIsMonthPickerOpen(false)}
-          onSelectMonth={onSelectFlowMonth}
         />
       ) : null}
     </ThemedView>
@@ -741,15 +534,18 @@ const styles = StyleSheet.create({
   },
   mainTabBtn: {
     flex: 1,
-    minHeight: 34,
-    paddingHorizontal: 8,
+    minHeight: 40,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 999,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   mainTabLabel: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   periodPickerRow: {
     width: '100%',

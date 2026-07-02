@@ -3,9 +3,12 @@ import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
 import {
+  syncTodayTabWithFixedRoutineApply,
   useDayPlanDraftStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
+  useDayPlanTodoStore,
+  useFixedFlowSetsStore,
 } from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { syncCategoryReminderNotifications } from '@features/category-reminder-notifications';
@@ -58,6 +61,9 @@ export function useAppBootstrap() {
 
       useDayPlanStore.getState().hydrate();
       useDayPlanDraftStore.getState().hydrate();
+      useDayPlanTodoStore.getState().hydrate();
+      useFixedFlowSetsStore.getState().hydrate();
+      syncTodayTabWithFixedRoutineApply();
       registerOtherCategoryResolverFromStorage();
 
       const plan = useDayPlanStore.getState();

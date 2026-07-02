@@ -70,7 +70,7 @@ export function RoutineAppearanceField({
     if (lastPersistedRef.current === serialized) return;
     lastPersistedRef.current = serialized;
     onChangeDataConfigRef.current(payload);
-  }, [categoryKey, selectedAccentColor, selectedIcon]);
+  }, [selectedAccentColor, selectedIcon]);
 
   return (
     <CustomFlowAppearancePicker

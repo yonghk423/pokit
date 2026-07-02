@@ -13,7 +13,7 @@ describe('dayPlanDraftStorage', () => {
 
   it('persists draft payload', () => {
     const draft = {
-      planMode: 'weekly' as const,
+      planMode: 'priority' as const,
       isFocusStarted: false,
       completedFocusCategoryKeys: [],
       planCompletionDismissedKeys: [],

@@ -1,0 +1,46 @@
+import {
+  removeCustomFlowCatalogId,
+  removeGoalDetailCategoryConfig,
+  savePriorityCatalogFixedRoutineKeys,
+} from '@shared/lib/storage';
+
+import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
+
+type DeleteCustomFlowDeps = {
+  hydrateFixedFlowSets: () => void;
+  getTodayAppliedCategoryKeys: () => string[];
+  reloadFixedFlowSetsFromStorage: () => void;
+  notifyFixedFlowApplyScheduleChanged: () => void;
+  getPriorityCategoryOrder: () => string[];
+  setPriorityCategoryOrder: (order: string[]) => void;
+  filterCompletedFocusKeysToPriorityOrder: (order: string[]) => void;
+  registerOtherCategoryResolverFromStorage: () => void;
+  bumpCategoryLabelEpoch: () => void;
+};
+
+/** 사용자 플로우(customFlow) 삭제 — 담기·설정·고정 루틴·오늘 순서에서 제거 */
+export function deleteCustomFlowCategory(
+  categoryKey: string,
+  deps: DeleteCustomFlowDeps,
+): boolean {
+  if (!isCustomFlowCategoryKey(categoryKey)) return false;
+
+  removeCustomFlowCatalogId(categoryKey);
+  removeGoalDetailCategoryConfig(categoryKey);
+
+  deps.hydrateFixedFlowSets();
+  const nextFixed = [
+    ...new Set(deps.getTodayAppliedCategoryKeys().filter((k) => k !== categoryKey)),
+  ];
+  savePriorityCatalogFixedRoutineKeys(nextFixed);
+  deps.reloadFixedFlowSetsFromStorage();
+  deps.notifyFixedFlowApplyScheduleChanged();
+
+  const nextOrder = deps.getPriorityCategoryOrder().filter((k) => k !== categoryKey);
+  deps.setPriorityCategoryOrder(nextOrder);
+  deps.filterCompletedFocusKeysToPriorityOrder(nextOrder);
+
+  deps.registerOtherCategoryResolverFromStorage();
+  deps.bumpCategoryLabelEpoch();
+  return true;
+}

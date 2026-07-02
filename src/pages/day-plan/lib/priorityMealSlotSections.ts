@@ -25,6 +25,70 @@ export type PriorityMealSlotSection<T extends { key: string }> = {
   isCurrent: boolean;
 };
 
+export type PriorityMealSlotSectionsResult<T extends { key: string }> = {
+  sections: PriorityMealSlotSection<T>[];
+  unslottedItems: T[];
+};
+
+function buildPriorityMealSlotSectionBuckets<T extends { key: string }>(
+  items: T[],
+  options?: {
+    nowMin?: number;
+    mealSlotOverrides?: ReadonlyMap<string, DayMealSlot>;
+    schedule?: DayMealSlotSchedule;
+    orderIndexByKey?: ReadonlyMap<string, number>;
+    /** true면 mealSlotOverrides에 있는 항목만 구간에 넣고, 나머지는 unslotted */
+    explicitSlotsOnly?: boolean;
+  },
+): PriorityMealSlotSectionsResult<T> {
+  const overrides = options?.mealSlotOverrides ?? new Map<string, DayMealSlot>();
+  const explicitSlotsOnly = options?.explicitSlotsOnly === true;
+  const schedule = normalizeDayMealSlotSchedule(options?.schedule);
+  const buckets = new Map<DayMealSlot, T[]>(
+    DAY_MEAL_SLOT_ORDER.map((slot) => [slot, []]),
+  );
+  const unslottedItems: T[] = [];
+
+  items.forEach((item, displayIndex) => {
+    const explicitSlot = overrides.get(item.key);
+    if (explicitSlotsOnly && !explicitSlot) {
+      unslottedItems.push(item);
+      return;
+    }
+    const orderIndex = options?.orderIndexByKey?.get(item.key) ?? displayIndex;
+    const slot = explicitSlot ?? resolvePriorityMealSlot(item.key, orderIndex, overrides);
+    buckets.get(slot)?.push(item);
+  });
+
+  const currentSlot =
+    typeof options?.nowMin === 'number'
+      ? resolveCurrentMealSlotFromSchedule(options.nowMin, schedule)
+      : null;
+
+  const sections = DAY_MEAL_SLOT_ORDER.map((slot) => ({
+    slot,
+    title: DAY_MEAL_SLOT_LABEL[slot],
+    hintTime: getMealSlotStartHhmm(schedule, slot),
+    items: buckets.get(slot) ?? [],
+    isCurrent: currentSlot === slot,
+  })).filter((section) => section.items.length > 0);
+
+  return { sections, unslottedItems };
+}
+
+export function splitPriorityMealSlotSections<T extends { key: string }>(
+  items: T[],
+  options?: {
+    nowMin?: number;
+    mealSlotOverrides?: ReadonlyMap<string, DayMealSlot>;
+    schedule?: DayMealSlotSchedule;
+    orderIndexByKey?: ReadonlyMap<string, number>;
+    explicitSlotsOnly?: boolean;
+  },
+): PriorityMealSlotSectionsResult<T> {
+  return buildPriorityMealSlotSectionBuckets(items, options);
+}
+
 export function buildPriorityMealSlotSections<T extends { key: string }>(
   items: T[],
   options?: {
@@ -35,32 +99,14 @@ export function buildPriorityMealSlotSections<T extends { key: string }>(
     orderIndexByKey?: ReadonlyMap<string, number>;
   },
 ): PriorityMealSlotSection<T>[] {
-  const overrides = options?.mealSlotOverrides ?? new Map<string, DayMealSlot>();
-  const schedule = normalizeDayMealSlotSchedule(options?.schedule);
-  const buckets = new Map<DayMealSlot, T[]>(
-    DAY_MEAL_SLOT_ORDER.map((slot) => [slot, []]),
-  );
+  return buildPriorityMealSlotSectionBuckets(items, options).sections;
+}
 
-  items.forEach((item, displayIndex) => {
-    const orderIndex =
-      options?.orderIndexByKey?.get(item.key) ??
-      displayIndex;
-    const slot = resolvePriorityMealSlot(item.key, orderIndex, overrides);
-    buckets.get(slot)?.push(item);
-  });
-
-  const currentSlot =
-    typeof options?.nowMin === 'number'
-      ? resolveCurrentMealSlotFromSchedule(options.nowMin, schedule)
-      : null;
-
-  return DAY_MEAL_SLOT_ORDER.map((slot) => ({
-    slot,
-    title: DAY_MEAL_SLOT_LABEL[slot],
-    hintTime: getMealSlotStartHhmm(schedule, slot),
-    items: buckets.get(slot) ?? [],
-    isCurrent: currentSlot === slot,
-  })).filter((section) => section.items.length > 0);
+export function hasExplicitMealSlotAssignments(
+  items: readonly { key: string }[],
+  overrides: ReadonlyMap<string, DayMealSlot>,
+): boolean {
+  return items.some((item) => overrides.has(item.key));
 }
 
 export function flattenPriorityMealSlotSectionKeys<T extends { key: string }>(

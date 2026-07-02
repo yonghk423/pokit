@@ -73,6 +73,7 @@ export function createDefaultFixedFlowSetsState(): FixedFlowSetsState {
   return {
     activeSetIds: [],
     sets,
+    scheduledMealSlotLayoutEnabled: false,
   };
 }
 

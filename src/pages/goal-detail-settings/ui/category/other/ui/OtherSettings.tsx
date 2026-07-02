@@ -49,6 +49,10 @@ export function OtherSettings({
   const [checklist, setChecklist] = useState(initial.checklist);
   const lastPersistedRef = useRef<string | null>(null);
   const isSyncingFromPropsRef = useRef(false);
+  const dataConfigRef = useRef(dataConfig);
+  const onChangeDataConfigRef = useRef(onChangeDataConfig);
+  dataConfigRef.current = dataConfig;
+  onChangeDataConfigRef.current = onChangeDataConfig;
 
   useEffect(() => {
     const next = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
@@ -64,16 +68,21 @@ export function OtherSettings({
       isSyncingFromPropsRef.current = false;
       return;
     }
+    const appearanceBase = normalizeOtherDetailConfig(
+      dataConfigRef.current ?? getInitialOtherDataConfig(),
+    );
     const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({
       displayName,
       summary,
       checklist,
+      ...(appearanceBase.icon ? { icon: appearanceBase.icon } : {}),
+      ...(appearanceBase.accentColor ? { accentColor: appearanceBase.accentColor } : {}),
     });
     const serialized = JSON.stringify(payload);
     if (lastPersistedRef.current === serialized) return;
     lastPersistedRef.current = serialized;
-    onChangeDataConfig(payload);
-  }, [displayName, summary, checklist, onChangeDataConfig]);
+    onChangeDataConfigRef.current(payload);
+  }, [displayName, summary, checklist]);
 
   const addTask = () => {
     const text = draftTask.trim();

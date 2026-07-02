@@ -1,6 +1,8 @@
+import { dismissCatalogGroupWithItemReassign } from '@entities/day-plan';
+import { hideStandardCatalogKey } from '@shared/lib/storage/hiddenStandardCatalogStorage';
+import { updateStandardCatalogGroup } from '@shared/lib/storage/catalogItemGroupStorage';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { StorageKeys } from '@shared/lib/storage/storageKeys';
-import { updateStandardCatalogGroup } from '@shared/lib/storage/catalogItemGroupStorage';
 
 import {
   buildPriorityCatalogSections,
@@ -10,6 +12,8 @@ import {
 describe('priorityCatalogSections', () => {
   beforeEach(() => {
     localStorageClient.removeItem(StorageKeys.standardCatalogGroupOverrides);
+    localStorageClient.removeItem(StorageKeys.dismissedCatalogGroups);
+    localStorageClient.removeItem(StorageKeys.hiddenStandardCatalogKeys);
   });
 
   it('maps standard keys to system groups', () => {
@@ -58,5 +62,22 @@ describe('priorityCatalogSections', () => {
     const productivity = result.groupSections.find((s) => s.groupKey === 'productivity');
     expect(health?.items.map((i) => i.key)).toEqual(['water', 'reading']);
     expect(productivity?.items).toEqual([]);
+  });
+
+  it('hides dismissed system groups and hidden standard items', () => {
+    dismissCatalogGroupWithItemReassign('health');
+    hideStandardCatalogKey('reading');
+    const result = buildPriorityCatalogSections({
+      available: [
+        { key: 'water', label: '수분', icon: 'drop.fill' },
+        { key: 'reading', label: '독서', icon: 'book.fill' },
+      ],
+      customFlowPickerItems: [],
+      customFlowEntries: [],
+      customGroups: [],
+    });
+
+    expect(result.groupSections.map((s) => s.groupKey)).toEqual(['productivity']);
+    expect(result.groupSections[0]?.items.map((i) => i.key)).toEqual(['water']);
   });
 });

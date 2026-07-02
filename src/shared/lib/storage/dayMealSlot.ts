@@ -111,14 +111,63 @@ export function resolvePriorityMealSlot(
   return resolveDefaultMealSlotForCategory(categoryKey, orderIndex);
 }
 
+function resolveActiveMealSlotFilter(
+  activeMealSlotsBySetId: Record<string, DayMealSlot[]> | undefined,
+  setId: string,
+): Set<DayMealSlot> | null {
+  const activeSlotsRaw = activeMealSlotsBySetId?.[setId];
+  if (!Array.isArray(activeSlotsRaw) || activeSlotsRaw.length === 0) return null;
+  return new Set(activeSlotsRaw);
+}
+
+/** 오늘 적용 중인 고정 루틴 항목의 구간 — 저장 mealSlot 없으면 카테고리 기본값 */
+export function buildAppliedFixedRoutineMealSlotOverrides(
+  state: Pick<FixedFlowSetsState, 'sets' | 'activeSetIds' | 'activeMealSlotsBySetId'>,
+  appliedKeys: readonly string[],
+): Record<string, DayMealSlot> {
+  const activeSetIds = new Set(state.activeSetIds);
+  const appliedKeySet = new Set(appliedKeys);
+  const activeMealSlotsBySetId = state.activeMealSlotsBySetId ?? {};
+  const out: Record<string, DayMealSlot> = {};
+
+  for (const set of state.sets) {
+    if (!activeSetIds.has(set.id)) continue;
+    const activeSlots = resolveActiveMealSlotFilter(activeMealSlotsBySetId, set.id);
+    for (const [index, item] of set.items.entries()) {
+      if (item.enabled === false) continue;
+      const key = item.categoryKey.trim();
+      if (!key || !appliedKeySet.has(key)) continue;
+      const slot = resolveFixedFlowItemMealSlot(item, index);
+      if (activeSlots && !activeSlots.has(slot)) continue;
+      if (!out[key]) out[key] = slot;
+    }
+  }
+
+  return out;
+}
+
 export function buildCategoryMealSlotOverrides(
-  state: Pick<FixedFlowSetsState, 'sets'>,
+  state: Pick<FixedFlowSetsState, 'sets' | 'activeSetIds' | 'activeMealSlotsBySetId'> & {
+    todayAppliedCategoryKeys?: string[];
+  },
 ): Map<string, DayMealSlot> {
+  const appliedKeys = state.todayAppliedCategoryKeys;
+  if (Array.isArray(appliedKeys)) {
+    const record = buildAppliedFixedRoutineMealSlotOverrides(state, appliedKeys);
+    return new Map(Object.entries(record));
+  }
+
+  const activeSetIds = new Set(state.activeSetIds);
+  const activeMealSlotsBySetId = state.activeMealSlotsBySetId ?? {};
   const map = new Map<string, DayMealSlot>();
   for (const set of state.sets) {
-    for (const item of set.items) {
-      const slot = normalizeDayMealSlot(item.mealSlot);
-      if (slot) map.set(item.categoryKey, slot);
+    if (!activeSetIds.has(set.id)) continue;
+    const activeSlots = resolveActiveMealSlotFilter(activeMealSlotsBySetId, set.id);
+    for (const [index, item] of set.items.entries()) {
+      if (item.enabled === false) continue;
+      const slot = resolveFixedFlowItemMealSlot(item, index);
+      if (activeSlots && !activeSlots.has(slot)) continue;
+      map.set(item.categoryKey, slot);
     }
   }
   return map;

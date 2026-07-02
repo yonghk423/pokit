@@ -1,5 +1,6 @@
 import {
   listAllCustomFlowCatalogEntries,
+  loadHiddenStandardCatalogKeys,
 } from '@shared/lib/storage';
 
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
@@ -73,6 +74,9 @@ export function getPriorityCatalogStandardKeys(): string[] {
 /** 담기 + 나만의에서 허용하는 카테고리 키(표준 + 사용자 customFlow) */
 export function getPriorityCatalogAllowedKeySet(): Set<string> {
   const allowed = new Set<string>(getPriorityCatalogStandardKeys());
+  for (const hidden of loadHiddenStandardCatalogKeys()) {
+    allowed.delete(hidden);
+  }
   for (const entry of listAllCustomFlowCatalogEntries()) {
     const id = entry.id?.trim();
     if (id) allowed.add(id);

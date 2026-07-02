@@ -16,6 +16,10 @@ import {
   snapshotRoutinePlannedKeys,
 } from '../lib/routineHistorySnapshot';
 import type { PlanMode } from './planMode';
+import {
+  registerDraftSyncTodayTabAccessors,
+  syncTodayTabWithFixedRoutineApply,
+} from '../lib/runSyncTodayTabWithFixedRoutineApply';
 
 type DayPlanDraftState = {
   planMode: PlanMode;
@@ -145,6 +149,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     const raw = loadDayPlanDraft();
     if (!raw) {
       set({ isHydrated: true });
+      syncTodayTabWithFixedRoutineApply();
       return;
     }
 
@@ -167,11 +172,9 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       planMode:
         raw.planMode === 'quickMemo'
           ? 'quickMemo'
-          : raw.planMode === 'weekly'
-            ? 'weekly'
-            : raw.planMode === 'monthly'
-              ? 'monthly'
-              : 'priority',
+          : raw.planMode === 'todoList'
+            ? 'todoList'
+            : 'priority',
       isFocusStarted: Boolean(raw.isFocusStarted),
       completedFocusCategoryKeys: Array.isArray(raw.completedFocusCategoryKeys)
         ? raw.completedFocusCategoryKeys
@@ -198,6 +201,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       priorityMealSlotOverrides: normalizePriorityMealSlotOverrides(raw.priorityMealSlotOverrides),
       isHydrated: true,
     });
+    syncTodayTabWithFixedRoutineApply();
   },
   setPlanMode: (mode) => {
     set({ planMode: mode });
@@ -428,6 +432,11 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       return { priorityMealSlotOverrides: next };
     }),
 }));
+
+registerDraftSyncTodayTabAccessors(
+  () => useDayPlanDraftStore.getState(),
+  (patch) => useDayPlanDraftStore.setState(patch),
+);
 
 useDayPlanDraftStore.subscribe((state) => {
   if (!state.isHydrated) return;

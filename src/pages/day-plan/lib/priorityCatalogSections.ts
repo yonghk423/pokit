@@ -10,6 +10,8 @@ import type {
 } from '@shared/lib/storage';
 import {
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
+  isCatalogGroupDismissed,
+  loadHiddenStandardCatalogKeys,
   loadStandardCatalogGroupOverrides,
   resolveSystemCatalogGroupLabel,
   resolveSystemCatalogGroupSubtitle,
@@ -32,7 +34,8 @@ const DEFAULT_CUSTOM_GROUP_SUBTITLE_KO =
   '직접 만든 묶음이에요. 아래에 두고 싶은 루틴을 오른쪽 아래 + 버튼으로 추가할 수 있어요.';
 
 export function filterCatalogPickerCategories(cats: PickerCategoryItem[]): PickerCategoryItem[] {
-  return cats.filter((c) => !CATALOG_REMOVED_KEYS.has(c.key));
+  const hidden = new Set(loadHiddenStandardCatalogKeys());
+  return cats.filter((c) => !CATALOG_REMOVED_KEYS.has(c.key) && !hidden.has(c.key));
 }
 
 export type PriorityCatalogGroupSection = {
@@ -136,37 +139,42 @@ export function buildPriorityCatalogSections(
 
   const sections: PriorityCatalogGroupSection[] = [];
 
-  const healthStandardItems = orderCategoryItemsInGroup(
-    standardByGroup.get('health') ?? [],
-    HEALTH_GROUP_SYSTEM_ORDER,
-  );
-  const healthCustomItems = customByGroup.get('health') ?? [];
-  sections.push({
-    groupKey: 'health',
-    title: resolveSystemCatalogGroupLabel('health'),
-    subtitle: resolveSystemCatalogGroupSubtitle('health'),
-    items: [...healthStandardItems, ...healthCustomItems],
-    isCustomGroup: false,
-  });
+  if (!isCatalogGroupDismissed('health')) {
+    const healthStandardItems = orderCategoryItemsInGroup(
+      standardByGroup.get('health') ?? [],
+      HEALTH_GROUP_SYSTEM_ORDER,
+    );
+    const healthCustomItems = customByGroup.get('health') ?? [];
+    sections.push({
+      groupKey: 'health',
+      title: resolveSystemCatalogGroupLabel('health'),
+      subtitle: resolveSystemCatalogGroupSubtitle('health'),
+      items: [...healthStandardItems, ...healthCustomItems],
+      isCustomGroup: false,
+    });
+  }
 
-  const productivityStandardItems = orderCategoryItemsInGroup(
-    standardByGroup.get('productivity') ?? [],
-    PRODUCTIVITY_GROUP_SYSTEM_ORDER,
-  );
-  const productivityCustomItems = customByGroup.get('productivity') ?? [];
-  sections.push({
-    groupKey: 'productivity',
-    title: resolveSystemCatalogGroupLabel('productivity'),
-    subtitle: resolveSystemCatalogGroupSubtitle('productivity'),
-    items: [
-      ...productivityStandardItems,
-      ...productivityCustomItems,
-      ...orphanCustomFlows,
-    ],
-    isCustomGroup: false,
-  });
+  if (!isCatalogGroupDismissed('productivity')) {
+    const productivityStandardItems = orderCategoryItemsInGroup(
+      standardByGroup.get('productivity') ?? [],
+      PRODUCTIVITY_GROUP_SYSTEM_ORDER,
+    );
+    const productivityCustomItems = customByGroup.get('productivity') ?? [];
+    sections.push({
+      groupKey: 'productivity',
+      title: resolveSystemCatalogGroupLabel('productivity'),
+      subtitle: resolveSystemCatalogGroupSubtitle('productivity'),
+      items: [
+        ...productivityStandardItems,
+        ...productivityCustomItems,
+        ...orphanCustomFlows,
+      ],
+      isCustomGroup: false,
+    });
+  }
 
   for (const g of input.customGroups) {
+    if (isCatalogGroupDismissed(g.key)) continue;
     const standardItems = orderCategoryItemsInGroup(standardByGroup.get(g.key) ?? [], []);
     const customItems = customByGroup.get(g.key) ?? [];
     sections.push({

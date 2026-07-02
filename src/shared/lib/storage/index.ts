@@ -34,6 +34,18 @@ export {
   updateStandardCatalogGroup,
 } from './catalogItemGroupStorage';
 export {
+  dismissCatalogGroupKey,
+  isCatalogGroupDismissed,
+  loadDismissedCatalogGroupKeys,
+  restoreCatalogGroupKey,
+} from './catalogGroupDismissStorage';
+export {
+  hideStandardCatalogKey,
+  isStandardCatalogKeyHidden,
+  loadHiddenStandardCatalogKeys,
+  restoreStandardCatalogKey,
+} from './hiddenStandardCatalogStorage';
+export {
   loadSystemCatalogGroupMeta,
   resolveSystemCatalogGroupLabel,
   resolveSystemCatalogGroupSubtitle,
@@ -46,6 +58,8 @@ export {
 } from './dailyRhythmOnboardingStorage';
 export { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
 export type { PersistedDayPlanDraft } from './dayPlanDraftStorage';
+export { loadDayPlanTodos, saveDayPlanTodos } from './dayPlanTodoStorage';
+export type { PersistedDayPlanTodos } from './dayPlanTodoStorage';
 export { loadDayPlan, saveDayPlan } from './dayPlanStorage';
 export type { PersistedDayPlan } from './dayPlanStorage';
 export {
@@ -83,6 +97,7 @@ export {
   type FixedFlowSetsState
 } from './fixedFlowSetsStorage';
 export {
+  buildAppliedFixedRoutineMealSlotOverrides,
   buildCategoryMealSlotOverrides,
   DAY_MEAL_SLOT_HINT,
   DAY_MEAL_SLOT_LABEL,

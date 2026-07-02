@@ -40,7 +40,6 @@ import {
   appendCustomFlowCatalogEntry,
   BUILTIN_PRESET_SCHEDULE_SET_IDS,
   DAY_MEAL_SLOT_LABEL,
-  DAY_MEAL_SLOT_ORDER,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
   groupFixedFlowItemsByMealSlot,
   isBuiltinPresetScheduleSet,
@@ -66,10 +65,10 @@ import {
   getFixedFlowPresetScheduleHint,
   getFixedFlowPresetScheduleLabel,
 } from '../lib/fixedFlowPresetLabels';
-import {
-  FixedRoutineSectionTabs,
-  type FixedRoutineSection,
-} from './FixedRoutineSectionTabs';
+import { FixedRoutineSectionLayoutBar } from './FixedRoutineSectionLayoutBar';
+import { FixedRoutineSectionTabs, type FixedRoutineSection } from './FixedRoutineSectionTabs';
+import { FixedRoutineSlotAddChips } from './FixedRoutineSlotAddChips';
+import { FixedRoutineSlotPickerSheet } from './FixedRoutineSlotPickerSheet';
 import { palette } from '../lib/dayPlanPalette';
 import {
   buildAddablePriorityCatalogSections,
@@ -79,7 +78,6 @@ import {
 } from '../lib/priorityCatalog';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
-import { FixedRoutineMealSlotScheduleCard } from './FixedRoutineMealSlotScheduleCard';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 
 if (
@@ -100,6 +98,8 @@ type FlowCardProps = {
   isFocusStarted: boolean;
   isInTodayPlan: boolean;
   isCompleted: boolean;
+  slotLabel?: string;
+  onPressSlot?: () => void;
   onToggleEnabled: (enabled: boolean) => void;
   onDelete: () => void;
 };
@@ -115,6 +115,8 @@ function FlowItemCard({
   isFocusStarted,
   isInTodayPlan,
   isCompleted,
+  slotLabel,
+  onPressSlot,
   onToggleEnabled,
   onDelete,
 }: FlowCardProps) {
@@ -184,6 +186,21 @@ function FlowItemCard({
           {label}
         </ThemedText>
       </View>
+      {slotLabel && onPressSlot ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${label} 구간 ${slotLabel}, 변경`}
+          onPress={onPressSlot}
+          style={({ pressed }) => [
+            styles.flowSlotPill,
+            { borderColor: line, backgroundColor: iconBoxBg },
+            pressed && { opacity: 0.72 },
+          ]}>
+          <ThemedText style={[styles.flowSlotPillLabel, { color: muted }]} numberOfLines={1}>
+            {slotLabel}
+          </ThemedText>
+        </Pressable>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label} 삭제`}
@@ -372,8 +389,10 @@ function AddItemModal({
 type GroupAccordionProps = {
   setItem: FixedFlowSet;
   isPresetScheduleSet: boolean;
+  mealSlotLayoutEnabled: boolean;
   isExpanded: boolean;
   isActiveForToday: boolean;
+  isEligibleToday: boolean;
   applyBlocked: boolean;
   catalogByKey: Map<string, PriorityCatalogRow>;
   isDark: boolean;
@@ -388,20 +407,25 @@ type GroupAccordionProps = {
   isCategoryCompleted: (categoryKey: string) => boolean;
   onToggleExpand: () => void;
   onToggleActiveForToday: () => void;
+  isMealSlotAppliedForToday?: (slot: DayMealSlot) => boolean;
+  onToggleMealSlotForToday?: (slot: DayMealSlot) => void;
   onApplyBlocked: () => void;
   onDeleteSet: () => void;
   onToggleItem: (categoryKey: string, enabled: boolean) => void;
   onDeleteItem: (categoryKey: string, label: string) => void;
   onOpenAddItem?: () => void;
   onOpenAddItemForSlot?: (slot: DayMealSlot) => void;
+  onChangeItemSlot?: (categoryKey: string, label: string) => void;
   mealSlotSchedule: import('@shared/lib/storage').DayMealSlotSchedule;
 };
 
 function GroupAccordion({
   setItem,
   isPresetScheduleSet,
+  mealSlotLayoutEnabled,
   isExpanded,
   isActiveForToday,
+  isEligibleToday,
   applyBlocked,
   catalogByKey,
   isDark,
@@ -416,41 +440,39 @@ function GroupAccordion({
   isCategoryCompleted,
   onToggleExpand,
   onToggleActiveForToday,
+  isMealSlotAppliedForToday,
+  onToggleMealSlotForToday,
   onApplyBlocked,
   onDeleteSet,
   onToggleItem,
   onDeleteItem,
   onOpenAddItem,
   onOpenAddItemForSlot,
+  onChangeItemSlot,
   mealSlotSchedule,
 }: GroupAccordionProps) {
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
   const totalCount = setItem.items.length;
-  const useMealSlotLayout = isPresetScheduleSet;
+  const useMealSlotLayout = isPresetScheduleSet && mealSlotLayoutEnabled;
   const mealSlotSections = useMemo(() => {
     if (!useMealSlotLayout) return [];
-    const grouped = groupFixedFlowItemsByMealSlot(setItem.items, mealSlotSchedule);
-    const bySlot = new Map(grouped.map((section) => [section.slot, section.items]));
-    return DAY_MEAL_SLOT_ORDER.map((slot) => ({
-      slot,
-      title: DAY_MEAL_SLOT_LABEL[slot],
-      hintTime: formatHhmmClockKo(mealSlotSchedule[slot]),
-      items: bySlot.get(slot) ?? [],
-    }));
+    return groupFixedFlowItemsByMealSlot(setItem.items, mealSlotSchedule);
   }, [mealSlotSchedule, setItem.items, useMealSlotLayout]);
+  const occupiedMealSlots = useMemo(
+    () => new Set(mealSlotSections.map((section) => section.slot)),
+    [mealSlotSections],
+  );
   const applyChipBlocked = applyBlocked && !isActiveForToday;
-  const disableApplyToggle = applyChipBlocked && !isPresetScheduleSet;
-  const applyLabel = isPresetScheduleSet
-    ? isActiveForToday
-      ? '자동 적용'
-      : '대기 중'
+  const disableApplyToggle = !isEligibleToday || applyChipBlocked;
+  const applyLabel = !isEligibleToday
+    ? '대기 중'
     : isActiveForToday
       ? '적용 중'
       : '오늘 적용';
-  const applyA11yLabel = isPresetScheduleSet
-    ? isActiveForToday
-      ? '자동 적용 중'
-      : '현재 요일에서는 자동 적용 대기 중'
+  const applyA11yLabel = !isEligibleToday
+    ? isPresetScheduleSet
+      ? '현재 요일에서는 오늘 적용할 수 없음'
+      : '오늘 적용할 수 없음'
     : isActiveForToday
       ? '오늘 적용 해제'
       : applyChipBlocked
@@ -468,74 +490,52 @@ function GroupAccordion({
             numberOfLines={1}>
             {setItem.name}
           </ThemedText>
-          {ruleLabel ? (
-            <View style={[styles.rulePill, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
-              <ThemedText style={[styles.rulePillText, { color: muted }]}>{ruleLabel}</ThemedText>
-            </View>
-          ) : null}
-        </View>
-        {isPresetScheduleSet ? (
+        {isPresetScheduleSet && ruleLabel ? (
           <View
             accessibilityRole="text"
-            accessibilityLabel={applyA11yLabel}
+            accessibilityLabel={ruleLabel}
             style={[
-              styles.headerApplyChip,
-              {
-                borderColor: isActiveForToday ? ink : line,
-                backgroundColor: isActiveForToday
-                  ? isDark
-                    ? 'rgba(255,255,255,0.14)'
-                    : 'rgba(0,0,0,0.08)'
-                  : isDark
-                    ? 'rgba(255,255,255,0.06)'
-                    : 'rgba(0,0,0,0.03)',
-              },
+              styles.rulePill,
+              { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' },
             ]}>
-            <ThemedText
-              style={[
-                styles.headerApplyChipLabel,
-                { color: isActiveForToday ? ink : muted },
-              ]}
-              numberOfLines={1}>
-              {applyLabel}
-            </ThemedText>
+            <ThemedText style={[styles.rulePillText, { color: muted }]}>{ruleLabel}</ThemedText>
           </View>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: disableApplyToggle }}
-            accessibilityLabel={applyA11yLabel}
-            onPress={() => {
-              if (disableApplyToggle) {
-                onApplyBlocked();
-                return;
-              }
-              onToggleActiveForToday();
-            }}
-            style={({ pressed }) => [
-              styles.headerApplyChip,
-              {
-                borderColor: isActiveForToday ? ink : line,
-                backgroundColor: isActiveForToday
-                  ? isDark
-                    ? 'rgba(255,255,255,0.14)'
-                    : 'rgba(0,0,0,0.08)'
-                  : isDark
-                    ? 'rgba(255,255,255,0.06)'
-                    : 'rgba(0,0,0,0.03)',
-                opacity: disableApplyToggle ? 0.42 : pressed ? 0.88 : 1,
-              },
-            ]}>
-            <ThemedText
-              style={[
-                styles.headerApplyChipLabel,
-                { color: isActiveForToday ? ink : muted },
-              ]}
-              numberOfLines={1}>
+        ) : null}
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: disableApplyToggle }}
+          accessibilityLabel={applyA11yLabel}
+          onPress={() => {
+            if (disableApplyToggle) {
+              if (applyChipBlocked) onApplyBlocked();
+              return;
+            }
+            onToggleActiveForToday();
+          }}
+          style={({ pressed }) => [
+            styles.headerApplyChip,
+            {
+              borderColor: isActiveForToday ? ink : line,
+              backgroundColor: isActiveForToday
+                ? isDark
+                  ? 'rgba(255,255,255,0.14)'
+                  : 'rgba(0,0,0,0.08)'
+                : isDark
+                  ? 'rgba(255,255,255,0.06)'
+                  : 'rgba(0,0,0,0.03)',
+              opacity: disableApplyToggle ? 0.42 : pressed ? 0.88 : 1,
+            },
+          ]}>
+          <ThemedText
+            style={[
+              styles.headerApplyChipLabel,
+              { color: isActiveForToday ? ink : muted },
+            ]}
+            numberOfLines={1}>
             {applyLabel}
           </ThemedText>
         </Pressable>
-        )}
         {!isPresetScheduleSet ? (
           <Pressable
             accessibilityRole="button"
@@ -570,6 +570,11 @@ function GroupAccordion({
           ) : null}
           {useMealSlotLayout ? (
             <View style={styles.mealSlotSectionList}>
+              {totalCount === 0 ? (
+                <ThemedText style={[styles.accordionEmpty, { color: muted }]}>
+                  아직 항목이 없어요. 아래에서 구간을 선택해 추가해 보세요.
+                </ThemedText>
+              ) : null}
               {mealSlotSections.map((section, sectionIndex) => (
                 <View
                   key={section.slot}
@@ -578,41 +583,84 @@ function GroupAccordion({
                     sectionIndex > 0 ? styles.mealSlotBlockFollows : null,
                   ]}>
                   <View style={styles.mealSlotBlockHeader}>
-                    <ThemedText style={[styles.mealSlotBlockTitle, { color: ink }]}>
-                      {section.title}
-                    </ThemedText>
-                    <ThemedText style={[styles.mealSlotBlockHint, { color: muted }]}>
-                      {section.hintTime}
-                    </ThemedText>
+                    <View style={styles.mealSlotBlockHeaderMain}>
+                      <ThemedText style={[styles.mealSlotBlockTitle, { color: ink }]}>
+                        {section.title}
+                      </ThemedText>
+                      <ThemedText style={[styles.mealSlotBlockHint, { color: muted }]}>
+                        {formatHhmmClockKo(section.hintTime)}
+                      </ThemedText>
+                    </View>
+                    {isPresetScheduleSet ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{
+                          disabled: !isEligibleToday || (applyBlocked && !isMealSlotAppliedForToday?.(section.slot)),
+                        }}
+                        accessibilityLabel={`${section.title} ${
+                          isMealSlotAppliedForToday?.(section.slot) ? '오늘 적용 해제' : '오늘 적용'
+                        }`}
+                        onPress={() => {
+                          const isApplied = isMealSlotAppliedForToday?.(section.slot) ?? false;
+                          const blockedByEnded = applyBlocked && !isApplied;
+                          if (!isEligibleToday || blockedByEnded) {
+                            if (blockedByEnded) onApplyBlocked();
+                            return;
+                          }
+                          onToggleMealSlotForToday?.(section.slot);
+                        }}
+                        style={({ pressed }) => {
+                          const isApplied = isMealSlotAppliedForToday?.(section.slot) ?? false;
+                          const disabled = !isEligibleToday || (applyBlocked && !isApplied);
+                          return [
+                            styles.mealSlotApplyChip,
+                            {
+                              borderColor: isApplied ? ink : line,
+                              backgroundColor: isApplied
+                                ? isDark
+                                  ? 'rgba(255,255,255,0.14)'
+                                  : 'rgba(0,0,0,0.08)'
+                                : isDark
+                                  ? 'rgba(255,255,255,0.06)'
+                                  : 'rgba(0,0,0,0.03)',
+                              opacity: disabled ? 0.42 : pressed ? 0.88 : 1,
+                            },
+                          ];
+                        }}>
+                        <ThemedText
+                          style={[
+                            styles.mealSlotApplyChipLabel,
+                            { color: isMealSlotAppliedForToday?.(section.slot) ? ink : muted },
+                          ]}>
+                          {isMealSlotAppliedForToday?.(section.slot) ? '적용 중' : '오늘 적용'}
+                        </ThemedText>
+                      </Pressable>
+                    ) : null}
                   </View>
                   <View style={[styles.cardList, { backgroundColor: cardBg, borderColor: line }]}>
-                    {section.items.length === 0 ? (
-                      <ThemedText style={[styles.mealSlotEmpty, { color: muted }]}>
-                        아직 {section.title} 항목이 없어요.
-                      </ThemedText>
-                    ) : (
-                      section.items.map((item) => {
-                        const cat = catalogByKey.get(item.categoryKey);
-                        const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
-                        return (
-                          <FlowItemCard
-                            key={item.categoryKey}
-                            item={item}
-                            catalog={cat}
-                            isDark={isDark}
-                            ink={ink}
-                            muted={muted}
-                            line={line}
-                            iconBoxBg={iconBoxBg}
-                            isFocusStarted={isFocusStarted}
-                            isInTodayPlan={isCategoryInTodayPlan(item.categoryKey)}
-                            isCompleted={isCategoryCompleted(item.categoryKey)}
-                            onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
-                            onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
-                          />
-                        );
-                      })
-                    )}
+                    {section.items.map((item) => {
+                      const cat = catalogByKey.get(item.categoryKey);
+                      const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
+                      return (
+                        <FlowItemCard
+                          key={item.categoryKey}
+                          item={item}
+                          catalog={cat}
+                          isDark={isDark}
+                          ink={ink}
+                          muted={muted}
+                          line={line}
+                          iconBoxBg={iconBoxBg}
+                          isFocusStarted={isFocusStarted}
+                          isInTodayPlan={isCategoryInTodayPlan(item.categoryKey)}
+                          isCompleted={isCategoryCompleted(item.categoryKey)}
+                          slotLabel={section.title}
+                          onPressSlot={() => onChangeItemSlot?.(item.categoryKey, itemLabel)}
+                          onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
+                          onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
+                        />
+                      );
+                    })}
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`${section.title} 항목 추가`}
@@ -629,6 +677,21 @@ function GroupAccordion({
                   </View>
                 </View>
               ))}
+              <FixedRoutineSlotAddChips
+                title={
+                  totalCount === 0
+                    ? '구간 선택해서 추가'
+                    : occupiedMealSlots.size > 0
+                      ? '다른 구간에 추가'
+                      : '구간 선택해서 추가'
+                }
+                occupiedSlots={totalCount === 0 ? undefined : occupiedMealSlots}
+                isDark={isDark}
+                ink={ink}
+                muted={muted}
+                line={line}
+                onSelectSlot={(slot) => onOpenAddItemForSlot?.(slot)}
+              />
             </View>
           ) : (
             <>
@@ -702,30 +765,45 @@ export function FixedRoutinePage() {
   const targetMealSlotRef = useRef<DayMealSlot | null>(null);
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [mealSlotScheduleOpen, setMealSlotScheduleOpen] = useState(false);
+  const [slotPicker, setSlotPicker] = useState<{
+    setId: string;
+    categoryKey: string;
+    label: string;
+  } | null>(null);
   const { schedule: mealSlotSchedule, persistSchedule: persistMealSlotSchedule } =
     useDayMealSlotSchedule();
 
   const {
     sets,
     activeSetIds,
+    activeMealSlotsBySetId,
+    scheduledMealSlotLayoutEnabled,
     hydrate,
     addSet,
     toggleSetForToday,
+    toggleMealSlotForToday,
+    setScheduledMealSlotLayoutEnabled,
     removeSet,
     addCategoryToSet,
     removeCategoryFromSet,
     setCategoryEnabledInSet,
+    setCategoryMealSlotInSet,
   } = useFixedFlowSetsStore(
     useShallow((s) => ({
       sets: s.sets,
       activeSetIds: s.activeSetIds,
+      activeMealSlotsBySetId: s.activeMealSlotsBySetId,
+      scheduledMealSlotLayoutEnabled: s.scheduledMealSlotLayoutEnabled,
       hydrate: s.hydrate,
       addSet: s.addSet,
       toggleSetForToday: s.toggleSetForToday,
+      toggleMealSlotForToday: s.toggleMealSlotForToday,
+      setScheduledMealSlotLayoutEnabled: s.setScheduledMealSlotLayoutEnabled,
       removeSet: s.removeSet,
       addCategoryToSet: s.addCategoryToSet,
       removeCategoryFromSet: s.removeCategoryFromSet,
       setCategoryEnabledInSet: s.setCategoryEnabledInSet,
+      setCategoryMealSlotInSet: s.setCategoryMealSlotInSet,
     })),
   );
 
@@ -838,11 +916,6 @@ export function FixedRoutinePage() {
     () => (section === 'scheduled' ? presetSets : customSets),
     [section, presetSets, customSets],
   );
-
-  const sectionHint =
-    section === 'scheduled'
-      ? '데일리·주말 루틴은 요일에 맞게 오늘 탭에 자동으로 추가돼요. 새벽·아침·점심·저녁·밤 시간대별로 항목을 관리할 수 있어요.'
-      : '그룹을 만들고 항목을 추가한 뒤, 오늘 적용을 켜면 오늘 탭에 반영돼요.';
 
   const reloadCatalog = useCallback(() => {
     setCatalogTick((n) => n + 1);
@@ -992,6 +1065,10 @@ export function FixedRoutinePage() {
     setAddItemModalOpen(true);
   }, []);
 
+  const handleChangeItemSlot = useCallback((setId: string, categoryKey: string, itemLabel: string) => {
+    setSlotPicker({ setId, categoryKey, label: itemLabel });
+  }, []);
+
   const addItemModalTitle = useMemo(
     () =>
       addItemMealSlot
@@ -1009,14 +1086,32 @@ export function FixedRoutinePage() {
   const line = c.catBorderIdle;
   const dashedBorder = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)';
   const isSetActiveForToday = useCallback(
-    (setItem: FixedFlowSet) => {
-      if (isBuiltinPresetScheduleSet(setItem)) {
-        return isFixedFlowSetMatchedToday(setItem, new Date(nowTick));
-      }
-      return activeSetIds.includes(setItem.id);
-    },
-    [activeSetIds, nowTick],
+    (setItem: FixedFlowSet) => activeSetIds.includes(setItem.id),
+    [activeSetIds],
   );
+  const isMealSlotActiveForToday = useCallback(
+    (setItem: FixedFlowSet, slot: DayMealSlot) => {
+      if (!activeSetIds.includes(setItem.id)) return false;
+      const configuredSlots = activeMealSlotsBySetId[setItem.id];
+      if (!Array.isArray(configuredSlots) || configuredSlots.length === 0) return true;
+      return configuredSlots.includes(slot);
+    },
+    [activeMealSlotsBySetId, activeSetIds],
+  );
+  const isSetEligibleToday = useCallback(
+    (setItem: FixedFlowSet) => {
+      if (!isBuiltinPresetScheduleSet(setItem)) return true;
+      return isFixedFlowSetMatchedToday(setItem, new Date(nowTick));
+    },
+    [nowTick],
+  );
+
+  const sectionHint =
+    section === 'scheduled'
+      ? scheduledMealSlotLayoutEnabled
+        ? '구간과 항목을 먼저 설정한 뒤, 필요한 구간만 오늘 적용하면 오늘 탭에 반영돼요.'
+        : '항목을 정리한 뒤 오늘 적용을 켜면 오늘 탭에 반영돼요. 필요하면 구간 보기로 시간대별 배치를 먼저 할 수 있어요.'
+      : '그룹을 만들고 항목을 추가한 뒤, 오늘 적용을 켜면 오늘 탭에 반영돼요.';
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
@@ -1036,14 +1131,21 @@ export function FixedRoutinePage() {
           isDark={isDark}
         />
         {section === 'scheduled' ? (
-          <FixedRoutineMealSlotScheduleCard
-            schedule={mealSlotSchedule}
+          <FixedRoutineSectionLayoutBar
+            enabled={scheduledMealSlotLayoutEnabled}
             isDark={isDark}
             ink={ink}
             muted={muted}
             line={line}
             cardBg={cardBg}
-            onPressSettings={() => setMealSlotScheduleOpen(true)}
+            onToggle={() =>
+              setScheduledMealSlotLayoutEnabled(!scheduledMealSlotLayoutEnabled)
+            }
+            onPressScheduleSettings={
+              scheduledMealSlotLayoutEnabled
+                ? () => setMealSlotScheduleOpen(true)
+                : undefined
+            }
           />
         ) : null}
         <ThemedText style={[styles.sectionHint, { color: muted }]}>{sectionHint}</ThemedText>
@@ -1053,8 +1155,10 @@ export function FixedRoutinePage() {
               key={setItem.id}
               setItem={setItem}
               isPresetScheduleSet={isBuiltinPresetScheduleSet(setItem)}
+              mealSlotLayoutEnabled={scheduledMealSlotLayoutEnabled}
               isExpanded={expandedIds.has(setItem.id)}
               isActiveForToday={isSetActiveForToday(setItem)}
+              isEligibleToday={isSetEligibleToday(setItem)}
               applyBlocked={priorityWindowEndedForToday}
               catalogByKey={catalogByKey}
               isDark={isDark}
@@ -1071,6 +1175,11 @@ export function FixedRoutinePage() {
               onToggleActiveForToday={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 toggleSetForToday(setItem.id);
+              }}
+              isMealSlotAppliedForToday={(slot) => isMealSlotActiveForToday(setItem, slot)}
+              onToggleMealSlotForToday={(slot) => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                toggleMealSlotForToday(setItem.id, slot);
               }}
               onApplyBlocked={handleApplyBlocked}
               onDeleteSet={() => handleDeleteSet(setItem.id)}
@@ -1097,6 +1206,9 @@ export function FixedRoutinePage() {
               }}
               onOpenAddItem={() => openAddItemModal(setItem.id)}
               onOpenAddItemForSlot={(slot) => openAddItemModal(setItem.id, slot)}
+              onChangeItemSlot={(categoryKey, itemLabel) =>
+                handleChangeItemSlot(setItem.id, categoryKey, itemLabel)
+              }
               mealSlotSchedule={mealSlotSchedule}
             />
           ))}
@@ -1203,6 +1315,23 @@ export function FixedRoutinePage() {
         isDark={isDark}
         onClose={() => setMealSlotScheduleOpen(false)}
         onSave={persistMealSlotSchedule}
+      />
+
+      <FixedRoutineSlotPickerSheet
+        visible={slotPicker !== null}
+        title={slotPicker ? `"${slotPicker.label}" 구간 변경` : '구간 선택'}
+        isDark={isDark}
+        ink={ink}
+        muted={muted}
+        surface={cardBg}
+        line={line}
+        onClose={() => setSlotPicker(null)}
+        onSelect={(slot) => {
+          if (!slotPicker) return;
+          setCategoryMealSlotInSet(slotPicker.setId, slotPicker.categoryKey, slot);
+          setSlotPicker(null);
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }}
       />
 
     </ThemedView>
@@ -1340,6 +1469,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingBottom: 6,
   },
+  mealSlotBlockHeaderMain: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    minWidth: 0,
+    flex: 1,
+  },
   mealSlotBlockTitle: {
     fontSize: 11,
     fontWeight: '700',
@@ -1349,6 +1485,17 @@ const styles = StyleSheet.create({
   mealSlotBlockHint: {
     fontSize: 11,
     fontWeight: '500',
+  },
+  mealSlotApplyChip: {
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  mealSlotApplyChipLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: -0.1,
   },
   mealSlotEmpty: {
     fontSize: 12,
@@ -1450,6 +1597,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: -0.25,
+  },
+  flowSlotPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    maxWidth: 52,
+    flexShrink: 0,
+  },
+  flowSlotPillLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   flowSwitch: {
     transform: [{ scaleX: 0.82 }, { scaleY: 0.82 }],

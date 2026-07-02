@@ -24,9 +24,11 @@ import {
   isPriorityWindowEndedForToday,
   parseHHmmToMinutes,
   resolveBlockCategoryKey,
+  syncTodayTabWithFixedRoutineApply,
   useDayPlanDraftStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
+  useDayPlanTodoStore,
   useFixedFlowSetsStore,
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
@@ -58,16 +60,13 @@ import {
   PRIMARY,
 } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
-import { ensureFixedRoutinesInPriorityOrder } from '../lib/ensureFixedRoutinesInPriorityOrder';
-import { normalizeFixedRoutineCategoryKeys } from '../lib/normalizeFixedRoutineCategoryKeys';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { DailyRhythmOnboardingGate } from './DailyRhythmOnboardingGate';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
-import { MonthlyPlanSection } from './MonthlyPlanSection';
+import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 import { PlanModeSwitch } from './PlanModeSwitch';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
-import { WeeklyPlanSection } from './WeeklyPlanSection';
 
 export function DayPlanPage() {
   const router = useRouter();
@@ -90,6 +89,7 @@ export function DayPlanPage() {
     priorityBagDismissedDateKey,
     priorityBagDismissedKeys,
     quickMemoDraft,
+    priorityMealSlotLayoutEnabled,
     setPlanMode,
     setIsFocusStarted,
     setPriorityPlanDateKey,
@@ -104,6 +104,7 @@ export function DayPlanPage() {
     clearCompletedFocusCategoryKeys,
     clearPlanCompletionDismissedKeys,
     setQuickMemoDraft,
+    setPriorityMealSlotLayoutEnabled,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       planMode: s.planMode,
@@ -117,6 +118,7 @@ export function DayPlanPage() {
       priorityBagDismissedDateKey: s.priorityBagDismissedDateKey,
       priorityBagDismissedKeys: s.priorityBagDismissedKeys,
       quickMemoDraft: s.quickMemoDraft,
+      priorityMealSlotLayoutEnabled: s.priorityMealSlotLayoutEnabled,
       setPlanMode: s.setPlanMode,
       setIsFocusStarted: s.setIsFocusStarted,
       setPriorityPlanDateKey: s.setPriorityPlanDateKey,
@@ -131,18 +133,36 @@ export function DayPlanPage() {
       clearCompletedFocusCategoryKeys: s.clearCompletedFocusCategoryKeys,
       clearPlanCompletionDismissedKeys: s.clearPlanCompletionDismissedKeys,
       setQuickMemoDraft: s.setQuickMemoDraft,
+      setPriorityMealSlotLayoutEnabled: s.setPriorityMealSlotLayoutEnabled,
     })),
   );
 
+  const layoutMode: DayPlanLayoutMode = useMemo(() => {
+    if (planMode === 'todoList') return 'todoList';
+    return priorityMealSlotLayoutEnabled ? 'sections' : 'bag';
+  }, [planMode, priorityMealSlotLayoutEnabled]);
+
+  const onSelectLayoutMode = useCallback(
+    (mode: DayPlanLayoutMode) => {
+      if (mode === 'todoList') {
+        setPlanMode('todoList');
+        return;
+      }
+      setPlanMode('priority');
+      setPriorityMealSlotLayoutEnabled(mode === 'sections');
+    },
+    [setPlanMode, setPriorityMealSlotLayoutEnabled],
+  );
+
   const {
-    todayAppliedCategoryKeys,
     todayAppliedRevision,
+    fixedFlowSets,
     hydrate: hydrateFixedFlowSets,
     refreshTodayAppliedCategoryKeys,
   } = useFixedFlowSetsStore(
     useShallow((s) => ({
-      todayAppliedCategoryKeys: s.todayAppliedCategoryKeys,
       todayAppliedRevision: s.todayAppliedRevision,
+      fixedFlowSets: s.sets,
       hydrate: s.hydrate,
       refreshTodayAppliedCategoryKeys: s.refreshTodayAppliedCategoryKeys,
     })),
@@ -155,6 +175,7 @@ export function DayPlanPage() {
   useFocusEffect(
     useCallback(() => {
       refreshTodayAppliedCategoryKeys();
+      syncTodayTabWithFixedRoutineApply();
     }, [refreshTodayAppliedCategoryKeys]),
   );
 
@@ -219,6 +240,13 @@ export function DayPlanPage() {
     [priorityWindowCtx],
   );
 
+  const setTodoActiveDateKey = useDayPlanTodoStore((s) => s.setActiveDateKey);
+  const todayKey = getLocalDateKey();
+
+  useEffect(() => {
+    setTodoActiveDateKey(todayKey);
+  }, [todayKey, nowTick, setTodoActiveDateKey]);
+
   const { addBlock, quickMemos, removeQuickMemo, completeBlocks } = useDayPlanStore(
     useShallow((s) => ({
       addBlock: s.addBlock,
@@ -272,36 +300,11 @@ export function DayPlanPage() {
     setPriorityEnd(w.endTime);
   }, [planMode, priorityCategoryOrder.length, priorityEnd, priorityStart, setPriorityEnd, setPriorityStart]);
 
-  /** 당일(적용 구간에 오늘이 포함될 때) 고정 루틴을 담기 앞쪽에 자동 보강 — FAB·시작 시에는 담기 순서만 쓴다. */
+  /** 고정 루틴「오늘 적용」상태와 오늘 탭 담기·구간 동기화 */
   useEffect(() => {
     if (planMode !== 'priority') return;
-    if (priorityWindowEndedForToday) return;
-    const today = getLocalDateKey();
-    if (today < priorityPlanDateKey || today > priorityPlanDateKeyEnd) return;
-
-    const todayDismissed =
-      priorityBagDismissedDateKey === today ? new Set(priorityBagDismissedKeys) : new Set<string>();
-    const fixedOrder = normalizeFixedRoutineCategoryKeys(todayAppliedCategoryKeys).filter(
-      (key) => !todayDismissed.has(key),
-    );
-    if (fixedOrder.length === 0) return;
-
-    setPriorityCategoryOrder((prev) => {
-      const next = ensureFixedRoutinesInPriorityOrder(prev, fixedOrder);
-      if (next.length === prev.length && next.every((k, i) => k === prev[i])) return prev;
-      return next;
-    });
-  }, [
-    planMode,
-    priorityPlanDateKey,
-    priorityPlanDateKeyEnd,
-    priorityWindowEndedForToday,
-    priorityBagDismissedDateKey,
-    priorityBagDismissedKeys,
-    todayAppliedCategoryKeys,
-    todayAppliedRevision,
-    setPriorityCategoryOrder,
-  ]);
+    syncTodayTabWithFixedRoutineApply();
+  }, [planMode, todayAppliedRevision, fixedFlowSets]);
 
   const c = useMemo(() => palette(isDark), [isDark]);
 
@@ -347,6 +350,10 @@ export function DayPlanPage() {
     },
     [router],
   );
+
+  const handleOpenFixedRoutine = useCallback(() => {
+    router.push('/(tabs)/fixed-routines');
+  }, [router]);
 
   const handleOpenFocusDetail = useCallback(
     (categoryKey: string) => {
@@ -701,7 +708,8 @@ export function DayPlanPage() {
       registerPrimaryAction(null, { disabled: true, label: '잠금화면 메모 저장', hidden: true });
       return;
     }
-    if (planMode === 'weekly' || planMode === 'monthly') {
+    if (planMode === 'todoList') {
+      registerPrimaryAction(null, { disabled: true, label: '할 일 추가', hidden: true });
       return;
     }
     registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
@@ -724,7 +732,7 @@ export function DayPlanPage() {
     <PlanModeSwitch planMode={planMode} onSelectMode={setPlanMode} c={c} />
   );
 
-  /** 스위치·본문·하단을 한 면으로 — c.bg(#fafafa) 대신 containerLow로 틈·밝은 띠 제거 */
+  const isDailyContent = planMode === 'priority' || planMode === 'todoList';
   const shellBg = c.containerLow;
 
   return (
@@ -745,7 +753,7 @@ export function DayPlanPage() {
                   paddingTop: 12,
                   paddingBottom: scrollContentBottomPad,
                   /** 우선순위: 타임라인·탭 사이 불필요한 세로 간격 축소 */
-                  ...(planMode === 'priority' ? { gap: 6 } : null),
+                  ...(isDailyContent ? { gap: 6 } : null),
                   /**
                    * flexGrow: 1 은 콘텐츠가 짧아도 스크롤 영역을 화면 높이로 늘려 **빈 스크롤**이 생김.
                    * 빠른 메모만(빈 곳 탭으로 키보드 내리기) 영역을 채우기 위해 사용.
@@ -773,16 +781,6 @@ export function DayPlanPage() {
                       />
                   </View>
                 </View>
-              ) : planMode === 'weekly' ? (
-                <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
-                  {planModeSwitchEl}
-                  <WeeklyPlanSection c={c} isDark={isDark} />
-                </View>
-              ) : planMode === 'monthly' ? (
-                <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
-                  {planModeSwitchEl}
-                  <MonthlyPlanSection c={c} isDark={isDark} />
-                </View>
               ) : (
                 <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
                   {planModeSwitchEl}
@@ -803,6 +801,9 @@ export function DayPlanPage() {
                     onSelectCategory={handlePriorityCategoryPress}
                     onOpenCategorySettings={handleOpenCategorySettings}
                     onOpenFocusDetail={handleOpenFocusDetail}
+                    onOpenFixedRoutine={handleOpenFixedRoutine}
+                    layoutMode={layoutMode}
+                    onSelectLayoutMode={onSelectLayoutMode}
                   />
                 </View>
               )}

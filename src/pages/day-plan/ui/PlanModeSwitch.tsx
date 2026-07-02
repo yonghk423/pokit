@@ -19,8 +19,6 @@ type ModeButton = {
 
 const MODE_BUTTONS: ModeButton[] = [
   { mode: 'priority', icon: 'list.number', label: '데일리' },
-  { mode: 'weekly', icon: 'calendar', label: '위클리' },
-  { mode: 'monthly', icon: 'calendar.badge.clock', label: '먼슬리' },
   { mode: 'quickMemo', icon: 'note.text', label: '잠금화면 메모' },
 ];
 
@@ -57,6 +55,8 @@ export function PlanModeSwitch({
         ? '잠금화면에서 상시 확인할 메모를 적어 두세요.'
         : null;
 
+  const activeModeForSwitch = planMode === 'todoList' ? 'priority' : planMode;
+
   const handleSelect = useCallback(
     (mode: PlanMode) => {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -82,7 +82,7 @@ export function PlanModeSwitch({
           ]}>
           <View style={styles.leftButtonGroup}>
             {MODE_BUTTONS.map((btn) => {
-              const active = planMode === btn.mode;
+              const active = activeModeForSwitch === btn.mode;
               return (
                 <Pressable
                   key={btn.mode}
@@ -102,13 +102,6 @@ export function PlanModeSwitch({
                     size={18}
                     color={active ? pill.activeIcon : c.onVariant}
                   />
-                  <ThemedText
-                    style={[
-                      styles.modeLabel,
-                      { color: active ? pill.activeIcon : c.onVariant },
-                    ]}>
-                    {btn.label}
-                  </ThemedText>
                 </Pressable>
               );
             })}
@@ -154,20 +147,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconHit: {
-    flexDirection: 'row',
+    width: 34,
+    height: 34,
     alignItems: 'center',
-    gap: 4,
-    minHeight: 34,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    justifyContent: 'center',
     borderRadius: 11,
     borderWidth: 1,
-    justifyContent: 'center',
-  },
-  modeLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: -0.2,
   },
   iconPressed: {
     opacity: 0.72,

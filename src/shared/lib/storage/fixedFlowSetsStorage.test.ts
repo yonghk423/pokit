@@ -73,13 +73,10 @@ describe('fixedFlowSetsStorage', () => {
     expect(getActiveFixedFlowSet(state)?.id).toBe('set_a');
   });
 
-  it('includes goal-detail weekday auto apply keys', () => {
+  it('does not auto-include goal-detail weekday keys without active apply', () => {
     saveGoalDetailCategoryConfig('planning', { applyWeekdays: [1, 2, 3, 4, 5] });
     const state = { activeSetIds: [], sets: [] };
-    expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-01T09:00:00+09:00'))).toEqual([
-      'planning',
-    ]);
-    expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-04T09:00:00+09:00'))).toEqual([]);
+    expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-01T09:00:00+09:00'))).toEqual([]);
   });
 
   it('matches custom weekday selection', () => {
@@ -123,12 +120,12 @@ describe('fixedFlowSetsStorage', () => {
     });
 
     expect(state.sets.map((set) => set.id)).toEqual(['set_daily', 'set_weekend', 'manual_a']);
-    expect(state.activeSetIds).toEqual(['manual_a']);
+    expect(state.activeSetIds).toEqual(['set_daily', 'manual_a']);
   });
 
-  it('auto-includes daily preset keys on weekdays', () => {
+  it('includes daily preset keys only when toggled on for today', () => {
     const state = normalizeFixedFlowSetsState({
-      activeSetIds: [],
+      activeSetIds: ['set_daily'],
       sets: [
         {
           id: 'set_daily',
@@ -143,9 +140,45 @@ describe('fixedFlowSetsStorage', () => {
     ]);
   });
 
+  it('does not include daily preset keys when not toggled on', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: [],
+      sets: [
+        {
+          id: 'set_daily',
+          name: '데일리 루틴',
+          applyRule: 'daily',
+          items: [{ categoryKey: 'water', enabled: true }],
+        },
+      ],
+    });
+    expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-01T09:00:00+09:00'))).toEqual([]);
+  });
+
   it('matches weekend apply rule for saturday and sunday', () => {
     expect(isFixedFlowSetRuleMatchedToday('weekend', new Date('2026-07-04T09:00:00+09:00'))).toBe(true);
     expect(isFixedFlowSetRuleMatchedToday('weekend', new Date('2026-07-05T09:00:00+09:00'))).toBe(true);
     expect(isFixedFlowSetRuleMatchedToday('weekend', new Date('2026-07-06T09:00:00+09:00'))).toBe(false);
+  });
+
+  it('collects preset keys by individually applied meal slots', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: ['set_daily'],
+      activeMealSlotsBySetId: { set_daily: ['morning'] },
+      sets: [
+        {
+          id: 'set_daily',
+          name: '데일리 루틴',
+          applyRule: 'daily',
+          items: [
+            { categoryKey: 'water', enabled: true, mealSlot: 'morning' },
+            { categoryKey: 'deepwork', enabled: true, mealSlot: 'lunch' },
+          ],
+        },
+      ],
+    });
+    expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-01T09:00:00+09:00'))).toEqual([
+      'water',
+    ]);
   });
 });

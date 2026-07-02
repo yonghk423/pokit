@@ -8,7 +8,7 @@ export type ResolveTodayFixedRoutineKeysOptions = {
   excludedKeys?: Iterable<string>;
 };
 
-/** 수동 그룹(오늘 적용) + 목표 상세 요일 자동 담기 — categoryKey 중복 없이 합친다. */
+/** 오늘 적용 켠 그룹 categoryKey — categoryKey 중복 없이 합친다. */
 export function resolveTodayFixedRoutineKeys(
   flowSets: FixedFlowSetsState,
   options?: ResolveTodayFixedRoutineKeysOptions,

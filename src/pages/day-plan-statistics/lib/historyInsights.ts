@@ -1,7 +1,5 @@
-import { buildWeeklyAxisScores, type WeeklyAxisRow } from './weeklyBalanceRadar';
-
 export type InsightDimension = {
-  scope: 'daily' | 'weekly' | 'monthly';
+  scope: 'daily';
   scopeLabel: string;
   score: number;
   caption: string;
@@ -32,33 +30,13 @@ export function buildHistoryInsights(input: {
   todayCompletionRate: number;
   todayCompletedCount: number;
   sameWeekdayAverageScore: number;
-  weeklyCompletionRate: number;
-  previousWeeklyCompletionRate: number;
-  weeklyBalanceScore: number;
-  weeklyBalanceRows: WeeklyAxisRow[];
-  monthlyRate: number;
-  previousMonthlyRate: number;
-  activeDaysInMonth: number;
   streak: number;
   weekCompletionDelta: number;
 }): HistoryInsightsReport {
   const dailyScore = pct(input.todayCompletionRate);
-  const weeklyScore = pct(input.weeklyCompletionRate);
-  const monthlyScore = pct(input.monthlyRate);
-
-  const axisScores = buildWeeklyAxisScores(input.weeklyBalanceRows);
-  const sortedAxis = [...axisScores].sort((a, b) => b.percent - a.percent);
-  const strongAxis = sortedAxis[0];
-  const weakAxis = sortedAxis[sortedAxis.length - 1];
-
   const weekdayDelta = dailyScore - input.sameWeekdayAverageScore;
-  const weekRateDelta = weeklyScore - pct(input.previousWeeklyCompletionRate);
-  const monthRateDelta = pct(input.monthlyRate) - pct(input.previousMonthlyRate);
 
-  const hasData =
-    input.todayCompletedCount > 0 ||
-    input.weeklyBalanceRows.some((r) => r.value > 0) ||
-    input.activeDaysInMonth > 0;
+  const hasData = input.todayCompletedCount > 0 || input.streak > 0;
 
   const dimensions: InsightDimension[] = [
     {
@@ -73,32 +51,6 @@ export function buildHistoryInsights(input: {
             : weekdayDelta <= -5
               ? `동일 요일 평균보다 ${weekdayDelta}%p`
               : '동일 요일 평균과 비슷',
-    },
-    {
-      scope: 'weekly',
-      scopeLabel: '위클리',
-      score: weeklyScore,
-      caption:
-        weeklyScore <= 0
-          ? '이번 주 완료 기록 없음'
-          : weekRateDelta >= 8
-            ? `지난주 대비 +${weekRateDelta}%p`
-            : weekRateDelta <= -8
-              ? `지난주 대비 ${weekRateDelta}%p`
-              : strongAxis && strongAxis.percent > 0
-                ? `${strongAxis.label} 영역 중심`
-                : '이번 주 완료율 반영',
-    },
-    {
-      scope: 'monthly',
-      scopeLabel: '먼슬리',
-      score: monthlyScore,
-      caption:
-        monthRateDelta >= 8
-          ? `전 기간 대비 +${monthRateDelta}%p`
-          : monthRateDelta <= -8
-            ? `전 기간 대비 ${monthRateDelta}%p`
-            : `활동일 ${input.activeDaysInMonth}일`,
     },
   ];
 
@@ -119,27 +71,11 @@ export function buildHistoryInsights(input: {
     });
   }
 
-  if (strongAxis && strongAxis.percent >= 45) {
-    strengths.push({
-      kind: 'strength',
-      title: `${strongAxis.label} 영역이 강점`,
-      detail: `위클리 밸런스에서 ${strongAxis.label} 완료 비중이 가장 높아요.`,
-    });
-  }
-
   if (input.weekCompletionDelta > 0) {
     strengths.push({
       kind: 'strength',
-      title: '위클리 완료가 늘었어요',
-      detail: `지난 주간보다 완료가 ${input.weekCompletionDelta}회 많아요.`,
-    });
-  }
-
-  if (monthlyScore >= 70) {
-    strengths.push({
-      kind: 'strength',
-      title: '먼슬리 달성률이 높아요',
-      detail: `최근 30일 평균 완료율이 ${monthlyScore}%예요.`,
+      title: '이번 주 완료가 늘었어요',
+      detail: `지난 주보다 완료가 ${input.weekCompletionDelta}회 많아요.`,
     });
   }
 
@@ -159,77 +95,49 @@ export function buildHistoryInsights(input: {
     });
   }
 
-  if (weakAxis && weakAxis.percent === 0 && input.weeklyBalanceRows.some((r) => r.value > 0)) {
-    weaknesses.push({
-      kind: 'weakness',
-      title: `${weakAxis.label} 영역이 비어 있어요`,
-      detail: '위클리 밸런스에서 가장 오래 비어 있는 축이에요.',
-    });
-  } else if (weakAxis && strongAxis && weakAxis.key !== strongAxis.key && weakAxis.percent < 25) {
-    weaknesses.push({
-      kind: 'weakness',
-      title: `${weakAxis.label} 비중이 낮아요`,
-      detail: '다른 영역 대비 완료가 적어 균형이 한쪽으로 기울었어요.',
-    });
-  }
-
   if (input.weekCompletionDelta < 0) {
     weaknesses.push({
       kind: 'weakness',
-      title: '위클리 완료가 줄었어요',
-      detail: `지난 주간보다 ${Math.abs(input.weekCompletionDelta)}회 적어요.`,
+      title: '이번 주 완료가 줄었어요',
+      detail: `지난 주보다 ${Math.abs(input.weekCompletionDelta)}회 적어요.`,
     });
   }
 
-  if (input.weeklyBalanceScore > 0 && input.weeklyBalanceScore < 45) {
+  if (weekdayDelta <= -8 && input.todayCompletedCount > 0) {
     weaknesses.push({
       kind: 'weakness',
-      title: '위클리 밸런스가 한쪽으로 쏠렸어요',
-      detail: '건강·생산성 등 여러 영역 중 일부만 몰려 있어요. 한 축씩 번갈아 채워 보세요.',
-    });
-  }
-
-  if (monthRateDelta <= -10 && monthlyScore > 0) {
-    weaknesses.push({
-      kind: 'weakness',
-      title: '먼슬리 완료율이 내려갔어요',
-      detail: `이전 30일 대비 완료율이 ${Math.abs(monthRateDelta)}%p 낮아요.`,
+      title: '오늘 페이스가 평소보다 낮아요',
+      detail: '같은 요일 평균보다 완료율이 낮게 나왔어요.',
     });
   }
 
   const trimmedStrengths = strengths.slice(0, 3);
   const trimmedWeaknesses = weaknesses.slice(0, 3);
 
-  const dimensionScores = dimensions.map((d) => d.score).filter((s) => s > 0);
-  const overallScore =
-    dimensionScores.length > 0
-      ? Math.round(dimensionScores.reduce((a, b) => a + b, 0) / dimensionScores.length)
-      : 0;
+  const overallScore = dailyScore;
 
   let overallTitle = '기록을 쌓는 중';
-  let overallCaption = '데일리 · 위클리 · 먼슬리를 함께 보면 강점과 보완점이 보여요.';
+  let overallCaption = '데일리 완료 기록을 바탕으로 강점과 보완점을 정리해요.';
   if (!hasData) {
     overallTitle = '아직 평가할 기록이 적어요';
     overallCaption = '플로우를 완료하면 종합 인사이트가 채워져요.';
   } else if (overallScore >= 80) {
-    overallTitle = '전반적으로 잘하고 있어요';
-    overallCaption = '세 기간 모두에서 안정적인 패턴이 보여요.';
+    overallTitle = '오늘 페이스가 좋아요';
+    overallCaption = '완료 흐름이 안정적으로 이어지고 있어요.';
   } else if (overallScore >= 55) {
     overallTitle = '균형을 맞추는 중이에요';
-    overallCaption = '강점은 유지하고, 비어 있는 영역만 채우면 좋아요.';
+    overallCaption = '지금 페이스를 유지하며 빈 구간만 채우면 좋아요.';
   } else {
     overallTitle = '다시 페이스를 잡을 시점';
-    overallCaption = '작은 완료부터 데일리 → 위클리 순으로 쌓아 보세요.';
+    overallCaption = '작은 완료부터 하나씩 쌓아 보세요.';
   }
 
   const firstWeak = trimmedWeaknesses[0];
   const nextStep = !hasData
     ? '가장 부담 없는 플로우 1개를 오늘 완료해 보세요.'
     : firstWeak
-      ? firstWeak.title.includes('비어')
-        ? `${weakAxis?.label ?? '비어 있는'} 관련 플로우를 이번 주에 2회 넣어 보세요.`
-        : '아쉬운 영역을 내일 첫 순서에 배치해 보세요.'
-      : '지금 강점 영역을 유지하며 같은 페이스로 이어가면 돼요.';
+      ? '아쉬운 영역을 내일 첫 순서에 배치해 보세요.'
+      : '지금 페이스를 유지하며 같은 리듬으로 이어가면 돼요.';
 
   return {
     hasData,

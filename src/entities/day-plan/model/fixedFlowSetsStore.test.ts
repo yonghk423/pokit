@@ -24,6 +24,7 @@ function resetStore() {
   useFixedFlowSetsStore.setState({
     activeSetIds: [],
     sets: [],
+    scheduledMealSlotLayoutEnabled: false,
     todayAppliedCategoryKeys: [],
     todayAppliedRevision: 0,
     isHydrated: false,

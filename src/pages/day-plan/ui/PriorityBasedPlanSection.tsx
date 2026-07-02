@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   Keyboard,
   KeyboardAvoidingView,
@@ -69,10 +70,12 @@ import {
 } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { getPriorityCategoryGoalHint } from '../lib/priorityCategoryGoalHints';
-import { buildPriorityMealSlotSections, buildCategoryMealSlotOverrides, flattenPriorityMealSlotSectionKeys, inferMealSlotAfterFlatReorder, reorderFlatKeys, resolvePriorityMealSlot } from '../lib/priorityMealSlotSections';
+import { buildCategoryMealSlotOverrides, flattenPriorityMealSlotSectionKeys, hasExplicitMealSlotAssignments, inferMealSlotAfterFlatReorder, reorderFlatKeys, resolvePriorityMealSlot, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { PriorityMealSlotSectionHeader } from './PriorityMealSlotSectionHeader';
-import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
+import { PriorityMealSlotSetupBanner } from './PriorityMealSlotSetupBanner';
+import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
+import { TodoListPlanSection } from './TodoListPlanSection';
 
 /** 우선순위 행 완료 제거 시: 페이드 아웃 + 아래 행이 부드럽게 올라오는 레이아웃 전환 */
 const PRIORITY_ROW_EXITING = FadeOut.duration(280).easing(Easing.out(Easing.cubic));
@@ -721,6 +724,10 @@ type Props = {
   onOpenCategorySettings?: (categoryKey: string) => void;
   /** 시작 후 목록 행에서 몰입 상세 열기 */
   onOpenFocusDetail?: (categoryKey: string) => void;
+  /** 구간 미설정 안내 → 오늘의 루틴 탭 */
+  onOpenFixedRoutine?: () => void;
+  layoutMode: DayPlanLayoutMode;
+  onSelectLayoutMode: (mode: DayPlanLayoutMode) => void;
 };
 
 /* ─── 메인 ─── */
@@ -742,6 +749,9 @@ export function PriorityBasedPlanSection({
   onSelectCategory,
   onOpenCategorySettings,
   onOpenFocusDetail,
+  onOpenFixedRoutine,
+  layoutMode,
+  onSelectLayoutMode,
 }: Props) {
   useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -987,9 +997,7 @@ export function PriorityBasedPlanSection({
   const [removeConfirmCategoryKey, setRemoveConfirmCategoryKey] = useState<string | null>(null);
   const [removeConfirmSkipNextChecked, setRemoveConfirmSkipNextChecked] = useState(false);
   const [draggingPriorityKey, setDraggingPriorityKey] = useState<string | null>(null);
-  const [mealSlotScheduleOpen, setMealSlotScheduleOpen] = useState(false);
-  const { schedule: mealSlotSchedule, persistSchedule: persistMealSlotSchedule, revision: mealSlotScheduleRevision } =
-    useDayMealSlotSchedule();
+  const { schedule: mealSlotSchedule, revision: mealSlotScheduleRevision } = useDayMealSlotSchedule();
   const priorityBagRowHeightRef = useRef(52);
 
   useEffect(() => {
@@ -997,6 +1005,12 @@ export function PriorityBasedPlanSection({
   }, []);
   const planBlocks = useDayPlanStore((s) => s.blocks);
   const fixedFlowSets = useFixedFlowSetsStore((s) => s.sets);
+  const fixedFlowActiveSetIds = useFixedFlowSetsStore((s) => s.activeSetIds);
+  const activeMealSlotsBySetId = useFixedFlowSetsStore((s) => s.activeMealSlotsBySetId);
+  const todayAppliedCategoryKeys = useFixedFlowSetsStore((s) => s.todayAppliedCategoryKeys);
+  const scheduledMealSlotLayoutEnabled = useFixedFlowSetsStore(
+    (s) => s.scheduledMealSlotLayoutEnabled,
+  );
   const dayPlanDateKey = useDayPlanStore((s) => s.dateKey);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
   const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
@@ -1060,38 +1074,128 @@ export function PriorityBasedPlanSection({
   );
 
   const mealSlotOverrides = useMemo(() => {
-    const map = buildCategoryMealSlotOverrides({ sets: fixedFlowSets });
+    const map = buildCategoryMealSlotOverrides({
+      sets: fixedFlowSets,
+      activeSetIds: fixedFlowActiveSetIds,
+      activeMealSlotsBySetId,
+      todayAppliedCategoryKeys,
+    });
     for (const [key, slot] of Object.entries(priorityMealSlotOverrides)) {
       map.set(key, slot);
     }
     return map;
-  }, [fixedFlowSets, priorityMealSlotOverrides]);
+  }, [fixedFlowSets, fixedFlowActiveSetIds, activeMealSlotsBySetId, priorityMealSlotOverrides, todayAppliedCategoryKeys]);
 
-  const priorityMealSlotSections = useMemo(() => {
-    if (!priorityMealSlotLayoutEnabled) return [];
-    return buildPriorityMealSlotSections(orderedSelectedItemsForDisplay, {
+  const priorityMealSlotLayout = useMemo(() => {
+    return splitPriorityMealSlotSections(orderedSelectedItemsForDisplay, {
       nowMin: getLocalMinutesOfDayNow(),
       mealSlotOverrides,
       schedule: mealSlotSchedule,
       orderIndexByKey: priorityOrderIndexByKey,
+      explicitSlotsOnly: true,
     });
   }, [
     orderedSelectedItemsForDisplay,
     priorityOrderIndexByKey,
     categoryHintTick,
-    priorityMealSlotLayoutEnabled,
     mealSlotOverrides,
     mealSlotSchedule,
     mealSlotScheduleRevision,
   ]);
 
-  const showMealSlotLayout =
-    priorityMealSlotLayoutEnabled && priorityMealSlotSections.length > 0;
+  const priorityMealSlotSections = priorityMealSlotLayout.sections;
+  const slottedPriorityKeys = useMemo(
+    () => flattenPriorityMealSlotSectionKeys(priorityMealSlotSections),
+    [priorityMealSlotSections],
+  );
+  const slottedCount = slottedPriorityKeys.length;
+  const fullBagCount = orderedSelectedItemsForDisplay.length;
 
-  const toggleMealSlotLayout = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setPriorityMealSlotLayoutEnabled(!priorityMealSlotLayoutEnabled);
-  }, [priorityMealSlotLayoutEnabled, setPriorityMealSlotLayoutEnabled]);
+  const hasExplicitMealSlots = useMemo(
+    () => hasExplicitMealSlotAssignments(orderedSelectedItemsForDisplay, mealSlotOverrides),
+    [orderedSelectedItemsForDisplay, mealSlotOverrides],
+  );
+
+  const hasAppliedFixedRoutineToday = todayAppliedCategoryKeys.length > 0;
+
+  const showPlanListTabs =
+    hasExplicitMealSlots && slottedCount > 0 && fullBagCount > 0;
+
+  const sectionsLayoutAvailable = showPlanListTabs;
+
+  const showSectionsBlockedAlert = useCallback(() => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+
+    if (fullBagCount === 0) {
+      Alert.alert(
+        '시간대별 보기',
+        '오늘 담은 항목이 없어요. 담기에서 항목을 먼저 추가해 주세요.',
+      );
+      return;
+    }
+
+    if (!hasExplicitMealSlots) {
+      const message =
+        hasAppliedFixedRoutineToday && scheduledMealSlotLayoutEnabled
+          ? '구간별로 보려면 나만의 루틴에서 구간을 설정한 뒤 오늘 적용을 켜 주세요.'
+          : '항목에 새벽·아침·점심 같은 구간이 지정되어 있지 않아요. 나만의 루틴에서 구간을 설정한 뒤 오늘 적용을 켜 주세요.';
+      if (onOpenFixedRoutine) {
+        Alert.alert('시간대별 보기', message, [
+          { text: '닫기', style: 'cancel' },
+          { text: '나만의 루틴', onPress: onOpenFixedRoutine },
+        ]);
+      } else {
+        Alert.alert('시간대별 보기', message);
+      }
+      return;
+    }
+
+    Alert.alert('시간대별 보기', '구간에 배치된 항목이 없어요.');
+  }, [
+    fullBagCount,
+    hasAppliedFixedRoutineToday,
+    hasExplicitMealSlots,
+    onOpenFixedRoutine,
+    scheduledMealSlotLayoutEnabled,
+  ]);
+
+  const handleSelectLayoutMode = useCallback(
+    (nextMode: DayPlanLayoutMode) => {
+      if (nextMode === 'sections' && !sectionsLayoutAvailable) {
+        showSectionsBlockedAlert();
+        return;
+      }
+      onSelectLayoutMode(nextMode);
+    },
+    [onSelectLayoutMode, sectionsLayoutAvailable, showSectionsBlockedAlert],
+  );
+
+  const priorityPlanListTab: 'sections' | 'bag' = priorityMealSlotLayoutEnabled
+    ? 'sections'
+    : 'bag';
+
+  const showSectionsView =
+    hasExplicitMealSlots &&
+    slottedCount > 0 &&
+    (!showPlanListTabs || priorityPlanListTab === 'sections');
+
+  useEffect(() => {
+    if (!hasExplicitMealSlots && priorityMealSlotLayoutEnabled) {
+      setPriorityMealSlotLayoutEnabled(false);
+    }
+  }, [hasExplicitMealSlots, priorityMealSlotLayoutEnabled, setPriorityMealSlotLayoutEnabled]);
+
+  useEffect(() => {
+    if (!showPlanListTabs) return;
+    if (priorityPlanListTab === 'sections' && slottedCount === 0) {
+      setPriorityMealSlotLayoutEnabled(false);
+    }
+  }, [
+    priorityPlanListTab,
+    setPriorityMealSlotLayoutEnabled,
+    showPlanListTabs,
+    slottedCount,
+  ]);
 
   const dragReorderDelta = useCallback((translationY: number, rowHeight: number): number => {
     const threshold = rowHeight * 0.75;
@@ -1104,8 +1208,8 @@ export function PriorityBasedPlanSection({
 
   const commitPriorityDisplayReorderFromDrag = useCallback(
     (categoryKey: string, translationY: number) => {
-      const keyOrder = showMealSlotLayout
-        ? flattenPriorityMealSlotSectionKeys(priorityMealSlotSections)
+      const keyOrder = showSectionsView
+        ? slottedPriorityKeys
         : orderedSelectedItemsForDisplay.map((c) => c.key);
       const len = keyOrder.length;
       if (len < 2) return;
@@ -1117,7 +1221,7 @@ export function PriorityBasedPlanSection({
       if (to === from) return;
       const moved = reorderFlatKeys(keyOrder, from, to);
 
-      if (showMealSlotLayout) {
+      if (showSectionsView) {
         const slotOfKey = (key: string) =>
           resolvePriorityMealSlot(key, priorityOrderIndexByKey.get(key) ?? 0, mealSlotOverrides);
         const prevSlot = slotOfKey(categoryKey);
@@ -1146,7 +1250,9 @@ export function PriorityBasedPlanSection({
       priorityOrderIndexByKey,
       setPriorityCategoryOrder,
       setPriorityMealSlotOverride,
-      showMealSlotLayout,
+      showPlanListTabs,
+      showSectionsView,
+      slottedPriorityKeys,
     ],
   );
 
@@ -1725,66 +1831,16 @@ export function PriorityBasedPlanSection({
                   </Pressable>
                 </View>
               </View>
-              {bagCount > 0 ? (
-                <View style={styles.priorityTimelineHeaderActions}>
-                  {priorityMealSlotLayoutEnabled ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="시간대 설정"
-                      onPress={() => setMealSlotScheduleOpen(true)}
-                      style={({ pressed }) => [
-                        styles.mealSlotScheduleBtn,
-                        {
-                          backgroundColor: c.containerLowest,
-                          borderColor: c.border,
-                        },
-                        pressed && styles.mealSlotLayoutTogglePressed,
-                      ]}>
-                      <IconSymbol name="clock" size={14} color={c.onVariant} />
-                    </Pressable>
-                  ) : null}
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: priorityMealSlotLayoutEnabled }}
-                    accessibilityLabel={
-                      priorityMealSlotLayoutEnabled
-                        ? '목록 보기로 전환'
-                        : '새벽·아침·점심·저녁·밤 구간으로 보기'
-                    }
-                    onPress={toggleMealSlotLayout}
-                    style={({ pressed }) => [
-                      styles.mealSlotLayoutToggle,
-                      {
-                        backgroundColor: priorityMealSlotLayoutEnabled
-                          ? tabColors.activeBg
-                          : c.containerLowest,
-                        borderColor: priorityMealSlotLayoutEnabled
-                          ? tabColors.activeBorder
-                          : c.border,
-                      },
-                      pressed && styles.mealSlotLayoutTogglePressed,
-                    ]}>
-                    <IconSymbol
-                      name="sun.horizon.fill"
-                      size={15}
-                      color={
-                        priorityMealSlotLayoutEnabled ? tabColors.activeIcon : c.onVariant
-                      }
-                    />
-                    <ThemedText
-                      style={[
-                        styles.mealSlotLayoutToggleLabel,
-                        {
-                          color: priorityMealSlotLayoutEnabled
-                            ? tabColors.activeIcon
-                            : c.onVariant,
-                        },
-                      ]}>
-                      구간
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              ) : null}
+              <View style={styles.priorityTimelineHeaderActions}>
+                <DayPlanLayoutModeTabs
+                  mode={layoutMode}
+                  onSelectMode={handleSelectLayoutMode}
+                  sectionsAvailable={sectionsLayoutAvailable}
+                  onSectionsBlockedPress={showSectionsBlockedAlert}
+                  c={c}
+                  isDark={isDark}
+                />
+              </View>
             </View>
             <ScrollView
               nestedScrollEnabled
@@ -1793,8 +1849,12 @@ export function PriorityBasedPlanSection({
               contentContainerStyle={[
                 styles.priorityTimelineScrollContent,
                 { paddingBottom: TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM },
-              ]}>
-              {timelineThreeDayKeys.map((dk) => {
+              ]}
+              keyboardShouldPersistTaps={layoutMode === 'todoList' ? 'always' : 'handled'}>
+              {layoutMode === 'todoList' ? (
+                <TodoListPlanSection embedded dateLabel={formatTimelineHeaderDateKo(todayKey)} />
+              ) : (
+              timelineThreeDayKeys.map((dk) => {
                 const d = parseLocalDateKeyToDate(dk);
                 const dayNum = d ? d.getDate() : '';
                 const wd = weekdayShortKoFromDateKey(dk);
@@ -2024,6 +2084,18 @@ export function PriorityBasedPlanSection({
                             {priorityWindowLine}
                           </ThemedText>
                         ) : null}
+                        {!hasExplicitMealSlots &&
+                        hasAppliedFixedRoutineToday &&
+                        scheduledMealSlotLayoutEnabled &&
+                        onOpenFixedRoutine ? (
+                          <PriorityMealSlotSetupBanner
+                            ink={editorial.ink}
+                            muted={editorial.muted}
+                            line={editorial.line}
+                            cardBg={editorial.surface}
+                            onPressSetup={onOpenFixedRoutine}
+                          />
+                        ) : null}
                         <View style={styles.priorityInlineList}>
                           {(() => {
                             const allowBagReorder = orderedSelectedItemsForDisplay.length >= 2;
@@ -2103,10 +2175,8 @@ export function PriorityBasedPlanSection({
                               );
                             };
 
-                            if (!showMealSlotLayout) {
-                              return orderedSelectedItemsForDisplay.map((cat) =>
-                                renderBagRow(cat),
-                              );
+                            if (!showSectionsView) {
+                              return orderedSelectedItemsForDisplay.map((cat) => renderBagRow(cat));
                             }
 
                             return priorityMealSlotSections.map((section, sectionIndex) => (
@@ -2129,19 +2199,13 @@ export function PriorityBasedPlanSection({
                     ) : null}
                   </View>
                 );
-              })}
+              })
+              )}
             </ScrollView>
           </View>
         </View>
       </View>
 
-      <DayMealSlotScheduleSheet
-        visible={mealSlotScheduleOpen}
-        schedule={mealSlotSchedule}
-        isDark={isDark}
-        onClose={() => setMealSlotScheduleOpen(false)}
-        onSave={persistMealSlotSchedule}
-      />
     </View>
   );
 }
@@ -2208,34 +2272,9 @@ const styles = StyleSheet.create({
   priorityTimelineHeaderActions: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 2,
+    gap: 4,
     paddingTop: 2,
     marginLeft: 4,
-  },
-  mealSlotLayoutToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  mealSlotLayoutTogglePressed: {
-    opacity: 0.72,
-  },
-  mealSlotLayoutToggleLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-  },
-  mealSlotScheduleBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 999,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   priorityTimelineScroll: {
     flex: 1,

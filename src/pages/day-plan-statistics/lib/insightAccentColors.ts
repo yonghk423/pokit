@@ -1,13 +1,11 @@
 import { PokitIconPalette } from '@shared/config/theme';
 import { toPastelColor } from '@shared/lib/ui/toPastelColor';
 
-export function insightScopeColor(scope: 'daily' | 'weekly' | 'monthly'): string {
-  if (scope === 'daily') return PokitIconPalette.sage;
-  if (scope === 'weekly') return PokitIconPalette.teal;
-  return PokitIconPalette.tealMuted;
+export function insightScopeColor(scope: 'daily'): string {
+  return PokitIconPalette.sage;
 }
 
-export function insightScopePastel(scope: 'daily' | 'weekly' | 'monthly'): string {
+export function insightScopePastel(scope: 'daily'): string {
   return toPastelColor(insightScopeColor(scope));
 }
 

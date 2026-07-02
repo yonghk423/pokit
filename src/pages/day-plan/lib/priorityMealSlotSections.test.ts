@@ -1,4 +1,10 @@
-import { buildPriorityMealSlotSections, inferMealSlotAfterFlatReorder, reorderFlatKeys } from './priorityMealSlotSections';
+import {
+  buildPriorityMealSlotSections,
+  hasExplicitMealSlotAssignments,
+  inferMealSlotAfterFlatReorder,
+  reorderFlatKeys,
+  splitPriorityMealSlotSections,
+} from './priorityMealSlotSections';
 import { resolvePriorityMealSlot } from '@shared/lib/storage';
 
 describe('buildPriorityMealSlotSections with custom schedule', () => {
@@ -30,6 +36,30 @@ describe('resolvePriorityMealSlot', () => {
   it('uses overrides when provided', () => {
     const overrides = new Map([['water', 'night' as const]]);
     expect(resolvePriorityMealSlot('water', 0, overrides)).toBe('night');
+  });
+});
+
+describe('splitPriorityMealSlotSections explicit slots only', () => {
+  it('keeps items without explicit override in unslotted list', () => {
+    const items = [
+      { key: 'water', label: '수분' },
+      { key: 'reading', label: '독서' },
+    ];
+    const overrides = new Map([['reading', 'morning' as const]]);
+    const { sections, unslottedItems } = splitPriorityMealSlotSections(items, {
+      mealSlotOverrides: overrides,
+      explicitSlotsOnly: true,
+    });
+    expect(sections).toHaveLength(1);
+    expect(sections[0]?.slot).toBe('morning');
+    expect(sections[0]?.items.map((item) => item.key)).toEqual(['reading']);
+    expect(unslottedItems.map((item) => item.key)).toEqual(['water']);
+  });
+
+  it('reports explicit assignments only when override exists', () => {
+    const items = [{ key: 'water', label: '수분' }];
+    expect(hasExplicitMealSlotAssignments(items, new Map())).toBe(false);
+    expect(hasExplicitMealSlotAssignments(items, new Map([['water', 'morning']]))).toBe(true);
   });
 });
 

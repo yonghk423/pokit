@@ -1,5 +1,6 @@
 import {
   LEGACY_WEEKDAY_SET_ID,
+  isBuiltinPresetScheduleSet,
   mergeBuiltInPresetSets,
   shouldMigrateAwayScheduledSet,
 } from './defaultFixedFlowSets';
@@ -15,9 +16,8 @@ import {
   saveGoalDetailCategoryConfig,
 } from './goalDetailSettingsStorage';
 import { localStorageClient } from './localStorageClient';
-import { collectAutoScheduledCategoryKeys } from './routineApplyWeekdaysStorage';
 import { StorageKeys } from './storageKeys';
-import { normalizeDayMealSlot, type DayMealSlot } from './dayMealSlot';
+import { normalizeDayMealSlot, resolveFixedFlowItemMealSlot, type DayMealSlot } from './dayMealSlot';
 
 export type { DayMealSlot } from './dayMealSlot';
 
@@ -47,7 +47,11 @@ export type FixedFlowSet = {
 export type FixedFlowSetsState = {
   /** 오늘 담기에 적용 중인 그룹 id (여러 개 가능) */
   activeSetIds: string[];
+  /** preset 구간별 오늘 적용 슬롯(비어있으면 세트 전체 적용) */
+  activeMealSlotsBySetId?: Record<string, DayMealSlot[]>;
   sets: FixedFlowSet[];
+  /** 데일리·주말 고정 루틴 — 시간대 구간 레이아웃 (기본: 목록) */
+  scheduledMealSlotLayoutEnabled?: boolean;
 };
 
 type PersistedShape = Partial<FixedFlowSetsState> & {
@@ -203,10 +207,9 @@ function hadRemovedScheduledSets(raw: unknown): boolean {
   });
 }
 
+/** 레거시 자동 적용 id — activeSetIds에서 제외(마이그레이션용) */
 const LEGACY_AUTO_ACTIVE_SET_IDS = new Set([
   LEGACY_WEEKDAY_SET_ID,
-  'set_daily',
-  'set_weekend',
   'set_always',
 ]);
 
@@ -239,13 +242,39 @@ function normalizeActiveSetIds(raw: PersistedShape, sets: FixedFlowSet[]): strin
   return out;
 }
 
+function normalizeActiveMealSlotsBySetId(
+  raw: PersistedShape,
+  sets: FixedFlowSet[],
+): Record<string, DayMealSlot[]> {
+  const fromRaw = raw.activeMealSlotsBySetId;
+  if (!fromRaw || typeof fromRaw !== 'object' || Array.isArray(fromRaw)) return {};
+
+  const validPresetSetIds = new Set(
+    sets.filter((set) => isBuiltinPresetScheduleSet(set)).map((set) => set.id),
+  );
+  const out: Record<string, DayMealSlot[]> = {};
+  for (const [setId, slotsRaw] of Object.entries(fromRaw as Record<string, unknown>)) {
+    if (!validPresetSetIds.has(setId)) continue;
+    if (!Array.isArray(slotsRaw)) continue;
+    const nextSlots = [...new Set(slotsRaw.map((slot) => normalizeDayMealSlot(slot)).filter(Boolean))];
+    if (nextSlots.length > 0) out[setId] = nextSlots;
+  }
+  return out;
+}
+
 export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState {
   const raw = input && typeof input === 'object' ? (input as PersistedShape) : {};
   const sets = mergeBuiltInPresetSets(
     migrateRemovedScheduledSets(migrateLegacyBuiltInSets(normalizeSets(raw.sets))),
   );
   const activeSetIds = normalizeActiveSetIds(raw, sets);
-  return { activeSetIds, sets };
+  const activeMealSlotsBySetId = normalizeActiveMealSlotsBySetId(raw, sets);
+  return {
+    activeSetIds,
+    activeMealSlotsBySetId,
+    sets,
+    scheduledMealSlotLayoutEnabled: raw.scheduledMealSlotLayoutEnabled === true,
+  };
 }
 
 export function isFixedFlowSetRuleMatchedToday(
@@ -264,43 +293,39 @@ export function isFixedFlowSetMatchedToday(
   return isApplyWeekdayMatchedToday(resolveApplyWeekdays(set), now);
 }
 
-function collectEffectiveActiveSetIds(
-  state: FixedFlowSetsState,
-  now: Date,
-): Set<string> {
-  const activeSetIds = new Set(state.activeSetIds);
-  for (const set of state.sets) {
-    if (isFixedFlowSetMatchedToday(set, now)) {
-      activeSetIds.add(set.id);
-    }
-  }
-  return activeSetIds;
+function collectEffectiveActiveSetIds(state: FixedFlowSetsState): Set<string> {
+  return new Set(state.activeSetIds);
 }
 
-/** 데일리·주말 자동 + 수동 그룹 + 목표 상세 요일 자동 담기 */
+/** 오늘 적용 켠 그룹 categoryKey */
 export function collectActiveFixedFlowCategoryKeys(
   state: FixedFlowSetsState,
   now: Date = new Date(),
 ): string[] {
-  const active = collectEffectiveActiveSetIds(state, now);
+  void now;
+  const active = collectEffectiveActiveSetIds(state);
+  const activeMealSlotsBySetId = state.activeMealSlotsBySetId ?? {};
   const seen = new Set<string>();
   const out: string[] = [];
 
   for (const set of state.sets) {
     if (!active.has(set.id)) continue;
-    for (const item of set.items) {
+    const activeSlotsRaw = activeMealSlotsBySetId[set.id];
+    const activeSlots =
+      isBuiltinPresetScheduleSet(set) && Array.isArray(activeSlotsRaw) && activeSlotsRaw.length > 0
+        ? new Set(activeSlotsRaw)
+        : null;
+    for (const [index, item] of set.items.entries()) {
       if (item.enabled === false) continue;
+      if (activeSlots) {
+        const slot = resolveFixedFlowItemMealSlot(item, index);
+        if (!activeSlots.has(slot)) continue;
+      }
       const key = item.categoryKey.trim();
       if (!key || seen.has(key)) continue;
       seen.add(key);
       out.push(key);
     }
-  }
-
-  for (const key of collectAutoScheduledCategoryKeys(now)) {
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(key);
   }
 
   return out;

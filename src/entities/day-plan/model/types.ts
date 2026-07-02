@@ -1,3 +1,20 @@
+export type TodoPriority = 'high' | 'medium' | 'low';
+
+/** 투두 리스트 모드 — 사용자가 직접 적는 할 일 행 */
+export type DayPlanTodoItem = {
+  id: string;
+  /** 할 일 내용 */
+  what: string;
+  /** 대상·장소·담당 */
+  who: string;
+  priority: TodoPriority;
+  startMinutes: number;
+  endMinutes: number;
+  inProgress: boolean;
+  isDone: boolean;
+  order: number;
+};
+
 /** 새 플로우 설정 — 퀵메모 모드에서 캡처만 하다가 시간/우선순위로 옮길 수 있는 항목 */
 export type DayPlanQuickMemo = {
   id: string;

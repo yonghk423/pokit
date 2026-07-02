@@ -25,6 +25,8 @@ type Props = {
   initialLabel: string;
   initialSubtitle: string;
   onSave: (input: { label: string; subtitle: string }) => void;
+  onDelete?: () => void;
+  deleteHint?: string;
   isDark: boolean;
   ink: string;
   muted: string;
@@ -37,6 +39,8 @@ export function EditCatalogGroupSheet({
   initialLabel,
   initialSubtitle,
   onSave,
+  onDelete,
+  deleteHint,
   isDark,
   ink,
   muted,
@@ -148,6 +152,30 @@ export function EditCatalogGroupSheet({
               />
             </View>
           </View>
+
+          {onDelete ? (
+            <View style={styles.deleteWrap}>
+              <ThemedText style={[styles.deleteHint, { color: muted }]}>
+                {deleteHint ?? '묶음을 삭제하면 안에 있던 항목은 다른 묶음으로 옮겨져요.'}
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="묶음 삭제"
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onDelete();
+                }}
+                style={({ pressed }) => [
+                  styles.deleteBtn,
+                  {
+                    borderColor: 'rgba(239,68,68,0.42)',
+                    backgroundColor: pressed ? 'rgba(239,68,68,0.08)' : 'transparent',
+                  },
+                ]}>
+                <ThemedText style={styles.deleteBtnText}>묶음 삭제</ThemedText>
+              </Pressable>
+            </View>
+          ) : null}
 
           <View style={styles.ctaWrap}>
             <Pressable
@@ -269,6 +297,29 @@ const styles = StyleSheet.create({
   ctaWrap: {
     paddingHorizontal: 22,
     paddingTop: 8,
+  },
+  deleteWrap: {
+    paddingHorizontal: 22,
+    paddingTop: 4,
+    gap: 10,
+  },
+  deleteHint: {
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 17,
+  },
+  deleteBtn: {
+    minHeight: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#dc2626',
+    letterSpacing: -0.15,
   },
   cta: {
     minHeight: 50,
