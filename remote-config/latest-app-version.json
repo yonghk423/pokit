@@ -1,7 +1,9 @@
 {
-  "latestVersion": "1.4.2",
+  "latestVersion": "1.5.0",
   "highlights": [
-    "앱 안정성과 사용 경험을 개선했어요."
+    "City Pop 미니멀 스타일로 화면 디자인을 새롭게 정리했어요.",
+    "플랫·직각 UI와 새 타이포그래피로 가독성을 높였어요.",
+    "잠금화면 메모 입력 글자 크기를 조정했어요."
   ],
   "storeUrls": {
     "ios": "https://apps.apple.com/app/id6762331629",
