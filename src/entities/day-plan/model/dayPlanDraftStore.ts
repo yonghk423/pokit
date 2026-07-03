@@ -27,9 +27,6 @@ type DayPlanDraftState = {
   completedFocusCategoryKeys: string[];
   /** 우선순위에서 항목을 뺐다가 다시 담을 때 플랜 완료만으로 취소선이 남지 않게 막는 키 */
   planCompletionDismissedKeys: string[];
-  /** 오늘 담기에서 사용자가 직접 뺀 항목. 고정 플로우 자동 보강에서 제외한다. */
-  priorityBagDismissedDateKey: string;
-  priorityBagDismissedKeys: string[];
   /** 우선 순위 일정 적용 기간 시작일 (YYYY-MM-DD) */
   priorityPlanDateKey: string;
   /** 우선 순위 일정 적용 기간 종료일 (YYYY-MM-DD) */
@@ -55,8 +52,12 @@ type DayPlanDraftState = {
   quickMemoDraft: string;
   /** 데일리 담기 — 아침·점심·저녁 구간 헤더 레이아웃 (기본: 목록) */
   priorityMealSlotLayoutEnabled: boolean;
+  /** 데일리 — 세로 스파인 타임라인 레이아웃 */
+  prioritySpineLayoutEnabled: boolean;
   /** 담기 목록 — 고정 루틴 외 항목 시간대 */
   priorityMealSlotOverrides: Record<string, DayMealSlot>;
+  /** 구간(시간대) 보기 — 사용자가 직접 지정한 시간대 */
+  prioritySectionsMealSlots: Record<string, DayMealSlot>;
   isHydrated: boolean;
   hydrate: () => void;
   setPlanMode: (mode: PlanMode) => void;
@@ -67,15 +68,6 @@ type DayPlanDraftState = {
   /** 우선순위 목록 변경 시 목록 밖 키 제거 */
   filterCompletedFocusKeysToPriorityOrder: (order: string[]) => void;
   clearCompletedFocusCategoryKeys: () => void;
-  /**
-   * 완료(취소선) 처리된 담기 행을 순서에서 제거하고, 체크 완료 기록을 지움.
-   * 집중 중이면 일정 완료만으로 취소선이 남는 경우를 위해 `planCompletionDismissForKeys`에 넣은 키는 담기 화면에서도 완료 표시를 끈다.
-   */
-  removeCompletedPriorityBagRows: (
-    removeKeys: string[],
-    planCompletionDismissForKeys: string[],
-  ) => void;
-  clearPriorityBagDismissedKeys: () => void;
   addPlanCompletionDismissedKey: (key: string) => void;
   clearPlanCompletionDismissedKeys: () => void;
   setPriorityPlanDateKey: (value: string) => void;
@@ -98,7 +90,12 @@ type DayPlanDraftState = {
   bumpWaterReminderSyncEpoch: () => void;
   setQuickMemoDraft: (value: string) => void;
   setPriorityMealSlotLayoutEnabled: (value: boolean) => void;
+  setPrioritySpineLayoutEnabled: (value: boolean) => void;
   setPriorityMealSlotOverride: (categoryKey: string, mealSlot: DayMealSlot | null) => void;
+  /** 기존 지정을 유지한 채 누락 항목만 구간을 채웁니다. */
+  mergePriorityMealSlotOverrides: (incoming: Record<string, DayMealSlot>) => void;
+  setPrioritySectionsMealSlot: (categoryKey: string, mealSlot: DayMealSlot | null) => void;
+  mergePrioritySectionsMealSlots: (incoming: Record<string, DayMealSlot>) => void;
 };
 
 function createInitialPriorityWindow() {
@@ -117,14 +114,28 @@ function normalizePriorityMealSlotOverrides(raw: unknown): Record<string, DayMea
   return out;
 }
 
+function pruneMealSlotRecordForOrder(
+  record: Record<string, DayMealSlot>,
+  order: readonly string[],
+): Record<string, DayMealSlot> {
+  const allowed = new Set(order);
+  const next = { ...record };
+  let changed = false;
+  for (const key of Object.keys(next)) {
+    if (!allowed.has(key)) {
+      delete next[key];
+      changed = true;
+    }
+  }
+  return changed ? next : record;
+}
+
 function createInitialState() {
   return {
     planMode: 'priority' as PlanMode,
     isFocusStarted: false,
     completedFocusCategoryKeys: [] as string[],
     planCompletionDismissedKeys: [] as string[],
-    priorityBagDismissedDateKey: getLocalDateKey(),
-    priorityBagDismissedKeys: [] as string[],
     priorityPlanDateKey: getLocalDateKey(),
     priorityPlanDateKeyEnd: getLocalDateKey(),
     priorityPlanExplicitMultiDay: false,
@@ -137,7 +148,9 @@ function createInitialState() {
     waterReminderSyncEpoch: 0,
     quickMemoDraft: '',
     priorityMealSlotLayoutEnabled: false,
+    prioritySpineLayoutEnabled: false,
     priorityMealSlotOverrides: {} as Record<string, DayMealSlot>,
+    prioritySectionsMealSlots: {} as Record<string, DayMealSlot>,
   };
 }
 
@@ -164,10 +177,6 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         : raw.priorityPlanDateKey;
     const keepRange = rangeHi >= today;
 
-    const dismissedDateKey =
-      typeof raw.priorityBagDismissedDateKey === 'string' ? raw.priorityBagDismissedDateKey : today;
-    const keepDismissed = dismissedDateKey === today;
-
     set({
       planMode:
         raw.planMode === 'quickMemo'
@@ -182,11 +191,6 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       planCompletionDismissedKeys: Array.isArray(raw.planCompletionDismissedKeys)
         ? raw.planCompletionDismissedKeys
         : [],
-      priorityBagDismissedDateKey: today,
-      priorityBagDismissedKeys:
-        keepDismissed && Array.isArray(raw.priorityBagDismissedKeys)
-          ? raw.priorityBagDismissedKeys.filter((k): k is string => typeof k === 'string' && k.trim().length > 0)
-          : [],
       priorityPlanDateKey: keepRange ? raw.priorityPlanDateKey : today,
       priorityPlanDateKeyEnd: keepRange ? raw.priorityPlanDateKeyEnd : today,
       priorityPlanExplicitMultiDay: keepRange ? Boolean(raw.priorityPlanExplicitMultiDay) : false,
@@ -198,7 +202,9 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       routineHistoryPlannedKeysByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPlannedKeysByDate),
       quickMemoDraft: typeof raw.quickMemoDraft === 'string' ? raw.quickMemoDraft : '',
       priorityMealSlotLayoutEnabled: Boolean(raw.priorityMealSlotLayoutEnabled),
+      prioritySpineLayoutEnabled: Boolean(raw.prioritySpineLayoutEnabled),
       priorityMealSlotOverrides: normalizePriorityMealSlotOverrides(raw.priorityMealSlotOverrides),
+      prioritySectionsMealSlots: normalizePriorityMealSlotOverrides(raw.prioritySectionsMealSlots),
       isHydrated: true,
     });
     syncTodayTabWithFixedRoutineApply();
@@ -260,46 +266,6 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     set((s) => {
       if (s.completedFocusCategoryKeys.length === 0) return s;
       return { completedFocusCategoryKeys: [] };
-    }),
-  removeCompletedPriorityBagRows: (removeKeys, planCompletionDismissForKeys) =>
-    set((s) => {
-      if (removeKeys.length === 0) return s;
-      const remove = new Set(removeKeys);
-      const nextOrder = s.priorityCategoryOrder.filter((k) => !remove.has(k));
-      const nextFocus = s.completedFocusCategoryKeys.filter((k) => !remove.has(k));
-      const nextDismissed = [...s.planCompletionDismissedKeys];
-      const today = getLocalDateKey();
-      const currentBagDismissed = s.priorityBagDismissedDateKey === today ? s.priorityBagDismissedKeys : [];
-      const nextBagDismissed = [...currentBagDismissed];
-      for (const k of planCompletionDismissForKeys) {
-        if (!nextDismissed.includes(k)) nextDismissed.push(k);
-      }
-      for (const k of removeKeys) {
-        if (!nextBagDismissed.includes(k)) nextBagDismissed.push(k);
-      }
-      const emptied = nextOrder.length === 0;
-      let routineHistoryPendingByDate = s.routineHistoryPendingByDate;
-      for (const k of removeKeys) {
-        routineHistoryPendingByDate = removeRoutineHistoryPending(
-          routineHistoryPendingByDate,
-          today,
-          k,
-        );
-      }
-      return {
-        priorityCategoryOrder: nextOrder,
-        completedFocusCategoryKeys: emptied ? [] : nextFocus,
-        planCompletionDismissedKeys: emptied ? [] : nextDismissed,
-        priorityBagDismissedDateKey: today,
-        priorityBagDismissedKeys: nextBagDismissed,
-        isFocusStarted: emptied ? false : s.isFocusStarted,
-        routineHistoryPendingByDate,
-      };
-    }),
-  clearPriorityBagDismissedKeys: () =>
-    set({
-      priorityBagDismissedDateKey: getLocalDateKey(),
-      priorityBagDismissedKeys: [],
     }),
   addPlanCompletionDismissedKey: (key) =>
     set((s) => ({
@@ -387,8 +353,6 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       priorityCategoryOrder: [],
       completedFocusCategoryKeys: [],
       planCompletionDismissedKeys: [],
-      priorityBagDismissedDateKey: today,
-      priorityBagDismissedKeys: [],
       isFocusStarted: false,
     });
   },
@@ -407,7 +371,20 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
               priorityCategoryOrder,
             )
           : s.routineHistoryPlannedKeysByDate;
-      return { priorityCategoryOrder, routineHistoryPlannedKeysByDate };
+      const priorityMealSlotOverrides = pruneMealSlotRecordForOrder(
+        s.priorityMealSlotOverrides,
+        priorityCategoryOrder,
+      );
+      const prioritySectionsMealSlots = pruneMealSlotRecordForOrder(
+        s.prioritySectionsMealSlots,
+        priorityCategoryOrder,
+      );
+      return {
+        priorityCategoryOrder,
+        routineHistoryPlannedKeysByDate,
+        priorityMealSlotOverrides,
+        prioritySectionsMealSlots,
+      };
     }),
   clearRoutineHistoryPendingForDate: (dateKey) =>
     set((s) => ({
@@ -421,7 +398,16 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   bumpWaterReminderSyncEpoch: () =>
     set((s) => ({ waterReminderSyncEpoch: s.waterReminderSyncEpoch + 1 })),
   setQuickMemoDraft: (value) => set({ quickMemoDraft: value }),
-  setPriorityMealSlotLayoutEnabled: (value) => set({ priorityMealSlotLayoutEnabled: value }),
+  setPriorityMealSlotLayoutEnabled: (value) =>
+    set((s) => ({
+      priorityMealSlotLayoutEnabled: value,
+      prioritySpineLayoutEnabled: value ? false : s.prioritySpineLayoutEnabled,
+    })),
+  setPrioritySpineLayoutEnabled: (value) =>
+    set((s) => ({
+      prioritySpineLayoutEnabled: value,
+      priorityMealSlotLayoutEnabled: value ? false : s.priorityMealSlotLayoutEnabled,
+    })),
   setPriorityMealSlotOverride: (categoryKey, mealSlot) =>
     set((s) => {
       const key = categoryKey.trim();
@@ -430,6 +416,42 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       if (mealSlot) next[key] = mealSlot;
       else delete next[key];
       return { priorityMealSlotOverrides: next };
+    }),
+  mergePriorityMealSlotOverrides: (incoming) =>
+    set((s) => {
+      const next = { ...s.priorityMealSlotOverrides };
+      let changed = false;
+      for (const [rawKey, slot] of Object.entries(incoming)) {
+        const key = rawKey.trim();
+        const normalized = normalizeDayMealSlot(slot);
+        if (!key || !normalized || next[key]) continue;
+        next[key] = normalized;
+        changed = true;
+      }
+      return changed ? { priorityMealSlotOverrides: next } : s;
+    }),
+  setPrioritySectionsMealSlot: (categoryKey, mealSlot) =>
+    set((s) => {
+      const key = categoryKey.trim();
+      if (!key) return s;
+      const next = { ...s.prioritySectionsMealSlots };
+      if (mealSlot) next[key] = mealSlot;
+      else delete next[key];
+      return { prioritySectionsMealSlots: next };
+    }),
+  mergePrioritySectionsMealSlots: (incoming) =>
+    set((s) => {
+      const next = { ...s.prioritySectionsMealSlots };
+      let changed = false;
+      for (const [rawKey, slot] of Object.entries(incoming)) {
+        const key = rawKey.trim();
+        const normalized = normalizeDayMealSlot(slot);
+        if (!key || !normalized) continue;
+        if (next[key] === normalized) continue;
+        next[key] = normalized;
+        changed = true;
+      }
+      return changed ? { prioritySectionsMealSlots: next } : s;
     }),
 }));
 
@@ -445,8 +467,6 @@ useDayPlanDraftStore.subscribe((state) => {
     isFocusStarted: state.isFocusStarted,
     completedFocusCategoryKeys: state.completedFocusCategoryKeys,
     planCompletionDismissedKeys: state.planCompletionDismissedKeys,
-    priorityBagDismissedDateKey: state.priorityBagDismissedDateKey,
-    priorityBagDismissedKeys: state.priorityBagDismissedKeys,
     priorityPlanDateKey: state.priorityPlanDateKey,
     priorityPlanDateKeyEnd: state.priorityPlanDateKeyEnd,
     priorityPlanExplicitMultiDay: state.priorityPlanExplicitMultiDay,
@@ -458,7 +478,9 @@ useDayPlanDraftStore.subscribe((state) => {
     routineHistoryPlannedKeysByDate: state.routineHistoryPlannedKeysByDate,
     quickMemoDraft: state.quickMemoDraft,
     priorityMealSlotLayoutEnabled: state.priorityMealSlotLayoutEnabled,
+    prioritySpineLayoutEnabled: state.prioritySpineLayoutEnabled,
     priorityMealSlotOverrides: state.priorityMealSlotOverrides,
+    prioritySectionsMealSlots: state.prioritySectionsMealSlots,
   });
   syncWidgetTimelineFromStorage();
 });
@@ -471,8 +493,6 @@ function persistDayPlanDraft(): void {
     isFocusStarted: s.isFocusStarted,
     completedFocusCategoryKeys: s.completedFocusCategoryKeys,
     planCompletionDismissedKeys: s.planCompletionDismissedKeys,
-    priorityBagDismissedDateKey: s.priorityBagDismissedDateKey,
-    priorityBagDismissedKeys: s.priorityBagDismissedKeys,
     priorityPlanDateKey: s.priorityPlanDateKey,
     priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
     priorityPlanExplicitMultiDay: s.priorityPlanExplicitMultiDay,
@@ -484,7 +504,9 @@ function persistDayPlanDraft(): void {
     routineHistoryPlannedKeysByDate: s.routineHistoryPlannedKeysByDate,
     quickMemoDraft: s.quickMemoDraft,
     priorityMealSlotLayoutEnabled: s.priorityMealSlotLayoutEnabled,
+    prioritySpineLayoutEnabled: s.prioritySpineLayoutEnabled,
     priorityMealSlotOverrides: s.priorityMealSlotOverrides,
+    prioritySectionsMealSlots: s.prioritySectionsMealSlots,
   });
 }
 

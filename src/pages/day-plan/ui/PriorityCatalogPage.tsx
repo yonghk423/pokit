@@ -23,16 +23,16 @@ import {
   isCustomFlowCategoryKey,
   isPriorityWindowEndedForToday,
   isSystemCatalogGroupKey,
+  notifyFixedFlowApplyScheduleChanged,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
   useDayPlanDraftStore,
   useDayPlanStore,
   useFixedFlowSetsStore,
-  notifyFixedFlowApplyScheduleChanged,
 } from '@entities/day-plan';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
-import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { PokitIconPalette } from '@shared/config/theme';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   appendCustomFlowCatalogEntry,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
@@ -41,8 +41,10 @@ import {
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
+  loadRoutineCatalogSelectionKeys,
   resolveCatalogItemGroupKey,
   saveGoalDetailCategoryConfig,
+  saveRoutineCatalogSelectionKeys,
   updateCatalogItemGroup,
   updateCustomCatalogGroup,
   updateSystemCatalogGroupMeta,
@@ -203,6 +205,16 @@ export function PriorityCatalogPage() {
   useFocusEffect(
     useCallback(() => {
       reloadCatalogData();
+      const order = useDayPlanDraftStore.getState().priorityCategoryOrder;
+      const saved = loadRoutineCatalogSelectionKeys();
+      if (saved.length === 0 && order.length > 0) {
+        saveRoutineCatalogSelectionKeys(order);
+        return;
+      }
+      const missing = saved.filter((key) => !order.includes(key));
+      if (missing.length > 0) {
+        useDayPlanDraftStore.getState().setPriorityCategoryOrder([...order, ...missing]);
+      }
     }, [reloadCatalogData]),
   );
 
@@ -335,6 +347,7 @@ export function PriorityCatalogPage() {
         ? priorityCategoryOrder.filter((k) => k !== key)
         : [...priorityCategoryOrder, key];
       setPriorityCategoryOrder(nextOrder);
+      saveRoutineCatalogSelectionKeys(nextOrder);
     },
     [
       animateListMutation,
@@ -481,6 +494,7 @@ export function PriorityCatalogPage() {
               hideStandardCatalogKey(categoryKey);
               const nextOrder = priorityCategoryOrder.filter((k) => k !== categoryKey);
               setPriorityCategoryOrder(nextOrder);
+              saveRoutineCatalogSelectionKeys(nextOrder);
               filterCompletedFocusKeysToPriorityOrder(nextOrder);
               bumpCategoryLabelEpoch();
               reloadCatalogData();
@@ -600,9 +614,9 @@ export function PriorityCatalogPage() {
         onDelete={
           editGroupSheet
             ? () => {
-                if (!editGroupSheet) return;
-                onDeleteCatalogGroup(editGroupSheet.groupKey, editGroupSheet.label);
-              }
+              if (!editGroupSheet) return;
+              onDeleteCatalogGroup(editGroupSheet.groupKey, editGroupSheet.label);
+            }
             : undefined
         }
         deleteHint={

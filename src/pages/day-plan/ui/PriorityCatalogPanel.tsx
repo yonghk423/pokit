@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
+import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
@@ -446,17 +446,17 @@ function GroupSectionBlock({
       <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
         {section.items.length > 0
           ? renderRows(
-              section.items,
-              editorial,
-              isDark,
-              priorityCategoryOrder,
-              isFocusStarted,
-              isCatalogRowCompleted,
-              onCatalogTap,
-              onOpenCategorySettings,
-              onMoveCustomFlow,
-              onDeleteCatalogItem,
-            )
+            section.items,
+            editorial,
+            isDark,
+            priorityCategoryOrder,
+            isFocusStarted,
+            isCatalogRowCompleted,
+            onCatalogTap,
+            onOpenCategorySettings,
+            onMoveCustomFlow,
+            onDeleteCatalogItem,
+          )
           : null}
       </View>
     </View>

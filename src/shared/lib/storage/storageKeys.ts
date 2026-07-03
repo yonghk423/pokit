@@ -14,8 +14,6 @@ export const StorageKeys = {
   fixedFlowSets: 'pokit:fixed-flow-sets',
   /** 첫 실행 하루 주기(시작·마무리 시각) 온보딩 완료 여부 */
   dailyRhythmOnboarding: 'pokit:daily-rhythm-onboarding',
-  /** 우선순위 완료 행 X(담기에서 빼기) 확인창 생략 여부 */
-  priorityBagRemoveConfirmSkip: 'pokit:priority-bag-remove-confirm-skip',
   /** 데이플랜 화면 드래프트(모드/시작·마무리/순서 등) */
   dayPlanDraft: 'pokit:day-plan-draft',
   /** 투두 리스트 모드 — 날짜별 할 일 표 */
@@ -40,6 +38,10 @@ export const StorageKeys = {
   hiddenStandardCatalogKeys: 'pokit:hidden-standard-catalog-keys',
   /** 데일리 시간대 구간(새벽·아침·점심·저녁·밤) 시작 시각 */
   dayMealSlotSchedule: 'pokit:day-meal-slot-schedule',
+  /** 마지막으로 확인한 앱 마케팅 버전(업데이트 안내용) */
+  lastSeenAppVersion: 'pokit:last-seen-app-version',
+  /** 스토어 업데이트 유도 모달을 닫은 최신 버전 */
+  updateAvailableDismissedVersion: 'pokit:update-available-dismissed-version',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];
@@ -58,7 +60,6 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   priorityCatalogFixedRoutines: 'lockflow:priority-catalog-fixed-routines',
   fixedFlowSets: 'lockflow:fixed-flow-sets',
   dailyRhythmOnboarding: 'lockflow:daily-rhythm-onboarding',
-  priorityBagRemoveConfirmSkip: 'lockflow:priority-bag-remove-confirm-skip',
   dayPlanDraft: 'lockflow:day-plan-draft',
   dayPlanTodos: 'lockflow:day-plan-todos',
   horizonGoals: 'lockflow:horizon-goals',
@@ -71,4 +72,6 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   dismissedCatalogGroups: 'lockflow:dismissed-catalog-groups',
   hiddenStandardCatalogKeys: 'lockflow:hidden-standard-catalog-keys',
   dayMealSlotSchedule: 'lockflow:day-meal-slot-schedule',
+  lastSeenAppVersion: 'lockflow:last-seen-app-version',
+  updateAvailableDismissedVersion: 'lockflow:update-available-dismissed-version',
 };

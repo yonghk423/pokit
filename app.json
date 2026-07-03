@@ -47,6 +47,7 @@
     },
     "extra": {
       "router": {},
+      "appUpdateManifestUrl": "https://raw.githubusercontent.com/yonghk423/pokit/main/remote-config/latest-app-version.json",
       "eas": {
         "projectId": "cf511aec-1358-4869-ac51-99875807f10a"
       }

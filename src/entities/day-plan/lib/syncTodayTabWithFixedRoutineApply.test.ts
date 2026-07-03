@@ -11,6 +11,15 @@ describe('syncPriorityOrderWithAppliedFixedRoutines', () => {
     expect(syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed)).toEqual(['custom']);
   });
 
+  it('keeps routine-catalog-selected fixed-flow keys when not applied today', () => {
+    const catalog = new Set(['water']);
+    const order = ['water', 'reading', 'custom'];
+    expect(syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed, catalog)).toEqual([
+      'water',
+      'custom',
+    ]);
+  });
+
   it('prepends applied keys missing from order', () => {
     const order = ['custom'];
     expect(
@@ -31,12 +40,11 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     priorityCategoryOrder: ['water', 'reading', 'custom'],
     priorityMealSlotOverrides: { water: 'morning' as const, reading: 'morning' as const },
     priorityMealSlotLayoutEnabled: true,
-    priorityBagDismissedDateKey: '2026-07-02',
-    priorityBagDismissedKeys: [] as string[],
     todayAppliedCategoryKeys: [] as string[],
     activeSetIds: [] as string[],
     activeMealSlotsBySetId: {} as Record<string, 'morning'>,
     scheduledMealSlotLayoutEnabled: false,
+    routineCatalogSelectionKeys: [] as string[],
     fixedFlowSets: [
       {
         id: 'preset-daily',
@@ -58,7 +66,27 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     });
   });
 
-  it('merges meal slot overrides for applied fixed routines without explicit draft override', () => {
+  it('keeps routine-catalog-selected water on today tab without fixed routine apply', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      priorityCategoryOrder: ['water'],
+      priorityMealSlotOverrides: {},
+      routineCatalogSelectionKeys: ['water'],
+    });
+    expect(patch).toBeNull();
+  });
+
+  it('keeps meal slot overrides for routine-catalog-selected fixed routines', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      priorityCategoryOrder: ['water', 'reading'],
+      priorityMealSlotOverrides: { water: 'dawn', reading: 'dawn' },
+      routineCatalogSelectionKeys: ['water', 'reading'],
+    });
+    expect(patch).toBeNull();
+  });
+
+  it('does not auto-fill meal slot overrides for applied fixed routines', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,
       priorityMealSlotOverrides: {},
@@ -68,7 +96,6 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     });
     expect(patch).toEqual({
       priorityCategoryOrder: ['water', 'custom'],
-      priorityMealSlotOverrides: { water: 'morning' },
     });
   });
 
@@ -83,9 +110,7 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
       activeMealSlotsBySetId: { 'preset-daily': ['morning'] },
       scheduledMealSlotLayoutEnabled: false,
     });
-    expect(patch).toEqual({
-      priorityMealSlotOverrides: { water: 'morning' },
-    });
+    expect(patch).toBeNull();
   });
 
   it('keeps draft meal slot override over applied fixed routine default', () => {

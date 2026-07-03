@@ -13,12 +13,12 @@ import {
   type FixedFlowSetItem,
 } from '@shared/lib/storage';
 
+import { isPriorityCatalogAllowedKey } from '../lib/priorityCatalogRegistry';
 import { resolveTodayFixedRoutineKeys } from '../lib/resolveTodayFixedRoutineKeys';
 import {
   registerFixedSyncTodayTabAccessor,
   syncTodayTabWithFixedRoutineApply,
 } from '../lib/runSyncTodayTabWithFixedRoutineApply';
-import { isPriorityCatalogAllowedKey } from '../lib/priorityCatalogRegistry';
 import { sanitizeFixedFlowSetItems } from '../lib/sanitizeFixedFlowSetItems';
 
 function sanitizeSetsState(state: { activeSetIds: string[]; sets: FixedFlowSet[] }): {
@@ -396,9 +396,9 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     const nextSets = sets.map((s) =>
       s.id === setId
         ? {
-            ...s,
-            items: s.items.map((x) => (x.categoryKey === key ? { ...x, enabled } : x)),
-          }
+          ...s,
+          items: s.items.map((x) => (x.categoryKey === key ? { ...x, enabled } : x)),
+        }
         : s,
     );
     set({ sets: nextSets });
@@ -415,11 +415,11 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     const nextSets = sets.map((s) =>
       s.id === setId
         ? {
-            ...s,
-            items: s.items.map((x) =>
-              x.categoryKey === key ? { ...x, mealSlot: normalized } : x,
-            ),
-          }
+          ...s,
+          items: s.items.map((x) =>
+            x.categoryKey === key ? { ...x, mealSlot: normalized } : x,
+          ),
+        }
         : s,
     );
     set({ sets: nextSets });

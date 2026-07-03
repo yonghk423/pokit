@@ -1,3 +1,4 @@
+import { normalizeDayMealSlot, resolveFixedFlowItemMealSlot, type DayMealSlot } from './dayMealSlot';
 import {
   LEGACY_WEEKDAY_SET_ID,
   isBuiltinPresetScheduleSet,
@@ -17,7 +18,6 @@ import {
 } from './goalDetailSettingsStorage';
 import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
-import { normalizeDayMealSlot, resolveFixedFlowItemMealSlot, type DayMealSlot } from './dayMealSlot';
 
 export type { DayMealSlot } from './dayMealSlot';
 
@@ -347,8 +347,8 @@ export function loadFixedFlowSetsState(): FixedFlowSetsState {
   );
   const legacyKeys = Array.isArray(legacy?.categoryKeys)
     ? legacy.categoryKeys
-        .map((k) => (typeof k === 'string' ? k.trim() : ''))
-        .filter((k): k is string => k.length > 0)
+      .map((k) => (typeof k === 'string' ? k.trim() : ''))
+      .filter((k): k is string => k.length > 0)
     : [];
   if (legacyKeys.length === 0) {
     const defaults = normalizeFixedFlowSetsState({ activeSetIds: [], sets: [] });

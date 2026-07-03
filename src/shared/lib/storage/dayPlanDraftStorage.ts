@@ -6,8 +6,6 @@ export type PersistedDayPlanDraft = {
   isFocusStarted: boolean;
   completedFocusCategoryKeys: string[];
   planCompletionDismissedKeys: string[];
-  priorityBagDismissedDateKey?: string;
-  priorityBagDismissedKeys?: string[];
   priorityPlanDateKey: string;
   priorityPlanDateKeyEnd: string;
   priorityPlanExplicitMultiDay: boolean;
@@ -22,8 +20,12 @@ export type PersistedDayPlanDraft = {
   quickMemoDraft: string;
   /** 데일리 담기 — 아침·점심·저녁 구간 헤더 레이아웃 */
   priorityMealSlotLayoutEnabled?: boolean;
+  /** 데일리 — 세로 스파인 타임라인 레이아웃 */
+  prioritySpineLayoutEnabled?: boolean;
   /** 담기 목록 — 고정 루틴 외 항목의 시간대 지정 */
   priorityMealSlotOverrides?: Partial<Record<string, import('./dayMealSlotScheduleStorage').DayMealSlot>>;
+  /** 구간(시간대) 보기 — 사용자가 모달·구간 UI에서 직접 지정한 시간대 */
+  prioritySectionsMealSlots?: Partial<Record<string, import('./dayMealSlotScheduleStorage').DayMealSlot>>;
 };
 
 export function loadDayPlanDraft(): PersistedDayPlanDraft | null {

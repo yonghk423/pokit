@@ -1,7 +1,7 @@
 // @ts-nocheck — RN Web에서 StyleSheet.create 타입이 TextStyle|ViewStyle로 합쳐져 Reanimated·제스처와 충돌함
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -25,6 +25,9 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   addDaysToLocalDateKey,
   blockMatchesPriorityHhmmWindow,
+  buildSpineTimelineModel,
+  computeSpineGapInsertSlot,
+  filterBagTimelineFlowBlocks,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
   formatHhmmClockKo,
@@ -45,8 +48,10 @@ import { useFixedFlowSetsStore } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   hasGoalDetailCommittedCategory,
-  loadPriorityBagRemoveConfirmSkip,
-  savePriorityBagRemoveConfirmSkip,
+  listAllCustomFlowCatalogEntries,
+  listCustomCatalogGroups,
+  saveRoutineCatalogSelectionKeys,
+  type DayMealSlot,
 } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -54,6 +59,10 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { PriorityOrderRow } from '@widgets/day-plan-priority-order';
+import { SpineScheduleEditSheet, SpineTimelineView } from '@widgets/day-plan-spine-timeline';
+import type { SpineScheduleEditDraft } from '@widgets/day-plan-spine-timeline';
+import { MealSlotTimelineView } from '@widgets/day-plan-meal-slot-timeline';
+import { buildRoutineTabPickerSections, buildAddablePriorityCatalogSections } from '../lib/priorityCatalog';
 import {
   formatDateKeyCompactKo,
   formatDateKeyDisplayKo,
@@ -70,10 +79,14 @@ import {
 } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { getPriorityCategoryGoalHint } from '../lib/priorityCategoryGoalHints';
-import { buildCategoryMealSlotOverrides, flattenPriorityMealSlotSectionKeys, hasExplicitMealSlotAssignments, inferMealSlotAfterFlatReorder, reorderFlatKeys, resolvePriorityMealSlot, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
+import { buildCategoryMealSlotOverrides, flattenPriorityMealSlotSectionKeys, hasExplicitMealSlotAssignments, inferMealSlotAfterFlatReorder, listUnslottedPriorityItems, reorderFlatKeys, resolvePriorityMealSlot, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
+import { DAY_MEAL_SLOT_LABEL } from '../lib/priorityMealSlotSections';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
+import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
+import { PriorityMealSlotAddRoutineRow } from './PriorityMealSlotAddRoutineRow';
 import { PriorityMealSlotSectionHeader } from './PriorityMealSlotSectionHeader';
-import { PriorityMealSlotSetupBanner } from './PriorityMealSlotSetupBanner';
+import { PriorityRoutinePickerSheet } from './PriorityRoutinePickerSheet';
+import { PriorityUnassignedMealSlotSheet } from './PriorityUnassignedMealSlotSheet';
 import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 import { TodoListPlanSection } from './TodoListPlanSection';
 
@@ -81,6 +94,7 @@ import { TodoListPlanSection } from './TodoListPlanSection';
 const PRIORITY_ROW_EXITING = FadeOut.duration(280).easing(Easing.out(Easing.cubic));
 const PRIORITY_ROW_LAYOUT = LinearTransition.duration(320).easing(Easing.out(Easing.cubic));
 
+import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
 import { useDayPlanDraftStore } from '@entities/day-plan';
 import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
 
@@ -753,6 +767,7 @@ export function PriorityBasedPlanSection({
   layoutMode,
   onSelectLayoutMode,
 }: Props) {
+  const router = useRouter();
   useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
       UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -778,6 +793,8 @@ export function PriorityBasedPlanSection({
   const [draftRangeEnd, setDraftRangeEnd] = useState(priorityPlanDateKeyEnd);
   /** null이 아니면 첫 번째로 택한 날(스토어 미반영) — 다음 탭이 범위의 다른 끝 */
   const [calendarRangeAnchor, setCalendarRangeAnchor] = useState<string | null>(null);
+  const [spineEditDraft, setSpineEditDraft] = useState<SpineScheduleEditDraft | null>(null);
+  const [spineDragActive, setSpineDragActive] = useState(false);
 
   const monthFallbackDate = useMemo(() => {
     const lo =
@@ -969,12 +986,14 @@ export function PriorityBasedPlanSection({
     filterCompletedFocusKeysToPriorityOrder,
     addPlanCompletionDismissedKey,
     clearPlanCompletionDismissedKeys,
-    removeCompletedPriorityBagRows,
     setPriorityCategoryOrder,
     priorityMealSlotLayoutEnabled,
     setPriorityMealSlotLayoutEnabled,
     priorityMealSlotOverrides,
     setPriorityMealSlotOverride,
+    prioritySectionsMealSlots,
+    mergePrioritySectionsMealSlots,
+    setPrioritySectionsMealSlot,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
@@ -984,36 +1003,52 @@ export function PriorityBasedPlanSection({
       filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
       addPlanCompletionDismissedKey: s.addPlanCompletionDismissedKey,
       clearPlanCompletionDismissedKeys: s.clearPlanCompletionDismissedKeys,
-      removeCompletedPriorityBagRows: s.removeCompletedPriorityBagRows,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
       priorityMealSlotLayoutEnabled: s.priorityMealSlotLayoutEnabled,
       setPriorityMealSlotLayoutEnabled: s.setPriorityMealSlotLayoutEnabled,
       priorityMealSlotOverrides: s.priorityMealSlotOverrides,
       setPriorityMealSlotOverride: s.setPriorityMealSlotOverride,
+      prioritySectionsMealSlots: s.prioritySectionsMealSlots,
+      mergePrioritySectionsMealSlots: s.mergePrioritySectionsMealSlots,
+      setPrioritySectionsMealSlot: s.setPrioritySectionsMealSlot,
     })),
   );
   const [lastAddedCategoryKey, setLastAddedCategoryKey] = useState<string | null>(null);
-  const [skipRemovePriorityBagConfirm, setSkipRemovePriorityBagConfirm] = useState(false);
-  const [removeConfirmCategoryKey, setRemoveConfirmCategoryKey] = useState<string | null>(null);
-  const [removeConfirmSkipNextChecked, setRemoveConfirmSkipNextChecked] = useState(false);
   const [draggingPriorityKey, setDraggingPriorityKey] = useState<string | null>(null);
-  const { schedule: mealSlotSchedule, revision: mealSlotScheduleRevision } = useDayMealSlotSchedule();
+  /** 순서 드래그 중·직후에만 Reanimated layout 전환 — 모드 전환 시 마지막 행만 움직이는 현상 방지 */
+  const [priorityRowLayoutAnim, setPriorityRowLayoutAnim] = useState(false);
+  const [mealSlotScheduleSheetOpen, setMealSlotScheduleSheetOpen] = useState(false);
+  const [mealSlotScheduleFocusSlot, setMealSlotScheduleFocusSlot] = useState<DayMealSlot | null>(
+    null,
+  );
+  const [addRoutineSheetOpen, setAddRoutineSheetOpen] = useState(false);
+  const [addRoutineTargetSlot, setAddRoutineTargetSlot] = useState<DayMealSlot | null>(null);
+  const [unassignedSlotSheetOpen, setUnassignedSlotSheetOpen] = useState(false);
+  const [pendingLayoutMode, setPendingLayoutMode] = useState<DayPlanLayoutMode | null>(null);
+  const [catalogTick, setCatalogTick] = useState(0);
+  const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
+  const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
+  const {
+    schedule: mealSlotSchedule,
+    persistSchedule: persistMealSlotSchedule,
+    revision: mealSlotScheduleRevision,
+  } = useDayMealSlotSchedule();
   const priorityBagRowHeightRef = useRef(52);
 
-  useEffect(() => {
-    setSkipRemovePriorityBagConfirm(loadPriorityBagRemoveConfirmSkip());
-  }, []);
   const planBlocks = useDayPlanStore((s) => s.blocks);
   const fixedFlowSets = useFixedFlowSetsStore((s) => s.sets);
   const fixedFlowActiveSetIds = useFixedFlowSetsStore((s) => s.activeSetIds);
   const activeMealSlotsBySetId = useFixedFlowSetsStore((s) => s.activeMealSlotsBySetId);
   const todayAppliedCategoryKeys = useFixedFlowSetsStore((s) => s.todayAppliedCategoryKeys);
-  const scheduledMealSlotLayoutEnabled = useFixedFlowSetsStore(
-    (s) => s.scheduledMealSlotLayoutEnabled,
-  );
   const dayPlanDateKey = useDayPlanStore((s) => s.dateKey);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
   const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
+  const addPlanBlock = useDayPlanStore((s) => s.addBlock);
+  const updatePlanBlock = useDayPlanStore((s) => s.updateBlock);
+  const removePlanBlock = useDayPlanStore((s) => s.removeBlock);
+  const reorderSpineBlocks = useDayPlanStore((s) => s.reorderSpineTimelineBlocks);
+  const completePlanBlock = useDayPlanStore((s) => s.completeBlock);
+  const uncompletePlanBlock = useDayPlanStore((s) => s.uncompleteBlock);
 
   const completedCategoryKeysFromPlan = useMemo(() => {
     const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
@@ -1040,9 +1075,13 @@ export function PriorityBasedPlanSection({
 
   useEffect(() => {
     if (!lastAddedCategoryKey) return;
-    if (priorityCategoryOrder.includes(lastAddedCategoryKey)) return;
-    setLastAddedCategoryKey(null);
-  }, [lastAddedCategoryKey, priorityCategoryOrder]);
+    const timer = setTimeout(() => setLastAddedCategoryKey(null), 450);
+    return () => clearTimeout(timer);
+  }, [lastAddedCategoryKey]);
+
+  useEffect(() => {
+    setPriorityRowLayoutAnim(false);
+  }, [layoutMode]);
 
   const isPriorityRowCompleted = useCallback(
     (categoryKey: string) => {
@@ -1073,6 +1112,11 @@ export function PriorityBasedPlanSection({
     [selectedItems],
   );
 
+  const sectionsMealSlotMap = useMemo(
+    () => new Map<string, DayMealSlot>(Object.entries(prioritySectionsMealSlots)),
+    [prioritySectionsMealSlots],
+  );
+
   const mealSlotOverrides = useMemo(() => {
     const map = buildCategoryMealSlotOverrides({
       sets: fixedFlowSets,
@@ -1086,21 +1130,33 @@ export function PriorityBasedPlanSection({
     return map;
   }, [fixedFlowSets, fixedFlowActiveSetIds, activeMealSlotsBySetId, priorityMealSlotOverrides, todayAppliedCategoryKeys]);
 
+  const hasExplicitMealSlots = useMemo(
+    () => hasExplicitMealSlotAssignments(orderedSelectedItemsForDisplay, mealSlotOverrides),
+    [orderedSelectedItemsForDisplay, mealSlotOverrides],
+  );
+
+  const layoutMealSlotOverrides = priorityMealSlotLayoutEnabled
+    ? sectionsMealSlotMap
+    : mealSlotOverrides;
+
   const priorityMealSlotLayout = useMemo(() => {
     return splitPriorityMealSlotSections(orderedSelectedItemsForDisplay, {
       nowMin: getLocalMinutesOfDayNow(),
-      mealSlotOverrides,
+      mealSlotOverrides: layoutMealSlotOverrides,
       schedule: mealSlotSchedule,
       orderIndexByKey: priorityOrderIndexByKey,
-      explicitSlotsOnly: true,
+      explicitSlotsOnly: priorityMealSlotLayoutEnabled ? true : hasExplicitMealSlots,
+      includeEmptySections: priorityMealSlotLayoutEnabled,
     });
   }, [
     orderedSelectedItemsForDisplay,
     priorityOrderIndexByKey,
     categoryHintTick,
-    mealSlotOverrides,
+    layoutMealSlotOverrides,
     mealSlotSchedule,
     mealSlotScheduleRevision,
+    hasExplicitMealSlots,
+    priorityMealSlotLayoutEnabled,
   ]);
 
   const priorityMealSlotSections = priorityMealSlotLayout.sections;
@@ -1108,93 +1164,130 @@ export function PriorityBasedPlanSection({
     () => flattenPriorityMealSlotSectionKeys(priorityMealSlotSections),
     [priorityMealSlotSections],
   );
-  const slottedCount = slottedPriorityKeys.length;
   const fullBagCount = orderedSelectedItemsForDisplay.length;
 
-  const hasExplicitMealSlots = useMemo(
-    () => hasExplicitMealSlotAssignments(orderedSelectedItemsForDisplay, mealSlotOverrides),
-    [orderedSelectedItemsForDisplay, mealSlotOverrides],
+  const unslottedItemsForLayout = useMemo(
+    () => listUnslottedPriorityItems(orderedSelectedItemsForDisplay, sectionsMealSlotMap),
+    [orderedSelectedItemsForDisplay, sectionsMealSlotMap],
   );
 
-  const hasAppliedFixedRoutineToday = todayAppliedCategoryKeys.length > 0;
+  const unassignedMealSlotItems = useMemo(
+    () =>
+      unslottedItemsForLayout.map((cat) => ({
+        key: cat.key,
+        label: cat.label,
+      })),
+    [unslottedItemsForLayout],
+  );
 
-  const showPlanListTabs =
-    hasExplicitMealSlots && slottedCount > 0 && fullBagCount > 0;
-
-  const sectionsLayoutAvailable = showPlanListTabs;
-
-  const showSectionsBlockedAlert = useCallback(() => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-
-    if (fullBagCount === 0) {
-      Alert.alert(
-        '시간대별 보기',
-        '오늘 담은 항목이 없어요. 담기에서 항목을 먼저 추가해 주세요.',
-      );
-      return;
-    }
-
-    if (!hasExplicitMealSlots) {
-      const message =
-        hasAppliedFixedRoutineToday && scheduledMealSlotLayoutEnabled
-          ? '구간별로 보려면 나만의 루틴에서 구간을 설정한 뒤 오늘 적용을 켜 주세요.'
-          : '항목에 새벽·아침·점심 같은 구간이 지정되어 있지 않아요. 나만의 루틴에서 구간을 설정한 뒤 오늘 적용을 켜 주세요.';
-      if (onOpenFixedRoutine) {
-        Alert.alert('시간대별 보기', message, [
-          { text: '닫기', style: 'cancel' },
-          { text: '나만의 루틴', onPress: onOpenFixedRoutine },
-        ]);
-      } else {
-        Alert.alert('시간대별 보기', message);
-      }
-      return;
-    }
-
-    Alert.alert('시간대별 보기', '구간에 배치된 항목이 없어요.');
-  }, [
-    fullBagCount,
-    hasAppliedFixedRoutineToday,
-    hasExplicitMealSlots,
-    onOpenFixedRoutine,
-    scheduledMealSlotLayoutEnabled,
-  ]);
+  const openUnassignedSlotSheet = useCallback((nextMode: DayPlanLayoutMode = 'sections') => {
+    setPendingLayoutMode(nextMode);
+    setUnassignedSlotSheetOpen(true);
+  }, []);
 
   const handleSelectLayoutMode = useCallback(
     (nextMode: DayPlanLayoutMode) => {
-      if (nextMode === 'sections' && !sectionsLayoutAvailable) {
-        showSectionsBlockedAlert();
+      if (nextMode === 'sections' && unslottedItemsForLayout.length > 0) {
+        openUnassignedSlotSheet('sections');
         return;
       }
       onSelectLayoutMode(nextMode);
     },
-    [onSelectLayoutMode, sectionsLayoutAvailable, showSectionsBlockedAlert],
+    [onSelectLayoutMode, openUnassignedSlotSheet, unslottedItemsForLayout.length],
   );
 
-  const priorityPlanListTab: 'sections' | 'bag' = priorityMealSlotLayoutEnabled
-    ? 'sections'
-    : 'bag';
+  const handleConfirmUnassignedMealSlots = useCallback(
+    (assignments: Record<string, DayMealSlot>) => {
+      mergePrioritySectionsMealSlots(assignments);
+      const mode = pendingLayoutMode;
+      setPendingLayoutMode(null);
+      if (mode === 'sections') {
+        onSelectLayoutMode('sections');
+      }
+    },
+    [mergePrioritySectionsMealSlots, onSelectLayoutMode, pendingLayoutMode],
+  );
 
-  const showSectionsView =
-    hasExplicitMealSlots &&
-    slottedCount > 0 &&
-    (!showPlanListTabs || priorityPlanListTab === 'sections');
+  const openMealSlotScheduleEditor = useCallback((slot?: DayMealSlot | null) => {
+    setMealSlotScheduleFocusSlot(slot ?? null);
+    setMealSlotScheduleSheetOpen(true);
+  }, []);
+
+  const reloadRoutineCatalog = useCallback(() => {
+    setCustomFlowEntries(listAllCustomFlowCatalogEntries());
+    setCustomGroups(listCustomCatalogGroups());
+    setCatalogTick((n) => n + 1);
+  }, []);
 
   useEffect(() => {
-    if (!hasExplicitMealSlots && priorityMealSlotLayoutEnabled) {
-      setPriorityMealSlotLayoutEnabled(false);
-    }
-  }, [hasExplicitMealSlots, priorityMealSlotLayoutEnabled, setPriorityMealSlotLayoutEnabled]);
+    if (!addRoutineSheetOpen) return;
+    reloadRoutineCatalog();
+  }, [addRoutineSheetOpen, reloadRoutineCatalog]);
+
+  const addableRoutineSections = useMemo(() => {
+    void catalogTick;
+    return buildAddablePriorityCatalogSections({
+      excludedKeys: new Set(),
+      customFlowEntries,
+      customGroups,
+    });
+  }, [catalogTick, customFlowEntries, customGroups]);
+
+  const openAddRoutineForSlot = useCallback((slot: DayMealSlot) => {
+    setAddRoutineTargetSlot(slot);
+    setAddRoutineSheetOpen(true);
+  }, []);
+
+  const handleConfirmAddRoutinesToSlot = useCallback(
+    (keys: string[]) => {
+      if (!addRoutineTargetSlot || keys.length === 0) return;
+      const slot = addRoutineTargetSlot;
+      const prevOrder = useDayPlanDraftStore.getState().priorityCategoryOrder;
+      const nextOrder = [...prevOrder];
+      keys.forEach((key) => {
+        if (!nextOrder.includes(key)) nextOrder.push(key);
+      });
+      saveRoutineCatalogSelectionKeys(nextOrder);
+      setPriorityCategoryOrder(nextOrder);
+      keys.forEach((key) => {
+        setPrioritySectionsMealSlot(key, slot);
+      });
+      keys.forEach((key) => {
+        setPriorityMealSlotOverride(key, slot);
+      });
+      keys.forEach((key) => {
+        useFixedFlowSetsStore.getState().setCategoryMealSlotInAnySet(key, slot);
+      });
+      setLastAddedCategoryKey(keys[keys.length - 1] ?? null);
+    },
+    [addRoutineTargetSlot, setPriorityCategoryOrder, setPriorityMealSlotOverride, setPrioritySectionsMealSlot],
+  );
+
+  const addRoutineSheetTitle = useMemo(
+    () =>
+      addRoutineTargetSlot
+        ? `${DAY_MEAL_SLOT_LABEL[addRoutineTargetSlot]} 루틴 연결`
+        : '루틴 연결',
+    [addRoutineTargetSlot],
+  );
+
+  const showSectionsView = priorityMealSlotLayoutEnabled;
+
+  const mealSlotSectionsForDisplay = useMemo(() => {
+    if (!showSectionsView) return [];
+    return priorityMealSlotSections;
+  }, [priorityMealSlotSections, showSectionsView]);
 
   useEffect(() => {
-    if (!showPlanListTabs) return;
-    if (priorityPlanListTab === 'sections' && slottedCount === 0) {
-      setPriorityMealSlotLayoutEnabled(false);
-    }
+    if (!priorityMealSlotLayoutEnabled) return;
+    if (unslottedItemsForLayout.length === 0) return;
+    setPriorityMealSlotLayoutEnabled(false);
+    openUnassignedSlotSheet('sections');
   }, [
-    priorityPlanListTab,
+    openUnassignedSlotSheet,
+    priorityMealSlotLayoutEnabled,
     setPriorityMealSlotLayoutEnabled,
-    showPlanListTabs,
-    slottedCount,
+    unslottedItemsForLayout.length,
   ]);
 
   const dragReorderDelta = useCallback((translationY: number, rowHeight: number): number => {
@@ -1223,6 +1316,7 @@ export function PriorityBasedPlanSection({
 
       if (showSectionsView) {
         const slotOfKey = (key: string) =>
+          sectionsMealSlotMap.get(key) ??
           resolvePriorityMealSlot(key, priorityOrderIndexByKey.get(key) ?? 0, mealSlotOverrides);
         const prevSlot = slotOfKey(categoryKey);
         const nextSlot = inferMealSlotAfterFlatReorder(moved, categoryKey, to, slotOfKey);
@@ -1230,6 +1324,7 @@ export function PriorityBasedPlanSection({
           const changedInSet = useFixedFlowSetsStore
             .getState()
             .setCategoryMealSlotInAnySet(categoryKey, nextSlot);
+          setPrioritySectionsMealSlot(categoryKey, nextSlot);
           if (!changedInSet) {
             setPriorityMealSlotOverride(categoryKey, nextSlot);
           }
@@ -1246,11 +1341,11 @@ export function PriorityBasedPlanSection({
       isPriorityRowCompleted,
       mealSlotOverrides,
       orderedSelectedItemsForDisplay,
-      priorityMealSlotSections,
       priorityOrderIndexByKey,
+      sectionsMealSlotMap,
       setPriorityCategoryOrder,
       setPriorityMealSlotOverride,
-      showPlanListTabs,
+      setPrioritySectionsMealSlot,
       showSectionsView,
       slottedPriorityKeys,
     ],
@@ -1285,63 +1380,6 @@ export function PriorityBasedPlanSection({
     [addFocusCategoryCompleted, isPriorityRowCompleted, undoPriorityRowCompletion],
   );
 
-  const commitRemoveOneCompletedFromPriorityBag = useCallback(
-    (categoryKey: string) => {
-      if (!isPriorityRowCompleted(categoryKey)) return;
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const planDismissKeys =
-        isFocusStarted && completedCategoryKeysFromPlan.includes(categoryKey) ? [categoryKey] : [];
-      removeCompletedPriorityBagRows([categoryKey], planDismissKeys);
-    },
-    [
-      completedCategoryKeysFromPlan,
-      isFocusStarted,
-      isPriorityRowCompleted,
-      removeCompletedPriorityBagRows,
-    ],
-  );
-
-  const requestRemoveOneCompletedFromPriorityBag = useCallback(
-    (categoryKey: string) => {
-      if (!isPriorityRowCompleted(categoryKey)) return;
-      if (skipRemovePriorityBagConfirm) {
-        commitRemoveOneCompletedFromPriorityBag(categoryKey);
-        return;
-      }
-      setRemoveConfirmCategoryKey(categoryKey);
-    },
-    [
-      commitRemoveOneCompletedFromPriorityBag,
-      isPriorityRowCompleted,
-      skipRemovePriorityBagConfirm,
-    ],
-  );
-
-  const closeRemovePriorityBagConfirm = useCallback(() => {
-    setRemoveConfirmCategoryKey(null);
-    setRemoveConfirmSkipNextChecked(false);
-  }, []);
-
-  const confirmRemoveFromPriorityBagOnce = useCallback(() => {
-    if (!removeConfirmCategoryKey) return;
-    if (removeConfirmSkipNextChecked) {
-      savePriorityBagRemoveConfirmSkip(true);
-      setSkipRemovePriorityBagConfirm(true);
-    }
-    commitRemoveOneCompletedFromPriorityBag(removeConfirmCategoryKey);
-    closeRemovePriorityBagConfirm();
-  }, [
-    closeRemovePriorityBagConfirm,
-    commitRemoveOneCompletedFromPriorityBag,
-    removeConfirmCategoryKey,
-    removeConfirmSkipNextChecked,
-  ]);
-
-  const removeConfirmLabel = useMemo(() => {
-    if (!removeConfirmCategoryKey) return '항목';
-    return getPickerCategoryLabel(removeConfirmCategoryKey);
-  }, [removeConfirmCategoryKey, categoryHintTick]);
-
   /** 라이트: 대표 톤은 `dayPlanPalette` 그레이(containerLow)·진한 글자(onSurface) — 순백·채도 높은 다크 면 아님 */
   const editorial = useMemo(() => {
     if (isDark) {
@@ -1370,8 +1408,217 @@ export function PriorityBasedPlanSection({
   );
 
   const sortedTimelineFlowBlocks = useMemo(
-    () => sortDayPlanBlocks(filterDayPlanFlowBlocks(planBlocks)),
+    () => sortDayPlanBlocks(filterBagTimelineFlowBlocks(planBlocks)),
     [planBlocks],
+  );
+
+  const spineTimelineRows = useMemo(
+    () =>
+      buildSpineTimelineModel({
+        priorityStart,
+        priorityEnd,
+        blocks: planBlocks,
+        nowMinutes: getLocalMinutesOfDayNow(),
+      }),
+    [priorityStart, priorityEnd, planBlocks],
+  );
+
+  const completedBlockIdSet = useMemo(
+    () => new Set(completedBlockIds),
+    [completedBlockIds],
+  );
+
+  const spineTimelinePalette = useMemo(
+    () => ({
+      ink: editorial.ink,
+      muted: editorial.muted,
+      line: editorial.line,
+      surface: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+      accent: isDark ? '#FAFAFA' : PRIMARY,
+    }),
+    [editorial.ink, editorial.line, editorial.muted, isDark],
+  );
+
+  const mealSlotTimelineSections = useMemo(
+    () =>
+      mealSlotSectionsForDisplay.map((section) => ({
+        slot: section.slot,
+        title: section.title,
+        hintTime: section.hintTime,
+        isCurrent: section.isCurrent,
+        items: section.items.map((cat) => ({
+          key: cat.key,
+          label: cat.label,
+          icon: cat.icon,
+          subtitle: categorySubtitleByKey(cat.key),
+        })),
+      })),
+    [categorySubtitleByKey, mealSlotSectionsForDisplay],
+  );
+
+  const spineRoutineSections = useMemo(
+    () => buildRoutineTabPickerSections(categoryLabelEpoch + categoryHintTick),
+    [categoryLabelEpoch, categoryHintTick],
+  );
+
+  const confirmSpineBlockDelete = useCallback(
+    (blockId: string) => {
+      const block = planBlocks.find((b) => b.id === blockId);
+      Alert.alert('일정 삭제', `「${block?.title ?? '일정'}」을 삭제할까요?`, [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: () => {
+            removePlanBlock(blockId);
+            setSpineEditDraft(null);
+          },
+        },
+      ]);
+    },
+    [planBlocks, removePlanBlock],
+  );
+
+  const alertSpineBlockSaveError = useCallback(
+    (action: 'add' | 'update', reason: string) => {
+      const title = action === 'add' ? '일정 추가' : '일정 수정';
+      if (reason === 'empty_title') {
+        Alert.alert(title, '제목을 입력해 주세요.');
+        return;
+      }
+      if (reason === 'in_the_past') {
+        Alert.alert(title, '종료 시각이 현재보다 이후인 일정만 저장할 수 있어요.');
+        return;
+      }
+      if (reason === 'overlap') {
+        Alert.alert(title, '겹치는 일정이 있어요. 다른 시간을 선택해 주세요.');
+        return;
+      }
+      if (reason === 'invalid_range') {
+        Alert.alert(title, '종료 시각은 시작 시각보다 뒤여야 해요.');
+        return;
+      }
+      Alert.alert(title, '일정을 저장하지 못했어요.');
+    },
+    [],
+  );
+
+  const handleSpineAddBlockInGap = useCallback(
+    (fromMinutes: number, toMinutes: number) => {
+      const slot = computeSpineGapInsertSlot(
+        fromMinutes,
+        toMinutes,
+        planBlocks,
+        getLocalMinutesOfDayNow(),
+      );
+      if (!slot) return;
+      setSpineEditDraft({
+        mode: 'create',
+        title: '',
+        categoryKey: null,
+        startMinutes: slot.startMinutes,
+        endMinutes: slot.endMinutes,
+      });
+    },
+    [planBlocks],
+  );
+
+  const handleSpineToggleBlockComplete = useCallback(
+    (blockId: string) => {
+      if (completedBlockIdSet.has(blockId)) {
+        uncompletePlanBlock(blockId);
+        return;
+      }
+      completePlanBlock(blockId);
+    },
+    [completePlanBlock, completedBlockIdSet, uncompletePlanBlock],
+  );
+
+  const handleSpinePressBlock = useCallback(
+    (blockId: string) => {
+      const block = planBlocks.find((b) => b.id === blockId);
+      if (!block) return;
+      setSpineEditDraft({
+        mode: 'edit',
+        blockId,
+        title: block.title,
+        categoryKey: block.categoryKey ?? null,
+        startMinutes: block.startMinutes,
+        endMinutes: block.endMinutes,
+      });
+    },
+    [planBlocks],
+  );
+
+  const handleSpineDeleteBlock = useCallback(
+    (blockId: string) => {
+      confirmSpineBlockDelete(blockId);
+    },
+    [confirmSpineBlockDelete],
+  );
+
+  const handleSpineReorderBlocks = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      reorderSpineBlocks(fromIndex, toIndex);
+    },
+    [reorderSpineBlocks],
+  );
+
+  const handleSpineSaveBlock = useCallback(
+    (input: {
+      title: string;
+      categoryKey: string | null;
+      startMinutes: number;
+      endMinutes: number;
+      blockId?: string;
+    }) => {
+      const title = input.title.trim();
+      if (!title) {
+        alertSpineBlockSaveError('add', 'empty_title');
+        return;
+      }
+
+      const linkedKey = input.categoryKey?.trim() || null;
+      const categoryLabel = linkedKey ? getPickerCategoryLabel(linkedKey) : '';
+
+      if (input.blockId) {
+        const result = updatePlanBlock(input.blockId, {
+          title,
+          category: categoryLabel,
+          categoryKey: linkedKey,
+          startMinutes: input.startMinutes,
+          endMinutes: input.endMinutes,
+        });
+        if (!result.ok) {
+          alertSpineBlockSaveError('update', result.reason);
+          return;
+        }
+      } else {
+        const result = addPlanBlock({
+          title,
+          category: categoryLabel,
+          ...(linkedKey ? { categoryKey: linkedKey } : {}),
+          startMinutes: input.startMinutes,
+          endMinutes: input.endMinutes,
+          blockOrigin: 'spineTimeline',
+          planDateKey: getLocalDateKey(),
+        });
+        if (!result.ok) {
+          alertSpineBlockSaveError('add', result.reason);
+          return;
+        }
+      }
+
+      setSpineEditDraft(null);
+    },
+    [addPlanBlock, alertSpineBlockSaveError, updatePlanBlock],
+  );
+
+  const handleSpineStartFocus = useCallback(
+    (blockId: string) => {
+      router.push({ pathname: '/activity-session', params: { blockId } });
+    },
+    [router],
   );
 
   const priorityWindowHhmm = useMemo(() => {
@@ -1679,104 +1926,17 @@ export function PriorityBasedPlanSection({
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal
-        visible={removeConfirmCategoryKey !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={closeRemovePriorityBagConfirm}>
-        <View style={styles.removeConfirmModalRoot} accessibilityViewIsModal>
-          <Pressable
-            style={styles.removeConfirmModalDim}
-            onPress={closeRemovePriorityBagConfirm}
-            accessibilityRole="button"
-            accessibilityLabel="닫기"
-          />
-          <View
-            style={[
-              styles.removeConfirmCard,
-              {
-                zIndex: 2,
-                elevation: 14,
-                backgroundColor: c.containerLow,
-                borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
-              },
-            ]}>
-            <ThemedText style={[styles.removeConfirmTitle, { color: editorial.ink }]} numberOfLines={2}>
-              담기에서 뺄까요?
-            </ThemedText>
-            <ThemedText style={[styles.removeConfirmBody, { color: editorial.muted }]} numberOfLines={4}>
-              완료한 「{removeConfirmLabel}」을 목록에서 빼요. 필요하면 담기 화면에서 다시 추가할 수 있어요.
-            </ThemedText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
-                removeConfirmSkipNextChecked ? '다음부터 묻지 않기 해제' : '다음부터 묻지 않기 선택'
-              }
-              onPress={() => setRemoveConfirmSkipNextChecked((v) => !v)}
-              style={[
-                styles.removeConfirmDontAskBtn,
-                {
-                  borderColor: removeConfirmSkipNextChecked ? PRIMARY : editorial.line,
-                  backgroundColor: removeConfirmSkipNextChecked
-                    ? isDark
-                      ? 'rgba(255,255,255,0.08)'
-                      : 'rgba(0,0,0,0.05)'
-                    : 'transparent',
-                },
-              ]}>
-              <View
-                style={[
-                  styles.removeConfirmCheckChip,
-                  {
-                    borderColor: removeConfirmSkipNextChecked ? PRIMARY : editorial.line,
-                    backgroundColor: removeConfirmSkipNextChecked ? PRIMARY : 'transparent',
-                  },
-                ]}>
-                <IconSymbol
-                  name="checkmark"
-                  size={12}
-                  color={removeConfirmSkipNextChecked ? '#fff' : 'transparent'}
-                />
-              </View>
-              <ThemedText style={[styles.removeConfirmDontAskBtnText, { color: editorial.ink }]}>
-                다음부터 묻지 않기
-              </ThemedText>
-            </Pressable>
-            <View style={styles.removeConfirmActions}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="취소"
-                onPress={closeRemovePriorityBagConfirm}
-                style={[
-                  styles.removeConfirmGhostBtn,
-                  {
-                    borderColor: tabColors.inactiveBorder,
-                    backgroundColor: tabColors.inactiveBg,
-                  },
-                ]}>
-                <ThemedText style={[styles.removeConfirmActionText, { color: tabColors.inactiveIcon }]}>
-                  취소
-                </ThemedText>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="담기에서 빼기"
-                onPress={confirmRemoveFromPriorityBagOnce}
-                style={[
-                  styles.removeConfirmPrimaryBtn,
-                  {
-                    backgroundColor: tabColors.activeBg,
-                    borderColor: tabColors.activeBorder,
-                  },
-                ]}>
-                <ThemedText style={[styles.removeConfirmPrimaryBtnText, { color: tabColors.activeIcon }]}>
-                  빼기
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <SpineScheduleEditSheet
+        visible={spineEditDraft != null}
+        draft={spineEditDraft}
+        routineSections={spineRoutineSections}
+        palette={spineTimelinePalette}
+        isDark={isDark}
+        onClose={() => setSpineEditDraft(null)}
+        onSave={handleSpineSaveBlock}
+        onDelete={confirmSpineBlockDelete}
+        onStartFocus={handleSpineStartFocus}
+      />
 
       <View style={[styles.bookOuter, { backgroundColor: surfaceBg }]}>
         {/* 기간·집중 구간 — 다일 타임라인 카드 (달력·시계는 각각 모달) */}
@@ -1835,15 +1995,16 @@ export function PriorityBasedPlanSection({
                 <DayPlanLayoutModeTabs
                   mode={layoutMode}
                   onSelectMode={handleSelectLayoutMode}
-                  sectionsAvailable={sectionsLayoutAvailable}
-                  onSectionsBlockedPress={showSectionsBlockedAlert}
                   c={c}
                   isDark={isDark}
+                  sectionsAvailable={unslottedItemsForLayout.length === 0}
+                  onSectionsBlockedPress={() => openUnassignedSlotSheet('sections')}
                 />
               </View>
             </View>
             <ScrollView
               nestedScrollEnabled
+              scrollEnabled={draggingPriorityKey == null && !spineDragActive}
               showsVerticalScrollIndicator={false}
               style={styles.priorityTimelineScroll}
               contentContainerStyle={[
@@ -1853,6 +2014,44 @@ export function PriorityBasedPlanSection({
               keyboardShouldPersistTaps={layoutMode === 'todoList' ? 'always' : 'handled'}>
               {layoutMode === 'todoList' ? (
                 <TodoListPlanSection embedded dateLabel={formatTimelineHeaderDateKo(todayKey)} />
+              ) : layoutMode === 'sections' ? (
+                <MealSlotTimelineView
+                  sections={mealSlotTimelineSections}
+                  palette={spineTimelinePalette}
+                  isDark={isDark}
+                  isItemCompleted={isPriorityRowCompleted}
+                  reorderEnabled={orderedSelectedItemsForDisplay.length >= 2}
+                  onPressEditSchedule={() => openMealSlotScheduleEditor()}
+                  onPressAddRoutine={openAddRoutineForSlot}
+                  onToggleItemComplete={handleTogglePriorityRowComplete}
+                  onOpenItemSettings={onOpenCategorySettings}
+                  onReorderDragActiveChange={(key, active) => {
+                    setDraggingPriorityKey((prev) => {
+                      if (active) return key;
+                      if (prev === key) return null;
+                      return prev;
+                    });
+                  }}
+                  onReorderItemDragEnd={(key, translationY) => {
+                    commitPriorityDisplayReorderFromDrag(key, translationY);
+                  }}
+                />
+              ) : layoutMode === 'spine' ? (
+                <SpineTimelineView
+                  rows={spineTimelineRows}
+                  completedBlockIds={completedBlockIdSet}
+                  isDark={isDark}
+                  palette={spineTimelinePalette}
+                  rowSurface={
+                    isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.72)'
+                  }
+                  onAddBlockInGap={handleSpineAddBlockInGap}
+                  onToggleBlockComplete={handleSpineToggleBlockComplete}
+                  onPressBlock={handleSpinePressBlock}
+                  onDeleteBlock={handleSpineDeleteBlock}
+                  onReorderBlocks={handleSpineReorderBlocks}
+                  onReorderDragActiveChange={setSpineDragActive}
+                />
               ) : (
               timelineThreeDayKeys.map((dk) => {
                 const d = parseLocalDateKeyToDate(dk);
@@ -1868,7 +2067,8 @@ export function PriorityBasedPlanSection({
                 /** 자정 넘김 종료일(다음날 새벽) — 전날과 같은 우선순위를 ‘연장’ 블록으로 표시 */
                 const isOvernightTailDay =
                   overnightWindow && todayWithinPriorityPlan && dk === tomorrowDk;
-                const showPriorityInMainTimeline = bagCount > 0 && isMainDay;
+                const showPriorityInMainTimeline =
+                  (bagCount > 0 || priorityMealSlotLayoutEnabled) && isMainDay;
                 const showOvernightPriorityContinuation = isOvernightTailDay && bagCount > 0;
                 const showPriorityListBelow =
                   showPriorityInMainTimeline || showOvernightPriorityContinuation;
@@ -1960,7 +2160,7 @@ export function PriorityBasedPlanSection({
                             paddingTop: isPriorityStripPrimary ? 12 : 4,
                           },
                         ]}>
-                        {isMainDay && bagCount === 0 ? (
+                        {isMainDay && bagCount === 0 && !priorityMealSlotLayoutEnabled ? (
                           <View
                             style={[
                               styles.priorityMainEmptyHint,
@@ -2084,18 +2284,6 @@ export function PriorityBasedPlanSection({
                             {priorityWindowLine}
                           </ThemedText>
                         ) : null}
-                        {!hasExplicitMealSlots &&
-                        hasAppliedFixedRoutineToday &&
-                        scheduledMealSlotLayoutEnabled &&
-                        onOpenFixedRoutine ? (
-                          <PriorityMealSlotSetupBanner
-                            ink={editorial.ink}
-                            muted={editorial.muted}
-                            line={editorial.line}
-                            cardBg={editorial.surface}
-                            onPressSetup={onOpenFixedRoutine}
-                          />
-                        ) : null}
                         <View style={styles.priorityInlineList}>
                           {(() => {
                             const allowBagReorder = orderedSelectedItemsForDisplay.length >= 2;
@@ -2106,8 +2294,8 @@ export function PriorityBasedPlanSection({
                               return (
                                 <Reanimated.View
                                   key={cat.key}
-                                  layout={PRIORITY_ROW_LAYOUT}
-                                  exiting={PRIORITY_ROW_EXITING}
+                                  layout={priorityRowLayoutAnim ? PRIORITY_ROW_LAYOUT : undefined}
+                                  exiting={priorityRowLayoutAnim ? PRIORITY_ROW_EXITING : undefined}
                                   style={[
                                     styles.priorityOrderRowAnimWrap,
                                     draggingPriorityKey === cat.key
@@ -2134,11 +2322,6 @@ export function PriorityBasedPlanSection({
                                     onToggleFocusComplete={() =>
                                       handleTogglePriorityRowComplete(cat.key)
                                     }
-                                    onRemoveCompletedFromPriorityBag={
-                                      rowDone
-                                        ? () => requestRemoveOneCompletedFromPriorityBag(cat.key)
-                                        : undefined
-                                    }
                                     onReorderDragTranslationEnd={
                                       allowBagReorder
                                         ? (ty) =>
@@ -2148,6 +2331,7 @@ export function PriorityBasedPlanSection({
                                     onReorderDragActiveChange={
                                       allowBagReorder
                                         ? (active) => {
+                                            if (active) setPriorityRowLayoutAnim(true);
                                             setDraggingPriorityKey((prev) => {
                                               if (active) return cat.key;
                                               if (prev === cat.key) return null;
@@ -2179,20 +2363,52 @@ export function PriorityBasedPlanSection({
                               return orderedSelectedItemsForDisplay.map((cat) => renderBagRow(cat));
                             }
 
-                            return priorityMealSlotSections.map((section, sectionIndex) => (
-                              <View key={section.slot} style={styles.priorityMealSlotSection}>
-                                <PriorityMealSlotSectionHeader
-                                  title={section.title}
-                                  hintTime={formatHhmmClockKo(section.hintTime)}
-                                  ink={editorial.ink}
-                                  muted={editorial.muted}
-                                  line={editorial.line}
-                                  isCurrent={section.isCurrent}
-                                  isFirst={sectionIndex === 0}
-                                />
-                                {section.items.map((cat) => renderBagRow(cat))}
-                              </View>
-                            ));
+                            return (
+                              <>
+                                {bagCount === 0 ? (
+                                  <ThemedText
+                                    style={[styles.prioritySectionsEmptyLead, { color: editorial.muted }]}
+                                    lightColor={editorial.muted}
+                                    darkColor={editorial.muted}>
+                                    아래에서 항목을 추가하면 구간에 자동 배치돼요.
+                                  </ThemedText>
+                                ) : null}
+                                {mealSlotSectionsForDisplay.map((section, sectionIndex) => (
+                                  <View key={section.slot} style={styles.priorityMealSlotSection}>
+                                    <PriorityMealSlotSectionHeader
+                                      title={section.title}
+                                      hintTime={formatHhmmClockKo(section.hintTime)}
+                                      ink={editorial.ink}
+                                      muted={editorial.muted}
+                                      line={editorial.line}
+                                      isDark={isDark}
+                                      isCurrent={section.isCurrent}
+                                      isFirst={sectionIndex === 0}
+                                      onPressHintTime={() => openMealSlotScheduleEditor(section.slot)}
+                                    />
+                                    {section.items.length === 0 ? (
+                                      <PriorityMealSlotAddRoutineRow
+                                        ink={editorial.ink}
+                                        line={editorial.line}
+                                        isDark={isDark}
+                                        onPress={() => openAddRoutineForSlot(section.slot)}
+                                      />
+                                    ) : (
+                                      <>
+                                        {section.items.map((cat) => renderBagRow(cat))}
+                                        <PriorityMealSlotAddRoutineRow
+                                          label="루틴 더 연결"
+                                          ink={editorial.ink}
+                                          line={editorial.line}
+                                          isDark={isDark}
+                                          onPress={() => openAddRoutineForSlot(section.slot)}
+                                        />
+                                      </>
+                                    )}
+                                  </View>
+                                ))}
+                              </>
+                            );
                           })()}
                         </View>
                       </View>
@@ -2206,6 +2422,48 @@ export function PriorityBasedPlanSection({
         </View>
       </View>
 
+      <DayMealSlotScheduleSheet
+        visible={mealSlotScheduleSheetOpen}
+        schedule={mealSlotSchedule}
+        isDark={isDark}
+        initialExpandedSlot={mealSlotScheduleFocusSlot}
+        onClose={() => setMealSlotScheduleSheetOpen(false)}
+        onSave={persistMealSlotSchedule}
+      />
+
+      <PriorityRoutinePickerSheet
+        visible={addRoutineSheetOpen}
+        title={addRoutineSheetTitle}
+        sections={addableRoutineSections}
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        surface={editorial.surface}
+        line={editorial.line}
+        onClose={() => {
+          setAddRoutineSheetOpen(false);
+          setAddRoutineTargetSlot(null);
+        }}
+        onConfirm={handleConfirmAddRoutinesToSlot}
+        onCreateCustom={() => {
+          router.push('/(tabs)/priority-catalog');
+        }}
+      />
+
+      <PriorityUnassignedMealSlotSheet
+        visible={unassignedSlotSheetOpen}
+        items={unassignedMealSlotItems}
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        surface={editorial.surface}
+        line={editorial.line}
+        onClose={() => {
+          setUnassignedSlotSheetOpen(false);
+          setPendingLayoutMode(null);
+        }}
+        onConfirm={handleConfirmUnassignedMealSlots}
+      />
     </View>
   );
 }
@@ -2382,6 +2640,19 @@ const styles = StyleSheet.create({
   },
   priorityMealSlotSection: {
     width: '100%',
+  },
+  prioritySectionsEmptyLead: {
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 17,
+    marginBottom: 8,
+  },
+  priorityMealSlotEmptyHint: {
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 17,
+    paddingBottom: 6,
+    paddingLeft: 2,
   },
   /** Reanimated layout/exit — 드래그 중 `translateY`가 잘리지 않도록 visible */
   priorityOrderRowAnimWrap: {
@@ -2722,89 +2993,4 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   pageScrollContent: { gap: 0, paddingBottom: 4 },
-  removeConfirmModalRoot: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  removeConfirmModalDim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  removeConfirmCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 22,
-    gap: 14,
-    maxWidth: 400,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  removeConfirmTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.35,
-  },
-  removeConfirmBody: {
-    fontSize: 15,
-    fontWeight: '500',
-    lineHeight: 22,
-    letterSpacing: -0.2,
-  },
-  removeConfirmDontAskBtn: {
-    marginTop: 2,
-    minHeight: 50,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  removeConfirmCheckChip: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeConfirmDontAskBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-    textAlign: 'left',
-  },
-  removeConfirmActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 4,
-  },
-  removeConfirmGhostBtn: {
-    flex: 1,
-    minHeight: 46,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeConfirmPrimaryBtn: {
-    flex: 1,
-    minHeight: 46,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeConfirmActionText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  removeConfirmPrimaryBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
 });

@@ -87,6 +87,58 @@ describe('dayPlanStore', () => {
     expect(result).toEqual({ ok: false, reason: 'invalid_range' });
   });
 
+  it('allows overlapping spine timeline blocks', () => {
+    resetStore({
+      blocks: [
+        block({
+          id: 'spine-a',
+          startMinutes: 17 * 60 + 52,
+          endMinutes: 18 * 60 + 7,
+          blockOrigin: 'spineTimeline',
+        }),
+      ],
+    });
+    const result = useDayPlanStore.getState().addBlock({
+      title: '겹침',
+      category: '명상',
+      startMinutes: 18 * 60,
+      endMinutes: 18 * 60 + 7,
+      planDateKey: '2099-06-01',
+      blockOrigin: 'spineTimeline',
+    });
+    expect(result.ok).toBe(true);
+    expect(useDayPlanStore.getState().blocks).toHaveLength(2);
+  });
+
+  it('allows updating spine timeline block into overlap', () => {
+    resetStore({
+      blocks: [
+        block({
+          id: 'spine-a',
+          startMinutes: 17 * 60 + 52,
+          endMinutes: 18 * 60 + 7,
+          blockOrigin: 'spineTimeline',
+        }),
+        block({
+          id: 'spine-b',
+          title: '두 번째',
+          startMinutes: 18 * 60 + 30,
+          endMinutes: 18 * 60 + 45,
+          order: 1,
+          blockOrigin: 'spineTimeline',
+        }),
+      ],
+    });
+    const result = useDayPlanStore.getState().updateBlock('spine-b', {
+      startMinutes: 18 * 60,
+      endMinutes: 18 * 60 + 7,
+    });
+    expect(result).toEqual({ ok: true });
+    const updated = useDayPlanStore.getState().blocks.find((b) => b.id === 'spine-b');
+    expect(updated?.startMinutes).toBe(18 * 60);
+    expect(updated?.endMinutes).toBe(18 * 60 + 7);
+  });
+
   it('rejects overlapping block', () => {
     resetStore({
       blocks: [block({ id: 'a', startMinutes: 14 * 60, endMinutes: 15 * 60 })],
@@ -227,6 +279,36 @@ describe('dayPlanStore', () => {
     expect(useDayPlanStore.getState().blocks).toHaveLength(0);
     expect(useDayPlanStore.getState().completedBlockIds).toEqual([]);
     expect(useDayPlanStore.getState().liveActivityChecklistFocusBlockId).toBeNull();
+  });
+
+  it('updates block title and time without spine overlap', () => {
+    resetStore({
+      blocks: [
+        block({
+          id: 'spine-a',
+          title: '독서',
+          startMinutes: 10 * 60,
+          endMinutes: 10 * 60 + 30,
+          blockOrigin: 'spineTimeline',
+        }),
+      ],
+    });
+    const result = useDayPlanStore.getState().updateBlock('spine-a', {
+      title: '운동',
+      startMinutes: 11 * 60,
+      endMinutes: 11 * 60 + 20,
+    });
+    expect(result).toEqual({ ok: true });
+    const updated = useDayPlanStore.getState().blocks[0];
+    expect(updated?.title).toBe('운동');
+    expect(updated?.startMinutes).toBe(11 * 60);
+    expect(updated?.endMinutes).toBe(11 * 60 + 20);
+  });
+
+  it('rejects update with empty title', () => {
+    resetStore({ blocks: [block({ id: 'a' })] });
+    const result = useDayPlanStore.getState().updateBlock('a', { title: '   ' });
+    expect(result).toEqual({ ok: false, reason: 'empty_title' });
   });
 
   it('setBlocks drops invalid checklist focus', () => {

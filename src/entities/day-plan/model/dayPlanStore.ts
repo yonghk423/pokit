@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
-import { filterDayPlanFlowBlocks } from '@entities/day-plan/lib/dayPlanFlowBlock';
+import { filterDayPlanFlowBlocks, migrateSpineTimelineBlockOrigins } from '@entities/day-plan/lib/dayPlanFlowBlock';
+import { reorderSpineTimelineBlocks as applySpineTimelineReorder } from '@entities/day-plan/lib/reorderSpineTimelineBlocks';
 import { isBlockEndInPastForDateKey } from '@entities/day-plan/lib/dayPlanRuntimeTime';
 import {
   findOverlappingDayPlanBlock,
@@ -75,6 +76,14 @@ export type AddBlockResult =
   | { ok: false; reason: 'invalid_range' }
   | { ok: false; reason: 'in_the_past' };
 
+export type UpdateBlockResult =
+  | { ok: true }
+  | { ok: false; reason: 'not_found' }
+  | { ok: false; reason: 'empty_title' }
+  | { ok: false; reason: 'overlap'; conflicting: DayPlanBlock }
+  | { ok: false; reason: 'invalid_range' }
+  | { ok: false; reason: 'in_the_past' };
+
 export type DayPlanStoreState = {
   dateKey: string;
   blocks: DayPlanBlock[];
@@ -92,6 +101,7 @@ export type DayPlanStoreState = {
   setLiveActivityChecklistFocusBlockId: (blockId: string | null) => void;
 
   completeBlock: (blockId: string) => void;
+  uncompleteBlock: (blockId: string) => void;
   /** 여러 블록을 한 번에 완료 처리 (단일 set + persist) */
   completeBlocks: (blockIds: string[]) => void;
   skipBlock: (blockId: string) => void;
@@ -117,13 +127,28 @@ export type DayPlanStoreState = {
     /** true면 `endMinutes`는 익일 0~1440 시각 */
     endsNextCalendarDay?: boolean;
     replaceOverlapping?: boolean;
-    blockOrigin?: 'quickMemo' | 'prioritySession';
+    blockOrigin?: 'quickMemo' | 'prioritySession' | 'spineTimeline';
     /** 지정 시 해당 날짜 기준으로 종료 시각 검증·스토어 dateKey 정렬 (우선순위 플로우 등) */
     planDateKey?: string;
   }) => AddBlockResult;
 
   /** 블록 제거 + 완료/건너뛰기 id 정리 */
   removeBlock: (blockId: string) => void;
+
+  /** 기존 타임라인 블록 수정 (제목·시작·종료). 겹침 검증은 blockOrigin scope 기준. */
+  updateBlock: (
+    blockId: string,
+    patch: {
+      title?: string;
+      startMinutes?: number;
+      endMinutes?: number;
+      category?: string;
+      categoryKey?: string | null;
+    },
+  ) => UpdateBlockResult;
+
+  /** 스파인 타임라인 블록 순서 변경 (시간 슬롯 유지) */
+  reorderSpineTimelineBlocks: (fromIndex: number, toIndex: number) => void;
 };
 
 export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
@@ -171,7 +196,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
           quickMemos: raw.quickMemos,
         });
         dateKey = n.dateKey;
-        blocks = sortDayPlanBlocks(n.blocks);
+        blocks = sortDayPlanBlocks(migrateSpineTimelineBlockOrigins(n.blocks));
         completedBlockIds = n.completedBlockIds;
         skippedBlockIds = n.skippedBlockIds;
         quickMemos = n.quickMemos;
@@ -271,6 +296,23 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
           liveActivityChecklistFocusBlockId === blockId
             ? null
             : liveActivityChecklistFocusBlockId,
+      });
+      persist();
+    },
+
+    uncompleteBlock: (blockId) => {
+      const { completedBlockIds, skippedBlockIds } = get();
+      const nextCompleted = completedBlockIds.filter((id) => id !== blockId);
+      const nextSkipped = skippedBlockIds.filter((id) => id !== blockId);
+      if (
+        nextCompleted.length === completedBlockIds.length &&
+        nextSkipped.length === skippedBlockIds.length
+      ) {
+        return;
+      }
+      set({
+        completedBlockIds: nextCompleted,
+        skippedBlockIds: nextSkipped,
       });
       persist();
     },
@@ -397,16 +439,33 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
 
       let { blocks: current, completedBlockIds, skippedBlockIds } = get();
 
+      const isSpineTimeline = input.blockOrigin === 'spineTimeline';
+      const overlapScope = isSpineTimeline
+        ? current.filter((b) => b.blockOrigin === 'spineTimeline')
+        : current.filter((b) => b.blockOrigin !== 'spineTimeline');
+
       if (input.replaceOverlapping) {
-        const overlapping = findOverlappingDayPlanBlocks(current, start, end, undefined, endsNext);
+        const overlapping = findOverlappingDayPlanBlocks(
+          overlapScope,
+          start,
+          end,
+          undefined,
+          endsNext,
+        );
         if (overlapping.length > 0) {
           const removeIds = new Set(overlapping.map((b) => b.id));
           current = current.filter((b) => !removeIds.has(b.id));
           completedBlockIds = completedBlockIds.filter((id) => !removeIds.has(id));
           skippedBlockIds = skippedBlockIds.filter((id) => !removeIds.has(id));
         }
-      } else {
-        const conflicting = findOverlappingDayPlanBlock(current, start, end, undefined, endsNext);
+      } else if (!isSpineTimeline) {
+        const conflicting = findOverlappingDayPlanBlock(
+          overlapScope,
+          start,
+          end,
+          undefined,
+          endsNext,
+        );
         if (conflicting) {
           return { ok: false, reason: 'overlap', conflicting };
         }
@@ -452,6 +511,106 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
             ? null
             : liveActivityChecklistFocusBlockId,
       });
+      persist();
+    },
+
+    updateBlock: (blockId, patch) => {
+      const existing = get().blocks.find((b) => b.id === blockId);
+      if (!existing) {
+        return { ok: false, reason: 'not_found' };
+      }
+
+      const title =
+        patch.title !== undefined ? patch.title.trim() : existing.title.trim();
+      if (!title) {
+        return { ok: false, reason: 'empty_title' };
+      }
+
+      const start = Math.max(
+        0,
+        Math.min(
+          Math.floor(patch.startMinutes ?? existing.startMinutes),
+          24 * 60 - 1,
+        ),
+      );
+      let end = Math.floor(patch.endMinutes ?? existing.endMinutes);
+      end = Math.max(0, Math.min(end, 24 * 60));
+      const endsNext = Boolean(existing.endsNextCalendarDay);
+
+      if (!endsNext) {
+        if (end <= start) {
+          return { ok: false, reason: 'invalid_range' };
+        }
+      } else {
+        if (end >= 24 * 60 || end >= start) {
+          return { ok: false, reason: 'invalid_range' };
+        }
+        const spanMin = 24 * 60 - start + end;
+        if (spanMin < 1) {
+          return { ok: false, reason: 'invalid_range' };
+        }
+      }
+
+      const dateKeyForBlock = get().dateKey;
+      if (
+        isBlockEndInPastForDateKey(dateKeyForBlock, {
+          endMinutes: end,
+          endsNextCalendarDay: endsNext,
+        })
+      ) {
+        return { ok: false, reason: 'in_the_past' };
+      }
+
+      const overlapScope =
+        existing.blockOrigin === 'spineTimeline'
+          ? get().blocks.filter(
+              (b) => b.blockOrigin === 'spineTimeline' && b.id !== blockId,
+            )
+          : get().blocks.filter(
+              (b) => b.blockOrigin !== 'spineTimeline' && b.id !== blockId,
+            );
+
+      if (existing.blockOrigin !== 'spineTimeline') {
+        const conflicting = findOverlappingDayPlanBlock(
+          overlapScope,
+          start,
+          end,
+          undefined,
+          endsNext,
+        );
+        if (conflicting) {
+          return { ok: false, reason: 'overlap', conflicting };
+        }
+      }
+
+      const nextBlocks = sortDayPlanBlocks(
+        get().blocks.map((b) => {
+          if (b.id !== blockId) return b;
+          const nextCategoryKey =
+            patch.categoryKey !== undefined
+              ? patch.categoryKey?.trim() || undefined
+              : b.categoryKey;
+          const nextCategory =
+            patch.category !== undefined ? patch.category.trim() : b.category;
+          return {
+            ...b,
+            title,
+            startMinutes: start,
+            endMinutes: end,
+            category: nextCategory,
+            ...(nextCategoryKey ? { categoryKey: nextCategoryKey } : { categoryKey: undefined }),
+          };
+        }),
+      );
+      set({ blocks: nextBlocks });
+      persist();
+      return { ok: true };
+    },
+
+    reorderSpineTimelineBlocks: (fromIndex, toIndex) => {
+      const next = applySpineTimelineReorder(get().blocks, fromIndex, toIndex);
+      if (next === get().blocks) return;
+      set({ blocks: next });
       persist();
     },
   };

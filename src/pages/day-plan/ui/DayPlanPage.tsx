@@ -50,6 +50,7 @@ import {
   loadDailyRhythmOnboardingCompleted,
   loadPriorityDayStartAlarm,
   markDailyRhythmOnboardingCompleted,
+  saveRoutineCatalogSelectionKeys,
 } from '@shared/lib/storage';
 import { ThemedView } from '@shared/ui/themed-view';
 
@@ -86,10 +87,9 @@ export function DayPlanPage() {
     priorityStart,
     priorityEnd,
     priorityCategoryOrder,
-    priorityBagDismissedDateKey,
-    priorityBagDismissedKeys,
     quickMemoDraft,
     priorityMealSlotLayoutEnabled,
+    prioritySpineLayoutEnabled,
     setPlanMode,
     setIsFocusStarted,
     setPriorityPlanDateKey,
@@ -105,6 +105,7 @@ export function DayPlanPage() {
     clearPlanCompletionDismissedKeys,
     setQuickMemoDraft,
     setPriorityMealSlotLayoutEnabled,
+    setPrioritySpineLayoutEnabled,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       planMode: s.planMode,
@@ -115,10 +116,9 @@ export function DayPlanPage() {
       priorityStart: s.priorityStart,
       priorityEnd: s.priorityEnd,
       priorityCategoryOrder: s.priorityCategoryOrder,
-      priorityBagDismissedDateKey: s.priorityBagDismissedDateKey,
-      priorityBagDismissedKeys: s.priorityBagDismissedKeys,
       quickMemoDraft: s.quickMemoDraft,
       priorityMealSlotLayoutEnabled: s.priorityMealSlotLayoutEnabled,
+      prioritySpineLayoutEnabled: s.prioritySpineLayoutEnabled,
       setPlanMode: s.setPlanMode,
       setIsFocusStarted: s.setIsFocusStarted,
       setPriorityPlanDateKey: s.setPriorityPlanDateKey,
@@ -134,24 +134,28 @@ export function DayPlanPage() {
       clearPlanCompletionDismissedKeys: s.clearPlanCompletionDismissedKeys,
       setQuickMemoDraft: s.setQuickMemoDraft,
       setPriorityMealSlotLayoutEnabled: s.setPriorityMealSlotLayoutEnabled,
+      setPrioritySpineLayoutEnabled: s.setPrioritySpineLayoutEnabled,
     })),
   );
 
   const layoutMode: DayPlanLayoutMode = useMemo(() => {
     if (planMode === 'todoList') return 'todoList';
+    if (prioritySpineLayoutEnabled) return 'spine';
     return priorityMealSlotLayoutEnabled ? 'sections' : 'bag';
-  }, [planMode, priorityMealSlotLayoutEnabled]);
+  }, [planMode, priorityMealSlotLayoutEnabled, prioritySpineLayoutEnabled]);
 
   const onSelectLayoutMode = useCallback(
     (mode: DayPlanLayoutMode) => {
       if (mode === 'todoList') {
         setPlanMode('todoList');
+        setPrioritySpineLayoutEnabled(false);
         return;
       }
       setPlanMode('priority');
       setPriorityMealSlotLayoutEnabled(mode === 'sections');
+      setPrioritySpineLayoutEnabled(mode === 'spine');
     },
-    [setPlanMode, setPriorityMealSlotLayoutEnabled],
+    [setPlanMode, setPriorityMealSlotLayoutEnabled, setPrioritySpineLayoutEnabled],
   );
 
   const {
@@ -337,6 +341,7 @@ export function DayPlanPage() {
         ? priorityCategoryOrder.filter((k) => k !== key)
         : [...priorityCategoryOrder, key];
       setPriorityCategoryOrder(nextOrder);
+      saveRoutineCatalogSelectionKeys(nextOrder);
     },
     [priorityCategoryOrder, setPriorityCategoryOrder],
   );

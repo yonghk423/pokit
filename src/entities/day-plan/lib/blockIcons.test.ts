@@ -15,12 +15,29 @@ function block(partial: Partial<DayPlanBlock>): DayPlanBlock {
 }
 
 describe('getBlockTimelineIcon', () => {
-  it('maps title and category to symbols', () => {
-    expect(getBlockTimelineIcon(block({ title: '취침 준비' }))).toBe('moon.stars.fill');
-    expect(getBlockTimelineIcon(block({ title: '기상 알람' }))).toBe('sun.max.fill');
+  it('uses categoryKey catalog icon when present', () => {
+    expect(getBlockTimelineIcon(block({ categoryKey: 'reading', category: '독서' }))).toBe(
+      'book.fill',
+    );
+    expect(getBlockTimelineIcon(block({ categoryKey: 'workout', category: '운동' }))).toBe(
+      'dumbbell.fill',
+    );
+  });
+
+  it('falls back to title and legacy category heuristics', () => {
+    const unknownCategory = { category: '커스텀 일정' as const };
+    expect(getBlockTimelineIcon(block({ title: '취침 준비', ...unknownCategory }))).toBe(
+      'moon.stars.fill',
+    );
+    expect(getBlockTimelineIcon(block({ title: '기상 알람', ...unknownCategory }))).toBe(
+      'sun.max.fill',
+    );
     expect(getBlockTimelineIcon(block({ category: '건강' }))).toBe('heart.fill');
     expect(getBlockTimelineIcon(block({ category: '딥워크' }))).toBe('bolt.fill');
     expect(getBlockTimelineIcon(block({ category: '생산성' }))).toBe('bag.fill');
-    expect(getBlockTimelineIcon(block({}))).toBe('clock.fill');
+  });
+
+  it('uses bookmark when category label cannot be resolved', () => {
+    expect(getBlockTimelineIcon(block({ category: '커스텀 일정' }))).toBe('bookmark.fill');
   });
 });

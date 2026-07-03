@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppUpdateNoticeHost } from '@app/AppUpdateNoticeHost';
 import { useAppBootstrap } from '@app/index';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 
@@ -89,6 +90,7 @@ export default function RootLayout() {
               options={{ headerShown: false, presentation: 'fullScreenModal' }}
             />
           </Stack>
+          <AppUpdateNoticeHost appReady={appReady} />
           <StatusBar style={isDark ? 'light' : 'dark'} />
         </ThemeProvider>
       </SafeAreaProvider>

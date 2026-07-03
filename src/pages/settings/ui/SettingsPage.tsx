@@ -64,8 +64,6 @@ export function SettingsPage() {
         isFocusStarted: false,
         completedFocusCategoryKeys: [],
         planCompletionDismissedKeys: [],
-        priorityBagDismissedDateKey: today,
-        priorityBagDismissedKeys: [],
         priorityPlanDateKey: today,
         priorityPlanDateKeyEnd: today,
         priorityPlanExplicitMultiDay: false,

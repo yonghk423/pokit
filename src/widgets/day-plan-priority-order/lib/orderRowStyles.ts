@@ -86,12 +86,4 @@ export const orderRowStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /** 완료 행 — 담기에서 제거(아이콘) */
-  orderBagEndIconHit: {
-    alignSelf: 'center',
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

@@ -1,12 +1,10 @@
 import {
-  buildAppliedFixedRoutineMealSlotOverrides,
   resolveFixedFlowItemMealSlot,
   type DayMealSlot,
   type FixedFlowSet,
 } from '@shared/lib/storage';
 
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
-import { getLocalDateKey } from './localDateKey';
 import { filterKeysToPriorityCatalog } from './priorityCatalogRegistry';
 
 /** 고정·나만의 루틴 세트에 등록된 활성 categoryKey */
@@ -31,18 +29,22 @@ function ensureFixedRoutinesInPriorityOrder(order: string[], fixedOrder: string[
 
 /**
  * 오늘 탭 담기 순서를 고정 루틴 적용 상태와 맞춘다.
- * - 오늘 적용 중이 아닌 루틴 세트 항목은 제거
+ * - 오늘 적용 중이 아닌 고정 루틴 항목은 제거 (단, 루틴 탭에서 직접 고른 항목은 유지)
  * - 오늘 적용 중인 항목은 앞쪽에 보강
  */
 export function syncPriorityOrderWithAppliedFixedRoutines(
   order: string[],
   appliedKeys: string[],
   allFixedFlowKeys: Set<string>,
+  routineCatalogSelectionKeys: ReadonlySet<string> = new Set(),
 ): string[] {
   const applied = new Set(appliedKeys);
-  const withoutInactiveRoutine = order.filter(
-    (key) => !allFixedFlowKeys.has(key) || applied.has(key),
-  );
+  const withoutInactiveRoutine = order.filter((key) => {
+    if (!allFixedFlowKeys.has(key)) return true;
+    if (applied.has(key)) return true;
+    if (routineCatalogSelectionKeys.has(key)) return true;
+    return false;
+  });
   return ensureFixedRoutinesInPriorityOrder(withoutInactiveRoutine, appliedKeys);
 }
 
@@ -50,22 +52,13 @@ function pruneMealSlotOverrides(
   overrides: Record<string, DayMealSlot>,
   appliedKeys: Set<string>,
   allFixedFlowKeys: Set<string>,
+  routineCatalogSelectionKeys: ReadonlySet<string> = new Set<string>(),
 ): Record<string, DayMealSlot> {
   const next = { ...overrides };
   for (const key of allFixedFlowKeys) {
-    if (!appliedKeys.has(key)) delete next[key];
-  }
-  return next;
-}
-
-function mergeAppliedFixedRoutineMealSlotOverrides(
-  draftOverrides: Record<string, DayMealSlot>,
-  prunedOverrides: Record<string, DayMealSlot>,
-  appliedOverrides: Record<string, DayMealSlot>,
-): Record<string, DayMealSlot> {
-  const next = { ...prunedOverrides };
-  for (const [key, slot] of Object.entries(appliedOverrides)) {
-    if (!(key in draftOverrides)) next[key] = slot;
+    if (appliedKeys.has(key)) continue;
+    if (routineCatalogSelectionKeys.has(key)) continue;
+    delete next[key];
   }
   return next;
 }
@@ -113,13 +106,13 @@ export function collectStandardsSupersededByAppliedCustom(
 export type SyncTodayTabWithFixedRoutineInput = {
   priorityCategoryOrder: string[];
   priorityMealSlotOverrides: Record<string, DayMealSlot>;
-  priorityBagDismissedDateKey: string;
-  priorityBagDismissedKeys: string[];
   todayAppliedCategoryKeys: string[];
   activeSetIds: string[];
   activeMealSlotsBySetId?: Record<string, DayMealSlot[]>;
   scheduledMealSlotLayoutEnabled: boolean;
   fixedFlowSets: FixedFlowSet[];
+  /** 루틴 탭에서 직접 선택한 categoryKey */
+  routineCatalogSelectionKeys?: string[];
 };
 
 export type SyncTodayTabWithFixedRoutinePatch = {
@@ -131,17 +124,12 @@ export type SyncTodayTabWithFixedRoutinePatch = {
 export function computeSyncTodayTabWithFixedRoutineApply(
   input: SyncTodayTabWithFixedRoutineInput,
 ): SyncTodayTabWithFixedRoutinePatch | null {
-  const today = getLocalDateKey();
-  const todayDismissed =
-    input.priorityBagDismissedDateKey === today
-      ? new Set(input.priorityBagDismissedKeys)
-      : new Set<string>();
-
-  const appliedKeys = filterKeysToPriorityCatalog(input.todayAppliedCategoryKeys).filter(
-    (key) => !todayDismissed.has(key),
-  );
+  const appliedKeys = filterKeysToPriorityCatalog(input.todayAppliedCategoryKeys);
   const allFixedFlowKeys = collectAllFixedFlowCategoryKeys(input.fixedFlowSets);
   const appliedSet = new Set(appliedKeys);
+  const catalogSelection = new Set(
+    filterKeysToPriorityCatalog(input.routineCatalogSelectionKeys ?? []),
+  );
 
   const supersededStandardKeys = collectStandardsSupersededByAppliedCustom(
     input.fixedFlowSets,
@@ -157,26 +145,16 @@ export function computeSyncTodayTabWithFixedRoutineApply(
     orderWithoutSuperseded,
     appliedKeys,
     allFixedFlowKeys,
+    catalogSelection,
   );
 
-  const appliedOverrides = buildAppliedFixedRoutineMealSlotOverrides(
-    {
-      sets: input.fixedFlowSets,
-      activeSetIds: input.activeSetIds,
-      activeMealSlotsBySetId: input.activeMealSlotsBySetId,
-    },
-    appliedKeys,
-  );
   const prunedOverrides = pruneMealSlotOverrides(
     input.priorityMealSlotOverrides,
     appliedSet,
     allFixedFlowKeys,
+    catalogSelection,
   );
-  const nextOverrides = mergeAppliedFixedRoutineMealSlotOverrides(
-    input.priorityMealSlotOverrides,
-    prunedOverrides,
-    appliedOverrides,
-  );
+  const nextOverrides = prunedOverrides;
 
   const orderChanged =
     nextOrder.length !== input.priorityCategoryOrder.length ||

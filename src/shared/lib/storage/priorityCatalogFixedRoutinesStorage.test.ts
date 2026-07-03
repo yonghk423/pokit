@@ -1,6 +1,6 @@
-import { localStorageClient } from './localStorageClient';
 import * as fixedFlowSetsStorage from './fixedFlowSetsStorage';
 import { loadFixedFlowSetsState } from './fixedFlowSetsStorage';
+import { localStorageClient } from './localStorageClient';
 import {
   loadPriorityCatalogFixedRoutineKeys,
   savePriorityCatalogFixedRoutineKeys,

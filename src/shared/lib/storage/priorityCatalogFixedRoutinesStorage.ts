@@ -24,6 +24,19 @@ function normalizeLegacyKeys(raw: unknown): string[] {
   return out;
 }
 
+/** 루틴 탭에서 사용자가 직접 선택한 항목 — 오늘 탭 담기와 동기화 시 보존 */
+export function loadRoutineCatalogSelectionKeys(): string[] {
+  const legacy = localStorageClient.getJson<LegacyPersistedShape>(StorageKeys.priorityCatalogFixedRoutines);
+  return normalizeLegacyKeys(legacy?.categoryKeys);
+}
+
+export function saveRoutineCatalogSelectionKeys(categoryKeys: string[]): void {
+  const normalized = normalizeLegacyKeys(categoryKeys);
+  localStorageClient.setJson(StorageKeys.priorityCatalogFixedRoutines, {
+    categoryKeys: normalized,
+  });
+}
+
 function createDefaultSet(categoryKeys: string[]): FixedFlowSet {
   return {
     id: 'default',

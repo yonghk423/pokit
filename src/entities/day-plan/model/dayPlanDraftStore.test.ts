@@ -35,8 +35,6 @@ function resetDraftStore() {
     routineHistoryPlannedKeysByDate: {},
     completedFocusCategoryKeys: [],
     planCompletionDismissedKeys: [],
-    priorityBagDismissedKeys: [],
-    priorityBagDismissedDateKey: '2025-05-26',
     quickMemoDraft: '',
   });
 }
@@ -262,27 +260,6 @@ describe('dayPlanDraftStore', () => {
     expect(useDayPlanDraftStore.getState().planMode).toBe('priority');
   });
 
-  it('keeps bag dismissed keys for today only', () => {
-    mockLoadDayPlanDraft.mockReturnValue({
-      planMode: 'priority',
-      isFocusStarted: false,
-      completedFocusCategoryKeys: [],
-      planCompletionDismissedKeys: [],
-      priorityPlanDateKey: '2025-05-26',
-      priorityPlanDateKeyEnd: '2025-05-26',
-      priorityPlanExplicitMultiDay: false,
-      priorityOvernightEndAuto: false,
-      priorityStart: '09:00',
-      priorityEnd: '18:00',
-      priorityCategoryOrder: [],
-      quickMemoDraft: '',
-      priorityBagDismissedDateKey: '2025-05-26',
-      priorityBagDismissedKeys: ['reading'],
-    });
-    useDayPlanDraftStore.getState().hydrate();
-    expect(useDayPlanDraftStore.getState().priorityBagDismissedKeys).toEqual(['reading']);
-  });
-
   it('toggles focus categories and filters order', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,
@@ -337,23 +314,11 @@ describe('dayPlanDraftStore', () => {
     expect(mockSaveDayPlanDraft).toHaveBeenCalled();
   });
 
-  it('no-ops removeCompletedPriorityBagRows when keys empty', () => {
+  it('bumps category label epoch', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,
-      priorityCategoryOrder: ['reading'],
-    });
-    useDayPlanDraftStore.getState().removeCompletedPriorityBagRows([], []);
-    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['reading']);
-  });
-
-  it('clears bag dismissed keys and bumps category label epoch', () => {
-    useDayPlanDraftStore.setState({
-      isHydrated: true,
-      priorityBagDismissedKeys: ['reading'],
       categoryLabelEpoch: 2,
     });
-    useDayPlanDraftStore.getState().clearPriorityBagDismissedKeys();
-    expect(useDayPlanDraftStore.getState().priorityBagDismissedKeys).toEqual([]);
     useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
     expect(useDayPlanDraftStore.getState().categoryLabelEpoch).toBe(3);
   });
@@ -396,38 +361,5 @@ describe('dayPlanDraftStore', () => {
     useDayPlanDraftStore.getState().setIsFocusStarted(true);
     expect(useDayPlanDraftStore.getState().isFocusStarted).toBe(true);
     expect(mockSaveDayPlanDraft).toHaveBeenCalled();
-  });
-
-  it('clears focus state when all bag rows are removed', () => {
-    useDayPlanDraftStore.setState({
-      isHydrated: true,
-      priorityCategoryOrder: ['reading'],
-      completedFocusCategoryKeys: ['reading'],
-      planCompletionDismissedKeys: ['reading'],
-      priorityBagDismissedKeys: [],
-      priorityBagDismissedDateKey: '2025-05-26',
-      isFocusStarted: true,
-    });
-    useDayPlanDraftStore.getState().removeCompletedPriorityBagRows(['reading'], []);
-    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual([]);
-    expect(useDayPlanDraftStore.getState().isFocusStarted).toBe(false);
-    expect(useDayPlanDraftStore.getState().planCompletionDismissedKeys).toEqual([]);
-  });
-
-  it('removes completed bag rows and dismisses keys', () => {
-    useDayPlanDraftStore.setState({
-      isHydrated: true,
-      priorityCategoryOrder: ['reading', 'water'],
-      completedFocusCategoryKeys: ['reading'],
-      planCompletionDismissedKeys: [],
-      priorityBagDismissedKeys: [],
-      priorityBagDismissedDateKey: '2025-05-26',
-      isFocusStarted: true,
-    });
-    useDayPlanDraftStore.getState().removeCompletedPriorityBagRows(['reading'], ['reading']);
-    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['water']);
-    expect(useDayPlanDraftStore.getState().completedFocusCategoryKeys).toEqual([]);
-    expect(useDayPlanDraftStore.getState().planCompletionDismissedKeys).toContain('reading');
-    expect(useDayPlanDraftStore.getState().priorityBagDismissedKeys).toContain('reading');
   });
 });

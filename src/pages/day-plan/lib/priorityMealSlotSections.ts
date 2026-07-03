@@ -5,6 +5,7 @@ import {
   getMealSlotStartHhmm,
   normalizeDayMealSlotSchedule,
   resolveCurrentMealSlotFromSchedule,
+  resolveDefaultMealSlotForCategory,
   resolvePriorityMealSlot,
   type DayMealSlot,
   type DayMealSlotSchedule,
@@ -39,10 +40,13 @@ function buildPriorityMealSlotSectionBuckets<T extends { key: string }>(
     orderIndexByKey?: ReadonlyMap<string, number>;
     /** true면 mealSlotOverrides에 있는 항목만 구간에 넣고, 나머지는 unslotted */
     explicitSlotsOnly?: boolean;
+    /** true면 항목이 없는 구간도 섹션 목록에 포함 */
+    includeEmptySections?: boolean;
   },
 ): PriorityMealSlotSectionsResult<T> {
   const overrides = options?.mealSlotOverrides ?? new Map<string, DayMealSlot>();
   const explicitSlotsOnly = options?.explicitSlotsOnly === true;
+  const includeEmptySections = options?.includeEmptySections === true;
   const schedule = normalizeDayMealSlotSchedule(options?.schedule);
   const buckets = new Map<DayMealSlot, T[]>(
     DAY_MEAL_SLOT_ORDER.map((slot) => [slot, []]),
@@ -71,7 +75,7 @@ function buildPriorityMealSlotSectionBuckets<T extends { key: string }>(
     hintTime: getMealSlotStartHhmm(schedule, slot),
     items: buckets.get(slot) ?? [],
     isCurrent: currentSlot === slot,
-  })).filter((section) => section.items.length > 0);
+  })).filter((section) => includeEmptySections || section.items.length > 0);
 
   return { sections, unslottedItems };
 }
@@ -84,6 +88,7 @@ export function splitPriorityMealSlotSections<T extends { key: string }>(
     schedule?: DayMealSlotSchedule;
     orderIndexByKey?: ReadonlyMap<string, number>;
     explicitSlotsOnly?: boolean;
+    includeEmptySections?: boolean;
   },
 ): PriorityMealSlotSectionsResult<T> {
   return buildPriorityMealSlotSectionBuckets(items, options);
@@ -107,6 +112,53 @@ export function hasExplicitMealSlotAssignments(
   overrides: ReadonlyMap<string, DayMealSlot>,
 ): boolean {
   return items.some((item) => overrides.has(item.key));
+}
+
+/** 구간(시간대)을 아직 지정하지 않은 담기 항목 */
+export function listUnslottedPriorityItems<T extends { key: string }>(
+  items: readonly T[],
+  overrides: ReadonlyMap<string, DayMealSlot>,
+): T[] {
+  return items.filter((item) => !overrides.has(item.key));
+}
+
+/** 고정 루틴·수동 지정이 없는 담기 항목에 카테고리 기본 구간을 채웁니다. */
+export function buildDefaultPriorityMealSlotOverrides(
+  items: readonly { key: string }[],
+  options?: {
+    orderIndexByKey?: ReadonlyMap<string, number>;
+    existingOverrides?: ReadonlyMap<string, DayMealSlot>;
+  },
+): Record<string, DayMealSlot> {
+  const existing = options?.existingOverrides ?? new Map<string, DayMealSlot>();
+  const out: Record<string, DayMealSlot> = {};
+  items.forEach((item, displayIndex) => {
+    if (existing.has(item.key)) return;
+    const orderIndex = options?.orderIndexByKey?.get(item.key) ?? displayIndex;
+    out[item.key] = resolveDefaultMealSlotForCategory(item.key, orderIndex);
+  });
+  return out;
+}
+
+/** 담기 항목이 없을 때 시간대별 보기 구간 뼈대 */
+export function buildEmptyPriorityMealSlotSections<T extends { key: string }>(
+  options?: {
+    nowMin?: number;
+    schedule?: DayMealSlotSchedule;
+  },
+): PriorityMealSlotSection<T>[] {
+  const schedule = normalizeDayMealSlotSchedule(options?.schedule);
+  const currentSlot =
+    typeof options?.nowMin === 'number'
+      ? resolveCurrentMealSlotFromSchedule(options.nowMin, schedule)
+      : null;
+  return DAY_MEAL_SLOT_ORDER.map((slot) => ({
+    slot,
+    title: DAY_MEAL_SLOT_LABEL[slot],
+    hintTime: getMealSlotStartHhmm(schedule, slot),
+    items: [],
+    isCurrent: currentSlot === slot,
+  }));
 }
 
 export function flattenPriorityMealSlotSectionKeys<T extends { key: string }>(

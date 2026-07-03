@@ -21,6 +21,8 @@ type Props = {
   isDark: boolean;
   onClose: () => void;
   onSave: (next: DayMealSlotSchedule) => void;
+  /** 열릴 때 펼칠 구간 — 오늘 탭에서 특정 시간을 눌러 들어올 때 */
+  initialExpandedSlot?: DayMealSlot | null;
 };
 
 const SLOT_HINTS: Record<DayMealSlot, string> = {
@@ -37,6 +39,7 @@ export function DayMealSlotScheduleSheet({
   isDark,
   onClose,
   onSave,
+  initialExpandedSlot = null,
 }: Props) {
   const insets = useSafeAreaInsets();
   const palette = useMemo(() => paletteForReminderTimeCard(isDark), [isDark]);
@@ -46,9 +49,9 @@ export function DayMealSlotScheduleSheet({
   useEffect(() => {
     if (visible) {
       setDraft(schedule);
-      setExpandedSlot(null);
+      setExpandedSlot(initialExpandedSlot);
     }
-  }, [visible, schedule]);
+  }, [visible, schedule, initialExpandedSlot]);
 
   const handleSave = useCallback(() => {
     if (!isDayMealSlotScheduleValid(draft)) {

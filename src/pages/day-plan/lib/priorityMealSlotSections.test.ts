@@ -1,7 +1,10 @@
 import {
+  buildDefaultPriorityMealSlotOverrides,
+  buildEmptyPriorityMealSlotSections,
   buildPriorityMealSlotSections,
   hasExplicitMealSlotAssignments,
   inferMealSlotAfterFlatReorder,
+  listUnslottedPriorityItems,
   reorderFlatKeys,
   splitPriorityMealSlotSections,
 } from './priorityMealSlotSections';
@@ -39,6 +42,61 @@ describe('resolvePriorityMealSlot', () => {
   });
 });
 
+describe('buildEmptyPriorityMealSlotSections', () => {
+  it('returns all day slots with empty items', () => {
+    const sections = buildEmptyPriorityMealSlotSections();
+    expect(sections).toHaveLength(5);
+    expect(sections.map((section) => section.slot)).toEqual([
+      'dawn',
+      'morning',
+      'lunch',
+      'dinner',
+      'night',
+    ]);
+    expect(sections.every((section) => section.items.length === 0)).toBe(true);
+  });
+});
+
+describe('listUnslottedPriorityItems', () => {
+  it('returns only items without explicit slot override', () => {
+    const items = [{ key: 'reading' }, { key: 'water' }];
+    const overrides = new Map([['reading', 'morning' as const]]);
+    expect(listUnslottedPriorityItems(items, overrides).map((item) => item.key)).toEqual([
+      'water',
+    ]);
+  });
+});
+
+describe('buildDefaultPriorityMealSlotOverrides', () => {
+  it('fills only items without existing override', () => {
+    const items = [
+      { key: 'water', label: '수분' },
+      { key: 'reading', label: '독서' },
+    ];
+    const defaults = buildDefaultPriorityMealSlotOverrides(items, {
+      existingOverrides: new Map([['water', 'night' as const]]),
+    });
+    expect(defaults).toEqual({ reading: 'morning' });
+  });
+});
+
+describe('splitPriorityMealSlotSections includeEmptySections', () => {
+  it('keeps all day slots when includeEmptySections is true', () => {
+    const items = [{ key: 'medicine', label: '약 복용' }];
+    const overrides = new Map([['medicine', 'dawn' as const]]);
+    const { sections } = splitPriorityMealSlotSections(items, {
+      mealSlotOverrides: overrides,
+      explicitSlotsOnly: true,
+      includeEmptySections: true,
+    });
+    expect(sections).toHaveLength(5);
+    expect(sections.find((section) => section.slot === 'dawn')?.items.map((item) => item.key)).toEqual([
+      'medicine',
+    ]);
+    expect(sections.find((section) => section.slot === 'morning')?.items).toEqual([]);
+  });
+});
+
 describe('splitPriorityMealSlotSections explicit slots only', () => {
   it('keeps items without explicit override in unslotted list', () => {
     const items = [
@@ -54,6 +112,21 @@ describe('splitPriorityMealSlotSections explicit slots only', () => {
     expect(sections[0]?.slot).toBe('morning');
     expect(sections[0]?.items.map((item) => item.key)).toEqual(['reading']);
     expect(unslottedItems.map((item) => item.key)).toEqual(['water']);
+  });
+
+  it('still buckets items without override when includeEmptySections layout is active', () => {
+    const items = [
+      { key: 'water', label: '수분' },
+      { key: 'reading', label: '독서' },
+    ];
+    const overrides = new Map([['reading', 'morning' as const]]);
+    const { sections, unslottedItems } = splitPriorityMealSlotSections(items, {
+      mealSlotOverrides: overrides,
+      explicitSlotsOnly: false,
+      includeEmptySections: true,
+    });
+    expect(unslottedItems).toEqual([]);
+    expect(sections.find((section) => section.items.some((item) => item.key === 'water'))).toBeTruthy();
   });
 
   it('reports explicit assignments only when override exists', () => {

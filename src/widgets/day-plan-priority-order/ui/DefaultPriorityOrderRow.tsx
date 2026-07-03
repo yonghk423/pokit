@@ -43,7 +43,6 @@ export function DefaultPriorityOrderRow({
   inkMuted,
   line,
   onToggleFocusComplete,
-  onRemoveCompletedFromPriorityBag,
   onReorderDragTranslationEnd,
   onReorderDragActiveChange,
   reorderDragSurface,
@@ -230,23 +229,6 @@ export function DefaultPriorityOrderRow({
             },
           ]}>
           <IconSymbol name="slider.horizontal.3" size={14} color={isDark ? '#FAFAFA' : primary} />
-        </Pressable>
-      ) : null}
-      {isCompleted && onRemoveCompletedFromPriorityBag ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${label} 담기에서 빼기`}
-          hitSlop={10}
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            onRemoveCompletedFromPriorityBag();
-          }}
-          style={styles.orderBagEndIconHit}>
-          <IconSymbol
-            name="xmark.circle.fill"
-            size={22}
-            color={isDark ? 'rgba(250,250,250,0.45)' : 'rgba(0,0,0,0.35)'}
-          />
         </Pressable>
       ) : null}
       {onToggleFocusComplete ? (

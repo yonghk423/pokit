@@ -1,3 +1,5 @@
+import { loadRoutineCatalogSelectionKeys } from '@shared/lib/storage';
+
 import {
   computeSyncTodayTabWithFixedRoutineApply,
   type SyncTodayTabWithFixedRoutinePatch,
@@ -8,8 +10,6 @@ type DraftSyncState = {
   priorityCategoryOrder: string[];
   priorityMealSlotOverrides: Record<string, import('@shared/lib/storage').DayMealSlot>;
   priorityMealSlotLayoutEnabled: boolean;
-  priorityBagDismissedDateKey: string;
-  priorityBagDismissedKeys: string[];
 };
 
 type FixedSyncState = {
@@ -50,13 +50,12 @@ export function syncTodayTabWithFixedRoutineApply(): void {
   const patch = computeSyncTodayTabWithFixedRoutineApply({
     priorityCategoryOrder: draft.priorityCategoryOrder,
     priorityMealSlotOverrides: draft.priorityMealSlotOverrides,
-    priorityBagDismissedDateKey: draft.priorityBagDismissedDateKey,
-    priorityBagDismissedKeys: draft.priorityBagDismissedKeys,
     todayAppliedCategoryKeys: fixed.todayAppliedCategoryKeys,
     activeSetIds: fixed.activeSetIds,
     activeMealSlotsBySetId: fixed.activeMealSlotsBySetId,
     scheduledMealSlotLayoutEnabled: fixed.scheduledMealSlotLayoutEnabled,
     fixedFlowSets: fixed.sets,
+    routineCatalogSelectionKeys: loadRoutineCatalogSelectionKeys(),
   });
 
   if (patch) setDraftSyncPatch(patch);

@@ -50,6 +50,7 @@ export type DayPlanBlock = {
    * 블록 생성 출처.
    * - `quickMemo`: 빠른 메모 저장 블록(메모 전용 표시)
    * - `prioritySession`: 우선순위 시작 시 내부 세션/동기화용 블록(타임라인 행에는 노출하지 않음)
+   * - `spineTimeline`: 스파인 타임라인 모드 전용(전체/구간 보기 타임라인에는 노출하지 않음)
    */
-  blockOrigin?: 'quickMemo' | 'prioritySession';
+  blockOrigin?: 'quickMemo' | 'prioritySession' | 'spineTimeline';
 };

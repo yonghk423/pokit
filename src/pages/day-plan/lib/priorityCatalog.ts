@@ -1,6 +1,6 @@
-import { isCustomFlowCategoryKey } from '@entities/day-plan';
+import { isCustomFlowCategoryKey, resolveCategoryCatalogIcon } from '@entities/day-plan';
 import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
-import { listAllCustomFlowCatalogEntries } from '@shared/lib/storage';
+import { listAllCustomFlowCatalogEntries, listCustomCatalogGroups } from '@shared/lib/storage';
 
 import {
   getPickerCategoryItem,
@@ -64,6 +64,45 @@ export function buildPriorityCatalogRows(): PriorityCatalogRow[] {
 
 export function buildPriorityCatalogByKey(): Map<string, PriorityCatalogRow> {
   return new Map(buildPriorityCatalogRows().map((row) => [row.key, row]));
+}
+
+/** 스파인 일정 편집 — 루틴 탭과 동일한 그룹·항목 목록 */
+export function buildRoutineTabPickerSections(catalogLabelEpoch = 0): {
+  title: string;
+  items: PriorityCatalogRow[];
+}[] {
+  void catalogLabelEpoch;
+  const customFlowEntries = listAllCustomFlowCatalogEntries();
+  const customGroups = listCustomCatalogGroups();
+  const available = filterCatalogPickerCategories(PICKER_CATEGORIES).map((item) => ({
+    ...item,
+    label: getPickerCategoryLabel(item.key),
+  }));
+  const customFlowPickerItems: PickerCategoryItem[] = customFlowEntries.map((entry) => {
+    const item = getPickerCategoryItem(entry.id);
+    return {
+      key: entry.id,
+      label: getPickerCategoryLabel(entry.id),
+      icon: (item?.icon ?? 'person.fill') as typeof PICKER_CATEGORIES[number]['icon'],
+    };
+  });
+  const { groupSections } = buildPriorityCatalogSections({
+    available,
+    customFlowPickerItems,
+    customFlowEntries,
+    customGroups,
+  });
+  return groupSections
+    .filter((section) => section.items.length > 0)
+    .map((section) => ({
+      title: section.title,
+      items: section.items.map((item) => ({
+        key: item.key,
+        label: item.label,
+        icon: resolveCategoryCatalogIcon(item.key),
+        isCustom: isCustomFlowCategoryKey(item.key),
+      })),
+    }));
 }
 
 export function getPriorityCatalogPickerItems(): PickerCategoryItem[] {

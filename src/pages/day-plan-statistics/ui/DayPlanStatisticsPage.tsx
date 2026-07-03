@@ -1,104 +1,74 @@
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, G } from 'react-native-svg';
 import { useShallow } from 'zustand/react/shallow';
 
-import {
-  addDaysToLocalDateKey,
-  categoryReminderIconName,
-  categoryReminderLabelKo,
-  getLocalDateKey,
-} from '@entities/day-plan';
-import { getCategoryCompletions, useHistoryStore } from '@entities/history';
+import { formatHhmmClockKo, getLocalDateKey, useDayPlanDraftStore } from '@entities/day-plan';
+import { useHistoryStore } from '@entities/history';
 import { syncRoutineWindowCompletionsToHistory } from '@features/history-routine-sync';
-
+import { PrimaryColor } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import {
+  loadDayMealSlotSchedule,
+  resolvePriorityMealSlot,
+  type DayMealSlot,
+} from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
-import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
-import { historyUiAccent, historyUiAccentPastel } from '../lib/historyBrandAccent';
 import {
-  formatHistoryCategoryVarietyKo,
-  formatHistoryFrequencyKo,
-} from '../lib/historyDisplayFormat';
-import { HistoryCalendarOverlay } from './HistoryCalendarOverlay';
-import { InsightsHistoryView } from './InsightsHistoryView';
+  buildMonthlyFlowHistory,
+  buildMonthlyHistorySummary,
+  historyPeriodDescription,
+} from '../lib/buildMonthlyFlowHistory';
+import {
+  addDaysToHistoryDateKey,
+  buildWeeklyFlowHistory,
+  formatWeekRangeLabelKo,
+  resolveWeekStartForAnchor,
+} from '../lib/buildWeeklyFlowHistory';
+import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
+import {
+  canGoNextMonth,
+  formatMonthLabelKo,
+  resolveMonthPrefix,
+  shiftMonthPrefix,
+  type HistoryPeriod,
+} from '../lib/historyPeriodRange';
+import { HistoryPeriodTabs } from './HistoryPeriodTabs';
+import { MonthlyFlowHistoryCard } from './MonthlyFlowHistoryCard';
+import { MonthlyHistorySummaryCard } from './MonthlyHistorySummaryCard';
+import { WeeklyFlowHistoryCard } from './WeeklyFlowHistoryCard';
 
-/** 하단 탭바 아래 끝 여백 — `DayPlanCustomTabBar`가 세이프 영역을 이미 담당 */
 const SCROLL_END_GAP_PX = 6;
 
-/** 통계 탭 = 데일리 / 인사이트 */
-type HistoryPeriod = 'today' | 'insights';
-
-type HistoryFeedRow = {
-  dateKey: string;
-  headline: string;
-  summary: string;
-  rateLabel: string;
-  categoryLabel: string;
-  categoryKey: string | null;
-};
-
-function formatDateKeyKo(dateKey: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
-  if (!m) return dateKey;
-  return `${Number(m[2])}월 ${Number(m[3])}일`;
-}
-
-function formatRatePercent(rate: number): string {
-  const pct = Math.round(Math.max(0, Math.min(1, Number(rate) || 0)) * 100);
-  return `${pct}%`;
-}
-
-function resolveHistoryHeadline(rate: number, completedCount: number): string {
-  if (completedCount >= 6 && rate >= 0.85) return '완벽한 몰입의 날';
-  if (completedCount >= 4 && rate >= 0.7) return '균형 있게 채운 하루';
-  if (completedCount >= 2) return '작은 완수를 이어간 날';
-  if (completedCount >= 1) return '기록을 다시 시작한 날';
-  return '회복을 준비한 날';
-}
-
-function resolveHistorySummary(rate: number, completedCount: number): string {
-  if (completedCount >= 6) return '핵심 플로우를 꾸준히 마무리하며 긴 호흡의 집중을 만들었어요.';
-  if (completedCount >= 4) return '여러 카테고리를 균형 있게 챙기며 안정적인 페이스를 유지했어요.';
-  if (rate >= 0.6) return '우선순위를 지키며 필요한 흐름을 놓치지 않았어요.';
-  if (completedCount > 0) return '작은 완료를 만들며 다음 페이스를 위한 기반을 쌓았어요.';
-  return '완료 기록은 없지만 흐름을 점검한 하루였어요.';
-}
-
-/** 하단 통계 탭 — 히스토리(기간별 조회) */
+/** 하단 히스토리 탭 — 주간·월간 플로우 완료 기록 */
 export function DayPlanStatisticsPage() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const todayDateKey = getLocalDateKey();
 
-  const [period, setPeriod] = useState<HistoryPeriod>('today');
-  const [selectedDateKey, setSelectedDateKey] = useState(todayDateKey);
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [historyQuery, setHistoryQuery] = useState('');
-  const [historyFilter, setHistoryFilter] = useState<string>('all');
+  const [period, setPeriod] = useState<HistoryPeriod>('week');
+  const [anchorDateKey, setAnchorDateKey] = useState(todayDateKey);
+  const [mealSlotSchedule] = useState(() => loadDayMealSlotSchedule());
 
-  const {
-    isHydrated,
-    hydrate,
-    reloadFromStorage,
-    dailyStatsByDate,
-    selectCurrentStreak,
-    selectGrowthVsPreviousWeek,
-  } = useHistoryStore(
+  const { priorityCategoryOrder, priorityMealSlotOverrides } = useDayPlanDraftStore(
+    useShallow((s) => ({
+      priorityCategoryOrder: s.priorityCategoryOrder,
+      priorityMealSlotOverrides: s.priorityMealSlotOverrides,
+    })),
+  );
+
+  const { isHydrated, hydrate, reloadFromStorage, dailyStatsByDate } = useHistoryStore(
     useShallow((s) => ({
       isHydrated: s.isHydrated,
       hydrate: s.hydrate,
       reloadFromStorage: s.reloadFromStorage,
       dailyStatsByDate: s.dailyStatsByDate,
-      selectCurrentStreak: s.selectCurrentStreak,
-      selectGrowthVsPreviousWeek: s.selectGrowthVsPreviousWeek,
     })),
   );
 
@@ -106,158 +76,136 @@ export function DayPlanStatisticsPage() {
     hydrate();
   }, [hydrate]);
 
-  const syncDailyRoutineHistory = useCallback(
-    (dateKey: string) => {
-      syncRoutineWindowCompletionsToHistory(dateKey);
-      reloadFromStorage();
-    },
-    [reloadFromStorage],
-  );
-
   useFocusEffect(
     useCallback(() => {
-      if (period === 'today') {
-        syncDailyRoutineHistory(selectedDateKey);
-      } else {
-        reloadFromStorage();
-      }
-    }, [period, reloadFromStorage, selectedDateKey, syncDailyRoutineHistory]),
+      syncRoutineWindowCompletionsToHistory(todayDateKey);
+      reloadFromStorage();
+    }, [reloadFromStorage, todayDateKey]),
   );
 
-  useEffect(() => {
-    if (period !== 'today') return;
-    syncDailyRoutineHistory(selectedDateKey);
-  }, [period, selectedDateKey, syncDailyRoutineHistory]);
-
-  const tone = useMemo(
+  const palette = useMemo<FlowHistoryPalette>(
     () => ({
       card: isDark ? 'rgba(255,255,255,0.06)' : '#ffffff',
       border: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
       muted: isDark ? '#a1a1aa' : '#71717a',
       ink: isDark ? '#f5f5f5' : '#1f2937',
-      level0: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-      barTrack: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
-      barFill: isDark ? 'rgba(157, 176, 157, 0.88)' : historyUiAccent,
-      highlightCard: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.72)',
-      highlightCardBorder: isDark ? 'rgba(255,255,255,0.1)' : 'transparent',
-      highlightFg: isDark ? '#f5f5f5' : '#FAFAFA',
-      highlightMuted: isDark ? 'rgba(245,245,245,0.7)' : 'rgba(250,250,250,0.75)',
-      highlightBadge: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.15)',
-      heat: isDark
-        ? ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.18)', 'rgba(255,255,255,0.34)', 'rgba(255,255,255,0.52)', 'rgba(255,255,255,0.72)']
-        : ['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.14)', 'rgba(0,0,0,0.26)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.62)'],
+      accent: isDark ? '#f4b4c8' : '#d9779a',
+      accentSoft: isDark ? 'rgba(244,180,200,0.35)' : 'rgba(217,119,154,0.35)',
+      weekdayIdle: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+      fab: isDark ? '#2a2a2e' : PrimaryColor.rgb,
+      fabIcon: '#FAFAFA',
     }),
     [isDark],
   );
 
-  const tabPill = useMemo(() => tabPillColors(isDark), [isDark]);
-
-  const streak = useMemo(() => selectCurrentStreak(todayDateKey), [dailyStatsByDate, selectCurrentStreak, todayDateKey]);
-  const growth = useMemo(
-    () => selectGrowthVsPreviousWeek(todayDateKey),
-    [dailyStatsByDate, selectGrowthVsPreviousWeek, todayDateKey],
+  const monthPrefix = useMemo(() => resolveMonthPrefix(anchorDateKey), [anchorDateKey]);
+  const weekStartDateKey = useMemo(
+    () => resolveWeekStartForAnchor(anchorDateKey),
+    [anchorDateKey],
   );
-
-  const historyRows = useMemo<HistoryFeedRow[]>(
+  const periodNavLabel = useMemo(
     () =>
-      Object.values(dailyStatsByDate)
-        .slice()
-        .sort((a, b) => b.dateKey.localeCompare(a.dateKey))
-        .map((row) => {
-          const topCategory = Object.entries(getCategoryCompletions(row)).sort((a, b) => b[1] - a[1])[0];
-          return {
-            dateKey: row.dateKey,
-            headline: resolveHistoryHeadline(row.completionRate, row.completedFlowCount),
-            summary: resolveHistorySummary(row.completionRate, row.completedFlowCount),
-            rateLabel: formatRatePercent(row.completionRate),
-            categoryLabel: topCategory ? categoryReminderLabelKo(topCategory[0]) : '기록 없음',
-            categoryKey: topCategory ? topCategory[0] : null,
-          };
-        }),
-    [dailyStatsByDate],
+      period === 'week'
+        ? formatWeekRangeLabelKo(weekStartDateKey)
+        : formatMonthLabelKo(monthPrefix),
+    [monthPrefix, period, weekStartDateKey],
+  );
+  const canGoNext = useMemo(
+    () =>
+      period === 'week'
+        ? anchorDateKey < todayDateKey
+        : canGoNextMonth(monthPrefix, todayDateKey),
+    [anchorDateKey, monthPrefix, period, todayDateKey],
   );
 
-  const historyFilterChips = useMemo(() => {
-    const set = new Set<string>();
-    for (const row of historyRows) {
-      if (row.categoryLabel === '기록 없음') continue;
-      set.add(row.categoryLabel);
-      if (set.size >= 5) break;
-    }
-    return ['all', ...Array.from(set)];
-  }, [historyRows]);
-
-  const filteredHistoryRows = useMemo(() => {
-    const keyword = historyQuery.trim();
-    return historyRows.filter((row) => {
-      if (historyFilter !== 'all' && row.categoryLabel !== historyFilter) return false;
-      if (!keyword) return true;
-      return (
-        row.headline.includes(keyword) ||
-        row.summary.includes(keyword) ||
-        row.categoryLabel.includes(keyword) ||
-        formatDateKeyKo(row.dateKey).includes(keyword)
-      );
+  const timeLabelByCategoryKey = useMemo(() => {
+    const overrides = new Map<string, DayMealSlot>(
+      Object.entries(priorityMealSlotOverrides) as [string, DayMealSlot][],
+    );
+    const map: Record<string, string> = {};
+    priorityCategoryOrder.forEach((key, index) => {
+      const slot = resolvePriorityMealSlot(key, index, overrides);
+      map[key] = formatHhmmClockKo(mealSlotSchedule[slot]);
     });
-  }, [historyFilter, historyQuery, historyRows]);
-  const todayRow = dailyStatsByDate[selectedDateKey] ?? {
-    dateKey: selectedDateKey,
-    completedFlowCount: 0,
-    sessionCount: 0,
-    completionRate: 0,
-    categoryMinutes: {},
-    categoryCompletions: {},
-  };
-  const focusScore = Math.round(Math.max(0, Math.min(1, todayRow.completionRate || 0)) * 100);
-  const sameWeekdayAverageScore = useMemo(() => {
-    const scores: number[] = [];
-    for (const daysAgo of [7, 14, 21, 28]) {
-      const key = addDaysToLocalDateKey(selectedDateKey, -daysAgo);
-      const row = dailyStatsByDate[key];
-      if (!row) continue;
-      scores.push(Math.round(Math.max(0, Math.min(1, row.completionRate || 0)) * 100));
-    }
-    if (scores.length === 0) return 0;
-    return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
-  }, [dailyStatsByDate, selectedDateKey]);
-  const focusDelta = focusScore - sameWeekdayAverageScore;
-  const todayCompletedCategories = useMemo(
+    return map;
+  }, [mealSlotSchedule, priorityCategoryOrder, priorityMealSlotOverrides]);
+
+  const weeklyRows = useMemo(
     () =>
-      Object.entries(getCategoryCompletions(todayRow))
-        .filter(([, count]) => count > 0)
-        .map(([categoryKey, count]) => ({ categoryKey, count }))
-        .sort(
-          (a, b) =>
-            b.count - a.count ||
-            categoryReminderLabelKo(a.categoryKey).localeCompare(
-              categoryReminderLabelKo(b.categoryKey),
-              'ko',
-            ),
-        ),
-    [todayRow],
+      buildWeeklyFlowHistory({
+        dailyStatsByDate,
+        weekStartDateKey,
+        trackedCategoryKeys: priorityCategoryOrder,
+        timeLabelByCategoryKey,
+      }),
+    [dailyStatsByDate, priorityCategoryOrder, timeLabelByCategoryKey, weekStartDateKey],
   );
-  const dailyHeroAccentColor =
-    todayCompletedCategories.length > 0 ? historyUiAccent : tone.barFill;
-  const todayTopCategoryLabel = todayCompletedCategories[0]
-    ? categoryReminderLabelKo(todayCompletedCategories[0].categoryKey)
-    : '핵심 플로우';
-  const reflectionText =
-    todayRow.completedFlowCount > 0
-      ? `${todayTopCategoryLabel} 중심으로 ${formatHistoryFrequencyKo(todayRow.completedFlowCount)} 마무리했어요. 현재 완료율은 ${focusScore}%이며, 내일은 오늘 가장 약했던 구간을 먼저 채워 보세요.`
-      : '오늘은 완료 기록이 없어요. 내일은 가장 부담이 적은 플로우 1개부터 시작해 흐름을 만들어 보세요.';
-  const reflectionTags =
-    todayRow.completedFlowCount > 0
-      ? ['성취감', focusDelta >= 0 ? '안정감' : '회복집중']
-      : ['재정비', '작은시작'];
-  const periodLabel = formatDateKeyKo(selectedDateKey);
-  const calendarHint = '날짜를 선택하면 해당 날의 기록을 보여요.';
-  const onSelectCalendarDateKey = useCallback(
-    (dateKey: string) => {
-      const next = dateKey > todayDateKey ? todayDateKey : dateKey;
-      setSelectedDateKey(next);
+
+  const monthlyRows = useMemo(
+    () =>
+      buildMonthlyFlowHistory({
+        dailyStatsByDate,
+        monthPrefix,
+        trackedCategoryKeys: priorityCategoryOrder,
+        timeLabelByCategoryKey,
+      }),
+    [dailyStatsByDate, monthPrefix, priorityCategoryOrder, timeLabelByCategoryKey],
+  );
+
+  const monthlySummary = useMemo(
+    () => buildMonthlyHistorySummary({ dailyStatsByDate, monthPrefix }),
+    [dailyStatsByDate, monthPrefix],
+  );
+
+  const shiftPeriod = useCallback(
+    (delta: number) => {
+      if (period === 'week') {
+        const nextAnchor = addDaysToHistoryDateKey(anchorDateKey, delta * 7);
+        if (delta > 0 && nextAnchor > todayDateKey) {
+          setAnchorDateKey(todayDateKey);
+          return;
+        }
+        setAnchorDateKey(nextAnchor);
+        return;
+      }
+
+      const nextMonth = shiftMonthPrefix(monthPrefix, delta);
+      if (delta > 0 && !canGoNextMonth(nextMonth, todayDateKey)) {
+        setAnchorDateKey(todayDateKey);
+        return;
+      }
+      setAnchorDateKey(`${nextMonth}-01`);
     },
-    [todayDateKey],
+    [anchorDateKey, monthPrefix, period, todayDateKey],
   );
+
+  const openCategoryDetail = useCallback(
+    (categoryKey: string) => {
+      router.push({
+        pathname: '/goal-detail-settings',
+        params: { categoryKey },
+      });
+    },
+    [router],
+  );
+
+  const openCatalog = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/(tabs)/priority-catalog');
+  }, [router]);
+
+  const openMonthlyTab = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setPeriod('month');
+  }, []);
+
+  const flowRows = period === 'week' ? weeklyRows : monthlyRows;
+  const emptyTitle =
+    period === 'week' ? '이번 주 기록이 아직 없어요' : '이번 달 기록이 아직 없어요';
+  const emptyBody =
+    period === 'week'
+      ? '오늘 탭에서 플로우를 완료하면 여기에 요일별로 쌓여요.'
+      : '오늘 탭에서 플로우를 완료하면 여기에 날짜별로 쌓여요.';
 
   return (
     <ThemedView style={styles.root}>
@@ -266,246 +214,136 @@ export function DayPlanStatisticsPage() {
           styles.scrollContent,
           {
             paddingTop: Math.max(insets.top, 12) + 8,
-            paddingBottom: SCROLL_END_GAP_PX + 24,
+            paddingBottom: SCROLL_END_GAP_PX + 88,
           },
         ]}
         showsVerticalScrollIndicator={false}>
-        <ThemedText style={styles.pageDesc} lightColor={tone.muted} darkColor={tone.muted}>
-          데일리 완료 기록과 인사이트로 오늘의 패턴을 확인해요.
+        <ThemedText style={styles.pageDesc} lightColor={palette.muted} darkColor={palette.muted}>
+          {historyPeriodDescription(period)}
         </ThemedText>
 
-        <View style={styles.mainTabRow}>
-          {(
-            [
-              { id: 'today' as const, label: '데일리' },
-              { id: 'insights' as const, label: '인사이트' },
-            ] as const
-          ).map((tab) => {
-            const active = period === tab.id;
-            return (
-            <Pressable
-              key={tab.id}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={tab.label}
-              onPress={() => {
-                if (active) return;
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setPeriod(tab.id);
-              }}
-              style={({ pressed }) => [
-                styles.mainTabBtn,
-                {
-                  backgroundColor: active ? tabPill.activeBg : tabPill.inactiveBg,
-                  borderColor: active ? tabPill.activeBorder : tabPill.inactiveBorder,
-                },
-                pressed && !active && { opacity: 0.88 },
-              ]}>
-              <ThemedText
-                style={[
-                  styles.mainTabLabel,
-                  { color: active ? tone.ink : tone.muted },
-                ]}
-                lightColor={active ? tone.ink : tone.muted}
-                darkColor={active ? tone.ink : tone.muted}
-                numberOfLines={1}>
-                {tab.label}
-              </ThemedText>
-            </Pressable>
-            );
-          })}
+        <HistoryPeriodTabs
+          period={period}
+          onSelectPeriod={setPeriod}
+          ink={palette.ink}
+          muted={palette.muted}
+          isDark={isDark}
+        />
+
+        <View style={styles.periodNavRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={period === 'week' ? '이전 주' : '이전 달'}
+            hitSlop={8}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              shiftPeriod(-1);
+            }}
+            style={({ pressed }) => [styles.periodNavBtn, pressed && styles.pressed]}>
+            <IconSymbol name="chevron.left" size={16} color={palette.ink} />
+          </Pressable>
+          <ThemedText style={[styles.periodNavLabel, { color: palette.ink }]}>
+            {periodNavLabel}
+          </ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={period === 'week' ? '다음 주' : '다음 달'}
+            disabled={!canGoNext}
+            hitSlop={8}
+            onPress={() => {
+              if (!canGoNext) return;
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              shiftPeriod(1);
+            }}
+            style={({ pressed }) => [
+              styles.periodNavBtn,
+              !canGoNext && styles.periodNavBtnDisabled,
+              pressed && canGoNext && styles.pressed,
+            ]}>
+            <IconSymbol
+              name="chevron.right"
+              size={16}
+              color={canGoNext ? palette.ink : palette.muted}
+            />
+          </Pressable>
         </View>
-        {period === 'today' ? (
-          <View style={styles.periodPickerRow}>
-            <ThemedText style={styles.periodPickerDate} lightColor={tone.muted} darkColor={tone.muted}>
-              {periodLabel}
-            </ThemedText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="날짜 선택"
-              onPress={() => setIsDatePickerOpen(true)}
-              hitSlop={8}
-              style={({ pressed }) => [styles.periodPickerIconBtn, pressed && { opacity: 0.6 }]}>
-              <IconSymbol name="calendar" size={15} color={tone.muted} />
-            </Pressable>
+
+        {period === 'month' ? (
+          <MonthlyHistorySummaryCard summary={monthlySummary} palette={palette} />
+        ) : null}
+
+        {!isHydrated ? (
+          <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <ThemedText style={styles.emptyTitle}>기록을 불러오는 중이에요</ThemedText>
           </View>
-        ) : null}
+        ) : flowRows.length === 0 ? (
+          <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <ThemedText style={styles.emptyTitle}>{emptyTitle}</ThemedText>
+            <ThemedText style={styles.emptyBody} lightColor={palette.muted} darkColor={palette.muted}>
+              {emptyBody}
+            </ThemedText>
+          </View>
+        ) : period === 'week' ? (
+          weeklyRows.map((row) => (
+            <WeeklyFlowHistoryCard
+              key={row.categoryKey}
+              row={row}
+              palette={palette}
+              isDark={isDark}
+              onPressDetail={() => openCategoryDetail(row.categoryKey)}
+            />
+          ))
+        ) : (
+          monthlyRows.map((row) => (
+            <MonthlyFlowHistoryCard
+              key={row.categoryKey}
+              row={row}
+              monthPrefix={monthPrefix}
+              palette={palette}
+              onPressDetail={() => openCategoryDetail(row.categoryKey)}
+            />
+          ))
+        )}
 
-        {period === 'today' ? (
-          <>
-            <View style={[styles.card, styles.dailyHeroCard, { backgroundColor: tone.card, borderColor: tone.border }]}>
-              <View style={styles.focusRingWrap}>
-                <Svg width={180} height={180}>
-                  <G transform="rotate(-90 90 90)">
-                    <Circle
-                      cx={90}
-                      cy={90}
-                      r={76}
-                      stroke={tone.barTrack}
-                      strokeWidth={8}
-                      fill="none"
-                    />
-                    <Circle
-                      cx={90}
-                      cy={90}
-                      r={76}
-                      stroke={dailyHeroAccentColor}
-                      strokeWidth={8}
-                      fill="none"
-                      strokeDasharray={`${2 * Math.PI * 76}`}
-                      strokeDashoffset={`${2 * Math.PI * 76 * (1 - Math.max(0, Math.min(1, focusScore / 100)))}`}
-                      strokeLinecap="round"
-                    />
-                  </G>
-                </Svg>
-                <View style={styles.focusRingCenter}>
-                  <ThemedText style={styles.focusScoreValue}>{focusScore}</ThemedText>
-                  <ThemedText style={styles.focusScoreLabel} lightColor={tone.muted} darkColor={tone.muted}>
-                    집중도 점수
-                  </ThemedText>
-                </View>
-              </View>
-              <ThemedText style={styles.focusDeltaText} lightColor={tone.muted} darkColor={tone.muted}>
-                오늘 집중도는 최근 동일 요일 평균보다{' '}
-                <ThemedText
-                  style={[
-                    styles.focusDeltaEmphasis,
-                    todayCompletedCategories.length > 0 && { color: dailyHeroAccentColor },
-                  ]}>
-                  {focusDelta >= 0 ? `+${focusDelta}%` : `${focusDelta}%`}
-                </ThemedText>{' '}
-                {focusDelta >= 0 ? '높아요.' : '낮아요.'}
-              </ThemedText>
-            </View>
-
-            <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
-              <View style={styles.sectionHeadRow}>
-                <ThemedText style={styles.sectionTitle}>오늘 활동 분석</ThemedText>
-                <ThemedText style={styles.sectionKicker} lightColor={tone.muted} darkColor={tone.muted}>
-                  {todayCompletedCategories.length > 0
-                    ? todayCompletedCategories.length > 5
-                      ? `오늘 ${formatHistoryCategoryVarietyKo(todayCompletedCategories.length)} · 옆으로 밀어 보기`
-                      : `오늘 ${formatHistoryCategoryVarietyKo(todayCompletedCategories.length)}`
-                    : '오늘 현황'}
-                </ThemedText>
-              </View>
-              {todayCompletedCategories.length === 0 ? (
-                <ThemedText style={styles.emptyNote} lightColor={tone.muted} darkColor={tone.muted}>
-                  오늘 분석할 활동 기록이 아직 없어요.
-                </ThemedText>
-              ) : (
-                <>
-                  <ThemedText style={styles.dailyActivityGroupLabel} lightColor={tone.ink} darkColor={tone.ink}>
-                    완료
-                  </ThemedText>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.dailyActivityScroll}>
-                    {todayCompletedCategories.map((row) => {
-                      const categoryColor = activeIconColorByCategory(row.categoryKey);
-                      return (
-                        <View key={row.categoryKey} style={styles.dailyActivityCol}>
-                          <View style={[styles.dailyActivityIconWrap, { backgroundColor: tone.level0 }]}>
-                            <IconSymbol
-                              name={categoryReminderIconName(row.categoryKey) as never}
-                              size={22}
-                              color={categoryColor}
-                            />
-                          </View>
-                          <ThemedText
-                            style={styles.dailyActivityLabel}
-                            lightColor={tone.ink}
-                            darkColor={tone.ink}
-                            numberOfLines={2}>
-                            {categoryReminderLabelKo(row.categoryKey)}
-                          </ThemedText>
-                        </View>
-                      );
-                    })}
-                  </ScrollView>
-                </>
-              )}
-            </View>
-
-            <View style={[styles.card, { backgroundColor: tone.card, borderColor: tone.border }]}>
-              <ThemedText style={styles.sectionTitle}>오늘의 성찰</ThemedText>
-              <ThemedText style={styles.reflectionBody}>{reflectionText}</ThemedText>
-              <View style={styles.reflectionTags}>
-                {reflectionTags.map((tag, index) => (
-                  <View
-                    key={tag}
-                    style={[
-                      styles.reflectionTag,
-                      {
-                        backgroundColor:
-                          index === 0 && todayCompletedCategories.length > 0
-                            ? historyUiAccentPastel
-                            : tone.level0,
-                      },
-                    ]}>
-                    <ThemedText
-                      style={styles.reflectionTagText}
-                      lightColor={
-                        index === 0 && todayCompletedCategories.length > 0
-                          ? historyUiAccent
-                          : tone.muted
-                      }
-                      darkColor={
-                        index === 0 && todayCompletedCategories.length > 0
-                          ? historyUiAccent
-                          : tone.muted
-                      }>
-                      {tag}
-                    </ThemedText>
-                  </View>
-                ))}
-              </View>
-            </View>
-          </>
-        ) : null}
-
-        {period === 'insights' ? (
-          <InsightsHistoryView
-            tone={tone}
-            isDark={isDark}
-            isHydrated={isHydrated}
-            todayCompletionRate={todayRow.completionRate}
-            todayCompletedCount={todayRow.completedFlowCount}
-            sameWeekdayAverageScore={sameWeekdayAverageScore}
-            streak={streak}
-            weekCompletionDelta={growth.diffCompletions}
-            historyRows={historyRows}
-            historyQuery={historyQuery}
-            onHistoryQueryChange={setHistoryQuery}
-            historyFilter={historyFilter}
-            onHistoryFilterChange={setHistoryFilter}
-            historyFilterChips={historyFilterChips}
-            filteredHistoryRows={filteredHistoryRows}
-            formatDateKeyKo={formatDateKeyKo}
-          />
-        ) : null}
-
-        <ThemedText style={styles.footnote} lightColor={tone.muted} darkColor={tone.muted}>
-          모든 화면은 플로우 완료 기록을 기반으로 자동 생성돼요.
+        <ThemedText style={styles.helperText} lightColor={palette.muted} darkColor={palette.muted}>
+          히스토리는 완료 기록을 보여줘요. 체크와 실행은 오늘·투두 탭에서 할 수 있어요.
         </ThemedText>
       </ScrollView>
-      {period === 'today' ? (
-        <HistoryCalendarOverlay
-          visible={isDatePickerOpen}
-          isDark={isDark}
-          period="today"
-          focusDateKey={selectedDateKey}
-          todayDateKey={todayDateKey}
-          sheetBg={tone.card}
-          ink={tone.ink}
-          muted={tone.muted}
-          border={tone.border}
-          hint={calendarHint}
-          onClose={() => setIsDatePickerOpen(false)}
-          onSelectDateKey={onSelectCalendarDateKey}
-        />
-      ) : null}
+
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            paddingBottom: Math.max(insets.bottom, 8) + 8,
+          },
+        ]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="월간 통계 보기"
+          onPress={openMonthlyTab}
+          style={({ pressed }) => [
+            styles.monthChip,
+            { borderColor: palette.border, backgroundColor: palette.card },
+            period === 'month' && styles.monthChipActive,
+            pressed && styles.pressed,
+          ]}>
+          <ThemedText style={[styles.monthChipLabel, { color: palette.ink }]}>월간진행률</ThemedText>
+          <ThemedText style={[styles.monthChipValue, { color: palette.accent }]}>
+            {monthlySummary.progressPercent}%
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="플로우 추가"
+          onPress={openCatalog}
+          style={({ pressed }) => [
+            styles.fab,
+            { backgroundColor: palette.fab },
+            pressed && styles.pressed,
+          ]}>
+          <IconSymbol name="plus" size={22} color={palette.fabIcon} />
+        </Pressable>
+      </View>
     </ThemedView>
   );
 }
@@ -516,7 +354,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     width: '100%',
-    alignItems: 'stretch',
     paddingHorizontal: 20,
     gap: 14,
   },
@@ -524,508 +361,100 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     fontWeight: '600',
-    marginBottom: 4,
   },
-  mainTabRow: {
-    width: '100%',
+  periodNavRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 2,
   },
-  mainTabBtn: {
-    flex: 1,
-    minHeight: 40,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  periodNavBtn: {
+    width: 34,
+    height: 34,
     borderRadius: 999,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mainTabLabel: {
-    fontSize: 13,
+  periodNavBtnDisabled: {
+    opacity: 0.35,
+  },
+  periodNavLabel: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
-  periodPickerRow: {
+  emptyCard: {
     width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  periodPickerDate: {
-    fontSize: 11,
-    fontWeight: '600',
-    lineHeight: 16,
-  },
-  periodPickerIconBtn: {
-    padding: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  card: {
-    width: '100%',
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: 16,
-    gap: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: -0.3,
-    lineHeight: 24,
-  },
-  sectionDesc: {
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: '600',
-  },
-  dailyHeroCard: {
-    alignItems: 'center',
-    gap: 14,
-    paddingTop: 20,
-    paddingBottom: 18,
-  },
-  focusRingWrap: {
-    width: 180,
-    height: 180,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  focusRingCenter: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  focusScoreValue: {
-    fontSize: 54,
-    fontWeight: '900',
-    letterSpacing: -1.4,
-    lineHeight: 62,
-  },
-  focusScoreLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-  },
-  focusDeltaText: {
-    fontSize: 13,
-    lineHeight: 20,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  focusDeltaEmphasis: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  sectionHeadRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  sectionKicker: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  dailyActivityScroll: {
-    gap: 10,
-    paddingRight: 4,
-  },
-  dailyActivityGroupLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: -0.1,
-    lineHeight: 14,
-    marginBottom: 4,
-  },
-  dailyActivityCol: {
-    width: 72,
-    alignItems: 'center',
+    padding: 20,
     gap: 8,
   },
-  dailyActivityIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dailyActivityLabel: {
-    width: '100%',
-    fontSize: 10,
+  emptyTitle: {
+    fontSize: 16,
     fontWeight: '700',
-    textAlign: 'center',
-    lineHeight: 13,
-  },
-  reportRow: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 10,
-    paddingBottom: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  reportAvgRow: {
-    marginTop: 4,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  reportTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  reportValueWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  reportValue: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  reportDeltaChip: {
-    borderRadius: 999,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  reportDeltaUp: {
-    backgroundColor: 'rgba(16,185,129,0.14)',
-  },
-  reportDeltaDown: {
-    backgroundColor: 'rgba(239,68,68,0.14)',
-  },
-  reportDeltaText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  monthlySummaryGrid: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  monthlySummaryItem: {
-    flex: 1,
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    gap: 3,
-    alignItems: 'center',
-  },
-  monthlySummaryLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-  },
-  monthlySummaryValue: {
-    fontSize: 24,
-    fontWeight: '900',
-    lineHeight: 30,
-  },
-  monthlySummaryHint: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  streakCard: {
-    marginTop: 2,
-    borderRadius: 14,
-    backgroundColor: '#111827',
-    padding: 14,
-    gap: 10,
-  },
-  streakCardTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#ffffff',
-  },
-  streakEmpty: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.75)',
-  },
-  streakRow: {
-    gap: 6,
-  },
-  streakRowTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  streakName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.82)',
-  },
-  streakValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  streakTrack: {
-    width: '100%',
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    overflow: 'hidden',
-  },
-  streakFill: {
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: '#ffffff',
-  },
-  reflectionBody: {
-    fontSize: 14,
+    letterSpacing: -0.2,
     lineHeight: 22,
-    fontWeight: '600',
-    fontStyle: 'italic',
   },
-  reflectionTags: {
-    marginTop: 4,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  reflectionTag: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  reflectionTagText: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-  },
-  searchInput: {
-    width: '100%',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  emptyBody: {
     fontSize: 14,
-    fontWeight: '600',
+    lineHeight: 21,
+    fontWeight: '500',
   },
-  filterRow: {
+  helperText: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '500',
+    textAlign: 'center',
+    paddingTop: 4,
+  },
+  bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
-  filterChip: {
-    minHeight: 30,
-    paddingHorizontal: 12,
+  monthChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 44,
+    paddingHorizontal: 16,
     borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  monthChipActive: {
+    borderWidth: 1.5,
+  },
+  monthChipLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  monthChipValue: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
-  filterChipLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  historyCard: {
-    gap: 8,
-  },
-  historyTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  historyDate: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  historyRate: {
-    fontSize: 30,
-    fontWeight: '900',
-    letterSpacing: -0.8,
-    lineHeight: 36,
-  },
-  historyHeadline: {
-    fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: -0.8,
-    lineHeight: 30,
-  },
-  historySummary: {
-    fontSize: 14,
-    lineHeight: 21,
-    fontWeight: '600',
-  },
-  historyMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  historyMetaChip: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  historyMetaChipText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  historyMetaText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  weeklyHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  scoreBadge: {
-    alignItems: 'flex-end',
-  },
-  scoreValue: {
-    fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: -0.4,
-    lineHeight: 30,
-  },
-  scoreLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  balanceList: {
-    gap: 8,
-  },
-  balanceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  balanceLabel: {
-    width: 60,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  balanceTrack: {
-    flex: 1,
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  balanceFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  balanceValue: {
-    width: 44,
-    textAlign: 'right',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  insightCard: {
-    marginTop: 6,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 12,
-    gap: 4,
-  },
-  insightLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  insightBody: {
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 21,
-  },
-  monthlyHeroCard: {
-    gap: 10,
-    paddingVertical: 18,
-  },
-  monthlyMeta: {
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 16,
-  },
-  monthlyTitle: {
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: -0.6,
-    lineHeight: 34,
-  },
-  monthlyRate: {
-    fontSize: 40,
-    fontWeight: '900',
-    letterSpacing: -1,
-    lineHeight: 48,
-    marginTop: 2,
-  },
-  monthlyDelta: {
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
-  },
-  monthlyBody: {
-    marginTop: 4,
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 19,
-  },
-  monthlyHeatWrap: {
-    gap: 6,
-  },
-  monthlyHeatRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  monthlyHeatCell: {
-    flex: 1,
-    aspectRatio: 1,
-    borderRadius: 4,
-    maxHeight: 26,
-  },
-  entryRow: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 10,
-    gap: 4,
-  },
-  entryTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  entryTitle: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  entryValue: {
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  entryDate: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  entrySummary: {
-    fontSize: 13,
-    lineHeight: 19,
-    fontWeight: '600',
-  },
-  emptyNote: {
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  footnote: {
-    width: '100%',
-    fontSize: 12,
-    lineHeight: 18,
-    textAlign: 'center',
-    paddingBottom: 8,
+  pressed: {
+    opacity: 0.82,
   },
 });

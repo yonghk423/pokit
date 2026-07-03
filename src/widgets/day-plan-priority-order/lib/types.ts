@@ -15,8 +15,6 @@ export type PriorityOrderRowProps = {
   line: string;
   /** 집중 중 완료 라디오 — 탭 시 완료 ↔ 완료 취소 */
   onToggleFocusComplete?: () => void;
-  /** 완료(취소선) 행만 — 담기 목록에서 제거·담기 화면 상태 복구 */
-  onRemoveCompletedFromPriorityBag?: () => void;
   /** 길게 눌러 본문 드래그 후 손 뗄 때 y 이동(px) — 메인 담기 순서 변경 */
   onReorderDragTranslationEnd?: (translationY: number) => void;
   /** 드래그 중 y 이동(px) — 다른 행이 즉시 비켜가도록 실시간 순서 반영 */

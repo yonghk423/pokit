@@ -8,6 +8,6 @@ export {
 } from './dayPlanDraftStore';
 export { useDayPlanTodoStore } from './dayPlanTodoStore';
 export type { PlanMode } from './planMode';
-export type { AddBlockResult, DayPlanStoreState } from './dayPlanStore';
+export type { AddBlockResult, UpdateBlockResult, DayPlanStoreState } from './dayPlanStore';
 export type { DayPlanRuntimeStoreState } from './dayPlanRuntimeStore';
 export type { DayPlanBlock, DayPlanQuickMemo, DayPlanTodoItem, TodoPriority } from './types';
