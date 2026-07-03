@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   stepsCard: {
-    borderRadius: 12,
+    borderRadius: 0,
     padding: 12,
     marginBottom: 12,
     gap: 4,
@@ -298,8 +298,8 @@ const styles = StyleSheet.create({
   groupChip: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     maxWidth: 220,
   },
   groupChipText: {
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   primaryBtn: {
-    borderRadius: 12,
+    borderRadius: 0,
     paddingVertical: 14,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   secondaryBtn: {
-    borderRadius: 12,
+    borderRadius: 0,
     paddingVertical: 14,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     width: '100%',
     minHeight: 48,
-    borderWidth: 1,
+    borderWidth: 2,
   },
   secondaryBtnText: {
     fontSize: 16,

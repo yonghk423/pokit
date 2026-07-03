@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 14,
+    borderRadius: 0,
     padding: 14,
     gap: 10,
     marginBottom: 12,
@@ -228,8 +228,8 @@ const styles = StyleSheet.create({
     minHeight: 32,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   slotChipLabel: {
     fontSize: 12,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   confirmBtn: {
     minHeight: 48,
-    borderRadius: 14,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

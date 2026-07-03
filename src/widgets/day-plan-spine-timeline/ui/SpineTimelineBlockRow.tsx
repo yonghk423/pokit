@@ -222,10 +222,10 @@ export function SpineTimelineBlockRow({
       { scale: reorderDragging.value ? 1.015 : 1 },
     ],
     zIndex: reorderDragging.value ? 220 : 0,
-    elevation: reorderDragging.value ? 24 : 0,
-    shadowOpacity: reorderDragging.value ? 0.12 : 0,
-    shadowRadius: reorderDragging.value ? 8 : 0,
-    shadowOffset: { width: 0, height: reorderDragging.value ? 4 : 0 },
+    elevation: 0,
+    shadowOpacity: 0,
+    borderWidth: reorderDragging.value ? 2 : 0,
+    borderColor: '#000000',
   }));
 
   const titleColor = completed ? palette.muted : palette.ink;
@@ -249,7 +249,7 @@ export function SpineTimelineBlockRow({
               style={[
                 styles.swipeForeground,
                 rowAnimatedStyle,
-                { backgroundColor: rowSurface, shadowColor: '#000' },
+                { backgroundColor: rowSurface },
               ]}>
               <Pressable
                 onPress={onPress}
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   nodeCircle: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

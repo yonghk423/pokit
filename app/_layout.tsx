@@ -8,12 +8,14 @@ import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppUpdateNoticeHost } from '@app/AppUpdateNoticeHost';
-import { useAppBootstrap } from '@app/index';
+import { useAppBootstrap, useCityPopFonts } from '@app/index';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 
-/** day-plan `palette`의 `c.bg`와 동일 — Stack 기본 `card` 순백이면 스크롤 바운스 시 뒤가 하얗게 보임 */
-const APP_SURFACE_LIGHT = '#fafafa';
-const APP_SURFACE_DARK = '#09090b';
+import { RetroFlatColors } from '@shared/config/retroFlat';
+
+/** day-plan `palette`의 `c.bg`와 동일 — Stack 기본 `card` 배경 */
+const APP_SURFACE_LIGHT = RetroFlatColors.light.bg;
+const APP_SURFACE_DARK = RetroFlatColors.dark.bg;
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -51,8 +53,9 @@ export default function RootLayout() {
   const rootBg = isDark ? APP_SURFACE_DARK : APP_SURFACE_LIGHT;
 
   const appReady = useAppBootstrap();
+  const fontsReady = useCityPopFonts();
 
-  if (!appReady) return null;
+  if (!appReady || !fontsReady) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: rootBg }}>

@@ -40,6 +40,7 @@ import {
   resolveCatalogItemGroupKey,
   updateCatalogItemGroup,
 } from '@shared/lib/storage';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { PokitIconPalette } from '@shared/config/theme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -55,25 +56,17 @@ import { RoutineApplyWeekdaysField } from './RoutineApplyWeekdaysField';
 import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
 
 function palette(isDark: boolean) {
-  if (isDark) {
-    return {
-      bg: '#09090b',
-      onSurface: '#fafafa',
-      onVariant: '#a1a1aa',
-      outline: '#71717a',
-      border: 'rgba(255,255,255,0.08)',
-    };
-  }
+  const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   return {
-    bg: '#ffffff',
-    onSurface: '#18181b',
-    onVariant: '#52525b',
-    outline: '#a1a1aa',
-    border: 'rgba(0,0,0,0.08)',
+    bg: c.bg,
+    onSurface: c.text,
+    onVariant: c.textMuted,
+    outline: c.textMuted,
+    border: c.border,
   };
 }
 
-const PRIMARY = 'rgb(0, 0, 0)';
+const PRIMARY = RetroFlatColors.light.primary;
 
 type EditingTarget = {
   blockId: string;
@@ -528,7 +521,7 @@ export function GoalDetailSettingsPage() {
                   styles.startPickerCard,
                   {
                     borderColor: c.border,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: RetroFlatColors.light.bgMint,
                   },
                 ]}>
                 <ThemedText style={[styles.startPickerTitle, { color: c.onSurface }]}>
@@ -558,7 +551,7 @@ export function GoalDetailSettingsPage() {
                             backgroundColor: selected
                               ? waterOnlyUi
                                 ? 'rgba(34,211,238,0.16)'
-                                : '#ffffff'
+                                : RetroFlatColors.light.surface
                               : pressed
                                 ? 'rgba(0,0,0,0.02)'
                                 : 'transparent',
@@ -608,7 +601,7 @@ export function GoalDetailSettingsPage() {
               ink={c.onSurface}
               muted={c.onVariant}
               line={c.border}
-              surface="#ffffff"
+              surface={RetroFlatColors.light.bgMint}
               isDark={false}
             />
 
@@ -674,7 +667,6 @@ export function GoalDetailSettingsPage() {
               styles.footerCompleteCircle,
               {
                 backgroundColor: waterOnlyUi ? WATER.ctaBg : PokitIconPalette.teal,
-                shadowColor: waterOnlyUi ? WATER.ctaBg : PokitIconPalette.teal,
               },
               pressed && { opacity: 0.9, transform: [{ scale: 0.94 }] },
             ]}>
@@ -706,12 +698,12 @@ const styles = StyleSheet.create({
   headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
   scrollContent: {},
-  padded: { paddingHorizontal: 24, gap: 22, marginTop: 18 },
+  padded: { paddingHorizontal: 24, gap: 32, marginTop: 24 },
   paddedWater: { marginTop: 8, gap: 20 },
   blockSection: { gap: 14, paddingVertical: 8 },
   startPickerCard: {
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 0,
+    borderWidth: 2,
     paddingVertical: 14,
     paddingHorizontal: 14,
     gap: 10,
@@ -725,13 +717,13 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   radioOuter: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: 0,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -739,7 +731,7 @@ const styles = StyleSheet.create({
   radioInner: {
     width: 12,
     height: 12,
-    borderRadius: 6,
+    borderRadius: 0,
     backgroundColor: PRIMARY,
   },
   startPickerRowText: { flex: 1, minWidth: 0, gap: 2 },
@@ -749,13 +741,13 @@ const styles = StyleSheet.create({
   footerCompleteCircle: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
-    shadowRadius: 10,
-    elevation: 4,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   footerFixed: {
     alignItems: 'center',

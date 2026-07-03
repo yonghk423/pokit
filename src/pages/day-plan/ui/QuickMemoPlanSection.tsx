@@ -43,8 +43,8 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
     hydratedRef.current = true;
   }, [draft, memos, onChangeDraft]);
 
-  const fontSize = width >= 768 ? 34 : width >= 390 ? 28 : 24;
-  const lineHeight = Math.round(fontSize * 1.25);
+  const fontSize = width >= 768 ? 26 : width >= 390 ? 22 : 20;
+  const lineHeight = Math.round(fontSize * 1.45);
 
   return (
     <View style={[styles.root, { backgroundColor: c.containerLowest }]}>
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   root: {
     minHeight: 300,
     flexGrow: 1,
-    borderRadius: 14,
+    borderRadius: 0,
     paddingHorizontal: 14,
     paddingTop: 14,
     paddingBottom: 12,
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   gradientHint: {
     height: 4,
-    borderRadius: 999,
+    borderRadius: 0,
     marginTop: 12,
     alignSelf: 'stretch',
     backgroundColor: 'rgba(0, 0, 0, 0.12)',
@@ -120,8 +120,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

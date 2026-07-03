@@ -1,6 +1,7 @@
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CityPopSpacing, RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -21,11 +22,7 @@ export function AppUpdateAvailableModal({
 }: Props) {
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
-
-  const bg = isDark ? '#1C1C1E' : '#FFFFFF';
-  const ink = isDark ? '#FAFAFA' : '#1A1A1A';
-  const muted = isDark ? '#8E8E93' : '#666666';
-  const bulletBg = isDark ? '#2C2C2E' : '#F5F5F5';
+  const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
 
   return (
     <Modal
@@ -38,12 +35,13 @@ export function AppUpdateAvailableModal({
           style={[
             styles.card,
             {
-              backgroundColor: bg,
-              marginBottom: Math.max(insets.bottom, 16),
+              backgroundColor: c.surface,
+              borderColor: c.border,
+              marginBottom: Math.max(insets.bottom, CityPopSpacing.gutter),
             },
           ]}>
-          <ThemedText style={[styles.title, { color: ink }]}>새 버전이 나왔어요</ThemedText>
-          <ThemedText style={[styles.subtitle, { color: muted }]}>
+          <ThemedText style={[styles.title, { color: c.text }]}>새 버전이 나왔어요</ThemedText>
+          <ThemedText style={[styles.subtitle, { color: c.textMuted }]}>
             POKIT v{latestVersion}이 스토어에 배포됐어요
           </ThemedText>
 
@@ -52,9 +50,11 @@ export function AppUpdateAvailableModal({
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}>
             {highlights.map((line) => (
-              <View key={line} style={[styles.bulletRow, { backgroundColor: bulletBg }]}>
-                <ThemedText style={[styles.bulletDot, { color: ink }]}>·</ThemedText>
-                <ThemedText style={[styles.bulletText, { color: ink }]}>{line}</ThemedText>
+              <View
+                key={line}
+                style={[styles.bulletRow, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+                <ThemedText style={[styles.bulletDot, { color: c.text }]}>·</ThemedText>
+                <ThemedText style={[styles.bulletText, { color: c.text }]}>{line}</ThemedText>
               </View>
             ))}
           </ScrollView>
@@ -64,18 +64,35 @@ export function AppUpdateAvailableModal({
             accessibilityLabel="업데이트"
             style={({ pressed }) => [
               styles.primaryBtn,
-              { backgroundColor: ink, opacity: pressed ? 0.85 : 1 },
+              {
+                backgroundColor: c.primary,
+                borderColor: c.border,
+                opacity: pressed ? 0.88 : 1,
+                transform: pressed
+                  ? [{ translateX: 4 }, { translateY: 4 }]
+                  : [{ translateX: 0 }, { translateY: 0 }],
+              },
             ]}
             onPress={onUpdatePress}>
-            <ThemedText style={[styles.primaryBtnText, { color: bg }]}>업데이트</ThemedText>
+            <ThemedText style={[styles.primaryBtnText, { color: c.primaryOn }]}>업데이트</ThemedText>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="나중에"
-            style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.7 : 1 }]}
+            style={({ pressed }) => [
+              styles.secondaryBtn,
+              {
+                borderColor: c.border,
+                backgroundColor: c.surfacePink,
+                opacity: pressed ? 0.88 : 1,
+                transform: pressed
+                  ? [{ translateX: 4 }, { translateY: 4 }]
+                  : [{ translateX: 0 }, { translateY: 0 }],
+              },
+            ]}
             onPress={onLaterPress}>
-            <ThemedText style={[styles.secondaryBtnText, { color: muted }]}>나중에</ThemedText>
+            <ThemedText style={[styles.secondaryBtnText, { color: c.text }]}>나중에</ThemedText>
           </Pressable>
         </View>
       </View>
@@ -87,44 +104,49 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    paddingHorizontal: CityPopSpacing.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   card: {
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 16,
+    borderRadius: 0,
+    borderWidth: RETRO_BORDER_WIDTH,
+    paddingHorizontal: CityPopSpacing.md,
+    paddingTop: CityPopSpacing.lg / 2,
+    paddingBottom: CityPopSpacing.md,
     maxHeight: '72%',
+    gap: CityPopSpacing.sm,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     textAlign: 'center',
+    letterSpacing: -0.24,
   },
   subtitle: {
-    marginTop: 8,
-    fontSize: 14,
+    marginTop: CityPopSpacing.xs,
+    fontSize: 16,
     textAlign: 'center',
+    lineHeight: 24,
   },
   listScroll: {
-    marginTop: 20,
+    marginTop: CityPopSpacing.md,
     flexGrow: 0,
   },
   listContent: {
-    gap: 8,
+    gap: CityPopSpacing.sm,
   },
   bulletRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 0,
+    borderWidth: RETRO_BORDER_WIDTH,
+    paddingHorizontal: CityPopSpacing.gutter,
+    paddingVertical: CityPopSpacing.sm,
   },
   bulletDot: {
     fontSize: 16,
     lineHeight: 22,
-    marginRight: 8,
+    marginRight: CityPopSpacing.xs,
   },
   bulletText: {
     flex: 1,
@@ -132,22 +154,27 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   primaryBtn: {
-    marginTop: 20,
-    borderRadius: 14,
-    paddingVertical: 14,
+    marginTop: CityPopSpacing.md,
+    borderRadius: 0,
+    borderWidth: RETRO_BORDER_WIDTH,
+    paddingVertical: 16,
     alignItems: 'center',
+    minHeight: 52,
   },
   primaryBtnText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   secondaryBtn: {
-    marginTop: 8,
-    paddingVertical: 10,
+    marginTop: CityPopSpacing.sm,
+    borderRadius: 0,
+    borderWidth: RETRO_BORDER_WIDTH,
+    paddingVertical: 14,
     alignItems: 'center',
+    minHeight: 48,
   },
   secondaryBtnText: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });

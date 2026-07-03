@@ -105,12 +105,12 @@ export function MeditationSettings({
 }
 
 const styles = StyleSheet.create({
-  inner: { borderRadius: 16, padding: 20, gap: 14 },
+  inner: { borderRadius: 0, padding: 20, gap: 14 },
   title: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
   sub: { fontSize: 12, lineHeight: 18 },
   row: { flexDirection: 'row', gap: 12 },
   col: { flex: 1, gap: 8 },
   label: { fontSize: 12, fontWeight: '700', letterSpacing: -0.1 },
-  field: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 },
+  field: { borderRadius: 0, paddingVertical: 10, paddingHorizontal: 14 },
   input: { fontSize: 16, fontWeight: '800', padding: 0 },
 });

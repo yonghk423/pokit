@@ -5,3 +5,4 @@
  */
 
 export { useAppBootstrap } from './useAppBootstrap';
+export { useCityPopFonts } from './useCityPopFonts';

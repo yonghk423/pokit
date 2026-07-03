@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   priorityDot: {
     width: 10,
     height: 10,
-    borderRadius: 999,
+    borderRadius: 0,
   },
   priorityLabel: {
     fontSize: 9,

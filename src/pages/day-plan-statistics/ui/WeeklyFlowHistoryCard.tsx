@@ -89,11 +89,11 @@ export function WeeklyFlowHistoryCard({ row, palette, isDark, onPressDetail }: P
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
+    borderRadius: 0,
+    borderWidth: 2,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    gap: 16,
   },
   headerRow: {
     flexDirection: 'row',
@@ -109,9 +109,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -150,8 +152,8 @@ const styles = StyleSheet.create({
   weekdayDot: {
     width: 22,
     height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   weekdayLabel: {
     fontSize: 10,

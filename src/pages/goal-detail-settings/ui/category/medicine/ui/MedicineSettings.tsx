@@ -301,7 +301,7 @@ export function MedicineSettings({
 const styles = StyleSheet.create({
   shell: { gap: 12, paddingVertical: 6 },
   routineWindowBand: {
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -362,10 +362,10 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 8,
     paddingVertical: 10,
-    borderRadius: 14,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: 2,
   },
   slotChipText: { fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
   medicineTimePickerRow: {

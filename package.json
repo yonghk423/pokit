@@ -18,6 +18,7 @@
     "sync-ios-assets": "bash scripts/sync-ios-app-icon-from-assets.sh"
   },
   "dependencies": {
+    "@expo-google-fonts/hanken-grotesk": "^0.4.3",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "^8.4.4",

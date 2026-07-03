@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    borderWidth: 1,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -611,8 +611,8 @@ const styles = StyleSheet.create({
   catalogSettingsBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -646,7 +646,7 @@ const styles = StyleSheet.create({
   catalogRowBadge: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -5,11 +5,12 @@ import { Animated, Easing, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PokitIconPalette } from '@shared/config/theme';
+import { CityPopSpacing, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 
-const FAB_PLAY_ICON = '#FAFAFA';
+const FAB_PLAY_ICON = '#FFFFFF';
 
 export function DayPlanTabFab() {
   const pathname = usePathname();
@@ -59,7 +60,7 @@ export function DayPlanTabFab() {
       style={[
         styles.wrap,
         {
-          bottom: insets.bottom + 58,
+          bottom: insets.bottom + 62,
           transform: [{ scale: fabPulse }],
         },
       ]}>
@@ -71,9 +72,10 @@ export function DayPlanTabFab() {
           styles.fab,
           {
             backgroundColor: PokitIconPalette.teal,
-            shadowColor: PokitIconPalette.teal,
-            opacity: pressed ? 0.9 : 1,
-            transform: [{ scale: pressed ? 0.95 : 1 }],
+            opacity: pressed ? 0.92 : 1,
+            transform: pressed
+              ? [{ translateX: 4 }, { translateY: 4 }]
+              : [{ translateX: 0 }, { translateY: 0 }],
           },
         ]}>
         <IconSymbol name="play.fill" size={22} color={FAB_PLAY_ICON} />
@@ -85,19 +87,20 @@ export function DayPlanTabFab() {
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    right: 12,
+    right: CityPopSpacing.marginMobile,
     zIndex: 900,
-    elevation: 900,
+    elevation: 0,
   },
   fab: {
     width: 58,
     height: 58,
-    borderRadius: 999,
+    borderRadius: 0,
+    borderWidth: RETRO_BORDER_WIDTH,
+    borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 10,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.24,
-    shadowRadius: 9,
+    elevation: 0,
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
 });

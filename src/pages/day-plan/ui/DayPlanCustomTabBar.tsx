@@ -148,8 +148,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     height: DAY_PLAN_TAB_BAR_ROW_HEIGHT,
-    borderRadius: 28,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     paddingHorizontal: 6,
     gap: 4,
   },
@@ -158,6 +158,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 44,
-    borderRadius: 14,
+    borderRadius: 0,
   },
 });

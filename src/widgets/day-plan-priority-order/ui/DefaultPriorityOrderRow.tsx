@@ -94,10 +94,10 @@ export function DefaultPriorityOrderRow({
   const reorderMainAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: reorderTranslateY.value }, { scale: reorderDragging.value ? 1.015 : 1 }],
     zIndex: reorderDragging.value ? 220 : 0,
-    elevation: reorderDragging.value ? 28 : 0,
-    shadowOpacity: reorderDragging.value ? 0.2 : 0,
-    shadowRadius: reorderDragging.value ? 10 : 0,
-    shadowOffset: { width: 0, height: reorderDragging.value ? 6 : 0 },
+    elevation: 0,
+    shadowOpacity: 0,
+    borderWidth: reorderDragging.value ? 2 : 0,
+    borderColor: '#000000',
   }));
 
   const enter = useRef(new Animated.Value(animateOnMount ? 0 : 1)).current;
@@ -283,7 +283,7 @@ export function DefaultPriorityOrderRow({
           style={[
             styles.orderRowDragShell,
             reorderMainAnimatedStyle,
-            { backgroundColor: reorderSurface, shadowColor: '#000' },
+            { backgroundColor: reorderSurface },
           ]}>
           <GestureDetector gesture={reorderPanGesture}>
             <View

@@ -48,8 +48,8 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: '700', letterSpacing: -0.1 },
   input: {
     minHeight: 88,
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: 2,
+    borderRadius: 0,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,

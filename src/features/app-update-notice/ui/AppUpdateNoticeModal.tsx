@@ -1,6 +1,7 @@
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CityPopSpacing, RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -14,11 +15,7 @@ type Props = {
 export function AppUpdateNoticeModal({ visible, version, highlights, onDismiss }: Props) {
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
-
-  const bg = isDark ? '#1C1C1E' : '#FFFFFF';
-  const ink = isDark ? '#FAFAFA' : '#1A1A1A';
-  const muted = isDark ? '#8E8E93' : '#666666';
-  const bulletBg = isDark ? '#2C2C2E' : '#F5F5F5';
+  const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
 
   return (
     <Modal
@@ -31,12 +28,13 @@ export function AppUpdateNoticeModal({ visible, version, highlights, onDismiss }
           style={[
             styles.card,
             {
-              backgroundColor: bg,
-              marginBottom: Math.max(insets.bottom, 16),
+              backgroundColor: c.surface,
+              borderColor: c.border,
+              marginBottom: Math.max(insets.bottom, CityPopSpacing.gutter),
             },
           ]}>
-          <ThemedText style={[styles.title, { color: ink }]}>업데이트 안내</ThemedText>
-          <ThemedText style={[styles.subtitle, { color: muted }]}>
+          <ThemedText style={[styles.title, { color: c.text }]}>업데이트 안내</ThemedText>
+          <ThemedText style={[styles.subtitle, { color: c.textMuted }]}>
             POKIT v{version}이 설치됐어요
           </ThemedText>
 
@@ -45,9 +43,11 @@ export function AppUpdateNoticeModal({ visible, version, highlights, onDismiss }
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}>
             {highlights.map((line) => (
-              <View key={line} style={[styles.bulletRow, { backgroundColor: bulletBg }]}>
-                <ThemedText style={[styles.bulletDot, { color: ink }]}>·</ThemedText>
-                <ThemedText style={[styles.bulletText, { color: ink }]}>{line}</ThemedText>
+              <View
+                key={line}
+                style={[styles.bulletRow, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+                <ThemedText style={[styles.bulletDot, { color: c.text }]}>·</ThemedText>
+                <ThemedText style={[styles.bulletText, { color: c.text }]}>{line}</ThemedText>
               </View>
             ))}
           </ScrollView>
@@ -57,10 +57,17 @@ export function AppUpdateNoticeModal({ visible, version, highlights, onDismiss }
             accessibilityLabel="확인"
             style={({ pressed }) => [
               styles.primaryBtn,
-              { backgroundColor: ink, opacity: pressed ? 0.85 : 1 },
+              {
+                backgroundColor: c.primary,
+                borderColor: c.border,
+                opacity: pressed ? 0.88 : 1,
+                transform: pressed
+                  ? [{ translateX: 4 }, { translateY: 4 }]
+                  : [{ translateX: 0 }, { translateY: 0 }],
+              },
             ]}
             onPress={onDismiss}>
-            <ThemedText style={[styles.primaryBtnText, { color: bg }]}>확인</ThemedText>
+            <ThemedText style={[styles.primaryBtnText, { color: c.primaryOn }]}>확인</ThemedText>
           </Pressable>
         </View>
       </View>
@@ -72,44 +79,49 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    paddingHorizontal: CityPopSpacing.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   card: {
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 20,
+    borderRadius: 0,
+    borderWidth: RETRO_BORDER_WIDTH,
+    paddingHorizontal: CityPopSpacing.md,
+    paddingTop: CityPopSpacing.lg / 2,
+    paddingBottom: CityPopSpacing.md,
     maxHeight: '72%',
+    gap: CityPopSpacing.sm,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     textAlign: 'center',
+    letterSpacing: -0.24,
   },
   subtitle: {
-    marginTop: 8,
-    fontSize: 14,
+    marginTop: CityPopSpacing.xs,
+    fontSize: 16,
     textAlign: 'center',
+    lineHeight: 24,
   },
   listScroll: {
-    marginTop: 20,
+    marginTop: CityPopSpacing.md,
     flexGrow: 0,
   },
   listContent: {
-    gap: 8,
+    gap: CityPopSpacing.sm,
   },
   bulletRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 0,
+    borderWidth: RETRO_BORDER_WIDTH,
+    paddingHorizontal: CityPopSpacing.gutter,
+    paddingVertical: CityPopSpacing.sm,
   },
   bulletDot: {
     fontSize: 16,
     lineHeight: 22,
-    marginRight: 8,
+    marginRight: CityPopSpacing.xs,
   },
   bulletText: {
     flex: 1,
@@ -117,13 +129,15 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   primaryBtn: {
-    marginTop: 20,
-    borderRadius: 14,
-    paddingVertical: 14,
+    marginTop: CityPopSpacing.md,
+    borderRadius: 0,
+    borderWidth: RETRO_BORDER_WIDTH,
+    paddingVertical: 16,
     alignItems: 'center',
+    minHeight: 52,
   },
   primaryBtnText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

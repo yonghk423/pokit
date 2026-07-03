@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   chipLabel: {
     fontSize: 11,

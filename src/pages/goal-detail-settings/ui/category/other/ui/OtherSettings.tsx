@@ -237,8 +237,8 @@ const styles = StyleSheet.create({
   deleteBtn: {
     marginTop: 2,
     alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderRadius: 10,
+    borderWidth: 2,
+    borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   toolbarText: { fontSize: 13, fontWeight: '700' },
   inputRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   taskInput: { flex: 1, borderBottomWidth: 1, paddingVertical: 10, fontSize: 15, fontWeight: '600' },
-  addBtn: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  addBtn: { borderWidth: 2, borderRadius: 0, paddingHorizontal: 14, paddingVertical: 8 },
   addBtnText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.6 },
   list: { borderTopWidth: 1 },
   row: {

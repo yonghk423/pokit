@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   section: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 16,
+    borderRadius: 0,
     overflow: 'hidden',
   },
   item: {

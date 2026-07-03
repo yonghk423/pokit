@@ -118,7 +118,7 @@ export function RoutineApplyWeekdaysField({
 const styles = StyleSheet.create({
   card: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 14,
+    borderRadius: 0,
     padding: 14,
     gap: 12,
     marginBottom: 12,
@@ -145,8 +145,8 @@ const styles = StyleSheet.create({
   toggleChip: {
     minHeight: 32,
     paddingHorizontal: 12,
-    borderRadius: 999,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

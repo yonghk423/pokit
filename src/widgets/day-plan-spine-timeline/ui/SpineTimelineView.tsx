@@ -416,14 +416,14 @@ const styles = StyleSheet.create({
   nodeCircle: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
   nodeCircleLg: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 0,
   },
   contentCol: {
     flex: 1,
@@ -461,8 +461,8 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   addButtonText: {
     fontSize: 14,

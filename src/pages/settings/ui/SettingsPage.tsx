@@ -27,6 +27,7 @@ import {
   openSupportMailComposer,
   SUPPORT_EMAIL,
 } from '@shared/lib/support';
+import { CityPopSpacing, RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -239,29 +240,33 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    padding: 24,
-    gap: 20,
+    padding: CityPopSpacing.md,
+    paddingHorizontal: CityPopSpacing.marginMobile,
+    gap: CityPopSpacing.lg / 2,
   },
   section: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#E5E7EB',
-    borderRadius: 16,
+    borderWidth: RETRO_BORDER_WIDTH,
+    borderColor: RetroFlatColors.light.border,
+    borderRadius: 0,
     overflow: 'hidden',
+    backgroundColor: RetroFlatColors.light.surfaceAlt,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '700',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 10,
-    color: '#6B7280',
+    paddingHorizontal: CityPopSpacing.gutter,
+    paddingTop: 18,
+    paddingBottom: 14,
+    color: RetroFlatColors.light.tertiary,
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
   },
   item: {
-    minHeight: 72,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
+    minHeight: 80,
+    paddingHorizontal: CityPopSpacing.gutter,
+    paddingVertical: CityPopSpacing.sm,
+    borderTopWidth: RETRO_BORDER_WIDTH,
+    borderTopColor: RetroFlatColors.light.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -289,8 +294,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   dangerItem: {
-    borderColor: '#FEE2E2',
-    backgroundColor: '#FEF2F2',
+    backgroundColor: RetroFlatColors.light.dangerBg,
   },
   dangerTitle: {
     color: '#B91C1C',

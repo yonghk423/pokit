@@ -8,7 +8,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { formatHhmmClockKo, getLocalDateKey, useDayPlanDraftStore } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import { syncRoutineWindowCompletionsToHistory } from '@features/history-routine-sync';
-import { PrimaryColor } from '@shared/config/theme';
+import { buildFlowHistoryPalette } from '../lib/flowHistoryPalette';
+import { CityPopSpacing } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   loadDayMealSlotSchedule,
@@ -30,7 +31,6 @@ import {
   formatWeekRangeLabelKo,
   resolveWeekStartForAnchor,
 } from '../lib/buildWeeklyFlowHistory';
-import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 import {
   canGoNextMonth,
   formatMonthLabelKo,
@@ -83,20 +83,7 @@ export function DayPlanStatisticsPage() {
     }, [reloadFromStorage, todayDateKey]),
   );
 
-  const palette = useMemo<FlowHistoryPalette>(
-    () => ({
-      card: isDark ? 'rgba(255,255,255,0.06)' : '#ffffff',
-      border: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-      muted: isDark ? '#a1a1aa' : '#71717a',
-      ink: isDark ? '#f5f5f5' : '#1f2937',
-      accent: isDark ? '#f4b4c8' : '#d9779a',
-      accentSoft: isDark ? 'rgba(244,180,200,0.35)' : 'rgba(217,119,154,0.35)',
-      weekdayIdle: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-      fab: isDark ? '#2a2a2e' : PrimaryColor.rgb,
-      fabIcon: '#FAFAFA',
-    }),
-    [isDark],
-  );
+  const palette = useMemo(() => buildFlowHistoryPalette(isDark), [isDark]);
 
   const monthPrefix = useMemo(() => resolveMonthPrefix(anchorDateKey), [anchorDateKey]);
   const weekStartDateKey = useMemo(
@@ -355,7 +342,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     width: '100%',
     paddingHorizontal: 20,
-    gap: 14,
+    paddingTop: 24,
+    paddingBottom: 48,
+    gap: 24,
   },
   pageDesc: {
     fontSize: 13,
@@ -370,9 +359,11 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   periodNavBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 999,
+    width: 40,
+    height: 40,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -388,10 +379,10 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     width: '100%',
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 20,
-    gap: 8,
+    borderRadius: 0,
+    borderWidth: 2,
+    padding: CityPopSpacing.md,
+    gap: CityPopSpacing.sm,
   },
   emptyTitle: {
     fontSize: 16,
@@ -428,11 +419,11 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 44,
     paddingHorizontal: 16,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   monthChipActive: {
-    borderWidth: 1.5,
+    borderWidth: 2,
   },
   monthChipLabel: {
     fontSize: 13,
@@ -445,14 +436,14 @@ const styles = StyleSheet.create({
   fab: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    elevation: 0,
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
   pressed: {
     opacity: 0.82,

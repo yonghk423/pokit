@@ -460,8 +460,8 @@ const styles = StyleSheet.create({
     minHeight: 30,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   scheduleEditLabel: {
     fontSize: 12,
@@ -500,10 +500,10 @@ const styles = StyleSheet.create({
   spineAddBtn: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: 2,
   },
   spineAddSlot: {
     height: 28,
@@ -514,14 +514,14 @@ const styles = StyleSheet.create({
   nodeCircle: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
   nodeCircleLg: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 0,
   },
   nodeDone: {
     opacity: 0.55,
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    borderWidth: 1,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

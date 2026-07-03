@@ -178,14 +178,14 @@ const styles = StyleSheet.create({
   container: { padding: 24, gap: 16 },
   sectionHint: { fontSize: 13, lineHeight: 19 },
   card: {
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
     paddingVertical: 14,
     gap: 12,
   },
   innerCard: {
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
     padding: 12,
     gap: 10,

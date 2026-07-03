@@ -96,10 +96,10 @@ function DraggableFixedRoutineRow({
   const animatedRowStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
     zIndex: dragging.value ? 50 : 0,
-    elevation: dragging.value ? 10 : 0,
-    shadowOpacity: dragging.value ? 0.12 : 0,
-    shadowRadius: dragging.value ? 8 : 0,
-    shadowOffset: { width: 0, height: dragging.value ? 4 : 0 },
+    elevation: 0,
+    shadowOpacity: 0,
+    borderWidth: dragging.value ? 2 : 0,
+    borderColor: '#000000',
   }));
 
   return (
@@ -107,7 +107,7 @@ function DraggableFixedRoutineRow({
       style={[
         styles.orderRowWrap,
         animatedRowStyle,
-        { borderBottomColor: line, shadowColor: '#000', backgroundColor: surface },
+        { borderBottomColor: line, backgroundColor: surface },
       ]}
       onLayout={(e) => {
         const h = e.nativeEvent.layout.height;
@@ -261,8 +261,8 @@ const styles = StyleSheet.create({
   orderActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   trashPill: {
     padding: 8,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

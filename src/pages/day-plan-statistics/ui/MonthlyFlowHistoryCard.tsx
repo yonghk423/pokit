@@ -107,11 +107,11 @@ export function MonthlyFlowHistoryCard({ row, monthPrefix, palette, onPressDetai
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 10,
+    borderRadius: 0,
+    borderWidth: 2,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    gap: 14,
   },
   headerRow: {
     flexDirection: 'row',
@@ -127,9 +127,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -182,8 +184,8 @@ const styles = StyleSheet.create({
   dayDot: {
     width: 18,
     height: 18,
-    borderRadius: 9,
-    borderWidth: 1.5,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   dayLabel: {
     fontSize: 9,

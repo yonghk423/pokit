@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 11,
-    borderWidth: 1,
+    borderWidth: 2,
   },
   iconPressed: {
     opacity: 0.72,

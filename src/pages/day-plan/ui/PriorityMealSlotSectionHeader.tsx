@@ -101,8 +101,8 @@ const styles = StyleSheet.create({
     minHeight: 28,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 999,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   timeChipPressed: {
     opacity: 0.72,

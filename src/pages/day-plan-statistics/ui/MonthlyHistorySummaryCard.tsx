@@ -35,11 +35,11 @@ export function MonthlyHistorySummaryCard({ summary, palette }: Props) {
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 8,
+    borderRadius: 0,
+    borderWidth: 2,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    gap: 12,
   },
   topRow: {
     flexDirection: 'row',

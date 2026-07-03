@@ -20,13 +20,13 @@ import { ThemedView } from '@shared/ui/themed-view';
 
 import { useFlowReviewRoute } from '../model/useFlowReviewRoute';
 
-const BG = '#ffffff';
-const SURFACE = '#f4f4f5';
-const SURFACE_LOW = '#e4e4e7';
-const BORDER = 'rgba(0,0,0,0.08)';
-const OUTLINE = '#52525b';
-const TEXT = '#18181b';
-const PRIMARY = '#000000';
+const BG = '#F5F2EB';
+const SURFACE = '#F4F2FF';
+const SURFACE_LOW = '#E8E2D8';
+const BORDER = '#000000';
+const OUTLINE = '#436086';
+const TEXT = '#181A2E';
+const PRIMARY = '#356668';
 
 const CATEGORY_META: Record<string, { icon: Parameters<typeof IconSymbol>[0]['name']; label: string }> = {
   work: { icon: 'bag.fill', label: '작업' },
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   headerBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -316,9 +316,9 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 18,
-    paddingBottom: 24,
-    gap: 24,
+    paddingTop: 24,
+    paddingBottom: 48,
+    gap: 32,
   },
   heroSection: { gap: 8, marginBottom: 8 },
   heroKicker: {
@@ -344,18 +344,15 @@ const styles = StyleSheet.create({
   },
   list: { gap: 16 },
   card: {
-    borderRadius: 22,
+    borderRadius: 0,
     padding: 20,
     backgroundColor: SURFACE,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: BORDER,
     overflow: 'hidden',
     gap: 16,
-    shadowColor: PRIMARY,
-    shadowOpacity: 0.16,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 6,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   cardPressed: {
     opacity: 0.92,
@@ -373,7 +370,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: SURFACE_LOW,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: 'rgba(0,0,0,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -397,7 +394,7 @@ const styles = StyleSheet.create({
     minWidth: 24,
     height: 24,
     paddingHorizontal: 6,
-    borderRadius: 12,
+    borderRadius: 0,
     backgroundColor: PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
@@ -437,13 +434,13 @@ const styles = StyleSheet.create({
   progressTrack: {
     flex: 1,
     height: 4,
-    borderRadius: 999,
+    borderRadius: 0,
     backgroundColor: 'rgba(0,0,0,0.08)',
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 999,
+    borderRadius: 0,
     backgroundColor: PRIMARY,
   },
   durationText: {
@@ -487,18 +484,17 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     minHeight: 58,
-    borderRadius: 999,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: BORDER,
     backgroundColor: PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: PRIMARY,
-    shadowOpacity: 0.22,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 6,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   primaryButtonText: {
-    color: '#0a0a0a',
+    color: '#FFFFFF',
     fontSize: 18,
     lineHeight: 22,
     fontWeight: '900',

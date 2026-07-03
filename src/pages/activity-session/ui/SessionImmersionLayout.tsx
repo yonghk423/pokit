@@ -131,7 +131,7 @@ export function ImmersionBottomControls({
         accessibilityState={{ disabled }}
         style={[
           styles.completeBtn,
-          { backgroundColor: accentColor, shadowColor: isDark ? '#000' : accentColor },
+          { backgroundColor: accentColor, borderWidth: 2, borderColor: '#000000' },
           disabled ? { opacity: 0.45 } : null,
         ]}
         disabled={disabled}
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 14,
     paddingHorizontal: 14,
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
   },
   summaryTexts: {
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   cardShell: {
     width: '100%',
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 14,
+    borderRadius: 0,
   },
   cardShellPad: {
     padding: 20,
@@ -276,15 +276,13 @@ const styles = StyleSheet.create({
   completeBtn: {
     marginTop: 8,
     height: 54,
-    borderRadius: 999,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   completeBtnText: {
     fontSize: 17,

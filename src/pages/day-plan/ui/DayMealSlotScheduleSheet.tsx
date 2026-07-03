@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   ghostBtn: {
     flex: 1,
     minHeight: 46,
-    borderRadius: 14,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   primaryBtn: {
     flex: 1.4,
     minHeight: 46,
-    borderRadius: 14,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

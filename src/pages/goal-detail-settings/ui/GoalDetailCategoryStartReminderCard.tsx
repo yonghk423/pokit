@@ -261,14 +261,14 @@ export function GoalDetailCategoryStartReminderCard({ categoryKey }: Props) {
 
 const styles = StyleSheet.create({
   outerCard: {
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
     paddingVertical: 14,
     gap: 12,
   },
   routineWindowBand: {
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   routineWindowLabel: { fontSize: 12, fontWeight: '600', letterSpacing: -0.15 },
   routineWindowTime: { fontSize: 16, fontWeight: '800', letterSpacing: -0.35 },
   innerCard: {
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
     padding: 12,
     gap: 4,

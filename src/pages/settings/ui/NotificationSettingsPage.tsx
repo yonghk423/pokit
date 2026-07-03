@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   sectionHint: { fontSize: 13, lineHeight: 19, marginBottom: 4 },
   section: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 16,
+    borderRadius: 0,
     overflow: 'hidden',
   },
   sectionTitle: {

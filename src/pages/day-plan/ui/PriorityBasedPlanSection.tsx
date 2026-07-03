@@ -569,7 +569,7 @@ const flipStyles = StyleSheet.create({
     maxWidth: '100%',
     minWidth: 0,
     alignSelf: 'stretch',
-    borderRadius: 16,
+    borderRadius: 0,
     shadowColor: '#000',
     shadowOpacity: 0,
     shadowRadius: 0,
@@ -582,7 +582,7 @@ const flipStyles = StyleSheet.create({
     alignItems: 'stretch',
     width: '100%',
     aspectRatio: 1.72,
-    borderRadius: 16,
+    borderRadius: 0,
     overflow: 'hidden',
   },
   halfCell: {
@@ -620,7 +620,7 @@ const flipStyles = StyleSheet.create({
     minWidth: 0,
     maxWidth: 200,
     aspectRatio: 1 / 1.2,
-    borderRadius: 16,
+    borderRadius: 0,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2483,7 +2483,7 @@ const styles = StyleSheet.create({
   },
   priorityTimelineCard: {
     width: '100%',
-    borderRadius: 28,
+    borderRadius: 0,
     borderWidth: 0,
     overflow: 'hidden',
     flexDirection: 'column',
@@ -2661,7 +2661,7 @@ const styles = StyleSheet.create({
   },
   priorityOrderRowAnimWrapDragging: {
     zIndex: 300,
-    elevation: 30,
+    elevation: 0,
   },
   /** 날짜(요일·일) 열과 같은 좌측 시작선 — 리스트를 그 아래 전체 너비로 */
   priorityInlineListUnderDate: {
@@ -2715,8 +2715,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.05,
   },
   priorityMainEmptyHint: {
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: 2,
+    borderRadius: 0,
     paddingHorizontal: 10,
     paddingVertical: 10,
     gap: 2,
@@ -2743,8 +2743,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   timeModalCard: {
-    borderRadius: 18,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     paddingHorizontal: 20,
     paddingVertical: 22,
     gap: 12,
@@ -2752,7 +2752,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
     zIndex: 2,
-    elevation: 14,
+    elevation: 0,
   },
   timeModalFlipWrap: {
     width: '100%',
@@ -2844,8 +2844,8 @@ const styles = StyleSheet.create({
   dateMonthNavBtn: {
     width: 36,
     height: 36,
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2863,8 +2863,8 @@ const styles = StyleSheet.create({
   },
   calendarFrame: {
     marginTop: 10,
-    borderWidth: 1,
-    borderRadius: 14,
+    borderWidth: 2,
+    borderRadius: 0,
     paddingTop: 8,
     paddingBottom: 8,
     paddingHorizontal: 6,
@@ -2880,8 +2880,8 @@ const styles = StyleSheet.create({
   calendarTodayBtn: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   calendarTodayBtnText: {
     fontSize: 13,
@@ -2931,12 +2931,12 @@ const styles = StyleSheet.create({
   dateActionBtn: {
     flex: 1,
     minHeight: 40,
-    borderRadius: 10,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dateActionGhost: {
-    borderWidth: 1,
+    borderWidth: 2,
   },
   dateActionPrimary: {
     backgroundColor: PRIMARY,

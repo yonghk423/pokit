@@ -495,7 +495,7 @@ export function DailyRhythmTimeEditorBody({
             {
               backgroundColor: pill.activeBg,
               borderColor: pill.activeBorder,
-              borderWidth: 1,
+              borderWidth: 2,
             },
             pressed && { opacity: 0.92 },
           ]}>
@@ -564,8 +564,8 @@ const styles = StyleSheet.create({
   endDateChoiceBtn: {
     flex: 1,
     minHeight: 42,
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -661,8 +661,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingVertical: 11,
     paddingHorizontal: 14,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     justifyContent: 'center',
   },
   presetRowTextCol: {
@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   card: {
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
     padding: 12,
     gap: 8,
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
   primaryBtn: {
     alignSelf: 'stretch',
     minHeight: 44,
-    borderRadius: 14,
+    borderRadius: 0,
     paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: 'center',

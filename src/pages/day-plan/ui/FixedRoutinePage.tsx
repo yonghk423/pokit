@@ -1359,8 +1359,8 @@ const styles = StyleSheet.create({
   },
   accordionSection: {
     width: '100%',
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     overflow: 'hidden',
   },
   accordionHeader: {
@@ -1389,7 +1389,7 @@ const styles = StyleSheet.create({
   rulePill: {
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 999,
+    borderRadius: 0,
     flexShrink: 0,
   },
   rulePillText: {
@@ -1399,8 +1399,8 @@ const styles = StyleSheet.create({
   headerApplyChip: {
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     flexShrink: 0,
   },
   headerApplyChipLabel: {
@@ -1427,7 +1427,7 @@ const styles = StyleSheet.create({
   countPill: {
     paddingHorizontal: 5,
     paddingVertical: 2,
-    borderRadius: 999,
+    borderRadius: 0,
   },
   countPillText: {
     fontSize: 10,
@@ -1489,8 +1489,8 @@ const styles = StyleSheet.create({
   mealSlotApplyChip: {
     paddingHorizontal: 9,
     paddingVertical: 5,
-    borderRadius: 999,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   mealSlotApplyChipLabel: {
     fontSize: 10,
@@ -1507,7 +1507,7 @@ const styles = StyleSheet.create({
   addGroupTrigger: {
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderRadius: 12,
+    borderRadius: 0,
     paddingVertical: 14,
     paddingHorizontal: 14,
     alignItems: 'center',
@@ -1524,7 +1524,7 @@ const styles = StyleSheet.create({
   addGroupCard: {
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderRadius: 12,
+    borderRadius: 0,
     padding: 12,
     gap: 10,
   },
@@ -1555,7 +1555,7 @@ const styles = StyleSheet.create({
   cardList: {
     width: '100%',
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 2,
     overflow: 'hidden',
   },
   flowRow: {
@@ -1578,7 +1578,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 9,
-    borderWidth: 1,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -1601,8 +1601,8 @@ const styles = StyleSheet.create({
   flowSlotPill: {
     paddingHorizontal: 7,
     paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     maxWidth: 52,
     flexShrink: 0,
   },
@@ -1680,7 +1680,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 44,
-    borderRadius: 12,
+    borderRadius: 0,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },

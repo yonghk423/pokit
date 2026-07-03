@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   bone: {
-    borderRadius: 10,
+    borderRadius: 0,
   },
   headerRow: {
     flexDirection: 'row',
@@ -126,12 +126,12 @@ const styles = StyleSheet.create({
   headerAction: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 0,
   },
   hero: {
     width: '100%',
     height: 176,
-    borderRadius: 18,
+    borderRadius: 0,
   },
   chipRow: {
     flexDirection: 'row',
@@ -157,12 +157,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     padding: 12,
-    borderRadius: 16,
+    borderRadius: 0,
   },
   thumb: {
     width: 76,
     height: 76,
-    borderRadius: 14,
+    borderRadius: 0,
   },
   cardText: {
     flex: 1,

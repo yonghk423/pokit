@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '900', letterSpacing: -0.5, lineHeight: 28 },
   sub: { fontSize: 13, lineHeight: 19, fontWeight: '600' },
   taskCard: {
-    borderRadius: 18,
+    borderRadius: 0,
     padding: 16,
     gap: 14,
   },
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
   },
   checkbox: {
@@ -246,12 +246,12 @@ const styles = StyleSheet.create({
   taskRemove: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyHint: {
-    borderRadius: 14,
+    borderRadius: 0,
     paddingVertical: 28,
     alignItems: 'center',
     justifyContent: 'center',
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   addBtn: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: 0,
     backgroundColor: PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   memoField: {
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
     paddingVertical: 12,

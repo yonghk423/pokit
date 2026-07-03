@@ -23,7 +23,9 @@ export {
 } from '@entities/day-plan';
 export type { PlanMode } from '@entities/day-plan';
 
-export const PRIMARY = 'rgb(0, 0, 0)';
+import { RetroFlatColors } from '@shared/config/retroFlat';
+
+export const PRIMARY = RetroFlatColors.light.primary;
 
 export const CATEGORIES: { key: string; label: string; icon: string }[] = [
   // ─── 건강·몸 관리 ───

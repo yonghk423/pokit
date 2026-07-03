@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -403,8 +403,8 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 22,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   chipDashed: {
     borderStyle: 'dashed',
@@ -420,8 +420,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: 2,
+    borderRadius: 0,
     paddingHorizontal: 14,
     height: 48,
     fontSize: 15,
@@ -435,8 +435,8 @@ const styles = StyleSheet.create({
   newGroupBtn: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   newGroupBtnText: {
     fontSize: 13,
@@ -448,8 +448,8 @@ const styles = StyleSheet.create({
   },
   cta: {
     minHeight: 50,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
