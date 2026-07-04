@@ -39,7 +39,7 @@ const CATEGORY_META: Record<string, { icon: Parameters<typeof IconSymbol>[0]['na
   fasting: { icon: 'figure.stand', label: '체중관리' },
   water: { icon: 'drop.fill', label: '수분섭취' },
   medicine: { icon: 'cross.case.fill', label: '약 복용' },
-  other: { icon: 'person.fill', label: '플로우 직접 설정' },
+  other: { icon: 'person.fill', label: '루틴 직접 설정' },
 };
 
 type ReviewRow = {
@@ -65,7 +65,7 @@ function getReviewCopy(block: DayPlanBlock, otherLabelFallback: string): { title
 
   const catKey = resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category) ?? 'other';
   const categoryFallback =
-    catKey === 'other' ? otherLabelFallback : (CATEGORY_META[catKey]?.label ?? '플로우');
+    catKey === 'other' ? otherLabelFallback : (CATEGORY_META[catKey]?.label ?? '루틴');
   const first = lines[0] ?? '';
   const looksNumbered = /^\d+\.\s/.test(first);
 
@@ -166,7 +166,7 @@ export function FlowReviewPage() {
 
   const handleRemoveFlow = useCallback(
     (row: ReviewRow) => {
-      Alert.alert('플로우 제거', `「${row.title}」를 오늘 플로우에서 제거할까요?`, [
+      Alert.alert('루틴 제거', `「${row.title}」를 오늘 루틴에서 제거할까요?`, [
         { text: '취소', style: 'cancel' },
         {
           text: '제거',
@@ -203,9 +203,9 @@ export function FlowReviewPage() {
           showsVerticalScrollIndicator={false}>
           <View style={styles.heroSection}>
             <ThemedText style={styles.heroKicker}>CURRENT SELECTION</ThemedText>
-            <ThemedText style={styles.heroTitle}>선택된 플로우</ThemedText>
+            <ThemedText style={styles.heroTitle}>선택된 루틴</ThemedText>
             <ThemedText style={styles.heroSub}>
-              오늘의 흐름을 위해 {rows.length}개의 플로우와 총 {totalDurationMin}분이 준비되었어요.
+              오늘의 흐름을 위해 {rows.length}개의 루틴과 총 {totalDurationMin}분이 준비되었어요.
             </ThemedText>
           </View>
 
@@ -264,7 +264,7 @@ export function FlowReviewPage() {
                     <View style={styles.cardFooterActions}>
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel="플로우 제거"
+                        accessibilityLabel="루틴 제거"
                         hitSlop={8}
                         onPress={(e) => {
                           e.stopPropagation();
@@ -284,10 +284,10 @@ export function FlowReviewPage() {
 
         <View style={styles.bottomActions}>
           <Pressable style={styles.primaryButton} onPress={handleStartTodayFlow}>
-            <ThemedText style={styles.primaryButtonText}>오늘의 플로우 시작</ThemedText>
+            <ThemedText style={styles.primaryButtonText}>오늘의 루틴 시작</ThemedText>
           </Pressable>
           <Pressable onPress={handleBackToEdit} style={styles.secondaryAction}>
-            <ThemedText style={styles.secondaryActionText}>플로우 수정하기</ThemedText>
+            <ThemedText style={styles.secondaryActionText}>루틴 수정하기</ThemedText>
           </Pressable>
         </View>
       </SafeAreaView>

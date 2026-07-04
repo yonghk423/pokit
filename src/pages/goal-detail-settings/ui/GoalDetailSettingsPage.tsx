@@ -525,7 +525,7 @@ export function GoalDetailSettingsPage() {
                   },
                 ]}>
                 <ThemedText style={[styles.startPickerTitle, { color: c.onSurface }]}>
-                  먼저 진행할 플로우
+                  먼저 진행할 루틴
                 </ThemedText>
                 <ThemedText style={[styles.startPickerSub, { color: c.onVariant }]}>
                   선택한 블록이 체크리스트 맨 위·진행 중으로 표시돼요.
@@ -658,7 +658,7 @@ export function GoalDetailSettingsPage() {
           ]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={waterOnlyUi ? '플로우 설정 완료' : '설정 완료'}
+            accessibilityLabel={waterOnlyUi ? '루틴 설정 완료' : '설정 완료'}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               handleCompleteAndStart();

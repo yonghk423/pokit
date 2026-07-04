@@ -25,7 +25,7 @@ export function MonthlyHistorySummaryCard({ summary, palette }: Props) {
       </ThemedText>
       {summary.topCategoryLabel ? (
         <ThemedText style={[styles.highlight, { color: palette.ink }]}>
-          가장 많이 한 플로우: {summary.topCategoryLabel}
+          가장 많이 한 루틴: {summary.topCategoryLabel}
         </ThemedText>
       ) : null}
     </View>
@@ -37,34 +37,34 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 0,
     borderWidth: 2,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 4,
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: 6,
   },
   title: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
   percent: {
-    fontSize: 22,
+    fontSize: 15,
     fontWeight: '900',
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   body: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: '600',
   },
   highlight: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: '700',
   },
 });

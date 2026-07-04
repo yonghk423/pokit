@@ -76,7 +76,7 @@ describe('normalizeWaterDetailConfig', () => {
 
 describe('normalizeYogaDetailConfig', () => {
   it('defaults flow label', () => {
-    expect(normalizeYogaDetailConfig({}).flowLabel).toBe('플로우');
+    expect(normalizeYogaDetailConfig({}).flowLabel).toBe('루틴');
     expect(getInitialYogaDataConfig().sessionMin).toBe(40);
   });
 });

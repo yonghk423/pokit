@@ -45,7 +45,6 @@ export function DefaultPriorityOrderRow({
   onToggleFocusComplete,
   onReorderDragTranslationEnd,
   onReorderDragActiveChange,
-  reorderDragSurface,
   onSettings,
   onFocusDetail,
   animateOnMount,
@@ -148,8 +147,6 @@ export function DefaultPriorityOrderRow({
     loop.start();
     return () => loop.stop();
   }, [shouldPulse, pulse]);
-
-  const reorderSurface = reorderDragSurface ?? 'transparent';
 
   const rankIconTitleBlock = (
     <>
@@ -279,12 +276,7 @@ export function DefaultPriorityOrderRow({
         },
       ]}>
       {reorderPanGesture ? (
-        <Reanimated.View
-          style={[
-            styles.orderRowDragShell,
-            reorderMainAnimatedStyle,
-            { backgroundColor: reorderSurface },
-          ]}>
+        <Reanimated.View style={[styles.orderRowDragShell, reorderMainAnimatedStyle]}>
           <GestureDetector gesture={reorderPanGesture}>
             <View
               style={styles.orderRowReorderMain}

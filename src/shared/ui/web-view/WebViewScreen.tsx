@@ -24,8 +24,8 @@ type Props = {
   onMessage?: (data: unknown) => void;
   /** 기본 true — 스토리 WebView 등에서 당겨서 새로고침 */
   pullToRefreshEnabled?: boolean;
-  /** 첫 로딩 중 표시 UI — 미지정 시 ActivityIndicator */
-  initialLoadingFallback?: ReactNode;
+  /** 첫 로딩 중 표시 UI — progress 0~100 */
+  renderInitialLoading?: (progress: number) => ReactNode;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -49,11 +49,12 @@ export function WebViewScreen({
   allowedHostSuffixes = [],
   onMessage,
   pullToRefreshEnabled = true,
-  initialLoadingFallback,
+  renderInitialLoading,
   style,
 }: Props) {
   const webViewRef = useRef<WebView>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -64,6 +65,7 @@ export function WebViewScreen({
   const handleRetry = useCallback(() => {
     setHasError(false);
     setIsLoading(true);
+    setLoadProgress(0);
     webViewRef.current?.reload();
   }, []);
 
@@ -174,6 +176,10 @@ export function WebViewScreen({
               setIsLoading(true);
               setHasError(false);
             }}
+            onLoadProgress={({ nativeEvent }) => {
+              const next = Math.round(nativeEvent.progress * 100);
+              setLoadProgress((prev) => Math.max(prev, next));
+            }}
             onLoadEnd={handleLoadEnd}
             onError={() => {
               setHasError(true);
@@ -196,10 +202,14 @@ export function WebViewScreen({
         {isLoading && !hasError && !hasLoadedOnce ? (
           <View
             style={
-              initialLoadingFallback ? styles.loadingOverlayFill : styles.loadingOverlayCentered
+              renderInitialLoading ? styles.loadingOverlayFill : styles.loadingOverlayCentered
             }
             pointerEvents="none">
-            {initialLoadingFallback ?? <ActivityIndicator size="large" color={tintColor} />}
+            {renderInitialLoading ? (
+              renderInitialLoading(loadProgress)
+            ) : (
+              <ActivityIndicator size="large" color={tintColor} />
+            )}
           </View>
         ) : null}
       </SafeAreaView>

@@ -4,6 +4,7 @@ import {
   buildPriorityMealSlotSections,
   hasExplicitMealSlotAssignments,
   inferMealSlotAfterFlatReorder,
+  listPriorityItemsForMealSlotAssignmentSheet,
   listUnslottedPriorityItems,
   reorderFlatKeys,
   splitPriorityMealSlotSections,
@@ -64,6 +65,37 @@ describe('listUnslottedPriorityItems', () => {
     expect(listUnslottedPriorityItems(items, overrides).map((item) => item.key)).toEqual([
       'water',
     ]);
+  });
+});
+
+describe('listPriorityItemsForMealSlotAssignmentSheet', () => {
+  it('returns all items when only some have explicit section assignments', () => {
+    const items = [
+      { key: 'meditation' },
+      { key: 'stretching' },
+      { key: 'drawing' },
+    ];
+    const overrides = new Map([
+      ['meditation', ['morning'] as const],
+      ['stretching', ['dinner'] as const],
+    ]);
+    expect(
+      listPriorityItemsForMealSlotAssignmentSheet(items, overrides).map((item) => item.key),
+    ).toEqual(['meditation', 'stretching', 'drawing']);
+  });
+
+  it('returns only unslotted items when none or all are assigned', () => {
+    const items = [{ key: 'reading' }, { key: 'water' }];
+    const noneAssigned = new Map<string, readonly ['morning']>();
+    expect(
+      listPriorityItemsForMealSlotAssignmentSheet(items, noneAssigned).map((item) => item.key),
+    ).toEqual(['reading', 'water']);
+
+    const allAssigned = new Map([
+      ['reading', ['morning'] as const],
+      ['water', ['lunch'] as const],
+    ]);
+    expect(listPriorityItemsForMealSlotAssignmentSheet(items, allAssigned)).toEqual([]);
   });
 });
 
@@ -156,6 +188,28 @@ describe('buildPriorityMealSlotSections order stability', () => {
       sections.find((section) => section.slot === 'dawn')?.items.map((item) => item.key) ?? [];
     expect(morningKeys).toContain(customKey);
     expect(dawnKeys).not.toContain(customKey);
+  });
+});
+
+describe('splitPriorityMealSlotSections multi-slot assignments', () => {
+  it('places the same item in every assigned section', () => {
+    const items = [{ key: 'medicine', label: '약 복용' }];
+    const overrides = new Map([['medicine', ['morning', 'lunch', 'dinner'] as const]]);
+    const { sections } = splitPriorityMealSlotSections(items, {
+      mealSlotOverrides: overrides,
+      explicitSlotsOnly: true,
+      includeEmptySections: true,
+    });
+    expect(sections.find((section) => section.slot === 'morning')?.items.map((item) => item.key)).toEqual([
+      'medicine',
+    ]);
+    expect(sections.find((section) => section.slot === 'lunch')?.items.map((item) => item.key)).toEqual([
+      'medicine',
+    ]);
+    expect(sections.find((section) => section.slot === 'dinner')?.items.map((item) => item.key)).toEqual([
+      'medicine',
+    ]);
+    expect(sections.find((section) => section.slot === 'dawn')?.items).toEqual([]);
   });
 });
 

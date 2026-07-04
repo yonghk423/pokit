@@ -1,7 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
-import { useCallback, useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, {
   runOnJS,
@@ -9,26 +9,41 @@ import Reanimated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
-import type { SymbolViewProps } from 'expo-symbols';
 
-import { resolveCategoryCatalogIcon } from '@entities/day-plan';
-import { PrimaryColor } from '@shared/config/theme';
+import { formatHhmmClockKo } from '@entities/day-plan';
+import {
+  CityPopSpacing,
+  CityPopTypography,
+  RetroFlatColors,
+  SOLID_SHADOW_OFFSET,
+  cityPopFont,
+} from '@shared/config/retroFlat';
 import type { DayMealSlot } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
+import {
+  activeIconColorByCategory,
+  categoryIconAccent,
+} from '@widgets/day-plan-priority-order/lib/activeIconColorByCategory';
+
+import { DAY_MEAL_SLOT_ICON, DAY_NIGHT_HEADER_ICON, DAY_NIGHT_HEADER_MOON_ICON } from '../lib/mealSlotIcons';
 
 export type MealSlotTimelineItem = {
   key: string;
+  /** 완료·드래그 식별자와 분리된 카테고리 키(구간별 복합 key 사용 시) */
+  categoryKey?: string;
   label: string;
   icon: string;
   subtitle?: string;
 };
 
+function resolveTimelineItemCategoryKey(item: MealSlotTimelineItem): string {
+  return item.categoryKey ?? item.key;
+}
+
 export type MealSlotTimelineSection<T extends MealSlotTimelineItem = MealSlotTimelineItem> = {
   slot: DayMealSlot;
   title: string;
-  /** HH:mm — 왼쪽 레일 */
   hintTime: string;
   isCurrent: boolean;
   items: T[];
@@ -42,179 +57,364 @@ export type MealSlotTimelinePalette = {
   accent: string;
 };
 
-const SLOT_ICON: Record<DayMealSlot, SymbolViewProps['name']> = {
-  dawn: 'sun.horizon.fill',
-  morning: 'sun.max.fill',
-  lunch: 'sun.max',
-  dinner: 'sunset.fill',
-  night: 'moon.fill',
-};
-
 const REORDER_LONG_PRESS_MS = 420;
 const REORDER_SPRING = { damping: 22, stiffness: 250, mass: 0.95 };
-const RAIL_W = 44;
-const SPINE_W = 36;
-const COMPLETE_W = 28;
+/** HTML `pl-10` */
+const TIMELINE_INSET = 40;
+/** HTML `left-[14px]` */
+const DOT_LEFT = 14;
+const DOT_SIZE = 12;
+/** HTML `rounded-lg` */
+const CARD_RADIUS = 8;
+/** HTML `thin-outline` */
+const THIN_BORDER = 1;
+const CHECKBOX_SIZE = 20;
 
-function formatRailHhmm(hhmm: string): string {
-  const [hRaw, mRaw] = hhmm.split(':');
-  const h = Number(hRaw);
-  const m = Number(mRaw);
-  if (!Number.isFinite(h) || !Number.isFinite(m)) return hhmm;
-  return `${h}:${String(m).padStart(2, '0')}`;
+type SlotBadgeTheme = {
+  bg: string;
+  label: string;
+};
+
+function slotBadgeTheme(slot: DayMealSlot, isDark: boolean): SlotBadgeTheme {
+  const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+
+  if (isDark) {
+    const dark: Record<DayMealSlot, SlotBadgeTheme> = {
+      dawn: { bg: '#306163', label: c.text },
+      morning: { bg: '#3A5C5E', label: c.text },
+      lunch: { bg: '#5C3A48', label: c.text },
+      dinner: { bg: '#4A463F', label: c.text },
+      night: { bg: c.text, label: c.bg },
+    };
+    return dark[slot];
+  }
+
+  const light: Record<DayMealSlot, SlotBadgeTheme> = {
+    dawn: { bg: '#D1F2F3', label: c.primary },
+    morning: { bg: c.primaryContainer, label: c.primary },
+    lunch: { bg: '#FFE2E2', label: c.text },
+    dinner: { bg: '#B6D3FF', label: '#3E5B81' },
+    night: { bg: c.text, label: '#FAFAFA' },
+  };
+  return light[slot];
 }
 
-function CompleteRadio({
+function cardColors(isDark: boolean) {
+  const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  return {
+    face: isDark ? c.surfaceAlt : '#FFFFFF',
+    border: isDark ? c.border : '#000000',
+    shadow: c.solidShadow,
+  };
+}
+
+function RoutineIconBadge({
+  icon,
+  categoryKey,
+  isDark,
+  completed,
+  palette,
+  size = 16,
+}: {
+  icon: string;
+  categoryKey: string;
+  isDark: boolean;
+  completed: boolean;
+  palette: MealSlotTimelinePalette;
+  size?: number;
+}) {
+  const accent = categoryIconAccent(categoryKey);
+  const colors = cardColors(isDark);
+  const iconColor = completed
+    ? palette.muted
+    : activeIconColorByCategory(categoryKey);
+
+  return (
+    <View
+      style={[
+        styles.routineIconBadge,
+        {
+          borderColor: colors.border,
+          backgroundColor: completed
+            ? isDark
+              ? 'rgba(255,255,255,0.06)'
+              : 'rgba(0,0,0,0.04)'
+            : accent.surface,
+        },
+      ]}>
+      {categoryKey === 'medicine' ? (
+        <IconSymbol name="cross.fill" size={size - 4} color="#BA1A1A" />
+      ) : (
+        <IconSymbol name={icon as any} size={size} color={iconColor} />
+      )}
+    </View>
+  );
+}
+
+function CardHeadingWithIcon({
+  item,
+  palette,
+  isDark,
+  completed = false,
+}: {
+  item: MealSlotTimelineItem;
+  palette: MealSlotTimelinePalette;
+  isDark: boolean;
+  completed?: boolean;
+}) {
+  return (
+    <View style={styles.cardHeadingRow}>
+      <RoutineIconBadge
+        icon={item.icon}
+        categoryKey={resolveTimelineItemCategoryKey(item)}
+        isDark={isDark}
+        completed={completed}
+        palette={palette}
+        size={17}
+      />
+      <ThemedText
+        style={[
+          styles.cardHeading,
+          cityPopFont('700'),
+          { color: completed ? palette.muted : palette.ink },
+          completed && styles.checkboxLabelDone,
+        ]}
+        numberOfLines={2}>
+        {item.label}
+      </ThemedText>
+    </View>
+  );
+}
+
+function BrutalistCard({ isDark, children }: { isDark: boolean; children: ReactNode }) {
+  const colors = cardColors(isDark);
+  return (
+    <View style={styles.cardShell}>
+      <View
+        style={[
+          styles.cardShadow,
+          { backgroundColor: colors.shadow, borderColor: colors.border },
+        ]}
+      />
+      <View
+        style={[
+          styles.cardFace,
+          { backgroundColor: colors.face, borderColor: colors.border },
+        ]}>
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function CustomCheckbox({
   checked,
   isDark,
-  accent,
   onPress,
 }: {
   checked: boolean;
   isDark: boolean;
-  accent: string;
   onPress?: () => void;
 }) {
+  const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   return (
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
       onPress={onPress}
       hitSlop={8}
-      style={styles.completeHit}>
-      {({ pressed }) => (
-        <MaterialIcons
-          name={checked ? 'radio-button-checked' : 'radio-button-unchecked'}
-          size={20}
-          color={
-            checked
-              ? accent
-              : pressed
-                ? isDark
-                  ? 'rgba(255,255,255,0.58)'
-                  : '#D1D5DB'
-                : isDark
-                  ? 'rgba(255,255,255,0.42)'
-                  : '#9CA3AF'
-          }
-        />
-      )}
-    </Pressable>
-  );
-}
-
-function SpineAddButton({
-  palette,
-  isDark,
-  label,
-  onPress,
-}: {
-  palette: MealSlotTimelinePalette;
-  isDark: boolean;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      hitSlop={6}
-      onPress={() => {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onPress();
-      }}
       style={({ pressed }) => [
-        styles.spineAddBtn,
+        styles.checkbox,
         {
-          borderColor: palette.line,
-          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+          borderColor: c.border,
+          backgroundColor: checked ? c.tertiary : pressed ? c.surfaceContainer : 'transparent',
         },
-        pressed && styles.pressed,
       ]}>
-      <IconSymbol name="plus" size={12} color={palette.accent} />
+      {checked ? <MaterialIcons name="check" size={14} color={c.primaryContainer} /> : null}
     </Pressable>
   );
 }
 
-function SlotAnchorRow({
-  section,
+function TimelineGreeting({
+  dateLabel,
   palette,
   isDark,
-  isLastSection,
-  onAddRoutine,
+  onPressEditSchedule,
 }: {
-  section: MealSlotTimelineSection;
+  dateLabel?: string;
   palette: MealSlotTimelinePalette;
   isDark: boolean;
-  isLastSection: boolean;
-  onAddRoutine?: () => void;
+  onPressEditSchedule?: () => void;
 }) {
-  const nodeBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)';
-  const titleColor = section.isCurrent ? palette.ink : palette.muted;
+  const pulse = useRef(new Animated.Value(1)).current;
+  const primary = isDark ? RetroFlatColors.dark.primary : RetroFlatColors.light.primary;
+  const colors = cardColors(isDark);
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 0.35, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
 
   return (
-    <View style={styles.eventRow}>
-      <View style={styles.railCol}>
-        <ThemedText style={[styles.railTime, { color: palette.muted }]}>
-          {formatRailHhmm(section.hintTime)}
+    <View style={styles.greetingBlock}>
+      <View style={styles.greetingTitleRow}>
+        <View style={styles.greetingDayNightIcons}>
+          <IconSymbol name={DAY_NIGHT_HEADER_ICON as 'sun.and.horizon.fill'} size={20} color={primary} />
+          <IconSymbol name={DAY_NIGHT_HEADER_MOON_ICON as 'moon.fill'} size={20} color={primary} />
+        </View>
+        <ThemedText style={[styles.greetingTitle, cityPopFont('700'), { color: palette.ink }]}>
+          오늘의 주야
         </ThemedText>
       </View>
-      <View style={styles.spineCol}>
-        <View style={[styles.nodeCircle, styles.nodeCircleLg, { backgroundColor: nodeBg }]}>
-          <IconSymbol
-            name={SLOT_ICON[section.slot]}
-            size={16}
-            color={section.isCurrent ? palette.ink : palette.muted}
-          />
+      <View style={styles.greetingSubRow}>
+        <View style={styles.greetingSubLeft}>
+          {dateLabel ? (
+            <>
+              <Animated.View
+                style={[styles.greetingPulseDot, { backgroundColor: primary, opacity: pulse }]}
+              />
+              <ThemedText style={[styles.greetingSub, cityPopFont('500'), { color: palette.muted }]}>
+                오늘은{' '}
+                <ThemedText style={[cityPopFont('700'), { color: primary }]}>{dateLabel}</ThemedText>
+              </ThemedText>
+            </>
+          ) : null}
         </View>
-        {onAddRoutine ? (
-          <SpineAddButton
-            palette={palette}
-            isDark={isDark}
-            label="루틴 연결"
-            onPress={onAddRoutine}
-          />
-        ) : null}
-        {!isLastSection || section.items.length > 0 ? (
-          <View style={[styles.spineLine, { backgroundColor: palette.line }]} />
+        {onPressEditSchedule ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="구간 시간 설정"
+            accessibilityHint="새벽·아침·점심·저녁·밤 구간 시작 시각을 변경할 수 있어요"
+            hitSlop={6}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onPressEditSchedule();
+            }}
+            style={({ pressed }) => [
+              styles.scheduleEditBtn,
+              {
+                borderColor: colors.border,
+                backgroundColor: colors.face,
+              },
+              pressed && styles.pressed,
+            ]}>
+            <IconSymbol name="clock" size={13} color={palette.ink} />
+            <ThemedText style={[styles.scheduleEditLabel, cityPopFont('700'), { color: palette.ink }]}>
+              구간 시간 설정
+            </ThemedText>
+          </Pressable>
         ) : null}
       </View>
-      <View style={styles.contentCol}>
-        <ThemedText style={[styles.metaText, { color: palette.muted }]}>{section.title}</ThemedText>
-      </View>
-      <View style={styles.completeSpacer} />
     </View>
   );
 }
 
-function RoutineSpineRow({
+
+function CheckboxRow({
   item,
   palette,
   isDark,
   completed,
-  reorderEnabled,
+  labelHidden = false,
   onToggleComplete,
-  onSettings,
-  onReorderDragActiveChange,
-  onReorderDragTranslationEnd,
-  onAddRoutine,
+  onOpenSettings,
 }: {
   item: MealSlotTimelineItem;
   palette: MealSlotTimelinePalette;
   isDark: boolean;
   completed: boolean;
+  labelHidden?: boolean;
+  onToggleComplete?: () => void;
+  onOpenSettings?: () => void;
+}) {
+  const primary = isDark ? RetroFlatColors.dark.primary : RetroFlatColors.light.primary;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={item.label}
+      onPress={() => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onToggleComplete?.();
+      }}
+      onLongPress={
+        onOpenSettings
+          ? () => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              onOpenSettings();
+            }
+          : undefined
+      }
+      style={({ pressed: rowPressed }) => [styles.checkboxRow, rowPressed && styles.pressed]}>
+      {({ pressed }) => (
+        <>
+          <CustomCheckbox
+            checked={completed}
+            isDark={isDark}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onToggleComplete?.();
+            }}
+          />
+          {labelHidden ? null : (
+            <>
+              <RoutineIconBadge
+                icon={item.icon}
+                categoryKey={resolveTimelineItemCategoryKey(item)}
+                isDark={isDark}
+                completed={completed}
+                palette={palette}
+              />
+              <ThemedText
+                style={[
+                  styles.checkboxLabel,
+                  cityPopFont('400'),
+                  { color: completed ? palette.muted : palette.ink },
+                  completed && styles.checkboxLabelDone,
+                  !completed && pressed && { color: primary },
+                ]}
+                numberOfLines={2}>
+                {item.label}
+              </ThemedText>
+            </>
+          )}
+        </>
+      )}
+    </Pressable>
+  );
+}
+
+function ReorderableCheckboxRow({
+  item,
+  palette,
+  isDark,
+  completed,
+  labelHidden = false,
+  reorderEnabled,
+  onToggleComplete,
+  onOpenSettings,
+  onReorderDragActiveChange,
+  onReorderDragTranslationEnd,
+}: {
+  item: MealSlotTimelineItem;
+  palette: MealSlotTimelinePalette;
+  isDark: boolean;
+  completed: boolean;
+  labelHidden?: boolean;
   reorderEnabled: boolean;
   onToggleComplete?: () => void;
-  onSettings?: () => void;
+  onOpenSettings?: () => void;
   onReorderDragActiveChange?: (key: string, active: boolean) => void;
   onReorderDragTranslationEnd?: (translationY: number) => void;
-  onAddRoutine?: () => void;
 }) {
   const translateY = useSharedValue(0);
   const reorderDragging = useSharedValue(0);
-  const nodeBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)';
-  const iconColor = completed ? palette.muted : activeIconColorByCategory(item.key);
-  const titleColor = completed ? palette.muted : palette.ink;
 
   const triggerReorderStart = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -255,94 +455,296 @@ function RoutineSpineRow({
   }, [
     clearReorderDragActive,
     onReorderDragTranslationEnd,
-    reorderDragging,
     reorderEnabled,
+    reorderDragging,
     triggerReorderEnd,
     triggerReorderStart,
     translateY,
   ]);
 
   const rowAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }, { scale: reorderDragging.value ? 1.015 : 1 }],
+    transform: [{ translateY: translateY.value }],
     zIndex: reorderDragging.value ? 220 : 0,
   }));
 
-  const rowContent = (
-    <>
-      <View style={styles.railCol} />
-      <View style={styles.spineCol}>
-        <View style={[styles.nodeCircle, { backgroundColor: nodeBg }, completed && styles.nodeDone]}>
-          <IconSymbol
-            name={resolveCategoryCatalogIcon(item.key) as SymbolViewProps['name']}
-            size={14}
-            color={iconColor}
-          />
-        </View>
-        <View style={styles.spineAddSlot}>
-          {onAddRoutine ? (
-            <SpineAddButton
-              palette={palette}
-              isDark={isDark}
-              label="루틴 더 연결"
-              onPress={onAddRoutine}
-            />
-          ) : null}
-        </View>
-        <View style={[styles.spineLine, { backgroundColor: palette.line }]} />
-      </View>
-      <View style={styles.contentCol}>
-        <View style={styles.titleRow}>
-          <ThemedText
-            style={[styles.titleText, { color: titleColor }, completed && styles.titleDone]}
-            numberOfLines={1}>
-            {item.label}
-          </ThemedText>
-          {onSettings ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`${item.label} 상세 설정`}
-              hitSlop={8}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onSettings();
-              }}
-              style={({ pressed }) => [
-                styles.settingsBtn,
-                {
-                  borderColor: palette.line,
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-                },
-                pressed && styles.pressed,
-              ]}>
-              <IconSymbol name="slider.horizontal.3" size={14} color={palette.ink} />
-            </Pressable>
-          ) : null}
-        </View>
-        {item.subtitle ? (
-          <ThemedText
-            style={[styles.metaText, { color: palette.muted }, completed && styles.titleDone]}
-            numberOfLines={1}>
-            {item.subtitle}
-          </ThemedText>
-        ) : null}
-      </View>
-      <CompleteRadio
-        checked={completed}
-        isDark={isDark}
-        accent={isDark ? '#FAFAFA' : PrimaryColor}
-        onPress={onToggleComplete}
-      />
-    </>
+  const row = (
+    <CheckboxRow
+      item={item}
+      palette={palette}
+      isDark={isDark}
+      completed={completed}
+      labelHidden={labelHidden}
+      onToggleComplete={onToggleComplete}
+      onOpenSettings={onOpenSettings}
+    />
   );
 
-  if (!reorderGesture) {
-    return <View style={styles.eventRow}>{rowContent}</View>;
-  }
+  if (!reorderGesture) return row;
 
   return (
     <GestureDetector gesture={reorderGesture}>
-      <Reanimated.View style={[styles.eventRow, rowAnimatedStyle]}>{rowContent}</Reanimated.View>
+      <Reanimated.View style={rowAnimatedStyle}>{row}</Reanimated.View>
     </GestureDetector>
+  );
+}
+
+function SectionSlotCard<T extends MealSlotTimelineItem>({
+  section,
+  palette,
+  isDark,
+  isItemCompleted,
+  reorderEnabled,
+  onPressAddRoutine,
+  onToggleItemComplete,
+  onOpenItemSettings,
+  onReorderDragActiveChange,
+  onReorderItemDragEnd,
+}: {
+  section: MealSlotTimelineSection<T>;
+  palette: MealSlotTimelinePalette;
+  isDark: boolean;
+  isItemCompleted: (key: string) => boolean;
+  reorderEnabled: boolean;
+  onPressAddRoutine: (slot: DayMealSlot) => void;
+  onToggleItemComplete: (key: string) => void;
+  onOpenItemSettings?: (key: string) => void;
+  onReorderDragActiveChange?: (key: string, active: boolean) => void;
+  onReorderItemDragEnd?: (key: string, translationY: number, fromSlot?: DayMealSlot) => void;
+}) {
+  const { items } = section;
+  const colors = cardColors(isDark);
+
+  if (items.length === 0) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="루틴 연결"
+        onPress={() => {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPressAddRoutine(section.slot);
+        }}
+        style={({ pressed }) => [styles.cardShell, pressed && styles.pressed]}>
+        <View
+          style={[
+            styles.cardShadow,
+            { backgroundColor: colors.shadow, borderColor: colors.border },
+          ]}
+        />
+        <View
+          style={[
+            styles.cardFace,
+            styles.emptyCardFace,
+            { backgroundColor: colors.face, borderColor: colors.border },
+          ]}>
+          <IconSymbol name="plus" size={15} color={palette.muted} />
+          <ThemedText style={[styles.emptyCardLabel, cityPopFont('600'), { color: palette.muted }]}>
+            루틴 연결
+          </ThemedText>
+        </View>
+      </Pressable>
+    );
+  }
+
+  const single = items.length === 1 ? items[0] : null;
+  const dawnStyle = single && single.subtitle && section.slot === 'dawn';
+
+  return (
+    <BrutalistCard isDark={isDark}>
+      <View style={styles.cardBody}>
+        {dawnStyle && single ? (
+          <>
+            <CardHeadingWithIcon item={single} palette={palette} isDark={isDark} />
+            <ThemedText
+              style={[styles.cardDescription, cityPopFont('400'), { color: palette.muted }]}
+              numberOfLines={4}>
+              {single.subtitle}
+            </ThemedText>
+          </>
+        ) : single && single.subtitle ? (
+          <>
+            <CardHeadingWithIcon
+              item={single}
+              palette={palette}
+              isDark={isDark}
+              completed={isItemCompleted(single.key)}
+            />
+            <ThemedText
+              style={[styles.cardDescription, cityPopFont('400'), { color: palette.muted }]}
+              numberOfLines={3}>
+              {single.subtitle}
+            </ThemedText>
+            <View style={styles.checkboxListTight}>
+              <ReorderableCheckboxRow
+                item={single}
+                palette={palette}
+                isDark={isDark}
+                completed={isItemCompleted(single.key)}
+                labelHidden
+                reorderEnabled={reorderEnabled}
+                onToggleComplete={() => onToggleItemComplete(single.key)}
+                onOpenSettings={
+                  onOpenItemSettings ? () => onOpenItemSettings(single.key) : undefined
+                }
+                onReorderDragActiveChange={onReorderDragActiveChange}
+                onReorderDragTranslationEnd={
+                  onReorderItemDragEnd
+                    ? (ty) => onReorderItemDragEnd(single.key, ty, section.slot)
+                    : undefined
+                }
+              />
+            </View>
+          </>
+        ) : single ? (
+          <>
+            <CardHeadingWithIcon
+              item={single}
+              palette={palette}
+              isDark={isDark}
+              completed={isItemCompleted(single.key)}
+            />
+            <View style={styles.checkboxList}>
+              <ReorderableCheckboxRow
+                item={single}
+                palette={palette}
+                isDark={isDark}
+                completed={isItemCompleted(single.key)}
+                labelHidden
+                reorderEnabled={reorderEnabled}
+                onToggleComplete={() => onToggleItemComplete(single.key)}
+                onOpenSettings={
+                  onOpenItemSettings ? () => onOpenItemSettings(single.key) : undefined
+                }
+                onReorderDragActiveChange={onReorderDragActiveChange}
+                onReorderDragTranslationEnd={
+                  onReorderItemDragEnd
+                    ? (ty) => onReorderItemDragEnd(single.key, ty, section.slot)
+                    : undefined
+                }
+              />
+            </View>
+          </>
+        ) : (
+          <View style={styles.checkboxList}>
+            {items.map((item) => (
+              <ReorderableCheckboxRow
+                key={item.key}
+                item={item}
+                palette={palette}
+                isDark={isDark}
+                completed={isItemCompleted(item.key)}
+                reorderEnabled={reorderEnabled}
+                onToggleComplete={() => onToggleItemComplete(item.key)}
+                onOpenSettings={onOpenItemSettings ? () => onOpenItemSettings(item.key) : undefined}
+                onReorderDragActiveChange={onReorderDragActiveChange}
+                onReorderDragTranslationEnd={
+                  onReorderItemDragEnd
+                    ? (ty) => onReorderItemDragEnd(item.key, ty, section.slot)
+                    : undefined
+                }
+              />
+            ))}
+          </View>
+        )}
+
+        {items.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="루틴 더 연결"
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onPressAddRoutine(section.slot);
+            }}
+            style={({ pressed }) => [styles.addLinkRow, pressed && styles.pressed]}>
+            <IconSymbol name="plus" size={13} color={palette.muted} />
+            <ThemedText style={[styles.addLinkLabel, cityPopFont('600'), { color: palette.muted }]}>
+              루틴 더 연결
+            </ThemedText>
+          </Pressable>
+        ) : null}
+      </View>
+    </BrutalistCard>
+  );
+}
+
+function TimelineSectionBlock<T extends MealSlotTimelineItem>({
+  section,
+  palette,
+  isDark,
+  isItemCompleted,
+  reorderEnabled,
+  onPressAddRoutine,
+  onToggleItemComplete,
+  onOpenItemSettings,
+  onReorderDragActiveChange,
+  onReorderItemDragEnd,
+}: {
+  section: MealSlotTimelineSection<T>;
+  palette: MealSlotTimelinePalette;
+  isDark: boolean;
+  isItemCompleted: (key: string) => boolean;
+  reorderEnabled: boolean;
+  onPressAddRoutine: (slot: DayMealSlot) => void;
+  onToggleItemComplete: (key: string) => void;
+  onOpenItemSettings?: (key: string) => void;
+  onReorderDragActiveChange?: (key: string, active: boolean) => void;
+  onReorderItemDragEnd?: (key: string, translationY: number, fromSlot?: DayMealSlot) => void;
+}) {
+  const badge = slotBadgeTheme(section.slot, isDark);
+  const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const colors = cardColors(isDark);
+
+  return (
+    <View style={styles.sectionBlock}>
+      <View
+        style={[
+          styles.sectionDot,
+          {
+            borderColor: palette.line,
+            backgroundColor: section.isCurrent ? c.primary : 'transparent',
+          },
+        ]}
+      />
+
+      <View style={styles.sectionContent}>
+        <View style={styles.badgeRow}>
+          <View
+            style={[
+              styles.slotBadge,
+              {
+                backgroundColor: badge.bg,
+                borderColor: colors.border,
+              },
+            ]}>
+            <IconSymbol
+              name={DAY_MEAL_SLOT_ICON[section.slot] as 'moon.fill'}
+              size={11}
+              color={badge.label}
+            />
+            <ThemedText
+              style={[styles.slotBadgeLabel, cityPopFont('800'), { color: badge.label }]}
+              numberOfLines={1}>
+              {section.title}
+            </ThemedText>
+          </View>
+          <ThemedText style={[styles.slotTimeLabel, cityPopFont('800'), { color: palette.muted }]}>
+            {formatHhmmClockKo(section.hintTime)}
+          </ThemedText>
+        </View>
+
+        <SectionSlotCard
+          section={section}
+          palette={palette}
+          isDark={isDark}
+          isItemCompleted={isItemCompleted}
+          reorderEnabled={reorderEnabled}
+          onPressAddRoutine={onPressAddRoutine}
+          onToggleItemComplete={onToggleItemComplete}
+          onOpenItemSettings={onOpenItemSettings}
+          onReorderDragActiveChange={onReorderDragActiveChange}
+          onReorderItemDragEnd={onReorderItemDragEnd}
+        />
+      </View>
+    </View>
   );
 }
 
@@ -350,14 +752,16 @@ type Props<T extends MealSlotTimelineItem> = {
   sections: MealSlotTimelineSection<T>[];
   palette: MealSlotTimelinePalette;
   isDark: boolean;
+  isFocusStarted: boolean;
   isItemCompleted: (key: string) => boolean;
   reorderEnabled?: boolean;
+  dateLabel?: string;
   onPressAddRoutine: (slot: DayMealSlot) => void;
   onPressEditSchedule?: () => void;
   onToggleItemComplete: (key: string) => void;
   onOpenItemSettings?: (key: string) => void;
   onReorderDragActiveChange?: (key: string, active: boolean) => void;
-  onReorderItemDragEnd?: (key: string, translationY: number) => void;
+  onReorderItemDragEnd?: (key: string, translationY: number, fromSlot?: DayMealSlot) => void;
 };
 
 export function MealSlotTimelineView<T extends MealSlotTimelineItem>({
@@ -366,6 +770,7 @@ export function MealSlotTimelineView<T extends MealSlotTimelineItem>({
   isDark,
   isItemCompleted,
   reorderEnabled = false,
+  dateLabel,
   onPressAddRoutine,
   onPressEditSchedule,
   onToggleItemComplete,
@@ -375,69 +780,34 @@ export function MealSlotTimelineView<T extends MealSlotTimelineItem>({
 }: Props<T>) {
   return (
     <View style={styles.root}>
-      {onPressEditSchedule ? (
-        <View style={styles.scheduleToolbar}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="구간 시간 설정"
-            accessibilityHint="새벽·아침·점심·저녁·밤 구간 시작 시각을 변경할 수 있어요"
-            hitSlop={6}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onPressEditSchedule();
-            }}
-            style={({ pressed }) => [
-              styles.scheduleEditBtn,
-              {
-                borderColor: palette.line,
-                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-              },
-              pressed && styles.pressed,
-            ]}>
-            <IconSymbol name="clock" size={13} color={palette.ink} />
-            <ThemedText style={[styles.scheduleEditLabel, { color: palette.ink }]}>
-              구간 시간 설정
-            </ThemedText>
-          </Pressable>
-        </View>
+      {dateLabel || onPressEditSchedule ? (
+        <TimelineGreeting
+          dateLabel={dateLabel}
+          palette={palette}
+          isDark={isDark}
+          onPressEditSchedule={onPressEditSchedule}
+        />
       ) : null}
-      {sections.map((section, sectionIndex) => {
-        const isLastSection = sectionIndex === sections.length - 1;
-        const addRoutineHandler = () => onPressAddRoutine(section.slot);
-        const lastItemKey =
-          section.items.length > 0 ? section.items[section.items.length - 1]?.key : null;
 
-        return (
-          <View key={section.slot}>
-            <SlotAnchorRow
-              section={section}
-              palette={palette}
-              isDark={isDark}
-              isLastSection={isLastSection}
-              onAddRoutine={section.items.length === 0 ? addRoutineHandler : undefined}
-            />
-            {section.items.map((item) => (
-              <RoutineSpineRow
-                key={item.key}
-                item={item}
-                palette={palette}
-                isDark={isDark}
-                completed={isItemCompleted(item.key)}
-                reorderEnabled={reorderEnabled}
-                onToggleComplete={() => onToggleItemComplete(item.key)}
-                onSettings={onOpenItemSettings ? () => onOpenItemSettings(item.key) : undefined}
-                onReorderDragActiveChange={onReorderDragActiveChange}
-                onReorderDragTranslationEnd={
-                  onReorderItemDragEnd
-                    ? (ty) => onReorderItemDragEnd(item.key, ty)
-                    : undefined
-                }
-                onAddRoutine={item.key === lastItemKey ? addRoutineHandler : undefined}
-              />
-            ))}
-          </View>
-        );
-      })}
+      <View style={styles.timelineTrack}>
+        <View style={[styles.spineLineAbsolute, { backgroundColor: palette.line }]} />
+
+        {sections.map((section) => (
+          <TimelineSectionBlock
+            key={section.slot}
+            section={section}
+            palette={palette}
+            isDark={isDark}
+            isItemCompleted={isItemCompleted}
+            reorderEnabled={reorderEnabled}
+            onPressAddRoutine={onPressAddRoutine}
+            onToggleItemComplete={onToggleItemComplete}
+            onOpenItemSettings={onOpenItemSettings}
+            onReorderDragActiveChange={onReorderDragActiveChange}
+            onReorderItemDragEnd={onReorderItemDragEnd}
+          />
+        ))}
+      </View>
     </View>
   );
 }
@@ -446,132 +816,209 @@ const styles = StyleSheet.create({
   root: {
     width: '100%',
     paddingVertical: 4,
+    gap: CityPopSpacing.md,
   },
-  scheduleToolbar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingBottom: 6,
+  greetingBlock: {
+    gap: CityPopSpacing.xs,
     paddingHorizontal: 2,
+  },
+  greetingTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  greetingDayNightIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  greetingTitle: {
+    ...CityPopTypography.headlineLgMobile,
+  },
+  greetingSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  greetingSubLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    flexShrink: 1,
+  },
+  greetingPulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+  },
+  greetingSub: {
+    ...CityPopTypography.bodyLg,
   },
   scheduleEditBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    minHeight: 30,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 0,
-    borderWidth: 2,
+    flexShrink: 0,
+    minHeight: 32,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: CARD_RADIUS,
+    borderWidth: THIN_BORDER,
   },
   scheduleEditLabel: {
     fontSize: 12,
-    fontWeight: '600',
     letterSpacing: -0.1,
   },
-  eventRow: {
+  timelineTrack: {
+    position: 'relative',
+    gap: CityPopSpacing.lg,
+  },
+  spineLineAbsolute: {
+    position: 'absolute',
+    left: DOT_LEFT + DOT_SIZE / 2 - THIN_BORDER / 2,
+    top: DOT_SIZE,
+    bottom: 32,
+    width: THIN_BORDER,
+    opacity: 0.45,
+  },
+  sectionBlock: {
+    position: 'relative',
+    paddingLeft: TIMELINE_INSET,
+  },
+  sectionDot: {
+    position: 'absolute',
+    left: DOT_LEFT,
+    top: 8,
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    borderRadius: DOT_SIZE / 2,
+    borderWidth: THIN_BORDER,
+  },
+  sectionContent: {
+    gap: CityPopSpacing.base,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  slotBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: CARD_RADIUS,
+    borderWidth: THIN_BORDER,
+  },
+  slotBadgeLabel: {
+    fontSize: 11,
+    letterSpacing: 0.55,
+    textTransform: 'uppercase',
+  },
+  slotTimeLabel: {
+    fontSize: 11,
+    letterSpacing: -0.1,
+  },
+  cardShell: {
+    position: 'relative',
+    marginRight: SOLID_SHADOW_OFFSET,
+    marginBottom: SOLID_SHADOW_OFFSET,
+  },
+  cardShadow: {
+    position: 'absolute',
+    top: SOLID_SHADOW_OFFSET,
+    left: SOLID_SHADOW_OFFSET,
+    right: 0,
+    bottom: 0,
+    borderWidth: THIN_BORDER,
+    borderRadius: CARD_RADIUS,
+  },
+  cardFace: {
+    borderWidth: THIN_BORDER,
+    borderRadius: CARD_RADIUS,
+    overflow: 'hidden',
+  },
+  cardBody: {
+    padding: CityPopSpacing.md,
+    gap: CityPopSpacing.sm,
+  },
+  cardHeadingRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    paddingVertical: 6,
-    minHeight: 72,
+    gap: 10,
   },
-  railCol: {
-    width: RAIL_W,
-    alignItems: 'flex-end',
-    paddingTop: 6,
-    gap: 2,
-  },
-  railTime: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: -0.2,
-  },
-  spineCol: {
-    width: SPINE_W,
-    alignItems: 'center',
-  },
-  spineLine: {
-    width: 2,
-    height: 18,
-    marginTop: 4,
-    borderRadius: 1,
-    opacity: 0.35,
-  },
-  spineAddBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-  },
-  spineAddSlot: {
-    height: 28,
-    marginTop: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nodeCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nodeCircleLg: {
-    width: 36,
-    height: 36,
-    borderRadius: 0,
-  },
-  nodeDone: {
-    opacity: 0.55,
-  },
-  contentCol: {
+  cardHeading: {
     flex: 1,
-    minWidth: 0,
-    justifyContent: 'center',
-    gap: 2,
+    fontSize: 20,
+    lineHeight: 25,
+    letterSpacing: -0.3,
   },
-  titleRow: {
+  cardDescription: {
+    fontSize: 16,
+    lineHeight: 24,
+    paddingLeft: 38,
+  },
+  routineIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 0,
+    borderWidth: THIN_BORDER,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  checkboxList: {
+    gap: 12,
+  },
+  checkboxListTight: {
+    gap: 12,
+    paddingTop: 4,
+  },
+  checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 6,
-    maxWidth: '100%',
+    gap: CityPopSpacing.sm,
   },
-  metaText: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16,
+  checkbox: {
+    width: CHECKBOX_SIZE,
+    height: CHECKBOX_SIZE,
+    borderRadius: 0,
+    borderWidth: THIN_BORDER,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  titleText: {
-    flexShrink: 1,
+  checkboxLabel: {
+    flex: 1,
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    lineHeight: 20,
+    lineHeight: 24,
   },
-  titleDone: {
+  checkboxLabelDone: {
     textDecorationLine: 'line-through',
-    opacity: 0.62,
+    opacity: 0.4,
   },
-  settingsBtn: {
-    flexShrink: 0,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
+  emptyCardFace: {
+    minHeight: 52,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    padding: CityPopSpacing.md,
   },
-  completeHit: {
-    width: COMPLETE_W,
-    height: COMPLETE_W,
+  emptyCardLabel: {
+    fontSize: 13,
+  },
+  addLinkRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+    paddingTop: 4,
   },
-  completeSpacer: {
-    width: COMPLETE_W,
+  addLinkLabel: {
+    fontSize: 13,
   },
   pressed: {
     opacity: 0.72,

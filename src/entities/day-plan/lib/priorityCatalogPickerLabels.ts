@@ -32,7 +32,7 @@ export const PRIORITY_CATALOG_PICKER_LABELS: Record<string, string> = {
   podcast: '팟캐스트·강의',
   work: '업무 집중',
   coding: '코딩·개발',
-  other: '플로우 직접 설정',
+  other: '루틴 직접 설정',
 };
 
 export function getPriorityCatalogPickerLabel(key: string): string {

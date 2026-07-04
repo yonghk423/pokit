@@ -22,19 +22,22 @@ export type UnassignedMealSlotItem = {
 type Props = {
   visible: boolean;
   items: UnassignedMealSlotItem[];
+  /** 시트에 표시 중인 항목의 기존 구간 지정 — 부분 지정 상태에서 재편집용 */
+  initialAssignments?: Record<string, DayMealSlot[]>;
   isDark: boolean;
   ink: string;
   muted: string;
   surface: string;
   line: string;
   onClose: () => void;
-  onConfirm: (assignments: Record<string, DayMealSlot>) => void;
+  onConfirm: (assignments: Record<string, DayMealSlot[]>) => void;
 };
 
 /** 시간대 미지정 플로우 — 구간 선택 후 시간대별 보기 활성화 */
 export function PriorityUnassignedMealSlotSheet({
   visible,
   items,
+  initialAssignments,
   isDark,
   ink,
   muted,
@@ -44,34 +47,56 @@ export function PriorityUnassignedMealSlotSheet({
   onConfirm,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const [slotByKey, setSlotByKey] = useState<Record<string, DayMealSlot | undefined>>({});
+  const [slotsByKey, setSlotsByKey] = useState<Record<string, DayMealSlot[]>>({});
+  const itemKeySignature = useMemo(() => items.map((item) => item.key).join('\n'), [items]);
+  const initialAssignmentSignature = useMemo(
+    () =>
+      items
+        .map((item) => `${item.key}:${(initialAssignments?.[item.key] ?? []).join(',')}`)
+        .join('|'),
+    [initialAssignments, items],
+  );
 
   useEffect(() => {
     if (!visible) return;
-    setSlotByKey({});
-  }, [visible, items]);
+    const next: Record<string, DayMealSlot[]> = {};
+    for (const item of items) {
+      const existing = initialAssignments?.[item.key];
+      if (existing?.length) next[item.key] = [...existing];
+    }
+    setSlotsByKey(next);
+  }, [visible, itemKeySignature, initialAssignmentSignature, initialAssignments, items]);
 
   const allAssigned = useMemo(
-    () => items.length > 0 && items.every((item) => slotByKey[item.key] != null),
-    [items, slotByKey],
+    () => items.length > 0 && items.every((item) => (slotsByKey[item.key]?.length ?? 0) > 0),
+    [items, slotsByKey],
   );
 
-  const selectSlot = useCallback((key: string, slot: DayMealSlot) => {
+  /** 시트 배경(surface)과 구분 — 투두 표·타임라인 카드와 같은 톤 */
+  const itemCardBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)';
+
+  const toggleSlot = useCallback((key: string, slot: DayMealSlot) => {
     void Haptics.selectionAsync();
-    setSlotByKey((prev) => ({ ...prev, [key]: slot }));
+    setSlotsByKey((prev) => {
+      const current = prev[key] ?? [];
+      const next = current.includes(slot)
+        ? current.filter((item) => item !== slot)
+        : [...current, slot];
+      return { ...prev, [key]: next };
+    });
   }, []);
 
   const handleConfirm = useCallback(() => {
     if (!allAssigned) return;
-    const assignments: Record<string, DayMealSlot> = {};
+    const assignments: Record<string, DayMealSlot[]> = {};
     for (const item of items) {
-      const slot = slotByKey[item.key];
-      if (slot) assignments[item.key] = slot;
+      const slots = slotsByKey[item.key];
+      if (slots && slots.length > 0) assignments[item.key] = slots;
     }
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onConfirm(assignments);
     onClose();
-  }, [allAssigned, items, onClose, onConfirm, slotByKey]);
+  }, [allAssigned, items, onClose, onConfirm, slotsByKey]);
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -80,8 +105,8 @@ export function PriorityUnassignedMealSlotSheet({
           <View style={styles.headerText}>
             <ThemedText style={[styles.title, { color: ink }]}>시간대 지정</ThemedText>
             <ThemedText style={[styles.subtitle, { color: muted }]}>
-              아직 구간이 정해지지 않은 플로우 {items.length}개가 있어요. 새벽·아침·점심·저녁·밤 중
-              하나를 골라 주세요.
+              아직 구간이 정해지지 않은 루틴 {items.length}개가 있어요. 해당하는 시간대를 모두
+              골라 주세요.
             </ThemedText>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={10}>
@@ -94,9 +119,11 @@ export function PriorityUnassignedMealSlotSheet({
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled">
           {items.map((item) => {
-            const selected = slotByKey[item.key];
+            const selected = slotsByKey[item.key] ?? [];
             return (
-              <View key={item.key} style={[styles.itemCard, { borderColor: line }]}>
+              <View
+                key={item.key}
+                style={[styles.itemCard, { borderColor: line, backgroundColor: itemCardBg }]}>
                 <View style={styles.itemHead}>
                   <IconSymbol
                     name={resolveCategoryCatalogIcon(item.key) as 'drop.fill'}
@@ -109,23 +136,25 @@ export function PriorityUnassignedMealSlotSheet({
                 </View>
                 <View style={styles.slotRow}>
                   {DAY_MEAL_SLOT_ORDER.map((slot) => {
-                    const active = selected === slot;
+                    const active = selected.includes(slot);
                     return (
                       <Pressable
                         key={slot}
                         accessibilityRole="button"
                         accessibilityState={{ selected: active }}
                         accessibilityLabel={`${item.label} ${DAY_MEAL_SLOT_LABEL[slot]}`}
-                        onPress={() => selectSlot(item.key, slot)}
+                        onPress={() => toggleSlot(item.key, slot)}
                         style={({ pressed }) => [
                           styles.slotChip,
                           {
                             borderColor: active ? PrimaryColor.rgb : line,
                             backgroundColor: active
                               ? isDark
-                                ? 'rgba(255,255,255,0.12)'
+                                ? 'rgba(255,255,255,0.16)'
                                 : 'rgba(0,0,0,0.06)'
-                              : 'transparent',
+                              : isDark
+                                ? 'rgba(255,255,255,0.04)'
+                                : 'rgba(255,255,255,0.9)',
                           },
                           pressed && styles.pressed,
                         ]}>

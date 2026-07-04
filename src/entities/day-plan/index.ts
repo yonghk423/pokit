@@ -105,7 +105,13 @@ export {
   parseNumberedFlowLines
 } from './lib/priorityBlockTitle';
 export {
-  PRIORITY_CATALOG_PICKER_LABELS, getPriorityCatalogPickerLabel
+  buildPrioritySectionCompletionKey,
+  parsePrioritySectionCompletionKey,
+  toRoutineHistoryCategoryKey,
+} from './lib/prioritySectionCompletionKey';
+export {
+  PRIORITY_CATALOG_PICKER_LABELS,
+  getPriorityCatalogPickerLabel,
 } from './lib/priorityCatalogPickerLabels';
 export {
   CATALOG_REMOVED_KEYS,

@@ -363,7 +363,7 @@ export function DailyRhythmTimeEditorBody({
         <View style={[styles.card, { backgroundColor: c.containerLow, borderColor: c.border }]}>
           <SnappedTimePickerField
             label="하루 시작"
-            hint="첫 집중·플로우를 켜기 좋은 시각"
+            hint="첫 집중·루틴을 켜기 좋은 시각"
             valueHhmm={startHhmm}
             onChangeHhmm={setStartHhmmWithSync}
             expanded={pickerTarget === 'start'}

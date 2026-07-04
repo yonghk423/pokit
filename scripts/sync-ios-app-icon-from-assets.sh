@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # app.json 아이콘만 바꾸면 ios/ AppIcon 은 자동 갱신되지 않음
-# 스플래시는 SplashScreen.storyboard 의 POKIT 라벨(흰 배경 + #486060 텍스트)
+# 스플래시는 assets/splash.png → ios/.../SplashScreen.imageset/image.png 복사 후 storyboard 반영
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ICON="$ROOT/assets/pokit3.png"
+ICON="$ROOT/assets/pokit5.png"
 APPICON="$ROOT/ios/Pokit/Images.xcassets/AppIcon.appiconset"
 
 if [[ ! -f "$ICON" ]]; then

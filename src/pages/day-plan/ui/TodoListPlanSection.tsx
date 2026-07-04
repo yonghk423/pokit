@@ -14,23 +14,27 @@ import {
   useDayPlanTodoStore,
   type DayPlanTodoItem,
 } from '@entities/day-plan';
+import { RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
+import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import {
   TODO_LAYOUT,
-  TODO_LIST_BORDER,
-  TODO_LIST_CREAM,
-  TODO_LIST_INK,
-  TODO_DONE_GREEN,
   TODO_PRIORITY_META,
+  TODO_TABLE_BORDER_WIDTH,
+  todoListUiColors,
+  type TodoListUiColors,
 } from '../lib/todoListTheme';
 import { TodoListTimeEditSheet } from './TodoListTimeEditSheet';
 
 const EMPTY_TODOS: DayPlanTodoItem[] = [];
-const TODO_TOP_BAR_ACTION_HEIGHT = 34;
+const TODO_TOP_BAR_ACTION_HEIGHT = 32;
+const STATUS_BOX_SIZE = 48;
 
 type Props = {
+  c: DayPlanPalette;
+  isDark: boolean;
   /** embedded: 타임라인 카드 내부 — 날짜 헤더는 상위 레이아웃 사용 */
   dateLabel?: string;
   embedded?: boolean;
@@ -39,28 +43,38 @@ type Props = {
 function StatusCheckbox({
   checked,
   label,
+  ui,
   variant = 'default',
   onPress,
 }: {
   checked: boolean;
   label: string;
+  ui: TodoListUiColors;
   variant?: 'default' | 'done';
   onPress: () => void;
 }) {
   const doneCheck = variant === 'done' && checked;
+  const borderColor = ui.tableBorder;
   return (
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
       accessibilityLabel={label}
+      hitSlop={8}
       onPress={onPress}
       style={[
         styles.statusBox,
-        { borderColor: TODO_LIST_BORDER, width: TODO_LAYOUT.statusWidth },
+        {
+          borderColor,
+          borderWidth: TODO_TABLE_BORDER_WIDTH,
+          backgroundColor: ui.cellBg,
+          width: TODO_LAYOUT.statusWidth,
+          minHeight: STATUS_BOX_SIZE,
+        },
       ]}>
       {checked ? (
         <Text
-          style={[styles.checkMark, doneCheck && styles.checkMarkDone]}
+          style={[styles.checkMark, { color: ui.ink }, doneCheck && { color: ui.done }]}
           accessibilityElementsHidden>
           ✓
         </Text>
@@ -78,6 +92,7 @@ function formatTodoTimeCompact(startMinutes: number, endMinutes: number): string
 
 function TodoListRow({
   item,
+  ui,
   deleteMode,
   onCyclePriority,
   onChangeWhat,
@@ -87,6 +102,7 @@ function TodoListRow({
   onRemove,
 }: {
   item: DayPlanTodoItem;
+  ui: TodoListUiColors;
   deleteMode: boolean;
   onCyclePriority: () => void;
   onChangeWhat: (value: string) => void;
@@ -99,7 +115,8 @@ function TodoListRow({
   const timeLabel = formatTodoTimeCompact(item.startMinutes, item.endMinutes);
   const timeA11y = `${formatMinutesToHHmm(item.startMinutes)}–${formatMinutesToHHmm(item.endMinutes)}`;
   const rowMuted = item.isDone;
-  const deleteReadyStyle = deleteMode ? styles.deleteReadyCell : null;
+  const cellBorderColor = deleteMode ? ui.danger : ui.tableBorder;
+  const cellBg = deleteMode ? ui.dangerBg : ui.cellBg;
 
   return (
     <View style={styles.dataRow}>
@@ -109,38 +126,43 @@ function TodoListRow({
         onPress={deleteMode ? onRemove : undefined}
         style={[
           styles.taskCell,
-          { borderColor: deleteMode ? '#b91c1c' : TODO_LIST_BORDER },
-          deleteReadyStyle,
+          {
+            borderColor: cellBorderColor,
+            borderWidth: TODO_TABLE_BORDER_WIDTH,
+            backgroundColor: cellBg,
+          },
         ]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`우선순위 ${priorityMeta.label}, 탭하면 변경`}
           onPress={deleteMode ? onRemove : onCyclePriority}
-          style={styles.priorityChip}>
+          style={[styles.priorityChip, { width: TODO_LAYOUT.priorityWidth }]}>
           <View style={[styles.priorityDot, { backgroundColor: priorityMeta.dot }]} />
           <ThemedText
             style={[styles.priorityLabel, rowMuted && styles.mutedText]}
-            lightColor={TODO_LIST_INK}
-            darkColor={TODO_LIST_INK}
+            lightColor={ui.muted}
+            darkColor={ui.muted}
             numberOfLines={1}>
             {priorityMeta.label}
           </ThemedText>
         </Pressable>
+
         <TextInput
           value={item.what}
           onChangeText={onChangeWhat}
           editable={!deleteMode}
           pointerEvents={deleteMode ? 'none' : 'auto'}
           placeholder="할 일 입력"
-          placeholderTextColor="rgba(17,17,17,0.35)"
+          placeholderTextColor={ui.placeholder}
           multiline
           style={[
             styles.cellInput,
             rowMuted && styles.mutedText,
-            { color: TODO_LIST_INK },
+            { color: ui.ink },
           ]}
         />
       </Pressable>
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
@@ -150,27 +172,41 @@ function TodoListRow({
         style={[
           styles.timeCell,
           {
-            borderColor: deleteMode ? '#b91c1c' : TODO_LIST_BORDER,
+            borderColor: cellBorderColor,
+            borderWidth: TODO_TABLE_BORDER_WIDTH,
+            backgroundColor: cellBg,
             width: TODO_LAYOUT.timeWidth,
           },
-          deleteReadyStyle,
         ]}>
         <ThemedText
           style={[styles.timeText, rowMuted && styles.mutedText]}
-          lightColor={TODO_LIST_INK}
-          darkColor={TODO_LIST_INK}
+          lightColor={ui.ink}
+          darkColor={ui.ink}
           numberOfLines={2}>
           {timeLabel}
         </ThemedText>
       </Pressable>
-      <StatusCheckbox checked={item.inProgress} label="진행 중" onPress={onToggleInProgress} />
-      <StatusCheckbox checked={item.isDone} label="완료" variant="done" onPress={onToggleDone} />
+
+      <StatusCheckbox
+        checked={item.inProgress}
+        label="진행 중"
+        ui={ui}
+        onPress={onToggleInProgress}
+      />
+      <StatusCheckbox
+        checked={item.isDone}
+        label="완료"
+        ui={ui}
+        variant="done"
+        onPress={onToggleDone}
+      />
     </View>
   );
 }
 
-/** 투두 리스트 — 모바일 한 화면 표 (우선순위+할 일 통합) */
-export function TodoListPlanSection({ dateLabel, embedded = false }: Props) {
+/** 투두 리스트 — 우선순위 루틴 목록과 같은 리스트형 레이아웃 */
+export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: Props) {
+  const ui = useMemo(() => todoListUiColors(c, isDark), [c, isDark]);
   const todos = useDayPlanTodoStore((s) => s.todosByDate[s.activeDateKey] ?? EMPTY_TODOS);
   const addTodo = useDayPlanTodoStore((s) => s.addTodo);
   const updateTodo = useDayPlanTodoStore((s) => s.updateTodo);
@@ -220,19 +256,20 @@ export function TodoListPlanSection({ dateLabel, embedded = false }: Props) {
     });
   }, []);
 
+  const handleAddTodo = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    addTodo();
+  }, [addTodo]);
+
   const hintText = deleteMode
-    ? '삭제할 행의 할 일·시간 칸을 탭하세요 · 휴지통을 다시 눌러 종료'
+    ? '삭제할 행을 탭하세요 · 휴지통을 다시 눌러 종료'
     : '색 점·우선순위 탭으로 높음·보통·낮음 · 시간 탭으로 구간 조절 · 휴지통으로 삭제 모드';
 
   return (
-    <View
-      style={[
-        embedded ? styles.rootEmbedded : styles.root,
-        !embedded && { backgroundColor: TODO_LIST_CREAM, borderColor: TODO_LIST_BORDER },
-      ]}>
+    <View style={embedded ? styles.rootEmbedded : styles.root}>
       <View style={[styles.topBar, embedded && styles.topBarEmbedded]}>
         {!embedded && dateLabel ? (
-          <ThemedText style={styles.dateCaption} lightColor={TODO_LIST_INK} darkColor={TODO_LIST_INK}>
+          <ThemedText style={styles.dateCaption} lightColor={ui.ink} darkColor={ui.ink}>
             {dateLabel}
           </ThemedText>
         ) : (
@@ -247,47 +284,51 @@ export function TodoListPlanSection({ dateLabel, embedded = false }: Props) {
             style={[
               styles.iconBtn,
               {
-                borderColor: deleteMode ? '#b91c1c' : TODO_LIST_BORDER,
-                backgroundColor: deleteMode ? 'rgba(185,28,28,0.08)' : '#FFFCF6',
+                borderColor: deleteMode ? ui.danger : ui.btnBorder,
+                backgroundColor: deleteMode ? ui.dangerBg : ui.btnBg,
               },
             ]}>
-            <IconSymbol name="trash" size={15} color={deleteMode ? '#b91c1c' : TODO_LIST_INK} />
+            <IconSymbol name="trash" size={14} color={deleteMode ? ui.danger : ui.ink} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="할 일 추가"
-            onPress={addTodo}
-            style={[styles.addBtn, { borderColor: TODO_LIST_BORDER }]}>
-            <ThemedText style={styles.addBtnText} lightColor={TODO_LIST_INK} darkColor={TODO_LIST_INK}>
+            onPress={handleAddTodo}
+            style={[
+              styles.addBtn,
+              { borderColor: ui.primary, backgroundColor: ui.primary },
+            ]}>
+            <ThemedText style={styles.addBtnText} lightColor={ui.primaryOn} darkColor={ui.primaryOn}>
               + 추가
             </ThemedText>
           </Pressable>
         </View>
       </View>
 
-      <View
-        style={[
-          embedded ? styles.tableEmbedded : styles.table,
-          embedded && { backgroundColor: TODO_LIST_CREAM, borderColor: TODO_LIST_BORDER },
-        ]}>
+      <View style={[styles.listShell, { borderColor: ui.tableBorder, borderWidth: TODO_TABLE_BORDER_WIDTH }]}>
         <View style={styles.headerRow}>
+          <View style={[styles.headerPriority, { width: TODO_LAYOUT.priorityWidth }]}>
+            <ThemedText style={styles.headerText} lightColor={ui.muted} darkColor={ui.muted}>
+              우선
+            </ThemedText>
+          </View>
           <View style={styles.headerTask}>
-            <ThemedText style={styles.headerText} lightColor={TODO_LIST_INK} darkColor={TODO_LIST_INK}>
+            <ThemedText style={styles.headerText} lightColor={ui.muted} darkColor={ui.muted}>
               할 일
             </ThemedText>
           </View>
           <View style={[styles.headerTime, { width: TODO_LAYOUT.timeWidth }]}>
-            <ThemedText style={styles.headerText} lightColor={TODO_LIST_INK} darkColor={TODO_LIST_INK}>
+            <ThemedText style={styles.headerText} lightColor={ui.muted} darkColor={ui.muted}>
               시간
             </ThemedText>
           </View>
           <View style={[styles.headerStatus, { width: TODO_LAYOUT.statusWidth }]}>
-            <ThemedText style={styles.headerText} lightColor={TODO_LIST_INK} darkColor={TODO_LIST_INK}>
+            <ThemedText style={styles.headerText} lightColor={ui.muted} darkColor={ui.muted}>
               진행
             </ThemedText>
           </View>
           <View style={[styles.headerStatus, { width: TODO_LAYOUT.statusWidth }]}>
-            <ThemedText style={styles.headerText} lightColor={TODO_LIST_INK} darkColor={TODO_LIST_INK}>
+            <ThemedText style={styles.headerText} lightColor={ui.muted} darkColor={ui.muted}>
               완료
             </ThemedText>
           </View>
@@ -297,6 +338,7 @@ export function TodoListPlanSection({ dateLabel, embedded = false }: Props) {
           <TodoListRow
             key={item.id}
             item={item}
+            ui={ui}
             deleteMode={deleteMode}
             onCyclePriority={() => cyclePriority(item.id)}
             onChangeWhat={(what) => updateTodo(item.id, { what })}
@@ -308,7 +350,7 @@ export function TodoListPlanSection({ dateLabel, embedded = false }: Props) {
         ))}
       </View>
 
-      <ThemedText style={styles.hint} lightColor="rgba(17,17,17,0.55)" darkColor="rgba(17,17,17,0.55)">
+      <ThemedText style={styles.hint} lightColor={ui.muted} darkColor={ui.muted}>
         {hintText}
       </ThemedText>
 
@@ -317,6 +359,8 @@ export function TodoListPlanSection({ dateLabel, embedded = false }: Props) {
           visible={timeEditId != null}
           startMinutes={timeEditItem.startMinutes}
           endMinutes={timeEditItem.endMinutes}
+          c={c}
+          isDark={isDark}
           onClose={() => setTimeEditId(null)}
           onSave={(startMinutes, endMinutes) =>
             updateTodo(timeEditItem.id, { startMinutes, endMinutes })
@@ -330,10 +374,8 @@ export function TodoListPlanSection({ dateLabel, embedded = false }: Props) {
 const styles = StyleSheet.create({
   root: {
     marginHorizontal: 16,
-    borderWidth: 1.5,
-    borderRadius: 0,
-    padding: 12,
-    gap: 10,
+    paddingVertical: 8,
+    gap: 8,
   },
   rootEmbedded: {
     width: '100%',
@@ -357,12 +399,12 @@ const styles = StyleSheet.create({
   topBarActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   iconBtn: {
     width: TODO_TOP_BAR_ACTION_HEIGHT,
     height: TODO_TOP_BAR_ACTION_HEIGHT,
-    borderWidth: 1.5,
+    borderWidth: RETRO_BORDER_WIDTH,
     borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
@@ -370,60 +412,55 @@ const styles = StyleSheet.create({
   dateCaption: {
     fontSize: 13,
     fontWeight: '700',
-    letterSpacing: 0.2,
+    letterSpacing: -0.1,
   },
   addBtn: {
     height: TODO_TOP_BAR_ACTION_HEIGHT,
-    borderWidth: 1.5,
+    borderWidth: RETRO_BORDER_WIDTH,
     borderRadius: 0,
-    paddingHorizontal: 10,
-    backgroundColor: '#FFFCF6',
+    paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addBtnText: {
     fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
     lineHeight: 14,
   },
-  table: {
+  listShell: {
     width: '100%',
-    gap: 6,
-  },
-  tableEmbedded: {
-    width: '100%',
-    gap: 6,
-    borderWidth: 1.5,
     borderRadius: 0,
     padding: 8,
+    gap: 6,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: TODO_LAYOUT.gap,
+    paddingBottom: 2,
+  },
+  headerPriority: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTask: {
     flex: 1,
     minWidth: 0,
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-    paddingBottom: 2,
+    paddingHorizontal: 2,
   },
   headerTime: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 2,
   },
   headerStatus: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 2,
   },
   headerText: {
     fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.3,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   dataRow: {
     flexDirection: 'row',
@@ -436,50 +473,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    borderWidth: 1.5,
     borderRadius: 0,
-    backgroundColor: '#FFFCF6',
     paddingHorizontal: 8,
     paddingVertical: 8,
-    minHeight: 48,
-  },
-  deleteReadyCell: {
-    backgroundColor: '#FFF5F5',
+    minHeight: STATUS_BOX_SIZE,
   },
   priorityChip: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 32,
-    gap: 2,
+    gap: 3,
   },
   priorityDot: {
-    width: 10,
-    height: 10,
+    width: 8,
+    height: 8,
     borderRadius: 0,
   },
   priorityLabel: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: -0.2,
   },
   cellInput: {
     flex: 1,
     minWidth: 0,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
+    letterSpacing: -0.2,
     padding: 0,
     margin: 0,
-    minHeight: 20,
+    minHeight: 22,
   },
   timeCell: {
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
     borderRadius: 0,
-    backgroundColor: '#FFFCF6',
     paddingHorizontal: 4,
     paddingVertical: 6,
-    minHeight: 48,
+    minHeight: STATUS_BOX_SIZE,
   },
   timeText: {
     fontSize: 10,
@@ -488,31 +518,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 13,
   },
-  mutedText: {
-    opacity: 0.45,
-    textDecorationLine: 'line-through',
-  },
   statusBox: {
-    minHeight: 48,
-    borderWidth: 1.5,
     borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFCF6',
   },
   checkMark: {
     fontSize: 16,
     fontWeight: '800',
-    color: TODO_LIST_INK,
     lineHeight: 18,
   },
-  checkMarkDone: {
-    color: TODO_DONE_GREEN,
+  mutedText: {
+    opacity: 0.45,
+    textDecorationLine: 'line-through',
   },
   hint: {
     fontSize: 11,
     lineHeight: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     paddingHorizontal: 2,
   },
 });

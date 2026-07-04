@@ -1,10 +1,12 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { PrimaryColor } from '@shared/config/theme';
 import {
   CUSTOM_FLOW_ACCENT_COLOR_OPTIONS,
   CUSTOM_FLOW_ICON_OPTIONS,
+  isPresetCustomFlowAccentColor,
   type CustomFlowIconOption,
 } from '@shared/lib/customFlowAppearanceCatalog';
 import { HsvColorPicker } from '@shared/ui/hsv-color-picker';
@@ -20,6 +22,7 @@ export type CustomFlowAppearancePickerProps = {
   isDark: boolean;
   ink: string;
   muted: string;
+  line?: string;
   hint?: string;
 };
 
@@ -32,12 +35,25 @@ export function CustomFlowAppearancePicker({
   isDark,
   ink,
   muted,
+  line,
   hint = '루틴 목록에서 구분하기 쉽게 골라 주세요',
 }: CustomFlowAppearancePickerProps) {
-  const inputBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
-  const inputBorder = isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)';
+  const border = line ?? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)');
+  const cardBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)';
+  const chipIdleBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.9)';
+
   const iconScrollRef = useRef<ScrollView>(null);
-  const ICON_CHIP_STEP = 50;
+  const ICON_CHIP_STEP = 46;
+
+  const [showCustomColor, setShowCustomColor] = useState(
+    () => !isPresetCustomFlowAccentColor(accentColor),
+  );
+
+  useEffect(() => {
+    if (!isPresetCustomFlowAccentColor(accentColor)) {
+      setShowCustomColor(true);
+    }
+  }, [accentColor]);
 
   const scrollIconIntoView = useCallback((iconName: CustomFlowIconOption) => {
     const index = CUSTOM_FLOW_ICON_OPTIONS.indexOf(iconName);
@@ -68,20 +84,13 @@ export function CustomFlowAppearancePicker({
         <ThemedText style={[styles.fieldHint, { color: muted }]}>{hint}</ThemedText>
       ) : null}
 
-      <View
-        style={[
-          styles.previewBox,
-          {
-            backgroundColor: inputBg,
-            borderColor: inputBorder,
-          },
-        ]}>
+      <View style={[styles.previewCard, { borderColor: border, backgroundColor: cardBg }]}>
         <View
           style={[
             styles.previewIconWrap,
-            { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' },
+            { borderColor: accentColor, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' },
           ]}>
-          <IconSymbol name={icon} size={28} color={accentColor} />
+          <IconSymbol name={icon} size={22} color={accentColor} />
         </View>
         <ThemedText style={[styles.previewLabel, { color: ink }]} numberOfLines={1}>
           {previewLabel}
@@ -106,37 +115,23 @@ export function CustomFlowAppearancePicker({
               style={[
                 styles.iconChip,
                 {
-                  borderColor: selected ? accentColor : inputBorder,
+                  borderColor: selected ? accentColor : border,
                   backgroundColor: selected
                     ? isDark
                       ? 'rgba(255,255,255,0.12)'
                       : 'rgba(0,0,0,0.06)'
-                    : isDark
-                      ? 'rgba(255,255,255,0.04)'
-                      : 'rgba(0,0,0,0.02)',
+                    : chipIdleBg,
                 },
               ]}>
-              <IconSymbol
-                name={iconName}
-                size={20}
-                color={selected ? accentColor : muted}
-              />
+              <IconSymbol name={iconName} size={18} color={selected ? accentColor : muted} />
             </Pressable>
           );
         })}
       </ScrollView>
 
-      <HsvColorPicker
-        value={accentColor}
-        onChange={onChangeAccentColor}
-        ink={ink}
-        muted={muted}
-        isDark={isDark}
-      />
-
-      <View style={styles.presetSection}>
-        <ThemedText style={[styles.presetLabel, { color: muted }]}>추천 색상</ThemedText>
-        <View style={styles.colorRow}>
+      <View style={styles.colorSection}>
+        <ThemedText style={[styles.presetLabel, { color: muted }]}>색상</ThemedText>
+        <View style={styles.colorGrid}>
           {CUSTOM_FLOW_ACCENT_COLOR_OPTIONS.map((color) => {
             const selected = accentColor.toLowerCase() === color;
             return (
@@ -144,31 +139,58 @@ export function CustomFlowAppearancePicker({
                 key={color}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                accessibilityLabel="추천 색상 선택"
+                accessibilityLabel="색상 선택"
                 onPress={() => {
                   void Haptics.selectionAsync();
                   onChangeAccentColor(color);
+                  setShowCustomColor(false);
                 }}
                 style={[
                   styles.colorSwatch,
                   {
                     backgroundColor: color,
-                    borderColor: selected ? ink : 'transparent',
+                    borderColor: selected ? PrimaryColor.rgb : border,
                   },
                 ]}>
-                {selected ? <IconSymbol name="checkmark" size={11} color="#FAFAFA" /> : null}
+                {selected ? <IconSymbol name="checkmark" size={12} color="#FAFAFA" /> : null}
               </Pressable>
             );
           })}
         </View>
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: showCustomColor }}
+        accessibilityLabel={showCustomColor ? '색상 직접 고르기 접기' : '색상 직접 고르기 펼치기'}
+        onPress={() => {
+          void Haptics.selectionAsync();
+          setShowCustomColor((prev) => !prev);
+        }}
+        style={[styles.customToggle, { borderColor: border, backgroundColor: chipIdleBg }]}>
+        <ThemedText style={[styles.customToggleLabel, { color: ink }]}>
+          {showCustomColor ? '색상 직접 고르기 접기' : '색상 직접 고르기'}
+        </ThemedText>
+        <IconSymbol name={showCustomColor ? 'chevron.up' : 'chevron.down'} size={14} color={muted} />
+      </Pressable>
+
+      {showCustomColor ? (
+        <HsvColorPicker
+          value={accentColor}
+          onChange={onChangeAccentColor}
+          ink={ink}
+          muted={muted}
+          isDark={isDark}
+          line={border}
+        />
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
-    gap: 8,
+    gap: 10,
   },
   fieldLabel: {
     fontSize: 14,
@@ -181,19 +203,20 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginTop: -4,
   },
-  previewBox: {
+  previewCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   previewIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 0,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -205,36 +228,49 @@ const styles = StyleSheet.create({
   },
   iconRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     paddingVertical: 2,
   },
   iconChip: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    borderWidth: 1.5,
+    width: 40,
+    height: 40,
+    borderRadius: 0,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  presetSection: {
+  colorSection: {
     gap: 8,
-    paddingTop: 2,
   },
   presetLabel: {
     fontSize: 12,
     fontWeight: '600',
   },
-  colorRow: {
+  colorGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
   },
   colorSwatch: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 0,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  customToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 40,
+    paddingHorizontal: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 0,
+  },
+  customToggleLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.15,
   },
 });

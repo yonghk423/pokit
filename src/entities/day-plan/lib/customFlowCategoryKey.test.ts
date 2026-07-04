@@ -19,9 +19,9 @@ describe('customFlowCategoryKey', () => {
   });
 
   it('builds picker label from key tail', () => {
-    expect(defaultCustomFlowPickerLabel('reading')).toBe('플로우');
+    expect(defaultCustomFlowPickerLabel('reading')).toBe('루틴');
     expect(defaultCustomFlowPickerLabel(`${CUSTOM_FLOW_CATEGORY_PREFIX}abcd1234`)).toBe(
-      '플로우 abcd1234',
+      '루틴 abcd1234',
     );
   });
 });

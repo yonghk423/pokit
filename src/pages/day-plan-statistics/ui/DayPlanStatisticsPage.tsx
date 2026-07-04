@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +9,6 @@ import { formatHhmmClockKo, getLocalDateKey, useDayPlanDraftStore } from '@entit
 import { useHistoryStore } from '@entities/history';
 import { syncRoutineWindowCompletionsToHistory } from '@features/history-routine-sync';
 import { buildFlowHistoryPalette } from '../lib/flowHistoryPalette';
-import { CityPopSpacing } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   loadDayMealSlotSchedule,
@@ -43,11 +42,8 @@ import { MonthlyFlowHistoryCard } from './MonthlyFlowHistoryCard';
 import { MonthlyHistorySummaryCard } from './MonthlyHistorySummaryCard';
 import { WeeklyFlowHistoryCard } from './WeeklyFlowHistoryCard';
 
-const SCROLL_END_GAP_PX = 6;
-
 /** 하단 히스토리 탭 — 주간·월간 플로우 완료 기록 */
 export function DayPlanStatisticsPage() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const todayDateKey = getLocalDateKey();
@@ -166,21 +162,6 @@ export function DayPlanStatisticsPage() {
     [anchorDateKey, monthPrefix, period, todayDateKey],
   );
 
-  const openCategoryDetail = useCallback(
-    (categoryKey: string) => {
-      router.push({
-        pathname: '/goal-detail-settings',
-        params: { categoryKey },
-      });
-    },
-    [router],
-  );
-
-  const openCatalog = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/(tabs)/priority-catalog');
-  }, [router]);
-
   const openMonthlyTab = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setPeriod('month');
@@ -191,20 +172,12 @@ export function DayPlanStatisticsPage() {
     period === 'week' ? '이번 주 기록이 아직 없어요' : '이번 달 기록이 아직 없어요';
   const emptyBody =
     period === 'week'
-      ? '오늘 탭에서 플로우를 완료하면 여기에 요일별로 쌓여요.'
-      : '오늘 탭에서 플로우를 완료하면 여기에 날짜별로 쌓여요.';
+      ? '오늘 탭에서 루틴을 완료하면 여기에 요일별로 쌓여요.'
+      : '오늘 탭에서 루틴을 완료하면 여기에 날짜별로 쌓여요.';
 
   return (
     <ThemedView style={styles.root}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingTop: Math.max(insets.top, 12) + 8,
-            paddingBottom: SCROLL_END_GAP_PX + 88,
-          },
-        ]}
-        showsVerticalScrollIndicator={false}>
+      <View style={styles.stickyHeader}>
         <ThemedText style={styles.pageDesc} lightColor={palette.muted} darkColor={palette.muted}>
           {historyPeriodDescription(period)}
         </ThemedText>
@@ -227,7 +200,7 @@ export function DayPlanStatisticsPage() {
               shiftPeriod(-1);
             }}
             style={({ pressed }) => [styles.periodNavBtn, pressed && styles.pressed]}>
-            <IconSymbol name="chevron.left" size={16} color={palette.ink} />
+            <IconSymbol name="chevron.left" size={14} color={palette.ink} />
           </Pressable>
           <ThemedText style={[styles.periodNavLabel, { color: palette.ink }]}>
             {periodNavLabel}
@@ -249,15 +222,44 @@ export function DayPlanStatisticsPage() {
             ]}>
             <IconSymbol
               name="chevron.right"
-              size={16}
+              size={14}
               color={canGoNext ? palette.ink : palette.muted}
             />
           </Pressable>
         </View>
+      </View>
 
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: 8,
+            paddingBottom: Math.max(insets.bottom, 12) + 12,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}>
         {period === 'month' ? (
           <MonthlyHistorySummaryCard summary={monthlySummary} palette={palette} />
-        ) : null}
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="월간 통계 보기"
+            onPress={openMonthlyTab}
+            style={({ pressed }) => [
+              styles.monthShortcut,
+              { borderColor: palette.border, backgroundColor: palette.card },
+              pressed && styles.pressed,
+            ]}>
+            <ThemedText style={[styles.monthShortcutLabel, { color: palette.muted }]}>
+              월간진행률
+            </ThemedText>
+            <ThemedText style={[styles.monthShortcutValue, { color: palette.accent }]}>
+              {monthlySummary.progressPercent}%
+            </ThemedText>
+            <IconSymbol name="chevron.right" size={12} color={palette.muted} />
+          </Pressable>
+        )}
 
         {!isHydrated ? (
           <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
@@ -271,66 +273,32 @@ export function DayPlanStatisticsPage() {
             </ThemedText>
           </View>
         ) : period === 'week' ? (
-          weeklyRows.map((row) => (
-            <WeeklyFlowHistoryCard
-              key={row.categoryKey}
-              row={row}
-              palette={palette}
-              isDark={isDark}
-              onPressDetail={() => openCategoryDetail(row.categoryKey)}
-            />
-          ))
+          <View style={styles.cardList}>
+            {weeklyRows.map((row) => (
+              <WeeklyFlowHistoryCard
+                key={row.categoryKey}
+                row={row}
+                palette={palette}
+              />
+            ))}
+          </View>
         ) : (
-          monthlyRows.map((row) => (
-            <MonthlyFlowHistoryCard
-              key={row.categoryKey}
-              row={row}
-              monthPrefix={monthPrefix}
-              palette={palette}
-              onPressDetail={() => openCategoryDetail(row.categoryKey)}
-            />
-          ))
+          <View style={styles.cardList}>
+            {monthlyRows.map((row) => (
+              <MonthlyFlowHistoryCard
+                key={row.categoryKey}
+                row={row}
+                monthPrefix={monthPrefix}
+                palette={palette}
+              />
+            ))}
+          </View>
         )}
 
         <ThemedText style={styles.helperText} lightColor={palette.muted} darkColor={palette.muted}>
           히스토리는 완료 기록을 보여줘요. 체크와 실행은 오늘·투두 탭에서 할 수 있어요.
         </ThemedText>
       </ScrollView>
-
-      <View
-        style={[
-          styles.bottomBar,
-          {
-            paddingBottom: Math.max(insets.bottom, 8) + 8,
-          },
-        ]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="월간 통계 보기"
-          onPress={openMonthlyTab}
-          style={({ pressed }) => [
-            styles.monthChip,
-            { borderColor: palette.border, backgroundColor: palette.card },
-            period === 'month' && styles.monthChipActive,
-            pressed && styles.pressed,
-          ]}>
-          <ThemedText style={[styles.monthChipLabel, { color: palette.ink }]}>월간진행률</ThemedText>
-          <ThemedText style={[styles.monthChipValue, { color: palette.accent }]}>
-            {monthlySummary.progressPercent}%
-          </ThemedText>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="플로우 추가"
-          onPress={openCatalog}
-          style={({ pressed }) => [
-            styles.fab,
-            { backgroundColor: palette.fab },
-            pressed && styles.pressed,
-          ]}>
-          <IconSymbol name="plus" size={22} color={palette.fabIcon} />
-        </Pressable>
-      </View>
     </ThemedView>
   );
 }
@@ -339,28 +307,35 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
+  stickyHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
+    gap: 10,
+    zIndex: 2,
+  },
+  scroll: {
+    flex: 1,
+  },
   scrollContent: {
     width: '100%',
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 48,
-    gap: 24,
+    paddingHorizontal: 16,
+    gap: 10,
   },
   pageDesc: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 17,
     fontWeight: '600',
   },
   periodNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
-    marginBottom: 2,
+    gap: 6,
   },
   periodNavBtn: {
-    width: 40,
-    height: 40,
+    width: 34,
+    height: 34,
     borderRadius: 0,
     borderWidth: 2,
     borderColor: '#000000',
@@ -373,77 +348,57 @@ const styles = StyleSheet.create({
   periodNavLabel: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: -0.2,
+  },
+  monthShortcut: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: 0,
+    borderWidth: 2,
+  },
+  monthShortcutLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  monthShortcutValue: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '800',
+    textAlign: 'right',
+  },
+  cardList: {
+    width: '100%',
+    gap: 8,
   },
   emptyCard: {
     width: '100%',
     borderRadius: 0,
     borderWidth: 2,
-    padding: CityPopSpacing.md,
-    gap: CityPopSpacing.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 6,
   },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   emptyBody: {
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '500',
   },
   helperText: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 16,
     fontWeight: '500',
     textAlign: 'center',
-    paddingTop: 4,
-  },
-  bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
-  monthChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    minHeight: 44,
-    paddingHorizontal: 16,
-    borderRadius: 0,
-    borderWidth: 2,
-  },
-  monthChipActive: {
-    borderWidth: 2,
-  },
-  monthChipLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  monthChipValue: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#000000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 0,
-    shadowOpacity: 0,
-    shadowRadius: 0,
   },
   pressed: {
     opacity: 0.82,

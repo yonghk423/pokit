@@ -24,8 +24,10 @@ export type PersistedDayPlanDraft = {
   prioritySpineLayoutEnabled?: boolean;
   /** 담기 목록 — 고정 루틴 외 항목의 시간대 지정 */
   priorityMealSlotOverrides?: Partial<Record<string, import('./dayMealSlotScheduleStorage').DayMealSlot>>;
-  /** 구간(시간대) 보기 — 사용자가 모달·구간 UI에서 직접 지정한 시간대 */
-  prioritySectionsMealSlots?: Partial<Record<string, import('./dayMealSlotScheduleStorage').DayMealSlot>>;
+  /** 구간(시간대) 보기 — 사용자가 모달·구간 UI에서 직접 지정한 시간대 (복수 선택 가능) */
+  prioritySectionsMealSlots?: Partial<
+    Record<string, import('./dayMealSlotScheduleStorage').DayMealSlot | import('./dayMealSlotScheduleStorage').DayMealSlot[]>
+  >;
 };
 
 export function loadDayPlanDraft(): PersistedDayPlanDraft | null {

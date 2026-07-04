@@ -61,7 +61,7 @@ describe('buildLiveActivityChecklistRows', () => {
       status: 'active',
     });
 
-    expect(result.checklistTitle).toBe('오늘 플로우 목록');
+    expect(result.checklistTitle).toBe('오늘 루틴 목록');
     expect(result.checklistSummaryLine1).toBe('완료 1개 · 건너뜀 0개 · 남은 1개');
     expect(result.checklistSummaryLine2).toContain('공부');
     expect(result.checklistRows.some((row) => row.blockId === 'memo')).toBe(false);

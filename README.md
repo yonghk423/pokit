@@ -219,6 +219,7 @@ pokit은 아래 레이어를 따른다.
 
 ### 7.2 화면 디자인
 
+- **디자인 컨셉·토큰 문서:** [`docs/design/DESIGN_CONCEPT.md`](docs/design/DESIGN_CONCEPT.md) (레트로 시티팝 / Flat Brutalism Lite), [`docs/design/city-pop-minimalist.md`](docs/design/city-pop-minimalist.md) (색·타이포·간격). 코드: `src/shared/config/retroFlat.ts`.
 - 카드 기반 레이아웃으로 현재 상태를 빠르게 파악할 수 있게 구성한다.
 - 진행 정보는 프로그레스 바와 수치 텍스트를 함께 제공한다.
 - 목표 상세 설정 화면 배경은 단순 평면 구성으로 유지하고 과한 장식 요소는 피한다.

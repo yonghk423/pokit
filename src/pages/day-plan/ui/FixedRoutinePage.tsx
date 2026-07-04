@@ -1115,15 +1115,7 @@ export function FixedRoutinePage() {
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={{
-          paddingBottom: 24 + insets.bottom,
-          paddingHorizontal: horizontalPad,
-          paddingTop: insets.top + 8,
-        }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
+      <View style={[styles.stickyHeader, { paddingHorizontal: horizontalPad, backgroundColor: shellBg }]}>
         <FixedRoutineSectionTabs
           section={section}
           onSelectSection={setSection}
@@ -1149,6 +1141,16 @@ export function FixedRoutinePage() {
           />
         ) : null}
         <ThemedText style={[styles.sectionHint, { color: muted }]}>{sectionHint}</ThemedText>
+      </View>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{
+          paddingBottom: 24 + insets.bottom,
+          paddingHorizontal: horizontalPad,
+          paddingTop: 8,
+        }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
         <View style={styles.accordionList}>
           {visibleSets.map((setItem) => (
             <GroupAccordion
@@ -1340,6 +1342,12 @@ export function FixedRoutinePage() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  stickyHeader: {
+    paddingTop: 8,
+    paddingBottom: 8,
+    gap: 10,
+    zIndex: 2,
+  },
   scroll: { flex: 1 },
   sectionHint: {
     fontSize: 12,

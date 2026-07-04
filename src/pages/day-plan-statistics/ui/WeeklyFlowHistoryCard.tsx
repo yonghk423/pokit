@@ -12,11 +12,10 @@ import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 type Props = {
   row: WeeklyFlowHistoryRow;
   palette: FlowHistoryPalette;
-  isDark: boolean;
   onPressDetail?: () => void;
 };
 
-export function WeeklyFlowHistoryCard({ row, palette, isDark, onPressDetail }: Props) {
+export function WeeklyFlowHistoryCard({ row, palette, onPressDetail }: Props) {
   const iconColor = activeIconColorByCategory(row.categoryKey);
 
   return (
@@ -24,11 +23,21 @@ export function WeeklyFlowHistoryCard({ row, palette, isDark, onPressDetail }: P
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
           <View style={[styles.iconWrap, { backgroundColor: palette.weekdayIdle }]}>
-            <IconSymbol name={row.icon as SymbolViewProps['name']} size={18} color={iconColor} />
+            <IconSymbol name={row.icon as SymbolViewProps['name']} size={16} color={iconColor} />
           </View>
-          <ThemedText style={[styles.title, { color: palette.ink }]} numberOfLines={1}>
-            {row.label}
-          </ThemedText>
+          <View style={styles.titleTextWrap}>
+            <ThemedText style={[styles.title, { color: palette.ink }]} numberOfLines={1}>
+              {row.label}
+            </ThemedText>
+            {row.timeLabel ? (
+              <View style={styles.timeInline}>
+                <MaterialIcons name="schedule" size={12} color={palette.muted} />
+                <ThemedText style={[styles.timeText, { color: palette.muted }]} numberOfLines={1}>
+                  {row.timeLabel}
+                </ThemedText>
+              </View>
+            ) : null}
+          </View>
         </View>
         {onPressDetail ? (
           <Pressable
@@ -39,7 +48,11 @@ export function WeeklyFlowHistoryCard({ row, palette, isDark, onPressDetail }: P
             style={({ pressed }) => [styles.detailBtn, pressed && styles.pressed]}>
             <ThemedText style={[styles.detailLabel, { color: palette.muted }]}>상세</ThemedText>
           </Pressable>
-        ) : null}
+        ) : (
+          <ThemedText style={[styles.weekCount, { color: palette.muted }]}>
+            {row.completedDays}/7
+          </ThemedText>
+        )}
       </View>
 
       <View style={styles.weekdayRow}>
@@ -65,17 +78,12 @@ export function WeeklyFlowHistoryCard({ row, palette, isDark, onPressDetail }: P
             );
           })}
         </View>
-        <ThemedText style={[styles.weekCount, { color: palette.muted }]}>
-          {row.completedDays}/7
-        </ThemedText>
+        {onPressDetail ? (
+          <ThemedText style={[styles.weekCount, { color: palette.muted }]}>
+            {row.completedDays}/7
+          </ThemedText>
+        ) : null}
       </View>
-
-      {row.timeLabel ? (
-        <View style={styles.metaRow}>
-          <MaterialIcons name="schedule" size={14} color={palette.muted} />
-          <ThemedText style={[styles.metaText, { color: palette.ink }]}>{row.timeLabel}</ThemedText>
-        </View>
-      ) : null}
 
       {row.startDateLabel ? (
         <ThemedText style={[styles.startDate, { color: palette.muted }]}>
@@ -91,91 +99,96 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 0,
     borderWidth: 2,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    gap: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
   },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: 8,
   },
   titleWrap: {
     flex: 1,
     minWidth: 0,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    alignItems: 'flex-start',
+    gap: 8,
   },
   iconWrap: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     borderRadius: 0,
     borderWidth: 2,
     borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
+  titleTextWrap: {
     flex: 1,
-    fontSize: 17,
+    minWidth: 0,
+    gap: 2,
+  },
+  title: {
+    fontSize: 15,
     fontWeight: '800',
-    letterSpacing: -0.3,
-    lineHeight: 22,
+    letterSpacing: -0.25,
+    lineHeight: 19,
+  },
+  timeInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  timeText: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
   },
   detailBtn: {
-    paddingHorizontal: 4,
-    paddingVertical: 2,
+    paddingHorizontal: 2,
+    paddingVertical: 0,
   },
   detailLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   weekdayRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: 6,
   },
   weekdayTrack: {
     flex: 1,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 2,
+    justifyContent: 'flex-start',
+    gap: 8,
   },
   weekdayCol: {
     alignItems: 'center',
-    gap: 4,
-    minWidth: 24,
+    gap: 2,
   },
   weekdayDot: {
-    width: 22,
-    height: 22,
+    width: 18,
+    height: 18,
     borderRadius: 0,
     borderWidth: 2,
   },
   weekdayLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
   },
   weekCount: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    minWidth: 28,
+    minWidth: 26,
     textAlign: 'right',
   },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  metaText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
   startDate: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
   pressed: {

@@ -16,10 +16,10 @@ export function createCustomFlowCategoryId(): CustomFlowCategoryKey {
 
 /** `displayName` 비어 있을 때 담기·일정에 쓰는 구분용 기본 라벨(키마다 다름) */
 export function defaultCustomFlowPickerLabel(categoryKey: string): string {
-  if (!isCustomFlowCategoryKey(categoryKey)) return '플로우';
+  if (!isCustomFlowCategoryKey(categoryKey)) return '루틴';
   const tail = categoryKey.slice(
     CUSTOM_FLOW_CATEGORY_PREFIX.length,
     CUSTOM_FLOW_CATEGORY_PREFIX.length + 8,
   );
-  return tail.length > 0 ? `플로우 ${tail}` : '플로우';
+  return tail.length > 0 ? `루틴 ${tail}` : '루틴';
 }

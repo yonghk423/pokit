@@ -1,5 +1,9 @@
-import { FixedRoutinePage } from '@pages/day-plan';
+import { DayPlanTabScreenShell, FixedRoutinePage } from '@pages/day-plan';
 
 export default function FixedRoutinesTabScreen() {
-  return <FixedRoutinePage />;
+  return (
+    <DayPlanTabScreenShell>
+      <FixedRoutinePage />
+    </DayPlanTabScreenShell>
+  );
 }

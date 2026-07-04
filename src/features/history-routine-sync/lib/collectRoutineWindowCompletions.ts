@@ -2,6 +2,7 @@ import {
   filterDayPlanFlowBlocks,
   getFlowCompletionCategoryKeysForBlock,
   getLocalDateKey,
+  toRoutineHistoryCategoryKey,
   useDayPlanDraftStore,
   useDayPlanStore,
 } from '@entities/day-plan';
@@ -40,7 +41,7 @@ export function collectRoutineWindowCompletions(dateKey: string): RoutineWindowC
 
   if (dateKey === today) {
     for (const key of draft.completedFocusCategoryKeys) {
-      keys.add(key);
+      keys.add(toRoutineHistoryCategoryKey(key));
     }
   }
 

@@ -463,8 +463,8 @@ export function PriorityCatalogPage() {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       if (isCustomFlowCategoryKey(categoryKey)) {
         Alert.alert(
-          '플로우 삭제',
-          `「${label}」 플로우를 삭제할까요? 담기·나만의 루틴과 설정에서 함께 제거됩니다.`,
+          '루틴 삭제',
+          `「${label}」 루틴을 삭제할까요? 담기·나만의 루틴과 설정에서 함께 제거됩니다.`,
           [
             { text: '취소', style: 'cancel' },
             {
@@ -540,17 +540,7 @@ export function PriorityCatalogPage() {
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
       <View style={[styles.safe, { backgroundColor: shellBg }]}>
-        <ScrollView
-          style={[styles.scroll, { backgroundColor: shellBg }]}
-          contentContainerStyle={[
-            styles.scrollContent,
-            {
-              paddingBottom: scrollBottomPad,
-              paddingTop: insets.top + 16,
-            },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+        <View style={[styles.stickyHeader, { backgroundColor: shellBg, paddingHorizontal: 20 }]}>
           <View style={styles.headerBlock}>
             <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>오늘 집중할 것</ThemedText>
             <ThemedText style={[styles.lead, { color: editorial.muted }]}>
@@ -558,6 +548,18 @@ export function PriorityCatalogPage() {
               담아도 돼요.
             </ThemedText>
           </View>
+        </View>
+        <ScrollView
+          style={[styles.scroll, { backgroundColor: shellBg }]}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingBottom: scrollBottomPad,
+              paddingTop: 8,
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
           <PriorityCatalogPanel
             editorial={editorial}
             priorityCategoryOrder={priorityCategoryOrder}
@@ -649,6 +651,11 @@ const FAB_SIZE = 56;
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
+  stickyHeader: {
+    paddingTop: 8,
+    paddingBottom: 4,
+    zIndex: 2,
+  },
   scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 20,

@@ -24,12 +24,10 @@ import {
   type CustomCatalogGroup,
   type CustomFlowIconOption,
 } from '@shared/lib/storage';
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { PrimaryColor } from '@shared/config/theme';
 import { CustomFlowAppearancePicker } from '@shared/ui/custom-flow-appearance-picker';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-
-import { PRIMARY } from '../lib/dayPlanEditorShared';
 
 const NAME_MAX = 24;
 const GROUP_NAME_MAX = 24;
@@ -69,7 +67,6 @@ export function CreateCustomFlowSheet({
   surface,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
 
   const [name, setName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState<CustomFlowIconOption>(DEFAULT_CUSTOM_FLOW_ICON);
@@ -78,7 +75,6 @@ export function CreateCustomFlowSheet({
   const [selectedGroupKey, setSelectedGroupKey] = useState<string>('productivity');
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupLabel, setNewGroupLabel] = useState('');
-  /** 모달이 이미 떠 있는 동안에는 폼·선택을 초기화하지 않음(부모 리렌더로 인한 재실행 방지) */
   const sheetWasVisibleRef = useRef(false);
 
   useEffect(() => {
@@ -122,6 +118,10 @@ export function CreateCustomFlowSheet({
   const trimmedName = name.trim();
   const canSubmit = trimmedName.length > 0 && selectedGroupKey.length > 0;
 
+  const inputBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.72)';
+  const cardBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)';
+  const chipIdleBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.9)';
+
   const handleSubmitNewGroup = () => {
     const label = newGroupLabel.trim().slice(0, GROUP_NAME_MAX);
     if (label.length === 0) return;
@@ -148,236 +148,195 @@ export function CreateCustomFlowSheet({
     });
   };
 
-  const sheetBg = surface;
-  const inputBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
-  const inputBorder = isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)';
-  const closeBtnBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
-
   return (
     <Modal
       visible={visible}
-      transparent
       animationType="slide"
-      statusBarTranslucent
+      presentationStyle="pageSheet"
       onRequestClose={onClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.kavRoot}>
-        {/* tap-to-dismiss backdrop */}
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
+        style={[styles.root, { backgroundColor: surface }]}>
+        <View style={[styles.header, { borderBottomColor: line, paddingTop: insets.top + 12 }]}>
+          <View style={styles.headerText}>
+            <ThemedText style={[styles.title, { color: ink }]}>새 루틴 만들기</ThemedText>
+            <ThemedText style={[styles.subtitle, { color: muted }]}>
+              이름과 아이콘·색상을 정한 뒤 담을 묶음을 골라 주세요.
+            </ThemedText>
+          </View>
+          <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={10}>
+            <IconSymbol name="xmark" size={20} color={muted} />
+          </Pressable>
+        </View>
 
-        {/* sheet */}
-        <View
-          style={[
-            styles.sheet,
-            { backgroundColor: sheetBg, paddingBottom: Math.max(insets.bottom, 16) + 8 },
-          ]}>
-          {/* handle */}
-          <View style={styles.handleBar}>
-            <View
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
+            <ThemedText style={[styles.fieldLabel, { color: ink }]}>루틴 이름</ThemedText>
+            <TextInput
+              value={name}
+              onChangeText={(v) => setName(v.slice(0, NAME_MAX))}
+              placeholder="예: 푸쉬업 50개 하기"
+              placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
+              maxLength={NAME_MAX}
+              returnKeyType="done"
+              multiline={false}
               style={[
-                styles.handle,
-                { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)' },
+                styles.input,
+                { color: ink, backgroundColor: inputBg, borderColor: line },
               ]}
             />
           </View>
 
-          <ScrollView
-            bounces={false}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollBody}>
-            {/* header */}
-            <View style={styles.headerRow}>
-              <ThemedText style={[styles.title, { color: ink }]}>새 루틴 만들기</ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="닫기"
-                hitSlop={8}
-                onPress={onClose}
-                style={[styles.closeBtn, { backgroundColor: closeBtnBg }]}>
-                <IconSymbol name="xmark" size={13} color={muted} />
-              </Pressable>
-            </View>
+          <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
+            <CustomFlowAppearancePicker
+              icon={selectedIcon}
+              accentColor={selectedAccentColor}
+              onChangeIcon={setSelectedIcon}
+              onChangeAccentColor={setSelectedAccentColor}
+              previewLabel={trimmedName.length > 0 ? trimmedName : '미리보기'}
+              isDark={isDark}
+              ink={ink}
+              muted={muted}
+              line={line}
+            />
+          </View>
 
-            {/* name */}
-            <View style={styles.fieldGroup}>
-              <ThemedText style={[styles.fieldLabel, { color: ink }]}>루틴 이름</ThemedText>
-              <TextInput
-                value={name}
-                onChangeText={(v) => setName(v.slice(0, NAME_MAX))}
-                placeholder="예: 푸쉬업 50개 하기"
-                placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
-                maxLength={NAME_MAX}
-                returnKeyType="done"
-                multiline={false}
-                style={[
-                  styles.input,
-                  { color: ink, backgroundColor: inputBg, borderColor: inputBorder },
-                ]}
-              />
-            </View>
+          <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
+            <ThemedText style={[styles.fieldLabel, { color: ink }]}>상위 카테고리</ThemedText>
+            <ThemedText style={[styles.fieldHint, { color: muted }]}>
+              어디에 둘지 골라 주세요
+            </ThemedText>
 
-            {/* appearance preview + pickers */}
-            <View style={styles.fieldGroup}>
-              <CustomFlowAppearancePicker
-                icon={selectedIcon}
-                accentColor={selectedAccentColor}
-                onChangeIcon={setSelectedIcon}
-                onChangeAccentColor={setSelectedAccentColor}
-                previewLabel={trimmedName.length > 0 ? trimmedName : '미리보기'}
-                isDark={isDark}
-                ink={ink}
-                muted={muted}
-              />
-            </View>
-
-            {/* group picker */}
-            <View style={styles.fieldGroup}>
-              <ThemedText style={[styles.fieldLabel, { color: ink }]}>상위 카테고리</ThemedText>
-              <ThemedText style={[styles.fieldHint, { color: muted }]}>
-                어디에 둘지 골라 주세요
-              </ThemedText>
-
-              <View style={styles.chipsWrap}>
-                {groupOptions.map((g) => {
-                  const selected = selectedGroupKey === g.key;
-                  const chipBg = selected
-                    ? isDark
-                      ? 'rgba(255,255,255,0.14)'
-                      : 'rgba(0,0,0,0.07)'
-                    : isDark
-                      ? 'rgba(255,255,255,0.04)'
-                      : 'rgba(0,0,0,0.02)';
-                  const chipBorder = selected
-                    ? isDark
-                      ? 'rgba(255,255,255,0.4)'
-                      : PRIMARY
-                    : inputBorder;
-                  return (
-                    <Pressable
-                      key={g.key}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      onPress={() => {
-                        void Haptics.selectionAsync();
-                        setSelectedGroupKey(g.key);
-                      }}
-                      style={[styles.chip, { borderColor: chipBorder, backgroundColor: chipBg }]}>
-                      {selected ? (
-                        <IconSymbol name="checkmark" size={11} color={ink} />
-                      ) : null}
-                      <ThemedText
-                        style={[
-                          styles.chipText,
-                          { color: selected ? ink : muted, fontWeight: selected ? '700' : '500' },
-                        ]}
-                        numberOfLines={1}>
-                        {g.label}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
-
-                {!isAddingGroup ? (
+            <View style={styles.chipsWrap}>
+              {groupOptions.map((g) => {
+                const selected = selectedGroupKey === g.key;
+                return (
                   <Pressable
+                    key={g.key}
                     accessibilityRole="button"
-                    accessibilityLabel="새 그룹 만들기"
+                    accessibilityState={{ selected }}
                     onPress={() => {
-                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setIsAddingGroup(true);
+                      void Haptics.selectionAsync();
+                      setSelectedGroupKey(g.key);
                     }}
                     style={[
                       styles.chip,
-                      styles.chipDashed,
-                      { borderColor: inputBorder, backgroundColor: 'transparent' },
-                    ]}>
-                    <IconSymbol name="plus" size={11} color={muted} />
-                    <ThemedText style={[styles.chipText, { color: muted }]}>
-                      새 그룹 만들기
-                    </ThemedText>
-                  </Pressable>
-                ) : null}
-              </View>
-
-              {isAddingGroup ? (
-                <View style={styles.newGroupRow}>
-                  <TextInput
-                    autoFocus
-                    value={newGroupLabel}
-                    onChangeText={(v) => setNewGroupLabel(v.slice(0, GROUP_NAME_MAX))}
-                    placeholder="새 그룹 이름 (예: 운동·체력)"
-                    placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
-                    maxLength={GROUP_NAME_MAX}
-                    returnKeyType="done"
-                    onSubmitEditing={handleSubmitNewGroup}
-                    style={[
-                      styles.input,
-                      { flex: 1, color: ink, backgroundColor: inputBg, borderColor: inputBorder },
-                    ]}
-                  />
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="추가"
-                    onPress={handleSubmitNewGroup}
-                    disabled={newGroupLabel.trim().length === 0}
-                    style={({ pressed }) => [
-                      styles.newGroupBtn,
                       {
-                        backgroundColor: tabColors.activeBg,
-                        borderColor: tabColors.activeBorder,
-                        opacity: newGroupLabel.trim().length === 0 ? 0.45 : pressed ? 0.88 : 1,
+                        borderColor: selected ? PrimaryColor.rgb : line,
+                        backgroundColor: selected
+                          ? isDark
+                            ? 'rgba(255,255,255,0.16)'
+                            : 'rgba(0,0,0,0.06)'
+                          : chipIdleBg,
                       },
                     ]}>
-                    <ThemedText style={[styles.newGroupBtnText, { color: tabColors.activeIcon }]}>
-                      추가
+                    {selected ? (
+                      <IconSymbol name="checkmark" size={11} color={ink} />
+                    ) : null}
+                    <ThemedText
+                      style={[
+                        styles.chipText,
+                        { color: selected ? ink : muted, fontWeight: selected ? '700' : '500' },
+                      ]}
+                      numberOfLines={1}>
+                      {g.label}
                     </ThemedText>
                   </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="취소"
-                    onPress={() => {
-                      setIsAddingGroup(false);
-                      setNewGroupLabel('');
-                    }}
-                    hitSlop={8}
-                    style={[styles.closeBtn, { backgroundColor: closeBtnBg }]}>
-                    <IconSymbol name="xmark" size={12} color={muted} />
-                  </Pressable>
-                </View>
+                );
+              })}
+
+              {!isAddingGroup ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="새 그룹 만들기"
+                  onPress={() => {
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setIsAddingGroup(true);
+                  }}
+                  style={[
+                    styles.chip,
+                    styles.chipDashed,
+                    { borderColor: line, backgroundColor: 'transparent' },
+                  ]}>
+                  <IconSymbol name="plus" size={11} color={muted} />
+                  <ThemedText style={[styles.chipText, { color: muted }]}>
+                    새 그룹 만들기
+                  </ThemedText>
+                </Pressable>
               ) : null}
             </View>
-          </ScrollView>
 
-          {/* CTA — always visible at the bottom */}
-          <View style={styles.ctaWrap}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !canSubmit }}
-              accessibilityLabel="만들기"
-              disabled={!canSubmit}
-              onPress={handleCreate}
-              style={({ pressed }) => [
-                styles.cta,
-                {
-                  backgroundColor: canSubmit ? PRIMARY : inputBg,
-                  borderColor: canSubmit
-                    ? PRIMARY
-                    : isDark
-                      ? 'rgba(255,255,255,0.12)'
-                      : 'rgba(0,0,0,0.08)',
-                  opacity: pressed && canSubmit ? 0.88 : 1,
-                },
-              ]}>
-              <ThemedText
-                style={[
-                  styles.ctaText,
-                  { color: canSubmit ? '#FAFAFA' : muted },
-                ]}>
-                만들기
-              </ThemedText>
-            </Pressable>
+            {isAddingGroup ? (
+              <View style={styles.newGroupRow}>
+                <TextInput
+                  autoFocus
+                  value={newGroupLabel}
+                  onChangeText={(v) => setNewGroupLabel(v.slice(0, GROUP_NAME_MAX))}
+                  placeholder="새 그룹 이름 (예: 운동·체력)"
+                  placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
+                  maxLength={GROUP_NAME_MAX}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSubmitNewGroup}
+                  style={[
+                    styles.input,
+                    styles.newGroupInput,
+                    { color: ink, backgroundColor: inputBg, borderColor: line },
+                  ]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="추가"
+                  onPress={handleSubmitNewGroup}
+                  disabled={newGroupLabel.trim().length === 0}
+                  style={({ pressed }) => [
+                    styles.newGroupBtn,
+                    {
+                      backgroundColor: PrimaryColor.rgb,
+                      opacity: newGroupLabel.trim().length === 0 ? 0.45 : pressed ? 0.88 : 1,
+                    },
+                  ]}>
+                  <ThemedText style={styles.newGroupBtnText}>추가</ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="취소"
+                  onPress={() => {
+                    setIsAddingGroup(false);
+                    setNewGroupLabel('');
+                  }}
+                  hitSlop={8}
+                  style={[styles.cancelBtn, { borderColor: line }]}>
+                  <IconSymbol name="xmark" size={12} color={muted} />
+                </Pressable>
+              </View>
+            ) : null}
           </View>
+        </ScrollView>
+
+        <View
+          style={[
+            styles.footer,
+            { borderTopColor: line, paddingBottom: Math.max(insets.bottom, 12) },
+          ]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !canSubmit }}
+            accessibilityLabel="만들기"
+            disabled={!canSubmit}
+            onPress={handleCreate}
+            style={({ pressed }) => [
+              styles.confirmBtn,
+              {
+                backgroundColor: canSubmit ? PrimaryColor.rgb : isDark ? '#3f3f46' : '#d4d4d8',
+              },
+              pressed && canSubmit && styles.pressed,
+            ]}>
+            <ThemedText style={styles.confirmLabel}>만들기</ThemedText>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -385,56 +344,46 @@ export function CreateCustomFlowSheet({
 }
 
 const styles = StyleSheet.create({
-  kavRoot: {
+  root: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  sheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: 'hidden',
-    maxHeight: '80%',
-  },
-  handleBar: {
-    alignItems: 'center',
-    paddingTop: 10,
-    paddingBottom: 4,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-  },
-  scrollBody: {
-    paddingHorizontal: 22,
-    paddingTop: 12,
-    paddingBottom: 4,
-  },
-  headerRow: {
+  header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerText: {
+    flex: 1,
+    gap: 6,
   },
   title: {
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
-  closeBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
+  subtitle: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '500',
   },
-  fieldGroup: {
-    marginBottom: 22,
-    gap: 8,
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 24,
+    gap: 12,
+  },
+  sectionCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 0,
+    padding: 14,
+    gap: 10,
   },
   fieldLabel: {
     fontSize: 14,
@@ -448,7 +397,7 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   input: {
-    borderWidth: 2,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 0,
     paddingHorizontal: 14,
     height: 48,
@@ -463,14 +412,14 @@ const styles = StyleSheet.create({
   chipsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 0,
     borderWidth: 2,
   },
@@ -487,30 +436,47 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 4,
   },
+  newGroupInput: {
+    flex: 1,
+  },
   newGroupBtn: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 0,
-    borderWidth: 2,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   newGroupBtnText: {
     fontSize: 13,
     fontWeight: '700',
+    color: '#FAFAFA',
   },
-  ctaWrap: {
-    paddingHorizontal: 22,
-    paddingTop: 8,
-  },
-  cta: {
-    minHeight: 50,
+  cancelBtn: {
+    width: 40,
+    height: 48,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ctaText: {
-    fontSize: 16,
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  confirmBtn: {
+    minHeight: 48,
+    borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmLabel: {
+    fontSize: 15,
     fontWeight: '800',
-    letterSpacing: -0.2,
+    color: '#FAFAFA',
+  },
+  pressed: {
+    opacity: 0.82,
   },
 });

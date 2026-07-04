@@ -73,7 +73,7 @@ export function YogaSettings({
         size="compact"
       />
       <ThemedText style={[styles.sub, { color: c.onVariant }]}>
-        세션 길이·경과 시간과 오늘의 플로우 이름을 적어 주세요.
+        세션 길이·경과 시간과 오늘의 루틴 이름을 적어 주세요.
       </ThemedText>
       <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
       <View style={styles.row}>
@@ -103,7 +103,7 @@ export function YogaSettings({
         </View>
       </View>
       <View style={styles.flowBlock}>
-        <ThemedText style={[styles.label, { color: c.onVariant }]}>플로우 이름</ThemedText>
+        <ThemedText style={[styles.label, { color: c.onVariant }]}>루틴 이름</ThemedText>
         <View style={[styles.field, { backgroundColor: c.surfaceLowest }]}>
           <TextInput
             value={flowLabel}

@@ -339,7 +339,7 @@ private struct PokitLiveActivityView: View {
           .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 8))
 
         VStack(alignment: .leading, spacing: 0) {
-          Text(isStandby ? "시작 대기" : "활성 플로우")
+          Text(isStandby ? "시작 대기" : "활성 루틴")
             .font(.system(size: 8, weight: .bold))
             .foregroundStyle(.white.opacity(0.58))
           Text(context.state.title.isEmpty ? "딥 리딩" : context.state.title)
@@ -407,7 +407,7 @@ private struct PokitLiveActivityView: View {
           .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
 
         VStack(alignment: .leading, spacing: 1) {
-          Text(isStandby ? "시작 대기" : "활성 플로우")
+          Text(isStandby ? "시작 대기" : "활성 루틴")
             .font(.system(size: 9, weight: .bold))
             .foregroundStyle(.white.opacity(0.62))
           Text(context.state.title.isEmpty ? "딥 리딩" : context.state.title)
@@ -483,7 +483,7 @@ private struct PokitLiveActivityView: View {
       }
 
       if rows.isEmpty {
-        Text(context.state.title.isEmpty ? "표시할 플로우가 없어요" : context.state.title)
+        Text(context.state.title.isEmpty ? "표시할 루틴이 없어요" : context.state.title)
           .font(.system(size: 15, weight: .semibold))
           .foregroundStyle(.white)
           .lineLimit(2)
@@ -521,7 +521,7 @@ private struct PokitLiveActivityView: View {
       }
 
       if rows.isEmpty {
-        Text(context.state.title.isEmpty ? "표시할 플로우가 없어요" : context.state.title)
+        Text(context.state.title.isEmpty ? "표시할 루틴이 없어요" : context.state.title)
           .font(.system(size: 13, weight: .semibold))
           .foregroundStyle(.white)
           .lineLimit(2)

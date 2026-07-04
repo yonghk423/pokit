@@ -14,7 +14,9 @@ description: pokit 프로젝트에서 디렉토리 구조, 도메인 모델, zus
 
 에이전트는 아래 규칙을 항상 우선 적용한다.
 
-**한글 사용자 대면 문구**는 `.cursor/rules/pokit-Expo.mdc` §7.0.1에 따라 **「플로우」**를 쓴다(「루틴」「리듬」표기 금지). 코드·타입·스토어 이름은 `day-plan`, `flow` 등 현재 도메인 용어를 따른다.
+**한글 사용자 대면 문구**는 `.cursor/rules/pokit-Expo.mdc` §7.0.1에 따라 **「루틴」**을 쓴다(「리듬」표기 금지). 코드·타입·스토어 이름은 `day-plan`, `customFlow`, `flow` 등 현재 도메인 식별자를 따른다.
+
+**UI/UX·비주얼 리팩터** 시 [`docs/design/DESIGN_CONCEPT.md`](../../docs/design/DESIGN_CONCEPT.md)(레트로 시티팝·Flat Brutalism Lite)와 [`docs/design/city-pop-minimalist.md`](../../docs/design/city-pop-minimalist.md)(색·타이포·간격 토큰)를 우선 참고한다. 코드 토큰은 `src/shared/config/retroFlat.ts`·`theme.ts`와 동기화한다.
 
 ---
 

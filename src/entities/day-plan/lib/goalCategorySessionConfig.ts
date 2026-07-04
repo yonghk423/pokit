@@ -88,14 +88,14 @@ export function normalizeYogaDetailConfig(raw: unknown): YogaDetailDataConfig {
   const sessionMin = Math.max(1, Math.min(180, Number(o.sessionMin) || 40));
   const elapsedRaw = Number(o.elapsedMin);
   const elapsedMin = Math.max(0, Math.min(sessionMin, Number.isFinite(elapsedRaw) ? elapsedRaw : 0));
-  const flowLabel = clampStr(o.flowLabel, 40) || '플로우';
+  const flowLabel = clampStr(o.flowLabel, 40) || '루틴';
   const summary = normalizeRoutineSummary(o.summary);
   const displayName = normalizeRoutineDisplayName(o.displayName);
   return { displayName, sessionMin, elapsedMin, flowLabel, summary };
 }
 
 export function getInitialYogaDataConfig(): YogaDetailDataConfig {
-  return { displayName: '', sessionMin: 40, elapsedMin: 0, flowLabel: '플로우', summary: '' };
+  return { displayName: '', sessionMin: 40, elapsedMin: 0, flowLabel: '루틴', summary: '' };
 }
 
 // --- fasting ---
@@ -388,7 +388,7 @@ export type OtherDetailDataConfig = {
 };
 
 /** 담기·일정 등에서 `other` 키의 기본 표기(사용자가 이름을 비운 경우) */
-export const OTHER_CATEGORY_PICKER_FALLBACK_KO = '플로우 직접 설정';
+export const OTHER_CATEGORY_PICKER_FALLBACK_KO = '루틴 직접 설정';
 
 export function getOtherCategoryResolvedDisplayLabel(raw: unknown | null): string {
   const cfg = normalizeOtherDetailConfig(raw ?? getInitialOtherDataConfig());

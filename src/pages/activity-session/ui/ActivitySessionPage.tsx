@@ -329,11 +329,11 @@ export function ActivitySessionPage() {
           status: isWaitingToStart ? 'standby' : isPaused ? 'paused' : 'active',
         })
         : {
-          checklistTitle: '오늘 플로우 목록',
+          checklistTitle: '오늘 루틴 목록',
           checklistCountLabel: '0개',
           checklistRows: [],
           checklistSummaryLine1: '완료 0개 · 건너뜀 0개 · 남은 0개',
-          checklistSummaryLine2: '오늘 남은 플로우가 없어요',
+          checklistSummaryLine2: '오늘 남은 루틴이 없어요',
         },
     [block, isPaused, isWaitingToStart],
   );
@@ -691,7 +691,7 @@ export function ActivitySessionPage() {
           </ImmersionHalfCard>
           <ImmersionHalfCard borderColor={WK.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={WK.muted} darkColor={WK.muted}>
-              플로우 진행
+              루틴 진행
             </ThemedText>
             <ThemedText style={waterStyles.halfValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
               {String(Math.round(progress * 100))}
@@ -724,7 +724,7 @@ export function ActivitySessionPage() {
                   style={workStyles.checklistEmptyText}
                   lightColor={CategoryImmersionTheme.work.muted}
                   darkColor={CategoryImmersionTheme.work.muted}>
-                  표시할 플로우가 없습니다
+                  표시할 루틴이 없습니다
                 </ThemedText>
               </View>
             ) : (
@@ -904,7 +904,7 @@ export function ActivitySessionPage() {
           </ImmersionHalfCard>
           <ImmersionHalfCard borderColor={R.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
-              플로우 진행
+              루틴 진행
             </ThemedText>
             <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
               {String(Math.round(progress * 100))}
@@ -1361,7 +1361,7 @@ export function ActivitySessionPage() {
                 style={waterStyles.halfLabel}
                 lightColor={W.muted}
                 darkColor={W.muted}>
-                플로우 진행
+                루틴 진행
               </ThemedText>
               <ThemedText
                 style={waterStyles.halfValue}
@@ -1467,7 +1467,7 @@ export function ActivitySessionPage() {
       }>
       <ImmersionCardShell borderColor={O.border}>
         <ThemedText style={waterStyles.statLabel} lightColor={O.muted} darkColor={O.muted}>
-          플로우 메모
+          루틴 메모
         </ThemedText>
         <ThemedText style={[waterStyles.metaLine, { marginTop: 4 }]} lightColor={O.onSurface} darkColor={O.onSurface}>
           {checklist.checklistSummaryLine1 || '목표 상세에서 체크리스트 또는 메모를 입력해 주세요.'}
@@ -1515,7 +1515,7 @@ export function ActivitySessionPage() {
 
       <ImmersionCardShell borderColor={O.border}>
         <ThemedText style={waterStyles.statLabel} lightColor={O.muted} darkColor={O.muted}>
-          오늘 플로우 목록
+          오늘 루틴 목록
         </ThemedText>
         <View style={medScheduleStyles.scheduleList}>
           <View style={medScheduleStyles.scheduleCard}>

@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
@@ -65,7 +65,6 @@ import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { DailyRhythmOnboardingGate } from './DailyRhythmOnboardingGate';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
 import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
-import { PlanModeSwitch } from './PlanModeSwitch';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
 
@@ -733,89 +732,72 @@ export function DayPlanPage() {
     });
   }, []);
 
-  const planModeSwitchEl = (
-    <PlanModeSwitch planMode={planMode} onSelectMode={setPlanMode} c={c} />
-  );
-
-  const isDailyContent = planMode === 'priority' || planMode === 'todoList';
   const shellBg = c.containerLow;
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
-      <SafeAreaView style={[styles.safe, { backgroundColor: shellBg }]} edges={['top']}>
-        <KeyboardAvoidingView
-          style={[styles.keyboardColumn, { backgroundColor: shellBg }]}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={0}>
-          <View style={[styles.mainColumn, { backgroundColor: shellBg }]}>
-            <ScrollView
-              ref={dayPlanScrollRef}
-              style={[styles.scroll, { backgroundColor: shellBg }]}
-              contentContainerStyle={[
-                styles.scrollContent,
-                {
-                  /** 메모/우선순위 동일 상단 inset — 모드 전환 시 토글 세로 위치 고정 */
-                  paddingTop: 12,
-                  paddingBottom: scrollContentBottomPad,
-                  /** 우선순위: 타임라인·탭 사이 불필요한 세로 간격 축소 */
-                  ...(isDailyContent ? { gap: 6 } : null),
-                  /**
-                   * flexGrow: 1 은 콘텐츠가 짧아도 스크롤 영역을 화면 높이로 늘려 **빈 스크롤**이 생김.
-                   * 빠른 메모만(빈 곳 탭으로 키보드 내리기) 영역을 채우기 위해 사용.
-                   */
-                  ...(planMode === 'quickMemo' ? { flexGrow: 1 } : null),
-                },
-              ]}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps={planMode === 'quickMemo' ? 'always' : 'handled'}
-              keyboardDismissMode="none"
-              onScrollBeginDrag={planMode === 'quickMemo' ? onQuickMemoScrollBeginDrag : undefined}>
-              {planMode === 'quickMemo' ? (
+      <KeyboardAvoidingView
+        style={[styles.keyboardColumn, { backgroundColor: shellBg }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}>
+        <View style={[styles.mainColumn, { backgroundColor: shellBg }]}>
+            {planMode === 'quickMemo' ? (
+              <ScrollView
+                ref={dayPlanScrollRef}
+                style={[styles.scroll, { backgroundColor: shellBg }]}
+                contentContainerStyle={[
+                  styles.scrollContent,
+                  {
+                    paddingBottom: scrollContentBottomPad,
+                    flexGrow: 1,
+                  },
+                ]}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+                keyboardDismissMode="none"
+                onScrollBeginDrag={onQuickMemoScrollBeginDrag}>
                 <View style={styles.quickMemoDismissWrap} collapsable={false}>
-                  {planModeSwitchEl}
                   <View style={styles.contentPad}>
                     <QuickMemoPlanSection
-                        ref={quickMemoInputRef}
-                        c={c}
-                        isDark={isDark}
-                        memos={quickMemos}
-                        draft={quickMemoDraft}
-                        onChangeDraft={setQuickMemoDraft}
-                        onInputContentSizeChange={onQuickMemoInputContentSizeChange}
-                        onSavePress={handleQuickMemoSavePress}
-                      />
+                      ref={quickMemoInputRef}
+                      c={c}
+                      isDark={isDark}
+                      memos={quickMemos}
+                      draft={quickMemoDraft}
+                      onChangeDraft={setQuickMemoDraft}
+                      onInputContentSizeChange={onQuickMemoInputContentSizeChange}
+                      onSavePress={handleQuickMemoSavePress}
+                    />
                   </View>
                 </View>
-              ) : (
-                <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
-                  {planModeSwitchEl}
-                  <PriorityBasedPlanSection
-                    c={c}
-                    isFocusStarted={isFocusStarted}
-                    priorityPlanDateKey={priorityPlanDateKey}
-                    onChangePriorityPlanDateKey={setPriorityPlanDateKey}
-                    priorityPlanDateKeyEnd={priorityPlanDateKeyEnd}
-                    onChangePriorityPlanDateKeyEnd={setPriorityPlanDateKeyEnd}
-                    applyPriorityPlanCalendarRange={applyPriorityPlanCalendarRange}
-                    priorityPlanExplicitMultiDay={priorityPlanExplicitMultiDay}
-                    priorityStart={priorityStart}
-                    priorityEnd={priorityEnd}
-                    onChangePriorityStart={setPriorityStart}
-                    onChangePriorityEnd={setPriorityEnd}
-                    priorityCategoryOrder={priorityCategoryOrder}
-                    onSelectCategory={handlePriorityCategoryPress}
-                    onOpenCategorySettings={handleOpenCategorySettings}
-                    onOpenFocusDetail={handleOpenFocusDetail}
-                    onOpenFixedRoutine={handleOpenFixedRoutine}
-                    layoutMode={layoutMode}
-                    onSelectLayoutMode={onSelectLayoutMode}
-                  />
-                </View>
-              )}
-            </ScrollView>
+              </ScrollView>
+            ) : (
+              <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
+                <PriorityBasedPlanSection
+                  c={c}
+                  isFocusStarted={isFocusStarted}
+                  priorityPlanDateKey={priorityPlanDateKey}
+                  onChangePriorityPlanDateKey={setPriorityPlanDateKey}
+                  priorityPlanDateKeyEnd={priorityPlanDateKeyEnd}
+                  onChangePriorityPlanDateKeyEnd={setPriorityPlanDateKeyEnd}
+                  applyPriorityPlanCalendarRange={applyPriorityPlanCalendarRange}
+                  priorityPlanExplicitMultiDay={priorityPlanExplicitMultiDay}
+                  priorityStart={priorityStart}
+                  priorityEnd={priorityEnd}
+                  onChangePriorityStart={setPriorityStart}
+                  onChangePriorityEnd={setPriorityEnd}
+                  priorityCategoryOrder={priorityCategoryOrder}
+                  onSelectCategory={handlePriorityCategoryPress}
+                  onOpenCategorySettings={handleOpenCategorySettings}
+                  onOpenFocusDetail={handleOpenFocusDetail}
+                  onOpenFixedRoutine={handleOpenFixedRoutine}
+                  layoutMode={layoutMode}
+                  onSelectLayoutMode={onSelectLayoutMode}
+                />
+              </View>
+            )}
           </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+      </KeyboardAvoidingView>
       <DailyRhythmOnboardingGate
         visible={rhythmGateOpen}
         isDark={isDark}
@@ -829,15 +811,13 @@ export function DayPlanPage() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safe: { flex: 1 },
   keyboardColumn: { flex: 1 },
   /** 키보드 회피 시 본문이 위로 밀리도록 */
   mainColumn: { flex: 1 },
   saveText: { color: PRIMARY, fontSize: 18, fontWeight: '700', letterSpacing: -0.2 },
   scroll: { flex: 1 },
-  /** paddingTop은 quickMemo만(12). 우선순위는 0 — 상단이 ScrollView 흰 배경 위에 띠처럼 보이는 문제 방지 */
   scrollContent: { paddingHorizontal: 0, gap: 16 },
-  priorityModeStack: { width: '100%', gap: 0 },
+  priorityModeStack: { flex: 1, minHeight: 0, width: '100%', gap: 0 },
   /** 다이어리 등 풀블리드 섹션 제외 영역만 좌우 여백 */
   contentPad: { paddingHorizontal: 24 },
   /** 빠른 메모: 스크롤 영역을 채워 빈 곳 탭 시 키보드 dismiss 가 먹도록 */

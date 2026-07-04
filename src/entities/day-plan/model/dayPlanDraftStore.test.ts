@@ -1,4 +1,5 @@
 jest.mock('@shared/lib/storage', () => ({
+  ...jest.requireActual('@shared/lib/storage'),
   loadDayPlanDraft: jest.fn(),
   saveDayPlanDraft: jest.fn(),
   syncWidgetTimelineFromStorage: jest.fn(),
@@ -284,6 +285,19 @@ describe('dayPlanDraftStore', () => {
     });
     useDayPlanDraftStore.getState().filterCompletedFocusKeysToPriorityOrder(['water']);
     expect(useDayPlanDraftStore.getState().completedFocusCategoryKeys).toEqual(['water']);
+  });
+
+  it('keeps slot-scoped completed keys when category remains in priority order', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      completedFocusCategoryKeys: ['stretching@dinner', 'stretching@night', 'water'],
+    });
+    useDayPlanDraftStore.getState().filterCompletedFocusKeysToPriorityOrder(['stretching', 'water']);
+    expect(useDayPlanDraftStore.getState().completedFocusCategoryKeys).toEqual([
+      'stretching@dinner',
+      'stretching@night',
+      'water',
+    ]);
   });
 
   it('updates priority plan date keys and water reminder epoch', () => {

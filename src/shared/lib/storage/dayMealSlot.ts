@@ -80,6 +80,31 @@ export function normalizeDayMealSlot(raw: unknown): DayMealSlot | null {
   return VALID_MEAL_SLOTS.has(next) ? next : null;
 }
 
+/** 카테고리별 시간대 — 단일 값(레거시) 또는 배열 */
+export type CategoryMealSlotOverride = DayMealSlot | DayMealSlot[];
+
+export function normalizeCategoryMealSlots(raw: unknown): DayMealSlot[] {
+  if (Array.isArray(raw)) {
+    const out: DayMealSlot[] = [];
+    for (const item of raw) {
+      const slot = normalizeDayMealSlot(item);
+      if (slot && !out.includes(slot)) out.push(slot);
+    }
+    return out;
+  }
+  const single = normalizeDayMealSlot(raw);
+  return single ? [single] : [];
+}
+
+export function resolveExplicitCategoryMealSlots(
+  overrides: ReadonlyMap<string, CategoryMealSlotOverride>,
+  key: string,
+): DayMealSlot[] | null {
+  if (!overrides.has(key)) return null;
+  const slots = normalizeCategoryMealSlots(overrides.get(key));
+  return slots.length > 0 ? slots : null;
+}
+
 /** 카테고리 기본 구간 — 저장된 mealSlot이 없을 때 */
 export function resolveDefaultMealSlotForCategory(
   categoryKey: string,

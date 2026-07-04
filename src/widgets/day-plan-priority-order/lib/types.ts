@@ -21,8 +21,6 @@ export type PriorityOrderRowProps = {
   onReorderDragTranslationChange?: (translationY: number) => void;
   /** 드래그 중 스크롤 잠금 등 */
   onReorderDragActiveChange?: (active: boolean) => void;
-  /** 드래그 중 행 배경(카드 톤과 맞춤) */
-  reorderDragSurface?: string;
   onSettings?: () => void;
   onFocusDetail?: () => void;
   animateOnMount?: boolean;

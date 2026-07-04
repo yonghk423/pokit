@@ -9,7 +9,6 @@ import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 import type { MonthlyFlowHistoryRow } from '../lib/buildMonthlyFlowHistory';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 import { buildMonthCalendarCells } from '../lib/historyPeriodRange';
-import { WEEKDAY_LABELS } from '../lib/buildWeeklyFlowHistory';
 
 type Props = {
   row: MonthlyFlowHistoryRow;
@@ -18,24 +17,31 @@ type Props = {
   onPressDetail?: () => void;
 };
 
+/** 월간 플로우 기록 — 주간 카드와 같은 컴팩트 dot 트랙 */
 export function MonthlyFlowHistoryCard({ row, monthPrefix, palette, onPressDetail }: Props) {
   const iconColor = activeIconColorByCategory(row.categoryKey);
   const calendarCells = buildMonthCalendarCells(monthPrefix);
+  const monthCountLabel = `${row.completedDays}/${row.daysInMonth}`;
 
   return (
     <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
           <View style={[styles.iconWrap, { backgroundColor: palette.weekdayIdle }]}>
-            <IconSymbol name={row.icon as SymbolViewProps['name']} size={18} color={iconColor} />
+            <IconSymbol name={row.icon as SymbolViewProps['name']} size={16} color={iconColor} />
           </View>
           <View style={styles.titleTextWrap}>
             <ThemedText style={[styles.title, { color: palette.ink }]} numberOfLines={1}>
               {row.label}
             </ThemedText>
-            <ThemedText style={[styles.subtitle, { color: palette.muted }]}>
-              총 {row.totalCompletions}회 완료
-            </ThemedText>
+            {row.timeLabel ? (
+              <View style={styles.timeInline}>
+                <MaterialIcons name="schedule" size={12} color={palette.muted} />
+                <ThemedText style={[styles.timeText, { color: palette.muted }]} numberOfLines={1}>
+                  {row.timeLabel}
+                </ThemedText>
+              </View>
+            ) : null}
           </View>
         </View>
         {onPressDetail ? (
@@ -47,51 +53,35 @@ export function MonthlyFlowHistoryCard({ row, monthPrefix, palette, onPressDetai
             style={({ pressed }) => [styles.detailBtn, pressed && styles.pressed]}>
             <ThemedText style={[styles.detailLabel, { color: palette.muted }]}>상세</ThemedText>
           </Pressable>
-        ) : null}
+        ) : (
+          <ThemedText style={[styles.monthCount, { color: palette.muted }]}>{monthCountLabel}</ThemedText>
+        )}
       </View>
 
-      <View style={styles.calendarHeader}>
-        {WEEKDAY_LABELS.map((label) => (
-          <ThemedText key={label} style={[styles.calendarHeaderLabel, { color: palette.muted }]}>
-            {label}
-          </ThemedText>
-        ))}
-      </View>
-
-      <View style={styles.calendarGrid}>
-        {calendarCells.map((day, index) => {
-          if (day == null) {
-            return <View key={`empty-${index}`} style={styles.calendarCell} />;
-          }
-          const done = row.dayDone[day - 1] ?? false;
-          return (
-            <View key={`day-${day}`} style={styles.calendarCell}>
-              <View
-                style={[
-                  styles.dayDot,
-                  {
-                    borderColor: done ? palette.accent : palette.accentSoft,
-                    backgroundColor: done ? palette.accent : 'transparent',
-                  },
-                ]}
-              />
-              <ThemedText style={[styles.dayLabel, { color: done ? palette.accent : palette.muted }]}>
-                {day}
-              </ThemedText>
-            </View>
-          );
-        })}
-      </View>
-
-      <View style={styles.footerRow}>
-        <ThemedText style={[styles.footerCount, { color: palette.muted }]}>
-          {row.completedDays}/{row.daysInMonth}일
-        </ThemedText>
-        {row.timeLabel ? (
-          <View style={styles.metaRow}>
-            <MaterialIcons name="schedule" size={14} color={palette.muted} />
-            <ThemedText style={[styles.metaText, { color: palette.ink }]}>{row.timeLabel}</ThemedText>
-          </View>
+      <View style={styles.monthRow}>
+        <View style={styles.monthTrack}>
+          {calendarCells.map((day, index) => {
+            if (day == null) {
+              return <View key={`empty-${index}`} style={styles.monthCol} />;
+            }
+            const done = row.dayDone[day - 1] ?? false;
+            return (
+              <View key={`day-${day}`} style={styles.monthCol}>
+                <View
+                  style={[
+                    styles.monthDot,
+                    {
+                      borderColor: done ? palette.accent : palette.accentSoft,
+                      backgroundColor: done ? palette.accent : 'transparent',
+                    },
+                  ]}
+                />
+              </View>
+            );
+          })}
+        </View>
+        {onPressDetail ? (
+          <ThemedText style={[styles.monthCount, { color: palette.muted }]}>{monthCountLabel}</ThemedText>
         ) : null}
       </View>
 
@@ -109,26 +99,26 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 0,
     borderWidth: 2,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    gap: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
   },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: 8,
   },
   titleWrap: {
     flex: 1,
     minWidth: 0,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    alignItems: 'flex-start',
+    gap: 8,
   },
   iconWrap: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     borderRadius: 0,
     borderWidth: 2,
     borderColor: '#000000',
@@ -141,77 +131,62 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   title: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '800',
-    letterSpacing: -0.3,
-    lineHeight: 22,
+    letterSpacing: -0.25,
+    lineHeight: 19,
   },
-  subtitle: {
-    fontSize: 12,
+  timeInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  timeText: {
+    flex: 1,
+    fontSize: 11,
     fontWeight: '600',
-    lineHeight: 16,
+    lineHeight: 14,
   },
   detailBtn: {
-    paddingHorizontal: 4,
-    paddingVertical: 2,
+    paddingHorizontal: 2,
+    paddingVertical: 0,
   },
   detailLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
-  calendarHeader: {
+  monthRow: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
-    paddingHorizontal: 2,
+    gap: 6,
   },
-  calendarHeaderLabel: {
-    width: 28,
-    textAlign: 'center',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  calendarGrid: {
+  monthTrack: {
+    flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    rowGap: 8,
+    rowGap: 4,
   },
-  calendarCell: {
+  monthCol: {
     width: `${100 / 7}%`,
     alignItems: 'center',
-    gap: 3,
-    minHeight: 34,
+    justifyContent: 'center',
+    minHeight: 18,
   },
-  dayDot: {
-    width: 18,
-    height: 18,
+  monthDot: {
+    width: 12,
+    height: 12,
     borderRadius: 0,
     borderWidth: 2,
   },
-  dayLabel: {
-    fontSize: 9,
+  monthCount: {
+    fontSize: 11,
     fontWeight: '700',
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  footerCount: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  metaText: {
-    fontSize: 13,
-    fontWeight: '600',
+    minWidth: 34,
+    textAlign: 'right',
   },
   startDate: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
   pressed: {

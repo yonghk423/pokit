@@ -21,10 +21,11 @@ type Props = {
   ink: string;
   muted: string;
   isDark: boolean;
+  line?: string;
 };
 
-const SV_HEIGHT = 168;
-const HUE_HEIGHT = 22;
+const SV_HEIGHT = 132;
+const HUE_HEIGHT = 20;
 
 function applySvFromPoint(
   x: number,
@@ -43,7 +44,7 @@ function applyHueFromPoint(x: number, width: number, s: number, v: number): stri
   return hsvToHex({ h, s, v });
 }
 
-export function HsvColorPicker({ value, onChange, ink, muted, isDark }: Props) {
+export function HsvColorPicker({ value, onChange, ink, muted, isDark, line }: Props) {
   const normalizedValue = normalizeHexColor(value) ?? '#f97316';
   const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(normalizedValue));
   const [hexDraft, setHexDraft] = useState(normalizedValue);
@@ -164,8 +165,8 @@ export function HsvColorPicker({ value, onChange, ink, muted, isDark }: Props) {
 
   const hueCursorLeft = clamp01(hsv.h / 360) * Math.max(hueWidth - 16, 0);
   const hueColor = hueToHex(hsv.h);
-  const inputBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
-  const inputBorder = isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)';
+  const inputBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.72)';
+  const inputBorder = line ?? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)');
 
   const applyHexDraft = () => {
     const normalized = normalizeHexColor(formatHexInput(hexDraft));
@@ -284,26 +285,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   previewSwatch: {
-    width: 42,
-    height: 42,
-    borderRadius: 10,
-    borderWidth: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   hexInput: {
     flex: 1,
-    minHeight: 42,
-    borderWidth: 1,
-    borderRadius: 10,
+    minHeight: 40,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 0,
     paddingHorizontal: 12,
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: 0.4,
   },
   applyBtn: {
-    minHeight: 42,
+    minHeight: 40,
     paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -313,30 +314,30 @@ const styles = StyleSheet.create({
   },
   svPanel: {
     height: SV_HEIGHT,
-    borderRadius: 12,
+    borderRadius: 0,
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   hueTrack: {
     height: HUE_HEIGHT,
-    borderRadius: 999,
+    borderRadius: 0,
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   cursor: {
     position: 'absolute',
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 14,
+    height: 14,
+    borderRadius: 0,
     borderWidth: 2,
     backgroundColor: 'transparent',
   },
   hueCursor: {
     position: 'absolute',
     top: 3,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 14,
+    height: 14,
+    borderRadius: 0,
     borderWidth: 2,
   },
 });

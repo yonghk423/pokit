@@ -50,10 +50,13 @@ export {
   DAY_MEAL_SLOT_ORDER, buildAppliedFixedRoutineMealSlotOverrides,
   buildCategoryMealSlotOverrides, groupFixedFlowItemsByMealSlot,
   normalizeDayMealSlot,
+  normalizeCategoryMealSlots,
+  resolveExplicitCategoryMealSlots,
   resolveCurrentMealSlot,
   resolveDefaultMealSlotForCategory,
   resolveFixedFlowItemMealSlot,
   resolvePriorityMealSlot,
+  type CategoryMealSlotOverride,
   type DayMealSlot
 } from './dayMealSlot';
 export {

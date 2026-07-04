@@ -137,7 +137,7 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
   },
   other: {
     key: 'other',
-    titleKo: '플로우 직접 설정',
+    titleKo: '루틴 직접 설정',
     getInitialDataConfig: getInitialOtherDataConfig,
     Settings: OtherSettings,
   },

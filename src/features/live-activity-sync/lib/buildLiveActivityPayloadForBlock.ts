@@ -58,7 +58,7 @@ export function buildLiveActivityChecklistRows(input: {
     .slice(0, 3)
     .map((b) => {
       const t = titleOneLine(b.title ?? '');
-      return t.length > 0 ? t : '플로우';
+      return t.length > 0 ? t : '루틴';
     });
   const topRemainingTitlesStr = topRemainingTitles.join(', ');
   const extra = remainingCount > topRemainingTitles.length ? remainingCount - topRemainingTitles.length : 0;
@@ -66,8 +66,8 @@ export function buildLiveActivityChecklistRows(input: {
   const checklistSummaryLine1 = `완료 ${completedCount}개 · 건너뜀 ${skippedCount}개 · 남은 ${remainingCount}개`;
   const checklistSummaryLine2 =
     remainingCount === 0
-      ? '오늘 남은 플로우가 없어요'
-      : `남은 플로우: ${topRemainingTitlesStr}${extra > 0 ? ` 외 ${extra}개` : ''}`;
+      ? '오늘 남은 루틴이 없어요'
+      : `남은 루틴: ${topRemainingTitlesStr}${extra > 0 ? ` 외 ${extra}개` : ''}`;
 
   const savedHighlight = plan.liveActivityChecklistFocusBlockId;
   let highlightId =
@@ -121,7 +121,7 @@ export function buildLiveActivityChecklistRows(input: {
     if (isCompound) {
       compoundLines.forEach((lineTitle, idx) => {
         const t = (lineTitle ?? '').trim();
-        const title = t.length > 0 ? t : '플로우';
+        const title = t.length > 0 ? t : '루틴';
         let state: PokitLiveActivityChecklistRow['state'] = parentState;
         if (parentState === 'current' && idx > 0) {
           state = 'upcoming';
@@ -136,7 +136,7 @@ export function buildLiveActivityChecklistRows(input: {
       });
     } else {
       const firstLine = block.title.split(/\r?\n/)[0]?.trim() ?? '';
-      const rowTitle = firstLine.length > 0 ? firstLine : '플로우';
+      const rowTitle = firstLine.length > 0 ? firstLine : '루틴';
       checklistRows.push({
         blockId: block.id,
         title: rowTitle,
@@ -147,7 +147,7 @@ export function buildLiveActivityChecklistRows(input: {
   }
 
   return {
-    checklistTitle: '오늘 플로우 목록',
+    checklistTitle: '오늘 루틴 목록',
     checklistCountLabel: `${checklistRows.length}개`,
     checklistRows,
     checklistSummaryLine1,

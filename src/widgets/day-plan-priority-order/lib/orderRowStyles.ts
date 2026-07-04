@@ -37,7 +37,7 @@ export const orderRowStyles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: RETRO_BORDER_WIDTH,
     borderColor: '#000000',
-    backgroundColor: '#FBF8FF',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },

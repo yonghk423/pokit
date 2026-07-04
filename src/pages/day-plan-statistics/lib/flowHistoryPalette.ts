@@ -15,7 +15,7 @@ export type FlowHistoryPalette = {
 export function buildFlowHistoryPalette(isDark: boolean): FlowHistoryPalette {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   return {
-    card: c.surfaceAlt,
+    card: c.bg,
     border: c.border,
     ink: c.text,
     muted: c.textMuted,

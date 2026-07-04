@@ -80,6 +80,7 @@ export default function RootLayout() {
               name="appearance-settings"
               options={{ headerShown: false, presentation: 'card' }}
             />
+            <Stack.Screen name="settings" options={{ headerShown: false, presentation: 'card' }} />
             <Stack.Screen
               name="notification-settings"
               options={{ headerShown: false, presentation: 'card' }}

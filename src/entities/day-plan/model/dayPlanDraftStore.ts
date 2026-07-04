@@ -1,12 +1,16 @@
 import { create } from 'zustand';
 
-import { loadDayPlanDraft, saveDayPlanDraft, syncWidgetTimelineFromStorage, normalizeDayMealSlot, type DayMealSlot } from '@shared/lib/storage';
+import { loadDayPlanDraft, saveDayPlanDraft, syncWidgetTimelineFromStorage, normalizeDayMealSlot, normalizeCategoryMealSlots, type DayMealSlot } from '@shared/lib/storage';
 
 import { getLocalMinutesOfDayNow } from '../lib/dayPlanTime';
 import { defaultPriorityWindowFromNow } from '../lib/dayPlanTimeMath';
 import { addDaysToLocalDateKey, getLocalDateKey } from '../lib/localDateKey';
 import { parseHHmmToMinutes } from '../lib/parseTime';
 import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
+import {
+  parsePrioritySectionCompletionKey,
+  toRoutineHistoryCategoryKey,
+} from '../lib/prioritySectionCompletionKey';
 import {
   appendRoutineHistoryPending,
   clearRoutineHistoryPendingForDate,
@@ -56,8 +60,8 @@ type DayPlanDraftState = {
   prioritySpineLayoutEnabled: boolean;
   /** 담기 목록 — 고정 루틴 외 항목 시간대 */
   priorityMealSlotOverrides: Record<string, DayMealSlot>;
-  /** 구간(시간대) 보기 — 사용자가 직접 지정한 시간대 */
-  prioritySectionsMealSlots: Record<string, DayMealSlot>;
+  /** 구간(시간대) 보기 — 사용자가 직접 지정한 시간대 (복수 선택 가능) */
+  prioritySectionsMealSlots: Record<string, DayMealSlot[]>;
   isHydrated: boolean;
   hydrate: () => void;
   setPlanMode: (mode: PlanMode) => void;
@@ -94,8 +98,9 @@ type DayPlanDraftState = {
   setPriorityMealSlotOverride: (categoryKey: string, mealSlot: DayMealSlot | null) => void;
   /** 기존 지정을 유지한 채 누락 항목만 구간을 채웁니다. */
   mergePriorityMealSlotOverrides: (incoming: Record<string, DayMealSlot>) => void;
-  setPrioritySectionsMealSlot: (categoryKey: string, mealSlot: DayMealSlot | null) => void;
-  mergePrioritySectionsMealSlots: (incoming: Record<string, DayMealSlot>) => void;
+  setPrioritySectionsMealSlots: (categoryKey: string, mealSlots: DayMealSlot[] | null) => void;
+  addPrioritySectionMealSlot: (categoryKey: string, mealSlot: DayMealSlot) => void;
+  mergePrioritySectionsMealSlots: (incoming: Record<string, DayMealSlot[]>) => void;
 };
 
 function createInitialPriorityWindow() {
@@ -114,10 +119,37 @@ function normalizePriorityMealSlotOverrides(raw: unknown): Record<string, DayMea
   return out;
 }
 
+function normalizePrioritySectionsMealSlots(raw: unknown): Record<string, DayMealSlot[]> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, DayMealSlot[]> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    const trimmed = key.trim();
+    const slots = normalizeCategoryMealSlots(value);
+    if (trimmed && slots.length > 0) out[trimmed] = slots;
+  }
+  return out;
+}
+
 function pruneMealSlotRecordForOrder(
   record: Record<string, DayMealSlot>,
   order: readonly string[],
 ): Record<string, DayMealSlot> {
+  const allowed = new Set(order);
+  const next = { ...record };
+  let changed = false;
+  for (const key of Object.keys(next)) {
+    if (!allowed.has(key)) {
+      delete next[key];
+      changed = true;
+    }
+  }
+  return changed ? next : record;
+}
+
+function pruneMealSlotsArrayRecordForOrder(
+  record: Record<string, DayMealSlot[]>,
+  order: readonly string[],
+): Record<string, DayMealSlot[]> {
   const allowed = new Set(order);
   const next = { ...record };
   let changed = false;
@@ -150,7 +182,7 @@ function createInitialState() {
     priorityMealSlotLayoutEnabled: false,
     prioritySpineLayoutEnabled: false,
     priorityMealSlotOverrides: {} as Record<string, DayMealSlot>,
-    prioritySectionsMealSlots: {} as Record<string, DayMealSlot>,
+    prioritySectionsMealSlots: {} as Record<string, DayMealSlot[]>,
   };
 }
 
@@ -204,7 +236,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       priorityMealSlotLayoutEnabled: Boolean(raw.priorityMealSlotLayoutEnabled),
       prioritySpineLayoutEnabled: Boolean(raw.prioritySpineLayoutEnabled),
       priorityMealSlotOverrides: normalizePriorityMealSlotOverrides(raw.priorityMealSlotOverrides),
-      prioritySectionsMealSlots: normalizePriorityMealSlotOverrides(raw.prioritySectionsMealSlots),
+      prioritySectionsMealSlots: normalizePrioritySectionsMealSlots(raw.prioritySectionsMealSlots),
       isHydrated: true,
     });
     syncTodayTabWithFixedRoutineApply();
@@ -224,11 +256,12 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         ? s.completedFocusCategoryKeys.filter((k) => k !== categoryKey)
         : [...s.completedFocusCategoryKeys, categoryKey];
       const today = getLocalDateKey();
+      const historyCategoryKey = toRoutineHistoryCategoryKey(categoryKey);
       let routineHistoryPendingByDate = s.routineHistoryPendingByDate;
       if (shouldTrackRoutineHistoryForDate(s, today)) {
         routineHistoryPendingByDate = removing
-          ? removeRoutineHistoryPending(routineHistoryPendingByDate, today, categoryKey)
-          : appendRoutineHistoryPending(routineHistoryPendingByDate, today, categoryKey);
+          ? removeRoutineHistoryPending(routineHistoryPendingByDate, today, historyCategoryKey)
+          : appendRoutineHistoryPending(routineHistoryPendingByDate, today, historyCategoryKey);
       }
       return { completedFocusCategoryKeys, routineHistoryPendingByDate };
     }),
@@ -237,6 +270,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       if (s.completedFocusCategoryKeys.includes(categoryKey)) return s;
       const today = getLocalDateKey();
       const completedFocusCategoryKeys = [...s.completedFocusCategoryKeys, categoryKey];
+      const historyCategoryKey = toRoutineHistoryCategoryKey(categoryKey);
       if (!shouldTrackRoutineHistoryForDate(s, today)) {
         return { completedFocusCategoryKeys };
       }
@@ -245,13 +279,16 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         routineHistoryPendingByDate: appendRoutineHistoryPending(
           s.routineHistoryPendingByDate,
           today,
-          categoryKey,
+          historyCategoryKey,
         ),
       };
     }),
   filterCompletedFocusKeysToPriorityOrder: (order) =>
     set((s) => {
-      const next = s.completedFocusCategoryKeys.filter((k) => order.includes(k));
+      const next = s.completedFocusCategoryKeys.filter((k) => {
+        const { categoryKey } = parsePrioritySectionCompletionKey(k);
+        return order.includes(categoryKey);
+      });
       if (
         next.length === s.completedFocusCategoryKeys.length &&
         next.every((k, i) => k === s.completedFocusCategoryKeys[i])
@@ -375,7 +412,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         s.priorityMealSlotOverrides,
         priorityCategoryOrder,
       );
-      const prioritySectionsMealSlots = pruneMealSlotRecordForOrder(
+      const prioritySectionsMealSlots = pruneMealSlotsArrayRecordForOrder(
         s.prioritySectionsMealSlots,
         priorityCategoryOrder,
       );
@@ -430,24 +467,49 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       }
       return changed ? { priorityMealSlotOverrides: next } : s;
     }),
-  setPrioritySectionsMealSlot: (categoryKey, mealSlot) =>
+  setPrioritySectionsMealSlots: (categoryKey, mealSlots) =>
     set((s) => {
       const key = categoryKey.trim();
       if (!key) return s;
       const next = { ...s.prioritySectionsMealSlots };
-      if (mealSlot) next[key] = mealSlot;
+      if (mealSlots && mealSlots.length > 0) next[key] = [...new Set(mealSlots)];
       else delete next[key];
       return { prioritySectionsMealSlots: next };
     }),
+  addPrioritySectionMealSlot: (categoryKey, mealSlot) =>
+    set((s) => {
+      const key = categoryKey.trim();
+      const normalized = normalizeDayMealSlot(mealSlot);
+      if (!key || !normalized) return s;
+      const prev = s.prioritySectionsMealSlots[key] ?? [];
+      if (prev.includes(normalized)) return s;
+      return {
+        prioritySectionsMealSlots: {
+          ...s.prioritySectionsMealSlots,
+          [key]: [...prev, normalized],
+        },
+      };
+    }),
+  /** 시간대 지정 시트 확인 — 항목별 구간을 전달값으로 교체 */
   mergePrioritySectionsMealSlots: (incoming) =>
     set((s) => {
       const next = { ...s.prioritySectionsMealSlots };
       let changed = false;
-      for (const [rawKey, slot] of Object.entries(incoming)) {
+      for (const [rawKey, slots] of Object.entries(incoming)) {
         const key = rawKey.trim();
-        const normalized = normalizeDayMealSlot(slot);
-        if (!key || !normalized) continue;
-        if (next[key] === normalized) continue;
+        if (!key) continue;
+        const normalized = normalizeCategoryMealSlots(slots);
+        if (normalized.length === 0) {
+          if (key in next) {
+            delete next[key];
+            changed = true;
+          }
+          continue;
+        }
+        const prev = next[key] ?? [];
+        if (prev.length === normalized.length && prev.every((slot, index) => slot === normalized[index])) {
+          continue;
+        }
         next[key] = normalized;
         changed = true;
       }

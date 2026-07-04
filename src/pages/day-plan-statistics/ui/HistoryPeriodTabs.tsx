@@ -61,18 +61,18 @@ export function HistoryPeriodTabs({ period, onSelectPeriod, ink, muted, isDark }
 const styles = StyleSheet.create({
   root: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   tab: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 34,
     borderRadius: 0,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: -0.2,
   },

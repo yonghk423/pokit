@@ -68,10 +68,13 @@ export function resolveCategoryKeyFromLabel(label: string): string | null {
     t === '사용자' ||
     t === '사용쟈' ||
     t === '맞춤 플로우' ||
+    t === '맞춤 루틴' ||
     t === '카테고리 만들기' ||
     t === '루틴 만들기' ||
     t === '플로우 직접 설정' ||
+    t === '루틴 직접 설정' ||
     t === '플로우' ||
+    t === '루틴' ||
     t === '헬스' ||
     t === '운동' ||
     t === '피트니스' ||

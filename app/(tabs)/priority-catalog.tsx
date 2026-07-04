@@ -1,5 +1,9 @@
-import { PriorityCatalogPage } from '@pages/day-plan';
+import { DayPlanTabScreenShell, PriorityCatalogPage } from '@pages/day-plan';
 
 export default function PriorityCatalogTabScreen() {
-  return <PriorityCatalogPage />;
+  return (
+    <DayPlanTabScreenShell>
+      <PriorityCatalogPage />
+    </DayPlanTabScreenShell>
+  );
 }

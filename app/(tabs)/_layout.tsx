@@ -13,7 +13,6 @@ const TAB_ICONS: Record<string, string> = {
   'fixed-routines': 'figure.walk',
   'day-plan-statistics': 'clock.arrow.circlepath',
   'pokit-story': 'book',
-  settings: 'gearshape',
 };
 
 export default function TabLayout() {
@@ -40,7 +39,6 @@ export default function TabLayout() {
           <Tabs.Screen name="fixed-routines" options={{ title: '나만의 루틴' }} />
           <Tabs.Screen name="day-plan-statistics" options={{ title: '히스토리' }} />
           <Tabs.Screen name="pokit-story" options={{ title: '스토리' }} />
-          <Tabs.Screen name="settings" options={{ title: '설정' }} />
         </Tabs>
         <DayPlanTabFab />
       </View>
