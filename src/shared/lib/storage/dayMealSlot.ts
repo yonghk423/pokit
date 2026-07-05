@@ -40,38 +40,11 @@ export const DAY_MEAL_SLOT_HINT: Record<DayMealSlot, string> = {
 const VALID_MEAL_SLOTS = new Set<string>(DAY_MEAL_SLOT_ORDER);
 
 const DEFAULT_SLOT_BY_CATEGORY: Partial<Record<string, DayMealSlot>> = {
-  meditation: 'dawn',
-  breathing: 'dawn',
   fasting: 'dawn',
   water: 'morning',
   medicine: 'morning',
   reading: 'morning',
-  planning: 'morning',
-  skincare: 'morning',
-  vitamins: 'morning',
-  deepwork: 'lunch',
   work: 'lunch',
-  study: 'lunch',
-  writing: 'lunch',
-  language: 'lunch',
-  creative: 'lunch',
-  inbox: 'lunch',
-  pomodoro: 'lunch',
-  coding: 'lunch',
-  organize: 'lunch',
-  news: 'lunch',
-  review: 'lunch',
-  stretching: 'dinner',
-  straightenBack: 'dinner',
-  neckPosture: 'dinner',
-  workout: 'dinner',
-  walking: 'dinner',
-  yoga: 'dinner',
-  posture: 'dinner',
-  eyerest: 'dinner',
-  sleep: 'night',
-  journal: 'night',
-  podcast: 'night',
 };
 
 export function normalizeDayMealSlot(raw: unknown): DayMealSlot | null {

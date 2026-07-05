@@ -1,7 +1,9 @@
 export { getBlockTimelineIcon } from './lib/blockIcons';
+export { buildSpineTimelineModel } from './lib/buildSpineTimelineModel';
+export type { BuildSpineTimelineModelInput } from './lib/buildSpineTimelineModel';
 export {
-  HEALTH_GROUP_SYSTEM_ORDER,
-  PRODUCTIVITY_GROUP_SYSTEM_ORDER, defaultSystemGroupForCatalogKey
+  defaultSystemGroupForCatalogKey, HEALTH_GROUP_SYSTEM_ORDER,
+  PRODUCTIVITY_GROUP_SYSTEM_ORDER
 } from './lib/catalogItemGroup';
 export {
   readEditableCategoryAppearance,
@@ -13,39 +15,86 @@ export {
   resolveRegisteredCategoryKeyByDisplayName
 } from './lib/categoryKeyByDisplayNameResolver';
 export {
-  CATEGORY_REMINDER_KEYS,
-  builtinCategoryLabelKo, categoryReminderIconName, categoryReminderLabelKo, type CategoryReminderCatalogKey
+  builtinCategoryLabelKo, CATEGORY_REMINDER_KEYS, categoryReminderIconName, categoryReminderLabelKo, type CategoryReminderCatalogKey
 } from './lib/categoryReminderCatalog';
+export { computeSpineGapInsertSlot } from './lib/computeSpineGapInsertSlot';
 export { countPendingFlowBlocks } from './lib/countPendingFlowBlocks';
 export {
-  SYSTEM_CATALOG_GROUP_KEYS,
+  isSystemCatalogGroupKey, SYSTEM_CATALOG_GROUP_KEYS,
   SYSTEM_CATALOG_GROUP_LABEL_KO,
-  SYSTEM_CATALOG_GROUP_SUBTITLE_KO, isSystemCatalogGroupKey, type SystemCatalogGroupKey
+  SYSTEM_CATALOG_GROUP_SUBTITLE_KO, type SystemCatalogGroupKey
 } from './lib/customCatalogGroup';
 export {
-  CUSTOM_FLOW_CATEGORY_PREFIX, createCustomFlowCategoryId, defaultCustomFlowPickerLabel,
+  createCustomFlowCategoryId, CUSTOM_FLOW_CATEGORY_PREFIX, defaultCustomFlowPickerLabel,
   isCustomFlowCategoryKey,
   type CustomFlowCategoryKey
 } from './lib/customFlowCategoryKey';
-export { computeSpineGapInsertSlot } from './lib/computeSpineGapInsertSlot';
-export { reorderSpineTimelineBlocks } from './lib/reorderSpineTimelineBlocks';
-export { buildSpineTimelineModel } from './lib/buildSpineTimelineModel';
-export type { BuildSpineTimelineModelInput } from './lib/buildSpineTimelineModel';
+export {
+  buildInitialCustomFlowDetailConfig,
+  buildTemplateDemoConfig,
+  CUSTOM_FLOW_TEMPLATE_DESCRIPTIONS,
+  CUSTOM_FLOW_TEMPLATE_LABELS,
+  CUSTOM_FLOW_TEMPLATE_SUMMARIES,
+  normalizeCustomFlowDetailConfig,
+  resolveCustomFlowTemplateKey,
+  type CustomFlowTemplateKey
+} from './lib/customFlowTemplate';
+export {
+  CUSTOM_FLOW_TEMPLATE_ICONS,
+  CUSTOM_FLOW_TEMPLATE_PREVIEW_LINES,
+  listCustomFlowTemplateCatalogEntries,
+  resolveCustomFlowTemplateCatalogEntry,
+  type CustomFlowTemplateCatalogEntry,
+  type CustomFlowTemplateIconName
+} from './lib/customFlowTemplateCatalog';
+export {
+  CUSTOM_FLOW_TEMPLATE_KEYS, getInitialCounterDataConfig,
+  getInitialFocusDataConfig,
+  getInitialHabitDataConfig,
+  getInitialJournalDataConfig,
+  getInitialReminderDataConfig, isCustomFlowTemplateKey, MAX_CUSTOM_REMINDER_TIMES,
+  mergeCustomFlowGoalDetailData, normalizeCounterDetailConfig,
+  normalizeFocusDetailConfig,
+  normalizeHabitDetailConfig,
+  normalizeJournalDetailConfig,
+  normalizeReminderDetailConfig
+} from './lib/customFlowTemplateConfigs';
+export type {
+  CounterDetailDataConfig,
+  FocusDetailDataConfig,
+  HabitDetailDataConfig,
+  JournalDetailDataConfig,
+  JournalEntry,
+  ReminderDetailDataConfig
+} from './lib/customFlowTemplateConfigs';
+export {
+  applyCounterDelta,
+  applyHabitDoneToggle,
+  applyJournalSave,
+  applyMeasurementSave,
+  buildHabitWeekDots,
+  ensureCounterDayBoundary,
+  focusElapsedMinFromSession,
+  formatMeasurementDelta,
+  formatReminderCountdown,
+  formatValueCompact,
+  JOURNAL_MOOD_OPTIONS,
+  measurementQuickDeltas,
+  measurementRecordedToday,
+  minutesUntilReminder,
+  reminderProgress,
+  resetCounterCount,
+  resolveNextReminderTime,
+  toggleReminderTimeDone,
+} from './lib/customFlowTemplateRuntime';
 export {
   filterBagTimelineFlowBlocks,
   filterDayPlanFlowBlocks,
   filterSpineTimelineBlocks,
   isDayPlanFlowBlock,
   isDayPlanSpineTimelineBlock,
-  migrateSpineTimelineBlockOrigins,
+  migrateSpineTimelineBlockOrigins
 } from './lib/dayPlanFlowBlock';
-export { formatSpineGapCoaching } from './lib/formatSpineGapCoaching';
-export type {
-  SpineTimelineAnchorRow,
-  SpineTimelineBlockRow,
-  SpineTimelineGapRow,
-  SpineTimelineRow,
-} from './lib/spineTimelineTypes';
 export {
   blockEndWallTimeMs,
   isBlockEndInPastForDateKey,
@@ -71,10 +120,10 @@ export {
   totalPlannedMinutes
 } from './lib/dayPlanTime';
 export {
-  MIN_BLOCK_DURATION_MINUTES,
-  PRIORITY_WINDOW_DEFAULT_SPAN_MINUTES, TIME_SNAP_MINUTES, defaultEditorBlockTimesFromNow,
+  defaultEditorBlockTimesFromNow,
   defaultPriorityWindowFromNow,
-  formatMinutesToHHmm, snapMinutes
+  formatMinutesToHHmm, MIN_BLOCK_DURATION_MINUTES,
+  PRIORITY_WINDOW_DEFAULT_SPAN_MINUTES, snapMinutes, TIME_SNAP_MINUTES
 } from './lib/dayPlanTimeMath';
 export { DEFAULT_DAY_PLAN_BLOCKS } from './lib/defaultBlocks';
 export { deleteCustomFlowCategory } from './lib/deleteCustomFlowCategory';
@@ -83,7 +132,47 @@ export {
   getFlowCompletionCategoryKeysForBlock,
   getFlowCompletionUnitCountForBlock
 } from './lib/flowCompletionUnits';
+export { formatSpineGapCoaching } from './lib/formatSpineGapCoaching';
 export * from './lib/goalCategorySessionConfig';
+export {
+  extractMedicineConfigFromRaw,
+  extractWaterConfigFromRaw,
+  getInitialHealthIntakeDataConfig,
+  HEALTH_INTAKE_CATEGORY_KEY,
+  HEALTH_INTAKE_LABEL_KO,
+  isHealthIntakeRelatedCategoryKey,
+  mergeLegacyHealthIntakeFromParts,
+  normalizeCatalogKeysAfterHealthIntakeMerge,
+  normalizeHealthIntakeDetailConfig,
+  resolveHealthIntakeCategoryKey,
+  type HealthIntakeDetailDataConfig,
+} from './lib/healthIntakeDetailConfig';
+export {
+  buildWorkStudyShareText,
+  WORK_STUDY_TASK_PRESETS,
+  workStudyModeLabelKo,
+} from './lib/workStudyPlan';
+export {
+  addMonths,
+  buildMonthCalendarGrid,
+  buildWeekCalendarRow,
+  dateKeyFromDate,
+  formatDateKeyDisplayKo,
+  formatMonthTitleKo,
+  formatStudyDdayLabel,
+  formatTimetableSlotLine,
+  nearestUpcomingDdayEvent,
+  sortDdayEvents,
+  sortTimetableSlots,
+  toMonthStart,
+  weekdayFromDate,
+  WORK_STUDY_WEEKDAY_LABELS_KO,
+} from './lib/workStudySchedule';
+export type {
+  WorkStudyDdayEvent,
+  WorkStudyTimetableSlot,
+  WorkStudyWeekday,
+} from './lib/workStudySchedule';
 export {
   GOAL_DETAIL_CHECKLIST_DERIVED_CATEGORY_KEYS, isGoalDetailChecklistDerivedCategoryKey,
   isGoalDetailChecklistStyleCategoryKey, type GoalDetailChecklistDerivedCategoryKey
@@ -105,25 +194,26 @@ export {
   parseNumberedFlowLines
 } from './lib/priorityBlockTitle';
 export {
-  buildPrioritySectionCompletionKey,
-  parsePrioritySectionCompletionKey,
-  toRoutineHistoryCategoryKey,
-} from './lib/prioritySectionCompletionKey';
-export {
-  PRIORITY_CATALOG_PICKER_LABELS,
-  getPriorityCatalogPickerLabel,
+  getPriorityCatalogPickerLabel, PRIORITY_CATALOG_PICKER_LABELS
 } from './lib/priorityCatalogPickerLabels';
 export {
   CATALOG_REMOVED_KEYS,
   filterKeysToPriorityCatalog,
   getPriorityCatalogAllowedKeySet,
   getPriorityCatalogStandardKeys,
-  isPriorityCatalogAllowedKey
+  isPriorityCatalogAllowedKey,
+  RETIRED_STANDARD_CATALOG_KEYS
 } from './lib/priorityCatalogRegistry';
 export {
   clampHhmmToPriorityWindow,
   isOvernightPriorityWindow
 } from './lib/priorityRoutineWindow';
+export {
+  buildPrioritySectionCompletionKey,
+  migrateCompletionKeyInList,
+  parsePrioritySectionCompletionKey,
+  toRoutineHistoryCategoryKey
+} from './lib/prioritySectionCompletionKey';
 export { blockMatchesPriorityHhmmWindow } from './lib/priorityWindowBlockMatch';
 export {
   isPriorityWindowEligible,
@@ -138,11 +228,27 @@ export {
   normalizeReadingMetricSelection,
   readingDisplayTitle
 } from './lib/readingLiveActivityConfig';
+export { normalizeReadingAladinBook } from './lib/readingAladinBook';
 export type {
+  ReadingAladinBook,
+  ReadingBookEntry,
   ReadingLiveActivityConfig,
   ReadingMetricKey
 } from './lib/readingLiveActivityConfig';
+export {
+  deriveReadingBookProgress,
+  ensureReadingBookPages,
+  firstAladinBookEntry,
+  makeReadingBookId,
+} from './lib/readingLiveActivityConfig';
+export { reorderSpineTimelineBlocks } from './lib/reorderSpineTimelineBlocks';
 export { resolveTodayFixedRoutineKeys } from './lib/resolveTodayFixedRoutineKeys';
+export type {
+  SpineTimelineAnchorRow,
+  SpineTimelineBlockRow,
+  SpineTimelineGapRow,
+  SpineTimelineRow
+} from './lib/spineTimelineTypes';
 export {
   collectAllFixedFlowCategoryKeys,
   syncPriorityOrderWithAppliedFixedRoutines
@@ -153,6 +259,6 @@ export {
   type WaterRoutineReminderSlot
 } from './lib/waterReminderRoutineSlots';
 export { appendPriorityCategoryKeysIfMissing, notifyFixedFlowApplyScheduleChanged, selectFirstPendingBlock, syncTodayTabWithFixedRoutineApply, useDayPlanDraftStore, useDayPlanRuntimeStore, useDayPlanStore, useDayPlanTodoStore, useFixedFlowSetsStore } from './model';
-export type { AddBlockResult, UpdateBlockResult, PlanMode } from './model';
+export type { AddBlockResult, PlanMode, UpdateBlockResult } from './model';
 export type { DayPlanBlock, DayPlanQuickMemo, DayPlanTodoItem, TodoPriority } from './model/types';
 

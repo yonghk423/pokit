@@ -1,13 +1,30 @@
+import { normalizeReadingAladinBook, type ReadingAladinBook } from './readingAladinBook';
 import { normalizeRoutineDisplayName } from './routineDisplayName';
 import { normalizeRoutineSummary } from './routineSummary';
 
+export type { ReadingAladinBook };
+
 export type ReadingMetricKey = 'pages_read' | 'pages_left' | 'focus_level';
+
+/** 읽을 도서 1권 — 알라딘 검색 또는 직접 입력 */
+export type ReadingBookEntry = {
+  id: string;
+  title: string;
+  startPage: number;
+  targetPage: number;
+  aladin?: ReadingAladinBook | null;
+};
 
 export type ReadingLiveActivityConfig = {
   displayName: string;
-  /** 비어 있으면 플로우(일정 블록) 제목을 세션에 표시합니다. */
+  /** @deprecated books[] 우선. 하위 호환용으로 유지 */
   bookTitle: string;
+  /** @deprecated books[] 우선. 하위 호환용으로 유지 */
+  aladinBook?: ReadingAladinBook | null;
+  books: ReadingBookEntry[];
+  /** @deprecated books[0]과 동기화. 하위 호환용 */
   startPage: number;
+  /** @deprecated books[0]과 동기화. 하위 호환용 */
   targetPage: number;
   selectedMetrics: ReadingMetricKey[];
   summary: string;
@@ -16,9 +33,10 @@ export type ReadingLiveActivityConfig = {
 export const DEFAULT_READING_LIVE_ACTIVITY_CONFIG: ReadingLiveActivityConfig = {
   displayName: '',
   bookTitle: '',
+  aladinBook: null,
+  books: [],
   startPage: 1,
   targetPage: 100,
-  /** 잠금화면 지표 — 전부 해제 가능 */
   selectedMetrics: [],
   summary: '',
 };
@@ -40,21 +58,141 @@ function clampReadingBookTitle(raw: unknown, max: number): string {
   return t.length > max ? t.slice(0, max) : t;
 }
 
-/** 세션·미리보기에 쓸 도서 제목: 입력이 있으면 우선, 없으면 플로우(블록) 제목 */
+function defaultTargetPageForBook(
+  aladin: ReadingAladinBook | null,
+  fallback: number,
+): number {
+  if (aladin?.totalPages && aladin.totalPages > 0) return aladin.totalPages;
+  return fallback;
+}
+
+export function makeReadingBookId(): string {
+  return `rb-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function normalizeBookEntry(
+  input: unknown,
+  fallbackTarget = DEFAULT_READING_LIVE_ACTIVITY_CONFIG.targetPage,
+): ReadingBookEntry | null {
+  if (!input || typeof input !== 'object') return null;
+  const raw = input as Partial<ReadingBookEntry>;
+  const id = typeof raw.id === 'string' && raw.id.length > 0 ? raw.id : null;
+  const title = clampReadingBookTitle(raw.title, 200);
+  if (!id || title.length === 0) return null;
+  const aladin = normalizeReadingAladinBook(raw.aladin);
+  return {
+    id,
+    title,
+    startPage: toNonNegativeInt(raw.startPage, DEFAULT_READING_LIVE_ACTIVITY_CONFIG.startPage),
+    targetPage: toNonNegativeInt(
+      raw.targetPage,
+      defaultTargetPageForBook(aladin, fallbackTarget),
+    ),
+    aladin,
+  };
+}
+
+export function ensureReadingBookPages(
+  entry: ReadingBookEntry,
+  fallbackTarget = DEFAULT_READING_LIVE_ACTIVITY_CONFIG.targetPage,
+): ReadingBookEntry {
+  const aladin = entry.aladin ?? null;
+  return {
+    ...entry,
+    startPage: toNonNegativeInt(entry.startPage, DEFAULT_READING_LIVE_ACTIVITY_CONFIG.startPage),
+    targetPage: toNonNegativeInt(
+      entry.targetPage,
+      defaultTargetPageForBook(aladin, fallbackTarget),
+    ),
+    aladin,
+  };
+}
+
+function normalizeBookEntries(
+  input: unknown,
+  fallbackTarget = DEFAULT_READING_LIVE_ACTIVITY_CONFIG.targetPage,
+): ReadingBookEntry[] {
+  if (!Array.isArray(input)) return [];
+  const result: ReadingBookEntry[] = [];
+  for (const item of input) {
+    const entry = normalizeBookEntry(item, fallbackTarget);
+    if (entry) result.push(entry);
+  }
+  return result;
+}
+
+/** 하위 호환: books[]가 비어 있으면 bookTitle/aladinBook에서 마이그레이션 */
+function migrateBookEntries(
+  books: ReadingBookEntry[],
+  bookTitle: string,
+  aladinBook: ReadingAladinBook | null,
+  startPage: number,
+  targetPage: number,
+): ReadingBookEntry[] {
+  if (books.length > 0) {
+    return books.map((book) => ensureReadingBookPages(book, targetPage));
+  }
+  if (bookTitle.length === 0 && !aladinBook) return [];
+  return [
+    {
+      id: makeReadingBookId(),
+      title: bookTitle || (aladinBook ? '도서' : ''),
+      startPage,
+      targetPage: defaultTargetPageForBook(aladinBook, targetPage),
+      aladin: aladinBook,
+    },
+  ];
+}
+
+/** 세션·미리보기에 쓸 도서 제목 */
 export function readingDisplayTitle(
   flowTitle: string,
   config: ReadingLiveActivityConfig,
 ): string {
+  if (config.books.length > 0) {
+    const titles = config.books.map((b) => b.title).filter(Boolean);
+    if (titles.length > 0) return titles.join(', ');
+  }
   const book = clampReadingBookTitle(config.bookTitle, 200);
   if (book.length > 0) return book;
   const flow = typeof flowTitle === 'string' ? flowTitle.trim() : '';
   return flow.length > 0 ? flow : '제목 없음';
 }
 
+/** 첫 번째 알라딘 연결 도서를 반환합니다 */
+export function firstAladinBookEntry(
+  config: ReadingLiveActivityConfig,
+): ReadingAladinBook | null {
+  for (const entry of config.books) {
+    if (entry.aladin) return entry.aladin;
+  }
+  return config.aladinBook ?? null;
+}
+
+export function deriveReadingBookProgress(entry: Pick<ReadingBookEntry, 'startPage' | 'targetPage'>): {
+  pagesRead: number;
+  pagesLeft: number;
+  progressPct: number;
+} {
+  const pagesRead = Math.max(0, entry.targetPage - entry.startPage);
+  const pagesLeft = Math.max(0, entry.startPage);
+  const progressPct =
+    entry.targetPage === 0
+      ? 0
+      : Math.max(
+          0,
+          Math.min(100, Math.round((pagesRead / entry.targetPage) * 100)),
+        );
+
+  return { pagesRead, pagesLeft, progressPct };
+}
+
 export function getInitialReadingLiveActivityConfig(): ReadingLiveActivityConfig {
   return {
     displayName: '',
-    bookTitle: DEFAULT_READING_LIVE_ACTIVITY_CONFIG.bookTitle,
+    bookTitle: '',
+    aladinBook: null,
+    books: [],
     startPage: DEFAULT_READING_LIVE_ACTIVITY_CONFIG.startPage,
     targetPage: DEFAULT_READING_LIVE_ACTIVITY_CONFIG.targetPage,
     selectedMetrics: [...DEFAULT_READING_LIVE_ACTIVITY_CONFIG.selectedMetrics],
@@ -85,17 +223,37 @@ export function normalizeReadingLiveActivityConfig(input: unknown): ReadingLiveA
       ? (input as Partial<ReadingLiveActivityConfig>)
       : {};
 
+  const bookTitle = clampReadingBookTitle(raw.bookTitle, 120);
+  const aladinBook = normalizeReadingAladinBook(raw.aladinBook);
+  const legacyStartPage = toNonNegativeInt(
+    raw.startPage,
+    DEFAULT_READING_LIVE_ACTIVITY_CONFIG.startPage,
+  );
+  const legacyTargetPage = toNonNegativeInt(
+    raw.targetPage,
+    DEFAULT_READING_LIVE_ACTIVITY_CONFIG.targetPage,
+  );
+
+  const booksRaw = normalizeBookEntries(raw.books, legacyTargetPage);
+  const books = migrateBookEntries(
+    booksRaw,
+    bookTitle,
+    aladinBook,
+    legacyStartPage,
+    legacyTargetPage,
+  );
+
+  const firstBook = books[0];
+  const startPage = firstBook?.startPage ?? legacyStartPage;
+  const targetPage = firstBook?.targetPage ?? legacyTargetPage;
+
   return {
     displayName: normalizeRoutineDisplayName(raw.displayName),
-    bookTitle: clampReadingBookTitle(raw.bookTitle, 120),
-    startPage: toNonNegativeInt(
-      raw.startPage,
-      DEFAULT_READING_LIVE_ACTIVITY_CONFIG.startPage,
-    ),
-    targetPage: toNonNegativeInt(
-      raw.targetPage,
-      DEFAULT_READING_LIVE_ACTIVITY_CONFIG.targetPage,
-    ),
+    bookTitle: firstBook?.title ?? bookTitle,
+    aladinBook: firstBook?.aladin ?? aladinBook,
+    books,
+    startPage,
+    targetPage,
     selectedMetrics: normalizeReadingMetricSelection(raw.selectedMetrics),
     summary: normalizeRoutineSummary(raw.summary),
   };
@@ -106,15 +264,18 @@ export function deriveReadingProgress(config: ReadingLiveActivityConfig): {
   pagesLeft: number;
   progressPct: number;
 } {
-  const pagesRead = Math.max(0, config.targetPage - config.startPage);
-  const pagesLeft = Math.max(0, config.startPage);
-  const progressPct =
-    config.targetPage === 0
-      ? 0
-      : Math.max(
-          0,
-          Math.min(100, Math.round((pagesRead / config.targetPage) * 100)),
-        );
+  if (config.books.length > 0) {
+    const totals = config.books.map(deriveReadingBookProgress);
+    const pagesRead = totals.reduce((sum, item) => sum + item.pagesRead, 0);
+    const pagesLeft = totals.reduce((sum, item) => sum + item.pagesLeft, 0);
+    const totalTarget = config.books.reduce((sum, book) => sum + book.targetPage, 0);
+    const progressPct =
+      totalTarget === 0
+        ? 0
+        : Math.max(0, Math.min(100, Math.round((pagesRead / totalTarget) * 100)));
 
-  return { pagesRead, pagesLeft, progressPct };
+    return { pagesRead, pagesLeft, progressPct };
+  }
+
+  return deriveReadingBookProgress(config);
 }

@@ -1,12 +1,7 @@
 const CUSTOM_FLOW_CATEGORY_PREFIX = 'customFlow:' as const;
 const HEALTH_GROUP_KEYS = new Set<string>([
-  'water',
-  'medicine',
+  'healthIntake',
   'fasting',
-  'stretching',
-  'straightenBack',
-  'neckPosture',
-  'meditation',
 ]);
 
 function isCustomFlowCategoryKey(k: string): k is `customFlow:${string}` {

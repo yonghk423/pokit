@@ -6,7 +6,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
-export type FixedRoutineSection = 'scheduled' | 'custom';
+export type FixedRoutineSection = 'scheduled' | 'custom' | 'templates';
 
 type TabDef = {
   key: FixedRoutineSection;
@@ -16,6 +16,7 @@ type TabDef = {
 const TABS: TabDef[] = [
   { key: 'scheduled', label: '고정 루틴' },
   { key: 'custom', label: '나만의 루틴' },
+  { key: 'templates', label: '루틴 템플릿' },
 ];
 
 type Props = {
@@ -79,11 +80,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 8,
   },
   tabLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: -0.2,
   },

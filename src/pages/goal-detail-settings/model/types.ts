@@ -1,14 +1,9 @@
-import type { CustomFlowCategoryKey, GoalDetailChecklistDerivedCategoryKey } from '@entities/day-plan';
+import type { CustomFlowCategoryKey } from '@entities/day-plan';
 
 export type GoalDetailCategoryKey =
   | 'work'
   | 'reading'
-  | 'meditation'
-  | 'yoga'
   | 'fasting'
-  | 'water'
-  | 'medicine'
+  | 'healthIntake'
   | 'other'
-  | GoalDetailChecklistDerivedCategoryKey
   | CustomFlowCategoryKey;
-

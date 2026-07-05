@@ -44,13 +44,15 @@ describe('generateHistorySeedRows', () => {
     expect(weakRecent).toBeGreaterThanOrEqual(10);
   });
 
-  it('strong profile boosts the recent 7 days with custom flow completions', () => {
+  it('strong profile boosts the recent 7 days with standard routine completions', () => {
     const rows = generateHistorySeedRows(anchor, 'strong');
     const recent = rows.slice(-7);
-    const hasCustomFlow = recent.some((row) =>
-      Object.keys(row.categoryCompletions ?? {}).some((k) => k.startsWith('customFlow:')),
+    const hasStandardRoutine = recent.some((row) =>
+      Object.keys(row.categoryCompletions ?? {}).some((k) =>
+        ['water', 'reading', 'medicine', 'work', 'fasting'].includes(k),
+      ),
     );
-    expect(hasCustomFlow).toBe(true);
+    expect(hasStandardRoutine).toBe(true);
   });
 
   it('strong profile keeps a long consecutive streak through anchor day', () => {

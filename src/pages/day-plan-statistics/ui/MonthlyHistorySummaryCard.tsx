@@ -23,9 +23,9 @@ export function MonthlyHistorySummaryCard({ summary, palette }: Props) {
         {summary.activeDays}일 / {summary.daysInMonth}일 중 활동 · 총 {summary.totalCompletions}회
         완료
       </ThemedText>
-      {summary.topCategoryLabel ? (
+      {summary.topCategoryLabels.length > 0 ? (
         <ThemedText style={[styles.highlight, { color: palette.ink }]}>
-          가장 많이 한 루틴: {summary.topCategoryLabel}
+          가장 많이 한 루틴: {summary.topCategoryLabels.join(' · ')}
         </ThemedText>
       ) : null}
     </View>

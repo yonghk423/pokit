@@ -6,7 +6,6 @@ import { PrimaryColor } from '@shared/config/theme';
 import {
   CUSTOM_FLOW_ACCENT_COLOR_OPTIONS,
   CUSTOM_FLOW_ICON_OPTIONS,
-  isPresetCustomFlowAccentColor,
   type CustomFlowIconOption,
 } from '@shared/lib/customFlowAppearanceCatalog';
 import { HsvColorPicker } from '@shared/ui/hsv-color-picker';
@@ -24,6 +23,8 @@ export type CustomFlowAppearancePickerProps = {
   muted: string;
   line?: string;
   hint?: string;
+  /** true면 아이콘·색상 편집 영역을 처음부터 펼친다 */
+  defaultExpanded?: boolean;
 };
 
 export function CustomFlowAppearancePicker({
@@ -37,6 +38,7 @@ export function CustomFlowAppearancePicker({
   muted,
   line,
   hint = '루틴 목록에서 구분하기 쉽게 골라 주세요',
+  defaultExpanded = false,
 }: CustomFlowAppearancePickerProps) {
   const border = line ?? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)');
   const cardBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)';
@@ -45,15 +47,12 @@ export function CustomFlowAppearancePicker({
   const iconScrollRef = useRef<ScrollView>(null);
   const ICON_CHIP_STEP = 46;
 
-  const [showCustomColor, setShowCustomColor] = useState(
-    () => !isPresetCustomFlowAccentColor(accentColor),
-  );
+  const [showAppearanceEditor, setShowAppearanceEditor] = useState(defaultExpanded);
 
-  useEffect(() => {
-    if (!isPresetCustomFlowAccentColor(accentColor)) {
-      setShowCustomColor(true);
-    }
-  }, [accentColor]);
+  const toggleAppearanceEditor = useCallback(() => {
+    void Haptics.selectionAsync();
+    setShowAppearanceEditor((prev) => !prev);
+  }, []);
 
   const scrollIconIntoView = useCallback((iconName: CustomFlowIconOption) => {
     const index = CUSTOM_FLOW_ICON_OPTIONS.indexOf(iconName);
@@ -95,94 +94,106 @@ export function CustomFlowAppearancePicker({
         <ThemedText style={[styles.previewLabel, { color: ink }]} numberOfLines={1}>
           {previewLabel}
         </ThemedText>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showAppearanceEditor }}
+          accessibilityLabel={
+            showAppearanceEditor ? '아이콘·색상 고르기 접기' : '아이콘·색상 고르기 펼치기'
+          }
+          onPress={toggleAppearanceEditor}
+          hitSlop={8}
+          style={[
+            styles.expandButton,
+            {
+              borderColor: border,
+              backgroundColor: showAppearanceEditor
+                ? isDark
+                  ? 'rgba(255,255,255,0.12)'
+                  : 'rgba(0,0,0,0.06)'
+                : chipIdleBg,
+            },
+          ]}>
+          <IconSymbol
+            name={showAppearanceEditor ? 'minus' : 'plus'}
+            size={16}
+            color={showAppearanceEditor ? ink : muted}
+            weight="semibold"
+          />
+        </Pressable>
       </View>
 
-      <ScrollView
-        ref={iconScrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.iconRow}
-        keyboardShouldPersistTaps="handled">
-        {CUSTOM_FLOW_ICON_OPTIONS.map((iconName) => {
-          const selected = icon === iconName;
-          return (
-            <Pressable
-              key={iconName}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              accessibilityLabel="아이콘 선택"
-              onPress={() => handleSelectIcon(iconName)}
-              style={[
-                styles.iconChip,
-                {
-                  borderColor: selected ? accentColor : border,
-                  backgroundColor: selected
-                    ? isDark
-                      ? 'rgba(255,255,255,0.12)'
-                      : 'rgba(0,0,0,0.06)'
-                    : chipIdleBg,
-                },
-              ]}>
-              <IconSymbol name={iconName} size={18} color={selected ? accentColor : muted} />
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      {showAppearanceEditor ? (
+        <View style={styles.editorBody}>
+          <ScrollView
+            ref={iconScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.iconRow}
+            keyboardShouldPersistTaps="handled">
+            {CUSTOM_FLOW_ICON_OPTIONS.map((iconName) => {
+              const selected = icon === iconName;
+              return (
+                <Pressable
+                  key={iconName}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel="아이콘 선택"
+                  onPress={() => handleSelectIcon(iconName)}
+                  style={[
+                    styles.iconChip,
+                    {
+                      borderColor: selected ? accentColor : border,
+                      backgroundColor: selected
+                        ? isDark
+                          ? 'rgba(255,255,255,0.12)'
+                          : 'rgba(0,0,0,0.06)'
+                        : chipIdleBg,
+                    },
+                  ]}>
+                  <IconSymbol name={iconName} size={18} color={selected ? accentColor : muted} />
+                </Pressable>
+              );
+            })}
+          </ScrollView>
 
-      <View style={styles.colorSection}>
-        <ThemedText style={[styles.presetLabel, { color: muted }]}>색상</ThemedText>
-        <View style={styles.colorGrid}>
-          {CUSTOM_FLOW_ACCENT_COLOR_OPTIONS.map((color) => {
-            const selected = accentColor.toLowerCase() === color;
-            return (
-              <Pressable
-                key={color}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                accessibilityLabel="색상 선택"
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  onChangeAccentColor(color);
-                  setShowCustomColor(false);
-                }}
-                style={[
-                  styles.colorSwatch,
-                  {
-                    backgroundColor: color,
-                    borderColor: selected ? PrimaryColor.rgb : border,
-                  },
-                ]}>
-                {selected ? <IconSymbol name="checkmark" size={12} color="#FAFAFA" /> : null}
-              </Pressable>
-            );
-          })}
+          <View style={styles.colorSection}>
+            <ThemedText style={[styles.presetLabel, { color: muted }]}>색상</ThemedText>
+            <View style={styles.colorGrid}>
+              {CUSTOM_FLOW_ACCENT_COLOR_OPTIONS.map((color) => {
+                const selected = accentColor.toLowerCase() === color;
+                return (
+                  <Pressable
+                    key={color}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel="색상 선택"
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      onChangeAccentColor(color);
+                    }}
+                    style={[
+                      styles.colorSwatch,
+                      {
+                        backgroundColor: color,
+                        borderColor: selected ? PrimaryColor.rgb : border,
+                      },
+                    ]}>
+                    {selected ? <IconSymbol name="checkmark" size={12} color="#FAFAFA" /> : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          <HsvColorPicker
+            value={accentColor}
+            onChange={onChangeAccentColor}
+            ink={ink}
+            muted={muted}
+            isDark={isDark}
+            line={border}
+          />
         </View>
-      </View>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ expanded: showCustomColor }}
-        accessibilityLabel={showCustomColor ? '색상 직접 고르기 접기' : '색상 직접 고르기 펼치기'}
-        onPress={() => {
-          void Haptics.selectionAsync();
-          setShowCustomColor((prev) => !prev);
-        }}
-        style={[styles.customToggle, { borderColor: border, backgroundColor: chipIdleBg }]}>
-        <ThemedText style={[styles.customToggleLabel, { color: ink }]}>
-          {showCustomColor ? '색상 직접 고르기 접기' : '색상 직접 고르기'}
-        </ThemedText>
-        <IconSymbol name={showCustomColor ? 'chevron.up' : 'chevron.down'} size={14} color={muted} />
-      </Pressable>
-
-      {showCustomColor ? (
-        <HsvColorPicker
-          value={accentColor}
-          onChange={onChangeAccentColor}
-          ink={ink}
-          muted={muted}
-          isDark={isDark}
-          line={border}
-        />
       ) : null}
     </View>
   );
@@ -226,6 +237,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.2,
   },
+  expandButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 0,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editorBody: {
+    gap: 10,
+  },
   iconRow: {
     flexDirection: 'row',
     gap: 6,
@@ -258,19 +280,5 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  customToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 40,
-    paddingHorizontal: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 0,
-  },
-  customToggleLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: -0.15,
   },
 });

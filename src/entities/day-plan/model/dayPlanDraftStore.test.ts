@@ -300,6 +300,16 @@ describe('dayPlanDraftStore', () => {
     ]);
   });
 
+  it('migrates slot-scoped completion keys when a routine moves sections', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      completedFocusCategoryKeys: ['stretching@morning'],
+      planCompletionDismissedKeys: [],
+    });
+    useDayPlanDraftStore.getState().migrateSectionCompletionOnSlotMove('stretching', 'morning', 'lunch');
+    expect(useDayPlanDraftStore.getState().completedFocusCategoryKeys).toEqual(['stretching@lunch']);
+  });
+
   it('updates priority plan date keys and water reminder epoch', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,

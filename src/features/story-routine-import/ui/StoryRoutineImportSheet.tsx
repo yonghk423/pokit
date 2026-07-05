@@ -5,10 +5,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SYSTEM_CATALOG_GROUP_KEYS } from '@entities/day-plan';
 import {
+  CityPopSpacing,
+  CityPopTypography,
+  RetroFlatColors,
+  RETRO_BORDER_WIDTH,
+  retroBorderFor,
+} from '@shared/config/retroFlat';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import {
   listCustomCatalogGroups,
   resolveSystemCatalogGroupLabel,
 } from '@shared/lib/storage';
-import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { importStoryAsRoutine, type ImportTarget } from '../lib/importStoryAsRoutine';
@@ -26,18 +34,27 @@ type DoneState = {
   created: boolean;
 };
 
+function sheetPalette(isDark: boolean) {
+  const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  return {
+    bg: c.bg,
+    surface: c.surface,
+    surfaceAlt: c.surfaceAlt,
+    ink: c.text,
+    muted: c.textMuted,
+    border: c.border,
+    primary: c.primary,
+    primaryOn: c.primaryOn,
+    chipBg: isDark ? c.surfaceContainer : c.primaryContainer,
+  };
+}
+
 export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
+  const palette = sheetPalette(isDark);
   const [selectedGroupKey, setSelectedGroupKey] = useState('productivity');
   const [done, setDone] = useState<DoneState | null>(null);
-
-  const bg = isDark ? '#1C1C1E' : '#FFFFFF';
-  const cardBg = isDark ? '#2C2C2E' : '#F5F5F5';
-  const ink = isDark ? '#FAFAFA' : '#1A1A1A';
-  const muted = isDark ? '#8E8E93' : '#999999';
-  const chipActiveBg = ink;
-  const chipActiveText = bg;
 
   const groupOptions = useMemo(() => {
     const system = (SYSTEM_CATALOG_GROUP_KEYS as readonly string[]).map((key) => ({
@@ -85,135 +102,194 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
       transparent
       onRequestClose={handleClose}>
       <View style={styles.backdrop}>
-        <Pressable style={styles.backdropTouch} onPress={handleClose} />
-        <View style={[styles.sheet, { backgroundColor: bg, paddingBottom: insets.bottom + 16 }]}>
+        <Pressable style={styles.backdropTouch} onPress={handleClose} accessibilityLabel="닫기" />
+        <View
+          style={[
+            styles.sheet,
+            retroBorderFor(isDark),
+            {
+              backgroundColor: palette.bg,
+              borderBottomWidth: 0,
+              paddingBottom: insets.bottom + CityPopSpacing.sm,
+            },
+          ]}>
           {done ? (
             <View style={styles.successContainer}>
-              <View style={styles.successBody}>
-                <ThemedText style={styles.successEmoji}>✓</ThemedText>
-                <ThemedText style={[styles.successTitle, { color: ink }]}>
-                  {done.target === 'today'
-                    ? done.created
-                      ? '오늘 일정에 담았어요'
-                      : '오늘 일정에 다시 담았어요'
-                    : done.created
-                      ? '루틴에 저장했어요'
-                      : '루틴 내용을 업데이트했어요'}
-                </ThemedText>
-                <ThemedText style={[styles.successSub, { color: muted }]}>
-                  {done.target === 'today'
-                    ? '오늘 탭에서 확인할 수 있어요'
-                    : `「${selectedGroupLabel}」에서 확인할 수 있어요`}
-                </ThemedText>
+              <View style={[styles.successIconWrap, retroBorderFor(isDark), { backgroundColor: palette.surface }]}>
+                <IconSymbol name="checkmark" size={22} color={palette.ink} />
               </View>
+              <ThemedText style={[styles.successTitle, { color: palette.ink }]}>
+                {done.target === 'today'
+                  ? done.created
+                    ? '오늘 일정에 담았어요'
+                    : '오늘 일정에 다시 담았어요'
+                  : done.created
+                    ? '루틴에 저장했어요'
+                    : '루틴 내용을 업데이트했어요'}
+              </ThemedText>
+              <ThemedText style={[styles.successSub, { color: palette.muted }]}>
+                {done.target === 'today'
+                  ? '오늘 탭에서 확인할 수 있어요'
+                  : `「${selectedGroupLabel}」에서 확인할 수 있어요`}
+              </ThemedText>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="확인"
                 style={({ pressed }) => [
                   styles.primaryBtn,
-                  { backgroundColor: ink, opacity: pressed ? 0.85 : 1 },
+                  retroBorderFor(isDark),
+                  {
+                    backgroundColor: palette.ink,
+                    opacity: pressed ? 0.88 : 1,
+                  },
                 ]}
                 onPress={handleClose}>
-                <ThemedText style={[styles.primaryBtnText, { color: bg }]}>확인</ThemedText>
+                <ThemedText style={[styles.primaryBtnText, { color: palette.bg }]}>확인</ThemedText>
               </Pressable>
             </View>
           ) : (
             <>
-              <View style={styles.handle} />
-              <ThemedText style={[styles.title, { color: ink }]} numberOfLines={2}>
-                {article.title}
-              </ThemedText>
-              {article.summary?.trim() ? (
-                <ThemedText style={[styles.summary, { color: muted }]} numberOfLines={3}>
-                  {article.summary.trim()}
-                </ThemedText>
-              ) : null}
-              <View style={styles.meta}>
-                {article.category ? (
-                  <View style={[styles.chip, { backgroundColor: cardBg }]}>
-                    <ThemedText style={[styles.chipText, { color: muted }]}>
-                      {article.category}
-                    </ThemedText>
-                  </View>
-                ) : null}
-                <View style={[styles.chip, { backgroundColor: cardBg }]}>
-                  <ThemedText style={[styles.chipText, { color: muted }]}>
-                    {durationLabel}
-                  </ThemedText>
-                </View>
+              <View style={styles.sheetHeader}>
+                <View style={[styles.handle, { backgroundColor: palette.muted }]} />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="닫기"
+                  hitSlop={10}
+                  onPress={handleClose}
+                  style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}>
+                  <IconSymbol name="xmark" size={16} color={palette.ink} />
+                </Pressable>
               </View>
 
-              {article.steps && article.steps.length > 0 ? (
-                <View style={[styles.stepsCard, { backgroundColor: cardBg }]}>
-                  {article.steps.slice(0, 4).map((step, i) => (
-                    <ThemedText key={i} style={[styles.stepLine, { color: ink }]} numberOfLines={1}>
-                      {i + 1}. {step}
-                    </ThemedText>
-                  ))}
-                </View>
-              ) : null}
-
-              <ThemedText style={[styles.sectionLabel, { color: muted }]}>
-                저장할 카테고리
-              </ThemedText>
               <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.groupRow}
-                style={styles.groupScroll}>
-                {groupOptions.map((group) => {
-                  const active = group.key === selectedGroupKey;
-                  return (
-                    <Pressable
-                      key={group.key}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
-                      onPress={() => setSelectedGroupKey(group.key)}
+                style={styles.scroll}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled">
+                <ThemedText style={[styles.title, { color: palette.ink }]} numberOfLines={3}>
+                  {article.title}
+                </ThemedText>
+                {article.summary?.trim() ? (
+                  <ThemedText style={[styles.summary, { color: palette.muted }]} numberOfLines={4}>
+                    {article.summary.trim()}
+                  </ThemedText>
+                ) : null}
+
+                <View style={styles.metaRow}>
+                  {article.category ? (
+                    <View
                       style={[
-                        styles.groupChip,
-                        {
-                          backgroundColor: active ? chipActiveBg : cardBg,
-                          borderColor: active
-                            ? chipActiveBg
-                            : isDark
-                              ? 'rgba(255,255,255,0.12)'
-                              : 'rgba(0,0,0,0.08)',
-                        },
+                        styles.metaChip,
+                        retroBorderFor(isDark),
+                        { backgroundColor: palette.chipBg },
                       ]}>
-                      <ThemedText
-                        style={[
-                          styles.groupChipText,
-                          { color: active ? chipActiveText : ink },
-                        ]}
-                        numberOfLines={1}>
-                        {group.label}
+                      <ThemedText style={[styles.metaChipText, { color: palette.ink }]}>
+                        {article.category}
                       </ThemedText>
-                    </Pressable>
-                  );
-                })}
+                    </View>
+                  ) : null}
+                  <View
+                    style={[
+                      styles.metaChip,
+                      retroBorderFor(isDark),
+                      { backgroundColor: palette.surface },
+                    ]}>
+                    <IconSymbol name="clock" size={11} color={palette.muted} />
+                    <ThemedText style={[styles.metaChipText, { color: palette.ink }]}>
+                      {durationLabel}
+                    </ThemedText>
+                  </View>
+                </View>
+
+                {article.steps && article.steps.length > 0 ? (
+                  <View
+                    style={[
+                      styles.stepsCard,
+                      retroBorderFor(isDark),
+                      { backgroundColor: palette.surfaceAlt },
+                    ]}>
+                    {article.steps.slice(0, 4).map((step, i) => (
+                      <View key={i} style={styles.stepRow}>
+                        <ThemedText style={[styles.stepIndex, { color: palette.muted }]}>
+                          {String(i + 1).padStart(2, '0')}
+                        </ThemedText>
+                        <ThemedText style={[styles.stepLine, { color: palette.ink }]} numberOfLines={2}>
+                          {step}
+                        </ThemedText>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+
+                <ThemedText style={[styles.sectionLabel, { color: palette.muted }]}>
+                  저장할 카테고리
+                </ThemedText>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.groupRow}
+                  style={styles.groupScroll}>
+                  {groupOptions.map((group) => {
+                    const active = group.key === selectedGroupKey;
+                    return (
+                      <Pressable
+                        key={group.key}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        onPress={() => {
+                          void Haptics.selectionAsync();
+                          setSelectedGroupKey(group.key);
+                        }}
+                        style={[
+                          styles.groupChip,
+                          retroBorderFor(isDark),
+                          {
+                            backgroundColor: active ? palette.ink : palette.surface,
+                            borderColor: active ? palette.ink : palette.border,
+                          },
+                        ]}>
+                        <ThemedText
+                          style={[
+                            styles.groupChipText,
+                            { color: active ? palette.bg : palette.ink },
+                          ]}
+                          numberOfLines={1}>
+                          {group.label}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
               </ScrollView>
 
-              <View style={styles.actions}>
+              <View style={[styles.actions, { borderTopColor: palette.border }]}>
                 <Pressable
+                  accessibilityRole="button"
                   style={({ pressed }) => [
                     styles.primaryBtn,
-                    { backgroundColor: ink, opacity: pressed ? 0.85 : 1 },
+                    retroBorderFor(isDark),
+                    {
+                      backgroundColor: palette.ink,
+                      opacity: pressed ? 0.88 : 1,
+                    },
                   ]}
                   onPress={() => handleImport('today')}>
-                  <ThemedText style={[styles.primaryBtnText, { color: bg }]}>
+                  <ThemedText style={[styles.primaryBtnText, { color: palette.bg }]}>
                     오늘 일정에 담기
                   </ThemedText>
                 </Pressable>
                 <Pressable
+                  accessibilityRole="button"
                   style={({ pressed }) => [
                     styles.secondaryBtn,
+                    retroBorderFor(isDark),
                     {
-                      borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
-                      opacity: pressed ? 0.85 : 1,
+                      backgroundColor: palette.surface,
+                      opacity: pressed ? 0.88 : 1,
                     },
                   ]}
                   onPress={() => handleImport('catalog')}>
-                  <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>
+                  <ThemedText style={[styles.secondaryBtnText, { color: palette.ink }]}>
                     루틴에 저장
                   </ThemedText>
                 </Pressable>
@@ -233,135 +309,175 @@ const styles = StyleSheet.create({
   },
   backdropTouch: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
   sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 12,
-    paddingHorizontal: 20,
-    maxHeight: '85%',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
+    maxHeight: '88%',
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: CityPopSpacing.sm,
+    paddingHorizontal: CityPopSpacing.marginMobile,
+    paddingBottom: CityPopSpacing.base,
   },
   handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(128,128,128,0.4)',
-    alignSelf: 'center',
-    marginBottom: 16,
+    width: 40,
+    height: 3,
+  },
+  closeBtn: {
+    position: 'absolute',
+    right: CityPopSpacing.marginMobile,
+    top: CityPopSpacing.sm,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scroll: {
+    flexGrow: 0,
+  },
+  scrollContent: {
+    paddingHorizontal: CityPopSpacing.marginMobile,
+    paddingBottom: CityPopSpacing.sm,
+    gap: CityPopSpacing.sm,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 8,
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: 26,
+    letterSpacing: -0.35,
+    paddingRight: 36,
   },
   summary: {
     fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 10,
+    lineHeight: 21,
+    letterSpacing: -0.1,
   },
-  meta: {
+  metaRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+    flexWrap: 'wrap',
+    gap: CityPopSpacing.base,
   },
-  chip: {
+  metaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingVertical: 5,
   },
-  chipText: {
-    fontSize: 13,
+  metaChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
   },
   stepsCard: {
-    borderRadius: 0,
-    padding: 12,
-    marginBottom: 12,
-    gap: 4,
+    padding: CityPopSpacing.sm,
+    gap: CityPopSpacing.base,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  stepIndex: {
+    width: 22,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    lineHeight: 18,
   },
   stepLine: {
+    flex: 1,
     fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.1,
   },
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
+    ...CityPopTypography.labelMd,
+    marginTop: CityPopSpacing.xs,
   },
   groupScroll: {
-    marginBottom: 16,
     flexGrow: 0,
+    marginHorizontal: -CityPopSpacing.marginMobile,
   },
   groupRow: {
-    gap: 8,
-    paddingRight: 4,
+    gap: CityPopSpacing.base,
+    paddingHorizontal: CityPopSpacing.marginMobile,
+    paddingBottom: 2,
   },
   groupChip: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 0,
-    borderWidth: 2,
     maxWidth: 220,
   },
   groupChipText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.1,
   },
   actions: {
-    gap: 10,
-    marginTop: 4,
-    width: '100%',
+    gap: CityPopSpacing.base,
+    paddingHorizontal: CityPopSpacing.marginMobile,
+    paddingTop: CityPopSpacing.sm,
+    borderTopWidth: RETRO_BORDER_WIDTH,
   },
   primaryBtn: {
-    borderRadius: 0,
     paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingHorizontal: CityPopSpacing.gutter,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'stretch',
-    width: '100%',
-    minHeight: 48,
+    minHeight: 52,
   },
   primaryBtnText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   secondaryBtn: {
-    borderRadius: 0,
     paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingHorizontal: CityPopSpacing.gutter,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'stretch',
-    width: '100%',
-    minHeight: 48,
-    borderWidth: 2,
+    minHeight: 52,
   },
   secondaryBtnText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   successContainer: {
-    width: '100%',
-    paddingTop: 8,
-    paddingBottom: 8,
-    gap: 20,
-  },
-  successBody: {
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 4,
+    gap: CityPopSpacing.sm,
+    paddingHorizontal: CityPopSpacing.marginMobile,
+    paddingTop: CityPopSpacing.md,
+    paddingBottom: CityPopSpacing.sm,
   },
-  successEmoji: {
-    fontSize: 32,
-    marginBottom: 4,
+  successIconWrap: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: CityPopSpacing.xs,
   },
   successTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    textAlign: 'center',
   },
   successSub: {
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: CityPopSpacing.sm,
+  },
+  pressed: {
+    opacity: 0.72,
   },
 });

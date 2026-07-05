@@ -10,7 +10,6 @@ describe('devMockSeed', () => {
     localStorageClient.removeItem(StorageKeys.fixedFlowSets);
     localStorageClient.removeItem(StorageKeys.goalDetailSettings);
     localStorageClient.removeItem(StorageKeys.historyDailyStats);
-    localStorageClient.removeItem(StorageKeys.historyAchievements);
     localStorageClient.removeItem(StorageKeys.historyMeta);
     localStorageClient.removeItem(StorageKeys.horizonCompletions);
     localStorageClient.removeItem(StorageKeys.horizonGoals);

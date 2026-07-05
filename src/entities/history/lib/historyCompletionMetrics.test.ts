@@ -1,22 +1,8 @@
 import type { HistoryDailyStat } from '@entities/history/model/types';
 
-import {
-  dayHasCompletionActivity,
-  getCategoryCompletions,
-  sumCategoryCompletions,
-} from './historyCompletionMetrics';
+import { getCategoryCompletions, sumCategoryCompletions } from './historyCompletionMetrics';
 
 describe('historyCompletionMetrics', () => {
-  it('detects completion activity', () => {
-    expect(dayHasCompletionActivity(undefined)).toBe(false);
-    expect(dayHasCompletionActivity({ completedFlowCount: 0, completionRate: 0 } as HistoryDailyStat)).toBe(
-      false,
-    );
-    expect(
-      dayHasCompletionActivity({ completedFlowCount: 1, completionRate: 0 } as HistoryDailyStat),
-    ).toBe(true);
-  });
-
   it('prefers categoryCompletions over legacy minutes', () => {
     const map = getCategoryCompletions({
       categoryCompletions: { reading: 2, water: 1 },

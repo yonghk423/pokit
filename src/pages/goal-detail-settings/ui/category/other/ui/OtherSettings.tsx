@@ -11,10 +11,10 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import type { GoalDetailCategoryKey } from '../../../../model/types';
 
-import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
-import { RoutineTitleField } from '../../lib/RoutineTitleField';
 import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
 import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
+import { RoutineTitleField } from '../../lib/RoutineTitleField';
+import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 
 import {
   getInitialOtherDataConfig,

@@ -19,8 +19,8 @@ describe('getBlockTimelineIcon', () => {
     expect(getBlockTimelineIcon(block({ categoryKey: 'reading', category: '독서' }))).toBe(
       'book.fill',
     );
-    expect(getBlockTimelineIcon(block({ categoryKey: 'workout', category: '운동' }))).toBe(
-      'dumbbell.fill',
+    expect(getBlockTimelineIcon(block({ categoryKey: 'medicine', category: '약 복용' }))).toBe(
+      'cross.case.fill',
     );
   });
 

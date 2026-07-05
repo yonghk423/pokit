@@ -28,7 +28,7 @@ describe('buildPriorityMealSlotSections with custom schedule', () => {
     expect(sections[0]?.hintTime).toBe('08:00');
     expect(sections[0]?.isCurrent).toBe(false);
     const lunchSections = buildPriorityMealSlotSections(
-      [{ key: 'deepwork', label: '딥 워크' }],
+      [{ key: 'work', label: '스터디' }],
       { nowMin: 12 * 60, schedule: custom },
     );
     expect(lunchSections[0]?.slot).toBe('lunch');
@@ -188,6 +188,24 @@ describe('buildPriorityMealSlotSections order stability', () => {
       sections.find((section) => section.slot === 'dawn')?.items.map((item) => item.key) ?? [];
     expect(morningKeys).toContain(customKey);
     expect(dawnKeys).not.toContain(customKey);
+  });
+});
+
+describe('splitPriorityMealSlotSections duplicate category keys', () => {
+  it('places each category at most once per section bucket', () => {
+    const items = [
+      { key: 'straightenBack', label: '허리펴기' },
+      { key: 'straightenBack', label: '허리펴기' },
+    ];
+    const overrides = new Map([['straightenBack', ['morning'] as const]]);
+    const { sections } = splitPriorityMealSlotSections(items, {
+      mealSlotOverrides: overrides,
+      explicitSlotsOnly: true,
+      includeEmptySections: true,
+    });
+    expect(
+      sections.find((section) => section.slot === 'morning')?.items.map((item) => item.key),
+    ).toEqual(['straightenBack']);
   });
 });
 

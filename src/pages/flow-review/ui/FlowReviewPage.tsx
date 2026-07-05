@@ -29,16 +29,11 @@ const TEXT = '#181A2E';
 const PRIMARY = '#356668';
 
 const CATEGORY_META: Record<string, { icon: Parameters<typeof IconSymbol>[0]['name']; label: string }> = {
-  work: { icon: 'bag.fill', label: '작업' },
+  work: { icon: 'bag.fill', label: '스터디' },
   reading: { icon: 'book.fill', label: '독서' },
-  meditation: { icon: 'brain.head.profile', label: '명상' },
-  yoga: { icon: 'figure.yoga', label: '요가' },
-  stretching: { icon: 'figure.run', label: '스트레칭하기' },
-  straightenBack: { icon: 'figure.yoga', label: '허리펴기' },
-  neckPosture: { icon: 'tortoise.fill', label: '거북목 바르게하기' },
   fasting: { icon: 'figure.stand', label: '체중관리' },
   water: { icon: 'drop.fill', label: '수분섭취' },
-  medicine: { icon: 'cross.case.fill', label: '약 복용' },
+  medicine: { icon: 'pills.fill', label: '약 복용' },
   other: { icon: 'person.fill', label: '루틴 직접 설정' },
 };
 

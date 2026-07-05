@@ -1,8 +1,13 @@
 import {
+  extractMedicineConfigFromRaw,
   filterDayPlanFlowBlocks,
   formatHhmmClockKo,
+  HEALTH_INTAKE_CATEGORY_KEY,
+  HEALTH_INTAKE_LABEL_KO,
+  isHealthIntakeRelatedCategoryKey,
   normalizeMedicineDetailConfig,
   parseHHmmToMinutes,
+  resolveBlockCategoryKey,
   useDayPlanStore,
 } from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
@@ -43,9 +48,20 @@ function collectFromBlocks(): CollectedSlot[] {
   const out: CollectedSlot[] = [];
 
   for (const b of filterDayPlanFlowBlocks(blocks)) {
-    if (b.category.trim() !== MEDICINE_CATEGORY_LABEL) continue;
-    const raw = loadGoalDetailBlockConfig(b.id) ?? loadGoalDetailCategoryConfig('medicine');
-    const cfg = normalizeMedicineDetailConfig(raw ?? {});
+    const categoryKey = resolveBlockCategoryKey(b);
+    const categoryLabel = b.category.trim();
+    const isMedicineBlock =
+      categoryKey === HEALTH_INTAKE_CATEGORY_KEY ||
+      categoryKey === 'medicine' ||
+      categoryLabel === MEDICINE_CATEGORY_LABEL ||
+      categoryLabel === HEALTH_INTAKE_LABEL_KO;
+    if (!isMedicineBlock) continue;
+    const raw =
+      loadGoalDetailBlockConfig(b.id) ??
+      (isHealthIntakeRelatedCategoryKey(categoryKey)
+        ? loadGoalDetailCategoryConfig(HEALTH_INTAKE_CATEGORY_KEY)
+        : loadGoalDetailCategoryConfig('medicine'));
+    const cfg = extractMedicineConfigFromRaw(raw ?? {});
 
     const parts: Array<{
       part: DosePart;

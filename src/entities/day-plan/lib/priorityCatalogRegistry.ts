@@ -6,63 +6,17 @@ import {
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 
 /** 담기·나만의 탭 공통 — 카탈로그에서 숨기는 표준 키 */
-export const CATALOG_REMOVED_KEYS = new Set<string>([
-  'other',
-  'vitamins',
-  'posture',
-  'workout',
-  'walking',
-  'yoga',
-  'sleep',
-  'breathing',
-  'skincare',
-  'eyerest',
-  'language',
-  'creative',
-  'pomodoro',
-  'review',
-  'news',
-  'organize',
-  'podcast',
-  'inbox',
-  'work',
-  'coding',
-]);
+export const CATALOG_REMOVED_KEYS = new Set<string>(['other']);
 
-/** 표준 카테고리 전체 정의(레거시 키 포함). UI 메타는 `dayPlanEditorShared` */
+/** 제거된 표준 키 — 기존 저장 데이터 마이그레이션용 */
+export const RETIRED_STANDARD_CATALOG_KEYS = new Set<string>(['meditation', 'water', 'medicine']);
+
+/** 표준 카테고리 전체 정의. UI 메타는 `dayPlanEditorShared` */
 export const PRIORITY_CATALOG_ALL_STANDARD_KEYS = [
-  'water',
-  'medicine',
-  'vitamins',
+  'healthIntake',
   'fasting',
-  'stretching',
-  'straightenBack',
-  'neckPosture',
-  'posture',
-  'meditation',
-  'workout',
-  'walking',
-  'yoga',
-  'sleep',
-  'breathing',
-  'skincare',
-  'eyerest',
   'reading',
-  'study',
-  'planning',
-  'writing',
-  'language',
-  'creative',
-  'deepwork',
-  'journal',
-  'pomodoro',
-  'review',
-  'news',
-  'organize',
-  'podcast',
-  'inbox',
   'work',
-  'coding',
   'other',
 ] as const;
 

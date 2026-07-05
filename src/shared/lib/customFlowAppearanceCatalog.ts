@@ -14,6 +14,7 @@ export const CUSTOM_FLOW_ICON_OPTIONS = [
   'drop.fill',
   'cross.case.fill',
   'pill.fill',
+  'pills.fill',
   'figure.stand',
   'figure.run',
   'figure.yoga',

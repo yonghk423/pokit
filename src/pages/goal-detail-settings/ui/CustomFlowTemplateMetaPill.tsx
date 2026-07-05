@@ -1,0 +1,38 @@
+import { StyleSheet, View } from 'react-native';
+
+import {
+  CUSTOM_FLOW_TEMPLATE_LABELS,
+  resolveCustomFlowTemplateKey,
+} from '@entities/day-plan';
+import { ThemedText } from '@shared/ui/themed-text';
+
+type Props = {
+  dataConfig: unknown;
+  ink: string;
+  line: string;
+};
+
+export function CustomFlowTemplateMetaPill({ dataConfig, ink, line }: Props) {
+  const templateKey = resolveCustomFlowTemplateKey(dataConfig);
+  const label = CUSTOM_FLOW_TEMPLATE_LABELS[templateKey];
+
+  return (
+    <View style={[styles.pill, { borderColor: line }]}>
+      <ThemedText style={[styles.text, { color: ink }]}>루틴 방식 · {label}</ThemedText>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  pill: {
+    alignSelf: 'flex-start',
+    borderWidth: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  text: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+});

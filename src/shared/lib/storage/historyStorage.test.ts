@@ -1,10 +1,8 @@
 import { localStorageClient } from './localStorageClient';
 import {
   clearHistoryStorage,
-  loadHistoryAchievements,
   loadHistoryDailyStats,
   loadHistoryMeta,
-  saveHistoryAchievements,
   saveHistoryDailyStats,
   saveHistoryMeta,
 } from './historyStorage';
@@ -65,30 +63,17 @@ describe('historyStorage', () => {
     expect(loadHistoryDailyStats()[0]?.completedFlowCount).toBe(3);
   });
 
-  it('filters invalid achievements', () => {
-    saveHistoryAchievements([
-      {
-        id: 'a1',
-        kind: 'streak',
-        unlockedAt: '2025-05-20T00:00:00.000Z',
-        title: '3일 연속',
-      },
-      {
-        id: '',
-        kind: 'minutes',
-        unlockedAt: '2025-05-21T00:00:00.000Z',
-        title: '무효',
-      },
-    ]);
-    expect(loadHistoryAchievements()).toHaveLength(1);
-    expect(loadHistoryAchievements()[0]?.id).toBe('a1');
-  });
-
   it('persists meta and clears all history keys', () => {
     saveHistoryMeta({ lastUpdatedAt: '2025-05-26T12:00:00.000Z', schemaVersion: 1 });
     expect(loadHistoryMeta()?.schemaVersion).toBe(1);
     clearHistoryStorage();
     expect(loadHistoryMeta()).toBeNull();
     expect(localStorageClient.getJson(StorageKeys.historyDailyStats)).toBeNull();
+  });
+
+  it('clears legacy achievement keys on clearHistoryStorage', () => {
+    localStorageClient.setJson('pokit:history-achievements', { v: 1, rows: [] });
+    clearHistoryStorage();
+    expect(localStorageClient.getJson('pokit:history-achievements')).toBeNull();
   });
 });

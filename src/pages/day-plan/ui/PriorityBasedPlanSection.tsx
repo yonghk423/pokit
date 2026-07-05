@@ -11,13 +11,13 @@ import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   UIManager,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import Reanimated, { Easing, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
@@ -64,7 +64,7 @@ import { registerOtherCategoryResolverFromStorage } from '@features/other-catego
 import { PriorityOrderRow } from '@widgets/day-plan-priority-order';
 import { SpineScheduleEditSheet, SpineTimelineView } from '@widgets/day-plan-spine-timeline';
 import type { SpineScheduleEditDraft } from '@widgets/day-plan-spine-timeline';
-import { MealSlotTimelineView } from '@widgets/day-plan-meal-slot-timeline';
+import { MealSlotScheduleEditButton, MealSlotTimelineView } from '@widgets/day-plan-meal-slot-timeline';
 import { buildRoutineTabPickerSections, buildAddablePriorityCatalogSections } from '../lib/priorityCatalog';
 import {
   formatDateKeyCompactKo,
@@ -82,7 +82,7 @@ import {
 } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { getPriorityCategoryGoalHint } from '../lib/priorityCategoryGoalHints';
-import { buildCategoryMealSlotOverrides, flattenPriorityMealSlotSectionEntries, hasExplicitMealSlotAssignments, inferMealSlotAfterEntryReorder, listPriorityItemsForMealSlotAssignmentSheet, listUnslottedPriorityItems, reorderFlatKeys, reorderMealSlotSectionEntries, resolvePriorityMealSlot, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
+import { buildCategoryMealSlotOverrides, flattenPriorityMealSlotSectionEntries, hasExplicitMealSlotAssignments, listPriorityItemsForMealSlotAssignmentSheet, listUnslottedPriorityItems, reorderFlatKeys, reorderMealSlotSectionEntries, resolvePriorityMealSlot, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
 import { DAY_MEAL_SLOT_LABEL } from '../lib/priorityMealSlotSections';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
@@ -919,6 +919,12 @@ export function PriorityBasedPlanSection({
 
   /** 목표 상세 저장소 기준 부가 한 줄 — 설정 화면에서 돌아올 때 갱신 */
   const [categoryHintTick, setCategoryHintTick] = useState(0);
+  /** 구간별 `isCurrent` — 시간대가 바뀔 때 갱신 */
+  const [mealSlotNowTick, setMealSlotNowTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setMealSlotNowTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
   const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
   useFocusEffect(
     useCallback(() => {
@@ -959,13 +965,7 @@ export function PriorityBasedPlanSection({
       fasting: '단식 목표 미설정',
       water: '섭취 목표 설정 안 함',
       medicine: '복용 슬롯 설정 안 함',
-      work: '작업 목표 미설정',
-      study: '학습 체크리스트 미작성',
-      planning: '정리 체크리스트 미작성',
-      writing: '글쓰기 체크리스트 미작성',
-      language: '언어 학습 체크리스트 미작성',
-      creative: '창작 체크리스트 미작성',
-      inbox: '정리 체크리스트 미작성',
+      work: '스터디 목표 미설정',
       other: '체크리스트 미작성',
     }),
     [],
@@ -998,6 +998,7 @@ export function PriorityBasedPlanSection({
     mergePrioritySectionsMealSlots,
     addPrioritySectionMealSlot,
     setPrioritySectionsMealSlots,
+    migrateSectionCompletionOnSlotMove,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
@@ -1016,12 +1017,14 @@ export function PriorityBasedPlanSection({
       mergePrioritySectionsMealSlots: s.mergePrioritySectionsMealSlots,
       addPrioritySectionMealSlot: s.addPrioritySectionMealSlot,
       setPrioritySectionsMealSlots: s.setPrioritySectionsMealSlots,
+      migrateSectionCompletionOnSlotMove: s.migrateSectionCompletionOnSlotMove,
     })),
   );
   const [lastAddedCategoryKey, setLastAddedCategoryKey] = useState<string | null>(null);
-  const [draggingPriorityKey, setDraggingPriorityKey] = useState<string | null>(null);
-  /** 순서 드래그 중·직후에만 Reanimated layout 전환 — 모드 전환 시 마지막 행만 움직이는 현상 방지 */
+  /** 순서 드래그 직후에만 Reanimated layout 전환 — 드래그 중 state 변경 시 제스처가 끊김 */
   const [priorityRowLayoutAnim, setPriorityRowLayoutAnim] = useState(false);
+  const priorityTimelineScrollRef = useRef<ScrollView>(null);
+  const priorityReorderDragActiveRef = useRef(false);
   const [mealSlotScheduleSheetOpen, setMealSlotScheduleSheetOpen] = useState(false);
   const [mealSlotScheduleFocusSlot, setMealSlotScheduleFocusSlot] = useState<DayMealSlot | null>(
     null,
@@ -1039,6 +1042,22 @@ export function PriorityBasedPlanSection({
     revision: mealSlotScheduleRevision,
   } = useDayMealSlotSchedule();
   const priorityBagRowHeightRef = useRef(52);
+
+  const setPriorityTimelineScrollEnabled = useCallback((enabled: boolean) => {
+    priorityTimelineScrollRef.current?.setNativeProps?.({ scrollEnabled: enabled });
+  }, []);
+
+  const lockPriorityTimelineScroll = useCallback(() => {
+    priorityReorderDragActiveRef.current = true;
+    setPriorityTimelineScrollEnabled(false);
+  }, [setPriorityTimelineScrollEnabled]);
+
+  const unlockPriorityTimelineScroll = useCallback(() => {
+    priorityReorderDragActiveRef.current = false;
+    if (!spineDragActive) {
+      setPriorityTimelineScrollEnabled(true);
+    }
+  }, [setPriorityTimelineScrollEnabled, spineDragActive]);
 
   const planBlocks = useDayPlanStore((s) => s.blocks);
   const fixedFlowSets = useFixedFlowSetsStore((s) => s.sets);
@@ -1087,6 +1106,16 @@ export function PriorityBasedPlanSection({
   useEffect(() => {
     setPriorityRowLayoutAnim(false);
   }, [layoutMode]);
+
+  useEffect(() => {
+    if (spineDragActive) {
+      setPriorityTimelineScrollEnabled(false);
+      return;
+    }
+    if (!priorityReorderDragActiveRef.current) {
+      setPriorityTimelineScrollEnabled(true);
+    }
+  }, [spineDragActive, setPriorityTimelineScrollEnabled]);
 
   const isPriorityRowCompleted = useCallback(
     (categoryKey: string) => {
@@ -1173,6 +1202,7 @@ export function PriorityBasedPlanSection({
     orderedSelectedItemsForDisplay,
     priorityOrderIndexByKey,
     categoryHintTick,
+    mealSlotNowTick,
     layoutMealSlotOverrides,
     mealSlotSchedule,
     mealSlotScheduleRevision,
@@ -1346,54 +1376,74 @@ export function PriorityBasedPlanSection({
     return translationY < 0 ? -steps : steps;
   }, []);
 
+  const movePriorityCategoryToSectionSlot = useCallback(
+    (categoryKey: string, fromSlot: DayMealSlot, toSlot: DayMealSlot) => {
+      if (fromSlot === toSlot) return;
+      const currentSlots = sectionsMealSlotMap.get(categoryKey) ?? [fromSlot];
+      const nextSlots = [
+        ...new Set([...currentSlots.filter((slot) => slot !== fromSlot), toSlot]),
+      ];
+      if (nextSlots.length === 0) return;
+      const changedInSet = useFixedFlowSetsStore
+        .getState()
+        .setCategoryMealSlotInAnySet(categoryKey, toSlot);
+      setPrioritySectionsMealSlots(categoryKey, nextSlots);
+      if (!changedInSet) {
+        setPriorityMealSlotOverride(categoryKey, toSlot);
+      }
+      migrateSectionCompletionOnSlotMove(categoryKey, fromSlot, toSlot);
+    },
+    [
+      migrateSectionCompletionOnSlotMove,
+      sectionsMealSlotMap,
+      setPriorityMealSlotOverride,
+      setPrioritySectionsMealSlots,
+    ],
+  );
+
   const commitPriorityDisplayReorderFromDrag = useCallback(
-    (categoryKey: string, translationY: number, fromSlot?: DayMealSlot) => {
+    (categoryKey: string, translationY: number, fromSlot?: DayMealSlot, targetSlot?: DayMealSlot) => {
       const parsed = parsePrioritySectionCompletionKey(categoryKey);
       const actualCategoryKey = parsed.categoryKey;
       const resolvedFromSlot = fromSlot ?? parsed.slot;
-      if (showSectionsView) {
-        const entries = slottedPriorityEntries;
-        const len = entries.length;
-        if (len < 2) return;
-        const from = resolvedFromSlot
-          ? entries.findIndex(
-              (entry) => entry.key === actualCategoryKey && entry.slot === resolvedFromSlot,
-            )
-          : entries.findIndex((entry) => entry.key === actualCategoryKey);
+      if (showSectionsView && resolvedFromSlot) {
+        const resolvedTarget = targetSlot ?? resolvedFromSlot;
+
+        if (resolvedTarget !== resolvedFromSlot) {
+          setPriorityRowLayoutAnim(true);
+          movePriorityCategoryToSectionSlot(actualCategoryKey, resolvedFromSlot, resolvedTarget);
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          return;
+        }
+
+        const entriesInSlot = slottedPriorityEntries.filter((entry) => entry.slot === resolvedFromSlot);
+        if (entriesInSlot.length < 2) return;
+        const from = entriesInSlot.findIndex((entry) => entry.key === actualCategoryKey);
         if (from < 0) return;
         const h = Math.max(36, priorityBagRowHeightRef.current);
         const delta = dragReorderDelta(translationY, h);
-        const to = Math.max(0, Math.min(len - 1, from + delta));
+        const to = Math.max(0, Math.min(entriesInSlot.length - 1, from + delta));
         if (to === from) return;
-        const movedEntries = reorderMealSlotSectionEntries(entries, from, to);
-        const dragFromSlot = resolvedFromSlot ?? entries[from]?.slot;
-        if (dragFromSlot) {
-          const nextSlot = inferMealSlotAfterEntryReorder(movedEntries, to, dragFromSlot);
-          if (nextSlot !== dragFromSlot) {
-            const currentSlots = sectionsMealSlotMap.get(actualCategoryKey) ?? [dragFromSlot];
-            const nextSlots = [
-              ...new Set([
-                ...currentSlots.filter((slot) => slot !== dragFromSlot),
-                nextSlot,
-              ]),
-            ];
-            const changedInSet = useFixedFlowSetsStore
-              .getState()
-              .setCategoryMealSlotInAnySet(actualCategoryKey, nextSlot);
-            setPrioritySectionsMealSlots(actualCategoryKey, nextSlots);
-            if (!changedInSet) {
-              setPriorityMealSlotOverride(actualCategoryKey, nextSlot);
-            }
-          }
-        }
-        const movedKeys: string[] = [];
-        for (const entry of movedEntries) {
-          if (!movedKeys.includes(entry.key)) movedKeys.push(entry.key);
-        }
-        const active = movedKeys.filter((k) => !isPriorityCategoryDoneForOrdering(k));
-        const done = movedKeys.filter((k) => isPriorityCategoryDoneForOrdering(k));
+        const reorderedInSlot = reorderMealSlotSectionEntries(entriesInSlot, from, to);
+        const slotKeySet = new Set(entriesInSlot.map((entry) => entry.key));
+        const firstSlotIndex = priorityCategoryOrder.findIndex((key) => slotKeySet.has(key));
+        if (firstSlotIndex < 0) return;
+        const before = priorityCategoryOrder.slice(0, firstSlotIndex);
+        const after = priorityCategoryOrder.slice(firstSlotIndex + entriesInSlot.length);
+        const nextOrder = [
+          ...before,
+          ...reorderedInSlot.map((entry) => entry.key),
+          ...after,
+        ];
+        const active = nextOrder.filter((k) => !isPriorityCategoryDoneForOrdering(k));
+        const done = nextOrder.filter((k) => isPriorityCategoryDoneForOrdering(k));
+        setPriorityRowLayoutAnim(true);
         setPriorityCategoryOrder([...active, ...done]);
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        return;
+      }
+
+      if (showSectionsView) {
         return;
       }
 
@@ -1410,6 +1460,7 @@ export function PriorityBasedPlanSection({
 
       const active = moved.filter((k) => !isPriorityRowCompleted(k));
       const done = moved.filter((k) => isPriorityRowCompleted(k));
+      setPriorityRowLayoutAnim(true);
       setPriorityCategoryOrder([...active, ...done]);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
@@ -1417,8 +1468,9 @@ export function PriorityBasedPlanSection({
       dragReorderDelta,
       isPriorityCategoryDoneForOrdering,
       isPriorityRowCompleted,
+      movePriorityCategoryToSectionSlot,
       orderedSelectedItemsForDisplay,
-      priorityOrderIndexByKey,
+      priorityCategoryOrder,
       sectionsMealSlotMap,
       setPriorityCategoryOrder,
       setPriorityMealSlotOverride,
@@ -1518,6 +1570,35 @@ export function PriorityBasedPlanSection({
       onOpenCategorySettings?.(categoryKey);
     },
     [onOpenCategorySettings],
+  );
+
+  const handleTimelineReorderDragActiveChange = useCallback(
+    (_key: string, active: boolean) => {
+      if (active) {
+        lockPriorityTimelineScroll();
+        return;
+      }
+      unlockPriorityTimelineScroll();
+    },
+    [lockPriorityTimelineScroll, unlockPriorityTimelineScroll],
+  );
+
+  const handleTimelineReorderItemDragEnd = useCallback(
+    (key: string, translationY: number, fromSlot: DayMealSlot, targetSlot: DayMealSlot) => {
+      commitPriorityDisplayReorderFromDrag(key, translationY, fromSlot, targetSlot);
+    },
+    [commitPriorityDisplayReorderFromDrag],
+  );
+
+  const handleBagReorderDragActiveChange = useCallback(
+    (_categoryKey: string, active: boolean) => {
+      if (active) {
+        lockPriorityTimelineScroll();
+        return;
+      }
+      unlockPriorityTimelineScroll();
+    },
+    [lockPriorityTimelineScroll, unlockPriorityTimelineScroll],
   );
 
   /** 라이트: 대표 톤은 `dayPlanPalette` 그레이(containerLow)·진한 글자(onSurface) — 순백·채도 높은 다크 면 아님 */
@@ -2094,61 +2175,100 @@ export function PriorityBasedPlanSection({
             <View
               style={[
                 styles.priorityTimelineHeader,
-                layoutMode === 'sections' && styles.priorityTimelineHeaderCompact,
                 { borderBottomColor: editorial.line },
               ]}>
-              {layoutMode === 'sections' ? (
-                <View style={styles.priorityTimelineHeaderActionsOnly}>
-                  <DayPlanLayoutModeTabs
-                    mode={layoutMode}
-                    onSelectMode={handleSelectLayoutMode}
-                    c={c}
-                    isDark={isDark}
-                    sectionsAvailable={unslottedItemsForLayout.length === 0}
-                    onSectionsBlockedPress={() => openUnassignedSlotSheet('sections')}
-                  />
-                </View>
-              ) : (
-                <>
               <View style={styles.priorityTimelineHeaderText}>
-                <ThemedText
-                  style={[styles.priorityTimelineTitle, { color: editorial.ink }]}
-                  lightColor={editorial.ink}
-                  darkColor={editorial.ink}
-                  numberOfLines={2}>
-                  {formatTimelineHeaderDateKo(todayKey)}
-                </ThemedText>
-                <View style={styles.priorityTimelineSubRow}>
-                  <ThemedText
-                    style={[styles.priorityTimelineSub, { color: editorial.muted }]}
-                    lightColor={editorial.muted}
-                    darkColor={editorial.muted}>
-                    {timelineDateIntro}
-                    {' · '}
-                  </ThemedText>
-                  <Pressable
-                    onPress={openPriorityTimeModal}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={`집중 구간 시간 설정, 현재 ${priorityWindowLine}`}
-                    accessibilityHint="탭하면 집중 구간 시간을 변경할 수 있어요"
-                    style={({ pressed }) => [pressed && { opacity: 0.65 }]}>
-                    <View style={styles.priorityTimelineTimeRow}>
-                      <IconSymbol name="clock" size={11} color={editorial.muted} />
+                {layoutMode === 'sections' ? (
+                  <>
+                    <View style={styles.priorityTimelineTitleRow}>
                       <ThemedText
-                        style={[
-                          styles.priorityTimelineSub,
-                          styles.priorityTimelineTimeTap,
-                          { color: editorial.ink },
-                        ]}
+                        style={[styles.priorityTimelineTitle, { color: editorial.ink }]}
                         lightColor={editorial.ink}
                         darkColor={editorial.ink}
                         numberOfLines={2}>
-                        {priorityWindowLine}
+                        {formatTimelineHeaderDateKo(todayKey)}
                       </ThemedText>
+                      <MealSlotScheduleEditButton
+                        palette={spineTimelinePalette}
+                        isDark={isDark}
+                        compact
+                        onPress={() => openMealSlotScheduleEditor()}
+                      />
                     </View>
-                  </Pressable>
-                </View>
+                    <View style={styles.priorityTimelineSubRow}>
+                      <ThemedText
+                        style={[styles.priorityTimelineSub, { color: editorial.muted }]}
+                        lightColor={editorial.muted}
+                        darkColor={editorial.muted}>
+                        {timelineDateIntro}
+                        {' · '}
+                      </ThemedText>
+                      <Pressable
+                        onPress={openPriorityTimeModal}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`집중 구간 시간 설정, 현재 ${priorityWindowLine}`}
+                        accessibilityHint="탭하면 집중 구간 시간을 변경할 수 있어요"
+                        style={({ pressed }) => [pressed && { opacity: 0.65 }]}>
+                        <View style={styles.priorityTimelineTimeRow}>
+                          <IconSymbol name="clock" size={11} color={editorial.muted} />
+                          <ThemedText
+                            style={[
+                              styles.priorityTimelineSub,
+                              styles.priorityTimelineTimeTap,
+                              { color: editorial.ink },
+                            ]}
+                            lightColor={editorial.ink}
+                            darkColor={editorial.ink}
+                            numberOfLines={2}>
+                            {priorityWindowLine}
+                          </ThemedText>
+                        </View>
+                      </Pressable>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <ThemedText
+                      style={[styles.priorityTimelineTitle, { color: editorial.ink }]}
+                      lightColor={editorial.ink}
+                      darkColor={editorial.ink}
+                      numberOfLines={2}>
+                      {formatTimelineHeaderDateKo(todayKey)}
+                    </ThemedText>
+                    <View style={styles.priorityTimelineSubRow}>
+                      <ThemedText
+                        style={[styles.priorityTimelineSub, { color: editorial.muted }]}
+                        lightColor={editorial.muted}
+                        darkColor={editorial.muted}>
+                        {timelineDateIntro}
+                        {' · '}
+                      </ThemedText>
+                      <Pressable
+                        onPress={openPriorityTimeModal}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`집중 구간 시간 설정, 현재 ${priorityWindowLine}`}
+                        accessibilityHint="탭하면 집중 구간 시간을 변경할 수 있어요"
+                        style={({ pressed }) => [pressed && { opacity: 0.65 }]}>
+                        <View style={styles.priorityTimelineTimeRow}>
+                          <IconSymbol name="clock" size={11} color={editorial.muted} />
+                          <ThemedText
+                            style={[
+                              styles.priorityTimelineSub,
+                              styles.priorityTimelineTimeTap,
+                              { color: editorial.ink },
+                            ]}
+                            lightColor={editorial.ink}
+                            darkColor={editorial.ink}
+                            numberOfLines={2}>
+                            {priorityWindowLine}
+                          </ThemedText>
+                        </View>
+                      </Pressable>
+                    </View>
+                  </>
+                )}
               </View>
               <View style={styles.priorityTimelineHeaderActions}>
                 <DayPlanLayoutModeTabs
@@ -2160,12 +2280,11 @@ export function PriorityBasedPlanSection({
                   onSectionsBlockedPress={() => openUnassignedSlotSheet('sections')}
                 />
               </View>
-                </>
-              )}
             </View>
             <ScrollView
+              ref={priorityTimelineScrollRef}
               nestedScrollEnabled
-              scrollEnabled={draggingPriorityKey == null && !spineDragActive}
+              scrollEnabled={!spineDragActive}
               showsVerticalScrollIndicator={false}
               style={styles.priorityTimelineScroll}
               contentContainerStyle={[
@@ -2182,22 +2301,12 @@ export function PriorityBasedPlanSection({
                   isDark={isDark}
                   isFocusStarted={isFocusStarted}
                   isItemCompleted={resolveTimelineItemCompleted}
-                  reorderEnabled={orderedSelectedItemsForDisplay.length >= 2}
-                  dateLabel={formatTimelineHeaderDateKo(todayKey)}
-                  onPressEditSchedule={() => openMealSlotScheduleEditor()}
+                  reorderEnabled={orderedSelectedItemsForDisplay.length >= 1}
                   onPressAddRoutine={openAddRoutineForSlot}
                   onToggleItemComplete={resolveTimelineCompletionToggle}
                   onOpenItemSettings={resolveTimelineCategorySettings}
-                  onReorderDragActiveChange={(key, active) => {
-                    setDraggingPriorityKey((prev) => {
-                      if (active) return key;
-                      if (prev === key) return null;
-                      return prev;
-                    });
-                  }}
-                  onReorderItemDragEnd={(key, translationY, fromSlot) => {
-                    commitPriorityDisplayReorderFromDrag(key, translationY, fromSlot);
-                  }}
+                  onReorderDragActiveChange={handleTimelineReorderDragActiveChange}
+                  onReorderItemDragEnd={handleTimelineReorderItemDragEnd}
                 />
               ) : layoutMode === 'spine' ? (
                 <SpineTimelineView
@@ -2463,12 +2572,7 @@ export function PriorityBasedPlanSection({
                                   key={rowKey}
                                   layout={priorityRowLayoutAnim ? PRIORITY_ROW_LAYOUT : undefined}
                                   exiting={priorityRowLayoutAnim ? PRIORITY_ROW_EXITING : undefined}
-                                  style={[
-                                    styles.priorityOrderRowAnimWrap,
-                                    draggingPriorityKey === cat.key
-                                      ? styles.priorityOrderRowAnimWrapDragging
-                                      : null,
-                                  ]}
+                                  style={styles.priorityOrderRowAnimWrap}
                                   onLayout={(e) => {
                                     const h = e.nativeEvent.layout.height;
                                     if (h > 0) {
@@ -2508,14 +2612,7 @@ export function PriorityBasedPlanSection({
                                     }
                                     onReorderDragActiveChange={
                                       allowBagReorder
-                                        ? (active) => {
-                                            if (active) setPriorityRowLayoutAnim(true);
-                                            setDraggingPriorityKey((prev) => {
-                                              if (active) return cat.key;
-                                              if (prev === cat.key) return null;
-                                              return prev;
-                                            });
-                                          }
+                                        ? (active) => handleBagReorderDragActiveChange(cat.key, active)
                                         : undefined
                                     }
                                     onSettings={
@@ -2655,7 +2752,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     width: '100%',
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   priorityTimelineOuter: {
     flex: 1,
@@ -2685,20 +2782,16 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  priorityTimelineHeaderCompact: {
-    justifyContent: 'flex-end',
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
-  priorityTimelineHeaderActionsOnly: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
   priorityTimelineHeaderText: {
     flex: 1,
     minWidth: 0,
     gap: 4,
+  },
+  priorityTimelineTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
   },
   priorityTimelineTitle: {
     fontSize: 18,
@@ -2736,6 +2829,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     width: '100%',
+    overflow: 'visible',
   },
   priorityTimelineScrollContent: {
     paddingHorizontal: 12,
@@ -2856,10 +2950,6 @@ const styles = StyleSheet.create({
   priorityOrderRowAnimWrap: {
     width: '100%',
     overflow: 'visible',
-  },
-  priorityOrderRowAnimWrapDragging: {
-    zIndex: 300,
-    elevation: 0,
   },
   /** 날짜(요일·일) 열과 같은 좌측 시작선 — 리스트를 그 아래 전체 너비로 */
   priorityInlineListUnderDate: {

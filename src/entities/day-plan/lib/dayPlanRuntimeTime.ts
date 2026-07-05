@@ -48,7 +48,7 @@ export function resolveCategoryKeyFromLabel(label: string): string | null {
   const fromRegistry = resolveRegisteredCategoryKeyByDisplayName(label);
   if (fromRegistry) return fromRegistry;
   if (t === '러닝') return 'other';
-  if (t === '업무' || t === '작업') return 'work';
+  if (t === '업무' || t === '작업' || t === '몰입' || t === '스터디') return 'work';
   if (t === '독서') return 'reading';
   if (t === '공부' || t === '공부·학습') return 'study';
   if (t === '스트레칭하기' || t === '스트레칭') return 'stretching';
@@ -83,6 +83,7 @@ export function resolveCategoryKeyFromLabel(label: string): string | null {
     return 'other';
   }
   if (t === '단식' || t === '체중관리') return 'fasting';
+  if (t === '건강을 위한 섭취') return 'healthIntake';
   if (t === '수분' || t === '수분섭취') return 'water';
   if (t === '약 복용') return 'medicine';
   if (t === '피트티스') return 'other';

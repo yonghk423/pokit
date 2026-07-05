@@ -11,25 +11,21 @@ export type HistoryDailyStatRow = {
   categoryCompletions?: Record<string, number>;
 };
 
-export type HistoryAchievementRow = {
-  id: string;
-  kind: 'streak' | 'minutes' | 'completion';
-  unlockedAt: string;
-  title: string;
-  description?: string;
-};
-
 export type HistoryMetaRow = {
   lastUpdatedAt: string;
   schemaVersion: 1;
 };
 
 type PersistedDaily = { v: 1; rows: HistoryDailyStatRow[] };
-type PersistedAchievements = { v: 1; rows: HistoryAchievementRow[] };
 type PersistedMeta = { v: 1; row: HistoryMetaRow };
 
 const MAX_DAILY_ROWS = 730;
-const MAX_ACHIEVEMENT_ROWS = 500;
+
+/** 제거된 배지 저장소 — clear 시 레거시 데이터 정리용 */
+const LEGACY_ACHIEVEMENT_KEYS = [
+  'pokit:history-achievements',
+  'lockflow:history-achievements',
+] as const;
 
 function clampInt(value: number, min = 0): number {
   const n = Math.floor(Number(value) || 0);
@@ -98,19 +94,6 @@ function normalizeDaily(row: HistoryDailyStatRow): HistoryDailyStatRow {
   };
 }
 
-function normalizeAchievement(row: HistoryAchievementRow): HistoryAchievementRow | null {
-  const id = row.id.trim();
-  const title = row.title.trim();
-  if (!id || !title) return null;
-  return {
-    id,
-    kind: row.kind,
-    unlockedAt: row.unlockedAt,
-    title,
-    description: row.description?.trim() || undefined,
-  };
-}
-
 export function loadHistoryDailyStats(): HistoryDailyStatRow[] {
   const raw = localStorageClient.getJson<PersistedDaily>(StorageKeys.historyDailyStats);
   if (!raw || raw.v !== 1 || !Array.isArray(raw.rows)) return [];
@@ -129,28 +112,6 @@ export function saveHistoryDailyStats(rows: HistoryDailyStatRow[]): void {
   }
   const deduped = [...map.values()].sort((a, b) => b.dateKey.localeCompare(a.dateKey)).slice(0, MAX_DAILY_ROWS);
   localStorageClient.setJson<PersistedDaily>(StorageKeys.historyDailyStats, { v: 1, rows: deduped });
-}
-
-export function loadHistoryAchievements(): HistoryAchievementRow[] {
-  const raw = localStorageClient.getJson<PersistedAchievements>(StorageKeys.historyAchievements);
-  if (!raw || raw.v !== 1 || !Array.isArray(raw.rows)) return [];
-  return raw.rows
-    .map((r) => normalizeAchievement(r))
-    .filter((r): r is HistoryAchievementRow => r !== null)
-    .sort((a, b) => a.unlockedAt.localeCompare(b.unlockedAt));
-}
-
-export function saveHistoryAchievements(rows: HistoryAchievementRow[]): void {
-  const map = new Map<string, HistoryAchievementRow>();
-  for (const row of rows) {
-    const normalized = normalizeAchievement(row);
-    if (!normalized) continue;
-    map.set(normalized.id, normalized);
-  }
-  const deduped = [...map.values()]
-    .sort((a, b) => b.unlockedAt.localeCompare(a.unlockedAt))
-    .slice(0, MAX_ACHIEVEMENT_ROWS);
-  localStorageClient.setJson<PersistedAchievements>(StorageKeys.historyAchievements, { v: 1, rows: deduped });
 }
 
 export function loadHistoryMeta(): HistoryMetaRow | null {
@@ -174,7 +135,8 @@ export function saveHistoryMeta(row: HistoryMetaRow): void {
 
 export function clearHistoryStorage(): void {
   localStorageClient.removeItem(StorageKeys.historyDailyStats);
-  localStorageClient.removeItem(StorageKeys.historyAchievements);
   localStorageClient.removeItem(StorageKeys.historyMeta);
+  for (const key of LEGACY_ACHIEVEMENT_KEYS) {
+    localStorageClient.removeItem(key);
+  }
 }
-

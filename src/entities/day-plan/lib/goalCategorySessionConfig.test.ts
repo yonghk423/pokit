@@ -2,19 +2,15 @@ import {
   emptyCategorySessionConfigs,
   getInitialFastingDataConfig,
   getInitialMedicineDataConfig,
-  getInitialMeditationDataConfig,
   getInitialOtherDataConfig,
   getInitialWaterDataConfig,
   getInitialWorkDataConfig,
-  getInitialYogaDataConfig,
   getOtherCategoryResolvedDisplayLabel,
   normalizeFastingDetailConfig,
   normalizeMedicineDetailConfig,
-  normalizeMeditationDetailConfig,
   normalizeOtherDetailConfig,
   normalizeWaterDetailConfig,
   normalizeWorkDetailConfig,
-  normalizeYogaDetailConfig,
   OTHER_CATEGORY_PICKER_FALLBACK_KO,
   readTrimmedOtherCustomDisplayNameFromRaw,
 } from './goalCategorySessionConfig';
@@ -30,22 +26,19 @@ describe('normalizeWorkDetailConfig', () => {
     const cfg = normalizeWorkDetailConfig({
       tasks: [{ id: '1', text: '  ', done: false }, { id: '2', text: '할 일', done: true }],
     });
-    expect(cfg.tasks).toHaveLength(1);
-    expect(cfg.tasks[0]!.text).toBe('할 일');
+    expect(cfg.tasks).toHaveLength(0);
+    expect(cfg.focusMemo).toBe('할 일');
   });
-});
 
-describe('normalizeMeditationDetailConfig', () => {
-  it('clamps session and elapsed', () => {
-    const cfg = normalizeMeditationDetailConfig({ sessionMin: 999, elapsedMin: 50 });
-    expect(cfg.sessionMin).toBe(180);
-    expect(cfg.elapsedMin).toBe(50);
-    expect(getInitialMeditationDataConfig()).toEqual({
-      displayName: '',
-      sessionMin: 15,
-      elapsedMin: 0,
-      summary: '',
-    });
+  it('normalizes pomodoro break minutes', () => {
+    const cfg = normalizeWorkDetailConfig({ studyMode: 'pomodoro', breakMin: 99 });
+    expect(cfg.breakMin).toBe(30);
+    expect(cfg.studyMode).toBe('pomodoro');
+  });
+
+  it('clears break minutes in free mode', () => {
+    const cfg = normalizeWorkDetailConfig({ studyMode: 'free', breakMin: 10 });
+    expect(cfg.breakMin).toBe(0);
   });
 });
 
@@ -71,13 +64,6 @@ describe('normalizeWaterDetailConfig', () => {
     expect(cfg.smartNotification).toBe(false);
     expect(cfg.reminderTimes).toEqual([]);
     expect(getInitialWaterDataConfig().reminderTimes).toEqual([]);
-  });
-});
-
-describe('normalizeYogaDetailConfig', () => {
-  it('defaults flow label', () => {
-    expect(normalizeYogaDetailConfig({}).flowLabel).toBe('루틴');
-    expect(getInitialYogaDataConfig().sessionMin).toBe(40);
   });
 });
 

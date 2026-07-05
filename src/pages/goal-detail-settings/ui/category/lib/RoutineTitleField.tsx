@@ -10,8 +10,8 @@ import type { goalDetailSettingsPalette } from './settingsPalette';
 export type RoutineRenameLockedReason = 'running' | 'today';
 
 const LOCK_MESSAGES: Record<RoutineRenameLockedReason, string> = {
-  running: '루틴 실행 중에는 변경할 수 없어요',
-  today: '오늘 일정에서는 이름을 변경할 수 없어요',
+  running: '루틴 실행 중에는 이름과 아이콘·스타일을 변경할 수 없어요',
+  today: '오늘 일정에서는 이름과 아이콘·스타일을 변경할 수 없어요',
 };
 
 type Palette = ReturnType<typeof goalDetailSettingsPalette>;

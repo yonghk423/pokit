@@ -5,16 +5,15 @@ import {
 } from './goalDetailChecklistCategoryKeys';
 
 describe('goalDetailChecklistCategoryKeys', () => {
-  it('identifies derived keys', () => {
-    expect(isGoalDetailChecklistDerivedCategoryKey('study')).toBe(true);
+  it('has no derived keys after standard routine cleanup', () => {
+    expect(GOAL_DETAIL_CHECKLIST_DERIVED_CATEGORY_KEYS).toEqual([]);
+    expect(isGoalDetailChecklistDerivedCategoryKey('study')).toBe(false);
     expect(isGoalDetailChecklistDerivedCategoryKey('reading')).toBe(false);
-    expect(GOAL_DETAIL_CHECKLIST_DERIVED_CATEGORY_KEYS).toContain('inbox');
-    expect(isGoalDetailChecklistDerivedCategoryKey('deepwork')).toBe(true);
   });
 
-  it('treats other and derived as checklist style', () => {
+  it('treats other and customFlow as checklist style', () => {
     expect(isGoalDetailChecklistStyleCategoryKey('other')).toBe(true);
-    expect(isGoalDetailChecklistStyleCategoryKey('journal')).toBe(true);
+    expect(isGoalDetailChecklistStyleCategoryKey('customFlow:abc12345')).toBe(false);
     expect(isGoalDetailChecklistStyleCategoryKey('water')).toBe(false);
   });
 });

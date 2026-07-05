@@ -1,8 +1,10 @@
 import {
   filterDayPlanFlowBlocks,
   formatHhmmClockKo,
+  extractWaterConfigFromRaw,
   normalizeWaterDetailConfig,
   parseHHmmToMinutes,
+  resolveBlockCategoryKey,
   useDayPlanStore,
 } from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
@@ -61,9 +63,16 @@ function collectSlots(): CollectedSlot[] {
   const byClock = new Map<string, CollectedSlot>();
 
   for (const b of filterDayPlanFlowBlocks(blocks)) {
-    if (b.category.trim() !== WATER_CATEGORY_LABEL) continue;
-    const raw = loadGoalDetailBlockConfig(b.id) ?? loadGoalDetailCategoryConfig('water');
-    const cfg = normalizeWaterDetailConfig(raw ?? {});
+    const categoryKey = resolveBlockCategoryKey(b);
+    const categoryLabel = b.category.trim();
+    const isWaterBlock =
+      categoryKey === 'water' ||
+      categoryLabel === WATER_CATEGORY_LABEL ||
+      categoryLabel === '수분';
+    if (!isWaterBlock) continue;
+    const raw =
+      loadGoalDetailBlockConfig(b.id) ?? loadGoalDetailCategoryConfig('water');
+    const cfg = extractWaterConfigFromRaw(raw ?? {});
     if (!cfg.smartNotification || cfg.reminderTimes.length === 0) continue;
 
     const firstLine = b.title?.trim().split('\n')[0]?.trim() ?? '';

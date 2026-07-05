@@ -35,13 +35,13 @@ const DEFAULT_SET_TEMPLATES: DefaultSetTemplate[] = [
     id: 'set_daily',
     name: '데일리 루틴',
     applyRule: 'daily',
-    categoryKeys: ['water', 'planning', 'deepwork', 'stretching'],
+    categoryKeys: ['healthIntake', 'reading', 'work'],
   },
   {
     id: 'set_weekend',
     name: '주말 루틴',
     applyRule: 'weekend',
-    categoryKeys: ['meditation', 'reading', 'journal'],
+    categoryKeys: ['fasting', 'reading'],
   },
 ];
 

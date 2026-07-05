@@ -18,14 +18,12 @@ import {
   createCustomFlowCategoryId,
   deleteCustomFlowCategory,
   dismissCatalogGroupWithItemReassign,
-  filterDayPlanFlowBlocks,
-  getInitialOtherDataConfig,
+  buildInitialCustomFlowDetailConfig,
+  type CustomFlowTemplateKey,
   isCustomFlowCategoryKey,
   isPriorityWindowEndedForToday,
   isSystemCatalogGroupKey,
   notifyFixedFlowApplyScheduleChanged,
-  resolveBlockCategoryKey,
-  resolveCategoryKeyFromLabel,
   useDayPlanDraftStore,
   useDayPlanStore,
   useFixedFlowSetsStore,
@@ -139,8 +137,6 @@ export function PriorityCatalogPage() {
     priorityCategoryOrder,
     setPriorityCategoryOrder,
     isFocusStarted,
-    completedFocusCategoryKeys,
-    planCompletionDismissedKeys,
     planMode,
     priorityStart,
     priorityEnd,
@@ -153,8 +149,6 @@ export function PriorityCatalogPage() {
       priorityCategoryOrder: s.priorityCategoryOrder,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
       isFocusStarted: s.isFocusStarted,
-      completedFocusCategoryKeys: s.completedFocusCategoryKeys,
-      planCompletionDismissedKeys: s.planCompletionDismissedKeys,
       planMode: s.planMode,
       priorityStart: s.priorityStart,
       priorityEnd: s.priorityEnd,
@@ -186,10 +180,7 @@ export function PriorityCatalogPage() {
     [],
   );
 
-  const planBlocks = useDayPlanStore((s) => s.blocks);
-  const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
-  const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
-
+  const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
 
@@ -229,19 +220,6 @@ export function PriorityCatalogPage() {
     });
   }, [customFlowEntries]);
 
-  const completedCategoryKeysFromPlan = useMemo(() => {
-    const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
-    const doneCategoryKeys = new Set<string>();
-    const flowBlocks = filterDayPlanFlowBlocks(planBlocks);
-    flowBlocks.forEach((block) => {
-      if (!doneBlockIds.has(block.id)) return;
-      const key = resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category ?? '');
-      if (key) doneCategoryKeys.add(key);
-    });
-    return [...doneCategoryKeys];
-  }, [planBlocks, completedBlockIds, skippedBlockIds]);
-
-  const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [createSheetGroupKey, setCreateSheetGroupKey] = useState<string | undefined>(undefined);
   const [editGroupSheet, setEditGroupSheet] = useState<{
     groupKey: string;
@@ -270,20 +248,22 @@ export function PriorityCatalogPage() {
       groupKey,
       icon,
       accentColor,
+      templateKey,
     }: {
       name: string;
       groupKey: string;
       icon: string;
       accentColor: string;
+      templateKey: CustomFlowTemplateKey;
     }) => {
       const id = createCustomFlowCategoryId();
       const safeGroupKey = resolveCatalogGroupKeyForPersist(groupKey);
-      const initial = getInitialOtherDataConfig();
       const trimmed = name.trim();
-      const next =
-        trimmed.length > 0
-          ? { ...initial, displayName: trimmed, icon, accentColor }
-          : { ...initial, icon, accentColor };
+      const next = buildInitialCustomFlowDetailConfig(templateKey, {
+        ...(trimmed.length > 0 ? { displayName: trimmed } : {}),
+        icon,
+        accentColor,
+      });
       saveGoalDetailCategoryConfig(id, next);
       appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
       registerOtherCategoryResolverFromStorage();
@@ -291,23 +271,12 @@ export function PriorityCatalogPage() {
       reloadCatalogData();
       setCreateSheetOpen(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.push({
+        pathname: '/goal-detail-settings',
+        params: { categoryKey: id, source: 'catalog' },
+      });
     },
-    [reloadCatalogData],
-  );
-
-  const isCatalogRowCompleted = useCallback(
-    (categoryKey: string) => {
-      if (completedFocusCategoryKeys.includes(categoryKey)) return true;
-      if (!isFocusStarted) return false;
-      if (planCompletionDismissedKeys.includes(categoryKey)) return false;
-      return completedCategoryKeysFromPlan.includes(categoryKey);
-    },
-    [
-      completedFocusCategoryKeys,
-      completedCategoryKeysFromPlan,
-      isFocusStarted,
-      planCompletionDismissedKeys,
-    ],
+    [reloadCatalogData, router],
   );
 
   const scrollBottomPad = useMemo(
@@ -564,7 +533,6 @@ export function PriorityCatalogPage() {
             editorial={editorial}
             priorityCategoryOrder={priorityCategoryOrder}
             isFocusStarted={isFocusStarted}
-            isCatalogRowCompleted={isCatalogRowCompleted}
             onCatalogTap={onCatalogTap}
             onOpenCategorySettings={onOpenCategorySettings}
             customFlowPickerItems={customFlowPickerItems}

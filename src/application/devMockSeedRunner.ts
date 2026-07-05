@@ -22,7 +22,6 @@ import { horizonCompletionMockSeed } from '@shared/lib/storage/devMockSeed/modul
 
 function reloadStoresAfterDevMockChange(): void {
   useHistoryStore.getState().reloadFromStorage();
-  useHistoryStore.getState().recomputeAchievements();
   useHorizonCompletionStore.getState().reloadFromStorage();
 
   const fixed = loadFixedFlowSetsState();

@@ -1,5 +1,6 @@
 import {
   buildPrioritySectionCompletionKey,
+  migrateCompletionKeyInList,
   parsePrioritySectionCompletionKey,
   toRoutineHistoryCategoryKey,
 } from './prioritySectionCompletionKey';
@@ -24,5 +25,15 @@ describe('prioritySectionCompletionKey', () => {
   it('treats plain keys without a meal slot suffix as category-only', () => {
     expect(parsePrioritySectionCompletionKey('water')).toEqual({ categoryKey: 'water' });
     expect(toRoutineHistoryCategoryKey('water')).toBe('water');
+  });
+
+  it('migrates slot-scoped completion keys in a list', () => {
+    expect(
+      migrateCompletionKeyInList(
+        ['stretching@dawn', 'water@morning'],
+        'stretching@dawn',
+        'stretching@lunch',
+      ),
+    ).toEqual(['water@morning', 'stretching@lunch']);
   });
 });

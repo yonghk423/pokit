@@ -1,10 +1,8 @@
 export const StorageKeys = {
   settings: 'pokit:settings',
   dayPlan: 'pokit:day-plan',
-  /** 히스토리 일별 지표(집중 시간/완료 수/카테고리 분포) */
+  /** 히스토리 일별 지표(완료 수/카테고리별 달성) */
   historyDailyStats: 'pokit:history-daily-stats',
-  /** 배지/마일스톤 달성 내역 */
-  historyAchievements: 'pokit:history-achievements',
   /** 히스토리 메타(최근 계산 시각/버전 등) */
   historyMeta: 'pokit:history-meta',
   goalDetailSettings: 'pokit:goal-detail-settings',
@@ -54,7 +52,6 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   settings: 'lockflow:settings',
   dayPlan: 'lockflow:day-plan',
   historyDailyStats: 'lockflow:history-daily-stats',
-  historyAchievements: 'lockflow:history-achievements',
   historyMeta: 'lockflow:history-meta',
   goalDetailSettings: 'lockflow:goal-detail-settings',
   priorityCatalogFixedRoutines: 'lockflow:priority-catalog-fixed-routines',

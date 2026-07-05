@@ -552,7 +552,7 @@ export function DayPlanPage() {
   }, []);
 
   /**
-   * 우선순위 모드: 일정 블록·Live Activity는 **「오늘 루틴 시작」FAB**에서만 시작한다.
+   * 우선순위 모드: 담기에 루틴이 있으면 집중 세션을 자동으로 연다.
    * 적용일·집중 구간 밖이거나 담기가 비면 집중 상태·Live Activity를 자동으로 정리한다.
    */
   const endFocusedLiveActivity = useCallback(() => {
@@ -661,47 +661,23 @@ export function DayPlanPage() {
     endFocusedLiveActivity,
   ]);
 
-  const { registerRoutineStartFab, registerPrimaryAction } = useDayPlanTabBridge();
-
-  /** 탭 위 플로팅 — 우선순위·구간 안·아직 시작 전일 때만 FAB 노출 */
+  /** 담기·루틴 탭에서 항목이 선택되면 시작 버튼 없이 바로 집중 세션을 연다 */
   useEffect(() => {
-    const idleFabMeta = {
-      visible: false,
-      disabled: true,
-      label: '오늘 루틴 시작',
-    } as const;
+    if (planMode !== 'priority') return;
+    if (isFocusStarted) return;
+    if (priorityCategoryOrder.length === 0) return;
 
-    if (planMode !== 'priority') {
-      registerRoutineStartFab(null, idleFabMeta);
-      return;
-    }
+    onSaveRef.current();
+  }, [planMode, isFocusStarted, priorityCategoryOrder]);
 
-    const visible = !isFocusStarted;
+  const { registerPrimaryAction } = useDayPlanTabBridge();
 
-    registerRoutineStartFab(
-      () => {
-        onSaveRef.current();
-      },
-      {
-        visible,
-        disabled: !visible || priorityCategoryOrder.length === 0,
-        label: '오늘 루틴 시작',
-      },
-    );
-  }, [
-    planMode,
-    registerRoutineStartFab,
-    priorityCategoryOrder.length,
-    isFocusStarted,
-  ]);
-
-  /** 마운트 해제 시에만 FAB·primary 를 idle로 되돌림 */
+  /** 마운트 해제 시 primary 를 idle로 되돌림 */
   useEffect(() => {
     return () => {
-      registerRoutineStartFab(null, { visible: false, disabled: true, label: '오늘 루틴 시작' });
       registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
     };
-  }, [registerRoutineStartFab, registerPrimaryAction]);
+  }, [registerPrimaryAction]);
 
   useEffect(() => {
     if (planMode === 'priority') {

@@ -1,101 +1,37 @@
-import type { GoalDetailChecklistDerivedCategoryKey } from '@entities/day-plan';
-
-import { isCustomFlowCategoryKey } from '@entities/day-plan';
+import {
+  isCustomFlowCategoryKey,
+  resolveCustomFlowTemplateKey,
+  type CustomFlowCategoryKey,
+  type CustomFlowTemplateKey,
+} from '@entities/day-plan';
+import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 
 import type { GoalDetailCategoryKey } from '../../model/types';
 
 import {
-  NeckPostureSettings,
-  StraightenBackSettings,
-  StretchingSettings,
-} from './body-habit-checklist';
-import { FastingSettings, getInitialFastingDataConfig } from './fasting';
-import { MeditationSettings, getInitialMeditationDataConfig } from './meditation';
-import { MedicineSettings, getInitialMedicineDataConfig } from './medicine';
+  CounterSettings,
+  FocusSettings,
+  HabitSettings,
+  JournalSettings,
+  ReminderSettings,
+  getInitialCounterDataConfig,
+  getInitialFocusDataConfig,
+  getInitialHabitDataConfig,
+  getInitialJournalDataConfig,
+  getInitialReminderDataConfig,
+} from './custom-templates';
+import { MeasurementSettings, getInitialMeasurementDataConfig } from './measurement';
 import { OtherSettings, getInitialOtherDataConfig } from './other';
-import { ReadingSettings, getInitialReadingDataConfig } from './reading';
 import type { GoalDetailCategoryModule } from './types';
-import { WaterSettings, getInitialWaterDataConfig } from './water';
+import { FastingSettings, getInitialFastingDataConfig } from './fasting';
+import { HealthIntakeSettings, getInitialHealthIntakeDataConfig } from './health-intake';
+import { ReadingSettings, getInitialReadingDataConfig } from './reading';
 import { WorkSettings, getInitialWorkDataConfig } from './work';
-import { YogaSettings, getInitialYogaDataConfig } from './yoga';
 
-/** 체크리스트형 목표 상세 — `other`와 동일 UI·저장 구조, 키만 분리 */
-const CHECKLIST_STYLE_CATEGORY_MODULES: Record<
-  GoalDetailChecklistDerivedCategoryKey,
-  GoalDetailCategoryModule
-> = {
-  study: {
-    key: 'study',
-    titleKo: '공부·학습',
-    getInitialDataConfig: getInitialOtherDataConfig,
-    Settings: OtherSettings,
-  },
-  stretching: {
-    key: 'stretching',
-    titleKo: '스트레칭하기',
-    getInitialDataConfig: getInitialOtherDataConfig,
-    Settings: StretchingSettings,
-  },
-  straightenBack: {
-    key: 'straightenBack',
-    titleKo: '허리펴기',
-    getInitialDataConfig: getInitialOtherDataConfig,
-    Settings: StraightenBackSettings,
-  },
-  neckPosture: {
-    key: 'neckPosture',
-    titleKo: '거북목 바르게하기',
-    getInitialDataConfig: getInitialOtherDataConfig,
-    Settings: NeckPostureSettings,
-  },
-  planning: {
-    key: 'planning',
-    titleKo: '하루·주간 정리',
-    getInitialDataConfig: getInitialOtherDataConfig,
-    Settings: OtherSettings,
-  },
-  writing: {
-    key: 'writing',
-    titleKo: '글쓰기',
-    getInitialDataConfig: getInitialOtherDataConfig,
-    Settings: OtherSettings,
-  },
-  journal: {
-    key: 'journal',
-    titleKo: '일기',
-    getInitialDataConfig: getInitialOtherDataConfig,
-    Settings: OtherSettings,
-  },
-  language: {
-    key: 'language',
-    titleKo: '언어 학습',
-    getInitialDataConfig: getInitialOtherDataConfig,
-    Settings: OtherSettings,
-  },
-  creative: {
-    key: 'creative',
-    titleKo: '창작·아이디어',
-    getInitialDataConfig: getInitialOtherDataConfig,
-    Settings: OtherSettings,
-  },
-  inbox: {
-    key: 'inbox',
-    titleKo: '메일·소통 정리',
-    getInitialDataConfig: getInitialOtherDataConfig,
-    Settings: OtherSettings,
-  },
-  deepwork: {
-    key: 'deepwork',
-    titleKo: '딥 워크',
-    getInitialDataConfig: getInitialOtherDataConfig,
-    Settings: OtherSettings,
-  },
-};
-
-const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
+const registry: Record<Exclude<GoalDetailCategoryKey, CustomFlowCategoryKey>, GoalDetailCategoryModule> = {
   work: {
     key: 'work',
-    titleKo: '작업',
+    titleKo: '스터디',
     getInitialDataConfig: getInitialWorkDataConfig,
     Settings: WorkSettings,
   },
@@ -105,35 +41,17 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
     getInitialDataConfig: getInitialReadingDataConfig,
     Settings: ReadingSettings,
   },
-  meditation: {
-    key: 'meditation',
-    titleKo: '명상',
-    getInitialDataConfig: getInitialMeditationDataConfig,
-    Settings: MeditationSettings,
-  },
-  yoga: {
-    key: 'yoga',
-    titleKo: '요가',
-    getInitialDataConfig: getInitialYogaDataConfig,
-    Settings: YogaSettings,
-  },
   fasting: {
     key: 'fasting',
     titleKo: '체중관리',
     getInitialDataConfig: getInitialFastingDataConfig,
     Settings: FastingSettings,
   },
-  water: {
-    key: 'water',
-    titleKo: '수분섭취',
-    getInitialDataConfig: getInitialWaterDataConfig,
-    Settings: WaterSettings,
-  },
-  medicine: {
-    key: 'medicine',
-    titleKo: '약 복용',
-    getInitialDataConfig: getInitialMedicineDataConfig,
-    Settings: MedicineSettings,
+  healthIntake: {
+    key: 'healthIntake',
+    titleKo: '건강을 위한 섭취',
+    getInitialDataConfig: getInitialHealthIntakeDataConfig,
+    Settings: HealthIntakeSettings,
   },
   other: {
     key: 'other',
@@ -141,13 +59,70 @@ const registry: Record<GoalDetailCategoryKey, GoalDetailCategoryModule> = {
     getInitialDataConfig: getInitialOtherDataConfig,
     Settings: OtherSettings,
   },
-  ...CHECKLIST_STYLE_CATEGORY_MODULES,
+};
+
+const customFlowTemplateModules: Record<
+  Exclude<CustomFlowTemplateKey, 'checklist'>,
+  Omit<GoalDetailCategoryModule, 'key'>
+> = {
+  measurement: {
+    titleKo: '값 기록',
+    getInitialDataConfig: getInitialMeasurementDataConfig,
+    Settings: MeasurementSettings,
+  },
+  habit: {
+    titleKo: '오늘 했/안 했',
+    getInitialDataConfig: getInitialHabitDataConfig,
+    Settings: HabitSettings,
+  },
+  counter: {
+    titleKo: '횟수 채우기',
+    getInitialDataConfig: getInitialCounterDataConfig,
+    Settings: CounterSettings,
+  },
+  focus: {
+    titleKo: '집중 시간',
+    getInitialDataConfig: getInitialFocusDataConfig,
+    Settings: FocusSettings,
+  },
+  journal: {
+    titleKo: '한 줄 기록',
+    getInitialDataConfig: getInitialJournalDataConfig,
+    Settings: JournalSettings,
+  },
+  reminder: {
+    titleKo: '시간 알림',
+    getInitialDataConfig: getInitialReminderDataConfig,
+    Settings: ReminderSettings,
+  },
 };
 
 export function getGoalDetailCategoryModule(key: GoalDetailCategoryKey): GoalDetailCategoryModule {
   if (isCustomFlowCategoryKey(key)) {
-    const base = registry.other;
-    return { ...base, key };
+    return resolveCustomFlowGoalDetailModule(key);
   }
-  return registry[key as keyof typeof registry];
+  return registry[key];
+}
+
+export function resolveCustomFlowGoalDetailModule(
+  key: CustomFlowCategoryKey,
+  rawConfig?: unknown,
+): GoalDetailCategoryModule {
+  const raw = rawConfig ?? loadGoalDetailCategoryConfig(key);
+  const templateKey = resolveCustomFlowTemplateKey(raw);
+  if (templateKey === 'checklist') {
+    return { ...registry.other, key };
+  }
+  const mod = customFlowTemplateModules[templateKey];
+  return { ...mod, key };
+}
+
+export function resolveGoalDetailModuleForTarget(
+  categoryKey: GoalDetailCategoryKey,
+  dataConfig?: unknown,
+): GoalDetailCategoryModule {
+  if (isCustomFlowCategoryKey(categoryKey)) {
+    return resolveCustomFlowGoalDetailModule(categoryKey, dataConfig);
+  }
+  return getGoalDetailCategoryModule(categoryKey);
 }

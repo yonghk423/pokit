@@ -1,5 +1,4 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { SymbolViewProps } from 'expo-symbols';
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -8,14 +7,16 @@ import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import { WEEKDAY_LABELS, type WeeklyFlowHistoryRow } from '../lib/buildWeeklyFlowHistory';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
+import { FlowHistoryMetaLine } from './FlowHistoryMetaLine';
+
+const WEEKDAY_DOT_MAX = 20;
 
 type Props = {
   row: WeeklyFlowHistoryRow;
   palette: FlowHistoryPalette;
-  onPressDetail?: () => void;
 };
 
-export function WeeklyFlowHistoryCard({ row, palette, onPressDetail }: Props) {
+export function WeeklyFlowHistoryCard({ row, palette }: Props) {
   const iconColor = activeIconColorByCategory(row.categoryKey);
 
   return (
@@ -23,73 +24,46 @@ export function WeeklyFlowHistoryCard({ row, palette, onPressDetail }: Props) {
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
           <View style={[styles.iconWrap, { backgroundColor: palette.weekdayIdle }]}>
-            <IconSymbol name={row.icon as SymbolViewProps['name']} size={16} color={iconColor} />
+            <IconSymbol name={row.icon as SymbolViewProps['name']} size={14} color={iconColor} />
           </View>
           <View style={styles.titleTextWrap}>
             <ThemedText style={[styles.title, { color: palette.ink }]} numberOfLines={1}>
               {row.label}
             </ThemedText>
-            {row.timeLabel ? (
-              <View style={styles.timeInline}>
-                <MaterialIcons name="schedule" size={12} color={palette.muted} />
-                <ThemedText style={[styles.timeText, { color: palette.muted }]} numberOfLines={1}>
-                  {row.timeLabel}
-                </ThemedText>
-              </View>
-            ) : null}
+            <FlowHistoryMetaLine
+              timeLabel={row.timeLabel}
+              startDateLabel={row.startDateLabel}
+              muted={palette.muted}
+            />
           </View>
         </View>
-        {onPressDetail ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${row.label} 상세 보기`}
-            hitSlop={8}
-            onPress={onPressDetail}
-            style={({ pressed }) => [styles.detailBtn, pressed && styles.pressed]}>
-            <ThemedText style={[styles.detailLabel, { color: palette.muted }]}>상세</ThemedText>
-          </Pressable>
-        ) : (
-          <ThemedText style={[styles.weekCount, { color: palette.muted }]}>
-            {row.completedDays}/7
-          </ThemedText>
-        )}
-      </View>
-
-      <View style={styles.weekdayRow}>
-        <View style={styles.weekdayTrack}>
-          {WEEKDAY_LABELS.map((label, index) => {
-            const done = row.weekdayDone[index] ?? false;
-            return (
-              <View key={label} style={styles.weekdayCol}>
-                <View
-                  style={[
-                    styles.weekdayDot,
-                    {
-                      borderColor: done ? palette.accent : palette.accentSoft,
-                      backgroundColor: done ? palette.accent : 'transparent',
-                    },
-                  ]}
-                />
-                <ThemedText
-                  style={[styles.weekdayLabel, { color: done ? palette.accent : palette.muted }]}>
-                  {label}
-                </ThemedText>
-              </View>
-            );
-          })}
-        </View>
-        {onPressDetail ? (
-          <ThemedText style={[styles.weekCount, { color: palette.muted }]}>
-            {row.completedDays}/7
-          </ThemedText>
-        ) : null}
-      </View>
-
-      {row.startDateLabel ? (
-        <ThemedText style={[styles.startDate, { color: palette.muted }]}>
-          시작일: {row.startDateLabel}
+        <ThemedText style={[styles.weekCount, { color: palette.muted }]}>
+          {row.completedDays}/7
         </ThemedText>
-      ) : null}
+      </View>
+
+      <View style={styles.weekdayTrack}>
+        {WEEKDAY_LABELS.map((label, index) => {
+          const done = row.weekdayDone[index] ?? false;
+          return (
+            <View key={label} style={styles.weekdayCol}>
+              <View
+                style={[
+                  styles.weekdayDot,
+                  {
+                    borderColor: done ? palette.accent : palette.accentSoft,
+                    backgroundColor: done ? palette.accent : 'transparent',
+                  },
+                ]}
+              />
+              <ThemedText
+                style={[styles.weekdayLabel, { color: done ? palette.accent : palette.muted }]}>
+                {label}
+              </ThemedText>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -99,99 +73,72 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 0,
     borderWidth: 2,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    gap: 5,
   },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: 6,
   },
   titleWrap: {
     flex: 1,
     minWidth: 0,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
+    alignItems: 'center',
+    gap: 6,
   },
   iconWrap: {
-    width: 30,
-    height: 30,
+    width: 24,
+    height: 24,
     borderRadius: 0,
     borderWidth: 2,
     borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   titleTextWrap: {
     flex: 1,
     minWidth: 0,
-    gap: 2,
+    gap: 1,
   },
   title: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: -0.25,
-    lineHeight: 19,
-  },
-  timeInline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  timeText: {
-    flex: 1,
-    fontSize: 11,
-    fontWeight: '600',
-    lineHeight: 14,
-  },
-  detailBtn: {
-    paddingHorizontal: 2,
-    paddingVertical: 0,
-  },
-  detailLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  weekdayRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: 6,
+    lineHeight: 17,
   },
   weekdayTrack: {
-    flex: 1,
+    width: '100%',
     flexDirection: 'row',
-    justifyContent: 'flex-start',
-    gap: 8,
+    gap: 3,
+    alignItems: 'flex-start',
   },
   weekdayCol: {
+    flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     gap: 2,
   },
   weekdayDot: {
-    width: 18,
-    height: 18,
+    width: WEEKDAY_DOT_MAX,
+    height: WEEKDAY_DOT_MAX,
     borderRadius: 0,
     borderWidth: 2,
   },
   weekdayLabel: {
     fontSize: 9,
     fontWeight: '700',
+    lineHeight: 11,
   },
   weekCount: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    minWidth: 26,
+    minWidth: 24,
     textAlign: 'right',
-  },
-  startDate: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  pressed: {
-    opacity: 0.72,
+    flexShrink: 0,
   },
 });

@@ -1,20 +1,8 @@
-export { dayHasCompletionActivity, getCategoryCompletions } from './lib/historyCompletionMetrics';
-export {
-  computeCategoryCompletionStreak,
-  formatCategoryStreakLabel,
-} from './lib/categoryCompletionStreak';
-export { buildWeeklyHeatMapCells } from './lib/buildWeeklyHeatMap';
-export { buildCategoryBreakdown } from './lib/buildCategoryBreakdown';
-export { buildConsistencyByWeekday } from './lib/buildConsistencyByWeekday';
+export { getCategoryCompletions, sumCategoryCompletions } from './lib/historyCompletionMetrics';
 export { useHistoryStore } from './model';
 export type {
-  HistoryAchievement,
-  HistoryAchievementKind,
-  HistoryCategoryBreakdownRow,
   HistoryDailyStat,
-  HistoryGrowthSummary,
-  HistoryHeatMapCell,
-  HistoryRange,
-  HistorySessionRecordInput, HistoryStoreState, HistoryWeekdayConsistencyRow
+  HistoryDailyStatInput,
+  HistorySessionRecordInput,
+  HistoryStoreState,
 } from './model';
-

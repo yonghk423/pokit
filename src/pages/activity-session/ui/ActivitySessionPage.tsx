@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import {
   blockDurationSec,
-  deriveReadingProgress,
+  deriveReadingBookProgress,
   emptyCategorySessionConfigs,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
@@ -19,13 +19,12 @@ import {
   isGoalDetailChecklistStyleCategoryKey,
   isOvernightPriorityWindow,
   normalizeFastingDetailConfig,
+  normalizeHealthIntakeDetailConfig,
   normalizeMedicineDetailConfig,
-  normalizeMeditationDetailConfig,
   normalizeOtherDetailConfig,
   normalizeReadingLiveActivityConfig,
   normalizeWaterDetailConfig,
   normalizeWorkDetailConfig,
-  normalizeYogaDetailConfig,
   parseHHmmToMinutes,
   parseNumberedFlowLines,
   readingDisplayTitle,
@@ -37,6 +36,7 @@ import {
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
+import { AladinAttributionLine, openAladinProductPage } from '@features/aladin-book-search';
 import {
   buildLiveActivityChecklistRows,
   buildLiveActivityPayloadForBlock,
@@ -57,6 +57,7 @@ import {
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
+import { CustomFlowActivitySession } from './CustomFlowActivitySession';
 import {
   ImmersionBottomControls,
   ImmersionCardShell,
@@ -214,6 +215,11 @@ export function ActivitySessionPage() {
   const timeRange = block ? formatBlockTimeRange(block) : '';
   const isQuickMemoSession = block?.blockOrigin === 'quickMemo';
 
+  const customFlowRawConfig = useMemo(() => {
+    if (!block || !isCustomFlowCategoryKey(categoryKey)) return null;
+    return loadGoalDetailBlockConfig(block.id) ?? loadGoalDetailCategoryConfig(categoryKey);
+  }, [block, categoryKey, goalDetailStorageTick]);
+
   useFocusEffect(
     useCallback(() => {
       registerOtherCategoryResolverFromStorage();
@@ -233,12 +239,12 @@ export function ActivitySessionPage() {
         return { ...base, reading: normalizeReadingLiveActivityConfig(raw) };
       case 'work':
         return { ...base, work: normalizeWorkDetailConfig(raw ?? {}) };
-      case 'meditation':
-        return { ...base, meditation: normalizeMeditationDetailConfig(raw ?? {}) };
-      case 'yoga':
-        return { ...base, yoga: normalizeYogaDetailConfig(raw ?? {}) };
       case 'fasting':
         return { ...base, fasting: normalizeFastingDetailConfig(raw ?? {}) };
+      case 'healthIntake': {
+        const hi = normalizeHealthIntakeDetailConfig(raw ?? {});
+        return { ...base, water: hi.water, medicine: hi.medicine };
+      }
       case 'water':
         return { ...base, water: normalizeWaterDetailConfig(raw ?? {}) };
       case 'medicine':
@@ -262,7 +268,7 @@ export function ActivitySessionPage() {
   }, [categoryKey, categoryConfigs.work]);
 
   useEffect(() => {
-    if (categoryKey !== 'water' || !categoryConfigs.water) {
+    if ((categoryKey !== 'water' && categoryKey !== 'healthIntake') || !categoryConfigs.water) {
       setWaterSessionDrankMl(null);
       return;
     }
@@ -273,7 +279,7 @@ export function ActivitySessionPage() {
     (deltaMl: number) => {
       if (
         !block ||
-        categoryKey !== 'water' ||
+        (categoryKey !== 'water' && categoryKey !== 'healthIntake') ||
         !categoryConfigs.water ||
         deltaMl <= 0
       ) {
@@ -284,8 +290,17 @@ export function ActivitySessionPage() {
         const base = prev ?? source.drankMl;
         const next = Math.max(0, Math.min(source.goalMl, base + deltaMl));
         const payload = normalizeWaterDetailConfig({ ...source, drankMl: next });
-        saveGoalDetailCategoryConfig('water', payload);
-        saveGoalDetailBlockConfig(block.id, payload);
+        if (categoryKey === 'healthIntake') {
+          const hi = normalizeHealthIntakeDetailConfig(
+            loadGoalDetailCategoryConfig('healthIntake') ?? {},
+          );
+          const merged = normalizeHealthIntakeDetailConfig({ ...hi, water: payload });
+          saveGoalDetailCategoryConfig('healthIntake', merged);
+          saveGoalDetailBlockConfig(block.id, merged);
+        } else {
+          saveGoalDetailCategoryConfig('water', payload);
+          saveGoalDetailBlockConfig(block.id, payload);
+        }
         return next;
       });
     },
@@ -435,11 +450,20 @@ export function ActivitySessionPage() {
       const nextTaken = Math.max(0, Math.min(totalDoses, source.takenCount + delta));
       if (nextTaken === source.takenCount) return;
       const payload = normalizeMedicineDetailConfig({ ...source, takenCount: nextTaken });
-      saveGoalDetailCategoryConfig('medicine', payload);
-      saveGoalDetailBlockConfig(block.id, payload);
+      if (categoryKey === 'healthIntake') {
+        const hi = normalizeHealthIntakeDetailConfig(
+          loadGoalDetailCategoryConfig('healthIntake') ?? {},
+        );
+        const merged = normalizeHealthIntakeDetailConfig({ ...hi, medicine: payload });
+        saveGoalDetailCategoryConfig('healthIntake', merged);
+        saveGoalDetailBlockConfig(block.id, merged);
+      } else {
+        saveGoalDetailCategoryConfig('medicine', payload);
+        saveGoalDetailBlockConfig(block.id, payload);
+      }
       setGoalDetailStorageTick((n) => n + 1);
     },
-    [block, categoryConfigs.medicine, isWaitingToStart],
+    [block, categoryConfigs.medicine, categoryKey, isWaitingToStart],
   );
 
   const onMedicineDoseCheck = useCallback(() => {
@@ -625,10 +649,10 @@ export function ActivitySessionPage() {
         muted={WK.muted}
         brand={WK.brand}
         aboutKicker={WK.aboutKicker}
-        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '작업 집중'}
+        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '스터디'}
         iconName="bag.fill"
         iconSize={28}
-        sessionKicker="작업 세션"
+        sessionKicker="스터디 세션"
         timerDisplay={
           <ThemedText
             style={waterStyles.timerHms}
@@ -649,7 +673,7 @@ export function ActivitySessionPage() {
             borderColor={WK.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
-            completeLabel="작업 완료"
+            completeLabel="스터디 완료"
           />
         }>
         <ImmersionCardShell borderColor={WK.border}>
@@ -708,7 +732,7 @@ export function ActivitySessionPage() {
               style={workStyles.checklistTitle}
               lightColor={CategoryImmersionTheme.work.onSurface}
               darkColor={CategoryImmersionTheme.work.onSurface}>
-              해야 할 작업 리스트
+              할 일 리스트
             </ThemedText>
             <ThemedText
               style={workStyles.checklistRemain}
@@ -764,7 +788,7 @@ export function ActivitySessionPage() {
                     </View>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={done ? '작업 체크 해제' : '작업 체크'}
+                      accessibilityLabel={done ? '할 일 체크 해제' : '할 일 체크'}
                       disabled={!useTaskChecklist}
                       onPress={() => {
                         if (!useTaskChecklist) return;
@@ -797,11 +821,20 @@ export function ActivitySessionPage() {
   if (enableCategoryTimedUi && categoryKey === 'reading' && !isQuickMemoSession && categoryConfigs.reading) {
     const readingCfg = categoryConfigs.reading;
     const timerSec = isWaitingToStart ? waitRemainingSec : remainingSec;
-    const bookTitle = readingDisplayTitle(activityTitle, readingCfg);
-    const pageRange = `${readingCfg.startPage}P ~ ${readingCfg.targetPage}P`;
-    const { pagesRead: pagesToRead, progressPct: readingProgressPct } = deriveReadingProgress(readingCfg);
     const R = CategoryImmersionTheme.reading;
-    const readTrack01 = Math.max(progress, Math.min(1, Math.max(0, readingProgressPct) / 100));
+    const sessionBooks =
+      readingCfg.books.length > 0
+        ? readingCfg.books
+        : [
+            {
+              id: 'legacy',
+              title: readingDisplayTitle(activityTitle, readingCfg),
+              startPage: readingCfg.startPage,
+              targetPage: readingCfg.targetPage,
+              aladin: readingCfg.aladinBook ?? null,
+            },
+          ];
+    const hasAladinBook = sessionBooks.some((book) => !!book.aladin);
 
     return (
       <SessionImmersionLayout
@@ -839,69 +872,116 @@ export function ActivitySessionPage() {
             completeLabel="독서 완료"
           />
         }>
-        <ImmersionCardShell borderColor={R.border}>
-          <ThemedText style={waterStyles.statLabel} lightColor={R.muted} darkColor={R.muted}>
-            오늘 읽기 구간
-          </ThemedText>
-          <View style={waterStyles.goalRow}>
-            <ThemedText style={waterStyles.goalValue} lightColor={R.onSurface} darkColor={R.onSurface}>
-              {pageRange}
-            </ThemedText>
-          </View>
-          <ThemedText style={waterStyles.metaLine} lightColor={R.muted} darkColor={R.muted} numberOfLines={2}>
-            {bookTitle}
-          </ThemedText>
-          <View style={waterStyles.hydrateTrack}>
-            <View
-              style={[
-                waterStyles.hydrateFill,
-                {
-                  width: `${Math.round(readTrack01 * 100)}%`,
-                  backgroundColor: READING_EMERALD,
-                  opacity: 0.45,
-                },
-              ]}
-            />
-          </View>
-        </ImmersionCardShell>
+        {sessionBooks.map((book) => {
+          const pageRange = `${book.startPage}P → ${book.targetPage}P`;
+          const { pagesRead: pagesToRead, progressPct: readingProgressPct } =
+            deriveReadingBookProgress(book);
+          const readTrack01 = Math.max(progress, Math.min(1, Math.max(0, readingProgressPct) / 100));
+
+          return (
+            <View key={book.id} style={waterStyles.readingBookBlock}>
+              <ImmersionCardShell borderColor={R.border}>
+                <ThemedText style={waterStyles.statLabel} lightColor={R.muted} darkColor={R.muted}>
+                  {sessionBooks.length > 1 ? book.title : '오늘 읽기 구간'}
+                </ThemedText>
+                <View style={waterStyles.goalRow}>
+                  <ThemedText style={waterStyles.goalValue} lightColor={R.onSurface} darkColor={R.onSurface}>
+                    {pageRange}
+                  </ThemedText>
+                </View>
+                {sessionBooks.length === 1 ? (
+                  <ThemedText
+                    style={waterStyles.metaLine}
+                    lightColor={R.muted}
+                    darkColor={R.muted}
+                    numberOfLines={2}>
+                    {book.title}
+                  </ThemedText>
+                ) : null}
+                {book.aladin?.link ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="알라딘에서 도서 보기"
+                    onPress={() => void openAladinProductPage(book.aladin!.link)}
+                    style={({ pressed }) => [waterStyles.aladinLinkBtn, pressed && { opacity: 0.72 }]}>
+                    <ThemedText
+                      style={waterStyles.aladinLinkText}
+                      lightColor={R.onSurface}
+                      darkColor={R.onSurface}>
+                      알라딘에서 보기
+                    </ThemedText>
+                  </Pressable>
+                ) : null}
+                <View style={waterStyles.hydrateTrack}>
+                  <View
+                    style={[
+                      waterStyles.hydrateFill,
+                      {
+                        width: `${Math.round(readTrack01 * 100)}%`,
+                        backgroundColor: READING_EMERALD,
+                        opacity: 0.45,
+                      },
+                    ]}
+                  />
+                </View>
+              </ImmersionCardShell>
+
+              <ImmersionSplitRow>
+                <ImmersionHalfCard borderColor={R.border}>
+                  <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
+                    시작 페이지
+                  </ThemedText>
+                  <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
+                    {String(book.startPage)}
+                  </ThemedText>
+                  <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
+                    p
+                  </ThemedText>
+                </ImmersionHalfCard>
+                <ImmersionHalfCard borderColor={R.border}>
+                  <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
+                    읽을 분량
+                  </ThemedText>
+                  <ThemedText style={waterStyles.halfValue} lightColor={R.accent} darkColor={R.accent}>
+                    {String(pagesToRead)}
+                  </ThemedText>
+                  <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
+                    p
+                  </ThemedText>
+                </ImmersionHalfCard>
+              </ImmersionSplitRow>
+
+              <ImmersionSplitRow>
+                <ImmersionHalfCard borderColor={R.border}>
+                  <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
+                    목표 페이지
+                  </ThemedText>
+                  <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
+                    {String(book.targetPage)}
+                  </ThemedText>
+                  <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
+                    p
+                  </ThemedText>
+                </ImmersionHalfCard>
+                <ImmersionHalfCard borderColor={R.border}>
+                  <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
+                    진행
+                  </ThemedText>
+                  <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
+                    {String(readingProgressPct)}
+                  </ThemedText>
+                  <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
+                    %
+                  </ThemedText>
+                </ImmersionHalfCard>
+              </ImmersionSplitRow>
+            </View>
+          );
+        })}
+
+        {hasAladinBook ? <AladinAttributionLine color={R.muted} compact /> : null}
 
         <ImmersionSplitRow>
-          <ImmersionHalfCard borderColor={R.border}>
-            <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
-              시작 페이지
-            </ThemedText>
-            <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
-              {String(readingCfg.startPage)}
-            </ThemedText>
-            <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
-              p
-            </ThemedText>
-          </ImmersionHalfCard>
-          <ImmersionHalfCard borderColor={R.border}>
-            <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
-              읽을 분량
-            </ThemedText>
-            <ThemedText style={waterStyles.halfValue} lightColor={R.accent} darkColor={R.accent}>
-              {String(pagesToRead)}
-            </ThemedText>
-            <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
-              p
-            </ThemedText>
-          </ImmersionHalfCard>
-        </ImmersionSplitRow>
-
-        <ImmersionSplitRow>
-          <ImmersionHalfCard borderColor={R.border}>
-            <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
-              목표 페이지
-            </ThemedText>
-            <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
-              {String(readingCfg.targetPage)}
-            </ThemedText>
-            <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
-              p
-            </ThemedText>
-          </ImmersionHalfCard>
           <ImmersionHalfCard borderColor={R.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
               루틴 진행
@@ -911,6 +991,17 @@ export function ActivitySessionPage() {
             </ThemedText>
             <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
               %
+            </ThemedText>
+          </ImmersionHalfCard>
+          <ImmersionHalfCard borderColor={R.border}>
+            <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
+              도서 수
+            </ThemedText>
+            <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
+              {String(sessionBooks.length)}
+            </ThemedText>
+            <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
+              권
             </ThemedText>
           </ImmersionHalfCard>
         </ImmersionSplitRow>
@@ -1020,7 +1111,112 @@ export function ActivitySessionPage() {
     );
   }
 
-  // ── Full-screen medicine session (약 복용) ──
+  // ── 건강을 위한 섭취 ──
+  if (enableCategoryTimedUi && categoryKey === 'healthIntake' && !isQuickMemoSession && categoryConfigs.medicine) {
+    const medCfg = categoryConfigs.medicine;
+    const enabledSlots = buildMedicineEnabledSlots(medCfg);
+    const totalDoses = enabledSlots.length;
+    const takenCount =
+      totalDoses === 0 ? 0 : Math.max(0, Math.min(totalDoses, medCfg.takenCount));
+    const progressWidth = (
+      totalDoses === 0 ? '0%' : `${Math.max(8, Math.round((takenCount / totalDoses) * 100))}%`
+    ) as `${number}%`;
+    const currentSlotLabel =
+      totalDoses === 0
+        ? '슬롯 없음'
+        : takenCount < totalDoses
+          ? enabledSlots[takenCount]?.labelKo ?? '—'
+          : '오늘 섭취 완료';
+    const timerSec = isWaitingToStart ? waitRemainingSec : remainingSec;
+    const itemLabel = medCfg.doseLabel.trim() || '섭취 항목';
+
+    const M = CategoryImmersionTheme.medicine;
+
+    return (
+      <SessionImmersionLayout
+        backgroundColor={M.screenBg}
+        accentColor={PRIMARY}
+        accentGlow="rgba(0, 0, 0, 0.08)"
+        onSurface={M.onSurface}
+        muted={M.muted}
+        brand={M.brand}
+        aboutKicker={M.aboutKicker}
+        headerTitle={
+          isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '건강을 위한 섭취'
+        }
+        iconName="pills.fill"
+        iconSize={28}
+        sessionKicker="섭취 세션"
+        timerDisplay={
+          <ThemedText
+            style={waterStyles.timerHms}
+            lightColor={M.onSurface}
+            darkColor={M.onSurface}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.35}>
+            {formatClock(timerSec)}
+          </ThemedText>
+        }
+        flowCaption={
+          activityTitle.trim() ? activityTitle : '오늘 예정된 섭취에 맞춰 진행해요'
+        }
+        onBack={() => safeRouterBack(router)}
+        scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
+        bottomBar={
+          <ImmersionBottomControls
+            accentColor={PRIMARY}
+            borderColor={M.border}
+            paddingBottom={Math.max(insets.bottom, 14)}
+            onEndSession={navigateAfterComplete}
+            completeLabel="섭취 루틴 완료"
+            disabled={isWaitingToStart}
+          />
+        }>
+        <ImmersionCardShell borderColor={M.border}>
+          <ThemedText style={waterStyles.statLabel} lightColor={M.muted} darkColor={M.muted}>
+            오늘 섭취
+          </ThemedText>
+          <View style={waterStyles.goalRow}>
+            <ThemedText style={waterStyles.goalValue} lightColor={M.onSurface} darkColor={M.onSurface}>
+              {takenCount}
+            </ThemedText>
+            <ThemedText style={waterStyles.goalUnit} lightColor={M.muted} darkColor={M.muted}>
+              {` / ${totalDoses}회`}
+            </ThemedText>
+          </View>
+          <ThemedText style={waterStyles.metaLine} lightColor={M.muted} darkColor={M.muted}>
+            {itemLabel} · {currentSlotLabel}
+          </ThemedText>
+          <View style={waterStyles.hydrateTrack}>
+            <View
+              style={[
+                waterStyles.hydrateFill,
+                { width: progressWidth, backgroundColor: PRIMARY },
+              ]}
+            />
+          </View>
+          {totalDoses > 0 && takenCount < totalDoses ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${currentSlotLabel} 섭취 체크`}
+              disabled={isWaitingToStart}
+              onPress={onMedicineDoseCheck}
+              style={[
+                medScheduleStyles.scheduleCheckBtn,
+                { alignSelf: 'flex-start', marginTop: 12 },
+                isWaitingToStart && medScheduleStyles.scheduleCheckBtnDisabled,
+              ]}>
+              <IconSymbol name="checkmark" size={13} color="#ffffff" />
+              <ThemedText style={medScheduleStyles.scheduleCheckBtnText}>섭취 체크</ThemedText>
+            </Pressable>
+          ) : null}
+        </ImmersionCardShell>
+      </SessionImmersionLayout>
+    );
+  }
+
+  // ── Full-screen medicine session (약 복용, 레거시) ──
   if (enableCategoryTimedUi && categoryKey === 'medicine' && !isQuickMemoSession && categoryConfigs.medicine) {
     const medCfg = categoryConfigs.medicine;
     const enabledSlots = buildMedicineEnabledSlots(medCfg);
@@ -1251,7 +1447,7 @@ export function ActivitySessionPage() {
     );
   }
 
-  // ── Full-screen water session (수분섭취) ──
+  // ── Full-screen water session (수분섭취, 레거시) ──
   if (enableCategoryTimedUi && categoryKey === 'water' && !isQuickMemoSession && categoryConfigs.water) {
     const wCfg = categoryConfigs.water;
     const drank = waterSessionDrankMl ?? wCfg.drankMl;
@@ -1421,13 +1617,28 @@ export function ActivitySessionPage() {
 
   const memoLines = parseNumberedFlowLines(block.title);
   const timerSec = isWaitingToStart ? waitRemainingSec : remainingSec;
+
+  if (isCustomFlowCategoryKey(categoryKey) && !isQuickMemoSession && customFlowRawConfig != null) {
+    return (
+      <CustomFlowActivitySession
+        block={block}
+        categoryKey={categoryKey}
+        activityTitle={activityTitle}
+        timeRange={timeRange}
+        isWaitingToStart={isWaitingToStart}
+        isPaused={isPaused}
+        timerSec={timerSec}
+        progress={progress}
+        rawConfig={customFlowRawConfig}
+        onBack={() => safeRouterBack(router)}
+        onEndSession={navigateAfterComplete}
+        onPersist={() => setGoalDetailStorageTick((n) => n + 1)}
+      />
+    );
+  }
+
   const O = CategoryImmersionTheme.other;
-  const sessionTitle =
-    categoryKey === 'meditation'
-      ? '명상 집중'
-      : categoryKey === 'yoga'
-        ? '요가 집중'
-        : activityTitle.trim() || '활동 집중';
+  const sessionTitle = activityTitle.trim() || '활동 집중';
 
   return (
     <SessionImmersionLayout
@@ -1502,7 +1713,7 @@ export function ActivitySessionPage() {
         </ImmersionHalfCard>
         <ImmersionHalfCard borderColor={O.border}>
           <ThemedText style={waterStyles.halfLabel} lightColor={O.muted} darkColor={O.muted}>
-            남은 작업
+            남은 할 일
           </ThemedText>
           <ThemedText style={waterStyles.halfValue} lightColor={O.onSurface} darkColor={O.onSurface}>
             {checklist.checklistRows.filter((row) => row.state !== 'completed').length}
@@ -2517,6 +2728,19 @@ const waterStyles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     lineHeight: 18,
+  },
+  aladinLinkBtn: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  readingBookBlock: {
+    gap: 12,
+    marginBottom: 8,
+  },
+  aladinLinkText: {
+    fontSize: 13,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
   hydrateTrack: {
     marginTop: 16,

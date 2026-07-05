@@ -51,44 +51,67 @@ export function DefaultPriorityOrderRow({
 }: PriorityOrderRowProps) {
   const reorderTranslateY = useSharedValue(0);
   const reorderDragging = useSharedValue(0);
+  const onReorderDragTranslationEndRef = useRef(onReorderDragTranslationEnd);
+  const onReorderDragActiveChangeRef = useRef(onReorderDragActiveChange);
 
-  const triggerReorderStart = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onReorderDragActiveChange?.(true);
-  }, [onReorderDragActiveChange]);
+  onReorderDragTranslationEndRef.current = onReorderDragTranslationEnd;
+  onReorderDragActiveChangeRef.current = onReorderDragActiveChange;
 
-  const triggerReorderEnd = useCallback(
-    (translationY: number) => {
-      onReorderDragTranslationEnd?.(translationY);
+  const gestureBridgeRef = useRef({
+    start: () => {},
+    end: (_translationY: number) => {},
+    clear: () => {},
+  });
+
+  gestureBridgeRef.current = {
+    start: () => {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onReorderDragActiveChangeRef.current?.(true);
     },
-    [onReorderDragTranslationEnd],
-  );
+    end: (translationY: number) => {
+      onReorderDragTranslationEndRef.current?.(translationY);
+    },
+    clear: () => {
+      onReorderDragActiveChangeRef.current?.(false);
+    },
+  };
 
-  const clearReorderDragActive = useCallback(() => {
-    onReorderDragActiveChange?.(false);
-  }, [onReorderDragActiveChange]);
+  const bridgeReorderStart = useCallback(() => {
+    gestureBridgeRef.current.start();
+  }, []);
+
+  const bridgeReorderEnd = useCallback((translationY: number) => {
+    gestureBridgeRef.current.end(translationY);
+  }, []);
+
+  const bridgeReorderClear = useCallback(() => {
+    gestureBridgeRef.current.clear();
+  }, []);
+
+  const reorderEnabled = Boolean(onReorderDragTranslationEnd);
 
   const reorderPanGesture = useMemo(() => {
-    if (!onReorderDragTranslationEnd) return null;
+    if (!reorderEnabled) return null;
     return Gesture.Pan()
       .activateAfterLongPress(REORDER_LONG_PRESS_MS)
       .maxPointers(1)
+      .activeOffsetY([-4, 4])
       .onStart(() => {
         reorderDragging.value = 1;
-        runOnJS(triggerReorderStart)();
+        runOnJS(bridgeReorderStart)();
       })
       .onUpdate((e) => {
         reorderTranslateY.value = e.translationY;
       })
       .onEnd((e) => {
-        runOnJS(triggerReorderEnd)(e.translationY);
+        runOnJS(bridgeReorderEnd)(e.translationY);
       })
       .onFinalize(() => {
         reorderTranslateY.value = withSpring(0, REORDER_SPRING);
         reorderDragging.value = 0;
-        runOnJS(clearReorderDragActive)();
+        runOnJS(bridgeReorderClear)();
       });
-  }, [clearReorderDragActive, triggerReorderEnd, triggerReorderStart]);
+  }, [bridgeReorderClear, bridgeReorderEnd, bridgeReorderStart, reorderDragging, reorderEnabled, reorderTranslateY]);
 
   const reorderMainAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: reorderTranslateY.value }, { scale: reorderDragging.value ? 1.015 : 1 }],
@@ -103,7 +126,7 @@ export function DefaultPriorityOrderRow({
   const pulse = useRef(new Animated.Value(1)).current;
   const shouldPulse = Boolean(isFocusStarted && !isCompleted);
   const primary = PrimaryColor.rgb;
-  /** 시작 전에는 아이콘 강조를 쓰지 않는다. `오늘 루틴 시작` 이후(집중 시작)만 카테고리 액센트. */
+  /** 시작 전에는 아이콘 강조를 쓰지 않는다. 집중 시작 이후에만 카테고리 액센트. */
   const showAccentIcon = Boolean(!isCompleted && isFocusStarted);
   const iconColor = isCompleted
     ? inkMuted
@@ -150,20 +173,14 @@ export function DefaultPriorityOrderRow({
 
   const rankIconTitleBlock = (
     <>
-      {shouldPulse && categoryKey === 'medicine' ? (
-        <Animated.View style={[styles.medicineIconBadge, { opacity: pulse }]}>
-          <IconSymbol name="cross.fill" size={10} color="#ef4444" />
-        </Animated.View>
-      ) : (
-        <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
-          <IconSymbol
-            key={`${categoryKey}-${iconColor}-${isCompleted ? 1 : 0}`}
-            name={icon as any}
-            size={17}
-            color={iconColor}
-          />
-        </Animated.View>
-      )}
+      <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
+        <IconSymbol
+          key={`${categoryKey}-${iconColor}-${isCompleted ? 1 : 0}`}
+          name={icon as any}
+          size={17}
+          color={iconColor}
+        />
+      </Animated.View>
       <View style={styles.orderRowRomanText}>
         <ThemedText
           style={[styles.orderRowRomanTitle, { color: ink }, isCompleted && styles.orderRowRomanTitleDone]}

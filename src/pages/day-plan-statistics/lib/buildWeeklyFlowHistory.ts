@@ -10,6 +10,16 @@ import {
 import { getCategoryCompletions } from '@entities/history/lib/historyCompletionMetrics';
 import type { HistoryDailyStat } from '@entities/history/model/types';
 
+import { resolveTopCategoryLabels } from './resolveTopCategoryLabels';
+
+export type WeeklyHistorySummary = {
+  activeDays: number;
+  daysInWeek: number;
+  totalCompletions: number;
+  progressPercent: number;
+  topCategoryLabels: string[];
+};
+
 export type WeeklyFlowHistoryRow = {
   categoryKey: string;
   label: string;
@@ -105,20 +115,41 @@ export function buildWeeklyFlowHistory(input: {
   return rows;
 }
 
-export function buildMonthlyProgressPercent(
-  dailyStatsByDate: Record<string, HistoryDailyStat>,
-  anchorDateKey: string,
-): number {
-  const anchor = parseHistoryDateKey(anchorDateKey);
-  if (!anchor) return 0;
+export function buildWeeklyHistorySummary(input: {
+  dailyStatsByDate: Record<string, HistoryDailyStat>;
+  weekStartDateKey: string;
+}): WeeklyHistorySummary {
+  const weekDateKeys = buildWeekDateKeys(input.weekStartDateKey);
+  const daysInWeek = weekDateKeys.length;
+  const totalsByCategory = new Map<string, number>();
 
-  const monthPrefix = anchorDateKey.slice(0, 7);
-  const monthDays = Object.values(dailyStatsByDate).filter((row) => row.dateKey.startsWith(monthPrefix));
-  if (monthDays.length === 0) return 0;
+  let activeDays = 0;
+  let totalCompletions = 0;
 
-  const activeDays = monthDays.filter((row) => row.completedFlowCount > 0).length;
-  const daysInMonth = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0).getDate();
-  return Math.round((activeDays / daysInMonth) * 100);
+  for (const dateKey of weekDateKeys) {
+    const row = input.dailyStatsByDate[dateKey];
+    if (!row) continue;
+    const dayTotal = row.completedFlowCount > 0 ? row.completedFlowCount : 0;
+    const categoryTotal = Object.values(getCategoryCompletions(row)).reduce((sum, n) => sum + n, 0);
+    const completions = Math.max(dayTotal, categoryTotal);
+    if (completions <= 0) continue;
+    activeDays += 1;
+    totalCompletions += completions;
+    for (const [key, count] of Object.entries(getCategoryCompletions(row))) {
+      if (count <= 0) continue;
+      totalsByCategory.set(key, (totalsByCategory.get(key) ?? 0) + count);
+    }
+  }
+
+  const progressPercent = daysInWeek > 0 ? Math.round((activeDays / daysInWeek) * 100) : 0;
+
+  return {
+    activeDays,
+    daysInWeek,
+    totalCompletions,
+    progressPercent,
+    topCategoryLabels: resolveTopCategoryLabels(totalsByCategory),
+  };
 }
 
 export function resolveWeekStartForAnchor(anchorDateKey: string): string {

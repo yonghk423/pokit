@@ -29,40 +29,12 @@ export const PRIMARY = RetroFlatColors.light.primary;
 
 export const CATEGORIES: { key: string; label: string; icon: string }[] = [
   // ─── 건강·몸 관리 ───
-  { key: 'water', label: PRIORITY_CATALOG_PICKER_LABELS.water, icon: 'drop.fill' },
-  { key: 'medicine', label: PRIORITY_CATALOG_PICKER_LABELS.medicine, icon: 'cross.case.fill' },
+  { key: 'healthIntake', label: PRIORITY_CATALOG_PICKER_LABELS.healthIntake, icon: 'pills.fill' },
   { key: 'fasting', label: PRIORITY_CATALOG_PICKER_LABELS.fasting, icon: 'figure.stand' },
-  { key: 'stretching', label: PRIORITY_CATALOG_PICKER_LABELS.stretching, icon: 'figure.run' },
-  { key: 'straightenBack', label: PRIORITY_CATALOG_PICKER_LABELS.straightenBack, icon: 'figure.yoga' },
-  { key: 'neckPosture', label: PRIORITY_CATALOG_PICKER_LABELS.neckPosture, icon: 'tortoise.fill' },
-  { key: 'meditation', label: PRIORITY_CATALOG_PICKER_LABELS.meditation, icon: 'brain.head.profile' },
-  { key: 'workout', label: PRIORITY_CATALOG_PICKER_LABELS.workout, icon: 'dumbbell.fill' },
-  { key: 'walking', label: PRIORITY_CATALOG_PICKER_LABELS.walking, icon: 'figure.walk' },
-  { key: 'yoga', label: PRIORITY_CATALOG_PICKER_LABELS.yoga, icon: 'figure.mind.and.body' },
-  { key: 'sleep', label: PRIORITY_CATALOG_PICKER_LABELS.sleep, icon: 'moon.fill' },
-  { key: 'breathing', label: PRIORITY_CATALOG_PICKER_LABELS.breathing, icon: 'wind' },
-  { key: 'skincare', label: PRIORITY_CATALOG_PICKER_LABELS.skincare, icon: 'sparkles' },
-  { key: 'vitamins', label: PRIORITY_CATALOG_PICKER_LABELS.vitamins, icon: 'pill.fill' },
-  { key: 'posture', label: PRIORITY_CATALOG_PICKER_LABELS.posture, icon: 'figure.stand.line.dotted.figure.stand' },
-  { key: 'eyerest', label: PRIORITY_CATALOG_PICKER_LABELS.eyerest, icon: 'eye' },
 
   // ─── 생산성을 높이는 도구 ───
   { key: 'reading', label: PRIORITY_CATALOG_PICKER_LABELS.reading, icon: 'book.fill' },
-  { key: 'study', label: PRIORITY_CATALOG_PICKER_LABELS.study, icon: 'graduationcap.fill' },
-  { key: 'planning', label: PRIORITY_CATALOG_PICKER_LABELS.planning, icon: 'calendar.badge.clock' },
-  { key: 'writing', label: PRIORITY_CATALOG_PICKER_LABELS.writing, icon: 'square.and.pencil' },
-  { key: 'language', label: PRIORITY_CATALOG_PICKER_LABELS.language, icon: 'character.bubble' },
-  { key: 'creative', label: PRIORITY_CATALOG_PICKER_LABELS.creative, icon: 'paintpalette.fill' },
-  { key: 'inbox', label: PRIORITY_CATALOG_PICKER_LABELS.inbox, icon: 'tray.2.fill' },
-  { key: 'deepwork', label: PRIORITY_CATALOG_PICKER_LABELS.deepwork, icon: 'brain' },
-  { key: 'journal', label: PRIORITY_CATALOG_PICKER_LABELS.journal, icon: 'book.closed.fill' },
-  { key: 'pomodoro', label: PRIORITY_CATALOG_PICKER_LABELS.pomodoro, icon: 'timer' },
-  { key: 'review', label: PRIORITY_CATALOG_PICKER_LABELS.review, icon: 'arrow.counterclockwise' },
-  { key: 'news', label: PRIORITY_CATALOG_PICKER_LABELS.news, icon: 'newspaper.fill' },
-  { key: 'organize', label: PRIORITY_CATALOG_PICKER_LABELS.organize, icon: 'tray.and.arrow.down.fill' },
-  { key: 'podcast', label: PRIORITY_CATALOG_PICKER_LABELS.podcast, icon: 'headphones' },
   { key: 'work', label: PRIORITY_CATALOG_PICKER_LABELS.work, icon: 'bag.fill' },
-  { key: 'coding', label: PRIORITY_CATALOG_PICKER_LABELS.coding, icon: 'chevron.left.forwardslash.chevron.right' },
 
   // ─── 레거시 호환 ───
   { key: 'other', label: PRIORITY_CATALOG_PICKER_LABELS.other, icon: 'person.fill' },

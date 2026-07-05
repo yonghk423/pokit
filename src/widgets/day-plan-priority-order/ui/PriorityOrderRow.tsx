@@ -3,36 +3,19 @@ import type { ComponentType } from 'react';
 import { isCustomFlowCategoryKey } from '@entities/day-plan';
 
 import type { PriorityOrderRowProps } from '../lib/types';
-import { CreativePriorityOrderRow } from './categories/CreativePriorityOrderRow';
 import { FastingPriorityOrderRow } from './categories/FastingPriorityOrderRow';
-import { InboxPriorityOrderRow } from './categories/InboxPriorityOrderRow';
-import { LanguagePriorityOrderRow } from './categories/LanguagePriorityOrderRow';
 import { MedicinePriorityOrderRow } from './categories/MedicinePriorityOrderRow';
-import { NeckPosturePriorityOrderRow } from './categories/NeckPosturePriorityOrderRow';
 import { OtherPriorityOrderRow } from './categories/OtherPriorityOrderRow';
-import { PlanningPriorityOrderRow } from './categories/PlanningPriorityOrderRow';
 import { ReadingPriorityOrderRow } from './categories/ReadingPriorityOrderRow';
-import { StraightenBackPriorityOrderRow } from './categories/StraightenBackPriorityOrderRow';
-import { StretchingPriorityOrderRow } from './categories/StretchingPriorityOrderRow';
-import { StudyPriorityOrderRow } from './categories/StudyPriorityOrderRow';
 import { WaterPriorityOrderRow } from './categories/WaterPriorityOrderRow';
 import { WorkPriorityOrderRow } from './categories/WorkPriorityOrderRow';
-import { WritingPriorityOrderRow } from './categories/WritingPriorityOrderRow';
 import { DefaultPriorityOrderRow } from './DefaultPriorityOrderRow';
 
 const priorityOrderRowByCategoryKey: Record<string, ComponentType<PriorityOrderRowProps>> = {
   work: WorkPriorityOrderRow,
   reading: ReadingPriorityOrderRow,
-  study: StudyPriorityOrderRow,
-  stretching: StretchingPriorityOrderRow,
-  straightenBack: StraightenBackPriorityOrderRow,
-  neckPosture: NeckPosturePriorityOrderRow,
-  planning: PlanningPriorityOrderRow,
-  writing: WritingPriorityOrderRow,
-  language: LanguagePriorityOrderRow,
-  creative: CreativePriorityOrderRow,
-  inbox: InboxPriorityOrderRow,
   fasting: FastingPriorityOrderRow,
+  healthIntake: WaterPriorityOrderRow,
   water: WaterPriorityOrderRow,
   medicine: MedicinePriorityOrderRow,
   other: OtherPriorityOrderRow,

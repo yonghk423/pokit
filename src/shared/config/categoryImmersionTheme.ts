@@ -50,22 +50,6 @@ function build(ui: GoalDetailSessionUiTokens) {
       brand: 'LOCKFLOW MEDICINE',
       aboutKicker: 'ABOUT MEDICATION',
     },
-    meditation: {
-      screenBg: ui.screenBg,
-      onSurface: ui.onSurface,
-      muted: ui.muted,
-      border: ui.border,
-      accent: ui.primary,
-      title: '명상 세션',
-    },
-    yoga: {
-      screenBg: ui.screenBg,
-      onSurface: ui.onSurface,
-      muted: ui.muted,
-      border: ui.border,
-      accent: ui.primary,
-      title: '요가 세션',
-    },
     other: {
       screenBg: ui.screenBg,
       onSurface: ui.onSurface,

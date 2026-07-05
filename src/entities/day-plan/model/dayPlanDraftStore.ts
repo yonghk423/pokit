@@ -8,8 +8,10 @@ import { addDaysToLocalDateKey, getLocalDateKey } from '../lib/localDateKey';
 import { parseHHmmToMinutes } from '../lib/parseTime';
 import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
 import {
+  buildPrioritySectionCompletionKey,
   parsePrioritySectionCompletionKey,
   toRoutineHistoryCategoryKey,
+  migrateCompletionKeyInList,
 } from '../lib/prioritySectionCompletionKey';
 import {
   appendRoutineHistoryPending,
@@ -101,6 +103,12 @@ type DayPlanDraftState = {
   setPrioritySectionsMealSlots: (categoryKey: string, mealSlots: DayMealSlot[] | null) => void;
   addPrioritySectionMealSlot: (categoryKey: string, mealSlot: DayMealSlot) => void;
   mergePrioritySectionsMealSlots: (incoming: Record<string, DayMealSlot[]>) => void;
+  /** 구간 이동 시 슬롯별 완료 체크 키를 함께 옮깁니다. */
+  migrateSectionCompletionOnSlotMove: (
+    categoryKey: string,
+    fromSlot: DayMealSlot,
+    toSlot: DayMealSlot,
+  ) => void;
 };
 
 function createInitialPriorityWindow() {
@@ -115,6 +123,19 @@ function normalizePriorityMealSlotOverrides(raw: unknown): Record<string, DayMea
     const trimmed = key.trim();
     const slot = normalizeDayMealSlot(value);
     if (trimmed && slot) out[trimmed] = slot;
+  }
+  return out;
+}
+
+/** 담기 순서 — 동일 categoryKey는 첫 등장만 유지 */
+function dedupePriorityCategoryOrder(order: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const rawKey of order) {
+    const key = rawKey.trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(key);
   }
   return out;
 }
@@ -229,7 +250,9 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       priorityOvernightEndAuto: keepRange ? Boolean(raw.priorityOvernightEndAuto) : false,
       priorityStart: typeof raw.priorityStart === 'string' ? raw.priorityStart : get().priorityStart,
       priorityEnd: typeof raw.priorityEnd === 'string' ? raw.priorityEnd : get().priorityEnd,
-      priorityCategoryOrder: Array.isArray(raw.priorityCategoryOrder) ? raw.priorityCategoryOrder : [],
+      priorityCategoryOrder: dedupePriorityCategoryOrder(
+        Array.isArray(raw.priorityCategoryOrder) ? raw.priorityCategoryOrder : [],
+      ),
       routineHistoryPendingByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPendingByDate),
       routineHistoryPlannedKeysByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPlannedKeysByDate),
       quickMemoDraft: typeof raw.quickMemoDraft === 'string' ? raw.quickMemoDraft : '',
@@ -397,8 +420,9 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   setPriorityEnd: (value) => set({ priorityEnd: value }),
   setPriorityCategoryOrder: (value) =>
     set((s) => {
-      const priorityCategoryOrder =
-        typeof value === 'function' ? value(s.priorityCategoryOrder) : value;
+      const priorityCategoryOrder = dedupePriorityCategoryOrder(
+        typeof value === 'function' ? value(s.priorityCategoryOrder) : value,
+      );
       const today = getLocalDateKey();
       const routineHistoryPlannedKeysByDate =
         shouldTrackRoutineHistoryForDate(s, today) && priorityCategoryOrder.length > 0
@@ -514,6 +538,36 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         changed = true;
       }
       return changed ? { prioritySectionsMealSlots: next } : s;
+    }),
+  migrateSectionCompletionOnSlotMove: (categoryKey, fromSlot, toSlot) =>
+    set((s) => {
+      const key = categoryKey.trim();
+      if (!key || fromSlot === toSlot) return s;
+      const fromCompletionKey = buildPrioritySectionCompletionKey(key, fromSlot);
+      const toCompletionKey = buildPrioritySectionCompletionKey(key, toSlot);
+      const completedFocusCategoryKeys = migrateCompletionKeyInList(
+        s.completedFocusCategoryKeys,
+        fromCompletionKey,
+        toCompletionKey,
+      );
+      const planCompletionDismissedKeys = migrateCompletionKeyInList(
+        s.planCompletionDismissedKeys,
+        fromCompletionKey,
+        toCompletionKey,
+      );
+      if (
+        completedFocusCategoryKeys.length === s.completedFocusCategoryKeys.length &&
+        planCompletionDismissedKeys.length === s.planCompletionDismissedKeys.length &&
+        completedFocusCategoryKeys.every(
+          (value, index) => value === s.completedFocusCategoryKeys[index],
+        ) &&
+        planCompletionDismissedKeys.every(
+          (value, index) => value === s.planCompletionDismissedKeys[index],
+        )
+      ) {
+        return s;
+      }
+      return { completedFocusCategoryKeys, planCompletionDismissedKeys };
     }),
 }));
 

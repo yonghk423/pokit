@@ -1,8 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { View } from 'react-native';
 
-import { DayPlanTabBridgeProvider, DayPlanTabFab } from '@pages/day-plan';
+import { DayPlanTabBridgeProvider } from '@pages/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { HapticTab } from '@shared/ui/haptic-tab/HapticTab';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -20,8 +19,7 @@ export default function TabLayout() {
 
   return (
     <DayPlanTabBridgeProvider>
-      <View style={{ flex: 1 }}>
-        <Tabs
+      <Tabs
           initialRouteName="day-plan"
           screenOptions={({ route }) => ({
             headerShown: false,
@@ -40,8 +38,6 @@ export default function TabLayout() {
           <Tabs.Screen name="day-plan-statistics" options={{ title: '히스토리' }} />
           <Tabs.Screen name="pokit-story" options={{ title: '스토리' }} />
         </Tabs>
-        <DayPlanTabFab />
-      </View>
     </DayPlanTabBridgeProvider>
   );
 }

@@ -58,6 +58,9 @@ function buildPriorityMealSlotSectionBuckets<T extends { key: string }>(
   const buckets = new Map<DayMealSlot, T[]>(
     DAY_MEAL_SLOT_ORDER.map((slot) => [slot, []]),
   );
+  const bucketKeysBySlot = new Map<DayMealSlot, Set<string>>(
+    DAY_MEAL_SLOT_ORDER.map((slot) => [slot, new Set()]),
+  );
   const unslottedItems: T[] = [];
 
   items.forEach((item, displayIndex) => {
@@ -70,7 +73,11 @@ function buildPriorityMealSlotSectionBuckets<T extends { key: string }>(
     const slots =
       explicitSlots ?? [resolvePriorityMealSlot(item.key, orderIndex, overrides as ReadonlyMap<string, DayMealSlot>)];
     for (const slot of slots) {
-      buckets.get(slot)?.push(item);
+      const bucket = buckets.get(slot);
+      const seenInSlot = bucketKeysBySlot.get(slot);
+      if (!bucket || !seenInSlot || seenInSlot.has(item.key)) continue;
+      seenInSlot.add(item.key);
+      bucket.push(item);
     }
   });
 

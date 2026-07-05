@@ -34,7 +34,6 @@ function CatalogListRow({
   line,
   isDark,
   isFocusStarted,
-  isCompleted,
   onAddPress,
   onOpenSettings,
   onMoveGroup,
@@ -50,7 +49,6 @@ function CatalogListRow({
   line: string;
   isDark: boolean;
   isFocusStarted: boolean;
-  isCompleted: boolean;
   onAddPress: () => void;
   onOpenSettings: () => void;
   onMoveGroup?: () => void;
@@ -59,7 +57,7 @@ function CatalogListRow({
   const settingsBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)';
   const settingsBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
   const settingsLocked = isFocusStarted && selected;
-  const shouldPulse = Boolean(selected && isFocusStarted && !isCompleted);
+  const shouldPulse = Boolean(selected && isFocusStarted);
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -90,12 +88,10 @@ function CatalogListRow({
   const iconColor = shouldPulse
     ? activeIconColorByCategory(categoryKey)
     : selected
-      ? isCompleted
-        ? muted
-        : selectedIconColor
+      ? selectedIconColor
       : muted;
 
-  const labelColor = selected && isCompleted ? muted : selected ? ink : muted;
+  const labelColor = selected ? ink : muted;
 
   return (
     <View style={[styles.catalogRow, { borderBottomColor: line }]}>
@@ -112,27 +108,17 @@ function CatalogListRow({
           onAddPress();
         }}
         style={styles.catalogRowMainHit}>
-        {shouldPulse && categoryKey === 'medicine' ? (
-          <Animated.View style={[styles.catalogMedicineBadge, { opacity: pulse }]}>
-            <IconSymbol name="cross.fill" size={12} color="#ef4444" />
-          </Animated.View>
-        ) : (
-          <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
-            <IconSymbol
-              key={`${categoryKey}-${selected ? 1 : 0}-${isCompleted ? 1 : 0}-${iconColor}`}
-              name={icon as any}
-              size={22}
-              color={iconColor}
-            />
-          </Animated.View>
-        )}
+        <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
+          <IconSymbol
+            key={`${categoryKey}-${selected ? 1 : 0}-${iconColor}`}
+            name={icon as any}
+            size={22}
+            color={iconColor}
+          />
+        </Animated.View>
         <View style={styles.catalogRowTextCol}>
           <ThemedText
-            style={[
-              styles.catalogRowLabel,
-              { color: labelColor },
-              selected && isCompleted && styles.catalogRowLabelDone,
-            ]}
+            style={[styles.catalogRowLabel, { color: labelColor }]}
             lightColor={labelColor}
             darkColor={labelColor}
             numberOfLines={1}>
@@ -255,9 +241,7 @@ function CatalogListRow({
           }}
           style={styles.catalogAddHit}>
           {selected ? (
-            <View style={[styles.catalogRowBadge, { backgroundColor: PRIMARY }]}>
-              <IconSymbol name="checkmark" size={11} color="#fff" />
-            </View>
+            <IconSymbol name="minus.circle.fill" size={22} color={selectedIconColor} />
           ) : (
             <IconSymbol name="plus.circle" size={22} color={muted} />
           )}
@@ -299,7 +283,6 @@ function renderRows(
   isDark: boolean,
   priorityCategoryOrder: string[],
   isFocusStarted: boolean,
-  isCatalogRowCompleted: (categoryKey: string) => boolean,
   onCatalogTap: (key: string) => void,
   onOpenCategorySettings: (key: string) => void,
   onMoveCustomFlow?: (key: string, label: string) => void,
@@ -318,7 +301,6 @@ function renderRows(
       line={editorial.line}
       isDark={isDark}
       isFocusStarted={isFocusStarted}
-      isCompleted={isCatalogRowCompleted(cat.key)}
       onAddPress={() => onCatalogTap(cat.key)}
       onOpenSettings={() => onOpenCategorySettings(cat.key)}
       onMoveGroup={
@@ -336,8 +318,6 @@ type Props = {
   priorityCategoryOrder: string[];
   /** 집중 구간 시작 후 — 담긴 항목 아이콘 색·펄스 */
   isFocusStarted: boolean;
-  /** 오늘 탭 `OrderRow`와 동일한 완료 판별 */
-  isCatalogRowCompleted: (categoryKey: string) => boolean;
   onCatalogTap: (key: string) => void;
   onOpenCategorySettings: (categoryKey: string) => void;
   /** 저장된 사용자 플로우(picker용 메타) — 라벨/아이콘 해석에 사용 */
@@ -363,7 +343,6 @@ function GroupSectionBlock({
   isDark,
   priorityCategoryOrder,
   isFocusStarted,
-  isCatalogRowCompleted,
   onCatalogTap,
   onOpenCategorySettings,
   onRenameCustomGroup,
@@ -377,7 +356,6 @@ function GroupSectionBlock({
   isDark: boolean;
   priorityCategoryOrder: string[];
   isFocusStarted: boolean;
-  isCatalogRowCompleted: (categoryKey: string) => boolean;
   onCatalogTap: (key: string) => void;
   onOpenCategorySettings: (key: string) => void;
   onRenameCustomGroup?: (groupKey: string, currentLabel: string, currentSubtitle: string) => void;
@@ -451,7 +429,6 @@ function GroupSectionBlock({
             isDark,
             priorityCategoryOrder,
             isFocusStarted,
-            isCatalogRowCompleted,
             onCatalogTap,
             onOpenCategorySettings,
             onMoveCustomFlow,
@@ -468,7 +445,6 @@ export function PriorityCatalogPanel({
   editorial,
   priorityCategoryOrder,
   isFocusStarted,
-  isCatalogRowCompleted,
   onCatalogTap,
   onOpenCategorySettings,
   customFlowPickerItems,
@@ -516,7 +492,6 @@ export function PriorityCatalogPanel({
           isDark={isDark}
           priorityCategoryOrder={priorityCategoryOrder}
           isFocusStarted={isFocusStarted}
-          isCatalogRowCompleted={isCatalogRowCompleted}
           onCatalogTap={onCatalogTap}
           onOpenCategorySettings={onOpenCategorySettings}
           onRenameCustomGroup={onRenameCustomGroup}
@@ -632,23 +607,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.3,
   },
-  catalogRowLabelDone: {
-    textDecorationLine: 'line-through',
-    textDecorationStyle: 'solid',
-    opacity: 0.52,
-  },
   catalogRowSubtitle: {
     fontSize: 12,
     fontWeight: '500',
     letterSpacing: -0.1,
     lineHeight: 16,
-  },
-  catalogRowBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   catalogMedicineBadge: {
     width: 22,

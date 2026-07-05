@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 
-import { isCustomFlowCategoryKey, isGoalDetailChecklistDerivedCategoryKey } from '@entities/day-plan';
+import { isCustomFlowCategoryKey } from '@entities/day-plan';
 
 import type { GoalDetailCategoryKey } from './types';
 
@@ -69,15 +69,12 @@ export function useGoalDetailSettingsRoute(): {
 function isGoalDetailCategoryKey(v: string): v is GoalDetailCategoryKey {
   return (
     isCustomFlowCategoryKey(v) ||
-    isGoalDetailChecklistDerivedCategoryKey(v) ||
     v === 'work' ||
     v === 'reading' ||
-    v === 'meditation' ||
-    v === 'yoga' ||
     v === 'fasting' ||
+    v === 'healthIntake' ||
     v === 'water' ||
     v === 'medicine' ||
     v === 'other'
   );
 }
-

@@ -18,7 +18,7 @@ type ModeButton = {
 };
 
 const MODE_BUTTONS: ModeButton[] = [
-  { mode: 'priority', icon: 'list.number', label: '데일리' },
+  { mode: 'priority', icon: 'list.bullet.rectangle', label: '데일리' },
   { mode: 'quickMemo', icon: 'note.text', label: '잠금화면 메모' },
 ];
 

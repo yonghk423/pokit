@@ -30,3 +30,14 @@ export function parsePrioritySectionCompletionKey(completionKey: string): {
 export function toRoutineHistoryCategoryKey(completionKey: string): string {
   return parsePrioritySectionCompletionKey(completionKey).categoryKey;
 }
+
+export function migrateCompletionKeyInList(
+  keys: readonly string[],
+  fromKey: string,
+  toKey: string,
+): string[] {
+  if (fromKey === toKey || !keys.includes(fromKey)) return [...keys];
+  const withoutFrom = keys.filter((key) => key !== fromKey);
+  if (withoutFrom.includes(toKey)) return withoutFrom;
+  return [...withoutFrom, toKey];
+}

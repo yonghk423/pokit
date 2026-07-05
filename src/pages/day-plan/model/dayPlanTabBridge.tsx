@@ -15,13 +15,6 @@ export type DayPlanPrimaryMeta = {
   hidden?: boolean;
 };
 
-/** 우측 하단 탭 위 플로팅 — 우선순위 모드에서만 사용 */
-export type DayPlanRoutineStartFabMeta = {
-  visible: boolean;
-  disabled: boolean;
-  label: string;
-};
-
 type Ctx = {
   primaryDisabled: boolean;
   primaryLabel: string;
@@ -32,9 +25,6 @@ type Ctx = {
   registerTabBarHeight: (height: number) => void;
   registerIsDayPlanFocused: (focused: boolean) => void;
   registerPrimaryAction: (run: (() => void) | null, meta: DayPlanPrimaryMeta) => void;
-  routineStartFab: DayPlanRoutineStartFabMeta;
-  invokeRoutineStartFab: () => void;
-  registerRoutineStartFab: (run: (() => void) | null, meta: DayPlanRoutineStartFabMeta) => void;
 };
 
 const DayPlanTabBridgeContext = createContext<Ctx | null>(null);
@@ -44,14 +34,6 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
   const [meta, setMeta] = useState<DayPlanPrimaryMeta>({ disabled: true, label: '시작하기', hidden: false });
   const [tabBarHeight, setTabBarHeight] = useState(0);
   const [isDayPlanFocused, setIsDayPlanFocused] = useState(false);
-
-  const routineRunRef = useRef<(() => void) | null>(null);
-  const routineFabRef = useRef<DayPlanRoutineStartFabMeta>({
-    visible: false,
-    disabled: true,
-    label: '오늘 루틴 시작',
-  });
-  const [fabVer, setFabVer] = useState(0);
 
   const registerPrimaryAction = useCallback((run: (() => void) | null, m: DayPlanPrimaryMeta) => {
     runRef.current = run;
@@ -65,16 +47,6 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
       }
       return m;
     });
-  }, []);
-
-  const registerRoutineStartFab = useCallback((run: (() => void) | null, m: DayPlanRoutineStartFabMeta) => {
-    routineRunRef.current = run;
-    const prev = routineFabRef.current;
-    if (prev.visible === m.visible && prev.disabled === m.disabled && prev.label === m.label) {
-      return;
-    }
-    routineFabRef.current = m;
-    setFabVer((v) => v + 1);
   }, []);
 
   const registerTabBarHeight = useCallback((height: number) => {
@@ -91,12 +63,6 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
     runRef.current?.();
   }, [meta.disabled]);
 
-  const invokeRoutineStartFab = useCallback(() => {
-    const fab = routineFabRef.current;
-    if (!fab.visible || fab.disabled) return;
-    routineRunRef.current?.();
-  }, []);
-
   const value = useMemo(
     () => ({
       primaryDisabled: meta.disabled,
@@ -108,9 +74,6 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
       registerTabBarHeight,
       registerIsDayPlanFocused,
       registerPrimaryAction,
-      routineStartFab: routineFabRef.current,
-      invokeRoutineStartFab,
-      registerRoutineStartFab,
     }),
     [
       meta.disabled,
@@ -122,9 +85,6 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
       registerTabBarHeight,
       registerIsDayPlanFocused,
       registerPrimaryAction,
-      fabVer,
-      invokeRoutineStartFab,
-      registerRoutineStartFab,
     ],
   );
 

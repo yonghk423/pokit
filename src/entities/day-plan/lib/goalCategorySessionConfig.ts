@@ -1,10 +1,16 @@
 /** 목표 상세(플로우별) 저장 구조 — 세션·위젯에서 공용으로 사용 */
 
-import type { ReadingLiveActivityConfig } from './readingLiveActivityConfig';
 import { normalizeWaterReminderTimes } from './normalizeWaterReminderTimes';
 import { parseHHmmToMinutes } from './parseTime';
+import type { ReadingLiveActivityConfig } from './readingLiveActivityConfig';
 import { normalizeRoutineDisplayName } from './routineDisplayName';
 import { normalizeRoutineSummary } from './routineSummary';
+import {
+  normalizeWorkStudyDdayEvents,
+  normalizeWorkStudyTimetableSlots,
+  type WorkStudyDdayEvent,
+  type WorkStudyTimetableSlot,
+} from './workStudySchedule';
 
 function asObj(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -18,20 +24,42 @@ function clampStr(s: unknown, max: number): string {
 // --- work ---
 export type WorkTask = { id: string; text: string; done: boolean };
 
+export type WorkStudyMode = 'free' | 'pomodoro';
+
+export type { WorkStudyDdayEvent, WorkStudyTimetableSlot, WorkStudyWeekday } from './workStudySchedule';
+
 export type WorkDetailDataConfig = {
   displayName: string;
+  /** 과목·주제 (스터디 특화) */
+  subject: string;
   planMin: number;
   doneMin: number;
+  /** 뽀모도로 휴식(분). 자유 모드에서는 0 */
+  breakMin: number;
+  studyMode: WorkStudyMode;
   tasks: WorkTask[];
   focusMemo: string;
   summary: string;
+  ddayEvents: WorkStudyDdayEvent[];
+  timetableSlots: WorkStudyTimetableSlot[];
 };
+
+function normalizeWorkStudyMode(raw: unknown): WorkStudyMode {
+  return raw === 'pomodoro' ? 'pomodoro' : 'free';
+}
 
 export function normalizeWorkDetailConfig(raw: unknown): WorkDetailDataConfig {
   const o = asObj(raw);
   const planMin = Math.max(15, Math.min(720, Number(o.planMin) || 120));
   const doneRaw = Number(o.doneMin);
   const doneMin = Math.max(0, Math.min(planMin, Number.isFinite(doneRaw) ? doneRaw : 0));
+  const studyMode = normalizeWorkStudyMode(o.studyMode);
+  const breakRaw = Number(o.breakMin);
+  const breakMin =
+    studyMode === 'pomodoro'
+      ? Math.max(3, Math.min(30, Number.isFinite(breakRaw) ? breakRaw : 5))
+      : 0;
+  const subject = clampStr(o.subject, 80);
   const tasks: WorkTask[] = Array.isArray(o.tasks)
     ? (o.tasks as unknown[])
         .filter((t): t is Record<string, unknown> => t != null && typeof t === 'object')
@@ -42,60 +70,46 @@ export function normalizeWorkDetailConfig(raw: unknown): WorkDetailDataConfig {
         }))
         .filter((t) => t.text.length > 0)
     : [];
-  const focusMemo = clampStr(o.focusMemo, 200);
+  let focusMemo = clampStr(o.focusMemo, 800);
+  if (tasks.length > 0) {
+    const taskLines = tasks.map((t) => t.text).filter(Boolean);
+    if (taskLines.length > 0) {
+      focusMemo = clampStr([focusMemo, taskLines.join('\n')].filter(Boolean).join('\n'), 800);
+    }
+  }
   const summary = normalizeRoutineSummary(o.summary);
   const displayName = normalizeRoutineDisplayName(o.displayName);
-  return { displayName, planMin, doneMin, tasks, focusMemo, summary };
+  const ddayEvents = normalizeWorkStudyDdayEvents(o.ddayEvents);
+  const timetableSlots = normalizeWorkStudyTimetableSlots(o.timetableSlots);
+  return {
+    displayName,
+    subject,
+    planMin,
+    doneMin,
+    breakMin,
+    studyMode,
+    tasks: [],
+    focusMemo,
+    summary,
+    ddayEvents,
+    timetableSlots,
+  };
 }
 
 export function getInitialWorkDataConfig(): WorkDetailDataConfig {
-  return { displayName: '', planMin: 120, doneMin: 0, tasks: [], focusMemo: '', summary: '' };
-}
-
-// --- meditation ---
-export type MeditationDetailDataConfig = {
-  displayName: string;
-  sessionMin: number;
-  elapsedMin: number;
-  summary: string;
-};
-
-export function normalizeMeditationDetailConfig(raw: unknown): MeditationDetailDataConfig {
-  const o = asObj(raw);
-  const sessionMin = Math.max(1, Math.min(180, Number(o.sessionMin) || 15));
-  const elapsedRaw = Number(o.elapsedMin);
-  const elapsedMin = Math.max(0, Math.min(sessionMin, Number.isFinite(elapsedRaw) ? elapsedRaw : 0));
-  const summary = normalizeRoutineSummary(o.summary);
-  const displayName = normalizeRoutineDisplayName(o.displayName);
-  return { displayName, sessionMin, elapsedMin, summary };
-}
-
-export function getInitialMeditationDataConfig(): MeditationDetailDataConfig {
-  return { displayName: '', sessionMin: 15, elapsedMin: 0, summary: '' };
-}
-
-// --- yoga ---
-export type YogaDetailDataConfig = {
-  displayName: string;
-  sessionMin: number;
-  elapsedMin: number;
-  flowLabel: string;
-  summary: string;
-};
-
-export function normalizeYogaDetailConfig(raw: unknown): YogaDetailDataConfig {
-  const o = asObj(raw);
-  const sessionMin = Math.max(1, Math.min(180, Number(o.sessionMin) || 40));
-  const elapsedRaw = Number(o.elapsedMin);
-  const elapsedMin = Math.max(0, Math.min(sessionMin, Number.isFinite(elapsedRaw) ? elapsedRaw : 0));
-  const flowLabel = clampStr(o.flowLabel, 40) || '루틴';
-  const summary = normalizeRoutineSummary(o.summary);
-  const displayName = normalizeRoutineDisplayName(o.displayName);
-  return { displayName, sessionMin, elapsedMin, flowLabel, summary };
-}
-
-export function getInitialYogaDataConfig(): YogaDetailDataConfig {
-  return { displayName: '', sessionMin: 40, elapsedMin: 0, flowLabel: '루틴', summary: '' };
+  return {
+    displayName: '',
+    subject: '',
+    planMin: 120,
+    doneMin: 0,
+    breakMin: 5,
+    studyMode: 'free',
+    tasks: [],
+    focusMemo: '',
+    summary: '',
+    ddayEvents: [],
+    timetableSlots: [],
+  };
 }
 
 // --- fasting ---
@@ -409,13 +423,13 @@ export function normalizeOtherDetailConfig(raw: unknown): OtherDetailDataConfig 
   const summary = normalizeRoutineSummary(o.summary);
   const checklist: OtherChecklistTask[] = Array.isArray(o.checklist)
     ? (o.checklist as unknown[])
-        .filter((t): t is Record<string, unknown> => t != null && typeof t === 'object')
-        .map((t) => ({
-          id: typeof t.id === 'string' ? t.id : `o_${Math.random().toString(36).slice(2, 8)}`,
-          text: clampStr(t.text, 160),
-          done: typeof t.done === 'boolean' ? t.done : false,
-        }))
-        .filter((t) => t.text.length > 0)
+      .filter((t): t is Record<string, unknown> => t != null && typeof t === 'object')
+      .map((t) => ({
+        id: typeof t.id === 'string' ? t.id : `o_${Math.random().toString(36).slice(2, 8)}`,
+        text: clampStr(t.text, 160),
+        done: typeof t.done === 'boolean' ? t.done : false,
+      }))
+      .filter((t) => t.text.length > 0)
     : [];
 
   const icon = normalizeCustomFlowIcon(o.icon);
@@ -438,12 +452,138 @@ export function getInitialOtherDataConfig(): OtherDetailDataConfig {
   };
 }
 
+// --- custom flow templates (measurement) ---
+
+export type MeasurementUnitKey = 'kg' | 'mmHg' | 'hours' | 'percent' | 'none';
+
+export type MeasurementFrequency = 'once' | 'multiple';
+
+export const MEASUREMENT_UNIT_OPTIONS: ReadonlyArray<{
+  key: MeasurementUnitKey;
+  labelKo: string;
+}> = [
+    { key: 'kg', labelKo: 'kg' },
+    { key: 'mmHg', labelKo: 'mmHg' },
+    { key: 'hours', labelKo: '시간' },
+    { key: 'percent', labelKo: '%' },
+    { key: 'none', labelKo: '없음' },
+  ];
+
+export type MeasurementHistoryEntry = {
+  dateKey: string;
+  value: number;
+};
+
+export type MeasurementDetailDataConfig = {
+  templateKey: 'measurement';
+  displayName: string;
+  summary: string;
+  /** 기록 항목 이름 — 예: 체중, 혈압 */
+  metricLabel: string;
+  unit: MeasurementUnitKey;
+  useGoalValue: boolean;
+  goalValue: number;
+  /** 오늘 기록값(세션·히스토리용) */
+  currentValue: number;
+  /** 직전 기록값 — 변화량 표시용 */
+  previousValue: number;
+  /** 최근 기록 (최대 14일) — 추이 차트용 */
+  history: MeasurementHistoryEntry[];
+  /** frequency=once 일 때 오늘 이미 기록했는지 */
+  lastRecordedDateKey: string;
+  frequency: MeasurementFrequency;
+  icon?: string;
+  accentColor?: string;
+};
+
+const MEASUREMENT_UNITS = new Set<MeasurementUnitKey>(['kg', 'mmHg', 'hours', 'percent', 'none']);
+
+function normalizeMeasurementUnit(raw: unknown): MeasurementUnitKey {
+  return typeof raw === 'string' && MEASUREMENT_UNITS.has(raw as MeasurementUnitKey)
+    ? (raw as MeasurementUnitKey)
+    : 'none';
+}
+
+function normalizeMeasurementFrequency(raw: unknown): MeasurementFrequency {
+  return raw === 'multiple' ? 'multiple' : 'once';
+}
+
+export function normalizeMeasurementDetailConfig(raw: unknown): MeasurementDetailDataConfig {
+  const o = asObj(raw);
+  const displayName = normalizeRoutineDisplayName(o.displayName);
+  const summary = normalizeRoutineSummary(o.summary);
+  const metricLabel = clampStr(o.metricLabel, 40);
+  const unit = normalizeMeasurementUnit(o.unit);
+  const useGoalValue = typeof o.useGoalValue === 'boolean' ? o.useGoalValue : false;
+  const goalRaw = Number(o.goalValue);
+  const goalValue = Number.isFinite(goalRaw) ? Math.max(0, Math.min(99999, goalRaw)) : 0;
+  const currentRaw = Number(o.currentValue);
+  const currentValue = Number.isFinite(currentRaw)
+    ? Math.max(0, Math.min(99999, currentRaw))
+    : 0;
+  const prevRaw = Number(o.previousValue);
+  const previousValue = Number.isFinite(prevRaw)
+    ? Math.max(0, Math.min(99999, prevRaw))
+    : 0;
+  const history = Array.isArray(o.history)
+    ? (o.history as unknown[])
+        .map((entry) => {
+          if (!entry || typeof entry !== 'object') return null;
+          const e = entry as Record<string, unknown>;
+          const dateKey = clampStr(e.dateKey, 10);
+          const valueRaw = Number(e.value);
+          if (dateKey.length < 10 || !Number.isFinite(valueRaw)) return null;
+          return { dateKey, value: Math.max(0, Math.min(99999, valueRaw)) };
+        })
+        .filter((e): e is MeasurementHistoryEntry => e != null)
+        .slice(0, 14)
+    : [];
+  const frequency = normalizeMeasurementFrequency(o.frequency);
+  const icon = normalizeCustomFlowIcon(o.icon);
+  const accentColor = normalizeCustomFlowAccentColor(o.accentColor);
+  const lastRecordedDateKey = clampStr(o.lastRecordedDateKey, 10);
+
+  return {
+    templateKey: 'measurement',
+    displayName,
+    summary,
+    metricLabel,
+    unit,
+    useGoalValue,
+    goalValue,
+    currentValue,
+    previousValue,
+    history:
+      history.length > 0
+        ? history
+        : currentValue > 0 && lastRecordedDateKey.length >= 10
+          ? [{ dateKey: lastRecordedDateKey, value: currentValue }]
+          : [],
+    lastRecordedDateKey,
+    frequency,
+    ...(icon ? { icon } : {}),
+    ...(accentColor ? { accentColor } : {}),
+  };
+}
+
+export function getInitialMeasurementDataConfig(): MeasurementDetailDataConfig {
+  return normalizeMeasurementDetailConfig({
+    templateKey: 'measurement',
+    displayName: '',
+    summary: '',
+    metricLabel: '',
+    unit: 'none',
+    useGoalValue: false,
+    goalValue: 0,
+    currentValue: 0,
+    frequency: 'once',
+  });
+}
+
 /** 액티브 세션 화면: 현재 블록 카테고리에 맞춰 하나만 채움 */
 export type CategoryConfigsForActiveSession = {
   reading: ReadingLiveActivityConfig | null;
   work: WorkDetailDataConfig | null;
-  meditation: MeditationDetailDataConfig | null;
-  yoga: YogaDetailDataConfig | null;
   fasting: FastingDetailDataConfig | null;
   water: WaterDetailDataConfig | null;
   medicine: MedicineDetailDataConfig | null;
@@ -454,8 +594,6 @@ export function emptyCategorySessionConfigs(): CategoryConfigsForActiveSession {
   return {
     reading: null,
     work: null,
-    meditation: null,
-    yoga: null,
     fasting: null,
     water: null,
     medicine: null,

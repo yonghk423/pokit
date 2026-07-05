@@ -43,19 +43,6 @@ function formatRailMinutes(minutes: number): string {
   return `${h}:${String(min).padStart(2, '0')}`;
 }
 
-function accentDurationInLine(line: string, accent: string, ink: string) {
-  const match = line.match(/^(\d+(?:시간(?: \d+분)?|\d+분)) (.+)$/);
-  if (!match) {
-    return <ThemedText style={{ color: ink, fontSize: 13, lineHeight: 19 }}>{line}</ThemedText>;
-  }
-  return (
-    <ThemedText style={{ color: ink, fontSize: 13, lineHeight: 19 }}>
-      <ThemedText style={{ color: accent, fontWeight: '700' }}>{match[1]}</ThemedText>
-      {` ${match[2]}`}
-    </ThemedText>
-  );
-}
-
 function CompleteRadio({
   checked,
   isDark,
@@ -104,13 +91,22 @@ function SpineNode({
   palette: SpineTimelinePalette;
   isDark: boolean;
 }) {
-  const startFill = isDark ? '#FAFAFA' : PrimaryColor;
+  const startFill = isDark ? '#FAFAFA' : PrimaryColor.rgb;
   const blockBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)';
 
   if (variant === 'start') {
     return (
-      <View style={[styles.nodeCircle, styles.nodeCircleLg, { backgroundColor: startFill }]}>
-        <IconSymbol name="alarm" size={18} color={isDark ? '#111' : '#FFF'} />
+      <View
+        style={[
+          styles.nodeCircle,
+          styles.nodeCircleLg,
+          {
+            backgroundColor: startFill,
+            borderWidth: isDark ? 0 : 2,
+            borderColor: palette.ink,
+          },
+        ]}>
+        <IconSymbol name="alarm" size={18} color={isDark ? '#111111' : '#FFFFFF'} />
       </View>
     );
   }
@@ -186,27 +182,23 @@ function GapRow({
         <View style={[styles.spineLineGap, { backgroundColor: palette.line }]} />
       </View>
       <View style={styles.gapContentCol}>
-        <View style={styles.gapCopyRow}>
-          <IconSymbol name="timer" size={13} color={palette.muted} />
-          {accentDurationInLine(row.coachingLine, accent, palette.muted)}
-        </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="일정 추가"
+          hitSlop={8}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onAdd();
           }}
           style={({ pressed }) => [
-            styles.addButton,
+            styles.addIconButton,
             {
               backgroundColor: palette.surface,
               borderColor: palette.line,
             },
             pressed && styles.pressed,
           ]}>
-          <IconSymbol name="plus" size={14} color={accent} />
-          <ThemedText style={[styles.addButtonText, { color: palette.ink }]}>일정 추가</ThemedText>
+          <IconSymbol name="plus" size={15} color={accent} />
         </Pressable>
       </View>
       <View style={styles.completeSpacer} />
@@ -227,7 +219,7 @@ export function SpineTimelineView({
   onReorderBlocks,
   onReorderDragActiveChange,
 }: Props) {
-  const startTone = isDark ? '#FAFAFA' : PrimaryColor;
+  const startTone = isDark ? '#FAFAFA' : PrimaryColor.rgb;
   const endTone = isDark ? '#93C5FD' : '#2563EB';
   const blockRowHeightRef = useRef(56);
 
@@ -434,8 +426,9 @@ const styles = StyleSheet.create({
   gapContentCol: {
     flex: 1,
     minWidth: 0,
-    gap: 10,
-    paddingTop: 0,
+    paddingTop: 2,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   metaText: {
     fontSize: 12,
@@ -448,26 +441,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     lineHeight: 21,
   },
-  gapCopyRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-    paddingRight: 4,
-  },
-  addButton: {
-    flexDirection: 'row',
+  addIconButton: {
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
     borderRadius: 0,
     borderWidth: 2,
-  },
-  addButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: -0.2,
+    flexShrink: 0,
   },
   completeHit: {
     width: COMPLETE_W,

@@ -1,12 +1,11 @@
 jest.mock('@shared/lib/storage', () => ({
   loadHistoryDailyStats: jest.fn(() => []),
-  loadHistoryAchievements: jest.fn(() => []),
   loadHistoryMeta: jest.fn(() => null),
   saveHistoryDailyStats: jest.fn(),
   saveHistoryMeta: jest.fn(),
-  saveHistoryAchievements: jest.fn(),
   loadDayPlanDraft: jest.fn(() => null),
   saveDayPlanDraft: jest.fn(),
+  syncWidgetTimelineFromStorage: jest.fn(),
 }));
 
 jest.mock('@entities/day-plan/lib/localDateKey', () => ({
@@ -23,7 +22,6 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
   beforeEach(() => {
     useHistoryStore.setState({
       dailyStatsByDate: {},
-      achievements: [],
       lastUpdatedAt: '',
       isHydrated: true,
     });

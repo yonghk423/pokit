@@ -5,6 +5,7 @@ jest.mock('@shared/lib/storage', () => ({
     { id: 'customFlow:legacy-only', groupKey: 'productivity' },
   ]),
   listCustomFlowCatalogEntries: jest.fn(() => []),
+  loadHiddenStandardCatalogKeys: jest.fn(() => []),
 }));
 
 import {
@@ -16,9 +17,9 @@ describe('priorityCatalogRegistry', () => {
   it('excludes removed keys from standard catalog', () => {
     const standard = getPriorityCatalogStandardKeys();
     expect(standard).toContain('reading');
-    expect(standard).toContain('water');
-    expect(standard).toContain('meditation');
-    expect(standard).toContain('deepwork');
+    expect(standard).toContain('healthIntake');
+    expect(standard).toContain('work');
+    expect(standard).not.toContain('meditation');
     expect(standard).not.toContain('other');
     expect(standard).not.toContain('yoga');
     expect(standard).not.toContain('coding');
@@ -29,11 +30,11 @@ describe('priorityCatalogRegistry', () => {
       'reading',
       'yoga',
       'coding',
-      'water',
-      'water',
+      'healthIntake',
+      'healthIntake',
       'other',
     ]);
-    expect(filtered).toEqual(['reading', 'water']);
+    expect(filtered).toEqual(['reading', 'healthIntake']);
   });
 
   it('allows config-only customFlow keys', () => {

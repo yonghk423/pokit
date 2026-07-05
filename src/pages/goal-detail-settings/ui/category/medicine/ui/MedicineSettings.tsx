@@ -12,6 +12,7 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { SettingsProgressBand } from '../../lib/SettingsProgressBand';
 import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
 import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
@@ -121,6 +122,8 @@ export function MedicineSettings({
   onChangeDataConfig,
   allowRename = true,
   renameLockedReason = null,
+  embedded = false,
+  intakeMode = false,
 }: {
   rhythmTitle: string;
   categoryKey?: GoalDetailCategoryKey;
@@ -128,6 +131,9 @@ export function MedicineSettings({
   onChangeDataConfig: (next: unknown) => void;
   allowRename?: boolean;
   renameLockedReason?: 'running' | 'today' | null;
+  embedded?: boolean;
+  /** 건강을 위한 섭취 — 약·영양제 등 포괄 문구 */
+  intakeMode?: boolean;
 }) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -168,6 +174,62 @@ export function MedicineSettings({
     [priorityEnd, priorityStart],
   );
 
+  const enabledSlots = useMemo(
+    () => SLOT_GRID.filter((slot) => slotOn(draft, slot.key)),
+    [draft],
+  );
+
+  const doseProgressRatio =
+    draft.dosesPerDay > 0 ? Math.min(1, draft.takenCount / draft.dosesPerDay) : 0;
+
+  const nextSlotLabel =
+    draft.takenCount < draft.dosesPerDay
+      ? enabledSlots[draft.takenCount]?.label ?? '—'
+      : intakeMode ? '오늘 섭취 완료' : '오늘 복용 완료';
+
+  const copy = intakeMode
+    ? {
+        progressTitle: '오늘 섭취',
+        progressDone: '오늘 섭취를 모두 마쳤어요',
+        progressEmpty: '섭취 슬롯을 켜면 횟수가 정해져요',
+        actionDone: '섭취 완료',
+        actionReset: '오늘 섭취 기록 초기화',
+        doseCountLabel: '섭취 횟수',
+        itemNameLabel: '항목 이름',
+        itemNamePlaceholder: '약·영양제·보조제 이름',
+        slotSectionLabel: '섭취 슬롯',
+        slotToggleA11y: (label: string, on: boolean) => `${label} 섭취 ${on ? '켜짐' : '꺼짐'}`,
+        slotTimeLabel: (label: string) => `${label} 섭취`,
+        slotNotifyLabel: (label: string) => `${label} 섭취 알림`,
+        itemIcon: 'pills.fill' as const,
+      }
+    : {
+        progressTitle: '오늘 복용',
+        progressDone: '오늘 복용을 모두 마쳤어요',
+        progressEmpty: '복용 슬롯을 켜면 횟수가 정해져요',
+        actionDone: '복용 완료',
+        actionReset: '오늘 복용 기록 초기화',
+        doseCountLabel: '복용 횟수',
+        itemNameLabel: '약 이름',
+        itemNamePlaceholder: '먹는 약 이름을 적어 주세요',
+        slotSectionLabel: '복용 슬롯',
+        slotToggleA11y: (label: string, on: boolean) => `${label} 복용 ${on ? '켜짐' : '꺼짐'}`,
+        slotTimeLabel: (label: string) => `${label} 복용`,
+        slotNotifyLabel: (label: string) => `${label} 복용 알림`,
+        itemIcon: 'pills.fill' as const,
+      };
+
+  const markDoseTaken = () => {
+    setDraft((prev) => {
+      if (prev.takenCount >= prev.dosesPerDay) return prev;
+      return normalizeMedicineDetailConfig({ ...prev, takenCount: prev.takenCount + 1 });
+    });
+  };
+
+  const resetDoseTaken = () => {
+    setDraft((prev) => normalizeMedicineDetailConfig({ ...prev, takenCount: 0 }));
+  };
+
   const timePickerPalette = useMemo(() => paletteForReminderTimeCard(isDark).timeField, [isDark]);
   const [expandedMedicineTimeKey, setExpandedMedicineTimeKey] = useState<
     'morning' | 'lunch' | 'dinner' | null
@@ -183,26 +245,116 @@ export function MedicineSettings({
   }, [draft, expandedMedicineTimeKey]);
 
   return (
-    <View style={styles.shell}>
-      <RoutineTitleField
-        value={draft.displayName}
-        onChangeValue={(displayName) => setDraft((prev) => ({ ...prev, displayName }))}
-        fallback={titleFallback}
-        allowRename={allowRename}
-        renameLockedReason={renameLockedReason}
+    <View style={[styles.shell, embedded && styles.shellEmbedded]}>
+      {!embedded ? (
+        <>
+          <RoutineTitleField
+            value={draft.displayName}
+            onChangeValue={(displayName) => setDraft((prev) => ({ ...prev, displayName }))}
+            fallback={titleFallback}
+            allowRename={allowRename}
+            renameLockedReason={renameLockedReason}
+            palette={c}
+          />
+
+          <RoutineSummaryField
+            value={draft.summary}
+            onChangeValue={(summary) => setDraft((prev) => ({ ...prev, summary }))}
+            palette={c}
+          />
+        </>
+      ) : null}
+
+      <SettingsProgressBand
+        title={copy.progressTitle}
+        valueLine={`${draft.takenCount} / ${draft.dosesPerDay}회`}
+        subLine={
+          draft.dosesPerDay > 0
+            ? draft.takenCount >= draft.dosesPerDay
+              ? copy.progressDone
+              : `다음: ${nextSlotLabel} · ${Math.round(doseProgressRatio * 100)}%`
+            : copy.progressEmpty
+        }
+        ratio={doseProgressRatio}
         palette={c}
       />
 
-      <RoutineSummaryField
-        value={draft.summary}
-        onChangeValue={(summary) => setDraft((prev) => ({ ...prev, summary }))}
-        palette={c}
-      />
+      {draft.dosesPerDay > 0 ? (
+        <View style={styles.doseActionRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={copy.actionDone}
+            onPress={markDoseTaken}
+            disabled={draft.takenCount >= draft.dosesPerDay}
+            style={({ pressed }) => [
+              styles.doseActionBtn,
+              { backgroundColor: PRIMARY, opacity: draft.takenCount >= draft.dosesPerDay ? 0.35 : pressed ? 0.85 : 1 },
+            ]}>
+            <Text style={styles.doseActionBtnText}>{copy.actionDone}</Text>
+          </Pressable>
+          {draft.takenCount > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={copy.actionReset}
+              onPress={resetDoseTaken}
+              style={({ pressed }) => [styles.doseResetBtn, { borderColor: c.outline }, pressed && { opacity: 0.75 }]}>
+              <Text style={[styles.doseResetBtnText, { color: c.onVariant }]}>초기화</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
+      {enabledSlots.length > 0 ? (
+        <View style={[styles.slotStatusWrap, { borderColor: c.outline }]}>
+          {enabledSlots.map((slot, index) => {
+            const isDone = index < draft.takenCount;
+            const isCurrent = index === draft.takenCount;
+            const statusLabel = isDone ? '완료' : isCurrent ? '다음' : '예정';
+            return (
+              <View
+                key={slot.key}
+                style={[
+                  styles.slotStatusRow,
+                  { borderBottomColor: c.outlineVariant },
+                  isCurrent && { backgroundColor: 'rgba(0,0,0,0.04)' },
+                ]}>
+                <View style={styles.slotStatusLeft}>
+                  <IconSymbol name={slot.icon} size={16} color={isDone ? PRIMARY : c.onVariant} />
+                  <Text style={[styles.slotStatusLabel, { color: c.onSurface }]}>{slot.label}</Text>
+                  <Text style={[styles.slotStatusTime, { color: c.onVariant }]}>
+                    {formatHhmmClockKo(timeField(draft, slot.key))}
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.slotStatusBadge,
+                    {
+                      color: isDone ? PRIMARY : isCurrent ? c.onSurface : c.onVariant,
+                      fontWeight: isCurrent ? '800' : '700',
+                    },
+                  ]}>
+                  {statusLabel}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
 
       <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: c.outline }]}>
         <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: c.onSurface }]}>{draft.takenCount}</Text>
+          <Text style={[styles.metricLabel, { color: c.onVariant }]}>완료</Text>
+        </View>
+        <View style={styles.metricItem}>
           <Text style={[styles.metricValue, { color: c.onSurface }]}>{draft.dosesPerDay}</Text>
-          <Text style={[styles.metricLabel, { color: c.onVariant }]}>복용 횟수</Text>
+          <Text style={[styles.metricLabel, { color: c.onVariant }]}>{copy.doseCountLabel}</Text>
+        </View>
+        <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: c.onSurface }]}>
+            {Math.max(0, draft.dosesPerDay - draft.takenCount)}
+          </Text>
+          <Text style={[styles.metricLabel, { color: c.onVariant }]}>남음</Text>
         </View>
       </View>
 
@@ -214,13 +366,13 @@ export function MedicineSettings({
       <View style={[styles.rowsWrap, { borderTopColor: '#000' }]}>
         <View style={[styles.row, { borderBottomColor: c.outline }]}>
           <View style={styles.rowLeft}>
-            <IconSymbol name="cross.case.fill" size={18} color={PRIMARY} />
-            <Text style={[styles.rowTitle, { color: c.onSurface }]}>약 이름</Text>
+            <IconSymbol name={copy.itemIcon} size={18} color={PRIMARY} />
+            <Text style={[styles.rowTitle, { color: c.onSurface }]}>{copy.itemNameLabel}</Text>
           </View>
           <TextInput
             value={draft.doseLabel}
             onChangeText={(t) => setDraft((prev) => ({ ...prev, doseLabel: t }))}
-            placeholder="먹는 약 이름을 적어 주세요"
+            placeholder={copy.itemNamePlaceholder}
             placeholderTextColor={c.outline}
             style={[styles.rowInput, { color: c.onSurface }]}
           />
@@ -228,7 +380,7 @@ export function MedicineSettings({
 
         <View style={[styles.row, styles.slotRowWrap, { borderBottomColor: c.outline }]}>
           <View style={styles.slotColumn}>
-            <Text style={[styles.rowTitle, { color: c.onSurface }]}>복용 슬롯</Text>
+            <Text style={[styles.rowTitle, { color: c.onSurface }]}>{copy.slotSectionLabel}</Text>
             <View style={styles.slotRow}>
               {SLOT_GRID.map((slot) => {
                 const on = slotOn(draft, slot.key);
@@ -240,7 +392,7 @@ export function MedicineSettings({
                     key={slot.key}
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
-                    accessibilityLabel={`${slot.label} 복용 ${on ? '켜짐' : '꺼짐'}`}
+                    accessibilityLabel={copy.slotToggleA11y(slot.label, on)}
                     android_ripple={{ color: 'rgba(0,0,0,0.12)' }}
                     onPress={() => setDraft((prev) => setSlot(prev, slot.key, !slotOn(prev, slot.key)))}
                     style={({ pressed }) => [
@@ -263,7 +415,7 @@ export function MedicineSettings({
             <View key={slot.key} style={[styles.slotDetailBlock, { borderBottomColor: c.outline }]}>
               <View style={styles.medicineTimePickerRow}>
                 <SnappedTimePickerField
-                  label={slot.cardSub}
+                  label={copy.slotTimeLabel(slot.label)}
                   hint={`담기 구간 ${routineWindowLine} 안에서만 선택돼요`}
                   valueHhmm={timeField(draft, slot.key)}
                   onChangeHhmm={(next) =>
@@ -281,7 +433,7 @@ export function MedicineSettings({
                 />
               </View>
               <View style={[styles.row, styles.rowInSlotGroup, styles.slotNotifyRow]}>
-                <Text style={[styles.rowSubTitle, { color: c.onVariant }]}>{slot.cardSub} 알림</Text>
+                <Text style={[styles.rowSubTitle, { color: c.onVariant }]}>{copy.slotNotifyLabel(slot.label)}</Text>
                 <Switch
                   value={notifyOn}
                   onValueChange={(v) => setDraft((prev) => setSlotNotify(prev, slot.key, v))}
@@ -300,6 +452,7 @@ export function MedicineSettings({
 
 const styles = StyleSheet.create({
   shell: { gap: 12, paddingVertical: 6 },
+  shellEmbedded: { paddingVertical: 0, gap: 10 },
   routineWindowBand: {
     borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
@@ -371,4 +524,34 @@ const styles = StyleSheet.create({
   medicineTimePickerRow: {
     paddingVertical: 4,
   },
+  doseActionRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  doseActionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doseActionBtnText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  doseResetBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  doseResetBtnText: { fontSize: 13, fontWeight: '700' },
+  slotStatusWrap: {
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  slotStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  slotStatusLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  slotStatusLabel: { fontSize: 14, fontWeight: '700' },
+  slotStatusTime: { fontSize: 12, fontWeight: '600' },
+  slotStatusBadge: { fontSize: 12 },
 });

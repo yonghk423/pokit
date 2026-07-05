@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { SettingsProgressBand } from '../../lib/SettingsProgressBand';
 import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
 import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
@@ -75,6 +76,14 @@ export function FastingSettings({
     return `${hh}:${mm}`;
   }, [finishAt]);
 
+  const weightDeltaKg = Math.max(0, parsed.currentWeightKg - parsed.targetWeightKg);
+  const weightAchieved = parsed.currentWeightKg <= parsed.targetWeightKg && parsed.targetWeightKg > 0;
+  const weightProgressRatio = weightAchieved
+    ? 1
+    : parsed.weeklyLossTargetKg > 0
+      ? Math.min(0.95, parsed.weeklyLossTargetKg / Math.max(0.1, weightDeltaKg))
+      : 0;
+
   useEffect(() => {
     const payload: FastingDetailDataConfig = parsed;
     const s = JSON.stringify(payload);
@@ -95,6 +104,22 @@ export function FastingSettings({
       />
 
       <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
+
+      <SettingsProgressBand
+        title="체중 목표"
+        valueLine={
+          weightAchieved
+            ? '목표 체중 달성'
+            : `${parsed.currentWeightKg.toFixed(1)}kg → ${parsed.targetWeightKg.toFixed(1)}kg`
+        }
+        subLine={
+          weightAchieved
+            ? `주간 ${parsed.weeklyLossTargetKg.toFixed(1)}kg 감량 목표 유지`
+            : `목표까지 ${weightDeltaKg.toFixed(1)}kg · 주간 ${parsed.weeklyLossTargetKg.toFixed(1)}kg 감량`
+        }
+        ratio={weightProgressRatio}
+        palette={c}
+      />
 
       <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: c.outline }]}>
         <View style={styles.metricItem}>
@@ -225,31 +250,16 @@ export function FastingSettings({
         ) : null}
       </View>
 
-      <View style={[styles.progressCard, { borderColor: c.outlineVariant, backgroundColor: c.surfaceLowest }]}>
-        <View style={styles.progressHeader}>
-          <Text style={[styles.progressTitle, { color: c.onSurface }]}>체중 목표 진행</Text>
-          <Text style={[styles.progressPct, { color: c.onVariant }]}>
-            {parsed.currentWeightKg <= parsed.targetWeightKg ? '달성' : '진행 중'}
-          </Text>
-        </View>
-        <Text style={[styles.weightSummary, { color: c.onVariant }]}>
-          현재 {parsed.currentWeightKg.toFixed(1)}kg → 목표 {parsed.targetWeightKg.toFixed(1)}kg, 주간{' '}
-          {parsed.weeklyLossTargetKg.toFixed(1)}kg 감량
-        </Text>
-      </View>
-
       {fastingEnabled ? (
-        <View style={[styles.progressCard, { borderColor: c.outlineVariant, backgroundColor: c.surfaceLowest }]}>
-          <View style={styles.progressHeader}>
-            <Text style={[styles.progressTitle, { color: c.onSurface }]}>단식 진행 현황</Text>
-            <Text style={[styles.progressPct, { color: c.onVariant }]}>{Math.round(progress01 * 100)}%</Text>
-          </View>
-          <View style={[styles.track, { backgroundColor: c.outlineVariant }]}>
-            <View style={[styles.fill, { width: `${Math.round(progress01 * 100)}%` }]} />
-          </View>
-        </View>
+        <SettingsProgressBand
+          title="단식 진행"
+          valueLine={`${Math.floor(parsed.elapsedMin / 60)}시간 ${parsed.elapsedMin % 60}분 / ${Math.floor(parsed.fastingMin / 60)}시간`}
+          subLine={`남은 ${Math.floor(remainingMin / 60)}시간 ${remainingMin % 60}분 · 예상 종료 ${finishLabel}`}
+          ratio={progress01}
+          palette={c}
+        />
       ) : null}
-      <View />
+
       <View>
         <Text style={[styles.note, { color: c.onVariant }]}>
           체중 관리를 기본으로 두고 필요할 때 단식 기능을 함께 사용하세요.
@@ -305,18 +315,5 @@ const styles = StyleSheet.create({
   toggleChipText: { fontSize: 12, fontWeight: '700' },
   inlineInputWrap: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   inlineInput: { minWidth: 72, fontSize: 18, fontWeight: '700', textAlign: 'right', padding: 0 },
-  progressCard: {
-    borderRadius: 0,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 10,
-  },
-  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  progressTitle: { fontSize: 14, fontWeight: '800' },
-  progressPct: { fontSize: 12, fontWeight: '700' },
-  weightSummary: { fontSize: 13, lineHeight: 19, fontWeight: '600' },
-  track: { height: 8, borderRadius: 0, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 0, backgroundColor: 'rgba(0,0,0,0.88)' },
   note: { fontSize: 12, lineHeight: 18, fontWeight: '500' },
 });

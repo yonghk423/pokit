@@ -27,12 +27,12 @@ describe('categoryReminderCatalog', () => {
 
   it('includes core reminder keys', () => {
     expect(CATEGORY_REMINDER_KEYS).toContain('reading');
-    expect(CATEGORY_REMINDER_KEYS).toContain('water');
+    expect(CATEGORY_REMINDER_KEYS).toContain('healthIntake');
   });
 
   it('returns Korean labels', () => {
     expect(categoryReminderLabelKo('reading')).toBe('독서');
-    expect(categoryReminderLabelKo('stretching')).toBe('스트레칭하기');
+    expect(categoryReminderLabelKo('work')).toBe('스터디');
     expect(categoryReminderLabelKo('unknown_key')).toBe('unknown_key');
     mockLoadGoalDetailCategoryConfig.mockReturnValue({ displayName: '내 루틴' });
     expect(
@@ -44,7 +44,7 @@ describe('categoryReminderCatalog', () => {
 
   it('returns catalog icon names', () => {
     expect(categoryReminderIconName('reading')).toBe('book.fill');
-    expect(categoryReminderIconName('planning')).toBe('calendar.badge.clock');
+    expect(categoryReminderIconName('work')).toBe('bag.fill');
     expect(categoryReminderIconName('unknown_key')).toBe('person.fill');
     expect(categoryReminderIconName(`${CUSTOM_FLOW_CATEGORY_PREFIX}abcdefgh`)).toBe('person.fill');
     expect(categoryReminderIconName('customFlow:builtin_hobby_photo')).toBe('camera.fill');

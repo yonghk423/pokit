@@ -46,6 +46,20 @@ describe('buildMonthlyFlowHistory', () => {
     expect(summary.activeDays).toBe(2);
     expect(summary.totalCompletions).toBe(2);
     expect(summary.progressPercent).toBe(Math.round((2 / 31) * 100));
-    expect(summary.topCategoryLabel).toBeTruthy();
+    expect(summary.topCategoryLabels).toEqual(expect.arrayContaining([expect.any(String)]));
+  });
+
+  it('includes all tied top categories in summary', () => {
+    const summary = buildMonthlyHistorySummary({
+      monthPrefix: '2026-07',
+      dailyStatsByDate: {
+        '2026-07-01': stat('2026-07-01', { water: 2, medicine: 2, fasting: 2, reading: 1 }),
+      },
+    });
+
+    expect(summary.topCategoryLabels).toHaveLength(3);
+    expect(summary.topCategoryLabels).toEqual(
+      expect.arrayContaining(['수분섭취', '약 복용', '체중관리']),
+    );
   });
 });

@@ -13,7 +13,7 @@ beforeEach(() => {
 });
 
 describe('resolveCustomFlowCatalogIcon', () => {
-  it('returns a themed icon for builtin custom flows', () => {
+  it('returns legacy icon metadata for removed builtin custom flows', () => {
     expect(resolveCustomFlowCatalogIcon('customFlow:builtin_hobby_draw')).toBe('paintbrush.pointed.fill');
     expect(resolveCustomFlowCatalogIcon('customFlow:builtin_family_call')).toBe('phone.fill');
     expect(resolveCustomFlowCatalogIcon('customFlow:builtin_mind_nap')).toBe('moon.zzz.fill');
@@ -36,7 +36,7 @@ describe('resolveCustomFlowCatalogIcon', () => {
     expect(resolveCustomFlowCatalogColor(id)).toBe('#3b82f6');
   });
 
-  it('prefers saved config over builtin defaults', () => {
+  it('prefers saved config over legacy builtin defaults', () => {
     saveGoalDetailCategoryConfig('customFlow:builtin_hobby_draw', {
       displayName: '드로잉',
       summary: '',
@@ -50,7 +50,7 @@ describe('resolveCustomFlowCatalogIcon', () => {
 });
 
 describe('resolveCustomFlowCatalogColor', () => {
-  it('returns distinct colors for builtin custom flows', () => {
+  it('returns distinct colors for legacy removed builtin custom flows', () => {
     expect(resolveCustomFlowCatalogColor('customFlow:builtin_hobby_draw')).toBe('#a855f7');
     expect(resolveCustomFlowCatalogColor('customFlow:builtin_family_call')).toBe('#3b82f6');
     expect(resolveCustomFlowCatalogColor('customFlow:builtin_mind_detox')).toBe('#22c55e');

@@ -24,7 +24,7 @@ const LIGHT: GoalDetailSessionUiTokens = {
   outline: '#a1a1aa',
   primary: 'rgb(0, 0, 0)',
   primaryOnAccent: '#ffffff',
-  readingAccent: 'rgb(16, 185, 129)',
+  readingAccent: '#356668',
   readingMetricBorder: '#d1d5db',
   waterCtaOnAccent: '#0f172a',
 };
@@ -38,7 +38,7 @@ const DARK: GoalDetailSessionUiTokens = {
   outline: '#71717a',
   primary: '#fafafa',
   primaryOnAccent: '#09090b',
-  readingAccent: 'rgb(52, 211, 153)',
+  readingAccent: '#9ecfd1',
   readingMetricBorder: '#3f3f46',
   waterCtaOnAccent: '#0f172a',
 };

@@ -1,4 +1,3 @@
-import { DEFAULT_BUILTIN_CUSTOM_FLOWS } from './defaultPriorityCatalog';
 import { SEED_CATEGORY_POOL } from './devMockSeed/seedCatalogConstants';
 import {
   type HistoryDailyStatRow,
@@ -25,37 +24,13 @@ type DayOutcome = 'empty' | 'low' | 'medium' | 'high';
 
 /** 최근 7일 — 도넛·핵심 목표 UI 데모용 고정 부스트 (10그룹 골고루) */
 const RECENT_WEEK_BOOSTS: ReadonlyArray<Record<string, number>> = [
-  {
-    water: 2, reading: 1, meditation: 1,
-    'customFlow:builtin_mind_gratitude': 1, 'customFlow:builtin_hobby_draw': 1,
-    'customFlow:builtin_family_friends': 1,
-  },
-  {
-    stretching: 1, planning: 2,
-    'customFlow:builtin_hobby_guitar': 1, 'customFlow:builtin_family_call': 1,
-    'customFlow:builtin_hobby_photo': 1, 'customFlow:builtin_mind_music': 1,
-  },
-  {
-    water: 1, medicine: 1, reading: 2,
-    'customFlow:builtin_hobby_cooking': 1, 'customFlow:builtin_mind_nap': 1, journal: 1,
-  },
-  {
-    study: 2, 'customFlow:builtin_hobby_hiking': 1, 'customFlow:builtin_family_parents': 1,
-    straightenBack: 1, deepwork: 1,
-  },
-  {
-    water: 2, planning: 1, writing: 1,
-    'customFlow:builtin_mind_pledge': 1, 'customFlow:builtin_family_community': 1,
-  },
-  {
-    stretching: 1, fasting: 1, neckPosture: 1,
-    'customFlow:builtin_family_partner': 1, 'customFlow:builtin_mind_detox': 1,
-  },
-  {
-    reading: 1, study: 1, water: 1,
-    'customFlow:builtin_hobby_draw': 1, 'customFlow:builtin_family_call': 1,
-    'customFlow:builtin_mind_gratitude': 1,
-  },
+  { water: 2, reading: 1, medicine: 1 },
+  { medicine: 1, work: 2, fasting: 1 },
+  { water: 1, medicine: 1, reading: 2 },
+  { work: 2, fasting: 1, water: 1 },
+  { water: 2, work: 1, reading: 1 },
+  { medicine: 1, fasting: 1, reading: 1 },
+  { reading: 1, work: 1, water: 1 },
 ];
 
 function formatDateKey(date: Date): string {
@@ -268,15 +243,13 @@ function generateRow(dateKey: string, intensity: DayIntensity): HistoryDailyStat
     totalCompleted += count;
   }
 
-  /** 커스텀 플로우가 주간 데이터에 꾸준히 섞이도록 자주 추가 */
-  if (unitFloat(`${dateKey}:custom`) > 0.35) {
-    const flow =
-      DEFAULT_BUILTIN_CUSTOM_FLOWS[
-        deterministicInt(`${dateKey}:customPick`, 0, DEFAULT_BUILTIN_CUSTOM_FLOWS.length - 1)
-      ];
-    if (flow) {
-      const extra = deterministicInt(`${dateKey}:${flow.id}:extra`, 1, 2);
-      categoryCompletions[flow.id] = (categoryCompletions[flow.id] ?? 0) + extra;
+  /** 커스텀 플로우는 사용자 생성분만 — dev seed에서는 표준 6개만 사용 */
+  if (unitFloat(`${dateKey}:custom`) > 0.35 && SEED_CATEGORIES.length > categoryCount) {
+    const extraCat =
+      SEED_CATEGORIES[deterministicInt(`${dateKey}:customPick`, 0, SEED_CATEGORIES.length - 1)];
+    if (extraCat && !(extraCat in categoryCompletions)) {
+      const extra = deterministicInt(`${dateKey}:${extraCat}:extra`, 1, 2);
+      categoryCompletions[extraCat] = extra;
       totalCompleted += extra;
     }
   }

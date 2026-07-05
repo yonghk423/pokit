@@ -8,10 +8,10 @@ import {
   deleteCustomFlowCategory,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
-  getInitialOtherDataConfig,
   isCustomFlowCategoryKey,
   isDayPlanFlowBlock,
   isGoalDetailChecklistStyleCategoryKey,
+  mergeCustomFlowGoalDetailData,
   normalizeMedicineDetailConfig,
   normalizeOtherDetailConfig,
   resolveBlockCategoryKey,
@@ -48,8 +48,9 @@ import { ThemedView } from '@shared/ui/themed-view';
 
 import type { GoalDetailCategoryKey } from '../model/types';
 import { useGoalDetailSettingsRoute } from '../model/useGoalDetailSettingsRoute';
-import { getGoalDetailCategoryModule } from './category';
+import { resolveGoalDetailModuleForTarget } from './category';
 import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
+import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
 import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
 import { GoalDetailCategoryStartReminderCard } from './GoalDetailCategoryStartReminderCard';
 import { RoutineApplyWeekdaysField } from './RoutineApplyWeekdaysField';
@@ -82,48 +83,22 @@ function blockTimeLabel(block: DayPlanBlock): string {
   return formatBlockTimeRange(block);
 }
 
-/** 블록 저장값이 `{}`처럼 truthy면 `byBlock ?? byCategory`만으로는 카테고리 이름이 가려진다 — 병합한다. */
-function mergeOtherStyleGoalDetailData(
-  blockRaw: unknown | null,
-  categoryRaw: unknown | null,
-  fallback: unknown,
-): unknown {
-  const b = blockRaw != null ? normalizeOtherDetailConfig(blockRaw) : null;
-  const c = categoryRaw != null ? normalizeOtherDetailConfig(categoryRaw) : null;
-  const dnBlock = (b?.displayName ?? '').trim();
-  const dnCat = (c?.displayName ?? '').trim();
-  const displayName =
-    dnBlock.length > 0 ? b!.displayName : dnCat.length > 0 ? c!.displayName : '';
-  const bl = b?.checklist ?? [];
-  const cl = c?.checklist ?? [];
-  const checklist = bl.length >= cl.length ? bl : cl.length > 0 ? cl : bl;
-  const summaryBlock = (b?.summary ?? '').trim();
-  const summaryCat = (c?.summary ?? '').trim();
-  const summary =
-    summaryBlock.length > 0 ? b!.summary : summaryCat.length > 0 ? c!.summary : '';
-  const icon = b?.icon ?? c?.icon;
-  const accentColor = b?.accentColor ?? c?.accentColor;
-  return normalizeOtherDetailConfig({
-    displayName,
-    summary,
-    checklist,
-    ...(icon ? { icon } : {}),
-    ...(accentColor ? { accentColor } : {}),
-  });
-}
-
 function buildLoadedDataByBlockId(targets: EditingTarget[]): Record<string, unknown> {
   const next: Record<string, unknown> = {};
   for (const t of targets) {
-    const module = getGoalDetailCategoryModule(t.categoryKey);
-    const fallback = module.getInitialDataConfig?.() ?? {};
     const byBlock = loadGoalDetailBlockConfig(t.blockId);
     const byCategory = loadGoalDetailCategoryConfig(t.categoryKey);
+    const module = resolveGoalDetailModuleForTarget(t.categoryKey, byCategory ?? byBlock);
+    const fallback = module.getInitialDataConfig?.() ?? {};
     if (
       isGoalDetailChecklistStyleCategoryKey(t.categoryKey) ||
       isCustomFlowCategoryKey(t.categoryKey)
     ) {
-      next[t.blockId] = mergeOtherStyleGoalDetailData(byBlock, byCategory, fallback);
+      next[t.blockId] = isCustomFlowCategoryKey(t.categoryKey)
+        ? mergeCustomFlowGoalDetailData(byBlock, byCategory, fallback)
+        : normalizeOtherDetailConfig(
+            mergeCustomFlowGoalDetailData(byBlock, byCategory, fallback) as object,
+          );
     } else {
       next[t.blockId] = byBlock ?? byCategory ?? fallback;
     }
@@ -151,6 +126,9 @@ function withPreservedRoutineFields(categoryKey: string, next: unknown): unknown
   }
   if (!('applyWeekdays' in o) && Array.isArray(prevO.applyWeekdays)) {
     o.applyWeekdays = prevO.applyWeekdays;
+  }
+  if (!('templateKey' in o) && typeof prevO.templateKey === 'string') {
+    o.templateKey = prevO.templateKey;
   }
   return o;
 }
@@ -329,7 +307,7 @@ export function GoalDetailSettingsPage() {
     saveGoalDetailCategoryConfig(target.categoryKey, persisted);
     registerOtherCategoryResolverFromStorage();
     useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
-    if (target.categoryKey === 'medicine') {
+    if (target.categoryKey === 'healthIntake' || target.categoryKey === 'medicine') {
       if (medicineReminderSyncTimerRef.current) {
         clearTimeout(medicineReminderSyncTimerRef.current);
       }
@@ -438,10 +416,11 @@ export function GoalDetailSettingsPage() {
   const reminderCategoryKeys = useMemo(() => {
     const list = sortedTargets.length > 0 ? sortedTargets : targets;
     const keys = [...new Set(list.map((t) => t.categoryKey))].filter(
-      (key) => key !== 'water' && key !== 'medicine',
+      (key) => key !== 'healthIntake' && key !== 'water' && key !== 'medicine',
     );
-    /** 수분·약은 전용 알림 UI만 사용 — 시작 알림 카드 제외 */
+    /** 건강 섭취·수분·약은 전용 알림 UI만 사용 — 시작 알림 카드 제외 */
     if (
+      categoryKey !== 'healthIntake' &&
       categoryKey !== 'water' &&
       categoryKey !== 'medicine' &&
       !keys.includes(categoryKey)
@@ -592,18 +571,33 @@ export function GoalDetailSettingsPage() {
               </View>
             ) : null}
 
-            {reminderCategoryKeys.map((key) => (
-              <GoalDetailCategoryStartReminderCard key={key} categoryKey={key} />
-            ))}
-
-            <RoutineApplyWeekdaysField
-              categoryKey={categoryKey}
-              ink={c.onSurface}
-              muted={c.onVariant}
-              line={c.border}
-              surface={RetroFlatColors.light.bgMint}
-              isDark={false}
-            />
+            {targets.map((t, idx) => {
+              const dataConfig = dataByBlockId[t.blockId] ?? {};
+              const module = resolveGoalDetailModuleForTarget(t.categoryKey, dataConfig);
+              const Settings = module.Settings;
+              const previewTitle = previewTitleForBlock(t.blockId, t.categoryKey);
+              const { allowRename, renameLockedReason } = resolveRenameAccess(t.categoryKey);
+              return (
+                <View key={`${t.blockId}-${idx}`} style={styles.blockSection}>
+                  {isCustomFlowCategoryKey(t.categoryKey) ? (
+                    <CustomFlowTemplateMetaPill
+                      dataConfig={dataConfig}
+                      ink={c.onSurface}
+                      line={c.border}
+                    />
+                  ) : null}
+                  <Settings
+                    rhythmTitle={previewTitle}
+                    categoryKey={t.categoryKey}
+                    dataConfig={dataConfig}
+                    onChangeDataConfig={(next) => handleChangeDataConfig(t, next)}
+                    onDeleteCategory={() => handleDeleteCustomFlow(t.categoryKey)}
+                    allowRename={allowRename}
+                    renameLockedReason={renameLockedReason}
+                  />
+                </View>
+              );
+            })}
 
             {targets.length === 1 ? (
               <View style={styles.blockSection}>
@@ -627,26 +621,18 @@ export function GoalDetailSettingsPage() {
               </View>
             ) : null}
 
-            {targets.map((t, idx) => {
-              const module = getGoalDetailCategoryModule(t.categoryKey);
-              const Settings = module.Settings;
-              const dataConfig = dataByBlockId[t.blockId] ?? module.getInitialDataConfig?.() ?? {};
-              const previewTitle = previewTitleForBlock(t.blockId, t.categoryKey);
-              const { allowRename, renameLockedReason } = resolveRenameAccess(t.categoryKey);
-              return (
-                <View key={`${t.blockId}-${idx}`} style={styles.blockSection}>
-                  <Settings
-                    rhythmTitle={previewTitle}
-                    categoryKey={t.categoryKey}
-                    dataConfig={dataConfig}
-                    onChangeDataConfig={(next) => handleChangeDataConfig(t, next)}
-                    onDeleteCategory={() => handleDeleteCustomFlow(t.categoryKey)}
-                    allowRename={allowRename}
-                    renameLockedReason={renameLockedReason}
-                  />
-                </View>
-              );
-            })}
+            <RoutineApplyWeekdaysField
+              categoryKey={categoryKey}
+              ink={c.onSurface}
+              muted={c.onVariant}
+              line={c.border}
+              surface={RetroFlatColors.light.bgMint}
+              isDark={false}
+            />
+
+            {reminderCategoryKeys.map((key) => (
+              <GoalDetailCategoryStartReminderCard key={key} categoryKey={key} />
+            ))}
           </View>
         </ScrollView>
         <View

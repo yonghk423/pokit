@@ -70,6 +70,10 @@ export default function RootLayout() {
               name="goal-detail-settings"
               options={{ headerShown: false, presentation: 'card' }}
             />
+            <Stack.Screen
+              name="routine-template-detail"
+              options={{ headerShown: false, presentation: 'card' }}
+            />
             <Stack.Screen name="flow-review" options={{ headerShown: false, presentation: 'card' }} />
             <Stack.Screen name="widget-settings" options={{ headerShown: false, presentation: 'card' }} />
             <Stack.Screen

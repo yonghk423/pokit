@@ -11,6 +11,7 @@ import {
   countDaysInMonth,
   type HistoryPeriod,
 } from './historyPeriodRange';
+import { resolveTopCategoryLabels } from './resolveTopCategoryLabels';
 
 export type MonthlyFlowHistoryRow = {
   categoryKey: string;
@@ -30,7 +31,7 @@ export type MonthlyHistorySummary = {
   daysInMonth: number;
   totalCompletions: number;
   progressPercent: number;
-  topCategoryLabel?: string;
+  topCategoryLabels: string[];
 };
 
 function findFirstCompletionDateKey(
@@ -124,7 +125,6 @@ export function buildMonthlyHistorySummary(input: {
     }
   }
 
-  const topEntry = [...totalsByCategory.entries()].sort((a, b) => b[1] - a[1])[0];
   const progressPercent = daysInMonth > 0 ? Math.round((activeDays / daysInMonth) * 100) : 0;
 
   return {
@@ -132,7 +132,7 @@ export function buildMonthlyHistorySummary(input: {
     daysInMonth,
     totalCompletions,
     progressPercent,
-    topCategoryLabel: topEntry ? categoryReminderLabelKo(topEntry[0]) : undefined,
+    topCategoryLabels: resolveTopCategoryLabels(totalsByCategory),
   };
 }
 

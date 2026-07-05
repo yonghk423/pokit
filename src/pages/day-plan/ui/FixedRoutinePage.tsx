@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -19,12 +19,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
+  buildInitialCustomFlowDetailConfig,
   createCustomFlowCategoryId,
   filterDayPlanFlowBlocks,
-  getInitialOtherDataConfig,
+  formatHhmmClockKo,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
-  isCustomFlowCategoryKey,
   isPriorityWindowEndedForToday,
   resolveBlockCategoryKey,
   resolveCategoryCatalogIcon,
@@ -32,10 +32,10 @@ import {
   useDayPlanDraftStore,
   useDayPlanStore,
   useFixedFlowSetsStore,
+  type CustomFlowTemplateKey
 } from '@entities/day-plan';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { formatHhmmClockKo } from '@entities/day-plan';
 import {
   appendCustomFlowCatalogEntry,
   BUILTIN_PRESET_SCHEDULE_SET_IDS,
@@ -61,24 +61,25 @@ import { ThemedView } from '@shared/ui/themed-view';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import { getPickerCategoryLabel, PRIMARY } from '../lib/dayPlanEditorShared';
+import { palette } from '../lib/dayPlanPalette';
 import {
   getFixedFlowPresetScheduleHint,
   getFixedFlowPresetScheduleLabel,
 } from '../lib/fixedFlowPresetLabels';
-import { FixedRoutineSectionLayoutBar } from './FixedRoutineSectionLayoutBar';
-import { FixedRoutineSectionTabs, type FixedRoutineSection } from './FixedRoutineSectionTabs';
-import { FixedRoutineSlotAddChips } from './FixedRoutineSlotAddChips';
-import { FixedRoutineSlotPickerSheet } from './FixedRoutineSlotPickerSheet';
-import { palette } from '../lib/dayPlanPalette';
 import {
   buildAddablePriorityCatalogSections,
   buildPriorityCatalogRows,
   type AddablePriorityCatalogSection,
   type PriorityCatalogRow,
 } from '../lib/priorityCatalog';
+import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
-import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
+import { FixedRoutineSectionLayoutBar } from './FixedRoutineSectionLayoutBar';
+import { FixedRoutineSectionTabs, type FixedRoutineSection } from './FixedRoutineSectionTabs';
+import { FixedRoutineSlotAddChips } from './FixedRoutineSlotAddChips';
+import { FixedRoutineSlotPickerSheet } from './FixedRoutineSlotPickerSheet';
+import { RoutineTemplateListPanel } from './RoutineTemplateListPanel';
 
 if (
   Platform.OS === 'android' &&
@@ -170,15 +171,9 @@ function FlowItemCard({
       ]}>
       <View style={styles.flowRowMain}>
         <View style={[styles.flowIconBox, { backgroundColor: iconBoxBg }]}>
-          {shouldPulse && categoryKey === 'medicine' ? (
-            <Animated.View style={{ opacity: pulse }}>
-              <IconSymbol name="cross.fill" size={12} color="#ef4444" />
-            </Animated.View>
-          ) : (
-            <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
-              <IconSymbol name={icon as any} size={15} color={iconColor} />
-            </Animated.View>
-          )}
+          <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
+            <IconSymbol name={icon as any} size={15} color={iconColor} />
+          </Animated.View>
         </View>
         <ThemedText
           style={[styles.flowRowTitle, { color: labelColor }]}
@@ -490,17 +485,17 @@ function GroupAccordion({
             numberOfLines={1}>
             {setItem.name}
           </ThemedText>
-        {isPresetScheduleSet && ruleLabel ? (
-          <View
-            accessibilityRole="text"
-            accessibilityLabel={ruleLabel}
-            style={[
-              styles.rulePill,
-              { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' },
-            ]}>
-            <ThemedText style={[styles.rulePillText, { color: muted }]}>{ruleLabel}</ThemedText>
-          </View>
-        ) : null}
+          {isPresetScheduleSet && ruleLabel ? (
+            <View
+              accessibilityRole="text"
+              accessibilityLabel={ruleLabel}
+              style={[
+                styles.rulePill,
+                { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' },
+              ]}>
+              <ThemedText style={[styles.rulePillText, { color: muted }]}>{ruleLabel}</ThemedText>
+            </View>
+          ) : null}
         </View>
         <Pressable
           accessibilityRole="button"
@@ -597,9 +592,8 @@ function GroupAccordion({
                         accessibilityState={{
                           disabled: !isEligibleToday || (applyBlocked && !isMealSlotAppliedForToday?.(section.slot)),
                         }}
-                        accessibilityLabel={`${section.title} ${
-                          isMealSlotAppliedForToday?.(section.slot) ? '오늘 적용 해제' : '오늘 적용'
-                        }`}
+                        accessibilityLabel={`${section.title} ${isMealSlotAppliedForToday?.(section.slot) ? '오늘 적용 해제' : '오늘 적용'
+                          }`}
                         onPress={() => {
                           const isApplied = isMealSlotAppliedForToday?.(section.slot) ?? false;
                           const blockedByEnded = applyBlocked && !isApplied;
@@ -743,6 +737,7 @@ function GroupAccordion({
 }
 
 export function FixedRoutinePage() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -912,10 +907,11 @@ export function FixedRoutinePage() {
     [sets],
   );
 
-  const visibleSets = useMemo(
-    () => (section === 'scheduled' ? presetSets : customSets),
-    [section, presetSets, customSets],
-  );
+  const visibleSets = useMemo(() => {
+    if (section === 'scheduled') return presetSets;
+    if (section === 'custom') return customSets;
+    return [];
+  }, [section, presetSets, customSets]);
 
   const reloadCatalog = useCallback(() => {
     setCatalogTick((n) => n + 1);
@@ -1026,23 +1022,25 @@ export function FixedRoutinePage() {
       groupKey,
       icon,
       accentColor,
+      templateKey,
     }: {
       name: string;
       groupKey: string;
       icon: string;
       accentColor: string;
+      templateKey: CustomFlowTemplateKey;
     }) => {
       const id = createCustomFlowCategoryId();
       const safeGroupKey =
         typeof groupKey === 'string' && groupKey.trim().length > 0
           ? groupKey.trim()
           : DEFAULT_CUSTOM_FLOW_GROUP_KEY;
-      const initial = getInitialOtherDataConfig();
       const trimmed = name.trim();
-      const next =
-        trimmed.length > 0
-          ? { ...initial, displayName: trimmed, icon, accentColor }
-          : { ...initial, icon, accentColor };
+      const next = buildInitialCustomFlowDetailConfig(templateKey, {
+        ...(trimmed.length > 0 ? { displayName: trimmed } : {}),
+        icon,
+        accentColor,
+      });
       saveGoalDetailCategoryConfig(id, next);
       appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
       registerOtherCategoryResolverFromStorage();
@@ -1053,8 +1051,12 @@ export function FixedRoutinePage() {
       if (targetSetId) addCategoryToSet(targetSetId, id, targetMealSlot ?? undefined);
       setCreateSheetOpen(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.push({
+        pathname: '/goal-detail-settings',
+        params: { categoryKey: id, source: 'catalog' },
+      });
     },
-    [addCategoryToSet, sets, addItemSetId, addItemMealSlot, reloadCatalog],
+    [addCategoryToSet, sets, addItemSetId, addItemMealSlot, reloadCatalog, router],
   );
 
   const openAddItemModal = useCallback((setId: string, mealSlot?: DayMealSlot) => {
@@ -1111,7 +1113,19 @@ export function FixedRoutinePage() {
       ? scheduledMealSlotLayoutEnabled
         ? '구간과 항목을 먼저 설정한 뒤, 필요한 구간만 오늘 적용하면 오늘 탭에 반영돼요.'
         : '항목을 정리한 뒤 오늘 적용을 켜면 오늘 탭에 반영돼요. 필요하면 구간 보기로 시간대별 배치를 먼저 할 수 있어요.'
-      : '그룹을 만들고 항목을 추가한 뒤, 오늘 적용을 켜면 오늘 탭에 반영돼요.';
+      : section === 'custom'
+        ? '그룹을 만들고 항목을 추가한 뒤, 오늘 적용을 켜면 오늘 탭에 반영돼요.'
+        : '항목을 눌러 방식별 화면 구성을 확인할 수 있어요.';
+
+  const openRoutineTemplateDetail = useCallback(
+    (templateKey: CustomFlowTemplateKey) => {
+      router.push({
+        pathname: '/routine-template-detail',
+        params: { templateKey },
+      });
+    },
+    [router],
+  );
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
@@ -1151,126 +1165,138 @@ export function FixedRoutinePage() {
         }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        <View style={styles.accordionList}>
-          {visibleSets.map((setItem) => (
-            <GroupAccordion
-              key={setItem.id}
-              setItem={setItem}
-              isPresetScheduleSet={isBuiltinPresetScheduleSet(setItem)}
-              mealSlotLayoutEnabled={scheduledMealSlotLayoutEnabled}
-              isExpanded={expandedIds.has(setItem.id)}
-              isActiveForToday={isSetActiveForToday(setItem)}
-              isEligibleToday={isSetEligibleToday(setItem)}
-              applyBlocked={priorityWindowEndedForToday}
-              catalogByKey={catalogByKey}
-              isDark={isDark}
-              ink={ink}
-              muted={muted}
-              line={line}
-              cardBg={cardBg}
-              iconBoxBg={iconBoxBg}
-              sectionBg={sectionBg}
-              isFocusStarted={isFocusStarted}
-              isCategoryInTodayPlan={isCategoryInTodayPlan}
-              isCategoryCompleted={isCategoryCompleted}
-              onToggleExpand={() => toggleExpanded(setItem.id)}
-              onToggleActiveForToday={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                toggleSetForToday(setItem.id);
-              }}
-              isMealSlotAppliedForToday={(slot) => isMealSlotActiveForToday(setItem, slot)}
-              onToggleMealSlotForToday={(slot) => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                toggleMealSlotForToday(setItem.id, slot);
-              }}
-              onApplyBlocked={handleApplyBlocked}
-              onDeleteSet={() => handleDeleteSet(setItem.id)}
-              onToggleItem={(categoryKey, enabled) => {
-                setCategoryEnabledInSet(setItem.id, categoryKey, enabled);
-              }}
-              onDeleteItem={(categoryKey, itemLabel) => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                Alert.alert(
-                  `"${itemLabel}" 삭제`,
-                  '이 항목을 그룹에서 삭제할까요?',
-                  [
-                    { text: '취소', style: 'cancel' },
-                    {
-                      text: '삭제',
-                      style: 'destructive',
-                      onPress: () => {
-                        removeCategoryFromSet(setItem.id, categoryKey);
-                        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                      },
-                    },
-                  ],
-                );
-              }}
-              onOpenAddItem={() => openAddItemModal(setItem.id)}
-              onOpenAddItemForSlot={(slot) => openAddItemModal(setItem.id, slot)}
-              onChangeItemSlot={(categoryKey, itemLabel) =>
-                handleChangeItemSlot(setItem.id, categoryKey, itemLabel)
-              }
-              mealSlotSchedule={mealSlotSchedule}
-            />
-          ))}
-        </View>
+        {section === 'templates' ? (
+          <RoutineTemplateListPanel
+            ink={ink}
+            muted={muted}
+            line={line}
+            cardBg={cardBg}
+            onPressTemplate={openRoutineTemplateDetail}
+          />
+        ) : (
+          <>
+            <View style={styles.accordionList}>
+              {visibleSets.map((setItem) => (
+                <GroupAccordion
+                  key={setItem.id}
+                  setItem={setItem}
+                  isPresetScheduleSet={isBuiltinPresetScheduleSet(setItem)}
+                  mealSlotLayoutEnabled={scheduledMealSlotLayoutEnabled}
+                  isExpanded={expandedIds.has(setItem.id)}
+                  isActiveForToday={isSetActiveForToday(setItem)}
+                  isEligibleToday={isSetEligibleToday(setItem)}
+                  applyBlocked={priorityWindowEndedForToday}
+                  catalogByKey={catalogByKey}
+                  isDark={isDark}
+                  ink={ink}
+                  muted={muted}
+                  line={line}
+                  cardBg={cardBg}
+                  iconBoxBg={iconBoxBg}
+                  sectionBg={sectionBg}
+                  isFocusStarted={isFocusStarted}
+                  isCategoryInTodayPlan={isCategoryInTodayPlan}
+                  isCategoryCompleted={isCategoryCompleted}
+                  onToggleExpand={() => toggleExpanded(setItem.id)}
+                  onToggleActiveForToday={() => {
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    toggleSetForToday(setItem.id);
+                  }}
+                  isMealSlotAppliedForToday={(slot) => isMealSlotActiveForToday(setItem, slot)}
+                  onToggleMealSlotForToday={(slot) => {
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    toggleMealSlotForToday(setItem.id, slot);
+                  }}
+                  onApplyBlocked={handleApplyBlocked}
+                  onDeleteSet={() => handleDeleteSet(setItem.id)}
+                  onToggleItem={(categoryKey, enabled) => {
+                    setCategoryEnabledInSet(setItem.id, categoryKey, enabled);
+                  }}
+                  onDeleteItem={(categoryKey, itemLabel) => {
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    Alert.alert(
+                      `"${itemLabel}" 삭제`,
+                      '이 항목을 그룹에서 삭제할까요?',
+                      [
+                        { text: '취소', style: 'cancel' },
+                        {
+                          text: '삭제',
+                          style: 'destructive',
+                          onPress: () => {
+                            removeCategoryFromSet(setItem.id, categoryKey);
+                            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                          },
+                        },
+                      ],
+                    );
+                  }}
+                  onOpenAddItem={() => openAddItemModal(setItem.id)}
+                  onOpenAddItemForSlot={(slot) => openAddItemModal(setItem.id, slot)}
+                  onChangeItemSlot={(categoryKey, itemLabel) =>
+                    handleChangeItemSlot(setItem.id, categoryKey, itemLabel)
+                  }
+                  mealSlotSchedule={mealSlotSchedule}
+                />
+              ))}
+            </View>
 
-        {section === 'custom' && visibleSets.length === 0 ? (
-          <ThemedText style={[styles.sectionEmpty, { color: muted }]}>
-            아직 나만의 루틴 그룹이 없어요. 아래에서 그룹을 추가해 보세요.
-          </ThemedText>
-        ) : null}
+            {section === 'custom' && visibleSets.length === 0 ? (
+              <ThemedText style={[styles.sectionEmpty, { color: muted }]}>
+                아직 나만의 루틴 그룹이 없어요. 아래에서 그룹을 추가해 보세요.
+              </ThemedText>
+            ) : null}
 
-        {section === 'custom' && (isAddingGroup ? (
-          <View style={[styles.addGroupCard, { borderColor: dashedBorder, backgroundColor: iconBoxBg }]}>
-            <TextInput
-              value={newGroupName}
-              onChangeText={setNewGroupName}
-              placeholder="새 그룹 이름"
-              placeholderTextColor={muted}
-              autoFocus
-              style={[styles.addGroupInput, { color: ink }]}
-              returnKeyType="done"
-              onSubmitEditing={submitNewGroup}
-            />
-            <View style={styles.addGroupActions}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="취소"
-                onPress={() => {
-                  setIsAddingGroup(false);
-                  setNewGroupName('');
-                }}>
-                <ThemedText style={[styles.addGroupCancel, { color: muted }]}>취소</ThemedText>
-              </Pressable>
+            {section === 'custom' && (isAddingGroup ? (
+              <View style={[styles.addGroupCard, { borderColor: dashedBorder, backgroundColor: iconBoxBg }]}>
+                <TextInput
+                  value={newGroupName}
+                  onChangeText={setNewGroupName}
+                  placeholder="새 그룹 이름"
+                  placeholderTextColor={muted}
+                  autoFocus
+                  style={[styles.addGroupInput, { color: ink }]}
+                  returnKeyType="done"
+                  onSubmitEditing={submitNewGroup}
+                />
+                <View style={styles.addGroupActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="취소"
+                    onPress={() => {
+                      setIsAddingGroup(false);
+                      setNewGroupName('');
+                    }}>
+                    <ThemedText style={[styles.addGroupCancel, { color: muted }]}>취소</ThemedText>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="그룹 추가"
+                    onPress={submitNewGroup}
+                    style={[styles.addGroupSubmit, { backgroundColor: ink }]}>
+                    <ThemedText style={[styles.addGroupSubmitLabel, { color: isDark ? '#09090b' : '#fff' }]}>
+                      추가
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="그룹 추가"
-                onPress={submitNewGroup}
-                style={[styles.addGroupSubmit, { backgroundColor: ink }]}>
-                <ThemedText style={[styles.addGroupSubmitLabel, { color: isDark ? '#09090b' : '#fff' }]}>
-                  추가
+                onPress={() => setIsAddingGroup(true)}
+                style={({ pressed }) => [
+                  styles.addGroupTrigger,
+                  { borderColor: dashedBorder, opacity: pressed ? 0.88 : 1 },
+                ]}>
+                <IconSymbol name="plus" size={18} color={muted} />
+                <ThemedText style={[styles.addGroupTriggerLabel, { color: muted }]}>그룹 추가</ThemedText>
+                <ThemedText style={[styles.addGroupHint, { color: muted }]}>
+                  이름을 눌러 바꾸고, 휴지통으로 삭제할 수 있어요
                 </ThemedText>
               </Pressable>
-            </View>
-          </View>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="그룹 추가"
-            onPress={() => setIsAddingGroup(true)}
-            style={({ pressed }) => [
-              styles.addGroupTrigger,
-              { borderColor: dashedBorder, opacity: pressed ? 0.88 : 1 },
-            ]}>
-            <IconSymbol name="plus" size={18} color={muted} />
-            <ThemedText style={[styles.addGroupTriggerLabel, { color: muted }]}>그룹 추가</ThemedText>
-            <ThemedText style={[styles.addGroupHint, { color: muted }]}>
-              이름을 눌러 바꾸고, 휴지통으로 삭제할 수 있어요
-            </ThemedText>
-          </Pressable>
-        ))}
+            ))}
+          </>
+        )}
       </ScrollView>
 
       <AddItemModal

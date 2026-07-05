@@ -4,3 +4,5 @@ export {
   type MealSlotTimelinePalette,
   type MealSlotTimelineSection,
 } from './ui/MealSlotTimelineView';
+export { MealSlotTimelineHeader } from './ui/MealSlotTimelineHeader';
+export { MealSlotScheduleEditButton } from './ui/MealSlotScheduleEditButton';

@@ -27,6 +27,7 @@ import {
 import {
   addDaysToHistoryDateKey,
   buildWeeklyFlowHistory,
+  buildWeeklyHistorySummary,
   formatWeekRangeLabelKo,
   resolveWeekStartForAnchor,
 } from '../lib/buildWeeklyFlowHistory';
@@ -41,6 +42,7 @@ import { HistoryPeriodTabs } from './HistoryPeriodTabs';
 import { MonthlyFlowHistoryCard } from './MonthlyFlowHistoryCard';
 import { MonthlyHistorySummaryCard } from './MonthlyHistorySummaryCard';
 import { WeeklyFlowHistoryCard } from './WeeklyFlowHistoryCard';
+import { WeeklyHistorySummaryCard } from './WeeklyHistorySummaryCard';
 
 /** 하단 히스토리 탭 — 주간·월간 플로우 완료 기록 */
 export function DayPlanStatisticsPage() {
@@ -135,6 +137,11 @@ export function DayPlanStatisticsPage() {
     [dailyStatsByDate, monthPrefix, priorityCategoryOrder, timeLabelByCategoryKey],
   );
 
+  const weeklySummary = useMemo(
+    () => buildWeeklyHistorySummary({ dailyStatsByDate, weekStartDateKey }),
+    [dailyStatsByDate, weekStartDateKey],
+  );
+
   const monthlySummary = useMemo(
     () => buildMonthlyHistorySummary({ dailyStatsByDate, monthPrefix }),
     [dailyStatsByDate, monthPrefix],
@@ -161,11 +168,6 @@ export function DayPlanStatisticsPage() {
     },
     [anchorDateKey, monthPrefix, period, todayDateKey],
   );
-
-  const openMonthlyTab = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setPeriod('month');
-  }, []);
 
   const flowRows = period === 'week' ? weeklyRows : monthlyRows;
   const emptyTitle =
@@ -242,23 +244,7 @@ export function DayPlanStatisticsPage() {
         {period === 'month' ? (
           <MonthlyHistorySummaryCard summary={monthlySummary} palette={palette} />
         ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="월간 통계 보기"
-            onPress={openMonthlyTab}
-            style={({ pressed }) => [
-              styles.monthShortcut,
-              { borderColor: palette.border, backgroundColor: palette.card },
-              pressed && styles.pressed,
-            ]}>
-            <ThemedText style={[styles.monthShortcutLabel, { color: palette.muted }]}>
-              월간진행률
-            </ThemedText>
-            <ThemedText style={[styles.monthShortcutValue, { color: palette.accent }]}>
-              {monthlySummary.progressPercent}%
-            </ThemedText>
-            <IconSymbol name="chevron.right" size={12} color={palette.muted} />
-          </Pressable>
+          <WeeklyHistorySummaryCard summary={weeklySummary} palette={palette} />
         )}
 
         {!isHydrated ? (
@@ -352,28 +338,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.2,
   },
-  monthShortcut: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    minHeight: 36,
-    paddingHorizontal: 12,
-    borderRadius: 0,
-    borderWidth: 2,
-  },
-  monthShortcutLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  monthShortcutValue: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '800',
-    textAlign: 'right',
-  },
   cardList: {
     width: '100%',
-    gap: 8,
+    gap: 6,
   },
   emptyCard: {
     width: '100%',

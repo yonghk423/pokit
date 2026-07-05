@@ -13,7 +13,7 @@ describe('buildAppliedFixedRoutineMealSlotOverrides', () => {
       applyRule: 'daily' as const,
       items: [
         { categoryKey: 'water', enabled: true },
-        { categoryKey: 'deepwork', enabled: true },
+        { categoryKey: 'work', enabled: true },
       ],
     },
   ];
@@ -29,9 +29,9 @@ describe('buildAppliedFixedRoutineMealSlotOverrides', () => {
   it('respects active meal slot filter per set', () => {
     const overrides = buildAppliedFixedRoutineMealSlotOverrides(
       { sets, activeSetIds: ['set_daily'], activeMealSlotsBySetId: { set_daily: ['lunch'] } },
-      ['water', 'deepwork'],
+      ['water', 'work'],
     );
-    expect(overrides).toEqual({ deepwork: 'lunch' });
+    expect(overrides).toEqual({ work: 'lunch' });
   });
 });
 

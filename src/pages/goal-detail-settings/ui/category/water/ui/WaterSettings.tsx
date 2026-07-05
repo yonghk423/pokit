@@ -17,6 +17,7 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { SettingsProgressBand } from '../../lib/SettingsProgressBand';
 import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
 import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
@@ -45,10 +46,6 @@ function seedWater(raw: unknown) {
   return normalizeWaterDetailConfig(raw ?? getInitialWaterDataConfig());
 }
 
-function initialDataConfigDrankMl(raw: unknown): number {
-  return seedWater(raw).drankMl;
-}
-
 function clampWaterTimes(times: string[], routineStart: string, routineEnd: string): string[] {
   return times.map((t) => clampHhmmToPriorityWindow(t, routineStart, routineEnd, 1));
 }
@@ -60,6 +57,7 @@ export function WaterSettings({
   onChangeDataConfig,
   allowRename = true,
   renameLockedReason = null,
+  embedded = false,
 }: {
   rhythmTitle: string;
   categoryKey?: GoalDetailCategoryKey;
@@ -67,6 +65,7 @@ export function WaterSettings({
   onChangeDataConfig: (next: unknown) => void;
   allowRename?: boolean;
   renameLockedReason?: 'running' | 'today' | null;
+  embedded?: boolean;
 }) {
   const scheme = useColorScheme();
   const palette = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
@@ -82,6 +81,7 @@ export function WaterSettings({
   );
 
   const [goalMl, setGoalMl] = useState(() => seedWater(dataConfig).goalMl);
+  const [drankMl, setDrankMl] = useState(() => seedWater(dataConfig).drankMl);
   const [goalLStr, setGoalLStr] = useState(() => (seedWater(dataConfig).goalMl / 1000).toFixed(1));
   const [reminderPreset, setReminderPreset] = useState<WaterReminderPreset>(
     () => seedWater(dataConfig).reminderPreset,
@@ -116,6 +116,7 @@ export function WaterSettings({
     hydratedKey.current = normalizedKey;
     const next = normalizeWaterDetailConfig(dataConfig ?? getInitialWaterDataConfig());
     setGoalMl(next.goalMl);
+    setDrankMl(next.drankMl);
     setGoalLStr((next.goalMl / 1000).toFixed(1));
     setReminderPreset(next.reminderPreset);
     setReminderCustomMin(String(next.reminderCustomMin));
@@ -126,8 +127,6 @@ export function WaterSettings({
     setOpenSlotIndex(null);
   }, [dataConfig, normalizedKey, priorityEnd, priorityStart]);
 
-  const initialDrankMl = initialDataConfigDrankMl(dataConfig);
-
   const customMinNum = Math.max(
     15,
     Math.min(24 * 60, parseInt(reminderCustomMin, 10) || 90),
@@ -136,7 +135,7 @@ export function WaterSettings({
   useEffect(() => {
     const payload: WaterDetailDataConfig = normalizeWaterDetailConfig({
       goalMl,
-      drankMl: Math.min(initialDrankMl, goalMl),
+      drankMl: Math.min(drankMl, goalMl),
       reminderPreset,
       reminderCustomMin: customMinNum,
       smartNotification,
@@ -150,7 +149,7 @@ export function WaterSettings({
     onChangeDataConfig(payload);
   }, [
     goalMl,
-    initialDrankMl,
+    drankMl,
     reminderPreset,
     customMinNum,
     smartNotification,
@@ -166,6 +165,13 @@ export function WaterSettings({
     setGoalMl(ml);
     setGoalLStr((ml / 1000).toFixed(1));
   };
+
+  const addDrankMl = (delta: number) => {
+    setDrankMl((prev) => Math.min(goalMl, prev + delta));
+  };
+
+  const waterProgressRatio = goalMl > 0 ? Math.min(1, drankMl / goalMl) : 0;
+  const waterRemainingMl = Math.max(0, goalMl - drankMl);
 
   const onBlurGoalL = () => {
     const next = parseGoalLitersToMl(goalLStr);
@@ -247,17 +253,57 @@ export function WaterSettings({
   ];
 
   return (
-    <View style={styles.shell}>
-      <RoutineTitleField
-        value={displayName}
-        onChangeValue={setDisplayName}
-        fallback={titleFallback}
-        allowRename={allowRename}
-        renameLockedReason={renameLockedReason}
+    <View style={[styles.shell, embedded && styles.shellEmbedded]}>
+      {!embedded ? (
+        <>
+          <RoutineTitleField
+            value={displayName}
+            onChangeValue={setDisplayName}
+            fallback={titleFallback}
+            allowRename={allowRename}
+            renameLockedReason={renameLockedReason}
+            palette={palette}
+          />
+
+          <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={palette} />
+        </>
+      ) : null}
+
+      <SettingsProgressBand
+        title="오늘 섭취"
+        valueLine={`${drankMl}ml / ${goalMl}ml`}
+        subLine={
+          waterRemainingMl > 0
+            ? `목표까지 ${waterRemainingMl}ml · ${Math.round(waterProgressRatio * 100)}%`
+            : '오늘 목표를 달성했어요'
+        }
+        ratio={waterProgressRatio}
         palette={palette}
+        accent={T.primary}
       />
 
-      <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={palette} />
+      <View style={styles.intakeQuickRow}>
+        <Text style={styles.intakeQuickLabel}>빠른 추가</Text>
+        <View style={styles.presetRow}>
+          {[200, 250, 500].map((ml) => (
+            <Pressable
+              key={ml}
+              accessibilityRole="button"
+              accessibilityLabel={`${ml}ml 추가`}
+              onPress={() => addDrankMl(ml)}
+              style={({ pressed }) => [styles.intakeChip, pressed && { opacity: 0.75 }]}>
+              <Text style={styles.intakeChipText}>+{ml}ml</Text>
+            </Pressable>
+          ))}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="오늘 섭취량 초기화"
+            onPress={() => setDrankMl(0)}
+            style={({ pressed }) => [styles.intakeResetChip, pressed && { opacity: 0.75 }]}>
+            <Text style={styles.intakeResetText}>초기화</Text>
+          </Pressable>
+        </View>
+      </View>
 
       <View style={styles.metricBar}>
         <View style={styles.metricItem}>
@@ -451,8 +497,34 @@ const styles = StyleSheet.create({
     backgroundColor: T.screenBg,
     gap: 16,
   },
+  shellEmbedded: {
+    marginHorizontal: 0,
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    backgroundColor: 'transparent',
+    gap: 12,
+  },
   listHeader: { gap: 6, paddingTop: 2 },
   mainTitle: { color: T.onSurface, fontSize: 42, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },
+  intakeQuickRow: { gap: 8 },
+  intakeQuickLabel: { color: T.onSurface, fontSize: 15, fontWeight: '700' },
+  intakeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: T.surfaceContainerHigh,
+    borderWidth: 2,
+    borderColor: 'rgba(34, 211, 238, 0.25)',
+  },
+  intakeChipText: { fontSize: 13, fontWeight: '800', color: T.primary },
+  intakeResetChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: T.surfaceContainerHigh,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: T.outline,
+  },
+  intakeResetText: { fontSize: 13, fontWeight: '700', color: T.onSurfaceVariant },
   metricBar: {
     flexDirection: 'row',
     borderTopWidth: 1,
