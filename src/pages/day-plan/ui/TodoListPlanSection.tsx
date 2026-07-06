@@ -4,7 +4,6 @@ import {
   Alert,
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -31,6 +30,7 @@ import { TodoListTimeEditSheet } from './TodoListTimeEditSheet';
 const EMPTY_TODOS: DayPlanTodoItem[] = [];
 const TODO_TOP_BAR_ACTION_HEIGHT = 32;
 const STATUS_BOX_SIZE = 48;
+const STATUS_CHECK_SIZE = 22;
 
 type Props = {
   c: DayPlanPalette;
@@ -53,32 +53,27 @@ function StatusCheckbox({
   variant?: 'default' | 'done';
   onPress: () => void;
 }) {
-  const doneCheck = variant === 'done' && checked;
-  const borderColor = ui.tableBorder;
+  const isDone = variant === 'done';
+  const accent = isDone ? ui.done : ui.primary;
   return (
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
       accessibilityLabel={label}
-      hitSlop={8}
+      hitSlop={10}
       onPress={onPress}
-      style={[
-        styles.statusBox,
-        {
-          borderColor,
-          borderWidth: TODO_TABLE_BORDER_WIDTH,
-          backgroundColor: ui.cellBg,
-          width: TODO_LAYOUT.statusWidth,
-          minHeight: STATUS_BOX_SIZE,
-        },
-      ]}>
-      {checked ? (
-        <Text
-          style={[styles.checkMark, { color: ui.ink }, doneCheck && { color: ui.done }]}
-          accessibilityElementsHidden>
-          ✓
-        </Text>
-      ) : null}
+      style={[styles.statusCell, { width: TODO_LAYOUT.statusWidth, minHeight: STATUS_BOX_SIZE }]}>
+      <View
+        style={[
+          styles.statusCheck,
+          checked
+            ? { backgroundColor: accent, borderColor: accent }
+            : { backgroundColor: ui.cellBg, borderColor: ui.tableBorder },
+        ]}>
+        {checked ? (
+          <IconSymbol name="checkmark" size={12} color={isDone ? '#fff' : ui.primaryOn} />
+        ) : null}
+      </View>
     </Pressable>
   );
 }
@@ -522,15 +517,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 13,
   },
-  statusBox: {
-    borderRadius: 0,
+  statusCell: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkMark: {
-    fontSize: 16,
-    fontWeight: '800',
-    lineHeight: 18,
+  statusCheck: {
+    width: STATUS_CHECK_SIZE,
+    height: STATUS_CHECK_SIZE,
+    borderRadius: STATUS_CHECK_SIZE / 2,
+    borderWidth: TODO_TABLE_BORDER_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mutedText: {
     opacity: 0.45,

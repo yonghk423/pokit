@@ -40,7 +40,7 @@ export function CustomFlowAppearancePicker({
   muted,
   line,
   hint = '루틴 목록에서 구분하기 쉽게 골라 주세요',
-  defaultExpanded = false,
+  defaultExpanded = true,
   compact = false,
 }: CustomFlowAppearancePickerProps) {
   const border = line ?? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)');

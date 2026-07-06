@@ -6,6 +6,8 @@ import {
   BUILTIN_ABSTAIN_GROUP_KEY,
   BUILTIN_DAILY_LIFE_FLOW_IDS,
   BUILTIN_DAILY_LIFE_GROUP_KEY,
+  BUILTIN_GOOD_POSTURE_FLOW_ID,
+  BUILTIN_STRETCHING_FLOW_ID,
   BUILTIN_HEALTH_GROUP_KEY,
   BUILTIN_INTERMITTENT_FASTING_FLOW_ID,
   LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID,
@@ -15,6 +17,7 @@ import { ensureDefaultPriorityCatalog } from './ensureDefaultPriorityCatalog';
 import { loadGoalDetailCategoryConfig } from './goalDetailSettingsStorage';
 import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
+import { resolveCategoryCatalogIcon } from '@entities/day-plan';
 
 describe('ensureDefaultPriorityCatalog', () => {
   beforeEach(() => {
@@ -35,6 +38,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     expect(listCustomFlowCatalogEntries().map((e) => e.id)).toEqual([
       ...BUILTIN_DAILY_LIFE_FLOW_IDS,
       BUILTIN_ABSTAIN_FLOW_ID,
+      BUILTIN_STRETCHING_FLOW_ID,
     ]);
 
     const bedCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_LIFE_FLOW_IDS[0]);
@@ -60,12 +64,47 @@ describe('ensureDefaultPriorityCatalog', () => {
     expect((abstainCfg as { templateKey?: string })?.templateKey).toBe('abstain');
     expect(abstainCfg?.checklist?.map((item) => item.text)).toEqual([...ABSTAIN_CHECKLIST_LABELS]);
 
+    const stretchingCfg = loadGoalDetailCategoryConfig(BUILTIN_STRETCHING_FLOW_ID);
+    expect(stretchingCfg?.displayName).toBe('스트레칭');
+    expect((stretchingCfg as { icon?: string })?.icon).toBe('figure.flexibility');
+    expect((stretchingCfg as { templateKey?: string })?.templateKey).toBe('habit');
+
     const waterCfg = loadGoalDetailCategoryConfig('water');
     expect(waterCfg).not.toBeNull();
     const overrides = loadStandardCatalogGroupOverrides();
     expect(overrides.water).toBeUndefined();
     expect(overrides.fasting).toBeUndefined();
     expect(resolveCatalogItemGroupKey('water')).toBe('health');
+    expect(resolveCategoryCatalogIcon('fasting')).toBe('person.fill');
+  });
+
+  it('purges legacy good posture flow from catalog and storage', () => {
+    localStorageClient.setJson(StorageKeys.customFlowCatalog, {
+      items: [{ id: BUILTIN_GOOD_POSTURE_FLOW_ID, groupKey: 'health' }],
+    });
+    localStorageClient.setJson(StorageKeys.goalDetailSettings, {
+      byCategory: {
+        [BUILTIN_GOOD_POSTURE_FLOW_ID]: {
+          templateKey: 'reminder',
+          displayName: '자세 바르게하기',
+        },
+      },
+      committedCategoryKeys: [BUILTIN_GOOD_POSTURE_FLOW_ID],
+    });
+    localStorageClient.setJson(StorageKeys.dayPlanDraft, {
+      priorityCategoryOrder: [BUILTIN_GOOD_POSTURE_FLOW_ID, 'water'],
+    });
+
+    ensureDefaultPriorityCatalog();
+
+    expect(listCustomFlowCatalogEntries().some((e) => e.id === BUILTIN_GOOD_POSTURE_FLOW_ID)).toBe(
+      false,
+    );
+    expect(loadGoalDetailCategoryConfig(BUILTIN_GOOD_POSTURE_FLOW_ID)).toBeNull();
+    expect(
+      localStorageClient.getJson<{ priorityCategoryOrder?: string[] }>(StorageKeys.dayPlanDraft)
+        ?.priorityCategoryOrder ?? [],
+    ).toEqual(['water']);
   });
 
   it('purges legacy intermittent fasting flow from catalog and storage', () => {
@@ -161,6 +200,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     expect(ids).toContain('customFlow:user01abcdef');
     expect(BUILTIN_DAILY_LIFE_FLOW_IDS.every((id) => ids.includes(id))).toBe(true);
     expect(ids).toContain(BUILTIN_ABSTAIN_FLOW_ID);
+    expect(ids).toContain(BUILTIN_STRETCHING_FLOW_ID);
     expect(listCustomCatalogGroups().map((g) => g.key)).toEqual([
       BUILTIN_DAILY_LIFE_GROUP_KEY,
       BUILTIN_ABSTAIN_GROUP_KEY,
@@ -232,6 +272,6 @@ describe('ensureDefaultPriorityCatalog', () => {
     ensureDefaultPriorityCatalog();
 
     expect(listCustomCatalogGroups()).toHaveLength(3);
-    expect(listCustomFlowCatalogEntries()).toHaveLength(8);
+    expect(listCustomFlowCatalogEntries()).toHaveLength(9);
   });
 });

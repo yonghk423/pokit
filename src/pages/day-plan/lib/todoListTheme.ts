@@ -18,7 +18,7 @@ export const TODO_TABLE_BORDER_WIDTH = 1;
 /** 모바일 한 화면 — 시간·상태 열 고정 폭 */
 export const TODO_LAYOUT = {
   timeWidth: 58,
-  statusWidth: 36,
+  statusWidth: 28,
   priorityWidth: 38,
   gap: 8,
 } as const;

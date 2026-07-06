@@ -17,6 +17,7 @@ describe('resolveCategoryCatalogIcon', () => {
   it('returns builtin icon for standard categories', () => {
     expect(resolveCategoryCatalogIcon('healthIntake')).toBe('pills.fill');
     expect(resolveCategoryCatalogIcon('water')).toBe('drop.fill');
+    expect(resolveCategoryCatalogIcon('fasting')).toBe('person.fill');
     expect(resolveCategoryCatalogIcon('work')).toBe('bag.fill');
   });
 

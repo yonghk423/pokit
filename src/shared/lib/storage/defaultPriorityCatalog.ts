@@ -25,8 +25,10 @@ export type BuiltinCustomFlowDef = {
   summary?: string;
   /** 체크리스트 항목 문구 — 시드 시 goal-detail checklist로 저장 */
   checklistLabels?: readonly string[];
-  /** 커스텀 플로우 템플릿 — 기본 checklist, 습관은 habit, 금지는 abstain */
-  templateKey?: 'checklist' | 'habit' | 'abstain';
+  /** 커스텀 플로우 템플릿 — 기본 checklist, 습관은 habit, 금지는 abstain, 알림은 reminder */
+  templateKey?: 'checklist' | 'habit' | 'abstain' | 'reminder';
+  /** `reminder` 템플릿 시드용 HH:mm 목록 */
+  reminderTimes?: readonly string[];
 };
 
 /** @deprecated 제거됨 — 마이그레이션·히스토리 표시용 */
@@ -54,6 +56,12 @@ export const BUILTIN_DAILY_LIFE_FLOW_ID = BUILTIN_DAILY_LIFE_FLOW_IDS[0];
 /** 금지 루틴 — 그룹·플로우 식별자 */
 export const BUILTIN_ABSTAIN_GROUP_KEY = 'customGroup:preset_abstain' as const;
 export const BUILTIN_ABSTAIN_FLOW_ID = 'customFlow:preset_abstain' as const;
+
+/** @deprecated 제거됨 — 마이그레이션·히스토리 표시용 */
+export const BUILTIN_GOOD_POSTURE_FLOW_ID = 'customFlow:preset_good_posture' as const;
+
+/** 건강 루틴 — 스트레칭 */
+export const BUILTIN_STRETCHING_FLOW_ID = 'customFlow:preset_stretching' as const;
 
 /** 금지 루틴 기본 항목 */
 export const ABSTAIN_CHECKLIST_LABELS = [
@@ -152,6 +160,15 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     checklistLabels: ABSTAIN_CHECKLIST_LABELS,
     templateKey: 'abstain',
   },
+  {
+    id: BUILTIN_STRETCHING_FLOW_ID,
+    groupKey: 'health',
+    displayName: '스트레칭',
+    icon: 'figure.flexibility',
+    color: '#14b8a6',
+    summary: '몸을 풀고 가볍게 늘려 줘요.',
+    templateKey: 'habit',
+  },
 ];
 
 /** 제거된 기본 커스텀 플로우 — 히스토리·레거시 표시·마이그레이션용 */
@@ -163,6 +180,14 @@ export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[
     icon: 'hourglass',
     color: '#a16207',
     summary: '정해 둔 식사 시간 창을 지키며 단식해요.',
+  },
+  {
+    id: BUILTIN_GOOD_POSTURE_FLOW_ID,
+    groupKey: 'health',
+    displayName: '자세 바르게하기',
+    icon: 'figure.stand',
+    color: '#6366f1',
+    summary: '정해 둔 시간마다 앉거나 서 있는 자세를 점검해요.',
   },
   { id: 'customFlow:builtin_hobby_draw', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '드로잉 연습', icon: 'paintbrush.pointed.fill', color: '#a855f7' },
   { id: 'customFlow:builtin_hobby_guitar', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '기타 연주', icon: 'guitars.fill', color: '#f59e0b' },

@@ -1,4 +1,6 @@
 import {
+  BUILTIN_GOOD_POSTURE_FLOW_ID,
+  BUILTIN_STRETCHING_FLOW_ID,
   DEFAULT_CUSTOM_FLOW_COLOR,
   DEFAULT_CUSTOM_FLOW_ICON,
   resolveCustomFlowCatalogColor,
@@ -21,6 +23,16 @@ describe('resolveCustomFlowCatalogIcon', () => {
 
   it('falls back to person.fill for unknown custom flows', () => {
     expect(resolveCustomFlowCatalogIcon('customFlow:user-made-01')).toBe(DEFAULT_CUSTOM_FLOW_ICON);
+  });
+
+  it('returns legacy icon metadata for removed good posture preset', () => {
+    expect(resolveCustomFlowCatalogIcon(BUILTIN_GOOD_POSTURE_FLOW_ID)).toBe('figure.stand');
+    expect(resolveCustomFlowCatalogColor(BUILTIN_GOOD_POSTURE_FLOW_ID)).toBe('#6366f1');
+  });
+
+  it('returns builtin icon for stretching preset', () => {
+    expect(resolveCustomFlowCatalogIcon(BUILTIN_STRETCHING_FLOW_ID)).toBe('figure.flexibility');
+    expect(resolveCustomFlowCatalogColor(BUILTIN_STRETCHING_FLOW_ID)).toBe('#14b8a6');
   });
 
   it('reads icon from saved goal-detail config for user custom flows', () => {

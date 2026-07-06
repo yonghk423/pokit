@@ -1014,7 +1014,7 @@ export function ActivitySessionPage() {
         brand={F.brand}
         aboutKicker={F.aboutKicker}
         headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '체중조절'}
-        iconName="figure.stand"
+        iconName="person.fill"
         iconSize={28}
         sessionKicker="체중 · 목표"
         timerDisplay={

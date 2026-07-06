@@ -11,6 +11,8 @@ import {
 } from './customFlowCatalogStorage';
 import {
   BUILTIN_ABSTAIN_FLOW_ID,
+  BUILTIN_GOOD_POSTURE_FLOW_ID,
+  BUILTIN_STRETCHING_FLOW_ID,
   BUILTIN_INTERMITTENT_FASTING_FLOW_ID,
   DEFAULT_BUILTIN_CUSTOM_FLOWS,
   DEFAULT_BUILTIN_CUSTOM_GROUPS,
@@ -290,6 +292,31 @@ function purgeIntermittentFastingFlow(): void {
   }
 }
 
+function purgeGoodPostureFlow(): void {
+  purgeCustomFlowIds([BUILTIN_GOOD_POSTURE_FLOW_ID]);
+
+  const state = loadFixedFlowSetsState();
+  let fixedChanged = false;
+  const sets = state.sets.map((set) => {
+    const items = set.items.filter((item) => item.categoryKey !== BUILTIN_GOOD_POSTURE_FLOW_ID);
+    if (items.length !== set.items.length) fixedChanged = true;
+    return { ...set, items };
+  });
+  if (fixedChanged) {
+    saveFixedFlowSetsState({ ...state, sets });
+  }
+
+  const draft = loadDayPlanDraft();
+  if (draft) {
+    const nextOrder = draft.priorityCategoryOrder.filter(
+      (key) => key !== BUILTIN_GOOD_POSTURE_FLOW_ID,
+    );
+    if (nextOrder.length !== draft.priorityCategoryOrder.length) {
+      saveDayPlanDraft({ ...draft, priorityCategoryOrder: nextOrder });
+    }
+  }
+}
+
 function buildBuiltinChecklist(flowId: string, labels: readonly string[]) {
   return labels.map((text, index) => ({
     id: `${flowId}_item_${index}`,
@@ -324,6 +351,17 @@ function migrateDailyWashIcon(): void {
   });
 }
 
+function migrateFastingBuiltinIcon(): void {
+  const cfg = loadGoalDetailCategoryConfig('fasting');
+  if (!cfg) return;
+  const icon = normalizeCustomFlowIcon((cfg as { icon?: unknown }).icon);
+  if (icon != null && icon !== 'figure.stand' && icon !== 'scalemass.fill') return;
+  saveGoalDetailCategoryConfig('fasting', {
+    ...(cfg as Record<string, unknown>),
+    icon: 'person.fill',
+  });
+}
+
 function mergeDefaultCustomFlows(): void {
   const curIds = new Set(listCustomFlowCatalogEntries().map((e) => e.id));
 
@@ -332,17 +370,22 @@ function mergeDefaultCustomFlows(): void {
       appendCustomFlowCatalogEntry({ id: flow.id, groupKey: flow.groupKey });
     }
     if (loadGoalDetailCategoryConfig(flow.id) == null) {
-      saveGoalDetailCategoryConfig(flow.id, {
+      const baseConfig: Record<string, unknown> = {
         displayName: flow.displayName,
         summary: flow.summary ?? '',
-        checklist:
-          flow.checklistLabels != null
-            ? buildBuiltinChecklist(flow.id, flow.checklistLabels)
-            : [],
         icon: flow.icon,
         accentColor: flow.color,
         ...(flow.templateKey ? { templateKey: flow.templateKey } : {}),
-      });
+      };
+      if (flow.checklistLabels != null) {
+        baseConfig.checklist = buildBuiltinChecklist(flow.id, flow.checklistLabels);
+      } else if (flow.templateKey === 'reminder') {
+        baseConfig.reminderTimes = [...(flow.reminderTimes ?? ['09:00'])];
+        baseConfig.completedTimes = [];
+      } else if (flow.templateKey !== 'habit') {
+        baseConfig.checklist = [];
+      }
+      saveGoalDetailCategoryConfig(flow.id, baseConfig);
     }
   }
 
@@ -374,7 +417,9 @@ export function ensureDefaultPriorityCatalog(): void {
   unifyHealthCatalogGroups();
   seedStandaloneWaterGoalDetail();
   migrateDailyWashIcon();
+  migrateFastingBuiltinIcon();
   migrateAbstainDisplayName();
   purgeIntermittentFastingFlow();
+  purgeGoodPostureFlow();
   mergeDefaultCustomFlows();
 }

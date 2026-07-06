@@ -37,7 +37,7 @@ const BUILTIN_CATEGORY_ICONS: Record<string, string> = {
   healthIntake: HEALTH_INTAKE_CATALOG_ICON,
   water: 'drop.fill',
   medicine: 'pills.fill',
-  fasting: 'figure.stand',
+  fasting: 'person.fill',
   reading: 'book.fill',
   work: 'bag.fill',
   other: 'person.fill',
