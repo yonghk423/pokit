@@ -1,5 +1,16 @@
 import { listCustomCatalogGroups } from './customCatalogGroupStorage';
 import { listCustomFlowCatalogEntries } from './customFlowCatalogStorage';
+import {
+  ABSTAIN_CHECKLIST_LABELS,
+  BUILTIN_ABSTAIN_FLOW_ID,
+  BUILTIN_ABSTAIN_GROUP_KEY,
+  BUILTIN_DAILY_LIFE_FLOW_IDS,
+  BUILTIN_DAILY_LIFE_GROUP_KEY,
+  BUILTIN_HEALTH_GROUP_KEY,
+  BUILTIN_INTERMITTENT_FASTING_FLOW_ID,
+  LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID,
+} from './defaultPriorityCatalog';
+import { loadStandardCatalogGroupOverrides, resolveCatalogItemGroupKey } from './catalogItemGroupStorage';
 import { ensureDefaultPriorityCatalog } from './ensureDefaultPriorityCatalog';
 import { loadGoalDetailCategoryConfig } from './goalDetailSettingsStorage';
 import { localStorageClient } from './localStorageClient';
@@ -14,11 +25,105 @@ describe('ensureDefaultPriorityCatalog', () => {
     localStorageClient.removeItem(StorageKeys.dayPlanDraft);
   });
 
-  it('does not seed builtin custom groups or flows on empty storage', () => {
+  it('seeds seven daily life habit flows and abstain flow on empty storage', () => {
     ensureDefaultPriorityCatalog();
 
-    expect(listCustomCatalogGroups()).toEqual([]);
-    expect(listCustomFlowCatalogEntries()).toEqual([]);
+    expect(listCustomCatalogGroups()).toEqual([
+      { key: BUILTIN_DAILY_LIFE_GROUP_KEY, label: '일상 루틴' },
+      { key: BUILTIN_ABSTAIN_GROUP_KEY, label: '금지 루틴' },
+    ]);
+    expect(listCustomFlowCatalogEntries().map((e) => e.id)).toEqual([
+      ...BUILTIN_DAILY_LIFE_FLOW_IDS,
+      BUILTIN_ABSTAIN_FLOW_ID,
+    ]);
+
+    const bedCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_LIFE_FLOW_IDS[0]);
+    expect(bedCfg?.displayName).toBe('이불정리');
+    expect((bedCfg as { templateKey?: string })?.templateKey).toBe('habit');
+
+    const washCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_LIFE_FLOW_IDS[3]);
+    expect((washCfg as { icon?: string })?.icon).toBe('hands.sparkles.fill');
+
+    const exerciseCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_LIFE_FLOW_IDS[5]);
+    expect(exerciseCfg?.displayName).toBe('운동하기');
+    expect((exerciseCfg as { templateKey?: string })?.templateKey).toBe('habit');
+
+    const shoppingCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_LIFE_FLOW_IDS[6]);
+    expect(shoppingCfg?.displayName).toBe('쇼핑하기');
+    expect((shoppingCfg as { templateKey?: string })?.templateKey).toBe('habit');
+    expect((shoppingCfg as { icon?: string })?.icon).toBe('cart.fill');
+
+    expect(loadGoalDetailCategoryConfig(BUILTIN_INTERMITTENT_FASTING_FLOW_ID)).toBeNull();
+
+    const abstainCfg = loadGoalDetailCategoryConfig(BUILTIN_ABSTAIN_FLOW_ID);
+    expect(abstainCfg?.displayName).toBe('금지');
+    expect((abstainCfg as { templateKey?: string })?.templateKey).toBe('abstain');
+    expect(abstainCfg?.checklist?.map((item) => item.text)).toEqual([...ABSTAIN_CHECKLIST_LABELS]);
+
+    const waterCfg = loadGoalDetailCategoryConfig('water');
+    expect(waterCfg).not.toBeNull();
+    const overrides = loadStandardCatalogGroupOverrides();
+    expect(overrides.water).toBeUndefined();
+    expect(overrides.fasting).toBeUndefined();
+    expect(resolveCatalogItemGroupKey('water')).toBe('health');
+  });
+
+  it('purges legacy intermittent fasting flow from catalog and storage', () => {
+    localStorageClient.setJson(StorageKeys.customFlowCatalog, {
+      items: [{ id: BUILTIN_INTERMITTENT_FASTING_FLOW_ID, groupKey: 'health' }],
+    });
+    localStorageClient.setJson(StorageKeys.goalDetailSettings, {
+      byCategory: {
+        [BUILTIN_INTERMITTENT_FASTING_FLOW_ID]: {
+          templateKey: 'intermittentFasting',
+          displayName: '간헐적 단식',
+        },
+      },
+      committedCategoryKeys: [BUILTIN_INTERMITTENT_FASTING_FLOW_ID],
+    });
+    localStorageClient.setJson(StorageKeys.dayPlanDraft, {
+      priorityCategoryOrder: [BUILTIN_INTERMITTENT_FASTING_FLOW_ID, 'water'],
+    });
+
+    ensureDefaultPriorityCatalog();
+
+    expect(listCustomFlowCatalogEntries().some((e) => e.id === BUILTIN_INTERMITTENT_FASTING_FLOW_ID)).toBe(
+      false,
+    );
+    expect(loadGoalDetailCategoryConfig(BUILTIN_INTERMITTENT_FASTING_FLOW_ID)).toBeNull();
+    expect(
+      localStorageClient.getJson<{ priorityCategoryOrder?: string[] }>(StorageKeys.dayPlanDraft)
+        ?.priorityCategoryOrder ?? [],
+    ).toEqual(['water']);
+  });
+
+  it('migrates legacy bundled daily life flow into five separate flows', () => {
+    localStorageClient.setJson(StorageKeys.customFlowCatalog, {
+      items: [{ id: LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID, groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY }],
+    });
+    localStorageClient.setJson(StorageKeys.goalDetailSettings, {
+      byCategory: {
+        [LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID]: {
+          displayName: '일상 생활 루틴',
+          checklist: [{ id: 'x', text: '이불 정리', done: false }],
+        },
+      },
+      committedCategoryKeys: [LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID],
+    });
+    localStorageClient.setJson(StorageKeys.dayPlanDraft, {
+      planMode: 'priority',
+      priorityCategoryOrder: ['reading', LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID],
+    });
+
+    ensureDefaultPriorityCatalog();
+
+    const ids = listCustomFlowCatalogEntries().map((e) => e.id);
+    expect(ids).not.toContain(LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID);
+    expect(BUILTIN_DAILY_LIFE_FLOW_IDS.every((id) => ids.includes(id))).toBe(true);
+    expect(
+      localStorageClient.getJson<{ priorityCategoryOrder?: string[] }>(StorageKeys.dayPlanDraft)
+        ?.priorityCategoryOrder,
+    ).toEqual(['reading', ...BUILTIN_DAILY_LIFE_FLOW_IDS]);
   });
 
   it('removes legacy dev seed and builtin custom flows', () => {
@@ -54,7 +159,13 @@ describe('ensureDefaultPriorityCatalog', () => {
     expect(ids).not.toContain('customFlow:seed00001');
     expect(ids).not.toContain('customFlow:builtin_hobby_draw');
     expect(ids).toContain('customFlow:user01abcdef');
-    expect(listCustomCatalogGroups().map((g) => g.key)).toEqual(['customGroup:user01']);
+    expect(BUILTIN_DAILY_LIFE_FLOW_IDS.every((id) => ids.includes(id))).toBe(true);
+    expect(ids).toContain(BUILTIN_ABSTAIN_FLOW_ID);
+    expect(listCustomCatalogGroups().map((g) => g.key)).toEqual([
+      BUILTIN_DAILY_LIFE_GROUP_KEY,
+      BUILTIN_ABSTAIN_GROUP_KEY,
+      'customGroup:user01',
+    ]);
     expect(loadGoalDetailCategoryConfig('customFlow:builtin_hobby_draw')).toBeNull();
   });
 
@@ -86,7 +197,30 @@ describe('ensureDefaultPriorityCatalog', () => {
     expect(
       (localStorageClient.getJson<{ priorityCategoryOrder?: string[] }>(StorageKeys.dayPlanDraft)
         ?.priorityCategoryOrder ?? []),
-    ).toEqual(['healthIntake', 'reading']);
+    ).toEqual(['water', 'reading']);
+  });
+
+  it('unifies legacy preset_health group into system health group', () => {
+    localStorageClient.setJson(StorageKeys.customCatalogGroups, {
+      groups: [
+        { key: BUILTIN_HEALTH_GROUP_KEY, label: '건강 루틴' },
+        { key: BUILTIN_DAILY_LIFE_GROUP_KEY, label: '일상 루틴' },
+      ],
+    });
+    localStorageClient.setJson(StorageKeys.customFlowCatalog, {
+      items: [{ id: BUILTIN_INTERMITTENT_FASTING_FLOW_ID, groupKey: BUILTIN_HEALTH_GROUP_KEY }],
+    });
+    localStorageClient.setJson(StorageKeys.standardCatalogGroupOverrides, {
+      overrides: { water: BUILTIN_HEALTH_GROUP_KEY, fasting: BUILTIN_HEALTH_GROUP_KEY },
+    });
+
+    ensureDefaultPriorityCatalog();
+
+    expect(listCustomCatalogGroups().map((g) => g.key)).not.toContain(BUILTIN_HEALTH_GROUP_KEY);
+    expect(resolveCatalogItemGroupKey('water')).toBe('health');
+    expect(listCustomFlowCatalogEntries().some((e) => e.id === BUILTIN_INTERMITTENT_FASTING_FLOW_ID)).toBe(
+      false,
+    );
   });
 
   it('is idempotent and preserves user-added groups', () => {
@@ -97,7 +231,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     ensureDefaultPriorityCatalog();
     ensureDefaultPriorityCatalog();
 
-    expect(listCustomCatalogGroups()).toHaveLength(1);
-    expect(listCustomFlowCatalogEntries()).toHaveLength(0);
+    expect(listCustomCatalogGroups()).toHaveLength(3);
+    expect(listCustomFlowCatalogEntries()).toHaveLength(8);
   });
 });

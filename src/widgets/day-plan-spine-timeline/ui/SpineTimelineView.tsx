@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import {
   formatMinuteOfDayKo,
   type SpineTimelineRow,
+  resolveBlockCategoryKey,
 } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -32,6 +33,7 @@ type Props = {
   onToggleBlockComplete: (blockId: string) => void;
   onPressBlock?: (blockId: string) => void;
   onDeleteBlock?: (blockId: string) => void;
+  onOpenBlockSettings?: (blockId: string, categoryKey: string) => void;
   onReorderBlocks?: (fromIndex: number, toIndex: number) => void;
   onReorderDragActiveChange?: (active: boolean) => void;
 };
@@ -216,6 +218,7 @@ export function SpineTimelineView({
   onToggleBlockComplete,
   onPressBlock,
   onDeleteBlock,
+  onOpenBlockSettings,
   onReorderBlocks,
   onReorderDragActiveChange,
 }: Props) {
@@ -273,6 +276,7 @@ export function SpineTimelineView({
       if (row.kind === 'block') {
         const currentIndex = blockIndex;
         blockIndex += 1;
+        const categoryKey = resolveBlockCategoryKey(row.block);
         return (
           <SpineTimelineBlockRow
             key={key}
@@ -286,6 +290,11 @@ export function SpineTimelineView({
             onToggleComplete={() => onToggleBlockComplete(row.block.id)}
             onPress={onPressBlock ? () => onPressBlock(row.block.id) : undefined}
             onDelete={onDeleteBlock ? () => onDeleteBlock(row.block.id) : undefined}
+            onOpenSettings={
+              categoryKey && onOpenBlockSettings
+                ? () => onOpenBlockSettings(row.block.id, categoryKey)
+                : undefined
+            }
             onRowMeasured={onRowMeasured}
             onReorderDragActiveChange={onReorderDragActiveChange}
             onCommitReorder={reorderEnabled ? onCommitReorder : undefined}
@@ -315,6 +324,7 @@ export function SpineTimelineView({
     onToggleBlockComplete,
     onPressBlock,
     onDeleteBlock,
+    onOpenBlockSettings,
     onRowMeasured,
     onReorderDragActiveChange,
     onCommitReorder,

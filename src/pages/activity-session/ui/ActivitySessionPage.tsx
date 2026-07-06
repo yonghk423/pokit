@@ -105,24 +105,6 @@ function formatClockHMS(totalSeconds: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
 }
 
-function fastingGoalLabelKo(fastingMin: number): string {
-  const m = Math.max(0, Math.round(fastingMin));
-  const h = Math.floor(m / 60);
-  const r = m % 60;
-  if (r === 0) return `${h}시간 단식`;
-  if (h === 0) return `${r}분 단식`;
-  return `${h}시간 ${r}분 단식`;
-}
-
-/** 단식 누적 비율(0~1)에 따른 안내 단계 (참고용) */
-function fastingStageLabelKo(elapsedOverGoal: number): string {
-  const f = Math.min(1, Math.max(0, elapsedOverGoal));
-  if (f < 0.2) return '공복 적응 단계';
-  if (f < 0.45) return '인슐린 안정 단계';
-  if (f < 0.7) return '지방 연소 단계';
-  return '깊은 단식 단계';
-}
-
 function formatMeridiemClock(minuteOfDay: number): { hhmm: string; meridiem: 'AM' | 'PM' } {
   const safe = ((Math.floor(minuteOfDay) % (24 * 60)) + 24 * 60) % (24 * 60);
   const h24 = Math.floor(safe / 60);
@@ -649,10 +631,10 @@ export function ActivitySessionPage() {
         muted={WK.muted}
         brand={WK.brand}
         aboutKicker={WK.aboutKicker}
-        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '스터디'}
+        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '노트'}
         iconName="bag.fill"
         iconSize={28}
-        sessionKicker="스터디 세션"
+        sessionKicker="노트 세션"
         timerDisplay={
           <ThemedText
             style={waterStyles.timerHms}
@@ -673,7 +655,7 @@ export function ActivitySessionPage() {
             borderColor={WK.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
-            completeLabel="스터디 완료"
+            completeLabel="노트 완료"
           />
         }>
         <ImmersionCardShell borderColor={WK.border}>
@@ -1009,13 +991,18 @@ export function ActivitySessionPage() {
     );
   }
 
-  // ── Full-screen 체중관리 세션 (단식 타이머) ──
+  // ── Full-screen 체중조절 세션 ──
   if (enableCategoryTimedUi && categoryKey === 'fasting' && !isQuickMemoSession && categoryConfigs.fasting) {
-    const fastingCfg = categoryConfigs.fasting;
-    const elapsedSec = isWaitingToStart ? 0 : Math.max(0, totalSec - remainingSec);
-    const goalSec = Math.max(60, fastingCfg.fastingMin * 60);
-    const fastProgress = Math.min(1, elapsedSec / goalSec);
+    const weightCfg = categoryConfigs.fasting;
     const F = CategoryImmersionTheme.fasting;
+    const weightDeltaKg = Math.max(0, weightCfg.currentWeightKg - weightCfg.targetWeightKg);
+    const weightAchieved =
+      weightCfg.currentWeightKg <= weightCfg.targetWeightKg && weightCfg.targetWeightKg > 0;
+    const weightProgress = weightAchieved
+      ? 1
+      : weightCfg.weeklyLossTargetKg > 0
+        ? Math.min(0.95, weightCfg.weeklyLossTargetKg / Math.max(0.1, weightDeltaKg))
+        : 0;
 
     return (
       <SessionImmersionLayout
@@ -1026,10 +1013,10 @@ export function ActivitySessionPage() {
         muted={F.muted}
         brand={F.brand}
         aboutKicker={F.aboutKicker}
-        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '체중관리'}
-        iconName="hourglass"
+        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '체중조절'}
+        iconName="figure.stand"
         iconSize={28}
-        sessionKicker="단식 · 집중"
+        sessionKicker="체중 · 목표"
         timerDisplay={
           <ThemedText
             style={waterStyles.timerHms}
@@ -1038,10 +1025,10 @@ export function ActivitySessionPage() {
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.35}>
-            {formatClockHMS(elapsedSec)}
+            {weightCfg.currentWeightKg.toFixed(1)}
           </ThemedText>
         }
-        flowCaption={activityTitle.trim() ? activityTitle : '목표까지 타이머로 맞춰요'}
+        flowCaption={activityTitle.trim() ? activityTitle : '현재 체중과 목표를 확인해요'}
         onBack={() => safeRouterBack(router)}
         scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
         bottomBar={
@@ -1050,29 +1037,31 @@ export function ActivitySessionPage() {
             borderColor={F.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
-            completeLabel="단식 완료"
+            completeLabel="기록 완료"
           />
         }>
         <ImmersionCardShell borderColor={F.border}>
           <ThemedText style={waterStyles.statLabel} lightColor={F.muted} darkColor={F.muted}>
-            단식 목표
+            체중 목표
           </ThemedText>
           <View style={waterStyles.goalRow}>
             <ThemedText style={waterStyles.goalValue} lightColor={F.onSurface} darkColor={F.onSurface}>
-              {formatDurationMinKo(fastingCfg.fastingMin)}
+              {weightAchieved
+                ? '목표 달성'
+                : `${weightCfg.currentWeightKg.toFixed(1)} → ${weightCfg.targetWeightKg.toFixed(1)} kg`}
             </ThemedText>
           </View>
           <ThemedText style={waterStyles.metaLine} lightColor={F.muted} darkColor={F.muted}>
-            {elapsedSec < 60
-              ? '방금 시작 · 목표까지 타이머를 따라가요'
-              : `${formatDurationMinKo(Math.floor(elapsedSec / 60))} 경과 · ${fastingGoalLabelKo(fastingCfg.fastingMin)}`}
+            {weightAchieved
+              ? `주간 ${weightCfg.weeklyLossTargetKg.toFixed(1)}kg 감량 목표 유지`
+              : `목표까지 ${weightDeltaKg.toFixed(1)}kg · 주간 ${weightCfg.weeklyLossTargetKg.toFixed(1)}kg 감량`}
           </ThemedText>
           <View style={waterStyles.hydrateTrack}>
             <View
               style={[
                 waterStyles.hydrateFill,
                 {
-                  width: `${Math.round(fastProgress * 100)}%`,
+                  width: `${Math.round(weightProgress * 100)}%`,
                   backgroundColor: PRIMARY,
                   opacity: 0.35,
                 },
@@ -1084,26 +1073,24 @@ export function ActivitySessionPage() {
         <ImmersionSplitRow>
           <ImmersionHalfCard borderColor={F.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={F.muted} darkColor={F.muted}>
-              현재 단계
+              현재
             </ThemedText>
-            <ThemedText
-              style={[waterStyles.halfValue, { fontSize: 17, lineHeight: 22, fontWeight: '800' }]}
-              lightColor={F.onSurface}
-              darkColor={F.onSurface}
-              numberOfLines={2}
-              adjustsFontSizeToFit>
-              {fastingStageLabelKo(fastProgress)}
+            <ThemedText style={waterStyles.halfValue} lightColor={F.onSurface} darkColor={F.onSurface}>
+              {weightCfg.currentWeightKg.toFixed(1)}
+            </ThemedText>
+            <ThemedText style={waterStyles.halfUnit} lightColor={F.muted} darkColor={F.muted}>
+              kg
             </ThemedText>
           </ImmersionHalfCard>
           <ImmersionHalfCard borderColor={F.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={F.muted} darkColor={F.muted}>
-              진행도
+              목표
             </ThemedText>
             <ThemedText style={waterStyles.halfValue} lightColor={F.onSurface} darkColor={F.onSurface}>
-              {Math.round(fastProgress * 100)}
+              {weightCfg.targetWeightKg.toFixed(1)}
             </ThemedText>
             <ThemedText style={waterStyles.halfUnit} lightColor={F.muted} darkColor={F.muted}>
-              %
+              kg
             </ThemedText>
           </ImmersionHalfCard>
         </ImmersionSplitRow>

@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 6,
     borderRadius: 0,
     paddingHorizontal: 8,
@@ -479,9 +479,12 @@ const styles = StyleSheet.create({
     minHeight: STATUS_BOX_SIZE,
   },
   priorityChip: {
+    alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
+    paddingTop: 7,
+    paddingBottom: 1,
   },
   priorityDot: {
     width: 8,
@@ -496,6 +499,7 @@ const styles = StyleSheet.create({
   cellInput: {
     flex: 1,
     minWidth: 0,
+    alignSelf: 'center',
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: -0.2,

@@ -401,7 +401,7 @@ export function PriorityCatalogPage() {
       const moveTargetLabel = isSystemCatalogGroupKey(groupKey)
         ? groupKey === 'health'
           ? '생산성을 높이는 도구'
-          : '건강·몸 관리'
+          : '건강 루틴'
         : '생산성을 높이는 도구';
       Alert.alert(
         '묶음 삭제',

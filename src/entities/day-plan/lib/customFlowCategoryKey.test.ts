@@ -18,10 +18,11 @@ describe('customFlowCategoryKey', () => {
     expect(isCustomFlowCategoryKey(id)).toBe(true);
   });
 
-  it('builds picker label from key tail', () => {
+  it('builds generic picker label without internal id', () => {
     expect(defaultCustomFlowPickerLabel('reading')).toBe('루틴');
-    expect(defaultCustomFlowPickerLabel(`${CUSTOM_FLOW_CATEGORY_PREFIX}abcd1234`)).toBe(
-      '루틴 abcd1234',
+    expect(defaultCustomFlowPickerLabel(`${CUSTOM_FLOW_CATEGORY_PREFIX}abcd1234`)).toBe('루틴');
+    expect(defaultCustomFlowPickerLabel(`${CUSTOM_FLOW_CATEGORY_PREFIX}preset_abstain`)).toBe(
+      '루틴',
     );
   });
 });

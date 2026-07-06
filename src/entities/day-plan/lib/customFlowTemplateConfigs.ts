@@ -48,6 +48,7 @@ function normalizeHhmmList(raw: unknown, max: number): string[] {
 
 export type CustomFlowTemplateKey =
   | 'checklist'
+  | 'abstain'
   | 'measurement'
   | 'habit'
   | 'counter'
@@ -55,14 +56,20 @@ export type CustomFlowTemplateKey =
   | 'journal'
   | 'reminder';
 
-export const CUSTOM_FLOW_TEMPLATE_KEYS: readonly CustomFlowTemplateKey[] = [
+/** 사용자가 직접 만들 수 있는 템플릿 */
+export const CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS = [
   'checklist',
+  'abstain',
   'measurement',
   'habit',
   'counter',
   'focus',
   'journal',
   'reminder',
+] as const satisfies readonly CustomFlowTemplateKey[];
+
+export const CUSTOM_FLOW_TEMPLATE_KEYS: readonly CustomFlowTemplateKey[] = [
+  ...CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS,
 ] as const;
 
 const TEMPLATE_KEY_SET = new Set<string>(CUSTOM_FLOW_TEMPLATE_KEYS);
@@ -549,6 +556,7 @@ export function mergeCustomFlowGoalDetailData(
         ...pickAppearance(b, c),
       });
     }
+    case 'abstain':
     case 'checklist':
     default: {
       const b = blockRaw != null ? normalizeOtherDetailConfig(blockRaw) : null;
@@ -556,22 +564,25 @@ export function mergeCustomFlowGoalDetailData(
       const bl = b?.checklist ?? [];
       const cl = c?.checklist ?? [];
       const checklist = bl.length >= cl.length ? bl : cl.length > 0 ? cl : bl;
-      return normalizeOtherDetailConfig({
-        displayName: pickDisplayName(
-          (b?.displayName ?? '').trim(),
-          (c?.displayName ?? '').trim(),
-          b?.displayName ?? '',
-          c?.displayName ?? '',
-        ),
-        summary: pickSummary(
-          (b?.summary ?? '').trim(),
-          (c?.summary ?? '').trim(),
-          b?.summary ?? '',
-          c?.summary ?? '',
-        ),
-        checklist,
-        ...pickAppearance(b, c),
-      });
+      return {
+        ...normalizeOtherDetailConfig({
+          displayName: pickDisplayName(
+            (b?.displayName ?? '').trim(),
+            (c?.displayName ?? '').trim(),
+            b?.displayName ?? '',
+            c?.displayName ?? '',
+          ),
+          summary: pickSummary(
+            (b?.summary ?? '').trim(),
+            (c?.summary ?? '').trim(),
+            b?.summary ?? '',
+            c?.summary ?? '',
+          ),
+          checklist,
+          ...pickAppearance(b, c),
+        }),
+        ...(templateKey === 'abstain' ? { templateKey: 'abstain' as const } : {}),
+      };
     }
   }
 }

@@ -13,6 +13,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import { formatMinuteOfDayKo, getBlockTimelineIcon, resolveBlockCategoryKey, resolveCategoryCatalogAccentColor, type SpineTimelineRow } from '@entities/day-plan';
+import { PrimaryColor } from '@shared/config/theme';
 import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -30,6 +31,38 @@ function formatRailMinutes(minutes: number): string {
   const h = Math.floor(m / 60);
   const min = m % 60;
   return `${h}:${String(min).padStart(2, '0')}`;
+}
+
+function SettingsButton({
+  label,
+  isDark,
+  onPress,
+}: {
+  label: string;
+  isDark: boolean;
+  onPress: () => void;
+}) {
+  const primary = isDark ? '#FAFAFA' : PrimaryColor.rgb;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label} 상세 설정`}
+      hitSlop={10}
+      onPress={() => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
+      style={[
+        styles.settingsBtn,
+        {
+          borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
+          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+        },
+      ]}>
+      <IconSymbol name="slider.horizontal.3" size={14} color={primary} />
+    </Pressable>
+  );
 }
 
 function CompleteRadio({
@@ -108,6 +141,7 @@ type Props = {
   onToggleComplete: () => void;
   onPress?: () => void;
   onDelete?: () => void;
+  onOpenSettings?: () => void;
   onRowMeasured: (height: number) => void;
   onReorderDragActiveChange?: (active: boolean) => void;
   onCommitReorder?: (fromIndex: number, translationY: number) => void;
@@ -124,6 +158,7 @@ export function SpineTimelineBlockRow({
   onToggleComplete,
   onPress,
   onDelete,
+  onOpenSettings,
   onRowMeasured,
   onReorderDragActiveChange,
   onCommitReorder,
@@ -299,6 +334,9 @@ export function SpineTimelineBlockRow({
             </Reanimated.View>
           </GestureDetector>
         </View>
+        {onOpenSettings ? (
+          <SettingsButton label={row.block.title} isDark={isDark} onPress={onOpenSettings} />
+        ) : null}
         <CompleteRadio
           checked={completed}
           isDark={isDark}
@@ -361,6 +399,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 6,
+  },
+  settingsBtn: {
+    width: COMPLETE_W,
+    height: COMPLETE_W,
+    borderRadius: 0,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+    flexShrink: 0,
   },
   railCol: {
     width: RAIL_W,

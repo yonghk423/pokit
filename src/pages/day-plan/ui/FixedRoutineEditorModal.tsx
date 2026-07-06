@@ -92,7 +92,7 @@ export function FixedRoutineEditorModal({
         <View style={[styles.sheetHeader, { borderBottomColor: border }]}>
           <ThemedText style={[styles.sheetTitle, { color: ink }]}>나만의 루틴</ThemedText>
           <ThemedText style={[styles.sheetLead, { color: muted }]}>
-            담기 탭 위쪽에 모아 둘 항목을 고르세요. 순서는 왼쪽 줄을 길게 누른 뒤 위아래로 끌어 바꿀 수 있어요. 비워 두면 아래는 건강·몸 관리(수분·약·체중·스트레칭·자세 등)와 생산성 도구로만 나뉘어 보여요.
+            담기 탭 위쪽에 모아 둘 항목을 고르세요. 순서는 왼쪽 줄을 길게 누른 뒤 위아래로 끌어 바꿀 수 있어요. 비워 두면 아래는 건강 루틴(수분·체중·복약 등)과 생산성 도구로만 나뉘어 보여요.
           </ThemedText>
         </View>
 

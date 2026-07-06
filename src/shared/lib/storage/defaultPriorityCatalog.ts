@@ -21,20 +21,149 @@ export type BuiltinCustomFlowDef = {
   icon: string;
   /** 집중 중 아이콘 강조색 — 없으면 기본 오렌지 */
   color: string;
+  /** 루틴 한 줄 요약 — 시드 시 goal-detail에 저장 */
+  summary?: string;
+  /** 체크리스트 항목 문구 — 시드 시 goal-detail checklist로 저장 */
+  checklistLabels?: readonly string[];
+  /** 커스텀 플로우 템플릿 — 기본 checklist, 습관은 habit, 금지는 abstain */
+  templateKey?: 'checklist' | 'habit' | 'abstain';
 };
+
+/** @deprecated 제거됨 — 마이그레이션·히스토리 표시용 */
+export const BUILTIN_INTERMITTENT_FASTING_FLOW_ID = 'customFlow:preset_intermittent_fasting' as const;
+
+/** 일상 루틴 그룹 (`customFlow:builtin_*` purge 대상 아님) */
+export const BUILTIN_DAILY_LIFE_GROUP_KEY = 'customGroup:preset_daily_life' as const;
+
+/** 통합 체크리스트 프리셋 — 7개 개별 루틴으로 분리됨 */
+export const LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID = 'customFlow:preset_daily_life' as const;
+
+export const BUILTIN_DAILY_LIFE_FLOW_IDS = [
+  'customFlow:preset_daily_bed',
+  'customFlow:preset_daily_clean',
+  'customFlow:preset_daily_laundry',
+  'customFlow:preset_daily_wash',
+  'customFlow:preset_daily_recycle',
+  'customFlow:preset_daily_exercise',
+  'customFlow:preset_daily_shopping',
+] as const;
+
+/** @deprecated — `BUILTIN_DAILY_LIFE_FLOW_IDS[0]` 등 개별 ID 사용 */
+export const BUILTIN_DAILY_LIFE_FLOW_ID = BUILTIN_DAILY_LIFE_FLOW_IDS[0];
+
+/** 금지 루틴 — 그룹·플로우 식별자 */
+export const BUILTIN_ABSTAIN_GROUP_KEY = 'customGroup:preset_abstain' as const;
+export const BUILTIN_ABSTAIN_FLOW_ID = 'customFlow:preset_abstain' as const;
+
+/** 금지 루틴 기본 항목 */
+export const ABSTAIN_CHECKLIST_LABELS = [
+  '밤늦게 폰 보기',
+  '과자·야식 먹기',
+  'SNS 무한 스크롤',
+  '충동 구매하기',
+  '늦잠 자기',
+] as const;
 
 export {
   DEFAULT_CUSTOM_FLOW_ACCENT_COLOR as DEFAULT_CUSTOM_FLOW_COLOR,
   DEFAULT_CUSTOM_FLOW_ICON,
 } from '../customFlowAppearanceCatalog';
 
-/** 신규 설치 시 자동 시드하지 않음 — 사용자가 직접 만든 customFlow만 사용 */
-export const DEFAULT_BUILTIN_CUSTOM_GROUPS = [] as const;
+/** @deprecated `health` 시스템 그룹으로 통합됨 — 마이그레이션용 */
+export const BUILTIN_HEALTH_GROUP_KEY = 'customGroup:preset_health' as const;
 
-export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [];
+/** 신규 설치 시 자동 시드되는 커스텀 그룹 */
+export const DEFAULT_BUILTIN_CUSTOM_GROUPS = [
+  { key: BUILTIN_DAILY_LIFE_GROUP_KEY, label: '일상 루틴' },
+  { key: BUILTIN_ABSTAIN_GROUP_KEY, label: '금지 루틴' },
+] as const;
+
+export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
+  {
+    id: BUILTIN_DAILY_LIFE_FLOW_IDS[0],
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '이불정리',
+    icon: 'bed.double.fill',
+    color: '#0d9488',
+    summary: '아침에 이불을 정리해 하루를 가볍게 시작해요.',
+    templateKey: 'habit',
+  },
+  {
+    id: BUILTIN_DAILY_LIFE_FLOW_IDS[1],
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '청소하기',
+    icon: 'sparkles',
+    color: '#0891b2',
+    summary: '방·거실 등 생활 공간을 간단히 정리해요.',
+    templateKey: 'habit',
+  },
+  {
+    id: BUILTIN_DAILY_LIFE_FLOW_IDS[2],
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '빨래하기',
+    icon: 'washer.fill',
+    color: '#6366f1',
+    summary: '쌓인 빨래를 돌리거나 개어 정리해요.',
+    templateKey: 'habit',
+  },
+  {
+    id: BUILTIN_DAILY_LIFE_FLOW_IDS[3],
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '세수하기',
+    icon: 'hands.sparkles.fill',
+    color: '#14b8a6',
+    summary: '하루를 시작·마무리할 때 깨끗이 씻어요.',
+    templateKey: 'habit',
+  },
+  {
+    id: BUILTIN_DAILY_LIFE_FLOW_IDS[4],
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '분리수거',
+    icon: 'arrow.3.trianglepath',
+    color: '#22c55e',
+    summary: '재활용·분리수거를 챙겨요.',
+    templateKey: 'habit',
+  },
+  {
+    id: BUILTIN_DAILY_LIFE_FLOW_IDS[5],
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '운동하기',
+    icon: 'figure.run',
+    color: '#ef4444',
+    summary: '가벼운 스트레칭부터 유산소까지, 오늘 몸을 움직여요.',
+    templateKey: 'habit',
+  },
+  {
+    id: BUILTIN_DAILY_LIFE_FLOW_IDS[6],
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '쇼핑하기',
+    icon: 'cart.fill',
+    color: '#f59e0b',
+    summary: '장보기·필요한 물건을 사러 나가요.',
+    templateKey: 'habit',
+  },
+  {
+    id: BUILTIN_ABSTAIN_FLOW_ID,
+    groupKey: BUILTIN_ABSTAIN_GROUP_KEY,
+    displayName: '금지',
+    icon: 'hand.raised.fill',
+    color: '#dc2626',
+    summary: '오늘 하지 말아야 할 것들을 지켰는지 확인해요.',
+    checklistLabels: ABSTAIN_CHECKLIST_LABELS,
+    templateKey: 'abstain',
+  },
+];
 
 /** 제거된 기본 커스텀 플로우 — 히스토리·레거시 표시·마이그레이션용 */
 export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
+  {
+    id: BUILTIN_INTERMITTENT_FASTING_FLOW_ID,
+    groupKey: 'health',
+    displayName: '간헐적 단식',
+    icon: 'hourglass',
+    color: '#a16207',
+    summary: '정해 둔 식사 시간 창을 지키며 단식해요.',
+  },
   { id: 'customFlow:builtin_hobby_draw', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '드로잉 연습', icon: 'paintbrush.pointed.fill', color: '#a855f7' },
   { id: 'customFlow:builtin_hobby_guitar', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '기타 연주', icon: 'guitars.fill', color: '#f59e0b' },
   { id: 'customFlow:builtin_hobby_photo', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '사진 촬영', icon: 'camera.fill', color: '#0ea5e9' },
@@ -59,6 +188,14 @@ export function isRemovedBuiltinCustomFlowId(id: string): boolean {
 export function isRemovedBuiltinCustomGroupKey(key: string): boolean {
   return key.startsWith('customGroup:builtin_');
 }
+
+const ACTIVE_BUILTIN_CUSTOM_FLOW_ICON_BY_ID = Object.fromEntries(
+  DEFAULT_BUILTIN_CUSTOM_FLOWS.map((flow) => [flow.id, flow.icon]),
+) as Record<string, string>;
+
+const ACTIVE_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID = Object.fromEntries(
+  DEFAULT_BUILTIN_CUSTOM_FLOWS.map((flow) => [flow.id, flow.color]),
+) as Record<string, string>;
 
 const LEGACY_BUILTIN_CUSTOM_FLOW_ICON_BY_ID = Object.fromEntries(
   LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS.map((flow) => [flow.id, flow.icon]),
@@ -86,6 +223,9 @@ function readStoredCustomFlowAccentColor(categoryKey: string): string | undefine
 export function resolveCustomFlowCatalogIcon(categoryKey: string): string {
   const fromConfig = readStoredCustomFlowIcon(categoryKey);
   if (fromConfig) return fromConfig;
+  if (ACTIVE_BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey]) {
+    return ACTIVE_BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey];
+  }
   if (LEGACY_BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey]) {
     return LEGACY_BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey];
   }
@@ -96,6 +236,9 @@ export function resolveCustomFlowCatalogIcon(categoryKey: string): string {
 export function resolveCustomFlowCatalogColor(categoryKey: string): string {
   const fromConfig = readStoredCustomFlowAccentColor(categoryKey);
   if (fromConfig) return fromConfig;
+  if (ACTIVE_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey]) {
+    return ACTIVE_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey];
+  }
   if (LEGACY_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey]) {
     return LEGACY_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey];
   }

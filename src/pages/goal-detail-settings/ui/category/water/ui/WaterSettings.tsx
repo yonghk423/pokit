@@ -7,6 +7,7 @@ import {
   clampHhmmToPriorityWindow,
   formatHhmmClockKo,
   formatMinuteOfDayKo,
+  MAX_WATER_QUICK_ADD_PRESETS,
   MAX_WATER_REMINDER_TIMES,
   parseHHmmToMinutes,
   useDayPlanDraftStore,
@@ -42,6 +43,17 @@ function parseGoalLitersToMl(text: string): number {
   return Math.max(100, Math.min(10000, Math.round(n * 1000)));
 }
 
+function sanitizeGoalLitersInput(text: string): string {
+  return text.replace(',', '.').replace(/[^0-9.]/g, '');
+}
+
+function parseQuickAddPresetMl(text: string): number | null {
+  const ml = Math.round(Number(text.replace(/[^0-9]/g, '')));
+  if (!Number.isFinite(ml)) return null;
+  if (ml < 50 || ml > 2000) return null;
+  return ml;
+}
+
 function seedWater(raw: unknown) {
   return normalizeWaterDetailConfig(raw ?? getInitialWaterDataConfig());
 }
@@ -68,7 +80,15 @@ export function WaterSettings({
   embedded?: boolean;
 }) {
   const scheme = useColorScheme();
-  const palette = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
+  const palette = useMemo(() => {
+    const base = goalDetailSettingsPalette(scheme === 'dark');
+    const pageBg = T.screenBg;
+    return {
+      ...base,
+      surfaceLow: pageBg,
+      surfaceLowest: pageBg,
+    };
+  }, [scheme]);
   const titleFallback = useMemo(
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],
@@ -83,6 +103,11 @@ export function WaterSettings({
   const [goalMl, setGoalMl] = useState(() => seedWater(dataConfig).goalMl);
   const [drankMl, setDrankMl] = useState(() => seedWater(dataConfig).drankMl);
   const [goalLStr, setGoalLStr] = useState(() => (seedWater(dataConfig).goalMl / 1000).toFixed(1));
+  const [quickAddPresetsMl, setQuickAddPresetsMl] = useState<number[]>(
+    () => seedWater(dataConfig).quickAddPresetsMl,
+  );
+  const [showAddPresetInput, setShowAddPresetInput] = useState(false);
+  const [addPresetDraft, setAddPresetDraft] = useState('');
   const [reminderPreset, setReminderPreset] = useState<WaterReminderPreset>(
     () => seedWater(dataConfig).reminderPreset,
   );
@@ -118,6 +143,9 @@ export function WaterSettings({
     setGoalMl(next.goalMl);
     setDrankMl(next.drankMl);
     setGoalLStr((next.goalMl / 1000).toFixed(1));
+    setQuickAddPresetsMl(next.quickAddPresetsMl);
+    setShowAddPresetInput(false);
+    setAddPresetDraft('');
     setReminderPreset(next.reminderPreset);
     setReminderCustomMin(String(next.reminderCustomMin));
     setSmartNotification(next.smartNotification);
@@ -136,6 +164,7 @@ export function WaterSettings({
     const payload: WaterDetailDataConfig = normalizeWaterDetailConfig({
       goalMl,
       drankMl: Math.min(drankMl, goalMl),
+      quickAddPresetsMl,
       reminderPreset,
       reminderCustomMin: customMinNum,
       smartNotification,
@@ -150,6 +179,7 @@ export function WaterSettings({
   }, [
     goalMl,
     drankMl,
+    quickAddPresetsMl,
     reminderPreset,
     customMinNum,
     smartNotification,
@@ -173,10 +203,38 @@ export function WaterSettings({
   const waterProgressRatio = goalMl > 0 ? Math.min(1, drankMl / goalMl) : 0;
   const waterRemainingMl = Math.max(0, goalMl - drankMl);
 
+  const onChangeGoalL = (text: string) => {
+    const cleaned = sanitizeGoalLitersInput(text);
+    setGoalLStr(cleaned);
+    const n = parseFloat(cleaned);
+    if (!Number.isFinite(n) || cleaned === '' || cleaned === '.') return;
+    const nextMl = Math.max(100, Math.min(10000, Math.round(n * 1000)));
+    setGoalMl(nextMl);
+  };
+
   const onBlurGoalL = () => {
     const next = parseGoalLitersToMl(goalLStr);
     setGoalMl(next);
     setGoalLStr((next / 1000).toFixed(1));
+  };
+
+  const confirmAddQuickPreset = () => {
+    const ml = parseQuickAddPresetMl(addPresetDraft);
+    if (ml === null) {
+      Alert.alert('빠른 추가', '50ml ~ 2000ml 사이 숫자를 입력해 주세요.');
+      return;
+    }
+    if (quickAddPresetsMl.includes(ml)) {
+      Alert.alert('빠른 추가', '이미 같은 용량이 있어요.');
+      return;
+    }
+    if (quickAddPresetsMl.length >= MAX_WATER_QUICK_ADD_PRESETS) {
+      Alert.alert('빠른 추가', `최대 ${MAX_WATER_QUICK_ADD_PRESETS}개까지 추가할 수 있어요.`);
+      return;
+    }
+    setQuickAddPresetsMl((prev) => [...prev, ml].sort((a, b) => a - b));
+    setAddPresetDraft('');
+    setShowAddPresetInput(false);
   };
 
   const updateTimeAt = useCallback(
@@ -285,7 +343,7 @@ export function WaterSettings({
       <View style={styles.intakeQuickRow}>
         <Text style={styles.intakeQuickLabel}>빠른 추가</Text>
         <View style={styles.presetRow}>
-          {[200, 250, 500].map((ml) => (
+          {quickAddPresetsMl.map((ml) => (
             <Pressable
               key={ml}
               accessibilityRole="button"
@@ -295,6 +353,15 @@ export function WaterSettings({
               <Text style={styles.intakeChipText}>+{ml}ml</Text>
             </Pressable>
           ))}
+          {quickAddPresetsMl.length < MAX_WATER_QUICK_ADD_PRESETS ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="빠른 추가 용량 추가"
+              onPress={() => setShowAddPresetInput(true)}
+              style={({ pressed }) => [styles.intakeAddChip, pressed && { opacity: 0.75 }]}>
+              <Text style={styles.intakeAddChipText}>+</Text>
+            </Pressable>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="오늘 섭취량 초기화"
@@ -303,6 +370,36 @@ export function WaterSettings({
             <Text style={styles.intakeResetText}>초기화</Text>
           </Pressable>
         </View>
+        {showAddPresetInput ? (
+          <View style={styles.addPresetRow}>
+            <TextInput
+              value={addPresetDraft}
+              onChangeText={(text) => setAddPresetDraft(text.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              placeholder="ml"
+              placeholderTextColor={T.placeholder}
+              style={styles.addPresetInput}
+              autoFocus
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="빠른 추가 용량 저장"
+              onPress={confirmAddQuickPreset}
+              style={({ pressed }) => [styles.addPresetConfirmBtn, pressed && { opacity: 0.75 }]}>
+              <Text style={styles.addPresetConfirmText}>추가</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="빠른 추가 용량 추가 취소"
+              onPress={() => {
+                setShowAddPresetInput(false);
+                setAddPresetDraft('');
+              }}
+              style={({ pressed }) => [styles.addPresetCancelBtn, pressed && { opacity: 0.75 }]}>
+              <Text style={styles.addPresetCancelText}>취소</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.metricBar}>
@@ -320,7 +417,7 @@ export function WaterSettings({
           <View style={styles.inlineInputWrap}>
             <TextInput
               value={goalLStr}
-              onChangeText={setGoalLStr}
+              onChangeText={onChangeGoalL}
               onBlur={onBlurGoalL}
               keyboardType="decimal-pad"
               placeholder="2.0"
@@ -490,12 +587,11 @@ export function WaterSettings({
 
 const styles = StyleSheet.create({
   shell: {
-    marginHorizontal: -24,
-    paddingHorizontal: 24,
-    paddingTop: 4,
-    paddingBottom: 8,
-    backgroundColor: T.screenBg,
-    gap: 16,
+    paddingHorizontal: 20,
+    paddingTop: 0,
+    paddingBottom: 4,
+    backgroundColor: 'transparent',
+    gap: 12,
   },
   shellEmbedded: {
     marginHorizontal: 0,
@@ -517,6 +613,43 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(34, 211, 238, 0.25)',
   },
   intakeChipText: { fontSize: 13, fontWeight: '800', color: T.primary },
+  intakeAddChip: {
+    minWidth: 36,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: T.surfaceContainerHigh,
+    borderWidth: 2,
+    borderColor: T.outline,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  intakeAddChipText: { fontSize: 16, fontWeight: '900', color: T.onSurface },
+  addPresetRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  addPresetInput: {
+    width: 88,
+    borderWidth: 2,
+    borderColor: T.glassPreviewBorder,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    fontWeight: '800',
+    textAlign: 'right',
+    color: T.onSurface,
+    backgroundColor: T.surfaceContainerHigh,
+  },
+  addPresetConfirmBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: T.primarySoft,
+    borderWidth: 2,
+    borderColor: 'rgba(34, 211, 238, 0.35)',
+  },
+  addPresetConfirmText: { fontSize: 13, fontWeight: '800', color: T.primary },
+  addPresetCancelBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  addPresetCancelText: { fontSize: 13, fontWeight: '700', color: T.onSurfaceVariant },
   intakeResetChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,

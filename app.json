@@ -2,7 +2,7 @@
   "expo": {
     "name": "POKIT",
     "slug": "pokit",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "orientation": "portrait",
     "icon": "./assets/pokit5.png",
     "scheme": "pokit",
@@ -11,11 +11,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "23"
+      "buildNumber": "24"
     },
     "android": {
-      "version": "1.5.0",
-      "versionCode": 23,
+      "version": "1.6.0",
+      "versionCode": 24,
       "adaptiveIcon": {
         "backgroundColor": "#F2EDE4",
         "foregroundImage": "./assets/pokit5.png"
@@ -30,6 +30,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "노트에 첨부할 사진을 앨범에서 선택하려면 사진 접근 권한이 필요해요."
+        }
+      ],
       "expo-mail-composer",
       [
         "expo-splash-screen",

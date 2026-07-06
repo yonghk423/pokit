@@ -1,10 +1,10 @@
 import {
-  defaultCustomFlowPickerLabel,
   getInitialOtherDataConfig,
   getOtherCategoryResolvedDisplayLabel,
   normalizeOtherDetailConfig,
   readTrimmedOtherCustomDisplayNameFromRaw,
   registerCategoryKeyByDisplayNameResolver,
+  resolveCustomFlowCategoryLabelKo,
 } from '@entities/day-plan';
 import {
   listCustomFlowCatalogIds,
@@ -15,7 +15,7 @@ function resolvedLabelForCategoryStorageKey(categoryKey: string, raw: unknown | 
   if (categoryKey.startsWith('customFlow:')) {
     const cfg = normalizeOtherDetailConfig(raw ?? getInitialOtherDataConfig());
     const d = cfg.displayName.trim();
-    return d.length > 0 ? d : defaultCustomFlowPickerLabel(categoryKey);
+    return d.length > 0 ? d : resolveCustomFlowCategoryLabelKo(categoryKey);
   }
   return getOtherCategoryResolvedDisplayLabel(raw);
 }

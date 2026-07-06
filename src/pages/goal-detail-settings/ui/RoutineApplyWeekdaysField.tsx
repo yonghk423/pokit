@@ -71,12 +71,7 @@ export function RoutineApplyWeekdaysField({
   return (
     <View style={[styles.card, { borderColor: line, backgroundColor: surface }]}>
       <View style={styles.headerRow}>
-        <View style={styles.headerText}>
-          <ThemedText style={[styles.title, { color: ink }]}>요일별 자동 담기</ThemedText>
-          <ThemedText style={[styles.sub, { color: muted }]}>
-            선택한 요일마다 오늘 탭에 자동으로 추가돼요.
-          </ThemedText>
-        </View>
+        <ThemedText style={[styles.title, { color: ink }]}>요일별 자동 담기</ThemedText>
         <Pressable
           accessibilityRole="switch"
           accessibilityState={{ checked: enabled }}
@@ -97,6 +92,9 @@ export function RoutineApplyWeekdaysField({
       </View>
       {enabled ? (
         <>
+          <ThemedText style={[styles.sub, { color: muted }]}>
+            선택 요일마다 오늘 탭에 자동 추가 · {formatApplyWeekdaysHint(weekdays)}
+          </ThemedText>
           <ApplyWeekdayPicker
             selectedWeekdays={weekdays}
             onChange={handleChangeWeekdays}
@@ -105,10 +103,8 @@ export function RoutineApplyWeekdaysField({
             muted={muted}
             line={line}
             surface={surface}
+            compact
           />
-          <ThemedText style={[styles.hint, { color: muted }]}>
-            {formatApplyWeekdaysHint(weekdays)}
-          </ThemedText>
         </>
       ) : null}
     </View>
@@ -119,43 +115,37 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 0,
-    padding: 14,
-    gap: 12,
-    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
   },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
-  },
-  headerText: {
-    flex: 1,
-    gap: 4,
+    gap: 10,
   },
   title: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: -0.15,
+    flex: 1,
   },
   sub: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '600',
   },
   toggleChip: {
-    minHeight: 32,
-    paddingHorizontal: 12,
+    minHeight: 28,
+    paddingHorizontal: 10,
     borderRadius: 0,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   toggleLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-  },
-  hint: {
-    fontSize: 12,
-    lineHeight: 17,
   },
 });

@@ -1,6 +1,7 @@
-/** 시스템 그룹 「건강·몸 관리」에 속하는 표준 카탈로그 키 순서 */
+/** 시스템 그룹 「건강 루틴」에 속하는 표준 카탈로그 키 순서 */
 export const HEALTH_GROUP_SYSTEM_ORDER = [
   'healthIntake',
+  'water',
   'fasting',
 ] as const;
 

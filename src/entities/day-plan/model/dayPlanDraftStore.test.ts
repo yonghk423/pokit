@@ -379,6 +379,37 @@ describe('dayPlanDraftStore', () => {
     expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['reading', 'water']);
   });
 
+  it('finishes a priority category for today and clears related completion keys', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      isFocusStarted: true,
+      priorityCategoryOrder: ['healthIntake', 'water'],
+      completedFocusCategoryKeys: ['healthIntake', 'water@morning'],
+      planCompletionDismissedKeys: ['healthIntake'],
+    });
+    useDayPlanDraftStore.getState().finishPriorityCategoryForToday('healthIntake');
+    const s = useDayPlanDraftStore.getState();
+    expect(s.priorityCategoryOrder).toEqual(['water']);
+    expect(s.completedFocusCategoryKeys).toEqual(['water@morning']);
+    expect(s.planCompletionDismissedKeys).toEqual([]);
+    expect(s.isFocusStarted).toBe(true);
+  });
+
+  it('clears focus started when the last priority category is finished for today', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      isFocusStarted: true,
+      priorityCategoryOrder: ['reading'],
+      completedFocusCategoryKeys: ['reading'],
+      planCompletionDismissedKeys: [],
+    });
+    useDayPlanDraftStore.getState().finishPriorityCategoryForToday('reading');
+    const s = useDayPlanDraftStore.getState();
+    expect(s.priorityCategoryOrder).toEqual([]);
+    expect(s.completedFocusCategoryKeys).toEqual([]);
+    expect(s.isFocusStarted).toBe(false);
+  });
+
   it('persists focus started flag', () => {
     useDayPlanDraftStore.setState({ isHydrated: true, isFocusStarted: false });
     mockSaveDayPlanDraft.mockClear();

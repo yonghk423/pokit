@@ -6,6 +6,7 @@ export {
   PRODUCTIVITY_GROUP_SYSTEM_ORDER
 } from './lib/catalogItemGroup';
 export {
+  mergeCategoryAppearanceIntoConfig,
   readEditableCategoryAppearance,
   resolveCategoryCatalogAccentColor,
   resolveCategoryCatalogIcon
@@ -24,6 +25,10 @@ export {
   SYSTEM_CATALOG_GROUP_LABEL_KO,
   SYSTEM_CATALOG_GROUP_SUBTITLE_KO, type SystemCatalogGroupKey
 } from './lib/customCatalogGroup';
+export {
+  isInternalAutoRoutineLabel,
+  resolveCustomFlowCategoryLabelKo,
+} from './lib/customFlowDisplayLabel';
 export {
   createCustomFlowCategoryId, CUSTOM_FLOW_CATEGORY_PREFIX, defaultCustomFlowPickerLabel,
   isCustomFlowCategoryKey,
@@ -48,7 +53,7 @@ export {
   type CustomFlowTemplateIconName
 } from './lib/customFlowTemplateCatalog';
 export {
-  CUSTOM_FLOW_TEMPLATE_KEYS, getInitialCounterDataConfig,
+  CUSTOM_FLOW_TEMPLATE_KEYS,   getInitialCounterDataConfig,
   getInitialFocusDataConfig,
   getInitialHabitDataConfig,
   getInitialJournalDataConfig,
@@ -65,8 +70,22 @@ export type {
   HabitDetailDataConfig,
   JournalDetailDataConfig,
   JournalEntry,
-  ReminderDetailDataConfig
+  ReminderDetailDataConfig,
 } from './lib/customFlowTemplateConfigs';
+export {
+  buildWeightChartSeries,
+  clampWeightKg,
+  latestWeightFromLogs,
+  normalizeFastingWeightLogs,
+  readWeightLogForDate,
+  removeFastingWeightLog,
+  setFastingWeightLog,
+  sortedWeightLogEntries,
+  weightDeltaToTarget,
+  weightGoalAchieved,
+  weightProgressRatioFromLogs,
+} from './lib/weightLog';
+export type { FastingWeightLogs, WeightChartPoint, WeightLogEntry } from './lib/weightLog';
 export {
   applyCounterDelta,
   applyHabitDoneToggle,
@@ -153,6 +172,37 @@ export {
   workStudyModeLabelKo,
 } from './lib/workStudyPlan';
 export {
+  WORK_STUDY_HEADING_ACCENTS,
+  WORK_STUDY_TABLE_MAX_ROWS,
+  WORK_STUDY_TABLE_MAX_COLS,
+  WORK_STUDY_TABLE_DEFAULT_ROWS,
+  WORK_STUDY_TABLE_DEFAULT_COLS,
+  createEmptyTableRows,
+  createWorkStudyDocBlock,
+  createWorkStudyNotePage,
+  getInitialWorkStudyDocument,
+  migrateLegacyWorkContentToDocument,
+  normalizeWorkStudyDocBlock,
+  normalizeWorkStudyDocument,
+  workStudyDocumentIsEmpty,
+  workStudyDocumentToPlainText,
+  formatWorkStudyNoteDateLabel,
+  formatWorkStudyNoteTitleFromDateKey,
+  resolveWorkStudyNotePageLabel,
+  resolveWorkStudyNotePagePreview,
+  isLegacyAutoWorkStudyNoteTitle,
+  getWorkStudyActivePage,
+  setWorkStudyActivePageBlocks,
+} from './lib/workStudyDocument';
+export type {
+  WorkStudyBlockKind,
+  WorkStudyBlockMarks,
+  WorkStudyDocBlock,
+  WorkStudyDocument,
+  WorkStudyHeadingLevel,
+  WorkStudyNotePage,
+} from './lib/workStudyDocument';
+export {
   addMonths,
   buildMonthCalendarGrid,
   buildWeekCalendarRow,
@@ -232,6 +282,7 @@ export { normalizeReadingAladinBook } from './lib/readingAladinBook';
 export type {
   ReadingAladinBook,
   ReadingBookEntry,
+  ReadingBookStatus,
   ReadingLiveActivityConfig,
   ReadingMetricKey
 } from './lib/readingLiveActivityConfig';
@@ -240,6 +291,7 @@ export {
   ensureReadingBookPages,
   firstAladinBookEntry,
   makeReadingBookId,
+  normalizeReadingBookStatus,
 } from './lib/readingLiveActivityConfig';
 export { reorderSpineTimelineBlocks } from './lib/reorderSpineTimelineBlocks';
 export { resolveTodayFixedRoutineKeys } from './lib/resolveTodayFixedRoutineKeys';

@@ -58,7 +58,9 @@ export function HealthIntakeSettings({
   }, [dataConfig]);
 
   useEffect(() => {
+    const prev = dataConfig && typeof dataConfig === 'object' ? dataConfig : {};
     const payload: HealthIntakeDetailDataConfig = normalizeHealthIntakeDetailConfig({
+      ...prev,
       displayName,
       summary,
       water: waterSnapshotRef.current,
@@ -68,7 +70,7 @@ export function HealthIntakeSettings({
     if (lastRef.current === s) return;
     lastRef.current = s;
     onChangeDataConfig(payload);
-  }, [displayName, summary, medicine, onChangeDataConfig]);
+  }, [dataConfig, displayName, summary, medicine, onChangeDataConfig]);
 
   return (
     <View style={styles.root}>

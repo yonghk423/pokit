@@ -19,7 +19,9 @@ import {
   reminderProgress,
   resolveCustomFlowTemplateKey,
 } from '@entities/day-plan';
+import { latestWeightFromLogs } from '@entities/day-plan/lib/weightLog';
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
+import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
 
 function medicineEnabledSlots(cfg: ReturnType<typeof normalizeMedicineDetailConfig>): string[] {
   const out: string[] = [];
@@ -91,9 +93,20 @@ function hintFromCustomFlowRaw(raw: unknown): string | null {
       return times;
     }
     case 'checklist':
-    default:
       return hintFromOtherStyleRaw(raw);
+    case 'abstain':
+      return hintFromAbstainRaw(raw);
   }
+}
+
+function hintFromAbstainRaw(raw: unknown): string | null {
+  const cfg = normalizeOtherDetailConfig(raw ?? {});
+  const total = cfg.checklist.length;
+  const kept = cfg.checklist.filter((x) => x.done).length;
+  if (total > 0) {
+    return kept > 0 ? `금지 ${total}개 · 지킴 ${kept}` : `금지 ${total}개`;
+  }
+  return null;
 }
 
 function hintFromOtherStyleRaw(raw: unknown): string | null {
@@ -131,15 +144,17 @@ export function getPriorityCategoryGoalHint(
     }
     case 'fasting': {
       const cfg = normalizeFastingDetailConfig(raw);
-      const goalH = Math.max(1, Math.round(cfg.fastingMin / 60));
-      if (cfg.elapsedMin > 0) {
-        const h = Math.floor(cfg.elapsedMin / 60);
-        const m = cfg.elapsedMin % 60;
-        if (h > 0 && m > 0) return `누적 ${h}시간 ${m}분`;
-        if (h > 0) return `누적 ${h}시간`;
-        return `누적 ${m}분`;
+      const current = latestWeightFromLogs(cfg.weightLogs, cfg.currentWeightKg);
+      if (current > 0 && cfg.targetWeightKg > 0) {
+        if (current <= cfg.targetWeightKg) {
+          return `목표 ${cfg.targetWeightKg.toFixed(1)}kg 달성`;
+        }
+        const delta = current - cfg.targetWeightKg;
+        return `${current.toFixed(1)}kg · 목표까지 ${delta.toFixed(1)}kg`;
       }
-      return `목표 ${goalH}시간`;
+      return cfg.weeklyLossTargetKg > 0
+        ? `주간 ${cfg.weeklyLossTargetKg.toFixed(1)}kg 감량 목표`
+        : null;
     }
     case 'healthIntake': {
       const hi = normalizeHealthIntakeDetailConfig(raw);

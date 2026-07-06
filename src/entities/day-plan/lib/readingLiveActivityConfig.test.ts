@@ -133,4 +133,16 @@ describe('readingLiveActivityConfig', () => {
     });
     expect(firstAladinBookEntry(cfg)).toBeNull();
   });
+
+  it('defaults book status to reading and preserves valid values', () => {
+    const cfg = normalizeReadingLiveActivityConfig({
+      books: [{ id: 'b1', title: '책', startPage: 1, targetPage: 50, status: 'done' }],
+    });
+    expect(cfg.books[0].status).toBe('done');
+
+    const legacy = normalizeReadingLiveActivityConfig({
+      books: [{ id: 'b2', title: '레거시', startPage: 1, targetPage: 80 }],
+    });
+    expect(legacy.books[0].status).toBe('reading');
+  });
 });

@@ -1,4 +1,5 @@
 import type { WorkDetailDataConfig } from './goalCategorySessionConfig';
+import { workStudyDocumentIsEmpty, workStudyDocumentToPlainText } from './workStudyDocument';
 import {
   formatDateKeyDisplayKo,
   formatStudyDdayLabel,
@@ -17,7 +18,7 @@ export function buildWorkStudyShareText(
   config: WorkDetailDataConfig,
   options?: { routineTitle?: string },
 ): string {
-  const title = config.displayName.trim() || options?.routineTitle?.trim() || '스터디';
+  const title = config.displayName.trim() || options?.routineTitle?.trim() || '노트';
   const lines: string[] = [`POKIT · ${title}`, ''];
 
   if (config.subject.trim()) {
@@ -31,7 +32,12 @@ export function buildWorkStudyShareText(
     lines.push(`목표 ${config.planMin}분${config.doneMin > 0 ? ` · 기록 ${config.doneMin}분` : ''}`);
   }
 
-  if (config.focusMemo.trim()) {
+  if (!workStudyDocumentIsEmpty(config.document)) {
+    const body = workStudyDocumentToPlainText(config.document);
+    if (body) {
+      lines.push('', '노트', body);
+    }
+  } else if (config.focusMemo.trim()) {
     lines.push('', '할 일', config.focusMemo.trim());
   } else if (config.tasks.length > 0) {
     lines.push('', '할 일');

@@ -23,16 +23,27 @@ import {
 } from './goalCategorySessionConfig';
 
 export {
-  CUSTOM_FLOW_TEMPLATE_KEYS, getInitialCounterDataConfig,
-  getInitialFocusDataConfig, getInitialHabitDataConfig, getInitialJournalDataConfig,
-  getInitialReminderDataConfig, MAX_CUSTOM_REMINDER_TIMES, mergeCustomFlowGoalDetailData, normalizeCounterDetailConfig,
-  normalizeFocusDetailConfig, normalizeHabitDetailConfig, normalizeJournalDetailConfig,
-  normalizeReminderDetailConfig, resolveCustomFlowTemplateKeyFromRaw
+  CUSTOM_FLOW_TEMPLATE_KEYS,
+  CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS,
+  getInitialCounterDataConfig,
+  getInitialFocusDataConfig,
+  getInitialHabitDataConfig,
+  getInitialJournalDataConfig,
+  getInitialReminderDataConfig,
+  MAX_CUSTOM_REMINDER_TIMES,
+  mergeCustomFlowGoalDetailData,
+  normalizeCounterDetailConfig,
+  normalizeFocusDetailConfig,
+  normalizeHabitDetailConfig,
+  normalizeJournalDetailConfig,
+  normalizeReminderDetailConfig,
+  resolveCustomFlowTemplateKeyFromRaw,
 } from './customFlowTemplateConfigs';
 export type { CustomFlowTemplateKey };
 
 export const CUSTOM_FLOW_TEMPLATE_LABELS: Record<CustomFlowTemplateKey, string> = {
   checklist: '할 일 체크',
+  abstain: '금지 지키기',
   measurement: '값 기록',
   habit: '오늘 했/안 했',
   counter: '횟수 채우기',
@@ -43,6 +54,7 @@ export const CUSTOM_FLOW_TEMPLATE_LABELS: Record<CustomFlowTemplateKey, string> 
 
 export const CUSTOM_FLOW_TEMPLATE_DESCRIPTIONS: Record<CustomFlowTemplateKey, string> = {
   checklist: '할 일을 하나씩 체크해요',
+  abstain: '하지 않은 것을 체크해요',
   measurement: '숫자·값을 꾸준히 기록해요',
   habit: '했는지만 간단히 남겨요',
   counter: '목표 횟수를 채워요',
@@ -54,6 +66,7 @@ export const CUSTOM_FLOW_TEMPLATE_DESCRIPTIONS: Record<CustomFlowTemplateKey, st
 /** 템플릿 상세·선택 화면용 한 줄 설명 */
 export const CUSTOM_FLOW_TEMPLATE_SUMMARIES: Record<CustomFlowTemplateKey, string> = {
   checklist: '할 일 목록을 만들고, 세션에서 하나씩 체크해요.',
+  abstain: '하지 말아야 할 습관을 목록으로 두고, 오늘 지켰는지 체크해요.',
   measurement: '체중·혈압처럼 숫자를 기록하고 추이·목표를 확인해요.',
   habit: '오늘 했는지만 남기고 연속 기록을 쌓아요.',
   counter: '물 잔 수처럼 횟수를 세고 하루 목표까지 채워요.',
@@ -106,6 +119,12 @@ export function buildInitialCustomFlowDetailConfig(
       return normalizeJournalDetailConfig({ ...getInitialJournalDataConfig(), ...appearance });
     case 'reminder':
       return normalizeReminderDetailConfig({ ...getInitialReminderDataConfig(), ...appearance });
+    case 'abstain':
+      return normalizeOtherDetailConfig({
+        ...getInitialOtherDataConfig(),
+        ...appearance,
+        templateKey: 'abstain',
+      });
     case 'checklist':
     default:
       return normalizeOtherDetailConfig({
@@ -132,6 +151,10 @@ export function normalizeCustomFlowDetailConfig(
       return normalizeJournalDetailConfig(raw);
     case 'reminder':
       return normalizeReminderDetailConfig(raw);
+    case 'abstain': {
+      const base = normalizeOtherDetailConfig(raw);
+      return { ...base, templateKey: 'abstain' } as CustomFlowDetailConfig;
+    }
     case 'checklist':
     default: {
       const base = normalizeOtherDetailConfig(raw);
@@ -211,6 +234,16 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
         ...base,
         planMin: 25,
         focusMemo: '방해 금지 모드 켜기',
+      });
+    case 'abstain':
+      return normalizeCustomFlowDetailConfig('abstain', {
+        ...base,
+        checklist: [
+          { id: 'a1', text: '밤늦게 폰 보기', done: true },
+          { id: 'a2', text: '과자·야식 먹기', done: false },
+          { id: 'a3', text: 'SNS 무한 스크롤', done: false },
+        ],
+        templateKey: 'abstain',
       });
     case 'checklist':
     default:

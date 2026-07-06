@@ -2,6 +2,7 @@ import {
   getOtherCategoryResolvedDisplayLabel,
   getPriorityCatalogPickerLabel,
   isCustomFlowCategoryKey,
+  isInternalAutoRoutineLabel,
   resolveCustomFlowCategoryLabelKo,
 } from '@entities/day-plan';
 
@@ -13,7 +14,7 @@ export function resolveRoutineTitleFallback(
   rhythmTitle: string,
 ): string {
   const fromRhythm = rhythmTitle.trim();
-  if (fromRhythm) return fromRhythm;
+  if (fromRhythm && !isInternalAutoRoutineLabel(fromRhythm)) return fromRhythm;
   if (!categoryKey || categoryKey === 'other') {
     return getOtherCategoryResolvedDisplayLabel(null);
   }

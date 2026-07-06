@@ -1,6 +1,7 @@
 const CUSTOM_FLOW_CATEGORY_PREFIX = 'customFlow:' as const;
 const HEALTH_GROUP_KEYS = new Set<string>([
   'healthIntake',
+  'water',
   'fasting',
 ]);
 

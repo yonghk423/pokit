@@ -1,5 +1,6 @@
 /** 목표 상세(플로우별) 저장 구조 — 세션·위젯에서 공용으로 사용 */
 
+import { normalizeFastingWeightLogs, type FastingWeightLogs } from './weightLog';
 import { normalizeWaterReminderTimes } from './normalizeWaterReminderTimes';
 import { parseHHmmToMinutes } from './parseTime';
 import type { ReadingLiveActivityConfig } from './readingLiveActivityConfig';
@@ -11,6 +12,13 @@ import {
   type WorkStudyDdayEvent,
   type WorkStudyTimetableSlot,
 } from './workStudySchedule';
+import {
+  getInitialWorkStudyDocument,
+  migrateLegacyWorkContentToDocument,
+  normalizeWorkStudyDocument,
+  workStudyDocumentIsEmpty,
+  type WorkStudyDocument,
+} from './workStudyDocument';
 
 function asObj(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -42,6 +50,8 @@ export type WorkDetailDataConfig = {
   summary: string;
   ddayEvents: WorkStudyDdayEvent[];
   timetableSlots: WorkStudyTimetableSlot[];
+  /** 블록 기반 스터디 문서 */
+  document: WorkStudyDocument;
 };
 
 function normalizeWorkStudyMode(raw: unknown): WorkStudyMode {
@@ -81,6 +91,10 @@ export function normalizeWorkDetailConfig(raw: unknown): WorkDetailDataConfig {
   const displayName = normalizeRoutineDisplayName(o.displayName);
   const ddayEvents = normalizeWorkStudyDdayEvents(o.ddayEvents);
   const timetableSlots = normalizeWorkStudyTimetableSlots(o.timetableSlots);
+  let document = normalizeWorkStudyDocument(o.document);
+  if (workStudyDocumentIsEmpty(document) && (focusMemo || tasks.length > 0)) {
+    document = migrateLegacyWorkContentToDocument({ focusMemo, tasks });
+  }
   return {
     displayName,
     subject,
@@ -93,6 +107,7 @@ export function normalizeWorkDetailConfig(raw: unknown): WorkDetailDataConfig {
     summary,
     ddayEvents,
     timetableSlots,
+    document,
   };
 }
 
@@ -109,6 +124,7 @@ export function getInitialWorkDataConfig(): WorkDetailDataConfig {
     summary: '',
     ddayEvents: [],
     timetableSlots: [],
+    document: getInitialWorkStudyDocument(),
   };
 }
 
@@ -122,6 +138,8 @@ export type FastingDetailDataConfig = {
   weeklyLossTargetKg: number;
   fastingEnabled: boolean;
   summary: string;
+  /** YYYY-MM-DD → kg — 날짜별 체중 기록 */
+  weightLogs: FastingWeightLogs;
 };
 
 const FASTING_MIN = 60;
@@ -147,9 +165,10 @@ export function normalizeFastingDetailConfig(raw: unknown): FastingDetailDataCon
     0.1,
     Math.min(2, Number.isFinite(weeklyLossRaw) ? weeklyLossRaw : 0.5),
   );
-  const fastingEnabled = typeof o.fastingEnabled === 'boolean' ? o.fastingEnabled : true;
+  const fastingEnabled = typeof o.fastingEnabled === 'boolean' ? o.fastingEnabled : false;
   const summary = normalizeRoutineSummary(o.summary);
   const displayName = normalizeRoutineDisplayName(o.displayName);
+  const weightLogs = normalizeFastingWeightLogs(o.weightLogs);
   return {
     displayName,
     fastingMin,
@@ -159,6 +178,7 @@ export function normalizeFastingDetailConfig(raw: unknown): FastingDetailDataCon
     weeklyLossTargetKg,
     fastingEnabled,
     summary,
+    weightLogs,
   };
 }
 
@@ -170,18 +190,24 @@ export function getInitialFastingDataConfig(): FastingDetailDataConfig {
     currentWeightKg: 70,
     targetWeightKg: 65,
     weeklyLossTargetKg: 0.5,
-    fastingEnabled: true,
+    fastingEnabled: false,
     summary: '',
+    weightLogs: {},
   };
 }
 
 // --- water ---
 export type WaterReminderPreset = '60' | '120' | 'custom';
 
+export const DEFAULT_WATER_QUICK_ADD_PRESETS_ML = [200, 250, 500] as const;
+export const MAX_WATER_QUICK_ADD_PRESETS = 6;
+
 export type WaterDetailDataConfig = {
   displayName: string;
   goalMl: number;
   drankMl: number;
+  /** 빠른 추가 버튼(ml). 사용자 커스텀 포함 */
+  quickAddPresetsMl: number[];
   /** 60=1시간, 120=2시간, custom=reminderCustomMin — 「시각 일괄 채우기」에만 사용 */
   reminderPreset: WaterReminderPreset;
   reminderCustomMin: number;
@@ -190,6 +216,22 @@ export type WaterDetailDataConfig = {
   reminderTimes: string[];
   summary: string;
 };
+
+export function normalizeWaterQuickAddPresetsMl(raw: unknown): number[] {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return [...DEFAULT_WATER_QUICK_ADD_PRESETS_ML];
+  }
+  const seen = new Set<number>();
+  const out: number[] = [];
+  for (const item of raw) {
+    const ml = Math.max(50, Math.min(2000, Math.round(Number(item))));
+    if (!Number.isFinite(ml) || seen.has(ml)) continue;
+    seen.add(ml);
+    out.push(ml);
+    if (out.length >= MAX_WATER_QUICK_ADD_PRESETS) break;
+  }
+  return out.length > 0 ? out.sort((a, b) => a - b) : [...DEFAULT_WATER_QUICK_ADD_PRESETS_ML];
+}
 
 export function normalizeWaterDetailConfig(raw: unknown): WaterDetailDataConfig {
   const o = asObj(raw);
@@ -213,11 +255,13 @@ export function normalizeWaterDetailConfig(raw: unknown): WaterDetailDataConfig 
   const reminderTimes = normalizeWaterReminderTimes(o.reminderTimes);
   const summary = normalizeRoutineSummary(o.summary);
   const displayName = normalizeRoutineDisplayName(o.displayName);
+  const quickAddPresetsMl = normalizeWaterQuickAddPresetsMl(o.quickAddPresetsMl);
 
   return {
     displayName,
     goalMl,
     drankMl,
+    quickAddPresetsMl,
     reminderPreset,
     reminderCustomMin,
     smartNotification,
@@ -231,6 +275,7 @@ export function getInitialWaterDataConfig(): WaterDetailDataConfig {
     displayName: '',
     goalMl: 2000,
     drankMl: 0,
+    quickAddPresetsMl: [...DEFAULT_WATER_QUICK_ADD_PRESETS_ML],
     reminderPreset: '60',
     reminderCustomMin: 90,
     smartNotification: false,

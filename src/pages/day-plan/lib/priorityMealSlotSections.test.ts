@@ -28,7 +28,7 @@ describe('buildPriorityMealSlotSections with custom schedule', () => {
     expect(sections[0]?.hintTime).toBe('08:00');
     expect(sections[0]?.isCurrent).toBe(false);
     const lunchSections = buildPriorityMealSlotSections(
-      [{ key: 'work', label: '스터디' }],
+      [{ key: 'work', label: '노트' }],
       { nowMin: 12 * 60, schedule: custom },
     );
     expect(lunchSections[0]?.slot).toBe('lunch');

@@ -11,6 +11,7 @@ import {
   isCustomFlowCategoryKey,
   isDayPlanFlowBlock,
   isGoalDetailChecklistStyleCategoryKey,
+  isInternalAutoRoutineLabel,
   mergeCustomFlowGoalDetailData,
   normalizeMedicineDetailConfig,
   normalizeOtherDetailConfig,
@@ -50,10 +51,11 @@ import type { GoalDetailCategoryKey } from '../model/types';
 import { useGoalDetailSettingsRoute } from '../model/useGoalDetailSettingsRoute';
 import { resolveGoalDetailModuleForTarget } from './category';
 import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
-import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
 import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
+import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
 import { GoalDetailCategoryStartReminderCard } from './GoalDetailCategoryStartReminderCard';
 import { RoutineApplyWeekdaysField } from './RoutineApplyWeekdaysField';
+import { RoutineDeleteButton } from './category/lib/RoutineDeleteButton';
 import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
 
 function palette(isDark: boolean) {
@@ -81,6 +83,28 @@ function inferCategoryKeyFromLabel(category: string): GoalDetailCategoryKey {
 
 function blockTimeLabel(block: DayPlanBlock): string {
   return formatBlockTimeRange(block);
+}
+
+function resolveGoalDetailHeaderTitle(args: {
+  targets: EditingTarget[];
+  sortedTargets: EditingTarget[];
+  categoryKey: GoalDetailCategoryKey;
+  dataByBlockId: Record<string, unknown>;
+  previewTitleForBlock: (blockId: string, fallbackCategoryKey?: string) => string;
+}): string {
+  const primary = args.sortedTargets[0] ?? args.targets[0];
+  const key = primary?.categoryKey ?? args.categoryKey;
+  const data = primary ? args.dataByBlockId[primary.blockId] : undefined;
+
+  const customName = readRoutineDisplayNameFromConfig(data);
+  if (customName) return customName;
+
+  if (primary) {
+    const blockTitle = args.previewTitleForBlock(primary.blockId, key);
+    if (blockTitle) return blockTitle;
+  }
+
+  return categoryReminderLabelKo(key);
 }
 
 function buildLoadedDataByBlockId(targets: EditingTarget[]): Record<string, unknown> {
@@ -268,15 +292,20 @@ export function GoalDetailSettingsPage() {
   }, [validTargets, sortedTargets, setLiveActivityChecklistFocusBlockId]);
 
   const loadedDataByBlockId = useMemo(() => buildLoadedDataByBlockId(targets), [targets]);
+  const targetBlockIdsKey = useMemo(
+    () => targets.map((t) => t.blockId).sort().join('|'),
+    [targets],
+  );
   const [patchByBlockId, setPatchByBlockId] = useState<Record<string, unknown>>({});
   const [customFlowGroupByCategoryKey, setCustomFlowGroupByCategoryKey] = useState<
     Record<string, string>
   >({});
+  const [routineMetaExpanded, setRoutineMetaExpanded] = useState(false);
   const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setPatchByBlockId({});
-  }, [targets]);
+  }, [targetBlockIdsKey]);
 
   useEffect(() => {
     const next: Record<string, string> = {};
@@ -302,7 +331,18 @@ export function GoalDetailSettingsPage() {
 
   const handleChangeDataConfig = useCallback((target: EditingTarget, next: unknown) => {
     const persisted = withPreservedRoutineFields(target.categoryKey, next);
-    setPatchByBlockId((prev) => ({ ...prev, [target.blockId]: persisted }));
+    const serialized = JSON.stringify(persisted);
+    let shouldPersist = true;
+    setPatchByBlockId((prev) => {
+      const current = prev[target.blockId];
+      if (current !== undefined && JSON.stringify(current) === serialized) {
+        shouldPersist = false;
+        return prev;
+      }
+      return { ...prev, [target.blockId]: persisted };
+    });
+    if (!shouldPersist) return;
+
     saveGoalDetailBlockConfig(target.blockId, persisted);
     saveGoalDetailCategoryConfig(target.categoryKey, persisted);
     registerOtherCategoryResolverFromStorage();
@@ -406,7 +446,7 @@ export function GoalDetailSettingsPage() {
     (blockId: string, fallbackCategoryKey?: string) => {
       const b = blocks.find((x) => x.id === blockId);
       const firstLine = b?.title?.trim().split('\n')[0]?.trim() ?? '';
-      if (firstLine) return firstLine;
+      if (firstLine && !isInternalAutoRoutineLabel(firstLine)) return firstLine;
       if (fallbackCategoryKey) return categoryReminderLabelKo(fallbackCategoryKey);
       return '';
     },
@@ -430,11 +470,20 @@ export function GoalDetailSettingsPage() {
     return keys;
   }, [sortedTargets, targets, categoryKey]);
 
-  const waterOnlyUi =
-    sortedTargets.length > 0 && sortedTargets.every((t) => t.categoryKey === 'water');
+  const waterDetailUi =
+    categoryKey === 'water' && targets.length > 0 && targets.every((t) => t.categoryKey === 'water');
+  const workNoteUi =
+    targets.length === 1 && categoryKey === 'work' && sortedTargets.length <= 1;
+  const readingLibraryUi =
+    targets.length === 1 && categoryKey === 'reading' && sortedTargets.length <= 1;
+  const customFlowRoutineUi =
+    targets.length === 1 && isCustomFlowCategoryKey(categoryKey);
+  const contentFlush = waterDetailUi || workNoteUi || readingLibraryUi;
+  const showRoutineMetaToggle = targets.length === 1;
+  const routineMetaVisible = !showRoutineMetaToggle || routineMetaExpanded;
   const medicineOnlyUi =
     sortedTargets.length === 1 && sortedTargets.every((t) => t.categoryKey === 'medicine');
-  const immersive = waterOnlyUi ? WATER : null;
+  const immersive = waterDetailUi ? WATER : null;
   const screenBg = c.bg;
   const headerBg = c.bg;
   const headerBorder = c.border;
@@ -446,6 +495,18 @@ export function GoalDetailSettingsPage() {
       : Platform.OS === 'ios'
         ? 59
         : Number(StatusBar.currentHeight) || 24;
+
+  const headerTitle = useMemo(
+    () =>
+      resolveGoalDetailHeaderTitle({
+        targets,
+        sortedTargets,
+        categoryKey,
+        dataByBlockId,
+        previewTitleForBlock,
+      }),
+    [targets, sortedTargets, categoryKey, dataByBlockId, previewTitleForBlock],
+  );
 
   return (
     <ThemedView
@@ -472,9 +533,14 @@ export function GoalDetailSettingsPage() {
             accessibilityLabel="뒤로가기">
             <IconSymbol name="chevron.left" size={22} color={headerFg} />
           </Pressable>
-          <ThemedText style={[styles.headerTitle, { color: headerFg }]}>
-            {waterOnlyUi ? '수분섭취 상세 설정' : '목표 상세 설정'}
-          </ThemedText>
+          <View style={styles.headerTitleWrap}>
+            <ThemedText
+              style={[styles.headerTitle, { color: headerFg }]}
+              numberOfLines={1}
+              accessibilityRole="header">
+              {headerTitle}
+            </ThemedText>
+          </View>
           {/* 위젯 설정 기능은 현재 계획이 없어 비활성화.
               단, 헤더 `space-between` 레이아웃에서 타이틀 위치가 흔들리지 않도록 오른쪽 자리는 placeholder로 남겨둡니다. */}
           <View style={styles.headerBtn} pointerEvents="none" />
@@ -482,18 +548,22 @@ export function GoalDetailSettingsPage() {
 
         <ScrollView
           style={styles.scrollFlex}
-          scrollEnabled={!medicineOnlyUi}
-          bounces={!medicineOnlyUi}
+          scrollEnabled={!medicineOnlyUi && !workNoteUi}
+          bounces={!medicineOnlyUi && !workNoteUi}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.scrollContent,
+            workNoteUi && styles.scrollContentFill,
             {
               paddingBottom: 20,
               backgroundColor: c.bg,
             },
           ]}
           keyboardShouldPersistTaps="handled">
-          <View style={[styles.padded, waterOnlyUi && styles.paddedWater]}>
+          <View
+            style={[
+              contentFlush ? styles.paddedFlush : styles.padded,
+            ]}>
             {sortedTargets.length > 1 ? (
               <View
                 style={[
@@ -528,7 +598,7 @@ export function GoalDetailSettingsPage() {
                               ? immersive?.primary ?? PRIMARY
                               : c.border,
                             backgroundColor: selected
-                              ? waterOnlyUi
+                              ? waterDetailUi
                                 ? 'rgba(34,211,238,0.16)'
                                 : RetroFlatColors.light.surface
                               : pressed
@@ -578,7 +648,13 @@ export function GoalDetailSettingsPage() {
               const previewTitle = previewTitleForBlock(t.blockId, t.categoryKey);
               const { allowRename, renameLockedReason } = resolveRenameAccess(t.categoryKey);
               return (
-                <View key={`${t.blockId}-${idx}`} style={styles.blockSection}>
+                <View
+                  key={`${t.blockId}-${idx}`}
+                  style={[
+                    styles.blockSection,
+                    (workNoteUi || readingLibraryUi || waterDetailUi) && styles.blockSectionFlush,
+                    workNoteUi && styles.blockSectionFlex,
+                  ]}>
                   {isCustomFlowCategoryKey(t.categoryKey) ? (
                     <CustomFlowTemplateMetaPill
                       dataConfig={dataConfig}
@@ -591,7 +667,6 @@ export function GoalDetailSettingsPage() {
                     categoryKey={t.categoryKey}
                     dataConfig={dataConfig}
                     onChangeDataConfig={(next) => handleChangeDataConfig(t, next)}
-                    onDeleteCategory={() => handleDeleteCustomFlow(t.categoryKey)}
                     allowRename={allowRename}
                     renameLockedReason={renameLockedReason}
                   />
@@ -599,8 +674,40 @@ export function GoalDetailSettingsPage() {
               );
             })}
 
-            {targets.length === 1 ? (
-              <View style={styles.blockSection}>
+            {showRoutineMetaToggle ? (
+              <View style={contentFlush ? styles.metaSectionInset : undefined}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: routineMetaExpanded }}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    setRoutineMetaExpanded((v) => !v);
+                  }}
+                  style={({ pressed }) => [
+                    styles.routineMetaToggle,
+                    {
+                      borderColor: c.border,
+                      backgroundColor: pressed ? 'rgba(0,0,0,0.03)' : 'transparent',
+                    },
+                  ]}>
+                  <ThemedText style={[styles.routineMetaToggleLabel, { color: c.onVariant }]}>
+                    루틴 설정
+                  </ThemedText>
+                  <IconSymbol
+                    name={routineMetaExpanded ? 'chevron.up' : 'chevron.down'}
+                    size={14}
+                    color={c.onVariant}
+                  />
+                </Pressable>
+              </View>
+            ) : null}
+
+            {routineMetaVisible && targets.length === 1 ? (
+              <View
+                style={[
+                  styles.metaSection,
+                  contentFlush && styles.metaSectionInset,
+                ]}>
                 <CustomFlowGroupField
                   groupKey={
                     customFlowGroupByCategoryKey[categoryKey] ??
@@ -611,7 +718,7 @@ export function GoalDetailSettingsPage() {
                 {!isCategoryRunning(categoryKey) ? (
                   <RoutineAppearanceField
                     categoryKey={categoryKey}
-                    previewLabel={categoryReminderLabelKo(categoryKey)}
+                    previewLabel={previewTitleForBlock(targets[0].blockId, categoryKey)}
                     dataConfig={dataByBlockId[targets[0].blockId]}
                     onChangeDataConfig={(next) => handleChangeDataConfig(targets[0], next)}
                     ink={c.onSurface}
@@ -621,18 +728,32 @@ export function GoalDetailSettingsPage() {
               </View>
             ) : null}
 
-            <RoutineApplyWeekdaysField
-              categoryKey={categoryKey}
-              ink={c.onSurface}
-              muted={c.onVariant}
-              line={c.border}
-              surface={RetroFlatColors.light.bgMint}
-              isDark={false}
-            />
+            {routineMetaVisible ? (
+            <View
+              style={[
+                styles.metaSection,
+                contentFlush && styles.metaSectionInset,
+              ]}>
+              <RoutineApplyWeekdaysField
+                categoryKey={categoryKey}
+                ink={c.onSurface}
+                muted={c.onVariant}
+                line={c.border}
+                surface={RetroFlatColors.light.bgMint}
+                isDark={false}
+              />
 
-            {reminderCategoryKeys.map((key) => (
-              <GoalDetailCategoryStartReminderCard key={key} categoryKey={key} />
-            ))}
+              {reminderCategoryKeys.map((key) => (
+                <GoalDetailCategoryStartReminderCard key={key} categoryKey={key} />
+              ))}
+
+              {customFlowRoutineUi ? (
+                <RoutineDeleteButton
+                  onDelete={() => handleDeleteCustomFlow(categoryKey)}
+                />
+              ) : null}
+            </View>
+            ) : null}
           </View>
         </ScrollView>
         <View
@@ -644,7 +765,7 @@ export function GoalDetailSettingsPage() {
           ]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={waterOnlyUi ? '루틴 설정 완료' : '설정 완료'}
+            accessibilityLabel={waterDetailUi ? '루틴 설정 완료' : '설정 완료'}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               handleCompleteAndStart();
@@ -652,7 +773,7 @@ export function GoalDetailSettingsPage() {
             style={({ pressed }) => [
               styles.footerCompleteCircle,
               {
-                backgroundColor: waterOnlyUi ? WATER.ctaBg : PokitIconPalette.teal,
+                backgroundColor: waterDetailUi ? WATER.ctaBg : PokitIconPalette.teal,
               },
               pressed && { opacity: 0.9, transform: [{ scale: 0.94 }] },
             ]}>
@@ -660,7 +781,7 @@ export function GoalDetailSettingsPage() {
               name="checkmark"
               size={22}
               weight="bold"
-              color={waterOnlyUi ? WATER.ctaText : '#FAFAFA'}
+              color={waterDetailUi ? WATER.ctaText : '#FAFAFA'}
             />
           </Pressable>
         </View>
@@ -682,11 +803,37 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
+  headerTitleWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
   scrollContent: {},
-  padded: { paddingHorizontal: 24, gap: 32, marginTop: 24 },
-  paddedWater: { marginTop: 8, gap: 20 },
-  blockSection: { gap: 14, paddingVertical: 8 },
+  scrollContentFill: { flexGrow: 1 },
+  padded: { paddingHorizontal: 20, gap: 18, marginTop: 16 },
+  paddedFlush: { paddingHorizontal: 0, gap: 10, marginTop: 0 },
+  blockSection: { gap: 10 },
+  blockSectionFlush: { gap: 0, marginTop: 0, paddingTop: 0 },
+  blockSectionFlex: { flex: 1 },
+  metaSection: { gap: 10 },
+  metaSectionInset: { paddingHorizontal: 20 },
+  routineMetaToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingVertical: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  routineMetaToggleLabel: { fontSize: 13, fontWeight: '700', letterSpacing: -0.1 },
   startPickerCard: {
     borderRadius: 0,
     borderWidth: 2,

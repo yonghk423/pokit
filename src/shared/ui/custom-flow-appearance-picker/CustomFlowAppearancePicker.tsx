@@ -25,6 +25,8 @@ export type CustomFlowAppearancePickerProps = {
   hint?: string;
   /** true면 아이콘·색상 편집 영역을 처음부터 펼친다 */
   defaultExpanded?: boolean;
+  /** 목표 상세 등 좁은 화면 — 패딩·여백 축소 */
+  compact?: boolean;
 };
 
 export function CustomFlowAppearancePicker({
@@ -39,6 +41,7 @@ export function CustomFlowAppearancePicker({
   line,
   hint = '루틴 목록에서 구분하기 쉽게 골라 주세요',
   defaultExpanded = false,
+  compact = false,
 }: CustomFlowAppearancePickerProps) {
   const border = line ?? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)');
   const cardBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)';
@@ -77,21 +80,31 @@ export function CustomFlowAppearancePicker({
   );
 
   return (
-    <View style={styles.root}>
-      <ThemedText style={[styles.fieldLabel, { color: ink }]}>아이콘·색상</ThemedText>
+    <View style={[styles.root, compact && styles.rootCompact]}>
+      <ThemedText style={[styles.fieldLabel, compact && styles.fieldLabelCompact, { color: ink }]}>
+        아이콘·색상
+      </ThemedText>
       {hint.length > 0 ? (
         <ThemedText style={[styles.fieldHint, { color: muted }]}>{hint}</ThemedText>
       ) : null}
 
-      <View style={[styles.previewCard, { borderColor: border, backgroundColor: cardBg }]}>
+      <View
+        style={[
+          styles.previewCard,
+          compact && styles.previewCardCompact,
+          { borderColor: border, backgroundColor: cardBg },
+        ]}>
         <View
           style={[
             styles.previewIconWrap,
+            compact && styles.previewIconWrapCompact,
             { borderColor: accentColor, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' },
           ]}>
-          <IconSymbol name={icon} size={22} color={accentColor} />
+          <IconSymbol name={icon} size={compact ? 18 : 22} color={accentColor} />
         </View>
-        <ThemedText style={[styles.previewLabel, { color: ink }]} numberOfLines={1}>
+        <ThemedText
+          style={[styles.previewLabel, compact && styles.previewLabelCompact, { color: ink }]}
+          numberOfLines={1}>
           {previewLabel}
         </ThemedText>
         <Pressable
@@ -104,6 +117,7 @@ export function CustomFlowAppearancePicker({
           hitSlop={8}
           style={[
             styles.expandButton,
+            compact && styles.expandButtonCompact,
             {
               borderColor: border,
               backgroundColor: showAppearanceEditor
@@ -123,7 +137,7 @@ export function CustomFlowAppearancePicker({
       </View>
 
       {showAppearanceEditor ? (
-        <View style={styles.editorBody}>
+        <View style={[styles.editorBody, compact && styles.editorBodyCompact]}>
           <ScrollView
             ref={iconScrollRef}
             horizontal
@@ -203,10 +217,17 @@ const styles = StyleSheet.create({
   root: {
     gap: 10,
   },
+  rootCompact: {
+    gap: 6,
+  },
   fieldLabel: {
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: -0.15,
+  },
+  fieldLabelCompact: {
+    fontSize: 12,
+    fontWeight: '800',
   },
   fieldHint: {
     fontSize: 12,
@@ -223,6 +244,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  previewCardCompact: {
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
   previewIconWrap: {
     width: 40,
     height: 40,
@@ -231,11 +257,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  previewIconWrapCompact: {
+    width: 34,
+    height: 34,
+  },
   previewLabel: {
     flex: 1,
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
+  },
+  previewLabelCompact: {
+    fontSize: 14,
   },
   expandButton: {
     width: 36,
@@ -245,8 +278,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  expandButtonCompact: {
+    width: 32,
+    height: 32,
+  },
   editorBody: {
     gap: 10,
+  },
+  editorBodyCompact: {
+    gap: 8,
   },
   iconRow: {
     flexDirection: 'row',

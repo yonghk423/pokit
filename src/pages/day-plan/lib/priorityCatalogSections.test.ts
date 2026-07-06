@@ -78,6 +78,6 @@ describe('priorityCatalogSections', () => {
     });
 
     expect(result.groupSections.map((s) => s.groupKey)).toEqual(['productivity']);
-    expect(result.groupSections[0]?.items.map((i) => i.key)).toEqual(['water']);
+    expect(result.groupSections[0]?.items.map((i) => i.key)).toEqual([]);
   });
 });

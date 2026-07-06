@@ -25,10 +25,8 @@ describe('resolveCustomFlowCategoryLabelKo', () => {
     );
   });
 
-  it('falls back to key-based label when display name is empty', () => {
+  it('falls back to generic label when display name is empty', () => {
     mockLoadGoalDetailCategoryConfig.mockReturnValue({ displayName: '' });
-    expect(resolveCustomFlowCategoryLabelKo(`${CUSTOM_FLOW_CATEGORY_PREFIX}abcd1234`)).toBe(
-      '루틴 abcd1234',
-    );
+    expect(resolveCustomFlowCategoryLabelKo(`${CUSTOM_FLOW_CATEGORY_PREFIX}abcd1234`)).toBe('루틴');
   });
 });

@@ -13,7 +13,7 @@ import {
 } from '@shared/lib/storage';
 
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
-import type { OtherDetailDataConfig } from './goalCategorySessionConfig';
+import { normalizeOtherDetailConfig } from './goalCategorySessionConfig';
 
 const HEALTH_INTAKE_LEGACY_ICONS = new Set(['drop.fill', 'cross.case.fill']);
 const HEALTH_INTAKE_CATALOG_ICON = 'pills.fill';
@@ -35,6 +35,8 @@ function resolveHealthIntakeCatalogAccentColor(color: string | undefined): strin
 /** 담기·카탈로그 기본 SF Symbol */
 const BUILTIN_CATEGORY_ICONS: Record<string, string> = {
   healthIntake: HEALTH_INTAKE_CATALOG_ICON,
+  water: 'drop.fill',
+  medicine: 'pills.fill',
   fasting: 'figure.stand',
   reading: 'book.fill',
   work: 'bag.fill',
@@ -44,11 +46,50 @@ const BUILTIN_CATEGORY_ICONS: Record<string, string> = {
 /** 담기·카탈로그 기본 강조색 */
 const BUILTIN_CATEGORY_ACCENT_COLORS: Record<string, string> = {
   healthIntake: HEALTH_INTAKE_CATALOG_ACCENT,
+  water: '#0ea5e9',
+  medicine: '#8b5a2b',
   fasting: '#8b5a2b',
   reading: '#356668',
   work: '#1e3a8a',
   other: '#f97316',
 };
+
+function asConfigObj(raw: unknown): Record<string, unknown> {
+  return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+}
+
+function readAppearanceFieldsFromRaw(raw: unknown): {
+  icon?: CustomFlowIconOption;
+  accentColor?: CustomFlowAccentColorOption;
+} {
+  const o = asConfigObj(raw);
+  return {
+    icon: normalizeCustomFlowIcon(o.icon) ?? undefined,
+    accentColor: normalizeCustomFlowAccentColor(o.accentColor) ?? undefined,
+  };
+}
+
+function resolveBuiltinCategoryIcon(categoryKey: string): CustomFlowIconOption {
+  if (isCustomFlowCategoryKey(categoryKey)) {
+    return (
+      normalizeCustomFlowIcon(resolveCustomFlowCatalogIcon(categoryKey)) ?? DEFAULT_CUSTOM_FLOW_ICON
+    );
+  }
+  return normalizeCustomFlowIcon(BUILTIN_CATEGORY_ICONS[categoryKey]) ?? DEFAULT_CUSTOM_FLOW_ICON;
+}
+
+function resolveBuiltinCategoryAccentColor(categoryKey: string): CustomFlowAccentColorOption {
+  if (isCustomFlowCategoryKey(categoryKey)) {
+    return (
+      normalizeCustomFlowAccentColor(resolveCustomFlowCatalogColor(categoryKey)) ??
+      DEFAULT_CUSTOM_FLOW_ACCENT_COLOR
+    );
+  }
+  return (
+    normalizeCustomFlowAccentColor(BUILTIN_CATEGORY_ACCENT_COLORS[categoryKey]) ??
+    DEFAULT_CUSTOM_FLOW_ACCENT_COLOR
+  );
+}
 
 function readStoredCategoryIcon(categoryKey: string): CustomFlowIconOption | undefined {
   const cfg = loadGoalDetailCategoryConfig(categoryKey);
@@ -85,31 +126,46 @@ export function resolveCategoryCatalogAccentColor(categoryKey: string): string {
   return BUILTIN_CATEGORY_ACCENT_COLORS[categoryKey] ?? DEFAULT_CUSTOM_FLOW_ACCENT_COLOR;
 }
 
+/** 목표 상세 아이콘·색상 편집 UI — 저장값·builtin을 그대로 반영(담기용 레거시 치환 없음) */
 export function readEditableCategoryAppearance(
   categoryKey: string,
-  cfg: OtherDetailDataConfig,
+  raw: unknown,
 ): { icon: CustomFlowIconOption; accentColor: CustomFlowAccentColorOption } {
-  const resolvedIcon =
-    normalizeCustomFlowIcon(cfg.icon) ??
-    normalizeCustomFlowIcon(resolveCategoryCatalogIcon(categoryKey)) ??
-    DEFAULT_CUSTOM_FLOW_ICON;
-  const icon =
+  const fromRaw = readAppearanceFieldsFromRaw(raw);
+  const fromStored = readAppearanceFieldsFromRaw(loadGoalDetailCategoryConfig(categoryKey));
+  const fromLegacyWater =
     categoryKey === 'healthIntake'
-      ? ((normalizeCustomFlowIcon(resolveHealthIntakeCatalogIcon(resolvedIcon)) ??
-          normalizeCustomFlowIcon(HEALTH_INTAKE_CATALOG_ICON)) ??
-        DEFAULT_CUSTOM_FLOW_ICON)
-      : resolvedIcon;
+      ? readAppearanceFieldsFromRaw(loadGoalDetailCategoryConfig('water'))
+      : {};
 
-  const resolvedAccent =
-    normalizeCustomFlowAccentColor(cfg.accentColor) ??
-    normalizeCustomFlowAccentColor(resolveCategoryCatalogAccentColor(categoryKey)) ??
-    DEFAULT_CUSTOM_FLOW_ACCENT_COLOR;
+  const icon =
+    fromRaw.icon ??
+    fromStored.icon ??
+    fromLegacyWater.icon ??
+    resolveBuiltinCategoryIcon(categoryKey);
   const accentColor =
-    categoryKey === 'healthIntake'
-      ? (normalizeCustomFlowAccentColor(resolveHealthIntakeCatalogAccentColor(resolvedAccent)) ??
-        normalizeCustomFlowAccentColor(HEALTH_INTAKE_CATALOG_ACCENT) ??
-        DEFAULT_CUSTOM_FLOW_ACCENT_COLOR)
-      : resolvedAccent;
+    fromRaw.accentColor ??
+    fromStored.accentColor ??
+    fromLegacyWater.accentColor ??
+    resolveBuiltinCategoryAccentColor(categoryKey);
 
   return { icon, accentColor };
+}
+
+/** 아이콘·색상만 갱신하고 카테고리별 설정 구조는 유지 */
+export function mergeCategoryAppearanceIntoConfig(
+  categoryKey: string,
+  raw: unknown,
+  appearance: { icon: CustomFlowIconOption; accentColor: CustomFlowAccentColorOption },
+): unknown {
+  const base = asConfigObj(raw);
+  const merged = {
+    ...base,
+    icon: appearance.icon,
+    accentColor: appearance.accentColor,
+  };
+  if (categoryKey === 'other' || isCustomFlowCategoryKey(categoryKey)) {
+    return normalizeOtherDetailConfig(merged);
+  }
+  return merged;
 }

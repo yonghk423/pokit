@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
-import { isCustomFlowCategoryKey } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -30,7 +29,6 @@ export function MeasurementSettings({
   categoryKey,
   dataConfig,
   onChangeDataConfig,
-  onDeleteCategory,
   allowRename = true,
   renameLockedReason = null,
 }: {
@@ -38,7 +36,6 @@ export function MeasurementSettings({
   categoryKey?: GoalDetailCategoryKey;
   dataConfig: unknown;
   onChangeDataConfig: (next: unknown) => void;
-  onDeleteCategory?: () => void;
   allowRename?: boolean;
   renameLockedReason?: 'running' | 'today' | null;
 }) {
@@ -109,8 +106,6 @@ export function MeasurementSettings({
     lastRef.current = serialized;
     onChangeRef.current(payload);
   }, [displayName, summary, metricLabel, unit, useGoalValue, goalValueStr, frequency]);
-
-  const showDelete = categoryKey != null && isCustomFlowCategoryKey(categoryKey) && onDeleteCategory;
 
   return (
     <View style={styles.shell}>
@@ -244,15 +239,6 @@ export function MeasurementSettings({
           })}
         </View>
       </View>
-
-      {showDelete ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={onDeleteCategory}
-          style={[styles.deleteBtn, { borderColor: 'rgba(239,68,68,0.42)' }]}>
-          <ThemedText style={styles.deleteLabel}>루틴 삭제</ThemedText>
-        </Pressable>
-      ) : null}
     </View>
   );
 }
@@ -324,15 +310,5 @@ const styles = StyleSheet.create({
   },
   segmentText: {
     fontSize: 13,
-  },
-  deleteBtn: {
-    borderWidth: 2,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  deleteLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#dc2626',
   },
 });

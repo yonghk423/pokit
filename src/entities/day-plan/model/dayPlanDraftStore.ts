@@ -109,6 +109,8 @@ type DayPlanDraftState = {
     fromSlot: DayMealSlot,
     toSlot: DayMealSlot,
   ) => void;
+  /** 오늘 담기 목록에서 항목을 완전히 종료 — 구간 만료 리셋과 같이 목록·완료 상태를 정리 */
+  finishPriorityCategoryForToday: (categoryKey: string) => void;
 };
 
 function createInitialPriorityWindow() {
@@ -138,6 +140,10 @@ function dedupePriorityCategoryOrder(order: readonly string[]): string[] {
     out.push(key);
   }
   return out;
+}
+
+function filterCompletionKeysForCategory(keys: readonly string[], categoryKey: string): string[] {
+  return keys.filter((key) => parsePrioritySectionCompletionKey(key).categoryKey !== categoryKey);
 }
 
 function normalizePrioritySectionsMealSlots(raw: unknown): Record<string, DayMealSlot[]> {
@@ -337,6 +343,39 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     set((s) => {
       if (s.planCompletionDismissedKeys.length === 0) return s;
       return { planCompletionDismissedKeys: [] };
+    }),
+  finishPriorityCategoryForToday: (categoryKey) =>
+    set((s) => {
+      const key = categoryKey.trim();
+      if (!key || !s.priorityCategoryOrder.includes(key)) return s;
+
+      const priorityCategoryOrder = s.priorityCategoryOrder.filter((k) => k !== key);
+      const completedFocusCategoryKeys = filterCompletionKeysForCategory(
+        s.completedFocusCategoryKeys,
+        key,
+      );
+      const planCompletionDismissedKeys = filterCompletionKeysForCategory(
+        s.planCompletionDismissedKeys,
+        key,
+      );
+      const priorityMealSlotOverrides = pruneMealSlotRecordForOrder(
+        s.priorityMealSlotOverrides,
+        priorityCategoryOrder,
+      );
+      const prioritySectionsMealSlots = pruneMealSlotsArrayRecordForOrder(
+        s.prioritySectionsMealSlots,
+        priorityCategoryOrder,
+      );
+      const isFocusStarted = priorityCategoryOrder.length > 0 ? s.isFocusStarted : false;
+
+      return {
+        priorityCategoryOrder,
+        completedFocusCategoryKeys,
+        planCompletionDismissedKeys,
+        priorityMealSlotOverrides,
+        prioritySectionsMealSlots,
+        isFocusStarted,
+      };
     }),
   setPriorityPlanDateKey: (value) => set({ priorityPlanDateKey: value }),
   setPriorityPlanDateKeyEnd: (value) => set({ priorityPlanDateKeyEnd: value }),

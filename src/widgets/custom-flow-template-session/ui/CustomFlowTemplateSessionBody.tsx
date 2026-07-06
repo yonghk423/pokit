@@ -27,6 +27,7 @@ import {
   type CustomFlowTemplateKey,
   type DayPlanBlock,
 } from '@entities/day-plan';
+import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -157,6 +158,341 @@ function WeekDots({ dots, accent, muted, ink }: { dots: boolean[]; accent: strin
   );
 }
 
+type TemplateEmit = (next: unknown) => void;
+
+function MeasurementTemplateView({
+  cfg,
+  emit,
+  theme,
+}: {
+  cfg: Parameters<typeof applyMeasurementSave>[0];
+  emit: TemplateEmit;
+  theme: TemplateSessionTheme;
+}) {
+  const { ink, muted, line, accent } = theme;
+  const unit = unitLabelKo(cfg.unit);
+  const [draft, setDraft] = useState(() => (cfg.currentValue > 0 ? String(cfg.currentValue) : ''));
+  useEffect(() => {
+    setDraft(cfg.currentValue > 0 ? String(cfg.currentValue) : '');
+  }, [cfg.currentValue]);
+
+  const parsed = parseFloat(draft.replace(',', '.'));
+  const quickDeltas = measurementQuickDeltas(cfg.unit);
+  const delta = formatMeasurementDelta(cfg.currentValue, cfg.previousValue);
+  const chartValues = cfg.history.slice(-7).map((h) => h.value);
+  const goalRatio =
+    cfg.useGoalValue && cfg.goalValue > 0 ? Math.min(1, cfg.currentValue / cfg.goalValue) : null;
+  const recordedToday = measurementRecordedToday(cfg);
+
+  const applyDelta = (d: number) => {
+    const base = Number.isFinite(parsed) ? parsed : cfg.currentValue;
+    setDraft(String(Math.max(0, Math.round((base + d) * 10) / 10)));
+  };
+
+  return (
+    <View style={styles.root}>
+      <Card theme={theme} gap={12}>
+        <SectionLabel color={muted}>{cfg.metricLabel.trim() || '기록'}</SectionLabel>
+        <View style={styles.heroRow}>
+          <ThemedText
+            style={[styles.heroValue, { color: ink }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}>
+            {cfg.currentValue > 0 ? formatValueCompact(cfg.currentValue) : '—'}
+          </ThemedText>
+          {unit ? <ThemedText style={[styles.heroUnit, { color: muted }]}>{unit}</ThemedText> : null}
+        </View>
+        {delta ? (
+          <ThemedText style={[styles.deltaLine, { color: accent }]}>
+            어제 대비 {delta}
+            {unit ? ` ${unit}` : ''}
+          </ThemedText>
+        ) : cfg.previousValue > 0 ? (
+          <ThemedText style={[styles.sub, { color: muted }]}>
+            이전 {formatValueCompact(cfg.previousValue)}
+            {unit ? ` ${unit}` : ''}
+          </ThemedText>
+        ) : null}
+        {goalRatio != null ? (
+          <>
+            <ThemedText style={[styles.sub, { color: muted }]}>
+              목표 {formatValueCompact(cfg.goalValue)}
+              {unit ? ` ${unit}` : ''} · {Math.round(goalRatio * 100)}%
+            </ThemedText>
+            <View style={[styles.track, { backgroundColor: line }]}>
+              <View style={[styles.fill, { width: `${Math.round(goalRatio * 100)}%`, backgroundColor: accent }]} />
+            </View>
+          </>
+        ) : null}
+      </Card>
+
+      {chartValues.length >= 2 ? (
+        <Card theme={theme}>
+          <SectionLabel color={muted}>최근 7일 추이</SectionLabel>
+          <MiniBarChart
+            values={chartValues}
+            goal={cfg.useGoalValue ? cfg.goalValue : undefined}
+            accent={accent}
+            muted={muted}
+          />
+        </Card>
+      ) : null}
+
+      <Card theme={theme}>
+        {recordedToday ? (
+          <ThemedText style={[styles.badge, { color: accent, borderColor: accent }]}>
+            오늘 기록 완료 · 수정하려면 값을 바꾸고 저장하세요
+          </ThemedText>
+        ) : null}
+        <View style={styles.quickRow}>
+          {quickDeltas.map((d) => (
+            <Pressable key={d} onPress={() => applyDelta(d)} style={[styles.quickBtn, { borderColor: line }]}>
+              <ThemedText style={{ color: ink, fontWeight: '700', fontSize: 13 }}>
+                {d > 0 ? `+${d}` : String(d)}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </View>
+        <View style={styles.measureInputRow}>
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            keyboardType="decimal-pad"
+            placeholder="값 입력"
+            placeholderTextColor={muted}
+            style={[styles.measureInput, { color: ink, borderColor: line }]}
+          />
+          {unit ? <ThemedText style={[styles.heroUnit, { color: muted }]}>{unit}</ThemedText> : null}
+        </View>
+        <Pressable
+          onPress={() => {
+            const raw = parseFloat(draft.replace(',', '.'));
+            if (!Number.isFinite(raw)) return;
+            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            emit(applyMeasurementSave(cfg, raw));
+          }}
+          style={[styles.primaryBtn, { backgroundColor: accent }]}>
+          <ThemedText style={styles.primaryBtnText}>기록 저장</ThemedText>
+        </Pressable>
+      </Card>
+    </View>
+  );
+}
+
+function JournalTemplateView({
+  cfg,
+  emit,
+  theme,
+}: {
+  cfg: Parameters<typeof applyJournalSave>[0];
+  emit: TemplateEmit;
+  theme: TemplateSessionTheme;
+}) {
+  const { ink, muted, line, accent } = theme;
+  const [draft, setDraft] = useState(cfg.lastEntry ?? '');
+  const [mood, setMood] = useState(cfg.moodToday ?? '');
+  useEffect(() => {
+    setDraft(cfg.lastEntry ?? '');
+    setMood(cfg.moodToday ?? '');
+  }, [cfg.lastEntry, cfg.moodToday]);
+
+  return (
+    <View style={styles.root}>
+      <Card theme={theme}>
+        <ThemedText style={[styles.prompt, { color: ink }]}>{cfg.prompt.trim() || '한 줄 기록'}</ThemedText>
+        <SectionLabel color={muted}>기분</SectionLabel>
+        <View style={styles.moodRow}>
+          {JOURNAL_MOOD_OPTIONS.map((m) => {
+            const selected = mood === m;
+            return (
+              <Pressable
+                key={m}
+                onPress={() => setMood(selected ? '' : m)}
+                style={[
+                  styles.moodChip,
+                  {
+                    borderColor: selected ? accent : line,
+                    backgroundColor: selected ? withAlpha(accent, 0.12) : theme.surface,
+                  },
+                ]}>
+                <ThemedText
+                  style={{ color: selected ? accent : muted, fontWeight: selected ? '700' : '500', fontSize: 12 }}>
+                  {m}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+        <TextInput
+          value={draft}
+          onChangeText={setDraft}
+          multiline
+          placeholder="오늘의 한 줄을 남겨요"
+          placeholderTextColor={muted}
+          textAlignVertical="top"
+          style={[styles.journalInput, { color: ink, borderColor: line }]}
+        />
+        <Pressable
+          onPress={() => {
+            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            emit(applyJournalSave(cfg, draft, mood));
+          }}
+          style={[styles.primaryBtn, { backgroundColor: accent }]}>
+          <ThemedText style={styles.primaryBtnText}>저장</ThemedText>
+        </Pressable>
+      </Card>
+      {cfg.recentEntries.length > 0 ? (
+        <Card theme={theme}>
+          <SectionLabel color={muted}>최근 기록</SectionLabel>
+          {cfg.recentEntries.slice(0, 5).map((entry, idx) => (
+            <View key={`${entry.dateKey}-${idx}`} style={[styles.entryRow, { borderColor: line }]}>
+              <View style={styles.entryMeta}>
+                {entry.dateKey ? (
+                  <ThemedText style={[styles.entryDate, { color: muted }]}>{entry.dateKey.slice(5)}</ThemedText>
+                ) : null}
+                {entry.mood ? (
+                  <ThemedText style={[styles.entryMood, { color: accent }]}>{entry.mood}</ThemedText>
+                ) : null}
+              </View>
+              <ThemedText style={[styles.entryText, { color: ink }]} numberOfLines={2}>
+                {entry.text}
+              </ThemedText>
+            </View>
+          ))}
+        </Card>
+      ) : null}
+    </View>
+  );
+}
+
+type ChecklistTemplateCfg = {
+  checklist: Array<{ id: string; text: string; done: boolean }>;
+  [key: string]: unknown;
+};
+
+function ChecklistTemplateView({
+  cfg,
+  emit,
+  theme,
+  variant = 'checklist',
+}: {
+  cfg: ChecklistTemplateCfg;
+  emit: TemplateEmit;
+  theme: TemplateSessionTheme;
+  variant?: 'checklist' | 'abstain';
+}) {
+  const { ink, muted, line, accent } = theme;
+  const tasks = cfg.checklist;
+  const doneCount = tasks.filter((t) => t.done).length;
+  const ratio = tasks.length > 0 ? doneCount / tasks.length : 0;
+  const [draft, setDraft] = useState('');
+  const templateKey = variant === 'abstain' ? 'abstain' : 'checklist';
+  const progressLabel =
+    variant === 'abstain'
+      ? `${doneCount}/${tasks.length} 지킴`
+      : `${doneCount}/${tasks.length} 완료`;
+  const completeBadge =
+    variant === 'abstain' ? '모든 금지를 지켰어요!' : '모든 할 일 완료!';
+  const addPlaceholder = variant === 'abstain' ? '금지 항목 추가' : '할 일 추가';
+
+  return (
+    <View style={styles.root}>
+      <Card theme={theme}>
+        <ThemedText style={[styles.counterTitle, { color: ink }]}>{progressLabel}</ThemedText>
+        <View style={[styles.track, { backgroundColor: line }]}>
+          <View style={[styles.fill, { width: `${Math.round(ratio * 100)}%`, backgroundColor: accent }]} />
+        </View>
+        {doneCount === tasks.length && tasks.length > 0 ? (
+          <ThemedText style={[styles.goalBadge, { color: accent }]}>{completeBadge}</ThemedText>
+        ) : null}
+      </Card>
+      <Card theme={theme}>
+        <View style={[styles.addRow, { borderColor: line }]}>
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={addPlaceholder}
+            placeholderTextColor={muted}
+            style={[styles.addInput, { color: ink }]}
+            returnKeyType="done"
+            onSubmitEditing={() => {
+              const text = draft.trim();
+              if (!text) return;
+              emit({
+                ...cfg,
+                templateKey,
+                checklist: [...tasks, { id: `task_${Date.now()}`, text, done: false }],
+              });
+              setDraft('');
+            }}
+          />
+          <Pressable
+            onPress={() => {
+              const text = draft.trim();
+              if (!text) return;
+              emit({
+                ...cfg,
+                templateKey,
+                checklist: [...tasks, { id: `task_${Date.now()}`, text, done: false }],
+              });
+              setDraft('');
+            }}
+            style={[styles.addBtn, { borderColor: ink }]}>
+            <ThemedText style={{ color: ink, fontWeight: '800', fontSize: 11 }}>ADD</ThemedText>
+          </Pressable>
+        </View>
+        {tasks.map((task) => (
+          <Pressable
+            key={task.id}
+            onPress={() => {
+              void Haptics.selectionAsync();
+              emit({
+                ...cfg,
+                templateKey,
+                checklist: tasks.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t)),
+              });
+            }}
+            style={[styles.checkRow, { borderColor: line }]}>
+            <View
+              style={[
+                styles.checkBox,
+                {
+                  borderColor: task.done ? accent : line,
+                  backgroundColor: task.done ? accent : 'transparent',
+                },
+              ]}>
+              {task.done ? <IconSymbol name="checkmark" size={12} color="#fff" /> : null}
+            </View>
+            <ThemedText
+              style={[
+                styles.checkText,
+                { color: task.done ? muted : ink },
+                variant === 'checklist' && task.done && styles.checkDone,
+              ]}>
+              {task.text}
+            </ThemedText>
+            {variant === 'abstain' && task.done ? (
+              <ThemedText style={[styles.abstainKeptBadge, { color: accent }]}>지킴</ThemedText>
+            ) : null}
+            <Pressable
+              hitSlop={8}
+              onPress={() =>
+                emit({
+                  ...cfg,
+                  templateKey,
+                  checklist: tasks.filter((t) => t.id !== task.id),
+                })
+              }>
+              <IconSymbol name="trash" size={14} color={muted} />
+            </Pressable>
+          </Pressable>
+        ))}
+      </Card>
+    </View>
+  );
+}
+
 export function CustomFlowTemplateSessionBody({
   templateKey,
   config: rawConfig,
@@ -176,123 +512,7 @@ export function CustomFlowTemplateSessionBody({
   switch (templateKey) {
     case 'measurement': {
       if (!('metricLabel' in cfg)) return null;
-      const unit = unitLabelKo(cfg.unit);
-      const [draft, setDraft] = useState(() =>
-        cfg.currentValue > 0 ? String(cfg.currentValue) : '',
-      );
-      useEffect(() => {
-        setDraft(cfg.currentValue > 0 ? String(cfg.currentValue) : '');
-      }, [cfg.currentValue]);
-
-      const parsed = parseFloat(draft.replace(',', '.'));
-      const quickDeltas = measurementQuickDeltas(cfg.unit);
-      const delta = formatMeasurementDelta(cfg.currentValue, cfg.previousValue);
-      const chartValues = cfg.history.slice(-7).map((h) => h.value);
-      const goalRatio =
-        cfg.useGoalValue && cfg.goalValue > 0
-          ? Math.min(1, cfg.currentValue / cfg.goalValue)
-          : null;
-      const recordedToday = measurementRecordedToday(cfg);
-
-      const applyDelta = (d: number) => {
-        const base = Number.isFinite(parsed) ? parsed : cfg.currentValue;
-        setDraft(String(Math.max(0, Math.round((base + d) * 10) / 10)));
-      };
-
-      return (
-        <View style={styles.root}>
-          <Card theme={theme} gap={12}>
-            <SectionLabel color={muted}>{cfg.metricLabel.trim() || '기록'}</SectionLabel>
-            <View style={styles.heroRow}>
-              <ThemedText
-                style={[styles.heroValue, { color: ink }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}>
-                {cfg.currentValue > 0 ? formatValueCompact(cfg.currentValue) : '—'}
-              </ThemedText>
-              {unit ? (
-                <ThemedText style={[styles.heroUnit, { color: muted }]}>{unit}</ThemedText>
-              ) : null}
-            </View>
-            {delta ? (
-              <ThemedText style={[styles.deltaLine, { color: accent }]}>
-                어제 대비 {delta}
-                {unit ? ` ${unit}` : ''}
-              </ThemedText>
-            ) : cfg.previousValue > 0 ? (
-              <ThemedText style={[styles.sub, { color: muted }]}>
-                이전 {formatValueCompact(cfg.previousValue)}
-                {unit ? ` ${unit}` : ''}
-              </ThemedText>
-            ) : null}
-            {goalRatio != null ? (
-              <>
-                <ThemedText style={[styles.sub, { color: muted }]}>
-                  목표 {formatValueCompact(cfg.goalValue)}
-                  {unit ? ` ${unit}` : ''} · {Math.round(goalRatio * 100)}%
-                </ThemedText>
-                <View style={[styles.track, { backgroundColor: line }]}>
-                  <View style={[styles.fill, { width: `${Math.round(goalRatio * 100)}%`, backgroundColor: accent }]} />
-                </View>
-              </>
-            ) : null}
-          </Card>
-
-          {chartValues.length >= 2 ? (
-            <Card theme={theme}>
-              <SectionLabel color={muted}>최근 7일 추이</SectionLabel>
-              <MiniBarChart
-                values={chartValues}
-                goal={cfg.useGoalValue ? cfg.goalValue : undefined}
-                accent={accent}
-                muted={muted}
-              />
-            </Card>
-          ) : null}
-
-          <Card theme={theme}>
-            {recordedToday ? (
-              <ThemedText style={[styles.badge, { color: accent, borderColor: accent }]}>
-                오늘 기록 완료 · 수정하려면 값을 바꾸고 저장하세요
-              </ThemedText>
-            ) : null}
-            <View style={styles.quickRow}>
-              {quickDeltas.map((d) => (
-                <Pressable
-                  key={d}
-                  onPress={() => applyDelta(d)}
-                  style={[styles.quickBtn, { borderColor: line }]}>
-                  <ThemedText style={{ color: ink, fontWeight: '700', fontSize: 13 }}>
-                    {d > 0 ? `+${d}` : String(d)}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
-            <View style={styles.measureInputRow}>
-              <TextInput
-                value={draft}
-                onChangeText={setDraft}
-                keyboardType="decimal-pad"
-                placeholder="값 입력"
-                placeholderTextColor={muted}
-                style={[styles.measureInput, { color: ink, borderColor: line }]}
-              />
-              {unit ? <ThemedText style={[styles.heroUnit, { color: muted }]}>{unit}</ThemedText> : null}
-            </View>
-            <Pressable
-              onPress={() => {
-                const raw = parseFloat(draft.replace(',', '.'));
-                if (!Number.isFinite(raw)) return;
-                void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                emit(applyMeasurementSave(cfg, raw));
-              }}
-              style={[styles.primaryBtn, { backgroundColor: accent }]}>
-              <ThemedText style={styles.primaryBtnText}>기록 저장</ThemedText>
-            </Pressable>
-          </Card>
-        </View>
-      );
+      return <MeasurementTemplateView cfg={cfg} emit={emit} theme={theme} />;
     }
 
     case 'counter': {
@@ -428,81 +648,7 @@ export function CustomFlowTemplateSessionBody({
 
     case 'journal': {
       if (!('prompt' in cfg)) return null;
-      const [draft, setDraft] = useState(cfg.lastEntry ?? '');
-      const [mood, setMood] = useState(cfg.moodToday ?? '');
-      useEffect(() => {
-        setDraft(cfg.lastEntry ?? '');
-        setMood(cfg.moodToday ?? '');
-      }, [cfg.lastEntry, cfg.moodToday]);
-
-      return (
-        <View style={styles.root}>
-          <Card theme={theme}>
-            <ThemedText style={[styles.prompt, { color: ink }]}>
-              {cfg.prompt.trim() || '한 줄 기록'}
-            </ThemedText>
-            <SectionLabel color={muted}>기분</SectionLabel>
-            <View style={styles.moodRow}>
-              {JOURNAL_MOOD_OPTIONS.map((m) => {
-                const selected = mood === m;
-                return (
-                  <Pressable
-                    key={m}
-                    onPress={() => setMood(selected ? '' : m)}
-                    style={[
-                      styles.moodChip,
-                      {
-                        borderColor: selected ? accent : line,
-                        backgroundColor: selected ? withAlpha(accent, 0.12) : surface,
-                      },
-                    ]}>
-                    <ThemedText style={{ color: selected ? accent : muted, fontWeight: selected ? '700' : '500', fontSize: 12 }}>
-                      {m}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              multiline
-              placeholder="오늘의 한 줄을 남겨요"
-              placeholderTextColor={muted}
-              textAlignVertical="top"
-              style={[styles.journalInput, { color: ink, borderColor: line }]}
-            />
-            <Pressable
-              onPress={() => {
-                void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                emit(applyJournalSave(cfg, draft, mood));
-              }}
-              style={[styles.primaryBtn, { backgroundColor: accent }]}>
-              <ThemedText style={styles.primaryBtnText}>저장</ThemedText>
-            </Pressable>
-          </Card>
-          {cfg.recentEntries.length > 0 ? (
-            <Card theme={theme}>
-              <SectionLabel color={muted}>최근 기록</SectionLabel>
-              {cfg.recentEntries.slice(0, 5).map((entry, idx) => (
-                <View key={`${entry.dateKey}-${idx}`} style={[styles.entryRow, { borderColor: line }]}>
-                  <View style={styles.entryMeta}>
-                    {entry.dateKey ? (
-                      <ThemedText style={[styles.entryDate, { color: muted }]}>{entry.dateKey.slice(5)}</ThemedText>
-                    ) : null}
-                    {entry.mood ? (
-                      <ThemedText style={[styles.entryMood, { color: accent }]}>{entry.mood}</ThemedText>
-                    ) : null}
-                  </View>
-                  <ThemedText style={[styles.entryText, { color: ink }]} numberOfLines={2}>
-                    {entry.text}
-                  </ThemedText>
-                </View>
-              ))}
-            </Card>
-          ) : null}
-        </View>
-      );
+      return <JournalTemplateView cfg={cfg} emit={emit} theme={theme} />;
     }
 
     case 'reminder': {
@@ -582,108 +728,15 @@ export function CustomFlowTemplateSessionBody({
       );
     }
 
+    case 'abstain': {
+      if (!('checklist' in cfg)) return null;
+      return <ChecklistTemplateView cfg={cfg} emit={emit} theme={theme} variant="abstain" />;
+    }
+
     case 'checklist':
     default: {
       if (!('checklist' in cfg)) return null;
-      const tasks = cfg.checklist;
-      const doneCount = tasks.filter((t) => t.done).length;
-      const ratio = tasks.length > 0 ? doneCount / tasks.length : 0;
-      const [draft, setDraft] = useState('');
-
-      return (
-        <View style={styles.root}>
-          <Card theme={theme}>
-            <ThemedText style={[styles.counterTitle, { color: ink }]}>
-              {doneCount}/{tasks.length} 완료
-            </ThemedText>
-            <View style={[styles.track, { backgroundColor: line }]}>
-              <View style={[styles.fill, { width: `${Math.round(ratio * 100)}%`, backgroundColor: accent }]} />
-            </View>
-            {doneCount === tasks.length && tasks.length > 0 ? (
-              <ThemedText style={[styles.goalBadge, { color: accent }]}>모든 할 일 완료!</ThemedText>
-            ) : null}
-          </Card>
-          <Card theme={theme}>
-            <View style={[styles.addRow, { borderColor: line }]}>
-              <TextInput
-                value={draft}
-                onChangeText={setDraft}
-                placeholder="할 일 추가"
-                placeholderTextColor={muted}
-                style={[styles.addInput, { color: ink }]}
-                returnKeyType="done"
-                onSubmitEditing={() => {
-                  const text = draft.trim();
-                  if (!text) return;
-                  emit({
-                    ...cfg,
-                    templateKey: 'checklist',
-                    checklist: [...tasks, { id: `task_${Date.now()}`, text, done: false }],
-                  });
-                  setDraft('');
-                }}
-              />
-              <Pressable
-                onPress={() => {
-                  const text = draft.trim();
-                  if (!text) return;
-                  emit({
-                    ...cfg,
-                    templateKey: 'checklist',
-                    checklist: [...tasks, { id: `task_${Date.now()}`, text, done: false }],
-                  });
-                  setDraft('');
-                }}
-                style={[styles.addBtn, { borderColor: ink }]}>
-                <ThemedText style={{ color: ink, fontWeight: '800', fontSize: 11 }}>ADD</ThemedText>
-              </Pressable>
-            </View>
-            {tasks.map((task) => (
-              <Pressable
-                key={task.id}
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  emit({
-                    ...cfg,
-                    templateKey: 'checklist',
-                    checklist: tasks.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t)),
-                  });
-                }}
-                style={[styles.checkRow, { borderColor: line }]}>
-                <View
-                  style={[
-                    styles.checkBox,
-                    {
-                      borderColor: task.done ? accent : line,
-                      backgroundColor: task.done ? accent : 'transparent',
-                    },
-                  ]}>
-                  {task.done ? <IconSymbol name="checkmark" size={12} color="#fff" /> : null}
-                </View>
-                <ThemedText
-                  style={[
-                    styles.checkText,
-                    { color: task.done ? muted : ink },
-                    task.done && styles.checkDone,
-                  ]}>
-                  {task.text}
-                </ThemedText>
-                <Pressable
-                  hitSlop={8}
-                  onPress={() =>
-                    emit({
-                      ...cfg,
-                      templateKey: 'checklist',
-                      checklist: tasks.filter((t) => t.id !== task.id),
-                    })
-                  }>
-                  <IconSymbol name="trash" size={14} color={muted} />
-                </Pressable>
-              </Pressable>
-            ))}
-          </Card>
-        </View>
-      );
+      return <ChecklistTemplateView cfg={cfg} emit={emit} theme={theme} variant="checklist" />;
     }
   }
 }
@@ -795,4 +848,5 @@ const styles = StyleSheet.create({
   checkBox: { width: 22, height: 22, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   checkText: { flex: 1, fontSize: 16, fontWeight: '600' },
   checkDone: { textDecorationLine: 'line-through', opacity: 0.55 },
+  abstainKeptBadge: { fontSize: 11, fontWeight: '800', marginLeft: 'auto', marginRight: 4 },
 });

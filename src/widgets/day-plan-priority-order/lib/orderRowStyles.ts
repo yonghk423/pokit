@@ -85,6 +85,21 @@ export const orderRowStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  orderFinishBtn: {
+    minWidth: 36,
+    height: 28,
+    borderRadius: 0,
+    borderWidth: RETRO_BORDER_WIDTH,
+    borderColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  orderFinishBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
   /** 집중 중 완료 탭 — sharp square checkbox */
   orderCompleteMaterialHit: {
     alignSelf: 'center',

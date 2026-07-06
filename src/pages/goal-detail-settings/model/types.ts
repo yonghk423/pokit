@@ -5,5 +5,7 @@ export type GoalDetailCategoryKey =
   | 'reading'
   | 'fasting'
   | 'healthIntake'
+  | 'water'
+  | 'medicine'
   | 'other'
   | CustomFlowCategoryKey;

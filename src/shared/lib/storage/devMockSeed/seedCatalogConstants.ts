@@ -20,6 +20,6 @@ export const SEED_CATEGORY_LABEL_KO: Record<string, string> = {
   medicine: '약 복용',
   fasting: '체중관리',
   reading: '독서',
-  work: '스터디',
+  work: '노트',
   ...Object.fromEntries(DEFAULT_BUILTIN_CUSTOM_FLOWS.map((f) => [f.id, f.displayName])),
 };

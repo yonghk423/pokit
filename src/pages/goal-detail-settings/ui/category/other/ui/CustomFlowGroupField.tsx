@@ -78,10 +78,12 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
 
   return (
     <View style={styles.shell}>
-      <ThemedText style={[styles.fieldLabel, { color: c.onVariant }]}>상위 카테고리</ThemedText>
-      <ThemedText style={[styles.fieldHint, { color: c.onVariant }]}>
-        지금 「{currentLabel}」에 있어요. 잘못된 묶음이면 아래에서 바꿀 수 있어요.
-      </ThemedText>
+      <View style={styles.labelRow}>
+        <ThemedText style={[styles.fieldLabel, { color: c.onVariant }]}>상위 카테고리</ThemedText>
+        <ThemedText style={[styles.currentTag, { color: c.onSurface }]} numberOfLines={1}>
+          {currentLabel}
+        </ThemedText>
+      </View>
 
       <View style={styles.chipsWrap}>
         {groupOptions.map((g) => {
@@ -193,19 +195,25 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
 
 const styles = StyleSheet.create({
   shell: { gap: 8 },
-  fieldLabel: { fontSize: 13, fontWeight: '700', letterSpacing: -0.2 },
-  fieldHint: { fontSize: 12, fontWeight: '500', lineHeight: 16 },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  fieldLabel: { fontSize: 12, fontWeight: '800', letterSpacing: -0.1 },
+  currentTag: { fontSize: 12, fontWeight: '700', flexShrink: 1, textAlign: 'right' },
   chipsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
     borderRadius: 0,
     borderWidth: 2,
   },
@@ -213,8 +221,8 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   chipText: {
-    fontSize: 13,
-    letterSpacing: -0.2,
+    fontSize: 12,
+    letterSpacing: -0.15,
   },
   newGroupRow: {
     flexDirection: 'row',
@@ -224,9 +232,9 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 2,
     borderRadius: 0,
-    paddingHorizontal: 14,
-    height: 48,
-    fontSize: 15,
+    paddingHorizontal: 12,
+    height: 40,
+    fontSize: 14,
     fontWeight: '600',
     paddingVertical: 0,
     ...(Platform.OS === 'android'

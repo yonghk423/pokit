@@ -1,4 +1,9 @@
 import {
+  normalizeCustomFlowAccentColor,
+  normalizeCustomFlowIcon,
+} from '@shared/lib/customFlowAppearanceCatalog';
+
+import {
   getInitialMedicineDataConfig,
   getInitialWaterDataConfig,
   normalizeMedicineDetailConfig,
@@ -22,6 +27,8 @@ export type HealthIntakeDetailDataConfig = {
   summary: string;
   water: WaterDetailDataConfig;
   medicine: MedicineDetailDataConfig;
+  icon?: string;
+  accentColor?: string;
 };
 
 function asObj(raw: unknown): Record<string, unknown> {
@@ -50,11 +57,15 @@ export function normalizeHealthIntakeDetailConfig(raw: unknown): HealthIntakeDet
   const summary = normalizeRoutineSummary(o.summary);
   const water = extractWaterConfigFromRaw(raw);
   const medicine = extractMedicineConfigFromRaw(raw);
+  const icon = normalizeCustomFlowIcon(o.icon);
+  const accentColor = normalizeCustomFlowAccentColor(o.accentColor);
   return {
     displayName,
     summary,
     water: { ...water, displayName, summary: '' },
     medicine: { ...medicine, displayName, summary: '' },
+    ...(icon ? { icon } : {}),
+    ...(accentColor ? { accentColor } : {}),
   };
 }
 
@@ -77,9 +88,13 @@ export function mergeLegacyHealthIntakeFromParts(
   const waterSummary = normalizeRoutineSummary(asObj(waterRaw).summary);
   const medicineSummary = normalizeRoutineSummary(asObj(medicineRaw).summary);
   const summary = waterSummary || medicineSummary;
+  const waterO = asObj(waterRaw);
+  const medicineO = asObj(medicineRaw);
   return normalizeHealthIntakeDetailConfig({
     displayName,
     summary,
+    icon: waterO.icon ?? medicineO.icon,
+    accentColor: waterO.accentColor ?? medicineO.accentColor,
     water: waterRaw ?? {},
     medicine: medicineRaw ?? {},
   });
@@ -100,7 +115,7 @@ export function normalizeCatalogKeysAfterHealthIntakeMerge(keys: string[]): stri
   for (const raw of keys) {
     const key = typeof raw === 'string' ? raw.trim() : '';
     if (!key) continue;
-    if (key === LEGACY_WATER_CATEGORY_KEY || key === LEGACY_MEDICINE_CATEGORY_KEY) {
+    if (key === LEGACY_MEDICINE_CATEGORY_KEY) {
       if (!healthAdded) {
         out.push(HEALTH_INTAKE_CATEGORY_KEY);
         healthAdded = true;

@@ -30,7 +30,7 @@ export function RoutineTitleField({
   renameLockedReason = null,
   palette,
   size = 'large',
-  placeholder = '',
+  placeholder,
 }: {
   value: string;
   onChangeValue: (next: string) => void;
@@ -39,11 +39,13 @@ export function RoutineTitleField({
   renameLockedReason?: RoutineRenameLockedReason | null;
   palette: Palette;
   size?: 'large' | 'compact';
+  /** 미입력 시 힌트 — 기본값은 `fallback` */
   placeholder?: string;
 }) {
   const titleStyle = size === 'large' ? styles.mainTitleLarge : styles.mainTitleCompact;
   const titleInputStyle = size === 'large' ? styles.mainTitleInputLarge : styles.mainTitleInputCompact;
   const fallbackTrimmed = fallback.trim();
+  const placeholderText = placeholder ?? fallbackTrimmed;
   const idleTitle = resolveIdleTitle(value, fallbackTrimmed);
 
   const [draft, setDraft] = useState(idleTitle);
@@ -61,12 +63,12 @@ export function RoutineTitleField({
     const persisted = persistRoutineDisplayName(raw, fallbackTrimmed);
     syncKeyRef.current = `${persisted}\0${fallbackTrimmed}`;
     onChangeValue(persisted);
-    setDraft(persisted.length > 0 ? persisted : fallbackTrimmed);
+    setDraft(persisted);
   };
 
   const handleFocus = () => {
     setFocused(true);
-    setDraft(value.trim().length > 0 ? value : fallbackTrimmed);
+    setDraft(value);
   };
 
   const handleBlur = () => {
@@ -76,7 +78,6 @@ export function RoutineTitleField({
 
   const handleChangeText = (text: string) => {
     setDraft(text);
-    onChangeValue(text);
   };
 
   const inputValue = focused ? draft : idleTitle;
@@ -89,7 +90,7 @@ export function RoutineTitleField({
           onChangeText={handleChangeText}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          placeholder={placeholder}
+          placeholder={placeholderText}
           placeholderTextColor={palette.outline}
           style={[titleInputStyle, { color: palette.onSurface }]}
           maxLength={40}

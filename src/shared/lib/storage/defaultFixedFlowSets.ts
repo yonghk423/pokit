@@ -8,6 +8,11 @@ import {
   type WeekdayIndex,
 } from './fixedFlowWeekdays';
 
+import {
+  BUILTIN_ABSTAIN_FLOW_ID,
+  BUILTIN_DAILY_LIFE_FLOW_IDS,
+} from './defaultPriorityCatalog';
+
 function items(categoryKeys: string[]) {
   return categoryKeys.map((categoryKey) => ({ categoryKey, enabled: true }));
 }
@@ -22,10 +27,26 @@ type DefaultSetTemplate = {
 /** 레거시 — 평일 루틴 → 데일리 루틴으로 통합 */
 export const LEGACY_WEEKDAY_SET_ID = 'set_weekday';
 
-/** 삭제·이름 변경 불가 — 데일리·주말 프리셋 */
-export const BUILTIN_FIXED_FLOW_SET_IDS = ['set_daily', 'set_weekend'] as const;
+/** 삭제·이름 변경 불가 — 데일리·주말·단식·수분·일상·금지 프리셋 */
+export const BUILTIN_FIXED_FLOW_SET_IDS = [
+  'set_daily',
+  'set_weekend',
+  'set_fasting',
+  'set_water',
+  'set_daily_life',
+  'set_abstain',
+] as const;
 
-export const BUILTIN_PRESET_SCHEDULE_SET_IDS = ['set_daily', 'set_weekend'] as const;
+export const BUILTIN_PRESET_SCHEDULE_SET_IDS = [
+  'set_daily',
+  'set_weekend',
+  'set_fasting',
+  'set_water',
+  'set_daily_life',
+  'set_abstain',
+] as const;
+
+export const BUILTIN_WATER_SET_ID = 'set_water';
 
 /** 제거 대상 — 요일별 루틴(그룹) */
 export const REMOVED_SCHEDULED_SET_IDS = ['set_always'] as const;
@@ -41,7 +62,31 @@ const DEFAULT_SET_TEMPLATES: DefaultSetTemplate[] = [
     id: 'set_weekend',
     name: '주말 루틴',
     applyRule: 'weekend',
-    categoryKeys: ['fasting', 'reading'],
+    categoryKeys: ['reading'],
+  },
+  {
+    id: 'set_fasting',
+    name: '체중조절',
+    applyRule: 'daily',
+    categoryKeys: ['fasting'],
+  },
+  {
+    id: 'set_water',
+    name: '수분 섭취',
+    applyRule: 'daily',
+    categoryKeys: ['water'],
+  },
+  {
+    id: 'set_daily_life',
+    name: '일상 루틴',
+    applyRule: 'daily',
+    categoryKeys: [...BUILTIN_DAILY_LIFE_FLOW_IDS],
+  },
+  {
+    id: 'set_abstain',
+    name: '금지 루틴',
+    applyRule: 'daily',
+    categoryKeys: [BUILTIN_ABSTAIN_FLOW_ID],
   },
 ];
 

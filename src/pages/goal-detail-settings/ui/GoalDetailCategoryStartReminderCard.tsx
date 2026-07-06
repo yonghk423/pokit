@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import {
-  categoryReminderLabelKo,
   clampHhmmToPriorityWindow,
   formatHhmmClockKo,
   useDayPlanDraftStore,
@@ -46,14 +45,9 @@ function buildReminderRow(reminderOn: boolean, times: string[]): CategoryReminde
 export function GoalDetailCategoryStartReminderCard({ categoryKey }: Props) {
   const priorityStart = useDayPlanDraftStore((s) => s.priorityStart);
   const priorityEnd = useDayPlanDraftStore((s) => s.priorityEnd);
-  const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
-  const label = useMemo(
-    () => categoryReminderLabelKo(categoryKey),
-    [categoryKey, categoryLabelEpoch],
-  );
   const startHint = useMemo(
-    () => `${label} — 매일 지정한 시각에 일정 확인 알림을 받아요. 아래 담기 구간 안에서만 골라요.`,
-    [label],
+    () => '담기 구간 안에서 알림 시각을 선택해요.',
+    [],
   );
   const routineWindowLine = useMemo(
     () => `${formatHhmmClockKo(priorityStart)} – ${formatHhmmClockKo(priorityEnd)}`,
@@ -176,6 +170,7 @@ export function GoalDetailCategoryStartReminderCard({ categoryKey }: Props) {
         value={reminderOn}
         onValueChange={(v) => void onToggleReminder(v)}
         palette={surface.alarm}
+        compact
       />
 
       <View
@@ -186,7 +181,7 @@ export function GoalDetailCategoryStartReminderCard({ categoryKey }: Props) {
         accessibilityRole="text"
         accessibilityLabel={`오늘 담기 구간 ${routineWindowLine}`}>
         <ThemedText style={[styles.routineWindowLabel, { color: surface.timeField.onVariant }]}>
-          오늘 담기 구간(시작~마무리)
+          담기 구간
         </ThemedText>
         <ThemedText style={[styles.routineWindowTime, { color: surface.timeField.onSurface }]}>
           {routineWindowLine}
@@ -264,23 +259,26 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
-    paddingVertical: 14,
-    gap: 12,
+    paddingVertical: 12,
+    gap: 8,
   },
   routineWindowBand: {
     borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
-  routineWindowLabel: { fontSize: 12, fontWeight: '600', letterSpacing: -0.15 },
-  routineWindowTime: { fontSize: 16, fontWeight: '800', letterSpacing: -0.35 },
+  routineWindowLabel: { fontSize: 11, fontWeight: '700', letterSpacing: -0.1 },
+  routineWindowTime: { fontSize: 13, fontWeight: '800', letterSpacing: -0.25 },
   innerCard: {
     borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: 12,
-    gap: 4,
+    padding: 10,
+    gap: 2,
   },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 6 },
   slotRow: {

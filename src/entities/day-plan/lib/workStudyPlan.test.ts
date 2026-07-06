@@ -16,7 +16,7 @@ describe('workStudyPlan', () => {
     expect(text).toContain('과목: 수학');
     expect(text).toContain('뽀모도로');
     expect(text).toContain('집중 25분 · 휴식 5분');
-    expect(text).toContain('할 일');
+    expect(text).toContain('노트');
     expect(text).toContain('3단원 문제');
     expect(text).toContain('함수 그래프 집중');
     expect(text).toContain('D-Day');

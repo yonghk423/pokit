@@ -32,7 +32,7 @@ describe('categoryReminderCatalog', () => {
 
   it('returns Korean labels', () => {
     expect(categoryReminderLabelKo('reading')).toBe('독서');
-    expect(categoryReminderLabelKo('work')).toBe('스터디');
+    expect(categoryReminderLabelKo('work')).toBe('노트');
     expect(categoryReminderLabelKo('unknown_key')).toBe('unknown_key');
     mockLoadGoalDetailCategoryConfig.mockReturnValue({ displayName: '내 루틴' });
     expect(

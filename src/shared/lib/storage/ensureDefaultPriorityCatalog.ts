@@ -1,18 +1,26 @@
 import {
   type CustomCatalogGroup,
   listCustomCatalogGroups,
+  removeCustomCatalogGroup,
 } from './customCatalogGroupStorage';
 import {
   appendCustomFlowCatalogEntry,
   listCustomFlowCatalogEntries,
   removeCustomFlowCatalogId,
+  updateCustomFlowCatalogGroup,
 } from './customFlowCatalogStorage';
 import {
+  BUILTIN_ABSTAIN_FLOW_ID,
+  BUILTIN_INTERMITTENT_FASTING_FLOW_ID,
   DEFAULT_BUILTIN_CUSTOM_FLOWS,
   DEFAULT_BUILTIN_CUSTOM_GROUPS,
+  BUILTIN_DAILY_LIFE_FLOW_IDS,
+  BUILTIN_HEALTH_GROUP_KEY,
   isRemovedBuiltinCustomFlowId,
   isRemovedBuiltinCustomGroupKey,
+  LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID,
 } from './defaultPriorityCatalog';
+import { updateStandardCatalogGroup } from './catalogItemGroupStorage';
 import { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
 import {
   appendGoalDetailCommittedCategoryKeys,
@@ -29,6 +37,8 @@ import {
 } from './migrateHealthIntakeCatalog';
 import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
+import { getInitialWaterDataConfig } from '@entities/day-plan/lib/goalCategorySessionConfig';
+import { normalizeCustomFlowIcon } from '../customFlowAppearanceCatalog';
 
 /** 제거된 표준 카탈로그 키 — 기존 저장 데이터 마이그레이션용 */
 const RETIRED_STANDARD_CATALOG_KEYS = new Set<string>(['meditation']);
@@ -146,12 +156,89 @@ function purgeRemovedBuiltinFromFixedFlowSets(): void {
   saveFixedFlowSetsState({ ...state, sets });
 }
 
+function purgeLegacyBundledDailyLifeFlow(): void {
+  purgeCustomFlowIds([LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID]);
+}
+
+function purgeLegacyBundledDailyLifeFromFixedFlowSets(): void {
+  const state = loadFixedFlowSetsState();
+  let changed = false;
+  const sets = state.sets.map((set) => {
+    const items = set.items.filter((item) => item.categoryKey !== LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID);
+    if (items.length !== set.items.length) changed = true;
+    return { ...set, items };
+  });
+  if (!changed) return;
+  saveFixedFlowSetsState({ ...state, sets });
+}
+
+function migrateDailyLifeFixedFlowSetItems(): void {
+  const state = loadFixedFlowSetsState();
+  const dailyLifeSet = state.sets.find((set) => set.id === 'set_daily_life');
+  if (!dailyLifeSet) return;
+
+  const hasLegacy = dailyLifeSet.items.some(
+    (item) => item.categoryKey === LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID,
+  );
+  const currentKeys = dailyLifeSet.items.map((item) => item.categoryKey);
+  const hasAllDailyFlows = BUILTIN_DAILY_LIFE_FLOW_IDS.every((id) => currentKeys.includes(id));
+  if (!hasLegacy && hasAllDailyFlows) return;
+
+  const sets = state.sets.map((set) => {
+    if (set.id !== 'set_daily_life') return set;
+    return {
+      ...set,
+      name: '일상 루틴',
+      items: BUILTIN_DAILY_LIFE_FLOW_IDS.map((categoryKey) => ({ categoryKey, enabled: true })),
+    };
+  });
+  saveFixedFlowSetsState({ ...state, sets });
+}
+
+function migrateLegacyBundledDailyLifeInDayPlanDraft(): void {
+  const draft = loadDayPlanDraft();
+  if (!draft) return;
+  const order = draft.priorityCategoryOrder;
+  const legacyIndex = order.indexOf(LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID);
+  if (legacyIndex < 0) return;
+  const nextOrder = [...order];
+  nextOrder.splice(legacyIndex, 1, ...BUILTIN_DAILY_LIFE_FLOW_IDS);
+  saveDayPlanDraft({ ...draft, priorityCategoryOrder: nextOrder });
+}
+
+function purgeLegacyBundledDailyLifeFromDayPlanDraft(): void {
+  const draft = loadDayPlanDraft();
+  if (!draft) return;
+  const nextOrder = draft.priorityCategoryOrder.filter(
+    (key) => key !== LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID,
+  );
+  if (nextOrder.length === draft.priorityCategoryOrder.length) return;
+  saveDayPlanDraft({ ...draft, priorityCategoryOrder: nextOrder });
+}
+
 function purgeRemovedBuiltinFromDayPlanDraft(): void {
   const draft = loadDayPlanDraft();
   if (!draft) return;
   const nextOrder = draft.priorityCategoryOrder.filter((key) => !isRemovedBuiltinCustomFlowId(key));
   if (nextOrder.length === draft.priorityCategoryOrder.length) return;
   saveDayPlanDraft({ ...draft, priorityCategoryOrder: nextOrder });
+}
+
+function unifyHealthCatalogGroups(): void {
+  for (const entry of listCustomFlowCatalogEntries()) {
+    if (entry.groupKey === BUILTIN_HEALTH_GROUP_KEY) {
+      updateCustomFlowCatalogGroup(entry.id, 'health');
+    }
+  }
+  updateStandardCatalogGroup('water', 'health');
+  updateStandardCatalogGroup('fasting', 'health');
+  removeCustomCatalogGroup(BUILTIN_HEALTH_GROUP_KEY);
+}
+
+function seedStandaloneWaterGoalDetail(): void {
+  if (loadGoalDetailCategoryConfig('water') != null) return;
+  saveGoalDetailCategoryConfig('water', getInitialWaterDataConfig());
+  appendGoalDetailCommittedCategoryKeys(['water']);
 }
 
 function mergeDefaultCustomGroups(): void {
@@ -178,6 +265,65 @@ function mergeDefaultCustomGroups(): void {
   localStorageClient.setJson(StorageKeys.customCatalogGroups, { groups: merged });
 }
 
+function purgeIntermittentFastingFlow(): void {
+  purgeCustomFlowIds([BUILTIN_INTERMITTENT_FASTING_FLOW_ID]);
+
+  const state = loadFixedFlowSetsState();
+  let fixedChanged = false;
+  const sets = state.sets.map((set) => {
+    const items = set.items.filter((item) => item.categoryKey !== BUILTIN_INTERMITTENT_FASTING_FLOW_ID);
+    if (items.length !== set.items.length) fixedChanged = true;
+    return { ...set, items };
+  });
+  if (fixedChanged) {
+    saveFixedFlowSetsState({ ...state, sets });
+  }
+
+  const draft = loadDayPlanDraft();
+  if (draft) {
+    const nextOrder = draft.priorityCategoryOrder.filter(
+      (key) => key !== BUILTIN_INTERMITTENT_FASTING_FLOW_ID,
+    );
+    if (nextOrder.length !== draft.priorityCategoryOrder.length) {
+      saveDayPlanDraft({ ...draft, priorityCategoryOrder: nextOrder });
+    }
+  }
+}
+
+function buildBuiltinChecklist(flowId: string, labels: readonly string[]) {
+  return labels.map((text, index) => ({
+    id: `${flowId}_item_${index}`,
+    text,
+    done: false,
+  }));
+}
+
+function migrateAbstainDisplayName(): void {
+  const cfg = loadGoalDetailCategoryConfig(BUILTIN_ABSTAIN_FLOW_ID);
+  if (!cfg) return;
+  const displayName =
+    typeof (cfg as { displayName?: unknown }).displayName === 'string'
+      ? (cfg as { displayName: string }).displayName.trim()
+      : '';
+  if (displayName !== '기본 금지 루틴') return;
+  saveGoalDetailCategoryConfig(BUILTIN_ABSTAIN_FLOW_ID, {
+    ...(cfg as Record<string, unknown>),
+    displayName: '금지',
+  });
+}
+
+function migrateDailyWashIcon(): void {
+  const flowId = BUILTIN_DAILY_LIFE_FLOW_IDS[3];
+  const cfg = loadGoalDetailCategoryConfig(flowId);
+  if (!cfg) return;
+  const icon = normalizeCustomFlowIcon((cfg as { icon?: unknown }).icon);
+  if (icon !== 'drop.fill') return;
+  saveGoalDetailCategoryConfig(flowId, {
+    ...(cfg as Record<string, unknown>),
+    icon: 'hands.sparkles.fill',
+  });
+}
+
 function mergeDefaultCustomFlows(): void {
   const curIds = new Set(listCustomFlowCatalogEntries().map((e) => e.id));
 
@@ -188,7 +334,14 @@ function mergeDefaultCustomFlows(): void {
     if (loadGoalDetailCategoryConfig(flow.id) == null) {
       saveGoalDetailCategoryConfig(flow.id, {
         displayName: flow.displayName,
-        checklist: [],
+        summary: flow.summary ?? '',
+        checklist:
+          flow.checklistLabels != null
+            ? buildBuiltinChecklist(flow.id, flow.checklistLabels)
+            : [],
+        icon: flow.icon,
+        accentColor: flow.color,
+        ...(flow.templateKey ? { templateKey: flow.templateKey } : {}),
       });
     }
   }
@@ -203,15 +356,25 @@ export function ensureDefaultPriorityCatalog(): void {
   migrateWaterMedicineToHealthIntake();
   purgeLegacyDevSeedCustomFlows();
   purgeRemovedBuiltinCustomFlows();
+  purgeLegacyBundledDailyLifeFlow();
   purgeRetiredStandardCatalogKeys();
   purgeLegacyDevSeedCustomGroups();
   purgeRemovedBuiltinCustomGroups();
   purgeRemovedBuiltinFromFixedFlowSets();
   purgeRemovedBuiltinFromDayPlanDraft();
+  purgeLegacyBundledDailyLifeFromFixedFlowSets();
+  migrateLegacyBundledDailyLifeInDayPlanDraft();
+  purgeLegacyBundledDailyLifeFromDayPlanDraft();
   purgeRetiredStandardFromFixedFlowSets();
   purgeRetiredStandardFromDayPlanDraft();
   purgeRetiredHealthIntakeFromFixedFlowSets();
   purgeRetiredHealthIntakeFromDayPlanDraft();
+  migrateDailyLifeFixedFlowSetItems();
   mergeDefaultCustomGroups();
+  unifyHealthCatalogGroups();
+  seedStandaloneWaterGoalDetail();
+  migrateDailyWashIcon();
+  migrateAbstainDisplayName();
+  purgeIntermittentFastingFlow();
   mergeDefaultCustomFlows();
 }

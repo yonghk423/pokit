@@ -8,8 +8,8 @@ describe('sanitizeFixedFlowSetItems', () => {
       { categoryKey: 'water', enabled: true },
     ]);
     expect(items).toEqual([
-      { categoryKey: 'reading', enabled: false },
-      { categoryKey: 'water', enabled: true },
+      { categoryKey: 'reading', enabled: false, mealSlot: undefined },
+      { categoryKey: 'water', enabled: true, mealSlot: undefined },
     ]);
   });
 
@@ -18,6 +18,6 @@ describe('sanitizeFixedFlowSetItems', () => {
       { categoryKey: 'water', enabled: true },
       { categoryKey: 'water', enabled: false },
     ]);
-    expect(items).toEqual([{ categoryKey: 'water', enabled: false }]);
+    expect(items).toEqual([{ categoryKey: 'water', enabled: false, mealSlot: undefined }]);
   });
 });

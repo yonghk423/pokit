@@ -1,6 +1,5 @@
 import {
   addDaysToLocalDateKey,
-  defaultCustomFlowPickerLabel,
   getInitialOtherDataConfig,
   getLocalDateKey,
   getOtherCategoryResolvedDisplayLabel,
@@ -9,6 +8,7 @@ import {
   parseHHmmToMinutes,
   PRIORITY_CATALOG_PICKER_LABELS,
   resolveCategoryCatalogIcon,
+  resolveCustomFlowCategoryLabelKo,
 } from '@entities/day-plan';
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 
@@ -28,8 +28,9 @@ import { RetroFlatColors } from '@shared/config/retroFlat';
 export const PRIMARY = RetroFlatColors.light.primary;
 
 export const CATEGORIES: { key: string; label: string; icon: string }[] = [
-  // ─── 건강·몸 관리 ───
+  // ─── 건강 루틴 ───
   { key: 'healthIntake', label: PRIORITY_CATALOG_PICKER_LABELS.healthIntake, icon: 'pills.fill' },
+  { key: 'water', label: PRIORITY_CATALOG_PICKER_LABELS.water, icon: 'drop.fill' },
   { key: 'fasting', label: PRIORITY_CATALOG_PICKER_LABELS.fasting, icon: 'figure.stand' },
 
   // ─── 생산성을 높이는 도구 ───
@@ -47,6 +48,11 @@ export type PickerCategoryItem = (typeof PICKER_CATEGORIES)[number];
 
 /** 제거됐지만 저장된 우선순위·고정 루틴에 남을 수 있는 키 — 행 표시용 */
 const LEGACY_PICKER_BY_KEY: Record<string, PickerCategoryItem> = {
+  water: {
+    key: 'water',
+    label: '수분섭취',
+    icon: 'drop.fill',
+  } as unknown as PickerCategoryItem,
   review: {
     key: 'review',
     label: '회고·점검',
@@ -80,7 +86,7 @@ export function getPickerCategoryLabel(
       otherDetailConfig !== undefined ? otherDetailConfig : loadGoalDetailCategoryConfig(key);
     const cfg = normalizeOtherDetailConfig(raw ?? getInitialOtherDataConfig());
     const d = cfg.displayName.trim();
-    return d.length > 0 ? d : defaultCustomFlowPickerLabel(key);
+    return d.length > 0 ? d : resolveCustomFlowCategoryLabelKo(key);
   }
   if (key === 'other') {
     const raw =

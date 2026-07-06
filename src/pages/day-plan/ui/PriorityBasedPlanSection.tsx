@@ -962,10 +962,10 @@ export function PriorityBasedPlanSection({
   const categoryUnsetHints = useMemo<Record<string, string>>(
     () => ({
       reading: '책 선정 안 함',
-      fasting: '단식 목표 미설정',
+      fasting: '체중 목표 미설정',
       water: '섭취 목표 설정 안 함',
       medicine: '복용 슬롯 설정 안 함',
-      work: '스터디 목표 미설정',
+      work: '노트 목표 미설정',
       other: '체크리스트 미작성',
     }),
     [],
@@ -999,6 +999,7 @@ export function PriorityBasedPlanSection({
     addPrioritySectionMealSlot,
     setPrioritySectionsMealSlots,
     migrateSectionCompletionOnSlotMove,
+    finishPriorityCategoryForToday,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
@@ -1018,6 +1019,7 @@ export function PriorityBasedPlanSection({
       addPrioritySectionMealSlot: s.addPrioritySectionMealSlot,
       setPrioritySectionsMealSlots: s.setPrioritySectionsMealSlots,
       migrateSectionCompletionOnSlotMove: s.migrateSectionCompletionOnSlotMove,
+      finishPriorityCategoryForToday: s.finishPriorityCategoryForToday,
     })),
   );
   const [lastAddedCategoryKey, setLastAddedCategoryKey] = useState<string | null>(null);
@@ -1543,6 +1545,31 @@ export function PriorityBasedPlanSection({
     ],
   );
 
+  const handleFinishPriorityCategoryForToday = useCallback(
+    (categoryKey: string, label: string) => {
+      Alert.alert(
+        '오늘 일정 종료',
+        `「${label}」을 오늘 목록에서 내릴까요?`,
+        [
+          { text: '취소', style: 'cancel' },
+          {
+            text: '종료',
+            style: 'destructive',
+            onPress: () => {
+              void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              setPriorityRowLayoutAnim(true);
+              finishPriorityCategoryForToday(categoryKey);
+              saveRoutineCatalogSelectionKeys(
+                useDayPlanDraftStore.getState().priorityCategoryOrder,
+              );
+            },
+          },
+        ],
+      );
+    },
+    [finishPriorityCategoryForToday],
+  );
+
   const resolveTimelineItemCompleted = useCallback(
     (itemKey: string) => {
       const { categoryKey, slot } = parsePrioritySectionCompletionKey(itemKey);
@@ -1754,6 +1781,13 @@ export function PriorityBasedPlanSection({
       completePlanBlock(blockId);
     },
     [completePlanBlock, completedBlockIdSet, uncompletePlanBlock],
+  );
+
+  const handleSpineOpenBlockSettings = useCallback(
+    (_blockId: string, categoryKey: string) => {
+      onOpenCategorySettings?.(categoryKey);
+    },
+    [onOpenCategorySettings],
   );
 
   const handleSpinePressBlock = useCallback(
@@ -2158,6 +2192,7 @@ export function PriorityBasedPlanSection({
         onSave={handleSpineSaveBlock}
         onDelete={confirmSpineBlockDelete}
         onStartFocus={handleSpineStartFocus}
+        onOpenCategorySettings={onOpenCategorySettings}
       />
 
       <View style={[styles.bookOuter, { backgroundColor: surfaceBg, flex: 1, minHeight: 0 }]}>
@@ -2319,6 +2354,7 @@ export function PriorityBasedPlanSection({
                   onToggleBlockComplete={handleSpineToggleBlockComplete}
                   onPressBlock={handleSpinePressBlock}
                   onDeleteBlock={handleSpineDeleteBlock}
+                  onOpenBlockSettings={handleSpineOpenBlockSettings}
                   onReorderBlocks={handleSpineReorderBlocks}
                   onReorderDragActiveChange={setSpineDragActive}
                 />
@@ -2618,6 +2654,12 @@ export function PriorityBasedPlanSection({
                                     onSettings={
                                       onOpenCategorySettings
                                         ? () => onOpenCategorySettings(cat.key)
+                                        : undefined
+                                    }
+                                    onFinishForToday={
+                                      isFocusStarted
+                                        ? () =>
+                                            handleFinishPriorityCategoryForToday(cat.key, cat.label)
                                         : undefined
                                     }
                                     onFocusDetail={

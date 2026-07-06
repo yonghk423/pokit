@@ -6,14 +6,27 @@ export type { ReadingAladinBook };
 
 export type ReadingMetricKey = 'pages_read' | 'pages_left' | 'focus_level';
 
+/** 서재 탭 필터 — want: 읽고 싶은, reading: 읽는 중, done: 완료 */
+export type ReadingBookStatus = 'want' | 'reading' | 'done';
+
+const READING_BOOK_STATUS_SET = new Set<ReadingBookStatus>(['want', 'reading', 'done']);
+
 /** 읽을 도서 1권 — 알라딘 검색 또는 직접 입력 */
 export type ReadingBookEntry = {
   id: string;
   title: string;
   startPage: number;
   targetPage: number;
+  status?: ReadingBookStatus;
   aladin?: ReadingAladinBook | null;
 };
+
+export function normalizeReadingBookStatus(input: unknown): ReadingBookStatus {
+  if (typeof input === 'string' && READING_BOOK_STATUS_SET.has(input as ReadingBookStatus)) {
+    return input as ReadingBookStatus;
+  }
+  return 'reading';
+}
 
 export type ReadingLiveActivityConfig = {
   displayName: string;
@@ -88,6 +101,7 @@ function normalizeBookEntry(
       raw.targetPage,
       defaultTargetPageForBook(aladin, fallbackTarget),
     ),
+    status: normalizeReadingBookStatus(raw.status),
     aladin,
   };
 }
@@ -104,6 +118,7 @@ export function ensureReadingBookPages(
       entry.targetPage,
       defaultTargetPageForBook(aladin, fallbackTarget),
     ),
+    status: normalizeReadingBookStatus(entry.status),
     aladin,
   };
 }
@@ -139,6 +154,7 @@ function migrateBookEntries(
       title: bookTitle || (aladinBook ? '도서' : ''),
       startPage,
       targetPage: defaultTargetPageForBook(aladinBook, targetPage),
+      status: 'reading',
       aladin: aladinBook,
     },
   ];

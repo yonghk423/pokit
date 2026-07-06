@@ -54,6 +54,7 @@ type Props = {
   }) => void;
   onDelete?: (blockId: string) => void;
   onStartFocus?: (blockId: string) => void;
+  onOpenCategorySettings?: (categoryKey: string) => void;
 };
 
 function minutesToInput(minutes: number): string {
@@ -77,6 +78,7 @@ export function SpineScheduleEditSheet({
   onSave,
   onDelete,
   onStartFocus,
+  onOpenCategorySettings,
 }: Props) {
   const insets = useSafeAreaInsets();
   const [titleText, setTitleText] = useState('');
@@ -297,6 +299,22 @@ export function SpineScheduleEditSheet({
                 </View>
               </View>
 
+              {categoryKey && onOpenCategorySettings ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="목표 상세 설정"
+                  onPress={() => {
+                    onOpenCategorySettings(categoryKey);
+                    onClose();
+                  }}
+                  style={[styles.detailSettingsBtn, { borderColor: palette.line }]}>
+                  <IconSymbol name="slider.horizontal.3" size={16} color={palette.ink} />
+                  <ThemedText style={[styles.detailSettingsBtnText, { color: palette.ink }]}>
+                    목표 상세 설정
+                  </ThemedText>
+                </Pressable>
+              ) : null}
+
               {draft?.mode === 'edit' && draft.blockId && onStartFocus ? (
                 <Pressable
                   accessibilityRole="button"
@@ -406,6 +424,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     lineHeight: 15,
+  },
+  detailSettingsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 2,
+    borderRadius: 0,
+    paddingVertical: 11,
+    marginBottom: 10,
+  },
+  detailSettingsBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   focusBtn: {
     borderWidth: 2,

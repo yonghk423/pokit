@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import {
   getInitialCounterDataConfig,
@@ -7,7 +7,6 @@ import {
   getInitialHabitDataConfig,
   getInitialJournalDataConfig,
   getInitialReminderDataConfig,
-  isCustomFlowCategoryKey,
   MAX_CUSTOM_REMINDER_TIMES,
   normalizeCounterDetailConfig,
   normalizeFocusDetailConfig,
@@ -37,27 +36,6 @@ type SettingsProps = {
 function useTemplateSettingsPalette() {
   const scheme = useColorScheme();
   return useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
-}
-
-function CustomFlowDeleteButton({ onDelete }: { onDelete?: () => void }) {
-  if (!onDelete) return null;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={() => {
-        Alert.alert(
-          '루틴 삭제',
-          '이 루틴을 삭제할까요? 담기·나만의 루틴과 설정에서 함께 제거됩니다.',
-          [
-            { text: '취소', style: 'cancel' },
-            { text: '삭제', style: 'destructive', onPress: onDelete },
-          ],
-        );
-      }}
-      style={[styles.deleteBtn, { borderColor: 'rgba(239,68,68,0.42)' }]}>
-      <ThemedText style={styles.deleteLabel}>루틴 삭제</ThemedText>
-    </Pressable>
-  );
 }
 
 function TemplateSection({
@@ -160,7 +138,7 @@ function TitleSummaryHeader({
 
 export function HabitSettings(props: SettingsProps) {
   const c = useTemplateSettingsPalette();
-  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, onDeleteCategory, allowRename = true, renameLockedReason = null } = props;
+  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null } = props;
   const seed = () => normalizeHabitDetailConfig(dataConfig ?? getInitialHabitDataConfig());
   const [displayName, setDisplayName] = useState(() => seed().displayName);
   const [summary, setSummary] = useState(() => seed().summary);
@@ -198,7 +176,6 @@ export function HabitSettings(props: SettingsProps) {
     onChangeDataConfig(payload);
   }, [displayName, summary, onChangeDataConfig, dataConfig]);
 
-  const showDelete = categoryKey != null && isCustomFlowCategoryKey(categoryKey) && onDeleteCategory;
   const streak = useMemo(() => seed().streakDays, [dataConfig]);
 
   return (
@@ -209,14 +186,13 @@ export function HabitSettings(props: SettingsProps) {
           <ThemedText style={[styles.helper, { color: c.onSurface, fontWeight: '700' }]}>{streak}일 연속</ThemedText>
         </TemplateSection>
       ) : null}
-      {showDelete ? <CustomFlowDeleteButton onDelete={onDeleteCategory} /> : null}
     </View>
   );
 }
 
 export function CounterSettings(props: SettingsProps) {
   const c = useTemplateSettingsPalette();
-  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, onDeleteCategory, allowRename = true, renameLockedReason = null } = props;
+  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null } = props;
   const seed = () => normalizeCounterDetailConfig(dataConfig ?? getInitialCounterDataConfig());
   const [displayName, setDisplayName] = useState(() => seed().displayName);
   const [summary, setSummary] = useState(() => seed().summary);
@@ -265,8 +241,6 @@ export function CounterSettings(props: SettingsProps) {
     onChangeDataConfig(payload);
   }, [displayName, summary, activityLabel, unitLabel, goalCountStr, dailyReset, onChangeDataConfig, dataConfig]);
 
-  const showDelete = categoryKey != null && isCustomFlowCategoryKey(categoryKey) && onDeleteCategory;
-
   return (
     <View style={styles.shell}>
       <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, c }} />
@@ -282,14 +256,13 @@ export function CounterSettings(props: SettingsProps) {
           <Switch value={dailyReset} onValueChange={setDailyReset} />
         </View>
       </TemplateSection>
-      {showDelete ? <CustomFlowDeleteButton onDelete={onDeleteCategory} /> : null}
     </View>
   );
 }
 
 export function FocusSettings(props: SettingsProps) {
   const c = useTemplateSettingsPalette();
-  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, onDeleteCategory, allowRename = true, renameLockedReason = null } = props;
+  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null } = props;
   const seed = () => normalizeFocusDetailConfig(dataConfig ?? getInitialFocusDataConfig());
   const [displayName, setDisplayName] = useState(() => seed().displayName);
   const [summary, setSummary] = useState(() => seed().summary);
@@ -331,8 +304,6 @@ export function FocusSettings(props: SettingsProps) {
     onChangeDataConfig(payload);
   }, [displayName, summary, planMinStr, focusMemo, onChangeDataConfig, dataConfig]);
 
-  const showDelete = categoryKey != null && isCustomFlowCategoryKey(categoryKey) && onDeleteCategory;
-
   return (
     <View style={styles.shell}>
       <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, c }} />
@@ -364,14 +335,13 @@ export function FocusSettings(props: SettingsProps) {
         <FieldLabel c={c}>집중 메모 (선택)</FieldLabel>
         <FieldInput value={focusMemo} onChangeText={(v) => setFocusMemo(v.slice(0, 200))} placeholder="예: 방해 금지 모드 켜기" c={c} multiline />
       </TemplateSection>
-      {showDelete ? <CustomFlowDeleteButton onDelete={onDeleteCategory} /> : null}
     </View>
   );
 }
 
 export function JournalSettings(props: SettingsProps) {
   const c = useTemplateSettingsPalette();
-  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, onDeleteCategory, allowRename = true, renameLockedReason = null } = props;
+  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null } = props;
   const seed = () => normalizeJournalDetailConfig(dataConfig ?? getInitialJournalDataConfig());
   const [displayName, setDisplayName] = useState(() => seed().displayName);
   const [summary, setSummary] = useState(() => seed().summary);
@@ -411,8 +381,6 @@ export function JournalSettings(props: SettingsProps) {
     onChangeDataConfig(payload);
   }, [displayName, summary, prompt, onChangeDataConfig, dataConfig]);
 
-  const showDelete = categoryKey != null && isCustomFlowCategoryKey(categoryKey) && onDeleteCategory;
-
   return (
     <View style={styles.shell}>
       <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, c }} />
@@ -421,14 +389,13 @@ export function JournalSettings(props: SettingsProps) {
         <FieldInput value={prompt} onChangeText={(v) => setPrompt(v.slice(0, 80))} placeholder="예: 오늘 기분은?" c={c} />
         <ThemedText style={[styles.helper, { color: c.onVariant }]}>세션에서 짧은 메모를 남겨요.</ThemedText>
       </TemplateSection>
-      {showDelete ? <CustomFlowDeleteButton onDelete={onDeleteCategory} /> : null}
     </View>
   );
 }
 
 export function ReminderSettings(props: SettingsProps) {
   const c = useTemplateSettingsPalette();
-  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, onDeleteCategory, allowRename = true, renameLockedReason = null } = props;
+  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null } = props;
   const seed = () => normalizeReminderDetailConfig(dataConfig ?? getInitialReminderDataConfig());
   const [displayName, setDisplayName] = useState(() => seed().displayName);
   const [summary, setSummary] = useState(() => seed().summary);
@@ -479,8 +446,6 @@ export function ReminderSettings(props: SettingsProps) {
     setDraftTime('');
   };
 
-  const showDelete = categoryKey != null && isCustomFlowCategoryKey(categoryKey) && onDeleteCategory;
-
   return (
     <View style={styles.shell}>
       <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, c }} />
@@ -508,7 +473,6 @@ export function ReminderSettings(props: SettingsProps) {
           알림은 추후 연동될 예정이에요. 지금은 시간 목록만 저장해요.
         </ThemedText>
       </TemplateSection>
-      {showDelete ? <CustomFlowDeleteButton onDelete={onDeleteCategory} /> : null}
     </View>
   );
 }
@@ -524,8 +488,6 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { borderWidth: 2, paddingHorizontal: 10, paddingVertical: 8 },
-  deleteBtn: { borderWidth: 2, paddingVertical: 12, alignItems: 'center' },
-  deleteLabel: { fontSize: 14, fontWeight: '700', color: '#dc2626' },
   timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 8 },
   timeText: { fontSize: 16, fontWeight: '700' },
   removeTime: { fontSize: 12, fontWeight: '600' },

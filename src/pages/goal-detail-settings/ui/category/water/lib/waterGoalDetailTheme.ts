@@ -1,17 +1,21 @@
+import { RetroFlatColors } from '@shared/config/retroFlat';
+
+const PAGE_BG = RetroFlatColors.light.bg;
+
 /**
- * 목표 상세 설정 — 수분섭취 카테고리 몰입 UI (시안 액센트 + 화이트 배경)
+ * 목표 상세 설정 — 수분섭취 카테고리 몰입 UI (시안 액센트 + 앱 기본 배경)
  * 시스템 라이트/다크와 무관하게 동일 톤으로 고정합니다.
  */
 export const WATER_GOAL_DETAIL_THEME = {
-  screenBg: '#ffffff',
-  headerBg: '#ffffff',
+  screenBg: PAGE_BG,
+  headerBg: PAGE_BG,
   summaryTint: 'rgba(34, 211, 238, 0.12)',
   onSurface: '#18181b',
   onSurfaceVariant: '#52525b',
   outline: 'rgba(0, 0, 0, 0.08)',
-  surfaceContainerLow: '#ffffff',
-  surfaceContainerHigh: '#ffffff',
-  surfaceContainerHighest: '#ffffff',
+  surfaceContainerLow: PAGE_BG,
+  surfaceContainerHigh: PAGE_BG,
+  surfaceContainerHighest: 'rgba(0, 0, 0, 0.06)',
   glassPreviewBorder: 'rgba(0, 0, 0, 0.08)',
   primary: '#22d3ee',
   primarySoft: 'rgba(34, 211, 238, 0.14)',

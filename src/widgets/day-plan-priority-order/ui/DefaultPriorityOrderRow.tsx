@@ -47,6 +47,7 @@ export function DefaultPriorityOrderRow({
   onReorderDragActiveChange,
   onSettings,
   onFocusDetail,
+  onFinishForToday,
   animateOnMount,
 }: PriorityOrderRowProps) {
   const reorderTranslateY = useSharedValue(0);
@@ -208,6 +209,29 @@ export function DefaultPriorityOrderRow({
 
   const actionsColumn = (
     <View style={styles.orderRowActions}>
+      {onFinishForToday ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${label} 오늘 일정에서 완전 종료`}
+          hitSlop={10}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            onFinishForToday();
+          }}
+          style={[
+            styles.orderFinishBtn,
+            {
+              borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+            },
+          ]}>
+          <ThemedText
+            style={[styles.orderFinishBtnText, { color: isDark ? '#FAFAFA' : primary }]}
+            numberOfLines={1}>
+            종료
+          </ThemedText>
+        </Pressable>
+      ) : null}
       {onSettings ? (
         <Pressable
           accessibilityRole="button"

@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 import {
+  mergeCategoryAppearanceIntoConfig,
   readEditableCategoryAppearance,
-  normalizeOtherDetailConfig,
-  type OtherDetailDataConfig,
 } from '@entities/day-plan';
 import type { CustomFlowIconOption } from '@shared/lib/customFlowAppearanceCatalog';
 import { CustomFlowAppearancePicker } from '@shared/ui/custom-flow-appearance-picker';
@@ -28,8 +27,7 @@ export function RoutineAppearanceField({
   ink,
   muted,
 }: Props) {
-  const initial = normalizeOtherDetailConfig(dataConfig);
-  const initialAppearance = readEditableCategoryAppearance(categoryKey, initial);
+  const initialAppearance = readEditableCategoryAppearance(categoryKey, dataConfig);
 
   const [selectedIcon, setSelectedIcon] = useState<CustomFlowIconOption>(initialAppearance.icon);
   const [selectedAccentColor, setSelectedAccentColor] = useState<string>(initialAppearance.accentColor);
@@ -41,17 +39,12 @@ export function RoutineAppearanceField({
   onChangeDataConfigRef.current = onChangeDataConfig;
 
   useEffect(() => {
-    const next = normalizeOtherDetailConfig(dataConfig);
-    const appearance = readEditableCategoryAppearance(categoryKey, next);
+    const appearance = readEditableCategoryAppearance(categoryKey, dataConfig);
     isSyncingFromPropsRef.current = true;
     setSelectedIcon(appearance.icon);
     setSelectedAccentColor(appearance.accentColor);
     lastPersistedRef.current = JSON.stringify(
-      normalizeOtherDetailConfig({
-        ...next,
-        icon: appearance.icon,
-        accentColor: appearance.accentColor,
-      }),
+      mergeCategoryAppearanceIntoConfig(categoryKey, dataConfig, appearance),
     );
   }, [categoryKey, dataConfig]);
 
@@ -60,9 +53,7 @@ export function RoutineAppearanceField({
       isSyncingFromPropsRef.current = false;
       return;
     }
-    const base = normalizeOtherDetailConfig(dataConfigRef.current);
-    const payload: OtherDetailDataConfig = normalizeOtherDetailConfig({
-      ...base,
+    const payload = mergeCategoryAppearanceIntoConfig(categoryKey, dataConfigRef.current, {
       icon: selectedIcon,
       accentColor: selectedAccentColor,
     });
@@ -70,7 +61,7 @@ export function RoutineAppearanceField({
     if (lastPersistedRef.current === serialized) return;
     lastPersistedRef.current = serialized;
     onChangeDataConfigRef.current(payload);
-  }, [selectedAccentColor, selectedIcon]);
+  }, [categoryKey, selectedAccentColor, selectedIcon]);
 
   return (
     <CustomFlowAppearancePicker
@@ -82,6 +73,8 @@ export function RoutineAppearanceField({
       isDark={isDark}
       ink={ink}
       muted={muted}
+      hint=""
+      compact
     />
   );
 }

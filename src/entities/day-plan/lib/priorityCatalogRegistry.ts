@@ -9,7 +9,7 @@ import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 export const CATALOG_REMOVED_KEYS = new Set<string>(['other']);
 
 /** 제거된 표준 키 — 기존 저장 데이터 마이그레이션용 */
-export const RETIRED_STANDARD_CATALOG_KEYS = new Set<string>(['meditation', 'water', 'medicine']);
+export const RETIRED_STANDARD_CATALOG_KEYS = new Set<string>(['meditation', 'medicine']);
 
 /** 표준 카테고리 전체 정의. UI 메타는 `dayPlanEditorShared` */
 export const PRIORITY_CATALOG_ALL_STANDARD_KEYS = [

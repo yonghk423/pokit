@@ -119,7 +119,15 @@ describe('fixedFlowSetsStorage', () => {
       ],
     });
 
-    expect(state.sets.map((set) => set.id)).toEqual(['set_daily', 'set_weekend', 'manual_a']);
+    expect(state.sets.map((set) => set.id)).toEqual([
+      'set_daily',
+      'set_weekend',
+      'set_fasting',
+      'set_water',
+      'set_daily_life',
+      'set_abstain',
+      'manual_a',
+    ]);
     expect(state.activeSetIds).toEqual(['set_daily', 'manual_a']);
   });
 

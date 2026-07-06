@@ -5,11 +5,13 @@ import {
 } from './customFlowTemplate';
 import {
   CUSTOM_FLOW_TEMPLATE_KEYS,
+  CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS,
   type CustomFlowTemplateKey,
 } from './customFlowTemplateConfigs';
 
 export type CustomFlowTemplateIconName =
   | 'checklist'
+  | 'hand.raised.fill'
   | 'chart.bar.fill'
   | 'checkmark.circle'
   | 'plus.circle'
@@ -19,6 +21,7 @@ export type CustomFlowTemplateIconName =
 
 export const CUSTOM_FLOW_TEMPLATE_ICONS: Record<CustomFlowTemplateKey, CustomFlowTemplateIconName> = {
   checklist: 'checklist',
+  abstain: 'hand.raised.fill',
   measurement: 'chart.bar.fill',
   habit: 'checkmark.circle',
   counter: 'plus.circle',
@@ -29,6 +32,7 @@ export const CUSTOM_FLOW_TEMPLATE_ICONS: Record<CustomFlowTemplateKey, CustomFlo
 
 export const CUSTOM_FLOW_TEMPLATE_PREVIEW_LINES: Record<CustomFlowTemplateKey, string[]> = {
   checklist: ['□ 물 마시기', '□ 스트레칭'],
+  abstain: ['✓ 밤늦게 폰 보기', '□ 과자·야식'],
   measurement: ['오늘 68.5 kg', '어제 68.9 kg'],
   habit: ['오늘 완료 ✓', '연속 5일'],
   counter: ['3 / 8회', '+1'],
@@ -47,7 +51,7 @@ export type CustomFlowTemplateCatalogEntry = {
 };
 
 export function listCustomFlowTemplateCatalogEntries(): CustomFlowTemplateCatalogEntry[] {
-  return CUSTOM_FLOW_TEMPLATE_KEYS.map((key) => resolveCustomFlowTemplateCatalogEntry(key));
+  return CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS.map((key) => resolveCustomFlowTemplateCatalogEntry(key));
 }
 
 export function resolveCustomFlowTemplateCatalogEntry(

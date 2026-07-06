@@ -23,5 +23,7 @@ export type PriorityOrderRowProps = {
   onReorderDragActiveChange?: (active: boolean) => void;
   onSettings?: () => void;
   onFocusDetail?: () => void;
+  /** 오늘 담기 목록에서 완전 종료 — 구간 만료와 같이 목록에서 제거 */
+  onFinishForToday?: () => void;
   animateOnMount?: boolean;
 };

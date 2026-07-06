@@ -40,6 +40,13 @@ describe('normalizeWorkDetailConfig', () => {
     const cfg = normalizeWorkDetailConfig({ studyMode: 'free', breakMin: 10 });
     expect(cfg.breakMin).toBe(0);
   });
+
+  it('migrates legacy tasks into document blocks', () => {
+    const cfg = normalizeWorkDetailConfig({
+      tasks: [{ id: '1', text: '복습', done: false }],
+    });
+    expect(cfg.document.pages[0]?.blocks.some((b) => b.text === '복습')).toBe(true);
+  });
 });
 
 describe('normalizeFastingDetailConfig', () => {
@@ -47,7 +54,7 @@ describe('normalizeFastingDetailConfig', () => {
     const cfg = normalizeFastingDetailConfig({});
     expect(cfg.fastingMin).toBe(16 * 60);
     expect(cfg.currentWeightKg).toBe(70);
-    expect(cfg.fastingEnabled).toBe(true);
+    expect(cfg.fastingEnabled).toBe(false);
     expect(getInitialFastingDataConfig().targetWeightKg).toBe(65);
   });
 });
@@ -64,6 +71,12 @@ describe('normalizeWaterDetailConfig', () => {
     expect(cfg.smartNotification).toBe(false);
     expect(cfg.reminderTimes).toEqual([]);
     expect(getInitialWaterDataConfig().reminderTimes).toEqual([]);
+  });
+
+  it('normalizes quick add presets and defaults when missing', () => {
+    const cfg = normalizeWaterDetailConfig({ quickAddPresetsMl: [300, 9999, 300, 80, 'x'] });
+    expect(cfg.quickAddPresetsMl).toEqual([80, 300, 2000]);
+    expect(getInitialWaterDataConfig().quickAddPresetsMl).toEqual([200, 250, 500]);
   });
 });
 

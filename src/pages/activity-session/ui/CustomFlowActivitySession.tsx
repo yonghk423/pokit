@@ -81,8 +81,8 @@ export function CustomFlowActivitySession({
   const persist = useCallback(
     (next: unknown) => {
       const withTemplate =
-        templateKey === 'checklist' && next && typeof next === 'object'
-          ? { ...(next as Record<string, unknown>), templateKey: 'checklist' }
+        (templateKey === 'checklist' || templateKey === 'abstain') && next && typeof next === 'object'
+          ? { ...(next as Record<string, unknown>), templateKey }
           : next;
       const normalized = normalizeCustomFlowDetailConfig(templateKey, withTemplate);
       setConfig(normalized);

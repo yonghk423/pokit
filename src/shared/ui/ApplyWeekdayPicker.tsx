@@ -18,6 +18,7 @@ type Props = {
   muted: string;
   line: string;
   surface: string;
+  compact?: boolean;
 };
 
 export function ApplyWeekdayPicker({
@@ -28,6 +29,7 @@ export function ApplyWeekdayPicker({
   muted,
   line,
   surface,
+  compact = false,
 }: Props) {
   const pill = tabPillColors(isDark);
   const selected = new Set(normalizeApplyWeekdays(selectedWeekdays));
@@ -43,8 +45,10 @@ export function ApplyWeekdayPicker({
   };
 
   return (
-    <View style={styles.root}>
-      <ThemedText style={[styles.title, { color: ink }]}>적용 요일</ThemedText>
+    <View style={[styles.root, compact && styles.rootCompact]}>
+      {!compact ? (
+        <ThemedText style={[styles.title, { color: ink }]}>적용 요일</ThemedText>
+      ) : null}
       <View style={styles.dayRow}>
         {WEEKDAY_PICKER_ORDER.map((day) => {
           const active = selected.has(day);
@@ -57,6 +61,7 @@ export function ApplyWeekdayPicker({
               onPress={() => toggleDay(day)}
               style={({ pressed }) => [
                 styles.dayChip,
+                compact && styles.dayChipCompact,
                 {
                   backgroundColor: active ? pill.activeBg : surface,
                   borderColor: active ? pill.activeBorder : line,
@@ -82,6 +87,9 @@ const styles = StyleSheet.create({
   root: {
     gap: 8,
   },
+  rootCompact: {
+    gap: 0,
+  },
   title: {
     fontSize: 12,
     fontWeight: '700',
@@ -98,6 +106,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dayChipCompact: {
+    minHeight: 30,
+    borderRadius: 0,
   },
   dayChipLabel: {
     fontSize: 12,

@@ -6,6 +6,7 @@ import {
   normalizeCatalogKeysAfterHealthIntakeMerge,
   normalizeHealthIntakeDetailConfig,
 } from '@entities/day-plan/lib/healthIntakeDetailConfig';
+import { BUILTIN_WATER_SET_ID } from './defaultFixedFlowSets';
 import { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
 import { loadFixedFlowSetsState, saveFixedFlowSetsState } from './fixedFlowSetsStorage';
 import {
@@ -18,7 +19,6 @@ import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 
 export const RETIRED_HEALTH_INTAKE_LEGACY_KEYS = new Set<string>([
-  LEGACY_WATER_CATEGORY_KEY,
   LEGACY_MEDICINE_CATEGORY_KEY,
 ]);
 
@@ -35,15 +35,24 @@ function mergeHealthIntakeGoalDetailConfig(): void {
     );
     return;
   }
-  const waterRaw = loadGoalDetailCategoryConfig(LEGACY_WATER_CATEGORY_KEY);
   const medicineRaw = loadGoalDetailCategoryConfig(LEGACY_MEDICINE_CATEGORY_KEY);
-  if (waterRaw == null && medicineRaw == null) {
+  const waterRaw = loadGoalDetailCategoryConfig(LEGACY_WATER_CATEGORY_KEY);
+  if (medicineRaw == null && waterRaw == null) {
     return;
   }
-  saveGoalDetailCategoryConfig(
-    HEALTH_INTAKE_CATEGORY_KEY,
-    mergeLegacyHealthIntakeFromParts(waterRaw, medicineRaw),
-  );
+  if (medicineRaw != null && waterRaw != null) {
+    saveGoalDetailCategoryConfig(
+      HEALTH_INTAKE_CATEGORY_KEY,
+      mergeLegacyHealthIntakeFromParts(waterRaw, medicineRaw),
+    );
+    return;
+  }
+  if (medicineRaw != null) {
+    saveGoalDetailCategoryConfig(
+      HEALTH_INTAKE_CATEGORY_KEY,
+      mergeLegacyHealthIntakeFromParts(null, medicineRaw),
+    );
+  }
 }
 
 function migrateDayPlanDraftKeys(): void {
@@ -58,6 +67,7 @@ function migrateFixedFlowSetKeys(): void {
   const state = loadFixedFlowSetsState();
   let changed = false;
   const sets = state.sets.map((set) => {
+    if (set.id === BUILTIN_WATER_SET_ID) return set;
     const merged = normalizeCatalogKeysAfterHealthIntakeMerge(
       set.items.map((item) => item.categoryKey),
     );
@@ -128,6 +138,7 @@ export function purgeRetiredHealthIntakeFromFixedFlowSets(): void {
   const state = loadFixedFlowSetsState();
   let changed = false;
   const sets = state.sets.map((set) => {
+    if (set.id === BUILTIN_WATER_SET_ID) return set;
     const items = set.items.filter((item) => !isRetiredHealthIntakeLegacyKey(item.categoryKey));
     if (items.length !== set.items.length) changed = true;
     return { ...set, items };

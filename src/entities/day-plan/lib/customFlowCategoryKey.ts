@@ -14,12 +14,7 @@ export function createCustomFlowCategoryId(): CustomFlowCategoryKey {
   return `${CUSTOM_FLOW_CATEGORY_PREFIX}${u}`;
 }
 
-/** `displayName` 비어 있을 때 담기·일정에 쓰는 구분용 기본 라벨(키마다 다름) */
-export function defaultCustomFlowPickerLabel(categoryKey: string): string {
-  if (!isCustomFlowCategoryKey(categoryKey)) return '루틴';
-  const tail = categoryKey.slice(
-    CUSTOM_FLOW_CATEGORY_PREFIX.length,
-    CUSTOM_FLOW_CATEGORY_PREFIX.length + 8,
-  );
-  return tail.length > 0 ? `루틴 ${tail}` : '루틴';
+/** `displayName` 비어 있을 때 담기·일정에 쓰는 기본 라벨 — 내부 ID는 노출하지 않음 */
+export function defaultCustomFlowPickerLabel(_categoryKey: string): string {
+  return '루틴';
 }

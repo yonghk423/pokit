@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, Share, StyleSheet, TextInput, View } from 'react-native';
 
 import {
-  isCustomFlowCategoryKey,
+  resolveCustomFlowTemplateKey,
 } from '@entities/day-plan';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -27,7 +27,6 @@ export function OtherSettings({
   dataConfig,
   onChangeDataConfig,
   categoryKey,
-  onDeleteCategory,
   allowRename = true,
   renameLockedReason = null,
 }: {
@@ -35,13 +34,14 @@ export function OtherSettings({
   categoryKey?: GoalDetailCategoryKey;
   dataConfig: unknown;
   onChangeDataConfig: (next: unknown) => void;
-  onDeleteCategory?: () => void;
   allowRename?: boolean;
   renameLockedReason?: 'running' | 'today' | null;
 }) {
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
   const initial = normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
+  const isAbstain =
+    resolveCustomFlowTemplateKey(dataConfig ?? getInitialOtherDataConfig()) === 'abstain';
 
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [summary, setSummary] = useState(initial.summary);
@@ -75,6 +75,7 @@ export function OtherSettings({
       displayName,
       summary,
       checklist,
+      ...(isAbstain ? { templateKey: 'abstain' as const } : {}),
       ...(appearanceBase.icon ? { icon: appearanceBase.icon } : {}),
       ...(appearanceBase.accentColor ? { accentColor: appearanceBase.accentColor } : {}),
     });
@@ -82,7 +83,7 @@ export function OtherSettings({
     if (lastPersistedRef.current === serialized) return;
     lastPersistedRef.current = serialized;
     onChangeDataConfigRef.current(payload);
-  }, [displayName, summary, checklist]);
+  }, [displayName, summary, checklist, isAbstain]);
 
   const addTask = () => {
     const text = draftTask.trim();
@@ -99,16 +100,17 @@ export function OtherSettings({
   };
 
   const buildShareText = () => {
+    const doneTag = isAbstain ? '[지킴] ' : '[완료] ';
     return checklist
       .filter((x) => x.text.trim().length > 0)
-      .map((x, i) => `${i + 1}. ${x.done ? '[완료] ' : ''}${x.text.trim()}`)
+      .map((x, i) => `${i + 1}. ${x.done ? doneTag : ''}${x.text.trim()}`)
       .join('\n');
   };
 
   const onShare = async () => {
     const content = buildShareText();
     if (!content) {
-      Alert.alert('공유할 내용 없음', '체크리스트를 먼저 입력해 주세요.');
+      Alert.alert('공유할 내용 없음', isAbstain ? '금지 항목을 먼저 입력해 주세요.' : '체크리스트를 먼저 입력해 주세요.');
       return;
     }
     await Share.share({
@@ -123,37 +125,6 @@ export function OtherSettings({
 
   return (
     <View style={styles.shell}>
-      {categoryKey && isCustomFlowCategoryKey(categoryKey) ? (
-        <View style={styles.actionBlock}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="루틴 삭제"
-            onPress={() => {
-              Alert.alert(
-                '루틴 삭제',
-                '이 루틴을 삭제할까요? 담기·나만의 루틴과 설정에서 함께 제거됩니다.',
-                [
-                  { text: '취소', style: 'cancel' },
-                  {
-                    text: '삭제',
-                    style: 'destructive',
-                    onPress: () => onDeleteCategory?.(),
-                  },
-                ],
-              );
-            }}
-            style={({ pressed }) => [
-              styles.deleteBtn,
-              {
-                borderColor: 'rgba(239,68,68,0.42)',
-                backgroundColor: pressed ? 'rgba(239,68,68,0.08)' : 'transparent',
-              },
-            ]}>
-            <ThemedText style={styles.deleteBtnText}>루틴 삭제</ThemedText>
-          </Pressable>
-        </View>
-      ) : null}
-
       <RoutineTitleField
         value={displayName}
         onChangeValue={setDisplayName}
@@ -176,7 +147,7 @@ export function OtherSettings({
         <TextInput
           value={draftTask}
           onChangeText={setDraftTask}
-          placeholder="작업 항목을 입력하고 추가"
+          placeholder={isAbstain ? '금지할 행동을 입력하고 추가' : '작업 항목을 입력하고 추가'}
           placeholderTextColor={c.outline}
           style={[styles.taskInput, { color: c.onSurface, borderBottomColor: c.outline }]}
           onSubmitEditing={addTask}
@@ -201,10 +172,13 @@ export function OtherSettings({
                 style={[
                   styles.rowTitle,
                   { color: task.done ? c.onVariant : c.onSurface },
-                  task.done && styles.rowTitleDone,
+                  !isAbstain && task.done && styles.rowTitleDone,
                 ]}>
                 {task.text}
               </ThemedText>
+              {isAbstain && task.done ? (
+                <ThemedText style={[styles.abstainTag, { color: c.onSurface }]}>지킴</ThemedText>
+              ) : null}
             </Pressable>
             <View style={styles.rowActions}>
               <Pressable
@@ -233,21 +207,6 @@ export function OtherSettings({
 
 const styles = StyleSheet.create({
   shell: { gap: 18, paddingVertical: 6 },
-  actionBlock: { gap: 8, paddingTop: 2 },
-  deleteBtn: {
-    marginTop: 2,
-    alignSelf: 'flex-start',
-    borderWidth: 2,
-    borderRadius: 0,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  deleteBtnText: {
-    color: '#dc2626',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-  },
   toolbar: {
     borderTopWidth: 1,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -274,6 +233,7 @@ const styles = StyleSheet.create({
   rowTextWrap: { flex: 1, paddingVertical: 10, paddingRight: 8 },
   rowTitle: { fontSize: 18, lineHeight: 24, fontWeight: '600' },
   rowTitleDone: { textDecorationLine: 'line-through' },
+  abstainTag: { fontSize: 11, fontWeight: '800', marginTop: 4 },
   rowActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   iconBtn: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
 });
