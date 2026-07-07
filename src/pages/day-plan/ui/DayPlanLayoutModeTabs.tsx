@@ -6,8 +6,8 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
-/** 데일리 타임라인 헤더 — 전체 / 시간대별 / 스파인 / 투두 레이아웃 */
-export type DayPlanLayoutMode = 'bag' | 'sections' | 'spine' | 'todoList';
+/** 데일리 타임라인 헤더 — 전체 / 시간대별 / 스파인 레이아웃 */
+export type DayPlanLayoutMode = 'bag' | 'sections' | 'spine';
 
 type TabDef = {
   key: DayPlanLayoutMode;
@@ -30,11 +30,6 @@ const TABS: TabDef[] = [
     key: 'spine',
     icon: 'clock',
     accessibilityLabel: '타임라인 보기',
-  },
-  {
-    key: 'todoList',
-    icon: 'checklist',
-    accessibilityLabel: '투두',
   },
 ];
 

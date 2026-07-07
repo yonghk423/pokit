@@ -11,9 +11,9 @@ import {
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
 
-type Palette = ReturnType<typeof goalDetailSettingsPalette>;
+type Palette = StudyNoteDocumentPalette;
 
 type Props = {
   pages: WorkStudyNotePage[];

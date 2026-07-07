@@ -4,6 +4,9 @@ import { useCallback, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
+  DAY_PLAN_ANCHOR_ICON_SIZE,
+  dayPlanAnchorIconColor,
+  dayPlanAnchorNodeBackground,
   formatMinuteOfDayKo,
   type SpineTimelineRow,
   resolveBlockCategoryKey,
@@ -83,6 +86,35 @@ function CompleteRadio({
   );
 }
 
+function SpineAnchorNode({
+  icon,
+  isDark,
+}: {
+  icon: 'sun.horizon.fill' | 'moon.fill';
+  isDark: boolean;
+}) {
+  const color = dayPlanAnchorIconColor(isDark);
+  return (
+    <View
+      style={[
+        styles.nodeCircle,
+        styles.nodeCircleLg,
+        {
+          backgroundColor: dayPlanAnchorNodeBackground(isDark),
+          borderColor: '#000000',
+          borderWidth: 2,
+        },
+      ]}>
+      <IconSymbol
+        name={icon}
+        size={DAY_PLAN_ANCHOR_ICON_SIZE}
+        color={color}
+        weight="semibold"
+      />
+    </View>
+  );
+}
+
 function SpineNode({
   variant,
   palette,
@@ -92,22 +124,13 @@ function SpineNode({
   palette: SpineTimelinePalette;
   isDark: boolean;
 }) {
-  const blockBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)';
-  const anchorIconColor = isDark ? '#93C5FD' : '#2563EB';
+  const blockBg = dayPlanAnchorNodeBackground(isDark);
 
   if (variant === 'start') {
-    return (
-      <View style={[styles.nodeCircle, styles.nodeCircleLg, { backgroundColor: blockBg }]}>
-        <IconSymbol name="sun.horizon.fill" size={16} color={anchorIconColor} />
-      </View>
-    );
+    return <SpineAnchorNode icon="sun.horizon.fill" isDark={isDark} />;
   }
   if (variant === 'end') {
-    return (
-      <View style={[styles.nodeCircle, styles.nodeCircleLg, { backgroundColor: blockBg }]}>
-        <IconSymbol name="moon.fill" size={16} color={anchorIconColor} />
-      </View>
-    );
+    return <SpineAnchorNode icon="moon.fill" isDark={isDark} />;
   }
   return (
     <View style={[styles.nodeCircle, { backgroundColor: blockBg }]}>

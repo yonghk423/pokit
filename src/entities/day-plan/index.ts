@@ -195,6 +195,11 @@ export {
   getFlowCompletionCategoryKeysForBlock,
   getFlowCompletionUnitCountForBlock
 } from './lib/flowCompletionUnits';
+export {
+  DAY_PLAN_ANCHOR_ICON_SIZE,
+  dayPlanAnchorIconColor,
+  dayPlanAnchorNodeBackground,
+} from './lib/dayPlanAnchorTheme';
 export { formatSpineGapCoaching } from './lib/formatSpineGapCoaching';
 export {
   ITEM_PRIORITY_CYCLE,

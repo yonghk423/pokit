@@ -92,7 +92,6 @@ import { PriorityMealSlotSectionHeader } from './PriorityMealSlotSectionHeader';
 import { PriorityRoutinePickerSheet } from './PriorityRoutinePickerSheet';
 import { PriorityUnassignedMealSlotSheet } from './PriorityUnassignedMealSlotSheet';
 import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
-import { TodoListPlanSection } from './TodoListPlanSection';
 
 /** 우선순위 행 완료 제거 시: 페이드 아웃 + 아래 행이 부드럽게 올라오는 레이아웃 전환 */
 const PRIORITY_ROW_EXITING = FadeOut.duration(280).easing(Easing.out(Easing.cubic));
@@ -2331,10 +2330,8 @@ export function PriorityBasedPlanSection({
                 styles.priorityTimelineScrollContent,
                 { paddingBottom: TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM },
               ]}
-              keyboardShouldPersistTaps={layoutMode === 'todoList' ? 'always' : 'handled'}>
-              {layoutMode === 'todoList' ? (
-                <TodoListPlanSection embedded c={c} isDark={isDark} dateLabel={formatTimelineHeaderDateKo(todayKey)} />
-              ) : layoutMode === 'sections' ? (
+              keyboardShouldPersistTaps="handled">
+              {layoutMode === 'sections' ? (
                 <MealSlotTimelineView
                   sections={mealSlotTimelineSections}
                   palette={spineTimelinePalette}

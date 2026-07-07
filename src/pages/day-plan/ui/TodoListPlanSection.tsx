@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   rootEmbedded: {
     width: '100%',
     paddingHorizontal: 4,
-    paddingTop: 4,
+    paddingTop: 0,
     paddingBottom: 8,
     gap: 8,
   },

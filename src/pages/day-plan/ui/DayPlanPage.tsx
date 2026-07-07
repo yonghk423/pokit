@@ -65,8 +65,10 @@ import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { DailyRhythmOnboardingGate } from './DailyRhythmOnboardingGate';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
 import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
+import { DayNotePlanSection } from './DayNotePlanSection';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
+import { TodoListPlanSection } from './TodoListPlanSection';
 
 export function DayPlanPage() {
   const router = useRouter();
@@ -138,18 +140,12 @@ export function DayPlanPage() {
   );
 
   const layoutMode: DayPlanLayoutMode = useMemo(() => {
-    if (planMode === 'todoList') return 'todoList';
     if (prioritySpineLayoutEnabled) return 'spine';
     return priorityMealSlotLayoutEnabled ? 'sections' : 'bag';
-  }, [planMode, priorityMealSlotLayoutEnabled, prioritySpineLayoutEnabled]);
+  }, [priorityMealSlotLayoutEnabled, prioritySpineLayoutEnabled]);
 
   const onSelectLayoutMode = useCallback(
     (mode: DayPlanLayoutMode) => {
-      if (mode === 'todoList') {
-        setPlanMode('todoList');
-        setPrioritySpineLayoutEnabled(false);
-        return;
-      }
       setPlanMode('priority');
       setPriorityMealSlotLayoutEnabled(mode === 'sections');
       setPrioritySpineLayoutEnabled(mode === 'spine');
@@ -688,6 +684,10 @@ export function DayPlanPage() {
       registerPrimaryAction(null, { disabled: true, label: '잠금화면 메모 저장', hidden: true });
       return;
     }
+    if (planMode === 'dayNote') {
+      registerPrimaryAction(null, { disabled: true, label: '노트', hidden: true });
+      return;
+    }
     if (planMode === 'todoList') {
       registerPrimaryAction(null, { disabled: true, label: '할 일 추가', hidden: true });
       return;
@@ -746,6 +746,25 @@ export function DayPlanPage() {
                     />
                   </View>
                 </View>
+              </ScrollView>
+            ) : planMode === 'dayNote' ? (
+              <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
+                <DayNotePlanSection c={c} isDark={isDark} />
+              </View>
+            ) : planMode === 'todoList' ? (
+              <ScrollView
+                style={[styles.scroll, { backgroundColor: shellBg }]}
+                contentContainerStyle={[
+                  styles.scrollContent,
+                  {
+                    paddingBottom: scrollContentBottomPad,
+                    flexGrow: 1,
+                  },
+                ]}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+                keyboardDismissMode="on-drag">
+                <TodoListPlanSection c={c} isDark={isDark} />
               </ScrollView>
             ) : (
               <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>

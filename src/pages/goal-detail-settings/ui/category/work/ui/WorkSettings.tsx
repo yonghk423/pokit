@@ -5,8 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { normalizeWorkDetailConfig, type WorkDetailDataConfig } from '@entities/day-plan';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
-
-import { StudyDocumentEditor } from './StudyDocumentEditor';
+import { StudyDocumentEditor } from '@widgets/study-note-document';
 import { getInitialWorkDataConfig } from './workConfig';
 
 export function WorkSettings({

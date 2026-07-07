@@ -10,7 +10,7 @@ import Reanimated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { formatHhmmClockKo } from '@entities/day-plan';
+import { formatHhmmClockKo, dayPlanAnchorIconColor, dayPlanAnchorNodeBackground } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import {
   CityPopSpacing,
@@ -88,28 +88,11 @@ type SlotBadgeTheme = {
   label: string;
 };
 
-function slotBadgeTheme(slot: DayMealSlot, isDark: boolean): SlotBadgeTheme {
-  const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-
-  if (isDark) {
-    const dark: Record<DayMealSlot, SlotBadgeTheme> = {
-      dawn: { bg: '#306163', label: c.text },
-      morning: { bg: '#3A5C5E', label: c.text },
-      lunch: { bg: '#5C3A48', label: c.text },
-      dinner: { bg: '#4A463F', label: c.text },
-      night: { bg: c.text, label: c.bg },
-    };
-    return dark[slot];
-  }
-
-  const light: Record<DayMealSlot, SlotBadgeTheme> = {
-    dawn: { bg: '#D1F2F3', label: c.primary },
-    morning: { bg: c.primaryContainer, label: c.primary },
-    lunch: { bg: '#FFE2E2', label: c.text },
-    dinner: { bg: '#B6D3FF', label: '#3E5B81' },
-    night: { bg: c.text, label: '#FAFAFA' },
+function slotBadgeTheme(_slot: DayMealSlot, isDark: boolean): SlotBadgeTheme {
+  return {
+    bg: dayPlanAnchorNodeBackground(isDark),
+    label: dayPlanAnchorIconColor(isDark),
   };
-  return light[slot];
 }
 
 function cardColors(isDark: boolean) {
@@ -764,13 +747,14 @@ function TimelineSectionBlock<T extends MealSlotTimelineItem>({
                 styles.slotBadge,
                 {
                   backgroundColor: badge.bg,
-                  borderColor: isCurrent ? palette.ink : colors.border,
+                  borderColor: '#000000',
                 },
               ]}>
               <IconSymbol
                 name={DAY_MEAL_SLOT_ICON[section.slot] as 'moon.fill'}
-                size={11}
+                size={12}
                 color={badge.label}
+                weight="semibold"
               />
               <ThemedText
                 style={[styles.slotBadgeLabel, cityPopFont('800'), { color: badge.label }]}

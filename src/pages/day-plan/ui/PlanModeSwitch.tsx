@@ -20,6 +20,8 @@ type ModeButton = {
 const MODE_BUTTONS: ModeButton[] = [
   { mode: 'priority', icon: 'list.bullet.rectangle', label: '데일리' },
   { mode: 'quickMemo', icon: 'note.text', label: '잠금화면 메모' },
+  { mode: 'dayNote', icon: 'square.and.pencil', label: '노트' },
+  { mode: 'todoList', icon: 'checklist', label: '투두' },
 ];
 
 type Props = {
@@ -53,9 +55,11 @@ export function PlanModeSwitch({
       ? description
       : planMode === 'quickMemo'
         ? '잠금화면에서 상시 확인할 메모를 적어 두세요.'
-        : null;
-
-  const activeModeForSwitch = planMode === 'todoList' ? 'priority' : planMode;
+        : planMode === 'dayNote'
+          ? null
+          : planMode === 'todoList'
+            ? null
+            : null;
 
   const handleSelect = useCallback(
     (mode: PlanMode) => {
@@ -82,7 +86,7 @@ export function PlanModeSwitch({
           ]}>
           <View style={styles.leftButtonGroup}>
             {MODE_BUTTONS.map((btn) => {
-              const active = activeModeForSwitch === btn.mode;
+              const active = planMode === btn.mode;
               return (
                 <Pressable
                   key={btn.mode}

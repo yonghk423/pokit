@@ -277,7 +277,9 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
           ? 'quickMemo'
           : raw.planMode === 'todoList'
             ? 'todoList'
-            : 'priority',
+            : raw.planMode === 'dayNote'
+              ? 'dayNote'
+              : 'priority',
       isFocusStarted: Boolean(raw.isFocusStarted),
       completedFocusCategoryKeys: Array.isArray(raw.completedFocusCategoryKeys)
         ? raw.completedFocusCategoryKeys

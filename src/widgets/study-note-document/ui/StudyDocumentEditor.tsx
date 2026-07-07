@@ -34,12 +34,12 @@ import { RetroFlatColors } from '@shared/config/retroFlat';
 import { pickImageFromLibrary } from '@shared/lib/media/pickImageFromLibrary';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
 
 import { StudyDocumentToolbar, type StudyToolbarAction } from './StudyDocumentToolbar';
 import { StudyNotePageList } from './StudyNotePageList';
 
-type Palette = ReturnType<typeof goalDetailSettingsPalette>;
+type Palette = StudyNoteDocumentPalette;
 
 const NOTE_PAGE_BG = RetroFlatColors.light.bg;
 const DRAWER_MAX_WIDTH = 320;
