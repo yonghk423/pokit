@@ -7,6 +7,7 @@ import {
   InputAccessoryView,
   Keyboard,
   Platform,
+  LayoutChangeEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -45,6 +46,7 @@ const DRAWER_MAX_WIDTH = 320;
 const DRAWER_WIDTH_RATIO = 0.82;
 const KEYBOARD_ACCESSORY_ESTIMATED_HEIGHT = 132;
 const STUDY_DOCUMENT_INPUT_ACCESSORY_ID = 'study-document-toolbar';
+const EDITOR_HEADER_HEIGHT = 52;
 
 const MAX_HISTORY = 40;
 
@@ -392,10 +394,13 @@ export function StudyDocumentEditor({
   document,
   onChangeDocument,
   palette,
+  viewportHeight,
 }: {
   document: WorkStudyDocument;
   onChangeDocument: Dispatch<SetStateAction<WorkStudyDocument>>;
   palette: Palette;
+  /** 목표 상세 등 고정 레이아웃에서 에디터 스크롤 영역 높이 */
+  viewportHeight?: number;
 }) {
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [linkDraft, setLinkDraft] = useState('');
@@ -403,6 +408,7 @@ export function StudyDocumentEditor({
   const [historyTick, setHistoryTick] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const [scrollViewportHeight, setScrollViewportHeight] = useState<number | null>(null);
   const drawerOpenRef = useRef(false);
   const undoStack = useRef<WorkStudyDocument[]>([]);
   const redoStack = useRef<WorkStudyDocument[]>([]);
@@ -812,13 +818,32 @@ export function StudyDocumentEditor({
   );
 
   const empty = activeBlocks.length === 0;
-  const canvasMinHeight = Math.round(Math.max(380, windowHeight * 0.5));
-  const singleParagraph = activeBlocks.length === 1 && activeBlocks[0]?.kind === 'paragraph';
-  const paragraphMinHeight = singleParagraph ? canvasMinHeight - 24 : undefined;
   const keyboardOpen = keyboardInset > 0;
   const showDockedToolbar = Platform.OS !== 'ios' || !keyboardOpen;
   const accessoryReserve =
     (showDockedToolbar ? (showLinkInput ? 56 : 0) + KEYBOARD_ACCESSORY_ESTIMATED_HEIGHT : 12);
+
+  const resolvedScrollHeight =
+    viewportHeight != null
+      ? Math.max(160, viewportHeight - EDITOR_HEADER_HEIGHT - accessoryReserve)
+      : scrollViewportHeight;
+
+  const canvasMinHeight =
+    resolvedScrollHeight != null
+      ? Math.max(120, resolvedScrollHeight - 8)
+      : Math.round(Math.max(380, windowHeight * 0.5));
+  const singleParagraph = activeBlocks.length === 1 && activeBlocks[0]?.kind === 'paragraph';
+  const paragraphMinHeight = singleParagraph ? canvasMinHeight - 24 : undefined;
+
+  const onShellLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const shellHeight = event.nativeEvent.layout.height;
+      if (shellHeight <= 0) return;
+      const nextHeight = Math.max(160, shellHeight - EDITOR_HEADER_HEIGHT - accessoryReserve);
+      setScrollViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+    },
+    [accessoryReserve],
+  );
 
   const toolbarAccessory = (
     <>
@@ -853,7 +878,13 @@ export function StudyDocumentEditor({
   );
 
   return (
-    <View style={[styles.shell, { backgroundColor: NOTE_PAGE_BG }]}>
+    <View
+      style={[
+        styles.shell,
+        { backgroundColor: NOTE_PAGE_BG },
+        viewportHeight != null ? { height: viewportHeight, flexGrow: 0 } : null,
+      ]}
+      onLayout={viewportHeight == null ? onShellLayout : undefined}>
       <View style={[styles.editorHeader, { borderBottomColor: palette.outlineVariant, backgroundColor: NOTE_PAGE_BG }]}>
         <Pressable
           accessibilityRole="button"
@@ -879,8 +910,11 @@ export function StudyDocumentEditor({
         </Pressable>
       </View>
       <ScrollView
-        style={styles.canvasScroll}
-        contentContainerStyle={{ paddingBottom: accessoryReserve + 12 }}
+        style={[
+          styles.canvasScroll,
+          resolvedScrollHeight != null ? { height: resolvedScrollHeight } : null,
+        ]}
+        contentContainerStyle={{ paddingBottom: accessoryReserve + 16 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}>
@@ -1008,13 +1042,15 @@ export function StudyDocumentEditor({
 const styles = StyleSheet.create({
   shell: {
     flex: 1,
+    minHeight: 0,
     overflow: 'hidden',
     width: '100%',
     alignSelf: 'stretch',
     position: 'relative',
   },
   canvasScroll: {
-    flex: 1,
+    flexGrow: 0,
+    flexShrink: 1,
   },
   keyboardAccessory: {
     position: 'absolute',

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { normalizeWorkDetailConfig, type WorkDetailDataConfig } from '@entities/day-plan';
 
@@ -21,6 +22,21 @@ export function WorkSettings({
   onDeleteCategory?: () => void;
 }) {
   const c = useMemo(() => goalDetailSettingsPalette(false), []);
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const editorViewportHeight = useMemo(() => {
+    const goalHeaderHeight = 56;
+    const footerHeight = 40 + Math.max(insets.bottom, 6);
+    const routineToggleReserve = 40;
+    return Math.max(
+      300,
+      windowHeight -
+        insets.top -
+        goalHeaderHeight -
+        footerHeight -
+        routineToggleReserve,
+    );
+  }, [insets.bottom, insets.top, windowHeight]);
 
   const initial = normalizeWorkDetailConfig(dataConfig ?? getInitialWorkDataConfig());
   const [document, setDocument] = useState(initial.document);
@@ -96,11 +112,16 @@ export function WorkSettings({
 
   return (
     <View style={styles.root}>
-      <StudyDocumentEditor document={document} onChangeDocument={setDocument} palette={c} />
+      <StudyDocumentEditor
+        document={document}
+        onChangeDocument={setDocument}
+        palette={c}
+        viewportHeight={editorViewportHeight}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, width: '100%', alignSelf: 'stretch' },
+  root: { width: '100%', alignSelf: 'stretch' },
 });

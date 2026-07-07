@@ -42,7 +42,6 @@ import {
   updateCatalogItemGroup,
 } from '@shared/lib/storage';
 import { RetroFlatColors } from '@shared/config/retroFlat';
-import { PokitIconPalette } from '@shared/config/theme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -548,14 +547,13 @@ export function GoalDetailSettingsPage() {
 
         <ScrollView
           style={styles.scrollFlex}
-          scrollEnabled={!medicineOnlyUi && !workNoteUi}
-          bounces={!medicineOnlyUi && !workNoteUi}
+          scrollEnabled={!medicineOnlyUi}
+          bounces={!medicineOnlyUi}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.scrollContent,
-            workNoteUi && styles.scrollContentFill,
             {
-              paddingBottom: 20,
+              paddingBottom: workNoteUi ? 0 : 8,
               backgroundColor: c.bg,
             },
           ]}
@@ -563,6 +561,7 @@ export function GoalDetailSettingsPage() {
           <View
             style={[
               contentFlush ? styles.paddedFlush : styles.padded,
+              workNoteUi && styles.paddedWorkNote,
             ]}>
             {sortedTargets.length > 1 ? (
               <View
@@ -653,7 +652,6 @@ export function GoalDetailSettingsPage() {
                   style={[
                     styles.blockSection,
                     (workNoteUi || readingLibraryUi || waterDetailUi) && styles.blockSectionFlush,
-                    workNoteUi && styles.blockSectionFlex,
                   ]}>
                   {isCustomFlowCategoryKey(t.categoryKey) ? (
                     <CustomFlowTemplateMetaPill
@@ -685,6 +683,7 @@ export function GoalDetailSettingsPage() {
                   }}
                   style={({ pressed }) => [
                     styles.routineMetaToggle,
+                    workNoteUi && styles.routineMetaToggleCompact,
                     {
                       borderColor: c.border,
                       backgroundColor: pressed ? 'rgba(0,0,0,0.03)' : 'transparent',
@@ -759,8 +758,9 @@ export function GoalDetailSettingsPage() {
         <View
           style={[
             styles.footerFixed,
+            workNoteUi && styles.footerFixedCompact,
             {
-              paddingBottom: Math.max(insets.bottom, 10),
+              paddingBottom: Math.max(insets.bottom, workNoteUi ? 4 : 6),
             },
           ]}>
           <Pressable
@@ -773,13 +773,13 @@ export function GoalDetailSettingsPage() {
             style={({ pressed }) => [
               styles.footerCompleteCircle,
               {
-                backgroundColor: waterDetailUi ? WATER.ctaBg : PokitIconPalette.teal,
+                backgroundColor: waterDetailUi ? WATER.ctaBg : '#000000',
               },
               pressed && { opacity: 0.9, transform: [{ scale: 0.94 }] },
             ]}>
             <IconSymbol
               name="checkmark"
-              size={22}
+              size={16}
               weight="bold"
               color={waterDetailUi ? WATER.ctaText : '#FAFAFA'}
             />
@@ -816,12 +816,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   scrollContent: {},
-  scrollContentFill: { flexGrow: 1 },
+  scrollContentFill: { flexGrow: 1 },  // legacy — kept for compat
   padded: { paddingHorizontal: 20, gap: 18, marginTop: 16 },
   paddedFlush: { paddingHorizontal: 0, gap: 10, marginTop: 0 },
+  paddedWorkNote: { gap: 2 },
   blockSection: { gap: 10 },
   blockSectionFlush: { gap: 0, marginTop: 0, paddingTop: 0 },
-  blockSectionFlex: { flex: 1 },
+  blockSectionFlex: { flex: 1, minHeight: 0 },  // legacy
   metaSection: { gap: 10 },
   metaSectionInset: { paddingHorizontal: 20 },
   routineMetaToggle: {
@@ -832,6 +833,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 12,
     borderWidth: StyleSheet.hairlineWidth,
+  },
+  routineMetaToggleCompact: {
+    marginTop: 0,
+    paddingVertical: 10,
   },
   routineMetaToggleLabel: { fontSize: 13, fontWeight: '700', letterSpacing: -0.1 },
   startPickerCard: {
@@ -870,10 +875,10 @@ const styles = StyleSheet.create({
   startPickerRowText: { flex: 1, minWidth: 0, gap: 2 },
   startPickerRowTitle: { fontSize: 15, fontWeight: '700' },
   startPickerRowMeta: { fontSize: 12, fontWeight: '600' },
-  /** 하단 고정 완료 — 아이콘만, 중앙 원형 CTA */
+  /** 하단 고정 완료 — 아이콘만, 중앙 컴팩트 CTA */
   footerCompleteCircle: {
-    width: 56,
-    height: 56,
+    width: 40,
+    height: 40,
     borderRadius: 0,
     borderWidth: 2,
     borderColor: '#000000',
@@ -884,6 +889,9 @@ const styles = StyleSheet.create({
   },
   footerFixed: {
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 4,
+  },
+  footerFixedCompact: {
+    paddingTop: 0,
   },
 });

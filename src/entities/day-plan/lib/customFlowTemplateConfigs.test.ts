@@ -1,4 +1,6 @@
 import {
+  CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS,
+  LEGACY_CUSTOM_FLOW_TEMPLATE_KEYS,
   normalizeCounterDetailConfig,
   normalizeFocusDetailConfig,
   normalizeHabitDetailConfig,
@@ -8,6 +10,11 @@ import {
 } from './customFlowTemplateConfigs';
 
 describe('customFlowTemplateConfigs', () => {
+  it('excludes journal from creatable templates', () => {
+    expect(CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS).not.toContain('journal');
+    expect(LEGACY_CUSTOM_FLOW_TEMPLATE_KEYS).toContain('journal');
+  });
+
   it('resolves all template keys', () => {
     expect(resolveCustomFlowTemplateKeyFromRaw({ templateKey: 'habit' })).toBe('habit');
     expect(resolveCustomFlowTemplateKeyFromRaw({ templateKey: 'counter' })).toBe('counter');

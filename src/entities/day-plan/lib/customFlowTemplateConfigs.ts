@@ -64,12 +64,15 @@ export const CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS = [
   'habit',
   'counter',
   'focus',
-  'journal',
   'reminder',
 ] as const satisfies readonly CustomFlowTemplateKey[];
 
+/** 새로 만들 수 없지만 기존 루틴·세션 호환용 */
+export const LEGACY_CUSTOM_FLOW_TEMPLATE_KEYS = ['journal'] as const satisfies readonly CustomFlowTemplateKey[];
+
 export const CUSTOM_FLOW_TEMPLATE_KEYS: readonly CustomFlowTemplateKey[] = [
   ...CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS,
+  ...LEGACY_CUSTOM_FLOW_TEMPLATE_KEYS,
 ] as const;
 
 const TEMPLATE_KEY_SET = new Set<string>(CUSTOM_FLOW_TEMPLATE_KEYS);

@@ -1,7 +1,7 @@
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CityPopSpacing, RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
+import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -30,27 +30,30 @@ export function AppUpdateNoticeModal({ visible, version, highlights, onDismiss }
             {
               backgroundColor: c.surface,
               borderColor: c.border,
-              marginBottom: Math.max(insets.bottom, CityPopSpacing.gutter),
+              marginBottom: Math.max(insets.bottom, 12),
             },
           ]}>
-          <ThemedText style={[styles.title, { color: c.text }]}>업데이트 안내</ThemedText>
-          <ThemedText style={[styles.subtitle, { color: c.textMuted }]}>
-            POKIT v{version}이 설치됐어요
-          </ThemedText>
+          <View style={styles.header}>
+            <ThemedText style={[styles.title, { color: c.text }]}>업데이트 안내</ThemedText>
+            <ThemedText style={[styles.subtitle, { color: c.textMuted }]}>
+              POKIT v{version}이 설치됐어요
+            </ThemedText>
+          </View>
 
-          <ScrollView
-            style={styles.listScroll}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}>
-            {highlights.map((line) => (
-              <View
-                key={line}
-                style={[styles.bulletRow, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
-                <ThemedText style={[styles.bulletDot, { color: c.text }]}>·</ThemedText>
-                <ThemedText style={[styles.bulletText, { color: c.text }]}>{line}</ThemedText>
-              </View>
-            ))}
-          </ScrollView>
+          <View style={[styles.listBox, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+            <ScrollView
+              style={styles.listScroll}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              bounces={false}>
+              {highlights.map((line) => (
+                <View key={line} style={styles.bulletRow}>
+                  <ThemedText style={[styles.bulletDot, { color: c.textMuted }]}>·</ThemedText>
+                  <ThemedText style={[styles.bulletText, { color: c.text }]}>{line}</ThemedText>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
 
           <Pressable
             accessibilityRole="button"
@@ -61,9 +64,6 @@ export function AppUpdateNoticeModal({ visible, version, highlights, onDismiss }
                 backgroundColor: c.primary,
                 borderColor: c.border,
                 opacity: pressed ? 0.88 : 1,
-                transform: pressed
-                  ? [{ translateX: 4 }, { translateY: 4 }]
-                  : [{ translateX: 0 }, { translateY: 0 }],
               },
             ]}
             onPress={onDismiss}>
@@ -79,65 +79,77 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: CityPopSpacing.md,
+    paddingHorizontal: 24,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   card: {
     borderRadius: 0,
     borderWidth: RETRO_BORDER_WIDTH,
-    paddingHorizontal: CityPopSpacing.md,
-    paddingTop: CityPopSpacing.lg / 2,
-    paddingBottom: CityPopSpacing.md,
-    maxHeight: '72%',
-    gap: CityPopSpacing.sm,
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 12,
+    gap: 10,
+    maxWidth: 360,
+    width: '100%',
+    alignSelf: 'center',
+    maxHeight: '68%',
+  },
+  header: {
+    gap: 2,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 24,
+    fontSize: 17,
     fontWeight: '800',
     textAlign: 'center',
-    letterSpacing: -0.24,
+    letterSpacing: -0.2,
   },
   subtitle: {
-    marginTop: CityPopSpacing.xs,
-    fontSize: 16,
+    fontSize: 12,
+    fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 16,
+  },
+  listBox: {
+    borderRadius: 0,
+    borderWidth: RETRO_BORDER_WIDTH,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    maxHeight: 220,
   },
   listScroll: {
-    marginTop: CityPopSpacing.md,
     flexGrow: 0,
   },
   listContent: {
-    gap: CityPopSpacing.sm,
+    gap: 4,
   },
   bulletRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    borderRadius: 0,
-    borderWidth: RETRO_BORDER_WIDTH,
-    paddingHorizontal: CityPopSpacing.gutter,
-    paddingVertical: CityPopSpacing.sm,
   },
   bulletDot: {
-    fontSize: 16,
-    lineHeight: 22,
-    marginRight: CityPopSpacing.xs,
+    fontSize: 12,
+    lineHeight: 17,
+    marginRight: 4,
+    width: 10,
+    textAlign: 'center',
   },
   bulletText: {
     flex: 1,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '500',
   },
   primaryBtn: {
-    marginTop: CityPopSpacing.md,
     borderRadius: 0,
     borderWidth: RETRO_BORDER_WIDTH,
-    paddingVertical: 16,
+    paddingVertical: 10,
     alignItems: 'center',
-    minHeight: 52,
+    minHeight: 40,
+    justifyContent: 'center',
   },
   primaryBtnText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
   },
 });
