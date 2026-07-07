@@ -277,6 +277,8 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
           ? 'quickMemo'
           : raw.planMode === 'todoList'
             ? 'todoList'
+            : raw.planMode === 'reading'
+              ? 'reading'
             : raw.planMode === 'dayNote'
               ? 'dayNote'
               : 'priority',

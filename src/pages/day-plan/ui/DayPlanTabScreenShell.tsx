@@ -35,7 +35,13 @@ export function DayPlanTabScreenShell({ children }: Props) {
   const handleSelectMode = useCallback(
     (mode: PlanMode) => {
       setPlanMode(mode);
-      if ((mode === 'quickMemo' || mode === 'dayNote' || mode === 'todoList') && !isDayPlanTab) {
+      if (
+        (mode === 'quickMemo' ||
+          mode === 'dayNote' ||
+          mode === 'todoList' ||
+          mode === 'reading') &&
+        !isDayPlanTab
+      ) {
         router.push('/(tabs)/day-plan');
       }
     },

@@ -2,7 +2,7 @@ import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 
 export type PersistedDayPlanDraft = {
-  planMode: 'priority' | 'todoList' | 'quickMemo' | 'dayNote';
+  planMode: 'priority' | 'todoList' | 'reading' | 'quickMemo' | 'dayNote';
   isFocusStarted: boolean;
   completedFocusCategoryKeys: string[];
   planCompletionDismissedKeys: string[];

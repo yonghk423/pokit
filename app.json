@@ -2,7 +2,7 @@
   "expo": {
     "name": "POKIT",
     "slug": "pokit",
-    "version": "1.6.0",
+    "version": "1.6.1",
     "orientation": "portrait",
     "icon": "./assets/pokit5.png",
     "scheme": "pokit",
@@ -14,7 +14,7 @@
       "buildNumber": "24"
     },
     "android": {
-      "version": "1.6.0",
+      "version": "1.6.1",
       "versionCode": 24,
       "adaptiveIcon": {
         "backgroundColor": "#F2EDE4",

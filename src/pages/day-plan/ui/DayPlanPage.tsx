@@ -68,6 +68,7 @@ import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 import { DayNotePlanSection } from './DayNotePlanSection';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
+import { ReadingPlanSection } from './ReadingPlanSection';
 import { TodoListPlanSection } from './TodoListPlanSection';
 
 export function DayPlanPage() {
@@ -692,6 +693,10 @@ export function DayPlanPage() {
       registerPrimaryAction(null, { disabled: true, label: '할 일 추가', hidden: true });
       return;
     }
+    if (planMode === 'reading') {
+      registerPrimaryAction(null, { disabled: true, label: '독서 설정', hidden: true });
+      return;
+    }
     registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
   }, [registerPrimaryAction, planMode]);
 
@@ -766,6 +771,10 @@ export function DayPlanPage() {
                 keyboardDismissMode="on-drag">
                 <TodoListPlanSection c={c} isDark={isDark} />
               </ScrollView>
+            ) : planMode === 'reading' ? (
+              <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
+                <ReadingPlanSection c={c} isDark={isDark} />
+              </View>
             ) : (
               <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
                 <PriorityBasedPlanSection

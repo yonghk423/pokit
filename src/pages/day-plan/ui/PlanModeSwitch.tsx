@@ -22,6 +22,7 @@ const MODE_BUTTONS: ModeButton[] = [
   { mode: 'quickMemo', icon: 'note.text', label: '잠금화면 메모' },
   { mode: 'dayNote', icon: 'square.and.pencil', label: '노트' },
   { mode: 'todoList', icon: 'checklist', label: '투두' },
+  { mode: 'reading', icon: 'book.closed.fill', label: '독서' },
 ];
 
 type Props = {
@@ -57,6 +58,8 @@ export function PlanModeSwitch({
         ? '잠금화면에서 상시 확인할 메모를 적어 두세요.'
         : planMode === 'dayNote'
           ? null
+          : planMode === 'reading'
+            ? null
           : planMode === 'todoList'
             ? null
             : null;
