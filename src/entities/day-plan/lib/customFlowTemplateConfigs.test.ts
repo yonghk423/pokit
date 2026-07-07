@@ -10,9 +10,16 @@ import {
 } from './customFlowTemplateConfigs';
 
 describe('customFlowTemplateConfigs', () => {
-  it('excludes journal from creatable templates', () => {
-    expect(CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS).not.toContain('journal');
-    expect(LEGACY_CUSTOM_FLOW_TEMPLATE_KEYS).toContain('journal');
+  it('excludes legacy templates from creatable list', () => {
+    for (const key of LEGACY_CUSTOM_FLOW_TEMPLATE_KEYS) {
+      expect(CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS).not.toContain(key);
+    }
+    expect(CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS).toEqual([
+      'checklist',
+      'measurement',
+      'counter',
+      'reminder',
+    ]);
   });
 
   it('resolves all template keys', () => {

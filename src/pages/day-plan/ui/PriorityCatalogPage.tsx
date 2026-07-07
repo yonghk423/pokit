@@ -249,12 +249,14 @@ export function PriorityCatalogPage() {
       icon,
       accentColor,
       templateKey,
+      templateDataConfig,
     }: {
       name: string;
       groupKey: string;
       icon: string;
       accentColor: string;
       templateKey: CustomFlowTemplateKey;
+      templateDataConfig?: unknown;
     }) => {
       const id = createCustomFlowCategoryId();
       const safeGroupKey = resolveCatalogGroupKeyForPersist(groupKey);
@@ -263,6 +265,7 @@ export function PriorityCatalogPage() {
         ...(trimmed.length > 0 ? { displayName: trimmed } : {}),
         icon,
         accentColor,
+        ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
       });
       saveGoalDetailCategoryConfig(id, next);
       appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });

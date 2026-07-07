@@ -1,7 +1,7 @@
 import {
   formatStudyDdayLabel,
   isCustomFlowCategoryKey,
-  MEASUREMENT_UNIT_OPTIONS,
+  formatMeasurementValue,
   nearestUpcomingDdayEvent,
   normalizeCounterDetailConfig,
   normalizeFastingDetailConfig,
@@ -17,7 +17,10 @@ import {
   normalizeWaterDetailConfig,
   normalizeWorkDetailConfig,
   reminderProgress,
+  resolveCounterUnitLabel,
   resolveCustomFlowTemplateKey,
+  resolveMeasurementUnitLabel,
+  resolveReminderItemTitle,
 } from '@entities/day-plan';
 import { latestWeightFromLogs } from '@entities/day-plan/lib/weightLog';
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
@@ -36,17 +39,15 @@ function hintFromMeasurementRaw(raw: unknown): string | null {
   const cfg = normalizeMeasurementDetailConfig(raw ?? {});
   const label = cfg.metricLabel.trim();
   if (label.length === 0) return null;
-  const unitLabel =
-    MEASUREMENT_UNIT_OPTIONS.find((u) => u.key === cfg.unit)?.labelKo ?? '';
+  const unitLabel = resolveMeasurementUnitLabel(cfg.unit, cfg.customUnitLabel);
   if (cfg.currentValue > 0) {
-    const valueText =
-      cfg.currentValue % 1 === 0 ? String(cfg.currentValue) : cfg.currentValue.toFixed(1);
+    const valueText = formatMeasurementValue(cfg.currentValue, cfg.unit);
     return unitLabel.length > 0 && cfg.unit !== 'none'
       ? `${label} ${valueText} ${unitLabel}`
       : `${label} ${valueText}`;
   }
   if (cfg.useGoalValue && cfg.goalValue > 0) {
-    const goalText = cfg.goalValue % 1 === 0 ? String(cfg.goalValue) : cfg.goalValue.toFixed(1);
+    const goalText = formatMeasurementValue(cfg.goalValue, cfg.unit);
     return unitLabel.length > 0 && cfg.unit !== 'none'
       ? `${label} · 목표 ${goalText} ${unitLabel}`
       : `${label} · 목표 ${goalText}`;
@@ -68,10 +69,13 @@ function hintFromCustomFlowRaw(raw: unknown): string | null {
     case 'counter': {
       const cfg = normalizeCounterDetailConfig(raw ?? {});
       const label = cfg.activityLabel.trim() || '횟수';
+      const unit = resolveCounterUnitLabel(cfg.unitKey, cfg.customUnitLabel, cfg.unitLabel);
       if (cfg.currentCount > 0) {
-        return `${label} ${cfg.currentCount}/${cfg.goalCount}${cfg.unitLabel}`;
+        return unit === '회' ? `${label} ${cfg.currentCount}/${cfg.goalCount}회` : `${label} ${cfg.currentCount}/${cfg.goalCount}${unit}`;
       }
-      return `${label} · 목표 ${cfg.goalCount}${cfg.unitLabel}`;
+      return unit === '회'
+        ? `${label} · 목표 ${cfg.goalCount}회`
+        : `${label} · 목표 ${cfg.goalCount}${unit}`;
     }
     case 'focus': {
       const cfg = normalizeFocusDetailConfig(raw ?? {});
@@ -86,11 +90,13 @@ function hintFromCustomFlowRaw(raw: unknown): string | null {
     }
     case 'reminder': {
       const cfg = normalizeReminderDetailConfig(raw ?? {});
-      const times = cfg.reminderTimes.join(' · ');
+      const labels = cfg.reminderItems
+        .map((item) => resolveReminderItemTitle(item))
+        .join(' · ');
       const { done, total } = reminderProgress(cfg);
-      if (total > 0 && done >= total) return `${times} · 전체 완료`;
-      if (done > 0) return `${times} · ${done}/${total}`;
-      return times;
+      if (total > 0 && done >= total) return `${labels} · 전체 완료`;
+      if (done > 0) return `${labels} · ${done}/${total}`;
+      return labels;
     }
     case 'checklist':
       return hintFromOtherStyleRaw(raw);

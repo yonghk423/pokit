@@ -15,7 +15,7 @@ export const orderRowStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 10,
     width: '100%',
   },
   inlineRankPill: {
@@ -74,7 +74,24 @@ export const orderRowStyles = StyleSheet.create({
   orderRowActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    flexShrink: 0,
+  },
+  orderRowPriorityBtn: {
+    minWidth: 40,
+    height: 28,
+    borderRadius: 0,
+    borderWidth: RETRO_BORDER_WIDTH,
+    borderColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  orderRowPriorityBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    lineHeight: 14,
   },
   orderSettingsBtn: {
     width: 28,

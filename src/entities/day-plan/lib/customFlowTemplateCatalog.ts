@@ -33,12 +33,12 @@ export const CUSTOM_FLOW_TEMPLATE_ICONS: Record<CustomFlowTemplateKey, CustomFlo
 export const CUSTOM_FLOW_TEMPLATE_PREVIEW_LINES: Record<CustomFlowTemplateKey, string[]> = {
   checklist: ['□ 물 마시기', '□ 스트레칭'],
   abstain: ['✓ 밤늦게 폰 보기', '□ 과자·야식'],
-  measurement: ['오늘 68.5 kg', '어제 68.9 kg'],
+  measurement: ['체중·혈압·수면 등', '단위·목표 설정'],
   habit: ['오늘 완료 ✓', '연속 5일'],
-  counter: ['3 / 8회', '+1'],
+  counter: ['횟수·단위·목표 설정', '+1 / 추이'],
   focus: ['25분 집중', '남은 12분'],
   journal: ['오늘 기분: 좋음', '한 줄 메모'],
-  reminder: ['09:00 알림', '완료 체크'],
+  reminder: ['약·물·식사 알림', '시간별 문구 설정'],
 };
 
 export type CustomFlowTemplateCatalogEntry = {

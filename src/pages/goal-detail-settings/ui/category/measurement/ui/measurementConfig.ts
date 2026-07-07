@@ -1,5 +1,6 @@
 export {
   getInitialMeasurementDataConfig,
+  MEASUREMENT_METRIC_PRESETS,
   normalizeMeasurementDetailConfig,
   MEASUREMENT_UNIT_OPTIONS,
   type MeasurementDetailDataConfig,

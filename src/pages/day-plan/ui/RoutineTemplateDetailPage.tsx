@@ -92,6 +92,7 @@ export function RoutineTemplateDetailPage() {
             templateKey={entry.key}
             config={demoConfig}
             onChange={setDemoConfig}
+            previewMode
             theme={{
               ink: c.onSurface,
               muted: c.onVariant,

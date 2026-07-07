@@ -51,6 +51,7 @@ type Props = {
     icon: CustomFlowIconOption;
     accentColor: string;
     templateKey: CustomFlowTemplateKey;
+    templateDataConfig?: unknown;
   }) => void;
   initialGroupKey?: string;
   initialTemplateKey?: CustomFlowTemplateKey;
@@ -174,6 +175,7 @@ export function CreateCustomFlowSheet({
       icon: selectedIcon,
       accentColor: selectedAccentColor,
       templateKey: selectedTemplateKey,
+      templateDataConfig: templateDemoConfig,
     });
   };
 
@@ -440,6 +442,7 @@ export function CreateCustomFlowSheet({
                 templateKey={selectedTemplateKey}
                 config={templateDemoConfig}
                 onChange={setTemplateDemoConfig}
+                previewMode
                 theme={{
                   ink,
                   muted,

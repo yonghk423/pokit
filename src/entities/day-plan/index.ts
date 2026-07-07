@@ -53,16 +53,37 @@ export {
   type CustomFlowTemplateIconName
 } from './lib/customFlowTemplateCatalog';
 export {
-  CUSTOM_FLOW_TEMPLATE_KEYS,   getInitialCounterDataConfig,
+  COUNTER_ACTIVITY_PRESETS,
+  COUNTER_UNIT_OPTIONS,
+  CUSTOM_FLOW_TEMPLATE_KEYS,
+  findReminderScheduleItem,
+  formatCounterProgressLine,
+  formatCounterRemainingMessage,
+  getInitialCounterDataConfig,
   getInitialFocusDataConfig,
   getInitialHabitDataConfig,
   getInitialJournalDataConfig,
-  getInitialReminderDataConfig, isCustomFlowTemplateKey, MAX_CUSTOM_REMINDER_TIMES,
-  mergeCustomFlowGoalDetailData, normalizeCounterDetailConfig,
+  getInitialReminderDataConfig,
+  isCustomFlowTemplateKey,
+  MAX_CUSTOM_REMINDER_TIMES,
+  mergeCustomFlowGoalDetailData,
+  normalizeCounterDetailConfig,
+  normalizeCounterCustomUnitLabel,
+  normalizeCounterStepSize,
+  normalizeCounterUnitKey,
   normalizeFocusDetailConfig,
   normalizeHabitDetailConfig,
   normalizeJournalDetailConfig,
-  normalizeReminderDetailConfig
+  normalizeReminderDetailConfig,
+  normalizeReminderTime,
+  REMINDER_SCHEDULE_PRESETS,
+  resolveCounterUnitLabel,
+  resolveReminderItemTitle,
+  sortReminderScheduleItems,
+  type CounterActivityPreset,
+  type CounterUnitKey,
+  type ReminderScheduleItem,
+  type ReminderSchedulePreset,
 } from './lib/customFlowTemplateConfigs';
 export type {
   CounterDetailDataConfig,
@@ -88,8 +109,10 @@ export {
 export type { FastingWeightLogs, WeightChartPoint, WeightLogEntry } from './lib/weightLog';
 export {
   applyCounterDelta,
+  applyCounterFillRemaining,
   applyHabitDoneToggle,
   applyJournalSave,
+  addReminderScheduleItem,
   applyMeasurementSave,
   buildHabitWeekDots,
   ensureCounterDayBoundary,
@@ -103,9 +126,30 @@ export {
   minutesUntilReminder,
   reminderProgress,
   resetCounterCount,
+  removeReminderScheduleItem,
   resolveNextReminderTime,
   toggleReminderTimeDone,
+  updateReminderItemLabel,
 } from './lib/customFlowTemplateRuntime';
+export {
+  applyCounterActivityPreset,
+  applyCounterActivitySettings,
+  pickCounterSettingsForCreate,
+} from './lib/counterPresetSamples';
+export {
+  applyMeasurementMetricPreset,
+  pickMeasurementSettingsForCreate,
+} from './lib/measurementPresetSamples';
+export {
+  applyReminderSchedulePreset,
+  pickReminderSettingsForCreate,
+} from './lib/reminderPresetSamples';
+export {
+  MEASUREMENT_METRIC_PRESETS,
+  MEASUREMENT_UNIT_OPTIONS,
+  resolveMeasurementUnitLabel,
+  roundMeasurementValue,
+} from './lib/measurementUnits';
 export {
   filterBagTimelineFlowBlocks,
   filterDayPlanFlowBlocks,
@@ -152,6 +196,13 @@ export {
   getFlowCompletionUnitCountForBlock
 } from './lib/flowCompletionUnits';
 export { formatSpineGapCoaching } from './lib/formatSpineGapCoaching';
+export {
+  ITEM_PRIORITY_CYCLE,
+  ITEM_PRIORITY_META,
+  cycleItemPriority,
+  normalizeItemPriority,
+  resolveCategoryImportance,
+} from './lib/itemPriority';
 export * from './lib/goalCategorySessionConfig';
 export {
   extractMedicineConfigFromRaw,

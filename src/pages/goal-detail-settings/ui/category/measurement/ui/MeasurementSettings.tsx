@@ -13,6 +13,7 @@ import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
 
 import {
   getInitialMeasurementDataConfig,
+  MEASUREMENT_METRIC_PRESETS,
   MEASUREMENT_UNIT_OPTIONS,
   normalizeMeasurementDetailConfig,
   type MeasurementDetailDataConfig,
@@ -51,6 +52,7 @@ export function MeasurementSettings({
   const [summary, setSummary] = useState(initial.summary);
   const [metricLabel, setMetricLabel] = useState(initial.metricLabel);
   const [unit, setUnit] = useState<MeasurementUnitKey>(initial.unit);
+  const [customUnitLabel, setCustomUnitLabel] = useState(initial.customUnitLabel ?? '');
   const [useGoalValue, setUseGoalValue] = useState(initial.useGoalValue);
   const [goalValueStr, setGoalValueStr] = useState(
     initial.goalValue > 0 ? String(initial.goalValue) : '',
@@ -71,6 +73,7 @@ export function MeasurementSettings({
     setSummary(next.summary);
     setMetricLabel(next.metricLabel);
     setUnit(next.unit);
+    setCustomUnitLabel(next.customUnitLabel ?? '');
     setUseGoalValue(next.useGoalValue);
     setGoalValueStr(next.goalValue > 0 ? String(next.goalValue) : '');
     setFrequency(next.frequency);
@@ -91,6 +94,7 @@ export function MeasurementSettings({
       summary,
       metricLabel,
       unit,
+      ...(unit === 'custom' ? { customUnitLabel } : {}),
       useGoalValue,
       goalValue,
       currentValue: appearanceBase.currentValue,
@@ -105,7 +109,7 @@ export function MeasurementSettings({
     if (lastRef.current === serialized) return;
     lastRef.current = serialized;
     onChangeRef.current(payload);
-  }, [displayName, summary, metricLabel, unit, useGoalValue, goalValueStr, frequency]);
+  }, [displayName, summary, metricLabel, unit, customUnitLabel, useGoalValue, goalValueStr, frequency]);
 
   return (
     <View style={styles.shell}>
@@ -127,6 +131,49 @@ export function MeasurementSettings({
 
       <View style={[styles.section, { borderColor: c.outline }]}>
         <ThemedText style={[styles.sectionTitle, { color: c.onSurface }]}>기록 설정</ThemedText>
+
+        <ThemedText style={[styles.fieldLabel, { color: c.onVariant }]}>자주 쓰는 예시</ThemedText>
+        <View style={styles.chipsRow}>
+          {MEASUREMENT_METRIC_PRESETS.map((preset) => {
+            const selected =
+              metricLabel === preset.metricLabel &&
+              unit === preset.unit &&
+              (preset.unit !== 'custom' || customUnitLabel === (preset.customUnitLabel ?? ''));
+            return (
+              <Pressable
+                key={preset.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => {
+                  setMetricLabel(preset.metricLabel);
+                  setUnit(preset.unit);
+                  if (preset.customUnitLabel) setCustomUnitLabel(preset.customUnitLabel);
+                  if (preset.sampleGoal != null) {
+                    setUseGoalValue(true);
+                    setGoalValueStr(String(preset.sampleGoal));
+                  }
+                }}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: selected ? c.onSurface : c.outline,
+                    backgroundColor: selected ? 'rgba(0,0,0,0.06)' : c.surfaceLowest,
+                  },
+                ]}>
+                <ThemedText
+                  style={[
+                    styles.chipText,
+                    {
+                      color: selected ? c.onSurface : c.onVariant,
+                      fontWeight: selected ? '700' : '500',
+                    },
+                  ]}>
+                  {preset.metricLabel}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
 
         <ThemedText style={[styles.fieldLabel, { color: c.onVariant }]}>무엇을 기록할까요?</ThemedText>
         <TextInput
@@ -171,6 +218,22 @@ export function MeasurementSettings({
             );
           })}
         </View>
+
+        {unit === 'custom' ? (
+          <>
+            <ThemedText style={[styles.fieldLabel, { color: c.onVariant }]}>표시 단위</ThemedText>
+            <TextInput
+              value={customUnitLabel}
+              onChangeText={(v) => setCustomUnitLabel(v.slice(0, 12))}
+              placeholder="예: 잔, 회, 페이지"
+              placeholderTextColor={c.outline}
+              style={[
+                styles.input,
+                { color: c.onSurface, borderColor: c.outline, backgroundColor: c.surfaceLowest },
+              ]}
+            />
+          </>
+        ) : null}
 
         <View style={styles.toggleRow}>
           <ThemedText style={[styles.fieldLabel, styles.toggleLabel, { color: c.onSurface }]}>

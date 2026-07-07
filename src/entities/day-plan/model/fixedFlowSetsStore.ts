@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 import {
   BUILTIN_FIXED_FLOW_SET_IDS,
+  createExampleCustomFlowSetItems,
+  EXAMPLE_CUSTOM_FLOW_SET_NAME,
   getActiveFixedFlowSet,
   isBuiltinPresetScheduleSet,
   isFixedFlowSetMatchedToday,
@@ -147,7 +149,7 @@ function mapSetItems(items: FixedFlowSetItem[]): Map<string, FixedFlowSetItem> {
 function nextSetName(existing: FixedFlowSet[]): string {
   const base = '세트';
   const taken = new Set(existing.map((s) => s.name.trim()));
-  if (!taken.has('기본 세트')) return '기본 세트';
+  if (!taken.has(EXAMPLE_CUSTOM_FLOW_SET_NAME)) return EXAMPLE_CUSTOM_FLOW_SET_NAME;
   let i = 2;
   while (taken.has(`${base} ${i}`)) i += 1;
   return `${base} ${i}`;
@@ -223,7 +225,7 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       id: createSetId(),
       name: nextName,
       applyRule: 'manual',
-      items: [],
+      items: nextName === EXAMPLE_CUSTOM_FLOW_SET_NAME ? createExampleCustomFlowSetItems() : [],
     };
     const nextSets = [...sets, nextSet];
     set({ sets: nextSets });

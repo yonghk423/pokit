@@ -10,6 +10,43 @@ import {
   normalizeOtherDetailConfig,
   type MeasurementDetailDataConfig,
 } from './goalCategorySessionConfig';
+import {
+  normalizeCounterCustomUnitLabel,
+  normalizeCounterStepSize,
+  normalizeCounterUnitKey,
+  resolveCounterUnitLabel,
+  type CounterUnitKey,
+} from './counterUnits';
+import {
+  mergeReminderScheduleItems,
+  normalizeReminderScheduleItems,
+  type ReminderScheduleItem,
+} from './reminderSchedule';
+
+export {
+  COUNTER_ACTIVITY_PRESETS,
+  COUNTER_UNIT_OPTIONS,
+  formatCounterProgressLine,
+  formatCounterRemainingMessage,
+  normalizeCounterCustomUnitLabel,
+  normalizeCounterStepSize,
+  normalizeCounterUnitKey,
+  resolveCounterUnitLabel,
+  type CounterActivityPreset,
+  type CounterUnitKey,
+} from './counterUnits';
+export {
+  findReminderScheduleItem,
+  mergeReminderScheduleItems,
+  normalizeReminderLabel,
+  normalizeReminderScheduleItems,
+  normalizeReminderTime,
+  REMINDER_SCHEDULE_PRESETS,
+  resolveReminderItemTitle,
+  sortReminderScheduleItems,
+  type ReminderScheduleItem,
+  type ReminderSchedulePreset,
+} from './reminderSchedule';
 import { normalizeRoutineDisplayName } from './routineDisplayName';
 import { normalizeRoutineSummary } from './routineSummary';
 
@@ -59,16 +96,18 @@ export type CustomFlowTemplateKey =
 /** 사용자가 직접 만들 수 있는 템플릿 */
 export const CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS = [
   'checklist',
-  'abstain',
   'measurement',
-  'habit',
   'counter',
-  'focus',
   'reminder',
 ] as const satisfies readonly CustomFlowTemplateKey[];
 
 /** 새로 만들 수 없지만 기존 루틴·세션 호환용 */
-export const LEGACY_CUSTOM_FLOW_TEMPLATE_KEYS = ['journal'] as const satisfies readonly CustomFlowTemplateKey[];
+export const LEGACY_CUSTOM_FLOW_TEMPLATE_KEYS = [
+  'journal',
+  'abstain',
+  'habit',
+  'focus',
+] as const satisfies readonly CustomFlowTemplateKey[];
 
 export const CUSTOM_FLOW_TEMPLATE_KEYS: readonly CustomFlowTemplateKey[] = [
   ...CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS,
@@ -121,16 +160,29 @@ export function getInitialHabitDataConfig(): HabitDetailDataConfig {
 }
 
 // --- counter ---
+export type CounterHistoryEntry = {
+  dateKey: string;
+  count: number;
+};
+
 export type CounterDetailDataConfig = {
   templateKey: 'counter';
   displayName: string;
   summary: string;
   activityLabel: string;
+  unitKey: CounterUnitKey;
+  /** unitKey=custom 일 때 표시 단위 */
+  customUnitLabel?: string;
+  /** @deprecated — resolveCounterUnitLabel(unitKey, customUnitLabel, unitLabel) 사용 */
   unitLabel: string;
   goalCount: number;
   currentCount: number;
+  stepSize: number;
+  secondaryStepSize: number;
   dailyReset: boolean;
   countDateKey: string;
+  /** 최근 일별 달성 횟수 — 추이 차트용 */
+  history: CounterHistoryEntry[];
   icon?: string;
   accentColor?: string;
 };
@@ -143,16 +195,49 @@ export function normalizeCounterDetailConfig(raw: unknown): CounterDetailDataCon
   const currentCount = Number.isFinite(currentRaw)
     ? Math.max(0, Math.min(9999, Math.round(currentRaw)))
     : 0;
+  const legacyUnitLabel = clampStr(o.unitLabel, 12) || '회';
+  const unitKey = normalizeCounterUnitKey(o.unitKey, legacyUnitLabel);
+  const customUnitLabel = normalizeCounterCustomUnitLabel(o.customUnitLabel);
+  const unitLabel = resolveCounterUnitLabel(unitKey, customUnitLabel, legacyUnitLabel);
+  const stepSize = normalizeCounterStepSize(o.stepSize, 1);
+  const secondaryStepSize = normalizeCounterStepSize(o.secondaryStepSize, Math.max(stepSize, 5));
+  const history = Array.isArray(o.history)
+    ? (o.history as unknown[])
+        .map((entry) => {
+          if (!entry || typeof entry !== 'object') return null;
+          const row = entry as Record<string, unknown>;
+          const dateKey = clampStr(row.dateKey, 10);
+          const countRaw = Number(row.count);
+          if (dateKey.length < 10 || !Number.isFinite(countRaw)) return null;
+          return {
+            dateKey,
+            count: Math.max(0, Math.min(9999, Math.round(countRaw))),
+          };
+        })
+        .filter((entry): entry is CounterHistoryEntry => entry != null)
+        .slice(0, 14)
+    : [];
+  const countDateKey = clampStr(o.countDateKey, 10);
   return {
     templateKey: 'counter',
     displayName: normalizeRoutineDisplayName(o.displayName),
     summary: normalizeRoutineSummary(o.summary),
     activityLabel: clampStr(o.activityLabel, 40),
-    unitLabel: clampStr(o.unitLabel, 12) || '회',
+    unitKey,
+    ...(unitKey === 'custom' && customUnitLabel.length > 0 ? { customUnitLabel } : {}),
+    unitLabel,
     goalCount,
     currentCount,
+    stepSize,
+    secondaryStepSize,
     dailyReset: typeof o.dailyReset === 'boolean' ? o.dailyReset : true,
-    countDateKey: clampStr(o.countDateKey, 10),
+    countDateKey,
+    history:
+      history.length > 0
+        ? history
+        : currentCount > 0 && countDateKey.length >= 10
+          ? [{ dateKey: countDateKey, count: currentCount }]
+          : [],
     ...appearanceFields(o),
   };
 }
@@ -280,6 +365,8 @@ export type ReminderDetailDataConfig = {
   templateKey: 'reminder';
   displayName: string;
   summary: string;
+  reminderItems: ReminderScheduleItem[];
+  /** @deprecated — reminderItems[].time 과 동기화 */
   reminderTimes: string[];
   completedTimes: string[];
   /** @deprecated legacy — normalize maps to completedTimes */
@@ -292,16 +379,25 @@ export const MAX_CUSTOM_REMINDER_TIMES = 5;
 
 export function normalizeReminderDetailConfig(raw: unknown): ReminderDetailDataConfig {
   const o = asObj(raw);
-  const times = normalizeHhmmList(o.reminderTimes, MAX_CUSTOM_REMINDER_TIMES);
-  let completedTimes = normalizeHhmmList(o.completedTimes, MAX_CUSTOM_REMINDER_TIMES);
-  if (completedTimes.length === 0 && o.completedToday === true && times.length > 0) {
-    completedTimes = [...times];
+  const legacyTimes = normalizeHhmmList(o.reminderTimes, MAX_CUSTOM_REMINDER_TIMES);
+  const reminderItems = normalizeReminderScheduleItems(
+    o.reminderItems,
+    legacyTimes,
+    MAX_CUSTOM_REMINDER_TIMES,
+  );
+  const reminderTimes = reminderItems.map((item) => item.time);
+  let completedTimes = normalizeHhmmList(o.completedTimes, MAX_CUSTOM_REMINDER_TIMES).filter((time) =>
+    reminderTimes.includes(time),
+  );
+  if (completedTimes.length === 0 && o.completedToday === true && reminderTimes.length > 0) {
+    completedTimes = [...reminderTimes];
   }
   return {
     templateKey: 'reminder',
     displayName: normalizeRoutineDisplayName(o.displayName),
     summary: normalizeRoutineSummary(o.summary),
-    reminderTimes: times.length > 0 ? times : ['09:00'],
+    reminderItems,
+    reminderTimes,
     completedTimes,
     ...appearanceFields(o),
   };
@@ -377,6 +473,12 @@ export function mergeCustomFlowGoalDetailData(
           c?.metricLabel ?? '',
         ),
         unit: b?.unit ?? c?.unit ?? 'none',
+        customUnitLabel: pickDisplayName(
+          (b?.customUnitLabel ?? '').trim(),
+          (c?.customUnitLabel ?? '').trim(),
+          b?.customUnitLabel ?? '',
+          c?.customUnitLabel ?? '',
+        ),
         useGoalValue: b?.useGoalValue ?? c?.useGoalValue ?? false,
         goalValue: Math.max(b?.goalValue ?? 0, c?.goalValue ?? 0),
         currentValue: Math.max(b?.currentValue ?? 0, c?.currentValue ?? 0),
@@ -448,9 +550,18 @@ export function mergeCustomFlowGoalDetailData(
           b?.activityLabel ?? '',
           c?.activityLabel ?? '',
         ),
+        unitKey: b?.unitKey ?? c?.unitKey ?? 'count',
+        customUnitLabel: pickDisplayName(
+          (b?.customUnitLabel ?? '').trim(),
+          (c?.customUnitLabel ?? '').trim(),
+          b?.customUnitLabel ?? '',
+          c?.customUnitLabel ?? '',
+        ),
         unitLabel: (b?.unitLabel ?? '').trim() || (c?.unitLabel ?? '').trim() || '회',
         goalCount,
         currentCount: Math.max(b?.currentCount ?? 0, c?.currentCount ?? 0),
+        stepSize: Math.max(b?.stepSize ?? 0, c?.stepSize ?? 0, 1),
+        secondaryStepSize: Math.max(b?.secondaryStepSize ?? 0, c?.secondaryStepSize ?? 0, 1),
         dailyReset: b?.dailyReset ?? c?.dailyReset ?? true,
         countDateKey: pickDisplayName(
           (b?.countDateKey ?? '').trim(),
@@ -458,6 +569,8 @@ export function mergeCustomFlowGoalDetailData(
           b?.countDateKey ?? '',
           c?.countDateKey ?? '',
         ),
+        history:
+          (b?.history?.length ?? 0) >= (c?.history?.length ?? 0) ? b?.history ?? [] : c?.history ?? [],
         ...pickAppearance(b, c),
       });
     }
@@ -535,9 +648,7 @@ export function mergeCustomFlowGoalDetailData(
     case 'reminder': {
       const b = blockRaw != null ? normalizeReminderDetailConfig(blockRaw) : null;
       const c = categoryRaw != null ? normalizeReminderDetailConfig(categoryRaw) : null;
-      const bl = b?.reminderTimes ?? [];
-      const cl = c?.reminderTimes ?? [];
-      const reminderTimes = bl.length >= cl.length ? bl : cl.length > 0 ? cl : bl;
+      const reminderItems = mergeReminderScheduleItems(b?.reminderItems ?? [], c?.reminderItems ?? []);
       return normalizeReminderDetailConfig({
         templateKey: 'reminder',
         displayName: pickDisplayName(
@@ -552,7 +663,7 @@ export function mergeCustomFlowGoalDetailData(
           b?.summary ?? '',
           c?.summary ?? '',
         ),
-        reminderTimes,
+        reminderItems,
         completedTimes: [
           ...new Set([...(b?.completedTimes ?? []), ...(c?.completedTimes ?? [])]),
         ].sort(),

@@ -384,15 +384,31 @@ describe('dayPlanDraftStore', () => {
       isHydrated: true,
       isFocusStarted: true,
       priorityCategoryOrder: ['healthIntake', 'water'],
+      priorityCategoryImportance: { healthIntake: 'high', water: 'low' },
       completedFocusCategoryKeys: ['healthIntake', 'water@morning'],
       planCompletionDismissedKeys: ['healthIntake'],
     });
     useDayPlanDraftStore.getState().finishPriorityCategoryForToday('healthIntake');
     const s = useDayPlanDraftStore.getState();
     expect(s.priorityCategoryOrder).toEqual(['water']);
+    expect(s.priorityCategoryImportance).toEqual({ water: 'low' });
     expect(s.completedFocusCategoryKeys).toEqual(['water@morning']);
     expect(s.planCompletionDismissedKeys).toEqual([]);
     expect(s.isFocusStarted).toBe(true);
+  });
+
+  it('cycles priority category importance and prunes removed categories', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      priorityCategoryOrder: ['reading', 'water'],
+      priorityCategoryImportance: { reading: 'high' },
+    });
+    useDayPlanDraftStore.getState().cyclePriorityCategoryImportance('reading');
+    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({});
+    useDayPlanDraftStore.getState().cyclePriorityCategoryImportance('water');
+    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({ water: 'low' });
+    useDayPlanDraftStore.getState().setPriorityCategoryOrder(['reading']);
+    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({});
   });
 
   it('clears focus started when the last priority category is finished for today', () => {

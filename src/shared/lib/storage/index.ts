@@ -78,7 +78,12 @@ export type { PersistedDayPlanTodos } from './dayPlanTodoStorage';
 export {
   BUILTIN_FIXED_FLOW_SET_IDS,
   BUILTIN_PRESET_SCHEDULE_SET_IDS,
+  createExampleCustomFlowSetItems,
+  EXAMPLE_CUSTOM_FLOW_SET_ITEM_KEYS,
+  EXAMPLE_CUSTOM_FLOW_SET_NAME,
+  LEGACY_CUSTOM_FLOW_SET_NAME,
   LEGACY_WEEKDAY_SET_ID,
+  REMOVED_BUILTIN_PRESET_SET_IDS,
   REMOVED_SCHEDULED_SET_IDS,
   createDefaultFixedFlowSetsState,
   isBuiltinPresetScheduleSet,

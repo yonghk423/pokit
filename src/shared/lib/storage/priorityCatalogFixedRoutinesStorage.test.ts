@@ -68,7 +68,7 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
       sets: [
         {
           id: 'default',
-          name: '기본 세트',
+          name: '예시 세트',
           applyRule: 'manual',
           items: [
             { categoryKey: 'study', enabled: true },

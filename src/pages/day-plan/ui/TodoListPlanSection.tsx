@@ -146,12 +146,19 @@ function TodoListRow({
         accessibilityRole="button"
         accessibilityLabel={`우선순위 ${priorityMeta.label}, 탭하면 변경`}
         onPress={deleteMode ? onRemove : onCyclePriority}
-        style={styles.priorityCol}>
-        <View style={[styles.priorityDot, { backgroundColor: priorityMeta.dot }]} />
+        style={[
+          styles.priorityBtn,
+          {
+            borderColor: ui.btnBorder,
+            backgroundColor: ui.btnBg,
+          },
+        ]}>
         <ThemedText
-          style={[styles.priorityLabel, rowMuted && styles.priorityLabelDone]}
-          lightColor={ui.muted}
-          darkColor={ui.muted}
+          style={[
+            styles.priorityBtnText,
+            { color: priorityMeta.dot },
+            rowMuted && styles.priorityLabelDone,
+          ]}
           numberOfLines={1}>
           {priorityMeta.label}
         </ThemedText>
@@ -486,22 +493,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.1,
   },
-  priorityCol: {
-    width: TODO_LAYOUT.priorityWidth,
-    alignItems: 'flex-end',
-    justifyContent: 'flex-start',
-    gap: 3,
-    paddingTop: 2,
-  },
-  priorityDot: {
-    width: 7,
-    height: 7,
+  priorityBtn: {
+    minWidth: 40,
+    height: 28,
+    borderWidth: TODO_TABLE_BORDER_WIDTH,
     borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    marginTop: 2,
+    flexShrink: 0,
   },
-  priorityLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+  priorityBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    lineHeight: 14,
   },
   priorityLabelDone: {
     opacity: 0.45,

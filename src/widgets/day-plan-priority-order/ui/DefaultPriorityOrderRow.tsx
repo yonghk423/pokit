@@ -10,6 +10,7 @@ import Reanimated, {
   withSpring,
 } from 'react-native-reanimated';
 
+import { ITEM_PRIORITY_META } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -36,6 +37,8 @@ export function DefaultPriorityOrderRow({
   icon,
   label,
   subtitle,
+  itemPriority = 'medium',
+  onCycleItemPriority,
   isFocusStarted,
   isCompleted,
   isDark,
@@ -127,6 +130,7 @@ export function DefaultPriorityOrderRow({
   const pulse = useRef(new Animated.Value(1)).current;
   const shouldPulse = Boolean(isFocusStarted && !isCompleted);
   const primary = PrimaryColor.rgb;
+  const priorityMeta = ITEM_PRIORITY_META[itemPriority];
   /** 시작 전에는 아이콘 강조를 쓰지 않는다. 집중 시작 이후에만 카테고리 액센트. */
   const showAccentIcon = Boolean(!isCompleted && isFocusStarted);
   const iconColor = isCompleted
@@ -207,8 +211,37 @@ export function DefaultPriorityOrderRow({
     </>
   );
 
+  const priorityButton = onCycleItemPriority ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`중요도 ${priorityMeta.label}, 탭하면 변경`}
+      hitSlop={8}
+      onPress={() => {
+        void Haptics.selectionAsync();
+        onCycleItemPriority();
+      }}
+      style={[
+        styles.orderRowPriorityBtn,
+        {
+          borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
+          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+        },
+      ]}>
+      <ThemedText
+        style={[
+          styles.orderRowPriorityBtnText,
+          { color: priorityMeta.dot },
+          isCompleted && styles.orderRowRomanTitleDone,
+        ]}
+        numberOfLines={1}>
+        {priorityMeta.label}
+      </ThemedText>
+    </Pressable>
+  ) : null;
+
   const actionsColumn = (
     <View style={styles.orderRowActions}>
+      {priorityButton}
       {onFinishForToday ? (
         <Pressable
           accessibilityRole="button"

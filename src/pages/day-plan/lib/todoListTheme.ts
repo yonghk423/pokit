@@ -1,23 +1,16 @@
 import type { TodoPriority } from '@entities/day-plan';
+import { ITEM_PRIORITY_META } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 
 import type { DayPlanPalette } from './dayPlanPalette';
 
-export const TODO_PRIORITY_META: Record<
-  TodoPriority,
-  { label: string; dot: string }
-> = {
-  high: { label: '높음', dot: '#356668' },
-  medium: { label: '보통', dot: '#5B8DEF' },
-  low: { label: '낮음', dot: '#94A3B8' },
-};
+export const TODO_PRIORITY_META = ITEM_PRIORITY_META;
 
 export const TODO_TABLE_BORDER_WIDTH = 1;
 
 export const TODO_LAYOUT = {
   checkboxSize: 22,
   rowMinHeight: 46,
-  priorityWidth: 52,
 } as const;
 
 export type TodoListUiColors = {

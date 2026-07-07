@@ -1,12 +1,15 @@
+import type { TodoPriority } from '@entities/day-plan';
+
 export type PriorityOrderRowProps = {
   categoryKey: string;
   icon: string;
   label: string;
   /** 목표 상세에서 온 부가 한 줄 */
   subtitle?: string | null;
-  priorityLabel?: string;
-  isTopPriority?: boolean;
-  priorityColor?: { bg: string; fg: string };
+  /** 담기 목록 중요도 — 미설정 시 보통 */
+  itemPriority?: TodoPriority;
+  /** 탭하면 높음 → 보통 → 낮음 순환 */
+  onCycleItemPriority?: () => void;
   isFocusStarted?: boolean;
   isCompleted?: boolean;
   isDark: boolean;

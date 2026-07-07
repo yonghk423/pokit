@@ -4,27 +4,46 @@ import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import {
   applyCounterDelta,
+  applyCounterActivityPreset,
+  applyCounterActivitySettings,
+  applyCounterFillRemaining,
+  addReminderScheduleItem,
   applyHabitDoneToggle,
   applyJournalSave,
   applyMeasurementSave,
+  applyMeasurementMetricPreset,
+  applyReminderSchedulePreset,
   blockDurationSec,
   buildHabitWeekDots,
+  COUNTER_ACTIVITY_PRESETS,
+  COUNTER_UNIT_OPTIONS,
   ensureCounterDayBoundary,
   focusElapsedMinFromSession,
+  formatCounterRemainingMessage,
+  findReminderScheduleItem,
   formatMeasurementDelta,
+  formatMeasurementValue,
   formatReminderCountdown,
-  formatValueCompact,
   JOURNAL_MOOD_OPTIONS,
-  MEASUREMENT_UNIT_OPTIONS,
+  MAX_CUSTOM_REMINDER_TIMES,
   measurementQuickDeltas,
   measurementRecordedToday,
+  MEASUREMENT_METRIC_PRESETS,
   minutesUntilReminder,
   normalizeCustomFlowDetailConfig,
   reminderProgress,
+  REMINDER_SCHEDULE_PRESETS,
+  removeReminderScheduleItem,
   resetCounterCount,
+  resolveCounterUnitLabel,
+  resolveMeasurementUnitLabel,
   resolveNextReminderTime,
+  resolveReminderItemTitle,
+  roundMeasurementValue,
   toggleReminderTimeDone,
+  updateReminderItemLabel,
   type CustomFlowTemplateKey,
+  type CounterUnitKey,
   type DayPlanBlock,
 } from '@entities/day-plan';
 import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
@@ -46,11 +65,9 @@ type Props = {
   theme: TemplateSessionTheme;
   block?: DayPlanBlock;
   sessionProgress?: number;
+  /** 템플릿 미리보기·만들기 — 예시 데이터 전환 허용 */
+  previewMode?: boolean;
 };
-
-function unitLabelKo(unit: string): string {
-  return MEASUREMENT_UNIT_OPTIONS.find((o) => o.key === unit)?.labelKo ?? '';
-}
 
 /** rgb/hex accent → rgba (템플릿 `${accent}10` 방식은 rgb에서 깨짐) */
 function withAlpha(color: string, alpha: number): string {
@@ -164,33 +181,83 @@ function MeasurementTemplateView({
   cfg,
   emit,
   theme,
+  previewMode = false,
 }: {
   cfg: Parameters<typeof applyMeasurementSave>[0];
   emit: TemplateEmit;
   theme: TemplateSessionTheme;
+  previewMode?: boolean;
 }) {
   const { ink, muted, line, accent } = theme;
-  const unit = unitLabelKo(cfg.unit);
+  const unit = resolveMeasurementUnitLabel(cfg.unit, cfg.customUnitLabel);
   const [draft, setDraft] = useState(() => (cfg.currentValue > 0 ? String(cfg.currentValue) : ''));
   useEffect(() => {
     setDraft(cfg.currentValue > 0 ? String(cfg.currentValue) : '');
-  }, [cfg.currentValue]);
+  }, [cfg.currentValue, cfg.unit, cfg.metricLabel]);
 
   const parsed = parseFloat(draft.replace(',', '.'));
   const quickDeltas = measurementQuickDeltas(cfg.unit);
-  const delta = formatMeasurementDelta(cfg.currentValue, cfg.previousValue);
+  const delta = formatMeasurementDelta(cfg.currentValue, cfg.previousValue, cfg.unit);
   const chartValues = cfg.history.slice(-7).map((h) => h.value);
   const goalRatio =
     cfg.useGoalValue && cfg.goalValue > 0 ? Math.min(1, cfg.currentValue / cfg.goalValue) : null;
   const recordedToday = measurementRecordedToday(cfg);
+  const showPresetPicker =
+    previewMode || (!cfg.metricLabel.trim() && cfg.unit === 'none');
 
   const applyDelta = (d: number) => {
     const base = Number.isFinite(parsed) ? parsed : cfg.currentValue;
-    setDraft(String(Math.max(0, Math.round((base + d) * 10) / 10)));
+    setDraft(String(roundMeasurementValue(base + d, cfg.unit)));
   };
 
   return (
     <View style={styles.root}>
+      {showPresetPicker ? (
+        <Card theme={theme} gap={8}>
+          <SectionLabel color={muted}>무엇을 기록할까요?</SectionLabel>
+          <ThemedText style={[styles.sub, { color: muted }]}>
+            예시를 눌러 단위·목표가 바뀌는 걸 체험해 보세요.
+          </ThemedText>
+          <View style={styles.moodRow}>
+            {MEASUREMENT_METRIC_PRESETS.map((preset) => {
+              const selected =
+                cfg.metricLabel === preset.metricLabel &&
+                cfg.unit === preset.unit;
+              return (
+                <Pressable
+                  key={preset.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    emit(
+                      applyMeasurementMetricPreset(cfg, preset, {
+                        includeSampleData: previewMode,
+                      }),
+                    );
+                  }}
+                  style={[
+                    styles.moodChip,
+                    {
+                      borderColor: selected ? accent : line,
+                      backgroundColor: selected ? withAlpha(accent, 0.12) : theme.surface,
+                    },
+                  ]}>
+                  <ThemedText
+                    style={{
+                      color: selected ? accent : muted,
+                      fontWeight: selected ? '700' : '500',
+                      fontSize: 12,
+                    }}>
+                    {preset.metricLabel}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+      ) : null}
+
       <Card theme={theme} gap={12}>
         <SectionLabel color={muted}>{cfg.metricLabel.trim() || '기록'}</SectionLabel>
         <View style={styles.heroRow}>
@@ -199,7 +266,7 @@ function MeasurementTemplateView({
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.7}>
-            {cfg.currentValue > 0 ? formatValueCompact(cfg.currentValue) : '—'}
+            {cfg.currentValue > 0 ? formatMeasurementValue(cfg.currentValue, cfg.unit) : '—'}
           </ThemedText>
           {unit ? <ThemedText style={[styles.heroUnit, { color: muted }]}>{unit}</ThemedText> : null}
         </View>
@@ -210,14 +277,14 @@ function MeasurementTemplateView({
           </ThemedText>
         ) : cfg.previousValue > 0 ? (
           <ThemedText style={[styles.sub, { color: muted }]}>
-            이전 {formatValueCompact(cfg.previousValue)}
+            이전 {formatMeasurementValue(cfg.previousValue, cfg.unit)}
             {unit ? ` ${unit}` : ''}
           </ThemedText>
         ) : null}
         {goalRatio != null ? (
           <>
             <ThemedText style={[styles.sub, { color: muted }]}>
-              목표 {formatValueCompact(cfg.goalValue)}
+              목표 {formatMeasurementValue(cfg.goalValue, cfg.unit)}
               {unit ? ` ${unit}` : ''} · {Math.round(goalRatio * 100)}%
             </ThemedText>
             <View style={[styles.track, { backgroundColor: line }]}>
@@ -239,6 +306,7 @@ function MeasurementTemplateView({
         </Card>
       ) : null}
 
+      {cfg.unit !== 'none' || cfg.metricLabel.trim().length > 0 ? (
       <Card theme={theme}>
         {recordedToday ? (
           <ThemedText style={[styles.badge, { color: accent, borderColor: accent }]}>
@@ -276,6 +344,7 @@ function MeasurementTemplateView({
           <ThemedText style={styles.primaryBtnText}>기록 저장</ThemedText>
         </Pressable>
       </Card>
+      ) : null}
     </View>
   );
 }
@@ -493,6 +562,509 @@ function ChecklistTemplateView({
   );
 }
 
+function CounterTemplateView({
+  cfg,
+  emit,
+  theme,
+  previewMode = false,
+}: {
+  cfg: Parameters<typeof applyCounterDelta>[0];
+  emit: TemplateEmit;
+  theme: TemplateSessionTheme;
+  previewMode?: boolean;
+}) {
+  const { ink, muted, line, accent } = theme;
+  const live = ensureCounterDayBoundary(cfg);
+  const unitLabel = resolveCounterUnitLabel(live.unitKey, live.customUnitLabel, live.unitLabel);
+  const ratio = live.goalCount > 0 ? Math.min(1, live.currentCount / live.goalCount) : 0;
+  const goalReached = live.currentCount >= live.goalCount;
+  const remaining = Math.max(0, live.goalCount - live.currentCount);
+  const chartValues = live.history.slice(-7).map((entry) => entry.count);
+  const [goalDraft, setGoalDraft] = useState(() => String(live.goalCount));
+  const [stepDraft, setStepDraft] = useState(() => String(live.stepSize));
+  const [secondaryStepDraft, setSecondaryStepDraft] = useState(() => String(live.secondaryStepSize));
+
+  useEffect(() => {
+    setGoalDraft(String(live.goalCount));
+    setStepDraft(String(live.stepSize));
+    setSecondaryStepDraft(String(live.secondaryStepSize));
+  }, [live.goalCount, live.stepSize, live.secondaryStepSize]);
+
+  const commitGoal = (raw: string) => {
+    const parsed = parseInt(raw, 10);
+    if (!Number.isFinite(parsed)) return;
+    emit(applyCounterActivitySettings(live, { goalCount: parsed }));
+  };
+
+  const commitStep = (raw: string) => {
+    const parsed = parseInt(raw, 10);
+    if (!Number.isFinite(parsed)) return;
+    emit(applyCounterActivitySettings(live, { stepSize: parsed }));
+  };
+
+  const commitSecondaryStep = (raw: string) => {
+    const parsed = parseInt(raw, 10);
+    if (!Number.isFinite(parsed)) return;
+    emit(applyCounterActivitySettings(live, { secondaryStepSize: parsed }));
+  };
+
+  return (
+    <View style={styles.root}>
+      <Card theme={theme} gap={10}>
+        <SectionLabel color={muted}>횟수 설정</SectionLabel>
+        <ThemedText style={[styles.sub, { color: muted }]}>
+          이름·단위·목표를 직접 입력하거나 예시를 눌러 채울 수 있어요.
+        </ThemedText>
+
+        <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>무엇을 셀까요?</ThemedText>
+        <TextInput
+          value={live.activityLabel}
+          onChangeText={(value) => emit(applyCounterActivitySettings(live, { activityLabel: value }))}
+          placeholder="예: 푸쉬업, 독서"
+          placeholderTextColor={muted}
+          style={[styles.reminderLabelInput, { color: ink, borderColor: line }]}
+        />
+
+        <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>단위</ThemedText>
+        <View style={styles.moodRow}>
+          {COUNTER_UNIT_OPTIONS.map((opt) => {
+            const selected = live.unitKey === opt.key;
+            return (
+              <Pressable
+                key={opt.key}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => emit(applyCounterActivitySettings(live, { unitKey: opt.key as CounterUnitKey }))}
+                style={[
+                  styles.moodChip,
+                  {
+                    borderColor: selected ? accent : line,
+                    backgroundColor: selected ? withAlpha(accent, 0.12) : theme.surface,
+                  },
+                ]}>
+                <ThemedText
+                  style={{
+                    color: selected ? accent : muted,
+                    fontWeight: selected ? '700' : '500',
+                    fontSize: 12,
+                  }}>
+                  {opt.labelKo}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {live.unitKey === 'custom' ? (
+          <>
+            <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>표시 단위</ThemedText>
+            <TextInput
+              value={live.customUnitLabel ?? ''}
+              onChangeText={(value) =>
+                emit(applyCounterActivitySettings(live, { customUnitLabel: value }))
+              }
+              placeholder="예: 세트, 페이지"
+              placeholderTextColor={muted}
+              style={[styles.reminderLabelInput, { color: ink, borderColor: line }]}
+            />
+          </>
+        ) : null}
+
+        <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>하루 목표</ThemedText>
+        <TextInput
+          value={goalDraft}
+          onChangeText={setGoalDraft}
+          onEndEditing={() => commitGoal(goalDraft)}
+          onBlur={() => commitGoal(goalDraft)}
+          keyboardType="number-pad"
+          placeholder="8"
+          placeholderTextColor={muted}
+          style={[styles.reminderLabelInput, { color: ink, borderColor: line }]}
+        />
+
+        <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>빠른 추가 단위</ThemedText>
+        <View style={styles.reminderAddRow}>
+          <TextInput
+            value={stepDraft}
+            onChangeText={setStepDraft}
+            onEndEditing={() => commitStep(stepDraft)}
+            onBlur={() => commitStep(stepDraft)}
+            keyboardType="number-pad"
+            placeholder="1"
+            placeholderTextColor={muted}
+            style={[styles.reminderAddInput, { color: ink, borderColor: line, flex: 1 }]}
+          />
+          <TextInput
+            value={secondaryStepDraft}
+            onChangeText={setSecondaryStepDraft}
+            onEndEditing={() => commitSecondaryStep(secondaryStepDraft)}
+            onBlur={() => commitSecondaryStep(secondaryStepDraft)}
+            keyboardType="number-pad"
+            placeholder="5"
+            placeholderTextColor={muted}
+            style={[styles.reminderAddInput, { color: ink, borderColor: line, flex: 1 }]}
+          />
+        </View>
+
+        <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>자주 쓰는 예시</ThemedText>
+        <View style={styles.moodRow}>
+          {COUNTER_ACTIVITY_PRESETS.map((preset) => {
+            const selected =
+              live.activityLabel === preset.activityLabel &&
+              live.unitKey === preset.unitKey &&
+              live.goalCount === preset.goalCount;
+            return (
+              <Pressable
+                key={preset.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  emit(
+                    applyCounterActivityPreset(live, preset, {
+                      includeSampleData: previewMode,
+                    }),
+                  );
+                }}
+                style={[
+                  styles.moodChip,
+                  {
+                    borderColor: selected ? accent : line,
+                    backgroundColor: selected ? withAlpha(accent, 0.12) : theme.surface,
+                  },
+                ]}>
+                <ThemedText
+                  style={{
+                    color: selected ? accent : muted,
+                    fontWeight: selected ? '700' : '500',
+                    fontSize: 12,
+                  }}>
+                  {preset.activityLabel}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Card>
+
+      <Card theme={theme} gap={12}>
+        <SectionLabel color={muted}>{live.activityLabel.trim() || '횟수'}</SectionLabel>
+        <View style={styles.counterValueRow}>
+          <ThemedText style={[styles.heroValue, { color: ink }]}>{live.currentCount}</ThemedText>
+          <ThemedText style={[styles.counterSlash, { color: muted }]}> / {live.goalCount}</ThemedText>
+          {unitLabel ? (
+            <ThemedText style={[styles.heroUnit, { color: muted }]}> {unitLabel}</ThemedText>
+          ) : null}
+        </View>
+        <View style={[styles.track, { backgroundColor: line }]}>
+          <View style={[styles.fill, { width: `${Math.round(ratio * 100)}%`, backgroundColor: accent }]} />
+        </View>
+        <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>
+          {goalReached
+            ? '목표 달성!'
+            : `${Math.round(ratio * 100)}% · ${formatCounterRemainingMessage(remaining, unitLabel)}`}
+        </ThemedText>
+      </Card>
+
+      {chartValues.length >= 2 ? (
+        <Card theme={theme}>
+          <SectionLabel color={muted}>최근 7일 추이</SectionLabel>
+          <MiniBarChart values={chartValues} goal={live.goalCount} accent={accent} muted={muted} />
+        </Card>
+      ) : null}
+
+      <Card theme={theme} gap={10}>
+        <View style={styles.counterPrimaryRow}>
+          <Pressable
+            disabled={live.currentCount <= 0}
+            accessibilityRole="button"
+            accessibilityLabel={`${live.stepSize}만큼 줄이기`}
+            accessibilityState={{ disabled: live.currentCount <= 0 }}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              emit(applyCounterDelta(live, -live.stepSize));
+            }}
+            style={[
+              styles.bigCounterBtn,
+              {
+                backgroundColor: theme.surface,
+                borderColor: line,
+                opacity: live.currentCount <= 0 ? 0.4 : 1,
+              },
+            ]}>
+            <ThemedText style={[styles.bigCounterText, { color: ink }]}>−{live.stepSize}</ThemedText>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${live.stepSize}만큼 늘리기`}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              emit(applyCounterDelta(live, live.stepSize));
+            }}
+            style={[styles.bigCounterBtn, { backgroundColor: accent, borderColor: '#000' }]}>
+            <ThemedText style={[styles.bigCounterText, styles.bigCounterTextOnAccent]}>
+              +{live.stepSize}
+            </ThemedText>
+          </Pressable>
+        </View>
+        <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>
+          잘못 눌렀으면 왼쪽 − 버튼으로 되돌릴 수 있어요
+        </ThemedText>
+        <View style={styles.counterRow}>
+          <Pressable
+            disabled={live.currentCount <= 0}
+            onPress={() => emit(applyCounterDelta(live, -live.secondaryStepSize))}
+            style={[
+              styles.counterBtn,
+              { borderColor: line, opacity: live.currentCount <= 0 ? 0.35 : 1 },
+            ]}>
+            <ThemedText style={{ color: ink, fontWeight: '700' }}>−{live.secondaryStepSize}</ThemedText>
+          </Pressable>
+          <Pressable
+            onPress={() => emit(applyCounterDelta(live, live.secondaryStepSize))}
+            style={[styles.counterBtn, { borderColor: line }]}>
+            <ThemedText style={{ color: ink, fontWeight: '700' }}>+{live.secondaryStepSize}</ThemedText>
+          </Pressable>
+          {!goalReached ? (
+            <Pressable
+              onPress={() => {
+                void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                emit(applyCounterFillRemaining(live));
+              }}
+              style={[styles.counterBtn, { borderColor: accent }]}>
+              <ThemedText style={{ color: accent, fontWeight: '700', fontSize: 12 }}>목표까지</ThemedText>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => emit(resetCounterCount(live))}
+              style={[styles.counterBtn, { borderColor: line }]}>
+              <ThemedText style={{ color: muted, fontWeight: '600', fontSize: 12 }}>리셋</ThemedText>
+            </Pressable>
+          )}
+        </View>
+        {!goalReached ? (
+          <Pressable onPress={() => emit(resetCounterCount(live))} style={styles.textActionBtn}>
+            <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>오늘 기록 초기화</ThemedText>
+          </Pressable>
+        ) : null}
+        {live.dailyReset ? (
+          <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>
+            자정에 횟수가 초기화돼요
+          </ThemedText>
+        ) : null}
+      </Card>
+    </View>
+  );
+}
+
+function ReminderTemplateView({
+  cfg,
+  emit,
+  theme,
+  previewMode = false,
+}: {
+  cfg: Parameters<typeof toggleReminderTimeDone>[0];
+  emit: TemplateEmit;
+  theme: TemplateSessionTheme;
+  previewMode?: boolean;
+}) {
+  const { ink, muted, line, surface, accent } = theme;
+  const { done, total } = reminderProgress(cfg);
+  const nextTime = resolveNextReminderTime(cfg);
+  const nextItem = nextTime ? findReminderScheduleItem(cfg.reminderItems, nextTime) : undefined;
+  const minsLeft = nextTime ? minutesUntilReminder(nextTime) : 0;
+  const countdown = nextTime ? formatReminderCountdown(minsLeft, nextTime) : '';
+  const isDefaultOnly =
+    cfg.reminderItems.length === 1 &&
+    cfg.reminderItems[0]?.time === '09:00' &&
+    !cfg.reminderItems[0]?.label.trim();
+  const showPresetPicker = previewMode || isDefaultOnly;
+  const [draftTime, setDraftTime] = useState('');
+  const [draftLabel, setDraftLabel] = useState('');
+  const canAddMore = cfg.reminderItems.length < MAX_CUSTOM_REMINDER_TIMES;
+
+  const handleAdd = () => {
+    const next = addReminderScheduleItem(cfg, draftTime, draftLabel);
+    if (!next) return;
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    emit(next);
+    setDraftTime('');
+    setDraftLabel('');
+  };
+
+  return (
+    <View style={styles.root}>
+      {showPresetPicker ? (
+        <Card theme={theme} gap={8}>
+          <SectionLabel color={muted}>어떤 알림인가요?</SectionLabel>
+          <ThemedText style={[styles.sub, { color: muted }]}>
+            예시를 누르거나 아래에서 직접 추가·수정할 수 있어요.
+          </ThemedText>
+          <View style={styles.moodRow}>
+            {REMINDER_SCHEDULE_PRESETS.map((preset) => {
+              const selected =
+                JSON.stringify(cfg.reminderItems) === JSON.stringify(preset.items);
+              return (
+                <Pressable
+                  key={preset.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    emit(
+                      applyReminderSchedulePreset(cfg, preset, {
+                        includeDemoProgress: previewMode,
+                      }),
+                    );
+                  }}
+                  style={[
+                    styles.moodChip,
+                    {
+                      borderColor: selected ? accent : line,
+                      backgroundColor: selected ? withAlpha(accent, 0.12) : surface,
+                    },
+                  ]}>
+                  <ThemedText
+                    style={{
+                      color: selected ? accent : muted,
+                      fontWeight: selected ? '700' : '500',
+                      fontSize: 12,
+                    }}>
+                    {preset.title}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+      ) : null}
+
+      <Card theme={theme}>
+        <ThemedText style={[styles.sub, { color: muted }]}>
+          {done}/{total} 완료
+        </ThemedText>
+        {nextTime ? (
+          <ThemedText style={[styles.nextReminder, { color: ink }]}>
+            다음 · {resolveReminderItemTitle(nextItem ?? { time: nextTime, label: '' })} · {nextTime}
+            {countdown ? ` · ${countdown}` : ''}
+          </ThemedText>
+        ) : (
+          <ThemedText style={[styles.goalBadge, { color: accent }]}>오늘 알림 모두 완료</ThemedText>
+        )}
+        <View style={[styles.track, { backgroundColor: line, marginTop: 4 }]}>
+          <View
+            style={[
+              styles.fill,
+              { width: total > 0 ? `${Math.round((done / total) * 100)}%` : '0%', backgroundColor: accent },
+            ]}
+          />
+        </View>
+      </Card>
+
+      <Card theme={theme} gap={10}>
+        <SectionLabel color={muted}>알림 목록</SectionLabel>
+        {cfg.reminderItems.map((item) => {
+          const checked = cfg.completedTimes.includes(item.time);
+          const isNext = nextTime === item.time && !checked;
+          return (
+            <View
+              key={item.time}
+              style={[
+                styles.reminderEditRow,
+                { borderColor: line },
+                isNext && {
+                  borderColor: accent,
+                  backgroundColor: withAlpha(accent, 0.06),
+                },
+              ]}>
+              <View style={styles.reminderEditMain}>
+                <View style={styles.reminderEditHeader}>
+                  <IconSymbol name="bell" size={16} color={isNext ? accent : muted} />
+                  <ThemedText style={[styles.reminderEditTime, { color: ink }]}>{item.time}</ThemedText>
+                  <ThemedText style={[styles.reminderMeta, { color: isNext ? accent : muted }]}>
+                    {checked ? '완료' : isNext ? '다음 알림' : '예정'}
+                  </ThemedText>
+                </View>
+                <TextInput
+                  value={item.label}
+                  onChangeText={(value) => emit(updateReminderItemLabel(cfg, item.time, value))}
+                  placeholder="어떤 알림인지 적어 주세요"
+                  placeholderTextColor={muted}
+                  style={[styles.reminderLabelInput, { color: ink, borderColor: line }]}
+                />
+              </View>
+              <View style={styles.reminderEditActions}>
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked }}
+                  accessibilityLabel={checked ? '완료 취소' : '완료'}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    emit(toggleReminderTimeDone(cfg, item.time));
+                  }}
+                  style={[
+                    styles.checkBox,
+                    {
+                      borderColor: checked ? accent : line,
+                      backgroundColor: checked ? accent : surface,
+                    },
+                  ]}>
+                  {checked ? <IconSymbol name="checkmark" size={10} color="#fff" /> : null}
+                </Pressable>
+                {cfg.reminderItems.length > 1 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="알림 삭제"
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      emit(removeReminderScheduleItem(cfg, item.time));
+                    }}
+                    hitSlop={8}>
+                    <ThemedText style={[styles.reminderRemove, { color: muted }]}>삭제</ThemedText>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+          );
+        })}
+      </Card>
+
+      {canAddMore ? (
+        <Card theme={theme} gap={8}>
+          <SectionLabel color={muted}>알림 추가</SectionLabel>
+          <View style={styles.reminderAddRow}>
+            <TextInput
+              value={draftTime}
+              onChangeText={setDraftTime}
+              placeholder="15:30"
+              placeholderTextColor={muted}
+              keyboardType="numbers-and-punctuation"
+              style={[styles.reminderAddInput, { color: ink, borderColor: line, flex: 0.8 }]}
+            />
+            <TextInput
+              value={draftLabel}
+              onChangeText={setDraftLabel}
+              placeholder="예: 물 마시기"
+              placeholderTextColor={muted}
+              style={[styles.reminderAddInput, { color: ink, borderColor: line, flex: 1 }]}
+            />
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleAdd}
+            style={[styles.reminderAddBtn, { borderColor: accent, alignSelf: 'flex-start' }]}>
+            <ThemedText style={{ color: accent, fontWeight: '700', fontSize: 13 }}>추가</ThemedText>
+          </Pressable>
+        </Card>
+      ) : (
+        <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>
+          알림은 최대 {MAX_CUSTOM_REMINDER_TIMES}개까지 추가할 수 있어요.
+        </ThemedText>
+      )}
+    </View>
+  );
+}
+
 export function CustomFlowTemplateSessionBody({
   templateKey,
   config: rawConfig,
@@ -500,6 +1072,7 @@ export function CustomFlowTemplateSessionBody({
   theme,
   block,
   sessionProgress = 0,
+  previewMode = false,
 }: Props) {
   const { ink, muted, line, surface, accent } = theme;
   const cfg = useMemo(
@@ -512,65 +1085,12 @@ export function CustomFlowTemplateSessionBody({
   switch (templateKey) {
     case 'measurement': {
       if (!('metricLabel' in cfg)) return null;
-      return <MeasurementTemplateView cfg={cfg} emit={emit} theme={theme} />;
+      return <MeasurementTemplateView cfg={cfg} emit={emit} theme={theme} previewMode={previewMode} />;
     }
 
     case 'counter': {
       if (!('goalCount' in cfg)) return null;
-      const live = ensureCounterDayBoundary(cfg);
-      const ratio = live.goalCount > 0 ? Math.min(1, live.currentCount / live.goalCount) : 0;
-      const goalReached = live.currentCount >= live.goalCount;
-      return (
-        <Card theme={theme}>
-          <ThemedText style={[styles.counterTitle, { color: ink }]}>
-            {live.activityLabel.trim() || '횟수'}
-          </ThemedText>
-          <View style={styles.counterValueRow}>
-            <ThemedText style={[styles.heroValue, { color: ink }]}>
-              {live.currentCount}
-            </ThemedText>
-            <ThemedText style={[styles.counterSlash, { color: muted }]}> / {live.goalCount}</ThemedText>
-            {live.unitLabel.trim() ? (
-              <ThemedText style={[styles.heroUnit, { color: muted }]}> {live.unitLabel.trim()}</ThemedText>
-            ) : null}
-          </View>
-          <View style={[styles.track, { backgroundColor: line }]}>
-            <View style={[styles.fill, { width: `${Math.round(ratio * 100)}%`, backgroundColor: accent }]} />
-          </View>
-          {goalReached ? (
-            <ThemedText style={[styles.goalBadge, { color: accent }]}>목표 달성!</ThemedText>
-          ) : (
-            <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>
-              {live.goalCount - live.currentCount}번 더 하면 목표예요
-            </ThemedText>
-          )}
-          <Pressable
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              emit(applyCounterDelta(live, 1));
-            }}
-            style={[styles.bigPlusBtn, { backgroundColor: accent }]}>
-            <ThemedText style={styles.bigPlusText}>+1</ThemedText>
-          </Pressable>
-          <View style={styles.counterRow}>
-            <Pressable
-              disabled={live.currentCount <= 0}
-              onPress={() => emit(applyCounterDelta(live, -1))}
-              style={[styles.counterBtn, { borderColor: line, opacity: live.currentCount <= 0 ? 0.35 : 1 }]}>
-              <ThemedText style={{ color: ink, fontWeight: '700' }}>−1</ThemedText>
-            </Pressable>
-            <Pressable onPress={() => emit(applyCounterDelta(live, 5))} style={[styles.counterBtn, { borderColor: line }]}>
-              <ThemedText style={{ color: ink, fontWeight: '700' }}>+5</ThemedText>
-            </Pressable>
-            <Pressable onPress={() => emit(resetCounterCount(live))} style={[styles.counterBtn, { borderColor: line }]}>
-              <ThemedText style={{ color: muted, fontWeight: '600', fontSize: 12 }}>리셋</ThemedText>
-            </Pressable>
-          </View>
-          {live.dailyReset ? (
-            <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>자정에 횟수가 초기화돼요</ThemedText>
-          ) : null}
-        </Card>
-      );
+      return <CounterTemplateView cfg={cfg} emit={emit} theme={theme} previewMode={previewMode} />;
     }
 
     case 'habit': {
@@ -653,79 +1173,7 @@ export function CustomFlowTemplateSessionBody({
 
     case 'reminder': {
       if (!('reminderTimes' in cfg)) return null;
-      const { done, total } = reminderProgress(cfg);
-      const nextTime = resolveNextReminderTime(cfg);
-      const minsLeft = nextTime ? minutesUntilReminder(nextTime) : 0;
-      const countdown = nextTime ? formatReminderCountdown(minsLeft, nextTime) : '';
-      return (
-        <View style={styles.root}>
-          <Card theme={theme}>
-            <ThemedText style={[styles.sub, { color: muted }]}>
-              {done}/{total} 완료
-            </ThemedText>
-            {nextTime ? (
-              <ThemedText style={[styles.nextReminder, { color: ink }]}>
-                다음 · {nextTime} · {countdown}
-              </ThemedText>
-            ) : (
-              <ThemedText style={[styles.goalBadge, { color: accent }]}>오늘 알림 모두 완료</ThemedText>
-            )}
-            <View style={[styles.track, { backgroundColor: line, marginTop: 4 }]}>
-              <View
-                style={[
-                  styles.fill,
-                  { width: total > 0 ? `${Math.round((done / total) * 100)}%` : '0%', backgroundColor: accent },
-                ]}
-              />
-            </View>
-          </Card>
-          <Card theme={theme} flushList>
-            {cfg.reminderTimes.map((time, index) => {
-              const checked = cfg.completedTimes.includes(time);
-              const isNext = nextTime === time && !checked;
-              const isLast = index === cfg.reminderTimes.length - 1;
-              return (
-                <Pressable
-                  key={time}
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    emit(toggleReminderTimeDone(cfg, time));
-                  }}
-                  style={[
-                    styles.reminderRow,
-                    {
-                      borderBottomColor: line,
-                      borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
-                    },
-                    isNext && {
-                      backgroundColor: withAlpha(accent, 0.08),
-                      borderLeftWidth: 3,
-                      borderLeftColor: accent,
-                    },
-                  ]}>
-                  <IconSymbol name="bell" size={16} color={isNext ? accent : muted} />
-                  <View style={styles.reminderTextCol}>
-                    <ThemedText style={[styles.reminderTime, { color: ink }]}>{time}</ThemedText>
-                    <ThemedText style={[styles.reminderMeta, { color: isNext ? accent : muted }]}>
-                      {checked ? '완료' : isNext ? '다음 알림' : '예정'}
-                    </ThemedText>
-                  </View>
-                  <View
-                    style={[
-                      styles.checkBox,
-                      {
-                        borderColor: checked ? accent : line,
-                        backgroundColor: checked ? accent : surface,
-                      },
-                    ]}>
-                    {checked ? <IconSymbol name="checkmark" size={10} color="#fff" /> : null}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </Card>
-        </View>
-      );
+      return <ReminderTemplateView cfg={cfg} emit={emit} theme={theme} previewMode={previewMode} />;
     }
 
     case 'abstain': {
@@ -745,7 +1193,13 @@ const styles = StyleSheet.create({
   root: { gap: 10, width: '100%' },
   card: { borderWidth: 2, padding: 14, width: '100%' },
   cardFlushList: { paddingHorizontal: 0, paddingVertical: 0, overflow: 'hidden' },
-  sectionLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+    letterSpacing: -0.2,
+    ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
+  },
   sub: { fontSize: 13, fontWeight: '500', lineHeight: 18 },
   heroRow: {
     flexDirection: 'row',
@@ -755,6 +1209,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 2,
   },
+  counterFieldLabel: { fontSize: 12, fontWeight: '600', lineHeight: 16 },
   counterValueRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -793,10 +1248,27 @@ const styles = StyleSheet.create({
   counterTitle: { fontSize: 15, fontWeight: '700' },
   counterSlash: { fontSize: 24, fontWeight: '700', lineHeight: 32 },
   goalBadge: { fontSize: 14, fontWeight: '800', textAlign: 'center' },
-  bigPlusBtn: { minHeight: 64, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#000' },
-  bigPlusText: { color: '#fff', fontSize: 28, fontWeight: '800' },
+  counterPrimaryRow: { flexDirection: 'row', gap: 8 },
+  bigCounterBtn: {
+    flex: 1,
+    minHeight: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  bigCounterText: {
+    fontSize: 28,
+    fontWeight: '800',
+    lineHeight: 34,
+    textAlign: 'center',
+    ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
+  },
+  bigCounterTextOnAccent: { color: '#fff' },
   counterRow: { flexDirection: 'row', gap: 8 },
   counterBtn: { flex: 1, minHeight: 40, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  textActionBtn: { paddingVertical: 4 },
   streakBadge: { alignSelf: 'center', borderWidth: 2, paddingHorizontal: 14, paddingVertical: 8 },
   habitBtn: { minHeight: 56, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
@@ -841,6 +1313,40 @@ const styles = StyleSheet.create({
   reminderTextCol: { flex: 1, gap: 2 },
   reminderTime: { fontSize: 18, fontWeight: '700' },
   reminderMeta: { fontSize: 12, fontWeight: '500' },
+  reminderEditRow: {
+    borderWidth: 2,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  reminderEditMain: { flex: 1, gap: 8, minWidth: 0 },
+  reminderEditHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  reminderEditTime: { fontSize: 16, fontWeight: '700' },
+  reminderLabelInput: {
+    borderWidth: 2,
+    minHeight: 40,
+    paddingHorizontal: 10,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reminderEditActions: { alignItems: 'center', gap: 8, paddingTop: 2 },
+  reminderRemove: { fontSize: 11, fontWeight: '600' },
+  reminderAddRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  reminderAddInput: {
+    borderWidth: 2,
+    minHeight: 40,
+    paddingHorizontal: 10,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reminderAddBtn: {
+    borderWidth: 2,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 40,
+    justifyContent: 'center',
+  },
   addRow: { flexDirection: 'row', gap: 8, alignItems: 'center', borderBottomWidth: 1, paddingBottom: 10, marginBottom: 4 },
   addInput: { flex: 1, fontSize: 15, fontWeight: '600', paddingVertical: 6 },
   addBtn: { borderWidth: 2, paddingHorizontal: 10, paddingVertical: 8 },

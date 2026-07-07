@@ -6,7 +6,6 @@ import {
   normalizeCatalogKeysAfterHealthIntakeMerge,
   normalizeHealthIntakeDetailConfig,
 } from '@entities/day-plan/lib/healthIntakeDetailConfig';
-import { BUILTIN_WATER_SET_ID } from './defaultFixedFlowSets';
 import { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
 import { loadFixedFlowSetsState, saveFixedFlowSetsState } from './fixedFlowSetsStorage';
 import {
@@ -67,7 +66,6 @@ function migrateFixedFlowSetKeys(): void {
   const state = loadFixedFlowSetsState();
   let changed = false;
   const sets = state.sets.map((set) => {
-    if (set.id === BUILTIN_WATER_SET_ID) return set;
     const merged = normalizeCatalogKeysAfterHealthIntakeMerge(
       set.items.map((item) => item.categoryKey),
     );
@@ -138,7 +136,6 @@ export function purgeRetiredHealthIntakeFromFixedFlowSets(): void {
   const state = loadFixedFlowSetsState();
   let changed = false;
   const sets = state.sets.map((set) => {
-    if (set.id === BUILTIN_WATER_SET_ID) return set;
     const items = set.items.filter((item) => !isRetiredHealthIntakeLegacyKey(item.categoryKey));
     if (items.length !== set.items.length) changed = true;
     return { ...set, items };

@@ -8,7 +8,6 @@ import {
   type SpineTimelineRow,
   resolveBlockCategoryKey,
 } from '@entities/day-plan';
-import { PrimaryColor } from '@shared/config/theme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -93,29 +92,20 @@ function SpineNode({
   palette: SpineTimelinePalette;
   isDark: boolean;
 }) {
-  const startFill = isDark ? '#FAFAFA' : PrimaryColor.rgb;
   const blockBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)';
+  const anchorIconColor = isDark ? '#93C5FD' : '#2563EB';
 
   if (variant === 'start') {
     return (
-      <View
-        style={[
-          styles.nodeCircle,
-          styles.nodeCircleLg,
-          {
-            backgroundColor: startFill,
-            borderWidth: isDark ? 0 : 2,
-            borderColor: palette.ink,
-          },
-        ]}>
-        <IconSymbol name="alarm" size={18} color={isDark ? '#111111' : '#FFFFFF'} />
+      <View style={[styles.nodeCircle, styles.nodeCircleLg, { backgroundColor: blockBg }]}>
+        <IconSymbol name="sun.horizon.fill" size={16} color={anchorIconColor} />
       </View>
     );
   }
   if (variant === 'end') {
     return (
       <View style={[styles.nodeCircle, styles.nodeCircleLg, { backgroundColor: blockBg }]}>
-        <IconSymbol name="moon.fill" size={16} color={isDark ? '#93C5FD' : '#2563EB'} />
+        <IconSymbol name="moon.fill" size={16} color={anchorIconColor} />
       </View>
     );
   }
@@ -130,12 +120,10 @@ function AnchorRow({
   row,
   palette,
   isDark,
-  tone,
 }: {
   row: Extract<SpineTimelineRow, { kind: 'anchor' }>;
   palette: SpineTimelinePalette;
   isDark: boolean;
-  tone: string;
 }) {
   const isStart = row.role === 'dayStart';
   return (
@@ -155,7 +143,7 @@ function AnchorRow({
         </ThemedText>
         <ThemedText style={[styles.titleText, { color: palette.ink }]}>{row.label}</ThemedText>
       </View>
-      <CompleteRadio checked={false} tone={tone} isDark={isDark} />
+      <View style={styles.completeSpacer} />
     </View>
   );
 }
@@ -222,8 +210,6 @@ export function SpineTimelineView({
   onReorderBlocks,
   onReorderDragActiveChange,
 }: Props) {
-  const startTone = isDark ? '#FAFAFA' : PrimaryColor.rgb;
-  const endTone = isDark ? '#93C5FD' : '#2563EB';
   const blockRowHeightRef = useRef(56);
 
   const spineBlockCount = useMemo(
@@ -269,7 +255,6 @@ export function SpineTimelineView({
             row={row}
             palette={palette}
             isDark={isDark}
-            tone={row.role === 'dayStart' ? startTone : endTone}
           />
         );
       }
@@ -316,8 +301,6 @@ export function SpineTimelineView({
     palette,
     isDark,
     rowSurface,
-    startTone,
-    endTone,
     completedBlockIds,
     reorderEnabled,
     onAddBlockInGap,

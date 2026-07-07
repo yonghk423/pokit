@@ -44,6 +44,7 @@ import {
   sortDayPlanBlocks,
   buildPrioritySectionCompletionKey,
   parsePrioritySectionCompletionKey,
+  resolveCategoryImportance,
   useDayPlanStore
 } from '@entities/day-plan';
 import { useFixedFlowSetsStore } from '@entities/day-plan';
@@ -1000,6 +1001,8 @@ export function PriorityBasedPlanSection({
     setPrioritySectionsMealSlots,
     migrateSectionCompletionOnSlotMove,
     finishPriorityCategoryForToday,
+    priorityCategoryImportance,
+    cyclePriorityCategoryImportance,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
@@ -1020,6 +1023,8 @@ export function PriorityBasedPlanSection({
       setPrioritySectionsMealSlots: s.setPrioritySectionsMealSlots,
       migrateSectionCompletionOnSlotMove: s.migrateSectionCompletionOnSlotMove,
       finishPriorityCategoryForToday: s.finishPriorityCategoryForToday,
+      priorityCategoryImportance: s.priorityCategoryImportance,
+      cyclePriorityCategoryImportance: s.cyclePriorityCategoryImportance,
     })),
   );
   const [lastAddedCategoryKey, setLastAddedCategoryKey] = useState<string | null>(null);
@@ -2620,6 +2625,13 @@ export function PriorityBasedPlanSection({
                                     icon={cat.icon}
                                     label={cat.label}
                                     subtitle={categorySubtitleByKey(cat.key)}
+                                    itemPriority={resolveCategoryImportance(
+                                      priorityCategoryImportance,
+                                      cat.key,
+                                    )}
+                                    onCycleItemPriority={() =>
+                                      cyclePriorityCategoryImportance(cat.key)
+                                    }
                                     isFocusStarted={isFocusStarted}
                                     isCompleted={rowDone}
                                     isDark={isDark}

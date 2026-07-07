@@ -177,11 +177,7 @@ export function SpineScheduleEditSheet({
                       styles.routinePanel,
                       { borderColor: palette.line, backgroundColor: inputBg },
                     ]}>
-                    <ScrollView
-                      nestedScrollEnabled
-                      showsVerticalScrollIndicator
-                      keyboardShouldPersistTaps="handled"
-                      contentContainerStyle={styles.routinePanelContent}>
+                    <View style={styles.routinePanelContent}>
                       <Pressable
                         accessibilityRole="button"
                         accessibilityState={{ selected: categoryKey === null }}
@@ -263,7 +259,7 @@ export function SpineScheduleEditSheet({
                           </View>
                         </View>
                       ))}
-                    </ScrollView>
+                    </View>
                   </View>
                 </View>
               ) : null}
@@ -489,8 +485,6 @@ const styles = StyleSheet.create({
   routinePanel: {
     borderWidth: 2,
     borderRadius: 0,
-    maxHeight: 280,
-    overflow: 'hidden',
   },
   routinePanelContent: {
     padding: 10,

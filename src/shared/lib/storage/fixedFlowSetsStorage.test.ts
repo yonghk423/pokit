@@ -119,16 +119,59 @@ describe('fixedFlowSetsStorage', () => {
       ],
     });
 
-    expect(state.sets.map((set) => set.id)).toEqual([
-      'set_daily',
-      'set_weekend',
-      'set_fasting',
-      'set_water',
-      'set_daily_life',
-      'set_abstain',
-      'manual_a',
-    ]);
+    expect(state.sets.map((set) => set.id)).toEqual(['set_daily', 'set_weekend', 'manual_a']);
     expect(state.activeSetIds).toEqual(['set_daily', 'manual_a']);
+  });
+
+  it('renames legacy 기본 세트 to 예시 세트 and seeds example items when empty', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: [],
+      sets: [
+        {
+          id: 'default',
+          name: '기본 세트',
+          applyRule: 'manual',
+          items: [],
+        },
+      ],
+    });
+
+    const exampleSet = state.sets.find((set) => set.id === 'default');
+    expect(exampleSet?.name).toBe('예시 세트');
+    expect(exampleSet?.items.map((item) => item.categoryKey)).toEqual([
+      'healthIntake',
+      'fasting',
+      'customFlow:preset_daily_clean',
+    ]);
+  });
+
+  it('removes legacy built-in preset sets (fasting, water, daily life, abstain)', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: ['set_water', 'set_daily'],
+      sets: [
+        {
+          id: 'set_daily',
+          name: '데일리 루틴',
+          applyRule: 'daily',
+          items: [{ categoryKey: 'reading', enabled: true }],
+        },
+        {
+          id: 'set_water',
+          name: '수분 섭취',
+          applyRule: 'daily',
+          items: [{ categoryKey: 'water', enabled: true }],
+        },
+        {
+          id: 'set_fasting',
+          name: '체중조절',
+          applyRule: 'daily',
+          items: [{ categoryKey: 'fasting', enabled: true }],
+        },
+      ],
+    });
+
+    expect(state.sets.map((set) => set.id)).toEqual(['set_daily', 'set_weekend']);
+    expect(state.activeSetIds).toEqual(['set_daily']);
   });
 
   it('includes daily preset keys only when toggled on for today', () => {

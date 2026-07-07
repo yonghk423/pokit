@@ -21,6 +21,9 @@ import {
   type MeasurementDetailDataConfig,
   type OtherDetailDataConfig,
 } from './goalCategorySessionConfig';
+import { pickCounterSettingsForCreate } from './counterPresetSamples';
+import { pickMeasurementSettingsForCreate } from './measurementPresetSamples';
+import { pickReminderSettingsForCreate } from './reminderPresetSamples';
 
 export {
   CUSTOM_FLOW_TEMPLATE_KEYS,
@@ -69,7 +72,7 @@ export const CUSTOM_FLOW_TEMPLATE_SUMMARIES: Record<CustomFlowTemplateKey, strin
   abstain: '하지 말아야 할 습관을 목록으로 두고, 오늘 지켰는지 체크해요.',
   measurement: '체중·혈압처럼 숫자를 기록하고 추이·목표를 확인해요.',
   habit: '오늘 했는지만 남기고 연속 기록을 쌓아요.',
-  counter: '물 잔 수처럼 횟수를 세고 하루 목표까지 채워요.',
+  counter: '횟수를 세고 하루 목표까지 채워요.',
   focus: '정해 둔 시간 동안 집중 타이머로 진행해요.',
   journal: '질문에 답하고 기분과 함께 짧게 남겨요.',
   reminder: '정해 둔 시간마다 완료 여부를 체크해요.',
@@ -94,6 +97,8 @@ export function buildInitialCustomFlowDetailConfig(
     displayName?: string;
     icon?: string;
     accentColor?: string;
+    /** 만들기·미리보기에서 고른 템플릿 설정(런타임 기록값 제외) */
+    templateSeed?: unknown;
   } = {},
 ): CustomFlowDetailConfig {
   const { displayName, icon, accentColor } = input;
@@ -104,21 +109,38 @@ export function buildInitialCustomFlowDetailConfig(
   };
 
   switch (templateKey) {
-    case 'measurement':
+    case 'measurement': {
+      const measurementSeed = input.templateSeed
+        ? pickMeasurementSettingsForCreate(input.templateSeed)
+        : null;
       return normalizeMeasurementDetailConfig({
         ...getInitialMeasurementDataConfig(),
         ...appearance,
+        ...(measurementSeed ?? {}),
       });
+    }
     case 'habit':
       return normalizeHabitDetailConfig({ ...getInitialHabitDataConfig(), ...appearance });
-    case 'counter':
-      return normalizeCounterDetailConfig({ ...getInitialCounterDataConfig(), ...appearance });
+    case 'counter': {
+      const counterSeed = input.templateSeed ? pickCounterSettingsForCreate(input.templateSeed) : null;
+      return normalizeCounterDetailConfig({
+        ...getInitialCounterDataConfig(),
+        ...appearance,
+        ...(counterSeed ?? {}),
+      });
+    }
     case 'focus':
       return normalizeFocusDetailConfig({ ...getInitialFocusDataConfig(), ...appearance });
     case 'journal':
       return normalizeJournalDetailConfig({ ...getInitialJournalDataConfig(), ...appearance });
-    case 'reminder':
-      return normalizeReminderDetailConfig({ ...getInitialReminderDataConfig(), ...appearance });
+    case 'reminder': {
+      const reminderSeed = input.templateSeed ? pickReminderSettingsForCreate(input.templateSeed) : null;
+      return normalizeReminderDetailConfig({
+        ...getInitialReminderDataConfig(),
+        ...appearance,
+        ...(reminderSeed ?? {}),
+      });
+    }
     case 'abstain':
       return normalizeOtherDetailConfig({
         ...getInitialOtherDataConfig(),
@@ -196,12 +218,15 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
     case 'counter':
       return normalizeCounterDetailConfig({
         ...base,
-        activityLabel: '물 마시기',
-        unitLabel: '잔',
+        activityLabel: '',
+        unitKey: 'count',
         goalCount: 8,
-        currentCount: 3,
+        currentCount: 0,
+        stepSize: 1,
+        secondaryStepSize: 2,
         dailyReset: true,
         countDateKey: today,
+        history: [],
       });
     case 'habit':
       return normalizeHabitDetailConfig({
@@ -226,7 +251,11 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
     case 'reminder':
       return normalizeReminderDetailConfig({
         ...base,
-        reminderTimes: ['09:00', '12:00', '18:00'],
+        reminderItems: [
+          { time: '09:00', label: '아침 영양제' },
+          { time: '12:00', label: '물 한 잔' },
+          { time: '18:00', label: '저녁 약' },
+        ],
         completedTimes: ['09:00'],
       });
     case 'focus':

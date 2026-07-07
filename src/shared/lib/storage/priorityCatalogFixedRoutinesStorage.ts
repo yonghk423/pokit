@@ -1,4 +1,8 @@
 import {
+  EXAMPLE_CUSTOM_FLOW_SET_ITEM_KEYS,
+  EXAMPLE_CUSTOM_FLOW_SET_NAME,
+} from './defaultFixedFlowSets';
+import {
   type FixedFlowSet,
   loadActiveFixedFlowCategoryKeys,
   loadFixedFlowSetsState,
@@ -38,11 +42,13 @@ export function saveRoutineCatalogSelectionKeys(categoryKeys: string[]): void {
 }
 
 function createDefaultSet(categoryKeys: string[]): FixedFlowSet {
+  const keys =
+    categoryKeys.length > 0 ? categoryKeys : [...EXAMPLE_CUSTOM_FLOW_SET_ITEM_KEYS];
   return {
     id: 'default',
-    name: '기본 세트',
+    name: EXAMPLE_CUSTOM_FLOW_SET_NAME,
     applyRule: 'manual',
-    items: categoryKeys.map((categoryKey) => ({ categoryKey, enabled: true })),
+    items: keys.map((categoryKey) => ({ categoryKey, enabled: true })),
   };
 }
 
@@ -86,7 +92,7 @@ export function savePriorityCatalogFixedRoutineKeys(categoryKeys: string[]): voi
   const idx = sets.findIndex((s) => s.id === activeId);
   const updated = createDefaultSet(normalized);
   updated.id = activeId;
-  updated.name = sets[idx]?.name ?? '기본 세트';
+  updated.name = sets[idx]?.name ?? EXAMPLE_CUSTOM_FLOW_SET_NAME;
   updated.applyRule = sets[idx]?.applyRule ?? 'manual';
   if (idx >= 0) sets[idx] = updated;
   else sets.push(updated);

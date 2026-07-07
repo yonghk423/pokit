@@ -19,6 +19,27 @@ import {
   workStudyDocumentIsEmpty,
   type WorkStudyDocument,
 } from './workStudyDocument';
+import {
+  MEASUREMENT_UNIT_OPTIONS,
+  normalizeMeasurementCustomUnitLabel,
+  normalizeMeasurementUnit,
+  type MeasurementUnitKey,
+} from './measurementUnits';
+
+export {
+  formatMeasurementDelta,
+  formatMeasurementValue,
+  measurementQuickDeltas,
+  measurementValuePrecision,
+  MEASUREMENT_METRIC_PRESETS,
+  MEASUREMENT_UNIT_OPTIONS,
+  normalizeMeasurementCustomUnitLabel,
+  normalizeMeasurementUnit,
+  resolveMeasurementUnitLabel,
+  roundMeasurementValue,
+  type MeasurementMetricPreset,
+  type MeasurementUnitKey,
+} from './measurementUnits';
 
 function asObj(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -499,20 +520,7 @@ export function getInitialOtherDataConfig(): OtherDetailDataConfig {
 
 // --- custom flow templates (measurement) ---
 
-export type MeasurementUnitKey = 'kg' | 'mmHg' | 'hours' | 'percent' | 'none';
-
 export type MeasurementFrequency = 'once' | 'multiple';
-
-export const MEASUREMENT_UNIT_OPTIONS: ReadonlyArray<{
-  key: MeasurementUnitKey;
-  labelKo: string;
-}> = [
-    { key: 'kg', labelKo: 'kg' },
-    { key: 'mmHg', labelKo: 'mmHg' },
-    { key: 'hours', labelKo: '시간' },
-    { key: 'percent', labelKo: '%' },
-    { key: 'none', labelKo: '없음' },
-  ];
 
 export type MeasurementHistoryEntry = {
   dateKey: string;
@@ -526,6 +534,8 @@ export type MeasurementDetailDataConfig = {
   /** 기록 항목 이름 — 예: 체중, 혈압 */
   metricLabel: string;
   unit: MeasurementUnitKey;
+  /** unit=custom 일 때 표시 단위 */
+  customUnitLabel?: string;
   useGoalValue: boolean;
   goalValue: number;
   /** 오늘 기록값(세션·히스토리용) */
@@ -541,14 +551,6 @@ export type MeasurementDetailDataConfig = {
   accentColor?: string;
 };
 
-const MEASUREMENT_UNITS = new Set<MeasurementUnitKey>(['kg', 'mmHg', 'hours', 'percent', 'none']);
-
-function normalizeMeasurementUnit(raw: unknown): MeasurementUnitKey {
-  return typeof raw === 'string' && MEASUREMENT_UNITS.has(raw as MeasurementUnitKey)
-    ? (raw as MeasurementUnitKey)
-    : 'none';
-}
-
 function normalizeMeasurementFrequency(raw: unknown): MeasurementFrequency {
   return raw === 'multiple' ? 'multiple' : 'once';
 }
@@ -559,6 +561,7 @@ export function normalizeMeasurementDetailConfig(raw: unknown): MeasurementDetai
   const summary = normalizeRoutineSummary(o.summary);
   const metricLabel = clampStr(o.metricLabel, 40);
   const unit = normalizeMeasurementUnit(o.unit);
+  const customUnitLabel = normalizeMeasurementCustomUnitLabel(o.customUnitLabel);
   const useGoalValue = typeof o.useGoalValue === 'boolean' ? o.useGoalValue : false;
   const goalRaw = Number(o.goalValue);
   const goalValue = Number.isFinite(goalRaw) ? Math.max(0, Math.min(99999, goalRaw)) : 0;
@@ -594,6 +597,7 @@ export function normalizeMeasurementDetailConfig(raw: unknown): MeasurementDetai
     summary,
     metricLabel,
     unit,
+    ...(unit === 'custom' && customUnitLabel.length > 0 ? { customUnitLabel } : {}),
     useGoalValue,
     goalValue,
     currentValue,

@@ -1,6 +1,10 @@
 import { normalizeDayMealSlot, resolveFixedFlowItemMealSlot, type DayMealSlot } from './dayMealSlot';
 import {
   LEGACY_WEEKDAY_SET_ID,
+  LEGACY_CUSTOM_FLOW_SET_NAME,
+  EXAMPLE_CUSTOM_FLOW_SET_NAME,
+  REMOVED_BUILTIN_PRESET_SET_IDS,
+  createExampleCustomFlowSetItems,
   isBuiltinPresetScheduleSet,
   mergeBuiltInPresetSets,
   shouldMigrateAwayScheduledSet,
@@ -59,7 +63,7 @@ type PersistedShape = Partial<FixedFlowSetsState> & {
   activeSetId?: string | null;
 };
 
-const FALLBACK_SET_NAME = '기본 세트';
+const FALLBACK_SET_NAME = EXAMPLE_CUSTOM_FLOW_SET_NAME;
 
 const VALID_APPLY_RULES = new Set<FixedFlowSetApplyRule>([
   'manual',
@@ -183,6 +187,50 @@ function mergeCategoryApplyWeekdays(categoryKey: string, weekdays: WeekdayIndex[
   saveGoalDetailCategoryConfig(key, { ...base, applyWeekdays: weekdays });
 }
 
+/** 나만의 루틴 예시 그룹 — 이름 변경·빈 항목 시 예시 채우기 */
+function migrateExampleCustomFlowSets(sets: FixedFlowSet[]): FixedFlowSet[] {
+  return sets.map((set) => {
+    if (set.applyRule !== 'manual') return set;
+    const isLegacyName = set.name === LEGACY_CUSTOM_FLOW_SET_NAME;
+    const isExampleName = set.name === EXAMPLE_CUSTOM_FLOW_SET_NAME;
+    if (!isLegacyName && !isExampleName) return set;
+    const name = isLegacyName ? EXAMPLE_CUSTOM_FLOW_SET_NAME : set.name;
+    const items = set.items.length > 0 ? set.items : createExampleCustomFlowSetItems();
+    if (name === set.name && items === set.items) return set;
+    return { ...set, name, items };
+  });
+}
+
+function hadExampleCustomFlowSetMigration(raw: unknown): boolean {
+  if (!Array.isArray(raw)) return false;
+  return raw.some((row) => {
+    if (!row || typeof row !== 'object') return false;
+    const r = row as Record<string, unknown>;
+    if (normalizeApplyRule(r.applyRule) !== 'manual') return false;
+    const name = typeof r.name === 'string' ? r.name.trim() : '';
+    if (name === LEGACY_CUSTOM_FLOW_SET_NAME) return true;
+    if (name === EXAMPLE_CUSTOM_FLOW_SET_NAME && normalizeItems(r.items).length === 0) return true;
+    return false;
+  });
+}
+
+/** 레거시 빌트인 프리셋(체중조절·수분·일상·금지) 제거 */
+function migrateRemovedBuiltinPresetSets(sets: FixedFlowSet[]): FixedFlowSet[] {
+  const removed = new Set(REMOVED_BUILTIN_PRESET_SET_IDS as readonly string[]);
+  return sets.filter((set) => !removed.has(set.id));
+}
+
+function hadRemovedBuiltinPresetSets(raw: unknown): boolean {
+  if (!Array.isArray(raw)) return false;
+  return raw.some((row) => {
+    if (!row || typeof row !== 'object') return false;
+    const id = typeof (row as Record<string, unknown>).id === 'string'
+      ? (row as Record<string, unknown>).id.trim()
+      : '';
+    return (REMOVED_BUILTIN_PRESET_SET_IDS as readonly string[]).includes(id);
+  });
+}
+
 /** 요일별 그룹(set_always·custom 등)만 목표 상세로 이전 — 데일리·주말은 유지 */
 function migrateRemovedScheduledSets(sets: FixedFlowSet[]): FixedFlowSet[] {
   for (const set of sets) {
@@ -265,7 +313,11 @@ function normalizeActiveMealSlotsBySetId(
 export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState {
   const raw = input && typeof input === 'object' ? (input as PersistedShape) : {};
   const sets = mergeBuiltInPresetSets(
-    migrateRemovedScheduledSets(migrateLegacyBuiltInSets(normalizeSets(raw.sets))),
+    migrateExampleCustomFlowSets(
+      migrateRemovedBuiltinPresetSets(
+        migrateRemovedScheduledSets(migrateLegacyBuiltInSets(normalizeSets(raw.sets))),
+      ),
+    ),
   );
   const activeSetIds = normalizeActiveSetIds(raw, sets);
   const activeMealSlotsBySetId = normalizeActiveMealSlotsBySetId(raw, sets);
@@ -334,7 +386,11 @@ export function collectActiveFixedFlowCategoryKeys(
 export function loadFixedFlowSetsState(): FixedFlowSetsState {
   const raw = localStorageClient.getJson<PersistedShape>(StorageKeys.fixedFlowSets);
   const normalized = normalizeFixedFlowSetsState(raw);
-  if (hadRemovedScheduledSets(raw?.sets)) {
+  if (
+    hadRemovedScheduledSets(raw?.sets) ||
+    hadRemovedBuiltinPresetSets(raw?.sets) ||
+    hadExampleCustomFlowSetMigration(raw?.sets)
+  ) {
     saveFixedFlowSetsState(normalized);
     return normalized;
   }

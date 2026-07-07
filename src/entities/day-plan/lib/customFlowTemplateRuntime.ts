@@ -1,25 +1,69 @@
 import { addDaysToLocalDateKey, getLocalDateKey } from './localDateKey';
 import type {
   CounterDetailDataConfig,
+  CounterHistoryEntry,
   HabitDetailDataConfig,
   JournalDetailDataConfig,
   JournalEntry,
   ReminderDetailDataConfig,
 } from './customFlowTemplateConfigs';
+import { MAX_CUSTOM_REMINDER_TIMES, normalizeReminderDetailConfig } from './customFlowTemplateConfigs';
 import type {
   MeasurementDetailDataConfig,
   MeasurementHistoryEntry,
 } from './goalCategorySessionConfig';
+import {
+  formatMeasurementDelta,
+  measurementQuickDeltas,
+  roundMeasurementValue,
+} from './measurementUnits';
 import { parseHHmmToMinutes } from './parseTime';
+import {
+  normalizeReminderLabel,
+  normalizeReminderTime,
+  sortReminderScheduleItems,
+  type ReminderScheduleItem,
+} from './reminderSchedule';
 import { getLocalMinutesOfDayNow } from './dayPlanTime';
 
 export function ensureCounterDayBoundary(
   cfg: CounterDetailDataConfig,
   todayKey: string = getLocalDateKey(),
 ): CounterDetailDataConfig {
-  if (!cfg.dailyReset) return cfg;
-  if (cfg.countDateKey === todayKey) return cfg;
-  return { ...cfg, currentCount: 0, countDateKey: todayKey };
+  if (!cfg.dailyReset) return syncCounterHistoryForToday(cfg, todayKey);
+  if (cfg.countDateKey === todayKey) return syncCounterHistoryForToday(cfg, todayKey);
+  const history =
+    cfg.countDateKey.length >= 10 && cfg.currentCount > 0
+      ? upsertCounterHistoryEntry(cfg.history, {
+          dateKey: cfg.countDateKey,
+          count: cfg.currentCount,
+        })
+      : cfg.history;
+  return syncCounterHistoryForToday(
+    { ...cfg, currentCount: 0, countDateKey: todayKey, history },
+    todayKey,
+  );
+}
+
+function upsertCounterHistoryEntry(
+  history: CounterHistoryEntry[],
+  entry: CounterHistoryEntry,
+): CounterHistoryEntry[] {
+  return [entry, ...history.filter((row) => row.dateKey !== entry.dateKey)].slice(0, 14);
+}
+
+function syncCounterHistoryForToday(
+  cfg: CounterDetailDataConfig,
+  todayKey: string,
+): CounterDetailDataConfig {
+  if (cfg.currentCount <= 0 || cfg.countDateKey !== todayKey) return cfg;
+  return {
+    ...cfg,
+    history: upsertCounterHistoryEntry(cfg.history, {
+      dateKey: todayKey,
+      count: cfg.currentCount,
+    }),
+  };
 }
 
 export function applyCounterDelta(
@@ -28,15 +72,32 @@ export function applyCounterDelta(
   todayKey: string = getLocalDateKey(),
 ): CounterDetailDataConfig {
   const base = ensureCounterDayBoundary(cfg, todayKey);
-  const next = Math.max(0, base.currentCount + delta);
-  return { ...base, currentCount: next, countDateKey: todayKey };
+  const next = Math.max(0, Math.min(base.goalCount, base.currentCount + delta));
+  return syncCounterHistoryForToday(
+    { ...base, currentCount: next, countDateKey: todayKey },
+    todayKey,
+  );
+}
+
+export function applyCounterFillRemaining(
+  cfg: CounterDetailDataConfig,
+  todayKey: string = getLocalDateKey(),
+): CounterDetailDataConfig {
+  const base = ensureCounterDayBoundary(cfg, todayKey);
+  return syncCounterHistoryForToday(
+    { ...base, currentCount: base.goalCount, countDateKey: todayKey },
+    todayKey,
+  );
 }
 
 export function resetCounterCount(
   cfg: CounterDetailDataConfig,
   todayKey: string = getLocalDateKey(),
 ): CounterDetailDataConfig {
-  return { ...ensureCounterDayBoundary(cfg, todayKey), currentCount: 0, countDateKey: todayKey };
+  return syncCounterHistoryForToday(
+    { ...ensureCounterDayBoundary(cfg, todayKey), currentCount: 0, countDateKey: todayKey },
+    todayKey,
+  );
 }
 
 export function applyHabitDoneToggle(
@@ -87,14 +148,17 @@ export function buildHabitWeekDots(
   return dots;
 }
 
+export { formatMeasurementDelta, measurementQuickDeltas } from './measurementUnits';
+
 export function applyMeasurementSave(
   cfg: MeasurementDetailDataConfig,
   nextValue: number,
   todayKey: string = getLocalDateKey(),
 ): MeasurementDetailDataConfig {
+  const value = roundMeasurementValue(nextValue, cfg.unit);
   const previousValue =
-    cfg.currentValue > 0 && cfg.currentValue !== nextValue ? cfg.currentValue : cfg.previousValue;
-  const historyEntry: MeasurementHistoryEntry = { dateKey: todayKey, value: nextValue };
+    cfg.currentValue > 0 && cfg.currentValue !== value ? cfg.currentValue : cfg.previousValue;
+  const historyEntry: MeasurementHistoryEntry = { dateKey: todayKey, value };
   const history = [
     historyEntry,
     ...cfg.history.filter((h) => h.dateKey !== todayKey),
@@ -102,32 +166,10 @@ export function applyMeasurementSave(
   return {
     ...cfg,
     previousValue,
-    currentValue: nextValue,
+    currentValue: value,
     history,
     lastRecordedDateKey: todayKey,
   };
-}
-
-export function formatMeasurementDelta(current: number, previous: number): string | null {
-  if (previous <= 0 || current === previous) return null;
-  const delta = current - previous;
-  const sign = delta > 0 ? '+' : '';
-  return `${sign}${delta.toFixed(1).replace(/\.0$/, '')}`;
-}
-
-export function measurementQuickDeltas(unit: string): number[] {
-  switch (unit) {
-    case 'kg':
-      return [-0.5, -0.1, 0.1, 0.5];
-    case 'mmHg':
-      return [-5, -1, 1, 5];
-    case 'hours':
-      return [-1, -0.5, 0.5, 1];
-    case 'percent':
-      return [-5, -1, 1, 5];
-    default:
-      return [-5, -1, 1, 5];
-  }
 }
 
 export function measurementRecordedToday(
@@ -173,6 +215,57 @@ export function toggleReminderTimeDone(
     ? cfg.completedTimes.filter((t) => t !== time)
     : [...cfg.completedTimes, time].sort();
   return { ...cfg, completedTimes };
+}
+
+function withReminderItems(
+  cfg: ReminderDetailDataConfig,
+  items: ReminderScheduleItem[],
+): ReminderDetailDataConfig {
+  const times = new Set(items.map((item) => item.time));
+  return normalizeReminderDetailConfig({
+    ...cfg,
+    reminderItems: items,
+    completedTimes: cfg.completedTimes.filter((time) => times.has(time)),
+  });
+}
+
+export function updateReminderItemLabel(
+  cfg: ReminderDetailDataConfig,
+  time: string,
+  label: string,
+): ReminderDetailDataConfig {
+  const items = cfg.reminderItems.map((item) =>
+    item.time === time ? { ...item, label: normalizeReminderLabel(label) } : item,
+  );
+  return withReminderItems(cfg, items);
+}
+
+export function addReminderScheduleItem(
+  cfg: ReminderDetailDataConfig,
+  timeRaw: string,
+  labelRaw: string,
+): ReminderDetailDataConfig | null {
+  const time = normalizeReminderTime(timeRaw);
+  if (!time) return null;
+  if (cfg.reminderItems.some((item) => item.time === time)) return null;
+  if (cfg.reminderItems.length >= MAX_CUSTOM_REMINDER_TIMES) return null;
+  const items = sortReminderScheduleItems([
+    ...cfg.reminderItems,
+    { time, label: normalizeReminderLabel(labelRaw) },
+  ]);
+  return withReminderItems(cfg, items);
+}
+
+export function removeReminderScheduleItem(
+  cfg: ReminderDetailDataConfig,
+  time: string,
+): ReminderDetailDataConfig {
+  const items = cfg.reminderItems.filter((item) => item.time !== time);
+  return normalizeReminderDetailConfig({
+    ...cfg,
+    reminderItems: items.length > 0 ? items : [{ time: '09:00', label: '' }],
+    completedTimes: cfg.completedTimes.filter((t) => t !== time),
+  });
 }
 
 export function reminderProgress(cfg: ReminderDetailDataConfig): { done: number; total: number } {

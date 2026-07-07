@@ -4,6 +4,7 @@ import { loadDayPlanDraft, saveDayPlanDraft, syncWidgetTimelineFromStorage, norm
 
 import { getLocalMinutesOfDayNow } from '../lib/dayPlanTime';
 import { defaultPriorityWindowFromNow } from '../lib/dayPlanTimeMath';
+import { cycleItemPriority, normalizeItemPriority } from '../lib/itemPriority';
 import { addDaysToLocalDateKey, getLocalDateKey } from '../lib/localDateKey';
 import { parseHHmmToMinutes } from '../lib/parseTime';
 import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
@@ -22,6 +23,7 @@ import {
   snapshotRoutinePlannedKeys,
 } from '../lib/routineHistorySnapshot';
 import type { PlanMode } from './planMode';
+import type { TodoPriority } from './types';
 import {
   registerDraftSyncTodayTabAccessors,
   syncTodayTabWithFixedRoutineApply,
@@ -47,6 +49,8 @@ type DayPlanDraftState = {
   priorityStart: string;
   priorityEnd: string;
   priorityCategoryOrder: string[];
+  /** 담기 목록 항목별 중요도 — 미설정 시 보통 */
+  priorityCategoryImportance: Record<string, TodoPriority>;
   /** 히스토리 데일리 진입 시 반영할 루틴 시간대 완료(담기 체크) */
   routineHistoryPendingByDate: Record<string, string[]>;
   /** 당일 담기 계획 스냅샷 — 구간 종료 후에도 완료율 분모 유지 */
@@ -91,6 +95,8 @@ type DayPlanDraftState = {
   setPriorityStart: (value: string) => void;
   setPriorityEnd: (value: string) => void;
   setPriorityCategoryOrder: (value: string[] | ((prev: string[]) => string[])) => void;
+  /** 담기 목록 항목 중요도 순환 — 높음 → 보통 → 낮음 */
+  cyclePriorityCategoryImportance: (categoryKey: string) => void;
   clearRoutineHistoryPendingForDate: (dateKey: string) => void;
   bumpCategoryLabelEpoch: () => void;
   bumpWaterReminderSyncEpoch: () => void;
@@ -189,6 +195,34 @@ function pruneMealSlotsArrayRecordForOrder(
   return changed ? next : record;
 }
 
+function normalizePriorityCategoryImportance(raw: unknown): Record<string, TodoPriority> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, TodoPriority> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    const trimmed = key.trim();
+    if (!trimmed) continue;
+    const priority = normalizeItemPriority(value);
+    if (priority !== 'medium') out[trimmed] = priority;
+  }
+  return out;
+}
+
+function prunePriorityCategoryImportanceForOrder(
+  record: Record<string, TodoPriority>,
+  order: readonly string[],
+): Record<string, TodoPriority> {
+  const allowed = new Set(order);
+  const next = { ...record };
+  let changed = false;
+  for (const key of Object.keys(next)) {
+    if (!allowed.has(key)) {
+      delete next[key];
+      changed = true;
+    }
+  }
+  return changed ? next : record;
+}
+
 function createInitialState() {
   return {
     planMode: 'priority' as PlanMode,
@@ -201,6 +235,7 @@ function createInitialState() {
     priorityOvernightEndAuto: false,
     ...createInitialPriorityWindow(),
     priorityCategoryOrder: [] as string[],
+    priorityCategoryImportance: {} as Record<string, TodoPriority>,
     routineHistoryPendingByDate: {} as Record<string, string[]>,
     routineHistoryPlannedKeysByDate: {} as Record<string, string[]>,
     categoryLabelEpoch: 0,
@@ -259,6 +294,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       priorityCategoryOrder: dedupePriorityCategoryOrder(
         Array.isArray(raw.priorityCategoryOrder) ? raw.priorityCategoryOrder : [],
       ),
+      priorityCategoryImportance: normalizePriorityCategoryImportance(raw.priorityCategoryImportance),
       routineHistoryPendingByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPendingByDate),
       routineHistoryPlannedKeysByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPlannedKeysByDate),
       quickMemoDraft: typeof raw.quickMemoDraft === 'string' ? raw.quickMemoDraft : '',
@@ -366,6 +402,10 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         s.prioritySectionsMealSlots,
         priorityCategoryOrder,
       );
+      const priorityCategoryImportance = prunePriorityCategoryImportanceForOrder(
+        s.priorityCategoryImportance,
+        priorityCategoryOrder,
+      );
       const isFocusStarted = priorityCategoryOrder.length > 0 ? s.isFocusStarted : false;
 
       return {
@@ -374,6 +414,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         planCompletionDismissedKeys,
         priorityMealSlotOverrides,
         prioritySectionsMealSlots,
+        priorityCategoryImportance,
         isFocusStarted,
       };
     }),
@@ -450,6 +491,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       priorityPlanExplicitMultiDay: false,
       priorityOvernightEndAuto: overnight,
       priorityCategoryOrder: [],
+      priorityCategoryImportance: {},
       completedFocusCategoryKeys: [],
       planCompletionDismissedKeys: [],
       isFocusStarted: false,
@@ -479,12 +521,31 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         s.prioritySectionsMealSlots,
         priorityCategoryOrder,
       );
+      const priorityCategoryImportance = prunePriorityCategoryImportanceForOrder(
+        s.priorityCategoryImportance,
+        priorityCategoryOrder,
+      );
       return {
         priorityCategoryOrder,
         routineHistoryPlannedKeysByDate,
         priorityMealSlotOverrides,
         prioritySectionsMealSlots,
+        priorityCategoryImportance,
       };
+    }),
+  cyclePriorityCategoryImportance: (categoryKey) =>
+    set((s) => {
+      const key = categoryKey.trim();
+      if (!key || !s.priorityCategoryOrder.includes(key)) return s;
+      const current = normalizeItemPriority(s.priorityCategoryImportance[key]);
+      const next = cycleItemPriority(current);
+      const priorityCategoryImportance = { ...s.priorityCategoryImportance };
+      if (next === 'medium') {
+        delete priorityCategoryImportance[key];
+      } else {
+        priorityCategoryImportance[key] = next;
+      }
+      return { priorityCategoryImportance };
     }),
   clearRoutineHistoryPendingForDate: (dateKey) =>
     set((s) => ({
@@ -629,6 +690,7 @@ useDayPlanDraftStore.subscribe((state) => {
     priorityStart: state.priorityStart,
     priorityEnd: state.priorityEnd,
     priorityCategoryOrder: state.priorityCategoryOrder,
+    priorityCategoryImportance: state.priorityCategoryImportance,
     routineHistoryPendingByDate: state.routineHistoryPendingByDate,
     routineHistoryPlannedKeysByDate: state.routineHistoryPlannedKeysByDate,
     quickMemoDraft: state.quickMemoDraft,
@@ -655,6 +717,7 @@ function persistDayPlanDraft(): void {
     priorityStart: s.priorityStart,
     priorityEnd: s.priorityEnd,
     priorityCategoryOrder: s.priorityCategoryOrder,
+    priorityCategoryImportance: s.priorityCategoryImportance,
     routineHistoryPendingByDate: s.routineHistoryPendingByDate,
     routineHistoryPlannedKeysByDate: s.routineHistoryPlannedKeysByDate,
     quickMemoDraft: s.quickMemoDraft,
