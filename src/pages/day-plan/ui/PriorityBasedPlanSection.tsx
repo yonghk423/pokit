@@ -24,14 +24,17 @@ import { useShallow } from 'zustand/react/shallow';
 
 import {
   addDaysToLocalDateKey,
+  appendPriorityCategoryKeysIfMissing,
   blockMatchesPriorityHhmmWindow,
   buildSpineTimelineModel,
+  clampSpineBlockToPriorityWindow,
   computeSpineGapInsertSlot,
   filterBagTimelineFlowBlocks,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
   formatHhmmClockKo,
   formatMinuteOfDayKo,
+  getFlowCompletionCategoryKeysForBlock,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
   isLikelyPriorityCatalogMonolineTitle,
@@ -41,6 +44,9 @@ import {
   parseLocalDateKeyToDate,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
+  resolveCrossLayoutRoutineKeysForTarget,
+  resolvePriorityLayoutRoutineSource,
+  resolveSpinePriorityWindow,
   sortDayPlanBlocks,
   buildPrioritySectionCompletionKey,
   parsePrioritySectionCompletionKey,
@@ -60,6 +66,7 @@ import {
   type DayMealSlot,
 } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { COMPLETION_TOGGLE_ANIM_MS } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -103,6 +110,25 @@ import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutMo
 /** 우선순위 행 완료 제거 시: 페이드 아웃 + 아래 행이 부드럽게 올라오는 레이아웃 전환 */
 const PRIORITY_ROW_EXITING = FadeOut.duration(280).easing(Easing.out(Easing.cubic));
 const PRIORITY_ROW_LAYOUT = LinearTransition.duration(320).easing(Easing.out(Easing.cubic));
+
+function partitionDisplayWithDeferredBottom<T>(
+  items: T[],
+  resolveKey: (item: T) => string,
+  isDone: (item: T) => boolean,
+  deferredKeys: ReadonlySet<string>,
+): T[] {
+  const active: T[] = [];
+  const done: T[] = [];
+  for (const item of items) {
+    const key = resolveKey(item);
+    if (!isDone(item) || deferredKeys.has(key)) {
+      active.push(item);
+    } else {
+      done.push(item);
+    }
+  }
+  return [...active, ...done];
+}
 
 import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
 import { useDayPlanDraftStore } from '@entities/day-plan';
@@ -993,6 +1019,7 @@ export function PriorityBasedPlanSection({
   );
 
   const bagCount = selectedItems.length;
+
   const {
     completedFocusCategoryKeys,
     planCompletionDismissedKeys,
@@ -1055,6 +1082,10 @@ export function PriorityBasedPlanSection({
   const [lastAddedCategoryKey, setLastAddedCategoryKey] = useState<string | null>(null);
   /** 순서 드래그 직후에만 Reanimated layout 전환 — 드래그 중 state 변경 시 제스처가 끊김 */
   const [priorityRowLayoutAnim, setPriorityRowLayoutAnim] = useState(false);
+  const [deferredBottomReorderKeys, setDeferredBottomReorderKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const deferredReorderTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const priorityTimelineScrollRef = useRef<ScrollView>(null);
   const priorityReorderDragActiveRef = useRef(false);
   const [mealSlotScheduleSheetOpen, setMealSlotScheduleSheetOpen] = useState(false);
@@ -1097,6 +1128,44 @@ export function PriorityBasedPlanSection({
   }, [setPriorityTimelineScrollEnabled, spineDragActive]);
 
   const planBlocks = useDayPlanStore((s) => s.blocks);
+
+  const layoutRoutineSource = useMemo(
+    () =>
+      resolvePriorityLayoutRoutineSource({
+        priorityCategoryOrder,
+        prioritySectionsCategoryOrder,
+        prioritySectionsLinkMode,
+        planBlocks,
+      }),
+    [
+      planBlocks,
+      priorityCategoryOrder,
+      prioritySectionsCategoryOrder,
+      prioritySectionsLinkMode,
+    ],
+  );
+
+  const linkedRoutineCatalogItems = useMemo(() => {
+    const keys =
+      layoutRoutineSource?.keys.length
+        ? [...layoutRoutineSource.keys]
+        : [...priorityCategoryOrder];
+    return keys
+      .map((key) => {
+        const base = getPickerCategoryItem(key);
+        if (!base) return null;
+        return { ...base, label: getPickerCategoryLabel(key) };
+      })
+      .filter(Boolean) as (typeof PICKER_CATEGORIES)[number][];
+  }, [categoryHintTick, categoryLabelEpoch, layoutRoutineSource, priorityCategoryOrder]);
+
+  const importLinkedRoutineSourceToBag = useCallback(() => {
+    const source = layoutRoutineSource;
+    if (!source || source.mode === 'bag') return;
+    appendPriorityCategoryKeysIfMissing([...source.keys]);
+    saveRoutineCatalogSelectionKeys(useDayPlanDraftStore.getState().priorityCategoryOrder);
+  }, [layoutRoutineSource]);
+
   const fixedFlowSets = useFixedFlowSetsStore((s) => s.sets);
   const fixedFlowActiveSetIds = useFixedFlowSetsStore((s) => s.activeSetIds);
   const activeMealSlotsBySetId = useFixedFlowSetsStore((s) => s.activeMealSlotsBySetId);
@@ -1145,6 +1214,54 @@ export function PriorityBasedPlanSection({
   }, [layoutMode]);
 
   useEffect(() => {
+    const timers = deferredReorderTimersRef.current;
+    return () => {
+      for (const timer of timers.values()) {
+        clearTimeout(timer);
+      }
+      timers.clear();
+    };
+  }, []);
+
+  const scheduleDeferredMoveToBottom = useCallback((itemKey: string) => {
+    const existing = deferredReorderTimersRef.current.get(itemKey);
+    if (existing) clearTimeout(existing);
+
+    setDeferredBottomReorderKeys((prev) => {
+      const next = new Set(prev);
+      next.add(itemKey);
+      return next;
+    });
+
+    const timer = setTimeout(() => {
+      deferredReorderTimersRef.current.delete(itemKey);
+      setDeferredBottomReorderKeys((prev) => {
+        const next = new Set(prev);
+        next.delete(itemKey);
+        return next;
+      });
+      setPriorityRowLayoutAnim(true);
+    }, COMPLETION_TOGGLE_ANIM_MS);
+
+    deferredReorderTimersRef.current.set(itemKey, timer);
+  }, []);
+
+  const releaseDeferredMoveToBottom = useCallback((itemKey: string) => {
+    const existing = deferredReorderTimersRef.current.get(itemKey);
+    if (existing) {
+      clearTimeout(existing);
+      deferredReorderTimersRef.current.delete(itemKey);
+    }
+    setDeferredBottomReorderKeys((prev) => {
+      if (!prev.has(itemKey)) return prev;
+      const next = new Set(prev);
+      next.delete(itemKey);
+      return next;
+    });
+    setPriorityRowLayoutAnim(true);
+  }, []);
+
+  useEffect(() => {
     if (spineDragActive) {
       setPriorityTimelineScrollEnabled(false);
       return;
@@ -1189,10 +1306,13 @@ export function PriorityBasedPlanSection({
    * 미완료는 위쪽·원래 담기 순서 유지, 완료(취소선)는 맨 아래로 모음.
    */
   const orderedSelectedItemsForDisplay = useMemo(() => {
-    const active = selectedItems.filter((cat) => !isPriorityRowCompleted(cat.key));
-    const done = selectedItems.filter((cat) => isPriorityRowCompleted(cat.key));
-    return [...active, ...done];
-  }, [selectedItems, isPriorityRowCompleted]);
+    return partitionDisplayWithDeferredBottom(
+      selectedItems,
+      (cat) => cat.key,
+      (cat) => isPriorityRowCompleted(cat.key),
+      deferredBottomReorderKeys,
+    );
+  }, [deferredBottomReorderKeys, selectedItems, isPriorityRowCompleted]);
 
   const sectionsCatalogItems = useMemo(
     () =>
@@ -1210,11 +1330,21 @@ export function PriorityBasedPlanSection({
     const source =
       prioritySectionsLinkMode === 'independent'
         ? sectionsCatalogItems
-        : orderedSelectedItemsForDisplay;
-    const active = source.filter((cat) => !isPriorityRowCompleted(cat.key));
-    const done = source.filter((cat) => isPriorityRowCompleted(cat.key));
-    return [...active, ...done];
+        : linkedRoutineCatalogItems.length > 0
+          ? linkedRoutineCatalogItems
+          : orderedSelectedItemsForDisplay;
+    if (prioritySectionsLinkMode !== 'independent') {
+      return source;
+    }
+    return partitionDisplayWithDeferredBottom(
+      source,
+      (cat) => cat.key,
+      (cat) => isPriorityRowCompleted(cat.key),
+      deferredBottomReorderKeys,
+    );
   }, [
+    deferredBottomReorderKeys,
+    linkedRoutineCatalogItems,
     prioritySectionsLinkMode,
     sectionsCatalogItems,
     orderedSelectedItemsForDisplay,
@@ -1329,7 +1459,7 @@ export function PriorityBasedPlanSection({
         .filter((block) => block.blockOrigin === 'spineTimeline' && block.categoryKey)
         .map((block) => [block.categoryKey!, block]),
     );
-    return selectedItems.map((cat) => {
+    return linkedRoutineCatalogItems.map((cat) => {
       const block = blockByKey.get(cat.key);
       return {
         key: cat.key,
@@ -1339,7 +1469,7 @@ export function PriorityBasedPlanSection({
         endMinutes: block?.endMinutes,
       };
     });
-  }, [planBlocks, selectedItems]);
+  }, [linkedRoutineCatalogItems, planBlocks]);
 
   const spineUnassignedLinkedRoutines = useMemo(
     () => spineLinkedRoutineSheetItems.filter((item) => !item.blockId),
@@ -1400,32 +1530,49 @@ export function PriorityBasedPlanSection({
       setLayoutSetupTargetMode(null);
       if (!target) return;
 
+      const crossKeys = resolveCrossLayoutRoutineKeysForTarget({
+        targetMode: target,
+        priorityCategoryOrder,
+        prioritySectionsCategoryOrder,
+        prioritySectionsLinkMode,
+        planBlocks,
+      });
+
       if (target === 'sections') {
         setPrioritySectionsLinkMode(linkMode);
-        if (linkMode === 'linked' && unslottedItemsForLayout.length > 0) {
-          openUnassignedSlotSheet('sections');
-          return;
+        if (linkMode === 'linked') {
+          importLinkedRoutineSourceToBag();
+          const slotMap = useDayPlanDraftStore.getState().prioritySectionsMealSlots;
+          const needsSlot = crossKeys.some((key) => !(slotMap[key]?.length));
+          if (needsSlot) {
+            openUnassignedSlotSheet('sections');
+            return;
+          }
         }
         onSelectLayoutMode('sections');
         return;
       }
 
       setPrioritySpineLinkMode(linkMode);
-      if (linkMode === 'linked' && selectedItems.length > 0) {
+      if (linkMode === 'linked' && crossKeys.length > 0) {
+        importLinkedRoutineSourceToBag();
         openSpineLinkedRoutineSheet('spine');
         return;
       }
       onSelectLayoutMode('spine');
     },
     [
+      importLinkedRoutineSourceToBag,
       layoutSetupTargetMode,
       onSelectLayoutMode,
       openSpineLinkedRoutineSheet,
       openUnassignedSlotSheet,
-      selectedItems.length,
+      planBlocks,
+      priorityCategoryOrder,
+      prioritySectionsCategoryOrder,
+      prioritySectionsLinkMode,
       setPrioritySectionsLinkMode,
       setPrioritySpineLinkMode,
-      unslottedItemsForLayout.length,
     ],
   );
 
@@ -1592,8 +1739,21 @@ export function PriorityBasedPlanSection({
 
   const mealSlotSectionsForDisplay = useMemo(() => {
     if (!showSectionsView) return [];
-    return priorityMealSlotSections;
-  }, [priorityMealSlotSections, showSectionsView]);
+    return priorityMealSlotSections.map((section) => ({
+      ...section,
+      items: partitionDisplayWithDeferredBottom(
+        section.items,
+        (cat) => buildPrioritySectionCompletionKey(cat.key, section.slot),
+        (cat) => isPrioritySectionItemCompleted(cat.key, section.slot),
+        deferredBottomReorderKeys,
+      ),
+    }));
+  }, [
+    deferredBottomReorderKeys,
+    isPrioritySectionItemCompleted,
+    priorityMealSlotSections,
+    showSectionsView,
+  ]);
 
   useEffect(() => {
     if (!priorityMealSlotLayoutEnabled) return;
@@ -1763,25 +1923,38 @@ export function PriorityBasedPlanSection({
   const handleTogglePriorityRowComplete = useCallback(
     (categoryKey: string) => {
       if (isPriorityRowCompleted(categoryKey)) {
+        releaseDeferredMoveToBottom(categoryKey);
         undoPriorityRowCompletion(categoryKey);
         return;
       }
+      scheduleDeferredMoveToBottom(categoryKey);
       addFocusCategoryCompleted(categoryKey);
     },
-    [addFocusCategoryCompleted, isPriorityRowCompleted, undoPriorityRowCompletion],
+    [
+      addFocusCategoryCompleted,
+      isPriorityRowCompleted,
+      releaseDeferredMoveToBottom,
+      scheduleDeferredMoveToBottom,
+      undoPriorityRowCompletion,
+    ],
   );
 
   const handleTogglePrioritySectionItemComplete = useCallback(
     (categoryKey: string, slot: DayMealSlot) => {
+      const itemKey = buildPrioritySectionCompletionKey(categoryKey, slot);
       if (isPrioritySectionItemCompleted(categoryKey, slot)) {
+        releaseDeferredMoveToBottom(itemKey);
         undoPrioritySectionItemCompletion(categoryKey, slot);
         return;
       }
-      addFocusCategoryCompleted(buildPrioritySectionCompletionKey(categoryKey, slot));
+      scheduleDeferredMoveToBottom(itemKey);
+      addFocusCategoryCompleted(itemKey);
     },
     [
       addFocusCategoryCompleted,
       isPrioritySectionItemCompleted,
+      releaseDeferredMoveToBottom,
+      scheduleDeferredMoveToBottom,
       undoPrioritySectionItemCompletion,
     ],
   );
@@ -1901,6 +2074,31 @@ export function PriorityBasedPlanSection({
     [planBlocks],
   );
 
+  useEffect(() => {
+    const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
+    if (!window) return;
+
+    for (const block of planBlocks) {
+      if (block.blockOrigin !== 'spineTimeline') continue;
+      const clamped = clampSpineBlockToPriorityWindow(
+        block.startMinutes,
+        block.endMinutes,
+        window,
+      );
+      if (!clamped) continue;
+      if (
+        clamped.startMinutes === block.startMinutes &&
+        clamped.endMinutes === block.endMinutes
+      ) {
+        continue;
+      }
+      updatePlanBlock(block.id, {
+        startMinutes: clamped.startMinutes,
+        endMinutes: clamped.endMinutes,
+      });
+    }
+  }, [planBlocks, priorityEnd, priorityStart, updatePlanBlock]);
+
   const spineTimelineRows = useMemo(
     () =>
       buildSpineTimelineModel({
@@ -1988,6 +2186,13 @@ export function PriorityBasedPlanSection({
         Alert.alert(title, '종료 시각은 시작 시각보다 뒤여야 해요.');
         return;
       }
+      if (reason === 'outside_window') {
+        Alert.alert(
+          title,
+          '일정은 하루 시작~하루 마무리 시간 안에서만 둘 수 있어요. 시간을 다시 확인해 주세요.',
+        );
+        return;
+      }
       Alert.alert(title, '일정을 저장하지 못했어요.');
     },
     [],
@@ -2000,8 +2205,8 @@ export function PriorityBasedPlanSection({
         .filter((b) => b.blockOrigin === 'spineTimeline' && b.categoryKey)
         .map((b) => b.categoryKey!),
     );
-    return selectedItems.filter((cat) => !spineKeys.has(cat.key));
-  }, [prioritySpineLinkMode, planBlocks, selectedItems]);
+    return linkedRoutineCatalogItems.filter((cat) => !spineKeys.has(cat.key));
+  }, [linkedRoutineCatalogItems, prioritySpineLinkMode, planBlocks]);
 
   const handleSpineAddBlockInGap = useCallback(
     (fromMinutes: number, toMinutes: number) => {
@@ -2010,6 +2215,10 @@ export function PriorityBasedPlanSection({
         toMinutes,
         planBlocks,
         getLocalMinutesOfDayNow(),
+        15,
+        1,
+        priorityStart,
+        priorityEnd,
       );
       if (!slot) return;
 
@@ -2027,7 +2236,7 @@ export function PriorityBasedPlanSection({
         endMinutes: slot.endMinutes,
       });
     },
-    [planBlocks, prioritySpineLinkMode, spineLinkedBagRoutines.length],
+    [planBlocks, priorityEnd, prioritySpineLinkMode, priorityStart, spineLinkedBagRoutines.length],
   );
 
   const handleSpineLinkedPickerSelect = useCallback(
@@ -2063,13 +2272,24 @@ export function PriorityBasedPlanSection({
 
   const handleSpineToggleBlockComplete = useCallback(
     (blockId: string) => {
+      const block = planBlocks.find((b) => b.id === blockId);
       if (completedBlockIdSet.has(blockId)) {
         uncompletePlanBlock(blockId);
+        if (block) {
+          for (const categoryKey of getFlowCompletionCategoryKeysForBlock(block)) {
+            useDayPlanDraftStore.getState().untrackRoutineHistoryCompletion(categoryKey, 'spine');
+          }
+        }
         return;
       }
       completePlanBlock(blockId);
+      if (block) {
+        for (const categoryKey of getFlowCompletionCategoryKeysForBlock(block)) {
+          useDayPlanDraftStore.getState().trackRoutineHistoryCompletion(categoryKey, 'spine');
+        }
+      }
     },
-    [completePlanBlock, completedBlockIdSet, uncompletePlanBlock],
+    [completePlanBlock, completedBlockIdSet, planBlocks, uncompletePlanBlock],
   );
 
   const handleSpineOpenBlockSettings = useCallback(
@@ -2123,6 +2343,21 @@ export function PriorityBasedPlanSection({
         return;
       }
 
+      const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
+      if (!window) {
+        alertSpineBlockSaveError(input.blockId ? 'update' : 'add', 'outside_window');
+        return;
+      }
+      const clamped = clampSpineBlockToPriorityWindow(
+        input.startMinutes,
+        input.endMinutes,
+        window,
+      );
+      if (!clamped) {
+        alertSpineBlockSaveError(input.blockId ? 'update' : 'add', 'outside_window');
+        return;
+      }
+
       const linkedKey = input.categoryKey?.trim() || null;
       const categoryLabel = linkedKey ? getPickerCategoryLabel(linkedKey) : '';
 
@@ -2131,8 +2366,8 @@ export function PriorityBasedPlanSection({
           title,
           category: categoryLabel,
           categoryKey: linkedKey,
-          startMinutes: input.startMinutes,
-          endMinutes: input.endMinutes,
+          startMinutes: clamped.startMinutes,
+          endMinutes: clamped.endMinutes,
         });
         if (!result.ok) {
           alertSpineBlockSaveError('update', result.reason);
@@ -2143,8 +2378,8 @@ export function PriorityBasedPlanSection({
           title,
           category: categoryLabel,
           ...(linkedKey ? { categoryKey: linkedKey } : {}),
-          startMinutes: input.startMinutes,
-          endMinutes: input.endMinutes,
+          startMinutes: clamped.startMinutes,
+          endMinutes: clamped.endMinutes,
           blockOrigin: 'spineTimeline',
           planDateKey: getLocalDateKey(),
         });
@@ -2156,7 +2391,7 @@ export function PriorityBasedPlanSection({
 
       setSpineEditDraft(null);
     },
-    [addPlanBlock, alertSpineBlockSaveError, updatePlanBlock],
+    [addPlanBlock, alertSpineBlockSaveError, priorityEnd, priorityStart, updatePlanBlock],
   );
 
   const handleConfirmSpineLinkedRoutines = useCallback(
@@ -2169,15 +2404,31 @@ export function PriorityBasedPlanSection({
         endMinutes: number;
       }>,
     ) => {
+      const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
+      if (!window) {
+        alertSpineBlockSaveError('add', 'outside_window');
+        return;
+      }
+
       for (const row of assignments) {
+        const clamped = clampSpineBlockToPriorityWindow(
+          row.startMinutes,
+          row.endMinutes,
+          window,
+        );
+        if (!clamped) {
+          alertSpineBlockSaveError(row.blockId ? 'update' : 'add', 'outside_window');
+          return;
+        }
+
         const categoryLabel = getPickerCategoryLabel(row.key);
         if (row.blockId) {
           const result = updatePlanBlock(row.blockId, {
             title: row.label,
             category: categoryLabel,
             categoryKey: row.key,
-            startMinutes: row.startMinutes,
-            endMinutes: row.endMinutes,
+            startMinutes: clamped.startMinutes,
+            endMinutes: clamped.endMinutes,
           });
           if (!result.ok) {
             alertSpineBlockSaveError('update', result.reason);
@@ -2189,8 +2440,8 @@ export function PriorityBasedPlanSection({
           title: row.label,
           category: categoryLabel,
           categoryKey: row.key,
-          startMinutes: row.startMinutes,
-          endMinutes: row.endMinutes,
+          startMinutes: clamped.startMinutes,
+          endMinutes: clamped.endMinutes,
           blockOrigin: 'spineTimeline',
           planDateKey: getLocalDateKey(),
         });
@@ -2212,6 +2463,8 @@ export function PriorityBasedPlanSection({
       alertSpineBlockSaveError,
       onSelectLayoutMode,
       pendingLayoutMode,
+      priorityEnd,
+      priorityStart,
       updatePlanBlock,
     ],
   );
@@ -2616,7 +2869,6 @@ export function PriorityBasedPlanSection({
         onSave={handleSpineSaveBlock}
         onDelete={confirmSpineBlockDelete}
         onStartFocus={handleSpineStartFocus}
-        onOpenCategorySettings={onOpenCategorySettings}
       />
 
       <View style={[styles.bookOuter, { backgroundColor: surfaceBg, flex: 1, minHeight: 0 }]}>
@@ -3303,7 +3555,27 @@ export function PriorityBasedPlanSection({
       <DayPlanLayoutModeSetupSheet
         visible={layoutSetupSheetOpen}
         targetMode={layoutSetupTargetMode ?? 'sections'}
-        bagCount={bagCount}
+        existingRoutineCount={
+          layoutSetupTargetMode
+            ? resolveCrossLayoutRoutineKeysForTarget({
+                targetMode: layoutSetupTargetMode,
+                priorityCategoryOrder,
+                prioritySectionsCategoryOrder,
+                prioritySectionsLinkMode,
+                planBlocks,
+              }).length
+            : 0
+        }
+        sourceMode={
+          layoutSetupTargetMode
+            ? resolvePriorityLayoutRoutineSource({
+                priorityCategoryOrder,
+                prioritySectionsCategoryOrder,
+                prioritySectionsLinkMode,
+                planBlocks,
+              })?.mode ?? null
+            : null
+        }
         initialLinkMode={
           layoutSetupTargetMode === 'sections' ? prioritySectionsLinkMode : prioritySpineLinkMode
         }

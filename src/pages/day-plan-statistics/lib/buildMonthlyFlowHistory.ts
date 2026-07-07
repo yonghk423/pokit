@@ -4,6 +4,12 @@ import {
 } from '@entities/day-plan';
 import { getCategoryCompletions } from '@entities/history/lib/historyCompletionMetrics';
 import type { HistoryDailyStat } from '@entities/history/model/types';
+import {
+  normalizeHistoryRecordKey,
+  parseRoutineHistoryRecordKey,
+  ROUTINE_HISTORY_LAYOUT_META,
+  type RoutineHistoryLayoutMode,
+} from '@shared/lib/routineHistoryLayoutKey';
 
 import { formatHistoryMonthDayKo } from './buildWeeklyFlowHistory';
 import {
@@ -14,7 +20,11 @@ import {
 import { resolveTopCategoryLabels } from './resolveTopCategoryLabels';
 
 export type MonthlyFlowHistoryRow = {
+  historyKey: string;
   categoryKey: string;
+  layoutMode: RoutineHistoryLayoutMode;
+  layoutIcon: string;
+  layoutLabel: string;
   label: string;
   icon: string;
   /** 1일=index 0 */
@@ -36,11 +46,11 @@ export type MonthlyHistorySummary = {
 
 function findFirstCompletionDateKey(
   dailyStatsByDate: Record<string, HistoryDailyStat>,
-  categoryKey: string,
+  historyKey: string,
 ): string | undefined {
   const keys = Object.keys(dailyStatsByDate).sort((a, b) => a.localeCompare(b));
   for (const dateKey of keys) {
-    const count = getCategoryCompletions(dailyStatsByDate[dateKey] ?? {})[categoryKey] ?? 0;
+    const count = getCategoryCompletions(dailyStatsByDate[dateKey] ?? {})[historyKey] ?? 0;
     if (count > 0) return dateKey;
   }
   return undefined;
@@ -54,30 +64,40 @@ export function buildMonthlyFlowHistory(input: {
 }): MonthlyFlowHistoryRow[] {
   const monthDateKeys = buildMonthDateKeys(input.monthPrefix);
   const daysInMonth = countDaysInMonth(input.monthPrefix);
-  const categoryKeys = new Set<string>(input.trackedCategoryKeys ?? []);
+  const historyKeys = new Set<string>(
+    (input.trackedCategoryKeys ?? []).map((key) => normalizeHistoryRecordKey(key)),
+  );
 
   for (const dateKey of monthDateKeys) {
     const row = input.dailyStatsByDate[dateKey];
     if (!row) continue;
     for (const [key, count] of Object.entries(getCategoryCompletions(row))) {
-      if (count > 0) categoryKeys.add(key);
+      if (count > 0) historyKeys.add(key);
     }
   }
 
   const rows: MonthlyFlowHistoryRow[] = [];
 
-  for (const categoryKey of categoryKeys) {
+  for (const historyKey of historyKeys) {
+    const { categoryKey, layoutMode } = parseRoutineHistoryRecordKey(historyKey);
+    if (!categoryKey) continue;
     let totalCompletions = 0;
     const dayDone = monthDateKeys.map((dateKey) => {
-      const count = getCategoryCompletions(input.dailyStatsByDate[dateKey] ?? {})[categoryKey] ?? 0;
+      const count = getCategoryCompletions(input.dailyStatsByDate[dateKey] ?? {})[historyKey] ?? 0;
       totalCompletions += count;
       return count > 0;
     });
     const completedDays = dayDone.filter(Boolean).length;
-    const firstDateKey = findFirstCompletionDateKey(input.dailyStatsByDate, categoryKey);
+    if (completedDays <= 0) continue;
+    const firstDateKey = findFirstCompletionDateKey(input.dailyStatsByDate, historyKey);
+    const layoutMeta = ROUTINE_HISTORY_LAYOUT_META[layoutMode];
 
     rows.push({
+      historyKey,
       categoryKey,
+      layoutMode,
+      layoutIcon: layoutMeta.icon,
+      layoutLabel: layoutMeta.labelKo,
       label: categoryReminderLabelKo(categoryKey),
       icon: categoryReminderIconName(categoryKey),
       dayDone,
@@ -91,9 +111,9 @@ export function buildMonthlyFlowHistory(input: {
 
   rows.sort(
     (a, b) =>
-      b.completedDays - a.completedDays ||
-      b.totalCompletions - a.totalCompletions ||
-      a.label.localeCompare(b.label, 'ko'),
+      a.categoryKey.localeCompare(b.categoryKey, 'ko') ||
+      a.layoutMode.localeCompare(b.layoutMode) ||
+      b.completedDays - a.completedDays,
   );
 
   return rows;

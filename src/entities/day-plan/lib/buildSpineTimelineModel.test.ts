@@ -68,4 +68,23 @@ describe('buildSpineTimelineModel', () => {
       expect(gap.nowMinutes).toBe(10 * 60);
     }
   });
+
+  it('하루 시작·마무리 밖 블록은 타임라인에서 제외한다', () => {
+    const rows = buildSpineTimelineModel({
+      priorityStart: '18:00',
+      priorityEnd: '21:00',
+      nowMinutes: 18 * 60,
+      blocks: [
+        block({ id: 'outside', startMinutes: 17 * 60 + 58, endMinutes: 18 * 60 + 13 }),
+        block({ id: 'inside', startMinutes: 18 * 60 + 30, endMinutes: 18 * 60 + 45 }),
+      ],
+    });
+
+    const blockRows = rows.filter((row) => row.kind === 'block');
+    expect(blockRows).toHaveLength(1);
+    expect(blockRows[0]).toMatchObject({
+      kind: 'block',
+      startMinutes: 18 * 60 + 30,
+    });
+  });
 });

@@ -51,6 +51,17 @@ export function RoutineTitleField({
   const [draft, setDraft] = useState(idleTitle);
   const [focused, setFocused] = useState(false);
   const syncKeyRef = useRef(`${value}\0${fallbackTrimmed}`);
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onChangeValueRef = useRef(onChangeValue);
+  onChangeValueRef.current = onChangeValue;
+
+  useEffect(() => {
+    return () => {
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const nextKey = `${value}\0${fallbackTrimmed}`;
@@ -60,10 +71,24 @@ export function RoutineTitleField({
   }, [value, fallbackTrimmed, focused, idleTitle]);
 
   const commitDraft = (raw: string) => {
+    if (persistTimerRef.current) {
+      clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = null;
+    }
     const persisted = persistRoutineDisplayName(raw, fallbackTrimmed);
     syncKeyRef.current = `${persisted}\0${fallbackTrimmed}`;
-    onChangeValue(persisted);
+    onChangeValueRef.current(persisted);
     setDraft(persisted);
+  };
+
+  const scheduleCommitDraft = (raw: string) => {
+    if (persistTimerRef.current) {
+      clearTimeout(persistTimerRef.current);
+    }
+    persistTimerRef.current = setTimeout(() => {
+      persistTimerRef.current = null;
+      commitDraft(raw);
+    }, 350);
   };
 
   const handleFocus = () => {
@@ -78,6 +103,7 @@ export function RoutineTitleField({
 
   const handleChangeText = (text: string) => {
     setDraft(text);
+    scheduleCommitDraft(text);
   };
 
   const inputValue = focused ? draft : idleTitle;

@@ -117,12 +117,4 @@ export const orderRowStyles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.2,
   },
-  /** 집중 중 완료 탭 — sharp square checkbox */
-  orderCompleteMaterialHit: {
-    alignSelf: 'center',
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

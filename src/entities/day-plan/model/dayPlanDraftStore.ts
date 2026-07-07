@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 
+import {
+  buildRoutineHistoryRecordKey,
+  type RoutineHistoryLayoutMode,
+} from '@shared/lib/routineHistoryLayoutKey';
 import { loadDayPlanDraft, saveDayPlanDraft, syncWidgetTimelineFromStorage, normalizeDayMealSlot, normalizeCategoryMealSlots, type DayMealSlot } from '@shared/lib/storage';
 
 import { getLocalMinutesOfDayNow } from '../lib/dayPlanTime';
@@ -11,6 +15,7 @@ import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
 import {
   buildPrioritySectionCompletionKey,
   parsePrioritySectionCompletionKey,
+  resolveFocusCompletionHistoryLayoutMode,
   toRoutineHistoryCategoryKey,
   migrateCompletionKeyInList,
 } from '../lib/prioritySectionCompletionKey';
@@ -85,6 +90,15 @@ type DayPlanDraftState = {
   toggleFocusCategoryCompleted: (categoryKey: string) => void;
   /** 완료 체크(한 번만 추가) — 우선순위 행 완료 UI */
   addFocusCategoryCompleted: (categoryKey: string) => void;
+  /** 레이아웃 모드별 히스토리 pending — 타임라인 체크 등 */
+  trackRoutineHistoryCompletion: (
+    categoryKey: string,
+    layoutMode: RoutineHistoryLayoutMode,
+  ) => void;
+  untrackRoutineHistoryCompletion: (
+    categoryKey: string,
+    layoutMode: RoutineHistoryLayoutMode,
+  ) => void;
   /** 우선순위 목록 변경 시 목록 밖 키 제거 */
   filterCompletedFocusKeysToPriorityOrder: (order: string[]) => void;
   clearCompletedFocusCategoryKeys: () => void;
@@ -355,7 +369,10 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         ? s.completedFocusCategoryKeys.filter((k) => k !== categoryKey)
         : [...s.completedFocusCategoryKeys, categoryKey];
       const today = getLocalDateKey();
-      const historyCategoryKey = toRoutineHistoryCategoryKey(categoryKey);
+      const historyCategoryKey = buildRoutineHistoryRecordKey(
+        toRoutineHistoryCategoryKey(categoryKey),
+        resolveFocusCompletionHistoryLayoutMode(categoryKey, s.prioritySectionsCategoryOrder),
+      );
       let routineHistoryPendingByDate = s.routineHistoryPendingByDate;
       if (shouldTrackRoutineHistoryForDate(s, today)) {
         routineHistoryPendingByDate = removing
@@ -369,7 +386,10 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       if (s.completedFocusCategoryKeys.includes(categoryKey)) return s;
       const today = getLocalDateKey();
       const completedFocusCategoryKeys = [...s.completedFocusCategoryKeys, categoryKey];
-      const historyCategoryKey = toRoutineHistoryCategoryKey(categoryKey);
+      const historyCategoryKey = buildRoutineHistoryRecordKey(
+        toRoutineHistoryCategoryKey(categoryKey),
+        resolveFocusCompletionHistoryLayoutMode(categoryKey, s.prioritySectionsCategoryOrder),
+      );
       if (!shouldTrackRoutineHistoryForDate(s, today)) {
         return { completedFocusCategoryKeys };
       }
@@ -379,6 +399,32 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
           s.routineHistoryPendingByDate,
           today,
           historyCategoryKey,
+        ),
+      };
+    }),
+  trackRoutineHistoryCompletion: (categoryKey, layoutMode) =>
+    set((s) => {
+      const today = getLocalDateKey();
+      const historyKey = buildRoutineHistoryRecordKey(categoryKey.trim(), layoutMode);
+      if (!shouldTrackRoutineHistoryForDate(s, today)) return s;
+      return {
+        routineHistoryPendingByDate: appendRoutineHistoryPending(
+          s.routineHistoryPendingByDate,
+          today,
+          historyKey,
+        ),
+      };
+    }),
+  untrackRoutineHistoryCompletion: (categoryKey, layoutMode) =>
+    set((s) => {
+      const today = getLocalDateKey();
+      const historyKey = buildRoutineHistoryRecordKey(categoryKey.trim(), layoutMode);
+      if (!shouldTrackRoutineHistoryForDate(s, today)) return s;
+      return {
+        routineHistoryPendingByDate: removeRoutineHistoryPending(
+          s.routineHistoryPendingByDate,
+          today,
+          historyKey,
         ),
       };
     }),

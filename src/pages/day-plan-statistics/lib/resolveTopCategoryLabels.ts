@@ -1,4 +1,5 @@
 import { categoryReminderLabelKo } from '@entities/day-plan';
+import { parseRoutineHistoryRecordKey } from '@shared/lib/routineHistoryLayoutKey';
 
 /** 완료 횟수가 최대인 카테고리 라벨(동률 전부, 가나다순) */
 export function resolveTopCategoryLabels(totalsByCategory: Map<string, number>): string[] {
@@ -12,6 +13,6 @@ export function resolveTopCategoryLabels(totalsByCategory: Map<string, number>):
 
   return sorted
     .filter(([, count]) => count === maxCount)
-    .map(([key]) => categoryReminderLabelKo(key))
+    .map(([key]) => categoryReminderLabelKo(parseRoutineHistoryRecordKey(key).categoryKey))
     .sort((a, b) => a.localeCompare(b, 'ko'));
 }

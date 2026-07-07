@@ -1,4 +1,3 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import { Pressable, StyleSheet, View, type View as RNView } from 'react-native';
@@ -20,6 +19,7 @@ import {
   cityPopFont,
 } from '@shared/config/retroFlat';
 import type { DayMealSlot } from '@shared/lib/storage';
+import { CompletionRadioButton, COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import {
@@ -81,7 +81,6 @@ const CARD_RADIUS = 12;
 const CARD_BORDER = RETRO_BORDER_WIDTH;
 /** HTML `thin-outline` — 소형 배지 등 */
 const THIN_BORDER = 1;
-const CHECKBOX_SIZE = 20;
 
 type SlotBadgeTheme = {
   bg: string;
@@ -231,34 +230,6 @@ function TimelineSectionDot({
   );
 }
 
-function CustomCheckbox({
-  checked,
-  isDark,
-  onPress,
-}: {
-  checked: boolean;
-  isDark: boolean;
-  onPress?: () => void;
-}) {
-  const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  return (
-    <Pressable
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked }}
-      onPress={onPress}
-      hitSlop={8}
-      style={({ pressed }) => [
-        styles.checkbox,
-        {
-          borderColor: c.border,
-          backgroundColor: checked ? c.tertiary : pressed ? c.surfaceContainer : 'transparent',
-        },
-      ]}>
-      {checked ? <MaterialIcons name="check" size={14} color={c.primaryContainer} /> : null}
-    </Pressable>
-  );
-}
-
 function RoutineRowSettingsButton({
   label,
   isDark,
@@ -309,17 +280,17 @@ function CheckboxRowContent({
   pressed?: boolean;
   onToggleComplete?: () => void;
 }) {
-  const primary = isDark ? RetroFlatColors.dark.primary : RetroFlatColors.light.primary;
+  const pressedLabelColor = isDark ? RetroFlatColors.dark.primary : COMPLETION_CHECKED_COLOR_LIGHT;
 
   return (
     <>
-      <CustomCheckbox
+      <CompletionRadioButton
         checked={completed}
         isDark={isDark}
-        onPress={() => {
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onToggleComplete?.();
-        }}
+        shape="square"
+        checkedColor={isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT}
+        accessibilityLabel={completed ? `${item.label} 완료 취소` : `${item.label} 완료`}
+        onPress={onToggleComplete}
       />
       {labelHidden ? null : (
         <>
@@ -336,7 +307,7 @@ function CheckboxRowContent({
               cityPopFont('400'),
               { color: completed ? palette.muted : palette.ink },
               completed && styles.checkboxLabelDone,
-              !completed && pressed && { color: primary },
+              !completed && pressed && { color: pressedLabelColor },
             ]}
             numberOfLines={2}>
             {item.label}
@@ -1021,14 +992,6 @@ const styles = StyleSheet.create({
   reorderPlaceholder: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.03)',
-  },
-  checkbox: {
-    width: CHECKBOX_SIZE,
-    height: CHECKBOX_SIZE,
-    borderRadius: 0,
-    borderWidth: THIN_BORDER,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   checkboxLabel: {
     flex: 1,

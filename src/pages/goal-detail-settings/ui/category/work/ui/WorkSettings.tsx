@@ -3,6 +3,7 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { normalizeWorkDetailConfig, type WorkDetailDataConfig } from '@entities/day-plan';
+import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { StudyDocumentEditor } from '@widgets/study-note-document';
@@ -11,6 +12,7 @@ import { getInitialWorkDataConfig } from './workConfig';
 export function WorkSettings({
   dataConfig,
   onChangeDataConfig,
+  categoryKey = 'work',
 }: {
   rhythmTitle: string;
   categoryKey?: string;
@@ -60,14 +62,18 @@ export function WorkSettings({
     setDocument(next.document);
   }, [dataConfig]);
 
-  const draftConfig = useMemo(
-    (): WorkDetailDataConfig =>
-      normalizeWorkDetailConfig({
-        ...(dataConfig && typeof dataConfig === 'object' ? dataConfig : {}),
-        document,
-      }),
-    [dataConfig, document],
-  );
+  const draftConfig = useMemo((): WorkDetailDataConfig => {
+    const fromProps =
+      dataConfig && typeof dataConfig === 'object' ? (dataConfig as Record<string, unknown>) : {};
+    const stored = loadGoalDetailCategoryConfig(categoryKey);
+    const fromStored =
+      stored && typeof stored === 'object' ? (stored as Record<string, unknown>) : {};
+    return normalizeWorkDetailConfig({
+      ...fromStored,
+      ...fromProps,
+      document,
+    });
+  }, [categoryKey, dataConfig, document]);
   const draftConfigRef = useRef(draftConfig);
   draftConfigRef.current = draftConfig;
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

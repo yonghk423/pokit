@@ -1,4 +1,3 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Pressable, View } from 'react-native';
@@ -12,6 +11,7 @@ import Reanimated, {
 
 import { ITEM_PRIORITY_META } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
+import { CompletionRadioButton, COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -19,14 +19,8 @@ import { activeIconColorByCategory } from '../lib/activeIconColorByCategory';
 import { orderRowStyles as styles } from '../lib/orderRowStyles';
 import type { PriorityOrderRowProps } from '../lib/types';
 
-/** 완료 라디오 — 집중 시작 전·후 모두 표시(담기 목록에서 완료 표시 가능) */
-const COMPLETE_RADIO_SIZE = 20;
+/** 완료 버튼 — 집중 시작 전·후 모두 표시(담기 목록에서 완료 표시 가능) */
 const GRAY_DEFAULT_LIGHT = '#9CA3AF';
-const GRAY_PRESSED_LIGHT = '#D1D5DB';
-const GRAY_DONE_LIGHT = '#B8BCC4';
-const GRAY_DEFAULT_DARK = 'rgba(255,255,255,0.42)';
-const GRAY_PRESSED_DARK = 'rgba(255,255,255,0.58)';
-const GRAY_DONE_DARK = 'rgba(255,255,255,0.28)';
 
 const REORDER_LONG_PRESS_MS = 420;
 const REORDER_SPRING = { damping: 22, stiffness: 250, mass: 0.95 };
@@ -131,11 +125,9 @@ export function DefaultPriorityOrderRow({
   const shouldPulse = Boolean(isFocusStarted && !isCompleted);
   const primary = PrimaryColor.rgb;
   const priorityMeta = ITEM_PRIORITY_META[itemPriority];
-  /** 시작 전에는 아이콘 강조를 쓰지 않는다. 집중 시작 이후에만 카테고리 액센트. */
-  const showAccentIcon = Boolean(!isCompleted && isFocusStarted);
   const iconColor = isCompleted
     ? inkMuted
-    : showAccentIcon
+    : isFocusStarted
       ? activeIconColorByCategory(categoryKey)
       : ink;
 
@@ -303,35 +295,14 @@ export function DefaultPriorityOrderRow({
         </Pressable>
       ) : null}
       {onToggleFocusComplete ? (
-        <Pressable
-          accessibilityRole="button"
+        <CompletionRadioButton
+          checked={Boolean(isCompleted)}
+          isDark={isDark}
+          checkedColor={isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT}
+          uncheckedColor={isDark ? 'rgba(255,255,255,0.42)' : GRAY_DEFAULT_LIGHT}
           accessibilityLabel={isCompleted ? `${label} 완료 취소` : `${label} 완료`}
-          hitSlop={12}
-          onPress={() => {
-            void Haptics.selectionAsync();
-            onToggleFocusComplete();
-          }}
-          style={styles.orderCompleteMaterialHit}>
-          {({ pressed }) => (
-            <MaterialIcons
-              name={isCompleted ? 'radio-button-checked' : 'radio-button-unchecked'}
-              size={COMPLETE_RADIO_SIZE}
-              color={
-                isCompleted
-                  ? isDark
-                    ? GRAY_DONE_DARK
-                    : GRAY_DONE_LIGHT
-                  : pressed
-                    ? isDark
-                      ? GRAY_PRESSED_DARK
-                      : GRAY_PRESSED_LIGHT
-                    : isDark
-                      ? GRAY_DEFAULT_DARK
-                      : GRAY_DEFAULT_LIGHT
-              }
-            />
-          )}
-        </Pressable>
+          onPress={onToggleFocusComplete}
+        />
       ) : null}
     </View>
   );

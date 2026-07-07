@@ -7,11 +7,13 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatMinutesToHHmm, parseHHmmToMinutes, resolveCategoryCatalogAccentColor } from '@entities/day-plan';
+import { PrimaryColor } from '@shared/config/theme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -54,7 +56,6 @@ type Props = {
   }) => void;
   onDelete?: (blockId: string) => void;
   onStartFocus?: (blockId: string) => void;
-  onOpenCategorySettings?: (categoryKey: string) => void;
 };
 
 function minutesToInput(minutes: number): string {
@@ -78,9 +79,10 @@ export function SpineScheduleEditSheet({
   onSave,
   onDelete,
   onStartFocus,
-  onOpenCategorySettings,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const routineScrollMaxHeight = Math.min(280, Math.round(windowHeight * 0.34));
   const [titleText, setTitleText] = useState('');
   const [categoryKey, setCategoryKey] = useState<string | null>(null);
   const [startText, setStartText] = useState('09:00');
@@ -120,6 +122,8 @@ export function SpineScheduleEditSheet({
   const destructive = isDark ? '#F87171' : '#DC2626';
   const sheetBg = isDark ? '#18181B' : '#FFFFFF';
   const inputBg = isDark ? '#27272A' : '#FAFAFA';
+  const primaryBtnBg = isDark ? '#FAFAFA' : PrimaryColor.rgb;
+  const primaryBtnFg = isDark ? PrimaryColor.rgb : '#FAFAFA';
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -177,7 +181,7 @@ export function SpineScheduleEditSheet({
                       styles.routinePanel,
                       { borderColor: palette.line, backgroundColor: inputBg },
                     ]}>
-                    <View style={styles.routinePanelContent}>
+                    <View style={styles.routinePanelHeader}>
                       <Pressable
                         accessibilityRole="button"
                         accessibilityState={{ selected: categoryKey === null }}
@@ -210,6 +214,14 @@ export function SpineScheduleEditSheet({
                           직접 입력
                         </ThemedText>
                       </Pressable>
+                    </View>
+                    <ScrollView
+                      style={[styles.routinePanelScroll, { maxHeight: routineScrollMaxHeight }]}
+                      contentContainerStyle={styles.routinePanelScrollContent}
+                      nestedScrollEnabled
+                      bounces={false}
+                      keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator>
                       {routineSections.map((section) => (
                         <View key={section.title} style={styles.routineSection}>
                           <ThemedText
@@ -259,7 +271,7 @@ export function SpineScheduleEditSheet({
                           </View>
                         </View>
                       ))}
-                    </View>
+                    </ScrollView>
                   </View>
                 </View>
               ) : null}
@@ -294,22 +306,6 @@ export function SpineScheduleEditSheet({
                   />
                 </View>
               </View>
-
-              {categoryKey && onOpenCategorySettings ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="목표 상세 설정"
-                  onPress={() => {
-                    onOpenCategorySettings(categoryKey);
-                    onClose();
-                  }}
-                  style={[styles.detailSettingsBtn, { borderColor: palette.line }]}>
-                  <IconSymbol name="slider.horizontal.3" size={16} color={palette.ink} />
-                  <ThemedText style={[styles.detailSettingsBtnText, { color: palette.ink }]}>
-                    목표 상세 설정
-                  </ThemedText>
-                </Pressable>
-              ) : null}
 
               {draft?.mode === 'edit' && draft.blockId && onStartFocus ? (
                 <Pressable
@@ -347,9 +343,9 @@ export function SpineScheduleEditSheet({
                   style={[
                     styles.btn,
                     styles.btnPrimary,
-                    { borderColor: palette.ink, backgroundColor: palette.ink },
+                    { borderColor: primaryBtnBg, backgroundColor: primaryBtnBg },
                   ]}>
-                  <ThemedText style={[styles.btnText, styles.btnPrimaryText]}>저장</ThemedText>
+                  <ThemedText style={[styles.btnText, { color: primaryBtnFg }]}>저장</ThemedText>
                 </Pressable>
               </View>
             </ScrollView>
@@ -421,20 +417,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 15,
   },
-  detailSettingsBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 2,
-    borderRadius: 0,
-    paddingVertical: 11,
-    marginBottom: 10,
-  },
-  detailSettingsBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
   focusBtn: {
     borderWidth: 2,
     borderRadius: 0,
@@ -479,15 +461,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  btnPrimaryText: {
-    color: '#FAFAFA',
-  },
   routinePanel: {
     borderWidth: 2,
     borderRadius: 0,
   },
-  routinePanelContent: {
-    padding: 10,
+  routinePanelHeader: {
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  routinePanelScroll: {
+    flexGrow: 0,
+  },
+  routinePanelScrollContent: {
+    paddingHorizontal: 10,
+    paddingBottom: 10,
     gap: 12,
   },
   directInputChip: {

@@ -1,4 +1,6 @@
 import type { HistoryDailyStat } from '@entities/history/model/types';
+import { categoryReminderLabelKo } from '@entities/day-plan';
+import { getCategoryCompletions } from '@entities/history/lib/historyCompletionMetrics';
 
 import {
   buildWeeklyFlowHistory,
@@ -24,14 +26,15 @@ describe('buildWeeklyFlowHistory', () => {
     const mondayStart = '2026-06-29';
     const rows = buildWeeklyFlowHistory({
       weekStartDateKey: mondayStart,
-      trackedCategoryKeys: ['reading'],
       dailyStatsByDate: {
-        '2026-07-01': stat('2026-07-01', { reading: 1 }),
-        '2026-07-03': stat('2026-07-03', { reading: 1 }),
+        '2026-07-01': stat('2026-07-01', { 'bag:reading': 1 }),
+        '2026-07-03': stat('2026-07-03', { 'bag:reading': 1 }),
       },
     });
 
     expect(rows).toHaveLength(1);
+    expect(rows[0]?.historyKey).toBe('bag:reading');
+    expect(rows[0]?.layoutMode).toBe('bag');
     expect(rows[0]?.completedDays).toBe(2);
     expect(rows[0]?.weekdayDone[historyWeekdayIndexMondayZero('2026-07-01')]).toBe(true);
     expect(rows[0]?.weekdayDone[historyWeekdayIndexMondayZero('2026-07-03')]).toBe(true);
@@ -39,12 +42,32 @@ describe('buildWeeklyFlowHistory', () => {
     expect(formatWeekRangeLabelKo(mondayStart)).toContain('6월');
   });
 
+  it('splits the same category across layout modes', () => {
+    const rows = buildWeeklyFlowHistory({
+      weekStartDateKey: '2026-06-29',
+      dailyStatsByDate: {
+        '2026-06-29': stat('2026-06-29', {
+          'bag:fasting': 1,
+          'sections:fasting': 1,
+          'spine:fasting': 1,
+        }),
+      },
+    });
+
+    expect(rows).toHaveLength(3);
+    expect(rows.map((row) => row.historyKey).sort()).toEqual([
+      'bag:fasting',
+      'sections:fasting',
+      'spine:fasting',
+    ]);
+  });
+
   it('summarizes weekly activity for the selected week', () => {
     const summary = buildWeeklyHistorySummary({
       weekStartDateKey: '2026-06-29',
       dailyStatsByDate: {
-        '2026-06-29': stat('2026-06-29', { reading: 1 }),
-        '2026-07-01': stat('2026-07-01', { reading: 1 }),
+        '2026-06-29': stat('2026-06-29', { 'bag:reading': 1 }),
+        '2026-07-01': stat('2026-07-01', { 'bag:reading': 1 }),
       },
     });
 
@@ -58,13 +81,22 @@ describe('buildWeeklyFlowHistory', () => {
     const summary = buildWeeklyHistorySummary({
       weekStartDateKey: '2026-06-29',
       dailyStatsByDate: {
-        '2026-06-29': stat('2026-06-29', { water: 2, medicine: 2, fasting: 2, reading: 1 }),
+        '2026-06-29': stat('2026-06-29', {
+          'bag:water': 2,
+          'bag:medicine': 2,
+          'bag:fasting': 2,
+          'bag:reading': 1,
+        }),
       },
     });
 
     expect(summary.topCategoryLabels).toHaveLength(3);
     expect(summary.topCategoryLabels).toEqual(
-      expect.arrayContaining(['수분섭취', '약 복용', '체중관리']),
+      expect.arrayContaining([
+        categoryReminderLabelKo('water'),
+        categoryReminderLabelKo('medicine'),
+        categoryReminderLabelKo('fasting'),
+      ]),
     );
   });
 });

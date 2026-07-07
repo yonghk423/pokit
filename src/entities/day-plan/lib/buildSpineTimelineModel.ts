@@ -3,7 +3,10 @@ import type { DayPlanBlock } from '../model/types';
 import { filterSpineTimelineBlocks } from './dayPlanFlowBlock';
 import { effectiveEndMinutesExclusive } from './dayPlanTime';
 import { formatSpineGapCoaching } from './formatSpineGapCoaching';
-import { parseHHmmToMinutes } from './parseTime';
+import {
+  isSpineBlockWithinPriorityWindow,
+  resolveSpinePriorityWindow,
+} from './spinePriorityWindow';
 import type { SpineTimelineRow } from './spineTimelineTypes';
 
 export type BuildSpineTimelineModelInput = {
@@ -83,11 +86,15 @@ function toRow(item: TimedItem): SpineTimelineRow {
 
 /** 하루 시작·블록·마무리·갭을 시간 순으로 펼친 스파인 타임라인 모델 */
 export function buildSpineTimelineModel(input: BuildSpineTimelineModelInput): SpineTimelineRow[] {
-  const startMin = parseHHmmToMinutes(input.priorityStart.trim());
-  const endMinRaw = parseHHmmToMinutes(input.priorityEnd.trim());
-  if (startMin === null || endMinRaw === null) return [];
+  const window = resolveSpinePriorityWindow(input.priorityStart, input.priorityEnd);
+  if (!window) return [];
 
-  const endMin = endMinRaw >= 24 * 60 ? 24 * 60 - 1 : endMinRaw;
+  const startMin = window.startMin;
+  const endMin = window.endMin;
+
+  const spineBlocksInWindow = filterSpineBlocks(input.blocks).filter((block) =>
+    isSpineBlockWithinPriorityWindow(block, window),
+  );
 
   const sequence: TimedItem[] = [
     {
@@ -96,7 +103,7 @@ export function buildSpineTimelineModel(input: BuildSpineTimelineModelInput): Sp
       minutes: startMin,
       label: input.dayStartLabel ?? '하루 시작',
     },
-    ...filterSpineBlocks(input.blocks).map((block) => ({
+    ...spineBlocksInWindow.map((block) => ({
       kind: 'block' as const,
       block,
       startMinutes: block.startMinutes,

@@ -1,3 +1,4 @@
+import type { RoutineHistoryLayoutMode } from '@shared/lib/routineHistoryLayoutKey';
 import { DAY_MEAL_SLOT_ORDER, type DayMealSlot } from '@shared/lib/storage';
 
 const MEAL_SLOT_SET = new Set<string>(DAY_MEAL_SLOT_ORDER);
@@ -29,6 +30,21 @@ export function parsePrioritySectionCompletionKey(completionKey: string): {
 /** 히스토리·위젯 등 카테고리 단위 집계용 */
 export function toRoutineHistoryCategoryKey(completionKey: string): string {
   return parsePrioritySectionCompletionKey(completionKey).categoryKey;
+}
+
+/**
+ * 집중 완료 키(`completedFocusCategoryKeys`)의 히스토리 레이아웃.
+ * 현재 활성 탭이 아니라 완료 키 형식·sections 독립 목록으로 판별한다.
+ * spine 완료는 블록 체크 경로에서만 기록한다.
+ */
+export function resolveFocusCompletionHistoryLayoutMode(
+  completionKey: string,
+  sectionsCategoryOrder: readonly string[] = [],
+): RoutineHistoryLayoutMode {
+  const { categoryKey, slot } = parsePrioritySectionCompletionKey(completionKey);
+  if (slot) return 'sections';
+  if (sectionsCategoryOrder.includes(categoryKey)) return 'sections';
+  return 'bag';
 }
 
 export function migrateCompletionKeyInList(

@@ -59,6 +59,8 @@ export type { WorkStudyDdayEvent, WorkStudyTimetableSlot, WorkStudyWeekday } fro
 
 export type WorkDetailDataConfig = {
   displayName: string;
+  icon?: string;
+  accentColor?: string;
   /** 과목·주제 (스터디 특화) */
   subject: string;
   planMin: number;
@@ -110,6 +112,8 @@ export function normalizeWorkDetailConfig(raw: unknown): WorkDetailDataConfig {
   }
   const summary = normalizeRoutineSummary(o.summary);
   const displayName = normalizeRoutineDisplayName(o.displayName);
+  const icon = normalizeCustomFlowIcon(o.icon);
+  const accentColor = normalizeCustomFlowAccentColor(o.accentColor);
   const ddayEvents = normalizeWorkStudyDdayEvents(o.ddayEvents);
   const timetableSlots = normalizeWorkStudyTimetableSlots(o.timetableSlots);
   let document = normalizeWorkStudyDocument(o.document);
@@ -118,6 +122,8 @@ export function normalizeWorkDetailConfig(raw: unknown): WorkDetailDataConfig {
   }
   return {
     displayName,
+    ...(icon ? { icon } : {}),
+    ...(accentColor ? { accentColor } : {}),
     subject,
     planMin,
     doneMin,

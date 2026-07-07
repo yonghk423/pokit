@@ -38,6 +38,10 @@ import {
   shiftMonthPrefix,
   type HistoryPeriod,
 } from '../lib/historyPeriodRange';
+import {
+  groupMonthlyFlowHistoryRows,
+  groupWeeklyFlowHistoryRows,
+} from '../lib/groupFlowHistoryRows';
 import { HistoryPeriodTabs } from './HistoryPeriodTabs';
 import { MonthlyFlowHistoryCard } from './MonthlyFlowHistoryCard';
 import { MonthlyHistorySummaryCard } from './MonthlyHistorySummaryCard';
@@ -120,10 +124,9 @@ export function DayPlanStatisticsPage() {
       buildWeeklyFlowHistory({
         dailyStatsByDate,
         weekStartDateKey,
-        trackedCategoryKeys: priorityCategoryOrder,
         timeLabelByCategoryKey,
       }),
-    [dailyStatsByDate, priorityCategoryOrder, timeLabelByCategoryKey, weekStartDateKey],
+    [dailyStatsByDate, timeLabelByCategoryKey, weekStartDateKey],
   );
 
   const monthlyRows = useMemo(
@@ -131,11 +134,14 @@ export function DayPlanStatisticsPage() {
       buildMonthlyFlowHistory({
         dailyStatsByDate,
         monthPrefix,
-        trackedCategoryKeys: priorityCategoryOrder,
         timeLabelByCategoryKey,
       }),
-    [dailyStatsByDate, monthPrefix, priorityCategoryOrder, timeLabelByCategoryKey],
+    [dailyStatsByDate, monthPrefix, timeLabelByCategoryKey],
   );
+
+  const weeklyGroups = useMemo(() => groupWeeklyFlowHistoryRows(weeklyRows), [weeklyRows]);
+
+  const monthlyGroups = useMemo(() => groupMonthlyFlowHistoryRows(monthlyRows), [monthlyRows]);
 
   const weeklySummary = useMemo(
     () => buildWeeklyHistorySummary({ dailyStatsByDate, weekStartDateKey }),
@@ -169,7 +175,7 @@ export function DayPlanStatisticsPage() {
     [anchorDateKey, monthPrefix, period, todayDateKey],
   );
 
-  const flowRows = period === 'week' ? weeklyRows : monthlyRows;
+  const flowRows = period === 'week' ? weeklyGroups : monthlyGroups;
   const emptyTitle =
     period === 'week' ? '이번 주 기록이 아직 없어요' : '이번 달 기록이 아직 없어요';
   const emptyBody =
@@ -260,20 +266,20 @@ export function DayPlanStatisticsPage() {
           </View>
         ) : period === 'week' ? (
           <View style={styles.cardList}>
-            {weeklyRows.map((row) => (
+            {weeklyGroups.map((group) => (
               <WeeklyFlowHistoryCard
-                key={row.categoryKey}
-                row={row}
+                key={group.categoryKey}
+                group={group}
                 palette={palette}
               />
             ))}
           </View>
         ) : (
           <View style={styles.cardList}>
-            {monthlyRows.map((row) => (
+            {monthlyGroups.map((group) => (
               <MonthlyFlowHistoryCard
-                key={row.categoryKey}
-                row={row}
+                key={group.categoryKey}
+                group={group}
                 monthPrefix={monthPrefix}
                 palette={palette}
               />

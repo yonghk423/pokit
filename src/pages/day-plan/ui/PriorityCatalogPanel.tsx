@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
+import { resolveCategoryCatalogIcon, useDayPlanDraftStore } from '@entities/day-plan';
 import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -83,15 +84,13 @@ function CatalogListRow({
     return () => loop.stop();
   }, [shouldPulse, pulse]);
 
-  /** 다크 모드에서 PRIMARY(검정)는 배경과 대비가 거의 없어 선택이 안 보이는 경우가 있음 */
+  const labelColor = selected ? ink : muted;
   const selectedIconColor = isDark ? ink : PRIMARY;
   const iconColor = shouldPulse
     ? activeIconColorByCategory(categoryKey)
     : selected
       ? selectedIconColor
       : muted;
-
-  const labelColor = selected ? ink : muted;
 
   return (
     <View style={[styles.catalogRow, { borderBottomColor: line }]}>
@@ -110,7 +109,7 @@ function CatalogListRow({
         style={styles.catalogRowMainHit}>
         <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
           <IconSymbol
-            key={`${categoryKey}-${selected ? 1 : 0}-${iconColor}`}
+            key={`${categoryKey}-${icon}-${iconColor}`}
             name={icon as any}
             size={22}
             color={iconColor}
@@ -457,6 +456,7 @@ export function PriorityCatalogPanel({
   onDeleteCatalogItem,
 }: Props) {
   const [catalogLabelTick, setCatalogLabelTick] = useState(0);
+  const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
   useFocusEffect(
     useCallback(() => {
       setCatalogLabelTick((n) => n + 1);
@@ -465,11 +465,13 @@ export function PriorityCatalogPanel({
 
   const visibleCatalogCategories = useMemo(() => {
     void catalogLabelTick;
+    void categoryLabelEpoch;
     return filterCatalogPickerCategories(PICKER_CATEGORIES).map((item) => ({
       ...item,
       label: getPickerCategoryLabel(item.key),
+      icon: resolveCategoryCatalogIcon(item.key),
     }));
-  }, [catalogLabelTick]);
+  }, [catalogLabelTick, categoryLabelEpoch]);
 
   const { groupSections } = useMemo(
     () =>

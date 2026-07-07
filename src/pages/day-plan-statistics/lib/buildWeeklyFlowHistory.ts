@@ -9,6 +9,12 @@ import {
 } from '@entities/history/lib/historyDateKey';
 import { getCategoryCompletions } from '@entities/history/lib/historyCompletionMetrics';
 import type { HistoryDailyStat } from '@entities/history/model/types';
+import {
+  normalizeHistoryRecordKey,
+  parseRoutineHistoryRecordKey,
+  ROUTINE_HISTORY_LAYOUT_META,
+  type RoutineHistoryLayoutMode,
+} from '@shared/lib/routineHistoryLayoutKey';
 
 import { resolveTopCategoryLabels } from './resolveTopCategoryLabels';
 
@@ -21,7 +27,11 @@ export type WeeklyHistorySummary = {
 };
 
 export type WeeklyFlowHistoryRow = {
+  historyKey: string;
   categoryKey: string;
+  layoutMode: RoutineHistoryLayoutMode;
+  layoutIcon: string;
+  layoutLabel: string;
   label: string;
   icon: string;
   /** 월=0 … 일=6 */
@@ -58,11 +68,11 @@ export function formatWeekRangeLabelKo(weekStartDateKey: string): string {
 
 function findFirstCompletionDateKey(
   dailyStatsByDate: Record<string, HistoryDailyStat>,
-  categoryKey: string,
+  historyKey: string,
 ): string | undefined {
   const keys = Object.keys(dailyStatsByDate).sort((a, b) => a.localeCompare(b));
   for (const dateKey of keys) {
-    const count = getCategoryCompletions(dailyStatsByDate[dateKey] ?? {})[categoryKey] ?? 0;
+    const count = getCategoryCompletions(dailyStatsByDate[dateKey] ?? {})[historyKey] ?? 0;
     if (count > 0) return dateKey;
   }
   return undefined;
@@ -75,28 +85,38 @@ export function buildWeeklyFlowHistory(input: {
   timeLabelByCategoryKey?: Readonly<Record<string, string | undefined>>;
 }): WeeklyFlowHistoryRow[] {
   const weekDateKeys = buildWeekDateKeys(input.weekStartDateKey);
-  const categoryKeys = new Set<string>(input.trackedCategoryKeys ?? []);
+  const historyKeys = new Set<string>(
+    (input.trackedCategoryKeys ?? []).map((key) => normalizeHistoryRecordKey(key)),
+  );
 
   for (const dateKey of weekDateKeys) {
     const row = input.dailyStatsByDate[dateKey];
     if (!row) continue;
     for (const [key, count] of Object.entries(getCategoryCompletions(row))) {
-      if (count > 0) categoryKeys.add(key);
+      if (count > 0) historyKeys.add(key);
     }
   }
 
   const rows: WeeklyFlowHistoryRow[] = [];
 
-  for (const categoryKey of categoryKeys) {
+  for (const historyKey of historyKeys) {
+    const { categoryKey, layoutMode } = parseRoutineHistoryRecordKey(historyKey);
+    if (!categoryKey) continue;
     const weekdayDone = weekDateKeys.map((dateKey) => {
-      const count = getCategoryCompletions(input.dailyStatsByDate[dateKey] ?? {})[categoryKey] ?? 0;
+      const count = getCategoryCompletions(input.dailyStatsByDate[dateKey] ?? {})[historyKey] ?? 0;
       return count > 0;
     });
     const completedDays = weekdayDone.filter(Boolean).length;
-    const firstDateKey = findFirstCompletionDateKey(input.dailyStatsByDate, categoryKey);
+    if (completedDays <= 0) continue;
+    const firstDateKey = findFirstCompletionDateKey(input.dailyStatsByDate, historyKey);
+    const layoutMeta = ROUTINE_HISTORY_LAYOUT_META[layoutMode];
 
     rows.push({
+      historyKey,
       categoryKey,
+      layoutMode,
+      layoutIcon: layoutMeta.icon,
+      layoutLabel: layoutMeta.labelKo,
       label: categoryReminderLabelKo(categoryKey),
       icon: categoryReminderIconName(categoryKey),
       weekdayDone,
@@ -108,8 +128,9 @@ export function buildWeeklyFlowHistory(input: {
 
   rows.sort(
     (a, b) =>
-      b.completedDays - a.completedDays ||
-      a.label.localeCompare(b.label, 'ko'),
+      a.categoryKey.localeCompare(b.categoryKey, 'ko') ||
+      a.layoutMode.localeCompare(b.layoutMode) ||
+      b.completedDays - a.completedDays,
   );
 
   return rows;

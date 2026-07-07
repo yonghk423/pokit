@@ -24,6 +24,7 @@ import {
   isPriorityWindowEndedForToday,
   isSystemCatalogGroupKey,
   notifyFixedFlowApplyScheduleChanged,
+  resolveCategoryCatalogIcon,
   useDayPlanDraftStore,
   useDayPlanStore,
   useFixedFlowSetsStore,
@@ -143,6 +144,7 @@ export function PriorityCatalogPage() {
     priorityPlanDateKey,
     priorityPlanDateKeyEnd,
     bumpCategoryLabelEpoch,
+    categoryLabelEpoch,
     filterCompletedFocusKeysToPriorityOrder,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
@@ -155,6 +157,7 @@ export function PriorityCatalogPage() {
       priorityPlanDateKey: s.priorityPlanDateKey,
       priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
       bumpCategoryLabelEpoch: s.bumpCategoryLabelEpoch,
+      categoryLabelEpoch: s.categoryLabelEpoch,
       filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
     })),
   );
@@ -196,6 +199,7 @@ export function PriorityCatalogPage() {
   useFocusEffect(
     useCallback(() => {
       reloadCatalogData();
+      useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
       const order = useDayPlanDraftStore.getState().priorityCategoryOrder;
       const saved = loadRoutineCatalogSelectionKeys();
       if (saved.length === 0 && order.length > 0) {
@@ -215,10 +219,10 @@ export function PriorityCatalogPage() {
       return {
         key: e.id,
         label: getPickerCategoryLabel(e.id),
-        icon: (item?.icon ?? 'person.fill') as typeof PICKER_CATEGORIES[number]['icon'],
+        icon: (item?.icon ?? resolveCategoryCatalogIcon(e.id)) as typeof PICKER_CATEGORIES[number]['icon'],
       };
     });
-  }, [customFlowEntries]);
+  }, [customFlowEntries, categoryLabelEpoch]);
 
   const [createSheetGroupKey, setCreateSheetGroupKey] = useState<string | undefined>(undefined);
   const [editGroupSheet, setEditGroupSheet] = useState<{

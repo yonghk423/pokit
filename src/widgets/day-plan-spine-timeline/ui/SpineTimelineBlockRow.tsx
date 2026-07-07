@@ -1,4 +1,3 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -15,6 +14,7 @@ import Reanimated, {
 import { formatMinuteOfDayKo, getBlockTimelineIcon, resolveBlockCategoryKey, resolveCategoryCatalogAccentColor, type SpineTimelineRow } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
+import { CompletionRadioButton, COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -24,7 +24,6 @@ const SWIPE_DELETE_WIDTH = 88;
 const SWIPE_DELETE_TRIGGER = 72;
 const REORDER_LONG_PRESS_MS = 420;
 const REORDER_SPRING = { damping: 22, stiffness: 250, mass: 0.95 };
-const COMPLETE_RADIO_SIZE = 22;
 
 function formatRailMinutes(minutes: number): string {
   const m = Math.max(0, Math.min(minutes, 24 * 60 - 1));
@@ -68,40 +67,19 @@ function SettingsButton({
 function CompleteRadio({
   checked,
   isDark,
-  accent,
   onPress,
 }: {
   checked: boolean;
   isDark: boolean;
-  accent: string;
   onPress?: () => void;
 }) {
   return (
-    <Pressable
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked }}
-      accessibilityLabel={checked ? '완료 취소' : '완료'}
+    <CompletionRadioButton
+      checked={checked}
+      isDark={isDark}
+      checkedColor={isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT}
       onPress={onPress}
-      hitSlop={10}
-      style={styles.completeHit}>
-      {({ pressed }) => (
-        <MaterialIcons
-          name={checked ? 'radio-button-checked' : 'radio-button-unchecked'}
-          size={COMPLETE_RADIO_SIZE}
-          color={
-            checked
-              ? accent
-              : pressed
-                ? isDark
-                  ? 'rgba(255,255,255,0.58)'
-                  : '#D1D5DB'
-                : isDark
-                  ? 'rgba(255,255,255,0.42)'
-                  : '#9CA3AF'
-          }
-        />
-      )}
-    </Pressable>
+    />
   );
 }
 
@@ -250,15 +228,21 @@ export function SpineTimelineBlockRow({
     opacity: interpolate(translateX.value, [0, 12, SWIPE_DELETE_WIDTH], [0, 0.5, 1], Extrapolation.CLAMP),
   }));
 
-  const rowAnimatedStyle = useAnimatedStyle(() => ({
+  const swipeAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const reorderAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: translateX.value },
       { translateY: translateY.value },
       { scale: reorderDragging.value ? 1.015 : 1 },
     ],
-    zIndex: reorderDragging.value ? 220 : 0,
-    elevation: 0,
-    shadowOpacity: 0,
+    zIndex: reorderDragging.value ? 320 : 0,
+    elevation: reorderDragging.value ? 16 : 0,
+    shadowColor: '#000000',
+    shadowOpacity: reorderDragging.value ? 0.14 : 0,
+    shadowRadius: reorderDragging.value ? 10 : 0,
+    shadowOffset: { width: 0, height: reorderDragging.value ? 6 : 0 },
     borderWidth: reorderDragging.value ? 2 : 0,
     borderColor: '#000000',
   }));
@@ -266,8 +250,8 @@ export function SpineTimelineBlockRow({
   const titleColor = completed ? palette.muted : palette.ink;
 
   return (
-    <View
-      style={styles.rowOuter}
+    <Reanimated.View
+      style={[styles.rowOuter, reorderAnimatedStyle]}
       onLayout={(e) => {
         const h = e.nativeEvent.layout.height;
         if (h > 0) onRowMeasured(h);
@@ -283,7 +267,7 @@ export function SpineTimelineBlockRow({
             <Reanimated.View
               style={[
                 styles.swipeForeground,
-                rowAnimatedStyle,
+                swipeAnimatedStyle,
                 { backgroundColor: rowSurface },
               ]}>
               <Pressable
@@ -340,24 +324,21 @@ export function SpineTimelineBlockRow({
         <CompleteRadio
           checked={completed}
           isDark={isDark}
-          accent={palette.accent}
-          onPress={() => {
-            void Haptics.selectionAsync();
-            onToggleComplete();
-          }}
+          onPress={onToggleComplete}
         />
       </View>
-    </View>
+    </Reanimated.View>
   );
 }
 
 const RAIL_W = 44;
 const SPINE_W = 36;
-const COMPLETE_W = 28;
+const COMPLETE_W = 44;
 
 const styles = StyleSheet.create({
   rowOuter: {
     width: '100%',
+    position: 'relative',
   },
   eventRow: {
     flexDirection: 'row',

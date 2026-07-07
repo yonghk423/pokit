@@ -358,6 +358,7 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 0,
     paddingVertical: 4,
+    overflow: 'visible',
   },
   emptyWrap: {
     paddingVertical: 24,

@@ -1,4 +1,6 @@
 import type { HistoryDailyStat } from '@entities/history/model/types';
+import { categoryReminderLabelKo } from '@entities/day-plan';
+import { getCategoryCompletions } from '@entities/history/lib/historyCompletionMetrics';
 
 import { buildMonthlyFlowHistory, buildMonthlyHistorySummary } from './buildMonthlyFlowHistory';
 
@@ -19,14 +21,14 @@ describe('buildMonthlyFlowHistory', () => {
   it('aggregates completion days within a month', () => {
     const rows = buildMonthlyFlowHistory({
       monthPrefix: '2026-07',
-      trackedCategoryKeys: ['reading'],
       dailyStatsByDate: {
-        '2026-07-01': stat('2026-07-01', { reading: 1 }),
-        '2026-07-03': stat('2026-07-03', { reading: 2 }),
+        '2026-07-01': stat('2026-07-01', { 'bag:reading': 1 }),
+        '2026-07-03': stat('2026-07-03', { 'bag:reading': 2 }),
       },
     });
 
     expect(rows).toHaveLength(1);
+    expect(rows[0]?.historyKey).toBe('bag:reading');
     expect(rows[0]?.completedDays).toBe(2);
     expect(rows[0]?.totalCompletions).toBe(3);
     expect(rows[0]?.daysInMonth).toBe(31);
@@ -38,8 +40,8 @@ describe('buildMonthlyFlowHistory', () => {
     const summary = buildMonthlyHistorySummary({
       monthPrefix: '2026-07',
       dailyStatsByDate: {
-        '2026-07-01': stat('2026-07-01', { reading: 1 }),
-        '2026-07-02': stat('2026-07-02', { stretching: 1 }),
+        '2026-07-01': stat('2026-07-01', { 'bag:reading': 1 }),
+        '2026-07-02': stat('2026-07-02', { 'bag:stretching': 1 }),
       },
     });
 
@@ -53,13 +55,22 @@ describe('buildMonthlyFlowHistory', () => {
     const summary = buildMonthlyHistorySummary({
       monthPrefix: '2026-07',
       dailyStatsByDate: {
-        '2026-07-01': stat('2026-07-01', { water: 2, medicine: 2, fasting: 2, reading: 1 }),
+        '2026-07-01': stat('2026-07-01', {
+          'bag:water': 2,
+          'bag:medicine': 2,
+          'bag:fasting': 2,
+          'bag:reading': 1,
+        }),
       },
     });
 
     expect(summary.topCategoryLabels).toHaveLength(3);
     expect(summary.topCategoryLabels).toEqual(
-      expect.arrayContaining(['수분섭취', '약 복용', '체중관리']),
+      expect.arrayContaining([
+        categoryReminderLabelKo('water'),
+        categoryReminderLabelKo('medicine'),
+        categoryReminderLabelKo('fasting'),
+      ]),
     );
   });
 });

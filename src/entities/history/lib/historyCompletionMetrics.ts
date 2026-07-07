@@ -1,4 +1,5 @@
 import type { HistoryDailyStat, HistoryDailyStatInput } from '../model/types';
+import { normalizeHistoryRecordKey } from '@shared/lib/routineHistoryLayoutKey';
 
 export type HistoryDailyStatCategorySource = Pick<
   HistoryDailyStat,
@@ -7,21 +8,23 @@ export type HistoryDailyStatCategorySource = Pick<
 
 /** 카테고리별 완료 횟수(구버전 categoryMinutes는 1회로 환산) */
 export function getCategoryCompletions(row: HistoryDailyStatCategorySource): Record<string, number> {
-  const out: Record<string, number> = {};
+  const merged: Record<string, number> = {};
+  const mergeKey = (rawKey: string, count: number) => {
+    const k = normalizeHistoryRecordKey(rawKey);
+    const n = Math.max(0, Math.floor(Number(count) || 0));
+    if (!k || n <= 0) return;
+    merged[k] = (merged[k] ?? 0) + n;
+  };
+
   for (const [key, raw] of Object.entries(row.categoryCompletions ?? {})) {
-    const k = key.trim();
-    const n = Math.max(0, Math.floor(Number(raw) || 0));
-    if (!k || n <= 0) continue;
-    out[k] = n;
+    mergeKey(key, raw);
   }
-  if (Object.keys(out).length > 0) return out;
+  if (Object.keys(merged).length > 0) return merged;
 
   for (const [key] of Object.entries(row.categoryMinutes ?? {})) {
-    const k = key.trim();
-    if (!k) continue;
-    out[k] = (out[k] ?? 0) + 1;
+    mergeKey(key, 1);
   }
-  return out;
+  return merged;
 }
 
 export function sumCategoryCompletions(map: Record<string, number>): number {

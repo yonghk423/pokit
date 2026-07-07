@@ -2,6 +2,7 @@ import {
   buildPrioritySectionCompletionKey,
   migrateCompletionKeyInList,
   parsePrioritySectionCompletionKey,
+  resolveFocusCompletionHistoryLayoutMode,
   toRoutineHistoryCategoryKey,
 } from './prioritySectionCompletionKey';
 
@@ -35,5 +36,12 @@ describe('prioritySectionCompletionKey', () => {
         'stretching@lunch',
       ),
     ).toEqual(['water@morning', 'stretching@lunch']);
+  });
+
+  it('resolves focus completion layout from key shape, not active tab', () => {
+    expect(resolveFocusCompletionHistoryLayoutMode('water')).toBe('bag');
+    expect(resolveFocusCompletionHistoryLayoutMode('water@morning')).toBe('sections');
+    expect(resolveFocusCompletionHistoryLayoutMode('water', ['water'])).toBe('sections');
+    expect(resolveFocusCompletionHistoryLayoutMode('reading', ['water'])).toBe('bag');
   });
 });

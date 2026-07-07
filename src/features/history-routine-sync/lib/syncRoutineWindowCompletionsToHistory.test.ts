@@ -1,12 +1,16 @@
-jest.mock('@shared/lib/storage', () => ({
-  loadHistoryDailyStats: jest.fn(() => []),
-  loadHistoryMeta: jest.fn(() => null),
-  saveHistoryDailyStats: jest.fn(),
-  saveHistoryMeta: jest.fn(),
-  loadDayPlanDraft: jest.fn(() => null),
-  saveDayPlanDraft: jest.fn(),
-  syncWidgetTimelineFromStorage: jest.fn(),
-}));
+jest.mock('@shared/lib/storage', () => {
+  const actual = jest.requireActual<typeof import('@shared/lib/storage')>('@shared/lib/storage');
+  return {
+    ...actual,
+    loadHistoryDailyStats: jest.fn(() => []),
+    loadHistoryMeta: jest.fn(() => null),
+    saveHistoryDailyStats: jest.fn(),
+    saveHistoryMeta: jest.fn(),
+    loadDayPlanDraft: jest.fn(() => null),
+    saveDayPlanDraft: jest.fn(),
+    syncWidgetTimelineFromStorage: jest.fn(),
+  };
+});
 
 jest.mock('@entities/day-plan/lib/localDateKey', () => ({
   getLocalDateKey: () => '2025-06-14',
@@ -14,7 +18,7 @@ jest.mock('@entities/day-plan/lib/localDateKey', () => ({
 }));
 
 import { useDayPlanDraftStore, useDayPlanStore } from '@entities/day-plan';
-import { useHistoryStore } from '@entities/history';
+import { getCategoryCompletions, useHistoryStore } from '@entities/history';
 
 import { syncRoutineWindowCompletionsToHistory } from './syncRoutineWindowCompletionsToHistory';
 
@@ -34,10 +38,10 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
       priorityCategoryOrder: [],
       completedFocusCategoryKeys: [],
       routineHistoryPendingByDate: {
-        '2025-06-14': ['reading', 'writing'],
+        '2025-06-14': ['bag:reading', 'bag:writing'],
       },
       routineHistoryPlannedKeysByDate: {
-        '2025-06-14': ['reading', 'writing', 'water'],
+        '2025-06-14': ['bag:reading', 'bag:writing', 'bag:water'],
       },
     });
     useDayPlanStore.setState({
@@ -53,8 +57,9 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
     syncRoutineWindowCompletionsToHistory('2025-06-14');
 
     const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
-    expect(row?.categoryCompletions.reading).toBe(1);
-    expect(row?.categoryCompletions.writing).toBe(1);
+    const completions = getCategoryCompletions(row ?? { categoryMinutes: {} });
+    expect(completions['bag:reading']).toBe(1);
+    expect(completions['bag:writing']).toBe(1);
     expect(row?.completedFlowCount).toBe(2);
     expect(useDayPlanDraftStore.getState().routineHistoryPendingByDate['2025-06-14']).toBeUndefined();
   });
@@ -70,8 +75,9 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
     syncRoutineWindowCompletionsToHistory('2025-06-14');
 
     const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
-    expect(row?.categoryCompletions.reading).toBe(1);
-    expect(row?.categoryCompletions.writing).toBe(1);
+    const completions = getCategoryCompletions(row ?? { categoryMinutes: {} });
+    expect(completions['bag:reading']).toBe(1);
+    expect(completions['bag:writing']).toBe(1);
     expect(row?.completedFlowCount).toBe(2);
   });
 
@@ -86,8 +92,86 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
     syncRoutineWindowCompletionsToHistory('2025-06-14');
 
     const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
-    expect(row?.categoryCompletions.reading).toBe(1);
-    expect(row?.categoryCompletions.writing).toBeUndefined();
+    const completions = getCategoryCompletions(row ?? { categoryMinutes: {} });
+    expect(completions['bag:reading']).toBe(1);
+    expect(completions['bag:writing']).toBeUndefined();
     expect(row?.completedFlowCount).toBe(1);
+  });
+
+  it('records independent bag, sections, and spine completions together', () => {
+    useDayPlanDraftStore.setState({
+      priorityCategoryOrder: ['reading'],
+      prioritySectionsCategoryOrder: ['water'],
+      prioritySpineLayoutEnabled: true,
+      priorityMealSlotLayoutEnabled: false,
+      completedFocusCategoryKeys: ['reading', 'water@morning'],
+      routineHistoryPendingByDate: {
+        '2025-06-14': ['bag:reading', 'sections:water', 'spine:exercise'],
+      },
+    });
+    useDayPlanStore.setState({
+      dateKey: '2025-06-14',
+      blocks: [
+        {
+          id: 'spine-1',
+          title: '운동',
+          category: '운동',
+          categoryKey: 'exercise',
+          startMinutes: 480,
+          endMinutes: 540,
+          order: 0,
+          blockOrigin: 'spineTimeline',
+          planDateKey: '2025-06-14',
+        },
+      ],
+      completedBlockIds: ['spine-1'],
+      skippedBlockIds: [],
+    });
+
+    syncRoutineWindowCompletionsToHistory('2025-06-14');
+
+    const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
+    const completions = getCategoryCompletions(row ?? { categoryMinutes: {} });
+    expect(completions['bag:reading']).toBe(1);
+    expect(completions['sections:water']).toBe(1);
+    expect(completions['spine:exercise']).toBe(1);
+    expect(row?.completedFlowCount).toBe(3);
+  });
+
+  it('keeps bag completion when resyncing on spine tab', () => {
+    useDayPlanDraftStore.setState({
+      priorityCategoryOrder: ['reading'],
+      prioritySpineLayoutEnabled: true,
+      priorityMealSlotLayoutEnabled: false,
+      completedFocusCategoryKeys: ['reading'],
+      routineHistoryPendingByDate: {
+        '2025-06-14': ['bag:reading', 'spine:exercise'],
+      },
+    });
+    useDayPlanStore.setState({
+      dateKey: '2025-06-14',
+      blocks: [
+        {
+          id: 'spine-1',
+          title: '운동',
+          category: '운동',
+          categoryKey: 'exercise',
+          startMinutes: 480,
+          endMinutes: 540,
+          order: 0,
+          blockOrigin: 'spineTimeline',
+          planDateKey: '2025-06-14',
+        },
+      ],
+      completedBlockIds: ['spine-1'],
+      skippedBlockIds: [],
+    });
+
+    syncRoutineWindowCompletionsToHistory('2025-06-14');
+
+    const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
+    const completions = getCategoryCompletions(row ?? { categoryMinutes: {} });
+    expect(completions['bag:reading']).toBe(1);
+    expect(completions['spine:exercise']).toBe(1);
   });
 });

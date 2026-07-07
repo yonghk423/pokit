@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { PriorityLayoutLinkMode } from '@entities/day-plan';
+import type { PriorityLayoutLinkMode, PriorityLayoutRoutineSourceMode } from '@entities/day-plan';
+import { priorityLayoutRoutineSourceLabelKo } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -13,7 +14,8 @@ import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 type Props = {
   visible: boolean;
   targetMode: Extract<DayPlanLayoutMode, 'sections' | 'spine'>;
-  bagCount: number;
+  existingRoutineCount: number;
+  sourceMode?: PriorityLayoutRoutineSourceMode | null;
   initialLinkMode?: PriorityLayoutLinkMode | null;
   isDark: boolean;
   ink: string;
@@ -31,22 +33,28 @@ type Option = {
   icon: string;
 };
 
-function optionsFor(targetMode: Extract<DayPlanLayoutMode, 'sections' | 'spine'>, bagCount: number): Option[] {
+function optionsFor(
+  targetMode: Extract<DayPlanLayoutMode, 'sections' | 'spine'>,
+  existingRoutineCount: number,
+  sourceMode?: PriorityLayoutRoutineSourceMode | null,
+): Option[] {
+  const sourceLabel = sourceMode ? priorityLayoutRoutineSourceLabelKo(sourceMode) : '다른 보기';
+  const hasExisting = existingRoutineCount > 0;
+
   if (targetMode === 'sections') {
     return [
       {
         mode: 'linked',
-        title: bagCount > 0 ? '목록 루틴 이어서 쓰기' : '목록과 연동',
-        body:
-          bagCount > 0
-            ? '목록에 담은 루틴을 시간대별로 배치해요. 시간대가 없는 루틴은 먼저 지정해 주세요.'
-            : '목록에 담은 루틴이 생기면 시간대별 보기에 함께 반영돼요.',
+        title: hasExisting ? `${sourceLabel} 루틴 이어서 쓰기` : '기존 루틴과 연동',
+        body: hasExisting
+          ? `${sourceLabel}에 있는 루틴을 시간대별로 배치해요. 시간대가 없는 루틴은 먼저 지정해 주세요.`
+          : '다른 보기에 루틴이 생기면 시간대별 보기에 함께 반영돼요.',
         icon: 'link',
       },
       {
         mode: 'independent',
         title: '시간대별로 따로 관리',
-        body: '목록과 별도로 시간대별 루틴을 구성해요. 각 시간대에서 직접 루틴을 추가할 수 있어요.',
+        body: '기존 보기와 별도로 시간대별 루틴을 구성해요. 각 시간대에서 직접 루틴을 추가할 수 있어요.',
         icon: 'sun.horizon.fill',
       },
     ];
@@ -55,17 +63,16 @@ function optionsFor(targetMode: Extract<DayPlanLayoutMode, 'sections' | 'spine'>
   return [
     {
       mode: 'linked',
-      title: bagCount > 0 ? '목록 루틴 이어서 쓰기' : '목록과 연동',
-      body:
-        bagCount > 0
-          ? '목록에 담은 루틴을 타임라인에 올릴 수 있어요. 각 루틴의 시작·종료 시각을 정해 주세요.'
-          : '목록에 담은 루틴이 생기면 타임라인에서 함께 다룰 수 있어요.',
+      title: hasExisting ? `${sourceLabel} 루틴 이어서 쓰기` : '기존 루틴과 연동',
+      body: hasExisting
+        ? `${sourceLabel}에 있는 루틴을 타임라인에 올릴 수 있어요. 각 루틴의 시작·종료 시각을 정해 주세요.`
+        : '다른 보기에 루틴이 생기면 타임라인에서 함께 다룰 수 있어요.',
       icon: 'link',
     },
     {
       mode: 'independent',
       title: '타임라인만 따로 사용',
-      body: '빈 타임라인에서 직접 일정을 추가해요. 목록과는 별도로 관리돼요.',
+      body: '빈 타임라인에서 직접 일정을 추가해요. 다른 보기와는 별도로 관리돼요.',
       icon: 'clock',
     },
   ];
@@ -75,15 +82,20 @@ function titleFor(targetMode: Extract<DayPlanLayoutMode, 'sections' | 'spine'>):
   return targetMode === 'sections' ? '시간대별 보기 설정' : '타임라인 보기 설정';
 }
 
-function bagCountLine(count: number): string | null {
+function existingRoutineCountLine(
+  count: number,
+  sourceMode?: PriorityLayoutRoutineSourceMode | null,
+): string | null {
   if (count <= 0) return null;
-  return `추가되어 있는 루틴이 ${count}가지 있습니다.`;
+  const sourceLabel = sourceMode ? priorityLayoutRoutineSourceLabelKo(sourceMode) : '다른 보기';
+  return `${sourceLabel}에 루틴이 ${count}가지 있습니다.`;
 }
 
 export function DayPlanLayoutModeSetupSheet({
   visible,
   targetMode,
-  bagCount,
+  existingRoutineCount,
+  sourceMode = null,
   initialLinkMode = null,
   isDark,
   ink,
@@ -95,8 +107,8 @@ export function DayPlanLayoutModeSetupSheet({
 }: Props) {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<PriorityLayoutLinkMode>('linked');
-  const options = optionsFor(targetMode, bagCount);
-  const bagCountSubtitle = bagCountLine(bagCount);
+  const options = optionsFor(targetMode, existingRoutineCount, sourceMode);
+  const existingRoutineSubtitle = existingRoutineCountLine(existingRoutineCount, sourceMode);
 
   useEffect(() => {
     if (!visible) return;
@@ -104,8 +116,8 @@ export function DayPlanLayoutModeSetupSheet({
       setSelected(initialLinkMode);
       return;
     }
-    setSelected(bagCount > 0 ? 'linked' : 'independent');
-  }, [bagCount, initialLinkMode, targetMode, visible]);
+    setSelected(existingRoutineCount > 0 ? 'linked' : 'independent');
+  }, [existingRoutineCount, initialLinkMode, targetMode, visible]);
 
   const handleConfirm = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -118,11 +130,11 @@ export function DayPlanLayoutModeSetupSheet({
         <View style={[styles.header, { borderBottomColor: line }]}>
           <View style={styles.headerText}>
             <ThemedText style={[styles.title, { color: ink }]}>{titleFor(targetMode)}</ThemedText>
-            {bagCountSubtitle ? (
-              <ThemedText style={[styles.subtitle, { color: ink }]}>{bagCountSubtitle}</ThemedText>
+            {existingRoutineSubtitle ? (
+              <ThemedText style={[styles.subtitle, { color: ink }]}>{existingRoutineSubtitle}</ThemedText>
             ) : null}
             <ThemedText style={[styles.subtitle, { color: muted }]}>
-              목록 루틴과 연동할지, 따로 관리할지 선택해 주세요.
+              기존 루틴과 연동할지, 이 보기만 따로 관리할지 선택해 주세요.
             </ThemedText>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={8}>

@@ -19,6 +19,22 @@ export {
   builtinCategoryLabelKo, CATEGORY_REMINDER_KEYS, categoryReminderIconName, categoryReminderLabelKo, type CategoryReminderCatalogKey
 } from './lib/categoryReminderCatalog';
 export { computeSpineGapInsertSlot } from './lib/computeSpineGapInsertSlot';
+export {
+  collectSpineTimelineCategoryKeys,
+  priorityLayoutRoutineSourceLabelKo,
+  resolveCrossLayoutRoutineKeysForTarget,
+  resolvePriorityLayoutRoutineSource,
+  type PriorityLayoutRoutineSource,
+  type PriorityLayoutRoutineSourceMode,
+} from './lib/priorityCrossLayoutRoutines';
+export {
+  clampSpineBlockToPriorityWindow,
+  clipGapToSpinePriorityWindow,
+  isMinuteWithinSpinePriorityWindow,
+  isSpineBlockWithinPriorityWindow,
+  resolveSpinePriorityWindow,
+  type SpinePriorityWindow,
+} from './lib/spinePriorityWindow';
 export { countPendingFlowBlocks } from './lib/countPendingFlowBlocks';
 export {
   isSystemCatalogGroupKey, SYSTEM_CATALOG_GROUP_KEYS,
@@ -318,7 +334,8 @@ export {
   buildPrioritySectionCompletionKey,
   migrateCompletionKeyInList,
   parsePrioritySectionCompletionKey,
-  toRoutineHistoryCategoryKey
+  toRoutineHistoryCategoryKey,
+  resolveFocusCompletionHistoryLayoutMode,
 } from './lib/prioritySectionCompletionKey';
 export { blockMatchesPriorityHhmmWindow } from './lib/priorityWindowBlockMatch';
 export {

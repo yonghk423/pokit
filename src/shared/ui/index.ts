@@ -1,4 +1,5 @@
 export { Collapsible } from './collapsible';
+export { CompletionRadioButton } from './completion-radio-button';
 export { CustomFlowAppearancePicker } from './custom-flow-appearance-picker';
 export { HsvColorPicker } from './hsv-color-picker';
 export { ExternalLink } from './external-link';

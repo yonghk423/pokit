@@ -1,6 +1,10 @@
 import type { DayPlanBlock } from '../model/types';
 
 import { filterSpineTimelineBlocks } from './dayPlanFlowBlock';
+import {
+  clipGapToSpinePriorityWindow,
+  resolveSpinePriorityWindow,
+} from './spinePriorityWindow';
 
 /** 갭 안에서 다음으로 넣을 수 있는 시작·종료 분. 불가면 null */
 export function computeSpineGapInsertSlot(
@@ -10,9 +14,21 @@ export function computeSpineGapInsertSlot(
   nowMinutes: number,
   defaultDurationMin = 15,
   minDurationMin = 1,
+  priorityStart?: string,
+  priorityEnd?: string,
 ): { startMinutes: number; endMinutes: number } | null {
-  const gapFrom = Math.max(0, fromMinutes);
-  const gapTo = Math.min(24 * 60, toMinutes);
+  let gapFrom = Math.max(0, fromMinutes);
+  let gapTo = Math.min(24 * 60, toMinutes);
+
+  if (priorityStart && priorityEnd) {
+    const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
+    if (!window) return null;
+    const clipped = clipGapToSpinePriorityWindow(gapFrom, gapTo, window, minDurationMin);
+    if (!clipped) return null;
+    gapFrom = clipped.fromMinutes;
+    gapTo = clipped.toMinutes;
+  }
+
   const gapWidth = gapTo - gapFrom;
   if (gapWidth < minDurationMin) return null;
 

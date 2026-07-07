@@ -55,6 +55,9 @@ import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
 import { GoalDetailCategoryStartReminderCard } from './GoalDetailCategoryStartReminderCard';
 import { RoutineApplyWeekdaysField } from './RoutineApplyWeekdaysField';
 import { RoutineDeleteButton } from './category/lib/RoutineDeleteButton';
+import { RoutineTitleField } from './category/lib/RoutineTitleField';
+import { resolveRoutineTitleFallback } from './category/lib/routineTitleFallback';
+import { goalDetailSettingsPalette } from './category/lib/settingsPalette';
 import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
 
 function palette(isDark: boolean) {
@@ -129,6 +132,26 @@ function buildLoadedDataByBlockId(targets: EditingTarget[]): Record<string, unkn
   return next;
 }
 
+function waterReminderSyncFingerprint(raw: unknown): string {
+  const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  return JSON.stringify({
+    goalMl: o.goalMl,
+    reminderPreset: o.reminderPreset,
+    reminderCustomMin: o.reminderCustomMin,
+    smartNotification: o.smartNotification,
+    reminderTimes: o.reminderTimes,
+  });
+}
+
+/** 루틴 탭 목록 라벨·아이콘 모양 갱신용 — 컬러(accentColor)는 제외 */
+function catalogListAppearanceFingerprint(raw: unknown): string {
+  const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  return JSON.stringify({
+    displayName: readRoutineDisplayNameFromConfig(raw),
+    icon: typeof o.icon === 'string' ? o.icon : '',
+  });
+}
+
 /** 자동 저장 레이스로 필드가 빠진 페이로드가 이전 값을 지우는 것을 막는다. */
 function withPreservedRoutineFields(categoryKey: string, next: unknown): unknown {
   if (!next || typeof next !== 'object') return next;
@@ -140,6 +163,12 @@ function withPreservedRoutineFields(categoryKey: string, next: unknown): unknown
   if (!('displayName' in o)) {
     const prevName = readRoutineDisplayNameFromConfig(prev);
     if (prevName.length > 0) o.displayName = prevName;
+  } else {
+    const nextName = readRoutineDisplayNameFromConfig(o);
+    const prevName = readRoutineDisplayNameFromConfig(prev);
+    if (nextName.length === 0 && prevName.length > 0) {
+      o.displayName = prevName;
+    }
   }
   if (!('icon' in o) && typeof prevO.icon === 'string') {
     o.icon = prevO.icon;
@@ -173,6 +202,12 @@ export function GoalDetailSettingsPage() {
     useDayPlanDraftStore.getState().hydrate();
     registerOtherCategoryResolverFromStorage();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
+    };
+  }, []);
   const blocks = useDayPlanStore((s) => s.blocks);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
   const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
@@ -180,6 +215,7 @@ export function GoalDetailSettingsPage() {
   const priorityCategoryOrder = useDayPlanDraftStore((s) => s.priorityCategoryOrder);
   const completedFocusCategoryKeys = useDayPlanDraftStore((s) => s.completedFocusCategoryKeys);
   const planCompletionDismissedKeys = useDayPlanDraftStore((s) => s.planCompletionDismissedKeys);
+  const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
 
   const completedCategoryKeysFromPlan = useMemo(() => {
     const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
@@ -329,6 +365,8 @@ export function GoalDetailSettingsPage() {
   );
 
   const handleChangeDataConfig = useCallback((target: EditingTarget, next: unknown) => {
+    const prevStored = loadGoalDetailCategoryConfig(target.categoryKey);
+    const prevCatalogAppearance = catalogListAppearanceFingerprint(prevStored);
     const persisted = withPreservedRoutineFields(target.categoryKey, next);
     const serialized = JSON.stringify(persisted);
     let shouldPersist = true;
@@ -345,7 +383,9 @@ export function GoalDetailSettingsPage() {
     saveGoalDetailBlockConfig(target.blockId, persisted);
     saveGoalDetailCategoryConfig(target.categoryKey, persisted);
     registerOtherCategoryResolverFromStorage();
-    useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
+    if (catalogListAppearanceFingerprint(persisted) !== prevCatalogAppearance) {
+      useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
+    }
     if (target.categoryKey === 'healthIntake' || target.categoryKey === 'medicine') {
       if (medicineReminderSyncTimerRef.current) {
         clearTimeout(medicineReminderSyncTimerRef.current);
@@ -356,7 +396,10 @@ export function GoalDetailSettingsPage() {
       }, 450);
     }
     if (target.categoryKey === 'water') {
-      useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
+      const prevWater = loadGoalDetailCategoryConfig('water');
+      if (waterReminderSyncFingerprint(prevWater) !== waterReminderSyncFingerprint(persisted)) {
+        useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
+      }
     }
   }, []);
 
@@ -495,17 +538,34 @@ export function GoalDetailSettingsPage() {
         ? 59
         : Number(StatusBar.currentHeight) || 24;
 
-  const headerTitle = useMemo(
-    () =>
-      resolveGoalDetailHeaderTitle({
-        targets,
-        sortedTargets,
-        categoryKey,
-        dataByBlockId,
-        previewTitleForBlock,
-      }),
-    [targets, sortedTargets, categoryKey, dataByBlockId, previewTitleForBlock],
-  );
+  const headerTitle = useMemo(() => {
+    void categoryLabelEpoch;
+    const stored = loadGoalDetailCategoryConfig(categoryKey);
+    const storedName = readRoutineDisplayNameFromConfig(stored);
+    if (storedName) return storedName;
+    return resolveGoalDetailHeaderTitle({
+      targets,
+      sortedTargets,
+      categoryKey,
+      dataByBlockId: loadedDataByBlockId,
+      previewTitleForBlock,
+    });
+  }, [
+    categoryLabelEpoch,
+    targets,
+    sortedTargets,
+    categoryKey,
+    loadedDataByBlockId,
+    previewTitleForBlock,
+  ]);
+
+  const settingsPalette = useMemo(() => goalDetailSettingsPalette(false), []);
+
+  const handleGoBack = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
+    router.back();
+  }, [router]);
 
   return (
     <ThemedView
@@ -522,10 +582,7 @@ export function GoalDetailSettingsPage() {
             },
           ]}>
           <Pressable
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.back();
-            }}
+            onPress={handleGoBack}
             style={styles.headerBtn}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             accessibilityRole="button"
@@ -707,6 +764,24 @@ export function GoalDetailSettingsPage() {
                   styles.metaSection,
                   contentFlush && styles.metaSectionInset,
                 ]}>
+                {workNoteUi ? (
+                  <RoutineTitleField
+                    value={readRoutineDisplayNameFromConfig(dataByBlockId[targets[0].blockId])}
+                    onChangeValue={(displayName) => {
+                      const base = dataByBlockId[targets[0].blockId];
+                      const merged =
+                        base && typeof base === 'object' ? { ...(base as object) } : {};
+                      handleChangeDataConfig(targets[0], { ...merged, displayName });
+                    }}
+                    fallback={resolveRoutineTitleFallback(
+                      categoryKey,
+                      previewTitleForBlock(targets[0].blockId, categoryKey),
+                    )}
+                    allowRename={resolveRenameAccess(categoryKey).allowRename}
+                    renameLockedReason={resolveRenameAccess(categoryKey).renameLockedReason}
+                    palette={settingsPalette}
+                  />
+                ) : null}
                 <CustomFlowGroupField
                   groupKey={
                     customFlowGroupByCategoryKey[categoryKey] ??
@@ -717,7 +792,10 @@ export function GoalDetailSettingsPage() {
                 {!isCategoryRunning(categoryKey) ? (
                   <RoutineAppearanceField
                     categoryKey={categoryKey}
-                    previewLabel={previewTitleForBlock(targets[0].blockId, categoryKey)}
+                    previewLabel={
+                      readRoutineDisplayNameFromConfig(dataByBlockId[targets[0].blockId]) ||
+                      previewTitleForBlock(targets[0].blockId, categoryKey)
+                    }
                     dataConfig={dataByBlockId[targets[0].blockId]}
                     onChangeDataConfig={(next) => handleChangeDataConfig(targets[0], next)}
                     ink={c.onSurface}
@@ -772,16 +850,14 @@ export function GoalDetailSettingsPage() {
             }}
             style={({ pressed }) => [
               styles.footerCompleteCircle,
-              {
-                backgroundColor: waterDetailUi ? WATER.ctaBg : '#000000',
-              },
+              { backgroundColor: '#000000' },
               pressed && { opacity: 0.9, transform: [{ scale: 0.94 }] },
             ]}>
             <IconSymbol
               name="checkmark"
               size={16}
               weight="bold"
-              color={waterDetailUi ? WATER.ctaText : '#FAFAFA'}
+              color="#FAFAFA"
             />
           </Pressable>
         </View>

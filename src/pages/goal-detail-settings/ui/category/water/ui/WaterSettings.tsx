@@ -58,6 +58,11 @@ function seedWater(raw: unknown) {
   return normalizeWaterDetailConfig(raw ?? getInitialWaterDataConfig());
 }
 
+function waterStructuralConfigKey(raw: unknown): string {
+  const { displayName: _displayName, summary: _summary, ...structural } = seedWater(raw);
+  return JSON.stringify(structural);
+}
+
 function clampWaterTimes(times: string[], routineStart: string, routineEnd: string): string[] {
   return times.map((t) => clampHhmmToPriorityWindow(t, routineStart, routineEnd, 1));
 }
@@ -95,10 +100,7 @@ export function WaterSettings({
   );
   const timeFieldPalette = useMemo(() => paletteForReminderTimeCard(false).timeField, []);
 
-  const normalizedKey = useMemo(
-    () => JSON.stringify(normalizeWaterDetailConfig(dataConfig ?? getInitialWaterDataConfig())),
-    [dataConfig],
-  );
+  const structuralKey = useMemo(() => waterStructuralConfigKey(dataConfig), [dataConfig]);
 
   const [goalMl, setGoalMl] = useState(() => seedWater(dataConfig).goalMl);
   const [drankMl, setDrankMl] = useState(() => seedWater(dataConfig).drankMl);
@@ -121,7 +123,9 @@ export function WaterSettings({
   const [openSlotIndex, setOpenSlotIndex] = useState<number | null>(null);
 
   const lastRef = useRef<string | null>(null);
-  const hydratedKey = useRef<string | null>(null);
+  const hydratedStructuralKey = useRef<string | null>(null);
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftPayloadRef = useRef<WaterDetailDataConfig | null>(null);
 
   useEffect(() => {
     useDayPlanDraftStore.getState().hydrate();
@@ -137,8 +141,8 @@ export function WaterSettings({
   );
 
   useEffect(() => {
-    if (hydratedKey.current === normalizedKey) return;
-    hydratedKey.current = normalizedKey;
+    if (hydratedStructuralKey.current === structuralKey) return;
+    hydratedStructuralKey.current = structuralKey;
     const next = normalizeWaterDetailConfig(dataConfig ?? getInitialWaterDataConfig());
     setGoalMl(next.goalMl);
     setDrankMl(next.drankMl);
@@ -153,43 +157,98 @@ export function WaterSettings({
     setSummary(next.summary);
     setDisplayName(next.displayName);
     setOpenSlotIndex(null);
-  }, [dataConfig, normalizedKey, priorityEnd, priorityStart]);
+  }, [dataConfig, structuralKey, priorityEnd, priorityStart]);
 
-  const customMinNum = Math.max(
-    15,
-    Math.min(24 * 60, parseInt(reminderCustomMin, 10) || 90),
-  );
-
-  useEffect(() => {
-    const payload: WaterDetailDataConfig = normalizeWaterDetailConfig({
+  const buildDraftPayload = useCallback((): WaterDetailDataConfig => {
+    const customMin = Math.max(
+      15,
+      Math.min(24 * 60, parseInt(reminderCustomMin, 10) || 90),
+    );
+    return normalizeWaterDetailConfig({
       goalMl,
       drankMl: Math.min(drankMl, goalMl),
       quickAddPresetsMl,
       reminderPreset,
-      reminderCustomMin: customMinNum,
+      reminderCustomMin: customMin,
       smartNotification,
       reminderTimes: clampWaterTimes(reminderTimes, priorityStart, priorityEnd),
       summary,
       displayName,
     });
-    const s = JSON.stringify(payload);
-    if (lastRef.current === s) return;
-    lastRef.current = s;
-    onChangeDataConfig(payload);
   }, [
-    goalMl,
-    drankMl,
-    quickAddPresetsMl,
-    reminderPreset,
-    customMinNum,
-    smartNotification,
-    reminderTimes,
-    summary,
     displayName,
+    drankMl,
+    goalMl,
     priorityEnd,
     priorityStart,
-    onChangeDataConfig,
+    quickAddPresetsMl,
+    reminderCustomMin,
+    reminderPreset,
+    reminderTimes,
+    smartNotification,
+    summary,
   ]);
+
+  draftPayloadRef.current = buildDraftPayload();
+
+  const persistCatalogAppearanceNow = useCallback(
+    (cosmetic: Partial<Pick<WaterDetailDataConfig, 'displayName' | 'summary'>>) => {
+      const payload = normalizeWaterDetailConfig({
+        ...(draftPayloadRef.current ?? buildDraftPayload()),
+        ...cosmetic,
+      });
+      const serialized = JSON.stringify(payload);
+      if (lastRef.current === serialized) return;
+      lastRef.current = serialized;
+      draftPayloadRef.current = payload;
+      onChangeDataConfig(payload);
+    },
+    [buildDraftPayload, onChangeDataConfig],
+  );
+
+  useEffect(() => {
+    const payload = buildDraftPayload();
+    const serialized = JSON.stringify(payload);
+    if (lastRef.current === serialized) return;
+
+    if (persistTimerRef.current) {
+      clearTimeout(persistTimerRef.current);
+    }
+    persistTimerRef.current = setTimeout(() => {
+      persistTimerRef.current = null;
+      const latest = JSON.stringify(draftPayloadRef.current);
+      if (lastRef.current === latest) return;
+      lastRef.current = latest;
+      onChangeDataConfig(draftPayloadRef.current);
+    }, 450);
+
+    return () => {
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+      }
+    };
+  }, [buildDraftPayload, onChangeDataConfig]);
+
+  useEffect(() => {
+    return () => {
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+      }
+      const payload = draftPayloadRef.current;
+      if (!payload) return;
+      const serialized = JSON.stringify(payload);
+      if (lastRef.current === serialized) return;
+      lastRef.current = serialized;
+      onChangeDataConfig(payload);
+    };
+  }, [onChangeDataConfig]);
+
+  const customMinNum = Math.max(
+    15,
+    Math.min(24 * 60, parseInt(reminderCustomMin, 10) || 90),
+  );
 
   const onPickPresetMl = (ml: number) => {
     setGoalMl(ml);
@@ -316,7 +375,10 @@ export function WaterSettings({
         <>
           <RoutineTitleField
             value={displayName}
-            onChangeValue={setDisplayName}
+            onChangeValue={(next) => {
+              setDisplayName(next);
+              persistCatalogAppearanceNow({ displayName: next });
+            }}
             fallback={titleFallback}
             allowRename={allowRename}
             renameLockedReason={renameLockedReason}
