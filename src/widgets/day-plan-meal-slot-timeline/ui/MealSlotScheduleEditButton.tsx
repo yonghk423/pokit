@@ -16,6 +16,7 @@ type Props = {
   onPress: () => void;
   compact?: boolean;
   showLabel?: boolean;
+  accessibilityLabel?: string;
 };
 
 function cardFaceColors(isDark: boolean) {
@@ -33,13 +34,14 @@ export function MealSlotScheduleEditButton({
   onPress,
   compact = false,
   showLabel = false,
+  accessibilityLabel = '구간 시간 설정',
 }: Props) {
   const colors = cardFaceColors(isDark);
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="구간 시간 설정"
+      accessibilityLabel={accessibilityLabel}
       accessibilityHint="새벽·아침·점심·저녁·밤 구간 시작 시각을 변경할 수 있어요"
       hitSlop={6}
       onPress={() => {

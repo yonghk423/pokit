@@ -43,7 +43,6 @@ import {
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
   groupFixedFlowItemsByMealSlot,
   isBuiltinPresetScheduleSet,
-  isFixedFlowSetMatchedToday,
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
@@ -387,7 +386,6 @@ type GroupAccordionProps = {
   mealSlotLayoutEnabled: boolean;
   isExpanded: boolean;
   isActiveForToday: boolean;
-  isEligibleToday: boolean;
   applyBlocked: boolean;
   catalogByKey: Map<string, PriorityCatalogRow>;
   isDark: boolean;
@@ -420,7 +418,6 @@ function GroupAccordion({
   mealSlotLayoutEnabled,
   isExpanded,
   isActiveForToday,
-  isEligibleToday,
   applyBlocked,
   catalogByKey,
   isDark,
@@ -458,21 +455,13 @@ function GroupAccordion({
     [mealSlotSections],
   );
   const applyChipBlocked = applyBlocked && !isActiveForToday;
-  const disableApplyToggle = !isEligibleToday || applyChipBlocked;
-  const applyLabel = !isEligibleToday
-    ? '대기 중'
-    : isActiveForToday
-      ? '적용 중'
+  const disableApplyToggle = applyChipBlocked;
+  const applyLabel = isActiveForToday ? '적용 중' : '오늘 적용';
+  const applyA11yLabel = isActiveForToday
+    ? '오늘 적용 해제'
+    : applyChipBlocked
+      ? '집중 시간이 끝나 오늘 적용할 수 없음'
       : '오늘 적용';
-  const applyA11yLabel = !isEligibleToday
-    ? isPresetScheduleSet
-      ? '현재 요일에서는 오늘 적용할 수 없음'
-      : '오늘 적용할 수 없음'
-    : isActiveForToday
-      ? '오늘 적용 해제'
-      : applyChipBlocked
-        ? '집중 시간이 끝나 오늘 적용할 수 없음'
-        : '오늘 적용';
   const ruleLabel = isPresetScheduleSet ? getFixedFlowPresetScheduleLabel(setItem.applyRule) : null;
   const scheduleHint = isPresetScheduleSet ? getFixedFlowPresetScheduleHint(setItem.applyRule) : null;
 
@@ -590,22 +579,22 @@ function GroupAccordion({
                       <Pressable
                         accessibilityRole="button"
                         accessibilityState={{
-                          disabled: !isEligibleToday || (applyBlocked && !isMealSlotAppliedForToday?.(section.slot)),
+                          disabled: applyBlocked && !isMealSlotAppliedForToday?.(section.slot),
                         }}
                         accessibilityLabel={`${section.title} ${isMealSlotAppliedForToday?.(section.slot) ? '오늘 적용 해제' : '오늘 적용'
                           }`}
                         onPress={() => {
                           const isApplied = isMealSlotAppliedForToday?.(section.slot) ?? false;
                           const blockedByEnded = applyBlocked && !isApplied;
-                          if (!isEligibleToday || blockedByEnded) {
-                            if (blockedByEnded) onApplyBlocked();
+                          if (blockedByEnded) {
+                            onApplyBlocked();
                             return;
                           }
                           onToggleMealSlotForToday?.(section.slot);
                         }}
                         style={({ pressed }) => {
                           const isApplied = isMealSlotAppliedForToday?.(section.slot) ?? false;
-                          const disabled = !isEligibleToday || (applyBlocked && !isApplied);
+                          const disabled = applyBlocked && !isApplied;
                           return [
                             styles.mealSlotApplyChip,
                             {
@@ -1103,13 +1092,6 @@ export function FixedRoutinePage() {
     },
     [activeMealSlotsBySetId, activeSetIds],
   );
-  const isSetEligibleToday = useCallback(
-    (setItem: FixedFlowSet) => {
-      if (!isBuiltinPresetScheduleSet(setItem)) return true;
-      return isFixedFlowSetMatchedToday(setItem, new Date(nowTick));
-    },
-    [nowTick],
-  );
 
   const sectionHint =
     section === 'scheduled'
@@ -1187,7 +1169,6 @@ export function FixedRoutinePage() {
                   mealSlotLayoutEnabled={scheduledMealSlotLayoutEnabled}
                   isExpanded={expandedIds.has(setItem.id)}
                   isActiveForToday={isSetActiveForToday(setItem)}
-                  isEligibleToday={isSetEligibleToday(setItem)}
                   applyBlocked={priorityWindowEndedForToday}
                   catalogByKey={catalogByKey}
                   isDark={isDark}

@@ -354,7 +354,6 @@ export function collectActiveFixedFlowCategoryKeys(
   state: FixedFlowSetsState,
   now: Date = new Date(),
 ): string[] {
-  void now;
   const active = collectEffectiveActiveSetIds(state);
   const activeMealSlotsBySetId = state.activeMealSlotsBySetId ?? {};
   const seen = new Set<string>();
@@ -362,6 +361,9 @@ export function collectActiveFixedFlowCategoryKeys(
 
   for (const set of state.sets) {
     if (!active.has(set.id)) continue;
+    if (isBuiltinPresetScheduleSet(set) && !isFixedFlowSetMatchedToday(set, now)) {
+      continue;
+    }
     const activeSlotsRaw = activeMealSlotsBySetId[set.id];
     const activeSlots =
       isBuiltinPresetScheduleSet(set) && Array.isArray(activeSlotsRaw) && activeSlotsRaw.length > 0

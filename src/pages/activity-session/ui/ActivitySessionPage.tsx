@@ -857,7 +857,11 @@ export function ActivitySessionPage() {
         {sessionBooks.map((book) => {
           const pageRange = `${book.startPage}P → ${book.targetPage}P`;
           const { pagesRead: pagesToRead, progressPct: readingProgressPct } =
-            deriveReadingBookProgress(book);
+            deriveReadingBookProgress({
+              startPage: book.startPage,
+              targetPage: book.targetPage,
+              totalPages: book.aladin?.totalPages,
+            });
           const readTrack01 = Math.max(progress, Math.min(1, Math.max(0, readingProgressPct) / 100));
 
           return (

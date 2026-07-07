@@ -151,13 +151,19 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
             <>
               <View style={styles.sheetHeader}>
                 <View style={[styles.handle, { backgroundColor: palette.muted }]} />
+              </View>
+
+              <View style={styles.titleRow}>
+                <ThemedText style={[styles.title, { color: palette.ink }]} numberOfLines={3}>
+                  {article.title}
+                </ThemedText>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="닫기"
-                  hitSlop={10}
+                  hitSlop={12}
                   onPress={handleClose}
                   style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}>
-                  <IconSymbol name="xmark" size={16} color={palette.ink} />
+                  <IconSymbol name="xmark" size={18} color={palette.ink} />
                 </Pressable>
               </View>
 
@@ -166,9 +172,6 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled">
-                <ThemedText style={[styles.title, { color: palette.ink }]} numberOfLines={3}>
-                  {article.title}
-                </ThemedText>
                 {article.summary?.trim() ? (
                   <ThemedText style={[styles.summary, { color: palette.muted }]} numberOfLines={4}>
                     {article.summary.trim()}
@@ -319,25 +322,30 @@ const styles = StyleSheet.create({
     maxHeight: '88%',
   },
   sheetHeader: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     paddingTop: CityPopSpacing.sm,
     paddingHorizontal: CityPopSpacing.marginMobile,
-    paddingBottom: CityPopSpacing.base,
+    paddingBottom: CityPopSpacing.xs,
   },
   handle: {
     width: 40,
     height: 3,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingHorizontal: CityPopSpacing.marginMobile,
+    paddingBottom: CityPopSpacing.sm,
+    zIndex: 2,
+  },
   closeBtn: {
-    position: 'absolute',
-    right: CityPopSpacing.marginMobile,
-    top: CityPopSpacing.sm,
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: -4,
   },
   scroll: {
     flexGrow: 0,
@@ -348,11 +356,12 @@ const styles = StyleSheet.create({
     gap: CityPopSpacing.sm,
   },
   title: {
+    flex: 1,
+    minWidth: 0,
     fontSize: 20,
     fontWeight: '800',
     lineHeight: 26,
     letterSpacing: -0.35,
-    paddingRight: 36,
   },
   summary: {
     fontSize: 14,

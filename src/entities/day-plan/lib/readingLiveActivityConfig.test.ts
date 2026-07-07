@@ -84,19 +84,60 @@ describe('readingLiveActivityConfig', () => {
   it('derives per-book reading progress', () => {
     const progress = deriveReadingBookProgress({ startPage: 10, targetPage: 100 });
     expect(progress.pagesRead).toBe(90);
-    expect(progress.progressPct).toBeGreaterThan(0);
+    expect(progress.progressPct).toBe(0);
+  });
+
+  it('derives book completion from total pages', () => {
+    const progress = deriveReadingBookProgress({
+      startPage: 1,
+      targetPage: 26,
+      totalPages: 196,
+    });
+    expect(progress.pagesRead).toBe(25);
+    expect(progress.progressPct).toBe(13);
+  });
+
+  it('preserves book memo within max length', () => {
+    const cfg = normalizeReadingLiveActivityConfig({
+      books: [{ id: 'b1', title: '책', startPage: 1, targetPage: 50, memo: '  오늘 20쪽  ' }],
+    });
+    expect(cfg.books[0].memo).toBe('오늘 20쪽');
   });
 
   it('derives aggregate reading progress from multiple books', () => {
     const cfg = normalizeReadingLiveActivityConfig({
       books: [
-        { id: 'b1', title: 'A', startPage: 1, targetPage: 100 },
-        { id: 'b2', title: 'B', startPage: 10, targetPage: 50 },
+        {
+          id: 'b1',
+          title: 'A',
+          startPage: 1,
+          targetPage: 100,
+          aladin: {
+            itemId: 1,
+            link: 'https://aladin.co.kr/1',
+            coverUrl: '',
+            author: '',
+            totalPages: 200,
+          },
+        },
+        {
+          id: 'b2',
+          title: 'B',
+          startPage: 10,
+          targetPage: 50,
+          aladin: {
+            itemId: 2,
+            link: 'https://aladin.co.kr/2',
+            coverUrl: '',
+            author: '',
+            totalPages: 100,
+          },
+        },
       ],
     });
     const p = deriveReadingProgress(cfg);
     expect(p.pagesRead).toBe(139);
-    expect(p.progressPct).toBeGreaterThan(0);
+    expect(p.progressPct).toBe(50);
   });
 
   it('generates unique book IDs', () => {

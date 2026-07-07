@@ -11,6 +11,8 @@ export type ReadingBookStatus = 'want' | 'reading' | 'done';
 
 const READING_BOOK_STATUS_SET = new Set<ReadingBookStatus>(['want', 'reading', 'done']);
 
+export const READING_BOOK_MEMO_MAX = 240;
+
 /** 읽을 도서 1권 — 알라딘 검색 또는 직접 입력 */
 export type ReadingBookEntry = {
   id: string;
@@ -18,8 +20,15 @@ export type ReadingBookEntry = {
   startPage: number;
   targetPage: number;
   status?: ReadingBookStatus;
+  /** 읽는 중 간단 메모 */
+  memo?: string;
   aladin?: ReadingAladinBook | null;
 };
+
+export function normalizeReadingBookMemo(raw: unknown): string {
+  const t = typeof raw === 'string' ? raw.trim() : '';
+  return t.length > READING_BOOK_MEMO_MAX ? t.slice(0, READING_BOOK_MEMO_MAX) : t;
+}
 
 export function normalizeReadingBookStatus(input: unknown): ReadingBookStatus {
   if (typeof input === 'string' && READING_BOOK_STATUS_SET.has(input as ReadingBookStatus)) {
@@ -102,6 +111,7 @@ function normalizeBookEntry(
       defaultTargetPageForBook(aladin, fallbackTarget),
     ),
     status: normalizeReadingBookStatus(raw.status),
+    memo: normalizeReadingBookMemo(raw.memo),
     aladin,
   };
 }
@@ -119,6 +129,7 @@ export function ensureReadingBookPages(
       defaultTargetPageForBook(aladin, fallbackTarget),
     ),
     status: normalizeReadingBookStatus(entry.status),
+    memo: normalizeReadingBookMemo(entry.memo),
     aladin,
   };
 }
@@ -185,20 +196,23 @@ export function firstAladinBookEntry(
   return config.aladinBook ?? null;
 }
 
-export function deriveReadingBookProgress(entry: Pick<ReadingBookEntry, 'startPage' | 'targetPage'>): {
+export function deriveReadingBookProgress(
+  entry: Pick<ReadingBookEntry, 'startPage' | 'targetPage'> & {
+    totalPages?: number | null;
+  },
+): {
   pagesRead: number;
   pagesLeft: number;
   progressPct: number;
 } {
   const pagesRead = Math.max(0, entry.targetPage - entry.startPage);
   const pagesLeft = Math.max(0, entry.startPage);
+  const totalPages =
+    typeof entry.totalPages === 'number' && entry.totalPages > 0 ? entry.totalPages : null;
   const progressPct =
-    entry.targetPage === 0
+    totalPages == null
       ? 0
-      : Math.max(
-          0,
-          Math.min(100, Math.round((pagesRead / entry.targetPage) * 100)),
-        );
+      : Math.max(0, Math.min(100, Math.round((entry.targetPage / totalPages) * 100)));
 
   return { pagesRead, pagesLeft, progressPct };
 }
@@ -281,14 +295,32 @@ export function deriveReadingProgress(config: ReadingLiveActivityConfig): {
   progressPct: number;
 } {
   if (config.books.length > 0) {
-    const totals = config.books.map(deriveReadingBookProgress);
+    const totals = config.books.map((book) =>
+      deriveReadingBookProgress({
+        startPage: book.startPage,
+        targetPage: book.targetPage,
+        totalPages: book.aladin?.totalPages,
+      }),
+    );
     const pagesRead = totals.reduce((sum, item) => sum + item.pagesRead, 0);
     const pagesLeft = totals.reduce((sum, item) => sum + item.pagesLeft, 0);
-    const totalTarget = config.books.reduce((sum, book) => sum + book.targetPage, 0);
+    const booksWithTotal = config.books.filter(
+      (book) => typeof book.aladin?.totalPages === 'number' && book.aladin.totalPages > 0,
+    );
     const progressPct =
-      totalTarget === 0
+      booksWithTotal.length === 0
         ? 0
-        : Math.max(0, Math.min(100, Math.round((pagesRead / totalTarget) * 100)));
+        : Math.max(
+            0,
+            Math.min(
+              100,
+              Math.round(
+                (booksWithTotal.reduce((sum, book) => sum + book.targetPage, 0) /
+                  booksWithTotal.reduce((sum, book) => sum + book.aladin!.totalPages!, 0)) *
+                  100,
+              ),
+            ),
+          );
 
     return { pagesRead, pagesLeft, progressPct };
   }

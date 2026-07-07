@@ -7,7 +7,6 @@ import {
   normalizeMedicineDetailConfig,
   type HealthIntakeDetailDataConfig,
 } from '@entities/day-plan';
-import { ThemedText } from '@shared/ui/themed-text';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
@@ -83,13 +82,6 @@ export function HealthIntakeSettings({
         palette={c}
       />
 
-      <View style={styles.heading}>
-        <ThemedText style={[styles.title, { color: c.onSurface }]}>건강을 위한 섭취</ThemedText>
-        <ThemedText style={[styles.sub, { color: c.onVariant }]}>
-          약·영양제·보조제 등 섭취 습관을 한곳에서 관리해요.
-        </ThemedText>
-      </View>
-
       <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
 
       <MedicineSettings
@@ -108,9 +100,6 @@ export function HealthIntakeSettings({
 
 const styles = StyleSheet.create({
   root: { gap: 20 },
-  heading: { gap: 6 },
-  title: { fontSize: 24, fontWeight: '900', letterSpacing: -0.5, lineHeight: 28 },
-  sub: { fontSize: 13, lineHeight: 19, fontWeight: '600' },
 });
 
 export {

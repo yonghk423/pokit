@@ -31,6 +31,8 @@ type Props = {
   line: string;
   onClose: () => void;
   onConfirm: (assignments: Record<string, DayMealSlot[]>) => void;
+  /** 연동 방식 설정 시트로 이동 */
+  onChangeLinkMode?: () => void;
 };
 
 /** 시간대 미지정 플로우 — 구간 선택 후 시간대별 보기 활성화 */
@@ -45,6 +47,7 @@ export function PriorityUnassignedMealSlotSheet({
   line,
   onClose,
   onConfirm,
+  onChangeLinkMode,
 }: Props) {
   const insets = useSafeAreaInsets();
   const [slotsByKey, setSlotsByKey] = useState<Record<string, DayMealSlot[]>>({});
@@ -105,8 +108,8 @@ export function PriorityUnassignedMealSlotSheet({
           <View style={styles.headerText}>
             <ThemedText style={[styles.title, { color: ink }]}>시간대 지정</ThemedText>
             <ThemedText style={[styles.subtitle, { color: muted }]}>
-              아직 구간이 정해지지 않은 루틴 {items.length}개가 있어요. 해당하는 시간대를 모두
-              골라 주세요.
+              아직 구간이 정해지지 않은 루틴 {items.length}개가 있어요. 해당하는 시간대를 모두 골라
+              주세요.
             </ThemedText>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={10}>
@@ -175,6 +178,19 @@ export function PriorityUnassignedMealSlotSheet({
         </ScrollView>
 
         <View style={[styles.footer, { borderTopColor: line, paddingBottom: Math.max(insets.bottom, 12) }]}>
+          {onChangeLinkMode ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="연동 방식 다시 선택"
+              onPress={onChangeLinkMode}
+              style={({ pressed }) => [
+                styles.secondaryBtn,
+                { borderColor: line },
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText style={[styles.secondaryLabel, { color: muted }]}>연동 방식 다시 선택</ThemedText>
+            </Pressable>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="시간대별 보기 활성화"
@@ -268,6 +284,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
+    gap: 8,
+  },
+  secondaryBtn: {
+    minHeight: 44,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryLabel: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   confirmBtn: {
     minHeight: 48,

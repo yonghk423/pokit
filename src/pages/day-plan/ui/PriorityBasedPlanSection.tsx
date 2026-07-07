@@ -45,6 +45,8 @@ import {
   buildPrioritySectionCompletionKey,
   parsePrioritySectionCompletionKey,
   resolveCategoryImportance,
+  resolveCategoryCatalogAccentColor,
+  resolveCategoryCatalogIcon,
   useDayPlanStore
 } from '@entities/day-plan';
 import { useFixedFlowSetsStore } from '@entities/day-plan';
@@ -91,6 +93,11 @@ import { PriorityMealSlotAddRoutineRow } from './PriorityMealSlotAddRoutineRow';
 import { PriorityMealSlotSectionHeader } from './PriorityMealSlotSectionHeader';
 import { PriorityRoutinePickerSheet } from './PriorityRoutinePickerSheet';
 import { PriorityUnassignedMealSlotSheet } from './PriorityUnassignedMealSlotSheet';
+import {
+  PrioritySpineLinkedRoutineSheet,
+  type SpineLinkedRoutineEntry,
+} from './PrioritySpineLinkedRoutineSheet';
+import { DayPlanLayoutModeSetupSheet } from './DayPlanLayoutModeSetupSheet';
 import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 
 /** 우선순위 행 완료 제거 시: 페이드 아웃 + 아래 행이 부드럽게 올라오는 레이아웃 전환 */
@@ -798,6 +805,11 @@ export function PriorityBasedPlanSection({
   const [calendarRangeAnchor, setCalendarRangeAnchor] = useState<string | null>(null);
   const [spineEditDraft, setSpineEditDraft] = useState<SpineScheduleEditDraft | null>(null);
   const [spineDragActive, setSpineDragActive] = useState(false);
+  const [spineLinkedPickerOpen, setSpineLinkedPickerOpen] = useState(false);
+  const [spineLinkedPickerGap, setSpineLinkedPickerGap] = useState<{
+    startMinutes: number;
+    endMinutes: number;
+  } | null>(null);
 
   const monthFallbackDate = useMemo(() => {
     const lo =
@@ -1002,6 +1014,13 @@ export function PriorityBasedPlanSection({
     finishPriorityCategoryForToday,
     priorityCategoryImportance,
     cyclePriorityCategoryImportance,
+    prioritySectionsLinkMode,
+    prioritySpineLinkMode,
+    prioritySectionsCategoryOrder,
+    setPrioritySectionsLinkMode,
+    setPrioritySpineLinkMode,
+    appendPrioritySectionsCategoryKeys,
+    setPrioritySectionsCategoryOrder,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
@@ -1024,6 +1043,13 @@ export function PriorityBasedPlanSection({
       finishPriorityCategoryForToday: s.finishPriorityCategoryForToday,
       priorityCategoryImportance: s.priorityCategoryImportance,
       cyclePriorityCategoryImportance: s.cyclePriorityCategoryImportance,
+      prioritySectionsLinkMode: s.prioritySectionsLinkMode,
+      prioritySpineLinkMode: s.prioritySpineLinkMode,
+      prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
+      setPrioritySectionsLinkMode: s.setPrioritySectionsLinkMode,
+      setPrioritySpineLinkMode: s.setPrioritySpineLinkMode,
+      appendPrioritySectionsCategoryKeys: s.appendPrioritySectionsCategoryKeys,
+      setPrioritySectionsCategoryOrder: s.setPrioritySectionsCategoryOrder,
     })),
   );
   const [lastAddedCategoryKey, setLastAddedCategoryKey] = useState<string | null>(null);
@@ -1038,7 +1064,12 @@ export function PriorityBasedPlanSection({
   const [addRoutineSheetOpen, setAddRoutineSheetOpen] = useState(false);
   const [addRoutineTargetSlot, setAddRoutineTargetSlot] = useState<DayMealSlot | null>(null);
   const [unassignedSlotSheetOpen, setUnassignedSlotSheetOpen] = useState(false);
+  const [spineLinkedRoutineSheetOpen, setSpineLinkedRoutineSheetOpen] = useState(false);
   const [pendingLayoutMode, setPendingLayoutMode] = useState<DayPlanLayoutMode | null>(null);
+  const [layoutSetupSheetOpen, setLayoutSetupSheetOpen] = useState(false);
+  const [layoutSetupTargetMode, setLayoutSetupTargetMode] = useState<
+    Extract<DayPlanLayoutMode, 'sections' | 'spine'> | null
+  >(null);
   const [catalogTick, setCatalogTick] = useState(0);
   const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
@@ -1163,10 +1194,45 @@ export function PriorityBasedPlanSection({
     return [...active, ...done];
   }, [selectedItems, isPriorityRowCompleted]);
 
-  const priorityOrderIndexByKey = useMemo(
-    () => new Map(selectedItems.map((item, index) => [item.key, index])),
-    [selectedItems],
+  const sectionsCatalogItems = useMemo(
+    () =>
+      prioritySectionsCategoryOrder
+        .map((key) => {
+          const base = getPickerCategoryItem(key);
+          if (!base) return null;
+          return { ...base, label: getPickerCategoryLabel(key) };
+        })
+        .filter(Boolean) as (typeof PICKER_CATEGORIES)[number][],
+    [prioritySectionsCategoryOrder, categoryHintTick, categoryLabelEpoch],
   );
+
+  const sectionsLayoutItems = useMemo(() => {
+    const source =
+      prioritySectionsLinkMode === 'independent'
+        ? sectionsCatalogItems
+        : orderedSelectedItemsForDisplay;
+    const active = source.filter((cat) => !isPriorityRowCompleted(cat.key));
+    const done = source.filter((cat) => isPriorityRowCompleted(cat.key));
+    return [...active, ...done];
+  }, [
+    prioritySectionsLinkMode,
+    sectionsCatalogItems,
+    orderedSelectedItemsForDisplay,
+    isPriorityRowCompleted,
+  ]);
+
+  const priorityOrderIndexByKey = useMemo(() => {
+    const source =
+      priorityMealSlotLayoutEnabled && prioritySectionsLinkMode === 'independent'
+        ? sectionsLayoutItems
+        : selectedItems;
+    return new Map(source.map((item, index) => [item.key, index]));
+  }, [
+    priorityMealSlotLayoutEnabled,
+    prioritySectionsLinkMode,
+    sectionsLayoutItems,
+    selectedItems,
+  ]);
 
   const sectionsMealSlotMap = useMemo(
     () => new Map<string, DayMealSlot[]>(Object.entries(prioritySectionsMealSlots)),
@@ -1196,7 +1262,11 @@ export function PriorityBasedPlanSection({
     : mealSlotOverrides;
 
   const priorityMealSlotLayout = useMemo(() => {
-    return splitPriorityMealSlotSections(orderedSelectedItemsForDisplay, {
+    const layoutItems =
+      priorityMealSlotLayoutEnabled && prioritySectionsLinkMode === 'independent'
+        ? sectionsLayoutItems
+        : orderedSelectedItemsForDisplay;
+    return splitPriorityMealSlotSections(layoutItems, {
       nowMin: getLocalMinutesOfDayNow(),
       mealSlotOverrides: layoutMealSlotOverrides,
       schedule: mealSlotSchedule,
@@ -1206,6 +1276,7 @@ export function PriorityBasedPlanSection({
     });
   }, [
     orderedSelectedItemsForDisplay,
+    sectionsLayoutItems,
     priorityOrderIndexByKey,
     categoryHintTick,
     mealSlotNowTick,
@@ -1214,6 +1285,7 @@ export function PriorityBasedPlanSection({
     mealSlotScheduleRevision,
     hasExplicitMealSlots,
     priorityMealSlotLayoutEnabled,
+    prioritySectionsLinkMode,
   ]);
 
   const priorityMealSlotSections = priorityMealSlotLayout.sections;
@@ -1224,13 +1296,13 @@ export function PriorityBasedPlanSection({
   const fullBagCount = orderedSelectedItemsForDisplay.length;
 
   const unslottedItemsForLayout = useMemo(
-    () => listUnslottedPriorityItems(orderedSelectedItemsForDisplay, sectionsMealSlotMap),
-    [orderedSelectedItemsForDisplay, sectionsMealSlotMap],
+    () => listUnslottedPriorityItems(sectionsLayoutItems, sectionsMealSlotMap),
+    [sectionsLayoutItems, sectionsMealSlotMap],
   );
 
   const mealSlotAssignmentSheetItems = useMemo(
-    () => listPriorityItemsForMealSlotAssignmentSheet(orderedSelectedItemsForDisplay, sectionsMealSlotMap),
-    [orderedSelectedItemsForDisplay, sectionsMealSlotMap],
+    () => listPriorityItemsForMealSlotAssignmentSheet(sectionsLayoutItems, sectionsMealSlotMap),
+    [sectionsLayoutItems, sectionsMealSlotMap],
   );
 
   const unassignedMealSlotItems = useMemo(
@@ -1251,20 +1323,165 @@ export function PriorityBasedPlanSection({
     return out;
   }, [mealSlotAssignmentSheetItems, prioritySectionsMealSlots]);
 
+  const spineLinkedRoutineSheetItems = useMemo((): SpineLinkedRoutineEntry[] => {
+    const blockByKey = new Map(
+      planBlocks
+        .filter((block) => block.blockOrigin === 'spineTimeline' && block.categoryKey)
+        .map((block) => [block.categoryKey!, block]),
+    );
+    return selectedItems.map((cat) => {
+      const block = blockByKey.get(cat.key);
+      return {
+        key: cat.key,
+        label: cat.label,
+        blockId: block?.id,
+        startMinutes: block?.startMinutes,
+        endMinutes: block?.endMinutes,
+      };
+    });
+  }, [planBlocks, selectedItems]);
+
+  const spineUnassignedLinkedRoutines = useMemo(
+    () => spineLinkedRoutineSheetItems.filter((item) => !item.blockId),
+    [spineLinkedRoutineSheetItems],
+  );
+
   const openUnassignedSlotSheet = useCallback((nextMode: DayPlanLayoutMode = 'sections') => {
     setPendingLayoutMode(nextMode);
     setUnassignedSlotSheetOpen(true);
   }, []);
 
-  const handleSelectLayoutMode = useCallback(
-    (nextMode: DayPlanLayoutMode) => {
-      if (nextMode === 'sections' && unslottedItemsForLayout.length > 0) {
-        openUnassignedSlotSheet('sections');
+  const openLayoutSetupSheet = useCallback(
+    (target: Extract<DayPlanLayoutMode, 'sections' | 'spine'>) => {
+      setLayoutSetupTargetMode(target);
+      setLayoutSetupSheetOpen(true);
+    },
+    [],
+  );
+
+  const openSectionsLinkModeSetupFromUnassigned = useCallback(() => {
+    setUnassignedSlotSheetOpen(false);
+    setPendingLayoutMode(null);
+    openLayoutSetupSheet('sections');
+  }, [openLayoutSetupSheet]);
+
+  const openSpineLinkedRoutineSheet = useCallback((nextMode: DayPlanLayoutMode | null = null) => {
+    if (nextMode) setPendingLayoutMode(nextMode);
+    setSpineLinkedRoutineSheetOpen(true);
+  }, []);
+
+  const openSpineLinkModeSetupFromRoutineSheet = useCallback(() => {
+    setSpineLinkedRoutineSheetOpen(false);
+    setPendingLayoutMode(null);
+    openLayoutSetupSheet('spine');
+  }, [openLayoutSetupSheet]);
+
+  const enterSectionsLayout = useCallback(() => {
+    if (prioritySectionsLinkMode === 'independent') {
+      onSelectLayoutMode('sections');
+      return;
+    }
+    if (prioritySectionsLinkMode === null || unslottedItemsForLayout.length > 0) {
+      openLayoutSetupSheet('sections');
+      return;
+    }
+    onSelectLayoutMode('sections');
+  }, [
+    onSelectLayoutMode,
+    openLayoutSetupSheet,
+    prioritySectionsLinkMode,
+    unslottedItemsForLayout.length,
+  ]);
+
+  const handleLayoutSetupConfirm = useCallback(
+    (linkMode: 'linked' | 'independent') => {
+      const target = layoutSetupTargetMode;
+      setLayoutSetupSheetOpen(false);
+      setLayoutSetupTargetMode(null);
+      if (!target) return;
+
+      if (target === 'sections') {
+        setPrioritySectionsLinkMode(linkMode);
+        if (linkMode === 'linked' && unslottedItemsForLayout.length > 0) {
+          openUnassignedSlotSheet('sections');
+          return;
+        }
+        onSelectLayoutMode('sections');
         return;
       }
-      onSelectLayoutMode(nextMode);
+
+      setPrioritySpineLinkMode(linkMode);
+      if (linkMode === 'linked' && selectedItems.length > 0) {
+        openSpineLinkedRoutineSheet('spine');
+        return;
+      }
+      onSelectLayoutMode('spine');
     },
-    [onSelectLayoutMode, openUnassignedSlotSheet, unslottedItemsForLayout.length],
+    [
+      layoutSetupTargetMode,
+      onSelectLayoutMode,
+      openSpineLinkedRoutineSheet,
+      openUnassignedSlotSheet,
+      selectedItems.length,
+      setPrioritySectionsLinkMode,
+      setPrioritySpineLinkMode,
+      unslottedItemsForLayout.length,
+    ],
+  );
+
+  const handleResetLayoutChoice = useCallback(() => {
+    const target: Extract<DayPlanLayoutMode, 'sections' | 'spine'> | null =
+      layoutMode === 'sections' ? 'sections' : layoutMode === 'spine' ? 'spine' : null;
+    if (!target) return;
+
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    if (target === 'sections') {
+      setPrioritySectionsLinkMode(null);
+    } else {
+      setPrioritySpineLinkMode(null);
+    }
+
+    onSelectLayoutMode('bag');
+    openLayoutSetupSheet(target);
+  }, [
+    layoutMode,
+    onSelectLayoutMode,
+    openLayoutSetupSheet,
+    setPrioritySectionsLinkMode,
+    setPrioritySpineLinkMode,
+  ]);
+
+  const handleSelectLayoutMode = useCallback(
+    (nextMode: DayPlanLayoutMode) => {
+      if (nextMode === 'bag') {
+        onSelectLayoutMode('bag');
+        return;
+      }
+      if (nextMode === 'sections') {
+        enterSectionsLayout();
+        return;
+      }
+      if (nextMode === 'spine') {
+        if (prioritySpineLinkMode === null) {
+          openLayoutSetupSheet('spine');
+          return;
+        }
+        if (prioritySpineLinkMode === 'linked' && spineUnassignedLinkedRoutines.length > 0) {
+          openSpineLinkedRoutineSheet('spine');
+          return;
+        }
+        onSelectLayoutMode('spine');
+      }
+    },
+    [
+      enterSectionsLayout,
+      onSelectLayoutMode,
+      openLayoutSetupSheet,
+      openSpineLinkedRoutineSheet,
+      prioritySpineLinkMode,
+      spineUnassignedLinkedRoutines.length,
+    ],
   );
 
   const handleConfirmUnassignedMealSlots = useCallback(
@@ -1313,6 +1530,16 @@ export function PriorityBasedPlanSection({
     (keys: string[]) => {
       if (!addRoutineTargetSlot || keys.length === 0) return;
       const slot = addRoutineTargetSlot;
+
+      if (prioritySectionsLinkMode === 'independent') {
+        appendPrioritySectionsCategoryKeys(keys);
+        keys.forEach((key) => {
+          addPrioritySectionMealSlot(key, slot);
+        });
+        setLastAddedCategoryKey(keys[keys.length - 1] ?? null);
+        return;
+      }
+
       const prevOrder = useDayPlanDraftStore.getState().priorityCategoryOrder;
       const nextOrder = [...prevOrder];
       keys.forEach((key) => {
@@ -1331,7 +1558,14 @@ export function PriorityBasedPlanSection({
       });
       setLastAddedCategoryKey(keys[keys.length - 1] ?? null);
     },
-    [addRoutineTargetSlot, addPrioritySectionMealSlot, setPriorityCategoryOrder, setPriorityMealSlotOverride],
+    [
+      addRoutineTargetSlot,
+      addPrioritySectionMealSlot,
+      appendPrioritySectionsCategoryKeys,
+      prioritySectionsLinkMode,
+      setPriorityCategoryOrder,
+      setPriorityMealSlotOverride,
+    ],
   );
 
   const addRoutineSheetTitle = useMemo(
@@ -1363,12 +1597,15 @@ export function PriorityBasedPlanSection({
 
   useEffect(() => {
     if (!priorityMealSlotLayoutEnabled) return;
-    if (unslottedItemsForLayout.length === 0) return;
-    setPriorityMealSlotLayoutEnabled(false);
-    openUnassignedSlotSheet('sections');
+    if (prioritySectionsLinkMode === 'independent') return;
+    if (prioritySectionsLinkMode === null || unslottedItemsForLayout.length > 0) {
+      setPriorityMealSlotLayoutEnabled(false);
+      openLayoutSetupSheet('sections');
+    }
   }, [
-    openUnassignedSlotSheet,
+    openLayoutSetupSheet,
     priorityMealSlotLayoutEnabled,
+    prioritySectionsLinkMode,
     setPriorityMealSlotLayoutEnabled,
     unslottedItemsForLayout.length,
   ]);
@@ -1756,6 +1993,16 @@ export function PriorityBasedPlanSection({
     [],
   );
 
+  const spineLinkedBagRoutines = useMemo(() => {
+    if (prioritySpineLinkMode !== 'linked') return [];
+    const spineKeys = new Set(
+      planBlocks
+        .filter((b) => b.blockOrigin === 'spineTimeline' && b.categoryKey)
+        .map((b) => b.categoryKey!),
+    );
+    return selectedItems.filter((cat) => !spineKeys.has(cat.key));
+  }, [prioritySpineLinkMode, planBlocks, selectedItems]);
+
   const handleSpineAddBlockInGap = useCallback(
     (fromMinutes: number, toMinutes: number) => {
       const slot = computeSpineGapInsertSlot(
@@ -1765,6 +2012,13 @@ export function PriorityBasedPlanSection({
         getLocalMinutesOfDayNow(),
       );
       if (!slot) return;
+
+      if (prioritySpineLinkMode === 'linked' && spineLinkedBagRoutines.length > 0) {
+        setSpineLinkedPickerGap({ startMinutes: slot.startMinutes, endMinutes: slot.endMinutes });
+        setSpineLinkedPickerOpen(true);
+        return;
+      }
+
       setSpineEditDraft({
         mode: 'create',
         title: '',
@@ -1773,8 +2027,39 @@ export function PriorityBasedPlanSection({
         endMinutes: slot.endMinutes,
       });
     },
-    [planBlocks],
+    [planBlocks, prioritySpineLinkMode, spineLinkedBagRoutines.length],
   );
+
+  const handleSpineLinkedPickerSelect = useCallback(
+    (categoryKey: string, label: string) => {
+      const gap = spineLinkedPickerGap;
+      setSpineLinkedPickerOpen(false);
+      setSpineLinkedPickerGap(null);
+      if (!gap) return;
+      setSpineEditDraft({
+        mode: 'create',
+        title: label,
+        categoryKey,
+        startMinutes: gap.startMinutes,
+        endMinutes: gap.endMinutes,
+      });
+    },
+    [spineLinkedPickerGap],
+  );
+
+  const handleSpineLinkedPickerFreeInput = useCallback(() => {
+    const gap = spineLinkedPickerGap;
+    setSpineLinkedPickerOpen(false);
+    setSpineLinkedPickerGap(null);
+    if (!gap) return;
+    setSpineEditDraft({
+      mode: 'create',
+      title: '',
+      categoryKey: null,
+      startMinutes: gap.startMinutes,
+      endMinutes: gap.endMinutes,
+    });
+  }, [spineLinkedPickerGap]);
 
   const handleSpineToggleBlockComplete = useCallback(
     (blockId: string) => {
@@ -1872,6 +2157,63 @@ export function PriorityBasedPlanSection({
       setSpineEditDraft(null);
     },
     [addPlanBlock, alertSpineBlockSaveError, updatePlanBlock],
+  );
+
+  const handleConfirmSpineLinkedRoutines = useCallback(
+    (
+      assignments: Array<{
+        key: string;
+        label: string;
+        blockId?: string;
+        startMinutes: number;
+        endMinutes: number;
+      }>,
+    ) => {
+      for (const row of assignments) {
+        const categoryLabel = getPickerCategoryLabel(row.key);
+        if (row.blockId) {
+          const result = updatePlanBlock(row.blockId, {
+            title: row.label,
+            category: categoryLabel,
+            categoryKey: row.key,
+            startMinutes: row.startMinutes,
+            endMinutes: row.endMinutes,
+          });
+          if (!result.ok) {
+            alertSpineBlockSaveError('update', result.reason);
+            return;
+          }
+          continue;
+        }
+        const result = addPlanBlock({
+          title: row.label,
+          category: categoryLabel,
+          categoryKey: row.key,
+          startMinutes: row.startMinutes,
+          endMinutes: row.endMinutes,
+          blockOrigin: 'spineTimeline',
+          planDateKey: getLocalDateKey(),
+        });
+        if (!result.ok) {
+          alertSpineBlockSaveError('add', result.reason);
+          return;
+        }
+      }
+
+      setSpineLinkedRoutineSheetOpen(false);
+      const mode = pendingLayoutMode;
+      setPendingLayoutMode(null);
+      if (mode === 'spine') {
+        onSelectLayoutMode('spine');
+      }
+    },
+    [
+      addPlanBlock,
+      alertSpineBlockSaveError,
+      onSelectLayoutMode,
+      pendingLayoutMode,
+      updatePlanBlock,
+    ],
   );
 
   const handleSpineStartFocus = useCallback(
@@ -2186,6 +2528,84 @@ export function PriorityBasedPlanSection({
         </KeyboardAvoidingView>
       </Modal>
 
+      <Modal
+        visible={spineLinkedPickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSpineLinkedPickerOpen(false)}>
+        <Pressable
+          style={styles.spineLinkedPickerBackdrop}
+          onPress={() => setSpineLinkedPickerOpen(false)}>
+          <Pressable
+            style={[
+              styles.spineLinkedPickerSheet,
+              {
+                backgroundColor: isDark ? '#18181B' : '#FFFFFF',
+                borderColor: editorial.line,
+                marginBottom: Math.max(insets.bottom, 16),
+              },
+            ]}
+            onPress={(e) => e.stopPropagation()}>
+            <ThemedText
+              style={[styles.spineLinkedPickerTitle, { color: editorial.ink }]}>
+              목록에서 루틴 선택
+            </ThemedText>
+            <ThemedText
+              style={[styles.spineLinkedPickerSub, { color: editorial.muted }]}>
+              배치할 루틴을 선택하면 시간을 설정할 수 있어요.
+            </ThemedText>
+            <ScrollView
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+              style={styles.spineLinkedPickerList}>
+              {spineLinkedBagRoutines.map((cat) => {
+                const accent = resolveCategoryCatalogAccentColor(cat.key);
+                const icon = resolveCategoryCatalogIcon(cat.key);
+                return (
+                  <Pressable
+                    key={cat.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${cat.label} 루틴 선택`}
+                    onPress={() => handleSpineLinkedPickerSelect(cat.key, cat.label)}
+                    style={[
+                      styles.spineLinkedPickerRow,
+                      {
+                        borderColor: editorial.line,
+                        backgroundColor: isDark ? '#27272A' : '#FAFAFA',
+                      },
+                    ]}>
+                    <IconSymbol
+                      name={icon as any}
+                      size={18}
+                      color={accent}
+                    />
+                    <ThemedText
+                      style={[styles.spineLinkedPickerRowText, { color: editorial.ink }]}
+                      numberOfLines={1}>
+                      {cat.label}
+                    </ThemedText>
+                    <IconSymbol name="chevron.right" size={14} color={editorial.muted} />
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleSpineLinkedPickerFreeInput}
+              style={[
+                styles.spineLinkedPickerFreeBtn,
+                { borderColor: editorial.line },
+              ]}>
+              <IconSymbol name="square.and.pencil" size={16} color={editorial.muted} />
+              <ThemedText
+                style={[styles.spineLinkedPickerFreeBtnText, { color: editorial.muted }]}>
+                직접 입력으로 추가
+              </ThemedText>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <SpineScheduleEditSheet
         visible={spineEditDraft != null}
         draft={spineEditDraft}
@@ -2232,6 +2652,56 @@ export function PriorityBasedPlanSection({
                         isDark={isDark}
                         compact
                         onPress={() => openMealSlotScheduleEditor()}
+                      />
+                    </View>
+                    <View style={styles.priorityTimelineSubRow}>
+                      <ThemedText
+                        style={[styles.priorityTimelineSub, { color: editorial.muted }]}
+                        lightColor={editorial.muted}
+                        darkColor={editorial.muted}>
+                        {timelineDateIntro}
+                        {' · '}
+                      </ThemedText>
+                      <Pressable
+                        onPress={openPriorityTimeModal}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`집중 구간 시간 설정, 현재 ${priorityWindowLine}`}
+                        accessibilityHint="탭하면 집중 구간 시간을 변경할 수 있어요"
+                        style={({ pressed }) => [pressed && { opacity: 0.65 }]}>
+                        <View style={styles.priorityTimelineTimeRow}>
+                          <IconSymbol name="clock" size={11} color={editorial.muted} />
+                          <ThemedText
+                            style={[
+                              styles.priorityTimelineSub,
+                              styles.priorityTimelineTimeTap,
+                              { color: editorial.ink },
+                            ]}
+                            lightColor={editorial.ink}
+                            darkColor={editorial.ink}
+                            numberOfLines={2}>
+                            {priorityWindowLine}
+                          </ThemedText>
+                        </View>
+                      </Pressable>
+                    </View>
+                  </>
+                ) : layoutMode === 'spine' && prioritySpineLinkMode === 'linked' ? (
+                  <>
+                    <View style={styles.priorityTimelineTitleRow}>
+                      <ThemedText
+                        style={[styles.priorityTimelineTitle, { color: editorial.ink }]}
+                        lightColor={editorial.ink}
+                        darkColor={editorial.ink}
+                        numberOfLines={2}>
+                        {formatTimelineHeaderDateKo(todayKey)}
+                      </ThemedText>
+                      <MealSlotScheduleEditButton
+                        palette={spineTimelinePalette}
+                        isDark={isDark}
+                        compact
+                        accessibilityLabel="루틴 시간 설정"
+                        onPress={() => openSpineLinkedRoutineSheet(null)}
                       />
                     </View>
                     <View style={styles.priorityTimelineSubRow}>
@@ -2315,9 +2785,24 @@ export function PriorityBasedPlanSection({
                   onSelectMode={handleSelectLayoutMode}
                   c={c}
                   isDark={isDark}
-                  sectionsAvailable={unslottedItemsForLayout.length === 0}
-                  onSectionsBlockedPress={() => openUnassignedSlotSheet('sections')}
                 />
+                {layoutMode === 'sections' || layoutMode === 'spine' ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="연동 방식 다시 선택"
+                    onPress={handleResetLayoutChoice}
+                    hitSlop={6}
+                    style={({ pressed }) => [
+                      styles.layoutResetBtn,
+                      {
+                        borderColor: editorial.line,
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : c.containerLowest,
+                      },
+                      pressed && { opacity: 0.72 },
+                    ]}>
+                    <IconSymbol name="arrow.uturn.backward" size={14} color={editorial.muted} />
+                  </Pressable>
+                ) : null}
               </View>
             </View>
             <ScrollView
@@ -2792,6 +3277,46 @@ export function PriorityBasedPlanSection({
           setPendingLayoutMode(null);
         }}
         onConfirm={handleConfirmUnassignedMealSlots}
+        onChangeLinkMode={openSectionsLinkModeSetupFromUnassigned}
+      />
+
+      <PrioritySpineLinkedRoutineSheet
+        visible={spineLinkedRoutineSheetOpen}
+        items={spineLinkedRoutineSheetItems}
+        priorityStart={priorityStart}
+        priorityEnd={priorityEnd}
+        existingBlocks={planBlocks}
+        nowMinutes={getLocalMinutesOfDayNow()}
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        surface={editorial.surface}
+        line={editorial.line}
+        onClose={() => {
+          setSpineLinkedRoutineSheetOpen(false);
+          setPendingLayoutMode(null);
+        }}
+        onConfirm={handleConfirmSpineLinkedRoutines}
+        onChangeLinkMode={openSpineLinkModeSetupFromRoutineSheet}
+      />
+
+      <DayPlanLayoutModeSetupSheet
+        visible={layoutSetupSheetOpen}
+        targetMode={layoutSetupTargetMode ?? 'sections'}
+        bagCount={bagCount}
+        initialLinkMode={
+          layoutSetupTargetMode === 'sections' ? prioritySectionsLinkMode : prioritySpineLinkMode
+        }
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        surface={editorial.surface}
+        line={editorial.line}
+        onClose={() => {
+          setLayoutSetupSheetOpen(false);
+          setLayoutSetupTargetMode(null);
+        }}
+        onConfirm={handleLayoutSetupConfirm}
       />
     </View>
   );
@@ -2875,6 +3400,13 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingTop: 2,
     marginLeft: 4,
+  },
+  layoutResetBtn: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   priorityTimelineScroll: {
     flex: 1,
@@ -3334,4 +3866,60 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   pageScrollContent: { gap: 0, paddingBottom: 4 },
+  spineLinkedPickerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  spineLinkedPickerSheet: {
+    marginHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 20,
+    maxHeight: '60%',
+  },
+  spineLinkedPickerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  spineLinkedPickerSub: {
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  spineLinkedPickerList: {
+    marginBottom: 12,
+  },
+  spineLinkedPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  spineLinkedPickerRowText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  spineLinkedPickerFreeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  spineLinkedPickerFreeBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });

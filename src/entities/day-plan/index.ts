@@ -347,9 +347,13 @@ export {
   ensureReadingBookPages,
   firstAladinBookEntry,
   makeReadingBookId,
+  normalizeReadingBookMemo,
   normalizeReadingBookStatus,
+  READING_BOOK_MEMO_MAX,
 } from './lib/readingLiveActivityConfig';
-export { reorderSpineTimelineBlocks } from './lib/reorderSpineTimelineBlocks';
+export type { PriorityLayoutLinkMode } from './lib/priorityLayoutLinkMode';
+export { buildSpineImportFromBag } from './lib/buildSpineImportFromBag';
+export type { SpineBagImportBlock } from './lib/buildSpineImportFromBag';
 export { resolveTodayFixedRoutineKeys } from './lib/resolveTodayFixedRoutineKeys';
 export type {
   SpineTimelineAnchorRow,

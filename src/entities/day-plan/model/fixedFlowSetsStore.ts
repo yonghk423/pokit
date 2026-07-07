@@ -6,7 +6,6 @@ import {
   EXAMPLE_CUSTOM_FLOW_SET_NAME,
   getActiveFixedFlowSet,
   isBuiltinPresetScheduleSet,
-  isFixedFlowSetMatchedToday,
   loadFixedFlowSetsState,
   normalizeDayMealSlot,
   saveFixedFlowSetsState,
@@ -265,13 +264,6 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     const target = sets.find((s) => s.id === setId);
     if (!target) return;
     const isActivating = !activeSetIds.includes(setId);
-    if (
-      isActivating &&
-      isBuiltinPresetScheduleSet(target) &&
-      !isFixedFlowSetMatchedToday(target)
-    ) {
-      return;
-    }
     const nextActive = isActivating
       ? [...activeSetIds, setId]
       : activeSetIds.filter((id) => id !== setId);
@@ -297,7 +289,6 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     const { sets, activeSetIds, activeMealSlotsBySetId } = get();
     const target = sets.find((s) => s.id === setId);
     if (!target || !isBuiltinPresetScheduleSet(target)) return;
-    if (!isFixedFlowSetMatchedToday(target)) return;
 
     const currentSlots = new Set(activeMealSlotsBySetId[setId] ?? []);
     if (currentSlots.has(normalizedSlot)) currentSlots.delete(normalizedSlot);

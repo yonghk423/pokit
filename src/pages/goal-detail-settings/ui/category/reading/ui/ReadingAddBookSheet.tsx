@@ -1,5 +1,13 @@
-import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -32,6 +40,10 @@ export function ReadingAddBookSheet({
   const c = palette;
   const [draft, setDraft] = useState('');
 
+  useEffect(() => {
+    if (!visible) setDraft('');
+  }, [visible]);
+
   const submit = () => {
     const trimmed = draft.trim();
     if (!trimmed) return;
@@ -46,8 +58,15 @@ export function ReadingAddBookSheet({
   };
 
   return (
-    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      statusBarTranslucent
+      onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.kavRoot}>
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
         <View
           style={[
@@ -88,14 +107,20 @@ export function ReadingAddBookSheet({
             </Pressable>
           ) : null}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
+  kavRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
   sheet: {
     borderTopWidth: 2,
     borderLeftWidth: 2,

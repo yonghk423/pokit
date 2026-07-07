@@ -212,6 +212,24 @@ describe('fixedFlowSetsStorage', () => {
     expect(isFixedFlowSetRuleMatchedToday('weekend', new Date('2026-07-06T09:00:00+09:00'))).toBe(false);
   });
 
+  it('includes weekend preset keys only on weekend when toggled on', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: ['set_weekend'],
+      sets: [
+        {
+          id: 'set_weekend',
+          name: '주말 루틴',
+          applyRule: 'weekend',
+          items: [{ categoryKey: 'reading', enabled: true }],
+        },
+      ],
+    });
+    expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-06T09:00:00+09:00'))).toEqual([]);
+    expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-04T09:00:00+09:00'))).toEqual([
+      'reading',
+    ]);
+  });
+
   it('collects preset keys by individually applied meal slots', () => {
     const state = normalizeFixedFlowSetsState({
       activeSetIds: ['set_daily'],

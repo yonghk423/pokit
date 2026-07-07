@@ -13,7 +13,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   deriveReadingBookProgress,
   ensureReadingBookPages,
+  normalizeReadingBookMemo,
   normalizeReadingBookStatus,
+  READING_BOOK_MEMO_MAX,
   type ReadingBookEntry,
   type ReadingBookStatus,
 } from '@entities/day-plan';
@@ -64,24 +66,30 @@ export function ReadingBookDetailSheet({
   const resolved = entry ? ensureReadingBookPages(entry) : null;
   const [startPageStr, setStartPageStr] = useState('1');
   const [targetPageStr, setTargetPageStr] = useState('100');
+  const [memo, setMemo] = useState('');
 
   useEffect(() => {
     if (!resolved) return;
     setStartPageStr(pageToInputValue(resolved.startPage, 1));
     setTargetPageStr(pageToInputValue(resolved.targetPage, resolved.aladin?.totalPages ?? 100));
+    setMemo(resolved.memo ?? '');
   }, [resolved]);
 
   if (!entry || !resolved) return null;
 
   const startPage = Math.max(0, parseInt(startPageStr, 10) || 0);
   const targetPage = Math.max(0, parseInt(targetPageStr, 10) || 0);
-  const { pagesRead, progressPct } = deriveReadingBookProgress({ startPage, targetPage });
-  const status = normalizeReadingBookStatus(entry.status);
-  const metaLine = entry.aladin?.author?.trim() || null;
   const totalPages =
     typeof entry.aladin?.totalPages === 'number' && entry.aladin.totalPages > 0
       ? entry.aladin.totalPages
       : null;
+  const { pagesRead, progressPct } = deriveReadingBookProgress({
+    startPage,
+    targetPage,
+    totalPages,
+  });
+  const status = normalizeReadingBookStatus(entry.status);
+  const metaLine = entry.aladin?.author?.trim() || null;
 
   const commitPages = (nextStart: number, nextTarget: number) => {
     onChange(
@@ -95,6 +103,13 @@ export function ReadingBookDetailSheet({
 
   const setStatus = (nextStatus: ReadingBookStatus) => {
     onChange({ ...entry, status: nextStatus });
+  };
+
+  const commitMemo = () => {
+    onChange({
+      ...entry,
+      memo: normalizeReadingBookMemo(memo),
+    });
   };
 
   return (
@@ -208,17 +223,20 @@ export function ReadingBookDetailSheet({
                 {startPage}P → {targetPage}P
               </ThemedText>
               <ThemedText style={[styles.progressSub, { color: c.onVariant }]}>
-                {pagesRead}쪽 · {progressPct}%
+                {pagesRead}쪽
+                {totalPages != null ? ` · 책 ${progressPct}%` : ''}
               </ThemedText>
             </View>
-            <View style={[styles.progressTrack, { backgroundColor: c.outlineVariant }]}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${progressPct}%`, backgroundColor: READING_ACCENT },
-                ]}
-              />
-            </View>
+            {totalPages != null ? (
+              <View style={[styles.progressTrack, { backgroundColor: c.outlineVariant }]}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${progressPct}%`, backgroundColor: READING_ACCENT },
+                  ]}
+                />
+              </View>
+            ) : null}
 
             <View style={styles.pageFields}>
               <View style={[styles.pageField, { borderColor: c.outlineVariant }]}>
@@ -271,6 +289,29 @@ export function ReadingBookDetailSheet({
                 </ThemedText>
               </View>
             </View>
+            </View>
+
+            <View style={styles.memoSection}>
+              <ThemedText style={[styles.sectionTitle, { color: c.onSurface }]}>메모</ThemedText>
+              <ThemedText style={[styles.sectionSub, { color: c.onVariant }]}>
+                읽는 동안 떠오른 생각이나 기억할 내용을 적어 두세요.
+              </ThemedText>
+              <TextInput
+                value={memo}
+                onChangeText={(text) => setMemo(text.slice(0, READING_BOOK_MEMO_MAX))}
+                onBlur={commitMemo}
+                placeholder="예: 3장까지 읽고 내일 이어서"
+                placeholderTextColor={c.outline}
+                multiline
+                textAlignVertical="top"
+                style={[
+                  styles.memoInput,
+                  {
+                    color: c.onSurface,
+                    borderColor: c.outlineVariant,
+                  },
+                ]}
+              />
             </View>
 
             {entry.aladin ? <AladinAttributionLine color={c.outline} compact /> : null}
@@ -372,6 +413,17 @@ const styles = StyleSheet.create({
   pageFieldSuffix: { fontSize: 10, fontWeight: '700' },
   pageFieldValue: { fontSize: 15, fontWeight: '800', letterSpacing: -0.3 },
   pageFieldValueMuted: { fontSize: 15, fontWeight: '700' },
+  memoSection: { gap: 8 },
+  memoInput: {
+    minHeight: 88,
+    borderWidth: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+    backgroundColor: '#ffffff',
+  },
   removeBtn: {
     flexDirection: 'row',
     alignItems: 'center',

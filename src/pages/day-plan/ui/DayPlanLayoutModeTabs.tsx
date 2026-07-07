@@ -38,9 +38,6 @@ type Props = {
   onSelectMode: (mode: DayPlanLayoutMode) => void;
   c: DayPlanPalette;
   isDark: boolean;
-  /** 시간대별 보기를 쓸 수 없을 때 false — 탭은 누를 수 있으나 선택되지 않음 */
-  sectionsAvailable?: boolean;
-  onSectionsBlockedPress?: () => void;
 };
 
 /** 오늘 탭 헤더 — 원형 아이콘 레이아웃 전환 */
@@ -49,8 +46,6 @@ export function DayPlanLayoutModeTabs({
   onSelectMode,
   c,
   isDark,
-  sectionsAvailable = true,
-  onSectionsBlockedPress,
 }: Props) {
   const pill = tabPillColors(isDark);
 
@@ -58,20 +53,14 @@ export function DayPlanLayoutModeTabs({
     <View style={styles.root}>
       {TABS.map((item) => {
         const active = mode === item.key;
-        const blocked =
-          item.key === 'sections' && !sectionsAvailable && !active;
         return (
           <Pressable
             key={item.key}
             accessibilityRole="tab"
-            accessibilityState={{ selected: active, disabled: blocked }}
+            accessibilityState={{ selected: active }}
             accessibilityLabel={item.accessibilityLabel}
             onPress={() => {
               if (active) return;
-              if (blocked) {
-                onSectionsBlockedPress?.();
-                return;
-              }
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onSelectMode(item.key);
             }}
@@ -82,8 +71,7 @@ export function DayPlanLayoutModeTabs({
                 borderColor: active ? pill.activeBorder : pill.inactiveBorder,
                 borderWidth: active ? 2 : 1,
               },
-              blocked && styles.tabBlocked,
-              pressed && !blocked && styles.pressed,
+              pressed && styles.pressed,
             ]}>
             <IconSymbol
               name={item.icon as 'sun.horizon.fill'}
@@ -112,8 +100,5 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.72,
-  },
-  tabBlocked: {
-    opacity: 0.42,
   },
 });

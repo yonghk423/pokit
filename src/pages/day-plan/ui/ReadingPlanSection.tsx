@@ -36,47 +36,45 @@ type Props = {
 /** 오늘 탭 — 독서 루틴과 동일한 내 서재 UI (상시 접근) */
 export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
   const [dataConfig, setDataConfig] = useState<unknown>(() => loadReadingConfig());
-  const dataConfigRef = useRef(dataConfig);
-  dataConfigRef.current = dataConfig;
-
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSentRef = useRef<string | null>(null);
+  const lastPersistedRef = useRef(JSON.stringify(dataConfig));
+  const pendingDraftRef = useRef<unknown>(dataConfig);
 
-  const flushPersist = useCallback(() => {
+  const flushPersist = useCallback((next: unknown) => {
     if (persistTimerRef.current) {
       clearTimeout(persistTimerRef.current);
       persistTimerRef.current = null;
     }
-    const serialized = JSON.stringify(dataConfigRef.current);
-    if (lastSentRef.current === serialized) return;
-    lastSentRef.current = serialized;
-    persistReadingConfig(dataConfigRef.current);
+    const serialized = JSON.stringify(next);
+    if (lastPersistedRef.current === serialized) return;
+    lastPersistedRef.current = serialized;
+    persistReadingConfig(next);
   }, []);
 
-  const handleChangeDataConfig = useCallback((next: unknown) => {
-    setDataConfig(next);
-  }, []);
+  const handleChangeDataConfig = useCallback(
+    (next: unknown) => {
+      pendingDraftRef.current = next;
+      const serialized = JSON.stringify(next);
+      if (lastPersistedRef.current === serialized) return;
+
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current);
+      }
+      persistTimerRef.current = setTimeout(() => {
+        persistTimerRef.current = null;
+        flushPersist(next);
+      }, 450);
+    },
+    [flushPersist],
+  );
 
   useEffect(() => {
-    const serialized = JSON.stringify(dataConfig);
-    if (lastSentRef.current === serialized) return;
-
-    if (persistTimerRef.current) {
-      clearTimeout(persistTimerRef.current);
-    }
-    persistTimerRef.current = setTimeout(flushPersist, 450);
-
     return () => {
       if (persistTimerRef.current) {
         clearTimeout(persistTimerRef.current);
         persistTimerRef.current = null;
+        flushPersist(pendingDraftRef.current);
       }
-    };
-  }, [dataConfig, flushPersist]);
-
-  useEffect(() => {
-    return () => {
-      flushPersist();
     };
   }, [flushPersist]);
 
@@ -84,10 +82,10 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
     useCallback(() => {
       const latest = loadReadingConfig();
       const serialized = JSON.stringify(latest);
-      if (serialized !== JSON.stringify(dataConfigRef.current)) {
-        setDataConfig(latest);
-        lastSentRef.current = serialized;
-      }
+      if (serialized === lastPersistedRef.current) return;
+      lastPersistedRef.current = serialized;
+      pendingDraftRef.current = latest;
+      setDataConfig(latest);
     }, []),
   );
 
