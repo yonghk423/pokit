@@ -1,5 +1,6 @@
 import { filterSpineTimelineBlocks } from './dayPlanFlowBlock';
 import type { PriorityLayoutLinkMode } from './priorityLayoutLinkMode';
+import { sanitizePriorityCategoryOrderKeys } from './priorityCatalogRegistry';
 import type { DayPlanBlock } from '../model/types';
 
 export type PriorityLayoutRoutineSourceMode = 'bag' | 'sections' | 'spine';
@@ -18,7 +19,7 @@ export function collectSpineTimelineCategoryKeys(blocks: readonly DayPlanBlock[]
     seen.add(key);
     keys.push(key);
   }
-  return keys;
+  return sanitizePriorityCategoryOrderKeys(keys);
 }
 
 /** 다른 보기에 이미 담긴 루틴의 최초 출처(목록 → 시간대별 → 타임라인 우선) */
@@ -29,14 +30,20 @@ export function resolvePriorityLayoutRoutineSource(input: {
   planBlocks: readonly DayPlanBlock[];
 }): PriorityLayoutRoutineSource | null {
   if (input.priorityCategoryOrder.length > 0) {
-    return { mode: 'bag', keys: input.priorityCategoryOrder };
+    return {
+      mode: 'bag',
+      keys: sanitizePriorityCategoryOrderKeys(input.priorityCategoryOrder),
+    };
   }
 
   if (
     input.prioritySectionsLinkMode === 'independent' &&
     input.prioritySectionsCategoryOrder.length > 0
   ) {
-    return { mode: 'sections', keys: input.prioritySectionsCategoryOrder };
+    return {
+      mode: 'sections',
+      keys: sanitizePriorityCategoryOrderKeys(input.prioritySectionsCategoryOrder),
+    };
   }
 
   const spineKeys = collectSpineTimelineCategoryKeys(input.planBlocks);
@@ -65,3 +72,11 @@ export function resolveCrossLayoutRoutineKeysForTarget(input: {
   if (!source || source.mode === input.targetMode) return [];
   return source.keys;
 }
+
+export type LayoutSetupRoutineCountInput = {
+  bagOtherModeRoutineCount: number;
+  priorityCategoryOrder: readonly string[];
+  prioritySectionsCategoryOrder: readonly string[];
+  prioritySectionsLinkMode: PriorityLayoutLinkMode | null;
+  planBlocks: readonly DayPlanBlock[];
+};

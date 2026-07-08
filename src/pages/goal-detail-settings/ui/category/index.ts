@@ -14,11 +14,13 @@ import {
   FocusSettings,
   HabitSettings,
   JournalSettings,
+  MemoSettings,
   ReminderSettings,
   getInitialCounterDataConfig,
   getInitialFocusDataConfig,
   getInitialHabitDataConfig,
   getInitialJournalDataConfig,
+  getInitialMemoDataConfig,
   getInitialReminderDataConfig,
 } from './custom-templates';
 import { MeasurementSettings, getInitialMeasurementDataConfig } from './measurement';
@@ -104,6 +106,11 @@ const customFlowTemplateModules: Record<
     titleKo: '한 줄 기록',
     getInitialDataConfig: getInitialJournalDataConfig,
     Settings: JournalSettings,
+  },
+  memo: {
+    titleKo: '간단한 메모',
+    getInitialDataConfig: getInitialMemoDataConfig,
+    Settings: MemoSettings,
   },
   reminder: {
     titleKo: '시간 알림',

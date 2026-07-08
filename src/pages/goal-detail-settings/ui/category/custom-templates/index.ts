@@ -3,6 +3,7 @@ export {
   CounterSettings,
   FocusSettings,
   JournalSettings,
+  MemoSettings,
   ReminderSettings,
 } from './ExtraCustomFlowTemplateSettings';
 
@@ -11,5 +12,6 @@ export {
   getInitialCounterDataConfig,
   getInitialFocusDataConfig,
   getInitialJournalDataConfig,
+  getInitialMemoDataConfig,
   getInitialReminderDataConfig,
 } from '@entities/day-plan';

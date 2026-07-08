@@ -205,7 +205,7 @@ export function HsvColorPicker({ value, onChange, ink, muted, isDark, line }: Pr
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="색상 코드 적용"
+          accessibilityLabel="색상 코드 적용하기"
           onPress={applyHexDraft}
           style={[styles.applyBtn, { borderColor: inputBorder, backgroundColor: inputBg }]}>
           <ThemedText style={[styles.applyBtnText, { color: ink }]}>입력</ThemedText>

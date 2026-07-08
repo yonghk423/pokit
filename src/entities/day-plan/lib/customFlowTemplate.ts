@@ -3,11 +3,13 @@ import {
   getInitialFocusDataConfig,
   getInitialHabitDataConfig,
   getInitialJournalDataConfig,
+  getInitialMemoDataConfig,
   getInitialReminderDataConfig,
   normalizeCounterDetailConfig,
   normalizeFocusDetailConfig,
   normalizeHabitDetailConfig,
   normalizeJournalDetailConfig,
+  normalizeMemoDetailConfig,
   normalizeReminderDetailConfig,
   resolveCustomFlowTemplateKeyFromRaw,
   type CustomFlowTemplateKey,
@@ -32,6 +34,7 @@ export {
   getInitialFocusDataConfig,
   getInitialHabitDataConfig,
   getInitialJournalDataConfig,
+  getInitialMemoDataConfig,
   getInitialReminderDataConfig,
   MAX_CUSTOM_REMINDER_TIMES,
   mergeCustomFlowGoalDetailData,
@@ -39,6 +42,7 @@ export {
   normalizeFocusDetailConfig,
   normalizeHabitDetailConfig,
   normalizeJournalDetailConfig,
+  normalizeMemoDetailConfig,
   normalizeReminderDetailConfig,
   resolveCustomFlowTemplateKeyFromRaw,
 } from './customFlowTemplateConfigs';
@@ -52,6 +56,7 @@ export const CUSTOM_FLOW_TEMPLATE_LABELS: Record<CustomFlowTemplateKey, string> 
   counter: '횟수 채우기',
   focus: '집중 시간',
   journal: '한 줄 기록',
+  memo: '간단한 메모',
   reminder: '시간 알림',
 };
 
@@ -63,6 +68,7 @@ export const CUSTOM_FLOW_TEMPLATE_DESCRIPTIONS: Record<CustomFlowTemplateKey, st
   counter: '목표 횟수를 채워요',
   focus: '정해진 시간 동안 집중해요',
   journal: '짧은 메모를 남겨요',
+  memo: '자유롭게 메모를 적어요',
   reminder: '알림 시간에 맞춰 완료해요',
 };
 
@@ -75,6 +81,7 @@ export const CUSTOM_FLOW_TEMPLATE_SUMMARIES: Record<CustomFlowTemplateKey, strin
   counter: '횟수를 세고 하루 목표까지 채워요.',
   focus: '정해 둔 시간 동안 집중 타이머로 진행해요.',
   journal: '질문에 답하고 기분과 함께 짧게 남겨요.',
+  memo: '세션에서 짧은 메모를 자유롭게 적고 저장해요.',
   reminder: '정해 둔 시간마다 완료 여부를 체크해요.',
 };
 
@@ -89,6 +96,7 @@ export type CustomFlowDetailConfig =
   | ReturnType<typeof normalizeCounterDetailConfig>
   | ReturnType<typeof normalizeFocusDetailConfig>
   | ReturnType<typeof normalizeJournalDetailConfig>
+  | ReturnType<typeof normalizeMemoDetailConfig>
   | ReturnType<typeof normalizeReminderDetailConfig>;
 
 export function buildInitialCustomFlowDetailConfig(
@@ -133,6 +141,8 @@ export function buildInitialCustomFlowDetailConfig(
       return normalizeFocusDetailConfig({ ...getInitialFocusDataConfig(), ...appearance });
     case 'journal':
       return normalizeJournalDetailConfig({ ...getInitialJournalDataConfig(), ...appearance });
+    case 'memo':
+      return normalizeMemoDetailConfig({ ...getInitialMemoDataConfig(), ...appearance });
     case 'reminder': {
       const reminderSeed = input.templateSeed ? pickReminderSettingsForCreate(input.templateSeed) : null;
       return normalizeReminderDetailConfig({
@@ -171,6 +181,8 @@ export function normalizeCustomFlowDetailConfig(
       return normalizeFocusDetailConfig(raw);
     case 'journal':
       return normalizeJournalDetailConfig(raw);
+    case 'memo':
+      return normalizeMemoDetailConfig(raw);
     case 'reminder':
       return normalizeReminderDetailConfig(raw);
     case 'abstain': {
@@ -246,6 +258,14 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
         recentEntries: [
           { dateKey: addDaysToLocalDateKey(today, -1), text: '어제는 괜찮았어요', mood: '보통' },
           { dateKey: addDaysToLocalDateKey(today, -2), text: '운동하고 기분 좋음', mood: '좋음' },
+        ],
+      });
+    case 'memo':
+      return normalizeMemoDetailConfig({
+        ...base,
+        lastEntry: '오늘 할 일 정리 완료',
+        recentEntries: [
+          { dateKey: addDaysToLocalDateKey(today, -1), text: '어제 메모 예시' },
         ],
       });
     case 'reminder':

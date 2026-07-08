@@ -24,17 +24,104 @@ type DefaultSetTemplate = {
 export const EXAMPLE_CUSTOM_FLOW_SET_NAME = '예시 세트';
 export const LEGACY_CUSTOM_FLOW_SET_NAME = '기본 세트';
 
+/** 삭제 불가 — 나만의 루틴 기본 예시 그룹 */
+export const BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS = [
+  'set_example_health',
+  'set_example_focus',
+] as const;
+
+export const BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_NAMES: Record<
+  (typeof BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS)[number],
+  string
+> = {
+  set_example_health: '건강 루틴 예시',
+  set_example_focus: '집중 루틴 예시',
+};
+
 export const EXAMPLE_CUSTOM_FLOW_SET_ITEM_KEYS = [
   'healthIntake',
   'fasting',
   BUILTIN_DAILY_LIFE_FLOW_IDS[1],
 ] as const;
 
+const BUILTIN_EXAMPLE_CUSTOM_SET_TEMPLATES: DefaultSetTemplate[] = [
+  {
+    id: 'set_example_health',
+    name: BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_NAMES.set_example_health,
+    applyRule: 'manual',
+    categoryKeys: [...EXAMPLE_CUSTOM_FLOW_SET_ITEM_KEYS],
+  },
+  {
+    id: 'set_example_focus',
+    name: BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_NAMES.set_example_focus,
+    applyRule: 'manual',
+    categoryKeys: ['reading', 'work'],
+  },
+];
+
 export function createExampleCustomFlowSetItems(): { categoryKey: string; enabled: true }[] {
   return EXAMPLE_CUSTOM_FLOW_SET_ITEM_KEYS.map((categoryKey) => ({
     categoryKey,
     enabled: true as const,
   }));
+}
+
+export function isBuiltinExampleCustomFlowSet(
+  set: Pick<FixedFlowSet, 'id'>,
+): boolean {
+  return (BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS as readonly string[]).includes(set.id);
+}
+
+export function createBuiltinExampleCustomFlowSets(): FixedFlowSet[] {
+  return BUILTIN_EXAMPLE_CUSTOM_SET_TEMPLATES.map((template) => ({
+    id: template.id,
+    name: template.name,
+    applyRule: 'manual',
+    applyWeekdays: defaultWeekdaysForApplyRule('manual') as WeekdayIndex[],
+    items: items(template.categoryKeys),
+  }));
+}
+
+/** 나만의 루틴 예시 그룹 2개 — 없으면 추가, 이름·빈 항목은 기본값으로 보강 */
+export function mergeBuiltInExampleCustomSets(sets: FixedFlowSet[]): FixedFlowSet[] {
+  const defaults = createBuiltinExampleCustomFlowSets();
+  const exampleIds = new Set(BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS as readonly string[]);
+  const byId = new Map(sets.map((set) => [set.id, set]));
+
+  const legacyDefault = byId.get('default');
+  if (legacyDefault?.applyRule === 'manual' && !byId.has('set_example_health')) {
+    byId.set('set_example_health', {
+      ...legacyDefault,
+      id: 'set_example_health',
+      name: defaults[0]!.name,
+      applyRule: 'manual',
+      items:
+        legacyDefault.items.length > 0 ? legacyDefault.items : defaults[0]!.items,
+    });
+    byId.delete('default');
+  }
+
+  const mergedExamples = defaults.map((defaultSet) => {
+    const existing = byId.get(defaultSet.id);
+    if (!existing) return defaultSet;
+    return {
+      ...existing,
+      name: defaultSet.name,
+      applyRule: 'manual' as const,
+      items: existing.items.length > 0 ? existing.items : defaultSet.items,
+    };
+  });
+
+  const presetIds = new Set(BUILTIN_PRESET_SCHEDULE_SET_IDS as readonly string[]);
+  const presets = sets.filter((set) => presetIds.has(set.id as (typeof BUILTIN_PRESET_SCHEDULE_SET_IDS)[number]));
+  const others = sets.filter(
+    (set) =>
+      !presetIds.has(set.id as (typeof BUILTIN_PRESET_SCHEDULE_SET_IDS)[number]) &&
+      !exampleIds.has(set.id) &&
+      set.id !== 'default',
+  );
+
+  return [...presets, ...mergedExamples, ...others];
 }
 
 /** 레거시 — 평일 루틴 → 데일리 루틴으로 통합 */

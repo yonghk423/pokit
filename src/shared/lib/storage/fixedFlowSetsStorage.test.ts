@@ -119,7 +119,13 @@ describe('fixedFlowSetsStorage', () => {
       ],
     });
 
-    expect(state.sets.map((set) => set.id)).toEqual(['set_daily', 'set_weekend', 'manual_a']);
+    expect(state.sets.map((set) => set.id)).toEqual([
+      'set_daily',
+      'set_weekend',
+      'set_example_health',
+      'set_example_focus',
+      'manual_a',
+    ]);
     expect(state.activeSetIds).toEqual(['set_daily', 'manual_a']);
   });
 
@@ -136,12 +142,38 @@ describe('fixedFlowSetsStorage', () => {
       ],
     });
 
-    const exampleSet = state.sets.find((set) => set.id === 'default');
-    expect(exampleSet?.name).toBe('예시 세트');
+    const exampleSet = state.sets.find((set) => set.id === 'set_example_health');
+    expect(exampleSet?.name).toBe('건강 루틴 예시');
     expect(exampleSet?.items.map((item) => item.categoryKey)).toEqual([
       'healthIntake',
       'fasting',
       'customFlow:preset_daily_clean',
+    ]);
+    expect(state.sets.find((set) => set.id === 'set_example_focus')?.name).toBe('집중 루틴 예시');
+  });
+
+  it('always includes two builtin example custom flow sets', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: [],
+      sets: [
+        {
+          id: 'set_daily',
+          name: '데일리 루틴',
+          applyRule: 'daily',
+          items: [{ categoryKey: 'reading', enabled: true }],
+        },
+      ],
+    });
+
+    expect(state.sets.map((set) => set.id)).toEqual([
+      'set_daily',
+      'set_weekend',
+      'set_example_health',
+      'set_example_focus',
+    ]);
+    expect(state.sets.find((set) => set.id === 'set_example_focus')?.items.map((item) => item.categoryKey)).toEqual([
+      'reading',
+      'work',
     ]);
   });
 
@@ -170,7 +202,12 @@ describe('fixedFlowSetsStorage', () => {
       ],
     });
 
-    expect(state.sets.map((set) => set.id)).toEqual(['set_daily', 'set_weekend']);
+    expect(state.sets.map((set) => set.id)).toEqual([
+      'set_daily',
+      'set_weekend',
+      'set_example_health',
+      'set_example_focus',
+    ]);
     expect(state.activeSetIds).toEqual(['set_daily']);
   });
 

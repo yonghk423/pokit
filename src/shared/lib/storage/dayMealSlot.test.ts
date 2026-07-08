@@ -1,9 +1,25 @@
 import {
   buildAppliedFixedRoutineMealSlotOverrides,
   buildCategoryMealSlotOverrides,
+  buildFixedFlowMealSlotSections,
   resolveCurrentMealSlot,
   resolveCurrentMealSlotFromSchedule,
 } from './dayMealSlot';
+
+describe('buildFixedFlowMealSlotSections', () => {
+  it('shows pinned empty morning section before items are added', () => {
+    const sections = buildFixedFlowMealSlotSections(
+      [
+        { categoryKey: 'healthIntake', mealSlot: 'dawn' },
+        { categoryKey: 'work', mealSlot: 'lunch' },
+      ],
+      undefined,
+      ['morning'],
+    );
+    expect(sections.map((section) => section.slot)).toEqual(['dawn', 'morning', 'lunch']);
+    expect(sections.find((section) => section.slot === 'morning')?.items).toEqual([]);
+  });
+});
 
 describe('buildAppliedFixedRoutineMealSlotOverrides', () => {
   const sets = [

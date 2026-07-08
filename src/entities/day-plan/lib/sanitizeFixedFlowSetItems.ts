@@ -25,6 +25,8 @@ export function sanitizeFixedFlowSetItems(items: FixedFlowSetItem[]): FixedFlowS
       categoryKey,
       enabled: prev?.enabled !== false,
       mealSlot: prev?.mealSlot,
+      spineStartMinutes: prev?.spineStartMinutes,
+      spineEndMinutes: prev?.spineEndMinutes,
     };
   });
 }

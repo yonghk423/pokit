@@ -115,7 +115,7 @@ export function normalizeCatalogKeysAfterHealthIntakeMerge(keys: string[]): stri
   for (const raw of keys) {
     const key = typeof raw === 'string' ? raw.trim() : '';
     if (!key) continue;
-    if (key === LEGACY_MEDICINE_CATEGORY_KEY) {
+    if (key === LEGACY_WATER_CATEGORY_KEY || key === LEGACY_MEDICINE_CATEGORY_KEY) {
       if (!healthAdded) {
         out.push(HEALTH_INTAKE_CATEGORY_KEY);
         healthAdded = true;

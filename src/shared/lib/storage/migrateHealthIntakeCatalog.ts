@@ -18,6 +18,7 @@ import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 
 export const RETIRED_HEALTH_INTAKE_LEGACY_KEYS = new Set<string>([
+  LEGACY_WATER_CATEGORY_KEY,
   LEGACY_MEDICINE_CATEGORY_KEY,
 ]);
 
@@ -58,8 +59,30 @@ function migrateDayPlanDraftKeys(): void {
   const draft = loadDayPlanDraft();
   if (!draft) return;
   const nextOrder = normalizeCatalogKeysAfterHealthIntakeMerge(draft.priorityCategoryOrder);
-  if (JSON.stringify(nextOrder) === JSON.stringify(draft.priorityCategoryOrder)) return;
-  saveDayPlanDraft({ ...draft, priorityCategoryOrder: nextOrder });
+  const nextSectionsOrder = normalizeCatalogKeysAfterHealthIntakeMerge(
+    draft.prioritySectionsCategoryOrder ?? [],
+  );
+  const orderSame = JSON.stringify(nextOrder) === JSON.stringify(draft.priorityCategoryOrder);
+  const sectionsSame =
+    JSON.stringify(nextSectionsOrder) === JSON.stringify(draft.prioritySectionsCategoryOrder ?? []);
+  if (orderSame && sectionsSame) return;
+  saveDayPlanDraft({
+    ...draft,
+    priorityCategoryOrder: nextOrder,
+    prioritySectionsCategoryOrder: nextSectionsOrder,
+  });
+}
+
+function migrateRoutineCatalogSelectionKeys(): void {
+  const legacy = localStorageClient.getJson<{ categoryKeys?: string[] }>(
+    StorageKeys.priorityCatalogFixedRoutines,
+  );
+  const keys = Array.isArray(legacy?.categoryKeys) ? legacy!.categoryKeys : [];
+  const nextKeys = normalizeCatalogKeysAfterHealthIntakeMerge(keys);
+  if (JSON.stringify(nextKeys) === JSON.stringify(keys)) return;
+  localStorageClient.setJson(StorageKeys.priorityCatalogFixedRoutines, {
+    categoryKeys: nextKeys,
+  });
 }
 
 function migrateFixedFlowSetKeys(): void {
@@ -118,6 +141,7 @@ function ensureHealthIntakeCommitted(): void {
 export function migrateWaterMedicineToHealthIntake(): void {
   mergeHealthIntakeGoalDetailConfig();
   migrateDayPlanDraftKeys();
+  migrateRoutineCatalogSelectionKeys();
   migrateFixedFlowSetKeys();
   migrateStandardCatalogGroupOverrides();
   ensureHealthIntakeCommitted();
@@ -128,8 +152,18 @@ export function purgeRetiredHealthIntakeFromDayPlanDraft(): void {
   const draft = loadDayPlanDraft();
   if (!draft) return;
   const nextOrder = draft.priorityCategoryOrder.filter((key) => !isRetiredHealthIntakeLegacyKey(key));
-  if (nextOrder.length === draft.priorityCategoryOrder.length) return;
-  saveDayPlanDraft({ ...draft, priorityCategoryOrder: nextOrder });
+  const nextSectionsOrder = (draft.prioritySectionsCategoryOrder ?? []).filter(
+    (key) => !isRetiredHealthIntakeLegacyKey(key),
+  );
+  const orderSame = nextOrder.length === draft.priorityCategoryOrder.length;
+  const sectionsSame =
+    nextSectionsOrder.length === (draft.prioritySectionsCategoryOrder ?? []).length;
+  if (orderSame && sectionsSame) return;
+  saveDayPlanDraft({
+    ...draft,
+    priorityCategoryOrder: nextOrder,
+    prioritySectionsCategoryOrder: nextSectionsOrder,
+  });
 }
 
 export function purgeRetiredHealthIntakeFromFixedFlowSets(): void {

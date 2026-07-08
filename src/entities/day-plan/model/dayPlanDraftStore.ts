@@ -14,6 +14,7 @@ import { cycleItemPriority, normalizeItemPriority } from '../lib/itemPriority';
 import { addDaysToLocalDateKey, getLocalDateKey } from '../lib/localDateKey';
 import { parseHHmmToMinutes } from '../lib/parseTime';
 import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
+import { sanitizePriorityCategoryOrderKeys } from '../lib/priorityCatalogRegistry';
 import {
   buildPrioritySectionCompletionKey,
   parsePrioritySectionCompletionKey,
@@ -136,6 +137,8 @@ type DayPlanDraftState = {
   setPriorityBagLinkMode: (mode: PriorityLayoutLinkMode | null) => void;
   setPrioritySectionsCategoryOrder: (value: string[] | ((prev: string[]) => string[])) => void;
   appendPrioritySectionsCategoryKeys: (keys: string[]) => void;
+  /** 시간대별 보기 — 항목 추가와 구간 지정을 한 번에 처리 */
+  appendPrioritySectionsWithMealSlot: (keys: string[], mealSlot: DayMealSlot) => void;
   setPriorityMealSlotOverride: (categoryKey: string, mealSlot: DayMealSlot | null) => void;
   /** 기존 지정을 유지한 채 누락 항목만 구간을 채웁니다. */
   mergePriorityMealSlotOverrides: (incoming: Record<string, DayMealSlot>) => void;
@@ -212,12 +215,17 @@ function pruneMealSlotRecordForOrder(
   return changed ? next : record;
 }
 
-function resolveSectionsLinkModeOnHydrate(raw: unknown): PriorityLayoutLinkMode | null {
-  return normalizePriorityLayoutLinkMode(raw);
+/** 보기별 루틴은 항상 독립 관리 — 연동 선택 UI 제거 */
+function resolveSectionsLinkModeOnHydrate(_raw: unknown): PriorityLayoutLinkMode {
+  return 'independent';
 }
 
-function resolveSpineLinkModeOnHydrate(raw: unknown): PriorityLayoutLinkMode | null {
-  return normalizePriorityLayoutLinkMode(raw);
+function resolveSpineLinkModeOnHydrate(_raw: unknown): PriorityLayoutLinkMode {
+  return 'independent';
+}
+
+function resolveBagLinkModeOnHydrate(_raw: unknown): PriorityLayoutLinkMode {
+  return 'independent';
 }
 
 function pruneMealSlotsArrayRecordForOrder(
@@ -340,7 +348,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       priorityOvernightEndAuto: keepRange ? Boolean(raw.priorityOvernightEndAuto) : false,
       priorityStart: typeof raw.priorityStart === 'string' ? raw.priorityStart : get().priorityStart,
       priorityEnd: typeof raw.priorityEnd === 'string' ? raw.priorityEnd : get().priorityEnd,
-      priorityCategoryOrder: dedupePriorityCategoryOrder(
+      priorityCategoryOrder: sanitizePriorityCategoryOrderKeys(
         Array.isArray(raw.priorityCategoryOrder) ? raw.priorityCategoryOrder : [],
       ),
       priorityCategoryImportance: normalizePriorityCategoryImportance(raw.priorityCategoryImportance),
@@ -353,8 +361,8 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       prioritySectionsMealSlots: normalizePrioritySectionsMealSlots(raw.prioritySectionsMealSlots),
       prioritySectionsLinkMode: resolveSectionsLinkModeOnHydrate(raw.prioritySectionsLinkMode),
       prioritySpineLinkMode: resolveSpineLinkModeOnHydrate(raw.prioritySpineLinkMode),
-      priorityBagLinkMode: normalizePriorityLayoutLinkMode(raw.priorityBagLinkMode),
-      prioritySectionsCategoryOrder: dedupePriorityCategoryOrder(
+      priorityBagLinkMode: resolveBagLinkModeOnHydrate(raw.priorityBagLinkMode),
+      prioritySectionsCategoryOrder: sanitizePriorityCategoryOrderKeys(
         Array.isArray(raw.prioritySectionsCategoryOrder) ? raw.prioritySectionsCategoryOrder : [],
       ),
       isHydrated: true,
@@ -588,8 +596,10 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   setPriorityEnd: (value) => set({ priorityEnd: value }),
   setPriorityCategoryOrder: (value) =>
     set((s) => {
-      const priorityCategoryOrder = dedupePriorityCategoryOrder(
-        typeof value === 'function' ? value(s.priorityCategoryOrder) : value,
+      const priorityCategoryOrder = sanitizePriorityCategoryOrderKeys(
+        dedupePriorityCategoryOrder(
+          typeof value === 'function' ? value(s.priorityCategoryOrder) : value,
+        ),
       );
       const today = getLocalDateKey();
       const routineHistoryPlannedKeysByDate =
@@ -683,6 +693,30 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         }
       }
       return changed ? { prioritySectionsCategoryOrder: next } : s;
+    }),
+  appendPrioritySectionsWithMealSlot: (keys, mealSlot) =>
+    set((s) => {
+      const normalized = normalizeDayMealSlot(mealSlot);
+      if (!normalized) return s;
+      const trimmed = keys.map((key) => key.trim()).filter(Boolean);
+      if (trimmed.length === 0) return s;
+      const nextOrder = [...s.prioritySectionsCategoryOrder];
+      const nextSlots = { ...s.prioritySectionsMealSlots };
+      let changed = false;
+      for (const key of trimmed) {
+        if (!nextOrder.includes(key)) {
+          nextOrder.push(key);
+          changed = true;
+        }
+        const prev = nextSlots[key] ?? [];
+        if (!prev.includes(normalized)) {
+          nextSlots[key] = [...prev, normalized];
+          changed = true;
+        }
+      }
+      return changed
+        ? { prioritySectionsCategoryOrder: nextOrder, prioritySectionsMealSlots: nextSlots }
+        : s;
     }),
   setPriorityMealSlotOverride: (categoryKey, mealSlot) =>
     set((s) => {
@@ -853,16 +887,15 @@ function persistDayPlanDraft(): void {
 
 /** 목표 상세 설정 완료 시 오늘 우선순위 목록에 카테고리가 없으면 끝에 추가 */
 export function appendPriorityCategoryKeysIfMissing(keys: string[]): void {
-  const trimmed = keys.map((k) => k.trim()).filter(Boolean);
+  const trimmed = sanitizePriorityCategoryOrderKeys(keys);
   if (trimmed.length === 0) return;
   const { priorityCategoryOrder, setPriorityCategoryOrder } = useDayPlanDraftStore.getState();
-  const next = [...priorityCategoryOrder];
-  let changed = false;
-  for (const k of trimmed) {
-    if (!next.includes(k)) {
-      next.push(k);
-      changed = true;
-    }
+  const next = sanitizePriorityCategoryOrderKeys([...priorityCategoryOrder, ...trimmed]);
+  if (
+    next.length === priorityCategoryOrder.length &&
+    next.every((key, index) => key === priorityCategoryOrder[index])
+  ) {
+    return;
   }
-  if (changed) setPriorityCategoryOrder(next);
+  setPriorityCategoryOrder(next);
 }

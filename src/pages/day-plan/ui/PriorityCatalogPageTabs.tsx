@@ -6,58 +6,67 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
-export type FixedRoutineSection = 'scheduled' | 'custom' | 'templates';
+export type PriorityCatalogPageTab = 'catalog' | 'fixed';
 
 type TabDef = {
-  key: FixedRoutineSection;
+  key: PriorityCatalogPageTab;
   label: string;
 };
 
 const TABS: TabDef[] = [
-  { key: 'custom', label: '나만의 루틴' },
-  { key: 'templates', label: '루틴 템플릿' },
+  { key: 'catalog', label: '루틴 목록' },
+  { key: 'fixed', label: '고정 루틴' },
 ];
 
 type Props = {
-  section: FixedRoutineSection;
-  onSelectSection: (section: FixedRoutineSection) => void;
+  tab: PriorityCatalogPageTab;
+  onSelectTab: (tab: PriorityCatalogPageTab) => void;
   c: DayPlanPalette;
   isDark: boolean;
+  /** 상위 보기(목록·시간대·타임라인) 아래 하위 탭 */
+  compact?: boolean;
 };
 
-export function FixedRoutineSectionTabs({ section, onSelectSection, c, isDark }: Props) {
+/** 루틴 탭 — 담기 목록 / 고정 루틴 커스텀 */
+export function PriorityCatalogPageTabs({
+  tab,
+  onSelectTab,
+  c,
+  isDark,
+  compact = false,
+}: Props) {
   const pill = tabPillColors(isDark);
 
   return (
     <View style={styles.root}>
-      {TABS.map((tab) => {
-        const active = section === tab.key;
+      {TABS.map((item) => {
+        const active = tab === item.key;
         return (
           <Pressable
-            key={tab.key}
+            key={item.key}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={tab.label}
+            accessibilityLabel={item.label}
             onPress={() => {
               if (active) return;
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onSelectSection(tab.key);
+              onSelectTab(item.key);
             }}
             style={({ pressed }) => [
               styles.tab,
+              compact && styles.tabCompact,
               {
                 backgroundColor: active ? pill.activeBg : pill.inactiveBg,
-                borderColor: active ? pill.activeBorder : pill.inactiveBorder,
+                borderColor: active ? c.onSurface : c.catBorderIdle,
               },
-              pressed && !active && { opacity: 0.88 },
+              pressed && !active && { opacity: 0.72 },
             ]}>
             <ThemedText
               style={[
-                styles.tabLabel,
-                { color: active ? c.onSurface : c.onVariant },
-              ]}
-              numberOfLines={1}>
-              {tab.label}
+                compact ? styles.tabLabelCompact : styles.tabLabel,
+                { color: active ? pill.activeText : pill.inactiveText },
+              ]}>
+              {item.label}
             </ThemedText>
           </Pressable>
         );
@@ -70,21 +79,30 @@ const styles = StyleSheet.create({
   root: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 12,
   },
   tab: {
     flex: 1,
-    minHeight: 40,
-    borderRadius: 0,
-    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8,
+    minHeight: 36,
+    paddingHorizontal: 10,
     paddingVertical: 8,
+    borderWidth: 2,
+    borderRadius: 0,
+  },
+  tabCompact: {
+    minHeight: 32,
+    paddingVertical: 6,
+    borderWidth: 1,
   },
   tabLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  tabLabelCompact: {
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: -0.2,
+    letterSpacing: -0.15,
   },
 });

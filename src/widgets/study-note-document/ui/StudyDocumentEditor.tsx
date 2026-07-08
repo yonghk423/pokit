@@ -1667,7 +1667,7 @@ export function StudyDocumentEditor({
             style={[styles.linkInput, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
           />
           <Pressable onPress={applyLink} onPressIn={toolbarRetainFocusHandler} style={[styles.linkApply, { borderColor: palette.onSurface }]}>
-            <ThemedText style={{ color: palette.onSurface, fontWeight: '700', fontSize: 12 }}>적용</ThemedText>
+            <ThemedText style={{ color: palette.onSurface, fontWeight: '700', fontSize: 12 }}>적용하기</ThemedText>
           </Pressable>
         </View>
       ) : null}

@@ -2,15 +2,16 @@ import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Keyboard,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   TextInput,
   useWindowDimensions,
   View,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,6 +21,7 @@ import {
   normalizeReadingBookMemo,
   normalizeReadingBookStatus,
   READING_BOOK_MEMO_MAX,
+  readingBookEntryToShareText,
   type ReadingBookEntry,
   type ReadingBookStatus,
 } from '@entities/day-plan';
@@ -68,8 +70,10 @@ export function ReadingBookDetailSheet({
   const { height: windowHeight } = useWindowDimensions();
   const c = palette;
   const scrollRef = useRef<ScrollView>(null);
-  const sectionOffsetsRef = useRef<Record<string, number>>({});
+  const scrollViewportHeightRef = useRef(300);
+  const memoSectionLayoutRef = useRef({ y: 0, height: 0 });
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const [isMemoFocused, setIsMemoFocused] = useState(false);
 
   const resolved = entry ? ensureReadingBookPages(entry) : null;
   const [startPageStr, setStartPageStr] = useState('1');
@@ -86,6 +90,7 @@ export function ReadingBookDetailSheet({
   useEffect(() => {
     if (!visible) {
       setKeyboardInset(0);
+      setIsMemoFocused(false);
       return;
     }
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -102,22 +107,24 @@ export function ReadingBookDetailSheet({
     };
   }, [visible]);
 
-  const scrollSectionIntoView = useCallback((key: string) => {
+  const scrollMemoIntoView = useCallback(() => {
     requestAnimationFrame(() => {
-      const offsetY = sectionOffsetsRef.current[key];
-      if (offsetY == null) return;
-      scrollRef.current?.scrollTo({ y: Math.max(0, offsetY - 12), animated: true });
+      const { y, height } = memoSectionLayoutRef.current;
+      const viewportHeight = scrollViewportHeightRef.current;
+      const targetY = y + height - viewportHeight + 32;
+      scrollRef.current?.scrollTo({ y: Math.max(0, targetY), animated: true });
     });
   }, []);
 
-  const rememberSectionOffset = useCallback((key: string, y: number) => {
-    sectionOffsetsRef.current[key] = y;
-  }, []);
+  useEffect(() => {
+    if (!visible || keyboardInset <= 0 || !isMemoFocused) return;
+    const timer = setTimeout(() => scrollMemoIntoView(), Platform.OS === 'ios' ? 80 : 120);
+    return () => clearTimeout(timer);
+  }, [visible, keyboardInset, isMemoFocused, scrollMemoIntoView]);
 
   if (!entry || !resolved) return null;
 
   const sheetMaxHeight = Math.round(windowHeight * 0.88);
-  const scrollMaxHeight = Math.max(220, sheetMaxHeight - 72);
 
   const startPage = Math.max(0, parseInt(startPageStr, 10) || 0);
   const targetPage = Math.max(0, parseInt(targetPageStr, 10) || 0);
@@ -154,6 +161,33 @@ export function ReadingBookDetailSheet({
     });
   };
 
+  const shareBook = async () => {
+    const shareEntry = ensureReadingBookPages({
+      ...entry,
+      startPage,
+      targetPage,
+      memo: normalizeReadingBookMemo(memo),
+    });
+    const message = readingBookEntryToShareText(shareEntry);
+    try {
+      await Share.share({
+        message,
+        title: entry.title,
+      });
+    } catch {
+      Alert.alert('공유 실패', '잠시 후 다시 시도해 주세요.');
+    }
+  };
+
+  const sheetBottomInset =
+    keyboardInset > 0 ? 12 : Math.max(insets.bottom, 16);
+  const effectiveSheetMaxHeight =
+    keyboardInset > 0
+      ? Math.min(sheetMaxHeight, windowHeight - keyboardInset - 16)
+      : sheetMaxHeight;
+  const effectiveScrollMaxHeight = Math.max(180, effectiveSheetMaxHeight - 72);
+  scrollViewportHeightRef.current = effectiveScrollMaxHeight;
+
   return (
     <Modal
       visible={visible}
@@ -161,50 +195,56 @@ export function ReadingBookDetailSheet({
       transparent
       statusBarTranslucent
       onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.kavRoot}>
-        <View style={styles.overlay}>
-          <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
-          <View
-            style={[
-              styles.sheet,
-              {
-                backgroundColor: c.surfaceLowest,
-                borderColor: c.outline,
-                paddingBottom: Math.max(insets.bottom, 16),
-                maxHeight: sheetMaxHeight,
-              },
-            ]}>
+      <View style={styles.overlay}>
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
+        <View
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: c.surfaceLowest,
+              borderColor: c.outline,
+              marginBottom: keyboardInset > 0 ? keyboardInset : 0,
+              paddingBottom: sheetBottomInset,
+              maxHeight: effectiveSheetMaxHeight,
+            },
+          ]}>
             <View style={[styles.sheetHandle, { backgroundColor: c.outlineVariant }]} />
 
             <View style={styles.sheetHeader}>
               <ThemedText style={[styles.sheetTitle, { color: c.onSurface }]} numberOfLines={2}>
                 {entry.title}
               </ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="닫기"
-                onPress={onClose}
-                hitSlop={8}
-                style={styles.closeBtn}>
-                <IconSymbol name="xmark" size={14} color={c.onVariant} />
-              </Pressable>
+              <View style={styles.headerActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="도서 정보 공유"
+                  onPress={() => {
+                    void shareBook();
+                  }}
+                  hitSlop={8}
+                  style={styles.headerActionBtn}>
+                  <IconSymbol name="square.and.arrow.up" size={16} color={c.onSurface} />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="닫기"
+                  onPress={onClose}
+                  hitSlop={8}
+                  style={styles.headerActionBtn}>
+                  <IconSymbol name="xmark" size={14} color={c.onVariant} />
+                </Pressable>
+              </View>
             </View>
 
             <ScrollView
               ref={scrollRef}
-              style={[styles.sheetScroll, { maxHeight: scrollMaxHeight }]}
+              style={[styles.sheetScroll, { maxHeight: effectiveScrollMaxHeight }]}
               contentContainerStyle={[
                 styles.sheetBody,
-                {
-                  paddingBottom:
-                    keyboardInset > 0 ? Math.max(32, Math.round(keyboardInset * 0.42)) : 16,
-                },
+                keyboardInset > 0 && isMemoFocused && { paddingBottom: 56 },
               ]}
               keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="interactive"
-              automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+              keyboardDismissMode="none"
               showsVerticalScrollIndicator={false}>
             <View style={styles.bookHero}>
               {entry.aladin?.coverUrl ? (
@@ -270,9 +310,7 @@ export function ReadingBookDetailSheet({
               </View>
             </View>
 
-            <View
-              style={styles.goalSection}
-              onLayout={(event) => rememberSectionOffset('goal', event.nativeEvent.layout.y)}>
+            <View style={styles.goalSection}>
               <ThemedText style={[styles.sectionTitle, { color: c.onSurface }]}>
                 오늘 목표 분량
               </ThemedText>
@@ -307,7 +345,6 @@ export function ReadingBookDetailSheet({
                   <TextInput
                     value={startPageStr}
                     onChangeText={setStartPageStr}
-                    onFocus={() => scrollSectionIntoView('goal')}
                     onBlur={() => commitPages(startPage, targetPage)}
                     placeholder="1"
                     placeholderTextColor={c.outline}
@@ -323,7 +360,6 @@ export function ReadingBookDetailSheet({
                   <TextInput
                     value={targetPageStr}
                     onChangeText={setTargetPageStr}
-                    onFocus={() => scrollSectionIntoView('goal')}
                     onBlur={() => commitPages(startPage, targetPage)}
                     placeholder="100"
                     placeholderTextColor={c.outline}
@@ -357,7 +393,10 @@ export function ReadingBookDetailSheet({
 
             <View
               style={styles.memoSection}
-              onLayout={(event) => rememberSectionOffset('memo', event.nativeEvent.layout.y)}>
+              onLayout={(event) => {
+                const { y, height } = event.nativeEvent.layout;
+                memoSectionLayoutRef.current = { y, height };
+              }}>
               <ThemedText style={[styles.sectionTitle, { color: c.onSurface }]}>메모</ThemedText>
               <ThemedText style={[styles.sectionSub, { color: c.onVariant }]}>
                 읽는 동안 떠오른 생각이나 기억할 내용을 적어 두세요.
@@ -365,8 +404,14 @@ export function ReadingBookDetailSheet({
               <TextInput
                 value={memo}
                 onChangeText={(text) => setMemo(text.slice(0, READING_BOOK_MEMO_MAX))}
-                onFocus={() => scrollSectionIntoView('memo')}
-                onBlur={commitMemo}
+                onFocus={() => {
+                  setIsMemoFocused(true);
+                  scrollMemoIntoView();
+                }}
+                onBlur={() => {
+                  setIsMemoFocused(false);
+                  commitMemo();
+                }}
                 placeholder="예: 3장까지 읽고 내일 이어서"
                 placeholderTextColor={c.outline}
                 multiline
@@ -398,13 +443,11 @@ export function ReadingBookDetailSheet({
           </ScrollView>
         </View>
       </View>
-      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  kavRoot: { flex: 1 },
   overlay: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
   sheet: {
@@ -427,14 +470,19 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   sheetTitle: { flex: 1, fontSize: 18, fontWeight: '800', letterSpacing: -0.3, lineHeight: 24 },
-  closeBtn: {
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  headerActionBtn: {
     width: 32,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sheetScroll: { flexGrow: 0 },
-  sheetBody: { paddingHorizontal: 16, gap: 14 },
+  sheetBody: { paddingHorizontal: 16, gap: 14, paddingBottom: 16 },
   bookHero: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
   bookCover: { width: 64, height: 90, backgroundColor: '#f3f4f6' },
   bookCoverFallback: { alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },

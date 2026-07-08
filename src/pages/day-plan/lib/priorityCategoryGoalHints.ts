@@ -9,6 +9,7 @@ import {
   normalizeHabitDetailConfig,
   normalizeHealthIntakeDetailConfig,
   normalizeJournalDetailConfig,
+  normalizeMemoDetailConfig,
   normalizeMeasurementDetailConfig,
   normalizeMedicineDetailConfig,
   normalizeOtherDetailConfig,
@@ -87,6 +88,11 @@ function hintFromCustomFlowRaw(raw: unknown): string | null {
       if (cfg.lastEntry.trim().length > 0) return cfg.lastEntry.trim();
       if (cfg.prompt.trim().length > 0) return cfg.prompt.trim();
       return '한 줄 기록';
+    }
+    case 'memo': {
+      const cfg = normalizeMemoDetailConfig(raw ?? {});
+      if (cfg.lastEntry.trim().length > 0) return cfg.lastEntry.trim();
+      return '간단한 메모';
     }
     case 'reminder': {
       const cfg = normalizeReminderDetailConfig(raw ?? {});

@@ -48,7 +48,9 @@ export {
   DAY_MEAL_SLOT_HINT,
   DAY_MEAL_SLOT_LABEL,
   DAY_MEAL_SLOT_ORDER, buildAppliedFixedRoutineMealSlotOverrides,
-  buildCategoryMealSlotOverrides, groupFixedFlowItemsByMealSlot,
+  buildCategoryMealSlotOverrides,
+  buildFixedFlowMealSlotSections,
+  groupFixedFlowItemsByMealSlot,
   normalizeDayMealSlot,
   normalizeCategoryMealSlots,
   resolveExplicitCategoryMealSlots,
@@ -76,6 +78,8 @@ export type { PersistedDayPlan } from './dayPlanStorage';
 export { loadDayPlanTodos, saveDayPlanTodos } from './dayPlanTodoStorage';
 export type { PersistedDayPlanTodos } from './dayPlanTodoStorage';
 export {
+  BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS,
+  BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_NAMES,
   BUILTIN_FIXED_FLOW_SET_IDS,
   BUILTIN_PRESET_SCHEDULE_SET_IDS,
   createExampleCustomFlowSetItems,
@@ -85,8 +89,11 @@ export {
   LEGACY_WEEKDAY_SET_ID,
   REMOVED_BUILTIN_PRESET_SET_IDS,
   REMOVED_SCHEDULED_SET_IDS,
+  createBuiltinExampleCustomFlowSets,
   createDefaultFixedFlowSetsState,
+  isBuiltinExampleCustomFlowSet,
   isBuiltinPresetScheduleSet,
+  mergeBuiltInExampleCustomSets,
   mergeBuiltInPresetSets,
   shouldMigrateAwayScheduledSet
 } from './defaultFixedFlowSets';
@@ -232,6 +239,16 @@ export {
   saveIncompleteRoutineReminder,
   saveMedicineReminderScheduled, savePriorityDayStartAlarm, saveWaterReminderScheduled
 } from './settingsStorage';
+export {
+  coerceDayPlanLayoutMode,
+  DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY,
+  listVisibleDayPlanLayoutModes,
+  loadDayPlanLayoutModeVisibility,
+  normalizeDayPlanLayoutModeVisibility,
+  saveDayPlanLayoutModeVisibility,
+  type DayPlanLayoutMode,
+  type DayPlanLayoutModeVisibility,
+} from './dayPlanLayoutModeVisibility';
 export type {
   AppearanceMode,
   CategoryReminderRuleRow,

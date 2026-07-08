@@ -1,89 +1,74 @@
-import type { DayPlanBlock } from '../model/types';
-
 import {
-  collectSpineTimelineCategoryKeys,
   resolveCrossLayoutRoutineKeysForTarget,
   resolvePriorityLayoutRoutineSource,
 } from './priorityCrossLayoutRoutines';
 
-function spineBlock(categoryKey: string): DayPlanBlock {
-  return {
-    id: `spine-${categoryKey}`,
-    title: categoryKey,
-    category: '사용자',
-    startMinutes: 600,
-    endMinutes: 615,
-    order: 0,
-    blockOrigin: 'spineTimeline',
-    categoryKey,
-  };
-}
-
 describe('priorityCrossLayoutRoutines', () => {
-  it('prefers bag routines as layout source', () => {
+  it('resolvePriorityLayoutRoutineSource prefers bag order', () => {
     expect(
       resolvePriorityLayoutRoutineSource({
-        priorityCategoryOrder: ['water'],
-        prioritySectionsCategoryOrder: ['reading'],
-        prioritySectionsLinkMode: 'independent',
-        planBlocks: [spineBlock('fasting')],
-      }),
-    ).toEqual({ mode: 'bag', keys: ['water'] });
-  });
-
-  it('uses sections routines when bag is empty', () => {
-    expect(
-      resolvePriorityLayoutRoutineSource({
-        priorityCategoryOrder: [],
-        prioritySectionsCategoryOrder: ['reading', 'water'],
+        priorityCategoryOrder: ['reading'],
+        prioritySectionsCategoryOrder: ['work'],
         prioritySectionsLinkMode: 'independent',
         planBlocks: [],
       }),
-    ).toEqual({ mode: 'sections', keys: ['reading', 'water'] });
+    ).toEqual({ mode: 'bag', keys: ['reading'] });
   });
 
-  it('uses spine routines when only timeline has category blocks', () => {
+  it('resolvePriorityLayoutRoutineSource uses sections when bag empty', () => {
+    expect(
+      resolvePriorityLayoutRoutineSource({
+        priorityCategoryOrder: [],
+        prioritySectionsCategoryOrder: ['work'],
+        prioritySectionsLinkMode: 'independent',
+        planBlocks: [],
+      }),
+    ).toEqual({ mode: 'sections', keys: ['work'] });
+  });
+
+  it('resolvePriorityLayoutRoutineSource uses spine blocks when bag and sections empty', () => {
     expect(
       resolvePriorityLayoutRoutineSource({
         priorityCategoryOrder: [],
         prioritySectionsCategoryOrder: [],
-        prioritySectionsLinkMode: null,
-        planBlocks: [spineBlock('fasting')],
+        prioritySectionsLinkMode: 'independent',
+        planBlocks: [
+          {
+            id: 'b1',
+            title: '독서',
+            category: '독서',
+            categoryKey: 'reading',
+            startMinutes: 600,
+            endMinutes: 630,
+            order: 0,
+            blockOrigin: 'spineTimeline',
+          },
+        ],
       }),
-    ).toEqual({ mode: 'spine', keys: ['fasting'] });
+    ).toEqual({ mode: 'spine', keys: ['reading'] });
   });
 
-  it('returns cross-layout keys for bag target from spine source', () => {
+  it('resolveCrossLayoutRoutineKeysForTarget excludes same mode', () => {
+    expect(
+      resolveCrossLayoutRoutineKeysForTarget({
+        targetMode: 'sections',
+        priorityCategoryOrder: ['reading'],
+        prioritySectionsCategoryOrder: [],
+        prioritySectionsLinkMode: null,
+        planBlocks: [],
+      }),
+    ).toEqual(['reading']);
+  });
+
+  it('resolveCrossLayoutRoutineKeysForTarget returns empty when source matches target', () => {
     expect(
       resolveCrossLayoutRoutineKeysForTarget({
         targetMode: 'bag',
-        priorityCategoryOrder: [],
+        priorityCategoryOrder: ['reading'],
         prioritySectionsCategoryOrder: [],
         prioritySectionsLinkMode: null,
-        planBlocks: [spineBlock('stretching')],
-      }),
-    ).toEqual(['stretching']);
-  });
-
-  it('returns cross-layout keys for spine target from sections source', () => {
-    expect(
-      resolveCrossLayoutRoutineKeysForTarget({
-        targetMode: 'spine',
-        priorityCategoryOrder: [],
-        prioritySectionsCategoryOrder: ['water'],
-        prioritySectionsLinkMode: 'independent',
         planBlocks: [],
       }),
-    ).toEqual(['water']);
-  });
-
-  it('collects unique spine category keys in timeline order', () => {
-    expect(
-      collectSpineTimelineCategoryKeys([
-        spineBlock('water'),
-        spineBlock('water'),
-        spineBlock('reading'),
-      ]),
-    ).toEqual(['water', 'reading']);
+    ).toEqual([]);
   });
 });

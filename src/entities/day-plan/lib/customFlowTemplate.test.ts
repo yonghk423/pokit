@@ -19,7 +19,7 @@ describe('customFlowTemplate', () => {
   });
 
   it('has labels for every template key', () => {
-    expect(CUSTOM_FLOW_TEMPLATE_KEYS).toHaveLength(8);
+    expect(CUSTOM_FLOW_TEMPLATE_KEYS).toHaveLength(9);
   });
 
   it('builds measurement initial config with appearance', () => {

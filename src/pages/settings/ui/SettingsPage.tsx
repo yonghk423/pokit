@@ -18,10 +18,12 @@ import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import {
-  createDefaultFixedFlowSetsState,
   ensureDefaultPriorityCatalog,
+  loadFixedFlowSetsState,
   resetAppLocalData,
+  saveDayPlan,
   saveFixedFlowSetsState,
+  saveRoutineCatalogSelectionKeys,
 } from '@shared/lib/storage';
 import {
   getDisplayedAppVersionLabel,
@@ -71,7 +73,8 @@ export function SettingsPage() {
       ensureDefaultPriorityCatalog();
       const today = getLocalDateKey();
       const defaultWindow = defaultPriorityWindowFromNow();
-      const defaultFixedSets = createDefaultFixedFlowSetsState();
+      const defaultFixedSets = loadFixedFlowSetsState();
+      saveRoutineCatalogSelectionKeys([]);
 
       useDayPlanStore.setState({
         dateKey: today,
@@ -81,6 +84,14 @@ export function SettingsPage() {
         liveActivityChecklistFocusBlockId: null,
         quickMemos: [],
         isHydrated: true,
+      });
+      saveDayPlan({
+        dateKey: today,
+        blocks: [],
+        completedBlockIds: [],
+        skippedBlockIds: [],
+        quickMemos: [],
+        liveActivityChecklistFocusBlockId: null,
       });
 
       useDayPlanDraftStore.setState({
@@ -95,8 +106,19 @@ export function SettingsPage() {
         priorityStart: defaultWindow.startTime,
         priorityEnd: defaultWindow.endTime,
         priorityCategoryOrder: [],
-        waterReminderSyncEpoch: 0,
+        priorityCategoryImportance: {},
+        routineHistoryPendingByDate: {},
+        routineHistoryPlannedKeysByDate: {},
         quickMemoDraft: '',
+        priorityMealSlotLayoutEnabled: false,
+        prioritySpineLayoutEnabled: false,
+        priorityMealSlotOverrides: {},
+        prioritySectionsMealSlots: {},
+        prioritySectionsLinkMode: 'independent',
+        prioritySpineLinkMode: 'independent',
+        priorityBagLinkMode: 'independent',
+        prioritySectionsCategoryOrder: [],
+        waterReminderSyncEpoch: 0,
         isHydrated: true,
       });
       useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
@@ -107,7 +129,9 @@ export function SettingsPage() {
 
       useFixedFlowSetsStore.setState({
         activeSetIds: defaultFixedSets.activeSetIds,
+        activeMealSlotsBySetId: defaultFixedSets.activeMealSlotsBySetId ?? {},
         sets: defaultFixedSets.sets,
+        scheduledMealSlotLayoutEnabled: defaultFixedSets.scheduledMealSlotLayoutEnabled === true,
         todayAppliedCategoryKeys: [],
         todayAppliedRevision: 0,
         isHydrated: true,
@@ -209,6 +233,28 @@ export function SettingsPage() {
 
         <View style={[styles.section, { borderColor: p.border, backgroundColor: p.surface }]}>
           <ThemedText style={[styles.sectionTitle, { color: p.sectionTitle }]}>화면</ThemedText>
+
+          <Pressable
+            style={[styles.item, { borderTopColor: p.border }]}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/day-plan-view-settings');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="오늘 탭 보기 설정">
+            <View style={styles.itemLeft}>
+              <IconSymbol name="square.grid.2x2" size={20} color={p.icon} />
+              <View style={styles.itemTextWrap}>
+                <ThemedText style={[styles.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                  오늘 탭 보기
+                </ThemedText>
+                <ThemedText style={[styles.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                  목록·시간대·타임라인 표시 설정
+                </ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={16} color={p.chevron} />
+          </Pressable>
 
           <Pressable
             style={[styles.item, { borderTopColor: p.border }]}

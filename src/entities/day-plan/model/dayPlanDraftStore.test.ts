@@ -109,8 +109,8 @@ describe('dayPlanDraftStore', () => {
       isHydrated: true,
       priorityCategoryOrder: ['reading'],
     });
-    appendPriorityCategoryKeysIfMissing(['water', 'reading']);
-    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['reading', 'water']);
+    appendPriorityCategoryKeysIfMissing(['water', 'reading', 'work']);
+    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['reading', 'work']);
   });
 
   it('applies explicit multi-day calendar range', () => {
@@ -378,8 +378,8 @@ describe('dayPlanDraftStore', () => {
       isHydrated: true,
       priorityCategoryOrder: ['reading'],
     });
-    useDayPlanDraftStore.getState().setPriorityCategoryOrder((prev) => [...prev, 'water']);
-    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['reading', 'water']);
+    useDayPlanDraftStore.getState().setPriorityCategoryOrder((prev) => [...prev, 'work']);
+    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['reading', 'work']);
   });
 
   it('finishes a priority category for today and clears related completion keys', () => {

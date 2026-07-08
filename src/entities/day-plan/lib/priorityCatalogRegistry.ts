@@ -9,7 +9,11 @@ import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 export const CATALOG_REMOVED_KEYS = new Set<string>(['other']);
 
 /** 제거된 표준 키 — 기존 저장 데이터 마이그레이션용 */
-export const RETIRED_STANDARD_CATALOG_KEYS = new Set<string>(['meditation', 'medicine']);
+export const RETIRED_STANDARD_CATALOG_KEYS = new Set<string>([
+  'meditation',
+  'medicine',
+  'water',
+]);
 
 /** 표준 카테고리 전체 정의. UI 메타는 `dayPlanEditorShared` */
 export const PRIORITY_CATALOG_ALL_STANDARD_KEYS = [
@@ -53,8 +57,30 @@ export function filterKeysToPriorityCatalog(keys: string[]): string[] {
     const key = typeof raw === 'string' ? raw.trim() : '';
     if (!key || seen.has(key) || !allowed.has(key)) continue;
     if (!isCustomFlowCategoryKey(key) && CATALOG_REMOVED_KEYS.has(key)) continue;
+    if (RETIRED_STANDARD_CATALOG_KEYS.has(key)) continue;
     seen.add(key);
     out.push(key);
   }
   return out;
+}
+
+/** 저장·연동 목록용 — 레거시 water/medicine 제거 후 담기 카탈로그 기준 정리 */
+export function sanitizePriorityCategoryOrderKeys(keys: readonly string[]): string[] {
+  const withoutRetired = [...keys]
+    .map((raw) => (typeof raw === 'string' ? raw.trim() : ''))
+    .filter((key) => key && !RETIRED_STANDARD_CATALOG_KEYS.has(key));
+  return filterKeysToPriorityCatalog(withoutRetired);
+}
+
+/**
+ * 타임라인·시간대 연동용 — 사용자가 담기 탭에서 직접 고른 루틴만.
+ * `routineCatalogSelectionKeys`가 있으면 그것을 우선하고, 없으면 담기 순서를 쓴다.
+ */
+export function resolveUserBagRoutineCatalogKeys(input: {
+  priorityCategoryOrder: readonly string[];
+  routineCatalogSelectionKeys?: readonly string[];
+}): string[] {
+  const catalogKeys = sanitizePriorityCategoryOrderKeys(input.routineCatalogSelectionKeys ?? []);
+  if (catalogKeys.length > 0) return catalogKeys;
+  return sanitizePriorityCategoryOrderKeys(input.priorityCategoryOrder);
 }

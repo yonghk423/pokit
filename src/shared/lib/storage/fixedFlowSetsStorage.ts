@@ -5,7 +5,9 @@ import {
   EXAMPLE_CUSTOM_FLOW_SET_NAME,
   REMOVED_BUILTIN_PRESET_SET_IDS,
   createExampleCustomFlowSetItems,
+  isBuiltinExampleCustomFlowSet,
   isBuiltinPresetScheduleSet,
+  mergeBuiltInExampleCustomSets,
   mergeBuiltInPresetSets,
   shouldMigrateAwayScheduledSet,
 } from './defaultFixedFlowSets';
@@ -38,6 +40,9 @@ export type FixedFlowSetItem = {
   enabled: boolean;
   /** 나만의 루틴 — 아침·점심·저녁 등 시간대 구간 */
   mealSlot?: DayMealSlot;
+  /** 타임라인 보기 — 시작·종료(분, 0~1440) */
+  spineStartMinutes?: number;
+  spineEndMinutes?: number;
 };
 
 export type FixedFlowSet = {
@@ -46,6 +51,8 @@ export type FixedFlowSet = {
   applyRule: FixedFlowSetApplyRule;
   applyWeekdays?: WeekdayIndex[];
   items: FixedFlowSetItem[];
+  /** 데일리·주말 — 사용자가 연 빈 시간대 구간(아침 등) */
+  pinnedMealSlots?: DayMealSlot[];
 };
 
 export type FixedFlowSetsState = {
@@ -80,6 +87,13 @@ function normalizeApplyRule(raw: unknown): FixedFlowSetApplyRule {
   return VALID_APPLY_RULES.has(next) ? next : 'manual';
 }
 
+function normalizeSpineMinutes(raw: unknown): number | undefined {
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return undefined;
+  const m = Math.floor(raw);
+  if (m < 0 || m > 24 * 60) return undefined;
+  return m;
+}
+
 function normalizeItems(raw: unknown): FixedFlowSetItem[] {
   if (!Array.isArray(raw)) return [];
   const out: FixedFlowSetItem[] = [];
@@ -90,14 +104,29 @@ function normalizeItems(raw: unknown): FixedFlowSetItem[] {
     const key = typeof r.categoryKey === 'string' ? r.categoryKey.trim() : '';
     if (!key || seen.has(key)) continue;
     const mealSlot = normalizeDayMealSlot(r.mealSlot);
+    const spineStartMinutes = normalizeSpineMinutes(r.spineStartMinutes);
+    const spineEndMinutes = normalizeSpineMinutes(r.spineEndMinutes);
+    const hasValidSpine =
+      spineStartMinutes !== undefined &&
+      spineEndMinutes !== undefined &&
+      spineEndMinutes > spineStartMinutes;
     out.push({
       categoryKey: key,
       enabled: r.enabled !== false,
       ...(mealSlot ? { mealSlot } : {}),
+      ...(hasValidSpine ? { spineStartMinutes, spineEndMinutes } : {}),
     });
     seen.add(key);
   }
   return out;
+}
+
+function normalizePinnedMealSlots(raw: unknown): DayMealSlot[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const slots = [
+    ...new Set(raw.map((slot) => normalizeDayMealSlot(slot)).filter(Boolean)),
+  ] as DayMealSlot[];
+  return slots.length > 0 ? slots : undefined;
 }
 
 function normalizeSets(raw: unknown): FixedFlowSet[] {
@@ -116,12 +145,17 @@ function normalizeSets(raw: unknown): FixedFlowSet[] {
     const applyWeekdays =
       applyWeekdaysRaw.length > 0 ? applyWeekdaysRaw : defaultWeekdaysForApplyRule(applyRule);
     const items = normalizeItems(r.items);
+    const pinnedMealSlots =
+      isBuiltinPresetScheduleSet({ id, applyRule }) && applyRule !== 'manual'
+        ? normalizePinnedMealSlots(r.pinnedMealSlots)
+        : undefined;
     out.push({
       id,
       name,
       applyRule,
       applyWeekdays: applyRule === 'manual' ? applyWeekdaysRaw : applyWeekdays,
       items,
+      ...(pinnedMealSlots ? { pinnedMealSlots } : {}),
     });
     seen.add(id);
   }
@@ -141,6 +175,8 @@ function mergeSetItems(
       categoryKey: key,
       enabled: prev?.enabled !== false && item.enabled !== false,
       mealSlot: item.mealSlot ?? prev?.mealSlot,
+      spineStartMinutes: item.spineStartMinutes ?? prev?.spineStartMinutes,
+      spineEndMinutes: item.spineEndMinutes ?? prev?.spineEndMinutes,
     });
   }
   return [...map.values()];
@@ -310,12 +346,28 @@ function normalizeActiveMealSlotsBySetId(
   return out;
 }
 
+function hadMissingBuiltinExampleCustomSets(raw: unknown): boolean {
+  if (!Array.isArray(raw)) return true;
+  const ids = new Set(
+    raw
+      .map((row) =>
+        row && typeof row === 'object' && typeof (row as Record<string, unknown>).id === 'string'
+          ? (row as Record<string, unknown>).id.trim()
+          : '',
+      )
+      .filter(Boolean),
+  );
+  return !ids.has('set_example_health') || !ids.has('set_example_focus');
+}
+
 export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState {
   const raw = input && typeof input === 'object' ? (input as PersistedShape) : {};
-  const sets = mergeBuiltInPresetSets(
-    migrateExampleCustomFlowSets(
-      migrateRemovedBuiltinPresetSets(
-        migrateRemovedScheduledSets(migrateLegacyBuiltInSets(normalizeSets(raw.sets))),
+  const sets = mergeBuiltInExampleCustomSets(
+    mergeBuiltInPresetSets(
+      migrateExampleCustomFlowSets(
+        migrateRemovedBuiltinPresetSets(
+          migrateRemovedScheduledSets(migrateLegacyBuiltInSets(normalizeSets(raw.sets))),
+        ),
       ),
     ),
   );
@@ -391,7 +443,8 @@ export function loadFixedFlowSetsState(): FixedFlowSetsState {
   if (
     hadRemovedScheduledSets(raw?.sets) ||
     hadRemovedBuiltinPresetSets(raw?.sets) ||
-    hadExampleCustomFlowSetMigration(raw?.sets)
+    hadExampleCustomFlowSetMigration(raw?.sets) ||
+    hadMissingBuiltinExampleCustomSets(raw?.sets)
   ) {
     saveFixedFlowSetsState(normalized);
     return normalized;

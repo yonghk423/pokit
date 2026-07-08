@@ -1,4 +1,4 @@
-import { createDefaultFixedFlowSetsState } from '@shared/lib/storage/defaultFixedFlowSets';
+import { createDefaultFixedFlowSetsState, createBuiltinExampleCustomFlowSets } from '@shared/lib/storage/defaultFixedFlowSets';
 import {
   loadFixedFlowSetsState,
   saveFixedFlowSetsState,
@@ -141,6 +141,21 @@ describe('fixedFlowSetsStore', () => {
     expect(useFixedFlowSetsStore.getState().sets.some((s) => s.id === 'set_daily')).toBe(true);
   });
 
+  it('does not remove builtin example custom sets', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: [],
+      sets: [
+        ...baseState.sets,
+        ...createBuiltinExampleCustomFlowSets(),
+      ],
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+    useFixedFlowSetsStore.getState().removeSet('set_example_health');
+    expect(useFixedFlowSetsStore.getState().sets.some((s) => s.id === 'set_example_health')).toBe(true);
+  });
+
   it('stores mealSlot when adding to a custom set', () => {
     useFixedFlowSetsStore.setState({
       activeSetIds: [],
@@ -149,11 +164,33 @@ describe('fixedFlowSetsStore', () => {
       todayAppliedRevision: 0,
       isHydrated: true,
     });
-    useFixedFlowSetsStore.getState().addCategoryToSet('set_a', 'water', 'night');
+    useFixedFlowSetsStore.getState().addCategoryToSet('set_a', 'reading', 'night');
     expect(useFixedFlowSetsStore.getState().sets[0]?.items[0]).toEqual({
-      categoryKey: 'water',
+      categoryKey: 'reading',
       enabled: true,
       mealSlot: 'night',
     });
+  });
+
+  it('pins empty morning slot when adding to preset set', () => {
+    useFixedFlowSetsStore.setState({
+      sets: [
+        {
+          id: 'set_daily',
+          name: '데일리 루틴',
+          applyRule: 'daily',
+          items: [{ categoryKey: 'healthIntake', enabled: true, mealSlot: 'dawn' }],
+        },
+      ],
+      activeSetIds: [],
+      activeMealSlotsBySetId: {},
+      scheduledMealSlotLayoutEnabled: false,
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+    useFixedFlowSetsStore.getState().pinMealSlotInSet('set_daily', 'morning');
+    const daily = useFixedFlowSetsStore.getState().sets.find((s) => s.id === 'set_daily');
+    expect(daily?.pinnedMealSlots).toEqual(['morning']);
   });
 });

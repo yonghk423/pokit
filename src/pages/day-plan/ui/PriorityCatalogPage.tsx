@@ -25,8 +25,10 @@ import {
   isSystemCatalogGroupKey,
   notifyFixedFlowApplyScheduleChanged,
   resolveCategoryCatalogIcon,
+  getLocalMinutesOfDayNow,
   useDayPlanDraftStore,
   useDayPlanStore,
+  useDayPlanLayoutModeVisibilityStore,
   useFixedFlowSetsStore,
 } from '@entities/day-plan';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
@@ -49,6 +51,7 @@ import {
   updateSystemCatalogGroupMeta,
   type CustomCatalogGroup,
   type CustomFlowCatalogEntry,
+  type DayMealSlot,
 } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -60,10 +63,23 @@ import {
   PICKER_CATEGORIES,
 } from '../lib/dayPlanEditorShared';
 import { palette, type DayPlanPalette } from '../lib/dayPlanPalette';
+import {
+  catalogLayoutModeActiveLabel,
+  catalogLayoutModeLead,
+  resolveCatalogLayoutMode,
+  resolveCatalogSelectedKeys,
+  resolveCatalogTargetMealSlot,
+  toggleCatalogItemForLayoutMode,
+} from '../lib/priorityCatalogLayoutMode';
+import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
+import { DayMealSlotTargetChips } from './DayMealSlotTargetChips';
+import { FixedRoutinePage } from './FixedRoutinePage';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
+import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 import { EditCatalogGroupSheet } from './EditCatalogGroupSheet';
 import { MoveCustomFlowGroupSheet } from './MoveCustomFlowGroupSheet';
+import { PriorityCatalogPageTabs, type PriorityCatalogPageTab } from './PriorityCatalogPageTabs';
 import { PriorityCatalogPanel } from './PriorityCatalogPanel';
 
 /** 시트에서 넘긴 그룹 키를 저장용으로 확정 — 검증 실패 시에만 기본 생산성 그룹 */
@@ -137,6 +153,16 @@ export function PriorityCatalogPage() {
   const {
     priorityCategoryOrder,
     setPriorityCategoryOrder,
+    prioritySectionsCategoryOrder,
+    setPrioritySectionsCategoryOrder,
+    priorityMealSlotLayoutEnabled,
+    prioritySpineLayoutEnabled,
+    setPlanMode,
+    setPriorityMealSlotLayoutEnabled,
+    setPrioritySpineLayoutEnabled,
+    appendPrioritySectionsCategoryKeys,
+    appendPrioritySectionsWithMealSlot,
+    addPrioritySectionMealSlot,
     isFocusStarted,
     planMode,
     priorityStart,
@@ -150,6 +176,16 @@ export function PriorityCatalogPage() {
     useShallow((s) => ({
       priorityCategoryOrder: s.priorityCategoryOrder,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
+      prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
+      setPrioritySectionsCategoryOrder: s.setPrioritySectionsCategoryOrder,
+      priorityMealSlotLayoutEnabled: s.priorityMealSlotLayoutEnabled,
+      prioritySpineLayoutEnabled: s.prioritySpineLayoutEnabled,
+      setPlanMode: s.setPlanMode,
+      setPriorityMealSlotLayoutEnabled: s.setPriorityMealSlotLayoutEnabled,
+      setPrioritySpineLayoutEnabled: s.setPrioritySpineLayoutEnabled,
+      appendPrioritySectionsCategoryKeys: s.appendPrioritySectionsCategoryKeys,
+      appendPrioritySectionsWithMealSlot: s.appendPrioritySectionsWithMealSlot,
+      addPrioritySectionMealSlot: s.addPrioritySectionMealSlot,
       isFocusStarted: s.isFocusStarted,
       planMode: s.planMode,
       priorityStart: s.priorityStart,
@@ -160,6 +196,120 @@ export function PriorityCatalogPage() {
       categoryLabelEpoch: s.categoryLabelEpoch,
       filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
     })),
+  );
+
+  const planBlocks = useDayPlanStore((s) => s.blocks);
+  const addPlanBlock = useDayPlanStore((s) => s.addBlock);
+  const removePlanBlock = useDayPlanStore((s) => s.removeBlock);
+
+  const { schedule: mealSlotSchedule } = useDayMealSlotSchedule();
+  const [catalogTargetMealSlot, setCatalogTargetMealSlot] = useState<DayMealSlot>(() =>
+    resolveCatalogTargetMealSlot({
+      schedule: mealSlotSchedule,
+      nowMinutes: getLocalMinutesOfDayNow(),
+    }),
+  );
+
+  const visibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
+  const coerceLayoutMode = useDayPlanLayoutModeVisibilityStore((s) => s.coerceMode);
+  const hydrateLayoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.hydrate);
+
+  const catalogLayoutMode = useMemo(
+    () =>
+      resolveCatalogLayoutMode({
+        priorityMealSlotLayoutEnabled,
+        prioritySpineLayoutEnabled,
+      }),
+    [priorityMealSlotLayoutEnabled, prioritySpineLayoutEnabled],
+  );
+
+  const effectiveCatalogLayoutMode = useMemo(
+    () => coerceLayoutMode(catalogLayoutMode),
+    [catalogLayoutMode, coerceLayoutMode],
+  );
+
+  useEffect(() => {
+    if (effectiveCatalogLayoutMode !== 'sections') return;
+    setCatalogTargetMealSlot(
+      resolveCatalogTargetMealSlot({
+        schedule: mealSlotSchedule,
+        nowMinutes: getLocalMinutesOfDayNow(),
+      }),
+    );
+  }, [effectiveCatalogLayoutMode, mealSlotSchedule]);
+
+  const visibleLayoutModes = useMemo(
+    () => (['bag', 'sections', 'spine'] as const).filter((mode) => visibility[mode]),
+    [visibility],
+  );
+
+  useEffect(() => {
+    hydrateLayoutModeVisibility();
+  }, [hydrateLayoutModeVisibility]);
+
+  useEffect(() => {
+    if (effectiveCatalogLayoutMode === catalogLayoutMode) return;
+    setPlanMode('priority');
+    setPriorityMealSlotLayoutEnabled(effectiveCatalogLayoutMode === 'sections');
+    setPrioritySpineLayoutEnabled(effectiveCatalogLayoutMode === 'spine');
+  }, [
+    catalogLayoutMode,
+    effectiveCatalogLayoutMode,
+    setPlanMode,
+    setPriorityMealSlotLayoutEnabled,
+    setPrioritySpineLayoutEnabled,
+  ]);
+
+  const onSelectCatalogLayoutMode = useCallback(
+    (mode: DayPlanLayoutMode) => {
+      const nextMode = coerceLayoutMode(mode);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setPlanMode('priority');
+      setPriorityMealSlotLayoutEnabled(nextMode === 'sections');
+      setPrioritySpineLayoutEnabled(nextMode === 'spine');
+    },
+    [coerceLayoutMode, setPlanMode, setPriorityMealSlotLayoutEnabled, setPrioritySpineLayoutEnabled],
+  );
+
+  const selectedCategoryKeys = useMemo(
+    () =>
+      resolveCatalogSelectedKeys({
+        layoutMode: effectiveCatalogLayoutMode,
+        priorityCategoryOrder,
+        prioritySectionsCategoryOrder,
+        planBlocks,
+      }),
+    [
+      effectiveCatalogLayoutMode,
+      planBlocks,
+      priorityCategoryOrder,
+      prioritySectionsCategoryOrder,
+    ],
+  );
+
+  const catalogToggleActions = useMemo(
+    () => ({
+      setPriorityCategoryOrder,
+      saveRoutineCatalogSelectionKeys,
+      appendPrioritySectionsCategoryKeys,
+      appendPrioritySectionsWithMealSlot,
+      setPrioritySectionsCategoryOrder,
+      addPrioritySectionMealSlot,
+      addPlanBlock,
+      removePlanBlock,
+      getPriorityCategoryOrder: () => useDayPlanDraftStore.getState().priorityCategoryOrder,
+      getPrioritySectionsCategoryOrder: () =>
+        useDayPlanDraftStore.getState().prioritySectionsCategoryOrder,
+    }),
+    [
+      addPlanBlock,
+      addPrioritySectionMealSlot,
+      appendPrioritySectionsCategoryKeys,
+      appendPrioritySectionsWithMealSlot,
+      removePlanBlock,
+      setPriorityCategoryOrder,
+      setPrioritySectionsCategoryOrder,
+    ],
   );
 
   const runDeleteCustomFlow = useCallback(
@@ -184,6 +334,7 @@ export function PriorityCatalogPage() {
   );
 
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  const [catalogPageTab, setCatalogPageTab] = useState<PriorityCatalogPageTab>('catalog');
   const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
 
@@ -198,6 +349,7 @@ export function PriorityCatalogPage() {
 
   useFocusEffect(
     useCallback(() => {
+      hydrateLayoutModeVisibility();
       reloadCatalogData();
       useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
       const order = useDayPlanDraftStore.getState().priorityCategoryOrder;
@@ -210,7 +362,7 @@ export function PriorityCatalogPage() {
       if (missing.length > 0) {
         useDayPlanDraftStore.getState().setPriorityCategoryOrder([...order, ...missing]);
       }
-    }, [reloadCatalogData]),
+    }, [hydrateLayoutModeVisibility, reloadCatalogData]),
   );
 
   const customFlowPickerItems = useMemo(() => {
@@ -295,7 +447,7 @@ export function PriorityCatalogPage() {
 
   const onCatalogTap = useCallback(
     (key: string) => {
-      const alreadyIn = priorityCategoryOrder.includes(key);
+      const alreadyIn = selectedCategoryKeys.includes(key);
       if (isFocusStarted && alreadyIn) {
         void Haptics.selectionAsync();
         return;
@@ -319,28 +471,46 @@ export function PriorityCatalogPage() {
       }
       animateListMutation();
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const nextOrder = priorityCategoryOrder.includes(key)
-        ? priorityCategoryOrder.filter((k) => k !== key)
-        : [...priorityCategoryOrder, key];
-      setPriorityCategoryOrder(nextOrder);
-      saveRoutineCatalogSelectionKeys(nextOrder);
+      const result = toggleCatalogItemForLayoutMode(
+        {
+          layoutMode: effectiveCatalogLayoutMode,
+          key,
+          selected: alreadyIn,
+          priorityStart,
+          priorityEnd,
+          planBlocks,
+          nowMinutes: getLocalMinutesOfDayNow(),
+          targetMealSlot: catalogTargetMealSlot,
+        },
+        catalogToggleActions,
+      );
+      if (!result.ok && result.reason === 'spine_window_full') {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        Alert.alert(
+          '타임라인에 담을 수 없어요',
+          '집중 구간 안에 빈 시간이 없어요. 오늘 탭에서 시간을 조정한 뒤 다시 시도해 주세요.',
+        );
+      }
     },
     [
       animateListMutation,
+      catalogToggleActions,
+      catalogTargetMealSlot,
+      effectiveCatalogLayoutMode,
       isFocusStarted,
+      planBlocks,
       planMode,
-      priorityCategoryOrder,
       priorityEnd,
       priorityPlanDateKey,
       priorityPlanDateKeyEnd,
       priorityStart,
-      setPriorityCategoryOrder,
+      selectedCategoryKeys,
     ],
   );
 
   const onOpenCategorySettings = useCallback(
     (categoryKey: string) => {
-      if (isFocusStarted && priorityCategoryOrder.includes(categoryKey)) {
+      if (isFocusStarted && selectedCategoryKeys.includes(categoryKey)) {
         void Haptics.selectionAsync();
         return;
       }
@@ -350,7 +520,7 @@ export function PriorityCatalogPage() {
         params: { categoryKey },
       });
     },
-    [isFocusStarted, priorityCategoryOrder, router],
+    [isFocusStarted, selectedCategoryKeys, router],
   );
 
   const onEditCatalogGroup = useCallback(
@@ -428,7 +598,7 @@ export function PriorityCatalogPage() {
 
   const onDeleteCatalogItem = useCallback(
     (categoryKey: string, label: string) => {
-      if (isFocusStarted && priorityCategoryOrder.includes(categoryKey)) {
+      if (isFocusStarted && selectedCategoryKeys.includes(categoryKey)) {
         void Haptics.selectionAsync();
         Alert.alert(
           '삭제할 수 없어요',
@@ -517,60 +687,115 @@ export function PriorityCatalogPage() {
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
       <View style={[styles.safe, { backgroundColor: shellBg }]}>
         <View style={[styles.stickyHeader, { backgroundColor: shellBg, paddingHorizontal: 20 }]}>
-          <View style={styles.headerBlock}>
-            <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>오늘 집중할 것</ThemedText>
-            <ThemedText style={[styles.lead, { color: editorial.muted }]}>
-              하루 동안 무엇에 집중할지 골라 담는 곳이에요. 탭한 항목은 오늘 탭 우선 순위에 순서대로 쌓여요. 부담스럽지 않게 필요한 만큼만
-              담아도 돼요.
-            </ThemedText>
-          </View>
-        </View>
-        <ScrollView
-          style={[styles.scroll, { backgroundColor: shellBg }]}
-          contentContainerStyle={[
-            styles.scrollContent,
-            {
-              paddingBottom: scrollBottomPad,
-              paddingTop: 8,
-            },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
-          <PriorityCatalogPanel
-            key={categoryLabelEpoch}
-            editorial={editorial}
-            priorityCategoryOrder={priorityCategoryOrder}
-            isFocusStarted={isFocusStarted}
-            onCatalogTap={onCatalogTap}
-            onOpenCategorySettings={onOpenCategorySettings}
-            customFlowPickerItems={customFlowPickerItems}
-            customFlowEntries={customFlowEntries}
-            customGroups={customGroups}
+          {visibleLayoutModes.length > 0 ? (
+            <View style={styles.layoutModeRow}>
+              <DayPlanLayoutModeTabs
+                mode={effectiveCatalogLayoutMode}
+                onSelectMode={onSelectCatalogLayoutMode}
+                c={c}
+                isDark={isDark}
+                visibleModes={visibleLayoutModes}
+                showLabels
+              />
+            </View>
+          ) : null}
+          <PriorityCatalogPageTabs
+            tab={catalogPageTab}
+            onSelectTab={setCatalogPageTab}
+            c={c}
             isDark={isDark}
-            onRenameCustomGroup={onEditCatalogGroup}
-            onDeleteCatalogGroup={onDeleteCatalogGroup}
-            onMoveCustomFlow={onMoveCatalogFlow}
-            onDeleteCatalogItem={onDeleteCatalogItem}
+            compact
           />
-        </ScrollView>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="새 루틴 만들기"
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            openCreateSheet();
-          }}
-          style={({ pressed }) => [
-            styles.fab,
-            {
-              bottom: Math.max(insets.bottom, 12) + 12,
-              opacity: pressed ? 0.92 : 1,
-            },
-          ]}>
-          <View style={styles.fabInner}>
-            <IconSymbol name="plus" size={26} color="#FAFAFA" />
-          </View>
-        </Pressable>
+          {catalogPageTab === 'catalog' ? (
+            <View style={styles.headerBlock}>
+              <View style={styles.titleRow}>
+                <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>오늘 집중할 것</ThemedText>
+                <View
+                  style={[
+                    styles.modeBadge,
+                    {
+                      borderColor: editorial.line,
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+                    },
+                  ]}>
+                  <ThemedText style={[styles.modeBadgeLabel, { color: editorial.muted }]}>
+                    {catalogLayoutModeActiveLabel(effectiveCatalogLayoutMode)}에 담기
+                  </ThemedText>
+                </View>
+              </View>
+              <ThemedText style={[styles.lead, { color: editorial.muted }]}>
+                {catalogLayoutModeLead(effectiveCatalogLayoutMode)}
+              </ThemedText>
+              {effectiveCatalogLayoutMode === 'sections' ? (
+                <DayMealSlotTargetChips
+                  selectedSlot={catalogTargetMealSlot}
+                  schedule={mealSlotSchedule}
+                  isDark={isDark}
+                  ink={editorial.ink}
+                  muted={editorial.muted}
+                  line={editorial.line}
+                  onSelectSlot={setCatalogTargetMealSlot}
+                />
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+        {catalogPageTab === 'catalog' ? (
+          <>
+            <ScrollView
+              style={[styles.scroll, { backgroundColor: shellBg }]}
+              contentContainerStyle={[
+                styles.scrollContent,
+                {
+                  paddingBottom: scrollBottomPad,
+                  paddingTop: 8,
+                },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}>
+              <PriorityCatalogPanel
+                key={categoryLabelEpoch}
+                editorial={editorial}
+                priorityCategoryOrder={selectedCategoryKeys}
+                isFocusStarted={isFocusStarted}
+                onCatalogTap={onCatalogTap}
+                onOpenCategorySettings={onOpenCategorySettings}
+                customFlowPickerItems={customFlowPickerItems}
+                customFlowEntries={customFlowEntries}
+                customGroups={customGroups}
+                isDark={isDark}
+                onRenameCustomGroup={onEditCatalogGroup}
+                onDeleteCatalogGroup={onDeleteCatalogGroup}
+                onMoveCustomFlow={onMoveCatalogFlow}
+                onDeleteCatalogItem={onDeleteCatalogItem}
+              />
+            </ScrollView>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="새 루틴 만들기"
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                openCreateSheet();
+              }}
+              style={({ pressed }) => [
+                styles.fab,
+                {
+                  bottom: Math.max(insets.bottom, 12) + 12,
+                  opacity: pressed ? 0.92 : 1,
+                },
+              ]}>
+              <View style={styles.fabInner}>
+                <IconSymbol name="plus" size={26} color="#FAFAFA" />
+              </View>
+            </Pressable>
+          </>
+        ) : (
+          <FixedRoutinePage
+            embeddedPresetOnly
+            controlledLayoutMode={effectiveCatalogLayoutMode}
+            hideLayoutModeHeader
+          />
+        )}
       </View>
       <CreateCustomFlowSheet
         visible={createSheetOpen}
@@ -630,7 +855,11 @@ const styles = StyleSheet.create({
   stickyHeader: {
     paddingTop: 8,
     paddingBottom: 4,
+    gap: 10,
     zIndex: 2,
+  },
+  layoutModeRow: {
+    marginBottom: 2,
   },
   scroll: { flex: 1 },
   scrollContent: {
@@ -660,7 +889,25 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 4,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  modeBadge: {
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flexShrink: 0,
+  },
+  modeBadgeLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
   pageTitle: {
+    flex: 1,
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.35,

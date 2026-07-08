@@ -30,6 +30,7 @@ export {
   priorityLayoutRoutineSourceLabelKo,
   resolveCrossLayoutRoutineKeysForTarget,
   resolvePriorityLayoutRoutineSource,
+  type LayoutSetupRoutineCountInput,
   type PriorityLayoutRoutineSource,
   type PriorityLayoutRoutineSourceMode,
 } from './lib/priorityCrossLayoutRoutines';
@@ -85,6 +86,7 @@ export {
   getInitialFocusDataConfig,
   getInitialHabitDataConfig,
   getInitialJournalDataConfig,
+  getInitialMemoDataConfig,
   getInitialReminderDataConfig,
   isCustomFlowTemplateKey,
   MAX_CUSTOM_REMINDER_TIMES,
@@ -96,6 +98,7 @@ export {
   normalizeFocusDetailConfig,
   normalizeHabitDetailConfig,
   normalizeJournalDetailConfig,
+  normalizeMemoDetailConfig,
   normalizeReminderDetailConfig,
   normalizeReminderTime,
   REMINDER_SCHEDULE_PRESETS,
@@ -113,6 +116,8 @@ export type {
   HabitDetailDataConfig,
   JournalDetailDataConfig,
   JournalEntry,
+  MemoDetailDataConfig,
+  MemoEntry,
   ReminderDetailDataConfig,
 } from './lib/customFlowTemplateConfigs';
 export {
@@ -134,6 +139,7 @@ export {
   applyCounterFillRemaining,
   applyHabitDoneToggle,
   applyJournalSave,
+  applyMemoSave,
   addReminderScheduleItem,
   applyMeasurementSave,
   buildHabitWeekDots,
@@ -334,7 +340,9 @@ export {
   getPriorityCatalogAllowedKeySet,
   getPriorityCatalogStandardKeys,
   isPriorityCatalogAllowedKey,
-  RETIRED_STANDARD_CATALOG_KEYS
+  RETIRED_STANDARD_CATALOG_KEYS,
+  resolveUserBagRoutineCatalogKeys,
+  sanitizePriorityCategoryOrderKeys,
 } from './lib/priorityCatalogRegistry';
 export {
   clampHhmmToPriorityWindow,
@@ -381,6 +389,11 @@ export {
 export type { PriorityLayoutLinkMode } from './lib/priorityLayoutLinkMode';
 export { buildSpineImportFromBag } from './lib/buildSpineImportFromBag';
 export type { SpineBagImportBlock } from './lib/buildSpineImportFromBag';
+export {
+  resolveFixedFlowSpineSchedules,
+  sortFixedFlowItemsBySpineSchedule,
+} from './lib/fixedFlowSpineSchedule';
+export type { FixedFlowSpineItemSchedule } from './lib/fixedFlowSpineSchedule';
 export { resolveTodayFixedRoutineKeys } from './lib/resolveTodayFixedRoutineKeys';
 export type {
   SpineTimelineAnchorRow,
@@ -397,7 +410,7 @@ export {
   waterReminderIntervalMinutes,
   type WaterRoutineReminderSlot
 } from './lib/waterReminderRoutineSlots';
-export { appendPriorityCategoryKeysIfMissing, notifyFixedFlowApplyScheduleChanged, selectFirstPendingBlock, syncTodayTabWithFixedRoutineApply, useDayPlanDraftStore, useDayPlanRuntimeStore, useDayPlanStore, useDayPlanTodoStore, useFixedFlowSetsStore } from './model';
+export { appendPriorityCategoryKeysIfMissing, notifyFixedFlowApplyScheduleChanged, selectFirstPendingBlock, syncTodayTabWithFixedRoutineApply, useDayPlanDraftStore, useDayPlanLayoutModeVisibilityStore, useDayPlanRuntimeStore, useDayPlanStore, useDayPlanTodoStore, useFixedFlowSetsStore } from './model';
 export type { AddBlockResult, PlanMode, UpdateBlockResult } from './model';
 export type { DayPlanBlock, DayPlanQuickMemo, DayPlanTodoItem, TodoPriority } from './model/types';
 

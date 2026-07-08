@@ -7,37 +7,37 @@ describe('syncPriorityOrderWithAppliedFixedRoutines', () => {
   const allFixed = new Set(['water', 'reading', 'study']);
 
   it('removes inactive fixed-flow keys from order', () => {
-    const order = ['water', 'reading', 'study', 'custom'];
-    expect(syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed)).toEqual(['custom']);
+    const order = ['water', 'reading', 'study', 'work'];
+    expect(syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed)).toEqual(['work']);
   });
 
   it('keeps routine-catalog-selected fixed-flow keys when not applied today', () => {
     const catalog = new Set(['water']);
-    const order = ['water', 'reading', 'custom'];
+    const order = ['water', 'reading', 'work'];
     expect(syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed, catalog)).toEqual([
       'water',
-      'custom',
+      'work',
     ]);
   });
 
   it('prepends applied keys missing from order', () => {
-    const order = ['custom'];
+    const order = ['work'];
     expect(
       syncPriorityOrderWithAppliedFixedRoutines(order, ['water', 'reading'], allFixed),
-    ).toEqual(['water', 'reading', 'custom']);
+    ).toEqual(['work']);
   });
 
   it('keeps manual keys and applied fixed keys', () => {
-    const order = ['custom', 'water', 'reading'];
+    const order = ['work', 'water', 'reading'];
     expect(
       syncPriorityOrderWithAppliedFixedRoutines(order, ['water'], allFixed),
-    ).toEqual(['custom', 'water']);
+    ).toEqual(['work', 'water']);
   });
 });
 
 describe('computeSyncTodayTabWithFixedRoutineApply', () => {
   const baseInput = {
-    priorityCategoryOrder: ['water', 'reading', 'custom'],
+    priorityCategoryOrder: ['water', 'reading', 'work'],
     priorityMealSlotOverrides: { water: 'morning' as const, reading: 'morning' as const },
     priorityMealSlotLayoutEnabled: true,
     todayAppliedCategoryKeys: [] as string[],
@@ -61,51 +61,78 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
   it('clears unapplied fixed routine keys and meal slot overrides', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply(baseInput);
     expect(patch).toEqual({
-      priorityCategoryOrder: ['custom'],
+      priorityCategoryOrder: ['work'],
       priorityMealSlotOverrides: {},
     });
   });
 
-  it('keeps routine-catalog-selected water on today tab without fixed routine apply', () => {
+  it('strips legacy water from order when user only picked work', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      priorityCategoryOrder: ['water', 'work'],
+      priorityMealSlotOverrides: {},
+      routineCatalogSelectionKeys: ['work'],
+      fixedFlowSets: [],
+    });
+    expect(patch).toEqual({
+      priorityCategoryOrder: ['work'],
+    });
+  });
+
+  it('strips legacy water from order when only water remained', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,
       priorityCategoryOrder: ['water'],
       priorityMealSlotOverrides: {},
-      routineCatalogSelectionKeys: ['water'],
+      routineCatalogSelectionKeys: [],
+      fixedFlowSets: [],
     });
-    expect(patch).toBeNull();
-  });
-
-  it('keeps meal slot overrides for routine-catalog-selected fixed routines', () => {
-    const patch = computeSyncTodayTabWithFixedRoutineApply({
-      ...baseInput,
-      priorityCategoryOrder: ['water', 'reading'],
-      priorityMealSlotOverrides: { water: 'dawn', reading: 'dawn' },
-      routineCatalogSelectionKeys: ['water', 'reading'],
+    expect(patch).toEqual({
+      priorityCategoryOrder: [],
     });
-    expect(patch).toBeNull();
   });
 
   it('does not auto-fill meal slot overrides for applied fixed routines', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,
       priorityMealSlotOverrides: {},
-      todayAppliedCategoryKeys: ['water'],
+      todayAppliedCategoryKeys: ['healthIntake'],
+      fixedFlowSets: [
+        {
+          id: 'preset-daily',
+          name: '데일리',
+          applyRule: 'daily' as const,
+          items: [
+            { categoryKey: 'healthIntake', enabled: true, mealSlot: 'morning' as const },
+            { categoryKey: 'reading', enabled: true, mealSlot: 'morning' as const },
+          ],
+        },
+      ],
       activeSetIds: ['preset-daily'],
       activeMealSlotsBySetId: { 'preset-daily': ['morning'] },
     });
     expect(patch).toEqual({
-      priorityCategoryOrder: ['water', 'custom'],
+      priorityCategoryOrder: ['work'],
     });
   });
 
   it('does not auto-enable layout tab when applied fixed routines have meal slots', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,
-      priorityCategoryOrder: ['water', 'custom'],
+      priorityCategoryOrder: ['healthIntake', 'work'],
       priorityMealSlotOverrides: {},
       priorityMealSlotLayoutEnabled: false,
-      todayAppliedCategoryKeys: ['water'],
+      todayAppliedCategoryKeys: ['healthIntake'],
+      fixedFlowSets: [
+        {
+          id: 'preset-daily',
+          name: '데일리',
+          applyRule: 'daily' as const,
+          items: [
+            { categoryKey: 'healthIntake', enabled: true, mealSlot: 'morning' as const },
+          ],
+        },
+      ],
       activeSetIds: ['preset-daily'],
       activeMealSlotsBySetId: { 'preset-daily': ['morning'] },
       scheduledMealSlotLayoutEnabled: false,
@@ -116,10 +143,20 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
   it('keeps draft meal slot override over applied fixed routine default', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,
-      priorityCategoryOrder: ['water', 'custom'],
-      priorityMealSlotOverrides: { water: 'lunch' },
+      priorityCategoryOrder: ['healthIntake', 'work'],
+      priorityMealSlotOverrides: { healthIntake: 'lunch' },
       priorityMealSlotLayoutEnabled: true,
-      todayAppliedCategoryKeys: ['water'],
+      todayAppliedCategoryKeys: ['healthIntake'],
+      fixedFlowSets: [
+        {
+          id: 'preset-daily',
+          name: '데일리',
+          applyRule: 'daily' as const,
+          items: [
+            { categoryKey: 'healthIntake', enabled: true, mealSlot: 'morning' as const },
+          ],
+        },
+      ],
       activeSetIds: ['preset-daily'],
       activeMealSlotsBySetId: { 'preset-daily': ['morning', 'lunch'] },
       scheduledMealSlotLayoutEnabled: true,

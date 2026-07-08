@@ -193,6 +193,31 @@ export function groupFixedFlowItemsByMealSlot<T extends Pick<FixedFlowSetItem, '
   })).filter((section) => section.items.length > 0);
 }
 
+/** 고정 루틴 편집 — 항목이 있는 구간 + 사용자가 연 빈 구간 */
+export function buildFixedFlowMealSlotSections<
+  T extends Pick<FixedFlowSetItem, 'categoryKey' | 'mealSlot'>,
+>(
+  items: T[],
+  schedule: DayMealSlotSchedule = DEFAULT_DAY_MEAL_SLOT_SCHEDULE,
+  pinnedSlots: readonly DayMealSlot[] = [],
+): { slot: DayMealSlot; title: string; hintTime: string; items: T[] }[] {
+  const grouped = groupFixedFlowItemsByMealSlot(items, schedule);
+  const bySlot = new Map(grouped.map((section) => [section.slot, section]));
+  const visibleSlots = new Set<DayMealSlot>([
+    ...grouped.map((section) => section.slot),
+    ...pinnedSlots,
+  ]);
+  const normalizedSchedule = normalizeDayMealSlotSchedule(schedule);
+  return DAY_MEAL_SLOT_ORDER.filter((slot) => visibleSlots.has(slot)).map((slot) =>
+    bySlot.get(slot) ?? {
+      slot,
+      title: DAY_MEAL_SLOT_LABEL[slot],
+      hintTime: getMealSlotStartHhmm(normalizedSchedule, slot),
+      items: [],
+    },
+  );
+}
+
 /** @deprecated schedule 인자 사용 권장 — `resolveCurrentMealSlotFromSchedule` */
 export function resolveCurrentMealSlot(
   nowMin: number,

@@ -35,6 +35,7 @@ import {
   initLocalStorageClient,
   loadPriorityDayStartAlarm,
 } from '@shared/lib/storage';
+import { useDayPlanLayoutModeVisibilityStore } from '@entities/day-plan';
 import { useDevSeedMenu } from './useDevSeedMenu';
 
 /**
@@ -58,6 +59,7 @@ export function useAppBootstrap() {
 
       ensureDefaultPriorityCatalog();
       useAppearanceStore.getState().hydrate();
+      useDayPlanLayoutModeVisibilityStore.getState().hydrate();
 
       useDayPlanStore.getState().hydrate();
       useDayPlanDraftStore.getState().hydrate();

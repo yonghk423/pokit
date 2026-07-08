@@ -1,43 +1,39 @@
-import { isPriorityCatalogAllowedKey } from './priorityCatalogRegistry';
-
-jest.mock('@shared/lib/storage', () => ({
-  listAllCustomFlowCatalogEntries: jest.fn(() => [
-    { id: 'customFlow:legacy-only', groupKey: 'productivity' },
-  ]),
-  listCustomFlowCatalogEntries: jest.fn(() => []),
-  loadHiddenStandardCatalogKeys: jest.fn(() => []),
-}));
-
 import {
   filterKeysToPriorityCatalog,
-  getPriorityCatalogStandardKeys,
+  resolveUserBagRoutineCatalogKeys,
+  sanitizePriorityCategoryOrderKeys,
 } from './priorityCatalogRegistry';
 
-describe('priorityCatalogRegistry', () => {
-  it('excludes removed keys from standard catalog', () => {
-    const standard = getPriorityCatalogStandardKeys();
-    expect(standard).toContain('reading');
-    expect(standard).toContain('healthIntake');
-    expect(standard).toContain('work');
-    expect(standard).not.toContain('meditation');
-    expect(standard).not.toContain('other');
-    expect(standard).not.toContain('yoga');
-    expect(standard).not.toContain('coding');
+describe('resolveUserBagRoutineCatalogKeys', () => {
+  it('prefers catalog selection over order so applied fixed routines do not leak', () => {
+    expect(
+      resolveUserBagRoutineCatalogKeys({
+        priorityCategoryOrder: ['healthIntake', 'work'],
+        routineCatalogSelectionKeys: ['work'],
+      }),
+    ).toEqual(['work']);
+  });
+});
+
+describe('sanitizePriorityCategoryOrderKeys', () => {
+  it('removes legacy water without adding healthIntake', () => {
+    expect(sanitizePriorityCategoryOrderKeys(['water', 'work'])).toEqual(['work']);
   });
 
-  it('filters fixed set keys to catalog-only', () => {
-    const filtered = filterKeysToPriorityCatalog([
-      'reading',
-      'yoga',
-      'coding',
+  it('keeps healthIntake when explicitly selected', () => {
+    expect(sanitizePriorityCategoryOrderKeys(['healthIntake', 'work'])).toEqual([
       'healthIntake',
-      'healthIntake',
-      'other',
+      'work',
     ]);
-    expect(filtered).toEqual(['reading', 'healthIntake']);
   });
 
-  it('allows config-only customFlow keys', () => {
-    expect(isPriorityCatalogAllowedKey('customFlow:legacy-only')).toBe(true);
+  it('drops retired keys before catalog filter', () => {
+    expect(sanitizePriorityCategoryOrderKeys(['medicine', 'reading'])).toEqual(['reading']);
+  });
+});
+
+describe('filterKeysToPriorityCatalog', () => {
+  it('excludes retired water key', () => {
+    expect(filterKeysToPriorityCatalog(['water', 'work'])).toEqual(['work']);
   });
 });

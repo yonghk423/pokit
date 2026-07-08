@@ -17,6 +17,7 @@ export type CustomFlowTemplateIconName =
   | 'plus.circle'
   | 'timer'
   | 'text.alignleft'
+  | 'note.text'
   | 'bell';
 
 export const CUSTOM_FLOW_TEMPLATE_ICONS: Record<CustomFlowTemplateKey, CustomFlowTemplateIconName> = {
@@ -27,6 +28,7 @@ export const CUSTOM_FLOW_TEMPLATE_ICONS: Record<CustomFlowTemplateKey, CustomFlo
   counter: 'plus.circle',
   focus: 'timer',
   journal: 'text.alignleft',
+  memo: 'note.text',
   reminder: 'bell',
 };
 
@@ -38,6 +40,7 @@ export const CUSTOM_FLOW_TEMPLATE_PREVIEW_LINES: Record<CustomFlowTemplateKey, s
   counter: ['횟수·단위·목표 설정', '+1 / 추이'],
   focus: ['25분 집중', '남은 12분'],
   journal: ['오늘 기분: 좋음', '한 줄 메모'],
+  memo: ['오늘 할 일 정리', '짧게 메모 남기기'],
   reminder: ['약·물·식사 알림', '시간별 문구 설정'],
 };
 

@@ -8,6 +8,7 @@ import {
   getInitialFocusDataConfig,
   getInitialHabitDataConfig,
   getInitialJournalDataConfig,
+  getInitialMemoDataConfig,
   getInitialReminderDataConfig,
   MAX_CUSTOM_REMINDER_TIMES,
   normalizeCounterDetailConfig,
@@ -15,6 +16,7 @@ import {
   type CounterUnitKey,
   normalizeHabitDetailConfig,
   normalizeJournalDetailConfig,
+  normalizeMemoDetailConfig,
   normalizeReminderDetailConfig,
   normalizeReminderTime,
   REMINDER_SCHEDULE_PRESETS,
@@ -524,6 +526,56 @@ export function JournalSettings(props: SettingsProps) {
         <FieldLabel c={c}>질문·주제 (선택)</FieldLabel>
         <FieldInput value={prompt} onChangeText={(v) => setPrompt(v.slice(0, 80))} placeholder="예: 오늘 기분은?" c={c} />
         <ThemedText style={[styles.helper, { color: c.onVariant }]}>세션에서 짧은 메모를 남겨요.</ThemedText>
+      </TemplateSection>
+    </View>
+  );
+}
+
+export function MemoSettings(props: SettingsProps) {
+  const c = useTemplateSettingsPalette();
+  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null, hideTitleField = false } = props;
+  const seed = () => normalizeMemoDetailConfig(dataConfig ?? getInitialMemoDataConfig());
+  const [displayName, setDisplayName] = useState(() => seed().displayName);
+  const [summary, setSummary] = useState(() => seed().summary);
+  const lastRef = useRef<string | null>(null);
+  const isSyncingRef = useRef(false);
+
+  useEffect(() => {
+    const next = seed();
+    isSyncingRef.current = true;
+    setDisplayName(next.displayName);
+    setSummary(next.summary);
+    lastRef.current = JSON.stringify(next);
+  }, [dataConfig]);
+
+  useEffect(() => {
+    if (isSyncingRef.current) {
+      isSyncingRef.current = false;
+      return;
+    }
+    const base = seed();
+    const payload = normalizeMemoDetailConfig({
+      templateKey: 'memo',
+      displayName,
+      summary,
+      lastEntry: base.lastEntry,
+      recentEntries: base.recentEntries,
+      ...(base.icon ? { icon: base.icon } : {}),
+      ...(base.accentColor ? { accentColor: base.accentColor } : {}),
+    });
+    const s = JSON.stringify(payload);
+    if (lastRef.current === s) return;
+    lastRef.current = s;
+    onChangeDataConfig(payload);
+  }, [displayName, summary, onChangeDataConfig, dataConfig]);
+
+  return (
+    <View style={styles.shell}>
+      <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, hideTitleField, c }} />
+      <TemplateSection title="메모" c={c}>
+        <ThemedText style={[styles.helper, { color: c.onVariant }]}>
+          세션에서 자유롭게 메모를 적고 저장할 수 있어요.
+        </ThemedText>
       </TemplateSection>
     </View>
   );

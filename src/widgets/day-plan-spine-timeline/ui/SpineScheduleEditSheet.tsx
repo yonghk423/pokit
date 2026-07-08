@@ -98,7 +98,7 @@ export function SpineScheduleEditSheet({
 
   const selectRoutine = useCallback((key: string, label: string) => {
     setCategoryKey(key);
-    setTitleText((prev) => (prev.trim().length > 0 ? prev : label));
+    setTitleText(label);
   }, []);
 
   const selectDirectInput = useCallback(() => {

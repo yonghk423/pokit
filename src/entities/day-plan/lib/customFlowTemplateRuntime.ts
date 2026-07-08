@@ -5,6 +5,8 @@ import type {
   HabitDetailDataConfig,
   JournalDetailDataConfig,
   JournalEntry,
+  MemoDetailDataConfig,
+  MemoEntry,
   ReminderDetailDataConfig,
 } from './customFlowTemplateConfigs';
 import { MAX_CUSTOM_REMINDER_TIMES, normalizeReminderDetailConfig } from './customFlowTemplateConfigs';
@@ -200,6 +202,25 @@ export function applyJournalSave(
     ...cfg,
     lastEntry: trimmed,
     moodToday: mood.trim(),
+    recentEntries,
+  };
+}
+
+export function applyMemoSave(
+  cfg: MemoDetailDataConfig,
+  entry: string,
+  todayKey: string = getLocalDateKey(),
+): MemoDetailDataConfig {
+  const trimmed = entry.trim();
+  if (trimmed.length === 0) return cfg;
+  const memoEntry: MemoEntry = { dateKey: todayKey, text: trimmed };
+  const recentEntries = [
+    memoEntry,
+    ...cfg.recentEntries.filter((e) => e.dateKey !== todayKey || e.text !== trimmed),
+  ].slice(0, 14);
+  return {
+    ...cfg,
+    lastEntry: trimmed,
     recentEntries,
   };
 }

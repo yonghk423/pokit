@@ -91,11 +91,13 @@ export type CustomFlowTemplateKey =
   | 'counter'
   | 'focus'
   | 'journal'
+  | 'memo'
   | 'reminder';
 
 /** 사용자가 직접 만들 수 있는 템플릿 */
 export const CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS = [
   'checklist',
+  'memo',
   'measurement',
   'counter',
   'reminder',
@@ -360,6 +362,65 @@ export function getInitialJournalDataConfig(): JournalDetailDataConfig {
   });
 }
 
+// --- memo ---
+export type MemoEntry = {
+  dateKey: string;
+  text: string;
+};
+
+export type MemoDetailDataConfig = {
+  templateKey: 'memo';
+  displayName: string;
+  summary: string;
+  lastEntry: string;
+  recentEntries: MemoEntry[];
+  icon?: string;
+  accentColor?: string;
+};
+
+export function normalizeMemoDetailConfig(raw: unknown): MemoDetailDataConfig {
+  const o = asObj(raw);
+  const lastEntry = clampStr(o.lastEntry, 500);
+  const recentEntries = Array.isArray(o.recentEntries)
+    ? (o.recentEntries as unknown[])
+        .map((entry) => {
+          if (!entry || typeof entry !== 'object') return null;
+          const e = entry as Record<string, unknown>;
+          const dateKey = clampStr(e.dateKey, 10);
+          const text = clampStr(e.text, 500);
+          if (text.length === 0) return null;
+          return {
+            dateKey: dateKey.length >= 10 ? dateKey : '',
+            text,
+          };
+        })
+        .filter((e): e is MemoEntry => e != null)
+        .slice(0, 14)
+    : [];
+  return {
+    templateKey: 'memo',
+    displayName: normalizeRoutineDisplayName(o.displayName),
+    summary: normalizeRoutineSummary(o.summary),
+    lastEntry,
+    recentEntries:
+      recentEntries.length > 0
+        ? recentEntries
+        : lastEntry.length > 0
+          ? [{ dateKey: '', text: lastEntry }]
+          : [],
+    ...appearanceFields(o),
+  };
+}
+
+export function getInitialMemoDataConfig(): MemoDetailDataConfig {
+  return normalizeMemoDetailConfig({
+    templateKey: 'memo',
+    displayName: '',
+    summary: '',
+    lastEntry: '',
+  });
+}
+
 // --- reminder ---
 export type ReminderDetailDataConfig = {
   templateKey: 'reminder';
@@ -419,6 +480,7 @@ export type CustomFlowTemplateDetailConfig =
   | CounterDetailDataConfig
   | FocusDetailDataConfig
   | JournalDetailDataConfig
+  | MemoDetailDataConfig
   | ReminderDetailDataConfig;
 
 function pickDisplayName(block: string, cat: string, blockVal: string, catVal: string): string {
@@ -637,6 +699,36 @@ export function mergeCustomFlowGoalDetailData(
           (c?.moodToday ?? '').trim(),
           b?.moodToday ?? '',
           c?.moodToday ?? '',
+        ),
+        recentEntries:
+          (b?.recentEntries?.length ?? 0) >= (c?.recentEntries?.length ?? 0)
+            ? b?.recentEntries ?? []
+            : c?.recentEntries ?? [],
+        ...pickAppearance(b, c),
+      });
+    }
+    case 'memo': {
+      const b = blockRaw != null ? normalizeMemoDetailConfig(blockRaw) : null;
+      const c = categoryRaw != null ? normalizeMemoDetailConfig(categoryRaw) : null;
+      return normalizeMemoDetailConfig({
+        templateKey: 'memo',
+        displayName: pickDisplayName(
+          (b?.displayName ?? '').trim(),
+          (c?.displayName ?? '').trim(),
+          b?.displayName ?? '',
+          c?.displayName ?? '',
+        ),
+        summary: pickSummary(
+          (b?.summary ?? '').trim(),
+          (c?.summary ?? '').trim(),
+          b?.summary ?? '',
+          c?.summary ?? '',
+        ),
+        lastEntry: pickSummary(
+          (b?.lastEntry ?? '').trim(),
+          (c?.lastEntry ?? '').trim(),
+          b?.lastEntry ?? '',
+          c?.lastEntry ?? '',
         ),
         recentEntries:
           (b?.recentEntries?.length ?? 0) >= (c?.recentEntries?.length ?? 0)

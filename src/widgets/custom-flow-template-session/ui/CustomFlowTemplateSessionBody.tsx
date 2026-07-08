@@ -10,6 +10,7 @@ import {
   addReminderScheduleItem,
   applyHabitDoneToggle,
   applyJournalSave,
+  applyMemoSave,
   applyMeasurementSave,
   applyMeasurementMetricPreset,
   applyReminderSchedulePreset,
@@ -424,6 +425,61 @@ function JournalTemplateView({
                   <ThemedText style={[styles.entryMood, { color: accent }]}>{entry.mood}</ThemedText>
                 ) : null}
               </View>
+              <ThemedText style={[styles.entryText, { color: ink }]} numberOfLines={2}>
+                {entry.text}
+              </ThemedText>
+            </View>
+          ))}
+        </Card>
+      ) : null}
+    </View>
+  );
+}
+
+function MemoTemplateView({
+  cfg,
+  emit,
+  theme,
+}: {
+  cfg: Parameters<typeof applyMemoSave>[0];
+  emit: TemplateEmit;
+  theme: TemplateSessionTheme;
+}) {
+  const { ink, muted, line, accent } = theme;
+  const [draft, setDraft] = useState(cfg.lastEntry ?? '');
+  useEffect(() => {
+    setDraft(cfg.lastEntry ?? '');
+  }, [cfg.lastEntry]);
+
+  return (
+    <View style={styles.root}>
+      <Card theme={theme}>
+        <TextInput
+          value={draft}
+          onChangeText={setDraft}
+          multiline
+          placeholder="메모를 적어요"
+          placeholderTextColor={muted}
+          textAlignVertical="top"
+          style={[styles.journalInput, { color: ink, borderColor: line }]}
+        />
+        <Pressable
+          onPress={() => {
+            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            emit(applyMemoSave(cfg, draft));
+          }}
+          style={[styles.primaryBtn, { backgroundColor: accent }]}>
+          <ThemedText style={styles.primaryBtnText}>저장</ThemedText>
+        </Pressable>
+      </Card>
+      {cfg.recentEntries.length > 0 ? (
+        <Card theme={theme}>
+          <SectionLabel color={muted}>최근 메모</SectionLabel>
+          {cfg.recentEntries.slice(0, 5).map((entry, idx) => (
+            <View key={`${entry.dateKey}-${idx}`} style={[styles.entryRow, { borderColor: line }]}>
+              {entry.dateKey ? (
+                <ThemedText style={[styles.entryDate, { color: muted }]}>{entry.dateKey.slice(5)}</ThemedText>
+              ) : null}
               <ThemedText style={[styles.entryText, { color: ink }]} numberOfLines={2}>
                 {entry.text}
               </ThemedText>
@@ -1169,6 +1225,11 @@ export function CustomFlowTemplateSessionBody({
     case 'journal': {
       if (!('prompt' in cfg)) return null;
       return <JournalTemplateView cfg={cfg} emit={emit} theme={theme} />;
+    }
+
+    case 'memo': {
+      if (!('recentEntries' in cfg) || 'prompt' in cfg) return null;
+      return <MemoTemplateView cfg={cfg} emit={emit} theme={theme} />;
     }
 
     case 'reminder': {

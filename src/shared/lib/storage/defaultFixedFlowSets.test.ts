@@ -1,4 +1,9 @@
-import { createDefaultFixedFlowSetsState, mergeBuiltInPresetSets } from './defaultFixedFlowSets';
+import {
+  createDefaultFixedFlowSetsState,
+  createBuiltinExampleCustomFlowSets,
+  mergeBuiltInExampleCustomSets,
+  mergeBuiltInPresetSets,
+} from './defaultFixedFlowSets';
 
 describe('createDefaultFixedFlowSetsState', () => {
   it('creates daily and weekend preset sets only', () => {
@@ -68,6 +73,38 @@ describe('createDefaultFixedFlowSetsState', () => {
     expect(merged.find((set) => set.id === 'set_daily')?.items.map((item) => item.categoryKey)).toEqual([
       'healthIntake',
       'reading',
+    ]);
+  });
+
+  it('creates two builtin example custom sets', () => {
+    const examples = createBuiltinExampleCustomFlowSets();
+    expect(examples).toHaveLength(2);
+    expect(examples.map((set) => set.name)).toEqual(['건강 루틴 예시', '집중 루틴 예시']);
+    expect(examples[1]?.items.map((item) => item.categoryKey)).toEqual(['reading', 'work']);
+  });
+
+  it('merges missing builtin example custom sets into stored state', () => {
+    const merged = mergeBuiltInExampleCustomSets([
+      {
+        id: 'set_daily',
+        name: '데일리 루틴',
+        applyRule: 'daily',
+        applyWeekdays: [0, 1, 2, 3, 4, 5, 6],
+        items: [{ categoryKey: 'reading', enabled: true }],
+      },
+      {
+        id: 'set_weekend',
+        name: '주말 루틴',
+        applyRule: 'weekend',
+        applyWeekdays: [0, 6],
+        items: [{ categoryKey: 'reading', enabled: true }],
+      },
+    ]);
+    expect(merged.map((set) => set.id)).toEqual([
+      'set_daily',
+      'set_weekend',
+      'set_example_health',
+      'set_example_focus',
     ]);
   });
 });

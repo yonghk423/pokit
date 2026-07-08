@@ -39,7 +39,6 @@ import {
 } from './migrateHealthIntakeCatalog';
 import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
-import { getInitialWaterDataConfig } from '@entities/day-plan/lib/goalCategorySessionConfig';
 import { normalizeCustomFlowIcon } from '../customFlowAppearanceCatalog';
 
 /** 제거된 표준 카탈로그 키 — 기존 저장 데이터 마이그레이션용 */
@@ -237,12 +236,6 @@ function unifyHealthCatalogGroups(): void {
   removeCustomCatalogGroup(BUILTIN_HEALTH_GROUP_KEY);
 }
 
-function seedStandaloneWaterGoalDetail(): void {
-  if (loadGoalDetailCategoryConfig('water') != null) return;
-  saveGoalDetailCategoryConfig('water', getInitialWaterDataConfig());
-  appendGoalDetailCommittedCategoryKeys(['water']);
-}
-
 function mergeDefaultCustomGroups(): void {
   const cur = listCustomCatalogGroups();
   const byKey = new Map(cur.map((g) => [g.key, g]));
@@ -415,7 +408,6 @@ export function ensureDefaultPriorityCatalog(): void {
   migrateDailyLifeFixedFlowSetItems();
   mergeDefaultCustomGroups();
   unifyHealthCatalogGroups();
-  seedStandaloneWaterGoalDetail();
   migrateDailyWashIcon();
   migrateFastingBuiltinIcon();
   migrateAbstainDisplayName();

@@ -16,6 +16,7 @@ describe('customFlowTemplateConfigs', () => {
     }
     expect(CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS).toEqual([
       'checklist',
+      'memo',
       'measurement',
       'counter',
       'reminder',
@@ -27,6 +28,7 @@ describe('customFlowTemplateConfigs', () => {
     expect(resolveCustomFlowTemplateKeyFromRaw({ templateKey: 'counter' })).toBe('counter');
     expect(resolveCustomFlowTemplateKeyFromRaw({ templateKey: 'focus' })).toBe('focus');
     expect(resolveCustomFlowTemplateKeyFromRaw({ templateKey: 'journal' })).toBe('journal');
+    expect(resolveCustomFlowTemplateKeyFromRaw({ templateKey: 'memo' })).toBe('memo');
     expect(resolveCustomFlowTemplateKeyFromRaw({ templateKey: 'reminder' })).toBe('reminder');
   });
 

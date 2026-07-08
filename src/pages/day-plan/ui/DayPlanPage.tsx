@@ -30,6 +30,7 @@ import {
   useDayPlanStore,
   useDayPlanTodoStore,
   useFixedFlowSetsStore,
+  useDayPlanLayoutModeVisibilityStore,
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import {
@@ -145,13 +146,44 @@ export function DayPlanPage() {
     return priorityMealSlotLayoutEnabled ? 'sections' : 'bag';
   }, [priorityMealSlotLayoutEnabled, prioritySpineLayoutEnabled]);
 
+  const visibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
+  const coerceLayoutMode = useDayPlanLayoutModeVisibilityStore((s) => s.coerceMode);
+  const hydrateLayoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.hydrate);
+  const visibleLayoutModes = useMemo(
+    () => (['bag', 'sections', 'spine'] as const).filter((mode) => visibility[mode]),
+    [visibility],
+  );
+
+  const effectiveLayoutMode = useMemo(
+    () => coerceLayoutMode(layoutMode),
+    [coerceLayoutMode, layoutMode],
+  );
+
+  useEffect(() => {
+    hydrateLayoutModeVisibility();
+  }, [hydrateLayoutModeVisibility]);
+
+  useEffect(() => {
+    if (effectiveLayoutMode === layoutMode) return;
+    setPlanMode('priority');
+    setPriorityMealSlotLayoutEnabled(effectiveLayoutMode === 'sections');
+    setPrioritySpineLayoutEnabled(effectiveLayoutMode === 'spine');
+  }, [
+    effectiveLayoutMode,
+    layoutMode,
+    setPlanMode,
+    setPriorityMealSlotLayoutEnabled,
+    setPrioritySpineLayoutEnabled,
+  ]);
+
   const onSelectLayoutMode = useCallback(
     (mode: DayPlanLayoutMode) => {
+      const nextMode = coerceLayoutMode(mode);
       setPlanMode('priority');
-      setPriorityMealSlotLayoutEnabled(mode === 'sections');
-      setPrioritySpineLayoutEnabled(mode === 'spine');
+      setPriorityMealSlotLayoutEnabled(nextMode === 'sections');
+      setPrioritySpineLayoutEnabled(nextMode === 'spine');
     },
-    [setPlanMode, setPriorityMealSlotLayoutEnabled, setPrioritySpineLayoutEnabled],
+    [coerceLayoutMode, setPlanMode, setPriorityMealSlotLayoutEnabled, setPrioritySpineLayoutEnabled],
   );
 
   const {
@@ -174,9 +206,10 @@ export function DayPlanPage() {
 
   useFocusEffect(
     useCallback(() => {
+      hydrateLayoutModeVisibility();
       refreshTodayAppliedCategoryKeys();
       syncTodayTabWithFixedRoutineApply();
-    }, [refreshTodayAppliedCategoryKeys]),
+    }, [hydrateLayoutModeVisibility, refreshTodayAppliedCategoryKeys]),
   );
 
   useFocusEffect(
@@ -766,8 +799,9 @@ export function DayPlanPage() {
                   onOpenCategorySettings={handleOpenCategorySettings}
                   onOpenFocusDetail={handleOpenFocusDetail}
                   onOpenFixedRoutine={handleOpenFixedRoutine}
-                  layoutMode={layoutMode}
+                  layoutMode={effectiveLayoutMode}
                   onSelectLayoutMode={onSelectLayoutMode}
+                  visibleLayoutModes={visibleLayoutModes}
                 />
               </View>
             )}

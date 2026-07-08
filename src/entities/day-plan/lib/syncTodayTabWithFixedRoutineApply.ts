@@ -5,7 +5,7 @@ import {
 } from '@shared/lib/storage';
 
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
-import { filterKeysToPriorityCatalog } from './priorityCatalogRegistry';
+import { filterKeysToPriorityCatalog, sanitizePriorityCategoryOrderKeys } from './priorityCatalogRegistry';
 
 /** 고정·나만의 루틴 세트에 등록된 활성 categoryKey */
 export function collectAllFixedFlowCategoryKeys(sets: FixedFlowSet[]): Set<string> {
@@ -20,17 +20,10 @@ export function collectAllFixedFlowCategoryKeys(sets: FixedFlowSet[]): Set<strin
   return out;
 }
 
-/** 고정 루틴에 해당하는 키가 `order`에 없으면, 고정 순서대로 **앞쪽에만** 붙인다. */
-function ensureFixedRoutinesInPriorityOrder(order: string[], fixedOrder: string[]): string[] {
-  const missing = fixedOrder.filter((k) => !order.includes(k));
-  if (missing.length === 0) return order;
-  return [...missing, ...order];
-}
-
 /**
  * 오늘 탭 담기 순서를 고정 루틴 적용 상태와 맞춘다.
  * - 오늘 적용 중이 아닌 고정 루틴 항목은 제거 (단, 루틴 탭에서 직접 고른 항목은 유지)
- * - 오늘 적용 중인 항목은 앞쪽에 보강
+ * - 고정 루틴「적용」만으로 담기 목록에 항목을 자동 추가하지 않는다 (담기 탭 직접 선택과 분리)
  */
 export function syncPriorityOrderWithAppliedFixedRoutines(
   order: string[],
@@ -39,13 +32,12 @@ export function syncPriorityOrderWithAppliedFixedRoutines(
   routineCatalogSelectionKeys: ReadonlySet<string> = new Set(),
 ): string[] {
   const applied = new Set(appliedKeys);
-  const withoutInactiveRoutine = order.filter((key) => {
+  return order.filter((key) => {
     if (!allFixedFlowKeys.has(key)) return true;
     if (applied.has(key)) return true;
     if (routineCatalogSelectionKeys.has(key)) return true;
     return false;
   });
-  return ensureFixedRoutinesInPriorityOrder(withoutInactiveRoutine, appliedKeys);
 }
 
 function pruneMealSlotOverrides(
@@ -137,15 +129,17 @@ export function computeSyncTodayTabWithFixedRoutineApply(
     input.activeMealSlotsBySetId,
     appliedKeys,
   );
-  const orderWithoutSuperseded = input.priorityCategoryOrder.filter(
-    (key) => !supersededStandardKeys.has(key),
+  const orderWithoutSuperseded = sanitizePriorityCategoryOrderKeys(
+    input.priorityCategoryOrder.filter((key) => !supersededStandardKeys.has(key)),
   );
 
-  const nextOrder = syncPriorityOrderWithAppliedFixedRoutines(
-    orderWithoutSuperseded,
-    appliedKeys,
-    allFixedFlowKeys,
-    catalogSelection,
+  const nextOrder = sanitizePriorityCategoryOrderKeys(
+    syncPriorityOrderWithAppliedFixedRoutines(
+      orderWithoutSuperseded,
+      appliedKeys,
+      allFixedFlowKeys,
+      catalogSelection,
+    ),
   );
 
   const prunedOverrides = pruneMealSlotOverrides(

@@ -5,6 +5,7 @@ import {
   createExampleCustomFlowSetItems,
   EXAMPLE_CUSTOM_FLOW_SET_NAME,
   getActiveFixedFlowSet,
+  isBuiltinExampleCustomFlowSet,
   isBuiltinPresetScheduleSet,
   loadFixedFlowSetsState,
   normalizeDayMealSlot,
@@ -68,12 +69,20 @@ type FixedFlowSetsStoreState = {
   /** preset 루틴 구간별 오늘 적용 토글 */
   toggleMealSlotForToday: (setId: string, slot: DayMealSlot) => void;
   setScheduledMealSlotLayoutEnabled: (enabled: boolean) => void;
+  /** 빈 시간대 구간을 편집 화면에 표시 — 아침 등 항목 추가 전 */
+  pinMealSlotInSet: (setId: string, slot: DayMealSlot) => void;
 
   addCategoryToSet: (setId: string, categoryKey: string, mealSlot?: DayMealSlot) => void;
   removeCategoryFromSet: (setId: string, categoryKey: string) => void;
   setSetOrder: (setId: string, categoryKeys: string[]) => void;
   setCategoryEnabledInSet: (setId: string, categoryKey: string, enabled: boolean) => void;
   setCategoryMealSlotInSet: (setId: string, categoryKey: string, mealSlot: DayMealSlot) => void;
+  setCategorySpineScheduleInSet: (
+    setId: string,
+    categoryKey: string,
+    startMinutes: number,
+    endMinutes: number,
+  ) => void;
   /** categoryKey가 속한 첫 세트의 mealSlot 갱신 — 성공 시 true */
   setCategoryMealSlotInAnySet: (categoryKey: string, mealSlot: DayMealSlot) => boolean;
 
@@ -247,6 +256,9 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     if (BUILTIN_FIXED_FLOW_SET_IDS.includes(setId as (typeof BUILTIN_FIXED_FLOW_SET_IDS)[number])) {
       return;
     }
+    if (isBuiltinExampleCustomFlowSet({ id: setId })) {
+      return;
+    }
     const { sets, activeSetIds, activeMealSlotsBySetId } = get();
     const nextSets = sets.filter((s) => s.id !== setId);
     const nextActive = activeSetIds.filter((id) => id !== setId);
@@ -316,24 +328,53 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     persistState(set, get, { scheduledMealSlotLayoutEnabled: enabled });
   },
 
+  pinMealSlotInSet: (setId, slot) => {
+    const normalizedSlot = normalizeDayMealSlot(slot);
+    if (!normalizedSlot) return;
+    const { sets, activeSetIds, activeMealSlotsBySetId } = get();
+    const target = sets.find((s) => s.id === setId);
+    if (!target || !isBuiltinPresetScheduleSet(target)) return;
+    const current = target.pinnedMealSlots ?? [];
+    if (current.includes(normalizedSlot)) return;
+    const nextSets = sets.map((s) =>
+      s.id === setId
+        ? { ...s, pinnedMealSlots: [...current, normalizedSlot] }
+        : s,
+    );
+    set({ sets: nextSets });
+    persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
+  },
+
   addCategoryToSet: (setId, categoryKey, mealSlot) => {
     const key = categoryKey.trim();
     if (!key) return;
     if (!isPriorityCatalogAllowedKey(key)) return;
+    const normalizedMealSlot = mealSlot ? normalizeDayMealSlot(mealSlot) : null;
     const { sets, activeSetIds, activeMealSlotsBySetId } = get();
     const target = sets.find((s) => s.id === setId);
     if (!target) return;
-    if (target.items.some((x) => x.categoryKey === key)) return;
+    if (target.items.some((x) => x.categoryKey === key)) {
+      if (normalizedMealSlot) {
+        get().setCategoryMealSlotInSet(setId, key, normalizedMealSlot);
+        if (isBuiltinPresetScheduleSet(target)) {
+          get().pinMealSlotInSet(setId, normalizedMealSlot);
+        }
+      }
+      return;
+    }
     const nextItem: FixedFlowSetItem = {
       categoryKey: key,
       enabled: true,
-      ...(mealSlot ? { mealSlot } : {}),
+      ...(normalizedMealSlot ? { mealSlot: normalizedMealSlot } : {}),
     };
     const nextSets = sets.map((s) =>
       s.id === setId ? { ...s, items: [...s.items, nextItem] } : s,
     );
     set({ sets: nextSets });
     persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
+    if (normalizedMealSlot && isBuiltinPresetScheduleSet(target)) {
+      get().pinMealSlotInSet(setId, normalizedMealSlot);
+    }
   },
 
   removeCategoryFromSet: (setId, categoryKey) => {
@@ -365,6 +406,8 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
         categoryKey: key,
         enabled: prev?.enabled !== false,
         mealSlot: prev?.mealSlot,
+        spineStartMinutes: prev?.spineStartMinutes,
+        spineEndMinutes: prev?.spineEndMinutes,
       });
     }
     const nextSets = sets.map((s) => (s.id === setId ? { ...s, items } : s));
@@ -403,6 +446,31 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
           ...s,
           items: s.items.map((x) =>
             x.categoryKey === key ? { ...x, mealSlot: normalized } : x,
+          ),
+        }
+        : s,
+    );
+    set({ sets: nextSets });
+    persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
+  },
+
+  setCategorySpineScheduleInSet: (setId, categoryKey, startMinutes, endMinutes) => {
+    const key = categoryKey.trim();
+    const start = Math.floor(startMinutes);
+    const end = Math.floor(endMinutes);
+    if (!key || !Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
+    if (start < 0 || end > 24 * 60) return;
+    const { sets, activeSetIds, activeMealSlotsBySetId } = get();
+    const target = sets.find((s) => s.id === setId);
+    if (!target?.items.some((x) => x.categoryKey === key)) return;
+    const nextSets = sets.map((s) =>
+      s.id === setId
+        ? {
+          ...s,
+          items: s.items.map((x) =>
+            x.categoryKey === key
+              ? { ...x, spineStartMinutes: start, spineEndMinutes: end }
+              : x,
           ),
         }
         : s,

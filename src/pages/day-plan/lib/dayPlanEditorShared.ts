@@ -30,7 +30,6 @@ export const PRIMARY = RetroFlatColors.light.primary;
 export const CATEGORIES: { key: string; label: string; icon: string }[] = [
   // ─── 건강 루틴 ───
   { key: 'healthIntake', label: PRIORITY_CATALOG_PICKER_LABELS.healthIntake, icon: 'pills.fill' },
-  { key: 'water', label: PRIORITY_CATALOG_PICKER_LABELS.water, icon: 'drop.fill' },
   { key: 'fasting', label: PRIORITY_CATALOG_PICKER_LABELS.fasting, icon: 'person.fill' },
 
   // ─── 생산성을 높이는 도구 ───
