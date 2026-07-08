@@ -124,6 +124,7 @@ export function MedicineSettings({
   renameLockedReason = null,
   embedded = false,
   intakeMode = false,
+  hideTitleField = false,
 }: {
   rhythmTitle: string;
   categoryKey?: GoalDetailCategoryKey;
@@ -134,6 +135,7 @@ export function MedicineSettings({
   embedded?: boolean;
   /** 건강을 위한 섭취 — 약·영양제 등 포괄 문구 */
   intakeMode?: boolean;
+  hideTitleField?: boolean;
 }) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -246,7 +248,7 @@ export function MedicineSettings({
 
   return (
     <View style={[styles.shell, embedded && styles.shellEmbedded]}>
-      {!embedded ? (
+      {!embedded && !hideTitleField ? (
         <>
           <RoutineTitleField
             value={draft.displayName}

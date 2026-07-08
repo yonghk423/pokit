@@ -13,6 +13,7 @@ import {
   isGoalDetailChecklistStyleCategoryKey,
   isInternalAutoRoutineLabel,
   mergeCustomFlowGoalDetailData,
+  normalizeHealthIntakeDetailConfig,
   normalizeMedicineDetailConfig,
   normalizeOtherDetailConfig,
   resolveBlockCategoryKey,
@@ -55,7 +56,7 @@ import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
 import { GoalDetailCategoryStartReminderCard } from './GoalDetailCategoryStartReminderCard';
 import { RoutineApplyWeekdaysField } from './RoutineApplyWeekdaysField';
 import { RoutineDeleteButton } from './category/lib/RoutineDeleteButton';
-import { RoutineTitleField } from './category/lib/RoutineTitleField';
+import { RoutineTitleField, ROUTINE_RENAME_LOCK_MESSAGES } from './category/lib/RoutineTitleField';
 import { resolveRoutineTitleFallback } from './category/lib/routineTitleFallback';
 import { goalDetailSettingsPalette } from './category/lib/settingsPalette';
 import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
@@ -163,12 +164,6 @@ function withPreservedRoutineFields(categoryKey: string, next: unknown): unknown
   if (!('displayName' in o)) {
     const prevName = readRoutineDisplayNameFromConfig(prev);
     if (prevName.length > 0) o.displayName = prevName;
-  } else {
-    const nextName = readRoutineDisplayNameFromConfig(o);
-    const prevName = readRoutineDisplayNameFromConfig(prev);
-    if (nextName.length === 0 && prevName.length > 0) {
-      o.displayName = prevName;
-    }
   }
   if (!('icon' in o) && typeof prevO.icon === 'string') {
     o.icon = prevO.icon;
@@ -367,7 +362,11 @@ export function GoalDetailSettingsPage() {
   const handleChangeDataConfig = useCallback((target: EditingTarget, next: unknown) => {
     const prevStored = loadGoalDetailCategoryConfig(target.categoryKey);
     const prevCatalogAppearance = catalogListAppearanceFingerprint(prevStored);
-    const persisted = withPreservedRoutineFields(target.categoryKey, next);
+    const normalizedNext =
+      target.categoryKey === 'healthIntake'
+        ? normalizeHealthIntakeDetailConfig(next)
+        : next;
+    const persisted = withPreservedRoutineFields(target.categoryKey, normalizedNext);
     const serialized = JSON.stringify(persisted);
     let shouldPersist = true;
     setPatchByBlockId((prev) => {
@@ -383,7 +382,12 @@ export function GoalDetailSettingsPage() {
     saveGoalDetailBlockConfig(target.blockId, persisted);
     saveGoalDetailCategoryConfig(target.categoryKey, persisted);
     registerOtherCategoryResolverFromStorage();
-    if (catalogListAppearanceFingerprint(persisted) !== prevCatalogAppearance) {
+    const prevDisplayName = readRoutineDisplayNameFromConfig(prevStored);
+    const nextDisplayName = readRoutineDisplayNameFromConfig(persisted);
+    if (
+      catalogListAppearanceFingerprint(persisted) !== prevCatalogAppearance ||
+      nextDisplayName !== prevDisplayName
+    ) {
       useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
     }
     if (target.categoryKey === 'healthIntake' || target.categoryKey === 'medicine') {
@@ -547,7 +551,7 @@ export function GoalDetailSettingsPage() {
       targets,
       sortedTargets,
       categoryKey,
-      dataByBlockId: loadedDataByBlockId,
+      dataByBlockId,
       previewTitleForBlock,
     });
   }, [
@@ -555,9 +559,36 @@ export function GoalDetailSettingsPage() {
     targets,
     sortedTargets,
     categoryKey,
-    loadedDataByBlockId,
+    dataByBlockId,
     previewTitleForBlock,
   ]);
+
+  const singleTarget = targets.length === 1 ? targets[0] : null;
+  const singleTargetRenameAccess = singleTarget
+    ? resolveRenameAccess(singleTarget.categoryKey)
+    : null;
+
+  const handleHeaderDisplayNameChange = useCallback(
+    (displayName: string) => {
+      if (!singleTarget) return;
+      const base = dataByBlockId[singleTarget.blockId];
+      const merged = base && typeof base === 'object' ? { ...(base as object) } : {};
+      let next: unknown = { ...merged, displayName };
+      if (singleTarget.categoryKey === 'healthIntake') {
+        next = normalizeHealthIntakeDetailConfig(next);
+      }
+      handleChangeDataConfig(singleTarget, next);
+    },
+    [singleTarget, dataByBlockId, handleChangeDataConfig],
+  );
+
+  const headerTitleFallback = useMemo(() => {
+    if (!singleTarget) return '';
+    return resolveRoutineTitleFallback(
+      singleTarget.categoryKey,
+      previewTitleForBlock(singleTarget.blockId, singleTarget.categoryKey),
+    );
+  }, [singleTarget, previewTitleForBlock]);
 
   const settingsPalette = useMemo(() => goalDetailSettingsPalette(false), []);
 
@@ -590,12 +621,25 @@ export function GoalDetailSettingsPage() {
             <IconSymbol name="chevron.left" size={22} color={headerFg} />
           </Pressable>
           <View style={styles.headerTitleWrap}>
-            <ThemedText
-              style={[styles.headerTitle, { color: headerFg }]}
-              numberOfLines={1}
-              accessibilityRole="header">
-              {headerTitle}
-            </ThemedText>
+            {singleTarget && singleTargetRenameAccess ? (
+              <RoutineTitleField
+                value={readRoutineDisplayNameFromConfig(dataByBlockId[singleTarget.blockId])}
+                onChangeValue={handleHeaderDisplayNameChange}
+                fallback={headerTitleFallback}
+                allowRename={singleTargetRenameAccess.allowRename}
+                renameLockedReason={singleTargetRenameAccess.renameLockedReason}
+                palette={settingsPalette}
+                size="header"
+                showLockHint={false}
+              />
+            ) : (
+              <ThemedText
+                style={[styles.headerTitle, { color: headerFg }]}
+                numberOfLines={1}
+                accessibilityRole="header">
+                {headerTitle}
+              </ThemedText>
+            )}
           </View>
           {/* 위젯 설정 기능은 현재 계획이 없어 비활성화.
               단, 헤더 `space-between` 레이아웃에서 타이틀 위치가 흔들리지 않도록 오른쪽 자리는 placeholder로 남겨둡니다. */}
@@ -615,6 +659,14 @@ export function GoalDetailSettingsPage() {
             },
           ]}
           keyboardShouldPersistTaps="handled">
+          {singleTarget && singleTargetRenameAccess?.renameLockedReason ? (
+            <View style={[styles.renameLockBanner, { borderBottomColor: headerBorder }]}>
+              <IconSymbol name="lock.fill" size={13} color={c.onVariant} />
+              <ThemedText style={[styles.renameLockBannerText, { color: c.onVariant }]}>
+                {ROUTINE_RENAME_LOCK_MESSAGES[singleTargetRenameAccess.renameLockedReason]}
+              </ThemedText>
+            </View>
+          ) : null}
           <View
             style={[
               contentFlush ? styles.paddedFlush : styles.padded,
@@ -724,6 +776,7 @@ export function GoalDetailSettingsPage() {
                     onChangeDataConfig={(next) => handleChangeDataConfig(t, next)}
                     allowRename={allowRename}
                     renameLockedReason={renameLockedReason}
+                    hideTitleField={targets.length === 1}
                   />
                 </View>
               );
@@ -764,24 +817,6 @@ export function GoalDetailSettingsPage() {
                   styles.metaSection,
                   contentFlush && styles.metaSectionInset,
                 ]}>
-                {workNoteUi ? (
-                  <RoutineTitleField
-                    value={readRoutineDisplayNameFromConfig(dataByBlockId[targets[0].blockId])}
-                    onChangeValue={(displayName) => {
-                      const base = dataByBlockId[targets[0].blockId];
-                      const merged =
-                        base && typeof base === 'object' ? { ...(base as object) } : {};
-                      handleChangeDataConfig(targets[0], { ...merged, displayName });
-                    }}
-                    fallback={resolveRoutineTitleFallback(
-                      categoryKey,
-                      previewTitleForBlock(targets[0].blockId, categoryKey),
-                    )}
-                    allowRename={resolveRenameAccess(categoryKey).allowRename}
-                    renameLockedReason={resolveRenameAccess(categoryKey).renameLockedReason}
-                    palette={settingsPalette}
-                  />
-                ) : null}
                 <CustomFlowGroupField
                   groupKey={
                     customFlowGroupByCategoryKey[categoryKey] ??
@@ -891,6 +926,15 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     textAlign: 'center',
   },
+  renameLockBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  renameLockBannerText: { flex: 1, fontSize: 13, fontWeight: '600', lineHeight: 18 },
   scrollContent: {},
   scrollContentFill: { flexGrow: 1 },  // legacy — kept for compat
   padded: { paddingHorizontal: 20, gap: 18, marginTop: 16 },

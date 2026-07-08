@@ -38,6 +38,7 @@ type SettingsProps = {
   onDeleteCategory?: () => void;
   allowRename?: boolean;
   renameLockedReason?: 'running' | 'today' | null;
+  hideTitleField?: boolean;
 };
 
 function useTemplateSettingsPalette() {
@@ -107,6 +108,7 @@ function TitleSummaryHeader({
   setSummary,
   allowRename,
   renameLockedReason,
+  hideTitleField = false,
   c,
 }: {
   rhythmTitle: string;
@@ -117,6 +119,7 @@ function TitleSummaryHeader({
   setSummary: (v: string) => void;
   allowRename: boolean;
   renameLockedReason: 'running' | 'today' | null;
+  hideTitleField?: boolean;
   c: ReturnType<typeof goalDetailSettingsPalette>;
 }) {
   const titleFallback = useMemo(
@@ -125,14 +128,16 @@ function TitleSummaryHeader({
   );
   return (
     <>
-      <RoutineTitleField
-        value={displayName}
-        onChangeValue={setDisplayName}
-        fallback={titleFallback}
-        allowRename={allowRename}
-        renameLockedReason={renameLockedReason}
-        palette={c}
-      />
+      {!hideTitleField ? (
+        <RoutineTitleField
+          value={displayName}
+          onChangeValue={setDisplayName}
+          fallback={titleFallback}
+          allowRename={allowRename}
+          renameLockedReason={renameLockedReason}
+          palette={c}
+        />
+      ) : null}
       <RoutineSummaryField
         value={summary}
         onChangeValue={setSummary}
@@ -145,7 +150,7 @@ function TitleSummaryHeader({
 
 export function HabitSettings(props: SettingsProps) {
   const c = useTemplateSettingsPalette();
-  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null } = props;
+  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null, hideTitleField = false } = props;
   const seed = () => normalizeHabitDetailConfig(dataConfig ?? getInitialHabitDataConfig());
   const [displayName, setDisplayName] = useState(() => seed().displayName);
   const [summary, setSummary] = useState(() => seed().summary);
@@ -187,7 +192,7 @@ export function HabitSettings(props: SettingsProps) {
 
   return (
     <View style={styles.shell}>
-      <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, c }} />
+      <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, hideTitleField, c }} />
       {streak > 0 ? (
         <TemplateSection title="연속 기록" c={c}>
           <ThemedText style={[styles.helper, { color: c.onSurface, fontWeight: '700' }]}>{streak}일 연속</ThemedText>
@@ -199,7 +204,7 @@ export function HabitSettings(props: SettingsProps) {
 
 export function CounterSettings(props: SettingsProps) {
   const c = useTemplateSettingsPalette();
-  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null } = props;
+  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null, hideTitleField = false } = props;
   const seed = () => normalizeCounterDetailConfig(dataConfig ?? getInitialCounterDataConfig());
   const [displayName, setDisplayName] = useState(() => seed().displayName);
   const [summary, setSummary] = useState(() => seed().summary);
@@ -274,7 +279,7 @@ export function CounterSettings(props: SettingsProps) {
 
   return (
     <View style={styles.shell}>
-      <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, c }} />
+      <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, hideTitleField, c }} />
       <TemplateSection title="횟수 설정" c={c}>
         <FieldLabel c={c}>자주 쓰는 예시</FieldLabel>
         <View style={styles.chipsRow}>
@@ -393,7 +398,7 @@ export function CounterSettings(props: SettingsProps) {
 
 export function FocusSettings(props: SettingsProps) {
   const c = useTemplateSettingsPalette();
-  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null } = props;
+  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null, hideTitleField = false } = props;
   const seed = () => normalizeFocusDetailConfig(dataConfig ?? getInitialFocusDataConfig());
   const [displayName, setDisplayName] = useState(() => seed().displayName);
   const [summary, setSummary] = useState(() => seed().summary);
@@ -437,7 +442,7 @@ export function FocusSettings(props: SettingsProps) {
 
   return (
     <View style={styles.shell}>
-      <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, c }} />
+      <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, hideTitleField, c }} />
       <TemplateSection title="집중 시간" c={c}>
         <FieldLabel c={c}>목표 시간(분)</FieldLabel>
         <FieldInput value={planMinStr} onChangeText={setPlanMinStr} placeholder="25" c={c} keyboardType="number-pad" />
@@ -472,7 +477,7 @@ export function FocusSettings(props: SettingsProps) {
 
 export function JournalSettings(props: SettingsProps) {
   const c = useTemplateSettingsPalette();
-  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null } = props;
+  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null, hideTitleField = false } = props;
   const seed = () => normalizeJournalDetailConfig(dataConfig ?? getInitialJournalDataConfig());
   const [displayName, setDisplayName] = useState(() => seed().displayName);
   const [summary, setSummary] = useState(() => seed().summary);
@@ -514,7 +519,7 @@ export function JournalSettings(props: SettingsProps) {
 
   return (
     <View style={styles.shell}>
-      <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, c }} />
+      <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, hideTitleField, c }} />
       <TemplateSection title="기록 설정" c={c}>
         <FieldLabel c={c}>질문·주제 (선택)</FieldLabel>
         <FieldInput value={prompt} onChangeText={(v) => setPrompt(v.slice(0, 80))} placeholder="예: 오늘 기분은?" c={c} />
@@ -526,7 +531,7 @@ export function JournalSettings(props: SettingsProps) {
 
 export function ReminderSettings(props: SettingsProps) {
   const c = useTemplateSettingsPalette();
-  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null } = props;
+  const { rhythmTitle, categoryKey, dataConfig, onChangeDataConfig, allowRename = true, renameLockedReason = null, hideTitleField = false } = props;
   const seed = () => normalizeReminderDetailConfig(dataConfig ?? getInitialReminderDataConfig());
   const [displayName, setDisplayName] = useState(() => seed().displayName);
   const [summary, setSummary] = useState(() => seed().summary);
@@ -591,7 +596,7 @@ export function ReminderSettings(props: SettingsProps) {
 
   return (
     <View style={styles.shell}>
-      <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, c }} />
+      <TitleSummaryHeader {...{ rhythmTitle, categoryKey, displayName, setDisplayName, summary, setSummary, allowRename, renameLockedReason, hideTitleField, c }} />
       <TemplateSection title="알림 시간" c={c}>
         <FieldLabel c={c}>자주 쓰는 예시</FieldLabel>
         <View style={styles.chipsRow}>

@@ -1554,6 +1554,26 @@ export function PriorityBasedPlanSection({
     onSelectLayoutMode('bag');
   }, [onSelectLayoutMode]);
 
+  /** 목록 보기 설정 시트 X — 목록 화면으로 돌아가고 자동 재오픈 방지 */
+  const handleLayoutSetupClose = useCallback(() => {
+    if (layoutSetupTargetMode === 'bag') {
+      setLayoutSetupSheetOpen(false);
+      setLayoutSetupTargetMode(null);
+      if (priorityBagLinkMode === null) {
+        setPriorityBagLinkMode('independent');
+      }
+      onSelectLayoutMode('bag');
+      return;
+    }
+    dismissLayoutEntryFlow();
+  }, [
+    dismissLayoutEntryFlow,
+    layoutSetupTargetMode,
+    onSelectLayoutMode,
+    priorityBagLinkMode,
+    setPriorityBagLinkMode,
+  ]);
+
   const openUnassignedSlotSheet = useCallback((nextMode: DayPlanLayoutMode = 'sections') => {
     setPendingLayoutMode(nextMode);
     setUnassignedSlotSheetOpen(true);
@@ -3064,14 +3084,15 @@ export function PriorityBasedPlanSection({
               styles.priorityTimelineCard,
               {
                 backgroundColor: editorial.surface,
-                /** 드래그 시작 시 React 상태 토글로 제스처가 취소되는 문제를 막기 위해 항상 visible */
-                overflow: 'visible',
               },
             ]}>
             <View
               style={[
                 styles.priorityTimelineHeader,
-                { borderBottomColor: editorial.line },
+                {
+                  borderBottomColor: editorial.line,
+                  backgroundColor: editorial.surface,
+                },
               ]}>
               <View style={styles.priorityTimelineHeaderText}>
                 {layoutMode === 'sections' ? (
@@ -3759,7 +3780,7 @@ export function PriorityBasedPlanSection({
         muted={editorial.muted}
         surface={editorial.surface}
         line={editorial.line}
-        onClose={dismissLayoutEntryFlow}
+        onClose={handleLayoutSetupClose}
         onConfirm={handleLayoutSetupConfirm}
       />
     </View>
@@ -3801,6 +3822,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    zIndex: 10,
+    elevation: 10,
   },
   priorityTimelineHeaderText: {
     flex: 1,
@@ -3856,7 +3879,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     width: '100%',
-    overflow: 'visible',
+    overflow: 'hidden',
   },
   priorityTimelineScrollContent: {
     paddingHorizontal: 12,

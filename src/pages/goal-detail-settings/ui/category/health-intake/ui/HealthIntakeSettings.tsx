@@ -23,6 +23,7 @@ export function HealthIntakeSettings({
   onChangeDataConfig,
   allowRename = true,
   renameLockedReason = null,
+  hideTitleField = false,
 }: {
   rhythmTitle: string;
   categoryKey?: GoalDetailCategoryKey;
@@ -30,6 +31,7 @@ export function HealthIntakeSettings({
   onChangeDataConfig: (next: unknown) => void;
   allowRename?: boolean;
   renameLockedReason?: 'running' | 'today' | null;
+  hideTitleField?: boolean;
 }) {
   const c = useMemo(() => goalDetailSettingsPalette(false), []);
   const titleFallback = useMemo(
@@ -43,24 +45,33 @@ export function HealthIntakeSettings({
   const [medicine, setMedicine] = useState(initial.medicine);
   const waterSnapshotRef = useRef(initial.water);
   const lastRef = useRef<string | null>(null);
-  const hydratedKeyRef = useRef<string | null>(null);
+  const isSyncingFromPropsRef = useRef(false);
+  const dataConfigRef = useRef(dataConfig);
+  const onChangeDataConfigRef = useRef(onChangeDataConfig);
+  dataConfigRef.current = dataConfig;
+  onChangeDataConfigRef.current = onChangeDataConfig;
 
   useEffect(() => {
     const next = normalizeHealthIntakeDetailConfig(dataConfig ?? getInitialHealthIntakeDataConfig());
-    const key = JSON.stringify(next);
-    if (hydratedKeyRef.current === key) return;
-    hydratedKeyRef.current = key;
+    isSyncingFromPropsRef.current = true;
     waterSnapshotRef.current = next.water;
     setDisplayName(next.displayName);
     setSummary(next.summary);
     setMedicine(next.medicine);
+    lastRef.current = JSON.stringify(next);
   }, [dataConfig]);
 
   useEffect(() => {
-    const prev = dataConfig && typeof dataConfig === 'object' ? dataConfig : {};
+    if (isSyncingFromPropsRef.current) {
+      isSyncingFromPropsRef.current = false;
+      return;
+    }
+    const appearanceBase = normalizeHealthIntakeDetailConfig(
+      dataConfigRef.current ?? getInitialHealthIntakeDataConfig(),
+    );
     const payload: HealthIntakeDetailDataConfig = normalizeHealthIntakeDetailConfig({
-      ...prev,
-      displayName,
+      ...appearanceBase,
+      ...(hideTitleField ? {} : { displayName }),
       summary,
       water: waterSnapshotRef.current,
       medicine,
@@ -68,19 +79,21 @@ export function HealthIntakeSettings({
     const s = JSON.stringify(payload);
     if (lastRef.current === s) return;
     lastRef.current = s;
-    onChangeDataConfig(payload);
-  }, [dataConfig, displayName, summary, medicine, onChangeDataConfig]);
+    onChangeDataConfigRef.current(payload);
+  }, [displayName, summary, medicine, hideTitleField]);
 
   return (
     <View style={styles.root}>
-      <RoutineTitleField
-        value={displayName}
-        onChangeValue={setDisplayName}
-        fallback={titleFallback}
-        allowRename={allowRename}
-        renameLockedReason={renameLockedReason}
-        palette={c}
-      />
+      {!hideTitleField ? (
+        <RoutineTitleField
+          value={displayName}
+          onChangeValue={setDisplayName}
+          fallback={titleFallback}
+          allowRename={allowRename}
+          renameLockedReason={renameLockedReason}
+          palette={c}
+        />
+      ) : null}
 
       <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
 

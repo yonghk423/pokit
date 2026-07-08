@@ -29,6 +29,7 @@ export function OtherSettings({
   categoryKey,
   allowRename = true,
   renameLockedReason = null,
+  hideTitleField = false,
 }: {
   rhythmTitle: string;
   categoryKey?: GoalDetailCategoryKey;
@@ -36,6 +37,7 @@ export function OtherSettings({
   onChangeDataConfig: (next: unknown) => void;
   allowRename?: boolean;
   renameLockedReason?: 'running' | 'today' | null;
+  hideTitleField?: boolean;
 }) {
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
@@ -125,14 +127,16 @@ export function OtherSettings({
 
   return (
     <View style={styles.shell}>
-      <RoutineTitleField
-        value={displayName}
-        onChangeValue={setDisplayName}
-        fallback={titleFallback}
-        allowRename={allowRename}
-        renameLockedReason={renameLockedReason}
-        palette={c}
-      />
+      {!hideTitleField ? (
+        <RoutineTitleField
+          value={displayName}
+          onChangeValue={setDisplayName}
+          fallback={titleFallback}
+          allowRename={allowRename}
+          renameLockedReason={renameLockedReason}
+          palette={c}
+        />
+      ) : null}
 
       <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
 

@@ -18,5 +18,7 @@ export type GoalDetailCategoryModule = {
     allowRename?: boolean;
     /** 이름 편집이 막힌 이유 — UI 안내용 */
     renameLockedReason?: 'running' | 'today' | null;
+    /** 상단 헤더에서 이름을 편집할 때 본문 타이틀 필드 숨김 */
+    hideTitleField?: boolean;
   }>;
 };

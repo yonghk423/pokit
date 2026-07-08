@@ -75,6 +75,7 @@ export function WaterSettings({
   allowRename = true,
   renameLockedReason = null,
   embedded = false,
+  hideTitleField = false,
 }: {
   rhythmTitle: string;
   categoryKey?: GoalDetailCategoryKey;
@@ -83,6 +84,7 @@ export function WaterSettings({
   allowRename?: boolean;
   renameLockedReason?: 'running' | 'today' | null;
   embedded?: boolean;
+  hideTitleField?: boolean;
 }) {
   const scheme = useColorScheme();
   const palette = useMemo(() => {
@@ -371,7 +373,7 @@ export function WaterSettings({
 
   return (
     <View style={[styles.shell, embedded && styles.shellEmbedded]}>
-      {!embedded ? (
+      {!embedded && !hideTitleField ? (
         <>
           <RoutineTitleField
             value={displayName}

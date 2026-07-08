@@ -9,10 +9,12 @@ import type { goalDetailSettingsPalette } from './settingsPalette';
 
 export type RoutineRenameLockedReason = 'running' | 'today';
 
-const LOCK_MESSAGES: Record<RoutineRenameLockedReason, string> = {
+export const ROUTINE_RENAME_LOCK_MESSAGES: Record<RoutineRenameLockedReason, string> = {
   running: '루틴 실행 중에는 이름과 아이콘·스타일을 변경할 수 없어요',
   today: '오늘 일정에서는 이름과 아이콘·스타일을 변경할 수 없어요',
 };
+
+const LOCK_MESSAGES = ROUTINE_RENAME_LOCK_MESSAGES;
 
 type Palette = ReturnType<typeof goalDetailSettingsPalette>;
 
@@ -31,6 +33,7 @@ export function RoutineTitleField({
   palette,
   size = 'large',
   placeholder,
+  showLockHint = true,
 }: {
   value: string;
   onChangeValue: (next: string) => void;
@@ -38,12 +41,24 @@ export function RoutineTitleField({
   allowRename: boolean;
   renameLockedReason?: RoutineRenameLockedReason | null;
   palette: Palette;
-  size?: 'large' | 'compact';
+  size?: 'large' | 'compact' | 'header';
   /** 미입력 시 힌트 — 기본값은 `fallback` */
   placeholder?: string;
+  /** 헤더 등 좁은 영역에서는 잠금 안내를 숨길 수 있음 */
+  showLockHint?: boolean;
 }) {
-  const titleStyle = size === 'large' ? styles.mainTitleLarge : styles.mainTitleCompact;
-  const titleInputStyle = size === 'large' ? styles.mainTitleInputLarge : styles.mainTitleInputCompact;
+  const titleStyle =
+    size === 'header'
+      ? styles.mainTitleHeader
+      : size === 'large'
+        ? styles.mainTitleLarge
+        : styles.mainTitleCompact;
+  const titleInputStyle =
+    size === 'header'
+      ? styles.mainTitleInputHeader
+      : size === 'large'
+        ? styles.mainTitleInputLarge
+        : styles.mainTitleInputCompact;
   const fallbackTrimmed = fallback.trim();
   const placeholderText = placeholder ?? fallbackTrimmed;
   const idleTitle = resolveIdleTitle(value, fallbackTrimmed);
@@ -52,16 +67,27 @@ export function RoutineTitleField({
   const [focused, setFocused] = useState(false);
   const syncKeyRef = useRef(`${value}\0${fallbackTrimmed}`);
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftRef = useRef(draft);
+  const focusedRef = useRef(focused);
   const onChangeValueRef = useRef(onChangeValue);
+  draftRef.current = draft;
+  focusedRef.current = focused;
   onChangeValueRef.current = onChangeValue;
 
   useEffect(() => {
     return () => {
       if (persistTimerRef.current) {
         clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+      }
+      if (focusedRef.current) {
+        const persisted = persistRoutineDisplayName(draftRef.current, fallbackTrimmed);
+        if (persisted !== value) {
+          onChangeValueRef.current(persisted);
+        }
       }
     };
-  }, []);
+  }, [fallbackTrimmed, value]);
 
   useEffect(() => {
     const nextKey = `${value}\0${fallbackTrimmed}`;
@@ -109,7 +135,7 @@ export function RoutineTitleField({
   const inputValue = focused ? draft : idleTitle;
 
   return (
-    <View style={styles.listHeader}>
+    <View style={size === 'header' ? styles.listHeaderHeader : styles.listHeader}>
       {allowRename ? (
         <TextInput
           value={inputValue}
@@ -122,17 +148,19 @@ export function RoutineTitleField({
           maxLength={40}
           returnKeyType="done"
           onSubmitEditing={handleBlur}
+          multiline={false}
         />
       ) : (
         <ThemedText
           style={[
             titleStyle,
             { color: renameLockedReason ? palette.onVariant : palette.onSurface },
-          ]}>
+          ]}
+          numberOfLines={size === 'header' ? 1 : undefined}>
           {idleTitle}
         </ThemedText>
       )}
-      {renameLockedReason ? (
+      {showLockHint && renameLockedReason ? (
         <View style={styles.renameLockRow}>
           <IconSymbol name="lock.fill" size={13} color={palette.onVariant} />
           <ThemedText style={[styles.renameLockHint, { color: palette.onVariant }]}>
@@ -146,6 +174,7 @@ export function RoutineTitleField({
 
 const styles = StyleSheet.create({
   listHeader: { gap: 6, paddingTop: 2 },
+  listHeaderHeader: { width: '100%', alignItems: 'center' },
   renameLockRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 2 },
   renameLockHint: { flex: 1, fontSize: 13, fontWeight: '600', lineHeight: 18 },
   mainTitleLarge: { fontSize: 17, lineHeight: 24, fontWeight: '700', letterSpacing: -0.2 },
@@ -163,5 +192,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.2,
     padding: 0,
+  },
+  mainTitleHeader: {
+    fontSize: 18,
+    lineHeight: 22,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
+  mainTitleInputHeader: {
+    fontSize: 18,
+    lineHeight: 22,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    textAlign: 'center',
+    padding: 0,
+    width: '100%',
   },
 });

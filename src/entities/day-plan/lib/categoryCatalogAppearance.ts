@@ -14,6 +14,7 @@ import {
 
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 import { normalizeOtherDetailConfig } from './goalCategorySessionConfig';
+import { normalizeHealthIntakeDetailConfig } from './healthIntakeDetailConfig';
 
 const HEALTH_INTAKE_LEGACY_ICONS = new Set(['drop.fill', 'cross.case.fill']);
 const HEALTH_INTAKE_CATALOG_ICON = 'pills.fill';
@@ -166,6 +167,9 @@ export function mergeCategoryAppearanceIntoConfig(
   };
   if (categoryKey === 'other' || isCustomFlowCategoryKey(categoryKey)) {
     return normalizeOtherDetailConfig(merged);
+  }
+  if (categoryKey === 'healthIntake') {
+    return normalizeHealthIntakeDetailConfig(merged);
   }
   return merged;
 }
