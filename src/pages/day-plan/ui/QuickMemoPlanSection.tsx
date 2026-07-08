@@ -1,5 +1,6 @@
-import { forwardRef, useEffect, useRef, type ForwardedRef } from 'react';
-import { Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { forwardRef, useEffect, useRef, useState, type ForwardedRef } from 'react';
+import { Keyboard, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import type { DayPlanQuickMemo } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -13,17 +14,33 @@ type Props = {
   memos: DayPlanQuickMemo[];
   draft: string;
   onChangeDraft: (v: string) => void;
-  onInputContentSizeChange?: () => void;
   onSavePress: () => void;
 };
 
 export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
-  { c, isDark, memos, draft, onChangeDraft, onInputContentSizeChange, onSavePress }: Props,
+  { c, isDark, memos, draft, onChangeDraft, onSavePress }: Props,
   ref: ForwardedRef<TextInput>,
 ) {
   const { width } = useWindowDimensions();
+  const bottomTabBarHeight = useBottomTabBarHeight();
   const hydratedRef = useRef(false);
   const pill = tabPillColors(isDark);
+  const [keyboardInset, setKeyboardInset] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardInset(event.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardInset(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -45,6 +62,8 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
 
   const fontSize = width >= 768 ? 26 : width >= 390 ? 22 : 20;
   const lineHeight = Math.round(fontSize * 1.45);
+  const footerBottomPad =
+    keyboardInset > 0 ? Math.max(12, keyboardInset - bottomTabBarHeight + 8) : 12;
 
   return (
     <View style={[styles.root, { backgroundColor: c.containerLowest }]}>
@@ -52,11 +71,10 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
         ref={ref}
         value={draft}
         onChangeText={onChangeDraft}
-        onContentSizeChange={() => onInputContentSizeChange?.()}
         placeholder="잠금화면에 표시할 메모를 입력하세요"
         placeholderTextColor={c.outline}
         multiline
-        scrollEnabled={false}
+        scrollEnabled
         textAlignVertical="top"
         autoFocus
         style={[
@@ -80,6 +98,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
           {
             backgroundColor: pill.activeBg,
             borderColor: pill.activeBorder,
+            marginBottom: footerBottomPad,
           },
           pressed && { opacity: 0.92 },
         ]}>
@@ -91,16 +110,17 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
 
 const styles = StyleSheet.create({
   root: {
-    minHeight: 300,
-    flexGrow: 1,
+    flex: 1,
+    minHeight: 0,
     borderRadius: 0,
     paddingHorizontal: 14,
     paddingTop: 14,
-    paddingBottom: 12,
+    paddingBottom: 0,
     overflow: 'hidden',
   },
   zenInput: {
-    minHeight: 260,
+    flex: 1,
+    minHeight: 120,
     alignSelf: 'stretch',
     padding: 0,
     margin: 0,

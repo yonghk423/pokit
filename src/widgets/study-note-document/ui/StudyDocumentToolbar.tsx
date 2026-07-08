@@ -33,12 +33,15 @@ type Props = {
   colorPickerOpen?: boolean;
   activeListKind?: 'checklist' | 'bullet' | 'numbered' | null;
   onAction: (action: StudyToolbarAction) => void;
+  /** 툴바 탭 시 본문 입력 포커스·키보드 유지 */
+  onRetainKeyboardFocus?: () => void;
 };
 
 function ToolBtn({
   label,
   icon,
   onPress,
+  onRetainKeyboardFocus,
   palette,
   surfaceBg = '#F5F2EB',
   disabled = false,
@@ -47,6 +50,7 @@ function ToolBtn({
   label: string;
   icon: React.ComponentProps<typeof IconSymbol>['name'];
   onPress: () => void;
+  onRetainKeyboardFocus?: () => void;
   palette: Palette;
   surfaceBg?: string;
   disabled?: boolean;
@@ -57,6 +61,7 @@ function ToolBtn({
       accessibilityRole="button"
       accessibilityLabel={label}
       disabled={disabled}
+      onPressIn={onRetainKeyboardFocus}
       onPress={onPress}
       style={[
         styles.toolBtn,
@@ -89,6 +94,7 @@ function TextColorIcon({
 function ColorToolBtn({
   label,
   onPress,
+  onRetainKeyboardFocus,
   palette,
   surfaceBg = '#F5F2EB',
   activeColor,
@@ -96,6 +102,7 @@ function ColorToolBtn({
 }: {
   label: string;
   onPress: () => void;
+  onRetainKeyboardFocus?: () => void;
   palette: Palette;
   surfaceBg?: string;
   activeColor?: string;
@@ -105,6 +112,7 @@ function ColorToolBtn({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      onPressIn={onRetainKeyboardFocus}
       onPress={onPress}
       style={[
         styles.toolBtn,
@@ -133,6 +141,7 @@ export function StudyDocumentToolbar({
   colorPickerOpen = false,
   activeListKind = null,
   onAction,
+  onRetainKeyboardFocus,
 }: Props) {
   return (
     <View style={[styles.root, surfaceBg ? { backgroundColor: surfaceBg } : null]}>
@@ -143,6 +152,7 @@ export function StudyDocumentToolbar({
           palette={palette}
           surfaceBg={surfaceBg}
           disabled={!canUndo}
+          onRetainKeyboardFocus={onRetainKeyboardFocus}
           onPress={() => onAction('undo')}
         />
         <ToolBtn
@@ -151,26 +161,28 @@ export function StudyDocumentToolbar({
           palette={palette}
           surfaceBg={surfaceBg}
           disabled={!canRedo}
+          onRetainKeyboardFocus={onRetainKeyboardFocus}
           onPress={() => onAction('redo')}
         />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
-        <ToolBtn label="체크리스트" icon="checkmark.square" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'checklist'} onPress={() => onAction('checklist')} />
-        <ToolBtn label="글머리 목록" icon="list.bullet" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'bullet'} onPress={() => onAction('bullet')} />
-        <ToolBtn label="번호 목록" icon="list.number" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'numbered'} onPress={() => onAction('numbered')} />
+        <ToolBtn label="체크리스트" icon="checkmark.square" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'checklist'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('checklist')} />
+        <ToolBtn label="글머리 목록" icon="list.bullet" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'bullet'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('bullet')} />
+        <ToolBtn label="번호 목록" icon="list.number" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'numbered'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('numbered')} />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
-        <ToolBtn label="굵게" icon="bold" palette={palette} surfaceBg={surfaceBg} active={activeBold} onPress={() => onAction('bold')} />
-        <ToolBtn label="밑줄" icon="underline" palette={palette} surfaceBg={surfaceBg} active={activeUnderline} onPress={() => onAction('underline')} />
+        <ToolBtn label="굵게" icon="bold" palette={palette} surfaceBg={surfaceBg} active={activeBold} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('bold')} />
+        <ToolBtn label="밑줄" icon="underline" palette={palette} surfaceBg={surfaceBg} active={activeUnderline} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('underline')} />
         <ColorToolBtn
           label="글자 색"
           palette={palette}
           surfaceBg={surfaceBg}
           activeColor={activeTextColor}
           active={colorPickerOpen || Boolean(activeTextColor)}
+          onRetainKeyboardFocus={onRetainKeyboardFocus}
           onPress={() => onAction('text-color')}
         />
-        <ToolBtn label="링크" icon="link" palette={palette} surfaceBg={surfaceBg} onPress={() => onAction('link')} />
-        <ToolBtn label="표" icon="tablecells" palette={palette} surfaceBg={surfaceBg} onPress={() => onAction('table')} />
-        <ToolBtn label="이미지" icon="photo" palette={palette} surfaceBg={surfaceBg} onPress={() => onAction('image')} />
+        <ToolBtn label="링크" icon="link" palette={palette} surfaceBg={surfaceBg} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('link')} />
+        <ToolBtn label="표" icon="tablecells" palette={palette} surfaceBg={surfaceBg} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('table')} />
+        <ToolBtn label="이미지" icon="photo" palette={palette} surfaceBg={surfaceBg} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('image')} />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
         <ToolBtn
           label="노트 전체 지우기"
@@ -178,6 +190,7 @@ export function StudyDocumentToolbar({
           palette={palette}
           surfaceBg={surfaceBg}
           disabled={!canResetDocument}
+          onRetainKeyboardFocus={onRetainKeyboardFocus}
           onPress={() => onAction('reset-document')}
         />
       </View>

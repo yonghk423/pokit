@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import {
   Alert,
   Animated,
@@ -10,6 +10,7 @@ import {
   LayoutChangeEvent,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   TextInput,
   useWindowDimensions,
@@ -24,15 +25,19 @@ import {
   createWorkStudyDocBlock,
   createWorkStudyNotePage,
   getWorkStudyActivePage,
+  persistWorkStudyNotePageTitle,
+  resolveWorkStudyNotePageAutoTitle,
   resolveWorkStudyNotePageLabel,
   setWorkStudyActivePageBlocks,
+  updateWorkStudyNotePageTitle,
+  workStudyPageBlocksToPlainText,
   type WorkStudyDocBlock,
   type WorkStudyDocument,
   type WorkStudyBlockMarks,
   type WorkStudyHeadingLevel,
 } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { RetroFlatColors } from '@shared/config/retroFlat';
+import { cityPopFont, RetroFlatColors } from '@shared/config/retroFlat';
 import { pickImageFromLibrary } from '@shared/lib/media/pickImageFromLibrary';
 import { normalizeWebUrl, openWebLink } from '@shared/lib/url/openWebLink';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -41,6 +46,7 @@ import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
 
 import { StudyDocumentToolbar, type StudyToolbarAction } from './StudyDocumentToolbar';
 import { StudyNotePageList } from './StudyNotePageList';
+import { StudyNotePageTitleField } from './StudyNotePageTitleField';
 
 type Palette = StudyNoteDocumentPalette;
 
@@ -176,6 +182,7 @@ function BlockText({
   palette,
   onChangeText,
   onFocus,
+  onBlur,
   onBackspaceAtStart,
   onEnterKey,
   onSelectionChange,
@@ -191,6 +198,7 @@ function BlockText({
   palette: Palette;
   onChangeText: (text: string) => void;
   onFocus?: () => void;
+  onBlur?: () => void;
   onBackspaceAtStart?: () => void;
   onEnterKey?: () => void;
   onSelectionChange?: (event: { nativeEvent: { selection: { start: number; end: number } } }) => void;
@@ -216,6 +224,17 @@ function BlockText({
     onEnterKey();
   }, [onEnterKey]);
 
+  const handleChangeText = useCallback(
+    (text: string) => {
+      if (onEnterKey && /\r?\n/.test(text)) {
+        onChangeText(text.replace(/\r?\n/g, ''));
+        return;
+      }
+      onChangeText(text);
+    },
+    [onChangeText, onEnterKey],
+  );
+
   const isEnterKey = useCallback((key: string) => {
     return key === 'Enter' || key === '\n' || key === 'Return';
   }, []);
@@ -224,13 +243,14 @@ function BlockText({
     <TextInput
       ref={inputRef}
       value={block.text}
-      onChangeText={onChangeText}
+      onChangeText={handleChangeText}
       onFocus={onFocus}
+      onBlur={onBlur}
       inputAccessoryViewID={inputAccessoryViewID}
       blurOnSubmit={false}
-      returnKeyType={onEnterKey && !multiline ? 'next' : multiline ? 'default' : 'done'}
+      returnKeyType={onEnterKey ? 'next' : multiline ? 'default' : 'done'}
       onSubmitEditing={() => {
-        if (onEnterKey && !multiline) {
+        if (onEnterKey) {
           handleEnterKey();
         }
       }}
@@ -239,10 +259,14 @@ function BlockText({
         onSelectionChange?.(event);
       }}
       onKeyPress={(event) => {
-        if (event.nativeEvent.key === 'Backspace' && block.text.length === 0) {
-          event.preventDefault();
-          onBackspaceAtStart?.();
-          return;
+        if (event.nativeEvent.key === 'Backspace' && onBackspaceAtStart) {
+          const atStart =
+            selectionRef.current.start === 0 && selectionRef.current.end === 0;
+          if (atStart) {
+            event.preventDefault();
+            onBackspaceAtStart();
+            return;
+          }
         }
         if (onEnterKey && isEnterKey(event.nativeEvent.key)) {
           event.preventDefault();
@@ -251,16 +275,18 @@ function BlockText({
       }}
       placeholder={placeholder}
       placeholderTextColor={palette.outline}
-      multiline={multiline}
+      multiline={multiline && !onEnterKey}
       scrollEnabled={false}
-      textAlignVertical={compact ? 'center' : multiline ? 'top' : 'center'}
+      textAlignVertical={
+        compact ? 'center' : onEnterKey ? 'top' : multiline ? 'top' : 'center'
+      }
       style={[
         styles.blockInput,
         compact ? styles.listBlockInput : null,
         style,
         {
           color: textColor ?? pendingTextColor ?? palette.onSurface,
-          fontWeight: bold ? '800' : '600',
+          ...(bold ? cityPopFont('800') : cityPopFont('400')),
           textDecorationLine: underline ? 'underline' : 'none',
         },
       ]}
@@ -274,6 +300,7 @@ function StudyDocumentBlockView({
   blockIndex,
   palette,
   onFocusBlock,
+  onBlurBlock,
   onChangeBlock,
   onPickImage,
   onBackspaceAtStart,
@@ -284,12 +311,14 @@ function StudyDocumentBlockView({
   onSelectionChange,
   pendingTextColor,
   onOpenLink,
+  onBlockLayout,
 }: {
   block: WorkStudyDocBlock;
   blocks: WorkStudyDocBlock[];
   blockIndex: number;
   palette: Palette;
   onFocusBlock: (id: string) => void;
+  onBlurBlock?: () => void;
   onChangeBlock: (id: string, patch: Partial<WorkStudyDocBlock>) => void;
   onPickImage: () => void;
   onBackspaceAtStart?: () => void;
@@ -300,8 +329,14 @@ function StudyDocumentBlockView({
   onSelectionChange?: (event: { nativeEvent: { selection: { start: number; end: number } } }) => void;
   pendingTextColor?: string;
   onOpenLink?: (url: string) => void;
+  onBlockLayout?: (blockId: string, y: number) => void;
 }) {
-  const rowShellStyle = isListBlockKind(block.kind) ? styles.listBlockRow : styles.blockRow;
+  const isFormattedParagraph = block.kind === 'paragraph' && Boolean(onEnterKey);
+  const rowShellStyle = isListBlockKind(block.kind)
+    ? styles.listBlockRow
+    : isFormattedParagraph
+      ? styles.formattedBlockRow
+      : styles.blockRow;
   const isListBlock = isListBlockKind(block.kind);
 
   if (block.kind === 'heading') {
@@ -309,7 +344,9 @@ function StudyDocumentBlockView({
     const level = block.headingLevel ?? 1;
     const titleSize = level === 1 ? 14 : level === 2 ? 13 : 12;
     return (
-      <View style={[rowShellStyle, styles.headingWrap]}>
+      <View
+        style={[rowShellStyle, styles.headingWrap]}
+        onLayout={(e) => onBlockLayout?.(block.id, e.nativeEvent.layout.y)}>
         <View style={[styles.headingBand, { backgroundColor: accent }]}>
           <TextInput
             value={block.text}
@@ -351,7 +388,9 @@ function StudyDocumentBlockView({
     };
 
     return (
-      <View style={rowShellStyle}>
+      <View
+        style={rowShellStyle}
+        onLayout={(e) => onBlockLayout?.(block.id, e.nativeEvent.layout.y)}>
         <View style={[styles.tableWrap, { borderColor: palette.outlineVariant }]}>
           {rows.map((row, rowIdx) => (
             <View key={`${block.id}-r-${rowIdx}`} style={[styles.tableRow, { borderColor: palette.outlineVariant }]}>
@@ -407,7 +446,9 @@ function StudyDocumentBlockView({
   if (block.kind === 'image') {
     const uri = normalizeWorkStudyImageUri(block.imageUri);
     return (
-      <View style={[rowShellStyle, styles.imageWrap, { borderColor: palette.outlineVariant }]}>
+      <View
+        style={[rowShellStyle, styles.imageWrap, { borderColor: palette.outlineVariant }]}
+        onLayout={(e) => onBlockLayout?.(block.id, e.nativeEvent.layout.y)}>
         <Pressable
           onPress={onPickImage}
           accessibilityRole="button"
@@ -439,6 +480,7 @@ function StudyDocumentBlockView({
           palette={palette}
           onChangeText={(text) => onChangeBlock(block.id, { text })}
           onFocus={() => onFocusBlock(block.id)}
+          onBlur={onBlurBlock}
           inputAccessoryViewID={inputAccessoryViewID}
           inputRef={(ref) => registerInputRef(block.id, ref)}
           onEnterKey={onEnterKey}
@@ -467,13 +509,17 @@ function StudyDocumentBlockView({
     ) : block.kind === 'bullet' ? (
       <ThemedText style={[styles.listMarker, { color: palette.onVariant }]}>•</ThemedText>
     ) : block.kind === 'numbered' ? (
-      <ThemedText style={[styles.listMarker, { color: palette.onVariant }]}>
+      <ThemedText
+        style={[styles.listMarker, styles.numberedMarker, { color: palette.onVariant }]}
+        numberOfLines={1}>
         {numberedIndexForBlock(blocks, block.id)}.
       </ThemedText>
     ) : null;
 
   return (
-    <View style={[rowShellStyle, styles.row, isListBlock ? styles.listRow : null]}>
+    <View
+      style={[rowShellStyle, styles.row, isListBlock ? styles.listRow : null]}
+      onLayout={(e) => onBlockLayout?.(block.id, e.nativeEvent.layout.y)}>
       {rowPrefix}
       <View style={[styles.rowBody, isListBlock ? styles.listRowBody : null]}>
         <BlockText
@@ -481,6 +527,7 @@ function StudyDocumentBlockView({
           palette={palette}
           onChangeText={(text) => onChangeBlock(block.id, { text })}
           onFocus={() => onFocusBlock(block.id)}
+          onBlur={onBlurBlock}
           onBackspaceAtStart={onBackspaceAtStart}
           inputAccessoryViewID={inputAccessoryViewID}
           inputRef={(ref) => registerInputRef(block.id, ref)}
@@ -493,19 +540,20 @@ function StudyDocumentBlockView({
               ? '할 일'
               : block.kind === 'paragraph'
                 ? '본문'
-                : '항목'
+                : '글을 입력해주세요.'
           }
           multiline={block.kind === 'paragraph'}
           style={
             block.kind === 'paragraph'
               ? [
                   styles.paragraphInput,
+                  onEnterKey ? styles.formattedParagraphInput : null,
                   blockIndex > 0 && blockNeedsTailParagraph(blocks[blockIndex - 1]!)
                     ? styles.structuralTailParagraph
                     : blocks[blockIndex + 1] && blockNeedsTailParagraph(blocks[blockIndex + 1]!)
                       ? styles.compactParagraph
                       : null,
-                  paragraphMinHeight ? { minHeight: paragraphMinHeight } : null,
+                  paragraphMinHeight && !onEnterKey ? { minHeight: paragraphMinHeight } : null,
                 ]
               : undefined
           }
@@ -564,13 +612,21 @@ export function StudyDocumentEditor({
   const blockInputRefs = useRef<Record<string, TextInput | null>>({});
   const selectionByBlockRef = useRef<Record<string, { start: number; end: number }>>({});
   const pendingFocusBlockIdRef = useRef<string | null>(null);
+  const pendingFocusSelectionRef = useRef<{ start: number; end: number } | null>(null);
   const linkTargetBlockIdRef = useRef<string | null>(null);
+  const toolbarInteractionRef = useRef(false);
+  const activeBlockIdRef = useRef<string | null>(null);
+  const canvasScrollRef = useRef<ScrollView | null>(null);
+  const blockLayoutYRef = useRef<Record<string, number>>({});
+  const scrollOffsetYRef = useRef(0);
+  const scrollViewportLayoutHeightRef = useRef(0);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const drawerWidth = Math.min(DRAWER_MAX_WIDTH, Math.round(windowWidth * DRAWER_WIDTH_RATIO));
   const drawerSlideX = useRef(new Animated.Value(-drawerWidth)).current;
   const drawerBackdropOpacity = useRef(new Animated.Value(0)).current;
   const documentRef = useRef(document);
   documentRef.current = document;
+  activeBlockIdRef.current = activeBlockId;
 
   const canUndo = historyTick >= 0 && undoStack.current.length > 0;
   const canRedo = historyTick >= 0 && redoStack.current.length > 0;
@@ -579,23 +635,123 @@ export function StudyDocumentEditor({
     return normalizeBlockMarks(pendingMarksRef.current);
   }, []);
 
-  const registerInputRef = useCallback((blockId: string, ref: TextInput | null) => {
-    if (ref) {
-      blockInputRefs.current[blockId] = ref;
-      return;
+  const applyInputSelection = useCallback((input: TextInput, cursor: number) => {
+    try {
+      input.setNativeProps({ selection: { start: cursor, end: cursor } });
+    } catch {
+      // noop — ref may not be ready on some platforms
     }
-    delete blockInputRefs.current[blockId];
   }, []);
 
-  useEffect(() => {
-    const blockId = pendingFocusBlockIdRef.current;
-    if (!blockId || activeBlockId !== blockId) return;
-    pendingFocusBlockIdRef.current = null;
-    const frame = requestAnimationFrame(() => {
-      blockInputRefs.current[blockId]?.focus();
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [activeBlockId]);
+  const transferFocusToBlock = useCallback(
+    (blockId: string, cursor: number) => {
+      pendingFocusBlockIdRef.current = blockId;
+      pendingFocusSelectionRef.current = { start: cursor, end: cursor };
+      setActiveBlockId(blockId);
+      const input = blockInputRefs.current[blockId];
+      if (input) {
+        input.focus();
+        applyInputSelection(input, cursor);
+        pendingFocusBlockIdRef.current = null;
+        pendingFocusSelectionRef.current = null;
+      }
+    },
+    [applyInputSelection],
+  );
+
+  const retainEditorKeyboardFocus = useCallback(() => {
+    const blockId = activeBlockIdRef.current;
+    if (!blockId) return;
+    const input = blockInputRefs.current[blockId];
+    if (!input) return;
+    const sel = selectionByBlockRef.current[blockId];
+    input.focus();
+    if (sel) {
+      applyInputSelection(input, sel.start);
+    }
+  }, [applyInputSelection]);
+
+  const beginToolbarInteraction = useCallback(() => {
+    toolbarInteractionRef.current = true;
+  }, []);
+
+  const endToolbarInteraction = useCallback(() => {
+    setTimeout(() => {
+      toolbarInteractionRef.current = false;
+    }, 120);
+  }, []);
+
+  const handleBlockBlur = useCallback(() => {
+    if (!toolbarInteractionRef.current) return;
+    if (Platform.OS === 'ios' && keyboardToolbarMode !== 'docked') return;
+    retainEditorKeyboardFocus();
+  }, [keyboardToolbarMode, retainEditorKeyboardFocus]);
+
+  const dismissEditorKeyboard = useCallback(() => {
+    toolbarInteractionRef.current = false;
+    const blockId = activeBlockIdRef.current;
+    if (blockId) {
+      blockInputRefs.current[blockId]?.blur();
+    }
+    setActiveBlockId(null);
+    Keyboard.dismiss();
+  }, []);
+
+  const registerBlockLayout = useCallback((blockId: string, y: number) => {
+    blockLayoutYRef.current[blockId] = y;
+  }, []);
+
+  const scrollActiveBlockIntoView = useCallback(
+    (blockId?: string | null) => {
+      const targetId = blockId ?? activeBlockIdRef.current;
+      if (!targetId) return;
+      const y = blockLayoutYRef.current[targetId];
+      if (y == null) return;
+      const viewportH = scrollViewportLayoutHeightRef.current;
+      if (viewportH <= 0) return;
+
+      const toolbarH =
+        KEYBOARD_ACCESSORY_ESTIMATED_HEIGHT +
+        (showLinkInput ? 56 : 0) +
+        (showColorPicker ? 44 : 0);
+      const bottomPad =
+        keyboardToolbarMode === 'docked' && keyboardInset > 0 ? toolbarH + 24 : 48;
+      const visibleBottom = scrollOffsetYRef.current + viewportH - bottomPad;
+      const visibleTop = scrollOffsetYRef.current + 12;
+      const targetBottom = y + 36;
+
+      if (targetBottom > visibleBottom) {
+        canvasScrollRef.current?.scrollTo({
+          y: Math.max(0, targetBottom - viewportH + bottomPad),
+          animated: true,
+        });
+      } else if (y < visibleTop) {
+        canvasScrollRef.current?.scrollTo({
+          y: Math.max(0, y - 12),
+          animated: true,
+        });
+      }
+    },
+    [keyboardInset, keyboardToolbarMode, showColorPicker, showLinkInput],
+  );
+
+  const registerInputRef = useCallback(
+    (blockId: string, ref: TextInput | null) => {
+      if (ref) {
+        blockInputRefs.current[blockId] = ref;
+        if (pendingFocusBlockIdRef.current === blockId) {
+          const cursor = pendingFocusSelectionRef.current?.start ?? 0;
+          ref.focus();
+          applyInputSelection(ref, cursor);
+          pendingFocusBlockIdRef.current = null;
+          pendingFocusSelectionRef.current = null;
+        }
+        return;
+      }
+      delete blockInputRefs.current[blockId];
+    },
+    [applyInputSelection],
+  );
 
   const pushHistory = useCallback(() => {
     undoStack.current = [...undoStack.current.slice(-(MAX_HISTORY - 1)), cloneDocument(document)];
@@ -613,6 +769,21 @@ export function StudyDocumentEditor({
   const activePage = getWorkStudyActivePage(document);
   const activeBlocks = activePage?.blocks ?? [];
   const tailFixKeyRef = useRef('');
+
+  useLayoutEffect(() => {
+    const blockId = pendingFocusBlockIdRef.current;
+    if (!blockId || activeBlockId !== blockId) return;
+    const input = blockInputRefs.current[blockId];
+    if (!input) return;
+    const cursor = pendingFocusSelectionRef.current?.start ?? 0;
+    input.focus();
+    applyInputSelection(input, cursor);
+    pendingFocusBlockIdRef.current = null;
+    pendingFocusSelectionRef.current = null;
+    requestAnimationFrame(() => {
+      scrollActiveBlockIntoView(blockId);
+    });
+  }, [activeBlockId, activeBlocks, applyInputSelection, scrollActiveBlockIntoView]);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -750,6 +921,9 @@ export function StudyDocumentEditor({
       } else {
         setActiveListKind(null);
       }
+      requestAnimationFrame(() => {
+        scrollActiveBlockIntoView(blockId);
+      });
       const pending = resolvePendingMarks();
       if (!pending || !block || block.kind === 'table' || block.kind === 'image' || block.kind === 'heading') {
         return;
@@ -762,7 +936,7 @@ export function StudyDocumentEditor({
         ),
       );
     },
-    [activeBlocks, replaceActiveBlocks, resolvePendingMarks],
+    [activeBlocks, replaceActiveBlocks, resolvePendingMarks, scrollActiveBlockIntoView],
   );
 
   const handleChangeBlock = useCallback(
@@ -897,33 +1071,35 @@ export function StudyDocumentEditor({
       const cursor = sel?.start ?? 0;
       if (cursor > 0) return;
 
-      if (block.text.length > 0) {
-        if (blockIndex <= 0) return;
+      if (block.text.length > 0 && blockIndex > 0) {
         const prev = activeBlocks[blockIndex - 1]!;
-        if (isListBlockKind(block.kind) && prev.kind === block.kind) {
+        const canMergeParagraph = block.kind === 'paragraph' && prev.kind === 'paragraph';
+        const canMergeList = isListBlockKind(block.kind) && prev.kind === block.kind;
+        if (canMergeParagraph || canMergeList) {
           pushHistory();
           const mergedText = prev.text + block.text;
           const marks = normalizeBlockMarks({ ...prev.marks, ...block.marks });
+          const cursorAt = prev.text.length;
           const next = activeBlocks
             .map((b, index) =>
               index === blockIndex - 1 ? { ...b, text: mergedText, marks: marks ?? b.marks } : b,
             )
             .filter((_, index) => index !== blockIndex);
+          transferFocusToBlock(prev.id, cursorAt);
           replaceActiveBlocks(next);
-          pendingFocusBlockIdRef.current = prev.id;
-          setActiveBlockId(prev.id);
           void Haptics.selectionAsync();
         }
         return;
       }
 
+      if (block.text.length > 0) return;
+
       pushHistory();
 
       if (activeBlocks.length === 1) {
-        const paragraph = createWorkStudyDocBlock('paragraph');
-        replaceActiveBlocks([paragraph]);
-        pendingFocusBlockIdRef.current = paragraph.id;
-        setActiveBlockId(paragraph.id);
+        const cleared: WorkStudyDocBlock = { ...block, text: '', marks: undefined };
+        transferFocusToBlock(block.id, 0);
+        replaceActiveBlocks([cleared]);
         if (isListBlockKind(block.kind)) setActiveListKind(null);
         void Haptics.selectionAsync();
         return;
@@ -933,13 +1109,14 @@ export function StudyDocumentEditor({
         blockIndex > 0
           ? activeBlocks[blockIndex - 1]!.id
           : activeBlocks[blockIndex + 1]!.id;
+      const focusCursor =
+        blockIndex > 0 ? activeBlocks[blockIndex - 1]!.text.length : 0;
       const next = activeBlocks.filter((_, index) => index !== blockIndex);
+      transferFocusToBlock(focusId, focusCursor);
       replaceActiveBlocks(next);
-      pendingFocusBlockIdRef.current = focusId;
-      setActiveBlockId(focusId);
       void Haptics.selectionAsync();
     },
-    [activeBlocks, pushHistory, replaceActiveBlocks],
+    [activeBlocks, pushHistory, replaceActiveBlocks, transferFocusToBlock],
   );
 
   const pickImageForBlock = useCallback(
@@ -1007,6 +1184,14 @@ export function StudyDocumentEditor({
     },
     [commitStructuralChange, ensurePageDocument, resolvePendingMarks],
   );
+
+  const handleEmptyCanvasPress = useCallback(() => {
+    if (keyboardInset > 0 || activeBlockIdRef.current) {
+      dismissEditorKeyboard();
+      return;
+    }
+    insertBlock('paragraph');
+  }, [dismissEditorKeyboard, insertBlock, keyboardInset]);
 
   const resetDocument = useCallback(() => {
     if (activeBlocks.length === 0) return;
@@ -1083,6 +1268,44 @@ export function StudyDocumentEditor({
   const activePageLabel = activePage
     ? resolveWorkStudyNotePageLabel(activePage, document.pages)
     : '메모';
+  const activePageAutoTitle = activePage
+    ? resolveWorkStudyNotePageAutoTitle(activePage, document.pages)
+    : '';
+
+  const handlePageTitleChange = useCallback(
+    (nextTitle: string) => {
+      if (!activePage) return;
+      const persisted = persistWorkStudyNotePageTitle(nextTitle, activePageAutoTitle);
+      if (persisted === activePage.title) return;
+      pushHistory();
+      applyDocument(updateWorkStudyNotePageTitle(document, activePage.id, persisted));
+    },
+    [activePage, activePageAutoTitle, applyDocument, document, pushHistory],
+  );
+
+  const shareActivePage = useCallback(async () => {
+    const page = getWorkStudyActivePage(document);
+    if (!page) {
+      Alert.alert('공유할 내용 없음', '공유할 메모를 먼저 작성해 주세요.');
+      return;
+    }
+    const title = resolveWorkStudyNotePageLabel(page, document.pages);
+    const body = workStudyPageBlocksToPlainText(page.blocks);
+    if (!body.trim()) {
+      Alert.alert('공유할 내용 없음', '메모 내용을 먼저 작성해 주세요.');
+      return;
+    }
+    void Haptics.selectionAsync();
+    try {
+      await Share.share({
+        message: `${title}\n\n${body}`,
+        title,
+      });
+    } catch {
+      Alert.alert('공유 실패', '잠시 후 다시 시도해 주세요.');
+    }
+  }, [document]);
+
   const focusedBlock = activeBlockId ? activeBlocks.find((b) => b.id === activeBlockId) : null;
   const toolbarActiveBold = resolveActiveMarkState(focusedBlock, pendingMarks, 'bold');
   const toolbarActiveUnderline = resolveActiveMarkState(focusedBlock, pendingMarks, 'underline');
@@ -1305,21 +1528,26 @@ export function StudyDocumentEditor({
 
   const onToolbarAction = useCallback(
     (action: StudyToolbarAction) => {
+      const guardDockedToolbar = keyboardToolbarMode === 'docked' && keyboardInset > 0;
+      if (guardDockedToolbar) beginToolbarInteraction();
+
       switch (action) {
         case 'undo': {
           const prev = undoStack.current.pop();
-          if (!prev) return;
-          redoStack.current.push(cloneDocument(document));
-          replaceDocument(prev);
-          setHistoryTick((n) => n + 1);
+          if (prev) {
+            redoStack.current.push(cloneDocument(document));
+            replaceDocument(prev);
+            setHistoryTick((n) => n + 1);
+          }
           break;
         }
         case 'redo': {
           const next = redoStack.current.pop();
-          if (!next) return;
-          undoStack.current.push(cloneDocument(document));
-          replaceDocument(next);
-          setHistoryTick((n) => n + 1);
+          if (next) {
+            undoStack.current.push(cloneDocument(document));
+            replaceDocument(next);
+            setHistoryTick((n) => n + 1);
+          }
           break;
         }
         case 'checklist':
@@ -1372,8 +1600,12 @@ export function StudyDocumentEditor({
         default:
           break;
       }
+      if (guardDockedToolbar) {
+        retainEditorKeyboardFocus();
+        endToolbarInteraction();
+      }
     },
-    [activeBlockId, activeBlocks, ensurePageDocument, insertBlock, openColorPicker, openLinkEditor, pickImageForBlock, replaceDocument, resetDocument, toggleListKind, toggleMark],
+    [activeBlockId, activeBlocks, beginToolbarInteraction, endToolbarInteraction, ensurePageDocument, insertBlock, keyboardInset, keyboardToolbarMode, openColorPicker, openLinkEditor, pickImageForBlock, replaceDocument, resetDocument, retainEditorKeyboardFocus, toggleListKind, toggleMark],
   );
 
   const empty = activeBlocks.length === 0;
@@ -1383,13 +1615,18 @@ export function StudyDocumentEditor({
   const textInputAccessoryViewID = useInputAccessory ? STUDY_DOCUMENT_INPUT_ACCESSORY_ID : undefined;
   const showDockedToolbar = useDockedKeyboardToolbar || Platform.OS !== 'ios' || !keyboardOpen;
   const toolbarPanelHeight = showLinkInput ? 56 : showColorPicker ? 44 : 0;
+  const toolbarLayoutActive = useInputAccessory || showDockedToolbar;
   const accessoryReserve =
-    (showDockedToolbar ? toolbarPanelHeight + KEYBOARD_ACCESSORY_ESTIMATED_HEIGHT : 12);
+    toolbarLayoutActive ? toolbarPanelHeight + KEYBOARD_ACCESSORY_ESTIMATED_HEIGHT : 12;
   const dockedToolbarBottom = useDockedKeyboardToolbar
-    ? Math.max(0, keyboardInset - keyboardBottomChromeInset)
+    ? keyboardOpen
+      ? Math.max(0, keyboardInset - keyboardBottomChromeInset)
+      : 0
     : Platform.OS === 'android'
       ? keyboardInset
       : 0;
+  const toolbarRetainFocusHandler =
+    showDockedToolbar && useDockedKeyboardToolbar ? beginToolbarInteraction : undefined;
 
   const resolvedScrollHeight =
     viewportHeight != null
@@ -1429,7 +1666,7 @@ export function StudyDocumentEditor({
             inputAccessoryViewID={textInputAccessoryViewID}
             style={[styles.linkInput, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
           />
-          <Pressable onPress={applyLink} style={[styles.linkApply, { borderColor: palette.onSurface }]}>
+          <Pressable onPress={applyLink} onPressIn={toolbarRetainFocusHandler} style={[styles.linkApply, { borderColor: palette.onSurface }]}>
             <ThemedText style={{ color: palette.onSurface, fontWeight: '700', fontSize: 12 }}>적용</ThemedText>
           </Pressable>
         </View>
@@ -1440,6 +1677,7 @@ export function StudyDocumentEditor({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="기본 색"
+            onPressIn={toolbarRetainFocusHandler}
             onPress={() => applyTextColor(undefined)}
             style={[
               styles.colorSwatch,
@@ -1456,6 +1694,7 @@ export function StudyDocumentEditor({
                 key={option.value}
                 accessibilityRole="button"
                 accessibilityLabel={option.label}
+                onPressIn={toolbarRetainFocusHandler}
                 onPress={() => applyTextColor(option.value)}
                 style={[
                   styles.colorSwatch,
@@ -1481,6 +1720,7 @@ export function StudyDocumentEditor({
           colorPickerOpen={showColorPicker}
           activeListKind={toolbarActiveListKind}
           onAction={onToolbarAction}
+          onRetainKeyboardFocus={toolbarRetainFocusHandler}
         />
       </View>
     </>
@@ -1507,22 +1747,44 @@ export function StudyDocumentEditor({
           style={({ pressed }) => [styles.menuBtn, pressed && { opacity: 0.65 }]}>
           <IconSymbol name="line.3.horizontal" size={20} color={palette.onSurface} />
         </Pressable>
-        <ThemedText style={[styles.editorTitle, { color: palette.onSurface }]} numberOfLines={1}>
-          {activePageLabel}
-        </ThemedText>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="새 메모 작성"
-          onPress={() => {
-            void Haptics.selectionAsync();
-            addPage();
-          }}
-          hitSlop={8}
-          style={({ pressed }) => [styles.headerComposeBtn, pressed && { opacity: 0.65 }]}>
-          <IconSymbol name="square.and.pencil" size={18} color={palette.onSurface} />
-        </Pressable>
+        {activePage ? (
+          <StudyNotePageTitleField
+            value={activePage.title}
+            autoFallback={activePageAutoTitle}
+            onChangeValue={handlePageTitleChange}
+            palette={palette}
+          />
+        ) : (
+          <ThemedText style={[styles.editorTitle, { color: palette.onSurface }]} numberOfLines={1}>
+            {activePageLabel}
+          </ThemedText>
+        )}
+        <View style={styles.headerActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="메모 공유"
+            onPress={() => {
+              void shareActivePage();
+            }}
+            hitSlop={8}
+            style={({ pressed }) => [styles.headerActionBtn, pressed && { opacity: 0.65 }]}>
+            <IconSymbol name="square.and.arrow.up" size={18} color={palette.onSurface} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="새 메모 작성"
+            onPress={() => {
+              void Haptics.selectionAsync();
+              addPage();
+            }}
+            hitSlop={8}
+            style={({ pressed }) => [styles.headerActionBtn, pressed && { opacity: 0.65 }]}>
+            <IconSymbol name="square.and.pencil" size={18} color={palette.onSurface} />
+          </Pressable>
+        </View>
       </View>
       <ScrollView
+        ref={canvasScrollRef}
         style={[
           styles.canvasScroll,
           useFlexCanvas ? styles.canvasScrollFlex : null,
@@ -1530,17 +1792,39 @@ export function StudyDocumentEditor({
         ]}
         contentContainerStyle={[
           useFlexCanvas ? styles.canvasScrollContentFlex : null,
-          { paddingBottom: useFlexCanvas ? 16 : accessoryReserve + 16 },
+          {
+            paddingBottom:
+              useDockedKeyboardToolbar
+                ? accessoryReserve + (keyboardOpen ? dockedToolbarBottom : 0) + 24
+                : useFlexCanvas
+                  ? 16
+                  : accessoryReserve + 16,
+          },
         ]}
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        showsVerticalScrollIndicator={false}>
+        keyboardDismissMode="none"
+        showsVerticalScrollIndicator={false}
+        onScroll={(e) => {
+          scrollOffsetYRef.current = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+        onLayout={(e) => {
+          scrollViewportLayoutHeightRef.current = e.nativeEvent.layout.height;
+        }}>
         <View style={[styles.canvas, useFlexCanvas ? styles.canvasFlex : null, { minHeight: canvasMinHeight, backgroundColor: NOTE_PAGE_BG }]}>
+        {!empty ? (
+          <Pressable
+            style={styles.canvasDismissBackdrop}
+            onPress={dismissEditorKeyboard}
+            accessibilityRole="button"
+            accessibilityLabel="키보드 닫기"
+          />
+        ) : null}
         {empty ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="노트 작성 시작"
-            onPress={() => insertBlock('paragraph')}
+            onPress={handleEmptyCanvasPress}
             style={[
               styles.emptyCanvas,
               useFlexCanvas ? styles.emptyCanvasFlex : null,
@@ -1555,7 +1839,7 @@ export function StudyDocumentEditor({
             </ThemedText>
           </Pressable>
         ) : (
-          <View style={styles.blocksInner}>
+          <View style={styles.blocksInner} pointerEvents="box-none">
             {activeBlocks.map((block, blockIndex) => (
               <StudyDocumentBlockView
                 key={block.id}
@@ -1564,9 +1848,11 @@ export function StudyDocumentEditor({
                 blockIndex={blockIndex}
                 palette={palette}
                 onFocusBlock={handleFocusBlock}
+                onBlurBlock={handleBlockBlur}
                 onChangeBlock={handleChangeBlock}
                 inputAccessoryViewID={textInputAccessoryViewID}
                 registerInputRef={registerInputRef}
+                onBlockLayout={registerBlockLayout}
                 onEnterKey={
                   isListBlockKind(block.kind) ||
                   (block.kind === 'paragraph' && blockHasToolbarFormatting(block, pendingMarks))
@@ -1612,9 +1898,7 @@ export function StudyDocumentEditor({
             {
               borderTopColor: palette.outlineVariant,
               backgroundColor: NOTE_PAGE_BG,
-              ...(useDockedKeyboardToolbar
-                ? { marginBottom: dockedToolbarBottom }
-                : { bottom: dockedToolbarBottom }),
+              bottom: dockedToolbarBottom,
             },
           ]}>
           {toolbarAccessory}
@@ -1700,9 +1984,11 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   keyboardAccessoryDocked: {
+    position: 'absolute',
     left: 0,
     right: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
+    zIndex: 10,
   },
   inputAccessoryShell: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -1748,7 +2034,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: -0.2,
   },
-  headerComposeBtn: {
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  headerActionBtn: {
     width: 36,
     height: 36,
     alignItems: 'center',
@@ -1759,6 +2050,11 @@ const styles = StyleSheet.create({
   },
   canvas: {
     width: '100%',
+    position: 'relative',
+  },
+  canvasDismissBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
   },
   blocksInner: {
     width: '100%',
@@ -1766,6 +2062,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 8,
     gap: 0,
+    zIndex: 1,
   },
   emptyCanvas: {
     width: '100%',
@@ -1786,6 +2083,11 @@ const styles = StyleSheet.create({
   blockRow: {
     width: '100%',
     paddingVertical: 0,
+  },
+  formattedBlockRow: {
+    width: '100%',
+    paddingTop: 0,
+    paddingBottom: 1,
   },
   listBlockRow: {
     width: '100%',
@@ -1818,9 +2120,26 @@ const styles = StyleSheet.create({
     marginVertical: 0,
   },
   paragraphInput: { textAlignVertical: 'top', width: '100%' },
+  formattedParagraphInput: {
+    minHeight: 24,
+    lineHeight: 22,
+    paddingTop: 0,
+    paddingBottom: 2,
+  },
   compactParagraph: { minHeight: 28 },
   structuralTailParagraph: { minHeight: 32, textAlignVertical: 'top' },
-  listMarker: { width: 16, fontSize: 14, fontWeight: '700', lineHeight: 20, textAlign: 'center' },
+  listMarker: {
+    minWidth: 16,
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
+    textAlign: 'right',
+    flexShrink: 0,
+  },
+  numberedMarker: {
+    minWidth: 28,
+    paddingRight: 2,
+  },
   checkBox: {
     width: 18,
     height: 18,

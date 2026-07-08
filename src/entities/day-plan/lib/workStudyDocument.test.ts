@@ -5,6 +5,7 @@ import {
   isLegacyAutoWorkStudyNoteTitle,
   migrateLegacyWorkContentToDocument,
   normalizeWorkStudyDocument,
+  persistWorkStudyNotePageTitle,
   resolveWorkStudyNotePageLabel,
   resolveWorkStudyNotePagePreview,
   workStudyDocumentToPlainText,
@@ -140,6 +141,13 @@ describe('resolveWorkStudyNotePageLabel', () => {
     const second = createWorkStudyNotePage({ createdDateKey: '2026-07-06' });
     expect(resolveWorkStudyNotePageLabel(first, [first, second])).toBe('2026년 7월 6일');
     expect(resolveWorkStudyNotePageLabel(second, [first, second])).toBe('2026년 7월 6일 · 2');
+  });
+
+  it('persists custom titles and clears when matching auto title', () => {
+    const auto = '2026년 7월 8일';
+    expect(persistWorkStudyNotePageTitle('시험 대비', auto)).toBe('시험 대비');
+    expect(persistWorkStudyNotePageTitle(auto, auto)).toBe('');
+    expect(persistWorkStudyNotePageTitle('  ', auto)).toBe('');
   });
 
   it('formats list date labels', () => {

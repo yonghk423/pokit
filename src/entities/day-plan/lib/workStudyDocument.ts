@@ -242,29 +242,61 @@ export function formatWorkStudyNoteTitleFromDateKey(dateKey: string, suffix?: nu
   return suffix != null && suffix > 1 ? `${base} · ${suffix}` : base;
 }
 
+function resolveWorkStudyNoteSameDayAutoOrder(
+  page: WorkStudyNotePage,
+  pages: readonly WorkStudyNotePage[],
+): number {
+  const dateKey = normalizeCreatedDateKey(page.createdDateKey);
+  const pageIndex = pages.findIndex((p) => p.id === page.id);
+  if (pageIndex < 0) return 1;
+  return pages
+    .slice(0, pageIndex + 1)
+    .filter((p) => {
+      const dk = normalizeCreatedDateKey(p.createdDateKey);
+      const t = p.title.trim();
+      return dk === dateKey && (!t || isLegacyAutoWorkStudyNoteTitle(t));
+    }).length;
+}
+
+/** 저장된 사용자 제목이 없을 때 쓰는 날짜 기반 자동 제목 */
+export function resolveWorkStudyNotePageAutoTitle(
+  page: WorkStudyNotePage,
+  pages: readonly WorkStudyNotePage[],
+): string {
+  const dateKey = normalizeCreatedDateKey(page.createdDateKey);
+  const sameDayOrder = resolveWorkStudyNoteSameDayAutoOrder(page, pages);
+  return formatWorkStudyNoteTitleFromDateKey(
+    dateKey,
+    sameDayOrder > 1 ? sameDayOrder : undefined,
+  );
+}
+
+/** 편집 결과 저장 — 비었거나 자동 날짜 제목과 같으면 빈 문자열(자동 제목 복원) */
+export function persistWorkStudyNotePageTitle(edited: string, autoFallback: string): string {
+  const t = edited.trim();
+  const fb = autoFallback.trim();
+  if (t.length === 0 || t === fb) return '';
+  return t.length > MAX_PAGE_TITLE ? t.slice(0, MAX_PAGE_TITLE) : t;
+}
+
+export function updateWorkStudyNotePageTitle(
+  doc: WorkStudyDocument,
+  pageId: string,
+  title: string,
+): WorkStudyDocument {
+  return {
+    ...doc,
+    pages: doc.pages.map((page) => (page.id === pageId ? { ...page, title } : page)),
+  };
+}
+
 export function resolveWorkStudyNotePageLabel(
   page: WorkStudyNotePage,
   pages: readonly WorkStudyNotePage[],
 ): string {
   const custom = page.title.trim();
   if (custom && !isLegacyAutoWorkStudyNoteTitle(custom)) return custom;
-
-  const dateKey = normalizeCreatedDateKey(page.createdDateKey);
-  const pageIndex = pages.findIndex((p) => p.id === page.id);
-  const sameDayOrder =
-    pageIndex < 0
-      ? 1
-      : pages
-          .slice(0, pageIndex + 1)
-          .filter((p) => {
-            const dk = normalizeCreatedDateKey(p.createdDateKey);
-            const t = p.title.trim();
-            return dk === dateKey && (!t || isLegacyAutoWorkStudyNoteTitle(t));
-          }).length;
-  return formatWorkStudyNoteTitleFromDateKey(
-    dateKey,
-    sameDayOrder > 1 ? sameDayOrder : undefined,
-  );
+  return resolveWorkStudyNotePageAutoTitle(page, pages);
 }
 
 function normalizeWorkStudyNotePage(raw: unknown): WorkStudyNotePage | null {
@@ -427,11 +459,9 @@ export function workStudyPageBlocksToPlainText(blocks: WorkStudyDocBlock[]): str
       }
       case 'checklist':
         lines.push(`${block.checked ? '[x]' : '[ ]'} ${block.text.trim()}`);
-        listIndex = 0;
         break;
       case 'bullet':
         lines.push(`• ${block.text.trim()}`);
-        listIndex = 0;
         break;
       case 'numbered':
         listIndex += 1;
@@ -441,17 +471,22 @@ export function workStudyPageBlocksToPlainText(blocks: WorkStudyDocBlock[]): str
         if (block.text.trim()) lines.push(block.text.trim());
         listIndex = 0;
         break;
-      case 'table':
-        block.tableRows?.forEach((row) => {
-          lines.push(row.join(' | '));
-        });
+      case 'table': {
+        const tableLines =
+          block.tableRows
+            ?.map((row) => row.map((cell) => cell.trim()).join(' | ').trim())
+            .filter((line) => line.length > 0) ?? [];
+        if (tableLines.length > 0) lines.push(...tableLines);
         listIndex = 0;
         break;
-      case 'image':
-        if (block.imageUri?.trim()) lines.push(`[이미지] ${block.imageUri.trim()}`);
-        else if (block.text.trim()) lines.push(`[이미지] ${block.text.trim()}`);
+      }
+      case 'image': {
+        const caption = block.text.trim();
+        if (caption) lines.push(`[이미지] ${caption}`);
+        else if (block.imageUri?.trim()) lines.push('[이미지]');
         listIndex = 0;
         break;
+      }
       default:
         break;
     }

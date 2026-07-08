@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -202,7 +202,6 @@ export function DayPlanPage() {
   ]);
 
   const quickMemoInputRef = useRef<TextInput>(null);
-  const dayPlanScrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
 
   const [nowTick, setNowTick] = useState(Date.now);
   useEffect(() => {
@@ -700,19 +699,6 @@ export function DayPlanPage() {
     registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
   }, [registerPrimaryAction, planMode]);
 
-  /** on-drag 만 쓰면 키보드만 내려가고 포커스는 남아, 다음 터치에 패드가 다시 뜨는 경우가 있어 스크롤 시 blur 로 포커스를 끈다. */
-  const onQuickMemoScrollBeginDrag = useCallback(() => {
-    quickMemoInputRef.current?.blur();
-    Keyboard.dismiss();
-  }, []);
-
-  /** 엔터로 줄이 늘어난 뒤 레이아웃이 반영되면 맨 아래로 스크롤 (내부 TextInput 스크롤 비활성화와 함께 사용) */
-  const onQuickMemoInputContentSizeChange = useCallback(() => {
-    requestAnimationFrame(() => {
-      dayPlanScrollRef.current?.scrollToEnd({ animated: true });
-    });
-  }, []);
-
   const shellBg = c.containerLow;
 
   return (
@@ -720,39 +706,23 @@ export function DayPlanPage() {
       <KeyboardAvoidingView
         style={[styles.keyboardColumn, { backgroundColor: shellBg }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        enabled={planMode !== 'dayNote'}
+        enabled={planMode !== 'dayNote' && planMode !== 'quickMemo'}
         keyboardVerticalOffset={0}>
         <View style={[styles.mainColumn, { backgroundColor: shellBg }]}>
             {planMode === 'quickMemo' ? (
-              <ScrollView
-                ref={dayPlanScrollRef}
-                style={[styles.scroll, { backgroundColor: shellBg }]}
-                contentContainerStyle={[
-                  styles.scrollContent,
-                  {
-                    paddingBottom: scrollContentBottomPad,
-                    flexGrow: 1,
-                  },
-                ]}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="always"
-                keyboardDismissMode="none"
-                onScrollBeginDrag={onQuickMemoScrollBeginDrag}>
-                <View style={styles.quickMemoDismissWrap} collapsable={false}>
-                  <View style={styles.contentPad}>
-                    <QuickMemoPlanSection
-                      ref={quickMemoInputRef}
-                      c={c}
-                      isDark={isDark}
-                      memos={quickMemos}
-                      draft={quickMemoDraft}
-                      onChangeDraft={setQuickMemoDraft}
-                      onInputContentSizeChange={onQuickMemoInputContentSizeChange}
-                      onSavePress={handleQuickMemoSavePress}
-                    />
-                  </View>
+              <View style={[styles.quickMemoColumn, { backgroundColor: shellBg }]}>
+                <View style={[styles.contentPad, styles.quickMemoContentPad]}>
+                  <QuickMemoPlanSection
+                    ref={quickMemoInputRef}
+                    c={c}
+                    isDark={isDark}
+                    memos={quickMemos}
+                    draft={quickMemoDraft}
+                    onChangeDraft={setQuickMemoDraft}
+                    onSavePress={handleQuickMemoSavePress}
+                  />
                 </View>
-              </ScrollView>
+              </View>
             ) : planMode === 'dayNote' ? (
               <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
                 <DayNotePlanSection c={c} isDark={isDark} />
@@ -825,6 +795,6 @@ const styles = StyleSheet.create({
   priorityModeStack: { flex: 1, minHeight: 0, width: '100%', gap: 0 },
   /** 다이어리 등 풀블리드 섹션 제외 영역만 좌우 여백 */
   contentPad: { paddingHorizontal: 24 },
-  /** 빠른 메모: 스크롤 영역을 채워 빈 곳 탭 시 키보드 dismiss 가 먹도록 */
-  quickMemoDismissWrap: { gap: 10, flexGrow: 1 },
+  quickMemoColumn: { flex: 1, minHeight: 0, width: '100%' },
+  quickMemoContentPad: { flex: 1, minHeight: 0 },
 });

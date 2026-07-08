@@ -267,11 +267,14 @@ export {
   workStudyDocumentToPlainText,
   formatWorkStudyNoteDateLabel,
   formatWorkStudyNoteTitleFromDateKey,
+  resolveWorkStudyNotePageAutoTitle,
   resolveWorkStudyNotePageLabel,
   resolveWorkStudyNotePagePreview,
+  persistWorkStudyNotePageTitle,
   isLegacyAutoWorkStudyNoteTitle,
   getWorkStudyActivePage,
   setWorkStudyActivePageBlocks,
+  updateWorkStudyNotePageTitle,
 } from './lib/workStudyDocument';
 export type {
   WorkStudyBlockKind,

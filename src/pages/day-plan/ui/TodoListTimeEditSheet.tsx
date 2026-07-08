@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import {
+  Keyboard,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatMinutesToHHmm, parseHHmmToMinutes } from '@entities/day-plan';
@@ -44,6 +52,26 @@ export function TodoListTimeEditSheet({
   const ui = useMemo(() => todoListUiColors(c, isDark), [c, isDark]);
   const [startText, setStartText] = useState(minutesToInput(startMinutes));
   const [endText, setEndText] = useState(minutesToInput(endMinutes));
+  const [keyboardInset, setKeyboardInset] = useState(0);
+
+  useEffect(() => {
+    if (!visible) {
+      setKeyboardInset(0);
+      return;
+    }
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardInset(event.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardInset(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [visible]);
 
   useEffect(() => {
     if (!visible) return;
@@ -59,16 +87,25 @@ export function TodoListTimeEditSheet({
     onClose();
   }, [startText, endText, startMinutes, endMinutes, onSave, onClose]);
 
+  const sheetBottomInset =
+    keyboardInset > 0 ? keyboardInset + 12 : Math.max(insets.bottom, 16);
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}>
+      <View style={styles.root}>
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
         <Pressable
           style={[
             styles.sheet,
             {
               backgroundColor: c.containerLow,
               borderColor: c.border,
-              marginBottom: Math.max(insets.bottom, 16),
+              marginBottom: sheetBottomInset,
             },
           ]}
           onPress={(e) => e.stopPropagation()}>
@@ -139,17 +176,20 @@ export function TodoListTimeEditSheet({
             </Pressable>
           </View>
         </Pressable>
-      </Pressable>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  root: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
     justifyContent: 'flex-end',
     paddingHorizontal: 16,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   sheet: {
     borderWidth: RETRO_BORDER_WIDTH,
