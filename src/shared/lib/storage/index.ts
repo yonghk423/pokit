@@ -251,6 +251,3 @@ export {
   loadDismissedUpdateAvailableVersion,
   saveDismissedUpdateAvailableVersion
 } from './updateAvailableDismissStorage';
-export { syncDayPlanToWidget, syncWidgetTimelineFromStorage } from './widgetDayPlanSync';
-export type { WidgetDayPlanPayload } from './widgetDayPlanSync';
-

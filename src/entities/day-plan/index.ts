@@ -1,4 +1,10 @@
 export { getBlockTimelineIcon } from './lib/blockIcons';
+export {
+  buildWidgetDayPlanPayload,
+  type WidgetDayPlanPayload,
+  type WidgetPriorityRoutineItem,
+} from './lib/widgetDayPlanPayload';
+export { syncDayPlanToWidget, syncWidgetTimelineFromStorage } from './lib/widgetDayPlanSync';
 export { buildSpineTimelineModel } from './lib/buildSpineTimelineModel';
 export type { BuildSpineTimelineModelInput } from './lib/buildSpineTimelineModel';
 export {

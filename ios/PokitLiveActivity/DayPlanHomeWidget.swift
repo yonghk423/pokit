@@ -17,7 +17,7 @@ private struct HomeRoutineIconCell: View {
         .frame(width: size, height: size)
         .background(
           RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
-            .fill(completed ? DayPlanWidgetPalette.completedTint.opacity(0.12) : DayPlanWidgetPalette.iconBox)
+            .fill(completed ? DayPlanWidgetPalette.completedIconBox : DayPlanWidgetPalette.iconBox)
         )
 
       if completed {
@@ -455,14 +455,14 @@ struct DayPlanHomeWidget: Widget {
       ),
       quickMemos: [],
       routineItems: [
-        DayPlanRoutineStatusItem(iconName: "brain", isCompleted: true),
-        DayPlanRoutineStatusItem(iconName: "book.closed.fill", isCompleted: true),
-        DayPlanRoutineStatusItem(iconName: "square.and.pencil", isCompleted: true),
-        DayPlanRoutineStatusItem(iconName: "drop.fill", isCompleted: true),
-        DayPlanRoutineStatusItem(iconName: "brain.head.profile", isCompleted: true),
-        DayPlanRoutineStatusItem(iconName: "figure.run", isCompleted: false),
-        DayPlanRoutineStatusItem(iconName: "book.fill", isCompleted: false),
-        DayPlanRoutineStatusItem(iconName: "calendar.badge.clock", isCompleted: false),
+        DayPlanRoutineStatusItem(categoryKey: "deepwork", iconName: "brain", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "journal", iconName: "book.closed.fill", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "writing", iconName: "square.and.pencil", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "water", iconName: "drop.fill", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "meditation", iconName: "brain.head.profile", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "stretching", iconName: "figure.run", isCompleted: false),
+        DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.fill", isCompleted: false),
+        DayPlanRoutineStatusItem(categoryKey: "planning", iconName: "calendar.badge.clock", isCompleted: false),
       ]
     )
   )
@@ -494,13 +494,13 @@ struct DayPlanHomeWidget: Widget {
       ),
       quickMemos: [],
       routineItems: [
-        DayPlanRoutineStatusItem(iconName: "brain", isCompleted: true),
-        DayPlanRoutineStatusItem(iconName: "book.closed.fill", isCompleted: true),
-        DayPlanRoutineStatusItem(iconName: "square.and.pencil", isCompleted: true),
-        DayPlanRoutineStatusItem(iconName: "drop.fill", isCompleted: true),
-        DayPlanRoutineStatusItem(iconName: "brain.head.profile", isCompleted: true),
-        DayPlanRoutineStatusItem(iconName: "figure.run", isCompleted: false),
-        DayPlanRoutineStatusItem(iconName: "book.fill", isCompleted: false),
+        DayPlanRoutineStatusItem(categoryKey: "deepwork", iconName: "brain", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "journal", iconName: "book.closed.fill", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "writing", iconName: "square.and.pencil", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "water", iconName: "drop.fill", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "meditation", iconName: "brain.head.profile", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "stretching", iconName: "figure.run", isCompleted: false),
+        DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.fill", isCompleted: false),
       ]
     )
   )
@@ -535,10 +535,10 @@ struct DayPlanHomeWidget: Widget {
         DayPlanQuickMemoLineModel(id: "m2", text: "친구에게 연락", isDone: false, isDraft: true),
       ],
       routineItems: [
-        DayPlanRoutineStatusItem(iconName: "book.fill", isCompleted: true),
-        DayPlanRoutineStatusItem(iconName: "wind", isCompleted: true),
-        DayPlanRoutineStatusItem(iconName: "brain", isCompleted: false),
-        DayPlanRoutineStatusItem(iconName: "drop.fill", isCompleted: false),
+        DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.fill", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "breathing", iconName: "wind", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "deepwork", iconName: "brain", isCompleted: false),
+        DayPlanRoutineStatusItem(categoryKey: "water", iconName: "drop.fill", isCompleted: false),
       ]
     )
   )

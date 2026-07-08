@@ -9,7 +9,7 @@ jest.mock('@shared/lib/storage/dayPlanStorage', () => ({
   saveDayPlan: jest.fn(),
 }));
 
-jest.mock('@shared/lib/storage/widgetDayPlanSync', () => ({
+jest.mock('../lib/widgetDayPlanSync', () => ({
   syncDayPlanToWidget: jest.fn(),
 }));
 

@@ -4,7 +4,9 @@ import {
   buildRoutineHistoryRecordKey,
   type RoutineHistoryLayoutMode,
 } from '@shared/lib/routineHistoryLayoutKey';
-import { loadDayPlanDraft, saveDayPlanDraft, syncWidgetTimelineFromStorage, normalizeDayMealSlot, normalizeCategoryMealSlots, type DayMealSlot } from '@shared/lib/storage';
+import { loadDayPlanDraft, saveDayPlanDraft, normalizeDayMealSlot, normalizeCategoryMealSlots, type DayMealSlot } from '@shared/lib/storage';
+
+import { syncWidgetTimelineFromStorage } from '../lib/widgetDayPlanSync';
 
 import { getLocalMinutesOfDayNow } from '../lib/dayPlanTime';
 import { defaultPriorityWindowFromNow } from '../lib/dayPlanTimeMath';

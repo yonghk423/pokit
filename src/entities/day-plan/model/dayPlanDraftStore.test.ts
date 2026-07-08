@@ -2,6 +2,9 @@ jest.mock('@shared/lib/storage', () => ({
   ...jest.requireActual('@shared/lib/storage'),
   loadDayPlanDraft: jest.fn(),
   saveDayPlanDraft: jest.fn(),
+}));
+
+jest.mock('../lib/widgetDayPlanSync', () => ({
   syncWidgetTimelineFromStorage: jest.fn(),
 }));
 

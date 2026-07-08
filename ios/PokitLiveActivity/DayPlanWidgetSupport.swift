@@ -22,6 +22,12 @@ struct DayPlanQuickMemoJson: Decodable {
   let isDone: Bool
 }
 
+struct DayPlanPriorityRoutineItemJson: Decodable {
+  let categoryKey: String
+  let iconName: String
+  let isCompleted: Bool
+}
+
 struct DayPlanSnapshotJson: Decodable {
   let dateKey: String
   let blocks: [DayPlanBlockJson]
@@ -29,6 +35,7 @@ struct DayPlanSnapshotJson: Decodable {
   let skippedBlockIds: [String]
   let priorityCategoryKeys: [String]?
   let completedFocusCategoryKeys: [String]?
+  let priorityRoutineItems: [DayPlanPriorityRoutineItemJson]?
   let quickMemos: [DayPlanQuickMemoJson]?
   let quickMemoDraft: String?
 }
@@ -57,7 +64,7 @@ private func normalizedKeys(_ keys: [String]?) -> [String] {
     .filter { !$0.isEmpty }
 }
 
-/// 담기·데이플랜 카탈로그 SF Symbol 매핑 (`categoryReminderCatalog.ts`와 동기)
+/// 담기·데이플랜 카탈로그 SF Symbol 폴백 — RN `resolveCategoryCatalogIcon` 동기화 전 저장본·블록용
 func dayPlanWidgetIconName(for categoryKey: String?) -> String {
   guard let key = categoryKey?.trimmingCharacters(in: .whitespacesAndNewlines), !key.isEmpty else {
     return "person.fill"
@@ -127,7 +134,8 @@ struct DayPlanRoutineIconsModel {
 }
 
 struct DayPlanRoutineStatusItem: Identifiable {
-  var id: String { "\(iconName)-\(isCompleted)" }
+  let categoryKey: String
+  var id: String { categoryKey }
   let iconName: String
   let isCompleted: Bool
 }
@@ -183,6 +191,47 @@ private func buildQuickMemoLines(snapshot: DayPlanSnapshotJson) -> [DayPlanQuick
   return lines
 }
 
+private func normalizedPriorityRoutineItems(
+  _ items: [DayPlanPriorityRoutineItemJson]?
+) -> [DayPlanPriorityRoutineItemJson] {
+  (items ?? [])
+    .filter {
+      !$0.categoryKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        && !$0.iconName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+private func routineSectionsFromPayloadItems(
+  _ items: [DayPlanPriorityRoutineItemJson]
+) -> (
+  routineItems: [DayPlanRoutineStatusItem],
+  today: DayPlanRoutineSectionModel,
+  completed: DayPlanRoutineSectionModel
+) {
+  let routineItems = items.map { item in
+    DayPlanRoutineStatusItem(
+      categoryKey: item.categoryKey,
+      iconName: item.iconName,
+      isCompleted: item.isCompleted
+    )
+  }
+  let pending = items.filter { !$0.isCompleted }
+  let done = items.filter { $0.isCompleted }
+  return (
+    routineItems: routineItems,
+    today: DayPlanRoutineSectionModel(
+      title: "오늘 루틴",
+      count: items.count,
+      iconNames: pending.map(\.iconName)
+    ),
+    completed: DayPlanRoutineSectionModel(
+      title: "완료",
+      count: done.count,
+      iconNames: done.map(\.iconName)
+    )
+  )
+}
+
 func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
   lock: DayPlanRoutineIconsModel,
   home: DayPlanHomeWidgetModel
@@ -207,6 +256,7 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
   }
 
   let priorityKeys = normalizedKeys(snapshot.priorityCategoryKeys)
+  let payloadRoutineItems = normalizedPriorityRoutineItems(snapshot.priorityRoutineItems)
   let completedFocusKeys = Set(normalizedKeys(snapshot.completedFocusCategoryKeys))
   let completedIds = Set(snapshot.completedBlockIds)
   let skippedIds = Set(snapshot.skippedBlockIds)
@@ -216,11 +266,17 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
   let completedSection: DayPlanRoutineSectionModel
   let routineItems: [DayPlanRoutineStatusItem]
 
-  if !priorityKeys.isEmpty {
+  if !payloadRoutineItems.isEmpty {
+    let sections = routineSectionsFromPayloadItems(payloadRoutineItems)
+    routineItems = sections.routineItems
+    todaySection = sections.today
+    completedSection = sections.completed
+  } else if !priorityKeys.isEmpty {
     let pendingKeys = priorityKeys.filter { !completedFocusKeys.contains($0) }
     let doneKeys = priorityKeys.filter { completedFocusKeys.contains($0) }
     routineItems = priorityKeys.map { key in
       DayPlanRoutineStatusItem(
+        categoryKey: key,
         iconName: dayPlanWidgetIconName(for: key),
         isCompleted: completedFocusKeys.contains(key)
       )
@@ -243,7 +299,11 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
     routineItems = blocks
       .filter { !skippedIds.contains($0.id) }
       .map { block in
-      DayPlanRoutineStatusItem(
+      let categoryKey = block.categoryKey?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        ? block.categoryKey!.trimmingCharacters(in: .whitespacesAndNewlines)
+        : block.id
+      return DayPlanRoutineStatusItem(
+        categoryKey: categoryKey,
         iconName: dayPlanWidgetIconName(for: block.categoryKey),
         isCompleted: completedIds.contains(block.id)
       )
@@ -265,7 +325,11 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
   let lockCount: Int
   let emptyMessage: String?
 
-  if !priorityKeys.isEmpty {
+  if !payloadRoutineItems.isEmpty {
+    lockIcons = payloadRoutineItems.map(\.iconName)
+    lockCount = payloadRoutineItems.count
+    emptyMessage = nil
+  } else if !priorityKeys.isEmpty {
     lockIcons = priorityKeys.map { dayPlanWidgetIconName(for: $0) }
     lockCount = priorityKeys.count
     emptyMessage = nil
@@ -334,9 +398,9 @@ struct DayPlanWidgetProvider: TimelineProvider {
           DayPlanQuickMemoLineModel(id: "m1", text: "장보기", isDone: false, isDraft: false),
         ],
         routineItems: [
-          DayPlanRoutineStatusItem(iconName: "brain", isCompleted: true),
-          DayPlanRoutineStatusItem(iconName: "drop.fill", isCompleted: false),
-          DayPlanRoutineStatusItem(iconName: "figure.run", isCompleted: false),
+          DayPlanRoutineStatusItem(categoryKey: "deepwork", iconName: "brain", isCompleted: true),
+          DayPlanRoutineStatusItem(categoryKey: "water", iconName: "drop.fill", isCompleted: false),
+          DayPlanRoutineStatusItem(categoryKey: "stretching", iconName: "figure.run", isCompleted: false),
         ]
       )
     )
@@ -358,11 +422,15 @@ struct DayPlanWidgetProvider: TimelineProvider {
   }
 }
 
+/// `src/shared/config/retroFlat.ts` `RetroFlatColors.light` 와 동기
 enum DayPlanWidgetPalette {
-  static let cream = Color(red: 0.949, green: 0.929, blue: 0.894)
-  static let ink = Color(red: 0.04, green: 0.04, blue: 0.04)
-  static let muted = Color(red: 0.42, green: 0.42, blue: 0.44)
+  static let cream = Color(red: 245 / 255, green: 242 / 255, blue: 235 / 255)
+  static let ink = Color(red: 24 / 255, green: 26 / 255, blue: 46 / 255)
+  static let muted = Color(red: 64 / 255, green: 72 / 255, blue: 72 / 255)
   static let iconBox = Color.black.opacity(0.06)
-  static let completedTint = Color(red: 0.22, green: 0.55, blue: 0.34)
+  /// 완료 아이콘·진행 바·완료 수치 — `primary` `#356668`
+  static let completedTint = Color(red: 53 / 255, green: 102 / 255, blue: 104 / 255)
+  /// 완료 루틴 아이콘 배경 — `primaryContainer` `#A8DADC`
+  static let completedIconBox = Color(red: 168 / 255, green: 218 / 255, blue: 220 / 255)
   static let divider = Color.black.opacity(0.08)
 }

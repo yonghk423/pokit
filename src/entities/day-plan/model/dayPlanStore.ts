@@ -12,7 +12,7 @@ import {
 import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 import type { DayPlanBlock, DayPlanQuickMemo } from '@entities/day-plan/model/types';
 import { loadDayPlan, saveDayPlan } from '@shared/lib/storage/dayPlanStorage';
-import { syncDayPlanToWidget } from '@shared/lib/storage/widgetDayPlanSync';
+import { syncDayPlanToWidget } from '../lib/widgetDayPlanSync';
 
 function createBlockId(): string {
   const cryptoAny = globalThis as unknown as { crypto?: { randomUUID?: () => string } };
