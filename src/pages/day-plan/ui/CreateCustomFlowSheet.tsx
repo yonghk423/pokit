@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  KeyboardAvoidingView,
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -99,7 +99,27 @@ export function CreateCustomFlowSheet({
     buildTemplateDemoConfig('checklist'),
   );
   const [appearancePickerEpoch, setAppearancePickerEpoch] = useState(0);
+  const [keyboardInset, setKeyboardInset] = useState(0);
   const sheetWasVisibleRef = useRef(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setKeyboardInset(0);
+      return;
+    }
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardInset(event.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardInset(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [visible]);
 
   useEffect(() => {
     if (!visible) {
@@ -202,9 +222,7 @@ export function CreateCustomFlowSheet({
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={[styles.root, { backgroundColor: surface }]}>
+      <View style={[styles.root, { backgroundColor: surface }]}>
         <View style={[styles.header, { borderBottomColor: line, paddingTop: insets.top + 12 }]}>
           <View style={styles.headerLeading}>
             {step === 'template' ? (
@@ -229,8 +247,12 @@ export function CreateCustomFlowSheet({
 
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            keyboardInset > 0 && { paddingBottom: keyboardInset + 24 },
+          ]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}>
           {step === 'basics' ? (
             <>
@@ -462,7 +484,11 @@ export function CreateCustomFlowSheet({
         <View
           style={[
             styles.footer,
-            { borderTopColor: line, paddingBottom: Math.max(insets.bottom, 12) },
+            {
+              borderTopColor: line,
+              paddingBottom:
+                keyboardInset > 0 ? keyboardInset + 12 : Math.max(insets.bottom, 12),
+            },
           ]}>
           {step === 'basics' ? (
             <Pressable
@@ -498,7 +524,7 @@ export function CreateCustomFlowSheet({
             </Pressable>
           )}
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
