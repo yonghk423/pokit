@@ -1,12 +1,12 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppStatusBar } from '@app/AppStatusBar';
 import { AppUpdateNoticeHost } from '@app/AppUpdateNoticeHost';
 import { useAppBootstrap, useCityPopFonts } from '@app/index';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -99,7 +99,7 @@ export default function RootLayout() {
             />
           </Stack>
           <AppUpdateNoticeHost appReady={appReady} />
-          <StatusBar style={isDark ? 'light' : 'dark'} />
+          <AppStatusBar />
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

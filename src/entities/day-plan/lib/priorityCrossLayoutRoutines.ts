@@ -55,7 +55,7 @@ export function priorityLayoutRoutineSourceLabelKo(mode: PriorityLayoutRoutineSo
 
 /** 연동 대상 보기에서 가져올 루틴 키(자기 보기 제외) */
 export function resolveCrossLayoutRoutineKeysForTarget(input: {
-  targetMode: Extract<PriorityLayoutRoutineSourceMode, 'sections' | 'spine'>;
+  targetMode: PriorityLayoutRoutineSourceMode;
   priorityCategoryOrder: readonly string[];
   prioritySectionsCategoryOrder: readonly string[];
   prioritySectionsLinkMode: PriorityLayoutLinkMode | null;

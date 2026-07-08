@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   normalizeWorkDetailConfig,
@@ -11,6 +12,7 @@ import {
 } from '@shared/lib/storage/goalDetailSettingsStorage';
 import { StudyDocumentEditor, studyNoteDocumentPalette } from '@widgets/study-note-document';
 
+import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
 const WORK_CATEGORY_KEY = 'work';
@@ -34,6 +36,11 @@ type Props = {
 /** 오늘 탭 — 노트 루틴과 동일한 문서 편집 (상시 접근) */
 export function DayNotePlanSection({ c, isDark }: Props) {
   const palette = useMemo(() => studyNoteDocumentPalette(isDark), [isDark]);
+  const insets = useSafeAreaInsets();
+  const keyboardBottomChromeInset = useMemo(
+    () => DAY_PLAN_TAB_BAR_ROW_HEIGHT + Math.max(insets.bottom, Platform.OS === 'ios' ? 34 : 0),
+    [insets.bottom],
+  );
 
   const [document, setDocument] = useState<WorkStudyDocument>(loadWorkDocument);
   const documentRef = useRef(document);
@@ -78,7 +85,13 @@ export function DayNotePlanSection({ c, isDark }: Props) {
 
   return (
     <View style={[styles.root, { backgroundColor: c.containerLow }]}>
-      <StudyDocumentEditor document={document} onChangeDocument={setDocument} palette={palette} />
+      <StudyDocumentEditor
+        document={document}
+        onChangeDocument={setDocument}
+        palette={palette}
+        keyboardToolbarMode="docked"
+        keyboardBottomChromeInset={keyboardBottomChromeInset}
+      />
     </View>
   );
 }

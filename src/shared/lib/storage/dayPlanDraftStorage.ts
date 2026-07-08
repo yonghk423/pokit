@@ -34,6 +34,8 @@ export type PersistedDayPlanDraft = {
   prioritySectionsLinkMode?: 'linked' | 'independent';
   /** 타임라인 보기 — 목록(bag)과 연동 여부 */
   prioritySpineLinkMode?: 'linked' | 'independent';
+  /** 목록(bag) — 다른 보기(타임라인·시간대별)와 연동 여부 */
+  priorityBagLinkMode?: 'linked' | 'independent';
   /** 시간대별 독립 모드 — 담기 목록과 별도 루틴 순서 */
   prioritySectionsCategoryOrder?: string[];
 };

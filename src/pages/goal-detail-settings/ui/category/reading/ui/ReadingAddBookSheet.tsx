@@ -17,8 +17,6 @@ import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 
 type Palette = ReturnType<typeof goalDetailSettingsPalette>;
 
-const PRIMARY = 'rgb(0, 0, 0)';
-
 type Props = {
   visible: boolean;
   palette: Palette;
@@ -38,6 +36,7 @@ export function ReadingAddBookSheet({
 }: Props) {
   const insets = useSafeAreaInsets();
   const c = palette;
+  const accent = c.onSurface;
   const [draft, setDraft] = useState('');
 
   useEffect(() => {
@@ -93,17 +92,17 @@ export function ReadingAddBookSheet({
               accessibilityRole="button"
               accessibilityLabel="도서 추가"
               onPress={submit}
-              style={[styles.addBtn, { backgroundColor: PRIMARY }]}>
-              <IconSymbol name="plus" size={16} color="#fff" />
+              style={[styles.addBtn, { backgroundColor: accent }]}>
+              <IconSymbol name="plus" size={16} color={c.surfaceLowest} />
             </Pressable>
           </View>
           {aladinEnabled ? (
             <Pressable
               accessibilityRole="button"
               onPress={openSearch}
-              style={[styles.searchBtn, { borderColor: PRIMARY }]}>
-              <IconSymbol name="magnifyingglass" size={14} color={PRIMARY} />
-              <ThemedText style={[styles.searchBtnText, { color: PRIMARY }]}>알라딘 도서 검색</ThemedText>
+              style={[styles.searchBtn, { borderColor: accent }]}>
+              <IconSymbol name="magnifyingglass" size={14} color={accent} />
+              <ThemedText style={[styles.searchBtnText, { color: accent }]}>알라딘 도서 검색</ThemedText>
             </Pressable>
           ) : null}
         </View>

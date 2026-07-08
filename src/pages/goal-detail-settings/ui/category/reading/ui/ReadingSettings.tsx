@@ -19,6 +19,7 @@ import {
   type AladinBookDetail,
 } from '@features/aladin-book-search';
 import { isAladinApiConfigured } from '@shared/config/aladin';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -28,8 +29,6 @@ import { ReadingAddBookSheet } from './ReadingAddBookSheet';
 import { ReadingBookDetailSheet } from './ReadingBookDetailSheet';
 
 import type { GoalDetailCategoryKey } from '../../../../model/types';
-
-const PRIMARY = 'rgb(0, 0, 0)';
 
 type LibraryTab = 'all' | ReadingBookStatus;
 
@@ -63,11 +62,13 @@ function statusLabel(status: ReadingBookStatus): string {
 function ReadingBookListRow({
   entry,
   palette,
+  isDark,
   onPress,
   showDivider,
 }: {
   entry: ReadingBookEntry;
   palette: SettingsPalette;
+  isDark: boolean;
   onPress: () => void;
   showDivider: boolean;
 }) {
@@ -82,12 +83,17 @@ function ReadingBookListRow({
       style={({ pressed }) => [
         styles.listRow,
         showDivider && [styles.listRowDivider, { borderTopColor: c.outlineVariant }],
-        pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
+        pressed && { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' },
       ]}>
       {entry.aladin?.coverUrl ? (
         <Image source={{ uri: entry.aladin.coverUrl }} style={styles.listCover} contentFit="cover" />
       ) : (
-        <View style={[styles.listCover, styles.listCoverFallback, { borderColor: c.outlineVariant }]}>
+        <View
+          style={[
+            styles.listCover,
+            styles.listCoverFallback,
+            { borderColor: c.outlineVariant, backgroundColor: c.surfaceLow },
+          ]}>
           <IconSymbol name="book.closed.fill" size={16} color={c.outline} />
         </View>
       )}
@@ -127,7 +133,9 @@ export function ReadingSettings({
   allowRename?: boolean;
   renameLockedReason?: 'running' | 'today' | null;
 }) {
-  const palette = useMemo(() => goalDetailSettingsPalette(false), []);
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  const palette = useMemo(() => goalDetailSettingsPalette(isDark), [isDark]);
   const c = palette;
 
   const [displayName, setDisplayName] = useState('');
@@ -245,16 +253,16 @@ export function ReadingSettings({
               accessibilityRole="button"
               accessibilityLabel="도서 추가"
               onPress={() => setAddSheetVisible(true)}
-              style={[styles.headerIconBtn, { borderColor: PRIMARY }]}>
-              <IconSymbol name="plus" size={15} color={PRIMARY} />
+              style={[styles.headerIconBtn, { borderColor: c.onSurface }]}>
+              <IconSymbol name="plus" size={15} color={c.onSurface} />
             </Pressable>
             {aladinEnabled ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="도서 검색"
                 onPress={() => setSearchSheetVisible(true)}
-                style={[styles.headerIconBtn, { borderColor: PRIMARY }]}>
-                <IconSymbol name="magnifyingglass" size={15} color={PRIMARY} />
+                style={[styles.headerIconBtn, { borderColor: c.onSurface }]}>
+                <IconSymbol name="magnifyingglass" size={15} color={c.onSurface} />
               </Pressable>
             ) : null}
           </View>
@@ -296,6 +304,7 @@ export function ReadingSettings({
                 key={entry.id}
                 entry={entry}
                 palette={palette}
+                isDark={isDark}
                 onPress={() => setDetailBookId(entry.id)}
                 showDivider={index > 0}
               />
@@ -412,7 +421,7 @@ const styles = StyleSheet.create({
     minHeight: 76,
   },
   listRowDivider: { borderTopWidth: StyleSheet.hairlineWidth },
-  listCover: { width: 42, height: 58, backgroundColor: '#f3f4f6' },
+  listCover: { width: 42, height: 58 },
   listCoverFallback: { alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },
   listBody: { flex: 1, minWidth: 0, gap: 3 },
   listTitle: { fontSize: 15, fontWeight: '700', letterSpacing: -0.2, lineHeight: 20 },

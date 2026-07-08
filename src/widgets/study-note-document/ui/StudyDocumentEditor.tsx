@@ -18,6 +18,7 @@ import {
 
 import {
   WORK_STUDY_HEADING_ACCENTS,
+  WORK_STUDY_TEXT_COLORS,
   WORK_STUDY_TABLE_MAX_COLS,
   WORK_STUDY_TABLE_MAX_ROWS,
   createWorkStudyDocBlock,
@@ -27,11 +28,13 @@ import {
   setWorkStudyActivePageBlocks,
   type WorkStudyDocBlock,
   type WorkStudyDocument,
+  type WorkStudyBlockMarks,
   type WorkStudyHeadingLevel,
 } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { pickImageFromLibrary } from '@shared/lib/media/pickImageFromLibrary';
+import { normalizeWebUrl, openWebLink } from '@shared/lib/url/openWebLink';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
@@ -49,6 +52,63 @@ const STUDY_DOCUMENT_INPUT_ACCESSORY_ID = 'study-document-toolbar';
 const EDITOR_HEADER_HEIGHT = 52;
 
 const MAX_HISTORY = 40;
+
+type ListBlockKind = 'checklist' | 'bullet' | 'numbered';
+
+function normalizeBlockMarks(marks?: WorkStudyBlockMarks): WorkStudyBlockMarks | undefined {
+  if (!marks) return undefined;
+  const next = { ...marks };
+  if (!next.bold) delete next.bold;
+  if (!next.underline) delete next.underline;
+  if (!next.link) delete next.link;
+  if (!next.color) delete next.color;
+  return Object.keys(next).length ? next : undefined;
+}
+
+function isListBlockKind(kind: WorkStudyDocBlock['kind']): kind is ListBlockKind {
+  return kind === 'checklist' || kind === 'bullet' || kind === 'numbered';
+}
+
+function isEditableLinkBlock(kind: WorkStudyDocBlock['kind']): boolean {
+  return kind !== 'table' && kind !== 'image' && kind !== 'heading';
+}
+
+function blockHasToolbarFormatting(
+  block: WorkStudyDocBlock,
+  pendingMarks?: WorkStudyBlockMarks,
+): boolean {
+  const marks = normalizeBlockMarks({ ...pendingMarks, ...block.marks });
+  return Boolean(marks?.bold || marks?.underline || marks?.link || marks?.color);
+}
+
+function convertBlockToKind(
+  block: WorkStudyDocBlock,
+  kind: ListBlockKind | 'paragraph',
+): WorkStudyDocBlock {
+  if (block.kind === kind) return block;
+  const next: WorkStudyDocBlock = { ...block, kind };
+  if (kind === 'checklist') {
+    next.checked = block.checked ?? false;
+  } else {
+    delete next.checked;
+  }
+  return next;
+}
+
+function resolveActiveMarkState(
+  block: WorkStudyDocBlock | null | undefined,
+  pendingMarks: WorkStudyBlockMarks,
+  key: 'bold' | 'underline',
+): boolean {
+  return Boolean(pendingMarks[key] ?? block?.marks?.[key]);
+}
+
+function resolveActiveTextColor(
+  block: WorkStudyDocBlock | null | undefined,
+  pendingMarks: WorkStudyBlockMarks,
+): string | undefined {
+  return pendingMarks.color ?? block?.marks?.color;
+}
 
 function cloneDocument(doc: WorkStudyDocument): WorkStudyDocument {
   return {
@@ -117,42 +177,89 @@ function BlockText({
   onChangeText,
   onFocus,
   onBackspaceAtStart,
+  onEnterKey,
+  onSelectionChange,
   placeholder,
   multiline = false,
+  compact = false,
+  pendingTextColor,
   style,
+  inputAccessoryViewID,
+  inputRef,
 }: {
   block: WorkStudyDocBlock;
   palette: Palette;
   onChangeText: (text: string) => void;
   onFocus?: () => void;
   onBackspaceAtStart?: () => void;
+  onEnterKey?: () => void;
+  onSelectionChange?: (event: { nativeEvent: { selection: { start: number; end: number } } }) => void;
   placeholder: string;
   multiline?: boolean;
+  compact?: boolean;
+  pendingTextColor?: string;
   style?: object;
+  inputAccessoryViewID?: string;
+  inputRef?: (ref: TextInput | null) => void;
 }) {
   const bold = block.marks?.bold;
   const underline = block.marks?.underline;
+  const textColor = block.marks?.color;
+  const enterLockRef = useRef(0);
+  const selectionRef = useRef({ start: 0, end: 0 });
+
+  const handleEnterKey = useCallback(() => {
+    if (!onEnterKey) return;
+    const now = Date.now();
+    if (now - enterLockRef.current < 80) return;
+    enterLockRef.current = now;
+    onEnterKey();
+  }, [onEnterKey]);
+
+  const isEnterKey = useCallback((key: string) => {
+    return key === 'Enter' || key === '\n' || key === 'Return';
+  }, []);
+
   return (
     <TextInput
+      ref={inputRef}
       value={block.text}
       onChangeText={onChangeText}
       onFocus={onFocus}
-      inputAccessoryViewID={Platform.OS === 'ios' ? STUDY_DOCUMENT_INPUT_ACCESSORY_ID : undefined}
+      inputAccessoryViewID={inputAccessoryViewID}
+      blurOnSubmit={false}
+      returnKeyType={onEnterKey && !multiline ? 'next' : multiline ? 'default' : 'done'}
+      onSubmitEditing={() => {
+        if (onEnterKey && !multiline) {
+          handleEnterKey();
+        }
+      }}
+      onSelectionChange={(event) => {
+        selectionRef.current = event.nativeEvent.selection;
+        onSelectionChange?.(event);
+      }}
       onKeyPress={(event) => {
         if (event.nativeEvent.key === 'Backspace' && block.text.length === 0) {
+          event.preventDefault();
           onBackspaceAtStart?.();
+          return;
+        }
+        if (onEnterKey && isEnterKey(event.nativeEvent.key)) {
+          event.preventDefault();
+          handleEnterKey();
         }
       }}
       placeholder={placeholder}
       placeholderTextColor={palette.outline}
       multiline={multiline}
       scrollEnabled={false}
-      textAlignVertical={multiline ? 'top' : 'center'}
+      textAlignVertical={compact ? 'center' : multiline ? 'top' : 'center'}
       style={[
         styles.blockInput,
+        compact ? styles.listBlockInput : null,
         style,
         {
-          color: palette.onSurface,
+          color: textColor ?? pendingTextColor ?? palette.onSurface,
           fontWeight: bold ? '800' : '600',
           textDecorationLine: underline ? 'underline' : 'none',
         },
@@ -171,6 +278,12 @@ function StudyDocumentBlockView({
   onPickImage,
   onBackspaceAtStart,
   paragraphMinHeight,
+  inputAccessoryViewID,
+  registerInputRef,
+  onEnterKey,
+  onSelectionChange,
+  pendingTextColor,
+  onOpenLink,
 }: {
   block: WorkStudyDocBlock;
   blocks: WorkStudyDocBlock[];
@@ -181,8 +294,15 @@ function StudyDocumentBlockView({
   onPickImage: () => void;
   onBackspaceAtStart?: () => void;
   paragraphMinHeight?: number;
+  inputAccessoryViewID?: string;
+  registerInputRef: (blockId: string, ref: TextInput | null) => void;
+  onEnterKey?: () => void;
+  onSelectionChange?: (event: { nativeEvent: { selection: { start: number; end: number } } }) => void;
+  pendingTextColor?: string;
+  onOpenLink?: (url: string) => void;
 }) {
-  const rowShellStyle = styles.blockRow;
+  const rowShellStyle = isListBlockKind(block.kind) ? styles.listBlockRow : styles.blockRow;
+  const isListBlock = isListBlockKind(block.kind);
 
   if (block.kind === 'heading') {
     const accent = WORK_STUDY_HEADING_ACCENTS[block.accentIndex ?? 0] ?? WORK_STUDY_HEADING_ACCENTS[0];
@@ -195,7 +315,7 @@ function StudyDocumentBlockView({
             value={block.text}
             onChangeText={(text) => onChangeBlock(block.id, { text })}
             onFocus={() => onFocusBlock(block.id)}
-            inputAccessoryViewID={Platform.OS === 'ios' ? STUDY_DOCUMENT_INPUT_ACCESSORY_ID : undefined}
+            inputAccessoryViewID={inputAccessoryViewID}
             placeholder="구역 라벨"
             placeholderTextColor="rgba(255,255,255,0.55)"
             style={[styles.headingPrimary, { fontSize: titleSize, color: '#fff' }]}
@@ -204,7 +324,7 @@ function StudyDocumentBlockView({
             value={block.subtitle ?? ''}
             onChangeText={(subtitle) => onChangeBlock(block.id, { subtitle })}
             onFocus={() => onFocusBlock(block.id)}
-            inputAccessoryViewID={Platform.OS === 'ios' ? STUDY_DOCUMENT_INPUT_ACCESSORY_ID : undefined}
+            inputAccessoryViewID={inputAccessoryViewID}
             placeholder="보조 라벨"
             placeholderTextColor="rgba(255,255,255,0.55)"
             style={[styles.headingSecondary, { fontSize: titleSize - 1, color: 'rgba(255,255,255,0.92)' }]}
@@ -245,7 +365,7 @@ function StudyDocumentBlockView({
                     onChangeBlock(block.id, { tableRows: nextRows });
                   }}
                   onFocus={() => onFocusBlock(block.id)}
-                  inputAccessoryViewID={Platform.OS === 'ios' ? STUDY_DOCUMENT_INPUT_ACCESSORY_ID : undefined}
+                  inputAccessoryViewID={inputAccessoryViewID}
                   placeholder={`${rowIdx + 1}-${colIdx + 1}`}
                   placeholderTextColor={palette.outline}
                   style={[styles.tableCell, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
@@ -319,6 +439,10 @@ function StudyDocumentBlockView({
           palette={palette}
           onChangeText={(text) => onChangeBlock(block.id, { text })}
           onFocus={() => onFocusBlock(block.id)}
+          inputAccessoryViewID={inputAccessoryViewID}
+          inputRef={(ref) => registerInputRef(block.id, ref)}
+          onEnterKey={onEnterKey}
+          onSelectionChange={onSelectionChange}
           placeholder="캡션 (선택)"
         />
       </View>
@@ -338,7 +462,7 @@ function StudyDocumentBlockView({
             backgroundColor: block.checked ? palette.onSurface : 'transparent',
           },
         ]}>
-        {block.checked ? <IconSymbol name="checkmark" size={12} color="#fff" /> : null}
+        {block.checked ? <IconSymbol name="checkmark" size={10} color="#fff" /> : null}
       </Pressable>
     ) : block.kind === 'bullet' ? (
       <ThemedText style={[styles.listMarker, { color: palette.onVariant }]}>•</ThemedText>
@@ -349,15 +473,21 @@ function StudyDocumentBlockView({
     ) : null;
 
   return (
-    <View style={[rowShellStyle, styles.row]}>
+    <View style={[rowShellStyle, styles.row, isListBlock ? styles.listRow : null]}>
       {rowPrefix}
-      <View style={styles.rowBody}>
+      <View style={[styles.rowBody, isListBlock ? styles.listRowBody : null]}>
         <BlockText
           block={block}
           palette={palette}
           onChangeText={(text) => onChangeBlock(block.id, { text })}
           onFocus={() => onFocusBlock(block.id)}
           onBackspaceAtStart={onBackspaceAtStart}
+          inputAccessoryViewID={inputAccessoryViewID}
+          inputRef={(ref) => registerInputRef(block.id, ref)}
+          onEnterKey={onEnterKey}
+          onSelectionChange={onSelectionChange}
+          compact={isListBlock}
+          pendingTextColor={pendingTextColor}
           placeholder={
             block.kind === 'checklist'
               ? '할 일'
@@ -381,9 +511,15 @@ function StudyDocumentBlockView({
           }
         />
         {block.marks?.link ? (
-          <ThemedText style={[styles.linkMeta, { color: palette.onVariant }]} numberOfLines={1}>
-            🔗 {block.marks.link}
-          </ThemedText>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={`링크 열기: ${block.marks.link}`}
+            onPress={() => onOpenLink?.(block.marks!.link!)}
+            style={({ pressed }) => [styles.linkMetaHit, pressed && { opacity: 0.65 }]}>
+            <ThemedText style={[styles.linkMeta, { color: palette.onSurface }]} numberOfLines={1}>
+              🔗 {block.marks.link}
+            </ThemedText>
+          </Pressable>
         ) : null}
       </View>
     </View>
@@ -395,16 +531,28 @@ export function StudyDocumentEditor({
   onChangeDocument,
   palette,
   viewportHeight,
+  keyboardToolbarMode = 'accessory',
+  keyboardBottomChromeInset = 0,
 }: {
   document: WorkStudyDocument;
   onChangeDocument: Dispatch<SetStateAction<WorkStudyDocument>>;
   palette: Palette;
   /** 목표 상세 등 고정 레이아웃에서 에디터 스크롤 영역 높이 */
   viewportHeight?: number;
+  /**
+   * `accessory`: iOS 키보드 상단 InputAccessoryView (루틴 노트 설정 등)
+   * `docked`: 키보드 높이만큼 올린 하단 도킹 툴바 (오늘 탭 상단 노트)
+   */
+  keyboardToolbarMode?: 'accessory' | 'docked';
+  /** 도킹 툴바 모드에서 키보드 inset 보정(탭 바 등 화면 하단 chrome) */
+  keyboardBottomChromeInset?: number;
 }) {
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [pendingMarks, setPendingMarksState] = useState<WorkStudyBlockMarks>({});
+  const [activeListKind, setActiveListKind] = useState<ListBlockKind | null>(null);
   const [linkDraft, setLinkDraft] = useState('');
   const [showLinkInput, setShowLinkInput] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const [historyTick, setHistoryTick] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
@@ -412,6 +560,11 @@ export function StudyDocumentEditor({
   const drawerOpenRef = useRef(false);
   const undoStack = useRef<WorkStudyDocument[]>([]);
   const redoStack = useRef<WorkStudyDocument[]>([]);
+  const pendingMarksRef = useRef<WorkStudyBlockMarks>({});
+  const blockInputRefs = useRef<Record<string, TextInput | null>>({});
+  const selectionByBlockRef = useRef<Record<string, { start: number; end: number }>>({});
+  const pendingFocusBlockIdRef = useRef<string | null>(null);
+  const linkTargetBlockIdRef = useRef<string | null>(null);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const drawerWidth = Math.min(DRAWER_MAX_WIDTH, Math.round(windowWidth * DRAWER_WIDTH_RATIO));
   const drawerSlideX = useRef(new Animated.Value(-drawerWidth)).current;
@@ -421,6 +574,28 @@ export function StudyDocumentEditor({
 
   const canUndo = historyTick >= 0 && undoStack.current.length > 0;
   const canRedo = historyTick >= 0 && redoStack.current.length > 0;
+
+  const resolvePendingMarks = useCallback((): WorkStudyBlockMarks | undefined => {
+    return normalizeBlockMarks(pendingMarksRef.current);
+  }, []);
+
+  const registerInputRef = useCallback((blockId: string, ref: TextInput | null) => {
+    if (ref) {
+      blockInputRefs.current[blockId] = ref;
+      return;
+    }
+    delete blockInputRefs.current[blockId];
+  }, []);
+
+  useEffect(() => {
+    const blockId = pendingFocusBlockIdRef.current;
+    if (!blockId || activeBlockId !== blockId) return;
+    pendingFocusBlockIdRef.current = null;
+    const frame = requestAnimationFrame(() => {
+      blockInputRefs.current[blockId]?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeBlockId]);
 
   const pushHistory = useCallback(() => {
     undoStack.current = [...undoStack.current.slice(-(MAX_HISTORY - 1)), cloneDocument(document)];
@@ -551,19 +726,220 @@ export function StudyDocumentEditor({
     [activeBlocks, replaceActiveBlocks],
   );
 
-  const deletePreviousBlock = useCallback(
-    (blockId: string) => {
-      const withPage = ensurePageDocument();
-      const page = getWorkStudyActivePage(withPage);
-      const blocks = page?.blocks ?? [];
-      const index = blocks.findIndex((block) => block.id === blockId);
-      if (index <= 0) return;
+  const commitStructuralChange = useCallback(
+    (blocks: WorkStudyDocBlock[]) => {
       pushHistory();
-      replaceActiveBlocks(blocks.filter((_, blockIndex) => blockIndex !== index - 1));
+      replaceActiveBlocks(blocks);
+    },
+    [pushHistory, replaceActiveBlocks],
+  );
+
+  const handleFocusBlock = useCallback(
+    (blockId: string) => {
       setActiveBlockId(blockId);
+      const block = activeBlocks.find((b) => b.id === blockId);
+      const synced = {
+        ...(block?.marks?.bold ? { bold: true } : {}),
+        ...(block?.marks?.underline ? { underline: true } : {}),
+        ...(block?.marks?.color ? { color: block.marks.color } : {}),
+      };
+      pendingMarksRef.current = synced;
+      setPendingMarksState(synced);
+      if (block && isListBlockKind(block.kind)) {
+        setActiveListKind(block.kind);
+      } else {
+        setActiveListKind(null);
+      }
+      const pending = resolvePendingMarks();
+      if (!pending || !block || block.kind === 'table' || block.kind === 'image' || block.kind === 'heading') {
+        return;
+      }
+      replaceActiveBlocks(
+        activeBlocks.map((b) =>
+          b.id === blockId
+            ? { ...b, marks: normalizeBlockMarks({ ...b.marks, ...pending }) }
+            : b,
+        ),
+      );
+    },
+    [activeBlocks, replaceActiveBlocks, resolvePendingMarks],
+  );
+
+  const handleChangeBlock = useCallback(
+    (id: string, patch: Partial<WorkStudyDocBlock>) => {
+      if (patch.text !== undefined) {
+        const block = activeBlocks.find((b) => b.id === id);
+        const pending = resolvePendingMarks();
+        if (
+          block &&
+          pending &&
+          !blockHasToolbarFormatting(block) &&
+          block.kind !== 'table' &&
+          block.kind !== 'image' &&
+          block.kind !== 'heading'
+        ) {
+          updateBlock(id, {
+            ...patch,
+            marks: normalizeBlockMarks({ ...block.marks, ...pending }),
+          });
+          return;
+        }
+      }
+      updateBlock(id, patch);
+    },
+    [activeBlocks, resolvePendingMarks, updateBlock],
+  );
+
+  const handleSelectionChange = useCallback(
+    (blockId: string, event: { nativeEvent: { selection: { start: number; end: number } } }) => {
+      selectionByBlockRef.current[blockId] = event.nativeEvent.selection;
+    },
+    [],
+  );
+
+  const insertBlockAfter = useCallback(
+    (
+      afterBlockId: string,
+      kind: WorkStudyDocBlock['kind'],
+      marks?: WorkStudyBlockMarks,
+    ) => {
+      const index = activeBlocks.findIndex((b) => b.id === afterBlockId);
+      if (index < 0) return;
+      const source = activeBlocks[index]!;
+      const block = createWorkStudyDocBlock(kind);
+      const resolvedMarks = normalizeBlockMarks(marks ?? source.marks ?? resolvePendingMarks());
+      if (resolvedMarks) block.marks = resolvedMarks;
+      const next = [...activeBlocks];
+      next.splice(index + 1, 0, block);
+      commitStructuralChange(next);
+      if (isListBlockKind(kind)) setActiveListKind(kind);
+      pendingFocusBlockIdRef.current = block.id;
+      setActiveBlockId(block.id);
+    },
+    [activeBlocks, commitStructuralChange, resolvePendingMarks],
+  );
+
+  const continueParagraph = useCallback(
+    (blockId: string) => {
+      const block = activeBlocks.find((b) => b.id === blockId);
+      if (!block || block.kind !== 'paragraph') return;
+      const sel = selectionByBlockRef.current[blockId];
+      const cursor = sel?.start ?? block.text.length;
+      const marks = normalizeBlockMarks(block.marks ?? resolvePendingMarks());
+      if (cursor < block.text.length) {
+        const before = block.text.slice(0, cursor);
+        const after = block.text.slice(cursor);
+        const newBlock = createWorkStudyDocBlock('paragraph');
+        newBlock.text = after;
+        if (marks) newBlock.marks = marks;
+        const index = activeBlocks.findIndex((b) => b.id === blockId);
+        const next = activeBlocks.map((b) =>
+          b.id === blockId ? { ...b, text: before, marks: marks ?? b.marks } : b,
+        );
+        next.splice(index + 1, 0, newBlock);
+        commitStructuralChange(next);
+        pendingFocusBlockIdRef.current = newBlock.id;
+        setActiveBlockId(newBlock.id);
+        return;
+      }
+      insertBlockAfter(blockId, 'paragraph', marks);
+    },
+    [activeBlocks, commitStructuralChange, insertBlockAfter, resolvePendingMarks],
+  );
+
+  const continueListBlock = useCallback(
+    (blockId: string, kind: ListBlockKind) => {
+      const block = activeBlocks.find((b) => b.id === blockId);
+      if (!block || block.kind !== kind) return;
+      const sel = selectionByBlockRef.current[blockId];
+      const cursor = sel?.start ?? block.text.length;
+      const marks = normalizeBlockMarks(block.marks ?? resolvePendingMarks());
+
+      if (cursor < block.text.length) {
+        const before = block.text.slice(0, cursor);
+        const after = block.text.slice(cursor);
+        const newBlock = createWorkStudyDocBlock(kind);
+        newBlock.text = after;
+        if (marks) newBlock.marks = marks;
+        const index = activeBlocks.findIndex((b) => b.id === blockId);
+        const next = activeBlocks.map((b) => (b.id === blockId ? { ...b, text: before, marks: marks ?? b.marks } : b));
+        next.splice(index + 1, 0, newBlock);
+        commitStructuralChange(next);
+        pendingFocusBlockIdRef.current = newBlock.id;
+        setActiveBlockId(newBlock.id);
+        return;
+      }
+
+      insertBlockAfter(blockId, kind, marks);
+    },
+    [activeBlocks, commitStructuralChange, insertBlockAfter, resolvePendingMarks],
+  );
+
+  const handleBlockEnter = useCallback(
+    (block: WorkStudyDocBlock) => {
+      if (isListBlockKind(block.kind)) {
+        continueListBlock(block.id, block.kind);
+        return;
+      }
+      if (block.kind === 'paragraph' && blockHasToolbarFormatting(block, pendingMarksRef.current)) {
+        continueParagraph(block.id);
+      }
+    },
+    [continueListBlock, continueParagraph],
+  );
+
+  const handleBackspaceAtStart = useCallback(
+    (blockId: string, blockIndex: number) => {
+      const block = activeBlocks[blockIndex];
+      if (!block || block.id !== blockId) return;
+
+      const sel = selectionByBlockRef.current[blockId];
+      const cursor = sel?.start ?? 0;
+      if (cursor > 0) return;
+
+      if (block.text.length > 0) {
+        if (blockIndex <= 0) return;
+        const prev = activeBlocks[blockIndex - 1]!;
+        if (isListBlockKind(block.kind) && prev.kind === block.kind) {
+          pushHistory();
+          const mergedText = prev.text + block.text;
+          const marks = normalizeBlockMarks({ ...prev.marks, ...block.marks });
+          const next = activeBlocks
+            .map((b, index) =>
+              index === blockIndex - 1 ? { ...b, text: mergedText, marks: marks ?? b.marks } : b,
+            )
+            .filter((_, index) => index !== blockIndex);
+          replaceActiveBlocks(next);
+          pendingFocusBlockIdRef.current = prev.id;
+          setActiveBlockId(prev.id);
+          void Haptics.selectionAsync();
+        }
+        return;
+      }
+
+      pushHistory();
+
+      if (activeBlocks.length === 1) {
+        const paragraph = createWorkStudyDocBlock('paragraph');
+        replaceActiveBlocks([paragraph]);
+        pendingFocusBlockIdRef.current = paragraph.id;
+        setActiveBlockId(paragraph.id);
+        if (isListBlockKind(block.kind)) setActiveListKind(null);
+        void Haptics.selectionAsync();
+        return;
+      }
+
+      const focusId =
+        blockIndex > 0
+          ? activeBlocks[blockIndex - 1]!.id
+          : activeBlocks[blockIndex + 1]!.id;
+      const next = activeBlocks.filter((_, index) => index !== blockIndex);
+      replaceActiveBlocks(next);
+      pendingFocusBlockIdRef.current = focusId;
+      setActiveBlockId(focusId);
       void Haptics.selectionAsync();
     },
-    [ensurePageDocument, pushHistory, replaceActiveBlocks],
+    [activeBlocks, pushHistory, replaceActiveBlocks],
   );
 
   const pickImageForBlock = useCallback(
@@ -610,14 +986,6 @@ export function StudyDocumentEditor({
     [ensurePageDocument, onChangeDocument],
   );
 
-  const commitStructuralChange = useCallback(
-    (blocks: WorkStudyDocBlock[]) => {
-      pushHistory();
-      replaceActiveBlocks(blocks);
-    },
-    [pushHistory, replaceActiveBlocks],
-  );
-
   const insertBlock = useCallback(
     (kind: WorkStudyDocBlock['kind'], options?: { headingLevel?: WorkStudyHeadingLevel }) => {
       const withPage = ensurePageDocument();
@@ -627,11 +995,17 @@ export function StudyDocumentEditor({
         headingLevel: options?.headingLevel,
         accentIndex: kind === 'heading' ? nextAccentIndex(blocks) : undefined,
       });
+      const marks = resolvePendingMarks();
+      if (marks && kind !== 'table' && kind !== 'image' && kind !== 'heading') {
+        block.marks = marks;
+      }
       commitStructuralChange([...blocks, block]);
+      if (isListBlockKind(kind)) setActiveListKind(kind);
+      pendingFocusBlockIdRef.current = block.id;
       setActiveBlockId(block.id);
       void Haptics.selectionAsync();
     },
-    [commitStructuralChange, ensurePageDocument],
+    [commitStructuralChange, ensurePageDocument, resolvePendingMarks],
   );
 
   const resetDocument = useCallback(() => {
@@ -646,6 +1020,7 @@ export function StudyDocumentEditor({
           replaceActiveBlocks([]);
           setActiveBlockId(null);
           setShowLinkInput(false);
+          setShowColorPicker(false);
           setLinkDraft('');
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         },
@@ -659,6 +1034,7 @@ export function StudyDocumentEditor({
         applyDocument({ ...document, activePageId: pageId });
         setActiveBlockId(null);
         setShowLinkInput(false);
+        setShowColorPicker(false);
         setLinkDraft('');
       }
       closeDrawer();
@@ -677,6 +1053,7 @@ export function StudyDocumentEditor({
       });
       setActiveBlockId(null);
       setShowLinkInput(false);
+      setShowColorPicker(false);
       setLinkDraft('');
       if (options?.closeDrawer) closeDrawer();
     },
@@ -697,6 +1074,7 @@ export function StudyDocumentEditor({
       applyDocument({ pages: nextPages, activePageId: nextActive });
       setActiveBlockId(null);
       setShowLinkInput(false);
+      setShowColorPicker(false);
       setLinkDraft('');
     },
     [applyDocument, document.activePageId, document.pages, pushHistory],
@@ -705,44 +1083,225 @@ export function StudyDocumentEditor({
   const activePageLabel = activePage
     ? resolveWorkStudyNotePageLabel(activePage, document.pages)
     : '메모';
+  const focusedBlock = activeBlockId ? activeBlocks.find((b) => b.id === activeBlockId) : null;
+  const toolbarActiveBold = resolveActiveMarkState(focusedBlock, pendingMarks, 'bold');
+  const toolbarActiveUnderline = resolveActiveMarkState(focusedBlock, pendingMarks, 'underline');
+  const toolbarActiveTextColor = resolveActiveTextColor(focusedBlock, pendingMarks);
+  const toolbarActiveListKind =
+    focusedBlock && isListBlockKind(focusedBlock.kind) ? focusedBlock.kind : activeListKind;
+
+  const toggleListKind = useCallback(
+    (kind: ListBlockKind) => {
+      const focusedBlock = activeBlockId ? activeBlocks.find((b) => b.id === activeBlockId) : null;
+      const block =
+        focusedBlock ??
+        (activeBlocks.length > 0 ? activeBlocks[activeBlocks.length - 1] : null);
+
+      if (block?.kind === kind) {
+        pushHistory();
+        replaceActiveBlocks(
+          activeBlocks.map((b) =>
+            b.id === block.id ? convertBlockToKind(b, 'paragraph') : b,
+          ),
+        );
+        setActiveListKind(null);
+        pendingFocusBlockIdRef.current = block.id;
+        setActiveBlockId(block.id);
+        void Haptics.selectionAsync();
+        return;
+      }
+
+      if (block && (block.kind === 'paragraph' || isListBlockKind(block.kind))) {
+        pushHistory();
+        replaceActiveBlocks(
+          activeBlocks.map((b) => (b.id === block.id ? convertBlockToKind(b, kind) : b)),
+        );
+        setActiveListKind(kind);
+        pendingFocusBlockIdRef.current = block.id;
+        setActiveBlockId(block.id);
+        void Haptics.selectionAsync();
+        return;
+      }
+
+      insertBlock(kind);
+    },
+    [activeBlockId, activeBlocks, insertBlock, pushHistory, replaceActiveBlocks],
+  );
 
   const toggleMark = useCallback(
     (key: 'bold' | 'underline') => {
-      if (!activeBlockId) return;
-      const block = activeBlocks.find((b) => b.id === activeBlockId);
-      if (!block || block.kind === 'table' || block.kind === 'image') return;
-      pushHistory();
-      const marks = { ...block.marks, [key]: !block.marks?.[key] };
-      if (!marks.bold) delete marks.bold;
-      if (!marks.underline) delete marks.underline;
-      replaceActiveBlocks(
-        activeBlocks.map((b) =>
-          b.id === activeBlockId ? { ...b, marks: Object.keys(marks).length ? marks : undefined } : b,
-        ),
-      );
+      const block = activeBlockId ? activeBlocks.find((b) => b.id === activeBlockId) : null;
+      const merged = {
+        ...(block?.marks ?? {}),
+        ...pendingMarksRef.current,
+      };
+      const nextValue = !resolveActiveMarkState(block, pendingMarksRef.current, key);
+      if (nextValue) {
+        merged[key] = true;
+      } else {
+        delete merged[key];
+      }
+      const normalized = normalizeBlockMarks(merged) ?? {};
+      pendingMarksRef.current = normalized;
+      setPendingMarksState({ ...normalized });
+
+      if (activeBlockId) {
+        if (!block || block.kind === 'table' || block.kind === 'image' || block.kind === 'heading') return;
+        pushHistory();
+        replaceActiveBlocks(
+          activeBlocks.map((b) =>
+            b.id === activeBlockId
+              ? { ...b, marks: normalizeBlockMarks(merged) }
+              : b,
+          ),
+        );
+        return;
+      }
+      if (activeBlocks.length === 0) {
+        insertBlock('paragraph');
+      }
     },
-    [activeBlockId, activeBlocks, pushHistory, replaceActiveBlocks],
+    [activeBlockId, activeBlocks, insertBlock, pushHistory, replaceActiveBlocks],
   );
 
-  const applyLink = useCallback(() => {
-    if (!activeBlockId) return;
-    pushHistory();
-    const url = linkDraft.trim();
-    if (!url) {
-      replaceActiveBlocks(
-        activeBlocks.map((b) => (b.id === activeBlockId ? { ...b, marks: undefined } : b)),
-      );
-    } else {
-      const block = activeBlocks.find((b) => b.id === activeBlockId);
+  const openLinkEditor = useCallback(() => {
+    void Haptics.selectionAsync();
+    const withPage = ensurePageDocument();
+    const page = getWorkStudyActivePage(withPage);
+    const blocks = page?.blocks ?? [];
+
+    let targetBlock =
+      (activeBlockId
+        ? blocks.find((b) => b.id === activeBlockId && isEditableLinkBlock(b.kind))
+        : null) ??
+      [...blocks].reverse().find((b) => isEditableLinkBlock(b.kind)) ??
+      null;
+
+    if (!targetBlock) {
+      const created = createWorkStudyDocBlock('paragraph');
+      const marks = resolvePendingMarks();
+      if (marks) created.marks = marks;
+      commitStructuralChange([...blocks, created]);
+      targetBlock = created;
+      pendingFocusBlockIdRef.current = created.id;
+      setActiveBlockId(created.id);
+    }
+
+    linkTargetBlockIdRef.current = targetBlock.id;
+    setLinkDraft(targetBlock.marks?.link ?? '');
+    setShowColorPicker(false);
+    setShowLinkInput(true);
+  }, [activeBlockId, commitStructuralChange, ensurePageDocument, resolvePendingMarks]);
+
+  const ensureEditableTargetBlock = useCallback((): WorkStudyDocBlock | null => {
+    const withPage = ensurePageDocument();
+    const page = getWorkStudyActivePage(withPage);
+    const blocks = page?.blocks ?? [];
+
+    let targetBlock =
+      (activeBlockId
+        ? blocks.find((b) => b.id === activeBlockId && isEditableLinkBlock(b.kind))
+        : null) ??
+      [...blocks].reverse().find((b) => isEditableLinkBlock(b.kind)) ??
+      null;
+
+    if (!targetBlock) {
+      const created = createWorkStudyDocBlock('paragraph');
+      const marks = resolvePendingMarks();
+      if (marks) created.marks = marks;
+      commitStructuralChange([...blocks, created]);
+      targetBlock = created;
+      pendingFocusBlockIdRef.current = created.id;
+      setActiveBlockId(created.id);
+    }
+
+    return targetBlock;
+  }, [activeBlockId, commitStructuralChange, ensurePageDocument, resolvePendingMarks]);
+
+  const applyTextColor = useCallback(
+    (color: string | undefined) => {
+      const targetBlock = ensureEditableTargetBlock();
+      if (!targetBlock) return;
+
+      const currentColor = resolveActiveTextColor(targetBlock, pendingMarksRef.current);
+      const normalizedPick = color?.toUpperCase();
+      const nextColor =
+        normalizedPick && currentColor?.toUpperCase() === normalizedPick ? undefined : normalizedPick;
+
+      const merged = {
+        ...(targetBlock.marks ?? {}),
+        ...pendingMarksRef.current,
+      };
+      if (nextColor) {
+        merged.color = nextColor;
+      } else {
+        delete merged.color;
+      }
+
+      const normalized = normalizeBlockMarks(merged) ?? {};
+      pendingMarksRef.current = normalized;
+      setPendingMarksState({ ...normalized });
+
+      pushHistory();
       replaceActiveBlocks(
         activeBlocks.map((b) =>
-          b.id === activeBlockId ? { ...b, marks: { ...block?.marks, link: url } } : b,
+          b.id === targetBlock.id ? { ...b, marks: normalizeBlockMarks(merged) } : b,
         ),
       );
-    }
+      pendingFocusBlockIdRef.current = targetBlock.id;
+      setActiveBlockId(targetBlock.id);
+      void Haptics.selectionAsync();
+    },
+    [activeBlocks, ensureEditableTargetBlock, pushHistory, replaceActiveBlocks],
+  );
+
+  const openColorPicker = useCallback(() => {
+    void Haptics.selectionAsync();
     setShowLinkInput(false);
     setLinkDraft('');
-  }, [activeBlockId, activeBlocks, linkDraft, pushHistory, replaceActiveBlocks]);
+    ensureEditableTargetBlock();
+    setShowColorPicker((open) => !open);
+  }, [ensureEditableTargetBlock]);
+
+  const applyLink = useCallback(() => {
+    const targetId =
+      linkTargetBlockIdRef.current ??
+      activeBlockId ??
+      [...activeBlocks].reverse().find((b) => isEditableLinkBlock(b.kind))?.id;
+    if (!targetId) return;
+
+    const url = normalizeWebUrl(linkDraft) ?? linkDraft.trim();
+    pushHistory();
+    onChangeDocument((prev) => {
+      const withPage = prev.pages.length > 0 ? prev : ensurePageDocument(prev);
+      const page = getWorkStudyActivePage(withPage);
+      const blocks = page?.blocks ?? [];
+      const nextBlocks = blocks.map((block) => {
+        if (block.id !== targetId || !isEditableLinkBlock(block.kind)) return block;
+        if (!url) {
+          return { ...block, marks: normalizeBlockMarks({ ...block.marks, link: undefined }) };
+        }
+        return { ...block, marks: normalizeBlockMarks({ ...block.marks, link: url }) };
+      });
+      return setWorkStudyActivePageBlocks(withPage, nextBlocks);
+    });
+
+    linkTargetBlockIdRef.current = targetId;
+    setActiveBlockId(targetId);
+    setShowLinkInput(false);
+    setLinkDraft('');
+    void Haptics.selectionAsync();
+    requestAnimationFrame(() => {
+      blockInputRefs.current[targetId]?.focus();
+    });
+  }, [activeBlockId, activeBlocks, ensurePageDocument, linkDraft, onChangeDocument, pushHistory]);
+
+  const handleOpenBlockLink = useCallback(async (url: string) => {
+    const opened = await openWebLink(url);
+    if (!opened) {
+      Alert.alert('링크를 열 수 없어요', '주소를 확인한 뒤 다시 시도해 주세요.');
+    }
+  }, []);
 
   const onToolbarAction = useCallback(
     (action: StudyToolbarAction) => {
@@ -764,13 +1323,13 @@ export function StudyDocumentEditor({
           break;
         }
         case 'checklist':
-          insertBlock('checklist');
+          toggleListKind('checklist');
           break;
         case 'bullet':
-          insertBlock('bullet');
+          toggleListKind('bullet');
           break;
         case 'numbered':
-          insertBlock('numbered');
+          toggleListKind('numbered');
           break;
         case 'table': {
           const withPage = ensurePageDocument();
@@ -801,12 +1360,12 @@ export function StudyDocumentEditor({
         case 'underline':
           toggleMark('underline');
           break;
-        case 'link': {
-          const block = activeBlockId ? activeBlocks.find((b) => b.id === activeBlockId) : null;
-          setLinkDraft(block?.marks?.link ?? '');
-          setShowLinkInput(true);
+        case 'text-color':
+          openColorPicker();
           break;
-        }
+        case 'link':
+          openLinkEditor();
+          break;
         case 'reset-document':
           resetDocument();
           break;
@@ -814,24 +1373,36 @@ export function StudyDocumentEditor({
           break;
       }
     },
-    [activeBlockId, activeBlocks, ensurePageDocument, insertBlock, pickImageForBlock, replaceDocument, resetDocument, toggleMark],
+    [activeBlockId, activeBlocks, ensurePageDocument, insertBlock, openColorPicker, openLinkEditor, pickImageForBlock, replaceDocument, resetDocument, toggleListKind, toggleMark],
   );
 
   const empty = activeBlocks.length === 0;
   const keyboardOpen = keyboardInset > 0;
-  const showDockedToolbar = Platform.OS !== 'ios' || !keyboardOpen;
+  const useDockedKeyboardToolbar = keyboardToolbarMode === 'docked';
+  const useInputAccessory = Platform.OS === 'ios' && !useDockedKeyboardToolbar;
+  const textInputAccessoryViewID = useInputAccessory ? STUDY_DOCUMENT_INPUT_ACCESSORY_ID : undefined;
+  const showDockedToolbar = useDockedKeyboardToolbar || Platform.OS !== 'ios' || !keyboardOpen;
+  const toolbarPanelHeight = showLinkInput ? 56 : showColorPicker ? 44 : 0;
   const accessoryReserve =
-    (showDockedToolbar ? (showLinkInput ? 56 : 0) + KEYBOARD_ACCESSORY_ESTIMATED_HEIGHT : 12);
+    (showDockedToolbar ? toolbarPanelHeight + KEYBOARD_ACCESSORY_ESTIMATED_HEIGHT : 12);
+  const dockedToolbarBottom = useDockedKeyboardToolbar
+    ? Math.max(0, keyboardInset - keyboardBottomChromeInset)
+    : Platform.OS === 'android'
+      ? keyboardInset
+      : 0;
 
   const resolvedScrollHeight =
     viewportHeight != null
       ? Math.max(160, viewportHeight - EDITOR_HEADER_HEIGHT - accessoryReserve)
       : scrollViewportHeight;
+  const useFlexCanvas = viewportHeight == null;
 
   const canvasMinHeight =
-    resolvedScrollHeight != null
-      ? Math.max(120, resolvedScrollHeight - 8)
-      : Math.round(Math.max(380, windowHeight * 0.5));
+    useFlexCanvas
+      ? 120
+      : resolvedScrollHeight != null
+        ? Math.max(120, resolvedScrollHeight - 8)
+        : Math.round(Math.max(380, windowHeight * 0.5));
   const singleParagraph = activeBlocks.length === 1 && activeBlocks[0]?.kind === 'paragraph';
   const paragraphMinHeight = singleParagraph ? canvasMinHeight - 24 : undefined;
 
@@ -855,12 +1426,45 @@ export function StudyDocumentEditor({
             placeholder="https://..."
             placeholderTextColor={palette.outline}
             autoCapitalize="none"
-            inputAccessoryViewID={Platform.OS === 'ios' ? STUDY_DOCUMENT_INPUT_ACCESSORY_ID : undefined}
+            inputAccessoryViewID={textInputAccessoryViewID}
             style={[styles.linkInput, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
           />
           <Pressable onPress={applyLink} style={[styles.linkApply, { borderColor: palette.onSurface }]}>
             <ThemedText style={{ color: palette.onSurface, fontWeight: '700', fontSize: 12 }}>적용</ThemedText>
           </Pressable>
+        </View>
+      ) : null}
+
+      {showColorPicker ? (
+        <View style={[styles.colorRow, { borderColor: palette.outlineVariant, backgroundColor: NOTE_PAGE_BG }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="기본 색"
+            onPress={() => applyTextColor(undefined)}
+            style={[
+              styles.colorSwatch,
+              styles.colorSwatchDefault,
+              !toolbarActiveTextColor
+                ? [styles.colorSwatchSelected, { borderColor: NOTE_PAGE_BG }]
+                : { borderColor: palette.outlineVariant },
+            ]}
+          />
+          {WORK_STUDY_TEXT_COLORS.map((option) => {
+            const selected = toolbarActiveTextColor?.toUpperCase() === option.value;
+            return (
+              <Pressable
+                key={option.value}
+                accessibilityRole="button"
+                accessibilityLabel={option.label}
+                onPress={() => applyTextColor(option.value)}
+                style={[
+                  styles.colorSwatch,
+                  { backgroundColor: option.value },
+                  selected ? styles.colorSwatchSelected : null,
+                ]}
+              />
+            );
+          })}
         </View>
       ) : null}
 
@@ -871,6 +1475,11 @@ export function StudyDocumentEditor({
           canUndo={canUndo}
           canRedo={canRedo}
           canResetDocument={activeBlocks.length > 0}
+          activeBold={toolbarActiveBold}
+          activeUnderline={toolbarActiveUnderline}
+          activeTextColor={toolbarActiveTextColor}
+          colorPickerOpen={showColorPicker}
+          activeListKind={toolbarActiveListKind}
           onAction={onToolbarAction}
         />
       </View>
@@ -882,9 +1491,13 @@ export function StudyDocumentEditor({
       style={[
         styles.shell,
         { backgroundColor: NOTE_PAGE_BG },
-        viewportHeight != null ? { height: viewportHeight, flexGrow: 0 } : null,
+        viewportHeight != null
+          ? { height: viewportHeight, flexGrow: 0, flexShrink: 0 }
+          : null,
       ]}
-      onLayout={viewportHeight == null ? onShellLayout : undefined}>
+      onLayout={
+        viewportHeight == null && keyboardToolbarMode !== 'docked' ? onShellLayout : undefined
+      }>
       <View style={[styles.editorHeader, { borderBottomColor: palette.outlineVariant, backgroundColor: NOTE_PAGE_BG }]}>
         <Pressable
           accessibilityRole="button"
@@ -912,13 +1525,17 @@ export function StudyDocumentEditor({
       <ScrollView
         style={[
           styles.canvasScroll,
-          resolvedScrollHeight != null ? { height: resolvedScrollHeight } : null,
+          useFlexCanvas ? styles.canvasScrollFlex : null,
+          !useFlexCanvas && resolvedScrollHeight != null ? { height: resolvedScrollHeight } : null,
         ]}
-        contentContainerStyle={{ paddingBottom: accessoryReserve + 16 }}
+        contentContainerStyle={[
+          useFlexCanvas ? styles.canvasScrollContentFlex : null,
+          { paddingBottom: useFlexCanvas ? 16 : accessoryReserve + 16 },
+        ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}>
-        <View style={[styles.canvas, { minHeight: canvasMinHeight, backgroundColor: NOTE_PAGE_BG }]}>
+        <View style={[styles.canvas, useFlexCanvas ? styles.canvasFlex : null, { minHeight: canvasMinHeight, backgroundColor: NOTE_PAGE_BG }]}>
         {empty ? (
           <Pressable
             accessibilityRole="button"
@@ -926,6 +1543,7 @@ export function StudyDocumentEditor({
             onPress={() => insertBlock('paragraph')}
             style={[
               styles.emptyCanvas,
+              useFlexCanvas ? styles.emptyCanvasFlex : null,
               { minHeight: canvasMinHeight, borderColor: palette.outlineVariant },
             ]}>
             <IconSymbol name="square.and.pencil" size={24} color={palette.onVariant} />
@@ -945,17 +1563,26 @@ export function StudyDocumentEditor({
                 blocks={activeBlocks}
                 blockIndex={blockIndex}
                 palette={palette}
-                onFocusBlock={setActiveBlockId}
-                onChangeBlock={updateBlock}
+                onFocusBlock={handleFocusBlock}
+                onChangeBlock={handleChangeBlock}
+                inputAccessoryViewID={textInputAccessoryViewID}
+                registerInputRef={registerInputRef}
+                onEnterKey={
+                  isListBlockKind(block.kind) ||
+                  (block.kind === 'paragraph' && blockHasToolbarFormatting(block, pendingMarks))
+                    ? () => handleBlockEnter(block)
+                    : undefined
+                }
+                onSelectionChange={(event) => handleSelectionChange(block.id, event)}
+                onOpenLink={(url) => {
+                  void handleOpenBlockLink(url);
+                }}
                 onPickImage={() => {
                   void pickImageForBlock(block.id);
                 }}
-                onBackspaceAtStart={
-                  block.kind === 'paragraph' && blockIndex > 0
-                    ? () => deletePreviousBlock(block.id)
-                    : undefined
-                }
+                onBackspaceAtStart={() => handleBackspaceAtStart(block.id, blockIndex)}
                 paragraphMinHeight={block.kind === 'paragraph' ? paragraphMinHeight : undefined}
+                pendingTextColor={block.id === activeBlockId ? pendingMarks.color : undefined}
               />
             ))}
           </View>
@@ -963,7 +1590,7 @@ export function StudyDocumentEditor({
         </View>
       </ScrollView>
 
-      {Platform.OS === 'ios' ? (
+      {useInputAccessory ? (
         <InputAccessoryView nativeID={STUDY_DOCUMENT_INPUT_ACCESSORY_ID} backgroundColor={NOTE_PAGE_BG}>
           <View
             style={[
@@ -981,11 +1608,13 @@ export function StudyDocumentEditor({
       {showDockedToolbar ? (
         <View
           style={[
-            styles.keyboardAccessory,
+            useDockedKeyboardToolbar ? styles.keyboardAccessoryDocked : styles.keyboardAccessory,
             {
               borderTopColor: palette.outlineVariant,
               backgroundColor: NOTE_PAGE_BG,
-              bottom: Platform.OS === 'android' ? keyboardInset : 0,
+              ...(useDockedKeyboardToolbar
+                ? { marginBottom: dockedToolbarBottom }
+                : { bottom: dockedToolbarBottom }),
             },
           ]}>
           {toolbarAccessory}
@@ -1052,11 +1681,27 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     flexShrink: 1,
   },
+  canvasScrollFlex: {
+    flex: 1,
+    flexGrow: 1,
+    minHeight: 0,
+  },
+  canvasScrollContentFlex: {
+    flexGrow: 1,
+  },
+  canvasFlex: {
+    flex: 1,
+    minHeight: 0,
+  },
   keyboardAccessory: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  keyboardAccessoryDocked: {
+    left: 0,
+    right: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   inputAccessoryShell: {
@@ -1132,11 +1777,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 20,
   },
+  emptyCanvasFlex: {
+    flex: 1,
+    minHeight: 0,
+  },
   emptyTitle: { fontSize: 15, fontWeight: '800', textAlign: 'center' },
   emptyBody: { fontSize: 12, lineHeight: 17, fontWeight: '600', textAlign: 'center' },
   blockRow: {
     width: '100%',
     paddingVertical: 0,
+  },
+  listBlockRow: {
+    width: '100%',
+    paddingVertical: 0,
+    marginVertical: 0,
   },
   headingWrap: { paddingHorizontal: 0, paddingVertical: 0, overflow: 'hidden' },
   headingBand: {
@@ -1150,21 +1804,33 @@ const styles = StyleSheet.create({
   headingPrimary: { flex: 1, fontWeight: '800', letterSpacing: 0.6 },
   headingSecondary: { fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, width: '100%' },
+  listRow: { alignItems: 'center', gap: 8 },
   rowBody: { flex: 1, gap: 4 },
+  listRowBody: { gap: 0 },
   blockInput: { fontSize: 15, lineHeight: 22, paddingVertical: 0, minHeight: 28, width: '100%' },
+  listBlockInput: {
+    minHeight: 20,
+    height: 20,
+    lineHeight: 20,
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingVertical: 0,
+    marginVertical: 0,
+  },
   paragraphInput: { textAlignVertical: 'top', width: '100%' },
   compactParagraph: { minHeight: 28 },
   structuralTailParagraph: { minHeight: 32, textAlignVertical: 'top' },
-  listMarker: { width: 18, fontSize: 15, fontWeight: '700', lineHeight: 28, textAlign: 'center' },
+  listMarker: { width: 16, fontSize: 14, fontWeight: '700', lineHeight: 20, textAlign: 'center' },
   checkBox: {
-    width: 22,
-    height: 22,
+    width: 18,
+    height: 18,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 3,
+    marginTop: 0,
   },
-  linkMeta: { fontSize: 11, fontWeight: '600' },
+  linkMeta: { fontSize: 11, fontWeight: '600', textDecorationLine: 'underline' },
+  linkMetaHit: { alignSelf: 'flex-start', maxWidth: '100%' },
   linkRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1184,6 +1850,28 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 12,
     paddingVertical: 8,
+  },
+  colorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  colorSwatch: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'transparent',
+  },
+  colorSwatchDefault: {
+    backgroundColor: '#000000',
+  },
+  colorSwatchSelected: {
+    borderWidth: 2,
+    borderColor: '#000000',
   },
   tableWrap: { borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   tableRow: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },

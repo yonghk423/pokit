@@ -98,8 +98,7 @@ export function PriorityUnassignedMealSlotSheet({
     }
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onConfirm(assignments);
-    onClose();
-  }, [allAssigned, items, onClose, onConfirm, slotsByKey]);
+  }, [allAssigned, items, onConfirm, slotsByKey]);
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>

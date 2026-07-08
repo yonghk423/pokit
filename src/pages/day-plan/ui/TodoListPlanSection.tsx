@@ -40,16 +40,18 @@ function DoneCheckbox({
   checked,
   ui,
   onPress,
+  accessibilityLabel,
 }: {
   checked: boolean;
   ui: TodoListUiColors;
   onPress: () => void;
+  accessibilityLabel: string;
 }) {
   return (
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
-      accessibilityLabel={checked ? '완료 취소' : '완료'}
+      accessibilityLabel={accessibilityLabel}
       hitSlop={8}
       onPress={onPress}
       style={[
@@ -72,22 +74,24 @@ function TodoListRow({
   item,
   ui,
   deleteMode,
+  deleteSelected,
   isLast,
   onCyclePriority,
   onChangeWhat,
   onPressTime,
   onToggleDone,
-  onRemove,
+  onToggleDeleteSelect,
 }: {
   item: DayPlanTodoItem;
   ui: TodoListUiColors;
   deleteMode: boolean;
+  deleteSelected: boolean;
   isLast: boolean;
   onCyclePriority: () => void;
   onChangeWhat: (value: string) => void;
   onPressTime: () => void;
   onToggleDone: () => void;
-  onRemove: () => void;
+  onToggleDeleteSelect: () => void;
 }) {
   const priorityMeta = TODO_PRIORITY_META[item.priority];
   const rowMuted = item.isDone;
@@ -96,23 +100,33 @@ function TodoListRow({
   return (
     <Pressable
       accessibilityRole={deleteMode ? 'button' : undefined}
-      accessibilityLabel={deleteMode ? '탭하면 이 할 일 삭제' : undefined}
-      onPress={deleteMode ? onRemove : undefined}
+      accessibilityLabel={deleteMode ? '탭하면 삭제 선택' : undefined}
+      accessibilityState={deleteMode ? { selected: deleteSelected } : undefined}
+      onPress={deleteMode ? onToggleDeleteSelect : undefined}
+      onLongPress={
+        deleteMode
+          ? undefined
+          : () => {
+              void Haptics.selectionAsync();
+              onToggleDone();
+            }
+      }
+      delayLongPress={280}
       style={[
         styles.row,
         !isLast && { borderBottomColor: ui.line, borderBottomWidth: TODO_TABLE_BORDER_WIDTH },
-        deleteMode && { backgroundColor: ui.dangerBg },
+        deleteMode && { backgroundColor: deleteSelected ? ui.dangerBg : ui.cellBg },
       ]}>
-      <DoneCheckbox
-        checked={item.isDone}
-        ui={ui}
-        onPress={() => {
-          if (deleteMode) return;
-          onToggleDone();
-        }}
-      />
+      {deleteMode ? (
+        <DoneCheckbox
+          checked={deleteSelected}
+          ui={ui}
+          accessibilityLabel={deleteSelected ? '삭제 선택 해제' : '삭제 선택'}
+          onPress={onToggleDeleteSelect}
+        />
+      ) : null}
 
-      <View style={styles.rowBody}>
+      <View style={[styles.rowBody, !deleteMode && styles.rowBodyFlush]}>
         <TextInput
           value={item.what}
           onChangeText={onChangeWhat}
@@ -145,7 +159,7 @@ function TodoListRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`우선순위 ${priorityMeta.label}, 탭하면 변경`}
-        onPress={deleteMode ? onRemove : onCyclePriority}
+        onPress={deleteMode ? onToggleDeleteSelect : onCyclePriority}
         style={[
           styles.priorityBtn,
           {
@@ -181,35 +195,59 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
   const [draftWhat, setDraftWhat] = useState('');
   const [timeEditId, setTimeEditId] = useState<string | null>(null);
   const [deleteMode, setDeleteMode] = useState(false);
+  const [deleteSelection, setDeleteSelection] = useState<Set<string>>(() => new Set());
 
   const timeEditItem = useMemo(
     () => todos.find((t) => t.id === timeEditId) ?? null,
     [todos, timeEditId],
   );
 
-  const handleRemoveTodo = useCallback(
-    (item: DayPlanTodoItem) => {
-      const label = item.what.trim();
-      if (label.length > 0) {
-        Alert.alert('할 일 삭제', `「${label}」 항목을 삭제할까요?`, [
-          { text: '취소', style: 'cancel' },
-          { text: '삭제', style: 'destructive', onPress: () => removeTodo(item.id) },
-        ]);
-        return;
-      }
-      removeTodo(item.id);
-    },
-    [removeTodo],
-  );
+  const toggleDeleteSelection = useCallback((id: string) => {
+    void Haptics.selectionAsync();
+    setDeleteSelection((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   const toggleDeleteMode = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDeleteMode((prev) => {
-      if (prev) return false;
+      if (prev) {
+        setDeleteSelection(new Set());
+        return false;
+      }
       setTimeEditId(null);
+      setDeleteSelection(new Set());
       return true;
     });
   }, []);
+
+  const handleTrashPress = useCallback(() => {
+    if (!deleteMode) {
+      toggleDeleteMode();
+      return;
+    }
+    if (deleteSelection.size === 0) {
+      toggleDeleteMode();
+      return;
+    }
+    const count = deleteSelection.size;
+    Alert.alert('할 일 삭제', `${count}개 항목을 삭제할까요?`, [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: () => {
+          deleteSelection.forEach((id) => removeTodo(id));
+          setDeleteSelection(new Set());
+          setDeleteMode(false);
+        },
+      },
+    ]);
+  }, [deleteMode, deleteSelection, removeTodo, toggleDeleteMode]);
 
   const handleQuickAdd = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -225,8 +263,10 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
   }, [activeDateKey, addTodo, draftWhat, updateTodo]);
 
   const hintText = deleteMode
-    ? '삭제할 행을 탭하세요 · 휴지통을 다시 눌러 종료'
-    : '체크로 완료 · 우선순위 탭으로 변경 · 시계로 시간 조절';
+    ? deleteSelection.size > 0
+      ? `${deleteSelection.size}개 선택됨 · 휴지통으로 삭제 · 다시 눌러 종료`
+      : '삭제할 행을 선택하세요 · 휴지통을 다시 눌러 종료'
+    : '길게 눌러 완료 · 우선순위 탭으로 변경 · 시계로 시간 조절';
 
   return (
     <View style={embedded ? styles.rootEmbedded : styles.root}>
@@ -253,7 +293,7 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
             accessibilityState={{ selected: deleteMode }}
             accessibilityLabel={deleteMode ? '삭제 모드 끄기' : '삭제 모드'}
             hitSlop={8}
-            onPress={toggleDeleteMode}
+            onPress={handleTrashPress}
             style={[
               styles.trashBtn,
               {
@@ -313,12 +353,13 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
                 item={item}
                 ui={ui}
                 deleteMode={deleteMode}
+                deleteSelected={deleteSelection.has(item.id)}
                 isLast={index === todos.length - 1}
                 onCyclePriority={() => cyclePriority(item.id)}
                 onChangeWhat={(what) => updateTodo(item.id, { what })}
                 onPressTime={() => setTimeEditId(item.id)}
                 onToggleDone={() => toggleDone(item.id)}
-                onRemove={() => handleRemoveTodo(item)}
+                onToggleDeleteSelect={() => toggleDeleteSelection(item.id)}
               />
             ))
           )}
@@ -468,6 +509,9 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 4,
+  },
+  rowBodyFlush: {
+    marginLeft: 0,
   },
   taskInput: {
     fontSize: 14,

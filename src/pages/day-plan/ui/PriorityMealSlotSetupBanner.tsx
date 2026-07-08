@@ -37,7 +37,7 @@ export function PriorityMealSlotSetupBanner({
           구간별로 보려면 설정이 필요해요
         </ThemedText>
         <ThemedText style={[styles.body, { color: muted }]}>
-          나만의 루틴에서 구간을 설정한 뒤 오늘 적용을 켜면, 여기서 구간별로 볼 수 있어요.
+          나만의 루틴에서 구간을 설정한 뒤 적용을 켜면, 여기서 구간별로 볼 수 있어요.
         </ThemedText>
       </View>
       <IconSymbol name="chevron.right" size={14} color={muted} />

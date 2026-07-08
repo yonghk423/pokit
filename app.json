@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/pokit5.png",
     "scheme": "pokit",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,

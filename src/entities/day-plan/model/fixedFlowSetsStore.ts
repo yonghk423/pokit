@@ -268,18 +268,14 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       ? [...activeSetIds, setId]
       : activeSetIds.filter((id) => id !== setId);
     const { [setId]: _removed, ...restSlots } = activeMealSlotsBySetId;
-    const enableScheduledLayout =
-      isActivating && isBuiltinPresetScheduleSet(target) && !get().scheduledMealSlotLayoutEnabled;
     set({
       activeSetIds: nextActive,
       activeMealSlotsBySetId: restSlots,
-      ...(enableScheduledLayout ? { scheduledMealSlotLayoutEnabled: true } : {}),
     });
     persistState(set, get, {
       activeSetIds: nextActive,
       activeMealSlotsBySetId: restSlots,
       sets,
-      ...(enableScheduledLayout ? { scheduledMealSlotLayoutEnabled: true } : {}),
     });
   },
 
@@ -304,18 +300,14 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       nextActiveMealSlotsBySetId[setId] = nextSlots;
     }
 
-    const enableScheduledLayout = nextSlots.length > 0 && !get().scheduledMealSlotLayoutEnabled;
-
     set({
       activeSetIds: nextActiveSetIds,
       activeMealSlotsBySetId: nextActiveMealSlotsBySetId,
-      ...(enableScheduledLayout ? { scheduledMealSlotLayoutEnabled: true } : {}),
     });
     persistState(set, get, {
       activeSetIds: nextActiveSetIds,
       activeMealSlotsBySetId: nextActiveMealSlotsBySetId,
       sets,
-      ...(enableScheduledLayout ? { scheduledMealSlotLayoutEnabled: true } : {}),
     });
   },
 

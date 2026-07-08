@@ -73,8 +73,6 @@ import {
 } from '../lib/priorityCatalog';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
-import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
-import { FixedRoutineSectionLayoutBar } from './FixedRoutineSectionLayoutBar';
 import { FixedRoutineSectionTabs, type FixedRoutineSection } from './FixedRoutineSectionTabs';
 import { FixedRoutineSlotAddChips } from './FixedRoutineSlotAddChips';
 import { FixedRoutineSlotPickerSheet } from './FixedRoutineSlotPickerSheet';
@@ -456,12 +454,12 @@ function GroupAccordion({
   );
   const applyChipBlocked = applyBlocked && !isActiveForToday;
   const disableApplyToggle = applyChipBlocked;
-  const applyLabel = isActiveForToday ? '적용 중' : '오늘 적용';
+  const applyLabel = isActiveForToday ? '적용 중' : '적용';
   const applyA11yLabel = isActiveForToday
-    ? '오늘 적용 해제'
+    ? '적용 해제'
     : applyChipBlocked
-      ? '집중 시간이 끝나 오늘 적용할 수 없음'
-      : '오늘 적용';
+      ? '집중 시간이 끝나 적용할 수 없음'
+      : '적용';
   const ruleLabel = isPresetScheduleSet ? getFixedFlowPresetScheduleLabel(setItem.applyRule) : null;
   const scheduleHint = isPresetScheduleSet ? getFixedFlowPresetScheduleHint(setItem.applyRule) : null;
 
@@ -581,7 +579,7 @@ function GroupAccordion({
                         accessibilityState={{
                           disabled: applyBlocked && !isMealSlotAppliedForToday?.(section.slot),
                         }}
-                        accessibilityLabel={`${section.title} ${isMealSlotAppliedForToday?.(section.slot) ? '오늘 적용 해제' : '오늘 적용'
+                        accessibilityLabel={`${section.title} ${isMealSlotAppliedForToday?.(section.slot) ? '적용 해제' : '적용'
                           }`}
                         onPress={() => {
                           const isApplied = isMealSlotAppliedForToday?.(section.slot) ?? false;
@@ -615,7 +613,7 @@ function GroupAccordion({
                             styles.mealSlotApplyChipLabel,
                             { color: isMealSlotAppliedForToday?.(section.slot) ? ink : muted },
                           ]}>
-                          {isMealSlotAppliedForToday?.(section.slot) ? '적용 중' : '오늘 적용'}
+                          {isMealSlotAppliedForToday?.(section.slot) ? '적용 중' : '적용'}
                         </ThemedText>
                       </Pressable>
                     ) : null}
@@ -748,25 +746,21 @@ export function FixedRoutinePage() {
   const targetSetIdRef = useRef<string | null>(null);
   const targetMealSlotRef = useRef<DayMealSlot | null>(null);
   const [nowTick, setNowTick] = useState(() => Date.now());
-  const [mealSlotScheduleOpen, setMealSlotScheduleOpen] = useState(false);
   const [slotPicker, setSlotPicker] = useState<{
     setId: string;
     categoryKey: string;
     label: string;
   } | null>(null);
-  const { schedule: mealSlotSchedule, persistSchedule: persistMealSlotSchedule } =
-    useDayMealSlotSchedule();
+  const { schedule: mealSlotSchedule } = useDayMealSlotSchedule();
 
   const {
     sets,
     activeSetIds,
     activeMealSlotsBySetId,
-    scheduledMealSlotLayoutEnabled,
     hydrate,
     addSet,
     toggleSetForToday,
     toggleMealSlotForToday,
-    setScheduledMealSlotLayoutEnabled,
     removeSet,
     addCategoryToSet,
     removeCategoryFromSet,
@@ -777,12 +771,10 @@ export function FixedRoutinePage() {
       sets: s.sets,
       activeSetIds: s.activeSetIds,
       activeMealSlotsBySetId: s.activeMealSlotsBySetId,
-      scheduledMealSlotLayoutEnabled: s.scheduledMealSlotLayoutEnabled,
       hydrate: s.hydrate,
       addSet: s.addSet,
       toggleSetForToday: s.toggleSetForToday,
       toggleMealSlotForToday: s.toggleMealSlotForToday,
-      setScheduledMealSlotLayoutEnabled: s.setScheduledMealSlotLayoutEnabled,
       removeSet: s.removeSet,
       addCategoryToSet: s.addCategoryToSet,
       removeCategoryFromSet: s.removeCategoryFromSet,
@@ -1095,11 +1087,9 @@ export function FixedRoutinePage() {
 
   const sectionHint =
     section === 'scheduled'
-      ? scheduledMealSlotLayoutEnabled
-        ? '구간과 항목을 먼저 설정한 뒤, 필요한 구간만 오늘 적용하면 오늘 탭에 반영돼요.'
-        : '항목을 정리한 뒤 오늘 적용을 켜면 오늘 탭에 반영돼요. 필요하면 구간 보기로 시간대별 배치를 먼저 할 수 있어요.'
+      ? '항목을 정리한 뒤 적용을 켜면 오늘 탭에 반영돼요.'
       : section === 'custom'
-        ? '그룹을 만들고 항목을 추가한 뒤, 오늘 적용을 켜면 오늘 탭에 반영돼요.'
+        ? '그룹을 만들고 항목을 추가한 뒤, 적용을 켜면 오늘 탭에 반영돼요.'
         : '항목을 눌러 방식별 화면 구성을 확인할 수 있어요.';
 
   const openRoutineTemplateDetail = useCallback(
@@ -1121,24 +1111,6 @@ export function FixedRoutinePage() {
           c={c}
           isDark={isDark}
         />
-        {section === 'scheduled' ? (
-          <FixedRoutineSectionLayoutBar
-            enabled={scheduledMealSlotLayoutEnabled}
-            isDark={isDark}
-            ink={ink}
-            muted={muted}
-            line={line}
-            cardBg={cardBg}
-            onToggle={() =>
-              setScheduledMealSlotLayoutEnabled(!scheduledMealSlotLayoutEnabled)
-            }
-            onPressScheduleSettings={
-              scheduledMealSlotLayoutEnabled
-                ? () => setMealSlotScheduleOpen(true)
-                : undefined
-            }
-          />
-        ) : null}
         <ThemedText style={[styles.sectionHint, { color: muted }]}>{sectionHint}</ThemedText>
       </View>
       <ScrollView
@@ -1166,7 +1138,7 @@ export function FixedRoutinePage() {
                   key={setItem.id}
                   setItem={setItem}
                   isPresetScheduleSet={isBuiltinPresetScheduleSet(setItem)}
-                  mealSlotLayoutEnabled={scheduledMealSlotLayoutEnabled}
+                  mealSlotLayoutEnabled={false}
                   isExpanded={expandedIds.has(setItem.id)}
                   isActiveForToday={isSetActiveForToday(setItem)}
                   applyBlocked={priorityWindowEndedForToday}
@@ -1319,14 +1291,6 @@ export function FixedRoutinePage() {
         muted={muted}
         line={line}
         surface={cardBg}
-      />
-
-      <DayMealSlotScheduleSheet
-        visible={mealSlotScheduleOpen}
-        schedule={mealSlotSchedule}
-        isDark={isDark}
-        onClose={() => setMealSlotScheduleOpen(false)}
-        onSave={persistMealSlotSchedule}
       />
 
       <FixedRoutineSlotPickerSheet

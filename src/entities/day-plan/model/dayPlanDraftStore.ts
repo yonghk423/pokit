@@ -81,6 +81,8 @@ type DayPlanDraftState = {
   prioritySectionsLinkMode: PriorityLayoutLinkMode | null;
   /** 타임라인 보기 — 목록과 연동 방식 (null = 아직 선택 안 함) */
   prioritySpineLinkMode: PriorityLayoutLinkMode | null;
+  /** 목록(bag) — 다른 보기와 연동 방식 (null = 아직 선택 안 함) */
+  priorityBagLinkMode: PriorityLayoutLinkMode | null;
   /** 시간대별 독립 모드 전용 루틴 순서 */
   prioritySectionsCategoryOrder: string[];
   isHydrated: boolean;
@@ -129,6 +131,7 @@ type DayPlanDraftState = {
   setPrioritySpineLayoutEnabled: (value: boolean) => void;
   setPrioritySectionsLinkMode: (mode: PriorityLayoutLinkMode | null) => void;
   setPrioritySpineLinkMode: (mode: PriorityLayoutLinkMode | null) => void;
+  setPriorityBagLinkMode: (mode: PriorityLayoutLinkMode | null) => void;
   setPrioritySectionsCategoryOrder: (value: string[] | ((prev: string[]) => string[])) => void;
   appendPrioritySectionsCategoryKeys: (keys: string[]) => void;
   setPriorityMealSlotOverride: (categoryKey: string, mealSlot: DayMealSlot | null) => void;
@@ -283,6 +286,7 @@ function createInitialState() {
     prioritySectionsMealSlots: {} as Record<string, DayMealSlot[]>,
     prioritySectionsLinkMode: null,
     prioritySpineLinkMode: null,
+    priorityBagLinkMode: null,
     prioritySectionsCategoryOrder: [] as string[],
   };
 }
@@ -347,6 +351,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       prioritySectionsMealSlots: normalizePrioritySectionsMealSlots(raw.prioritySectionsMealSlots),
       prioritySectionsLinkMode: resolveSectionsLinkModeOnHydrate(raw.prioritySectionsLinkMode),
       prioritySpineLinkMode: resolveSpineLinkModeOnHydrate(raw.prioritySpineLinkMode),
+      priorityBagLinkMode: normalizePriorityLayoutLinkMode(raw.priorityBagLinkMode),
       prioritySectionsCategoryOrder: dedupePriorityCategoryOrder(
         Array.isArray(raw.prioritySectionsCategoryOrder) ? raw.prioritySectionsCategoryOrder : [],
       ),
@@ -651,6 +656,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     })),
   setPrioritySectionsLinkMode: (mode) => set({ prioritySectionsLinkMode: mode }),
   setPrioritySpineLinkMode: (mode) => set({ prioritySpineLinkMode: mode }),
+  setPriorityBagLinkMode: (mode) => set({ priorityBagLinkMode: mode }),
   setPrioritySectionsCategoryOrder: (value) =>
     set((s) => {
       const prioritySectionsCategoryOrder =
@@ -807,6 +813,7 @@ useDayPlanDraftStore.subscribe((state) => {
     prioritySectionsMealSlots: state.prioritySectionsMealSlots,
     prioritySectionsLinkMode: state.prioritySectionsLinkMode ?? undefined,
     prioritySpineLinkMode: state.prioritySpineLinkMode ?? undefined,
+    priorityBagLinkMode: state.priorityBagLinkMode ?? undefined,
     prioritySectionsCategoryOrder: state.prioritySectionsCategoryOrder,
   });
   syncWidgetTimelineFromStorage();
@@ -837,6 +844,7 @@ function persistDayPlanDraft(): void {
     prioritySectionsMealSlots: s.prioritySectionsMealSlots,
     prioritySectionsLinkMode: s.prioritySectionsLinkMode ?? undefined,
     prioritySpineLinkMode: s.prioritySpineLinkMode ?? undefined,
+    priorityBagLinkMode: s.priorityBagLinkMode ?? undefined,
     prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
   });
 }

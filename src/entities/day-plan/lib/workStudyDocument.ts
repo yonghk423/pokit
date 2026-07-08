@@ -17,7 +17,19 @@ export type WorkStudyBlockMarks = {
   bold?: boolean;
   underline?: boolean;
   link?: string;
+  color?: string;
 };
+
+/** 스터디 노트 본문 글자색 프리셋 */
+export const WORK_STUDY_TEXT_COLORS = [
+  { label: '빨강', value: '#C62828' },
+  { label: '주황', value: '#E65100' },
+  { label: '갈색', value: '#8B5A2B' },
+  { label: '초록', value: '#2E7D32' },
+  { label: '파랑', value: '#1565C0' },
+  { label: '보라', value: '#6A1B9A' },
+  { label: '회색', value: '#616161' },
+] as const;
 
 export type WorkStudyDocBlock = {
   id: string;
@@ -61,7 +73,7 @@ const MAX_PAGES = 30;
 const MAX_PAGE_TITLE = 40;
 const MAX_TEXT = 500;
 const MAX_SUBTITLE = 80;
-export const WORK_STUDY_TABLE_MAX_ROWS = 3;
+export const WORK_STUDY_TABLE_MAX_ROWS = 100;
 export const WORK_STUDY_TABLE_MAX_COLS = 5;
 export const WORK_STUDY_TABLE_DEFAULT_ROWS = 2;
 export const WORK_STUDY_TABLE_DEFAULT_COLS = 2;
@@ -83,14 +95,26 @@ function normalizeHeadingLevel(raw: unknown): WorkStudyHeadingLevel {
   return 1;
 }
 
+function normalizeTextColor(raw: unknown): string | undefined {
+  const value = typeof raw === 'string' ? raw.trim() : '';
+  if (!/^#[0-9A-Fa-f]{6}$/.test(value)) return undefined;
+  return value.toUpperCase();
+}
+
 function normalizeMarks(raw: unknown): WorkStudyBlockMarks | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const o = raw as Record<string, unknown>;
   const bold = o.bold === true;
   const underline = o.underline === true || o.highlight === true;
   const link = clampStr(o.link, 500);
-  if (!bold && !underline && !link) return undefined;
-  return { bold: bold || undefined, underline: underline || undefined, link: link || undefined };
+  const color = normalizeTextColor(o.color);
+  if (!bold && !underline && !link && !color) return undefined;
+  return {
+    bold: bold || undefined,
+    underline: underline || undefined,
+    link: link || undefined,
+    color: color || undefined,
+  };
 }
 
 export function createEmptyTableRows(

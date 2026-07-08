@@ -53,6 +53,18 @@ describe('priorityCrossLayoutRoutines', () => {
     ).toEqual({ mode: 'spine', keys: ['fasting'] });
   });
 
+  it('returns cross-layout keys for bag target from spine source', () => {
+    expect(
+      resolveCrossLayoutRoutineKeysForTarget({
+        targetMode: 'bag',
+        priorityCategoryOrder: [],
+        prioritySectionsCategoryOrder: [],
+        prioritySectionsLinkMode: null,
+        planBlocks: [spineBlock('stretching')],
+      }),
+    ).toEqual(['stretching']);
+  });
+
   it('returns cross-layout keys for spine target from sections source', () => {
     expect(
       resolveCrossLayoutRoutineKeysForTarget({

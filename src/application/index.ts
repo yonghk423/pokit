@@ -4,5 +4,7 @@
  * Expo Router의 app/ 은 라우팅만 담당하고, 여기서는 앱 레벨 로직/프로바이더를 export 합니다.
  */
 
+export { AppStatusBar } from './AppStatusBar';
+export { resetAppStatusBarCache, syncAppStatusBar } from '@shared/lib/status-bar/appStatusBar';
 export { useAppBootstrap } from './useAppBootstrap';
 export { useCityPopFonts } from './useCityPopFonts';

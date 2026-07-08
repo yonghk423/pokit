@@ -13,7 +13,7 @@ import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 
 type Props = {
   visible: boolean;
-  targetMode: Extract<DayPlanLayoutMode, 'sections' | 'spine'>;
+  targetMode: DayPlanLayoutMode;
   existingRoutineCount: number;
   sourceMode?: PriorityLayoutRoutineSourceMode | null;
   initialLinkMode?: PriorityLayoutLinkMode | null;
@@ -34,12 +34,31 @@ type Option = {
 };
 
 function optionsFor(
-  targetMode: Extract<DayPlanLayoutMode, 'sections' | 'spine'>,
+  targetMode: DayPlanLayoutMode,
   existingRoutineCount: number,
   sourceMode?: PriorityLayoutRoutineSourceMode | null,
 ): Option[] {
   const sourceLabel = sourceMode ? priorityLayoutRoutineSourceLabelKo(sourceMode) : '다른 보기';
   const hasExisting = existingRoutineCount > 0;
+
+  if (targetMode === 'bag') {
+    return [
+      {
+        mode: 'linked',
+        title: hasExisting ? `${sourceLabel} 루틴 목록에 추가` : '기존 루틴과 연동',
+        body: hasExisting
+          ? `${sourceLabel}에 있는 루틴을 목록에도 표시해요.`
+          : '다른 보기에 루틴이 생기면 목록에도 함께 반영할 수 있어요.',
+        icon: 'link',
+      },
+      {
+        mode: 'independent',
+        title: '목록만 따로 관리',
+        body: '다른 보기와 별도로 목록 루틴을 구성해요. 아래에서 직접 항목을 추가할 수 있어요.',
+        icon: 'list.bullet.rectangle',
+      },
+    ];
+  }
 
   if (targetMode === 'sections') {
     return [
@@ -78,7 +97,8 @@ function optionsFor(
   ];
 }
 
-function titleFor(targetMode: Extract<DayPlanLayoutMode, 'sections' | 'spine'>): string {
+function titleFor(targetMode: DayPlanLayoutMode): string {
+  if (targetMode === 'bag') return '목록 보기 설정';
   return targetMode === 'sections' ? '시간대별 보기 설정' : '타임라인 보기 설정';
 }
 

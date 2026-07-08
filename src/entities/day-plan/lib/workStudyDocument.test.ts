@@ -71,7 +71,7 @@ describe('normalizeWorkStudyDocument', () => {
     ]);
   });
 
-  it('caps table size at 3 rows and 5 columns', () => {
+  it('caps table columns at 5 and preserves rows up to the safety limit', () => {
     const doc = normalizeWorkStudyDocument({
       blocks: [
         {
@@ -87,9 +87,19 @@ describe('normalizeWorkStudyDocument', () => {
       ],
     });
     const table = doc.pages[0]?.blocks[0];
-    expect(table?.tableRows).toHaveLength(3);
+    expect(table?.tableRows).toHaveLength(4);
     expect(table?.tableRows?.every((row) => row.length === 5)).toBe(true);
     expect(table?.tableRows?.[0]).toEqual(['a', 'b', 'c', 'd', 'e']);
+  });
+
+  it('normalizes text color marks', () => {
+    const block = normalizeWorkStudyDocBlock({
+      id: 'a',
+      kind: 'paragraph',
+      text: '색상',
+      marks: { color: '#c62828' },
+    });
+    expect(block?.marks?.color).toBe('#C62828');
   });
 
   it('preserves table rows through work detail config normalization', () => {

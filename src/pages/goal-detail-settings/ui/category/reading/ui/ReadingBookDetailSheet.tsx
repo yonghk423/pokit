@@ -1,11 +1,15 @@
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -61,7 +65,11 @@ export function ReadingBookDetailSheet({
   onRemove,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const c = palette;
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionOffsetsRef = useRef<Record<string, number>>({});
+  const [keyboardInset, setKeyboardInset] = useState(0);
 
   const resolved = entry ? ensureReadingBookPages(entry) : null;
   const [startPageStr, setStartPageStr] = useState('1');
@@ -75,7 +83,41 @@ export function ReadingBookDetailSheet({
     setMemo(resolved.memo ?? '');
   }, [resolved]);
 
+  useEffect(() => {
+    if (!visible) {
+      setKeyboardInset(0);
+      return;
+    }
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardInset(event.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardInset(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [visible]);
+
+  const scrollSectionIntoView = useCallback((key: string) => {
+    requestAnimationFrame(() => {
+      const offsetY = sectionOffsetsRef.current[key];
+      if (offsetY == null) return;
+      scrollRef.current?.scrollTo({ y: Math.max(0, offsetY - 12), animated: true });
+    });
+  }, []);
+
+  const rememberSectionOffset = useCallback((key: string, y: number) => {
+    sectionOffsetsRef.current[key] = y;
+  }, []);
+
   if (!entry || !resolved) return null;
+
+  const sheetMaxHeight = Math.round(windowHeight * 0.88);
+  const scrollMaxHeight = Math.max(220, sheetMaxHeight - 72);
 
   const startPage = Math.max(0, parseInt(startPageStr, 10) || 0);
   const targetPage = Math.max(0, parseInt(targetPageStr, 10) || 0);
@@ -113,39 +155,57 @@ export function ReadingBookDetailSheet({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
-        <View
-          style={[
-            styles.sheet,
-            {
-              backgroundColor: c.surfaceLowest,
-              borderColor: c.outline,
-              paddingBottom: Math.max(insets.bottom, 16),
-            },
-          ]}>
-          <View style={[styles.sheetHandle, { backgroundColor: c.outlineVariant }]} />
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      statusBarTranslucent
+      onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.kavRoot}>
+        <View style={styles.overlay}>
+          <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
+          <View
+            style={[
+              styles.sheet,
+              {
+                backgroundColor: c.surfaceLowest,
+                borderColor: c.outline,
+                paddingBottom: Math.max(insets.bottom, 16),
+                maxHeight: sheetMaxHeight,
+              },
+            ]}>
+            <View style={[styles.sheetHandle, { backgroundColor: c.outlineVariant }]} />
 
-          <View style={styles.sheetHeader}>
-            <ThemedText style={[styles.sheetTitle, { color: c.onSurface }]} numberOfLines={2}>
-              {entry.title}
-            </ThemedText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="닫기"
-              onPress={onClose}
-              hitSlop={8}
-              style={styles.closeBtn}>
-              <IconSymbol name="xmark" size={14} color={c.onVariant} />
-            </Pressable>
-          </View>
+            <View style={styles.sheetHeader}>
+              <ThemedText style={[styles.sheetTitle, { color: c.onSurface }]} numberOfLines={2}>
+                {entry.title}
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="닫기"
+                onPress={onClose}
+                hitSlop={8}
+                style={styles.closeBtn}>
+                <IconSymbol name="xmark" size={14} color={c.onVariant} />
+              </Pressable>
+            </View>
 
-          <ScrollView
-            style={styles.sheetScroll}
-            contentContainerStyle={styles.sheetBody}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
+            <ScrollView
+              ref={scrollRef}
+              style={[styles.sheetScroll, { maxHeight: scrollMaxHeight }]}
+              contentContainerStyle={[
+                styles.sheetBody,
+                {
+                  paddingBottom:
+                    keyboardInset > 0 ? Math.max(32, Math.round(keyboardInset * 0.42)) : 16,
+                },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+              showsVerticalScrollIndicator={false}>
             <View style={styles.bookHero}>
               {entry.aladin?.coverUrl ? (
                 <Image
@@ -210,7 +270,9 @@ export function ReadingBookDetailSheet({
               </View>
             </View>
 
-            <View style={styles.goalSection}>
+            <View
+              style={styles.goalSection}
+              onLayout={(event) => rememberSectionOffset('goal', event.nativeEvent.layout.y)}>
               <ThemedText style={[styles.sectionTitle, { color: c.onSurface }]}>
                 오늘 목표 분량
               </ThemedText>
@@ -245,6 +307,7 @@ export function ReadingBookDetailSheet({
                   <TextInput
                     value={startPageStr}
                     onChangeText={setStartPageStr}
+                    onFocus={() => scrollSectionIntoView('goal')}
                     onBlur={() => commitPages(startPage, targetPage)}
                     placeholder="1"
                     placeholderTextColor={c.outline}
@@ -260,6 +323,7 @@ export function ReadingBookDetailSheet({
                   <TextInput
                     value={targetPageStr}
                     onChangeText={setTargetPageStr}
+                    onFocus={() => scrollSectionIntoView('goal')}
                     onBlur={() => commitPages(startPage, targetPage)}
                     placeholder="100"
                     placeholderTextColor={c.outline}
@@ -291,7 +355,9 @@ export function ReadingBookDetailSheet({
             </View>
             </View>
 
-            <View style={styles.memoSection}>
+            <View
+              style={styles.memoSection}
+              onLayout={(event) => rememberSectionOffset('memo', event.nativeEvent.layout.y)}>
               <ThemedText style={[styles.sectionTitle, { color: c.onSurface }]}>메모</ThemedText>
               <ThemedText style={[styles.sectionSub, { color: c.onVariant }]}>
                 읽는 동안 떠오른 생각이나 기억할 내용을 적어 두세요.
@@ -299,6 +365,7 @@ export function ReadingBookDetailSheet({
               <TextInput
                 value={memo}
                 onChangeText={(text) => setMemo(text.slice(0, READING_BOOK_MEMO_MAX))}
+                onFocus={() => scrollSectionIntoView('memo')}
                 onBlur={commitMemo}
                 placeholder="예: 3장까지 읽고 내일 이어서"
                 placeholderTextColor={c.outline}
@@ -309,6 +376,7 @@ export function ReadingBookDetailSheet({
                   {
                     color: c.onSurface,
                     borderColor: c.outlineVariant,
+                    backgroundColor: c.surfaceLow,
                   },
                 ]}
               />
@@ -330,15 +398,16 @@ export function ReadingBookDetailSheet({
           </ScrollView>
         </View>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  kavRoot: { flex: 1 },
   overlay: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
   sheet: {
-    maxHeight: '88%',
     borderTopWidth: 2,
     borderLeftWidth: 2,
     borderRightWidth: 2,
@@ -364,8 +433,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sheetScroll: { maxHeight: 520 },
-  sheetBody: { paddingHorizontal: 16, gap: 14, paddingBottom: 8 },
+  sheetScroll: { flexGrow: 0 },
+  sheetBody: { paddingHorizontal: 16, gap: 14 },
   bookHero: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
   bookCover: { width: 64, height: 90, backgroundColor: '#f3f4f6' },
   bookCoverFallback: { alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },
@@ -422,7 +491,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     lineHeight: 20,
-    backgroundColor: '#ffffff',
   },
   removeBtn: {
     flexDirection: 'row',
