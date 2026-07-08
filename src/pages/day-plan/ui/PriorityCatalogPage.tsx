@@ -537,6 +537,7 @@ export function PriorityCatalogPage() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <PriorityCatalogPanel
+            key={categoryLabelEpoch}
             editorial={editorial}
             priorityCategoryOrder={priorityCategoryOrder}
             isFocusStarted={isFocusStarted}

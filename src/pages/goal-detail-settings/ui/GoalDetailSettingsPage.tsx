@@ -126,6 +126,16 @@ function buildLoadedDataByBlockId(targets: EditingTarget[]): Record<string, unkn
         : normalizeOtherDetailConfig(
             mergeCustomFlowGoalDetailData(byBlock, byCategory, fallback) as object,
           );
+    } else if (t.categoryKey === 'healthIntake') {
+      const merged = {
+        ...(byCategory && typeof byCategory === 'object' ? byCategory : {}),
+        ...(byBlock && typeof byBlock === 'object' ? byBlock : {}),
+      };
+      const displayName =
+        readRoutineDisplayNameFromConfig(byBlock) ||
+        readRoutineDisplayNameFromConfig(byCategory) ||
+        '';
+      next[t.blockId] = normalizeHealthIntakeDetailConfig({ ...merged, displayName });
     } else {
       next[t.blockId] = byBlock ?? byCategory ?? fallback;
     }
@@ -141,15 +151,6 @@ function waterReminderSyncFingerprint(raw: unknown): string {
     reminderCustomMin: o.reminderCustomMin,
     smartNotification: o.smartNotification,
     reminderTimes: o.reminderTimes,
-  });
-}
-
-/** 루틴 탭 목록 라벨·아이콘 모양 갱신용 — 컬러(accentColor)는 제외 */
-function catalogListAppearanceFingerprint(raw: unknown): string {
-  const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-  return JSON.stringify({
-    displayName: readRoutineDisplayNameFromConfig(raw),
-    icon: typeof o.icon === 'string' ? o.icon : '',
   });
 }
 
@@ -360,8 +361,6 @@ export function GoalDetailSettingsPage() {
   );
 
   const handleChangeDataConfig = useCallback((target: EditingTarget, next: unknown) => {
-    const prevStored = loadGoalDetailCategoryConfig(target.categoryKey);
-    const prevCatalogAppearance = catalogListAppearanceFingerprint(prevStored);
     const normalizedNext =
       target.categoryKey === 'healthIntake'
         ? normalizeHealthIntakeDetailConfig(next)
@@ -382,14 +381,7 @@ export function GoalDetailSettingsPage() {
     saveGoalDetailBlockConfig(target.blockId, persisted);
     saveGoalDetailCategoryConfig(target.categoryKey, persisted);
     registerOtherCategoryResolverFromStorage();
-    const prevDisplayName = readRoutineDisplayNameFromConfig(prevStored);
-    const nextDisplayName = readRoutineDisplayNameFromConfig(persisted);
-    if (
-      catalogListAppearanceFingerprint(persisted) !== prevCatalogAppearance ||
-      nextDisplayName !== prevDisplayName
-    ) {
-      useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
-    }
+    useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
     if (target.categoryKey === 'healthIntake' || target.categoryKey === 'medicine') {
       if (medicineReminderSyncTimerRef.current) {
         clearTimeout(medicineReminderSyncTimerRef.current);

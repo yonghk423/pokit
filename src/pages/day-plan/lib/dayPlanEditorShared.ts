@@ -34,8 +34,8 @@ export const CATEGORIES: { key: string; label: string; icon: string }[] = [
   { key: 'fasting', label: PRIORITY_CATALOG_PICKER_LABELS.fasting, icon: 'person.fill' },
 
   // ─── 생산성을 높이는 도구 ───
-  { key: 'reading', label: PRIORITY_CATALOG_PICKER_LABELS.reading, icon: 'book.fill' },
-  { key: 'work', label: PRIORITY_CATALOG_PICKER_LABELS.work, icon: 'bag.fill' },
+  { key: 'reading', label: PRIORITY_CATALOG_PICKER_LABELS.reading, icon: 'book.closed.fill' },
+  { key: 'work', label: PRIORITY_CATALOG_PICKER_LABELS.work, icon: 'square.and.pencil' },
 
   // ─── 레거시 호환 ───
   { key: 'other', label: PRIORITY_CATALOG_PICKER_LABELS.other, icon: 'person.fill' },

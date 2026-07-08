@@ -43,8 +43,8 @@ describe('categoryReminderCatalog', () => {
   });
 
   it('returns catalog icon names', () => {
-    expect(categoryReminderIconName('reading')).toBe('book.fill');
-    expect(categoryReminderIconName('work')).toBe('bag.fill');
+    expect(categoryReminderIconName('reading')).toBe('book.closed.fill');
+    expect(categoryReminderIconName('work')).toBe('square.and.pencil');
     expect(categoryReminderIconName('unknown_key')).toBe('person.fill');
     expect(categoryReminderIconName(`${CUSTOM_FLOW_CATEGORY_PREFIX}abcdefgh`)).toBe('person.fill');
     expect(categoryReminderIconName('customFlow:builtin_hobby_photo')).toBe('camera.fill');

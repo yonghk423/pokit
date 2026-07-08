@@ -17,7 +17,7 @@ function block(partial: Partial<DayPlanBlock>): DayPlanBlock {
 describe('getBlockTimelineIcon', () => {
   it('uses categoryKey catalog icon when present', () => {
     expect(getBlockTimelineIcon(block({ categoryKey: 'reading', category: '독서' }))).toBe(
-      'book.fill',
+      'book.closed.fill',
     );
     expect(getBlockTimelineIcon(block({ categoryKey: 'medicine', category: '약 복용' }))).toBe(
       'cross.case.fill',

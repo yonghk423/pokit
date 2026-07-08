@@ -14,12 +14,21 @@ import {
 
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 import { normalizeOtherDetailConfig } from './goalCategorySessionConfig';
-import { normalizeHealthIntakeDetailConfig } from './healthIntakeDetailConfig';
+import { HEALTH_INTAKE_CATEGORY_KEY, normalizeHealthIntakeDetailConfig } from './healthIntakeDetailConfig';
+import { readRoutineDisplayNameFromConfig } from './routineDisplayName';
 
 const HEALTH_INTAKE_LEGACY_ICONS = new Set(['drop.fill', 'cross.case.fill']);
 const HEALTH_INTAKE_CATALOG_ICON = 'pills.fill';
 const HEALTH_INTAKE_CATALOG_ACCENT = '#8b5a2b';
 const HEALTH_INTAKE_LEGACY_ACCENT_COLORS = new Set(['#0ea5e9', '#0891b2', '#22d3ee', '#38bdf8']);
+
+const READING_CATEGORY_KEY = 'reading';
+const READING_CATALOG_ICON = 'book.closed.fill';
+const READING_LEGACY_ICONS = new Set(['book.fill']);
+
+const WORK_CATEGORY_KEY = 'work';
+const WORK_CATALOG_ICON = 'square.and.pencil';
+const WORK_LEGACY_ICONS = new Set(['bag.fill']);
 
 function resolveHealthIntakeCatalogIcon(icon: string | undefined): string | undefined {
   if (icon != null && HEALTH_INTAKE_LEGACY_ICONS.has(icon)) return HEALTH_INTAKE_CATALOG_ICON;
@@ -33,14 +42,24 @@ function resolveHealthIntakeCatalogAccentColor(color: string | undefined): strin
   return color;
 }
 
+function resolveReadingCatalogIcon(icon: string | undefined): string | undefined {
+  if (icon != null && READING_LEGACY_ICONS.has(icon)) return READING_CATALOG_ICON;
+  return icon;
+}
+
+function resolveWorkCatalogIcon(icon: string | undefined): string | undefined {
+  if (icon != null && WORK_LEGACY_ICONS.has(icon)) return WORK_CATALOG_ICON;
+  return icon;
+}
+
 /** 담기·카탈로그 기본 SF Symbol */
 const BUILTIN_CATEGORY_ICONS: Record<string, string> = {
   healthIntake: HEALTH_INTAKE_CATALOG_ICON,
   water: 'drop.fill',
   medicine: 'pills.fill',
   fasting: 'person.fill',
-  reading: 'book.fill',
-  work: 'bag.fill',
+  reading: READING_CATALOG_ICON,
+  work: WORK_CATALOG_ICON,
   other: 'person.fill',
 };
 
@@ -109,6 +128,12 @@ export function resolveCategoryCatalogIcon(categoryKey: string): string {
     if (categoryKey === 'healthIntake') {
       return resolveHealthIntakeCatalogIcon(stored) ?? stored;
     }
+    if (categoryKey === READING_CATEGORY_KEY) {
+      return resolveReadingCatalogIcon(stored) ?? stored;
+    }
+    if (categoryKey === WORK_CATEGORY_KEY) {
+      return resolveWorkCatalogIcon(stored) ?? stored;
+    }
     return stored;
   }
   if (isCustomFlowCategoryKey(categoryKey)) return resolveCustomFlowCatalogIcon(categoryKey);
@@ -159,7 +184,20 @@ export function mergeCategoryAppearanceIntoConfig(
   raw: unknown,
   appearance: { icon: CustomFlowIconOption; accentColor: CustomFlowAccentColorOption },
 ): unknown {
-  const base = asConfigObj(raw);
+  const fromRaw = asConfigObj(raw);
+  const fromStored =
+    categoryKey === HEALTH_INTAKE_CATEGORY_KEY
+      ? asConfigObj(loadGoalDetailCategoryConfig(HEALTH_INTAKE_CATEGORY_KEY))
+      : {};
+  const base =
+    categoryKey === HEALTH_INTAKE_CATEGORY_KEY ? { ...fromStored, ...fromRaw } : fromRaw;
+  if (categoryKey === HEALTH_INTAKE_CATEGORY_KEY) {
+    const storedName = readRoutineDisplayNameFromConfig(fromStored);
+    const rawName = readRoutineDisplayNameFromConfig(fromRaw);
+    if (storedName && !rawName) {
+      base.displayName = storedName;
+    }
+  }
   const merged = {
     ...base,
     icon: appearance.icon,

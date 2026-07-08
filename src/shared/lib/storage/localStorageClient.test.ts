@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
+  clearPokitLocalStorage,
   flushLocalStorageClientWrites,
   initLocalStorageClient,
   localStorageClient,
 } from './localStorageClient';
+import { StorageKeys } from './storageKeys';
 
 describe('localStorageClient (native memory cache)', () => {
   beforeEach(async () => {
@@ -32,6 +34,34 @@ describe('localStorageClient (native memory cache)', () => {
     localStorageClient.setItemRaw('pokit:test-key', 'sync-me');
     await flushLocalStorageClientWrites();
     await expect(AsyncStorage.getItem('pokit:test-key')).resolves.toBe('sync-me');
+  });
+
+  it('clearPokitLocalStorage invalidates stale async writes after reset', async () => {
+    let resolveWrite: (() => void) | null = null;
+    const writeGate = new Promise<void>((resolve) => {
+      resolveWrite = resolve;
+    });
+    const setItemSpy = jest
+      .spyOn(AsyncStorage, 'setItem')
+      .mockImplementation(async () => {
+        await writeGate;
+      });
+
+    localStorageClient.setJson(StorageKeys.goalDetailSettings, {
+      byCategory: {
+        healthIntake: { displayName: 'Aaaa', summary: '', water: {}, medicine: {} },
+      },
+    });
+
+    const clearPromise = clearPokitLocalStorage();
+    resolveWrite?.();
+    await clearPromise;
+    await flushLocalStorageClientWrites();
+
+    expect(localStorageClient.getJson(StorageKeys.goalDetailSettings)).toBeNull();
+    await expect(AsyncStorage.getItem(StorageKeys.goalDetailSettings)).resolves.toBeNull();
+
+    setItemSpy.mockRestore();
   });
 });
 

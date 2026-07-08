@@ -48,7 +48,7 @@ describe('widgetDayPlanPayload', () => {
     ]);
     expect(payload.priorityRoutineItems).toEqual([
       { categoryKey: 'water', iconName: 'drop.fill', isCompleted: true },
-      { categoryKey: 'reading', iconName: 'book.fill', isCompleted: false },
+      { categoryKey: 'reading', iconName: 'book.closed.fill', isCompleted: false },
       {
         categoryKey: 'customFlow:builtin_hobby_photo',
         iconName: 'camera.fill',
@@ -85,8 +85,8 @@ describe('widgetDayPlanPayload', () => {
     });
 
     expect(payload.priorityRoutineItems).toEqual([
-      { categoryKey: 'reading', iconName: 'book.fill', isCompleted: true },
-      { categoryKey: 'work', iconName: 'bag.fill', isCompleted: false },
+      { categoryKey: 'reading', iconName: 'book.closed.fill', isCompleted: true },
+      { categoryKey: 'work', iconName: 'square.and.pencil', isCompleted: false },
     ]);
   });
 });
@@ -126,7 +126,7 @@ describe('widgetDayPlanSync', () => {
     const payload = JSON.parse(String(sync.mock.calls[0]?.[0]));
     expect(payload.priorityRoutineItems).toEqual([
       { categoryKey: 'water', iconName: 'drop.fill', isCompleted: false },
-      { categoryKey: 'reading', iconName: 'book.fill', isCompleted: false },
+      { categoryKey: 'reading', iconName: 'book.closed.fill', isCompleted: false },
     ]);
   });
 

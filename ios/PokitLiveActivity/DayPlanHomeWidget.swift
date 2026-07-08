@@ -461,7 +461,7 @@ struct DayPlanHomeWidget: Widget {
         DayPlanRoutineStatusItem(categoryKey: "water", iconName: "drop.fill", isCompleted: true),
         DayPlanRoutineStatusItem(categoryKey: "meditation", iconName: "brain.head.profile", isCompleted: true),
         DayPlanRoutineStatusItem(categoryKey: "stretching", iconName: "figure.run", isCompleted: false),
-        DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.fill", isCompleted: false),
+        DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.closed.fill", isCompleted: false),
         DayPlanRoutineStatusItem(categoryKey: "planning", iconName: "calendar.badge.clock", isCompleted: false),
       ]
     )
@@ -500,7 +500,7 @@ struct DayPlanHomeWidget: Widget {
         DayPlanRoutineStatusItem(categoryKey: "water", iconName: "drop.fill", isCompleted: true),
         DayPlanRoutineStatusItem(categoryKey: "meditation", iconName: "brain.head.profile", isCompleted: true),
         DayPlanRoutineStatusItem(categoryKey: "stretching", iconName: "figure.run", isCompleted: false),
-        DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.fill", isCompleted: false),
+        DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.closed.fill", isCompleted: false),
       ]
     )
   )
@@ -535,7 +535,7 @@ struct DayPlanHomeWidget: Widget {
         DayPlanQuickMemoLineModel(id: "m2", text: "친구에게 연락", isDone: false, isDraft: true),
       ],
       routineItems: [
-        DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.fill", isCompleted: true),
+        DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.closed.fill", isCompleted: true),
         DayPlanRoutineStatusItem(categoryKey: "breathing", iconName: "wind", isCompleted: true),
         DayPlanRoutineStatusItem(categoryKey: "deepwork", iconName: "brain", isCompleted: false),
         DayPlanRoutineStatusItem(categoryKey: "water", iconName: "drop.fill", isCompleted: false),

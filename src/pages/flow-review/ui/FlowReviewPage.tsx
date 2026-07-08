@@ -29,8 +29,8 @@ const TEXT = '#181A2E';
 const PRIMARY = '#356668';
 
 const CATEGORY_META: Record<string, { icon: Parameters<typeof IconSymbol>[0]['name']; label: string }> = {
-  work: { icon: 'bag.fill', label: '노트' },
-  reading: { icon: 'book.fill', label: '독서' },
+  work: { icon: 'square.and.pencil', label: '노트' },
+  reading: { icon: 'book.closed.fill', label: '독서' },
   fasting: { icon: 'person.fill', label: '체중관리' },
   water: { icon: 'drop.fill', label: '수분섭취' },
   medicine: { icon: 'pills.fill', label: '약 복용' },

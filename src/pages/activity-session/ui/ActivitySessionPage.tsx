@@ -29,6 +29,7 @@ import {
   parseNumberedFlowLines,
   readingDisplayTitle,
   resolveBlockCategoryKey,
+  resolveCategoryCatalogIcon,
   toRuntimeTiming,
   useDayPlanDraftStore,
   useDayPlanRuntimeStore,
@@ -632,7 +633,7 @@ export function ActivitySessionPage() {
         brand={WK.brand}
         aboutKicker={WK.aboutKicker}
         headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '노트'}
-        iconName="bag.fill"
+        iconName={resolveCategoryCatalogIcon('work') as 'square.and.pencil'}
         iconSize={28}
         sessionKicker="노트 세션"
         timerDisplay={
@@ -828,7 +829,7 @@ export function ActivitySessionPage() {
         brand={R.brand}
         aboutKicker={R.aboutKicker}
         headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '독서 집중'}
-        iconName="book.fill"
+        iconName={resolveCategoryCatalogIcon('reading') as 'book.closed.fill'}
         iconSize={28}
         sessionKicker="독서 세션"
         timerDisplay={

@@ -18,7 +18,8 @@ describe('resolveCategoryCatalogIcon', () => {
     expect(resolveCategoryCatalogIcon('healthIntake')).toBe('pills.fill');
     expect(resolveCategoryCatalogIcon('water')).toBe('drop.fill');
     expect(resolveCategoryCatalogIcon('fasting')).toBe('person.fill');
-    expect(resolveCategoryCatalogIcon('work')).toBe('bag.fill');
+    expect(resolveCategoryCatalogIcon('work')).toBe('square.and.pencil');
+    expect(resolveCategoryCatalogIcon('reading')).toBe('book.closed.fill');
   });
 
   it('returns builtin blue accent for water', () => {
@@ -108,6 +109,26 @@ describe('resolveCategoryCatalogIcon', () => {
       },
     });
     expect(resolveCategoryCatalogIcon('healthIntake')).toBe('pills.fill');
+  });
+
+  it('maps legacy open book icon to closed book for reading', () => {
+    saveGoalDetailCategoryConfig('reading', {
+      displayName: '독서',
+      summary: '',
+      icon: 'book.fill',
+      books: [],
+    });
+    expect(resolveCategoryCatalogIcon('reading')).toBe('book.closed.fill');
+  });
+
+  it('maps legacy bag icon to square pencil for work', () => {
+    saveGoalDetailCategoryConfig('work', {
+      displayName: '노트',
+      summary: '',
+      icon: 'bag.fill',
+      tasks: [],
+    });
+    expect(resolveCategoryCatalogIcon('work')).toBe('square.and.pencil');
   });
 
   it('prefers saved icon over builtin default', () => {
@@ -206,5 +227,58 @@ describe('readEditableCategoryAppearance', () => {
     expect(merged.water.goalMl).toBe(2000);
     expect(merged.icon).toBe('drop.fill');
     expect(merged.accentColor).toBe('#0ea5e9');
+  });
+
+  it('keeps stored displayName when raw layer cleared it during appearance merge', () => {
+    saveGoalDetailCategoryConfig('healthIntake', {
+      displayName: '영양제 섭취',
+      summary: '',
+      icon: 'heart.fill',
+      accentColor: '#8b2b59',
+      water: { displayName: '', summary: '', goalMl: 2000, drankMl: 0, smartNotification: false, reminderTimes: [] },
+      medicine: {
+        displayName: '',
+        summary: '',
+        doseLabel: '',
+        dosesPerDay: 1,
+        takenCount: 0,
+        morningOn: true,
+        morningNotify: false,
+        morningTime: '08:00',
+        lunchOn: false,
+        lunchNotify: false,
+        lunchTime: '12:00',
+        dinnerOn: false,
+        dinnerNotify: false,
+        dinnerTime: '18:00',
+      },
+    });
+    const staleBlock = {
+      displayName: '',
+      summary: '',
+      water: { displayName: '', summary: '', goalMl: 2000, drankMl: 0, smartNotification: false, reminderTimes: [] },
+      medicine: {
+        displayName: '',
+        summary: '',
+        doseLabel: '',
+        dosesPerDay: 1,
+        takenCount: 0,
+        morningOn: true,
+        morningNotify: false,
+        morningTime: '08:00',
+        lunchOn: false,
+        lunchNotify: false,
+        lunchTime: '12:00',
+        dinnerOn: false,
+        dinnerNotify: false,
+        dinnerTime: '18:00',
+      },
+    };
+    const merged = mergeCategoryAppearanceIntoConfig('healthIntake', staleBlock, {
+      icon: 'heart.fill',
+      accentColor: '#8b2b59',
+    }) as { displayName: string; icon: string };
+    expect(merged.displayName).toBe('영양제 섭취');
+    expect(merged.icon).toBe('heart.fill');
   });
 });

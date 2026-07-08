@@ -25,7 +25,7 @@ describe('priorityCatalogSections', () => {
     const result = buildPriorityCatalogSections({
       available: [
         { key: 'water', label: '수분', icon: 'drop.fill' },
-        { key: 'reading', label: '독서', icon: 'book.fill' },
+        { key: 'reading', label: '독서', icon: 'book.closed.fill' },
       ],
       customFlowPickerItems: [
         { key: 'customFlow:a', label: '나만의 플로우', icon: 'book.fill' },
@@ -51,7 +51,7 @@ describe('priorityCatalogSections', () => {
     const result = buildPriorityCatalogSections({
       available: [
         { key: 'water', label: '수분', icon: 'drop.fill' },
-        { key: 'reading', label: '독서', icon: 'book.fill' },
+        { key: 'reading', label: '독서', icon: 'book.closed.fill' },
       ],
       customFlowPickerItems: [],
       customFlowEntries: [],
@@ -70,7 +70,7 @@ describe('priorityCatalogSections', () => {
     const result = buildPriorityCatalogSections({
       available: [
         { key: 'water', label: '수분', icon: 'drop.fill' },
-        { key: 'reading', label: '독서', icon: 'book.fill' },
+        { key: 'reading', label: '독서', icon: 'book.closed.fill' },
       ],
       customFlowPickerItems: [],
       customFlowEntries: [],

@@ -8,6 +8,8 @@ import {
   type HealthIntakeDetailDataConfig,
 } from '@entities/day-plan';
 
+import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
+
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
@@ -15,6 +17,15 @@ import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
 import { MedicineSettings } from '../../medicine';
 
 import type { GoalDetailCategoryKey } from '../../../../model/types';
+
+/** 헤더·루틴 설정 전용 필드 — 본문 자동 저장이 덮어쓰지 않도록 제외 */
+function omitCatalogAppearanceFields(config: HealthIntakeDetailDataConfig): Record<string, unknown> {
+  const next: Record<string, unknown> = { ...config };
+  delete next.displayName;
+  delete next.icon;
+  delete next.accentColor;
+  return next;
+}
 
 export function HealthIntakeSettings({
   rhythmTitle,
@@ -66,21 +77,25 @@ export function HealthIntakeSettings({
       isSyncingFromPropsRef.current = false;
       return;
     }
-    const appearanceBase = normalizeHealthIntakeDetailConfig(
-      dataConfigRef.current ?? getInitialHealthIntakeDataConfig(),
-    );
     const payload: HealthIntakeDetailDataConfig = normalizeHealthIntakeDetailConfig({
-      ...appearanceBase,
+      ...(hideTitleField
+        ? normalizeHealthIntakeDetailConfig(
+            loadGoalDetailCategoryConfig(categoryKey) ?? getInitialHealthIntakeDataConfig(),
+          )
+        : normalizeHealthIntakeDetailConfig(
+            dataConfigRef.current ?? getInitialHealthIntakeDataConfig(),
+          )),
       ...(hideTitleField ? {} : { displayName }),
       summary,
       water: waterSnapshotRef.current,
       medicine,
     });
-    const s = JSON.stringify(payload);
+    const outgoing = hideTitleField ? omitCatalogAppearanceFields(payload) : payload;
+    const s = JSON.stringify(outgoing);
     if (lastRef.current === s) return;
     lastRef.current = s;
-    onChangeDataConfigRef.current(payload);
-  }, [displayName, summary, medicine, hideTitleField]);
+    onChangeDataConfigRef.current(outgoing);
+  }, [categoryKey, displayName, summary, medicine, hideTitleField]);
 
   return (
     <View style={styles.root}>

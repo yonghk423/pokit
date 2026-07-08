@@ -14,6 +14,59 @@ const isWeb = Platform.OS === 'web';
 let nativeCacheReady = false;
 let nativeInitPromise: Promise<void> | null = null;
 const pendingNativeWrites = new Set<Promise<void>>();
+/** 초기화 이후 늦게 끝나는 쓰기가 디스크를 덮어쓰지 않도록 세대를 올린다. */
+let storageResetGeneration = 0;
+
+function isPokitStorageKey(key: string): boolean {
+  return key.startsWith('pokit:') || key.startsWith('lockflow:');
+}
+
+function scheduleNativeSetItem(key: string, value: string): void {
+  const generationAtWrite = storageResetGeneration;
+  const task = AsyncStorage.setItem(key, value)
+    .then(async () => {
+      if (generationAtWrite !== storageResetGeneration) {
+        await AsyncStorage.removeItem(key).catch(() => undefined);
+      }
+    })
+    .catch(() => undefined);
+  trackNativeWrite(task);
+}
+
+function scheduleNativeRemoveItem(key: string): void {
+  const task = AsyncStorage.removeItem(key).catch(() => undefined);
+  trackNativeWrite(task);
+}
+
+/** 메모리·디스크의 pokit/lockflow 키를 비우고, 이후 완료되는 이전 쓰기를 무효화한다. */
+export async function clearPokitLocalStorage(): Promise<void> {
+  storageResetGeneration += 1;
+
+  let diskKeysToClear: string[] = [];
+  if (!storage) {
+    try {
+      const diskKeys = await AsyncStorage.getAllKeys();
+      diskKeysToClear = diskKeys.filter(isPokitStorageKey);
+    } catch {
+      diskKeysToClear = [];
+    }
+  }
+
+  const memoryKeys = [...memoryStorage.keys()].filter(isPokitStorageKey);
+  const allKeys = new Set([...memoryKeys, ...diskKeysToClear]);
+  for (const key of allKeys) {
+    memoryStorage.delete(key);
+    storage?.removeItem(key);
+  }
+
+  if (!storage && diskKeysToClear.length > 0) {
+    try {
+      await AsyncStorage.multiRemove([...allKeys]);
+    } catch {
+      // ignore
+    }
+  }
+}
 
 function trackNativeWrite(promise: Promise<void>): void {
   pendingNativeWrites.add(promise);
@@ -92,10 +145,7 @@ export const localStorageClient = {
       if (!storage) {
         memoryStorage.set(key, value);
         if (!isWeb) {
-          const task = AsyncStorage.setItem(key, value).catch(() => {
-            // ignore
-          });
-          trackNativeWrite(task);
+          scheduleNativeSetItem(key, value);
         }
         return;
       }
@@ -110,10 +160,7 @@ export const localStorageClient = {
       if (!storage) {
         memoryStorage.delete(key);
         if (!isWeb) {
-          const task = AsyncStorage.removeItem(key).catch(() => {
-            // ignore
-          });
-          trackNativeWrite(task);
+          scheduleNativeRemoveItem(key);
         }
         return;
       }

@@ -15,6 +15,7 @@ import {
 import { useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
+import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import {
   createDefaultFixedFlowSetsState,
@@ -94,11 +95,12 @@ export function SettingsPage() {
         priorityStart: defaultWindow.startTime,
         priorityEnd: defaultWindow.endTime,
         priorityCategoryOrder: [],
-        categoryLabelEpoch: 0,
         waterReminderSyncEpoch: 0,
         quickMemoDraft: '',
         isHydrated: true,
       });
+      useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
+      registerOtherCategoryResolverFromStorage();
 
       useDayPlanRuntimeStore.getState().stopTicker();
       useDayPlanRuntimeStore.getState().clearRuntime();

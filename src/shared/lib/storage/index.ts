@@ -195,6 +195,7 @@ export {
   saveLastSeenAppVersion
 } from './lastSeenAppVersionStorage';
 export {
+  clearPokitLocalStorage,
   flushLocalStorageClientWrites,
   initLocalStorageClient,
   localStorageClient
