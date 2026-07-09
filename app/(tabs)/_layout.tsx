@@ -8,8 +8,8 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 
 const TAB_ICONS: Record<string, string> = {
   'day-plan': 'calendar',
-  'priority-catalog': 'list.bullet.rectangle',
-  'fixed-routines': 'figure.walk',
+  'priority-catalog': 'figure.walk',
+  'fixed-routines': 'list.bullet.rectangle',
   'day-plan-statistics': 'clock.arrow.circlepath',
   'pokit-story': 'book',
 };
@@ -33,8 +33,8 @@ export default function TabLayout() {
           })}>
           <Tabs.Screen name="index" options={{ href: null }} />
           <Tabs.Screen name="day-plan" options={{ title: '오늘' }} />
-          <Tabs.Screen name="priority-catalog" options={{ title: '루틴' }} />
-          <Tabs.Screen name="fixed-routines" options={{ title: '나만의 루틴' }} />
+          <Tabs.Screen name="fixed-routines" options={{ title: '루틴' }} />
+          <Tabs.Screen name="priority-catalog" options={{ title: '나만의 루틴' }} />
           <Tabs.Screen name="day-plan-statistics" options={{ title: '히스토리' }} />
           <Tabs.Screen name="pokit-story" options={{ title: '스토리' }} />
         </Tabs>

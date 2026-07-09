@@ -411,6 +411,10 @@ export function GoalDetailSettingsPage() {
         getPriorityCategoryOrder: () => useDayPlanDraftStore.getState().priorityCategoryOrder,
         setPriorityCategoryOrder: (order) =>
           useDayPlanDraftStore.getState().setPriorityCategoryOrder(order),
+        getPrioritySectionsCategoryOrder: () =>
+          useDayPlanDraftStore.getState().prioritySectionsCategoryOrder,
+        setPrioritySectionsCategoryOrder: (order) =>
+          useDayPlanDraftStore.getState().setPrioritySectionsCategoryOrder(order),
         filterCompletedFocusKeysToPriorityOrder: (order) =>
           useDayPlanDraftStore.getState().filterCompletedFocusKeysToPriorityOrder(order),
         registerOtherCategoryResolverFromStorage,

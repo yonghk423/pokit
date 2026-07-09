@@ -1,4 +1,4 @@
-/** 오늘 탭 레이아웃 모드 — 히스토리 기록 단위 */
+/** 오늘 탭 레이아웃 모드 — 일정 UI 전용 (히스토리 기록 단위와 분리) */
 export type RoutineHistoryLayoutMode = 'bag' | 'sections' | 'spine';
 
 export const ROUTINE_HISTORY_LAYOUT_MODES: readonly RoutineHistoryLayoutMode[] = [
@@ -9,22 +9,9 @@ export const ROUTINE_HISTORY_LAYOUT_MODES: readonly RoutineHistoryLayoutMode[] =
 
 const LAYOUT_PREFIX = /^(bag|sections|spine):/;
 
-export const ROUTINE_HISTORY_LAYOUT_META: Record<
-  RoutineHistoryLayoutMode,
-  { icon: string; labelKo: string }
-> = {
-  bag: { icon: 'list.bullet.rectangle', labelKo: '전체' },
-  sections: { icon: 'sun.horizon.fill', labelKo: '시간대별' },
-  spine: { icon: 'clock', labelKo: '타임라인' },
-};
-
-export function buildRoutineHistoryRecordKey(
-  categoryKey: string,
-  layoutMode: RoutineHistoryLayoutMode,
-): string {
-  const base = categoryKey.trim();
-  if (!base) return `${layoutMode}:`;
-  return `${layoutMode}:${base}`;
+/** 히스토리·완료 추적에 쓰는 카테고리 키 (레이아웃 접두사 제거) */
+export function buildRoutineHistoryRecordKey(categoryKey: string): string {
+  return parseRoutineHistoryRecordKey(categoryKey).categoryKey;
 }
 
 export function parseRoutineHistoryRecordKey(recordKey: string): {
@@ -43,12 +30,9 @@ export function parseRoutineHistoryRecordKey(recordKey: string): {
   return { categoryKey: trimmed, layoutMode: 'bag' };
 }
 
-/** 레거시 `reading` → `bag:reading` */
+/** 레거시 `bag:reading` → `reading` */
 export function normalizeHistoryRecordKey(recordKey: string): string {
-  const trimmed = recordKey.trim();
-  if (!trimmed) return trimmed;
-  const parsed = parseRoutineHistoryRecordKey(trimmed);
-  return buildRoutineHistoryRecordKey(parsed.categoryKey, parsed.layoutMode);
+  return parseRoutineHistoryRecordKey(recordKey.trim()).categoryKey;
 }
 
 export function resolveDraftLayoutMode(input: {

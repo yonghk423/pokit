@@ -1,5 +1,6 @@
 import type { DayPlanBlock } from '../model/types';
 
+import { DEFAULT_SPINE_GAP_BLOCK_MINUTES } from '@shared/lib/spineDefaultBlockMinutes';
 import { filterSpineTimelineBlocks } from './dayPlanFlowBlock';
 import {
   clipGapToSpinePriorityWindow,
@@ -12,7 +13,7 @@ export function computeSpineGapInsertSlot(
   toMinutes: number,
   blocks: DayPlanBlock[],
   nowMinutes: number,
-  defaultDurationMin = 15,
+  defaultDurationMin = DEFAULT_SPINE_GAP_BLOCK_MINUTES,
   minDurationMin = 1,
   priorityStart?: string,
   priorityEnd?: string,

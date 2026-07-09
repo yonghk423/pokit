@@ -26,7 +26,6 @@ import {
   normalizeWaterDetailConfig,
   normalizeWorkDetailConfig,
   parseHHmmToMinutes,
-  parseNumberedFlowLines,
   readingDisplayTitle,
   resolveBlockCategoryKey,
   resolveCategoryCatalogIcon,
@@ -202,6 +201,22 @@ export function ActivitySessionPage() {
     if (!block || !isCustomFlowCategoryKey(categoryKey)) return null;
     return loadGoalDetailBlockConfig(block.id) ?? loadGoalDetailCategoryConfig(categoryKey);
   }, [block, categoryKey, goalDetailStorageTick]);
+
+  const usesCustomFlowSession = useMemo(
+    () =>
+      Boolean(
+        block &&
+          isCustomFlowCategoryKey(categoryKey) &&
+          !isQuickMemoSession &&
+          customFlowRawConfig != null,
+      ),
+    [block, categoryKey, customFlowRawConfig, isQuickMemoSession],
+  );
+
+  useEffect(() => {
+    if (!block || usesCustomFlowSession) return;
+    safeRouterBack(router);
+  }, [block, router, usesCustomFlowSession]);
 
   useFocusEffect(
     useCallback(() => {
@@ -1607,10 +1622,9 @@ export function ActivitySessionPage() {
     );
   }
 
-  const memoLines = parseNumberedFlowLines(block.title);
   const timerSec = isWaitingToStart ? waitRemainingSec : remainingSec;
 
-  if (isCustomFlowCategoryKey(categoryKey) && !isQuickMemoSession && customFlowRawConfig != null) {
+  if (usesCustomFlowSession && isCustomFlowCategoryKey(categoryKey)) {
     return (
       <CustomFlowActivitySession
         block={block}
@@ -1621,7 +1635,7 @@ export function ActivitySessionPage() {
         isPaused={isPaused}
         timerSec={timerSec}
         progress={progress}
-        rawConfig={customFlowRawConfig}
+        rawConfig={customFlowRawConfig!}
         onBack={() => safeRouterBack(router)}
         onEndSession={navigateAfterComplete}
         onPersist={() => setGoalDetailStorageTick((n) => n + 1)}
@@ -1629,134 +1643,7 @@ export function ActivitySessionPage() {
     );
   }
 
-  const O = CategoryImmersionTheme.other;
-  const sessionTitle = activityTitle.trim() || '활동 집중';
-
-  return (
-    <SessionImmersionLayout
-      backgroundColor={O.screenBg}
-      accentColor={PRIMARY}
-      accentGlow="rgba(0, 0, 0, 0.14)"
-      onSurface={O.onSurface}
-      muted={O.muted}
-      brand={O.brand}
-      aboutKicker={O.aboutKicker}
-      headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : sessionTitle}
-      iconName="star.fill"
-      iconSize={28}
-      sessionKicker={isQuickMemoSession ? '잠금화면 메모' : '세션'}
-      timerDisplay={
-        <ThemedText
-          style={waterStyles.timerHms}
-          lightColor={O.onSurface}
-          darkColor={O.onSurface}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.35}>
-          {isPaused ? '잠시 멈춤' : isWaitingToStart ? '시작 전' : '세션'}
-        </ThemedText>
-      }
-      flowCaption={isQuickMemoSession ? '잠금화면 메모를 기반으로 흐름을 정리해요' : activityTitle}
-      onBack={() => safeRouterBack(router)}
-      scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
-      bottomBar={
-        <ImmersionBottomControls
-          accentColor={PRIMARY}
-          borderColor={O.border}
-          paddingBottom={Math.max(insets.bottom, 14)}
-          onEndSession={navigateAfterComplete}
-          completeLabel="활동 완료"
-        />
-      }>
-      <ImmersionCardShell borderColor={O.border}>
-        <ThemedText style={waterStyles.statLabel} lightColor={O.muted} darkColor={O.muted}>
-          루틴 메모
-        </ThemedText>
-        <ThemedText style={[waterStyles.metaLine, { marginTop: 4 }]} lightColor={O.onSurface} darkColor={O.onSurface}>
-          {checklist.checklistSummaryLine1 || '목표 상세에서 체크리스트 또는 메모를 입력해 주세요.'}
-        </ThemedText>
-        {checklist.checklistSummaryLine2 ? (
-          <ThemedText style={waterStyles.metaLine} lightColor={O.muted} darkColor={O.muted}>
-            {checklist.checklistSummaryLine2}
-          </ThemedText>
-        ) : null}
-        {isQuickMemoSession && memoLines.length > 0 ? (
-          <View style={{ marginTop: 12, gap: 6 }}>
-            {memoLines.slice(0, 3).map((line, idx) => (
-              <ThemedText key={`${idx}-${line.slice(0, 8)}`} style={waterStyles.addSectionHint} lightColor={O.onSurface} darkColor={O.onSurface}>
-                {`• ${line}`}
-              </ThemedText>
-            ))}
-          </View>
-        ) : null}
-      </ImmersionCardShell>
-
-      <ImmersionSplitRow>
-        <ImmersionHalfCard borderColor={O.border}>
-          <ThemedText style={waterStyles.halfLabel} lightColor={O.muted} darkColor={O.muted}>
-            완료
-          </ThemedText>
-          <ThemedText style={waterStyles.halfValue} lightColor={O.onSurface} darkColor={O.onSurface}>
-            {checklist.checklistRows.filter((row) => row.state === 'completed').length}
-          </ThemedText>
-          <ThemedText style={waterStyles.halfUnit} lightColor={O.muted} darkColor={O.muted}>
-            개
-          </ThemedText>
-        </ImmersionHalfCard>
-        <ImmersionHalfCard borderColor={O.border}>
-          <ThemedText style={waterStyles.halfLabel} lightColor={O.muted} darkColor={O.muted}>
-            남은 할 일
-          </ThemedText>
-          <ThemedText style={waterStyles.halfValue} lightColor={O.onSurface} darkColor={O.onSurface}>
-            {checklist.checklistRows.filter((row) => row.state !== 'completed').length}
-          </ThemedText>
-          <ThemedText style={waterStyles.halfUnit} lightColor={O.muted} darkColor={O.muted}>
-            개
-          </ThemedText>
-        </ImmersionHalfCard>
-      </ImmersionSplitRow>
-
-      <ImmersionCardShell borderColor={O.border}>
-        <ThemedText style={waterStyles.statLabel} lightColor={O.muted} darkColor={O.muted}>
-          오늘 루틴 목록
-        </ThemedText>
-        <View style={medScheduleStyles.scheduleList}>
-          <View style={medScheduleStyles.scheduleCard}>
-            <View style={medScheduleStyles.scheduleLeft}>
-              <ThemedText style={medScheduleStyles.scheduleTime} lightColor={PRIMARY} darkColor={PRIMARY}>
-                •
-              </ThemedText>
-              <View>
-                <ThemedText style={medScheduleStyles.scheduleTitle} lightColor={O.onSurface} darkColor={O.onSurface}>
-                  {activityTitle}
-                </ThemedText>
-                <ThemedText style={medScheduleStyles.scheduleMeta} lightColor={O.muted} darkColor={O.muted}>
-                  {timeRange}
-                </ThemedText>
-              </View>
-            </View>
-          </View>
-          {nextBlock ? (
-            <View style={medScheduleStyles.scheduleCard}>
-              <View style={medScheduleStyles.scheduleLeft}>
-                <ThemedText style={medScheduleStyles.scheduleTime} lightColor={O.muted} darkColor={O.muted}>
-                  •
-                </ThemedText>
-                <View>
-                  <ThemedText style={medScheduleStyles.scheduleTitle} lightColor={O.onSurface} darkColor={O.onSurface}>
-                    {nextBlock.title}
-                  </ThemedText>
-                  <ThemedText style={medScheduleStyles.scheduleMeta} lightColor={O.muted} darkColor={O.muted}>
-                    {formatBlockTimeRange(nextBlock)}
-                  </ThemedText>
-                </View>
-              </View>
-            </View>
-          ) : null}
-        </View>
-      </ImmersionCardShell>
-    </SessionImmersionLayout>
-  );
+  return null;
 }
 
 const styles = StyleSheet.create({

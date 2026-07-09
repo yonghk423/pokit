@@ -7,6 +7,10 @@
     "icon": "./assets/pokit5.png",
     "scheme": "pokit",
     "userInterfaceStyle": "automatic",
+    "notification": {
+      "icon": "./assets/pokit5.png",
+      "color": "#000000"
+    },
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -47,6 +51,14 @@
           "dark": {
             "backgroundColor": "#E9B4A6"
           }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/pokit5.png",
+          "color": "#000000",
+          "defaultChannel": "default"
         }
       ]
     ],

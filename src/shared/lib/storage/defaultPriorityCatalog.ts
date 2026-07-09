@@ -25,8 +25,8 @@ export type BuiltinCustomFlowDef = {
   summary?: string;
   /** 체크리스트 항목 문구 — 시드 시 goal-detail checklist로 저장 */
   checklistLabels?: readonly string[];
-  /** 커스텀 플로우 템플릿 — 기본 checklist, 습관은 habit, 금지는 abstain, 알림은 reminder */
-  templateKey?: 'checklist' | 'habit' | 'abstain' | 'reminder';
+  /** 커스텀 플로우 템플릿 — 기본 checklist, 금지는 abstain, 알림은 reminder */
+  templateKey?: 'checklist' | 'abstain' | 'reminder';
   /** `reminder` 템플릿 시드용 HH:mm 목록 */
   reminderTimes?: readonly string[];
 };
@@ -94,7 +94,8 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     icon: 'bed.double.fill',
     color: '#0d9488',
     summary: '아침에 이불을 정리해 하루를 가볍게 시작해요.',
-    templateKey: 'habit',
+    templateKey: 'checklist',
+    checklistLabels: ['이불정리'],
   },
   {
     id: BUILTIN_DAILY_LIFE_FLOW_IDS[1],
@@ -103,7 +104,8 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     icon: 'sparkles',
     color: '#0891b2',
     summary: '방·거실 등 생활 공간을 간단히 정리해요.',
-    templateKey: 'habit',
+    templateKey: 'checklist',
+    checklistLabels: ['청소하기'],
   },
   {
     id: BUILTIN_DAILY_LIFE_FLOW_IDS[2],
@@ -112,7 +114,8 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     icon: 'washer.fill',
     color: '#6366f1',
     summary: '쌓인 빨래를 돌리거나 개어 정리해요.',
-    templateKey: 'habit',
+    templateKey: 'checklist',
+    checklistLabels: ['빨래하기'],
   },
   {
     id: BUILTIN_DAILY_LIFE_FLOW_IDS[3],
@@ -121,7 +124,8 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     icon: 'hands.sparkles.fill',
     color: '#14b8a6',
     summary: '하루를 시작·마무리할 때 깨끗이 씻어요.',
-    templateKey: 'habit',
+    templateKey: 'checklist',
+    checklistLabels: ['세수하기'],
   },
   {
     id: BUILTIN_DAILY_LIFE_FLOW_IDS[4],
@@ -130,7 +134,8 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     icon: 'arrow.3.trianglepath',
     color: '#22c55e',
     summary: '재활용·분리수거를 챙겨요.',
-    templateKey: 'habit',
+    templateKey: 'checklist',
+    checklistLabels: ['분리수거'],
   },
   {
     id: BUILTIN_DAILY_LIFE_FLOW_IDS[5],
@@ -139,7 +144,8 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     icon: 'figure.run',
     color: '#ef4444',
     summary: '가벼운 스트레칭부터 유산소까지, 오늘 몸을 움직여요.',
-    templateKey: 'habit',
+    templateKey: 'checklist',
+    checklistLabels: ['운동하기'],
   },
   {
     id: BUILTIN_DAILY_LIFE_FLOW_IDS[6],
@@ -148,7 +154,8 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     icon: 'cart.fill',
     color: '#f59e0b',
     summary: '장보기·필요한 물건을 사러 나가요.',
-    templateKey: 'habit',
+    templateKey: 'checklist',
+    checklistLabels: ['쇼핑하기'],
   },
   {
     id: BUILTIN_ABSTAIN_FLOW_ID,
@@ -167,7 +174,8 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     icon: 'figure.flexibility',
     color: '#14b8a6',
     summary: '몸을 풀고 가볍게 늘려 줘요.',
-    templateKey: 'habit',
+    templateKey: 'checklist',
+    checklistLabels: ['스트레칭'],
   },
 ];
 

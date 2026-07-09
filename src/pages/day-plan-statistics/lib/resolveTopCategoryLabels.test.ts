@@ -1,3 +1,5 @@
+import { categoryReminderLabelKo } from '@entities/day-plan';
+
 import { resolveTopCategoryLabels } from './resolveTopCategoryLabels';
 
 describe('resolveTopCategoryLabels', () => {
@@ -15,7 +17,13 @@ describe('resolveTopCategoryLabels', () => {
       ]),
     );
 
-    expect(labels).toEqual(['수분섭취', '약 복용', '체중관리']);
+    expect(labels).toEqual(
+      [
+        categoryReminderLabelKo('water'),
+        categoryReminderLabelKo('medicine'),
+        categoryReminderLabelKo('fasting'),
+      ].sort((a, b) => a.localeCompare(b, 'ko')),
+    );
   });
 
   it('returns single label when one category leads', () => {
@@ -26,6 +34,6 @@ describe('resolveTopCategoryLabels', () => {
           ['water', 2],
         ]),
       ),
-    ).toEqual(['독서']);
+    ).toEqual([categoryReminderLabelKo('reading')]);
   });
 });

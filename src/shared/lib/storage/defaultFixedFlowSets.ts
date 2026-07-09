@@ -24,7 +24,7 @@ type DefaultSetTemplate = {
 export const EXAMPLE_CUSTOM_FLOW_SET_NAME = '예시 세트';
 export const LEGACY_CUSTOM_FLOW_SET_NAME = '기본 세트';
 
-/** 삭제 불가 — 나만의 루틴 기본 예시 그룹 */
+/** 나만의 루틴 기본 예시 그룹 — 삭제 시 dismissedExampleCustomFlowSetIds에 기록 */
 export const BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS = [
   'set_example_health',
   'set_example_focus',
@@ -83,8 +83,12 @@ export function createBuiltinExampleCustomFlowSets(): FixedFlowSet[] {
 }
 
 /** 나만의 루틴 예시 그룹 2개 — 없으면 추가, 이름·빈 항목은 기본값으로 보강 */
-export function mergeBuiltInExampleCustomSets(sets: FixedFlowSet[]): FixedFlowSet[] {
-  const defaults = createBuiltinExampleCustomFlowSets();
+export function mergeBuiltInExampleCustomSets(
+  sets: FixedFlowSet[],
+  options?: { dismissedIds?: readonly string[] },
+): FixedFlowSet[] {
+  const dismissedIds = new Set(options?.dismissedIds ?? []);
+  const defaults = createBuiltinExampleCustomFlowSets().filter((set) => !dismissedIds.has(set.id));
   const exampleIds = new Set(BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS as readonly string[]);
   const byId = new Map(sets.map((set) => [set.id, set]));
 

@@ -88,14 +88,57 @@ export function resolveDefaultMealSlotForCategory(
   return DAY_MEAL_SLOT_ORDER[orderIndex % DAY_MEAL_SLOT_ORDER.length] ?? 'morning';
 }
 
-/** 고정 루틴 항목에 저장된 구간 또는 카테고리 기본값 */
+/** 고정 루틴 항목에 저장된 구간 목록 — 없으면 카테고리 기본값 1개 */
+export function resolveFixedFlowItemMealSlots(
+  item: Pick<FixedFlowSetItem, 'categoryKey' | 'mealSlot' | 'mealSlots'>,
+  orderIndex: number,
+): DayMealSlot[] {
+  const explicit = normalizeCategoryMealSlots(
+    item.mealSlots !== undefined ? item.mealSlots : item.mealSlot,
+  );
+  if (explicit.length > 0) return explicit;
+  return [resolveDefaultMealSlotForCategory(item.categoryKey, orderIndex)];
+}
+
+/** 고정 루틴 항목에 저장된 구간 또는 카테고리 기본값 — 대표 1개 */
 export function resolveFixedFlowItemMealSlot(
-  item: Pick<FixedFlowSetItem, 'categoryKey' | 'mealSlot'>,
+  item: Pick<FixedFlowSetItem, 'categoryKey' | 'mealSlot' | 'mealSlots'>,
   orderIndex: number,
 ): DayMealSlot {
-  const stored = normalizeDayMealSlot(item.mealSlot);
-  if (stored) return stored;
-  return resolveDefaultMealSlotForCategory(item.categoryKey, orderIndex);
+  return resolveFixedFlowItemMealSlots(item, orderIndex)[0] ?? 'morning';
+}
+
+export function orderDayMealSlots(slots: readonly DayMealSlot[]): DayMealSlot[] {
+  const selected = new Set(slots);
+  return DAY_MEAL_SLOT_ORDER.filter((slot) => selected.has(slot));
+}
+
+export function toggleFixedFlowItemMealSlots(
+  item: Pick<FixedFlowSetItem, 'categoryKey' | 'mealSlot' | 'mealSlots'>,
+  orderIndex: number,
+  slot: DayMealSlot,
+): DayMealSlot[] {
+  const normalized = normalizeDayMealSlot(slot);
+  if (!normalized) return resolveFixedFlowItemMealSlots(item, orderIndex);
+  const explicit = normalizeCategoryMealSlots(
+    item.mealSlots !== undefined ? item.mealSlots : item.mealSlot,
+  );
+  const current = explicit.length > 0 ? explicit : resolveFixedFlowItemMealSlots(item, orderIndex);
+  if (current.includes(normalized)) {
+    return orderDayMealSlots(current.filter((value) => value !== normalized));
+  }
+  return orderDayMealSlots([...current, normalized]);
+}
+
+export function buildFixedFlowItemMealSlotsFields(
+  slots: readonly DayMealSlot[],
+): Pick<FixedFlowSetItem, 'mealSlot' | 'mealSlots'> {
+  const ordered = orderDayMealSlots(slots);
+  if (ordered.length === 0) return {};
+  if (ordered.length === 1) {
+    return { mealSlot: ordered[0], mealSlots: ordered };
+  }
+  return { mealSlots: ordered };
 }
 
 /** 담기 목록 표시 — 사용자 지정 구간 우선 */
@@ -119,14 +162,14 @@ function resolveActiveMealSlotFilter(
 }
 
 /** 오늘 적용 중인 고정 루틴 항목의 구간 — 저장 mealSlot 없으면 카테고리 기본값 */
-export function buildAppliedFixedRoutineMealSlotOverrides(
+export function buildAppliedFixedRoutineMealSlotsMap(
   state: Pick<FixedFlowSetsState, 'sets' | 'activeSetIds' | 'activeMealSlotsBySetId'>,
   appliedKeys: readonly string[],
-): Record<string, DayMealSlot> {
+): Record<string, DayMealSlot[]> {
   const activeSetIds = new Set(state.activeSetIds);
   const appliedKeySet = new Set(appliedKeys);
   const activeMealSlotsBySetId = state.activeMealSlotsBySetId ?? {};
-  const out: Record<string, DayMealSlot> = {};
+  const out: Record<string, DayMealSlot[]> = {};
 
   for (const set of state.sets) {
     if (!activeSetIds.has(set.id)) continue;
@@ -135,12 +178,27 @@ export function buildAppliedFixedRoutineMealSlotOverrides(
       if (item.enabled === false) continue;
       const key = item.categoryKey.trim();
       if (!key || !appliedKeySet.has(key)) continue;
-      const slot = resolveFixedFlowItemMealSlot(item, index);
-      if (activeSlots && !activeSlots.has(slot)) continue;
-      if (!out[key]) out[key] = slot;
+      const slots = resolveFixedFlowItemMealSlots(item, index).filter(
+        (slot) => !activeSlots || activeSlots.has(slot),
+      );
+      if (slots.length === 0) continue;
+      const prev = out[key] ?? [];
+      out[key] = orderDayMealSlots([...prev, ...slots]);
     }
   }
 
+  return out;
+}
+
+export function buildAppliedFixedRoutineMealSlotOverrides(
+  state: Pick<FixedFlowSetsState, 'sets' | 'activeSetIds' | 'activeMealSlotsBySetId'>,
+  appliedKeys: readonly string[],
+): Record<string, DayMealSlot> {
+  const multi = buildAppliedFixedRoutineMealSlotsMap(state, appliedKeys);
+  const out: Record<string, DayMealSlot> = {};
+  for (const [key, slots] of Object.entries(multi)) {
+    if (slots[0]) out[key] = slots[0];
+  }
   return out;
 }
 
@@ -171,18 +229,23 @@ export function buildCategoryMealSlotOverrides(
   return map;
 }
 
-export function groupFixedFlowItemsByMealSlot<T extends Pick<FixedFlowSetItem, 'categoryKey' | 'mealSlot'>>(
-  items: T[],
-  schedule: DayMealSlotSchedule = DEFAULT_DAY_MEAL_SLOT_SCHEDULE,
-): { slot: DayMealSlot; title: string; hintTime: string; items: T[] }[] {
+export function groupFixedFlowItemsByMealSlot<
+  T extends Pick<FixedFlowSetItem, 'categoryKey' | 'mealSlot' | 'mealSlots'>,
+>(items: T[], schedule: DayMealSlotSchedule = DEFAULT_DAY_MEAL_SLOT_SCHEDULE): {
+  slot: DayMealSlot;
+  title: string;
+  hintTime: string;
+  items: T[];
+}[] {
   const normalizedSchedule = normalizeDayMealSlotSchedule(schedule);
   const buckets = new Map<DayMealSlot, T[]>(
     DAY_MEAL_SLOT_ORDER.map((slot) => [slot, []]),
   );
 
   items.forEach((item, index) => {
-    const slot = resolveFixedFlowItemMealSlot(item, index);
-    buckets.get(slot)?.push(item);
+    for (const slot of resolveFixedFlowItemMealSlots(item, index)) {
+      buckets.get(slot)?.push(item);
+    }
   });
 
   return DAY_MEAL_SLOT_ORDER.map((slot) => ({
@@ -195,7 +258,7 @@ export function groupFixedFlowItemsByMealSlot<T extends Pick<FixedFlowSetItem, '
 
 /** 고정 루틴 편집 — 항목이 있는 구간 + 사용자가 연 빈 구간 */
 export function buildFixedFlowMealSlotSections<
-  T extends Pick<FixedFlowSetItem, 'categoryKey' | 'mealSlot'>,
+  T extends Pick<FixedFlowSetItem, 'categoryKey' | 'mealSlot' | 'mealSlots'>,
 >(
   items: T[],
   schedule: DayMealSlotSchedule = DEFAULT_DAY_MEAL_SLOT_SCHEDULE,

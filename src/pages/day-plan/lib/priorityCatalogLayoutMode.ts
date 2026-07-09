@@ -2,6 +2,7 @@ import {
   buildSpineImportFromBag,
   collectSpineTimelineCategoryKeys,
   getLocalDateKey,
+  parseHHmmToMinutes,
   type DayPlanBlock,
 } from '@entities/day-plan';
 import { filterSpineTimelineBlocks } from '@entities/day-plan/lib/dayPlanFlowBlock';
@@ -31,10 +32,10 @@ export function resolveCatalogLayoutMode(input: {
 
 export function catalogLayoutModeLead(mode: DayPlanLayoutMode): string {
   if (mode === 'sections') {
-    return '담을 시간대를 고른 뒤 루틴을 탭하면 해당 구간에 추가돼요.';
+    return '시간대 아이콘을 누르면 바로 구간을 고를 수 있어요.';
   }
   if (mode === 'spine') {
-    return '타임라인 보기에 담을 루틴을 골라요. 탭한 항목은 오늘 탭 타임라인에 시간과 함께 쌓여요.';
+    return '시간 아이콘을 누르면 시작·종료 시각을 정할 수 있어요. 담은 항목은 오늘 탭 타임라인에 쌓여요.';
   }
   return '목록 보기에 담을 루틴을 골라요. 탭한 항목은 오늘 탭 우선 순위에 순서대로 쌓여요.';
 }
@@ -67,7 +68,14 @@ export function isCatalogKeySelected(
   return selectedKeys.includes(key);
 }
 
-function findSpineBlockIdForCategory(
+export type CatalogSpineSchedule = {
+  startMinutes: number;
+  endMinutes: number;
+  blockId?: string;
+  isInTimeline: boolean;
+};
+
+export function findSpineBlockIdForCategory(
   blocks: readonly DayPlanBlock[],
   categoryKey: string,
 ): string | null {
@@ -76,6 +84,57 @@ function findSpineBlockIdForCategory(
     if (block.categoryKey?.trim() === key) return block.id;
   }
   return null;
+}
+
+const DEFAULT_SPINE_BLOCK_MIN = 30;
+
+/** 루틴 목록 타임라인 행 — 담긴 블록 시각 또는 집중 구간 안 제안 시각 */
+export function resolveCatalogSpineScheduleForKey(input: {
+  categoryKey: string;
+  planBlocks: readonly DayPlanBlock[];
+  priorityStart: string;
+  priorityEnd: string;
+  nowMinutes: number;
+}): CatalogSpineSchedule {
+  const key = input.categoryKey.trim();
+  for (const block of filterSpineTimelineBlocks([...input.planBlocks])) {
+    if (block.categoryKey?.trim() === key) {
+      return {
+        startMinutes: block.startMinutes,
+        endMinutes: block.endMinutes,
+        blockId: block.id,
+        isInTimeline: true,
+      };
+    }
+  }
+
+  const suggested = buildSpineImportFromBag({
+    categoryKeys: [key],
+    resolveTitle: () => key,
+    priorityStart: input.priorityStart,
+    priorityEnd: input.priorityEnd,
+    existingBlocks: input.planBlocks,
+    nowMinutes: input.nowMinutes,
+  });
+  if (suggested[0]) {
+    return {
+      startMinutes: suggested[0].startMinutes,
+      endMinutes: suggested[0].endMinutes,
+      isInTimeline: false,
+    };
+  }
+
+  const windowStart = parseHHmmToMinutes(input.priorityStart) ?? 9 * 60;
+  const windowEndRaw = parseHHmmToMinutes(input.priorityEnd) ?? 22 * 60;
+  const windowEnd = windowEndRaw <= windowStart ? 24 * 60 : windowEndRaw;
+  const start = Math.min(Math.max(windowStart, input.nowMinutes), windowEnd - DEFAULT_SPINE_BLOCK_MIN);
+  const end = Math.min(start + DEFAULT_SPINE_BLOCK_MIN, windowEnd);
+
+  return {
+    startMinutes: start,
+    endMinutes: end,
+    isInTimeline: false,
+  };
 }
 
 export type CatalogToggleResult =

@@ -4,7 +4,6 @@ export {
   normalizeHistoryRecordKey,
   parseRoutineHistoryRecordKey,
   resolveDraftLayoutMode,
-  ROUTINE_HISTORY_LAYOUT_META,
   ROUTINE_HISTORY_LAYOUT_MODES,
   type RoutineHistoryLayoutMode,
 } from '@shared/lib/routineHistoryLayoutKey';

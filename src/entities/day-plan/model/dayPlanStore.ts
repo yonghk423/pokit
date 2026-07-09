@@ -13,6 +13,7 @@ import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 import type { DayPlanBlock, DayPlanQuickMemo } from '@entities/day-plan/model/types';
 import { loadDayPlan, saveDayPlan } from '@shared/lib/storage/dayPlanStorage';
 import { syncDayPlanToWidget } from '../lib/widgetDayPlanSync';
+import { registerDayPlanSyncTodayTabAccessors } from '../lib/runSyncTodayTabWithFixedRoutineApply';
 
 function createBlockId(): string {
   const cryptoAny = globalThis as unknown as { crypto?: { randomUUID?: () => string } };
@@ -615,6 +616,28 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
     },
   };
 });
+
+registerDayPlanSyncTodayTabAccessors(
+  () => ({
+    isHydrated: useDayPlanStore.getState().isHydrated,
+    blocks: useDayPlanStore.getState().blocks,
+  }),
+  (blocks) => {
+    const sorted = sortDayPlanBlocks(blocks);
+    useDayPlanStore.setState({ blocks: sorted });
+    const s = useDayPlanStore.getState();
+    const payload = {
+      dateKey: s.dateKey,
+      blocks: s.blocks,
+      completedBlockIds: s.completedBlockIds,
+      skippedBlockIds: s.skippedBlockIds,
+      liveActivityChecklistFocusBlockId: s.liveActivityChecklistFocusBlockId,
+      quickMemos: s.quickMemos,
+    };
+    saveDayPlan(payload);
+    syncDayPlanToWidget(payload);
+  },
+);
 
 export function selectFirstPendingBlock(state: DayPlanStoreState): DayPlanBlock | null {
   const flowBlocks = filterDayPlanFlowBlocks(state.blocks);

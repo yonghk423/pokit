@@ -99,7 +99,7 @@ describe('priorityCatalogLayoutMode', () => {
 
   it('catalogLayoutModeLead differs by mode', () => {
     expect(catalogLayoutModeLead('bag')).toContain('목록');
-    expect(catalogLayoutModeLead('sections')).toContain('담을 시간대');
-    expect(catalogLayoutModeLead('spine')).toContain('타임라인');
+    expect(catalogLayoutModeLead('sections')).toContain('시간대');
+    expect(catalogLayoutModeLead('spine')).toContain('시간 아이콘');
   });
 });

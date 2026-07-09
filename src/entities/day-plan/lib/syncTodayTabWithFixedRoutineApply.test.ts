@@ -1,5 +1,6 @@
 import {
   computeSyncTodayTabWithFixedRoutineApply,
+  mergeOrderWithAppliedFixedRoutines,
   syncPriorityOrderWithAppliedFixedRoutines,
 } from './syncTodayTabWithFixedRoutineApply';
 
@@ -20,13 +21,6 @@ describe('syncPriorityOrderWithAppliedFixedRoutines', () => {
     ]);
   });
 
-  it('prepends applied keys missing from order', () => {
-    const order = ['work'];
-    expect(
-      syncPriorityOrderWithAppliedFixedRoutines(order, ['water', 'reading'], allFixed),
-    ).toEqual(['work']);
-  });
-
   it('keeps manual keys and applied fixed keys', () => {
     const order = ['work', 'water', 'reading'];
     expect(
@@ -35,15 +29,32 @@ describe('syncPriorityOrderWithAppliedFixedRoutines', () => {
   });
 });
 
+describe('mergeOrderWithAppliedFixedRoutines', () => {
+  const allFixed = new Set(['healthIntake', 'fasting', 'reading']);
+
+  it('appends applied keys missing from order', () => {
+    const order = ['work'];
+    expect(
+      mergeOrderWithAppliedFixedRoutines(order, ['healthIntake', 'fasting'], allFixed),
+    ).toEqual(['work', 'healthIntake', 'fasting']);
+  });
+});
+
 describe('computeSyncTodayTabWithFixedRoutineApply', () => {
   const baseInput = {
     priorityCategoryOrder: ['water', 'reading', 'work'],
     priorityMealSlotOverrides: { water: 'morning' as const, reading: 'morning' as const },
+    prioritySectionsCategoryOrder: [] as string[],
+    prioritySectionsMealSlots: {} as Record<string, 'morning'>,
+    priorityStart: '09:00',
+    priorityEnd: '22:00',
+    planBlocks: [] as import('../model/types').DayPlanBlock[],
     priorityMealSlotLayoutEnabled: true,
     todayAppliedCategoryKeys: [] as string[],
     activeSetIds: [] as string[],
     activeMealSlotsBySetId: {} as Record<string, 'morning'>,
     scheduledMealSlotLayoutEnabled: false,
+    fixedRoutineApplyLayoutMode: 'bag' as const,
     routineCatalogSelectionKeys: [] as string[],
     fixedFlowSets: [
       {
@@ -58,7 +69,7 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     ],
   };
 
-  it('clears unapplied fixed routine keys and meal slot overrides', () => {
+  it('clears unapplied fixed routine keys and meal slot overrides in bag mode', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply(baseInput);
     expect(patch).toEqual({
       priorityCategoryOrder: ['work'],
@@ -92,9 +103,42 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     });
   });
 
-  it('does not auto-fill meal slot overrides for applied fixed routines', () => {
+  it('adds applied fixed routines to sections order with meal slots', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,
+      fixedRoutineApplyLayoutMode: 'sections',
+      priorityCategoryOrder: ['work'],
+      prioritySectionsCategoryOrder: [],
+      prioritySectionsMealSlots: {},
+      priorityMealSlotOverrides: {},
+      todayAppliedCategoryKeys: ['healthIntake', 'fasting'],
+      fixedFlowSets: [
+        {
+          id: 'set_example_health',
+          name: '건강',
+          applyRule: 'manual' as const,
+          items: [
+            { categoryKey: 'healthIntake', enabled: true, mealSlot: 'dawn' as const },
+            { categoryKey: 'fasting', enabled: true, mealSlot: 'morning' as const },
+          ],
+        },
+      ],
+      activeSetIds: ['set_example_health'],
+      activeMealSlotsBySetId: {},
+    });
+    expect(patch).toEqual({
+      prioritySectionsCategoryOrder: ['healthIntake', 'fasting'],
+      prioritySectionsMealSlots: {
+        healthIntake: ['dawn'],
+        fasting: ['morning'],
+      },
+    });
+  });
+
+  it('does not auto-fill meal slot overrides for applied fixed routines in sections mode', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      fixedRoutineApplyLayoutMode: 'sections',
       priorityMealSlotOverrides: {},
       todayAppliedCategoryKeys: ['healthIntake'],
       fixedFlowSets: [
@@ -112,14 +156,20 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
       activeMealSlotsBySetId: { 'preset-daily': ['morning'] },
     });
     expect(patch).toEqual({
-      priorityCategoryOrder: ['work'],
+      prioritySectionsCategoryOrder: ['healthIntake'],
+      prioritySectionsMealSlots: {
+        healthIntake: ['morning'],
+      },
     });
   });
 
   it('does not auto-enable layout tab when applied fixed routines have meal slots', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,
+      fixedRoutineApplyLayoutMode: 'sections',
       priorityCategoryOrder: ['healthIntake', 'work'],
+      prioritySectionsCategoryOrder: ['healthIntake'],
+      prioritySectionsMealSlots: { healthIntake: ['morning'] },
       priorityMealSlotOverrides: {},
       priorityMealSlotLayoutEnabled: false,
       todayAppliedCategoryKeys: ['healthIntake'],
@@ -140,10 +190,13 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     expect(patch).toBeNull();
   });
 
-  it('keeps draft meal slot override over applied fixed routine default', () => {
+  it('keeps draft meal slot override over applied fixed routine default in sections mode', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,
+      fixedRoutineApplyLayoutMode: 'sections',
       priorityCategoryOrder: ['healthIntake', 'work'],
+      prioritySectionsCategoryOrder: ['healthIntake'],
+      prioritySectionsMealSlots: { healthIntake: ['lunch'] },
       priorityMealSlotOverrides: { healthIntake: 'lunch' },
       priorityMealSlotLayoutEnabled: true,
       todayAppliedCategoryKeys: ['healthIntake'],
@@ -161,6 +214,47 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
       activeMealSlotsBySetId: { 'preset-daily': ['morning', 'lunch'] },
       scheduledMealSlotLayoutEnabled: true,
     });
-    expect(patch).toBeNull();
+    expect(patch).toEqual({
+      prioritySectionsMealSlots: {
+        healthIntake: ['morning'],
+      },
+    });
+  });
+
+  it('adds applied fixed routines to spine timeline blocks in spine mode', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      fixedRoutineApplyLayoutMode: 'spine',
+      priorityCategoryOrder: ['work'],
+      todayAppliedCategoryKeys: ['healthIntake', 'fasting'],
+      fixedFlowSets: [
+        {
+          id: 'set_example_health',
+          name: '건강',
+          applyRule: 'manual' as const,
+          items: [
+            {
+              categoryKey: 'healthIntake',
+              enabled: true,
+              spineStartMinutes: 9 * 60,
+              spineEndMinutes: 9 * 60 + 30,
+            },
+            {
+              categoryKey: 'fasting',
+              enabled: true,
+              spineStartMinutes: 10 * 60,
+              spineEndMinutes: 10 * 60 + 30,
+            },
+          ],
+        },
+      ],
+      activeSetIds: ['set_example_health'],
+    });
+    expect(patch?.planBlocks).toHaveLength(2);
+    expect(patch?.planBlocks?.map((block) => block.categoryKey)).toEqual([
+      'healthIntake',
+      'fasting',
+    ]);
+    expect(patch?.priorityCategoryOrder).toBeUndefined();
   });
 });

@@ -53,6 +53,7 @@ import {
   markDailyRhythmOnboardingCompleted,
   saveRoutineCatalogSelectionKeys,
 } from '@shared/lib/storage';
+import { coerceDayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
 import { ThemedView } from '@shared/ui/themed-view';
 
 import {
@@ -155,8 +156,8 @@ export function DayPlanPage() {
   );
 
   const effectiveLayoutMode = useMemo(
-    () => coerceLayoutMode(layoutMode),
-    [coerceLayoutMode, layoutMode],
+    () => coerceDayPlanLayoutMode(layoutMode, visibility),
+    [layoutMode, visibility],
   );
 
   useEffect(() => {

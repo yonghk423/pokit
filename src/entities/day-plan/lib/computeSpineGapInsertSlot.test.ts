@@ -17,6 +17,11 @@ function spineBlock(partial: Partial<DayPlanBlock> & Pick<DayPlanBlock, 'id'>): 
 describe('computeSpineGapInsertSlot', () => {
   it('returns first free slot after now within gap', () => {
     const slot = computeSpineGapInsertSlot(60, 120, [], 70);
+    expect(slot).toEqual({ startMinutes: 70, endMinutes: 120 });
+  });
+
+  it('uses custom default duration', () => {
+    const slot = computeSpineGapInsertSlot(60, 120, [], 70, 15);
     expect(slot).toEqual({ startMinutes: 70, endMinutes: 85 });
   });
 
@@ -41,7 +46,7 @@ describe('computeSpineGapInsertSlot', () => {
       spineBlock({ id: 'a', startMinutes: 70, endMinutes: 95 }),
     ];
     const slot = computeSpineGapInsertSlot(60, 120, blocks, 70);
-    expect(slot).toEqual({ startMinutes: 95, endMinutes: 110 });
+    expect(slot).toEqual({ startMinutes: 95, endMinutes: 120 });
   });
 
   it('uses remaining short gap when less than default duration', () => {

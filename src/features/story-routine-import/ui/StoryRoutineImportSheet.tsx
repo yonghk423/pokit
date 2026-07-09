@@ -19,7 +19,7 @@ import {
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { importStoryAsRoutine, type ImportTarget } from '../lib/importStoryAsRoutine';
+import { importStoryAsRoutine } from '../lib/importStoryAsRoutine';
 import { suggestCatalogGroupKey } from '../lib/storyArticleCategoryKey';
 import type { StoryRoutineArticle } from '../model/storyRoutinePayload';
 
@@ -30,7 +30,6 @@ type Props = {
 };
 
 type DoneState = {
-  target: ImportTarget;
   created: boolean;
 };
 
@@ -74,15 +73,12 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
     setSelectedGroupKey(suggestCatalogGroupKey(article));
   }, [visible, article]);
 
-  const handleImport = useCallback(
-    (target: ImportTarget) => {
-      if (!article) return;
-      const result = importStoryAsRoutine(article, target, selectedGroupKey);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setDone({ target, created: result.created });
-    },
-    [article, selectedGroupKey],
-  );
+  const handleImport = useCallback(() => {
+    if (!article) return;
+    const result = importStoryAsRoutine(article, selectedGroupKey);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setDone({ created: result.created });
+  }, [article, selectedGroupKey]);
 
   const handleClose = useCallback(() => {
     setDone(null);
@@ -119,18 +115,10 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
                 <IconSymbol name="checkmark" size={22} color={palette.ink} />
               </View>
               <ThemedText style={[styles.successTitle, { color: palette.ink }]}>
-                {done.target === 'today'
-                  ? done.created
-                    ? '오늘 일정에 담았어요'
-                    : '오늘 일정에 다시 담았어요'
-                  : done.created
-                    ? '루틴에 저장했어요'
-                    : '루틴 내용을 업데이트했어요'}
+                {done.created ? '루틴에 저장했어요' : '루틴 내용을 업데이트했어요'}
               </ThemedText>
               <ThemedText style={[styles.successSub, { color: palette.muted }]}>
-                {done.target === 'today'
-                  ? '오늘 탭에서 확인할 수 있어요'
-                  : `「${selectedGroupLabel}」에서 확인할 수 있어요`}
+                {`「${selectedGroupLabel}」에서 확인할 수 있어요`}
               </ThemedText>
               <Pressable
                 accessibilityRole="button"
@@ -276,23 +264,8 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
                       opacity: pressed ? 0.88 : 1,
                     },
                   ]}
-                  onPress={() => handleImport('today')}>
+                  onPress={handleImport}>
                   <ThemedText style={[styles.primaryBtnText, { color: palette.bg }]}>
-                    오늘 일정에 담기
-                  </ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.secondaryBtn,
-                    retroBorderFor(isDark),
-                    {
-                      backgroundColor: palette.surface,
-                      opacity: pressed ? 0.88 : 1,
-                    },
-                  ]}
-                  onPress={() => handleImport('catalog')}>
-                  <ThemedText style={[styles.secondaryBtnText, { color: palette.ink }]}>
                     루틴에 저장
                   </ThemedText>
                 </Pressable>
@@ -444,18 +417,6 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   primaryBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  secondaryBtn: {
-    paddingVertical: 14,
-    paddingHorizontal: CityPopSpacing.gutter,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 52,
-  },
-  secondaryBtnText: {
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,

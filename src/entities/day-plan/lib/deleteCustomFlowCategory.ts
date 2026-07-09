@@ -13,6 +13,8 @@ type DeleteCustomFlowDeps = {
   notifyFixedFlowApplyScheduleChanged: () => void;
   getPriorityCategoryOrder: () => string[];
   setPriorityCategoryOrder: (order: string[]) => void;
+  getPrioritySectionsCategoryOrder: () => string[];
+  setPrioritySectionsCategoryOrder: (order: string[]) => void;
   filterCompletedFocusKeysToPriorityOrder: (order: string[]) => void;
   registerOtherCategoryResolverFromStorage: () => void;
   bumpCategoryLabelEpoch: () => void;
@@ -39,6 +41,11 @@ export function deleteCustomFlowCategory(
   const nextOrder = deps.getPriorityCategoryOrder().filter((k) => k !== categoryKey);
   deps.setPriorityCategoryOrder(nextOrder);
   deps.filterCompletedFocusKeysToPriorityOrder(nextOrder);
+
+  const nextSectionsOrder = deps.getPrioritySectionsCategoryOrder().filter((k) => k !== categoryKey);
+  if (nextSectionsOrder.length !== deps.getPrioritySectionsCategoryOrder().length) {
+    deps.setPrioritySectionsCategoryOrder(nextSectionsOrder);
+  }
 
   deps.registerOtherCategoryResolverFromStorage();
   deps.bumpCategoryLabelEpoch();

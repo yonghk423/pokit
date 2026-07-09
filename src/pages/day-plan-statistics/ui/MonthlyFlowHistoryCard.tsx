@@ -9,7 +9,7 @@ import type { MonthlyFlowHistoryRow } from '../lib/buildMonthlyFlowHistory';
 import type { FlowHistoryCategoryGroup } from '../lib/groupFlowHistoryRows';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 import { FlowHistoryMetaLine } from './FlowHistoryMetaLine';
-import { FlowHistoryModeMonthRow } from './FlowHistoryModeMonthRow';
+import { FlowHistoryMonthRow } from './FlowHistoryMonthRow';
 
 type Props = {
   group: FlowHistoryCategoryGroup<MonthlyFlowHistoryRow>;
@@ -17,12 +17,9 @@ type Props = {
   palette: FlowHistoryPalette;
 };
 
-/** 월간 플로우 기록 — 주간 카드와 같은 모드별 트랙 스택 */
 export function MonthlyFlowHistoryCard({ group, monthPrefix, palette }: Props) {
   const iconColor = activeIconColorByCategory(group.categoryKey);
-  const daysInMonth = group.modeRows[0]?.daysInMonth ?? 0;
-  const headerCount = Math.max(...group.modeRows.map((row) => row.completedDays), 0);
-  const monthCountLabel = `${headerCount}/${daysInMonth}`;
+  const monthCountLabel = `${group.row.completedDays}/${group.row.daysInMonth}`;
 
   return (
     <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
@@ -45,16 +42,7 @@ export function MonthlyFlowHistoryCard({ group, monthPrefix, palette }: Props) {
         <ThemedText style={[styles.monthCount, { color: palette.muted }]}>{monthCountLabel}</ThemedText>
       </View>
 
-      <View style={styles.modeRows}>
-        {group.modeRows.map((row) => (
-          <FlowHistoryModeMonthRow
-            key={row.historyKey}
-            row={row}
-            monthPrefix={monthPrefix}
-            palette={palette}
-          />
-        ))}
-      </View>
+      <FlowHistoryMonthRow row={group.row} monthPrefix={monthPrefix} palette={palette} />
     </View>
   );
 }
@@ -101,10 +89,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.25,
     lineHeight: 17,
-  },
-  modeRows: {
-    width: '100%',
-    gap: 5,
   },
   monthCount: {
     fontSize: 10,

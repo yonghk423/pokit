@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, {
   Extrapolation,
@@ -88,22 +88,59 @@ function SpineNode({
   palette,
   isDark,
   completed,
+  isCurrent,
+  accentColor,
 }: {
   block: Extract<SpineTimelineRow, { kind: 'block' }>['block'];
   palette: SpineTimelinePalette;
   isDark: boolean;
   completed: boolean;
+  isCurrent: boolean;
+  accentColor: string;
 }) {
   const blockBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)';
   const categoryKey = resolveBlockCategoryKey(block) ?? 'other';
   const iconName = getBlockTimelineIcon(block);
+  const shouldPulse = isCurrent && !completed;
+  const pulse = useRef(new Animated.Value(1)).current;
   const iconColor = completed
     ? palette.muted
     : resolveCategoryCatalogAccentColor(categoryKey);
 
+  useEffect(() => {
+    if (!shouldPulse) {
+      pulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 0.45,
+          duration: 650,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 650,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse, shouldPulse]);
+
   return (
-    <View style={[styles.nodeCircle, { backgroundColor: blockBg }, completed && styles.nodeDone]}>
-      <IconSymbol name={iconName as any} size={14} color={iconColor} />
+    <View
+      style={[
+        styles.nodeCircle,
+        { backgroundColor: blockBg },
+        completed && styles.nodeDone,
+        shouldPulse && { borderWidth: 2, borderColor: accentColor },
+      ]}>
+      <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
+        <IconSymbol name={iconName as any} size={14} color={iconColor} />
+      </Animated.View>
     </View>
   );
 }
@@ -115,6 +152,8 @@ type Props = {
   isDark: boolean;
   rowSurface: string;
   completed: boolean;
+  isCurrent: boolean;
+  accentColor: string;
   reorderEnabled: boolean;
   onToggleComplete: () => void;
   onPress?: () => void;
@@ -132,6 +171,8 @@ export function SpineTimelineBlockRow({
   isDark,
   rowSurface,
   completed,
+  isCurrent,
+  accentColor,
   reorderEnabled,
   onToggleComplete,
   onPress,
@@ -248,6 +289,8 @@ export function SpineTimelineBlockRow({
   }));
 
   const titleColor = completed ? palette.muted : palette.ink;
+  const liveTimeColor = isCurrent && !completed ? accentColor : palette.muted;
+  const liveTitleColor = isCurrent && !completed ? accentColor : titleColor;
 
   return (
     <Reanimated.View
@@ -279,7 +322,8 @@ export function SpineTimelineBlockRow({
                   <ThemedText
                     style={[
                       styles.railTime,
-                      { color: palette.muted },
+                      { color: liveTimeColor },
+                      isCurrent && !completed && styles.railTimeLive,
                       completed && styles.textDone,
                     ]}>
                     {formatRailMinutes(row.startMinutes)}
@@ -287,21 +331,30 @@ export function SpineTimelineBlockRow({
                   <ThemedText
                     style={[
                       styles.railTimeSecondary,
-                      { color: palette.muted },
+                      { color: liveTimeColor },
+                      isCurrent && !completed && styles.railTimeLive,
                       completed && styles.textDone,
                     ]}>
                     {formatRailMinutes(row.endMinutes)}
                   </ThemedText>
                 </View>
                 <View style={styles.spineCol}>
-                  <SpineNode block={row.block} palette={palette} isDark={isDark} completed={completed} />
+                  <SpineNode
+                    block={row.block}
+                    palette={palette}
+                    isDark={isDark}
+                    completed={completed}
+                    isCurrent={isCurrent}
+                    accentColor={accentColor}
+                  />
                   <View style={[styles.spineLine, { backgroundColor: palette.line }]} />
                 </View>
                 <View style={styles.contentCol}>
                   <ThemedText
                     style={[
                       styles.metaText,
-                      { color: palette.muted },
+                      { color: liveTimeColor },
+                      isCurrent && !completed && styles.metaTextLive,
                       completed && styles.textDone,
                     ]}>
                     {formatMinuteOfDayKo(row.startMinutes)}~
@@ -309,7 +362,12 @@ export function SpineTimelineBlockRow({
                     {formatDurationMinKo(durationMin)})
                   </ThemedText>
                   <ThemedText
-                    style={[styles.titleText, { color: titleColor }, completed && styles.titleDone]}
+                    style={[
+                      styles.titleText,
+                      { color: liveTitleColor },
+                      isCurrent && !completed && styles.titleLive,
+                      completed && styles.titleDone,
+                    ]}
                     numberOfLines={2}>
                     {row.block.title}
                   </ThemedText>
@@ -407,6 +465,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     opacity: 0.72,
   },
+  railTimeLive: {
+    fontWeight: '800',
+    opacity: 1,
+  },
   spineCol: {
     width: SPINE_W,
     alignItems: 'center',
@@ -439,11 +501,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 16,
   },
+  metaTextLive: {
+    fontWeight: '700',
+  },
   titleText: {
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: -0.3,
     lineHeight: 21,
+  },
+  titleLive: {
+    fontWeight: '800',
   },
   titleDone: {
     textDecorationLine: 'line-through',

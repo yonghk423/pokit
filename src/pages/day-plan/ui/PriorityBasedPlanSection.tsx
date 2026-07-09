@@ -27,7 +27,6 @@ import {
   blockMatchesPriorityHhmmWindow,
   buildSpineTimelineModel,
   clampSpineBlockToPriorityWindow,
-  computeSpineGapInsertSlot,
   filterBagTimelineFlowBlocks,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
@@ -52,7 +51,7 @@ import {
   resolveCategoryCatalogIcon,
   useDayPlanStore
 } from '@entities/day-plan';
-import { useFixedFlowSetsStore } from '@entities/day-plan';
+import { appendPriorityCategoryKeysIfMissing, useFixedFlowSetsStore } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   hasGoalDetailCommittedCategory,
@@ -70,10 +69,10 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { PriorityOrderRow } from '@widgets/day-plan-priority-order';
-import { SpineScheduleEditSheet, SpineTimelineView } from '@widgets/day-plan-spine-timeline';
-import type { SpineScheduleEditDraft } from '@widgets/day-plan-spine-timeline';
+import { SpineBlockEditSheet, type SpineBlockEditDraft } from './SpineBlockEditSheet';
+import { SpineTimelineView } from '@widgets/day-plan-spine-timeline';
 import { MealSlotScheduleEditButton, MealSlotTimelineView } from '@widgets/day-plan-meal-slot-timeline';
-import { buildRoutineTabPickerSections, buildAddablePriorityCatalogSections } from '../lib/priorityCatalog';
+import { buildAddablePriorityCatalogSections } from '../lib/priorityCatalog';
 import {
   formatDateKeyCompactKo,
   formatDateKeyDisplayKo,
@@ -96,7 +95,10 @@ import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
 import { PriorityMealSlotAddRoutineRow } from './PriorityMealSlotAddRoutineRow';
 import { PriorityMealSlotSectionHeader } from './PriorityMealSlotSectionHeader';
-import { PriorityRoutinePickerSheet } from './PriorityRoutinePickerSheet';
+import {
+  PriorityRoutinePickerSheet,
+  type RoutinePickerConfirmItem,
+} from './PriorityRoutinePickerSheet';
 import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 
 /** 우선순위 행 완료 제거 시: 페이드 아웃 + 아래 행이 부드럽게 올라오는 레이아웃 전환 */
@@ -225,6 +227,45 @@ function formatOvernightTailEndHeadline(end: string): string {
     return '자정(24:00)';
   }
   return formatMinuteOfDayKo(pe);
+}
+
+/** 타임라인 헤더 — 집중 구간 시각(탭 시 모달) */
+function PriorityWindowTimeChip({
+  line,
+  ink,
+  muted,
+  chipBg,
+  chipBgPressed,
+  onPress,
+}: {
+  line: string;
+  ink: string;
+  muted: string;
+  chipBg: string;
+  chipBgPressed: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={`집중 구간 시간 설정, 현재 ${line}`}
+      accessibilityHint="탭하면 집중 구간 시간을 변경할 수 있어요"
+      style={({ pressed }) => [
+        styles.priorityTimelineTimeChip,
+        { backgroundColor: pressed ? chipBgPressed : chipBg },
+      ]}>
+      <IconSymbol name="clock" size={11} color={muted} />
+      <ThemedText
+        style={[styles.priorityTimelineSub, styles.priorityTimelineTimeTap, { color: ink }]}
+        lightColor={ink}
+        darkColor={ink}
+        numberOfLines={2}>
+        {line}
+      </ThemedText>
+    </Pressable>
+  );
 }
 
 function buildCalendarDays(monthStart: Date): Date[] {
@@ -823,7 +864,7 @@ export function PriorityBasedPlanSection({
   const [draftRangeEnd, setDraftRangeEnd] = useState(priorityPlanDateKeyEnd);
   /** null이 아니면 첫 번째로 택한 날(스토어 미반영) — 다음 탭이 범위의 다른 끝 */
   const [calendarRangeAnchor, setCalendarRangeAnchor] = useState<string | null>(null);
-  const [spineEditDraft, setSpineEditDraft] = useState<SpineScheduleEditDraft | null>(null);
+  const [spineEditDraft, setSpineEditDraft] = useState<SpineBlockEditDraft | null>(null);
   const [spineDragActive, setSpineDragActive] = useState(false);
 
   const monthFallbackDate = useMemo(() => {
@@ -1079,6 +1120,10 @@ export function PriorityBasedPlanSection({
   );
   const [addRoutineSheetOpen, setAddRoutineSheetOpen] = useState(false);
   const [addRoutineTargetSlot, setAddRoutineTargetSlot] = useState<DayMealSlot | null>(null);
+  const [spinePendingGapBounds, setSpinePendingGapBounds] = useState<{
+    fromMinutes: number;
+    toMinutes: number;
+  } | null>(null);
   const [catalogTick, setCatalogTick] = useState(0);
   const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
@@ -1267,6 +1312,8 @@ export function PriorityBasedPlanSection({
     [prioritySectionsCategoryOrder, categoryHintTick, categoryLabelEpoch],
   );
 
+  const sectionsCount = sectionsCatalogItems.length;
+
   const sectionsLayoutItems = useMemo(
     () =>
       partitionDisplayWithDeferredBottom(
@@ -1342,23 +1389,41 @@ export function PriorityBasedPlanSection({
   );
   const fullBagCount = orderedSelectedItemsForDisplay.length;
 
-  const openSpineCreateDraftForGap = useCallback(
-    (slot: { startMinutes: number; endMinutes: number }, categoryKey: string | null = null, title = '') => {
-      setSpineEditDraft({
-        mode: 'create',
-        title,
-        categoryKey,
-        startMinutes: slot.startMinutes,
-        endMinutes: slot.endMinutes,
-      });
-    },
-    [],
-  );
-
   const openMealSlotScheduleEditor = useCallback((slot?: DayMealSlot | null) => {
     setMealSlotScheduleFocusSlot(slot ?? null);
     setMealSlotScheduleSheetOpen(true);
   }, []);
+
+  const alertSpineBlockSaveError = useCallback(
+    (action: 'add' | 'update', reason: string) => {
+      const title = action === 'add' ? '일정 추가' : '일정 수정';
+      if (reason === 'empty_title') {
+        Alert.alert(title, '제목을 입력해 주세요.');
+        return;
+      }
+      if (reason === 'in_the_past') {
+        Alert.alert(title, '종료 시각이 현재보다 이후인 일정만 저장할 수 있어요.');
+        return;
+      }
+      if (reason === 'overlap') {
+        Alert.alert(title, '겹치는 일정이 있어요. 다른 시간을 선택해 주세요.');
+        return;
+      }
+      if (reason === 'invalid_range') {
+        Alert.alert(title, '종료 시각은 시작 시각보다 뒤여야 해요.');
+        return;
+      }
+      if (reason === 'outside_window') {
+        Alert.alert(
+          title,
+          '일정은 하루 시작~하루 마무리 시간 안에서만 둘 수 있어요. 시간을 다시 확인해 주세요.',
+        );
+        return;
+      }
+      Alert.alert(title, '일정을 저장하지 못했어요.');
+    },
+    [],
+  );
 
   const reloadRoutineCatalog = useCallback(() => {
     setCustomFlowEntries(listAllCustomFlowCatalogEntries());
@@ -1373,38 +1438,120 @@ export function PriorityBasedPlanSection({
 
   const addableRoutineSections = useMemo(() => {
     void catalogTick;
+    const excludedKeys = spinePendingGapBounds
+      ? new Set<string>()
+      : new Set(
+          addRoutineTargetSlot ? prioritySectionsCategoryOrder : priorityCategoryOrder,
+        );
     return buildAddablePriorityCatalogSections({
-      excludedKeys: new Set(),
+      excludedKeys,
       customFlowEntries,
       customGroups,
     });
-  }, [catalogTick, customFlowEntries, customGroups]);
+  }, [
+    addRoutineTargetSlot,
+    catalogTick,
+    customFlowEntries,
+    customGroups,
+    priorityCategoryOrder,
+    prioritySectionsCategoryOrder,
+    spinePendingGapBounds,
+  ]);
 
   const openAddRoutineForSlot = useCallback((slot: DayMealSlot) => {
+    setSpinePendingGapBounds(null);
     setAddRoutineTargetSlot(slot);
     setAddRoutineSheetOpen(true);
   }, []);
 
+  const openAddRoutineForBag = useCallback(() => {
+    setSpinePendingGapBounds(null);
+    setAddRoutineTargetSlot(null);
+    setAddRoutineSheetOpen(true);
+  }, []);
+
   const handleConfirmAddRoutinesToSlot = useCallback(
-    (keys: string[]) => {
-      if (!addRoutineTargetSlot || keys.length === 0) return;
-      const slot = addRoutineTargetSlot;
-      appendPrioritySectionsCategoryKeys(keys);
-      keys.forEach((key) => {
-        addPrioritySectionMealSlot(key, slot);
-      });
+    (items: RoutinePickerConfirmItem[]) => {
+      if (items.length === 0) return;
+
+      if (spinePendingGapBounds) {
+        const addedKeys: string[] = [];
+
+        for (const item of items) {
+          const schedule = item.schedule;
+          if (!schedule) break;
+
+          const label = getPickerCategoryLabel(item.key);
+          const result = addPlanBlock({
+            title: label,
+            category: label,
+            categoryKey: item.key,
+            startMinutes: schedule.startMinutes,
+            endMinutes: schedule.endMinutes,
+            blockOrigin: 'spineTimeline',
+            planDateKey: getLocalDateKey(),
+          });
+          if (!result.ok) {
+            if (addedKeys.length === 0) {
+              alertSpineBlockSaveError('add', result.reason);
+            }
+            break;
+          }
+          addedKeys.push(item.key);
+        }
+
+        if (addedKeys.length > 0) {
+          setLastAddedCategoryKey(addedKeys[addedKeys.length - 1] ?? null);
+        }
+        setSpinePendingGapBounds(null);
+        return;
+      }
+
+      const keys = items.map((item) => item.key);
+
+      if (addRoutineTargetSlot) {
+        const slot = addRoutineTargetSlot;
+        appendPrioritySectionsCategoryKeys(keys);
+        keys.forEach((key) => {
+          addPrioritySectionMealSlot(key, slot);
+        });
+      } else {
+        appendPriorityCategoryKeysIfMissing(keys);
+      }
       setLastAddedCategoryKey(keys[keys.length - 1] ?? null);
     },
-    [addRoutineTargetSlot, addPrioritySectionMealSlot, appendPrioritySectionsCategoryKeys],
+    [
+      addPlanBlock,
+      addRoutineTargetSlot,
+      addPrioritySectionMealSlot,
+      alertSpineBlockSaveError,
+      appendPriorityCategoryKeysIfMissing,
+      appendPrioritySectionsCategoryKeys,
+      spinePendingGapBounds,
+    ],
   );
 
   const addRoutineSheetTitle = useMemo(
     () =>
       addRoutineTargetSlot
         ? `${DAY_MEAL_SLOT_LABEL[addRoutineTargetSlot]} 루틴 연결`
-        : '루틴 연결',
+        : '루틴 추가',
     [addRoutineTargetSlot],
   );
+
+  const addRoutineSheetConfirmLabel = addRoutineTargetSlot ? '연결' : '추가';
+
+  const spineGapAddConfig = useMemo(() => {
+    if (!spinePendingGapBounds) return null;
+    return {
+      fromMinutes: spinePendingGapBounds.fromMinutes,
+      toMinutes: spinePendingGapBounds.toMinutes,
+      priorityStart,
+      priorityEnd,
+      planBlocks,
+      nowMinutes: getLocalMinutesOfDayNow(),
+    };
+  }, [planBlocks, priorityEnd, priorityStart, spinePendingGapBounds]);
 
   const showSectionsView = priorityMealSlotLayoutEnabled;
 
@@ -1497,10 +1644,10 @@ export function PriorityBasedPlanSection({
         if (to === from) return;
         const reorderedInSlot = reorderMealSlotSectionEntries(entriesInSlot, from, to);
         const slotKeySet = new Set(entriesInSlot.map((entry) => entry.key));
-        const firstSlotIndex = priorityCategoryOrder.findIndex((key) => slotKeySet.has(key));
+        const firstSlotIndex = prioritySectionsCategoryOrder.findIndex((key) => slotKeySet.has(key));
         if (firstSlotIndex < 0) return;
-        const before = priorityCategoryOrder.slice(0, firstSlotIndex);
-        const after = priorityCategoryOrder.slice(firstSlotIndex + entriesInSlot.length);
+        const before = prioritySectionsCategoryOrder.slice(0, firstSlotIndex);
+        const after = prioritySectionsCategoryOrder.slice(firstSlotIndex + entriesInSlot.length);
         const nextOrder = [
           ...before,
           ...reorderedInSlot.map((entry) => entry.key),
@@ -1509,7 +1656,7 @@ export function PriorityBasedPlanSection({
         const active = nextOrder.filter((k) => !isPriorityCategoryDoneForOrdering(k));
         const done = nextOrder.filter((k) => isPriorityCategoryDoneForOrdering(k));
         setPriorityRowLayoutAnim(true);
-        setPriorityCategoryOrder([...active, ...done]);
+        setPrioritySectionsCategoryOrder([...active, ...done]);
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         return;
       }
@@ -1541,11 +1688,10 @@ export function PriorityBasedPlanSection({
       isPriorityRowCompleted,
       movePriorityCategoryToSectionSlot,
       orderedSelectedItemsForDisplay,
-      priorityCategoryOrder,
+      prioritySectionsCategoryOrder,
       sectionsMealSlotMap,
       setPriorityCategoryOrder,
-      setPriorityMealSlotOverride,
-      setPrioritySectionsMealSlots,
+      setPrioritySectionsCategoryOrder,
       showSectionsView,
       slottedPriorityEntries,
     ],
@@ -1728,6 +1874,14 @@ export function PriorityBasedPlanSection({
     };
   }, [isDark, bc.cover, bc.ink, bc.inkMuted, c.catBorderIdle]);
 
+  const priorityTimeChipColors = useMemo(
+    () =>
+      isDark
+        ? { bg: 'rgba(255,255,255,0.08)', pressed: 'rgba(255,255,255,0.13)' }
+        : { bg: c.containerHigh, pressed: '#DDD8CE' },
+    [c.containerHigh, isDark],
+  );
+
   /** 당일(오늘) · 다음날 — 전날 열은 제외하고, 자정 넘김 종료일만 연장 카드로 표시 */
   const timelineThreeDayKeys = useMemo(
     () => [
@@ -1767,15 +1921,20 @@ export function PriorityBasedPlanSection({
     }
   }, [planBlocks, priorityEnd, priorityStart, updatePlanBlock]);
 
+  const spineNowMinutes = useMemo(() => {
+    void mealSlotNowTick;
+    return getLocalMinutesOfDayNow();
+  }, [mealSlotNowTick]);
+
   const spineTimelineRows = useMemo(
     () =>
       buildSpineTimelineModel({
         priorityStart,
         priorityEnd,
         blocks: planBlocks,
-        nowMinutes: getLocalMinutesOfDayNow(),
+        nowMinutes: spineNowMinutes,
       }),
-    [priorityStart, priorityEnd, planBlocks],
+    [priorityStart, priorityEnd, planBlocks, spineNowMinutes],
   );
 
   const completedBlockIdSet = useMemo(
@@ -1812,11 +1971,6 @@ export function PriorityBasedPlanSection({
     [categorySubtitleByKey, mealSlotSectionsForDisplay],
   );
 
-  const spineRoutineSections = useMemo(
-    () => buildRoutineTabPickerSections(categoryLabelEpoch + categoryHintTick),
-    [categoryLabelEpoch, categoryHintTick],
-  );
-
   const confirmSpineBlockDelete = useCallback(
     (blockId: string) => {
       const block = planBlocks.find((b) => b.id === blockId);
@@ -1835,55 +1989,11 @@ export function PriorityBasedPlanSection({
     [planBlocks, removePlanBlock],
   );
 
-  const alertSpineBlockSaveError = useCallback(
-    (action: 'add' | 'update', reason: string) => {
-      const title = action === 'add' ? '일정 추가' : '일정 수정';
-      if (reason === 'empty_title') {
-        Alert.alert(title, '제목을 입력해 주세요.');
-        return;
-      }
-      if (reason === 'in_the_past') {
-        Alert.alert(title, '종료 시각이 현재보다 이후인 일정만 저장할 수 있어요.');
-        return;
-      }
-      if (reason === 'overlap') {
-        Alert.alert(title, '겹치는 일정이 있어요. 다른 시간을 선택해 주세요.');
-        return;
-      }
-      if (reason === 'invalid_range') {
-        Alert.alert(title, '종료 시각은 시작 시각보다 뒤여야 해요.');
-        return;
-      }
-      if (reason === 'outside_window') {
-        Alert.alert(
-          title,
-          '일정은 하루 시작~하루 마무리 시간 안에서만 둘 수 있어요. 시간을 다시 확인해 주세요.',
-        );
-        return;
-      }
-      Alert.alert(title, '일정을 저장하지 못했어요.');
-    },
-    [],
-  );
-
-  const handleSpineAddBlockInGap = useCallback(
-    (fromMinutes: number, toMinutes: number) => {
-      const slot = computeSpineGapInsertSlot(
-        fromMinutes,
-        toMinutes,
-        planBlocks,
-        getLocalMinutesOfDayNow(),
-        15,
-        1,
-        priorityStart,
-        priorityEnd,
-      );
-      if (!slot) return;
-
-      openSpineCreateDraftForGap(slot);
-    },
-    [openSpineCreateDraftForGap, planBlocks, priorityEnd, priorityStart],
-  );
+  const handleSpineAddBlockInGap = useCallback((fromMinutes: number, toMinutes: number) => {
+    setAddRoutineTargetSlot(null);
+    setSpinePendingGapBounds({ fromMinutes, toMinutes });
+    setAddRoutineSheetOpen(true);
+  }, []);
 
   const handleSpineToggleBlockComplete = useCallback(
     (blockId: string) => {
@@ -1892,7 +2002,7 @@ export function PriorityBasedPlanSection({
         uncompletePlanBlock(blockId);
         if (block) {
           for (const categoryKey of getFlowCompletionCategoryKeysForBlock(block)) {
-            useDayPlanDraftStore.getState().untrackRoutineHistoryCompletion(categoryKey, 'spine');
+            useDayPlanDraftStore.getState().untrackRoutineHistoryCompletion(categoryKey);
           }
         }
         return;
@@ -1900,7 +2010,7 @@ export function PriorityBasedPlanSection({
       completePlanBlock(blockId);
       if (block) {
         for (const categoryKey of getFlowCompletionCategoryKeysForBlock(block)) {
-          useDayPlanDraftStore.getState().trackRoutineHistoryCompletion(categoryKey, 'spine');
+          useDayPlanDraftStore.getState().trackRoutineHistoryCompletion(categoryKey);
         }
       }
     },
@@ -1919,7 +2029,6 @@ export function PriorityBasedPlanSection({
       const block = planBlocks.find((b) => b.id === blockId);
       if (!block) return;
       setSpineEditDraft({
-        mode: 'edit',
         blockId,
         title: block.title,
         categoryKey: block.categoryKey ?? null,
@@ -2007,13 +2116,6 @@ export function PriorityBasedPlanSection({
       setSpineEditDraft(null);
     },
     [addPlanBlock, alertSpineBlockSaveError, priorityEnd, priorityStart, updatePlanBlock],
-  );
-
-  const handleSpineStartFocus = useCallback(
-    (blockId: string) => {
-      router.push({ pathname: '/activity-session', params: { blockId } });
-    },
-    [router],
   );
 
   const priorityWindowHhmm = useMemo(() => {
@@ -2321,16 +2423,19 @@ export function PriorityBasedPlanSection({
         </KeyboardAvoidingView>
       </Modal>
 
-      <SpineScheduleEditSheet
+      <SpineBlockEditSheet
         visible={spineEditDraft != null}
         draft={spineEditDraft}
-        routineSections={spineRoutineSections}
-        palette={spineTimelinePalette}
         isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        surface={editorial.surface}
+        line={editorial.line}
+        priorityStart={priorityStart}
+        priorityEnd={priorityEnd}
         onClose={() => setSpineEditDraft(null)}
         onSave={handleSpineSaveBlock}
         onDelete={confirmSpineBlockDelete}
-        onStartFocus={handleSpineStartFocus}
       />
 
       <View style={[styles.bookOuter, { backgroundColor: surfaceBg, flex: 1, minHeight: 0 }]}>
@@ -2377,28 +2482,14 @@ export function PriorityBasedPlanSection({
                         {timelineDateIntro}
                         {' · '}
                       </ThemedText>
-                      <Pressable
+                      <PriorityWindowTimeChip
+                        line={priorityWindowLine}
+                        ink={editorial.ink}
+                        muted={editorial.muted}
+                        chipBg={priorityTimeChipColors.bg}
+                        chipBgPressed={priorityTimeChipColors.pressed}
                         onPress={openPriorityTimeModal}
-                        hitSlop={8}
-                        accessibilityRole="button"
-                        accessibilityLabel={`집중 구간 시간 설정, 현재 ${priorityWindowLine}`}
-                        accessibilityHint="탭하면 집중 구간 시간을 변경할 수 있어요"
-                        style={({ pressed }) => [pressed && { opacity: 0.65 }]}>
-                        <View style={styles.priorityTimelineTimeRow}>
-                          <IconSymbol name="clock" size={11} color={editorial.muted} />
-                          <ThemedText
-                            style={[
-                              styles.priorityTimelineSub,
-                              styles.priorityTimelineTimeTap,
-                              { color: editorial.ink },
-                            ]}
-                            lightColor={editorial.ink}
-                            darkColor={editorial.ink}
-                            numberOfLines={2}>
-                            {priorityWindowLine}
-                          </ThemedText>
-                        </View>
-                      </Pressable>
+                      />
                     </View>
                   </>
                 ) : (
@@ -2418,28 +2509,14 @@ export function PriorityBasedPlanSection({
                         {timelineDateIntro}
                         {' · '}
                       </ThemedText>
-                      <Pressable
+                      <PriorityWindowTimeChip
+                        line={priorityWindowLine}
+                        ink={editorial.ink}
+                        muted={editorial.muted}
+                        chipBg={priorityTimeChipColors.bg}
+                        chipBgPressed={priorityTimeChipColors.pressed}
                         onPress={openPriorityTimeModal}
-                        hitSlop={8}
-                        accessibilityRole="button"
-                        accessibilityLabel={`집중 구간 시간 설정, 현재 ${priorityWindowLine}`}
-                        accessibilityHint="탭하면 집중 구간 시간을 변경할 수 있어요"
-                        style={({ pressed }) => [pressed && { opacity: 0.65 }]}>
-                        <View style={styles.priorityTimelineTimeRow}>
-                          <IconSymbol name="clock" size={11} color={editorial.muted} />
-                          <ThemedText
-                            style={[
-                              styles.priorityTimelineSub,
-                              styles.priorityTimelineTimeTap,
-                              { color: editorial.ink },
-                            ]}
-                            lightColor={editorial.ink}
-                            darkColor={editorial.ink}
-                            numberOfLines={2}>
-                            {priorityWindowLine}
-                          </ThemedText>
-                        </View>
-                      </Pressable>
+                      />
                     </View>
                   </>
                 )}
@@ -2472,7 +2549,7 @@ export function PriorityBasedPlanSection({
                   isDark={isDark}
                   isFocusStarted={isFocusStarted}
                   isItemCompleted={resolveTimelineItemCompleted}
-                  reorderEnabled={orderedSelectedItemsForDisplay.length >= 1}
+                  reorderEnabled={sectionsCount >= 1}
                   onPressAddRoutine={openAddRoutineForSlot}
                   onToggleItemComplete={resolveTimelineCompletionToggle}
                   onOpenItemSettings={resolveTimelineCategorySettings}
@@ -2483,6 +2560,7 @@ export function PriorityBasedPlanSection({
                 <SpineTimelineView
                   rows={spineTimelineRows}
                   completedBlockIds={completedBlockIdSet}
+                  nowMinutes={spineNowMinutes}
                   isDark={isDark}
                   palette={spineTimelinePalette}
                   rowSurface={editorial.surface}
@@ -2623,8 +2701,15 @@ export function PriorityBasedPlanSection({
                               style={[styles.priorityMainEmptyHintBody, { color: editorial.muted }]}
                               lightColor={editorial.muted}
                               darkColor={editorial.muted}>
-                              아래에서 항목을 추가해 주세요.
+                              버튼을 눌러 오늘 할 루틴을 추가해 주세요.
                             </ThemedText>
+                            <PriorityMealSlotAddRoutineRow
+                              label="루틴 추가"
+                              ink={editorial.ink}
+                              line={editorial.line}
+                              isDark={isDark}
+                              onPress={openAddRoutineForBag}
+                            />
                           </View>
                         ) : null}
                         {timelineBlocksForDay.length > 0
@@ -2817,7 +2902,18 @@ export function PriorityBasedPlanSection({
                             };
 
                             if (!showSectionsView) {
-                              return orderedSelectedItemsForDisplay.map((cat) => renderBagRow(cat));
+                              return (
+                                <>
+                                  {orderedSelectedItemsForDisplay.map((cat) => renderBagRow(cat))}
+                                  <PriorityMealSlotAddRoutineRow
+                                    label="루틴 더 추가"
+                                    ink={editorial.ink}
+                                    line={editorial.line}
+                                    isDark={isDark}
+                                    onPress={openAddRoutineForBag}
+                                  />
+                                </>
+                              );
                             }
 
                             return (
@@ -2896,7 +2992,9 @@ export function PriorityBasedPlanSection({
       <PriorityRoutinePickerSheet
         visible={addRoutineSheetOpen}
         title={addRoutineSheetTitle}
+        confirmLabel={addRoutineSheetConfirmLabel}
         sections={addableRoutineSections}
+        spineGapAdd={spineGapAddConfig}
         isDark={isDark}
         ink={editorial.ink}
         muted={editorial.muted}
@@ -2905,6 +3003,7 @@ export function PriorityBasedPlanSection({
         onClose={() => {
           setAddRoutineSheetOpen(false);
           setAddRoutineTargetSlot(null);
+          setSpinePendingGapBounds(null);
         }}
         onConfirm={handleConfirmAddRoutinesToSlot}
         onCreateCustom={() => {
@@ -2984,10 +3083,16 @@ const styles = StyleSheet.create({
   priorityTimelineTimeTap: {
     fontWeight: '600',
   },
-  priorityTimelineTimeRow: {
+  priorityTimelineTimeChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    flexShrink: 1,
+    maxWidth: '100%',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 1,
   },
   priorityTimelineHeaderActions: {
     flexDirection: 'row',
@@ -3178,7 +3283,7 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     paddingHorizontal: 10,
     paddingVertical: 10,
-    gap: 2,
+    gap: 8,
     marginBottom: 10,
   },
   priorityMainEmptyHintTitle: {

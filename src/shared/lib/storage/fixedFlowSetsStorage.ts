@@ -1,5 +1,6 @@
-import { normalizeDayMealSlot, resolveFixedFlowItemMealSlot, type DayMealSlot } from './dayMealSlot';
+import { normalizeCategoryMealSlots, normalizeDayMealSlot, resolveFixedFlowItemMealSlot, type DayMealSlot } from './dayMealSlot';
 import {
+  BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS,
   LEGACY_WEEKDAY_SET_ID,
   LEGACY_CUSTOM_FLOW_SET_NAME,
   EXAMPLE_CUSTOM_FLOW_SET_NAME,
@@ -38,8 +39,10 @@ export type FixedFlowSetApplyRule =
 export type FixedFlowSetItem = {
   categoryKey: string;
   enabled: boolean;
-  /** 나만의 루틴 — 아침·점심·저녁 등 시간대 구간 */
+  /** 나만의 루틴 — 아침·점심·저녁 등 시간대 구간 (단일, 레거시) */
   mealSlot?: DayMealSlot;
+  /** 나만의 루틴 — 복수 시간대 구간 */
+  mealSlots?: DayMealSlot[];
   /** 타임라인 보기 — 시작·종료(분, 0~1440) */
   spineStartMinutes?: number;
   spineEndMinutes?: number;
@@ -55,6 +58,8 @@ export type FixedFlowSet = {
   pinnedMealSlots?: DayMealSlot[];
 };
 
+export type FixedRoutineApplyLayoutMode = 'bag' | 'sections' | 'spine';
+
 export type FixedFlowSetsState = {
   /** 오늘 담기에 적용 중인 그룹 id (여러 개 가능) */
   activeSetIds: string[];
@@ -63,6 +68,10 @@ export type FixedFlowSetsState = {
   sets: FixedFlowSet[];
   /** 데일리·주말 고정 루틴 — 시간대 구간 레이아웃 (기본: 목록) */
   scheduledMealSlotLayoutEnabled?: boolean;
+  /** 사용자가 삭제한 나만의 루틴 예시 그룹 id — 재생성 방지 */
+  dismissedExampleCustomFlowSetIds?: string[];
+  /** 나만의 루틴 적용 시 반영할 오늘 탭 보기 */
+  fixedRoutineApplyLayoutMode?: FixedRoutineApplyLayoutMode;
 };
 
 type PersistedShape = Partial<FixedFlowSetsState> & {
@@ -103,7 +112,9 @@ function normalizeItems(raw: unknown): FixedFlowSetItem[] {
     const r = row as Record<string, unknown>;
     const key = typeof r.categoryKey === 'string' ? r.categoryKey.trim() : '';
     if (!key || seen.has(key)) continue;
-    const mealSlot = normalizeDayMealSlot(r.mealSlot);
+    const mealSlots = normalizeCategoryMealSlots(
+      r.mealSlots !== undefined ? r.mealSlots : r.mealSlot,
+    );
     const spineStartMinutes = normalizeSpineMinutes(r.spineStartMinutes);
     const spineEndMinutes = normalizeSpineMinutes(r.spineEndMinutes);
     const hasValidSpine =
@@ -113,7 +124,8 @@ function normalizeItems(raw: unknown): FixedFlowSetItem[] {
     out.push({
       categoryKey: key,
       enabled: r.enabled !== false,
-      ...(mealSlot ? { mealSlot } : {}),
+      ...(mealSlots.length === 1 ? { mealSlot: mealSlots[0] } : {}),
+      ...(mealSlots.length > 0 ? { mealSlots } : {}),
       ...(hasValidSpine ? { spineStartMinutes, spineEndMinutes } : {}),
     });
     seen.add(key);
@@ -175,6 +187,7 @@ function mergeSetItems(
       categoryKey: key,
       enabled: prev?.enabled !== false && item.enabled !== false,
       mealSlot: item.mealSlot ?? prev?.mealSlot,
+      mealSlots: item.mealSlots ?? prev?.mealSlots,
       spineStartMinutes: item.spineStartMinutes ?? prev?.spineStartMinutes,
       spineEndMinutes: item.spineEndMinutes ?? prev?.spineEndMinutes,
     });
@@ -346,6 +359,25 @@ function normalizeActiveMealSlotsBySetId(
   return out;
 }
 
+function normalizeFixedRoutineApplyLayoutMode(raw: unknown): FixedRoutineApplyLayoutMode {
+  if (raw === 'bag' || raw === 'sections' || raw === 'spine') return raw;
+  return 'sections';
+}
+
+function normalizeDismissedExampleCustomFlowSetIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const valid = new Set(BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS as readonly string[]);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of raw) {
+    const t = typeof id === 'string' ? id.trim() : '';
+    if (!t || !valid.has(t) || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
+}
+
 function hadMissingBuiltinExampleCustomSets(raw: unknown): boolean {
   if (!Array.isArray(raw)) return true;
   const ids = new Set(
@@ -362,6 +394,12 @@ function hadMissingBuiltinExampleCustomSets(raw: unknown): boolean {
 
 export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState {
   const raw = input && typeof input === 'object' ? (input as PersistedShape) : {};
+  const dismissedExampleCustomFlowSetIds = normalizeDismissedExampleCustomFlowSetIds(
+    raw.dismissedExampleCustomFlowSetIds,
+  );
+  const fixedRoutineApplyLayoutMode = normalizeFixedRoutineApplyLayoutMode(
+    raw.fixedRoutineApplyLayoutMode,
+  );
   const sets = mergeBuiltInExampleCustomSets(
     mergeBuiltInPresetSets(
       migrateExampleCustomFlowSets(
@@ -370,6 +408,7 @@ export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState 
         ),
       ),
     ),
+    { dismissedIds: dismissedExampleCustomFlowSetIds },
   );
   const activeSetIds = normalizeActiveSetIds(raw, sets);
   const activeMealSlotsBySetId = normalizeActiveMealSlotsBySetId(raw, sets);
@@ -378,6 +417,8 @@ export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState 
     activeMealSlotsBySetId,
     sets,
     scheduledMealSlotLayoutEnabled: raw.scheduledMealSlotLayoutEnabled === true,
+    dismissedExampleCustomFlowSetIds,
+    fixedRoutineApplyLayoutMode,
   };
 }
 

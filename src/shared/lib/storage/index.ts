@@ -48,15 +48,20 @@ export {
   DAY_MEAL_SLOT_HINT,
   DAY_MEAL_SLOT_LABEL,
   DAY_MEAL_SLOT_ORDER, buildAppliedFixedRoutineMealSlotOverrides,
+  buildAppliedFixedRoutineMealSlotsMap,
   buildCategoryMealSlotOverrides,
+  buildFixedFlowItemMealSlotsFields,
   buildFixedFlowMealSlotSections,
   groupFixedFlowItemsByMealSlot,
   normalizeDayMealSlot,
   normalizeCategoryMealSlots,
+  orderDayMealSlots,
   resolveExplicitCategoryMealSlots,
   resolveCurrentMealSlot,
   resolveDefaultMealSlotForCategory,
   resolveFixedFlowItemMealSlot,
+  resolveFixedFlowItemMealSlots,
+  toggleFixedFlowItemMealSlots,
   resolvePriorityMealSlot,
   type CategoryMealSlotOverride,
   type DayMealSlot
@@ -122,7 +127,7 @@ export {
   isFixedFlowSetRuleMatchedToday, loadActiveFixedFlowCategoryKeys, loadFixedFlowSetsState,
   normalizeFixedFlowSetsState,
   saveFixedFlowSetsState, type FixedFlowSet, type FixedFlowSetApplyRule, type FixedFlowSetItem,
-  type FixedFlowSetsState
+  type FixedFlowSetsState, type FixedRoutineApplyLayoutMode
 } from './fixedFlowSetsStorage';
 export {
   WEEKDAY_LABELS,
@@ -249,6 +254,13 @@ export {
   type DayPlanLayoutMode,
   type DayPlanLayoutModeVisibility,
 } from './dayPlanLayoutModeVisibility';
+export {
+  loadSpineDefaultBlockMinutes,
+  saveSpineDefaultBlockMinutes,
+  SPINE_GAP_BLOCK_MINUTE_OPTIONS,
+  DEFAULT_SPINE_GAP_BLOCK_MINUTES,
+  type SpineGapBlockMinuteOption,
+} from './spineTimelineDefaultsStorage';
 export type {
   AppearanceMode,
   CategoryReminderRuleRow,

@@ -355,6 +355,42 @@ function migrateFastingBuiltinIcon(): void {
   });
 }
 
+function migrateHabitPresetFlowsToChecklist(): void {
+  const presetFlowIds = [...BUILTIN_DAILY_LIFE_FLOW_IDS, BUILTIN_STRETCHING_FLOW_ID];
+  for (const flowId of presetFlowIds) {
+    const flowDef = DEFAULT_BUILTIN_CUSTOM_FLOWS.find((flow) => flow.id === flowId);
+    const cfg = loadGoalDetailCategoryConfig(flowId);
+    if (!cfg || typeof cfg !== 'object') continue;
+    const row = cfg as Record<string, unknown>;
+    if (row.templateKey !== 'habit') continue;
+
+    const displayName =
+      typeof row.displayName === 'string' && row.displayName.trim().length > 0
+        ? row.displayName.trim()
+        : flowDef?.displayName ?? '루틴';
+    const checklistLabel = flowDef?.checklistLabels?.[0] ?? displayName;
+    const doneToday = row.doneToday === true;
+
+    const {
+      doneToday: _doneToday,
+      streakDays: _streakDays,
+      lastDoneDateKey: _lastDoneDateKey,
+      recentDoneDateKeys: _recentDoneDateKeys,
+      ...rest
+    } = row;
+
+    saveGoalDetailCategoryConfig(flowId, {
+      ...rest,
+      templateKey: 'checklist',
+      displayName,
+      checklist: buildBuiltinChecklist(flowId, [checklistLabel]).map((item) => ({
+        ...item,
+        done: doneToday,
+      })),
+    });
+  }
+}
+
 function mergeDefaultCustomFlows(): void {
   const curIds = new Set(listCustomFlowCatalogEntries().map((e) => e.id));
 
@@ -375,7 +411,7 @@ function mergeDefaultCustomFlows(): void {
       } else if (flow.templateKey === 'reminder') {
         baseConfig.reminderTimes = [...(flow.reminderTimes ?? ['09:00'])];
         baseConfig.completedTimes = [];
-      } else if (flow.templateKey !== 'habit') {
+      } else {
         baseConfig.checklist = [];
       }
       saveGoalDetailCategoryConfig(flow.id, baseConfig);
@@ -411,6 +447,7 @@ export function ensureDefaultPriorityCatalog(): void {
   migrateDailyWashIcon();
   migrateFastingBuiltinIcon();
   migrateAbstainDisplayName();
+  migrateHabitPresetFlowsToChecklist();
   purgeIntermittentFastingFlow();
   purgeGoodPostureFlow();
   mergeDefaultCustomFlows();

@@ -1,20 +1,13 @@
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  Animated,
-  LayoutAnimation,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  TextInput,
-  UIManager,
-  View,
-} from 'react-native';
+import { Alert, Animated, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, UIManager, View } from 'react-native';
+import Reanimated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -29,8 +22,9 @@ import {
   resolveBlockCategoryKey,
   resolveCategoryCatalogIcon,
   resolveCategoryKeyFromLabel,
+  collectSpineTimelineCategoryKeys,
+  notifyFixedFlowApplyScheduleChanged,
   resolveFixedFlowSpineSchedules,
-  sortFixedFlowItemsBySpineSchedule,
   formatMinuteOfDayKo,
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
@@ -50,11 +44,11 @@ import {
   DAY_MEAL_SLOT_LABEL,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
   buildFixedFlowMealSlotSections,
-  isBuiltinExampleCustomFlowSet,
   isBuiltinPresetScheduleSet,
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
+  resolveFixedFlowItemMealSlots,
   saveGoalDetailCategoryConfig,
   subscribeCustomFlowCatalog,
   type CustomCatalogGroup,
@@ -88,15 +82,16 @@ import { FixedRoutineLayoutModeHeader } from './FixedRoutineLayoutModeHeader';
 import { FixedRoutineMealSlotScheduleCard } from './FixedRoutineMealSlotScheduleCard';
 import { FixedRoutinePriorityWindowCard } from './FixedRoutinePriorityWindowCard';
 import { FixedRoutinePriorityWindowSheet } from './FixedRoutinePriorityWindowSheet';
-import { FixedRoutineSpineItemTimeSheet } from './FixedRoutineSpineItemTimeSheet';
 import { FixedRoutineSectionTabs, type FixedRoutineSection } from './FixedRoutineSectionTabs';
 import { FixedRoutineSlotAddChips } from './FixedRoutineSlotAddChips';
-import { FixedRoutineSlotPickerSheet } from './FixedRoutineSlotPickerSheet';
+import { CatalogRowMealSlotChips, CatalogRowMealSlotSelectedIcons, mealSlotPickerBtnWidth } from './CatalogRowMealSlotChips';
+import { CatalogRowSpineTimePanel, CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT, CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT } from './CatalogRowSpineTimePanel';
+import { RoutineCatalogManageContent } from './RoutineCatalogManageContent';
 import { RoutineTemplateListPanel } from './RoutineTemplateListPanel';
 
 function layoutModeHint(mode: DayPlanLayoutMode): string {
   if (mode === 'sections') {
-    return '항목을 정리한 뒤 적용을 켜면 시간대 보기에 반영돼요.';
+    return '시간대 아이콘을 누르면 구간을 고를 수 있어요. 적용을 켜면 시간대 보기에 반영돼요.';
   }
   if (mode === 'spine') {
     return '집중 구간과 루틴별 시간을 정한 뒤 적용을 켜면 타임라인 보기에 반영돼요.';
@@ -104,11 +99,17 @@ function layoutModeHint(mode: DayPlanLayoutMode): string {
   return '그룹을 만들고 항목을 추가한 뒤, 적용을 켜면 목록 보기에 반영돼요.';
 }
 
-function sectionHintText(section: FixedRoutineSection, layoutMode: DayPlanLayoutMode): string {
+function sectionHintText(
+  section: 'scheduled' | 'custom' | FixedRoutineSection,
+  layoutMode: DayPlanLayoutMode,
+): string {
   if (section === 'templates') {
     return '항목을 눌러 방식별 화면 구성을 확인할 수 있어요.';
   }
-  if (section === 'scheduled') {
+  if (section === 'catalog') {
+    return '루틴을 만들고 묶음으로 정리해요. 행을 누르면 상세 설정을 열 수 있어요.';
+  }
+  if (section === 'scheduled' || section === 'custom') {
     if (layoutMode === 'sections') {
       return '항목을 정리한 뒤 적용을 켜면 시간대 보기에 반영돼요.';
     }
@@ -119,6 +120,8 @@ function sectionHintText(section: FixedRoutineSection, layoutMode: DayPlanLayout
   }
   return layoutModeHint(layoutMode);
 }
+
+const FLOW_MEAL_SLOT_PANEL_HEIGHT = 56;
 
 if (
   Platform.OS === 'android' &&
@@ -138,10 +141,15 @@ type FlowCardProps = {
   isFocusStarted: boolean;
   isInTodayPlan: boolean;
   isCompleted: boolean;
-  slotLabel?: string;
-  onPressSlot?: () => void;
-  timeLabel?: string;
-  onPressTime?: () => void;
+  mealSlots?: DayMealSlot[];
+  showMealSlotPicker?: boolean;
+  onToggleMealSlot?: (slot: DayMealSlot) => void;
+  showSpineTimePicker?: boolean;
+  spineStartMinutes?: number;
+  spineEndMinutes?: number;
+  priorityStart?: string;
+  priorityEnd?: string;
+  onChangeSpineTime?: (startMinutes: number, endMinutes: number) => void;
   onToggleEnabled: (enabled: boolean) => void;
   onDelete: () => void;
 };
@@ -157,14 +165,24 @@ function FlowItemCard({
   isFocusStarted,
   isInTodayPlan,
   isCompleted,
-  slotLabel,
-  onPressSlot,
-  timeLabel,
-  onPressTime,
+  mealSlots = [],
+  showMealSlotPicker,
+  onToggleMealSlot,
+  showSpineTimePicker,
+  spineStartMinutes,
+  spineEndMinutes,
+  priorityStart,
+  priorityEnd,
+  onChangeSpineTime,
   onToggleEnabled,
   onDelete,
 }: FlowCardProps) {
-  const label = catalog?.label ?? getPickerCategoryLabel(item.categoryKey);
+  const [mealSlotExpanded, setMealSlotExpanded] = useState(false);
+  const [spineTimeExpanded, setSpineTimeExpanded] = useState(false);
+  const [spineInnerPickerExpanded, setSpineInnerPickerExpanded] = useState(false);
+  const expandProgress = useSharedValue(0);
+  const spineExpandProgress = useSharedValue(0);
+  const label = getPickerCategoryLabel(item.categoryKey);
   const enabled = item.enabled !== false;
   const categoryKey = item.categoryKey;
   const icon = resolveCategoryCatalogIcon(categoryKey);
@@ -206,12 +224,83 @@ function FlowItemCard({
   const labelColor =
     isInTodayPlan && enabled ? (isCompleted ? muted : ink) : muted;
 
+  const settingsBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)';
+  const settingsBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+  const mealSlotIconHighlighted = mealSlots.length > 0 || mealSlotExpanded;
+
+  useEffect(() => {
+    expandProgress.value = withTiming(mealSlotExpanded ? 1 : 0, {
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [expandProgress, mealSlotExpanded]);
+
+  const mealSlotPanelAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: expandProgress.value,
+    maxHeight: expandProgress.value * FLOW_MEAL_SLOT_PANEL_HEIGHT,
+    transform: [
+      { translateY: (1 - expandProgress.value) * -8 },
+      { scale: 0.96 + expandProgress.value * 0.04 },
+    ],
+  }));
+
+  const mealSlotIconAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.92 + expandProgress.value * 0.08 }],
+  }));
+
+  const spineTimeIconHighlighted = Boolean(spineStartMinutes != null && spineEndMinutes != null) || spineTimeExpanded;
+
+  useEffect(() => {
+    spineExpandProgress.value = withTiming(spineTimeExpanded ? 1 : 0, {
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [spineExpandProgress, spineTimeExpanded]);
+
+  useEffect(() => {
+    if (!spineTimeExpanded) {
+      setSpineInnerPickerExpanded(false);
+    }
+  }, [spineTimeExpanded]);
+
+  const spinePanelHeight = spineInnerPickerExpanded
+    ? CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT
+    : CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT;
+
+  const spineTimePanelAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: spineExpandProgress.value,
+    maxHeight: spineExpandProgress.value * spinePanelHeight,
+    transform: [
+      { translateY: (1 - spineExpandProgress.value) * -8 },
+      { scale: 0.96 + spineExpandProgress.value * 0.04 },
+    ],
+  }));
+
+  const spineTimeIconAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.92 + spineExpandProgress.value * 0.08 }],
+  }));
+
+  const handleToggleSpineTimeExpand = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSpineTimeExpanded((prev) => !prev);
+  };
+
+  const handleToggleMealSlotExpand = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setMealSlotExpanded((prev) => !prev);
+  };
+
+  const handleToggleMealSlot = (slot: DayMealSlot) => {
+    onToggleMealSlot?.(slot);
+  };
+
   return (
     <View
       style={[
-        styles.flowRow,
+        styles.flowRowWrap,
         { borderBottomColor: line, opacity: enabled ? 1 : 0.5 },
       ]}>
+      <View style={styles.flowRow}>
       <View style={styles.flowRowMain}>
         <View style={[styles.flowIconBox, { backgroundColor: iconBoxBg }]}>
           <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
@@ -224,39 +313,82 @@ function FlowItemCard({
           {label}
         </ThemedText>
       </View>
-      {slotLabel && onPressSlot ? (
+      {showMealSlotPicker && onToggleMealSlot ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${label} 구간 ${slotLabel}, 변경`}
-          onPress={onPressSlot}
+          accessibilityState={{
+            selected: mealSlotIconHighlighted,
+            expanded: mealSlotExpanded,
+          }}
+          accessibilityLabel={
+            mealSlots.length > 0
+              ? `${label} 시간대 ${mealSlots.map((slot) => DAY_MEAL_SLOT_LABEL[slot]).join(', ')}`
+              : `${label} 시간대 선택`
+          }
+          hitSlop={10}
+          onPress={handleToggleMealSlotExpand}
           style={({ pressed }) => [
-            styles.flowSlotPill,
-            { borderColor: line, backgroundColor: iconBoxBg },
-            pressed && { opacity: 0.72 },
+            styles.flowSlotBtn,
+            {
+              width: mealSlotPickerBtnWidth(mealSlots),
+              borderColor: mealSlotIconHighlighted ? ink : settingsBorder,
+              backgroundColor: mealSlotIconHighlighted
+                ? isDark
+                  ? 'rgba(255,255,255,0.14)'
+                  : 'rgba(0,0,0,0.06)'
+                : settingsBg,
+              opacity: pressed ? 0.72 : 1,
+            },
           ]}>
-          <ThemedText style={[styles.flowSlotPillLabel, { color: muted }]} numberOfLines={1}>
-            {slotLabel}
-          </ThemedText>
+          <Reanimated.View style={mealSlotIconAnimatedStyle}>
+            <CatalogRowMealSlotSelectedIcons
+              selectedSlots={mealSlots}
+              color={mealSlotIconHighlighted ? ink : muted}
+              mutedColor={muted}
+              size={14}
+              compactSize={9}
+            />
+          </Reanimated.View>
         </Pressable>
       ) : null}
-      {timeLabel && onPressTime ? (
+      {showSpineTimePicker && onChangeSpineTime ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${label} 시간 ${timeLabel}, 변경`}
-          onPress={onPressTime}
+          accessibilityState={{
+            selected: spineTimeIconHighlighted,
+            expanded: spineTimeExpanded,
+          }}
+          accessibilityLabel={
+            spineStartMinutes != null && spineEndMinutes != null
+              ? `${label} 시간 ${formatMinuteOfDayKo(spineStartMinutes)}~${formatMinuteOfDayKo(spineEndMinutes)}`
+              : `${label} 시간 선택`
+          }
+          hitSlop={10}
+          onPress={handleToggleSpineTimeExpand}
           style={({ pressed }) => [
-            styles.flowTimePill,
-            { borderColor: line, backgroundColor: iconBoxBg },
-            pressed && { opacity: 0.72 },
+            styles.flowSlotBtn,
+            {
+              borderColor: spineTimeIconHighlighted ? ink : settingsBorder,
+              backgroundColor: spineTimeIconHighlighted
+                ? isDark
+                  ? 'rgba(255,255,255,0.14)'
+                  : 'rgba(0,0,0,0.06)'
+                : settingsBg,
+              opacity: pressed ? 0.72 : 1,
+            },
           ]}>
-          <ThemedText style={[styles.flowTimePillLabel, { color: muted }]} numberOfLines={1}>
-            {timeLabel}
-          </ThemedText>
+          <Reanimated.View style={spineTimeIconAnimatedStyle}>
+            <IconSymbol
+              name="clock.fill"
+              size={14}
+              color={spineTimeIconHighlighted ? ink : muted}
+            />
+          </Reanimated.View>
         </Pressable>
       ) : null}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label} 삭제`}
+        accessibilityLabel={`${label} 루틴 삭제`}
         onPress={onDelete}
         style={({ pressed }) => [
           styles.rowDeleteBtn,
@@ -277,6 +409,54 @@ function FlowItemCard({
         ios_backgroundColor={trackOff}
         style={styles.flowSwitch}
       />
+      </View>
+      {showMealSlotPicker && onToggleMealSlot ? (
+        <Reanimated.View
+          pointerEvents={mealSlotExpanded ? 'auto' : 'none'}
+          style={[
+            styles.flowMealSlotPanel,
+            mealSlotPanelAnimatedStyle,
+            {
+              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)',
+              borderTopColor: line,
+            },
+          ]}>
+          <CatalogRowMealSlotChips
+            selectedSlots={mealSlots}
+            ink={ink}
+            muted={muted}
+            line={line}
+            isDark={isDark}
+            onToggleSlot={handleToggleMealSlot}
+            contentInsetLeft={8}
+          />
+        </Reanimated.View>
+      ) : null}
+      {showSpineTimePicker && onChangeSpineTime && priorityStart && priorityEnd ? (
+        <Reanimated.View
+          pointerEvents={spineTimeExpanded ? 'auto' : 'none'}
+          style={[
+            styles.flowSpineTimePanel,
+            spineTimePanelAnimatedStyle,
+            {
+              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)',
+            },
+          ]}>
+          <CatalogRowSpineTimePanel
+            startMinutes={spineStartMinutes ?? 9 * 60}
+            endMinutes={spineEndMinutes ?? 9 * 60 + 30}
+            ink={ink}
+            muted={muted}
+            line={line}
+            isDark={isDark}
+            priorityStart={priorityStart}
+            priorityEnd={priorityEnd}
+            onScheduleChange={onChangeSpineTime}
+            contentInsetLeft={8}
+            onPickerExpandedChange={setSpineInnerPickerExpanded}
+          />
+        </Reanimated.View>
+      ) : null}
     </View>
   );
 }
@@ -467,12 +647,13 @@ type GroupAccordionProps = {
   onApplyBlocked: () => void;
   canDeleteSet: boolean;
   onDeleteSet: () => void;
+  onRenameSet?: (nextName: string) => void;
   onToggleItem: (categoryKey: string, enabled: boolean) => void;
   onDeleteItem: (categoryKey: string, label: string) => void;
   onOpenAddItem?: () => void;
   onOpenAddItemForSlot?: (slot: DayMealSlot) => void;
-  onChangeItemSlot?: (categoryKey: string, label: string) => void;
-  onChangeItemSpineTime?: (categoryKey: string, label: string, startMinutes: number, endMinutes: number) => void;
+  onToggleItemMealSlot?: (categoryKey: string, slot: DayMealSlot) => void;
+  onChangeItemSpineTime?: (categoryKey: string, startMinutes: number, endMinutes: number) => void;
   mealSlotSchedule: import('@shared/lib/storage').DayMealSlotSchedule;
 };
 
@@ -504,17 +685,55 @@ function GroupAccordion({
   onApplyBlocked,
   canDeleteSet,
   onDeleteSet,
+  onRenameSet,
   onToggleItem,
   onDeleteItem,
   onOpenAddItem,
   onOpenAddItemForSlot,
-  onChangeItemSlot,
+  onToggleItemMealSlot,
   onChangeItemSpineTime,
   mealSlotSchedule,
 }: GroupAccordionProps) {
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
   const totalCount = setItem.items.length;
-  const useMealSlotLayout = isPresetScheduleSet && mealSlotLayoutEnabled;
+  const canRenameSet = !isPresetScheduleSet && Boolean(onRenameSet);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(setItem.name);
+
+  useEffect(() => {
+    if (!isEditingName) {
+      setNameDraft(setItem.name);
+    }
+  }, [isEditingName, setItem.name]);
+
+  const commitRename = useCallback(() => {
+    const trimmed = nameDraft.trim();
+    if (!trimmed) {
+      setNameDraft(setItem.name);
+      setIsEditingName(false);
+      return;
+    }
+    if (trimmed !== setItem.name) {
+      onRenameSet?.(trimmed);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    setIsEditingName(false);
+  }, [nameDraft, onRenameSet, setItem.name]);
+
+  const cancelRename = useCallback(() => {
+    setNameDraft(setItem.name);
+    setIsEditingName(false);
+  }, [setItem.name]);
+
+  const startRename = useCallback(() => {
+    if (!canRenameSet) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setNameDraft(setItem.name);
+    setIsEditingName(true);
+  }, [canRenameSet, setItem.name]);
+
+  const useMealSlotGroupedLayout = isPresetScheduleSet && mealSlotLayoutEnabled;
+  const useMealSlotFlatPickerLayout = !isPresetScheduleSet && mealSlotLayoutEnabled;
   const useSpineLayout = spineLayoutEnabled;
   const spineSchedules = useMemo(() => {
     if (!useSpineLayout) return new Map();
@@ -524,18 +743,14 @@ function GroupAccordion({
       priorityEnd,
     });
   }, [priorityEnd, priorityStart, setItem.items, useSpineLayout]);
-  const spineSortedItems = useMemo(() => {
-    if (!useSpineLayout) return setItem.items;
-    return sortFixedFlowItemsBySpineSchedule(setItem.items, spineSchedules);
-  }, [setItem.items, spineSchedules, useSpineLayout]);
   const mealSlotSections = useMemo(() => {
-    if (!useMealSlotLayout) return [];
+    if (!useMealSlotGroupedLayout) return [];
     return buildFixedFlowMealSlotSections(
       setItem.items,
       mealSlotSchedule,
       setItem.pinnedMealSlots ?? [],
     );
-  }, [mealSlotSchedule, setItem.items, setItem.pinnedMealSlots, useMealSlotLayout]);
+  }, [mealSlotSchedule, setItem.items, setItem.pinnedMealSlots, useMealSlotGroupedLayout]);
   const occupiedMealSlots = useMemo(
     () => new Set(mealSlotSections.map((section) => section.slot)),
     [mealSlotSections],
@@ -554,12 +769,66 @@ function GroupAccordion({
   return (
     <View style={[styles.accordionSection, { backgroundColor: sectionBg, borderColor: line }]}>
       <View style={styles.accordionHeader}>
+        {canRenameSet && isEditingName ? (
+          <View style={styles.renameGroupRow}>
+            <TextInput
+              value={nameDraft}
+              onChangeText={setNameDraft}
+              autoFocus
+              maxLength={24}
+              returnKeyType="done"
+              onSubmitEditing={commitRename}
+              placeholder="그룹 이름"
+              placeholderTextColor={muted}
+              style={[styles.renameGroupInput, { color: ink }]}
+              accessibilityLabel="그룹 이름 수정"
+            />
+            <View style={styles.renameGroupActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="이름 수정 취소"
+                onPress={cancelRename}
+                hitSlop={6}>
+                <ThemedText style={[styles.renameGroupCancel, { color: muted }]}>취소</ThemedText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="그룹 이름 저장"
+                onPress={commitRename}
+                style={[styles.renameGroupSave, { backgroundColor: ink, borderColor: ink }]}>
+                <ThemedText style={[styles.renameGroupSaveLabel, { color: isDark ? '#09090b' : '#fff' }]}>
+                  저장
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <>
         <View style={styles.accordionHeaderMain}>
-          <ThemedText
-            style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
-            numberOfLines={1}>
-            {setItem.name}
-          </ThemedText>
+          {canRenameSet ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${setItem.name} 이름 수정`}
+              accessibilityHint="탭하면 그룹 이름을 바꿀 수 있어요"
+              onPress={startRename}
+              style={({ pressed }) => [
+                styles.accordionTitlePress,
+                pressed && { opacity: 0.72 },
+              ]}>
+              <ThemedText
+                style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
+                numberOfLines={1}>
+                {setItem.name}
+              </ThemedText>
+              <IconSymbol name="pencil" size={11} color={muted} />
+            </Pressable>
+          ) : (
+            <ThemedText
+              style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
+              numberOfLines={1}>
+              {setItem.name}
+            </ThemedText>
+          )}
           {isPresetScheduleSet && ruleLabel ? (
             <View
               accessibilityRole="text"
@@ -631,6 +900,8 @@ function GroupAccordion({
           </View>
           <IconSymbol name={isExpanded ? 'chevron.up' : 'chevron.down'} size={12} color={muted} />
         </Pressable>
+          </>
+        )}
       </View>
 
       {isExpanded ? (
@@ -638,7 +909,7 @@ function GroupAccordion({
           {scheduleHint ? (
             <ThemedText style={[styles.accordionRuleHint, { color: muted }]}>{scheduleHint}</ThemedText>
           ) : null}
-          {useMealSlotLayout ? (
+          {useMealSlotGroupedLayout ? (
             <View style={styles.mealSlotSectionList}>
               {totalCount === 0 ? (
                 <ThemedText style={[styles.accordionEmpty, { color: muted }]}>
@@ -707,12 +978,19 @@ function GroupAccordion({
                     ) : null}
                   </View>
                   <View style={[styles.cardList, { backgroundColor: cardBg, borderColor: line }]}>
-                    {section.items.map((item) => {
+                    {section.items.map((item, itemIndex) => {
                       const cat = catalogByKey.get(item.categoryKey);
                       const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
+                      const globalIndex = setItem.items.findIndex(
+                        (row) => row.categoryKey === item.categoryKey,
+                      );
+                      const itemMealSlots = resolveFixedFlowItemMealSlots(
+                        item,
+                        globalIndex >= 0 ? globalIndex : itemIndex,
+                      );
                       return (
                         <FlowItemCard
-                          key={item.categoryKey}
+                          key={`${item.categoryKey}-${section.slot}`}
                           item={item}
                           catalog={cat}
                           isDark={isDark}
@@ -723,8 +1001,11 @@ function GroupAccordion({
                           isFocusStarted={isFocusStarted}
                           isInTodayPlan={isCategoryInTodayPlan(item.categoryKey)}
                           isCompleted={isCategoryCompleted(item.categoryKey)}
-                          slotLabel={section.title}
-                          onPressSlot={() => onChangeItemSlot?.(item.categoryKey, itemLabel)}
+                          mealSlots={itemMealSlots}
+                          showMealSlotPicker={useMealSlotGroupedLayout}
+                          onToggleMealSlot={(slot) =>
+                            onToggleItemMealSlot?.(item.categoryKey, slot)
+                          }
                           onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
                           onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
                         />
@@ -770,13 +1051,10 @@ function GroupAccordion({
                 </ThemedText>
               ) : null}
               <View style={[styles.cardList, { backgroundColor: cardBg, borderColor: line }]}>
-                {spineSortedItems.map((item) => {
+                {setItem.items.map((item) => {
                   const cat = catalogByKey.get(item.categoryKey);
                   const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
                   const schedule = spineSchedules.get(item.categoryKey);
-                  const timeLabel = schedule
-                    ? `${formatMinuteOfDayKo(schedule.startMinutes)}~${formatMinuteOfDayKo(schedule.endMinutes)}`
-                    : undefined;
                   return (
                     <FlowItemCard
                       key={item.categoryKey}
@@ -790,17 +1068,13 @@ function GroupAccordion({
                       isFocusStarted={isFocusStarted}
                       isInTodayPlan={isCategoryInTodayPlan(item.categoryKey)}
                       isCompleted={isCategoryCompleted(item.categoryKey)}
-                      timeLabel={timeLabel}
-                      onPressTime={
-                        schedule
-                          ? () =>
-                              onChangeItemSpineTime?.(
-                                item.categoryKey,
-                                itemLabel,
-                                schedule.startMinutes,
-                                schedule.endMinutes,
-                              )
-                          : undefined
+                      showSpineTimePicker={useSpineLayout}
+                      spineStartMinutes={schedule?.startMinutes}
+                      spineEndMinutes={schedule?.endMinutes}
+                      priorityStart={priorityStart}
+                      priorityEnd={priorityEnd}
+                      onChangeSpineTime={(startMinutes, endMinutes) =>
+                        onChangeItemSpineTime?.(item.categoryKey, startMinutes, endMinutes)
                       }
                       onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
                       onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
@@ -828,9 +1102,10 @@ function GroupAccordion({
                 </ThemedText>
               ) : null}
               <View style={[styles.cardList, { backgroundColor: cardBg, borderColor: line }]}>
-                {setItem.items.map((item) => {
+                {setItem.items.map((item, itemIndex) => {
                   const cat = catalogByKey.get(item.categoryKey);
                   const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
+                  const itemMealSlots = resolveFixedFlowItemMealSlots(item, itemIndex);
                   return (
                     <FlowItemCard
                       key={item.categoryKey}
@@ -844,6 +1119,13 @@ function GroupAccordion({
                       isFocusStarted={isFocusStarted}
                       isInTodayPlan={isCategoryInTodayPlan(item.categoryKey)}
                       isCompleted={isCategoryCompleted(item.categoryKey)}
+                      mealSlots={itemMealSlots}
+                      showMealSlotPicker={useMealSlotFlatPickerLayout}
+                      onToggleMealSlot={
+                        useMealSlotFlatPickerLayout
+                          ? (slot) => onToggleItemMealSlot?.(item.categoryKey, slot)
+                          : undefined
+                      }
                       onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
                       onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
                     />
@@ -872,6 +1154,8 @@ function GroupAccordion({
 type FixedRoutinePageProps = {
   /** 루틴 탭 내부 — 고정 루틴(프리셋) 커스텀만 표시 */
   embeddedPresetOnly?: boolean;
+  /** 루틴 탭 내부 — 나만의 루틴(커스텀 그룹)만 표시 */
+  embeddedCustomOnly?: boolean;
   /** 상위 화면에서 보기 모드(목록·시간대·타임라인)를 제어할 때 */
   controlledLayoutMode?: DayPlanLayoutMode;
   hideLayoutModeHeader?: boolean;
@@ -879,6 +1163,7 @@ type FixedRoutinePageProps = {
 
 export function FixedRoutinePage({
   embeddedPresetOnly = false,
+  embeddedCustomOnly = false,
   controlledLayoutMode,
   hideLayoutModeHeader = false,
 }: FixedRoutinePageProps = {}) {
@@ -888,24 +1173,18 @@ export function FixedRoutinePage({
   const isDark = colorScheme === 'dark';
   const c = useMemo(() => palette(isDark), [isDark]);
 
-  const horizontalPad = embeddedPresetOnly ? 20 : 16;
+  const isEmbedded = embeddedPresetOnly || embeddedCustomOnly;
+  const horizontalPad = isEmbedded ? 20 : 16;
 
   const [catalogTick, setCatalogTick] = useState(0);
   const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [section, setSection] = useState<FixedRoutineSection>('custom');
+  const [section, setSection] = useState<FixedRoutineSection>('catalog');
   const [internalLayoutMode, setInternalLayoutMode] = useState<DayPlanLayoutMode>('sections');
   const layoutMode = controlledLayoutMode ?? internalLayoutMode;
   const [mealSlotScheduleSheetOpen, setMealSlotScheduleSheetOpen] = useState(false);
   const [priorityWindowSheetOpen, setPriorityWindowSheetOpen] = useState(false);
-  const [spineTimePicker, setSpineTimePicker] = useState<{
-    setId: string;
-    categoryKey: string;
-    label: string;
-    startMinutes: number;
-    endMinutes: number;
-  } | null>(null);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [addItemModalOpen, setAddItemModalOpen] = useState(false);
   const [addItemSetId, setAddItemSetId] = useState<string | null>(null);
@@ -915,11 +1194,6 @@ export function FixedRoutinePage({
   const targetSetIdRef = useRef<string | null>(null);
   const targetMealSlotRef = useRef<DayMealSlot | null>(null);
   const [nowTick, setNowTick] = useState(() => Date.now());
-  const [slotPicker, setSlotPicker] = useState<{
-    setId: string;
-    categoryKey: string;
-    label: string;
-  } | null>(null);
   const { schedule: mealSlotSchedule, persistSchedule: persistMealSlotSchedule } =
     useDayMealSlotSchedule();
   const layoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
@@ -931,7 +1205,7 @@ export function FixedRoutinePage({
       ),
     [layoutModeVisibility],
   );
-  const canManageCustomGroups = section === 'custom';
+  const canManageCustomGroups = embeddedCustomOnly || false;
   const useSectionsRoutineLayout = layoutMode === 'sections';
   const useSpineRoutineLayout = layoutMode === 'spine';
 
@@ -944,12 +1218,15 @@ export function FixedRoutinePage({
     toggleSetForToday,
     toggleMealSlotForToday,
     removeSet,
+    renameSet,
     addCategoryToSet,
     removeCategoryFromSet,
     setCategoryEnabledInSet,
-    setCategoryMealSlotInSet,
+    toggleCategoryMealSlotInSet,
     setCategorySpineScheduleInSet,
     pinMealSlotInSet,
+    fixedRoutineApplyLayoutMode,
+    setFixedRoutineApplyLayoutMode,
   } = useFixedFlowSetsStore(
     useShallow((s) => ({
       sets: s.sets,
@@ -960,12 +1237,15 @@ export function FixedRoutinePage({
       toggleSetForToday: s.toggleSetForToday,
       toggleMealSlotForToday: s.toggleMealSlotForToday,
       removeSet: s.removeSet,
+      renameSet: s.renameSet,
       addCategoryToSet: s.addCategoryToSet,
       removeCategoryFromSet: s.removeCategoryFromSet,
       setCategoryEnabledInSet: s.setCategoryEnabledInSet,
-      setCategoryMealSlotInSet: s.setCategoryMealSlotInSet,
+      toggleCategoryMealSlotInSet: s.toggleCategoryMealSlotInSet,
       setCategorySpineScheduleInSet: s.setCategorySpineScheduleInSet,
       pinMealSlotInSet: s.pinMealSlotInSet,
+      fixedRoutineApplyLayoutMode: s.fixedRoutineApplyLayoutMode,
+      setFixedRoutineApplyLayoutMode: s.setFixedRoutineApplyLayoutMode,
     })),
   );
 
@@ -977,10 +1257,16 @@ export function FixedRoutinePage({
     priorityPlanDateKeyEnd,
     isFocusStarted,
     priorityCategoryOrder,
+    prioritySectionsCategoryOrder,
     completedFocusCategoryKeys,
     planCompletionDismissedKeys,
     setPriorityStart,
     setPriorityEnd,
+    setPriorityCategoryOrder,
+    setPrioritySectionsCategoryOrder,
+    filterCompletedFocusKeysToPriorityOrder,
+    categoryLabelEpoch,
+    bumpCategoryLabelEpoch,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       planMode: s.planMode,
@@ -990,10 +1276,16 @@ export function FixedRoutinePage({
       priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
       isFocusStarted: s.isFocusStarted,
       priorityCategoryOrder: s.priorityCategoryOrder,
+      prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
       planCompletionDismissedKeys: s.planCompletionDismissedKeys,
       setPriorityStart: s.setPriorityStart,
       setPriorityEnd: s.setPriorityEnd,
+      setPriorityCategoryOrder: s.setPriorityCategoryOrder,
+      setPrioritySectionsCategoryOrder: s.setPrioritySectionsCategoryOrder,
+      filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
+      categoryLabelEpoch: s.categoryLabelEpoch,
+      bumpCategoryLabelEpoch: s.bumpCategoryLabelEpoch,
     })),
   );
 
@@ -1029,8 +1321,22 @@ export function FixedRoutinePage({
   );
 
   const isCategoryInTodayPlan = useCallback(
-    (categoryKey: string) => priorityCategoryOrder.includes(categoryKey),
-    [priorityCategoryOrder],
+    (categoryKey: string) => {
+      if (useSpineRoutineLayout) {
+        return collectSpineTimelineCategoryKeys(planBlocks).includes(categoryKey);
+      }
+      if (useSectionsRoutineLayout) {
+        return prioritySectionsCategoryOrder.includes(categoryKey);
+      }
+      return priorityCategoryOrder.includes(categoryKey);
+    },
+    [
+      planBlocks,
+      priorityCategoryOrder,
+      prioritySectionsCategoryOrder,
+      useSectionsRoutineLayout,
+      useSpineRoutineLayout,
+    ],
   );
 
   useEffect(() => {
@@ -1079,24 +1385,28 @@ export function FixedRoutinePage({
   );
 
   const visibleSets = useMemo(() => {
-    if (section === 'scheduled') return presetSets;
-    if (section === 'custom') return customSets;
+    if (embeddedPresetOnly) return presetSets;
+    if (embeddedCustomOnly) return customSets;
     return [];
-  }, [customSets, presetSets, section]);
+  }, [customSets, embeddedCustomOnly, embeddedPresetOnly, presetSets]);
 
   useEffect(() => {
     if (controlledLayoutMode !== undefined) return;
-    setInternalLayoutMode((prev) => coerceDayPlanLayoutMode(prev, layoutModeVisibility));
-  }, [controlledLayoutMode, layoutModeVisibility]);
+    setInternalLayoutMode((prev) =>
+      coerceDayPlanLayoutMode(fixedRoutineApplyLayoutMode, layoutModeVisibility) || prev,
+    );
+  }, [controlledLayoutMode, fixedRoutineApplyLayoutMode, layoutModeVisibility]);
 
   const handleSelectLayoutMode = useCallback(
     (mode: DayPlanLayoutMode) => {
       const next = coerceDayPlanLayoutMode(mode, layoutModeVisibility);
+      setFixedRoutineApplyLayoutMode(next);
       if (controlledLayoutMode === undefined) {
         setInternalLayoutMode(next);
       }
+      notifyFixedFlowApplyScheduleChanged();
     },
-    [controlledLayoutMode, layoutModeVisibility],
+    [controlledLayoutMode, layoutModeVisibility, setFixedRoutineApplyLayoutMode],
   );
 
   const reloadCatalog = useCallback(() => {
@@ -1116,7 +1426,12 @@ export function FixedRoutinePage({
     }, [hydrateLayoutModeVisibility]),
   );
 
-  useFocusEffect(useCallback(() => reloadCatalog(), [reloadCatalog]));
+  useFocusEffect(
+    useCallback(() => {
+      reloadCatalog();
+      bumpCategoryLabelEpoch();
+    }, [bumpCategoryLabelEpoch, reloadCatalog]),
+  );
 
   useEffect(() => subscribeCustomFlowCatalog(reloadCatalog), [reloadCatalog]);
 
@@ -1139,8 +1454,9 @@ export function FixedRoutinePage({
 
   const catalog = useMemo(() => {
     void catalogTick;
+    void categoryLabelEpoch;
     return buildPriorityCatalogRows();
-  }, [catalogTick]);
+  }, [catalogTick, categoryLabelEpoch]);
   const catalogByKey = useMemo(() => new Map(catalog.map((x) => [x.key, x])), [catalog]);
 
   const addableSectionsForModal = useMemo(() => {
@@ -1148,12 +1464,13 @@ export function FixedRoutinePage({
     if (!setItem) return [];
     const excludedKeys = new Set(setItem.items.map((x) => x.categoryKey));
     void catalogTick;
+    void categoryLabelEpoch;
     return buildAddablePriorityCatalogSections({
       excludedKeys,
       customFlowEntries,
       customGroups,
     });
-  }, [catalogTick, customFlowEntries, customGroups, sets, addItemSetId]);
+  }, [catalogTick, categoryLabelEpoch, customFlowEntries, customGroups, sets, addItemSetId]);
 
   const toggleExpanded = useCallback((setId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -1168,7 +1485,6 @@ export function FixedRoutinePage({
   const handleDeleteSet = useCallback(
     (setId: string) => {
       if (isBuiltinPresetScheduleSet({ id: setId, applyRule: 'manual' })) return;
-      if (isBuiltinExampleCustomFlowSet({ id: setId })) return;
       const target = sets.find((s) => s.id === setId);
       if (!target) return;
       Alert.alert(
@@ -1266,9 +1582,13 @@ export function FixedRoutinePage({
     setAddItemModalOpen(true);
   }, [pinMealSlotInSet]);
 
-  const handleChangeItemSlot = useCallback((setId: string, categoryKey: string, itemLabel: string) => {
-    setSlotPicker({ setId, categoryKey, label: itemLabel });
-  }, []);
+  const handleToggleItemMealSlot = useCallback(
+    (setId: string, categoryKey: string, slot: DayMealSlot) => {
+      toggleCategoryMealSlotInSet(setId, categoryKey, slot);
+      void Haptics.selectionAsync();
+    },
+    [toggleCategoryMealSlotInSet],
+  );
 
   const addItemModalTitle = useMemo(
     () =>
@@ -1300,7 +1620,12 @@ export function FixedRoutinePage({
     [activeMealSlotsBySetId, activeSetIds],
   );
 
-  const sectionHint = sectionHintText(section, layoutMode);
+  const activeSection = embeddedPresetOnly
+    ? ('scheduled' as const)
+    : embeddedCustomOnly
+      ? ('custom' as const)
+      : section;
+  const sectionHint = sectionHintText(activeSection, layoutMode);
 
   const openRoutineTemplateDetail = useCallback(
     (templateKey: CustomFlowTemplateKey) => {
@@ -1312,17 +1637,15 @@ export function FixedRoutinePage({
     [router],
   );
 
-  const activeSection = embeddedPresetOnly ? 'scheduled' : section;
-
   const pageBody = (
     <>
       <View
         style={[
           styles.stickyHeader,
-          embeddedPresetOnly && hideLayoutModeHeader && styles.stickyHeaderEmbedded,
+          isEmbedded && hideLayoutModeHeader && styles.stickyHeaderEmbedded,
           { paddingHorizontal: horizontalPad, backgroundColor: shellBg },
         ]}>
-        {!embeddedPresetOnly ? (
+        {!isEmbedded ? (
           <FixedRoutineSectionTabs
             section={section}
             onSelectSection={setSection}
@@ -1330,7 +1653,7 @@ export function FixedRoutinePage({
             isDark={isDark}
           />
         ) : null}
-        {activeSection !== 'templates' && !hideLayoutModeHeader ? (
+        {activeSection !== 'templates' && activeSection !== 'catalog' && !hideLayoutModeHeader ? (
           <FixedRoutineLayoutModeHeader
             layoutMode={layoutMode}
             onSelectLayoutMode={handleSelectLayoutMode}
@@ -1339,12 +1662,17 @@ export function FixedRoutinePage({
             isDark={isDark}
           />
         ) : null}
-        {!hideLayoutModeHeader || embeddedPresetOnly ? (
-          <ThemedText style={[styles.sectionHint, { color: muted }]}>
-            {embeddedPresetOnly ? sectionHintText('scheduled', layoutMode) : sectionHint}
-          </ThemedText>
+        {!hideLayoutModeHeader || isEmbedded || activeSection === 'templates' ? (
+          activeSection !== 'catalog' ? (
+            <ThemedText style={[styles.sectionHint, { color: muted }]}>
+              {sectionHint}
+            </ThemedText>
+          ) : null
         ) : null}
       </View>
+      {activeSection === 'catalog' ? (
+        <RoutineCatalogManageContent />
+      ) : (
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{
@@ -1364,7 +1692,7 @@ export function FixedRoutinePage({
           />
         ) : (
           <>
-            {activeSection === 'scheduled' && useSectionsRoutineLayout ? (
+            {useSectionsRoutineLayout ? (
               <FixedRoutineMealSlotScheduleCard
                 schedule={mealSlotSchedule}
                 isDark={isDark}
@@ -1393,9 +1721,7 @@ export function FixedRoutinePage({
                   key={setItem.id}
                   setItem={setItem}
                   isPresetScheduleSet={isBuiltinPresetScheduleSet(setItem)}
-                  mealSlotLayoutEnabled={
-                    isBuiltinPresetScheduleSet(setItem) && useSectionsRoutineLayout
-                  }
+                  mealSlotLayoutEnabled={useSectionsRoutineLayout}
                   spineLayoutEnabled={useSpineRoutineLayout}
                   priorityStart={priorityStart}
                   priorityEnd={priorityEnd}
@@ -1424,8 +1750,9 @@ export function FixedRoutinePage({
                     toggleMealSlotForToday(setItem.id, slot);
                   }}
                   onApplyBlocked={handleApplyBlocked}
-                  canDeleteSet={!isBuiltinExampleCustomFlowSet(setItem)}
+                  canDeleteSet
                   onDeleteSet={() => handleDeleteSet(setItem.id)}
+                  onRenameSet={(nextName) => renameSet(setItem.id, nextName)}
                   onToggleItem={(categoryKey, enabled) => {
                     setCategoryEnabledInSet(setItem.id, categoryKey, enabled);
                   }}
@@ -1449,17 +1776,12 @@ export function FixedRoutinePage({
                   }}
                   onOpenAddItem={() => openAddItemModal(setItem.id)}
                   onOpenAddItemForSlot={(slot) => openAddItemModal(setItem.id, slot)}
-                  onChangeItemSlot={(categoryKey, itemLabel) =>
-                    handleChangeItemSlot(setItem.id, categoryKey, itemLabel)
+                  onToggleItemMealSlot={(categoryKey, slot) =>
+                    handleToggleItemMealSlot(setItem.id, categoryKey, slot)
                   }
-                  onChangeItemSpineTime={(categoryKey, itemLabel, startMinutes, endMinutes) => {
-                    setSpineTimePicker({
-                      setId: setItem.id,
-                      categoryKey,
-                      label: itemLabel,
-                      startMinutes,
-                      endMinutes,
-                    });
+                  onChangeItemSpineTime={(categoryKey, startMinutes, endMinutes) => {
+                    setCategorySpineScheduleInSet(setItem.id, categoryKey, startMinutes, endMinutes);
+                    void Haptics.selectionAsync();
                   }}
                   mealSlotSchedule={mealSlotSchedule}
                 />
@@ -1517,13 +1839,14 @@ export function FixedRoutinePage({
                 <IconSymbol name="plus" size={18} color={muted} />
                 <ThemedText style={[styles.addGroupTriggerLabel, { color: muted }]}>그룹 추가</ThemedText>
                 <ThemedText style={[styles.addGroupHint, { color: muted }]}>
-                  이름을 눌러 바꾸고, 휴지통으로 삭제할 수 있어요
+                  이름을 눌러 바꾸고, 헤더 휴지통으로 그룹을 삭제할 수 있어요
                 </ThemedText>
               </Pressable>
             ))}
           </>
         )}
       </ScrollView>
+      )}
 
       <AddItemModal
         visible={addItemModalOpen}
@@ -1583,45 +1906,10 @@ export function FixedRoutinePage({
         }}
       />
 
-      <FixedRoutineSpineItemTimeSheet
-        visible={spineTimePicker !== null}
-        itemLabel={spineTimePicker?.label ?? ''}
-        startMinutes={spineTimePicker?.startMinutes ?? 9 * 60}
-        endMinutes={spineTimePicker?.endMinutes ?? 9 * 60 + 30}
-        isDark={isDark}
-        onClose={() => setSpineTimePicker(null)}
-        onSave={(startMinutes, endMinutes) => {
-          if (!spineTimePicker) return;
-          setCategorySpineScheduleInSet(
-            spineTimePicker.setId,
-            spineTimePicker.categoryKey,
-            startMinutes,
-            endMinutes,
-          );
-          setSpineTimePicker(null);
-        }}
-      />
-
-      <FixedRoutineSlotPickerSheet
-        visible={slotPicker !== null}
-        title={slotPicker ? `"${slotPicker.label}" 구간 변경` : '구간 선택'}
-        isDark={isDark}
-        ink={ink}
-        muted={muted}
-        surface={cardBg}
-        line={line}
-        onClose={() => setSlotPicker(null)}
-        onSelect={(slot) => {
-          if (!slotPicker) return;
-          setCategoryMealSlotInSet(slotPicker.setId, slotPicker.categoryKey, slot);
-          setSlotPicker(null);
-          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }}
-      />
     </>
   );
 
-  if (embeddedPresetOnly) {
+  if (isEmbedded) {
     return <View style={[styles.embeddedRoot, { backgroundColor: shellBg }]}>{pageBody}</View>;
   }
 
@@ -1679,6 +1967,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
+  renameGroupRow: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  renameGroupInput: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.28,
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+  },
+  renameGroupActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  renameGroupCancel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  renameGroupSave: {
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 0,
+    borderWidth: 2,
+  },
+  renameGroupSaveLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
   accordionHeaderMain: {
     flex: 1,
     minWidth: 0,
@@ -1694,6 +2018,14 @@ const styles = StyleSheet.create({
   accordionTitleText: {
     flex: 1,
     minWidth: 0,
+  },
+  accordionTitlePress: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 2,
   },
   rulePill: {
     paddingHorizontal: 6,
@@ -1867,6 +2199,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     overflow: 'hidden',
   },
+  flowRowWrap: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingBottom: 6,
+  },
   flowRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1874,7 +2210,30 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingHorizontal: 8,
     paddingVertical: 5,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  flowMealSlotPanel: {
+    marginTop: -2,
+    paddingTop: 4,
+    paddingBottom: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  flowSpineTimePanel: {
+    marginTop: -2,
+    paddingTop: 4,
+    paddingBottom: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  flowSlotBtn: {
+    minWidth: 32,
+    height: 32,
+    borderRadius: 0,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    paddingHorizontal: 3,
   },
   flowRowMain: {
     flex: 1,
@@ -1907,33 +2266,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.25,
   },
-  flowSlotPill: {
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: 0,
-    borderWidth: 2,
-    maxWidth: 52,
-    flexShrink: 0,
-  },
-  flowSlotPillLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  flowTimePill: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 0,
-    borderWidth: 2,
-    minWidth: 84,
-    maxWidth: 100,
-    flexShrink: 0,
-  },
-  flowTimePillLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
   flowSwitch: {
     transform: [{ scaleX: 0.72 }, { scaleY: 0.78 }],
   },
@@ -1942,9 +2274,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    minHeight: 32,
+    minHeight: 36,
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 10,
   },
   addRowLabel: {
     fontSize: 12,

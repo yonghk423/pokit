@@ -1,3 +1,5 @@
+import { syncRoutineWindowCompletionsToHistory } from './syncRoutineWindowCompletionsToHistory';
+
 jest.mock('@shared/lib/storage', () => {
   const actual = jest.requireActual<typeof import('@shared/lib/storage')>('@shared/lib/storage');
   return {
@@ -20,8 +22,6 @@ jest.mock('@entities/day-plan/lib/localDateKey', () => ({
 import { useDayPlanDraftStore, useDayPlanStore } from '@entities/day-plan';
 import { getCategoryCompletions, useHistoryStore } from '@entities/history';
 
-import { syncRoutineWindowCompletionsToHistory } from './syncRoutineWindowCompletionsToHistory';
-
 describe('syncRoutineWindowCompletionsToHistory', () => {
   beforeEach(() => {
     useHistoryStore.setState({
@@ -38,10 +38,10 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
       priorityCategoryOrder: [],
       completedFocusCategoryKeys: [],
       routineHistoryPendingByDate: {
-        '2025-06-14': ['bag:reading', 'bag:writing'],
+        '2025-06-14': ['reading', 'writing'],
       },
       routineHistoryPlannedKeysByDate: {
-        '2025-06-14': ['bag:reading', 'bag:writing', 'bag:water'],
+        '2025-06-14': ['reading', 'writing', 'water'],
       },
     });
     useDayPlanStore.setState({
@@ -58,8 +58,8 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
 
     const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
     const completions = getCategoryCompletions(row ?? { categoryMinutes: {} });
-    expect(completions['bag:reading']).toBe(1);
-    expect(completions['bag:writing']).toBe(1);
+    expect(completions.reading).toBe(1);
+    expect(completions.writing).toBe(1);
     expect(row?.completedFlowCount).toBe(2);
     expect(useDayPlanDraftStore.getState().routineHistoryPendingByDate['2025-06-14']).toBeUndefined();
   });
@@ -76,8 +76,8 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
 
     const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
     const completions = getCategoryCompletions(row ?? { categoryMinutes: {} });
-    expect(completions['bag:reading']).toBe(1);
-    expect(completions['bag:writing']).toBe(1);
+    expect(completions.reading).toBe(1);
+    expect(completions.writing).toBe(1);
     expect(row?.completedFlowCount).toBe(2);
   });
 
@@ -93,12 +93,12 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
 
     const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
     const completions = getCategoryCompletions(row ?? { categoryMinutes: {} });
-    expect(completions['bag:reading']).toBe(1);
-    expect(completions['bag:writing']).toBeUndefined();
+    expect(completions.reading).toBe(1);
+    expect(completions.writing).toBeUndefined();
     expect(row?.completedFlowCount).toBe(1);
   });
 
-  it('records independent bag, sections, and spine completions together', () => {
+  it('merges completions from list, sections, and timeline into category keys', () => {
     useDayPlanDraftStore.setState({
       priorityCategoryOrder: ['reading'],
       prioritySectionsCategoryOrder: ['water'],
@@ -106,7 +106,7 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
       priorityMealSlotLayoutEnabled: false,
       completedFocusCategoryKeys: ['reading', 'water@morning'],
       routineHistoryPendingByDate: {
-        '2025-06-14': ['bag:reading', 'sections:water', 'spine:exercise'],
+        '2025-06-14': ['reading', 'water', 'exercise'],
       },
     });
     useDayPlanStore.setState({
@@ -132,20 +132,20 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
 
     const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
     const completions = getCategoryCompletions(row ?? { categoryMinutes: {} });
-    expect(completions['bag:reading']).toBe(1);
-    expect(completions['sections:water']).toBe(1);
-    expect(completions['spine:exercise']).toBe(1);
+    expect(completions.reading).toBe(1);
+    expect(completions.water).toBe(1);
+    expect(completions.exercise).toBe(1);
     expect(row?.completedFlowCount).toBe(3);
   });
 
-  it('keeps bag completion when resyncing on spine tab', () => {
+  it('keeps list completion when timeline completion is also present', () => {
     useDayPlanDraftStore.setState({
       priorityCategoryOrder: ['reading'],
       prioritySpineLayoutEnabled: true,
       priorityMealSlotLayoutEnabled: false,
       completedFocusCategoryKeys: ['reading'],
       routineHistoryPendingByDate: {
-        '2025-06-14': ['bag:reading', 'spine:exercise'],
+        '2025-06-14': ['reading', 'exercise'],
       },
     });
     useDayPlanStore.setState({
@@ -171,7 +171,7 @@ describe('syncRoutineWindowCompletionsToHistory', () => {
 
     const row = useHistoryStore.getState().dailyStatsByDate['2025-06-14'];
     const completions = getCategoryCompletions(row ?? { categoryMinutes: {} });
-    expect(completions['bag:reading']).toBe(1);
-    expect(completions['spine:exercise']).toBe(1);
+    expect(completions.reading).toBe(1);
+    expect(completions.exercise).toBe(1);
   });
 });

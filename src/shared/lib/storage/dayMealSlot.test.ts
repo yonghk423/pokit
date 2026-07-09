@@ -19,6 +19,15 @@ describe('buildFixedFlowMealSlotSections', () => {
     expect(sections.map((section) => section.slot)).toEqual(['dawn', 'morning', 'lunch']);
     expect(sections.find((section) => section.slot === 'morning')?.items).toEqual([]);
   });
+
+  it('places one item in multiple sections when mealSlots has duplicates across times', () => {
+    const sections = buildFixedFlowMealSlotSections([
+      { categoryKey: 'healthIntake', mealSlots: ['dinner', 'night'] },
+    ]);
+    expect(sections.map((section) => section.slot)).toEqual(['dinner', 'night']);
+    expect(sections.find((section) => section.slot === 'dinner')?.items).toHaveLength(1);
+    expect(sections.find((section) => section.slot === 'night')?.items).toHaveLength(1);
+  });
 });
 
 describe('buildAppliedFixedRoutineMealSlotOverrides', () => {

@@ -107,4 +107,9 @@ describe('createDefaultFixedFlowSetsState', () => {
       'set_example_focus',
     ]);
   });
+
+  it('skips dismissed builtin example custom sets', () => {
+    const merged = mergeBuiltInExampleCustomSets([], { dismissedIds: ['set_example_health'] });
+    expect(merged.map((set) => set.id)).toEqual(['set_example_focus']);
+  });
 });

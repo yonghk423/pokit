@@ -1,6 +1,7 @@
 import { getCategoryCompletions, useHistoryStore } from '@entities/history';
 import { sumCategoryCompletions } from '@entities/history/lib/historyCompletionMetrics';
 import { useDayPlanDraftStore } from '@entities/day-plan';
+import { normalizeHistoryRecordKey } from '@shared/lib/routineHistoryLayoutKey';
 
 import {
   collectRoutineWindowCompletions,
@@ -29,7 +30,15 @@ export function syncRoutineWindowCompletionsToHistory(dateKey: string): void {
 
   const draft = useDayPlanDraftStore.getState();
   const existingRow = history.dailyStatsByDate[trimmed];
-  const existingCompletions = { ...getCategoryCompletions(existingRow ?? { categoryMinutes: {} }) };
+  const existingCompletions: Record<string, number> = {};
+  for (const [key, count] of Object.entries(
+    getCategoryCompletions(existingRow ?? { categoryMinutes: {} }),
+  )) {
+    if (count <= 0) continue;
+    const categoryKey = normalizeHistoryRecordKey(key);
+    if (!categoryKey) continue;
+    existingCompletions[categoryKey] = (existingCompletions[categoryKey] ?? 0) + count;
+  }
 
   let changed = false;
 

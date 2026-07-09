@@ -16,8 +16,8 @@ export type StoryRoutinePayload = {
   version: number;
   source: string;
   article: StoryRoutineArticle;
-  suggestedTargets?: ('today' | 'catalog')[];
-  defaultTarget?: 'today' | 'catalog';
+  suggestedTargets?: 'catalog'[];
+  defaultTarget?: 'catalog';
 };
 
 export function isStoryRoutinePayload(data: unknown): data is StoryRoutinePayload {

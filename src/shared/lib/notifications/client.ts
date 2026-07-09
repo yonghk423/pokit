@@ -28,7 +28,7 @@ async function ensureConfigured(): Promise<void> {
       name: '기본',
       importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#F97316',
+      lightColor: '#000000',
     });
     isAndroidChannelConfigured = true;
   }

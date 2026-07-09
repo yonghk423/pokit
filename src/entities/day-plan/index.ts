@@ -25,6 +25,13 @@ export {
   builtinCategoryLabelKo, CATEGORY_REMINDER_KEYS, categoryReminderIconName, categoryReminderLabelKo, type CategoryReminderCatalogKey
 } from './lib/categoryReminderCatalog';
 export { computeSpineGapInsertSlot } from './lib/computeSpineGapInsertSlot';
+export { isSpineBlockActiveAtMinute } from './lib/isSpineBlockActiveAtMinute';
+export {
+  DEFAULT_SPINE_GAP_BLOCK_MINUTES,
+  normalizeSpineDefaultBlockMinutes,
+  SPINE_GAP_BLOCK_MINUTE_OPTIONS,
+  type SpineGapBlockMinuteOption,
+} from '@shared/lib/spineDefaultBlockMinutes';
 export {
   collectSpineTimelineCategoryKeys,
   priorityLayoutRoutineSourceLabelKo,

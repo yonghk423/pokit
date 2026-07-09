@@ -28,7 +28,7 @@ describe('buildMonthlyFlowHistory', () => {
     });
 
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.historyKey).toBe('bag:reading');
+    expect(rows[0]?.historyKey).toBe('reading');
     expect(rows[0]?.completedDays).toBe(2);
     expect(rows[0]?.totalCompletions).toBe(3);
     expect(rows[0]?.daysInMonth).toBe(31);

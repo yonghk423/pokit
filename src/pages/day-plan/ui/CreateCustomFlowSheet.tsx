@@ -261,7 +261,6 @@ export function CreateCustomFlowSheet({
                 <TextInput
                   value={name}
                   onChangeText={(v) => setName(v.slice(0, NAME_MAX))}
-                  placeholder="예: 푸쉬업 50개 하기"
                   placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
                   maxLength={NAME_MAX}
                   returnKeyType="done"

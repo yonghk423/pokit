@@ -50,7 +50,8 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    marginBottom: 4,
+    marginTop: 10,
+    marginBottom: 8,
   },
   pressed: {
     opacity: 0.78,

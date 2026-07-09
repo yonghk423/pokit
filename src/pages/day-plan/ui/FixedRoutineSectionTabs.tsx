@@ -6,7 +6,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
-export type FixedRoutineSection = 'scheduled' | 'custom' | 'templates';
+export type FixedRoutineSection = 'catalog' | 'templates';
 
 type TabDef = {
   key: FixedRoutineSection;
@@ -14,7 +14,7 @@ type TabDef = {
 };
 
 const TABS: TabDef[] = [
-  { key: 'custom', label: '나만의 루틴' },
+  { key: 'catalog', label: '루틴 목록' },
   { key: 'templates', label: '루틴 템플릿' },
 ];
 
@@ -25,7 +25,12 @@ type Props = {
   isDark: boolean;
 };
 
-export function FixedRoutineSectionTabs({ section, onSelectSection, c, isDark }: Props) {
+export function FixedRoutineSectionTabs({
+  section,
+  onSelectSection,
+  c,
+  isDark,
+}: Props) {
   const pill = tabPillColors(isDark);
 
   return (

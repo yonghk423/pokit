@@ -3,7 +3,6 @@ export type { StoryRoutineArticle, StoryRoutinePayload } from './model/storyRout
 export {
   importStoryAsRoutine,
   type ImportStoryResult,
-  type ImportTarget,
 } from './lib/importStoryAsRoutine';
 export {
   resolveCatalogGroupKeyForPersist,

@@ -14,7 +14,7 @@ type TabDef = {
 };
 
 const TABS: TabDef[] = [
-  { key: 'catalog', label: '루틴 목록' },
+  { key: 'catalog', label: '나만의 루틴' },
   { key: 'fixed', label: '고정 루틴' },
 ];
 
@@ -27,7 +27,7 @@ type Props = {
   compact?: boolean;
 };
 
-/** 루틴 탭 — 담기 목록 / 고정 루틴 커스텀 */
+/** 루틴 탭 — 담기 목록 / 고정 루틴 */
 export function PriorityCatalogPageTabs({
   tab,
   onSelectTab,
@@ -65,7 +65,8 @@ export function PriorityCatalogPageTabs({
               style={[
                 compact ? styles.tabLabelCompact : styles.tabLabel,
                 { color: active ? pill.activeText : pill.inactiveText },
-              ]}>
+              ]}
+              numberOfLines={1}>
               {item.label}
             </ThemedText>
           </Pressable>
@@ -91,9 +92,10 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   tabCompact: {
-    minHeight: 32,
-    paddingVertical: 6,
-    borderWidth: 1,
+    minHeight: 36,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderWidth: 2,
   },
   tabLabel: {
     fontSize: 13,
@@ -103,6 +105,6 @@ const styles = StyleSheet.create({
   tabLabelCompact: {
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: -0.15,
+    letterSpacing: -0.2,
   },
 });

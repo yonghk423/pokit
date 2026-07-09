@@ -8,6 +8,7 @@ import {
   dayPlanAnchorIconColor,
   dayPlanAnchorNodeBackground,
   formatMinuteOfDayKo,
+  isSpineBlockActiveAtMinute,
   type SpineTimelineRow,
   resolveBlockCategoryKey,
 } from '@entities/day-plan';
@@ -27,6 +28,8 @@ export type SpineTimelinePalette = {
 type Props = {
   rows: SpineTimelineRow[];
   completedBlockIds: ReadonlySet<string>;
+  /** 분 단위 현재 시각 — 진행 중 블록 강조·갱신용 */
+  nowMinutes: number;
   isDark: boolean;
   palette: SpineTimelinePalette;
   /** 스와이프 행 전경 — 타임라인 카드 배경과 동일해야 삭제 레이어가 비치지 않음 */
@@ -222,6 +225,7 @@ function GapRow({
 export function SpineTimelineView({
   rows,
   completedBlockIds,
+  nowMinutes,
   isDark,
   palette,
   rowSurface,
@@ -285,6 +289,12 @@ export function SpineTimelineView({
         const currentIndex = blockIndex;
         blockIndex += 1;
         const categoryKey = resolveBlockCategoryKey(row.block);
+        const completed = completedBlockIds.has(row.block.id);
+        const isCurrent = isSpineBlockActiveAtMinute(
+          row.startMinutes,
+          row.endMinutes,
+          nowMinutes,
+        );
         return (
           <SpineTimelineBlockRow
             key={key}
@@ -293,7 +303,9 @@ export function SpineTimelineView({
             palette={palette}
             isDark={isDark}
             rowSurface={rowSurface}
-            completed={completedBlockIds.has(row.block.id)}
+            completed={completed}
+            isCurrent={isCurrent}
+            accentColor={palette.accent}
             reorderEnabled={reorderEnabled}
             onToggleComplete={() => onToggleBlockComplete(row.block.id)}
             onPress={onPressBlock ? () => onPressBlock(row.block.id) : undefined}
@@ -321,6 +333,7 @@ export function SpineTimelineView({
     });
   }, [
     rows,
+    nowMinutes,
     palette,
     isDark,
     rowSurface,

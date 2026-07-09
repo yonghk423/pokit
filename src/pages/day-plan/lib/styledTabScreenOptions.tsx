@@ -9,8 +9,8 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 
 const TAB_ICONS: Record<string, string> = {
   'day-plan': 'calendar',
-  'priority-catalog': 'list.bullet.rectangle',
-  'fixed-routines': 'figure.walk',
+  'priority-catalog': 'figure.walk',
+  'fixed-routines': 'list.bullet.rectangle',
   'day-plan-statistics': 'clock.arrow.circlepath',
   settings: 'person',
 };

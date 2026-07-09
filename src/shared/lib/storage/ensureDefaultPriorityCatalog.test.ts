@@ -28,7 +28,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     localStorageClient.removeItem(StorageKeys.dayPlanDraft);
   });
 
-  it('seeds seven daily life habit flows and abstain flow on empty storage', () => {
+  it('seeds seven daily life checklist flows and abstain flow on empty storage', () => {
     ensureDefaultPriorityCatalog();
 
     expect(listCustomCatalogGroups()).toEqual([
@@ -43,18 +43,19 @@ describe('ensureDefaultPriorityCatalog', () => {
 
     const bedCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_LIFE_FLOW_IDS[0]);
     expect(bedCfg?.displayName).toBe('이불정리');
-    expect((bedCfg as { templateKey?: string })?.templateKey).toBe('habit');
+    expect((bedCfg as { templateKey?: string })?.templateKey).toBe('checklist');
+    expect(bedCfg?.checklist?.map((item) => item.text)).toEqual(['이불정리']);
 
     const washCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_LIFE_FLOW_IDS[3]);
     expect((washCfg as { icon?: string })?.icon).toBe('hands.sparkles.fill');
 
     const exerciseCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_LIFE_FLOW_IDS[5]);
     expect(exerciseCfg?.displayName).toBe('운동하기');
-    expect((exerciseCfg as { templateKey?: string })?.templateKey).toBe('habit');
+    expect((exerciseCfg as { templateKey?: string })?.templateKey).toBe('checklist');
 
     const shoppingCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_LIFE_FLOW_IDS[6]);
     expect(shoppingCfg?.displayName).toBe('쇼핑하기');
-    expect((shoppingCfg as { templateKey?: string })?.templateKey).toBe('habit');
+    expect((shoppingCfg as { templateKey?: string })?.templateKey).toBe('checklist');
     expect((shoppingCfg as { icon?: string })?.icon).toBe('cart.fill');
 
     expect(loadGoalDetailCategoryConfig(BUILTIN_INTERMITTENT_FASTING_FLOW_ID)).toBeNull();
@@ -67,7 +68,8 @@ describe('ensureDefaultPriorityCatalog', () => {
     const stretchingCfg = loadGoalDetailCategoryConfig(BUILTIN_STRETCHING_FLOW_ID);
     expect(stretchingCfg?.displayName).toBe('스트레칭');
     expect((stretchingCfg as { icon?: string })?.icon).toBe('figure.flexibility');
-    expect((stretchingCfg as { templateKey?: string })?.templateKey).toBe('habit');
+    expect((stretchingCfg as { templateKey?: string })?.templateKey).toBe('checklist');
+    expect(stretchingCfg?.checklist?.map((item) => item.text)).toEqual(['스트레칭']);
 
     const waterCfg = loadGoalDetailCategoryConfig('water');
     expect(waterCfg).not.toBeNull();
@@ -261,6 +263,33 @@ describe('ensureDefaultPriorityCatalog', () => {
     expect(listCustomFlowCatalogEntries().some((e) => e.id === BUILTIN_INTERMITTENT_FASTING_FLOW_ID)).toBe(
       false,
     );
+  });
+
+  it('migrates legacy habit preset flows to checklist template', () => {
+    localStorageClient.setJson(StorageKeys.goalDetailSettings, {
+      byCategory: {
+        [BUILTIN_DAILY_LIFE_FLOW_IDS[3]]: {
+          templateKey: 'habit',
+          displayName: '세수하기',
+          summary: '하루를 시작·마무리할 때 깨끗이 씻어요.',
+          icon: 'hands.sparkles.fill',
+          accentColor: '#14b8a6',
+          doneToday: true,
+          streakDays: 4,
+          recentDoneDateKeys: ['2026-07-08'],
+        },
+      },
+      committedCategoryKeys: [BUILTIN_DAILY_LIFE_FLOW_IDS[3]],
+    });
+
+    ensureDefaultPriorityCatalog();
+
+    const washCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_LIFE_FLOW_IDS[3]);
+    expect((washCfg as { templateKey?: string })?.templateKey).toBe('checklist');
+    expect(washCfg?.checklist).toEqual([
+      { id: `${BUILTIN_DAILY_LIFE_FLOW_IDS[3]}_item_0`, text: '세수하기', done: true },
+    ]);
+    expect((washCfg as { doneToday?: boolean }).doneToday).toBeUndefined();
   });
 
   it('is idempotent and preserves user-added groups', () => {

@@ -9,7 +9,7 @@ import type { FlowHistoryCategoryGroup } from '../lib/groupFlowHistoryRows';
 import type { WeeklyFlowHistoryRow } from '../lib/buildWeeklyFlowHistory';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 import { FlowHistoryMetaLine } from './FlowHistoryMetaLine';
-import { FlowHistoryModeWeekdayRow } from './FlowHistoryModeWeekdayRow';
+import { FlowHistoryWeekdayRow } from './FlowHistoryWeekdayRow';
 
 type Props = {
   group: FlowHistoryCategoryGroup<WeeklyFlowHistoryRow>;
@@ -18,7 +18,6 @@ type Props = {
 
 export function WeeklyFlowHistoryCard({ group, palette }: Props) {
   const iconColor = activeIconColorByCategory(group.categoryKey);
-  const headerCount = Math.max(...group.modeRows.map((row) => row.completedDays), 0);
 
   return (
     <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
@@ -38,14 +37,12 @@ export function WeeklyFlowHistoryCard({ group, palette }: Props) {
             />
           </View>
         </View>
-        <ThemedText style={[styles.weekCount, { color: palette.muted }]}>{headerCount}/7</ThemedText>
+        <ThemedText style={[styles.weekCount, { color: palette.muted }]}>
+          {group.row.completedDays}/7
+        </ThemedText>
       </View>
 
-      <View style={styles.modeRows}>
-        {group.modeRows.map((row) => (
-          <FlowHistoryModeWeekdayRow key={row.historyKey} row={row} palette={palette} />
-        ))}
-      </View>
+      <FlowHistoryWeekdayRow row={group.row} palette={palette} />
     </View>
   );
 }
@@ -92,10 +89,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.25,
     lineHeight: 17,
-  },
-  modeRows: {
-    width: '100%',
-    gap: 5,
   },
   weekCount: {
     fontSize: 10,

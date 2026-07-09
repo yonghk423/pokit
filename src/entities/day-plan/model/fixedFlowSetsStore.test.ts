@@ -141,19 +141,21 @@ describe('fixedFlowSetsStore', () => {
     expect(useFixedFlowSetsStore.getState().sets.some((s) => s.id === 'set_daily')).toBe(true);
   });
 
-  it('does not remove builtin example custom sets', () => {
+  it('removes builtin example custom sets and remembers dismissal', () => {
     useFixedFlowSetsStore.setState({
       activeSetIds: [],
       sets: [
         ...baseState.sets,
         ...createBuiltinExampleCustomFlowSets(),
       ],
+      dismissedExampleCustomFlowSetIds: [],
       todayAppliedCategoryKeys: [],
       todayAppliedRevision: 0,
       isHydrated: true,
     });
     useFixedFlowSetsStore.getState().removeSet('set_example_health');
-    expect(useFixedFlowSetsStore.getState().sets.some((s) => s.id === 'set_example_health')).toBe(true);
+    expect(useFixedFlowSetsStore.getState().sets.some((s) => s.id === 'set_example_health')).toBe(false);
+    expect(useFixedFlowSetsStore.getState().dismissedExampleCustomFlowSetIds).toEqual(['set_example_health']);
   });
 
   it('stores mealSlot when adding to a custom set', () => {
@@ -169,7 +171,29 @@ describe('fixedFlowSetsStore', () => {
       categoryKey: 'reading',
       enabled: true,
       mealSlot: 'night',
+      mealSlots: ['night'],
     });
+  });
+
+  it('toggles multiple meal slots on one item', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: [],
+      sets: [
+        {
+          id: 'set_a',
+          name: 'A',
+          applyRule: 'manual',
+          items: [{ categoryKey: 'reading', enabled: true, mealSlots: ['dinner'] }],
+        },
+      ],
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+    useFixedFlowSetsStore.getState().toggleCategoryMealSlotInSet('set_a', 'reading', 'night');
+    expect(useFixedFlowSetsStore.getState().sets[0]?.items[0]?.mealSlots).toEqual(['dinner', 'night']);
+    useFixedFlowSetsStore.getState().toggleCategoryMealSlotInSet('set_a', 'reading', 'dinner');
+    expect(useFixedFlowSetsStore.getState().sets[0]?.items[0]?.mealSlots).toEqual(['night']);
   });
 
   it('pins empty morning slot when adding to preset set', () => {

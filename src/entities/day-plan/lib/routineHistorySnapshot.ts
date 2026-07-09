@@ -1,4 +1,5 @@
 import type { PlanMode } from '../model/planMode';
+import { normalizeHistoryRecordKey } from '@shared/lib/routineHistoryLayoutKey';
 
 type RoutineHistoryByDate = Record<string, string[]>;
 
@@ -42,10 +43,10 @@ export function appendRoutineHistoryPending(
   dateKey: string,
   categoryKey: string,
 ): RoutineHistoryByDate {
-  const trimmed = categoryKey.trim();
+  const trimmed = normalizeHistoryRecordKey(categoryKey);
   if (!trimmed) return pendingByDate;
   const prev = pendingByDate[dateKey] ?? [];
-  if (prev.includes(trimmed)) return pendingByDate;
+  if (prev.some((key) => normalizeHistoryRecordKey(key) === trimmed)) return pendingByDate;
   return { ...pendingByDate, [dateKey]: [...prev, trimmed] };
 }
 
@@ -54,9 +55,10 @@ export function removeRoutineHistoryPending(
   dateKey: string,
   categoryKey: string,
 ): RoutineHistoryByDate {
+  const target = normalizeHistoryRecordKey(categoryKey);
   const prev = pendingByDate[dateKey];
   if (!prev || prev.length === 0) return pendingByDate;
-  const next = prev.filter((k) => k !== categoryKey);
+  const next = prev.filter((key) => normalizeHistoryRecordKey(key) !== target);
   if (next.length === prev.length) return pendingByDate;
   if (next.length === 0) {
     const copy = { ...pendingByDate };

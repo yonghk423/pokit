@@ -3,9 +3,15 @@ import { useFocusEffect } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import Reanimated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
-import { resolveCategoryCatalogIcon, useDayPlanDraftStore } from '@entities/day-plan';
-import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
+import { formatMinuteOfDayKo, resolveCategoryCatalogIcon, useDayPlanDraftStore } from '@entities/day-plan';
+import { DAY_MEAL_SLOT_LABEL, type CustomCatalogGroup, type CustomFlowCatalogEntry, type DayMealSlot } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
@@ -17,12 +23,20 @@ import {
   type PickerCategoryItem,
   type PriorityCatalogGroupSection,
 } from '../lib/priorityCatalogSections';
+import {
+  CatalogRowMealSlotChips,
+  CatalogRowMealSlotSelectedIcons,
+  mealSlotPickerBtnWidth,
+} from './CatalogRowMealSlotChips';
+import { CatalogRowSpineTimePanel, CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT, CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT } from './CatalogRowSpineTimePanel';
 
 export type PriorityCatalogEditorial = {
   ink: string;
   muted: string;
   line: string;
 };
+
+const MEAL_SLOT_PANEL_HEIGHT = 56;
 
 function CatalogListRow({
   categoryKey,
@@ -39,6 +53,22 @@ function CatalogListRow({
   onOpenSettings,
   onMoveGroup,
   onDeleteItem,
+  showMealSlotPicker,
+  selectedMealSlots,
+  mealSlotPickerDisabled,
+  isMealSlotExpanded,
+  onToggleMealSlotExpand,
+  onToggleMealSlot,
+  showSpineTimePicker,
+  spineStartMinutes,
+  spineEndMinutes,
+  spineTimePickerDisabled,
+  isSpineTimeExpanded,
+  onToggleSpineTimeExpand,
+  onChangeSpineTime,
+  priorityStart,
+  priorityEnd,
+  manageOnly = false,
 }: {
   categoryKey: string;
   icon: string;
@@ -54,11 +84,28 @@ function CatalogListRow({
   onOpenSettings: () => void;
   onMoveGroup?: () => void;
   onDeleteItem?: () => void;
+  showMealSlotPicker?: boolean;
+  selectedMealSlots?: readonly DayMealSlot[];
+  mealSlotPickerDisabled?: boolean;
+  isMealSlotExpanded?: boolean;
+  onToggleMealSlotExpand?: () => void;
+  onToggleMealSlot?: (slot: DayMealSlot) => void;
+  showSpineTimePicker?: boolean;
+  spineStartMinutes?: number;
+  spineEndMinutes?: number;
+  spineTimePickerDisabled?: boolean;
+  isSpineTimeExpanded?: boolean;
+  onToggleSpineTimeExpand?: () => void;
+  onChangeSpineTime?: (startMinutes: number, endMinutes: number) => void;
+  priorityStart?: string;
+  priorityEnd?: string;
+  manageOnly?: boolean;
 }) {
+  const [spineInnerPickerExpanded, setSpineInnerPickerExpanded] = useState(false);
   const settingsBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)';
   const settingsBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
-  const settingsLocked = isFocusStarted && selected;
-  const shouldPulse = Boolean(selected && isFocusStarted);
+  const settingsLocked = !manageOnly && isFocusStarted && selected;
+  const shouldPulse = !manageOnly && Boolean(selected && isFocusStarted);
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -84,26 +131,94 @@ function CatalogListRow({
     return () => loop.stop();
   }, [shouldPulse, pulse]);
 
-  const labelColor = selected ? ink : muted;
+  const labelColor = manageOnly ? ink : selected ? ink : muted;
   const selectedIconColor = isDark ? ink : PRIMARY;
   const iconColor = shouldPulse
     ? activeIconColorByCategory(categoryKey)
-    : selected
-      ? selectedIconColor
-      : muted;
+    : manageOnly
+      ? ink
+      : selected
+        ? selectedIconColor
+        : muted;
+
+  const mealSlotActive = Boolean(selectedMealSlots && selectedMealSlots.length > 0);
+  const mealSlotIconHighlighted = mealSlotActive || isMealSlotExpanded;
+  const expandProgress = useSharedValue(isMealSlotExpanded ? 1 : 0);
+
+  useEffect(() => {
+    expandProgress.value = withTiming(isMealSlotExpanded ? 1 : 0, {
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [expandProgress, isMealSlotExpanded]);
+
+  const mealSlotPanelAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: expandProgress.value,
+    maxHeight: expandProgress.value * MEAL_SLOT_PANEL_HEIGHT,
+    transform: [
+      { translateY: (1 - expandProgress.value) * -8 },
+      { scale: 0.96 + expandProgress.value * 0.04 },
+    ],
+  }));
+
+  const mealSlotIconAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.92 + expandProgress.value * 0.08 }],
+  }));
+
+  const spineTimeIconHighlighted = selected || Boolean(isSpineTimeExpanded);
+  const spineExpandProgress = useSharedValue(isSpineTimeExpanded ? 1 : 0);
+
+  useEffect(() => {
+    spineExpandProgress.value = withTiming(isSpineTimeExpanded ? 1 : 0, {
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [isSpineTimeExpanded, spineExpandProgress]);
+
+  useEffect(() => {
+    if (!isSpineTimeExpanded) {
+      setSpineInnerPickerExpanded(false);
+    }
+  }, [isSpineTimeExpanded]);
+
+  const spinePanelHeight = spineInnerPickerExpanded
+    ? CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT
+    : CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT;
+
+  const spineTimePanelAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: spineExpandProgress.value,
+    maxHeight: spineExpandProgress.value * spinePanelHeight,
+    transform: [
+      { translateY: (1 - spineExpandProgress.value) * -8 },
+      { scale: 0.96 + spineExpandProgress.value * 0.04 },
+    ],
+  }));
+
+  const spineTimeIconAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.92 + spineExpandProgress.value * 0.08 }],
+  }));
 
   return (
-    <View style={[styles.catalogRow, { borderBottomColor: line }]}>
-      <Pressable
+    <View style={[styles.catalogRowWrap, { borderBottomColor: line }]}>
+      <View style={styles.catalogRow}>
+        <Pressable
         accessibilityRole="button"
-        accessibilityState={{ selected }}
+        accessibilityState={{ selected: manageOnly ? undefined : selected }}
         accessibilityLabel={
-          subtitle
-            ? `${label}. ${subtitle}, 우선 순위에 ${selected ? '담김' : '담기'}`
-            : `${label}, 우선 순위에 ${selected ? '담김' : '담기'}`
+          manageOnly
+            ? subtitle
+              ? `${label}. ${subtitle}, 설정 열기`
+              : `${label}, 설정 열기`
+            : subtitle
+              ? `${label}. ${subtitle}, 우선 순위에 ${selected ? '담김' : '담기'}`
+              : `${label}, 우선 순위에 ${selected ? '담김' : '담기'}`
         }
         onPress={() => {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          if (manageOnly) {
+            onOpenSettings();
+            return;
+          }
           onAddPress();
         }}
         style={styles.catalogRowMainHit}>
@@ -189,6 +304,107 @@ function CatalogListRow({
             <IconSymbol name="arrow.left.arrow.right" size={15} color={isDark ? '#FAFAFA' : PRIMARY} />
           </Pressable>
         ) : null}
+        {showMealSlotPicker && !manageOnly && onToggleMealSlotExpand ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{
+              selected: mealSlotIconHighlighted,
+              expanded: isMealSlotExpanded,
+              disabled: mealSlotPickerDisabled,
+            }}
+            accessibilityLabel={
+              mealSlotActive
+                ? `${label} 시간대 ${selectedMealSlots!.map((slot) => DAY_MEAL_SLOT_LABEL[slot]).join(', ')}`
+                : `${label} 시간대 선택`
+            }
+            disabled={mealSlotPickerDisabled}
+            hitSlop={mealSlotPickerDisabled ? 0 : 10}
+            onPress={() => {
+              if (mealSlotPickerDisabled) return;
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onToggleMealSlotExpand();
+            }}
+            style={[
+              styles.catalogSettingsBtn,
+              {
+                width: mealSlotPickerBtnWidth(selectedMealSlots ?? []),
+                borderColor: mealSlotIconHighlighted ? ink : settingsBorder,
+                backgroundColor: mealSlotIconHighlighted
+                  ? isDark
+                    ? 'rgba(255,255,255,0.14)'
+                    : 'rgba(0,0,0,0.06)'
+                  : settingsBg,
+                opacity: mealSlotPickerDisabled ? 0.55 : 1,
+              },
+            ]}>
+            <Reanimated.View style={mealSlotIconAnimatedStyle}>
+              <CatalogRowMealSlotSelectedIcons
+                selectedSlots={selectedMealSlots ?? []}
+                color={
+                  mealSlotIconHighlighted
+                    ? ink
+                    : mealSlotPickerDisabled
+                      ? muted
+                      : isDark
+                        ? '#FAFAFA'
+                        : PRIMARY
+                }
+                mutedColor={mealSlotPickerDisabled ? muted : isDark ? '#FAFAFA' : PRIMARY}
+                size={15}
+                compactSize={9}
+              />
+            </Reanimated.View>
+          </Pressable>
+        ) : null}
+        {showSpineTimePicker && !manageOnly && onToggleSpineTimeExpand ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{
+              selected: spineTimeIconHighlighted,
+              expanded: isSpineTimeExpanded,
+              disabled: spineTimePickerDisabled,
+            }}
+            accessibilityLabel={
+              spineStartMinutes != null && spineEndMinutes != null
+                ? `${label} 시간 ${formatMinuteOfDayKo(spineStartMinutes)}~${formatMinuteOfDayKo(spineEndMinutes)}`
+                : `${label} 시간 선택`
+            }
+            disabled={spineTimePickerDisabled}
+            hitSlop={spineTimePickerDisabled ? 0 : 10}
+            onPress={() => {
+              if (spineTimePickerDisabled) return;
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onToggleSpineTimeExpand();
+            }}
+            style={[
+              styles.catalogSettingsBtn,
+              {
+                borderColor: spineTimeIconHighlighted ? ink : settingsBorder,
+                backgroundColor: spineTimeIconHighlighted
+                  ? isDark
+                    ? 'rgba(255,255,255,0.14)'
+                    : 'rgba(0,0,0,0.06)'
+                  : settingsBg,
+                opacity: spineTimePickerDisabled ? 0.55 : 1,
+              },
+            ]}>
+            <Reanimated.View style={spineTimeIconAnimatedStyle}>
+              <IconSymbol
+                name="clock.fill"
+                size={15}
+                color={
+                  spineTimeIconHighlighted
+                    ? ink
+                    : spineTimePickerDisabled
+                      ? muted
+                      : isDark
+                        ? '#FAFAFA'
+                        : PRIMARY
+                }
+              />
+            </Reanimated.View>
+          </Pressable>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ disabled: settingsLocked }}
@@ -226,6 +442,7 @@ function CatalogListRow({
             color={settingsLocked ? muted : isDark ? '#FAFAFA' : PRIMARY}
           />
         </Pressable>
+        {!manageOnly ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={
@@ -245,7 +462,56 @@ function CatalogListRow({
             <IconSymbol name="plus.circle" size={22} color={muted} />
           )}
         </Pressable>
+        ) : null}
       </View>
+      </View>
+      {showMealSlotPicker && !manageOnly && onToggleMealSlot ? (
+        <Reanimated.View
+          pointerEvents={isMealSlotExpanded ? 'auto' : 'none'}
+          style={[
+            styles.mealSlotPanel,
+            mealSlotPanelAnimatedStyle,
+            {
+              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)',
+              borderTopColor: line,
+            },
+          ]}>
+          <CatalogRowMealSlotChips
+            selectedSlots={selectedMealSlots ?? []}
+            ink={ink}
+            muted={muted}
+            line={line}
+            isDark={isDark}
+            disabled={mealSlotPickerDisabled}
+            onToggleSlot={onToggleMealSlot}
+          />
+        </Reanimated.View>
+      ) : null}
+      {showSpineTimePicker && !manageOnly && onChangeSpineTime && priorityStart && priorityEnd ? (
+        <Reanimated.View
+          pointerEvents={isSpineTimeExpanded ? 'auto' : 'none'}
+          style={[
+            styles.spineTimePanel,
+            spineTimePanelAnimatedStyle,
+            {
+              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)',
+            },
+          ]}>
+          <CatalogRowSpineTimePanel
+            startMinutes={spineStartMinutes ?? 9 * 60}
+            endMinutes={spineEndMinutes ?? 9 * 60 + 30}
+            ink={ink}
+            muted={muted}
+            line={line}
+            isDark={isDark}
+            disabled={spineTimePickerDisabled}
+            priorityStart={priorityStart}
+            priorityEnd={priorityEnd}
+            onScheduleChange={onChangeSpineTime}
+            onPickerExpandedChange={setSpineInnerPickerExpanded}
+          />
+        </Reanimated.View>
+      ) : null}
     </View>
   );
 }
@@ -276,6 +542,22 @@ function CatalogSectionHeader({
   );
 }
 
+function resolveCatalogRowMealSlots(
+  key: string,
+  inOrder: boolean,
+  slotsByKey: Record<string, DayMealSlot[]>,
+  fallbackSlot: DayMealSlot,
+  overridesByKey: Record<string, DayMealSlot> = {},
+): DayMealSlot[] {
+  if (!inOrder) {
+    const override = overridesByKey[key];
+    return override ? [override] : [];
+  }
+  const explicit = slotsByKey[key];
+  if (Array.isArray(explicit) && explicit.length > 0) return explicit;
+  return [fallbackSlot];
+}
+
 function renderRows(
   cats: PickerCategoryItem[],
   editorial: PriorityCatalogEditorial,
@@ -286,15 +568,39 @@ function renderRows(
   onOpenCategorySettings: (key: string) => void,
   onMoveCustomFlow?: (key: string, label: string) => void,
   onDeleteCatalogItem?: (key: string, label: string) => void,
+  sectionsCatalogOptions?: {
+    prioritySectionsMealSlots: Record<string, DayMealSlot[]>;
+    priorityMealSlotOverrides: Record<string, DayMealSlot>;
+    defaultMealSlot: DayMealSlot;
+    expandedMealSlotKey: string | null;
+    onToggleMealSlotExpand: (categoryKey: string) => void;
+    onToggleCatalogMealSlot: (categoryKey: string, slot: DayMealSlot) => void;
+  },
+  spineCatalogOptions?: {
+    priorityStart: string;
+    priorityEnd: string;
+    expandedSpineTimeKey: string | null;
+    onToggleSpineTimeExpand: (categoryKey: string) => void;
+    onChangeSpineTime: (categoryKey: string, startMinutes: number, endMinutes: number) => void;
+    resolveSpineSchedule: (categoryKey: string) => {
+      startMinutes: number;
+      endMinutes: number;
+    };
+  },
+  manageOnly = false,
 ) {
-  return cats.map((cat) => (
+  return cats.map((cat) => {
+    const selected = priorityCategoryOrder.includes(cat.key);
+    const slotPickerLocked = isFocusStarted && selected;
+    const spineSchedule = spineCatalogOptions?.resolveSpineSchedule(cat.key);
+    return (
     <CatalogListRow
       key={cat.key}
       categoryKey={cat.key}
       icon={cat.icon}
       label={cat.label}
       subtitle={null}
-      selected={priorityCategoryOrder.includes(cat.key)}
+      selected={selected}
       ink={editorial.ink}
       muted={editorial.muted}
       line={editorial.line}
@@ -308,8 +614,52 @@ function renderRows(
       onDeleteItem={
         onDeleteCatalogItem ? () => onDeleteCatalogItem(cat.key, cat.label) : undefined
       }
+      showMealSlotPicker={Boolean(sectionsCatalogOptions)}
+      selectedMealSlots={
+        sectionsCatalogOptions
+          ? resolveCatalogRowMealSlots(
+              cat.key,
+              selected,
+              sectionsCatalogOptions.prioritySectionsMealSlots,
+              sectionsCatalogOptions.defaultMealSlot,
+              sectionsCatalogOptions.priorityMealSlotOverrides,
+            )
+          : undefined
+      }
+      mealSlotPickerDisabled={slotPickerLocked}
+      isMealSlotExpanded={sectionsCatalogOptions?.expandedMealSlotKey === cat.key}
+      onToggleMealSlotExpand={
+        sectionsCatalogOptions
+          ? () => sectionsCatalogOptions.onToggleMealSlotExpand(cat.key)
+          : undefined
+      }
+      onToggleMealSlot={
+        sectionsCatalogOptions
+          ? (slot) => sectionsCatalogOptions.onToggleCatalogMealSlot(cat.key, slot)
+          : undefined
+      }
+      showSpineTimePicker={Boolean(spineCatalogOptions)}
+      spineStartMinutes={spineSchedule?.startMinutes}
+      spineEndMinutes={spineSchedule?.endMinutes}
+      spineTimePickerDisabled={slotPickerLocked}
+      isSpineTimeExpanded={spineCatalogOptions?.expandedSpineTimeKey === cat.key}
+      onToggleSpineTimeExpand={
+        spineCatalogOptions
+          ? () => spineCatalogOptions.onToggleSpineTimeExpand(cat.key)
+          : undefined
+      }
+      onChangeSpineTime={
+        spineCatalogOptions
+          ? (startMinutes, endMinutes) =>
+              spineCatalogOptions.onChangeSpineTime(cat.key, startMinutes, endMinutes)
+          : undefined
+      }
+      priorityStart={spineCatalogOptions?.priorityStart}
+      priorityEnd={spineCatalogOptions?.priorityEnd}
+      manageOnly={manageOnly}
     />
-  ));
+  );
+  });
 }
 
 type Props = {
@@ -334,6 +684,27 @@ type Props = {
   onMoveCustomFlow?: (categoryKey: string, label: string) => void;
   /** 담기 항목 — 삭제(사용자 플로우) 또는 목록에서 숨기기(표준) */
   onDeleteCatalogItem?: (categoryKey: string, label: string) => void;
+  /** 시간대 보기 — 행별 구간 선택 */
+  sectionsCatalogEnabled?: boolean;
+  prioritySectionsMealSlots?: Record<string, DayMealSlot[]>;
+  priorityMealSlotOverrides?: Record<string, DayMealSlot>;
+  defaultMealSlot?: DayMealSlot;
+  onToggleCatalogMealSlot?: (categoryKey: string, slot: DayMealSlot) => void;
+  /** 타임라인 보기 — 행별 시작·종료 시각 */
+  spineCatalogEnabled?: boolean;
+  priorityStart?: string;
+  priorityEnd?: string;
+  resolveSpineSchedule?: (categoryKey: string) => {
+    startMinutes: number;
+    endMinutes: number;
+  };
+  onChangeCatalogSpineTime?: (
+    categoryKey: string,
+    startMinutes: number,
+    endMinutes: number,
+  ) => void;
+  /** 담기·시간 설정 없이 루틴 목록만 관리 */
+  manageOnly?: boolean;
 };
 
 function GroupSectionBlock({
@@ -349,6 +720,9 @@ function GroupSectionBlock({
   onMoveCustomFlow,
   onDeleteCatalogItem,
   isFirst,
+  sectionsCatalogOptions,
+  spineCatalogOptions,
+  manageOnly = false,
 }: {
   section: PriorityCatalogGroupSection;
   editorial: PriorityCatalogEditorial;
@@ -362,6 +736,26 @@ function GroupSectionBlock({
   onMoveCustomFlow?: (categoryKey: string, label: string) => void;
   onDeleteCatalogItem?: (categoryKey: string, label: string) => void;
   isFirst: boolean;
+  sectionsCatalogOptions?: {
+    prioritySectionsMealSlots: Record<string, DayMealSlot[]>;
+    priorityMealSlotOverrides: Record<string, DayMealSlot>;
+    defaultMealSlot: DayMealSlot;
+    expandedMealSlotKey: string | null;
+    onToggleMealSlotExpand: (categoryKey: string) => void;
+    onToggleCatalogMealSlot: (categoryKey: string, slot: DayMealSlot) => void;
+  };
+  spineCatalogOptions?: {
+    priorityStart: string;
+    priorityEnd: string;
+    expandedSpineTimeKey: string | null;
+    onToggleSpineTimeExpand: (categoryKey: string) => void;
+    onChangeSpineTime: (categoryKey: string, startMinutes: number, endMinutes: number) => void;
+    resolveSpineSchedule: (categoryKey: string) => {
+      startMinutes: number;
+      endMinutes: number;
+    };
+  };
+  manageOnly?: boolean;
 }) {
   const groupHeaderTrailing =
     onRenameCustomGroup || onDeleteCatalogGroup ? (
@@ -432,6 +826,9 @@ function GroupSectionBlock({
             onOpenCategorySettings,
             onMoveCustomFlow,
             onDeleteCatalogItem,
+            sectionsCatalogOptions,
+            spineCatalogOptions,
+            manageOnly,
           )
           : null}
       </View>
@@ -454,7 +851,38 @@ export function PriorityCatalogPanel({
   onDeleteCatalogGroup,
   onMoveCustomFlow,
   onDeleteCatalogItem,
+  sectionsCatalogEnabled = false,
+  prioritySectionsMealSlots = {},
+  priorityMealSlotOverrides = {},
+  defaultMealSlot = 'morning',
+  onToggleCatalogMealSlot,
+  spineCatalogEnabled = false,
+  priorityStart = '09:00',
+  priorityEnd = '22:00',
+  resolveSpineSchedule,
+  onChangeCatalogSpineTime,
+  manageOnly = false,
 }: Props) {
+  const [expandedMealSlotKey, setExpandedMealSlotKey] = useState<string | null>(null);
+  const [expandedSpineTimeKey, setExpandedSpineTimeKey] = useState<string | null>(null);
+
+  const onToggleMealSlotExpand = useCallback((categoryKey: string) => {
+    setExpandedMealSlotKey((prev) => (prev === categoryKey ? null : categoryKey));
+    setExpandedSpineTimeKey(null);
+  }, []);
+
+  const handleToggleCatalogMealSlot = useCallback(
+    (categoryKey: string, slot: DayMealSlot) => {
+      onToggleCatalogMealSlot?.(categoryKey, slot);
+      setExpandedMealSlotKey(null);
+    },
+    [onToggleCatalogMealSlot],
+  );
+
+  const onToggleSpineTimeExpand = useCallback((categoryKey: string) => {
+    setExpandedSpineTimeKey((prev) => (prev === categoryKey ? null : categoryKey));
+    setExpandedMealSlotKey(null);
+  }, []);
   const [catalogLabelTick, setCatalogLabelTick] = useState(0);
   const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
   useFocusEffect(
@@ -484,6 +912,53 @@ export function PriorityCatalogPanel({
     [visibleCatalogCategories, customFlowPickerItems, customFlowEntries, customGroups],
   );
 
+  const sectionsCatalogOptions = useMemo(
+    () =>
+      sectionsCatalogEnabled && onToggleCatalogMealSlot
+        ? {
+            prioritySectionsMealSlots,
+            priorityMealSlotOverrides,
+            defaultMealSlot,
+            expandedMealSlotKey,
+            onToggleMealSlotExpand,
+            onToggleCatalogMealSlot: handleToggleCatalogMealSlot,
+          }
+        : undefined,
+    [
+      defaultMealSlot,
+      expandedMealSlotKey,
+      handleToggleCatalogMealSlot,
+      onToggleCatalogMealSlot,
+      onToggleMealSlotExpand,
+      priorityMealSlotOverrides,
+      prioritySectionsMealSlots,
+      sectionsCatalogEnabled,
+    ],
+  );
+
+  const spineCatalogOptions = useMemo(
+    () =>
+      spineCatalogEnabled && resolveSpineSchedule && onChangeCatalogSpineTime
+        ? {
+            priorityStart,
+            priorityEnd,
+            expandedSpineTimeKey,
+            onToggleSpineTimeExpand,
+            onChangeSpineTime: onChangeCatalogSpineTime,
+            resolveSpineSchedule,
+          }
+        : undefined,
+    [
+      expandedSpineTimeKey,
+      onChangeCatalogSpineTime,
+      onToggleSpineTimeExpand,
+      priorityEnd,
+      priorityStart,
+      resolveSpineSchedule,
+      spineCatalogEnabled,
+    ],
+  );
+
   return (
     <View style={styles.root}>
       {groupSections.map((section, index) => (
@@ -500,6 +975,9 @@ export function PriorityCatalogPanel({
           onDeleteCatalogGroup={onDeleteCatalogGroup}
           onMoveCustomFlow={onMoveCustomFlow}
           onDeleteCatalogItem={onDeleteCatalogItem}
+          sectionsCatalogOptions={sectionsCatalogOptions}
+          spineCatalogOptions={spineCatalogOptions}
+          manageOnly={manageOnly}
           isFirst={index === 0}
         />
       ))}
@@ -563,13 +1041,30 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingBottom: 2,
   },
+  catalogRowWrap: {
+    borderBottomWidth: 1,
+    paddingBottom: 6,
+  },
+  mealSlotPanel: {
+    marginTop: -2,
+    paddingTop: 4,
+    paddingBottom: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  spineTimePanel: {
+    marginTop: -2,
+    paddingTop: 4,
+    paddingBottom: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
   catalogRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingVertical: 4,
     paddingHorizontal: 0,
-    borderBottomWidth: 1,
   },
   catalogRowMainHit: {
     flex: 1,
@@ -586,12 +1081,13 @@ const styles = StyleSheet.create({
     paddingLeft: 2,
   },
   catalogSettingsBtn: {
-    width: 32,
+    minWidth: 32,
     height: 32,
     borderRadius: 0,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 3,
   },
   catalogAddHit: {
     width: 36,

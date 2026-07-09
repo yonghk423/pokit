@@ -59,12 +59,8 @@ describe('collectRoutineWindowCompletions', () => {
     });
   });
 
-  it('collects bag, sections, and spine keys independently', () => {
+  it('collects unique category keys regardless of layout mode', () => {
     const { categoryKeys } = collectRoutineWindowCompletions('2025-06-14');
-    expect(categoryKeys.sort()).toEqual([
-      'bag:reading',
-      'sections:water',
-      'spine:exercise',
-    ]);
+    expect(categoryKeys.sort()).toEqual(['exercise', 'reading', 'water']);
   });
 });

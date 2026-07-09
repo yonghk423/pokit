@@ -1,5 +1,4 @@
 import {
-  appendPriorityCategoryKeysIfMissing,
   getInitialOtherDataConfig,
   useDayPlanDraftStore,
 } from '@entities/day-plan';
@@ -16,8 +15,6 @@ import {
   storyArticleCategoryKey,
 } from './storyArticleCategoryKey';
 
-export type ImportTarget = 'today' | 'catalog';
-
 export type ImportStoryResult = {
   categoryKey: string;
   /** false면 기존 스토리 루틴을 갱신한 것 */
@@ -25,12 +22,11 @@ export type ImportStoryResult = {
 };
 
 /**
- * pokitstory 아티클을 커스텀 플로우로 등록하고, 지정 대상에 추가한다.
+ * pokitstory 아티클을 커스텀 플로우로 등록한다.
  * 동일 slug는 항상 같은 categoryKey를 써 중복 추가를 막는다.
  */
 export function importStoryAsRoutine(
   article: StoryRoutineArticle,
-  target: ImportTarget,
   groupKey: string,
 ): ImportStoryResult {
   const id = storyArticleCategoryKey(article);
@@ -53,10 +49,6 @@ export function importStoryAsRoutine(
 
   registerOtherCategoryResolverFromStorage();
   useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
-
-  if (target === 'today') {
-    appendPriorityCategoryKeysIfMissing([id]);
-  }
 
   return { categoryKey: id, created: !existed };
 }
