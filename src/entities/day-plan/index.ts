@@ -381,10 +381,12 @@ export type {
   ReadingAladinBook,
   ReadingBookEntry,
   ReadingBookStatus,
+  ReadingLibrarySortOrder,
   ReadingLiveActivityConfig,
   ReadingMetricKey
 } from './lib/readingLiveActivityConfig';
 export {
+  bookMatchesReadingLibraryQuery,
   deriveReadingBookProgress,
   ensureReadingBookPages,
   firstAladinBookEntry,
@@ -392,6 +394,9 @@ export {
   normalizeReadingBookMemo,
   normalizeReadingBookStatus,
   READING_BOOK_MEMO_MAX,
+  resolveReadingBookAddedAtMs,
+  sortReadingBooksByAddedAt,
+  sortReadingBooksByNewestFirst,
 } from './lib/readingLiveActivityConfig';
 export type { PriorityLayoutLinkMode } from './lib/priorityLayoutLinkMode';
 export { buildSpineImportFromBag } from './lib/buildSpineImportFromBag';

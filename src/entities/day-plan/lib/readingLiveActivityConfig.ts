@@ -20,6 +20,8 @@ export type ReadingBookEntry = {
   startPage: number;
   targetPage: number;
   status?: ReadingBookStatus;
+  /** 서재 등록 시각(ms) — 최신순 정렬용 */
+  addedAtMs?: number;
   /** 읽는 중 간단 메모 */
   memo?: string;
   aladin?: ReadingAladinBook | null;
@@ -92,6 +94,57 @@ export function makeReadingBookId(): string {
   return `rb-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+function resolveReadingBookAddedAtMsFromId(id: string): number | null {
+  const match = /^rb-([a-z0-9]+)-/i.exec(id);
+  if (!match) return null;
+  const parsed = parseInt(match[1]!, 36);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function normalizeReadingBookAddedAtMs(raw: unknown, id: string): number {
+  if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) {
+    return Math.round(raw);
+  }
+  return resolveReadingBookAddedAtMsFromId(id) ?? 0;
+}
+
+/** 서재 정렬·표시용 등록 시각 */
+export function resolveReadingBookAddedAtMs(
+  book: Pick<ReadingBookEntry, 'id' | 'addedAtMs'>,
+): number {
+  if (typeof book.addedAtMs === 'number' && Number.isFinite(book.addedAtMs) && book.addedAtMs > 0) {
+    return Math.round(book.addedAtMs);
+  }
+  return resolveReadingBookAddedAtMsFromId(book.id) ?? 0;
+}
+
+export type ReadingLibrarySortOrder = 'newest' | 'oldest';
+
+export function sortReadingBooksByAddedAt(
+  books: readonly ReadingBookEntry[],
+  order: ReadingLibrarySortOrder = 'newest',
+): ReadingBookEntry[] {
+  return [...books].sort((a, b) => {
+    const diff = resolveReadingBookAddedAtMs(b) - resolveReadingBookAddedAtMs(a);
+    return order === 'newest' ? diff : -diff;
+  });
+}
+
+export function sortReadingBooksByNewestFirst(
+  books: readonly ReadingBookEntry[],
+): ReadingBookEntry[] {
+  return sortReadingBooksByAddedAt(books, 'newest');
+}
+
+export function bookMatchesReadingLibraryQuery(book: ReadingBookEntry, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const author = book.aladin?.author?.trim() ?? '';
+  const status = normalizeReadingBookStatus(book.status);
+  const statusKo = status === 'want' ? '읽고 싶은' : status === 'done' ? '완료' : '읽는 중';
+  return [book.title, author, statusKo].some((part) => part.toLowerCase().includes(q));
+}
+
 function normalizeBookEntry(
   input: unknown,
   fallbackTarget = DEFAULT_READING_LIVE_ACTIVITY_CONFIG.targetPage,
@@ -111,6 +164,7 @@ function normalizeBookEntry(
       defaultTargetPageForBook(aladin, fallbackTarget),
     ),
     status: normalizeReadingBookStatus(raw.status),
+    addedAtMs: normalizeReadingBookAddedAtMs(raw.addedAtMs, id),
     memo: normalizeReadingBookMemo(raw.memo),
     aladin,
   };
@@ -129,6 +183,7 @@ export function ensureReadingBookPages(
       defaultTargetPageForBook(aladin, fallbackTarget),
     ),
     status: normalizeReadingBookStatus(entry.status),
+    addedAtMs: normalizeReadingBookAddedAtMs(entry.addedAtMs, entry.id),
     memo: normalizeReadingBookMemo(entry.memo),
     aladin,
   };
@@ -166,6 +221,7 @@ function migrateBookEntries(
       startPage,
       targetPage: defaultTargetPageForBook(aladinBook, targetPage),
       status: 'reading',
+      addedAtMs: Date.now(),
       aladin: aladinBook,
     },
   ];

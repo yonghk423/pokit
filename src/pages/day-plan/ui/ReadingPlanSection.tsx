@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { useDayPlanDraftStore } from '@entities/day-plan';
 import {
@@ -91,18 +91,12 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
 
   return (
     <View style={[styles.root, { backgroundColor: c.containerLow }]}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        <ReadingSettings
-          rhythmTitle="독서"
-          categoryKey="reading"
-          dataConfig={dataConfig}
-          onChangeDataConfig={handleChangeDataConfig}
-        />
-      </ScrollView>
+      <ReadingSettings
+        rhythmTitle="독서"
+        categoryKey="reading"
+        dataConfig={dataConfig}
+        onChangeDataConfig={handleChangeDataConfig}
+      />
     </View>
   );
 }
@@ -112,12 +106,5 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     width: '100%',
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 24,
   },
 });

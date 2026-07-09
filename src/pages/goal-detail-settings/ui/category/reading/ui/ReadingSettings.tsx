@@ -1,17 +1,21 @@
+import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import {
   DEFAULT_READING_LIVE_ACTIVITY_CONFIG,
+  bookMatchesReadingLibraryQuery,
   ensureReadingBookPages,
   getInitialReadingLiveActivityConfig,
   makeReadingBookId,
   normalizeReadingBookStatus,
   normalizeReadingLiveActivityConfig,
   normalizeReadingMetricSelection,
+  sortReadingBooksByAddedAt,
   type ReadingBookEntry,
   type ReadingBookStatus,
+  type ReadingLibrarySortOrder,
   type ReadingLiveActivityConfig,
 } from '@entities/day-plan';
 import {
@@ -29,6 +33,15 @@ import { ReadingAddBookSheet } from './ReadingAddBookSheet';
 import { ReadingBookDetailSheet } from './ReadingBookDetailSheet';
 
 import type { GoalDetailCategoryKey } from '../../../../model/types';
+
+const LIBRARY_SORT_LABELS: Record<ReadingLibrarySortOrder, string> = {
+  newest: '최신순',
+  oldest: '오래된순',
+};
+
+function nextLibrarySortOrder(order: ReadingLibrarySortOrder): ReadingLibrarySortOrder {
+  return order === 'newest' ? 'oldest' : 'newest';
+}
 
 type LibraryTab = 'all' | ReadingBookStatus;
 
@@ -145,6 +158,9 @@ export function ReadingSettings({
   const [summary, setSummary] = useState('');
   const [activeTab, setActiveTab] = useState<LibraryTab>('all');
   const [detailBookId, setDetailBookId] = useState<string | null>(null);
+  const [libraryQuery, setLibraryQuery] = useState('');
+  const [listSearchActive, setListSearchActive] = useState(false);
+  const [librarySortOrder, setLibrarySortOrder] = useState<ReadingLibrarySortOrder>('newest');
 
   const lastPushedRef = useRef<string | null>(null);
   const hydratedKeyRef = useRef<string | null>(null);
@@ -182,10 +198,13 @@ export function ReadingSettings({
     onChangeDataConfig(draftReading);
   }, [draftReading, onChangeDataConfig]);
 
-  const filteredBooks = useMemo(
-    () => books.filter((book) => bookMatchesTab(book, activeTab)),
-    [activeTab, books],
-  );
+  const displayBooks = useMemo(() => {
+    const tabbed = books.filter((book) => bookMatchesTab(book, activeTab));
+    const sorted = sortReadingBooksByAddedAt(tabbed, librarySortOrder);
+    const q = libraryQuery.trim();
+    if (!q) return sorted;
+    return sorted.filter((book) => bookMatchesReadingLibraryQuery(book, q));
+  }, [activeTab, books, libraryQuery, librarySortOrder]);
 
   const detailBook = useMemo(
     () => (detailBookId ? books.find((book) => book.id === detailBookId) ?? null : null),
@@ -195,27 +214,30 @@ export function ReadingSettings({
   const addManualBook = (title: string) => {
     const trimmed = title.trim();
     if (!trimmed) return;
+    const now = Date.now();
     setBooks((prev) => [
-      ...prev,
       {
         id: makeReadingBookId(),
         title: trimmed,
         startPage: 1,
         targetPage: 100,
         status: activeTab === 'done' ? 'done' : 'reading',
+        addedAtMs: now,
       },
+      ...prev,
     ]);
   };
 
   const addAladinBook = (book: AladinBookDetail) => {
+    const now = Date.now();
     setBooks((prev) => [
-      ...prev,
       {
         id: makeReadingBookId(),
         title: book.title,
         startPage: 1,
         targetPage: book.totalPages && book.totalPages > 0 ? book.totalPages : 100,
         status: activeTab === 'done' ? 'done' : 'reading',
+        addedAtMs: now,
         aladin: {
           itemId: book.itemId,
           link: book.link,
@@ -224,6 +246,7 @@ export function ReadingSettings({
           totalPages: book.totalPages,
         },
       },
+      ...prev,
     ]);
   };
 
@@ -259,7 +282,7 @@ export function ReadingSettings({
             {aladinEnabled ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="도서 검색"
+                accessibilityLabel="알라딘 도서 검색"
                 onPress={() => setSearchSheetVisible(true)}
                 style={[styles.headerIconBtn, { borderColor: c.onSurface }]}>
                 <IconSymbol name="magnifyingglass" size={15} color={c.onSurface} />
@@ -297,29 +320,103 @@ export function ReadingSettings({
           })}
         </View>
 
-        {filteredBooks.length > 0 ? (
-          <View style={[styles.listShell, { borderColor: c.outlineVariant }]}>
-            {filteredBooks.map((entry, index) => (
-              <ReadingBookListRow
-                key={entry.id}
-                entry={entry}
-                palette={palette}
-                isDark={isDark}
-                onPress={() => setDetailBookId(entry.id)}
-                showDivider={index > 0}
-              />
-            ))}
+        {books.length > 0 ? (
+          <View style={[styles.listMetaRow, { borderBottomColor: c.outlineVariant }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`정렬: ${LIBRARY_SORT_LABELS[librarySortOrder]}`}
+              hitSlop={8}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                setLibrarySortOrder((order) => nextLibrarySortOrder(order));
+              }}
+              style={styles.listSortTrigger}>
+              <ThemedText style={[styles.listMetaText, { color: c.onVariant }]}>
+                {LIBRARY_SORT_LABELS[librarySortOrder]}
+              </ThemedText>
+              <IconSymbol name="arrow.up.arrow.down" size={13} color={c.onVariant} />
+            </Pressable>
+            <View
+              style={[
+                styles.listSearchSlot,
+                (listSearchActive || libraryQuery.length > 0) && styles.listSearchSlotExpanded,
+              ]}>
+              {listSearchActive || libraryQuery.length > 0 ? (
+                <>
+                  <IconSymbol name="text.magnifyingglass" size={13} color={c.onVariant} />
+                  <TextInput
+                    value={libraryQuery}
+                    onChangeText={setLibraryQuery}
+                    placeholder="제목·작가"
+                    placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
+                    returnKeyType="search"
+                    autoFocus={listSearchActive}
+                    onBlur={() => {
+                      if (!libraryQuery.trim()) setListSearchActive(false);
+                    }}
+                    style={[styles.listSearchInputCompact, { color: c.onSurface }]}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="목록 검색 닫기"
+                    hitSlop={8}
+                    onPress={() => {
+                      setLibraryQuery('');
+                      setListSearchActive(false);
+                    }}
+                    style={styles.listSearchCloseBtn}>
+                    <IconSymbol name="xmark" size={12} color={c.onVariant} />
+                  </Pressable>
+                </>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="도서 목록 검색"
+                  hitSlop={8}
+                  onPress={() => setListSearchActive(true)}
+                  style={styles.listSearchTriggerBtn}>
+                  <ThemedText style={[styles.listSearchTrigger, { color: c.onVariant }]}>검색</ThemedText>
+                </Pressable>
+              )}
+            </View>
           </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyTitle, { color: c.onSurface }]}>
-              {activeTab === 'all' ? '아직 담긴 책이 없어요' : '이 목록에 책이 없어요'}
-            </ThemedText>
-            <ThemedText style={[styles.emptyBody, { color: c.onVariant }]}>
-              우측 상단 + 또는 검색으로 책을 추가해 주세요.
-            </ThemedText>
-          </View>
-        )}
+        ) : null}
+
+        <ScrollView
+          style={styles.listScroll}
+          contentContainerStyle={styles.listScrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
+          {displayBooks.length > 0 ? (
+            <View style={[styles.listShell, { borderColor: c.outlineVariant }]}>
+              {displayBooks.map((entry, index) => (
+                <ReadingBookListRow
+                  key={entry.id}
+                  entry={entry}
+                  palette={palette}
+                  isDark={isDark}
+                  onPress={() => setDetailBookId(entry.id)}
+                  showDivider={index > 0}
+                />
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <ThemedText style={[styles.emptyTitle, { color: c.onSurface }]}>
+                {libraryQuery.trim().length > 0
+                  ? '검색 결과가 없어요'
+                  : activeTab === 'all'
+                    ? '아직 담긴 책이 없어요'
+                    : '이 목록에 책이 없어요'}
+              </ThemedText>
+              <ThemedText style={[styles.emptyBody, { color: c.onVariant }]}>
+                {libraryQuery.trim().length > 0
+                  ? '다른 검색어로 다시 찾아 보세요.'
+                  : '우측 상단 + 로 책을 추가해 주세요.'}
+              </ThemedText>
+            </View>
+          )}
+        </ScrollView>
       </View>
 
       <ReadingBookDetailSheet
@@ -360,8 +457,8 @@ export function ReadingSettings({
 }
 
 const styles = StyleSheet.create({
-  root: { gap: 0, width: '100%' },
-  libraryCanvas: { gap: 0, width: '100%' },
+  root: { flex: 1, minHeight: 0, width: '100%' },
+  libraryCanvas: { flex: 1, minHeight: 0, width: '100%' },
   libraryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -406,6 +503,75 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     marginTop: 10,
     marginBottom: -StyleSheet.hairlineWidth,
+  },
+
+  listMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    height: 48,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  listMetaText: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+    flexShrink: 0,
+  },
+  listSortTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
+    height: 32,
+  },
+  listSearchSlot: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 8,
+    minWidth: 0,
+    height: 32,
+  },
+  listSearchSlotExpanded: {
+    justifyContent: 'flex-start',
+  },
+  listSearchTriggerBtn: {
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingHorizontal: 2,
+  },
+  listSearchTrigger: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+    textDecorationLine: 'underline',
+  },
+  listSearchCloseBtn: {
+    width: 24,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listSearchInputCompact: {
+    flex: 1,
+    minWidth: 0,
+    height: 32,
+    fontSize: 14,
+    fontWeight: '500',
+    paddingVertical: 0,
+  },
+
+  listScroll: {
+    flex: 1,
+    minHeight: 0,
+  },
+  listScrollContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
   },
 
   listShell: {

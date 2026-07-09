@@ -1,4 +1,5 @@
 import {
+  bookMatchesReadingLibraryQuery,
   deriveReadingBookProgress,
   deriveReadingProgress,
   ensureReadingBookPages,
@@ -8,6 +9,9 @@ import {
   normalizeReadingLiveActivityConfig,
   normalizeReadingMetricSelection,
   readingDisplayTitle,
+  sortReadingBooksByAddedAt,
+  sortReadingBooksByNewestFirst,
+  type ReadingBookEntry,
 } from './readingLiveActivityConfig';
 
 describe('readingLiveActivityConfig', () => {
@@ -185,5 +189,54 @@ describe('readingLiveActivityConfig', () => {
       books: [{ id: 'b2', title: '레거시', startPage: 1, targetPage: 80 }],
     });
     expect(legacy.books[0].status).toBe('reading');
+  });
+
+  it('sorts books by newest registration first', () => {
+    const sorted = sortReadingBooksByNewestFirst([
+      { id: 'rb-100-aaaa', title: '오래된 책', startPage: 1, targetPage: 100, addedAtMs: 100 },
+      { id: 'rb-300-bbbb', title: '최신 책', startPage: 1, targetPage: 100, addedAtMs: 300 },
+      { id: 'rb-200-cccc', title: '중간 책', startPage: 1, targetPage: 100, addedAtMs: 200 },
+    ]);
+    expect(sorted.map((book) => book.title)).toEqual(['최신 책', '중간 책', '오래된 책']);
+  });
+
+  it('sorts books by oldest registration first', () => {
+    const sorted = sortReadingBooksByAddedAt(
+      [
+        { id: 'rb-100-aaaa', title: '오래된 책', startPage: 1, targetPage: 100, addedAtMs: 100 },
+        { id: 'rb-300-bbbb', title: '최신 책', startPage: 1, targetPage: 100, addedAtMs: 300 },
+        { id: 'rb-200-cccc', title: '중간 책', startPage: 1, targetPage: 100, addedAtMs: 200 },
+      ],
+      'oldest',
+    );
+    expect(sorted.map((book) => book.title)).toEqual(['오래된 책', '중간 책', '최신 책']);
+  });
+
+  it('filters library query by title and author', () => {
+    const book: ReadingBookEntry = {
+      id: 'b1',
+      title: '어린 왕자',
+      startPage: 1,
+      targetPage: 100,
+      aladin: {
+        itemId: 1,
+        link: 'https://aladin.co.kr/1',
+        coverUrl: '',
+        author: '생텍쥐페리',
+        totalPages: 120,
+      },
+    };
+    expect(bookMatchesReadingLibraryQuery(book, '왕자')).toBe(true);
+    expect(bookMatchesReadingLibraryQuery(book, '생텍')).toBe(true);
+    expect(bookMatchesReadingLibraryQuery(book, '없는책')).toBe(false);
+  });
+
+  it('infers addedAtMs from reading book id when missing', () => {
+    const ts = Date.now();
+    const id = `rb-${ts.toString(36)}-abcd`;
+    const cfg = normalizeReadingLiveActivityConfig({
+      books: [{ id, title: '테스트', startPage: 1, targetPage: 50 }],
+    });
+    expect(cfg.books[0]?.addedAtMs).toBe(ts);
   });
 });
