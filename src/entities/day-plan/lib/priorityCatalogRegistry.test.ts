@@ -1,8 +1,24 @@
 import {
   filterKeysToPriorityCatalog,
+  isNonDeletableCatalogKey,
   resolveUserBagRoutineCatalogKeys,
   sanitizePriorityCategoryOrderKeys,
 } from './priorityCatalogRegistry';
+
+describe('isNonDeletableCatalogKey', () => {
+  it('protects standard catalog keys and builtin preset flows', () => {
+    expect(isNonDeletableCatalogKey('reading')).toBe(true);
+    expect(isNonDeletableCatalogKey('work')).toBe(true);
+    expect(isNonDeletableCatalogKey('healthIntake')).toBe(true);
+    expect(isNonDeletableCatalogKey('fasting')).toBe(true);
+    expect(isNonDeletableCatalogKey('customFlow:preset_daily_clean')).toBe(true);
+    expect(isNonDeletableCatalogKey('customFlow:preset_stretching')).toBe(true);
+  });
+
+  it('allows deleting user-created custom flows', () => {
+    expect(isNonDeletableCatalogKey('customFlow:abcdefgh1234')).toBe(false);
+  });
+});
 
 describe('resolveUserBagRoutineCatalogKeys', () => {
   it('prefers catalog selection over order so applied fixed routines do not leak', () => {

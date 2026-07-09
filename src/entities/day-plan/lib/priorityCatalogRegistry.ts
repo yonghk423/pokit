@@ -2,6 +2,7 @@ import {
   listAllCustomFlowCatalogEntries,
   loadHiddenStandardCatalogKeys,
 } from '@shared/lib/storage';
+import { isBuiltinPresetCustomFlowId } from '@shared/lib/storage/defaultPriorityCatalog';
 
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 
@@ -23,6 +24,21 @@ export const PRIORITY_CATALOG_ALL_STANDARD_KEYS = [
   'work',
   'other',
 ] as const;
+
+/** 카탈로그 관리에서 삭제(숨김)할 수 없는 항목 — 표준 카테고리 + 앱 기본 프리셋 루틴 */
+export function isNonDeletableCatalogKey(key: string): boolean {
+  const trimmed = key.trim();
+  if (!trimmed) return false;
+  if (isCustomFlowCategoryKey(trimmed)) {
+    return isBuiltinPresetCustomFlowId(trimmed);
+  }
+  return getPriorityCatalogStandardKeys().includes(trimmed);
+}
+
+/** @deprecated `isNonDeletableCatalogKey` 사용 */
+export function isNonDeletableStandardCatalogKey(key: string): boolean {
+  return isNonDeletableCatalogKey(key);
+}
 
 /** 담기 카탈로그에 노출되는 표준 키 */
 export function getPriorityCatalogStandardKeys(): string[] {

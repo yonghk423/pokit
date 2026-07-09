@@ -346,6 +346,8 @@ export {
   filterKeysToPriorityCatalog,
   getPriorityCatalogAllowedKeySet,
   getPriorityCatalogStandardKeys,
+  isNonDeletableCatalogKey,
+  isNonDeletableStandardCatalogKey,
   isPriorityCatalogAllowedKey,
   RETIRED_STANDARD_CATALOG_KEYS,
   resolveUserBagRoutineCatalogKeys,

@@ -222,6 +222,11 @@ export function isRemovedBuiltinCustomGroupKey(key: string): boolean {
   return key.startsWith('customGroup:builtin_');
 }
 
+/** 앱 기본 시드 커스텀 플로우 — 사용자가 만든 `customFlow:` 와 구분 */
+export function isBuiltinPresetCustomFlowId(id: string): boolean {
+  return id.trim().startsWith('customFlow:preset_');
+}
+
 const ACTIVE_BUILTIN_CUSTOM_FLOW_ICON_BY_ID = Object.fromEntries(
   DEFAULT_BUILTIN_CUSTOM_FLOWS.map((flow) => [flow.id, flow.icon]),
 ) as Record<string, string>;

@@ -10,7 +10,12 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { formatMinuteOfDayKo, resolveCategoryCatalogIcon, useDayPlanDraftStore } from '@entities/day-plan';
+import {
+  formatMinuteOfDayKo,
+  isNonDeletableCatalogKey,
+  resolveCategoryCatalogIcon,
+  useDayPlanDraftStore,
+} from '@entities/day-plan';
 import { DAY_MEAL_SLOT_LABEL, type CustomCatalogGroup, type CustomFlowCatalogEntry, type DayMealSlot } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -612,7 +617,9 @@ function renderRows(
         onMoveCustomFlow ? () => onMoveCustomFlow(cat.key, cat.label) : undefined
       }
       onDeleteItem={
-        onDeleteCatalogItem ? () => onDeleteCatalogItem(cat.key, cat.label) : undefined
+        onDeleteCatalogItem && !isNonDeletableCatalogKey(cat.key)
+          ? () => onDeleteCatalogItem(cat.key, cat.label)
+          : undefined
       }
       showMealSlotPicker={Boolean(sectionsCatalogOptions)}
       selectedMealSlots={
