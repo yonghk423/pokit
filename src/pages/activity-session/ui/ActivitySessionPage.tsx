@@ -27,6 +27,10 @@ import {
   normalizeWorkDetailConfig,
   parseHHmmToMinutes,
   readingDisplayTitle,
+  readingBookExternalLinkLabel,
+  resolveReadingBookCatalogSource,
+  resolveReadingBookExternalLink,
+  resolveReadingBookTotalPages,
   resolveBlockCategoryKey,
   resolveCategoryCatalogIcon,
   toRuntimeTiming,
@@ -37,6 +41,7 @@ import {
 import { useHistoryStore } from '@entities/history';
 import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
 import { AladinAttributionLine, openAladinProductPage } from '@features/aladin-book-search';
+import { OpenLibraryAttributionLine, openOpenLibraryBookPage } from '@features/open-library-book-search';
 import {
   buildLiveActivityChecklistRows,
   buildLiveActivityPayloadForBlock,
@@ -832,7 +837,8 @@ export function ActivitySessionPage() {
               aladin: readingCfg.aladinBook ?? null,
             },
           ];
-    const hasAladinBook = sessionBooks.some((book) => !!book.aladin);
+    const hasAladinBook = sessionBooks.some((book) => book.aladin);
+    const hasOpenLibraryBook = sessionBooks.some((book) => book.openLibrary);
 
     return (
       <SessionImmersionLayout
@@ -872,11 +878,14 @@ export function ActivitySessionPage() {
         }>
         {sessionBooks.map((book) => {
           const pageRange = `${book.startPage}P → ${book.targetPage}P`;
+          const catalogSource = resolveReadingBookCatalogSource(book);
+          const externalLink = resolveReadingBookExternalLink(book);
+          const externalLinkLabel = readingBookExternalLinkLabel(catalogSource);
           const { pagesRead: pagesToRead, progressPct: readingProgressPct } =
             deriveReadingBookProgress({
               startPage: book.startPage,
               targetPage: book.targetPage,
-              totalPages: book.aladin?.totalPages,
+              totalPages: resolveReadingBookTotalPages(book),
             });
           const readTrack01 = Math.max(progress, Math.min(1, Math.max(0, readingProgressPct) / 100));
 
@@ -900,17 +909,23 @@ export function ActivitySessionPage() {
                     {book.title}
                   </ThemedText>
                 ) : null}
-                {book.aladin?.link ? (
+                {externalLink && externalLinkLabel ? (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="알라딘에서 도서 보기"
-                    onPress={() => void openAladinProductPage(book.aladin!.link)}
+                    accessibilityLabel={externalLinkLabel}
+                    onPress={() => {
+                      if (catalogSource === 'aladin') {
+                        void openAladinProductPage(externalLink);
+                        return;
+                      }
+                      void openOpenLibraryBookPage(externalLink);
+                    }}
                     style={({ pressed }) => [waterStyles.aladinLinkBtn, pressed && { opacity: 0.72 }]}>
                     <ThemedText
                       style={waterStyles.aladinLinkText}
                       lightColor={R.onSurface}
                       darkColor={R.onSurface}>
-                      알라딘에서 보기
+                      {externalLinkLabel}
                     </ThemedText>
                   </Pressable>
                 ) : null}
@@ -982,6 +997,7 @@ export function ActivitySessionPage() {
         })}
 
         {hasAladinBook ? <AladinAttributionLine color={R.muted} compact /> : null}
+        {hasOpenLibraryBook ? <OpenLibraryAttributionLine color={R.muted} compact /> : null}
 
         <ImmersionSplitRow>
           <ImmersionHalfCard borderColor={R.border}>

@@ -379,6 +379,19 @@ export {
   readingDisplayTitle
 } from './lib/readingLiveActivityConfig';
 export { normalizeReadingAladinBook } from './lib/readingAladinBook';
+export { normalizeReadingOpenLibraryBook } from './lib/readingOpenLibraryBook';
+export type { ReadingOpenLibraryBook } from './lib/readingOpenLibraryBook';
+export {
+  defaultTargetPageForCatalogBook,
+  readingBookExternalLinkLabel,
+  readingBookShareLinkLabel,
+  resolveReadingBookAuthor,
+  resolveReadingBookCatalogSource,
+  resolveReadingBookCoverUrl,
+  resolveReadingBookExternalLink,
+  resolveReadingBookTotalPages,
+} from './lib/readingBookCatalog';
+export type { ReadingBookCatalogSource } from './lib/readingBookCatalog';
 export type {
   ReadingAladinBook,
   ReadingBookEntry,

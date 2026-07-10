@@ -5,6 +5,13 @@ import {
   type ReadingBookEntry,
   type ReadingBookStatus,
 } from './readingLiveActivityConfig';
+import {
+  readingBookShareLinkLabel,
+  resolveReadingBookAuthor,
+  resolveReadingBookCatalogSource,
+  resolveReadingBookExternalLink,
+  resolveReadingBookTotalPages,
+} from './readingBookCatalog';
 
 const STATUS_LABEL_KO: Record<ReadingBookStatus, string> = {
   want: '읽고 싶은',
@@ -16,10 +23,7 @@ const STATUS_LABEL_KO: Record<ReadingBookStatus, string> = {
 export function readingBookEntryToShareText(entry: ReadingBookEntry): string {
   const resolved = ensureReadingBookPages(entry);
   const status = normalizeReadingBookStatus(resolved.status);
-  const totalPages =
-    typeof resolved.aladin?.totalPages === 'number' && resolved.aladin.totalPages > 0
-      ? resolved.aladin.totalPages
-      : null;
+  const totalPages = resolveReadingBookTotalPages(resolved);
   const { pagesRead, progressPct } = deriveReadingBookProgress({
     startPage: resolved.startPage,
     targetPage: resolved.targetPage,
@@ -28,7 +32,7 @@ export function readingBookEntryToShareText(entry: ReadingBookEntry): string {
 
   const lines: string[] = [resolved.title];
 
-  const author = resolved.aladin?.author?.trim();
+  const author = resolveReadingBookAuthor(resolved);
   if (author) lines.push(`저자: ${author}`);
 
   lines.push(`상태: ${STATUS_LABEL_KO[status]}`);
@@ -41,8 +45,9 @@ export function readingBookEntryToShareText(entry: ReadingBookEntry): string {
   const memo = resolved.memo?.trim();
   if (memo) lines.push(`메모: ${memo}`);
 
-  const link = resolved.aladin?.link?.trim();
-  if (link) lines.push(`알라딘: ${link}`);
+  const link = resolveReadingBookExternalLink(resolved);
+  const linkLabel = readingBookShareLinkLabel(resolveReadingBookCatalogSource(resolved));
+  if (link && linkLabel) lines.push(`${linkLabel}: ${link}`);
 
   return lines.join('\n');
 }

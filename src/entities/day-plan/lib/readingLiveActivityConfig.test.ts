@@ -231,6 +231,23 @@ describe('readingLiveActivityConfig', () => {
     expect(bookMatchesReadingLibraryQuery(book, '없는책')).toBe(false);
   });
 
+  it('filters library query by open library author', () => {
+    const book: ReadingBookEntry = {
+      id: 'b2',
+      title: 'Harry Potter',
+      startPage: 1,
+      targetPage: 100,
+      openLibrary: {
+        workKey: '/works/OL82563W',
+        link: 'https://openlibrary.org/works/OL82563W',
+        coverUrl: '',
+        author: 'J. K. Rowling',
+        totalPages: 309,
+      },
+    };
+    expect(bookMatchesReadingLibraryQuery(book, 'Rowling')).toBe(true);
+  });
+
   it('infers addedAtMs from reading book id when missing', () => {
     const ts = Date.now();
     const id = `rb-${ts.toString(36)}-abcd`;

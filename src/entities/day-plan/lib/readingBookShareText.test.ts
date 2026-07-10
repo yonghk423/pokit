@@ -27,6 +27,26 @@ describe('readingBookEntryToShareText', () => {
     expect(text).toContain('알라딘: https://www.aladin.co.kr');
   });
 
+  it('Open Library 링크를 포함한다', () => {
+    const text = readingBookEntryToShareText({
+      id: 'b3',
+      title: 'Harry Potter',
+      startPage: 1,
+      targetPage: 50,
+      status: 'reading',
+      openLibrary: {
+        workKey: '/works/OL82563W',
+        link: 'https://openlibrary.org/works/OL82563W',
+        coverUrl: '',
+        author: 'J. K. Rowling',
+        totalPages: 309,
+      },
+    });
+
+    expect(text).toContain('Open Library: https://openlibrary.org');
+    expect(text).toContain('저자: J. K. Rowling');
+  });
+
   it('메모·알라딘 정보가 없으면 해당 줄을 생략한다', () => {
     const text = readingBookEntryToShareText({
       id: 'b2',

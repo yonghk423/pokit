@@ -12,17 +12,15 @@ import {
   normalizeReadingBookStatus,
   normalizeReadingLiveActivityConfig,
   normalizeReadingMetricSelection,
+  resolveReadingBookAuthor,
+  resolveReadingBookCoverUrl,
   sortReadingBooksByAddedAt,
   type ReadingBookEntry,
   type ReadingBookStatus,
   type ReadingLibrarySortOrder,
   type ReadingLiveActivityConfig,
 } from '@entities/day-plan';
-import {
-  AladinBookSearchSheet,
-  type AladinBookDetail,
-} from '@features/aladin-book-search';
-import { isAladinApiConfigured } from '@shared/config/aladin';
+import { BookSearchSheet, type BookSearchSelection } from './BookSearchSheet';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -87,7 +85,8 @@ function ReadingBookListRow({
 }) {
   const c = palette;
   const status = normalizeReadingBookStatus(entry.status);
-  const author = entry.aladin?.author?.trim();
+  const author = resolveReadingBookAuthor(entry);
+  const coverUrl = resolveReadingBookCoverUrl(entry);
 
   return (
     <Pressable
@@ -98,8 +97,8 @@ function ReadingBookListRow({
         showDivider && [styles.listRowDivider, { borderTopColor: c.outlineVariant }],
         pressed && { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' },
       ]}>
-      {entry.aladin?.coverUrl ? (
-        <Image source={{ uri: entry.aladin.coverUrl }} style={styles.listCover} contentFit="cover" />
+      {coverUrl ? (
+        <Image source={{ uri: coverUrl }} style={styles.listCover} contentFit="cover" />
       ) : (
         <View
           style={[
@@ -228,18 +227,44 @@ export function ReadingSettings({
     ]);
   };
 
-  const addAladinBook = (book: AladinBookDetail) => {
+  const addCatalogBook = (selection: BookSearchSelection) => {
     const now = Date.now();
+    const base = {
+      id: makeReadingBookId(),
+      startPage: 1,
+      status: (activeTab === 'done' ? 'done' : 'reading') as ReadingBookStatus,
+      addedAtMs: now,
+    };
+
+    if (selection.source === 'aladin') {
+      const book = selection.book;
+      setBooks((prev) => [
+        {
+          ...base,
+          title: book.title,
+          targetPage: book.totalPages && book.totalPages > 0 ? book.totalPages : 100,
+          aladin: {
+            itemId: book.itemId,
+            link: book.link,
+            coverUrl: book.coverUrl,
+            author: book.author,
+            totalPages: book.totalPages,
+          },
+        },
+        ...prev,
+      ]);
+      return;
+    }
+
+    const book = selection.book;
     setBooks((prev) => [
       {
-        id: makeReadingBookId(),
+        ...base,
         title: book.title,
-        startPage: 1,
         targetPage: book.totalPages && book.totalPages > 0 ? book.totalPages : 100,
-        status: activeTab === 'done' ? 'done' : 'reading',
-        addedAtMs: now,
-        aladin: {
-          itemId: book.itemId,
+        openLibrary: {
+          workKey: book.workKey,
+          editionKey: book.editionKey,
           link: book.link,
           coverUrl: book.coverUrl,
           author: book.author,
@@ -259,7 +284,7 @@ export function ReadingSettings({
     if (detailBookId === id) setDetailBookId(null);
   };
 
-  const aladinEnabled = isAladinApiConfigured();
+  const searchEnabled = true;
 
   return (
     <View style={styles.root}>
@@ -279,10 +304,10 @@ export function ReadingSettings({
               style={[styles.headerIconBtn, { borderColor: c.onSurface }]}>
               <IconSymbol name="plus" size={15} color={c.onSurface} />
             </Pressable>
-            {aladinEnabled ? (
+            {searchEnabled ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="알라딘 도서 검색"
+                accessibilityLabel="도서 검색"
                 onPress={() => setSearchSheetVisible(true)}
                 style={[styles.headerIconBtn, { borderColor: c.onSurface }]}>
                 <IconSymbol name="magnifyingglass" size={15} color={c.onSurface} />
@@ -437,20 +462,20 @@ export function ReadingSettings({
       <ReadingAddBookSheet
         visible={addSheetVisible}
         palette={palette}
-        aladinEnabled={aladinEnabled}
+        searchEnabled={searchEnabled}
         onClose={() => setAddSheetVisible(false)}
         onAddManual={addManualBook}
         onOpenSearch={() => setSearchSheetVisible(true)}
       />
 
-      <AladinBookSearchSheet
+      <BookSearchSheet
         visible={searchSheetVisible}
         ink={c.onSurface}
         muted={c.onVariant}
         surface={c.surfaceLowest}
         line={c.outline}
         onClose={() => setSearchSheetVisible(false)}
-        onSelect={addAladinBook}
+        onSelect={addCatalogBook}
       />
     </View>
   );

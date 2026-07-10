@@ -20,7 +20,7 @@ type Palette = ReturnType<typeof goalDetailSettingsPalette>;
 type Props = {
   visible: boolean;
   palette: Palette;
-  aladinEnabled: boolean;
+  searchEnabled: boolean;
   onClose: () => void;
   onAddManual: (title: string) => void;
   onOpenSearch: () => void;
@@ -29,7 +29,7 @@ type Props = {
 export function ReadingAddBookSheet({
   visible,
   palette,
-  aladinEnabled,
+  searchEnabled,
   onClose,
   onAddManual,
   onOpenSearch,
@@ -96,13 +96,13 @@ export function ReadingAddBookSheet({
               <IconSymbol name="plus" size={16} color={c.surfaceLowest} />
             </Pressable>
           </View>
-          {aladinEnabled ? (
+          {searchEnabled ? (
             <Pressable
               accessibilityRole="button"
               onPress={openSearch}
               style={[styles.searchBtn, { borderColor: accent }]}>
               <IconSymbol name="magnifyingglass" size={14} color={accent} />
-              <ThemedText style={[styles.searchBtnText, { color: accent }]}>알라딘 도서 검색</ThemedText>
+              <ThemedText style={[styles.searchBtnText, { color: accent }]}>도서 검색</ThemedText>
             </Pressable>
           ) : null}
         </View>

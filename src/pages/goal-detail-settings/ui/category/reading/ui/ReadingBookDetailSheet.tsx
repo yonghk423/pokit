@@ -22,10 +22,17 @@ import {
   normalizeReadingBookStatus,
   READING_BOOK_MEMO_MAX,
   readingBookEntryToShareText,
+  readingBookExternalLinkLabel,
+  resolveReadingBookAuthor,
+  resolveReadingBookCatalogSource,
+  resolveReadingBookCoverUrl,
+  resolveReadingBookExternalLink,
+  resolveReadingBookTotalPages,
   type ReadingBookEntry,
   type ReadingBookStatus,
 } from '@entities/day-plan';
 import { AladinAttributionLine, openAladinProductPage } from '@features/aladin-book-search';
+import { OpenLibraryAttributionLine, openOpenLibraryBookPage } from '@features/open-library-book-search';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -83,7 +90,9 @@ export function ReadingBookDetailSheet({
   useEffect(() => {
     if (!resolved) return;
     setStartPageStr(pageToInputValue(resolved.startPage, 1));
-    setTargetPageStr(pageToInputValue(resolved.targetPage, resolved.aladin?.totalPages ?? 100));
+    setTargetPageStr(
+      pageToInputValue(resolved.targetPage, resolveReadingBookTotalPages(resolved) ?? 100),
+    );
     setMemo(resolved.memo ?? '');
   }, [resolved]);
 
@@ -128,17 +137,18 @@ export function ReadingBookDetailSheet({
 
   const startPage = Math.max(0, parseInt(startPageStr, 10) || 0);
   const targetPage = Math.max(0, parseInt(targetPageStr, 10) || 0);
-  const totalPages =
-    typeof entry.aladin?.totalPages === 'number' && entry.aladin.totalPages > 0
-      ? entry.aladin.totalPages
-      : null;
+  const totalPages = resolveReadingBookTotalPages(entry);
   const { pagesRead, progressPct } = deriveReadingBookProgress({
     startPage,
     targetPage,
     totalPages,
   });
   const status = normalizeReadingBookStatus(entry.status);
-  const metaLine = entry.aladin?.author?.trim() || null;
+  const metaLine = resolveReadingBookAuthor(entry) || null;
+  const coverUrl = resolveReadingBookCoverUrl(entry);
+  const externalLink = resolveReadingBookExternalLink(entry);
+  const catalogSource = resolveReadingBookCatalogSource(entry);
+  const externalLinkLabel = readingBookExternalLinkLabel(catalogSource);
 
   const commitPages = (nextStart: number, nextTarget: number) => {
     onChange(
@@ -247,9 +257,9 @@ export function ReadingBookDetailSheet({
               keyboardDismissMode="none"
               showsVerticalScrollIndicator={false}>
             <View style={styles.bookHero}>
-              {entry.aladin?.coverUrl ? (
+              {coverUrl ? (
                 <Image
-                  source={{ uri: entry.aladin.coverUrl }}
+                  source={{ uri: coverUrl }}
                   style={styles.bookCover}
                   contentFit="cover"
                 />
@@ -265,13 +275,19 @@ export function ReadingBookDetailSheet({
                     {metaLine}
                   </ThemedText>
                 ) : null}
-                {entry.aladin?.link ? (
+                {externalLink && externalLinkLabel ? (
                   <Pressable
                     accessibilityRole="button"
-                    onPress={() => void openAladinProductPage(entry.aladin!.link)}
+                    onPress={() => {
+                      if (catalogSource === 'aladin') {
+                        void openAladinProductPage(externalLink);
+                        return;
+                      }
+                      void openOpenLibraryBookPage(externalLink);
+                    }}
                     style={({ pressed }) => pressed && { opacity: 0.72 }}>
                     <ThemedText style={[styles.aladinLink, { color: c.onVariant }]}>
-                      알라딘에서 보기
+                      {externalLinkLabel}
                     </ThemedText>
                   </Pressable>
                 ) : null}
@@ -427,7 +443,11 @@ export function ReadingBookDetailSheet({
               />
             </View>
 
-            {entry.aladin ? <AladinAttributionLine color={c.outline} compact /> : null}
+            {catalogSource === 'aladin' ? (
+              <AladinAttributionLine color={c.outline} compact />
+            ) : catalogSource === 'openlibrary' ? (
+              <OpenLibraryAttributionLine color={c.outline} compact />
+            ) : null}
 
             <Pressable
               accessibilityRole="button"
