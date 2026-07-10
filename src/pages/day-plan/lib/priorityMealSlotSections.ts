@@ -3,6 +3,7 @@ import {
   DAY_MEAL_SLOT_LABEL,
   DAY_MEAL_SLOT_ORDER,
   getMealSlotStartHhmm,
+  mealSlotProgressTowardNext,
   normalizeDayMealSlotSchedule,
   resolveCurrentMealSlotFromSchedule,
   resolveDefaultMealSlotForCategory,
@@ -26,6 +27,8 @@ export type PriorityMealSlotSection<T extends { key: string }> = {
   hintTime: string;
   items: T[];
   isCurrent: boolean;
+  /** 현재 구간일 때 다음 구간까지의 진행률(0~1) */
+  progressToNext?: number;
 };
 
 export type PriorityMealSlotSectionsResult<T extends { key: string }> = {
@@ -86,13 +89,19 @@ function buildPriorityMealSlotSectionBuckets<T extends { key: string }>(
       ? resolveCurrentMealSlotFromSchedule(options.nowMin, schedule)
       : null;
 
-  const sections = DAY_MEAL_SLOT_ORDER.map((slot) => ({
-    slot,
-    title: DAY_MEAL_SLOT_LABEL[slot],
-    hintTime: getMealSlotStartHhmm(schedule, slot),
-    items: buckets.get(slot) ?? [],
-    isCurrent: currentSlot === slot,
-  })).filter((section) => includeEmptySections || section.items.length > 0);
+  const sections = DAY_MEAL_SLOT_ORDER.map((slot) => {
+    const isCurrent = currentSlot === slot;
+    return {
+      slot,
+      title: DAY_MEAL_SLOT_LABEL[slot],
+      hintTime: getMealSlotStartHhmm(schedule, slot),
+      items: buckets.get(slot) ?? [],
+      isCurrent,
+      ...(isCurrent && typeof options?.nowMin === 'number'
+        ? { progressToNext: mealSlotProgressTowardNext(options.nowMin, schedule, slot) }
+        : {}),
+    };
+  }).filter((section) => includeEmptySections || section.items.length > 0);
 
   return { sections, unslottedItems };
 }
@@ -187,13 +196,104 @@ export function buildEmptyPriorityMealSlotSections<T extends { key: string }>(
     typeof options?.nowMin === 'number'
       ? resolveCurrentMealSlotFromSchedule(options.nowMin, schedule)
       : null;
-  return DAY_MEAL_SLOT_ORDER.map((slot) => ({
-    slot,
-    title: DAY_MEAL_SLOT_LABEL[slot],
-    hintTime: getMealSlotStartHhmm(schedule, slot),
-    items: [],
-    isCurrent: currentSlot === slot,
-  }));
+  return DAY_MEAL_SLOT_ORDER.map((slot) => {
+    const isCurrent = currentSlot === slot;
+    return {
+      slot,
+      title: DAY_MEAL_SLOT_LABEL[slot],
+      hintTime: getMealSlotStartHhmm(schedule, slot),
+      items: [],
+      isCurrent,
+      ...(isCurrent && typeof options?.nowMin === 'number'
+        ? {
+            progressToNext: mealSlotProgressTowardNext(
+              options.nowMin,
+              schedule,
+              slot,
+            ),
+          }
+        : {}),
+    };
+  });
+}
+
+function parseWindowMinutes(hhmm: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(min) || h > 24 || min > 59) return null;
+  const total = h * 60 + min;
+  return total > 24 * 60 ? null : total;
+}
+
+function formatWindowMinutes(total: number): string {
+  const t = Math.max(0, Math.min(total, 24 * 60));
+  const h = Math.floor(t / 60);
+  const m = t % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * 구간(시간대) 목록을 하루 시작~마무리 창에 맞춥니다. (오늘 탭 구간 보기 전용, 표시만 보정)
+ * - 창 시작 시점에 활성인 구간을 맨 앞에 두고 그 시작 시각을 하루 시작으로 클램프.
+ * - 나머지는 창 순서(자정 넘김 포함)대로 정렬.
+ * - 창 밖 구간은 숨김. 단, 항목이 있는 구간은 데이터 유실 방지를 위해 뒤에 유지.
+ */
+export function clampMealSlotSectionsToWindow<
+  T extends { slot: DayMealSlot; hintTime: string; items: readonly unknown[] },
+>(sections: T[], priorityStart: string, priorityEnd: string, spansNextDay = false): T[] {
+  if (sections.length === 0) return sections;
+  const startMin = parseWindowMinutes(priorityStart);
+  const endMinRaw = parseWindowMinutes(priorityEnd);
+  if (startMin === null || endMinRaw === null) return sections;
+
+  // 시각만으로는 자정 넘김을 알 수 없어 다중일 여부(spansNextDay)를 함께 받는다.
+  const overnight = spansNextDay || endMinRaw <= startMin;
+  const windowLen = !overnight
+    ? endMinRaw - startMin
+    : endMinRaw === startMin
+      ? 24 * 60
+      : endMinRaw + 24 * 60 - startMin;
+
+  const mod = (n: number) => ((n % (24 * 60)) + 24 * 60) % (24 * 60);
+
+  const withMinutes = sections
+    .map((section) => {
+      const start = parseWindowMinutes(section.hintTime);
+      return start === null ? null : { section, start };
+    })
+    .filter((v): v is { section: T; start: number } => v !== null);
+  if (withMinutes.length === 0) return sections;
+
+  // 창 시작 직전(포함)에 가장 최근 시작한 구간이 창 시작 시점의 활성 구간
+  let activeIdx = 0;
+  let bestRot = Infinity;
+  withMinutes.forEach(({ start }, i) => {
+    const rot = mod(startMin - start);
+    if (rot < bestRot) {
+      bestRot = rot;
+      activeIdx = i;
+    }
+  });
+
+  const first = {
+    ...withMinutes[activeIdx]!.section,
+    hintTime: formatWindowMinutes(startMin),
+  } as T;
+
+  const rest = withMinutes
+    .filter((_, i) => i !== activeIdx)
+    .map((v) => ({ section: v.section, off: mod(v.start - startMin) }));
+
+  const inWindow = rest
+    .filter((v) => v.off > 0 && v.off < windowLen)
+    .sort((a, b) => a.off - b.off);
+  const outWithItems = rest
+    .filter((v) => v.off >= windowLen && v.section.items.length > 0)
+    .sort((a, b) => a.off - b.off);
+
+  return [first, ...inWindow.map((v) => v.section), ...outWithItems.map((v) => v.section)];
 }
 
 export function flattenPriorityMealSlotSectionKeys<T extends { key: string }>(

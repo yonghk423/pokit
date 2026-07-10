@@ -3,6 +3,7 @@ import {
   addReminderScheduleItem,
   removeReminderScheduleItem,
   updateReminderItemLabel,
+  updateReminderItemTime,
 } from './customFlowTemplateRuntime';
 
 describe('reminder schedule mutations', () => {
@@ -44,5 +45,33 @@ describe('reminder schedule mutations', () => {
   it('rejects duplicate time on add', () => {
     const base = getInitialReminderDataConfig();
     expect(addReminderScheduleItem(base, '09:00', '중복')).toBeNull();
+  });
+
+  it('updates time and migrates completion', () => {
+    const base = normalizeReminderDetailConfig({
+      templateKey: 'reminder',
+      reminderItems: [
+        { time: '09:00', label: '아침' },
+        { time: '18:00', label: '저녁' },
+      ],
+      completedTimes: ['09:00'],
+    });
+    const updated = updateReminderItemTime(base, '09:00', '8:30');
+    expect(updated?.reminderItems).toEqual([
+      { time: '08:30', label: '아침' },
+      { time: '18:00', label: '저녁' },
+    ]);
+    expect(updated?.completedTimes).toEqual(['08:30']);
+  });
+
+  it('rejects duplicate time on update', () => {
+    const base = normalizeReminderDetailConfig({
+      templateKey: 'reminder',
+      reminderItems: [
+        { time: '09:00', label: '아침' },
+        { time: '18:00', label: '저녁' },
+      ],
+    });
+    expect(updateReminderItemTime(base, '09:00', '18:00')).toBeNull();
   });
 });

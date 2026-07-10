@@ -16,10 +16,18 @@ export type BuildSpineTimelineModelInput = {
   nowMinutes: number;
   dayStartLabel?: string;
   dayEndLabel?: string;
+  dayStartDateCaption?: string;
+  dayEndDateCaption?: string;
 };
 
 type TimedItem =
-  | { kind: 'anchor'; role: 'dayStart' | 'dayEnd'; minutes: number; label: string }
+  | {
+      kind: 'anchor';
+      role: 'dayStart' | 'dayEnd';
+      minutes: number;
+      label: string;
+      dateCaption?: string;
+    }
   | { kind: 'block'; block: DayPlanBlock; startMinutes: number; endMinutes: number };
 
 function filterSpineBlocks(blocks: DayPlanBlock[]): DayPlanBlock[] {
@@ -74,6 +82,7 @@ function toRow(item: TimedItem): SpineTimelineRow {
       role: item.role,
       minutes: item.minutes,
       label: item.label,
+      ...(item.dateCaption ? { dateCaption: item.dateCaption } : {}),
     };
   }
   return {
@@ -102,6 +111,7 @@ export function buildSpineTimelineModel(input: BuildSpineTimelineModelInput): Sp
       role: 'dayStart',
       minutes: startMin,
       label: input.dayStartLabel ?? '하루 시작',
+      ...(input.dayStartDateCaption ? { dateCaption: input.dayStartDateCaption } : {}),
     },
     ...spineBlocksInWindow.map((block) => ({
       kind: 'block' as const,
@@ -114,6 +124,7 @@ export function buildSpineTimelineModel(input: BuildSpineTimelineModelInput): Sp
       role: 'dayEnd',
       minutes: endMin,
       label: input.dayEndLabel ?? '하루 마무리',
+      ...(input.dayEndDateCaption ? { dateCaption: input.dayEndDateCaption } : {}),
     },
   ];
 

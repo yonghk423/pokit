@@ -2,7 +2,10 @@ import * as fixedFlowSetsStorage from './fixedFlowSetsStorage';
 import { loadFixedFlowSetsState } from './fixedFlowSetsStorage';
 import { localStorageClient } from './localStorageClient';
 import {
+  appendRoutineCatalogSelectionKeys,
   loadPriorityCatalogFixedRoutineKeys,
+  loadRoutineCatalogSelectionKeys,
+  removeRoutineCatalogSelectionKey,
   savePriorityCatalogFixedRoutineKeys,
 } from './priorityCatalogFixedRoutinesStorage';
 import { StorageKeys } from './storageKeys';
@@ -12,6 +15,18 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
     jest.restoreAllMocks();
     localStorageClient.removeItem(StorageKeys.fixedFlowSets);
     localStorageClient.removeItem(StorageKeys.priorityCatalogFixedRoutines);
+  });
+
+  it('appends routine catalog selection keys without duplicates', () => {
+    savePriorityCatalogFixedRoutineKeys(['reading']);
+    appendRoutineCatalogSelectionKeys(['work', 'reading']);
+    expect(loadRoutineCatalogSelectionKeys()).toEqual(['reading', 'work']);
+  });
+
+  it('removes a routine catalog selection key', () => {
+    appendRoutineCatalogSelectionKeys(['reading', 'work']);
+    removeRoutineCatalogSelectionKey('reading');
+    expect(loadRoutineCatalogSelectionKeys()).toEqual(['work']);
   });
 
   it('saves and loads active fixed routine keys', () => {

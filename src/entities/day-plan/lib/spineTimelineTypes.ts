@@ -5,6 +5,8 @@ export type SpineTimelineAnchorRow = {
   role: 'dayStart' | 'dayEnd';
   minutes: number;
   label: string;
+  /** M월 D일 — 다중일·자정 넘김 구간에서 날짜 맥락 표시 */
+  dateCaption?: string;
 };
 
 export type SpineTimelineBlockRow = {

@@ -105,3 +105,29 @@ export function getMealSlotStartHhmm(
 ): string {
   return normalizeDayMealSlotSchedule(schedule)[slot];
 }
+
+/**
+ * 현재 구간 시작 → 다음 구간 시작까지 진행률(0~1).
+ * 자정을 넘는 밤→새벽도 처리합니다.
+ */
+export function mealSlotProgressTowardNext(
+  nowMin: number,
+  schedule: DayMealSlotSchedule,
+  currentSlot: DayMealSlot,
+): number {
+  const normalized = normalizeDayMealSlotSchedule(schedule);
+  const idx = DAY_MEAL_SLOT_ORDER.indexOf(currentSlot);
+  if (idx < 0) return 0;
+
+  const start = mealSlotStartMinutes(normalized, currentSlot);
+  const nextSlot = DAY_MEAL_SLOT_ORDER[idx + 1] ?? DAY_MEAL_SLOT_ORDER[0]!;
+  const nextStart = mealSlotStartMinutes(normalized, nextSlot);
+  const wraps = nextStart <= start;
+  const end = wraps ? nextStart + 24 * 60 : nextStart;
+  let now = Math.max(0, Math.min(Math.floor(nowMin), 24 * 60 - 1));
+  if (wraps && now < start) now += 24 * 60;
+
+  const span = end - start;
+  if (span <= 0) return 0;
+  return Math.max(0, Math.min(1, (now - start) / span));
+}

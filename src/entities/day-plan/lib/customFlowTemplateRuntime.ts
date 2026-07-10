@@ -261,6 +261,25 @@ export function updateReminderItemLabel(
   return withReminderItems(cfg, items);
 }
 
+export function updateReminderItemTime(
+  cfg: ReminderDetailDataConfig,
+  oldTime: string,
+  newTimeRaw: string,
+): ReminderDetailDataConfig | null {
+  const newTime = normalizeReminderTime(newTimeRaw);
+  if (!newTime) return null;
+  if (newTime === oldTime) return cfg;
+  if (cfg.reminderItems.some((item) => item.time === newTime)) return null;
+
+  const items = sortReminderScheduleItems(
+    cfg.reminderItems.map((item) =>
+      item.time === oldTime ? { ...item, time: newTime } : item,
+    ),
+  );
+  const completedTimes = cfg.completedTimes.map((t) => (t === oldTime ? newTime : t));
+  return withReminderItems({ ...cfg, completedTimes }, items);
+}
+
 export function addReminderScheduleItem(
   cfg: ReminderDetailDataConfig,
   timeRaw: string,

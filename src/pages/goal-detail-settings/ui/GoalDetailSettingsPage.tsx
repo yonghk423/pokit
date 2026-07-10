@@ -18,6 +18,7 @@ import {
   normalizeOtherDetailConfig,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
+  resolveCustomFlowTemplateKey,
   useDayPlanDraftStore,
   useDayPlanRuntimeStore,
   categoryReminderLabelKo,
@@ -31,6 +32,7 @@ import {
   rescheduleDayPlanNotifications,
   syncMedicineReminderNotifications,
 } from '@features/day-plan-notifications';
+import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { reconcileLiveActivityFromPlan } from '@features/live-activity-sync';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
@@ -339,6 +341,17 @@ export function GoalDetailSettingsPage() {
   }, [targetBlockIdsKey]);
 
   useEffect(() => {
+    for (const t of targets) {
+      if (!isCustomFlowCategoryKey(t.categoryKey)) continue;
+      const cfg =
+        loadedDataByBlockId[t.blockId] ?? loadGoalDetailCategoryConfig(t.categoryKey);
+      if (resolveCustomFlowTemplateKey(cfg) === 'reminder') {
+        void persistReminderTemplateNotificationRule(t.categoryKey, cfg);
+      }
+    }
+  }, [loadedDataByBlockId, targetBlockIdsKey, targets]);
+
+  useEffect(() => {
     const next: Record<string, string> = {};
     for (const t of targets) {
       next[t.categoryKey] = resolveCatalogGroupKeyForSettings(t.categoryKey);
@@ -396,6 +409,12 @@ export function GoalDetailSettingsPage() {
       if (waterReminderSyncFingerprint(prevWater) !== waterReminderSyncFingerprint(persisted)) {
         useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
       }
+    }
+    if (
+      isCustomFlowCategoryKey(target.categoryKey) &&
+      resolveCustomFlowTemplateKey(persisted) === 'reminder'
+    ) {
+      void persistReminderTemplateNotificationRule(target.categoryKey, persisted);
     }
   }, []);
 
@@ -851,7 +870,16 @@ export function GoalDetailSettingsPage() {
                 isDark={false}
               />
 
-              {reminderCategoryKeys.map((key) => (
+              {reminderCategoryKeys
+                .filter((key) => {
+                  if (!isCustomFlowCategoryKey(key)) return true;
+                  const target = targets.find((t) => t.categoryKey === key);
+                  const cfg = target
+                    ? dataByBlockId[target.blockId]
+                    : loadGoalDetailCategoryConfig(key);
+                  return resolveCustomFlowTemplateKey(cfg) !== 'reminder';
+                })
+                .map((key) => (
                 <GoalDetailCategoryStartReminderCard key={key} categoryKey={key} />
               ))}
 

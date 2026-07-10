@@ -2,6 +2,7 @@ import {
   buildDefaultPriorityMealSlotOverrides,
   buildEmptyPriorityMealSlotSections,
   buildPriorityMealSlotSections,
+  clampMealSlotSectionsToWindow,
   hasExplicitMealSlotAssignments,
   inferMealSlotAfterFlatReorder,
   listPriorityItemsForMealSlotAssignmentSheet,
@@ -9,6 +10,7 @@ import {
   reorderFlatKeys,
   splitPriorityMealSlotSections,
 } from './priorityMealSlotSections';
+import type { DayMealSlot } from '@shared/lib/storage';
 import { resolvePriorityMealSlot } from '@shared/lib/storage';
 
 describe('buildPriorityMealSlotSections with custom schedule', () => {
@@ -228,6 +230,62 @@ describe('splitPriorityMealSlotSections multi-slot assignments', () => {
       'medicine',
     ]);
     expect(sections.find((section) => section.slot === 'dawn')?.items).toEqual([]);
+  });
+});
+
+describe('clampMealSlotSectionsToWindow', () => {
+  const DEFAULT_STARTS: Record<DayMealSlot, string> = {
+    dawn: '04:00',
+    morning: '06:00',
+    lunch: '12:30',
+    dinner: '19:00',
+    night: '21:00',
+  };
+
+  function baseSections(items: Partial<Record<DayMealSlot, string[]>> = {}) {
+    return (['dawn', 'morning', 'lunch', 'dinner', 'night'] as DayMealSlot[]).map((slot) => ({
+      slot,
+      title: slot,
+      hintTime: DEFAULT_STARTS[slot],
+      isCurrent: false,
+      items: (items[slot] ?? []).map((key) => ({ key })),
+    }));
+  }
+
+  it('같은 날 창(06:00~23:00)이면 창 밖 새벽을 숨기고 첫 구간을 하루 시작으로 클램프한다', () => {
+    const result = clampMealSlotSectionsToWindow(baseSections(), '06:00', '23:00');
+    expect(result.map((s) => s.slot)).toEqual(['morning', 'lunch', 'dinner', 'night']);
+    expect(result[0]?.hintTime).toBe('06:00');
+  });
+
+  it('창 시작이 구간 중간이면 그 구간을 하루 시작으로 당겨 맨 앞에 둔다', () => {
+    const result = clampMealSlotSectionsToWindow(baseSections(), '16:40', '23:00');
+    expect(result[0]?.slot).toBe('lunch');
+    expect(result[0]?.hintTime).toBe('16:40');
+    expect(result.map((s) => s.slot)).toEqual(['lunch', 'dinner', 'night']);
+  });
+
+  it('자정을 넘기는 창은 순서대로 이어 배치한다', () => {
+    const result = clampMealSlotSectionsToWindow(baseSections(), '16:40', '19:40', true);
+    expect(result.map((s) => s.slot)).toEqual(['lunch', 'dinner', 'night', 'dawn', 'morning']);
+    expect(result[0]?.hintTime).toBe('16:40');
+  });
+
+  it('자연 자정 넘김(22:00~06:00)도 순서대로 배치한다', () => {
+    const result = clampMealSlotSectionsToWindow(baseSections(), '22:00', '06:00');
+    expect(result[0]?.slot).toBe('night');
+    expect(result[0]?.hintTime).toBe('22:00');
+    expect(result.map((s) => s.slot)).toEqual(['night', 'dawn']);
+  });
+
+  it('창 밖 구간이라도 항목이 있으면 유실하지 않고 뒤에 유지한다', () => {
+    const result = clampMealSlotSectionsToWindow(
+      baseSections({ dawn: ['fasting'] }),
+      '06:00',
+      '23:00',
+    );
+    expect(result.map((s) => s.slot)).toContain('dawn');
+    expect(result[result.length - 1]?.slot).toBe('dawn');
   });
 });
 

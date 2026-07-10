@@ -1,3 +1,4 @@
+import { BUILTIN_ABSTAIN_FLOW_ID } from '@shared/lib/storage/defaultPriorityCatalog';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { saveGoalDetailCategoryConfig } from '@shared/lib/storage/goalDetailSettingsStorage';
 import { StorageKeys } from '@shared/lib/storage/storageKeys';
@@ -196,6 +197,14 @@ describe('readEditableCategoryAppearance', () => {
       icon: 'drop.fill',
       accentColor: '#0ea5e9',
     });
+  });
+
+  it('matches catalog icon for abstain preset in settings picker', () => {
+    const catalogIcon = resolveCategoryCatalogIcon(BUILTIN_ABSTAIN_FLOW_ID);
+    const editable = readEditableCategoryAppearance(BUILTIN_ABSTAIN_FLOW_ID, {});
+    expect(editable.icon).toBe(catalogIcon);
+    expect(editable.icon).toBe('hand.raised.fill');
+    expect(editable.accentColor).toBe('#dc2626');
   });
 
   it('merges appearance without stripping healthIntake nested config', () => {

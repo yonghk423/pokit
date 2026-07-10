@@ -26,6 +26,7 @@ import {
   useDayPlanDraftStore,
   useFixedFlowSetsStore,
 } from '@entities/day-plan';
+import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { PokitIconPalette } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -217,6 +218,9 @@ export function RoutineCatalogManageContent() {
         ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
       });
       saveGoalDetailCategoryConfig(id, next);
+      if (templateKey === 'reminder') {
+        void persistReminderTemplateNotificationRule(id, next);
+      }
       appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
       registerOtherCategoryResolverFromStorage();
       void loadGoalDetailCategoryConfig(id);
@@ -382,7 +386,7 @@ export function RoutineCatalogManageContent() {
   );
 
   const scrollBottomPad = useMemo(
-    () => tabBarScrollBottomInset(insets.bottom) + 88,
+    () => tabBarScrollBottomInset(insets.bottom),
     [insets.bottom],
   );
 
@@ -390,7 +394,24 @@ export function RoutineCatalogManageContent() {
     <>
       <View style={[styles.stickyHeader, { paddingHorizontal: 16 }]}>
         <View style={styles.headerBlock}>
-          <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>루틴 목록</ThemedText>
+          <View style={styles.titleRow}>
+            <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>루틴 목록</ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="새 루틴 만들기"
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                openCreateSheet();
+              }}
+              style={({ pressed }) => [
+                styles.headerAddButton,
+                { opacity: pressed ? 0.92 : 1 },
+              ]}>
+              <View style={styles.headerAddButtonInner}>
+                <IconSymbol name="plus" size={18} color="#FAFAFA" />
+              </View>
+            </Pressable>
+          </View>
           <ThemedText style={[styles.lead, { color: editorial.muted }]}>
             루틴을 만들고 묶음으로 정리해요. 행을 누르면 상세 설정을 열 수 있어요.
           </ThemedText>
@@ -425,24 +446,6 @@ export function RoutineCatalogManageContent() {
           manageOnly
         />
       </ScrollView>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="새 루틴 만들기"
-        onPress={() => {
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          openCreateSheet();
-        }}
-        style={({ pressed }) => [
-          styles.fab,
-          {
-            bottom: Math.max(insets.bottom, 12) + 12,
-            opacity: pressed ? 0.92 : 1,
-          },
-        ]}>
-        <View style={styles.fabInner}>
-          <IconSymbol name="plus" size={26} color="#FAFAFA" />
-        </View>
-      </Pressable>
       <CreateCustomFlowSheet
         visible={createSheetOpen}
         onClose={() => setCreateSheetOpen(false)}
@@ -493,7 +496,7 @@ export function RoutineCatalogManageContent() {
   );
 }
 
-const FAB_SIZE = 56;
+const HEADER_ADD_BUTTON_SIZE = 36;
 
 const styles = StyleSheet.create({
   stickyHeader: {
@@ -505,10 +508,32 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 4,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
   pageTitle: {
+    flex: 1,
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.35,
+  },
+  headerAddButton: {
+    width: HEADER_ADD_BUTTON_SIZE,
+    height: HEADER_ADD_BUTTON_SIZE,
+    borderRadius: HEADER_ADD_BUTTON_SIZE / 2,
+    borderWidth: 2,
+    borderColor: '#000000',
+    flexShrink: 0,
+  },
+  headerAddButtonInner: {
+    flex: 1,
+    borderRadius: HEADER_ADD_BUTTON_SIZE / 2,
+    backgroundColor: PokitIconPalette.teal,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   lead: {
     fontSize: 14,
@@ -520,24 +545,5 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     gap: 16,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
-    borderWidth: 2,
-    borderColor: '#000000',
-    zIndex: 30,
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  fabInner: {
-    flex: 1,
-    borderRadius: FAB_SIZE / 2,
-    backgroundColor: PokitIconPalette.teal,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

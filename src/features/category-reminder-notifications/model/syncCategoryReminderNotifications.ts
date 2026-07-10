@@ -1,4 +1,13 @@
-import { categoryReminderLabelKo, formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
+import {
+  categoryReminderLabelKo,
+  findReminderScheduleItem,
+  formatHhmmClockKo,
+  isCustomFlowCategoryKey,
+  normalizeReminderDetailConfig,
+  parseHHmmToMinutes,
+  resolveCustomFlowTemplateKey,
+  resolveReminderItemTitle,
+} from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import {
   cancelLocalNotificationsById,
@@ -7,11 +16,28 @@ import {
 import {
   loadCategoryReminderRules,
   loadCategoryReminderScheduled,
+  loadGoalDetailCategoryConfig,
   saveCategoryReminderScheduled,
 } from '@shared/lib/storage';
 
-/** iOS 등 예약 상한을 고려한 상한(여유) */
 const MAX_CATEGORY_REMINDER_SLOTS = 40;
+
+function resolveCategoryReminderNotificationBody(categoryKey: string, hhmm: string): string {
+  const label = categoryReminderLabelKo(categoryKey);
+  const clock = formatHhmmClockKo(hhmm.trim());
+  if (isCustomFlowCategoryKey(categoryKey)) {
+    const raw = loadGoalDetailCategoryConfig(categoryKey);
+    if (resolveCustomFlowTemplateKey(raw) === 'reminder') {
+      const cfg = normalizeReminderDetailConfig(raw);
+      const item = findReminderScheduleItem(cfg.reminderItems, hhmm.trim());
+      if (item) {
+        const title = resolveReminderItemTitle(item);
+        return `${label} · ${title} (${clock})`;
+      }
+    }
+  }
+  return `${label} · ${clock} 시간 입니다.`;
+}
 
 type Slot = {
   slotKey: string;
@@ -53,14 +79,13 @@ export async function syncCategoryReminderNotifications(): Promise<void> {
       const slotKey = `${categoryKey}:${hhmm.trim()}`;
       if (seen.has(slotKey)) continue;
       seen.add(slotKey);
-      const label = categoryReminderLabelKo(categoryKey);
       slots.push({
         slotKey,
         categoryKey,
         hour,
         minute,
-        title: '카테고리 알림',
-        body: `${label} · ${formatHhmmClockKo(hhmm.trim())} 시간 입니다.`,
+        title: '루틴 알림',
+        body: resolveCategoryReminderNotificationBody(categoryKey, hhmm.trim()),
       });
     }
   }

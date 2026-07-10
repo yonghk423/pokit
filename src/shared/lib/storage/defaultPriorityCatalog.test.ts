@@ -1,4 +1,5 @@
 import {
+  BUILTIN_ABSTAIN_FLOW_ID,
   BUILTIN_GOOD_POSTURE_FLOW_ID,
   BUILTIN_STRETCHING_FLOW_ID,
   DEFAULT_CUSTOM_FLOW_COLOR,
@@ -33,6 +34,11 @@ describe('resolveCustomFlowCatalogIcon', () => {
   it('returns builtin icon for stretching preset', () => {
     expect(resolveCustomFlowCatalogIcon(BUILTIN_STRETCHING_FLOW_ID)).toBe('figure.flexibility');
     expect(resolveCustomFlowCatalogColor(BUILTIN_STRETCHING_FLOW_ID)).toBe('#14b8a6');
+  });
+
+  it('returns hand.raised.fill for abstain preset (picker-compatible icon)', () => {
+    expect(resolveCustomFlowCatalogIcon(BUILTIN_ABSTAIN_FLOW_ID)).toBe('hand.raised.fill');
+    expect(resolveCustomFlowCatalogColor(BUILTIN_ABSTAIN_FLOW_ID)).toBe('#dc2626');
   });
 
   it('reads icon from saved goal-detail config for user custom flows', () => {

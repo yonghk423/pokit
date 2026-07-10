@@ -6,7 +6,7 @@ import {
   type DayPlanBlock,
 } from '@entities/day-plan';
 import { filterSpineTimelineBlocks } from '@entities/day-plan/lib/dayPlanFlowBlock';
-import { normalizeDayMealSlot, resolveCurrentMealSlotFromSchedule, type DayMealSlot } from '@shared/lib/storage';
+import { normalizeDayMealSlot, resolveCurrentMealSlotFromSchedule, type DayMealSlot, appendRoutineCatalogSelectionKeys, removeRoutineCatalogSelectionKey } from '@shared/lib/storage';
 
 import { getPickerCategoryLabel } from './dayPlanEditorShared';
 import type { DayPlanLayoutMode } from '../ui/DayPlanLayoutModeTabs';
@@ -193,10 +193,12 @@ export function toggleCatalogItemForLayoutMode(
     const order = actions.getPrioritySectionsCategoryOrder();
     if (ctx.selected) {
       actions.setPrioritySectionsCategoryOrder(order.filter((k) => k !== key));
+      removeRoutineCatalogSelectionKey(key);
       return { ok: true, selected: false };
     }
     const slot = normalizeDayMealSlot(ctx.targetMealSlot) ?? DEFAULT_CATALOG_MEAL_SLOT;
     actions.appendPrioritySectionsWithMealSlot([key], slot);
+    appendRoutineCatalogSelectionKeys([key]);
     return { ok: true, selected: true };
   }
 

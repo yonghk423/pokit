@@ -54,15 +54,17 @@ import {
 import { appendPriorityCategoryKeysIfMissing, useFixedFlowSetsStore } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
-  hasGoalDetailCommittedCategory,
+  appendRoutineCatalogSelectionKeys,
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
   loadRoutineCatalogSelectionKeys,
+  removeRoutineCatalogSelectionKey,
   saveRoutineCatalogSelectionKeys,
   type CategoryMealSlotOverride,
   type DayMealSlot,
 } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { COMPLETION_TOGGLE_ANIM_MS } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -76,6 +78,7 @@ import { buildAddablePriorityCatalogSections } from '../lib/priorityCatalog';
 import {
   formatDateKeyCompactKo,
   formatDateKeyDisplayKo,
+  formatEndHhmmFrom12hParts,
   formatMinutesToHHmm,
   getPickerCategoryItem,
   getPickerCategoryLabel,
@@ -86,10 +89,10 @@ import {
   priorityClockCaptionDateKeyEnd,
   priorityClockCaptionDateKeyStart,
   sortedPlanDateRange,
+  toggleEndMeridiemHhmm,
 } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
-import { getPriorityCategoryGoalHint } from '../lib/priorityCategoryGoalHints';
-import { buildCategoryMealSlotOverrides, flattenPriorityMealSlotSectionEntries, hasExplicitMealSlotAssignments, reorderFlatKeys, reorderMealSlotSectionEntries, resolvePriorityMealSlot, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
+import { buildCategoryMealSlotOverrides, clampMealSlotSectionsToWindow, flattenPriorityMealSlotSectionEntries, hasExplicitMealSlotAssignments, reorderFlatKeys, reorderMealSlotSectionEntries, resolvePriorityMealSlot, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
 import { DAY_MEAL_SLOT_LABEL } from '../lib/priorityMealSlotSections';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
@@ -131,17 +134,24 @@ import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
 /** 타임라인 내부 스크롤 하단 — 리스트와 카드 둥근 하단 사이 최소만 */
 const TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM = 8;
 
-/**
- * 플립 시계 레퍼런스: 카드 다크 배경 · 밝은 회색 숫자 · 숫자 가운데 검정 힌지선(flip-divider)
- */
-const CLOCK_CARD_DARK = '#09090b';
-const CLOCK_TEXT_GREY = '#a1a1aa';
-/** ampm: text-clock-grey + opacity-80 */
-const CLOCK_AMPM_GREY = 'rgba(161, 161, 170, 0.8)';
-/** 기계식 플립: 숫자 세로 중앙을 가로지르는 선 (레퍼런스: solid black) */
-const CLOCK_FLIP_HINGE = '#000000';
-/** 카드 하단선용(선택). 구 번들/미저장 JSX가 참조해도 런타임 오류 나지 않게 유지 */
-const CLOCK_FLIP_DIVIDER = 'rgba(255, 255, 255, 0.06)';
+type FlipClockPalette = {
+  cardBg: string;
+  border: string;
+  text: string;
+  ampm: string;
+  hinge: string;
+};
+
+function flipClockPalette(isDark: boolean): FlipClockPalette {
+  const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  return {
+    cardBg: '#09090b',
+    border: c.border,
+    text: '#a1a1aa',
+    ampm: 'rgba(161, 161, 170, 0.8)',
+    hinge: '#000000',
+  };
+}
 
 /** TextInput이 밑줄·테두리로 ‘가운데 선’처럼 보이지 않게 */
 const digitInputNoArtifact = {
@@ -297,7 +307,7 @@ function normalizeToDate(value: unknown, fallback: Date): Date {
 /** 합쳐진 시계 면 가운데 — 사각 점 두 개(콜론) + 느린 깜빡임 */
 const COLON_BLINK_MS = 1100;
 
-function BlinkingTimeColon() {
+function BlinkingTimeColon({ dotColor }: { dotColor: string }) {
   const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -322,8 +332,8 @@ function BlinkingTimeColon() {
   return (
     <Animated.View style={[flipStyles.colonStrip, { opacity }]} pointerEvents="none">
       <View style={flipStyles.colonDotsColumn}>
-        <View style={[flipStyles.colonDotSquare, { backgroundColor: CLOCK_TEXT_GREY }]} />
-        <View style={[flipStyles.colonDotSquare, { backgroundColor: CLOCK_TEXT_GREY }]} />
+        <View style={[flipStyles.colonDotSquare, { backgroundColor: dotColor }]} />
+        <View style={[flipStyles.colonDotSquare, { backgroundColor: dotColor }]} />
       </View>
     </Animated.View>
   );
@@ -339,12 +349,15 @@ function flipClockInitialDrafts(v: string): { hour: string; min: string } {
   return { hour: String(h12v).padStart(2, '0'), min: String(mv).padStart(2, '0') };
 }
 
-/** 플립 시계형 시·분 카드 (저장은 `HH:mm` 24h) — 색은 CLOCK_* 스펙 고정 */
+/** 플립 시계형 시·분 카드 (저장은 `HH:mm` 24h) — 민트 면 + 밝은 전경 */
 function FlipClockTimePair({
   value,
   onChange,
   nextDayHint,
   dateCaption,
+  clockRole = 'start',
+  partnerStartHhmm,
+  palette,
 }: {
   value: string;
   onChange: (hhmm: string) => void;
@@ -352,6 +365,10 @@ function FlipClockTimePair({
   nextDayHint?: boolean;
   /** 달력으로 기간을 나눈 경우에만 — 박스 하단에 `M월 D일` */
   dateCaption?: string;
+  clockRole?: 'start' | 'end';
+  /** 종료 시계 — 시작 시각과 함께 오전 12:xx·다음날 해석 */
+  partnerStartHhmm?: string;
+  palette: FlipClockPalette;
 }) {
   const totalMin = useMemo(() => {
     const p = parseHHmmToMinutes(value.trim());
@@ -388,9 +405,13 @@ function FlipClockTimePair({
       const na = next.ap ?? ap;
       const nh = next.h12 ?? h12;
       const nm = next.min ?? min;
+      if (clockRole === 'end' && partnerStartHhmm?.trim()) {
+        onChange(formatEndHhmmFrom12hParts(nh, nm, na, partnerStartHhmm));
+        return;
+      }
       onChange(formatMinutesToHHmm(from12hPartsToTotal(nh, nm, na)));
     },
-    [ap, h12, min, onChange],
+    [ap, clockRole, h12, min, onChange, partnerStartHhmm],
   );
 
   const onHourText = (t: string) => {
@@ -553,21 +574,29 @@ function FlipClockTimePair({
   const toggleAp = () => {
     if (is2400) return;
     void Haptics.selectionAsync();
+    if (clockRole === 'end' && partnerStartHhmm?.trim()) {
+      onChange(toggleEndMeridiemHhmm(partnerStartHhmm, h12, min, ap));
+      return;
+    }
     commit({ ap: ap === '오전' ? '오후' : '오전' });
   };
 
   return (
     <View style={flipStyles.pairRow}>
       <View style={flipStyles.mergedOuter}>
-        <View style={[flipStyles.mergedFace, { backgroundColor: CLOCK_CARD_DARK }]}>
+        <View
+          style={[
+            flipStyles.mergedFace,
+            { backgroundColor: palette.cardBg, borderColor: palette.border, borderWidth: 2 },
+          ]}>
           {nextDayHint ? (
             <View pointerEvents="none" style={flipStyles.nextDayBadge}>
-              <ThemedText style={[flipStyles.nextDayText, { color: CLOCK_AMPM_GREY }]}>다음날</ThemedText>
+              <ThemedText style={[flipStyles.nextDayText, { color: palette.ampm }]}>다음날</ThemedText>
             </View>
           ) : null}
           {dateCaption ? (
             <View pointerEvents="none" style={flipStyles.dateCaptionFooter}>
-              <ThemedText style={[flipStyles.dateCaptionText, { color: CLOCK_AMPM_GREY }]}>
+              <ThemedText style={[flipStyles.dateCaptionText, { color: palette.ampm }]}>
                 {dateCaption}
               </ThemedText>
             </View>
@@ -579,7 +608,7 @@ function FlipClockTimePair({
                 style={flipStyles.ampmBadge}
                 accessibilityRole="text"
                 accessibilityLabel="자정, 하루의 끝(24시)">
-                <ThemedText style={[flipStyles.ampmText, { color: CLOCK_AMPM_GREY }]}>자정</ThemedText>
+                <ThemedText style={[flipStyles.ampmText, { color: palette.ampm }]}>자정</ThemedText>
               </View>
             ) : (
               <Pressable
@@ -588,7 +617,7 @@ function FlipClockTimePair({
                 style={flipStyles.ampmBadge}
                 accessibilityRole="button"
                 accessibilityLabel={ap === '오전' ? '오전, 탭하면 오후로 전환' : '오후, 탭하면 오전으로 전환'}>
-                <ThemedText style={[flipStyles.ampmText, { color: CLOCK_AMPM_GREY }]}>{ap}</ThemedText>
+                <ThemedText style={[flipStyles.ampmText, { color: palette.ampm }]}>{ap}</ThemedText>
               </Pressable>
             )}
             <TextInput
@@ -598,12 +627,12 @@ function FlipClockTimePair({
               keyboardType="number-pad"
               maxLength={2}
               selectTextOnFocus
-              style={[flipStyles.digitInput, digitInputNoArtifact, { color: CLOCK_TEXT_GREY }]}
+              style={[flipStyles.digitInput, digitInputNoArtifact, { color: palette.text }]}
             />
-            <View pointerEvents="none" style={[flipStyles.flipHinge, { backgroundColor: CLOCK_FLIP_HINGE }]} />
+            <View pointerEvents="none" style={[flipStyles.flipHinge, { backgroundColor: palette.hinge }]} />
           </View>
           <View style={flipStyles.colonGutter}>
-            <BlinkingTimeColon />
+            <BlinkingTimeColon dotColor={palette.text} />
           </View>
           <View style={flipStyles.halfCell}>
             <TextInput
@@ -613,9 +642,9 @@ function FlipClockTimePair({
               keyboardType="number-pad"
               maxLength={2}
               selectTextOnFocus
-              style={[flipStyles.digitInput, digitInputNoArtifact, { color: CLOCK_TEXT_GREY }]}
+              style={[flipStyles.digitInput, digitInputNoArtifact, { color: palette.text }]}
             />
-            <View pointerEvents="none" style={[flipStyles.flipHinge, { backgroundColor: CLOCK_FLIP_HINGE }]} />
+            <View pointerEvents="none" style={[flipStyles.flipHinge, { backgroundColor: palette.hinge }]} />
           </View>
         </View>
       </View>
@@ -716,7 +745,7 @@ const flipStyles = StyleSheet.create({
     left: '12%',
     zIndex: 12,
   },
-  /** ampm-label + text-clock-grey opacity-80 → CLOCK_AMPM_GREY에 이미 0.8 */
+  /** ampm-label — 밝은 전경 + 약한 투명 */
   ampmText: {
     fontSize: 11,
     fontWeight: '700',
@@ -848,6 +877,7 @@ export function PriorityBasedPlanSection({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
+  const flipClockColors = useMemo(() => flipClockPalette(isDark), [isDark]);
   const insets = useSafeAreaInsets();
   const bottomTabBarHeight = useBottomTabBarHeight();
   const { height: windowHeight } = useWindowDimensions();
@@ -859,6 +889,10 @@ export function PriorityBasedPlanSection({
   const [priorityTimeModalOpen, setPriorityTimeModalOpen] = useState(false);
   const [draftPriorityStart, setDraftPriorityStart] = useState(priorityStart);
   const [draftPriorityEnd, setDraftPriorityEnd] = useState(priorityEnd);
+  const [draftEndNextDay, setDraftEndNextDay] = useState<boolean>(() =>
+    isOvernightHhmmRange(priorityStart, priorityEnd),
+  );
+  const draftEndNextDayPinnedRef = useRef(false);
   const [monthCursor, setMonthCursor] = useState(() => toMonthStart(new Date()));
   const [draftRangeStart, setDraftRangeStart] = useState(priorityPlanDateKey);
   const [draftRangeEnd, setDraftRangeEnd] = useState(priorityPlanDateKeyEnd);
@@ -881,15 +915,15 @@ export function PriorityBasedPlanSection({
   const modalClockFaceHints = useMemo(() => {
     const explicit = priorityPlanExplicitMultiDay;
     const { lo, hi } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
-    const overnight = isOvernightHhmmRange(draftPriorityStart, draftPriorityEnd);
     const startKey = priorityClockCaptionDateKeyStart(lo);
     const endKey = priorityClockCaptionDateKeyEnd(hi, draftPriorityStart, draftPriorityEnd);
     return {
       startDateCaption: explicit ? formatDateKeyCompactKo(startKey) : undefined,
       endDateCaption: explicit ? formatDateKeyCompactKo(endKey) : undefined,
-      endNextDayOnlyBadge: overnight && !explicit,
+      endNextDayOnlyBadge: draftEndNextDay && !explicit,
     };
   }, [
+    draftEndNextDay,
     draftPriorityEnd,
     draftPriorityStart,
     priorityPlanDateKey,
@@ -985,7 +1019,7 @@ export function PriorityBasedPlanSection({
   const monthTitle = `${safeMonthCursor.getFullYear()}년 ${safeMonthCursor.getMonth() + 1}월`;
   const weekdayLabels = ['월', '화', '수', '목', '금', '토', '일'];
 
-  /** 목표 상세 저장소 기준 부가 한 줄 — 설정 화면에서 돌아올 때 갱신 */
+  /** 목표 상세·커스텀 라벨 갱신 — 설정 화면에서 돌아올 때 */
   const [categoryHintTick, setCategoryHintTick] = useState(0);
   /** 구간별 `isCurrent` — 시간대가 바뀔 때 갱신 */
   const [mealSlotNowTick, setMealSlotNowTick] = useState(0);
@@ -1011,41 +1045,6 @@ export function PriorityBasedPlanSection({
         })
         .filter(Boolean) as (typeof PICKER_CATEGORIES)[number][],
     [priorityCategoryOrder, categoryHintTick, categoryLabelEpoch],
-  );
-
-  const categoryKeysForHints = useMemo(
-    () => [...new Set([...priorityCategoryOrder, ...PICKER_CATEGORIES.map((c) => c.key)])],
-    [priorityCategoryOrder],
-  );
-
-  const categoryGoalHints = useMemo(() => {
-    void categoryHintTick;
-    const out: Record<string, string | null> = {};
-    for (const k of categoryKeysForHints) {
-      out[k] = getPriorityCategoryGoalHint(k, { isFocusStarted });
-    }
-    return out;
-  }, [categoryKeysForHints, categoryHintTick, isFocusStarted]);
-
-  const categoryUnsetHints = useMemo<Record<string, string>>(
-    () => ({
-      reading: '책 선정 안 함',
-      fasting: '체중 목표 미설정',
-      water: '섭취 목표 설정 안 함',
-      medicine: '복용 슬롯 설정 안 함',
-      work: '노트 목표 미설정',
-      other: '체크리스트 미작성',
-    }),
-    [],
-  );
-
-  const categorySubtitleByKey = useCallback(
-    (categoryKey: string): string | null => {
-      const fallback = categoryUnsetHints[categoryKey] ?? '설정 안 함';
-      if (!hasGoalDetailCommittedCategory(categoryKey)) return fallback;
-      return categoryGoalHints[categoryKey] ?? fallback;
-    },
-    [categoryGoalHints, categoryUnsetHints],
   );
 
   const bagCount = selectedItems.length;
@@ -1488,6 +1487,7 @@ export function PriorityBasedPlanSection({
             categoryKey: item.key,
             startMinutes: schedule.startMinutes,
             endMinutes: schedule.endMinutes,
+            endsNextCalendarDay: Boolean(schedule.endsNextCalendarDay),
             blockOrigin: 'spineTimeline',
             planDateKey: getLocalDateKey(),
           });
@@ -1515,8 +1515,10 @@ export function PriorityBasedPlanSection({
         keys.forEach((key) => {
           addPrioritySectionMealSlot(key, slot);
         });
+        appendRoutineCatalogSelectionKeys(keys);
       } else {
         appendPriorityCategoryKeysIfMissing(keys);
+        appendRoutineCatalogSelectionKeys(keys);
       }
       setLastAddedCategoryKey(keys[keys.length - 1] ?? null);
     },
@@ -1569,7 +1571,7 @@ export function PriorityBasedPlanSection({
 
   const mealSlotSectionsForDisplay = useMemo(() => {
     if (!showSectionsView) return [];
-    return priorityMealSlotSections.map((section) => ({
+    const mapped = priorityMealSlotSections.map((section) => ({
       ...section,
       items: partitionDisplayWithDeferredBottom(
         section.items,
@@ -1578,10 +1580,16 @@ export function PriorityBasedPlanSection({
         deferredBottomReorderKeys,
       ),
     }));
+    const spansNextDay =
+      priorityPlanExplicitMultiDay || isOvernightHhmmRange(priorityStart, priorityEnd);
+    return clampMealSlotSectionsToWindow(mapped, priorityStart, priorityEnd, spansNextDay);
   }, [
     deferredBottomReorderKeys,
     isPrioritySectionItemCompleted,
     priorityMealSlotSections,
+    priorityStart,
+    priorityEnd,
+    priorityPlanExplicitMultiDay,
     showSectionsView,
   ]);
 
@@ -1926,6 +1934,27 @@ export function PriorityBasedPlanSection({
     return getLocalMinutesOfDayNow();
   }, [mealSlotNowTick]);
 
+  const spineAnchorDateCaptions = useMemo(() => {
+    const explicit = priorityPlanExplicitMultiDay;
+    const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
+    if (!explicit && !overnight) {
+      return { dayStartDateCaption: undefined, dayEndDateCaption: undefined };
+    }
+    const { lo, hi } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
+    const startKey = priorityClockCaptionDateKeyStart(lo);
+    const endKey = priorityClockCaptionDateKeyEnd(hi, priorityStart, priorityEnd);
+    return {
+      dayStartDateCaption: formatDateKeyCompactKo(startKey),
+      dayEndDateCaption: formatDateKeyCompactKo(endKey),
+    };
+  }, [
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+    priorityPlanExplicitMultiDay,
+    priorityStart,
+    priorityEnd,
+  ]);
+
   const spineTimelineRows = useMemo(
     () =>
       buildSpineTimelineModel({
@@ -1933,8 +1962,9 @@ export function PriorityBasedPlanSection({
         priorityEnd,
         blocks: planBlocks,
         nowMinutes: spineNowMinutes,
+        ...spineAnchorDateCaptions,
       }),
-    [priorityStart, priorityEnd, planBlocks, spineNowMinutes],
+    [priorityStart, priorityEnd, planBlocks, spineNowMinutes, spineAnchorDateCaptions],
   );
 
   const completedBlockIdSet = useMemo(
@@ -1960,15 +1990,17 @@ export function PriorityBasedPlanSection({
         title: section.title,
         hintTime: section.hintTime,
         isCurrent: section.isCurrent,
+        ...(typeof section.progressToNext === 'number'
+          ? { progressToNext: section.progressToNext }
+          : {}),
         items: section.items.map((cat) => ({
           key: buildPrioritySectionCompletionKey(cat.key, section.slot),
           categoryKey: cat.key,
           label: cat.label,
           icon: cat.icon,
-          subtitle: categorySubtitleByKey(cat.key),
         })),
       })),
-    [categorySubtitleByKey, mealSlotSectionsForDisplay],
+    [mealSlotSectionsForDisplay],
   );
 
   const confirmSpineBlockDelete = useCallback(
@@ -2017,13 +2049,6 @@ export function PriorityBasedPlanSection({
     [completePlanBlock, completedBlockIdSet, planBlocks, uncompletePlanBlock],
   );
 
-  const handleSpineOpenBlockSettings = useCallback(
-    (_blockId: string, categoryKey: string) => {
-      onOpenCategorySettings?.(categoryKey);
-    },
-    [onOpenCategorySettings],
-  );
-
   const handleSpinePressBlock = useCallback(
     (blockId: string) => {
       const block = planBlocks.find((b) => b.id === blockId);
@@ -2034,6 +2059,7 @@ export function PriorityBasedPlanSection({
         categoryKey: block.categoryKey ?? null,
         startMinutes: block.startMinutes,
         endMinutes: block.endMinutes,
+        endsNextCalendarDay: Boolean(block.endsNextCalendarDay),
       });
     },
     [planBlocks],
@@ -2059,6 +2085,7 @@ export function PriorityBasedPlanSection({
       categoryKey: string | null;
       startMinutes: number;
       endMinutes: number;
+      endsNextCalendarDay: boolean;
       blockId?: string;
     }) => {
       const title = input.title.trim();
@@ -2067,19 +2094,39 @@ export function PriorityBasedPlanSection({
         return;
       }
 
-      const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
-      if (!window) {
-        alertSpineBlockSaveError(input.blockId ? 'update' : 'add', 'outside_window');
-        return;
-      }
-      const clamped = clampSpineBlockToPriorityWindow(
-        input.startMinutes,
-        input.endMinutes,
-        window,
-      );
-      if (!clamped) {
-        alertSpineBlockSaveError(input.blockId ? 'update' : 'add', 'outside_window');
-        return;
+      const planRangeLo =
+        priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd;
+      const planRangeHi =
+        priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKeyEnd : priorityPlanDateKey;
+      const rangeSpansMultiDay = planRangeLo !== planRangeHi;
+
+      let clamped:
+        | {
+            startMinutes: number;
+            endMinutes: number;
+          }
+        | null = null;
+
+      if (rangeSpansMultiDay) {
+        clamped = {
+          startMinutes: Math.max(0, Math.min(Math.floor(input.startMinutes), 24 * 60 - 1)),
+          endMinutes: Math.max(0, Math.min(Math.floor(input.endMinutes), 24 * 60)),
+        };
+      } else {
+        const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
+        if (!window) {
+          alertSpineBlockSaveError(input.blockId ? 'update' : 'add', 'outside_window');
+          return;
+        }
+        clamped = clampSpineBlockToPriorityWindow(
+          input.startMinutes,
+          input.endMinutes,
+          window,
+        );
+        if (!clamped) {
+          alertSpineBlockSaveError(input.blockId ? 'update' : 'add', 'outside_window');
+          return;
+        }
       }
 
       const linkedKey = input.categoryKey?.trim() || null;
@@ -2092,6 +2139,7 @@ export function PriorityBasedPlanSection({
           categoryKey: linkedKey,
           startMinutes: clamped.startMinutes,
           endMinutes: clamped.endMinutes,
+          endsNextCalendarDay: input.endsNextCalendarDay,
         });
         if (!result.ok) {
           alertSpineBlockSaveError('update', result.reason);
@@ -2104,6 +2152,7 @@ export function PriorityBasedPlanSection({
           ...(linkedKey ? { categoryKey: linkedKey } : {}),
           startMinutes: clamped.startMinutes,
           endMinutes: clamped.endMinutes,
+          endsNextCalendarDay: input.endsNextCalendarDay,
           blockOrigin: 'spineTimeline',
           planDateKey: getLocalDateKey(),
         });
@@ -2115,7 +2164,15 @@ export function PriorityBasedPlanSection({
 
       setSpineEditDraft(null);
     },
-    [addPlanBlock, alertSpineBlockSaveError, priorityEnd, priorityStart, updatePlanBlock],
+    [
+      addPlanBlock,
+      alertSpineBlockSaveError,
+      priorityEnd,
+      priorityPlanDateKey,
+      priorityPlanDateKeyEnd,
+      priorityStart,
+      updatePlanBlock,
+    ],
   );
 
   const priorityWindowHhmm = useMemo(() => {
@@ -2171,8 +2228,42 @@ export function PriorityBasedPlanSection({
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDraftPriorityStart(priorityStart);
     setDraftPriorityEnd(priorityEnd);
+    const overnightNow =
+      isOvernightHhmmRange(priorityStart, priorityEnd) ||
+      priorityPlanDateKey !== priorityPlanDateKeyEnd;
+    setDraftEndNextDay(overnightNow);
+    draftEndNextDayPinnedRef.current = false;
     setPriorityTimeModalOpen(true);
-  }, [priorityEnd, priorityStart]);
+  }, [priorityEnd, priorityStart, priorityPlanDateKey, priorityPlanDateKeyEnd]);
+
+  const setDraftPriorityStartWithSync = useCallback(
+    (next: string) => {
+      setDraftPriorityStart(next);
+      if (!draftEndNextDayPinnedRef.current) {
+        setDraftEndNextDay(isOvernightHhmmRange(next, draftPriorityEnd));
+      }
+    },
+    [draftPriorityEnd],
+  );
+
+  const setDraftPriorityEndWithSync = useCallback(
+    (next: string) => {
+      setDraftPriorityEnd(next);
+      if (!draftEndNextDayPinnedRef.current) {
+        setDraftEndNextDay(isOvernightHhmmRange(draftPriorityStart, next));
+      }
+    },
+    [draftPriorityStart],
+  );
+
+  const toggleDraftEndNextDay = useCallback(
+    (target: boolean) => {
+      void Haptics.selectionAsync();
+      draftEndNextDayPinnedRef.current = true;
+      setDraftEndNextDay(target);
+    },
+    [],
+  );
 
   const closePriorityTimeModal = useCallback(() => {
     Keyboard.dismiss();
@@ -2181,11 +2272,35 @@ export function PriorityBasedPlanSection({
 
   const confirmPriorityTimeModal = useCallback(() => {
     Keyboard.dismiss();
+    const ps = parseHHmmToMinutes(draftPriorityStart);
+    const pe = parseHHmmToMinutes(draftPriorityEnd);
+    if (ps !== null && pe !== null && !draftEndNextDay && pe <= ps) {
+      Alert.alert('시간 구간', '당일 종료를 쓰려면 종료 시각이 시작 시각보다 늦어야 해요.');
+      return;
+    }
     onChangePriorityStart(draftPriorityStart);
     onChangePriorityEnd(draftPriorityEnd);
+    const isNaturalOvernight = isOvernightHhmmRange(draftPriorityStart, draftPriorityEnd);
+    if (draftEndNextDay && !isNaturalOvernight) {
+      const { lo } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
+      const nextDay = addDaysToLocalDateKey(lo, 1);
+      applyPriorityPlanCalendarRange(lo, nextDay);
+    } else if (!draftEndNextDay && isNaturalOvernight) {
+      const { lo } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
+      applyPriorityPlanCalendarRange(lo, lo);
+    }
     setPriorityTimeModalOpen(false);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [draftPriorityEnd, draftPriorityStart, onChangePriorityEnd, onChangePriorityStart]);
+  }, [
+    draftPriorityEnd,
+    draftPriorityStart,
+    draftEndNextDay,
+    onChangePriorityEnd,
+    onChangePriorityStart,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+    applyPriorityPlanCalendarRange,
+  ]);
 
   /** c.containerLow 한 값을 모든 컨테이너에 직접 지정 — 중간 View 투명 영역에서 톤 차이 원천 제거 */
   const surfaceBg = c.containerLow;
@@ -2388,20 +2503,62 @@ export function PriorityBasedPlanSection({
                   <ThemedText style={[styles.timeKicker, { color: editorial.muted }]}>시작</ThemedText>
                   <FlipClockTimePair
                     value={draftPriorityStart}
-                    onChange={setDraftPriorityStart}
+                    onChange={setDraftPriorityStartWithSync}
                     dateCaption={modalClockFaceHints.startDateCaption}
+                    palette={flipClockColors}
                   />
                 </View>
                 <View style={styles.timeFlipColumn}>
                   <ThemedText style={[styles.timeKicker, { color: editorial.muted }]}>종료</ThemedText>
                   <FlipClockTimePair
                     value={draftPriorityEnd}
-                    onChange={setDraftPriorityEnd}
+                    onChange={setDraftPriorityEndWithSync}
+                    clockRole="end"
+                    partnerStartHhmm={draftPriorityStart}
                     nextDayHint={modalClockFaceHints.endNextDayOnlyBadge}
                     dateCaption={modalClockFaceHints.endDateCaption}
+                    palette={flipClockColors}
                   />
                 </View>
               </View>
+            </View>
+            <View style={styles.endDateChoiceRow}>
+              <Pressable
+                style={[
+                  styles.endDateChoiceBtn,
+                  {
+                    backgroundColor: !draftEndNextDay ? tabColors.activeBg : tabColors.inactiveBg,
+                    borderColor: !draftEndNextDay ? tabColors.activeBorder : tabColors.inactiveBorder,
+                    borderWidth: !draftEndNextDay ? 2 : 1,
+                  },
+                ]}
+                onPress={() => toggleDraftEndNextDay(false)}>
+                <ThemedText
+                  style={[
+                    styles.endDateChoiceText,
+                    { color: !draftEndNextDay ? tabColors.activeIcon : tabColors.inactiveIcon },
+                  ]}>
+                  당일
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.endDateChoiceBtn,
+                  {
+                    backgroundColor: draftEndNextDay ? tabColors.activeBg : tabColors.inactiveBg,
+                    borderColor: draftEndNextDay ? tabColors.activeBorder : tabColors.inactiveBorder,
+                    borderWidth: draftEndNextDay ? 2 : 1,
+                  },
+                ]}
+                onPress={() => toggleDraftEndNextDay(true)}>
+                <ThemedText
+                  style={[
+                    styles.endDateChoiceText,
+                    { color: draftEndNextDay ? tabColors.activeIcon : tabColors.inactiveIcon },
+                  ]}>
+                  다음 날
+                </ThemedText>
+              </Pressable>
             </View>
             <View style={styles.dateActionRow}>
               <Pressable
@@ -2436,6 +2593,20 @@ export function PriorityBasedPlanSection({
         onClose={() => setSpineEditDraft(null)}
         onSave={handleSpineSaveBlock}
         onDelete={confirmSpineBlockDelete}
+        onOpenCategorySettings={
+          onOpenCategorySettings
+            ? (categoryKey) => {
+                setSpineEditDraft(null);
+                onOpenCategorySettings(categoryKey);
+              }
+            : undefined
+        }
+        completed={spineEditDraft != null && completedBlockIdSet.has(spineEditDraft.blockId)}
+        onToggleComplete={
+          spineEditDraft != null
+            ? () => handleSpineToggleBlockComplete(spineEditDraft.blockId)
+            : undefined
+        }
       />
 
       <View style={[styles.bookOuter, { backgroundColor: surfaceBg, flex: 1, minHeight: 0 }]}>
@@ -2565,10 +2736,8 @@ export function PriorityBasedPlanSection({
                   palette={spineTimelinePalette}
                   rowSurface={editorial.surface}
                   onAddBlockInGap={handleSpineAddBlockInGap}
-                  onToggleBlockComplete={handleSpineToggleBlockComplete}
                   onPressBlock={handleSpinePressBlock}
                   onDeleteBlock={handleSpineDeleteBlock}
-                  onOpenBlockSettings={handleSpineOpenBlockSettings}
                   onReorderBlocks={handleSpineReorderBlocks}
                   onReorderDragActiveChange={setSpineDragActive}
                 />
@@ -2840,7 +3009,7 @@ export function PriorityBasedPlanSection({
                                     categoryKey={cat.key}
                                     icon={cat.icon}
                                     label={cat.label}
-                                    subtitle={categorySubtitleByKey(cat.key)}
+                                    subtitle={null}
                                     itemPriority={resolveCategoryImportance(
                                       priorityCategoryImportance,
                                       cat.key,
@@ -3322,6 +3491,21 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 2,
     paddingBottom: 4,
+  },
+  endDateChoiceRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  endDateChoiceBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 0,
+  },
+  endDateChoiceText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   timeCalendarTopLeftHit: {
     padding: 4,

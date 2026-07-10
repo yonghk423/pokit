@@ -6,6 +6,7 @@ export const DEFAULT_CUSTOM_FLOW_ACCENT_COLOR = '#f97316' as const;
 /** 담기·기본 플로우에서 쓰는 SF Symbol — 신규 루틴 선택지 */
 export const CUSTOM_FLOW_ICON_OPTIONS = [
   'person.fill',
+  'hand.raised.fill',
   'star.fill',
   'heart.fill',
   'flame.fill',

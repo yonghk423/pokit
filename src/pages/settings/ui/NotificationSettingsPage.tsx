@@ -3,29 +3,21 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useShallow } from 'zustand/react/shallow';
 
-import { formatHhmmClockKo, useDayPlanDraftStore } from '@entities/day-plan';
+import { formatHhmmClockKo } from '@entities/day-plan';
 import { getGoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { loadIncompleteRoutineReminder, loadPriorityDayStartAlarm } from '@shared/lib/storage';
+import { loadIncompleteRoutineReminder } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
-/** 설정 → 알림 (하루 시작·시작·마무리 등) */
+/** 설정 → 알림 */
 export function NotificationSettingsPage() {
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
   const c = getGoalDetailSessionUi(isDark);
   const insets = useSafeAreaInsets();
-  const { priorityStart, priorityEnd } = useDayPlanDraftStore(
-    useShallow((s) => ({
-      priorityStart: s.priorityStart,
-      priorityEnd: s.priorityEnd,
-    })),
-  );
-  const [dayStartAlarmOn, setDayStartAlarmOn] = useState(() => loadPriorityDayStartAlarm().enabled);
   const [incompleteReminderOn, setIncompleteReminderOn] = useState(
     () => loadIncompleteRoutineReminder().enabled,
   );
@@ -35,7 +27,6 @@ export function NotificationSettingsPage() {
 
   useFocusEffect(
     useCallback(() => {
-      setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
       const incomplete = loadIncompleteRoutineReminder();
       setIncompleteReminderOn(incomplete.enabled);
       setIncompleteReminderHhmm(incomplete.reminderHhmm);
@@ -78,7 +69,7 @@ export function NotificationSettingsPage() {
 
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
           <ThemedText style={[styles.sectionHint, { color: c.muted }]} lightColor={c.muted} darkColor={c.muted}>
-            하루 시작·마무리 시간과 미완료 일정 알림을 설정해요.
+            미완료 일정 알림을 설정해요.
           </ThemedText>
 
           <View style={[styles.section, { borderColor: c.border }]}>
@@ -89,34 +80,6 @@ export function NotificationSettingsPage() {
             <Pressable
               style={({ pressed }) => [
                 styles.item,
-                { borderTopColor: c.border },
-                pressed && { opacity: 0.85 },
-              ]}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/daily-rhythm-settings');
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="시작과 마무리 시간 설정">
-              <View style={styles.itemLeft}>
-                <IconSymbol name="sun.horizon.fill" size={20} color={c.muted} />
-                <View style={styles.itemTextWrap}>
-                  <ThemedText style={[styles.itemTitle, { color: c.onSurface }]} lightColor={c.onSurface} darkColor={c.onSurface}>
-                    시작·마무리
-                  </ThemedText>
-                  <ThemedText style={[styles.itemDesc, { color: c.muted }]} lightColor={c.muted} darkColor={c.muted}>
-                    {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
-                    {dayStartAlarmOn ? ' · 하루 시작 알림 켜짐' : ''}
-                  </ThemedText>
-                </View>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color={c.muted} />
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.item,
-                styles.itemDivider,
                 { borderTopColor: c.border },
                 pressed && { opacity: 0.85 },
               ]}
@@ -194,5 +157,4 @@ const styles = StyleSheet.create({
   itemTextWrap: { flex: 1, gap: 3 },
   itemTitle: { fontSize: 15, fontWeight: '700' },
   itemDesc: { fontSize: 12, opacity: 0.85 },
-  itemDivider: { borderTopWidth: StyleSheet.hairlineWidth },
 });

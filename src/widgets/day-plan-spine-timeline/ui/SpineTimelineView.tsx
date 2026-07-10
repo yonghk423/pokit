@@ -9,6 +9,8 @@ import {
   dayPlanAnchorNodeBackground,
   formatMinuteOfDayKo,
   isSpineBlockActiveAtMinute,
+  type SpineTimelineAnchorRow,
+  type SpineTimelineGapRow,
   type SpineTimelineRow,
   resolveBlockCategoryKey,
 } from '@entities/day-plan';
@@ -35,13 +37,59 @@ type Props = {
   /** 스와이프 행 전경 — 타임라인 카드 배경과 동일해야 삭제 레이어가 비치지 않음 */
   rowSurface: string;
   onAddBlockInGap: (fromMinutes: number, toMinutes: number) => void;
-  onToggleBlockComplete: (blockId: string) => void;
+  onToggleBlockComplete?: (blockId: string) => void;
   onPressBlock?: (blockId: string) => void;
   onDeleteBlock?: (blockId: string) => void;
   onOpenBlockSettings?: (blockId: string, categoryKey: string) => void;
   onReorderBlocks?: (fromIndex: number, toIndex: number) => void;
   onReorderDragActiveChange?: (active: boolean) => void;
 };
+
+const MIN_GAP_MINUTES = 5;
+
+/** 갭이 없을 때 하루 마무리 앵커 직전에 추가 슬롯을 둡니다(집중 구간 안). */
+function ensureGapBeforeDayEnd(rows: SpineTimelineRow[], nowMinutes: number): SpineTimelineRow[] {
+  const dayEndIdx = rows.findIndex((row) => row.kind === 'anchor' && row.role === 'dayEnd');
+  if (dayEndIdx < 0) return rows;
+
+  const prev = rows[dayEndIdx - 1];
+  if (prev?.kind === 'gap') return rows;
+
+  const dayEndMinutes = (rows[dayEndIdx] as SpineTimelineAnchorRow).minutes;
+  const dayStartRow = rows.find(
+    (row) => row.kind === 'anchor' && row.role === 'dayStart',
+  ) as SpineTimelineAnchorRow | undefined;
+  const startMin = dayStartRow?.minutes ?? 0;
+
+  let occupiedEnd = startMin;
+  for (let i = 0; i < dayEndIdx; i += 1) {
+    const row = rows[i]!;
+    if (row.kind === 'block') {
+      occupiedEnd = Math.max(occupiedEnd, Math.min(row.endMinutes, dayEndMinutes));
+    }
+  }
+
+  let fromMinutes = Math.max(occupiedEnd, nowMinutes, startMin);
+  let toMinutes = dayEndMinutes;
+
+  if (toMinutes - fromMinutes < MIN_GAP_MINUTES) {
+    fromMinutes = Math.max(startMin, toMinutes - 30);
+  }
+  if (toMinutes - fromMinutes < MIN_GAP_MINUTES) return rows;
+
+  const gap: SpineTimelineGapRow = {
+    kind: 'gap',
+    fromMinutes,
+    toMinutes,
+    durationMin: toMinutes - fromMinutes,
+    coachingLine: '',
+    ...(nowMinutes > fromMinutes && nowMinutes < toMinutes ? { nowMinutes } : {}),
+  };
+
+  const next = [...rows];
+  next.splice(dayEndIdx, 0, gap);
+  return next;
+}
 
 function formatRailMinutes(minutes: number): string {
   const m = Math.max(0, Math.min(minutes, 24 * 60 - 1));
@@ -163,11 +211,18 @@ function AnchorRow({
         <SpineNode variant={isStart ? 'start' : 'end'} palette={palette} isDark={isDark} />
         <View style={[styles.spineLine, { backgroundColor: palette.line }]} />
       </View>
-      <View style={styles.contentCol}>
-        <ThemedText style={[styles.metaText, { color: palette.muted }]}>
-          {formatMinuteOfDayKo(row.minutes)} ↻
-        </ThemedText>
-        <ThemedText style={[styles.titleText, { color: palette.ink }]}>{row.label}</ThemedText>
+      <View style={styles.anchorContentRow}>
+        <View style={styles.anchorMetaCol}>
+          <ThemedText style={[styles.metaText, { color: palette.muted }]}>
+            {formatMinuteOfDayKo(row.minutes)}
+          </ThemedText>
+          {row.dateCaption ? (
+            <ThemedText style={[styles.anchorDateText, { color: palette.muted }]}>
+              {row.dateCaption}
+            </ThemedText>
+          ) : null}
+        </View>
+        <ThemedText style={[styles.anchorTitleText, { color: palette.ink }]}>{row.label}</ThemedText>
       </View>
       <View style={styles.completeSpacer} />
     </View>
@@ -239,9 +294,14 @@ export function SpineTimelineView({
 }: Props) {
   const blockRowHeightRef = useRef(56);
 
+  const displayRows = useMemo(
+    () => ensureGapBeforeDayEnd(rows, nowMinutes),
+    [rows, nowMinutes],
+  );
+
   const spineBlockCount = useMemo(
-    () => rows.filter((row) => row.kind === 'block').length,
-    [rows],
+    () => displayRows.filter((row) => row.kind === 'block').length,
+    [displayRows],
   );
   const reorderEnabled = spineBlockCount >= 2 && Boolean(onReorderBlocks);
 
@@ -267,7 +327,7 @@ export function SpineTimelineView({
 
   const rendered = useMemo(() => {
     let blockIndex = 0;
-    return rows.map((row, index) => {
+    return displayRows.map((row, index) => {
       const key =
         row.kind === 'block'
           ? `block-${row.block.id}`
@@ -307,7 +367,9 @@ export function SpineTimelineView({
             isCurrent={isCurrent}
             accentColor={palette.accent}
             reorderEnabled={reorderEnabled}
-            onToggleComplete={() => onToggleBlockComplete(row.block.id)}
+            onToggleComplete={
+              onToggleBlockComplete ? () => onToggleBlockComplete(row.block.id) : undefined
+            }
             onPress={onPressBlock ? () => onPressBlock(row.block.id) : undefined}
             onDelete={onDeleteBlock ? () => onDeleteBlock(row.block.id) : undefined}
             onOpenSettings={
@@ -332,7 +394,7 @@ export function SpineTimelineView({
       );
     });
   }, [
-    rows,
+    displayRows,
     nowMinutes,
     palette,
     isDark,
@@ -349,7 +411,7 @@ export function SpineTimelineView({
     onCommitReorder,
   ]);
 
-  if (rows.length === 0) {
+  if (displayRows.length === 0) {
     return (
       <View style={styles.emptyWrap}>
         <ThemedText style={{ color: palette.muted, fontSize: 13 }}>
@@ -453,6 +515,25 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingTop: 2,
   },
+  anchorContentRow: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingTop: 2,
+  },
+  anchorMetaCol: {
+    gap: 2,
+    flexShrink: 0,
+  },
+  anchorTitleText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    lineHeight: 21,
+  },
   gapContentCol: {
     flex: 1,
     minWidth: 0,
@@ -464,6 +545,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 16,
+  },
+  anchorDateText: {
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
+    letterSpacing: -0.1,
   },
   titleText: {
     fontSize: 16,

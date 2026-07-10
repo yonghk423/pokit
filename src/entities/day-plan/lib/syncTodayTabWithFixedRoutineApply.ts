@@ -439,7 +439,7 @@ export function computeSyncTodayTabWithFixedRoutineApply(
     sectionsWithoutSuperseded,
     appliedKeys,
     allFixedFlowKeys,
-    new Set(),
+    catalogSelection,
   );
   const appliedOverrides = buildAppliedFixedRoutineMealSlotsMap(
     {

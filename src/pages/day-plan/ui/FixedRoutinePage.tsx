@@ -32,6 +32,7 @@ import {
   useFixedFlowSetsStore,
   type CustomFlowTemplateKey
 } from '@entities/day-plan';
+import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
@@ -1554,6 +1555,9 @@ export function FixedRoutinePage({
         ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
       });
       saveGoalDetailCategoryConfig(id, next);
+      if (templateKey === 'reminder') {
+        void persistReminderTemplateNotificationRule(id, next);
+      }
       appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
       registerOtherCategoryResolverFromStorage();
       void loadGoalDetailCategoryConfig(id);

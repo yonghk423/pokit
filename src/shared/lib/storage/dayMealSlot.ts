@@ -16,6 +16,7 @@ export {
   getMealSlotStartHhmm,
   isDayMealSlotScheduleValid,
   loadDayMealSlotSchedule,
+  mealSlotProgressTowardNext,
   normalizeDayMealSlotSchedule,
   resolveCurrentMealSlotFromSchedule,
   saveDayMealSlotSchedule,

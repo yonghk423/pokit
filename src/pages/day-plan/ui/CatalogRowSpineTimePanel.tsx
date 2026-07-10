@@ -26,6 +26,10 @@ export const CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT = 228;
 type Props = {
   startMinutes: number;
   endMinutes: number;
+  endsNextCalendarDay?: boolean;
+  startDateLabel?: string;
+  endDateLabelToday?: string;
+  endDateLabelNextDay?: string;
   ink: string;
   muted: string;
   line: string;
@@ -33,7 +37,11 @@ type Props = {
   disabled?: boolean;
   priorityStart: string;
   priorityEnd: string;
-  onScheduleChange: (startMinutes: number, endMinutes: number) => void;
+  onScheduleChange: (
+    startMinutes: number,
+    endMinutes: number,
+    endsNextCalendarDay: boolean,
+  ) => void;
   onPickerExpandedChange?: (expanded: boolean) => void;
   contentInsetLeft?: number;
 };
@@ -42,6 +50,10 @@ type Props = {
 export function CatalogRowSpineTimePanel({
   startMinutes,
   endMinutes,
+  endsNextCalendarDay = false,
+  startDateLabel,
+  endDateLabelToday,
+  endDateLabelNextDay,
   ink,
   muted,
   line,
@@ -55,13 +67,15 @@ export function CatalogRowSpineTimePanel({
 }: Props) {
   const [draftStart, setDraftStart] = useState(() => formatMinutesToHHmm(startMinutes));
   const [draftEnd, setDraftEnd] = useState(() => formatMinutesToHHmm(endMinutes));
+  const [draftEndsNext, setDraftEndsNext] = useState(endsNextCalendarDay);
   const [expanded, setExpanded] = useState<'start' | 'end' | null>(null);
 
   useEffect(() => {
     if (expanded !== null) return;
     setDraftStart(formatMinutesToHHmm(startMinutes));
     setDraftEnd(formatMinutesToHHmm(endMinutes));
-  }, [expanded, startMinutes, endMinutes]);
+    setDraftEndsNext(endsNextCalendarDay);
+  }, [expanded, startMinutes, endMinutes, endsNextCalendarDay]);
 
   useEffect(() => {
     onPickerExpandedChange?.(expanded !== null);
@@ -77,12 +91,12 @@ export function CatalogRowSpineTimePanel({
   }, [priorityEnd, priorityStart]);
 
   const commitDraft = useCallback(
-    (startHhmm: string, endHhmm: string) => {
+    (startHhmm: string, endHhmm: string, endsNext: boolean) => {
       const start = parseHHmmToMinutes(startHhmm);
       let end = parseHHmmToMinutes(endHhmm);
       if (start === null || end === null) return;
-      if (end <= start) end = Math.min(24 * 60, start + 15);
-      onScheduleChange(start, end);
+      if (!endsNext && end <= start) end = Math.min(24 * 60, start + 15);
+      onScheduleChange(start, end, endsNext);
     },
     [onScheduleChange],
   );
@@ -104,14 +118,15 @@ export function CatalogRowSpineTimePanel({
   const resetDraftFromProps = useCallback(() => {
     setDraftStart(formatMinutesToHHmm(startMinutes));
     setDraftEnd(formatMinutesToHHmm(endMinutes));
-  }, [endMinutes, startMinutes]);
+    setDraftEndsNext(endsNextCalendarDay);
+  }, [endMinutes, endsNextCalendarDay, startMinutes]);
 
   const handleConfirm = useCallback(() => {
     if (disabled) return;
-    commitDraft(draftStart, draftEnd);
+    commitDraft(draftStart, draftEnd, draftEndsNext);
     setExpanded(null);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [commitDraft, disabled, draftEnd, draftStart]);
+  }, [commitDraft, disabled, draftEnd, draftEndsNext, draftStart]);
 
   const toggleExpand = useCallback(
     (field: 'start' | 'end') => {
@@ -171,6 +186,12 @@ export function CatalogRowSpineTimePanel({
 
   const renderSegment = (field: 'start' | 'end', label: string, valueHhmm: string) => {
     const selected = activeField === field;
+    const dateLabel =
+      field === 'start'
+        ? startDateLabel
+        : draftEndsNext
+          ? endDateLabelNextDay
+          : endDateLabelToday;
     return (
       <Pressable
         accessibilityRole="button"
@@ -194,6 +215,13 @@ export function CatalogRowSpineTimePanel({
           numberOfLines={1}>
           {formatHhmmClockKo(valueHhmm)}
         </ThemedText>
+        {dateLabel ? (
+          <ThemedText
+            style={[styles.segmentDate, { color: selected ? selectedFg : muted }]}
+            numberOfLines={1}>
+            {dateLabel}
+          </ThemedText>
+        ) : null}
       </Pressable>
     );
   };
@@ -212,6 +240,55 @@ export function CatalogRowSpineTimePanel({
     </Pressable>
   );
 
+  const renderEndDateChoice = () => (
+    <View style={styles.endDateChoiceRow}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="종료 시간을 당일로 설정"
+        disabled={disabled}
+        onPress={() => {
+          if (disabled) return;
+          void Haptics.selectionAsync();
+          setDraftEndsNext(false);
+          commitDraft(draftStart, draftEnd, false);
+        }}
+        style={({ pressed }) => [
+          styles.endDateChoiceBtn,
+          {
+            backgroundColor: !draftEndsNext ? ink : trackBg,
+            borderColor: line,
+            opacity: disabled ? 0.45 : pressed ? 0.9 : 1,
+          },
+        ]}>
+        <ThemedText style={[styles.endDateChoiceText, { color: !draftEndsNext ? selectedFg : ink }]}>
+          당일
+        </ThemedText>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="종료 시간을 다음 날로 설정"
+        disabled={disabled}
+        onPress={() => {
+          if (disabled) return;
+          void Haptics.selectionAsync();
+          setDraftEndsNext(true);
+          commitDraft(draftStart, draftEnd, true);
+        }}
+        style={({ pressed }) => [
+          styles.endDateChoiceBtn,
+          {
+            backgroundColor: draftEndsNext ? ink : trackBg,
+            borderColor: line,
+            opacity: disabled ? 0.45 : pressed ? 0.9 : 1,
+          },
+        ]}>
+        <ThemedText style={[styles.endDateChoiceText, { color: draftEndsNext ? selectedFg : ink }]}>
+          다음 날
+        </ThemedText>
+      </Pressable>
+    </View>
+  );
+
   return (
     <View style={[styles.root, { paddingLeft: contentInsetLeft }]}>
       <View style={[styles.track, { backgroundColor: trackBg, borderColor: line }]}>
@@ -225,6 +302,7 @@ export function CatalogRowSpineTimePanel({
           </>
         ) : null}
       </View>
+      {renderEndDateChoice()}
       {Platform.OS === 'ios' && activeField ? (
         <View style={styles.pickerWrap}>
           <View style={styles.pickerScale}>
@@ -289,10 +367,36 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.25,
   },
+  segmentDate: {
+    marginTop: 1,
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: -0.15,
+  },
   pickerWrap: {
     marginTop: 0,
     overflow: 'hidden',
     alignItems: 'center',
+  },
+  endDateChoiceRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    gap: 6,
+  },
+  endDateChoiceBtn: {
+    flex: 1,
+    minHeight: 30,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  endDateChoiceText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   pickerScale: {
     height: 132,

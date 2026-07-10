@@ -344,6 +344,37 @@ describe('dayPlanStore', () => {
     expect(past).toEqual({ ok: false, reason: 'in_the_past' });
   });
 
+  it('allows endsNext block when end is after start', () => {
+    resetStore({ dateKey: '2099-06-01' });
+    const result = useDayPlanStore.getState().addBlock({
+      title: '다음날 긴 구간',
+      category: '독서',
+      startMinutes: 3 * 60,
+      endMinutes: 4 * 60,
+      endsNextCalendarDay: true,
+      planDateKey: '2099-06-01',
+    });
+    expect(result.ok).toBe(true);
+    const added = useDayPlanStore.getState().blocks[0];
+    expect(added?.endsNextCalendarDay).toBe(true);
+  });
+
+  it('updates block and toggles endsNext flag', () => {
+    resetStore({
+      dateKey: '2099-06-01',
+      blocks: [block({ id: 'toggle', startMinutes: 22 * 60, endMinutes: 23 * 60 })],
+    });
+    const result = useDayPlanStore.getState().updateBlock('toggle', {
+      startMinutes: 22 * 60,
+      endMinutes: 3 * 60,
+      endsNextCalendarDay: true,
+    });
+    expect(result).toEqual({ ok: true });
+    const updated = useDayPlanStore.getState().blocks.find((b) => b.id === 'toggle');
+    expect(updated?.endsNextCalendarDay).toBe(true);
+    expect(updated?.endMinutes).toBe(3 * 60);
+  });
+
   it('switches date when adding block for another plan day', () => {
     const future = addDaysToLocalDateKey(getLocalDateKey(), 2);
     const result = useDayPlanStore.getState().addBlock({

@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import {
-  CUSTOM_FLOW_TEMPLATE_LABELS,
+  resolveAppliedCustomFlowTemplateLabel,
   resolveCustomFlowTemplateKey,
 } from '@entities/day-plan';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -14,7 +14,7 @@ type Props = {
 
 export function CustomFlowTemplateMetaPill({ dataConfig, ink, line }: Props) {
   const templateKey = resolveCustomFlowTemplateKey(dataConfig);
-  const label = CUSTOM_FLOW_TEMPLATE_LABELS[templateKey];
+  const label = resolveAppliedCustomFlowTemplateLabel(templateKey);
 
   return (
     <View style={[styles.pill, { borderColor: line }]}>

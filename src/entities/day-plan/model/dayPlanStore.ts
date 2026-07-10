@@ -143,6 +143,7 @@ export type DayPlanStoreState = {
       title?: string;
       startMinutes?: number;
       endMinutes?: number;
+      endsNextCalendarDay?: boolean;
       category?: string;
       categoryKey?: string | null;
     },
@@ -414,9 +415,6 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         if (end >= 24 * 60) {
           return { ok: false, reason: 'invalid_range' };
         }
-        if (end >= start) {
-          return { ok: false, reason: 'invalid_range' };
-        }
         const spanMin = 24 * 60 - start + end;
         if (spanMin < 1) {
           return { ok: false, reason: 'invalid_range' };
@@ -536,14 +534,17 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
       );
       let end = Math.floor(patch.endMinutes ?? existing.endMinutes);
       end = Math.max(0, Math.min(end, 24 * 60));
-      const endsNext = Boolean(existing.endsNextCalendarDay);
+      const endsNext =
+        patch.endsNextCalendarDay !== undefined
+          ? Boolean(patch.endsNextCalendarDay)
+          : Boolean(existing.endsNextCalendarDay);
 
       if (!endsNext) {
         if (end <= start) {
           return { ok: false, reason: 'invalid_range' };
         }
       } else {
-        if (end >= 24 * 60 || end >= start) {
+        if (end >= 24 * 60) {
           return { ok: false, reason: 'invalid_range' };
         }
         const spanMin = 24 * 60 - start + end;
@@ -598,6 +599,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
             title,
             startMinutes: start,
             endMinutes: end,
+            ...(endsNext ? { endsNextCalendarDay: true as const } : { endsNextCalendarDay: undefined }),
             category: nextCategory,
             ...(nextCategoryKey ? { categoryKey: nextCategoryKey } : { categoryKey: undefined }),
           };

@@ -4,8 +4,10 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  addDaysToLocalDateKey,
   computeSpineGapInsertSlot,
   formatMinuteOfDayKo,
+  getLocalDateKey,
   resolveCategoryCatalogIcon,
   type DayPlanBlock,
 } from '@entities/day-plan';
@@ -26,6 +28,7 @@ import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
 export type RoutinePickerSpineSchedule = {
   startMinutes: number;
   endMinutes: number;
+  endsNextCalendarDay: boolean;
 };
 
 export type RoutinePickerConfirmItem = {
@@ -71,6 +74,7 @@ function buildPendingSpineBlocks(
       categoryKey: key,
       startMinutes: schedule.startMinutes,
       endMinutes: schedule.endMinutes,
+      ...(schedule.endsNextCalendarDay ? { endsNextCalendarDay: true as const } : {}),
       order: 10_000 + index,
       blockOrigin: 'spineTimeline' as const,
     }));
@@ -94,7 +98,7 @@ function resolveGapSlotForKey(
     config.priorityEnd,
   );
   if (!slot) return null;
-  return { startMinutes: slot.startMinutes, endMinutes: slot.endMinutes };
+  return { startMinutes: slot.startMinutes, endMinutes: slot.endMinutes, endsNextCalendarDay: false };
 }
 
 function buildSchedulesForSelectedKeys(
@@ -108,6 +112,14 @@ function buildSchedulesForSelectedKeys(
     if (slot) schedules[key] = slot;
   }
   return schedules;
+}
+
+function formatDateKeyCompactLabel(dateKey: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
+  if (!m) return dateKey;
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  return `${month}월 ${day}일`;
 }
 
 /** 루틴 탭과 동일한 그룹 구조 — 담기·구간 연결·타임라인 갭 추가용 다중 선택 시트 */
@@ -133,6 +145,12 @@ export function PriorityRoutinePickerSheet({
   const [defaultBlockMinutes, setDefaultBlockMinutes] = useState(() => loadSpineDefaultBlockMinutes());
 
   const spineTimeEnabled = spineGapAdd != null;
+  const baseDateKey = useMemo(() => getLocalDateKey(), []);
+  const baseDateLabel = useMemo(() => formatDateKeyCompactLabel(baseDateKey), [baseDateKey]);
+  const nextDateLabel = useMemo(
+    () => formatDateKeyCompactLabel(addDaysToLocalDateKey(baseDateKey, 1)),
+    [baseDateKey],
+  );
 
   useEffect(() => {
     if (!visible) return;
@@ -195,14 +213,14 @@ export function PriorityRoutinePickerSheet({
   );
 
   const handleScheduleChange = useCallback(
-    (key: string, startMinutes: number, endMinutes: number) => {
+    (key: string, startMinutes: number, endMinutes: number, endsNextCalendarDay: boolean) => {
       let end = endMinutes;
-      if (end <= startMinutes) {
+      if (!endsNextCalendarDay && end <= startMinutes) {
         end = Math.min(24 * 60, startMinutes + defaultBlockMinutes);
       }
       setScheduleByKey((prev) => ({
         ...prev,
-        [key]: { startMinutes, endMinutes: end },
+        [key]: { startMinutes, endMinutes: end, endsNextCalendarDay },
       }));
     },
     [defaultBlockMinutes],
@@ -372,14 +390,18 @@ export function PriorityRoutinePickerSheet({
                         <CatalogRowSpineTimePanel
                           startMinutes={schedule.startMinutes}
                           endMinutes={schedule.endMinutes}
+                          endsNextCalendarDay={schedule.endsNextCalendarDay}
+                          startDateLabel={baseDateLabel}
+                          endDateLabelToday={baseDateLabel}
+                          endDateLabelNextDay={nextDateLabel}
                           ink={ink}
                           muted={muted}
                           line={line}
                           isDark={isDark}
                           priorityStart={spineGapAdd.priorityStart}
                           priorityEnd={spineGapAdd.priorityEnd}
-                          onScheduleChange={(startMinutes, endMinutes) =>
-                            handleScheduleChange(cat.key, startMinutes, endMinutes)
+                          onScheduleChange={(startMinutes, endMinutes, endsNextCalendarDay) =>
+                            handleScheduleChange(cat.key, startMinutes, endMinutes, endsNextCalendarDay)
                           }
                           contentInsetLeft={28}
                         />

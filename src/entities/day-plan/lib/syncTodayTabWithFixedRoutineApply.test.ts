@@ -103,6 +103,37 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     });
   });
 
+  it('clears unapplied fixed routine keys from sections order', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      fixedRoutineApplyLayoutMode: 'sections',
+      priorityCategoryOrder: [],
+      priorityMealSlotOverrides: {},
+      prioritySectionsCategoryOrder: ['reading', 'work'],
+      prioritySectionsMealSlots: { reading: ['morning'] },
+      todayAppliedCategoryKeys: [],
+      routineCatalogSelectionKeys: [],
+    });
+    expect(patch).toEqual({
+      prioritySectionsCategoryOrder: ['work'],
+      prioritySectionsMealSlots: {},
+    });
+  });
+
+  it('keeps manually added fixed routine keys in sections mode when catalog selection protects them', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      fixedRoutineApplyLayoutMode: 'sections',
+      priorityCategoryOrder: [],
+      priorityMealSlotOverrides: {},
+      prioritySectionsCategoryOrder: ['reading', 'work'],
+      prioritySectionsMealSlots: { reading: ['morning'] },
+      todayAppliedCategoryKeys: [],
+      routineCatalogSelectionKeys: ['reading'],
+    });
+    expect(patch).toBeNull();
+  });
+
   it('adds applied fixed routines to sections order with meal slots', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,

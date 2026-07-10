@@ -87,4 +87,20 @@ describe('buildSpineTimelineModel', () => {
       startMinutes: 18 * 60 + 30,
     });
   });
+
+  it('앵커에 날짜 캡션을 전달하면 행에 포함한다', () => {
+    const rows = buildSpineTimelineModel({
+      priorityStart: '03:00',
+      priorityEnd: '15:03',
+      nowMinutes: 3 * 60,
+      blocks: [],
+      dayStartDateCaption: '7월 10일',
+      dayEndDateCaption: '7월 11일',
+    });
+
+    const start = rows.find((r) => r.kind === 'anchor' && r.role === 'dayStart');
+    const end = rows.find((r) => r.kind === 'anchor' && r.role === 'dayEnd');
+    expect(start).toMatchObject({ dateCaption: '7월 10일' });
+    expect(end).toMatchObject({ dateCaption: '7월 11일' });
+  });
 });

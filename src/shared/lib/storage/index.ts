@@ -71,6 +71,7 @@ export {
   getMealSlotStartHhmm,
   isDayMealSlotScheduleValid,
   loadDayMealSlotSchedule,
+  mealSlotProgressTowardNext,
   normalizeDayMealSlotSchedule,
   resolveCurrentMealSlotFromSchedule,
   saveDayMealSlotSchedule,
@@ -213,7 +214,9 @@ export {
   localStorageClient
 } from './localStorageClient';
 export {
+  appendRoutineCatalogSelectionKeys,
   loadRoutineCatalogSelectionKeys,
+  removeRoutineCatalogSelectionKey,
   saveRoutineCatalogSelectionKeys,
   loadPriorityCatalogFixedRoutineKeys,
   savePriorityCatalogFixedRoutineKeys

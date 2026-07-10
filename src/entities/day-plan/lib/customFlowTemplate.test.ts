@@ -1,6 +1,7 @@
 import {
   buildInitialCustomFlowDetailConfig,
   CUSTOM_FLOW_TEMPLATE_KEYS,
+  resolveAppliedCustomFlowTemplateLabel,
   resolveCustomFlowTemplateKey,
 } from './customFlowTemplate';
 import {
@@ -20,6 +21,10 @@ describe('customFlowTemplate', () => {
 
   it('has labels for every template key', () => {
     expect(CUSTOM_FLOW_TEMPLATE_KEYS).toHaveLength(9);
+  });
+
+  it('maps legacy abstain template to checklist label', () => {
+    expect(resolveAppliedCustomFlowTemplateLabel('abstain')).toBe('할 일 체크');
   });
 
   it('builds measurement initial config with appearance', () => {

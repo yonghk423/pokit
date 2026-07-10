@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import {
@@ -25,6 +25,7 @@ import {
   formatMeasurementDelta,
   formatMeasurementValue,
   formatReminderCountdown,
+  formatHhmmClockKo,
   JOURNAL_MOOD_OPTIONS,
   MAX_CUSTOM_REMINDER_TIMES,
   measurementQuickDeltas,
@@ -43,6 +44,7 @@ import {
   roundMeasurementValue,
   toggleReminderTimeDone,
   updateReminderItemLabel,
+  updateReminderItemTime,
   type CustomFlowTemplateKey,
   type CounterUnitKey,
   type DayPlanBlock,
@@ -50,6 +52,8 @@ import {
 import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+
+import { ReminderTimePickerPill } from './ReminderTimePickerPill';
 
 export type TemplateSessionTheme = {
   ink: string;
@@ -937,7 +941,19 @@ function ReminderTemplateView({
   const showPresetPicker = previewMode || isDefaultOnly;
   const [draftTime, setDraftTime] = useState('');
   const [draftLabel, setDraftLabel] = useState('');
+  const [expandedTimeKey, setExpandedTimeKey] = useState<string | null>(null);
+  const [addTimeExpanded, setAddTimeExpanded] = useState(false);
   const canAddMore = cfg.reminderItems.length < MAX_CUSTOM_REMINDER_TIMES;
+
+  const openTimePicker = useCallback((key: string) => {
+    setAddTimeExpanded(false);
+    setExpandedTimeKey((cur) => (cur === key ? null : key));
+  }, []);
+
+  const openAddTimePicker = useCallback(() => {
+    setExpandedTimeKey(null);
+    setAddTimeExpanded((cur) => !cur);
+  }, []);
 
   const handleAdd = () => {
     const next = addReminderScheduleItem(cfg, draftTime, draftLabel);
@@ -1001,7 +1017,7 @@ function ReminderTemplateView({
         </ThemedText>
         {nextTime ? (
           <ThemedText style={[styles.nextReminder, { color: ink }]}>
-            다음 · {resolveReminderItemTitle(nextItem ?? { time: nextTime, label: '' })} · {nextTime}
+            다음 · {resolveReminderItemTitle(nextItem ?? { time: nextTime, label: '' })} · {formatHhmmClockKo(nextTime)}
             {countdown ? ` · ${countdown}` : ''}
           </ThemedText>
         ) : (
@@ -1036,11 +1052,26 @@ function ReminderTemplateView({
               <View style={styles.reminderEditMain}>
                 <View style={styles.reminderEditHeader}>
                   <IconSymbol name="bell" size={16} color={isNext ? accent : muted} />
-                  <ThemedText style={[styles.reminderEditTime, { color: ink }]}>{item.time}</ThemedText>
-                  <ThemedText style={[styles.reminderMeta, { color: isNext ? accent : muted }]}>
+                  <ThemedText style={[styles.reminderMeta, { color: isNext ? accent : muted, flex: 1 }]}>
                     {checked ? '완료' : isNext ? '다음 알림' : '예정'}
                   </ThemedText>
                 </View>
+                <ReminderTimePickerPill
+                  valueHhmm={item.time}
+                  onChangeHhmm={(next) => {
+                    const updated = updateReminderItemTime(cfg, item.time, next);
+                    if (updated) {
+                      emit(updated);
+                      setExpandedTimeKey(next);
+                    }
+                  }}
+                  expanded={expandedTimeKey === item.time}
+                  onToggleExpand={() => openTimePicker(item.time)}
+                  ink={ink}
+                  muted={muted}
+                  line={line}
+                  surface={surface}
+                />
                 <TextInput
                   value={item.label}
                   onChangeText={(value) => emit(updateReminderItemLabel(cfg, item.time, value))}
@@ -1088,23 +1119,25 @@ function ReminderTemplateView({
       {canAddMore ? (
         <Card theme={theme} gap={8}>
           <SectionLabel color={muted}>알림 추가</SectionLabel>
-          <View style={styles.reminderAddRow}>
-            <TextInput
-              value={draftTime}
-              onChangeText={setDraftTime}
-              placeholder="15:30"
-              placeholderTextColor={muted}
-              keyboardType="numbers-and-punctuation"
-              style={[styles.reminderAddInput, { color: ink, borderColor: line, flex: 0.8 }]}
-            />
-            <TextInput
-              value={draftLabel}
-              onChangeText={setDraftLabel}
-              placeholder="예: 물 마시기"
-              placeholderTextColor={muted}
-              style={[styles.reminderAddInput, { color: ink, borderColor: line, flex: 1 }]}
-            />
-          </View>
+          <ReminderTimePickerPill
+            valueHhmm={draftTime}
+            onChangeHhmm={setDraftTime}
+            expanded={addTimeExpanded}
+            onToggleExpand={openAddTimePicker}
+            ink={ink}
+            muted={muted}
+            line={line}
+            surface={surface}
+            placeholder="시간 선택"
+            accessibilityLabel="새 알림 시간"
+          />
+          <TextInput
+            value={draftLabel}
+            onChangeText={setDraftLabel}
+            placeholder="예: 물 마시기"
+            placeholderTextColor={muted}
+            style={[styles.reminderLabelInput, { color: ink, borderColor: line }]}
+          />
           <Pressable
             accessibilityRole="button"
             onPress={handleAdd}
@@ -1382,8 +1415,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   reminderEditMain: { flex: 1, gap: 8, minWidth: 0 },
-  reminderEditHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  reminderEditTime: { fontSize: 16, fontWeight: '700' },
+  reminderEditHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   reminderLabelInput: {
     borderWidth: 2,
     minHeight: 40,

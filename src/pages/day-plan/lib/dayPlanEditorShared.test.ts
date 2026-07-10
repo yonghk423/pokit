@@ -25,10 +25,12 @@ jest.mock('@entities/day-plan', () => {
 
 import {
   formatDateKeyDisplayKo,
+  formatEndHhmmFrom12hParts,
   pickPlanDateKeyForBlock,
   planDayIntroFromRange,
   priorityClockCaptionDateKeyEnd,
   sortedPlanDateRange,
+  toggleEndMeridiemHhmm,
 } from './dayPlanEditorShared';
 
 describe('dayPlanEditorShared', () => {
@@ -61,5 +63,17 @@ describe('dayPlanEditorShared', () => {
   it('extends end caption to next day for overnight window', () => {
     expect(priorityClockCaptionDateKeyEnd('2025-05-26', '22:00', '06:00')).toBe('2025-05-27');
     expect(priorityClockCaptionDateKeyEnd('2025-05-26', '09:00', '18:00')).toBe('2025-05-26');
+  });
+
+  it('resolves end noon vs midnight for ambiguous 오전 12:xx', () => {
+    expect(formatEndHhmmFrom12hParts(12, 20, '오전', '09:20')).toBe('00:20');
+    expect(formatEndHhmmFrom12hParts(12, 20, '오후', '09:20')).toBe('12:20');
+    expect(formatEndHhmmFrom12hParts(12, 5, '오후', '22:00')).toBe('12:05');
+  });
+
+  it('toggles end meridiem to keep overnight for evening start', () => {
+    expect(toggleEndMeridiemHhmm('22:00', 12, 5, '오전')).toBe('12:05');
+    expect(toggleEndMeridiemHhmm('22:00', 12, 5, '오후')).toBe('00:05');
+    expect(toggleEndMeridiemHhmm('22:00', 7, 0, '오전')).toBe('19:00');
   });
 });

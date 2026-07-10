@@ -55,7 +55,7 @@ export const orderRowStyles = StyleSheet.create({
     paddingRight: 10,
   },
   orderRowRomanTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: -0.3,
   },

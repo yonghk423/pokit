@@ -1,11 +1,13 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useShallow } from 'zustand/react/shallow';
 
 import {
   defaultPriorityWindowFromNow,
+  formatHhmmClockKo,
   getLocalDateKey,
   useDayPlanDraftStore,
   useDayPlanRuntimeStore,
@@ -20,6 +22,7 @@ import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import {
   ensureDefaultPriorityCatalog,
   loadFixedFlowSetsState,
+  loadPriorityDayStartAlarm,
   resetAppLocalData,
   saveDayPlan,
   saveFixedFlowSetsState,
@@ -65,6 +68,20 @@ export function SettingsPage() {
   const [isResettingData, setIsResettingData] = useState(false);
   const appearanceMode = useAppearanceStore((s) => s.mode);
   const appearanceLabel = appearanceMode === 'dark' ? '다크 모드' : '라이트 모드';
+  const { priorityStart, priorityEnd } = useDayPlanDraftStore(
+    useShallow((s) => ({
+      priorityStart: s.priorityStart,
+      priorityEnd: s.priorityEnd,
+    })),
+  );
+  const [dayStartAlarmOn, setDayStartAlarmOn] = useState(() => loadPriorityDayStartAlarm().enabled);
+
+  useFocusEffect(
+    useCallback(() => {
+      setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
+    }, []),
+  );
+
   const runResetData = async () => {
     if (isResettingData) return;
     setIsResettingData(true);
@@ -205,6 +222,32 @@ export function SettingsPage() {
           },
         ]}
         showsVerticalScrollIndicator={false}>
+        <View style={[styles.section, { borderColor: p.border, backgroundColor: p.surface }]}>
+          <ThemedText style={[styles.sectionTitle, { color: p.sectionTitle }]}>데이플랜</ThemedText>
+
+          <Pressable
+            style={[styles.item, { borderTopColor: p.border }]}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/daily-rhythm-settings');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="시작과 마무리 시간 설정">
+            <View style={styles.itemLeft}>
+              <View style={styles.itemTextWrap}>
+                <ThemedText style={[styles.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                  시작·마무리
+                </ThemedText>
+                <ThemedText style={[styles.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                  {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
+                  {dayStartAlarmOn ? ' · 하루 시작 알림 켜짐' : ''}
+                </ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={16} color={p.chevron} />
+          </Pressable>
+        </View>
+
         <View style={[styles.section, { borderColor: p.border, backgroundColor: p.surface }]}>
           <ThemedText style={[styles.sectionTitle, { color: p.sectionTitle }]}>알림</ThemedText>
 

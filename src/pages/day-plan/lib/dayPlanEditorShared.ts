@@ -1,9 +1,11 @@
 import {
   addDaysToLocalDateKey,
+  formatMinutesToHHmm,
   getInitialOtherDataConfig,
   getLocalDateKey,
   getOtherCategoryResolvedDisplayLabel,
   isCustomFlowCategoryKey,
+  isOvernightPriorityWindow,
   normalizeOtherDetailConfig,
   parseHHmmToMinutes,
   PRIORITY_CATALOG_PICKER_LABELS,
@@ -223,6 +225,100 @@ export function sortedPlanDateRange(startKey: string, endKey: string): { lo: str
 
 /** @deprecated 이름 호환 — `isOvernightPriorityWindow`와 동일 */
 export { isOvernightPriorityWindow as isOvernightHhmmRange } from '@entities/day-plan';
+
+type MeridiemKo = '오전' | '오후';
+
+function from12hPartsToTotal(h12: number, min: number, ap: MeridiemKo): number {
+  const m = Math.max(0, Math.min(59, min));
+  let h24: number;
+  if (h12 === 12) {
+    h24 = ap === '오전' ? 0 : 12;
+  } else {
+    h24 = ap === '오후' ? h12 + 12 : h12;
+  }
+  return h24 * 60 + m;
+}
+
+/**
+ * 종료 시계 — 오전 12:xx는 자정(00:xx)과 정오(12:xx)가 겹친다.
+ * 시작 시각·다음날 여부에 맞는 24h 분 값을 고른다.
+ */
+export function resolveEndMinutesFrom12h(
+  h12: number,
+  min: number,
+  ap: MeridiemKo,
+  startHhmm: string,
+  preferMidnightForNoon = false,
+): number {
+  if (ap === '오후') {
+    return from12hPartsToTotal(h12, min, '오후');
+  }
+  if (h12 !== 12) {
+    return from12hPartsToTotal(h12, min, '오전');
+  }
+
+  const start = startHhmm.trim();
+  const ps = parseHHmmToMinutes(start);
+  if (ps === null) {
+    return from12hPartsToTotal(h12, min, '오전');
+  }
+
+  const midnight = min;
+  const noon = 12 * 60 + min;
+  const midnightHhmm = formatMinutesToHHmm(midnight);
+  const noonHhmm = formatMinutesToHHmm(noon);
+  const midOver = isOvernightPriorityWindow(start, midnightHhmm);
+  const noonOver = isOvernightPriorityWindow(start, noonHhmm);
+
+  if (midOver && !noonOver) return midnight;
+  if (!midOver && noonOver) return noon;
+  if (midOver && noonOver) {
+    return preferMidnightForNoon ? midnight : noon;
+  }
+  return noon > ps ? noon : midnight;
+}
+
+export function formatEndHhmmFrom12hParts(
+  h12: number,
+  min: number,
+  ap: MeridiemKo,
+  startHhmm: string,
+  preferMidnightForNoon = false,
+): string {
+  return formatMinutesToHHmm(
+    resolveEndMinutesFrom12h(h12, min, ap, startHhmm, preferMidnightForNoon),
+  );
+}
+
+/** 종료 시계 AM/PM 토글 — 오후 12:xx도 저녁 시작 구간에서는 다음날로 해석 */
+export function toggleEndMeridiemHhmm(
+  startHhmm: string,
+  h12: number,
+  min: number,
+  ap: MeridiemKo,
+): string {
+  const start = startHhmm.trim();
+  const nextAp: MeridiemKo = ap === '오전' ? '오후' : '오전';
+
+  if (h12 === 12) {
+    const midnightHhmm = formatMinutesToHHmm(min);
+    const noonHhmm = formatMinutesToHHmm(12 * 60 + min);
+    const midOver = isOvernightPriorityWindow(start, midnightHhmm);
+    const noonOver = isOvernightPriorityWindow(start, noonHhmm);
+
+    if (nextAp === '오후' && noonOver) {
+      return noonHhmm;
+    }
+    if (nextAp === '오전' && midOver) {
+      return midnightHhmm;
+    }
+    if (nextAp === '오전' && noonOver) {
+      return noonHhmm;
+    }
+  }
+
+  return formatEndHhmmFrom12hParts(h12, min, nextAp, start, nextAp === '오전');
+}
 
 /**
  * 달력 다중일일 때 시작 시계 아래 날짜 — 구간 첫날.

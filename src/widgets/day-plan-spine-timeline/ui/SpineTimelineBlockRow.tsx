@@ -11,7 +11,7 @@ import Reanimated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { formatMinuteOfDayKo, getBlockTimelineIcon, resolveBlockCategoryKey, resolveCategoryCatalogAccentColor, type SpineTimelineRow } from '@entities/day-plan';
+import { blockDurationSec, formatMinuteOfDayKo, getBlockTimelineIcon, resolveBlockCategoryKey, resolveCategoryCatalogAccentColor, type SpineTimelineRow } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
 import { CompletionRadioButton, COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT } from '@shared/ui/completion-radio-button';
@@ -155,7 +155,7 @@ type Props = {
   isCurrent: boolean;
   accentColor: string;
   reorderEnabled: boolean;
-  onToggleComplete: () => void;
+  onToggleComplete?: () => void;
   onPress?: () => void;
   onDelete?: () => void;
   onOpenSettings?: () => void;
@@ -185,7 +185,15 @@ export function SpineTimelineBlockRow({
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const reorderDragging = useSharedValue(0);
-  const durationMin = row.endMinutes - row.startMinutes;
+  const endsNextDay = row.block.endsNextCalendarDay === true;
+  // 실제 저장값 기준 길이 — 익일 종료 블록은 자정을 넘긴 총 시간을 반영
+  const durationMin = Math.max(0, Math.round(blockDurationSec(row.block) / 60));
+  // 라벨은 저장된 종료(익일이면 익일 시각)를 그대로 보여준다. 타임라인 위치용 캡(24:00) 값이 아님
+  const railEndMinutes = endsNextDay ? row.block.endMinutes : row.endMinutes;
+  const startClockLabel = formatMinuteOfDayKo(row.startMinutes);
+  const endClockLabel = endsNextDay
+    ? `다음날 ${formatMinuteOfDayKo(row.block.endMinutes)}`
+    : formatMinuteOfDayKo(row.endMinutes).replace(/^[^\s]+\s/, '');
 
   const triggerDelete = useCallback(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -335,7 +343,7 @@ export function SpineTimelineBlockRow({
                       isCurrent && !completed && styles.railTimeLive,
                       completed && styles.textDone,
                     ]}>
-                    {formatRailMinutes(row.endMinutes)}
+                    {endsNextDay ? `+${formatRailMinutes(railEndMinutes)}` : formatRailMinutes(railEndMinutes)}
                   </ThemedText>
                 </View>
                 <View style={styles.spineCol}>
@@ -357,9 +365,7 @@ export function SpineTimelineBlockRow({
                       isCurrent && !completed && styles.metaTextLive,
                       completed && styles.textDone,
                     ]}>
-                    {formatMinuteOfDayKo(row.startMinutes)}~
-                    {formatMinuteOfDayKo(row.endMinutes).replace(/^[^\s]+\s/, '')} (
-                    {formatDurationMinKo(durationMin)})
+                    {startClockLabel}~{endClockLabel} ({formatDurationMinKo(durationMin)})
                   </ThemedText>
                   <ThemedText
                     style={[
@@ -379,11 +385,13 @@ export function SpineTimelineBlockRow({
         {onOpenSettings ? (
           <SettingsButton label={row.block.title} isDark={isDark} onPress={onOpenSettings} />
         ) : null}
-        <CompleteRadio
-          checked={completed}
-          isDark={isDark}
-          onPress={onToggleComplete}
-        />
+        {onToggleComplete ? (
+          <CompleteRadio
+            checked={completed}
+            isDark={isDark}
+            onPress={onToggleComplete}
+          />
+        ) : null}
       </View>
     </Reanimated.View>
   );
@@ -505,10 +513,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   titleText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: -0.3,
-    lineHeight: 21,
+    lineHeight: 19,
   },
   titleLive: {
     fontWeight: '800',

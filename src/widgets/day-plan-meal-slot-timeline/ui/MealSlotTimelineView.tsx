@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useMemo, useRef, type ReactNode, type RefObject } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Pressable, StyleSheet, View, type View as RNView } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, {
@@ -51,6 +51,8 @@ export type MealSlotTimelineSection<T extends MealSlotTimelineItem = MealSlotTim
   title: string;
   hintTime: string;
   isCurrent: boolean;
+  /** 현재 구간 → 다음 구간 진행률(0~1) */
+  progressToNext?: number;
   items: T[];
 };
 
@@ -207,27 +209,64 @@ function BrutalistCard({
 
 function TimelineSectionDot({
   isCurrent,
+  isPast,
   isDark,
   palette,
 }: {
   isCurrent: boolean;
+  isPast: boolean;
   isDark: boolean;
   palette: MealSlotTimelinePalette;
 }) {
   const pageBg = isDark ? RetroFlatColors.dark.bg : RetroFlatColors.light.bg;
+  const filled = isCurrent || isPast;
 
   return (
     <View
       style={[
         styles.sectionDot,
-        isCurrent && styles.sectionDotCurrent,
+        filled && styles.sectionDotCurrent,
         {
-          borderColor: isCurrent ? palette.ink : palette.line,
-          backgroundColor: isCurrent ? palette.ink : pageBg,
+          borderColor: filled ? palette.ink : palette.line,
+          backgroundColor: filled ? palette.ink : pageBg,
+          zIndex: 2,
         },
       ]}
     />
   );
+}
+
+function resolveSpineGaugeFrame(
+  sections: readonly { slot: DayMealSlot; progressToNext?: number }[],
+  bounds: Partial<Record<DayMealSlot, MealSlotSectionBounds>>,
+  currentIndex: number,
+): { top: number; height: number } | null {
+  if (currentIndex < 0 || sections.length === 0) return null;
+  const firstBounds = bounds[sections[0]!.slot];
+  const current = sections[currentIndex];
+  const currentBounds = current ? bounds[current.slot] : undefined;
+  if (!firstBounds || !current || !currentBounds) return null;
+
+  const dotOffset = SECTION_DOT_TOP + CURRENT_DOT_SIZE / 2;
+  const top = firstBounds.y + dotOffset;
+  const currentDotY = currentBounds.y + dotOffset;
+  const progress = Math.max(0, Math.min(1, current.progressToNext ?? 0));
+
+  let endY = currentDotY;
+  const next = sections[currentIndex + 1];
+  if (next) {
+    const nextBounds = bounds[next.slot];
+    if (nextBounds) {
+      const nextDotY = nextBounds.y + SECTION_DOT_TOP + DOT_SIZE / 2;
+      endY = currentDotY + (nextDotY - currentDotY) * progress;
+    } else {
+      endY = currentDotY + Math.max(0, currentBounds.height - dotOffset) * progress;
+    }
+  } else {
+    endY = currentDotY + Math.max(0, currentBounds.height - dotOffset) * progress;
+  }
+
+  return { top, height: Math.max(0, endY - top) };
 }
 
 function RoutineRowSettingsButton({
@@ -661,6 +700,8 @@ function SectionSlotCard<T extends MealSlotTimelineItem>({
 
 function TimelineSectionBlock<T extends MealSlotTimelineItem>({
   section,
+  isPast,
+  isFuture,
   palette,
   isDark,
   isItemCompleted,
@@ -674,6 +715,8 @@ function TimelineSectionBlock<T extends MealSlotTimelineItem>({
   onRowDragEnd,
 }: {
   section: MealSlotTimelineSection<T>;
+  isPast: boolean;
+  isFuture: boolean;
   palette: MealSlotTimelinePalette;
   isDark: boolean;
   isItemCompleted: (key: string) => boolean;
@@ -692,14 +735,14 @@ function TimelineSectionBlock<T extends MealSlotTimelineItem>({
   ) => void;
 }) {
   const badge = slotBadgeTheme(section.slot, isDark);
-  const colors = cardColors(isDark);
   const isCurrent = section.isCurrent;
+  const timeEmphasis = isCurrent || isPast;
 
   return (
     <View
       style={[
         styles.sectionBlock,
-        !isCurrent && styles.sectionBlockInactive,
+        isFuture && styles.sectionBlockInactive,
       ]}
       collapsable={false}
       onLayout={(event) => {
@@ -707,7 +750,12 @@ function TimelineSectionBlock<T extends MealSlotTimelineItem>({
         onSectionLayout(section.slot, y, height);
       }}>
       <View style={styles.spineCol}>
-        <TimelineSectionDot isCurrent={isCurrent} isDark={isDark} palette={palette} />
+        <TimelineSectionDot
+          isCurrent={isCurrent}
+          isPast={isPast}
+          isDark={isDark}
+          palette={palette}
+        />
       </View>
 
       <View style={styles.sectionContent}>
@@ -738,7 +786,7 @@ function TimelineSectionBlock<T extends MealSlotTimelineItem>({
             style={[
               styles.slotTimeLabel,
               cityPopFont('800'),
-              { color: isCurrent ? palette.ink : palette.muted },
+              { color: timeEmphasis ? palette.ink : palette.muted },
             ]}>
             {formatHhmmClockKo(section.hintTime)}
           </ThemedText>
@@ -795,9 +843,17 @@ export function MealSlotTimelineView<T extends MealSlotTimelineItem>({
 }: Props<T>) {
   const timelineTrackRef = useRef<RNView>(null);
   const sectionBoundsRef = useRef<Partial<Record<DayMealSlot, MealSlotSectionBounds>>>({});
+  const [sectionBounds, setSectionBounds] = useState<
+    Partial<Record<DayMealSlot, MealSlotSectionBounds>>
+  >({});
 
   const handleSectionLayout = useCallback((slot: DayMealSlot, y: number, height: number) => {
     sectionBoundsRef.current[slot] = { y, height };
+    setSectionBounds((prev) => {
+      const existing = prev[slot];
+      if (existing && existing.y === y && existing.height === height) return prev;
+      return { ...prev, [slot]: { y, height } };
+    });
   }, []);
 
   const handleRowDragEnd = useCallback(
@@ -813,28 +869,57 @@ export function MealSlotTimelineView<T extends MealSlotTimelineItem>({
     [onReorderItemDragEnd],
   );
 
+  const currentIndex = useMemo(
+    () => sections.findIndex((section) => section.isCurrent),
+    [sections],
+  );
+
+  const gaugeFrame = useMemo(
+    () => resolveSpineGaugeFrame(sections, sectionBounds, currentIndex),
+    [sections, sectionBounds, currentIndex],
+  );
+
   return (
     <View style={styles.root}>
       <View ref={timelineTrackRef} style={styles.timelineTrack} collapsable={false}>
         <View style={[styles.spineLineAbsolute, { backgroundColor: palette.line }]} />
-
-        {sections.map((section) => (
-          <TimelineSectionBlock
-            key={section.slot}
-            section={section}
-            palette={palette}
-            isDark={isDark}
-            isItemCompleted={isItemCompleted}
-            reorderEnabled={reorderEnabled}
-            timelineTrackRef={timelineTrackRef}
-            onSectionLayout={handleSectionLayout}
-            onPressAddRoutine={onPressAddRoutine}
-            onToggleItemComplete={onToggleItemComplete}
-            onOpenItemSettings={onOpenItemSettings}
-            onReorderDragActiveChange={onReorderDragActiveChange}
-            onRowDragEnd={handleRowDragEnd}
+        {gaugeFrame && gaugeFrame.height > 0 ? (
+          <View
+            pointerEvents="none"
+            style={[
+              styles.spineGaugeAbsolute,
+              {
+                backgroundColor: palette.ink,
+                top: gaugeFrame.top,
+                height: gaugeFrame.height,
+              },
+            ]}
           />
-        ))}
+        ) : null}
+
+        {sections.map((section, index) => {
+          const isPast = currentIndex >= 0 && index < currentIndex;
+          const isFuture = currentIndex >= 0 && index > currentIndex;
+          return (
+            <TimelineSectionBlock
+              key={section.slot}
+              section={section}
+              isPast={isPast}
+              isFuture={isFuture}
+              palette={palette}
+              isDark={isDark}
+              isItemCompleted={isItemCompleted}
+              reorderEnabled={reorderEnabled}
+              timelineTrackRef={timelineTrackRef}
+              onSectionLayout={handleSectionLayout}
+              onPressAddRoutine={onPressAddRoutine}
+              onToggleItemComplete={onToggleItemComplete}
+              onOpenItemSettings={onOpenItemSettings}
+              onReorderDragActiveChange={onReorderDragActiveChange}
+              onRowDragEnd={handleRowDragEnd}
+            />
+          );
+        })}
       </View>
     </View>
   );
@@ -860,6 +945,13 @@ const styles = StyleSheet.create({
     opacity: 0.4,
     zIndex: 0,
   },
+  spineGaugeAbsolute: {
+    position: 'absolute',
+    left: timelineAxisLeft - 1,
+    width: SPINE_WIDTH + 2,
+    borderRadius: 1,
+    zIndex: 1,
+  },
   sectionBlock: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -872,7 +964,7 @@ const styles = StyleSheet.create({
     width: SPINE_COL_WIDTH,
     alignItems: 'center',
     paddingTop: SECTION_DOT_TOP,
-    zIndex: 1,
+    zIndex: 2,
   },
   sectionDot: {
     width: DOT_SIZE,
@@ -995,8 +1087,8 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     flex: 1,
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
   },
   checkboxLabelDone: {
     textDecorationLine: 'line-through',

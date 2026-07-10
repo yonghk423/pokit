@@ -48,6 +48,21 @@ export function saveRoutineCatalogSelectionKeys(categoryKeys: string[]): void {
   });
 }
 
+/** 오늘 탭에서 수동으로 담은 항목을 동기화 보호 목록에 추가 */
+export function appendRoutineCatalogSelectionKeys(categoryKeys: string[]): void {
+  const incoming = categoryKeys.map((key) => key.trim()).filter(Boolean);
+  if (incoming.length === 0) return;
+  const merged = [...new Set([...loadRoutineCatalogSelectionKeys(), ...incoming])];
+  saveRoutineCatalogSelectionKeys(merged);
+}
+
+/** sections·bag에서 항목을 내릴 때 보호 목록에서도 제거 */
+export function removeRoutineCatalogSelectionKey(categoryKey: string): void {
+  const key = categoryKey.trim();
+  if (!key) return;
+  saveRoutineCatalogSelectionKeys(loadRoutineCatalogSelectionKeys().filter((item) => item !== key));
+}
+
 function createDefaultSet(categoryKeys: string[]): FixedFlowSet {
   const keys =
     categoryKeys.length > 0 ? categoryKeys : [...EXAMPLE_CUSTOM_FLOW_SET_ITEM_KEYS];

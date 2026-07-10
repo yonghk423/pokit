@@ -1,3 +1,4 @@
+import { pickCounterSettingsForCreate } from './counterPresetSamples';
 import {
   getInitialCounterDataConfig,
   getInitialFocusDataConfig,
@@ -14,7 +15,6 @@ import {
   resolveCustomFlowTemplateKeyFromRaw,
   type CustomFlowTemplateKey,
 } from './customFlowTemplateConfigs';
-import { addDaysToLocalDateKey, getLocalDateKey } from './localDateKey';
 import {
   getInitialMeasurementDataConfig,
   getInitialOtherDataConfig,
@@ -23,14 +23,12 @@ import {
   type MeasurementDetailDataConfig,
   type OtherDetailDataConfig,
 } from './goalCategorySessionConfig';
-import { pickCounterSettingsForCreate } from './counterPresetSamples';
+import { addDaysToLocalDateKey, getLocalDateKey } from './localDateKey';
 import { pickMeasurementSettingsForCreate } from './measurementPresetSamples';
 import { pickReminderSettingsForCreate } from './reminderPresetSamples';
 
 export {
-  CUSTOM_FLOW_TEMPLATE_KEYS,
-  CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS,
-  getInitialCounterDataConfig,
+  CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS, CUSTOM_FLOW_TEMPLATE_KEYS, getInitialCounterDataConfig,
   getInitialFocusDataConfig,
   getInitialHabitDataConfig,
   getInitialJournalDataConfig,
@@ -44,13 +42,13 @@ export {
   normalizeJournalDetailConfig,
   normalizeMemoDetailConfig,
   normalizeReminderDetailConfig,
-  resolveCustomFlowTemplateKeyFromRaw,
+  resolveCustomFlowTemplateKeyFromRaw
 } from './customFlowTemplateConfigs';
 export type { CustomFlowTemplateKey };
 
 export const CUSTOM_FLOW_TEMPLATE_LABELS: Record<CustomFlowTemplateKey, string> = {
   checklist: '할 일 체크',
-  abstain: '금지 지키기',
+  abstain: '금지 체크',
   measurement: '값 기록',
   habit: '오늘 했/안 했',
   counter: '횟수 채우기',
@@ -87,6 +85,16 @@ export const CUSTOM_FLOW_TEMPLATE_SUMMARIES: Record<CustomFlowTemplateKey, strin
 
 export function resolveCustomFlowTemplateKey(raw: unknown): CustomFlowTemplateKey {
   return resolveCustomFlowTemplateKeyFromRaw(raw);
+}
+
+/** 목표 상세 등 — 실제 적용 중인 템플릿 표기 (레거시 abstain → 할 일 체크) */
+export function resolveAppliedCustomFlowTemplateLabel(
+  templateKey: CustomFlowTemplateKey,
+): string {
+  if (templateKey === 'abstain') {
+    return CUSTOM_FLOW_TEMPLATE_LABELS.checklist;
+  }
+  return CUSTOM_FLOW_TEMPLATE_LABELS[templateKey];
 }
 
 export type CustomFlowDetailConfig =

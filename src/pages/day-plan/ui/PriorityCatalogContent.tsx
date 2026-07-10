@@ -30,6 +30,7 @@ import {
   useDayPlanLayoutModeVisibilityStore,
   useFixedFlowSetsStore,
 } from '@entities/day-plan';
+import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { PokitIconPalette } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -538,6 +539,9 @@ export function PriorityCatalogContent({
         ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
       });
       saveGoalDetailCategoryConfig(id, next);
+      if (templateKey === 'reminder') {
+        void persistReminderTemplateNotificationRule(id, next);
+      }
       appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
       registerOtherCategoryResolverFromStorage();
       void loadGoalDetailCategoryConfig(id);
@@ -553,7 +557,7 @@ export function PriorityCatalogContent({
   );
 
   const scrollBottomPad = useMemo(
-    () => tabBarScrollBottomInset(insets.bottom) + 88,
+    () => tabBarScrollBottomInset(insets.bottom),
     [insets.bottom],
   );
 
@@ -867,17 +871,34 @@ export function PriorityCatalogContent({
         <View style={styles.headerBlock}>
           <View style={styles.titleRow}>
             <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>오늘 집중할 것</ThemedText>
-            <View
-              style={[
-                styles.modeBadge,
-                {
-                  borderColor: editorial.line,
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-                },
-              ]}>
-              <ThemedText style={[styles.modeBadgeLabel, { color: editorial.muted }]}>
-                {catalogLayoutModeActiveLabel(effectiveCatalogLayoutMode)}에 담기
-              </ThemedText>
+            <View style={styles.titleRowEnd}>
+              <View
+                style={[
+                  styles.modeBadge,
+                  {
+                    borderColor: editorial.line,
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+                  },
+                ]}>
+                <ThemedText style={[styles.modeBadgeLabel, { color: editorial.muted }]}>
+                  {catalogLayoutModeActiveLabel(effectiveCatalogLayoutMode)}에 담기
+                </ThemedText>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="새 루틴 만들기"
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  openCreateSheet();
+                }}
+                style={({ pressed }) => [
+                  styles.headerAddButton,
+                  { opacity: pressed ? 0.92 : 1 },
+                ]}>
+                <View style={styles.headerAddButtonInner}>
+                  <IconSymbol name="plus" size={18} color="#FAFAFA" />
+                </View>
+              </Pressable>
             </View>
           </View>
           <ThemedText style={[styles.lead, { color: editorial.muted }]}>
@@ -923,24 +944,6 @@ export function PriorityCatalogContent({
           onChangeCatalogSpineTime={onChangeCatalogSpineTime}
         />
       </ScrollView>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="새 루틴 만들기"
-        onPress={() => {
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          openCreateSheet();
-        }}
-        style={({ pressed }) => [
-          styles.fab,
-          {
-            bottom: Math.max(insets.bottom, 12) + 12,
-            opacity: pressed ? 0.92 : 1,
-          },
-        ]}>
-        <View style={styles.fabInner}>
-          <IconSymbol name="plus" size={26} color="#FAFAFA" />
-        </View>
-      </Pressable>
       <CreateCustomFlowSheet
         visible={createSheetOpen}
         onClose={() => setCreateSheetOpen(false)}
@@ -991,7 +994,7 @@ export function PriorityCatalogContent({
   );
 }
 
-const FAB_SIZE = 56;
+const HEADER_ADD_BUTTON_SIZE = 36;
 
 const styles = StyleSheet.create({
   stickyHeader: {
@@ -1008,25 +1011,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 16,
   },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
-    borderWidth: 2,
-    borderColor: '#000000',
-    zIndex: 30,
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  fabInner: {
-    flex: 1,
-    borderRadius: FAB_SIZE / 2,
-    backgroundColor: PokitIconPalette.teal,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   headerBlock: {
     gap: 8,
     marginBottom: 4,
@@ -1036,6 +1020,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
+  },
+  titleRowEnd: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  headerAddButton: {
+    width: HEADER_ADD_BUTTON_SIZE,
+    height: HEADER_ADD_BUTTON_SIZE,
+    borderRadius: HEADER_ADD_BUTTON_SIZE / 2,
+    borderWidth: 2,
+    borderColor: '#000000',
+    flexShrink: 0,
+  },
+  headerAddButtonInner: {
+    flex: 1,
+    borderRadius: HEADER_ADD_BUTTON_SIZE / 2,
+    backgroundColor: PokitIconPalette.teal,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modeBadge: {
     borderWidth: 1,

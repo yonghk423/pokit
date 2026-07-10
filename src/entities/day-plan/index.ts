@@ -72,6 +72,7 @@ export {
   CUSTOM_FLOW_TEMPLATE_SUMMARIES,
   normalizeCustomFlowDetailConfig,
   resolveCustomFlowTemplateKey,
+  resolveAppliedCustomFlowTemplateLabel,
   type CustomFlowTemplateKey
 } from './lib/customFlowTemplate';
 export {
@@ -165,6 +166,7 @@ export {
   resolveNextReminderTime,
   toggleReminderTimeDone,
   updateReminderItemLabel,
+  updateReminderItemTime,
 } from './lib/customFlowTemplateRuntime';
 export {
   applyCounterActivityPreset,
