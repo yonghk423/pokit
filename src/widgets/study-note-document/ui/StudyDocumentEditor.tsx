@@ -56,6 +56,8 @@ const DRAWER_WIDTH_RATIO = 0.82;
 const KEYBOARD_ACCESSORY_ESTIMATED_HEIGHT = 132;
 const STUDY_DOCUMENT_INPUT_ACCESSORY_ID = 'study-document-toolbar';
 const EDITOR_HEADER_HEIGHT = 52;
+/** iOS 빈 TextInput에서 Backspace onKeyPress가 안 오는 문제 우회용 */
+const EMPTY_BACKSPACE_SENTINEL = '\u200B';
 
 const MAX_HISTORY = 40;
 
@@ -73,6 +75,15 @@ function normalizeBlockMarks(marks?: WorkStudyBlockMarks): WorkStudyBlockMarks |
 
 function isListBlockKind(kind: WorkStudyDocBlock['kind']): kind is ListBlockKind {
   return kind === 'checklist' || kind === 'bullet' || kind === 'numbered';
+}
+
+/** 캔버스 빈 영역 탭 시 포커스할 수 있는 본문 블록 */
+function isCanvasFocusableBlock(block: WorkStudyDocBlock): boolean {
+  return (
+    block.kind === 'paragraph' ||
+    isListBlockKind(block.kind) ||
+    block.kind === 'heading'
+  );
 }
 
 function isEditableLinkBlock(kind: WorkStudyDocBlock['kind']): boolean {
@@ -215,6 +226,18 @@ function BlockText({
   const textColor = block.marks?.color;
   const enterLockRef = useRef(0);
   const selectionRef = useRef({ start: 0, end: 0 });
+  const backspaceLockRef = useRef(0);
+  const isEmpty = block.text.length === 0;
+  const useBackspaceSentinel = Boolean(onBackspaceAtStart) && isEmpty;
+  const displayValue = useBackspaceSentinel ? EMPTY_BACKSPACE_SENTINEL : block.text;
+
+  const triggerBackspaceAtStart = useCallback(() => {
+    if (!onBackspaceAtStart) return;
+    const now = Date.now();
+    if (now - backspaceLockRef.current < 80) return;
+    backspaceLockRef.current = now;
+    onBackspaceAtStart();
+  }, [onBackspaceAtStart]);
 
   const handleEnterKey = useCallback(() => {
     if (!onEnterKey) return;
@@ -227,12 +250,18 @@ function BlockText({
   const handleChangeText = useCallback(
     (text: string) => {
       if (onEnterKey && /\r?\n/.test(text)) {
-        onChangeText(text.replace(/\r?\n/g, ''));
+        onChangeText(text.replace(/\r?\n/g, '').split(EMPTY_BACKSPACE_SENTINEL).join(''));
         return;
       }
-      onChangeText(text);
+      const cleaned = text.split(EMPTY_BACKSPACE_SENTINEL).join('');
+      // 센티널만 지워진 경우 → 빈 줄에서 백스페이스로 이전 블록 합치기/삭제
+      if (onBackspaceAtStart && isEmpty && cleaned.length === 0) {
+        triggerBackspaceAtStart();
+        return;
+      }
+      onChangeText(cleaned);
     },
-    [onChangeText, onEnterKey],
+    [isEmpty, onBackspaceAtStart, onChangeText, onEnterKey, triggerBackspaceAtStart],
   );
 
   const isEnterKey = useCallback((key: string) => {
@@ -240,57 +269,70 @@ function BlockText({
   }, []);
 
   return (
-    <TextInput
-      ref={inputRef}
-      value={block.text}
-      onChangeText={handleChangeText}
-      onFocus={onFocus}
-      onBlur={onBlur}
-      inputAccessoryViewID={inputAccessoryViewID}
-      blurOnSubmit={false}
-      returnKeyType={onEnterKey ? 'next' : multiline ? 'default' : 'done'}
-      onSubmitEditing={() => {
-        if (onEnterKey) {
-          handleEnterKey();
-        }
-      }}
-      onSelectionChange={(event) => {
-        selectionRef.current = event.nativeEvent.selection;
-        onSelectionChange?.(event);
-      }}
-      onKeyPress={(event) => {
-        if (event.nativeEvent.key === 'Backspace' && onBackspaceAtStart) {
-          const atStart =
-            selectionRef.current.start === 0 && selectionRef.current.end === 0;
-          if (atStart) {
-            event.preventDefault();
-            onBackspaceAtStart();
-            return;
+    <View style={styles.blockTextWrap}>
+      {isEmpty ? (
+        <ThemedText
+          pointerEvents="none"
+          style={[
+            styles.blockInputPlaceholder,
+            compact ? styles.listBlockInput : null,
+            style,
+            { color: palette.outline },
+          ]}>
+          {placeholder}
+        </ThemedText>
+      ) : null}
+      <TextInput
+        ref={inputRef}
+        value={displayValue}
+        onChangeText={handleChangeText}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        inputAccessoryViewID={inputAccessoryViewID}
+        blurOnSubmit={false}
+        returnKeyType={onEnterKey ? 'next' : multiline ? 'default' : 'done'}
+        onSubmitEditing={() => {
+          if (onEnterKey) {
+            handleEnterKey();
           }
-        }
-        if (onEnterKey && isEnterKey(event.nativeEvent.key)) {
-          event.preventDefault();
-          handleEnterKey();
-        }
-      }}
-      placeholder={placeholder}
-      placeholderTextColor={palette.outline}
-      multiline={multiline && !onEnterKey}
-      scrollEnabled={false}
-      textAlignVertical={
-        compact ? 'center' : onEnterKey ? 'top' : multiline ? 'top' : 'center'
-      }
-      style={[
-        styles.blockInput,
-        compact ? styles.listBlockInput : null,
-        style,
-        {
-          color: textColor ?? pendingTextColor ?? palette.onSurface,
-          ...(bold ? cityPopFont('800') : cityPopFont('400')),
-          textDecorationLine: underline ? 'underline' : 'none',
-        },
-      ]}
-    />
+        }}
+        onSelectionChange={(event) => {
+          selectionRef.current = event.nativeEvent.selection;
+          onSelectionChange?.(event);
+        }}
+        onKeyPress={(event) => {
+          if (event.nativeEvent.key === 'Backspace' && onBackspaceAtStart) {
+            const { start, end } = selectionRef.current;
+            const atStart = start === 0 && end === 0;
+            const onlySentinel =
+              useBackspaceSentinel && start <= 1 && end <= 1 && block.text.length === 0;
+            if (atStart || onlySentinel || isEmpty) {
+              event.preventDefault();
+              triggerBackspaceAtStart();
+              return;
+            }
+          }
+          if (onEnterKey && isEnterKey(event.nativeEvent.key)) {
+            event.preventDefault();
+            handleEnterKey();
+          }
+        }}
+        placeholder=""
+        multiline={Boolean(multiline)}
+        scrollEnabled={false}
+        textAlignVertical={compact ? 'center' : multiline ? 'top' : 'center'}
+        style={[
+          styles.blockInput,
+          compact ? styles.listBlockInput : null,
+          style,
+          {
+            color: textColor ?? pendingTextColor ?? palette.onSurface,
+            ...(bold ? cityPopFont('800') : cityPopFont('400')),
+            textDecorationLine: underline ? 'underline' : 'none',
+          },
+        ]}
+      />
+    </View>
   );
 }
 
@@ -686,16 +728,6 @@ export function StudyDocumentEditor({
     if (Platform.OS === 'ios' && keyboardToolbarMode !== 'docked') return;
     retainEditorKeyboardFocus();
   }, [keyboardToolbarMode, retainEditorKeyboardFocus]);
-
-  const dismissEditorKeyboard = useCallback(() => {
-    toolbarInteractionRef.current = false;
-    const blockId = activeBlockIdRef.current;
-    if (blockId) {
-      blockInputRefs.current[blockId]?.blur();
-    }
-    setActiveBlockId(null);
-    Keyboard.dismiss();
-  }, []);
 
   const registerBlockLayout = useCallback((blockId: string, y: number) => {
     blockLayoutYRef.current[blockId] = y;
@@ -1185,13 +1217,25 @@ export function StudyDocumentEditor({
     [commitStructuralChange, ensurePageDocument, resolvePendingMarks],
   );
 
-  const handleEmptyCanvasPress = useCallback(() => {
-    if (keyboardInset > 0 || activeBlockIdRef.current) {
-      dismissEditorKeyboard();
+  /** 메모 빈 영역 탭 → 키보드 활성화(마지막 본문 포커스, 없으면 문단 추가) */
+  const focusCanvasEditor = useCallback(() => {
+    const page = getWorkStudyActivePage(documentRef.current);
+    const blocks = page?.blocks ?? [];
+    const activeId = activeBlockIdRef.current;
+    const active = activeId ? blocks.find((b) => b.id === activeId) : null;
+    const target =
+      (active && isCanvasFocusableBlock(active) ? active : null) ??
+      [...blocks].reverse().find(isCanvasFocusableBlock);
+    if (target) {
+      transferFocusToBlock(target.id, target.text.length);
       return;
     }
     insertBlock('paragraph');
-  }, [dismissEditorKeyboard, insertBlock, keyboardInset]);
+  }, [insertBlock, transferFocusToBlock]);
+
+  const handleEmptyCanvasPress = useCallback(() => {
+    focusCanvasEditor();
+  }, [focusCanvasEditor]);
 
   const resetDocument = useCallback(() => {
     if (activeBlocks.length === 0) return;
@@ -1373,9 +1417,7 @@ export function StudyDocumentEditor({
         pushHistory();
         replaceActiveBlocks(
           activeBlocks.map((b) =>
-            b.id === activeBlockId
-              ? { ...b, marks: normalizeBlockMarks(merged) }
-              : b,
+            b.id === activeBlockId ? { ...b, marks: normalizeBlockMarks(merged) } : b,
           ),
         );
         return;
@@ -1739,14 +1781,16 @@ export function StudyDocumentEditor({
         viewportHeight == null && keyboardToolbarMode !== 'docked' ? onShellLayout : undefined
       }>
       <View style={[styles.editorHeader, { borderBottomColor: palette.outlineVariant, backgroundColor: NOTE_PAGE_BG }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="메모 목록 열기"
-          onPress={openDrawer}
-          hitSlop={8}
-          style={({ pressed }) => [styles.menuBtn, pressed && { opacity: 0.65 }]}>
-          <IconSymbol name="line.3.horizontal" size={20} color={palette.onSurface} />
-        </Pressable>
+        <View style={styles.headerSide}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="메모 목록 열기"
+            onPress={openDrawer}
+            hitSlop={8}
+            style={({ pressed }) => [styles.menuBtn, pressed && { opacity: 0.65 }]}>
+            <IconSymbol name="line.3.horizontal" size={20} color={palette.onSurface} />
+          </Pressable>
+        </View>
         {activePage ? (
           <StudyNotePageTitleField
             value={activePage.title}
@@ -1759,7 +1803,7 @@ export function StudyDocumentEditor({
             {activePageLabel}
           </ThemedText>
         )}
-        <View style={styles.headerActions}>
+        <View style={[styles.headerSide, styles.headerSideEnd]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="메모 공유"
@@ -1815,9 +1859,9 @@ export function StudyDocumentEditor({
         {!empty ? (
           <Pressable
             style={styles.canvasDismissBackdrop}
-            onPress={dismissEditorKeyboard}
+            onPress={focusCanvasEditor}
             accessibilityRole="button"
-            accessibilityLabel="키보드 닫기"
+            accessibilityLabel="본문 편집"
           />
         ) : null}
         {empty ? (
@@ -2021,6 +2065,16 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  /** 좌·우 액션 폭을 맞춰 제목이 화면 정중앙에 오도록 함 (우측 버튼 2개 = 36+2+36) */
+  headerSide: {
+    width: 74,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerSideEnd: {
+    justifyContent: 'flex-end',
+    gap: 2,
+  },
   menuBtn: {
     width: 36,
     height: 36,
@@ -2030,14 +2084,9 @@ const styles = StyleSheet.create({
   editorTitle: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '600',
     textAlign: 'center',
     letterSpacing: -0.2,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
   },
   headerActionBtn: {
     width: 36,
@@ -2059,7 +2108,7 @@ const styles = StyleSheet.create({
   blocksInner: {
     width: '100%',
     paddingHorizontal: 16,
-    paddingTop: 0,
+    paddingTop: 10,
     paddingBottom: 8,
     gap: 0,
     zIndex: 1,
@@ -2110,6 +2159,22 @@ const styles = StyleSheet.create({
   rowBody: { flex: 1, gap: 4 },
   listRowBody: { gap: 0 },
   blockInput: { fontSize: 15, lineHeight: 22, paddingVertical: 0, minHeight: 28, width: '100%' },
+  blockTextWrap: {
+    width: '100%',
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  blockInputPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    fontSize: 15,
+    lineHeight: 22,
+    paddingVertical: 0,
+    minHeight: 28,
+    zIndex: 0,
+  },
   listBlockInput: {
     minHeight: 20,
     height: 20,

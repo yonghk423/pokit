@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   titleInput: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '600',
     textAlign: 'center',
     letterSpacing: -0.2,
     padding: 0,

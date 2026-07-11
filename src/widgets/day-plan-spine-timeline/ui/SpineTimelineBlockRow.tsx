@@ -11,7 +11,7 @@ import Reanimated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { blockDurationSec, formatMinuteOfDayKo, getBlockTimelineIcon, resolveBlockCategoryKey, resolveCategoryCatalogAccentColor, type SpineTimelineRow } from '@entities/day-plan';
+import { blockDurationSec, formatMinuteOfDayKo, getBlockTimelineIcon, resolveBlockCategoryKey, resolveCategoryCatalogAccentColor, resolveDayPlanBlockDisplayTitle, type SpineTimelineRow } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
 import { CompletionRadioButton, COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT } from '@shared/ui/completion-radio-button';
@@ -194,6 +194,7 @@ export function SpineTimelineBlockRow({
   const endClockLabel = endsNextDay
     ? `다음날 ${formatMinuteOfDayKo(row.block.endMinutes)}`
     : formatMinuteOfDayKo(row.endMinutes).replace(/^[^\s]+\s/, '');
+  const displayTitle = resolveDayPlanBlockDisplayTitle(row.block);
 
   const triggerDelete = useCallback(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -324,7 +325,7 @@ export function SpineTimelineBlockRow({
               <Pressable
                 onPress={onPress}
                 accessibilityRole="button"
-                accessibilityLabel={`${row.block.title}, 탭하면 수정 · 오른쪽으로 밀면 삭제 · 길게 눌러 순서 변경`}
+                accessibilityLabel={`${displayTitle}, 탭하면 수정 · 오른쪽으로 밀면 삭제 · 길게 눌러 순서 변경`}
                 style={({ pressed }) => [styles.blockMainPress, pressed && onPress && styles.pressed]}>
                 <View style={styles.railCol}>
                   <ThemedText
@@ -375,7 +376,7 @@ export function SpineTimelineBlockRow({
                       completed && styles.titleDone,
                     ]}
                     numberOfLines={2}>
-                    {row.block.title}
+                    {displayTitle}
                   </ThemedText>
                 </View>
               </Pressable>
@@ -383,7 +384,7 @@ export function SpineTimelineBlockRow({
           </GestureDetector>
         </View>
         {onOpenSettings ? (
-          <SettingsButton label={row.block.title} isDark={isDark} onPress={onOpenSettings} />
+          <SettingsButton label={displayTitle} isDark={isDark} onPress={onOpenSettings} />
         ) : null}
         {onToggleComplete ? (
           <CompleteRadio

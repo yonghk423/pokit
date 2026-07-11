@@ -1,7 +1,7 @@
 {
   "name": "pokit",
   "main": "expo-router/entry",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "scripts": {
     "start": "expo start",
     "postinstall": "node ./scripts/patch-debugger-locale.js",
@@ -15,7 +15,8 @@
     "test:coverage": "jest --ci --coverage",
     "test:watch": "jest --watchAll",
     "ci": "npm run lint && npm run typecheck && npm run test",
-    "sync-ios-assets": "bash scripts/sync-ios-app-icon-from-assets.sh"
+    "sync-ios-assets": "node ./scripts/sync-app-icons.mjs",
+    "sync-app-icons": "node ./scripts/sync-app-icons.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/hanken-grotesk": "^0.4.3",

@@ -361,7 +361,7 @@ function normalizeActiveMealSlotsBySetId(
 
 function normalizeFixedRoutineApplyLayoutMode(raw: unknown): FixedRoutineApplyLayoutMode {
   if (raw === 'bag' || raw === 'sections' || raw === 'spine') return raw;
-  return 'sections';
+  return 'bag';
 }
 
 function normalizeDismissedExampleCustomFlowSetIds(raw: unknown): string[] {

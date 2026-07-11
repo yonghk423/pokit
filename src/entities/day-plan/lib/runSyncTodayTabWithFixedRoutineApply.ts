@@ -15,6 +15,7 @@ type DraftSyncState = {
   priorityStart: string;
   priorityEnd: string;
   priorityMealSlotLayoutEnabled: boolean;
+  prioritySpineLayoutEnabled: boolean;
 };
 
 type FixedSyncState = {
@@ -73,6 +74,13 @@ export function syncTodayTabWithFixedRoutineApply(): void {
   const dayPlan = getDayPlanSyncState();
   if (!dayPlan.isHydrated) return;
 
+  const effectiveLayoutMode: import('@shared/lib/storage').FixedRoutineApplyLayoutMode =
+    draft.prioritySpineLayoutEnabled
+      ? 'spine'
+      : draft.priorityMealSlotLayoutEnabled
+        ? 'sections'
+        : 'bag';
+
   const patch = computeSyncTodayTabWithFixedRoutineApply({
     priorityCategoryOrder: draft.priorityCategoryOrder,
     priorityMealSlotOverrides: draft.priorityMealSlotOverrides,
@@ -85,7 +93,7 @@ export function syncTodayTabWithFixedRoutineApply(): void {
     activeSetIds: fixed.activeSetIds,
     activeMealSlotsBySetId: fixed.activeMealSlotsBySetId,
     scheduledMealSlotLayoutEnabled: fixed.scheduledMealSlotLayoutEnabled,
-    fixedRoutineApplyLayoutMode: fixed.fixedRoutineApplyLayoutMode,
+    fixedRoutineApplyLayoutMode: effectiveLayoutMode,
     fixedFlowSets: fixed.sets,
     routineCatalogSelectionKeys: loadRoutineCatalogSelectionKeys(),
   });

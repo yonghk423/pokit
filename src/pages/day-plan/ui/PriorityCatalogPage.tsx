@@ -12,6 +12,8 @@ import {
   useDayPlanDraftStore,
   useDayPlanStore,
   useDayPlanLayoutModeVisibilityStore,
+  useFixedFlowSetsStore,
+  notifyFixedFlowApplyScheduleChanged,
 } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -81,17 +83,24 @@ export function PriorityCatalogPage() {
     setPlanMode('priority');
     setPriorityMealSlotLayoutEnabled(effectiveCatalogLayoutMode === 'sections');
     setPrioritySpineLayoutEnabled(effectiveCatalogLayoutMode === 'spine');
+    setFixedRoutineApplyLayoutMode(effectiveCatalogLayoutMode);
+    notifyFixedFlowApplyScheduleChanged();
   }, [
     catalogLayoutMode,
     effectiveCatalogLayoutMode,
     setPlanMode,
     setPriorityMealSlotLayoutEnabled,
     setPrioritySpineLayoutEnabled,
+    setFixedRoutineApplyLayoutMode,
   ]);
 
   const visibleLayoutModes = useMemo(
     () => (['bag', 'sections', 'spine'] as const).filter((mode) => visibility[mode]),
     [visibility],
+  );
+
+  const setFixedRoutineApplyLayoutMode = useFixedFlowSetsStore(
+    (s) => s.setFixedRoutineApplyLayoutMode,
   );
 
   const onSelectCatalogLayoutMode = useCallback(
@@ -101,8 +110,10 @@ export function PriorityCatalogPage() {
       setPlanMode('priority');
       setPriorityMealSlotLayoutEnabled(nextMode === 'sections');
       setPrioritySpineLayoutEnabled(nextMode === 'spine');
+      setFixedRoutineApplyLayoutMode(nextMode);
+      notifyFixedFlowApplyScheduleChanged();
     },
-    [coerceLayoutMode, setPlanMode, setPriorityMealSlotLayoutEnabled, setPrioritySpineLayoutEnabled],
+    [coerceLayoutMode, setPlanMode, setPriorityMealSlotLayoutEnabled, setPrioritySpineLayoutEnabled, setFixedRoutineApplyLayoutMode],
   );
 
   const [catalogPageTab, setCatalogPageTab] = useState<PriorityCatalogPageTab>('catalog');

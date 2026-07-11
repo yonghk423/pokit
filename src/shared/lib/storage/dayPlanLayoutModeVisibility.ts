@@ -9,7 +9,7 @@ export type DayPlanLayoutModeVisibility = Record<DayPlanLayoutMode, boolean>;
 
 export const DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY: DayPlanLayoutModeVisibility = {
   bag: true,
-  sections: true,
+  sections: false,
   spine: true,
 };
 

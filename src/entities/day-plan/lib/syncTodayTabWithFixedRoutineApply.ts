@@ -14,6 +14,10 @@ import { filterSpineTimelineBlocks, isDayPlanSpineTimelineBlock } from './dayPla
 import { resolveFixedFlowSpineSchedules } from './fixedFlowSpineSchedule';
 import { sortDayPlanBlocks } from './dayPlanTime';
 import { filterKeysToPriorityCatalog, sanitizePriorityCategoryOrderKeys } from './priorityCatalogRegistry';
+import {
+  looksLikeRawCategoryKeyTitle,
+  resolveCategoryKeyDisplayLabelKo,
+} from './resolveDayPlanBlockDisplayTitle';
 import type { DayPlanBlock } from '../model/types';
 
 /** 고정·나만의 루틴 세트에 등록된 활성 categoryKey */
@@ -227,6 +231,8 @@ function spineBlocksEqual(a: readonly DayPlanBlock[], b: readonly DayPlanBlock[]
     return (
       block.id === other.id &&
       block.categoryKey === other.categoryKey &&
+      block.title === other.title &&
+      block.category === other.category &&
       block.startMinutes === other.startMinutes &&
       block.endMinutes === other.endMinutes &&
       block.blockOrigin === other.blockOrigin
@@ -283,14 +289,24 @@ export function syncSpinePlanBlocksWithAppliedFixedRoutines(input: {
     const schedule = scheduleByKey.get(key);
     if (!schedule) continue;
 
+    const label = resolveCategoryKeyDisplayLabelKo(key);
     const existing = spineByKey.get(key);
     if (existing) {
-      if (
+      const nextTitle = looksLikeRawCategoryKeyTitle(existing.title, key)
+        ? label
+        : existing.title;
+      const nextCategory = looksLikeRawCategoryKeyTitle(existing.category ?? '', key)
+        ? label
+        : existing.category ?? label;
+      const scheduleChanged =
         existing.startMinutes !== schedule.startMinutes ||
-        existing.endMinutes !== schedule.endMinutes
-      ) {
+        existing.endMinutes !== schedule.endMinutes;
+      const labelChanged = nextTitle !== existing.title || nextCategory !== existing.category;
+      if (scheduleChanged || labelChanged) {
         spineByKey.set(key, {
           ...existing,
+          title: nextTitle,
+          category: nextCategory,
           startMinutes: schedule.startMinutes,
           endMinutes: schedule.endMinutes,
         });
@@ -301,8 +317,8 @@ export function syncSpinePlanBlocksWithAppliedFixedRoutines(input: {
     maxOrder += 1;
     spineByKey.set(key, {
       id: createSpineBlockId(),
-      title: key,
-      category: key,
+      title: label,
+      category: label,
       categoryKey: key,
       startMinutes: schedule.startMinutes,
       endMinutes: schedule.endMinutes,

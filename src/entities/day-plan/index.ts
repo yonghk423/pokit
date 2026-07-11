@@ -60,6 +60,11 @@ export {
   resolveCustomFlowCategoryLabelKo,
 } from './lib/customFlowDisplayLabel';
 export {
+  looksLikeRawCategoryKeyTitle,
+  resolveCategoryKeyDisplayLabelKo,
+  resolveDayPlanBlockDisplayTitle,
+} from './lib/resolveDayPlanBlockDisplayTitle';
+export {
   createCustomFlowCategoryId, CUSTOM_FLOW_CATEGORY_PREFIX, defaultCustomFlowPickerLabel,
   isCustomFlowCategoryKey,
   type CustomFlowCategoryKey

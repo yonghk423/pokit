@@ -22,6 +22,7 @@ import {
   getLocalMinutesOfDayNow,
   isPriorityWindowEligible,
   isPriorityWindowEndedForToday,
+  notifyFixedFlowApplyScheduleChanged,
   parseHHmmToMinutes,
   resolveBlockCategoryKey,
   syncTodayTabWithFixedRoutineApply,
@@ -169,12 +170,15 @@ export function DayPlanPage() {
     setPlanMode('priority');
     setPriorityMealSlotLayoutEnabled(effectiveLayoutMode === 'sections');
     setPrioritySpineLayoutEnabled(effectiveLayoutMode === 'spine');
+    setFixedRoutineApplyLayoutMode(effectiveLayoutMode);
+    notifyFixedFlowApplyScheduleChanged();
   }, [
     effectiveLayoutMode,
     layoutMode,
     setPlanMode,
     setPriorityMealSlotLayoutEnabled,
     setPrioritySpineLayoutEnabled,
+    setFixedRoutineApplyLayoutMode,
   ]);
 
   const onSelectLayoutMode = useCallback(
@@ -183,8 +187,10 @@ export function DayPlanPage() {
       setPlanMode('priority');
       setPriorityMealSlotLayoutEnabled(nextMode === 'sections');
       setPrioritySpineLayoutEnabled(nextMode === 'spine');
+      setFixedRoutineApplyLayoutMode(nextMode);
+      notifyFixedFlowApplyScheduleChanged();
     },
-    [coerceLayoutMode, setPlanMode, setPriorityMealSlotLayoutEnabled, setPrioritySpineLayoutEnabled],
+    [coerceLayoutMode, setPlanMode, setPriorityMealSlotLayoutEnabled, setPrioritySpineLayoutEnabled, setFixedRoutineApplyLayoutMode],
   );
 
   const {
@@ -192,12 +198,14 @@ export function DayPlanPage() {
     fixedFlowSets,
     hydrate: hydrateFixedFlowSets,
     refreshTodayAppliedCategoryKeys,
+    setFixedRoutineApplyLayoutMode,
   } = useFixedFlowSetsStore(
     useShallow((s) => ({
       todayAppliedRevision: s.todayAppliedRevision,
       fixedFlowSets: s.sets,
       hydrate: s.hydrate,
       refreshTodayAppliedCategoryKeys: s.refreshTodayAppliedCategoryKeys,
+      setFixedRoutineApplyLayoutMode: s.setFixedRoutineApplyLayoutMode,
     })),
   );
 
@@ -208,9 +216,10 @@ export function DayPlanPage() {
   useFocusEffect(
     useCallback(() => {
       hydrateLayoutModeVisibility();
+      setFixedRoutineApplyLayoutMode(effectiveLayoutMode);
       refreshTodayAppliedCategoryKeys();
       syncTodayTabWithFixedRoutineApply();
-    }, [hydrateLayoutModeVisibility, refreshTodayAppliedCategoryKeys]),
+    }, [hydrateLayoutModeVisibility, refreshTodayAppliedCategoryKeys, setFixedRoutineApplyLayoutMode, effectiveLayoutMode]),
   );
 
   useFocusEffect(

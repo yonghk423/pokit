@@ -15,7 +15,6 @@ import {
   buildInitialCustomFlowDetailConfig,
   createCustomFlowCategoryId,
   filterDayPlanFlowBlocks,
-  formatHhmmClockKo,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
   isPriorityWindowEndedForToday,
@@ -42,19 +41,15 @@ import {
 import {
   appendCustomFlowCatalogEntry,
   BUILTIN_PRESET_SCHEDULE_SET_IDS,
-  DAY_MEAL_SLOT_LABEL,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
-  buildFixedFlowMealSlotSections,
   isBuiltinPresetScheduleSet,
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
-  resolveFixedFlowItemMealSlots,
   saveGoalDetailCategoryConfig,
   subscribeCustomFlowCatalog,
   type CustomCatalogGroup,
   type CustomFlowCatalogEntry,
-  type DayMealSlot,
   type FixedFlowSet,
   type FixedFlowSetItem,
 } from '@shared/lib/storage';
@@ -75,25 +70,17 @@ import {
   type AddablePriorityCatalogSection,
   type PriorityCatalogRow,
 } from '../lib/priorityCatalog';
-import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
-import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
 import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 import { FixedRoutineLayoutModeHeader } from './FixedRoutineLayoutModeHeader';
-import { FixedRoutineMealSlotScheduleCard } from './FixedRoutineMealSlotScheduleCard';
 import { FixedRoutinePriorityWindowCard } from './FixedRoutinePriorityWindowCard';
 import { FixedRoutinePriorityWindowSheet } from './FixedRoutinePriorityWindowSheet';
 import { FixedRoutineSectionTabs, type FixedRoutineSection } from './FixedRoutineSectionTabs';
-import { FixedRoutineSlotAddChips } from './FixedRoutineSlotAddChips';
-import { CatalogRowMealSlotChips, CatalogRowMealSlotSelectedIcons, mealSlotPickerBtnWidth } from './CatalogRowMealSlotChips';
 import { CatalogRowSpineTimePanel, CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT, CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT } from './CatalogRowSpineTimePanel';
 import { RoutineCatalogManageContent } from './RoutineCatalogManageContent';
 import { RoutineTemplateListPanel } from './RoutineTemplateListPanel';
 
 function layoutModeHint(mode: DayPlanLayoutMode): string {
-  if (mode === 'sections') {
-    return '시간대 아이콘을 누르면 구간을 고를 수 있어요. 적용을 켜면 시간대 보기에 반영돼요.';
-  }
   if (mode === 'spine') {
     return '집중 구간과 루틴별 시간을 정한 뒤 적용을 켜면 타임라인 보기에 반영돼요.';
   }
@@ -111,9 +98,6 @@ function sectionHintText(
     return '루틴을 만들고 묶음으로 정리해요. 행을 누르면 상세 설정을 열 수 있어요.';
   }
   if (section === 'scheduled' || section === 'custom') {
-    if (layoutMode === 'sections') {
-      return '항목을 정리한 뒤 적용을 켜면 시간대 보기에 반영돼요.';
-    }
     if (layoutMode === 'spine') {
       return '항목별 시간을 정한 뒤 적용을 켜면 타임라인 보기에 반영돼요.';
     }
@@ -121,8 +105,6 @@ function sectionHintText(
   }
   return layoutModeHint(layoutMode);
 }
-
-const FLOW_MEAL_SLOT_PANEL_HEIGHT = 56;
 
 if (
   Platform.OS === 'android' &&
@@ -142,9 +124,6 @@ type FlowCardProps = {
   isFocusStarted: boolean;
   isInTodayPlan: boolean;
   isCompleted: boolean;
-  mealSlots?: DayMealSlot[];
-  showMealSlotPicker?: boolean;
-  onToggleMealSlot?: (slot: DayMealSlot) => void;
   showSpineTimePicker?: boolean;
   spineStartMinutes?: number;
   spineEndMinutes?: number;
@@ -166,9 +145,6 @@ function FlowItemCard({
   isFocusStarted,
   isInTodayPlan,
   isCompleted,
-  mealSlots = [],
-  showMealSlotPicker,
-  onToggleMealSlot,
   showSpineTimePicker,
   spineStartMinutes,
   spineEndMinutes,
@@ -178,10 +154,8 @@ function FlowItemCard({
   onToggleEnabled,
   onDelete,
 }: FlowCardProps) {
-  const [mealSlotExpanded, setMealSlotExpanded] = useState(false);
   const [spineTimeExpanded, setSpineTimeExpanded] = useState(false);
   const [spineInnerPickerExpanded, setSpineInnerPickerExpanded] = useState(false);
-  const expandProgress = useSharedValue(0);
   const spineExpandProgress = useSharedValue(0);
   const label = getPickerCategoryLabel(item.categoryKey);
   const enabled = item.enabled !== false;
@@ -227,27 +201,6 @@ function FlowItemCard({
 
   const settingsBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)';
   const settingsBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
-  const mealSlotIconHighlighted = mealSlots.length > 0 || mealSlotExpanded;
-
-  useEffect(() => {
-    expandProgress.value = withTiming(mealSlotExpanded ? 1 : 0, {
-      duration: 260,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [expandProgress, mealSlotExpanded]);
-
-  const mealSlotPanelAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: expandProgress.value,
-    maxHeight: expandProgress.value * FLOW_MEAL_SLOT_PANEL_HEIGHT,
-    transform: [
-      { translateY: (1 - expandProgress.value) * -8 },
-      { scale: 0.96 + expandProgress.value * 0.04 },
-    ],
-  }));
-
-  const mealSlotIconAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 0.92 + expandProgress.value * 0.08 }],
-  }));
 
   const spineTimeIconHighlighted = Boolean(spineStartMinutes != null && spineEndMinutes != null) || spineTimeExpanded;
 
@@ -286,15 +239,6 @@ function FlowItemCard({
     setSpineTimeExpanded((prev) => !prev);
   };
 
-  const handleToggleMealSlotExpand = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setMealSlotExpanded((prev) => !prev);
-  };
-
-  const handleToggleMealSlot = (slot: DayMealSlot) => {
-    onToggleMealSlot?.(slot);
-  };
-
   return (
     <View
       style={[
@@ -314,44 +258,6 @@ function FlowItemCard({
           {label}
         </ThemedText>
       </View>
-      {showMealSlotPicker && onToggleMealSlot ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{
-            selected: mealSlotIconHighlighted,
-            expanded: mealSlotExpanded,
-          }}
-          accessibilityLabel={
-            mealSlots.length > 0
-              ? `${label} 시간대 ${mealSlots.map((slot) => DAY_MEAL_SLOT_LABEL[slot]).join(', ')}`
-              : `${label} 시간대 선택`
-          }
-          hitSlop={10}
-          onPress={handleToggleMealSlotExpand}
-          style={({ pressed }) => [
-            styles.flowSlotBtn,
-            {
-              width: mealSlotPickerBtnWidth(mealSlots),
-              borderColor: mealSlotIconHighlighted ? ink : settingsBorder,
-              backgroundColor: mealSlotIconHighlighted
-                ? isDark
-                  ? 'rgba(255,255,255,0.14)'
-                  : 'rgba(0,0,0,0.06)'
-                : settingsBg,
-              opacity: pressed ? 0.72 : 1,
-            },
-          ]}>
-          <Reanimated.View style={mealSlotIconAnimatedStyle}>
-            <CatalogRowMealSlotSelectedIcons
-              selectedSlots={mealSlots}
-              color={mealSlotIconHighlighted ? ink : muted}
-              mutedColor={muted}
-              size={14}
-              compactSize={9}
-            />
-          </Reanimated.View>
-        </Pressable>
-      ) : null}
       {showSpineTimePicker && onChangeSpineTime ? (
         <Pressable
           accessibilityRole="button"
@@ -411,28 +317,6 @@ function FlowItemCard({
         style={styles.flowSwitch}
       />
       </View>
-      {showMealSlotPicker && onToggleMealSlot ? (
-        <Reanimated.View
-          pointerEvents={mealSlotExpanded ? 'auto' : 'none'}
-          style={[
-            styles.flowMealSlotPanel,
-            mealSlotPanelAnimatedStyle,
-            {
-              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)',
-              borderTopColor: line,
-            },
-          ]}>
-          <CatalogRowMealSlotChips
-            selectedSlots={mealSlots}
-            ink={ink}
-            muted={muted}
-            line={line}
-            isDark={isDark}
-            onToggleSlot={handleToggleMealSlot}
-            contentInsetLeft={8}
-          />
-        </Reanimated.View>
-      ) : null}
       {showSpineTimePicker && onChangeSpineTime && priorityStart && priorityEnd ? (
         <Reanimated.View
           pointerEvents={spineTimeExpanded ? 'auto' : 'none'}
@@ -623,7 +507,6 @@ function AddItemModal({
 type GroupAccordionProps = {
   setItem: FixedFlowSet;
   isPresetScheduleSet: boolean;
-  mealSlotLayoutEnabled: boolean;
   spineLayoutEnabled: boolean;
   priorityStart: string;
   priorityEnd: string;
@@ -643,8 +526,6 @@ type GroupAccordionProps = {
   isCategoryCompleted: (categoryKey: string) => boolean;
   onToggleExpand: () => void;
   onToggleActiveForToday: () => void;
-  isMealSlotAppliedForToday?: (slot: DayMealSlot) => boolean;
-  onToggleMealSlotForToday?: (slot: DayMealSlot) => void;
   onApplyBlocked: () => void;
   canDeleteSet: boolean;
   onDeleteSet: () => void;
@@ -652,16 +533,12 @@ type GroupAccordionProps = {
   onToggleItem: (categoryKey: string, enabled: boolean) => void;
   onDeleteItem: (categoryKey: string, label: string) => void;
   onOpenAddItem?: () => void;
-  onOpenAddItemForSlot?: (slot: DayMealSlot) => void;
-  onToggleItemMealSlot?: (categoryKey: string, slot: DayMealSlot) => void;
   onChangeItemSpineTime?: (categoryKey: string, startMinutes: number, endMinutes: number) => void;
-  mealSlotSchedule: import('@shared/lib/storage').DayMealSlotSchedule;
 };
 
 function GroupAccordion({
   setItem,
   isPresetScheduleSet,
-  mealSlotLayoutEnabled,
   spineLayoutEnabled,
   priorityStart,
   priorityEnd,
@@ -681,8 +558,6 @@ function GroupAccordion({
   isCategoryCompleted,
   onToggleExpand,
   onToggleActiveForToday,
-  isMealSlotAppliedForToday,
-  onToggleMealSlotForToday,
   onApplyBlocked,
   canDeleteSet,
   onDeleteSet,
@@ -690,10 +565,7 @@ function GroupAccordion({
   onToggleItem,
   onDeleteItem,
   onOpenAddItem,
-  onOpenAddItemForSlot,
-  onToggleItemMealSlot,
   onChangeItemSpineTime,
-  mealSlotSchedule,
 }: GroupAccordionProps) {
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
   const totalCount = setItem.items.length;
@@ -733,8 +605,6 @@ function GroupAccordion({
     setIsEditingName(true);
   }, [canRenameSet, setItem.name]);
 
-  const useMealSlotGroupedLayout = isPresetScheduleSet && mealSlotLayoutEnabled;
-  const useMealSlotFlatPickerLayout = !isPresetScheduleSet && mealSlotLayoutEnabled;
   const useSpineLayout = spineLayoutEnabled;
   const spineSchedules = useMemo(() => {
     if (!useSpineLayout) return new Map();
@@ -744,18 +614,7 @@ function GroupAccordion({
       priorityEnd,
     });
   }, [priorityEnd, priorityStart, setItem.items, useSpineLayout]);
-  const mealSlotSections = useMemo(() => {
-    if (!useMealSlotGroupedLayout) return [];
-    return buildFixedFlowMealSlotSections(
-      setItem.items,
-      mealSlotSchedule,
-      setItem.pinnedMealSlots ?? [],
-    );
-  }, [mealSlotSchedule, setItem.items, setItem.pinnedMealSlots, useMealSlotGroupedLayout]);
-  const occupiedMealSlots = useMemo(
-    () => new Set(mealSlotSections.map((section) => section.slot)),
-    [mealSlotSections],
-  );
+  
   const applyChipBlocked = applyBlocked && !isActiveForToday;
   const disableApplyToggle = applyChipBlocked;
   const applyLabel = isActiveForToday ? '적용 중' : '적용하기';
@@ -910,152 +769,21 @@ function GroupAccordion({
           {scheduleHint ? (
             <ThemedText style={[styles.accordionRuleHint, { color: muted }]}>{scheduleHint}</ThemedText>
           ) : null}
-          {useMealSlotGroupedLayout ? (
-            <View style={styles.mealSlotSectionList}>
-              {totalCount === 0 ? (
-                <ThemedText style={[styles.accordionEmpty, { color: muted }]}>
-                  아직 항목이 없어요. 아래에서 구간을 선택해 추가해 보세요.
-                </ThemedText>
-              ) : null}
-              {mealSlotSections.map((section, sectionIndex) => (
-                <View
-                  key={section.slot}
-                  style={[
-                    styles.mealSlotBlock,
-                    sectionIndex > 0 ? styles.mealSlotBlockFollows : null,
-                  ]}>
-                  <View style={styles.mealSlotBlockHeader}>
-                    <View style={styles.mealSlotBlockHeaderMain}>
-                      <ThemedText style={[styles.mealSlotBlockTitle, { color: ink }]}>
-                        {section.title}
-                      </ThemedText>
-                      <ThemedText style={[styles.mealSlotBlockHint, { color: muted }]}>
-                        {formatHhmmClockKo(section.hintTime)}
-                      </ThemedText>
-                    </View>
-                    {isPresetScheduleSet ? (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityState={{
-                          disabled: applyBlocked && !isMealSlotAppliedForToday?.(section.slot),
-                        }}
-                        accessibilityLabel={`${section.title} ${isMealSlotAppliedForToday?.(section.slot) ? '적용 해제' : '적용하기'
-                          }`}
-                        onPress={() => {
-                          const isApplied = isMealSlotAppliedForToday?.(section.slot) ?? false;
-                          const blockedByEnded = applyBlocked && !isApplied;
-                          if (blockedByEnded) {
-                            onApplyBlocked();
-                            return;
-                          }
-                          onToggleMealSlotForToday?.(section.slot);
-                        }}
-                        style={({ pressed }) => {
-                          const isApplied = isMealSlotAppliedForToday?.(section.slot) ?? false;
-                          const disabled = applyBlocked && !isApplied;
-                          return [
-                            styles.mealSlotApplyChip,
-                            {
-                              borderColor: isApplied ? ink : line,
-                              backgroundColor: isApplied
-                                ? isDark
-                                  ? 'rgba(255,255,255,0.14)'
-                                  : 'rgba(0,0,0,0.08)'
-                                : isDark
-                                  ? 'rgba(255,255,255,0.06)'
-                                  : 'rgba(0,0,0,0.03)',
-                              opacity: disabled ? 0.42 : pressed ? 0.88 : 1,
-                            },
-                          ];
-                        }}>
-                        <ThemedText
-                          style={[
-                            styles.mealSlotApplyChipLabel,
-                            { color: isMealSlotAppliedForToday?.(section.slot) ? ink : muted },
-                          ]}>
-                          {isMealSlotAppliedForToday?.(section.slot) ? '적용 중' : '적용하기'}
-                        </ThemedText>
-                      </Pressable>
-                    ) : null}
-                  </View>
-                  <View style={[styles.cardList, { backgroundColor: cardBg, borderColor: line }]}>
-                    {section.items.map((item, itemIndex) => {
-                      const cat = catalogByKey.get(item.categoryKey);
-                      const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
-                      const globalIndex = setItem.items.findIndex(
-                        (row) => row.categoryKey === item.categoryKey,
-                      );
-                      const itemMealSlots = resolveFixedFlowItemMealSlots(
-                        item,
-                        globalIndex >= 0 ? globalIndex : itemIndex,
-                      );
-                      return (
-                        <FlowItemCard
-                          key={`${item.categoryKey}-${section.slot}`}
-                          item={item}
-                          catalog={cat}
-                          isDark={isDark}
-                          ink={ink}
-                          muted={muted}
-                          line={line}
-                          iconBoxBg={iconBoxBg}
-                          isFocusStarted={isFocusStarted}
-                          isInTodayPlan={isCategoryInTodayPlan(item.categoryKey)}
-                          isCompleted={isCategoryCompleted(item.categoryKey)}
-                          mealSlots={itemMealSlots}
-                          showMealSlotPicker={useMealSlotGroupedLayout}
-                          onToggleMealSlot={(slot) =>
-                            onToggleItemMealSlot?.(item.categoryKey, slot)
-                          }
-                          onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
-                          onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
-                        />
-                      );
-                    })}
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`${section.title} 항목 추가`}
-                      onPress={() => onOpenAddItemForSlot?.(section.slot)}
-                      style={({ pressed }) => [
-                        styles.addRow,
-                        { opacity: pressed ? 0.88 : 1 },
-                      ]}>
-                      <IconSymbol name="plus" size={14} color={muted} />
-                      <ThemedText style={[styles.addRowLabel, { color: muted }]}>
-                        {section.title} 항목 추가
-                      </ThemedText>
-                    </Pressable>
-                  </View>
-                </View>
-              ))}
-              <FixedRoutineSlotAddChips
-                title={
-                  totalCount === 0
-                    ? '구간 선택해서 추가'
-                    : occupiedMealSlots.size > 0
-                      ? '다른 구간에 추가'
-                      : '구간 선택해서 추가'
-                }
-                occupiedSlots={totalCount === 0 ? undefined : occupiedMealSlots}
-                isDark={isDark}
-                ink={ink}
-                muted={muted}
-                line={line}
-                onSelectSlot={(slot) => onOpenAddItemForSlot?.(slot)}
-              />
-            </View>
-          ) : useSpineLayout ? (
-            <>
-              {totalCount === 0 ? (
+          {(() => {
+            if (totalCount === 0) {
+              return (
                 <ThemedText style={[styles.accordionEmpty, { color: muted }]}>
                   아직 항목이 없어요. 아래에서 추가해 주세요.
                 </ThemedText>
-              ) : null}
+              );
+            }
+            return null;
+          })()}
               <View style={[styles.cardList, { backgroundColor: cardBg, borderColor: line }]}>
                 {setItem.items.map((item) => {
                   const cat = catalogByKey.get(item.categoryKey);
                   const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
-                  const schedule = spineSchedules.get(item.categoryKey);
+                  const schedule = useSpineLayout ? spineSchedules.get(item.categoryKey) : undefined;
                   return (
                     <FlowItemCard
                       key={item.categoryKey}
@@ -1074,9 +802,9 @@ function GroupAccordion({
                       spineEndMinutes={schedule?.endMinutes}
                       priorityStart={priorityStart}
                       priorityEnd={priorityEnd}
-                      onChangeSpineTime={(startMinutes, endMinutes) =>
+                      onChangeSpineTime={useSpineLayout ? (startMinutes, endMinutes) =>
                         onChangeItemSpineTime?.(item.categoryKey, startMinutes, endMinutes)
-                      }
+                      : undefined}
                       onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
                       onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
                     />
@@ -1094,58 +822,6 @@ function GroupAccordion({
                   <ThemedText style={[styles.addRowLabel, { color: muted }]}>새 항목 추가</ThemedText>
                 </Pressable>
               </View>
-            </>
-          ) : (
-            <>
-              {totalCount === 0 ? (
-                <ThemedText style={[styles.accordionEmpty, { color: muted }]}>
-                  아직 항목이 없어요. 아래에서 추가해 주세요.
-                </ThemedText>
-              ) : null}
-              <View style={[styles.cardList, { backgroundColor: cardBg, borderColor: line }]}>
-                {setItem.items.map((item, itemIndex) => {
-                  const cat = catalogByKey.get(item.categoryKey);
-                  const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
-                  const itemMealSlots = resolveFixedFlowItemMealSlots(item, itemIndex);
-                  return (
-                    <FlowItemCard
-                      key={item.categoryKey}
-                      item={item}
-                      catalog={cat}
-                      isDark={isDark}
-                      ink={ink}
-                      muted={muted}
-                      line={line}
-                      iconBoxBg={iconBoxBg}
-                      isFocusStarted={isFocusStarted}
-                      isInTodayPlan={isCategoryInTodayPlan(item.categoryKey)}
-                      isCompleted={isCategoryCompleted(item.categoryKey)}
-                      mealSlots={itemMealSlots}
-                      showMealSlotPicker={useMealSlotFlatPickerLayout}
-                      onToggleMealSlot={
-                        useMealSlotFlatPickerLayout
-                          ? (slot) => onToggleItemMealSlot?.(item.categoryKey, slot)
-                          : undefined
-                      }
-                      onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
-                      onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
-                    />
-                  );
-                })}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="새 항목 추가"
-                  onPress={onOpenAddItem}
-                  style={({ pressed }) => [
-                    styles.addRow,
-                    { opacity: pressed ? 0.88 : 1 },
-                  ]}>
-                  <IconSymbol name="plus" size={14} color={muted} />
-                  <ThemedText style={[styles.addRowLabel, { color: muted }]}>새 항목 추가</ThemedText>
-                </Pressable>
-              </View>
-            </>
-          )}
         </View>
       ) : null}
     </View>
@@ -1182,21 +858,20 @@ export function FixedRoutinePage({
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [section, setSection] = useState<FixedRoutineSection>('catalog');
-  const [internalLayoutMode, setInternalLayoutMode] = useState<DayPlanLayoutMode>('sections');
+  const [internalLayoutMode, setInternalLayoutMode] = useState<DayPlanLayoutMode>('bag');
   const layoutMode = controlledLayoutMode ?? internalLayoutMode;
-  const [mealSlotScheduleSheetOpen, setMealSlotScheduleSheetOpen] = useState(false);
+  
   const [priorityWindowSheetOpen, setPriorityWindowSheetOpen] = useState(false);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [addItemModalOpen, setAddItemModalOpen] = useState(false);
   const [addItemSetId, setAddItemSetId] = useState<string | null>(null);
-  const [addItemMealSlot, setAddItemMealSlot] = useState<DayMealSlot | null>(null);
+  
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const targetSetIdRef = useRef<string | null>(null);
-  const targetMealSlotRef = useRef<DayMealSlot | null>(null);
+  
   const [nowTick, setNowTick] = useState(() => Date.now());
-  const { schedule: mealSlotSchedule, persistSchedule: persistMealSlotSchedule } =
-    useDayMealSlotSchedule();
+  
   const layoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
   const hydrateLayoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.hydrate);
   const visibleLayoutModes = useMemo(
@@ -1207,44 +882,35 @@ export function FixedRoutinePage({
     [layoutModeVisibility],
   );
   const canManageCustomGroups = embeddedCustomOnly || false;
-  const useSectionsRoutineLayout = layoutMode === 'sections';
   const useSpineRoutineLayout = layoutMode === 'spine';
 
   const {
     sets,
     activeSetIds,
-    activeMealSlotsBySetId,
     hydrate,
     addSet,
     toggleSetForToday,
-    toggleMealSlotForToday,
     removeSet,
     renameSet,
     addCategoryToSet,
     removeCategoryFromSet,
     setCategoryEnabledInSet,
-    toggleCategoryMealSlotInSet,
     setCategorySpineScheduleInSet,
-    pinMealSlotInSet,
     fixedRoutineApplyLayoutMode,
     setFixedRoutineApplyLayoutMode,
   } = useFixedFlowSetsStore(
     useShallow((s) => ({
       sets: s.sets,
       activeSetIds: s.activeSetIds,
-      activeMealSlotsBySetId: s.activeMealSlotsBySetId,
       hydrate: s.hydrate,
       addSet: s.addSet,
       toggleSetForToday: s.toggleSetForToday,
-      toggleMealSlotForToday: s.toggleMealSlotForToday,
       removeSet: s.removeSet,
       renameSet: s.renameSet,
       addCategoryToSet: s.addCategoryToSet,
       removeCategoryFromSet: s.removeCategoryFromSet,
       setCategoryEnabledInSet: s.setCategoryEnabledInSet,
-      toggleCategoryMealSlotInSet: s.toggleCategoryMealSlotInSet,
       setCategorySpineScheduleInSet: s.setCategorySpineScheduleInSet,
-      pinMealSlotInSet: s.pinMealSlotInSet,
       fixedRoutineApplyLayoutMode: s.fixedRoutineApplyLayoutMode,
       setFixedRoutineApplyLayoutMode: s.setFixedRoutineApplyLayoutMode,
     })),
@@ -1258,13 +924,11 @@ export function FixedRoutinePage({
     priorityPlanDateKeyEnd,
     isFocusStarted,
     priorityCategoryOrder,
-    prioritySectionsCategoryOrder,
     completedFocusCategoryKeys,
     planCompletionDismissedKeys,
     setPriorityStart,
     setPriorityEnd,
     setPriorityCategoryOrder,
-    setPrioritySectionsCategoryOrder,
     filterCompletedFocusKeysToPriorityOrder,
     categoryLabelEpoch,
     bumpCategoryLabelEpoch,
@@ -1277,13 +941,11 @@ export function FixedRoutinePage({
       priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
       isFocusStarted: s.isFocusStarted,
       priorityCategoryOrder: s.priorityCategoryOrder,
-      prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
       planCompletionDismissedKeys: s.planCompletionDismissedKeys,
       setPriorityStart: s.setPriorityStart,
       setPriorityEnd: s.setPriorityEnd,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
-      setPrioritySectionsCategoryOrder: s.setPrioritySectionsCategoryOrder,
       filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
       categoryLabelEpoch: s.categoryLabelEpoch,
       bumpCategoryLabelEpoch: s.bumpCategoryLabelEpoch,
@@ -1326,16 +988,11 @@ export function FixedRoutinePage({
       if (useSpineRoutineLayout) {
         return collectSpineTimelineCategoryKeys(planBlocks).includes(categoryKey);
       }
-      if (useSectionsRoutineLayout) {
-        return prioritySectionsCategoryOrder.includes(categoryKey);
-      }
       return priorityCategoryOrder.includes(categoryKey);
     },
     [
       planBlocks,
       priorityCategoryOrder,
-      prioritySectionsCategoryOrder,
-      useSectionsRoutineLayout,
       useSpineRoutineLayout,
     ],
   );
@@ -1563,8 +1220,7 @@ export function FixedRoutinePage({
       void loadGoalDetailCategoryConfig(id);
       reloadCatalog();
       const targetSetId = targetSetIdRef.current ?? addItemSetId ?? sets[0]?.id;
-      const targetMealSlot = targetMealSlotRef.current ?? addItemMealSlot;
-      if (targetSetId) addCategoryToSet(targetSetId, id, targetMealSlot ?? undefined);
+      if (targetSetId) addCategoryToSet(targetSetId, id);
       setCreateSheetOpen(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.push({
@@ -1572,35 +1228,16 @@ export function FixedRoutinePage({
         params: { categoryKey: id, source: 'catalog' },
       });
     },
-    [addCategoryToSet, sets, addItemSetId, addItemMealSlot, reloadCatalog, router],
+    [addCategoryToSet, sets, addItemSetId, reloadCatalog, router],
   );
 
-  const openAddItemModal = useCallback((setId: string, mealSlot?: DayMealSlot) => {
-    if (mealSlot) {
-      pinMealSlotInSet(setId, mealSlot);
-    }
+  const openAddItemModal = useCallback((setId: string) => {
     targetSetIdRef.current = setId;
-    targetMealSlotRef.current = mealSlot ?? null;
     setAddItemSetId(setId);
-    setAddItemMealSlot(mealSlot ?? null);
     setAddItemModalOpen(true);
-  }, [pinMealSlotInSet]);
+  }, []);
 
-  const handleToggleItemMealSlot = useCallback(
-    (setId: string, categoryKey: string, slot: DayMealSlot) => {
-      toggleCategoryMealSlotInSet(setId, categoryKey, slot);
-      void Haptics.selectionAsync();
-    },
-    [toggleCategoryMealSlotInSet],
-  );
-
-  const addItemModalTitle = useMemo(
-    () =>
-      addItemMealSlot
-        ? `${DAY_MEAL_SLOT_LABEL[addItemMealSlot]} 항목 추가`
-        : '항목 추가',
-    [addItemMealSlot],
-  );
+  const addItemModalTitle = '항목 추가';
 
   const shellBg = c.bg;
   const cardBg = c.containerLowest;
@@ -1614,16 +1251,6 @@ export function FixedRoutinePage({
     (setItem: FixedFlowSet) => activeSetIds.includes(setItem.id),
     [activeSetIds],
   );
-  const isMealSlotActiveForToday = useCallback(
-    (setItem: FixedFlowSet, slot: DayMealSlot) => {
-      if (!activeSetIds.includes(setItem.id)) return false;
-      const configuredSlots = activeMealSlotsBySetId[setItem.id];
-      if (!Array.isArray(configuredSlots) || configuredSlots.length === 0) return true;
-      return configuredSlots.includes(slot);
-    },
-    [activeMealSlotsBySetId, activeSetIds],
-  );
-
   const activeSection = embeddedPresetOnly
     ? ('scheduled' as const)
     : embeddedCustomOnly
@@ -1696,17 +1323,6 @@ export function FixedRoutinePage({
           />
         ) : (
           <>
-            {useSectionsRoutineLayout ? (
-              <FixedRoutineMealSlotScheduleCard
-                schedule={mealSlotSchedule}
-                isDark={isDark}
-                ink={ink}
-                muted={muted}
-                line={line}
-                cardBg={cardBg}
-                onPressSettings={() => setMealSlotScheduleSheetOpen(true)}
-              />
-            ) : null}
             {useSpineRoutineLayout ? (
               <FixedRoutinePriorityWindowCard
                 priorityStart={priorityStart}
@@ -1725,7 +1341,6 @@ export function FixedRoutinePage({
                   key={setItem.id}
                   setItem={setItem}
                   isPresetScheduleSet={isBuiltinPresetScheduleSet(setItem)}
-                  mealSlotLayoutEnabled={useSectionsRoutineLayout}
                   spineLayoutEnabled={useSpineRoutineLayout}
                   priorityStart={priorityStart}
                   priorityEnd={priorityEnd}
@@ -1747,11 +1362,6 @@ export function FixedRoutinePage({
                   onToggleActiveForToday={() => {
                     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     toggleSetForToday(setItem.id);
-                  }}
-                  isMealSlotAppliedForToday={(slot) => isMealSlotActiveForToday(setItem, slot)}
-                  onToggleMealSlotForToday={(slot) => {
-                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    toggleMealSlotForToday(setItem.id, slot);
                   }}
                   onApplyBlocked={handleApplyBlocked}
                   canDeleteSet
@@ -1779,15 +1389,10 @@ export function FixedRoutinePage({
                     );
                   }}
                   onOpenAddItem={() => openAddItemModal(setItem.id)}
-                  onOpenAddItemForSlot={(slot) => openAddItemModal(setItem.id, slot)}
-                  onToggleItemMealSlot={(categoryKey, slot) =>
-                    handleToggleItemMealSlot(setItem.id, categoryKey, slot)
-                  }
                   onChangeItemSpineTime={(categoryKey, startMinutes, endMinutes) => {
                     setCategorySpineScheduleInSet(setItem.id, categoryKey, startMinutes, endMinutes);
                     void Haptics.selectionAsync();
                   }}
-                  mealSlotSchedule={mealSlotSchedule}
                 />
               ))}
             </View>
@@ -1868,12 +1473,11 @@ export function FixedRoutinePage({
         onConfirm={(keys) => {
           if (!addItemSetId) return;
           keys.forEach((key) =>
-            addCategoryToSet(addItemSetId, key, addItemMealSlot ?? undefined),
+            addCategoryToSet(addItemSetId, key),
           );
         }}
         onCreateCustom={() => {
           targetSetIdRef.current = addItemSetId;
-          targetMealSlotRef.current = addItemMealSlot;
           setCreateSheetOpen(true);
         }}
       />
@@ -1888,14 +1492,6 @@ export function FixedRoutinePage({
         muted={muted}
         line={line}
         surface={cardBg}
-      />
-
-      <DayMealSlotScheduleSheet
-        visible={mealSlotScheduleSheetOpen}
-        schedule={mealSlotSchedule}
-        onClose={() => setMealSlotScheduleSheetOpen(false)}
-        onSave={persistMealSlotSchedule}
-        isDark={isDark}
       />
 
       <FixedRoutinePriorityWindowSheet
@@ -2096,59 +1692,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 18,
   },
-  mealSlotSectionList: {
-    width: '100%',
-    gap: 10,
-  },
-  mealSlotBlock: {
-    width: '100%',
-  },
-  mealSlotBlockFollows: {
-    marginTop: 2,
-  },
-  mealSlotBlockHeader: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: 8,
-    paddingHorizontal: 4,
-    paddingBottom: 6,
-  },
-  mealSlotBlockHeaderMain: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    minWidth: 0,
-    flex: 1,
-  },
-  mealSlotBlockTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  mealSlotBlockHint: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  mealSlotApplyChip: {
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 0,
-    borderWidth: 2,
-  },
-  mealSlotApplyChipLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-  },
-  mealSlotEmpty: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
   addGroupTrigger: {
     borderWidth: 2,
     borderStyle: 'dashed',
@@ -2214,13 +1757,6 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingHorizontal: 8,
     paddingVertical: 5,
-  },
-  flowMealSlotPanel: {
-    marginTop: -2,
-    paddingTop: 4,
-    paddingBottom: 6,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
   },
   flowSpineTimePanel: {
     marginTop: -2,

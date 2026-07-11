@@ -286,6 +286,52 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
       'healthIntake',
       'fasting',
     ]);
+    expect(patch?.planBlocks?.map((block) => block.title)).toEqual([
+      '건강을 위한 섭취',
+      '체중조절',
+    ]);
+    expect(patch?.planBlocks?.map((block) => block.category)).toEqual([
+      '건강을 위한 섭취',
+      '체중조절',
+    ]);
     expect(patch?.priorityCategoryOrder).toBeUndefined();
+  });
+
+  it('rewrites raw categoryKey titles on existing spine blocks', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      fixedRoutineApplyLayoutMode: 'spine',
+      planBlocks: [
+        {
+          id: 'b1',
+          title: 'reading',
+          category: 'reading',
+          categoryKey: 'reading',
+          startMinutes: 14 * 60 + 35,
+          endMinutes: 15 * 60 + 5,
+          order: 0,
+          blockOrigin: 'spineTimeline',
+        },
+      ],
+      todayAppliedCategoryKeys: ['reading'],
+      fixedFlowSets: [
+        {
+          id: 'set_weekend',
+          name: '주말 루틴',
+          applyRule: 'weekend' as const,
+          items: [
+            {
+              categoryKey: 'reading',
+              enabled: true,
+              spineStartMinutes: 14 * 60 + 35,
+              spineEndMinutes: 15 * 60 + 5,
+            },
+          ],
+        },
+      ],
+      activeSetIds: ['set_weekend'],
+    });
+    expect(patch?.planBlocks?.map((block) => block.title)).toEqual(['독서']);
+    expect(patch?.planBlocks?.map((block) => block.category)).toEqual(['독서']);
   });
 });
