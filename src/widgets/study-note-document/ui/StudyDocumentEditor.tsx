@@ -30,12 +30,12 @@ import {
   resolveWorkStudyNotePageLabel,
   setWorkStudyActivePageBlocks,
   updateWorkStudyNotePageTitle,
-  workStudyPageBlocksToPlainText,
   type WorkStudyDocBlock,
   type WorkStudyDocument,
   type WorkStudyBlockMarks,
   type WorkStudyHeadingLevel,
 } from '@entities/day-plan';
+import { workStudyPageBlocksToPlainText } from '@entities/day-plan/lib/workStudyDocument';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { cityPopFont, RetroFlatColors } from '@shared/config/retroFlat';
 import { pickImageFromLibrary } from '@shared/lib/media/pickImageFromLibrary';

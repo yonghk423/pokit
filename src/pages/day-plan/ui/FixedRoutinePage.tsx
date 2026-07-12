@@ -1016,6 +1016,7 @@ export function FixedRoutinePage({
 
   const {
     sets,
+    activeSetIds,
     activeSetIdsByLayoutMode,
     hydrate,
     reloadFromStorage,
@@ -1033,6 +1034,7 @@ export function FixedRoutinePage({
   } = useFixedFlowSetsStore(
     useShallow((s) => ({
       sets: s.sets,
+      activeSetIds: s.activeSetIds,
       activeSetIdsByLayoutMode: s.activeSetIdsByLayoutMode,
       hydrate: s.hydrate,
       reloadFromStorage: s.reloadFromStorage,
@@ -1404,7 +1406,8 @@ export function FixedRoutinePage({
   const muted = c.onVariant;
   const line = c.catBorderIdle;
   const dashedBorder = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)';
-  const activeSetIdsForLayout = activeSetIdsByLayoutMode[layoutMode] ?? [];
+  const activeSetIdsForLayout =
+    activeSetIdsByLayoutMode?.[layoutMode] ?? activeSetIds ?? [];
   const isSetActiveForToday = useCallback(
     (setItem: FixedFlowSet) => activeSetIdsForLayout.includes(setItem.id),
     [activeSetIdsForLayout],

@@ -285,6 +285,7 @@ export {
   normalizeWorkStudyDocument,
   workStudyDocumentIsEmpty,
   workStudyDocumentToPlainText,
+  workStudyPageBlocksToPlainText,
   formatWorkStudyNoteDateLabel,
   formatWorkStudyNoteTitleFromDateKey,
   resolveWorkStudyNotePageAutoTitle,

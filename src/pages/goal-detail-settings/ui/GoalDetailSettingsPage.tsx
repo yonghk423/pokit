@@ -1,7 +1,15 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import {
+  Keyboard,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -190,10 +198,39 @@ function resolveCatalogGroupKeyForSettings(categoryKey: string): string {
 export function GoalDetailSettingsPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   /** 목표 상세는 항상 라이트(화이트) 기준 UI */
   const c = useMemo(() => palette(false), []);
 
   const { categoryKey, startBlockId, blockIds, source } = useGoalDetailSettingsRoute();
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(Math.max(0, event.endCoordinates?.height ?? 0));
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, []);
+
+  const keyboardOpen = keyboardHeight > 0;
+  // iOS: 키보드가 화면을 덮으므로 콘텐츠 영역을 줄인다. Android(resize)는 창이 이미 줄어든다.
+  const keyboardInset = Platform.OS === 'ios' && keyboardOpen ? keyboardHeight : 0;
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (!keyboardOpen) return;
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [keyboardOpen]);
 
   useEffect(() => {
     useDayPlanStore.getState().hydrate();
@@ -618,7 +655,7 @@ export function GoalDetailSettingsPage() {
       style={[styles.screen, { backgroundColor: screenBg }]}
       darkColor={screenBg}
       lightColor={screenBg}>
-      <View style={[styles.safe, { paddingTop: topInset }]}>
+      <View style={[styles.safe, { paddingTop: topInset, paddingBottom: keyboardInset }]}>
         <View
           style={[
             styles.header,
@@ -662,6 +699,7 @@ export function GoalDetailSettingsPage() {
         </View>
 
         <ScrollView
+          ref={scrollRef}
           style={styles.scrollFlex}
           scrollEnabled={!medicineOnlyUi}
           bounces={!medicineOnlyUi}
@@ -669,11 +707,14 @@ export function GoalDetailSettingsPage() {
           contentContainerStyle={[
             styles.scrollContent,
             {
-              paddingBottom: workNoteUi ? 0 : 8,
+              paddingBottom: keyboardOpen ? 24 : workNoteUi ? 0 : 8,
               backgroundColor: c.bg,
             },
           ]}
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets={false}
+          contentInsetAdjustmentBehavior="never">
           {singleTarget && singleTargetRenameAccess?.renameLockedReason ? (
             <View style={[styles.renameLockBanner, { borderBottomColor: headerBorder }]}>
               <IconSymbol name="lock.fill" size={13} color={c.onVariant} />
@@ -892,34 +933,36 @@ export function GoalDetailSettingsPage() {
             ) : null}
           </View>
         </ScrollView>
-        <View
-          style={[
-            styles.footerFixed,
-            workNoteUi && styles.footerFixedCompact,
-            {
-              paddingBottom: Math.max(insets.bottom, workNoteUi ? 4 : 6),
-            },
-          ]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={waterDetailUi ? '루틴 설정 완료' : '설정 완료'}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              handleCompleteAndStart();
-            }}
-            style={({ pressed }) => [
-              styles.footerCompleteCircle,
-              { backgroundColor: '#000000' },
-              pressed && { opacity: 0.9, transform: [{ scale: 0.94 }] },
+        {keyboardOpen ? null : (
+          <View
+            style={[
+              styles.footerFixed,
+              workNoteUi && styles.footerFixedCompact,
+              {
+                paddingBottom: Math.max(insets.bottom, workNoteUi ? 4 : 6),
+              },
             ]}>
-            <IconSymbol
-              name="checkmark"
-              size={16}
-              weight="bold"
-              color="#FAFAFA"
-            />
-          </Pressable>
-        </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={waterDetailUi ? '루틴 설정 완료' : '설정 완료'}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                handleCompleteAndStart();
+              }}
+              style={({ pressed }) => [
+                styles.footerCompleteCircle,
+                { backgroundColor: '#000000' },
+                pressed && { opacity: 0.9, transform: [{ scale: 0.94 }] },
+              ]}>
+              <IconSymbol
+                name="checkmark"
+                size={16}
+                weight="bold"
+                color="#FAFAFA"
+              />
+            </Pressable>
+          </View>
+        )}
       </View>
     </ThemedView>
   );

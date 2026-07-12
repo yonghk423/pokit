@@ -21,7 +21,6 @@ import {
   normalizeReadingBookMemo,
   normalizeReadingBookStatus,
   READING_BOOK_MEMO_MAX,
-  readingBookEntryToShareText,
   readingBookExternalLinkLabel,
   resolveReadingBookAuthor,
   resolveReadingBookCatalogSource,
@@ -31,6 +30,7 @@ import {
   type ReadingBookEntry,
   type ReadingBookStatus,
 } from '@entities/day-plan';
+import { readingBookEntryToShareText } from '@entities/day-plan/lib/readingBookShareText';
 import { AladinAttributionLine, openAladinProductPage } from '@features/aladin-book-search';
 import { OpenLibraryAttributionLine, openOpenLibraryBookPage } from '@features/open-library-book-search';
 import { RetroFlatColors } from '@shared/config/retroFlat';

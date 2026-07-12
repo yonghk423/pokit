@@ -1,6 +1,15 @@
 import type { SymbolViewProps } from 'expo-symbols';
-import type { ReactNode } from 'react';
-import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  Keyboard,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getGoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
@@ -46,6 +55,7 @@ export function SessionImmersionLayout({
   const isDark = useColorScheme() === 'dark';
   const ui = getGoalDetailSessionUi(isDark);
   const insets = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const topInset =
     insets.top >= 1
       ? insets.top
@@ -53,9 +63,37 @@ export function SessionImmersionLayout({
         ? 59
         : Number(StatusBar.currentHeight) || 24;
 
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(Math.max(0, event.endCoordinates?.height ?? 0));
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, []);
+
+  const keyboardOpen = keyboardHeight > 0;
+  const effectiveScrollBottom = keyboardOpen ? 24 : scrollBottomPadding;
+  const keyboardInset = Platform.OS === 'ios' && keyboardOpen ? keyboardHeight : 0;
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (!keyboardOpen) return;
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [keyboardOpen]);
+
   return (
     <View style={[styles.screen, { backgroundColor: ui.screenBg }]}>
-      <View style={[styles.flex, { paddingTop: topInset }]}>
+      <View style={[styles.flex, { paddingTop: topInset, paddingBottom: keyboardInset }]}>
         <View style={[styles.header, { borderBottomColor: ui.border }]}>
           <Pressable
             accessibilityRole="button"
@@ -76,8 +114,12 @@ export function SessionImmersionLayout({
         </View>
 
         <ScrollView
+          ref={scrollRef}
           style={styles.scroll}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollBottomPadding }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: effectiveScrollBottom }]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets={false}
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           bounces>
@@ -95,7 +137,7 @@ export function SessionImmersionLayout({
           {children}
         </ScrollView>
 
-        {bottomBar}
+        {keyboardOpen ? null : bottomBar}
       </View>
     </View>
   );
@@ -154,9 +196,13 @@ export function ImmersionCardShell({
 }) {
   const isDark = useColorScheme() === 'dark';
   const ui = getGoalDetailSessionUi(isDark);
-
   return (
-    <View style={[styles.cardShell, { borderColor, backgroundColor: ui.cardBg }, padded ? styles.cardShellPad : null]}>
+    <View
+      style={[
+        styles.cardShell,
+        { borderColor, backgroundColor: ui.cardBg },
+        padded ? styles.cardShellPad : null,
+      ]}>
       {children}
     </View>
   );
@@ -187,16 +233,15 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   flex: { flex: 1 },
   header: {
-    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 8,
+    paddingBottom: 10,
   },
   headerBtn: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -287,6 +332,5 @@ const styles = StyleSheet.create({
   completeBtnText: {
     fontSize: 17,
     fontWeight: '800',
-    letterSpacing: -0.2,
   },
 });

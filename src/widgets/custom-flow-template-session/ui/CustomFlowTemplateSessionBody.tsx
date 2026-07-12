@@ -537,40 +537,6 @@ function ChecklistTemplateView({
         ) : null}
       </Card>
       <Card theme={theme}>
-        <View style={[styles.addRow, { borderColor: line }]}>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={addPlaceholder}
-            placeholderTextColor={muted}
-            style={[styles.addInput, { color: ink }]}
-            returnKeyType="done"
-            onSubmitEditing={() => {
-              const text = draft.trim();
-              if (!text) return;
-              emit({
-                ...cfg,
-                templateKey,
-                checklist: [...tasks, { id: `task_${Date.now()}`, text, done: false }],
-              });
-              setDraft('');
-            }}
-          />
-          <Pressable
-            onPress={() => {
-              const text = draft.trim();
-              if (!text) return;
-              emit({
-                ...cfg,
-                templateKey,
-                checklist: [...tasks, { id: `task_${Date.now()}`, text, done: false }],
-              });
-              setDraft('');
-            }}
-            style={[styles.addBtn, { borderColor: ink }]}>
-            <ThemedText style={{ color: ink, fontWeight: '800', fontSize: 11 }}>ADD</ThemedText>
-          </Pressable>
-        </View>
         {tasks.map((task) => (
           <Pressable
             key={task.id}
@@ -617,6 +583,40 @@ function ChecklistTemplateView({
             </Pressable>
           </Pressable>
         ))}
+        <View style={[styles.addRow, { borderColor: line }]}>
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={addPlaceholder}
+            placeholderTextColor={muted}
+            style={[styles.addInput, { color: ink }]}
+            returnKeyType="done"
+            onSubmitEditing={() => {
+              const text = draft.trim();
+              if (!text) return;
+              emit({
+                ...cfg,
+                templateKey,
+                checklist: [...tasks, { id: `task_${Date.now()}`, text, done: false }],
+              });
+              setDraft('');
+            }}
+          />
+          <Pressable
+            onPress={() => {
+              const text = draft.trim();
+              if (!text) return;
+              emit({
+                ...cfg,
+                templateKey,
+                checklist: [...tasks, { id: `task_${Date.now()}`, text, done: false }],
+              });
+              setDraft('');
+            }}
+            style={[styles.addBtn, { borderColor: ink }]}>
+            <ThemedText style={{ color: ink, fontWeight: '800', fontSize: 11 }}>ADD</ThemedText>
+          </Pressable>
+        </View>
       </Card>
     </View>
   );
