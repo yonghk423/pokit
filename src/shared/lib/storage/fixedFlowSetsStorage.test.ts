@@ -287,4 +287,60 @@ describe('fixedFlowSetsStorage', () => {
       'water',
     ]);
   });
+
+  it('seeds legacy activeSetIds into the current layout mode only', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: ['set_a'],
+      fixedRoutineApplyLayoutMode: 'spine',
+      sets: [{ id: 'set_a', name: 'A', applyRule: 'manual', items: [] }],
+    });
+    expect(state.activeSetIdsByLayoutMode).toEqual({
+      bag: [],
+      sections: [],
+      spine: ['set_a'],
+    });
+    expect(state.activeSetIds).toEqual(['set_a']);
+  });
+
+  it('keeps per-layout-mode activeSetIds independent when present', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: ['set_a'],
+      fixedRoutineApplyLayoutMode: 'spine',
+      fixedRoutinePerModeApplyMigrated: true,
+      activeSetIdsByLayoutMode: {
+        bag: [],
+        sections: ['set_b'],
+        spine: ['set_a'],
+      },
+      sets: [
+        { id: 'set_a', name: 'A', applyRule: 'manual', items: [] },
+        { id: 'set_b', name: 'B', applyRule: 'manual', items: [] },
+      ],
+    });
+    expect(state.activeSetIds).toEqual(['set_a']);
+    expect(state.activeSetIdsByLayoutMode).toEqual({
+      bag: [],
+      sections: ['set_b'],
+      spine: ['set_a'],
+    });
+  });
+
+  it('splits identical per-mode apply into the current mode once', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: ['set_a'],
+      fixedRoutineApplyLayoutMode: 'spine',
+      activeSetIdsByLayoutMode: {
+        bag: ['set_a'],
+        sections: ['set_a'],
+        spine: ['set_a'],
+      },
+      sets: [{ id: 'set_a', name: 'A', applyRule: 'manual', items: [] }],
+    });
+    expect(state.activeSetIdsByLayoutMode).toEqual({
+      bag: [],
+      sections: [],
+      spine: ['set_a'],
+    });
+    expect(state.fixedRoutinePerModeApplyMigrated).toBe(true);
+  });
 });

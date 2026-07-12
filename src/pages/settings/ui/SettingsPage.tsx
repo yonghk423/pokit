@@ -9,9 +9,12 @@ import {
   defaultPriorityWindowFromNow,
   formatHhmmClockKo,
   getLocalDateKey,
+  syncTodayTabWithFixedRoutineApply,
   useDayPlanDraftStore,
+  useDayPlanLayoutModeVisibilityStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
+  useDayPlanTodoStore,
   useFixedFlowSetsStore,
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
@@ -20,11 +23,14 @@ import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import {
+  DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY,
   ensureDefaultPriorityCatalog,
   loadFixedFlowSetsState,
   loadPriorityDayStartAlarm,
   resetAppLocalData,
   saveDayPlan,
+  saveDayPlanLayoutModeVisibility,
+  saveDayPlanTodos,
   saveFixedFlowSetsState,
   saveRoutineCatalogSelectionKeys,
 } from '@shared/lib/storage';
@@ -90,8 +96,9 @@ export function SettingsPage() {
       ensureDefaultPriorityCatalog();
       const today = getLocalDateKey();
       const defaultWindow = defaultPriorityWindowFromNow();
-      const defaultFixedSets = loadFixedFlowSetsState();
       saveRoutineCatalogSelectionKeys([]);
+      saveDayPlanLayoutModeVisibility({ ...DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY });
+      saveDayPlanTodos({ todosByDate: {} });
 
       useDayPlanStore.setState({
         dateKey: today,
@@ -144,16 +151,21 @@ export function SettingsPage() {
       useDayPlanRuntimeStore.getState().stopTicker();
       useDayPlanRuntimeStore.getState().clearRuntime();
 
-      useFixedFlowSetsStore.setState({
-        activeSetIds: defaultFixedSets.activeSetIds,
-        activeMealSlotsBySetId: defaultFixedSets.activeMealSlotsBySetId ?? {},
-        sets: defaultFixedSets.sets,
-        scheduledMealSlotLayoutEnabled: defaultFixedSets.scheduledMealSlotLayoutEnabled === true,
-        todayAppliedCategoryKeys: [],
-        todayAppliedRevision: 0,
+      useDayPlanTodoStore.setState({
+        todosByDate: {},
+        activeDateKey: today,
         isHydrated: true,
       });
+
+      useDayPlanLayoutModeVisibilityStore.setState({
+        visibility: { ...DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY },
+      });
+
+      // 디스크에 기본 고정 루틴을 먼저 저장한 뒤, 메모리(모드별 적용 포함)를 통째로 다시 맞춤
+      const defaultFixedSets = loadFixedFlowSetsState();
       saveFixedFlowSetsState(defaultFixedSets);
+      useFixedFlowSetsStore.getState().reloadFromStorage();
+      syncTodayTabWithFixedRoutineApply();
 
       useHistoryStore.getState().reloadFromStorage();
       useHorizonCompletionStore.getState().reloadFromStorage();

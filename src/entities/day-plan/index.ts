@@ -399,6 +399,7 @@ export {
   resolveReadingBookTotalPages,
 } from './lib/readingBookCatalog';
 export type { ReadingBookCatalogSource } from './lib/readingBookCatalog';
+export { readingBookEntryToShareText } from './lib/readingBookShareText';
 export type {
   ReadingAladinBook,
   ReadingBookEntry,

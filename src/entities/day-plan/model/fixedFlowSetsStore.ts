@@ -15,6 +15,8 @@ import {
   type DayMealSlot,
   type FixedFlowSet,
   type FixedFlowSetItem,
+  type FixedRoutineActiveMealSlotsByLayoutMode,
+  type FixedRoutineActiveSetIdsByLayoutMode,
   type FixedRoutineApplyLayoutMode,
 } from '@shared/lib/storage';
 
@@ -26,9 +28,44 @@ import {
 } from '../lib/runSyncTodayTabWithFixedRoutineApply';
 import { sanitizeFixedFlowSetItems } from '../lib/sanitizeFixedFlowSetItems';
 
-function sanitizeSetsState(state: { activeSetIds: string[]; sets: FixedFlowSet[] }): {
+function emptyActiveSetIdsByLayoutMode(): FixedRoutineActiveSetIdsByLayoutMode {
+  return { bag: [], sections: [], spine: [] };
+}
+
+function emptyActiveMealSlotsByLayoutMode(): FixedRoutineActiveMealSlotsByLayoutMode {
+  return { bag: {}, sections: {}, spine: {} };
+}
+
+function sanitizeActiveSetIds(ids: readonly string[], valid: Set<string>): string[] {
+  return ids.filter((id) => valid.has(id));
+}
+
+function sanitizeActiveMealSlotsBySetId(
+  slotsBySetId: Record<string, DayMealSlot[]> | undefined,
+  valid: Set<string>,
+): Record<string, DayMealSlot[]> {
+  const activeMealSlotsBySetId: Record<string, DayMealSlot[]> = {};
+  if (!slotsBySetId || typeof slotsBySetId !== 'object') return activeMealSlotsBySetId;
+  for (const [setId, slots] of Object.entries(slotsBySetId)) {
+    if (!valid.has(setId) || !Array.isArray(slots)) continue;
+    const normalized = [...new Set(slots.map((slot) => normalizeDayMealSlot(slot)).filter(Boolean))];
+    if (normalized.length > 0) activeMealSlotsBySetId[setId] = normalized;
+  }
+  return activeMealSlotsBySetId;
+}
+
+function sanitizeSetsState(state: {
+  activeSetIds: string[];
+  activeMealSlotsBySetId?: Record<string, DayMealSlot[]>;
+  activeSetIdsByLayoutMode?: FixedRoutineActiveSetIdsByLayoutMode;
+  activeMealSlotsBySetIdByLayoutMode?: FixedRoutineActiveMealSlotsByLayoutMode;
+  sets: FixedFlowSet[];
+  fixedRoutineApplyLayoutMode?: FixedRoutineApplyLayoutMode;
+}): {
   activeSetIds: string[];
   activeMealSlotsBySetId: Record<string, DayMealSlot[]>;
+  activeSetIdsByLayoutMode: FixedRoutineActiveSetIdsByLayoutMode;
+  activeMealSlotsBySetIdByLayoutMode: FixedRoutineActiveMealSlotsByLayoutMode;
   sets: FixedFlowSet[];
 } {
   const sets = state.sets.map((s) => ({
@@ -36,30 +73,62 @@ function sanitizeSetsState(state: { activeSetIds: string[]; sets: FixedFlowSet[]
     items: sanitizeFixedFlowSetItems(s.items),
   }));
   const valid = new Set(sets.map((s) => s.id));
-  const activeSetIds = state.activeSetIds.filter((id) => valid.has(id));
-  const slotsBySetIdRaw = (state as { activeMealSlotsBySetId?: Record<string, DayMealSlot[]> })
-    .activeMealSlotsBySetId;
-  const activeMealSlotsBySetId: Record<string, DayMealSlot[]> = {};
-  if (slotsBySetIdRaw && typeof slotsBySetIdRaw === 'object') {
-    for (const [setId, slots] of Object.entries(slotsBySetIdRaw)) {
-      if (!valid.has(setId) || !Array.isArray(slots)) continue;
-      const normalized = [...new Set(slots.map((slot) => normalizeDayMealSlot(slot)).filter(Boolean))];
-      if (normalized.length > 0) activeMealSlotsBySetId[setId] = normalized;
-    }
+  const mode = state.fixedRoutineApplyLayoutMode ?? 'bag';
+
+  const activeSetIdsByLayoutMode = emptyActiveSetIdsByLayoutMode();
+  const sourceByMode = state.activeSetIdsByLayoutMode ?? {
+    bag: state.activeSetIds,
+    sections: state.activeSetIds,
+    spine: state.activeSetIds,
+  };
+  for (const key of ['bag', 'sections', 'spine'] as const) {
+    activeSetIdsByLayoutMode[key] = sanitizeActiveSetIds(sourceByMode[key] ?? [], valid);
   }
-  return { activeSetIds, activeMealSlotsBySetId, sets };
+
+  const activeMealSlotsBySetIdByLayoutMode = emptyActiveMealSlotsByLayoutMode();
+  const sourceSlotsByMode = state.activeMealSlotsBySetIdByLayoutMode ?? {
+    bag: state.activeMealSlotsBySetId ?? {},
+    sections: state.activeMealSlotsBySetId ?? {},
+    spine: state.activeMealSlotsBySetId ?? {},
+  };
+  for (const key of ['bag', 'sections', 'spine'] as const) {
+    activeMealSlotsBySetIdByLayoutMode[key] = sanitizeActiveMealSlotsBySetId(
+      sourceSlotsByMode[key],
+      valid,
+    );
+  }
+
+  return {
+    activeSetIds: [...activeSetIdsByLayoutMode[mode]],
+    activeMealSlotsBySetId: { ...activeMealSlotsBySetIdByLayoutMode[mode] },
+    activeSetIdsByLayoutMode,
+    activeMealSlotsBySetIdByLayoutMode,
+    sets,
+  };
+}
+
+function mirrorsForMode(
+  mode: FixedRoutineApplyLayoutMode,
+  activeSetIdsByLayoutMode: FixedRoutineActiveSetIdsByLayoutMode,
+  activeMealSlotsBySetIdByLayoutMode: FixedRoutineActiveMealSlotsByLayoutMode,
+): { activeSetIds: string[]; activeMealSlotsBySetId: Record<string, DayMealSlot[]> } {
+  return {
+    activeSetIds: [...activeSetIdsByLayoutMode[mode]],
+    activeMealSlotsBySetId: { ...activeMealSlotsBySetIdByLayoutMode[mode] },
+  };
 }
 
 type FixedFlowSetsStoreState = {
   activeSetIds: string[];
   activeMealSlotsBySetId: Record<string, DayMealSlot[]>;
+  activeSetIdsByLayoutMode: FixedRoutineActiveSetIdsByLayoutMode;
+  activeMealSlotsBySetIdByLayoutMode: FixedRoutineActiveMealSlotsByLayoutMode;
   sets: FixedFlowSet[];
   scheduledMealSlotLayoutEnabled: boolean;
   dismissedExampleCustomFlowSetIds: string[];
   fixedRoutineApplyLayoutMode: FixedRoutineApplyLayoutMode;
-  /** 오늘 자동·수동 적용 대상 categoryKey (중복 없음) */
+  /** 현재 편집 모드 기준 오늘 적용 categoryKey */
   todayAppliedCategoryKeys: string[];
-  /** todayAppliedCategoryKeys 재계산 시 증가 — 구독용 */
   todayAppliedRevision: number;
   isHydrated: boolean;
 
@@ -69,13 +138,15 @@ type FixedFlowSetsStoreState = {
   addSet: (name?: string) => void;
   renameSet: (setId: string, nextName: string) => void;
   removeSet: (setId: string) => void;
-  /** 오늘 적용 그룹 토글 — 여러 그룹 동시 적용 가능 */
-  toggleSetForToday: (setId: string) => void;
-  /** preset 루틴 구간별 오늘 적용 토글 */
-  toggleMealSlotForToday: (setId: string, slot: DayMealSlot) => void;
+  /** 지정 보기 모드(또는 현재 모드)에만 오늘 적용 토글 */
+  toggleSetForToday: (setId: string, layoutMode?: FixedRoutineApplyLayoutMode) => void;
+  toggleMealSlotForToday: (
+    setId: string,
+    slot: DayMealSlot,
+    layoutMode?: FixedRoutineApplyLayoutMode,
+  ) => void;
   setScheduledMealSlotLayoutEnabled: (enabled: boolean) => void;
   setFixedRoutineApplyLayoutMode: (mode: FixedRoutineApplyLayoutMode) => void;
-  /** 빈 시간대 구간을 편집 화면에 표시 — 아침 등 항목 추가 전 */
   pinMealSlotInSet: (setId: string, slot: DayMealSlot) => void;
 
   addCategoryToSet: (setId: string, categoryKey: string, mealSlot?: DayMealSlot) => void;
@@ -90,10 +161,8 @@ type FixedFlowSetsStoreState = {
     startMinutes: number,
     endMinutes: number,
   ) => void;
-  /** categoryKey가 속한 첫 세트의 mealSlot 갱신 — 성공 시 true */
   setCategoryMealSlotInAnySet: (categoryKey: string, mealSlot: DayMealSlot) => boolean;
 
-  /** @deprecated 첫 적용 그룹 전용 — 기존 코드 호환 */
   setActiveSetOrder: (categoryKeys: string[]) => void;
   addCategoryToActiveSet: (categoryKey: string) => void;
   removeCategoryFromActiveSet: (categoryKey: string) => void;
@@ -146,6 +215,8 @@ function persistState(
       FixedFlowSetsStoreState,
       | 'activeSetIds'
       | 'activeMealSlotsBySetId'
+      | 'activeSetIdsByLayoutMode'
+      | 'activeMealSlotsBySetIdByLayoutMode'
       | 'sets'
       | 'scheduledMealSlotLayoutEnabled'
       | 'dismissedExampleCustomFlowSetIds'
@@ -153,24 +224,58 @@ function persistState(
     >
   >,
 ): void {
-  const activeSetIds = patch.activeSetIds ?? get().activeSetIds;
-  const activeMealSlotsBySetId = patch.activeMealSlotsBySetId ?? get().activeMealSlotsBySetId;
+  const fixedRoutineApplyLayoutMode =
+    patch.fixedRoutineApplyLayoutMode ?? get().fixedRoutineApplyLayoutMode;
+  let activeSetIdsByLayoutMode =
+    patch.activeSetIdsByLayoutMode ?? get().activeSetIdsByLayoutMode;
+  let activeMealSlotsBySetIdByLayoutMode =
+    patch.activeMealSlotsBySetIdByLayoutMode ?? get().activeMealSlotsBySetIdByLayoutMode;
+
+  // 현재 모드 미러만 바꾼 호출 → 해당 모드 슬롯에 반영 (목록/시간대/타임라인 독립)
+  if (patch.activeSetIds !== undefined || patch.activeMealSlotsBySetId !== undefined) {
+    activeSetIdsByLayoutMode = {
+      ...activeSetIdsByLayoutMode,
+      [fixedRoutineApplyLayoutMode]:
+        patch.activeSetIds ?? activeSetIdsByLayoutMode[fixedRoutineApplyLayoutMode],
+    };
+    activeMealSlotsBySetIdByLayoutMode = {
+      ...activeMealSlotsBySetIdByLayoutMode,
+      [fixedRoutineApplyLayoutMode]:
+        patch.activeMealSlotsBySetId ??
+        activeMealSlotsBySetIdByLayoutMode[fixedRoutineApplyLayoutMode],
+    };
+  }
+
+  const mirrors = mirrorsForMode(
+    fixedRoutineApplyLayoutMode,
+    activeSetIdsByLayoutMode,
+    activeMealSlotsBySetIdByLayoutMode,
+  );
+  const activeSetIds = mirrors.activeSetIds;
+  const activeMealSlotsBySetId = mirrors.activeMealSlotsBySetId;
   const sets = patch.sets ?? get().sets;
   const scheduledMealSlotLayoutEnabled =
     patch.scheduledMealSlotLayoutEnabled ?? get().scheduledMealSlotLayoutEnabled;
   const dismissedExampleCustomFlowSetIds =
     patch.dismissedExampleCustomFlowSetIds ?? get().dismissedExampleCustomFlowSetIds;
-  const fixedRoutineApplyLayoutMode =
-    patch.fixedRoutineApplyLayoutMode ?? get().fixedRoutineApplyLayoutMode;
   saveFixedFlowSetsState({
     activeSetIds,
     activeMealSlotsBySetId,
+    activeSetIdsByLayoutMode,
+    activeMealSlotsBySetIdByLayoutMode,
     sets,
     scheduledMealSlotLayoutEnabled,
     dismissedExampleCustomFlowSetIds,
     fixedRoutineApplyLayoutMode,
   });
-  applyTodayAppliedPatch(set, get, { activeSetIds, activeMealSlotsBySetId, sets });
+  applyTodayAppliedPatch(set, get, {
+    activeSetIds,
+    activeMealSlotsBySetId,
+    activeSetIdsByLayoutMode,
+    activeMealSlotsBySetIdByLayoutMode,
+    sets,
+    fixedRoutineApplyLayoutMode,
+  });
 }
 
 function mapSetItems(items: FixedFlowSetItem[]): Map<string, FixedFlowSetItem> {
@@ -189,6 +294,8 @@ function nextSetName(existing: FixedFlowSet[]): string {
 export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) => ({
   activeSetIds: [],
   activeMealSlotsBySetId: {},
+  activeSetIdsByLayoutMode: emptyActiveSetIdsByLayoutMode(),
+  activeMealSlotsBySetIdByLayoutMode: emptyActiveMealSlotsByLayoutMode(),
   sets: [],
   scheduledMealSlotLayoutEnabled: false,
   dismissedExampleCustomFlowSetIds: [],
@@ -206,6 +313,7 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     if (keysBefore !== keysAfter) {
       saveFixedFlowSetsState({ ...loaded, ...sanitized });
     }
+    const mode = loaded.fixedRoutineApplyLayoutMode ?? 'bag';
     const todayAppliedCategoryKeys = recomputeTodayApplied(
       sanitized.activeSetIds,
       sanitized.activeMealSlotsBySetId,
@@ -214,10 +322,12 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     set({
       activeSetIds: sanitized.activeSetIds,
       activeMealSlotsBySetId: sanitized.activeMealSlotsBySetId,
+      activeSetIdsByLayoutMode: sanitized.activeSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode: sanitized.activeMealSlotsBySetIdByLayoutMode,
       sets: sanitized.sets,
-      scheduledMealSlotLayoutEnabled: sanitized.scheduledMealSlotLayoutEnabled === true,
-      dismissedExampleCustomFlowSetIds: sanitized.dismissedExampleCustomFlowSetIds ?? [],
-      fixedRoutineApplyLayoutMode: sanitized.fixedRoutineApplyLayoutMode ?? 'bag',
+      scheduledMealSlotLayoutEnabled: loaded.scheduledMealSlotLayoutEnabled === true,
+      dismissedExampleCustomFlowSetIds: loaded.dismissedExampleCustomFlowSetIds ?? [],
+      fixedRoutineApplyLayoutMode: mode,
       todayAppliedCategoryKeys,
       todayAppliedRevision: 1,
       isHydrated: true,
@@ -231,10 +341,12 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     applyTodayAppliedPatch(set, get, {
       activeSetIds: sanitized.activeSetIds,
       activeMealSlotsBySetId: sanitized.activeMealSlotsBySetId,
+      activeSetIdsByLayoutMode: sanitized.activeSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode: sanitized.activeMealSlotsBySetIdByLayoutMode,
       sets: sanitized.sets,
-      scheduledMealSlotLayoutEnabled: sanitized.scheduledMealSlotLayoutEnabled === true,
-      dismissedExampleCustomFlowSetIds: sanitized.dismissedExampleCustomFlowSetIds ?? [],
-      fixedRoutineApplyLayoutMode: sanitized.fixedRoutineApplyLayoutMode ?? 'bag',
+      scheduledMealSlotLayoutEnabled: loaded.scheduledMealSlotLayoutEnabled === true,
+      dismissedExampleCustomFlowSetIds: loaded.dismissedExampleCustomFlowSetIds ?? [],
+      fixedRoutineApplyLayoutMode: loaded.fixedRoutineApplyLayoutMode ?? 'bag',
       isHydrated: true,
     });
   },
@@ -285,75 +397,145 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     if (BUILTIN_FIXED_FLOW_SET_IDS.includes(setId as (typeof BUILTIN_FIXED_FLOW_SET_IDS)[number])) {
       return;
     }
-    const { sets, activeSetIds, activeMealSlotsBySetId, dismissedExampleCustomFlowSetIds } = get();
+    const {
+      sets,
+      activeSetIds,
+      activeMealSlotsBySetId,
+      activeSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode,
+      dismissedExampleCustomFlowSetIds,
+      fixedRoutineApplyLayoutMode,
+    } = get();
     const nextSets = sets.filter((s) => s.id !== setId);
-    const nextActive = activeSetIds.filter((id) => id !== setId);
-    const { [setId]: _removed, ...nextActiveMealSlotsBySetId } = activeMealSlotsBySetId;
+    // setState로 미러만 갱신한 경우에도 현재 모드 슬롯과 맞춤
+    const syncedByMode: FixedRoutineActiveSetIdsByLayoutMode = {
+      ...activeSetIdsByLayoutMode,
+      [fixedRoutineApplyLayoutMode]: activeSetIds,
+    };
+    const syncedSlotsByMode: FixedRoutineActiveMealSlotsByLayoutMode = {
+      ...activeMealSlotsBySetIdByLayoutMode,
+      [fixedRoutineApplyLayoutMode]: activeMealSlotsBySetId,
+    };
+    const nextActiveSetIdsByLayoutMode = emptyActiveSetIdsByLayoutMode();
+    const nextActiveMealSlotsBySetIdByLayoutMode = emptyActiveMealSlotsByLayoutMode();
+    for (const mode of ['bag', 'sections', 'spine'] as const) {
+      nextActiveSetIdsByLayoutMode[mode] = syncedByMode[mode].filter((id) => id !== setId);
+      const { [setId]: _removed, ...restSlots } = syncedSlotsByMode[mode];
+      nextActiveMealSlotsBySetIdByLayoutMode[mode] = restSlots;
+    }
     const nextDismissed = isBuiltinExampleCustomFlowSet({ id: setId })
       ? [...new Set([...dismissedExampleCustomFlowSetIds, setId])]
       : dismissedExampleCustomFlowSetIds;
+    const mirrors = mirrorsForMode(
+      fixedRoutineApplyLayoutMode,
+      nextActiveSetIdsByLayoutMode,
+      nextActiveMealSlotsBySetIdByLayoutMode,
+    );
     set({
       sets: nextSets,
-      activeSetIds: nextActive,
-      activeMealSlotsBySetId: nextActiveMealSlotsBySetId,
+      activeSetIds: mirrors.activeSetIds,
+      activeMealSlotsBySetId: mirrors.activeMealSlotsBySetId,
+      activeSetIdsByLayoutMode: nextActiveSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode: nextActiveMealSlotsBySetIdByLayoutMode,
       dismissedExampleCustomFlowSetIds: nextDismissed,
     });
     persistState(set, get, {
-      activeSetIds: nextActive,
-      activeMealSlotsBySetId: nextActiveMealSlotsBySetId,
+      activeSetIdsByLayoutMode: nextActiveSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode: nextActiveMealSlotsBySetIdByLayoutMode,
       sets: nextSets,
       dismissedExampleCustomFlowSetIds: nextDismissed,
     });
   },
 
-  toggleSetForToday: (setId) => {
-    const { sets, activeSetIds, activeMealSlotsBySetId } = get();
+  toggleSetForToday: (setId, layoutMode) => {
+    const mode = layoutMode ?? get().fixedRoutineApplyLayoutMode;
+    const {
+      sets,
+      activeSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode,
+    } = get();
     const target = sets.find((s) => s.id === setId);
     if (!target) return;
-    const isActivating = !activeSetIds.includes(setId);
+    const modeActiveIds = activeSetIdsByLayoutMode[mode] ?? [];
+    const modeSlots = activeMealSlotsBySetIdByLayoutMode[mode] ?? {};
+    const isActivating = !modeActiveIds.includes(setId);
     const nextActive = isActivating
-      ? [...activeSetIds, setId]
-      : activeSetIds.filter((id) => id !== setId);
-    const { [setId]: _removed, ...restSlots } = activeMealSlotsBySetId;
+      ? [...modeActiveIds, setId]
+      : modeActiveIds.filter((id) => id !== setId);
+    const { [setId]: _removed, ...restSlots } = modeSlots;
+    const nextActiveSetIdsByLayoutMode = {
+      ...activeSetIdsByLayoutMode,
+      [mode]: nextActive,
+    };
+    const nextActiveMealSlotsBySetIdByLayoutMode = {
+      ...activeMealSlotsBySetIdByLayoutMode,
+      [mode]: restSlots,
+    };
     set({
+      fixedRoutineApplyLayoutMode: mode,
       activeSetIds: nextActive,
       activeMealSlotsBySetId: restSlots,
+      activeSetIdsByLayoutMode: nextActiveSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode: nextActiveMealSlotsBySetIdByLayoutMode,
     });
     persistState(set, get, {
+      fixedRoutineApplyLayoutMode: mode,
       activeSetIds: nextActive,
       activeMealSlotsBySetId: restSlots,
+      activeSetIdsByLayoutMode: nextActiveSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode: nextActiveMealSlotsBySetIdByLayoutMode,
       sets,
     });
   },
 
-  toggleMealSlotForToday: (setId, slot) => {
+  toggleMealSlotForToday: (setId, slot, layoutMode) => {
     const normalizedSlot = normalizeDayMealSlot(slot);
     if (!normalizedSlot) return;
-    const { sets, activeSetIds, activeMealSlotsBySetId } = get();
+    const mode = layoutMode ?? get().fixedRoutineApplyLayoutMode;
+    const {
+      sets,
+      activeSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode,
+    } = get();
     const target = sets.find((s) => s.id === setId);
     if (!target || !isBuiltinPresetScheduleSet(target)) return;
 
-    const currentSlots = new Set(activeMealSlotsBySetId[setId] ?? []);
+    const modeActiveIds = activeSetIdsByLayoutMode[mode] ?? [];
+    const modeSlots = { ...(activeMealSlotsBySetIdByLayoutMode[mode] ?? {}) };
+    const currentSlots = new Set(modeSlots[setId] ?? []);
     if (currentSlots.has(normalizedSlot)) currentSlots.delete(normalizedSlot);
     else currentSlots.add(normalizedSlot);
 
-    const nextActiveMealSlotsBySetId = { ...activeMealSlotsBySetId };
-    let nextActiveSetIds = activeSetIds.includes(setId) ? [...activeSetIds] : [...activeSetIds, setId];
+    let nextActiveSetIds = modeActiveIds.includes(setId) ? [...modeActiveIds] : [...modeActiveIds, setId];
     const nextSlots = [...currentSlots];
     if (nextSlots.length === 0) {
-      delete nextActiveMealSlotsBySetId[setId];
+      delete modeSlots[setId];
       nextActiveSetIds = nextActiveSetIds.filter((id) => id !== setId);
     } else {
-      nextActiveMealSlotsBySetId[setId] = nextSlots;
+      modeSlots[setId] = nextSlots;
     }
 
+    const nextActiveSetIdsByLayoutMode = {
+      ...activeSetIdsByLayoutMode,
+      [mode]: nextActiveSetIds,
+    };
+    const nextActiveMealSlotsBySetIdByLayoutMode = {
+      ...activeMealSlotsBySetIdByLayoutMode,
+      [mode]: modeSlots,
+    };
     set({
+      fixedRoutineApplyLayoutMode: mode,
       activeSetIds: nextActiveSetIds,
-      activeMealSlotsBySetId: nextActiveMealSlotsBySetId,
+      activeMealSlotsBySetId: modeSlots,
+      activeSetIdsByLayoutMode: nextActiveSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode: nextActiveMealSlotsBySetIdByLayoutMode,
     });
     persistState(set, get, {
+      fixedRoutineApplyLayoutMode: mode,
       activeSetIds: nextActiveSetIds,
-      activeMealSlotsBySetId: nextActiveMealSlotsBySetId,
+      activeMealSlotsBySetId: modeSlots,
+      activeSetIdsByLayoutMode: nextActiveSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode: nextActiveMealSlotsBySetIdByLayoutMode,
       sets,
     });
   },
@@ -365,7 +547,13 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
 
   setFixedRoutineApplyLayoutMode: (mode) => {
     if (get().fixedRoutineApplyLayoutMode === mode) return;
-    set({ fixedRoutineApplyLayoutMode: mode });
+    const { activeSetIdsByLayoutMode, activeMealSlotsBySetIdByLayoutMode } = get();
+    const mirrors = mirrorsForMode(mode, activeSetIdsByLayoutMode, activeMealSlotsBySetIdByLayoutMode);
+    set({
+      fixedRoutineApplyLayoutMode: mode,
+      activeSetIds: mirrors.activeSetIds,
+      activeMealSlotsBySetId: mirrors.activeMealSlotsBySetId,
+    });
     persistState(set, get, { fixedRoutineApplyLayoutMode: mode });
   },
 

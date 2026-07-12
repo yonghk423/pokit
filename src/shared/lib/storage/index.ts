@@ -124,11 +124,23 @@ export {
 export type { BuiltinCustomFlowDef } from './defaultPriorityCatalog';
 export { ensureDefaultPriorityCatalog } from './ensureDefaultPriorityCatalog';
 export {
-  collectActiveFixedFlowCategoryKeys, getActiveFixedFlowSet, isFixedFlowSetMatchedToday,
-  isFixedFlowSetRuleMatchedToday, loadActiveFixedFlowCategoryKeys, loadFixedFlowSetsState,
+  collectActiveFixedFlowCategoryKeys,
+  FIXED_ROUTINE_APPLY_LAYOUT_MODES,
+  getActiveFixedFlowSet,
+  isFixedFlowSetMatchedToday,
+  isFixedFlowSetRuleMatchedToday,
+  loadActiveFixedFlowCategoryKeys,
+  loadFixedFlowSetsState,
   normalizeFixedFlowSetsState,
-  saveFixedFlowSetsState, type FixedFlowSet, type FixedFlowSetApplyRule, type FixedFlowSetItem,
-  type FixedFlowSetsState, type FixedRoutineApplyLayoutMode
+  resolveActiveFixedFlowApplyForLayoutMode,
+  saveFixedFlowSetsState,
+  type FixedFlowSet,
+  type FixedFlowSetApplyRule,
+  type FixedFlowSetItem,
+  type FixedFlowSetsState,
+  type FixedRoutineActiveMealSlotsByLayoutMode,
+  type FixedRoutineActiveSetIdsByLayoutMode,
+  type FixedRoutineApplyLayoutMode,
 } from './fixedFlowSetsStorage';
 export {
   WEEKDAY_LABELS,

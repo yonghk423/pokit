@@ -1,5 +1,12 @@
-import { loadRoutineCatalogSelectionKeys } from '@shared/lib/storage';
+import {
+  loadRoutineCatalogSelectionKeys,
+  resolveActiveFixedFlowApplyForLayoutMode,
+  type FixedRoutineActiveMealSlotsByLayoutMode,
+  type FixedRoutineActiveSetIdsByLayoutMode,
+  type FixedRoutineApplyLayoutMode,
+} from '@shared/lib/storage';
 
+import { resolveTodayFixedRoutineKeys } from './resolveTodayFixedRoutineKeys';
 import {
   computeSyncTodayTabWithFixedRoutineApply,
   type SyncTodayTabWithFixedRoutinePatch,
@@ -23,8 +30,10 @@ type FixedSyncState = {
   todayAppliedCategoryKeys: string[];
   activeSetIds: string[];
   activeMealSlotsBySetId: Record<string, import('@shared/lib/storage').DayMealSlot[]>;
+  activeSetIdsByLayoutMode: FixedRoutineActiveSetIdsByLayoutMode;
+  activeMealSlotsBySetIdByLayoutMode: FixedRoutineActiveMealSlotsByLayoutMode;
   scheduledMealSlotLayoutEnabled: boolean;
-  fixedRoutineApplyLayoutMode: import('@shared/lib/storage').FixedRoutineApplyLayoutMode;
+  fixedRoutineApplyLayoutMode: FixedRoutineApplyLayoutMode;
   sets: import('@shared/lib/storage').FixedFlowSet[];
 };
 
@@ -74,12 +83,19 @@ export function syncTodayTabWithFixedRoutineApply(): void {
   const dayPlan = getDayPlanSyncState();
   if (!dayPlan.isHydrated) return;
 
-  const effectiveLayoutMode: import('@shared/lib/storage').FixedRoutineApplyLayoutMode =
-    draft.prioritySpineLayoutEnabled
-      ? 'spine'
-      : draft.priorityMealSlotLayoutEnabled
-        ? 'sections'
-        : 'bag';
+  const effectiveLayoutMode: FixedRoutineApplyLayoutMode = draft.prioritySpineLayoutEnabled
+    ? 'spine'
+    : draft.priorityMealSlotLayoutEnabled
+      ? 'sections'
+      : 'bag';
+
+  // 오늘 탭 보기 모드의 적용 상태만 사용 (고정 루틴 화면의 현재 편집 모드와 독립)
+  const modeApply = resolveActiveFixedFlowApplyForLayoutMode(fixed, effectiveLayoutMode);
+  const todayAppliedCategoryKeys = resolveTodayFixedRoutineKeys({
+    activeSetIds: modeApply.activeSetIds,
+    activeMealSlotsBySetId: modeApply.activeMealSlotsBySetId,
+    sets: fixed.sets,
+  });
 
   const patch = computeSyncTodayTabWithFixedRoutineApply({
     priorityCategoryOrder: draft.priorityCategoryOrder,
@@ -89,9 +105,9 @@ export function syncTodayTabWithFixedRoutineApply(): void {
     priorityStart: draft.priorityStart,
     priorityEnd: draft.priorityEnd,
     planBlocks: dayPlan.blocks,
-    todayAppliedCategoryKeys: fixed.todayAppliedCategoryKeys,
-    activeSetIds: fixed.activeSetIds,
-    activeMealSlotsBySetId: fixed.activeMealSlotsBySetId,
+    todayAppliedCategoryKeys,
+    activeSetIds: modeApply.activeSetIds,
+    activeMealSlotsBySetId: modeApply.activeMealSlotsBySetId,
     scheduledMealSlotLayoutEnabled: fixed.scheduledMealSlotLayoutEnabled,
     fixedRoutineApplyLayoutMode: effectiveLayoutMode,
     fixedFlowSets: fixed.sets,

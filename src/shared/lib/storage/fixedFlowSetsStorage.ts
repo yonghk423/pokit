@@ -60,23 +60,50 @@ export type FixedFlowSet = {
 
 export type FixedRoutineApplyLayoutMode = 'bag' | 'sections' | 'spine';
 
+export const FIXED_ROUTINE_APPLY_LAYOUT_MODES: readonly FixedRoutineApplyLayoutMode[] = [
+  'bag',
+  'sections',
+  'spine',
+] as const;
+
+export type FixedRoutineActiveSetIdsByLayoutMode = Record<FixedRoutineApplyLayoutMode, string[]>;
+
+export type FixedRoutineActiveMealSlotsByLayoutMode = Record<
+  FixedRoutineApplyLayoutMode,
+  Record<string, DayMealSlot[]>
+>;
+
 export type FixedFlowSetsState = {
-  /** 오늘 담기에 적용 중인 그룹 id (여러 개 가능) */
+  /**
+   * 현재 `fixedRoutineApplyLayoutMode`에 대응하는 적용 세트.
+   * 실제 저장 진실은 `activeSetIdsByLayoutMode` — 하위 호환용 미러.
+   */
   activeSetIds: string[];
-  /** preset 구간별 오늘 적용 슬롯(비어있으면 세트 전체 적용) */
+  /** 현재 모드의 preset 구간별 오늘 적용 슬롯 미러 */
   activeMealSlotsBySetId?: Record<string, DayMealSlot[]>;
+  /** 목록·시간대·타임라인 모드별 오늘 적용 그룹 */
+  activeSetIdsByLayoutMode: FixedRoutineActiveSetIdsByLayoutMode;
+  /** 모드별 preset 구간 오늘 적용 슬롯 */
+  activeMealSlotsBySetIdByLayoutMode: FixedRoutineActiveMealSlotsByLayoutMode;
   sets: FixedFlowSet[];
   /** 데일리·주말 고정 루틴 — 시간대 구간 레이아웃 (기본: 목록) */
   scheduledMealSlotLayoutEnabled?: boolean;
   /** 사용자가 삭제한 나만의 루틴 예시 그룹 id — 재생성 방지 */
   dismissedExampleCustomFlowSetIds?: string[];
-  /** 나만의 루틴 적용 시 반영할 오늘 탭 보기 */
+  /** 고정 루틴 화면에서 편집 중인 보기 모드 */
   fixedRoutineApplyLayoutMode?: FixedRoutineApplyLayoutMode;
+  /**
+   * 모드별 적용 분리 마이그레이션 완료 여부.
+   * 이전에는 단일 activeSetIds를 세 모드에 복제했음 → 한 번만 현재 모드로 축소.
+   */
+  fixedRoutinePerModeApplyMigrated?: boolean;
 };
 
 type PersistedShape = Partial<FixedFlowSetsState> & {
   /** 레거시 단일 적용 id — 읽기 전용 마이그레이션 */
   activeSetId?: string | null;
+  activeSetIdsByLayoutMode?: Partial<FixedRoutineActiveSetIdsByLayoutMode> | unknown;
+  activeMealSlotsBySetIdByLayoutMode?: Partial<FixedRoutineActiveMealSlotsByLayoutMode> | unknown;
 };
 
 const FALLBACK_SET_NAME = EXAMPLE_CUSTOM_FLOW_SET_NAME;
@@ -364,6 +391,170 @@ function normalizeFixedRoutineApplyLayoutMode(raw: unknown): FixedRoutineApplyLa
   return 'bag';
 }
 
+function emptyActiveSetIdsByLayoutMode(): FixedRoutineActiveSetIdsByLayoutMode {
+  return { bag: [], sections: [], spine: [] };
+}
+
+function emptyActiveMealSlotsByLayoutMode(): FixedRoutineActiveMealSlotsByLayoutMode {
+  return { bag: {}, sections: {}, spine: {} };
+}
+
+function filterActiveSetIdsForSets(ids: readonly string[], sets: FixedFlowSet[]): string[] {
+  const valid = new Set(sets.map((s) => s.id));
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const row of ids) {
+    const id = typeof row === 'string' ? row.trim() : '';
+    if (!id || !valid.has(id) || seen.has(id) || LEGACY_AUTO_ACTIVE_SET_IDS.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
+function filterActiveMealSlotsForSets(
+  slotsBySetId: Record<string, DayMealSlot[]>,
+  sets: FixedFlowSet[],
+): Record<string, DayMealSlot[]> {
+  const validPresetSetIds = new Set(
+    sets.filter((set) => isBuiltinPresetScheduleSet(set)).map((set) => set.id),
+  );
+  const out: Record<string, DayMealSlot[]> = {};
+  for (const [setId, slots] of Object.entries(slotsBySetId)) {
+    if (!validPresetSetIds.has(setId) || !Array.isArray(slots)) continue;
+    const nextSlots = [...new Set(slots.map((slot) => normalizeDayMealSlot(slot)).filter(Boolean))];
+    if (nextSlots.length > 0) out[setId] = nextSlots;
+  }
+  return out;
+}
+
+function normalizeActiveSetIdsByLayoutMode(
+  raw: PersistedShape,
+  sets: FixedFlowSet[],
+  legacyActiveSetIds: string[],
+  currentMode: FixedRoutineApplyLayoutMode,
+): FixedRoutineActiveSetIdsByLayoutMode {
+  const fromRaw = raw.activeSetIdsByLayoutMode;
+  if (fromRaw && typeof fromRaw === 'object' && !Array.isArray(fromRaw)) {
+    const row = fromRaw as Record<string, unknown>;
+    const out = emptyActiveSetIdsByLayoutMode();
+    for (const mode of FIXED_ROUTINE_APPLY_LAYOUT_MODES) {
+      // 모드 키가 없으면 빈 배열 — 레거시 단일 목록을 다른 모드에 복제하지 않음
+      const ids = Array.isArray(row[mode]) ? (row[mode] as unknown[]) : [];
+      out[mode] = filterActiveSetIdsForSets(
+        ids.map((id) => (typeof id === 'string' ? id : '')),
+        sets,
+      );
+    }
+    return out;
+  }
+  // 레거시: 단일 activeSetIds는 당시 편집 모드에만 두고 나머지는 비움
+  const seed = filterActiveSetIdsForSets(legacyActiveSetIds, sets);
+  const out = emptyActiveSetIdsByLayoutMode();
+  out[currentMode] = [...seed];
+  return out;
+}
+
+function normalizeActiveMealSlotsByLayoutMode(
+  raw: PersistedShape,
+  sets: FixedFlowSet[],
+  legacySlots: Record<string, DayMealSlot[]>,
+  currentMode: FixedRoutineApplyLayoutMode,
+): FixedRoutineActiveMealSlotsByLayoutMode {
+  const fromRaw = raw.activeMealSlotsBySetIdByLayoutMode;
+  if (fromRaw && typeof fromRaw === 'object' && !Array.isArray(fromRaw)) {
+    const row = fromRaw as Record<string, unknown>;
+    const out = emptyActiveMealSlotsByLayoutMode();
+    for (const mode of FIXED_ROUTINE_APPLY_LAYOUT_MODES) {
+      const modeRaw = row[mode];
+      const source =
+        modeRaw && typeof modeRaw === 'object' && !Array.isArray(modeRaw)
+          ? (modeRaw as Record<string, DayMealSlot[]>)
+          : {};
+      out[mode] = filterActiveMealSlotsForSets(source, sets);
+    }
+    return out;
+  }
+  const seed = filterActiveMealSlotsForSets(legacySlots, sets);
+  const out = emptyActiveMealSlotsByLayoutMode();
+  out[currentMode] = { ...seed };
+  return out;
+}
+
+function sameIdList(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((id, index) => id === b[index]);
+}
+
+function sameMealSlotsMaps(
+  a: Record<string, DayMealSlot[]>,
+  b: Record<string, DayMealSlot[]>,
+): boolean {
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  return aKeys.every((key) => sameIdList(a[key] ?? [], b[key] ?? []));
+}
+
+/** 세 모드에 동일 복제된 적용 상태를 현재 모드만 남기고 분리 */
+function splitIdenticalPerModeApply(
+  activeSetIdsByLayoutMode: FixedRoutineActiveSetIdsByLayoutMode,
+  activeMealSlotsBySetIdByLayoutMode: FixedRoutineActiveMealSlotsByLayoutMode,
+  currentMode: FixedRoutineApplyLayoutMode,
+): {
+  activeSetIdsByLayoutMode: FixedRoutineActiveSetIdsByLayoutMode;
+  activeMealSlotsBySetIdByLayoutMode: FixedRoutineActiveMealSlotsByLayoutMode;
+} {
+  const idsIdentical =
+    sameIdList(activeSetIdsByLayoutMode.bag, activeSetIdsByLayoutMode.sections) &&
+    sameIdList(activeSetIdsByLayoutMode.sections, activeSetIdsByLayoutMode.spine);
+  const slotsIdentical =
+    sameMealSlotsMaps(
+      activeMealSlotsBySetIdByLayoutMode.bag,
+      activeMealSlotsBySetIdByLayoutMode.sections,
+    ) &&
+    sameMealSlotsMaps(
+      activeMealSlotsBySetIdByLayoutMode.sections,
+      activeMealSlotsBySetIdByLayoutMode.spine,
+    );
+  if (!idsIdentical || !slotsIdentical) {
+    return { activeSetIdsByLayoutMode, activeMealSlotsBySetIdByLayoutMode };
+  }
+  const nextIds = emptyActiveSetIdsByLayoutMode();
+  const nextSlots = emptyActiveMealSlotsByLayoutMode();
+  nextIds[currentMode] = [...activeSetIdsByLayoutMode[currentMode]];
+  nextSlots[currentMode] = { ...activeMealSlotsBySetIdByLayoutMode[currentMode] };
+  return {
+    activeSetIdsByLayoutMode: nextIds,
+    activeMealSlotsBySetIdByLayoutMode: nextSlots,
+  };
+}
+
+/** 특정 보기 모드의 오늘 적용 세트·구간 */
+export function resolveActiveFixedFlowApplyForLayoutMode(
+  state: Pick<
+    FixedFlowSetsState,
+    | 'activeSetIds'
+    | 'activeMealSlotsBySetId'
+    | 'activeSetIdsByLayoutMode'
+    | 'activeMealSlotsBySetIdByLayoutMode'
+  >,
+  mode: FixedRoutineApplyLayoutMode,
+): { activeSetIds: string[]; activeMealSlotsBySetId: Record<string, DayMealSlot[]> } {
+  const byMode = state.activeSetIdsByLayoutMode;
+  const slotsByMode = state.activeMealSlotsBySetIdByLayoutMode;
+  if (byMode && typeof byMode === 'object') {
+    return {
+      activeSetIds: [...(byMode[mode] ?? [])],
+      activeMealSlotsBySetId: { ...(slotsByMode?.[mode] ?? {}) },
+    };
+  }
+  return {
+    activeSetIds: [...(state.activeSetIds ?? [])],
+    activeMealSlotsBySetId: { ...(state.activeMealSlotsBySetId ?? {}) },
+  };
+}
+
 function normalizeDismissedExampleCustomFlowSetIds(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   const valid = new Set(BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS as readonly string[]);
@@ -410,15 +601,44 @@ export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState 
     ),
     { dismissedIds: dismissedExampleCustomFlowSetIds },
   );
-  const activeSetIds = normalizeActiveSetIds(raw, sets);
-  const activeMealSlotsBySetId = normalizeActiveMealSlotsBySetId(raw, sets);
+  const legacyActiveSetIds = normalizeActiveSetIds(raw, sets);
+  const legacyActiveMealSlotsBySetId = normalizeActiveMealSlotsBySetId(raw, sets);
+  let activeSetIdsByLayoutMode = normalizeActiveSetIdsByLayoutMode(
+    raw,
+    sets,
+    legacyActiveSetIds,
+    fixedRoutineApplyLayoutMode,
+  );
+  let activeMealSlotsBySetIdByLayoutMode = normalizeActiveMealSlotsByLayoutMode(
+    raw,
+    sets,
+    legacyActiveMealSlotsBySetId,
+    fixedRoutineApplyLayoutMode,
+  );
+  const alreadyMigrated = raw.fixedRoutinePerModeApplyMigrated === true;
+  if (!alreadyMigrated) {
+    const split = splitIdenticalPerModeApply(
+      activeSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode,
+      fixedRoutineApplyLayoutMode,
+    );
+    activeSetIdsByLayoutMode = split.activeSetIdsByLayoutMode;
+    activeMealSlotsBySetIdByLayoutMode = split.activeMealSlotsBySetIdByLayoutMode;
+  }
+  const activeSetIds = [...activeSetIdsByLayoutMode[fixedRoutineApplyLayoutMode]];
+  const activeMealSlotsBySetId = {
+    ...activeMealSlotsBySetIdByLayoutMode[fixedRoutineApplyLayoutMode],
+  };
   return {
     activeSetIds,
     activeMealSlotsBySetId,
+    activeSetIdsByLayoutMode,
+    activeMealSlotsBySetIdByLayoutMode,
     sets,
     scheduledMealSlotLayoutEnabled: raw.scheduledMealSlotLayoutEnabled === true,
     dismissedExampleCustomFlowSetIds,
     fixedRoutineApplyLayoutMode,
+    fixedRoutinePerModeApplyMigrated: true,
   };
 }
 
@@ -438,16 +658,12 @@ export function isFixedFlowSetMatchedToday(
   return isApplyWeekdayMatchedToday(resolveApplyWeekdays(set), now);
 }
 
-function collectEffectiveActiveSetIds(state: FixedFlowSetsState): Set<string> {
-  return new Set(state.activeSetIds);
-}
-
 /** 오늘 적용 켠 그룹 categoryKey */
 export function collectActiveFixedFlowCategoryKeys(
-  state: FixedFlowSetsState,
+  state: Pick<FixedFlowSetsState, 'activeSetIds' | 'activeMealSlotsBySetId' | 'sets'>,
   now: Date = new Date(),
 ): string[] {
-  const active = collectEffectiveActiveSetIds(state);
+  const active = new Set(state.activeSetIds);
   const activeMealSlotsBySetId = state.activeMealSlotsBySetId ?? {};
   const seen = new Set<string>();
   const out: string[] = [];
@@ -481,12 +697,13 @@ export function collectActiveFixedFlowCategoryKeys(
 export function loadFixedFlowSetsState(): FixedFlowSetsState {
   const raw = localStorageClient.getJson<PersistedShape>(StorageKeys.fixedFlowSets);
   const normalized = normalizeFixedFlowSetsState(raw);
-  if (
+  const needsPersist =
     hadRemovedScheduledSets(raw?.sets) ||
     hadRemovedBuiltinPresetSets(raw?.sets) ||
     hadExampleCustomFlowSetMigration(raw?.sets) ||
-    hadMissingBuiltinExampleCustomSets(raw?.sets)
-  ) {
+    hadMissingBuiltinExampleCustomSets(raw?.sets) ||
+    raw?.fixedRoutinePerModeApplyMigrated !== true;
+  if (needsPersist) {
     saveFixedFlowSetsState(normalized);
     return normalized;
   }
@@ -523,7 +740,13 @@ export function loadFixedFlowSetsState(): FixedFlowSetsState {
 }
 
 export function saveFixedFlowSetsState(next: FixedFlowSetsState): void {
-  const normalized = normalizeFixedFlowSetsState(next);
+  const existing = localStorageClient.getJson<PersistedShape>(StorageKeys.fixedFlowSets);
+  const normalized = normalizeFixedFlowSetsState({
+    ...next,
+    fixedRoutinePerModeApplyMigrated:
+      next.fixedRoutinePerModeApplyMigrated === true ||
+      existing?.fixedRoutinePerModeApplyMigrated === true,
+  });
   localStorageClient.setJson(StorageKeys.fixedFlowSets, normalized);
 }
 

@@ -198,8 +198,12 @@ export function createDefaultFixedFlowSetsState(): FixedFlowSetsState {
   }));
   return {
     activeSetIds: [],
+    activeMealSlotsBySetId: {},
+    activeSetIdsByLayoutMode: { bag: [], sections: [], spine: [] },
+    activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
     sets,
     scheduledMealSlotLayoutEnabled: false,
+    fixedRoutinePerModeApplyMigrated: true,
   };
 }
 

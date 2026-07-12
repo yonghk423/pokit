@@ -23,8 +23,13 @@ const baseState = createDefaultFixedFlowSetsState();
 function resetStore() {
   useFixedFlowSetsStore.setState({
     activeSetIds: [],
+    activeMealSlotsBySetId: {},
+    activeSetIdsByLayoutMode: { bag: [], sections: [], spine: [] },
+    activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
     sets: [],
     scheduledMealSlotLayoutEnabled: false,
+    dismissedExampleCustomFlowSetIds: [],
+    fixedRoutineApplyLayoutMode: 'bag',
     todayAppliedCategoryKeys: [],
     todayAppliedRevision: 0,
     isHydrated: false,
@@ -216,5 +221,69 @@ describe('fixedFlowSetsStore', () => {
     useFixedFlowSetsStore.getState().pinMealSlotInSet('set_daily', 'morning');
     const daily = useFixedFlowSetsStore.getState().sets.find((s) => s.id === 'set_daily');
     expect(daily?.pinnedMealSlots).toEqual(['morning']);
+  });
+
+  it('keeps fixed routine apply independent per layout mode', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: [],
+      activeMealSlotsBySetId: {},
+      activeSetIdsByLayoutMode: { bag: [], sections: [], spine: [] },
+      activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
+      fixedRoutineApplyLayoutMode: 'bag',
+      sets: [
+        {
+          id: 'set_a',
+          name: 'A',
+          applyRule: 'manual',
+          items: [{ categoryKey: 'reading', enabled: true }],
+        },
+      ],
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+
+    useFixedFlowSetsStore.getState().toggleSetForToday('set_a', 'spine');
+    expect(useFixedFlowSetsStore.getState().activeSetIds).toEqual(['set_a']);
+    expect(useFixedFlowSetsStore.getState().fixedRoutineApplyLayoutMode).toBe('spine');
+    expect(useFixedFlowSetsStore.getState().activeSetIdsByLayoutMode).toEqual({
+      bag: [],
+      sections: [],
+      spine: ['set_a'],
+    });
+    expect(useFixedFlowSetsStore.getState().todayAppliedCategoryKeys).toEqual(['reading']);
+
+    useFixedFlowSetsStore.getState().setFixedRoutineApplyLayoutMode('bag');
+    expect(useFixedFlowSetsStore.getState().activeSetIds).toEqual([]);
+    expect(useFixedFlowSetsStore.getState().todayAppliedCategoryKeys).toEqual([]);
+    expect(useFixedFlowSetsStore.getState().activeSetIdsByLayoutMode.spine).toEqual(['set_a']);
+
+    useFixedFlowSetsStore.getState().setFixedRoutineApplyLayoutMode('spine');
+    expect(useFixedFlowSetsStore.getState().activeSetIds).toEqual(['set_a']);
+    expect(useFixedFlowSetsStore.getState().todayAppliedCategoryKeys).toEqual(['reading']);
+  });
+
+  it('removes set from every layout mode active list', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: ['set_a'],
+      activeMealSlotsBySetId: {},
+      activeSetIdsByLayoutMode: { bag: ['set_a'], sections: ['set_a'], spine: ['set_b'] },
+      activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
+      fixedRoutineApplyLayoutMode: 'bag',
+      sets: [
+        { id: 'set_a', name: 'A', applyRule: 'manual', items: [] },
+        { id: 'set_b', name: 'B', applyRule: 'manual', items: [] },
+      ],
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+    useFixedFlowSetsStore.getState().removeSet('set_a');
+    expect(useFixedFlowSetsStore.getState().activeSetIdsByLayoutMode).toEqual({
+      bag: [],
+      sections: [],
+      spine: ['set_b'],
+    });
+    expect(useFixedFlowSetsStore.getState().sets.map((s) => s.id)).toEqual(['set_b']);
   });
 });

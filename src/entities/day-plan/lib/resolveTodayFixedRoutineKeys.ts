@@ -10,7 +10,7 @@ export type ResolveTodayFixedRoutineKeysOptions = {
 
 /** 오늘 적용 켠 그룹 categoryKey — categoryKey 중복 없이 합친다. */
 export function resolveTodayFixedRoutineKeys(
-  flowSets: FixedFlowSetsState,
+  flowSets: Pick<FixedFlowSetsState, 'activeSetIds' | 'activeMealSlotsBySetId' | 'sets'>,
   options?: ResolveTodayFixedRoutineKeysOptions,
 ): string[] {
   const keys = collectActiveFixedFlowCategoryKeys(flowSets, options?.now ?? new Date());

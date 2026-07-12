@@ -78,6 +78,10 @@ export function PriorityCatalogPage() {
     hydrateLayoutModeVisibility();
   }, [hydrateLayoutModeVisibility]);
 
+  const setFixedRoutineApplyLayoutMode = useFixedFlowSetsStore(
+    (s) => s.setFixedRoutineApplyLayoutMode,
+  );
+
   useEffect(() => {
     if (effectiveCatalogLayoutMode === catalogLayoutMode) return;
     setPlanMode('priority');
@@ -97,10 +101,6 @@ export function PriorityCatalogPage() {
   const visibleLayoutModes = useMemo(
     () => (['bag', 'sections', 'spine'] as const).filter((mode) => visibility[mode]),
     [visibility],
-  );
-
-  const setFixedRoutineApplyLayoutMode = useFixedFlowSetsStore(
-    (s) => s.setFixedRoutineApplyLayoutMode,
   );
 
   const onSelectCatalogLayoutMode = useCallback(

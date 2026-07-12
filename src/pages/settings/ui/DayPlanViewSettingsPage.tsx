@@ -100,6 +100,9 @@ export function DayPlanViewSettingsPage() {
                       void Haptics.selectionAsync();
                       setModeVisible(opt.key, next);
                     }}
+                    trackColor={{ false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)', true: c.primary }}
+                    thumbColor="#FFFFFF"
+                    ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
                     accessibilityLabel={`${opt.label} 보기 ${enabled ? '끄기' : '켜기'}`}
                   />
                 </View>
