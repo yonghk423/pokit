@@ -1,6 +1,8 @@
 import { normalizeReminderDetailConfig } from './customFlowTemplateConfigs';
 import {
+  isReminderPresetActive,
   normalizeReminderScheduleItems,
+  REMINDER_SCHEDULE_PRESETS,
   resolveReminderItemTitle,
 } from './reminderSchedule';
 
@@ -23,5 +25,13 @@ describe('reminderSchedule', () => {
     });
     expect(cfg.reminderTimes).toEqual(['09:00', '12:00']);
     expect(resolveReminderItemTitle(cfg.reminderItems[0]!)).toBe('아침 영양제');
+  });
+
+  it('detects active reminder preset', () => {
+    const items = REMINDER_SCHEDULE_PRESETS[0]!.items;
+    expect(isReminderPresetActive(items, REMINDER_SCHEDULE_PRESETS[0]!)).toBe(true);
+    expect(
+      isReminderPresetActive([{ time: '09:00', label: '다른 라벨' }], REMINDER_SCHEDULE_PRESETS[0]!),
+    ).toBe(false);
   });
 });

@@ -8,6 +8,7 @@ import {
   getInitialJournalDataConfig,
   getInitialMemoDataConfig,
   getInitialReminderDataConfig,
+  isReminderPresetActive,
   normalizeCounterDetailConfig,
   normalizeFocusDetailConfig,
   normalizeHabitDetailConfig,
@@ -250,6 +251,7 @@ function GenericTemplateSettings<T extends { displayName: string; summary: strin
           accent: PrimaryColor.rgb,
         }}
         previewMode={false}
+        allowScheduleCompletion={templateKey !== 'reminder'}
       />
     </View>
   );
@@ -318,27 +320,46 @@ export function ReminderSettings(props: SettingsProps) {
       normalize={normalizeReminderDetailConfig}
       getInitial={getInitialReminderDataConfig}
       topSection={(cfg, applyConfig, c) => (
-        <TemplateSection title="알림 시간" c={c}>
+        <TemplateSection title="예시 불러오기" c={c}>
           <View style={styles.chipsRow}>
-            {REMINDER_SCHEDULE_PRESETS.map((preset) => (
-              <Pressable
-                key={preset.id}
-                accessibilityRole="button"
-                onPress={() => {
-                  const next = normalizeReminderDetailConfig({
-                    ...(cfg as Record<string, unknown>),
-                    reminderItems: preset.items,
-                    completedTimes: [],
-                  });
-                  applyConfig(next);
-                }}
-                style={[styles.chip, { borderColor: c.outline, backgroundColor: c.surfaceLowest }]}>
-                <ThemedText style={[styles.chipText, { color: c.onVariant }]}>{preset.title}</ThemedText>
-              </Pressable>
-            ))}
+            {REMINDER_SCHEDULE_PRESETS.map((preset) => {
+              const selected = isReminderPresetActive(
+                (cfg as { reminderItems?: { time: string; label: string }[] }).reminderItems ?? [],
+                preset,
+              );
+              return (
+                <Pressable
+                  key={preset.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => {
+                    const next = normalizeReminderDetailConfig({
+                      ...(cfg as Record<string, unknown>),
+                      reminderItems: preset.items,
+                      completedTimes: [],
+                    });
+                    applyConfig(next);
+                  }}
+                  style={[
+                    styles.chip,
+                    {
+                      borderColor: selected ? PrimaryColor.rgb : c.outline,
+                      backgroundColor: selected ? 'rgba(0, 0, 0, 0.04)' : c.surfaceLowest,
+                    },
+                  ]}>
+                  <ThemedText
+                    style={[
+                      styles.chipText,
+                      { color: selected ? c.onSurface : c.onVariant, fontWeight: selected ? '700' : '500' },
+                    ]}>
+                    {preset.title}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
           </View>
           <ThemedText style={[styles.helper, { color: c.onVariant }]}>
-            각 시간마다 어떤 알림인지 적어 두면 세션에서 바로 확인할 수 있어요.
+            예시를 누르면 아래 알림 목록이 채워져요. 시간·이름은 목록에서 바로 수정할 수 있어요.
           </ThemedText>
         </TemplateSection>
       )}

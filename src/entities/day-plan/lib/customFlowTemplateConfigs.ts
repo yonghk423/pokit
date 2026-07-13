@@ -37,6 +37,7 @@ export {
 } from './counterUnits';
 export {
   findReminderScheduleItem,
+  isReminderPresetActive,
   mergeReminderScheduleItems,
   normalizeReminderLabel,
   normalizeReminderScheduleItems,
@@ -740,7 +741,13 @@ export function mergeCustomFlowGoalDetailData(
     case 'reminder': {
       const b = blockRaw != null ? normalizeReminderDetailConfig(blockRaw) : null;
       const c = categoryRaw != null ? normalizeReminderDetailConfig(categoryRaw) : null;
-      const reminderItems = mergeReminderScheduleItems(b?.reminderItems ?? [], c?.reminderItems ?? []);
+      const blockHasSchedule = (b?.reminderItems?.length ?? 0) > 0;
+      const reminderItems = blockHasSchedule
+        ? b!.reminderItems
+        : mergeReminderScheduleItems(b?.reminderItems ?? [], c?.reminderItems ?? []);
+      const completedTimes = blockHasSchedule
+        ? b!.completedTimes
+        : [...new Set([...(b?.completedTimes ?? []), ...(c?.completedTimes ?? [])])].sort();
       return normalizeReminderDetailConfig({
         templateKey: 'reminder',
         displayName: pickDisplayName(
@@ -756,9 +763,7 @@ export function mergeCustomFlowGoalDetailData(
           c?.summary ?? '',
         ),
         reminderItems,
-        completedTimes: [
-          ...new Set([...(b?.completedTimes ?? []), ...(c?.completedTimes ?? [])]),
-        ].sort(),
+        completedTimes,
         ...pickAppearance(b, c),
       });
     }

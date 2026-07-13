@@ -114,6 +114,7 @@ export {
   normalizeMemoDetailConfig,
   normalizeReminderDetailConfig,
   normalizeReminderTime,
+  isReminderPresetActive,
   REMINDER_SCHEDULE_PRESETS,
   resolveCounterUnitLabel,
   resolveReminderItemTitle,

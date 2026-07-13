@@ -1,6 +1,7 @@
 import {
   CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS,
   LEGACY_CUSTOM_FLOW_TEMPLATE_KEYS,
+  mergeCustomFlowGoalDetailData,
   normalizeCounterDetailConfig,
   normalizeFocusDetailConfig,
   normalizeHabitDetailConfig,
@@ -44,6 +45,27 @@ describe('customFlowTemplateConfigs', () => {
       reminderTimes: ['9:30', 'invalid', '18:00'],
     });
     expect(cfg.reminderTimes).toEqual(['09:30', '18:00']);
+  });
+
+  it('prefers block reminder schedule over category merge', () => {
+    const merged = mergeCustomFlowGoalDetailData(
+      {
+        templateKey: 'reminder',
+        reminderItems: [{ time: '09:00', label: '아침' }],
+        completedTimes: [],
+      },
+      {
+        templateKey: 'reminder',
+        reminderItems: [
+          { time: '09:00', label: '아침' },
+          { time: '18:00', label: '저녁' },
+        ],
+        completedTimes: ['09:00'],
+      },
+      { templateKey: 'reminder' },
+    );
+    expect(merged.reminderItems).toEqual([{ time: '09:00', label: '아침' }]);
+    expect(merged.completedTimes).toEqual([]);
   });
 
   it('normalizes habit and journal', () => {

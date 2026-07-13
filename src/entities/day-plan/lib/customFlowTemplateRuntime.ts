@@ -303,7 +303,7 @@ export function removeReminderScheduleItem(
   const items = cfg.reminderItems.filter((item) => item.time !== time);
   return normalizeReminderDetailConfig({
     ...cfg,
-    reminderItems: items.length > 0 ? items : [{ time: '09:00', label: '' }],
+    reminderItems: items,
     completedTimes: cfg.completedTimes.filter((t) => t !== time),
   });
 }

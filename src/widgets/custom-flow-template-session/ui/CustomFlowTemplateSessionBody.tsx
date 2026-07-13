@@ -41,6 +41,7 @@ import {
   resolveMeasurementUnitLabel,
   resolveNextReminderTime,
   resolveReminderItemTitle,
+  isReminderPresetActive,
   roundMeasurementValue,
   toggleReminderTimeDone,
   updateReminderItemLabel,
@@ -72,6 +73,8 @@ type Props = {
   sessionProgress?: number;
   /** 템플릿 미리보기·만들기 — 예시 데이터 전환 허용 */
   previewMode?: boolean;
+  /** false면 설정 화면 — 완료 체크 없이 일정만 편집 */
+  allowScheduleCompletion?: boolean;
 };
 
 /** rgb/hex accent → rgba (템플릿 `${accent}10` 방식은 rgb에서 깨짐) */
@@ -614,7 +617,7 @@ function ChecklistTemplateView({
               setDraft('');
             }}
             style={[styles.addBtn, { borderColor: ink }]}>
-            <ThemedText style={{ color: ink, fontWeight: '800', fontSize: 11 }}>ADD</ThemedText>
+            <ThemedText style={{ color: ink, fontWeight: '800', fontSize: 11 }}>추가</ThemedText>
           </Pressable>
         </View>
       </Card>
@@ -922,11 +925,13 @@ function ReminderTemplateView({
   emit,
   theme,
   previewMode = false,
+  allowScheduleCompletion = true,
 }: {
   cfg: Parameters<typeof toggleReminderTimeDone>[0];
   emit: TemplateEmit;
   theme: TemplateSessionTheme;
   previewMode?: boolean;
+  allowScheduleCompletion?: boolean;
 }) {
   const { ink, muted, line, surface, accent } = theme;
   const { done, total } = reminderProgress(cfg);
@@ -938,9 +943,10 @@ function ReminderTemplateView({
     cfg.reminderItems.length === 1 &&
     cfg.reminderItems[0]?.time === '09:00' &&
     !cfg.reminderItems[0]?.label.trim();
-  const showPresetPicker = previewMode || isDefaultOnly;
+  const showPresetPicker = previewMode || (!allowScheduleCompletion && isDefaultOnly);
   const [draftTime, setDraftTime] = useState('');
   const [draftLabel, setDraftLabel] = useState('');
+  const [addError, setAddError] = useState<string | null>(null);
   const [expandedTimeKey, setExpandedTimeKey] = useState<string | null>(null);
   const [addTimeExpanded, setAddTimeExpanded] = useState(false);
   const canAddMore = cfg.reminderItems.length < MAX_CUSTOM_REMINDER_TIMES;
@@ -952,30 +958,45 @@ function ReminderTemplateView({
 
   const openAddTimePicker = useCallback(() => {
     setExpandedTimeKey(null);
-    setAddTimeExpanded((cur) => !cur);
-  }, []);
+    setAddTimeExpanded((cur) => {
+      const next = !cur;
+      if (next && !draftTime) setDraftTime('12:00');
+      return next;
+    });
+  }, [draftTime]);
 
   const handleAdd = () => {
-    const next = addReminderScheduleItem(cfg, draftTime, draftLabel);
-    if (!next) return;
+    const timeToUse = draftTime.trim() || '12:00';
+    const next = addReminderScheduleItem(cfg, timeToUse, draftLabel);
+    if (!next) {
+      setAddError('이미 같은 시간이 있거나 추가할 수 없어요.');
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+    setAddError(null);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     emit(next);
     setDraftTime('');
     setDraftLabel('');
+    setAddTimeExpanded(false);
+  };
+
+  const handleRemove = (time: string) => {
+    void Haptics.selectionAsync();
+    emit(removeReminderScheduleItem(cfg, time));
   };
 
   return (
     <View style={styles.root}>
       {showPresetPicker ? (
         <Card theme={theme} gap={8}>
-          <SectionLabel color={muted}>어떤 알림인가요?</SectionLabel>
+          <SectionLabel color={muted}>예시 불러오기</SectionLabel>
           <ThemedText style={[styles.sub, { color: muted }]}>
             예시를 누르거나 아래에서 직접 추가·수정할 수 있어요.
           </ThemedText>
           <View style={styles.moodRow}>
             {REMINDER_SCHEDULE_PRESETS.map((preset) => {
-              const selected =
-                JSON.stringify(cfg.reminderItems) === JSON.stringify(preset.items);
+              const selected = isReminderPresetActive(cfg.reminderItems, preset);
               return (
                 <Pressable
                   key={preset.id}
@@ -1011,33 +1032,38 @@ function ReminderTemplateView({
         </Card>
       ) : null}
 
-      <Card theme={theme}>
-        <ThemedText style={[styles.sub, { color: muted }]}>
-          {done}/{total} 완료
-        </ThemedText>
-        {nextTime ? (
-          <ThemedText style={[styles.nextReminder, { color: ink }]}>
-            다음 · {resolveReminderItemTitle(nextItem ?? { time: nextTime, label: '' })} · {formatHhmmClockKo(nextTime)}
-            {countdown ? ` · ${countdown}` : ''}
+      {allowScheduleCompletion ? (
+        <Card theme={theme}>
+          <ThemedText style={[styles.sub, { color: muted }]}>
+            {done}/{total} 완료
           </ThemedText>
-        ) : (
-          <ThemedText style={[styles.goalBadge, { color: accent }]}>오늘 알림 모두 완료</ThemedText>
-        )}
-        <View style={[styles.track, { backgroundColor: line, marginTop: 4 }]}>
-          <View
-            style={[
-              styles.fill,
-              { width: total > 0 ? `${Math.round((done / total) * 100)}%` : '0%', backgroundColor: accent },
-            ]}
-          />
-        </View>
-      </Card>
+          {nextTime ? (
+            <ThemedText style={[styles.nextReminder, { color: ink }]}>
+              다음 · {resolveReminderItemTitle(nextItem ?? { time: nextTime, label: '' })} · {formatHhmmClockKo(nextTime)}
+              {countdown ? ` · ${countdown}` : ''}
+            </ThemedText>
+          ) : (
+            <ThemedText style={[styles.goalBadge, { color: accent }]}>오늘 알림 모두 완료</ThemedText>
+          )}
+          <View style={[styles.track, { backgroundColor: line, marginTop: 4 }]}>
+            <View
+              style={[
+                styles.fill,
+                { width: total > 0 ? `${Math.round((done / total) * 100)}%` : '0%', backgroundColor: accent },
+              ]}
+            />
+          </View>
+        </Card>
+      ) : null}
 
       <Card theme={theme} gap={10}>
         <SectionLabel color={muted}>알림 목록</SectionLabel>
+        {cfg.reminderItems.length === 0 ? (
+          <ThemedText style={[styles.sub, { color: muted }]}>아래에서 알림을 추가해 주세요.</ThemedText>
+        ) : null}
         {cfg.reminderItems.map((item) => {
           const checked = cfg.completedTimes.includes(item.time);
-          const isNext = nextTime === item.time && !checked;
+          const isNext = allowScheduleCompletion && nextTime === item.time && !checked;
           return (
             <View
               key={item.time}
@@ -1050,12 +1076,14 @@ function ReminderTemplateView({
                 },
               ]}>
               <View style={styles.reminderEditMain}>
-                <View style={styles.reminderEditHeader}>
-                  <IconSymbol name="bell" size={16} color={isNext ? accent : muted} />
-                  <ThemedText style={[styles.reminderMeta, { color: isNext ? accent : muted, flex: 1 }]}>
-                    {checked ? '완료' : isNext ? '다음 알림' : '예정'}
-                  </ThemedText>
-                </View>
+                {allowScheduleCompletion ? (
+                  <View style={styles.reminderEditHeader}>
+                    <IconSymbol name="bell" size={16} color={isNext ? accent : muted} />
+                    <ThemedText style={[styles.reminderMeta, { color: isNext ? accent : muted, flex: 1 }]}>
+                      {checked ? '완료' : isNext ? '다음 알림' : '예정'}
+                    </ThemedText>
+                  </View>
+                ) : null}
                 <ReminderTimePickerPill
                   valueHhmm={item.time}
                   onChangeHhmm={(next) => {
@@ -1081,35 +1109,34 @@ function ReminderTemplateView({
                 />
               </View>
               <View style={styles.reminderEditActions}>
-                <Pressable
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked }}
-                  accessibilityLabel={checked ? '완료 취소' : '완료'}
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    emit(toggleReminderTimeDone(cfg, item.time));
-                  }}
-                  style={[
-                    styles.checkBox,
-                    {
-                      borderColor: checked ? accent : line,
-                      backgroundColor: checked ? accent : surface,
-                    },
-                  ]}>
-                  {checked ? <IconSymbol name="checkmark" size={10} color="#fff" /> : null}
-                </Pressable>
-                {cfg.reminderItems.length > 1 ? (
+                {allowScheduleCompletion ? (
                   <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="알림 삭제"
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked }}
+                    accessibilityLabel={checked ? '완료 취소' : '완료'}
                     onPress={() => {
                       void Haptics.selectionAsync();
-                      emit(removeReminderScheduleItem(cfg, item.time));
+                      emit(toggleReminderTimeDone(cfg, item.time));
                     }}
-                    hitSlop={8}>
-                    <ThemedText style={[styles.reminderRemove, { color: muted }]}>삭제</ThemedText>
+                    style={[
+                      styles.checkBox,
+                      {
+                        borderColor: checked ? accent : line,
+                        backgroundColor: checked ? accent : surface,
+                      },
+                    ]}>
+                    {checked ? <IconSymbol name="checkmark" size={10} color="#fff" /> : null}
                   </Pressable>
                 ) : null}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="알림 삭제"
+                  onPress={() => handleRemove(item.time)}
+                  hitSlop={8}
+                  style={styles.reminderDeleteBtn}>
+                  <IconSymbol name="trash" size={16} color={muted} />
+                  <ThemedText style={[styles.reminderRemove, { color: muted }]}>삭제</ThemedText>
+                </Pressable>
               </View>
             </View>
           );
@@ -1121,7 +1148,10 @@ function ReminderTemplateView({
           <SectionLabel color={muted}>알림 추가</SectionLabel>
           <ReminderTimePickerPill
             valueHhmm={draftTime}
-            onChangeHhmm={setDraftTime}
+            onChangeHhmm={(next) => {
+              setDraftTime(next);
+              setAddError(null);
+            }}
             expanded={addTimeExpanded}
             onToggleExpand={openAddTimePicker}
             ink={ink}
@@ -1133,11 +1163,17 @@ function ReminderTemplateView({
           />
           <TextInput
             value={draftLabel}
-            onChangeText={setDraftLabel}
+            onChangeText={(value) => {
+              setDraftLabel(value);
+              setAddError(null);
+            }}
             placeholder="예: 물 마시기"
             placeholderTextColor={muted}
             style={[styles.reminderLabelInput, { color: ink, borderColor: line }]}
           />
+          {addError ? (
+            <ThemedText style={[styles.sub, { color: accent }]}>{addError}</ThemedText>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             onPress={handleAdd}
@@ -1162,6 +1198,7 @@ export function CustomFlowTemplateSessionBody({
   block,
   sessionProgress = 0,
   previewMode = false,
+  allowScheduleCompletion = true,
 }: Props) {
   const { ink, muted, line, surface, accent } = theme;
   const cfg = useMemo(
@@ -1267,7 +1304,15 @@ export function CustomFlowTemplateSessionBody({
 
     case 'reminder': {
       if (!('reminderTimes' in cfg)) return null;
-      return <ReminderTemplateView cfg={cfg} emit={emit} theme={theme} previewMode={previewMode} />;
+      return (
+        <ReminderTemplateView
+          cfg={cfg}
+          emit={emit}
+          theme={theme}
+          previewMode={previewMode}
+          allowScheduleCompletion={allowScheduleCompletion}
+        />
+      );
     }
 
     case 'abstain': {
@@ -1424,6 +1469,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   reminderEditActions: { alignItems: 'center', gap: 8, paddingTop: 2 },
+  reminderDeleteBtn: { alignItems: 'center', gap: 4, minWidth: 40 },
   reminderRemove: { fontSize: 11, fontWeight: '600' },
   reminderAddRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   reminderAddInput: {

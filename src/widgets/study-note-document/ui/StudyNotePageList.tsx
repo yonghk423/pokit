@@ -102,50 +102,74 @@ export function StudyNotePageList({
             const preview = resolveWorkStudyNotePagePreview(page);
             const dateLabel = formatWorkStudyNoteDateLabel(page.createdDateKey ?? '');
             const isLast = index === sortedPages.length - 1;
+            const canDelete = sortedPages.length > 1;
+
+            const confirmDelete = () => {
+              if (!canDelete) {
+                Alert.alert('삭제할 수 없어요', '메모는 최소 1개는 남겨 두어야 해요.');
+                return;
+              }
+              Alert.alert('메모 삭제', `「${title}」 메모를 삭제할까요?`, [
+                { text: '취소', style: 'cancel' },
+                {
+                  text: '삭제',
+                  style: 'destructive',
+                  onPress: () => {
+                    void Haptics.selectionAsync();
+                    onDeletePage(page.id);
+                  },
+                },
+              ]);
+            };
 
             return (
-              <Pressable
+              <View
                 key={page.id}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  onSelectPage(page.id);
-                }}
-                onLongPress={() => {
-                  Alert.alert('메모 삭제', `「${title}」 메모를 삭제할까요?`, [
-                    { text: '취소', style: 'cancel' },
-                    { text: '삭제', style: 'destructive', onPress: () => onDeletePage(page.id) },
-                  ]);
-                }}
-                style={({ pressed }) => [
+                style={[
                   styles.row,
                   {
-                    backgroundColor: pressed
-                      ? 'rgba(0,0,0,0.04)'
-                      : selected
-                        ? 'rgba(0,0,0,0.03)'
-                        : surfaceBg,
+                    backgroundColor: selected ? 'rgba(0,0,0,0.03)' : surfaceBg,
                     borderBottomColor: palette.outlineVariant,
                     borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
                   },
                 ]}>
-                <ThemedText
-                  style={[styles.rowTitle, { color: palette.onSurface }]}
-                  numberOfLines={1}>
-                  {title}
-                </ThemedText>
-                {preview ? (
-                  <ThemedText style={[styles.rowPreview, { color: palette.onVariant }]} numberOfLines={2}>
-                    {preview}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    onSelectPage(page.id);
+                  }}
+                  onLongPress={confirmDelete}
+                  style={({ pressed }) => [
+                    styles.rowMain,
+                    pressed && { opacity: 0.72 },
+                  ]}>
+                  <ThemedText
+                    style={[styles.rowTitle, { color: palette.onSurface }]}
+                    numberOfLines={1}>
+                    {title}
                   </ThemedText>
-                ) : (
-                  <ThemedText style={[styles.rowPreview, { color: palette.outline }]} numberOfLines={1}>
-                    내용 없음
-                  </ThemedText>
-                )}
-                <ThemedText style={[styles.rowDate, { color: palette.onVariant }]}>{dateLabel}</ThemedText>
-              </Pressable>
+                  {preview ? (
+                    <ThemedText style={[styles.rowPreview, { color: palette.onVariant }]} numberOfLines={2}>
+                      {preview}
+                    </ThemedText>
+                  ) : (
+                    <ThemedText style={[styles.rowPreview, { color: palette.outline }]} numberOfLines={1}>
+                      내용 없음
+                    </ThemedText>
+                  )}
+                  <ThemedText style={[styles.rowDate, { color: palette.onVariant }]}>{dateLabel}</ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${title} 메모 삭제`}
+                  onPress={confirmDelete}
+                  hitSlop={8}
+                  style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.55 }]}>
+                  <IconSymbol name="trash" size={16} color={palette.onVariant} />
+                </Pressable>
+              </View>
             );
           })
         )}
@@ -217,10 +241,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   row: {
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingLeft: 16,
+    paddingRight: 10,
     paddingTop: 12,
     paddingBottom: 11,
+  },
+  rowMain: {
+    flex: 1,
+    minWidth: 0,
     gap: 4,
+  },
+  deleteBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
   },
   rowTitle: {
     fontSize: 16,

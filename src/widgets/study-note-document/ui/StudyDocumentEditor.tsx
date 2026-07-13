@@ -46,6 +46,7 @@ import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
 
 import { StudyDocumentToolbar, type StudyToolbarAction } from './StudyDocumentToolbar';
 import { StudyNotePageList } from './StudyNotePageList';
+import { ImeSafeTextInput } from './ImeSafeTextInput';
 import { StudyNotePageTitleField } from './StudyNotePageTitleField';
 
 type Palette = StudyNoteDocumentPalette;
@@ -227,9 +228,36 @@ function BlockText({
   const enterLockRef = useRef(0);
   const selectionRef = useRef({ start: 0, end: 0 });
   const backspaceLockRef = useRef(0);
-  const isEmpty = block.text.length === 0;
-  const useBackspaceSentinel = Boolean(onBackspaceAtStart) && isEmpty;
-  const displayValue = useBackspaceSentinel ? EMPTY_BACKSPACE_SENTINEL : block.text;
+  const [isFocused, setIsFocused] = useState(false);
+  const [draftText, setDraftText] = useState(block.text);
+  const draftTextRef = useRef(block.text);
+  const committedTextRef = useRef(block.text);
+
+  useEffect(() => {
+    committedTextRef.current = block.text;
+    if (!isFocused) {
+      draftTextRef.current = block.text;
+      setDraftText(block.text);
+    }
+  }, [block.id, block.text, isFocused]);
+
+  const effectiveText = isFocused ? draftText : block.text;
+  const isEmpty = effectiveText.length === 0;
+  // 포커스 중 빈 줄에는 센티널을 넣지 않는다 — 한글 IME 첫 조합이 ㅇ ㅏ ㄴ 으로 분리되는 원인.
+  const useBackspaceSentinel = Boolean(onBackspaceAtStart) && isEmpty && !isFocused;
+  const displayValue = useBackspaceSentinel ? EMPTY_BACKSPACE_SENTINEL : effectiveText;
+
+  const commitDraft = useCallback(
+    (text: string) => {
+      draftTextRef.current = text;
+      setDraftText(text);
+      if (text !== committedTextRef.current) {
+        committedTextRef.current = text;
+        onChangeText(text);
+      }
+    },
+    [onChangeText],
+  );
 
   const triggerBackspaceAtStart = useCallback(() => {
     if (!onBackspaceAtStart) return;
@@ -250,7 +278,9 @@ function BlockText({
   const handleChangeText = useCallback(
     (text: string) => {
       if (onEnterKey && /\r?\n/.test(text)) {
-        onChangeText(text.replace(/\r?\n/g, '').split(EMPTY_BACKSPACE_SENTINEL).join(''));
+        const cleaned = text.replace(/\r?\n/g, '').split(EMPTY_BACKSPACE_SENTINEL).join('');
+        commitDraft(cleaned);
+        handleEnterKey();
         return;
       }
       const cleaned = text.split(EMPTY_BACKSPACE_SENTINEL).join('');
@@ -259,10 +289,27 @@ function BlockText({
         triggerBackspaceAtStart();
         return;
       }
-      onChangeText(cleaned);
+      draftTextRef.current = cleaned;
+      setDraftText(cleaned);
     },
-    [isEmpty, onBackspaceAtStart, onChangeText, onEnterKey, triggerBackspaceAtStart],
+    [commitDraft, handleEnterKey, isEmpty, onBackspaceAtStart, onEnterKey, triggerBackspaceAtStart],
   );
+
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+    draftTextRef.current = block.text;
+    setDraftText(block.text);
+    onFocus?.();
+  }, [block.text, onFocus]);
+
+  const handleBlur = useCallback(() => {
+    setIsFocused(false);
+    if (draftTextRef.current !== committedTextRef.current) {
+      committedTextRef.current = draftTextRef.current;
+      onChangeText(draftTextRef.current);
+    }
+    onBlur?.();
+  }, [onBlur, onChangeText]);
 
   const isEnterKey = useCallback((key: string) => {
     return key === 'Enter' || key === '\n' || key === 'Return';
@@ -270,24 +317,12 @@ function BlockText({
 
   return (
     <View style={styles.blockTextWrap}>
-      {isEmpty ? (
-        <ThemedText
-          pointerEvents="none"
-          style={[
-            styles.blockInputPlaceholder,
-            compact ? styles.listBlockInput : null,
-            style,
-            { color: palette.outline },
-          ]}>
-          {placeholder}
-        </ThemedText>
-      ) : null}
       <TextInput
         ref={inputRef}
         value={displayValue}
         onChangeText={handleChangeText}
-        onFocus={onFocus}
-        onBlur={onBlur}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         inputAccessoryViewID={inputAccessoryViewID}
         blurOnSubmit={false}
         returnKeyType={onEnterKey ? 'next' : multiline ? 'default' : 'done'}
@@ -305,7 +340,7 @@ function BlockText({
             const { start, end } = selectionRef.current;
             const atStart = start === 0 && end === 0;
             const onlySentinel =
-              useBackspaceSentinel && start <= 1 && end <= 1 && block.text.length === 0;
+              useBackspaceSentinel && start <= 1 && end <= 1 && effectiveText.length === 0;
             if (atStart || onlySentinel || isEmpty) {
               event.preventDefault();
               triggerBackspaceAtStart();
@@ -317,7 +352,8 @@ function BlockText({
             handleEnterKey();
           }
         }}
-        placeholder=""
+        placeholder={placeholder}
+        placeholderTextColor={palette.outline}
         multiline={Boolean(multiline)}
         scrollEnabled={false}
         textAlignVertical={compact ? 'center' : multiline ? 'top' : 'center'}
@@ -390,7 +426,7 @@ function StudyDocumentBlockView({
         style={[rowShellStyle, styles.headingWrap]}
         onLayout={(e) => onBlockLayout?.(block.id, e.nativeEvent.layout.y)}>
         <View style={[styles.headingBand, { backgroundColor: accent }]}>
-          <TextInput
+          <ImeSafeTextInput
             value={block.text}
             onChangeText={(text) => onChangeBlock(block.id, { text })}
             onFocus={() => onFocusBlock(block.id)}
@@ -399,7 +435,7 @@ function StudyDocumentBlockView({
             placeholderTextColor="rgba(255,255,255,0.55)"
             style={[styles.headingPrimary, { fontSize: titleSize, color: '#fff' }]}
           />
-          <TextInput
+          <ImeSafeTextInput
             value={block.subtitle ?? ''}
             onChangeText={(subtitle) => onChangeBlock(block.id, { subtitle })}
             onFocus={() => onFocusBlock(block.id)}
@@ -437,7 +473,7 @@ function StudyDocumentBlockView({
           {rows.map((row, rowIdx) => (
             <View key={`${block.id}-r-${rowIdx}`} style={[styles.tableRow, { borderColor: palette.outlineVariant }]}>
               {row.map((cell, colIdx) => (
-                <TextInput
+                <ImeSafeTextInput
                   key={`${block.id}-c-${rowIdx}-${colIdx}`}
                   value={cell}
                   onChangeText={(text) => {
@@ -960,10 +996,15 @@ export function StudyDocumentEditor({
       if (!pending || !block || block.kind === 'table' || block.kind === 'image' || block.kind === 'heading') {
         return;
       }
+      const nextMarks = normalizeBlockMarks({ ...block.marks, ...pending });
+      const prevMarks = normalizeBlockMarks(block.marks);
+      if (JSON.stringify(prevMarks) === JSON.stringify(nextMarks)) {
+        return;
+      }
       replaceActiveBlocks(
         activeBlocks.map((b) =>
           b.id === blockId
-            ? { ...b, marks: normalizeBlockMarks({ ...b.marks, ...pending }) }
+            ? { ...b, marks: nextMarks }
             : b,
         ),
       );

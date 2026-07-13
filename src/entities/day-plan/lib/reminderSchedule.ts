@@ -113,6 +113,19 @@ export function findReminderScheduleItem(
   return items.find((item) => item.time === time);
 }
 
+export function isReminderPresetActive(
+  items: ReminderScheduleItem[],
+  preset: ReminderSchedulePreset,
+): boolean {
+  if (items.length !== preset.items.length) return false;
+  const sorted = sortReminderScheduleItems(items);
+  const presetSorted = sortReminderScheduleItems(preset.items);
+  return sorted.every(
+    (item, index) =>
+      item.time === presetSorted[index]?.time && item.label === presetSorted[index]?.label,
+  );
+}
+
 export function mergeReminderScheduleItems(
   primary: ReminderScheduleItem[],
   secondary: ReminderScheduleItem[],
