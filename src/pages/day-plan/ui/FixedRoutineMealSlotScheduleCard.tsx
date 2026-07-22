@@ -32,7 +32,7 @@ export function FixedRoutineMealSlotScheduleCard({
   return (
     <View style={[styles.root, { backgroundColor: cardBg, borderColor: line }]}>
       <View style={styles.textCol}>
-        <ThemedText style={[styles.title, { color: ink }]}>하루 시간대</ThemedText>
+        <ThemedText style={[styles.title, { color: ink }]}>시간대 모드</ThemedText>
         <ThemedText style={[styles.summary, { color: muted }]} numberOfLines={3}>
           {DAY_MEAL_SLOT_ORDER.map(
             (slot) => `${DAY_MEAL_SLOT_LABEL[slot]} ${formatHhmmClockKo(schedule[slot])}`,

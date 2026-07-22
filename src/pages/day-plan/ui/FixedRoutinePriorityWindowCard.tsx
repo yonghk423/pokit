@@ -4,11 +4,15 @@ import { formatHhmmClockKo } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
+import { formatDateKeyCompactKo, isOvernightHhmmRange, sortedPlanDateRange } from '../lib/dayPlanEditorShared';
 
 type Props = {
   priorityStart: string;
   priorityEnd: string;
+  /** 집중 구간 시작 달력일 (YYYY-MM-DD) */
+  planDateKey: string;
+  /** 집중 구간 종료 달력일 (YYYY-MM-DD) */
+  planDateKeyEnd: string;
   isDark: boolean;
   ink: string;
   muted: string;
@@ -17,20 +21,32 @@ type Props = {
   onPressSettings: () => void;
 };
 
-function formatPriorityWindowSummary(start: string, end: string): string {
+function formatPriorityWindowLines(
+  start: string,
+  end: string,
+  planDateKey: string,
+  planDateKeyEnd: string,
+): { dateLine: string; timeLine: string } {
+  const { lo, hi } = sortedPlanDateRange(planDateKey, planDateKeyEnd);
   const overnight = isOvernightHhmmRange(start, end);
+  const dateLine =
+    lo === hi
+      ? formatDateKeyCompactKo(lo)
+      : `${formatDateKeyCompactKo(lo)} ~ ${formatDateKeyCompactKo(hi)}`;
   const startLabel = formatHhmmClockKo(start);
   const endLabel = formatHhmmClockKo(end);
-  if (overnight) {
-    return `${startLabel} — 다음날 ${endLabel}`;
-  }
-  return `${startLabel} — ${endLabel}`;
+  const timeLine = overnight
+    ? `${startLabel} — 다음날 ${endLabel}`
+    : `${startLabel} — ${endLabel}`;
+  return { dateLine, timeLine };
 }
 
-/** 고정 루틴 타임라인 — 집중 구간 요약 + 설정 진입 */
+/** 고정 루틴 — 집중 구간 요약(날짜·시각) + 설정 진입 */
 export function FixedRoutinePriorityWindowCard({
   priorityStart,
   priorityEnd,
+  planDateKey,
+  planDateKeyEnd,
   isDark,
   ink,
   muted,
@@ -38,12 +54,21 @@ export function FixedRoutinePriorityWindowCard({
   cardBg,
   onPressSettings,
 }: Props) {
+  const { dateLine, timeLine } = formatPriorityWindowLines(
+    priorityStart,
+    priorityEnd,
+    planDateKey,
+    planDateKeyEnd,
+  );
+
   return (
     <View style={[styles.root, { backgroundColor: cardBg, borderColor: line }]}>
       <View style={styles.textCol}>
         <ThemedText style={[styles.title, { color: ink }]}>타임라인 집중 구간</ThemedText>
         <ThemedText style={[styles.summary, { color: muted }]} numberOfLines={2}>
-          {formatPriorityWindowSummary(priorityStart, priorityEnd)}
+          {dateLine}
+          {'\n'}
+          {timeLine}
         </ThemedText>
       </View>
       <Pressable

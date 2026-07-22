@@ -5,6 +5,7 @@ import {
   loadDayPlanScheduledNotifications,
   loadIncompleteRoutineReminder,
   loadMedicineReminderScheduled,
+  loadPriorityDayRollMode,
   loadPriorityDayStartAlarm,
   loadWaterReminderScheduled,
   saveCategoryReminderRules,
@@ -12,6 +13,7 @@ import {
   saveDayPlanScheduledNotifications,
   saveIncompleteRoutineReminder,
   saveMedicineReminderScheduled,
+  savePriorityDayRollMode,
   savePriorityDayStartAlarm,
   saveWaterReminderScheduled,
 } from './settingsStorage';
@@ -102,5 +104,13 @@ describe('settingsStorage', () => {
     saveWaterReminderScheduled([{ slotKey: 'water:10:00', notificationId: 'n2' }]);
     expect(loadMedicineReminderScheduled()).toHaveLength(1);
     expect(loadWaterReminderScheduled()[0]?.slotKey).toBe('water:10:00');
+  });
+
+  it('persists priority day roll mode', () => {
+    expect(loadPriorityDayRollMode()).toBe('reset');
+    savePriorityDayRollMode('keep');
+    expect(loadPriorityDayRollMode()).toBe('keep');
+    savePriorityDayRollMode('reset');
+    expect(loadPriorityDayRollMode()).toBe('reset');
   });
 });

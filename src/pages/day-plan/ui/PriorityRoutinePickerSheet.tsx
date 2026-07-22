@@ -1,14 +1,17 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   addDaysToLocalDateKey,
   computeSpineGapInsertSlot,
+  formatHhmmClockKo,
   formatMinuteOfDayKo,
   getLocalDateKey,
+  isSpineBlockScheduleWithinPriorityWindow,
   resolveCategoryCatalogIcon,
+  resolveSpinePriorityWindow,
   type DayPlanBlock,
 } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
@@ -234,6 +237,33 @@ export function PriorityRoutinePickerSheet({
 
   const handleConfirm = useCallback(() => {
     if (!canConfirm) return;
+
+    if (spineGapAdd && spineTimeEnabled) {
+      const window = resolveSpinePriorityWindow(spineGapAdd.priorityStart, spineGapAdd.priorityEnd);
+      for (const key of selectedKeys) {
+        const schedule = scheduleByKey[key];
+        if (!schedule) continue;
+        if (
+          !window ||
+          !isSpineBlockScheduleWithinPriorityWindow(
+            {
+              startMinutes: schedule.startMinutes,
+              endMinutes: schedule.endMinutes,
+              endsNextCalendarDay: schedule.endsNextCalendarDay,
+            },
+            window,
+          )
+        ) {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          Alert.alert(
+            '시간을 확인해 주세요',
+            `루틴 종료 시간(${formatHhmmClockKo(spineGapAdd.priorityEnd)})을 넘는 일정은 저장할 수 없어요. 하루 시작~마무리 안으로 맞춰 주세요.`,
+          );
+          return;
+        }
+      }
+    }
+
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const items: RoutinePickerConfirmItem[] = [...selectedKeys].map((key) => ({
       key,
@@ -241,7 +271,7 @@ export function PriorityRoutinePickerSheet({
     }));
     onConfirm(items);
     onClose();
-  }, [canConfirm, onClose, onConfirm, scheduleByKey, selectedKeys, spineTimeEnabled]);
+  }, [canConfirm, onClose, onConfirm, scheduleByKey, selectedKeys, spineGapAdd, spineTimeEnabled]);
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>

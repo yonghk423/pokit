@@ -2,15 +2,20 @@ import type { FixedFlowSetItem } from '@shared/lib/storage';
 
 import { buildSpineImportFromBag } from './buildSpineImportFromBag';
 import { parseHHmmToMinutes } from './parseTime';
+import {
+  clampSpineBlockToPriorityWindow,
+  resolveSpinePriorityWindow,
+} from './spinePriorityWindow';
 
 export type FixedFlowSpineItemSchedule = {
   startMinutes: number;
   endMinutes: number;
+  endsNextCalendarDay?: boolean;
   /** 저장된 시각이 없어 기본 배치로 채운 경우 */
   isSuggested: boolean;
 };
 
-function isValidSpineMinutes(start: unknown, end: unknown): start is number {
+function isValidSameDaySpineMinutes(start: unknown, end: unknown): start is number {
   return (
     typeof start === 'number' &&
     typeof end === 'number' &&
@@ -22,8 +27,25 @@ function isValidSpineMinutes(start: unknown, end: unknown): start is number {
   );
 }
 
+function isValidOvernightSpineMinutes(start: unknown, end: unknown): start is number {
+  return (
+    typeof start === 'number' &&
+    typeof end === 'number' &&
+    Number.isFinite(start) &&
+    Number.isFinite(end) &&
+    end < start &&
+    start >= 0 &&
+    end >= 0 &&
+    end <= 24 * 60 &&
+    start <= 24 * 60
+  );
+}
+
 function itemHasStoredSchedule(item: FixedFlowSetItem): boolean {
-  return isValidSpineMinutes(item.spineStartMinutes, item.spineEndMinutes);
+  if (item.spineEndsNextCalendarDay === true) {
+    return isValidOvernightSpineMinutes(item.spineStartMinutes, item.spineEndMinutes);
+  }
+  return isValidSameDaySpineMinutes(item.spineStartMinutes, item.spineEndMinutes);
 }
 
 /** 고정 루틴 타임라인 — 항목별 시작·종료 시각(저장값 없으면 집중 구간 안에서 순서대로 제안) */
@@ -34,15 +56,43 @@ export function resolveFixedFlowSpineSchedules(input: {
 }): Map<string, FixedFlowSpineItemSchedule> {
   const out = new Map<string, FixedFlowSpineItemSchedule>();
   const enabledItems = input.items.filter((item) => item.enabled !== false);
+  const window = resolveSpinePriorityWindow(input.priorityStart, input.priorityEnd);
 
   for (const item of enabledItems) {
-    if (itemHasStoredSchedule(item)) {
+    if (!itemHasStoredSchedule(item)) continue;
+    const startMinutes = item.spineStartMinutes!;
+    const endMinutes = item.spineEndMinutes!;
+    const endsNext = item.spineEndsNextCalendarDay === true;
+
+    if (endsNext) {
       out.set(item.categoryKey, {
-        startMinutes: item.spineStartMinutes!,
-        endMinutes: item.spineEndMinutes!,
+        startMinutes,
+        endMinutes,
+        endsNextCalendarDay: true,
         isSuggested: false,
       });
+      continue;
     }
+
+    if (window) {
+      const clamped = clampSpineBlockToPriorityWindow(startMinutes, endMinutes, window);
+      if (clamped) {
+        out.set(item.categoryKey, {
+          startMinutes: clamped.startMinutes,
+          endMinutes: clamped.endMinutes,
+          isSuggested: false,
+        });
+        continue;
+      }
+      // 창 밖이면 저장값을 버리고 아래에서 재제안
+      continue;
+    }
+
+    out.set(item.categoryKey, {
+      startMinutes,
+      endMinutes,
+      isSuggested: false,
+    });
   }
 
   const missingKeys = enabledItems

@@ -61,8 +61,18 @@ describe('dayPlanEditorShared', () => {
   });
 
   it('extends end caption to next day for overnight window', () => {
-    expect(priorityClockCaptionDateKeyEnd('2025-05-26', '22:00', '06:00')).toBe('2025-05-27');
-    expect(priorityClockCaptionDateKeyEnd('2025-05-26', '09:00', '18:00')).toBe('2025-05-26');
+    expect(priorityClockCaptionDateKeyEnd('2025-05-26', '2025-05-26', '22:00', '06:00')).toBe(
+      '2025-05-27',
+    );
+    expect(priorityClockCaptionDateKeyEnd('2025-05-26', '2025-05-26', '09:00', '18:00')).toBe(
+      '2025-05-26',
+    );
+  });
+
+  it('does not double-extend when calendar range already spans overnight end day', () => {
+    expect(priorityClockCaptionDateKeyEnd('2025-07-14', '2025-07-15', '06:30', '00:00')).toBe(
+      '2025-07-15',
+    );
   });
 
   it('resolves end noon vs midnight for ambiguous 오전 12:xx', () => {

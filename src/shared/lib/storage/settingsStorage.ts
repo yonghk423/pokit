@@ -46,6 +46,9 @@ export type WaterReminderScheduledRow = {
 
 export type AppearanceMode = 'light' | 'dark';
 
+/** 하루(시작~마무리) 구간이 지난 뒤 오늘 탭 담기 처리 */
+export type PriorityDayRollMode = 'reset' | 'keep';
+
 type SettingsStorageShape = {
   dayPlanScheduledNotifications?: DayPlanScheduledNotification[];
   priorityDayStartAlarm?: PriorityDayStartAlarmPersisted;
@@ -55,6 +58,7 @@ type SettingsStorageShape = {
   medicineReminderScheduled?: MedicineReminderScheduledRow[];
   waterReminderScheduled?: WaterReminderScheduledRow[];
   appearanceMode?: AppearanceMode;
+  priorityDayRollMode?: PriorityDayRollMode;
 };
 
 function readRoot(): SettingsStorageShape {
@@ -258,5 +262,20 @@ export function saveAppearanceMode(mode: AppearanceMode): void {
   localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
     ...root,
     appearanceMode: mode,
+  });
+}
+
+const DEFAULT_PRIORITY_DAY_ROLL_MODE: PriorityDayRollMode = 'reset';
+
+export function loadPriorityDayRollMode(): PriorityDayRollMode {
+  const root = readRoot();
+  return root.priorityDayRollMode === 'keep' ? 'keep' : DEFAULT_PRIORITY_DAY_ROLL_MODE;
+}
+
+export function savePriorityDayRollMode(mode: PriorityDayRollMode): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    priorityDayRollMode: mode === 'keep' ? 'keep' : 'reset',
   });
 }

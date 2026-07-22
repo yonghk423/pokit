@@ -37,6 +37,7 @@ import {
   getLocalMinutesOfDayNow,
   isLikelyPriorityCatalogMonolineTitle,
   isPriorityCompoundBlockTitle,
+  isSpineBlockScheduleWithinPriorityWindow,
   localDateToDateKey,
   parseHHmmToMinutes,
   parseLocalDateKeyToDate,
@@ -913,14 +914,15 @@ export function PriorityBasedPlanSection({
   );
 
   const modalClockFaceHints = useMemo(() => {
-    const explicit = priorityPlanExplicitMultiDay;
     const { lo, hi } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
     const startKey = priorityClockCaptionDateKeyStart(lo);
-    const endKey = priorityClockCaptionDateKeyEnd(hi, draftPriorityStart, draftPriorityEnd);
+    const endKey = draftEndNextDay
+      ? addDaysToLocalDateKey(lo, 1)
+      : priorityClockCaptionDateKeyEnd(lo, hi, draftPriorityStart, draftPriorityEnd);
     return {
-      startDateCaption: explicit ? formatDateKeyCompactKo(startKey) : undefined,
-      endDateCaption: explicit ? formatDateKeyCompactKo(endKey) : undefined,
-      endNextDayOnlyBadge: draftEndNextDay && !explicit,
+      startDateCaption: formatDateKeyCompactKo(startKey),
+      endDateCaption: formatDateKeyCompactKo(endKey),
+      endNextDayOnlyBadge: false,
     };
   }, [
     draftEndNextDay,
@@ -928,7 +930,6 @@ export function PriorityBasedPlanSection({
     draftPriorityStart,
     priorityPlanDateKey,
     priorityPlanDateKeyEnd,
-    priorityPlanExplicitMultiDay,
   ]);
 
   const openPlanDatePicker = useCallback(() => {
@@ -1415,13 +1416,13 @@ export function PriorityBasedPlanSection({
       if (reason === 'outside_window') {
         Alert.alert(
           title,
-          '일정은 하루 시작~하루 마무리 시간 안에서만 둘 수 있어요. 시간을 다시 확인해 주세요.',
+          `루틴 종료 시간(${formatHhmmClockKo(priorityEnd)})을 넘는 일정은 저장할 수 없어요. 하루 시작~마무리 안으로 맞춰 주세요.`,
         );
         return;
       }
       Alert.alert(title, '일정을 저장하지 못했어요.');
     },
-    [],
+    [priorityEnd],
   );
 
   const reloadRoutineCatalog = useCallback(() => {
@@ -1474,11 +1475,29 @@ export function PriorityBasedPlanSection({
       if (items.length === 0) return;
 
       if (spinePendingGapBounds) {
+        const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
         const addedKeys: string[] = [];
 
         for (const item of items) {
           const schedule = item.schedule;
           if (!schedule) break;
+
+          const endsNext = Boolean(schedule.endsNextCalendarDay);
+
+          if (
+            !window ||
+            !isSpineBlockScheduleWithinPriorityWindow(
+              {
+                startMinutes: schedule.startMinutes,
+                endMinutes: schedule.endMinutes,
+                endsNextCalendarDay: endsNext,
+              },
+              window,
+            )
+          ) {
+            alertSpineBlockSaveError('add', 'outside_window');
+            break;
+          }
 
           const label = getPickerCategoryLabel(item.key);
           const result = addPlanBlock({
@@ -1487,7 +1506,7 @@ export function PriorityBasedPlanSection({
             categoryKey: item.key,
             startMinutes: schedule.startMinutes,
             endMinutes: schedule.endMinutes,
-            endsNextCalendarDay: Boolean(schedule.endsNextCalendarDay),
+            endsNextCalendarDay: endsNext,
             blockOrigin: 'spineTimeline',
             planDateKey: getLocalDateKey(),
           });
@@ -1529,6 +1548,8 @@ export function PriorityBasedPlanSection({
       alertSpineBlockSaveError,
       appendPriorityCategoryKeysIfMissing,
       appendPrioritySectionsCategoryKeys,
+      priorityEnd,
+      priorityStart,
       spinePendingGapBounds,
     ],
   );
@@ -1580,8 +1601,8 @@ export function PriorityBasedPlanSection({
         deferredBottomReorderKeys,
       ),
     }));
-    const spansNextDay =
-      priorityPlanExplicitMultiDay || isOvernightHhmmRange(priorityStart, priorityEnd);
+    // 달력 다중일(explicit)과 시계 자정 넘김은 별개 — 구간 표시는 HH:mm 창만 따른다.
+    const spansNextDay = isOvernightHhmmRange(priorityStart, priorityEnd);
     return clampMealSlotSectionsToWindow(mapped, priorityStart, priorityEnd, spansNextDay);
   }, [
     deferredBottomReorderKeys,
@@ -1589,7 +1610,6 @@ export function PriorityBasedPlanSection({
     priorityMealSlotSections,
     priorityStart,
     priorityEnd,
-    priorityPlanExplicitMultiDay,
     showSectionsView,
   ]);
 
@@ -1910,6 +1930,8 @@ export function PriorityBasedPlanSection({
 
     for (const block of planBlocks) {
       if (block.blockOrigin !== 'spineTimeline') continue;
+      // 자정 넘김 일정은 당일 밴드 클램프 대상이 아님
+      if (block.endsNextCalendarDay) continue;
       const clamped = clampSpineBlockToPriorityWindow(
         block.startMinutes,
         block.endMinutes,
@@ -1942,7 +1964,7 @@ export function PriorityBasedPlanSection({
     }
     const { lo, hi } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
     const startKey = priorityClockCaptionDateKeyStart(lo);
-    const endKey = priorityClockCaptionDateKeyEnd(hi, priorityStart, priorityEnd);
+    const endKey = priorityClockCaptionDateKeyEnd(lo, hi, priorityStart, priorityEnd);
     return {
       dayStartDateCaption: formatDateKeyCompactKo(startKey),
       dayEndDateCaption: formatDateKeyCompactKo(endKey),
@@ -2094,39 +2116,42 @@ export function PriorityBasedPlanSection({
         return;
       }
 
-      const planRangeLo =
-        priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd;
-      const planRangeHi =
-        priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKeyEnd : priorityPlanDateKey;
-      const rangeSpansMultiDay = planRangeLo !== planRangeHi;
+      const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
+      if (!window) {
+        alertSpineBlockSaveError(input.blockId ? 'update' : 'add', 'outside_window');
+        return;
+      }
+      if (
+        !isSpineBlockScheduleWithinPriorityWindow(
+          {
+            startMinutes: input.startMinutes,
+            endMinutes: input.endMinutes,
+            endsNextCalendarDay: input.endsNextCalendarDay,
+          },
+          window,
+        )
+      ) {
+        alertSpineBlockSaveError(input.blockId ? 'update' : 'add', 'outside_window');
+        return;
+      }
 
-      let clamped:
-        | {
-            startMinutes: number;
-            endMinutes: number;
-          }
-        | null = null;
-
-      if (rangeSpansMultiDay) {
+      let clamped: { startMinutes: number; endMinutes: number };
+      if (input.endsNextCalendarDay) {
         clamped = {
           startMinutes: Math.max(0, Math.min(Math.floor(input.startMinutes), 24 * 60 - 1)),
           endMinutes: Math.max(0, Math.min(Math.floor(input.endMinutes), 24 * 60)),
         };
       } else {
-        const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
-        if (!window) {
-          alertSpineBlockSaveError(input.blockId ? 'update' : 'add', 'outside_window');
-          return;
-        }
-        clamped = clampSpineBlockToPriorityWindow(
+        const next = clampSpineBlockToPriorityWindow(
           input.startMinutes,
           input.endMinutes,
           window,
         );
-        if (!clamped) {
+        if (!next) {
           alertSpineBlockSaveError(input.blockId ? 'update' : 'add', 'outside_window');
           return;
         }
+        clamped = next;
       }
 
       const linkedKey = input.categoryKey?.trim() || null;
@@ -2168,8 +2193,6 @@ export function PriorityBasedPlanSection({
       addPlanBlock,
       alertSpineBlockSaveError,
       priorityEnd,
-      priorityPlanDateKey,
-      priorityPlanDateKeyEnd,
       priorityStart,
       updatePlanBlock,
     ],
@@ -2228,13 +2251,12 @@ export function PriorityBasedPlanSection({
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDraftPriorityStart(priorityStart);
     setDraftPriorityEnd(priorityEnd);
-    const overnightNow =
-      isOvernightHhmmRange(priorityStart, priorityEnd) ||
-      priorityPlanDateKey !== priorityPlanDateKeyEnd;
-    setDraftEndNextDay(overnightNow);
+    // 시계 자정 넘김만 기본값으로 쓴다. 달력 다중일만으로 '다음날 종료'를 켜면
+    // 칩(당일 시각)과 구간 모드가 어긋난다.
+    setDraftEndNextDay(isOvernightHhmmRange(priorityStart, priorityEnd));
     draftEndNextDayPinnedRef.current = false;
     setPriorityTimeModalOpen(true);
-  }, [priorityEnd, priorityStart, priorityPlanDateKey, priorityPlanDateKeyEnd]);
+  }, [priorityEnd, priorityStart]);
 
   const setDraftPriorityStartWithSync = useCallback(
     (next: string) => {
@@ -2288,6 +2310,12 @@ export function PriorityBasedPlanSection({
     } else if (!draftEndNextDay && isNaturalOvernight) {
       const { lo } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
       applyPriorityPlanCalendarRange(lo, lo);
+    } else if (!draftEndNextDay && !isNaturalOvernight) {
+      // 당일 시계 창인데 날짜만 이틀로 남아 있으면(이전 overnight 잔존) 하루로 맞춤
+      const { lo, hi } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
+      if (hi === addDaysToLocalDateKey(lo, 1)) {
+        applyPriorityPlanCalendarRange(lo, lo);
+      }
     }
     setPriorityTimeModalOpen(false);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -2590,6 +2618,11 @@ export function PriorityBasedPlanSection({
         line={editorial.line}
         priorityStart={priorityStart}
         priorityEnd={priorityEnd}
+        baseDateKey={
+          priorityPlanDateKey <= priorityPlanDateKeyEnd
+            ? priorityPlanDateKey
+            : priorityPlanDateKeyEnd
+        }
         onClose={() => setSpineEditDraft(null)}
         onSave={handleSpineSaveBlock}
         onDelete={confirmSpineBlockDelete}
@@ -2642,6 +2675,7 @@ export function PriorityBasedPlanSection({
                         palette={spineTimelinePalette}
                         isDark={isDark}
                         compact
+                        showLabel
                         onPress={() => openMealSlotScheduleEditor()}
                       />
                     </View>

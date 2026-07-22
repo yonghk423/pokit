@@ -54,6 +54,34 @@ export function isSpineBlockWithinPriorityWindow(
   return inEvening || inMorning;
 }
 
+/**
+ * 일정 수정·추가용 — `endsNextCalendarDay`(자정 넘김)까지 포함해
+ * 하루 시작~마무리 안에 들어가는지 검사합니다.
+ */
+export function isSpineBlockScheduleWithinPriorityWindow(
+  block: {
+    startMinutes: number;
+    endMinutes: number;
+    endsNextCalendarDay?: boolean;
+  },
+  window: SpinePriorityWindow,
+): boolean {
+  const start = Math.floor(block.startMinutes);
+  const end = Math.floor(block.endMinutes);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+  if (start < 0 || end < 0 || start > 24 * 60 || end > 24 * 60) return false;
+
+  if (block.endsNextCalendarDay) {
+    if (!window.overnight) return false;
+    // 당일 저녁 밴드에서 시작해 다음날 아침 밴드(마무리 시각까지)에서 끝나야 함
+    if (start < window.startMin) return false;
+    if (end > window.endMin) return false;
+    return 24 * 60 - start + end > 0;
+  }
+
+  return isSpineBlockWithinPriorityWindow({ startMinutes: start, endMinutes: end }, window);
+}
+
 /** 갭 구간을 하루 시작~마무리와 교차하는 부분만 남깁니다. */
 export function clipGapToSpinePriorityWindow(
   fromMinutes: number,

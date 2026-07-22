@@ -45,7 +45,7 @@ export function MealSlotTimelineHeader({
             palette={palette}
             isDark={isDark}
             compact={isPageHeader}
-            showLabel={!isPageHeader}
+            showLabel
             onPress={onPressEditSchedule}
           />
         ) : null}

@@ -199,6 +199,7 @@ export function RoutineCatalogManageContent() {
       icon,
       accentColor,
       templateKey,
+      summary,
       templateDataConfig,
     }: {
       name: string;
@@ -206,6 +207,7 @@ export function RoutineCatalogManageContent() {
       icon: string;
       accentColor: string;
       templateKey: CustomFlowTemplateKey;
+      summary?: string;
       templateDataConfig?: unknown;
     }) => {
       const id = createCustomFlowCategoryId();
@@ -213,6 +215,9 @@ export function RoutineCatalogManageContent() {
       const trimmed = name.trim();
       const next = buildInitialCustomFlowDetailConfig(templateKey, {
         ...(trimmed.length > 0 ? { displayName: trimmed } : {}),
+        ...(typeof summary === 'string' && summary.trim().length > 0
+          ? { summary: summary.trim() }
+          : {}),
         icon,
         accentColor,
         ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
@@ -227,12 +232,8 @@ export function RoutineCatalogManageContent() {
       reloadCatalogData();
       setCreateSheetOpen(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push({
-        pathname: '/goal-detail-settings',
-        params: { categoryKey: id, source: 'catalog' },
-      });
     },
-    [reloadCatalogData, router],
+    [reloadCatalogData],
   );
 
   const onOpenCategorySettings = useCallback(

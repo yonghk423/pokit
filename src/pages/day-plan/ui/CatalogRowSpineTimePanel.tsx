@@ -4,13 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import {
+  addDaysToLocalDateKey,
   clampHhmmToPriorityWindow,
   formatHhmmClockKo,
   formatMinutesToHHmm,
+  getLocalDateKey,
   parseHHmmToMinutes,
 } from '@entities/day-plan';
 import { ThemedText } from '@shared/ui/themed-text';
 import { hhmmToPickerDate, pickerDateToSnappedHhmm } from '@widgets/daily-rhythm-time-field';
+
+import { formatDateKeyCompactKo } from '../lib/dayPlanEditorShared';
 
 type IosMinuteInterval = 1 | 2 | 3 | 4 | 5 | 6 | 10 | 12 | 15 | 20 | 30;
 
@@ -27,6 +31,8 @@ type Props = {
   startMinutes: number;
   endMinutes: number;
   endsNextCalendarDay?: boolean;
+  /** 시작 기준 달력일(YYYY-MM-DD). 없으면 오늘 */
+  baseDateKey?: string;
   startDateLabel?: string;
   endDateLabelToday?: string;
   endDateLabelNextDay?: string;
@@ -51,6 +57,7 @@ export function CatalogRowSpineTimePanel({
   startMinutes,
   endMinutes,
   endsNextCalendarDay = false,
+  baseDateKey,
   startDateLabel,
   endDateLabelToday,
   endDateLabelNextDay,
@@ -184,19 +191,31 @@ export function CatalogRowSpineTimePanel({
     }
   };
 
+  const resolvedDateLabels = useMemo(() => {
+    const key =
+      typeof baseDateKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(baseDateKey.trim())
+        ? baseDateKey.trim()
+        : getLocalDateKey();
+    const start = startDateLabel?.trim() || formatDateKeyCompactKo(key);
+    const today = endDateLabelToday?.trim() || start;
+    const next =
+      endDateLabelNextDay?.trim() || formatDateKeyCompactKo(addDaysToLocalDateKey(key, 1));
+    return { start, today, next };
+  }, [baseDateKey, endDateLabelNextDay, endDateLabelToday, startDateLabel]);
+
   const renderSegment = (field: 'start' | 'end', label: string, valueHhmm: string) => {
     const selected = activeField === field;
     const dateLabel =
       field === 'start'
-        ? startDateLabel
+        ? resolvedDateLabels.start
         : draftEndsNext
-          ? endDateLabelNextDay
-          : endDateLabelToday;
+          ? resolvedDateLabels.next
+          : resolvedDateLabels.today;
     return (
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected, disabled }}
-        accessibilityLabel={`${label} ${formatHhmmClockKo(valueHhmm)}`}
+        accessibilityLabel={`${label} ${formatHhmmClockKo(valueHhmm)} ${dateLabel}`}
         disabled={disabled}
         onPress={() => toggleExpand(field)}
         style={({ pressed }) => [
@@ -215,13 +234,11 @@ export function CatalogRowSpineTimePanel({
           numberOfLines={1}>
           {formatHhmmClockKo(valueHhmm)}
         </ThemedText>
-        {dateLabel ? (
-          <ThemedText
-            style={[styles.segmentDate, { color: selected ? selectedFg : muted }]}
-            numberOfLines={1}>
-            {dateLabel}
-          </ThemedText>
-        ) : null}
+        <ThemedText
+          style={[styles.segmentDate, { color: selected ? selectedFg : muted }]}
+          numberOfLines={1}>
+          {dateLabel}
+        </ThemedText>
       </Pressable>
     );
   };

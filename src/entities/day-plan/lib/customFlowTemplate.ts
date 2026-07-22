@@ -107,10 +107,105 @@ export type CustomFlowDetailConfig =
   | ReturnType<typeof normalizeMemoDetailConfig>
   | ReturnType<typeof normalizeReminderDetailConfig>;
 
+/** 만들기 시트 — 할 일 목록(체크리스트) 설정만 추출, 완료 상태는 초기화 */
+export function pickChecklistSettingsForCreate(
+  raw: unknown,
+  templateKey: 'checklist' | 'abstain' = 'checklist',
+): Record<string, unknown> | null {
+  const cfg = normalizeOtherDetailConfig(raw);
+  const checklist = cfg.checklist
+    .map((item, index) => {
+      const text = typeof item.text === 'string' ? item.text.trim() : '';
+      if (!text) return null;
+      const id =
+        typeof item.id === 'string' && item.id.trim().length > 0
+          ? item.id.trim()
+          : `task_${index + 1}`;
+      return { id, text, done: false as const };
+    })
+    .filter((item): item is { id: string; text: string; done: false } => item != null);
+  if (checklist.length === 0) return null;
+  return {
+    checklist,
+    templateKey,
+    ...(cfg.summary.trim() ? { summary: cfg.summary.trim() } : {}),
+  };
+}
+
+/** 만들기 시트 — 메모 템플릿은 요약만 반영(세션 기록은 제외) */
+export function pickMemoSettingsForCreate(raw: unknown): Record<string, unknown> | null {
+  const cfg = normalizeMemoDetailConfig(raw);
+  if (!cfg.summary.trim()) return null;
+  return { summary: cfg.summary.trim() };
+}
+
+/**
+ * 만들기 시트용 설정 시드 — 바로 편집 가능한 기본값.
+ * 체험용 진행도(완료 체크·히스토리 샘플)는 넣지 않는다.
+ */
+export function buildTemplateSetupConfig(templateKey: CustomFlowTemplateKey): CustomFlowDetailConfig {
+  const base = buildInitialCustomFlowDetailConfig(templateKey, {
+    displayName: '',
+  });
+
+  switch (templateKey) {
+    case 'checklist':
+      return normalizeCustomFlowDetailConfig('checklist', {
+        ...base,
+        checklist: [
+          { id: 'd1', text: '물 한 잔 마시기', done: false },
+          { id: 'd2', text: '5분 스트레칭', done: false },
+          { id: 'd3', text: '창문 열고 환기', done: false },
+        ],
+        templateKey: 'checklist',
+      });
+    case 'abstain':
+      return normalizeCustomFlowDetailConfig('abstain', {
+        ...base,
+        checklist: [
+          { id: 'a1', text: '밤늦게 폰 보기', done: false },
+          { id: 'a2', text: '과자·야식 먹기', done: false },
+          { id: 'a3', text: 'SNS 무한 스크롤', done: false },
+        ],
+        templateKey: 'abstain',
+      });
+    case 'counter':
+      return normalizeCounterDetailConfig({
+        ...base,
+        activityLabel: '',
+        unitKey: 'count',
+        goalCount: 10,
+        currentCount: 0,
+        stepSize: 1,
+        secondaryStepSize: 5,
+        dailyReset: true,
+        history: [],
+      });
+    case 'reminder':
+      return normalizeReminderDetailConfig({
+        ...base,
+        reminderItems: [
+          { time: '09:00', label: '' },
+          { time: '12:00', label: '' },
+          { time: '18:00', label: '' },
+        ],
+        completedTimes: [],
+      });
+    case 'measurement':
+    case 'memo':
+    case 'habit':
+    case 'focus':
+    case 'journal':
+    default:
+      return base;
+  }
+}
+
 export function buildInitialCustomFlowDetailConfig(
   templateKey: CustomFlowTemplateKey,
   input: {
     displayName?: string;
+    summary?: string;
     icon?: string;
     accentColor?: string;
     /** 만들기·미리보기에서 고른 템플릿 설정(런타임 기록값 제외) */
@@ -118,8 +213,10 @@ export function buildInitialCustomFlowDetailConfig(
   } = {},
 ): CustomFlowDetailConfig {
   const { displayName, icon, accentColor } = input;
+  const summary = typeof input.summary === 'string' ? input.summary.trim() : '';
   const appearance = {
     ...(displayName && displayName.trim().length > 0 ? { displayName: displayName.trim() } : {}),
+    ...(summary.length > 0 ? { summary } : {}),
     ...(icon ? { icon } : {}),
     ...(accentColor ? { accentColor } : {}),
   };
@@ -131,8 +228,8 @@ export function buildInitialCustomFlowDetailConfig(
         : null;
       return normalizeMeasurementDetailConfig({
         ...getInitialMeasurementDataConfig(),
-        ...appearance,
         ...(measurementSeed ?? {}),
+        ...appearance,
       });
     }
     case 'habit':
@@ -141,36 +238,53 @@ export function buildInitialCustomFlowDetailConfig(
       const counterSeed = input.templateSeed ? pickCounterSettingsForCreate(input.templateSeed) : null;
       return normalizeCounterDetailConfig({
         ...getInitialCounterDataConfig(),
-        ...appearance,
         ...(counterSeed ?? {}),
+        ...appearance,
       });
     }
     case 'focus':
       return normalizeFocusDetailConfig({ ...getInitialFocusDataConfig(), ...appearance });
     case 'journal':
       return normalizeJournalDetailConfig({ ...getInitialJournalDataConfig(), ...appearance });
-    case 'memo':
-      return normalizeMemoDetailConfig({ ...getInitialMemoDataConfig(), ...appearance });
+    case 'memo': {
+      const memoSeed = input.templateSeed ? pickMemoSettingsForCreate(input.templateSeed) : null;
+      return normalizeMemoDetailConfig({
+        ...getInitialMemoDataConfig(),
+        ...(memoSeed ?? {}),
+        ...appearance,
+      });
+    }
     case 'reminder': {
       const reminderSeed = input.templateSeed ? pickReminderSettingsForCreate(input.templateSeed) : null;
       return normalizeReminderDetailConfig({
         ...getInitialReminderDataConfig(),
-        ...appearance,
         ...(reminderSeed ?? {}),
+        ...appearance,
       });
     }
-    case 'abstain':
+    case 'abstain': {
+      const abstainSeed = input.templateSeed
+        ? pickChecklistSettingsForCreate(input.templateSeed, 'abstain')
+        : null;
       return normalizeOtherDetailConfig({
         ...getInitialOtherDataConfig(),
-        ...appearance,
         templateKey: 'abstain',
-      });
-    case 'checklist':
-    default:
-      return normalizeOtherDetailConfig({
-        ...getInitialOtherDataConfig(),
+        ...(abstainSeed ?? {}),
         ...appearance,
       });
+    }
+    case 'checklist':
+    default: {
+      const checklistSeed = input.templateSeed
+        ? pickChecklistSettingsForCreate(input.templateSeed, 'checklist')
+        : null;
+      return normalizeOtherDetailConfig({
+        ...getInitialOtherDataConfig(),
+        templateKey: 'checklist',
+        ...(checklistSeed ?? {}),
+        ...appearance,
+      });
+    }
   }
 }
 

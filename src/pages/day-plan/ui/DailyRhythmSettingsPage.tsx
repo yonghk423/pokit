@@ -1,20 +1,25 @@
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
+import { Alert, Platform, Pressable, StatusBar, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import { syncPriorityDayStartAlarm } from '@features/day-plan-notifications';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { loadPriorityDayStartAlarm } from '@shared/lib/storage';
+import {
+  loadPriorityDayRollMode,
+  loadPriorityDayStartAlarm,
+  savePriorityDayRollMode,
+  type PriorityDayRollMode,
+} from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
 import { addDaysToLocalDateKey, useDayPlanDraftStore } from '@entities/day-plan';
 import { palette } from '../lib/dayPlanPalette';
-import { formatDateKeyCompactKo } from '../lib/dayPlanEditorShared';
+import { formatDateKeyCompactKo, PRIMARY } from '../lib/dayPlanEditorShared';
 import { DailyRhythmTimeEditorBody } from './DailyRhythmTimeEditorBody';
 
 /** 설정 탭에서 우선순위 데이플랜의 하루 시작·마무리 시각을 바꿀 때 */
@@ -51,6 +56,7 @@ export function DailyRhythmSettingsPage() {
   const [seedEnd, setSeedEnd] = useState(priorityEnd);
   const [seedKey, setSeedKey] = useState(0);
   const [dayStartAlarmOn, setDayStartAlarmOn] = useState(true);
+  const [dayRollMode, setDayRollMode] = useState<PriorityDayRollMode>(() => loadPriorityDayRollMode());
   const planRangeLo = useMemo(
     () =>
       priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd,
@@ -73,6 +79,7 @@ export function DailyRhythmSettingsPage() {
       setSeedStart(st.priorityStart);
       setSeedEnd(st.priorityEnd);
       setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
+      setDayRollMode(loadPriorityDayRollMode());
       setSeedKey((k) => k + 1);
     }, []),
   );
@@ -92,6 +99,7 @@ export function DailyRhythmSettingsPage() {
       setPriorityStart(start);
       setPriorityEnd(end);
       syncOvernightPriorityPlanDates();
+      savePriorityDayRollMode(dayRollMode);
       const ok = await syncPriorityDayStartAlarm({ enabled: dayStartAlarmOn, startHhmm: start });
       if (dayStartAlarmOn && !ok) {
         setDayStartAlarmOn(false);
@@ -99,7 +107,7 @@ export function DailyRhythmSettingsPage() {
       }
       router.back();
     },
-    [dayStartAlarmOn, router, setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
+    [dayRollMode, dayStartAlarmOn, router, setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
   );
 
   const handleEndDateChoice = useCallback(
@@ -111,6 +119,8 @@ export function DailyRhythmSettingsPage() {
     },
     [applyPriorityPlanCalendarRange, planRangeLo, setPriorityEnd, setPriorityStart],
   );
+
+  const keepOrder = dayRollMode === 'keep';
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: c.bg }]} darkColor={c.bg} lightColor={c.bg}>
@@ -157,6 +167,33 @@ export function DailyRhythmSettingsPage() {
           priorityPlanRangeHi={planRangeHi}
           dayStartAlarmOn={dayStartAlarmOn}
           onDayStartAlarmChange={setDayStartAlarmOn}
+          footerSlot={
+            <View style={[styles.rollCard, { borderColor: c.border, backgroundColor: c.containerLow }]}>
+              <View style={styles.rollTextWrap}>
+                <ThemedText style={[styles.rollTitle, { color: c.onSurface }]}>
+                  하루가 지나면 담기 유지
+                </ThemedText>
+                <ThemedText style={[styles.rollDesc, { color: c.onVariant }]}>
+                  켜면 시작·마무리 구간이 지나도 오늘 담은 루틴을 비우지 않아요. 끄면 다음 하루로 넘길 때 담기를
+                  비워요.
+                </ThemedText>
+              </View>
+              <Switch
+                value={keepOrder}
+                onValueChange={(next) => {
+                  void Haptics.selectionAsync();
+                  setDayRollMode(next ? 'keep' : 'reset');
+                }}
+                trackColor={{
+                  false: c.trackOff,
+                  true: PRIMARY,
+                }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor={c.trackOff}
+                accessibilityLabel={`하루가 지나면 담기 유지 ${keepOrder ? '켜짐' : '꺼짐'}`}
+              />
+            </View>
+          }
         />
       </View>
     </ThemedView>
@@ -185,5 +222,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 17,
     fontWeight: '800',
+  },
+  rollCard: {
+    borderWidth: 1,
+    borderRadius: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  rollTextWrap: {
+    flex: 1,
+    gap: 4,
+  },
+  rollTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  rollDesc: {
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '500',
   },
 });

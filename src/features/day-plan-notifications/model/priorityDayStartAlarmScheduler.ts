@@ -76,7 +76,7 @@ export async function syncPriorityDayStartAlarm(input: {
       const nid = await scheduleDailyLocalNotification({
         identifier: PRIORITY_DAY_START_NOTIFICATION_ID,
         title: '오늘이 시작됐어요',
-        body: `하루 시작 · ${startLabel} 시간 입니다.`,
+        body: `하루 시작 · ${startLabel}입니다.`,
         hour,
         minute,
         data: { eventType: PRIORITY_DAY_START_EVENT_TYPE },

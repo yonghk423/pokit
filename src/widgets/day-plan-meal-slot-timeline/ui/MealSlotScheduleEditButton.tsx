@@ -27,14 +27,14 @@ function cardFaceColors(isDark: boolean) {
   };
 }
 
-/** 구간 타임라인 — 구간 시간 설정 버튼 */
+/** 구간 타임라인 — 시간대 변경 버튼 */
 export function MealSlotScheduleEditButton({
   palette,
   isDark,
   onPress,
   compact = false,
   showLabel = false,
-  accessibilityLabel = '구간 시간 설정',
+  accessibilityLabel = '시간대 변경',
 }: Props) {
   const colors = cardFaceColors(isDark);
 
@@ -50,7 +50,8 @@ export function MealSlotScheduleEditButton({
       }}
       style={({ pressed }) => [
         styles.root,
-        compact && styles.rootCompact,
+        compact && !showLabel && styles.rootCompactIconOnly,
+        compact && showLabel && styles.rootCompactWithLabel,
         {
           borderColor: colors.border,
           backgroundColor: colors.face,
@@ -59,7 +60,9 @@ export function MealSlotScheduleEditButton({
       ]}>
       <IconSymbol name="clock" size={compact ? 11 : 13} color={palette.ink} />
       {showLabel ? (
-        <ThemedText style={[styles.label, { color: palette.ink }]}>구간 시간 설정</ThemedText>
+        <ThemedText style={[styles.label, compact && styles.labelCompact, { color: palette.ink }]}>
+          시간대 변경
+        </ThemedText>
       ) : null}
     </Pressable>
   );
@@ -77,16 +80,25 @@ const styles = StyleSheet.create({
     borderRadius: CARD_RADIUS,
     borderWidth: THIN_BORDER,
   },
-  rootCompact: {
+  rootCompactIconOnly: {
     minHeight: 28,
     minWidth: 28,
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
+  rootCompactWithLabel: {
+    minHeight: 28,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 4,
+  },
   label: {
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: -0.1,
+  },
+  labelCompact: {
+    fontSize: 11,
   },
   pressed: {
     opacity: 0.72,

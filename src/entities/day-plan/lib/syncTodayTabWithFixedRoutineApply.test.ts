@@ -334,4 +334,43 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     expect(patch?.planBlocks?.map((block) => block.title)).toEqual(['독서']);
     expect(patch?.planBlocks?.map((block) => block.category)).toEqual(['독서']);
   });
+
+  it('dedupes spine blocks that share the same categoryKey', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      fixedRoutineApplyLayoutMode: 'spine',
+      planBlocks: [
+        {
+          id: 'b1',
+          title: '금지',
+          category: '금지',
+          categoryKey: 'custom_forbid',
+          startMinutes: 15 * 60 + 40,
+          endMinutes: 16 * 60 + 10,
+          order: 0,
+          blockOrigin: 'spineTimeline',
+          endsNextCalendarDay: true,
+        },
+        {
+          id: 'b2',
+          title: '금지',
+          category: '금지',
+          categoryKey: 'custom_forbid',
+          startMinutes: 15 * 60 + 40,
+          endMinutes: 16 * 60 + 10,
+          order: 1,
+          blockOrigin: 'spineTimeline',
+          endsNextCalendarDay: true,
+        },
+      ],
+      todayAppliedCategoryKeys: [],
+      routineCatalogSelectionKeys: ['custom_forbid'],
+      fixedFlowSets: [],
+      activeSetIds: [],
+    });
+    const spine = (patch?.planBlocks ?? []).filter((b) => b.blockOrigin === 'spineTimeline');
+    expect(spine).toHaveLength(1);
+    const ids = spine.map((b) => b.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
 });

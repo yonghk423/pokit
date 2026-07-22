@@ -46,6 +46,8 @@ export type FixedFlowSetItem = {
   /** 타임라인 보기 — 시작·종료(분, 0~1440) */
   spineStartMinutes?: number;
   spineEndMinutes?: number;
+  /** 종료 시각이 시작보다 이른 시계(다음날 새벽)일 때 */
+  spineEndsNextCalendarDay?: boolean;
 };
 
 export type FixedFlowSet = {
@@ -144,16 +146,25 @@ function normalizeItems(raw: unknown): FixedFlowSetItem[] {
     );
     const spineStartMinutes = normalizeSpineMinutes(r.spineStartMinutes);
     const spineEndMinutes = normalizeSpineMinutes(r.spineEndMinutes);
+    const spineEndsNextCalendarDay = r.spineEndsNextCalendarDay === true;
     const hasValidSpine =
       spineStartMinutes !== undefined &&
       spineEndMinutes !== undefined &&
-      spineEndMinutes > spineStartMinutes;
+      (spineEndsNextCalendarDay
+        ? spineEndMinutes < spineStartMinutes
+        : spineEndMinutes > spineStartMinutes);
     out.push({
       categoryKey: key,
       enabled: r.enabled !== false,
       ...(mealSlots.length === 1 ? { mealSlot: mealSlots[0] } : {}),
       ...(mealSlots.length > 0 ? { mealSlots } : {}),
-      ...(hasValidSpine ? { spineStartMinutes, spineEndMinutes } : {}),
+      ...(hasValidSpine
+        ? {
+            spineStartMinutes,
+            spineEndMinutes,
+            ...(spineEndsNextCalendarDay ? { spineEndsNextCalendarDay: true as const } : {}),
+          }
+        : {}),
     });
     seen.add(key);
   }
@@ -217,6 +228,8 @@ function mergeSetItems(
       mealSlots: item.mealSlots ?? prev?.mealSlots,
       spineStartMinutes: item.spineStartMinutes ?? prev?.spineStartMinutes,
       spineEndMinutes: item.spineEndMinutes ?? prev?.spineEndMinutes,
+      spineEndsNextCalendarDay:
+        item.spineEndsNextCalendarDay ?? prev?.spineEndsNextCalendarDay,
     });
   }
   return [...map.values()];

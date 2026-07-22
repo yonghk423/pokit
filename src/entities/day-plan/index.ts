@@ -45,6 +45,7 @@ export {
   clampSpineBlockToPriorityWindow,
   clipGapToSpinePriorityWindow,
   isMinuteWithinSpinePriorityWindow,
+  isSpineBlockScheduleWithinPriorityWindow,
   isSpineBlockWithinPriorityWindow,
   resolveSpinePriorityWindow,
   type SpinePriorityWindow,
@@ -72,10 +73,13 @@ export {
 export {
   buildInitialCustomFlowDetailConfig,
   buildTemplateDemoConfig,
+  buildTemplateSetupConfig,
   CUSTOM_FLOW_TEMPLATE_DESCRIPTIONS,
   CUSTOM_FLOW_TEMPLATE_LABELS,
   CUSTOM_FLOW_TEMPLATE_SUMMARIES,
   normalizeCustomFlowDetailConfig,
+  pickChecklistSettingsForCreate,
+  pickMemoSettingsForCreate,
   resolveCustomFlowTemplateKey,
   resolveAppliedCustomFlowTemplateLabel,
   type CustomFlowTemplateKey
@@ -252,6 +256,12 @@ export {
   resolveCategoryImportance,
 } from './lib/itemPriority';
 export * from './lib/goalCategorySessionConfig';
+export {
+  ROUTINE_SUMMARY_MAX,
+  formatRoutineSummaryHint,
+  normalizeRoutineSummary,
+  readRoutineSummaryFromConfig,
+} from './lib/routineSummary';
 export {
   extractMedicineConfigFromRaw,
   extractWaterConfigFromRaw,

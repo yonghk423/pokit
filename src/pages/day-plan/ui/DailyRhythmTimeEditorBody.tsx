@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { addDaysToLocalDateKey, formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
@@ -84,6 +84,8 @@ export type DailyRhythmTimeEditorBodyProps = {
   priorityPlanRangeLo?: string;
   /** 마무리 시각이 속한 달력일(범위 종료일) */
   priorityPlanRangeHi?: string;
+  /** 설정 화면 등 — 알림 토글 아래 추가 슬롯 */
+  footerSlot?: ReactNode;
 };
 
 export function DailyRhythmTimeEditorBody({
@@ -105,6 +107,7 @@ export function DailyRhythmTimeEditorBody({
   endDateChoiceNextDayLabel = '다음 날',
   priorityPlanRangeLo,
   priorityPlanRangeHi,
+  footerSlot,
 }: DailyRhythmTimeEditorBodyProps) {
   const [startHhmm, setStartHhmm] = useState(seedStart);
   const [endHhmm, setEndHhmm] = useState(seedEnd);
@@ -485,6 +488,8 @@ export function DailyRhythmTimeEditorBody({
             />
           </View>
         ) : null}
+
+        {footerSlot}
       </View>
 
       <View style={styles.footer}>

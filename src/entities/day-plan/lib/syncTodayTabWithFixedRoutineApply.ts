@@ -300,7 +300,8 @@ export function syncSpinePlanBlocksWithAppliedFixedRoutines(input: {
         : existing.category ?? label;
       const scheduleChanged =
         existing.startMinutes !== schedule.startMinutes ||
-        existing.endMinutes !== schedule.endMinutes;
+        existing.endMinutes !== schedule.endMinutes ||
+        Boolean(existing.endsNextCalendarDay) !== Boolean(schedule.endsNextCalendarDay);
       const labelChanged = nextTitle !== existing.title || nextCategory !== existing.category;
       if (scheduleChanged || labelChanged) {
         spineByKey.set(key, {
@@ -309,6 +310,9 @@ export function syncSpinePlanBlocksWithAppliedFixedRoutines(input: {
           category: nextCategory,
           startMinutes: schedule.startMinutes,
           endMinutes: schedule.endMinutes,
+          ...(schedule.endsNextCalendarDay
+            ? { endsNextCalendarDay: true as const }
+            : { endsNextCalendarDay: undefined }),
         });
       }
       continue;
@@ -324,26 +328,33 @@ export function syncSpinePlanBlocksWithAppliedFixedRoutines(input: {
       endMinutes: schedule.endMinutes,
       order: maxOrder,
       blockOrigin: 'spineTimeline',
+      ...(schedule.endsNextCalendarDay ? { endsNextCalendarDay: true as const } : {}),
     });
   }
 
-  const orderedSpineBlocks = keptSpineBlocks
-    .map((block) => {
-      const key = block.categoryKey?.trim();
-      return key ? spineByKey.get(key) ?? block : block;
-    })
-    .filter((block) => {
-      const key = block.categoryKey?.trim();
-      return !key || spineByKey.has(key);
-    });
+  // 같은 categoryKey로 여러 스파인 블록이 있으면 spineByKey 해석 결과가
+  // 동일 id로 반복될 수 있어, key·id 기준으로 한 번만 남긴다.
+  const orderedSpineBlocks: DayPlanBlock[] = [];
+  const seenSpineIds = new Set<string>();
+  const seenSpineKeys = new Set<string>();
+  for (const block of keptSpineBlocks) {
+    const key = block.categoryKey?.trim();
+    if (key && !spineByKey.has(key)) continue;
+    const resolved = key ? spineByKey.get(key)! : block;
+    if (seenSpineIds.has(resolved.id)) continue;
+    if (key) {
+      if (seenSpineKeys.has(key)) continue;
+      seenSpineKeys.add(key);
+    }
+    seenSpineIds.add(resolved.id);
+    orderedSpineBlocks.push(resolved);
+  }
 
-  const existingKeys = new Set(
-    orderedSpineBlocks
-      .map((block) => block.categoryKey?.trim())
-      .filter((key): key is string => Boolean(key)),
-  );
   for (const [key, block] of spineByKey.entries()) {
-    if (existingKeys.has(key)) continue;
+    if (seenSpineKeys.has(key)) continue;
+    if (seenSpineIds.has(block.id)) continue;
+    seenSpineKeys.add(key);
+    seenSpineIds.add(block.id);
     orderedSpineBlocks.push(block);
   }
 

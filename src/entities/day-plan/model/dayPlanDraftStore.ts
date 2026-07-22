@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import {
   buildRoutineHistoryRecordKey,
 } from '@shared/lib/routineHistoryLayoutKey';
-import { loadDayPlanDraft, saveDayPlanDraft, normalizeDayMealSlot, normalizeCategoryMealSlots, type DayMealSlot } from '@shared/lib/storage';
+import { loadDayPlanDraft, saveDayPlanDraft, normalizeDayMealSlot, normalizeCategoryMealSlots, loadPriorityDayRollMode, type DayMealSlot } from '@shared/lib/storage';
 
 import { syncWidgetTimelineFromStorage } from '../lib/widgetDayPlanSync';
 
@@ -564,6 +564,20 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     const nextEnd = overnight ? addDaysToLocalDateKey(today, 1) : today;
     // 같은 날 일찍 끝난 경우(아직 날짜가 안 넘어감)는 그대로 둔다.
     if (s.priorityPlanDateKey === nextStart && s.priorityPlanDateKeyEnd === nextEnd) return;
+
+    const rollMode = loadPriorityDayRollMode();
+    if (rollMode === 'keep') {
+      set({
+        priorityPlanDateKey: nextStart,
+        priorityPlanDateKeyEnd: nextEnd,
+        priorityPlanExplicitMultiDay: false,
+        priorityOvernightEndAuto: overnight,
+        completedFocusCategoryKeys: [],
+        planCompletionDismissedKeys: [],
+        isFocusStarted: false,
+      });
+      return;
+    }
 
     set({
       priorityPlanDateKey: nextStart,

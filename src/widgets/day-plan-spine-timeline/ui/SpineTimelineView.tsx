@@ -244,9 +244,12 @@ function GapRow({
     <View style={styles.gapRow}>
       <View style={styles.railCol}>
         {row.nowMinutes != null ? (
-          <ThemedText style={[styles.railTimeNow, { color: accent }]}>
-            {formatRailMinutes(row.nowMinutes)}
-          </ThemedText>
+          <View style={styles.railNowWrap}>
+            <ThemedText style={[styles.railTimeNowLabel, { color: accent }]}>지금</ThemedText>
+            <ThemedText style={[styles.railTimeNow, { color: accent }]}>
+              {formatRailMinutes(row.nowMinutes)}
+            </ThemedText>
+          </View>
         ) : null}
       </View>
       <View style={styles.spineColGap}>
@@ -330,9 +333,9 @@ export function SpineTimelineView({
     return displayRows.map((row, index) => {
       const key =
         row.kind === 'block'
-          ? `block-${row.block.id}`
+          ? `block-${row.block.id}-${index}`
           : row.kind === 'anchor'
-            ? `anchor-${row.role}-${row.minutes}`
+            ? `anchor-${row.role}-${row.minutes}-${index}`
             : `gap-${row.fromMinutes}-${row.toMinutes}-${index}`;
 
       if (row.kind === 'anchor') {
@@ -473,6 +476,15 @@ const styles = StyleSheet.create({
   railTimeNow: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  railNowWrap: {
+    alignItems: 'flex-end',
+    gap: 1,
+  },
+  railTimeNowLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   spineCol: {
     width: SPINE_W,

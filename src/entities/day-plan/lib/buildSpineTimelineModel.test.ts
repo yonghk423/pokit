@@ -103,4 +103,74 @@ describe('buildSpineTimelineModel', () => {
     expect(start).toMatchObject({ dateCaption: '7월 10일' });
     expect(end).toMatchObject({ dateCaption: '7월 11일' });
   });
+
+  it('overnight 구간은 시작 → 저녁 블록 → 마무리 순으로 펼친다', () => {
+    const rows = buildSpineTimelineModel({
+      priorityStart: '06:30',
+      priorityEnd: '00:00',
+      nowMinutes: 9 * 60 + 29,
+      blocks: [
+        block({
+          id: 'pushup',
+          startMinutes: 23 * 60,
+          endMinutes: 23 * 60 + 10,
+          title: '푸쉬업',
+        }),
+      ],
+      dayStartDateCaption: '7월 14일',
+      dayEndDateCaption: '7월 15일',
+    });
+
+    const kindsAndRoles = rows.map((r) => {
+      if (r.kind === 'anchor') return `${r.kind}:${r.role}`;
+      if (r.kind === 'block') return `block:${r.startMinutes}`;
+      return `gap:${r.fromMinutes}-${r.toMinutes}`;
+    });
+
+    expect(kindsAndRoles[0]).toBe('anchor:dayStart');
+    expect(kindsAndRoles).toContain('block:1380');
+    expect(kindsAndRoles[kindsAndRoles.length - 1]).toBe('anchor:dayEnd');
+
+    const dayStartIdx = kindsAndRoles.indexOf('anchor:dayStart');
+    const blockIdx = kindsAndRoles.indexOf('block:1380');
+    const dayEndIdx = kindsAndRoles.indexOf('anchor:dayEnd');
+    expect(dayStartIdx).toBeLessThan(blockIdx);
+    expect(blockIdx).toBeLessThan(dayEndIdx);
+
+    const morningGap = rows.find(
+      (r) => r.kind === 'gap' && r.fromMinutes === 6 * 60 + 30 && r.toMinutes === 23 * 60,
+    );
+    expect(morningGap).toMatchObject({ kind: 'gap', nowMinutes: 9 * 60 + 29 });
+  });
+
+  it('동일 id 블록은 한 번만 표시하고 창 밖 익일 종료는 제외한다', () => {
+    const rows = buildSpineTimelineModel({
+      priorityStart: '06:30',
+      priorityEnd: '00:00',
+      nowMinutes: 15 * 60,
+      blocks: [
+        block({
+          id: 'same',
+          startMinutes: 15 * 60 + 40,
+          endMinutes: 16 * 60 + 10,
+          endsNextCalendarDay: true,
+        }),
+        block({
+          id: 'same',
+          startMinutes: 15 * 60 + 40,
+          endMinutes: 16 * 60 + 10,
+          endsNextCalendarDay: true,
+        }),
+        block({
+          id: 'ok',
+          startMinutes: 22 * 60,
+          endMinutes: 22 * 60 + 30,
+        }),
+      ],
+    });
+
+    const blockRows = rows.filter((r) => r.kind === 'block');
+    expect(blockRows).toHaveLength(1);
+    expect(blockRows[0]).toMatchObject({ kind: 'block', startMinutes: 22 * 60 });
+  });
 });

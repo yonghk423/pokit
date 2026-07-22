@@ -36,7 +36,7 @@ function resolveCategoryReminderNotificationBody(categoryKey: string, hhmm: stri
       }
     }
   }
-  return `${label} · ${clock} 시간 입니다.`;
+  return `${label} · ${clock}입니다.`;
 }
 
 type Slot = {

@@ -248,7 +248,9 @@ export function clampMealSlotSectionsToWindow<
   const endMinRaw = parseWindowMinutes(priorityEnd);
   if (startMin === null || endMinRaw === null) return sections;
 
-  // 시각만으로는 자정 넘김을 알 수 없어 다중일 여부(spansNextDay)를 함께 받는다.
+  // 시각만으로는 자정 넘김을 알 수 없어 overnight(spansNextDay)를 함께 받는다.
+  // 주의: 달력상 이틀(priorityPlanExplicitMultiDay)과 혼동하지 말 것 — 시계 창이
+  // 자정을 넘길 때만 true여야 한다.
   const overnight = spansNextDay || endMinRaw <= startMin;
   const windowLen = !overnight
     ? endMinRaw - startMin

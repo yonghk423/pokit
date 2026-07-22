@@ -13,7 +13,7 @@ jest.mock('../lib/localDateKey', () => ({
   addDaysToLocalDateKey: jest.requireActual('../lib/localDateKey').addDaysToLocalDateKey,
 }));
 
-import { loadDayPlanDraft, saveDayPlanDraft } from '@shared/lib/storage';
+import { loadDayPlanDraft, saveDayPlanDraft, savePriorityDayRollMode } from '@shared/lib/storage';
 
 import {
   appendPriorityCategoryKeysIfMissing,
@@ -166,6 +166,34 @@ describe('dayPlanDraftStore', () => {
     expect(s.priorityPlanDateKeyEnd).toBe('2025-05-27');
     expect(s.priorityOvernightEndAuto).toBe(true);
     expect(s.priorityCategoryOrder).toEqual([]);
+  });
+
+  it('keeps bag order when priority day roll mode is keep', () => {
+    savePriorityDayRollMode('keep');
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      planMode: 'priority',
+      priorityPlanDateKey: '2025-05-25',
+      priorityPlanDateKeyEnd: '2025-05-25',
+      priorityPlanExplicitMultiDay: false,
+      priorityOvernightEndAuto: false,
+      priorityStart: '09:00',
+      priorityEnd: '18:00',
+      priorityCategoryOrder: ['reading', 'work'],
+      priorityCategoryImportance: { reading: 'high' },
+      completedFocusCategoryKeys: ['reading'],
+      isFocusStarted: true,
+    });
+    useDayPlanDraftStore
+      .getState()
+      .rollPriorityPlanForwardIfEnded({ nowKey: '2025-05-26', nowMin: 8 * 60 });
+    const s = useDayPlanDraftStore.getState();
+    expect(s.priorityPlanDateKey).toBe('2025-05-26');
+    expect(s.priorityCategoryOrder).toEqual(['reading', 'work']);
+    expect(s.priorityCategoryImportance).toEqual({ reading: 'high' });
+    expect(s.completedFocusCategoryKeys).toEqual([]);
+    expect(s.isFocusStarted).toBe(false);
+    savePriorityDayRollMode('reset');
   });
 
   it('does not roll forward while the window is still active', () => {

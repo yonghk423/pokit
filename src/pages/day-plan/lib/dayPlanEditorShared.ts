@@ -329,9 +329,12 @@ export function priorityClockCaptionDateKeyStart(rangeLo: string): string {
 
 /**
  * 달력 다중일일 때 종료 시계 아래 날짜.
- * 오전/오후·시분에 따라 자정을 넘기면 종료 시각은 적용 기간 **마지막 날의 다음날** 새벽으로 본다.
+ * overnight이면 종료 시각은 **시작일 다음 날**(구간이 아직 하루일 때) 또는
+ * 이미 다중일로 잡힌 구간의 **마지막 날**(auto overnight / 명시 다중일)에 둔다.
+ * `rangeHi`가 이미 종료일이면 하루를 더하지 않는다.
  */
 export function priorityClockCaptionDateKeyEnd(
+  rangeLo: string,
   rangeHi: string,
   priorityStart: string,
   priorityEnd: string,
@@ -341,7 +344,7 @@ export function priorityClockCaptionDateKeyEnd(
   if (ps === null || pe === null) return rangeHi;
   if (pe === 24 * 60 && pe > ps) return rangeHi;
   if (pe < ps) {
-    return addDaysToLocalDateKey(rangeHi, 1);
+    return rangeLo === rangeHi ? addDaysToLocalDateKey(rangeHi, 1) : rangeHi;
   }
   return rangeHi;
 }

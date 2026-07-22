@@ -271,6 +271,20 @@ describe('clampMealSlotSectionsToWindow', () => {
     expect(result[0]?.hintTime).toBe('16:40');
   });
 
+  it('같은 날 짧은 창(13:10~17:10)에서는 창 밖 밤·새벽·아침을 숨긴다', () => {
+    const result = clampMealSlotSectionsToWindow(baseSections(), '13:10', '17:10', false);
+    expect(result.map((s) => s.slot)).toEqual(['lunch']);
+    expect(result[0]?.hintTime).toBe('13:10');
+  });
+
+  it('달력 다중일처럼 spansNextDay를 켜도 호출측이 false면 같은 날 창을 유지한다', () => {
+    // 회귀: priorityPlanExplicitMultiDay 를 spansNextDay로 넘기면 안 됨
+    const result = clampMealSlotSectionsToWindow(baseSections(), '13:10', '17:10', false);
+    expect(result.map((s) => s.slot)).not.toContain('night');
+    expect(result.map((s) => s.slot)).not.toContain('dawn');
+    expect(result.map((s) => s.slot)).not.toContain('morning');
+  });
+
   it('자연 자정 넘김(22:00~06:00)도 순서대로 배치한다', () => {
     const result = clampMealSlotSectionsToWindow(baseSections(), '22:00', '06:00');
     expect(result[0]?.slot).toBe('night');

@@ -51,7 +51,7 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   loadDailyRhythmOnboardingCompleted,
   loadPriorityDayStartAlarm,
-  markDailyRhythmOnboardingCompleted,
+  markDailyRhythmOnboardingCompletedAndFlush,
   saveRoutineCatalogSelectionKeys,
 } from '@shared/lib/storage';
 import { coerceDayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
@@ -231,6 +231,10 @@ export function DayPlanPage() {
       // 탭 전환/화면 freeze 이후에도 담기 순서 키를 최신 스토어 스냅샷으로 동기화
       const latestOrder = useDayPlanDraftStore.getState().priorityCategoryOrder;
       setPriorityCategoryOrder([...latestOrder]);
+      // 온보딩 플래그가 디스크에 반영됐으면 게이트를 닫는다
+      if (loadDailyRhythmOnboardingCompleted()) {
+        setRhythmGateOpen(false);
+      }
     }, [bumpCategoryLabelEpoch, rollPriorityPlanForwardIfEnded, setPriorityCategoryOrder]),
   );
 
@@ -355,15 +359,17 @@ export function DayPlanPage() {
       setPriorityStart(start);
       setPriorityEnd(end);
       syncOvernightPriorityPlanDates();
-      markDailyRhythmOnboardingCompleted();
-      setRhythmGateOpen(false);
+      void markDailyRhythmOnboardingCompletedAndFlush().then(() => {
+        setRhythmGateOpen(false);
+      });
     },
     [setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
   );
 
   const handleRhythmSkip = useCallback(() => {
-    markDailyRhythmOnboardingCompleted();
-    setRhythmGateOpen(false);
+    void markDailyRhythmOnboardingCompletedAndFlush().then(() => {
+      setRhythmGateOpen(false);
+    });
   }, []);
 
   const syncScheduledNotifications = useCallback(() => {

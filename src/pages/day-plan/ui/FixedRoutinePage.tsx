@@ -75,7 +75,10 @@ import {
 } from '../lib/priorityCatalog';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
+import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
 import { FixedRoutineLayoutModeHeader } from './FixedRoutineLayoutModeHeader';
+import { FixedRoutineListModeCard } from './FixedRoutineListModeCard';
+import { FixedRoutineMealSlotScheduleCard } from './FixedRoutineMealSlotScheduleCard';
 import { FixedRoutinePriorityWindowCard } from './FixedRoutinePriorityWindowCard';
 import { FixedRoutinePriorityWindowSheet } from './FixedRoutinePriorityWindowSheet';
 import { FixedRoutineSectionTabs, type FixedRoutineSection } from './FixedRoutineSectionTabs';
@@ -85,6 +88,7 @@ import {
   mealSlotPickerBtnWidth,
 } from './CatalogRowMealSlotChips';
 import { CatalogRowSpineTimePanel, CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT, CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT } from './CatalogRowSpineTimePanel';
+import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { RoutineCatalogManageContent } from './RoutineCatalogManageContent';
 import { RoutineTemplateListPanel } from './RoutineTemplateListPanel';
 
@@ -146,9 +150,15 @@ type FlowCardProps = {
   showSpineTimePicker?: boolean;
   spineStartMinutes?: number;
   spineEndMinutes?: number;
+  spineTimeIsSuggested?: boolean;
   priorityStart?: string;
   priorityEnd?: string;
-  onChangeSpineTime?: (startMinutes: number, endMinutes: number) => void;
+  baseDateKey?: string;
+  onChangeSpineTime?: (
+    startMinutes: number,
+    endMinutes: number,
+    endsNextCalendarDay: boolean,
+  ) => void;
   onToggleEnabled: (enabled: boolean) => void;
   onDelete: () => void;
 };
@@ -170,8 +180,10 @@ function FlowItemCard({
   showSpineTimePicker,
   spineStartMinutes,
   spineEndMinutes,
+  spineTimeIsSuggested,
   priorityStart,
   priorityEnd,
+  baseDateKey,
   onChangeSpineTime,
   onToggleEnabled,
   onDelete,
@@ -248,6 +260,10 @@ function FlowItemCard({
   }));
 
   const spineTimeIconHighlighted = Boolean(spineStartMinutes != null && spineEndMinutes != null) || spineTimeExpanded;
+  const spineTimeLabel =
+    spineStartMinutes != null && spineEndMinutes != null
+      ? `${formatMinuteOfDayKo(spineStartMinutes)}~${formatMinuteOfDayKo(spineEndMinutes)}`
+      : null;
 
   useEffect(() => {
     spineExpandProgress.value = withTiming(spineTimeExpanded ? 1 : 0, {
@@ -306,11 +322,23 @@ function FlowItemCard({
             <IconSymbol name={icon as any} size={15} color={iconColor} />
           </Animated.View>
         </View>
-        <ThemedText
-          style={[styles.flowRowTitle, { color: labelColor }]}
-          numberOfLines={1}>
-          {label}
-        </ThemedText>
+        <View style={styles.flowRowTextCol}>
+          <ThemedText
+            style={[styles.flowRowTitle, { color: labelColor }]}
+            numberOfLines={1}>
+            {label}
+          </ThemedText>
+          {showSpineTimePicker && spineTimeLabel ? (
+            <ThemedText
+              style={[
+                styles.flowRowTime,
+                { color: muted, opacity: spineTimeIsSuggested ? 0.72 : 1 },
+              ]}
+              numberOfLines={1}>
+              {spineTimeIsSuggested ? `추천 ${spineTimeLabel}` : spineTimeLabel}
+            </ThemedText>
+          ) : null}
+        </View>
       </View>
       {showMealSlotPicker && onToggleMealSlot ? (
         <Pressable
@@ -444,6 +472,12 @@ function FlowItemCard({
           <CatalogRowSpineTimePanel
             startMinutes={spineStartMinutes ?? 9 * 60}
             endMinutes={spineEndMinutes ?? 9 * 60 + 30}
+            endsNextCalendarDay={
+              spineStartMinutes != null &&
+              spineEndMinutes != null &&
+              spineEndMinutes < spineStartMinutes
+            }
+            baseDateKey={baseDateKey}
             ink={ink}
             muted={muted}
             line={line}
@@ -625,6 +659,7 @@ type GroupAccordionProps = {
   spineLayoutEnabled: boolean;
   priorityStart: string;
   priorityEnd: string;
+  baseDateKey?: string;
   isExpanded: boolean;
   isActiveForToday: boolean;
   applyBlocked: boolean;
@@ -649,7 +684,12 @@ type GroupAccordionProps = {
   onDeleteItem: (categoryKey: string, label: string) => void;
   onOpenAddItem?: () => void;
   onToggleItemMealSlot?: (categoryKey: string, slot: DayMealSlot) => void;
-  onChangeItemSpineTime?: (categoryKey: string, startMinutes: number, endMinutes: number) => void;
+  onChangeItemSpineTime?: (
+    categoryKey: string,
+    startMinutes: number,
+    endMinutes: number,
+    endsNextCalendarDay: boolean,
+  ) => void;
 };
 
 function GroupAccordion({
@@ -659,6 +699,7 @@ function GroupAccordion({
   spineLayoutEnabled,
   priorityStart,
   priorityEnd,
+  baseDateKey,
   isExpanded,
   isActiveForToday,
   applyBlocked,
@@ -929,10 +970,17 @@ function GroupAccordion({
                       showSpineTimePicker={useSpineLayout}
                       spineStartMinutes={schedule?.startMinutes}
                       spineEndMinutes={schedule?.endMinutes}
+                      spineTimeIsSuggested={schedule?.isSuggested === true}
                       priorityStart={priorityStart}
                       priorityEnd={priorityEnd}
-                      onChangeSpineTime={useSpineLayout ? (startMinutes, endMinutes) =>
-                        onChangeItemSpineTime?.(item.categoryKey, startMinutes, endMinutes)
+                      baseDateKey={baseDateKey}
+                      onChangeSpineTime={useSpineLayout ? (startMinutes, endMinutes, endsNextCalendarDay) =>
+                        onChangeItemSpineTime?.(
+                          item.categoryKey,
+                          startMinutes,
+                          endMinutes,
+                          endsNextCalendarDay,
+                        )
                       : undefined}
                       onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
                       onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
@@ -991,6 +1039,7 @@ export function FixedRoutinePage({
   const layoutMode = controlledLayoutMode ?? internalLayoutMode;
   
   const [priorityWindowSheetOpen, setPriorityWindowSheetOpen] = useState(false);
+  const [mealSlotScheduleSheetOpen, setMealSlotScheduleSheetOpen] = useState(false);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [addItemModalOpen, setAddItemModalOpen] = useState(false);
   const [addItemSetId, setAddItemSetId] = useState<string | null>(null);
@@ -1065,6 +1114,7 @@ export function FixedRoutinePage({
     planCompletionDismissedKeys,
     setPriorityStart,
     setPriorityEnd,
+    syncOvernightPriorityPlanDates,
     setPriorityCategoryOrder,
     filterCompletedFocusKeysToPriorityOrder,
     categoryLabelEpoch,
@@ -1083,6 +1133,7 @@ export function FixedRoutinePage({
       planCompletionDismissedKeys: s.planCompletionDismissedKeys,
       setPriorityStart: s.setPriorityStart,
       setPriorityEnd: s.setPriorityEnd,
+      syncOvernightPriorityPlanDates: s.syncOvernightPriorityPlanDates,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
       filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
       categoryLabelEpoch: s.categoryLabelEpoch,
@@ -1093,6 +1144,10 @@ export function FixedRoutinePage({
   const planBlocks = useDayPlanStore((s) => s.blocks);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
   const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
+  const {
+    schedule: mealSlotSchedule,
+    persistSchedule: persistMealSlotSchedule,
+  } = useDayMealSlotSchedule();
 
   const completedCategoryKeysFromPlan = useMemo(() => {
     const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
@@ -1349,6 +1404,7 @@ export function FixedRoutinePage({
       icon,
       accentColor,
       templateKey,
+      summary,
       templateDataConfig,
     }: {
       name: string;
@@ -1356,6 +1412,7 @@ export function FixedRoutinePage({
       icon: string;
       accentColor: string;
       templateKey: CustomFlowTemplateKey;
+      summary?: string;
       templateDataConfig?: unknown;
     }) => {
       const id = createCustomFlowCategoryId();
@@ -1366,6 +1423,9 @@ export function FixedRoutinePage({
       const trimmed = name.trim();
       const next = buildInitialCustomFlowDetailConfig(templateKey, {
         ...(trimmed.length > 0 ? { displayName: trimmed } : {}),
+        ...(typeof summary === 'string' && summary.trim().length > 0
+          ? { summary: summary.trim() }
+          : {}),
         icon,
         accentColor,
         ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
@@ -1382,12 +1442,8 @@ export function FixedRoutinePage({
       if (targetSetId) addCategoryToSet(targetSetId, id);
       setCreateSheetOpen(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push({
-        pathname: '/goal-detail-settings',
-        params: { categoryKey: id, source: 'catalog' },
-      });
     },
-    [addCategoryToSet, sets, addItemSetId, reloadCatalog, router],
+    [addCategoryToSet, sets, addItemSetId, reloadCatalog],
   );
 
   const openAddItemModal = useCallback((setId: string) => {
@@ -1488,12 +1544,33 @@ export function FixedRoutinePage({
               <FixedRoutinePriorityWindowCard
                 priorityStart={priorityStart}
                 priorityEnd={priorityEnd}
+                planDateKey={priorityPlanDateKey}
+                planDateKeyEnd={priorityPlanDateKeyEnd}
                 isDark={isDark}
                 ink={ink}
                 muted={muted}
                 line={line}
                 cardBg={cardBg}
                 onPressSettings={() => setPriorityWindowSheetOpen(true)}
+              />
+            ) : null}
+            {useSectionsRoutineLayout ? (
+              <FixedRoutineMealSlotScheduleCard
+                schedule={mealSlotSchedule}
+                isDark={isDark}
+                ink={ink}
+                muted={muted}
+                line={line}
+                cardBg={cardBg}
+                onPressSettings={() => setMealSlotScheduleSheetOpen(true)}
+              />
+            ) : null}
+            {!useSpineRoutineLayout && !useSectionsRoutineLayout ? (
+              <FixedRoutineListModeCard
+                ink={ink}
+                muted={muted}
+                line={line}
+                cardBg={cardBg}
               />
             ) : null}
             <View style={styles.accordionList}>
@@ -1506,6 +1583,11 @@ export function FixedRoutinePage({
                   spineLayoutEnabled={useSpineRoutineLayout}
                   priorityStart={priorityStart}
                   priorityEnd={priorityEnd}
+                  baseDateKey={
+                    priorityPlanDateKey <= priorityPlanDateKeyEnd
+                      ? priorityPlanDateKey
+                      : priorityPlanDateKeyEnd
+                  }
                   isExpanded={expandedIds.has(setItem.id)}
                   isActiveForToday={isSetActiveForToday(setItem)}
                   applyBlocked={priorityWindowEndedForToday}
@@ -1554,8 +1636,14 @@ export function FixedRoutinePage({
                   onToggleItemMealSlot={(categoryKey, slot) =>
                     handleToggleItemMealSlot(setItem.id, categoryKey, slot)
                   }
-                  onChangeItemSpineTime={(categoryKey, startMinutes, endMinutes) => {
-                    setCategorySpineScheduleInSet(setItem.id, categoryKey, startMinutes, endMinutes);
+                  onChangeItemSpineTime={(categoryKey, startMinutes, endMinutes, endsNextCalendarDay) => {
+                    setCategorySpineScheduleInSet(
+                      setItem.id,
+                      categoryKey,
+                      startMinutes,
+                      endMinutes,
+                      endsNextCalendarDay,
+                    );
                     void Haptics.selectionAsync();
                   }}
                 />
@@ -1668,7 +1756,16 @@ export function FixedRoutinePage({
         onSave={(start, end) => {
           setPriorityStart(start);
           setPriorityEnd(end);
+          syncOvernightPriorityPlanDates();
         }}
+      />
+
+      <DayMealSlotScheduleSheet
+        visible={mealSlotScheduleSheetOpen}
+        schedule={mealSlotSchedule}
+        isDark={isDark}
+        onClose={() => setMealSlotScheduleSheetOpen(false)}
+        onSave={persistMealSlotSchedule}
       />
 
     </>
@@ -1954,6 +2051,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  flowRowTextCol: {
+    flex: 1,
+    minWidth: 0,
+    gap: 1,
+  },
   rowDeleteBtn: {
     width: 34,
     height: 34,
@@ -1972,11 +2074,15 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   flowRowTitle: {
-    flex: 1,
-    minWidth: 0,
+    flexShrink: 1,
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: -0.25,
+  },
+  flowRowTime: {
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
   flowSwitch: {
     transform: [{ scaleX: 0.72 }, { scaleY: 0.78 }],

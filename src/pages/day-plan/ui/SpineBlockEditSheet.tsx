@@ -1,9 +1,14 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { resolveCategoryCatalogIcon } from '@entities/day-plan';
+import {
+  formatHhmmClockKo,
+  isSpineBlockScheduleWithinPriorityWindow,
+  resolveCategoryCatalogIcon,
+  resolveSpinePriorityWindow,
+} from '@entities/day-plan';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 import {
   COMPLETION_CHECKED_COLOR_DARK,
@@ -35,6 +40,8 @@ type Props = {
   line: string;
   priorityStart: string;
   priorityEnd: string;
+  /** 일정 시작 기준 달력일 — 시간 패널 날짜 표시용 */
+  baseDateKey?: string;
   onClose: () => void;
   onSave: (input: {
     title: string;
@@ -63,6 +70,7 @@ export function SpineBlockEditSheet({
   line,
   priorityStart,
   priorityEnd,
+  baseDateKey,
   onClose,
   onSave,
   onDelete,
@@ -98,6 +106,25 @@ export function SpineBlockEditSheet({
 
   const handleSave = useCallback(() => {
     if (!draft) return;
+    const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
+    if (
+      !window ||
+      !isSpineBlockScheduleWithinPriorityWindow(
+        {
+          startMinutes,
+          endMinutes,
+          endsNextCalendarDay,
+        },
+        window,
+      )
+    ) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(
+        '시간을 확인해 주세요',
+        `루틴 종료 시간(${formatHhmmClockKo(priorityEnd)})을 넘는 일정은 저장할 수 없어요. 하루 시작~마무리 안으로 맞춰 주세요.`,
+      );
+      return;
+    }
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onSave({
       title: titleText,
@@ -107,7 +134,17 @@ export function SpineBlockEditSheet({
       endsNextCalendarDay,
       blockId: draft.blockId,
     });
-  }, [categoryKey, draft, endMinutes, endsNextCalendarDay, onSave, startMinutes, titleText]);
+  }, [
+    categoryKey,
+    draft,
+    endMinutes,
+    endsNextCalendarDay,
+    onSave,
+    priorityEnd,
+    priorityStart,
+    startMinutes,
+    titleText,
+  ]);
 
   if (!draft) return null;
 
@@ -218,6 +255,7 @@ export function SpineBlockEditSheet({
               startMinutes={startMinutes}
               endMinutes={endMinutes}
               endsNextCalendarDay={endsNextCalendarDay}
+              baseDateKey={baseDateKey}
               ink={ink}
               muted={muted}
               line={line}

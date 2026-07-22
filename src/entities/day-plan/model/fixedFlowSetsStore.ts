@@ -160,6 +160,7 @@ type FixedFlowSetsStoreState = {
     categoryKey: string,
     startMinutes: number,
     endMinutes: number,
+    endsNextCalendarDay?: boolean,
   ) => void;
   setCategoryMealSlotInAnySet: (categoryKey: string, mealSlot: DayMealSlot) => boolean;
 
@@ -711,12 +712,14 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
   },
 
-  setCategorySpineScheduleInSet: (setId, categoryKey, startMinutes, endMinutes) => {
+  setCategorySpineScheduleInSet: (setId, categoryKey, startMinutes, endMinutes, endsNextCalendarDay) => {
     const key = categoryKey.trim();
     const start = Math.floor(startMinutes);
     const end = Math.floor(endMinutes);
-    if (!key || !Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
-    if (start < 0 || end > 24 * 60) return;
+    const endsNext = endsNextCalendarDay === true;
+    if (!key || !Number.isFinite(start) || !Number.isFinite(end)) return;
+    if (start < 0 || end < 0 || start > 24 * 60 || end > 24 * 60) return;
+    if (endsNext ? end >= start : end <= start) return;
     const { sets, activeSetIds, activeMealSlotsBySetId } = get();
     const target = sets.find((s) => s.id === setId);
     if (!target?.items.some((x) => x.categoryKey === key)) return;
@@ -726,7 +729,14 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
           ...s,
           items: s.items.map((x) =>
             x.categoryKey === key
-              ? { ...x, spineStartMinutes: start, spineEndMinutes: end }
+              ? {
+                  ...x,
+                  spineStartMinutes: start,
+                  spineEndMinutes: end,
+                  ...(endsNext
+                    ? { spineEndsNextCalendarDay: true as const }
+                    : { spineEndsNextCalendarDay: undefined }),
+                }
               : x,
           ),
         }

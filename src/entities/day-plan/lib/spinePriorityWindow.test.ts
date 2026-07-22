@@ -1,6 +1,7 @@
 import {
   clampSpineBlockToPriorityWindow,
   clipGapToSpinePriorityWindow,
+  isSpineBlockScheduleWithinPriorityWindow,
   isSpineBlockWithinPriorityWindow,
   resolveSpinePriorityWindow,
 } from './spinePriorityWindow';
@@ -48,5 +49,55 @@ describe('spinePriorityWindow', () => {
       fromMinutes: 18 * 60,
       toMinutes: 19 * 60,
     });
+  });
+
+  it('rejects next-day end past overnight window finish', () => {
+    const overnight = resolveSpinePriorityWindow('06:30', '00:00');
+    expect(overnight).not.toBeNull();
+    expect(
+      isSpineBlockScheduleWithinPriorityWindow(
+        {
+          startMinutes: 13 * 60 + 10,
+          endMinutes: 14 * 60 + 10,
+          endsNextCalendarDay: true,
+        },
+        overnight!,
+      ),
+    ).toBe(false);
+    expect(
+      isSpineBlockScheduleWithinPriorityWindow(
+        {
+          startMinutes: 22 * 60,
+          endMinutes: 0,
+          endsNextCalendarDay: true,
+        },
+        overnight!,
+      ),
+    ).toBe(true);
+  });
+
+  it('allows overnight next-day end within morning band', () => {
+    const overnight = resolveSpinePriorityWindow('22:00', '06:00');
+    expect(overnight).not.toBeNull();
+    expect(
+      isSpineBlockScheduleWithinPriorityWindow(
+        {
+          startMinutes: 23 * 60,
+          endMinutes: 5 * 60,
+          endsNextCalendarDay: true,
+        },
+        overnight!,
+      ),
+    ).toBe(true);
+    expect(
+      isSpineBlockScheduleWithinPriorityWindow(
+        {
+          startMinutes: 23 * 60,
+          endMinutes: 7 * 60,
+          endsNextCalendarDay: true,
+        },
+        overnight!,
+      ),
+    ).toBe(false);
   });
 });

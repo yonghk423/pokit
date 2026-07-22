@@ -42,7 +42,8 @@ export {
 export type { CustomFlowCatalogEntry } from './customFlowCatalogStorage';
 export {
   loadDailyRhythmOnboardingCompleted,
-  markDailyRhythmOnboardingCompleted
+  markDailyRhythmOnboardingCompleted,
+  markDailyRhythmOnboardingCompletedAndFlush,
 } from './dailyRhythmOnboardingStorage';
 export {
   DAY_MEAL_SLOT_HINT,
@@ -251,13 +252,13 @@ export {
   loadCategoryReminderScheduled,
   loadDayPlanScheduledNotifications,
   loadIncompleteRoutineReminder,
-  loadMedicineReminderScheduled, loadPriorityDayStartAlarm, loadWaterReminderScheduled,
+  loadMedicineReminderScheduled, loadPriorityDayStartAlarm, loadPriorityDayRollMode, loadWaterReminderScheduled,
   saveAppearanceMode,
   saveCategoryReminderRules,
   saveCategoryReminderScheduled,
   saveDayPlanScheduledNotifications,
   saveIncompleteRoutineReminder,
-  saveMedicineReminderScheduled, savePriorityDayStartAlarm, saveWaterReminderScheduled
+  saveMedicineReminderScheduled, savePriorityDayStartAlarm, savePriorityDayRollMode, saveWaterReminderScheduled
 } from './settingsStorage';
 export {
   coerceDayPlanLayoutMode,
@@ -283,7 +284,7 @@ export type {
   CategoryReminderScheduledRow,
   DayPlanScheduledNotification,
   IncompleteRoutineReminderPersisted,
-  MedicineReminderScheduledRow, PriorityDayStartAlarmPersisted, WaterReminderScheduledRow
+  MedicineReminderScheduledRow, PriorityDayRollMode, PriorityDayStartAlarmPersisted, WaterReminderScheduledRow
 } from './settingsStorage';
 export { StorageKeys } from './storageKeys';
 export {

@@ -13,8 +13,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  buildTemplateDemoConfig,
+  buildTemplateSetupConfig,
   listCustomFlowTemplateCatalogEntries,
+  normalizeCustomFlowDetailConfig,
+  ROUTINE_SUMMARY_MAX,
   SYSTEM_CATALOG_GROUP_KEYS,
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
@@ -51,6 +53,7 @@ type Props = {
     icon: CustomFlowIconOption;
     accentColor: string;
     templateKey: CustomFlowTemplateKey;
+    summary?: string;
     templateDataConfig?: unknown;
   }) => void;
   initialGroupKey?: string;
@@ -95,9 +98,10 @@ export function CreateCustomFlowSheet({
   const [step, setStep] = useState<SheetStep>('basics');
   const [selectedTemplateKey, setSelectedTemplateKey] =
     useState<CustomFlowTemplateKey>('checklist');
-  const [templateDemoConfig, setTemplateDemoConfig] = useState(() =>
-    buildTemplateDemoConfig('checklist'),
+  const [templateSetupConfig, setTemplateSetupConfig] = useState(() =>
+    buildTemplateSetupConfig('checklist'),
   );
+  const [summary, setSummary] = useState('');
   const [appearancePickerEpoch, setAppearancePickerEpoch] = useState(0);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const sheetWasVisibleRef = useRef(false);
@@ -139,7 +143,8 @@ export function CreateCustomFlowSheet({
     setNewGroupLabel('');
     setStep('basics');
     setSelectedTemplateKey(initialTemplateKey ?? 'checklist');
-    setTemplateDemoConfig(buildTemplateDemoConfig(initialTemplateKey ?? 'checklist'));
+    setTemplateSetupConfig(buildTemplateSetupConfig(initialTemplateKey ?? 'checklist'));
+    setSummary('');
     setAppearancePickerEpoch((n) => n + 1);
     const fallback =
       initialGroupKey && initialGroupKey.length > 0 ? initialGroupKey : 'productivity';
@@ -195,7 +200,8 @@ export function CreateCustomFlowSheet({
       icon: selectedIcon,
       accentColor: selectedAccentColor,
       templateKey: selectedTemplateKey,
-      templateDataConfig: templateDemoConfig,
+      summary: summary.trim(),
+      templateDataConfig: templateSetupConfig,
     });
   };
 
@@ -210,11 +216,11 @@ export function CreateCustomFlowSheet({
     setStep('basics');
   };
 
-  const headerTitle = step === 'basics' ? '새 루틴 만들기' : '루틴 방식 선택';
+  const headerTitle = step === 'basics' ? '새 루틴 만들기' : '루틴 방식·상세 설정';
   const headerSubtitle =
     step === 'basics'
       ? '이름과 아이콘·색상을 정한 뒤 담을 묶음을 골라 주세요.'
-      : '기록 방식을 고르면 맞춤 상세 설정 화면이 열려요.';
+      : '방식을 고른 뒤 아래에서 할 일·목표를 맞춰 주세요. 만들기를 누르면 바로 추가돼요.';
 
   return (
     <Modal
@@ -223,7 +229,7 @@ export function CreateCustomFlowSheet({
       presentationStyle="pageSheet"
       onRequestClose={onClose}>
       <View style={[styles.root, { backgroundColor: surface }]}>
-        <View style={[styles.header, { borderBottomColor: line, paddingTop: insets.top + 12 }]}>
+        <View style={[styles.header, { borderBottomColor: line, paddingTop: 14 }]}>
           <View style={styles.headerLeading}>
             {step === 'template' ? (
               <Pressable
@@ -406,6 +412,27 @@ export function CreateCustomFlowSheet({
                 <ThemedText style={[styles.routineNamePreview, { color: ink }]}>{trimmedName}</ThemedText>
               </View>
 
+              <View style={styles.summaryField}>
+                <ThemedText style={[styles.summaryLabel, { color: muted }]}>요약</ThemedText>
+                <TextInput
+                  value={summary}
+                  onChangeText={setSummary}
+                  placeholder="이 항목에 대한 짧은 설명을 적어 주세요"
+                  placeholderTextColor={muted}
+                  style={[
+                    styles.summaryInput,
+                    {
+                      color: ink,
+                      borderColor: line,
+                      backgroundColor: inputBg,
+                    },
+                  ]}
+                  maxLength={ROUTINE_SUMMARY_MAX}
+                  multiline
+                  textAlignVertical="top"
+                />
+              </View>
+
               <View style={styles.templateList}>
                 {TEMPLATE_OPTIONS.map((opt) => {
                   const selected = selectedTemplateKey === opt.key;
@@ -417,7 +444,7 @@ export function CreateCustomFlowSheet({
                       onPress={() => {
                         void Haptics.selectionAsync();
                         setSelectedTemplateKey(opt.key);
-                        setTemplateDemoConfig(buildTemplateDemoConfig(opt.key));
+                        setTemplateSetupConfig(buildTemplateSetupConfig(opt.key));
                       }}
                       style={[
                         styles.templateCard,
@@ -459,22 +486,33 @@ export function CreateCustomFlowSheet({
                 })}
               </View>
 
-              <CustomFlowTemplateSessionBody
-                templateKey={selectedTemplateKey}
-                config={templateDemoConfig}
-                onChange={setTemplateDemoConfig}
-                previewMode
-                theme={{
-                  ink,
-                  muted,
-                  line,
-                  surface: inputBg,
-                  accent: PrimaryColor.rgb,
-                }}
-              />
+              <View style={styles.setupSection}>
+                <ThemedText style={[styles.setupSectionTitle, { color: ink }]}>상세 설정</ThemedText>
+                <ThemedText style={[styles.setupSectionHint, { color: muted }]}>
+                  여기서 맞춘 내용이 그대로 새 루틴에 저장돼요.
+                </ThemedText>
+                <CustomFlowTemplateSessionBody
+                  templateKey={selectedTemplateKey}
+                  config={templateSetupConfig}
+                  onChange={(next) => {
+                    setTemplateSetupConfig(
+                      normalizeCustomFlowDetailConfig(selectedTemplateKey, next),
+                    );
+                  }}
+                  previewMode={false}
+                  allowScheduleCompletion={false}
+                  theme={{
+                    ink,
+                    muted,
+                    line,
+                    surface: inputBg,
+                    accent: PrimaryColor.rgb,
+                  }}
+                />
+              </View>
 
               <ThemedText style={[styles.templateNote, { color: muted }]}>
-                방식은 만든 뒤 변경하기 어려워요.
+                기록 방식은 만든 뒤 바꾸기 어려워요. 세부 내용은 나중에 항목을 눌러도 수정할 수 있어요.
               </ThemedText>
             </>
           )}
@@ -679,8 +717,40 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.3,
   },
+  summaryField: {
+    gap: 8,
+  },
+  summaryLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  summaryInput: {
+    minHeight: 88,
+    borderWidth: 2,
+    borderRadius: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '500',
+  },
   templateList: {
     gap: 10,
+  },
+  setupSection: {
+    gap: 8,
+  },
+  setupSectionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  setupSectionHint: {
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 17,
+    marginBottom: 2,
   },
   templateCard: {
     borderWidth: 2,

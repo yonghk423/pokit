@@ -91,7 +91,7 @@ function collectSlots(): CollectedSlot[] {
         hour: Math.floor(wall / 60),
         minute: wall % 60,
         title: '수분 알림',
-        body: `${label} · ${formatHhmmClockKo(hhmm)} 시간 입니다.`,
+        body: `${label} · ${formatHhmmClockKo(hhmm)}입니다.`,
       });
     }
   }
