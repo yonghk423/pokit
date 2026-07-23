@@ -21,90 +21,96 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
+void SplashScreen.preventAutoHideAsync().catch(() => {
+  /* 이미 숨겨진 경우 무시 */
+});
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  useEffect(() => {
-    SplashScreen.setOptions({
-      fade: false,
-      duration: 0,
-    });
-  }, []);
-
   const navigationTheme = isDark
     ? {
-      ...DarkTheme,
-      colors: {
-        ...DarkTheme.colors,
-        background: APP_SURFACE_DARK,
-        card: APP_SURFACE_DARK,
-      },
-    }
+        ...DarkTheme,
+        colors: {
+          ...DarkTheme.colors,
+          background: APP_SURFACE_DARK,
+          card: APP_SURFACE_DARK,
+        },
+      }
     : {
-      ...DefaultTheme,
-      colors: {
-        ...DefaultTheme.colors,
-        background: APP_SURFACE_LIGHT,
-        card: APP_SURFACE_LIGHT,
-      },
-    };
+        ...DefaultTheme,
+        colors: {
+          ...DefaultTheme.colors,
+          background: APP_SURFACE_LIGHT,
+          card: APP_SURFACE_LIGHT,
+        },
+      };
 
   const rootBg = isDark ? APP_SURFACE_DARK : APP_SURFACE_LIGHT;
 
   const appReady = useAppBootstrap();
   const fontsReady = useCityPopFonts();
+  const contentReady = appReady && fontsReady;
 
-  if (!appReady || !fontsReady) return null;
+  useEffect(() => {
+    if (!contentReady) return;
+    void SplashScreen.hideAsync().catch(() => {});
+  }, [contentReady]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: rootBg }}>
       <SafeAreaProvider>
-        <ThemeProvider value={navigationTheme}>
-          <Stack
-            screenOptions={{
-              contentStyle: { backgroundColor: rootBg },
-            }}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="goal-detail-settings"
-              options={{ headerShown: false, presentation: 'card' }}
-            />
-            <Stack.Screen
-              name="routine-template-detail"
-              options={{ headerShown: false, presentation: 'card' }}
-            />
-            <Stack.Screen name="flow-review" options={{ headerShown: false, presentation: 'card' }} />
-            <Stack.Screen name="widget-settings" options={{ headerShown: false, presentation: 'card' }} />
-            <Stack.Screen
-              name="daily-rhythm-settings"
-              options={{ headerShown: false, presentation: 'card' }}
-            />
-            <Stack.Screen
-              name="appearance-settings"
-              options={{ headerShown: false, presentation: 'card' }}
-            />
-            <Stack.Screen
-              name="day-plan-view-settings"
-              options={{ headerShown: false, presentation: 'card' }}
-            />
-            <Stack.Screen name="settings" options={{ headerShown: false, presentation: 'card' }} />
-            <Stack.Screen
-              name="notification-settings"
-              options={{ headerShown: false, presentation: 'card' }}
-            />
-            <Stack.Screen
-              name="incomplete-routine-reminder-settings"
-              options={{ headerShown: false, presentation: 'card' }}
-            />
-            <Stack.Screen
-              name="activity-session"
-              options={{ headerShown: false, presentation: 'fullScreenModal' }}
-            />
-          </Stack>
-          <AppUpdateNoticeHost appReady={appReady} />
-          <AppStatusBar />
-        </ThemeProvider>
+        {contentReady ? (
+          <ThemeProvider value={navigationTheme}>
+            <Stack
+              screenOptions={{
+                contentStyle: { backgroundColor: rootBg },
+              }}>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="goal-detail-settings"
+                options={{ headerShown: false, presentation: 'card' }}
+              />
+              <Stack.Screen
+                name="routine-template-detail"
+                options={{ headerShown: false, presentation: 'card' }}
+              />
+              <Stack.Screen name="flow-review" options={{ headerShown: false, presentation: 'card' }} />
+              <Stack.Screen
+                name="widget-settings"
+                options={{ headerShown: false, presentation: 'card' }}
+              />
+              <Stack.Screen
+                name="daily-rhythm-settings"
+                options={{ headerShown: false, presentation: 'card' }}
+              />
+              <Stack.Screen
+                name="appearance-settings"
+                options={{ headerShown: false, presentation: 'card' }}
+              />
+              <Stack.Screen
+                name="day-plan-view-settings"
+                options={{ headerShown: false, presentation: 'card' }}
+              />
+              <Stack.Screen name="settings" options={{ headerShown: false, presentation: 'card' }} />
+              <Stack.Screen
+                name="notification-settings"
+                options={{ headerShown: false, presentation: 'card' }}
+              />
+              <Stack.Screen
+                name="incomplete-routine-reminder-settings"
+                options={{ headerShown: false, presentation: 'card' }}
+              />
+              <Stack.Screen
+                name="activity-session"
+                options={{ headerShown: false, presentation: 'fullScreenModal' }}
+              />
+            </Stack>
+            <AppUpdateNoticeHost appReady={appReady} />
+            <AppStatusBar />
+          </ThemeProvider>
+        ) : null}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

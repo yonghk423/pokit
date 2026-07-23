@@ -32,6 +32,7 @@ import { PokitIconPalette } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   appendCustomFlowCatalogEntry,
+  createCustomCatalogGroup,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
   hideStandardCatalogKey,
   isCustomCatalogGroupKey,
@@ -55,6 +56,7 @@ import {
   PICKER_CATEGORIES,
 } from '../lib/dayPlanEditorShared';
 import { palette, type DayPlanPalette } from '../lib/dayPlanPalette';
+import { CreateCatalogEntryChoiceSheet } from './CreateCatalogEntryChoiceSheet';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
 import { EditCatalogGroupSheet } from './EditCatalogGroupSheet';
@@ -114,6 +116,8 @@ export function RoutineCatalogManageContent() {
   );
 
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  const [createChoiceSheetOpen, setCreateChoiceSheetOpen] = useState(false);
+  const [createGroupSheetOpen, setCreateGroupSheetOpen] = useState(false);
   const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
   const [createSheetGroupKey, setCreateSheetGroupKey] = useState<string | undefined>(undefined);
@@ -279,6 +283,28 @@ export function RoutineCatalogManageContent() {
     [editGroupSheet, reloadCatalogData],
   );
 
+  const onSaveCreateCatalogGroup = useCallback(
+    ({ label, subtitle }: { label: string; subtitle: string }) => {
+      if (label.length === 0 || subtitle.length === 0) {
+        Alert.alert('입력 확인', '이름과 설명을 모두 입력해 주세요.');
+        return;
+      }
+      if (listCustomCatalogGroups().some((g) => g.label === label)) {
+        Alert.alert('이미 있는 묶음', '같은 이름의 묶음이 있어요. 다른 이름을 써 주세요.');
+        return;
+      }
+      const created = createCustomCatalogGroup(label, subtitle);
+      if (!created) {
+        Alert.alert('만들기 실패', '묶음을 만들지 못했어요. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+      reloadCatalogData();
+      setCreateGroupSheetOpen(false);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [reloadCatalogData],
+  );
+
   const performDeleteCatalogGroup = useCallback(
     (groupKey: string) => {
       animateListMutation();
@@ -399,10 +425,10 @@ export function RoutineCatalogManageContent() {
             <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>루틴 목록</ThemedText>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="새 루틴 만들기"
+              accessibilityLabel="새 루틴 또는 묶음 만들기"
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                openCreateSheet();
+                setCreateChoiceSheetOpen(true);
               }}
               style={({ pressed }) => [
                 styles.headerAddButton,
@@ -447,6 +473,23 @@ export function RoutineCatalogManageContent() {
           manageOnly
         />
       </ScrollView>
+      <CreateCatalogEntryChoiceSheet
+        visible={createChoiceSheetOpen}
+        onClose={() => setCreateChoiceSheetOpen(false)}
+        onCreateRoutine={() => {
+          setCreateChoiceSheetOpen(false);
+          setTimeout(() => openCreateSheet(), 80);
+        }}
+        onCreateGroup={() => {
+          setCreateChoiceSheetOpen(false);
+          setTimeout(() => setCreateGroupSheetOpen(true), 80);
+        }}
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        surface={editorial.shellBg}
+        line={editorial.line}
+      />
       <CreateCustomFlowSheet
         visible={createSheetOpen}
         onClose={() => setCreateSheetOpen(false)}
@@ -456,6 +499,18 @@ export function RoutineCatalogManageContent() {
         ink={editorial.ink}
         muted={editorial.muted}
         line={editorial.line}
+        surface={editorial.shellBg}
+      />
+      <EditCatalogGroupSheet
+        visible={createGroupSheetOpen}
+        mode="create"
+        onClose={() => setCreateGroupSheetOpen(false)}
+        initialLabel=""
+        initialSubtitle=""
+        onSave={onSaveCreateCatalogGroup}
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
         surface={editorial.shellBg}
       />
       <EditCatalogGroupSheet

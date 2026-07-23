@@ -19,10 +19,6 @@ import {
   resolveApplyWeekdays,
   type WeekdayIndex,
 } from './fixedFlowWeekdays';
-import {
-  loadGoalDetailCategoryConfig,
-  saveGoalDetailCategoryConfig,
-} from './goalDetailSettingsStorage';
 import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 
@@ -259,23 +255,6 @@ function migrateLegacyBuiltInSets(sets: FixedFlowSet[]): FixedFlowSet[] {
   return withoutWeekday;
 }
 
-function mergeCategoryApplyWeekdays(categoryKey: string, weekdays: WeekdayIndex[]): void {
-  const key = categoryKey.trim();
-  if (!key || weekdays.length === 0) return;
-  const existing = loadGoalDetailCategoryConfig(key);
-  const existingDays =
-    existing && typeof existing === 'object'
-      ? normalizeApplyWeekdays((existing as Record<string, unknown>).applyWeekdays)
-      : [];
-  if (existingDays.length > 0) return;
-
-  const base =
-    existing && typeof existing === 'object'
-      ? { ...(existing as Record<string, unknown>) }
-      : {};
-  saveGoalDetailCategoryConfig(key, { ...base, applyWeekdays: weekdays });
-}
-
 /** 나만의 루틴 예시 그룹 — 이름 변경·빈 항목 시 예시 채우기 */
 function migrateExampleCustomFlowSets(sets: FixedFlowSet[]): FixedFlowSet[] {
   return sets.map((set) => {
@@ -320,16 +299,8 @@ function hadRemovedBuiltinPresetSets(raw: unknown): boolean {
   });
 }
 
-/** 요일별 그룹(set_always·custom 등)만 목표 상세로 이전 — 데일리·주말은 유지 */
+/** 요일별 그룹(set_always·custom 등)만 제거 — 데일리·주말은 유지 */
 function migrateRemovedScheduledSets(sets: FixedFlowSet[]): FixedFlowSet[] {
-  for (const set of sets) {
-    if (!shouldMigrateAwayScheduledSet(set)) continue;
-    const weekdays = resolveApplyWeekdays(set);
-    for (const item of set.items) {
-      if (item.enabled === false) continue;
-      mergeCategoryApplyWeekdays(item.categoryKey, weekdays);
-    }
-  }
   return sets.filter((set) => !shouldMigrateAwayScheduledSet(set));
 }
 

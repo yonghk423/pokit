@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { filterDayPlanFlowBlocks, migrateSpineTimelineBlockOrigins } from '@entities/day-plan/lib/dayPlanFlowBlock';
+import { filterDayPlanFlowBlocks, isDayPlanSpineTimelineBlock, migrateSpineTimelineBlockOrigins } from '@entities/day-plan/lib/dayPlanFlowBlock';
 import { reorderSpineTimelineBlocks as applySpineTimelineReorder } from '@entities/day-plan/lib/reorderSpineTimelineBlocks';
 import { isBlockEndInPastForDateKey } from '@entities/day-plan/lib/dayPlanRuntimeTime';
 import {
@@ -247,14 +247,17 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
       } = get();
       if (blocks.length === 0) return;
 
+      // 스파인 타임라인 블록은 하루 일정 보기·수정용이므로 종료 후에도 유지한다.
+      // (지난 블록을 지우면 동기화·탭 복귀 때 사라졌다 다시 생기는 것처럼 보인다.)
       const expiredIds = new Set(
         blocks
-          .filter((b) =>
-            isBlockEndInPastForDateKey(dateKey, {
+          .filter((b) => {
+            if (isDayPlanSpineTimelineBlock(b)) return false;
+            return isBlockEndInPastForDateKey(dateKey, {
               endMinutes: b.endMinutes,
               endsNextCalendarDay: b.endsNextCalendarDay,
-            }),
-          )
+            });
+          })
           .map((b) => b.id),
       );
       if (expiredIds.size === 0) return;
@@ -553,15 +556,8 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         }
       }
 
-      const dateKeyForBlock = get().dateKey;
-      if (
-        isBlockEndInPastForDateKey(dateKeyForBlock, {
-          endMinutes: end,
-          endsNextCalendarDay: endsNext,
-        })
-      ) {
-        return { ok: false, reason: 'in_the_past' };
-      }
+      // 기존 일정 수정은 지난 구간도 허용 — 완료 표시·회고 편집이 막히지 않게 한다.
+      // (신규 추가는 addBlock에서만 과거 종료를 막는다.)
 
       const overlapScope =
         existing.blockOrigin === 'spineTimeline'

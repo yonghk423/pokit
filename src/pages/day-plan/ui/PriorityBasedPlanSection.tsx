@@ -25,8 +25,10 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   addDaysToLocalDateKey,
   blockMatchesPriorityHhmmWindow,
+  buildInitialCustomFlowDetailConfig,
   buildSpineTimelineModel,
   clampSpineBlockToPriorityWindow,
+  createCustomFlowCategoryId,
   filterBagTimelineFlowBlocks,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
@@ -38,6 +40,7 @@ import {
   isLikelyPriorityCatalogMonolineTitle,
   isPriorityCompoundBlockTitle,
   isSpineBlockScheduleWithinPriorityWindow,
+  isSystemCatalogGroupKey,
   localDateToDateKey,
   parseHHmmToMinutes,
   parseLocalDateKeyToDate,
@@ -50,16 +53,22 @@ import {
   resolveCategoryImportance,
   resolveCategoryCatalogAccentColor,
   resolveCategoryCatalogIcon,
+  type CustomFlowTemplateKey,
   useDayPlanStore
 } from '@entities/day-plan';
 import { appendPriorityCategoryKeysIfMissing, useFixedFlowSetsStore } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
+  appendCustomFlowCatalogEntry,
   appendRoutineCatalogSelectionKeys,
+  DEFAULT_CUSTOM_FLOW_GROUP_KEY,
+  isCustomCatalogGroupKey,
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
+  loadGoalDetailCategoryConfig,
   loadRoutineCatalogSelectionKeys,
   removeRoutineCatalogSelectionKey,
+  saveGoalDetailCategoryConfig,
   saveRoutineCatalogSelectionKeys,
   type CategoryMealSlotOverride,
   type DayMealSlot,
@@ -70,6 +79,7 @@ import { COMPLETION_TOGGLE_ANIM_MS } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
+import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { PriorityOrderRow } from '@widgets/day-plan-priority-order';
 import { SpineBlockEditSheet, type SpineBlockEditDraft } from './SpineBlockEditSheet';
@@ -96,6 +106,7 @@ import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { buildCategoryMealSlotOverrides, clampMealSlotSectionsToWindow, flattenPriorityMealSlotSectionEntries, hasExplicitMealSlotAssignments, reorderFlatKeys, reorderMealSlotSectionEntries, resolvePriorityMealSlot, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
 import { DAY_MEAL_SLOT_LABEL } from '../lib/priorityMealSlotSections';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
+import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
 import { PriorityMealSlotAddRoutineRow } from './PriorityMealSlotAddRoutineRow';
 import { PriorityMealSlotSectionHeader } from './PriorityMealSlotSectionHeader';
@@ -104,6 +115,15 @@ import {
   type RoutinePickerConfirmItem,
 } from './PriorityRoutinePickerSheet';
 import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
+
+function resolveCatalogGroupKeyForPersist(raw: string): string {
+  const t = typeof raw === 'string' ? raw.trim() : '';
+  if (!t) return DEFAULT_CUSTOM_FLOW_GROUP_KEY;
+  if (isSystemCatalogGroupKey(t)) return t;
+  if (listCustomCatalogGroups().some((g) => g.key === t)) return t;
+  if (isCustomCatalogGroupKey(t)) return t;
+  return DEFAULT_CUSTOM_FLOW_GROUP_KEY;
+}
 
 /** 우선순위 행 완료 제거 시: 페이드 아웃 + 아래 행이 부드럽게 올라오는 레이아웃 전환 */
 const PRIORITY_ROW_EXITING = FadeOut.duration(280).easing(Easing.out(Easing.cubic));
@@ -1120,6 +1140,8 @@ export function PriorityBasedPlanSection({
   );
   const [addRoutineSheetOpen, setAddRoutineSheetOpen] = useState(false);
   const [addRoutineTargetSlot, setAddRoutineTargetSlot] = useState<DayMealSlot | null>(null);
+  const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  const [createSheetGroupKey, setCreateSheetGroupKey] = useState<string | undefined>(undefined);
   const [spinePendingGapBounds, setSpinePendingGapBounds] = useState<{
     fromMinutes: number;
     toMinutes: number;
@@ -1436,6 +1458,50 @@ export function PriorityBasedPlanSection({
     reloadRoutineCatalog();
   }, [addRoutineSheetOpen, reloadRoutineCatalog]);
 
+  const handleCreateCustomFlow = useCallback(
+    ({
+      name,
+      groupKey,
+      icon,
+      accentColor,
+      templateKey,
+      summary,
+      templateDataConfig,
+    }: {
+      name: string;
+      groupKey: string;
+      icon: string;
+      accentColor: string;
+      templateKey: CustomFlowTemplateKey;
+      summary?: string;
+      templateDataConfig?: unknown;
+    }) => {
+      const id = createCustomFlowCategoryId();
+      const safeGroupKey = resolveCatalogGroupKeyForPersist(groupKey);
+      const trimmed = name.trim();
+      const next = buildInitialCustomFlowDetailConfig(templateKey, {
+        ...(trimmed.length > 0 ? { displayName: trimmed } : {}),
+        ...(typeof summary === 'string' && summary.trim().length > 0
+          ? { summary: summary.trim() }
+          : {}),
+        icon,
+        accentColor,
+        ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
+      });
+      saveGoalDetailCategoryConfig(id, next);
+      if (templateKey === 'reminder') {
+        void persistReminderTemplateNotificationRule(id, next);
+      }
+      appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
+      registerOtherCategoryResolverFromStorage();
+      void loadGoalDetailCategoryConfig(id);
+      reloadRoutineCatalog();
+      setCreateSheetOpen(false);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [reloadRoutineCatalog],
+  );
+
   const addableRoutineSections = useMemo(() => {
     void catalogTick;
     const excludedKeys = spinePendingGapBounds
@@ -1520,6 +1586,7 @@ export function PriorityBasedPlanSection({
         }
 
         if (addedKeys.length > 0) {
+          appendRoutineCatalogSelectionKeys(addedKeys);
           setLastAddedCategoryKey(addedKeys[addedKeys.length - 1] ?? null);
         }
         setSpinePendingGapBounds(null);
@@ -2170,6 +2237,9 @@ export function PriorityBasedPlanSection({
           alertSpineBlockSaveError('update', result.reason);
           return;
         }
+        if (linkedKey) {
+          appendRoutineCatalogSelectionKeys([linkedKey]);
+        }
       } else {
         const result = addPlanBlock({
           title,
@@ -2184,6 +2254,9 @@ export function PriorityBasedPlanSection({
         if (!result.ok) {
           alertSpineBlockSaveError('add', result.reason);
           return;
+        }
+        if (linkedKey) {
+          appendRoutineCatalogSelectionKeys([linkedKey]);
         }
       }
 
@@ -3210,8 +3283,21 @@ export function PriorityBasedPlanSection({
         }}
         onConfirm={handleConfirmAddRoutinesToSlot}
         onCreateCustom={() => {
-          router.push('/(tabs)/priority-catalog');
+          setCreateSheetGroupKey(undefined);
+          setCreateSheetOpen(true);
         }}
+      />
+
+      <CreateCustomFlowSheet
+        visible={createSheetOpen}
+        onClose={() => setCreateSheetOpen(false)}
+        onCreate={handleCreateCustomFlow}
+        initialGroupKey={createSheetGroupKey}
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        line={editorial.line}
+        surface={editorial.surface}
       />
     </View>
   );

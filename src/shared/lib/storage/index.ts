@@ -240,13 +240,6 @@ export {
   resolveWeeklyCompletionDocument
 } from './resolveHorizonCompletionDocument';
 export {
-  clearCategoryApplyWeekdays,
-  collectAutoScheduledCategoryKeys,
-  loadCategoryApplyWeekdays,
-  readApplyWeekdaysFromConfig,
-  saveCategoryApplyWeekdays
-} from './routineApplyWeekdaysStorage';
-export {
   loadAppearanceMode,
   loadCategoryReminderRules,
   loadCategoryReminderScheduled,

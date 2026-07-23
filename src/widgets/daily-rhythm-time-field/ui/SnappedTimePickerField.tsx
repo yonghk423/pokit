@@ -1,27 +1,14 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { useMemo } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { clampHhmmToPriorityWindow, formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
+import { DigitalHhmmInput } from '@shared/ui/digital-hhmm-input';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import {
-  hhmmToPickerDate,
-  pickerDateToSnappedHhmm,
-  TIME_SNAP_MINUTES,
-} from '../lib/snappedPickerMath';
+import { TIME_SNAP_MINUTES } from '../lib/snappedPickerMath';
 
 const PRIMARY = 'rgb(0, 0, 0)';
-
-/** iOS `UIDatePicker`에서 허용하는 분 간격 */
-type IosMinuteInterval = 1 | 2 | 3 | 4 | 5 | 6 | 10 | 12 | 15 | 20 | 30;
-
-function toIosMinuteInterval(step: number): IosMinuteInterval {
-  const s = Number.isFinite(step) && step > 0 ? Math.floor(step) : 5;
-  const allowed: IosMinuteInterval[] = [1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
-  return allowed.includes(s as IosMinuteInterval) ? (s as IosMinuteInterval) : 1;
-}
 
 export type SnappedTimePickerFieldPalette = {
   onSurface: string;
@@ -62,8 +49,6 @@ export function SnappedTimePickerField({
   routineDayEndHhmm,
   dateCaption,
 }: SnappedTimePickerFieldProps) {
-  const pickerDate = useMemo(() => hhmmToPickerDate(valueHhmm), [valueHhmm]);
-
   const applyRoutineWindow = useMemo(() => {
     const rs = routineDayStartHhmm?.trim() ?? '';
     const re = routineDayEndHhmm?.trim() ?? '';
@@ -75,25 +60,11 @@ export function SnappedTimePickerField({
     ) {
       return (hhmm: string) => hhmm;
     }
-    return (hhmm: string) => clampHhmmToPriorityWindow(hhmm, rs, re, snapStepMinutes);
-  }, [routineDayStartHhmm, routineDayEndHhmm, snapStepMinutes]);
+    /** 입력 중 스냅 간섭 방지 — 최종 스냅은 DigitalHhmmInput blur */
+    return (hhmm: string) => clampHhmmToPriorityWindow(hhmm, rs, re, 1);
+  }, [routineDayStartHhmm, routineDayEndHhmm]);
 
-  const onIosTimeChange = (_: unknown, date?: Date) => {
-    if (!date) return;
-    const snapped = pickerDateToSnappedHhmm(date, snapStepMinutes);
-    onChangeHhmm(applyRoutineWindow(snapped));
-  };
-
-  const onAndroidTimeChange = (event: { type?: string }, date?: Date) => {
-    if (event.type === 'dismissed') {
-      onToggleExpand();
-      return;
-    }
-    if (!date) return;
-    const snapped = pickerDateToSnappedHhmm(date, snapStepMinutes);
-    onChangeHhmm(applyRoutineWindow(snapped));
-    onToggleExpand();
-  };
+  const selectedFg = isDark ? '#09090b' : '#FAFAFA';
 
   return (
     <View>
@@ -144,15 +115,18 @@ export function SnappedTimePickerField({
           </View>
         </View>
       </Pressable>
-      {Platform.OS === 'ios' && expanded ? (
-        <View style={styles.iosPickerBlock}>
-          <DateTimePicker
-            value={pickerDate}
-            mode="time"
-            display="spinner"
-            themeVariant={isDark ? 'dark' : 'light'}
-            minuteInterval={toIosMinuteInterval(snapStepMinutes)}
-            onChange={onIosTimeChange}
+      {expanded ? (
+        <View style={styles.inputBlock}>
+          <DigitalHhmmInput
+            valueHhmm={valueHhmm}
+            onChangeHhmm={(next) => onChangeHhmm(applyRoutineWindow(next))}
+            ink={palette.onSurface}
+            muted={palette.onVariant}
+            line={palette.border}
+            surface={palette.containerLowest}
+            selectedForeground={selectedFg}
+            snapStepMinutes={snapStepMinutes}
+            accessibilityLabelPrefix={label}
           />
           <Pressable
             onPress={() => {
@@ -165,14 +139,6 @@ export function SnappedTimePickerField({
             <ThemedText style={styles.confirmBtnText}>확인</ThemedText>
           </Pressable>
         </View>
-      ) : null}
-      {Platform.OS === 'android' && expanded ? (
-        <DateTimePicker
-          value={pickerDate}
-          mode="time"
-          display="default"
-          onChange={onAndroidTimeChange}
-        />
       ) : null}
     </View>
   );
@@ -209,9 +175,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timePillText: { fontSize: 16, fontWeight: '800', letterSpacing: -0.25 },
-  iosPickerBlock: {
+  inputBlock: {
     paddingTop: 6,
-    gap: 2,
+    gap: 4,
   },
   confirmBtn: {
     alignSelf: 'flex-end',

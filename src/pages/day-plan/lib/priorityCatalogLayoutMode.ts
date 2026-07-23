@@ -205,9 +205,11 @@ export function toggleCatalogItemForLayoutMode(
   const blockId = findSpineBlockIdForCategory(ctx.planBlocks, key);
   if (ctx.selected && blockId) {
     actions.removePlanBlock(blockId);
+    removeRoutineCatalogSelectionKey(key);
     return { ok: true, selected: false };
   }
   if (ctx.selected) {
+    removeRoutineCatalogSelectionKey(key);
     return { ok: true, selected: false };
   }
   const label = getPickerCategoryLabel(key);
@@ -235,5 +237,6 @@ export function toggleCatalogItemForLayoutMode(
   if (!result.ok) {
     return { ok: false, reason: 'spine_window_full' };
   }
+  appendRoutineCatalogSelectionKeys([key]);
   return { ok: true, selected: true };
 }

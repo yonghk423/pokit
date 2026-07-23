@@ -1,34 +1,12 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
-import { useMemo } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
+import { formatHhmmClockKo } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { DigitalHhmmInput } from '@shared/ui/digital-hhmm-input';
 import { ThemedText } from '@shared/ui/themed-text';
 
 const PRIMARY = 'rgb(0, 0, 0)';
-
-function hhmmToPickerDate(hhmm: string): Date {
-  const m = parseHHmmToMinutes(hhmm);
-  const d = new Date();
-  if (m === null) {
-    d.setHours(12, 0, 0, 0);
-    return d;
-  }
-  if (m >= 24 * 60) {
-    d.setHours(23, 59, 0, 0);
-    return d;
-  }
-  d.setHours(Math.floor(m / 60), m % 60, 0, 0);
-  return d;
-}
-
-function pickerDateToHhmm(date: Date): string {
-  const h = date.getHours();
-  const m = date.getMinutes();
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
 
 type Props = {
   valueHhmm: string;
@@ -57,24 +35,10 @@ export function ReminderTimePickerPill({
 }: Props) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const pickerDate = useMemo(() => hhmmToPickerDate(valueHhmm), [valueHhmm]);
   const hasValue = valueHhmm.trim().length > 0;
   const label = hasValue ? formatHhmmClockKo(valueHhmm) : placeholder;
-
-  const onIosTimeChange = (_: unknown, date?: Date) => {
-    if (!date) return;
-    onChangeHhmm(pickerDateToHhmm(date));
-  };
-
-  const onAndroidTimeChange = (event: { type?: string }, date?: Date) => {
-    if (event.type === 'dismissed') {
-      onToggleExpand();
-      return;
-    }
-    if (!date) return;
-    onChangeHhmm(pickerDateToHhmm(date));
-    onToggleExpand();
-  };
+  const selectedFg = isDark ? '#09090b' : '#FAFAFA';
+  const editorValue = hasValue ? valueHhmm : '09:00';
 
   return (
     <View style={styles.root}>
@@ -104,15 +68,18 @@ export function ReminderTimePickerPill({
           </ThemedText>
         </View>
       </Pressable>
-      {Platform.OS === 'ios' && expanded ? (
-        <View style={styles.iosPickerBlock}>
-          <DateTimePicker
-            value={pickerDate}
-            mode="time"
-            display="spinner"
-            themeVariant={isDark ? 'dark' : 'light'}
-            minuteInterval={1}
-            onChange={onIosTimeChange}
+      {expanded ? (
+        <View style={styles.inputBlock}>
+          <DigitalHhmmInput
+            valueHhmm={editorValue}
+            onChangeHhmm={onChangeHhmm}
+            ink={ink}
+            muted={muted}
+            line={line}
+            surface={surface}
+            selectedForeground={selectedFg}
+            snapStepMinutes={1}
+            accessibilityLabelPrefix={accessibilityLabel}
           />
           <Pressable
             onPress={() => {
@@ -125,14 +92,6 @@ export function ReminderTimePickerPill({
             <ThemedText style={styles.confirmBtnText}>확인</ThemedText>
           </Pressable>
         </View>
-      ) : null}
-      {Platform.OS === 'android' && expanded ? (
-        <DateTimePicker
-          value={pickerDate}
-          mode="time"
-          display="default"
-          onChange={onAndroidTimeChange}
-        />
       ) : null}
     </View>
   );
@@ -156,10 +115,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.2,
   },
-  iosPickerBlock: {
+  inputBlock: {
     marginTop: 6,
     paddingTop: 4,
-    gap: 2,
+    gap: 4,
   },
   confirmBtn: {
     alignSelf: 'flex-end',

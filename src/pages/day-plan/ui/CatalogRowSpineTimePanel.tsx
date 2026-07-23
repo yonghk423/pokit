@@ -1,7 +1,6 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
   addDaysToLocalDateKey,
@@ -11,21 +10,15 @@ import {
   getLocalDateKey,
   parseHHmmToMinutes,
 } from '@entities/day-plan';
+import { DigitalHhmmInput } from '@shared/ui/digital-hhmm-input';
 import { ThemedText } from '@shared/ui/themed-text';
-import { hhmmToPickerDate, pickerDateToSnappedHhmm } from '@widgets/daily-rhythm-time-field';
 
 import { formatDateKeyCompactKo } from '../lib/dayPlanEditorShared';
 
-type IosMinuteInterval = 1 | 2 | 3 | 4 | 5 | 6 | 10 | 12 | 15 | 20 | 30;
-
-function toIosMinuteInterval(step: number): IosMinuteInterval {
-  const s = Number.isFinite(step) && step > 0 ? Math.floor(step) : 5;
-  const allowed: IosMinuteInterval[] = [1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
-  return allowed.includes(s as IosMinuteInterval) ? (s as IosMinuteInterval) : 5;
-}
-
-export const CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT = 66;
-export const CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT = 228;
+/** 시작·종료 트랙 + 당일/다음 날 (숫자 입력 접힘) — 폴백용 */
+export const CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT = 128;
+/** 위 + 오전/오후·시·분 입력 — 폴백용 (실측 onLayout 우선) */
+export const CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT = 300;
 
 type Props = {
   startMinutes: number;
@@ -52,7 +45,7 @@ type Props = {
   contentInsetLeft?: number;
 };
 
-/** 루틴 목록 행 — 펼침 시 시작·종료 시각 선택(컴팩트) */
+/** 루틴 목록 행 — 펼침 시 시작·종료 시각 선택(숫자 입력) */
 export function CatalogRowSpineTimePanel({
   startMinutes,
   endMinutes,
@@ -94,7 +87,8 @@ export function CatalogRowSpineTimePanel({
     if (!rs || !re || parseHHmmToMinutes(rs) === null || parseHHmmToMinutes(re) === null) {
       return (hhmm: string) => hhmm;
     }
-    return (hhmm: string) => clampHhmmToPriorityWindow(hhmm, rs, re, 5);
+    /** 입력 중에는 1분 단위로만 클램프 — 5분 스냅은 DigitalHhmmInput blur에서 처리 */
+    return (hhmm: string) => clampHhmmToPriorityWindow(hhmm, rs, re, 1);
   }, [priorityEnd, priorityStart]);
 
   const commitDraft = useCallback(
@@ -156,40 +150,11 @@ export function CatalogRowSpineTimePanel({
   const trackBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
   const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const activeField = expanded;
-  const pickerDate = useMemo(
-    () => hhmmToPickerDate(activeField === 'end' ? draftEnd : draftStart),
-    [activeField, draftEnd, draftStart],
-  );
 
   const committedStart = formatMinutesToHHmm(startMinutes);
   const committedEnd = formatMinutesToHHmm(endMinutes);
   const displayStart = expanded !== null ? draftStart : committedStart;
   const displayEnd = expanded !== null ? draftEnd : committedEnd;
-
-  const onIosTimeChange = (_: unknown, date?: Date) => {
-    if (!date || !activeField) return;
-    const snapped = pickerDateToSnappedHhmm(date, 5);
-    if (activeField === 'start') {
-      updateDraftStart(snapped);
-    } else {
-      updateDraftEnd(snapped);
-    }
-  };
-
-  const onAndroidTimeChange = (event: { type?: string }, date?: Date) => {
-    if (event.type === 'dismissed') {
-      resetDraftFromProps();
-      setExpanded(null);
-      return;
-    }
-    if (!date || !activeField) return;
-    const snapped = pickerDateToSnappedHhmm(date, 5);
-    if (activeField === 'start') {
-      updateDraftStart(snapped);
-    } else {
-      updateDraftEnd(snapped);
-    }
-  };
 
   const resolvedDateLabels = useMemo(() => {
     const key =
@@ -320,27 +285,18 @@ export function CatalogRowSpineTimePanel({
         ) : null}
       </View>
       {renderEndDateChoice()}
-      {Platform.OS === 'ios' && activeField ? (
-        <View style={styles.pickerWrap}>
-          <View style={styles.pickerScale}>
-            <DateTimePicker
-              value={pickerDate}
-              mode="time"
-              display="spinner"
-              themeVariant={isDark ? 'dark' : 'light'}
-              minuteInterval={toIosMinuteInterval(5)}
-              onChange={onIosTimeChange}
-              style={styles.iosPicker}
-            />
-          </View>
-        </View>
-      ) : null}
-      {Platform.OS === 'android' && activeField ? (
-        <DateTimePicker
-          value={pickerDate}
-          mode="time"
-          display="default"
-          onChange={onAndroidTimeChange}
+      {activeField ? (
+        <DigitalHhmmInput
+          valueHhmm={activeField === 'end' ? draftEnd : draftStart}
+          onChangeHhmm={activeField === 'end' ? updateDraftEnd : updateDraftStart}
+          ink={ink}
+          muted={muted}
+          line={line}
+          surface={trackBg}
+          selectedForeground={selectedFg}
+          disabled={disabled}
+          snapStepMinutes={5}
+          accessibilityLabelPrefix={activeField === 'end' ? '종료' : '시작'}
         />
       ) : null}
     </View>
@@ -390,11 +346,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.15,
   },
-  pickerWrap: {
-    marginTop: 0,
-    overflow: 'hidden',
-    alignItems: 'center',
-  },
   endDateChoiceRow: {
     marginTop: 8,
     flexDirection: 'row',
@@ -414,19 +365,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: -0.2,
-  },
-  pickerScale: {
-    height: 132,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ scale: 0.8 }],
-    marginTop: -22,
-    marginBottom: -18,
-  },
-  iosPicker: {
-    width: '100%',
-    height: 196,
   },
   confirmSegment: {
     width: 42,

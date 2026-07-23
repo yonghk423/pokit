@@ -33,7 +33,7 @@ import {
   CatalogRowMealSlotSelectedIcons,
   mealSlotPickerBtnWidth,
 } from './CatalogRowMealSlotChips';
-import { CatalogRowSpineTimePanel, CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT, CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT } from './CatalogRowSpineTimePanel';
+import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
 
 export type PriorityCatalogEditorial = {
   ink: string;
@@ -106,7 +106,6 @@ function CatalogListRow({
   priorityEnd?: string;
   manageOnly?: boolean;
 }) {
-  const [spineInnerPickerExpanded, setSpineInnerPickerExpanded] = useState(false);
   const settingsBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)';
   const settingsBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
   const settingsLocked = !manageOnly && isFocusStarted && selected;
@@ -179,25 +178,6 @@ function CatalogListRow({
       easing: Easing.out(Easing.cubic),
     });
   }, [isSpineTimeExpanded, spineExpandProgress]);
-
-  useEffect(() => {
-    if (!isSpineTimeExpanded) {
-      setSpineInnerPickerExpanded(false);
-    }
-  }, [isSpineTimeExpanded]);
-
-  const spinePanelHeight = spineInnerPickerExpanded
-    ? CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT
-    : CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT;
-
-  const spineTimePanelAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: spineExpandProgress.value,
-    maxHeight: spineExpandProgress.value * spinePanelHeight,
-    transform: [
-      { translateY: (1 - spineExpandProgress.value) * -8 },
-      { scale: 0.96 + spineExpandProgress.value * 0.04 },
-    ],
-  }));
 
   const spineTimeIconAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 0.92 + spineExpandProgress.value * 0.08 }],
@@ -492,12 +472,10 @@ function CatalogListRow({
           />
         </Reanimated.View>
       ) : null}
-      {showSpineTimePicker && !manageOnly && onChangeSpineTime && priorityStart && priorityEnd ? (
-        <Reanimated.View
-          pointerEvents={isSpineTimeExpanded ? 'auto' : 'none'}
+      {showSpineTimePicker && !manageOnly && onChangeSpineTime && priorityStart && priorityEnd && isSpineTimeExpanded ? (
+        <View
           style={[
             styles.spineTimePanel,
-            spineTimePanelAnimatedStyle,
             {
               backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)',
             },
@@ -513,9 +491,8 @@ function CatalogListRow({
             priorityStart={priorityStart}
             priorityEnd={priorityEnd}
             onScheduleChange={onChangeSpineTime}
-            onPickerExpandedChange={setSpineInnerPickerExpanded}
           />
-        </Reanimated.View>
+        </View>
       ) : null}
     </View>
   );
@@ -1064,7 +1041,6 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 6,
     borderTopWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
   },
   catalogRow: {
     flexDirection: 'row',

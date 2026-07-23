@@ -268,6 +268,24 @@ describe('dayPlanStore', () => {
     expect(useDayPlanStore.getState().liveActivityChecklistFocusBlockId).toBeNull();
   });
 
+  it('keeps past-ended spine timeline blocks when pruning', () => {
+    const today = getLocalDateKey();
+    resetStore({
+      dateKey: today,
+      blocks: [
+        block({
+          id: 'spine-past',
+          startMinutes: 0,
+          endMinutes: 1,
+          blockOrigin: 'spineTimeline',
+        }),
+        block({ id: 'bag-past', startMinutes: 0, endMinutes: 1 }),
+      ],
+    });
+    useDayPlanStore.getState().prunePastEndedBlocks();
+    expect(useDayPlanStore.getState().blocks.map((b) => b.id)).toEqual(['spine-past']);
+  });
+
   it('removes block and clears related ids', () => {
     resetStore({
       blocks: [block({ id: 'rm' })],
@@ -303,6 +321,29 @@ describe('dayPlanStore', () => {
     expect(updated?.title).toBe('운동');
     expect(updated?.startMinutes).toBe(11 * 60);
     expect(updated?.endMinutes).toBe(11 * 60 + 20);
+  });
+
+  it('allows updating an existing block whose end is already in the past', () => {
+    const today = getLocalDateKey();
+    resetStore({
+      dateKey: today,
+      blocks: [
+        block({
+          id: 'spine-past',
+          title: '아침',
+          startMinutes: 0,
+          endMinutes: 1,
+          blockOrigin: 'spineTimeline',
+        }),
+      ],
+    });
+    const result = useDayPlanStore.getState().updateBlock('spine-past', {
+      title: '아침 완료',
+      startMinutes: 0,
+      endMinutes: 1,
+    });
+    expect(result).toEqual({ ok: true });
+    expect(useDayPlanStore.getState().blocks[0]?.title).toBe('아침 완료');
   });
 
   it('rejects update with empty title', () => {

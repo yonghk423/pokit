@@ -60,15 +60,13 @@ import { ThemedView } from '@shared/ui/themed-view';
 import type { GoalDetailCategoryKey } from '../model/types';
 import { useGoalDetailSettingsRoute } from '../model/useGoalDetailSettingsRoute';
 import { resolveGoalDetailModuleForTarget } from './category';
-import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
-import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
-import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
-import { GoalDetailCategoryStartReminderCard } from './GoalDetailCategoryStartReminderCard';
-import { RoutineApplyWeekdaysField } from './RoutineApplyWeekdaysField';
 import { RoutineDeleteButton } from './category/lib/RoutineDeleteButton';
 import { RoutineTitleField, ROUTINE_RENAME_LOCK_MESSAGES } from './category/lib/RoutineTitleField';
 import { resolveRoutineTitleFallback } from './category/lib/routineTitleFallback';
 import { goalDetailSettingsPalette } from './category/lib/settingsPalette';
+import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
+import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
+import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
 import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
 
 function palette(isDark: boolean) {
@@ -181,9 +179,6 @@ function withPreservedRoutineFields(categoryKey: string, next: unknown): unknown
   }
   if (!('accentColor' in o) && typeof prevO.accentColor === 'string') {
     o.accentColor = prevO.accentColor;
-  }
-  if (!('applyWeekdays' in o) && Array.isArray(prevO.applyWeekdays)) {
-    o.applyWeekdays = prevO.applyWeekdays;
   }
   if (!('templateKey' in o) && typeof prevO.templateKey === 'string') {
     o.templateKey = prevO.templateKey;
@@ -551,23 +546,6 @@ export function GoalDetailSettingsPage() {
     [blocks],
   );
 
-  const reminderCategoryKeys = useMemo(() => {
-    const list = sortedTargets.length > 0 ? sortedTargets : targets;
-    const keys = [...new Set(list.map((t) => t.categoryKey))].filter(
-      (key) => key !== 'healthIntake' && key !== 'water' && key !== 'medicine',
-    );
-    /** 건강 섭취·수분·약은 전용 알림 UI만 사용 — 시작 알림 카드 제외 */
-    if (
-      categoryKey !== 'healthIntake' &&
-      categoryKey !== 'water' &&
-      categoryKey !== 'medicine' &&
-      !keys.includes(categoryKey)
-    ) {
-      keys.push(categoryKey);
-    }
-    return keys;
-  }, [sortedTargets, targets, categoryKey]);
-
   const waterDetailUi =
     categoryKey === 'water' && targets.length > 0 && targets.every((t) => t.categoryKey === 'water');
   const workNoteUi =
@@ -896,39 +874,15 @@ export function GoalDetailSettingsPage() {
               </View>
             ) : null}
 
-            {routineMetaVisible ? (
+            {routineMetaVisible && customFlowRoutineUi ? (
             <View
               style={[
                 styles.metaSection,
                 contentFlush && styles.metaSectionInset,
               ]}>
-              <RoutineApplyWeekdaysField
-                categoryKey={categoryKey}
-                ink={c.onSurface}
-                muted={c.onVariant}
-                line={c.border}
-                surface={RetroFlatColors.light.bgMint}
-                isDark={false}
+              <RoutineDeleteButton
+                onDelete={() => handleDeleteCustomFlow(categoryKey)}
               />
-
-              {reminderCategoryKeys
-                .filter((key) => {
-                  if (!isCustomFlowCategoryKey(key)) return true;
-                  const target = targets.find((t) => t.categoryKey === key);
-                  const cfg = target
-                    ? dataByBlockId[target.blockId]
-                    : loadGoalDetailCategoryConfig(key);
-                  return resolveCustomFlowTemplateKey(cfg) !== 'reminder';
-                })
-                .map((key) => (
-                <GoalDetailCategoryStartReminderCard key={key} categoryKey={key} />
-              ))}
-
-              {customFlowRoutineUi ? (
-                <RoutineDeleteButton
-                  onDelete={() => handleDeleteCustomFlow(categoryKey)}
-                />
-              ) : null}
             </View>
             ) : null}
           </View>

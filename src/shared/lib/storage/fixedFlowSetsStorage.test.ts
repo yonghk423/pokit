@@ -88,7 +88,7 @@ describe('fixedFlowSetsStorage', () => {
     expect(isFixedFlowSetMatchedToday(set, new Date('2026-07-08T09:00:00+09:00'))).toBe(false);
   });
 
-  it('migrates weekday-only scheduled sets into goal detail and keeps daily, weekend, manual', () => {
+  it('removes weekday-only scheduled sets and keeps daily, weekend, manual', () => {
     const state = normalizeFixedFlowSetsState({
       activeSetIds: ['set_daily', 'manual_a'],
       sets: [

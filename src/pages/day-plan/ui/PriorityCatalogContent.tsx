@@ -36,6 +36,8 @@ import { PokitIconPalette } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   appendCustomFlowCatalogEntry,
+  appendRoutineCatalogSelectionKeys,
+  createCustomCatalogGroup,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
   hideStandardCatalogKey,
   isCustomCatalogGroupKey,
@@ -74,6 +76,7 @@ import {
   toggleCatalogItemForLayoutMode,
 } from '../lib/priorityCatalogLayoutMode';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
+import { CreateCatalogEntryChoiceSheet } from './CreateCatalogEntryChoiceSheet';
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
 import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
@@ -406,7 +409,9 @@ export function PriorityCatalogContent({
             '집중 구간 안에 빈 시간이 없어요. 오늘 탭에서 시간을 조정한 뒤 다시 시도해 주세요.',
           );
         }
+        return;
       }
+      appendRoutineCatalogSelectionKeys([trimmed]);
     },
     [
       animateListMutation,
@@ -450,6 +455,8 @@ export function PriorityCatalogContent({
   );
 
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  const [createChoiceSheetOpen, setCreateChoiceSheetOpen] = useState(false);
+  const [createGroupSheetOpen, setCreateGroupSheetOpen] = useState(false);
   const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
 
@@ -726,6 +733,28 @@ export function PriorityCatalogContent({
     [editGroupSheet, reloadCatalogData],
   );
 
+  const onSaveCreateCatalogGroup = useCallback(
+    ({ label, subtitle }: { label: string; subtitle: string }) => {
+      if (label.length === 0 || subtitle.length === 0) {
+        Alert.alert('입력 확인', '이름과 설명을 모두 입력해 주세요.');
+        return;
+      }
+      if (listCustomCatalogGroups().some((g) => g.label === label)) {
+        Alert.alert('이미 있는 묶음', '같은 이름의 묶음이 있어요. 다른 이름을 써 주세요.');
+        return;
+      }
+      const created = createCustomCatalogGroup(label, subtitle);
+      if (!created) {
+        Alert.alert('만들기 실패', '묶음을 만들지 못했어요. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+      reloadCatalogData();
+      setCreateGroupSheetOpen(false);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [reloadCatalogData],
+  );
+
   const performDeleteCatalogGroup = useCallback(
     (groupKey: string) => {
       animateListMutation();
@@ -887,10 +916,10 @@ export function PriorityCatalogContent({
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="새 루틴 만들기"
+                accessibilityLabel="새 루틴 또는 묶음 만들기"
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  openCreateSheet();
+                  setCreateChoiceSheetOpen(true);
                 }}
                 style={({ pressed }) => [
                   styles.headerAddButton,
@@ -945,6 +974,23 @@ export function PriorityCatalogContent({
           onChangeCatalogSpineTime={onChangeCatalogSpineTime}
         />
       </ScrollView>
+      <CreateCatalogEntryChoiceSheet
+        visible={createChoiceSheetOpen}
+        onClose={() => setCreateChoiceSheetOpen(false)}
+        onCreateRoutine={() => {
+          setCreateChoiceSheetOpen(false);
+          setTimeout(() => openCreateSheet(), 80);
+        }}
+        onCreateGroup={() => {
+          setCreateChoiceSheetOpen(false);
+          setTimeout(() => setCreateGroupSheetOpen(true), 80);
+        }}
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        surface={shellBg}
+        line={editorial.line}
+      />
       <CreateCustomFlowSheet
         visible={createSheetOpen}
         onClose={() => setCreateSheetOpen(false)}
@@ -954,6 +1000,18 @@ export function PriorityCatalogContent({
         ink={editorial.ink}
         muted={editorial.muted}
         line={editorial.line}
+        surface={shellBg}
+      />
+      <EditCatalogGroupSheet
+        visible={createGroupSheetOpen}
+        mode="create"
+        onClose={() => setCreateGroupSheetOpen(false)}
+        initialLabel=""
+        initialSubtitle=""
+        onSave={onSaveCreateCatalogGroup}
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
         surface={shellBg}
       />
       <EditCatalogGroupSheet

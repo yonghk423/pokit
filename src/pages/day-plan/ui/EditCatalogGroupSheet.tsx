@@ -27,6 +27,8 @@ type Props = {
   onSave: (input: { label: string; subtitle: string }) => void;
   onDelete?: () => void;
   deleteHint?: string;
+  /** 기본: 편집. create면 제목·CTA만 바뀌고 삭제는 숨김 */
+  mode?: 'create' | 'edit';
   isDark: boolean;
   ink: string;
   muted: string;
@@ -41,6 +43,7 @@ export function EditCatalogGroupSheet({
   onSave,
   onDelete,
   deleteHint,
+  mode = 'edit',
   isDark,
   ink,
   muted,
@@ -70,6 +73,10 @@ export function EditCatalogGroupSheet({
   const trimmedLabel = label.trim();
   const trimmedSubtitle = subtitle.trim();
   const canSave = trimmedLabel.length > 0 && trimmedSubtitle.length > 0;
+  const isCreate = mode === 'create';
+  const title = isCreate ? '새 묶음 만들기' : '묶음 편집';
+  const ctaLabel = isCreate ? '만들기' : '저장';
+  const showDelete = !isCreate && onDelete != null;
 
   const handleSave = () => {
     if (!canSave) return;
@@ -105,7 +112,7 @@ export function EditCatalogGroupSheet({
 
           <View style={styles.body}>
             <View style={styles.headerRow}>
-              <ThemedText style={[styles.title, { color: ink }]}>묶음 편집</ThemedText>
+              <ThemedText style={[styles.title, { color: ink }]}>{title}</ThemedText>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="닫기"
@@ -115,6 +122,12 @@ export function EditCatalogGroupSheet({
                 <IconSymbol name="xmark" size={13} color={muted} />
               </Pressable>
             </View>
+
+            {isCreate ? (
+              <ThemedText style={[styles.createLead, { color: muted }]}>
+                루틴을 담을 묶음만 먼저 만들 수 있어요. 이름은 목록에, 설명은 묶음 아래에 보여요.
+              </ThemedText>
+            ) : null}
 
             <View style={styles.fieldGroup}>
               <ThemedText style={[styles.fieldLabel, { color: ink }]}>이름</ThemedText>
@@ -153,7 +166,7 @@ export function EditCatalogGroupSheet({
             </View>
           </View>
 
-          {onDelete ? (
+          {showDelete ? (
             <View style={styles.deleteWrap}>
               <ThemedText style={[styles.deleteHint, { color: muted }]}>
                 {deleteHint ?? '묶음을 삭제하면 안에 있던 항목은 다른 묶음으로 옮겨져요.'}
@@ -163,7 +176,7 @@ export function EditCatalogGroupSheet({
                 accessibilityLabel="묶음 삭제"
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onDelete();
+                  onDelete?.();
                 }}
                 style={({ pressed }) => [
                   styles.deleteBtn,
@@ -181,7 +194,7 @@ export function EditCatalogGroupSheet({
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ disabled: !canSave }}
-              accessibilityLabel="저장"
+              accessibilityLabel={ctaLabel}
               disabled={!canSave}
               onPress={handleSave}
               style={({ pressed }) => [
@@ -197,7 +210,7 @@ export function EditCatalogGroupSheet({
                 },
               ]}>
               <ThemedText style={[styles.ctaText, { color: canSave ? '#FAFAFA' : muted }]}>
-                저장
+                {ctaLabel}
               </ThemedText>
             </Pressable>
           </View>
@@ -257,6 +270,13 @@ const styles = StyleSheet.create({
   },
   fieldGroup: {
     gap: 8,
+  },
+  createLead: {
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 19,
+    letterSpacing: -0.15,
+    marginTop: -4,
   },
   fieldLabel: {
     fontSize: 14,

@@ -5,6 +5,8 @@
  */
 
 export { AppStatusBar } from './AppStatusBar';
+export { RandomSplashOverlay } from './RandomSplashOverlay';
+export { SPLASH_BACKGROUND_COLOR, SPLASH_IMAGE_SOURCES } from './splashAssets';
 export { resetAppStatusBarCache, syncAppStatusBar } from '@shared/lib/status-bar/appStatusBar';
 export { useAppBootstrap } from './useAppBootstrap';
 export { useCityPopFonts } from './useCityPopFonts';

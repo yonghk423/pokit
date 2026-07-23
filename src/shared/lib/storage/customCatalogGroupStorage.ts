@@ -60,14 +60,23 @@ export function listCustomCatalogGroups(): CustomCatalogGroup[] {
   return normalize(readRoot());
 }
 
-/** 신규 그룹 생성 — label 정규화 후 신규 key 발급해 반환 */
-export function createCustomCatalogGroup(label: string): CustomCatalogGroup | null {
+/** 신규 그룹 생성 — label 정규화 후 신규 key 발급해 반환. 같은 이름이면 기존 그룹을 반환 */
+export function createCustomCatalogGroup(
+  label: string,
+  subtitle?: string,
+): CustomCatalogGroup | null {
   const trimmed = label.trim().slice(0, MAX_LABEL);
   if (trimmed.length === 0) return null;
+  const trimmedSubtitle =
+    typeof subtitle === 'string' ? subtitle.trim().slice(0, MAX_SUBTITLE) : '';
   const cur = listCustomCatalogGroups();
   const dup = cur.find((g) => g.label === trimmed);
   if (dup) return dup;
-  const next: CustomCatalogGroup = { key: newCustomGroupId(), label: trimmed };
+  const next: CustomCatalogGroup = {
+    key: newCustomGroupId(),
+    label: trimmed,
+    ...(trimmedSubtitle.length > 0 ? { subtitle: trimmedSubtitle } : {}),
+  };
   writeRoot([...cur, next]);
   return next;
 }

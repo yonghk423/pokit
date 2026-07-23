@@ -87,7 +87,7 @@ import {
   CatalogRowMealSlotSelectedIcons,
   mealSlotPickerBtnWidth,
 } from './CatalogRowMealSlotChips';
-import { CatalogRowSpineTimePanel, CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT, CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT } from './CatalogRowSpineTimePanel';
+import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { RoutineCatalogManageContent } from './RoutineCatalogManageContent';
 import { RoutineTemplateListPanel } from './RoutineTemplateListPanel';
@@ -190,7 +190,6 @@ function FlowItemCard({
 }: FlowCardProps) {
   const [mealSlotExpanded, setMealSlotExpanded] = useState(false);
   const [spineTimeExpanded, setSpineTimeExpanded] = useState(false);
-  const [spineInnerPickerExpanded, setSpineInnerPickerExpanded] = useState(false);
   const expandProgress = useSharedValue(0);
   const spineExpandProgress = useSharedValue(0);
   const label = getPickerCategoryLabel(item.categoryKey);
@@ -259,7 +258,8 @@ function FlowItemCard({
     transform: [{ scale: 0.92 + expandProgress.value * 0.08 }],
   }));
 
-  const spineTimeIconHighlighted = Boolean(spineStartMinutes != null && spineEndMinutes != null) || spineTimeExpanded;
+  const spineTimeIconHighlighted =
+    Boolean(spineStartMinutes != null && spineEndMinutes != null) || spineTimeExpanded;
   const spineTimeLabel =
     spineStartMinutes != null && spineEndMinutes != null
       ? `${formatMinuteOfDayKo(spineStartMinutes)}~${formatMinuteOfDayKo(spineEndMinutes)}`
@@ -271,25 +271,6 @@ function FlowItemCard({
       easing: Easing.out(Easing.cubic),
     });
   }, [spineExpandProgress, spineTimeExpanded]);
-
-  useEffect(() => {
-    if (!spineTimeExpanded) {
-      setSpineInnerPickerExpanded(false);
-    }
-  }, [spineTimeExpanded]);
-
-  const spinePanelHeight = spineInnerPickerExpanded
-    ? CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT
-    : CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT;
-
-  const spineTimePanelAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: spineExpandProgress.value,
-    maxHeight: spineExpandProgress.value * spinePanelHeight,
-    transform: [
-      { translateY: (1 - spineExpandProgress.value) * -8 },
-      { scale: 0.96 + spineExpandProgress.value * 0.04 },
-    ],
-  }));
 
   const spineTimeIconAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 0.92 + spineExpandProgress.value * 0.08 }],
@@ -459,12 +440,10 @@ function FlowItemCard({
           />
         </Reanimated.View>
       ) : null}
-      {showSpineTimePicker && onChangeSpineTime && priorityStart && priorityEnd ? (
-        <Reanimated.View
-          pointerEvents={spineTimeExpanded ? 'auto' : 'none'}
+      {showSpineTimePicker && onChangeSpineTime && priorityStart && priorityEnd && spineTimeExpanded ? (
+        <View
           style={[
             styles.flowSpineTimePanel,
-            spineTimePanelAnimatedStyle,
             {
               backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)',
             },
@@ -486,9 +465,8 @@ function FlowItemCard({
             priorityEnd={priorityEnd}
             onScheduleChange={onChangeSpineTime}
             contentInsetLeft={8}
-            onPickerExpandedChange={setSpineInnerPickerExpanded}
           />
-        </Reanimated.View>
+        </View>
       ) : null}
     </View>
   );
@@ -2025,7 +2003,6 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 6,
     borderTopWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
   },
   flowMealSlotPanel: {
     marginTop: -2,
