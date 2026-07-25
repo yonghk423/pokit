@@ -75,7 +75,7 @@ export function DayPlanViewSettingsPage() {
 
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
           <ThemedText style={[styles.sectionHint, { color: c.muted }]}>
-            켜 둔 보기만 오늘 탭 상단에 표시돼요. 하나만 켜 두면 전환 버튼이 숨겨져요.
+            켜 둔 보기만 오늘 탭 상단에 표시돼요. 하나만 켜 두어도 현재 모드 아이콘은 그대로 보여요.
           </ThemedText>
 
           <View style={[styles.section, { borderColor: c.border }]}>

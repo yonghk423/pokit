@@ -1,7 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -17,6 +17,9 @@ import { RetroFlatColors } from '@shared/config/retroFlat';
 const APP_SURFACE_LIGHT = RetroFlatColors.light.bg;
 const APP_SURFACE_DARK = RetroFlatColors.dark.bg;
 
+/** 네이티브 스플래시 최소 표시 시간 */
+const MIN_SPLASH_MS = 1000;
+
 export const unstable_settings = {
   anchor: '(tabs)',
 };
@@ -28,6 +31,7 @@ void SplashScreen.preventAutoHideAsync().catch(() => {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const splashStartedAtRef = useRef(Date.now());
 
   const navigationTheme = isDark
     ? {
@@ -55,7 +59,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!contentReady) return;
-    void SplashScreen.hideAsync().catch(() => {});
+    const elapsed = Date.now() - splashStartedAtRef.current;
+    const remainMs = Math.max(0, MIN_SPLASH_MS - elapsed);
+    const timer = setTimeout(() => {
+      void SplashScreen.hideAsync().catch(() => {});
+    }, remainMs);
+    return () => clearTimeout(timer);
   }, [contentReady]);
 
   return (

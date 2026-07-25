@@ -136,13 +136,13 @@ function CatalogListRow({
   }, [shouldPulse, pulse]);
 
   const labelColor = manageOnly ? ink : selected ? ink : muted;
-  const selectedIconColor = isDark ? ink : PRIMARY;
+  const categoryIconColor = activeIconColorByCategory(categoryKey);
   const iconColor = shouldPulse
-    ? activeIconColorByCategory(categoryKey)
+    ? categoryIconColor
     : manageOnly
-      ? ink
+      ? categoryIconColor
       : selected
-        ? selectedIconColor
+        ? categoryIconColor
         : muted;
 
   const mealSlotActive = Boolean(selectedMealSlots && selectedMealSlots.length > 0);
@@ -442,7 +442,7 @@ function CatalogListRow({
           }}
           style={styles.catalogAddHit}>
           {selected ? (
-            <IconSymbol name="minus.circle.fill" size={22} color={selectedIconColor} />
+            <IconSymbol name="minus.circle.fill" size={22} color={categoryIconColor} />
           ) : (
             <IconSymbol name="plus.circle" size={22} color={muted} />
           )}

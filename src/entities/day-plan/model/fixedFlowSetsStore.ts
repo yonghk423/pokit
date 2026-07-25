@@ -639,6 +639,9 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
         mealSlots: prev?.mealSlots,
         spineStartMinutes: prev?.spineStartMinutes,
         spineEndMinutes: prev?.spineEndMinutes,
+        ...(prev?.spineEndsNextCalendarDay === true
+          ? { spineEndsNextCalendarDay: true as const }
+          : {}),
       });
     }
     const nextSets = sets.map((s) => (s.id === setId ? { ...s, items } : s));

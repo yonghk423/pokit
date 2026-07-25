@@ -434,11 +434,20 @@ export function ReadingSettings({
                     ? '아직 담긴 책이 없어요'
                     : '이 목록에 책이 없어요'}
               </ThemedText>
-              <ThemedText style={[styles.emptyBody, { color: c.onVariant }]}>
-                {libraryQuery.trim().length > 0
-                  ? '다른 검색어로 다시 찾아 보세요.'
-                  : '우측 상단 + 로 책을 추가해 주세요.'}
-              </ThemedText>
+              {libraryQuery.trim().length > 0 ? (
+                <ThemedText style={[styles.emptyBody, { color: c.onVariant }]}>
+                  다른 검색어로 다시 찾아 보세요.
+                </ThemedText>
+              ) : (
+                <View style={styles.emptyBodyRow}>
+                  <IconSymbol name="plus" size={13} color={c.onVariant} />
+                  <ThemedText style={[styles.emptyBody, { color: c.onVariant }]}> 또는 </ThemedText>
+                  <IconSymbol name="magnifyingglass" size={13} color={c.onVariant} />
+                  <ThemedText style={[styles.emptyBody, { color: c.onVariant }]}>
+                    {' '}을 눌러 검색을 해주세요
+                  </ThemedText>
+                </View>
+              )}
             </View>
           )}
         </ScrollView>
@@ -627,4 +636,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 15, fontWeight: '800', textAlign: 'center' },
   emptyBody: { fontSize: 13, fontWeight: '600', textAlign: 'center', lineHeight: 19 },
+  emptyBodyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
 });

@@ -151,13 +151,14 @@ export function syncPrioritySectionsMealSlotsWithApplied(
   const next: Record<string, DayMealSlot[]> = {};
 
   for (const key of order) {
-    if (appliedKeys.has(key) && appliedOverrides[key]?.length) {
-      next[key] = [...appliedOverrides[key]!];
-      continue;
-    }
+    // 오늘 탭에 이미 둔 시간대가 있으면 유지 (탭 on/off·sync 시 리셋 방지)
     const existing = current[key];
     if (existing && existing.length > 0) {
       next[key] = [...existing];
+      continue;
+    }
+    if (appliedKeys.has(key) && appliedOverrides[key]?.length) {
+      next[key] = [...appliedOverrides[key]!];
       continue;
     }
     if (!allFixedFlowKeys.has(key)) {
@@ -298,21 +299,29 @@ export function syncSpinePlanBlocksWithAppliedFixedRoutines(input: {
       const nextCategory = looksLikeRawCategoryKeyTitle(existing.category ?? '', key)
         ? label
         : existing.category ?? label;
-      const scheduleChanged =
-        existing.startMinutes !== schedule.startMinutes ||
-        existing.endMinutes !== schedule.endMinutes ||
-        Boolean(existing.endsNextCalendarDay) !== Boolean(schedule.endsNextCalendarDay);
       const labelChanged = nextTitle !== existing.title || nextCategory !== existing.category;
+      // 제안(suggested) 시각은 오늘 탭 기존 블록을 덮지 않음.
+      // 고정 루틴에 저장된 시각만 반영한다.
+      const shouldApplySchedule = !schedule.isSuggested;
+      const scheduleChanged =
+        shouldApplySchedule &&
+        (existing.startMinutes !== schedule.startMinutes ||
+          existing.endMinutes !== schedule.endMinutes ||
+          Boolean(existing.endsNextCalendarDay) !== Boolean(schedule.endsNextCalendarDay));
       if (scheduleChanged || labelChanged) {
         spineByKey.set(key, {
           ...existing,
           title: nextTitle,
           category: nextCategory,
-          startMinutes: schedule.startMinutes,
-          endMinutes: schedule.endMinutes,
-          ...(schedule.endsNextCalendarDay
-            ? { endsNextCalendarDay: true as const }
-            : { endsNextCalendarDay: undefined }),
+          ...(scheduleChanged
+            ? {
+                startMinutes: schedule.startMinutes,
+                endMinutes: schedule.endMinutes,
+                ...(schedule.endsNextCalendarDay
+                  ? { endsNextCalendarDay: true as const }
+                  : { endsNextCalendarDay: undefined }),
+              }
+            : {}),
         });
       }
       continue;

@@ -61,7 +61,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
-import { getPickerCategoryLabel, PRIMARY } from '../lib/dayPlanEditorShared';
+import { getPickerCategoryLabel } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
 import {
   getFixedFlowPresetScheduleHint,
@@ -223,13 +223,13 @@ function FlowItemCard({
     return () => loop.stop();
   }, [shouldPulse, pulse]);
 
-  const selectedIconColor = isDark ? ink : PRIMARY;
+  const categoryIconColor = activeIconColorByCategory(categoryKey);
   const iconColor = shouldPulse
-    ? activeIconColorByCategory(categoryKey)
+    ? categoryIconColor
     : isInTodayPlan && enabled
       ? isCompleted
         ? muted
-        : selectedIconColor
+        : categoryIconColor
       : muted;
   const labelColor =
     isInTodayPlan && enabled ? (isCompleted ? muted : ink) : muted;
@@ -1622,6 +1622,7 @@ export function FixedRoutinePage({
                       endMinutes,
                       endsNextCalendarDay,
                     );
+                    notifyFixedFlowApplyScheduleChanged();
                     void Haptics.selectionAsync();
                   }}
                 />

@@ -47,13 +47,28 @@ type Props = {
 
 const MIN_GAP_MINUTES = 5;
 
+function nowIsInGap(fromMinutes: number, toMinutes: number, nowMinutes: number): boolean {
+  return nowMinutes >= fromMinutes && nowMinutes < toMinutes;
+}
+
 /** 갭이 없을 때 하루 마무리 앵커 직전에 추가 슬롯을 둡니다(집중 구간 안). */
 function ensureGapBeforeDayEnd(rows: SpineTimelineRow[], nowMinutes: number): SpineTimelineRow[] {
   const dayEndIdx = rows.findIndex((row) => row.kind === 'anchor' && row.role === 'dayEnd');
   if (dayEndIdx < 0) return rows;
 
   const prev = rows[dayEndIdx - 1];
-  if (prev?.kind === 'gap') return rows;
+  if (prev?.kind === 'gap') {
+    // 기존 갭에도 최신 「지금」 시각을 반영
+    const next = [...rows];
+    const gap = { ...prev };
+    if (nowIsInGap(gap.fromMinutes, gap.toMinutes, nowMinutes)) {
+      gap.nowMinutes = nowMinutes;
+    } else {
+      delete gap.nowMinutes;
+    }
+    next[dayEndIdx - 1] = gap;
+    return next;
+  }
 
   const dayEndMinutes = (rows[dayEndIdx] as SpineTimelineAnchorRow).minutes;
   const dayStartRow = rows.find(
@@ -69,7 +84,8 @@ function ensureGapBeforeDayEnd(rows: SpineTimelineRow[], nowMinutes: number): Sp
     }
   }
 
-  let fromMinutes = Math.max(occupiedEnd, nowMinutes, startMin);
+  // 「지금」이 갭 시작과 같아도 표시되도록 now로 from을 밀지 않는다.
+  let fromMinutes = Math.max(occupiedEnd, startMin);
   let toMinutes = dayEndMinutes;
 
   if (toMinutes - fromMinutes < MIN_GAP_MINUTES) {
@@ -83,7 +99,7 @@ function ensureGapBeforeDayEnd(rows: SpineTimelineRow[], nowMinutes: number): Sp
     toMinutes,
     durationMin: toMinutes - fromMinutes,
     coachingLine: '',
-    ...(nowMinutes > fromMinutes && nowMinutes < toMinutes ? { nowMinutes } : {}),
+    ...(nowIsInGap(fromMinutes, toMinutes, nowMinutes) ? { nowMinutes } : {}),
   };
 
   const next = [...rows];

@@ -28,6 +28,9 @@ export function sanitizeFixedFlowSetItems(items: FixedFlowSetItem[]): FixedFlowS
       mealSlots: prev?.mealSlots,
       spineStartMinutes: prev?.spineStartMinutes,
       spineEndMinutes: prev?.spineEndMinutes,
+      ...(prev?.spineEndsNextCalendarDay === true
+        ? { spineEndsNextCalendarDay: true as const }
+        : {}),
     };
   });
 }

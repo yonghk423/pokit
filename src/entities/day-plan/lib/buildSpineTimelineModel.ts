@@ -72,7 +72,7 @@ function pushGap(
   if (to - from < 5) return;
 
   const nowMinutesInGap =
-    nowMinutes > from && nowMinutes < to ? nowMinutes : undefined;
+    nowMinutes >= from && nowMinutes < to ? nowMinutes : undefined;
 
   const durationBase =
     nowMinutesInGap != null ? to - nowMinutesInGap : to - from;

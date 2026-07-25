@@ -69,7 +69,6 @@ export function DayPlanLayoutModeTabs({
     : TABS;
 
   if (tabs.length === 0) return null;
-  if (!showLabels && tabs.length <= 1) return null;
 
   return (
     <View style={[styles.root, showLabels && styles.rootLabeled]}>

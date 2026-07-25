@@ -87,14 +87,17 @@ export function ReadingBookDetailSheet({
   const [targetPageStr, setTargetPageStr] = useState('100');
   const [memo, setMemo] = useState('');
 
+  // entry 식별자·저장된 페이지만 의존 — ensureReadingBookPages 결과 객체는 매 렌더 새로 생겨
+  // 입력 중 값이 리셋되는 것을 막는다.
   useEffect(() => {
-    if (!resolved) return;
-    setStartPageStr(pageToInputValue(resolved.startPage, 1));
+    if (!entry) return;
+    const next = ensureReadingBookPages(entry);
+    setStartPageStr(pageToInputValue(next.startPage, 1));
     setTargetPageStr(
-      pageToInputValue(resolved.targetPage, resolveReadingBookTotalPages(resolved) ?? 100),
+      pageToInputValue(next.targetPage, resolveReadingBookTotalPages(next) ?? 100),
     );
-    setMemo(resolved.memo ?? '');
-  }, [resolved]);
+    setMemo(next.memo ?? '');
+  }, [entry?.id, entry?.startPage, entry?.targetPage, entry?.memo, entry?.totalPages]);
 
   useEffect(() => {
     if (!visible) {

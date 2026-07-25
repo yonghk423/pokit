@@ -128,6 +128,7 @@ function TodoListRow({
 
       <View style={[styles.rowBody, !deleteMode && styles.rowBodyFlush]}>
         <TextInput
+          key={`${item.id}-${item.isDone ? 'done' : 'todo'}`}
           value={item.what}
           onChangeText={onChangeWhat}
           editable={!deleteMode}
@@ -137,8 +138,11 @@ function TodoListRow({
           multiline
           style={[
             styles.taskInput,
-            rowMuted && styles.taskInputDone,
-            { color: rowMuted ? ui.done : ui.ink },
+            {
+              color: rowMuted ? ui.done : ui.ink,
+              textDecorationLine: rowMuted ? 'line-through' : 'none',
+              opacity: rowMuted ? 0.55 : 1,
+            },
           ]}
         />
         {!deleteMode ? (
@@ -521,10 +525,6 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 0,
     minHeight: 20,
-  },
-  taskInputDone: {
-    textDecorationLine: 'line-through',
-    opacity: 0.55,
   },
   timeMetaRow: {
     flexDirection: 'row',

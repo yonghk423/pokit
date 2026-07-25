@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
+  AppState,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -1042,17 +1043,33 @@ export function PriorityBasedPlanSection({
 
   /** 목표 상세·커스텀 라벨 갱신 — 설정 화면에서 돌아올 때 */
   const [categoryHintTick, setCategoryHintTick] = useState(0);
-  /** 구간별 `isCurrent` — 시간대가 바뀔 때 갱신 */
+  /** 구간별 `isCurrent` / 타임라인 「지금」 — 분 단위로 갱신 */
   const [mealSlotNowTick, setMealSlotNowTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setMealSlotNowTick((n) => n + 1), 60_000);
-    return () => clearInterval(id);
+    const bump = () => setMealSlotNowTick((n) => n + 1);
+    // 다음 분 경계에 맞춘 뒤 60초마다 갱신
+    const msToNextMinute = 60_000 - (Date.now() % 60_000) + 50;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const timeoutId = setTimeout(() => {
+      bump();
+      intervalId = setInterval(bump, 60_000);
+    }, msToNextMinute);
+    const onAppState = (state: string) => {
+      if (state === 'active') bump();
+    };
+    const sub = AppState.addEventListener('change', onAppState);
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+      sub.remove();
+    };
   }, []);
   const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
   useFocusEffect(
     useCallback(() => {
       registerOtherCategoryResolverFromStorage();
       setCategoryHintTick((n) => n + 1);
+      setMealSlotNowTick((n) => n + 1);
     }, []),
   );
 

@@ -245,11 +245,8 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
       activeMealSlotsBySetId: { 'preset-daily': ['morning', 'lunch'] },
       scheduledMealSlotLayoutEnabled: true,
     });
-    expect(patch).toEqual({
-      prioritySectionsMealSlots: {
-        healthIntake: ['morning'],
-      },
-    });
+    // 오늘 탭에 이미 둔 시간대(lunch)를 sync가 덮어쓰지 않는다.
+    expect(patch).toBeNull();
   });
 
   it('adds applied fixed routines to spine timeline blocks in spine mode', () => {
