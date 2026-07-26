@@ -450,10 +450,12 @@ export function ReadingSettings({
               ) : (
                 <View style={styles.emptyBodyRow}>
                   <IconSymbol name="plus" size={13} color={c.onVariant} />
-                  <ThemedText style={[styles.emptyBody, { color: c.onVariant }]}> 또는 </ThemedText>
+                  <ThemedText style={[styles.emptyBody, { color: c.onVariant }]}>
+                    {' '}버튼을 눌러 직접 추가하거나{' '}
+                  </ThemedText>
                   <IconSymbol name="magnifyingglass" size={13} color={c.onVariant} />
                   <ThemedText style={[styles.emptyBody, { color: c.onVariant }]}>
-                    {' '}을 눌러 검색을 해주세요
+                    {' '}으로 검색해 주세요
                   </ThemedText>
                 </View>
               )}
