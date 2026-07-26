@@ -2456,7 +2456,7 @@ const styles = StyleSheet.create({
   blockTextWrap: {
     width: '100%',
     position: 'relative',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   blockInputPlaceholder: {
     position: 'absolute',
@@ -2471,7 +2471,7 @@ const styles = StyleSheet.create({
   },
   listBlockInputWrap: {
     minHeight: 20,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   listBlockInput: {
     minHeight: 20,
