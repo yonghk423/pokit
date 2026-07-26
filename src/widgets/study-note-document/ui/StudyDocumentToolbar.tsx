@@ -19,7 +19,8 @@ export type StudyToolbarAction =
   | 'image'
   | 'undo'
   | 'redo'
-  | 'reset-document';
+  | 'reset-document'
+  | 'dismiss-keyboard';
 
 type Props = {
   palette: Palette;
@@ -196,6 +197,14 @@ export function StudyDocumentToolbar({
           disabled={!canResetDocument}
           onRetainKeyboardFocus={onRetainKeyboardFocus}
           onPress={() => onAction('reset-document')}
+        />
+        <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
+        <ToolBtn
+          label="키보드 내리기"
+          icon="keyboard.chevron.compact.down"
+          palette={palette}
+          surfaceBg={surfaceBg}
+          onPress={() => onAction('dismiss-keyboard')}
         />
       </View>
     </View>

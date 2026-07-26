@@ -1805,8 +1805,26 @@ export function StudyDocumentEditor({
     }
   }, []);
 
+  const dismissEditorKeyboard = useCallback(() => {
+    toolbarInteractionRef.current = false;
+    setShowColorPicker(false);
+    setShowLinkInput(false);
+    const blockId = activeBlockIdRef.current;
+    if (blockId) {
+      blockInputRefs.current[blockId]?.blur();
+    }
+    Keyboard.dismiss();
+    setKeyboardInset(0);
+    void Haptics.selectionAsync();
+  }, []);
+
   const onToolbarAction = useCallback(
     (action: StudyToolbarAction) => {
+      if (action === 'dismiss-keyboard') {
+        dismissEditorKeyboard();
+        return;
+      }
+
       const shouldRetainFocus = keyboardInset > 0 || Boolean(activeBlockIdRef.current);
       if (shouldRetainFocus) beginToolbarInteraction();
 
@@ -1893,6 +1911,7 @@ export function StudyDocumentEditor({
       activeBlocks,
       beginToolbarInteraction,
       clearTextEditSession,
+      dismissEditorKeyboard,
       endToolbarInteraction,
       ensurePageDocument,
       insertBlock,
