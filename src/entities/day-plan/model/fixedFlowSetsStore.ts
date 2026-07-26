@@ -163,6 +163,22 @@ type FixedFlowSetsStoreState = {
     endsNextCalendarDay?: boolean,
   ) => void;
   setCategoryMealSlotInAnySet: (categoryKey: string, mealSlot: DayMealSlot) => boolean;
+  setCategorySpineScheduleInAnySet: (
+    categoryKey: string,
+    startMinutes: number,
+    endMinutes: number,
+    endsNextCalendarDay?: boolean,
+  ) => boolean;
+  /**
+   * 목록 모드 등에서 시작 시각 저장.
+   * 세트에 없으면 커스텀 그룹에 넣은 뒤 시각을 저장합니다.
+   */
+  ensureCategorySpineScheduleInAnySet: (
+    categoryKey: string,
+    startMinutes: number,
+    endMinutes: number,
+    endsNextCalendarDay?: boolean,
+  ) => boolean;
 
   setActiveSetOrder: (categoryKeys: string[]) => void;
   addCategoryToActiveSet: (categoryKey: string) => void;
@@ -769,6 +785,71 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     set({ sets: nextSets });
     persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
     return true;
+  },
+
+  setCategorySpineScheduleInAnySet: (categoryKey, startMinutes, endMinutes, endsNextCalendarDay) => {
+    const key = categoryKey.trim();
+    const start = Math.floor(startMinutes);
+    const end = Math.floor(endMinutes);
+    const endsNext = endsNextCalendarDay === true;
+    if (!key || !Number.isFinite(start) || !Number.isFinite(end)) return false;
+    if (start < 0 || end < 0 || start > 24 * 60 || end > 24 * 60) return false;
+    if (endsNext ? end >= start : end <= start) return false;
+    const { sets, activeSetIds, activeMealSlotsBySetId } = get();
+    if (!sets.some((s) => s.items.some((x) => x.categoryKey === key))) return false;
+    const nextSets = sets.map((s) => {
+      if (!s.items.some((x) => x.categoryKey === key)) return s;
+      return {
+        ...s,
+        items: s.items.map((x) =>
+          x.categoryKey === key
+            ? {
+                ...x,
+                spineStartMinutes: start,
+                spineEndMinutes: end,
+                ...(endsNext
+                  ? { spineEndsNextCalendarDay: true as const }
+                  : { spineEndsNextCalendarDay: undefined }),
+              }
+            : x,
+        ),
+      };
+    });
+    set({ sets: nextSets });
+    persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
+    return true;
+  },
+
+  ensureCategorySpineScheduleInAnySet: (
+    categoryKey,
+    startMinutes,
+    endMinutes,
+    endsNextCalendarDay,
+  ) => {
+    const key = categoryKey.trim();
+    if (!key || !isPriorityCatalogAllowedKey(key)) return false;
+
+    const { sets, activeSetIds } = get();
+    const alreadyInSet = sets.some((s) => s.items.some((x) => x.categoryKey === key));
+    if (!alreadyInSet) {
+      const customSets = sets.filter((s) => !isBuiltinPresetScheduleSet(s));
+      const activeCustom = customSets.find((s) => activeSetIds.includes(s.id));
+      let targetId = activeCustom?.id ?? customSets[0]?.id;
+      if (!targetId) {
+        get().addSet('나만의 루틴');
+        const after = get().sets.filter((s) => !isBuiltinPresetScheduleSet(s));
+        targetId = after[after.length - 1]?.id;
+      }
+      if (!targetId) return false;
+      get().addCategoryToSet(targetId, key);
+    }
+
+    return get().setCategorySpineScheduleInAnySet(
+      key,
+      startMinutes,
+      endMinutes,
+      endsNextCalendarDay,
+    );
   },
 
   setActiveSetOrder: (categoryKeys) => {

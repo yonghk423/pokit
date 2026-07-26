@@ -2,7 +2,7 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Alert,
   Animated,
@@ -856,6 +856,14 @@ type Props = {
   onSelectCategory: (key: string) => void;
   /** 목록 행에서 상세 설정 열기 — categoryKey를 전달 */
   onOpenCategorySettings?: (categoryKey: string) => void;
+  /**
+   * 타임라인 일정 수정 시트에 끼울 루틴 설정 본문.
+   * app에서 GoalDetail 패널을 주입한다(페이지 간 import 회피).
+   */
+  renderRoutineInlineSettings?: (
+    categoryKey: string,
+    theme: { ink: string; muted: string; border: string; isDark: boolean },
+  ) => ReactNode;
   /** 시작 후 목록 행에서 몰입 상세 열기 */
   onOpenFocusDetail?: (categoryKey: string) => void;
   /** 구간 미설정 안내 → 오늘의 루틴 탭 */
@@ -883,6 +891,7 @@ export function PriorityBasedPlanSection({
   priorityCategoryOrder,
   onSelectCategory,
   onOpenCategorySettings,
+  renderRoutineInlineSettings,
   onOpenFocusDetail,
   onOpenFixedRoutine,
   layoutMode,
@@ -2726,18 +2735,15 @@ export function PriorityBasedPlanSection({
         onClose={() => setSpineEditDraft(null)}
         onSave={handleSpineSaveBlock}
         onDelete={confirmSpineBlockDelete}
-        onOpenCategorySettings={
-          onOpenCategorySettings
-            ? (categoryKey) => {
-                setSpineEditDraft(null);
-                onOpenCategorySettings(categoryKey);
-              }
-            : undefined
-        }
-        completed={spineEditDraft != null && completedBlockIdSet.has(spineEditDraft.blockId)}
-        onToggleComplete={
-          spineEditDraft != null
-            ? () => handleSpineToggleBlockComplete(spineEditDraft.blockId)
+        renderRoutineSettings={
+          renderRoutineInlineSettings
+            ? (categoryKey) =>
+                renderRoutineInlineSettings(categoryKey, {
+                  ink: editorial.ink,
+                  muted: editorial.muted,
+                  border: editorial.line,
+                  isDark,
+                })
             : undefined
         }
       />
@@ -2870,6 +2876,7 @@ export function PriorityBasedPlanSection({
                   palette={spineTimelinePalette}
                   rowSurface={editorial.surface}
                   onAddBlockInGap={handleSpineAddBlockInGap}
+                  onToggleBlockComplete={handleSpineToggleBlockComplete}
                   onPressBlock={handleSpinePressBlock}
                   onDeleteBlock={handleSpineDeleteBlock}
                   onReorderBlocks={handleSpineReorderBlocks}

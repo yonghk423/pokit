@@ -68,7 +68,7 @@ import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
 import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
 import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
 import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
-import { RoutineStartNotifyField } from './lib/RoutineStartNotifyField';
+import { RoutineStartNotifyField } from '@features/day-plan-notifications';
 
 function palette(isDark: boolean) {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -366,7 +366,6 @@ export function GoalDetailSettingsPage() {
   const [customFlowGroupByCategoryKey, setCustomFlowGroupByCategoryKey] = useState<
     Record<string, string>
   >({});
-  const [routineMetaExpanded, setRoutineMetaExpanded] = useState(false);
   const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -556,8 +555,8 @@ export function GoalDetailSettingsPage() {
   const customFlowRoutineUi =
     targets.length === 1 && isCustomFlowCategoryKey(categoryKey);
   const contentFlush = waterDetailUi || workNoteUi || readingLibraryUi;
-  const showRoutineMetaToggle = targets.length === 1;
-  const routineMetaVisible = !showRoutineMetaToggle || routineMetaExpanded;
+  /** 접기 없이 한 화면에 루틴 설정을 모두 보여 준다 */
+  const routineMetaVisible = targets.length === 1;
   const medicineOnlyUi =
     sortedTargets.length === 1 && sortedTargets.every((t) => t.categoryKey === 'medicine');
   const immersive = waterDetailUi ? WATER : null;
@@ -817,41 +816,15 @@ export function GoalDetailSettingsPage() {
               );
             })}
 
-            {showRoutineMetaToggle ? (
-              <View style={contentFlush ? styles.metaSectionInset : undefined}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded: routineMetaExpanded }}
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    setRoutineMetaExpanded((v) => !v);
-                  }}
-                  style={({ pressed }) => [
-                    styles.routineMetaToggle,
-                    workNoteUi && styles.routineMetaToggleCompact,
-                    {
-                      borderColor: c.border,
-                      backgroundColor: pressed ? 'rgba(0,0,0,0.03)' : 'transparent',
-                    },
-                  ]}>
-                  <ThemedText style={[styles.routineMetaToggleLabel, { color: c.onVariant }]}>
-                    루틴 설정
-                  </ThemedText>
-                  <IconSymbol
-                    name={routineMetaExpanded ? 'chevron.up' : 'chevron.down'}
-                    size={14}
-                    color={c.onVariant}
-                  />
-                </Pressable>
-              </View>
-            ) : null}
-
-            {routineMetaVisible && targets.length === 1 ? (
+            {routineMetaVisible ? (
               <View
                 style={[
                   styles.metaSection,
                   contentFlush && styles.metaSectionInset,
                 ]}>
+                <ThemedText style={[styles.routineMetaSectionTitle, { color: c.onVariant }]}>
+                  루틴 설정
+                </ThemedText>
                 <CustomFlowGroupField
                   groupKey={
                     customFlowGroupByCategoryKey[categoryKey] ??
@@ -973,20 +946,12 @@ const styles = StyleSheet.create({
   blockSectionFlex: { flex: 1, minHeight: 0 },  // legacy
   metaSection: { gap: 10 },
   metaSectionInset: { paddingHorizontal: 20 },
-  routineMetaToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 8,
-    paddingVertical: 12,
-    borderWidth: StyleSheet.hairlineWidth,
+  routineMetaSectionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: -0.15,
+    marginBottom: 2,
   },
-  routineMetaToggleCompact: {
-    marginTop: 0,
-    paddingVertical: 10,
-  },
-  routineMetaToggleLabel: { fontSize: 13, fontWeight: '700', letterSpacing: -0.1 },
   startPickerCard: {
     borderRadius: 0,
     borderWidth: 2,

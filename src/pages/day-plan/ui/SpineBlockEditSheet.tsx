@@ -1,24 +1,16 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   formatHhmmClockKo,
   isSpineBlockScheduleWithinPriorityWindow,
-  resolveCategoryCatalogIcon,
   resolveSpinePriorityWindow,
 } from '@entities/day-plan';
-import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
-import {
-  COMPLETION_CHECKED_COLOR_DARK,
-  COMPLETION_CHECKED_COLOR_LIGHT,
-  CompletionRadioButton,
-} from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { getPickerCategoryLabel } from '../lib/dayPlanEditorShared';
 import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
 
 export type SpineBlockEditDraft = {
@@ -52,14 +44,14 @@ type Props = {
     blockId: string;
   }) => void;
   onDelete?: (blockId: string) => void;
-  /** 연결된 루틴의 상세 설정 화면 열기 */
-  onOpenCategorySettings?: (categoryKey: string) => void;
-  /** 완료 상태·토글 (타임라인 완료 버튼을 이 시트로 통합) */
-  completed?: boolean;
-  onToggleComplete?: () => void;
+  /**
+   * 연결된 루틴의 전체 설정(템플릿·그룹·아이콘·알림).
+   * app 레이어에서 GoalDetail 패널을 주입한다.
+   */
+  renderRoutineSettings?: (categoryKey: string) => ReactNode;
 };
 
-/** 타임라인 블록 탭 — 선택한 일정만 수정(제목·시간) */
+/** 타임라인 블록 탭 — 일정 + 루틴 설정을 한 시트에서 수정 */
 export function SpineBlockEditSheet({
   visible,
   draft,
@@ -74,9 +66,7 @@ export function SpineBlockEditSheet({
   onClose,
   onSave,
   onDelete,
-  onOpenCategorySettings,
-  completed = false,
-  onToggleComplete,
+  renderRoutineSettings,
 }: Props) {
   const insets = useSafeAreaInsets();
   const [titleText, setTitleText] = useState('');
@@ -148,9 +138,6 @@ export function SpineBlockEditSheet({
 
   if (!draft) return null;
 
-  const linkedLabel = categoryKey ? getPickerCategoryLabel(categoryKey) : null;
-  const linkedIcon = categoryKey ? resolveCategoryCatalogIcon(categoryKey) : null;
-  const linkedAccent = categoryKey ? activeIconColorByCategory(categoryKey) : ink;
   const destructive = isDark ? '#F87171' : '#DC2626';
   const panelBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)';
 
@@ -169,85 +156,31 @@ export function SpineBlockEditSheet({
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
+          {/* 목표 상세와 동일: 잠금 안내·루틴 방식·템플릿을 최상단에 */}
+          {categoryKey && renderRoutineSettings ? (
+            <View style={styles.routineSettingsPanel}>{renderRoutineSettings(categoryKey)}</View>
+          ) : null}
+
           <View style={styles.fieldBlock}>
             <ThemedText style={[styles.sectionLabel, { color: muted }]}>할 일</ThemedText>
             <View
               style={[
                 styles.titleRow,
                 {
-                  borderColor: completed ? (isDark ? '#FAFAFA' : ink) : line,
+                  borderColor: line,
                   backgroundColor: panelBg,
                 },
               ]}>
-              {onToggleComplete ? (
-                <View style={styles.titleRadioSlot}>
-                  <View style={styles.titleRadioHitTrim}>
-                    <CompletionRadioButton
-                      checked={completed}
-                      isDark={isDark}
-                      checkedColor={isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT}
-                      accessibilityLabel={completed ? '완료 취소' : '완료로 표시'}
-                      onPress={() => {
-                        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        onToggleComplete();
-                      }}
-                    />
-                  </View>
-                </View>
-              ) : null}
               <TextInput
                 value={titleText}
                 onChangeText={setTitleText}
                 placeholder="무엇을 할까요?"
                 placeholderTextColor={muted}
                 multiline
-                style={[
-                  styles.titleInput,
-                  {
-                    color: ink,
-                    textDecorationLine: completed ? 'line-through' : 'none',
-                    opacity: completed ? 0.55 : 1,
-                  },
-                ]}
+                style={[styles.titleInput, { color: ink }]}
               />
             </View>
           </View>
-
-          {categoryKey && linkedLabel ? (
-            <View style={styles.fieldBlock}>
-              <ThemedText style={[styles.sectionLabel, { color: muted }]}>연결된 루틴</ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={
-                  onOpenCategorySettings
-                    ? `${linkedLabel} 상세 설정`
-                    : linkedLabel
-                }
-                disabled={!onOpenCategorySettings}
-                onPress={() => {
-                  if (!onOpenCategorySettings) return;
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onOpenCategorySettings(categoryKey);
-                }}
-                style={({ pressed }) => [
-                  styles.linkedRow,
-                  { borderColor: line, backgroundColor: panelBg },
-                  onOpenCategorySettings && pressed && { opacity: 0.72 },
-                ]}>
-                <View style={[styles.linkedIcon, { backgroundColor: `${linkedAccent}22` }]}>
-                  {linkedIcon ? (
-                    <IconSymbol name={linkedIcon as 'drop.fill'} size={16} color={linkedAccent} />
-                  ) : null}
-                </View>
-                <ThemedText style={[styles.linkedLabel, { color: ink }]} numberOfLines={2}>
-                  {linkedLabel}
-                </ThemedText>
-                {onOpenCategorySettings ? (
-                  <IconSymbol name="chevron.right" size={16} color={muted} />
-                ) : null}
-              </Pressable>
-            </View>
-          ) : null}
 
           <View style={styles.fieldBlock}>
             <ThemedText style={[styles.sectionLabel, { color: muted }]}>시간</ThemedText>
@@ -345,17 +278,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     minHeight: 48,
   },
-  titleRadioSlot: {
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  /** CompletionRadioButton hit 영역(44)을 시각 원(30)에 맞춰 정렬 */
-  titleRadioHitTrim: {
-    margin: -7,
-  },
   titleInput: {
     flex: 1,
     minWidth: 0,
@@ -367,27 +289,8 @@ const styles = StyleSheet.create({
     minHeight: 30,
     textAlignVertical: 'center',
   },
-  linkedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-  },
-  linkedIcon: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-  },
-  linkedLabel: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+  routineSettingsPanel: {
+    marginBottom: 8,
   },
   deleteBtn: {
     marginTop: 16,

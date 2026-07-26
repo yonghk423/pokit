@@ -35,16 +35,19 @@ export function collectAllFixedFlowCategoryKeys(sets: FixedFlowSet[]): Set<strin
 
 /**
  * 오늘 탭 담기 순서를 고정 루틴 적용 상태와 맞춘다.
- * - 오늘 적용 중이 아닌 고정 루틴 항목은 제거 (단, 루틴 탭에서 직접 고른 항목은 유지)
+ * - 오늘 적용 중이 아닌 고정 루틴 항목은 제거
+ * - 단, 루틴 탭에서 직접 고른 항목·오늘 탭에 시간대를 직접 둔 항목은 유지
  */
 export function syncPriorityOrderWithAppliedFixedRoutines(
   order: string[],
   appliedKeys: string[],
   allFixedFlowKeys: Set<string>,
   routineCatalogSelectionKeys: ReadonlySet<string> = new Set(),
+  protectedKeys: ReadonlySet<string> = new Set(),
 ): string[] {
   const applied = new Set(appliedKeys);
   return order.filter((key) => {
+    if (protectedKeys.has(key)) return true;
     if (!allFixedFlowKeys.has(key)) return true;
     if (applied.has(key)) return true;
     if (routineCatalogSelectionKeys.has(key)) return true;
@@ -58,16 +61,46 @@ export function mergeOrderWithAppliedFixedRoutines(
   appliedKeys: string[],
   allFixedFlowKeys: Set<string>,
   routineCatalogSelectionKeys: ReadonlySet<string> = new Set(),
+  protectedKeys: ReadonlySet<string> = new Set(),
 ): string[] {
   const filtered = syncPriorityOrderWithAppliedFixedRoutines(
     order,
     appliedKeys,
     allFixedFlowKeys,
     routineCatalogSelectionKeys,
+    protectedKeys,
   );
   const existing = new Set(filtered);
   const toAppend = appliedKeys.filter((key) => !existing.has(key));
-  return sanitizePriorityCategoryOrderKeys([...filtered, ...toAppend]);
+  const merged = [...filtered, ...toAppend];
+  const sanitized = sanitizePriorityCategoryOrderKeys(merged);
+  if (protectedKeys.size === 0) return sanitized;
+
+  // sanitize가 카탈로그에서 잠시 빠진 키를 지워도, 오늘 탭에 둔 시간대 항목은 유지
+  const sanitizedSet = new Set(sanitized);
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const key of merged) {
+    if (seen.has(key)) continue;
+    if (sanitizedSet.has(key) || protectedKeys.has(key)) {
+      out.push(key);
+      seen.add(key);
+    }
+  }
+  return out;
+}
+
+/** 시간대 모드에서 사용자가 직접 구간을 붙인 카테고리 */
+export function collectKeysWithExplicitSectionsMealSlots(
+  slots: Record<string, DayMealSlot[]>,
+): Set<string> {
+  const out = new Set<string>();
+  for (const [rawKey, value] of Object.entries(slots)) {
+    const key = rawKey.trim();
+    if (!key || !Array.isArray(value) || value.length === 0) continue;
+    out.add(key);
+  }
+  return out;
 }
 
 function pruneMealSlotOverrides(
@@ -468,14 +501,24 @@ export function computeSyncTodayTabWithFixedRoutineApply(
     return Object.keys(patch).length > 0 ? patch : null;
   }
 
-  const sectionsWithoutSuperseded = sanitizePriorityCategoryOrderKeys(
-    input.prioritySectionsCategoryOrder.filter((key) => !supersededStandardKeys.has(key)),
+  const protectedBySectionsSlots = collectKeysWithExplicitSectionsMealSlots(
+    input.prioritySectionsMealSlots,
+  );
+  const sectionsCandidates = input.prioritySectionsCategoryOrder.filter(
+    (key) => !supersededStandardKeys.has(key),
+  );
+  const sanitizedSections = sanitizePriorityCategoryOrderKeys(sectionsCandidates);
+  const sanitizedSectionsSet = new Set(sanitizedSections);
+  // sanitize가 카탈로그 허용 목록에서 빠진 키를 지워도, 이미 시간대를 둔 항목은 유지
+  const sectionsWithoutSuperseded = sectionsCandidates.filter(
+    (key) => sanitizedSectionsSet.has(key) || protectedBySectionsSlots.has(key),
   );
   const nextSectionsOrder = mergeOrderWithAppliedFixedRoutines(
     sectionsWithoutSuperseded,
     appliedKeys,
     allFixedFlowKeys,
     catalogSelection,
+    protectedBySectionsSlots,
   );
   const appliedOverrides = buildAppliedFixedRoutineMealSlotsMap(
     {

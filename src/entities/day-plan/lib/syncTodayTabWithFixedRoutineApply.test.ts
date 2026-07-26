@@ -103,7 +103,7 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     });
   });
 
-  it('clears unapplied fixed routine keys from sections order', () => {
+  it('keeps sections items that already have meal slots even when not applied today', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,
       fixedRoutineApplyLayoutMode: 'sections',
@@ -114,9 +114,23 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
       todayAppliedCategoryKeys: [],
       routineCatalogSelectionKeys: [],
     });
+    // 오늘 탭 시간대에 직접 둔 항목은 상세설정 복귀 sync에서도 유지
+    expect(patch).toBeNull();
+  });
+
+  it('clears unapplied fixed routine keys from sections order when they have no meal slot', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      fixedRoutineApplyLayoutMode: 'sections',
+      priorityCategoryOrder: [],
+      priorityMealSlotOverrides: {},
+      prioritySectionsCategoryOrder: ['reading', 'work'],
+      prioritySectionsMealSlots: {},
+      todayAppliedCategoryKeys: [],
+      routineCatalogSelectionKeys: [],
+    });
     expect(patch).toEqual({
       prioritySectionsCategoryOrder: ['work'],
-      prioritySectionsMealSlots: {},
     });
   });
 

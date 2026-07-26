@@ -104,7 +104,7 @@ function layoutModeHint(mode: DayPlanLayoutMode): string {
   if (mode === 'sections') {
     return '항목마다 새벽·아침·점심·저녁·밤을 고른 뒤 적용을 켜면 시간대 보기에 반영돼요.';
   }
-  return '그룹을 만들고 항목을 추가한 뒤, 적용을 켜면 목록 보기에 반영돼요.';
+  return '항목마다 시작 시간을 정할 수 있어요. 적용을 켜면 목록 보기에 반영되고, 시작 알림도 그 시각에 울려요.';
 }
 
 function sectionHintText(
@@ -124,7 +124,7 @@ function sectionHintText(
     if (layoutMode === 'sections') {
       return '항목마다 시간대를 고른 뒤 적용을 켜면 시간대 보기에 반영돼요.';
     }
-    return '항목을 정리한 뒤 적용을 켜면 목록 보기에 반영돼요.';
+    return '항목마다 시작 시간을 정한 뒤 적용을 켜면 목록 보기에 반영돼요.';
   }
   return layoutModeHint(layoutMode);
 }
@@ -800,15 +800,46 @@ function GroupAccordion({
   }, [canRenameSet, setItem.name]);
 
   const useSpineLayout = spineLayoutEnabled;
+  /** 목록 모드도 루틴별 시작·종료 시각을 직접 둘 수 있음(시작 알림·타임라인 공유) */
+  const useBagStartTimePicker = !spineLayoutEnabled && !mealSlotLayoutEnabled;
+  const useStartTimePicker = useSpineLayout || useBagStartTimePicker;
   const useMealSlotFlatPickerLayout = mealSlotLayoutEnabled && !spineLayoutEnabled;
   const spineSchedules = useMemo(() => {
-    if (!useSpineLayout) return new Map();
+    if (!useStartTimePicker) return new Map();
+    if (useBagStartTimePicker) {
+      // 목록 모드: 저장된 시각만 표시(추천 시각으로 알림 가능처럼 보이지 않게)
+      const out = new Map<
+        string,
+        { startMinutes: number; endMinutes: number; endsNextCalendarDay?: boolean; isSuggested: boolean }
+      >();
+      for (const item of setItem.items) {
+        if (item.enabled === false) continue;
+        const start = item.spineStartMinutes;
+        const end = item.spineEndMinutes;
+        if (typeof start !== 'number' || typeof end !== 'number') continue;
+        const endsNext = item.spineEndsNextCalendarDay === true;
+        if (endsNext ? end >= start : end <= start) continue;
+        out.set(item.categoryKey, {
+          startMinutes: start,
+          endMinutes: end,
+          endsNextCalendarDay: endsNext || undefined,
+          isSuggested: false,
+        });
+      }
+      return out;
+    }
     return resolveFixedFlowSpineSchedules({
       items: setItem.items,
       priorityStart,
       priorityEnd,
     });
-  }, [priorityEnd, priorityStart, setItem.items, useSpineLayout]);
+  }, [
+    priorityEnd,
+    priorityStart,
+    setItem.items,
+    useBagStartTimePicker,
+    useStartTimePicker,
+  ]);
   
   const applyChipBlocked = applyBlocked && !isActiveForToday;
   const disableApplyToggle = applyChipBlocked;
@@ -978,7 +1009,9 @@ function GroupAccordion({
                 {setItem.items.map((item, itemIndex) => {
                   const cat = catalogByKey.get(item.categoryKey);
                   const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
-                  const schedule = useSpineLayout ? spineSchedules.get(item.categoryKey) : undefined;
+                  const schedule = useStartTimePicker
+                    ? spineSchedules.get(item.categoryKey)
+                    : undefined;
                   const itemMealSlots = useMealSlotFlatPickerLayout
                     ? resolveFixedFlowItemMealSlots(item, itemIndex)
                     : [];
@@ -1002,21 +1035,24 @@ function GroupAccordion({
                           ? (slot) => onToggleItemMealSlot?.(item.categoryKey, slot)
                           : undefined
                       }
-                      showSpineTimePicker={useSpineLayout}
+                      showSpineTimePicker={useStartTimePicker}
                       spineStartMinutes={schedule?.startMinutes}
                       spineEndMinutes={schedule?.endMinutes}
                       spineTimeIsSuggested={schedule?.isSuggested === true}
                       priorityStart={priorityStart}
                       priorityEnd={priorityEnd}
                       baseDateKey={baseDateKey}
-                      onChangeSpineTime={useSpineLayout ? (startMinutes, endMinutes, endsNextCalendarDay) =>
-                        onChangeItemSpineTime?.(
-                          item.categoryKey,
-                          startMinutes,
-                          endMinutes,
-                          endsNextCalendarDay,
-                        )
-                      : undefined}
+                      onChangeSpineTime={
+                        useStartTimePicker
+                          ? (startMinutes, endMinutes, endsNextCalendarDay) =>
+                              onChangeItemSpineTime?.(
+                                item.categoryKey,
+                                startMinutes,
+                                endMinutes,
+                                endsNextCalendarDay,
+                              )
+                          : undefined
+                      }
                       startNotifyEnabled={isStartNotifyEnabled?.(item.categoryKey) ?? false}
                       onToggleStartNotify={
                         onToggleStartNotify

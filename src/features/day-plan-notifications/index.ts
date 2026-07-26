@@ -17,4 +17,5 @@ export {
   ROUTINE_START_EVENT_TYPE,
   syncRoutineStartNotifications,
 } from './model/syncRoutineStartNotifications';
+export { RoutineStartNotifyField } from './ui/RoutineStartNotifyField';
 export { buildIncompleteRoutineReminderNotificationContent } from './lib/incompleteRoutineReminderCopy';

@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Alert,
   Keyboard,
@@ -74,7 +74,14 @@ import { QuickMemoPlanSection } from './QuickMemoPlanSection';
 import { ReadingPlanSection } from './ReadingPlanSection';
 import { TodoListPlanSection } from './TodoListPlanSection';
 
-export function DayPlanPage() {
+export function DayPlanPage({
+  renderRoutineInlineSettings,
+}: {
+  renderRoutineInlineSettings?: (
+    categoryKey: string,
+    theme: { ink: string; muted: string; border: string; isDark: boolean },
+  ) => ReactNode;
+} = {}) {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -813,6 +820,7 @@ export function DayPlanPage() {
                   priorityCategoryOrder={priorityCategoryOrder}
                   onSelectCategory={handlePriorityCategoryPress}
                   onOpenCategorySettings={handleOpenCategorySettings}
+                  renderRoutineInlineSettings={renderRoutineInlineSettings}
                   onOpenFocusDetail={handleOpenFocusDetail}
                   onOpenFixedRoutine={handleOpenFixedRoutine}
                   layoutMode={effectiveLayoutMode}

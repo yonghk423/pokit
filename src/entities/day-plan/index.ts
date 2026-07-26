@@ -66,6 +66,12 @@ export {
   resolveDayPlanBlockDisplayTitle,
 } from './lib/resolveDayPlanBlockDisplayTitle';
 export {
+  normalizeRoutineDisplayName,
+  persistRoutineDisplayName,
+  readRoutineDisplayNameFromConfig,
+  ROUTINE_DISPLAY_NAME_MAX,
+} from './lib/routineDisplayName';
+export {
   createCustomFlowCategoryId, CUSTOM_FLOW_CATEGORY_PREFIX, defaultCustomFlowPickerLabel,
   isCustomFlowCategoryKey,
   type CustomFlowCategoryKey
