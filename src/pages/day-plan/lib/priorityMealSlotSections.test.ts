@@ -252,23 +252,26 @@ describe('clampMealSlotSectionsToWindow', () => {
     }));
   }
 
-  it('같은 날 창(06:00~23:00)이면 창 밖 새벽을 숨기고 첫 구간을 하루 시작으로 클램프한다', () => {
+  it('같은 날 창(06:00~23:00)이면 창 밖 새벽을 숨기고 첫·끝 구간을 하루 창에 맞춘다', () => {
     const result = clampMealSlotSectionsToWindow(baseSections(), '06:00', '23:00');
     expect(result.map((s) => s.slot)).toEqual(['morning', 'lunch', 'dinner', 'night']);
     expect(result[0]?.hintTime).toBe('06:00');
+    expect(result[result.length - 1]?.hintTime).toBe('23:00');
   });
 
-  it('창 시작이 구간 중간이면 그 구간을 하루 시작으로 당겨 맨 앞에 둔다', () => {
+  it('창 시작이 구간 중간이면 그 구간을 맨 앞에 두고 시작 시각을 하루 시작으로 맞춘다', () => {
     const result = clampMealSlotSectionsToWindow(baseSections(), '16:40', '23:00');
     expect(result[0]?.slot).toBe('lunch');
     expect(result[0]?.hintTime).toBe('16:40');
     expect(result.map((s) => s.slot)).toEqual(['lunch', 'dinner', 'night']);
+    expect(result[result.length - 1]?.hintTime).toBe('23:00');
   });
 
   it('자정을 넘기는 창은 순서대로 이어 배치한다', () => {
     const result = clampMealSlotSectionsToWindow(baseSections(), '16:40', '19:40', true);
     expect(result.map((s) => s.slot)).toEqual(['lunch', 'dinner', 'night', 'dawn', 'morning']);
     expect(result[0]?.hintTime).toBe('16:40');
+    expect(result[result.length - 1]?.hintTime).toBe('19:40');
   });
 
   it('같은 날 짧은 창(13:10~17:10)에서는 창 밖 밤·새벽·아침을 숨긴다', () => {
@@ -290,6 +293,38 @@ describe('clampMealSlotSectionsToWindow', () => {
     expect(result[0]?.slot).toBe('night');
     expect(result[0]?.hintTime).toBe('22:00');
     expect(result.map((s) => s.slot)).toEqual(['night', 'dawn']);
+    expect(result[result.length - 1]?.hintTime).toBe('06:00');
+  });
+
+  it('하루 마무리가 24:00이면 마지막 밤 구간도 24:00으로 맞춘다', () => {
+    const result = clampMealSlotSectionsToWindow(baseSections(), '18:10', '24:00');
+    expect(result.map((s) => s.slot)).toEqual(['lunch', 'dinner', 'night']);
+    expect(result[0]?.hintTime).toBe('18:10');
+    expect(result.find((s) => s.slot === 'dinner')?.hintTime).toBe('19:00');
+    expect(result[result.length - 1]?.slot).toBe('night');
+    expect(result[result.length - 1]?.hintTime).toBe('24:00');
+  });
+
+  it('밤이 이미 24:00이어도 저녁을 끝으로 덮지 않고 밤을 마지막에 둔다', () => {
+    const sections = (['dawn', 'morning', 'lunch', 'dinner', 'night'] as DayMealSlot[]).map(
+      (slot) => ({
+        slot,
+        title: slot,
+        hintTime:
+          slot === 'night'
+            ? '24:00'
+            : slot === 'lunch'
+              ? '18:10'
+              : DEFAULT_STARTS[slot],
+        isCurrent: false,
+        items: [] as { key: string }[],
+      }),
+    );
+    const result = clampMealSlotSectionsToWindow(sections, '18:10', '24:00');
+    expect(result.map((s) => s.slot)).toEqual(['lunch', 'dinner', 'night']);
+    expect(result.find((s) => s.slot === 'dinner')?.hintTime).toBe('19:00');
+    expect(result[result.length - 1]?.slot).toBe('night');
+    expect(result[result.length - 1]?.hintTime).toBe('24:00');
   });
 
   it('창 밖 구간이라도 항목이 있으면 유실하지 않고 뒤에 유지한다', () => {

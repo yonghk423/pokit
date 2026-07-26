@@ -31,6 +31,7 @@ type Props = {
   activeUnderline?: boolean;
   activeTextColor?: string;
   colorPickerOpen?: boolean;
+  linkPickerOpen?: boolean;
   activeListKind?: 'checklist' | 'bullet' | 'numbered' | null;
   onAction: (action: StudyToolbarAction) => void;
   /** 툴바 탭 시 본문 입력 포커스·키보드 유지 */
@@ -61,6 +62,7 @@ function ToolBtn({
       accessibilityRole="button"
       accessibilityLabel={label}
       disabled={disabled}
+      onTouchStart={onRetainKeyboardFocus}
       onPressIn={onRetainKeyboardFocus}
       onPress={onPress}
       style={[
@@ -112,6 +114,7 @@ function ColorToolBtn({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      onTouchStart={onRetainKeyboardFocus}
       onPressIn={onRetainKeyboardFocus}
       onPress={onPress}
       style={[
@@ -139,6 +142,7 @@ export function StudyDocumentToolbar({
   activeUnderline = false,
   activeTextColor,
   colorPickerOpen = false,
+  linkPickerOpen = false,
   activeListKind = null,
   onAction,
   onRetainKeyboardFocus,
@@ -180,7 +184,7 @@ export function StudyDocumentToolbar({
           onRetainKeyboardFocus={onRetainKeyboardFocus}
           onPress={() => onAction('text-color')}
         />
-        <ToolBtn label="링크" icon="link" palette={palette} surfaceBg={surfaceBg} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('link')} />
+        <ToolBtn label="링크" icon="link" palette={palette} surfaceBg={surfaceBg} active={linkPickerOpen} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('link')} />
         <ToolBtn label="표" icon="tablecells" palette={palette} surfaceBg={surfaceBg} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('table')} />
         <ToolBtn label="이미지" icon="photo" palette={palette} surfaceBg={surfaceBg} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('image')} />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />

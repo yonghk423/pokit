@@ -1169,8 +1169,18 @@ export function PriorityBasedPlanSection({
   const {
     schedule: mealSlotSchedule,
     persistSchedule: persistMealSlotSchedule,
+    syncWithPriorityWindow: syncMealSlotScheduleWithPriorityWindow,
     revision: mealSlotScheduleRevision,
   } = useDayMealSlotSchedule();
+
+  useEffect(() => {
+    syncMealSlotScheduleWithPriorityWindow(
+      priorityStart,
+      priorityEnd,
+      isOvernightHhmmRange(priorityStart, priorityEnd),
+    );
+  }, [priorityStart, priorityEnd, syncMealSlotScheduleWithPriorityWindow]);
+
   const priorityBagRowHeightRef = useRef(52);
 
   const setPriorityTimelineScrollEnabled = useCallback((enabled: boolean) => {
@@ -3278,6 +3288,8 @@ export function PriorityBasedPlanSection({
         schedule={mealSlotSchedule}
         isDark={isDark}
         initialExpandedSlot={mealSlotScheduleFocusSlot}
+        priorityStart={priorityStart}
+        priorityEnd={priorityEnd}
         onClose={() => setMealSlotScheduleSheetOpen(false)}
         onSave={persistMealSlotSchedule}
       />

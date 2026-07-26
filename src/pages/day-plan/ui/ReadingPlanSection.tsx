@@ -40,11 +40,12 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
   const lastPersistedRef = useRef(JSON.stringify(dataConfig));
   const pendingDraftRef = useRef<unknown>(dataConfig);
 
-  const flushPersist = useCallback((next: unknown) => {
+  const flushPersist = useCallback(() => {
     if (persistTimerRef.current) {
       clearTimeout(persistTimerRef.current);
       persistTimerRef.current = null;
     }
+    const next = pendingDraftRef.current;
     const serialized = JSON.stringify(next);
     if (lastPersistedRef.current === serialized) return;
     lastPersistedRef.current = serialized;
@@ -54,15 +55,19 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
   const handleChangeDataConfig = useCallback(
     (next: unknown) => {
       pendingDraftRef.current = next;
-      const serialized = JSON.stringify(next);
-      if (lastPersistedRef.current === serialized) return;
+      setDataConfig(next);
 
+      const serialized = JSON.stringify(next);
+      // early-return 이더라도 이전(빈 books 등) 타이머는 반드시 취소한다.
       if (persistTimerRef.current) {
         clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
       }
+      if (lastPersistedRef.current === serialized) return;
+
       persistTimerRef.current = setTimeout(() => {
         persistTimerRef.current = null;
-        flushPersist(next);
+        flushPersist();
       }, 450);
     },
     [flushPersist],
@@ -70,11 +75,8 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
 
   useEffect(() => {
     return () => {
-      if (persistTimerRef.current) {
-        clearTimeout(persistTimerRef.current);
-        persistTimerRef.current = null;
-        flushPersist(pendingDraftRef.current);
-      }
+      // 탭 이탈 시 대기 중인 draft를 항상 저장 (빈 값 wipe 레이스 방지)
+      flushPersist();
     };
   }, [flushPersist]);
 
@@ -83,6 +85,11 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
       const latest = loadReadingConfig();
       const serialized = JSON.stringify(latest);
       if (serialized === lastPersistedRef.current) return;
+      // 포커스 복귀 시 디스크가 최신이면 UI에 반영
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+      }
       lastPersistedRef.current = serialized;
       pendingDraftRef.current = latest;
       setDataConfig(latest);

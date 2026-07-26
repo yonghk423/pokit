@@ -74,6 +74,13 @@ function normalizeBlockMarks(marks?: WorkStudyBlockMarks): WorkStudyBlockMarks |
   return Object.keys(next).length ? next : undefined;
 }
 
+/** Enter로 다음 줄을 이어갈 때 링크는 상속하지 않는다 */
+function marksForContinuedBlock(marks?: WorkStudyBlockMarks): WorkStudyBlockMarks | undefined {
+  if (!marks) return undefined;
+  const { link: _link, ...rest } = marks;
+  return normalizeBlockMarks(rest);
+}
+
 function isListBlockKind(kind: WorkStudyDocBlock['kind']): kind is ListBlockKind {
   return kind === 'checklist' || kind === 'bullet' || kind === 'numbered';
 }
@@ -202,6 +209,7 @@ function BlockText({
   multiline = false,
   compact = false,
   pendingTextColor,
+  contentRevision = 0,
   style,
   inputAccessoryViewID,
   inputRef,
@@ -212,26 +220,40 @@ function BlockText({
   onFocus?: () => void;
   onBlur?: () => void;
   onBackspaceAtStart?: () => void;
-  onEnterKey?: () => void;
+  /** 현재 draft 텍스트를 넘겨 부모 stale 블록과의 레이스를 피한다 */
+  onEnterKey?: (currentText: string) => void;
   onSelectionChange?: (event: { nativeEvent: { selection: { start: number; end: number } } }) => void;
   placeholder: string;
   multiline?: boolean;
   compact?: boolean;
   pendingTextColor?: string;
+  /** undo/redo 등 외부 문서 교체 시 draft 강제 동기화 */
+  contentRevision?: number;
   style?: object;
   inputAccessoryViewID?: string;
   inputRef?: (ref: TextInput | null) => void;
 }) {
   const bold = block.marks?.bold;
   const underline = block.marks?.underline;
+  const checkedDone = block.kind === 'checklist' && block.checked === true;
   const textColor = block.marks?.color;
   const enterLockRef = useRef(0);
   const selectionRef = useRef({ start: 0, end: 0 });
   const backspaceLockRef = useRef(0);
+  const onEnterKeyRef = useRef(onEnterKey);
+  onEnterKeyRef.current = onEnterKey;
+  const onBackspaceAtStartRef = useRef(onBackspaceAtStart);
+  onBackspaceAtStartRef.current = onBackspaceAtStart;
   const [isFocused, setIsFocused] = useState(false);
   const [draftText, setDraftText] = useState(block.text);
   const draftTextRef = useRef(block.text);
   const committedTextRef = useRef(block.text);
+
+  useEffect(() => {
+    draftTextRef.current = block.text;
+    setDraftText(block.text);
+    committedTextRef.current = block.text;
+  }, [block.id, contentRevision]);
 
   useEffect(() => {
     committedTextRef.current = block.text;
@@ -240,6 +262,19 @@ function BlockText({
       setDraftText(block.text);
     }
   }, [block.id, block.text, isFocused]);
+
+  // 포커스 중에도 잠시 멈추면 부모에 커밋 — undo가 타이핑을 추적할 수 있게 한다.
+  useEffect(() => {
+    if (!isFocused) return;
+    const timer = setTimeout(() => {
+      const text = draftTextRef.current;
+      if (text !== committedTextRef.current) {
+        committedTextRef.current = text;
+        onChangeText(text);
+      }
+    }, 420);
+    return () => clearTimeout(timer);
+  }, [draftText, isFocused, onChangeText]);
 
   const effectiveText = isFocused ? draftText : block.text;
   const isEmpty = effectiveText.length === 0;
@@ -260,39 +295,43 @@ function BlockText({
   );
 
   const triggerBackspaceAtStart = useCallback(() => {
-    if (!onBackspaceAtStart) return;
+    if (!onBackspaceAtStartRef.current) return;
     const now = Date.now();
     if (now - backspaceLockRef.current < 80) return;
     backspaceLockRef.current = now;
-    onBackspaceAtStart();
-  }, [onBackspaceAtStart]);
+    onBackspaceAtStartRef.current();
+  }, []);
 
   const handleEnterKey = useCallback(() => {
-    if (!onEnterKey) return;
+    if (!onEnterKeyRef.current) return;
     const now = Date.now();
     if (now - enterLockRef.current < 80) return;
     enterLockRef.current = now;
-    onEnterKey();
-  }, [onEnterKey]);
+    // 부모 커밋 레이스 없이 draft를 직접 전달 (구조 변경이 최신 텍스트를 반영)
+    const text = draftTextRef.current;
+    committedTextRef.current = text;
+    onEnterKeyRef.current(text);
+  }, []);
 
   const handleChangeText = useCallback(
     (text: string) => {
-      if (onEnterKey && /\r?\n/.test(text)) {
+      if (onEnterKeyRef.current && /\r?\n/.test(text)) {
         const cleaned = text.replace(/\r?\n/g, '').split(EMPTY_BACKSPACE_SENTINEL).join('');
-        commitDraft(cleaned);
+        draftTextRef.current = cleaned;
+        setDraftText(cleaned);
         handleEnterKey();
         return;
       }
       const cleaned = text.split(EMPTY_BACKSPACE_SENTINEL).join('');
       // 센티널만 지워진 경우 → 빈 줄에서 백스페이스로 이전 블록 합치기/삭제
-      if (onBackspaceAtStart && isEmpty && cleaned.length === 0) {
+      if (onBackspaceAtStartRef.current && isEmpty && cleaned.length === 0) {
         triggerBackspaceAtStart();
         return;
       }
       draftTextRef.current = cleaned;
       setDraftText(cleaned);
     },
-    [commitDraft, handleEnterKey, isEmpty, onBackspaceAtStart, onEnterKey, triggerBackspaceAtStart],
+    [handleEnterKey, isEmpty, triggerBackspaceAtStart],
   );
 
   const handleFocus = useCallback(() => {
@@ -315,8 +354,14 @@ function BlockText({
     return key === 'Enter' || key === '\n' || key === 'Return';
   }, []);
 
+  // 레이아웃용 style/compact는 래퍼에만 적용 — TextInput native props 변동 시 iOS 키보드 reload 방지
   return (
-    <View style={styles.blockTextWrap}>
+    <View
+      style={[
+        styles.blockTextWrap,
+        compact ? styles.listBlockInputWrap : null,
+        style,
+      ]}>
       <TextInput
         ref={inputRef}
         value={displayValue}
@@ -325,9 +370,9 @@ function BlockText({
         onBlur={handleBlur}
         inputAccessoryViewID={inputAccessoryViewID}
         blurOnSubmit={false}
-        returnKeyType={onEnterKey ? 'next' : multiline ? 'default' : 'done'}
+        returnKeyType="default"
         onSubmitEditing={() => {
-          if (onEnterKey) {
+          if (onEnterKeyRef.current) {
             handleEnterKey();
           }
         }}
@@ -336,7 +381,7 @@ function BlockText({
           onSelectionChange?.(event);
         }}
         onKeyPress={(event) => {
-          if (event.nativeEvent.key === 'Backspace' && onBackspaceAtStart) {
+          if (event.nativeEvent.key === 'Backspace' && onBackspaceAtStartRef.current) {
             const { start, end } = selectionRef.current;
             const atStart = start === 0 && end === 0;
             const onlySentinel =
@@ -347,24 +392,32 @@ function BlockText({
               return;
             }
           }
-          if (onEnterKey && isEnterKey(event.nativeEvent.key)) {
+          if (onEnterKeyRef.current && isEnterKey(event.nativeEvent.key)) {
             event.preventDefault();
             handleEnterKey();
           }
         }}
         placeholder={placeholder}
         placeholderTextColor={palette.outline}
-        multiline={Boolean(multiline)}
+        multiline
         scrollEnabled={false}
-        textAlignVertical={compact ? 'center' : multiline ? 'top' : 'center'}
+        textAlignVertical="top"
         style={[
           styles.blockInput,
-          compact ? styles.listBlockInput : null,
-          style,
           {
-            color: textColor ?? pendingTextColor ?? palette.onSurface,
+            color: checkedDone
+              ? palette.onVariant
+              : textColor ?? pendingTextColor ?? palette.onSurface,
             ...(bold ? cityPopFont('800') : cityPopFont('400')),
-            textDecorationLine: underline ? 'underline' : 'none',
+            opacity: checkedDone ? 0.72 : 1,
+            textDecorationLine:
+              checkedDone && underline
+                ? 'underline line-through'
+                : checkedDone
+                  ? 'line-through'
+                  : underline
+                    ? 'underline'
+                    : 'none',
           },
         ]}
       />
@@ -388,6 +441,7 @@ function StudyDocumentBlockView({
   onEnterKey,
   onSelectionChange,
   pendingTextColor,
+  contentRevision,
   onOpenLink,
   onBlockLayout,
 }: {
@@ -403,9 +457,10 @@ function StudyDocumentBlockView({
   paragraphMinHeight?: number;
   inputAccessoryViewID?: string;
   registerInputRef: (blockId: string, ref: TextInput | null) => void;
-  onEnterKey?: () => void;
+  onEnterKey?: (currentText: string) => void;
   onSelectionChange?: (event: { nativeEvent: { selection: { start: number; end: number } } }) => void;
   pendingTextColor?: string;
+  contentRevision?: number;
   onOpenLink?: (url: string) => void;
   onBlockLayout?: (blockId: string, y: number) => void;
 }) {
@@ -563,6 +618,7 @@ function StudyDocumentBlockView({
           inputRef={(ref) => registerInputRef(block.id, ref)}
           onEnterKey={onEnterKey}
           onSelectionChange={onSelectionChange}
+          contentRevision={contentRevision}
           placeholder="캡션 (선택)"
         />
       </View>
@@ -598,7 +654,12 @@ function StudyDocumentBlockView({
     <View
       style={[rowShellStyle, styles.row, isListBlock ? styles.listRow : null]}
       onLayout={(e) => onBlockLayout?.(block.id, e.nativeEvent.layout.y)}>
-      {rowPrefix}
+      {/* prefix를 항상 두어 형제 인덱스 변동으로 TextInput이 리마운트되지 않게 한다 */}
+      <View
+        style={isListBlock ? styles.listPrefixSlot : styles.paragraphPrefixSlot}
+        pointerEvents={isListBlock ? 'box-none' : 'none'}>
+        {rowPrefix}
+      </View>
       <View style={[styles.rowBody, isListBlock ? styles.listRowBody : null]}>
         <BlockText
           block={block}
@@ -611,16 +672,12 @@ function StudyDocumentBlockView({
           inputRef={(ref) => registerInputRef(block.id, ref)}
           onEnterKey={onEnterKey}
           onSelectionChange={onSelectionChange}
+          contentRevision={contentRevision}
           compact={isListBlock}
           pendingTextColor={pendingTextColor}
-          placeholder={
-            block.kind === 'checklist'
-              ? '할 일'
-              : block.kind === 'paragraph'
-                ? '본문'
-                : '글을 입력해주세요.'
-          }
-          multiline={block.kind === 'paragraph'}
+          /** placeholder도 kind마다 바꾸면 TextInput props 갱신→키보드 reload 유발 */
+          placeholder="글을 입력해주세요."
+          multiline
           style={
             block.kind === 'paragraph'
               ? [
@@ -680,6 +737,7 @@ export function StudyDocumentEditor({
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [historyTick, setHistoryTick] = useState(0);
+  const [contentRevision, setContentRevision] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [scrollViewportHeight, setScrollViewportHeight] = useState<number | null>(null);
@@ -693,6 +751,8 @@ export function StudyDocumentEditor({
   const pendingFocusSelectionRef = useRef<{ start: number; end: number } | null>(null);
   const linkTargetBlockIdRef = useRef<string | null>(null);
   const toolbarInteractionRef = useRef(false);
+  const textEditSessionRef = useRef(false);
+  const textEditTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeBlockIdRef = useRef<string | null>(null);
   const canvasScrollRef = useRef<ScrollView | null>(null);
   const blockLayoutYRef = useRef<Record<string, number>>({});
@@ -737,33 +797,49 @@ export function StudyDocumentEditor({
     [applyInputSelection],
   );
 
-  const retainEditorKeyboardFocus = useCallback(() => {
-    const blockId = activeBlockIdRef.current;
-    if (!blockId) return;
-    const input = blockInputRefs.current[blockId];
-    if (!input) return;
-    const sel = selectionByBlockRef.current[blockId];
-    input.focus();
-    if (sel) {
-      applyInputSelection(input, sel.start);
-    }
-  }, [applyInputSelection]);
+  const retainEditorKeyboardFocus = useCallback(
+    (options?: { retries?: number }) => {
+      const retries = options?.retries ?? 0;
+      const blockId = activeBlockIdRef.current ?? pendingFocusBlockIdRef.current;
+      if (!blockId) return;
+      const input = blockInputRefs.current[blockId];
+      if (!input) {
+        if (retries > 0) {
+          requestAnimationFrame(() => retainEditorKeyboardFocus({ retries: retries - 1 }));
+        }
+        return;
+      }
+      const sel = selectionByBlockRef.current[blockId];
+      input.focus();
+      if (sel) {
+        applyInputSelection(input, sel.start);
+      }
+      if (retries > 0) {
+        requestAnimationFrame(() => retainEditorKeyboardFocus({ retries: retries - 1 }));
+      }
+    },
+    [applyInputSelection],
+  );
+  const retainEditorKeyboardFocusRef = useRef(retainEditorKeyboardFocus);
+  retainEditorKeyboardFocusRef.current = retainEditorKeyboardFocus;
 
   const beginToolbarInteraction = useCallback(() => {
     toolbarInteractionRef.current = true;
-  }, []);
+    // pressIn 시점에 바로 포커스 유지 — blur/리마운트 전에 키보드가 내려가지 않게 한다.
+    retainEditorKeyboardFocus({ retries: 2 });
+  }, [retainEditorKeyboardFocus]);
 
   const endToolbarInteraction = useCallback(() => {
+    // 리스트 토글 직후 native blur/hide 이벤트가 늦게 오므로 조금 더 길게 보호
     setTimeout(() => {
       toolbarInteractionRef.current = false;
-    }, 120);
+    }, 320);
   }, []);
 
   const handleBlockBlur = useCallback(() => {
     if (!toolbarInteractionRef.current) return;
-    if (Platform.OS === 'ios' && keyboardToolbarMode !== 'docked') return;
-    retainEditorKeyboardFocus();
-  }, [keyboardToolbarMode, retainEditorKeyboardFocus]);
+    retainEditorKeyboardFocus({ retries: 3 });
+  }, [retainEditorKeyboardFocus]);
 
   const registerBlockLayout = useCallback((blockId: string, y: number) => {
     blockLayoutYRef.current[blockId] = y;
@@ -822,10 +898,31 @@ export function StudyDocumentEditor({
   );
 
   const pushHistory = useCallback(() => {
-    undoStack.current = [...undoStack.current.slice(-(MAX_HISTORY - 1)), cloneDocument(document)];
+    undoStack.current = [
+      ...undoStack.current.slice(-(MAX_HISTORY - 1)),
+      cloneDocument(documentRef.current),
+    ];
     redoStack.current = [];
     setHistoryTick((n) => n + 1);
-  }, [document]);
+  }, []);
+
+  const armTextEditHistory = useCallback(() => {
+    if (textEditSessionRef.current) return;
+    textEditSessionRef.current = true;
+    pushHistory();
+    if (textEditTimerRef.current) clearTimeout(textEditTimerRef.current);
+    textEditTimerRef.current = setTimeout(() => {
+      textEditSessionRef.current = false;
+    }, 650);
+  }, [pushHistory]);
+
+  const clearTextEditSession = useCallback(() => {
+    textEditSessionRef.current = false;
+    if (textEditTimerRef.current) {
+      clearTimeout(textEditTimerRef.current);
+      textEditTimerRef.current = null;
+    }
+  }, []);
 
   const applyDocument = useCallback(
     (next: WorkStudyDocument) => {
@@ -860,6 +957,11 @@ export function StudyDocumentEditor({
       setKeyboardInset(event.endCoordinates.height);
     });
     const hideSub = Keyboard.addListener(hideEvent, () => {
+      // 툴바(체크/리스트) 탭 중 순간 hide는 무시 — inset이 0이 되면 스크롤이 위로 튀고 키보드가 깜빡임
+      if (toolbarInteractionRef.current) {
+        retainEditorKeyboardFocusRef.current({ retries: 3 });
+        return;
+      }
       setKeyboardInset(0);
     });
     return () => {
@@ -967,10 +1069,32 @@ export function StudyDocumentEditor({
 
   const commitStructuralChange = useCallback(
     (blocks: WorkStudyDocBlock[]) => {
+      clearTextEditSession();
       pushHistory();
       replaceActiveBlocks(blocks);
     },
-    [pushHistory, replaceActiveBlocks],
+    [clearTextEditSession, pushHistory, replaceActiveBlocks],
+  );
+
+  /** Enter 직전 draft 텍스트를 반영한 스냅샷을 history에 남긴 뒤 구조 변경을 적용 */
+  const commitEnterStructuralChange = useCallback(
+    (blockId: string, flushedText: string, nextBlocks: WorkStudyDocBlock[]) => {
+      clearTextEditSession();
+      const withPage = ensurePageDocument();
+      const page = getWorkStudyActivePage(withPage);
+      const currentBlocks = page?.blocks ?? [];
+      const flushedBlocks = currentBlocks.map((b) =>
+        b.id === blockId ? { ...b, text: flushedText } : b,
+      );
+      undoStack.current = [
+        ...undoStack.current.slice(-(MAX_HISTORY - 1)),
+        cloneDocument(setWorkStudyActivePageBlocks(withPage, flushedBlocks)),
+      ];
+      redoStack.current = [];
+      setHistoryTick((n) => n + 1);
+      replaceActiveBlocks(nextBlocks);
+    },
+    [clearTextEditSession, ensurePageDocument, replaceActiveBlocks],
   );
 
   const handleFocusBlock = useCallback(
@@ -1015,6 +1139,7 @@ export function StudyDocumentEditor({
   const handleChangeBlock = useCallback(
     (id: string, patch: Partial<WorkStudyDocBlock>) => {
       if (patch.text !== undefined) {
+        armTextEditHistory();
         const block = activeBlocks.find((b) => b.id === id);
         const pending = resolvePendingMarks();
         if (
@@ -1031,10 +1156,12 @@ export function StudyDocumentEditor({
           });
           return;
         }
+      } else if (patch.checked !== undefined) {
+        pushHistory();
       }
       updateBlock(id, patch);
     },
-    [activeBlocks, resolvePendingMarks, updateBlock],
+    [activeBlocks, armTextEditHistory, pushHistory, resolvePendingMarks, updateBlock],
   );
 
   const handleSelectionChange = useCallback(
@@ -1054,8 +1181,12 @@ export function StudyDocumentEditor({
       if (index < 0) return;
       const source = activeBlocks[index]!;
       const block = createWorkStudyDocBlock(kind);
-      const resolvedMarks = normalizeBlockMarks(marks ?? source.marks ?? resolvePendingMarks());
+      // 다음 줄로 이어갈 때 링크는 복제하지 않는다
+      const resolvedMarks = marksForContinuedBlock(
+        normalizeBlockMarks(marks ?? source.marks ?? resolvePendingMarks()),
+      );
       if (resolvedMarks) block.marks = resolvedMarks;
+      if (kind === 'checklist') block.checked = false;
       const next = [...activeBlocks];
       next.splice(index + 1, 0, block);
       commitStructuralChange(next);
@@ -1067,72 +1198,107 @@ export function StudyDocumentEditor({
   );
 
   const continueParagraph = useCallback(
-    (blockId: string) => {
-      const block = activeBlocks.find((b) => b.id === blockId);
+    (blockId: string, textOverride?: string) => {
+      const page = getWorkStudyActivePage(documentRef.current);
+      const blocks = page?.blocks ?? activeBlocks;
+      const block = blocks.find((b) => b.id === blockId);
       if (!block || block.kind !== 'paragraph') return;
+      const text = textOverride ?? block.text;
       const sel = selectionByBlockRef.current[blockId];
-      const cursor = sel?.start ?? block.text.length;
-      const marks = normalizeBlockMarks(block.marks ?? resolvePendingMarks());
-      if (cursor < block.text.length) {
-        const before = block.text.slice(0, cursor);
-        const after = block.text.slice(cursor);
+      const cursor = Math.max(0, Math.min(sel?.start ?? text.length, text.length));
+      const keepMarks = normalizeBlockMarks(block.marks ?? resolvePendingMarks());
+      const nextMarks = marksForContinuedBlock(keepMarks);
+      if (cursor < text.length) {
+        const before = text.slice(0, cursor);
+        const after = text.slice(cursor);
         const newBlock = createWorkStudyDocBlock('paragraph');
         newBlock.text = after;
-        if (marks) newBlock.marks = marks;
-        const index = activeBlocks.findIndex((b) => b.id === blockId);
-        const next = activeBlocks.map((b) =>
-          b.id === blockId ? { ...b, text: before, marks: marks ?? b.marks } : b,
+        if (nextMarks) newBlock.marks = nextMarks;
+        const index = blocks.findIndex((b) => b.id === blockId);
+        const next = blocks.map((b) =>
+          b.id === blockId ? { ...b, text: before, marks: keepMarks ?? b.marks } : b,
         );
         next.splice(index + 1, 0, newBlock);
-        commitStructuralChange(next);
+        commitEnterStructuralChange(blockId, text, next);
         pendingFocusBlockIdRef.current = newBlock.id;
         setActiveBlockId(newBlock.id);
         return;
       }
-      insertBlockAfter(blockId, 'paragraph', marks);
+      // 줄 끝 Enter: 현재 텍스트를 반영한 뒤 빈 다음 줄 추가
+      const flushed = blocks.map((b) => (b.id === blockId ? { ...b, text } : b));
+      const newBlock = createWorkStudyDocBlock('paragraph');
+      if (nextMarks) newBlock.marks = nextMarks;
+      const index = flushed.findIndex((b) => b.id === blockId);
+      const next = [...flushed];
+      next.splice(index + 1, 0, newBlock);
+      commitEnterStructuralChange(blockId, text, next);
+      pendingFocusBlockIdRef.current = newBlock.id;
+      setActiveBlockId(newBlock.id);
     },
-    [activeBlocks, commitStructuralChange, insertBlockAfter, resolvePendingMarks],
+    [activeBlocks, commitEnterStructuralChange, resolvePendingMarks],
   );
 
   const continueListBlock = useCallback(
-    (blockId: string, kind: ListBlockKind) => {
-      const block = activeBlocks.find((b) => b.id === blockId);
+    (blockId: string, kind: ListBlockKind, textOverride?: string) => {
+      const page = getWorkStudyActivePage(documentRef.current);
+      const blocks = page?.blocks ?? activeBlocks;
+      const block = blocks.find((b) => b.id === blockId);
       if (!block || block.kind !== kind) return;
+      const text = textOverride ?? block.text;
       const sel = selectionByBlockRef.current[blockId];
-      const cursor = sel?.start ?? block.text.length;
-      const marks = normalizeBlockMarks(block.marks ?? resolvePendingMarks());
+      const cursor = Math.max(0, Math.min(sel?.start ?? text.length, text.length));
+      const keepMarks = normalizeBlockMarks(block.marks ?? resolvePendingMarks());
+      const nextMarks = marksForContinuedBlock(keepMarks);
 
-      if (cursor < block.text.length) {
-        const before = block.text.slice(0, cursor);
-        const after = block.text.slice(cursor);
+      if (cursor < text.length) {
+        const before = text.slice(0, cursor);
+        const after = text.slice(cursor);
         const newBlock = createWorkStudyDocBlock(kind);
         newBlock.text = after;
-        if (marks) newBlock.marks = marks;
-        const index = activeBlocks.findIndex((b) => b.id === blockId);
-        const next = activeBlocks.map((b) => (b.id === blockId ? { ...b, text: before, marks: marks ?? b.marks } : b));
+        if (kind === 'checklist') newBlock.checked = false;
+        if (nextMarks) newBlock.marks = nextMarks;
+        const index = blocks.findIndex((b) => b.id === blockId);
+        const next = blocks.map((b) =>
+          b.id === blockId ? { ...b, text: before, marks: keepMarks ?? b.marks } : b,
+        );
         next.splice(index + 1, 0, newBlock);
-        commitStructuralChange(next);
+        commitEnterStructuralChange(blockId, text, next);
         pendingFocusBlockIdRef.current = newBlock.id;
         setActiveBlockId(newBlock.id);
         return;
       }
 
-      insertBlockAfter(blockId, kind, marks);
+      const flushed = blocks.map((b) => (b.id === blockId ? { ...b, text } : b));
+      const newBlock = createWorkStudyDocBlock(kind);
+      if (kind === 'checklist') newBlock.checked = false;
+      if (nextMarks) newBlock.marks = nextMarks;
+      const index = flushed.findIndex((b) => b.id === blockId);
+      const next = [...flushed];
+      next.splice(index + 1, 0, newBlock);
+      commitEnterStructuralChange(blockId, text, next);
+      if (isListBlockKind(kind)) setActiveListKind(kind);
+      pendingFocusBlockIdRef.current = newBlock.id;
+      setActiveBlockId(newBlock.id);
     },
-    [activeBlocks, commitStructuralChange, insertBlockAfter, resolvePendingMarks],
+    [activeBlocks, commitEnterStructuralChange, resolvePendingMarks],
   );
 
   const handleBlockEnter = useCallback(
-    (block: WorkStudyDocBlock) => {
+    (blockId: string, currentText: string) => {
+      const page = getWorkStudyActivePage(documentRef.current);
+      const block =
+        (page?.blocks ?? activeBlocks).find((b) => b.id === blockId) ??
+        activeBlocks.find((b) => b.id === blockId);
+      if (!block) return;
       if (isListBlockKind(block.kind)) {
-        continueListBlock(block.id, block.kind);
+        continueListBlock(block.id, block.kind, currentText);
         return;
       }
       if (block.kind === 'paragraph' && blockHasToolbarFormatting(block, pendingMarksRef.current)) {
-        continueParagraph(block.id);
+        continueParagraph(block.id, currentText);
       }
     },
-    [continueListBlock, continueParagraph],
+    [activeBlocks, continueListBlock, continueParagraph],
   );
 
   const handleBackspaceAtStart = useCallback(
@@ -1405,6 +1571,17 @@ export function StudyDocumentEditor({
         focusedBlock ??
         (activeBlocks.length > 0 ? activeBlocks[activeBlocks.length - 1] : null);
 
+      const keepFocusOn = (blockId: string) => {
+        pendingFocusBlockIdRef.current = blockId;
+        setActiveBlockId(blockId);
+        // 블록 kind 전환 직후 TextInput이 잠깐 풀려도 바로 되돌림
+        requestAnimationFrame(() => {
+          retainEditorKeyboardFocus({ retries: 3 });
+        });
+        setTimeout(() => retainEditorKeyboardFocus({ retries: 2 }), 16);
+        setTimeout(() => retainEditorKeyboardFocus({ retries: 1 }), 64);
+      };
+
       if (block?.kind === kind) {
         pushHistory();
         replaceActiveBlocks(
@@ -1413,8 +1590,7 @@ export function StudyDocumentEditor({
           ),
         );
         setActiveListKind(null);
-        pendingFocusBlockIdRef.current = block.id;
-        setActiveBlockId(block.id);
+        keepFocusOn(block.id);
         void Haptics.selectionAsync();
         return;
       }
@@ -1425,15 +1601,21 @@ export function StudyDocumentEditor({
           activeBlocks.map((b) => (b.id === block.id ? convertBlockToKind(b, kind) : b)),
         );
         setActiveListKind(kind);
-        pendingFocusBlockIdRef.current = block.id;
-        setActiveBlockId(block.id);
+        keepFocusOn(block.id);
         void Haptics.selectionAsync();
         return;
       }
 
       insertBlock(kind);
     },
-    [activeBlockId, activeBlocks, insertBlock, pushHistory, replaceActiveBlocks],
+    [
+      activeBlockId,
+      activeBlocks,
+      insertBlock,
+      pushHistory,
+      replaceActiveBlocks,
+      retainEditorKeyboardFocus,
+    ],
   );
 
   const toggleMark = useCallback(
@@ -1472,6 +1654,14 @@ export function StudyDocumentEditor({
 
   const openLinkEditor = useCallback(() => {
     void Haptics.selectionAsync();
+    // 색 피커와 같이 다시 누르면 닫기
+    if (showLinkInput) {
+      setShowLinkInput(false);
+      setLinkDraft('');
+      linkTargetBlockIdRef.current = null;
+      return;
+    }
+
     const withPage = ensurePageDocument();
     const page = getWorkStudyActivePage(withPage);
     const blocks = page?.blocks ?? [];
@@ -1485,7 +1675,7 @@ export function StudyDocumentEditor({
 
     if (!targetBlock) {
       const created = createWorkStudyDocBlock('paragraph');
-      const marks = resolvePendingMarks();
+      const marks = marksForContinuedBlock(resolvePendingMarks());
       if (marks) created.marks = marks;
       commitStructuralChange([...blocks, created]);
       targetBlock = created;
@@ -1497,7 +1687,13 @@ export function StudyDocumentEditor({
     setLinkDraft(targetBlock.marks?.link ?? '');
     setShowColorPicker(false);
     setShowLinkInput(true);
-  }, [activeBlockId, commitStructuralChange, ensurePageDocument, resolvePendingMarks]);
+  }, [
+    activeBlockId,
+    commitStructuralChange,
+    ensurePageDocument,
+    resolvePendingMarks,
+    showLinkInput,
+  ]);
 
   const ensureEditableTargetBlock = useCallback((): WorkStudyDocBlock | null => {
     const withPage = ensurePageDocument();
@@ -1611,25 +1807,29 @@ export function StudyDocumentEditor({
 
   const onToolbarAction = useCallback(
     (action: StudyToolbarAction) => {
-      const guardDockedToolbar = keyboardToolbarMode === 'docked' && keyboardInset > 0;
-      if (guardDockedToolbar) beginToolbarInteraction();
+      const shouldRetainFocus = keyboardInset > 0 || Boolean(activeBlockIdRef.current);
+      if (shouldRetainFocus) beginToolbarInteraction();
 
       switch (action) {
         case 'undo': {
           const prev = undoStack.current.pop();
           if (prev) {
-            redoStack.current.push(cloneDocument(document));
+            clearTextEditSession();
+            redoStack.current.push(cloneDocument(documentRef.current));
             replaceDocument(prev);
             setHistoryTick((n) => n + 1);
+            setContentRevision((n) => n + 1);
           }
           break;
         }
         case 'redo': {
           const next = redoStack.current.pop();
           if (next) {
-            undoStack.current.push(cloneDocument(document));
+            clearTextEditSession();
+            undoStack.current.push(cloneDocument(documentRef.current));
             replaceDocument(next);
             setHistoryTick((n) => n + 1);
+            setContentRevision((n) => n + 1);
           }
           break;
         }
@@ -1683,17 +1883,39 @@ export function StudyDocumentEditor({
         default:
           break;
       }
-      if (guardDockedToolbar) {
+      if (shouldRetainFocus) {
         retainEditorKeyboardFocus();
         endToolbarInteraction();
       }
     },
-    [activeBlockId, activeBlocks, beginToolbarInteraction, endToolbarInteraction, ensurePageDocument, insertBlock, keyboardInset, keyboardToolbarMode, openColorPicker, openLinkEditor, pickImageForBlock, replaceDocument, resetDocument, retainEditorKeyboardFocus, toggleListKind, toggleMark],
+    [
+      activeBlockId,
+      activeBlocks,
+      beginToolbarInteraction,
+      clearTextEditSession,
+      endToolbarInteraction,
+      ensurePageDocument,
+      insertBlock,
+      keyboardInset,
+      keyboardToolbarMode,
+      openColorPicker,
+      openLinkEditor,
+      pickImageForBlock,
+      replaceDocument,
+      resetDocument,
+      retainEditorKeyboardFocus,
+      toggleListKind,
+      toggleMark,
+    ],
   );
 
   const empty = activeBlocks.length === 0;
   const keyboardOpen = keyboardInset > 0;
   const useDockedKeyboardToolbar = keyboardToolbarMode === 'docked';
+  /**
+   * accessory 모드에서 TextInput props가 자주 바뀌면 iOS가 reloadInputViews로 키보드를 깜빡인다.
+   * 리스트 토글 시 props는 안정화하고, 도킹 모드에서는 터치 시 포커스를 붙잡는다.
+   */
   const useInputAccessory = Platform.OS === 'ios' && !useDockedKeyboardToolbar;
   const textInputAccessoryViewID = useInputAccessory ? STUDY_DOCUMENT_INPUT_ACCESSORY_ID : undefined;
   const showDockedToolbar = useDockedKeyboardToolbar || Platform.OS !== 'ios' || !keyboardOpen;
@@ -1708,8 +1930,7 @@ export function StudyDocumentEditor({
     : Platform.OS === 'android'
       ? keyboardInset
       : 0;
-  const toolbarRetainFocusHandler =
-    showDockedToolbar && useDockedKeyboardToolbar ? beginToolbarInteraction : undefined;
+  const toolbarRetainFocusHandler = beginToolbarInteraction;
 
   const resolvedScrollHeight =
     viewportHeight != null
@@ -1801,6 +2022,7 @@ export function StudyDocumentEditor({
           activeUnderline={toolbarActiveUnderline}
           activeTextColor={toolbarActiveTextColor}
           colorPickerOpen={showColorPicker}
+          linkPickerOpen={showLinkInput}
           activeListKind={toolbarActiveListKind}
           onAction={onToolbarAction}
           onRetainKeyboardFocus={toolbarRetainFocusHandler}
@@ -1886,7 +2108,7 @@ export function StudyDocumentEditor({
                   : accessoryReserve + 16,
           },
         ]}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
         keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
         onScroll={(e) => {
@@ -1941,7 +2163,7 @@ export function StudyDocumentEditor({
                 onEnterKey={
                   isListBlockKind(block.kind) ||
                   (block.kind === 'paragraph' && blockHasToolbarFormatting(block, pendingMarks))
-                    ? () => handleBlockEnter(block)
+                    ? (currentText) => handleBlockEnter(block.id, currentText)
                     : undefined
                 }
                 onSelectionChange={(event) => handleSelectionChange(block.id, event)}
@@ -1954,6 +2176,7 @@ export function StudyDocumentEditor({
                 onBackspaceAtStart={() => handleBackspaceAtStart(block.id, blockIndex)}
                 paragraphMinHeight={block.kind === 'paragraph' ? paragraphMinHeight : undefined}
                 pendingTextColor={block.id === activeBlockId ? pendingMarks.color : undefined}
+                contentRevision={contentRevision}
               />
             ))}
           </View>
@@ -2195,8 +2418,19 @@ const styles = StyleSheet.create({
   },
   headingPrimary: { flex: 1, fontWeight: '800', letterSpacing: 0.6 },
   headingSecondary: { fontWeight: '700' },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, width: '100%' },
+  row: { flexDirection: 'row', alignItems: 'flex-start', width: '100%' },
   listRow: { alignItems: 'center', gap: 8 },
+  paragraphPrefixSlot: {
+    width: 0,
+    marginRight: 0,
+    overflow: 'hidden',
+  },
+  listPrefixSlot: {
+    minWidth: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   rowBody: { flex: 1, gap: 4 },
   listRowBody: { gap: 0 },
   blockInput: { fontSize: 15, lineHeight: 22, paddingVertical: 0, minHeight: 28, width: '100%' },
@@ -2215,6 +2449,10 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     minHeight: 28,
     zIndex: 0,
+  },
+  listBlockInputWrap: {
+    minHeight: 20,
+    justifyContent: 'center',
   },
   listBlockInput: {
     minHeight: 20,

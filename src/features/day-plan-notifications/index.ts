@@ -11,4 +11,10 @@ export {
   syncIncompleteRoutineReminderNotifications,
 } from './model/syncIncompleteRoutineReminderNotifications';
 export { syncWaterReminderNotifications } from './model/syncWaterReminderNotifications';
+export {
+  isRoutineStartNotifyEnabled,
+  persistRoutineStartNotifyToggle,
+  ROUTINE_START_EVENT_TYPE,
+  syncRoutineStartNotifications,
+} from './model/syncRoutineStartNotifications';
 export { buildIncompleteRoutineReminderNotificationContent } from './lib/incompleteRoutineReminderCopy';

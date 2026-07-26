@@ -68,6 +68,7 @@ export {
   type DayMealSlot
 } from './dayMealSlot';
 export {
+  alignDayMealSlotScheduleToPriorityWindow,
   DEFAULT_DAY_MEAL_SLOT_SCHEDULE,
   getMealSlotStartHhmm,
   isDayMealSlotScheduleValid,
@@ -76,6 +77,7 @@ export {
   normalizeDayMealSlotSchedule,
   resolveCurrentMealSlotFromSchedule,
   saveDayMealSlotSchedule,
+  syncDayMealSlotScheduleWithPriorityWindow,
   type DayMealSlotSchedule
 } from './dayMealSlotScheduleStorage';
 export { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
@@ -245,13 +247,23 @@ export {
   loadCategoryReminderScheduled,
   loadDayPlanScheduledNotifications,
   loadIncompleteRoutineReminder,
-  loadMedicineReminderScheduled, loadPriorityDayStartAlarm, loadPriorityDayRollMode, loadWaterReminderScheduled,
+  loadMedicineReminderScheduled,
+  loadPriorityDayStartAlarm,
+  loadPriorityDayRollMode,
+  loadRoutineStartNotifyRules,
+  loadRoutineStartNotifyScheduled,
+  loadWaterReminderScheduled,
   saveAppearanceMode,
   saveCategoryReminderRules,
   saveCategoryReminderScheduled,
   saveDayPlanScheduledNotifications,
   saveIncompleteRoutineReminder,
-  saveMedicineReminderScheduled, savePriorityDayStartAlarm, savePriorityDayRollMode, saveWaterReminderScheduled
+  saveMedicineReminderScheduled,
+  savePriorityDayStartAlarm,
+  savePriorityDayRollMode,
+  saveRoutineStartNotifyRules,
+  saveRoutineStartNotifyScheduled,
+  saveWaterReminderScheduled,
 } from './settingsStorage';
 export {
   coerceDayPlanLayoutMode,
@@ -277,7 +289,13 @@ export type {
   CategoryReminderScheduledRow,
   DayPlanScheduledNotification,
   IncompleteRoutineReminderPersisted,
-  MedicineReminderScheduledRow, PriorityDayRollMode, PriorityDayStartAlarmPersisted, WaterReminderScheduledRow
+  MedicineReminderScheduledRow,
+  PriorityDayRollMode,
+  PriorityDayStartAlarmPersisted,
+  RoutineStartNotifyRuleRow,
+  RoutineStartNotifyRules,
+  RoutineStartNotifyScheduledRow,
+  WaterReminderScheduledRow,
 } from './settingsStorage';
 export { StorageKeys } from './storageKeys';
 export {

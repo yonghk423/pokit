@@ -150,19 +150,28 @@ export function ReadingSettings({
   const palette = useMemo(() => goalDetailSettingsPalette(isDark), [isDark]);
   const c = palette;
 
-  const [displayName, setDisplayName] = useState('');
-  const [books, setBooks] = useState<ReadingBookEntry[]>([]);
+  const initialConfig = useMemo(
+    () => normalizeReadingLiveActivityConfig(dataConfig),
+    // 마운트 시드용 — 이후 hydrate effect가 dataConfig 변경을 반영한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const [displayName, setDisplayName] = useState(initialConfig.displayName ?? '');
+  const [books, setBooks] = useState<ReadingBookEntry[]>(() =>
+    initialConfig.books.map((book) => ensureReadingBookPages(book)),
+  );
   const [searchSheetVisible, setSearchSheetVisible] = useState(false);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
-  const [summary, setSummary] = useState('');
+  const [summary, setSummary] = useState(initialConfig.summary ?? '');
   const [activeTab, setActiveTab] = useState<LibraryTab>('all');
   const [detailBookId, setDetailBookId] = useState<string | null>(null);
   const [libraryQuery, setLibraryQuery] = useState('');
   const [listSearchActive, setListSearchActive] = useState(false);
   const [librarySortOrder, setLibrarySortOrder] = useState<ReadingLibrarySortOrder>('newest');
 
-  const lastPushedRef = useRef<string | null>(null);
-  const hydratedKeyRef = useRef<string | null>(null);
+  const lastPushedRef = useRef<string | null>(JSON.stringify(initialConfig));
+  const hydratedKeyRef = useRef<string | null>(JSON.stringify(initialConfig));
 
   useEffect(() => {
     const next = normalizeReadingLiveActivityConfig(dataConfig);

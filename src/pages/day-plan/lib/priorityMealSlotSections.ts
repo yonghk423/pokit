@@ -229,6 +229,7 @@ function parseWindowMinutes(hhmm: string): number | null {
 
 function formatWindowMinutes(total: number): string {
   const t = Math.max(0, Math.min(total, 24 * 60));
+  if (t === 24 * 60) return '24:00';
   const h = Math.floor(t / 60);
   const m = t % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -236,8 +237,9 @@ function formatWindowMinutes(total: number): string {
 
 /**
  * 구간(시간대) 목록을 하루 시작~마무리 창에 맞춥니다. (오늘 탭 구간 보기 전용, 표시만 보정)
- * - 창 시작 시점에 활성인 구간을 맨 앞에 두고 그 시작 시각을 하루 시작으로 클램프.
- * - 나머지는 창 순서(자정 넘김 포함)대로 정렬.
+ * - 창 시작 시점에 활성인 구간을 맨 앞에 두고, 시작 시각을 하루 시작으로 맞춘다.
+ * - 창 안 마지막 구간의 시작 시각은 하루 마무리로 맞춘다. (예: 끝 24:00 → 밤 24:00)
+ * - 가운데 구간은 「시간대 변경」설정값을 유지한다.
  * - 창 밖 구간은 숨김. 단, 항목이 있는 구간은 데이터 유실 방지를 위해 뒤에 유지.
  */
 export function clampMealSlotSectionsToWindow<
@@ -257,6 +259,7 @@ export function clampMealSlotSectionsToWindow<
     : endMinRaw === startMin
       ? 24 * 60
       : endMinRaw + 24 * 60 - startMin;
+  const endDisplayMin = overnight && endMinRaw === 0 ? 24 * 60 : endMinRaw;
 
   const mod = (n: number) => ((n % (24 * 60)) + 24 * 60) % (24 * 60);
 
@@ -288,14 +291,39 @@ export function clampMealSlotSectionsToWindow<
     .filter((_, i) => i !== activeIdx)
     .map((v) => ({ section: v.section, off: mod(v.start - startMin) }));
 
+  // 같은 날: 하루 끝과 시작이 같은 구간(밤 24:00)도 마지막에 포함.
+  // 자정 넘김: 끝 시각에 시작하는 다음 구간(예: 06:00 아침)은 제외.
   const inWindow = rest
-    .filter((v) => v.off > 0 && v.off < windowLen)
-    .sort((a, b) => a.off - b.off);
+    .filter((v) =>
+      overnight ? v.off > 0 && v.off < windowLen : v.off > 0 && v.off <= windowLen,
+    )
+    .sort((a, b) => a.off - b.off)
+    .map((v) => v.section);
   const outWithItems = rest
-    .filter((v) => v.off >= windowLen && v.section.items.length > 0)
-    .sort((a, b) => a.off - b.off);
+    .filter((v) => {
+      const beyond = overnight ? v.off >= windowLen : v.off > windowLen;
+      return beyond && v.section.items.length > 0;
+    })
+    .sort((a, b) => a.off - b.off)
+    .map((v) => v.section);
 
-  return [first, ...inWindow.map((v) => v.section), ...outWithItems.map((v) => v.section)];
+  const windowSections: T[] = [first, ...inWindow];
+  if (windowSections.length >= 2) {
+    // 창 안 마지막 구간 = 하루 마무리 시각 (예: 24:00 → 밤 24:00)
+    const lastIdx = windowSections.length - 1;
+    windowSections[lastIdx] = {
+      ...windowSections[lastIdx]!,
+      hintTime: formatWindowMinutes(endDisplayMin),
+    } as T;
+  } else if (first.slot === 'night' && endDisplayMin === 24 * 60) {
+    // 밤만 남는 창이고 하루가 자정에 끝나면 밤을 24:00으로 표시
+    windowSections[0] = {
+      ...first,
+      hintTime: formatWindowMinutes(endDisplayMin),
+    } as T;
+  }
+
+  return [...windowSections, ...outWithItems];
 }
 
 export function flattenPriorityMealSlotSectionKeys<T extends { key: string }>(

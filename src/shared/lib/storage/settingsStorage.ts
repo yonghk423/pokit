@@ -44,6 +44,19 @@ export type WaterReminderScheduledRow = {
   notificationId: string;
 };
 
+/** 루틴 시작 시각 알림 — 카테고리별 on/off */
+export type RoutineStartNotifyRuleRow = {
+  enabled: boolean;
+};
+
+export type RoutineStartNotifyRules = Record<string, RoutineStartNotifyRuleRow>;
+
+/** 루틴 시작 알림 OS 예약 — `${categoryKey}:${HH:mm}` */
+export type RoutineStartNotifyScheduledRow = {
+  slotKey: string;
+  notificationId: string;
+};
+
 export type AppearanceMode = 'light' | 'dark';
 
 /** 하루(시작~마무리) 구간이 지난 뒤 오늘 탭 담기 처리 */
@@ -57,6 +70,8 @@ type SettingsStorageShape = {
   categoryReminderScheduled?: CategoryReminderScheduledRow[];
   medicineReminderScheduled?: MedicineReminderScheduledRow[];
   waterReminderScheduled?: WaterReminderScheduledRow[];
+  routineStartNotifyRules?: RoutineStartNotifyRules;
+  routineStartNotifyScheduled?: RoutineStartNotifyScheduledRow[];
   appearanceMode?: AppearanceMode;
   priorityDayRollMode?: PriorityDayRollMode;
 };
@@ -249,6 +264,51 @@ export function saveWaterReminderScheduled(rows: WaterReminderScheduledRow[]): v
   localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
     ...root,
     waterReminderScheduled: rows,
+  });
+}
+
+export function loadRoutineStartNotifyRules(): RoutineStartNotifyRules {
+  const root = readRoot();
+  const raw = root.routineStartNotifyRules;
+  if (!raw || typeof raw !== 'object') return {};
+  const out: RoutineStartNotifyRules = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (!k || !v || typeof v !== 'object') continue;
+    const enabled = (v as RoutineStartNotifyRuleRow).enabled;
+    if (typeof enabled !== 'boolean') continue;
+    out[k] = { enabled };
+  }
+  return out;
+}
+
+export function saveRoutineStartNotifyRules(next: RoutineStartNotifyRules): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    routineStartNotifyRules: next,
+  });
+}
+
+export function loadRoutineStartNotifyScheduled(): RoutineStartNotifyScheduledRow[] {
+  const root = readRoot();
+  const rows = root.routineStartNotifyScheduled;
+  if (!Array.isArray(rows)) return [];
+  return rows.filter(
+    (row): row is RoutineStartNotifyScheduledRow =>
+      Boolean(
+        row &&
+        typeof row === 'object' &&
+        typeof (row as RoutineStartNotifyScheduledRow).slotKey === 'string' &&
+        typeof (row as RoutineStartNotifyScheduledRow).notificationId === 'string',
+      ),
+  );
+}
+
+export function saveRoutineStartNotifyScheduled(rows: RoutineStartNotifyScheduledRow[]): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    routineStartNotifyScheduled: rows,
   });
 }
 

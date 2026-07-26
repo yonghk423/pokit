@@ -31,6 +31,8 @@ export type SnappedTimePickerFieldProps = {
   /** 데이플랜「시작~마무리」안으로만 시각이 잡힘(둘 다 유효할 때만) */
   routineDayStartHhmm?: string;
   routineDayEndHhmm?: string;
+  /** 오전 12:00 → `24:00`(하루 끝). 밤 구간 등 */
+  mapMidnightToEndOfDay?: boolean;
   /** 시각 pill 왼쪽에 표시할 날짜(예: 5월 21일) */
   dateCaption?: string;
 };
@@ -47,6 +49,7 @@ export function SnappedTimePickerField({
   snapStepMinutes = TIME_SNAP_MINUTES,
   routineDayStartHhmm,
   routineDayEndHhmm,
+  mapMidnightToEndOfDay = false,
   dateCaption,
 }: SnappedTimePickerFieldProps) {
   const applyRoutineWindow = useMemo(() => {
@@ -126,6 +129,7 @@ export function SnappedTimePickerField({
             surface={palette.containerLowest}
             selectedForeground={selectedFg}
             snapStepMinutes={snapStepMinutes}
+            mapMidnightToEndOfDay={mapMidnightToEndOfDay}
             accessibilityLabelPrefix={label}
           />
           <Pressable

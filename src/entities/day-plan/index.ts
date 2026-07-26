@@ -235,6 +235,11 @@ export {
   formatMinutesToHHmm, MIN_BLOCK_DURATION_MINUTES,
   PRIORITY_WINDOW_DEFAULT_SPAN_MINUTES, snapMinutes, TIME_SNAP_MINUTES
 } from './lib/dayPlanTimeMath';
+export {
+  collectRoutineStartNotifySlots,
+  hasResolvableRoutineStartTime,
+  type RoutineStartNotifySlot,
+} from './lib/resolveRoutineStartNotifySlots';
 export { DEFAULT_DAY_PLAN_BLOCKS } from './lib/defaultBlocks';
 export { deleteCustomFlowCategory } from './lib/deleteCustomFlowCategory';
 export { dismissCatalogGroupWithItemReassign } from './lib/dismissCatalogGroup';

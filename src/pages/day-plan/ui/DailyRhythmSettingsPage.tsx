@@ -11,6 +11,7 @@ import {
   loadPriorityDayRollMode,
   loadPriorityDayStartAlarm,
   savePriorityDayRollMode,
+  syncDayMealSlotScheduleWithPriorityWindow,
   type PriorityDayRollMode,
 } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -99,6 +100,7 @@ export function DailyRhythmSettingsPage() {
       setPriorityStart(start);
       setPriorityEnd(end);
       syncOvernightPriorityPlanDates();
+      syncDayMealSlotScheduleWithPriorityWindow(start, end);
       savePriorityDayRollMode(dayRollMode);
       const ok = await syncPriorityDayStartAlarm({ enabled: dayStartAlarmOn, startHhmm: start });
       if (dayStartAlarmOn && !ok) {

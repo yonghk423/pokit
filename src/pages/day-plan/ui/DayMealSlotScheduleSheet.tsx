@@ -4,6 +4,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  alignDayMealSlotScheduleToPriorityWindow,
   DAY_MEAL_SLOT_LABEL,
   DAY_MEAL_SLOT_ORDER,
   DEFAULT_DAY_MEAL_SLOT_SCHEDULE,
@@ -15,6 +16,8 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
+import { isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
+
 type Props = {
   visible: boolean;
   schedule: DayMealSlotSchedule;
@@ -23,6 +26,9 @@ type Props = {
   onSave: (next: DayMealSlotSchedule) => void;
   /** 열릴 때 펼칠 구간 — 오늘 탭에서 특정 시간을 눌러 들어올 때 */
   initialExpandedSlot?: DayMealSlot | null;
+  /** 하루 시작·마무리 — 있으면 첫·끝 구간을 창에 맞춰 표시 */
+  priorityStart?: string;
+  priorityEnd?: string;
 };
 
 const SLOT_HINTS: Record<DayMealSlot, string> = {
@@ -40,6 +46,8 @@ export function DayMealSlotScheduleSheet({
   onClose,
   onSave,
   initialExpandedSlot = null,
+  priorityStart,
+  priorityEnd,
 }: Props) {
   const insets = useSafeAreaInsets();
   const palette = useMemo(() => paletteForReminderTimeCard(isDark), [isDark]);
@@ -47,11 +55,21 @@ export function DayMealSlotScheduleSheet({
   const [expandedSlot, setExpandedSlot] = useState<DayMealSlot | null>(null);
 
   useEffect(() => {
-    if (visible) {
-      setDraft(schedule);
-      setExpandedSlot(initialExpandedSlot);
-    }
-  }, [visible, schedule, initialExpandedSlot]);
+    if (!visible) return;
+    const start = priorityStart?.trim() ?? '';
+    const end = priorityEnd?.trim() ?? '';
+    const aligned =
+      start && end
+        ? alignDayMealSlotScheduleToPriorityWindow(
+            schedule,
+            start,
+            end,
+            isOvernightHhmmRange(start, end),
+          )
+        : schedule;
+    setDraft(aligned);
+    setExpandedSlot(initialExpandedSlot);
+  }, [visible, schedule, initialExpandedSlot, priorityStart, priorityEnd]);
 
   const handleSave = useCallback(() => {
     if (!isDayMealSlotScheduleValid(draft)) {
@@ -68,9 +86,21 @@ export function DayMealSlotScheduleSheet({
 
   const handleReset = useCallback(() => {
     void Haptics.selectionAsync();
-    setDraft({ ...DEFAULT_DAY_MEAL_SLOT_SCHEDULE });
+    const start = priorityStart?.trim() ?? '';
+    const end = priorityEnd?.trim() ?? '';
+    const base = { ...DEFAULT_DAY_MEAL_SLOT_SCHEDULE };
+    setDraft(
+      start && end
+        ? alignDayMealSlotScheduleToPriorityWindow(
+            base,
+            start,
+            end,
+            isOvernightHhmmRange(start, end),
+          )
+        : base,
+    );
     setExpandedSlot(null);
-  }, []);
+  }, [priorityStart, priorityEnd]);
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -113,6 +143,7 @@ export function DayMealSlotScheduleSheet({
                 isDark={isDark}
                 palette={palette.timeField}
                 snapStepMinutes={1}
+                mapMidnightToEndOfDay={slot === 'night'}
               />
             </View>
           ))}

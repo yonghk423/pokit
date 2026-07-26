@@ -32,6 +32,11 @@ import {
   type CustomFlowTemplateKey
 } from '@entities/day-plan';
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
+import {
+  isRoutineStartNotifyEnabled,
+  persistRoutineStartNotifyToggle,
+  syncRoutineStartNotifications,
+} from '@features/day-plan-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
@@ -61,7 +66,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
-import { getPickerCategoryLabel } from '../lib/dayPlanEditorShared';
+import { getPickerCategoryLabel, isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
 import {
   getFixedFlowPresetScheduleHint,
@@ -159,6 +164,8 @@ type FlowCardProps = {
     endMinutes: number,
     endsNextCalendarDay: boolean,
   ) => void;
+  startNotifyEnabled?: boolean;
+  onToggleStartNotify?: () => void;
   onToggleEnabled: (enabled: boolean) => void;
   onDelete: () => void;
 };
@@ -185,6 +192,8 @@ function FlowItemCard({
   priorityEnd,
   baseDateKey,
   onChangeSpineTime,
+  startNotifyEnabled = false,
+  onToggleStartNotify,
   onToggleEnabled,
   onDelete,
 }: FlowCardProps) {
@@ -290,6 +299,21 @@ function FlowItemCard({
     onToggleMealSlot?.(slot);
   };
 
+  const showStartNotify = Boolean(
+    (showSpineTimePicker && onChangeSpineTime) || (showMealSlotPicker && onToggleMealSlot),
+  );
+  const canStartNotify = showSpineTimePicker
+    ? spineStartMinutes != null && spineEndMinutes != null
+    : mealSlots.length > 0;
+
+  const handleToggleStartNotify = () => {
+    if (!canStartNotify) {
+      Alert.alert('시작 알림', '먼저 루틴 시작 시간을 정해 주세요.');
+      return;
+    }
+    onToggleStartNotify?.();
+  };
+
   return (
     <View
       style={[
@@ -392,6 +416,35 @@ function FlowItemCard({
               color={spineTimeIconHighlighted ? ink : muted}
             />
           </Reanimated.View>
+        </Pressable>
+      ) : null}
+      {showStartNotify && onToggleStartNotify ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: startNotifyEnabled, disabled: !canStartNotify }}
+          accessibilityLabel={`${label} 시작 알림 ${startNotifyEnabled ? '켜짐' : '꺼짐'}`}
+          hitSlop={10}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            handleToggleStartNotify();
+          }}
+          style={({ pressed }) => [
+            styles.flowSlotBtn,
+            {
+              borderColor: startNotifyEnabled ? ink : settingsBorder,
+              backgroundColor: startNotifyEnabled
+                ? isDark
+                  ? 'rgba(255,255,255,0.14)'
+                  : 'rgba(0,0,0,0.06)'
+                : settingsBg,
+              opacity: pressed ? 0.72 : canStartNotify ? 1 : 0.45,
+            },
+          ]}>
+          <IconSymbol
+            name={startNotifyEnabled ? 'bell.fill' : 'bell'}
+            size={14}
+            color={startNotifyEnabled ? ink : muted}
+          />
         </Pressable>
       ) : null}
       <Pressable
@@ -668,6 +721,8 @@ type GroupAccordionProps = {
     endMinutes: number,
     endsNextCalendarDay: boolean,
   ) => void;
+  isStartNotifyEnabled?: (categoryKey: string) => boolean;
+  onToggleStartNotify?: (categoryKey: string) => void;
 };
 
 function GroupAccordion({
@@ -703,6 +758,8 @@ function GroupAccordion({
   onOpenAddItem,
   onToggleItemMealSlot,
   onChangeItemSpineTime,
+  isStartNotifyEnabled,
+  onToggleStartNotify,
 }: GroupAccordionProps) {
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
   const totalCount = setItem.items.length;
@@ -960,6 +1017,12 @@ function GroupAccordion({
                           endsNextCalendarDay,
                         )
                       : undefined}
+                      startNotifyEnabled={isStartNotifyEnabled?.(item.categoryKey) ?? false}
+                      onToggleStartNotify={
+                        onToggleStartNotify
+                          ? () => onToggleStartNotify(item.categoryKey)
+                          : undefined
+                      }
                       onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
                       onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
                     />
@@ -1125,7 +1188,40 @@ export function FixedRoutinePage({
   const {
     schedule: mealSlotSchedule,
     persistSchedule: persistMealSlotSchedule,
+    syncWithPriorityWindow: syncMealSlotScheduleWithPriorityWindow,
   } = useDayMealSlotSchedule();
+  const [startNotifyRevision, setStartNotifyRevision] = useState(0);
+
+  useEffect(() => {
+    syncMealSlotScheduleWithPriorityWindow(
+      priorityStart,
+      priorityEnd,
+      isOvernightHhmmRange(priorityStart, priorityEnd),
+    );
+  }, [priorityStart, priorityEnd, syncMealSlotScheduleWithPriorityWindow]);
+
+  const handleToggleStartNotify = useCallback(async (categoryKey: string) => {
+    const nextEnabled = !isRoutineStartNotifyEnabled(categoryKey);
+    const ok = await persistRoutineStartNotifyToggle(categoryKey, nextEnabled);
+    setStartNotifyRevision((n) => n + 1);
+    if (nextEnabled && !ok) {
+      Alert.alert('알림', '알림을 켜려면 기기에서 알림 권한을 허용해 주세요.');
+      return;
+    }
+    void Haptics.notificationAsync(
+      nextEnabled && ok
+        ? Haptics.NotificationFeedbackType.Success
+        : Haptics.NotificationFeedbackType.Warning,
+    );
+  }, []);
+
+  const isStartNotifyEnabledForCategory = useCallback(
+    (categoryKey: string) => {
+      void startNotifyRevision;
+      return isRoutineStartNotifyEnabled(categoryKey);
+    },
+    [startNotifyRevision],
+  );
 
   const completedCategoryKeysFromPlan = useMemo(() => {
     const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
@@ -1176,6 +1272,7 @@ export function FixedRoutinePage({
   const handleToggleItemMealSlot = useCallback(
     (setId: string, categoryKey: string, slot: DayMealSlot) => {
       toggleCategoryMealSlotInSet(setId, categoryKey, slot);
+      void syncRoutineStartNotifications();
       void Haptics.selectionAsync();
     },
     [toggleCategoryMealSlotInSet],
@@ -1623,7 +1720,12 @@ export function FixedRoutinePage({
                       endsNextCalendarDay,
                     );
                     notifyFixedFlowApplyScheduleChanged();
+                    void syncRoutineStartNotifications();
                     void Haptics.selectionAsync();
+                  }}
+                  isStartNotifyEnabled={isStartNotifyEnabledForCategory}
+                  onToggleStartNotify={(categoryKey) => {
+                    void handleToggleStartNotify(categoryKey);
                   }}
                 />
               ))}
@@ -1743,6 +1845,8 @@ export function FixedRoutinePage({
         visible={mealSlotScheduleSheetOpen}
         schedule={mealSlotSchedule}
         isDark={isDark}
+        priorityStart={priorityStart}
+        priorityEnd={priorityEnd}
         onClose={() => setMealSlotScheduleSheetOpen(false)}
         onSave={persistMealSlotSchedule}
       />

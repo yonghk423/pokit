@@ -16,6 +16,11 @@ export type DigitalHhmmInputProps = {
   disabled?: boolean;
   /** 분 스냅 간격. 기본 1분 */
   snapStepMinutes?: number;
+  /**
+   * 오전 12:00을 `00:00` 대신 `24:00`(하루 끝)으로 저장.
+   * 밤 구간·하루 마무리처럼 자정을 끝 시각으로 쓸 때.
+   */
+  mapMidnightToEndOfDay?: boolean;
   /** 접근성 라벨 접두 (예: 시작, 종료) */
   accessibilityLabelPrefix?: string;
 };
@@ -88,6 +93,7 @@ export function DigitalHhmmInput({
   selectedForeground = '#FAFAFA',
   disabled = false,
   snapStepMinutes = 1,
+  mapMidnightToEndOfDay = false,
   accessibilityLabelPrefix,
 }: DigitalHhmmInputProps) {
   const synced = useMemo(() => draftsFromValue(valueHhmm), [valueHhmm]);
@@ -122,7 +128,9 @@ export function DigitalHhmmInput({
     const min = next.min ?? Math.min(59, Math.max(0, parseInt(minDraft, 10) || 0));
     const meridiem = next.ap ?? ap;
     const raw = from12h(h12, min, meridiem);
-    const total = options?.snap === false ? raw : snapMinutes(raw, snapStepMinutes);
+    const snapped = options?.snap === false ? raw : snapMinutes(raw, snapStepMinutes);
+    const total =
+      mapMidnightToEndOfDay && snapped === 0 ? 24 * 60 : snapped;
     onChangeHhmm(formatHhmm(total));
   };
 

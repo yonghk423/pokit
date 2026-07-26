@@ -68,6 +68,7 @@ import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
 import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
 import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
 import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
+import { RoutineStartNotifyField } from './lib/RoutineStartNotifyField';
 
 function palette(isDark: boolean) {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -871,6 +872,12 @@ export function GoalDetailSettingsPage() {
                     muted={c.onVariant}
                   />
                 ) : null}
+                <RoutineStartNotifyField
+                  categoryKey={categoryKey}
+                  ink={c.onSurface}
+                  muted={c.onVariant}
+                  border={c.border}
+                />
               </View>
             ) : null}
 
