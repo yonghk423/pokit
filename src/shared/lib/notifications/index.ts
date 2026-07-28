@@ -9,6 +9,7 @@ export {
   getLocalNotificationPermissionSnapshot,
   scheduleDailyLocalNotification,
   scheduleLocalNotification,
+  scheduleWeeklyLocalNotification,
   sendImmediateNotification,
 } from './client';
 export type { LocalNotificationPermissionSnapshot } from './client';

@@ -119,6 +119,41 @@ export async function scheduleDailyLocalNotification(params: {
   });
 }
 
+/** 매주 특정 요일·시·분에 울리는 로컬 알림. (`weekday`: 0=일~6=토) */
+export async function scheduleWeeklyLocalNotification(params: {
+  title: string;
+  body: string;
+  weekday: number;
+  hour: number;
+  minute: number;
+  data?: Record<string, unknown>;
+  identifier?: string;
+}): Promise<string | null> {
+  if (!isNativeNotificationPlatform()) return null;
+  await ensureConfigured();
+
+  const weekday = Math.max(0, Math.min(6, Math.floor(params.weekday)));
+  const hour = Math.max(0, Math.min(23, Math.floor(params.hour)));
+  const minute = Math.max(0, Math.min(59, Math.floor(params.minute)));
+  const expoWeekday = weekday + 1; // Expo weekly: 1=일요일 ... 7=토요일
+
+  return Notifications.scheduleNotificationAsync({
+    identifier: params.identifier,
+    content: {
+      title: params.title,
+      body: params.body,
+      sound: true,
+      data: params.data,
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+      weekday: expoWeekday,
+      hour,
+      minute,
+    },
+  });
+}
+
 export async function cancelScheduledNotificationByIdentifier(
   identifier: string,
 ): Promise<void> {

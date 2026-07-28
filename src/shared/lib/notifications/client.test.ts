@@ -26,7 +26,7 @@ jest.mock('expo-notifications', () => ({
     mockAddNotificationResponseReceivedListener(...args),
   addNotificationReceivedListener: (...args: unknown[]) =>
     mockAddNotificationReceivedListener(...args),
-  SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily' },
+  SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily', WEEKLY: 'weekly' },
   AndroidImportance: { DEFAULT: 4 },
 }));
 
@@ -40,6 +40,7 @@ import {
   getLocalNotificationPermissionSnapshot,
   scheduleDailyLocalNotification,
   scheduleLocalNotification,
+  scheduleWeeklyLocalNotification,
   sendImmediateNotification,
 } from './client';
 
@@ -67,7 +68,7 @@ describe('notifications client', () => {
     expect(mockRequestPermissionsAsync).toHaveBeenCalled();
   });
 
-  it('schedules date and daily notifications', async () => {
+  it('schedules date, daily and weekly notifications', async () => {
     const at = new Date('2025-05-26T09:00:00');
     await scheduleLocalNotification({ title: 'T', body: 'B', triggerAt: at });
     await scheduleDailyLocalNotification({
@@ -77,7 +78,15 @@ describe('notifications client', () => {
       hour: 9,
       minute: 30,
     });
-    expect(mockScheduleNotificationAsync).toHaveBeenCalledTimes(2);
+    await scheduleWeeklyLocalNotification({
+      identifier: 'pokit:weekly',
+      title: '주간',
+      body: '본문',
+      weekday: 6,
+      hour: 11,
+      minute: 15,
+    });
+    expect(mockScheduleNotificationAsync).toHaveBeenCalledTimes(3);
   });
 
   it('cancels by identifier and event type', async () => {
@@ -169,7 +178,7 @@ describe('notifications client (non-native)', () => {
       jest.doMock('expo-notifications', () => ({
         getPermissionsAsync: jest.fn(),
         scheduleNotificationAsync: jest.fn(),
-        SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily' },
+        SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily', WEEKLY: 'weekly' },
       }));
       mod = require('./client');
     });
@@ -206,7 +215,7 @@ describe('notifications client (android channel)', () => {
         getAllScheduledNotificationsAsync: jest.fn().mockResolvedValue([]),
         addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
         addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
-        SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily' },
+        SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily', WEEKLY: 'weekly' },
         AndroidImportance: { DEFAULT: 4 },
       }));
       mod = require('./client');

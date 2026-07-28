@@ -11,7 +11,7 @@ import { useLocalNotificationsStore } from '@entities/local-notifications';
 import {
   cancelLocalNotificationsById,
   ensureLocalNotificationPermission,
-  scheduleDailyLocalNotification,
+  scheduleWeeklyLocalNotification,
 } from '@shared/lib/notifications';
 import {
   loadDayMealSlotSchedule,
@@ -55,6 +55,7 @@ export async function syncRoutineStartNotifications(): Promise<void> {
     enabledCategoryKeys: enabledKeys,
     sets: fixed.sets,
     activeSetIds: fixed.activeSetIds,
+    includeInactiveSets: false,
     layoutMode: fixed.fixedRoutineApplyLayoutMode,
     mealSchedule: loadDayMealSlotSchedule(),
     planBlocks: plan.blocks,
@@ -73,18 +74,21 @@ export async function syncRoutineStartNotifications(): Promise<void> {
 
     const label = categoryReminderLabelKo(slot.categoryKey);
     const clock = formatHhmmClockKo(slot.hhmm);
-    const nid = await scheduleDailyLocalNotification({
-      title: '루틴 시작',
-      body: `${label} · ${clock}에 시작할 시간이에요.`,
-      hour,
-      minute,
-      data: {
-        eventType: ROUTINE_START_EVENT_TYPE,
-        categoryKey: slot.categoryKey,
-      },
-    });
-    if (nid) {
-      nextRows.push({ slotKey: slot.slotKey, notificationId: nid });
+    for (const weekday of slot.weekdays) {
+      const nid = await scheduleWeeklyLocalNotification({
+        title: '루틴 시작',
+        body: `${label} · ${clock}에 시작할 시간이에요.`,
+        weekday,
+        hour,
+        minute,
+        data: {
+          eventType: ROUTINE_START_EVENT_TYPE,
+          categoryKey: slot.categoryKey,
+        },
+      });
+      if (nid) {
+        nextRows.push({ slotKey: `${slot.slotKey}@${weekday}`, notificationId: nid });
+      }
     }
   }
 

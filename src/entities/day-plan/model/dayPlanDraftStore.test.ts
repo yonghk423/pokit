@@ -214,7 +214,7 @@ describe('dayPlanDraftStore', () => {
     expect(s.priorityCategoryOrder).toEqual(['reading']);
   });
 
-  it('keeps a same-day window that ended earlier today (no date change)', () => {
+  it('resets same-day window after end time passes in reset mode', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,
       planMode: 'priority',
@@ -224,14 +224,17 @@ describe('dayPlanDraftStore', () => {
       priorityEnd: '18:00',
       priorityCategoryOrder: ['reading'],
     });
-    // 오늘 18:00 종료가 지난 20:00 — 날짜는 그대로(오늘), 담기 유지
+    savePriorityDayRollMode('reset');
+    // 오늘 18:00 종료가 지난 20:00 — 같은 날짜여도 종료 후에는 초기화
     useDayPlanDraftStore
       .getState()
       .rollPriorityPlanForwardIfEnded({ nowKey: '2025-05-26', nowMin: 20 * 60 });
     const s = useDayPlanDraftStore.getState();
     expect(s.priorityPlanDateKey).toBe('2025-05-26');
     expect(s.priorityPlanDateKeyEnd).toBe('2025-05-26');
-    expect(s.priorityCategoryOrder).toEqual(['reading']);
+    expect(s.priorityCategoryOrder).toEqual([]);
+    expect(s.completedFocusCategoryKeys).toEqual([]);
+    expect(s.isFocusStarted).toBe(false);
   });
 
   it('collapses overnight auto end when window becomes same-day', () => {

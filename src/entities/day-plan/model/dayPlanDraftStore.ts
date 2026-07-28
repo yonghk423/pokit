@@ -562,9 +562,6 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     const overnight = isOvernightPriorityWindow(s.priorityStart, s.priorityEnd);
     const nextStart = today;
     const nextEnd = overnight ? addDaysToLocalDateKey(today, 1) : today;
-    // 같은 날 일찍 끝난 경우(아직 날짜가 안 넘어감)는 그대로 둔다.
-    if (s.priorityPlanDateKey === nextStart && s.priorityPlanDateKeyEnd === nextEnd) return;
-
     const rollMode = loadPriorityDayRollMode();
     if (rollMode === 'keep') {
       set({
@@ -576,6 +573,8 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         planCompletionDismissedKeys: [],
         isFocusStarted: false,
       });
+      // 하루 종료 롤오버 직후에는 고정 루틴만 다시 반영하고 수동 담기는 비웁니다.
+      syncTodayTabWithFixedRoutineApply();
       return;
     }
 
@@ -590,6 +589,8 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       planCompletionDismissedKeys: [],
       isFocusStarted: false,
     });
+    // reset 모드: 수동 담기를 비운 뒤 고정 루틴 적용분만 다시 반영.
+    syncTodayTabWithFixedRoutineApply();
   },
   setPriorityStart: (value) => set({ priorityStart: value }),
   setPriorityEnd: (value) => set({ priorityEnd: value }),

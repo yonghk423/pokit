@@ -64,6 +64,31 @@ const MAX_HISTORY = 40;
 
 type ListBlockKind = 'checklist' | 'bullet' | 'numbered';
 
+function isVisuallyEmptyText(value: string): boolean {
+  // 한글 IME/붙여넣기 등에서 섞일 수 있는 zero-width 문자까지 제거해 빈 줄 판정
+  return value.replace(/[\u200B-\u200D\uFEFF]/g, '').trim().length === 0;
+}
+
+/**
+ * Enter 시 커서 위치. 한글 IME 조합 중에는 selection이 length-1로 남는 경우가 많아
+ * 줄 끝(또는 마지막 글자 위)이면 분할하지 않고 다음 빈 블록으로 넘긴다.
+ */
+function resolveEnterSplitCursor(
+  text: string,
+  selection?: { start: number; end: number } | null,
+): { cursor: number; splitMidLine: boolean } {
+  const textLen = text.length;
+  const start = selection?.start;
+  const end = selection?.end;
+  const cursor = Math.max(0, Math.min(start ?? textLen, textLen));
+  const collapsed = start == null || end == null || start === end;
+  // 줄 끝, 또는 IME로 마지막 글자 앞에 캐럿이 남은 경우 → 분할하지 않음
+  if (cursor >= textLen || (collapsed && cursor >= Math.max(0, textLen - 1))) {
+    return { cursor: textLen, splitMidLine: false };
+  }
+  return { cursor, splitMidLine: true };
+}
+
 function normalizeBlockMarks(marks?: WorkStudyBlockMarks): WorkStudyBlockMarks | undefined {
   if (!marks) return undefined;
   const next = { ...marks };
@@ -205,7 +230,7 @@ function BlockText({
   onBackspaceAtStart,
   onEnterKey,
   onSelectionChange,
-  placeholder,
+  placeholder = '',
   multiline = false,
   compact = false,
   pendingTextColor,
@@ -219,11 +244,12 @@ function BlockText({
   onChangeText: (text: string) => void;
   onFocus?: () => void;
   onBlur?: () => void;
-  onBackspaceAtStart?: () => void;
+  /** 현재 draft 텍스트를 넘겨 부모 stale 블록과의 레이스를 피한다 */
+  onBackspaceAtStart?: (currentText: string) => void;
   /** 현재 draft 텍스트를 넘겨 부모 stale 블록과의 레이스를 피한다 */
   onEnterKey?: (currentText: string) => void;
   onSelectionChange?: (event: { nativeEvent: { selection: { start: number; end: number } } }) => void;
-  placeholder: string;
+  placeholder?: string;
   multiline?: boolean;
   compact?: boolean;
   pendingTextColor?: string;
@@ -240,6 +266,7 @@ function BlockText({
   const enterLockRef = useRef(0);
   const selectionRef = useRef({ start: 0, end: 0 });
   const backspaceLockRef = useRef(0);
+  const localInputRef = useRef<TextInput | null>(null);
   const onEnterKeyRef = useRef(onEnterKey);
   onEnterKeyRef.current = onEnterKey;
   const onBackspaceAtStartRef = useRef(onBackspaceAtStart);
@@ -248,6 +275,14 @@ function BlockText({
   const [draftText, setDraftText] = useState(block.text);
   const draftTextRef = useRef(block.text);
   const committedTextRef = useRef(block.text);
+
+  const setInputRef = useCallback(
+    (ref: TextInput | null) => {
+      localInputRef.current = ref;
+      inputRef?.(ref);
+    },
+    [inputRef],
+  );
 
   useEffect(() => {
     draftTextRef.current = block.text;
@@ -278,7 +313,8 @@ function BlockText({
 
   const effectiveText = isFocused ? draftText : block.text;
   const isEmpty = effectiveText.length === 0;
-  // 포커스 중 빈 줄에는 센티널을 넣지 않는다 — 한글 IME 첫 조합이 ㅇ ㅏ ㄴ 으로 분리되는 원인.
+  // 포커스 중 빈 줄에 센티널을 넣으면 한글 IME 첫 조합이 ㅇㅏㄴ 으로 분리된다.
+  // 센티널은 비포커스 빈 줄의 Backspace 감지용으로만 쓴다.
   const useBackspaceSentinel = Boolean(onBackspaceAtStart) && isEmpty && !isFocused;
   const displayValue = useBackspaceSentinel ? EMPTY_BACKSPACE_SENTINEL : effectiveText;
 
@@ -299,7 +335,12 @@ function BlockText({
     const now = Date.now();
     if (now - backspaceLockRef.current < 80) return;
     backspaceLockRef.current = now;
-    onBackspaceAtStartRef.current();
+    // 문서 커밋은 debounce되므로 구조 변경에는 항상 최신 draft를 넘긴다.
+    // (커밋 전 값으로 병합하면 지운 글자가 이전 줄에 되살아난다)
+    const liveText = draftTextRef.current.split(EMPTY_BACKSPACE_SENTINEL).join('');
+    // 뒤늦은 blur/debounce 커밋이 옛 텍스트를 되돌리지 않도록 동기화
+    committedTextRef.current = liveText;
+    onBackspaceAtStartRef.current(liveText);
   }, []);
 
   const handleEnterKey = useCallback(() => {
@@ -313,31 +354,47 @@ function BlockText({
     onEnterKeyRef.current(text);
   }, []);
 
+  const syncNativeText = useCallback((text: string) => {
+    try {
+      localInputRef.current?.setNativeProps({ text });
+    } catch {
+      // noop
+    }
+  }, []);
+
   const handleChangeText = useCallback(
     (text: string) => {
       if (onEnterKeyRef.current && /\r?\n/.test(text)) {
         const cleaned = text.replace(/\r?\n/g, '').split(EMPTY_BACKSPACE_SENTINEL).join('');
         draftTextRef.current = cleaned;
         setDraftText(cleaned);
+        // submitBehavior='submit'이 개행을 막지 못한 플랫폼용 폴백
+        syncNativeText(cleaned);
         handleEnterKey();
         return;
       }
       const cleaned = text.split(EMPTY_BACKSPACE_SENTINEL).join('');
-      // 센티널만 지워진 경우 → 빈 줄에서 백스페이스로 이전 블록 합치기/삭제
-      if (onBackspaceAtStartRef.current && isEmpty && cleaned.length === 0) {
+      // 센티널만 지워진 경우(비포커스→포커스 전) → 빈 줄 백스페이스로 구조 변경
+      if (
+        onBackspaceAtStartRef.current &&
+        isVisuallyEmptyText(draftTextRef.current) &&
+        isVisuallyEmptyText(cleaned)
+      ) {
         triggerBackspaceAtStart();
         return;
       }
       draftTextRef.current = cleaned;
       setDraftText(cleaned);
+      // 포커스 중에는 센티널을 다시 넣지 않는다 — 한글 조합을 깨뜨림
     },
-    [handleEnterKey, isEmpty, triggerBackspaceAtStart],
+    [handleEnterKey, syncNativeText, triggerBackspaceAtStart],
   );
 
   const handleFocus = useCallback(() => {
     setIsFocused(true);
     draftTextRef.current = block.text;
     setDraftText(block.text);
+    selectionRef.current = { start: 0, end: 0 };
     onFocus?.();
   }, [block.text, onFocus]);
 
@@ -350,10 +407,6 @@ function BlockText({
     onBlur?.();
   }, [onBlur, onChangeText]);
 
-  const isEnterKey = useCallback((key: string) => {
-    return key === 'Enter' || key === '\n' || key === 'Return';
-  }, []);
-
   // 레이아웃용 style/compact는 래퍼에만 적용 — TextInput native props 변동 시 iOS 키보드 reload 방지
   return (
     <View
@@ -363,42 +416,43 @@ function BlockText({
         style,
       ]}>
       <TextInput
-        ref={inputRef}
+        ref={setInputRef}
         value={displayValue}
         onChangeText={handleChangeText}
         onFocus={handleFocus}
         onBlur={handleBlur}
         inputAccessoryViewID={inputAccessoryViewID}
-        blurOnSubmit={false}
+        // multiline 기본값('newline')은 Return 시 네이티브가 개행을 먼저 넣어
+        // 줄이 늘었다가 새 블록으로 다시 내려가는 점프가 생긴다.
+        // 'submit'은 개행 없이 onSubmitEditing만 보낸다.
+        submitBehavior={onEnterKey ? 'submit' : 'newline'}
         returnKeyType="default"
         onSubmitEditing={() => {
-          if (onEnterKeyRef.current) {
-            handleEnterKey();
-          }
+          if (onEnterKeyRef.current) handleEnterKey();
         }}
         onSelectionChange={(event) => {
           selectionRef.current = event.nativeEvent.selection;
           onSelectionChange?.(event);
         }}
         onKeyPress={(event) => {
-          if (event.nativeEvent.key === 'Backspace' && onBackspaceAtStartRef.current) {
+          const key = event.nativeEvent.key;
+          const isBackspaceLike = key === 'Backspace' || key === 'Delete';
+          if (isBackspaceLike && onBackspaceAtStartRef.current) {
             const { start, end } = selectionRef.current;
-            const atStart = start === 0 && end === 0;
             const onlySentinel =
-              useBackspaceSentinel && start <= 1 && end <= 1 && effectiveText.length === 0;
-            if (atStart || onlySentinel || isEmpty) {
+              useBackspaceSentinel && start <= 1 && end <= 1 && isVisuallyEmptyText(effectiveText);
+            // 비어 있는 줄(또는 센티널 전용 줄)에서만 구조 변경을 트리거한다.
+            // 비어 있지 않은 줄의 맨 앞 Backspace는 실수로 이전 줄과 합쳐지는 부작용을 막기 위해 무시한다.
+            if (onlySentinel || isVisuallyEmptyText(effectiveText)) {
               event.preventDefault();
               triggerBackspaceAtStart();
               return;
             }
           }
-          if (onEnterKeyRef.current && isEnterKey(event.nativeEvent.key)) {
-            event.preventDefault();
-            handleEnterKey();
-          }
         }}
+        // TextInput placeholder는 빈 값 한 프레임에 깜빡이므로 본문에서는 쓰지 않는다.
         placeholder={placeholder}
-        placeholderTextColor={palette.outline}
+        placeholderTextColor={placeholder ? palette.outline : 'transparent'}
         multiline
         scrollEnabled={false}
         textAlignVertical="top"
@@ -435,7 +489,6 @@ function StudyDocumentBlockView({
   onChangeBlock,
   onPickImage,
   onBackspaceAtStart,
-  paragraphMinHeight,
   inputAccessoryViewID,
   registerInputRef,
   onEnterKey,
@@ -453,8 +506,7 @@ function StudyDocumentBlockView({
   onBlurBlock?: () => void;
   onChangeBlock: (id: string, patch: Partial<WorkStudyDocBlock>) => void;
   onPickImage: () => void;
-  onBackspaceAtStart?: () => void;
-  paragraphMinHeight?: number;
+  onBackspaceAtStart?: (currentText: string) => void;
   inputAccessoryViewID?: string;
   registerInputRef: (blockId: string, ref: TextInput | null) => void;
   onEnterKey?: (currentText: string) => void;
@@ -675,8 +727,6 @@ function StudyDocumentBlockView({
           contentRevision={contentRevision}
           compact={isListBlock}
           pendingTextColor={pendingTextColor}
-          /** placeholder도 kind마다 바꾸면 TextInput props 갱신→키보드 reload 유발 */
-          placeholder="글을 입력해주세요."
           multiline
           style={
             block.kind === 'paragraph'
@@ -688,7 +738,6 @@ function StudyDocumentBlockView({
                     : blocks[blockIndex + 1] && blockNeedsTailParagraph(blocks[blockIndex + 1]!)
                       ? styles.compactParagraph
                       : null,
-                  paragraphMinHeight && !onEnterKey ? { minHeight: paragraphMinHeight } : null,
                 ]
               : undefined
           }
@@ -749,6 +798,10 @@ export function StudyDocumentEditor({
   const selectionByBlockRef = useRef<Record<string, { start: number; end: number }>>({});
   const pendingFocusBlockIdRef = useRef<string | null>(null);
   const pendingFocusSelectionRef = useRef<{ start: number; end: number } | null>(null);
+  /** Enter/구조 변경으로 옮긴 포커스 — handleFocusBlock 중복 스크롤 방지 */
+  const programmaticFocusRef = useRef(false);
+  /** 새 블록 onLayout 이후에만 스크롤 — 레이아웃 접힘 중 스크롤 점프 방지 */
+  const pendingEnterScrollBlockIdRef = useRef<string | null>(null);
   const linkTargetBlockIdRef = useRef<string | null>(null);
   const toolbarInteractionRef = useRef(false);
   const textEditSessionRef = useRef(false);
@@ -788,6 +841,7 @@ export function StudyDocumentEditor({
       setActiveBlockId(blockId);
       const input = blockInputRefs.current[blockId];
       if (input) {
+        programmaticFocusRef.current = true;
         input.focus();
         applyInputSelection(input, cursor);
         pendingFocusBlockIdRef.current = null;
@@ -841,18 +895,15 @@ export function StudyDocumentEditor({
     retainEditorKeyboardFocus({ retries: 3 });
   }, [retainEditorKeyboardFocus]);
 
-  const registerBlockLayout = useCallback((blockId: string, y: number) => {
-    blockLayoutYRef.current[blockId] = y;
-  }, []);
-
   const scrollActiveBlockIntoView = useCallback(
-    (blockId?: string | null) => {
+    (blockId?: string | null, options?: { animated?: boolean }) => {
       const targetId = blockId ?? activeBlockIdRef.current;
       if (!targetId) return;
       const y = blockLayoutYRef.current[targetId];
       if (y == null) return;
       const viewportH = scrollViewportLayoutHeightRef.current;
       if (viewportH <= 0) return;
+      const animated = options?.animated ?? true;
 
       const toolbarH =
         KEYBOARD_ACCESSORY_ESTIMATED_HEIGHT +
@@ -867,16 +918,27 @@ export function StudyDocumentEditor({
       if (targetBottom > visibleBottom) {
         canvasScrollRef.current?.scrollTo({
           y: Math.max(0, targetBottom - viewportH + bottomPad),
-          animated: true,
+          animated,
         });
       } else if (y < visibleTop) {
         canvasScrollRef.current?.scrollTo({
           y: Math.max(0, y - 12),
-          animated: true,
+          animated,
         });
       }
     },
     [keyboardInset, keyboardToolbarMode, showColorPicker, showLinkInput],
+  );
+
+  const registerBlockLayout = useCallback(
+    (blockId: string, y: number) => {
+      blockLayoutYRef.current[blockId] = y;
+      if (pendingEnterScrollBlockIdRef.current === blockId) {
+        pendingEnterScrollBlockIdRef.current = null;
+        scrollActiveBlockIntoView(blockId, { animated: false });
+      }
+    },
+    [scrollActiveBlockIntoView],
   );
 
   const registerInputRef = useCallback(
@@ -885,16 +947,26 @@ export function StudyDocumentEditor({
         blockInputRefs.current[blockId] = ref;
         if (pendingFocusBlockIdRef.current === blockId) {
           const cursor = pendingFocusSelectionRef.current?.start ?? 0;
+          programmaticFocusRef.current = true;
           ref.focus();
           applyInputSelection(ref, cursor);
           pendingFocusBlockIdRef.current = null;
           pendingFocusSelectionRef.current = null;
+          // 레이아웃 확정 후 스크롤 (중간 좌표로 점프하지 않게)
+          pendingEnterScrollBlockIdRef.current = blockId;
+          if (blockLayoutYRef.current[blockId] != null) {
+            const target = blockId;
+            pendingEnterScrollBlockIdRef.current = null;
+            requestAnimationFrame(() => {
+              scrollActiveBlockIntoView(target, { animated: false });
+            });
+          }
         }
         return;
       }
       delete blockInputRefs.current[blockId];
     },
-    [applyInputSelection],
+    [applyInputSelection, scrollActiveBlockIntoView],
   );
 
   const pushHistory = useCallback(() => {
@@ -941,13 +1013,18 @@ export function StudyDocumentEditor({
     const input = blockInputRefs.current[blockId];
     if (!input) return;
     const cursor = pendingFocusSelectionRef.current?.start ?? 0;
+    programmaticFocusRef.current = true;
     input.focus();
     applyInputSelection(input, cursor);
     pendingFocusBlockIdRef.current = null;
     pendingFocusSelectionRef.current = null;
-    requestAnimationFrame(() => {
-      scrollActiveBlockIntoView(blockId);
-    });
+    pendingEnterScrollBlockIdRef.current = blockId;
+    if (blockLayoutYRef.current[blockId] != null) {
+      pendingEnterScrollBlockIdRef.current = null;
+      requestAnimationFrame(() => {
+        scrollActiveBlockIntoView(blockId, { animated: false });
+      });
+    }
   }, [activeBlockId, activeBlocks, applyInputSelection, scrollActiveBlockIntoView]);
 
   useEffect(() => {
@@ -1062,9 +1139,13 @@ export function StudyDocumentEditor({
 
   const updateBlock = useCallback(
     (id: string, patch: Partial<WorkStudyDocBlock>) => {
-      replaceActiveBlocks(activeBlocks.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+      const page = getWorkStudyActivePage(documentRef.current);
+      const blocks = page?.blocks ?? [];
+      if (blocks.length === 0) return;
+      const next = blocks.map((b) => (b.id === id ? { ...b, ...patch } : b));
+      replaceActiveBlocks(next);
     },
-    [activeBlocks, replaceActiveBlocks],
+    [replaceActiveBlocks],
   );
 
   const commitStructuralChange = useCallback(
@@ -1114,6 +1195,11 @@ export function StudyDocumentEditor({
         setActiveListKind(null);
       }
       requestAnimationFrame(() => {
+        // Enter로 새 줄을 만든 직후엔 register/layout에서 이미 스크롤함 — 중복 점프 방지
+        if (programmaticFocusRef.current) {
+          programmaticFocusRef.current = false;
+          return;
+        }
         scrollActiveBlockIntoView(blockId);
       });
       const pending = resolvePendingMarks();
@@ -1204,11 +1290,13 @@ export function StudyDocumentEditor({
       const block = blocks.find((b) => b.id === blockId);
       if (!block || block.kind !== 'paragraph') return;
       const text = textOverride ?? block.text;
-      const sel = selectionByBlockRef.current[blockId];
-      const cursor = Math.max(0, Math.min(sel?.start ?? text.length, text.length));
+      const { cursor, splitMidLine } = resolveEnterSplitCursor(
+        text,
+        selectionByBlockRef.current[blockId],
+      );
       const keepMarks = normalizeBlockMarks(block.marks ?? resolvePendingMarks());
       const nextMarks = marksForContinuedBlock(keepMarks);
-      if (cursor < text.length) {
+      if (splitMidLine) {
         const before = text.slice(0, cursor);
         const after = text.slice(cursor);
         const newBlock = createWorkStudyDocBlock('paragraph');
@@ -1221,6 +1309,8 @@ export function StudyDocumentEditor({
         next.splice(index + 1, 0, newBlock);
         commitEnterStructuralChange(blockId, text, next);
         pendingFocusBlockIdRef.current = newBlock.id;
+        // 중간 분할: 새 블록 텍스트 시작점에 캐럿
+        pendingFocusSelectionRef.current = { start: 0, end: 0 };
         setActiveBlockId(newBlock.id);
         return;
       }
@@ -1233,6 +1323,7 @@ export function StudyDocumentEditor({
       next.splice(index + 1, 0, newBlock);
       commitEnterStructuralChange(blockId, text, next);
       pendingFocusBlockIdRef.current = newBlock.id;
+      pendingFocusSelectionRef.current = { start: 0, end: 0 };
       setActiveBlockId(newBlock.id);
     },
     [activeBlocks, commitEnterStructuralChange, resolvePendingMarks],
@@ -1245,12 +1336,14 @@ export function StudyDocumentEditor({
       const block = blocks.find((b) => b.id === blockId);
       if (!block || block.kind !== kind) return;
       const text = textOverride ?? block.text;
-      const sel = selectionByBlockRef.current[blockId];
-      const cursor = Math.max(0, Math.min(sel?.start ?? text.length, text.length));
+      const { cursor, splitMidLine } = resolveEnterSplitCursor(
+        text,
+        selectionByBlockRef.current[blockId],
+      );
       const keepMarks = normalizeBlockMarks(block.marks ?? resolvePendingMarks());
       const nextMarks = marksForContinuedBlock(keepMarks);
 
-      if (cursor < text.length) {
+      if (splitMidLine) {
         const before = text.slice(0, cursor);
         const after = text.slice(cursor);
         const newBlock = createWorkStudyDocBlock(kind);
@@ -1264,6 +1357,7 @@ export function StudyDocumentEditor({
         next.splice(index + 1, 0, newBlock);
         commitEnterStructuralChange(blockId, text, next);
         pendingFocusBlockIdRef.current = newBlock.id;
+        pendingFocusSelectionRef.current = { start: 0, end: 0 };
         setActiveBlockId(newBlock.id);
         return;
       }
@@ -1278,6 +1372,7 @@ export function StudyDocumentEditor({
       commitEnterStructuralChange(blockId, text, next);
       if (isListBlockKind(kind)) setActiveListKind(kind);
       pendingFocusBlockIdRef.current = newBlock.id;
+      pendingFocusSelectionRef.current = { start: 0, end: 0 };
       setActiveBlockId(newBlock.id);
     },
     [activeBlocks, commitEnterStructuralChange, resolvePendingMarks],
@@ -1294,7 +1389,9 @@ export function StudyDocumentEditor({
         continueListBlock(block.id, block.kind, currentText);
         return;
       }
-      if (block.kind === 'paragraph' && blockHasToolbarFormatting(block, pendingMarksRef.current)) {
+      // 일반/빈 문단도 Enter로 다음 블록을 만든다.
+      // (서식 있는 문단만 처리하면 빈 화면에서 커서가 내려갔다가 다시 올라간다)
+      if (block.kind === 'paragraph') {
         continueParagraph(block.id, currentText);
       }
     },
@@ -1302,58 +1399,72 @@ export function StudyDocumentEditor({
   );
 
   const handleBackspaceAtStart = useCallback(
-    (blockId: string, blockIndex: number) => {
-      const block = activeBlocks[blockIndex];
+    (blockId: string, blockIndex: number, currentText?: string) => {
+      const page = getWorkStudyActivePage(documentRef.current);
+      const blocks = page?.blocks ?? activeBlocks;
+      const liveIndex = blocks.findIndex((b) => b.id === blockId);
+      const block = liveIndex >= 0 ? blocks[liveIndex]! : activeBlocks[blockIndex];
+      const resolvedIndex = liveIndex >= 0 ? liveIndex : blockIndex;
       if (!block || block.id !== blockId) return;
+
+      // 문서 커밋은 debounce되므로 입력 중인 draft를 우선한다.
+      // (문서의 옛 텍스트로 병합하면 지운 글자가 되살아난다)
+      const liveText = currentText ?? block.text;
+      const blockIsVisuallyEmpty = isVisuallyEmptyText(liveText);
+
+      // 빈 줄은 커서 위치와 무관하게 제거한다.
+      // (센티널·선택영역 stale로 cursor>0 이어도 빈 번호 줄이 안 지워지던 원인)
+      if (blockIsVisuallyEmpty) {
+        pushHistory();
+
+        if (blocks.length === 1) {
+          const cleared: WorkStudyDocBlock = {
+            ...block,
+            kind: 'paragraph',
+            text: '',
+            marks: undefined,
+          };
+          delete cleared.checked;
+          transferFocusToBlock(block.id, 0);
+          replaceActiveBlocks([cleared]);
+          setActiveListKind(null);
+          void Haptics.selectionAsync();
+          return;
+        }
+
+        const focusId =
+          resolvedIndex > 0 ? blocks[resolvedIndex - 1]!.id : blocks[resolvedIndex + 1]!.id;
+        const focusCursor =
+          resolvedIndex > 0 ? blocks[resolvedIndex - 1]!.text.length : 0;
+        const next = blocks.filter((_, index) => index !== resolvedIndex);
+        transferFocusToBlock(focusId, focusCursor);
+        replaceActiveBlocks(next);
+        void Haptics.selectionAsync();
+        return;
+      }
 
       const sel = selectionByBlockRef.current[blockId];
       const cursor = sel?.start ?? 0;
       if (cursor > 0) return;
 
-      if (block.text.length > 0 && blockIndex > 0) {
-        const prev = activeBlocks[blockIndex - 1]!;
+      if (resolvedIndex > 0) {
+        const prev = blocks[resolvedIndex - 1]!;
         const canMergeParagraph = block.kind === 'paragraph' && prev.kind === 'paragraph';
-        const canMergeList = isListBlockKind(block.kind) && prev.kind === block.kind;
-        if (canMergeParagraph || canMergeList) {
+        if (canMergeParagraph) {
           pushHistory();
-          const mergedText = prev.text + block.text;
+          const mergedText = prev.text + liveText;
           const marks = normalizeBlockMarks({ ...prev.marks, ...block.marks });
           const cursorAt = prev.text.length;
-          const next = activeBlocks
+          const next = blocks
             .map((b, index) =>
-              index === blockIndex - 1 ? { ...b, text: mergedText, marks: marks ?? b.marks } : b,
+              index === resolvedIndex - 1 ? { ...b, text: mergedText, marks: marks ?? b.marks } : b,
             )
-            .filter((_, index) => index !== blockIndex);
+            .filter((_, index) => index !== resolvedIndex);
           transferFocusToBlock(prev.id, cursorAt);
           replaceActiveBlocks(next);
           void Haptics.selectionAsync();
         }
-        return;
       }
-
-      if (block.text.length > 0) return;
-
-      pushHistory();
-
-      if (activeBlocks.length === 1) {
-        const cleared: WorkStudyDocBlock = { ...block, text: '', marks: undefined };
-        transferFocusToBlock(block.id, 0);
-        replaceActiveBlocks([cleared]);
-        if (isListBlockKind(block.kind)) setActiveListKind(null);
-        void Haptics.selectionAsync();
-        return;
-      }
-
-      const focusId =
-        blockIndex > 0
-          ? activeBlocks[blockIndex - 1]!.id
-          : activeBlocks[blockIndex + 1]!.id;
-      const focusCursor =
-        blockIndex > 0 ? activeBlocks[blockIndex - 1]!.text.length : 0;
-      const next = activeBlocks.filter((_, index) => index !== blockIndex);
-      transferFocusToBlock(focusId, focusCursor);
-      replaceActiveBlocks(next);
-      void Haptics.selectionAsync();
     },
     [activeBlocks, pushHistory, replaceActiveBlocks, transferFocusToBlock],
   );
@@ -1806,6 +1917,40 @@ export function StudyDocumentEditor({
   }, []);
 
   const dismissEditorKeyboard = useCallback(() => {
+    const cleanupEmptyFocusedListBlock = () => {
+      const blockId = activeBlockIdRef.current;
+      if (!blockId) return;
+      const page = getWorkStudyActivePage(documentRef.current);
+      const blocks = page?.blocks ?? [];
+      const blockIndex = blocks.findIndex((b) => b.id === blockId);
+      if (blockIndex < 0) return;
+      const block = blocks[blockIndex];
+      if (!block || !isListBlockKind(block.kind)) return;
+      if (block.text.trim().length > 0) return;
+
+      pushHistory();
+      if (blocks.length === 1) {
+        // 마지막 빈 리스트 줄은 문단으로 되돌려 다음 진입 시 리스트 마커가 남지 않게 한다.
+        replaceActiveBlocks([{ ...block, kind: 'paragraph', text: '', checked: undefined }]);
+        setActiveListKind(null);
+        return;
+      }
+
+      const focusTarget =
+        blockIndex > 0
+          ? blocks[blockIndex - 1]
+          : blocks[blockIndex + 1];
+      const next = blocks.filter((_, index) => index !== blockIndex);
+      if (focusTarget) {
+        const cursor = blockIndex > 0 ? focusTarget.text.length : 0;
+        selectionByBlockRef.current[focusTarget.id] = { start: cursor, end: cursor };
+        setActiveBlockId(focusTarget.id);
+      }
+      replaceActiveBlocks(next);
+      setActiveListKind(null);
+    };
+
+    cleanupEmptyFocusedListBlock();
     toolbarInteractionRef.current = false;
     setShowColorPicker(false);
     setShowLinkInput(false);
@@ -1816,7 +1961,7 @@ export function StudyDocumentEditor({
     Keyboard.dismiss();
     setKeyboardInset(0);
     void Haptics.selectionAsync();
-  }, []);
+  }, [pushHistory, replaceActiveBlocks]);
 
   const onToolbarAction = useCallback(
     (action: StudyToolbarAction) => {
@@ -1963,8 +2108,6 @@ export function StudyDocumentEditor({
       : resolvedScrollHeight != null
         ? Math.max(120, resolvedScrollHeight - 8)
         : Math.round(Math.max(380, windowHeight * 0.5));
-  const singleParagraph = activeBlocks.length === 1 && activeBlocks[0]?.kind === 'paragraph';
-  const paragraphMinHeight = singleParagraph ? canvasMinHeight - 24 : undefined;
 
   const onShellLayout = useCallback(
     (event: LayoutChangeEvent) => {
@@ -2180,8 +2323,7 @@ export function StudyDocumentEditor({
                 registerInputRef={registerInputRef}
                 onBlockLayout={registerBlockLayout}
                 onEnterKey={
-                  isListBlockKind(block.kind) ||
-                  (block.kind === 'paragraph' && blockHasToolbarFormatting(block, pendingMarks))
+                  isListBlockKind(block.kind) || block.kind === 'paragraph'
                     ? (currentText) => handleBlockEnter(block.id, currentText)
                     : undefined
                 }
@@ -2192,8 +2334,9 @@ export function StudyDocumentEditor({
                 onPickImage={() => {
                   void pickImageForBlock(block.id);
                 }}
-                onBackspaceAtStart={() => handleBackspaceAtStart(block.id, blockIndex)}
-                paragraphMinHeight={block.kind === 'paragraph' ? paragraphMinHeight : undefined}
+                onBackspaceAtStart={(currentText) =>
+                  handleBackspaceAtStart(block.id, blockIndex, currentText)
+                }
                 pendingTextColor={block.id === activeBlockId ? pendingMarks.color : undefined}
                 contentRevision={contentRevision}
               />
@@ -2457,17 +2600,6 @@ const styles = StyleSheet.create({
     width: '100%',
     position: 'relative',
     justifyContent: 'flex-start',
-  },
-  blockInputPlaceholder: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    fontSize: 15,
-    lineHeight: 22,
-    paddingVertical: 0,
-    minHeight: 28,
-    zIndex: 0,
   },
   listBlockInputWrap: {
     minHeight: 20,
