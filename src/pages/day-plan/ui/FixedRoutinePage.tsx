@@ -120,7 +120,7 @@ function layoutModeHint(mode: DayPlanLayoutMode): string {
   if (mode === 'sections') {
     return '항목마다 새벽·아침·점심·저녁·밤을 고른 뒤 적용을 켜면 시간대 보기에 반영돼요.';
   }
-  return '항목마다 시작 시간을 정할 수 있어요. 적용을 켜면 목록 보기에 반영되고, 시작 알림도 그 시각에 울려요.';
+  return '그룹·항목을 정리한 뒤 적용을 켜면 목록 보기에 반영돼요. 시간·시간대는 타임라인·시간대 모드에서 맞춰요.';
 }
 
 function sectionHintText(
@@ -131,7 +131,7 @@ function sectionHintText(
     return '항목을 눌러 방식별 화면 구성을 확인할 수 있어요.';
   }
   if (section === 'catalog') {
-    return '루틴을 만들고 묶음으로 정리해요. 행을 누르면 상세 설정을 열 수 있어요.';
+    return '루틴을 만들고 묶음으로 정리해요.';
   }
   if (section === 'scheduled' || section === 'custom') {
     if (layoutMode === 'spine') {
@@ -140,7 +140,7 @@ function sectionHintText(
     if (layoutMode === 'sections') {
       return '항목마다 시간대를 고른 뒤 적용을 켜면 시간대 보기에 반영돼요.';
     }
-    return '항목마다 시작 시간을 정한 뒤 적용을 켜면 목록 보기에 반영돼요.';
+    return '그룹·항목을 정리한 뒤 적용을 켜면 목록 보기에 반영돼요.';
   }
   return layoutModeHint(layoutMode);
 }
@@ -171,9 +171,8 @@ type FlowCardProps = {
   showSpineTimePicker?: boolean;
   spineStartMinutes?: number;
   spineEndMinutes?: number;
+  spineEndsNextCalendarDay?: boolean;
   spineTimeIsSuggested?: boolean;
-  priorityStart?: string;
-  priorityEnd?: string;
   baseDateKey?: string;
   onChangeSpineTime?: (
     startMinutes: number,
@@ -205,9 +204,8 @@ function FlowItemCard({
   showSpineTimePicker,
   spineStartMinutes,
   spineEndMinutes,
+  spineEndsNextCalendarDay,
   spineTimeIsSuggested,
-  priorityStart,
-  priorityEnd,
   baseDateKey,
   onChangeSpineTime,
   onEnsureVisibleAboveKeyboard,
@@ -513,7 +511,7 @@ function FlowItemCard({
           />
         </Reanimated.View>
       ) : null}
-      {showSpineTimePicker && onChangeSpineTime && priorityStart && priorityEnd && spineTimeExpanded ? (
+      {showSpineTimePicker && onChangeSpineTime && spineTimeExpanded ? (
         <View
           ref={spineTimePanelRef}
           style={[
@@ -525,18 +523,12 @@ function FlowItemCard({
           <CatalogRowSpineTimePanel
             startMinutes={spineStartMinutes ?? 9 * 60}
             endMinutes={spineEndMinutes ?? 9 * 60 + 30}
-            endsNextCalendarDay={
-              spineStartMinutes != null &&
-              spineEndMinutes != null &&
-              spineEndMinutes < spineStartMinutes
-            }
+            endsNextCalendarDay={spineEndsNextCalendarDay}
             baseDateKey={baseDateKey}
             ink={ink}
             muted={muted}
             line={line}
             isDark={isDark}
-            priorityStart={priorityStart}
-            priorityEnd={priorityEnd}
             onScheduleChange={onChangeSpineTime}
             onRequestScrollIntoView={() => {
               const measureAndEnsure = () => {
@@ -834,46 +826,17 @@ function GroupAccordion({
   }, [canRenameSet, setItem.name]);
 
   const useSpineLayout = spineLayoutEnabled;
-  /** 목록 모드도 루틴별 시작·종료 시각을 직접 둘 수 있음(시작 알림·타임라인 공유) */
-  const useBagStartTimePicker = !spineLayoutEnabled && !mealSlotLayoutEnabled;
-  const useStartTimePicker = useSpineLayout || useBagStartTimePicker;
+  /** 목록 모드에서는 시간 UI 없음 — 시각·시작 알림은 타임라인 모드에서만 */
+  const useStartTimePicker = useSpineLayout;
   const useMealSlotFlatPickerLayout = mealSlotLayoutEnabled && !spineLayoutEnabled;
   const spineSchedules = useMemo(() => {
     if (!useStartTimePicker) return new Map();
-    if (useBagStartTimePicker) {
-      // 목록 모드: 저장된 시각만 표시(추천 시각으로 알림 가능처럼 보이지 않게)
-      const out = new Map<
-        string,
-        { startMinutes: number; endMinutes: number; endsNextCalendarDay?: boolean; isSuggested: boolean }
-      >();
-      for (const item of setItem.items) {
-        if (item.enabled === false) continue;
-        const start = item.spineStartMinutes;
-        const end = item.spineEndMinutes;
-        if (typeof start !== 'number' || typeof end !== 'number') continue;
-        const endsNext = item.spineEndsNextCalendarDay === true;
-        if (endsNext ? end >= start : end <= start) continue;
-        out.set(item.categoryKey, {
-          startMinutes: start,
-          endMinutes: end,
-          endsNextCalendarDay: endsNext || undefined,
-          isSuggested: false,
-        });
-      }
-      return out;
-    }
     return resolveFixedFlowSpineSchedules({
       items: setItem.items,
       priorityStart,
       priorityEnd,
     });
-  }, [
-    priorityEnd,
-    priorityStart,
-    setItem.items,
-    useBagStartTimePicker,
-    useStartTimePicker,
-  ]);
+  }, [priorityEnd, priorityStart, setItem.items, useStartTimePicker]);
   
   const applyChipBlocked = applyBlocked && !isActiveForToday;
   const disableApplyToggle = applyChipBlocked;
@@ -1072,9 +1035,8 @@ function GroupAccordion({
                       showSpineTimePicker={useStartTimePicker}
                       spineStartMinutes={schedule?.startMinutes}
                       spineEndMinutes={schedule?.endMinutes}
+                      spineEndsNextCalendarDay={schedule?.endsNextCalendarDay}
                       spineTimeIsSuggested={schedule?.isSuggested === true}
-                      priorityStart={priorityStart}
-                      priorityEnd={priorityEnd}
                       baseDateKey={baseDateKey}
                       onChangeSpineTime={
                         useStartTimePicker

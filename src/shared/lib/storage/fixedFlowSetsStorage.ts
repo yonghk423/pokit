@@ -42,7 +42,7 @@ export type FixedFlowSetItem = {
   /** 타임라인 보기 — 시작·종료(분, 0~1440) */
   spineStartMinutes?: number;
   spineEndMinutes?: number;
-  /** 종료 시각이 시작보다 이른 시계(다음날 새벽)일 때 */
+  /** 종료가 다음 달력일인 경우 (시계 시각의 전후와 무관) */
   spineEndsNextCalendarDay?: boolean;
 };
 
@@ -147,7 +147,9 @@ function normalizeItems(raw: unknown): FixedFlowSetItem[] {
       spineStartMinutes !== undefined &&
       spineEndMinutes !== undefined &&
       (spineEndsNextCalendarDay
-        ? spineEndMinutes < spineStartMinutes
+        ? spineStartMinutes < 24 * 60 &&
+          spineEndMinutes < 24 * 60 &&
+          24 * 60 - spineStartMinutes + spineEndMinutes > 0
         : spineEndMinutes > spineStartMinutes);
     out.push({
       categoryKey: key,

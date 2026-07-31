@@ -32,7 +32,6 @@ import {
 } from '@entities/day-plan';
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
-import { PokitIconPalette } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   appendCustomFlowCatalogEntry,
@@ -1097,7 +1096,7 @@ const styles = StyleSheet.create({
   headerAddButtonInner: {
     flex: 1,
     borderRadius: HEADER_ADD_BUTTON_SIZE / 2,
-    backgroundColor: PokitIconPalette.teal,
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },

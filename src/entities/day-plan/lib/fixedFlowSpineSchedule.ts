@@ -2,10 +2,6 @@ import type { FixedFlowSetItem } from '@shared/lib/storage';
 
 import { buildSpineImportFromBag } from './buildSpineImportFromBag';
 import { parseHHmmToMinutes } from './parseTime';
-import {
-  clampSpineBlockToPriorityWindow,
-  resolveSpinePriorityWindow,
-} from './spinePriorityWindow';
 
 export type FixedFlowSpineItemSchedule = {
   startMinutes: number;
@@ -27,23 +23,23 @@ function isValidSameDaySpineMinutes(start: unknown, end: unknown): start is numb
   );
 }
 
-function isValidOvernightSpineMinutes(start: unknown, end: unknown): start is number {
+function isValidNextDaySpineMinutes(start: unknown, end: unknown): start is number {
   return (
     typeof start === 'number' &&
     typeof end === 'number' &&
     Number.isFinite(start) &&
     Number.isFinite(end) &&
-    end < start &&
     start >= 0 &&
     end >= 0 &&
-    end <= 24 * 60 &&
-    start <= 24 * 60
+    start < 24 * 60 &&
+    end < 24 * 60 &&
+    24 * 60 - start + end > 0
   );
 }
 
 function itemHasStoredSchedule(item: FixedFlowSetItem): boolean {
   if (item.spineEndsNextCalendarDay === true) {
-    return isValidOvernightSpineMinutes(item.spineStartMinutes, item.spineEndMinutes);
+    return isValidNextDaySpineMinutes(item.spineStartMinutes, item.spineEndMinutes);
   }
   return isValidSameDaySpineMinutes(item.spineStartMinutes, item.spineEndMinutes);
 }
@@ -56,8 +52,6 @@ export function resolveFixedFlowSpineSchedules(input: {
 }): Map<string, FixedFlowSpineItemSchedule> {
   const out = new Map<string, FixedFlowSpineItemSchedule>();
   const enabledItems = input.items.filter((item) => item.enabled !== false);
-  const window = resolveSpinePriorityWindow(input.priorityStart, input.priorityEnd);
-
   for (const item of enabledItems) {
     if (!itemHasStoredSchedule(item)) continue;
     const startMinutes = item.spineStartMinutes!;
@@ -71,20 +65,6 @@ export function resolveFixedFlowSpineSchedules(input: {
         endsNextCalendarDay: true,
         isSuggested: false,
       });
-      continue;
-    }
-
-    if (window) {
-      const clamped = clampSpineBlockToPriorityWindow(startMinutes, endMinutes, window);
-      if (clamped) {
-        out.set(item.categoryKey, {
-          startMinutes: clamped.startMinutes,
-          endMinutes: clamped.endMinutes,
-          isSuggested: false,
-        });
-        continue;
-      }
-      // 창 밖이면 저장값을 버리고 아래에서 재제안
       continue;
     }
 

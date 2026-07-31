@@ -28,7 +28,6 @@ import {
 } from '@entities/day-plan';
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
-import { PokitIconPalette } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   appendCustomFlowCatalogEntry,
@@ -440,7 +439,7 @@ export function RoutineCatalogManageContent() {
             </Pressable>
           </View>
           <ThemedText style={[styles.lead, { color: editorial.muted }]}>
-            루틴을 만들고 묶음으로 정리해요. 행을 누르면 상세 설정을 열 수 있어요.
+            루틴을 만들고 묶음으로 정리해요.
           </ThemedText>
         </View>
       </View>
@@ -587,7 +586,7 @@ const styles = StyleSheet.create({
   headerAddButtonInner: {
     flex: 1,
     borderRadius: HEADER_ADD_BUTTON_SIZE / 2,
-    backgroundColor: PokitIconPalette.teal,
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },

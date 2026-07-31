@@ -384,4 +384,48 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     const ids = spine.map((b) => b.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it('updates an existing block when only its next-day flag changes', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      fixedRoutineApplyLayoutMode: 'spine',
+      planBlocks: [
+        {
+          id: 'reading-block',
+          title: '독서',
+          category: '독서',
+          categoryKey: 'reading',
+          startMinutes: 23 * 60,
+          endMinutes: 1 * 60,
+          order: 0,
+          blockOrigin: 'spineTimeline',
+        },
+      ],
+      todayAppliedCategoryKeys: ['reading'],
+      fixedFlowSets: [
+        {
+          id: 'set_night',
+          name: '밤 루틴',
+          applyRule: 'manual' as const,
+          items: [
+            {
+              categoryKey: 'reading',
+              enabled: true,
+              spineStartMinutes: 23 * 60,
+              spineEndMinutes: 1 * 60,
+              spineEndsNextCalendarDay: true,
+            },
+          ],
+        },
+      ],
+      activeSetIds: ['set_night'],
+    });
+
+    expect(patch?.planBlocks).toEqual([
+      expect.objectContaining({
+        id: 'reading-block',
+        endsNextCalendarDay: true,
+      }),
+    ]);
+  });
 });

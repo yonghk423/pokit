@@ -43,6 +43,35 @@ describe('fixedFlowSetsStorage', () => {
     expect(state.activeSetIds).toEqual([]);
   });
 
+  it('keeps a next-day end later than its start clock time', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: [],
+      sets: [
+        {
+          id: 'set_a',
+          name: 'A',
+          items: [
+            {
+              categoryKey: 'reading',
+              enabled: true,
+              spineStartMinutes: 7 * 60,
+              spineEndMinutes: 7 * 60 + 30,
+              spineEndsNextCalendarDay: true,
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(state.sets.find((set) => set.id === 'set_a')?.items[0]).toEqual({
+      categoryKey: 'reading',
+      enabled: true,
+      spineStartMinutes: 7 * 60,
+      spineEndMinutes: 7 * 60 + 30,
+      spineEndsNextCalendarDay: true,
+    });
+  });
+
   it('merges category keys from multiple active manual sets', () => {
     const state = {
       activeSetIds: ['set_a', 'set_b'],

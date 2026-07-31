@@ -4,7 +4,6 @@ import { Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import {
   addDaysToLocalDateKey,
-  clampHhmmToPriorityWindow,
   formatHhmmClockKo,
   formatMinutesToHHmm,
   getLocalDateKey,
@@ -37,8 +36,6 @@ type Props = {
   line: string;
   isDark: boolean;
   disabled?: boolean;
-  priorityStart: string;
-  priorityEnd: string;
   onScheduleChange: (
     startMinutes: number,
     endMinutes: number,
@@ -64,8 +61,6 @@ export function CatalogRowSpineTimePanel({
   line,
   isDark,
   disabled = false,
-  priorityStart,
-  priorityEnd,
   onScheduleChange,
   onPickerExpandedChange,
   onRequestScrollIntoView,
@@ -75,6 +70,7 @@ export function CatalogRowSpineTimePanel({
   const [draftEnd, setDraftEnd] = useState(() => formatMinutesToHHmm(endMinutes));
   const [draftEndsNext, setDraftEndsNext] = useState(endsNextCalendarDay);
   const [expanded, setExpanded] = useState<'start' | 'end' | null>(null);
+  const [rangeError, setRangeError] = useState<string | null>(null);
   const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
   const expandedRef = useRef(expanded);
   expandedRef.current = expanded;
@@ -84,6 +80,7 @@ export function CatalogRowSpineTimePanel({
     setDraftStart(formatMinutesToHHmm(startMinutes));
     setDraftEnd(formatMinutesToHHmm(endMinutes));
     setDraftEndsNext(endsNextCalendarDay);
+    setRangeError(null);
   }, [expanded, startMinutes, endMinutes, endsNextCalendarDay]);
 
   useEffect(() => {
@@ -100,32 +97,23 @@ export function CatalogRowSpineTimePanel({
     return () => showSub.remove();
   }, [expanded, onRequestScrollIntoView]);
 
-  const applyRoutineWindow = useMemo(() => {
-    const rs = priorityStart.trim();
-    const re = priorityEnd.trim();
-    if (!rs || !re || parseHHmmToMinutes(rs) === null || parseHHmmToMinutes(re) === null) {
-      return (hhmm: string) => hhmm;
-    }
-    return (hhmm: string) => clampHhmmToPriorityWindow(hhmm, rs, re, 1);
-  }, [priorityEnd, priorityStart]);
-
   const commitDraft = useCallback(
-    (startHhmm: string, endHhmm: string, endsNext: boolean) => {
-      const startClamped = applyRoutineWindow(startHhmm);
-      const endClamped = applyRoutineWindow(endHhmm);
-      const start = parseHHmmToMinutes(startClamped);
-      let end = parseHHmmToMinutes(endClamped);
-      if (start === null || end === null) return;
-      if (!endsNext && end <= start) end = Math.min(24 * 60, start + 15);
+    (startHhmm: string, endHhmm: string, endsNext: boolean): boolean => {
+      const start = parseHHmmToMinutes(startHhmm);
+      const end = parseHHmmToMinutes(endHhmm);
+      if (start === null || end === null) return false;
+      if (!endsNext && end <= start) return false;
       onScheduleChange(start, end, endsNext);
+      return true;
     },
-    [applyRoutineWindow, onScheduleChange],
+    [onScheduleChange],
   );
 
   const resetDraftFromProps = useCallback(() => {
     setDraftStart(formatMinutesToHHmm(startMinutes));
     setDraftEnd(formatMinutesToHHmm(endMinutes));
     setDraftEndsNext(endsNextCalendarDay);
+    setRangeError(null);
   }, [endMinutes, endsNextCalendarDay, startMinutes]);
 
   /** 현재 편집 필드의 DigitalHhmmInput 초안을 draftStart/End에 반영 */
@@ -151,15 +139,14 @@ export function CatalogRowSpineTimePanel({
     if (disabled) return;
     Keyboard.dismiss();
     const { start, end } = flushActiveFieldToDrafts();
-    const nextStart = applyRoutineWindow(start);
-    const nextEnd = applyRoutineWindow(end);
-    setDraftStart(nextStart);
-    setDraftEnd(nextEnd);
-    commitDraft(nextStart, nextEnd, draftEndsNext);
+    if (!commitDraft(start, end, draftEndsNext)) {
+      setRangeError('당일 종료 시각은 시작 시각보다 늦어야 해요. 다음 날을 선택하거나 시각을 바꿔 주세요.');
+      return;
+    }
+    setRangeError(null);
     setExpanded(null);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, [
-    applyRoutineWindow,
     commitDraft,
     disabled,
     draftEndsNext,
@@ -197,6 +184,7 @@ export function CatalogRowSpineTimePanel({
   const committedEnd = formatMinutesToHHmm(endMinutes);
   const displayStart = expanded !== null ? draftStart : committedStart;
   const displayEnd = expanded !== null ? draftEnd : committedEnd;
+  const isDateChoiceDirty = draftEndsNext !== endsNextCalendarDay;
 
   const resolvedDateLabels = useMemo(() => {
     const key =
@@ -273,9 +261,9 @@ export function CatalogRowSpineTimePanel({
         onPress={() => {
           if (disabled) return;
           void Haptics.selectionAsync();
-          const { start, end } = flushActiveFieldToDrafts();
+          flushActiveFieldToDrafts();
           setDraftEndsNext(false);
-          commitDraft(start, end, false);
+          setRangeError(null);
         }}
         style={({ pressed }) => [
           styles.endDateChoiceBtn,
@@ -296,9 +284,9 @@ export function CatalogRowSpineTimePanel({
         onPress={() => {
           if (disabled) return;
           void Haptics.selectionAsync();
-          const { start, end } = flushActiveFieldToDrafts();
+          flushActiveFieldToDrafts();
           setDraftEndsNext(true);
-          commitDraft(start, end, true);
+          setRangeError(null);
         }}
         style={({ pressed }) => [
           styles.endDateChoiceBtn,
@@ -321,7 +309,7 @@ export function CatalogRowSpineTimePanel({
         {renderSegment('start', '시작', displayStart)}
         <View style={[styles.segmentDivider, { backgroundColor: line }]} />
         {renderSegment('end', '종료', displayEnd)}
-        {activeField ? (
+        {activeField || isDateChoiceDirty ? (
           <>
             <View style={[styles.segmentDivider, { backgroundColor: line }]} />
             {renderConfirmSegment()}
@@ -329,6 +317,9 @@ export function CatalogRowSpineTimePanel({
         ) : null}
       </View>
       {renderEndDateChoice()}
+      {rangeError ? (
+        <ThemedText style={[styles.rangeError, { color: muted }]}>{rangeError}</ThemedText>
+      ) : null}
       {activeField ? (
         <DigitalHhmmInput
           key={activeField}
@@ -341,7 +332,7 @@ export function CatalogRowSpineTimePanel({
           surface={trackBg}
           selectedForeground={selectedFg}
           disabled={disabled}
-          snapStepMinutes={5}
+          snapStepMinutes={1}
           accessibilityLabelPrefix={activeField === 'end' ? '종료' : '시작'}
           onInputFocus={onRequestScrollIntoView}
         />
@@ -412,6 +403,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: -0.2,
+  },
+  rangeError: {
+    marginTop: 6,
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 16,
+    letterSpacing: -0.15,
   },
   confirmSegment: {
     width: 42,

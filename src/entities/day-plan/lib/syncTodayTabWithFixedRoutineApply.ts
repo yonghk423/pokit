@@ -269,7 +269,8 @@ function spineBlocksEqual(a: readonly DayPlanBlock[], b: readonly DayPlanBlock[]
       block.category === other.category &&
       block.startMinutes === other.startMinutes &&
       block.endMinutes === other.endMinutes &&
-      block.blockOrigin === other.blockOrigin
+      block.blockOrigin === other.blockOrigin &&
+      Boolean(block.endsNextCalendarDay) === Boolean(other.endsNextCalendarDay)
     );
   });
 }

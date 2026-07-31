@@ -236,7 +236,7 @@ export const GUIDE_BOOK_PAGES: readonly GuideBookPage[] = [
       {
         n: 1,
         label: '목록',
-        detail: '루틴마다 시작·종료 시각과 시작 알림을 맞춘 뒤 적용해요.',
+        detail: '그룹·항목만 정리한 뒤 적용해요. 시간·시간대는 다른 보기에서 맞춰요.',
       },
       {
         n: 2,
@@ -246,7 +246,7 @@ export const GUIDE_BOOK_PAGES: readonly GuideBookPage[] = [
       {
         n: 3,
         label: '타임라인',
-        detail: '「타임라인 집중 구간」을 맞추고, 루틴마다 시작·종료(당일/다음 날)를 정한 뒤 적용해요.',
+        detail: '「타임라인 집중 구간」을 맞추고, 루틴마다 시작·종료(당일/다음 날)·시작 알림을 정한 뒤 적용해요.',
       },
       {
         n: 4,

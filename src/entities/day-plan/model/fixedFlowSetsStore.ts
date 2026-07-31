@@ -738,7 +738,13 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     const endsNext = endsNextCalendarDay === true;
     if (!key || !Number.isFinite(start) || !Number.isFinite(end)) return;
     if (start < 0 || end < 0 || start > 24 * 60 || end > 24 * 60) return;
-    if (endsNext ? end >= start : end <= start) return;
+    if (
+      endsNext
+        ? start >= 24 * 60 || end >= 24 * 60 || 24 * 60 - start + end <= 0
+        : end <= start
+    ) {
+      return;
+    }
     const { sets, activeSetIds, activeMealSlotsBySetId } = get();
     const target = sets.find((s) => s.id === setId);
     if (!target?.items.some((x) => x.categoryKey === key)) return;
@@ -794,7 +800,13 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     const endsNext = endsNextCalendarDay === true;
     if (!key || !Number.isFinite(start) || !Number.isFinite(end)) return false;
     if (start < 0 || end < 0 || start > 24 * 60 || end > 24 * 60) return false;
-    if (endsNext ? end >= start : end <= start) return false;
+    if (
+      endsNext
+        ? start >= 24 * 60 || end >= 24 * 60 || 24 * 60 - start + end <= 0
+        : end <= start
+    ) {
+      return false;
+    }
     const { sets, activeSetIds, activeMealSlotsBySetId } = get();
     if (!sets.some((s) => s.items.some((x) => x.categoryKey === key))) return false;
     const nextSets = sets.map((s) => {

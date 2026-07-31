@@ -266,7 +266,7 @@ function CatalogListRow({
             <IconSymbol
               name="trash"
               size={15}
-              color={settingsLocked ? muted : isDark ? '#FAFAFA' : PRIMARY}
+              color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
             />
           </Pressable>
         ) : null}
@@ -286,7 +286,7 @@ function CatalogListRow({
                 backgroundColor: settingsBg,
               },
             ]}>
-            <IconSymbol name="arrow.left.arrow.right" size={15} color={isDark ? '#FAFAFA' : PRIMARY} />
+            <IconSymbol name="arrow.left.arrow.right" size={15} color={isDark ? '#FAFAFA' : '#000000'} />
           </Pressable>
         ) : null}
         {showMealSlotPicker && !manageOnly && onToggleMealSlotExpand ? (
@@ -424,7 +424,7 @@ function CatalogListRow({
           <IconSymbol
             name={settingsLocked ? 'lock.fill' : 'slider.horizontal.3'}
             size={settingsLocked ? 14 : 16}
-            color={settingsLocked ? muted : isDark ? '#FAFAFA' : PRIMARY}
+            color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
           />
         </Pressable>
         {!manageOnly ? (
@@ -500,15 +500,11 @@ function CatalogListRow({
 
 function CatalogSectionHeader({
   title,
-  subtitle,
   ink,
-  muted,
   trailing,
 }: {
   title: string;
-  subtitle: string;
   ink: string;
-  muted: string;
   trailing?: ReactNode;
 }) {
   return (
@@ -516,7 +512,6 @@ function CatalogSectionHeader({
       <View style={styles.sectionHeaderTop}>
         <View style={styles.sectionHeaderTextCol}>
           <ThemedText style={[styles.sectionTitle, { color: ink }]}>{title}</ThemedText>
-          <ThemedText style={[styles.sectionSubtitle, { color: muted }]}>{subtitle}</ThemedText>
         </View>
         {trailing ? <View style={styles.sectionHeaderTrailing}>{trailing}</View> : null}
       </View>
@@ -764,7 +759,7 @@ function GroupSectionBlock({
                 backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
               },
             ]}>
-            <IconSymbol name="pencil" size={16} color={isDark ? '#FAFAFA' : PRIMARY} />
+            <IconSymbol name="pencil" size={16} color={isDark ? '#FAFAFA' : '#000000'} />
           </Pressable>
         ) : null}
         {onDeleteCatalogGroup ? (
@@ -783,7 +778,7 @@ function GroupSectionBlock({
                 backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
               },
             ]}>
-            <IconSymbol name="trash" size={16} color={isDark ? '#FAFAFA' : PRIMARY} />
+            <IconSymbol name="trash" size={16} color={isDark ? '#FAFAFA' : '#000000'} />
           </Pressable>
         ) : null}
       </View>
@@ -793,9 +788,7 @@ function GroupSectionBlock({
     <View style={[styles.sectionBlock, !isFirst && styles.sectionBlockFollows]}>
       <CatalogSectionHeader
         title={section.title}
-        subtitle={section.subtitle ?? ''}
         ink={editorial.ink}
-        muted={editorial.muted}
         trailing={groupHeaderTrailing}
       />
       <View style={[styles.listShell, { borderTopColor: editorial.line }]}>

@@ -615,9 +615,9 @@ function FigureMyRoutine({ tone }: { tone: Tone }) {
 
 function FigureMyRoutineApply({ tone }: { tone: Tone }) {
   const rows = [
-    { n: 1, icon: 'list.bullet.rectangle' as const, t: '목록 — 시작·종료 · 시작 알림' },
+    { n: 1, icon: 'list.bullet.rectangle' as const, t: '목록 — 그룹·항목 정리' },
     { n: 2, icon: 'sun.horizon.fill' as const, t: '시간대 — 새벽~밤 · 시작 알림' },
-    { n: 3, icon: 'clock' as const, t: '타임라인 — 집중 구간 · 시작·종료' },
+    { n: 3, icon: 'clock' as const, t: '타임라인 — 집중 구간 · 시작·종료 · 시작 알림' },
     { n: 4, icon: 'plus' as const, t: '항목 켜기 · 새 항목 추가' },
   ];
   return (
