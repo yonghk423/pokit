@@ -26,7 +26,6 @@ export function WelcomeIntroPage() {
   const [index, setIndex] = useState(0);
   const last = index >= WELCOME_INTRO_SLIDES.length - 1;
   const item = WELCOME_INTRO_SLIDES[index]!;
-  const bg = WELCOME_INTRO_BACKGROUNDS[index] ?? WELCOME_INTRO_BACKGROUNDS[0]!;
 
   const finish = useCallback(() => {
     void markWelcomeIntroSeenAndFlush().finally(() => {
@@ -71,13 +70,16 @@ export function WelcomeIntroPage() {
 
   return (
     <View style={styles.screen}>
-      <Image
-        key={item.id}
-        source={bg}
-        style={styles.bgImage}
-        resizeMode="cover"
-        accessibilityIgnoresInvertColors
-      />
+      {/* 모든 배경을 미리 마운트 — 넘길 때 opacity만 바꿔 디코드 지연을 없앰 */}
+      {WELCOME_INTRO_BACKGROUNDS.map((source, i) => (
+        <Image
+          key={`welcome-bg-${i}`}
+          source={source}
+          style={[styles.bgImage, { opacity: i === index ? 1 : 0 }]}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
+      ))}
       <View style={styles.bgScrim} pointerEvents="none" />
 
       <View style={[styles.column, { paddingTop: Math.max(insets.top, 12) }]}>
