@@ -1,6 +1,13 @@
 import * as Haptics from 'expo-haptics';
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -14,7 +21,7 @@ export type DigitalHhmmInputProps = {
   /** 오전/오후 선택 시 글자색 (기본: 밝은 전경) */
   selectedForeground?: string;
   disabled?: boolean;
-  /** 분 스냅 간격. 기본 1분 */
+  /** 분 증감 간격. 기본 1분 */
   snapStepMinutes?: number;
   /**
    * 오전 12:00을 `00:00` 대신 `24:00`(하루 끝)으로 저장.
@@ -23,6 +30,13 @@ export type DigitalHhmmInputProps = {
   mapMidnightToEndOfDay?: boolean;
   /** 접근성 라벨 접두 (예: 시작, 종료) */
   accessibilityLabelPrefix?: string;
+  /** 레거시 호환용(키패드 제거로 현재 미사용) */
+  onInputFocus?: () => void;
+};
+
+/** 키보드가 열린 채 확인을 누를 때 등 — blur 없이 현재 초안을 확정 */
+export type DigitalHhmmInputHandle = {
+  flush: () => string;
 };
 
 type Meridiem = '오전' | '오후';
@@ -49,25 +63,11 @@ function formatHhmm(total: number): string {
   return `${pad2(Math.floor(safe / 60))}:${pad2(safe % 60)}`;
 }
 
-function snapMinutes(total: number, step: number): number {
-  if (total >= 24 * 60) return 24 * 60;
-  const s = Number.isFinite(step) && step > 0 ? Math.floor(step) : 1;
-  if (s <= 1) return Math.max(0, Math.min(23 * 60 + 59, Math.round(total)));
-  const max = 23 * 60 + 55;
-  return Math.max(0, Math.min(max, Math.round(total / s) * s));
-}
-
 function h24To12(h24: number): { ap: Meridiem; h12: number } {
   if (h24 === 24) return { ap: '오전', h12: 12 };
   const ap: Meridiem = h24 < 12 ? '오전' : '오후';
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
   return { ap, h12 };
-}
-
-function from12h(h12: number, min: number, ap: Meridiem): number {
-  const h = h12 === 12 ? 0 : h12;
-  const h24 = ap === '오후' ? h + 12 : h;
-  return h24 * 60 + min;
 }
 
 function draftsFromValue(valueHhmm: string): { hour: string; min: string; ap: Meridiem } {
@@ -80,204 +80,201 @@ function draftsFromValue(valueHhmm: string): { hour: string; min: string; ap: Me
   return { hour: pad2(h12), min: pad2(min), ap };
 }
 
-/**
- * 휠 대신 시·분 숫자 패드 + 오전/오후 토글로 `HH:mm`을 입력합니다.
- */
-export function DigitalHhmmInput({
-  valueHhmm,
-  onChangeHhmm,
-  ink,
-  muted,
-  line,
-  surface = 'transparent',
-  selectedForeground = '#FAFAFA',
-  disabled = false,
-  snapStepMinutes = 1,
-  mapMidnightToEndOfDay = false,
-  accessibilityLabelPrefix,
-}: DigitalHhmmInputProps) {
-  const synced = useMemo(() => draftsFromValue(valueHhmm), [valueHhmm]);
-  const [hourDraft, setHourDraft] = useState(synced.hour);
-  const [minDraft, setMinDraft] = useState(synced.min);
-  const [ap, setAp] = useState<Meridiem>(synced.ap);
-  const [focusedField, setFocusedField] = useState<'hour' | 'min' | null>(null);
-
-  useEffect(() => {
-    if (focusedField === 'hour') {
-      setMinDraft(synced.min);
-      setAp(synced.ap);
-      return;
-    }
-    if (focusedField === 'min') {
-      setHourDraft(synced.hour);
-      setAp(synced.ap);
-      return;
-    }
-    setHourDraft(synced.hour);
-    setMinDraft(synced.min);
-    setAp(synced.ap);
-  }, [synced, focusedField]);
-
-  const prefix = accessibilityLabelPrefix?.trim() || '시간';
-
-  const commitParts = (
-    next: { h12?: number; min?: number; ap?: Meridiem },
-    options?: { snap?: boolean },
-  ) => {
-    const h12 = next.h12 ?? Math.min(12, Math.max(1, parseInt(hourDraft, 10) || 12));
-    const min = next.min ?? Math.min(59, Math.max(0, parseInt(minDraft, 10) || 0));
-    const meridiem = next.ap ?? ap;
-    const raw = from12h(h12, min, meridiem);
-    const snapped = options?.snap === false ? raw : snapMinutes(raw, snapStepMinutes);
-    const total =
-      mapMidnightToEndOfDay && snapped === 0 ? 24 * 60 : snapped;
-    onChangeHhmm(formatHhmm(total));
-  };
-
-  const onHourChange = (raw: string) => {
-    const d = raw.replace(/\D/g, '').slice(0, 2);
-    setHourDraft(d);
-    if (d === '' || d === '0') return;
-    const n = parseInt(d, 10);
-    if (!Number.isFinite(n)) return;
-    if (d.length === 1 && n >= 1 && n <= 9) {
-      commitParts({ h12: n }, { snap: false });
-      return;
-    }
-    if (d.length === 2) {
-      commitParts({ h12: Math.min(12, Math.max(1, n)) }, { snap: false });
-    }
-  };
-
-  const onHourBlur = () => {
-    const d = hourDraft.replace(/\D/g, '').slice(0, 2);
-    if (d === '' || d === '0') {
-      setHourDraft(synced.hour);
-      return;
-    }
-    const n = parseInt(d, 10);
-    if (!Number.isFinite(n)) {
-      setHourDraft(synced.hour);
-      return;
-    }
-    const h12 = Math.min(12, Math.max(1, n));
-    setHourDraft(pad2(h12));
-    commitParts({ h12 }, { snap: true });
-  };
-
-  const onMinChange = (raw: string) => {
-    const d = raw.replace(/\D/g, '').slice(0, 2);
-    setMinDraft(d);
-    if (d === '') return;
-    const n = parseInt(d, 10);
-    if (!Number.isFinite(n)) return;
-    if (d.length === 1) {
-      commitParts({ min: n }, { snap: false });
-      return;
-    }
-    commitParts({ min: Math.min(59, Math.max(0, n)) }, { snap: false });
-  };
-
-  const onMinBlur = () => {
-    const d = minDraft.replace(/\D/g, '').slice(0, 2);
-    if (d === '') {
-      setMinDraft(synced.min);
-      return;
-    }
-    const n = parseInt(d, 10);
-    if (!Number.isFinite(n)) {
-      setMinDraft(synced.min);
-      return;
-    }
-    const min = Math.min(59, Math.max(0, n));
-    const snapped = snapMinutes(
-      from12h(Math.min(12, Math.max(1, parseInt(hourDraft, 10) || 12)), min, ap),
-      snapStepMinutes,
-    );
-    const snappedMin = snapped % 60;
-    setMinDraft(pad2(snappedMin));
-    commitParts({ min: snappedMin }, { snap: true });
-  };
-
-  const setMeridiem = (next: Meridiem) => {
-    if (disabled || next === ap) return;
-    void Haptics.selectionAsync();
-    setAp(next);
-    commitParts({ ap: next }, { snap: true });
-  };
-
-  return (
-    <View style={[styles.root, disabled && styles.disabled]} pointerEvents={disabled ? 'none' : 'auto'}>
-      <View style={styles.meridiemRow}>
-        {(['오전', '오후'] as const).map((label) => {
-          const selected = ap === label;
-          return (
-            <Pressable
-              key={label}
-              accessibilityRole="button"
-              accessibilityState={{ selected, disabled }}
-              accessibilityLabel={`${prefix} ${label}`}
-              disabled={disabled}
-              onPress={() => setMeridiem(label)}
-              style={({ pressed }) => [
-                styles.meridiemBtn,
-                {
-                  backgroundColor: selected ? ink : surface,
-                  borderColor: line,
-                  opacity: pressed ? 0.88 : 1,
-                },
-              ]}>
-              <ThemedText
-                style={[styles.meridiemText, { color: selected ? selectedForeground : ink }]}>
-                {label}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={[styles.fieldsRow, { borderColor: line, backgroundColor: surface }]}>
-        <View style={styles.fieldCol}>
-          <ThemedText style={[styles.fieldCaption, { color: muted }]}>시</ThemedText>
-          <TextInput
-            value={hourDraft}
-            onChangeText={onHourChange}
-            onFocus={() => setFocusedField('hour')}
-            onBlur={() => {
-              setFocusedField(null);
-              onHourBlur();
-            }}
-            keyboardType="number-pad"
-            maxLength={2}
-            selectTextOnFocus
-            editable={!disabled}
-            accessibilityLabel={`${prefix} 시`}
-            style={[styles.digitInput, { color: ink }]}
-          />
-        </View>
-        <ThemedText style={[styles.colon, { color: ink }]}>:</ThemedText>
-        <View style={styles.fieldCol}>
-          <ThemedText style={[styles.fieldCaption, { color: muted }]}>분</ThemedText>
-          <TextInput
-            value={minDraft}
-            onChangeText={onMinChange}
-            onFocus={() => setFocusedField('min')}
-            onBlur={() => {
-              setFocusedField(null);
-              onMinBlur();
-            }}
-            keyboardType="number-pad"
-            maxLength={2}
-            selectTextOnFocus
-            editable={!disabled}
-            accessibilityLabel={`${prefix} 분`}
-            style={[styles.digitInput, { color: ink }]}
-          />
-        </View>
-      </View>
-    </View>
-  );
+function normalizeTotal(total: number): number {
+  const m = Math.round(total);
+  if (!Number.isFinite(m)) return 9 * 60;
+  if (m >= 24 * 60) return 24 * 60;
+  if (m < 0) {
+    const cycle = ((m % (24 * 60)) + (24 * 60)) % (24 * 60);
+    return cycle;
+  }
+  return m;
 }
+
+function hourMinuteFromTotal(total: number): { hour24: number; min: number } {
+  if (total >= 24 * 60) return { hour24: 0, min: 0 };
+  const safe = Math.max(0, Math.min(23 * 60 + 59, total));
+  return { hour24: Math.floor(safe / 60), min: safe % 60 };
+}
+
+function composeFromParts(
+  hour24: number,
+  min: number,
+  mapMidnightToEndOfDay: boolean,
+): string {
+  const h = Math.max(0, Math.min(23, Math.round(hour24)));
+  const m = Math.max(0, Math.min(59, Math.round(min)));
+  const total = h * 60 + m;
+  if (mapMidnightToEndOfDay && total === 0) return '24:00';
+  return formatHhmm(total);
+}
+
+function nextHour(total: number, delta: number, mapMidnightToEndOfDay: boolean): string {
+  const { hour24, min } = hourMinuteFromTotal(total);
+  const h = (hour24 + delta + 24) % 24;
+  return composeFromParts(h, min, mapMidnightToEndOfDay);
+}
+
+function nextMinute(
+  total: number,
+  delta: number,
+  step: number,
+  mapMidnightToEndOfDay: boolean,
+): string {
+  const s = Number.isFinite(step) && step > 0 ? Math.floor(step) : 1;
+  const base = total >= 24 * 60 ? 0 : total;
+  const moved = normalizeTotal(base + delta * s);
+  if (moved >= 24 * 60) return mapMidnightToEndOfDay ? '24:00' : '00:00';
+  return formatHhmm(moved);
+}
+
+/**
+ * 키패드 없이 시·분 증감 버튼 + 오전/오후 토글로 `HH:mm`을 입력합니다.
+ */
+export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmInputProps>(
+  function DigitalHhmmInput(
+    {
+      valueHhmm,
+      onChangeHhmm,
+      ink,
+      muted,
+      line,
+      surface = 'transparent',
+      selectedForeground = '#FAFAFA',
+      disabled = false,
+      snapStepMinutes = 1,
+      mapMidnightToEndOfDay = false,
+      accessibilityLabelPrefix,
+    },
+    ref,
+  ) {
+    const synced = useMemo(() => parseHhmm(valueHhmm)?.total ?? 9 * 60, [valueHhmm]);
+    const [draftTotal, setDraftTotal] = useState<number>(synced);
+    const draftTotalRef = useRef(draftTotal);
+    const onChangeRef = useRef(onChangeHhmm);
+    draftTotalRef.current = draftTotal;
+    onChangeRef.current = onChangeHhmm;
+
+    useEffect(() => {
+      setDraftTotal(synced);
+    }, [synced]);
+
+    const prefix = accessibilityLabelPrefix?.trim() || '시간';
+    const display = useMemo(() => draftsFromValue(formatHhmm(draftTotal)), [draftTotal]);
+
+    const emit = (nextHhmm: string): string => {
+      onChangeRef.current(nextHhmm);
+      const parsed = parseHhmm(nextHhmm)?.total ?? 9 * 60;
+      setDraftTotal(parsed);
+      return nextHhmm;
+    };
+
+    useImperativeHandle(ref, () => ({
+      flush: () => formatHhmm(draftTotalRef.current),
+    }));
+
+    const applyHour = (delta: number) => {
+      if (disabled) return;
+      void Haptics.selectionAsync();
+      emit(nextHour(draftTotalRef.current, delta, mapMidnightToEndOfDay));
+    };
+
+    const applyMinute = (delta: number) => {
+      if (disabled) return;
+      void Haptics.selectionAsync();
+      emit(nextMinute(draftTotalRef.current, delta, snapStepMinutes, mapMidnightToEndOfDay));
+    };
+
+    const setMeridiem = (next: Meridiem) => {
+      if (disabled || next === display.ap) return;
+      void Haptics.selectionAsync();
+      const { hour24, min } = hourMinuteFromTotal(draftTotalRef.current);
+      const currentIsPm = hour24 >= 12;
+      const targetIsPm = next === '오후';
+      if (currentIsPm === targetIsPm) return;
+      const shifted = (hour24 + 12) % 24;
+      emit(composeFromParts(shifted, min, mapMidnightToEndOfDay));
+    };
+
+    return (
+      <View
+        style={[styles.root, disabled && styles.disabled]}
+        pointerEvents={disabled ? 'none' : 'auto'}>
+        <View style={styles.meridiemRow}>
+          {(['오전', '오후'] as const).map((label) => {
+            const selected = display.ap === label;
+            return (
+              <Pressable
+                key={label}
+                accessibilityRole="button"
+                accessibilityState={{ selected, disabled }}
+                accessibilityLabel={`${prefix} ${label}`}
+                disabled={disabled}
+                onPress={() => setMeridiem(label)}
+                style={({ pressed }) => [
+                  styles.meridiemBtn,
+                  {
+                    backgroundColor: selected ? ink : surface,
+                    borderColor: line,
+                    opacity: pressed ? 0.88 : 1,
+                  },
+                ]}>
+                <ThemedText
+                  style={[styles.meridiemText, { color: selected ? selectedForeground : ink }]}>
+                  {label}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={[styles.fieldsRow, { borderColor: line, backgroundColor: surface }]}>
+          <View style={styles.stepCol}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${prefix} 시 증가`}
+              onPress={() => applyHour(1)}
+              style={({ pressed }) => [styles.stepBtn, { borderColor: line, opacity: pressed ? 0.8 : 1 }]}>
+              <ThemedText style={[styles.stepText, { color: ink }]}>+</ThemedText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${prefix} 시 감소`}
+              onPress={() => applyHour(-1)}
+              style={({ pressed }) => [styles.stepBtn, { borderColor: line, opacity: pressed ? 0.8 : 1 }]}>
+              <ThemedText style={[styles.stepText, { color: ink }]}>-</ThemedText>
+            </Pressable>
+          </View>
+          <View style={styles.fieldCol}>
+            <ThemedText style={[styles.fieldCaption, { color: muted }]}>시</ThemedText>
+            <ThemedText style={[styles.digitText, { color: ink }]}>{display.hour}</ThemedText>
+          </View>
+          <ThemedText style={[styles.colon, { color: ink }]}>:</ThemedText>
+          <View style={styles.fieldCol}>
+            <ThemedText style={[styles.fieldCaption, { color: muted }]}>분</ThemedText>
+            <ThemedText style={[styles.digitText, { color: ink }]}>{display.min}</ThemedText>
+          </View>
+          <View style={styles.stepCol}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${prefix} 분 증가`}
+              onPress={() => applyMinute(1)}
+              style={({ pressed }) => [styles.stepBtn, { borderColor: line, opacity: pressed ? 0.8 : 1 }]}>
+              <ThemedText style={[styles.stepText, { color: ink }]}>+</ThemedText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${prefix} 분 감소`}
+              onPress={() => applyMinute(-1)}
+              style={({ pressed }) => [styles.stepBtn, { borderColor: line, opacity: pressed ? 0.8 : 1 }]}>
+              <ThemedText style={[styles.stepText, { color: ink }]}>-</ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   root: {
@@ -310,10 +307,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
-    minHeight: 64,
+    minHeight: 92,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 4,
+  },
+  stepCol: {
+    width: 36,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 6,
+  },
+  stepBtn: {
+    width: 32,
+    height: 32,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepText: {
+    fontSize: 18,
+    fontWeight: '800',
+    lineHeight: 20,
   },
   fieldCol: {
     flex: 1,
@@ -327,16 +342,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.15,
   },
-  digitInput: {
+  digitText: {
     fontSize: 28,
-    lineHeight: 34,
+    lineHeight: 32,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
     textAlign: 'center',
-    padding: 0,
-    margin: 0,
-    width: '100%',
-    minHeight: 36,
   },
   colon: {
     fontSize: 26,

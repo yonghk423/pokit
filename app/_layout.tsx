@@ -95,6 +95,14 @@ export default function RootLayout() {
                 options={{ headerShown: false, presentation: 'card' }}
               />
               <Stack.Screen
+                name="guide-book"
+                options={{ headerShown: false, presentation: 'fullScreenModal' }}
+              />
+              <Stack.Screen
+                name="welcome-intro"
+                options={{ headerShown: false, presentation: 'fullScreenModal' }}
+              />
+              <Stack.Screen
                 name="appearance-settings"
                 options={{ headerShown: false, presentation: 'card' }}
               />

@@ -1,9 +1,13 @@
 import * as Haptics from 'expo-haptics';
+import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { formatHhmmClockKo } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { DigitalHhmmInput } from '@shared/ui/digital-hhmm-input';
+import {
+  DigitalHhmmInput,
+  type DigitalHhmmInputHandle,
+} from '@shared/ui/digital-hhmm-input';
 import { ThemedText } from '@shared/ui/themed-text';
 
 const PRIMARY = 'rgb(0, 0, 0)';
@@ -39,6 +43,7 @@ export function ReminderTimePickerPill({
   const label = hasValue ? formatHhmmClockKo(valueHhmm) : placeholder;
   const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const editorValue = hasValue ? valueHhmm : '09:00';
+  const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
 
   return (
     <View style={styles.root}>
@@ -71,6 +76,7 @@ export function ReminderTimePickerPill({
       {expanded ? (
         <View style={styles.inputBlock}>
           <DigitalHhmmInput
+            ref={digitalInputRef}
             valueHhmm={editorValue}
             onChangeHhmm={onChangeHhmm}
             ink={ink}
@@ -83,6 +89,8 @@ export function ReminderTimePickerPill({
           />
           <Pressable
             onPress={() => {
+              const flushed = digitalInputRef.current?.flush();
+              if (flushed) onChangeHhmm(flushed);
               void Haptics.selectionAsync();
               onToggleExpand();
             }}

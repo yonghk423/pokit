@@ -98,6 +98,8 @@ export function FixedRoutinePriorityWindowSheet({
               isDark={isDark}
               palette={palette.timeField}
               snapStepMinutes={1}
+              /** 종료의 오전 12시는 다음 날 경계(24:00)로 저장 */
+              mapMidnightToEndOfDay
             />
           </View>
         </ScrollView>

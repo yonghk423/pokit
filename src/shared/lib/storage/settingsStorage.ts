@@ -109,7 +109,7 @@ export function saveDayPlanScheduledNotifications(
 }
 
 const DEFAULT_PRIORITY_DAY_START_ALARM: PriorityDayStartAlarmPersisted = {
-  enabled: true,
+  enabled: false,
   notificationId: null,
 };
 

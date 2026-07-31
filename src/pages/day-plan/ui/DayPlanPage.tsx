@@ -27,11 +27,11 @@ import {
   resolveBlockCategoryKey,
   syncTodayTabWithFixedRoutineApply,
   useDayPlanDraftStore,
+  useDayPlanLayoutModeVisibilityStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
   useDayPlanTodoStore,
   useFixedFlowSetsStore,
-  useDayPlanLayoutModeVisibilityStore,
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import {
@@ -51,6 +51,7 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   loadDailyRhythmOnboardingCompleted,
   loadPriorityDayStartAlarm,
+  loadWelcomeIntroSeen,
   markDailyRhythmOnboardingCompletedAndFlush,
   saveRoutineCatalogSelectionKeys,
 } from '@shared/lib/storage';
@@ -66,9 +67,9 @@ import {
 import { palette } from '../lib/dayPlanPalette';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { DailyRhythmOnboardingGate } from './DailyRhythmOnboardingGate';
+import { DayNotePlanSection } from './DayNotePlanSection';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
 import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
-import { DayNotePlanSection } from './DayNotePlanSection';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
 import { ReadingPlanSection } from './ReadingPlanSection';
@@ -361,23 +362,33 @@ export function DayPlanPage({
 
   const c = useMemo(() => palette(isDark), [isDark]);
 
+  const handleRhythmEndDateChoice = useCallback(
+    (start: string, end: string, target: 'today' | 'nextDay') => {
+      setPriorityStart(start);
+      setPriorityEnd(end);
+      const lo = getLocalDateKey();
+      const endDate = target === 'nextDay' ? addDaysToLocalDateKey(lo, 1) : lo;
+      applyPriorityPlanCalendarRange(lo, endDate);
+    },
+    [applyPriorityPlanCalendarRange, setPriorityEnd, setPriorityStart],
+  );
+
   const handleRhythmConfirm = useCallback(
     (start: string, end: string) => {
       setPriorityStart(start);
       setPriorityEnd(end);
+      // 온보딩에서 당일/다음 날을 이미 골랐다면 explicit multi-day가 유지되고,
+      // 아니면 overnight 시각 규칙으로 날짜를 맞춘다.
       syncOvernightPriorityPlanDates();
       void markDailyRhythmOnboardingCompletedAndFlush().then(() => {
         setRhythmGateOpen(false);
+        if (!loadWelcomeIntroSeen()) {
+          router.push('/welcome-intro');
+        }
       });
     },
-    [setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
+    [router, setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
   );
-
-  const handleRhythmSkip = useCallback(() => {
-    void markDailyRhythmOnboardingCompletedAndFlush().then(() => {
-      setRhythmGateOpen(false);
-    });
-  }, []);
 
   const syncScheduledNotifications = useCallback(() => {
     void rescheduleDayPlanNotifications();
@@ -765,78 +776,78 @@ export function DayPlanPage({
         enabled={planMode !== 'dayNote' && planMode !== 'quickMemo'}
         keyboardVerticalOffset={0}>
         <View style={[styles.mainColumn, { backgroundColor: shellBg }]}>
-            {planMode === 'quickMemo' ? (
-              <View style={[styles.quickMemoColumn, { backgroundColor: shellBg }]}>
-                <View style={[styles.contentPad, styles.quickMemoContentPad]}>
-                  <QuickMemoPlanSection
-                    ref={quickMemoInputRef}
-                    c={c}
-                    isDark={isDark}
-                    memos={quickMemos}
-                    draft={quickMemoDraft}
-                    onChangeDraft={setQuickMemoDraft}
-                    onSavePress={handleQuickMemoSavePress}
-                  />
-                </View>
-              </View>
-            ) : planMode === 'dayNote' ? (
-              <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
-                <DayNotePlanSection c={c} isDark={isDark} />
-              </View>
-            ) : planMode === 'todoList' ? (
-              <ScrollView
-                style={[styles.scroll, { backgroundColor: shellBg }]}
-                contentContainerStyle={[
-                  styles.scrollContent,
-                  {
-                    paddingBottom: scrollContentBottomPad,
-                    flexGrow: 1,
-                  },
-                ]}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="always"
-                keyboardDismissMode="on-drag">
-                <TodoListPlanSection c={c} isDark={isDark} />
-              </ScrollView>
-            ) : planMode === 'reading' ? (
-              <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
-                <ReadingPlanSection c={c} isDark={isDark} />
-              </View>
-            ) : (
-              <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
-                <PriorityBasedPlanSection
+          {planMode === 'quickMemo' ? (
+            <View style={[styles.quickMemoColumn, { backgroundColor: shellBg }]}>
+              <View style={[styles.contentPad, styles.quickMemoContentPad]}>
+                <QuickMemoPlanSection
+                  ref={quickMemoInputRef}
                   c={c}
-                  isFocusStarted={isFocusStarted}
-                  priorityPlanDateKey={priorityPlanDateKey}
-                  onChangePriorityPlanDateKey={setPriorityPlanDateKey}
-                  priorityPlanDateKeyEnd={priorityPlanDateKeyEnd}
-                  onChangePriorityPlanDateKeyEnd={setPriorityPlanDateKeyEnd}
-                  applyPriorityPlanCalendarRange={applyPriorityPlanCalendarRange}
-                  priorityPlanExplicitMultiDay={priorityPlanExplicitMultiDay}
-                  priorityStart={priorityStart}
-                  priorityEnd={priorityEnd}
-                  onChangePriorityStart={setPriorityStart}
-                  onChangePriorityEnd={setPriorityEnd}
-                  priorityCategoryOrder={priorityCategoryOrder}
-                  onSelectCategory={handlePriorityCategoryPress}
-                  onOpenCategorySettings={handleOpenCategorySettings}
-                  renderRoutineInlineSettings={renderRoutineInlineSettings}
-                  onOpenFocusDetail={handleOpenFocusDetail}
-                  onOpenFixedRoutine={handleOpenFixedRoutine}
-                  layoutMode={effectiveLayoutMode}
-                  onSelectLayoutMode={onSelectLayoutMode}
-                  visibleLayoutModes={visibleLayoutModes}
+                  isDark={isDark}
+                  memos={quickMemos}
+                  draft={quickMemoDraft}
+                  onChangeDraft={setQuickMemoDraft}
+                  onSavePress={handleQuickMemoSavePress}
                 />
               </View>
-            )}
-          </View>
+            </View>
+          ) : planMode === 'dayNote' ? (
+            <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
+              <DayNotePlanSection c={c} isDark={isDark} />
+            </View>
+          ) : planMode === 'todoList' ? (
+            <ScrollView
+              style={[styles.scroll, { backgroundColor: shellBg }]}
+              contentContainerStyle={[
+                styles.scrollContent,
+                {
+                  paddingBottom: scrollContentBottomPad,
+                  flexGrow: 1,
+                },
+              ]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="always"
+              keyboardDismissMode="on-drag">
+              <TodoListPlanSection c={c} isDark={isDark} />
+            </ScrollView>
+          ) : planMode === 'reading' ? (
+            <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
+              <ReadingPlanSection c={c} isDark={isDark} />
+            </View>
+          ) : (
+            <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
+              <PriorityBasedPlanSection
+                c={c}
+                isFocusStarted={isFocusStarted}
+                priorityPlanDateKey={priorityPlanDateKey}
+                onChangePriorityPlanDateKey={setPriorityPlanDateKey}
+                priorityPlanDateKeyEnd={priorityPlanDateKeyEnd}
+                onChangePriorityPlanDateKeyEnd={setPriorityPlanDateKeyEnd}
+                applyPriorityPlanCalendarRange={applyPriorityPlanCalendarRange}
+                priorityPlanExplicitMultiDay={priorityPlanExplicitMultiDay}
+                priorityStart={priorityStart}
+                priorityEnd={priorityEnd}
+                onChangePriorityStart={setPriorityStart}
+                onChangePriorityEnd={setPriorityEnd}
+                priorityCategoryOrder={priorityCategoryOrder}
+                onSelectCategory={handlePriorityCategoryPress}
+                onOpenCategorySettings={handleOpenCategorySettings}
+                renderRoutineInlineSettings={renderRoutineInlineSettings}
+                onOpenFocusDetail={handleOpenFocusDetail}
+                onOpenFixedRoutine={handleOpenFixedRoutine}
+                layoutMode={effectiveLayoutMode}
+                onSelectLayoutMode={onSelectLayoutMode}
+                visibleLayoutModes={visibleLayoutModes}
+              />
+            </View>
+          )}
+        </View>
       </KeyboardAvoidingView>
       <DailyRhythmOnboardingGate
         visible={rhythmGateOpen}
         isDark={isDark}
         c={c}
         onConfirm={handleRhythmConfirm}
-        onSkip={handleRhythmSkip}
+        onEndDateChoice={handleRhythmEndDateChoice}
       />
     </ThemedView>
   );

@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import {
   addDaysToLocalDateKey,
@@ -10,7 +10,10 @@ import {
   getLocalDateKey,
   parseHHmmToMinutes,
 } from '@entities/day-plan';
-import { DigitalHhmmInput } from '@shared/ui/digital-hhmm-input';
+import {
+  DigitalHhmmInput,
+  type DigitalHhmmInputHandle,
+} from '@shared/ui/digital-hhmm-input';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { formatDateKeyCompactKo } from '../lib/dayPlanEditorShared';
@@ -42,6 +45,8 @@ type Props = {
     endsNextCalendarDay: boolean,
   ) => void;
   onPickerExpandedChange?: (expanded: boolean) => void;
+  /** 키패드가 필드를 가리지 않도록 부모 ScrollView 스크롤 요청 */
+  onRequestScrollIntoView?: () => void;
   contentInsetLeft?: number;
 };
 
@@ -63,12 +68,16 @@ export function CatalogRowSpineTimePanel({
   priorityEnd,
   onScheduleChange,
   onPickerExpandedChange,
+  onRequestScrollIntoView,
   contentInsetLeft = 34,
 }: Props) {
   const [draftStart, setDraftStart] = useState(() => formatMinutesToHHmm(startMinutes));
   const [draftEnd, setDraftEnd] = useState(() => formatMinutesToHHmm(endMinutes));
   const [draftEndsNext, setDraftEndsNext] = useState(endsNextCalendarDay);
   const [expanded, setExpanded] = useState<'start' | 'end' | null>(null);
+  const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
+  const expandedRef = useRef(expanded);
+  expandedRef.current = expanded;
 
   useEffect(() => {
     if (expanded !== null) return;
@@ -81,39 +90,36 @@ export function CatalogRowSpineTimePanel({
     onPickerExpandedChange?.(expanded !== null);
   }, [expanded, onPickerExpandedChange]);
 
+  /** 키패드가 올라오면 부모에 스크롤만 요청 — UI 높이는 늘리지 않음 */
+  useEffect(() => {
+    if (expanded === null || !onRequestScrollIntoView) return;
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const showSub = Keyboard.addListener(showEvent, () => {
+      requestAnimationFrame(() => onRequestScrollIntoView());
+    });
+    return () => showSub.remove();
+  }, [expanded, onRequestScrollIntoView]);
+
   const applyRoutineWindow = useMemo(() => {
     const rs = priorityStart.trim();
     const re = priorityEnd.trim();
     if (!rs || !re || parseHHmmToMinutes(rs) === null || parseHHmmToMinutes(re) === null) {
       return (hhmm: string) => hhmm;
     }
-    /** 입력 중에는 1분 단위로만 클램프 — 5분 스냅은 DigitalHhmmInput blur에서 처리 */
     return (hhmm: string) => clampHhmmToPriorityWindow(hhmm, rs, re, 1);
   }, [priorityEnd, priorityStart]);
 
   const commitDraft = useCallback(
     (startHhmm: string, endHhmm: string, endsNext: boolean) => {
-      const start = parseHHmmToMinutes(startHhmm);
-      let end = parseHHmmToMinutes(endHhmm);
+      const startClamped = applyRoutineWindow(startHhmm);
+      const endClamped = applyRoutineWindow(endHhmm);
+      const start = parseHHmmToMinutes(startClamped);
+      let end = parseHHmmToMinutes(endClamped);
       if (start === null || end === null) return;
       if (!endsNext && end <= start) end = Math.min(24 * 60, start + 15);
       onScheduleChange(start, end, endsNext);
     },
-    [onScheduleChange],
-  );
-
-  const updateDraftStart = useCallback(
-    (hhmm: string) => {
-      setDraftStart(applyRoutineWindow(hhmm));
-    },
-    [applyRoutineWindow],
-  );
-
-  const updateDraftEnd = useCallback(
-    (hhmm: string) => {
-      setDraftEnd(applyRoutineWindow(hhmm));
-    },
-    [applyRoutineWindow],
+    [applyRoutineWindow, onScheduleChange],
   );
 
   const resetDraftFromProps = useCallback(() => {
@@ -122,29 +128,65 @@ export function CatalogRowSpineTimePanel({
     setDraftEndsNext(endsNextCalendarDay);
   }, [endMinutes, endsNextCalendarDay, startMinutes]);
 
+  /** 현재 편집 필드의 DigitalHhmmInput 초안을 draftStart/End에 반영 */
+  const flushActiveFieldToDrafts = useCallback((): {
+    start: string;
+    end: string;
+  } => {
+    const field = expandedRef.current;
+    const flushed = digitalInputRef.current?.flush();
+    let start = draftStart;
+    let end = draftEnd;
+    if (flushed && field === 'start') {
+      start = flushed;
+      setDraftStart(flushed);
+    } else if (flushed && field === 'end') {
+      end = flushed;
+      setDraftEnd(flushed);
+    }
+    return { start, end };
+  }, [draftEnd, draftStart]);
+
   const handleConfirm = useCallback(() => {
     if (disabled) return;
-    commitDraft(draftStart, draftEnd, draftEndsNext);
+    Keyboard.dismiss();
+    const { start, end } = flushActiveFieldToDrafts();
+    const nextStart = applyRoutineWindow(start);
+    const nextEnd = applyRoutineWindow(end);
+    setDraftStart(nextStart);
+    setDraftEnd(nextEnd);
+    commitDraft(nextStart, nextEnd, draftEndsNext);
     setExpanded(null);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [commitDraft, disabled, draftEnd, draftEndsNext, draftStart]);
+  }, [
+    applyRoutineWindow,
+    commitDraft,
+    disabled,
+    draftEndsNext,
+    flushActiveFieldToDrafts,
+  ]);
 
   const toggleExpand = useCallback(
     (field: 'start' | 'end') => {
       if (disabled) return;
       void Haptics.selectionAsync();
-      setExpanded((cur) => {
-        if (cur === field) {
-          resetDraftFromProps();
-          return null;
-        }
-        if (cur === null) {
-          resetDraftFromProps();
-        }
-        return field;
-      });
+      const cur = expandedRef.current;
+      if (cur === field) {
+        // 같은 필드 다시 탭 → 접기 (미확정 초안 폐기)
+        Keyboard.dismiss();
+        resetDraftFromProps();
+        setExpanded(null);
+        return;
+      }
+      if (cur !== null) {
+        // 시작 ↔ 종료 전환: 현재 필드 초안 보존 후 전환
+        flushActiveFieldToDrafts();
+      } else {
+        resetDraftFromProps();
+      }
+      setExpanded(field);
     },
-    [disabled, resetDraftFromProps],
+    [disabled, flushActiveFieldToDrafts, resetDraftFromProps],
   );
 
   const trackBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
@@ -231,8 +273,9 @@ export function CatalogRowSpineTimePanel({
         onPress={() => {
           if (disabled) return;
           void Haptics.selectionAsync();
+          const { start, end } = flushActiveFieldToDrafts();
           setDraftEndsNext(false);
-          commitDraft(draftStart, draftEnd, false);
+          commitDraft(start, end, false);
         }}
         style={({ pressed }) => [
           styles.endDateChoiceBtn,
@@ -253,8 +296,9 @@ export function CatalogRowSpineTimePanel({
         onPress={() => {
           if (disabled) return;
           void Haptics.selectionAsync();
+          const { start, end } = flushActiveFieldToDrafts();
           setDraftEndsNext(true);
-          commitDraft(draftStart, draftEnd, true);
+          commitDraft(start, end, true);
         }}
         style={({ pressed }) => [
           styles.endDateChoiceBtn,
@@ -287,8 +331,10 @@ export function CatalogRowSpineTimePanel({
       {renderEndDateChoice()}
       {activeField ? (
         <DigitalHhmmInput
+          key={activeField}
+          ref={digitalInputRef}
           valueHhmm={activeField === 'end' ? draftEnd : draftStart}
-          onChangeHhmm={activeField === 'end' ? updateDraftEnd : updateDraftStart}
+          onChangeHhmm={activeField === 'end' ? setDraftEnd : setDraftStart}
           ink={ink}
           muted={muted}
           line={line}
@@ -297,6 +343,7 @@ export function CatalogRowSpineTimePanel({
           disabled={disabled}
           snapStepMinutes={5}
           accessibilityLabelPrefix={activeField === 'end' ? '종료' : '시작'}
+          onInputFocus={onRequestScrollIntoView}
         />
       ) : null}
     </View>

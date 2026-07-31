@@ -1,6 +1,15 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -142,6 +151,7 @@ export function PriorityRoutinePickerSheet({
   onCreateCustom,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [scheduleByKey, setScheduleByKey] = useState<Record<string, RoutinePickerSpineSchedule>>({});
   const [expandedTimeKey, setExpandedTimeKey] = useState<string | null>(null);
@@ -154,6 +164,13 @@ export function PriorityRoutinePickerSheet({
     () => formatDateKeyCompactLabel(addDaysToLocalDateKey(baseDateKey, 1)),
     [baseDateKey],
   );
+
+  const scrollTimePanelIntoView = useCallback(() => {
+    // 키패드가 시간 입력을 가리지 않도록 아래로 여유 있게 스크롤
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    });
+  }, []);
 
   useEffect(() => {
     if (!visible) return;
@@ -275,7 +292,11 @@ export function PriorityRoutinePickerSheet({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.root, { backgroundColor: surface, paddingTop: insets.top + 12 }]}>
+      <KeyboardAvoidingView
+        style={styles.root}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 12 : 0}>
+        <View style={{ flex: 1, backgroundColor: surface, paddingTop: insets.top + 12 }}>
         <View style={[styles.header, { borderBottomColor: line }]}>
           <ThemedText style={[styles.title, { color: ink }]}>{title}</ThemedText>
           <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={10}>
@@ -319,15 +340,19 @@ export function PriorityRoutinePickerSheet({
           </View>
         ) : null}
         <ScrollView
+          ref={scrollRef}
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled">
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 24) }]}
+          automaticallyAdjustKeyboardInsets
+          contentInsetAdjustmentBehavior="automatic"
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive">
           {onCreateCustom ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="새로운 루틴 만들기"
               onPress={() => {
-                onClose();
+                // 부모에서 픽커만 닫고 슬롯/갭 타깃은 유지한 채 생성 시트를 연다.
                 onCreateCustom();
               }}
               style={({ pressed }) => [styles.createRow, pressed && { opacity: 0.72 }]}>
@@ -381,7 +406,13 @@ export function PriorityRoutinePickerSheet({
                           onPress={(event) => {
                             event.stopPropagation();
                             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            setExpandedTimeKey((current) => (current === cat.key ? null : cat.key));
+                            setExpandedTimeKey((current) => {
+                              const next = current === cat.key ? null : cat.key;
+                              if (next) {
+                                requestAnimationFrame(() => scrollTimePanelIntoView());
+                              }
+                              return next;
+                            });
                           }}
                           style={[
                             styles.timeBtn,
@@ -433,6 +464,7 @@ export function PriorityRoutinePickerSheet({
                           onScheduleChange={(startMinutes, endMinutes, endsNextCalendarDay) =>
                             handleScheduleChange(cat.key, startMinutes, endMinutes, endsNextCalendarDay)
                           }
+                          onRequestScrollIntoView={scrollTimePanelIntoView}
                           contentInsetLeft={28}
                         />
                       </View>
@@ -478,7 +510,8 @@ export function PriorityRoutinePickerSheet({
             </ThemedText>
           </Pressable>
         </View>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -486,7 +519,7 @@ export function PriorityRoutinePickerSheet({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 12, paddingHorizontal: 20, gap: 2 },
+  scrollContent: { paddingHorizontal: 20, gap: 2 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

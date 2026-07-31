@@ -14,8 +14,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   buildTemplateSetupConfig,
+  isSpineBlockScheduleWithinPriorityWindow,
   listCustomFlowTemplateCatalogEntries,
   normalizeCustomFlowDetailConfig,
+  resolveSpinePriorityWindow,
   ROUTINE_SUMMARY_MAX,
   SYSTEM_CATALOG_GROUP_KEYS,
   type CustomFlowTemplateKey,
@@ -29,11 +31,16 @@ import {
   resolveSystemCatalogGroupLabel,
   type CustomCatalogGroup,
   type CustomFlowIconOption,
+  type DayMealSlot,
+  type DayMealSlotSchedule,
 } from '@shared/lib/storage';
 import { CustomFlowAppearancePicker } from '@shared/ui/custom-flow-appearance-picker';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
+
+import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
+import { DayMealSlotTargetChips } from './DayMealSlotTargetChips';
 
 const NAME_MAX = 24;
 const GROUP_NAME_MAX = 24;
@@ -43,6 +50,28 @@ type GroupOption = {
   label: string;
   isSystem: boolean;
 };
+
+export type CreateCustomFlowSpineSchedule = {
+  startMinutes: number;
+  endMinutes: number;
+  endsNextCalendarDay?: boolean;
+};
+
+/** 루틴 추가 흐름에서 현재 레이아웃에 바로 담기 위한 배치 설정 */
+export type CreateCustomFlowPlacement =
+  | {
+      mode: 'sections';
+      initialMealSlot: DayMealSlot;
+      mealSlotSchedule: DayMealSlotSchedule;
+    }
+  | {
+      mode: 'spine';
+      priorityStart: string;
+      priorityEnd: string;
+      initialStartMinutes: number;
+      initialEndMinutes: number;
+      initialEndsNextCalendarDay?: boolean;
+    };
 
 type Props = {
   visible: boolean;
@@ -55,9 +84,15 @@ type Props = {
     templateKey: CustomFlowTemplateKey;
     summary?: string;
     templateDataConfig?: unknown;
+    /** 시간대 모드 — 담을 구간 */
+    mealSlot?: DayMealSlot;
+    /** 타임라인 모드 — 시작·종료 */
+    schedule?: CreateCustomFlowSpineSchedule;
   }) => void;
   initialGroupKey?: string;
   initialTemplateKey?: CustomFlowTemplateKey;
+  /** 루틴 추가(시간대·타임라인)에서 열릴 때만 전달 */
+  placement?: CreateCustomFlowPlacement | null;
   isDark: boolean;
   ink: string;
   muted: string;
@@ -80,6 +115,7 @@ export function CreateCustomFlowSheet({
   onCreate,
   initialGroupKey,
   initialTemplateKey,
+  placement = null,
   isDark,
   ink,
   muted,
@@ -104,7 +140,15 @@ export function CreateCustomFlowSheet({
   const [summary, setSummary] = useState('');
   const [appearancePickerEpoch, setAppearancePickerEpoch] = useState(0);
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const [selectedMealSlot, setSelectedMealSlot] = useState<DayMealSlot>('morning');
+  const [spineSchedule, setSpineSchedule] = useState<CreateCustomFlowSpineSchedule>({
+    startMinutes: 9 * 60,
+    endMinutes: 10 * 60,
+    endsNextCalendarDay: false,
+  });
   const sheetWasVisibleRef = useRef(false);
+  const placementRef = useRef(placement);
+  placementRef.current = placement;
 
   useEffect(() => {
     if (!visible) {
@@ -146,6 +190,16 @@ export function CreateCustomFlowSheet({
     setTemplateSetupConfig(buildTemplateSetupConfig(initialTemplateKey ?? 'checklist'));
     setSummary('');
     setAppearancePickerEpoch((n) => n + 1);
+    const currentPlacement = placementRef.current;
+    if (currentPlacement?.mode === 'sections') {
+      setSelectedMealSlot(currentPlacement.initialMealSlot);
+    } else if (currentPlacement?.mode === 'spine') {
+      setSpineSchedule({
+        startMinutes: currentPlacement.initialStartMinutes,
+        endMinutes: currentPlacement.initialEndMinutes,
+        endsNextCalendarDay: Boolean(currentPlacement.initialEndsNextCalendarDay),
+      });
+    }
     const fallback =
       initialGroupKey && initialGroupKey.length > 0 ? initialGroupKey : 'productivity';
     const exists =
@@ -168,8 +222,27 @@ export function CreateCustomFlowSheet({
     return [...sys, ...custom];
   }, [customGroups]);
 
+  const spineScheduleValid = useMemo(() => {
+    if (placement?.mode !== 'spine') return true;
+    const window = resolveSpinePriorityWindow(placement.priorityStart, placement.priorityEnd);
+    if (!window) return false;
+    return isSpineBlockScheduleWithinPriorityWindow(
+      {
+        startMinutes: spineSchedule.startMinutes,
+        endMinutes: spineSchedule.endMinutes,
+        endsNextCalendarDay: Boolean(spineSchedule.endsNextCalendarDay),
+      },
+      window,
+    );
+  }, [placement, spineSchedule]);
+
   const trimmedName = name.trim();
-  const canProceedBasics = trimmedName.length > 0 && selectedGroupKey.length > 0;
+  const placementReady =
+    placement == null ||
+    placement.mode === 'sections' ||
+    (placement.mode === 'spine' && spineScheduleValid);
+  const canProceedBasics =
+    trimmedName.length > 0 && selectedGroupKey.length > 0 && placementReady;
   const canCreate = canProceedBasics && selectedTemplateKey.length > 0;
 
   const inputBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.72)';
@@ -202,6 +275,16 @@ export function CreateCustomFlowSheet({
       templateKey: selectedTemplateKey,
       summary: summary.trim(),
       templateDataConfig: templateSetupConfig,
+      ...(placement?.mode === 'sections' ? { mealSlot: selectedMealSlot } : {}),
+      ...(placement?.mode === 'spine'
+        ? {
+            schedule: {
+              startMinutes: spineSchedule.startMinutes,
+              endMinutes: spineSchedule.endMinutes,
+              ...(spineSchedule.endsNextCalendarDay ? { endsNextCalendarDay: true as const } : {}),
+            },
+          }
+        : {}),
     });
   };
 
@@ -219,7 +302,11 @@ export function CreateCustomFlowSheet({
   const headerTitle = step === 'basics' ? '새 루틴 만들기' : '루틴 방식·상세 설정';
   const headerSubtitle =
     step === 'basics'
-      ? '이름과 아이콘·색상을 정한 뒤 담을 묶음을 골라 주세요.'
+      ? placement?.mode === 'sections'
+        ? '이름·아이콘을 정한 뒤, 담을 시간대(새벽~밤)를 골라 주세요.'
+        : placement?.mode === 'spine'
+          ? '이름·아이콘을 정한 뒤, 타임라인에 넣을 시작·종료 시각을 맞춰 주세요.'
+          : '이름과 아이콘·색상을 정한 뒤 담을 묶음을 골라 주세요.'
       : '방식을 고른 뒤 아래에서 할 일·목표를 맞춰 주세요. 만들기를 누르면 바로 추가돼요.';
 
   return (
@@ -404,6 +491,53 @@ export function CreateCustomFlowSheet({
                   </View>
                 ) : null}
               </View>
+
+              {placement?.mode === 'sections' ? (
+                <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
+                  <DayMealSlotTargetChips
+                    selectedSlot={selectedMealSlot}
+                    schedule={placement.mealSlotSchedule}
+                    isDark={isDark}
+                    ink={ink}
+                    muted={muted}
+                    line={line}
+                    onSelectSlot={setSelectedMealSlot}
+                  />
+                </View>
+              ) : null}
+
+              {placement?.mode === 'spine' ? (
+                <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
+                  <ThemedText style={[styles.fieldLabel, { color: ink }]}>타임라인 시간</ThemedText>
+                  <ThemedText style={[styles.fieldHint, { color: muted }]}>
+                    하루 시작~마무리 안에서 시작·종료를 맞춰 주세요
+                  </ThemedText>
+                  <CatalogRowSpineTimePanel
+                    startMinutes={spineSchedule.startMinutes}
+                    endMinutes={spineSchedule.endMinutes}
+                    endsNextCalendarDay={Boolean(spineSchedule.endsNextCalendarDay)}
+                    ink={ink}
+                    muted={muted}
+                    line={line}
+                    isDark={isDark}
+                    priorityStart={placement.priorityStart}
+                    priorityEnd={placement.priorityEnd}
+                    onScheduleChange={(startMinutes, endMinutes, endsNextCalendarDay) =>
+                      setSpineSchedule({
+                        startMinutes,
+                        endMinutes,
+                        endsNextCalendarDay,
+                      })
+                    }
+                    contentInsetLeft={0}
+                  />
+                  {!spineScheduleValid ? (
+                    <ThemedText style={[styles.fieldHint, { color: muted, marginTop: 8 }]}>
+                      선택한 시간이 하루 시작~마무리 밖이에요. 구간 안으로 맞춰 주세요.
+                    </ThemedText>
+                  ) : null}
+                </View>
+              ) : null}
             </>
           ) : (
             <>

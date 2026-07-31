@@ -1,8 +1,8 @@
-import { localStorageClient } from './localStorageClient';
 import {
   loadDailyRhythmOnboardingCompleted,
   markDailyRhythmOnboardingCompleted,
 } from './dailyRhythmOnboardingStorage';
+import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 
 describe('dailyRhythmOnboardingStorage', () => {

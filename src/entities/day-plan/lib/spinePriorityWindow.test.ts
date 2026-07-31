@@ -51,6 +51,33 @@ describe('spinePriorityWindow', () => {
     });
   });
 
+  it('keeps 24:00 as the day-end boundary and allows evening blocks', () => {
+    const dayEnd = resolveSpinePriorityWindow('06:30', '24:00');
+    expect(dayEnd).toEqual({
+      startMin: 6 * 60 + 30,
+      endMin: 24 * 60,
+      overnight: false,
+    });
+    expect(
+      isSpineBlockScheduleWithinPriorityWindow(
+        {
+          startMinutes: 21 * 60,
+          endMinutes: 21 * 60 + 30,
+        },
+        dayEnd!,
+      ),
+    ).toBe(true);
+    expect(
+      isSpineBlockScheduleWithinPriorityWindow(
+        {
+          startMinutes: 23 * 60,
+          endMinutes: 24 * 60,
+        },
+        dayEnd!,
+      ),
+    ).toBe(true);
+  });
+
   it('rejects next-day end past overnight window finish', () => {
     const overnight = resolveSpinePriorityWindow('06:30', '00:00');
     expect(overnight).not.toBeNull();

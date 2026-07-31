@@ -12,6 +12,10 @@ export const StorageKeys = {
   fixedFlowSets: 'pokit:fixed-flow-sets',
   /** 첫 실행 하루 주기(시작·마무리 시각) 온보딩 완료 여부 */
   dailyRhythmOnboarding: 'pokit:daily-rhythm-onboarding',
+  /** 사용 설명서(가이드북) 열람 여부 */
+  guideBook: 'pokit:guide-book',
+  /** 첫 실행 서비스 소개(슬라이드) 열람 여부 */
+  welcomeIntro: 'pokit:welcome-intro',
   /** 데이플랜 화면 드래프트(모드/시작·마무리/순서 등) */
   dayPlanDraft: 'pokit:day-plan-draft',
   /** 투두 리스트 모드 — 날짜별 할 일 표 */
@@ -57,6 +61,8 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   priorityCatalogFixedRoutines: 'lockflow:priority-catalog-fixed-routines',
   fixedFlowSets: 'lockflow:fixed-flow-sets',
   dailyRhythmOnboarding: 'lockflow:daily-rhythm-onboarding',
+  guideBook: 'lockflow:guide-book',
+  welcomeIntro: 'lockflow:welcome-intro',
   dayPlanDraft: 'lockflow:day-plan-draft',
   dayPlanTodos: 'lockflow:day-plan-todos',
   horizonGoals: 'lockflow:horizon-goals',

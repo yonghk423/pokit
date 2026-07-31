@@ -15,10 +15,14 @@ export function resolveSpinePriorityWindow(
   const endMinRaw = parseHHmmToMinutes(priorityEnd.trim());
   if (startMin === null || endMinRaw === null) return null;
 
-  const endMin = endMinRaw >= 24 * 60 ? 24 * 60 - 1 : endMinRaw;
   return {
     startMin,
-    endMin,
+    /**
+     * `24:00`은 23:59로 내리지 않는다.
+     * 시작~자정 구간에서는 24:00이 실제 종료 경계이며, 21:00~24:00 같은 블록을
+     * 전역 집중 구간 안으로 판정하려면 1440을 보존해야 한다.
+     */
+    endMin: endMinRaw,
     overnight: isOvernightPriorityWindow(priorityStart, priorityEnd),
   };
 }

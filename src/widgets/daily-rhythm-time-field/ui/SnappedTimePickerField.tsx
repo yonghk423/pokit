@@ -1,9 +1,12 @@
 import * as Haptics from 'expo-haptics';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { clampHhmmToPriorityWindow, formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
-import { DigitalHhmmInput } from '@shared/ui/digital-hhmm-input';
+import {
+  DigitalHhmmInput,
+  type DigitalHhmmInputHandle,
+} from '@shared/ui/digital-hhmm-input';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { TIME_SNAP_MINUTES } from '../lib/snappedPickerMath';
@@ -35,6 +38,8 @@ export type SnappedTimePickerFieldProps = {
   mapMidnightToEndOfDay?: boolean;
   /** 시각 pill 왼쪽에 표시할 날짜(예: 5월 21일) */
   dateCaption?: string;
+  /** 온보딩 등 — 라벨·시각 pill을 조금 키움 */
+  emphasized?: boolean;
 };
 
 export function SnappedTimePickerField({
@@ -51,6 +56,7 @@ export function SnappedTimePickerField({
   routineDayEndHhmm,
   mapMidnightToEndOfDay = false,
   dateCaption,
+  emphasized = false,
 }: SnappedTimePickerFieldProps) {
   const applyRoutineWindow = useMemo(() => {
     const rs = routineDayStartHhmm?.trim() ?? '';
@@ -67,6 +73,7 @@ export function SnappedTimePickerField({
     return (hhmm: string) => clampHhmmToPriorityWindow(hhmm, rs, re, 1);
   }, [routineDayStartHhmm, routineDayEndHhmm]);
 
+  const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
   const selectedFg = isDark ? '#09090b' : '#FAFAFA';
 
   return (
@@ -76,16 +83,28 @@ export function SnappedTimePickerField({
           void Haptics.selectionAsync();
           onToggleExpand();
         }}
-        style={({ pressed }) => [styles.timeRow, pressed && { opacity: 0.9 }]}>
+        style={({ pressed }) => [
+          styles.timeRow,
+          emphasized && styles.timeRowEmphasized,
+          pressed && { opacity: 0.9 },
+        ]}>
         <View style={styles.timeRowLeft}>
           <ThemedText
-            style={[styles.timeRowLabel, { color: palette.onSurface }]}
+            style={[
+              styles.timeRowLabel,
+              emphasized && styles.timeRowLabelEmphasized,
+              { color: palette.onSurface },
+            ]}
             lightColor={palette.onSurface}
             darkColor={palette.onSurface}>
             {label}
           </ThemedText>
           <ThemedText
-            style={[styles.timeRowHint, { color: palette.onVariant }]}
+            style={[
+              styles.timeRowHint,
+              emphasized && styles.timeRowHintEmphasized,
+              { color: palette.onVariant },
+            ]}
             lightColor={palette.onVariant}
             darkColor={palette.onVariant}>
             {hint}
@@ -94,7 +113,11 @@ export function SnappedTimePickerField({
         <View style={styles.timeRowRight}>
           {dateCaption ? (
             <ThemedText
-              style={[styles.timeDateAside, { color: palette.onVariant }]}
+              style={[
+                styles.timeDateAside,
+                emphasized && styles.timeDateAsideEmphasized,
+                { color: palette.onVariant },
+              ]}
               lightColor={palette.onVariant}
               darkColor={palette.onVariant}
               numberOfLines={1}>
@@ -104,13 +127,18 @@ export function SnappedTimePickerField({
           <View
             style={[
               styles.timePill,
+              emphasized && styles.timePillEmphasized,
               {
                 backgroundColor: palette.containerLowest,
                 borderColor: expanded ? PRIMARY : palette.border,
               },
             ]}>
             <ThemedText
-              style={[styles.timePillText, { color: palette.onSurface }]}
+              style={[
+                styles.timePillText,
+                emphasized && styles.timePillTextEmphasized,
+                { color: palette.onSurface },
+              ]}
               lightColor={palette.onSurface}
               darkColor={palette.onSurface}>
               {formatHhmmClockKo(valueHhmm)}
@@ -121,8 +149,9 @@ export function SnappedTimePickerField({
       {expanded ? (
         <View style={styles.inputBlock}>
           <DigitalHhmmInput
+            ref={digitalInputRef}
             valueHhmm={valueHhmm}
-            onChangeHhmm={(next) => onChangeHhmm(applyRoutineWindow(next))}
+            onChangeHhmm={onChangeHhmm}
             ink={palette.onSurface}
             muted={palette.onVariant}
             line={palette.border}
@@ -134,6 +163,8 @@ export function SnappedTimePickerField({
           />
           <Pressable
             onPress={() => {
+              const flushed = digitalInputRef.current?.flush();
+              if (flushed) onChangeHhmm(applyRoutineWindow(flushed));
               void Haptics.selectionAsync();
               onToggleExpand();
             }}
@@ -155,9 +186,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
+  timeRowEmphasized: {
+    minHeight: 56,
+    paddingVertical: 4,
+  },
   timeRowLeft: { flex: 1, gap: 2, minWidth: 0 },
   timeRowLabel: { fontSize: 14, fontWeight: '700' },
+  timeRowLabelEmphasized: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
   timeRowHint: { fontSize: 11, fontWeight: '500', lineHeight: 14 },
+  timeRowHintEmphasized: { fontSize: 12, lineHeight: 16 },
   timeRowRight: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -170,6 +207,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
     textAlign: 'right',
   },
+  timeDateAsideEmphasized: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
   timePill: {
     minWidth: 108,
     paddingHorizontal: 12,
@@ -178,7 +219,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     alignItems: 'center',
   },
+  timePillEmphasized: {
+    minWidth: 118,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
   timePillText: { fontSize: 16, fontWeight: '800', letterSpacing: -0.25 },
+  timePillTextEmphasized: { fontSize: 18, letterSpacing: -0.35 },
   inputBlock: {
     paddingTop: 6,
     gap: 4,

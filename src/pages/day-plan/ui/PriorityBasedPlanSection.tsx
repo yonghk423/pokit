@@ -29,6 +29,7 @@ import {
   buildInitialCustomFlowDetailConfig,
   buildSpineTimelineModel,
   clampSpineBlockToPriorityWindow,
+  computeSpineGapInsertSlot,
   createCustomFlowCategoryId,
   filterBagTimelineFlowBlocks,
   filterDayPlanFlowBlocks,
@@ -68,7 +69,9 @@ import {
   listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
   loadRoutineCatalogSelectionKeys,
+  loadSpineDefaultBlockMinutes,
   removeRoutineCatalogSelectionKey,
+  resolveCurrentMealSlotFromSchedule,
   saveGoalDetailCategoryConfig,
   saveRoutineCatalogSelectionKeys,
   type CategoryMealSlotOverride,
@@ -107,7 +110,7 @@ import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { buildCategoryMealSlotOverrides, clampMealSlotSectionsToWindow, flattenPriorityMealSlotSectionEntries, hasExplicitMealSlotAssignments, reorderFlatKeys, reorderMealSlotSectionEntries, resolvePriorityMealSlot, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
 import { DAY_MEAL_SLOT_LABEL } from '../lib/priorityMealSlotSections';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
-import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
+import { CreateCustomFlowSheet, type CreateCustomFlowPlacement } from './CreateCustomFlowSheet';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
 import { PriorityMealSlotAddRoutineRow } from './PriorityMealSlotAddRoutineRow';
 import { PriorityMealSlotSectionHeader } from './PriorityMealSlotSectionHeader';
@@ -1494,50 +1497,6 @@ export function PriorityBasedPlanSection({
     reloadRoutineCatalog();
   }, [addRoutineSheetOpen, reloadRoutineCatalog]);
 
-  const handleCreateCustomFlow = useCallback(
-    ({
-      name,
-      groupKey,
-      icon,
-      accentColor,
-      templateKey,
-      summary,
-      templateDataConfig,
-    }: {
-      name: string;
-      groupKey: string;
-      icon: string;
-      accentColor: string;
-      templateKey: CustomFlowTemplateKey;
-      summary?: string;
-      templateDataConfig?: unknown;
-    }) => {
-      const id = createCustomFlowCategoryId();
-      const safeGroupKey = resolveCatalogGroupKeyForPersist(groupKey);
-      const trimmed = name.trim();
-      const next = buildInitialCustomFlowDetailConfig(templateKey, {
-        ...(trimmed.length > 0 ? { displayName: trimmed } : {}),
-        ...(typeof summary === 'string' && summary.trim().length > 0
-          ? { summary: summary.trim() }
-          : {}),
-        icon,
-        accentColor,
-        ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
-      });
-      saveGoalDetailCategoryConfig(id, next);
-      if (templateKey === 'reminder') {
-        void persistReminderTemplateNotificationRule(id, next);
-      }
-      appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
-      registerOtherCategoryResolverFromStorage();
-      void loadGoalDetailCategoryConfig(id);
-      reloadRoutineCatalog();
-      setCreateSheetOpen(false);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    },
-    [reloadRoutineCatalog],
-  );
-
   const addableRoutineSections = useMemo(() => {
     void catalogTick;
     const excludedKeys = spinePendingGapBounds
@@ -1572,11 +1531,17 @@ export function PriorityBasedPlanSection({
     setAddRoutineSheetOpen(true);
   }, []);
 
+  const clearAddRoutineTargetContext = useCallback(() => {
+    setAddRoutineTargetSlot(null);
+    setSpinePendingGapBounds(null);
+  }, []);
+
   const handleConfirmAddRoutinesToSlot = useCallback(
     (items: RoutinePickerConfirmItem[]) => {
       if (items.length === 0) return;
 
-      if (spinePendingGapBounds) {
+      const allHaveSpineSchedule = items.every((item) => item.schedule != null);
+      if (allHaveSpineSchedule) {
         const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
         const addedKeys: string[] = [];
 
@@ -1653,6 +1618,113 @@ export function PriorityBasedPlanSection({
       appendPrioritySectionsCategoryKeys,
       priorityEnd,
       priorityStart,
+    ],
+  );
+
+  const handleCreateCustomFlow = useCallback(
+    ({
+      name,
+      groupKey,
+      icon,
+      accentColor,
+      templateKey,
+      summary,
+      templateDataConfig,
+      mealSlot,
+      schedule,
+    }: {
+      name: string;
+      groupKey: string;
+      icon: string;
+      accentColor: string;
+      templateKey: CustomFlowTemplateKey;
+      summary?: string;
+      templateDataConfig?: unknown;
+      mealSlot?: DayMealSlot;
+      schedule?: {
+        startMinutes: number;
+        endMinutes: number;
+        endsNextCalendarDay?: boolean;
+      };
+    }) => {
+      const id = createCustomFlowCategoryId();
+      const safeGroupKey = resolveCatalogGroupKeyForPersist(groupKey);
+      const trimmed = name.trim();
+      const next = buildInitialCustomFlowDetailConfig(templateKey, {
+        ...(trimmed.length > 0 ? { displayName: trimmed } : {}),
+        ...(typeof summary === 'string' && summary.trim().length > 0
+          ? { summary: summary.trim() }
+          : {}),
+        icon,
+        accentColor,
+        ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
+      });
+      saveGoalDetailCategoryConfig(id, next);
+      if (templateKey === 'reminder') {
+        void persistReminderTemplateNotificationRule(id, next);
+      }
+      appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
+      registerOtherCategoryResolverFromStorage();
+      void loadGoalDetailCategoryConfig(id);
+      reloadRoutineCatalog();
+
+      // 카탈로그 저장 후 현재 레이아웃 모드에 바로 담기
+      if (schedule) {
+        handleConfirmAddRoutinesToSlot([
+          {
+            key: id,
+            schedule: {
+              startMinutes: schedule.startMinutes,
+              endMinutes: schedule.endMinutes,
+              endsNextCalendarDay: Boolean(schedule.endsNextCalendarDay),
+            },
+          },
+        ]);
+      } else if (mealSlot) {
+        appendPrioritySectionsCategoryKeys([id]);
+        addPrioritySectionMealSlot(id, mealSlot);
+        appendRoutineCatalogSelectionKeys([id]);
+        setLastAddedCategoryKey(id);
+      } else if (spinePendingGapBounds) {
+        const slot = computeSpineGapInsertSlot(
+          spinePendingGapBounds.fromMinutes,
+          spinePendingGapBounds.toMinutes,
+          planBlocks,
+          getLocalMinutesOfDayNow(),
+          loadSpineDefaultBlockMinutes(),
+          1,
+          priorityStart,
+          priorityEnd,
+        );
+        if (slot) {
+          handleConfirmAddRoutinesToSlot([
+            {
+              key: id,
+              schedule: {
+                startMinutes: slot.startMinutes,
+                endMinutes: slot.endMinutes,
+                endsNextCalendarDay: false,
+              },
+            },
+          ]);
+        }
+      } else {
+        handleConfirmAddRoutinesToSlot([{ key: id }]);
+      }
+
+      clearAddRoutineTargetContext();
+      setCreateSheetOpen(false);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [
+      addPrioritySectionMealSlot,
+      appendPrioritySectionsCategoryKeys,
+      clearAddRoutineTargetContext,
+      handleConfirmAddRoutinesToSlot,
+      planBlocks,
+      priorityEnd,
+      priorityStart,
+      reloadRoutineCatalog,
       spinePendingGapBounds,
     ],
   );
@@ -1678,6 +1750,62 @@ export function PriorityBasedPlanSection({
       nowMinutes: getLocalMinutesOfDayNow(),
     };
   }, [planBlocks, priorityEnd, priorityStart, spinePendingGapBounds]);
+
+  const createSheetPlacement = useMemo((): CreateCustomFlowPlacement | null => {
+    if (layoutMode === 'sections') {
+      return {
+        mode: 'sections',
+        initialMealSlot:
+          addRoutineTargetSlot ??
+          resolveCurrentMealSlotFromSchedule(getLocalMinutesOfDayNow(), mealSlotSchedule),
+        mealSlotSchedule,
+      };
+    }
+    if (layoutMode === 'spine') {
+      const defaultDuration = loadSpineDefaultBlockMinutes();
+      const gap = spinePendingGapBounds;
+      const slot = computeSpineGapInsertSlot(
+        gap?.fromMinutes ?? 0,
+        gap?.toMinutes ?? 24 * 60,
+        planBlocks,
+        getLocalMinutesOfDayNow(),
+        defaultDuration,
+        1,
+        priorityStart,
+        priorityEnd,
+      );
+      if (slot) {
+        return {
+          mode: 'spine',
+          priorityStart,
+          priorityEnd,
+          initialStartMinutes: slot.startMinutes,
+          initialEndMinutes: slot.endMinutes,
+        };
+      }
+      const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
+      if (!window) return null;
+      const startMinutes = window.startMin;
+      const endMinutes = Math.min(startMinutes + defaultDuration, window.endMin);
+      if (endMinutes - startMinutes < 1) return null;
+      return {
+        mode: 'spine',
+        priorityStart,
+        priorityEnd,
+        initialStartMinutes: startMinutes,
+        initialEndMinutes: endMinutes,
+      };
+    }
+    return null;
+  }, [
+    addRoutineTargetSlot,
+    layoutMode,
+    mealSlotSchedule,
+    planBlocks,
+    priorityEnd,
+    priorityStart,
+    spinePendingGapBounds,
+  ]);
 
   const showSectionsView = priorityMealSlotLayoutEnabled;
 
@@ -3011,7 +3139,7 @@ export function PriorityBasedPlanSection({
                               style={[styles.priorityMainEmptyHintBody, { color: editorial.muted }]}
                               lightColor={editorial.muted}
                               darkColor={editorial.muted}>
-                              버튼을 눌러 오늘 할 루틴을 추가해 주세요.
+                              오늘 할 루틴을 추가해 주세요.
                             </ThemedText>
                             <PriorityMealSlotAddRoutineRow
                               label="루틴 추가"
@@ -3314,11 +3442,12 @@ export function PriorityBasedPlanSection({
         line={editorial.line}
         onClose={() => {
           setAddRoutineSheetOpen(false);
-          setAddRoutineTargetSlot(null);
-          setSpinePendingGapBounds(null);
+          clearAddRoutineTargetContext();
         }}
         onConfirm={handleConfirmAddRoutinesToSlot}
         onCreateCustom={() => {
+          // 픽커만 닫고 슬롯/갭 타깃은 유지 — 생성 직후 해당 모드에 담기 위함
+          setAddRoutineSheetOpen(false);
           setCreateSheetGroupKey(undefined);
           setCreateSheetOpen(true);
         }}
@@ -3326,9 +3455,13 @@ export function PriorityBasedPlanSection({
 
       <CreateCustomFlowSheet
         visible={createSheetOpen}
-        onClose={() => setCreateSheetOpen(false)}
+        onClose={() => {
+          setCreateSheetOpen(false);
+          clearAddRoutineTargetContext();
+        }}
         onCreate={handleCreateCustomFlow}
         initialGroupKey={createSheetGroupKey}
+        placement={createSheetPlacement}
         isDark={isDark}
         ink={editorial.ink}
         muted={editorial.muted}

@@ -1,7 +1,23 @@
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, UIManager, View } from 'react-native';
+import {
+  Alert,
+  Animated,
+  Keyboard,
+  KeyboardAvoidingView,
+  LayoutAnimation,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  TextInput,
+  UIManager,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import Reanimated, {
   Easing,
   useAnimatedStyle,
@@ -164,6 +180,8 @@ type FlowCardProps = {
     endMinutes: number,
     endsNextCalendarDay: boolean,
   ) => void;
+  /** 키패드에 가리지 않도록 패널을 스크롤 영역 안으로 */
+  onEnsureVisibleAboveKeyboard?: (windowY: number, height: number) => void;
   startNotifyEnabled?: boolean;
   onToggleStartNotify?: () => void;
   onToggleEnabled: (enabled: boolean) => void;
@@ -192,6 +210,7 @@ function FlowItemCard({
   priorityEnd,
   baseDateKey,
   onChangeSpineTime,
+  onEnsureVisibleAboveKeyboard,
   startNotifyEnabled = false,
   onToggleStartNotify,
   onToggleEnabled,
@@ -199,6 +218,7 @@ function FlowItemCard({
 }: FlowCardProps) {
   const [mealSlotExpanded, setMealSlotExpanded] = useState(false);
   const [spineTimeExpanded, setSpineTimeExpanded] = useState(false);
+  const spineTimePanelRef = useRef<View>(null);
   const expandProgress = useSharedValue(0);
   const spineExpandProgress = useSharedValue(0);
   const label = getPickerCategoryLabel(item.categoryKey);
@@ -495,6 +515,7 @@ function FlowItemCard({
       ) : null}
       {showSpineTimePicker && onChangeSpineTime && priorityStart && priorityEnd && spineTimeExpanded ? (
         <View
+          ref={spineTimePanelRef}
           style={[
             styles.flowSpineTimePanel,
             {
@@ -517,6 +538,17 @@ function FlowItemCard({
             priorityStart={priorityStart}
             priorityEnd={priorityEnd}
             onScheduleChange={onChangeSpineTime}
+            onRequestScrollIntoView={() => {
+              const measureAndEnsure = () => {
+                spineTimePanelRef.current?.measureInWindow((_x, y, _w, h) => {
+                  onEnsureVisibleAboveKeyboard?.(y, h);
+                });
+              };
+              requestAnimationFrame(measureAndEnsure);
+              // 키패드 애니메이션·KeyboardAvoidingView 레이아웃 반영 후 재측정
+              setTimeout(measureAndEnsure, 120);
+              setTimeout(measureAndEnsure, 280);
+            }}
             contentInsetLeft={8}
           />
         </View>
@@ -721,6 +753,7 @@ type GroupAccordionProps = {
     endMinutes: number,
     endsNextCalendarDay: boolean,
   ) => void;
+  onEnsureVisibleAboveKeyboard?: (windowY: number, height: number) => void;
   isStartNotifyEnabled?: (categoryKey: string) => boolean;
   onToggleStartNotify?: (categoryKey: string) => void;
 };
@@ -758,6 +791,7 @@ function GroupAccordion({
   onOpenAddItem,
   onToggleItemMealSlot,
   onChangeItemSpineTime,
+  onEnsureVisibleAboveKeyboard,
   isStartNotifyEnabled,
   onToggleStartNotify,
 }: GroupAccordionProps) {
@@ -1053,6 +1087,7 @@ function GroupAccordion({
                               )
                           : undefined
                       }
+                      onEnsureVisibleAboveKeyboard={onEnsureVisibleAboveKeyboard}
                       startNotifyEnabled={isStartNotifyEnabled?.(item.categoryKey) ?? false}
                       onToggleStartNotify={
                         onToggleStartNotify
@@ -1124,7 +1159,42 @@ export function FixedRoutinePage({
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const targetSetIdRef = useRef<string | null>(null);
-  
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
+  const keyboardHeightRef = useRef(0);
+  const { height: windowHeight } = useWindowDimensions();
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      keyboardHeightRef.current = e.endCoordinates.height;
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      keyboardHeightRef.current = 0;
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const ensureVisibleAboveKeyboard = useCallback(
+    (windowY: number, height: number) => {
+      const kb = keyboardHeightRef.current;
+      if (kb <= 0) return;
+      const keyboardTop = windowHeight - kb;
+      const fieldBottom = windowY + height;
+      const overlap = fieldBottom - keyboardTop + 24;
+      if (overlap <= 0) return;
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, scrollOffsetRef.current + overlap),
+        animated: true,
+      });
+    },
+    [windowHeight],
+  );
+
   const [nowTick, setNowTick] = useState(() => Date.now());
   
   const layoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
@@ -1632,15 +1702,27 @@ export function FixedRoutinePage({
       {activeSection === 'catalog' ? (
         <RoutineCatalogManageContent />
       ) : (
+      <KeyboardAvoidingView
+        style={styles.scrollKeyboardRoot}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={{
           paddingBottom: 24 + insets.bottom,
           paddingHorizontal: horizontalPad,
           paddingTop: 8,
         }}
+        automaticallyAdjustKeyboardInsets
+        contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
+        keyboardDismissMode="interactive"
+        showsVerticalScrollIndicator={false}
+        onScroll={(e) => {
+          scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}>
         {activeSection === 'templates' ? (
           <RoutineTemplateListPanel
             ink={ink}
@@ -1759,6 +1841,7 @@ export function FixedRoutinePage({
                     void syncRoutineStartNotifications();
                     void Haptics.selectionAsync();
                   }}
+                  onEnsureVisibleAboveKeyboard={ensureVisibleAboveKeyboard}
                   isStartNotifyEnabled={isStartNotifyEnabledForCategory}
                   onToggleStartNotify={(categoryKey) => {
                     void handleToggleStartNotify(categoryKey);
@@ -1825,6 +1908,7 @@ export function FixedRoutinePage({
           </>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
       )}
 
       <AddItemModal
@@ -1918,6 +2002,7 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     gap: 6,
   },
+  scrollKeyboardRoot: { flex: 1 },
   scroll: { flex: 1 },
   sectionHint: {
     fontSize: 12,

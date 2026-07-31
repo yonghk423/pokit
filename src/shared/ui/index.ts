@@ -2,7 +2,7 @@ export { Collapsible } from './collapsible';
 export { CompletionRadioButton } from './completion-radio-button';
 export { CustomFlowAppearancePicker } from './custom-flow-appearance-picker';
 export { DigitalHhmmInput } from './digital-hhmm-input';
-export type { DigitalHhmmInputProps } from './digital-hhmm-input';
+export type { DigitalHhmmInputHandle, DigitalHhmmInputProps } from './digital-hhmm-input';
 export { HsvColorPicker } from './hsv-color-picker';
 export { ExternalLink } from './external-link';
 export { HapticTab } from './haptic-tab';

@@ -1,2 +1,2 @@
 export { DigitalHhmmInput } from './DigitalHhmmInput';
-export type { DigitalHhmmInputProps } from './DigitalHhmmInput';
+export type { DigitalHhmmInputHandle, DigitalHhmmInputProps } from './DigitalHhmmInput';

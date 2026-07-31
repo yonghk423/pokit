@@ -1,59 +1,216 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  Alert,
+  Image,
+  type ImageSourcePropType,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import { addDaysToLocalDateKey, formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
-import { IconSymbol } from '@shared/ui/icon-symbol';
+import {
+  RETRO_BORDER_WIDTH,
+  RetroFlatColors,
+  SOLID_SHADOW_OFFSET,
+  cityPopFont,
+} from '@shared/config/retroFlat';
+import { DigitalHhmmInput, type DigitalHhmmInputHandle } from '@shared/ui/digital-hhmm-input';
 import { ThemedText } from '@shared/ui/themed-text';
 import { DailyRhythmStyleAlarmRow, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { dailyRhythmOnboardingAssets } from '../lib/dailyRhythmOnboardingAssets';
 import { formatDateKeyCompactKo, isOvernightHhmmRange, PRIMARY } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
+import { DayCycleEmojiMark } from './DayCycleEmojiMark';
 
 type PickerTarget = 'start' | 'end' | null;
-
-function rhythmPresetLabel(start: string, end: string): string {
-  return `${formatHhmmClockKo(start)} – ${formatHhmmClockKo(end)}`;
-}
 
 function initialEndDateTargetFromRange(rangeLo?: string, rangeHi?: string): 'today' | 'nextDay' {
   if (rangeLo && rangeHi && rangeHi > rangeLo) return 'nextDay';
   return 'today';
 }
 
-/** 시각만 보고 당일/다음 날 기본값 추천 (사용자가 직접 고른 뒤에는 덮어쓰지 않음) */
 function suggestEndDateTarget(start: string, end: string): 'today' | 'nextDay' {
   if (isOvernightHhmmRange(start, end)) return 'nextDay';
   return 'today';
 }
 
-const PRESETS: ReadonlyArray<{ label: string; hint: string; start: string; end: string }> = [
-  {
-    label: rhythmPresetLabel('06:00', '23:00'),
-    hint: '이른 시작 → 밤까지',
-    start: '06:00',
-    end: '23:00',
-  },
-  {
-    label: rhythmPresetLabel('07:00', '23:00'),
-    hint: '가장 흔한 패턴',
-    start: '07:00',
-    end: '23:00',
-  },
-  {
-    label: rhythmPresetLabel('08:00', '22:00'),
-    hint: '조금 일찍 마무리',
-    start: '08:00',
-    end: '22:00',
-  },
-  {
-    label: rhythmPresetLabel('08:00', '24:00'),
-    hint: '당일 자정(24:00)까지',
-    start: '08:00',
-    end: '24:00',
-  },
-];
+function splitDateKeyCompactKo(dateKey: string): { month: string; day: string } | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
+  if (!m) return null;
+  return { month: `${parseInt(m[2], 10)}월`, day: `${parseInt(m[3], 10)}일` };
+}
+
+function SolidShadowFace({
+  borderColor,
+  shadowColor,
+  backgroundColor,
+  style,
+  shellStyle,
+  children,
+  shadowSize = SOLID_SHADOW_OFFSET,
+}: {
+  borderColor: string;
+  shadowColor: string;
+  backgroundColor: string;
+  style?: object;
+  shellStyle?: object;
+  children: ReactNode;
+  shadowSize?: number;
+}) {
+  return (
+    <View
+      style={[
+        styles.shadowShell,
+        { marginRight: shadowSize, marginBottom: shadowSize },
+        shellStyle,
+      ]}>
+      <View
+        style={[
+          styles.shadowBlock,
+          {
+            backgroundColor: shadowColor,
+            borderColor,
+            transform: [{ translateX: shadowSize }, { translateY: shadowSize }],
+          },
+        ]}
+      />
+      <View style={[styles.shadowFace, { backgroundColor, borderColor }, style]}>{children}</View>
+    </View>
+  );
+}
+
+function OnboardingTimeRow({
+  label,
+  hint,
+  valueHhmm,
+  onChangeHhmm,
+  expanded,
+  onToggleExpand,
+  isDark,
+  c,
+  thumb,
+  dateParts,
+  mapMidnightToEndOfDay,
+}: {
+  label: string;
+  hint: string;
+  valueHhmm: string;
+  onChangeHhmm: (next: string) => void;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  isDark: boolean;
+  c: DayPlanPalette;
+  thumb: ImageSourcePropType;
+  dateParts: { month: string; day: string } | null;
+  mapMidnightToEndOfDay?: boolean;
+}) {
+  const digitalRef = useRef<DigitalHhmmInputHandle>(null);
+  const ink = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const selectedFg = isDark ? '#09090b' : '#FAFAFA';
+
+  return (
+    <View style={styles.onboardTimeBlock}>
+      <Pressable
+        onPress={() => {
+          void Haptics.selectionAsync();
+          onToggleExpand();
+        }}
+        style={({ pressed }) => [styles.onboardTimeRow, pressed && { opacity: 0.92 }]}>
+        <SolidShadowFace
+          borderColor={c.border}
+          shadowColor={isDark ? ink.solidShadow : '#000000'}
+          backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
+          shadowSize={3}
+          style={styles.thumbFace}>
+          <Image source={thumb} style={styles.thumbImage} resizeMode="cover" />
+        </SolidShadowFace>
+
+        <View style={styles.onboardTimeCopy}>
+          <ThemedText
+            style={[styles.onboardTimeLabel, { color: c.onSurface }, cityPopFont('800')]}
+            lightColor={c.onSurface}
+            darkColor={c.onSurface}>
+            {label}
+          </ThemedText>
+          <ThemedText
+            style={[styles.onboardTimeHint, { color: c.onVariant }, cityPopFont('700')]}
+            lightColor={c.onVariant}
+            darkColor={c.onVariant}
+            numberOfLines={2}>
+            {hint}
+          </ThemedText>
+        </View>
+
+        <View style={styles.onboardTimeRight}>
+          {dateParts ? (
+            <View style={styles.dateStack}>
+              <ThemedText
+                style={[styles.dateStackLine, { color: c.onVariant }, cityPopFont('700')]}
+                lightColor={c.onVariant}
+                darkColor={c.onVariant}>
+                {dateParts.month}
+              </ThemedText>
+              <ThemedText
+                style={[styles.dateStackLine, { color: c.onVariant }, cityPopFont('700')]}
+                lightColor={c.onVariant}
+                darkColor={c.onVariant}>
+                {dateParts.day}
+              </ThemedText>
+            </View>
+          ) : null}
+          <SolidShadowFace
+            borderColor={c.border}
+            shadowColor={isDark ? ink.solidShadow : '#000000'}
+            backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
+            shadowSize={expanded ? 0 : 2}
+            style={styles.timePillFace}>
+            <ThemedText
+              style={[styles.timePillText, { color: c.onSurface }, cityPopFont('800')]}
+              lightColor={c.onSurface}
+              darkColor={c.onSurface}>
+              {formatHhmmClockKo(valueHhmm)}
+            </ThemedText>
+          </SolidShadowFace>
+        </View>
+      </Pressable>
+
+      {expanded ? (
+        <View style={styles.inputBlock}>
+          <DigitalHhmmInput
+            ref={digitalRef}
+            valueHhmm={valueHhmm}
+            onChangeHhmm={onChangeHhmm}
+            ink={c.onSurface}
+            muted={c.onVariant}
+            line={c.border}
+            surface={isDark ? ink.surfaceAlt : '#FFFFFF'}
+            selectedForeground={selectedFg}
+            snapStepMinutes={1}
+            mapMidnightToEndOfDay={mapMidnightToEndOfDay}
+            accessibilityLabelPrefix={label}
+          />
+          <Pressable
+            onPress={() => {
+              const flushed = digitalRef.current?.flush();
+              if (flushed) onChangeHhmm(flushed);
+              void Haptics.selectionAsync();
+              onToggleExpand();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`${label} 시간 선택 확인`}
+            style={({ pressed }) => [styles.confirmBtn, pressed && { opacity: 0.86 }]}>
+            <ThemedText style={[styles.confirmBtnText, cityPopFont('700')]}>확인</ThemedText>
+          </Pressable>
+        </View>
+      ) : null}
+    </View>
+  );
+}
 
 export type DailyRhythmTimeEditorVariant = 'onboarding' | 'settings';
 
@@ -62,29 +219,20 @@ export type DailyRhythmTimeEditorBodyProps = {
   isDark: boolean;
   seedStart: string;
   seedEnd: string;
-  /** 값이 바뀔 때마다 시드 시각으로 폼을 맞춤 */
   seedKey: number;
   variant: DailyRhythmTimeEditorVariant;
   primaryLabel: string;
   onPrimaryPress: (startHhmm: string, endHhmm: string) => void;
   secondaryLabel?: string;
   onSecondaryPress?: () => void;
-  /** 설정 화면 전용: 하루 시작 시각에 맞춰 매일 알림 */
   dayStartAlarmOn?: boolean;
   onDayStartAlarmChange?: (value: boolean) => void;
-  /** 편집 전 구간이 다음 날로 이어진 상태인지 */
   currentSpansMultiDay?: boolean;
-  /** 종료 시각 모호성(당일/다음 날) 확정 콜백 */
   onEndDateChoice?: (startHhmm: string, endHhmm: string, target: 'today' | 'nextDay') => void;
-  /** 당일 선택 라벨(예: 당일 · 5월 21일) */
   endDateChoiceTodayLabel?: string;
-  /** 다음 날 선택 라벨(예: 다음 날 · 5월 22일) */
   endDateChoiceNextDayLabel?: string;
-  /** 마무리 시각이 속한 달력일(범위 시작일) */
   priorityPlanRangeLo?: string;
-  /** 마무리 시각이 속한 달력일(범위 종료일) */
   priorityPlanRangeHi?: string;
-  /** 설정 화면 등 — 알림 토글 아래 추가 슬롯 */
   footerSlot?: ReactNode;
 };
 
@@ -101,7 +249,7 @@ export function DailyRhythmTimeEditorBody({
   onSecondaryPress,
   dayStartAlarmOn,
   onDayStartAlarmChange,
-  currentSpansMultiDay = false,
+  currentSpansMultiDay: _currentSpansMultiDay = false,
   onEndDateChoice,
   endDateChoiceTodayLabel = '당일',
   endDateChoiceNextDayLabel = '다음 날',
@@ -115,9 +263,15 @@ export function DailyRhythmTimeEditorBody({
   const [endDateTarget, setEndDateTarget] = useState<'today' | 'nextDay'>(() =>
     initialEndDateTargetFromRange(priorityPlanRangeLo, priorityPlanRangeHi),
   );
-  /** 사용자가 당일/다음 날 버튼을 직접 눌렀으면 시각 변경 시 자동 추천으로 덮어쓰지 않음 */
   const endDatePinnedRef = useRef(false);
-  const endDateTargetRef = useRef<'today' | 'nextDay'>(initialEndDateTargetFromRange(priorityPlanRangeLo, priorityPlanRangeHi));
+  const endDateTargetRef = useRef<'today' | 'nextDay'>(
+    initialEndDateTargetFromRange(priorityPlanRangeLo, priorityPlanRangeHi),
+  );
+
+  const ink = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const pill = useMemo(() => tabPillColors(isDark), [isDark]);
+  const isOnboarding = variant === 'onboarding';
+  const shadowInk = isDark ? ink.solidShadow : '#000000';
 
   useEffect(() => {
     endDateTargetRef.current = endDateTarget;
@@ -129,9 +283,11 @@ export function DailyRhythmTimeEditorBody({
     setPickerTarget(null);
     endDatePinnedRef.current = false;
     const initial = initialEndDateTargetFromRange(priorityPlanRangeLo, priorityPlanRangeHi);
-    endDateTargetRef.current = initial;
-    setEndDateTarget(initial);
-  }, [seedKey, seedStart, seedEnd]);
+    const suggested =
+      initial === 'today' && isOvernightHhmmRange(seedStart, seedEnd) ? 'nextDay' : initial;
+    endDateTargetRef.current = suggested;
+    setEndDateTarget(suggested);
+  }, [seedKey, seedStart, seedEnd, priorityPlanRangeLo, priorityPlanRangeHi]);
 
   const applyEndDateTarget = useCallback(
     (target: 'today' | 'nextDay', start: string, end: string, fromUser = false) => {
@@ -173,21 +329,6 @@ export function DailyRhythmTimeEditorBody({
     [startHhmm, syncEndDateForTimes],
   );
 
-  const applyPreset = useCallback(
-    (start: string, end: string) => {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setStartHhmm(start);
-      setEndHhmm(end);
-      endDatePinnedRef.current = false;
-      const target = suggestEndDateTarget(start, end);
-      endDateTargetRef.current = target;
-      setEndDateTarget(target);
-      onEndDateChoice?.(start, end, target);
-      setPickerTarget(null);
-    },
-    [onEndDateChoice],
-  );
-
   const validateAndPrimary = useCallback(() => {
     const ps = parseHHmmToMinutes(startHhmm);
     const pe = parseHHmmToMinutes(endHhmm);
@@ -207,26 +348,31 @@ export function DailyRhythmTimeEditorBody({
     onPrimaryPress(startHhmm, endHhmm);
   }, [endDateTarget, endHhmm, onEndDateChoice, onPrimaryPress, startHhmm]);
 
-  const startPillDateCaption = useMemo(() => {
+  const startDateKey = priorityPlanRangeLo;
+  const endDateKey = useMemo(() => {
     if (!priorityPlanRangeLo) return undefined;
-    return formatDateKeyCompactKo(priorityPlanRangeLo);
-  }, [priorityPlanRangeLo]);
-
-  const endPillDateCaption = useMemo(() => {
-    if (!priorityPlanRangeLo) return undefined;
-    const lo = priorityPlanRangeLo;
     if (onEndDateChoice) {
       return endDateTarget === 'nextDay'
-        ? formatDateKeyCompactKo(addDaysToLocalDateKey(lo, 1))
-        : formatDateKeyCompactKo(lo);
+        ? addDaysToLocalDateKey(priorityPlanRangeLo, 1)
+        : priorityPlanRangeLo;
     }
-    const hi = priorityPlanRangeHi ?? lo;
-    if (hi > lo) return formatDateKeyCompactKo(hi);
+    const hi = priorityPlanRangeHi ?? priorityPlanRangeLo;
+    if (hi > priorityPlanRangeLo) return hi;
     if (isOvernightHhmmRange(startHhmm, endHhmm)) {
-      return formatDateKeyCompactKo(addDaysToLocalDateKey(lo, 1));
+      return addDaysToLocalDateKey(priorityPlanRangeLo, 1);
     }
-    return formatDateKeyCompactKo(lo);
-  }, [endDateTarget, endHhmm, onEndDateChoice, priorityPlanRangeHi, priorityPlanRangeLo, startHhmm]);
+    return priorityPlanRangeLo;
+  }, [
+    endDateTarget,
+    endHhmm,
+    onEndDateChoice,
+    priorityPlanRangeHi,
+    priorityPlanRangeLo,
+    startHhmm,
+  ]);
+
+  const startDateParts = startDateKey ? splitDateKeyCompactKo(startDateKey) : null;
+  const endDateParts = endDateKey ? splitDateKeyCompactKo(endDateKey) : null;
 
   const endDateTodayInvalid =
     endDateTarget === 'today' &&
@@ -234,247 +380,399 @@ export function DailyRhythmTimeEditorBody({
     parseHHmmToMinutes(startHhmm) !== null &&
     Number(parseHHmmToMinutes(endHhmm)) <= Number(parseHHmmToMinutes(startHhmm));
 
+  const rangeSummaryParts = useMemo(() => {
+    const startLabel = formatHhmmClockKo(startHhmm);
+    const endLabel = formatHhmmClockKo(endHhmm);
+    if (!priorityPlanRangeLo) {
+      return {
+        left: startLabel,
+        right: endDateTarget === 'nextDay' ? `${endLabel} · 다음 날` : endLabel,
+      };
+    }
+    const startDate = formatDateKeyCompactKo(priorityPlanRangeLo);
+    const endDate =
+      endDateTarget === 'nextDay'
+        ? formatDateKeyCompactKo(addDaysToLocalDateKey(priorityPlanRangeLo, 1))
+        : startDate;
+    if (endDate === startDate) {
+      return { left: `${startDate} ${startLabel}`, right: endLabel };
+    }
+    return { left: `${startDate} ${startLabel}`, right: `${endDate} ${endLabel}` };
+  }, [endDateTarget, endHhmm, priorityPlanRangeLo, startHhmm]);
+
   const timePickerPalette = useMemo(
     () => ({
       onSurface: c.onSurface,
       onVariant: c.onVariant,
       border: c.border,
-      containerLowest: c.containerLowest,
+      containerLowest: isDark ? ink.surfaceAlt : '#FFFFFF',
     }),
-    [c],
+    [c, ink.surfaceAlt, isDark],
   );
 
-  const title =
-    variant === 'onboarding' ? '하루 일과에 맞춰 정하기' : null;
-  const subtitle =
-    variant === 'onboarding'
-      ? '하루가 돌아가는 시작·마무리만 잡아도 데이플랜이 맞춰져요. 나중에 설정에서 바꿀 수 있어요.'
-      : '우선순위 데이플랜의 하루 시작·마무리 시각입니다. 저장하면 바로 반영돼요.';
-  const heroKicker = variant === 'onboarding' ? '하루 일과 시간' : '데이플랜';
-  const presetRuleColor = isDark ? 'rgba(250, 250, 250, 0.92)' : PRIMARY;
-  const pill = useMemo(() => tabPillColors(isDark), [isDark]);
+  const settingsTimeCard = (
+    <View
+      style={[
+        styles.settingsCard,
+        { backgroundColor: isDark ? ink.surfaceAlt : '#FFFFFF', borderColor: c.border },
+      ]}>
+      <SnappedTimePickerField
+        label="하루 시작"
+        hint="첫 집중·루틴을 켜기 좋은 시각"
+        valueHhmm={startHhmm}
+        onChangeHhmm={setStartHhmmWithSync}
+        expanded={pickerTarget === 'start'}
+        onToggleExpand={() => setPickerTarget((t) => (t === 'start' ? null : 'start'))}
+        isDark={isDark}
+        palette={timePickerPalette}
+        snapStepMinutes={1}
+        dateCaption={startDateKey ? formatDateKeyCompactKo(startDateKey) : undefined}
+      />
+      <View style={[styles.divider, { backgroundColor: c.border }]} />
+      <SnappedTimePickerField
+        label="하루 마무리"
+        hint="오늘 목표 구간이 끝나는 시각"
+        valueHhmm={endHhmm}
+        onChangeHhmm={setEndHhmmWithChoiceCheck}
+        expanded={pickerTarget === 'end'}
+        onToggleExpand={() => setPickerTarget((t) => (t === 'end' ? null : 'end'))}
+        isDark={isDark}
+        palette={timePickerPalette}
+        snapStepMinutes={1}
+        mapMidnightToEndOfDay
+        dateCaption={endDateKey ? formatDateKeyCompactKo(endDateKey) : undefined}
+      />
+      {onEndDateChoice ? (
+        <View style={styles.endDateChoiceInline}>
+          <ThemedText
+            style={[styles.endDateChoiceQuestion, { color: c.onVariant }]}
+            lightColor={c.onVariant}
+            darkColor={c.onVariant}>
+            마무리 시각은 당일인가요, 다음 날인가요?
+          </ThemedText>
+          <View style={styles.endDateChoiceBtnRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="당일로 설정"
+              onPress={() => {
+                applyEndDateTarget('today', startHhmm, endHhmm, true);
+                void Haptics.selectionAsync();
+              }}
+              style={({ pressed }) => [
+                styles.endDateChoiceBtn,
+                {
+                  backgroundColor: endDateTarget === 'today' ? pill.activeBg : pill.inactiveBg,
+                  borderColor: endDateTarget === 'today' ? pill.activeBorder : pill.inactiveBorder,
+                },
+                pressed && { opacity: 0.9 },
+              ]}>
+              <ThemedText
+                style={[
+                  styles.endDateChoiceBtnText,
+                  { color: endDateTarget === 'today' ? pill.activeIcon : pill.inactiveIcon },
+                ]}>
+                {endDateChoiceTodayLabel}
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="다음 날로 설정"
+              onPress={() => {
+                applyEndDateTarget('nextDay', startHhmm, endHhmm, true);
+                void Haptics.selectionAsync();
+              }}
+              style={({ pressed }) => [
+                styles.endDateChoiceBtn,
+                {
+                  backgroundColor: endDateTarget === 'nextDay' ? pill.activeBg : pill.inactiveBg,
+                  borderColor:
+                    endDateTarget === 'nextDay' ? pill.activeBorder : pill.inactiveBorder,
+                },
+                pressed && { opacity: 0.9 },
+              ]}>
+              <ThemedText
+                style={[
+                  styles.endDateChoiceBtnText,
+                  { color: endDateTarget === 'nextDay' ? pill.activeIcon : pill.inactiveIcon },
+                ]}>
+                {endDateChoiceNextDayLabel}
+              </ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
 
   return (
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={[
         styles.scrollContent,
-        variant === 'onboarding' && styles.scrollContentOnboarding,
+        isOnboarding && styles.scrollContentOnboarding,
         variant === 'settings' && styles.scrollContentSettings,
       ]}
       showsVerticalScrollIndicator={false}
-      bounces={false}
+      bounces={isOnboarding}
       alwaysBounceVertical={false}
       keyboardShouldPersistTaps="handled"
-      scrollEnabled={variant === 'settings' || pickerTarget !== null}>
-      <View
-        style={[
-          styles.topBlock,
-          variant === 'onboarding' && styles.topBlockOnboarding,
-          variant === 'settings' && styles.topBlockSettings,
-        ]}>
-        <View
-          style={[
-            styles.hero,
-            variant === 'onboarding' && styles.heroOnboarding,
-            variant === 'settings' && styles.heroSettings,
-          ]}>
-          <View style={styles.heroHeaderRow}>
-            <ThemedText
-              style={[styles.heroKicker, { color: c.onVariant }]}
-              lightColor={c.onVariant}
-              darkColor={c.onVariant}>
-              {heroKicker}
-            </ThemedText>
-            <View style={[styles.heroMark, { borderColor: c.border }]}>
-              <IconSymbol name="sun.horizon.fill" size={18} color={PRIMARY} />
-            </View>
-          </View>
-          {title ? (
-            <ThemedText
+      scrollEnabled>
+      <View style={[styles.topBlock, isOnboarding && styles.topBlockOnboarding]}>
+        {isOnboarding ? (
+          <SolidShadowFace
+            borderColor={c.border}
+            shadowColor={shadowInk}
+            backgroundColor={isDark ? ink.surfaceAlt : '#F6F3EB'}
+            shellStyle={styles.heroBannerShell}
+            style={styles.heroBannerFace}>
+            <Image
+              source={dailyRhythmOnboardingAssets.hero}
+              style={styles.heroBannerImage}
+              resizeMode="contain"
+              accessibilityLabel="아침 루틴 일러스트"
+            />
+            <View
+              pointerEvents="none"
               style={[
-                styles.title,
-                { color: c.onSurface },
-                variant === 'onboarding' && styles.titleOnboarding,
+                styles.heroBannerScrim,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(45, 47, 68, 0.55)'
+                    : 'rgba(246, 243, 235, 0.72)',
+                },
               ]}
-              lightColor={c.onSurface}
-              darkColor={c.onSurface}
-              numberOfLines={2}>
-              {title}
-            </ThemedText>
-          ) : null}
-          <ThemedText
-            style={[
-              styles.subtitle,
-              { color: c.onVariant },
-              variant === 'onboarding' && styles.subtitleOnboarding,
-            ]}
-            lightColor={c.onVariant}
-            darkColor={c.onVariant}
-            numberOfLines={variant === 'onboarding' ? 3 : 4}>
-            {subtitle}
-          </ThemedText>
-        </View>
-
-        <View style={styles.presetSection}>
-          <ThemedText
-            style={[styles.presetKicker, { color: c.onVariant }]}
-            lightColor={c.onVariant}
-            darkColor={c.onVariant}>
-            자주 쓰는 패턴
-          </ThemedText>
-          <View style={[styles.presetRule, { borderTopColor: presetRuleColor }]} />
-          <View style={styles.presetPillList}>
-            {PRESETS.map((p) => {
-              const selected = p.start === startHhmm && p.end === endHhmm;
-              const bg = selected ? pill.activeBg : pill.inactiveBg;
-              const borderCol = selected ? pill.activeBorder : pill.inactiveBorder;
-              const titleCol = selected ? pill.activeIcon : c.onSurface;
-              const hintCol = selected ? pill.inactiveIcon : c.onVariant;
-              return (
-                <Pressable
-                  key={`${p.start}-${p.end}`}
-                  onPress={() => applyPreset(p.start, p.end)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${p.label}. ${p.hint}`}
-                  accessibilityState={{ selected }}
-                  style={({ pressed }) => [
-                    styles.presetPill,
-                    { backgroundColor: bg, borderColor: borderCol },
-                    pressed && { opacity: 0.88 },
-                  ]}>
-                  <View style={styles.presetRowTextCol}>
+            />
+            <View style={styles.heroBannerContent}>
+              <View style={styles.heroHeaderRow}>
+                <View style={styles.kickerRow}>
+                  {(['하루', '일과', '시간'] as const).map((word) => (
                     <ThemedText
-                      style={[styles.presetRowTitle, { color: titleCol }]}
-                      lightColor={titleCol}
-                      darkColor={titleCol}>
-                      {p.label}
+                      key={word}
+                      style={[styles.kickerWord, { color: c.onVariant }, cityPopFont('700')]}
+                      lightColor={c.onVariant}
+                      darkColor={c.onVariant}>
+                      {word}
                     </ThemedText>
-                    <ThemedText
-                      style={[styles.presetRowHint, { color: hintCol }]}
-                      lightColor={hintCol}
-                      darkColor={hintCol}>
-                      {p.hint}
-                    </ThemedText>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-
-        <View style={[styles.card, { backgroundColor: c.containerLow, borderColor: c.border }]}>
-          <SnappedTimePickerField
-            label="하루 시작"
-            hint="첫 집중·루틴을 켜기 좋은 시각"
-            valueHhmm={startHhmm}
-            onChangeHhmm={setStartHhmmWithSync}
-            expanded={pickerTarget === 'start'}
-            onToggleExpand={() => setPickerTarget((t) => (t === 'start' ? null : 'start'))}
-            isDark={isDark}
-            palette={timePickerPalette}
-            snapStepMinutes={1}
-            dateCaption={startPillDateCaption}
-          />
-
-          <View style={[styles.divider, { backgroundColor: c.border }]} />
-
-          <SnappedTimePickerField
-            label="하루 마무리"
-            hint="오늘 목표 구간이 끝나는 시각"
-            valueHhmm={endHhmm}
-            onChangeHhmm={setEndHhmmWithChoiceCheck}
-            expanded={pickerTarget === 'end'}
-            onToggleExpand={() => setPickerTarget((t) => (t === 'end' ? null : 'end'))}
-            isDark={isDark}
-            palette={timePickerPalette}
-            snapStepMinutes={1}
-            dateCaption={endPillDateCaption}
-          />
-
-          {onEndDateChoice ? (
-            <View style={styles.endDateChoiceInline}>
-              <ThemedText
-                style={[styles.endDateChoiceQuestion, { color: c.onVariant }]}
-                lightColor={c.onVariant}
-                darkColor={c.onVariant}>
-                마무리 시각은 당일인가요, 다음 날인가요?
-              </ThemedText>
-              <View style={styles.endDateChoiceBtnRow}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="당일로 설정"
-                  onPress={() => {
-                    applyEndDateTarget('today', startHhmm, endHhmm, true);
-                    void Haptics.selectionAsync();
-                  }}
-                  style={({ pressed }) => [
-                    styles.endDateChoiceBtn,
-                    {
-                      backgroundColor: endDateTarget === 'today' ? pill.activeBg : pill.inactiveBg,
-                      borderColor: endDateTarget === 'today' ? pill.activeBorder : pill.inactiveBorder,
-                    },
-                    pressed && { opacity: 0.9 },
-                  ]}>
-                  <ThemedText
-                    style={[
-                      styles.endDateChoiceBtnText,
-                      { color: endDateTarget === 'today' ? pill.activeIcon : pill.inactiveIcon },
-                    ]}
-                    lightColor={endDateTarget === 'today' ? pill.activeIcon : pill.inactiveIcon}
-                    darkColor={endDateTarget === 'today' ? pill.activeIcon : pill.inactiveIcon}>
-                    {endDateChoiceTodayLabel}
-                  </ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="다음 날로 설정"
-                  onPress={() => {
-                    applyEndDateTarget('nextDay', startHhmm, endHhmm, true);
-                    void Haptics.selectionAsync();
-                  }}
-                  style={({ pressed }) => [
-                    styles.endDateChoiceBtn,
-                    {
-                      backgroundColor: endDateTarget === 'nextDay' ? pill.activeBg : pill.inactiveBg,
-                      borderColor: endDateTarget === 'nextDay' ? pill.activeBorder : pill.inactiveBorder,
-                    },
-                    pressed && { opacity: 0.9 },
-                  ]}>
-                  <ThemedText
-                    style={[
-                      styles.endDateChoiceBtnText,
-                      { color: endDateTarget === 'nextDay' ? pill.activeIcon : pill.inactiveIcon },
-                    ]}
-                    lightColor={endDateTarget === 'nextDay' ? pill.activeIcon : pill.inactiveIcon}
-                    darkColor={endDateTarget === 'nextDay' ? pill.activeIcon : pill.inactiveIcon}>
-                    {endDateChoiceNextDayLabel}
-                  </ThemedText>
-                </Pressable>
+                  ))}
+                </View>
+                <SolidShadowFace
+                  borderColor={c.border}
+                  shadowColor={shadowInk}
+                  backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
+                  style={styles.sunFace}>
+                  <DayCycleEmojiMark size={22} color={c.border} />
+                </SolidShadowFace>
               </View>
-              {endDateTodayInvalid ? (
+
+              <View style={styles.heroBannerCopy}>
                 <ThemedText
-                  style={[styles.endDateChoiceHint, { color: c.onVariant }]}
+                  style={[styles.onboardTitle, { color: c.onSurface }, cityPopFont('800')]}
+                  lightColor={c.onSurface}
+                  darkColor={c.onSurface}>
+                  내 하루 일과 정하기
+                </ThemedText>
+                <ThemedText
+                  style={[styles.onboardSubtitle, { color: c.onVariant }, cityPopFont('500')]}
                   lightColor={c.onVariant}
                   darkColor={c.onVariant}>
-                  {`마무리(${formatHhmmClockKo(endHhmm)})가 시작(${formatHhmmClockKo(startHhmm)})보다 이릅니다. 저장하려면 마무리를 시작 이후로 맞춰 주세요.`}
+                  시작·마무리만 잡으면 데이플랜이 그 구간에 맞춰져요. 자정을 넘겨도 괜찮아요.
+                  나중에 설정에서 바꿀 수 있어요.
                 </ThemedText>
-              ) : isOvernightHhmmRange(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
-                <ThemedText
-                  style={[styles.endDateChoiceHint, { color: c.onVariant }]}
-                  lightColor={c.onVariant}
-                  darkColor={c.onVariant}>
-                  마무리 시각이 시작보다 이르면 다음 날로 이어지는 하루 구간이에요.
-                </ThemedText>
-              ) : null}
+              </View>
             </View>
-          ) : null}
-        </View>
+          </SolidShadowFace>
+        ) : (
+          <View style={styles.settingsHero}>
+            <ThemedText style={[styles.settingsKicker, { color: c.onVariant }]}>데이플랜</ThemedText>
+            <ThemedText style={[styles.settingsSubtitle, { color: c.onVariant }]}>
+              우선순위 데이플랜의 하루 시작·마무리 시각입니다. 저장하면 바로 반영돼요.
+            </ThemedText>
+          </View>
+        )}
+
+        {isOnboarding ? (
+          <SolidShadowFace
+            borderColor={c.border}
+            shadowColor={shadowInk}
+            backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
+            style={styles.mainCardFace}>
+            <OnboardingTimeRow
+              label="하루 시작"
+              hint="첫 집중·루틴을 켜기 좋은 시각"
+              valueHhmm={startHhmm}
+              onChangeHhmm={setStartHhmmWithSync}
+              expanded={pickerTarget === 'start'}
+              onToggleExpand={() => setPickerTarget((t) => (t === 'start' ? null : 'start'))}
+              isDark={isDark}
+              c={c}
+              thumb={dailyRhythmOnboardingAssets.startThumb}
+              dateParts={startDateParts}
+            />
+
+            <View style={[styles.cardRule, { borderTopColor: c.border }]} />
+
+            <OnboardingTimeRow
+              label="하루 마무리"
+              hint="오늘 목표 구간이 끝나는 시각"
+              valueHhmm={endHhmm}
+              onChangeHhmm={setEndHhmmWithChoiceCheck}
+              expanded={pickerTarget === 'end'}
+              onToggleExpand={() => setPickerTarget((t) => (t === 'end' ? null : 'end'))}
+              isDark={isDark}
+              c={c}
+              thumb={dailyRhythmOnboardingAssets.endThumb}
+              dateParts={endDateParts}
+              mapMidnightToEndOfDay
+            />
+
+            {onEndDateChoice ? (
+              <View style={styles.endDateChoiceOnboard}>
+                <ThemedText
+                  style={[styles.endDateChoiceQuestionOnboard, { color: c.onVariant }, cityPopFont('800')]}
+                  lightColor={c.onVariant}
+                  darkColor={c.onVariant}>
+                  마무리 시각은 당일인가요, 다음 날인가요?
+                </ThemedText>
+                <View style={styles.endDateChoiceBtnRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="당일로 설정"
+                    onPress={() => {
+                      applyEndDateTarget('today', startHhmm, endHhmm, true);
+                      void Haptics.selectionAsync();
+                    }}
+                    style={({ pressed }) => [
+                      styles.dayChoicePress,
+                      pressed && { opacity: 0.92, transform: [{ translateX: 1 }, { translateY: 1 }] },
+                    ]}>
+                    <SolidShadowFace
+                      borderColor={c.border}
+                      shadowColor={shadowInk}
+                      backgroundColor={
+                        endDateTarget === 'today' ? ink.bgMint : isDark ? ink.surfaceAlt : '#FFFFFF'
+                      }
+                      shadowSize={endDateTarget === 'today' ? 4 : 2}
+                      shellStyle={styles.dayChoiceShell}
+                      style={styles.dayChoiceFace}>
+                      <ThemedText
+                        style={[
+                          styles.dayChoiceText,
+                          {
+                            color:
+                              endDateTarget === 'today'
+                                ? isDark
+                                  ? ink.text
+                                  : ink.tertiary
+                                : c.onVariant,
+                          },
+                          cityPopFont('800'),
+                        ]}>
+                        {endDateChoiceTodayLabel}
+                      </ThemedText>
+                    </SolidShadowFace>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="다음 날로 설정"
+                    onPress={() => {
+                      applyEndDateTarget('nextDay', startHhmm, endHhmm, true);
+                      void Haptics.selectionAsync();
+                    }}
+                    style={({ pressed }) => [
+                      styles.dayChoicePress,
+                      pressed && { opacity: 0.92, transform: [{ translateX: 1 }, { translateY: 1 }] },
+                    ]}>
+                    <SolidShadowFace
+                      borderColor={c.border}
+                      shadowColor={shadowInk}
+                      backgroundColor={
+                        endDateTarget === 'nextDay'
+                          ? ink.bgMint
+                          : isDark
+                            ? ink.surfaceAlt
+                            : '#FFFFFF'
+                      }
+                      shadowSize={endDateTarget === 'nextDay' ? 4 : 2}
+                      shellStyle={styles.dayChoiceShell}
+                      style={styles.dayChoiceFace}>
+                      <ThemedText
+                        style={[
+                          styles.dayChoiceText,
+                          {
+                            color:
+                              endDateTarget === 'nextDay'
+                                ? isDark
+                                  ? ink.text
+                                  : ink.tertiary
+                                : c.onVariant,
+                          },
+                          cityPopFont('800'),
+                        ]}>
+                        {endDateChoiceNextDayLabel}
+                      </ThemedText>
+                    </SolidShadowFace>
+                  </Pressable>
+                </View>
+                {endDateTodayInvalid ? (
+                  <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+                    {`마무리(${formatHhmmClockKo(endHhmm)})가 시작(${formatHhmmClockKo(startHhmm)})보다 이릅니다. 저장하려면 마무리를 시작 이후로 맞춰 주세요.`}
+                  </ThemedText>
+                ) : isOvernightHhmmRange(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
+                  <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+                    마무리 시각이 시작보다 이르면 다음 날로 이어지는 하루 구간이에요.
+                  </ThemedText>
+                ) : null}
+              </View>
+            ) : null}
+
+            <View
+              style={[
+                styles.summaryBox,
+                {
+                  borderColor: c.border,
+                  backgroundColor: isDark ? 'rgba(48, 97, 99, 0.35)' : 'rgba(246, 243, 235, 0.7)',
+                },
+              ]}>
+              <View
+                style={[
+                  styles.summaryBadge,
+                  {
+                    borderColor: c.border,
+                    backgroundColor: isDark ? ink.surfaceAlt : '#FFFFFF',
+                  },
+                ]}>
+                <ThemedText
+                  style={[styles.summaryBadgeText, { color: c.onSurface }, cityPopFont('800')]}>
+                  내 일과
+                </ThemedText>
+              </View>
+              <View style={styles.summaryRow}>
+                <ThemedText
+                  style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
+                  numberOfLines={2}>
+                  {rangeSummaryParts.left}
+                </ThemedText>
+                <ThemedText style={[styles.summaryArrow, { color: c.onSurface }]}>→</ThemedText>
+                <ThemedText
+                  style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
+                  numberOfLines={2}>
+                  {rangeSummaryParts.right}
+                </ThemedText>
+              </View>
+            </View>
+          </SolidShadowFace>
+        ) : (
+          settingsTimeCard
+        )}
 
         {variant === 'settings' &&
-          typeof dayStartAlarmOn === 'boolean' &&
-          onDayStartAlarmChange ? (
-          <View style={[styles.card, { backgroundColor: c.containerLow, borderColor: c.border }]}>
+        typeof dayStartAlarmOn === 'boolean' &&
+        onDayStartAlarmChange ? (
+          <View
+            style={[
+              styles.settingsCard,
+              { backgroundColor: isDark ? ink.surfaceAlt : '#FFFFFF', borderColor: c.border },
+            ]}>
             <DailyRhythmStyleAlarmRow
               title="하루 시작 알림"
               hint="위에서 정한「하루 시작」시각에 매일 알려 드려요."
@@ -492,41 +790,67 @@ export function DailyRhythmTimeEditorBody({
         {footerSlot}
       </View>
 
-      <View style={styles.footer}>
-        <Pressable
-          onPress={validateAndPrimary}
-          style={({ pressed }) => [
-            styles.primaryBtn,
-            {
-              backgroundColor: pill.activeBg,
-              borderColor: pill.activeBorder,
-              borderWidth: 2,
-            },
-            pressed && { opacity: 0.92 },
-          ]}>
-          <ThemedText
-            style={[styles.primaryBtnText, { color: pill.activeIcon }]}
-            lightColor={pill.activeIcon}
-            darkColor={pill.activeIcon}>
-            {primaryLabel}
-          </ThemedText>
-        </Pressable>
-
-        {secondaryLabel && onSecondaryPress ? (
+      <View style={[styles.footer, isOnboarding && styles.footerOnboarding]}>
+        {isOnboarding ? (
           <Pressable
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onSecondaryPress();
-            }}
-            style={({ pressed }) => [styles.textBtn, pressed && { opacity: 0.7 }]}>
-            <ThemedText
-              style={[styles.textBtnLabel, { color: c.onVariant }]}
-              lightColor={c.onVariant}
-              darkColor={c.onVariant}>
-              {secondaryLabel}
-            </ThemedText>
+            onPress={validateAndPrimary}
+            style={({ pressed }) => [
+              styles.primaryPress,
+              pressed && { transform: [{ translateX: 2 }, { translateY: 2 }], opacity: 0.94 },
+            ]}>
+            <SolidShadowFace
+              borderColor={c.border}
+              shadowColor={shadowInk}
+              backgroundColor={ink.bgMint}
+              shellStyle={styles.primaryShell}
+              style={styles.primaryFace}>
+              <ThemedText
+                style={[
+                  styles.primaryBtnTextOnboard,
+                  { color: isDark ? ink.text : ink.tertiary },
+                  cityPopFont('800'),
+                ]}>
+                {primaryLabel}
+              </ThemedText>
+            </SolidShadowFace>
           </Pressable>
-        ) : null}
+        ) : (
+          <>
+            <Pressable
+              onPress={validateAndPrimary}
+              style={({ pressed }) => [pressed && { opacity: 0.94 }]}>
+              <View
+                style={[
+                  styles.primaryBtn,
+                  {
+                    backgroundColor: pill.activeBg,
+                    borderColor: pill.activeBorder,
+                    borderWidth: 2,
+                  },
+                ]}>
+                <ThemedText style={[styles.primaryBtnText, { color: pill.activeIcon }]}>
+                  {primaryLabel}
+                </ThemedText>
+              </View>
+            </Pressable>
+
+            {secondaryLabel && onSecondaryPress ? (
+              <Pressable
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onSecondaryPress();
+                }}
+                style={({ pressed }) => [styles.textBtn, pressed && { opacity: 0.7 }]}>
+                <ThemedText
+                  style={[styles.textBtnLabel, { color: c.onVariant }, cityPopFont('700')]}
+                  lightColor={c.onVariant}
+                  darkColor={c.onVariant}>
+                  {secondaryLabel}
+                </ThemedText>
+              </Pressable>
+            ) : null}
+          </>
+        )}
       </View>
     </ScrollView>
   );
@@ -541,170 +865,248 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 10,
   },
-  /** 온보딩: 한 화면에 맞추기 위해 상단 여백 최소화 */
   scrollContentOnboarding: {
-    paddingTop: 4,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 24,
   },
-  /** 설정: 네비 제목만 사용, 상단 여백 최소화 */
   scrollContentSettings: {
     paddingTop: 0,
     paddingBottom: 4,
   },
-  topBlock: { gap: 18, paddingBottom: 4 },
-  topBlockOnboarding: { gap: 12 },
-  topBlockSettings: { gap: 12, paddingBottom: 0 },
-  endDateChoiceInline: {
-    marginTop: 10,
+  topBlock: { gap: 16, paddingBottom: 4 },
+  topBlockOnboarding: { gap: 22 },
+
+  shadowShell: { position: 'relative' },
+  shadowBlock: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: RETRO_BORDER_WIDTH,
+  },
+  shadowFace: {
+    borderWidth: RETRO_BORDER_WIDTH,
+    overflow: 'hidden',
+  },
+
+  onboardHero: { gap: 16 },
+  heroBannerShell: {
+    alignSelf: 'stretch',
+    width: '100%',
+  },
+  heroBannerFace: {
+    minHeight: 280,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  heroBannerImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  heroBannerScrim: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  heroBannerContent: {
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 20,
+    gap: 28,
+    minHeight: 280,
+    justifyContent: 'space-between',
+  },
+  heroBannerCopy: {
     gap: 10,
-  },
-  endDateChoiceQuestion: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: -0.2,
-  },
-  endDateChoiceBtnRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  endDateChoiceBtn: {
-    flex: 1,
-    minHeight: 42,
-    borderRadius: 0,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  endDateChoiceBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  endDateChoiceHint: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16,
-  },
-  footer: {
-    flexShrink: 0,
-    gap: 2,
-    paddingTop: 10,
-  },
-  hero: { gap: 10, marginBottom: 0, alignSelf: 'stretch' },
-  /** 온보딩: 히어로 세로 밀도 */
-  heroOnboarding: {
-    paddingTop: 2,
-  },
-  /** 설정: 큰 타이틀 없이 키커·설명만 */
-  heroSettings: {
-    gap: 6,
-    marginBottom: 0,
+    maxWidth: '88%',
   },
   heroHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    alignSelf: 'stretch',
   },
-  heroKicker: {
+  kickerRow: { flexDirection: 'row', gap: 18, paddingTop: 4 },
+  kickerWord: {
+    fontSize: 13,
+    letterSpacing: 2.4,
+  },
+  sunFace: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  onboardTitle: {
+    fontSize: 24,
+    lineHeight: 30,
+    letterSpacing: -0.5,
+  },
+  onboardSubtitle: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+
+  mainCardFace: {
+    padding: 22,
+    gap: 18,
+  },
+  cardRule: {
+    borderTopWidth: 2,
+    opacity: 0.12,
+  },
+
+  onboardTimeBlock: { gap: 8 },
+  onboardTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  thumbFace: {
+    width: 48,
+    height: 48,
+    borderRadius: 2,
+  },
+  thumbImage: { width: '100%', height: '100%' },
+  onboardTimeCopy: { flex: 1, minWidth: 0, gap: 2 },
+  onboardTimeLabel: { fontSize: 15, lineHeight: 20, letterSpacing: -0.25 },
+  onboardTimeHint: {
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    lineHeight: 14,
+  },
+  onboardTimeRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexShrink: 0,
+  },
+  dateStack: { alignItems: 'flex-end' },
+  dateStackLine: { fontSize: 11, lineHeight: 14, textAlign: 'right' },
+  timePillFace: {
+    minWidth: 110,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timePillText: { fontSize: 15, letterSpacing: -0.2 },
+  inputBlock: { paddingTop: 4, gap: 6 },
+  confirmBtn: {
+    alignSelf: 'flex-end',
+    minWidth: 68,
+    minHeight: 36,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+  },
+  confirmBtnText: { fontSize: 14, color: PRIMARY },
+
+  endDateChoiceOnboard: { gap: 12, paddingTop: 4 },
+  endDateChoiceQuestionOnboard: {
+    fontSize: 11,
+    letterSpacing: 1.6,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  endDateChoiceInline: { marginTop: 12, gap: 10 },
+  endDateChoiceQuestion: { fontSize: 13, fontWeight: '600' },
+  endDateChoiceBtnRow: { flexDirection: 'row', gap: 12 },
+  dayChoicePress: { flex: 1 },
+  dayChoiceShell: { alignSelf: 'stretch', width: '100%' },
+  endDateChoiceBtn: {
+    flex: 1,
+    minHeight: 48,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  endDateChoiceBtnText: { fontSize: 14, fontWeight: '700', textAlign: 'center' },
+  endDateChoiceHint: { fontSize: 12, fontWeight: '500', lineHeight: 16 },
+  dayChoiceFace: {
+    minHeight: 52,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 2,
+  },
+  dayChoiceText: { fontSize: 12, textAlign: 'center' },
+
+  summaryBox: {
+    marginTop: 8,
+    borderWidth: 2,
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 14,
+    position: 'relative',
+  },
+  summaryBadge: {
+    position: 'absolute',
+    top: -11,
+    left: 14,
+    borderWidth: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  summaryBadgeText: {
+    fontSize: 10,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  summaryValue: { fontSize: 13, letterSpacing: -0.2, textAlign: 'center', lineHeight: 18 },
+  summaryArrow: { fontSize: 13, fontWeight: '800' },
+
+  settingsHero: { gap: 6 },
+  settingsKicker: {
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 3.2,
-    includeFontPadding: false,
   },
-  heroMark: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-    letterSpacing: -0.75,
-    flexShrink: 1,
-    alignSelf: 'stretch',
-    lineHeight: 34,
-    includeFontPadding: false,
-  },
-  titleOnboarding: {
-    fontSize: 22,
-    lineHeight: 28,
-    letterSpacing: -0.55,
-    fontWeight: '700',
-  },
-  subtitle: { fontSize: 15, lineHeight: 21, fontWeight: '500', letterSpacing: -0.15 },
-  subtitleOnboarding: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '500',
-    letterSpacing: -0.05,
-  },
-  presetSection: {
-    alignSelf: 'stretch',
-    gap: 0,
-  },
-  presetKicker: {
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 2.8,
-    marginBottom: 6,
-    includeFontPadding: false,
-  },
-  presetRule: {
-    borderTopWidth: 1,
-    marginBottom: 0,
-  },
-  presetPillList: {
-    alignSelf: 'stretch',
-    gap: 8,
-    marginTop: 8,
-  },
-  presetPill: {
-    alignSelf: 'stretch',
-    minHeight: 44,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    borderRadius: 0,
-    borderWidth: 2,
-    justifyContent: 'center',
-  },
-  presetRowTextCol: {
-    gap: 2,
-    alignSelf: 'stretch',
-  },
-  presetRowTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: -0.25,
-    lineHeight: 18,
-    includeFontPadding: false,
-  },
-  presetRowHint: {
-    fontSize: 11,
-    fontWeight: '400',
-    lineHeight: 14,
-    letterSpacing: 0,
-    includeFontPadding: false,
-  },
-  card: {
-    borderRadius: 0,
+  settingsSubtitle: { fontSize: 14, lineHeight: 20, fontWeight: '500' },
+  settingsCard: {
     borderWidth: StyleSheet.hairlineWidth,
     padding: 12,
     gap: 8,
   },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
-  primaryBtn: {
-    alignSelf: 'stretch',
-    minHeight: 44,
-    borderRadius: 0,
+
+  footer: { flexShrink: 0, gap: 4, paddingTop: 14 },
+  footerOnboarding: {
+    gap: 0,
+    paddingTop: 18,
+    alignItems: 'center',
+  },
+  primaryPress: {
+    alignSelf: 'center',
+    width: '78%',
+    maxWidth: 280,
+  },
+  primaryShell: { alignSelf: 'stretch', width: '100%' },
+  primaryFace: {
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
+    borderRadius: 2,
+  },
+  primaryBtnTextOnboard: { fontSize: 15, letterSpacing: -0.2 },
+  primaryBtn: {
+    alignSelf: 'stretch',
+    minHeight: 48,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryBtnText: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
-  textBtn: { paddingVertical: 12, alignItems: 'center' },
+  primaryBtnText: { fontSize: 15, fontWeight: '800' },
+  textBtn: { paddingVertical: 6, alignItems: 'center' },
   textBtnLabel: { fontSize: 14, fontWeight: '600' },
 });

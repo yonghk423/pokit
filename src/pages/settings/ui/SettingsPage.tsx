@@ -21,7 +21,9 @@ import { useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
+import { CityPopSpacing, RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY,
   ensureDefaultPriorityCatalog,
@@ -39,8 +41,6 @@ import {
   openSupportMailComposer,
   SUPPORT_EMAIL,
 } from '@shared/lib/support';
-import { CityPopSpacing, RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
-import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -253,6 +253,48 @@ export function SettingsPage() {
                 <ThemedText style={[styles.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                   {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
                   {dayStartAlarmOn ? ' · 하루 시작 알림 켜짐' : ''}
+                </ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={16} color={p.chevron} />
+          </Pressable>
+
+          <Pressable
+            style={[styles.item, { borderTopColor: p.border }]}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/welcome-intro');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="POKIT 소개 보기">
+            <View style={styles.itemLeft}>
+              <View style={styles.itemTextWrap}>
+                <ThemedText style={[styles.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                  POKIT 소개
+                </ThemedText>
+                <ThemedText style={[styles.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                  처음 쓸 때처럼 핵심만 짧게 안내해요
+                </ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={16} color={p.chevron} />
+          </Pressable>
+
+          <Pressable
+            style={[styles.item, { borderTopColor: p.border }]}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/guide-book');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="사용 설명서 보기">
+            <View style={styles.itemLeft}>
+              <View style={styles.itemTextWrap}>
+                <ThemedText style={[styles.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                  사용 설명서
+                </ThemedText>
+                <ThemedText style={[styles.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                  실제 화면 기준으로 탭·버튼을 설명해요
                 </ThemedText>
               </View>
             </View>

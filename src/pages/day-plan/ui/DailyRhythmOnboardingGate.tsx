@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { defaultPriorityWindowFromNow } from '../lib/dayPlanEditorShared';
+import { addDaysToLocalDateKey, getLocalDateKey } from '@entities/day-plan';
+
+import { DEFAULT_DAILY_RHYTHM } from '../lib/dailyRhythmPresets';
+import { formatDateKeyCompactKo } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { DailyRhythmTimeEditorBody } from './DailyRhythmTimeEditorBody';
 
@@ -11,10 +14,16 @@ type Props = {
   isDark: boolean;
   c: DayPlanPalette;
   onConfirm: (startHhmm: string, endHhmm: string) => void;
-  onSkip: () => void;
+  onEndDateChoice?: (startHhmm: string, endHhmm: string, target: 'today' | 'nextDay') => void;
 };
 
-export function DailyRhythmOnboardingGate({ visible, isDark, c, onConfirm, onSkip }: Props) {
+export function DailyRhythmOnboardingGate({
+  visible,
+  isDark,
+  c,
+  onConfirm,
+  onEndDateChoice,
+}: Props) {
   const insets = useSafeAreaInsets();
   const safeTop =
     insets.top > 8
@@ -23,12 +32,27 @@ export function DailyRhythmOnboardingGate({ visible, isDark, c, onConfirm, onSki
         ? 54
         : Math.max(Number(StatusBar.currentHeight) || 0, 24);
   const [seedKey, setSeedKey] = useState(0);
-  const seed = useMemo(() => defaultPriorityWindowFromNow(), [seedKey]);
+  const todayKey = useMemo(() => getLocalDateKey(), [seedKey]);
+  const todayChoiceLabel = useMemo(
+    () => `당일 · ${formatDateKeyCompactKo(todayKey)}`,
+    [todayKey],
+  );
+  const nextDayChoiceLabel = useMemo(
+    () => `다음 날 · ${formatDateKeyCompactKo(addDaysToLocalDateKey(todayKey, 1))}`,
+    [todayKey],
+  );
 
   useEffect(() => {
     if (!visible) return;
     setSeedKey((k) => k + 1);
   }, [visible]);
+
+  const handleEndDateChoice = useCallback(
+    (start: string, end: string, target: 'today' | 'nextDay') => {
+      onEndDateChoice?.(start, end, target);
+    },
+    [onEndDateChoice],
+  );
 
   return (
     <Modal visible={visible} animationType="fade" presentationStyle="fullScreen">
@@ -44,14 +68,17 @@ export function DailyRhythmOnboardingGate({ visible, isDark, c, onConfirm, onSki
         <DailyRhythmTimeEditorBody
           c={c}
           isDark={isDark}
-          seedStart={seed.startTime}
-          seedEnd={seed.endTime}
+          seedStart={DEFAULT_DAILY_RHYTHM.start}
+          seedEnd={DEFAULT_DAILY_RHYTHM.end}
           seedKey={seedKey}
           variant="onboarding"
-          primaryLabel="이대로 시작하기"
+          primaryLabel="시작하기"
           onPrimaryPress={onConfirm}
-          secondaryLabel="건너뛰기 · 지금 기본값 유지"
-          onSecondaryPress={onSkip}
+          onEndDateChoice={handleEndDateChoice}
+          endDateChoiceTodayLabel={todayChoiceLabel}
+          endDateChoiceNextDayLabel={nextDayChoiceLabel}
+          priorityPlanRangeLo={todayKey}
+          priorityPlanRangeHi={todayKey}
         />
       </View>
     </Modal>
