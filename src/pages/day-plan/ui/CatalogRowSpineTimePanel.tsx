@@ -246,7 +246,11 @@ export function CatalogRowSpineTimePanel({
       onPress={handleConfirm}
       style={({ pressed }) => [
         styles.confirmSegment,
-        { backgroundColor: ink, opacity: disabled ? 0.45 : pressed ? 0.82 : 1 },
+        {
+          backgroundColor: ink,
+          borderColor: line,
+          opacity: disabled ? 0.45 : pressed ? 0.88 : 1,
+        },
       ]}>
       <ThemedText style={[styles.confirmSegmentLabel, { color: selectedFg }]}>확인</ThemedText>
     </Pressable>
@@ -412,15 +416,16 @@ const styles = StyleSheet.create({
     letterSpacing: -0.15,
   },
   confirmSegment: {
-    width: 42,
+    width: 48,
     flexShrink: 0,
     minHeight: 36,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
+    borderLeftWidth: 2,
   },
   confirmSegmentLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: -0.2,
   },

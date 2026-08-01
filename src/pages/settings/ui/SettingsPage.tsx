@@ -43,6 +43,7 @@ import {
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
+import { prefetchWelcomeIntroAssets } from '@shared/lib/welcome-intro-assets';
 
 import {
   buildSettingsPalette,
@@ -72,6 +73,7 @@ export function SettingsPage() {
   useFocusEffect(
     useCallback(() => {
       setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
+      void prefetchWelcomeIntroAssets();
     }, []),
   );
 
@@ -257,7 +259,9 @@ export function SettingsPage() {
             style={[chrome.item, { borderTopColor: p.border }]}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/welcome-intro');
+              void prefetchWelcomeIntroAssets().finally(() => {
+                router.push('/welcome-intro');
+              });
             }}
             accessibilityRole="button"
             accessibilityLabel="POKIT 소개 보기">

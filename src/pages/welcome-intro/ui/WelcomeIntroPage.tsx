@@ -1,7 +1,8 @@
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { runOnJS } from 'react-native-reanimated';
@@ -15,7 +16,10 @@ import {
 import { markWelcomeIntroSeenAndFlush } from '@shared/lib/storage';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { WELCOME_INTRO_BACKGROUNDS } from '../lib/welcomeIntroAssets';
+import {
+  prefetchWelcomeIntroAssets,
+  WELCOME_INTRO_BACKGROUNDS,
+} from '../lib/welcomeIntroAssets';
 import { WELCOME_INTRO_SLIDES } from '../lib/welcomeIntroSlides';
 
 /** 첫 사용자용 짧은 서비스 소개 (5장 슬라이드) */
@@ -24,8 +28,34 @@ export function WelcomeIntroPage() {
   const insets = useSafeAreaInsets();
   const rf = RetroFlatColors.light;
   const [index, setIndex] = useState(0);
+  const [assetsReady, setAssetsReady] = useState(false);
+  const loadedRef = useRef(0);
   const last = index >= WELCOME_INTRO_SLIDES.length - 1;
   const item = WELCOME_INTRO_SLIDES[index]!;
+  const totalBg = WELCOME_INTRO_BACKGROUNDS.length;
+
+  const markBgLoaded = useCallback(() => {
+    loadedRef.current += 1;
+    if (loadedRef.current >= totalBg) {
+      setAssetsReady(true);
+    }
+  }, [totalBg]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+    void prefetchWelcomeIntroAssets().finally(() => {
+      if (cancelled) return;
+      // prefetch 후에도 디코드 onLoad가 안 오면 화면이 멈추지 않게 폴백
+      fallbackTimer = setTimeout(() => {
+        if (!cancelled) setAssetsReady(true);
+      }, 800);
+    });
+    return () => {
+      cancelled = true;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+    };
+  }, []);
 
   const finish = useCallback(() => {
     void markWelcomeIntroSeenAndFlush().finally(() => {
@@ -75,14 +105,26 @@ export function WelcomeIntroPage() {
         <Image
           key={`welcome-bg-${i}`}
           source={source}
-          style={[styles.bgImage, { opacity: i === index ? 1 : 0 }]}
-          resizeMode="cover"
+          style={[
+            styles.bgImage,
+            { opacity: assetsReady && i === index ? 1 : 0 },
+          ]}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          priority="high"
+          transition={0}
+          recyclingKey={`welcome-intro-bg-${i}`}
+          onLoad={markBgLoaded}
           accessibilityIgnoresInvertColors
         />
       ))}
       <View style={styles.bgScrim} pointerEvents="none" />
 
-      <View style={[styles.column, { paddingTop: Math.max(insets.top, 12) }]}>
+      <View
+        style={[
+          styles.column,
+          { paddingTop: Math.max(insets.top, 12), opacity: assetsReady ? 1 : 0 },
+        ]}>
         <View style={styles.topBar}>
           <ThemedText
             style={[styles.topLabel, { color: rf.textMuted }, cityPopFont('700')]}

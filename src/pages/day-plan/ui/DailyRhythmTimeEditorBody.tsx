@@ -18,12 +18,13 @@ import {
   cityPopFont,
 } from '@shared/config/retroFlat';
 import { DigitalHhmmInput, type DigitalHhmmInputHandle } from '@shared/ui/digital-hhmm-input';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { ThemedText } from '@shared/ui/themed-text';
 import { DailyRhythmStyleAlarmRow, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { dailyRhythmOnboardingAssets } from '../lib/dailyRhythmOnboardingAssets';
-import { formatDateKeyCompactKo, isOvernightHhmmRange, PRIMARY } from '../lib/dayPlanEditorShared';
+import { formatDateKeyCompactKo, isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { DayCycleEmojiMark } from './DayCycleEmojiMark';
 
@@ -194,18 +195,19 @@ function OnboardingTimeRow({
             mapMidnightToEndOfDay={mapMidnightToEndOfDay}
             accessibilityLabelPrefix={label}
           />
-          <Pressable
+          <BrutalConfirmButton
+            accessibilityLabel={`${label} 시간 선택 확인`}
+            fill={c.onSurface}
+            labelColor={selectedFg}
+            border={c.border}
+            shadowColor={isDark ? ink.solidShadow : '#000000'}
             onPress={() => {
               const flushed = digitalRef.current?.flush();
               if (flushed) onChangeHhmm(flushed);
               void Haptics.selectionAsync();
               onToggleExpand();
             }}
-            accessibilityRole="button"
-            accessibilityLabel={`${label} 시간 선택 확인`}
-            style={({ pressed }) => [styles.confirmBtn, pressed && { opacity: 0.86 }]}>
-            <ThemedText style={[styles.confirmBtnText, cityPopFont('700')]}>확인</ThemedText>
-          </Pressable>
+          />
         </View>
       ) : null}
     </View>
@@ -990,17 +992,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   timePillText: { fontSize: 15, letterSpacing: -0.2 },
-  inputBlock: { paddingTop: 4, gap: 6 },
-  confirmBtn: {
-    alignSelf: 'flex-end',
-    minWidth: 68,
-    minHeight: 36,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
-  },
-  confirmBtnText: { fontSize: 14, color: PRIMARY },
+  inputBlock: { paddingTop: 4, gap: 8 },
 
   endDateChoiceOnboard: { gap: 12, paddingTop: 4 },
   endDateChoiceQuestionOnboard: {

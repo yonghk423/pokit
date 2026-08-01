@@ -17,6 +17,7 @@ import {
   resolveSystemCatalogGroupLabel,
 } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { importStoryAsRoutine } from '../lib/importStoryAsRoutine';
@@ -126,20 +127,15 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
               <ThemedText style={[styles.successSub, { color: palette.muted }]}>
                 {`「${selectedGroupLabel}」에서 확인할 수 있어요`}
               </ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="확인"
-                style={({ pressed }) => [
-                  styles.primaryBtn,
-                  retroBorderFor(isDark),
-                  {
-                    backgroundColor: palette.ink,
-                    opacity: pressed ? 0.88 : 1,
-                  },
-                ]}
-                onPress={handleClose}>
-                <ThemedText style={[styles.primaryBtnText, { color: palette.bg }]}>확인</ThemedText>
-              </Pressable>
+              <BrutalConfirmButton
+                align="stretch"
+                fill={palette.ink}
+                labelColor={palette.bg}
+                border={palette.border}
+                shadowColor={isDark ? RetroFlatColors.dark.solidShadow : RetroFlatColors.light.solidShadow}
+                onPress={handleClose}
+                style={styles.successConfirm}
+              />
             </View>
           ) : (
             <>
@@ -433,6 +429,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: CityPopSpacing.marginMobile,
     paddingTop: CityPopSpacing.md,
     paddingBottom: CityPopSpacing.sm,
+  },
+  successConfirm: {
+    alignSelf: 'stretch',
+    marginTop: CityPopSpacing.xs,
   },
   successIconWrap: {
     width: 48,

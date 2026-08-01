@@ -5,6 +5,7 @@ import {
   updateReminderItemLabel,
   updateReminderItemTime,
 } from './customFlowTemplateRuntime';
+import { suggestNextReminderTime } from './reminderSchedule';
 
 describe('reminder schedule mutations', () => {
   it('updates label and adds item', () => {
@@ -20,6 +21,24 @@ describe('reminder schedule mutations', () => {
       { time: '09:00', label: '아침 약' },
       { time: '12:00', label: '점심 약' },
     ]);
+  });
+
+  it('suggests last reminder + 1 hour', () => {
+    expect(suggestNextReminderTime([])).toBe('09:00');
+    expect(suggestNextReminderTime([{ time: '09:00', label: '아침' }])).toBe('10:00');
+    expect(
+      suggestNextReminderTime([
+        { time: '09:00', label: '아침' },
+        { time: '18:00', label: '저녁' },
+      ]),
+    ).toBe('19:00');
+    expect(suggestNextReminderTime([{ time: '23:30', label: '밤' }])).toBe('00:30');
+    expect(
+      suggestNextReminderTime([
+        { time: '09:00', label: 'a' },
+        { time: '10:00', label: 'b' },
+      ]),
+    ).toBe('11:00');
   });
 
   it('removes item but keeps at least one', () => {

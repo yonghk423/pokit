@@ -57,6 +57,7 @@ import {
 } from '@shared/lib/storage';
 import { coerceDayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
 import { ThemedView } from '@shared/ui/themed-view';
+import { prefetchWelcomeIntroAssets } from '@shared/lib/welcome-intro-assets';
 
 import {
   defaultPriorityWindowFromNow,
@@ -172,6 +173,12 @@ export function DayPlanPage({
   useEffect(() => {
     hydrateLayoutModeVisibility();
   }, [hydrateLayoutModeVisibility]);
+
+  useEffect(() => {
+    if (!loadWelcomeIntroSeen()) {
+      void prefetchWelcomeIntroAssets();
+    }
+  }, []);
 
   useEffect(() => {
     if (effectiveLayoutMode === layoutMode) return;
@@ -383,7 +390,9 @@ export function DayPlanPage({
       void markDailyRhythmOnboardingCompletedAndFlush().then(() => {
         setRhythmGateOpen(false);
         if (!loadWelcomeIntroSeen()) {
-          router.push('/welcome-intro');
+          void prefetchWelcomeIntroAssets().finally(() => {
+            router.push('/welcome-intro');
+          });
         }
       });
     },

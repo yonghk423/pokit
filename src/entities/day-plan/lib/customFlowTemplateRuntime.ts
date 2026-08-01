@@ -9,7 +9,7 @@ import type {
   MemoEntry,
   ReminderDetailDataConfig,
 } from './customFlowTemplateConfigs';
-import { MAX_CUSTOM_REMINDER_TIMES, normalizeReminderDetailConfig } from './customFlowTemplateConfigs';
+import { normalizeReminderDetailConfig } from './customFlowTemplateConfigs';
 import type {
   MeasurementDetailDataConfig,
   MeasurementHistoryEntry,
@@ -288,7 +288,6 @@ export function addReminderScheduleItem(
   const time = normalizeReminderTime(timeRaw);
   if (!time) return null;
   if (cfg.reminderItems.some((item) => item.time === time)) return null;
-  if (cfg.reminderItems.length >= MAX_CUSTOM_REMINDER_TIMES) return null;
   const items = sortReminderScheduleItems([
     ...cfg.reminderItems,
     { time, label: normalizeReminderLabel(labelRaw) },

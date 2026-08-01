@@ -129,6 +129,7 @@ export {
   resolveCounterUnitLabel,
   resolveReminderItemTitle,
   sortReminderScheduleItems,
+  suggestNextReminderTime,
   type CounterActivityPreset,
   type CounterUnitKey,
   type ReminderScheduleItem,

@@ -3,6 +3,8 @@ import { useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { clampHhmmToPriorityWindow, formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
+import { RetroFlatColors } from '@shared/config/retroFlat';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import {
   DigitalHhmmInput,
   type DigitalHhmmInputHandle,
@@ -10,8 +12,6 @@ import {
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { TIME_SNAP_MINUTES } from '../lib/snappedPickerMath';
-
-const PRIMARY = 'rgb(0, 0, 0)';
 
 export type SnappedTimePickerFieldPalette = {
   onSurface: string;
@@ -161,18 +161,19 @@ export function SnappedTimePickerField({
             mapMidnightToEndOfDay={mapMidnightToEndOfDay}
             accessibilityLabelPrefix={label}
           />
-          <Pressable
+          <BrutalConfirmButton
+            accessibilityLabel={`${label} 시간 선택 확인`}
+            fill={palette.onSurface}
+            labelColor={selectedFg}
+            border={palette.border}
+            shadowColor={isDark ? RetroFlatColors.dark.solidShadow : RetroFlatColors.light.solidShadow}
             onPress={() => {
               const flushed = digitalInputRef.current?.flush();
               if (flushed) onChangeHhmm(applyRoutineWindow(flushed));
               void Haptics.selectionAsync();
               onToggleExpand();
             }}
-            accessibilityRole="button"
-            accessibilityLabel={`${label} 시간 선택 확인`}
-            style={({ pressed }) => [styles.confirmBtn, pressed && { opacity: 0.86 }]}>
-            <ThemedText style={styles.confirmBtnText}>확인</ThemedText>
-          </Pressable>
+          />
         </View>
       ) : null}
     </View>
@@ -228,22 +229,6 @@ const styles = StyleSheet.create({
   timePillTextEmphasized: { fontSize: 18, letterSpacing: -0.35 },
   inputBlock: {
     paddingTop: 6,
-    gap: 4,
-  },
-  confirmBtn: {
-    alignSelf: 'flex-end',
-    minWidth: 68,
-    minHeight: 36,
-    paddingHorizontal: 12,
-    borderRadius: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
-  },
-  confirmBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: PRIMARY,
-    letterSpacing: -0.1,
+    gap: 8,
   },
 });

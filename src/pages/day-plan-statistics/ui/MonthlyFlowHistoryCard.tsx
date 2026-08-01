@@ -6,7 +6,6 @@ import type { MonthlyFlowHistoryRow } from '../lib/buildMonthlyFlowHistory';
 import type { FlowHistoryCategoryGroup } from '../lib/groupFlowHistoryRows';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 import { FlowHistoryCategoryIcon } from './FlowHistoryCategoryIcon';
-import { FlowHistoryMetaLine } from './FlowHistoryMetaLine';
 import { FlowHistoryMonthRow } from './FlowHistoryMonthRow';
 
 type Props = {
@@ -27,16 +26,9 @@ export function MonthlyFlowHistoryCard({ group, monthPrefix, palette }: Props) {
             icon={group.icon}
             palette={palette}
           />
-          <View style={styles.titleTextWrap}>
-            <ThemedText style={[styles.title, { color: palette.ink }]} numberOfLines={1}>
-              {group.label}
-            </ThemedText>
-            <FlowHistoryMetaLine
-              timeLabel={group.timeLabel}
-              startDateLabel={group.startDateLabel}
-              muted={palette.muted}
-            />
-          </View>
+          <ThemedText style={[styles.title, { color: palette.ink }]} numberOfLines={1}>
+            {group.label}
+          </ThemedText>
         </View>
         <ThemedText style={[styles.monthCount, { color: palette.muted }]}>{monthCountLabel}</ThemedText>
       </View>
@@ -68,12 +60,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  titleTextWrap: {
+  title: {
     flex: 1,
     minWidth: 0,
-    gap: 1,
-  },
-  title: {
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: -0.25,

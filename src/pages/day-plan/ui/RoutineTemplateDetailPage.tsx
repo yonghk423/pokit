@@ -1,7 +1,15 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Keyboard,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { buildTemplateDemoConfig, resolveCustomFlowTemplateCatalogEntry } from '@entities/day-plan';
@@ -27,6 +35,9 @@ export function RoutineTemplateDetailPage() {
   const c = useMemo(() => palette(isDark), [isDark]);
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowColor = isDark ? tone.solidShadow : tone.text;
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
 
   const entry = useMemo(
     () => (templateKey ? resolveCustomFlowTemplateCatalogEntry(templateKey) : null),
@@ -45,6 +56,29 @@ export function RoutineTemplateDetailPage() {
     if (entry) setDemoConfig(buildTemplateDemoConfig(entry.key));
   }, [entry?.key]);
 
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = Keyboard.addListener(showEvent, (event) => {
+      const pinnedY = scrollOffsetRef.current;
+      setKeyboardHeight(Math.max(0, event.endCoordinates?.height ?? 0));
+      // 패딩 변화·시스템 포커스 스크롤이 맨 아래로 밀지 않도록 현재 오프셋을 유지
+      const restore = () => {
+        scrollRef.current?.scrollTo({ y: pinnedY, animated: false });
+      };
+      requestAnimationFrame(restore);
+      setTimeout(restore, 50);
+      setTimeout(restore, 200);
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, []);
+
   if (!entry || !demoConfig) return null;
 
   const topInset =
@@ -54,6 +88,11 @@ export function RoutineTemplateDetailPage() {
         ? 59
         : Number(StatusBar.currentHeight) || 24;
   const bottomInset = Math.max(insets.bottom, 16);
+  const keyboardOpen = keyboardHeight > 0;
+  const scrollBottomPad =
+    Platform.OS === 'ios' && keyboardOpen
+      ? Math.max(24, keyboardHeight + 16)
+      : bottomInset + 24;
   const cardBg = isDark ? tone.surfaceAlt : '#FFFFFF';
   const iconBoxBg = cardBg;
 
@@ -110,9 +149,18 @@ export function RoutineTemplateDetailPage() {
         </View>
 
         <ScrollView
+          ref={scrollRef}
           style={styles.scroll}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomInset + 24 }]}
-          showsVerticalScrollIndicator={false}>
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollBottomPad }]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets={false}
+          contentInsetAdjustmentBehavior="never"
+          showsVerticalScrollIndicator={false}
+          onScroll={(e) => {
+            scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}>
           <View
             style={[
               styles.heroShell,

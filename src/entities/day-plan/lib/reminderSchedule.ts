@@ -1,3 +1,6 @@
+import { formatMinutesToHHmm } from './dayPlanTimeMath';
+import { parseHHmmToMinutes } from './parseTime';
+
 export type ReminderScheduleItem = {
   time: string;
   label: string;
@@ -71,6 +74,45 @@ export function resolveReminderItemTitle(item: ReminderScheduleItem): string {
 
 export function sortReminderScheduleItems(items: ReminderScheduleItem[]): ReminderScheduleItem[] {
   return [...items].sort((a, b) => a.time.localeCompare(b.time));
+}
+
+/**
+ * 알림 추가 기본 시각 — 가장 늦은 기존 알림 + `stepMinutes`(기본 60분).
+ * 같은 시각이 있으면 같은 간격으로 비어 있는 시각을 찾는다.
+ */
+export function suggestNextReminderTime(
+  items: readonly ReminderScheduleItem[],
+  stepMinutes = 60,
+): string {
+  const step =
+    Number.isFinite(stepMinutes) && stepMinutes > 0 ? Math.floor(stepMinutes) : 60;
+  const occupied = new Set<string>();
+  for (const item of items) {
+    const time = normalizeReminderTime(item.time);
+    if (time) occupied.add(time);
+  }
+
+  const sorted = sortReminderScheduleItems(
+    items
+      .map((item) => {
+        const time = normalizeReminderTime(item.time);
+        return time ? { time, label: item.label } : null;
+      })
+      .filter((item): item is ReminderScheduleItem => item != null),
+  );
+
+  if (sorted.length === 0) return '09:00';
+
+  const lastMin = parseHHmmToMinutes(sorted[sorted.length - 1]!.time) ?? 9 * 60;
+  const day = 24 * 60;
+  let candidate = (lastMin + step) % day;
+  const maxTries = Math.max(1, Math.floor(day / step));
+  for (let i = 0; i < maxTries; i += 1) {
+    const hhmm = formatMinutesToHHmm(candidate);
+    if (!occupied.has(hhmm)) return hhmm;
+    candidate = (candidate + step) % day;
+  }
+  return formatMinutesToHHmm((lastMin + step) % day);
 }
 
 export function normalizeReminderScheduleItems(

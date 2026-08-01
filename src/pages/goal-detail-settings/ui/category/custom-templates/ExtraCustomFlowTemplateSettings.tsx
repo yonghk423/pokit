@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import {
   getInitialCounterDataConfig,
@@ -8,14 +8,12 @@ import {
   getInitialJournalDataConfig,
   getInitialMemoDataConfig,
   getInitialReminderDataConfig,
-  isReminderPresetActive,
   normalizeCounterDetailConfig,
   normalizeFocusDetailConfig,
   normalizeHabitDetailConfig,
   normalizeJournalDetailConfig,
   normalizeMemoDetailConfig,
   normalizeReminderDetailConfig,
-  REMINDER_SCHEDULE_PRESETS,
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
@@ -46,23 +44,6 @@ type Seeder<T> = () => T;
 function useTemplateSettingsPalette() {
   const scheme = useColorScheme();
   return useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
-}
-
-function TemplateSection({
-  title,
-  children,
-  c,
-}: {
-  title: string;
-  children: React.ReactNode;
-  c: ReturnType<typeof goalDetailSettingsPalette>;
-}) {
-  return (
-    <View style={[styles.section, { borderColor: c.outline }]}>
-      <ThemedText style={[styles.sectionTitle, { color: c.onSurface }]}>{title}</ThemedText>
-      {children}
-    </View>
-  );
 }
 
 function TitleSummaryHeader({
@@ -319,60 +300,10 @@ export function ReminderSettings(props: SettingsProps) {
       templateKey="reminder"
       normalize={normalizeReminderDetailConfig}
       getInitial={getInitialReminderDataConfig}
-      topSection={(cfg, applyConfig, c) => (
-        <TemplateSection title="예시 불러오기" c={c}>
-          <View style={styles.chipsRow}>
-            {REMINDER_SCHEDULE_PRESETS.map((preset) => {
-              const selected = isReminderPresetActive(
-                (cfg as { reminderItems?: { time: string; label: string }[] }).reminderItems ?? [],
-                preset,
-              );
-              return (
-                <Pressable
-                  key={preset.id}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  onPress={() => {
-                    const next = normalizeReminderDetailConfig({
-                      ...(cfg as Record<string, unknown>),
-                      reminderItems: preset.items,
-                      completedTimes: [],
-                    });
-                    applyConfig(next);
-                  }}
-                  style={[
-                    styles.chip,
-                    {
-                      borderColor: selected ? PrimaryColor.rgb : c.outline,
-                      backgroundColor: selected ? 'rgba(0, 0, 0, 0.04)' : c.surfaceLowest,
-                    },
-                  ]}>
-                  <ThemedText
-                    style={[
-                      styles.chipText,
-                      { color: selected ? c.onSurface : c.onVariant, fontWeight: selected ? '700' : '500' },
-                    ]}>
-                    {preset.title}
-                  </ThemedText>
-                </Pressable>
-              );
-            })}
-          </View>
-          <ThemedText style={[styles.helper, { color: c.onVariant }]}>
-            예시를 누르면 아래 알림 목록이 채워져요. 시간·이름은 목록에서 바로 수정할 수 있어요.
-          </ThemedText>
-        </TemplateSection>
-      )}
     />
   );
 }
 
 const styles = StyleSheet.create({
   shell: { gap: 16 },
-  section: { borderWidth: 2, padding: 14, gap: 10 },
-  sectionTitle: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
-  helper: { fontSize: 12, lineHeight: 17, fontWeight: '500' },
-  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { borderWidth: 2, paddingHorizontal: 10, paddingVertical: 8 },
-  chipText: { fontSize: 13 },
 });

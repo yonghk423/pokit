@@ -194,6 +194,8 @@ export function GoalDetailSettingsPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
   /** 목표 상세는 항상 라이트(화이트) 기준 UI */
   const c = useMemo(() => palette(false), []);
 
@@ -203,7 +205,14 @@ export function GoalDetailSettingsPage() {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
     const onShow = Keyboard.addListener(showEvent, (event) => {
+      const pinnedY = scrollOffsetRef.current;
       setKeyboardHeight(Math.max(0, event.endCoordinates?.height ?? 0));
+      const restore = () => {
+        scrollRef.current?.scrollTo({ y: pinnedY, animated: false });
+      };
+      requestAnimationFrame(restore);
+      setTimeout(restore, 50);
+      setTimeout(restore, 200);
     });
     const onHide = Keyboard.addListener(hideEvent, () => {
       setKeyboardHeight(0);
@@ -215,17 +224,6 @@ export function GoalDetailSettingsPage() {
   }, []);
 
   const keyboardOpen = keyboardHeight > 0;
-  // iOS: 키보드가 화면을 덮으므로 콘텐츠 영역을 줄인다. Android(resize)는 창이 이미 줄어든다.
-  const keyboardInset = Platform.OS === 'ios' && keyboardOpen ? keyboardHeight : 0;
-  const scrollRef = useRef<ScrollView>(null);
-
-  useEffect(() => {
-    if (!keyboardOpen) return;
-    const timer = setTimeout(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [keyboardOpen]);
 
   useEffect(() => {
     useDayPlanStore.getState().hydrate();
@@ -540,6 +538,13 @@ export function GoalDetailSettingsPage() {
   const headerBg = c.bg;
   const headerBorder = c.border;
   const headerFg = c.onSurface;
+  // 프레임 축소·scrollToEnd 없이 content 패딩만 — 중간 TextInput 포커스 시 맨 아래 점프 방지
+  const scrollBottomPad =
+    Platform.OS === 'ios' && keyboardOpen
+      ? Math.max(24, keyboardHeight + 16)
+      : workNoteUi
+        ? 0
+        : 8;
 
   const topInset =
     insets.top >= 1
@@ -609,7 +614,7 @@ export function GoalDetailSettingsPage() {
       style={[styles.screen, { backgroundColor: screenBg }]}
       darkColor={screenBg}
       lightColor={screenBg}>
-      <View style={[styles.safe, { paddingTop: topInset, paddingBottom: keyboardInset }]}>
+      <View style={[styles.safe, { paddingTop: topInset }]}>
         <View
           style={[
             styles.header,
@@ -661,14 +666,18 @@ export function GoalDetailSettingsPage() {
           contentContainerStyle={[
             styles.scrollContent,
             {
-              paddingBottom: keyboardOpen ? 24 : workNoteUi ? 0 : 8,
+              paddingBottom: scrollBottomPad,
               backgroundColor: c.bg,
             },
           ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           automaticallyAdjustKeyboardInsets={false}
-          contentInsetAdjustmentBehavior="never">
+          contentInsetAdjustmentBehavior="never"
+          onScroll={(e) => {
+            scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}>
           {singleTarget && singleTargetRenameAccess?.renameLockedReason ? (
             <View style={[styles.renameLockBanner, { borderBottomColor: headerBorder }]}>
               <IconSymbol name="lock.fill" size={13} color={c.onVariant} />

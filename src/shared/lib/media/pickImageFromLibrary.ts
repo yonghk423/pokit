@@ -73,13 +73,21 @@ export async function pickImageFromLibrary(): Promise<PickImageFromLibraryResult
       return { ok: false, reason: 'permission_denied' };
     }
 
+    /**
+     * iOS PHPicker: 단일 선택(기본)만 쓰면 실기기에서 체크만 되고
+     * 「추가/완료」가 안 보이는 경우가 있음.
+     * selectionLimit: 1 + allowsMultipleSelection 으로 확인 버튼을 항상 노출한다.
+     */
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
+      allowsMultipleSelection: true,
+      selectionLimit: 1,
       quality: 0.85,
+      presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
     });
 
-    if (result.canceled || !result.assets[0]?.uri) {
+    if (result.canceled || !result.assets?.[0]?.uri) {
       return { ok: false, reason: 'cancelled' };
     }
 

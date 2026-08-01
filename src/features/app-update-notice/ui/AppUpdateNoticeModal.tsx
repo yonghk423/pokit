@@ -1,8 +1,9 @@
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -55,20 +56,14 @@ export function AppUpdateNoticeModal({ visible, version, highlights, onDismiss }
             </ScrollView>
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="확인"
-            style={({ pressed }) => [
-              styles.primaryBtn,
-              {
-                backgroundColor: c.primary,
-                borderColor: c.border,
-                opacity: pressed ? 0.88 : 1,
-              },
-            ]}
-            onPress={onDismiss}>
-            <ThemedText style={[styles.primaryBtnText, { color: c.primaryOn }]}>확인</ThemedText>
-          </Pressable>
+          <BrutalConfirmButton
+            align="stretch"
+            fill={c.primary}
+            labelColor={c.primaryOn}
+            border={c.border}
+            shadowColor={c.solidShadow}
+            onPress={onDismiss}
+          />
         </View>
       </View>
     </Modal>
@@ -139,17 +134,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     fontWeight: '500',
-  },
-  primaryBtn: {
-    borderRadius: 0,
-    borderWidth: RETRO_BORDER_WIDTH,
-    paddingVertical: 10,
-    alignItems: 'center',
-    minHeight: 40,
-    justifyContent: 'center',
-  },
-  primaryBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
   },
 });

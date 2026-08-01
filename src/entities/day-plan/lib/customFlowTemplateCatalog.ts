@@ -37,7 +37,7 @@ export const CUSTOM_FLOW_TEMPLATE_PREVIEW_LINES: Record<CustomFlowTemplateKey, s
   abstain: ['✓ 밤늦게 폰 보기', '□ 과자·야식'],
   measurement: ['체중·혈압·수면 등', '단위·목표 설정'],
   habit: ['오늘 완료 ✓', '연속 5일'],
-  counter: ['횟수·단위·목표 설정', '+1 / 추이'],
+  counter: ['이름·목표 설정', '+1 / 추이'],
   focus: ['25분 집중', '남은 12분'],
   journal: ['오늘 기분: 좋음', '한 줄 메모'],
   memo: ['오늘 할 일 정리', '짧게 메모 남기기'],

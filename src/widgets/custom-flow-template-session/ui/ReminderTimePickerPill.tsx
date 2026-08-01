@@ -3,14 +3,15 @@ import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { formatHhmmClockKo } from '@entities/day-plan';
+import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import {
   DigitalHhmmInput,
   type DigitalHhmmInputHandle,
 } from '@shared/ui/digital-hhmm-input';
+import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-
-const PRIMARY = 'rgb(0, 0, 0)';
 
 type Props = {
   valueHhmm: string;
@@ -23,6 +24,10 @@ type Props = {
   surface: string;
   placeholder?: string;
   accessibilityLabel?: string;
+  /** 목록 행·추가 폼 — 가로 전체 */
+  fullWidth?: boolean;
+  /** 다음 알림 등 강조 색 */
+  emphasizeColor?: string;
 };
 
 export function ReminderTimePickerPill({
@@ -36,6 +41,8 @@ export function ReminderTimePickerPill({
   surface,
   placeholder = '시간 선택',
   accessibilityLabel = '알림 시간',
+  fullWidth = false,
+  emphasizeColor,
 }: Props) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -44,9 +51,12 @@ export function ReminderTimePickerPill({
   const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const editorValue = hasValue ? valueHhmm : '09:00';
   const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const timeColor = emphasizeColor ?? (hasValue ? ink : muted);
+  const iconColor = emphasizeColor ?? muted;
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, fullWidth && styles.rootFull]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
@@ -58,18 +68,26 @@ export function ReminderTimePickerPill({
         <View
           style={[
             styles.pill,
+            fullWidth && styles.pillFull,
             {
               backgroundColor: surface,
-              borderColor: expanded ? PRIMARY : line,
+              borderColor: line,
             },
           ]}>
-          <ThemedText
-            style={[
-              styles.pillText,
-              { color: hasValue ? ink : muted },
-            ]}
-            numberOfLines={1}>
-            {label}
+          <View style={styles.pillLeft}>
+            <IconSymbol name="clock" size={15} color={iconColor} />
+            <ThemedText
+              style={[
+                styles.pillText,
+                fullWidth && styles.pillTextFull,
+                { color: timeColor },
+              ]}
+              numberOfLines={1}>
+              {label}
+            </ThemedText>
+          </View>
+          <ThemedText style={[styles.pillHint, { color: muted }]}>
+            {expanded ? '접기' : '변경'}
           </ThemedText>
         </View>
       </Pressable>
@@ -87,18 +105,19 @@ export function ReminderTimePickerPill({
             snapStepMinutes={1}
             accessibilityLabelPrefix={accessibilityLabel}
           />
-          <Pressable
+          <BrutalConfirmButton
+            accessibilityLabel="시간 선택 확인"
+            fill={ink}
+            labelColor={selectedFg}
+            border={line}
+            shadowColor={tone.solidShadow}
             onPress={() => {
               const flushed = digitalInputRef.current?.flush();
               if (flushed) onChangeHhmm(flushed);
               void Haptics.selectionAsync();
               onToggleExpand();
             }}
-            accessibilityRole="button"
-            accessibilityLabel="시간 선택 확인"
-            style={({ pressed }) => [styles.confirmBtn, pressed && { opacity: 0.86 }]}>
-            <ThemedText style={styles.confirmBtnText}>확인</ThemedText>
-          </Pressable>
+          />
         </View>
       ) : null}
     </View>
@@ -110,37 +129,57 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     maxWidth: '100%',
   },
+  rootFull: {
+    alignSelf: 'stretch',
+  },
   pill: {
-    minWidth: 92,
-    maxWidth: 132,
+    minWidth: 84,
+    maxWidth: 148,
+    minHeight: 34,
     paddingHorizontal: 8,
     paddingVertical: 6,
-    borderWidth: 2,
+    borderWidth: RETRO_BORDER_WIDTH,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  pillFull: {
+    maxWidth: '100%',
+    alignSelf: 'stretch',
+    minHeight: 40,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  pillLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    minWidth: 0,
   },
   pillText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: -0.2,
+    flexShrink: 1,
+  },
+  pillTextFull: {
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.25,
+    lineHeight: 20,
+  },
+  pillHint: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'solid',
   },
   inputBlock: {
     marginTop: 6,
-    paddingTop: 4,
-    gap: 4,
-  },
-  confirmBtn: {
-    alignSelf: 'flex-end',
-    minWidth: 68,
-    minHeight: 36,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
-  },
-  confirmBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: PRIMARY,
-    letterSpacing: -0.1,
+    paddingTop: 2,
+    gap: 6,
   },
 });

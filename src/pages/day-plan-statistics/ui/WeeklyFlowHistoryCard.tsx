@@ -6,7 +6,6 @@ import type { FlowHistoryCategoryGroup } from '../lib/groupFlowHistoryRows';
 import type { WeeklyFlowHistoryRow } from '../lib/buildWeeklyFlowHistory';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 import { FlowHistoryCategoryIcon } from './FlowHistoryCategoryIcon';
-import { FlowHistoryMetaLine } from './FlowHistoryMetaLine';
 import { FlowHistoryWeekdayRow } from './FlowHistoryWeekdayRow';
 
 type Props = {
@@ -24,16 +23,9 @@ export function WeeklyFlowHistoryCard({ group, palette }: Props) {
             icon={group.icon}
             palette={palette}
           />
-          <View style={styles.titleTextWrap}>
-            <ThemedText style={[styles.title, { color: palette.ink }]} numberOfLines={1}>
-              {group.label}
-            </ThemedText>
-            <FlowHistoryMetaLine
-              timeLabel={group.timeLabel}
-              startDateLabel={group.startDateLabel}
-              muted={palette.muted}
-            />
-          </View>
+          <ThemedText style={[styles.title, { color: palette.ink }]} numberOfLines={1}>
+            {group.label}
+          </ThemedText>
         </View>
         <ThemedText style={[styles.weekCount, { color: palette.muted }]}>
           {group.row.completedDays}/7
@@ -67,12 +59,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  titleTextWrap: {
+  title: {
     flex: 1,
     minWidth: 0,
-    gap: 1,
-  },
-  title: {
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: -0.25,

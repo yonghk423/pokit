@@ -45,6 +45,7 @@ export {
   REMINDER_SCHEDULE_PRESETS,
   resolveReminderItemTitle,
   sortReminderScheduleItems,
+  suggestNextReminderTime,
   type ReminderScheduleItem,
   type ReminderSchedulePreset,
 } from './reminderSchedule';
@@ -437,7 +438,7 @@ export type ReminderDetailDataConfig = {
   accentColor?: string;
 };
 
-export const MAX_CUSTOM_REMINDER_TIMES = 5;
+export const MAX_CUSTOM_REMINDER_TIMES = 24 * 60;
 
 export function normalizeReminderDetailConfig(raw: unknown): ReminderDetailDataConfig {
   const o = asObj(raw);
