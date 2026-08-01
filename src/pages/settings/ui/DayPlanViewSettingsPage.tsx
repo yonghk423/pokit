@@ -4,12 +4,18 @@ import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, View } 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDayPlanLayoutModeVisibilityStore } from '@entities/day-plan';
-import { getGoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import type { DayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
+
+import {
+  buildSettingsPalette,
+  SettingsRowIcon,
+  SettingsSection,
+  settingsChromeStyles as chrome,
+} from '../lib/settingsChrome';
 
 const MODE_OPTIONS: {
   key: DayPlanLayoutMode;
@@ -41,7 +47,7 @@ const MODE_OPTIONS: {
 export function DayPlanViewSettingsPage() {
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
-  const c = getGoalDetailSessionUi(isDark);
+  const p = buildSettingsPalette(isDark);
   const insets = useSafeAreaInsets();
   const visibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
   const setModeVisible = useDayPlanLayoutModeVisibilityStore((s) => s.setModeVisible);
@@ -55,42 +61,54 @@ export function DayPlanViewSettingsPage() {
         : Number(StatusBar.currentHeight) || 24;
 
   return (
-    <ThemedView style={[styles.screen, { backgroundColor: c.screenBg }]} darkColor={c.screenBg} lightColor={c.screenBg}>
+    <ThemedView style={[styles.screen, { backgroundColor: p.bg }]} darkColor={p.bg} lightColor={p.bg}>
       <View style={[styles.safe, { paddingTop: topInset, paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <View style={[styles.header, { backgroundColor: c.screenBg, borderBottomColor: c.border }]}>
+        <View style={[chrome.header, { backgroundColor: p.bg, borderBottomColor: p.border }]}>
           <Pressable
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.back();
             }}
-            style={styles.headerBtn}
+            style={chrome.headerBtn}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             accessibilityRole="button"
             accessibilityLabel="뒤로가기">
-            <IconSymbol name="chevron.left" size={22} color={c.onSurface} />
+            <IconSymbol name="chevron.left" size={20} color={p.title} />
           </Pressable>
-          <ThemedText style={[styles.headerTitle, { color: c.onSurface }]}>오늘 탭 보기</ThemedText>
-          <View style={styles.headerBtn} pointerEvents="none" />
+          <ThemedText style={[chrome.headerTitle, styles.headerTitleCenter, { color: p.title }]}>
+            오늘 탭 보기
+          </ThemedText>
+          <View style={chrome.headerBtn} pointerEvents="none" />
         </View>
 
-        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-          <ThemedText style={[styles.sectionHint, { color: c.muted }]}>
+        <ScrollView contentContainerStyle={chrome.container} showsVerticalScrollIndicator={false}>
+          <ThemedText style={[chrome.sectionHint, { color: p.desc }]}>
             켜 둔 보기만 오늘 탭 상단에 표시돼요. 하나만 켜 두어도 현재 모드 아이콘은 그대로 보여요.
           </ThemedText>
 
-          <View style={[styles.section, { borderColor: c.border }]}>
-            {MODE_OPTIONS.map((opt) => {
+          <SettingsSection border={p.border} surface={p.surface}>
+            {MODE_OPTIONS.map((opt, index) => {
               const enabled = visibility[opt.key];
               const disableOff = enabled && visibleCount <= 1;
               return (
-                <View key={opt.key} style={[styles.item, { borderTopColor: c.border }]}>
-                  <View style={styles.itemMain}>
-                    <View style={[styles.iconBox, { borderColor: c.border, backgroundColor: c.surface }]}>
-                      <IconSymbol name={opt.icon} size={16} color={c.onSurface} />
-                    </View>
-                    <View style={styles.itemTextWrap}>
-                      <ThemedText style={[styles.itemTitle, { color: c.onSurface }]}>{opt.label}</ThemedText>
-                      <ThemedText style={[styles.itemDesc, { color: c.muted }]}>{opt.desc}</ThemedText>
+                <View
+                  key={opt.key}
+                  style={[
+                    chrome.item,
+                    { borderTopColor: p.border },
+                    index === 0 && styles.firstItem,
+                  ]}>
+                  <View style={chrome.itemLeft}>
+                    <SettingsRowIcon
+                      name={opt.icon}
+                      color={p.icon}
+                      boxBg={p.iconBoxBg}
+                      border={p.border}
+                      shadow={p.shadow}
+                    />
+                    <View style={chrome.itemTextWrap}>
+                      <ThemedText style={[chrome.itemTitle, { color: p.title }]}>{opt.label}</ThemedText>
+                      <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>{opt.desc}</ThemedText>
                     </View>
                   </View>
                   <Switch
@@ -100,7 +118,10 @@ export function DayPlanViewSettingsPage() {
                       void Haptics.selectionAsync();
                       setModeVisible(opt.key, next);
                     }}
-                    trackColor={{ false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)', true: c.primary }}
+                    trackColor={{
+                      false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
+                      true: '#000000',
+                    }}
                     thumbColor="#FFFFFF"
                     ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
                     accessibilityLabel={`${opt.label} 보기 ${enabled ? '끄기' : '켜기'}`}
@@ -108,7 +129,7 @@ export function DayPlanViewSettingsPage() {
                 </View>
               );
             })}
-          </View>
+          </SettingsSection>
         </ScrollView>
       </View>
     </ThemedView>
@@ -118,36 +139,11 @@ export function DayPlanViewSettingsPage() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    paddingHorizontal: 8,
-    paddingBottom: 10,
+  headerTitleCenter: {
+    flex: 1,
+    textAlign: 'center',
   },
-  headerBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '700' },
-  container: { paddingHorizontal: 16, paddingTop: 12, gap: 12 },
-  sectionHint: { fontSize: 13, lineHeight: 19, fontWeight: '500' },
-  section: { borderWidth: 1, borderRadius: 0 },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderTopWidth: 1,
+  firstItem: {
+    borderTopWidth: 0,
   },
-  itemMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  iconBox: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  itemTextWrap: { flex: 1, gap: 2 },
-  itemTitle: { fontSize: 15, fontWeight: '700' },
-  itemDesc: { fontSize: 12, lineHeight: 17, fontWeight: '500' },
 });

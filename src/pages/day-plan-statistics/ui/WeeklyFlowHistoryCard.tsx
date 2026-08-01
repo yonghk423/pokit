@@ -1,13 +1,11 @@
 import { StyleSheet, View } from 'react-native';
-import type { SymbolViewProps } from 'expo-symbols';
 
-import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import type { FlowHistoryCategoryGroup } from '../lib/groupFlowHistoryRows';
 import type { WeeklyFlowHistoryRow } from '../lib/buildWeeklyFlowHistory';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
+import { FlowHistoryCategoryIcon } from './FlowHistoryCategoryIcon';
 import { FlowHistoryMetaLine } from './FlowHistoryMetaLine';
 import { FlowHistoryWeekdayRow } from './FlowHistoryWeekdayRow';
 
@@ -17,15 +15,15 @@ type Props = {
 };
 
 export function WeeklyFlowHistoryCard({ group, palette }: Props) {
-  const iconColor = activeIconColorByCategory(group.categoryKey);
-
   return (
     <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
-          <View style={[styles.iconWrap, { backgroundColor: palette.weekdayIdle }]}>
-            <IconSymbol name={group.icon as SymbolViewProps['name']} size={14} color={iconColor} />
-          </View>
+          <FlowHistoryCategoryIcon
+            categoryKey={group.categoryKey}
+            icon={group.icon}
+            palette={palette}
+          />
           <View style={styles.titleTextWrap}>
             <ThemedText style={[styles.title, { color: palette.ink }]} numberOfLines={1}>
               {group.label}
@@ -53,31 +51,21 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: 2,
     paddingHorizontal: 10,
-    paddingVertical: 7,
-    gap: 6,
+    paddingVertical: 8,
+    gap: 8,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 6,
+    gap: 8,
   },
   titleWrap: {
     flex: 1,
     minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-  },
-  iconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#000000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
+    gap: 8,
   },
   titleTextWrap: {
     flex: 1,
@@ -85,10 +73,10 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   title: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '700',
     letterSpacing: -0.25,
-    lineHeight: 17,
+    lineHeight: 16,
   },
   weekCount: {
     fontSize: 10,

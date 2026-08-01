@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ReactElement } from 'react';
 import { Animated, Easing, Pressable, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, {
@@ -15,12 +15,13 @@ import { CompletionRadioButton, COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKE
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { activeIconColorByCategory } from '../lib/activeIconColorByCategory';
+import { activeIconColorByCategory, categoryAccentColorPastel } from '../lib/activeIconColorByCategory';
 import { orderRowStyles as styles } from '../lib/orderRowStyles';
 import type { PriorityOrderRowProps } from '../lib/types';
 
 /** 완료 버튼 — 집중 시작 전·후 모두 표시(담기 목록에서 완료 표시 가능) */
 const GRAY_DEFAULT_LIGHT = '#9CA3AF';
+const BRUTAL_SHADOW_SM = 2;
 
 const REORDER_LONG_PRESS_MS = 420;
 const REORDER_SPRING = { damping: 22, stiffness: 250, mass: 0.95 };
@@ -125,11 +126,7 @@ export function DefaultPriorityOrderRow({
   const shouldPulse = Boolean(isFocusStarted && !isCompleted);
   const primary = PrimaryColor.rgb;
   const priorityMeta = ITEM_PRIORITY_META[itemPriority];
-  const iconColor = isCompleted
-    ? inkMuted
-    : isFocusStarted
-      ? activeIconColorByCategory(categoryKey)
-      : ink;
+  const iconColor = activeIconColorByCategory(categoryKey);
 
   useEffect(() => {
     if (!animateOnMount) {
@@ -168,16 +165,55 @@ export function DefaultPriorityOrderRow({
     return () => loop.stop();
   }, [shouldPulse, pulse]);
 
+  const iconBoxBg = categoryAccentColorPastel(categoryKey);
+  const actionBg = isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF';
+  const actionBorder = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
+  const actionShadow = isDark ? '#9ECFD1' : '#181A2E';
+  const actionHoverBg = isDark ? 'rgba(255,255,255,0.16)' : 'rgba(168, 218, 220, 0.35)';
+
   const rankIconTitleBlock = (
     <>
-      <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
-        <IconSymbol
-          key={`${categoryKey}-${iconColor}-${isCompleted ? 1 : 0}`}
-          name={icon as any}
-          size={17}
-          color={iconColor}
+      <View
+        style={[
+          styles.orderIconBoxShell,
+          { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+        ]}>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.orderIconBoxShadow,
+            {
+              backgroundColor: actionShadow,
+              borderColor: actionBorder,
+              transform: [
+                { translateX: BRUTAL_SHADOW_SM },
+                { translateY: BRUTAL_SHADOW_SM },
+              ],
+            },
+          ]}
         />
-      </Animated.View>
+        <View
+          style={[
+            styles.orderIconBox,
+            {
+              backgroundColor: iconBoxBg,
+              borderColor: actionBorder,
+            },
+          ]}>
+          <Animated.View
+            style={[
+              shouldPulse ? { opacity: pulse } : undefined,
+              isCompleted && { opacity: 0.5 },
+            ]}>
+            <IconSymbol
+              key={`${categoryKey}-${iconColor}-${isCompleted ? 1 : 0}`}
+              name={icon as any}
+              size={16}
+              color={iconColor}
+            />
+          </Animated.View>
+        </View>
+      </View>
       <View style={styles.orderRowRomanText}>
         <ThemedText
           style={[styles.orderRowRomanTitle, { color: ink }, isCompleted && styles.orderRowRomanTitleDone]}
@@ -203,97 +239,133 @@ export function DefaultPriorityOrderRow({
     </>
   );
 
-  const priorityButton = onCycleItemPriority ? (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`중요도 ${priorityMeta.label}, 탭하면 변경`}
-      hitSlop={8}
-      onPress={() => {
-        void Haptics.selectionAsync();
-        onCycleItemPriority();
-      }}
+  const wrapBrutal = (child: ReactElement) => (
+    <View
       style={[
-        styles.orderRowPriorityBtn,
-        {
-          borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
-          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-        },
+        styles.orderBrutalBtnShell,
+        { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
       ]}>
-      <ThemedText
+      <View
+        pointerEvents="none"
         style={[
-          styles.orderRowPriorityBtnText,
-          { color: priorityMeta.dot },
-          isCompleted && styles.orderRowRomanTitleDone,
+          styles.orderBrutalBtnShadow,
+          {
+            backgroundColor: actionShadow,
+            borderColor: actionBorder,
+            transform: [
+              { translateX: BRUTAL_SHADOW_SM },
+              { translateY: BRUTAL_SHADOW_SM },
+            ],
+          },
         ]}
-        numberOfLines={1}>
-        {priorityMeta.label}
-      </ThemedText>
-    </Pressable>
-  ) : null;
+      />
+      {child}
+    </View>
+  );
+
+  const priorityButton = onCycleItemPriority
+    ? wrapBrutal(
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`중요도 ${priorityMeta.label}, 탭하면 변경`}
+          hitSlop={8}
+          onPress={() => {
+            void Haptics.selectionAsync();
+            onCycleItemPriority();
+          }}
+          style={({ pressed }) => [
+            styles.orderRowPriorityBtn,
+            {
+              borderColor: actionBorder,
+              backgroundColor: pressed ? actionHoverBg : actionBg,
+            },
+            pressed && { transform: [{ translateX: 1 }, { translateY: 1 }] },
+          ]}>
+          <ThemedText
+            style={[
+              styles.orderRowPriorityBtnText,
+              { color: priorityMeta.dot },
+              isCompleted && styles.orderRowRomanTitleDone,
+            ]}
+            numberOfLines={1}>
+            {priorityMeta.label}
+          </ThemedText>
+        </Pressable>,
+      )
+    : null;
 
   const actionsColumn = (
     <View style={styles.orderRowActions}>
       {priorityButton}
-      {onFinishForToday ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${label} 오늘 일정에서 완전 종료`}
-          hitSlop={10}
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            onFinishForToday();
-          }}
-          style={[
-            styles.orderFinishBtn,
-            {
-              borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
-              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-            },
-          ]}>
-          <ThemedText
-            style={[styles.orderFinishBtnText, { color: isDark ? '#FAFAFA' : primary }]}
-            numberOfLines={1}>
-            종료
-          </ThemedText>
-        </Pressable>
-      ) : null}
-      {onSettings ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${label} 상세 설정`}
-          hitSlop={10}
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onSettings();
-          }}
-          style={[
-            styles.orderSettingsBtn,
-            {
-              borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
-              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-            },
-          ]}>
-          <IconSymbol name="slider.horizontal.3" size={14} color={isDark ? '#FAFAFA' : primary} />
-        </Pressable>
-      ) : isFocusStarted && onFocusDetail ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${label} 몰입 화면 자세히 보기`}
-          hitSlop={10}
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onFocusDetail();
-          }}
-          style={[
-            styles.orderSettingsBtn,
-            {
-              borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
-              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-            },
-          ]}>
-          <IconSymbol name="slider.horizontal.3" size={14} color={isDark ? '#FAFAFA' : primary} />
-        </Pressable>
-      ) : null}
+      {onFinishForToday
+        ? wrapBrutal(
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${label} 오늘 일정에서 완전 종료`}
+              hitSlop={10}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onFinishForToday();
+              }}
+              style={({ pressed }) => [
+                styles.orderFinishBtn,
+                {
+                  borderColor: actionBorder,
+                  backgroundColor: pressed ? actionHoverBg : actionBg,
+                },
+                pressed && { transform: [{ translateX: 1 }, { translateY: 1 }] },
+              ]}>
+              <ThemedText
+                style={[styles.orderFinishBtnText, { color: isDark ? '#FAFAFA' : primary }]}
+                numberOfLines={1}>
+                종료
+              </ThemedText>
+            </Pressable>,
+          )
+        : null}
+      {onSettings
+        ? wrapBrutal(
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${label} 상세 설정`}
+              hitSlop={10}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onSettings();
+              }}
+              style={({ pressed }) => [
+                styles.orderSettingsBtn,
+                {
+                  borderColor: actionBorder,
+                  backgroundColor: pressed ? actionHoverBg : actionBg,
+                },
+                pressed && { transform: [{ translateX: 1 }, { translateY: 1 }] },
+              ]}>
+              <IconSymbol name="slider.horizontal.3" size={13} color={isDark ? '#FAFAFA' : primary} />
+            </Pressable>,
+          )
+        : isFocusStarted && onFocusDetail
+          ? wrapBrutal(
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${label} 몰입 화면 자세히 보기`}
+                hitSlop={10}
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onFocusDetail();
+                }}
+                style={({ pressed }) => [
+                  styles.orderSettingsBtn,
+                  {
+                    borderColor: actionBorder,
+                    backgroundColor: pressed ? actionHoverBg : actionBg,
+                  },
+                  pressed && { transform: [{ translateX: 1 }, { translateY: 1 }] },
+                ]}>
+                <IconSymbol name="slider.horizontal.3" size={13} color={isDark ? '#FAFAFA' : primary} />
+              </Pressable>,
+            )
+          : null}
       {onToggleFocusComplete ? (
         <CompletionRadioButton
           checked={Boolean(isCompleted)}

@@ -184,8 +184,11 @@ export function DayPlanStatisticsPage() {
       : '오늘 탭에서 루틴을 완료하면 여기에 날짜별로 쌓여요.';
 
   return (
-    <ThemedView style={styles.root}>
-      <View style={styles.stickyHeader}>
+    <ThemedView
+      style={[styles.root, { backgroundColor: palette.pageBg }]}
+      lightColor={palette.pageBg}
+      darkColor={palette.pageBg}>
+      <View style={[styles.stickyHeader, { backgroundColor: palette.pageBg }]}>
         <ThemedText style={styles.pageDesc} lightColor={palette.muted} darkColor={palette.muted}>
           {historyPeriodDescription(period)}
         </ThemedText>
@@ -193,47 +196,91 @@ export function DayPlanStatisticsPage() {
         <HistoryPeriodTabs
           period={period}
           onSelectPeriod={setPeriod}
-          ink={palette.ink}
-          muted={palette.muted}
           isDark={isDark}
         />
 
         <View style={styles.periodNavRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={period === 'week' ? '이전 주' : '이전 달'}
-            hitSlop={8}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              shiftPeriod(-1);
-            }}
-            style={({ pressed }) => [styles.periodNavBtn, pressed && styles.pressed]}>
-            <IconSymbol name="chevron.left" size={14} color={palette.ink} />
-          </Pressable>
+          <View
+            style={[
+              styles.periodNavShell,
+              { marginRight: 2, marginBottom: 2 },
+            ]}>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.periodNavShadow,
+                {
+                  backgroundColor: palette.shadow,
+                  borderColor: palette.border,
+                  transform: [{ translateX: 2 }, { translateY: 2 }],
+                },
+              ]}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={period === 'week' ? '이전 주' : '이전 달'}
+              hitSlop={8}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                shiftPeriod(-1);
+              }}
+              style={({ pressed }) => [
+                styles.periodNavBtn,
+                {
+                  backgroundColor: pressed ? palette.accentSoft : palette.actionBg,
+                  borderColor: palette.border,
+                },
+                pressed && styles.periodNavPressed,
+              ]}>
+              <IconSymbol name="chevron.left" size={13} color={palette.ink} />
+            </Pressable>
+          </View>
           <ThemedText style={[styles.periodNavLabel, { color: palette.ink }]}>
             {periodNavLabel}
           </ThemedText>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={period === 'week' ? '다음 주' : '다음 달'}
-            disabled={!canGoNext}
-            hitSlop={8}
-            onPress={() => {
-              if (!canGoNext) return;
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              shiftPeriod(1);
-            }}
-            style={({ pressed }) => [
-              styles.periodNavBtn,
-              !canGoNext && styles.periodNavBtnDisabled,
-              pressed && canGoNext && styles.pressed,
+          <View
+            style={[
+              styles.periodNavShell,
+              { marginRight: 2, marginBottom: 2 },
             ]}>
-            <IconSymbol
-              name="chevron.right"
-              size={14}
-              color={canGoNext ? palette.ink : palette.muted}
+            <View
+              pointerEvents="none"
+              style={[
+                styles.periodNavShadow,
+                {
+                  backgroundColor: palette.shadow,
+                  borderColor: palette.border,
+                  transform: [{ translateX: 2 }, { translateY: 2 }],
+                },
+              ]}
             />
-          </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={period === 'week' ? '다음 주' : '다음 달'}
+              disabled={!canGoNext}
+              hitSlop={8}
+              onPress={() => {
+                if (!canGoNext) return;
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                shiftPeriod(1);
+              }}
+              style={({ pressed }) => [
+                styles.periodNavBtn,
+                {
+                  backgroundColor:
+                    pressed && canGoNext ? palette.accentSoft : palette.actionBg,
+                  borderColor: palette.border,
+                },
+                !canGoNext && styles.periodNavBtnDisabled,
+                pressed && canGoNext && styles.periodNavPressed,
+              ]}>
+              <IconSymbol
+                name="chevron.right"
+                size={13}
+                color={canGoNext ? palette.ink : palette.muted}
+              />
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -255,11 +302,13 @@ export function DayPlanStatisticsPage() {
 
         {!isHydrated ? (
           <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <ThemedText style={styles.emptyTitle}>기록을 불러오는 중이에요</ThemedText>
+            <ThemedText style={[styles.emptyTitle, { color: palette.ink }]}>
+              기록을 불러오는 중이에요
+            </ThemedText>
           </View>
         ) : flowRows.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <ThemedText style={styles.emptyTitle}>{emptyTitle}</ThemedText>
+            <ThemedText style={[styles.emptyTitle, { color: palette.ink }]}>{emptyTitle}</ThemedText>
             <ThemedText style={styles.emptyBody} lightColor={palette.muted} darkColor={palette.muted}>
               {emptyBody}
             </ThemedText>
@@ -288,7 +337,7 @@ export function DayPlanStatisticsPage() {
         )}
 
         <ThemedText style={styles.helperText} lightColor={palette.muted} darkColor={palette.muted}>
-          히스토리는 완료 기록을 보여줘요. 체크와 실행은 오늘·투두 탭에서 할 수 있어요.
+          히스토리는 완료 기록을 보여줘요. 체크와 실행은 오늘 탭에서 할 수 있어요.
         </ThemedText>
       </ScrollView>
     </ThemedView>
@@ -300,7 +349,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stickyHeader: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 8,
     gap: 10,
@@ -311,28 +360,39 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     width: '100%',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     gap: 10,
   },
   pageDesc: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 11,
+    lineHeight: 16,
     fontWeight: '600',
   },
   periodNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 6,
+    gap: 8,
+  },
+  periodNavShell: {
+    position: 'relative',
+  },
+  periodNavShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderRadius: 0,
   },
   periodNavBtn: {
-    width: 34,
-    height: 34,
+    width: 32,
+    height: 32,
     borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#000000',
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
+  },
+  periodNavPressed: {
+    transform: [{ translateX: 1 }, { translateY: 1 }],
   },
   periodNavBtnDisabled: {
     opacity: 0.35,
@@ -340,13 +400,13 @@ const styles = StyleSheet.create({
   periodNavLabel: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
   cardList: {
     width: '100%',
-    gap: 6,
+    gap: 8,
   },
   emptyCard: {
     width: '100%',
@@ -357,14 +417,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   emptyTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: -0.2,
-    lineHeight: 20,
+    lineHeight: 19,
   },
   emptyBody: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
     fontWeight: '500',
   },
   helperText: {
@@ -372,8 +432,5 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: '500',
     textAlign: 'center',
-  },
-  pressed: {
-    opacity: 0.82,
   },
 });

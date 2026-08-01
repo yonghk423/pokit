@@ -144,7 +144,7 @@ export function DailyRhythmSettingsPage() {
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             accessibilityRole="button"
             accessibilityLabel="뒤로가기">
-            <IconSymbol name="chevron.left" size={22} color={headerFg} />
+            <IconSymbol name="chevron.left" size={20} color={headerFg} />
           </Pressable>
           <ThemedText style={[styles.headerTitle, { color: headerFg }]} lightColor={headerFg} darkColor={headerFg}>
             시작·마무리 시간
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 8,
     paddingBottom: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 2,
   },
   headerBtn: {
     width: 44,
@@ -222,11 +222,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
   },
   rollCard: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderRadius: 0,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -239,12 +239,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   rollTitle: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
   },
   rollDesc: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: '500',
   },
 });

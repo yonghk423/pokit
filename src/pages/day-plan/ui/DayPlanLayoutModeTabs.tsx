@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -40,6 +41,8 @@ const TABS: TabDef[] = [
   },
 ];
 
+const SHADOW_SM = 2;
+
 type Props = {
   mode: DayPlanLayoutMode;
   onSelectMode: (mode: DayPlanLayoutMode) => void;
@@ -51,9 +54,14 @@ type Props = {
   allowReselect?: boolean;
   /** 아이콘 아래 모드 이름(목록·시간대·타임라인) 표시 */
   showLabels?: boolean;
+  /**
+   * 부착형 세그먼트 (나만의 루틴 탭).
+   * showLabels 와 함께 쓸 때 루틴 목록 세그먼트와 동일한 톤.
+   */
+  attached?: boolean;
 };
 
-/** 오늘 탭 헤더 — 원형 아이콘 레이아웃 전환 */
+/** 오늘·나만의 루틴 — 레이아웃 모드 전환 */
 export function DayPlanLayoutModeTabs({
   mode,
   onSelectMode,
@@ -62,13 +70,80 @@ export function DayPlanLayoutModeTabs({
   visibleModes,
   allowReselect = false,
   showLabels = false,
+  attached = false,
 }: Props) {
   const pill = tabPillColors(isDark);
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const tabs = visibleModes
     ? TABS.filter((item) => visibleModes.includes(item.key))
     : TABS;
 
   if (tabs.length === 0) return null;
+
+  if (attached && showLabels) {
+    const border = tone.border;
+    const shadowColor = isDark ? tone.solidShadow : tone.text;
+    const activeBg = tone.primaryContainer;
+    const activeText = tone.primary;
+    const inactiveBg = isDark ? tone.surfaceAlt : '#FFFFFF';
+    const inactiveText = tone.textMuted;
+
+    return (
+      <View style={styles.attachedRoot}>
+        {tabs.map((item, index) => {
+          const active = mode === item.key;
+          const label = DAY_PLAN_LAYOUT_MODE_LABELS_KO[item.key];
+          const isFirst = index === 0;
+          return (
+            <View key={item.key} style={styles.attachedShell}>
+              {active ? (
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.attachedShadow,
+                    {
+                      backgroundColor: shadowColor,
+                      borderColor: border,
+                      transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
+                    },
+                  ]}
+                />
+              ) : null}
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={label}
+                onPress={() => {
+                  if (active && !allowReselect) return;
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onSelectMode(item.key);
+                }}
+                style={({ pressed }) => [
+                  styles.attachedTab,
+                  !isFirst && styles.attachedJoin,
+                  {
+                    backgroundColor: active ? activeBg : inactiveBg,
+                    borderColor: border,
+                  },
+                  pressed && styles.attachedPressed,
+                ]}>
+                <IconSymbol
+                  name={item.icon as 'sun.horizon.fill'}
+                  size={14}
+                  color={active ? activeText : inactiveText}
+                />
+                <ThemedText
+                  style={[styles.attachedLabel, { color: active ? activeText : inactiveText }]}
+                  numberOfLines={1}>
+                  {label}
+                </ThemedText>
+              </Pressable>
+            </View>
+          );
+        })}
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.root, showLabels && styles.rootLabeled]}>
@@ -170,5 +245,42 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.72,
+  },
+  attachedRoot: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    marginRight: SHADOW_SM,
+    marginBottom: SHADOW_SM,
+  },
+  attachedShell: {
+    flex: 1,
+    position: 'relative',
+  },
+  attachedShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 2,
+    borderRadius: 0,
+  },
+  attachedTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    borderWidth: 2,
+    borderRadius: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    zIndex: 1,
+  },
+  attachedJoin: {
+    borderLeftWidth: 0,
+  },
+  attachedPressed: {
+    transform: [{ translateY: SHADOW_SM }],
+  },
+  attachedLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.15,
   },
 });

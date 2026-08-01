@@ -52,7 +52,7 @@ import {
   resolveCatalogItemGroupKey,
   updateCatalogItemGroup,
 } from '@shared/lib/storage';
-import { RetroFlatColors } from '@shared/config/retroFlat';
+import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -876,25 +876,44 @@ export function GoalDetailSettingsPage() {
                 paddingBottom: Math.max(insets.bottom, workNoteUi ? 4 : 6),
               },
             ]}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={waterDetailUi ? '루틴 설정 완료' : '설정 완료'}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                handleCompleteAndStart();
-              }}
-              style={({ pressed }) => [
-                styles.footerCompleteCircle,
-                { backgroundColor: '#000000' },
-                pressed && { opacity: 0.9, transform: [{ scale: 0.94 }] },
-              ]}>
-              <IconSymbol
-                name="checkmark"
-                size={16}
-                weight="bold"
-                color="#FAFAFA"
+            <View style={styles.footerCompleteShell}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.footerCompleteShadow,
+                  {
+                    backgroundColor: RetroFlatColors.light.text,
+                    borderColor: RetroFlatColors.light.border,
+                  },
+                ]}
               />
-            </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={waterDetailUi ? '루틴 설정 완료' : '설정 완료'}
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  handleCompleteAndStart();
+                }}
+                style={({ pressed }) => [
+                  styles.footerCompleteCircle,
+                  {
+                    backgroundColor: pressed
+                      ? '#8EC8CA'
+                      : RetroFlatColors.light.primaryContainer,
+                    borderColor: RetroFlatColors.light.border,
+                  },
+                  pressed && {
+                    transform: [{ translateX: 2 }, { translateY: 2 }],
+                  },
+                ]}>
+                <IconSymbol
+                  name="checkmark"
+                  size={16}
+                  weight="bold"
+                  color={RetroFlatColors.light.text}
+                />
+              </Pressable>
+            </View>
           </View>
         )}
       </View>
@@ -988,17 +1007,26 @@ const styles = StyleSheet.create({
   startPickerRowText: { flex: 1, minWidth: 0, gap: 2 },
   startPickerRowTitle: { fontSize: 15, fontWeight: '700' },
   startPickerRowMeta: { fontSize: 12, fontWeight: '600' },
-  /** 하단 고정 완료 — 아이콘만, 중앙 컴팩트 CTA */
+  /** 하단 고정 완료 — 민트 CTA + solid shadow */
+  footerCompleteShell: {
+    position: 'relative',
+    marginRight: 3,
+    marginBottom: 3,
+  },
+  footerCompleteShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+    borderWidth: RETRO_BORDER_WIDTH,
+    transform: [{ translateX: 3 }, { translateY: 3 }],
+  },
   footerCompleteCircle: {
     width: 40,
     height: 40,
     borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#000000',
+    borderWidth: RETRO_BORDER_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 0,
-    shadowOpacity: 0,
+    zIndex: 1,
   },
   footerFixed: {
     alignItems: 'center',

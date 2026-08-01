@@ -28,6 +28,7 @@ import {
 } from '@entities/day-plan';
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
+import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   appendCustomFlowCatalogEntry,
@@ -72,11 +73,17 @@ function resolveCatalogGroupKeyForPersist(raw: string): string {
 }
 
 function bookColors(c: DayPlanPalette, isDark: boolean) {
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   return {
-    ink: c.onSurface,
-    muted: c.onVariant,
-    line: isDark ? 'rgba(255,255,255,0.2)' : c.catBorderIdle,
+    ink: tone.text,
+    muted: tone.textMuted,
+    line: tone.border,
+    /** 이전 앱 배경 — warm beige (`#F5F2EB`) */
     shellBg: c.containerLow,
+    sheetSurface: c.containerLow,
+    actionBg: isDark ? tone.surfaceAlt : '#FFFFFF',
+    actionHoverBg: tone.surfacePink,
+    shadow: isDark ? tone.solidShadow : tone.text,
   };
 }
 
@@ -418,10 +425,15 @@ export function RoutineCatalogManageContent() {
 
   return (
     <>
-      <View style={[styles.stickyHeader, { paddingHorizontal: 16 }]}>
+      <View style={[styles.stickyHeader, { paddingHorizontal: CityPopSpacing.marginMobile }]}>
         <View style={styles.headerBlock}>
           <View style={styles.titleRow}>
-            <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>루틴 목록</ThemedText>
+            <View style={styles.titleCopy}>
+              <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>루틴 목록</ThemedText>
+              <ThemedText style={[styles.lead, { color: editorial.muted }]}>
+                반복되는 할 일과 습관을 관리해요.
+              </ThemedText>
+            </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="새 루틴 또는 묶음 만들기"
@@ -433,14 +445,11 @@ export function RoutineCatalogManageContent() {
                 styles.headerAddButton,
                 { opacity: pressed ? 0.92 : 1 },
               ]}>
-              <View style={styles.headerAddButtonInner}>
-                <IconSymbol name="plus" size={18} color="#FAFAFA" />
+              <View style={[styles.headerAddButtonInner, { backgroundColor: editorial.ink }]}>
+                <IconSymbol name="plus" size={15} color="#FFFFFF" />
               </View>
             </Pressable>
           </View>
-          <ThemedText style={[styles.lead, { color: editorial.muted }]}>
-            루틴을 만들고 묶음으로 정리해요.
-          </ThemedText>
         </View>
       </View>
       <ScrollView
@@ -449,7 +458,7 @@ export function RoutineCatalogManageContent() {
           styles.scrollContent,
           {
             paddingBottom: scrollBottomPad,
-            paddingTop: 8,
+            paddingTop: CityPopSpacing.base,
           },
         ]}
         keyboardShouldPersistTaps="handled"
@@ -486,7 +495,7 @@ export function RoutineCatalogManageContent() {
         isDark={isDark}
         ink={editorial.ink}
         muted={editorial.muted}
-        surface={editorial.shellBg}
+        surface={editorial.sheetSurface}
         line={editorial.line}
       />
       <CreateCustomFlowSheet
@@ -498,7 +507,7 @@ export function RoutineCatalogManageContent() {
         ink={editorial.ink}
         muted={editorial.muted}
         line={editorial.line}
-        surface={editorial.shellBg}
+        surface={editorial.sheetSurface}
       />
       <EditCatalogGroupSheet
         visible={createGroupSheetOpen}
@@ -510,7 +519,7 @@ export function RoutineCatalogManageContent() {
         isDark={isDark}
         ink={editorial.ink}
         muted={editorial.muted}
-        surface={editorial.shellBg}
+        surface={editorial.sheetSurface}
       />
       <EditCatalogGroupSheet
         visible={editGroupSheet != null}
@@ -534,7 +543,7 @@ export function RoutineCatalogManageContent() {
         isDark={isDark}
         ink={editorial.ink}
         muted={editorial.muted}
-        surface={editorial.shellBg}
+        surface={editorial.sheetSurface}
       />
       <MoveCustomFlowGroupSheet
         visible={moveFlowSheet != null}
@@ -545,35 +554,39 @@ export function RoutineCatalogManageContent() {
         isDark={isDark}
         ink={editorial.ink}
         muted={editorial.muted}
-        surface={editorial.shellBg}
+        surface={editorial.sheetSurface}
       />
     </>
   );
 }
 
-const HEADER_ADD_BUTTON_SIZE = 36;
+const HEADER_ADD_BUTTON_SIZE = 34;
 
 const styles = StyleSheet.create({
   stickyHeader: {
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingTop: CityPopSpacing.base,
+    paddingBottom: CityPopSpacing.base,
     zIndex: 2,
   },
   headerBlock: {
-    gap: 8,
-    marginBottom: 4,
+    marginBottom: CityPopSpacing.base,
   },
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: CityPopSpacing.sm,
+  },
+  titleCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
   },
   pageTitle: {
-    flex: 1,
     fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.35,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    lineHeight: 24,
   },
   headerAddButton: {
     width: HEADER_ADD_BUTTON_SIZE,
@@ -582,23 +595,22 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#000000',
     flexShrink: 0,
+    marginBottom: 2,
   },
   headerAddButtonInner: {
     flex: 1,
     borderRadius: HEADER_ADD_BUTTON_SIZE / 2,
-    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
   lead: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
-    letterSpacing: -0.2,
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 17,
   },
   scroll: { flex: 1 },
   scrollContent: {
-    paddingHorizontal: 20,
-    gap: 16,
+    paddingHorizontal: CityPopSpacing.marginMobile,
+    gap: CityPopSpacing.md,
   },
 });

@@ -65,6 +65,6 @@ const styles = StyleSheet.create({
     width: MONTH_CELL,
     height: MONTH_CELL,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 1.5,
   },
 });

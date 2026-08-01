@@ -264,13 +264,14 @@ function formatOvernightTailEndHeadline(end: string): string {
   return formatMinuteOfDayKo(pe);
 }
 
-/** 타임라인 헤더 — 집중 구간 시각(탭 시 모달) */
+/** 타임라인 헤더 — 하루 시작·마무리 시각(탭 시 모달) */
 function PriorityWindowTimeChip({
   line,
   ink,
   muted,
   chipBg,
   chipBgPressed,
+  borderColor,
   onPress,
 }: {
   line: string;
@@ -278,6 +279,7 @@ function PriorityWindowTimeChip({
   muted: string;
   chipBg: string;
   chipBgPressed: string;
+  borderColor: string;
   onPress: () => void;
 }) {
   return (
@@ -285,11 +287,14 @@ function PriorityWindowTimeChip({
       onPress={onPress}
       hitSlop={6}
       accessibilityRole="button"
-      accessibilityLabel={`집중 구간 시간 설정, 현재 ${line}`}
-      accessibilityHint="탭하면 집중 구간 시간을 변경할 수 있어요"
+      accessibilityLabel={`하루 시작·마무리 시간 설정, 현재 ${line}`}
+      accessibilityHint="탭하면 시작·종료 시간을 변경할 수 있어요"
       style={({ pressed }) => [
         styles.priorityTimelineTimeChip,
-        { backgroundColor: pressed ? chipBgPressed : chipBg },
+        {
+          backgroundColor: pressed ? chipBgPressed : chipBg,
+          borderColor,
+        },
       ]}>
       <IconSymbol name="clock" size={11} color={muted} />
       <ThemedText
@@ -766,7 +771,7 @@ const flipStyles = StyleSheet.create({
   /** ampm: 숫자 영역과 시각 중심을 맞추기 위해 x축을 약간 오른쪽으로 이동 */
   ampmBadge: {
     position: 'absolute',
-    top: '8%',
+    top: '5%',
     left: '12%',
     zIndex: 12,
   },
@@ -778,7 +783,7 @@ const flipStyles = StyleSheet.create({
   },
   nextDayBadge: {
     position: 'absolute',
-    top: '7%',
+    top: '5%',
     right: '7%',
     zIndex: 13,
   },
@@ -791,7 +796,7 @@ const flipStyles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: '7%',
+    bottom: '4%',
     zIndex: 11,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2115,30 +2120,35 @@ export function PriorityBasedPlanSection({
     [lockPriorityTimelineScroll, unlockPriorityTimelineScroll],
   );
 
-  /** 라이트: 대표 톤은 `dayPlanPalette` 그레이(containerLow)·진한 글자(onSurface) — 순백·채도 높은 다크 면 아님 */
+  /** 라이트: warm beige 페이지 위 흰색 카드·검정 보더 톤 */
   const editorial = useMemo(() => {
+    const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
     if (isDark) {
       return {
         surface: bc.cover,
-        ink: bc.ink,
-        muted: bc.inkMuted,
-        line: 'rgba(255,255,255,0.2)',
+        ink: tone.text,
+        muted: tone.textMuted,
+        line: tone.border,
+        actionBg: tone.surfaceAlt,
+        shadow: tone.solidShadow,
       };
     }
     return {
-      surface: bc.cover,
-      ink: bc.ink,
-      muted: bc.inkMuted,
-      line: c.catBorderIdle,
+      surface: tone.bg,
+      ink: tone.text,
+      muted: tone.textMuted,
+      line: tone.border,
+      actionBg: '#FFFFFF',
+      shadow: tone.text,
     };
-  }, [isDark, bc.cover, bc.ink, bc.inkMuted, c.catBorderIdle]);
+  }, [isDark, bc.cover]);
 
   const priorityTimeChipColors = useMemo(
     () =>
       isDark
-        ? { bg: 'rgba(255,255,255,0.08)', pressed: 'rgba(255,255,255,0.13)' }
-        : { bg: c.containerHigh, pressed: '#DDD8CE' },
-    [c.containerHigh, isDark],
+        ? { bg: editorial.actionBg, pressed: 'rgba(255,255,255,0.13)' }
+        : { bg: editorial.actionBg, pressed: 'rgba(168, 218, 220, 0.35)' },
+    [editorial.actionBg, isDark],
   );
 
   /** 당일(오늘) · 다음날 — 전날 열은 제외하고, 자정 넘김 종료일만 연장 카드로 표시 */
@@ -2754,12 +2764,11 @@ export function PriorityBasedPlanSection({
             style={[
               styles.timeModalCard,
               {
-                backgroundColor: c.containerLow,
-                borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+                backgroundColor: isDark ? c.containerLow : '#FFFFFF',
+                borderColor: isDark ? RetroFlatColors.dark.border : '#000000',
               },
             ]}>
-            <ThemedText style={[styles.dateModalTitle, { color: c.onSurface }]}>집중 구간 시간</ThemedText>
-            <ThemedText style={[styles.dateModalHint, { color: c.onVariant }]}>
+            <ThemedText style={[styles.dateModalHint, styles.timeModalLead, { color: c.onVariant }]}>
               시작·종료를 맞춘 뒤 설정 완료를 눌러 주세요.
             </ThemedText>
             <View style={styles.timeModalFlipWrap}>
@@ -2837,7 +2846,7 @@ export function PriorityBasedPlanSection({
                 style={[styles.dateActionBtn, styles.dateActionPrimary]}
                 onPress={confirmPriorityTimeModal}
                 accessibilityRole="button"
-                accessibilityLabel="집중 구간 시간 적용">
+                accessibilityLabel="시작·종료 시간 적용">
                 <ThemedText style={[styles.dateActionText, { color: '#fff' }]}>설정 완료</ThemedText>
               </Pressable>
             </View>
@@ -2927,6 +2936,7 @@ export function PriorityBasedPlanSection({
                         muted={editorial.muted}
                         chipBg={priorityTimeChipColors.bg}
                         chipBgPressed={priorityTimeChipColors.pressed}
+                        borderColor={editorial.line}
                         onPress={openPriorityTimeModal}
                       />
                     </View>
@@ -2954,21 +2964,24 @@ export function PriorityBasedPlanSection({
                         muted={editorial.muted}
                         chipBg={priorityTimeChipColors.bg}
                         chipBgPressed={priorityTimeChipColors.pressed}
+                        borderColor={editorial.line}
                         onPress={openPriorityTimeModal}
                       />
                     </View>
                   </>
                 )}
               </View>
-              <View style={styles.priorityTimelineHeaderActions}>
-                <DayPlanLayoutModeTabs
-                  mode={layoutMode}
-                  onSelectMode={onSelectLayoutMode}
-                  c={c}
-                  isDark={isDark}
-                  visibleModes={visibleLayoutModes}
-                />
-              </View>
+              {(visibleLayoutModes?.length ?? 3) > 0 ? (
+                <View style={styles.priorityTimelineHeaderActions}>
+                  <DayPlanLayoutModeTabs
+                    mode={layoutMode}
+                    onSelectMode={onSelectLayoutMode}
+                    c={c}
+                    isDark={isDark}
+                    visibleModes={visibleLayoutModes}
+                  />
+                </View>
+              ) : null}
             </View>
             <ScrollView
               ref={priorityTimelineScrollRef}
@@ -3504,11 +3517,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingTop: 14,
+    paddingBottom: 12,
+    borderBottomWidth: 2,
     zIndex: 10,
     elevation: 10,
+  },
+  priorityTimelineHeaderTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
   },
   priorityTimelineHeaderText: {
     flex: 1,
@@ -3522,15 +3541,15 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   priorityTimelineTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     letterSpacing: -0.3,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   priorityTimelineSub: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
-    lineHeight: 17,
+    lineHeight: 16,
     letterSpacing: -0.1,
   },
   priorityTimelineSubRow: {
@@ -3547,9 +3566,10 @@ const styles = StyleSheet.create({
     gap: 4,
     flexShrink: 1,
     maxWidth: '100%',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 0,
+    borderWidth: 1,
     marginTop: 1,
   },
   priorityTimelineHeaderActions: {
@@ -3775,6 +3795,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     zIndex: 2,
     elevation: 0,
+  },
+  timeModalLead: {
+    marginTop: 0,
   },
   timeModalFlipWrap: {
     width: '100%',

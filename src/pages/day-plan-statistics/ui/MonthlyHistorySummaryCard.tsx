@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: 2,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
     gap: 4,
   },
   topRow: {
@@ -48,12 +48,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   title: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
   percent: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '900',
     letterSpacing: -0.3,
   },

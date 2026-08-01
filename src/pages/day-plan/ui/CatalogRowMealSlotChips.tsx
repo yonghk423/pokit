@@ -8,7 +8,11 @@ import {
 } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import { DAY_MEAL_SLOT_ICON } from '@widgets/day-plan-meal-slot-timeline/lib/mealSlotIcons';
+import {
+  DAY_MEAL_SLOT_ICON,
+  dayMealSlotIconColor,
+} from '@widgets/day-plan-meal-slot-timeline/lib/mealSlotIcons';
+
 
 type Props = {
   selectedSlots: readonly DayMealSlot[];
@@ -64,7 +68,7 @@ export function CatalogRowMealSlotChips({
               <IconSymbol
                 name={iconName}
                 size={11}
-                color={selected ? selectedFg : muted}
+                color={dayMealSlotIconColor(slot, isDark)}
               />
               <ThemedText
                 style={[
@@ -135,11 +139,12 @@ type SelectedIconsProps = {
 /** 행 접힘 상태 — 선택된 시간대 아이콘 목록 */
 export function CatalogRowMealSlotSelectedIcons({
   selectedSlots,
-  color,
+  color: _legacyMonoColor,
   mutedColor,
   size = 14,
   compactSize = 10,
 }: SelectedIconsProps) {
+  void _legacyMonoColor;
   const ordered = resolveOrderedSelectedSlots(selectedSlots);
 
   if (ordered.length === 0) {
@@ -152,7 +157,7 @@ export function CatalogRowMealSlotSelectedIcons({
       <IconSymbol
         name={DAY_MEAL_SLOT_ICON[slot] as 'sun.horizon.fill'}
         size={size}
-        color={color}
+        color={dayMealSlotIconColor(slot)}
       />
     );
   }
@@ -164,7 +169,7 @@ export function CatalogRowMealSlotSelectedIcons({
           key={slot}
           name={DAY_MEAL_SLOT_ICON[slot] as 'sun.horizon.fill'}
           size={compactSize}
-          color={color}
+          color={dayMealSlotIconColor(slot)}
         />
       ))}
     </View>

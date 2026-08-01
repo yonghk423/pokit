@@ -257,6 +257,8 @@ export {
   DAY_PLAN_ANCHOR_ICON_SIZE,
   dayPlanAnchorIconColor,
   dayPlanAnchorNodeBackground,
+  dayPlanDayStartIconColor,
+  dayPlanDayEndIconColor,
 } from './lib/dayPlanAnchorTheme';
 export { formatSpineGapCoaching } from './lib/formatSpineGapCoaching';
 export {

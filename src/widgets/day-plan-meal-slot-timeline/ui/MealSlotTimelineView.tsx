@@ -27,7 +27,8 @@ import {
   categoryIconAccent,
 } from '@widgets/day-plan-priority-order/lib/activeIconColorByCategory';
 
-import { DAY_MEAL_SLOT_ICON } from '../lib/mealSlotIcons';
+import { DAY_MEAL_SLOT_ICON, dayMealSlotIconColor } from '../lib/mealSlotIcons';
+
 import {
   resolveMealSlotFromTimelineY,
   type MealSlotSectionBounds,
@@ -77,12 +78,13 @@ const EMPHASIZED_SHADOW_OFFSET = 6;
 const SECTION_DOT_TOP = 10;
 const timelineAxisLeft = SPINE_COL_WIDTH / 2 - SPINE_WIDTH / 2;
 const timelineSpineTop = SECTION_DOT_TOP + DOT_SIZE / 2;
-/** 예시 UI — rounded-xl */
-const CARD_RADIUS = 12;
+/** Flat Brutalism Lite — radius 0 */
+const CARD_RADIUS = 0;
 /** 카드·체크박스 외곽선 */
 const CARD_BORDER = RETRO_BORDER_WIDTH;
-/** HTML `thin-outline` — 소형 배지 등 */
-const THIN_BORDER = 1;
+/** 소형 배지·설정 버튼 */
+const THIN_BORDER = RETRO_BORDER_WIDTH;
+const ICON_SHADOW_SM = 2;
 
 type SlotBadgeTheme = {
   bg: string;
@@ -123,24 +125,37 @@ function RoutineIconBadge({
 }) {
   const accent = categoryIconAccent(categoryKey);
   const colors = cardColors(isDark);
-  const iconColor = completed
-    ? palette.muted
-    : activeIconColorByCategory(categoryKey);
+  const iconColor = activeIconColorByCategory(categoryKey);
 
   return (
     <View
       style={[
-        styles.routineIconBadge,
-        {
-          borderColor: colors.border,
-          backgroundColor: completed
-            ? isDark
-              ? 'rgba(255,255,255,0.06)'
-              : 'rgba(0,0,0,0.04)'
-            : accent.surface,
-        },
+        styles.routineIconBadgeShell,
+        { marginRight: ICON_SHADOW_SM, marginBottom: ICON_SHADOW_SM },
       ]}>
-      <IconSymbol name={icon as any} size={size} color={iconColor} />
+      <View
+        pointerEvents="none"
+        style={[
+          styles.routineIconBadgeShadow,
+          {
+            backgroundColor: colors.shadow,
+            borderColor: colors.border,
+            transform: [{ translateX: ICON_SHADOW_SM }, { translateY: ICON_SHADOW_SM }],
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.routineIconBadge,
+          {
+            borderColor: colors.border,
+            backgroundColor: accent.surface,
+          },
+        ]}>
+        <View style={completed ? { opacity: 0.5 } : undefined}>
+          <IconSymbol name={icon as any} size={size} color={iconColor} />
+        </View>
+      </View>
     </View>
   );
 }
@@ -294,10 +309,10 @@ function RoutineRowSettingsButton({
         styles.settingsBtn,
         {
           borderColor: colors.border,
-          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+          backgroundColor: colors.face,
         },
       ]}>
-      <IconSymbol name="slider.horizontal.3" size={14} color={isDark ? '#FAFAFA' : primary} />
+      <IconSymbol name="slider.horizontal.3" size={13} color={isDark ? '#FAFAFA' : primary} />
     </Pressable>
   );
 }
@@ -772,7 +787,7 @@ function TimelineSectionBlock<T extends MealSlotTimelineItem>({
               <IconSymbol
                 name={DAY_MEAL_SLOT_ICON[section.slot] as 'moon.fill'}
                 size={12}
-                color={badge.label}
+                color={dayMealSlotIconColor(section.slot, isDark)}
                 weight="semibold"
               />
               <ThemedText
@@ -999,18 +1014,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: CARD_RADIUS,
+    borderRadius: 0,
     borderWidth: THIN_BORDER,
   },
   slotBadgeLabel: {
-    fontSize: 11,
+    fontSize: 10,
     letterSpacing: 0.55,
     textTransform: 'uppercase',
   },
   slotTimeLabel: {
-    fontSize: 11,
+    fontSize: 10,
     letterSpacing: -0.1,
   },
   cardShell: {
@@ -1034,14 +1049,25 @@ const styles = StyleSheet.create({
     gap: CityPopSpacing.sm,
     overflow: 'visible',
   },
-  routineIconBadge: {
-    width: 28,
-    height: 28,
+  routineIconBadgeShell: {
+    position: 'relative',
+    flexShrink: 0,
+  },
+  routineIconBadgeShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
     borderRadius: 0,
-    borderWidth: THIN_BORDER,
+  },
+  routineIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 0,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 1,
+    marginTop: 0,
+    zIndex: 1,
+    overflow: 'hidden',
   },
   checkboxList: {
     gap: 12,
@@ -1063,8 +1089,8 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   settingsBtn: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     borderRadius: 0,
     borderWidth: THIN_BORDER,
     alignItems: 'center',
@@ -1087,15 +1113,15 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
   },
   checkboxLabelDone: {
     textDecorationLine: 'line-through',
     opacity: 0.4,
   },
   emptyCardFace: {
-    minHeight: 52,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1103,7 +1129,7 @@ const styles = StyleSheet.create({
     padding: CityPopSpacing.md,
   },
   emptyCardLabel: {
-    fontSize: 13,
+    fontSize: 12,
   },
   addLinkRow: {
     flexDirection: 'row',
@@ -1112,7 +1138,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   addLinkLabel: {
-    fontSize: 13,
+    fontSize: 12,
   },
   pressed: {
     opacity: 0.72,

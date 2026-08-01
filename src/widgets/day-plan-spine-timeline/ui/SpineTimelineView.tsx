@@ -5,8 +5,9 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
   DAY_PLAN_ANCHOR_ICON_SIZE,
-  dayPlanAnchorIconColor,
   dayPlanAnchorNodeBackground,
+  dayPlanDayEndIconColor,
+  dayPlanDayStartIconColor,
   formatMinuteOfDayKo,
   isSpineBlockActiveAtMinute,
   type SpineTimelineAnchorRow,
@@ -160,7 +161,10 @@ function SpineAnchorNode({
   icon: 'sun.horizon.fill' | 'moon.fill';
   isDark: boolean;
 }) {
-  const color = dayPlanAnchorIconColor(isDark);
+  const color =
+    icon === 'moon.fill'
+      ? dayPlanDayEndIconColor(isDark)
+      : dayPlanDayStartIconColor(isDark);
   return (
     <View
       style={[

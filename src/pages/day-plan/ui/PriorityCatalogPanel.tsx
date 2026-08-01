@@ -19,7 +19,7 @@ import {
 import { DAY_MEAL_SLOT_LABEL, type CustomCatalogGroup, type CustomFlowCatalogEntry, type DayMealSlot } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
+import { activeIconColorByCategory, categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
 
 import { getPickerCategoryLabel, PICKER_CATEGORIES, PRIMARY } from '../lib/dayPlanEditorShared';
 import {
@@ -39,9 +39,75 @@ export type PriorityCatalogEditorial = {
   ink: string;
   muted: string;
   line: string;
+  /** 시안 액션 버튼용 (manageOnly) */
+  actionBg?: string;
+  actionHoverBg?: string;
+  shadow?: string;
 };
 
 const MEAL_SLOT_PANEL_HEIGHT = 56;
+const BRUTAL_SHADOW_SM = 2;
+
+/** 시안 `w-10 h-10 border border-black bg-white brutal-shadow-sm` */
+function BrutalActionButton({
+  accessibilityLabel,
+  disabled,
+  borderColor,
+  backgroundColor,
+  pressedBg,
+  shadowColor,
+  onPress,
+  children,
+}: {
+  accessibilityLabel: string;
+  disabled?: boolean;
+  borderColor: string;
+  backgroundColor: string;
+  pressedBg: string;
+  shadowColor: string;
+  onPress: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <View
+      style={[
+        styles.brutalBtnShell,
+        { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+      ]}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.brutalBtnShadow,
+          {
+            backgroundColor: shadowColor,
+            borderColor,
+            transform: [{ translateX: BRUTAL_SHADOW_SM }, { translateY: BRUTAL_SHADOW_SM }],
+          },
+        ]}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        disabled={disabled}
+        hitSlop={disabled ? 0 : 8}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.catalogSettingsBtnManage,
+          {
+            borderColor,
+            backgroundColor: pressed && !disabled ? pressedBg : backgroundColor,
+            opacity: disabled ? 0.55 : 1,
+          },
+          pressed &&
+            !disabled && {
+              transform: [{ translateX: 1 }, { translateY: 1 }],
+            },
+        ]}>
+        {children}
+      </Pressable>
+    </View>
+  );
+}
 
 function CatalogListRow({
   categoryKey,
@@ -52,6 +118,9 @@ function CatalogListRow({
   ink,
   muted,
   line,
+  actionBg,
+  actionHoverBg,
+  shadow,
   isDark,
   isFocusStarted,
   onAddPress,
@@ -83,6 +152,9 @@ function CatalogListRow({
   ink: string;
   muted: string;
   line: string;
+  actionBg?: string;
+  actionHoverBg?: string;
+  shadow?: string;
   isDark: boolean;
   isFocusStarted: boolean;
   onAddPress: () => void;
@@ -106,8 +178,18 @@ function CatalogListRow({
   priorityEnd?: string;
   manageOnly?: boolean;
 }) {
-  const settingsBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)';
-  const settingsBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+  const settingsBorder = manageOnly
+    ? line
+    : isDark
+      ? 'rgba(255,255,255,0.28)'
+      : 'rgba(0,0,0,0.2)';
+  const settingsBg = manageOnly
+    ? (actionBg ?? (isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF'))
+    : isDark
+      ? 'rgba(255,255,255,0.1)'
+      : 'rgba(0,0,0,0.05)';
+  const settingsHoverBg = actionHoverBg ?? settingsBg;
+  const brutalShadow = shadow ?? (isDark ? '#9ECFD1' : '#181A2E');
   const settingsLocked = !manageOnly && isFocusStarted && selected;
   const shouldPulse = !manageOnly && Boolean(selected && isFocusStarted);
   const pulse = useRef(new Animated.Value(1)).current;
@@ -144,6 +226,9 @@ function CatalogListRow({
       : selected
         ? categoryIconColor
         : muted;
+  const iconBoxBg = manageOnly
+    ? categoryAccentColorPastel(categoryKey)
+    : undefined;
 
   const mealSlotActive = Boolean(selectedMealSlots && selectedMealSlots.length > 0);
   const mealSlotIconHighlighted = mealSlotActive || isMealSlotExpanded;
@@ -184,8 +269,13 @@ function CatalogListRow({
   }));
 
   return (
-    <View style={[styles.catalogRowWrap, { borderBottomColor: line }]}>
-      <View style={styles.catalogRow}>
+    <View
+      style={[
+        styles.catalogRowWrap,
+        manageOnly && styles.catalogRowWrapManage,
+        { borderBottomColor: line },
+      ]}>
+      <View style={[styles.catalogRow, manageOnly && styles.catalogRowManage]}>
         <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected: manageOnly ? undefined : selected }}
@@ -206,18 +296,67 @@ function CatalogListRow({
           }
           onAddPress();
         }}
-        style={styles.catalogRowMainHit}>
+        style={({ pressed }) => [
+          styles.catalogRowMainHit,
+          manageOnly && styles.catalogRowMainHitManage,
+          manageOnly &&
+            pressed && {
+              backgroundColor: 'rgba(168, 218, 220, 0.1)',
+            },
+        ]}>
         <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
-          <IconSymbol
-            key={`${categoryKey}-${icon}-${iconColor}`}
-            name={icon as any}
-            size={22}
-            color={iconColor}
-          />
+          {manageOnly ? (
+            <View
+              style={[
+                styles.catalogIconBoxShell,
+                { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+              ]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.catalogIconBoxShadow,
+                  {
+                    backgroundColor: brutalShadow,
+                    borderColor: line,
+                    transform: [
+                      { translateX: BRUTAL_SHADOW_SM },
+                      { translateY: BRUTAL_SHADOW_SM },
+                    ],
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.catalogIconBox,
+                  {
+                    borderColor: line,
+                    backgroundColor: iconBoxBg ?? '#FFFFFF',
+                  },
+                ]}>
+                <IconSymbol
+                  key={`${categoryKey}-${icon}-${iconColor}`}
+                  name={icon as any}
+                  size={16}
+                  color={iconColor}
+                />
+              </View>
+            </View>
+          ) : (
+            <IconSymbol
+              key={`${categoryKey}-${icon}-${iconColor}`}
+              name={icon as any}
+              size={18}
+              color={iconColor}
+            />
+          )}
         </Animated.View>
         <View style={styles.catalogRowTextCol}>
           <ThemedText
-            style={[styles.catalogRowLabel, { color: labelColor }]}
+            style={[
+              styles.catalogRowLabel,
+              manageOnly && styles.catalogRowLabelManage,
+              { color: labelColor },
+            ]}
             lightColor={labelColor}
             darkColor={labelColor}
             numberOfLines={1}>
@@ -225,7 +364,11 @@ function CatalogListRow({
           </ThemedText>
           {subtitle ? (
             <ThemedText
-              style={[styles.catalogRowSubtitle, { color: muted }]}
+              style={[
+                styles.catalogRowSubtitle,
+                manageOnly && styles.catalogRowSubtitleManage,
+                { color: muted },
+              ]}
               lightColor={muted}
               darkColor={muted}
               numberOfLines={1}>
@@ -235,8 +378,28 @@ function CatalogListRow({
         </View>
       </Pressable>
 
-      <View style={styles.catalogRowActions}>
+      <View style={[styles.catalogRowActions, manageOnly && styles.catalogRowActionsManage]}>
         {onDeleteItem ? (
+          manageOnly ? (
+            <BrutalActionButton
+              accessibilityLabel={`${label} 삭제`}
+              disabled={settingsLocked}
+              borderColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)') : settingsBorder}
+              backgroundColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)') : settingsBg}
+              pressedBg={settingsHoverBg}
+              shadowColor={brutalShadow}
+              onPress={() => {
+                if (settingsLocked) return;
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onDeleteItem();
+              }}>
+              <IconSymbol
+                name="trash"
+                size={14}
+                color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
+              />
+            </BrutalActionButton>
+          ) : (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${label} 삭제`}
@@ -265,12 +428,31 @@ function CatalogListRow({
             ]}>
             <IconSymbol
               name="trash"
-              size={15}
+              size={14}
               color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
             />
           </Pressable>
+          )
         ) : null}
         {onMoveGroup ? (
+          manageOnly ? (
+            <BrutalActionButton
+              accessibilityLabel={`${label} 묶음 옮기기`}
+              borderColor={settingsBorder}
+              backgroundColor={settingsBg}
+              pressedBg={settingsHoverBg}
+              shadowColor={brutalShadow}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onMoveGroup();
+              }}>
+              <IconSymbol
+                name="arrow.left.arrow.right"
+                size={14}
+                color={isDark ? '#FAFAFA' : '#000000'}
+              />
+            </BrutalActionButton>
+          ) : (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${label} 묶음 옮기기`}
@@ -288,6 +470,7 @@ function CatalogListRow({
             ]}>
             <IconSymbol name="arrow.left.arrow.right" size={15} color={isDark ? '#FAFAFA' : '#000000'} />
           </Pressable>
+          )
         ) : null}
         {showMealSlotPicker && !manageOnly && onToggleMealSlotExpand ? (
           <Pressable
@@ -390,6 +573,42 @@ function CatalogListRow({
             </Reanimated.View>
           </Pressable>
         ) : null}
+        {manageOnly ? (
+          <BrutalActionButton
+            accessibilityLabel={
+              settingsLocked
+                ? `${label} 목표 상세 설정, 집중 실행 중에는 변경할 수 없어요`
+                : `${label} 목표 상세 설정`
+            }
+            disabled={settingsLocked}
+            borderColor={
+              settingsLocked
+                ? isDark
+                  ? 'rgba(255,255,255,0.12)'
+                  : 'rgba(0,0,0,0.08)'
+                : settingsBorder
+            }
+            backgroundColor={
+              settingsLocked
+                ? isDark
+                  ? 'rgba(255,255,255,0.04)'
+                  : 'rgba(0,0,0,0.02)'
+                : settingsBg
+            }
+            pressedBg={settingsHoverBg}
+            shadowColor={brutalShadow}
+            onPress={() => {
+              if (settingsLocked) return;
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onOpenSettings();
+            }}>
+            <IconSymbol
+              name={settingsLocked ? 'lock.fill' : 'slider.horizontal.3'}
+              size={settingsLocked ? 13 : 14}
+              color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
+            />
+          </BrutalActionButton>
+        ) : (
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ disabled: settingsLocked }}
@@ -423,10 +642,11 @@ function CatalogListRow({
           ]}>
           <IconSymbol
             name={settingsLocked ? 'lock.fill' : 'slider.horizontal.3'}
-            size={settingsLocked ? 14 : 16}
+            size={settingsLocked ? 13 : 14}
             color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
           />
         </Pressable>
+        )}
         {!manageOnly ? (
         <Pressable
           accessibilityRole="button"
@@ -442,9 +662,9 @@ function CatalogListRow({
           }}
           style={styles.catalogAddHit}>
           {selected ? (
-            <IconSymbol name="minus.circle.fill" size={22} color={categoryIconColor} />
+            <IconSymbol name="minus.circle.fill" size={18} color={categoryIconColor} />
           ) : (
-            <IconSymbol name="plus.circle" size={22} color={muted} />
+            <IconSymbol name="plus.circle" size={18} color={muted} />
           )}
         </Pressable>
         ) : null}
@@ -502,16 +722,25 @@ function CatalogSectionHeader({
   title,
   ink,
   trailing,
+  manageOnly = false,
 }: {
   title: string;
   ink: string;
   trailing?: ReactNode;
+  manageOnly?: boolean;
 }) {
   return (
     <View style={styles.sectionHeader} accessibilityRole="header">
       <View style={styles.sectionHeaderTop}>
         <View style={styles.sectionHeaderTextCol}>
-          <ThemedText style={[styles.sectionTitle, { color: ink }]}>{title}</ThemedText>
+          <ThemedText
+            style={[
+              styles.sectionTitle,
+              manageOnly && styles.sectionTitleManage,
+              { color: ink },
+            ]}>
+            {title}
+          </ThemedText>
         </View>
         {trailing ? <View style={styles.sectionHeaderTrailing}>{trailing}</View> : null}
       </View>
@@ -581,6 +810,9 @@ function renderRows(
       ink={editorial.ink}
       muted={editorial.muted}
       line={editorial.line}
+      actionBg={editorial.actionBg}
+      actionHoverBg={editorial.actionHoverBg}
+      shadow={editorial.shadow}
       isDark={isDark}
       isFocusStarted={isFocusStarted}
       onAddPress={() => onCatalogTap(cat.key)}
@@ -752,14 +984,30 @@ function GroupSectionBlock({
                 section.subtitle ?? '',
               );
             }}
-            style={[
-              styles.customGroupHeaderIconBtn,
+            style={({ pressed }) => [
+              manageOnly ? styles.customGroupHeaderIconBtnManage : styles.customGroupHeaderIconBtn,
               {
-                borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                borderColor: manageOnly
+                  ? isDark
+                    ? 'rgba(255,255,255,0.88)'
+                    : '#000000'
+                  : isDark
+                    ? 'rgba(255,255,255,0.28)'
+                    : 'rgba(0,0,0,0.2)',
+                backgroundColor: manageOnly
+                  ? isDark
+                    ? 'rgba(255,255,255,0.08)'
+                    : '#FFFFFF'
+                  : isDark
+                    ? 'rgba(255,255,255,0.1)'
+                    : 'rgba(0,0,0,0.05)',
               },
+              manageOnly &&
+                pressed && {
+                  transform: [{ translateX: 1 }, { translateY: 1 }],
+                },
             ]}>
-            <IconSymbol name="pencil" size={16} color={isDark ? '#FAFAFA' : '#000000'} />
+            <IconSymbol name="pencil" size={13} color={isDark ? '#FAFAFA' : '#000000'} />
           </Pressable>
         ) : null}
         {onDeleteCatalogGroup ? (
@@ -771,14 +1019,30 @@ function GroupSectionBlock({
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onDeleteCatalogGroup(section.groupKey, section.title);
             }}
-            style={[
-              styles.customGroupHeaderIconBtn,
+            style={({ pressed }) => [
+              manageOnly ? styles.customGroupHeaderIconBtnManage : styles.customGroupHeaderIconBtn,
               {
-                borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                borderColor: manageOnly
+                  ? isDark
+                    ? 'rgba(255,255,255,0.88)'
+                    : '#000000'
+                  : isDark
+                    ? 'rgba(255,255,255,0.28)'
+                    : 'rgba(0,0,0,0.2)',
+                backgroundColor: manageOnly
+                  ? isDark
+                    ? 'rgba(255,255,255,0.08)'
+                    : '#FFFFFF'
+                  : isDark
+                    ? 'rgba(255,255,255,0.1)'
+                    : 'rgba(0,0,0,0.05)',
               },
+              manageOnly &&
+                pressed && {
+                  transform: [{ translateX: 1 }, { translateY: 1 }],
+                },
             ]}>
-            <IconSymbol name="trash" size={16} color={isDark ? '#FAFAFA' : '#000000'} />
+            <IconSymbol name="trash" size={13} color={isDark ? '#FAFAFA' : '#000000'} />
           </Pressable>
         ) : null}
       </View>
@@ -789,9 +1053,15 @@ function GroupSectionBlock({
       <CatalogSectionHeader
         title={section.title}
         ink={editorial.ink}
+        manageOnly={manageOnly}
         trailing={groupHeaderTrailing}
       />
-      <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
+      <View
+        style={[
+          styles.listShell,
+          manageOnly && styles.listShellManage,
+          { borderTopColor: editorial.line },
+        ]}>
         {section.items.length > 0
           ? renderRows(
             section.items,
@@ -970,7 +1240,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   sectionBlockFollows: {
-    marginTop: 28,
+    marginTop: 20,
   },
   sectionHeader: {
     marginBottom: 10,
@@ -1002,15 +1272,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  customGroupHeaderIconBtnManage: {
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
+  sectionTitleManage: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
   sectionSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
-    lineHeight: 17,
+    lineHeight: 15,
     letterSpacing: -0.1,
   },
   listShell: {
@@ -1018,9 +1302,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingBottom: 2,
   },
+  listShellManage: {
+    /** 시안 `border-t border-black` (1px) */
+    borderTopWidth: 1,
+    paddingBottom: 0,
+  },
   catalogRowWrap: {
     borderBottomWidth: 1,
     paddingBottom: 6,
+  },
+  catalogRowWrapManage: {
+    /** 시안 `border-b border-black` + `py-md` */
+    borderBottomWidth: 1,
+    paddingBottom: 0,
   },
   mealSlotPanel: {
     marginTop: -2,
@@ -1042,6 +1336,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 0,
   },
+  catalogRowManage: {
+    paddingVertical: 0,
+  },
   catalogRowMainHit: {
     flex: 1,
     flexDirection: 'row',
@@ -1050,11 +1347,37 @@ const styles = StyleSheet.create({
     minWidth: 0,
     paddingVertical: 10,
   },
+  catalogRowMainHitManage: {
+    paddingVertical: 10,
+    gap: 10,
+  },
+  catalogIconBoxShell: {
+    position: 'relative',
+  },
+  catalogIconBoxShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderRadius: 0,
+  },
+  catalogIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 0,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+    overflow: 'hidden',
+  },
   catalogRowActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingLeft: 2,
+  },
+  catalogRowActionsManage: {
+    gap: 8,
+    paddingLeft: 4,
   },
   catalogSettingsBtn: {
     minWidth: 32,
@@ -1065,9 +1388,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
+  brutalBtnShell: {
+    position: 'relative',
+  },
+  brutalBtnShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderRadius: 0,
+  },
+  catalogSettingsBtnManage: {
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   catalogAddHit: {
-    width: 36,
-    height: 36,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1077,39 +1418,53 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   catalogRowLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     letterSpacing: -0.3,
   },
+  catalogRowLabelManage: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    lineHeight: 17,
+  },
   catalogRowSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
     letterSpacing: -0.1,
-    lineHeight: 16,
+    lineHeight: 14,
+  },
+  catalogRowSubtitleManage: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    lineHeight: 13,
+    marginTop: 1,
   },
   catalogMedicineBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyWrap: {
-    paddingVertical: 28,
+    paddingVertical: 24,
     paddingHorizontal: 8,
-    gap: 8,
+    gap: 6,
   },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: -0.2,
     textAlign: 'center',
   },
   emptyHint: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: 17,
     textAlign: 'center',
     maxWidth: 320,
     alignSelf: 'center',

@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
@@ -18,58 +18,77 @@ const TABS: TabDef[] = [
   { key: 'fixed', label: '고정 루틴' },
 ];
 
+const SHADOW_SM = 2;
+
 type Props = {
   tab: PriorityCatalogPageTab;
   onSelectTab: (tab: PriorityCatalogPageTab) => void;
   c: DayPlanPalette;
   isDark: boolean;
-  /** 상위 보기(목록·시간대·타임라인) 아래 하위 탭 */
+  /** @deprecated 부착 세그먼트로 통일 — 무시됨 */
   compact?: boolean;
 };
 
-/** 루틴 탭 — 담기 목록 / 고정 루틴 */
+/** 나만의 루틴 탭 — 루틴 목록과 동일 톤의 부착 세그먼트 */
 export function PriorityCatalogPageTabs({
   tab,
   onSelectTab,
-  c,
+  c: _c,
   isDark,
-  compact = false,
 }: Props) {
-  const pill = tabPillColors(isDark);
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const border = tone.border;
+  const shadowColor = isDark ? tone.solidShadow : tone.text;
+  const activeBg = tone.primaryContainer;
+  const activeText = tone.primary;
+  const inactiveBg = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const inactiveText = tone.textMuted;
 
   return (
     <View style={styles.root}>
-      {TABS.map((item) => {
+      {TABS.map((item, index) => {
         const active = tab === item.key;
+        const isFirst = index === 0;
         return (
-          <Pressable
-            key={item.key}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
-            accessibilityLabel={item.label}
-            onPress={() => {
-              if (active) return;
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onSelectTab(item.key);
-            }}
-            style={({ pressed }) => [
-              styles.tab,
-              compact && styles.tabCompact,
-              {
-                backgroundColor: active ? pill.activeBg : pill.inactiveBg,
-                borderColor: active ? c.onSurface : c.catBorderIdle,
-              },
-              pressed && !active && { opacity: 0.72 },
-            ]}>
-            <ThemedText
-              style={[
-                compact ? styles.tabLabelCompact : styles.tabLabel,
-                { color: active ? pill.activeText : pill.inactiveText },
-              ]}
-              numberOfLines={1}>
-              {item.label}
-            </ThemedText>
-          </Pressable>
+          <View key={item.key} style={styles.tabShell}>
+            {active ? (
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.tabShadow,
+                  {
+                    backgroundColor: shadowColor,
+                    borderColor: border,
+                    transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
+                  },
+                ]}
+              />
+            ) : null}
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={item.label}
+              onPress={() => {
+                if (active) return;
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onSelectTab(item.key);
+              }}
+              style={({ pressed }) => [
+                styles.tab,
+                !isFirst && styles.tabJoin,
+                {
+                  backgroundColor: active ? activeBg : inactiveBg,
+                  borderColor: border,
+                },
+                pressed && styles.tabPressed,
+              ]}>
+              <ThemedText
+                style={[styles.tabLabel, { color: active ? activeText : inactiveText }]}
+                numberOfLines={1}>
+                {item.label}
+              </ThemedText>
+            </Pressable>
+          </View>
         );
       })}
     </View>
@@ -79,32 +98,37 @@ export function PriorityCatalogPageTabs({
 const styles = StyleSheet.create({
   root: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'stretch',
+    marginRight: SHADOW_SM,
+    marginBottom: SHADOW_SM,
   },
-  tab: {
+  tabShell: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 36,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    position: 'relative',
+  },
+  tabShadow: {
+    ...StyleSheet.absoluteFillObject,
     borderWidth: 2,
     borderRadius: 0,
   },
-  tabCompact: {
-    minHeight: 36,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+  tab: {
+    borderRadius: 0,
     borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    zIndex: 1,
+  },
+  tabJoin: {
+    borderLeftWidth: 0,
+  },
+  tabPressed: {
+    transform: [{ translateY: SHADOW_SM }],
   },
   tabLabel: {
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  tabLabelCompact: {
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: -0.2,
+    letterSpacing: -0.1,
   },
 });

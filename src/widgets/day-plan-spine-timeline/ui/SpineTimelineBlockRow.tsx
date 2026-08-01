@@ -42,25 +42,46 @@ function SettingsButton({
   onPress: () => void;
 }) {
   const primary = isDark ? '#FAFAFA' : PrimaryColor.rgb;
+  const border = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
+  const bg = isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF';
+  const shadow = isDark ? '#9ECFD1' : '#181A2E';
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${label} 상세 설정`}
-      hitSlop={10}
-      onPress={() => {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onPress();
-      }}
-      style={[
-        styles.settingsBtn,
-        {
-          borderColor: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)',
-          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-        },
-      ]}>
-      <IconSymbol name="slider.horizontal.3" size={14} color={primary} />
-    </Pressable>
+    <View style={[styles.settingsBtnShell, { marginRight: 2, marginBottom: 2 }]}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.settingsBtnShadow,
+          {
+            backgroundColor: shadow,
+            borderColor: border,
+            transform: [{ translateX: 2 }, { translateY: 2 }],
+          },
+        ]}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${label} 상세 설정`}
+        hitSlop={10}
+        onPress={() => {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPress();
+        }}
+        style={({ pressed }) => [
+          styles.settingsBtn,
+          {
+            borderColor: border,
+            backgroundColor: pressed
+              ? isDark
+                ? 'rgba(255,255,255,0.16)'
+                : 'rgba(168, 218, 220, 0.35)'
+              : bg,
+          },
+          pressed && { transform: [{ translateX: 1 }, { translateY: 1 }] },
+        ]}>
+        <IconSymbol name="slider.horizontal.3" size={13} color={primary} />
+      </Pressable>
+    </View>
   );
 }
 
@@ -98,14 +119,11 @@ function SpineNode({
   isCurrent: boolean;
   accentColor: string;
 }) {
-  const blockBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)';
   const categoryKey = resolveBlockCategoryKey(block) ?? 'other';
   const iconName = getBlockTimelineIcon(block);
   const shouldPulse = isCurrent && !completed;
   const pulse = useRef(new Animated.Value(1)).current;
-  const iconColor = completed
-    ? palette.muted
-    : resolveCategoryCatalogAccentColor(categoryKey);
+  const iconColor = resolveCategoryCatalogAccentColor(categoryKey);
 
   useEffect(() => {
     if (!shouldPulse) {
@@ -134,12 +152,18 @@ function SpineNode({
     <View
       style={[
         styles.nodeCircle,
-        { backgroundColor: blockBg },
-        completed && styles.nodeDone,
-        shouldPulse && { borderWidth: 2, borderColor: accentColor },
+        {
+          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF',
+          borderColor: shouldPulse ? accentColor : isDark ? palette.line : '#000000',
+          borderWidth: shouldPulse ? 2 : 1,
+        },
       ]}>
-      <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
-        <IconSymbol name={iconName as any} size={14} color={iconColor} />
+      <Animated.View
+        style={[
+          shouldPulse ? { opacity: pulse } : undefined,
+          completed && { opacity: 0.5 },
+        ]}>
+        <IconSymbol name={iconName as any} size={15} color={iconColor} />
       </Animated.View>
     </View>
   );
@@ -448,15 +472,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 6,
   },
-  settingsBtn: {
-    width: COMPLETE_W,
-    height: COMPLETE_W,
-    borderRadius: 0,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
+  settingsBtnShell: {
+    position: 'relative',
     marginTop: 6,
     flexShrink: 0,
+  },
+  settingsBtnShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderRadius: 0,
+  },
+  settingsBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   railCol: {
     width: RAIL_W,
@@ -490,34 +523,31 @@ const styles = StyleSheet.create({
     opacity: 0.35,
   },
   nodeCircle: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nodeDone: {
-    opacity: 0.55,
-  },
   contentCol: {
     flex: 1,
     minWidth: 0,
-    gap: 4,
+    gap: 3,
     paddingTop: 2,
   },
   metaText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
-    lineHeight: 16,
+    lineHeight: 15,
   },
   metaTextLive: {
     fontWeight: '700',
   },
   titleText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: -0.3,
-    lineHeight: 19,
+    lineHeight: 17,
   },
   titleLive: {
     fontWeight: '800',

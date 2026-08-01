@@ -28,11 +28,11 @@ export function PriorityMealSlotAddRoutineRow({
         styles.root,
         {
           borderColor: line,
-          backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
+          backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
         },
         pressed && styles.pressed,
       ]}>
-      <IconSymbol name="plus.circle.fill" size={16} color={ink} />
+      <IconSymbol name="plus.circle.fill" size={14} color={ink} />
       <ThemedText style={[styles.label, { color: ink }]}>{label}</ThemedText>
     </Pressable>
   );
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     opacity: 0.78,
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: -0.2,
   },

@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatHhmmClockKo } from '@entities/day-plan';
 import { saveIncompleteRoutineReminderSettings } from '@features/day-plan-notifications';
-import { getGoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { loadIncompleteRoutineReminder } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -18,11 +18,13 @@ import {
   SnappedTimePickerField,
 } from '@widgets/daily-rhythm-time-field';
 
+import { buildSettingsPalette, settingsChromeStyles as chrome } from '../lib/settingsChrome';
+
 /** 설정 → 알림 → 미완료 일정 알림 */
 export function IncompleteRoutineReminderSettingsPage() {
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
-  const c = getGoalDetailSessionUi(isDark);
+  const p = buildSettingsPalette(isDark);
   const insets = useSafeAreaInsets();
   const surface = useMemo(() => paletteForReminderTimeCard(false), []);
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -91,37 +93,37 @@ export function IncompleteRoutineReminderSettingsPage() {
 
   return (
     <ThemedView
-      style={[styles.screen, { backgroundColor: c.screenBg }]}
-      darkColor={c.screenBg}
-      lightColor={c.screenBg}>
+      style={[styles.screen, { backgroundColor: p.bg }]}
+      darkColor={p.bg}
+      lightColor={p.bg}>
       <View style={[styles.safe, { paddingTop: topInset, paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <View style={[styles.header, { backgroundColor: c.screenBg, borderBottomColor: c.border }]}>
+        <View style={[chrome.header, { backgroundColor: p.bg, borderBottomColor: p.border }]}>
           <Pressable
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.back();
             }}
-            style={styles.headerBtn}
+            style={chrome.headerBtn}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             accessibilityRole="button"
             accessibilityLabel="뒤로가기">
-            <IconSymbol name="chevron.left" size={22} color={c.onSurface} />
+            <IconSymbol name="chevron.left" size={20} color={p.title} />
           </Pressable>
           <ThemedText
-            style={[styles.headerTitle, { color: c.onSurface }]}
-            lightColor={c.onSurface}
-            darkColor={c.onSurface}>
+            style={[chrome.headerTitle, styles.headerTitleCenter, { color: p.title }]}
+            lightColor={p.title}
+            darkColor={p.title}>
             미완료 일정 알림
           </ThemedText>
-          <View style={styles.headerBtn} pointerEvents="none" />
+          <View style={chrome.headerBtn} pointerEvents="none" />
         </View>
 
-        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-          <ThemedText style={[styles.sectionHint, { color: c.muted }]} lightColor={c.muted} darkColor={c.muted}>
+        <ScrollView contentContainerStyle={chrome.container} showsVerticalScrollIndicator={false}>
+          <ThemedText style={[chrome.sectionHint, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
             정해진 시간에 아직 끝내지 못한 일정이 있으면 알려 드려요.
           </ThemedText>
 
-          <View style={[styles.card, { borderColor: surface.cardBorder, backgroundColor: '#ffffff' }]}>
+          <View style={[styles.card, { borderColor: p.border, backgroundColor: p.surface }]}>
             <DailyRhythmStyleAlarmRow
               title="미완료 일정 알림"
               hint="매일 지정한 시각에 미완료 일정 개수를 알려 드려요."
@@ -134,7 +136,12 @@ export function IncompleteRoutineReminderSettingsPage() {
               <View
                 style={[
                   styles.innerCard,
-                  { backgroundColor: surface.cardBg, borderColor: surface.cardBorder },
+                  {
+                    backgroundColor: isDark
+                      ? RetroFlatColors.dark.surfaceAlt
+                      : RetroFlatColors.light.bg,
+                    borderColor: p.border,
+                  },
                 ]}>
                 <SnappedTimePickerField
                   label="알림 시각"
@@ -150,7 +157,7 @@ export function IncompleteRoutineReminderSettingsPage() {
                   palette={surface.timeField}
                   snapStepMinutes={1}
                 />
-                <ThemedText style={[styles.previewLine, { color: surface.timeField.onVariant }]}>
+                <ThemedText style={[styles.previewLine, { color: p.desc }]}>
                   예시 · {formatHhmmClockKo(reminderHhmm)}에 일정 4개가 남아 있으면 「아직 완료하지 못한 일정이 4개 있어요. 확인해 보세요.」
                 </ThemedText>
               </View>
@@ -165,30 +172,22 @@ export function IncompleteRoutineReminderSettingsPage() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingBottom: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  headerTitleCenter: {
+    flex: 1,
+    textAlign: 'center',
   },
-  headerBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
-  container: { padding: 24, gap: 16 },
-  sectionHint: { fontSize: 13, lineHeight: 19 },
   card: {
     borderRadius: 0,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 2,
     paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingVertical: 12,
     gap: 12,
   },
   innerCard: {
     borderRadius: 0,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 2,
     padding: 12,
     gap: 10,
   },
-  previewLine: { fontSize: 12, lineHeight: 18 },
+  previewLine: { fontSize: 11, lineHeight: 16, fontWeight: '500' },
 });

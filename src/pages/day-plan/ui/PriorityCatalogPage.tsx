@@ -133,6 +133,7 @@ export function PriorityCatalogPage() {
                 isDark={isDark}
                 visibleModes={visibleLayoutModes}
                 showLabels
+                attached
               />
             </View>
           ) : null}

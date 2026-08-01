@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Alert,
   Animated,
@@ -54,6 +54,7 @@ import {
   syncRoutineStartNotifications,
 } from '@features/day-plan-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   coerceDayPlanLayoutMode,
@@ -79,8 +80,10 @@ import {
 } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import { ThemedView } from '@shared/ui/themed-view';
-import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
+import {
+  activeIconColorByCategory,
+  categoryAccentColorPastel,
+} from '@widgets/day-plan-priority-order';
 
 import { getPickerCategoryLabel, isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
@@ -146,6 +149,77 @@ function sectionHintText(
 }
 
 const FLOW_MEAL_SLOT_PANEL_HEIGHT = 56;
+const BRUTAL_SHADOW_SM = 2;
+
+/** 시안 `w-10 h-10 border bg-white brutal-shadow-sm` */
+function FlowBrutalActionButton({
+  accessibilityLabel,
+  accessibilityState,
+  disabled,
+  borderColor,
+  backgroundColor,
+  pressedBg,
+  shadowColor,
+  width,
+  minWidth,
+  onPress,
+  children,
+}: {
+  accessibilityLabel: string;
+  accessibilityState?: { selected?: boolean; expanded?: boolean; disabled?: boolean };
+  disabled?: boolean;
+  borderColor: string;
+  backgroundColor: string;
+  pressedBg: string;
+  shadowColor: string;
+  width?: number;
+  minWidth?: number;
+  onPress: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <View
+      style={[
+        styles.brutalBtnShell,
+        { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+      ]}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.brutalBtnShadow,
+          {
+            backgroundColor: shadowColor,
+            borderColor,
+            transform: [{ translateX: BRUTAL_SHADOW_SM }, { translateY: BRUTAL_SHADOW_SM }],
+          },
+        ]}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityState={accessibilityState}
+        disabled={disabled}
+        hitSlop={disabled ? 0 : 8}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.flowBrutalBtn,
+          width != null ? { width } : null,
+          minWidth != null ? { minWidth } : null,
+          {
+            borderColor,
+            backgroundColor: pressed && !disabled ? pressedBg : backgroundColor,
+            opacity: disabled ? 0.55 : 1,
+          },
+          pressed &&
+            !disabled && {
+              transform: [{ translateX: 1 }, { translateY: 1 }],
+            },
+        ]}>
+        {children}
+      </Pressable>
+    </View>
+  );
+}
 
 if (
   Platform.OS === 'android' &&
@@ -161,7 +235,9 @@ type FlowCardProps = {
   ink: string;
   muted: string;
   line: string;
-  iconBoxBg: string;
+  actionBg: string;
+  actionHoverBg: string;
+  shadow: string;
   isFocusStarted: boolean;
   isInTodayPlan: boolean;
   isCompleted: boolean;
@@ -194,7 +270,9 @@ function FlowItemCard({
   ink,
   muted,
   line,
-  iconBoxBg,
+  actionBg,
+  actionHoverBg,
+  shadow,
   isFocusStarted,
   isInTodayPlan,
   isCompleted,
@@ -226,6 +304,8 @@ function FlowItemCard({
   const trackOff = isDark ? '#3f3f46' : '#e5e7eb';
   const shouldPulse = Boolean(isInTodayPlan && isFocusStarted && enabled && !isCompleted);
   const pulse = useRef(new Animated.Value(1)).current;
+  const iconBoxBg = categoryAccentColorPastel(categoryKey);
+  const brutalShadow = shadow;
 
   useEffect(() => {
     if (!shouldPulse) {
@@ -251,18 +331,11 @@ function FlowItemCard({
   }, [shouldPulse, pulse]);
 
   const categoryIconColor = activeIconColorByCategory(categoryKey);
-  const iconColor = shouldPulse
-    ? categoryIconColor
-    : isInTodayPlan && enabled
-      ? isCompleted
-        ? muted
-        : categoryIconColor
-      : muted;
+  const iconColor =
+    isInTodayPlan && enabled ? categoryIconColor : muted;
   const labelColor =
     isInTodayPlan && enabled ? (isCompleted ? muted : ink) : muted;
 
-  const settingsBorder = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.2)';
-  const settingsBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
   const mealSlotIconHighlighted = mealSlots.length > 0 || mealSlotExpanded;
 
   useEffect(() => {
@@ -326,6 +399,17 @@ function FlowItemCard({
 
   const handleToggleStartNotify = () => {
     if (!canStartNotify) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      if (showMealSlotPicker && onToggleMealSlot) {
+        setMealSlotExpanded(true);
+        Alert.alert('시작 알림', '먼저 시간대를 선택한 뒤 알림을 켤 수 있어요.');
+        return;
+      }
+      if (showSpineTimePicker && onChangeSpineTime) {
+        setSpineTimeExpanded(true);
+        Alert.alert('시작 알림', '먼저 시작·종료 시간을 정한 뒤 알림을 켤 수 있어요.');
+        return;
+      }
       Alert.alert('시작 알림', '먼저 루틴 시작 시간을 정해 주세요.');
       return;
     }
@@ -340,10 +424,38 @@ function FlowItemCard({
       ]}>
       <View style={styles.flowRow}>
       <View style={styles.flowRowMain}>
-        <View style={[styles.flowIconBox, { backgroundColor: iconBoxBg }]}>
-          <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
-            <IconSymbol name={icon as any} size={15} color={iconColor} />
-          </Animated.View>
+        <View
+          style={[
+            styles.flowIconBoxShell,
+            { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+          ]}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.flowIconBoxShadow,
+              {
+                backgroundColor: brutalShadow,
+                borderColor: line,
+                transform: [
+                  { translateX: BRUTAL_SHADOW_SM },
+                  { translateY: BRUTAL_SHADOW_SM },
+                ],
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.flowIconBox,
+              { backgroundColor: iconBoxBg, borderColor: line },
+            ]}>
+            <Animated.View
+              style={[
+                shouldPulse ? { opacity: pulse } : undefined,
+                isCompleted && { opacity: 0.5 },
+              ]}>
+              <IconSymbol name={icon as any} size={18} color={iconColor} />
+            </Animated.View>
+          </View>
         </View>
         <View style={styles.flowRowTextCol}>
           <ThemedText
@@ -364,118 +476,86 @@ function FlowItemCard({
         </View>
       </View>
       {showMealSlotPicker && onToggleMealSlot ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{
-            selected: mealSlotIconHighlighted,
-            expanded: mealSlotExpanded,
-          }}
+        <FlowBrutalActionButton
           accessibilityLabel={
             mealSlots.length > 0
               ? `${label} 시간대 ${mealSlots.map((slot) => DAY_MEAL_SLOT_LABEL[slot]).join(', ')}`
               : `${label} 시간대 선택`
           }
-          hitSlop={10}
-          onPress={handleToggleMealSlotExpand}
-          style={({ pressed }) => [
-            styles.flowSlotBtn,
-            {
-              width: mealSlotPickerBtnWidth(mealSlots),
-              borderColor: mealSlotIconHighlighted ? ink : settingsBorder,
-              backgroundColor: mealSlotIconHighlighted
-                ? isDark
-                  ? 'rgba(255,255,255,0.14)'
-                  : 'rgba(0,0,0,0.06)'
-                : settingsBg,
-              opacity: pressed ? 0.72 : 1,
-            },
-          ]}>
+          accessibilityState={{
+            selected: mealSlotIconHighlighted,
+            expanded: mealSlotExpanded,
+          }}
+          borderColor={line}
+          backgroundColor={actionBg}
+          pressedBg={actionHoverBg}
+          shadowColor={brutalShadow}
+          width={Math.max(32, mealSlotPickerBtnWidth(mealSlots))}
+          onPress={handleToggleMealSlotExpand}>
           <Reanimated.View style={mealSlotIconAnimatedStyle}>
             <CatalogRowMealSlotSelectedIcons
               selectedSlots={mealSlots}
               color={mealSlotIconHighlighted ? ink : muted}
               mutedColor={muted}
-              size={14}
-              compactSize={9}
+              size={12}
+              compactSize={8}
             />
           </Reanimated.View>
-        </Pressable>
+        </FlowBrutalActionButton>
       ) : null}
       {showSpineTimePicker && onChangeSpineTime ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{
-            selected: spineTimeIconHighlighted,
-            expanded: spineTimeExpanded,
-          }}
+        <FlowBrutalActionButton
           accessibilityLabel={
             spineStartMinutes != null && spineEndMinutes != null
               ? `${label} 시간 ${formatMinuteOfDayKo(spineStartMinutes)}~${formatMinuteOfDayKo(spineEndMinutes)}`
               : `${label} 시간 선택`
           }
-          hitSlop={10}
-          onPress={handleToggleSpineTimeExpand}
-          style={({ pressed }) => [
-            styles.flowSlotBtn,
-            {
-              borderColor: spineTimeIconHighlighted ? ink : settingsBorder,
-              backgroundColor: spineTimeIconHighlighted
-                ? isDark
-                  ? 'rgba(255,255,255,0.14)'
-                  : 'rgba(0,0,0,0.06)'
-                : settingsBg,
-              opacity: pressed ? 0.72 : 1,
-            },
-          ]}>
+          accessibilityState={{
+            selected: spineTimeIconHighlighted,
+            expanded: spineTimeExpanded,
+          }}
+          borderColor={line}
+          backgroundColor={actionBg}
+          pressedBg={actionHoverBg}
+          shadowColor={brutalShadow}
+          onPress={handleToggleSpineTimeExpand}>
           <Reanimated.View style={spineTimeIconAnimatedStyle}>
             <IconSymbol
               name="clock.fill"
-              size={14}
+              size={13}
               color={spineTimeIconHighlighted ? ink : muted}
             />
           </Reanimated.View>
-        </Pressable>
+        </FlowBrutalActionButton>
       ) : null}
       {showStartNotify && onToggleStartNotify ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ selected: startNotifyEnabled, disabled: !canStartNotify }}
+        <FlowBrutalActionButton
           accessibilityLabel={`${label} 시작 알림 ${startNotifyEnabled ? '켜짐' : '꺼짐'}`}
-          hitSlop={10}
+          accessibilityState={{ selected: startNotifyEnabled }}
+          borderColor={line}
+          backgroundColor={actionBg}
+          pressedBg={actionHoverBg}
+          shadowColor={brutalShadow}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             handleToggleStartNotify();
-          }}
-          style={({ pressed }) => [
-            styles.flowSlotBtn,
-            {
-              borderColor: startNotifyEnabled ? ink : settingsBorder,
-              backgroundColor: startNotifyEnabled
-                ? isDark
-                  ? 'rgba(255,255,255,0.14)'
-                  : 'rgba(0,0,0,0.06)'
-                : settingsBg,
-              opacity: pressed ? 0.72 : canStartNotify ? 1 : 0.45,
-            },
-          ]}>
+          }}>
           <IconSymbol
             name={startNotifyEnabled ? 'bell.fill' : 'bell'}
-            size={14}
-            color={startNotifyEnabled ? ink : muted}
+            size={13}
+            color={startNotifyEnabled ? ink : canStartNotify ? ink : muted}
           />
-        </Pressable>
+        </FlowBrutalActionButton>
       ) : null}
-      <Pressable
-        accessibilityRole="button"
+      <FlowBrutalActionButton
         accessibilityLabel={`${label} 루틴 삭제`}
-        onPress={onDelete}
-        style={({ pressed }) => [
-          styles.rowDeleteBtn,
-          { backgroundColor: iconBoxBg, borderColor: line },
-          pressed && { opacity: 0.72 },
-        ]}>
-        <IconSymbol name="trash" size={14} color={muted} />
-      </Pressable>
+        borderColor={line}
+        backgroundColor={actionBg}
+        pressedBg={actionHoverBg}
+        shadowColor={brutalShadow}
+        onPress={onDelete}>
+        <IconSymbol name="trash" size={13} color={muted} />
+      </FlowBrutalActionButton>
       <Switch
         accessibilityLabel={`${label} ${enabled ? '켜짐' : '꺼짐'}`}
         value={enabled}
@@ -724,7 +804,9 @@ type GroupAccordionProps = {
   muted: string;
   line: string;
   cardBg: string;
-  iconBoxBg: string;
+  actionBg: string;
+  actionHoverBg: string;
+  shadow: string;
   sectionBg: string;
   isFocusStarted: boolean;
   isCategoryInTodayPlan: (categoryKey: string) => boolean;
@@ -767,7 +849,9 @@ function GroupAccordion({
   muted,
   line,
   cardBg,
-  iconBoxBg,
+  actionBg,
+  actionHoverBg,
+  shadow,
   sectionBg,
   isFocusStarted,
   isCategoryInTodayPlan,
@@ -903,7 +987,7 @@ function GroupAccordion({
                 numberOfLines={1}>
                 {setItem.name}
               </ThemedText>
-              <IconSymbol name="pencil" size={11} color={muted} />
+              <IconSymbol name="pencil" size={10} color={muted} />
             </Pressable>
           ) : (
             <ThemedText
@@ -938,14 +1022,12 @@ function GroupAccordion({
           style={({ pressed }) => [
             styles.headerApplyChip,
             {
-              borderColor: isActiveForToday ? ink : line,
+              borderColor: line,
               backgroundColor: isActiveForToday
                 ? isDark
                   ? 'rgba(255,255,255,0.14)'
-                  : 'rgba(0,0,0,0.08)'
-                : isDark
-                  ? 'rgba(255,255,255,0.06)'
-                  : 'rgba(0,0,0,0.03)',
+                  : actionHoverBg
+                : actionBg,
               opacity: disableApplyToggle ? 0.42 : pressed ? 0.88 : 1,
             },
           ]}>
@@ -959,17 +1041,42 @@ function GroupAccordion({
           </ThemedText>
         </Pressable>
         {!isPresetScheduleSet && canDeleteSet ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${setItem.name} 그룹 삭제`}
-            onPress={onDeleteSet}
-            style={({ pressed }) => [
-              styles.headerDeleteBtn,
-              { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' },
-              pressed && { opacity: 0.72 },
+          <View
+            style={[
+              styles.brutalBtnShell,
+              { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
             ]}>
-            <IconSymbol name="trash" size={13} color={muted} />
-          </Pressable>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.brutalBtnShadow,
+                {
+                  backgroundColor: shadow,
+                  borderColor: line,
+                  transform: [
+                    { translateX: BRUTAL_SHADOW_SM },
+                    { translateY: BRUTAL_SHADOW_SM },
+                  ],
+                },
+              ]}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${setItem.name} 그룹 삭제`}
+              onPress={onDeleteSet}
+              style={({ pressed }) => [
+                styles.headerDeleteBtn,
+                {
+                  borderColor: line,
+                  backgroundColor: pressed ? actionHoverBg : actionBg,
+                },
+                pressed && {
+                  transform: [{ translateX: 1 }, { translateY: 1 }],
+                },
+              ]}>
+              <IconSymbol name="trash" size={12} color={muted} />
+            </Pressable>
+          </View>
         ) : null}
         <Pressable
           accessibilityRole="button"
@@ -1021,7 +1128,9 @@ function GroupAccordion({
                       ink={ink}
                       muted={muted}
                       line={line}
-                      iconBoxBg={iconBoxBg}
+                      actionBg={actionBg}
+                      actionHoverBg={actionHoverBg}
+                      shadow={shadow}
                       isFocusStarted={isFocusStarted}
                       isInTodayPlan={isCategoryInTodayPlan(item.categoryKey)}
                       isCompleted={isCategoryCompleted(item.categoryKey)}
@@ -1069,7 +1178,7 @@ function GroupAccordion({
                     styles.addRow,
                     { opacity: pressed ? 0.88 : 1 },
                   ]}>
-                  <IconSymbol name="plus" size={14} color={muted} />
+                  <IconSymbol name="plus" size={12} color={muted} />
                   <ThemedText style={[styles.addRowLabel, { color: muted }]}>새 항목 추가</ThemedText>
                 </Pressable>
               </View>
@@ -1102,8 +1211,6 @@ export function FixedRoutinePage({
   const c = useMemo(() => palette(isDark), [isDark]);
 
   const isEmbedded = embeddedPresetOnly || embeddedCustomOnly;
-  const horizontalPad = isEmbedded ? 20 : 16;
-
   const [catalogTick, setCatalogTick] = useState(0);
   const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
@@ -1111,6 +1218,9 @@ export function FixedRoutinePage({
   const [section, setSection] = useState<FixedRoutineSection>('catalog');
   const [internalLayoutMode, setInternalLayoutMode] = useState<DayPlanLayoutMode>('bag');
   const layoutMode = controlledLayoutMode ?? internalLayoutMode;
+  /** 시안 `px-margin-mobile` 20 */
+  const horizontalPad =
+    isEmbedded || section === 'catalog' || section === 'templates' ? 20 : 16;
   
   const [priorityWindowSheetOpen, setPriorityWindowSheetOpen] = useState(false);
   const [mealSlotScheduleSheetOpen, setMealSlotScheduleSheetOpen] = useState(false);
@@ -1597,13 +1707,29 @@ export function FixedRoutinePage({
 
   const addItemModalTitle = '항목 추가';
 
+  const activeSection = embeddedPresetOnly
+    ? ('scheduled' as const)
+    : embeddedCustomOnly
+      ? ('custom' as const)
+      : section;
+  const isCityPopCatalogSurface =
+    activeSection === 'catalog' || activeSection === 'templates';
+  const useBrutalSurface = isEmbedded || isCityPopCatalogSurface;
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  /** 이전 앱 배경 — warm beige (페이지 배경만 유지) */
   const shellBg = c.bg;
-  const cardBg = c.containerLowest;
-  const iconBoxBg = c.containerLow;
-  const sectionBg = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)';
-  const ink = c.onSurface;
-  const muted = c.onVariant;
-  const line = c.catBorderIdle;
+  const cardBg = useBrutalSurface
+    ? isDark
+      ? tone.surfaceAlt
+      : '#FFFFFF'
+    : c.containerLowest;
+  const actionBg = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const actionHoverBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(168, 218, 220, 0.35)';
+  const shadow = isDark ? tone.solidShadow : tone.text;
+  const sectionBg = isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF';
+  const ink = useBrutalSurface ? tone.text : c.onSurface;
+  const muted = useBrutalSurface ? tone.textMuted : c.onVariant;
+  const line = useBrutalSurface ? tone.border : c.catBorderIdle;
   const dashedBorder = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)';
   const activeSetIdsForLayout =
     activeSetIdsByLayoutMode?.[layoutMode] ?? activeSetIds ?? [];
@@ -1611,11 +1737,6 @@ export function FixedRoutinePage({
     (setItem: FixedFlowSet) => activeSetIdsForLayout.includes(setItem.id),
     [activeSetIdsForLayout],
   );
-  const activeSection = embeddedPresetOnly
-    ? ('scheduled' as const)
-    : embeddedCustomOnly
-      ? ('custom' as const)
-      : section;
   const sectionHint = sectionHintText(activeSection, layoutMode);
 
   const openRoutineTemplateDetail = useCallback(
@@ -1654,7 +1775,7 @@ export function FixedRoutinePage({
           />
         ) : null}
         {!hideLayoutModeHeader || isEmbedded || activeSection === 'templates' ? (
-          activeSection !== 'catalog' ? (
+          activeSection !== 'catalog' && activeSection !== 'templates' ? (
             <ThemedText style={[styles.sectionHint, { color: muted }]}>
               {sectionHint}
             </ThemedText>
@@ -1691,6 +1812,7 @@ export function FixedRoutinePage({
             muted={muted}
             line={line}
             cardBg={cardBg}
+            isDark={isDark}
             onPressTemplate={openRoutineTemplateDetail}
           />
         ) : (
@@ -1752,7 +1874,9 @@ export function FixedRoutinePage({
                   muted={muted}
                   line={line}
                   cardBg={cardBg}
-                  iconBoxBg={iconBoxBg}
+                  actionBg={actionBg}
+                  actionHoverBg={actionHoverBg}
+                  shadow={shadow}
                   sectionBg={sectionBg}
                   isFocusStarted={isFocusStarted}
                   isCategoryInTodayPlan={isCategoryInTodayPlan}
@@ -1819,7 +1943,7 @@ export function FixedRoutinePage({
             ) : null}
 
             {canManageCustomGroups && (isAddingGroup ? (
-              <View style={[styles.addGroupCard, { borderColor: dashedBorder, backgroundColor: iconBoxBg }]}>
+              <View style={[styles.addGroupCard, { borderColor: dashedBorder, backgroundColor: cardBg }]}>
                 <TextInput
                   value={newGroupName}
                   onChangeText={setNewGroupName}
@@ -1941,9 +2065,9 @@ export function FixedRoutinePage({
   }
 
   return (
-    <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
+    <View style={[styles.screen, { backgroundColor: shellBg }]}>
       {pageBody}
-    </ThemedView>
+    </View>
   );
 }
 
@@ -1967,10 +2091,10 @@ const styles = StyleSheet.create({
   scrollKeyboardRoot: { flex: 1 },
   scroll: { flex: 1 },
   sectionHint: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 16,
     fontWeight: '500',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   sectionEmpty: {
     fontSize: 13,
@@ -1991,9 +2115,9 @@ const styles = StyleSheet.create({
   accordionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   renameGroupRow: {
     flex: 1,
@@ -2039,7 +2163,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   accordionTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: -0.28,
   },
@@ -2066,8 +2190,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   headerApplyChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     borderRadius: 0,
     borderWidth: 2,
     flexShrink: 0,
@@ -2078,12 +2202,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.15,
   },
   headerDeleteBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 0,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    zIndex: 1,
   },
   accordionHeaderRight: {
     flexDirection: 'row',
@@ -2104,7 +2230,7 @@ const styles = StyleSheet.create({
   },
   accordionBody: {
     width: '100%',
-    borderTopWidth: 1,
+    borderTopWidth: 2,
     paddingHorizontal: 8,
     paddingTop: 6,
     paddingBottom: 6,
@@ -2170,21 +2296,21 @@ const styles = StyleSheet.create({
   },
   cardList: {
     width: '100%',
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 2,
     overflow: 'hidden',
   },
   flowRowWrap: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingBottom: 6,
+    borderBottomWidth: 1,
+    paddingBottom: 0,
   },
   flowRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 6,
     minHeight: 40,
     paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingVertical: 7,
   },
   flowSpineTimePanel: {
     marginTop: -2,
@@ -2222,21 +2348,50 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   rowDeleteBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
+    width: 30,
+    height: 30,
+    borderRadius: 0,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
+  brutalBtnShell: {
+    position: 'relative',
+  },
+  brutalBtnShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderRadius: 0,
+  },
+  flowBrutalBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  flowIconBoxShell: {
+    position: 'relative',
+  },
+  flowIconBoxShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderRadius: 0,
+  },
   flowIconBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
+    width: 36,
+    height: 36,
+    borderRadius: 0,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    zIndex: 1,
+    overflow: 'hidden',
   },
   flowRowTitle: {
     flexShrink: 1,
@@ -2245,19 +2400,19 @@ const styles = StyleSheet.create({
     letterSpacing: -0.25,
   },
   flowRowTime: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500',
     letterSpacing: -0.2,
   },
   flowSwitch: {
-    transform: [{ scaleX: 0.72 }, { scaleY: 0.78 }],
+    transform: [{ scaleX: 0.68 }, { scaleY: 0.72 }],
   },
   addRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    minHeight: 36,
+    minHeight: 38,
     paddingHorizontal: 8,
     paddingVertical: 10,
   },

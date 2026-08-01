@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { HistoryPeriod } from '../lib/historyPeriodRange';
@@ -9,8 +9,6 @@ import type { HistoryPeriod } from '../lib/historyPeriodRange';
 type Props = {
   period: HistoryPeriod;
   onSelectPeriod: (period: HistoryPeriod) => void;
-  ink: string;
-  muted: string;
   isDark: boolean;
 };
 
@@ -19,39 +17,63 @@ const TABS: { id: HistoryPeriod; label: string }[] = [
   { id: 'month', label: '월간' },
 ];
 
-export function HistoryPeriodTabs({ period, onSelectPeriod, ink, muted, isDark }: Props) {
-  const pill = tabPillColors(isDark);
+const SHADOW_SM = 2;
+
+/** 히스토리 — 루틴 탭과 동일 톤의 부착 세그먼트 */
+export function HistoryPeriodTabs({ period, onSelectPeriod, isDark }: Props) {
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const border = tone.border;
+  const shadowColor = isDark ? tone.solidShadow : tone.text;
+  const activeBg = tone.primaryContainer;
+  const activeText = tone.primary;
+  const inactiveBg = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const inactiveText = tone.textMuted;
 
   return (
     <View style={styles.root}>
-      {TABS.map((tab) => {
+      {TABS.map((tab, index) => {
         const active = period === tab.id;
+        const isFirst = index === 0;
         return (
-          <Pressable
-            key={tab.id}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
-            accessibilityLabel={tab.label}
-            onPress={() => {
-              if (active) return;
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onSelectPeriod(tab.id);
-            }}
-            style={({ pressed }) => [
-              styles.tab,
-              {
-                backgroundColor: active ? pill.activeBg : pill.inactiveBg,
-                borderColor: active ? pill.activeBorder : pill.inactiveBorder,
-              },
-              pressed && !active && styles.pressed,
-            ]}>
-            <ThemedText
-              style={[styles.label, { color: active ? ink : muted }]}
-              lightColor={active ? ink : muted}
-              darkColor={active ? ink : muted}>
-              {tab.label}
-            </ThemedText>
-          </Pressable>
+          <View key={tab.id} style={styles.tabShell}>
+            {active ? (
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.tabShadow,
+                  {
+                    backgroundColor: shadowColor,
+                    borderColor: border,
+                    transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
+                  },
+                ]}
+              />
+            ) : null}
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={tab.label}
+              onPress={() => {
+                if (active) return;
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onSelectPeriod(tab.id);
+              }}
+              style={({ pressed }) => [
+                styles.tab,
+                !isFirst && styles.tabJoin,
+                {
+                  backgroundColor: active ? activeBg : inactiveBg,
+                  borderColor: border,
+                },
+                pressed && styles.tabPressed,
+              ]}>
+              <ThemedText
+                style={[styles.label, { color: active ? activeText : inactiveText }]}
+                numberOfLines={1}>
+                {tab.label}
+              </ThemedText>
+            </Pressable>
+          </View>
         );
       })}
     </View>
@@ -61,22 +83,37 @@ export function HistoryPeriodTabs({ period, onSelectPeriod, ink, muted, isDark }
 const styles = StyleSheet.create({
   root: {
     flexDirection: 'row',
-    gap: 6,
+    alignItems: 'stretch',
+    marginRight: SHADOW_SM,
+    marginBottom: SHADOW_SM,
+  },
+  tabShell: {
+    flex: 1,
+    position: 'relative',
+  },
+  tabShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 2,
+    borderRadius: 0,
   },
   tab: {
-    flex: 1,
-    minHeight: 34,
     borderRadius: 0,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    zIndex: 1,
+  },
+  tabJoin: {
+    borderLeftWidth: 0,
+  },
+  tabPressed: {
+    transform: [{ translateY: SHADOW_SM }],
   },
   label: {
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  pressed: {
-    opacity: 0.88,
+    letterSpacing: -0.1,
   },
 });

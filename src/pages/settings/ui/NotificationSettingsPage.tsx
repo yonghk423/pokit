@@ -5,18 +5,24 @@ import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatHhmmClockKo } from '@entities/day-plan';
-import { getGoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { loadIncompleteRoutineReminder } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
+import {
+  buildSettingsPalette,
+  SettingsRowIcon,
+  SettingsSection,
+  settingsChromeStyles as chrome,
+} from '../lib/settingsChrome';
+
 /** 설정 → 알림 */
 export function NotificationSettingsPage() {
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
-  const c = getGoalDetailSessionUi(isDark);
+  const p = buildSettingsPalette(isDark);
   const insets = useSafeAreaInsets();
   const [incompleteReminderOn, setIncompleteReminderOn] = useState(
     () => loadIncompleteRoutineReminder().enabled,
@@ -42,45 +48,45 @@ export function NotificationSettingsPage() {
 
   return (
     <ThemedView
-      style={[styles.screen, { backgroundColor: c.screenBg }]}
-      darkColor={c.screenBg}
-      lightColor={c.screenBg}>
+      style={[styles.screen, { backgroundColor: p.bg }]}
+      darkColor={p.bg}
+      lightColor={p.bg}>
       <View style={[styles.safe, { paddingTop: topInset, paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <View style={[styles.header, { backgroundColor: c.screenBg, borderBottomColor: c.border }]}>
+        <View style={[chrome.header, { backgroundColor: p.bg, borderBottomColor: p.border }]}>
           <Pressable
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.back();
             }}
-            style={styles.headerBtn}
+            style={chrome.headerBtn}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             accessibilityRole="button"
             accessibilityLabel="뒤로가기">
-            <IconSymbol name="chevron.left" size={22} color={c.onSurface} />
+            <IconSymbol name="chevron.left" size={20} color={p.title} />
           </Pressable>
           <ThemedText
-            style={[styles.headerTitle, { color: c.onSurface }]}
-            lightColor={c.onSurface}
-            darkColor={c.onSurface}>
+            style={[chrome.headerTitle, styles.headerTitleCenter, { color: p.title }]}
+            lightColor={p.title}
+            darkColor={p.title}>
             알림
           </ThemedText>
-          <View style={styles.headerBtn} pointerEvents="none" />
+          <View style={chrome.headerBtn} pointerEvents="none" />
         </View>
 
-        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-          <ThemedText style={[styles.sectionHint, { color: c.muted }]} lightColor={c.muted} darkColor={c.muted}>
+        <ScrollView contentContainerStyle={chrome.container} showsVerticalScrollIndicator={false}>
+          <ThemedText style={[chrome.sectionHint, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
             미완료 일정 알림을 설정해요.
           </ThemedText>
 
-          <View style={[styles.section, { borderColor: c.border }]}>
-            <ThemedText style={[styles.sectionTitle, { color: c.muted }]} lightColor={c.muted} darkColor={c.muted}>
+          <SettingsSection border={p.border} surface={p.surface}>
+            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]} lightColor={p.sectionTitle} darkColor={p.sectionTitle}>
               데이플랜
             </ThemedText>
 
             <Pressable
               style={({ pressed }) => [
-                styles.item,
-                { borderTopColor: c.border },
+                chrome.item,
+                { borderTopColor: p.border },
                 pressed && { opacity: 0.85 },
               ]}
               onPress={() => {
@@ -89,22 +95,28 @@ export function NotificationSettingsPage() {
               }}
               accessibilityRole="button"
               accessibilityLabel="미완료 일정 알림 설정">
-              <View style={styles.itemLeft}>
-                <IconSymbol name="bell.badge.fill" size={20} color={c.muted} />
-                <View style={styles.itemTextWrap}>
-                  <ThemedText style={[styles.itemTitle, { color: c.onSurface }]} lightColor={c.onSurface} darkColor={c.onSurface}>
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon
+                  name="bell.badge.fill"
+                  color={p.icon}
+                  boxBg={p.iconBoxBg}
+                  border={p.border}
+                  shadow={p.shadow}
+                />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
                     미완료 일정 알림
                   </ThemedText>
-                  <ThemedText style={[styles.itemDesc, { color: c.muted }]} lightColor={c.muted} darkColor={c.muted}>
+                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                     {incompleteReminderOn
                       ? `${formatHhmmClockKo(incompleteReminderHhmm)} · 켜짐`
                       : '꺼짐'}
                   </ThemedText>
                 </View>
               </View>
-              <IconSymbol name="chevron.right" size={16} color={c.muted} />
+              <IconSymbol name="chevron.right" size={14} color={p.chevron} />
             </Pressable>
-          </View>
+          </SettingsSection>
         </ScrollView>
       </View>
     </ThemedView>
@@ -114,47 +126,8 @@ export function NotificationSettingsPage() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingBottom: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
-  container: { padding: 24, gap: 20 },
-  sectionHint: { fontSize: 13, lineHeight: 19, marginBottom: 4 },
-  section: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 0,
-    overflow: 'hidden',
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 10,
-  },
-  item: {
-    minHeight: 72,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  itemLeft: {
+  headerTitleCenter: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    textAlign: 'center',
   },
-  itemTextWrap: { flex: 1, gap: 3 },
-  itemTitle: { fontSize: 15, fontWeight: '700' },
-  itemDesc: { fontSize: 12, opacity: 0.85 },
 });

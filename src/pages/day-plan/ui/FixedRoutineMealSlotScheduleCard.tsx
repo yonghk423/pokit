@@ -47,11 +47,11 @@ export function FixedRoutineMealSlotScheduleCard({
           styles.settingsBtn,
           {
             borderColor: line,
-            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF',
           },
           pressed && { opacity: 0.72 },
         ]}>
-        <IconSymbol name="clock" size={14} color={ink} />
+        <IconSymbol name="clock" size={12} color={ink} />
         <ThemedText style={[styles.settingsBtnLabel, { color: ink }]}>설정</ThemedText>
       </Pressable>
     </View>
@@ -75,27 +75,28 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
   summary: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500',
-    lineHeight: 16,
+    lineHeight: 15,
   },
   settingsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderRadius: 0,
     borderWidth: 2,
     flexShrink: 0,
+    backgroundColor: '#FFFFFF',
   },
   settingsBtnLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
 });

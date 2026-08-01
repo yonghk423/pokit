@@ -5,6 +5,7 @@ import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { buildTemplateDemoConfig, resolveCustomFlowTemplateCatalogEntry } from '@entities/day-plan';
+import { CityPopSpacing, RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -15,6 +16,8 @@ import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-ses
 import { palette } from '../lib/dayPlanPalette';
 import { useRoutineTemplateDetailRoute } from '../model/useRoutineTemplateDetailRoute';
 
+const BRUTAL_SHADOW_SM = 2;
+
 export function RoutineTemplateDetailPage() {
   const router = useRouter();
   const { templateKey } = useRoutineTemplateDetailRoute();
@@ -22,6 +25,8 @@ export function RoutineTemplateDetailPage() {
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
   const c = useMemo(() => palette(isDark), [isDark]);
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const shadowColor = isDark ? tone.solidShadow : tone.text;
 
   const entry = useMemo(
     () => (templateKey ? resolveCustomFlowTemplateCatalogEntry(templateKey) : null),
@@ -49,44 +54,135 @@ export function RoutineTemplateDetailPage() {
         ? 59
         : Number(StatusBar.currentHeight) || 24;
   const bottomInset = Math.max(insets.bottom, 16);
-  const cardBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)';
+  const cardBg = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const iconBoxBg = cardBg;
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: c.bg }]} darkColor={c.bg} lightColor={c.bg}>
       <View style={[styles.safe, { paddingTop: topInset }]}>
-        <View style={[styles.header, { borderBottomColor: c.border }]}>
-          <Pressable
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.back();
-            }}
-            style={styles.headerBtn}
-            hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
-            accessibilityRole="button"
-            accessibilityLabel="뒤로가기">
-            <IconSymbol name="chevron.left" size={22} color={c.onSurface} />
-          </Pressable>
+        <View style={[styles.header, { borderBottomColor: tone.border }]}>
+          <View
+            style={[
+              styles.headerBtnShell,
+              { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+            ]}>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.headerBtnShadow,
+                {
+                  backgroundColor: shadowColor,
+                  borderColor: tone.border,
+                  transform: [
+                    { translateX: BRUTAL_SHADOW_SM },
+                    { translateY: BRUTAL_SHADOW_SM },
+                  ],
+                },
+              ]}
+            />
+            <Pressable
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.back();
+              }}
+              style={({ pressed }) => [
+                styles.headerBtn,
+                {
+                  borderColor: tone.border,
+                  backgroundColor: pressed
+                    ? isDark
+                      ? 'rgba(158, 207, 209, 0.22)'
+                      : 'rgba(168, 218, 220, 0.35)'
+                    : cardBg,
+                },
+                pressed && {
+                  transform: [{ translateX: 1 }, { translateY: 1 }],
+                },
+              ]}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="뒤로가기">
+              <IconSymbol name="chevron.left" size={18} color={c.onSurface} />
+            </Pressable>
+          </View>
           <ThemedText style={[styles.headerTitle, { color: c.onSurface }]} numberOfLines={1}>
             루틴 템플릿
           </ThemedText>
-          <View style={styles.headerBtn} pointerEvents="none" />
+          <View style={styles.headerBtnSpacer} pointerEvents="none" />
         </View>
 
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomInset + 24 }]}
           showsVerticalScrollIndicator={false}>
-          <View style={[styles.heroCard, { borderColor: c.border, backgroundColor: cardBg }]}>
-            <View style={[styles.iconBox, { borderColor: c.border }]}>
-              <IconSymbol name={entry.icon} size={22} color={c.onSurface} />
+          <View
+            style={[
+              styles.heroShell,
+              { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+            ]}>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.heroShadow,
+                {
+                  backgroundColor: shadowColor,
+                  borderColor: tone.border,
+                  transform: [
+                    { translateX: BRUTAL_SHADOW_SM },
+                    { translateY: BRUTAL_SHADOW_SM },
+                  ],
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.heroCard,
+                { borderColor: tone.border, backgroundColor: cardBg },
+              ]}>
+              <View
+                style={[
+                  styles.iconBoxShell,
+                  { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+                ]}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.iconBoxShadow,
+                    {
+                      backgroundColor: shadowColor,
+                      borderColor: tone.border,
+                      transform: [
+                        { translateX: BRUTAL_SHADOW_SM },
+                        { translateY: BRUTAL_SHADOW_SM },
+                      ],
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.iconBox,
+                    { borderColor: tone.border, backgroundColor: iconBoxBg },
+                  ]}>
+                  <IconSymbol name={entry.icon} size={20} color={c.onSurface} />
+                </View>
+              </View>
+              <ThemedText style={[styles.title, { color: c.onSurface }]}>{entry.label}</ThemedText>
+              <ThemedText style={[styles.summary, { color: c.onVariant }]}>{entry.summary}</ThemedText>
             </View>
-            <ThemedText style={[styles.title, { color: c.onSurface }]}>{entry.label}</ThemedText>
-            <ThemedText style={[styles.summary, { color: c.onVariant }]}>{entry.summary}</ThemedText>
           </View>
 
-          <ThemedText style={[styles.previewHint, { color: c.onVariant }]}>
-            아래에서 미리 체험해 볼 수 있어요. 저장되지 않는 미리보기예요.
-          </ThemedText>
+          <View
+            style={[
+              styles.hintChip,
+              {
+                borderColor: tone.border,
+                backgroundColor: tone.primaryContainer,
+              },
+            ]}>
+            <ThemedText style={[styles.previewHint, { color: tone.primary }]}>
+              아래에서 미리 체험해 볼 수 있어요. 저장되지 않는 미리보기예요.
+            </ThemedText>
+          </View>
 
           <CustomFlowTemplateSessionBody
             templateKey={entry.key}
@@ -96,8 +192,8 @@ export function RoutineTemplateDetailPage() {
             theme={{
               ink: c.onSurface,
               muted: c.onVariant,
-              line: c.border,
-              surface: c.containerLow,
+              line: tone.border,
+              surface: cardBg,
               accent: PrimaryColor.rgb,
             }}
           />
@@ -114,61 +210,101 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingBottom: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: CityPopSpacing.sm,
+    paddingBottom: 12,
+    borderBottomWidth: RETRO_BORDER_WIDTH,
+  },
+  headerBtnShell: {
+    position: 'relative',
+  },
+  headerBtnShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderRadius: 0,
   },
   headerBtn: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
+    borderWidth: 1,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
+  },
+  headerBtnSpacer: {
+    width: 36 + BRUTAL_SHADOW_SM,
+    height: 36,
   },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     letterSpacing: -0.3,
   },
   scroll: { flex: 1 },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    gap: 12,
+    paddingHorizontal: CityPopSpacing.marginMobile,
+    paddingTop: CityPopSpacing.sm,
+    gap: CityPopSpacing.sm,
+  },
+  heroShell: {
+    position: 'relative',
+  },
+  heroShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: RETRO_BORDER_WIDTH,
+    borderRadius: 0,
   },
   heroCard: {
-    borderWidth: 2,
+    borderWidth: RETRO_BORDER_WIDTH,
     borderRadius: 0,
-    padding: 16,
+    padding: CityPopSpacing.sm,
     alignItems: 'center',
     gap: 10,
+    zIndex: 1,
+  },
+  iconBoxShell: {
+    position: 'relative',
+  },
+  iconBoxShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderRadius: 0,
   },
   iconBox: {
-    width: 48,
-    height: 48,
-    borderWidth: 2,
+    width: 44,
+    height: 44,
+    borderWidth: 1,
     borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   title: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
-    letterSpacing: -0.4,
+    letterSpacing: -0.35,
     textAlign: 'center',
   },
   summary: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
-    textAlign: 'center',
-    letterSpacing: -0.1,
-  },
-  previewHint: {
     fontSize: 13,
     fontWeight: '500',
     lineHeight: 18,
+    textAlign: 'center',
     letterSpacing: -0.1,
+  },
+  hintChip: {
+    borderWidth: RETRO_BORDER_WIDTH,
+    borderRadius: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  previewHint: {
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 17,
+    letterSpacing: -0.1,
+    textAlign: 'center',
   },
 });

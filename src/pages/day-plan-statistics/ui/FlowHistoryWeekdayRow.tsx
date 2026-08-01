@@ -5,7 +5,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { WEEKDAY_LABELS, type WeeklyFlowHistoryRow } from '../lib/buildWeeklyFlowHistory';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 
-const WEEKDAY_DOT_MAX = 20;
+const WEEKDAY_DOT_MAX = 18;
 
 type Props = {
   row: WeeklyFlowHistoryRow;
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     width: WEEKDAY_DOT_MAX,
     height: WEEKDAY_DOT_MAX,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 1.5,
   },
   weekdayLabel: {
     fontSize: 9,
