@@ -14,6 +14,7 @@ import Reanimated, {
 import { blockDurationSec, formatMinuteOfDayKo, getBlockTimelineIcon, resolveBlockCategoryKey, resolveCategoryCatalogAccentColor, resolveDayPlanBlockDisplayTitle, type SpineTimelineRow } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
+import { toPastelColor } from '@shared/lib/ui/toPastelColor';
 import { CompletionRadioButton, COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -77,7 +78,7 @@ function SettingsButton({
                 : 'rgba(168, 218, 220, 0.35)'
               : bg,
           },
-          pressed && { transform: [{ translateX: 1 }, { translateY: 1 }] },
+          pressed && { opacity: 0.92 },
         ]}>
         <IconSymbol name="slider.horizontal.3" size={13} color={primary} />
       </Pressable>
@@ -124,6 +125,7 @@ function SpineNode({
   const shouldPulse = isCurrent && !completed;
   const pulse = useRef(new Animated.Value(1)).current;
   const iconColor = resolveCategoryCatalogAccentColor(categoryKey);
+  const iconBoxBg = toPastelColor(iconColor);
 
   useEffect(() => {
     if (!shouldPulse) {
@@ -153,9 +155,9 @@ function SpineNode({
       style={[
         styles.nodeCircle,
         {
-          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF',
+          backgroundColor: iconBoxBg,
           borderColor: shouldPulse ? accentColor : isDark ? palette.line : '#000000',
-          borderWidth: shouldPulse ? 2 : 1,
+          borderWidth: 2,
         },
       ]}>
       <Animated.View

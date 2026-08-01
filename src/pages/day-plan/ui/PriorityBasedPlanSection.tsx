@@ -170,11 +170,11 @@ type FlipClockPalette = {
 function flipClockPalette(isDark: boolean): FlipClockPalette {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   return {
-    cardBg: '#09090b',
+    cardBg: isDark ? c.surfaceAlt : '#FFFFFF',
     border: c.border,
-    text: '#a1a1aa',
-    ampm: 'rgba(161, 161, 170, 0.8)',
-    hinge: '#000000',
+    text: c.text,
+    ampm: c.textMuted,
+    hinge: isDark ? 'rgba(241, 239, 255, 0.18)' : 'rgba(24, 26, 46, 0.14)',
   };
 }
 
@@ -2734,11 +2734,32 @@ export function PriorityBasedPlanSection({
                 <ThemedText style={[styles.dateActionText, { color: c.onSurface }]}>취소</ThemedText>
               </Pressable>
               <Pressable
-                style={[styles.dateActionBtn, styles.dateActionPrimary]}
+                style={[
+                  styles.dateActionBtn,
+                  styles.dateActionPrimary,
+                  {
+                    backgroundColor: isDark
+                      ? RetroFlatColors.dark.bgMint
+                      : RetroFlatColors.light.primaryContainer,
+                    borderColor: isDark
+                      ? RetroFlatColors.dark.border
+                      : RetroFlatColors.light.border,
+                  },
+                ]}
                 onPress={onConfirmCalendarRange}
                 accessibilityRole="button"
                 accessibilityLabel="선택한 기간 적용">
-                <ThemedText style={[styles.dateActionText, { color: '#fff' }]}>설정 완료</ThemedText>
+                <ThemedText
+                  style={[
+                    styles.dateActionText,
+                    {
+                      color: isDark
+                        ? RetroFlatColors.dark.text
+                        : RetroFlatColors.light.text,
+                    },
+                  ]}>
+                  설정 완료
+                </ThemedText>
               </Pressable>
             </View>
           </View>
@@ -2843,11 +2864,32 @@ export function PriorityBasedPlanSection({
                 <ThemedText style={[styles.dateActionText, { color: c.onSurface }]}>취소</ThemedText>
               </Pressable>
               <Pressable
-                style={[styles.dateActionBtn, styles.dateActionPrimary]}
+                style={[
+                  styles.dateActionBtn,
+                  styles.dateActionPrimary,
+                  {
+                    backgroundColor: isDark
+                      ? RetroFlatColors.dark.bgMint
+                      : RetroFlatColors.light.primaryContainer,
+                    borderColor: isDark
+                      ? RetroFlatColors.dark.border
+                      : RetroFlatColors.light.border,
+                  },
+                ]}
                 onPress={confirmPriorityTimeModal}
                 accessibilityRole="button"
                 accessibilityLabel="시작·종료 시간 적용">
-                <ThemedText style={[styles.dateActionText, { color: '#fff' }]}>설정 완료</ThemedText>
+                <ThemedText
+                  style={[
+                    styles.dateActionText,
+                    {
+                      color: isDark
+                        ? RetroFlatColors.dark.text
+                        : RetroFlatColors.light.text,
+                    },
+                  ]}>
+                  설정 완료
+                </ThemedText>
               </Pressable>
             </View>
           </View>
@@ -3999,7 +4041,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   dateActionPrimary: {
-    backgroundColor: PRIMARY,
+    borderWidth: 2,
   },
   dateActionText: {
     fontSize: 14,

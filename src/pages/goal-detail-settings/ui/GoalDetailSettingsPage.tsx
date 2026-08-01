@@ -14,7 +14,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   deleteCustomFlowCategory,
-  filterDayPlanFlowBlocks,
   formatBlockTimeRange,
   isCustomFlowCategoryKey,
   isDayPlanFlowBlock,
@@ -240,43 +239,20 @@ export function GoalDetailSettingsPage() {
     };
   }, []);
   const blocks = useDayPlanStore((s) => s.blocks);
-  const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
-  const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
-  const isFocusStarted = useDayPlanDraftStore((s) => s.isFocusStarted);
-  const priorityCategoryOrder = useDayPlanDraftStore((s) => s.priorityCategoryOrder);
-  const completedFocusCategoryKeys = useDayPlanDraftStore((s) => s.completedFocusCategoryKeys);
-  const planCompletionDismissedKeys = useDayPlanDraftStore((s) => s.planCompletionDismissedKeys);
+  const activeBlockId = useDayPlanRuntimeStore((s) => s.activeBlockId);
   const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
 
-  const completedCategoryKeysFromPlan = useMemo(() => {
-    const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
-    const doneCategoryKeys = new Set<string>();
-    const flowBlocks = filterDayPlanFlowBlocks(blocks);
-    flowBlocks.forEach((block) => {
-      if (!doneBlockIds.has(block.id)) return;
-      const key =
-        resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category ?? '');
-      if (key) doneCategoryKeys.add(key);
-    });
-    return [...doneCategoryKeys];
-  }, [blocks, completedBlockIds, skippedBlockIds]);
-
+  /** 실제 activity-session 활성 블록만 ‘실행 중’ — 오늘 담기 자동 집중(isFocusStarted)과 구분 */
   const isCategoryRunning = useCallback(
     (key: string) => {
-      if (!isFocusStarted) return false;
-      if (!priorityCategoryOrder.includes(key)) return false;
-      if (completedFocusCategoryKeys.includes(key)) return false;
-      if (planCompletionDismissedKeys.includes(key)) return false;
-      if (completedCategoryKeysFromPlan.includes(key)) return false;
-      return true;
+      if (!activeBlockId) return false;
+      const block = blocks.find((b) => b.id === activeBlockId);
+      if (!block) return false;
+      const blockKey =
+        resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category ?? '');
+      return blockKey === key;
     },
-    [
-      completedCategoryKeysFromPlan,
-      completedFocusCategoryKeys,
-      isFocusStarted,
-      planCompletionDismissedKeys,
-      priorityCategoryOrder,
-    ],
+    [activeBlockId, blocks],
   );
 
   const resolveRenameAccess = useCallback(
@@ -869,6 +845,7 @@ export function GoalDetailSettingsPage() {
         </ScrollView>
         {keyboardOpen ? null : (
           <View
+            pointerEvents="box-none"
             style={[
               styles.footerFixed,
               workNoteUi && styles.footerFixedCompact,
@@ -876,44 +853,51 @@ export function GoalDetailSettingsPage() {
                 paddingBottom: Math.max(insets.bottom, workNoteUi ? 4 : 6),
               },
             ]}>
-            <View style={styles.footerCompleteShell}>
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.footerCompleteShadow,
-                  {
-                    backgroundColor: RetroFlatColors.light.text,
-                    borderColor: RetroFlatColors.light.border,
-                  },
-                ]}
-              />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={waterDetailUi ? '루틴 설정 완료' : '설정 완료'}
-                onPress={() => {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  handleCompleteAndStart();
-                }}
-                style={({ pressed }) => [
-                  styles.footerCompleteCircle,
-                  {
-                    backgroundColor: pressed
-                      ? '#8EC8CA'
-                      : RetroFlatColors.light.primaryContainer,
-                    borderColor: RetroFlatColors.light.border,
-                  },
-                  pressed && {
-                    transform: [{ translateX: 2 }, { translateY: 2 }],
-                  },
-                ]}>
-                <IconSymbol
-                  name="checkmark"
-                  size={16}
-                  weight="bold"
-                  color={RetroFlatColors.light.text}
-                />
-              </Pressable>
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={waterDetailUi ? '루틴 설정 완료' : '설정 완료'}
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                handleCompleteAndStart();
+              }}
+              style={({ pressed }) => [
+                styles.footerCompleteShell,
+                pressed && { opacity: 0.92 },
+              ]}>
+              {({ pressed }) => (
+                <>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.footerCompleteShadow,
+                      {
+                        backgroundColor: RetroFlatColors.light.text,
+                        borderColor: RetroFlatColors.light.border,
+                      },
+                    ]}
+                  />
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.footerCompleteCircle,
+                      {
+                        backgroundColor: pressed
+                          ? '#8EC8CA'
+                          : RetroFlatColors.light.primaryContainer,
+                        borderColor: RetroFlatColors.light.border,
+                      },
+                    ]}>
+                    <IconSymbol
+                      name="checkmark"
+                      size={16}
+                      weight="bold"
+                      color={RetroFlatColors.light.text}
+                    />
+                  </View>
+                </>
+              )}
+            </Pressable>
           </View>
         )}
       </View>
@@ -1010,14 +994,21 @@ const styles = StyleSheet.create({
   /** 하단 고정 완료 — 민트 CTA + solid shadow */
   footerCompleteShell: {
     position: 'relative',
+    width: 44,
+    height: 44,
     marginRight: 3,
     marginBottom: 3,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
   },
   footerCompleteShadow: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    width: 40,
+    height: 40,
     borderRadius: 0,
     borderWidth: RETRO_BORDER_WIDTH,
-    transform: [{ translateX: 3 }, { translateY: 3 }],
   },
   footerCompleteCircle: {
     width: 40,
@@ -1026,11 +1017,12 @@ const styles = StyleSheet.create({
     borderWidth: RETRO_BORDER_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1,
   },
   footerFixed: {
     alignItems: 'center',
     paddingTop: 4,
+    zIndex: 30,
+    elevation: 30,
   },
   footerFixedCompact: {
     paddingTop: 0,

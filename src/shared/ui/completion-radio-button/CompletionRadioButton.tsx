@@ -9,11 +9,14 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { RetroFlatColors } from '@shared/config/retroFlat';
+
 export const COMPLETION_TOGGLE_ANIM_MS = 280;
 
-/** 라이트 모드 완료 채움 — 검정 사각/원 통일 */
-export const COMPLETION_CHECKED_COLOR_LIGHT = '#000000';
-export const COMPLETION_CHECKED_COLOR_DARK = '#FAFAFA';
+/** 라이트 모드 완료 채움 — Soft Mint (`primaryContainer`) */
+export const COMPLETION_CHECKED_COLOR_LIGHT = RetroFlatColors.light.primaryContainer;
+/** 다크 모드 완료 채움 — Soft Mint (`primaryContainer`) */
+export const COMPLETION_CHECKED_COLOR_DARK = RetroFlatColors.dark.primaryContainer;
 
 const CIRCLE_OUTER_SIZE = 30;
 const SQUARE_OUTER_SIZE = 20;
@@ -27,6 +30,29 @@ const FILL_IN_MS = 220;
 const FILL_OUT_MS = 160;
 const PRESS_IN_MS = 90;
 const PRESS_OUT_MS = 140;
+
+/** 완료 채움 위 체크 아이콘 색 — 밝은 민트면 검정, 어두운 채움이면 흰색 */
+export function completionCheckIconColor(fill: string): string {
+  const raw = fill.trim().toLowerCase();
+  const hex = /^#?([0-9a-f]{6})$/i.exec(raw);
+  if (hex) {
+    const n = hex[1]!;
+    const r = parseInt(n.slice(0, 2), 16);
+    const g = parseInt(n.slice(2, 4), 16);
+    const b = parseInt(n.slice(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.55 ? '#09090b' : '#FFFFFF';
+  }
+  const rgb = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/.exec(raw);
+  if (rgb) {
+    const luminance =
+      (0.299 * Number(rgb[1]) + 0.587 * Number(rgb[2]) + 0.114 * Number(rgb[3])) / 255;
+    return luminance > 0.55 ? '#09090b' : '#FFFFFF';
+  }
+  const u = fill.toUpperCase();
+  if (u === '#FAFAFA' || u === '#FFFFFF' || u === '#A8DADC') return '#09090b';
+  return '#FFFFFF';
+}
 
 type Props = {
   checked: boolean;
@@ -55,10 +81,7 @@ export function CompletionRadioButton({
   const fillScale = useSharedValue(checked ? 1 : 0);
   const prevCheckedRef = useRef(checked);
 
-  const checkIconColor =
-    checkedColor.toUpperCase() === '#FAFAFA' || checkedColor.toUpperCase() === '#FFFFFF'
-      ? '#09090b'
-      : '#FFFFFF';
+  const checkIconColor = completionCheckIconColor(checkedColor);
   const borderIdle =
     uncheckedColor ??
     (isDark ? 'rgba(255,255,255,0.42)' : '#9CA3AF');

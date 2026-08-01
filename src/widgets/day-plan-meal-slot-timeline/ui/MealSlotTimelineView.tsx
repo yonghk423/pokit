@@ -334,7 +334,7 @@ function CheckboxRowContent({
   pressed?: boolean;
   onToggleComplete?: () => void;
 }) {
-  const pressedLabelColor = isDark ? RetroFlatColors.dark.primary : COMPLETION_CHECKED_COLOR_LIGHT;
+  const pressedLabelColor = isDark ? RetroFlatColors.dark.primary : RetroFlatColors.light.text;
 
   return (
     <>

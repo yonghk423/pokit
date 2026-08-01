@@ -1,25 +1,18 @@
 import * as Haptics from 'expo-haptics';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View, Platform } from 'react-native';
+import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import {
-  isSystemCatalogGroupKey,
-  SYSTEM_CATALOG_GROUP_KEYS,
-} from '@entities/day-plan';
+import { isSystemCatalogGroupKey, SYSTEM_CATALOG_GROUP_KEYS } from '@entities/day-plan';
+import { RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   createCustomCatalogGroup,
   listCustomCatalogGroups,
   resolveSystemCatalogGroupLabel,
   type CustomCatalogGroup,
 } from '@shared/lib/storage';
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
-import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-
-import { Colors } from '@shared/config/theme';
-
-import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 
 const GROUP_NAME_MAX = 24;
 
@@ -36,8 +29,7 @@ type Props = {
 export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const c = useMemo(() => goalDetailSettingsPalette(isDark), [isDark]);
-  const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
 
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>(() =>
     listCustomCatalogGroups(),
@@ -53,9 +45,6 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
     const custom: GroupOption[] = customGroups.map((g) => ({ key: g.key, label: g.label }));
     return [...sys, ...custom];
   }, [customGroups]);
-
-  const inputBorder = isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)';
-  const inputBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
 
   const handleSubmitNewGroup = () => {
     const label = newGroupLabel.trim().slice(0, GROUP_NAME_MAX);
@@ -79,8 +68,8 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
   return (
     <View style={styles.shell}>
       <View style={styles.labelRow}>
-        <ThemedText style={[styles.fieldLabel, { color: c.onVariant }]}>상위 카테고리</ThemedText>
-        <ThemedText style={[styles.currentTag, { color: c.onSurface }]} numberOfLines={1}>
+        <ThemedText style={[styles.fieldLabel, { color: tone.textMuted }]}>상위 카테고리</ThemedText>
+        <ThemedText style={[styles.currentTag, { color: tone.text }]} numberOfLines={1}>
           {currentLabel}
         </ThemedText>
       </View>
@@ -88,18 +77,6 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
       <View style={styles.chipsWrap}>
         {groupOptions.map((g) => {
           const selected = groupKey === g.key;
-          const chipBg = selected
-            ? isDark
-              ? 'rgba(255,255,255,0.14)'
-              : 'rgba(0,0,0,0.07)'
-            : isDark
-              ? 'rgba(255,255,255,0.04)'
-              : 'rgba(0,0,0,0.02)';
-          const chipBorder = selected
-            ? isDark
-              ? 'rgba(255,255,255,0.4)'
-              : Colors.primarySolid
-            : inputBorder;
           return (
             <Pressable
               key={g.key}
@@ -110,12 +87,28 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
                 void Haptics.selectionAsync();
                 onChangeGroupKey(g.key);
               }}
-              style={[styles.chip, { borderColor: chipBorder, backgroundColor: chipBg }]}>
-              {selected ? <IconSymbol name="checkmark" size={11} color={c.onSurface} /> : null}
+              style={({ pressed }) => [
+                styles.chip,
+                {
+                  borderColor: tone.border,
+                  backgroundColor: selected
+                    ? tone.primaryContainer
+                    : isDark
+                      ? tone.surfaceAlt
+                      : '#FFFFFF',
+                },
+                pressed && { opacity: 0.92 },
+              ]}>
+              {selected ? (
+                <IconSymbol name="checkmark" size={11} color={tone.text} weight="bold" />
+              ) : null}
               <ThemedText
                 style={[
                   styles.chipText,
-                  { color: selected ? c.onSurface : c.onVariant, fontWeight: selected ? '700' : '500' },
+                  {
+                    color: selected ? tone.text : tone.textMuted,
+                    fontWeight: selected ? '800' : '600',
+                  },
                 ]}
                 numberOfLines={1}>
                 {g.label}
@@ -132,13 +125,19 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setIsAddingGroup(true);
             }}
-            style={[
+            style={({ pressed }) => [
               styles.chip,
-              styles.chipDashed,
-              { borderColor: inputBorder, backgroundColor: 'transparent' },
+              {
+                borderColor: tone.border,
+                backgroundColor: isDark ? tone.surfaceAlt : '#FFFFFF',
+                borderStyle: 'dashed',
+              },
+              pressed && { opacity: 0.92 },
             ]}>
-            <IconSymbol name="plus" size={11} color={c.onVariant} />
-            <ThemedText style={[styles.chipText, { color: c.onVariant }]}>새 그룹 만들기</ThemedText>
+            <IconSymbol name="plus" size={11} color={tone.text} weight="bold" />
+            <ThemedText style={[styles.chipText, { color: tone.text, fontWeight: '700' }]}>
+              새 그룹 만들기
+            </ThemedText>
           </Pressable>
         ) : null}
       </View>
@@ -150,13 +149,18 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
             value={newGroupLabel}
             onChangeText={(v) => setNewGroupLabel(v.slice(0, GROUP_NAME_MAX))}
             placeholder="새 그룹 이름"
-            placeholderTextColor={c.outline}
+            placeholderTextColor={tone.textMuted}
             maxLength={GROUP_NAME_MAX}
             returnKeyType="done"
             onSubmitEditing={handleSubmitNewGroup}
             style={[
               styles.input,
-              { flex: 1, color: c.onSurface, backgroundColor: inputBg, borderColor: inputBorder },
+              {
+                flex: 1,
+                color: tone.text,
+                backgroundColor: isDark ? tone.surfaceAlt : '#FFFFFF',
+                borderColor: tone.border,
+              },
             ]}
           />
           <Pressable
@@ -167,14 +171,12 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
             style={({ pressed }) => [
               styles.newGroupBtn,
               {
-                backgroundColor: tabColors.activeBg,
-                borderColor: tabColors.activeBorder,
-                opacity: newGroupLabel.trim().length === 0 ? 0.45 : pressed ? 0.88 : 1,
+                backgroundColor: tone.primaryContainer,
+                borderColor: tone.border,
+                opacity: newGroupLabel.trim().length === 0 ? 0.45 : pressed ? 0.92 : 1,
               },
             ]}>
-            <ThemedText style={[styles.newGroupBtnText, { color: tabColors.activeIcon }]}>
-              추가
-            </ThemedText>
+            <ThemedText style={[styles.newGroupBtnText, { color: tone.text }]}>추가</ThemedText>
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -184,8 +186,14 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
               setNewGroupLabel('');
             }}
             hitSlop={8}
-            style={styles.cancelBtn}>
-            <IconSymbol name="xmark" size={12} color={c.onVariant} />
+            style={[
+              styles.cancelBtn,
+              {
+                borderColor: tone.border,
+                backgroundColor: isDark ? tone.surfaceAlt : '#FFFFFF',
+              },
+            ]}>
+            <IconSymbol name="xmark" size={12} color={tone.text} />
           </Pressable>
         </View>
       ) : null}
@@ -194,7 +202,7 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
 }
 
 const styles = StyleSheet.create({
-  shell: { gap: 8 },
+  shell: { gap: 10 },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -206,19 +214,16 @@ const styles = StyleSheet.create({
   chipsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
     borderRadius: 0,
-    borderWidth: 2,
-  },
-  chipDashed: {
-    borderStyle: 'dashed',
+    borderWidth: RETRO_BORDER_WIDTH,
   },
   chipText: {
     fontSize: 12,
@@ -230,10 +235,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   input: {
-    borderWidth: 2,
+    borderWidth: RETRO_BORDER_WIDTH,
     borderRadius: 0,
     paddingHorizontal: 12,
-    height: 40,
+    height: 42,
     fontSize: 14,
     fontWeight: '600',
     paddingVertical: 0,
@@ -245,16 +250,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 11,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: RETRO_BORDER_WIDTH,
   },
   newGroupBtnText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   cancelBtn: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: RETRO_BORDER_WIDTH,
+    borderRadius: 0,
   },
 });

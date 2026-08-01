@@ -20,17 +20,18 @@ export default function TabLayout() {
   return (
     <DayPlanTabBridgeProvider>
       <Tabs
-          initialRouteName="day-plan"
-          screenOptions={({ route }) => ({
-            headerShown: false,
-            tabBarButton: HapticTab,
-            tabBarActiveTintColor: isDark ? '#FAFAFA' : '#000000',
-            tabBarInactiveTintColor: isDark ? '#8E8E93' : '#999999',
-            tabBarIcon: ({ color }) => {
-              const icon = TAB_ICONS[route.name] ?? 'circle';
-              return <IconSymbol name={icon as any} size={24} color={color} />;
-            },
-          })}>
+        initialRouteName="day-plan"
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          freezeOnBlur: true,
+          tabBarButton: HapticTab,
+          tabBarActiveTintColor: isDark ? '#FAFAFA' : '#000000',
+          tabBarInactiveTintColor: isDark ? '#8E8E93' : '#999999',
+          tabBarIcon: ({ color }) => {
+            const icon = TAB_ICONS[route.name] ?? 'circle';
+            return <IconSymbol name={icon as any} size={24} color={color} />;
+          },
+        })}>
           <Tabs.Screen name="index" options={{ href: null }} />
           <Tabs.Screen name="day-plan" options={{ title: '오늘' }} />
           <Tabs.Screen name="fixed-routines" options={{ title: '루틴' }} />

@@ -1,4 +1,6 @@
+import { useIsFocused } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import {
   isStoryRoutinePayload,
@@ -15,6 +17,7 @@ import { PokitStoryWebViewProgressLoader } from './PokitStoryWebViewProgressLoad
 
 /** POKIT 공식 웹사이트(pokitstory.com) WebView 탭 + 루틴 추가 브릿지 */
 export function PokitStoryPage() {
+  const isFocused = useIsFocused();
   const [sheetArticle, setSheetArticle] = useState<StoryRoutineArticle | null>(null);
 
   const handleWebMessage = useCallback((data: unknown) => {
@@ -29,19 +32,29 @@ export function PokitStoryPage() {
 
   return (
     <>
-      <WebViewScreen
-        uri={POKIT_STORY_URL}
-        allowedHostSuffixes={POKIT_STORY_ALLOWED_HOST_SUFFIXES}
-        onMessage={handleWebMessage}
-        renderInitialLoading={(progress) => (
-          <PokitStoryWebViewProgressLoader progress={progress} />
-        )}
-      />
+      {isFocused ? (
+        <WebViewScreen
+          uri={POKIT_STORY_URL}
+          allowedHostSuffixes={POKIT_STORY_ALLOWED_HOST_SUFFIXES}
+          onMessage={handleWebMessage}
+          renderInitialLoading={(progress) => (
+            <PokitStoryWebViewProgressLoader progress={progress} />
+          )}
+        />
+      ) : (
+        <View style={styles.placeholder} collapsable={false} />
+      )}
       <StoryRoutineImportSheet
-        visible={sheetArticle !== null}
+        visible={isFocused && sheetArticle !== null}
         article={sheetArticle}
         onClose={handleSheetClose}
       />
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  placeholder: {
+    flex: 1,
+  },
+});

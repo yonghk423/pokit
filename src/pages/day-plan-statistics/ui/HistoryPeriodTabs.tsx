@@ -65,7 +65,7 @@ export function HistoryPeriodTabs({ period, onSelectPeriod, isDark }: Props) {
                   backgroundColor: active ? activeBg : inactiveBg,
                   borderColor: border,
                 },
-                pressed && styles.tabPressed,
+                pressed && { opacity: 0.92 },
               ]}>
               <ThemedText
                 style={[styles.label, { color: active ? activeText : inactiveText }]}
@@ -107,9 +107,6 @@ const styles = StyleSheet.create({
   },
   tabJoin: {
     borderLeftWidth: 0,
-  },
-  tabPressed: {
-    transform: [{ translateY: SHADOW_SM }],
   },
   label: {
     fontSize: 12,

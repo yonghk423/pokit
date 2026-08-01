@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import {
-  filterDayPlanFlowBlocks,
   isCustomFlowCategoryKey,
   normalizeHealthIntakeDetailConfig,
   normalizeMedicineDetailConfig,
@@ -10,6 +9,7 @@ import {
   resolveCategoryKeyFromLabel,
   resolveCustomFlowTemplateKey,
   useDayPlanDraftStore,
+  useDayPlanRuntimeStore,
   useDayPlanStore,
   categoryReminderLabelKo,
 } from '@entities/day-plan';
@@ -92,12 +92,7 @@ export function RoutineInlineSettingsPanel({
   const [groupKey, setGroupKey] = useState(() => resolveCatalogItemGroupKey(key));
   const medicineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const blocks = useDayPlanStore((s) => s.blocks);
-  const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
-  const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
-  const isFocusStarted = useDayPlanDraftStore((s) => s.isFocusStarted);
-  const priorityCategoryOrder = useDayPlanDraftStore((s) => s.priorityCategoryOrder);
-  const completedFocusCategoryKeys = useDayPlanDraftStore((s) => s.completedFocusCategoryKeys);
-  const planCompletionDismissedKeys = useDayPlanDraftStore((s) => s.planCompletionDismissedKeys);
+  const activeBlockId = useDayPlanRuntimeStore((s) => s.activeBlockId);
 
   useEffect(() => {
     setDataConfig(loadGoalDetailCategoryConfig(key) ?? {});
@@ -115,34 +110,17 @@ export function RoutineInlineSettingsPanel({
     () => resolveGoalDetailModuleForTarget(key, dataConfig),
     [dataConfig, key],
   );
-  const completedCategoryKeysFromPlan = useMemo(() => {
-    const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
-    const doneCategoryKeys = new Set<string>();
-    const flowBlocks = filterDayPlanFlowBlocks(blocks);
-    flowBlocks.forEach((block) => {
-      if (!doneBlockIds.has(block.id)) return;
-      const category =
-        resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category ?? '');
-      if (category) doneCategoryKeys.add(category);
-    });
-    return [...doneCategoryKeys];
-  }, [blocks, completedBlockIds, skippedBlockIds]);
+  /** 실제 activity-session 활성 블록만 ‘실행 중’ — 오늘 담기 자동 집중(isFocusStarted)과 구분 */
   const isCategoryRunning = useCallback(
     (targetKey: string) => {
-      if (!isFocusStarted) return false;
-      if (!priorityCategoryOrder.includes(targetKey)) return false;
-      if (completedFocusCategoryKeys.includes(targetKey)) return false;
-      if (planCompletionDismissedKeys.includes(targetKey)) return false;
-      if (completedCategoryKeysFromPlan.includes(targetKey)) return false;
-      return true;
+      if (!activeBlockId) return false;
+      const block = blocks.find((b) => b.id === activeBlockId);
+      if (!block) return false;
+      const blockKey =
+        resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category ?? '');
+      return blockKey === targetKey;
     },
-    [
-      completedCategoryKeysFromPlan,
-      completedFocusCategoryKeys,
-      isFocusStarted,
-      planCompletionDismissedKeys,
-      priorityCategoryOrder,
-    ],
+    [activeBlockId, blocks],
   );
   const Settings = module.Settings;
   const title =

@@ -44,6 +44,7 @@ function sheetPalette(isDark: boolean) {
     border: c.border,
     primary: c.primary,
     primaryOn: c.primaryOn,
+    primaryContainer: c.primaryContainer,
     chipBg: isDark ? c.surfaceContainer : c.primaryContainer,
   };
 }
@@ -111,7 +112,12 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
           ]}>
           {done ? (
             <View style={styles.successContainer}>
-              <View style={[styles.successIconWrap, retroBorderFor(isDark), { backgroundColor: palette.surface }]}>
+              <View
+                style={[
+                  styles.successIconWrap,
+                  retroBorderFor(isDark),
+                  { backgroundColor: palette.primaryContainer },
+                ]}>
                 <IconSymbol name="checkmark" size={22} color={palette.ink} />
               </View>
               <ThemedText style={[styles.successTitle, { color: palette.ink }]}>

@@ -14,6 +14,7 @@ import {
   useDayPlanTodoStore,
   type DayPlanTodoItem,
 } from '@entities/day-plan';
+import { completionCheckIconColor } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -47,6 +48,7 @@ function DoneCheckbox({
   onPress: () => void;
   accessibilityLabel: string;
 }) {
+  const checkMarkColor = completionCheckIconColor(ui.checkFill);
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -62,7 +64,7 @@ function DoneCheckbox({
         },
       ]}>
       {checked ? (
-        <Text style={styles.checkMark} accessibilityElementsHidden>
+        <Text style={[styles.checkMark, { color: checkMarkColor }]} accessibilityElementsHidden>
           ✓
         </Text>
       ) : null}
@@ -504,7 +506,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   checkMark: {
-    color: '#FAFAFA',
     fontSize: 13,
     fontWeight: '800',
     lineHeight: 15,

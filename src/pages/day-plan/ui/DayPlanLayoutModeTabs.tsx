@@ -125,7 +125,7 @@ export function DayPlanLayoutModeTabs({
                     backgroundColor: active ? activeBg : inactiveBg,
                     borderColor: border,
                   },
-                  pressed && styles.attachedPressed,
+                  pressed && { opacity: 0.92 },
                 ]}>
                 <IconSymbol
                   name={item.icon as 'sun.horizon.fill'}
@@ -274,9 +274,6 @@ const styles = StyleSheet.create({
   },
   attachedJoin: {
     borderLeftWidth: 0,
-  },
-  attachedPressed: {
-    transform: [{ translateY: SHADOW_SM }],
   },
   attachedLabel: {
     fontSize: 12,

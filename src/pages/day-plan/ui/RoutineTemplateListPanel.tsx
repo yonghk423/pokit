@@ -81,9 +81,7 @@ export function RoutineTemplateListPanel({
                   borderColor: line,
                   backgroundColor: pressed ? pressedBg : rowFace,
                 },
-                pressed && {
-                  transform: [{ translateX: 1 }, { translateY: 1 }],
-                },
+                pressed && { opacity: 0.92 },
               ]}>
               <View
                 style={[

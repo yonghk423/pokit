@@ -51,6 +51,11 @@ import {
   type DayPlanBlock,
 } from '@entities/day-plan';
 import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
+import {
+  COMPLETION_CHECKED_COLOR_DARK,
+  COMPLETION_CHECKED_COLOR_LIGHT,
+  completionCheckIconColor,
+} from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -63,6 +68,27 @@ export type TemplateSessionTheme = {
   surface: string;
   accent: string;
 };
+
+/** 완료 체크 채움 — 카테고리 accent 대신 Soft Mint */
+function completionCheckFill(theme: TemplateSessionTheme): string {
+  const ink = theme.ink.trim().toLowerCase();
+  const hex = /^#?([0-9a-f]{6})$/i.exec(ink);
+  if (hex) {
+    const n = hex[1]!;
+    const r = parseInt(n.slice(0, 2), 16);
+    const g = parseInt(n.slice(2, 4), 16);
+    const b = parseInt(n.slice(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.55 ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT;
+  }
+  const rgb = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/.exec(ink);
+  if (rgb) {
+    const luminance =
+      (0.299 * Number(rgb[1]) + 0.587 * Number(rgb[2]) + 0.114 * Number(rgb[3])) / 255;
+    return luminance > 0.55 ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT;
+  }
+  return COMPLETION_CHECKED_COLOR_LIGHT;
+}
 
 type Props = {
   templateKey: CustomFlowTemplateKey;
@@ -160,8 +186,19 @@ function MiniBarChart({
   );
 }
 
-function WeekDots({ dots, accent, muted, ink }: { dots: boolean[]; accent: string; muted: string; ink: string }) {
+function WeekDots({
+  dots,
+  muted,
+  ink,
+  checkFill,
+}: {
+  dots: boolean[];
+  muted: string;
+  ink: string;
+  checkFill: string;
+}) {
   const labels = ['월', '화', '수', '목', '금', '토', '일'];
+  const checkIcon = completionCheckIconColor(checkFill);
   return (
     <View style={styles.weekRow}>
       {dots.map((done, idx) => (
@@ -170,11 +207,11 @@ function WeekDots({ dots, accent, muted, ink }: { dots: boolean[]; accent: strin
             style={[
               styles.weekDot,
               {
-                borderColor: done ? accent : muted,
-                backgroundColor: done ? accent : 'transparent',
+                borderColor: done ? checkFill : muted,
+                backgroundColor: done ? checkFill : 'transparent',
               },
             ]}>
-            {done ? <IconSymbol name="checkmark" size={10} color="#fff" /> : null}
+            {done ? <IconSymbol name="checkmark" size={10} color={checkIcon} /> : null}
           </View>
           <ThemedText style={[styles.weekLabel, { color: done ? ink : muted }]}>{labels[idx]}</ThemedText>
         </View>
@@ -515,6 +552,8 @@ function ChecklistTemplateView({
   variant?: 'checklist' | 'abstain';
 }) {
   const { ink, muted, line, accent } = theme;
+  const checkFill = completionCheckFill(theme);
+  const checkIcon = completionCheckIconColor(checkFill);
   const tasks = cfg.checklist;
   const doneCount = tasks.filter((t) => t.done).length;
   const ratio = tasks.length > 0 ? doneCount / tasks.length : 0;
@@ -556,11 +595,11 @@ function ChecklistTemplateView({
               style={[
                 styles.checkBox,
                 {
-                  borderColor: task.done ? accent : line,
-                  backgroundColor: task.done ? accent : 'transparent',
+                  borderColor: task.done ? checkFill : line,
+                  backgroundColor: task.done ? checkFill : 'transparent',
                 },
               ]}>
-              {task.done ? <IconSymbol name="checkmark" size={12} color="#fff" /> : null}
+              {task.done ? <IconSymbol name="checkmark" size={12} color={checkIcon} /> : null}
             </View>
             <ThemedText
               style={[
@@ -934,6 +973,8 @@ function ReminderTemplateView({
   allowScheduleCompletion?: boolean;
 }) {
   const { ink, muted, line, surface, accent } = theme;
+  const checkFill = completionCheckFill(theme);
+  const checkIcon = completionCheckIconColor(checkFill);
   const { done, total } = reminderProgress(cfg);
   const nextTime = resolveNextReminderTime(cfg);
   const nextItem = nextTime ? findReminderScheduleItem(cfg.reminderItems, nextTime) : undefined;
@@ -1121,11 +1162,11 @@ function ReminderTemplateView({
                     style={[
                       styles.checkBox,
                       {
-                        borderColor: checked ? accent : line,
-                        backgroundColor: checked ? accent : surface,
+                        borderColor: checked ? checkFill : line,
+                        backgroundColor: checked ? checkFill : surface,
                       },
                     ]}>
-                    {checked ? <IconSymbol name="checkmark" size={10} color="#fff" /> : null}
+                    {checked ? <IconSymbol name="checkmark" size={10} color={checkIcon} /> : null}
                   </Pressable>
                 ) : null}
                 <Pressable
@@ -1222,6 +1263,8 @@ export function CustomFlowTemplateSessionBody({
     case 'habit': {
       if (!('doneToday' in cfg)) return null;
       const weekDots = buildHabitWeekDots(cfg.recentDoneDateKeys);
+      const checkFill = completionCheckFill(theme);
+      const checkIcon = completionCheckIconColor(checkFill);
       return (
         <View style={styles.root}>
           <Card theme={theme}>
@@ -1239,16 +1282,24 @@ export function CustomFlowTemplateSessionBody({
               }}
               style={[
                 styles.habitBtn,
-                { backgroundColor: cfg.doneToday ? accent : surface, borderColor: accent },
+                {
+                  backgroundColor: cfg.doneToday ? checkFill : surface,
+                  borderColor: checkFill,
+                },
               ]}>
-              <ThemedText style={{ color: cfg.doneToday ? '#fff' : ink, fontWeight: '800', fontSize: 18 }}>
+              <ThemedText
+                style={{
+                  color: cfg.doneToday ? checkIcon : ink,
+                  fontWeight: '800',
+                  fontSize: 18,
+                }}>
                 {cfg.doneToday ? '오늘 완료 ✓' : '오늘 했어요'}
               </ThemedText>
             </Pressable>
           </Card>
           <Card theme={theme}>
             <SectionLabel color={muted}>이번 주</SectionLabel>
-            <WeekDots dots={weekDots} accent={accent} muted={muted} ink={ink} />
+            <WeekDots dots={weekDots} checkFill={checkFill} muted={muted} ink={ink} />
           </Card>
         </View>
       );

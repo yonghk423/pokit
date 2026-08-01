@@ -643,7 +643,7 @@ export function DailyRhythmTimeEditorBody({
                     }}
                     style={({ pressed }) => [
                       styles.dayChoicePress,
-                      pressed && { opacity: 0.92, transform: [{ translateX: 1 }, { translateY: 1 }] },
+                      pressed && { opacity: 0.92 },
                     ]}>
                     <SolidShadowFace
                       borderColor={c.border}
@@ -680,7 +680,7 @@ export function DailyRhythmTimeEditorBody({
                     }}
                     style={({ pressed }) => [
                       styles.dayChoicePress,
-                      pressed && { opacity: 0.92, transform: [{ translateX: 1 }, { translateY: 1 }] },
+                      pressed && { opacity: 0.92 },
                     ]}>
                     <SolidShadowFace
                       borderColor={c.border}
@@ -796,7 +796,7 @@ export function DailyRhythmTimeEditorBody({
             onPress={validateAndPrimary}
             style={({ pressed }) => [
               styles.primaryPress,
-              pressed && { transform: [{ translateX: 2 }, { translateY: 2 }], opacity: 0.94 },
+              pressed && { opacity: 0.94 },
             ]}>
             <SolidShadowFace
               borderColor={c.border}

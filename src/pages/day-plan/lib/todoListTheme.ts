@@ -1,6 +1,10 @@
 import type { TodoPriority } from '@entities/day-plan';
 import { ITEM_PRIORITY_META } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import {
+  COMPLETION_CHECKED_COLOR_DARK,
+  COMPLETION_CHECKED_COLOR_LIGHT,
+} from '@shared/ui/completion-radio-button';
 
 import type { DayPlanPalette } from './dayPlanPalette';
 
@@ -44,16 +48,16 @@ export function todoListUiColors(c: DayPlanPalette, isDark: boolean): TodoListUi
     dangerBg: rc.dangerBg,
     primary: rc.primary,
     primaryOn: rc.primaryOn,
-    done: isDark ? '#7DD99A' : '#64748B',
+    done: isDark ? 'rgba(255,255,255,0.45)' : '#64748B',
     placeholder: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(24,26,46,0.32)',
     btnBg: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)',
     btnBorder: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.85)',
     tableBorder: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.85)',
     cellBg: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
     cardBg: isDark ? 'rgba(255,255,255,0.04)' : '#F3F0EA',
-    checkFill: isDark ? '#FAFAFA' : '#0F172A',
-    addBtnBg: isDark ? '#356668' : '#B8E0DC',
-    tagBg: isDark ? '#1E293B' : '#0F172A',
-    tagText: '#FAFAFA',
+    checkFill: isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT,
+    addBtnBg: rc.primaryContainer,
+    tagBg: isDark ? '#FAFAFA' : '#000000',
+    tagText: isDark ? '#09090b' : '#FAFAFA',
   };
 }

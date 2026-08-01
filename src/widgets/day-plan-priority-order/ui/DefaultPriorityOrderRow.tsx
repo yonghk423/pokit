@@ -279,7 +279,7 @@ export function DefaultPriorityOrderRow({
               borderColor: actionBorder,
               backgroundColor: pressed ? actionHoverBg : actionBg,
             },
-            pressed && { transform: [{ translateX: 1 }, { translateY: 1 }] },
+            pressed && { opacity: 0.92 },
           ]}>
           <ThemedText
             style={[
@@ -313,7 +313,7 @@ export function DefaultPriorityOrderRow({
                   borderColor: actionBorder,
                   backgroundColor: pressed ? actionHoverBg : actionBg,
                 },
-                pressed && { transform: [{ translateX: 1 }, { translateY: 1 }] },
+                pressed && { opacity: 0.92 },
               ]}>
               <ThemedText
                 style={[styles.orderFinishBtnText, { color: isDark ? '#FAFAFA' : primary }]}
@@ -339,7 +339,7 @@ export function DefaultPriorityOrderRow({
                   borderColor: actionBorder,
                   backgroundColor: pressed ? actionHoverBg : actionBg,
                 },
-                pressed && { transform: [{ translateX: 1 }, { translateY: 1 }] },
+                pressed && { opacity: 0.92 },
               ]}>
               <IconSymbol name="slider.horizontal.3" size={13} color={isDark ? '#FAFAFA' : primary} />
             </Pressable>,
@@ -360,7 +360,7 @@ export function DefaultPriorityOrderRow({
                     borderColor: actionBorder,
                     backgroundColor: pressed ? actionHoverBg : actionBg,
                   },
-                  pressed && { transform: [{ translateX: 1 }, { translateY: 1 }] },
+                  pressed && { opacity: 0.92 },
                 ]}>
                 <IconSymbol name="slider.horizontal.3" size={13} color={isDark ? '#FAFAFA' : primary} />
               </Pressable>,

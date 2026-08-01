@@ -96,12 +96,8 @@ function BrutalActionButton({
           {
             borderColor,
             backgroundColor: pressed && !disabled ? pressedBg : backgroundColor,
-            opacity: disabled ? 0.55 : 1,
+            opacity: disabled ? 0.55 : pressed ? 0.92 : 1,
           },
-          pressed &&
-            !disabled && {
-              transform: [{ translateX: 1 }, { translateY: 1 }],
-            },
         ]}>
         {children}
       </Pressable>
@@ -1002,10 +998,7 @@ function GroupSectionBlock({
                     ? 'rgba(255,255,255,0.1)'
                     : 'rgba(0,0,0,0.05)',
               },
-              manageOnly &&
-                pressed && {
-                  transform: [{ translateX: 1 }, { translateY: 1 }],
-                },
+              manageOnly && pressed && { opacity: 0.92 },
             ]}>
             <IconSymbol name="pencil" size={13} color={isDark ? '#FAFAFA' : '#000000'} />
           </Pressable>
@@ -1037,10 +1030,7 @@ function GroupSectionBlock({
                     ? 'rgba(255,255,255,0.1)'
                     : 'rgba(0,0,0,0.05)',
               },
-              manageOnly &&
-                pressed && {
-                  transform: [{ translateX: 1 }, { translateY: 1 }],
-                },
+              manageOnly && pressed && { opacity: 0.92 },
             ]}>
             <IconSymbol name="trash" size={13} color={isDark ? '#FAFAFA' : '#000000'} />
           </Pressable>

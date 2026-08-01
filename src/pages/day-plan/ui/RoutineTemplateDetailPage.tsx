@@ -95,9 +95,7 @@ export function RoutineTemplateDetailPage() {
                       : 'rgba(168, 218, 220, 0.35)'
                     : cardBg,
                 },
-                pressed && {
-                  transform: [{ translateX: 1 }, { translateY: 1 }],
-                },
+                pressed && { opacity: 0.92 },
               ]}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityRole="button"

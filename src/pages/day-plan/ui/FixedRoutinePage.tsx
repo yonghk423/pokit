@@ -208,12 +208,8 @@ function FlowBrutalActionButton({
           {
             borderColor,
             backgroundColor: pressed && !disabled ? pressedBg : backgroundColor,
-            opacity: disabled ? 0.55 : 1,
+            opacity: disabled ? 0.55 : pressed ? 0.92 : 1,
           },
-          pressed &&
-            !disabled && {
-              transform: [{ translateX: 1 }, { translateY: 1 }],
-            },
         ]}>
         {children}
       </Pressable>
@@ -1070,9 +1066,7 @@ function GroupAccordion({
                   borderColor: line,
                   backgroundColor: pressed ? actionHoverBg : actionBg,
                 },
-                pressed && {
-                  transform: [{ translateX: 1 }, { translateY: 1 }],
-                },
+                pressed && { opacity: 0.92 },
               ]}>
               <IconSymbol name="trash" size={12} color={muted} />
             </Pressable>

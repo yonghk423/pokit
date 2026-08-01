@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   periodNavPressed: {
-    transform: [{ translateX: 1 }, { translateY: 1 }],
+    opacity: 0.92,
   },
   periodNavBtnDisabled: {
     opacity: 0.35,

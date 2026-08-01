@@ -7,7 +7,6 @@ import {
   alignDayMealSlotScheduleToPriorityWindow,
   DAY_MEAL_SLOT_LABEL,
   DAY_MEAL_SLOT_ORDER,
-  DEFAULT_DAY_MEAL_SLOT_SCHEDULE,
   isDayMealSlotScheduleValid,
   type DayMealSlot,
   type DayMealSlotSchedule,
@@ -84,24 +83,6 @@ export function DayMealSlotScheduleSheet({
     onClose();
   }, [draft, onClose, onSave]);
 
-  const handleReset = useCallback(() => {
-    void Haptics.selectionAsync();
-    const start = priorityStart?.trim() ?? '';
-    const end = priorityEnd?.trim() ?? '';
-    const base = { ...DEFAULT_DAY_MEAL_SLOT_SCHEDULE };
-    setDraft(
-      start && end
-        ? alignDayMealSlotScheduleToPriorityWindow(
-            base,
-            start,
-            end,
-            isOvernightHhmmRange(start, end),
-          )
-        : base,
-    );
-    setExpandedSlot(null);
-  }, [priorityStart, priorityEnd]);
-
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View
@@ -150,15 +131,6 @@ export function DayMealSlotScheduleSheet({
         </ScrollView>
 
         <View style={[styles.footer, { borderTopColor: palette.timeField.border }]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="기본값으로 되돌리기"
-            onPress={handleReset}
-            style={({ pressed }) => [styles.ghostBtn, pressed && { opacity: 0.72 }]}>
-            <ThemedText style={[styles.ghostBtnLabel, { color: palette.timeField.onVariant }]}>
-              기본값
-            </ThemedText>
-          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="시간대 설정 저장"
@@ -215,25 +187,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   footer: {
-    flexDirection: 'row',
-    gap: 10,
     paddingHorizontal: 20,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  ghostBtn: {
-    flex: 1,
-    minHeight: 46,
-    borderRadius: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ghostBtnLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
   primaryBtn: {
-    flex: 1.4,
     minHeight: 46,
     borderRadius: 0,
     alignItems: 'center',

@@ -132,6 +132,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   pressed: {
-    transform: [{ translateX: 1 }, { translateY: 1 }],
+    opacity: 0.92,
   },
 });
