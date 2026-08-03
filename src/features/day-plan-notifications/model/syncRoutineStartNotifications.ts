@@ -10,6 +10,7 @@ import {
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import {
   cancelLocalNotificationsById,
+  cancelScheduledNotificationsByEventType,
   ensureLocalNotificationPermission,
   scheduleWeeklyLocalNotification,
 } from '@shared/lib/notifications';
@@ -23,17 +24,25 @@ import {
 
 const MAX_ROUTINE_START_NOTIFY_SLOTS = 40;
 export const ROUTINE_START_EVENT_TYPE = 'routineStart';
+const ROUTINE_START_NOTIFICATION_ID_PREFIX = 'pokit:routine-start:';
+let routineStartSyncQueue: Promise<void> = Promise.resolve();
+
+function buildRoutineStartNotificationId(slotKey: string): string {
+  return `${ROUTINE_START_NOTIFICATION_ID_PREFIX}${slotKey}`;
+}
 
 /**
  * 켜진 루틴 시작 알림을 취소 후 다시 예약합니다.
  * 권한이 없으면 예약만 비웁니다(규칙은 유지).
  * 알림 시각은 루틴/일정 시작 시각에서만 해석합니다.
  */
-export async function syncRoutineStartNotifications(): Promise<void> {
+async function performRoutineStartNotificationSync(): Promise<void> {
   const prev = loadRoutineStartNotifyScheduled();
   if (prev.length > 0) {
     await cancelLocalNotificationsById(prev.map((r) => r.notificationId));
   }
+  /** 과거 동시 실행에서 저장 목록 밖으로 유실된 고아 예약도 제거합니다. */
+  await cancelScheduledNotificationsByEventType(ROUTINE_START_EVENT_TYPE);
   saveRoutineStartNotifyScheduled([]);
 
   await useLocalNotificationsStore.getState().refreshPermission();
@@ -75,7 +84,9 @@ export async function syncRoutineStartNotifications(): Promise<void> {
     const label = categoryReminderLabelKo(slot.categoryKey);
     const clock = formatHhmmClockKo(slot.hhmm);
     for (const weekday of slot.weekdays) {
+      const slotKey = `${slot.slotKey}@${weekday}`;
       const nid = await scheduleWeeklyLocalNotification({
+        identifier: buildRoutineStartNotificationId(slotKey),
         title: '루틴 시작',
         body: `${label} · ${clock}에 시작할 시간이에요.`,
         weekday,
@@ -87,12 +98,21 @@ export async function syncRoutineStartNotifications(): Promise<void> {
         },
       });
       if (nid) {
-        nextRows.push({ slotKey: `${slot.slotKey}@${weekday}`, notificationId: nid });
+        nextRows.push({ slotKey, notificationId: nid });
       }
     }
   }
 
   saveRoutineStartNotifyScheduled(nextRows);
+}
+
+export function syncRoutineStartNotifications(): Promise<void> {
+  const run = routineStartSyncQueue.then(
+    performRoutineStartNotificationSync,
+    performRoutineStartNotificationSync,
+  );
+  routineStartSyncQueue = run.catch(() => undefined);
+  return run;
 }
 
 /**

@@ -16,6 +16,7 @@ import {
   normalizeReminderDetailConfig,
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -183,6 +184,7 @@ function GenericTemplateSettings<T extends { displayName: string; summary: strin
   ) => React.ReactNode;
 }) {
   const c = useTemplateSettingsPalette();
+  const isDark = useColorScheme() === 'dark';
   const {
     rhythmTitle,
     categoryKey,
@@ -228,11 +230,11 @@ function GenericTemplateSettings<T extends { displayName: string; summary: strin
           ink: c.onSurface,
           muted: c.onVariant,
           line: c.outline,
-          surface: c.surfaceLowest,
+          /** 루틴 템플릿 미리보기와 동일한 카드 면 색 */
+          surface: isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF',
           accent: PrimaryColor.rgb,
         }}
         previewMode={false}
-        allowScheduleCompletion={templateKey !== 'reminder'}
       />
     </View>
   );

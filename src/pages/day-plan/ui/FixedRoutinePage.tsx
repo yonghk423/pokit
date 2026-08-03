@@ -51,7 +51,6 @@ import { persistReminderTemplateNotificationRule } from '@features/category-remi
 import {
   isRoutineStartNotifyEnabled,
   persistRoutineStartNotifyToggle,
-  syncRoutineStartNotifications,
 } from '@features/day-plan-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { RetroFlatColors } from '@shared/config/retroFlat';
@@ -1444,7 +1443,6 @@ export function FixedRoutinePage({
   const handleToggleItemMealSlot = useCallback(
     (setId: string, categoryKey: string, slot: DayMealSlot) => {
       toggleCategoryMealSlotInSet(setId, categoryKey, slot);
-      void syncRoutineStartNotifications();
       void Haptics.selectionAsync();
     },
     [toggleCategoryMealSlotInSet],
@@ -1918,7 +1916,6 @@ export function FixedRoutinePage({
                       endsNextCalendarDay,
                     );
                     notifyFixedFlowApplyScheduleChanged();
-                    void syncRoutineStartNotifications();
                     void Haptics.selectionAsync();
                   }}
                   onEnsureVisibleAboveKeyboard={ensureVisibleAboveKeyboard}

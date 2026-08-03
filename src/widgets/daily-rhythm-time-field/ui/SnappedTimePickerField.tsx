@@ -130,7 +130,7 @@ export function SnappedTimePickerField({
               emphasized && styles.timePillEmphasized,
               {
                 backgroundColor: palette.containerLowest,
-                borderColor: expanded ? PRIMARY : palette.border,
+                borderColor: expanded ? palette.onSurface : palette.border,
               },
             ]}>
             <ThemedText

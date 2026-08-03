@@ -14,8 +14,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { PRIMARY } from '../lib/dayPlanEditorShared';
-
 const LABEL_MAX = 24;
 const SUBTITLE_MAX = 120;
 
@@ -72,7 +70,7 @@ export function EditCatalogGroupSheet({
   const closeBtnBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
   const trimmedLabel = label.trim();
   const trimmedSubtitle = subtitle.trim();
-  const canSave = trimmedLabel.length > 0 && trimmedSubtitle.length > 0;
+  const canSave = trimmedLabel.length > 0;
   const isCreate = mode === 'create';
   const title = isCreate ? '새 묶음 만들기' : '묶음 편집';
   const ctaLabel = isCreate ? '만들기' : '저장';
@@ -125,7 +123,7 @@ export function EditCatalogGroupSheet({
 
             {isCreate ? (
               <ThemedText style={[styles.createLead, { color: muted }]}>
-                루틴을 담을 묶음만 먼저 만들 수 있어요. 이름은 목록에, 설명은 묶음 아래에 보여요.
+                루틴을 담을 묶음만 먼저 만들 수 있어요. 이름은 목록에 보여요.
               </ThemedText>
             ) : null}
 
@@ -137,7 +135,7 @@ export function EditCatalogGroupSheet({
                 placeholder="묶음 이름"
                 placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
                 maxLength={LABEL_MAX}
-                returnKeyType="next"
+                returnKeyType="done"
                 style={[
                   styles.input,
                   { color: ink, backgroundColor: inputBg, borderColor: inputBorder },
@@ -146,14 +144,17 @@ export function EditCatalogGroupSheet({
             </View>
 
             <View style={styles.fieldGroup}>
-              <ThemedText style={[styles.fieldLabel, { color: ink }]}>설명</ThemedText>
+              <ThemedText style={[styles.fieldLabel, { color: ink }]}>
+                설명{' '}
+                <ThemedText style={[styles.fieldOptional, { color: muted }]}>(선택)</ThemedText>
+              </ThemedText>
               <ThemedText style={[styles.fieldHint, { color: muted }]}>
-                담기 화면 묶음 아래에 보이는 안내 문구예요
+                비워 두어도 묶음을 만들 수 있어요
               </ThemedText>
               <TextInput
                 value={subtitle}
                 onChangeText={(v) => setSubtitle(v.slice(0, SUBTITLE_MAX))}
-                placeholder="묶음 설명"
+                placeholder="묶음 설명 (선택)"
                 placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
                 maxLength={SUBTITLE_MAX}
                 multiline
@@ -200,16 +201,16 @@ export function EditCatalogGroupSheet({
               style={({ pressed }) => [
                 styles.cta,
                 {
-                  backgroundColor: canSave ? PRIMARY : inputBg,
+                  backgroundColor: canSave ? ink : inputBg,
                   borderColor: canSave
-                    ? PRIMARY
+                    ? ink
                     : isDark
                       ? 'rgba(255,255,255,0.12)'
                       : 'rgba(0,0,0,0.08)',
                   opacity: pressed && canSave ? 0.88 : 1,
                 },
               ]}>
-              <ThemedText style={[styles.ctaText, { color: canSave ? '#FAFAFA' : muted }]}>
+              <ThemedText style={[styles.ctaText, { color: canSave ? (isDark ? '#09090b' : '#FAFAFA') : muted }]}>
                 {ctaLabel}
               </ThemedText>
             </Pressable>
@@ -282,6 +283,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: -0.15,
+  },
+  fieldOptional: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
   fieldHint: {
     fontSize: 12,

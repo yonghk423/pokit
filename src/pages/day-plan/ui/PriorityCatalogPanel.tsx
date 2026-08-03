@@ -716,27 +716,40 @@ function CatalogListRow({
 
 function CatalogSectionHeader({
   title,
+  itemCount,
   ink,
+  muted,
   trailing,
   manageOnly = false,
 }: {
   title: string;
+  itemCount: number;
   ink: string;
+  muted: string;
   trailing?: ReactNode;
   manageOnly?: boolean;
 }) {
   return (
-    <View style={styles.sectionHeader} accessibilityRole="header">
+    <View
+      style={[styles.sectionHeader, manageOnly && styles.sectionHeaderManage]}
+      accessibilityRole="header"
+      accessibilityLabel={`${title} 묶음, ${itemCount}개`}>
       <View style={styles.sectionHeaderTop}>
         <View style={styles.sectionHeaderTextCol}>
-          <ThemedText
-            style={[
-              styles.sectionTitle,
-              manageOnly && styles.sectionTitleManage,
-              { color: ink },
-            ]}>
-            {title}
-          </ThemedText>
+          <View style={styles.sectionHeaderTitleRow}>
+            <ThemedText
+              style={[
+                styles.sectionTitle,
+                manageOnly && styles.sectionTitleManage,
+                { color: ink },
+              ]}
+              numberOfLines={1}>
+              {title}
+            </ThemedText>
+            <ThemedText style={[styles.sectionMeta, { color: muted }]} numberOfLines={1}>
+              묶음 · {itemCount}개
+            </ThemedText>
+          </View>
         </View>
         {trailing ? <View style={styles.sectionHeaderTrailing}>{trailing}</View> : null}
       </View>
@@ -1040,34 +1053,49 @@ function GroupSectionBlock({
 
   return (
     <View style={[styles.sectionBlock, !isFirst && styles.sectionBlockFollows]}>
-      <CatalogSectionHeader
-        title={section.title}
-        ink={editorial.ink}
-        manageOnly={manageOnly}
-        trailing={groupHeaderTrailing}
-      />
       <View
-        style={[
-          styles.listShell,
-          manageOnly && styles.listShellManage,
-          { borderTopColor: editorial.line },
-        ]}>
-        {section.items.length > 0
-          ? renderRows(
-            section.items,
-            editorial,
-            isDark,
-            priorityCategoryOrder,
-            isFocusStarted,
-            onCatalogTap,
-            onOpenCategorySettings,
-            onMoveCustomFlow,
-            onDeleteCatalogItem,
-            sectionsCatalogOptions,
-            spineCatalogOptions,
-            manageOnly,
-          )
-          : null}
+        style={
+          manageOnly
+            ? [
+                styles.sectionGroupShell,
+                {
+                  borderColor: editorial.line,
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                },
+              ]
+            : undefined
+        }>
+        <CatalogSectionHeader
+          title={section.title}
+          itemCount={section.items.length}
+          ink={editorial.ink}
+          muted={editorial.muted}
+          manageOnly={manageOnly}
+          trailing={groupHeaderTrailing}
+        />
+        <View
+          style={[
+            styles.listShell,
+            manageOnly && styles.listShellManage,
+            { borderTopColor: editorial.line },
+          ]}>
+          {section.items.length > 0
+            ? renderRows(
+              section.items,
+              editorial,
+              isDark,
+              priorityCategoryOrder,
+              isFocusStarted,
+              onCatalogTap,
+              onOpenCategorySettings,
+              onMoveCustomFlow,
+              onDeleteCatalogItem,
+              sectionsCatalogOptions,
+              spineCatalogOptions,
+              manageOnly,
+            )
+            : null}
+        </View>
       </View>
     </View>
   );
@@ -1230,24 +1258,38 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   sectionBlockFollows: {
-    marginTop: 20,
+    marginTop: 28,
+  },
+  sectionGroupShell: {
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   sectionHeader: {
     marginBottom: 10,
     paddingHorizontal: 2,
   },
+  sectionHeaderManage: {
+    marginBottom: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   sectionHeaderTop: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 10,
   },
   sectionHeaderTextCol: {
     flex: 1,
     minWidth: 0,
-    gap: 4,
+  },
+  sectionHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    flexWrap: 'nowrap',
   },
   sectionHeaderTrailing: {
-    paddingTop: 2,
+    paddingTop: 0,
   },
   customGroupHeaderActions: {
     flexDirection: 'row',
@@ -1270,22 +1312,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sectionTitle: {
+  sectionMeta: {
+    flexShrink: 0,
     fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  sectionTitle: {
+    flexShrink: 1,
+    fontSize: 17,
     fontWeight: '800',
-    letterSpacing: -0.2,
+    letterSpacing: -0.35,
+    lineHeight: 22,
   },
   sectionTitleManage: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  sectionSubtitle: {
-    fontSize: 11,
-    fontWeight: '500',
-    lineHeight: 15,
-    letterSpacing: -0.1,
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.35,
+    lineHeight: 22,
+    textTransform: 'none',
   },
   listShell: {
     width: '100%',
@@ -1293,9 +1338,10 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   listShellManage: {
-    /** 시안 `border-t border-black` (1px) */
     borderTopWidth: 1,
     paddingBottom: 0,
+    paddingHorizontal: 4,
+    backgroundColor: 'transparent',
   },
   catalogRowWrap: {
     borderBottomWidth: 1,

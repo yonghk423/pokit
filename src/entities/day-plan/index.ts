@@ -247,6 +247,7 @@ export {
   hasResolvableRoutineStartTime,
   type RoutineStartNotifySlot,
 } from './lib/resolveRoutineStartNotifySlots';
+export { resolveCategoryReminderNotifyWeekdays } from './lib/resolveCategoryReminderNotifyWeekdays';
 export { DEFAULT_DAY_PLAN_BLOCKS } from './lib/defaultBlocks';
 export { deleteCustomFlowCategory } from './lib/deleteCustomFlowCategory';
 export { dismissCatalogGroupWithItemReassign } from './lib/dismissCatalogGroup';

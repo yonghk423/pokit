@@ -22,6 +22,7 @@ import {
   SYSTEM_CATALOG_GROUP_KEYS,
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
 import {
   createCustomCatalogGroup,
@@ -34,6 +35,7 @@ import {
   type DayMealSlot,
   type DayMealSlotSchedule,
 } from '@shared/lib/storage';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { CustomFlowAppearancePicker } from '@shared/ui/custom-flow-appearance-picker';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -471,7 +473,7 @@ export function CreateCustomFlowSheet({
                       style={({ pressed }) => [
                         styles.newGroupBtn,
                         {
-                          backgroundColor: PrimaryColor.rgb,
+                          backgroundColor: ink,
                           opacity: newGroupLabel.trim().length === 0 ? 0.45 : pressed ? 0.88 : 1,
                         },
                       ]}>
@@ -634,12 +636,12 @@ export function CreateCustomFlowSheet({
                     );
                   }}
                   previewMode={false}
-                  allowScheduleCompletion={false}
                   theme={{
                     ink,
                     muted,
                     line,
-                    surface: inputBg,
+                    /** 루틴 템플릿 미리보기와 동일한 카드 면 색 */
+                    surface: isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF',
                     accent: PrimaryColor.rgb,
                   }}
                 />
@@ -662,37 +664,29 @@ export function CreateCustomFlowSheet({
             },
           ]}>
           {step === 'basics' ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !canProceedBasics }}
+            <BrutalConfirmButton
+              label="다음"
               accessibilityLabel="다음"
+              align="stretch"
+              fill={ink}
+              labelColor={isDark ? '#09090b' : '#FAFAFA'}
+              border={line}
+              shadowColor={isDark ? RetroFlatColors.dark.solidShadow : '#000000'}
               disabled={!canProceedBasics}
               onPress={handleNextStep}
-              style={({ pressed }) => [
-                styles.confirmBtn,
-                {
-                  backgroundColor: canProceedBasics ? PrimaryColor.rgb : isDark ? '#3f3f46' : '#d4d4d8',
-                },
-                pressed && canProceedBasics && styles.pressed,
-              ]}>
-              <ThemedText style={styles.confirmLabel}>다음</ThemedText>
-            </Pressable>
+            />
           ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !canCreate }}
+            <BrutalConfirmButton
+              label="만들기"
               accessibilityLabel="만들기"
+              align="stretch"
+              fill={ink}
+              labelColor={isDark ? '#09090b' : '#FAFAFA'}
+              border={line}
+              shadowColor={isDark ? RetroFlatColors.dark.solidShadow : '#000000'}
               disabled={!canCreate}
               onPress={handleCreate}
-              style={({ pressed }) => [
-                styles.confirmBtn,
-                {
-                  backgroundColor: canCreate ? PrimaryColor.rgb : isDark ? '#3f3f46' : '#d4d4d8',
-                },
-                pressed && canCreate && styles.pressed,
-              ]}>
-              <ThemedText style={styles.confirmLabel}>만들기</ThemedText>
-            </Pressable>
+            />
           )}
         </View>
       </View>
@@ -831,20 +825,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  confirmBtn: {
-    minHeight: 48,
-    borderRadius: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  confirmLabel: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#FAFAFA',
-  },
-  pressed: {
-    opacity: 0.82,
   },
   routineNamePreview: {
     fontSize: 18,

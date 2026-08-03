@@ -106,6 +106,40 @@ export function useAppBootstrap() {
       ) {
         void syncIncompleteRoutineReminderNotifications();
       }
+      if (state.blocks !== prev.blocks || state.dateKey !== prev.dateKey) {
+        void syncCategoryReminderNotifications();
+        void syncRoutineStartNotifications();
+      }
+    });
+  }, [isReady]);
+
+  /** 적용하기 on/off · 그룹 항목 변경 시 시간 알림·시작 알림 예약 재동기화 */
+  useEffect(() => {
+    if (!isReady) return;
+    return useFixedFlowSetsStore.subscribe((state, prev) => {
+      if (
+        state.todayAppliedRevision === prev.todayAppliedRevision &&
+        state.activeSetIds === prev.activeSetIds &&
+        state.sets === prev.sets
+      ) {
+        return;
+      }
+      void syncCategoryReminderNotifications();
+      void syncRoutineStartNotifications();
+    });
+  }, [isReady]);
+
+  useEffect(() => {
+    if (!isReady) return;
+    return useDayPlanDraftStore.subscribe((state, prev) => {
+      if (
+        state.priorityCategoryOrder === prev.priorityCategoryOrder &&
+        state.prioritySectionsCategoryOrder === prev.prioritySectionsCategoryOrder
+      ) {
+        return;
+      }
+      void syncCategoryReminderNotifications();
+      void syncRoutineStartNotifications();
     });
   }, [isReady]);
 

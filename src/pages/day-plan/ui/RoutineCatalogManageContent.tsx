@@ -273,8 +273,8 @@ export function RoutineCatalogManageContent() {
   const onSaveEditCatalogGroup = useCallback(
     ({ label, subtitle }: { label: string; subtitle: string }) => {
       if (!editGroupSheet) return;
-      if (label.length === 0 || subtitle.length === 0) {
-        Alert.alert('입력 확인', '이름과 설명을 모두 입력해 주세요.');
+      if (label.length === 0) {
+        Alert.alert('입력 확인', '이름을 입력해 주세요.');
         return;
       }
       if (editGroupSheet.isSystemGroup && isSystemCatalogGroupKey(editGroupSheet.groupKey)) {
@@ -291,8 +291,8 @@ export function RoutineCatalogManageContent() {
 
   const onSaveCreateCatalogGroup = useCallback(
     ({ label, subtitle }: { label: string; subtitle: string }) => {
-      if (label.length === 0 || subtitle.length === 0) {
-        Alert.alert('입력 확인', '이름과 설명을 모두 입력해 주세요.');
+      if (label.length === 0) {
+        Alert.alert('입력 확인', '이름을 입력해 주세요.');
         return;
       }
       if (listCustomCatalogGroups().some((g) => g.label === label)) {

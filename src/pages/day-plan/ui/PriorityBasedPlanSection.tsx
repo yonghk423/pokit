@@ -174,6 +174,7 @@ function flipClockPalette(isDark: boolean): FlipClockPalette {
     border: c.border,
     text: c.text,
     ampm: c.textMuted,
+    /** 임시 미사용 — flipHinge View 복원 시 함께 사용 */
     hinge: isDark ? 'rgba(241, 239, 255, 0.18)' : 'rgba(24, 26, 46, 0.14)',
   };
 }
@@ -659,7 +660,9 @@ function FlipClockTimePair({
               selectTextOnFocus
               style={[flipStyles.digitInput, digitInputNoArtifact, { color: palette.text }]}
             />
+            {/* 임시 비활성 — 플립 힌지 실선 (나중에 재사용 가능)
             <View pointerEvents="none" style={[flipStyles.flipHinge, { backgroundColor: palette.hinge }]} />
+            */}
           </View>
           <View style={flipStyles.colonGutter}>
             <BlinkingTimeColon dotColor={palette.text} />
@@ -674,7 +677,9 @@ function FlipClockTimePair({
               selectTextOnFocus
               style={[flipStyles.digitInput, digitInputNoArtifact, { color: palette.text }]}
             />
+            {/* 임시 비활성 — 플립 힌지 실선 (나중에 재사용 가능)
             <View pointerEvents="none" style={[flipStyles.flipHinge, { backgroundColor: palette.hinge }]} />
+            */}
           </View>
         </View>
       </View>
@@ -758,7 +763,7 @@ const flipStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     elevation: 0,
   },
-  /** 플립 힌지: 숫자 가운데보다 살짝 아래(기계식 플립 시각 보정) */
+  /** 플립 힌지: 숫자 가운데보다 살짝 아래(기계식 플립 시각 보정) — 임시 미사용, View 주석 복원 시 사용 */
   flipHinge: {
     position: 'absolute',
     left: 0,
