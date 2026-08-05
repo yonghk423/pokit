@@ -6,7 +6,7 @@ export const HEALTH_GROUP_SYSTEM_ORDER = [
 ] as const;
 
 /** 시스템 그룹 「생산성을 높이는 도구」에 속하는 표준 카탈로그 키 순서 */
-export const PRODUCTIVITY_GROUP_SYSTEM_ORDER = ['reading', 'work'] as const;
+export const PRODUCTIVITY_GROUP_SYSTEM_ORDER = ['reading'] as const;
 
 const HEALTH_GROUP_KEYS = new Set<string>(HEALTH_GROUP_SYSTEM_ORDER);
 const PRODUCTIVITY_GROUP_KEYS = new Set<string>(PRODUCTIVITY_GROUP_SYSTEM_ORDER);

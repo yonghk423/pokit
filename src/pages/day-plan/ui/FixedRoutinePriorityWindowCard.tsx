@@ -1,10 +1,14 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { formatHhmmClockKo } from '@entities/day-plan';
-import { IconSymbol } from '@shared/ui/icon-symbol';
+import { addDaysToLocalDateKey, formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { formatDateKeyCompactKo, isOvernightHhmmRange, sortedPlanDateRange } from '../lib/dayPlanEditorShared';
+import {
+  endsOnNextCalendarDay,
+  formatDateKeyCompactKo,
+  sortedPlanDateRange,
+} from '../lib/dayPlanEditorShared';
+import { FixedRoutineSettingsButton } from './FixedRoutineSettingsButton';
 
 type Props = {
   priorityStart: string;
@@ -28,15 +32,22 @@ function formatPriorityWindowLines(
   planDateKeyEnd: string,
 ): { dateLine: string; timeLine: string } {
   const { lo, hi } = sortedPlanDateRange(planDateKey, planDateKeyEnd);
-  const overnight = isOvernightHhmmRange(start, end);
+  const pe = parseHHmmToMinutes(end.trim());
+  const crossesNextDay = endsOnNextCalendarDay(start, end);
+  const endDateKey =
+    pe === 24 * 60
+      ? addDaysToLocalDateKey(hi, 1)
+      : crossesNextDay && lo === hi
+        ? addDaysToLocalDateKey(lo, 1)
+        : hi;
   const dateLine =
-    lo === hi
+    lo === endDateKey
       ? formatDateKeyCompactKo(lo)
-      : `${formatDateKeyCompactKo(lo)} ~ ${formatDateKeyCompactKo(hi)}`;
+      : `${formatDateKeyCompactKo(lo)} ~ ${formatDateKeyCompactKo(endDateKey)}`;
   const startLabel = formatHhmmClockKo(start);
   const endLabel = formatHhmmClockKo(end);
-  const timeLine = overnight
-    ? `${startLabel} — 다음날 ${endLabel}`
+  const timeLine = crossesNextDay
+    ? `${startLabel} — ${formatDateKeyCompactKo(endDateKey)} ${endLabel}`
     : `${startLabel} — ${endLabel}`;
   return { dateLine, timeLine };
 }
@@ -71,21 +82,13 @@ export function FixedRoutinePriorityWindowCard({
           {timeLine}
         </ThemedText>
       </View>
-      <Pressable
-        accessibilityRole="button"
+      <FixedRoutineSettingsButton
+        isDark={isDark}
+        ink={ink}
+        line={line}
         accessibilityLabel="집중 구간 설정"
         onPress={onPressSettings}
-        style={({ pressed }) => [
-          styles.settingsBtn,
-          {
-            borderColor: line,
-            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-          },
-          pressed && { opacity: 0.72 },
-        ]}>
-        <IconSymbol name="clock" size={14} color={ink} />
-        <ThemedText style={[styles.settingsBtnLabel, { color: ink }]}>설정</ThemedText>
-      </Pressable>
+      />
     </View>
   );
 }
@@ -107,7 +110,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
@@ -115,19 +118,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     lineHeight: 16,
-  },
-  settingsBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 0,
-    borderWidth: 2,
-    flexShrink: 0,
-  },
-  settingsBtnLabel: {
-    fontSize: 12,
-    fontWeight: '700',
   },
 });

@@ -24,24 +24,25 @@ export function blockDurationSec(block: DayPlanBlock): number {
 
 export function formatMinuteOfDayKo(minutes: number): string {
   if (minutes >= 24 * 60) {
-    return '24:00';
+    return 'AM 00:00';
   }
   const m = Math.max(0, Math.min(minutes, 24 * 60 - 1));
   const h24 = Math.floor(m / 60);
   const min = m % 60;
   const isAm = h24 < 12;
-  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-  const prefix = isAm ? '오전' : '오후';
-  return `${prefix} ${h12}:${String(min).padStart(2, '0')}`;
+  const h12 = h24 === 0 ? 0 : h24 % 12 === 0 ? 12 : h24 % 12;
+  const prefix = isAm ? 'AM' : 'PM';
+  const hour = h12 === 0 ? '00' : String(h12);
+  return `${prefix} ${hour}:${String(min).padStart(2, '0')}`;
 }
 
 /**
  * 저장용 `HH:mm` → 화면용 한글 시각 (`formatMinuteOfDayKo`와 동일 규칙).
- * `24:00`(당일 끝)은 집중 구간 표기와 맞춰 `24:00(자정)`.
+ * 저장값 `24:00`(당일 끝)은 `AM 00:00`으로 표시하며, 실제 종료 날짜는 호출 UI에서 함께 표시.
  */
 export function formatHhmmClockKo(hhmm: string): string {
   const t = hhmm.trim();
-  if (t === '24:00') return '24:00(자정)';
+  if (t === '24:00') return 'AM 00:00';
   const m = parseHHmmToMinutes(t);
   if (m === null) return hhmm;
   return formatMinuteOfDayKo(m);

@@ -26,6 +26,7 @@ jest.mock('@entities/day-plan', () => {
 import {
   formatDateKeyDisplayKo,
   formatEndHhmmFrom12hParts,
+  endsOnNextCalendarDay,
   pickPlanDateKeyForBlock,
   planDayIntroFromRange,
   priorityClockCaptionDateKeyEnd,
@@ -60,12 +61,21 @@ describe('dayPlanEditorShared', () => {
     expect(pickPlanDateKeyForBlock('2025-06-01', '2025-06-10')).toBe('2025-06-01');
   });
 
+  it('treats 24:00 end as next calendar day in UI', () => {
+    expect(endsOnNextCalendarDay('23:15', '24:00')).toBe(true);
+    expect(endsOnNextCalendarDay('09:00', '18:00')).toBe(false);
+    expect(endsOnNextCalendarDay('22:00', '06:00')).toBe(true);
+  });
+
   it('extends end caption to next day for overnight window', () => {
     expect(priorityClockCaptionDateKeyEnd('2025-05-26', '2025-05-26', '22:00', '06:00')).toBe(
       '2025-05-27',
     );
     expect(priorityClockCaptionDateKeyEnd('2025-05-26', '2025-05-26', '09:00', '18:00')).toBe(
       '2025-05-26',
+    );
+    expect(priorityClockCaptionDateKeyEnd('2025-05-26', '2025-05-26', '23:15', '24:00')).toBe(
+      '2025-05-27',
     );
   });
 

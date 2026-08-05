@@ -76,9 +76,11 @@ describe('block duration and formatting', () => {
   });
 
   it('formats Korean clock strings', () => {
-    expect(formatMinuteOfDayKo(9 * 60)).toBe('오전 9:00');
-    expect(formatHhmmClockKo('24:00')).toBe('24:00(자정)');
-    expect(formatHhmmClockKo('14:30')).toContain('오후');
+    expect(formatMinuteOfDayKo(0)).toBe('AM 00:00');
+    expect(formatMinuteOfDayKo(9 * 60)).toBe('AM 9:00');
+    expect(formatMinuteOfDayKo(24 * 60)).toBe('AM 00:00');
+    expect(formatHhmmClockKo('24:00')).toBe('AM 00:00');
+    expect(formatHhmmClockKo('14:30')).toContain('PM');
   });
 
   it('sums planned minutes and sorts by order', () => {

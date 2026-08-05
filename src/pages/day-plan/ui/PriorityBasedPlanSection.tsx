@@ -97,6 +97,7 @@ import {
   formatMinutesToHHmm,
   getPickerCategoryItem,
   getPickerCategoryLabel,
+  endsOnNextCalendarDay,
   isOvernightHhmmRange,
   PICKER_CATEGORIES,
   planDayIntroFromRange,
@@ -242,15 +243,22 @@ function formatTimelineHeaderDateKo(dateKey: string): string {
   return `${WEEKDAY_LONG_KO[d.getDay()]}, ${mo}월 ${day}일`;
 }
 
-/** 우선 순위 집중 구간 한 줄 (시계 모달과 동일 기준) */
-function formatPriorityWindowLine(start: string, end: string): string {
+/** 우선 순위 집중 구간 한 줄 — 날짜 경계를 넘는 종료에는 실제 날짜를 표시 */
+function formatPriorityWindowLine(
+  start: string,
+  end: string,
+  dateKey: string,
+  dateKeyEnd: string,
+): string {
   const overnight = isOvernightHhmmRange(start, end);
   const ps = parseHHmmToMinutes(start.trim());
   const pe = parseHHmmToMinutes(end.trim());
   if (ps === null || pe === null) return '';
-  const eStr = pe === 24 * 60 ? '24:00(자정)' : formatMinuteOfDayKo(pe);
-  if (overnight) {
-    return `${formatMinuteOfDayKo(ps)} — 다음날 ${eStr}`;
+  const eStr = formatMinuteOfDayKo(pe);
+  if (overnight || pe === 24 * 60) {
+    const rangeHi = dateKey <= dateKeyEnd ? dateKeyEnd : dateKey;
+    const endDateKey = pe === 24 * 60 ? addDaysToLocalDateKey(rangeHi, 1) : rangeHi;
+    return `${formatMinuteOfDayKo(ps)} — ${formatDateKeyDisplayKo(endDateKey)} ${eStr}`;
   }
   return `${formatMinuteOfDayKo(ps)} — ${eStr}`;
 }
@@ -259,9 +267,6 @@ function formatPriorityWindowLine(start: string, end: string): string {
 function formatOvernightTailEndHeadline(end: string): string {
   const pe = parseHHmmToMinutes(end.trim());
   if (pe === null) return '';
-  if (pe === 24 * 60) {
-    return '자정(24:00)';
-  }
   return formatMinuteOfDayKo(pe);
 }
 
@@ -373,7 +378,7 @@ function BlinkingTimeColon({ dotColor }: { dotColor: string }) {
 function flipClockInitialDrafts(v: string): { hour: string; min: string } {
   const p = parseHHmmToMinutes(v.trim());
   const tm = p !== null ? p : 9 * 60;
-  if (tm === 24 * 60) return { hour: '24', min: '00' };
+  if (tm === 24 * 60) return { hour: '00', min: '00' };
   const h24v = Math.floor(tm / 60);
   const mv = tm % 60;
   const { h12: h12v } = h24To12(h24v);
@@ -420,7 +425,7 @@ function FlipClockTimePair({
     const p = parseHHmmToMinutes(value.trim());
     const tm = p !== null ? p : 9 * 60;
     if (tm === 24 * 60) {
-      setHourDraft('24');
+      setHourDraft('00');
       setMinDraft('00');
       return;
     }
@@ -463,8 +468,14 @@ function FlipClockTimePair({
         }
         return;
       }
+      if (n === 0) {
+        onChange('24:00');
+        setMinDraft('00');
+        return;
+      }
       if (n === 24) {
         onChange('24:00');
+        setHourDraft('00');
         setMinDraft('00');
         return;
       }
@@ -489,17 +500,17 @@ function FlipClockTimePair({
     const d = hourDraft.replace(/\D/g, '').slice(0, 2);
     if (atMidnight) {
       if (d === '' || d === '0') {
-        setHourDraft('24');
+        setHourDraft('00');
         return;
       }
       const n = parseInt(d, 10);
       if (!Number.isFinite(n)) {
-        setHourDraft('24');
+        setHourDraft('00');
         return;
       }
-      if (n === 24) {
+      if (n === 0 || n === 24) {
         onChange('24:00');
-        setHourDraft('24');
+        setHourDraft('00');
         setMinDraft('00');
         return;
       }
@@ -510,7 +521,7 @@ function FlipClockTimePair({
         setHourDraft(String(n).padStart(2, '0'));
         return;
       }
-      setHourDraft('24');
+      setHourDraft('00');
       return;
     }
 
@@ -638,8 +649,8 @@ function FlipClockTimePair({
                 pointerEvents="none"
                 style={flipStyles.ampmBadge}
                 accessibilityRole="text"
-                accessibilityLabel="자정, 하루의 끝(24시)">
-                <ThemedText style={[flipStyles.ampmText, { color: palette.ampm }]}>자정</ThemedText>
+                accessibilityLabel="AM 00:00, 다음 날짜 자정">
+                <ThemedText style={[flipStyles.ampmText, { color: palette.ampm }]}>AM</ThemedText>
               </View>
             ) : (
               <Pressable
@@ -647,8 +658,10 @@ function FlipClockTimePair({
                 hitSlop={8}
                 style={flipStyles.ampmBadge}
                 accessibilityRole="button"
-                accessibilityLabel={ap === '오전' ? '오전, 탭하면 오후로 전환' : '오후, 탭하면 오전으로 전환'}>
-                <ThemedText style={[flipStyles.ampmText, { color: palette.ampm }]}>{ap}</ThemedText>
+                accessibilityLabel={ap === '오전' ? 'AM, 탭하면 PM으로 전환' : 'PM, 탭하면 AM으로 전환'}>
+                <ThemedText style={[flipStyles.ampmText, { color: palette.ampm }]}>
+                  {ap === '오전' ? 'AM' : 'PM'}
+                </ThemedText>
               </Pressable>
             )}
             <TextInput
@@ -934,7 +947,7 @@ export function PriorityBasedPlanSection({
   const [draftPriorityStart, setDraftPriorityStart] = useState(priorityStart);
   const [draftPriorityEnd, setDraftPriorityEnd] = useState(priorityEnd);
   const [draftEndNextDay, setDraftEndNextDay] = useState<boolean>(() =>
-    isOvernightHhmmRange(priorityStart, priorityEnd),
+    endsOnNextCalendarDay(priorityStart, priorityEnd),
   );
   const draftEndNextDayPinnedRef = useRef(false);
   const [monthCursor, setMonthCursor] = useState(() => toMonthStart(new Date()));
@@ -959,13 +972,16 @@ export function PriorityBasedPlanSection({
   const modalClockFaceHints = useMemo(() => {
     const { lo, hi } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
     const startKey = priorityClockCaptionDateKeyStart(lo);
-    const endKey = draftEndNextDay
+    const endNextDay =
+      draftEndNextDay || endsOnNextCalendarDay(draftPriorityStart, draftPriorityEnd);
+    const endKey = endNextDay
       ? addDaysToLocalDateKey(lo, 1)
       : priorityClockCaptionDateKeyEnd(lo, hi, draftPriorityStart, draftPriorityEnd);
     return {
       startDateCaption: formatDateKeyCompactKo(startKey),
       endDateCaption: formatDateKeyCompactKo(endKey),
       endNextDayOnlyBadge: false,
+      endNextDaySelected: endNextDay,
     };
   }, [
     draftEndNextDay,
@@ -2458,8 +2474,14 @@ export function PriorityBasedPlanSection({
   }, [priorityStart, priorityEnd]);
 
   const priorityWindowLine = useMemo(
-    () => formatPriorityWindowLine(priorityStart, priorityEnd),
-    [priorityStart, priorityEnd],
+    () =>
+      formatPriorityWindowLine(
+        priorityStart,
+        priorityEnd,
+        priorityPlanDateKey,
+        priorityPlanDateKeyEnd,
+      ),
+    [priorityStart, priorityEnd, priorityPlanDateKey, priorityPlanDateKeyEnd],
   );
 
   const { lo: planRangeLo, hi: planRangeHi } = useMemo(
@@ -2503,18 +2525,24 @@ export function PriorityBasedPlanSection({
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDraftPriorityStart(priorityStart);
     setDraftPriorityEnd(priorityEnd);
-    // 시계 자정 넘김만 기본값으로 쓴다. 달력 다중일만으로 '다음날 종료'를 켜면
-    // 칩(당일 시각)과 구간 모드가 어긋난다.
-    setDraftEndNextDay(isOvernightHhmmRange(priorityStart, priorityEnd));
+    // `24:00`은 저장 경계값이지만 UI에서는 다음 날짜 `AM 00:00`으로 취급한다.
+    setDraftEndNextDay(endsOnNextCalendarDay(priorityStart, priorityEnd));
     draftEndNextDayPinnedRef.current = false;
     setPriorityTimeModalOpen(true);
   }, [priorityEnd, priorityStart]);
+
+  useEffect(() => {
+    if (!priorityTimeModalOpen) return;
+    if (!endsOnNextCalendarDay(draftPriorityStart, draftPriorityEnd)) return;
+    if (draftEndNextDay) return;
+    setDraftEndNextDay(true);
+  }, [priorityTimeModalOpen, draftPriorityStart, draftPriorityEnd, draftEndNextDay]);
 
   const setDraftPriorityStartWithSync = useCallback(
     (next: string) => {
       setDraftPriorityStart(next);
       if (!draftEndNextDayPinnedRef.current) {
-        setDraftEndNextDay(isOvernightHhmmRange(next, draftPriorityEnd));
+        setDraftEndNextDay(endsOnNextCalendarDay(next, draftPriorityEnd));
       }
     },
     [draftPriorityEnd],
@@ -2523,8 +2551,13 @@ export function PriorityBasedPlanSection({
   const setDraftPriorityEndWithSync = useCallback(
     (next: string) => {
       setDraftPriorityEnd(next);
+      // `24:00`은 항상 다음 날짜 자정이므로 pin과 무관하게 다음 날을 켠다.
+      if (next.trim() === '24:00') {
+        setDraftEndNextDay(true);
+        return;
+      }
       if (!draftEndNextDayPinnedRef.current) {
-        setDraftEndNextDay(isOvernightHhmmRange(draftPriorityStart, next));
+        setDraftEndNextDay(endsOnNextCalendarDay(draftPriorityStart, next));
       }
     },
     [draftPriorityStart],
@@ -2533,10 +2566,16 @@ export function PriorityBasedPlanSection({
   const toggleDraftEndNextDay = useCallback(
     (target: boolean) => {
       void Haptics.selectionAsync();
+      // 종료가 `24:00`(AM 00:00)이면 당일로 내릴 수 없다.
+      if (!target && draftPriorityEnd.trim() === '24:00') {
+        draftEndNextDayPinnedRef.current = true;
+        setDraftEndNextDay(true);
+        return;
+      }
       draftEndNextDayPinnedRef.current = true;
       setDraftEndNextDay(target);
     },
-    [],
+    [draftPriorityEnd],
   );
 
   const closePriorityTimeModal = useCallback(() => {
@@ -2548,21 +2587,26 @@ export function PriorityBasedPlanSection({
     Keyboard.dismiss();
     const ps = parseHHmmToMinutes(draftPriorityStart);
     const pe = parseHHmmToMinutes(draftPriorityEnd);
-    if (ps !== null && pe !== null && !draftEndNextDay && pe <= ps) {
+    const endNextDay =
+      draftEndNextDay || endsOnNextCalendarDay(draftPriorityStart, draftPriorityEnd);
+    if (ps !== null && pe !== null && !endNextDay && pe <= ps) {
       Alert.alert('시간 구간', '당일 종료를 쓰려면 종료 시각이 시작 시각보다 늦어야 해요.');
       return;
     }
     onChangePriorityStart(draftPriorityStart);
     onChangePriorityEnd(draftPriorityEnd);
     const isNaturalOvernight = isOvernightHhmmRange(draftPriorityStart, draftPriorityEnd);
-    if (draftEndNextDay && !isNaturalOvernight) {
+    // `24:00` 자체가 현재 종료일 다음 자정 경계이므로 날짜 범위를 한 번 더 늘리지 않는다.
+    if (pe === 24 * 60) {
+      // 현재 날짜 범위를 유지
+    } else if (endNextDay && !isNaturalOvernight) {
       const { lo } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
       const nextDay = addDaysToLocalDateKey(lo, 1);
       applyPriorityPlanCalendarRange(lo, nextDay);
-    } else if (!draftEndNextDay && isNaturalOvernight) {
+    } else if (!endNextDay && isNaturalOvernight) {
       const { lo } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
       applyPriorityPlanCalendarRange(lo, lo);
-    } else if (!draftEndNextDay && !isNaturalOvernight) {
+    } else if (!endNextDay && !isNaturalOvernight) {
       // 당일 시계 창인데 날짜만 이틀로 남아 있으면(이전 overnight 잔존) 하루로 맞춤
       const { lo, hi } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
       if (hi === addDaysToLocalDateKey(lo, 1)) {
@@ -2827,16 +2871,24 @@ export function PriorityBasedPlanSection({
                 style={[
                   styles.endDateChoiceBtn,
                   {
-                    backgroundColor: !draftEndNextDay ? tabColors.activeBg : tabColors.inactiveBg,
-                    borderColor: !draftEndNextDay ? tabColors.activeBorder : tabColors.inactiveBorder,
-                    borderWidth: !draftEndNextDay ? 2 : 1,
+                    backgroundColor: !modalClockFaceHints.endNextDaySelected
+                      ? tabColors.activeBg
+                      : tabColors.inactiveBg,
+                    borderColor: !modalClockFaceHints.endNextDaySelected
+                      ? tabColors.activeBorder
+                      : tabColors.inactiveBorder,
+                    borderWidth: !modalClockFaceHints.endNextDaySelected ? 2 : 1,
                   },
                 ]}
                 onPress={() => toggleDraftEndNextDay(false)}>
                 <ThemedText
                   style={[
                     styles.endDateChoiceText,
-                    { color: !draftEndNextDay ? tabColors.activeIcon : tabColors.inactiveIcon },
+                    {
+                      color: !modalClockFaceHints.endNextDaySelected
+                        ? tabColors.activeIcon
+                        : tabColors.inactiveIcon,
+                    },
                   ]}>
                   당일
                 </ThemedText>
@@ -2845,16 +2897,24 @@ export function PriorityBasedPlanSection({
                 style={[
                   styles.endDateChoiceBtn,
                   {
-                    backgroundColor: draftEndNextDay ? tabColors.activeBg : tabColors.inactiveBg,
-                    borderColor: draftEndNextDay ? tabColors.activeBorder : tabColors.inactiveBorder,
-                    borderWidth: draftEndNextDay ? 2 : 1,
+                    backgroundColor: modalClockFaceHints.endNextDaySelected
+                      ? tabColors.activeBg
+                      : tabColors.inactiveBg,
+                    borderColor: modalClockFaceHints.endNextDaySelected
+                      ? tabColors.activeBorder
+                      : tabColors.inactiveBorder,
+                    borderWidth: modalClockFaceHints.endNextDaySelected ? 2 : 1,
                   },
                 ]}
                 onPress={() => toggleDraftEndNextDay(true)}>
                 <ThemedText
                   style={[
                     styles.endDateChoiceText,
-                    { color: draftEndNextDay ? tabColors.activeIcon : tabColors.inactiveIcon },
+                    {
+                      color: modalClockFaceHints.endNextDaySelected
+                        ? tabColors.activeIcon
+                        : tabColors.inactiveIcon,
+                    },
                   ]}>
                   다음 날
                 </ThemedText>

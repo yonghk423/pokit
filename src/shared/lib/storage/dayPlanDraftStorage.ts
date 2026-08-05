@@ -2,6 +2,8 @@ import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 
 export type PersistedDayPlanDraft = {
+  /** 날짜별 루틴·완료 상태 롤오버 마이그레이션 버전 */
+  dailyRolloverVersion?: 1;
   planMode: 'priority' | 'todoList' | 'reading' | 'quickMemo' | 'dayNote';
   isFocusStarted: boolean;
   completedFocusCategoryKeys: string[];

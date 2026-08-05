@@ -66,6 +66,8 @@ export function useAppBootstrap() {
       useDayPlanDraftStore.getState().hydrate();
       useDayPlanTodoStore.getState().hydrate();
       useFixedFlowSetsStore.getState().hydrate();
+      useDayPlanDraftStore.getState().rollPriorityPlanForwardIfEnded();
+      useDayPlanStore.getState().prunePastEndedBlocks();
       syncTodayTabWithFixedRoutineApply();
       registerOtherCategoryResolverFromStorage();
 
@@ -206,6 +208,9 @@ export function useAppBootstrap() {
     syncLiveActivityIfSessionInProgress();
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
+        useDayPlanDraftStore.getState().rollPriorityPlanForwardIfEnded();
+        useDayPlanStore.getState().prunePastEndedBlocks();
+        syncTodayTabWithFixedRoutineApply();
         syncLiveActivityIfSessionInProgress();
         void useLocalNotificationsStore.getState().refreshPermission();
         void syncCategoryReminderNotifications();

@@ -36,7 +36,6 @@ export const CATEGORIES: { key: string; label: string; icon: string }[] = [
 
   // ─── 생산성을 높이는 도구 ───
   { key: 'reading', label: PRIORITY_CATALOG_PICKER_LABELS.reading, icon: 'book.closed.fill' },
-  { key: 'work', label: PRIORITY_CATALOG_PICKER_LABELS.work, icon: 'square.and.pencil' },
 
   // ─── 레거시 호환 ───
   { key: 'other', label: PRIORITY_CATALOG_PICKER_LABELS.other, icon: 'person.fill' },
@@ -49,6 +48,11 @@ export type PickerCategoryItem = (typeof PICKER_CATEGORIES)[number];
 
 /** 제거됐지만 저장된 우선순위·고정 루틴에 남을 수 있는 키 — 행 표시용 */
 const LEGACY_PICKER_BY_KEY: Record<string, PickerCategoryItem> = {
+  work: {
+    key: 'work',
+    label: PRIORITY_CATALOG_PICKER_LABELS.work,
+    icon: 'square.and.pencil',
+  } as unknown as PickerCategoryItem,
   water: {
     key: 'water',
     label: '수분섭취',
@@ -226,6 +230,16 @@ export function sortedPlanDateRange(startKey: string, endKey: string): { lo: str
 /** @deprecated 이름 호환 — `isOvernightPriorityWindow`와 동일 */
 export { isOvernightPriorityWindow as isOvernightHhmmRange } from '@entities/day-plan';
 
+/**
+ * 종료가 UI상 다음 날짜인지.
+ * 저장값 `24:00`(당일 끝)은 화면에서 다음 날짜 `AM 00:00`이므로 true.
+ */
+export function endsOnNextCalendarDay(start: string, end: string): boolean {
+  const pe = parseHHmmToMinutes(end.trim());
+  if (pe === 24 * 60) return true;
+  return isOvernightPriorityWindow(start, end);
+}
+
 type MeridiemKo = '오전' | '오후';
 
 function from12hPartsToTotal(h12: number, min: number, ap: MeridiemKo): number {
@@ -342,7 +356,7 @@ export function priorityClockCaptionDateKeyEnd(
   const ps = parseHHmmToMinutes(priorityStart.trim());
   const pe = parseHHmmToMinutes(priorityEnd.trim());
   if (ps === null || pe === null) return rangeHi;
-  if (pe === 24 * 60 && pe > ps) return rangeHi;
+  if (pe === 24 * 60 && pe > ps) return addDaysToLocalDateKey(rangeHi, 1);
   if (pe < ps) {
     return rangeLo === rangeHi ? addDaysToLocalDateKey(rangeHi, 1) : rangeHi;
   }

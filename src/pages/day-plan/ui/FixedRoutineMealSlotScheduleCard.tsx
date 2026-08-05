@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import {
   DAY_MEAL_SLOT_LABEL,
@@ -6,8 +6,9 @@ import {
   type DayMealSlotSchedule,
 } from '@shared/lib/storage';
 import { formatHhmmClockKo } from '@entities/day-plan';
-import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+
+import { FixedRoutineSettingsButton } from './FixedRoutineSettingsButton';
 
 type Props = {
   schedule: DayMealSlotSchedule;
@@ -39,21 +40,13 @@ export function FixedRoutineMealSlotScheduleCard({
           ).join(' · ')}
         </ThemedText>
       </View>
-      <Pressable
-        accessibilityRole="button"
+      <FixedRoutineSettingsButton
+        isDark={isDark}
+        ink={ink}
+        line={line}
         accessibilityLabel="시간대 설정"
         onPress={onPressSettings}
-        style={({ pressed }) => [
-          styles.settingsBtn,
-          {
-            borderColor: line,
-            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF',
-          },
-          pressed && { opacity: 0.72 },
-        ]}>
-        <IconSymbol name="clock" size={12} color={ink} />
-        <ThemedText style={[styles.settingsBtnLabel, { color: ink }]}>설정</ThemedText>
-      </Pressable>
+      />
     </View>
   );
 }
@@ -80,23 +73,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   summary: {
-    fontSize: 10,
-    fontWeight: '500',
-    lineHeight: 15,
-  },
-  settingsBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 0,
-    borderWidth: 2,
-    flexShrink: 0,
-    backgroundColor: '#FFFFFF',
-  },
-  settingsBtnLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '500',
+    lineHeight: 16,
   },
 });

@@ -439,11 +439,12 @@ function BlockText({
           const isBackspaceLike = key === 'Backspace' || key === 'Delete';
           if (isBackspaceLike && onBackspaceAtStartRef.current) {
             const { start, end } = selectionRef.current;
+            const atStart = start === 0 && end === 0;
+            const empty = isVisuallyEmptyText(effectiveText);
             const onlySentinel =
-              useBackspaceSentinel && start <= 1 && end <= 1 && isVisuallyEmptyText(effectiveText);
-            // 비어 있는 줄(또는 센티널 전용 줄)에서만 구조 변경을 트리거한다.
-            // 비어 있지 않은 줄의 맨 앞 Backspace는 실수로 이전 줄과 합쳐지는 부작용을 막기 위해 무시한다.
-            if (onlySentinel || isVisuallyEmptyText(effectiveText)) {
+              useBackspaceSentinel && start <= 1 && end <= 1 && empty;
+            // 빈 줄/캡션·줄 맨 앞에서는 부모에게 구조 변경(이미지 제거·문단 병합)을 맡긴다.
+            if (onlySentinel || empty || atStart) {
               event.preventDefault();
               triggerBackspaceAtStart();
               return;
@@ -666,6 +667,7 @@ function StudyDocumentBlockView({
           onChangeText={(text) => onChangeBlock(block.id, { text })}
           onFocus={() => onFocusBlock(block.id)}
           onBlur={onBlurBlock}
+          onBackspaceAtStart={onBackspaceAtStart}
           inputAccessoryViewID={inputAccessoryViewID}
           inputRef={(ref) => registerInputRef(block.id, ref)}
           onEnterKey={onEnterKey}
@@ -1412,19 +1414,61 @@ export function StudyDocumentEditor({
       const liveText = currentText ?? block.text;
       const blockIsVisuallyEmpty = isVisuallyEmptyText(liveText);
 
+      const removeImageBlockAt = (imageIndex: number, focusAfter: { id: string; cursor: number }) => {
+        Alert.alert('사진 삭제', '이 사진을 삭제할까요?', [
+          { text: '취소', style: 'cancel' },
+          {
+            text: '삭제',
+            style: 'destructive',
+            onPress: () => {
+              const latestPage = getWorkStudyActivePage(documentRef.current);
+              const latestBlocks = latestPage?.blocks ?? activeBlocks;
+              if (imageIndex < 0 || imageIndex >= latestBlocks.length) return;
+              if (latestBlocks[imageIndex]?.kind !== 'image') return;
+              pushHistory();
+              if (latestBlocks.length === 1) {
+                transferFocusToBlock(focusAfter.id, 0);
+                replaceActiveBlocks([{ id: latestBlocks[imageIndex]!.id, kind: 'paragraph', text: '' }]);
+                setActiveListKind(null);
+              } else {
+                const next = latestBlocks.filter((_, index) => index !== imageIndex);
+                transferFocusToBlock(focusAfter.id, focusAfter.cursor);
+                replaceActiveBlocks(next);
+              }
+              void Haptics.selectionAsync();
+            },
+          },
+        ]);
+      };
+
       // 빈 줄은 커서 위치와 무관하게 제거한다.
-      // (센티널·선택영역 stale로 cursor>0 이어도 빈 번호 줄이 안 지워지던 원인)
+      // (센티널·선택영역 stale로 cursor>0 이어도 빈 텍스트 줄이 안 지워지던 원인)
       if (blockIsVisuallyEmpty) {
+        if (block.kind === 'image') {
+          const focusId =
+            blocks.length === 1
+              ? block.id
+              : resolvedIndex > 0
+                ? blocks[resolvedIndex - 1]!.id
+                : blocks[resolvedIndex + 1]!.id;
+          const focusCursor =
+            blocks.length === 1
+              ? 0
+              : resolvedIndex > 0
+                ? blocks[resolvedIndex - 1]!.text.length
+                : 0;
+          removeImageBlockAt(resolvedIndex, { id: focusId, cursor: focusCursor });
+          return;
+        }
+
         pushHistory();
 
         if (blocks.length === 1) {
           const cleared: WorkStudyDocBlock = {
-            ...block,
+            id: block.id,
             kind: 'paragraph',
             text: '',
-            marks: undefined,
           };
-          delete cleared.checked;
           transferFocusToBlock(block.id, 0);
           replaceActiveBlocks([cleared]);
           setActiveListKind(null);
@@ -1449,6 +1493,19 @@ export function StudyDocumentEditor({
 
       if (resolvedIndex > 0) {
         const prev = blocks[resolvedIndex - 1]!;
+        // 바로 위가 이미지면 확인 후 제거한다.
+        if (prev.kind === 'image') {
+          removeImageBlockAt(resolvedIndex - 1, { id: blockId, cursor: 0 });
+          return;
+        }
+        if (prev.kind === 'table') {
+          pushHistory();
+          const next = blocks.filter((_, index) => index !== resolvedIndex - 1);
+          transferFocusToBlock(blockId, 0);
+          replaceActiveBlocks(next);
+          void Haptics.selectionAsync();
+          return;
+        }
         const canMergeParagraph = block.kind === 'paragraph' && prev.kind === 'paragraph';
         if (canMergeParagraph) {
           pushHistory();

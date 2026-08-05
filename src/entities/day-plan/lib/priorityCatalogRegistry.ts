@@ -7,7 +7,7 @@ import { isBuiltinPresetCustomFlowId } from '@shared/lib/storage/defaultPriority
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 
 /** 담기·나만의 탭 공통 — 카탈로그에서 숨기는 표준 키 */
-export const CATALOG_REMOVED_KEYS = new Set<string>(['other']);
+export const CATALOG_REMOVED_KEYS = new Set<string>(['other', 'work']);
 
 /** 제거된 표준 키 — 기존 저장 데이터 마이그레이션용 */
 export const RETIRED_STANDARD_CATALOG_KEYS = new Set<string>([

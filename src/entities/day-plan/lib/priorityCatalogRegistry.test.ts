@@ -8,7 +8,7 @@ import {
 describe('isNonDeletableCatalogKey', () => {
   it('protects standard catalog keys and builtin preset flows', () => {
     expect(isNonDeletableCatalogKey('reading')).toBe(true);
-    expect(isNonDeletableCatalogKey('work')).toBe(true);
+    expect(isNonDeletableCatalogKey('work')).toBe(false);
     expect(isNonDeletableCatalogKey('healthIntake')).toBe(true);
     expect(isNonDeletableCatalogKey('fasting')).toBe(true);
     expect(isNonDeletableCatalogKey('customFlow:preset_daily_clean')).toBe(true);
@@ -25,31 +25,39 @@ describe('resolveUserBagRoutineCatalogKeys', () => {
     expect(
       resolveUserBagRoutineCatalogKeys({
         priorityCategoryOrder: ['healthIntake', 'work'],
-        routineCatalogSelectionKeys: ['work'],
+        routineCatalogSelectionKeys: ['reading'],
       }),
-    ).toEqual(['work']);
+    ).toEqual(['reading']);
   });
 });
 
 describe('sanitizePriorityCategoryOrderKeys', () => {
   it('removes legacy water without adding healthIntake', () => {
-    expect(sanitizePriorityCategoryOrderKeys(['water', 'work'])).toEqual(['work']);
+    expect(sanitizePriorityCategoryOrderKeys(['water', 'reading'])).toEqual(['reading']);
   });
 
   it('keeps healthIntake when explicitly selected', () => {
-    expect(sanitizePriorityCategoryOrderKeys(['healthIntake', 'work'])).toEqual([
+    expect(sanitizePriorityCategoryOrderKeys(['healthIntake', 'reading'])).toEqual([
       'healthIntake',
-      'work',
+      'reading',
     ]);
   });
 
   it('drops retired keys before catalog filter', () => {
     expect(sanitizePriorityCategoryOrderKeys(['medicine', 'reading'])).toEqual(['reading']);
   });
+
+  it('drops note(work) from routine catalog lists', () => {
+    expect(sanitizePriorityCategoryOrderKeys(['work', 'reading'])).toEqual(['reading']);
+  });
 });
 
 describe('filterKeysToPriorityCatalog', () => {
   it('excludes retired water key', () => {
-    expect(filterKeysToPriorityCatalog(['water', 'work'])).toEqual(['work']);
+    expect(filterKeysToPriorityCatalog(['water', 'reading'])).toEqual(['reading']);
+  });
+
+  it('excludes note(work) from routine catalog', () => {
+    expect(filterKeysToPriorityCatalog(['work', 'reading'])).toEqual(['reading']);
   });
 });

@@ -315,6 +315,9 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         ? raw.priorityPlanDateKeyEnd
         : raw.priorityPlanDateKey;
     const keepRange = rangeHi >= today;
+    const needsDailyRolloverMigration = raw.dailyRolloverVersion !== 1;
+    const resetDailyPlan = !keepRange && loadPriorityDayRollMode() === 'reset';
+    const keepDailyProgress = keepRange && !needsDailyRolloverMigration;
 
     set({
       planMode:
@@ -327,11 +330,11 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
             : raw.planMode === 'dayNote'
               ? 'dayNote'
               : 'priority',
-      isFocusStarted: Boolean(raw.isFocusStarted),
-      completedFocusCategoryKeys: Array.isArray(raw.completedFocusCategoryKeys)
+      isFocusStarted: keepDailyProgress && Boolean(raw.isFocusStarted),
+      completedFocusCategoryKeys: keepDailyProgress && Array.isArray(raw.completedFocusCategoryKeys)
         ? raw.completedFocusCategoryKeys
         : [],
-      planCompletionDismissedKeys: Array.isArray(raw.planCompletionDismissedKeys)
+      planCompletionDismissedKeys: keepDailyProgress && Array.isArray(raw.planCompletionDismissedKeys)
         ? raw.planCompletionDismissedKeys
         : [],
       priorityPlanDateKey: keepRange ? raw.priorityPlanDateKey : today,
@@ -340,10 +343,14 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       priorityOvernightEndAuto: keepRange ? Boolean(raw.priorityOvernightEndAuto) : false,
       priorityStart: typeof raw.priorityStart === 'string' ? raw.priorityStart : get().priorityStart,
       priorityEnd: typeof raw.priorityEnd === 'string' ? raw.priorityEnd : get().priorityEnd,
-      priorityCategoryOrder: sanitizePriorityCategoryOrderKeys(
-        Array.isArray(raw.priorityCategoryOrder) ? raw.priorityCategoryOrder : [],
-      ),
-      priorityCategoryImportance: normalizePriorityCategoryImportance(raw.priorityCategoryImportance),
+      priorityCategoryOrder: resetDailyPlan
+        ? []
+        : sanitizePriorityCategoryOrderKeys(
+            Array.isArray(raw.priorityCategoryOrder) ? raw.priorityCategoryOrder : [],
+          ),
+      priorityCategoryImportance: resetDailyPlan
+        ? {}
+        : normalizePriorityCategoryImportance(raw.priorityCategoryImportance),
       routineHistoryPendingByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPendingByDate),
       routineHistoryPlannedKeysByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPlannedKeysByDate),
       quickMemoDraft: typeof raw.quickMemoDraft === 'string' ? raw.quickMemoDraft : '',
@@ -828,6 +835,7 @@ registerDraftSyncTodayTabAccessors(
 useDayPlanDraftStore.subscribe((state) => {
   if (!state.isHydrated) return;
   saveDayPlanDraft({
+    dailyRolloverVersion: 1,
     planMode: state.planMode,
     isFocusStarted: state.isFocusStarted,
     completedFocusCategoryKeys: state.completedFocusCategoryKeys,
@@ -859,6 +867,7 @@ function persistDayPlanDraft(): void {
   const s = useDayPlanDraftStore.getState();
   if (!s.isHydrated) return;
   saveDayPlanDraft({
+    dailyRolloverVersion: 1,
     planMode: s.planMode,
     isFocusStarted: s.isFocusStarted,
     completedFocusCategoryKeys: s.completedFocusCategoryKeys,
