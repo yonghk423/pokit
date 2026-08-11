@@ -314,7 +314,9 @@ export function syncSpinePlanBlocksWithAppliedFixedRoutines(input: {
   const spineByKey = new Map<string, DayPlanBlock>();
   for (const block of keptSpineBlocks) {
     const key = block.categoryKey?.trim();
-    if (key) spineByKey.set(key, block);
+    // 고정 루틴 동기화가 갱신할 대표 블록만 고른다.
+    // 같은 카테고리를 사용자가 여러 번 둔 나머지 블록은 id별로 보존한다.
+    if (key && !spineByKey.has(key)) spineByKey.set(key, block);
   }
 
   let maxOrder = input.planBlocks.reduce((acc, block) => Math.max(acc, block.order), -1);
@@ -375,28 +377,20 @@ export function syncSpinePlanBlocksWithAppliedFixedRoutines(input: {
     });
   }
 
-  // 같은 categoryKey로 여러 스파인 블록이 있으면 spineByKey 해석 결과가
-  // 동일 id로 반복될 수 있어, key·id 기준으로 한 번만 남긴다.
   const orderedSpineBlocks: DayPlanBlock[] = [];
   const seenSpineIds = new Set<string>();
-  const seenSpineKeys = new Set<string>();
   for (const block of keptSpineBlocks) {
     const key = block.categoryKey?.trim();
-    if (key && !spineByKey.has(key)) continue;
-    const resolved = key ? spineByKey.get(key)! : block;
+    const representative = key ? spineByKey.get(key) : undefined;
+    const resolved =
+      representative?.id === block.id ? representative : block;
     if (seenSpineIds.has(resolved.id)) continue;
-    if (key) {
-      if (seenSpineKeys.has(key)) continue;
-      seenSpineKeys.add(key);
-    }
     seenSpineIds.add(resolved.id);
     orderedSpineBlocks.push(resolved);
   }
 
-  for (const [key, block] of spineByKey.entries()) {
-    if (seenSpineKeys.has(key)) continue;
+  for (const block of spineByKey.values()) {
     if (seenSpineIds.has(block.id)) continue;
-    seenSpineKeys.add(key);
     seenSpineIds.add(block.id);
     orderedSpineBlocks.push(block);
   }

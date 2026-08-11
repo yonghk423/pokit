@@ -38,6 +38,28 @@ describe('priorityCatalogLayoutMode', () => {
     ).toEqual(['work']);
   });
 
+  it('resolveCatalogSelectedKeys uses timeline blocks instead of bag order for spine mode', () => {
+    expect(
+      resolveCatalogSelectedKeys({
+        layoutMode: 'spine',
+        priorityCategoryOrder: ['reading'],
+        prioritySectionsCategoryOrder: ['work'],
+        planBlocks: [
+          {
+            id: 'spine-health',
+            title: '건강 챙기기',
+            category: '건강',
+            categoryKey: 'healthIntake',
+            startMinutes: 9 * 60,
+            endMinutes: 10 * 60,
+            order: 0,
+            blockOrigin: 'spineTimeline',
+          },
+        ],
+      }),
+    ).toEqual(['healthIntake']);
+  });
+
   it('toggleCatalogItemForLayoutMode appends to bag order', () => {
     const orders: string[][] = [];
     const result = toggleCatalogItemForLayoutMode(

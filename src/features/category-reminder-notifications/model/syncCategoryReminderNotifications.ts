@@ -7,6 +7,7 @@ import {
   parseHHmmToMinutes,
   resolveCategoryReminderNotifyWeekdays,
   resolveCustomFlowTemplateKey,
+  resolvePriorityRoutineCategoryKey,
   resolveReminderItemTitle,
   useDayPlanDraftStore,
   useDayPlanStore,
@@ -62,11 +63,11 @@ function collectTodayPlanCategoryKeys(): string[] {
   const plan = useDayPlanStore.getState();
   const keys = new Set<string>();
   for (const key of draft.priorityCategoryOrder) {
-    const k = key.trim();
+    const k = resolvePriorityRoutineCategoryKey(key);
     if (k) keys.add(k);
   }
   for (const key of draft.prioritySectionsCategoryOrder) {
-    const k = key.trim();
+    const k = resolvePriorityRoutineCategoryKey(key);
     if (k) keys.add(k);
   }
   for (const block of plan.blocks) {

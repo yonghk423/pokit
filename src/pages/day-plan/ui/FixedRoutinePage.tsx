@@ -86,6 +86,7 @@ import {
 
 import { getPickerCategoryLabel, isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
+import { resolveFixedRoutineItemIconColor } from '../lib/fixedRoutineItemAppearance';
 import {
   getFixedFlowPresetScheduleHint,
   getFixedFlowPresetScheduleLabel,
@@ -326,8 +327,10 @@ function FlowItemCard({
   }, [shouldPulse, pulse]);
 
   const categoryIconColor = activeIconColorByCategory(categoryKey);
-  const iconColor =
-    isInTodayPlan && enabled ? categoryIconColor : muted;
+  const iconColor = resolveFixedRoutineItemIconColor({
+    categoryAccentColor: categoryIconColor,
+    isInTodayPlan,
+  });
   const labelColor =
     isInTodayPlan && enabled ? (isCompleted ? muted : ink) : muted;
 

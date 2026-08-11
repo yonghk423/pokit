@@ -1,6 +1,6 @@
 import {
-  appendCustomCatalogGroup,
   appendCustomFlowCatalogEntry,
+  createCustomCatalogGroup,
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
 } from '@shared/lib/storage';
@@ -16,6 +16,7 @@ import {
 
 describe('priorityCatalog', () => {
   beforeEach(() => {
+    localStorageClient.removeItem(StorageKeys.customCatalogGroups);
     localStorageClient.removeItem(StorageKeys.customFlowCatalog);
     localStorageClient.removeItem(StorageKeys.goalDetailSettings);
   });
@@ -46,7 +47,7 @@ describe('priorityCatalog', () => {
 
     const sorted = sortAddablePriorityCatalogRows(buildPriorityCatalogRows());
     const userIdx = sorted.findIndex((row) => row.key === 'customFlow:user-b');
-    const standardIdx = sorted.findIndex((row) => row.key === 'water');
+    const standardIdx = sorted.findIndex((row) => row.key === 'healthIntake');
     expect(userIdx).toBeGreaterThanOrEqual(0);
     expect(standardIdx).toBeGreaterThan(userIdx);
   });
@@ -68,6 +69,41 @@ describe('priorityCatalog', () => {
 
     const productivitySection = sections.find((s) => s.groupKey === 'productivity');
     expect(productivitySection).toBeTruthy();
+  });
+
+  it('places user-created routine groups first in the add modal', () => {
+    const group = createCustomCatalogGroup('주말 운동');
+    expect(group).not.toBeNull();
+    if (!group) return;
+
+    appendCustomFlowCatalogEntry({
+      id: 'customFlow:weekend-yoga',
+      groupKey: group.key,
+    });
+    appendCustomFlowCatalogEntry({
+      id: 'customFlow:weekend-cardio',
+      groupKey: group.key,
+    });
+    saveGoalDetailCategoryConfig('customFlow:weekend-yoga', {
+      displayName: '요가',
+      checklist: [],
+    });
+    saveGoalDetailCategoryConfig('customFlow:weekend-cardio', {
+      displayName: '카디오 & 러닝',
+      checklist: [],
+    });
+
+    const sections = buildAddablePriorityCatalogSections({
+      excludedKeys: new Set(),
+      customFlowEntries: listAllCustomFlowCatalogEntries(),
+      customGroups: listCustomCatalogGroups(),
+    });
+
+    expect(sections[0]?.title).toBe('주말 운동');
+    expect(sections[0]?.items.map((item) => item.label)).toEqual([
+      '요가',
+      '카디오 & 러닝',
+    ]);
   });
 
   it('dedupes catalog rows by key', () => {

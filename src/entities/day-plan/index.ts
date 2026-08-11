@@ -388,6 +388,12 @@ export {
   sanitizePriorityCategoryOrderKeys,
 } from './lib/priorityCatalogRegistry';
 export {
+  createPriorityRoutineInstanceKey,
+  isPriorityRoutineInstanceKey,
+  materializePriorityRoutineOccurrenceKeys,
+  resolvePriorityRoutineCategoryKey,
+} from './lib/priorityRoutineInstance';
+export {
   clampHhmmToPriorityWindow,
   isOvernightPriorityWindow
 } from './lib/priorityRoutineWindow';
@@ -452,6 +458,7 @@ export type { PriorityLayoutLinkMode } from './lib/priorityLayoutLinkMode';
 export { buildSpineImportFromBag } from './lib/buildSpineImportFromBag';
 export type { SpineBagImportBlock } from './lib/buildSpineImportFromBag';
 export {
+  isStoredFixedFlowSpineSchedule,
   resolveFixedFlowSpineSchedules,
   sortFixedFlowItemsBySpineSchedule,
 } from './lib/fixedFlowSpineSchedule';

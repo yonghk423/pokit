@@ -14,6 +14,7 @@ import { addDaysToLocalDateKey, getLocalDateKey } from '../lib/localDateKey';
 import { parseHHmmToMinutes } from '../lib/parseTime';
 import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
 import { sanitizePriorityCategoryOrderKeys } from '../lib/priorityCatalogRegistry';
+import { resolvePriorityRoutineCategoryKey } from '../lib/priorityRoutineInstance';
 import {
   buildPrioritySectionCompletionKey,
   parsePrioritySectionCompletionKey,
@@ -621,10 +622,6 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         s.priorityMealSlotOverrides,
         priorityCategoryOrder,
       );
-      const prioritySectionsMealSlots = pruneMealSlotsArrayRecordForOrder(
-        s.prioritySectionsMealSlots,
-        priorityCategoryOrder,
-      );
       const priorityCategoryImportance = prunePriorityCategoryImportanceForOrder(
         s.priorityCategoryImportance,
         priorityCategoryOrder,
@@ -633,7 +630,6 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         priorityCategoryOrder,
         routineHistoryPlannedKeysByDate,
         priorityMealSlotOverrides,
-        prioritySectionsMealSlots,
         priorityCategoryImportance,
       };
     }),
@@ -899,7 +895,17 @@ export function appendPriorityCategoryKeysIfMissing(keys: string[]): void {
   const trimmed = sanitizePriorityCategoryOrderKeys(keys);
   if (trimmed.length === 0) return;
   const { priorityCategoryOrder, setPriorityCategoryOrder } = useDayPlanDraftStore.getState();
-  const next = sanitizePriorityCategoryOrderKeys([...priorityCategoryOrder, ...trimmed]);
+  const existingCategories = new Set(
+    priorityCategoryOrder.map(resolvePriorityRoutineCategoryKey),
+  );
+  const missing = trimmed.filter(
+    (key) => !existingCategories.has(resolvePriorityRoutineCategoryKey(key)),
+  );
+  if (missing.length === 0) return;
+  const next = sanitizePriorityCategoryOrderKeys([
+    ...priorityCategoryOrder,
+    ...missing,
+  ]);
   if (
     next.length === priorityCategoryOrder.length &&
     next.every((key, index) => key === priorityCategoryOrder[index])

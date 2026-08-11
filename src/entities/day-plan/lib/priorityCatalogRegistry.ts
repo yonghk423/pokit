@@ -5,6 +5,7 @@ import {
 import { isBuiltinPresetCustomFlowId } from '@shared/lib/storage/defaultPriorityCatalog';
 
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
+import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 
 /** 담기·나만의 탭 공통 — 카탈로그에서 숨기는 표준 키 */
 export const CATALOG_REMOVED_KEYS = new Set<string>(['other', 'work']);
@@ -71,9 +72,10 @@ export function filterKeysToPriorityCatalog(keys: string[]): string[] {
   const out: string[] = [];
   for (const raw of keys) {
     const key = typeof raw === 'string' ? raw.trim() : '';
-    if (!key || seen.has(key) || !allowed.has(key)) continue;
-    if (!isCustomFlowCategoryKey(key) && CATALOG_REMOVED_KEYS.has(key)) continue;
-    if (RETIRED_STANDARD_CATALOG_KEYS.has(key)) continue;
+    const categoryKey = resolvePriorityRoutineCategoryKey(key);
+    if (!key || !categoryKey || seen.has(key) || !allowed.has(categoryKey)) continue;
+    if (!isCustomFlowCategoryKey(categoryKey) && CATALOG_REMOVED_KEYS.has(categoryKey)) continue;
+    if (RETIRED_STANDARD_CATALOG_KEYS.has(categoryKey)) continue;
     seen.add(key);
     out.push(key);
   }
@@ -84,7 +86,11 @@ export function filterKeysToPriorityCatalog(keys: string[]): string[] {
 export function sanitizePriorityCategoryOrderKeys(keys: readonly string[]): string[] {
   const withoutRetired = [...keys]
     .map((raw) => (typeof raw === 'string' ? raw.trim() : ''))
-    .filter((key) => key && !RETIRED_STANDARD_CATALOG_KEYS.has(key));
+    .filter(
+      (key) =>
+        key &&
+        !RETIRED_STANDARD_CATALOG_KEYS.has(resolvePriorityRoutineCategoryKey(key)),
+    );
   return filterKeysToPriorityCatalog(withoutRetired);
 }
 
@@ -98,5 +104,7 @@ export function resolveUserBagRoutineCatalogKeys(input: {
 }): string[] {
   const catalogKeys = sanitizePriorityCategoryOrderKeys(input.routineCatalogSelectionKeys ?? []);
   if (catalogKeys.length > 0) return catalogKeys;
-  return sanitizePriorityCategoryOrderKeys(input.priorityCategoryOrder);
+  return sanitizePriorityCategoryOrderKeys(
+    [...new Set(input.priorityCategoryOrder.map(resolvePriorityRoutineCategoryKey))],
+  );
 }

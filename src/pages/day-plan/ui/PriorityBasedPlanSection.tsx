@@ -41,11 +41,14 @@ import {
   getLocalMinutesOfDayNow,
   isLikelyPriorityCatalogMonolineTitle,
   isPriorityCompoundBlockTitle,
+  isStoredFixedFlowSpineSchedule,
   isSpineBlockScheduleWithinPriorityWindow,
   isSystemCatalogGroupKey,
   localDateToDateKey,
+  materializePriorityRoutineOccurrenceKeys,
   parseHHmmToMinutes,
   parseLocalDateKeyToDate,
+  resolvePriorityRoutineCategoryKey,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
   resolveSpinePriorityWindow,
@@ -58,7 +61,7 @@ import {
   type CustomFlowTemplateKey,
   useDayPlanStore
 } from '@entities/day-plan';
-import { appendPriorityCategoryKeysIfMissing, useFixedFlowSetsStore } from '@entities/day-plan';
+import { useFixedFlowSetsStore } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   appendCustomFlowCatalogEntry,
@@ -74,6 +77,7 @@ import {
   resolveCurrentMealSlotFromSchedule,
   saveGoalDetailCategoryConfig,
   saveRoutineCatalogSelectionKeys,
+  subscribeCustomFlowCatalog,
   type CategoryMealSlotOverride,
   type DayMealSlot,
 } from '@shared/lib/storage';
@@ -1202,8 +1206,12 @@ export function PriorityBasedPlanSection({
     toMinutes: number;
   } | null>(null);
   const [catalogTick, setCatalogTick] = useState(0);
-  const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
-  const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
+  const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>(() =>
+    listAllCustomFlowCatalogEntries(),
+  );
+  const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>(() =>
+    listCustomCatalogGroups(),
+  );
   const {
     schedule: mealSlotSchedule,
     persistSchedule: persistMealSlotSchedule,
@@ -1241,6 +1249,9 @@ export function PriorityBasedPlanSection({
 
   const fixedFlowSets = useFixedFlowSetsStore((s) => s.sets);
   const fixedFlowActiveSetIds = useFixedFlowSetsStore((s) => s.activeSetIds);
+  const fixedFlowSpineActiveSetIds = useFixedFlowSetsStore(
+    (s) => s.activeSetIdsByLayoutMode.spine,
+  );
   const activeMealSlotsBySetId = useFixedFlowSetsStore((s) => s.activeMealSlotsBySetId);
   const todayAppliedCategoryKeys = useFixedFlowSetsStore((s) => s.todayAppliedCategoryKeys);
   const dayPlanDateKey = useDayPlanStore((s) => s.dateKey);
@@ -1518,6 +1529,17 @@ export function PriorityBasedPlanSection({
     setCatalogTick((n) => n + 1);
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      reloadRoutineCatalog();
+    }, [reloadRoutineCatalog]),
+  );
+
+  useEffect(
+    () => subscribeCustomFlowCatalog(reloadRoutineCatalog),
+    [reloadRoutineCatalog],
+  );
+
   useEffect(() => {
     if (!addRoutineSheetOpen) return;
     reloadRoutineCatalog();
@@ -1525,24 +1547,16 @@ export function PriorityBasedPlanSection({
 
   const addableRoutineSections = useMemo(() => {
     void catalogTick;
-    const excludedKeys = spinePendingGapBounds
-      ? new Set<string>()
-      : new Set(
-          addRoutineTargetSlot ? prioritySectionsCategoryOrder : priorityCategoryOrder,
-        );
     return buildAddablePriorityCatalogSections({
-      excludedKeys,
+      // 이미 담긴 루틴도 다시 추가할 수 있도록 항상 전체 카탈로그를 보여준다.
+      excludedKeys: new Set<string>(),
       customFlowEntries,
       customGroups,
     });
   }, [
-    addRoutineTargetSlot,
     catalogTick,
     customFlowEntries,
     customGroups,
-    priorityCategoryOrder,
-    prioritySectionsCategoryOrder,
-    spinePendingGapBounds,
   ]);
 
   const openAddRoutineForSlot = useCallback((slot: DayMealSlot) => {
@@ -1620,30 +1634,43 @@ export function PriorityBasedPlanSection({
         return;
       }
 
-      const keys = items.map((item) => item.key);
+      const categoryKeys = items.map((item) =>
+        resolvePriorityRoutineCategoryKey(item.key),
+      );
 
       if (addRoutineTargetSlot) {
         const slot = addRoutineTargetSlot;
-        appendPrioritySectionsCategoryKeys(keys);
-        keys.forEach((key) => {
+        const occurrenceKeys = materializePriorityRoutineOccurrenceKeys(
+          categoryKeys,
+          prioritySectionsCategoryOrder,
+        );
+        appendPrioritySectionsCategoryKeys(occurrenceKeys);
+        occurrenceKeys.forEach((key) => {
           addPrioritySectionMealSlot(key, slot);
         });
-        appendRoutineCatalogSelectionKeys(keys);
+        appendRoutineCatalogSelectionKeys(categoryKeys);
+        setLastAddedCategoryKey(occurrenceKeys[occurrenceKeys.length - 1] ?? null);
       } else {
-        appendPriorityCategoryKeysIfMissing(keys);
-        appendRoutineCatalogSelectionKeys(keys);
+        const occurrenceKeys = materializePriorityRoutineOccurrenceKeys(
+          categoryKeys,
+          priorityCategoryOrder,
+        );
+        setPriorityCategoryOrder((current) => [...current, ...occurrenceKeys]);
+        appendRoutineCatalogSelectionKeys(categoryKeys);
+        setLastAddedCategoryKey(occurrenceKeys[occurrenceKeys.length - 1] ?? null);
       }
-      setLastAddedCategoryKey(keys[keys.length - 1] ?? null);
     },
     [
       addPlanBlock,
       addRoutineTargetSlot,
       addPrioritySectionMealSlot,
       alertSpineBlockSaveError,
-      appendPriorityCategoryKeysIfMissing,
       appendPrioritySectionsCategoryKeys,
+      priorityCategoryOrder,
       priorityEnd,
+      prioritySectionsCategoryOrder,
       priorityStart,
+      setPriorityCategoryOrder,
     ],
   );
 
@@ -2107,7 +2134,7 @@ export function PriorityBasedPlanSection({
   const resolveTimelineCategorySettings = useCallback(
     (itemKey: string) => {
       const { categoryKey } = parsePrioritySectionCompletionKey(itemKey);
-      onOpenCategorySettings?.(categoryKey);
+      onOpenCategorySettings?.(resolvePriorityRoutineCategoryKey(categoryKey));
     },
     [onOpenCategorySettings],
   );
@@ -2189,9 +2216,15 @@ export function PriorityBasedPlanSection({
   useEffect(() => {
     const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
     if (!window) return;
+    const activeSetIds = new Set(fixedFlowSpineActiveSetIds);
+    const fixedFlowItems = fixedFlowSets
+      .filter((set) => activeSetIds.has(set.id))
+      .flatMap((set) => set.items);
 
     for (const block of planBlocks) {
       if (block.blockOrigin !== 'spineTimeline') continue;
+      // 고정 루틴에서 명시적으로 저장한 시각은 집중 구간보다 우선한다.
+      if (isStoredFixedFlowSpineSchedule(block, fixedFlowItems)) continue;
       // 자정 넘김 일정은 당일 밴드 클램프 대상이 아님
       if (block.endsNextCalendarDay) continue;
       const clamped = clampSpineBlockToPriorityWindow(
@@ -2211,7 +2244,14 @@ export function PriorityBasedPlanSection({
         endMinutes: clamped.endMinutes,
       });
     }
-  }, [planBlocks, priorityEnd, priorityStart, updatePlanBlock]);
+  }, [
+    fixedFlowSpineActiveSetIds,
+    fixedFlowSets,
+    planBlocks,
+    priorityEnd,
+    priorityStart,
+    updatePlanBlock,
+  ]);
 
   const spineNowMinutes = useMemo(() => {
     void mealSlotNowTick;
@@ -3439,7 +3479,10 @@ export function PriorityBasedPlanSection({
                                     }
                                     onSettings={
                                       onOpenCategorySettings
-                                        ? () => onOpenCategorySettings(cat.key)
+                                        ? () =>
+                                            onOpenCategorySettings(
+                                              resolvePriorityRoutineCategoryKey(cat.key),
+                                            )
                                         : undefined
                                     }
                                     onFinishForToday={
@@ -3450,7 +3493,10 @@ export function PriorityBasedPlanSection({
                                     }
                                     onFocusDetail={
                                       onOpenFocusDetail
-                                        ? () => onOpenFocusDetail(cat.key)
+                                        ? () =>
+                                            onOpenFocusDetail(
+                                              resolvePriorityRoutineCategoryKey(cat.key),
+                                            )
                                         : undefined
                                     }
                                     animateOnMount={lastAddedCategoryKey === cat.key}

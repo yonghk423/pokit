@@ -15,6 +15,7 @@ import {
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 import { normalizeOtherDetailConfig } from './goalCategorySessionConfig';
 import { HEALTH_INTAKE_CATEGORY_KEY, normalizeHealthIntakeDetailConfig } from './healthIntakeDetailConfig';
+import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 import { readRoutineDisplayNameFromConfig } from './routineDisplayName';
 
 const HEALTH_INTAKE_LEGACY_ICONS = new Set(['drop.fill', 'cross.case.fill']);
@@ -123,33 +124,42 @@ function readStoredCategoryAccentColor(categoryKey: string): CustomFlowAccentCol
 
 /** 목표 상세·담기·집중 UI — 저장값 → builtin/customFlow 기본값 */
 export function resolveCategoryCatalogIcon(categoryKey: string): string {
-  const stored = readStoredCategoryIcon(categoryKey);
+  const resolvedCategoryKey = resolvePriorityRoutineCategoryKey(categoryKey);
+  const stored = readStoredCategoryIcon(resolvedCategoryKey);
   if (stored) {
-    if (categoryKey === 'healthIntake') {
+    if (resolvedCategoryKey === 'healthIntake') {
       return resolveHealthIntakeCatalogIcon(stored) ?? stored;
     }
-    if (categoryKey === READING_CATEGORY_KEY) {
+    if (resolvedCategoryKey === READING_CATEGORY_KEY) {
       return resolveReadingCatalogIcon(stored) ?? stored;
     }
-    if (categoryKey === WORK_CATEGORY_KEY) {
+    if (resolvedCategoryKey === WORK_CATEGORY_KEY) {
       return resolveWorkCatalogIcon(stored) ?? stored;
     }
     return stored;
   }
-  if (isCustomFlowCategoryKey(categoryKey)) return resolveCustomFlowCatalogIcon(categoryKey);
-  return BUILTIN_CATEGORY_ICONS[categoryKey] ?? DEFAULT_CUSTOM_FLOW_ICON;
+  if (isCustomFlowCategoryKey(resolvedCategoryKey)) {
+    return resolveCustomFlowCatalogIcon(resolvedCategoryKey);
+  }
+  return BUILTIN_CATEGORY_ICONS[resolvedCategoryKey] ?? DEFAULT_CUSTOM_FLOW_ICON;
 }
 
 export function resolveCategoryCatalogAccentColor(categoryKey: string): string {
-  const stored = readStoredCategoryAccentColor(categoryKey);
+  const resolvedCategoryKey = resolvePriorityRoutineCategoryKey(categoryKey);
+  const stored = readStoredCategoryAccentColor(resolvedCategoryKey);
   if (stored) {
-    if (categoryKey === 'healthIntake') {
+    if (resolvedCategoryKey === 'healthIntake') {
       return resolveHealthIntakeCatalogAccentColor(stored) ?? stored;
     }
     return stored;
   }
-  if (isCustomFlowCategoryKey(categoryKey)) return resolveCustomFlowCatalogColor(categoryKey);
-  return BUILTIN_CATEGORY_ACCENT_COLORS[categoryKey] ?? DEFAULT_CUSTOM_FLOW_ACCENT_COLOR;
+  if (isCustomFlowCategoryKey(resolvedCategoryKey)) {
+    return resolveCustomFlowCatalogColor(resolvedCategoryKey);
+  }
+  return (
+    BUILTIN_CATEGORY_ACCENT_COLORS[resolvedCategoryKey] ??
+    DEFAULT_CUSTOM_FLOW_ACCENT_COLOR
+  );
 }
 
 /** 목표 상세 아이콘·색상 편집 UI — 저장값·builtin을 그대로 반영(담기용 레거시 치환 없음) */

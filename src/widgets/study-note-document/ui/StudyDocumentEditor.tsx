@@ -459,12 +459,13 @@ function BlockText({
         textAlignVertical="top"
         style={[
           styles.blockInput,
+          compact ? styles.listBlockInput : null,
           {
             color: checkedDone
               ? palette.onVariant
               : textColor ?? pendingTextColor ?? palette.onSurface,
             ...(bold ? cityPopFont('800') : cityPopFont('400')),
-            opacity: checkedDone ? 0.72 : 1,
+            opacity: checkedDone ? 0.42 : 1,
             textDecorationLine:
               checkedDone && underline
                 ? 'underline line-through'
@@ -473,7 +474,13 @@ function BlockText({
                   : underline
                     ? 'underline'
                     : 'none',
+            textDecorationColor: checkedDone
+              ? palette.outline
+              : textColor ?? pendingTextColor ?? palette.onSurface,
+            textDecorationStyle: checkedDone ? 'dashed' : 'solid',
           },
+          // iOS: 커스텀 라틴 폰트 + 한글 폴백 시 첫 줄 글리프가 아래로 처짐 → 패딩 재고정
+          compact && Platform.OS === 'ios' ? styles.listBlockInputIos : null,
         ]}
       />
     </View>
@@ -684,15 +691,22 @@ function StudyDocumentBlockView({
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: block.checked === true }}
+        accessibilityLabel={
+          block.checked ? `${block.text || '체크리스트'} 완료 취소` : `${block.text || '체크리스트'} 완료`
+        }
         onPress={() => onChangeBlock(block.id, { checked: !block.checked })}
-        style={[
-          styles.checkBox,
-          {
-            borderColor: block.checked ? palette.onSurface : palette.outline,
-            backgroundColor: block.checked ? palette.onSurface : 'transparent',
-          },
-        ]}>
-        {block.checked ? <IconSymbol name="checkmark" size={10} color="#fff" /> : null}
+        hitSlop={{ top: 8, right: 10, bottom: 8, left: 10 }}
+        style={styles.checkBoxHitArea}>
+        <View
+          style={[
+            styles.checkBox,
+            {
+              borderColor: block.checked ? palette.onSurface : palette.outline,
+              backgroundColor: block.checked ? palette.onSurface : 'transparent',
+            },
+          ]}>
+          {block.checked ? <IconSymbol name="checkmark" size={12} color="#fff" /> : null}
+        </View>
       </Pressable>
     ) : block.kind === 'bullet' ? (
       <ThemedText style={[styles.listMarker, { color: palette.onVariant }]}>•</ThemedText>
@@ -710,7 +724,13 @@ function StudyDocumentBlockView({
       onLayout={(e) => onBlockLayout?.(block.id, e.nativeEvent.layout.y)}>
       {/* prefix를 항상 두어 형제 인덱스 변동으로 TextInput이 리마운트되지 않게 한다 */}
       <View
-        style={isListBlock ? styles.listPrefixSlot : styles.paragraphPrefixSlot}
+        style={
+          isListBlock
+            ? block.kind === 'checklist'
+              ? styles.checklistPrefixSlot
+              : styles.listPrefixSlot
+            : styles.paragraphPrefixSlot
+        }
         pointerEvents={isListBlock ? 'box-none' : 'none'}>
         {rowPrefix}
       </View>
@@ -2479,6 +2499,15 @@ export function StudyDocumentEditor({
   );
 }
 
+/** 리스트 본문 첫 줄 메트릭 — 체크/마커와 TextInput 1행 정렬 기준 */
+const LIST_LINE_HEIGHT = 22;
+const LIST_CHECK_SIZE = 18;
+/**
+ * 체크 상단 inset.
+ * 줄 박스 중앙((22−18)/2=2) + iOS 한글 폴백·TextInput 글리프 처짐.
+ */
+const LIST_CHECK_OPTICAL_TOP = Platform.select({ ios: 5, android: 2, default: 2 })!;
+
 const styles = StyleSheet.create({
   shell: {
     flex: 1,
@@ -2638,43 +2667,66 @@ const styles = StyleSheet.create({
   headingPrimary: { flex: 1, fontWeight: '800', letterSpacing: 0.6 },
   headingSecondary: { fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'flex-start', width: '100%' },
-  listRow: { alignItems: 'center', gap: 8 },
+  listRow: { alignItems: 'flex-start', gap: 10 },
   paragraphPrefixSlot: {
     width: 0,
     marginRight: 0,
     overflow: 'hidden',
   },
   listPrefixSlot: {
-    minWidth: 18,
+    minWidth: 22,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    alignSelf: 'flex-start',
+    // 본문 첫 줄 글리프와 마커(• / 1.) 광학 정렬
+    paddingTop: Platform.OS === 'ios' ? 2 : 1,
     flexShrink: 0,
+  },
+  /**
+   * 체크박스는 멀티라인 전체 높이가 아니라 본문 첫 줄에만 맞춤.
+   * iOS TextInput(커스텀 폰트+한글 폴백)은 글리프가 줄 박스 아래로 처지므로
+   * paddingTop으로 체크 중심 ≈ 첫 줄 글리프 중심이 되게 한다.
+   */
+  checklistPrefixSlot: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    alignSelf: 'flex-start',
+    paddingTop: LIST_CHECK_OPTICAL_TOP,
+    flexGrow: 0,
+    flexShrink: 0,
+    overflow: 'visible',
   },
   rowBody: { flex: 1, gap: 4 },
   listRowBody: { gap: 0 },
-  blockInput: { fontSize: 15, lineHeight: 22, paddingVertical: 0, minHeight: 28, width: '100%' },
+  blockInput: { fontSize: 15, lineHeight: LIST_LINE_HEIGHT, paddingVertical: 0, minHeight: 28, width: '100%' },
   blockTextWrap: {
     width: '100%',
     position: 'relative',
     justifyContent: 'flex-start',
   },
   listBlockInputWrap: {
-    minHeight: 20,
+    minHeight: LIST_LINE_HEIGHT,
     justifyContent: 'flex-start',
   },
   listBlockInput: {
-    minHeight: 20,
-    height: 20,
-    lineHeight: 20,
+    minHeight: LIST_LINE_HEIGHT,
+    fontSize: 15,
+    lineHeight: LIST_LINE_HEIGHT,
+    padding: 0,
+    margin: 0,
+    includeFontPadding: false,
+    textAlignVertical: 'top',
+  },
+  listBlockInputIos: {
+    // 네이티브 기본 inset을 눌러 첫 줄 y를 체크 슬롯과 맞춤
     paddingTop: 0,
-    paddingBottom: 0,
-    paddingVertical: 0,
-    marginVertical: 0,
+    lineHeight: LIST_LINE_HEIGHT,
   },
   paragraphInput: { textAlignVertical: 'top', width: '100%' },
   formattedParagraphInput: {
     minHeight: 24,
-    lineHeight: 22,
+    lineHeight: LIST_LINE_HEIGHT,
     paddingTop: 0,
     paddingBottom: 2,
   },
@@ -2684,7 +2736,7 @@ const styles = StyleSheet.create({
     minWidth: 16,
     fontSize: 14,
     fontWeight: '700',
-    lineHeight: 20,
+    lineHeight: LIST_LINE_HEIGHT,
     textAlign: 'right',
     flexShrink: 0,
   },
@@ -2693,12 +2745,19 @@ const styles = StyleSheet.create({
     paddingRight: 2,
   },
   checkBox: {
-    width: 18,
-    height: 18,
-    borderWidth: 2,
+    width: LIST_CHECK_SIZE,
+    height: LIST_CHECK_SIZE,
+    borderWidth: 1.5,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 0,
+  },
+  checkBoxHitArea: {
+    width: 28,
+    height: LIST_CHECK_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
   },
   linkMeta: { fontSize: 11, fontWeight: '600', textDecorationLine: 'underline' },
   linkMetaHit: { alignSelf: 'flex-start', maxWidth: '100%' },

@@ -128,6 +128,15 @@ export function buildAddablePriorityCatalogSections(input: {
   customFlowEntries: CustomFlowCatalogEntry[];
   customGroups: CustomCatalogGroup[];
 }): AddablePriorityCatalogSection[] {
+  const userCreatedGroupKeys = new Set(
+    input.customGroups
+      .filter(
+        (group) =>
+          !group.key.startsWith('customGroup:preset_') &&
+          !group.key.startsWith('customGroup:builtin_'),
+      )
+      .map((group) => group.key),
+  );
   const visibleCatalogCategories = filterCatalogPickerCategories(PICKER_CATEGORIES).map((item) => ({
     ...item,
     label: getPickerCategoryLabel(item.key),
@@ -150,7 +159,12 @@ export function buildAddablePriorityCatalogSections(input: {
         .filter((item) => !input.excludedKeys.has(item.key))
         .map((item) => pickerItemToRow(item)),
     }))
-    .filter((section) => section.items.length > 0);
+    .filter((section) => section.items.length > 0)
+    .sort((a, b) => {
+      const aRank = userCreatedGroupKeys.has(a.groupKey) ? 0 : 1;
+      const bRank = userCreatedGroupKeys.has(b.groupKey) ? 0 : 1;
+      return aRank - bRank;
+    });
 }
 
 /** @deprecated 항목 추가 모달은 `buildAddablePriorityCatalogSections` 사용 */

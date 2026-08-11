@@ -1,4 +1,7 @@
-import { resolveFixedFlowSpineSchedules } from './fixedFlowSpineSchedule';
+import {
+  isStoredFixedFlowSpineSchedule,
+  resolveFixedFlowSpineSchedules,
+} from './fixedFlowSpineSchedule';
 
 describe('resolveFixedFlowSpineSchedules', () => {
   it('keeps an exact same-day time outside the daily focus window', () => {
@@ -43,5 +46,35 @@ describe('resolveFixedFlowSpineSchedules', () => {
       endsNextCalendarDay: true,
       isSuggested: false,
     });
+  });
+
+  it('recognizes an exact stored slot so today-plan clamping cannot overwrite it', () => {
+    const item = {
+      categoryKey: 'reading',
+      enabled: true,
+      spineStartMinutes: 13 * 60,
+      spineEndMinutes: 13 * 60 + 30,
+    };
+
+    expect(
+      isStoredFixedFlowSpineSchedule(
+        {
+          categoryKey: 'reading',
+          startMinutes: 13 * 60,
+          endMinutes: 13 * 60 + 30,
+        },
+        [item],
+      ),
+    ).toBe(true);
+    expect(
+      isStoredFixedFlowSpineSchedule(
+        {
+          categoryKey: 'reading',
+          startMinutes: 7 * 60,
+          endMinutes: 7 * 60 + 30,
+        },
+        [item],
+      ),
+    ).toBe(false);
   });
 });

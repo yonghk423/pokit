@@ -2,6 +2,7 @@ import type { FixedFlowSetItem } from '@shared/lib/storage';
 
 import { buildSpineImportFromBag } from './buildSpineImportFromBag';
 import { parseHHmmToMinutes } from './parseTime';
+import type { DayPlanBlock } from '../model/types';
 
 export type FixedFlowSpineItemSchedule = {
   startMinutes: number;
@@ -42,6 +43,32 @@ function itemHasStoredSchedule(item: FixedFlowSetItem): boolean {
     return isValidNextDaySpineMinutes(item.spineStartMinutes, item.spineEndMinutes);
   }
   return isValidSameDaySpineMinutes(item.spineStartMinutes, item.spineEndMinutes);
+}
+
+/**
+ * 오늘 일정 블록이 고정 루틴에 저장된 정확한 시간 슬롯인지 확인한다.
+ * 저장 슬롯은 오늘 일정의 집중 구간 자동 보정 대상에서 제외해야 한다.
+ */
+export function isStoredFixedFlowSpineSchedule(
+  block: Pick<
+    DayPlanBlock,
+    'categoryKey' | 'startMinutes' | 'endMinutes' | 'endsNextCalendarDay'
+  >,
+  items: readonly FixedFlowSetItem[],
+): boolean {
+  const categoryKey = block.categoryKey?.trim();
+  if (!categoryKey) return false;
+
+  return items.some(
+    (item) =>
+      item.enabled !== false &&
+      item.categoryKey.trim() === categoryKey &&
+      itemHasStoredSchedule(item) &&
+      item.spineStartMinutes === block.startMinutes &&
+      item.spineEndMinutes === block.endMinutes &&
+      (item.spineEndsNextCalendarDay === true) ===
+        (block.endsNextCalendarDay === true),
+  );
 }
 
 /** 고정 루틴 타임라인 — 항목별 시작·종료 시각(저장값 없으면 집중 구간 안에서 순서대로 제안) */

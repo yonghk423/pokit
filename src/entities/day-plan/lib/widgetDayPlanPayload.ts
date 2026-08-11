@@ -5,6 +5,7 @@ import type { DayPlanBlock } from '../model/types';
 import { getBlockTimelineIcon } from './blockIcons';
 import { resolveCategoryCatalogIcon } from './categoryCatalogAppearance';
 import { resolveBlockCategoryKey } from './dayPlanRuntimeTime';
+import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 
 export type WidgetPriorityRoutineItem = {
   categoryKey: string;
@@ -38,11 +39,14 @@ function buildRoutineItemsFromPriorityList(
   completedFocusCategoryKeys: string[],
 ): WidgetPriorityRoutineItem[] {
   const completed = new Set(completedFocusCategoryKeys);
-  return priorityCategoryKeys.map((categoryKey) => ({
-    categoryKey,
-    iconName: resolveCategoryCatalogIcon(categoryKey),
-    isCompleted: completed.has(categoryKey),
-  }));
+  return priorityCategoryKeys.map((routineKey) => {
+    const categoryKey = resolvePriorityRoutineCategoryKey(routineKey);
+    return {
+      categoryKey,
+      iconName: resolveCategoryCatalogIcon(categoryKey),
+      isCompleted: completed.has(routineKey),
+    };
+  });
 }
 
 function buildRoutineItemsFromBlocks(

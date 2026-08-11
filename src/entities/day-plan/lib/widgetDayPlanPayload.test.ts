@@ -22,7 +22,10 @@ describe('widgetDayPlanPayload', () => {
     jest.mocked(loadDayPlanDraft).mockReturnValue({
       planMode: 'priority',
       isFocusStarted: false,
-      completedFocusCategoryKeys: ['water'],
+      completedFocusCategoryKeys: [
+        'water',
+        'reading::instance:second',
+      ],
       planCompletionDismissedKeys: [],
       priorityPlanDateKey: '2026-06-28',
       priorityPlanDateKeyEnd: '2026-06-28',
@@ -30,7 +33,12 @@ describe('widgetDayPlanPayload', () => {
       priorityOvernightEndAuto: false,
       priorityStart: '06:00',
       priorityEnd: '23:00',
-      priorityCategoryOrder: ['water', 'reading', 'customFlow:builtin_hobby_photo'],
+      priorityCategoryOrder: [
+        'water',
+        'reading',
+        'reading::instance:second',
+        'customFlow:builtin_hobby_photo',
+      ],
       quickMemoDraft: '',
     });
 
@@ -44,11 +52,13 @@ describe('widgetDayPlanPayload', () => {
     expect(payload.priorityCategoryKeys).toEqual([
       'water',
       'reading',
+      'reading::instance:second',
       'customFlow:builtin_hobby_photo',
     ]);
     expect(payload.priorityRoutineItems).toEqual([
       { categoryKey: 'water', iconName: 'drop.fill', isCompleted: true },
       { categoryKey: 'reading', iconName: 'book.closed.fill', isCompleted: false },
+      { categoryKey: 'reading', iconName: 'book.closed.fill', isCompleted: true },
       {
         categoryKey: 'customFlow:builtin_hobby_photo',
         iconName: 'camera.fill',

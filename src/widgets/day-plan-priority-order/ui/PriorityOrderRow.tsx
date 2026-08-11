@@ -1,6 +1,9 @@
 import type { ComponentType } from 'react';
 
-import { isCustomFlowCategoryKey } from '@entities/day-plan';
+import {
+  isCustomFlowCategoryKey,
+  resolvePriorityRoutineCategoryKey,
+} from '@entities/day-plan';
 
 import type { PriorityOrderRowProps } from '../lib/types';
 import { FastingPriorityOrderRow } from './categories/FastingPriorityOrderRow';
@@ -23,8 +26,11 @@ const priorityOrderRowByCategoryKey: Record<string, ComponentType<PriorityOrderR
 
 /** 우선순위 목록 한 행 — 카테고리 키별 위젯으로 라우팅 (FSD: `widgets/day-plan-priority-order`) */
 export function PriorityOrderRow(props: PriorityOrderRowProps) {
+  const categoryKey = resolvePriorityRoutineCategoryKey(props.categoryKey);
   const Row =
-    priorityOrderRowByCategoryKey[props.categoryKey] ??
-    (isCustomFlowCategoryKey(props.categoryKey) ? OtherPriorityOrderRow : DefaultPriorityOrderRow);
+    priorityOrderRowByCategoryKey[categoryKey] ??
+    (isCustomFlowCategoryKey(categoryKey)
+      ? OtherPriorityOrderRow
+      : DefaultPriorityOrderRow);
   return <Row {...props} />;
 }

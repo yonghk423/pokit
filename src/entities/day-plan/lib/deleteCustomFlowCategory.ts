@@ -5,6 +5,7 @@ import {
 } from '@shared/lib/storage';
 
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
+import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 
 type DeleteCustomFlowDeps = {
   hydrateFixedFlowSets: () => void;
@@ -38,11 +39,15 @@ export function deleteCustomFlowCategory(
   deps.reloadFixedFlowSetsFromStorage();
   deps.notifyFixedFlowApplyScheduleChanged();
 
-  const nextOrder = deps.getPriorityCategoryOrder().filter((k) => k !== categoryKey);
+  const nextOrder = deps
+    .getPriorityCategoryOrder()
+    .filter((k) => resolvePriorityRoutineCategoryKey(k) !== categoryKey);
   deps.setPriorityCategoryOrder(nextOrder);
   deps.filterCompletedFocusKeysToPriorityOrder(nextOrder);
 
-  const nextSectionsOrder = deps.getPrioritySectionsCategoryOrder().filter((k) => k !== categoryKey);
+  const nextSectionsOrder = deps
+    .getPrioritySectionsCategoryOrder()
+    .filter((k) => resolvePriorityRoutineCategoryKey(k) !== categoryKey);
   if (nextSectionsOrder.length !== deps.getPrioritySectionsCategoryOrder().length) {
     deps.setPrioritySectionsCategoryOrder(nextSectionsOrder);
   }

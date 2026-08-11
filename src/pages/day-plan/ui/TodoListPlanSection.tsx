@@ -119,16 +119,22 @@ function TodoListRow({
         !isLast && { borderBottomColor: ui.line, borderBottomWidth: TODO_TABLE_BORDER_WIDTH },
         deleteMode && { backgroundColor: deleteSelected ? ui.dangerBg : ui.cellBg },
       ]}>
-      {deleteMode ? (
-        <DoneCheckbox
-          checked={deleteSelected}
-          ui={ui}
-          accessibilityLabel={deleteSelected ? '삭제 선택 해제' : '삭제 선택'}
-          onPress={onToggleDeleteSelect}
-        />
-      ) : null}
+      <DoneCheckbox
+        checked={deleteMode ? deleteSelected : item.isDone}
+        ui={ui}
+        accessibilityLabel={
+          deleteMode
+            ? deleteSelected
+              ? `${item.what || '할 일'} 삭제 선택 해제`
+              : `${item.what || '할 일'} 삭제 선택`
+            : item.isDone
+              ? `${item.what || '할 일'} 완료 취소`
+              : `${item.what || '할 일'} 완료`
+        }
+        onPress={deleteMode ? onToggleDeleteSelect : onToggleDone}
+      />
 
-      <View style={[styles.rowBody, !deleteMode && styles.rowBodyFlush]}>
+      <View style={styles.rowBody}>
         <TextInput
           key={`${item.id}-${item.isDone ? 'done' : 'todo'}`}
           value={item.what}
@@ -143,7 +149,9 @@ function TodoListRow({
             {
               color: rowMuted ? ui.done : ui.ink,
               textDecorationLine: rowMuted ? 'line-through' : 'none',
-              opacity: rowMuted ? 0.55 : 1,
+              textDecorationStyle: rowMuted ? 'dashed' : 'solid',
+              textDecorationColor: rowMuted ? ui.muted : ui.ink,
+              opacity: rowMuted ? 0.42 : 1,
             },
           ]}
         />
@@ -272,7 +280,7 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
     ? deleteSelection.size > 0
       ? `${deleteSelection.size}개 선택됨 · 휴지통으로 삭제 · 다시 눌러 종료`
       : '삭제할 행을 선택하세요 · 휴지통을 다시 눌러 종료'
-    : '길게 눌러 완료 · 우선순위 탭으로 변경 · 시계로 시간 조절';
+    : '왼쪽 체크로 완료 · 길게 눌러도 완료 · 우선순위와 시간을 눌러 조절';
 
   return (
     <View style={embedded ? styles.rootEmbedded : styles.root}>
@@ -514,9 +522,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 4,
-  },
-  rowBodyFlush: {
-    marginLeft: 0,
   },
   taskInput: {
     fontSize: 14,

@@ -38,6 +38,17 @@ describe('mergeOrderWithAppliedFixedRoutines', () => {
       mergeOrderWithAppliedFixedRoutines(order, ['healthIntake', 'fasting'], allFixed),
     ).toEqual(['healthIntake', 'fasting']);
   });
+
+  it('preserves manually repeated routine occurrences during fixed-routine sync', () => {
+    const repeated = 'reading::instance:second';
+    expect(
+      mergeOrderWithAppliedFixedRoutines(
+        ['reading', repeated],
+        ['reading'],
+        allFixed,
+      ),
+    ).toEqual(['reading', repeated]);
+  });
 });
 
 describe('computeSyncTodayTabWithFixedRoutineApply', () => {
@@ -346,16 +357,62 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     expect(patch?.planBlocks?.map((block) => block.category)).toEqual(['독서']);
   });
 
-  it('dedupes spine blocks that share the same categoryKey', () => {
+  it('restores the exact stored routine slot after today-plan window clamping', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      fixedRoutineApplyLayoutMode: 'spine',
+      priorityStart: '07:00',
+      priorityEnd: '07:30',
+      planBlocks: [
+        {
+          id: 'reading-block',
+          title: '독서',
+          category: '독서',
+          categoryKey: 'reading',
+          startMinutes: 7 * 60,
+          endMinutes: 7 * 60 + 30,
+          order: 0,
+          blockOrigin: 'spineTimeline',
+        },
+      ],
+      todayAppliedCategoryKeys: ['reading'],
+      fixedFlowSets: [
+        {
+          id: 'set_reading',
+          name: '독서 루틴',
+          applyRule: 'manual' as const,
+          items: [
+            {
+              categoryKey: 'reading',
+              enabled: true,
+              spineStartMinutes: 13 * 60,
+              spineEndMinutes: 13 * 60 + 30,
+            },
+          ],
+        },
+      ],
+      activeSetIds: ['set_reading'],
+    });
+
+    expect(patch?.planBlocks).toEqual([
+      expect.objectContaining({
+        id: 'reading-block',
+        startMinutes: 13 * 60,
+        endMinutes: 13 * 60 + 30,
+      }),
+    ]);
+  });
+
+  it('preserves repeated spine blocks that share the same categoryKey', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,
       fixedRoutineApplyLayoutMode: 'spine',
       planBlocks: [
         {
           id: 'b1',
-          title: '금지',
-          category: '금지',
-          categoryKey: 'custom_forbid',
+          title: '독서',
+          category: '독서',
+          categoryKey: 'reading',
           startMinutes: 15 * 60 + 40,
           endMinutes: 16 * 60 + 10,
           order: 0,
@@ -364,25 +421,48 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
         },
         {
           id: 'b2',
-          title: '금지',
-          category: '금지',
-          categoryKey: 'custom_forbid',
-          startMinutes: 15 * 60 + 40,
-          endMinutes: 16 * 60 + 10,
+          title: '독서',
+          category: '독서',
+          categoryKey: 'reading',
+          startMinutes: 17 * 60,
+          endMinutes: 17 * 60 + 30,
           order: 1,
           blockOrigin: 'spineTimeline',
-          endsNextCalendarDay: true,
         },
       ],
-      todayAppliedCategoryKeys: [],
-      routineCatalogSelectionKeys: ['custom_forbid'],
-      fixedFlowSets: [],
-      activeSetIds: [],
+      todayAppliedCategoryKeys: ['reading'],
+      routineCatalogSelectionKeys: ['reading'],
+      fixedFlowSets: [
+        {
+          id: 'set_reading',
+          name: '독서',
+          applyRule: 'manual',
+          items: [
+            {
+              categoryKey: 'reading',
+              enabled: true,
+              spineStartMinutes: 13 * 60,
+              spineEndMinutes: 13 * 60 + 30,
+            },
+          ],
+        },
+      ],
+      activeSetIds: ['set_reading'],
     });
     const spine = (patch?.planBlocks ?? []).filter((b) => b.blockOrigin === 'spineTimeline');
-    expect(spine).toHaveLength(1);
-    const ids = spine.map((b) => b.id);
-    expect(new Set(ids).size).toBe(ids.length);
+    expect(spine).toHaveLength(2);
+    expect(spine).toEqual([
+      expect.objectContaining({
+        id: 'b1',
+        startMinutes: 13 * 60,
+        endMinutes: 13 * 60 + 30,
+      }),
+      expect.objectContaining({
+        id: 'b2',
+        startMinutes: 17 * 60,
+        endMinutes: 17 * 60 + 30,
+      }),
+    ]);
   });
 
   it('updates an existing block when only its next-day flag changes', () => {

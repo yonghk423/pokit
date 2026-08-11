@@ -50,6 +50,20 @@ describe('sanitizePriorityCategoryOrderKeys', () => {
   it('drops note(work) from routine catalog lists', () => {
     expect(sanitizePriorityCategoryOrderKeys(['work', 'reading'])).toEqual(['reading']);
   });
+
+  it('preserves distinct routine occurrence keys for the same catalog category', () => {
+    expect(
+      sanitizePriorityCategoryOrderKeys([
+        'reading',
+        'reading::instance:first',
+        'reading::instance:second',
+      ]),
+    ).toEqual([
+      'reading',
+      'reading::instance:first',
+      'reading::instance:second',
+    ]);
+  });
 });
 
 describe('filterKeysToPriorityCatalog', () => {

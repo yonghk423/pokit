@@ -1,6 +1,8 @@
 import type { RoutineHistoryLayoutMode } from '@shared/lib/routineHistoryLayoutKey';
 import { DAY_MEAL_SLOT_ORDER, type DayMealSlot } from '@shared/lib/storage';
 
+import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
+
 const MEAL_SLOT_SET = new Set<string>(DAY_MEAL_SLOT_ORDER);
 
 /** 시간대별 보기에서 구간마다 독립 완료 체크를 위한 복합 키 */
@@ -29,7 +31,9 @@ export function parsePrioritySectionCompletionKey(completionKey: string): {
 
 /** 히스토리·위젯 등 카테고리 단위 집계용 */
 export function toRoutineHistoryCategoryKey(completionKey: string): string {
-  return parsePrioritySectionCompletionKey(completionKey).categoryKey;
+  return resolvePriorityRoutineCategoryKey(
+    parsePrioritySectionCompletionKey(completionKey).categoryKey,
+  );
 }
 
 /**

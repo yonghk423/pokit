@@ -23,6 +23,12 @@ function addCategoryKey(keys: Set<string>, rawKey: string) {
   if (normalized) keys.add(normalized);
 }
 
+function countUniqueRoutineCategoryKeys(rawKeys: readonly string[]): number {
+  const keys = new Set<string>();
+  for (const key of rawKeys) addCategoryKey(keys, key);
+  return keys.size;
+}
+
 function collectSpineCategoryKeysFromBlocks(blocks: DayPlanBlock[]): string[] {
   const keys = new Set<string>();
   for (const block of filterSpineTimelineBlocks(blocks)) {
@@ -95,9 +101,17 @@ export function collectRoutineWindowCompletions(dateKey: string): RoutineWindowC
     }
   }
 
-  const plannedFromSnapshot = draft.routineHistoryPlannedKeysByDate[dateKey]?.length ?? 0;
-  const plannedFromBag = dateKey === today ? draft.priorityCategoryOrder.length : 0;
-  const plannedFromSections = dateKey === today ? draft.prioritySectionsCategoryOrder.length : 0;
+  const plannedFromSnapshot = countUniqueRoutineCategoryKeys(
+    draft.routineHistoryPlannedKeysByDate[dateKey] ?? [],
+  );
+  const plannedFromBag =
+    dateKey === today
+      ? countUniqueRoutineCategoryKeys(draft.priorityCategoryOrder)
+      : 0;
+  const plannedFromSections =
+    dateKey === today
+      ? countUniqueRoutineCategoryKeys(draft.prioritySectionsCategoryOrder)
+      : 0;
   const plannedFromSpine =
     dateKey === today ? collectSpineCategoryKeysFromBlocks(dayPlan.blocks).length : 0;
   const categoryKeys = [...keys];

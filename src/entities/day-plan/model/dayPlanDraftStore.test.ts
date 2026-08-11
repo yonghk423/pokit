@@ -196,6 +196,28 @@ describe('dayPlanDraftStore', () => {
     expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['reading', 'fasting']);
   });
 
+  it('keeps repeated routine occurrences independently in the bag order', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      priorityCategoryOrder: [],
+      completedFocusCategoryKeys: [],
+    });
+    const repeated = 'reading::instance:second';
+
+    useDayPlanDraftStore
+      .getState()
+      .setPriorityCategoryOrder(['reading', repeated]);
+    useDayPlanDraftStore.getState().toggleFocusCategoryCompleted(repeated);
+
+    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual([
+      'reading',
+      repeated,
+    ]);
+    expect(useDayPlanDraftStore.getState().completedFocusCategoryKeys).toEqual([
+      repeated,
+    ]);
+  });
+
   it('applies explicit multi-day calendar range', () => {
     useDayPlanDraftStore.setState({ isHydrated: true });
     useDayPlanDraftStore.getState().applyPriorityPlanCalendarRange('2025-05-26', '2025-05-28');
@@ -494,6 +516,36 @@ describe('dayPlanDraftStore', () => {
     });
     useDayPlanDraftStore.getState().setPriorityCategoryOrder((prev) => [...prev, 'fasting']);
     expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['reading', 'fasting']);
+  });
+
+  it('keeps independent sections placement when bag order changes', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      priorityCategoryOrder: [],
+      prioritySectionsCategoryOrder: ['customFlow:new-routine'],
+      prioritySectionsMealSlots: {
+        'customFlow:new-routine': ['morning'],
+      },
+    });
+    mockSaveDayPlanDraft.mockClear();
+
+    useDayPlanDraftStore.getState().setPriorityCategoryOrder(['reading']);
+
+    const state = useDayPlanDraftStore.getState();
+    expect(state.priorityCategoryOrder).toEqual(['reading']);
+    expect(state.prioritySectionsCategoryOrder).toEqual(['customFlow:new-routine']);
+    expect(state.prioritySectionsMealSlots).toEqual({
+      'customFlow:new-routine': ['morning'],
+    });
+    expect(mockSaveDayPlanDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        priorityCategoryOrder: ['reading'],
+        prioritySectionsCategoryOrder: ['customFlow:new-routine'],
+        prioritySectionsMealSlots: {
+          'customFlow:new-routine': ['morning'],
+        },
+      }),
+    );
   });
 
   it('finishes a priority category for today and clears related completion keys', () => {

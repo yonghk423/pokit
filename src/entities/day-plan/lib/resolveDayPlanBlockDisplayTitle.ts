@@ -1,6 +1,7 @@
 import { categoryReminderLabelKo } from './categoryReminderCatalog';
 import { isInternalAutoRoutineLabel } from './customFlowDisplayLabel';
 import { PRIORITY_CATALOG_PICKER_LABELS } from './priorityCatalogPickerLabels';
+import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 import type { DayPlanBlock } from '../model/types';
 
 /** categoryKey·영문 키·customFlow: 원문이 title로 저장된 경우 */
@@ -17,7 +18,7 @@ export function looksLikeRawCategoryKeyTitle(title: string, categoryKey?: string
 
 /** 카테고리 키 → 사용자 대면 한글 라벨 */
 export function resolveCategoryKeyDisplayLabelKo(categoryKey: string): string {
-  const key = categoryKey.trim();
+  const key = resolvePriorityRoutineCategoryKey(categoryKey);
   if (!key) return '루틴';
   return categoryReminderLabelKo(key);
 }

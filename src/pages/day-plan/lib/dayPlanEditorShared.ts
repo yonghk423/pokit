@@ -11,6 +11,7 @@ import {
   PRIORITY_CATALOG_PICKER_LABELS,
   resolveCategoryCatalogIcon,
   resolveCustomFlowCategoryLabelKo,
+  resolvePriorityRoutineCategoryKey,
 } from '@entities/day-plan';
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 
@@ -66,18 +67,22 @@ const LEGACY_PICKER_BY_KEY: Record<string, PickerCategoryItem> = {
 };
 
 export function getPickerCategoryItem(key: string): PickerCategoryItem | undefined {
-  if (isCustomFlowCategoryKey(key)) {
+  const categoryKey = resolvePriorityRoutineCategoryKey(key);
+  if (isCustomFlowCategoryKey(categoryKey)) {
     return {
       key,
-      label: getPickerCategoryLabel(key),
-      icon: resolveCategoryCatalogIcon(key),
+      label: getPickerCategoryLabel(categoryKey),
+      icon: resolveCategoryCatalogIcon(categoryKey),
     } as PickerCategoryItem;
   }
-  const base = PICKER_CATEGORIES.find((c) => c.key === key) ?? LEGACY_PICKER_BY_KEY[key];
+  const base =
+    PICKER_CATEGORIES.find((c) => c.key === categoryKey) ??
+    LEGACY_PICKER_BY_KEY[categoryKey];
   if (!base) return undefined;
   return {
     ...base,
-    icon: resolveCategoryCatalogIcon(key),
+    key,
+    icon: resolveCategoryCatalogIcon(categoryKey),
   } as PickerCategoryItem;
 }
 
@@ -86,26 +91,31 @@ export function getPickerCategoryLabel(
   key: string,
   otherDetailConfig: unknown | null | undefined = undefined,
 ): string {
-  if (isCustomFlowCategoryKey(key)) {
+  const categoryKey = resolvePriorityRoutineCategoryKey(key);
+  if (isCustomFlowCategoryKey(categoryKey)) {
     const raw =
-      otherDetailConfig !== undefined ? otherDetailConfig : loadGoalDetailCategoryConfig(key);
+      otherDetailConfig !== undefined
+        ? otherDetailConfig
+        : loadGoalDetailCategoryConfig(categoryKey);
     const cfg = normalizeOtherDetailConfig(raw ?? getInitialOtherDataConfig());
     const d = cfg.displayName.trim();
-    return d.length > 0 ? d : resolveCustomFlowCategoryLabelKo(key);
+    return d.length > 0 ? d : resolveCustomFlowCategoryLabelKo(categoryKey);
   }
-  if (key === 'other') {
+  if (categoryKey === 'other') {
     const raw =
       otherDetailConfig !== undefined ? otherDetailConfig : loadGoalDetailCategoryConfig('other');
     return getOtherCategoryResolvedDisplayLabel(raw);
   }
   const raw =
-    otherDetailConfig !== undefined ? otherDetailConfig : loadGoalDetailCategoryConfig(key);
+    otherDetailConfig !== undefined
+      ? otherDetailConfig
+      : loadGoalDetailCategoryConfig(categoryKey);
   if (raw && typeof raw === 'object') {
     const dn = ((raw as Record<string, unknown>).displayName ?? '') as string;
     const trimmed = typeof dn === 'string' ? dn.trim() : '';
     if (trimmed.length > 0) return trimmed;
   }
-  return getPickerCategoryItem(key)?.label ?? '사용자';
+  return getPickerCategoryItem(categoryKey)?.label ?? '사용자';
 }
 
 export type PriorityTask = { id: string; title: string; categoryKey: string };

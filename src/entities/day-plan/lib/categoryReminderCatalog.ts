@@ -3,6 +3,7 @@ import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 import { resolveCategoryCatalogIcon } from './categoryCatalogAppearance';
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 import { resolveCustomFlowCategoryLabelKo } from './customFlowDisplayLabel';
+import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 import { readRoutineDisplayNameFromConfig } from './routineDisplayName';
 import { getPriorityCatalogPickerLabel } from './priorityCatalogPickerLabels';
 
@@ -21,10 +22,15 @@ export function builtinCategoryLabelKo(key: string): string {
 }
 
 export function categoryReminderLabelKo(key: string): string {
-  const customName = readRoutineDisplayNameFromConfig(loadGoalDetailCategoryConfig(key));
+  const categoryKey = resolvePriorityRoutineCategoryKey(key);
+  const customName = readRoutineDisplayNameFromConfig(
+    loadGoalDetailCategoryConfig(categoryKey),
+  );
   if (customName.length > 0) return customName;
-  if (isCustomFlowCategoryKey(key)) return resolveCustomFlowCategoryLabelKo(key);
-  return getPriorityCatalogPickerLabel(key);
+  if (isCustomFlowCategoryKey(categoryKey)) {
+    return resolveCustomFlowCategoryLabelKo(categoryKey);
+  }
+  return getPriorityCatalogPickerLabel(categoryKey);
 }
 
 export function categoryReminderIconName(key: string): string {

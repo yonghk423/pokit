@@ -6,12 +6,14 @@ jest.mock('@entities/day-plan', () => {
   const local = jest.requireActual('@entities/day-plan/lib/localDateKey');
   const parse = jest.requireActual('@entities/day-plan/lib/parseTime');
   const priority = jest.requireActual('@entities/day-plan/lib/priorityRoutineWindow');
+  const instances = jest.requireActual('@entities/day-plan/lib/priorityRoutineInstance');
   const math = jest.requireActual('@entities/day-plan/lib/dayPlanTimeMath');
   const labels = jest.requireActual('@entities/day-plan/lib/priorityCatalogPickerLabels');
   return {
     ...local,
     ...parse,
     ...priority,
+    ...instances,
     ...math,
     ...labels,
     getLocalDateKey: () => '2025-05-26',

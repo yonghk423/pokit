@@ -63,4 +63,27 @@ describe('collectRoutineWindowCompletions', () => {
     const { categoryKeys } = collectRoutineWindowCompletions('2025-06-14');
     expect(categoryKeys.sort()).toEqual(['exercise', 'reading', 'water']);
   });
+
+  it('does not inflate the history denominator for repeated occurrences', () => {
+    useDayPlanDraftStore.setState({
+      priorityCategoryOrder: [
+        'reading',
+        'reading::instance:second',
+      ],
+      prioritySectionsCategoryOrder: [],
+      completedFocusCategoryKeys: ['reading::instance:second'],
+      routineHistoryPendingByDate: {},
+      routineHistoryPlannedKeysByDate: {},
+    });
+    useDayPlanStore.setState({
+      blocks: [],
+      completedBlockIds: [],
+      skippedBlockIds: [],
+    });
+
+    expect(collectRoutineWindowCompletions('2025-06-14')).toEqual({
+      categoryKeys: ['reading'],
+      plannedCountForDay: 1,
+    });
+  });
 });
