@@ -19,7 +19,10 @@ function sanitizeRoutineCatalogSelectionKeys(keys: string[]): string[] {
 }
 
 type LegacyPersistedShape = {
+  /** 레거시 고정 루틴 목록 — 수동 담기 여부로 사용하지 않는다. */
   categoryKeys?: string[];
+  /** 오늘 탭/담기 화면에서 사용자가 직접 선택한 항목 */
+  manualSelectionKeys?: string[];
 };
 
 function normalizeLegacyKeys(raw: unknown): string[] {
@@ -38,13 +41,16 @@ function normalizeLegacyKeys(raw: unknown): string[] {
 /** 루틴 탭에서 사용자가 직접 선택한 항목 — 오늘 탭 담기와 동기화 시 보존 */
 export function loadRoutineCatalogSelectionKeys(): string[] {
   const legacy = localStorageClient.getJson<LegacyPersistedShape>(StorageKeys.priorityCatalogFixedRoutines);
-  return sanitizeRoutineCatalogSelectionKeys(normalizeLegacyKeys(legacy?.categoryKeys));
+  return sanitizeRoutineCatalogSelectionKeys(normalizeLegacyKeys(legacy?.manualSelectionKeys));
 }
 
 export function saveRoutineCatalogSelectionKeys(categoryKeys: string[]): void {
   const normalized = sanitizeRoutineCatalogSelectionKeys(categoryKeys);
+  const current =
+    localStorageClient.getJson<LegacyPersistedShape>(StorageKeys.priorityCatalogFixedRoutines) ?? {};
   localStorageClient.setJson(StorageKeys.priorityCatalogFixedRoutines, {
-    categoryKeys: normalized,
+    ...current,
+    manualSelectionKeys: normalized,
   });
 }
 
@@ -121,7 +127,10 @@ export function savePriorityCatalogFixedRoutineKeys(categoryKeys: string[]): voi
   const activeSetIds =
     state.activeSetIds.length > 0 ? state.activeSetIds : [activeId];
   saveFixedFlowSetsState({ activeSetIds, sets });
+  const current =
+    localStorageClient.getJson<LegacyPersistedShape>(StorageKeys.priorityCatalogFixedRoutines) ?? {};
   localStorageClient.setJson(StorageKeys.priorityCatalogFixedRoutines, {
+    ...current,
     categoryKeys: [...normalized],
   });
 }

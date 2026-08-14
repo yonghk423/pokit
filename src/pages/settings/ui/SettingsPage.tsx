@@ -21,6 +21,13 @@ import { useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
+import {
+  presentCustomerCenter,
+  presentPaywall,
+  restorePurchases,
+  selectIsPro,
+  useSubscriptionStore,
+} from '@features/subscriptions';
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
@@ -52,6 +59,9 @@ import {
   settingsChromeStyles as chrome,
 } from '../lib/settingsChrome';
 
+/** Pro 구독 설정 섹션 — 정식 시행 전까지 숨김 (`true`로 바꾸면 다시 표시) */
+const SHOW_POKIT_PRO_SETTINGS = false;
+
 /** 앱 설정 (로그인·Profile 없음). 문의하기 탭 시 네이티브 메일 작성을 바로 엽니다. */
 export function SettingsPage() {
   const router = useRouter();
@@ -60,8 +70,11 @@ export function SettingsPage() {
   const p = buildSettingsPalette(isDark);
   const appVersionLabel = getDisplayedAppVersionLabel();
   const [isResettingData, setIsResettingData] = useState(false);
+  const [isSubscriptionBusy, setIsSubscriptionBusy] = useState(false);
   const appearanceMode = useAppearanceStore((s) => s.mode);
   const appearanceLabel = appearanceMode === 'dark' ? '다크 모드' : '라이트 모드';
+  const isPro = useSubscriptionStore(selectIsPro);
+  const subscriptionConfigured = useSubscriptionStore((s) => s.isConfigured);
   const { priorityStart, priorityEnd } = useDayPlanDraftStore(
     useShallow((s) => ({
       priorityStart: s.priorityStart,
@@ -74,8 +87,76 @@ export function SettingsPage() {
     useCallback(() => {
       setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
       void prefetchWelcomeIntroAssets();
+      if (SHOW_POKIT_PRO_SETTINGS) {
+        void useSubscriptionStore.getState().refreshCustomerInfo();
+      }
     }, []),
   );
+
+  const runPresentPaywall = async () => {
+    if (isSubscriptionBusy) return;
+    setIsSubscriptionBusy(true);
+    try {
+      const outcome = await presentPaywall();
+      await useSubscriptionStore.getState().refreshCustomerInfo();
+      if (outcome === 'purchased' || outcome === 'restored') {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert('POKIT Pro', '구독이 활성화되었어요.');
+      } else if (outcome === 'error') {
+        Alert.alert(
+          '구독 화면',
+          '페이월을 열지 못했어요. RevenueCat 대시보드에 Offering·Paywall이 준비됐는지 확인해 주세요.',
+        );
+      } else if (outcome === 'skipped') {
+        Alert.alert('구독', '이 환경에서는 인앱 결제를 사용할 수 없어요.');
+      }
+    } finally {
+      setIsSubscriptionBusy(false);
+    }
+  };
+
+  const runRestorePurchases = async () => {
+    if (isSubscriptionBusy) return;
+    setIsSubscriptionBusy(true);
+    try {
+      const result = await restorePurchases();
+      if (result.ok) {
+        useSubscriptionStore.getState().applyCustomerInfo(result.customerInfo);
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        const entitled = selectIsPro(useSubscriptionStore.getState());
+        Alert.alert(
+          '구매 복원',
+          entitled ? 'POKIT Pro 구독을 복원했어요.' : '복원할 구독이 없어요.',
+        );
+      } else if (result.reason === 'skipped') {
+        Alert.alert('구매 복원', '이 환경에서는 구매 복원을 사용할 수 없어요.');
+      } else {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('구매 복원 실패', result.message ?? '다시 시도해 주세요.');
+      }
+    } finally {
+      setIsSubscriptionBusy(false);
+    }
+  };
+
+  const runCustomerCenter = async () => {
+    if (isSubscriptionBusy) return;
+    setIsSubscriptionBusy(true);
+    try {
+      const outcome = await presentCustomerCenter();
+      await useSubscriptionStore.getState().refreshCustomerInfo();
+      if (outcome === 'error') {
+        Alert.alert(
+          '구독 관리',
+          '고객 센터를 열지 못했어요. RevenueCat Customer Center 설정을 확인해 주세요.',
+        );
+      } else if (outcome === 'skipped') {
+        Alert.alert('구독 관리', '이 환경에서는 구독 관리를 사용할 수 없어요.');
+      }
+    } finally {
+      setIsSubscriptionBusy(false);
+    }
+  };
 
   const runResetData = async () => {
     if (isResettingData) return;
@@ -405,6 +486,78 @@ export function SettingsPage() {
             <IconSymbol name="chevron.right" size={14} color={p.chevron} />
           </Pressable>
         </SettingsSection>
+
+        {SHOW_POKIT_PRO_SETTINGS ? (
+          <SettingsSection border={p.border} surface={p.surface}>
+            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>POKIT Pro</ThemedText>
+
+            <Pressable
+              style={[chrome.item, { borderTopColor: p.border }, isSubscriptionBusy && styles.disabledItem]}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (isPro) {
+                  void runCustomerCenter();
+                } else {
+                  void runPresentPaywall();
+                }
+              }}
+              disabled={isSubscriptionBusy}
+              accessibilityRole="button"
+              accessibilityLabel={isPro ? 'POKIT Pro 구독 관리' : 'POKIT Pro 구독하기'}>
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon
+                  name="star.fill"
+                  color={p.icon}
+                  boxBg={p.iconBoxBg}
+                  border={p.border}
+                  shadow={p.shadow}
+                />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                    {isPro ? 'Pro 이용 중' : 'Pro 시작하기'}
+                  </ThemedText>
+                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                    {!subscriptionConfigured
+                      ? '이 빌드에서는 결제 모듈을 쓸 수 없어요'
+                      : isPro
+                        ? '구독·결제 관리 (Customer Center)'
+                        : '월간·연간·평생 — 클라우드 등 Pro 기능'}
+                  </ThemedText>
+                </View>
+              </View>
+              <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+            </Pressable>
+
+            <Pressable
+              style={[chrome.item, { borderTopColor: p.border }, isSubscriptionBusy && styles.disabledItem]}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                void runRestorePurchases();
+              }}
+              disabled={isSubscriptionBusy}
+              accessibilityRole="button"
+              accessibilityLabel="구매 복원">
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon
+                  name="arrow.clockwise"
+                  color={p.icon}
+                  boxBg={p.iconBoxBg}
+                  border={p.border}
+                  shadow={p.shadow}
+                />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                    구매 복원
+                  </ThemedText>
+                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                    같은 Apple/Google 계정의 구독을 다시 불러와요
+                  </ThemedText>
+                </View>
+              </View>
+              <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+            </Pressable>
+          </SettingsSection>
+        ) : null}
 
         <SettingsSection border={p.border} surface={p.surface}>
           <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>고객센터</ThemedText>

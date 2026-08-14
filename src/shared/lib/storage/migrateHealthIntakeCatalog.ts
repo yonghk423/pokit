@@ -74,14 +74,28 @@ function migrateDayPlanDraftKeys(): void {
 }
 
 function migrateRoutineCatalogSelectionKeys(): void {
-  const legacy = localStorageClient.getJson<{ categoryKeys?: string[] }>(
+  const legacy = localStorageClient.getJson<{
+    categoryKeys?: string[];
+    manualSelectionKeys?: string[];
+  }>(
     StorageKeys.priorityCatalogFixedRoutines,
   );
   const keys = Array.isArray(legacy?.categoryKeys) ? legacy!.categoryKeys : [];
+  const manualSelectionKeys = Array.isArray(legacy?.manualSelectionKeys)
+    ? legacy!.manualSelectionKeys
+    : [];
   const nextKeys = normalizeCatalogKeysAfterHealthIntakeMerge(keys);
-  if (JSON.stringify(nextKeys) === JSON.stringify(keys)) return;
+  const nextManualSelectionKeys = normalizeCatalogKeysAfterHealthIntakeMerge(manualSelectionKeys);
+  if (
+    JSON.stringify(nextKeys) === JSON.stringify(keys) &&
+    JSON.stringify(nextManualSelectionKeys) === JSON.stringify(manualSelectionKeys)
+  ) {
+    return;
+  }
   localStorageClient.setJson(StorageKeys.priorityCatalogFixedRoutines, {
+    ...legacy,
     categoryKeys: nextKeys,
+    manualSelectionKeys: nextManualSelectionKeys,
   });
 }
 

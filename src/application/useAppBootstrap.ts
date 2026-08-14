@@ -25,6 +25,7 @@ import {
 } from '@features/live-activity-sync';
 import { useLocalNotifications } from '@features/local-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
+import { useSubscriptionStore } from '@features/subscriptions';
 import {
   addLocalNotificationReceivedListener,
   addLocalNotificationResponseListener,
@@ -70,6 +71,8 @@ export function useAppBootstrap() {
       useDayPlanStore.getState().prunePastEndedBlocks();
       syncTodayTabWithFixedRoutineApply();
       registerOtherCategoryResolverFromStorage();
+      await useSubscriptionStore.getState().hydrate();
+      if (cancelled) return;
 
       const plan = useDayPlanStore.getState();
       useDayPlanRuntimeStore.getState().buildTimelineFromBlocks({
@@ -219,6 +222,7 @@ export function useAppBootstrap() {
         void syncIncompleteRoutineReminderNotifications();
         useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
         registerOtherCategoryResolverFromStorage();
+        void useSubscriptionStore.getState().refreshCustomerInfo();
       } else {
         /** 백그라운드/비활성 전환 시 대기 중인 저장 write를 즉시 정리 */
         void flushLocalStorageClientWrites();

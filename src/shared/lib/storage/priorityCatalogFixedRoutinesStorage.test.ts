@@ -18,9 +18,17 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
   });
 
   it('appends routine catalog selection keys without duplicates', () => {
-    savePriorityCatalogFixedRoutineKeys(['reading']);
+    appendRoutineCatalogSelectionKeys(['reading']);
     appendRoutineCatalogSelectionKeys(['work', 'reading']);
     expect(loadRoutineCatalogSelectionKeys()).toEqual(['reading', 'work']);
+  });
+
+  it('does not treat legacy fixed-routine keys as manual today selections', () => {
+    localStorageClient.setJson(StorageKeys.priorityCatalogFixedRoutines, {
+      categoryKeys: ['reading', 'work'],
+    });
+
+    expect(loadRoutineCatalogSelectionKeys()).toEqual([]);
   });
 
   it('removes a routine catalog selection key', () => {
