@@ -5,6 +5,7 @@ import { AppState } from 'react-native';
 import {
   syncTodayTabWithFixedRoutineApply,
   useDayPlanDraftStore,
+  useDayPlanLayoutModeVisibilityStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
   useDayPlanTodoStore,
@@ -37,7 +38,6 @@ import {
   initLocalStorageClient,
   loadPriorityDayStartAlarm,
 } from '@shared/lib/storage';
-import { useDayPlanLayoutModeVisibilityStore } from '@entities/day-plan';
 import { useDevSeedMenu } from './useDevSeedMenu';
 
 /**
@@ -71,15 +71,23 @@ export function useAppBootstrap() {
       useDayPlanStore.getState().prunePastEndedBlocks();
       syncTodayTabWithFixedRoutineApply();
       registerOtherCategoryResolverFromStorage();
-      await useSubscriptionStore.getState().hydrate();
-      if (cancelled) return;
-
       const plan = useDayPlanStore.getState();
       useDayPlanRuntimeStore.getState().buildTimelineFromBlocks({
         dateKey: plan.dateKey,
         blocks: plan.blocks,
       });
       if (!cancelled) setIsReady(true);
+
+      /**
+       * 구독은 선택 기능이므로 네트워크 상태·RevenueCat 설정 오류가
+       * 앱 시작과 스플래시 해제를 막지 않도록 핵심 hydrate와 분리한다.
+       */
+      void useSubscriptionStore
+        .getState()
+        .hydrate()
+        .catch((error) => {
+          console.warn('[subscriptions] background hydrate failed', error);
+        });
     })();
 
     return () => {

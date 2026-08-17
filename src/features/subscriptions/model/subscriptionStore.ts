@@ -48,23 +48,33 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   },
 
   hydrate: async () => {
-    const ok = await configurePurchases();
-    set({ isConfigured: ok });
+    try {
+      const ok = await configurePurchases();
+      set({ isConfigured: ok });
 
-    if (!ok) {
-      set({ isHydrated: true, customerInfo: null });
-      return;
+      if (!ok) {
+        set({ customerInfo: null });
+        return;
+      }
+
+      if (!customerInfoListenerAttached) {
+        Purchases.addCustomerInfoUpdateListener((info) => {
+          get().applyCustomerInfo(info);
+        });
+        customerInfoListenerAttached = true;
+      }
+
+      await get().refreshCustomerInfo();
+    } catch (error) {
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as PurchasesError).message)
+          : '구독 정보를 불러오지 못했어요.';
+      set({ isConfigured: false, customerInfo: null, lastError: message });
+      console.warn('[subscriptions] hydrate failed', error);
+    } finally {
+      set({ isHydrated: true });
     }
-
-    if (!customerInfoListenerAttached) {
-      Purchases.addCustomerInfoUpdateListener((info) => {
-        get().applyCustomerInfo(info);
-      });
-      customerInfoListenerAttached = true;
-    }
-
-    await get().refreshCustomerInfo();
-    set({ isHydrated: true });
   },
 }));
 
