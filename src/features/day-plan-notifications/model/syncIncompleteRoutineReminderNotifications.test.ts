@@ -6,7 +6,7 @@ const mockEnsureLocalNotificationPermission = jest.fn();
 const mockSaveIncompleteRoutineReminder = jest.fn();
 const mockLoadIncompleteRoutineReminder = jest.fn();
 const mockDayPlanGetState = jest.fn();
-let mockPendingCount = 4;
+let mockPendingCounts = { bag: 2, sections: 1, spine: 1 };
 
 jest.mock('@shared/lib/notifications', () => ({
   scheduleDailyLocalNotification: (...args: unknown[]) =>
@@ -35,10 +35,29 @@ jest.mock('@entities/local-notifications', () => ({
 }));
 
 jest.mock('@entities/day-plan', () => ({
-  countPendingFlowBlocks: () => mockPendingCount,
+  countPendingRoutinesByLayout: () => mockPendingCounts,
+  totalPendingRoutinesByLayout: (counts: typeof mockPendingCounts) =>
+    counts.bag + counts.sections + counts.spine,
   parseHHmmToMinutes: (hhmm: string) => {
     const [h, m] = hhmm.split(':').map(Number);
     return h * 60 + m;
+  },
+  useDayPlanDraftStore: {
+    getState: () => ({
+      priorityCategoryOrder: [],
+      prioritySectionsCategoryOrder: [],
+      prioritySectionsMealSlots: {},
+      completedFocusCategoryKeys: [],
+      planCompletionDismissedKeys: [],
+      isFocusStarted: false,
+      priorityStart: '07:00',
+      priorityEnd: '23:00',
+    }),
+  },
+  useDayPlanLayoutModeVisibilityStore: {
+    getState: () => ({
+      visibility: { bag: true, sections: true, spine: true },
+    }),
   },
   useDayPlanStore: {
     getState: () => mockDayPlanGetState(),
@@ -55,7 +74,7 @@ describe('syncIncompleteRoutineReminderNotifications', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
-    mockPendingCount = 4;
+    mockPendingCounts = { bag: 2, sections: 1, spine: 1 };
     mockDayPlanGetState.mockReturnValue({
       blocks: [],
       completedBlockIds: [],
@@ -85,14 +104,15 @@ describe('syncIncompleteRoutineReminderNotifications', () => {
         identifier: INCOMPLETE_ROUTINE_REMINDER_NOTIFICATION_ID,
         hour: 22,
         minute: 0,
-        body: '아직 완료하지 못한 일정이 4개 있어요. 확인해 보세요.',
+        title: '미완료 루틴 4개가 있습니다.',
+        body: '▤ 2개   ☀︎ 1개   ◷ 1개',
         data: { eventType: 'incompleteRoutineReminder' },
       }),
     );
   });
 
   it('cancels without scheduling when pending count is zero', async () => {
-    mockPendingCount = 0;
+    mockPendingCounts = { bag: 0, sections: 0, spine: 0 };
     const { syncIncompleteRoutineReminderNotifications } = loadSyncModule();
     await syncIncompleteRoutineReminderNotifications();
 

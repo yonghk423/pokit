@@ -52,6 +52,12 @@ export {
 } from './lib/spinePriorityWindow';
 export { countPendingFlowBlocks } from './lib/countPendingFlowBlocks';
 export {
+  countPendingRoutinesByLayout,
+  totalPendingRoutinesByLayout,
+  type CountPendingRoutinesByLayoutInput,
+  type PendingRoutineCountsByLayout,
+} from './lib/countPendingRoutinesByLayout';
+export {
   isSystemCatalogGroupKey, SYSTEM_CATALOG_GROUP_KEYS,
   SYSTEM_CATALOG_GROUP_LABEL_KO,
   SYSTEM_CATALOG_GROUP_SUBTITLE_KO, type SystemCatalogGroupKey

@@ -1,4 +1,12 @@
-import { countPendingFlowBlocks, parseHHmmToMinutes, useDayPlanStore } from '@entities/day-plan';
+import {
+  countPendingRoutinesByLayout,
+  parseHHmmToMinutes,
+  totalPendingRoutinesByLayout,
+  useDayPlanDraftStore,
+  useDayPlanLayoutModeVisibilityStore,
+  useDayPlanStore,
+  type PendingRoutineCountsByLayout,
+} from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import {
   cancelLocalNotificationsById,
@@ -20,8 +28,18 @@ export const INCOMPLETE_ROUTINE_REMINDER_EVENT_TYPE = 'incompleteRoutineReminder
 let syncInFlight: Promise<boolean> | null = null;
 let lastSyncedKey = '';
 
-function buildSyncKey(enabled: boolean, reminderHhmm: string, pendingCount: number): string {
-  return `${enabled ? '1' : '0'}:${reminderHhmm.trim()}:${pendingCount}`;
+function buildSyncKey(
+  enabled: boolean,
+  reminderHhmm: string,
+  counts: PendingRoutineCountsByLayout,
+): string {
+  return [
+    enabled ? '1' : '0',
+    reminderHhmm.trim(),
+    counts.bag,
+    counts.sections,
+    counts.spine,
+  ].join(':');
 }
 
 async function cancelAllIncompleteRoutineReminderNotifications(
@@ -47,12 +65,33 @@ export async function syncIncompleteRoutineReminderNotifications(): Promise<bool
     try {
       const config = loadIncompleteRoutineReminder();
       const { blocks, completedBlockIds, skippedBlockIds } = useDayPlanStore.getState();
-      const pendingCount = countPendingFlowBlocks({
+      const {
+        priorityCategoryOrder,
+        prioritySectionsCategoryOrder,
+        prioritySectionsMealSlots,
+        completedFocusCategoryKeys,
+        planCompletionDismissedKeys,
+        isFocusStarted,
+        priorityStart,
+        priorityEnd,
+      } = useDayPlanDraftStore.getState();
+      const { visibility } = useDayPlanLayoutModeVisibilityStore.getState();
+      const pendingCounts = countPendingRoutinesByLayout({
+        visibility,
+        priorityCategoryOrder,
+        prioritySectionsCategoryOrder,
+        prioritySectionsMealSlots,
+        completedFocusCategoryKeys,
+        planCompletionDismissedKeys,
+        isFocusStarted,
+        priorityStart,
+        priorityEnd,
         blocks,
         completedBlockIds,
         skippedBlockIds,
       });
-      const syncKey = buildSyncKey(config.enabled, config.reminderHhmm, pendingCount);
+      const pendingCount = totalPendingRoutinesByLayout(pendingCounts);
+      const syncKey = buildSyncKey(config.enabled, config.reminderHhmm, pendingCounts);
 
       if (syncKey === lastSyncedKey) {
         return true;
@@ -104,7 +143,7 @@ export async function syncIncompleteRoutineReminderNotifications(): Promise<bool
 
       const hour = Math.floor(m / 60);
       const minute = m % 60;
-      const { title, body } = buildIncompleteRoutineReminderNotificationContent(pendingCount);
+      const { title, body } = buildIncompleteRoutineReminderNotificationContent(pendingCounts);
       const nid = await scheduleDailyLocalNotification({
         identifier: INCOMPLETE_ROUTINE_REMINDER_NOTIFICATION_ID,
         title,

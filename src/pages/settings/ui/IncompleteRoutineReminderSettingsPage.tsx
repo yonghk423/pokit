@@ -28,6 +28,7 @@ export function IncompleteRoutineReminderSettingsPage() {
   const insets = useSafeAreaInsets();
   const surface = useMemo(() => paletteForReminderTimeCard(false), []);
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingPersistRef = useRef<{ on: boolean; hhmm: string } | null>(null);
 
   const [reminderOn, setReminderOn] = useState(false);
   const [reminderHhmm, setReminderHhmm] = useState('22:00');
@@ -60,8 +61,10 @@ export function IncompleteRoutineReminderSettingsPage() {
   const schedulePersist = useCallback(
     (on: boolean, hhmm: string) => {
       if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+      pendingPersistRef.current = { on, hhmm };
       persistTimerRef.current = setTimeout(() => {
         persistTimerRef.current = null;
+        pendingPersistRef.current = null;
         void flushPersist(on, hhmm);
       }, 380);
     },
@@ -70,9 +73,14 @@ export function IncompleteRoutineReminderSettingsPage() {
 
   useEffect(
     () => () => {
-      if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+      if (!persistTimerRef.current) return;
+      clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = null;
+      const pending = pendingPersistRef.current;
+      pendingPersistRef.current = null;
+      if (pending) void flushPersist(pending.on, pending.hhmm);
     },
-    [],
+    [flushPersist],
   );
 
   const onToggleReminder = useCallback(
@@ -158,7 +166,8 @@ export function IncompleteRoutineReminderSettingsPage() {
                   snapStepMinutes={1}
                 />
                 <ThemedText style={[styles.previewLine, { color: p.desc }]}>
-                  예시 · {formatHhmmClockKo(reminderHhmm)}에 일정 4개가 남아 있으면 「아직 완료하지 못한 일정이 4개 있어요. 확인해 보세요.」
+                  예시 · {formatHhmmClockKo(reminderHhmm)}에 루틴 6개가 남아 있으면 「미완료
+                  루틴 6개가 있습니다. · ▤ 2개　☀︎ 3개　◷ 1개」
                 </ThemedText>
               </View>
             ) : null}

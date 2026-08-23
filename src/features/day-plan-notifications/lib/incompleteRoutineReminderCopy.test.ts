@@ -1,16 +1,29 @@
 import { buildIncompleteRoutineReminderNotificationContent } from './incompleteRoutineReminderCopy';
 
 describe('buildIncompleteRoutineReminderNotificationContent', () => {
-  it('builds Korean copy with pending count', () => {
-    expect(buildIncompleteRoutineReminderNotificationContent(4)).toEqual({
-      title: '미완료 일정',
-      body: '아직 완료하지 못한 일정이 4개 있어요. 확인해 보세요.',
+  it('builds icon copy for modes that have pending routines', () => {
+    expect(
+      buildIncompleteRoutineReminderNotificationContent({
+        bag: 2,
+        sections: 3,
+        spine: 1,
+      }),
+    ).toEqual({
+      title: '미완료 루틴 6개가 있습니다.',
+      body: '▤ 2개   ☀︎ 3개   ◷ 1개',
     });
   });
 
-  it('clamps invalid counts to zero', () => {
-    expect(buildIncompleteRoutineReminderNotificationContent(-2).body).toBe(
-      '아직 완료하지 못한 일정이 0개 있어요. 확인해 보세요.',
-    );
+  it('omits empty modes and clamps invalid counts to zero', () => {
+    expect(
+      buildIncompleteRoutineReminderNotificationContent({
+        bag: -2,
+        sections: 3,
+        spine: 0,
+      }),
+    ).toEqual({
+      title: '미완료 루틴 3개가 있습니다.',
+      body: '☀︎ 3개',
+    });
   });
 });
