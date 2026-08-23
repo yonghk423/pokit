@@ -1,7 +1,7 @@
 {
-  "latestVersion": "1.6.18",
+  "latestVersion": "1.6.19",
   "highlights": [
-    "앱이 더 안정적으로 시작되도록 구독 연동을 정리했어요."
+    "미완료 일정 알림이 지정한 시각에 더 안정적으로 울리도록 고쳤어요."
   ],
   "storeUrls": {
     "ios": "https://apps.apple.com/app/id6762331629",

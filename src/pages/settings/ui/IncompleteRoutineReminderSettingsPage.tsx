@@ -4,8 +4,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { formatHhmmClockKo } from '@entities/day-plan';
-import { saveIncompleteRoutineReminderSettings } from '@features/day-plan-notifications';
+import {
+  countPendingRoutinesByLayout,
+  formatHhmmClockKo,
+  totalPendingRoutinesByLayout,
+  useDayPlanDraftStore,
+  useDayPlanLayoutModeVisibilityStore,
+  useDayPlanStore,
+} from '@entities/day-plan';
+import {
+  buildIncompleteRoutineReminderNotificationContent,
+  saveIncompleteRoutineReminderSettings,
+} from '@features/day-plan-notifications';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { loadIncompleteRoutineReminder } from '@shared/lib/storage';
@@ -20,6 +30,7 @@ import {
 
 import { buildSettingsPalette, settingsChromeStyles as chrome } from '../lib/settingsChrome';
 
+
 /** 설정 → 알림 → 미완료 일정 알림 */
 export function IncompleteRoutineReminderSettingsPage() {
   const router = useRouter();
@@ -33,6 +44,56 @@ export function IncompleteRoutineReminderSettingsPage() {
   const [reminderOn, setReminderOn] = useState(false);
   const [reminderHhmm, setReminderHhmm] = useState('22:00');
   const [timeExpanded, setTimeExpanded] = useState(false);
+  const priorityCategoryOrder = useDayPlanDraftStore((s) => s.priorityCategoryOrder);
+  const prioritySectionsCategoryOrder = useDayPlanDraftStore(
+    (s) => s.prioritySectionsCategoryOrder,
+  );
+  const prioritySectionsMealSlots = useDayPlanDraftStore((s) => s.prioritySectionsMealSlots);
+  const completedFocusCategoryKeys = useDayPlanDraftStore((s) => s.completedFocusCategoryKeys);
+  const planCompletionDismissedKeys = useDayPlanDraftStore((s) => s.planCompletionDismissedKeys);
+  const isFocusStarted = useDayPlanDraftStore((s) => s.isFocusStarted);
+  const priorityStart = useDayPlanDraftStore((s) => s.priorityStart);
+  const priorityEnd = useDayPlanDraftStore((s) => s.priorityEnd);
+  const visibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
+  const blocks = useDayPlanStore((s) => s.blocks);
+  const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
+  const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
+  const pendingCounts = useMemo(
+    () =>
+      countPendingRoutinesByLayout({
+        visibility,
+        priorityCategoryOrder,
+        prioritySectionsCategoryOrder,
+        prioritySectionsMealSlots,
+        completedFocusCategoryKeys,
+        planCompletionDismissedKeys,
+        isFocusStarted,
+        priorityStart,
+        priorityEnd,
+        blocks,
+        completedBlockIds,
+        skippedBlockIds,
+      }),
+    [
+      visibility,
+      priorityCategoryOrder,
+      prioritySectionsCategoryOrder,
+      prioritySectionsMealSlots,
+      completedFocusCategoryKeys,
+      planCompletionDismissedKeys,
+      isFocusStarted,
+      priorityStart,
+      priorityEnd,
+      blocks,
+      completedBlockIds,
+      skippedBlockIds,
+    ],
+  );
+  const pendingTotal = totalPendingRoutinesByLayout(pendingCounts);
+  const pendingPreview = useMemo(
+    () => buildIncompleteRoutineReminderNotificationContent(pendingCounts),
+    [pendingCounts],
+  );
 
   const hydrateFromStorage = useCallback(() => {
     const row = loadIncompleteRoutineReminder();
@@ -40,6 +101,7 @@ export function IncompleteRoutineReminderSettingsPage() {
     setReminderHhmm(row.reminderHhmm);
     setTimeExpanded(false);
   }, []);
+
 
   useFocusEffect(
     useCallback(() => {
@@ -166,8 +228,9 @@ export function IncompleteRoutineReminderSettingsPage() {
                   snapStepMinutes={1}
                 />
                 <ThemedText style={[styles.previewLine, { color: p.desc }]}>
-                  예시 · {formatHhmmClockKo(reminderHhmm)}에 루틴 6개가 남아 있으면 「미완료
-                  루틴 6개가 있습니다. · ▤ 2개　☀︎ 3개　◷ 1개」
+                  {pendingTotal > 0
+                    ? `현재 예약 · ${formatHhmmClockKo(reminderHhmm)}에 「${pendingPreview.title} · ${pendingPreview.body}」`
+                    : '현재 미완료 루틴이 없어 알림이 예약되지 않아요.'}
                 </ThemedText>
               </View>
             ) : null}

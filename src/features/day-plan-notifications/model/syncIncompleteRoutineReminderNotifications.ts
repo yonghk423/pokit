@@ -11,9 +11,9 @@ import { useLocalNotificationsStore } from '@entities/local-notifications';
 import {
   cancelLocalNotificationsById,
   cancelScheduledNotificationByIdentifier,
-  cancelScheduledNotificationsByEventType,
   ensureLocalNotificationPermission,
-  scheduleDailyLocalNotification,
+  getScheduledLocalNotifications,
+  scheduleLocalNotification,
 } from '@shared/lib/notifications';
 import {
   loadIncompleteRoutineReminder,
@@ -21,12 +21,21 @@ import {
 } from '@shared/lib/storage';
 
 import { buildIncompleteRoutineReminderNotificationContent } from '../lib/incompleteRoutineReminderCopy';
+import {
+  buildNextDailyReminderDates,
+  toLocalDateKey,
+} from '../lib/nextIncompleteRoutineReminderDates';
 
 export const INCOMPLETE_ROUTINE_REMINDER_NOTIFICATION_ID = 'pokit:incomplete-routine-reminder';
 export const INCOMPLETE_ROUTINE_REMINDER_EVENT_TYPE = 'incompleteRoutineReminder';
+const INCOMPLETE_ROUTINE_WEEKLY_ID_PREFIX = 'pokit:incomplete-routine-weekly:';
+const INCOMPLETE_ROUTINE_DATE_ID_PREFIX = 'pokit:incomplete-routine-date:';
+const ROLLING_DAYS = 7;
 
 let syncInFlight: Promise<boolean> | null = null;
+let resyncRequestedWhileInFlight = false;
 let lastSyncedKey = '';
+
 
 function buildSyncKey(
   enabled: boolean,
@@ -42,6 +51,35 @@ function buildSyncKey(
   ].join(':');
 }
 
+function readPendingCounts(): PendingRoutineCountsByLayout {
+  const { blocks, completedBlockIds, skippedBlockIds } = useDayPlanStore.getState();
+  const {
+    priorityCategoryOrder,
+    prioritySectionsCategoryOrder,
+    prioritySectionsMealSlots,
+    completedFocusCategoryKeys,
+    planCompletionDismissedKeys,
+    isFocusStarted,
+    priorityStart,
+    priorityEnd,
+  } = useDayPlanDraftStore.getState();
+  const { visibility } = useDayPlanLayoutModeVisibilityStore.getState();
+  return countPendingRoutinesByLayout({
+    visibility,
+    priorityCategoryOrder,
+    prioritySectionsCategoryOrder,
+    prioritySectionsMealSlots,
+    completedFocusCategoryKeys,
+    planCompletionDismissedKeys,
+    isFocusStarted,
+    priorityStart,
+    priorityEnd,
+    blocks,
+    completedBlockIds,
+    skippedBlockIds,
+  });
+}
+
 async function cancelAllIncompleteRoutineReminderNotifications(
   notificationId: string | null,
 ): Promise<void> {
@@ -49,47 +87,35 @@ async function cancelAllIncompleteRoutineReminderNotifications(
   if (notificationId && notificationId !== INCOMPLETE_ROUTINE_REMINDER_NOTIFICATION_ID) {
     await cancelLocalNotificationsById([notificationId]);
   }
-  await cancelScheduledNotificationsByEventType(INCOMPLETE_ROUTINE_REMINDER_EVENT_TYPE);
+  for (const weekday of [0, 1, 2, 3, 4, 5, 6]) {
+    await cancelScheduledNotificationByIdentifier(
+      `${INCOMPLETE_ROUTINE_WEEKLY_ID_PREFIX}${weekday}`,
+    );
+  }
+  const scheduled = await getScheduledLocalNotifications();
+  const staleIds = scheduled
+    .filter((row) => row.eventType === INCOMPLETE_ROUTINE_REMINDER_EVENT_TYPE)
+    .map((row) => row.identifier);
+  if (staleIds.length > 0) {
+    await cancelLocalNotificationsById(staleIds);
+  }
 }
 
 /**
- * 저장된 미완료 일정 알림 설정과 오늘 남은 플로우 블록 수를 반영해 매일 알림을 다시 예약합니다.
+ * 저장된 미완료 일정 알림 설정과 오늘 남은 루틴 수를 반영해
+ * 앞으로 7일의 절대 시각 알림을 다시 예약합니다.
  * 미완료 일정이 없으면 예약만 취소하고 설정은 유지합니다.
  */
 export async function syncIncompleteRoutineReminderNotifications(): Promise<boolean> {
   if (syncInFlight) {
+    resyncRequestedWhileInFlight = true;
     return syncInFlight;
   }
 
   syncInFlight = (async () => {
     try {
       const config = loadIncompleteRoutineReminder();
-      const { blocks, completedBlockIds, skippedBlockIds } = useDayPlanStore.getState();
-      const {
-        priorityCategoryOrder,
-        prioritySectionsCategoryOrder,
-        prioritySectionsMealSlots,
-        completedFocusCategoryKeys,
-        planCompletionDismissedKeys,
-        isFocusStarted,
-        priorityStart,
-        priorityEnd,
-      } = useDayPlanDraftStore.getState();
-      const { visibility } = useDayPlanLayoutModeVisibilityStore.getState();
-      const pendingCounts = countPendingRoutinesByLayout({
-        visibility,
-        priorityCategoryOrder,
-        prioritySectionsCategoryOrder,
-        prioritySectionsMealSlots,
-        completedFocusCategoryKeys,
-        planCompletionDismissedKeys,
-        isFocusStarted,
-        priorityStart,
-        priorityEnd,
-        blocks,
-        completedBlockIds,
-        skippedBlockIds,
-      });
+      const pendingCounts = readPendingCounts();
       const pendingCount = totalPendingRoutinesByLayout(pendingCounts);
       const syncKey = buildSyncKey(config.enabled, config.reminderHhmm, pendingCounts);
 
@@ -144,14 +170,24 @@ export async function syncIncompleteRoutineReminderNotifications(): Promise<bool
       const hour = Math.floor(m / 60);
       const minute = m % 60;
       const { title, body } = buildIncompleteRoutineReminderNotificationContent(pendingCounts);
-      const nid = await scheduleDailyLocalNotification({
-        identifier: INCOMPLETE_ROUTINE_REMINDER_NOTIFICATION_ID,
-        title,
-        body,
-        hour,
-        minute,
-        data: { eventType: INCOMPLETE_ROUTINE_REMINDER_EVENT_TYPE },
-      });
+      let nid: string | null = null;
+      for (const triggerAt of buildNextDailyReminderDates(hour, minute, ROLLING_DAYS)) {
+        const dateId = `${INCOMPLETE_ROUTINE_DATE_ID_PREFIX}${toLocalDateKey(triggerAt)}`;
+        try {
+          const dateNid = await scheduleLocalNotification({
+            identifier: dateId,
+            title,
+            body,
+            triggerAt,
+            data: { eventType: INCOMPLETE_ROUTINE_REMINDER_EVENT_TYPE },
+          });
+          if (!nid && dateNid) {
+            nid = dateNid;
+          }
+        } catch (error) {
+          console.warn('[notifications] incomplete routine reminder date schedule failed', error);
+        }
+      }
 
       if (!nid) {
         saveIncompleteRoutineReminder({
@@ -172,6 +208,12 @@ export async function syncIncompleteRoutineReminderNotifications(): Promise<bool
       return true;
     } finally {
       syncInFlight = null;
+      if (resyncRequestedWhileInFlight) {
+        resyncRequestedWhileInFlight = false;
+        void syncIncompleteRoutineReminderNotifications().catch((error) => {
+          console.warn('[notifications] incomplete routine reminder resync failed', error);
+        });
+      }
     }
   })();
 
@@ -209,3 +251,4 @@ export async function saveIncompleteRoutineReminderSettings(input: {
   lastSyncedKey = '';
   return syncIncompleteRoutineReminderNotifications();
 }
+

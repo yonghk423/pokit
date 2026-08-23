@@ -14,6 +14,7 @@ async function ensureConfigured(): Promise<void> {
   if (!isHandlerConfigured) {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
+        shouldShowAlert: true,
         shouldShowBanner: true,
         shouldShowList: true,
         shouldPlaySound: true,
@@ -66,14 +67,17 @@ export async function scheduleLocalNotification(params: {
   body: string;
   triggerAt: Date;
   data?: Record<string, unknown>;
+  identifier?: string;
 }): Promise<string | null> {
   if (!isNativeNotificationPlatform()) return null;
   await ensureConfigured();
 
   const triggerDate = params.triggerAt;
   if (!(triggerDate instanceof Date) || Number.isNaN(triggerDate.getTime())) return null;
+  if (triggerDate.getTime() <= Date.now()) return null;
 
   return Notifications.scheduleNotificationAsync({
+    identifier: params.identifier,
     content: {
       title: params.title,
       body: params.body,
@@ -218,6 +222,55 @@ export async function cancelLocalNotificationsById(ids: string[]): Promise<void>
     if (!id) continue;
     await Notifications.cancelScheduledNotificationAsync(id);
   }
+}
+
+export type ScheduledLocalNotificationSnapshot = {
+  identifier: string;
+  title: string;
+  body: string;
+  eventType: string | null;
+  triggerAtMs: number | null;
+};
+
+function readTriggerAtMs(trigger: Notifications.NotificationTrigger | null): number | null {
+  if (!trigger || typeof trigger !== 'object') return null;
+  const row = trigger as Record<string, unknown>;
+  const raw = row.date ?? row.value;
+  if (raw instanceof Date) {
+    const ms = raw.getTime();
+    return Number.isNaN(ms) ? null : ms;
+  }
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return raw < 1e12 ? raw * 1000 : raw;
+  }
+  if (typeof raw === 'string') {
+    const ms = Date.parse(raw);
+    return Number.isNaN(ms) ? null : ms;
+  }
+  return null;
+}
+
+/** 현재 앱이 OS에 올려 둔 로컬 알림 스냅샷. */
+export async function getScheduledLocalNotifications(): Promise<
+  ScheduledLocalNotificationSnapshot[]
+> {
+  if (!isNativeNotificationPlatform()) return [];
+  await ensureConfigured();
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  return scheduled.map((req) => {
+    const data = req.content.data;
+    const eventType =
+      data && typeof data === 'object' && typeof (data as { eventType?: unknown }).eventType === 'string'
+        ? (data as { eventType: string }).eventType
+        : null;
+    return {
+      identifier: req.identifier,
+      title: typeof req.content.title === 'string' ? req.content.title : '',
+      body: typeof req.content.body === 'string' ? req.content.body : '',
+      eventType,
+      triggerAtMs: readTriggerAtMs(req.trigger),
+    };
+  });
 }
 
 export function addLocalNotificationResponseListener(

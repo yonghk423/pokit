@@ -69,7 +69,7 @@ describe('notifications client', () => {
   });
 
   it('schedules date, daily and weekly notifications', async () => {
-    const at = new Date('2025-05-26T09:00:00');
+    const at = new Date(Date.now() + 60_000);
     await scheduleLocalNotification({ title: 'T', body: 'B', triggerAt: at });
     await scheduleDailyLocalNotification({
       identifier: 'pokit:test',
@@ -121,9 +121,12 @@ describe('notifications client', () => {
     await expect(ensureLocalNotificationPermission()).resolves.toBe(false);
   });
 
-  it('skips scheduling for invalid trigger date', async () => {
+  it('skips scheduling for invalid or past trigger dates', async () => {
     await expect(
       scheduleLocalNotification({ title: 'T', body: 'B', triggerAt: new Date('invalid') }),
+    ).resolves.toBeNull();
+    await expect(
+      scheduleLocalNotification({ title: 'T', body: 'B', triggerAt: new Date(Date.now() - 1000) }),
     ).resolves.toBeNull();
     expect(mockScheduleNotificationAsync).not.toHaveBeenCalled();
   });
