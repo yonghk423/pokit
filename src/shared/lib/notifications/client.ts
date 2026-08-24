@@ -1,11 +1,30 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
+import {
+  buildExactLocalNotificationTrigger,
+  REMINDER_NOTIFICATION_CHANNEL_ID,
+} from './buildExactLocalNotificationTrigger';
+
 let isHandlerConfigured = false;
 let isAndroidChannelConfigured = false;
 
 function isNativeNotificationPlatform(): boolean {
   return Platform.OS === 'ios' || Platform.OS === 'android';
+}
+
+function reminderNotificationContent(params: {
+  title: string;
+  body: string;
+  data?: Record<string, unknown>;
+}) {
+  return {
+    title: params.title,
+    body: params.body,
+    sound: true as const,
+    data: params.data,
+    interruptionLevel: 'timeSensitive' as const,
+  };
 }
 
 async function ensureConfigured(): Promise<void> {
@@ -25,11 +44,12 @@ async function ensureConfigured(): Promise<void> {
   }
 
   if (Platform.OS === 'android' && !isAndroidChannelConfigured) {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: '기본',
-      importance: Notifications.AndroidImportance.DEFAULT,
+    await Notifications.setNotificationChannelAsync(REMINDER_NOTIFICATION_CHANNEL_ID, {
+      name: '일정 알림',
+      importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#000000',
+      sound: 'default',
     });
     isAndroidChannelConfigured = true;
   }
@@ -78,16 +98,8 @@ export async function scheduleLocalNotification(params: {
 
   return Notifications.scheduleNotificationAsync({
     identifier: params.identifier,
-    content: {
-      title: params.title,
-      body: params.body,
-      sound: true,
-      data: params.data,
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: triggerDate,
-    },
+    content: reminderNotificationContent(params),
+    trigger: buildExactLocalNotificationTrigger(triggerDate),
   });
 }
 
@@ -109,16 +121,12 @@ export async function scheduleDailyLocalNotification(params: {
 
   return Notifications.scheduleNotificationAsync({
     identifier: params.identifier,
-    content: {
-      title: params.title,
-      body: params.body,
-      sound: true,
-      data: params.data,
-    },
+    content: reminderNotificationContent(params),
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour,
       minute,
+      channelId: REMINDER_NOTIFICATION_CHANNEL_ID,
     },
   });
 }
@@ -143,17 +151,13 @@ export async function scheduleWeeklyLocalNotification(params: {
 
   return Notifications.scheduleNotificationAsync({
     identifier: params.identifier,
-    content: {
-      title: params.title,
-      body: params.body,
-      sound: true,
-      data: params.data,
-    },
+    content: reminderNotificationContent(params),
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
       weekday: expoWeekday,
       hour,
       minute,
+      channelId: REMINDER_NOTIFICATION_CHANNEL_ID,
     },
   });
 }
@@ -206,12 +210,7 @@ export async function sendImmediateNotification(params: {
   await ensureConfigured();
 
   return Notifications.scheduleNotificationAsync({
-    content: {
-      title: params.title,
-      body: params.body,
-      sound: true,
-      data: params.data,
-    },
+    content: reminderNotificationContent(params),
     trigger: null,
   });
 }

@@ -62,6 +62,12 @@ import {
 /** Pro 구독 설정 섹션 — 정식 시행 전까지 숨김 (`true`로 바꾸면 다시 표시) */
 const SHOW_POKIT_PRO_SETTINGS = false;
 
+/** 화면 테마(라이트/다크) 설정 — 출시 전까지 숨김 (`true`로 바꾸면 다시 표시) */
+const SHOW_APPEARANCE_SETTINGS = false;
+
+/** 설정 → 알림 섹션 — 임시 숨김 (`true`로 바꾸면 다시 표시). 알림 예약 로직은 유지 */
+const SHOW_NOTIFICATION_SETTINGS = false;
+
 /** 앱 설정 (로그인·Profile 없음). 문의하기 탭 시 네이티브 메일 작성을 바로 엽니다. */
 export function SettingsPage() {
   const router = useRouter();
@@ -395,37 +401,39 @@ export function SettingsPage() {
           </Pressable>
         </SettingsSection>
 
-        <SettingsSection border={p.border} surface={p.surface}>
-          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>알림</ThemedText>
+        {SHOW_NOTIFICATION_SETTINGS ? (
+          <SettingsSection border={p.border} surface={p.surface}>
+            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>알림</ThemedText>
 
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/notification-settings');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="알림 설정">
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="bell.fill"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.border}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  알림
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  나를 위한 다양한 알림 기능
-                </ThemedText>
+            <Pressable
+              style={[chrome.item, { borderTopColor: p.border }]}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/notification-settings');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="알림 설정">
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon
+                  name="bell.fill"
+                  color={p.icon}
+                  boxBg={p.iconBoxBg}
+                  border={p.border}
+                  shadow={p.shadow}
+                />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                    알림
+                  </ThemedText>
+                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                    나를 위한 다양한 알림 기능
+                  </ThemedText>
+                </View>
               </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
-        </SettingsSection>
+              <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+            </Pressable>
+          </SettingsSection>
+        ) : null}
 
         <SettingsSection border={p.border} surface={p.surface}>
           <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>화면</ThemedText>
@@ -458,33 +466,35 @@ export function SettingsPage() {
             <IconSymbol name="chevron.right" size={14} color={p.chevron} />
           </Pressable>
 
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/appearance-settings');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="화면 테마 설정">
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="paintbrush.fill"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.border}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  화면 테마
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {appearanceLabel}
-                </ThemedText>
+          {SHOW_APPEARANCE_SETTINGS ? (
+            <Pressable
+              style={[chrome.item, { borderTopColor: p.border }]}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/appearance-settings');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="화면 테마 설정">
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon
+                  name="paintbrush.fill"
+                  color={p.icon}
+                  boxBg={p.iconBoxBg}
+                  border={p.border}
+                  shadow={p.shadow}
+                />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                    화면 테마
+                  </ThemedText>
+                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                    {appearanceLabel}
+                  </ThemedText>
+                </View>
               </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
+              <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+            </Pressable>
+          ) : null}
         </SettingsSection>
 
         {SHOW_POKIT_PRO_SETTINGS ? (

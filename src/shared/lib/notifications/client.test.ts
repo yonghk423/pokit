@@ -26,8 +26,8 @@ jest.mock('expo-notifications', () => ({
     mockAddNotificationResponseReceivedListener(...args),
   addNotificationReceivedListener: (...args: unknown[]) =>
     mockAddNotificationReceivedListener(...args),
-  SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily', WEEKLY: 'weekly' },
-  AndroidImportance: { DEFAULT: 4 },
+  SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily', WEEKLY: 'weekly', CALENDAR: 'calendar' },
+  AndroidImportance: { DEFAULT: 4, HIGH: 5 },
 }));
 
 import {
@@ -87,6 +87,17 @@ describe('notifications client', () => {
       minute: 15,
     });
     expect(mockScheduleNotificationAsync).toHaveBeenCalledTimes(3);
+    expect(mockScheduleNotificationAsync).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        trigger: expect.objectContaining({
+          type: 'calendar',
+          hour: at.getHours(),
+          minute: at.getMinutes(),
+          repeats: false,
+        }),
+      }),
+    );
   });
 
   it('cancels by identifier and event type', async () => {
@@ -200,7 +211,7 @@ describe('notifications client (non-native)', () => {
 });
 
 describe('notifications client (android channel)', () => {
-  it('creates default notification channel on first use', async () => {
+  it('creates high-importance reminder notification channel on first use', async () => {
     jest.resetModules();
     const mockSetNotificationChannelAsync = jest.fn().mockResolvedValue(undefined);
     let mod: typeof import('./client');
@@ -218,15 +229,15 @@ describe('notifications client (android channel)', () => {
         getAllScheduledNotificationsAsync: jest.fn().mockResolvedValue([]),
         addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
         addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
-        SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily', WEEKLY: 'weekly' },
-        AndroidImportance: { DEFAULT: 4 },
+        SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily', WEEKLY: 'weekly', CALENDAR: 'calendar' },
+        AndroidImportance: { DEFAULT: 4, HIGH: 5 },
       }));
       mod = require('./client');
     });
     await mod!.getLocalNotificationPermissionSnapshot();
     expect(mockSetNotificationChannelAsync).toHaveBeenCalledWith(
-      'default',
-      expect.objectContaining({ name: '기본' }),
+      'pokit-reminders',
+      expect.objectContaining({ name: '일정 알림' }),
     );
   });
 });

@@ -62,9 +62,16 @@ export type AppearanceMode = 'light' | 'dark';
 /** 하루(시작~마무리) 구간이 지난 뒤 오늘 탭 담기 처리 */
 export type PriorityDayRollMode = 'reset' | 'keep';
 
+export type PriorityDayEndAlarmPersisted = {
+  enabled: boolean;
+  reminderHhmm: string;
+  notificationId: string | null;
+};
+
 type SettingsStorageShape = {
   dayPlanScheduledNotifications?: DayPlanScheduledNotification[];
   priorityDayStartAlarm?: PriorityDayStartAlarmPersisted;
+  priorityDayEndAlarm?: PriorityDayEndAlarmPersisted;
   incompleteRoutineReminder?: IncompleteRoutineReminderPersisted;
   categoryReminderRules?: CategoryReminderRules;
   categoryReminderScheduled?: CategoryReminderScheduledRow[];
@@ -131,6 +138,41 @@ export function savePriorityDayStartAlarm(next: PriorityDayStartAlarmPersisted):
     ...root,
     priorityDayStartAlarm: {
       enabled: next.enabled,
+      notificationId: next.notificationId,
+    },
+  });
+}
+
+const DEFAULT_PRIORITY_DAY_END_ALARM: PriorityDayEndAlarmPersisted = {
+  enabled: false,
+  reminderHhmm: '22:00',
+  notificationId: null,
+};
+
+export function loadPriorityDayEndAlarm(): PriorityDayEndAlarmPersisted {
+  const root = readRoot();
+  const v = root.priorityDayEndAlarm;
+  if (!v || typeof v !== 'object') {
+    return { ...DEFAULT_PRIORITY_DAY_END_ALARM };
+  }
+  const hhmm =
+    typeof v.reminderHhmm === 'string' && v.reminderHhmm.trim().length > 0
+      ? v.reminderHhmm.trim()
+      : DEFAULT_PRIORITY_DAY_END_ALARM.reminderHhmm;
+  return {
+    enabled: Boolean(v.enabled),
+    reminderHhmm: hhmm,
+    notificationId: typeof v.notificationId === 'string' ? v.notificationId : null,
+  };
+}
+
+export function savePriorityDayEndAlarm(next: PriorityDayEndAlarmPersisted): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    priorityDayEndAlarm: {
+      enabled: next.enabled,
+      reminderHhmm: next.reminderHhmm,
       notificationId: next.notificationId,
     },
   });

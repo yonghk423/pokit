@@ -4,9 +4,11 @@ import { Alert, DevSettings } from 'react-native';
 import type { HistorySeedProfile } from '@shared/lib/storage/seedHistoryData';
 
 import {
+  formatDevMockSeedAlertMessage,
   formatDevMockSeedProfileAlertMessage,
   runDevMockClearWithStoreSync,
   runDevMockSeedProfileWithStoreSync,
+  runScreenshotDemoSeedWithStoreSync,
 } from './devMockSeedRunner';
 
 const HISTORY_SEED_MENU_ITEMS: ReadonlyArray<{ profile: HistorySeedProfile; label: string; hint: string }> = [
@@ -34,6 +36,16 @@ export function useDevSeedMenu(): void {
   useEffect(() => {
     if (!__DEV__) return;
 
+    DevSettings.addMenuItem('[Seed] 스크린샷 데모', () => {
+      void (async () => {
+        const result = await runScreenshotDemoSeedWithStoreSync();
+        Alert.alert(
+          'Seed 완료',
+          `${formatDevMockSeedAlertMessage(result)}\n\n앱스토어용 화면을 찍을 때 쓰세요. 온보딩은 건너뛴 상태예요.`,
+        );
+      })();
+    });
+
     for (const item of HISTORY_SEED_MENU_ITEMS) {
       DevSettings.addMenuItem(item.label, () => {
         void (async () => {
@@ -46,7 +58,10 @@ export function useDevSeedMenu(): void {
     DevSettings.addMenuItem('[Clear] 목업 데이터 전체', () => {
       void (async () => {
         await runDevMockClearWithStoreSync();
-        Alert.alert('Clear 완료', '목업 데이터를 모두 제거했어요.\n통계 탭이 비어 있어야 정상이에요.');
+        Alert.alert(
+          'Clear 완료',
+          '목업 데이터를 모두 제거했어요.\n통계·스크린샷 데모(루틴·투두·도서·노트)가 비어 있어야 정상이에요.',
+        );
       })();
     });
   }, []);

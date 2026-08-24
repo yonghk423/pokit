@@ -190,7 +190,8 @@ export function IncompleteRoutineReminderSettingsPage() {
 
         <ScrollView contentContainerStyle={chrome.container} showsVerticalScrollIndicator={false}>
           <ThemedText style={[chrome.sectionHint, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-            정해진 시간에 아직 끝내지 못한 일정이 있으면 알려 드려요.
+            정해진 시각에 아직 끝내지 못한 일정이 있으면 알려 드려요. 기기 설정에서
+            POKIT이「알림 요약」에 들어 있으면 시각이 밀릴 수 있어요.
           </ThemedText>
 
           <View style={[styles.card, { borderColor: p.border, backgroundColor: p.surface }]}>

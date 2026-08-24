@@ -229,6 +229,10 @@ export type DailyRhythmTimeEditorBodyProps = {
   onSecondaryPress?: () => void;
   dayStartAlarmOn?: boolean;
   onDayStartAlarmChange?: (value: boolean) => void;
+  dayEndAlarmOn?: boolean;
+  dayEndAlarmHhmm?: string;
+  onDayEndAlarmChange?: (value: boolean) => void;
+  onDayEndAlarmHhmmChange?: (hhmm: string) => void;
   currentSpansMultiDay?: boolean;
   onEndDateChoice?: (startHhmm: string, endHhmm: string, target: 'today' | 'nextDay') => void;
   endDateChoiceTodayLabel?: string;
@@ -251,6 +255,10 @@ export function DailyRhythmTimeEditorBody({
   onSecondaryPress,
   dayStartAlarmOn,
   onDayStartAlarmChange,
+  dayEndAlarmOn,
+  dayEndAlarmHhmm,
+  onDayEndAlarmChange,
+  onDayEndAlarmHhmmChange,
   currentSpansMultiDay: _currentSpansMultiDay = false,
   onEndDateChoice,
   endDateChoiceTodayLabel = '당일',
@@ -262,6 +270,7 @@ export function DailyRhythmTimeEditorBody({
   const [startHhmm, setStartHhmm] = useState(seedStart);
   const [endHhmm, setEndHhmm] = useState(seedEnd);
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
+  const [dayEndAlarmTimeExpanded, setDayEndAlarmTimeExpanded] = useState(false);
   const [endDateTarget, setEndDateTarget] = useState<'today' | 'nextDay'>(() =>
     initialEndDateTargetFromRange(priorityPlanRangeLo, priorityPlanRangeHi),
   );
@@ -786,6 +795,44 @@ export function DailyRhythmTimeEditorBody({
                 trackOff: c.trackOff,
               }}
             />
+            {typeof dayEndAlarmOn === 'boolean' && onDayEndAlarmChange ? (
+              <>
+                <View style={[styles.divider, { backgroundColor: c.border }]} />
+                <DailyRhythmStyleAlarmRow
+                  title="오늘 돌아보기 알림"
+                  hint="정해진 시각에 오늘 진행 상황을 돌아보라고 알려 드려요."
+                  value={dayEndAlarmOn}
+                  onValueChange={onDayEndAlarmChange}
+                  palette={{
+                    onSurface: c.onSurface,
+                    onVariant: c.onVariant,
+                    trackOff: c.trackOff,
+                  }}
+                />
+                {dayEndAlarmOn && dayEndAlarmHhmm && onDayEndAlarmHhmmChange ? (
+                  <View
+                    style={[
+                      styles.endAlarmTimeCard,
+                      {
+                        backgroundColor: isDark ? ink.surfaceAlt : '#F6F3EB',
+                        borderColor: c.border,
+                      },
+                    ]}>
+                    <SnappedTimePickerField
+                      label="알림 시각"
+                      hint="이 시각에 매일 알림이 울려요."
+                      valueHhmm={dayEndAlarmHhmm}
+                      onChangeHhmm={onDayEndAlarmHhmmChange}
+                      expanded={dayEndAlarmTimeExpanded}
+                      onToggleExpand={() => setDayEndAlarmTimeExpanded((v) => !v)}
+                      isDark={isDark}
+                      palette={timePickerPalette}
+                      snapStepMinutes={1}
+                    />
+                  </View>
+                ) : null}
+              </>
+            ) : null}
           </View>
         ) : null}
 
@@ -1069,6 +1116,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
+  endAlarmTimeCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 12,
+    gap: 8,
+  },
 
   footer: { flexShrink: 0, gap: 4, paddingTop: 14 },
   footerOnboarding: {

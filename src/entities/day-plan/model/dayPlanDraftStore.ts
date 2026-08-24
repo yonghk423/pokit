@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import {
   buildRoutineHistoryRecordKey,
 } from '@shared/lib/routineHistoryLayoutKey';
-import { loadDayPlanDraft, saveDayPlanDraft, normalizeDayMealSlot, normalizeCategoryMealSlots, loadPriorityDayRollMode, type DayMealSlot } from '@shared/lib/storage';
+import { appendRoutineCatalogSelectionKeys, loadDayPlanDraft, saveDayPlanDraft, normalizeDayMealSlot, normalizeCategoryMealSlots, loadPriorityDayRollMode, type DayMealSlot } from '@shared/lib/storage';
 
 import { syncWidgetTimelineFromStorage } from '../lib/widgetDayPlanSync';
 
@@ -317,8 +317,26 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         : raw.priorityPlanDateKey;
     const keepRange = rangeHi >= today;
     const needsDailyRolloverMigration = raw.dailyRolloverVersion !== 1;
-    const resetDailyPlan = !keepRange && loadPriorityDayRollMode() === 'reset';
+    const rollMode = loadPriorityDayRollMode();
+    const resetDailyPlan = !keepRange && rollMode === 'reset';
     const keepDailyProgress = keepRange && !needsDailyRolloverMigration;
+
+    if (!keepRange && rollMode === 'keep') {
+      const rawBag = Array.isArray(raw.priorityCategoryOrder) ? raw.priorityCategoryOrder : [];
+      const rawSections = Array.isArray(raw.prioritySectionsCategoryOrder)
+        ? raw.prioritySectionsCategoryOrder
+        : [];
+      const retainedBaseKeys = [
+        ...new Set(
+          [...rawBag, ...rawSections]
+            .map(resolvePriorityRoutineCategoryKey)
+            .filter(Boolean),
+        ),
+      ];
+      if (retainedBaseKeys.length > 0) {
+        appendRoutineCatalogSelectionKeys(retainedBaseKeys);
+      }
+    }
 
     set({
       planMode:
@@ -572,6 +590,17 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     const nextEnd = overnight ? addDaysToLocalDateKey(today, 1) : today;
     const rollMode = loadPriorityDayRollMode();
     if (rollMode === 'keep') {
+      const retainedBaseKeys = [
+        ...new Set(
+          [...s.priorityCategoryOrder, ...s.prioritySectionsCategoryOrder]
+            .map(resolvePriorityRoutineCategoryKey)
+            .filter(Boolean),
+        ),
+      ];
+      if (retainedBaseKeys.length > 0) {
+        appendRoutineCatalogSelectionKeys(retainedBaseKeys);
+      }
+
       set({
         priorityPlanDateKey: nextStart,
         priorityPlanDateKeyEnd: nextEnd,
@@ -581,7 +610,6 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         planCompletionDismissedKeys: [],
         isFocusStarted: false,
       });
-      // 하루 종료 롤오버 직후에는 고정 루틴만 다시 반영하고 수동 담기는 비웁니다.
       syncTodayTabWithFixedRoutineApply();
       return;
     }

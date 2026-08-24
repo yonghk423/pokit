@@ -237,7 +237,7 @@ export {
   loadCategoryReminderScheduled,
   loadDayPlanScheduledNotifications,
   loadIncompleteRoutineReminder,
-  loadMedicineReminderScheduled, loadPriorityDayRollMode, loadPriorityDayStartAlarm, loadRoutineStartNotifyRules,
+  loadMedicineReminderScheduled, loadPriorityDayEndAlarm, loadPriorityDayRollMode, loadPriorityDayStartAlarm, loadRoutineStartNotifyRules,
   loadRoutineStartNotifyScheduled,
   loadWaterReminderScheduled,
   saveAppearanceMode,
@@ -245,7 +245,7 @@ export {
   saveCategoryReminderScheduled,
   saveDayPlanScheduledNotifications,
   saveIncompleteRoutineReminder,
-  saveMedicineReminderScheduled, savePriorityDayRollMode, savePriorityDayStartAlarm, saveRoutineStartNotifyRules,
+  saveMedicineReminderScheduled, savePriorityDayEndAlarm, savePriorityDayRollMode, savePriorityDayStartAlarm, saveRoutineStartNotifyRules,
   saveRoutineStartNotifyScheduled,
   saveWaterReminderScheduled
 } from './settingsStorage';
@@ -258,6 +258,7 @@ export type {
   IncompleteRoutineReminderPersisted,
   MedicineReminderScheduledRow,
   PriorityDayRollMode,
+  PriorityDayEndAlarmPersisted,
   PriorityDayStartAlarmPersisted,
   RoutineStartNotifyRuleRow,
   RoutineStartNotifyRules,

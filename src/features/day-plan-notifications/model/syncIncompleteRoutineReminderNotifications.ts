@@ -13,7 +13,7 @@ import {
   cancelScheduledNotificationByIdentifier,
   ensureLocalNotificationPermission,
   getScheduledLocalNotifications,
-  scheduleLocalNotification,
+  scheduleDailyLocalNotification,
 } from '@shared/lib/notifications';
 import {
   loadIncompleteRoutineReminder,
@@ -21,21 +21,21 @@ import {
 } from '@shared/lib/storage';
 
 import { buildIncompleteRoutineReminderNotificationContent } from '../lib/incompleteRoutineReminderCopy';
-import {
-  buildNextDailyReminderDates,
-  toLocalDateKey,
-} from '../lib/nextIncompleteRoutineReminderDates';
 
 export const INCOMPLETE_ROUTINE_REMINDER_NOTIFICATION_ID = 'pokit:incomplete-routine-reminder';
 export const INCOMPLETE_ROUTINE_REMINDER_EVENT_TYPE = 'incompleteRoutineReminder';
 const INCOMPLETE_ROUTINE_WEEKLY_ID_PREFIX = 'pokit:incomplete-routine-weekly:';
 const INCOMPLETE_ROUTINE_DATE_ID_PREFIX = 'pokit:incomplete-routine-date:';
-const ROLLING_DAYS = 7;
 
 let syncInFlight: Promise<boolean> | null = null;
 let resyncRequestedWhileInFlight = false;
 let lastSyncedKey = '';
 
+/**
+ * `daily2` — 매일 시·분 캘린더 트리거(하루 시작 알림과 동일 경로).
+ * 예전 DATE(→ 초 단위 지연) / 7일 원샷 캘린더는 시각이 수~십수 분 밀릴 수 있음.
+ */
+const INCOMPLETE_REMINDER_SCHEDULER_VERSION = 'daily2';
 
 function buildSyncKey(
   enabled: boolean,
@@ -43,6 +43,7 @@ function buildSyncKey(
   counts: PendingRoutineCountsByLayout,
 ): string {
   return [
+    INCOMPLETE_REMINDER_SCHEDULER_VERSION,
     enabled ? '1' : '0',
     reminderHhmm.trim(),
     counts.bag,
@@ -94,16 +95,22 @@ async function cancelAllIncompleteRoutineReminderNotifications(
   }
   const scheduled = await getScheduledLocalNotifications();
   const staleIds = scheduled
-    .filter((row) => row.eventType === INCOMPLETE_ROUTINE_REMINDER_EVENT_TYPE)
+    .filter(
+      (row) =>
+        row.eventType === INCOMPLETE_ROUTINE_REMINDER_EVENT_TYPE ||
+        row.identifier.startsWith(INCOMPLETE_ROUTINE_DATE_ID_PREFIX) ||
+        row.identifier.startsWith(INCOMPLETE_ROUTINE_WEEKLY_ID_PREFIX) ||
+        row.identifier === INCOMPLETE_ROUTINE_REMINDER_NOTIFICATION_ID,
+    )
     .map((row) => row.identifier);
   if (staleIds.length > 0) {
-    await cancelLocalNotificationsById(staleIds);
+    await cancelLocalNotificationsById([...new Set(staleIds)]);
   }
 }
 
 /**
  * 저장된 미완료 일정 알림 설정과 오늘 남은 루틴 수를 반영해
- * 앞으로 7일의 절대 시각 알림을 다시 예약합니다.
+ * 매일 같은 시·분에 울리는 캘린더 알림을 다시 예약합니다.
  * 미완료 일정이 없으면 예약만 취소하고 설정은 유지합니다.
  */
 export async function syncIncompleteRoutineReminderNotifications(): Promise<boolean> {
@@ -170,23 +177,19 @@ export async function syncIncompleteRoutineReminderNotifications(): Promise<bool
       const hour = Math.floor(m / 60);
       const minute = m % 60;
       const { title, body } = buildIncompleteRoutineReminderNotificationContent(pendingCounts);
+
       let nid: string | null = null;
-      for (const triggerAt of buildNextDailyReminderDates(hour, minute, ROLLING_DAYS)) {
-        const dateId = `${INCOMPLETE_ROUTINE_DATE_ID_PREFIX}${toLocalDateKey(triggerAt)}`;
-        try {
-          const dateNid = await scheduleLocalNotification({
-            identifier: dateId,
-            title,
-            body,
-            triggerAt,
-            data: { eventType: INCOMPLETE_ROUTINE_REMINDER_EVENT_TYPE },
-          });
-          if (!nid && dateNid) {
-            nid = dateNid;
-          }
-        } catch (error) {
-          console.warn('[notifications] incomplete routine reminder date schedule failed', error);
-        }
+      try {
+        nid = await scheduleDailyLocalNotification({
+          identifier: INCOMPLETE_ROUTINE_REMINDER_NOTIFICATION_ID,
+          title,
+          body,
+          hour,
+          minute,
+          data: { eventType: INCOMPLETE_ROUTINE_REMINDER_EVENT_TYPE },
+        });
+      } catch (error) {
+        console.warn('[notifications] incomplete routine reminder daily schedule failed', error);
       }
 
       if (!nid) {
@@ -251,4 +254,3 @@ export async function saveIncompleteRoutineReminderSettings(input: {
   lastSyncedKey = '';
   return syncIncompleteRoutineReminderNotifications();
 }
-

@@ -103,26 +103,25 @@ describe('syncIncompleteRoutineReminderNotifications', () => {
     mockGetScheduledLocalNotifications.mockResolvedValue([]);
   });
 
-  it('schedules the next 7 absolute dates when enabled', async () => {
+  it('schedules a daily hour:minute calendar reminder when enabled', async () => {
     const { syncIncompleteRoutineReminderNotifications } = loadSyncModule();
 
     const ok = await syncIncompleteRoutineReminderNotifications();
 
     expect(ok).toBe(true);
-    expect(mockScheduleLocalNotification).toHaveBeenCalledTimes(7);
-    expect(mockScheduleLocalNotification).toHaveBeenCalledWith(
+    expect(mockScheduleDailyLocalNotification).toHaveBeenCalledTimes(1);
+    expect(mockScheduleDailyLocalNotification).toHaveBeenCalledWith(
       expect.objectContaining({
+        identifier: 'pokit:incomplete-routine-reminder',
         title: '미완료 루틴 4개가 있습니다.',
         body: '▤ 2개   ☀︎ 1개   ◷ 1개',
+        hour: 22,
+        minute: 0,
         data: { eventType: 'incompleteRoutineReminder' },
       }),
     );
-    const firstTrigger = mockScheduleLocalNotification.mock.calls[0]?.[0]?.triggerAt as Date;
-    expect(firstTrigger).toBeInstanceOf(Date);
-    expect(firstTrigger.getHours()).toBe(22);
-    expect(firstTrigger.getMinutes()).toBe(0);
+    expect(mockScheduleLocalNotification).not.toHaveBeenCalled();
     expect(mockScheduleWeeklyLocalNotification).not.toHaveBeenCalled();
-    expect(mockScheduleDailyLocalNotification).not.toHaveBeenCalled();
   });
 
   it('cancels without scheduling when pending count is zero', async () => {
@@ -168,9 +167,9 @@ describe('syncIncompleteRoutineReminderNotifications', () => {
     await Promise.all([first, second]);
     await new Promise<void>((resolve) => setImmediate(resolve));
 
-    const trigger = mockScheduleLocalNotification.mock.calls.find((call) => {
-      const at = call[0]?.triggerAt as Date | undefined;
-      return at instanceof Date && at.getHours() === 22 && at.getMinutes() === 1;
+    const trigger = mockScheduleDailyLocalNotification.mock.calls.find((call) => {
+      const params = call[0] as { hour?: number; minute?: number } | undefined;
+      return params?.hour === 22 && params?.minute === 1;
     });
     expect(trigger).toBeDefined();
   });

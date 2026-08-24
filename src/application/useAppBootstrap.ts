@@ -16,6 +16,7 @@ import { syncCategoryReminderNotifications } from '@features/category-reminder-n
 import {
   syncIncompleteRoutineReminderNotifications,
   syncMedicineReminderNotifications,
+  syncPriorityDayEndAlarm,
   syncPriorityDayStartAlarm,
   syncRoutineStartNotifications,
   syncWaterReminderNotifications,
@@ -36,7 +37,9 @@ import {
   ensureDefaultPriorityCatalog,
   flushLocalStorageClientWrites,
   initLocalStorageClient,
+  loadPriorityDayEndAlarm,
   loadPriorityDayStartAlarm,
+  savePriorityDayRollMode,
 } from '@shared/lib/storage';
 import { useDevSeedMenu } from './useDevSeedMenu';
 
@@ -60,6 +63,8 @@ export function useAppBootstrap() {
       if (cancelled) return;
 
       ensureDefaultPriorityCatalog();
+      // 「하루가 지나면 담기 유지」임시 비활성 — keep 잔존 설정이 롤오버에 영향을 주지 않도록 reset 고정
+      savePriorityDayRollMode('reset');
       useAppearanceStore.getState().hydrate();
       useDayPlanLayoutModeVisibilityStore.getState().hydrate();
 
@@ -97,10 +102,12 @@ export function useAppBootstrap() {
 
   useEffect(() => {
     if (!isReady) return;
-    const { enabled } = loadPriorityDayStartAlarm();
+    const { enabled: startEnabled } = loadPriorityDayStartAlarm();
+    const endAlarm = loadPriorityDayEndAlarm();
     const { priorityStart: initialPriorityStart } = useDayPlanDraftStore.getState();
     void (async () => {
-      await syncPriorityDayStartAlarm({ enabled, startHhmm: initialPriorityStart });
+      await syncPriorityDayStartAlarm({ enabled: startEnabled, startHhmm: initialPriorityStart });
+      await syncPriorityDayEndAlarm({ enabled: endAlarm.enabled, reminderHhmm: endAlarm.reminderHhmm });
       await syncCategoryReminderNotifications();
       await syncMedicineReminderNotifications();
       await syncRoutineStartNotifications();
@@ -205,6 +212,10 @@ export function useAppBootstrap() {
         return;
       }
       if (data.eventType === 'incompleteRoutineReminder') {
+        router.push('/(tabs)/day-plan');
+        return;
+      }
+      if (data.eventType === 'priorityDayEnd') {
         router.push('/(tabs)/day-plan');
         return;
       }
