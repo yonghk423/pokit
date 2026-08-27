@@ -16,9 +16,10 @@ export const SEED_CATEGORY_POOL = [
 ] as const;
 
 export const SEED_CATEGORY_LABEL_KO: Record<string, string> = {
+  healthIntake: '건강을 위한 섭취',
   water: '수분섭취',
   medicine: '약 복용',
-  fasting: '체중관리',
+  fasting: '체중조절',
   reading: '독서',
   work: '노트',
   ...Object.fromEntries(DEFAULT_BUILTIN_CUSTOM_FLOWS.map((f) => [f.id, f.displayName])),

@@ -3,6 +3,11 @@ import {
   loadFixedFlowSetsState,
   saveFixedFlowSetsState,
 } from '@shared/lib/storage/fixedFlowSetsStorage';
+import {
+  appendRoutineCatalogSelectionKeys,
+  loadRoutineCatalogSelectionKeys,
+  saveRoutineCatalogSelectionKeys,
+} from '@shared/lib/storage/priorityCatalogFixedRoutinesStorage';
 
 import { useFixedFlowSetsStore } from './fixedFlowSetsStore';
 
@@ -40,6 +45,7 @@ describe('fixedFlowSetsStore', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockLoad.mockReturnValue(baseState);
+    saveRoutineCatalogSelectionKeys([]);
     resetStore();
   });
 
@@ -199,6 +205,33 @@ describe('fixedFlowSetsStore', () => {
     expect(useFixedFlowSetsStore.getState().sets[0]?.items[0]?.mealSlots).toEqual(['dinner', 'night']);
     useFixedFlowSetsStore.getState().toggleCategoryMealSlotInSet('set_a', 'reading', 'dinner');
     expect(useFixedFlowSetsStore.getState().sets[0]?.items[0]?.mealSlots).toEqual(['night']);
+  });
+
+  it('removes manual-selection protection when a fixed routine item is disabled', () => {
+    appendRoutineCatalogSelectionKeys(['healthIntake']);
+    useFixedFlowSetsStore.setState({
+      activeSetIds: ['set_a'],
+      sets: [
+        {
+          id: 'set_a',
+          name: 'A',
+          applyRule: 'manual',
+          items: [{ categoryKey: 'healthIntake', enabled: true, mealSlots: ['morning'] }],
+        },
+      ],
+      todayAppliedCategoryKeys: ['healthIntake'],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+
+    useFixedFlowSetsStore
+      .getState()
+      .setCategoryEnabledInSet('set_a', 'healthIntake', false);
+
+    expect(loadRoutineCatalogSelectionKeys()).not.toContain('healthIntake');
+    expect(useFixedFlowSetsStore.getState().todayAppliedCategoryKeys).not.toContain(
+      'healthIntake',
+    );
   });
 
   it('pins empty morning slot when adding to preset set', () => {

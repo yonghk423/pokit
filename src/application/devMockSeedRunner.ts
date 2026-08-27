@@ -1,5 +1,7 @@
 import {
   useDayPlanDraftStore,
+  useDayPlanLayoutModeVisibilityStore,
+  useDayPlanStore,
   useDayPlanTodoStore,
   useFixedFlowSetsStore,
 } from '@entities/day-plan';
@@ -36,10 +38,13 @@ function reloadStoresAfterDevMockChange(): void {
     isHydrated: true,
   });
 
-  // draft hydrate는 1회성이라 시드/클리어 후 강제 재로드
+  // draft/dayPlan hydrate는 1회성이라 시드/클리어 후 강제 재로드
   useDayPlanDraftStore.setState({ isHydrated: false });
   useDayPlanDraftStore.getState().hydrate();
+  useDayPlanStore.setState({ isHydrated: false });
+  useDayPlanStore.getState().hydrate();
   useDayPlanTodoStore.getState().hydrate();
+  useDayPlanLayoutModeVisibilityStore.getState().hydrate();
 }
 
 export async function runDevMockSeedWithStoreSync(): Promise<DevMockSeedResult> {
@@ -64,11 +69,11 @@ export async function runDevMockSeedProfileWithStoreSync(
   return { historyDays, ...horizonPartial };
 }
 
-/** 앱스토어 스크린샷용 — 오늘 루틴·투두·도서·노트 + 혼합 히스토리/호라이즌 */
+/** 앱스토어 스크린샷용 — 오늘 루틴·투두·도서·노트 + 고달성 히스토리/호라이즌 */
 export async function runScreenshotDemoSeedWithStoreSync(): Promise<DevMockSeedResult> {
   ensureDefaultPriorityCatalog();
   const screenshotPartial = await screenshotDemoMockSeed.seed();
-  const historyDays = await seedHistoryData('mixed');
+  const historyDays = await seedHistoryData('strong');
   const horizonPartial = await horizonCompletionMockSeed.seed();
   localStorageClient.setItemRaw(
     'pokit:dev-mock-seed-bundle-version',

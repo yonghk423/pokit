@@ -546,18 +546,9 @@ function StudyDocumentBlockView({
             onChangeText={(text) => onChangeBlock(block.id, { text })}
             onFocus={() => onFocusBlock(block.id)}
             inputAccessoryViewID={inputAccessoryViewID}
-            placeholder="구역 라벨"
+            placeholder="제목"
             placeholderTextColor="rgba(255,255,255,0.55)"
             style={[styles.headingPrimary, { fontSize: titleSize, color: '#fff' }]}
-          />
-          <ImeSafeTextInput
-            value={block.subtitle ?? ''}
-            onChangeText={(subtitle) => onChangeBlock(block.id, { subtitle })}
-            onFocus={() => onFocusBlock(block.id)}
-            inputAccessoryViewID={inputAccessoryViewID}
-            placeholder="보조 라벨"
-            placeholderTextColor="rgba(255,255,255,0.55)"
-            style={[styles.headingSecondary, { fontSize: titleSize - 1, color: 'rgba(255,255,255,0.92)' }]}
           />
         </View>
       </View>
@@ -2665,7 +2656,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headingPrimary: { flex: 1, fontWeight: '800', letterSpacing: 0.6 },
-  headingSecondary: { fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'flex-start', width: '100%' },
   listRow: { alignItems: 'flex-start', gap: 10 },
   paragraphPrefixSlot: {

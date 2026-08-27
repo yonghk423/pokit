@@ -20,12 +20,11 @@ import {
 } from './resolveDayPlanBlockDisplayTitle';
 import type { DayPlanBlock } from '../model/types';
 
-/** 고정·나만의 루틴 세트에 등록된 활성 categoryKey */
+/** 고정·나만의 루틴 세트에 등록된 전체 categoryKey — 꺼진 항목 정리에도 사용 */
 export function collectAllFixedFlowCategoryKeys(sets: FixedFlowSet[]): Set<string> {
   const out = new Set<string>();
   for (const set of sets) {
     for (const item of set.items) {
-      if (item.enabled === false) continue;
       const key = item.categoryKey.trim();
       if (key) out.add(key);
     }
@@ -152,14 +151,16 @@ export function syncPrioritySectionsMealSlotsWithApplied(
   const next: Record<string, DayMealSlot[]> = {};
 
   for (const key of order) {
-    // 오늘 탭에 이미 둔 시간대가 있으면 유지 (탭 on/off·sync 시 리셋 방지)
+    // 적용 중인 고정·나만의 루틴은 저장된 시간대가 기준
+    // (예: 밤으로 바꾼 뒤에도 오늘에 저녁이 남는 문제 방지)
+    if (appliedKeys.has(key) && appliedOverrides[key]?.length) {
+      next[key] = [...appliedOverrides[key]!];
+      continue;
+    }
+    // 수동으로 담은 항목만 오늘에 둔 시간대를 유지
     const existing = current[key];
     if (existing && existing.length > 0) {
       next[key] = [...existing];
-      continue;
-    }
-    if (appliedKeys.has(key) && appliedOverrides[key]?.length) {
-      next[key] = [...appliedOverrides[key]!];
       continue;
     }
     if (!allFixedFlowKeys.has(key)) {
@@ -238,6 +239,7 @@ function spineBlocksEqual(a: readonly DayPlanBlock[], b: readonly DayPlanBlock[]
       block.startMinutes === other.startMinutes &&
       block.endMinutes === other.endMinutes &&
       block.blockOrigin === other.blockOrigin &&
+      Boolean(block.hasManualScheduleOverride) === Boolean(other.hasManualScheduleOverride) &&
       Boolean(block.endsNextCalendarDay) === Boolean(other.endsNextCalendarDay)
     );
   });
@@ -306,7 +308,7 @@ export function syncSpinePlanBlocksWithAppliedFixedRoutines(input: {
       const labelChanged = nextTitle !== existing.title || nextCategory !== existing.category;
       // 제안(suggested) 시각은 오늘 탭 기존 블록을 덮지 않음.
       // 고정 루틴에 저장된 시각만 반영한다.
-      const shouldApplySchedule = !schedule.isSuggested;
+      const shouldApplySchedule = !schedule.isSuggested && !existing.hasManualScheduleOverride;
       const scheduleChanged =
         shouldApplySchedule &&
         (existing.startMinutes !== schedule.startMinutes ||
@@ -402,8 +404,21 @@ export function computeSyncTodayTabWithFixedRoutineApply(
   const appliedKeys = filterKeysToPriorityCatalog(input.todayAppliedCategoryKeys);
   const allFixedFlowKeys = collectAllFixedFlowCategoryKeys(input.fixedFlowSets);
   const appliedSet = new Set(appliedKeys);
+  const activeSetIds = new Set(input.activeSetIds);
+  const disabledInActiveSets = new Set(
+    input.fixedFlowSets
+      .filter((set) => activeSetIds.has(set.id))
+      .flatMap((set) =>
+        set.items
+          .filter((item) => item.enabled === false)
+          .map((item) => item.categoryKey.trim())
+          .filter(Boolean),
+      ),
+  );
   const catalogSelection = new Set(
-    filterKeysToPriorityCatalog(input.routineCatalogSelectionKeys ?? []),
+    filterKeysToPriorityCatalog(input.routineCatalogSelectionKeys ?? []).filter(
+      (key) => appliedSet.has(key) || !disabledInActiveSets.has(key),
+    ),
   );
 
   const supersededStandardKeys = collectStandardsSupersededByAppliedCustom(

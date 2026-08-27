@@ -3011,11 +3011,7 @@ export function PriorityBasedPlanSection({
         line={editorial.line}
         priorityStart={priorityStart}
         priorityEnd={priorityEnd}
-        baseDateKey={
-          priorityPlanDateKey <= priorityPlanDateKeyEnd
-            ? priorityPlanDateKey
-            : priorityPlanDateKeyEnd
-        }
+        baseDateKey={todayKey}
         onClose={() => setSpineEditDraft(null)}
         onSave={handleSpineSaveBlock}
         onDelete={confirmSpineBlockDelete}

@@ -103,6 +103,7 @@ export function RoutineStartNotifyField({
       categoryKey,
       sets,
       activeSetIds,
+      includeInactiveSets: false,
       mealSchedule: loadDayMealSlotSchedule(),
       planBlocks,
       sectionsMealSlots: {
@@ -128,7 +129,9 @@ export function RoutineStartNotifyField({
     if (isBagLayout) {
       const stored = findStoredSpineStartHhmm(sets, categoryKey);
       return stored
-        ? `목록 모드 · ${formatHhmmClockKo(stored)}에 시작 · 알림도 이 시각에 울려요.`
+        ? enabled
+          ? `목록 모드 · ${formatHhmmClockKo(stored)}에 시작 · 알림도 이 시각에 울려요.`
+          : `목록 모드 · ${formatHhmmClockKo(stored)}에 시작 · 알림을 켜면 이 시각에 울려요.`
         : '목록 모드에서는 아래에서 시작 시간을 직접 정해 주세요.';
     }
     if (!canResolve) {
@@ -140,9 +143,13 @@ export function RoutineStartNotifyField({
     });
     const clocks = slots.map((s) => formatHhmmClockKo(s.hhmm)).join(', ');
     return clocks
-      ? `루틴 시작 · ${clocks}에 알려 드려요.`
-      : '루틴이 시작되는 시각에 알려 드려요.';
-  }, [canResolve, categoryKey, isBagLayout, resolveInput, sets]);
+      ? enabled
+        ? `루틴 시작 · ${clocks}에 알려 드려요.`
+        : `알림을 켜면 ${clocks}에 알려 드려요.`
+      : enabled
+        ? '루틴이 시작되는 시각에 알려 드려요.'
+        : '알림을 켜면 루틴이 시작되는 시각에 알려 드려요.';
+  }, [canResolve, categoryKey, enabled, isBagLayout, resolveInput, sets]);
 
   const trackOff = isDark ? '#3f3f46' : '#e5e7eb';
 

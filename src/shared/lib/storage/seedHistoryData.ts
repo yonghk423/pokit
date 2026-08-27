@@ -22,15 +22,63 @@ const SEED_CATEGORIES = SEED_CATEGORY_POOL;
 type DayIntensity = 'light' | 'normal' | 'heavy';
 type DayOutcome = 'empty' | 'low' | 'medium' | 'high';
 
-/** 최근 7일 — 도넛·핵심 목표 UI 데모용 고정 부스트 (10그룹 골고루) */
+/** 최근 7일 — 주간 히스토리 카드가 꽉 차 보이도록 카테고리·횟수를 넉넉히 */
 const RECENT_WEEK_BOOSTS: ReadonlyArray<Record<string, number>> = [
-  { water: 2, reading: 1, medicine: 1 },
-  { medicine: 1, work: 2, fasting: 1 },
-  { water: 1, medicine: 1, reading: 2 },
-  { work: 2, fasting: 1, water: 1 },
-  { water: 2, work: 1, reading: 1 },
-  { medicine: 1, fasting: 1, reading: 1 },
-  { reading: 1, work: 1, water: 1 },
+  {
+    healthIntake: 2,
+    reading: 2,
+    fasting: 1,
+    'customFlow:preset_daily_bed': 1,
+    'customFlow:preset_daily_exercise': 1,
+    'customFlow:preset_stretching': 1,
+  },
+  {
+    reading: 2,
+    work: 2,
+    fasting: 1,
+    healthIntake: 1,
+    'customFlow:preset_daily_clean': 1,
+    'customFlow:preset_daily_exercise': 1,
+  },
+  {
+    healthIntake: 2,
+    reading: 2,
+    'customFlow:preset_daily_exercise': 2,
+    'customFlow:preset_stretching': 1,
+    fasting: 1,
+  },
+  {
+    work: 2,
+    fasting: 1,
+    healthIntake: 2,
+    reading: 1,
+    'customFlow:preset_daily_bed': 1,
+    'customFlow:preset_daily_laundry': 1,
+  },
+  {
+    healthIntake: 2,
+    'customFlow:preset_stretching': 2,
+    reading: 2,
+    'customFlow:preset_daily_exercise': 1,
+    fasting: 1,
+  },
+  {
+    fasting: 2,
+    reading: 2,
+    'customFlow:preset_daily_bed': 1,
+    healthIntake: 1,
+    work: 1,
+    'customFlow:preset_daily_wash': 1,
+  },
+  {
+    reading: 2,
+    work: 1,
+    healthIntake: 2,
+    fasting: 1,
+    'customFlow:preset_daily_bed': 1,
+    'customFlow:preset_daily_exercise': 1,
+    'customFlow:preset_stretching': 1,
+  },
 ];
 
 function formatDateKey(date: Date): string {

@@ -161,6 +161,33 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     expect(patch).toBeNull();
   });
 
+  it('removes a disabled item from sections even when a stale catalog selection exists', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      fixedRoutineApplyLayoutMode: 'sections',
+      priorityCategoryOrder: [],
+      priorityMealSlotOverrides: {},
+      prioritySectionsCategoryOrder: ['reading', 'healthIntake'],
+      prioritySectionsMealSlots: { reading: ['morning'] },
+      todayAppliedCategoryKeys: [],
+      routineCatalogSelectionKeys: ['reading'],
+      fixedFlowSets: [
+        {
+          id: 'set_daily',
+          name: '데일리 루틴',
+          applyRule: 'daily' as const,
+          items: [{ categoryKey: 'reading', enabled: false, mealSlot: 'morning' as const }],
+        },
+      ],
+      activeSetIds: ['set_daily'],
+    });
+
+    expect(patch).toEqual({
+      prioritySectionsCategoryOrder: ['healthIntake'],
+      prioritySectionsMealSlots: {},
+    });
+  });
+
   it('adds applied fixed routines to sections order with meal slots', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,
@@ -248,32 +275,73 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     expect(patch).toBeNull();
   });
 
-  it('keeps draft meal slot override over applied fixed routine default in sections mode', () => {
+  it('updates today section meal slots when an applied routine changes its slot', () => {
     const patch = computeSyncTodayTabWithFixedRoutineApply({
       ...baseInput,
       fixedRoutineApplyLayoutMode: 'sections',
-      priorityCategoryOrder: ['healthIntake'],
-      prioritySectionsCategoryOrder: ['healthIntake'],
-      prioritySectionsMealSlots: { healthIntake: ['lunch'] },
-      priorityMealSlotOverrides: { healthIntake: 'lunch' },
-      priorityMealSlotLayoutEnabled: true,
-      todayAppliedCategoryKeys: ['healthIntake'],
+      priorityCategoryOrder: [],
+      prioritySectionsCategoryOrder: ['fasting', 'healthIntake'],
+      prioritySectionsMealSlots: {
+        fasting: ['dinner'],
+        healthIntake: ['night'],
+      },
+      priorityMealSlotOverrides: {},
+      todayAppliedCategoryKeys: ['fasting', 'healthIntake'],
       fixedFlowSets: [
         {
-          id: 'preset-daily',
-          name: '데일리',
-          applyRule: 'daily' as const,
+          id: 'set_example_health',
+          name: '건강 루틴 예시',
+          applyRule: 'manual' as const,
           items: [
-            { categoryKey: 'healthIntake', enabled: true, mealSlot: 'morning' as const },
+            { categoryKey: 'healthIntake', enabled: true, mealSlots: ['night'] },
+            { categoryKey: 'fasting', enabled: true, mealSlots: ['night'] },
           ],
         },
       ],
-      activeSetIds: ['preset-daily'],
-      activeMealSlotsBySetId: { 'preset-daily': ['morning', 'lunch'] },
-      scheduledMealSlotLayoutEnabled: true,
+      activeSetIds: ['set_example_health'],
+      activeMealSlotsBySetId: {},
     });
-    // 오늘 탭에 이미 둔 시간대(lunch)를 sync가 덮어쓰지 않는다.
-    expect(patch).toBeNull();
+    expect(patch).toEqual({
+      prioritySectionsMealSlots: {
+        fasting: ['night'],
+        healthIntake: ['night'],
+      },
+    });
+  });
+
+  it('keeps manual catalog meal slots when the routine is not applied today', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      fixedRoutineApplyLayoutMode: 'sections',
+      priorityCategoryOrder: [],
+      prioritySectionsCategoryOrder: ['fasting', 'healthIntake'],
+      prioritySectionsMealSlots: {
+        fasting: ['dinner'],
+        healthIntake: ['night'],
+      },
+      priorityMealSlotOverrides: {},
+      todayAppliedCategoryKeys: [],
+      routineCatalogSelectionKeys: ['fasting'],
+      fixedFlowSets: [
+        {
+          id: 'set_example_health',
+          name: '건강 루틴 예시',
+          applyRule: 'manual' as const,
+          items: [
+            { categoryKey: 'healthIntake', enabled: true, mealSlots: ['night'] },
+            { categoryKey: 'fasting', enabled: true, mealSlots: ['night'] },
+          ],
+        },
+      ],
+      activeSetIds: [],
+      activeMealSlotsBySetId: {},
+    });
+    expect(patch).toEqual({
+      prioritySectionsCategoryOrder: ['fasting'],
+      prioritySectionsMealSlots: {
+        fasting: ['dinner'],
+      },
+    });
   });
 
   it('adds applied fixed routines to spine timeline blocks in spine mode', () => {
@@ -403,6 +471,46 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
         endMinutes: 13 * 60 + 30,
       }),
     ]);
+  });
+
+  it('preserves a schedule edited directly in today timeline', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      fixedRoutineApplyLayoutMode: 'spine',
+      planBlocks: [
+        {
+          id: 'reading-block',
+          title: '독서',
+          category: '독서',
+          categoryKey: 'reading',
+          startMinutes: 22 * 60 + 5,
+          endMinutes: 0,
+          endsNextCalendarDay: true,
+          hasManualScheduleOverride: true,
+          order: 0,
+          blockOrigin: 'spineTimeline',
+        },
+      ],
+      todayAppliedCategoryKeys: ['reading'],
+      fixedFlowSets: [
+        {
+          id: 'set_reading',
+          name: '독서 루틴',
+          applyRule: 'manual' as const,
+          items: [
+            {
+              categoryKey: 'reading',
+              enabled: true,
+              spineStartMinutes: 7 * 60 + 5,
+              spineEndMinutes: 7 * 60 + 35,
+            },
+          ],
+        },
+      ],
+      activeSetIds: ['set_reading'],
+    });
+
+    expect(patch).toBeNull();
   });
 
   it('preserves repeated spine blocks that share the same categoryKey', () => {

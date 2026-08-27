@@ -1,5 +1,14 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import {
@@ -9,6 +18,13 @@ import {
   getLocalDateKey,
   parseHHmmToMinutes,
 } from '@entities/day-plan';
+import {
+  RETRO_BORDER_WIDTH,
+  RetroFlatColors,
+  SOLID_SHADOW_OFFSET,
+  cityPopFont,
+} from '@shared/config/retroFlat';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import {
   DigitalHhmmInput,
   type DigitalHhmmInputHandle,
@@ -35,6 +51,12 @@ type Props = {
   muted: string;
   line: string;
   isDark: boolean;
+  /** inline: 목록 행 · sheet: 일정 수정 시트 등 넓은 패널 */
+  presentation?: 'inline' | 'sheet';
+  /** 호출부 호환용 — 범위 검증은 저장 시트/상위 화면에서 수행 */
+  priorityStart?: string;
+  /** 호출부 호환용 — 범위 검증은 저장 시트/상위 화면에서 수행 */
+  priorityEnd?: string;
   disabled?: boolean;
   onScheduleChange: (
     startMinutes: number,
@@ -47,25 +69,92 @@ type Props = {
   contentInsetLeft?: number;
 };
 
+export type CatalogRowSpineTimePanelHandle = {
+  /** 열린 숫자 입력 초안까지 확정하고 저장에 사용할 최종 일정을 반환 */
+  commitPendingSchedule: () => {
+    startMinutes: number;
+    endMinutes: number;
+    endsNextCalendarDay: boolean;
+  } | null;
+};
+
+function SolidShadowFace({
+  borderColor,
+  shadowColor,
+  backgroundColor,
+  shadowSize = SOLID_SHADOW_OFFSET,
+  shellStyle,
+  faceStyle,
+  children,
+}: {
+  borderColor: string;
+  shadowColor: string;
+  backgroundColor: string;
+  shadowSize?: number;
+  shellStyle?: object;
+  faceStyle?: object;
+  children: ReactNode;
+}) {
+  return (
+    <View
+      style={[
+        styles.shadowShell,
+        { marginRight: shadowSize, marginBottom: shadowSize },
+        shellStyle,
+      ]}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.shadowBlock,
+          {
+            backgroundColor: shadowColor,
+            borderColor,
+            transform: [{ translateX: shadowSize }, { translateY: shadowSize }],
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.shadowFace,
+          { backgroundColor, borderColor },
+          faceStyle,
+        ]}>
+        {children}
+      </View>
+    </View>
+  );
+}
+
 /** 루틴 목록 행 — 펼침 시 시작·종료 시각 선택(숫자 입력) */
-export function CatalogRowSpineTimePanel({
-  startMinutes,
-  endMinutes,
-  endsNextCalendarDay = false,
-  baseDateKey,
-  startDateLabel,
-  endDateLabelToday,
-  endDateLabelNextDay,
-  ink,
-  muted,
-  line,
-  isDark,
-  disabled = false,
-  onScheduleChange,
-  onPickerExpandedChange,
-  onRequestScrollIntoView,
-  contentInsetLeft = 34,
-}: Props) {
+export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandle, Props>(
+  function CatalogRowSpineTimePanel(
+    {
+      startMinutes,
+      endMinutes,
+      endsNextCalendarDay = false,
+      baseDateKey,
+      startDateLabel,
+      endDateLabelToday,
+      endDateLabelNextDay,
+      ink,
+      muted,
+      line,
+      isDark,
+      presentation = 'inline',
+      disabled = false,
+      onScheduleChange,
+      onPickerExpandedChange,
+      onRequestScrollIntoView,
+      contentInsetLeft = 34,
+    },
+    ref,
+  ) {
+  const isSheet = presentation === 'sheet';
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const shadowInk = isDark ? tone.solidShadow : '#000000';
+  const panelSurface = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const shadowSize = isSheet ? 4 : 2;
+
   const [draftStart, setDraftStart] = useState(() => formatMinutesToHHmm(startMinutes));
   const [draftEnd, setDraftEnd] = useState(() => formatMinutesToHHmm(endMinutes));
   const [draftEndsNext, setDraftEndsNext] = useState(endsNextCalendarDay);
@@ -153,20 +242,63 @@ export function CatalogRowSpineTimePanel({
     flushActiveFieldToDrafts,
   ]);
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      commitPendingSchedule: () => {
+        if (disabled) return null;
+        if (expandedRef.current === null && draftEndsNext === endsNextCalendarDay) {
+          return { startMinutes, endMinutes, endsNextCalendarDay };
+        }
+
+        Keyboard.dismiss();
+        const { start, end } = flushActiveFieldToDrafts();
+        const parsedStart = parseHHmmToMinutes(start);
+        const parsedEnd = parseHHmmToMinutes(end);
+        if (
+          parsedStart === null ||
+          parsedEnd === null ||
+          (!draftEndsNext && parsedEnd <= parsedStart)
+        ) {
+          setRangeError(
+            '당일 종료 시각은 시작 시각보다 늦어야 해요. 다음 날을 선택하거나 시각을 바꿔 주세요.',
+          );
+          return null;
+        }
+
+        onScheduleChange(parsedStart, parsedEnd, draftEndsNext);
+        setRangeError(null);
+        setExpanded(null);
+        return {
+          startMinutes: parsedStart,
+          endMinutes: parsedEnd,
+          endsNextCalendarDay: draftEndsNext,
+        };
+      },
+    }),
+    [
+      disabled,
+      draftEndsNext,
+      endMinutes,
+      endsNextCalendarDay,
+      flushActiveFieldToDrafts,
+      onScheduleChange,
+      startMinutes,
+    ],
+  );
+
   const toggleExpand = useCallback(
     (field: 'start' | 'end') => {
       if (disabled) return;
       void Haptics.selectionAsync();
       const cur = expandedRef.current;
       if (cur === field) {
-        // 같은 필드 다시 탭 → 접기 (미확정 초안 폐기)
         Keyboard.dismiss();
         resetDraftFromProps();
         setExpanded(null);
         return;
       }
       if (cur !== null) {
-        // 시작 ↔ 종료 전환: 현재 필드 초안 보존 후 전환
         flushActiveFieldToDrafts();
       } else {
         resetDraftFromProps();
@@ -176,15 +308,13 @@ export function CatalogRowSpineTimePanel({
     [disabled, flushActiveFieldToDrafts, resetDraftFromProps],
   );
 
-  const trackBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
-  const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const activeField = expanded;
-
   const committedStart = formatMinutesToHHmm(startMinutes);
   const committedEnd = formatMinutesToHHmm(endMinutes);
   const displayStart = expanded !== null ? draftStart : committedStart;
   const displayEnd = expanded !== null ? draftEnd : committedEnd;
   const isDateChoiceDirty = draftEndsNext !== endsNextCalendarDay;
+  const showConfirm = Boolean(activeField || isDateChoiceDirty);
 
   const resolvedDateLabels = useMemo(() => {
     const key =
@@ -206,6 +336,7 @@ export function CatalogRowSpineTimePanel({
         : draftEndsNext
           ? resolvedDateLabels.next
           : resolvedDateLabels.today;
+    const selectedText = isDark ? tone.text : tone.tertiary;
     return (
       <Pressable
         accessibilityRole="button"
@@ -215,22 +346,38 @@ export function CatalogRowSpineTimePanel({
         onPress={() => toggleExpand(field)}
         style={({ pressed }) => [
           styles.segment,
-          selected && { backgroundColor: ink },
-          !selected && pressed && { opacity: 0.72 },
+          isSheet && styles.segmentSheet,
+          selected && { backgroundColor: tone.bgMint },
+          !selected && pressed && { opacity: 0.88 },
           disabled && { opacity: 0.45 },
         ]}>
         <ThemedText
-          style={[styles.segmentLabel, { color: selected ? selectedFg : muted }]}
+          style={[
+            styles.segmentLabel,
+            isSheet && styles.segmentLabelSheet,
+            { color: selected ? selectedText : muted },
+            cityPopFont('700'),
+          ]}
           numberOfLines={1}>
           {label}
         </ThemedText>
         <ThemedText
-          style={[styles.segmentTime, { color: selected ? selectedFg : ink }]}
+          style={[
+            styles.segmentTime,
+            isSheet && styles.segmentTimeSheet,
+            { color: selected ? selectedText : ink },
+            cityPopFont('800'),
+          ]}
           numberOfLines={1}>
           {formatHhmmClockKo(valueHhmm)}
         </ThemedText>
         <ThemedText
-          style={[styles.segmentDate, { color: selected ? selectedFg : muted }]}
+          style={[
+            styles.segmentDate,
+            isSheet && styles.segmentDateSheet,
+            { color: selected ? selectedText : muted },
+            cityPopFont('600'),
+          ]}
           numberOfLines={1}>
           {dateLabel}
         </ThemedText>
@@ -238,7 +385,7 @@ export function CatalogRowSpineTimePanel({
     );
   };
 
-  const renderConfirmSegment = () => (
+  const renderInlineConfirmSegment = () => (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="선택한 시간 적용"
@@ -252,78 +399,95 @@ export function CatalogRowSpineTimePanel({
           opacity: disabled ? 0.45 : pressed ? 0.88 : 1,
         },
       ]}>
-      <ThemedText style={[styles.confirmSegmentLabel, { color: selectedFg }]}>확인</ThemedText>
+      <ThemedText style={[styles.confirmSegmentLabel, { color: isDark ? '#09090b' : '#FAFAFA' }]}>
+        확인
+      </ThemedText>
     </Pressable>
   );
 
-  const renderEndDateChoice = () => (
-    <View style={styles.endDateChoiceRow}>
+  const renderDayChoice = (nextDay: boolean, label: string) => {
+    const selected = draftEndsNext === nextDay;
+    const selectedText = isDark ? tone.text : tone.tertiary;
+    return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="종료 시간을 당일로 설정"
+        accessibilityLabel={nextDay ? '종료 시간을 다음 날로 설정' : '종료 시간을 당일로 설정'}
         disabled={disabled}
         onPress={() => {
           if (disabled) return;
           void Haptics.selectionAsync();
           flushActiveFieldToDrafts();
-          setDraftEndsNext(false);
+          setDraftEndsNext(nextDay);
           setRangeError(null);
         }}
-        style={({ pressed }) => [
-          styles.endDateChoiceBtn,
-          {
-            backgroundColor: !draftEndsNext ? ink : trackBg,
-            borderColor: line,
-            opacity: disabled ? 0.45 : pressed ? 0.9 : 1,
-          },
-        ]}>
-        <ThemedText style={[styles.endDateChoiceText, { color: !draftEndsNext ? selectedFg : ink }]}>
-          당일
-        </ThemedText>
+        style={({ pressed }) => [styles.dayChoicePress, pressed && { opacity: 0.92 }]}>
+        <SolidShadowFace
+          borderColor={line}
+          shadowColor={shadowInk}
+          backgroundColor={selected ? tone.bgMint : panelSurface}
+          shadowSize={selected ? shadowSize : Math.max(2, shadowSize - 2)}
+          shellStyle={styles.dayChoiceShell}
+          faceStyle={[styles.dayChoiceFace, isSheet && styles.dayChoiceFaceSheet]}>
+          <ThemedText
+            style={[
+              styles.dayChoiceText,
+              isSheet && styles.dayChoiceTextSheet,
+              { color: selected ? selectedText : muted },
+              cityPopFont('800'),
+            ]}>
+            {label}
+          </ThemedText>
+        </SolidShadowFace>
       </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="종료 시간을 다음 날로 설정"
-        disabled={disabled}
-        onPress={() => {
-          if (disabled) return;
-          void Haptics.selectionAsync();
-          flushActiveFieldToDrafts();
-          setDraftEndsNext(true);
-          setRangeError(null);
-        }}
-        style={({ pressed }) => [
-          styles.endDateChoiceBtn,
-          {
-            backgroundColor: draftEndsNext ? ink : trackBg,
-            borderColor: line,
-            opacity: disabled ? 0.45 : pressed ? 0.9 : 1,
-          },
-        ]}>
-        <ThemedText style={[styles.endDateChoiceText, { color: draftEndsNext ? selectedFg : ink }]}>
-          다음 날
-        </ThemedText>
-      </Pressable>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={[styles.root, { paddingLeft: contentInsetLeft }]}>
-      <View style={[styles.track, { backgroundColor: trackBg, borderColor: line }]}>
-        {renderSegment('start', '시작', displayStart)}
-        <View style={[styles.segmentDivider, { backgroundColor: line }]} />
-        {renderSegment('end', '종료', displayEnd)}
-        {activeField || isDateChoiceDirty ? (
-          <>
-            <View style={[styles.segmentDivider, { backgroundColor: line }]} />
-            {renderConfirmSegment()}
-          </>
-        ) : null}
+      <SolidShadowFace
+        borderColor={line}
+        shadowColor={shadowInk}
+        backgroundColor={panelSurface}
+        shadowSize={shadowSize}
+        shellStyle={styles.trackShell}
+        faceStyle={styles.trackFace}>
+        <View style={styles.trackInner}>
+          {renderSegment('start', '시작', displayStart)}
+          <View style={[styles.segmentDivider, { backgroundColor: line }]} />
+          {renderSegment('end', '종료', displayEnd)}
+          {!isSheet && showConfirm ? (
+            <>
+              <View style={[styles.segmentDivider, { backgroundColor: line }]} />
+              {renderInlineConfirmSegment()}
+            </>
+          ) : null}
+        </View>
+      </SolidShadowFace>
+
+      <View style={[styles.endDateChoiceRow, isSheet && styles.endDateChoiceRowSheet]}>
+        {renderDayChoice(false, '당일')}
+        {renderDayChoice(true, '다음 날')}
       </View>
-      {renderEndDateChoice()}
+
+      {isSheet && showConfirm ? (
+        <BrutalConfirmButton
+          label="시간 적용"
+          accessibilityLabel="선택한 시간 적용"
+          align="stretch"
+          fill={ink}
+          labelColor={isDark ? '#09090b' : '#FAFAFA'}
+          border={line}
+          shadowColor={shadowInk}
+          disabled={disabled}
+          onPress={handleConfirm}
+          style={styles.sheetConfirmBtn}
+        />
+      ) : null}
+
       {rangeError ? (
         <ThemedText style={[styles.rangeError, { color: muted }]}>{rangeError}</ThemedText>
       ) : null}
+
       {activeField ? (
         <DigitalHhmmInput
           key={activeField}
@@ -333,8 +497,8 @@ export function CatalogRowSpineTimePanel({
           ink={ink}
           muted={muted}
           line={line}
-          surface={trackBg}
-          selectedForeground={selectedFg}
+          surface={panelSurface}
+          selectedForeground={isDark ? '#09090b' : '#FAFAFA'}
           disabled={disabled}
           snapStepMinutes={1}
           accessibilityLabelPrefix={activeField === 'end' ? '종료' : '시작'}
@@ -343,7 +507,8 @@ export function CatalogRowSpineTimePanel({
       ) : null}
     </View>
   );
-}
+  },
+);
 
 const styles = StyleSheet.create({
   root: {
@@ -351,78 +516,121 @@ const styles = StyleSheet.create({
     paddingTop: 2,
     paddingBottom: 14,
   },
-  track: {
+  shadowShell: {
+    position: 'relative',
+  },
+  shadowBlock: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: RETRO_BORDER_WIDTH,
+  },
+  shadowFace: {
+    borderWidth: RETRO_BORDER_WIDTH,
+    overflow: 'hidden',
+  },
+  trackShell: {
+    alignSelf: 'stretch',
+  },
+  trackFace: {
+    overflow: 'hidden',
+  },
+  trackInner: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-    marginBottom: 2,
   },
   segment: {
     flex: 1,
-    minHeight: 36,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 1,
-    paddingHorizontal: 6,
-    paddingVertical: 5,
+    gap: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  segmentSheet: {
+    minHeight: 72,
+    paddingVertical: 12,
+    gap: 4,
   },
   segmentDivider: {
-    width: StyleSheet.hairlineWidth,
+    width: RETRO_BORDER_WIDTH,
     alignSelf: 'stretch',
   },
   segmentLabel: {
     fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  segmentLabelSheet: {
+    fontSize: 11,
+    letterSpacing: 0.6,
   },
   segmentTime: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 12,
     letterSpacing: -0.25,
+  },
+  segmentTimeSheet: {
+    fontSize: 17,
+    letterSpacing: -0.35,
   },
   segmentDate: {
     marginTop: 1,
     fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: -0.15,
+    letterSpacing: -0.1,
+  },
+  segmentDateSheet: {
+    fontSize: 12,
   },
   endDateChoiceRow: {
-    marginTop: 8,
+    marginTop: 10,
     flexDirection: 'row',
-    gap: 6,
+    gap: 10,
   },
-  endDateChoiceBtn: {
+  endDateChoiceRowSheet: {
+    marginTop: 14,
+    gap: 12,
+  },
+  dayChoicePress: {
     flex: 1,
-    minHeight: 30,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 0,
+  },
+  dayChoiceShell: {
+    alignSelf: 'stretch',
+    width: '100%',
+  },
+  dayChoiceFace: {
+    minHeight: 40,
+    paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
   },
-  endDateChoiceText: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+  dayChoiceFaceSheet: {
+    minHeight: 52,
+    paddingHorizontal: 10,
+  },
+  dayChoiceText: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  dayChoiceTextSheet: {
+    fontSize: 14,
+  },
+  sheetConfirmBtn: {
+    marginTop: 12,
   },
   rangeError: {
-    marginTop: 6,
-    fontSize: 11,
+    marginTop: 8,
+    fontSize: 12,
     fontWeight: '600',
-    lineHeight: 16,
+    lineHeight: 17,
     letterSpacing: -0.15,
   },
   confirmSegment: {
-    width: 48,
+    width: 52,
     flexShrink: 0,
-    minHeight: 36,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
-    borderLeftWidth: 2,
+    borderLeftWidth: RETRO_BORDER_WIDTH,
   },
   confirmSegmentLabel: {
     fontSize: 12,

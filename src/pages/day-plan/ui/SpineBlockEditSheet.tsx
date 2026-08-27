@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -8,13 +8,25 @@ import {
   isSpineBlockScheduleWithinPriorityWindow,
   resolveSpinePriorityWindow,
 } from '@entities/day-plan';
+import {
+  CityPopTypography,
+  RETRO_BORDER_WIDTH,
+  RetroFlatColors,
+} from '@shared/config/retroFlat';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
+import {
+  CatalogRowSpineTimePanel,
+  type CatalogRowSpineTimePanelHandle,
+} from './CatalogRowSpineTimePanel';
+
+const DELETE_SHADOW = 3;
 
 export type SpineBlockEditDraft = {
   blockId: string;
+  /** 저장 시 기존 블록 제목 유지(시트에서 편집하지 않음) */
   title: string;
   categoryKey: string | null;
   startMinutes: number;
@@ -69,15 +81,16 @@ export function SpineBlockEditSheet({
   renderRoutineSettings,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const [titleText, setTitleText] = useState('');
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const shadowInk = isDark ? tone.solidShadow : '#000000';
   const [categoryKey, setCategoryKey] = useState<string | null>(null);
   const [startMinutes, setStartMinutes] = useState(9 * 60);
   const [endMinutes, setEndMinutes] = useState(9 * 60 + 30);
   const [endsNextCalendarDay, setEndsNextCalendarDay] = useState(false);
+  const timePanelRef = useRef<CatalogRowSpineTimePanelHandle>(null);
 
   useEffect(() => {
     if (!visible || !draft) return;
-    setTitleText(draft.title);
     setCategoryKey(draft.categoryKey);
     setStartMinutes(draft.startMinutes);
     setEndMinutes(draft.endMinutes);
@@ -96,14 +109,19 @@ export function SpineBlockEditSheet({
 
   const handleSave = useCallback(() => {
     if (!draft) return;
+    const pending = timePanelRef.current?.commitPendingSchedule();
+    if (timePanelRef.current && !pending) return;
+    const finalStartMinutes = pending?.startMinutes ?? startMinutes;
+    const finalEndMinutes = pending?.endMinutes ?? endMinutes;
+    const finalEndsNextCalendarDay = pending?.endsNextCalendarDay ?? endsNextCalendarDay;
     const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
     if (
       !window ||
       !isSpineBlockScheduleWithinPriorityWindow(
         {
-          startMinutes,
-          endMinutes,
-          endsNextCalendarDay,
+          startMinutes: finalStartMinutes,
+          endMinutes: finalEndMinutes,
+          endsNextCalendarDay: finalEndsNextCalendarDay,
         },
         window,
       )
@@ -117,11 +135,11 @@ export function SpineBlockEditSheet({
     }
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onSave({
-      title: titleText,
+      title: draft.title,
       categoryKey,
-      startMinutes,
-      endMinutes,
-      endsNextCalendarDay,
+      startMinutes: finalStartMinutes,
+      endMinutes: finalEndMinutes,
+      endsNextCalendarDay: finalEndsNextCalendarDay,
       blockId: draft.blockId,
     });
   }, [
@@ -133,13 +151,9 @@ export function SpineBlockEditSheet({
     priorityEnd,
     priorityStart,
     startMinutes,
-    titleText,
   ]);
 
   if (!draft) return null;
-
-  const destructive = isDark ? '#F87171' : '#DC2626';
-  const panelBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)';
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -156,35 +170,15 @@ export function SpineBlockEditSheet({
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          {/* 목표 상세와 동일: 잠금 안내·루틴 방식·템플릿을 최상단에 */}
           {categoryKey && renderRoutineSettings ? (
             <View style={styles.routineSettingsPanel}>{renderRoutineSettings(categoryKey)}</View>
           ) : null}
 
           <View style={styles.fieldBlock}>
-            <ThemedText style={[styles.sectionLabel, { color: muted }]}>할 일</ThemedText>
-            <View
-              style={[
-                styles.titleRow,
-                {
-                  borderColor: line,
-                  backgroundColor: panelBg,
-                },
-              ]}>
-              <TextInput
-                value={titleText}
-                onChangeText={setTitleText}
-                placeholder="무엇을 할까요?"
-                placeholderTextColor={muted}
-                multiline
-                style={[styles.titleInput, { color: ink }]}
-              />
-            </View>
-          </View>
-
-          <View style={styles.fieldBlock}>
             <ThemedText style={[styles.sectionLabel, { color: muted }]}>시간</ThemedText>
             <CatalogRowSpineTimePanel
+              ref={timePanelRef}
+              presentation="sheet"
               startMinutes={startMinutes}
               endMinutes={endMinutes}
               endsNextCalendarDay={endsNextCalendarDay}
@@ -201,16 +195,32 @@ export function SpineBlockEditSheet({
           </View>
 
           {onDelete ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="일정 삭제"
-              onPress={() => onDelete(draft.blockId)}
-              style={({ pressed }) => [
-                styles.deleteBtn,
-                { borderColor: destructive, opacity: pressed ? 0.82 : 1 },
-              ]}>
-              <ThemedText style={[styles.deleteBtnText, { color: destructive }]}>삭제</ThemedText>
-            </Pressable>
+            <View style={styles.deleteShell}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.deleteShadow,
+                  {
+                    backgroundColor: tone.danger,
+                    borderColor: line,
+                  },
+                ]}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="일정 삭제"
+                onPress={() => onDelete(draft.blockId)}
+                style={({ pressed }) => [
+                  styles.deleteBtn,
+                  {
+                    borderColor: line,
+                    backgroundColor: pressed ? '#F5B8B2' : tone.dangerBg,
+                  },
+                  pressed && { opacity: 0.94 },
+                ]}>
+                <ThemedText style={[styles.deleteBtnText, { color: tone.danger }]}>삭제</ThemedText>
+              </Pressable>
+            </View>
           ) : null}
         </ScrollView>
 
@@ -223,18 +233,16 @@ export function SpineBlockEditSheet({
               backgroundColor: surface,
             },
           ]}>
-          <Pressable
-            accessibilityRole="button"
+          <BrutalConfirmButton
+            label="저장"
             accessibilityLabel="저장"
+            align="stretch"
+            fill={ink}
+            labelColor={isDark ? '#09090b' : '#FAFAFA'}
+            border={line}
+            shadowColor={shadowInk}
             onPress={handleSave}
-            style={({ pressed }) => [
-              styles.confirmBtn,
-              { backgroundColor: ink, opacity: pressed ? 0.9 : 1 },
-            ]}>
-            <ThemedText style={[styles.confirmLabel, { color: isDark ? '#09090b' : '#fff' }]}>
-              저장
-            </ThemedText>
-          </Pressable>
+          />
         </View>
       </View>
     </Modal>
@@ -244,14 +252,14 @@ export function SpineBlockEditSheet({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 12, paddingHorizontal: 20, gap: 2 },
+  scrollContent: { paddingBottom: 16, paddingHorizontal: 20, gap: 4 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 14,
-    borderBottomWidth: 1,
+    borderBottomWidth: RETRO_BORDER_WIDTH,
   },
   title: {
     fontSize: 16,
@@ -263,63 +271,41 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     marginTop: 8,
-    marginBottom: 6,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: -0.15,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: 48,
-  },
-  titleInput: {
-    flex: 1,
-    minWidth: 0,
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 22,
-    padding: 0,
-    margin: 0,
-    minHeight: 30,
-    textAlignVertical: 'center',
+    marginBottom: 10,
+    ...CityPopTypography.labelMd,
   },
   routineSettingsPanel: {
     marginBottom: 8,
   },
+  deleteShell: {
+    position: 'relative',
+    marginTop: 20,
+    marginRight: DELETE_SHADOW,
+    marginBottom: DELETE_SHADOW,
+  },
+  deleteShadow: {
+    position: 'absolute',
+    top: DELETE_SHADOW,
+    left: DELETE_SHADOW,
+    right: -DELETE_SHADOW,
+    bottom: -DELETE_SHADOW,
+    borderWidth: RETRO_BORDER_WIDTH,
+  },
   deleteBtn: {
-    marginTop: 16,
-    marginBottom: 4,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
-    paddingVertical: 12,
+    borderWidth: RETRO_BORDER_WIDTH,
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   deleteBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   footer: {
     paddingHorizontal: 20,
-    paddingTop: 10,
-    borderTopWidth: 1,
-  },
-  confirmBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    borderRadius: 0,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  confirmLabel: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: -0.2,
+    paddingTop: 12,
+    borderTopWidth: RETRO_BORDER_WIDTH,
   },
 });

@@ -321,6 +321,7 @@ describe('dayPlanStore', () => {
     expect(updated?.title).toBe('운동');
     expect(updated?.startMinutes).toBe(11 * 60);
     expect(updated?.endMinutes).toBe(11 * 60 + 20);
+    expect(updated?.hasManualScheduleOverride).toBe(true);
   });
 
   it('allows updating an existing block whose end is already in the past', () => {

@@ -41,7 +41,7 @@ export function useDevSeedMenu(): void {
         const result = await runScreenshotDemoSeedWithStoreSync();
         Alert.alert(
           'Seed 완료',
-          `${formatDevMockSeedAlertMessage(result)}\n\n앱스토어용 화면을 찍을 때 쓰세요. 온보딩은 건너뛴 상태예요.`,
+          `${formatDevMockSeedAlertMessage(result)}\n\n담기·시간대·타임라인·메모·투두·서재·노트·통계가 채워졌어요.\n히스토리 주간이 오늘만 보이면 ◀ 로 지난주를 열어 보세요.`,
         );
       })();
     });

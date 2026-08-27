@@ -44,6 +44,11 @@ export type DayPlanBlock = {
    * (예: 당일 13:00 ~ 익일 01:00)
    */
   endsNextCalendarDay?: boolean;
+  /**
+   * 오늘 타임라인에서 사용자가 직접 바꾼 시간.
+   * 고정 루틴 재동기화가 이 블록의 오늘 일정 시간을 덮어쓰지 않도록 합니다.
+   */
+  hasManualScheduleOverride?: boolean;
   /** 타임라인 표시 순서 */
   order: number;
   /**

@@ -9,6 +9,7 @@ import {
   isBuiltinPresetScheduleSet,
   loadFixedFlowSetsState,
   normalizeDayMealSlot,
+  removeRoutineCatalogSelectionKey,
   buildFixedFlowItemMealSlotsFields,
   toggleFixedFlowItemMealSlots,
   saveFixedFlowSetsState,
@@ -632,6 +633,7 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     const nextSets = sets.map((s) =>
       s.id === setId ? { ...s, items: s.items.filter((x) => x.categoryKey !== key) } : s,
     );
+    removeRoutineCatalogSelectionKey(key);
     set({ sets: nextSets });
     persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
   },
@@ -679,6 +681,9 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
         }
         : s,
     );
+    if (!enabled) {
+      removeRoutineCatalogSelectionKey(key);
+    }
     set({ sets: nextSets });
     persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
   },

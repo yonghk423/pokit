@@ -596,6 +596,12 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
             startMinutes: start,
             endMinutes: end,
             ...(endsNext ? { endsNextCalendarDay: true as const } : { endsNextCalendarDay: undefined }),
+            ...(existing.blockOrigin === 'spineTimeline' &&
+            (patch.startMinutes !== undefined ||
+              patch.endMinutes !== undefined ||
+              patch.endsNextCalendarDay !== undefined)
+              ? { hasManualScheduleOverride: true as const }
+              : {}),
             category: nextCategory,
             ...(nextCategoryKey ? { categoryKey: nextCategoryKey } : { categoryKey: undefined }),
           };

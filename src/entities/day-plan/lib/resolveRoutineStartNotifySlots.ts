@@ -159,6 +159,7 @@ export function hasResolvableRoutineStartTime(input: {
   categoryKey: string;
   sets: readonly FixedFlowSet[];
   activeSetIds: readonly string[];
+  includeInactiveSets?: boolean;
   layoutMode?: FixedRoutineApplyLayoutMode;
   mealSchedule: DayMealSlotSchedule;
   planBlocks?: readonly RoutineStartNotifyPlanBlock[];
@@ -169,6 +170,7 @@ export function hasResolvableRoutineStartTime(input: {
       enabledCategoryKeys: [input.categoryKey],
       sets: input.sets,
       activeSetIds: input.activeSetIds,
+      includeInactiveSets: input.includeInactiveSets,
       layoutMode: input.layoutMode,
       mealSchedule: input.mealSchedule,
       planBlocks: input.planBlocks,
