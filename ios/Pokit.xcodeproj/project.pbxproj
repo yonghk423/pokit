@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		2A7C1E01D4E5F60011223344 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 2A7C1E04D4E5F60011223344 /* InfoPlist.strings */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		5030F36FA407208EADC84060 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C6F2085864CBC917219DC28E /* PrivacyInfo.xcprivacy */; };
 		7F35267344FF99A771C67C14 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC9D6768CC3FBEDC6F0885B /* ExpoModulesProvider.swift */; };
@@ -59,6 +60,8 @@
 		13B07F961A680F5B00A75B9A /* Pokit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pokit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Pokit/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Pokit/Info.plist; sourceTree = "<group>"; };
+		2A7C1E02D4E5F60011223344 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Pokit/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		2A7C1E03D4E5F60011223344 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = Pokit/ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		663375D503B62B1BD7492B57 /* Pods-Pokit.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pokit.release.xcconfig"; path = "Target Support Files/Pods-Pokit/Pods-Pokit.release.xcconfig"; sourceTree = "<group>"; };
 		6CC9D6768CC3FBEDC6F0885B /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Pokit/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		A1B2C311D4E5F60011223344 /* PokitLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pokit/PokitLiveActivity.swift; sourceTree = "<group>"; };
@@ -117,6 +120,7 @@
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
+				2A7C1E04D4E5F60011223344 /* InfoPlist.strings */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				C6F2085864CBC917219DC28E /* PrivacyInfo.xcprivacy */,
 			);
@@ -289,6 +293,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				ko,
 				Base,
 			);
 			mainGroup = 83CBB9F61A601CBA00E9B192;
@@ -309,6 +314,7 @@
 			files = (
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				2A7C1E01D4E5F60011223344 /* InfoPlist.strings in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				5030F36FA407208EADC84060 /* PrivacyInfo.xcprivacy in Resources */,
 			);
@@ -461,6 +467,18 @@
 		};
 /* End PBXShellScriptBuildPhase section */
 
+/* Begin PBXVariantGroup section */
+		2A7C1E04D4E5F60011223344 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				2A7C1E02D4E5F60011223344 /* en */,
+				2A7C1E03D4E5F60011223344 /* ko */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin PBXSourcesBuildPhase section */
 		13B07F871A680F5B00A75B9A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -510,7 +528,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Pokit/Pokit.entitlements;
-				CURRENT_PROJECT_VERSION = 45;
+				CURRENT_PROJECT_VERSION = 46;
 				DEVELOPMENT_TEAM = 7Z957H35S5;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -523,7 +541,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6.22;
+				MARKETING_VERSION = 1.6.23;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -547,7 +565,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Pokit/Pokit.entitlements;
-				CURRENT_PROJECT_VERSION = 45;
+				CURRENT_PROJECT_VERSION = 46;
 				DEVELOPMENT_TEAM = 7Z957H35S5;
 				INFOPLIST_FILE = Pokit/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -555,7 +573,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6.22;
+				MARKETING_VERSION = 1.6.23;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -695,7 +713,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = PokitLiveActivity/PokitLiveActivity.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 45;
+				CURRENT_PROJECT_VERSION = 46;
 				DEVELOPMENT_TEAM = 7Z957H35S5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PokitLiveActivity/Info.plist;
@@ -705,7 +723,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.6.22;
+				MARKETING_VERSION = 1.6.23;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.pokit.LiveActivity;
 				PRODUCT_NAME = PokitLiveActivity;
@@ -721,7 +739,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = PokitLiveActivity/PokitLiveActivity.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 45;
+				CURRENT_PROJECT_VERSION = 46;
 				DEVELOPMENT_TEAM = 7Z957H35S5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PokitLiveActivity/Info.plist;
@@ -731,7 +749,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.6.22;
+				MARKETING_VERSION = 1.6.23;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.yonghee.pokit.LiveActivity;
 				PRODUCT_NAME = PokitLiveActivity;

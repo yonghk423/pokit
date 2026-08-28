@@ -2,7 +2,7 @@
   "expo": {
     "name": "POKIT",
     "slug": "pokit",
-    "version": "1.6.22",
+    "version": "1.6.23",
     "orientation": "portrait",
     "icon": "./assets/pokit5.png",
     "scheme": "pokit",
@@ -12,14 +12,22 @@
       "color": "#000000"
     },
     "newArchEnabled": true,
+    "locales": {
+      "en": "./locales/en.json",
+      "ko": "./locales/ko.json"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "45"
+      "buildNumber": "46",
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
+        "CFBundleLocalizations": ["en", "ko"]
+      }
     },
     "android": {
-      "version": "1.6.22",
-      "versionCode": 45,
+      "version": "1.6.23",
+      "versionCode": 46,
       "adaptiveIcon": {
         "backgroundColor": "#F2EDE4",
         "foregroundImage": "./assets/pokit5.png"

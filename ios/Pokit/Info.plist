@@ -6,6 +6,13 @@
     <true/>
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleAllowMixedLocalizations</key>
+    <true/>
+    <key>CFBundleLocalizations</key>
+    <array>
+      <string>en</string>
+      <string>ko</string>
+    </array>
     <key>CFBundleDisplayName</key>
     <string>POKIT</string>
     <key>CFBundleExecutable</key>
@@ -19,7 +26,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.6.22</string>
+    <string>1.6.23</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -39,7 +46,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>45</string>
+    <string>46</string>
     <key>LSApplicationQueriesSchemes</key>
     <array>
       <string>airmail</string>

@@ -1,7 +1,7 @@
 {
-  "latestVersion": "1.6.22",
+  "latestVersion": "1.6.23",
   "highlights": [
-    "타임라인 일정 수정 화면을 정리하고, 시간·삭제 버튼을 앱 스타일에 맞게 다듬었어요."
+    "App Store에 한국어가 지원 언어로 표시되도록 앱 언어 설정을 추가했어요."
   ],
   "storeUrls": {
     "ios": "https://apps.apple.com/app/id6762331629",
