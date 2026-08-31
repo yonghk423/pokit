@@ -30,6 +30,12 @@ import {
   resolveWorkStudyNotePageLabel,
   setWorkStudyActivePageBlocks,
   updateWorkStudyNotePageTitle,
+  WORK_STUDY_IMAGE_DISPLAY_HEIGHT_PRESETS,
+  WORK_STUDY_IMAGE_MAX_DISPLAY_HEIGHT,
+  WORK_STUDY_IMAGE_MIN_DISPLAY_HEIGHT,
+  clampWorkStudyImageDisplayHeight,
+  resolveWorkStudyImageDisplayHeight,
+  stepWorkStudyImageDisplayHeight,
   type WorkStudyDocBlock,
   type WorkStudyDocument,
   type WorkStudyBlockMarks,
@@ -83,7 +89,10 @@ function resolveEnterSplitCursor(
   const cursor = Math.max(0, Math.min(start ?? textLen, textLen));
   const collapsed = start == null || end == null || start === end;
   // 줄 끝, 또는 IME로 마지막 글자 앞에 캐럿이 남은 경우 → 분할하지 않음
-  if (cursor >= textLen || (collapsed && cursor >= Math.max(0, textLen - 1))) {
+  if (
+    cursor >= textLen ||
+    (collapsed && cursor > 0 && cursor >= Math.max(0, textLen - 1))
+  ) {
     return { cursor: textLen, splitMidLine: false };
   }
   return { cursor, splitMidLine: true };
@@ -524,6 +533,7 @@ function StudyDocumentBlockView({
   onOpenLink?: (url: string) => void;
   onBlockLayout?: (blockId: string, y: number) => void;
 }) {
+  const [failedImageUri, setFailedImageUri] = useState<string | null>(null);
   const isFormattedParagraph = block.kind === 'paragraph' && Boolean(onEnterKey);
   const rowShellStyle = isListBlockKind(block.kind)
     ? styles.listBlockRow
@@ -629,6 +639,18 @@ function StudyDocumentBlockView({
 
   if (block.kind === 'image') {
     const uri = normalizeWorkStudyImageUri(block.imageUri);
+    const imageLoadFailed = Boolean(uri) && failedImageUri === uri;
+    const displayHeight = resolveWorkStudyImageDisplayHeight(block);
+    const atMinHeight = displayHeight <= WORK_STUDY_IMAGE_MIN_DISPLAY_HEIGHT;
+    const atMaxHeight = displayHeight >= WORK_STUDY_IMAGE_MAX_DISPLAY_HEIGHT;
+
+    const setImageDisplayHeight = (nextHeight: number) => {
+      onChangeBlock(block.id, {
+        imageDisplayHeight: clampWorkStudyImageDisplayHeight(nextHeight),
+      });
+      void Haptics.selectionAsync();
+    };
+
     return (
       <View
         style={[rowShellStyle, styles.imageWrap, { borderColor: palette.outlineVariant }]}
@@ -639,15 +661,87 @@ function StudyDocumentBlockView({
           accessibilityLabel={uri ? '앨범에서 사진 변경' : '앨범에서 사진 선택'}
           style={styles.imagePickArea}
         >
-          {uri ? (
-            <Image source={{ uri }} style={styles.imagePreview} contentFit="cover" recyclingKey={uri} />
+          {uri && !imageLoadFailed ? (
+            <Image
+              source={{ uri }}
+              style={[styles.imagePreview, { height: displayHeight }]}
+              contentFit="contain"
+              recyclingKey={uri}
+              onError={() => setFailedImageUri(uri)}
+            />
           ) : (
             <View style={[styles.imagePlaceholder, { backgroundColor: 'rgba(0,0,0,0.04)' }]}>
               <IconSymbol name="photo.on.rectangle.angled" size={28} color={palette.onVariant} />
-              <ThemedText style={[styles.imagePickLabel, { color: palette.onVariant }]}>앨범에서 선택</ThemedText>
+              <ThemedText style={[styles.imagePickLabel, { color: palette.onVariant }]}>
+                {imageLoadFailed ? '사진을 표시할 수 없어요 · 다시 선택' : '앨범에서 선택'}
+              </ThemedText>
             </View>
           )}
         </Pressable>
+        {uri && !imageLoadFailed ? (
+          <View style={styles.imageSizeControls}>
+            <View style={styles.imageSizeStepRow}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="사진 크기 줄이기"
+                disabled={atMinHeight}
+                onPress={() => setImageDisplayHeight(stepWorkStudyImageDisplayHeight(displayHeight, -1))}
+                style={({ pressed }) => [
+                  styles.imageSizeStepBtn,
+                  {
+                    borderColor: palette.outlineVariant,
+                    opacity: atMinHeight ? 0.35 : pressed ? 0.65 : 1,
+                  },
+                ]}>
+                <IconSymbol name="minus" size={14} color={palette.onSurface} />
+              </Pressable>
+              <ThemedText style={[styles.imageSizeLabel, { color: palette.onVariant }]}>크기</ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="사진 크기 키우기"
+                disabled={atMaxHeight}
+                onPress={() => setImageDisplayHeight(stepWorkStudyImageDisplayHeight(displayHeight, 1))}
+                style={({ pressed }) => [
+                  styles.imageSizeStepBtn,
+                  {
+                    borderColor: palette.outlineVariant,
+                    opacity: atMaxHeight ? 0.35 : pressed ? 0.65 : 1,
+                  },
+                ]}>
+                <IconSymbol name="plus" size={14} color={palette.onSurface} />
+              </Pressable>
+            </View>
+            <View style={styles.imageSizePresetRow}>
+              {WORK_STUDY_IMAGE_DISPLAY_HEIGHT_PRESETS.map((preset) => {
+                const selected = displayHeight === preset.value;
+                return (
+                  <Pressable
+                    key={preset.label}
+                    accessibilityRole="button"
+                    accessibilityLabel={`사진 크기 ${preset.label}`}
+                    accessibilityState={{ selected }}
+                    onPress={() => setImageDisplayHeight(preset.value)}
+                    style={({ pressed }) => [
+                      styles.imageSizePresetBtn,
+                      {
+                        borderColor: selected ? palette.onSurface : palette.outlineVariant,
+                        backgroundColor: selected ? 'rgba(0,0,0,0.06)' : 'transparent',
+                        opacity: pressed ? 0.65 : 1,
+                      },
+                    ]}>
+                    <ThemedText
+                      style={[
+                        styles.imageSizePresetLabel,
+                        { color: selected ? palette.onSurface : palette.onVariant },
+                      ]}>
+                      {preset.label}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
         {uri ? (
           <Pressable
             onPress={onPickImage}
@@ -1255,7 +1349,7 @@ export function StudyDocumentEditor({
           });
           return;
         }
-      } else if (patch.checked !== undefined) {
+      } else if (patch.checked !== undefined || patch.imageDisplayHeight !== undefined) {
         pushHistory();
       }
       updateBlock(id, patch);
@@ -1309,6 +1403,19 @@ export function StudyDocumentEditor({
       );
       const keepMarks = normalizeBlockMarks(block.marks ?? resolvePendingMarks());
       const nextMarks = marksForContinuedBlock(keepMarks);
+      if (cursor === 0) {
+        const newBlock = createWorkStudyDocBlock('paragraph');
+        if (nextMarks) newBlock.marks = nextMarks;
+        const index = blocks.findIndex((b) => b.id === blockId);
+        const flushed = blocks.map((b) => (b.id === blockId ? { ...b, text } : b));
+        const next = [...flushed];
+        next.splice(index, 0, newBlock);
+        commitEnterStructuralChange(blockId, text, next);
+        pendingFocusBlockIdRef.current = newBlock.id;
+        pendingFocusSelectionRef.current = { start: 0, end: 0 };
+        setActiveBlockId(newBlock.id);
+        return;
+      }
       if (splitMidLine) {
         const before = text.slice(0, cursor);
         const after = text.slice(cursor);
@@ -1355,6 +1462,22 @@ export function StudyDocumentEditor({
       );
       const keepMarks = normalizeBlockMarks(block.marks ?? resolvePendingMarks());
       const nextMarks = marksForContinuedBlock(keepMarks);
+
+      if (cursor === 0) {
+        const newBlock = createWorkStudyDocBlock(kind);
+        if (kind === 'checklist') newBlock.checked = false;
+        if (nextMarks) newBlock.marks = nextMarks;
+        const index = blocks.findIndex((b) => b.id === blockId);
+        const flushed = blocks.map((b) => (b.id === blockId ? { ...b, text } : b));
+        const next = [...flushed];
+        next.splice(index, 0, newBlock);
+        commitEnterStructuralChange(blockId, text, next);
+        if (isListBlockKind(kind)) setActiveListKind(kind);
+        pendingFocusBlockIdRef.current = newBlock.id;
+        pendingFocusSelectionRef.current = { start: 0, end: 0 };
+        setActiveBlockId(newBlock.id);
+        return;
+      }
 
       if (splitMidLine) {
         const before = text.slice(0, cursor);
@@ -1537,49 +1660,77 @@ export function StudyDocumentEditor({
     [activeBlocks, pushHistory, replaceActiveBlocks, transferFocusToBlock],
   );
 
+  const pickImageUri = useCallback(async (): Promise<string | null> => {
+    const result = await pickImageFromLibrary();
+    if (result.ok) {
+      return normalizeWorkStudyImageUri(result.uri);
+    }
+
+    if (result.reason === 'cancelled') {
+      return null;
+    }
+
+    if (result.reason === 'permission_denied') {
+      Alert.alert(
+        '사진 접근 권한',
+        '앨범에서 사진을 선택하려면 설정에서 사진 접근을 허용해 주세요.',
+      );
+      return null;
+    }
+
+    if (result.reason === 'module_unavailable') {
+      Alert.alert(
+        '앱을 다시 빌드해 주세요',
+        '앨범에서 사진을 선택하려면 새 네이티브 모듈이 필요해요. 실행 중인 앱을 종료한 뒤 터미널에서 npx expo run:ios --device 를 다시 실행해 주세요.',
+      );
+      return null;
+    }
+
+    Alert.alert('사진을 불러오지 못했어요', '잠시 후 다시 시도해 주세요.');
+    return null;
+  }, []);
+
   const pickImageForBlock = useCallback(
     async (blockId: string) => {
-      const result = await pickImageFromLibrary();
-      if (result.ok) {
-        const imageUri = normalizeWorkStudyImageUri(result.uri);
-        undoStack.current = [
-          ...undoStack.current.slice(-(MAX_HISTORY - 1)),
-          cloneDocument(documentRef.current),
-        ];
-        redoStack.current = [];
-        setHistoryTick((n) => n + 1);
-        onChangeDocument((prev) => {
-          const withPage = prev.pages.length > 0 ? prev : ensurePageDocument(prev);
-          const page = getWorkStudyActivePage(withPage);
-          const blocks = page?.blocks ?? [];
-          return setWorkStudyActivePageBlocks(
-            withPage,
-            blocks.map((b) => (b.id === blockId ? { ...b, imageUri } : b)),
-          );
-        });
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        return;
-      }
-      if (result.reason === 'permission_denied') {
-        Alert.alert(
-          '사진 접근 권한',
-          '앨범에서 사진을 선택하려면 설정에서 사진 접근을 허용해 주세요.',
+      const imageUri = await pickImageUri();
+      if (!imageUri) return;
+
+      undoStack.current = [
+        ...undoStack.current.slice(-(MAX_HISTORY - 1)),
+        cloneDocument(documentRef.current),
+      ];
+      redoStack.current = [];
+      setHistoryTick((n) => n + 1);
+      onChangeDocument((prev) => {
+        const withPage = prev.pages.length > 0 ? prev : ensurePageDocument(prev);
+        const page = getWorkStudyActivePage(withPage);
+        const blocks = page?.blocks ?? [];
+        return setWorkStudyActivePageBlocks(
+          withPage,
+          blocks.map((b) => (b.id === blockId ? { ...b, imageUri } : b)),
         );
-        return;
-      }
-      if (result.reason === 'module_unavailable') {
-        Alert.alert(
-          '앱을 다시 빌드해 주세요',
-          '앨범에서 사진을 선택하려면 새 네이티브 모듈이 필요해요. 실행 중인 앱을 종료한 뒤 터미널에서 npx expo run:ios --device 를 다시 실행해 주세요.',
-        );
-        return;
-      }
-      if (result.reason === 'error') {
-        Alert.alert('사진을 불러오지 못했어요', '잠시 후 다시 시도해 주세요.');
-      }
+      });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
-    [ensurePageDocument, onChangeDocument],
+    [ensurePageDocument, onChangeDocument, pickImageUri],
   );
+
+  const pickAndInsertImageBlock = useCallback(async () => {
+    const imageUri = await pickImageUri();
+    if (!imageUri) return;
+
+    const withPage = ensurePageDocument();
+    const page = getWorkStudyActivePage(withPage);
+    const blocks = page?.blocks ?? [];
+    const block = createWorkStudyDocBlock('image');
+    block.imageUri = imageUri;
+    const tail = createWorkStudyDocBlock('paragraph');
+
+    pendingEnterScrollBlockIdRef.current = block.id;
+    commitStructuralChange([...blocks, block, tail]);
+    setActiveBlockId(tail.id);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [commitStructuralChange, ensurePageDocument, pickImageUri]);
 
   const insertBlock = useCallback(
     (kind: WorkStudyDocBlock['kind'], options?: { headingLevel?: WorkStudyHeadingLevel }) => {
@@ -1601,6 +1752,26 @@ export function StudyDocumentEditor({
       void Haptics.selectionAsync();
     },
     [commitStructuralChange, ensurePageDocument, resolvePendingMarks],
+  );
+
+  const insertEdgeParagraph = useCallback(
+    (edge: 'top' | 'bottom') => {
+      const withPage = ensurePageDocument();
+      const page = getWorkStudyActivePage(withPage);
+      const blocks = page?.blocks ?? [];
+      const block = createWorkStudyDocBlock('paragraph');
+      const next = edge === 'top' ? [block, ...blocks] : [...blocks, block];
+
+      pendingFocusBlockIdRef.current = block.id;
+      pendingFocusSelectionRef.current = { start: 0, end: 0 };
+      pendingEnterScrollBlockIdRef.current = block.id;
+      activeBlockIdRef.current = block.id;
+      commitStructuralChange(next);
+      setActiveBlockId(block.id);
+      setActiveListKind(null);
+      void Haptics.selectionAsync();
+    },
+    [commitStructuralChange, ensurePageDocument],
   );
 
   /** 메모 빈 영역 탭 → 키보드 활성화(마지막 본문 포커스, 없으면 문단 추가) */
@@ -2064,6 +2235,12 @@ export function StudyDocumentEditor({
           }
           break;
         }
+        case 'insert-line-top':
+          insertEdgeParagraph('top');
+          break;
+        case 'insert-line-bottom':
+          insertEdgeParagraph('bottom');
+          break;
         case 'checklist':
           toggleListKind('checklist');
           break;
@@ -2085,15 +2262,7 @@ export function StudyDocumentEditor({
           break;
         }
         case 'image': {
-          const withPage = ensurePageDocument();
-          const page = getWorkStudyActivePage(withPage);
-          const blocks = page?.blocks ?? [];
-          const block = createWorkStudyDocBlock('image');
-          const tail = createWorkStudyDocBlock('paragraph');
-          commitStructuralChange([...blocks, block, tail]);
-          setActiveBlockId(tail.id);
-          void Haptics.selectionAsync();
-          void pickImageForBlock(block.id);
+          void pickAndInsertImageBlock();
           break;
         }
         case 'bold':
@@ -2124,15 +2293,17 @@ export function StudyDocumentEditor({
       activeBlocks,
       beginToolbarInteraction,
       clearTextEditSession,
+      commitStructuralChange,
       dismissEditorKeyboard,
       endToolbarInteraction,
       ensurePageDocument,
       insertBlock,
+      insertEdgeParagraph,
       keyboardInset,
       keyboardToolbarMode,
       openColorPicker,
       openLinkEditor,
-      pickImageForBlock,
+      pickAndInsertImageBlock,
       replaceDocument,
       resetDocument,
       retainEditorKeyboardFocus,
@@ -2816,7 +2987,33 @@ const styles = StyleSheet.create({
   },
   imageWrap: { gap: 6, borderWidth: StyleSheet.hairlineWidth, padding: 8, marginTop: 4 },
   imagePickArea: { width: '100%' },
-  imagePreview: { width: '100%', height: 160 },
+  imagePreview: { width: '100%' },
+  imageSizeControls: { gap: 8 },
+  imageSizeStepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  imageSizeStepBtn: {
+    width: 34,
+    height: 34,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageSizeLabel: { fontSize: 12, fontWeight: '700', minWidth: 28, textAlign: 'center' },
+  imageSizePresetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  imageSizePresetBtn: {
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  imageSizePresetLabel: { fontSize: 12, fontWeight: '600' },
   imagePlaceholder: {
     width: '100%',
     height: 120,

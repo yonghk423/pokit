@@ -44,6 +44,8 @@ export type WorkStudyDocBlock = {
   marks?: WorkStudyBlockMarks;
   tableRows?: string[][];
   imageUri?: string;
+  /** 이미지 블록 표시 높이(px) — 미설정 시 기본값 */
+  imageDisplayHeight?: number;
 };
 
 export type WorkStudyNotePage = {
@@ -78,6 +80,18 @@ export const WORK_STUDY_TABLE_MAX_COLS = 5;
 export const WORK_STUDY_TABLE_DEFAULT_ROWS = 2;
 export const WORK_STUDY_TABLE_DEFAULT_COLS = 2;
 const MAX_IMAGE_URI = 500;
+
+export const WORK_STUDY_IMAGE_MIN_DISPLAY_HEIGHT = 120;
+export const WORK_STUDY_IMAGE_MAX_DISPLAY_HEIGHT = 560;
+export const WORK_STUDY_IMAGE_DEFAULT_DISPLAY_HEIGHT = 280;
+export const WORK_STUDY_IMAGE_DISPLAY_HEIGHT_STEP = 48;
+
+export const WORK_STUDY_IMAGE_DISPLAY_HEIGHT_PRESETS = [
+  { label: '작게', value: 160 },
+  { label: '보통', value: 280 },
+  { label: '크게', value: 400 },
+  { label: '최대', value: 520 },
+] as const;
 
 function clampStr(s: unknown, max: number): string {
   const t = typeof s === 'string' ? s.trim() : '';
@@ -151,6 +165,29 @@ function normalizeTableRows(raw: unknown): string[][] {
   });
 }
 
+function normalizeImageDisplayHeight(raw: unknown): number | undefined {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return undefined;
+  return Math.max(
+    WORK_STUDY_IMAGE_MIN_DISPLAY_HEIGHT,
+    Math.min(WORK_STUDY_IMAGE_MAX_DISPLAY_HEIGHT, Math.round(n)),
+  );
+}
+
+export function clampWorkStudyImageDisplayHeight(height: number): number {
+  return normalizeImageDisplayHeight(height) ?? WORK_STUDY_IMAGE_DEFAULT_DISPLAY_HEIGHT;
+}
+
+export function resolveWorkStudyImageDisplayHeight(
+  block: Pick<WorkStudyDocBlock, 'imageDisplayHeight'>,
+): number {
+  return block.imageDisplayHeight ?? WORK_STUDY_IMAGE_DEFAULT_DISPLAY_HEIGHT;
+}
+
+export function stepWorkStudyImageDisplayHeight(current: number, delta: number): number {
+  return clampWorkStudyImageDisplayHeight(current + delta * WORK_STUDY_IMAGE_DISPLAY_HEIGHT_STEP);
+}
+
 function normalizeBlockKind(raw: unknown): WorkStudyBlockKind {
   switch (raw) {
     case 'heading':
@@ -180,7 +217,14 @@ export function normalizeWorkStudyDocBlock(raw: unknown): WorkStudyDocBlock | nu
 
   if (kind === 'image') {
     const imageUri = clampStr(o.imageUri, MAX_IMAGE_URI);
-    return { id, kind, text: clampStr(o.text, MAX_TEXT), imageUri: imageUri || undefined };
+    const imageDisplayHeight = normalizeImageDisplayHeight(o.imageDisplayHeight);
+    return {
+      id,
+      kind,
+      text: clampStr(o.text, MAX_TEXT),
+      imageUri: imageUri || undefined,
+      imageDisplayHeight,
+    };
   }
 
   if (kind === 'heading') {

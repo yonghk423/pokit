@@ -2,6 +2,7 @@ import { requireOptionalNativeModule } from 'expo-modules-core';
 import {
   copyAsync,
   documentDirectory,
+  getInfoAsync,
   makeDirectoryAsync,
 } from 'expo-file-system/legacy';
 
@@ -49,12 +50,12 @@ export async function persistLocalImageUri(sourceUri: string): Promise<string> {
 
   await makeDirectoryAsync(dir, { intermediates: true });
   const dest = buildWorkStudyImageDestUri(trimmed);
-  try {
-    await copyAsync({ from: trimmed, to: dest });
-    return dest;
-  } catch {
-    return trimmed;
+  await copyAsync({ from: trimmed, to: dest });
+  const copied = await getInfoAsync(dest);
+  if (!copied.exists) {
+    throw new Error('copied image file does not exist');
   }
+  return dest;
 }
 
 export type PickImageFromLibraryResult =
@@ -67,7 +68,9 @@ export async function pickImageFromLibrary(): Promise<PickImageFromLibraryResult
   }
 
   try {
-    const ImagePicker = await import('expo-image-picker');
+    // Metro에서 동적 import 청크의 모듈 ID가 HMR 후 유실되는 문제를 피한다.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const ImagePicker = require('expo-image-picker') as typeof import('expo-image-picker');
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       return { ok: false, reason: 'permission_denied' };
@@ -83,6 +86,8 @@ export async function pickImageFromLibrary(): Promise<PickImageFromLibraryResult
       allowsEditing: false,
       allowsMultipleSelection: true,
       selectionLimit: 1,
+      preferredAssetRepresentationMode:
+        ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
       quality: 0.85,
       presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
     });

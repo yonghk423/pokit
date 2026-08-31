@@ -4,8 +4,10 @@ import {
   formatWorkStudyNoteTitleFromDateKey,
   isLegacyAutoWorkStudyNoteTitle,
   migrateLegacyWorkContentToDocument,
+  normalizeWorkStudyDocBlock,
   normalizeWorkStudyDocument,
   persistWorkStudyNotePageTitle,
+  resolveWorkStudyImageDisplayHeight,
   resolveWorkStudyNotePageLabel,
   resolveWorkStudyNotePagePreview,
   workStudyDocumentToPlainText,
@@ -101,6 +103,18 @@ describe('normalizeWorkStudyDocument', () => {
       marks: { color: '#c62828' },
     });
     expect(block?.marks?.color).toBe('#C62828');
+  });
+
+  it('normalizes image display height and defaults when unset', () => {
+    const block = normalizeWorkStudyDocBlock({
+      id: 'img1',
+      kind: 'image',
+      text: '',
+      imageUri: 'file:///tmp/a.jpg',
+      imageDisplayHeight: 999,
+    });
+    expect(block?.imageDisplayHeight).toBe(560);
+    expect(resolveWorkStudyImageDisplayHeight({})).toBe(280);
   });
 
   it('preserves table rows through work detail config normalization', () => {

@@ -19,6 +19,8 @@ export type StudyToolbarAction =
   | 'image'
   | 'undo'
   | 'redo'
+  | 'insert-line-top'
+  | 'insert-line-bottom'
   | 'reset-document'
   | 'dismiss-keyboard';
 
@@ -168,6 +170,23 @@ export function StudyDocumentToolbar({
           disabled={!canRedo}
           onRetainKeyboardFocus={onRetainKeyboardFocus}
           onPress={() => onAction('redo')}
+        />
+        <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
+        <ToolBtn
+          label="맨 위에 줄 추가"
+          icon="arrow.up.to.line"
+          palette={palette}
+          surfaceBg={surfaceBg}
+          onRetainKeyboardFocus={onRetainKeyboardFocus}
+          onPress={() => onAction('insert-line-top')}
+        />
+        <ToolBtn
+          label="맨 아래에 줄 추가"
+          icon="arrow.down.to.line"
+          palette={palette}
+          surfaceBg={surfaceBg}
+          onRetainKeyboardFocus={onRetainKeyboardFocus}
+          onPress={() => onAction('insert-line-bottom')}
         />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
         <ToolBtn label="체크리스트" icon="checkmark.square" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'checklist'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('checklist')} />
