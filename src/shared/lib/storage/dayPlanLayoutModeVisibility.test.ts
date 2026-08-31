@@ -13,16 +13,16 @@ describe('dayPlanLayoutModeVisibility', () => {
     localStorageClient.removeItem(StorageKeys.settings);
   });
 
-  it('defaults all modes to visible', () => {
+  it('defaults to bag/sections and keeps spine hidden', () => {
     expect(normalizeDayPlanLayoutModeVisibility(undefined)).toEqual({
       bag: true,
       sections: true,
-      spine: true,
+      spine: false,
     });
     expect(DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY).toEqual({
       bag: true,
       sections: true,
-      spine: true,
+      spine: false,
     });
   });
 
@@ -33,31 +33,40 @@ describe('dayPlanLayoutModeVisibility', () => {
   });
 
   it('lists only enabled modes in order', () => {
+    const visibility = normalizeDayPlanLayoutModeVisibility({
+      bag: false,
+      sections: true,
+      spine: true,
+    });
     expect(
-      listVisibleDayPlanLayoutModes({ bag: false, sections: true, spine: true }),
-    ).toEqual(['sections', 'spine']);
+      listVisibleDayPlanLayoutModes(visibility),
+    ).toEqual(['sections']);
   });
 
   it('coerces hidden mode to first visible mode', () => {
-    const visibility = { bag: false, sections: false, spine: true };
-    expect(coerceDayPlanLayoutMode('bag', visibility)).toBe('spine');
-    expect(coerceDayPlanLayoutMode('sections', visibility)).toBe('spine');
-    expect(coerceDayPlanLayoutMode('spine', visibility)).toBe('spine');
+    const visibility = normalizeDayPlanLayoutModeVisibility({
+      bag: false,
+      sections: false,
+      spine: true,
+    });
+    expect(coerceDayPlanLayoutMode('bag', visibility)).toBe('bag');
+    expect(coerceDayPlanLayoutMode('sections', visibility)).toBe('sections');
+    expect(coerceDayPlanLayoutMode('spine', visibility)).toBe('bag');
   });
 
-  it('upgrades legacy default (sections off) to all-on once', () => {
+  it('loads legacy visibility but keeps spine hidden', () => {
     localStorageClient.setJson(StorageKeys.settings, {
       dayPlanLayoutModeVisibility: { bag: true, sections: false, spine: true },
     });
     expect(loadDayPlanLayoutModeVisibility()).toEqual({
       bag: true,
       sections: true,
-      spine: true,
+      spine: false,
     });
     expect(loadDayPlanLayoutModeVisibility()).toEqual({
       bag: true,
       sections: true,
-      spine: true,
+      spine: false,
     });
   });
 
@@ -69,7 +78,7 @@ describe('dayPlanLayoutModeVisibility', () => {
     expect(loadDayPlanLayoutModeVisibility()).toEqual({
       bag: true,
       sections: false,
-      spine: true,
+      spine: false,
     });
   });
 });

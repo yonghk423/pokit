@@ -459,7 +459,7 @@ export function SettingsPage() {
                   오늘 탭 보기
                 </ThemedText>
                 <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  목록·시간대·타임라인 표시 설정
+                  목록·시간대 표시 설정
                 </ThemedText>
               </View>
             </View>

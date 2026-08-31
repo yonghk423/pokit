@@ -41,6 +41,8 @@ const TABS: TabDef[] = [
   },
 ];
 
+const ENABLED_LAYOUT_MODES: readonly DayPlanLayoutMode[] = ['bag', 'sections'];
+
 const SHADOW_SM = 2;
 
 type Props = {
@@ -74,9 +76,9 @@ export function DayPlanLayoutModeTabs({
 }: Props) {
   const pill = tabPillColors(isDark);
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const tabs = visibleModes
-    ? TABS.filter((item) => visibleModes.includes(item.key))
-    : TABS;
+  const tabs = TABS.filter((item) => ENABLED_LAYOUT_MODES.includes(item.key)).filter((item) =>
+    visibleModes ? visibleModes.includes(item.key) : true,
+  );
 
   if (tabs.length === 0) return null;
 

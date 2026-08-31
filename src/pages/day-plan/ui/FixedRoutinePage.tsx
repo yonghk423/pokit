@@ -118,12 +118,12 @@ import { RoutineTemplateListPanel } from './RoutineTemplateListPanel';
 
 function layoutModeHint(mode: DayPlanLayoutMode): string {
   if (mode === 'spine') {
-    return '집중 구간과 루틴별 시간을 정한 뒤 적용을 켜면 타임라인 보기에 반영돼요.';
+    return '이 보기는 현재 점검을 위해 잠시 숨겨져 있어요.';
   }
   if (mode === 'sections') {
     return '항목마다 새벽·아침·점심·저녁·밤을 고른 뒤 적용을 켜면 시간대 보기에 반영돼요.';
   }
-  return '그룹·항목을 정리한 뒤 적용을 켜면 목록 보기에 반영돼요. 시간·시간대는 타임라인·시간대 모드에서 맞춰요.';
+  return '그룹·항목을 정리한 뒤 적용을 켜면 목록 보기에 반영돼요. 세부 시간대는 시간대 보기에서 맞춰요.';
 }
 
 function sectionHintText(
@@ -138,7 +138,7 @@ function sectionHintText(
   }
   if (section === 'scheduled' || section === 'custom') {
     if (layoutMode === 'spine') {
-      return '항목별 시간을 정한 뒤 적용을 켜면 타임라인 보기에 반영돼요.';
+      return '이 보기는 현재 점검을 위해 잠시 숨겨져 있어요.';
     }
     if (layoutMode === 'sections') {
       return '항목마다 시간대를 고른 뒤 적용을 켜면 시간대 보기에 반영돼요.';

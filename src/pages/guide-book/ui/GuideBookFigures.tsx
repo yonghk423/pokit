@@ -30,7 +30,6 @@ const MODE_BUTTONS = [
 const LAYOUT_TABS = [
   { key: 'bag', icon: 'list.bullet.rectangle', label: '목록', n: 1 },
   { key: 'sections', icon: 'sun.horizon.fill', label: '시간대', n: 2 },
-  { key: 'spine', icon: 'clock', label: '타임라인', n: 3 },
 ] as const;
 
 type Tone = {
@@ -161,7 +160,7 @@ function LayoutIcons({
   showBadges,
 }: {
   tone: Tone;
-  active?: 'bag' | 'sections' | 'spine';
+  active?: 'bag' | 'sections';
   showBadges?: boolean;
 }) {
   const pill = tabPillColors(tone.isDark);
@@ -617,8 +616,7 @@ function FigureMyRoutineApply({ tone }: { tone: Tone }) {
   const rows = [
     { n: 1, icon: 'list.bullet.rectangle' as const, t: '목록 — 그룹·항목 정리' },
     { n: 2, icon: 'sun.horizon.fill' as const, t: '시간대 — 새벽~밤 · 시작 알림' },
-    { n: 3, icon: 'clock' as const, t: '타임라인 — 집중 구간 · 시작·종료 · 시작 알림' },
-    { n: 4, icon: 'plus' as const, t: '항목 켜기 · 새 항목 추가' },
+    { n: 3, icon: 'plus' as const, t: '항목 켜기 · 새 항목 추가' },
   ];
   return (
     <PhoneShell tone={tone} tabActive="mine">

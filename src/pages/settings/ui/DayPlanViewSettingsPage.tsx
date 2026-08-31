@@ -21,7 +21,7 @@ const MODE_OPTIONS: {
   key: DayPlanLayoutMode;
   label: string;
   desc: string;
-  icon: 'list.bullet.rectangle' | 'sun.horizon.fill' | 'clock';
+  icon: 'list.bullet.rectangle' | 'sun.horizon.fill';
 }[] = [
   {
     key: 'bag',
@@ -34,12 +34,6 @@ const MODE_OPTIONS: {
     label: '시간대',
     desc: '새벽·아침·점심·저녁·밤 구간으로 나눠 봐요.',
     icon: 'sun.horizon.fill',
-  },
-  {
-    key: 'spine',
-    label: '타임라인',
-    desc: '하루 시간 흐름에 맞춰 배치해 봐요.',
-    icon: 'clock',
   },
 ];
 

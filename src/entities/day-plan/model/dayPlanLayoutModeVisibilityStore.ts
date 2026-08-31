@@ -29,6 +29,7 @@ export const useDayPlanLayoutModeVisibilityStore = create<DayPlanLayoutModeVisib
       set({ visibility: loadDayPlanLayoutModeVisibility() });
     },
     setModeVisible: (mode, visible) => {
+      if (mode === 'spine') return;
       const current = get().visibility;
       const next = { ...current, [mode]: visible };
       const enabledCount = (['bag', 'sections', 'spine'] as const).filter((key) => next[key]).length;

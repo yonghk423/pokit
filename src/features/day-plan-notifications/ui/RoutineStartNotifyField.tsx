@@ -135,7 +135,7 @@ export function RoutineStartNotifyField({
         : '목록 모드에서는 아래에서 시작 시간을 직접 정해 주세요.';
     }
     if (!canResolve) {
-      return '나만의 루틴에서 시작 시간(타임라인·시간대)을 정하면 그 시각에 알려 드려요.';
+      return '나만의 루틴에서 시작 시간(시간대)을 정하면 그 시각에 알려 드려요.';
     }
     const slots = collectRoutineStartNotifySlots({
       enabledCategoryKeys: [categoryKey],
@@ -205,7 +205,7 @@ export function RoutineStartNotifyField({
       } else if (next && !canResolve) {
         Alert.alert(
           '시작 알림',
-          '루틴 시작 시간이 아직 없어요. 나만의 루틴에서 타임라인 또는 시간대를 정해 주세요.',
+          '루틴 시작 시간이 아직 없어요. 나만의 루틴에서 시간대를 정해 주세요.',
         );
         return;
       }

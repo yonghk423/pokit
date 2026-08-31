@@ -3,8 +3,8 @@ import { Animated, StyleSheet, View } from 'react-native';
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
-/** 데이플랜 레이아웃 탭과 동일한 3아이콘 — 목록 / 시간대 / 타임라인 */
-const CYCLE_ICONS = ['list.bullet.rectangle', 'sun.horizon.fill', 'clock'] as const;
+/** 데이플랜 레이아웃 탭과 동일한 2아이콘 — 목록 / 시간대 */
+const CYCLE_ICONS = ['list.bullet.rectangle', 'sun.horizon.fill'] as const;
 
 const HOLD_MS = 2200;
 const FADE_MS = 550;
@@ -14,7 +14,7 @@ type Props = {
   color: string;
 };
 
-/** 목록·시간대·타임라인 아이콘을 천천히 페이드하며 순환 */
+/** 목록·시간대 아이콘을 천천히 페이드하며 순환 */
 export function DayCycleEmojiMark({ size = 22, color }: Props) {
   const [index, setIndex] = useState(0);
   const opacity = useRef(new Animated.Value(1)).current;
@@ -53,7 +53,7 @@ export function DayCycleEmojiMark({ size = 22, color }: Props) {
   }, [opacity]);
 
   return (
-    <View style={styles.wrap} accessibilityLabel="목록·시간대·타임라인 순환 아이콘">
+    <View style={styles.wrap} accessibilityLabel="목록·시간대 순환 아이콘">
       <Animated.View style={{ opacity }}>
         <IconSymbol name={CYCLE_ICONS[index]} size={size} color={color} />
       </Animated.View>

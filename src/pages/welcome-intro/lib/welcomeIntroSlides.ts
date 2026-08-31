@@ -20,7 +20,7 @@ export const WELCOME_INTRO_SLIDES: readonly WelcomeIntroSlide[] = [
   {
     id: 'today',
     title: '오늘은 담아 두고 이어가요',
-    body: '오늘 할 루틴을 모아 두고, 목록·시간대·타임라인처럼 편한 방식으로 하루를 볼 수 있어요.',
+    body: '오늘 할 루틴을 모아 두고, 목록·시간대처럼 편한 방식으로 하루를 볼 수 있어요.',
   },
   {
     id: 'routines',
