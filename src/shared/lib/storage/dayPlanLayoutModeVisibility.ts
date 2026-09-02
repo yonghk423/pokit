@@ -9,7 +9,8 @@ export type DayPlanLayoutModeVisibility = Record<DayPlanLayoutMode, boolean>;
 
 export const DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY: DayPlanLayoutModeVisibility = {
   bag: true,
-  sections: true,
+  // 시간대(sections) 모드는 잠정 유보 — UI에서만 숨김, 로직은 보존
+  sections: false,
   spine: false,
 };
 
@@ -43,8 +44,9 @@ export function normalizeDayPlanLayoutModeVisibility(raw: unknown): DayPlanLayou
   for (const mode of MODE_ORDER) {
     if (typeof o[mode] === 'boolean') base[mode] = o[mode];
   }
-  // 타임라인(spine) 기능은 임시 비활성화 상태로 강제한다.
+  // 타임라인(spine)·시간대(sections) 기능은 임시 비활성화 상태로 강제한다.
   base.spine = false;
+  base.sections = false;
   const enabledCount = MODE_ORDER.filter((mode) => base[mode]).length;
   if (enabledCount === 0) return { ...DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY };
   return base;

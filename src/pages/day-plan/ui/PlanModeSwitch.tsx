@@ -21,7 +21,6 @@ const MODE_BUTTONS: ModeButton[] = [
   { mode: 'priority', icon: 'list.bullet.rectangle', label: '데일리' },
   { mode: 'quickMemo', icon: 'note.text', label: '잠금화면 메모' },
   { mode: 'dayNote', icon: 'square.and.pencil', label: '노트' },
-  { mode: 'todoList', icon: 'checklist', label: '투두' },
   { mode: 'reading', icon: 'book.closed.fill', label: '독서' },
 ];
 
@@ -89,7 +88,8 @@ export function PlanModeSwitch({
           ]}>
           <View style={styles.leftButtonGroup}>
             {MODE_BUTTONS.map((btn) => {
-              const active = planMode === btn.mode;
+              const active =
+                planMode === btn.mode || (btn.mode === 'priority' && planMode === 'todoList');
               return (
                 <Pressable
                   key={btn.mode}

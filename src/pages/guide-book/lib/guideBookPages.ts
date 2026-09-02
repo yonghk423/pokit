@@ -42,7 +42,7 @@ export const GUIDE_BOOK_PAGES: readonly GuideBookPage[] = [
     lead: '화면 아래에 다섯 개의 아이콘 탭이 있어요. 글자 라벨 없이 아이콘만 보이며, 순서와 역할은 아래와 같아요.',
     figureId: 'tabs-map',
     callouts: [
-      { n: 1, label: '오늘', detail: '오늘 할 루틴을 담고, 집중 구간 안에서 목록·시간대로 보는 메인 화면이에요.' },
+      { n: 1, label: '오늘', detail: '오늘 할 루틴을 담고, 집중 구간 안에서 목록으로 보는 메인 화면이에요.' },
       { n: 2, label: '루틴', detail: '루틴과 묶음을 만들고 정리하는 관리 화면이에요. 오늘에 바로 적용하는 곳이 아니에요.' },
       { n: 3, label: '나만의 루틴', detail: '그룹을 모아 두고 「적용하기」로 오늘 담기에 반영하는 화면이에요.' },
       { n: 4, label: '히스토리', detail: '완료한 루틴을 주간·월간으로 모아 봐요.' },
@@ -59,9 +59,8 @@ export const GUIDE_BOOK_PAGES: readonly GuideBookPage[] = [
       { n: 1, label: '데일리', detail: '오늘 담기·집중의 기본 화면으로 돌아와요.' },
       { n: 2, label: '잠금화면 메모', detail: '잠금화면에 표시할 짧은 메모를 적어요.' },
       { n: 3, label: '노트', detail: '노트 문서를 작성해요. 입력한 내용은 자동으로 저장돼요.' },
-      { n: 4, label: '투두', detail: '할 일을 빠르게 추가하고 중요도·완료를 다뤄요.' },
-      { n: 5, label: '독서', detail: '독서(서재) 설정을 바로 편집해요.' },
-      { n: 6, label: '설정', detail: '시작·마무리, 사용 설명서, 알림, 오늘 탭 보기, 화면 테마, 문의, 데이터 초기화로 가요.' },
+      { n: 4, label: '독서', detail: '독서(서재) 설정을 바로 편집해요.' },
+      { n: 5, label: '설정', detail: '시작·마무리, 사용 설명서, 알림, 오늘 탭 보기, 화면 테마, 문의, 데이터 초기화로 가요.' },
     ],
     notes: ['스토리 탭에는 이 상단 모드 줄이 없어요.'],
   },
@@ -69,11 +68,16 @@ export const GUIDE_BOOK_PAGES: readonly GuideBookPage[] = [
     id: 'today-overview',
     chapter: '오늘 탭',
     title: '오늘 탭 화면',
-    lead: '오늘 집중할 루틴을 담아 두고, 집중 구간 안에서 목록·시간대로 보는 화면이에요.',
+    lead: '오늘 집중할 루틴을 담아 두고, 집중 구간 안에서 목록으로 보는 화면이에요.',
     figureId: 'today-overview',
     callouts: [
       { n: 1, label: '날짜·집중 구간', detail: '오늘 날짜와 하루 시작~마무리(집중 구간)가 보여요. 구간 시각을 누르면 바꿀 수 있어요.' },
-      { n: 2, label: '보기 전환', detail: '목록 / 시간대 아이콘으로 같은 담기를 다른 방식으로 봐요. 설정 → 오늘 탭 보기에서 숨길 수도 있어요.' },
+      {
+        n: 2,
+        label: '목록 · 투두',
+        detail:
+          '헤더 오른쪽에 목록 아이콘과 투두 아이콘이 있어요. 투두를 누르면 할 일 화면으로 바로 갈 수 있어요.',
+      },
       { n: 3, label: '담기 영역', detail: '비어 있으면 「담기 목록이 비어 있어요」「오늘 할 루틴을 추가해 주세요」와 「루틴 추가」가 보여요.' },
       { n: 4, label: '하단 「오늘」탭', detail: '달력 아이콘이 선택된 상태예요.' },
     ],
@@ -97,16 +101,15 @@ export const GUIDE_BOOK_PAGES: readonly GuideBookPage[] = [
   {
     id: 'today-layouts',
     chapter: '오늘 탭',
-    title: '목록 · 시간대',
-    lead: '보기만 바뀌고, 담는 일은 같아요.',
+    title: '목록 보기',
+    lead: '담은 루틴을 한 줄 목록으로 봐요.',
     figureId: 'today-layouts',
     callouts: [
       { n: 1, label: '목록', detail: '담은 루틴을 한 줄 목록으로 봐요. 「루틴 추가」「루틴 더 추가」로 담아요.' },
       {
         n: 2,
-        label: '시간대',
-        detail:
-          '새벽·아침·점심·저녁·밤으로 나눠 봐요. 구간마다 「루틴 연결」이 있어요. 구간 시각을 누르면 시간대 스케줄을 바꿔요.',
+        label: '투두 바로가기',
+        detail: '목록 아이콘 오른쪽 투두 아이콘을 누르면 할 일 화면으로 바로 이동해요.',
       },
     ],
   },
@@ -203,7 +206,7 @@ export const GUIDE_BOOK_PAGES: readonly GuideBookPage[] = [
         n: 1,
         label: '보기',
         detail:
-          '오늘 탭과 같은 목록·시간대를 써요. 여기서 바꾸면 오늘 탭 보기도 함께 바뀌고, 적용은 보기마다 따로 기억돼요.',
+          '오늘 탭과 같은 목록 보기를 써요. 여기서 바꾸면 오늘 탭 보기도 함께 바뀌고, 적용은 보기마다 따로 기억돼요.',
       },
       { n: 2, label: '나만의 루틴', detail: '직접 만든 그룹이에요. 「그룹 추가」로 늘려요.' },
       {
@@ -223,22 +226,17 @@ export const GUIDE_BOOK_PAGES: readonly GuideBookPage[] = [
   {
     id: 'my-routine-apply',
     chapter: '나만의 루틴 탭',
-    title: '적용하기와 시간',
-    lead: '보기(목록·시간대)마다 맞추는 값이 달라요. 맞춘 뒤 그룹의 「적용하기」를 누르면 오늘 담기에 반영돼요.',
+    title: '적용하기',
+    lead: '그룹·항목을 정리한 뒤 「적용하기」를 누르면 오늘 담기에 반영돼요.',
     figureId: 'my-routine-apply',
     callouts: [
       {
         n: 1,
         label: '목록',
-        detail: '그룹·항목만 정리한 뒤 적용해요. 시간·시간대는 다른 보기에서 맞춰요.',
+        detail: '그룹·항목을 정리한 뒤 적용해요.',
       },
       {
         n: 2,
-        label: '시간대',
-        detail: '새벽~밤 중 어디에 둘지 고르고, 필요하면 시작 알림도 켠 뒤 적용해요.',
-      },
-      {
-        n: 3,
         label: '항목 켜기·추가',
         detail: '스위치로 넣을 항목을 고르고, 「새 항목 추가」로 구성해요.',
       },
@@ -303,7 +301,7 @@ export const GUIDE_BOOK_PAGES: readonly GuideBookPage[] = [
       {
         n: 4,
         label: '오늘 탭 보기 · 화면 테마',
-        detail: '목록·시간대 표시 on/off와 라이트/다크를 바꿔요.',
+        detail: '목록 보기와 라이트/다크를 바꿔요.',
       },
       {
         n: 5,
@@ -324,7 +322,7 @@ export type GuideBookTocSection = {
 const CHAPTER_META: Record<string, { icon: string; subtitle: string }> = {
   POKIT: { icon: 'calendar', subtitle: '하단 다섯 탭의 역할' },
   공통: { icon: 'gearshape', subtitle: '상단 모드와 설정' },
-  '오늘 탭': { icon: 'calendar', subtitle: '목록 · 시간대 · 집중' },
+  '오늘 탭': { icon: 'calendar', subtitle: '목록 · 집중' },
   '루틴 탭': { icon: 'list.bullet.rectangle', subtitle: '만들기 · 관리 · 템플릿' },
   '나만의 루틴 탭': { icon: 'figure.walk', subtitle: '그룹 적용하기' },
   '히스토리 탭': { icon: 'clock.arrow.circlepath', subtitle: '주간 · 월간 기록' },

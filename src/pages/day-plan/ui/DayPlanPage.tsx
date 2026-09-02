@@ -74,7 +74,6 @@ import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
 import { ReadingPlanSection } from './ReadingPlanSection';
-import { TodoListPlanSection } from './TodoListPlanSection';
 
 export function DayPlanPage({
   renderRoutineInlineSettings,
@@ -803,21 +802,6 @@ export function DayPlanPage({
             <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
               <DayNotePlanSection c={c} isDark={isDark} />
             </View>
-          ) : planMode === 'todoList' ? (
-            <ScrollView
-              style={[styles.scroll, { backgroundColor: shellBg }]}
-              contentContainerStyle={[
-                styles.scrollContent,
-                {
-                  paddingBottom: scrollContentBottomPad,
-                  flexGrow: 1,
-                },
-              ]}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="always"
-              keyboardDismissMode="on-drag">
-              <TodoListPlanSection c={c} isDark={isDark} />
-            </ScrollView>
           ) : planMode === 'reading' ? (
             <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
               <ReadingPlanSection c={c} isDark={isDark} />
@@ -846,6 +830,9 @@ export function DayPlanPage({
                 layoutMode={effectiveLayoutMode}
                 onSelectLayoutMode={onSelectLayoutMode}
                 visibleLayoutModes={visibleLayoutModes}
+                showTodoList={planMode === 'todoList'}
+                onPressTodoList={() => setPlanMode('todoList')}
+                onExitTodoList={() => setPlanMode('priority')}
               />
             </View>
           )}

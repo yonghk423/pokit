@@ -29,7 +29,8 @@ export const useDayPlanLayoutModeVisibilityStore = create<DayPlanLayoutModeVisib
       set({ visibility: loadDayPlanLayoutModeVisibility() });
     },
     setModeVisible: (mode, visible) => {
-      if (mode === 'spine') return;
+      // 시간대(sections)·타임라인(spine) 모드는 잠정 유보 — UI 토글 차단
+      if (mode === 'spine' || mode === 'sections') return;
       const current = get().visibility;
       const next = { ...current, [mode]: visible };
       const enabledCount = (['bag', 'sections', 'spine'] as const).filter((key) => next[key]).length;

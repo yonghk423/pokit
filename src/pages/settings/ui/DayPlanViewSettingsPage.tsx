@@ -29,12 +29,13 @@ const MODE_OPTIONS: {
     desc: '담은 루틴을 한 목록으로 봐요.',
     icon: 'list.bullet.rectangle',
   },
-  {
-    key: 'sections',
-    label: '시간대',
-    desc: '새벽·아침·점심·저녁·밤 구간으로 나눠 봐요.',
-    icon: 'sun.horizon.fill',
-  },
+  // 시간대(sections) 모드는 잠정 유보 — UI에서만 숨김, 로직은 보존
+  // {
+  //   key: 'sections',
+  //   label: '시간대',
+  //   desc: '새벽·아침·점심·저녁·밤 구간으로 나눠 봐요.',
+  //   icon: 'sun.horizon.fill',
+  // },
 ];
 
 /** 설정 → 오늘 탭에서 쓸 보기 방식 on/off */

@@ -11,6 +11,14 @@ import type { DayPlanPalette } from '../lib/dayPlanPalette';
 /** 데일리 타임라인 헤더 — 전체 / 시간대별 / 스파인 레이아웃 */
 export type DayPlanLayoutMode = 'bag' | 'sections' | 'spine';
 
+export type DayPlanHeaderSuffixTab = {
+  key: string;
+  icon: string;
+  active: boolean;
+  onPress: () => void;
+  accessibilityLabel: string;
+};
+
 type TabDef = {
   key: DayPlanLayoutMode;
   icon: string;
@@ -41,7 +49,8 @@ const TABS: TabDef[] = [
   },
 ];
 
-const ENABLED_LAYOUT_MODES: readonly DayPlanLayoutMode[] = ['bag', 'sections'];
+// 시간대(sections) 모드는 잠정 유보 — UI에서만 숨김, 로직은 보존
+const ENABLED_LAYOUT_MODES: readonly DayPlanLayoutMode[] = ['bag'];
 
 const SHADOW_SM = 2;
 
@@ -61,6 +70,10 @@ type Props = {
    * showLabels 와 함께 쓸 때 루틴 목록 세그먼트와 동일한 톤.
    */
   attached?: boolean;
+  /** false면 목록 등 레이아웃 탭을 비활성 톤으로 — 투두 등 다른 헤더 뷰 선택 시 */
+  layoutTabActive?: boolean;
+  /** 목록 탭 오른쪽 추가 아이콘(투두 등) — 레이아웃 탭과 동일 pill 스타일 */
+  suffixTabs?: readonly DayPlanHeaderSuffixTab[];
 };
 
 /** 오늘·나만의 루틴 — 레이아웃 모드 전환 */
@@ -73,14 +86,17 @@ export function DayPlanLayoutModeTabs({
   allowReselect = false,
   showLabels = false,
   attached = false,
+  layoutTabActive = true,
+  suffixTabs,
 }: Props) {
   const pill = tabPillColors(isDark);
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const tabs = TABS.filter((item) => ENABLED_LAYOUT_MODES.includes(item.key)).filter((item) =>
     visibleModes ? visibleModes.includes(item.key) : true,
   );
+  const suffix = suffixTabs ?? [];
 
-  if (tabs.length === 0) return null;
+  if (tabs.length === 0 && suffix.length === 0) return null;
 
   if (attached && showLabels) {
     const border = tone.border;
@@ -150,7 +166,7 @@ export function DayPlanLayoutModeTabs({
   return (
     <View style={[styles.root, showLabels && styles.rootLabeled]}>
       {tabs.map((item) => {
-        const active = mode === item.key;
+        const active = layoutTabActive && mode === item.key;
         const label = DAY_PLAN_LAYOUT_MODE_LABELS_KO[item.key];
         return (
           <Pressable
@@ -200,6 +216,33 @@ export function DayPlanLayoutModeTabs({
           </Pressable>
         );
       })}
+      {suffix.map((item) => (
+        <Pressable
+          key={item.key}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: item.active }}
+          accessibilityLabel={item.accessibilityLabel}
+          onPress={() => {
+            if (item.active) return;
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            item.onPress();
+          }}
+          style={({ pressed }) => [
+            styles.tab,
+            {
+              backgroundColor: item.active ? pill.activeBg : pill.inactiveBg,
+              borderColor: item.active ? pill.activeBorder : pill.inactiveBorder,
+              borderWidth: item.active ? 2 : 1,
+            },
+            pressed && !item.active && styles.pressed,
+          ]}>
+          <IconSymbol
+            name={item.icon as 'checklist'}
+            size={15}
+            color={item.active ? pill.activeIcon : pill.inactiveIcon}
+          />
+        </Pressable>
+      ))}
     </View>
   );
 }

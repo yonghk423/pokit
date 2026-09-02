@@ -22,14 +22,13 @@ const MODE_BUTTONS = [
   { icon: 'list.bullet.rectangle', label: '데일리', n: 1 },
   { icon: 'note.text', label: '잠금화면 메모', n: 2 },
   { icon: 'square.and.pencil', label: '노트', n: 3 },
-  { icon: 'checklist', label: '투두', n: 4 },
-  { icon: 'book.closed.fill', label: '독서', n: 5 },
+  { icon: 'book.closed.fill', label: '독서', n: 4 },
 ] as const;
 
-/** `DayPlanLayoutModeTabs` 와 동일 */
-const LAYOUT_TABS = [
+/** 오늘 탭 헤더 — 목록 + 투두 바로가기 */
+const HEADER_SHORTCUTS = [
   { key: 'bag', icon: 'list.bullet.rectangle', label: '목록', n: 1 },
-  { key: 'sections', icon: 'sun.horizon.fill', label: '시간대', n: 2 },
+  { key: 'todo', icon: 'checklist', label: '투두', n: 2 },
 ] as const;
 
 type Tone = {
@@ -141,7 +140,7 @@ function ModeRow({
         })}
       </View>
       <View style={styles.modeHitWrap}>
-        {showBadges ? <Badge n={6} tone={tone} /> : null}
+        {showBadges ? <Badge n={5} tone={tone} /> : null}
         <View
           style={[
             styles.modeHit,
@@ -154,20 +153,18 @@ function ModeRow({
   );
 }
 
-function LayoutIcons({
+function HeaderShortcuts({
   tone,
-  active = 'bag',
   showBadges,
 }: {
   tone: Tone;
-  active?: 'bag' | 'sections';
   showBadges?: boolean;
 }) {
   const pill = tabPillColors(tone.isDark);
   return (
     <View style={styles.layoutRow}>
-      {LAYOUT_TABS.map((item) => {
-        const on = item.key === active;
+      {HEADER_SHORTCUTS.map((item) => {
+        const on = item.key === 'bag';
         return (
           <View key={item.key} style={styles.layoutHitWrap}>
             {showBadges ? <Badge n={item.n} tone={tone} /> : null}
@@ -186,9 +183,11 @@ function LayoutIcons({
                 color={on ? pill.activeIcon : pill.inactiveIcon}
               />
             </View>
-            <ThemedText style={[styles.layoutLabel, { color: tone.muted }, cityPopFont('600')]}>
-              {item.label}
-            </ThemedText>
+            {showBadges ? (
+              <ThemedText style={[styles.layoutLabel, { color: tone.muted }, cityPopFont('600')]}>
+                {item.label}
+              </ThemedText>
+            ) : null}
           </View>
         );
       })}
@@ -241,7 +240,7 @@ function FigureChromeModes({ tone }: { tone: Tone }) {
       <ModeRow tone={tone} showBadges />
       <View style={styles.centerHint}>
         <ThemedText style={[styles.hintBody, { color: tone.muted }, cityPopFont('500')]}>
-          상단은 데일리·메모·노트·투두·독서 + 설정이에요.
+          상단은 데일리·메모·노트·독서 + 설정이에요.
         </ThemedText>
       </View>
       <View style={styles.tabBarPad}>
@@ -273,7 +272,7 @@ function FigureTodayOverview({ tone }: { tone: Tone }) {
           </View>
           <View>
             <Badge n={2} tone={tone} />
-            <LayoutIcons tone={tone} />
+            <HeaderShortcuts tone={tone} />
           </View>
         </View>
       </View>
@@ -374,13 +373,13 @@ function FigureTodayLayouts({ tone }: { tone: Tone }) {
   return (
     <View style={[styles.phone, { borderColor: tone.border, backgroundColor: tone.bg, padding: 12 }]}>
       <ThemedText style={[styles.hintTitle, { color: tone.text }, cityPopFont('800')]}>
-        보기 전환 아이콘
+        목록 · 투두
       </ThemedText>
       <ThemedText style={[styles.hintBody, { color: tone.muted }, cityPopFont('500')]}>
         오늘 탭 헤더 오른쪽과 같은 아이콘이에요.
       </ThemedText>
       <View style={{ height: 10 }} />
-      <LayoutIcons tone={tone} showBadges />
+      <HeaderShortcuts tone={tone} showBadges />
     </View>
   );
 }
@@ -558,7 +557,7 @@ function FigureMyRoutine({ tone }: { tone: Tone }) {
     <PhoneShell tone={tone} tabActive="mine">
       <View style={styles.layoutMiniRow}>
         <Badge n={1} tone={tone} />
-        <LayoutIcons tone={tone} />
+        <HeaderShortcuts tone={tone} />
       </View>
       <View style={styles.subTabs}>
         <View style={{ position: 'relative' }}>
@@ -615,8 +614,7 @@ function FigureMyRoutine({ tone }: { tone: Tone }) {
 function FigureMyRoutineApply({ tone }: { tone: Tone }) {
   const rows = [
     { n: 1, icon: 'list.bullet.rectangle' as const, t: '목록 — 그룹·항목 정리' },
-    { n: 2, icon: 'sun.horizon.fill' as const, t: '시간대 — 새벽~밤 · 시작 알림' },
-    { n: 3, icon: 'plus' as const, t: '항목 켜기 · 새 항목 추가' },
+    { n: 2, icon: 'plus' as const, t: '항목 켜기 · 새 항목 추가' },
   ];
   return (
     <PhoneShell tone={tone} tabActive="mine">

@@ -123,6 +123,7 @@ import {
   type RoutinePickerConfirmItem,
 } from './PriorityRoutinePickerSheet';
 import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
+import { TodoListPlanSection } from './TodoListPlanSection';
 
 function resolveCatalogGroupKeyForPersist(raw: string): string {
   const t = typeof raw === 'string' ? raw.trim() : '';
@@ -354,6 +355,12 @@ type Props = {
   layoutMode: DayPlanLayoutMode;
   onSelectLayoutMode: (mode: DayPlanLayoutMode) => void;
   visibleLayoutModes?: readonly DayPlanLayoutMode[];
+  /** true면 헤더는 유지하고 본문만 투두 리스트로 표시 */
+  showTodoList?: boolean;
+  /** 헤더 목록 아이콘 — 투두에서 담기 목록으로 복귀 */
+  onExitTodoList?: () => void;
+  /** 헤더 레이아웃 탭 옆 투두 아이콘 — 탭하면 todoList 모드로 전환 */
+  onPressTodoList?: () => void;
 };
 
 /* ─── 메인 ─── */
@@ -380,6 +387,9 @@ export function PriorityBasedPlanSection({
   layoutMode,
   onSelectLayoutMode,
   visibleLayoutModes,
+  showTodoList = false,
+  onExitTodoList,
+  onPressTodoList,
 }: Props) {
   const router = useRouter();
   useEffect(() => {
@@ -916,6 +926,33 @@ export function PriorityBasedPlanSection({
     setMealSlotScheduleFocusSlot(slot ?? null);
     setMealSlotScheduleSheetOpen(true);
   }, []);
+
+  const handleHeaderLayoutModeSelect = useCallback(
+    (mode: DayPlanLayoutMode) => {
+      if (showTodoList && mode === 'bag') {
+        onExitTodoList?.();
+        return;
+      }
+      onSelectLayoutMode(mode);
+    },
+    [onExitTodoList, onSelectLayoutMode, showTodoList],
+  );
+
+  const headerSuffixTabs = useMemo(
+    () =>
+      onPressTodoList
+        ? [
+            {
+              key: 'todo',
+              icon: 'checklist',
+              active: showTodoList,
+              onPress: onPressTodoList,
+              accessibilityLabel: '투두 리스트',
+            },
+          ]
+        : [],
+    [onPressTodoList, showTodoList],
+  );
 
   const alertSpineBlockSaveError = useCallback(
     (action: 'add' | 'update', reason: string) => {
@@ -2400,17 +2437,19 @@ export function PriorityBasedPlanSection({
                   </>
                 )}
               </View>
-              {(visibleLayoutModes?.length ?? 3) > 0 ? (
-                <View style={styles.priorityTimelineHeaderActions}>
+              <View style={styles.priorityTimelineHeaderActions}>
+                {(visibleLayoutModes?.length ?? 3) > 0 || headerSuffixTabs.length > 0 ? (
                   <DayPlanLayoutModeTabs
                     mode={layoutMode}
-                    onSelectMode={onSelectLayoutMode}
+                    onSelectMode={handleHeaderLayoutModeSelect}
                     c={c}
                     isDark={isDark}
                     visibleModes={visibleLayoutModes}
+                    layoutTabActive={!showTodoList}
+                    suffixTabs={headerSuffixTabs}
                   />
-                </View>
-              ) : null}
+                ) : null}
+              </View>
             </View>
             <ScrollView
               ref={priorityTimelineScrollRef}
@@ -2423,7 +2462,11 @@ export function PriorityBasedPlanSection({
                 { paddingBottom: TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM },
               ]}
               keyboardShouldPersistTaps="handled">
-              {layoutMode === 'sections' ? (
+              {showTodoList ? (
+                <View style={styles.todoListBody}>
+                  <TodoListPlanSection c={c} isDark={isDark} embedded />
+                </View>
+              ) : layoutMode === 'sections' ? (
                 <MealSlotTimelineView
                   sections={mealSlotTimelineSections}
                   palette={spineTimelinePalette}
@@ -3013,6 +3056,11 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingTop: 2,
     marginLeft: 4,
+  },
+  todoListBody: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   priorityTimelineScroll: {
     flex: 1,
