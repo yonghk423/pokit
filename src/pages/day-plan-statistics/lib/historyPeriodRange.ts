@@ -22,6 +22,9 @@ export function formatMonthLabelKo(monthPrefix: string, locale?: AppLocale): str
   if (loc === 'ko') {
     return `${year}년 ${month}월`;
   }
+  if (loc === 'ja') {
+    return `${year}年${month}月`;
+  }
   const date = new Date(year, month - 1, 1);
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }

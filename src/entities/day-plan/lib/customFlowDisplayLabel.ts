@@ -9,7 +9,13 @@ import { getInitialOtherDataConfig, normalizeOtherDetailConfig } from './goalCat
 export function isInternalAutoRoutineLabel(label: string): boolean {
   const trimmed = label.trim();
   if (!trimmed) return false;
-  if (trimmed === '루틴' || trimmed === t('category.routineFallback', 'en')) return true;
+  if (
+    trimmed === '루틴' ||
+    trimmed === t('category.routineFallback', 'en') ||
+    trimmed === t('category.routineFallback', 'ja')
+  ) {
+    return true;
+  }
   if (/^루틴 preset_/i.test(trimmed)) return true;
   if (/^루틴 [a-f0-9_-]{4,}$/i.test(trimmed)) return true;
   return false;
@@ -21,7 +27,12 @@ function resolveStoredOrBuiltinLabel(categoryKey: string, displayName: string): 
   const localizedDefault = getBuiltinFlowDefaultLabel(categoryKey, locale);
 
   if (displayName.length > 0) {
-    if (koDefault && displayName === koDefault && localizedDefault && locale === 'en') {
+    if (
+      koDefault &&
+      displayName === koDefault &&
+      localizedDefault &&
+      (locale === 'en' || locale === 'ja')
+    ) {
       return localizedDefault;
     }
     return displayName;

@@ -39,9 +39,41 @@ const BUILTIN_FLOW_EN: Record<string, string> = {
   'customFlow:builtin_mind_detox': 'Digital detox',
 };
 
+const BUILTIN_FLOW_JA: Record<string, string> = {
+  'customFlow:preset_daily_bed': 'ベッドを整える',
+  'customFlow:preset_daily_clean': '掃除',
+  'customFlow:preset_daily_laundry': '洗濯',
+  'customFlow:preset_daily_wash': '洗顔・身支度',
+  'customFlow:preset_daily_recycle': '分別・リサイクル',
+  'customFlow:preset_daily_exercise': '運動',
+  'customFlow:preset_daily_shopping': '買い物',
+  'customFlow:preset_abstain': '禁止',
+  'customFlow:preset_stretching': 'ストレッチ',
+  'customFlow:preset_intermittent_fasting': '間歇断食',
+  'customFlow:preset_good_posture': '姿勢を正す',
+  'customFlow:builtin_hobby_draw': 'デッサン練習',
+  'customFlow:builtin_hobby_guitar': 'ギター練習',
+  'customFlow:builtin_hobby_photo': '写真撮影',
+  'customFlow:builtin_hobby_cooking': '料理実験',
+  'customFlow:builtin_hobby_hiking': '登山・トレッキング',
+  'customFlow:builtin_family_call': '家族に電話',
+  'customFlow:builtin_family_friends': '友達と会う',
+  'customFlow:builtin_family_parents': '親の安否確認',
+  'customFlow:builtin_family_community': 'コミュニティ参加',
+  'customFlow:builtin_family_partner': 'パートナーとの時間',
+  'customFlow:builtin_mind_gratitude': '感謝日記',
+  'customFlow:builtin_mind_pledge': '今日の誓い',
+  'customFlow:builtin_mind_nap': '昼寝・パワーナップ',
+  'customFlow:builtin_mind_music': '音楽鑑賞',
+  'customFlow:builtin_mind_detox': 'デジタルデトックス',
+};
+
 export function getBuiltinFlowDefaultLabel(flowId: string, locale: AppLocale): string | null {
   if (locale === 'en') {
     return BUILTIN_FLOW_EN[flowId] ?? null;
+  }
+  if (locale === 'ja') {
+    return BUILTIN_FLOW_JA[flowId] ?? null;
   }
   return BUILTIN_FLOW_KO[flowId] ?? null;
 }

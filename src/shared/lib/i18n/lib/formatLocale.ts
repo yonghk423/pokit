@@ -24,9 +24,9 @@ export function formatMinuteOfDay(minutes: number, locale?: AppLocale): string {
 
 export function formatHhmmClock(hhmm: string, locale?: AppLocale): string {
   void locale;
-  const t = hhmm.trim();
-  if (t === '24:00') return 'AM 00:00';
-  const m = parseHHmmToMinutes(t);
+  const trimmed = hhmm.trim();
+  if (trimmed === '24:00') return 'AM 00:00';
+  const m = parseHHmmToMinutes(trimmed);
   if (m === null) return hhmm;
   return formatMinuteOfDay(m, locale);
 }
@@ -41,6 +41,9 @@ export function formatDateKeyDisplay(dateKey: string, locale?: AppLocale): strin
   const d = parseInt(m[3], 10);
   if (loc === 'ko') {
     return `${mo}월 ${d}일`;
+  }
+  if (loc === 'ja') {
+    return `${mo}月${d}日`;
   }
   const date = new Date(y, mo - 1, d);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -64,6 +67,9 @@ export function splitDateKeyCompact(
   if (loc === 'ko') {
     return { month: `${mo}월`, day: `${d}일` };
   }
+  if (loc === 'ja') {
+    return { month: `${mo}月`, day: `${d}日` };
+  }
   const date = new Date(y, mo - 1, d);
   return {
     month: date.toLocaleDateString('en-US', { month: 'short' }),
@@ -83,6 +89,10 @@ export function formatTimelineHeaderDate(dateKey: string, locale?: AppLocale): s
     const long = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
     return `${long[date.getDay()]}, ${mo}월 ${d}일`;
   }
+  if (loc === 'ja') {
+    const long = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+    return `${long[date.getDay()]}、${mo}月${d}日`;
+  }
   return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
@@ -90,6 +100,9 @@ export function formatWeekdayShort(date: Date, locale?: AppLocale): string {
   const loc = resolveLocale(locale);
   if (loc === 'ko') {
     return ['일', '월', '화', '수', '목', '금', '토'][date.getDay()] ?? '';
+  }
+  if (loc === 'ja') {
+    return ['日', '月', '火', '水', '木', '金', '土'][date.getDay()] ?? '';
   }
   return date.toLocaleDateString('en-US', { weekday: 'short' }).replace('.', '');
 }
@@ -101,13 +114,19 @@ export function formatWeekdayLabel(index: WeekdayIndex, locale?: AppLocale): str
   if (loc === 'ko') {
     return ({ 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' } as const)[index];
   }
+  if (loc === 'ja') {
+    return ({ 0: '日', 1: '月', 2: '火', 3: '水', 4: '木', 5: '金', 6: '土' } as const)[index];
+  }
   const base = new Date(2024, 0, 7 + index);
   return base.toLocaleDateString('en-US', { weekday: 'short' }).replace('.', '');
 }
 
 export type DayMealSlot = 'dawn' | 'morning' | 'lunch' | 'dinner' | 'night';
 
-const MEAL_SLOT_KEYS: Record<DayMealSlot, 'mealSlot.dawn' | 'mealSlot.morning' | 'mealSlot.lunch' | 'mealSlot.dinner' | 'mealSlot.night'> = {
+const MEAL_SLOT_KEYS: Record<
+  DayMealSlot,
+  'mealSlot.dawn' | 'mealSlot.morning' | 'mealSlot.lunch' | 'mealSlot.dinner' | 'mealSlot.night'
+> = {
   dawn: 'mealSlot.dawn',
   morning: 'mealSlot.morning',
   lunch: 'mealSlot.lunch',
