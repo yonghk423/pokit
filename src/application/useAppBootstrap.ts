@@ -33,6 +33,7 @@ import {
   addLocalNotificationResponseListener,
 } from '@shared/lib/notifications';
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
+import { useAppLocaleStore } from '@shared/lib/i18n';
 import {
   ensureDefaultPriorityCatalog,
   flushLocalStorageClientWrites,
@@ -62,6 +63,7 @@ export function useAppBootstrap() {
       await initLocalStorageClient();
       if (cancelled) return;
 
+      useAppLocaleStore.getState().hydrateFromDevice();
       ensureDefaultPriorityCatalog();
       // 「하루가 지나면 담기 유지」임시 비활성 — keep 잔존 설정이 롤오버에 영향을 주지 않도록 reset 고정
       savePriorityDayRollMode('reset');

@@ -4,6 +4,7 @@ import {
   resolveAppliedCustomFlowTemplateLabel,
   resolveCustomFlowTemplateKey,
 } from '@entities/day-plan';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -13,12 +14,15 @@ type Props = {
 };
 
 export function CustomFlowTemplateMetaPill({ dataConfig, ink, line }: Props) {
+  const { t } = useTranslation();
   const templateKey = resolveCustomFlowTemplateKey(dataConfig);
   const label = resolveAppliedCustomFlowTemplateLabel(templateKey);
 
   return (
     <View style={[styles.pill, { borderColor: line }]}>
-      <ThemedText style={[styles.text, { color: ink }]}>루틴 방식 · {label}</ThemedText>
+      <ThemedText style={[styles.text, { color: ink }]}>
+        {t('goalDetail.routineMode', { label })}
+      </ThemedText>
     </View>
   );
 }

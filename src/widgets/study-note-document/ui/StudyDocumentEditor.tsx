@@ -46,6 +46,7 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { cityPopFont, RetroFlatColors } from '@shared/config/retroFlat';
 import { pickImageFromLibrary } from '@shared/lib/media/pickImageFromLibrary';
 import { normalizeWebUrl, openWebLink } from '@shared/lib/url/openWebLink';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
@@ -533,6 +534,7 @@ function StudyDocumentBlockView({
   onOpenLink?: (url: string) => void;
   onBlockLayout?: (blockId: string, y: number) => void;
 }) {
+  const { t } = useTranslation();
   const [failedImageUri, setFailedImageUri] = useState<string | null>(null);
   const isFormattedParagraph = block.kind === 'paragraph' && Boolean(onEnterKey);
   const rowShellStyle = isListBlockKind(block.kind)
@@ -556,7 +558,7 @@ function StudyDocumentBlockView({
             onChangeText={(text) => onChangeBlock(block.id, { text })}
             onFocus={() => onFocusBlock(block.id)}
             inputAccessoryViewID={inputAccessoryViewID}
-            placeholder="제목"
+            placeholder={t('studyNote.titlePlaceholder')}
             placeholderTextColor="rgba(255,255,255,0.55)"
             style={[styles.headingPrimary, { fontSize: titleSize, color: '#fff' }]}
           />
@@ -614,10 +616,10 @@ function StudyDocumentBlockView({
                 onPress={addTableRow}
                 style={[styles.tableControlBtn, { borderColor: palette.outlineVariant }]}
                 accessibilityRole="button"
-                accessibilityLabel="행 추가"
+                accessibilityLabel={t('studyNote.addRow')}
               >
                 <IconSymbol name="plus" size={12} color={palette.onVariant} />
-                <ThemedText style={[styles.tableControlLabel, { color: palette.onVariant }]}>행 추가</ThemedText>
+                <ThemedText style={[styles.tableControlLabel, { color: palette.onVariant }]}>{t('studyNote.addRow')}</ThemedText>
               </Pressable>
             ) : null}
             {canAddCol ? (
@@ -625,10 +627,10 @@ function StudyDocumentBlockView({
                 onPress={addTableCol}
                 style={[styles.tableControlBtn, { borderColor: palette.outlineVariant }]}
                 accessibilityRole="button"
-                accessibilityLabel="열 추가"
+                accessibilityLabel={t('studyNote.addCol')}
               >
                 <IconSymbol name="plus" size={12} color={palette.onVariant} />
-                <ThemedText style={[styles.tableControlLabel, { color: palette.onVariant }]}>열 추가</ThemedText>
+                <ThemedText style={[styles.tableControlLabel, { color: palette.onVariant }]}>{t('studyNote.addCol')}</ThemedText>
               </Pressable>
             ) : null}
           </View>
@@ -658,7 +660,7 @@ function StudyDocumentBlockView({
         <Pressable
           onPress={onPickImage}
           accessibilityRole="button"
-          accessibilityLabel={uri ? '앨범에서 사진 변경' : '앨범에서 사진 선택'}
+          accessibilityLabel={uri ? t('studyNote.pickPhotoChangeA11y') : t('studyNote.pickPhotoSelectA11y')}
           style={styles.imagePickArea}
         >
           {uri && !imageLoadFailed ? (
@@ -673,7 +675,7 @@ function StudyDocumentBlockView({
             <View style={[styles.imagePlaceholder, { backgroundColor: 'rgba(0,0,0,0.04)' }]}>
               <IconSymbol name="photo.on.rectangle.angled" size={28} color={palette.onVariant} />
               <ThemedText style={[styles.imagePickLabel, { color: palette.onVariant }]}>
-                {imageLoadFailed ? '사진을 표시할 수 없어요 · 다시 선택' : '앨범에서 선택'}
+                {imageLoadFailed ? t('studyNote.imageLoadFailed') : t('studyNote.pickFromAlbum')}
               </ThemedText>
             </View>
           )}
@@ -683,7 +685,7 @@ function StudyDocumentBlockView({
             <View style={styles.imageSizeStepRow}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="사진 크기 줄이기"
+                accessibilityLabel={t('studyNote.shrinkPhotoA11y')}
                 disabled={atMinHeight}
                 onPress={() => setImageDisplayHeight(stepWorkStudyImageDisplayHeight(displayHeight, -1))}
                 style={({ pressed }) => [
@@ -695,10 +697,10 @@ function StudyDocumentBlockView({
                 ]}>
                 <IconSymbol name="minus" size={14} color={palette.onSurface} />
               </Pressable>
-              <ThemedText style={[styles.imageSizeLabel, { color: palette.onVariant }]}>크기</ThemedText>
+              <ThemedText style={[styles.imageSizeLabel, { color: palette.onVariant }]}>{t('studyNote.sizeLabel')}</ThemedText>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="사진 크기 키우기"
+                accessibilityLabel={t('studyNote.enlargePhotoA11y')}
                 disabled={atMaxHeight}
                 onPress={() => setImageDisplayHeight(stepWorkStudyImageDisplayHeight(displayHeight, 1))}
                 style={({ pressed }) => [
@@ -718,7 +720,7 @@ function StudyDocumentBlockView({
                   <Pressable
                     key={preset.label}
                     accessibilityRole="button"
-                    accessibilityLabel={`사진 크기 ${preset.label}`}
+                    accessibilityLabel={t('studyNote.photoSizeA11y', { label: preset.label })}
                     accessibilityState={{ selected }}
                     onPress={() => setImageDisplayHeight(preset.value)}
                     style={({ pressed }) => [
@@ -746,11 +748,11 @@ function StudyDocumentBlockView({
           <Pressable
             onPress={onPickImage}
             accessibilityRole="button"
-            accessibilityLabel="사진 변경"
+            accessibilityLabel={t('studyNote.changePhotoA11y')}
             style={[styles.imageChangeBtn, { borderColor: palette.outlineVariant }]}
           >
             <IconSymbol name="photo.on.rectangle.angled" size={14} color={palette.onVariant} />
-            <ThemedText style={[styles.imageChangeLabel, { color: palette.onVariant }]}>사진 변경</ThemedText>
+            <ThemedText style={[styles.imageChangeLabel, { color: palette.onVariant }]}>{t('studyNote.changePhoto')}</ThemedText>
           </Pressable>
         ) : null}
         <BlockText
@@ -765,7 +767,7 @@ function StudyDocumentBlockView({
           onEnterKey={onEnterKey}
           onSelectionChange={onSelectionChange}
           contentRevision={contentRevision}
-          placeholder="캡션 (선택)"
+          placeholder={t('studyNote.captionPlaceholder')}
         />
       </View>
     );
@@ -777,7 +779,9 @@ function StudyDocumentBlockView({
         accessibilityRole="checkbox"
         accessibilityState={{ checked: block.checked === true }}
         accessibilityLabel={
-          block.checked ? `${block.text || '체크리스트'} 완료 취소` : `${block.text || '체크리스트'} 완료`
+          block.checked
+            ? t('studyNote.checklistUncheckA11y', { label: block.text || t('studyNote.checklistFallback') })
+            : t('studyNote.checklistCheckA11y', { label: block.text || t('studyNote.checklistFallback') })
         }
         onPress={() => onChangeBlock(block.id, { checked: !block.checked })}
         hitSlop={{ top: 8, right: 10, bottom: 8, left: 10 }}
@@ -852,7 +856,7 @@ function StudyDocumentBlockView({
         {block.marks?.link ? (
           <Pressable
             accessibilityRole="link"
-            accessibilityLabel={`링크 열기: ${block.marks.link}`}
+            accessibilityLabel={t('studyNote.openLinkA11y', { url: block.marks.link })}
             onPress={() => onOpenLink?.(block.marks!.link!)}
             style={({ pressed }) => [styles.linkMetaHit, pressed && { opacity: 0.65 }]}>
             <ThemedText style={[styles.linkMeta, { color: palette.onSurface }]} numberOfLines={1}>
@@ -886,6 +890,7 @@ export function StudyDocumentEditor({
   /** 도킹 툴바 모드에서 키보드 inset 보정(탭 바 등 화면 하단 chrome) */
   keyboardBottomChromeInset?: number;
 }) {
+  const { t } = useTranslation();
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [pendingMarks, setPendingMarksState] = useState<WorkStudyBlockMarks>({});
   const [activeListKind, setActiveListKind] = useState<ListBlockKind | null>(null);
@@ -1549,10 +1554,10 @@ export function StudyDocumentEditor({
       const blockIsVisuallyEmpty = isVisuallyEmptyText(liveText);
 
       const removeImageBlockAt = (imageIndex: number, focusAfter: { id: string; cursor: number }) => {
-        Alert.alert('사진 삭제', '이 사진을 삭제할까요?', [
-          { text: '취소', style: 'cancel' },
+        Alert.alert(t('studyNote.deletePhotoTitle'), t('studyNote.deletePhotoMessage'), [
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: '삭제',
+            text: t('common.delete'),
             style: 'destructive',
             onPress: () => {
               const latestPage = getWorkStudyActivePage(documentRef.current);
@@ -1672,21 +1677,21 @@ export function StudyDocumentEditor({
 
     if (result.reason === 'permission_denied') {
       Alert.alert(
-        '사진 접근 권한',
-        '앨범에서 사진을 선택하려면 설정에서 사진 접근을 허용해 주세요.',
+        t('studyNote.photoPermissionTitle'),
+        t('studyNote.photoPermissionMessage'),
       );
       return null;
     }
 
     if (result.reason === 'module_unavailable') {
       Alert.alert(
-        '앱을 다시 빌드해 주세요',
-        '앨범에서 사진을 선택하려면 새 네이티브 모듈이 필요해요. 실행 중인 앱을 종료한 뒤 터미널에서 npx expo run:ios --device 를 다시 실행해 주세요.',
+        t('studyNote.rebuildTitle'),
+        t('studyNote.rebuildMessage'),
       );
       return null;
     }
 
-    Alert.alert('사진을 불러오지 못했어요', '잠시 후 다시 시도해 주세요.');
+    Alert.alert(t('studyNote.photoLoadFailedTitle'), t('studyNote.photoLoadFailedMessage'));
     return null;
   }, []);
 
@@ -1796,10 +1801,10 @@ export function StudyDocumentEditor({
 
   const resetDocument = useCallback(() => {
     if (activeBlocks.length === 0) return;
-    Alert.alert('메모 전체 지우기', '이 메모 내용을 모두 지울까요? 실행 취소로 되돌릴 수 있어요.', [
-      { text: '취소', style: 'cancel' },
+    Alert.alert(t('studyNote.clearAllTitle'), t('studyNote.clearAllMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '전체 지우기',
+        text: t('studyNote.clearAllConfirm'),
         style: 'destructive',
         onPress: () => {
           pushHistory();
@@ -1868,7 +1873,7 @@ export function StudyDocumentEditor({
 
   const activePageLabel = activePage
     ? resolveWorkStudyNotePageLabel(activePage, document.pages)
-    : '메모';
+    : t('studyNote.memoFallback');
   const activePageAutoTitle = activePage
     ? resolveWorkStudyNotePageAutoTitle(activePage, document.pages)
     : '';
@@ -1887,13 +1892,13 @@ export function StudyDocumentEditor({
   const shareActivePage = useCallback(async () => {
     const page = getWorkStudyActivePage(document);
     if (!page) {
-      Alert.alert('공유할 내용 없음', '공유할 메모를 먼저 작성해 주세요.');
+      Alert.alert(t('studyNote.shareNoContentTitle'), t('studyNote.shareNoContentMessage'));
       return;
     }
     const title = resolveWorkStudyNotePageLabel(page, document.pages);
     const body = workStudyPageBlocksToPlainText(page.blocks);
     if (!body.trim()) {
-      Alert.alert('공유할 내용 없음', '메모 내용을 먼저 작성해 주세요.');
+      Alert.alert(t('studyNote.shareNoContentTitle'), t('studyNote.shareEmptyBody'));
       return;
     }
     void Haptics.selectionAsync();
@@ -1903,9 +1908,9 @@ export function StudyDocumentEditor({
         title,
       });
     } catch {
-      Alert.alert('공유 실패', '잠시 후 다시 시도해 주세요.');
+      Alert.alert(t('studyNote.shareFailedTitle'), t('studyNote.photoLoadFailedMessage'));
     }
-  }, [document]);
+  }, [document, t]);
 
   const focusedBlock = activeBlockId ? activeBlocks.find((b) => b.id === activeBlockId) : null;
   const toolbarActiveBold = resolveActiveMarkState(focusedBlock, pendingMarks, 'bold');
@@ -2151,7 +2156,7 @@ export function StudyDocumentEditor({
   const handleOpenBlockLink = useCallback(async (url: string) => {
     const opened = await openWebLink(url);
     if (!opened) {
-      Alert.alert('링크를 열 수 없어요', '주소를 확인한 뒤 다시 시도해 주세요.');
+      Alert.alert(t('studyNote.openLinkFailedTitle'), t('studyNote.openLinkFailedMessage'));
     }
   }, []);
 
@@ -2372,7 +2377,7 @@ export function StudyDocumentEditor({
             style={[styles.linkInput, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
           />
           <Pressable onPress={applyLink} onPressIn={toolbarRetainFocusHandler} style={[styles.linkApply, { borderColor: palette.onSurface }]}>
-            <ThemedText style={{ color: palette.onSurface, fontWeight: '700', fontSize: 12 }}>적용하기</ThemedText>
+            <ThemedText style={{ color: palette.onSurface, fontWeight: '700', fontSize: 12 }}>{t('common.apply')}</ThemedText>
           </Pressable>
         </View>
       ) : null}
@@ -2381,7 +2386,7 @@ export function StudyDocumentEditor({
         <View style={[styles.colorRow, { borderColor: palette.outlineVariant, backgroundColor: NOTE_PAGE_BG }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="기본 색"
+            accessibilityLabel={t('studyNote.defaultColorA11y')}
             onPressIn={toolbarRetainFocusHandler}
             onPress={() => applyTextColor(undefined)}
             style={[
@@ -2448,7 +2453,7 @@ export function StudyDocumentEditor({
         <View style={styles.headerSide}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="메모 목록 열기"
+            accessibilityLabel={t('studyNote.openListA11y')}
             onPress={openDrawer}
             hitSlop={8}
             style={({ pressed }) => [styles.menuBtn, pressed && { opacity: 0.65 }]}>
@@ -2470,7 +2475,7 @@ export function StudyDocumentEditor({
         <View style={[styles.headerSide, styles.headerSideEnd]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="메모 공유"
+            accessibilityLabel={t('studyNote.shareA11y')}
             onPress={() => {
               void shareActivePage();
             }}
@@ -2480,7 +2485,7 @@ export function StudyDocumentEditor({
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="새 메모 작성"
+            accessibilityLabel={t('studyNote.newMemoA11y')}
             onPress={() => {
               void Haptics.selectionAsync();
               addPage();
@@ -2525,13 +2530,13 @@ export function StudyDocumentEditor({
             style={styles.canvasDismissBackdrop}
             onPress={focusCanvasEditor}
             accessibilityRole="button"
-            accessibilityLabel="본문 편집"
+            accessibilityLabel={t('studyNote.editBodyA11y')}
           />
         ) : null}
         {empty ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="노트 작성 시작"
+            accessibilityLabel={t('studyNote.startWritingA11y')}
             onPress={handleEmptyCanvasPress}
             style={[
               styles.emptyCanvas,
@@ -2540,10 +2545,10 @@ export function StudyDocumentEditor({
             ]}>
             <IconSymbol name="square.and.pencil" size={24} color={palette.onVariant} />
             <ThemedText style={[styles.emptyTitle, { color: palette.onSurface }]}>
-              여기에 노트를 작성하세요
+              {t('studyNote.emptyTitle')}
             </ThemedText>
             <ThemedText style={[styles.emptyBody, { color: palette.onVariant }]}>
-              탭하면 본문이 추가돼요 · 아래 툴바로 서식을 넣을 수 있어요
+              {t('studyNote.emptyBody')}
             </ThemedText>
           </Pressable>
         ) : (
@@ -2628,7 +2633,7 @@ export function StudyDocumentEditor({
             ]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="메모 목록 닫기"
+              accessibilityLabel={t('studyNote.closeListA11y')}
               onPress={closeDrawer}
               style={StyleSheet.absoluteFill}
             />

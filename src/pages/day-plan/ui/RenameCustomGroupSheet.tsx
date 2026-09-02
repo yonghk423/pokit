@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -41,10 +42,14 @@ export function RenameCustomGroupSheet({
   ink,
   muted,
   surface,
-  title = '묶음 이름 바꾸기',
-  placeholder = '묶음 이름',
+  title,
+  placeholder,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t('catalog.renameGroupTitle');
+  const resolvedPlaceholder = placeholder ?? t('catalog.groupNamePlaceholder');
+
   const [label, setLabel] = useState('');
   const sheetWasVisibleRef = useRef(false);
 
@@ -84,7 +89,7 @@ export function RenameCustomGroupSheet({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.kavRoot}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
 
         <View
           style={[
@@ -102,10 +107,10 @@ export function RenameCustomGroupSheet({
 
           <View style={styles.body}>
             <View style={styles.headerRow}>
-              <ThemedText style={[styles.title, { color: ink }]}>{title}</ThemedText>
+              <ThemedText style={[styles.title, { color: ink }]}>{resolvedTitle}</ThemedText>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="닫기"
+                accessibilityLabel={t('common.close')}
                 hitSlop={8}
                 onPress={onClose}
                 style={[styles.closeBtn, { backgroundColor: closeBtnBg }]}>
@@ -114,14 +119,14 @@ export function RenameCustomGroupSheet({
             </View>
 
             <View style={styles.fieldGroup}>
-              <ThemedText style={[styles.fieldLabel, { color: ink }]}>이름</ThemedText>
+              <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('common.name')}</ThemedText>
               <ThemedText style={[styles.fieldHint, { color: muted }]}>
-                최대 {LABEL_MAX}자까지 입력할 수 있어요
+                {t('catalog.renameGroupMaxHint', { count: LABEL_MAX })}
               </ThemedText>
               <TextInput
                 value={label}
                 onChangeText={(v) => setLabel(v.slice(0, LABEL_MAX))}
-                placeholder={placeholder}
+                placeholder={resolvedPlaceholder}
                 placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
                 maxLength={LABEL_MAX}
                 returnKeyType="done"
@@ -138,7 +143,7 @@ export function RenameCustomGroupSheet({
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ disabled: !canSave }}
-              accessibilityLabel="저장"
+              accessibilityLabel={t('common.save')}
               disabled={!canSave}
               onPress={handleSave}
               style={({ pressed }) => [
@@ -154,7 +159,7 @@ export function RenameCustomGroupSheet({
                 },
               ]}>
               <ThemedText style={[styles.ctaText, { color: canSave ? '#FAFAFA' : muted }]}>
-                저장
+                {t('common.save')}
               </ThemedText>
             </Pressable>
           </View>

@@ -35,6 +35,7 @@ import {
   resolveBookSearchProvider,
   type BookSearchProvider,
 } from '@shared/lib/bookSearch/resolveBookSearchProvider';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -118,6 +119,7 @@ function toUnifiedDetail(
 }
 
 export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, onSelect }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const aladinConfigured = useMemo(() => isAladinApiConfigured(), []);
 
@@ -154,7 +156,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
   const runSearch = useCallback(async () => {
     const trimmed = query.trim();
     if (trimmed.length === 0) {
-      setErrorMessage('검색어를 입력해 주세요.');
+      setErrorMessage(t('goalDetail.bookSearch.needQuery'));
       return;
     }
 
@@ -162,7 +164,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
     setActiveProvider(provider);
 
     if (!isBookSearchAvailable(provider, aladinConfigured)) {
-      setErrorMessage('알라딘 API 키가 설정되지 않았어요. 영문 검색은 Open Library를 사용해 주세요.');
+      setErrorMessage(t('goalDetail.bookSearch.noAladinKey'));
       return;
     }
 
@@ -176,7 +178,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
         const result = await searchAladinBooks(trimmed, { maxResults: 12 });
         setResults(result.items.map(mapAladinItem));
         if (result.items.length === 0) {
-          setErrorMessage('검색 결과가 없어요.');
+          setErrorMessage(t('goalDetail.bookSearch.noResults'));
         }
         return;
       }
@@ -184,7 +186,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
       const result = await searchOpenLibraryBooks(trimmed, { limit: 12 });
       setResults(result.items.map(mapOpenLibraryItem));
       if (result.items.length === 0) {
-        setErrorMessage('검색 결과가 없어요.');
+        setErrorMessage(t('goalDetail.bookSearch.noResults'));
       }
     } catch (error: unknown) {
       setResults([]);
@@ -192,11 +194,11 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
         setErrorMessage(error.message);
         return;
       }
-      setErrorMessage('도서 검색 중 문제가 발생했어요.');
+      setErrorMessage(t('goalDetail.bookSearch.error'));
     } finally {
       setLoading(false);
     }
-  }, [aladinConfigured, query]);
+  }, [aladinConfigured, query, t]);
 
   const openDetail = useCallback(async (item: UnifiedBookSearchItem) => {
     setMode('detail');
@@ -218,17 +220,17 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
         return;
       }
 
-      setDetailErrorMessage('도서 상세 정보를 불러오지 못했어요.');
+      setDetailErrorMessage(t('goalDetail.bookSearch.detailError'));
     } catch (error: unknown) {
       if (error instanceof AladinApiError || error instanceof OpenLibraryApiError) {
         setDetailErrorMessage(error.message);
         return;
       }
-      setDetailErrorMessage('도서 상세 정보를 불러오지 못했어요.');
+      setDetailErrorMessage(t('goalDetail.bookSearch.detailError'));
     } finally {
       setDetailLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const handleConfirmSelect = useCallback(async () => {
     if (!previewDetail) return;
@@ -249,11 +251,11 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
         setDetailErrorMessage(error.message);
         return;
       }
-      setDetailErrorMessage('도서를 추가하지 못했어요.');
+      setDetailErrorMessage(t('goalDetail.bookSearch.addError'));
     } finally {
       setConfirming(false);
     }
-  }, [onClose, onSelect, previewDetail]);
+  }, [onClose, onSelect, previewDetail, t]);
 
   const handleBackToSearch = useCallback(() => {
     setMode('search');
@@ -264,7 +266,9 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
   }, []);
 
   const externalLinkLabel =
-    activeProvider === 'aladin' ? '알라딘에서 보기' : 'Open Library에서 보기';
+    activeProvider === 'aladin'
+      ? t('goalDetail.bookSearch.viewOnAladin')
+      : t('goalDetail.bookSearch.viewOnOpenLibrary');
 
   const openExternalLink = useCallback(() => {
     if (!previewDetail?.link) return;
@@ -284,7 +288,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
           {mode === 'detail' ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="검색 결과로 돌아가기"
+              accessibilityLabel={t('goalDetail.bookSearch.backToResults')}
               onPress={handleBackToSearch}
               hitSlop={10}
               style={styles.headerBackBtn}>
@@ -292,9 +296,9 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
             </Pressable>
           ) : null}
           <ThemedText style={[styles.title, { color: ink }]}>
-            {mode === 'detail' ? '도서 상세' : '도서 검색'}
+            {mode === 'detail' ? t('goalDetail.bookSearch.detailTitle') : t('goalDetail.bookSearch.searchTitle')}
           </ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('dayPlan.close')} onPress={onClose} hitSlop={10}>
             <IconSymbol name="xmark" size={20} color={muted} />
           </Pressable>
         </View>
@@ -303,7 +307,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
           {!searchAvailable ? (
             <View style={styles.centerBox}>
               <ThemedText style={[styles.helper, { color: muted }]}>
-                도서 검색을 사용할 수 없어요.
+                {t('goalDetail.bookSearch.unavailable')}
               </ThemedText>
             </View>
           ) : mode === 'search' ? (
@@ -314,7 +318,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                   <TextInput
                     value={query}
                     onChangeText={setQuery}
-                    placeholder="책 제목, 저자"
+                    placeholder={t('goalDetail.bookSearch.placeholder')}
                     placeholderTextColor={muted}
                     autoFocus
                     returnKeyType="search"
@@ -324,7 +328,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="도서 검색"
+                  accessibilityLabel={t('goalDetail.bookSearch.searchTitle')}
                   disabled={loading}
                   onPress={() => void runSearch()}
                   style={({ pressed }) => [
@@ -335,7 +339,9 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                   {loading ? (
                     <ActivityIndicator size="small" color={surface} />
                   ) : (
-                    <ThemedText style={[styles.searchSubmitText, { color: surface }]}>검색</ThemedText>
+                    <ThemedText style={[styles.searchSubmitText, { color: surface }]}>
+                      {t('common.search')}
+                    </ThemedText>
                   )}
                 </Pressable>
               </View>
@@ -344,11 +350,13 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                 <ThemedText style={[styles.helper, { color: muted }]}>{errorMessage}</ThemedText>
               ) : lastSubmittedQuery.length === 0 ? (
                 <ThemedText style={[styles.helper, { color: muted }]}>
-                  검색어를 입력한 뒤 검색 버튼을 눌러 주세요.
+                  {t('goalDetail.bookSearch.enterHint')}
                 </ThemedText>
               ) : (
                 <ThemedText style={[styles.helper, { color: muted }]}>
-                  {bookSearchProviderLabel(activeProvider)} 검색 결과
+                  {t('goalDetail.bookSearch.resultsFor', {
+                    provider: bookSearchProviderLabel(activeProvider),
+                  })}
                 </ThemedText>
               )}
 
@@ -359,7 +367,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                   <Pressable
                     key={item.key}
                     accessibilityRole="button"
-                    accessibilityLabel={`${item.title} 상세 보기`}
+                    accessibilityLabel={t('goalDetail.bookSearch.detailA11y', { title: item.title })}
                     onPress={() => void openDetail(item)}
                     style={({ pressed }) => [
                       styles.resultRow,
@@ -378,7 +386,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                         {item.title}
                       </ThemedText>
                       <ThemedText style={[styles.resultMeta, { color: muted }]} numberOfLines={1}>
-                        {[item.author, item.publisher].filter(Boolean).join(' · ') || '정보 없음'}
+                        {[item.author, item.publisher].filter(Boolean).join(' · ') || t('common.none')}
                       </ThemedText>
                     </View>
                     <IconSymbol name="chevron.right" size={14} color={muted} />
@@ -395,7 +403,9 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
               {detailLoading ? (
                 <View style={styles.centerBox}>
                   <ActivityIndicator size="small" color={ink} />
-                  <ThemedText style={[styles.helper, { color: muted }]}>상세 정보를 불러오는 중...</ThemedText>
+                  <ThemedText style={[styles.helper, { color: muted }]}>
+                    {t('goalDetail.bookSearch.loadingDetail')}
+                  </ThemedText>
                 </View>
               ) : previewDetail ? (
                 <>
@@ -425,12 +435,12 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                       ) : null}
                       {previewDetail.pubDate ? (
                         <ThemedText style={[styles.detailMeta, { color: muted }]}>
-                          출간 {previewDetail.pubDate}
+                          {t('goalDetail.bookSearch.published', { date: previewDetail.pubDate })}
                         </ThemedText>
                       ) : null}
                       {previewDetail.totalPages ? (
                         <ThemedText style={[styles.detailMeta, { color: muted }]}>
-                          전체 {previewDetail.totalPages}쪽
+                          {t('goalDetail.bookSearch.totalPages', { pages: previewDetail.totalPages })}
                         </ThemedText>
                       ) : null}
                     </View>
@@ -452,7 +462,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
 
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="이 도서 선택"
+                    accessibilityLabel={t('goalDetail.bookSearch.selectA11y')}
                     disabled={confirming}
                     onPress={() => void handleConfirmSelect()}
                     style={({ pressed }) => [
@@ -463,21 +473,25 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                     {confirming ? (
                       <ActivityIndicator size="small" color={surface} />
                     ) : (
-                      <ThemedText style={[styles.primaryBtnText, { color: surface }]}>이 도서 선택</ThemedText>
+                      <ThemedText style={[styles.primaryBtnText, { color: surface }]}>
+                        {t('goalDetail.bookSearch.selectBook')}
+                      </ThemedText>
                     )}
                   </Pressable>
                 </>
               ) : (
                 <View style={styles.centerBox}>
                   <ThemedText style={[styles.helper, { color: muted }]}>
-                    {detailErrorMessage ?? '도서 상세 정보를 불러오지 못했어요.'}
+                    {detailErrorMessage ?? t('goalDetail.bookSearch.detailError')}
                   </ThemedText>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="검색 결과로 돌아가기"
+                    accessibilityLabel={t('goalDetail.bookSearch.backToResults')}
                     onPress={handleBackToSearch}
                     style={({ pressed }) => [styles.secondaryBtn, { borderColor: line }, pressed && { opacity: 0.72 }]}>
-                    <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>검색 결과로 돌아가기</ThemedText>
+                    <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>
+                      {t('goalDetail.bookSearch.backToResults')}
+                    </ThemedText>
                   </Pressable>
                 </View>
               )}

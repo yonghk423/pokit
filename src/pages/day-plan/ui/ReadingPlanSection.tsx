@@ -7,6 +7,7 @@ import {
   getInitialReadingDataConfig,
   ReadingSettings,
 } from '@pages/goal-detail-settings/ui/category/reading';
+import { useTranslation } from '@shared/lib/i18n';
 import {
   loadGoalDetailCategoryConfig,
   saveGoalDetailCategoryConfig,
@@ -35,6 +36,7 @@ type Props = {
 
 /** 오늘 탭 — 독서 루틴과 동일한 내 서재 UI (상시 접근) */
 export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
+  const { t } = useTranslation();
   const [dataConfig, setDataConfig] = useState<unknown>(() => loadReadingConfig());
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastPersistedRef = useRef(JSON.stringify(dataConfig));
@@ -99,7 +101,7 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
   return (
     <View style={[styles.root, { backgroundColor: c.containerLow }]}>
       <ReadingSettings
-        rhythmTitle="독서"
+        rhythmTitle={t('planMode.reading')}
         categoryKey="reading"
         dataConfig={dataConfig}
         onChangeDataConfig={handleChangeDataConfig}

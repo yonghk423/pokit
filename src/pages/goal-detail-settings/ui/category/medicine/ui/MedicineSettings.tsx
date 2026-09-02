@@ -6,6 +6,7 @@ import {
   formatHhmmClockKo,
   useDayPlanDraftStore,
 } from '@entities/day-plan';
+import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -29,13 +30,13 @@ const PRIMARY = 'rgb(0, 0, 0)';
 
 const SLOT_GRID: {
   key: 'morning' | 'lunch' | 'dinner';
-  label: string;
-  cardSub: string;
+  labelKey: 'mealSlot.morning' | 'mealSlot.lunch' | 'mealSlot.dinner';
+  cardSubKey: 'goalDetail.medicine.morningSub' | 'goalDetail.medicine.lunchSub' | 'goalDetail.medicine.dinnerSub';
   icon: React.ComponentProps<typeof IconSymbol>['name'];
 }[] = [
-  { key: 'morning', label: '아침', cardSub: '아침 복용', icon: 'sun.max.fill' },
-  { key: 'lunch', label: '점심', cardSub: '점심 복용', icon: 'sun.max' },
-  { key: 'dinner', label: '저녁', cardSub: '저녁 복용', icon: 'moon.fill' },
+  { key: 'morning', labelKey: 'mealSlot.morning', cardSubKey: 'goalDetail.medicine.morningSub', icon: 'sun.max.fill' },
+  { key: 'lunch', labelKey: 'mealSlot.lunch', cardSubKey: 'goalDetail.medicine.lunchSub', icon: 'sun.max' },
+  { key: 'dinner', labelKey: 'mealSlot.dinner', cardSubKey: 'goalDetail.medicine.dinnerSub', icon: 'moon.fill' },
 ];
 
 function slotOn(cfg: MedicineDetailDataConfig, key: 'morning' | 'lunch' | 'dinner'): boolean {
@@ -137,6 +138,7 @@ export function MedicineSettings({
   intakeMode?: boolean;
   hideTitleField?: boolean;
 }) {
+  const { t } = useTranslation();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const c = useMemo(() => goalDetailSettingsPalette(isDark), [isDark]);
@@ -186,38 +188,48 @@ export function MedicineSettings({
 
   const nextSlotLabel =
     draft.takenCount < draft.dosesPerDay
-      ? enabledSlots[draft.takenCount]?.label ?? '—'
-      : intakeMode ? '오늘 섭취 완료' : '오늘 복용 완료';
+      ? (enabledSlots[draft.takenCount] ? t(enabledSlots[draft.takenCount].labelKey) : '—')
+      : intakeMode
+        ? t('goalDetail.medicine.intakeTodayDone')
+        : t('goalDetail.medicine.doseTodayDone');
 
   const copy = intakeMode
     ? {
-        progressTitle: '오늘 섭취',
-        progressDone: '오늘 섭취를 모두 마쳤어요',
-        progressEmpty: '섭취 슬롯을 켜면 횟수가 정해져요',
-        actionDone: '섭취 완료',
-        actionReset: '오늘 섭취 기록 초기화',
-        doseCountLabel: '섭취 횟수',
-        itemNameLabel: '항목 이름',
-        itemNamePlaceholder: '약·영양제·보조제 이름',
-        slotSectionLabel: '섭취 슬롯',
-        slotToggleA11y: (label: string, on: boolean) => `${label} 섭취 ${on ? '켜짐' : '꺼짐'}`,
-        slotTimeLabel: (label: string) => `${label} 섭취`,
-        slotNotifyLabel: (label: string) => `${label} 섭취 알림`,
+        progressTitle: t('goalDetail.medicine.intakeProgressTitle'),
+        progressDone: t('goalDetail.medicine.intakeProgressDone'),
+        progressEmpty: t('goalDetail.medicine.intakeProgressEmpty'),
+        actionDone: t('goalDetail.medicine.intakeActionDone'),
+        actionReset: t('goalDetail.medicine.intakeReset'),
+        doseCountLabel: t('goalDetail.medicine.intakeCount'),
+        itemNameLabel: t('goalDetail.medicine.itemName'),
+        itemNamePlaceholder: t('goalDetail.medicine.itemPlaceholder'),
+        slotSectionLabel: t('goalDetail.medicine.intakeSlots'),
+        slotToggleA11y: (label: string, on: boolean) =>
+          t('goalDetail.medicine.intakeToggleA11y', {
+            label,
+            state: on ? t('goalDetail.medicine.toggleOn') : t('goalDetail.medicine.toggleOff'),
+          }),
+        slotTimeLabel: (label: string) => t('goalDetail.medicine.intakeTime', { label }),
+        slotNotifyLabel: (label: string) => t('goalDetail.medicine.intakeNotify', { label }),
         itemIcon: 'pills.fill' as const,
       }
     : {
-        progressTitle: '오늘 복용',
-        progressDone: '오늘 복용을 모두 마쳤어요',
-        progressEmpty: '복용 슬롯을 켜면 횟수가 정해져요',
-        actionDone: '복용 완료',
-        actionReset: '오늘 복용 기록 초기화',
-        doseCountLabel: '복용 횟수',
-        itemNameLabel: '약 이름',
-        itemNamePlaceholder: '먹는 약 이름을 적어 주세요',
-        slotSectionLabel: '복용 슬롯',
-        slotToggleA11y: (label: string, on: boolean) => `${label} 복용 ${on ? '켜짐' : '꺼짐'}`,
-        slotTimeLabel: (label: string) => `${label} 복용`,
-        slotNotifyLabel: (label: string) => `${label} 복용 알림`,
+        progressTitle: t('goalDetail.medicine.doseProgressTitle'),
+        progressDone: t('goalDetail.medicine.doseProgressDone'),
+        progressEmpty: t('goalDetail.medicine.doseProgressEmpty'),
+        actionDone: t('goalDetail.medicine.doseActionDone'),
+        actionReset: t('goalDetail.medicine.doseReset'),
+        doseCountLabel: t('goalDetail.medicine.doseCount'),
+        itemNameLabel: t('goalDetail.medicine.medName'),
+        itemNamePlaceholder: t('goalDetail.medicine.medPlaceholder'),
+        slotSectionLabel: t('goalDetail.medicine.doseSlots'),
+        slotToggleA11y: (label: string, on: boolean) =>
+          t('goalDetail.medicine.doseToggleA11y', {
+            label,
+            state: on ? t('goalDetail.medicine.toggleOn') : t('goalDetail.medicine.toggleOff'),
+          }),
+        slotTimeLabel: (label: string) => t('goalDetail.medicine.doseTime', { label }),
+        slotNotifyLabel: (label: string) => t('goalDetail.medicine.doseNotify', { label }),
         itemIcon: 'pills.fill' as const,
       };
 
@@ -269,12 +281,12 @@ export function MedicineSettings({
 
       <SettingsProgressBand
         title={copy.progressTitle}
-        valueLine={`${draft.takenCount} / ${draft.dosesPerDay}회`}
+        valueLine={t('goalDetail.medicine.doseValue', { taken: draft.takenCount, total: draft.dosesPerDay })}
         subLine={
           draft.dosesPerDay > 0
             ? draft.takenCount >= draft.dosesPerDay
               ? copy.progressDone
-              : `다음: ${nextSlotLabel} · ${Math.round(doseProgressRatio * 100)}%`
+              : t('goalDetail.medicine.nextSlot', { label: nextSlotLabel, percent: Math.round(doseProgressRatio * 100) })
             : copy.progressEmpty
         }
         ratio={doseProgressRatio}
@@ -300,7 +312,7 @@ export function MedicineSettings({
               accessibilityLabel={copy.actionReset}
               onPress={resetDoseTaken}
               style={({ pressed }) => [styles.doseResetBtn, { borderColor: c.outline }, pressed && { opacity: 0.75 }]}>
-              <Text style={[styles.doseResetBtnText, { color: c.onVariant }]}>초기화</Text>
+              <Text style={[styles.doseResetBtnText, { color: c.onVariant }]}>{t('common.reset')}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -311,7 +323,7 @@ export function MedicineSettings({
           {enabledSlots.map((slot, index) => {
             const isDone = index < draft.takenCount;
             const isCurrent = index === draft.takenCount;
-            const statusLabel = isDone ? '완료' : isCurrent ? '다음' : '예정';
+            const statusLabel = isDone ? t('goalDetail.medicine.statusDone') : isCurrent ? t('goalDetail.medicine.statusNext') : t('goalDetail.medicine.statusScheduled');
             return (
               <View
                 key={slot.key}
@@ -322,7 +334,7 @@ export function MedicineSettings({
                 ]}>
                 <View style={styles.slotStatusLeft}>
                   <IconSymbol name={slot.icon} size={16} color={isDone ? PRIMARY : c.onVariant} />
-                  <Text style={[styles.slotStatusLabel, { color: c.onSurface }]}>{slot.label}</Text>
+                  <Text style={[styles.slotStatusLabel, { color: c.onSurface }]}>{t(slot.labelKey)}</Text>
                   <Text style={[styles.slotStatusTime, { color: c.onVariant }]}>
                     {formatHhmmClockKo(timeField(draft, slot.key))}
                   </Text>
@@ -346,7 +358,7 @@ export function MedicineSettings({
       <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: c.outline }]}>
         <View style={styles.metricItem}>
           <Text style={[styles.metricValue, { color: c.onSurface }]}>{draft.takenCount}</Text>
-          <Text style={[styles.metricLabel, { color: c.onVariant }]}>완료</Text>
+          <Text style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.doneCount')}</Text>
         </View>
         <View style={styles.metricItem}>
           <Text style={[styles.metricValue, { color: c.onSurface }]}>{draft.dosesPerDay}</Text>
@@ -356,12 +368,12 @@ export function MedicineSettings({
           <Text style={[styles.metricValue, { color: c.onSurface }]}>
             {Math.max(0, draft.dosesPerDay - draft.takenCount)}
           </Text>
-          <Text style={[styles.metricLabel, { color: c.onVariant }]}>남음</Text>
+          <Text style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.remainingCount')}</Text>
         </View>
       </View>
 
       <View style={[styles.routineWindowBand, { borderColor: c.outline, backgroundColor: '#f4f4f5' }]}>
-        <Text style={[styles.routineWindowLabel, { color: c.onVariant }]}>오늘 담기 구간(시작~마무리)</Text>
+        <Text style={[styles.routineWindowLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.routineWindow')}</Text>
         <Text style={[styles.routineWindowTime, { color: c.onSurface }]}>{routineWindowLine}</Text>
       </View>
 
@@ -394,7 +406,7 @@ export function MedicineSettings({
                     key={slot.key}
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
-                    accessibilityLabel={copy.slotToggleA11y(slot.label, on)}
+                    accessibilityLabel={copy.slotToggleA11y(t(slot.labelKey), on)}
                     android_ripple={{ color: 'rgba(0,0,0,0.12)' }}
                     onPress={() => setDraft((prev) => setSlot(prev, slot.key, !slotOn(prev, slot.key)))}
                     style={({ pressed }) => [
@@ -402,7 +414,7 @@ export function MedicineSettings({
                       { flex: 1, backgroundColor: bg, borderColor: borderCol },
                       pressed && { opacity: 0.88 },
                     ]}>
-                    <Text style={[styles.slotChipText, { color: fg }]}>{slot.label}</Text>
+                    <Text style={[styles.slotChipText, { color: fg }]}>{t(slot.labelKey)}</Text>
                   </Pressable>
                 );
               })}
@@ -417,8 +429,8 @@ export function MedicineSettings({
             <View key={slot.key} style={[styles.slotDetailBlock, { borderBottomColor: c.outline }]}>
               <View style={styles.medicineTimePickerRow}>
                 <SnappedTimePickerField
-                  label={copy.slotTimeLabel(slot.label)}
-                  hint={`담기 구간 ${routineWindowLine} 안에서만 선택돼요`}
+                  label={copy.slotTimeLabel(t(slot.labelKey))}
+                  hint={t('goalDetail.medicine.timeWithinWindow', { window: routineWindowLine })}
                   valueHhmm={timeField(draft, slot.key)}
                   onChangeHhmm={(next) =>
                     setDraft((prev) => withTime(prev, slot.key, next))
@@ -435,7 +447,7 @@ export function MedicineSettings({
                 />
               </View>
               <View style={[styles.row, styles.rowInSlotGroup, styles.slotNotifyRow]}>
-                <Text style={[styles.rowSubTitle, { color: c.onVariant }]}>{copy.slotNotifyLabel(slot.label)}</Text>
+                <Text style={[styles.rowSubTitle, { color: c.onVariant }]}>{copy.slotNotifyLabel(t(slot.labelKey))}</Text>
                 <Switch
                   value={notifyOn}
                   onValueChange={(v) => setDraft((prev) => setSlotNotify(prev, slot.key, v))}

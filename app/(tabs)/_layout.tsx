@@ -1,8 +1,10 @@
-import { Tabs } from 'expo-router';
 import React from 'react';
+
+import { Tabs } from 'expo-router';
 
 import { DayPlanTabBridgeProvider } from '@pages/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
 import { HapticTab } from '@shared/ui/haptic-tab/HapticTab';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
@@ -16,6 +18,7 @@ const TAB_ICONS: Record<string, string> = {
 
 export default function TabLayout() {
   const isDark = useColorScheme() === 'dark';
+  const { t } = useTranslation();
 
   return (
     <DayPlanTabBridgeProvider>
@@ -33,11 +36,11 @@ export default function TabLayout() {
           },
         })}>
           <Tabs.Screen name="index" options={{ href: null }} />
-          <Tabs.Screen name="day-plan" options={{ title: '오늘' }} />
-          <Tabs.Screen name="fixed-routines" options={{ title: '루틴' }} />
-          <Tabs.Screen name="priority-catalog" options={{ title: '나만의 루틴' }} />
-          <Tabs.Screen name="day-plan-statistics" options={{ title: '히스토리' }} />
-          <Tabs.Screen name="pokit-story" options={{ title: '스토리' }} />
+          <Tabs.Screen name="day-plan" options={{ title: t('tabs.dayPlan') }} />
+          <Tabs.Screen name="fixed-routines" options={{ title: t('tabs.routines') }} />
+          <Tabs.Screen name="priority-catalog" options={{ title: t('tabs.myRoutines') }} />
+          <Tabs.Screen name="day-plan-statistics" options={{ title: t('tabs.history') }} />
+          <Tabs.Screen name="pokit-story" options={{ title: t('tabs.story') }} />
         </Tabs>
     </DayPlanTabBridgeProvider>
   );

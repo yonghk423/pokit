@@ -4,10 +4,10 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  formatHhmmClockKo,
   isSpineBlockScheduleWithinPriorityWindow,
   resolveSpinePriorityWindow,
 } from '@entities/day-plan';
+import { formatHhmmClock, useTranslation } from '@shared/lib/i18n';
 import {
   CityPopTypography,
   RETRO_BORDER_WIDTH,
@@ -80,6 +80,7 @@ export function SpineBlockEditSheet({
   onDelete,
   renderRoutineSettings,
 }: Props) {
+  const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : '#000000';
@@ -128,8 +129,8 @@ export function SpineBlockEditSheet({
     ) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(
-        '시간을 확인해 주세요',
-        `루틴 종료 시간(${formatHhmmClockKo(priorityEnd)})을 넘는 일정은 저장할 수 없어요. 하루 시작~마무리 안으로 맞춰 주세요.`,
+        t('catalog.checkTimeTitle'),
+        t('dayPlan.blockExceedsEnd', { end: formatHhmmClock(priorityEnd, locale) }),
       );
       return;
     }
@@ -159,8 +160,8 @@ export function SpineBlockEditSheet({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.root, { backgroundColor: surface, paddingTop: insets.top + 12 }]}>
         <View style={[styles.header, { borderBottomColor: line }]}>
-          <ThemedText style={[styles.title, { color: ink }]}>일정 수정</ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={10}>
+          <ThemedText style={[styles.title, { color: ink }]}>{t('dayPlan.blockEditTitle')}</ThemedText>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} hitSlop={10}>
             <IconSymbol name="xmark" size={20} color={muted} />
           </Pressable>
         </View>
@@ -175,7 +176,7 @@ export function SpineBlockEditSheet({
           ) : null}
 
           <View style={styles.fieldBlock}>
-            <ThemedText style={[styles.sectionLabel, { color: muted }]}>시간</ThemedText>
+            <ThemedText style={[styles.sectionLabel, { color: muted }]}>{t('common.time')}</ThemedText>
             <CatalogRowSpineTimePanel
               ref={timePanelRef}
               presentation="sheet"
@@ -208,7 +209,7 @@ export function SpineBlockEditSheet({
               />
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="일정 삭제"
+                accessibilityLabel={t('alert.deleteBlock.title')}
                 onPress={() => onDelete(draft.blockId)}
                 style={({ pressed }) => [
                   styles.deleteBtn,
@@ -218,7 +219,7 @@ export function SpineBlockEditSheet({
                   },
                   pressed && { opacity: 0.94 },
                 ]}>
-                <ThemedText style={[styles.deleteBtnText, { color: tone.danger }]}>삭제</ThemedText>
+                <ThemedText style={[styles.deleteBtnText, { color: tone.danger }]}>{t('common.delete')}</ThemedText>
               </Pressable>
             </View>
           ) : null}
@@ -234,8 +235,8 @@ export function SpineBlockEditSheet({
             },
           ]}>
           <BrutalConfirmButton
-            label="저장"
-            accessibilityLabel="저장"
+            label={t('common.save')}
+            accessibilityLabel={t('common.save')}
             align="stretch"
             fill={ink}
             labelColor={isDark ? '#09090b' : '#FAFAFA'}

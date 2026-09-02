@@ -9,6 +9,7 @@ import {
   type WorkStudyNotePage,
 } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
@@ -38,6 +39,7 @@ export function StudyNotePageList({
   onDeletePage,
   onClose,
 }: Props) {
+  const { t } = useTranslation();
   const sortedPages = useMemo(
     () =>
       [...pages].sort((a, b) => {
@@ -55,7 +57,7 @@ export function StudyNotePageList({
         {layout === 'drawer' && onClose ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="메모 목록 닫기"
+            accessibilityLabel={t('studyNote.closeListA11y')}
             onPress={() => {
               void Haptics.selectionAsync();
               onClose();
@@ -67,10 +69,10 @@ export function StudyNotePageList({
         ) : (
           <View style={styles.closeBtn} />
         )}
-        <ThemedText style={[styles.headerTitle, { color: palette.onSurface }]}>메모</ThemedText>
+        <ThemedText style={[styles.headerTitle, { color: palette.onSurface }]}>{t('studyNote.listTitle')}</ThemedText>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="새 메모 작성"
+          accessibilityLabel={t('studyNote.newMemoA11y')}
           onPress={() => {
             void Haptics.selectionAsync();
             onAddPage();
@@ -90,9 +92,9 @@ export function StudyNotePageList({
         {sortedPages.length === 0 ? (
           <View style={styles.emptyWrap}>
             <IconSymbol name="note.text" size={28} color={palette.onVariant} />
-            <ThemedText style={[styles.emptyTitle, { color: palette.onSurface }]}>메모가 없어요</ThemedText>
+            <ThemedText style={[styles.emptyTitle, { color: palette.onSurface }]}>{t('studyNote.emptyListTitle')}</ThemedText>
             <ThemedText style={[styles.emptyBody, { color: palette.onVariant }]}>
-              오른쪽 위 버튼으로 첫 메모를 작성해 보세요
+              {t('studyNote.emptyListBody')}
             </ThemedText>
           </View>
         ) : (
@@ -106,13 +108,13 @@ export function StudyNotePageList({
 
             const confirmDelete = () => {
               if (!canDelete) {
-                Alert.alert('삭제할 수 없어요', '메모는 최소 1개는 남겨 두어야 해요.');
+                Alert.alert(t('studyNote.cannotDeleteTitle'), t('studyNote.cannotDeleteMessage'));
                 return;
               }
-              Alert.alert('메모 삭제', `「${title}」 메모를 삭제할까요?`, [
-                { text: '취소', style: 'cancel' },
+              Alert.alert(t('studyNote.deleteMemoTitle'), t('studyNote.deleteMemoMessage', { title }), [
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                  text: '삭제',
+                  text: t('common.delete'),
                   style: 'destructive',
                   onPress: () => {
                     void Haptics.selectionAsync();
@@ -156,14 +158,14 @@ export function StudyNotePageList({
                     </ThemedText>
                   ) : (
                     <ThemedText style={[styles.rowPreview, { color: palette.outline }]} numberOfLines={1}>
-                      내용 없음
+                      {t('studyNote.noContent')}
                     </ThemedText>
                   )}
                   <ThemedText style={[styles.rowDate, { color: palette.onVariant }]}>{dateLabel}</ThemedText>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`${title} 메모 삭제`}
+                  accessibilityLabel={t('studyNote.deleteMemoA11y', { title })}
                   onPress={confirmDelete}
                   hitSlop={8}
                   style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.55 }]}>

@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -13,86 +14,126 @@ const SURFACE = '#151518';
 const SURFACE_CARD = '#1e1e23';
 const TEXT_MUTED = '#9ca3af';
 
-const STYLES = [
-  { key: 'data-rich', title: 'Data Rich', description: '활동 통계를 크게 표시' },
-  { key: 'minimal-timer', title: 'Minimal Timer', description: '시간 정보에 집중' },
-  { key: 'image-focus', title: 'Image Focus', description: '배경 이미지 중심' },
-  { key: 'circular-focus', title: 'Circular Focus', description: '원형 진행률 강조' },
-  { key: 'bold-type', title: 'Bold Typography', description: '강한 타이포그래피' },
-  { key: 'habit-streak', title: 'Habit Streak', description: '연속 기록 강조' },
-  { key: 'zen-gradient', title: 'Zen Gradient', description: '부드러운 그라디언트' },
-  { key: 'analog-clock', title: 'Analog Clock', description: '클래식 시계 표현' },
-  { key: 'checklist', title: 'Checklist', description: '체크리스트형 레이아웃' },
-  { key: 'ai-message', title: 'AI Message', description: '코칭 메시지 중심' },
-  { key: 'retro-pixel', title: 'Retro Pixel', description: '레트로 픽셀 감성' },
-  { key: 'kinetic-glass', title: 'Kinetic Glass', description: '깊이감 있는 글래스' },
-];
+const STYLE_KEYS = [
+  'data-rich',
+  'minimal-timer',
+  'image-focus',
+  'circular-focus',
+  'bold-type',
+  'habit-streak',
+  'zen-gradient',
+  'analog-clock',
+  'checklist',
+  'ai-message',
+  'retro-pixel',
+  'kinetic-glass',
+] as const;
+
+const STYLE_TITLES: Record<(typeof STYLE_KEYS)[number], string> = {
+  'data-rich': 'Data Rich',
+  'minimal-timer': 'Minimal Timer',
+  'image-focus': 'Image Focus',
+  'circular-focus': 'Circular Focus',
+  'bold-type': 'Bold Typography',
+  'habit-streak': 'Habit Streak',
+  'zen-gradient': 'Zen Gradient',
+  'analog-clock': 'Analog Clock',
+  checklist: 'Checklist',
+  'ai-message': 'AI Message',
+  'retro-pixel': 'Retro Pixel',
+  'kinetic-glass': 'Kinetic Glass',
+};
+
+const STYLE_DESC_KEYS = {
+  'data-rich': 'widgetSettings.style.dataRich',
+  'minimal-timer': 'widgetSettings.style.minimalTimer',
+  'image-focus': 'widgetSettings.style.imageFocus',
+  'circular-focus': 'widgetSettings.style.circularFocus',
+  'bold-type': 'widgetSettings.style.boldType',
+  'habit-streak': 'widgetSettings.style.habitStreak',
+  'zen-gradient': 'widgetSettings.style.zenGradient',
+  'analog-clock': 'widgetSettings.style.analogClock',
+  checklist: 'widgetSettings.style.checklist',
+  'ai-message': 'widgetSettings.style.aiMessage',
+  'retro-pixel': 'widgetSettings.style.retroPixel',
+  'kinetic-glass': 'widgetSettings.style.kineticGlass',
+} as const;
 
 export function WidgetSettingsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
-  const [selectedStyle, setSelectedStyle] = useState('data-rich');
+  const [selectedStyle, setSelectedStyle] = useState<(typeof STYLE_KEYS)[number]>('data-rich');
   const [kineticTransition, setKineticTransition] = useState(true);
+  const styleOptions = useMemo(
+    () =>
+      STYLE_KEYS.map((key) => ({
+        key,
+        title: STYLE_TITLES[key],
+        description: t(STYLE_DESC_KEYS[key]),
+      })),
+    [t],
+  );
 
   return (
-    <ThemedView style={styles.screen} darkColor={BG} lightColor={BG}>
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <View style={styles.topBar}>
-          <View style={styles.topBarLeft}>
-            <Pressable onPress={() => router.back()} style={styles.iconTap}>
+    <ThemedView style={sheetStyles.screen} darkColor={BG} lightColor={BG}>
+      <SafeAreaView style={sheetStyles.safe} edges={['top', 'bottom']}>
+        <View style={sheetStyles.topBar}>
+          <View style={sheetStyles.topBarLeft}>
+            <Pressable onPress={() => router.back()} style={sheetStyles.iconTap}>
               <IconSymbol name="arrow.backward" size={20} color={PRIMARY} />
             </Pressable>
-            <ThemedText style={styles.topTitle}>POKIT 맞춤 설정</ThemedText>
+            <ThemedText style={sheetStyles.topTitle}>{t('widgetSettings.title')}</ThemedText>
           </View>
-          <Pressable style={styles.saveTopButton}>
-            <ThemedText style={styles.saveTopText}>저장</ThemedText>
+          <Pressable style={sheetStyles.saveTopButton}>
+            <ThemedText style={sheetStyles.saveTopText}>{t('common.save')}</ThemedText>
           </Pressable>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <View style={styles.previewSection}>
-            <View style={styles.phoneShell}>
-              <View style={styles.wallpaper} />
-              <View style={styles.lockContent}>
-                <ThemedText style={styles.dateText}>MONDAY, JUNE 12</ThemedText>
-                <ThemedText style={styles.timeText}>09:41</ThemedText>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={sheetStyles.content}>
+          <View style={sheetStyles.previewSection}>
+            <View style={sheetStyles.phoneShell}>
+              <View style={sheetStyles.wallpaper} />
+              <View style={sheetStyles.lockContent}>
+                <ThemedText style={sheetStyles.dateText}>MONDAY, JUNE 12</ThemedText>
+                <ThemedText style={sheetStyles.timeText}>09:41</ThemedText>
 
-                <View style={styles.liveWidget}>
-                  <View style={styles.widgetHead}>
-                    <ThemedText style={styles.widgetKicker}>Morning Jog</ThemedText>
+                <View style={sheetStyles.liveWidget}>
+                  <View style={sheetStyles.widgetHead}>
+                    <ThemedText style={sheetStyles.widgetKicker}>Morning Jog</ThemedText>
                     <IconSymbol name="figure.run" size={14} color="#fff" />
                   </View>
-                  <View style={styles.widgetBottom}>
+                  <View style={sheetStyles.widgetBottom}>
                     <View>
-                      <ThemedText style={styles.kmText}>4.2km</ThemedText>
-                      <ThemedText style={styles.paceText}>{'Pace: 5\'12"/km'}</ThemedText>
+                      <ThemedText style={sheetStyles.kmText}>4.2km</ThemedText>
+                      <ThemedText style={sheetStyles.paceText}>{'Pace: 5\'12"/km'}</ThemedText>
                     </View>
-                    <View style={styles.percentCircle}>
-                      <ThemedText style={styles.percentText}>75%</ThemedText>
+                    <View style={sheetStyles.percentCircle}>
+                      <ThemedText style={sheetStyles.percentText}>75%</ThemedText>
                     </View>
                   </View>
                 </View>
 
-                <View style={styles.bottomIndicators}>
-                  <View style={styles.indicatorBtn}>
+                <View style={sheetStyles.bottomIndicators}>
+                  <View style={sheetStyles.indicatorBtn}>
                     <IconSymbol name="flashlight.off.fill" size={18} color="#fff" />
                   </View>
-                  <View style={styles.indicatorBtn}>
+                  <View style={sheetStyles.indicatorBtn}>
                     <IconSymbol name="camera.fill" size={18} color="#fff" />
                   </View>
                 </View>
               </View>
-              <View style={styles.homeBar} />
+              <View style={sheetStyles.homeBar} />
             </View>
           </View>
 
-          <View style={styles.sectionHeaderRow}>
+          <View style={sheetStyles.sectionHeaderRow}>
             <View>
-              <ThemedText style={styles.customizationKicker}>CUSTOMIZATION</ThemedText>
-              <ThemedText style={styles.sectionTitle}>위젯 스타일 선택</ThemedText>
+              <ThemedText style={sheetStyles.customizationKicker}>CUSTOMIZATION</ThemedText>
+              <ThemedText style={sheetStyles.sectionTitle}>{t('widgetSettings.pickStyle')}</ThemedText>
             </View>
-            <View style={styles.counterPill}>
-              <ThemedText style={styles.counterText}>
-                {STYLES.findIndex((s) => s.key === selectedStyle) + 1} / {STYLES.length}
+            <View style={sheetStyles.counterPill}>
+              <ThemedText style={sheetStyles.counterText}>
+                {styleOptions.findIndex((s) => s.key === selectedStyle) + 1} / {styleOptions.length}
               </ThemedText>
             </View>
           </View>
@@ -100,27 +141,27 @@ export function WidgetSettingsPage() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.styleRow}>
-            {STYLES.map((item) => {
+            contentContainerStyle={sheetStyles.styleRow}>
+            {styleOptions.map((item) => {
               const active = item.key === selectedStyle;
               return (
                 <Pressable
                   key={item.key}
                   onPress={() => setSelectedStyle(item.key)}
-                  style={[styles.styleCard, active && styles.styleCardActive]}>
-                  <View style={[styles.mockCard, active && styles.mockCardActive]} />
-                  <ThemedText style={styles.styleTitle}>{item.title}</ThemedText>
-                  <ThemedText style={styles.styleDesc}>{item.description}</ThemedText>
+                  style={[sheetStyles.styleCard, active && sheetStyles.styleCardActive]}>
+                  <View style={[sheetStyles.mockCard, active && sheetStyles.mockCardActive]} />
+                  <ThemedText style={sheetStyles.styleTitle}>{item.title}</ThemedText>
+                  <ThemedText style={sheetStyles.styleDesc}>{item.description}</ThemedText>
                 </Pressable>
               );
             })}
           </ScrollView>
 
-          <View style={styles.settingBox}>
+          <View style={sheetStyles.settingBox}>
             <View>
-              <ThemedText style={styles.settingTitle}>Kinetic Transition</ThemedText>
-              <ThemedText style={styles.settingDescription}>
-                업데이트 시 역동적인 모션 블러 효과 사용
+              <ThemedText style={sheetStyles.settingTitle}>{t('widgetSettings.kineticTitle')}</ThemedText>
+              <ThemedText style={sheetStyles.settingDescription}>
+                {t('widgetSettings.kineticDesc')}
               </ThemedText>
             </View>
             <Switch
@@ -131,9 +172,9 @@ export function WidgetSettingsPage() {
             />
           </View>
 
-          <Pressable style={styles.saveButton}>
+          <Pressable style={sheetStyles.saveButton}>
             <IconSymbol name="checkmark.circle.fill" size={18} color="#fff" />
-            <ThemedText style={styles.saveButtonText}>설정 저장</ThemedText>
+            <ThemedText style={sheetStyles.saveButtonText}>{t('widgetSettings.saveSettings')}</ThemedText>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -141,7 +182,7 @@ export function WidgetSettingsPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const sheetStyles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: BG },
   safe: { flex: 1 },
   topBar: {

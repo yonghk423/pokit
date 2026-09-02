@@ -10,6 +10,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { useTranslation } from '@shared/lib/i18n';
 
 export const COMPLETION_TOGGLE_ANIM_MS = 280;
 
@@ -74,6 +75,7 @@ export function CompletionRadioButton({
   onPress,
   accessibilityLabel,
 }: Props) {
+  const { t } = useTranslation();
   const outerSize = shape === 'square' ? SQUARE_OUTER_SIZE : CIRCLE_OUTER_SIZE;
   const cornerRadius = shape === 'square' ? 0 : outerSize / 2;
   const checkIconSize = shape === 'square' ? SQUARE_CHECK_ICON_SIZE : CHECK_ICON_SIZE;
@@ -128,7 +130,7 @@ export function CompletionRadioButton({
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
-      accessibilityLabel={accessibilityLabel ?? (checked ? '완료 취소' : '완료')}
+      accessibilityLabel={accessibilityLabel ?? (checked ? t('common.completeCancel') : t('common.complete'))}
       hitSlop={6}
       onPress={handlePress}
       onPressIn={() => {

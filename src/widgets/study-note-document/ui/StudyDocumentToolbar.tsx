@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -150,11 +151,12 @@ export function StudyDocumentToolbar({
   onAction,
   onRetainKeyboardFocus,
 }: Props) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.root, surfaceBg ? { backgroundColor: surfaceBg } : null]}>
       <View style={styles.row}>
         <ToolBtn
-          label="실행 취소"
+          label={t('studyNote.undo')}
           icon="arrow.uturn.backward"
           palette={palette}
           surfaceBg={surfaceBg}
@@ -163,7 +165,7 @@ export function StudyDocumentToolbar({
           onPress={() => onAction('undo')}
         />
         <ToolBtn
-          label="다시 실행"
+          label={t('studyNote.redo')}
           icon="arrow.uturn.forward"
           palette={palette}
           surfaceBg={surfaceBg}
@@ -173,7 +175,7 @@ export function StudyDocumentToolbar({
         />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
         <ToolBtn
-          label="맨 위에 줄 추가"
+          label={t('studyNote.insertLineTop')}
           icon="arrow.up.to.line"
           palette={palette}
           surfaceBg={surfaceBg}
@@ -181,7 +183,7 @@ export function StudyDocumentToolbar({
           onPress={() => onAction('insert-line-top')}
         />
         <ToolBtn
-          label="맨 아래에 줄 추가"
+          label={t('studyNote.insertLineBottom')}
           icon="arrow.down.to.line"
           palette={palette}
           surfaceBg={surfaceBg}
@@ -189,14 +191,14 @@ export function StudyDocumentToolbar({
           onPress={() => onAction('insert-line-bottom')}
         />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
-        <ToolBtn label="체크리스트" icon="checkmark.square" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'checklist'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('checklist')} />
-        <ToolBtn label="글머리 목록" icon="list.bullet" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'bullet'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('bullet')} />
-        <ToolBtn label="번호 목록" icon="list.number" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'numbered'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('numbered')} />
+        <ToolBtn label={t('studyNote.toolbarChecklist')} icon="checkmark.square" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'checklist'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('checklist')} />
+        <ToolBtn label={t('studyNote.toolbarBullet')} icon="list.bullet" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'bullet'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('bullet')} />
+        <ToolBtn label={t('studyNote.toolbarNumbered')} icon="list.number" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'numbered'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('numbered')} />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
-        <ToolBtn label="굵게" icon="bold" palette={palette} surfaceBg={surfaceBg} active={activeBold} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('bold')} />
-        <ToolBtn label="밑줄" icon="underline" palette={palette} surfaceBg={surfaceBg} active={activeUnderline} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('underline')} />
+        <ToolBtn label={t('studyNote.toolbarBold')} icon="bold" palette={palette} surfaceBg={surfaceBg} active={activeBold} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('bold')} />
+        <ToolBtn label={t('studyNote.toolbarUnderline')} icon="underline" palette={palette} surfaceBg={surfaceBg} active={activeUnderline} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('underline')} />
         <ColorToolBtn
-          label="글자 색"
+          label={t('studyNote.toolbarTextColor')}
           palette={palette}
           surfaceBg={surfaceBg}
           activeColor={activeTextColor}
@@ -204,12 +206,12 @@ export function StudyDocumentToolbar({
           onRetainKeyboardFocus={onRetainKeyboardFocus}
           onPress={() => onAction('text-color')}
         />
-        <ToolBtn label="링크" icon="link" palette={palette} surfaceBg={surfaceBg} active={linkPickerOpen} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('link')} />
-        <ToolBtn label="표" icon="tablecells" palette={palette} surfaceBg={surfaceBg} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('table')} />
-        <ToolBtn label="이미지" icon="photo" palette={palette} surfaceBg={surfaceBg} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('image')} />
+        <ToolBtn label={t('studyNote.toolbarLink')} icon="link" palette={palette} surfaceBg={surfaceBg} active={linkPickerOpen} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('link')} />
+        <ToolBtn label={t('studyNote.toolbarTable')} icon="tablecells" palette={palette} surfaceBg={surfaceBg} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('table')} />
+        <ToolBtn label={t('studyNote.toolbarImage')} icon="photo" palette={palette} surfaceBg={surfaceBg} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('image')} />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
         <ToolBtn
-          label="노트 전체 지우기"
+          label={t('studyNote.toolbarClearAll')}
           icon="arrow.counterclockwise"
           palette={palette}
           surfaceBg={surfaceBg}
@@ -219,7 +221,7 @@ export function StudyDocumentToolbar({
         />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
         <ToolBtn
-          label="키보드 내리기"
+          label={t('studyNote.toolbarDismissKeyboard')}
           icon="keyboard.chevron.compact.down"
           palette={palette}
           surfaceBg={surfaceBg}

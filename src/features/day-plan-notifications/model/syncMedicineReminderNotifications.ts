@@ -21,6 +21,7 @@ import {
   loadMedicineReminderScheduled,
   saveMedicineReminderScheduled,
 } from '@shared/lib/storage';
+import { t } from '@shared/lib/i18n';
 
 const MAX_MEDICINE_REMINDER_SLOTS = 32;
 
@@ -38,9 +39,9 @@ type CollectedSlot = {
 };
 
 function doseLabelKo(part: DosePart): string {
-  if (part === 'morning') return '아침';
-  if (part === 'lunch') return '점심';
-  return '저녁';
+  if (part === 'morning') return t('notify.meal.morning');
+  if (part === 'lunch') return t('notify.meal.lunch');
+  return t('notify.meal.dinner');
 }
 
 function collectFromBlocks(): CollectedSlot[] {
@@ -80,16 +81,17 @@ function collectFromBlocks(): CollectedSlot[] {
       if (m === null || m >= 24 * 60) continue;
       const hour = Math.floor(m / 60);
       const minute = m % 60;
-      const doseName = (cfg.doseLabel ?? '').trim() || '약';
+      const doseName = (cfg.doseLabel ?? '').trim() || t('notify.medicineDefault');
       const slotKey = `${b.id}:${row.part}`;
       const labelKo = doseLabelKo(row.part);
+      const timeLabel = formatHhmmClockKo(row.hhmm.trim());
       out.push({
         slotKey,
         blockId: b.id,
         hour,
         minute,
-        title: '복용 알림',
-        body: `${doseName} · ${labelKo} 복용 ${formatHhmmClockKo(row.hhmm.trim())}입니다.`,
+        title: t('notify.medicine.title'),
+        body: t('notify.medicine.body', { dose: doseName, meal: labelKo, time: timeLabel }),
       });
     }
   }

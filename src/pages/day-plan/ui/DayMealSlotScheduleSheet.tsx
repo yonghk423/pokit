@@ -5,12 +5,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   alignDayMealSlotScheduleToPriorityWindow,
-  DAY_MEAL_SLOT_LABEL,
   DAY_MEAL_SLOT_ORDER,
   isDayMealSlotScheduleValid,
   type DayMealSlot,
   type DayMealSlotSchedule,
 } from '@shared/lib/storage';
+import { formatMealSlotLabel, type LocaleDayMealSlot } from '@shared/lib/i18n';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
@@ -30,13 +31,13 @@ type Props = {
   priorityEnd?: string;
 };
 
-const SLOT_HINTS: Record<DayMealSlot, string> = {
-  dawn: '새벽 구간이 시작되는 시각',
-  morning: '아침 구간이 시작되는 시각',
-  lunch: '점심 구간이 시작되는 시각',
-  dinner: '저녁 구간이 시작되는 시각',
-  night: '밤 구간이 시작되는 시각',
-};
+const SLOT_HINT_KEYS = {
+  dawn: 'mealSlot.dawnStartHint',
+  morning: 'mealSlot.morningStartHint',
+  lunch: 'mealSlot.lunchStartHint',
+  dinner: 'mealSlot.dinnerStartHint',
+  night: 'mealSlot.nightStartHint',
+} as const satisfies Record<DayMealSlot, import('@shared/lib/i18n').I18nKey>;
 
 export function DayMealSlotScheduleSheet({
   visible,
@@ -49,6 +50,8 @@ export function DayMealSlotScheduleSheet({
   priorityEnd,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+
   const palette = useMemo(() => paletteForReminderTimeCard(isDark), [isDark]);
   const [draft, setDraft] = useState(schedule);
   const [expandedSlot, setExpandedSlot] = useState<DayMealSlot | null>(null);
@@ -73,8 +76,8 @@ export function DayMealSlotScheduleSheet({
   const handleSave = useCallback(() => {
     if (!isDayMealSlotScheduleValid(draft)) {
       Alert.alert(
-        '시간 순서를 확인해 주세요',
-        '새벽 → 아침 → 점심 → 저녁 → 밤 순으로 시작 시각이 앞서야 해요.',
+        t('alert.mealSlotOrder.title'),
+        t('alert.mealSlotOrder.message'),
       );
       return;
     }
@@ -96,9 +99,9 @@ export function DayMealSlotScheduleSheet({
         ]}>
         <View style={[styles.header, { borderBottomColor: palette.timeField.border }]}>
           <ThemedText style={[styles.title, { color: palette.timeField.onSurface }]}>
-            시간대 설정
+            {t('dayPlan.mealSlotScheduleTitle')}
           </ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} hitSlop={10}>
             <IconSymbol name="xmark" size={20} color={palette.timeField.onVariant} />
           </Pressable>
         </View>
@@ -108,13 +111,13 @@ export function DayMealSlotScheduleSheet({
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled">
           <ThemedText style={[styles.lead, { color: palette.timeField.onVariant }]}>
-            각 구간이 시작되는 시각을 정해요. 오늘 탭 구간 보기와 나만의 루틴에 함께 반영돼요.
+            {t('dayPlan.mealSlotScheduleLead')}
           </ThemedText>
           {DAY_MEAL_SLOT_ORDER.map((slot) => (
             <View key={slot} style={[styles.rowWrap, { borderBottomColor: palette.timeField.border }]}>
               <SnappedTimePickerField
-                label={DAY_MEAL_SLOT_LABEL[slot]}
-                hint={SLOT_HINTS[slot]}
+                label={formatMealSlotLabel(slot as LocaleDayMealSlot)}
+                hint={t(SLOT_HINT_KEYS[slot])}
                 valueHhmm={draft[slot]}
                 onChangeHhmm={(next) => setDraft((prev) => ({ ...prev, [slot]: next }))}
                 expanded={expandedSlot === slot}
@@ -133,7 +136,7 @@ export function DayMealSlotScheduleSheet({
         <View style={[styles.footer, { borderTopColor: palette.timeField.border }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="시간대 설정 저장"
+            accessibilityLabel={t('dayPlan.mealSlotScheduleSaveA11y')}
             onPress={handleSave}
             style={({ pressed }) => [
               styles.primaryBtn,
@@ -141,7 +144,7 @@ export function DayMealSlotScheduleSheet({
               pressed && { opacity: 0.88 },
             ]}>
             <ThemedText style={[styles.primaryBtnLabel, { color: isDark ? '#09090b' : '#ffffff' }]}>
-              저장
+              {t('common.save')}
             </ThemedText>
           </Pressable>
         </View>

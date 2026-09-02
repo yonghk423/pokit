@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CityPopSpacing, RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -20,6 +21,7 @@ export function AppUpdateAvailableModal({
   onUpdatePress,
   onLaterPress,
 }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -40,9 +42,9 @@ export function AppUpdateAvailableModal({
               marginBottom: Math.max(insets.bottom, CityPopSpacing.gutter),
             },
           ]}>
-          <ThemedText style={[styles.title, { color: c.text }]}>새 버전이 나왔어요</ThemedText>
+          <ThemedText style={[styles.title, { color: c.text }]}>{t('appUpdate.availableTitle')}</ThemedText>
           <ThemedText style={[styles.subtitle, { color: c.textMuted }]}>
-            POKIT v{latestVersion}이 스토어에 배포됐어요
+            {t('appUpdate.availableSubtitle', { version: latestVersion })}
           </ThemedText>
 
           <ScrollView
@@ -61,7 +63,7 @@ export function AppUpdateAvailableModal({
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="업데이트"
+            accessibilityLabel={t('appUpdate.updateA11y')}
             style={({ pressed }) => [
               styles.primaryBtn,
               {
@@ -74,12 +76,12 @@ export function AppUpdateAvailableModal({
               },
             ]}
             onPress={onUpdatePress}>
-            <ThemedText style={[styles.primaryBtnText, { color: c.primaryOn }]}>업데이트</ThemedText>
+            <ThemedText style={[styles.primaryBtnText, { color: c.primaryOn }]}>{t('appUpdate.updateBtn')}</ThemedText>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="나중에"
+            accessibilityLabel={t('appUpdate.laterA11y')}
             style={({ pressed }) => [
               styles.secondaryBtn,
               {
@@ -92,7 +94,7 @@ export function AppUpdateAvailableModal({
               },
             ]}
             onPress={onLaterPress}>
-            <ThemedText style={[styles.secondaryBtnText, { color: c.text }]}>나중에</ThemedText>
+            <ThemedText style={[styles.secondaryBtnText, { color: c.text }]}>{t('appUpdate.laterBtn')}</ThemedText>
           </Pressable>
         </View>
       </View>

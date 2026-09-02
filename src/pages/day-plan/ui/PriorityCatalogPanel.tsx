@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import { useFocusEffect } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,7 +17,7 @@ import {
   resolveCategoryCatalogIcon,
   useDayPlanDraftStore,
 } from '@entities/day-plan';
-import { DAY_MEAL_SLOT_LABEL, type CustomCatalogGroup, type CustomFlowCatalogEntry, type DayMealSlot } from '@shared/lib/storage';
+import { getDayMealSlotLabel, type CustomCatalogGroup, type CustomFlowCatalogEntry, type DayMealSlot } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory, categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
@@ -174,6 +175,7 @@ function CatalogListRow({
   priorityEnd?: string;
   manageOnly?: boolean;
 }) {
+  const { t } = useTranslation();
   const settingsBorder = manageOnly
     ? line
     : isDark
@@ -278,11 +280,11 @@ function CatalogListRow({
         accessibilityLabel={
           manageOnly
             ? subtitle
-              ? `${label}. ${subtitle}, 설정 열기`
-              : `${label}, 설정 열기`
+              ? t('catalog.settingsOpenA11y', { label, subtitle: t('catalog.settingsOpenSubtitleA11y', { subtitle }) })
+              : t('catalog.settingsOpenA11y', { label, subtitle: '' })
             : subtitle
-              ? `${label}. ${subtitle}, 우선 순위에 ${selected ? '담김' : '담기'}`
-              : `${label}, 우선 순위에 ${selected ? '담김' : '담기'}`
+              ? t('catalog.priorityToggleA11y', { label, subtitle: t('catalog.settingsOpenSubtitleA11y', { subtitle }), state: selected ? t('catalog.priorityAdded') : t('catalog.priorityAdd') })
+              : t('catalog.priorityToggleA11y', { label, subtitle: '', state: selected ? t('catalog.priorityAdded') : t('catalog.priorityAdd') })
         }
         onPress={() => {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -378,7 +380,7 @@ function CatalogListRow({
         {onDeleteItem ? (
           manageOnly ? (
             <BrutalActionButton
-              accessibilityLabel={`${label} 삭제`}
+              accessibilityLabel={t('catalog.deleteA11y', { label })}
               disabled={settingsLocked}
               borderColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)') : settingsBorder}
               backgroundColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)') : settingsBg}
@@ -398,7 +400,7 @@ function CatalogListRow({
           ) : (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${label} 삭제`}
+            accessibilityLabel={t('catalog.deleteA11y', { label })}
             hitSlop={10}
             disabled={settingsLocked}
             onPress={() => {
@@ -433,7 +435,7 @@ function CatalogListRow({
         {onMoveGroup ? (
           manageOnly ? (
             <BrutalActionButton
-              accessibilityLabel={`${label} 묶음 옮기기`}
+              accessibilityLabel={t('catalog.moveGroupA11y', { label })}
               borderColor={settingsBorder}
               backgroundColor={settingsBg}
               pressedBg={settingsHoverBg}
@@ -451,7 +453,7 @@ function CatalogListRow({
           ) : (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${label} 묶음 옮기기`}
+            accessibilityLabel={t('catalog.moveGroupA11y', { label })}
             hitSlop={10}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -478,8 +480,8 @@ function CatalogListRow({
             }}
             accessibilityLabel={
               mealSlotActive
-                ? `${label} 시간대 ${selectedMealSlots!.map((slot) => DAY_MEAL_SLOT_LABEL[slot]).join(', ')}`
-                : `${label} 시간대 선택`
+                ? t('fixedRoutine.mealSlotA11y', { label, slots: selectedMealSlots!.map((slot) => getDayMealSlotLabel(slot)).join(', ') })
+                : t('fixedRoutine.mealSlotPickA11y', { label })
             }
             disabled={mealSlotPickerDisabled}
             hitSlop={mealSlotPickerDisabled ? 0 : 10}
@@ -530,8 +532,8 @@ function CatalogListRow({
             }}
             accessibilityLabel={
               spineStartMinutes != null && spineEndMinutes != null
-                ? `${label} 시간 ${formatMinuteOfDayKo(spineStartMinutes)}~${formatMinuteOfDayKo(spineEndMinutes)}`
-                : `${label} 시간 선택`
+                ? t('fixedRoutine.timeA11y', { label, time: `${formatMinuteOfDayKo(spineStartMinutes)}~${formatMinuteOfDayKo(spineEndMinutes)}` })
+                : t('fixedRoutine.timePickA11y', { label })
             }
             disabled={spineTimePickerDisabled}
             hitSlop={spineTimePickerDisabled ? 0 : 10}
@@ -573,8 +575,8 @@ function CatalogListRow({
           <BrutalActionButton
             accessibilityLabel={
               settingsLocked
-                ? `${label} 목표 상세 설정, 집중 실행 중에는 변경할 수 없어요`
-                : `${label} 목표 상세 설정`
+                ? t('catalog.goalSettingsLockedA11y', { label })
+                : t('catalog.goalSettingsA11y', { label })
             }
             disabled={settingsLocked}
             borderColor={
@@ -610,8 +612,8 @@ function CatalogListRow({
           accessibilityState={{ disabled: settingsLocked }}
           accessibilityLabel={
             settingsLocked
-              ? `${label} 목표 상세 설정, 집중 실행 중에는 변경할 수 없어요`
-              : `${label} 목표 상세 설정`
+              ? t('catalog.goalSettingsLockedA11y', { label })
+              : t('catalog.goalSettingsA11y', { label })
           }
           disabled={settingsLocked}
           hitSlop={settingsLocked ? 0 : 10}
@@ -648,8 +650,8 @@ function CatalogListRow({
           accessibilityRole="button"
           accessibilityLabel={
             selected
-              ? `${label} 우선 순위에서 빼기`
-              : `${label} 우선 순위에 담기`
+              ? t('catalog.removeFromPriorityA11y', { label })
+              : t('catalog.addToPriorityA11y', { label })
           }
           hitSlop={10}
           onPress={() => {
@@ -729,11 +731,12 @@ function CatalogSectionHeader({
   trailing?: ReactNode;
   manageOnly?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <View
       style={[styles.sectionHeader, manageOnly && styles.sectionHeaderManage]}
       accessibilityRole="header"
-      accessibilityLabel={`${title} 묶음, ${itemCount}개`}>
+      accessibilityLabel={t('catalog.groupA11y', { title, count: itemCount })}>
       <View style={styles.sectionHeaderTop}>
         <View style={styles.sectionHeaderTextCol}>
           <View style={styles.sectionHeaderTitleRow}>
@@ -747,7 +750,7 @@ function CatalogSectionHeader({
               {title}
             </ThemedText>
             <ThemedText style={[styles.sectionMeta, { color: muted }]} numberOfLines={1}>
-              묶음 · {itemCount}개
+              {t('catalog.groupCount', { count: itemCount })}
             </ThemedText>
           </View>
         </View>
@@ -977,13 +980,14 @@ function GroupSectionBlock({
   };
   manageOnly?: boolean;
 }) {
+  const { t } = useTranslation();
   const groupHeaderTrailing =
     onRenameCustomGroup || onDeleteCatalogGroup ? (
       <View style={styles.customGroupHeaderActions}>
         {onRenameCustomGroup ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="묶음 편집"
+            accessibilityLabel={t('catalog.editGroupA11y')}
             hitSlop={8}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1019,7 +1023,7 @@ function GroupSectionBlock({
         {onDeleteCatalogGroup ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="묶음 삭제"
+            accessibilityLabel={t('catalog.deleteGroupA11y')}
             hitSlop={8}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

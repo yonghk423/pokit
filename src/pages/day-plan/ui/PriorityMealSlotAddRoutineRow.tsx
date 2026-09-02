@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet } from 'react-native';
 
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -13,16 +14,19 @@ type Props = {
 
 /** 시간대별 보기 — 구간에 루틴 연결 */
 export function PriorityMealSlotAddRoutineRow({
-  label = '루틴 연결',
+  label,
   ink,
   line,
   isDark,
   onPress,
 }: Props) {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t('dayPlan.confirmLink');
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={resolvedLabel}
       onPress={onPress}
       style={({ pressed }) => [
         styles.root,
@@ -33,7 +37,7 @@ export function PriorityMealSlotAddRoutineRow({
         pressed && styles.pressed,
       ]}>
       <IconSymbol name="plus.circle.fill" size={14} color={ink} />
-      <ThemedText style={[styles.label, { color: ink }]}>{label}</ThemedText>
+      <ThemedText style={[styles.label, { color: ink }]}>{resolvedLabel}</ThemedText>
     </Pressable>
   );
 }

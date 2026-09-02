@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { WeeklyHistorySummary } from '../lib/buildWeeklyFlowHistory';
@@ -11,21 +12,25 @@ type Props = {
 };
 
 export function WeeklyHistorySummaryCard({ summary, palette }: Props) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
       <View style={styles.topRow}>
-        <ThemedText style={[styles.title, { color: palette.ink }]}>이번 주 요약</ThemedText>
+        <ThemedText style={[styles.title, { color: palette.ink }]}>{t('history.summary.weekTitle')}</ThemedText>
         <ThemedText style={[styles.percent, { color: palette.accent }]}>
           {summary.progressPercent}%
         </ThemedText>
       </View>
       <ThemedText style={[styles.body, { color: palette.muted }]}>
-        {summary.activeDays}일 / {summary.daysInWeek}일 중 활동 · 총 {summary.totalCompletions}회
-        완료
+        {t('history.summary.body', {
+          activeDays: summary.activeDays,
+          totalDays: summary.daysInWeek,
+          completions: summary.totalCompletions,
+        })}
       </ThemedText>
       {summary.topCategoryLabels.length > 0 ? (
         <ThemedText style={[styles.highlight, { color: palette.ink }]}>
-          가장 많이 한 루틴: {summary.topCategoryLabels.join(' · ')}
+          {t('history.summary.topRoutine', { labels: summary.topCategoryLabels.join(' · ') })}
         </ThemedText>
       ) : null}
     </View>

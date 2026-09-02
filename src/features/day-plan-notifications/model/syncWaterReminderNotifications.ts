@@ -18,6 +18,7 @@ import {
   loadWaterReminderScheduled,
   saveWaterReminderScheduled,
 } from '@shared/lib/storage';
+import { t } from '@shared/lib/i18n';
 
 const MAX_WATER_REMINDER_SLOTS = 48;
 
@@ -76,7 +77,7 @@ function collectSlots(): CollectedSlot[] {
     if (!cfg.smartNotification || cfg.reminderTimes.length === 0) continue;
 
     const firstLine = b.title?.trim().split('\n')[0]?.trim() ?? '';
-    const label = firstLine.length > 0 ? firstLine : '수분';
+    const label = firstLine.length > 0 ? firstLine : t('notify.waterDefault');
 
     for (const hhmmRaw of cfg.reminderTimes) {
       const hhmm = hhmmRaw.trim();
@@ -90,8 +91,8 @@ function collectSlots(): CollectedSlot[] {
         blockId: b.id,
         hour: Math.floor(wall / 60),
         minute: wall % 60,
-        title: '수분 알림',
-        body: `${label} · ${formatHhmmClockKo(hhmm)}입니다.`,
+        title: t('notify.water.title'),
+        body: t('notify.water.body', { label, time: formatHhmmClockKo(hhmm) }),
       });
     }
   }

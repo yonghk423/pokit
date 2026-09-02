@@ -24,12 +24,13 @@ import {
   saveGoalDetailCategoryConfig,
   updateCatalogItemGroup,
 } from '@shared/lib/storage';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { GoalDetailCategoryKey } from '../model/types';
 import { resolveGoalDetailModuleForTarget } from './category';
-import { ROUTINE_RENAME_LOCK_MESSAGES } from './category/lib/RoutineTitleField';
+import { getRoutineRenameLockMessage } from './category/lib/RoutineTitleField';
 import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
 import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
 import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
@@ -87,6 +88,7 @@ export function RoutineInlineSettingsPanel({
   lockRename = true,
   previewTitle,
 }: Props) {
+  const { t } = useTranslation();
   const key = categoryKey as GoalDetailCategoryKey;
   const [dataConfig, setDataConfig] = useState<unknown>(() => loadGoalDetailCategoryConfig(key) ?? {});
   const [groupKey, setGroupKey] = useState(() => resolveCatalogItemGroupKey(key));
@@ -179,7 +181,7 @@ export function RoutineInlineSettingsPanel({
         <View style={[styles.renameLockBanner, { borderBottomColor: border }]}>
           <IconSymbol name="lock.fill" size={13} color={muted} />
           <ThemedText style={[styles.renameLockBannerText, { color: muted }]}>
-            {ROUTINE_RENAME_LOCK_MESSAGES[renameLockedReason]}
+            {getRoutineRenameLockMessage(renameLockedReason)}
           </ThemedText>
         </View>
       ) : null}
@@ -199,7 +201,9 @@ export function RoutineInlineSettingsPanel({
       />
 
       <View style={[styles.metaSection, { borderTopColor: border }]}>
-        <ThemedText style={[styles.metaTitle, { color: muted }]}>루틴 설정</ThemedText>
+        <ThemedText style={[styles.metaTitle, { color: muted }]}>
+          {t('goalDetail.routineSettings')}
+        </ThemedText>
         <CustomFlowGroupField groupKey={groupKey} onChangeGroupKey={handleChangeGroup} />
         {!running ? (
           <RoutineAppearanceField

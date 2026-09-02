@@ -58,6 +58,7 @@ import {
 import { coerceDayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
 import { ThemedView } from '@shared/ui/themed-view';
 import { prefetchWelcomeIntroAssets } from '@shared/lib/welcome-intro-assets';
+import { t } from '@shared/lib/i18n';
 
 import {
   defaultPriorityWindowFromNow,
@@ -169,6 +170,22 @@ export function DayPlanPage({
     [layoutMode, visibility],
   );
 
+  const {
+    todayAppliedRevision,
+    fixedFlowSets,
+    hydrate: hydrateFixedFlowSets,
+    refreshTodayAppliedCategoryKeys,
+    setFixedRoutineApplyLayoutMode,
+  } = useFixedFlowSetsStore(
+    useShallow((s) => ({
+      todayAppliedRevision: s.todayAppliedRevision,
+      fixedFlowSets: s.sets,
+      hydrate: s.hydrate,
+      refreshTodayAppliedCategoryKeys: s.refreshTodayAppliedCategoryKeys,
+      setFixedRoutineApplyLayoutMode: s.setFixedRoutineApplyLayoutMode,
+    })),
+  );
+
   useEffect(() => {
     hydrateLayoutModeVisibility();
   }, [hydrateLayoutModeVisibility]);
@@ -205,22 +222,6 @@ export function DayPlanPage({
       notifyFixedFlowApplyScheduleChanged();
     },
     [coerceLayoutMode, setPlanMode, setPriorityMealSlotLayoutEnabled, setPrioritySpineLayoutEnabled, setFixedRoutineApplyLayoutMode],
-  );
-
-  const {
-    todayAppliedRevision,
-    fixedFlowSets,
-    hydrate: hydrateFixedFlowSets,
-    refreshTodayAppliedCategoryKeys,
-    setFixedRoutineApplyLayoutMode,
-  } = useFixedFlowSetsStore(
-    useShallow((s) => ({
-      todayAppliedRevision: s.todayAppliedRevision,
-      fixedFlowSets: s.sets,
-      hydrate: s.hydrate,
-      refreshTodayAppliedCategoryKeys: s.refreshTodayAppliedCategoryKeys,
-      setFixedRoutineApplyLayoutMode: s.setFixedRoutineApplyLayoutMode,
-    })),
   );
 
   useEffect(() => {
@@ -436,11 +437,11 @@ export function DayPlanPage({
       const pe = parseHHmmToMinutes(priorityEnd);
       const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
       if (ps === null || pe === null) {
-        Alert.alert('시각 형식', '시작·종료 시각을 먼저 확인해 주세요.');
+        Alert.alert(t('alert.timeFormat.title'), t('alert.timeFormat.checkStartEnd'));
         return;
       }
       if (!overnight && pe <= ps) {
-        Alert.alert('시각 형식', '시작·종료 시각을 먼저 확인해 주세요.');
+        Alert.alert(t('alert.timeFormat.title'), t('alert.timeFormat.checkStartEnd'));
         return;
       }
       const label = getPickerCategoryLabel(categoryKey);
@@ -455,7 +456,7 @@ export function DayPlanPage({
         planDateKey: getLocalDateKey(),
       });
       if (!result.ok) {
-        Alert.alert('열기 실패', '해당 카테고리 몰입 화면을 열지 못했습니다.');
+        Alert.alert(t('alert.openFailed.title'), t('alert.openFailed.focusDetail'));
         return;
       }
       router.push({
@@ -496,7 +497,7 @@ export function DayPlanPage({
       const ps = parseHHmmToMinutes(w.startTime);
       const pe = parseHHmmToMinutes(w.endTime);
       if (ps === null || pe === null || pe <= ps) {
-        Alert.alert('저장 실패', '기본 시간대를 계산하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+        Alert.alert(t('alert.saveFailed.title'), t('alert.saveFailed.defaultWindow'));
         return;
       }
 
@@ -505,17 +506,17 @@ export function DayPlanPage({
         title: blockTitle,
         startMinutes: ps,
         endMinutes: pe,
-        category: '사용자',
+        category: t('category.userFallback'),
         replaceOverlapping: true,
         blockOrigin: 'quickMemo',
       });
 
       if (!result.ok) {
         if (result.reason === 'in_the_past') {
-          Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 일정만 저장할 수 있어요.');
+          Alert.alert(t('alert.pastTime.title'), t('alert.pastTime.endMustBeFuture'));
           return;
         }
-        Alert.alert('저장 실패', '잠금화면 메모를 일정으로 저장하지 못했습니다.');
+        Alert.alert(t('alert.saveFailed.title'), t('alert.saveFailed.quickMemo'));
         return;
       }
 
@@ -543,7 +544,7 @@ export function DayPlanPage({
 
     if (planMode === 'priority') {
       if (priorityCategoryOrder.length === 0) {
-        Alert.alert('카테고리 필요', '저장하려면 카테고리를 하나 이상 선택해 주세요.');
+        Alert.alert(t('alert.categoryRequired.title'), t('alert.categoryRequired.message'));
         return;
       }
       const today = getLocalDateKey();
@@ -568,18 +569,18 @@ export function DayPlanPage({
       const pe = parseHHmmToMinutes(effectiveEnd);
       const overnight = isOvernightHhmmRange(effectiveStart, effectiveEnd);
       if (ps === null || pe === null) {
-        Alert.alert('시각 형식', '시작·종료 시각은 09:00 형식으로 입력해 주세요.');
+        Alert.alert(t('alert.timeFormat.title'), t('alert.timeFormat.useHhmm'));
         return;
       }
       if (!overnight && pe <= ps) {
-        Alert.alert('시간 구간', '종료 시각은 시작 시각보다 늦어야 합니다.');
+        Alert.alert(t('alert.timeRange.title'), t('alert.timeRange.endAfterStart'));
         return;
       }
 
       const headKey = priorityCategoryOrder[0]!;
       const catLabel = getPickerCategoryLabel(headKey);
       const orderedLabels = priorityCategoryOrder.map((key) => getPickerCategoryLabel(key));
-      const blockTitle = orderedLabels.length > 0 ? orderedLabels.join('\n') : '항목';
+      const blockTitle = orderedLabels.length > 0 ? orderedLabels.join('\n') : t('dayPlan.blockFallback');
 
       const result = addBlock({
         title: blockTitle,
@@ -595,14 +596,14 @@ export function DayPlanPage({
 
       if (!result.ok) {
         if (result.reason === 'overlap') {
-          Alert.alert('시간 중복', '기존 일정과 겹칩니다. 시간대를 조정해 주세요.');
+          Alert.alert(t('alert.overlap.title'), t('alert.overlap.message'));
           return;
         }
         if (result.reason === 'in_the_past') {
-          Alert.alert('지난 시간', '종료 시각이 현재보다 이후인 일정만 저장할 수 있어요.');
+          Alert.alert(t('alert.pastTime.title'), t('alert.pastTime.endMustBeFuture'));
           return;
         }
-        Alert.alert('시작 실패', '우선 순위 일정을 시작하지 못했습니다.');
+        Alert.alert(t('alert.startFailed.title'), t('alert.startFailed.priorityPlan'));
         return;
       }
 
@@ -746,32 +747,32 @@ export function DayPlanPage({
   /** 마운트 해제 시 primary 를 idle로 되돌림 */
   useEffect(() => {
     return () => {
-      registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
+      registerPrimaryAction(null, { disabled: true, label: t('dayPlan.primary.start'), hidden: false });
     };
   }, [registerPrimaryAction]);
 
   useEffect(() => {
     if (planMode === 'priority') {
-      registerPrimaryAction(null, { disabled: true, label: '자동 시작', hidden: true });
+      registerPrimaryAction(null, { disabled: true, label: t('dayPlan.primary.autoStart'), hidden: true });
       return;
     }
     if (planMode === 'quickMemo') {
-      registerPrimaryAction(null, { disabled: true, label: '잠금화면 메모 저장', hidden: true });
+      registerPrimaryAction(null, { disabled: true, label: t('dayPlan.primary.saveQuickMemo'), hidden: true });
       return;
     }
     if (planMode === 'dayNote') {
-      registerPrimaryAction(null, { disabled: true, label: '노트', hidden: true });
+      registerPrimaryAction(null, { disabled: true, label: t('planMode.dayNote'), hidden: true });
       return;
     }
     if (planMode === 'todoList') {
-      registerPrimaryAction(null, { disabled: true, label: '할 일 추가', hidden: true });
+      registerPrimaryAction(null, { disabled: true, label: t('dayPlan.primary.addTodo'), hidden: true });
       return;
     }
     if (planMode === 'reading') {
-      registerPrimaryAction(null, { disabled: true, label: '독서 설정', hidden: true });
+      registerPrimaryAction(null, { disabled: true, label: t('dayPlan.primary.readingSettings'), hidden: true });
       return;
     }
-    registerPrimaryAction(null, { disabled: true, label: '시작하기', hidden: false });
+    registerPrimaryAction(null, { disabled: true, label: t('dayPlan.primary.start'), hidden: false });
   }, [registerPrimaryAction, planMode]);
 
   const shellBg = c.containerLow;

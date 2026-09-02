@@ -5,8 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addDaysToLocalDateKey, getLocalDateKey } from '@entities/day-plan';
 
 import { DEFAULT_DAILY_RHYTHM } from '../lib/dailyRhythmPresets';
-import { formatDateKeyCompactKo } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
+import { formatDateKeyCompact, useTranslation } from '@shared/lib/i18n';
 import { DailyRhythmTimeEditorBody } from './DailyRhythmTimeEditorBody';
 
 type Props = {
@@ -24,6 +24,7 @@ export function DailyRhythmOnboardingGate({
   onConfirm,
   onEndDateChoice,
 }: Props) {
+  const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
   const safeTop =
     insets.top > 8
@@ -34,12 +35,15 @@ export function DailyRhythmOnboardingGate({
   const [seedKey, setSeedKey] = useState(0);
   const todayKey = useMemo(() => getLocalDateKey(), [seedKey]);
   const todayChoiceLabel = useMemo(
-    () => `당일 · ${formatDateKeyCompactKo(todayKey)}`,
-    [todayKey],
+    () => t('dayRhythm.todayChoice', { date: formatDateKeyCompact(todayKey, locale) }),
+    [locale, t, todayKey],
   );
   const nextDayChoiceLabel = useMemo(
-    () => `다음 날 · ${formatDateKeyCompactKo(addDaysToLocalDateKey(todayKey, 1))}`,
-    [todayKey],
+    () =>
+      t('dayRhythm.nextDayChoice', {
+        date: formatDateKeyCompact(addDaysToLocalDateKey(todayKey, 1), locale),
+      }),
+    [locale, t, todayKey],
   );
 
   useEffect(() => {
@@ -72,7 +76,7 @@ export function DailyRhythmOnboardingGate({
           seedEnd={DEFAULT_DAILY_RHYTHM.end}
           seedKey={seedKey}
           variant="onboarding"
-          primaryLabel="시작하기"
+          primaryLabel={t('welcome.startBtn')}
           onPrimaryPress={onConfirm}
           onEndDateChoice={handleEndDateChoice}
           endDateChoiceTodayLabel={todayChoiceLabel}

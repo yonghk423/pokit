@@ -55,6 +55,8 @@ import {
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { t } from '@shared/lib/i18n';
+import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import {
   coerceDayPlanLayoutMode,
   type DayPlanLayoutMode as StorageDayPlanLayoutMode,
@@ -62,7 +64,7 @@ import {
 import {
   appendCustomFlowCatalogEntry,
   BUILTIN_PRESET_SCHEDULE_SET_IDS,
-  DAY_MEAL_SLOT_LABEL,
+  getDayMealSlotLabel,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
   isBuiltinPresetScheduleSet,
   listAllCustomFlowCatalogEntries,
@@ -118,12 +120,12 @@ import { RoutineTemplateListPanel } from './RoutineTemplateListPanel';
 
 function layoutModeHint(mode: DayPlanLayoutMode): string {
   if (mode === 'spine') {
-    return '이 보기는 현재 점검을 위해 잠시 숨겨져 있어요.';
+    return t('fixedRoutine.spineHiddenHint');
   }
   if (mode === 'sections') {
-    return '항목마다 새벽·아침·점심·저녁·밤을 고른 뒤 적용을 켜면 시간대 보기에 반영돼요.';
+    return t('fixedRoutine.sectionsHint');
   }
-  return '그룹·항목을 정리한 뒤 적용을 켜면 목록 보기에 반영돼요. 세부 시간대는 시간대 보기에서 맞춰요.';
+  return t('fixedRoutine.bagHint');
 }
 
 function sectionHintText(
@@ -131,19 +133,19 @@ function sectionHintText(
   layoutMode: DayPlanLayoutMode,
 ): string {
   if (section === 'templates') {
-    return '항목을 눌러 방식별 화면 구성을 확인할 수 있어요.';
+    return t('fixedRoutine.templatesHint');
   }
   if (section === 'catalog') {
-    return '루틴을 만들고 묶음으로 정리해요.';
+    return t('fixedRoutine.catalogHint');
   }
   if (section === 'scheduled' || section === 'custom') {
     if (layoutMode === 'spine') {
-      return '이 보기는 현재 점검을 위해 잠시 숨겨져 있어요.';
+      return t('fixedRoutine.spineHiddenHint');
     }
     if (layoutMode === 'sections') {
-      return '항목마다 시간대를 고른 뒤 적용을 켜면 시간대 보기에 반영돼요.';
+      return t('fixedRoutine.sectionsHintShort');
     }
-    return '그룹·항목을 정리한 뒤 적용을 켜면 목록 보기에 반영돼요.';
+    return t('fixedRoutine.bagHintShort');
   }
   return layoutModeHint(layoutMode);
 }
@@ -288,6 +290,7 @@ function FlowItemCard({
   onToggleEnabled,
   onDelete,
 }: FlowCardProps) {
+  const { t } = useTranslation();
   const [mealSlotExpanded, setMealSlotExpanded] = useState(false);
   const [spineTimeExpanded, setSpineTimeExpanded] = useState(false);
   const spineTimePanelRef = useRef<View>(null);
@@ -400,15 +403,15 @@ function FlowItemCard({
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       if (showMealSlotPicker && onToggleMealSlot) {
         setMealSlotExpanded(true);
-        Alert.alert('시작 알림', '먼저 시간대를 선택한 뒤 알림을 켤 수 있어요.');
+        Alert.alert(t('alert.startNotify.title'), t('alert.startNotify.pickMealSlot'));
         return;
       }
       if (showSpineTimePicker && onChangeSpineTime) {
         setSpineTimeExpanded(true);
-        Alert.alert('시작 알림', '먼저 시작·종료 시간을 정한 뒤 알림을 켤 수 있어요.');
+        Alert.alert(t('alert.startNotify.title'), t('alert.startNotify.pickStartEnd'));
         return;
       }
-      Alert.alert('시작 알림', '먼저 루틴 시작 시간을 정해 주세요.');
+      Alert.alert(t('alert.startNotify.title'), t('alert.startNotify.pickStartTime'));
       return;
     }
     onToggleStartNotify?.();
@@ -468,7 +471,7 @@ function FlowItemCard({
                 { color: muted, opacity: spineTimeIsSuggested ? 0.72 : 1 },
               ]}
               numberOfLines={1}>
-              {spineTimeIsSuggested ? `추천 ${spineTimeLabel}` : spineTimeLabel}
+              {spineTimeIsSuggested ? t('common.suggested', { time: spineTimeLabel }) : spineTimeLabel}
             </ThemedText>
           ) : null}
         </View>
@@ -477,8 +480,8 @@ function FlowItemCard({
         <FlowBrutalActionButton
           accessibilityLabel={
             mealSlots.length > 0
-              ? `${label} 시간대 ${mealSlots.map((slot) => DAY_MEAL_SLOT_LABEL[slot]).join(', ')}`
-              : `${label} 시간대 선택`
+              ? t('fixedRoutine.mealSlotA11y', { label, slots: mealSlots.map((slot) => getDayMealSlotLabel(slot)).join(', ') })
+              : t('fixedRoutine.mealSlotPickA11y', { label })
           }
           accessibilityState={{
             selected: mealSlotIconHighlighted,
@@ -505,8 +508,8 @@ function FlowItemCard({
         <FlowBrutalActionButton
           accessibilityLabel={
             spineStartMinutes != null && spineEndMinutes != null
-              ? `${label} 시간 ${formatMinuteOfDayKo(spineStartMinutes)}~${formatMinuteOfDayKo(spineEndMinutes)}`
-              : `${label} 시간 선택`
+              ? t('fixedRoutine.timeA11y', { label, time: `${formatMinuteOfDayKo(spineStartMinutes)}~${formatMinuteOfDayKo(spineEndMinutes)}` })
+              : t('fixedRoutine.timePickA11y', { label })
           }
           accessibilityState={{
             selected: spineTimeIconHighlighted,
@@ -528,7 +531,7 @@ function FlowItemCard({
       ) : null}
       {showStartNotify && onToggleStartNotify ? (
         <FlowBrutalActionButton
-          accessibilityLabel={`${label} 시작 알림 ${startNotifyEnabled ? '켜짐' : '꺼짐'}`}
+          accessibilityLabel={t('fixedRoutine.startNotifyA11y', { label, state: startNotifyEnabled ? t('common.on') : t('common.off') })}
           accessibilityState={{ selected: startNotifyEnabled }}
           borderColor={line}
           backgroundColor={actionBg}
@@ -546,7 +549,7 @@ function FlowItemCard({
         </FlowBrutalActionButton>
       ) : null}
       <FlowBrutalActionButton
-        accessibilityLabel={`${label} 루틴 삭제`}
+        accessibilityLabel={t('fixedRoutine.deleteRoutineA11y', { label })}
         borderColor={line}
         backgroundColor={actionBg}
         pressedBg={actionHoverBg}
@@ -555,7 +558,7 @@ function FlowItemCard({
         <IconSymbol name="trash" size={13} color={muted} />
       </FlowBrutalActionButton>
       <Switch
-        accessibilityLabel={`${label} ${enabled ? '켜짐' : '꺼짐'}`}
+        accessibilityLabel={t('fixedRoutine.toggleA11y', { label, state: enabled ? t('common.on') : t('common.off') })}
         value={enabled}
         onValueChange={(next) => {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -654,6 +657,7 @@ function AddItemModal({
   onConfirm,
   onCreateCustom,
 }: AddItemModalProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
@@ -685,7 +689,7 @@ function AddItemModal({
       <View style={[styles.modalSheet, { backgroundColor: surface, paddingTop: insets.top + 12 }]}>
         <View style={[styles.modalHeader, { borderBottomColor: line }]}>
           <ThemedText style={[styles.modalTitle, { color: ink }]}>{title}</ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} hitSlop={10}>
             <IconSymbol name="xmark" size={20} color={muted} />
           </Pressable>
         </View>
@@ -695,14 +699,14 @@ function AddItemModal({
           keyboardShouldPersistTaps="handled">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="새로운 루틴 만들기"
+            accessibilityLabel={t('fixedRoutine.createNew')}
             onPress={() => {
               onClose();
               onCreateCustom();
             }}
             style={({ pressed }) => [styles.modalCreateRow, pressed && { opacity: 0.72 }]}>
             <IconSymbol name="plus.circle.fill" size={20} color={ink} />
-            <ThemedText style={[styles.modalRowLabel, { color: ink }]}>새로운 루틴 만들기</ThemedText>
+            <ThemedText style={[styles.modalRowLabel, { color: ink }]}>{t('fixedRoutine.createNew')}</ThemedText>
           </Pressable>
           {sections.map((section) => (
             <View key={section.groupKey}>
@@ -714,7 +718,7 @@ function AddItemModal({
                     key={cat.key}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: selected }}
-                    accessibilityLabel={`${cat.label} ${selected ? '선택됨' : '선택'}`}
+                    accessibilityLabel={t('fixedRoutine.selectItemA11y', { label: cat.label, state: selected ? t('common.selected') : t('common.select') })}
                     onPress={() => toggleSelection(cat.key)}
                     style={({ pressed }) => [
                       styles.modalPickRow,
@@ -746,7 +750,7 @@ function AddItemModal({
           ))}
           {sections.length === 0 ? (
             <ThemedText style={[styles.modalEmpty, { color: muted }]}>
-              추가할 수 있는 항목이 없어요. 위에서 새로운 루틴을 만들어 보세요.
+{t('fixedRoutine.modalEmpty')}
             </ThemedText>
           ) : null}
         </ScrollView>
@@ -761,7 +765,7 @@ function AddItemModal({
           ]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={selectedCount > 0 ? `${selectedCount}개 항목 추가` : '항목을 선택해 주세요'}
+            accessibilityLabel={selectedCount > 0 ? t('fixedRoutine.addItemsA11y', { count: selectedCount }) : t('fixedRoutine.pickItems')}
             disabled={selectedCount === 0}
             onPress={handleConfirm}
             style={({ pressed }) => [
@@ -776,7 +780,7 @@ function AddItemModal({
                 styles.modalConfirmLabel,
                 { color: selectedCount > 0 ? (isDark ? '#09090b' : '#fff') : muted },
               ]}>
-              {selectedCount > 0 ? `${selectedCount}개 추가` : '항목을 선택해 주세요'}
+              {selectedCount > 0 ? t('fixedRoutine.addCount', { count: selectedCount }) : t('fixedRoutine.pickItems')}
             </ThemedText>
           </Pressable>
         </View>
@@ -869,6 +873,7 @@ function GroupAccordion({
   isStartNotifyEnabled,
   onToggleStartNotify,
 }: GroupAccordionProps) {
+  const { t } = useTranslation();
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
   const totalCount = setItem.items.length;
   const canRenameSet = !isPresetScheduleSet && Boolean(onRenameSet);
@@ -922,12 +927,12 @@ function GroupAccordion({
   
   const applyChipBlocked = applyBlocked && !isActiveForToday;
   const disableApplyToggle = applyChipBlocked;
-  const applyLabel = isActiveForToday ? '적용 중' : '적용하기';
+  const applyLabel = isActiveForToday ? t('fixedRoutine.applying') : t('fixedRoutine.apply');
   const applyA11yLabel = isActiveForToday
-    ? '적용 해제'
+    ? t('fixedRoutine.unapply')
     : applyChipBlocked
-      ? '집중 시간이 끝나 적용하기를 할 수 없음'
-      : '적용하기';
+      ? t('fixedRoutine.applyBlockedA11y')
+      : t('fixedRoutine.apply');
   const ruleLabel = isPresetScheduleSet ? getFixedFlowPresetScheduleLabel(setItem.applyRule) : null;
   const scheduleHint = isPresetScheduleSet ? getFixedFlowPresetScheduleHint(setItem.applyRule) : null;
 
@@ -943,26 +948,26 @@ function GroupAccordion({
               maxLength={24}
               returnKeyType="done"
               onSubmitEditing={commitRename}
-              placeholder="그룹 이름"
+              placeholder={t('fixedRoutine.groupNamePlaceholder')}
               placeholderTextColor={muted}
               style={[styles.renameGroupInput, { color: ink }]}
-              accessibilityLabel="그룹 이름 수정"
+              accessibilityLabel={t('fixedRoutine.editGroupNameA11y')}
             />
             <View style={styles.renameGroupActions}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="이름 수정 취소"
+                accessibilityLabel={t('fixedRoutine.cancelRenameA11y')}
                 onPress={cancelRename}
                 hitSlop={6}>
-                <ThemedText style={[styles.renameGroupCancel, { color: muted }]}>취소</ThemedText>
+                <ThemedText style={[styles.renameGroupCancel, { color: muted }]}>{t('common.cancel')}</ThemedText>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="그룹 이름 저장"
+                accessibilityLabel={t('fixedRoutine.saveGroupNameA11y')}
                 onPress={commitRename}
                 style={[styles.renameGroupSave, { backgroundColor: ink, borderColor: ink }]}>
                 <ThemedText style={[styles.renameGroupSaveLabel, { color: isDark ? '#09090b' : '#fff' }]}>
-                  저장
+                  {t('common.save')}
                 </ThemedText>
               </Pressable>
             </View>
@@ -973,8 +978,8 @@ function GroupAccordion({
           {canRenameSet ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${setItem.name} 이름 수정`}
-              accessibilityHint="탭하면 그룹 이름을 바꿀 수 있어요"
+              accessibilityLabel={t('fixedRoutine.renameGroupA11y', { name: setItem.name })}
+              accessibilityHint={t('fixedRoutine.renameHint')}
               onPress={startRename}
               style={({ pressed }) => [
                 styles.accordionTitlePress,
@@ -1060,7 +1065,7 @@ function GroupAccordion({
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${setItem.name} 그룹 삭제`}
+              accessibilityLabel={t('fixedRoutine.deleteGroupA11y', { name: setItem.name })}
               onPress={onDeleteSet}
               style={({ pressed }) => [
                 styles.headerDeleteBtn,
@@ -1076,7 +1081,7 @@ function GroupAccordion({
         ) : null}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${setItem.name} ${isExpanded ? '접기' : '펼치기'}`}
+          accessibilityLabel={t('fixedRoutine.expandA11y', { name: setItem.name, action: isExpanded ? t('common.collapse') : t('common.expand') })}
           onPress={onToggleExpand}
           style={({ pressed }) => [styles.accordionHeaderRight, pressed && { opacity: 0.85 }]}>
           <View style={[styles.countPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
@@ -1099,7 +1104,7 @@ function GroupAccordion({
             if (totalCount === 0) {
               return (
                 <ThemedText style={[styles.accordionEmpty, { color: muted }]}>
-                  아직 항목이 없어요. 아래에서 추가해 주세요.
+{t('fixedRoutine.groupEmpty')}
                 </ThemedText>
               );
             }
@@ -1168,14 +1173,14 @@ function GroupAccordion({
                 })}
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="새 항목 추가"
+                  accessibilityLabel={t('fixedRoutine.addItem')}
                   onPress={onOpenAddItem}
                   style={({ pressed }) => [
                     styles.addRow,
                     { opacity: pressed ? 0.88 : 1 },
                   ]}>
                   <IconSymbol name="plus" size={12} color={muted} />
-                  <ThemedText style={[styles.addRowLabel, { color: muted }]}>새 항목 추가</ThemedText>
+                  <ThemedText style={[styles.addRowLabel, { color: muted }]}>{t('fixedRoutine.addItem')}</ThemedText>
                 </Pressable>
               </View>
         </View>
@@ -1379,7 +1384,7 @@ export function FixedRoutinePage({
     const ok = await persistRoutineStartNotifyToggle(categoryKey, nextEnabled);
     setStartNotifyRevision((n) => n + 1);
     if (nextEnabled && !ok) {
-      Alert.alert('알림', '알림을 켜려면 기기에서 알림 권한을 허용해 주세요.');
+      Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
       return;
     }
     void Haptics.notificationAsync(
@@ -1479,10 +1484,7 @@ export function FixedRoutinePage({
 
   const handleApplyBlocked = useCallback(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    Alert.alert(
-      '집중 시간이 끝났어요',
-      '오늘 집중 구간이 종료되어 지금은 적용할 수 없어요. 오늘 탭에서 집중 시간을 변경한 뒤 다시 적용해 주세요.',
-    );
+    Alert.alert(t('alert.focusEnded.title'), t('fixedRoutine.focusEndedApply'));
   }, []);
 
   const presetSets = useMemo(() => {
@@ -1608,12 +1610,12 @@ export function FixedRoutinePage({
       const target = sets.find((s) => s.id === setId);
       if (!target) return;
       Alert.alert(
-        `"${target.name}" 삭제`,
-        '이 그룹을 삭제할까요? 안에 있는 항목도 함께 사라져요.',
+        t('fixedRoutine.deleteGroupTitle', { name: target.name }),
+        t('fixedRoutine.deleteGroupMessage'),
         [
-          { text: '취소', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: '삭제',
+            text: t('common.delete'),
             style: 'destructive',
             onPress: () => {
               removeSet(setId);
@@ -1700,7 +1702,7 @@ export function FixedRoutinePage({
     setAddItemModalOpen(true);
   }, []);
 
-  const addItemModalTitle = '항목 추가';
+  const addItemModalTitle = t('fixedRoutine.addItemTitle');
 
   const activeSection = embeddedPresetOnly
     ? ('scheduled' as const)
@@ -1891,12 +1893,12 @@ export function FixedRoutinePage({
                   onDeleteItem={(categoryKey, itemLabel) => {
                     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     Alert.alert(
-                      `"${itemLabel}" 삭제`,
-                      '이 항목을 그룹에서 삭제할까요?',
+                      t('fixedRoutine.deleteItemTitle', { label: itemLabel }),
+                      t('fixedRoutine.deleteItemMessage'),
                       [
-                        { text: '취소', style: 'cancel' },
+                        { text: t('common.cancel'), style: 'cancel' },
                         {
-                          text: '삭제',
+                          text: t('common.delete'),
                           style: 'destructive',
                           onPress: () => {
                             removeCategoryFromSet(setItem.id, categoryKey);
@@ -1932,7 +1934,7 @@ export function FixedRoutinePage({
 
             {canManageCustomGroups && visibleSets.length === 0 ? (
               <ThemedText style={[styles.sectionEmpty, { color: muted }]}>
-                아직 나만의 루틴 그룹이 없어요. 아래에서 그룹을 추가해 보세요.
+{t('fixedRoutine.noCustomGroups')}
               </ThemedText>
             ) : null}
 
@@ -1941,7 +1943,7 @@ export function FixedRoutinePage({
                 <TextInput
                   value={newGroupName}
                   onChangeText={setNewGroupName}
-                  placeholder="새 그룹 이름"
+                  placeholder={t('fixedRoutine.newGroupPlaceholder')}
                   placeholderTextColor={muted}
                   autoFocus
                   style={[styles.addGroupInput, { color: ink }]}
@@ -1951,20 +1953,20 @@ export function FixedRoutinePage({
                 <View style={styles.addGroupActions}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="취소"
+                    accessibilityLabel={t('common.cancel')}
                     onPress={() => {
                       setIsAddingGroup(false);
                       setNewGroupName('');
                     }}>
-                    <ThemedText style={[styles.addGroupCancel, { color: muted }]}>취소</ThemedText>
+                    <ThemedText style={[styles.addGroupCancel, { color: muted }]}>{t('common.cancel')}</ThemedText>
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="그룹 추가"
+                    accessibilityLabel={t('fixedRoutine.addGroupA11y')}
                     onPress={submitNewGroup}
                     style={[styles.addGroupSubmit, { backgroundColor: ink }]}>
                     <ThemedText style={[styles.addGroupSubmitLabel, { color: isDark ? '#09090b' : '#fff' }]}>
-                      추가
+                      {t('common.add')}
                     </ThemedText>
                   </Pressable>
                 </View>
@@ -1972,16 +1974,16 @@ export function FixedRoutinePage({
             ) : (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="그룹 추가"
+                accessibilityLabel={t('fixedRoutine.addGroupA11y')}
                 onPress={() => setIsAddingGroup(true)}
                 style={({ pressed }) => [
                   styles.addGroupTrigger,
                   { borderColor: dashedBorder, opacity: pressed ? 0.88 : 1 },
                 ]}>
                 <IconSymbol name="plus" size={18} color={muted} />
-                <ThemedText style={[styles.addGroupTriggerLabel, { color: muted }]}>그룹 추가</ThemedText>
+                <ThemedText style={[styles.addGroupTriggerLabel, { color: muted }]}>{t('fixedRoutine.addGroupA11y')}</ThemedText>
                 <ThemedText style={[styles.addGroupHint, { color: muted }]}>
-                  이름을 눌러 바꾸고, 헤더 휴지통으로 그룹을 삭제할 수 있어요
+{t('fixedRoutine.addGroupHint')}
                 </ThemedText>
               </Pressable>
             ))}

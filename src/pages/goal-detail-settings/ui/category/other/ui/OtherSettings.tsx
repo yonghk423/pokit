@@ -8,6 +8,7 @@ import {
 } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
@@ -41,6 +42,7 @@ export function OtherSettings({
   renameLockedReason?: 'running' | 'today' | null;
   hideTitleField?: boolean;
 }) {
+  const { t } = useTranslation();
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
   const seed = () => normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
@@ -119,7 +121,7 @@ export function OtherSettings({
 
   const buildShareText = () => {
     const checklist = liveConfig.checklist;
-    const doneTag = isAbstain ? '[지킴] ' : '[완료] ';
+    const doneTag = isAbstain ? t('goalDetail.shareAbstainTag') : t('goalDetail.shareDoneTag');
     return checklist
       .filter((x) => x.text.trim().length > 0)
       .map((x, i) => `${i + 1}. ${x.done ? doneTag : ''}${x.text.trim()}`)
@@ -130,13 +132,13 @@ export function OtherSettings({
     const content = buildShareText();
     if (!content) {
       Alert.alert(
-        '공유할 내용 없음',
-        isAbstain ? '금지 항목을 먼저 입력해 주세요.' : '체크리스트를 먼저 입력해 주세요.',
+        t('goalDetail.shareEmptyTitle'),
+        isAbstain ? t('goalDetail.shareEmptyAbstain') : t('goalDetail.shareEmptyChecklist'),
       );
       return;
     }
     await Share.share({
-      message: `POKIT 사용자 루틴\n\n${content}`,
+      message: t('goalDetail.shareMessage', { content }),
     });
   };
 
@@ -163,7 +165,9 @@ export function OtherSettings({
       <View style={[styles.toolbar, { borderTopColor: c.onSurface, borderBottomColor: c.outline }]}>
         <Pressable style={styles.toolbarBtn} onPress={onShare}>
           <IconSymbol name="square.and.arrow.up" size={16} color={c.onSurface} />
-          <ThemedText style={[styles.toolbarText, { color: c.onSurface }]}>공유</ThemedText>
+          <ThemedText style={[styles.toolbarText, { color: c.onSurface }]}>
+            {t('goalDetail.share')}
+          </ThemedText>
         </Pressable>
       </View>
 

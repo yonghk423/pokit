@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { buildTemplateDemoConfig, resolveCustomFlowTemplateCatalogEntry } from '@entities/day-plan';
 import { CityPopSpacing, RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
+import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -28,6 +29,8 @@ const BRUTAL_SHADOW_SM = 2;
 
 export function RoutineTemplateDetailPage() {
   const router = useRouter();
+  const { t } = useTranslation();
+
   const { templateKey } = useRoutineTemplateDetailRoute();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -138,12 +141,12 @@ export function RoutineTemplateDetailPage() {
               ]}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityRole="button"
-              accessibilityLabel="뒤로가기">
+              accessibilityLabel={t('common.back')}>
               <IconSymbol name="chevron.left" size={18} color={c.onSurface} />
             </Pressable>
           </View>
           <ThemedText style={[styles.headerTitle, { color: c.onSurface }]} numberOfLines={1}>
-            루틴 템플릿
+            {t('fixedRoutine.templatePageTitle')}
           </ThemedText>
           <View style={styles.headerBtnSpacer} pointerEvents="none" />
         </View>
@@ -226,14 +229,14 @@ export function RoutineTemplateDetailPage() {
               },
             ]}>
             <ThemedText style={[styles.previewHint, { color: tone.primary }]}>
-              아래에서 미리 체험해 볼 수 있어요. 저장되지 않는 미리보기예요.
+              {t('fixedRoutine.templatePreviewHint')}
             </ThemedText>
           </View>
 
           <CustomFlowTemplateSessionBody
             templateKey={entry.key}
             config={demoConfig}
-            onChange={setDemoConfig}
+            onChange={(next) => setDemoConfig(next as typeof demoConfig)}
             previewMode
             theme={{
               ink: c.onSurface,

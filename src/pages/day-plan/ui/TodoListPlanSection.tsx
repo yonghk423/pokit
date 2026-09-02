@@ -14,6 +14,7 @@ import {
   useDayPlanTodoStore,
   type DayPlanTodoItem,
 } from '@entities/day-plan';
+import { useTranslation } from '@shared/lib/i18n';
 import { completionCheckIconColor } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -24,6 +25,7 @@ import {
   TODO_PRIORITY_META,
   TODO_TABLE_BORDER_WIDTH,
   todoListUiColors,
+  todoPriorityLabel,
   type TodoListUiColors,
 } from '../lib/todoListTheme';
 import { TodoListTimeEditSheet } from './TodoListTimeEditSheet';
@@ -95,14 +97,17 @@ function TodoListRow({
   onToggleDone: () => void;
   onToggleDeleteSelect: () => void;
 }) {
+  const { t } = useTranslation();
   const priorityMeta = TODO_PRIORITY_META[item.priority];
+  const priorityLabel = todoPriorityLabel(item.priority, t);
   const rowMuted = item.isDone;
   const timeLabel = `${formatMinutesToHHmm(item.startMinutes)}–${formatMinutesToHHmm(item.endMinutes)}`;
+  const title = item.what || t('todo.fallbackTitle');
 
   return (
     <Pressable
       accessibilityRole={deleteMode ? 'button' : undefined}
-      accessibilityLabel={deleteMode ? '탭하면 삭제 선택' : undefined}
+      accessibilityLabel={deleteMode ? t('todo.tapToSelectDelete') : undefined}
       accessibilityState={deleteMode ? { selected: deleteSelected } : undefined}
       onPress={deleteMode ? onToggleDeleteSelect : undefined}
       onLongPress={
@@ -125,11 +130,11 @@ function TodoListRow({
         accessibilityLabel={
           deleteMode
             ? deleteSelected
-              ? `${item.what || '할 일'} 삭제 선택 해제`
-              : `${item.what || '할 일'} 삭제 선택`
+              ? t('todo.deselectDelete', { title })
+              : t('todo.selectDelete', { title })
             : item.isDone
-              ? `${item.what || '할 일'} 완료 취소`
-              : `${item.what || '할 일'} 완료`
+              ? t('todo.undoDone', { title })
+              : t('todo.markDone', { title })
         }
         onPress={deleteMode ? onToggleDeleteSelect : onToggleDone}
       />
@@ -141,7 +146,7 @@ function TodoListRow({
           onChangeText={onChangeWhat}
           editable={!deleteMode}
           pointerEvents={deleteMode ? 'none' : 'auto'}
-          placeholder="할 일을 입력하세요"
+          placeholder={t('todo.placeholder')}
           placeholderTextColor={ui.placeholder}
           multiline
           style={[
@@ -158,7 +163,7 @@ function TodoListRow({
         {!deleteMode ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`시간 ${timeLabel}, 탭하면 조절`}
+            accessibilityLabel={t('todo.timeA11y', { time: timeLabel })}
             hitSlop={6}
             onPress={onPressTime}
             style={styles.timeMetaRow}>
@@ -172,7 +177,7 @@ function TodoListRow({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`우선순위 ${priorityMeta.label}, 탭하면 변경`}
+        accessibilityLabel={t('todo.priorityA11y', { priority: priorityLabel })}
         onPress={deleteMode ? onToggleDeleteSelect : onCyclePriority}
         style={[
           styles.priorityBtn,
@@ -188,7 +193,7 @@ function TodoListRow({
             rowMuted && styles.priorityLabelDone,
           ]}
           numberOfLines={1}>
-          {priorityMeta.label}
+          {priorityLabel}
         </ThemedText>
       </Pressable>
     </Pressable>
@@ -197,6 +202,7 @@ function TodoListRow({
 
 /** 투두 리스트 — 체크·할 일·우선순위 리스트형 */
 export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: Props) {
+  const { t } = useTranslation();
   const ui = useMemo(() => todoListUiColors(c, isDark), [c, isDark]);
   const activeDateKey = useDayPlanTodoStore((s) => s.activeDateKey);
   const todos = useDayPlanTodoStore((s) => s.todosByDate[s.activeDateKey] ?? EMPTY_TODOS);
@@ -212,7 +218,7 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
   const [deleteSelection, setDeleteSelection] = useState<Set<string>>(() => new Set());
 
   const timeEditItem = useMemo(
-    () => todos.find((t) => t.id === timeEditId) ?? null,
+    () => todos.find((todo) => todo.id === timeEditId) ?? null,
     [todos, timeEditId],
   );
 
@@ -249,10 +255,10 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
       return;
     }
     const count = deleteSelection.size;
-    Alert.alert('할 일 삭제', `${count}개 항목을 삭제할까요?`, [
-      { text: '취소', style: 'cancel' },
+    Alert.alert(t('alert.deleteTodo.title'), t('alert.deleteTodo.message', { count }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '삭제',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => {
           deleteSelection.forEach((id) => removeTodo(id));
@@ -261,7 +267,7 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
         },
       },
     ]);
-  }, [deleteMode, deleteSelection, removeTodo, toggleDeleteMode]);
+  }, [deleteMode, deleteSelection, removeTodo, t, toggleDeleteMode]);
 
   const handleQuickAdd = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -278,9 +284,9 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
 
   const hintText = deleteMode
     ? deleteSelection.size > 0
-      ? `${deleteSelection.size}개 선택됨 · 휴지통으로 삭제 · 다시 눌러 종료`
-      : '삭제할 행을 선택하세요 · 휴지통을 다시 눌러 종료'
-    : '왼쪽 체크로 완료 · 길게 눌러도 완료 · 우선순위와 시간을 눌러 조절';
+      ? t('todo.hintDeleteSelected', { count: deleteSelection.size })
+      : t('todo.hintDeletePick')
+    : t('todo.hintNormal');
 
   return (
     <View style={embedded ? styles.rootEmbedded : styles.root}>
@@ -300,12 +306,14 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
         ]}>
         <View style={styles.cardTopRow}>
           <View style={[styles.newTaskTag, { backgroundColor: ui.tagBg }]}>
-            <ThemedText style={[styles.newTaskTagText, { color: ui.tagText }]}>새 할 일</ThemedText>
+            <ThemedText style={[styles.newTaskTagText, { color: ui.tagText }]}>
+              {t('todo.newTaskTag')}
+            </ThemedText>
           </View>
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ selected: deleteMode }}
-            accessibilityLabel={deleteMode ? '삭제 모드 끄기' : '삭제 모드'}
+            accessibilityLabel={deleteMode ? t('todo.deleteModeOff') : t('todo.deleteModeOn')}
             hitSlop={8}
             onPress={handleTrashPress}
             style={[
@@ -330,7 +338,7 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
           <TextInput
             value={draftWhat}
             onChangeText={setDraftWhat}
-            placeholder="할 일을 빠르게 추가..."
+            placeholder={t('todo.quickAddPlaceholder')}
             placeholderTextColor={ui.placeholder}
             returnKeyType="done"
             onSubmitEditing={handleQuickAdd}
@@ -338,7 +346,7 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="할 일 추가"
+            accessibilityLabel={t('todo.addA11y')}
             onPress={handleQuickAdd}
             style={[
               styles.quickAddBtn,
@@ -357,7 +365,7 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
           {todos.length === 0 ? (
             <View style={styles.emptyRow}>
               <ThemedText style={styles.emptyText} lightColor={ui.muted} darkColor={ui.muted}>
-                위에서 할 일을 추가해 보세요
+                {t('todo.emptyHint')}
               </ThemedText>
             </View>
           ) : (

@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -34,8 +35,10 @@ export function MealSlotScheduleEditButton({
   onPress,
   compact = false,
   showLabel = false,
-  accessibilityLabel = '시간대 변경',
+  accessibilityLabel,
 }: Props) {
+  const { t } = useTranslation();
+  const resolvedA11y = accessibilityLabel ?? t('dayPlan.mealSlotScheduleA11y');
   const colors = cardFaceColors(isDark);
 
   return (
@@ -57,8 +60,8 @@ export function MealSlotScheduleEditButton({
       />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-        accessibilityHint="새벽·아침·점심·저녁·밤 구간 시작 시각을 변경할 수 있어요"
+        accessibilityLabel={resolvedA11y}
+        accessibilityHint={t('dayPlan.mealSlotScheduleHint')}
         hitSlop={6}
         onPress={() => {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -81,7 +84,7 @@ export function MealSlotScheduleEditButton({
         <IconSymbol name="clock" size={compact ? 11 : 12} color={palette.ink} />
         {showLabel ? (
           <ThemedText style={[styles.label, compact && styles.labelCompact, { color: palette.ink }]}>
-            시간대 변경
+            {t('dayPlan.mealSlotScheduleA11y')}
           </ThemedText>
         ) : null}
       </Pressable>

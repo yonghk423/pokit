@@ -13,6 +13,7 @@ import {
   useDayPlanDraftStore,
   waterReminderIntervalMinutes,
 } from '@entities/day-plan';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
@@ -86,6 +87,8 @@ export function WaterSettings({
   embedded?: boolean;
   hideTitleField?: boolean;
 }) {
+  const { t } = useTranslation();
+
   const scheme = useColorScheme();
   const palette = useMemo(() => {
     const base = goalDetailSettingsPalette(scheme === 'dark');
@@ -282,15 +285,15 @@ export function WaterSettings({
   const confirmAddQuickPreset = () => {
     const ml = parseQuickAddPresetMl(addPresetDraft);
     if (ml === null) {
-      Alert.alert('빠른 추가', '50ml ~ 2000ml 사이 숫자를 입력해 주세요.');
+      Alert.alert(t('goalDetail.water.quickAddTitle'), t('goalDetail.water.quickAddRange'));
       return;
     }
     if (quickAddPresetsMl.includes(ml)) {
-      Alert.alert('빠른 추가', '이미 같은 용량이 있어요.');
+      Alert.alert(t('goalDetail.water.quickAddTitle'), t('goalDetail.water.quickAddDuplicate'));
       return;
     }
     if (quickAddPresetsMl.length >= MAX_WATER_QUICK_ADD_PRESETS) {
-      Alert.alert('빠른 추가', `최대 ${MAX_WATER_QUICK_ADD_PRESETS}개까지 추가할 수 있어요.`);
+      Alert.alert(t('goalDetail.water.quickAddTitle'), t('goalDetail.water.quickAddMax', { max: MAX_WATER_QUICK_ADD_PRESETS }));
       return;
     }
     setQuickAddPresetsMl((prev) => [...prev, ml].sort((a, b) => a - b));
@@ -343,33 +346,36 @@ export function WaterSettings({
       ),
     );
     if (filled.length === 0) {
-      Alert.alert('알림', '이 구간과 주기로 채울 시각이 없어요.');
+      Alert.alert(t('alert.permission.title'), t('goalDetail.water.noFillTimes'));
       return;
     }
     const label =
       reminderPreset === '60'
-        ? '매 1시간'
+        ? t('goalDetail.water.intervalHour1')
         : reminderPreset === '120'
-          ? '매 2시간'
-          : `${customMinNum}분`;
+          ? t('goalDetail.water.intervalHour2')
+          : t('goalDetail.water.intervalMinutes', { min: customMinNum });
     Alert.alert(
-      '시각 일괄 채우기',
-      `담기 구간에 ${label} 간격으로 ${filled.length}개 시각을 넣을까요? 지금 추가해 둔 시각은 대체돼요.`,
+      t('goalDetail.water.bulkFillTitle'),
+      t('goalDetail.water.bulkFillMessage', { label, count: filled.length }),
       [
-        { text: '취소', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '채우기',
+          text: t('goalDetail.water.bulkFillConfirm'),
           onPress: () => setReminderTimes(filled.slice(0, MAX_TIME_SLOTS)),
         },
       ],
     );
-  }, [customMinNum, priorityEnd, priorityStart, reminderPreset]);
+  }, [customMinNum, priorityEnd, priorityStart, reminderPreset, t]);
 
-  const reminderRows: { key: WaterReminderPreset; label: string }[] = [
-    { key: '60', label: '매 1시간' },
-    { key: '120', label: '매 2시간' },
-    { key: 'custom', label: '직접(분)' },
-  ];
+  const reminderRows = useMemo(
+    (): { key: WaterReminderPreset; label: string }[] => [
+      { key: '60', label: t('goalDetail.water.intervalHour1') },
+      { key: '120', label: t('goalDetail.water.intervalHour2') },
+      { key: 'custom', label: t('goalDetail.water.intervalCustom') },
+    ],
+    [t],
+  );
 
   return (
     <View style={[styles.shell, embedded && styles.shellEmbedded]}>
@@ -392,12 +398,12 @@ export function WaterSettings({
       ) : null}
 
       <SettingsProgressBand
-        title="오늘 섭취"
+        title={t('goalDetail.water.todayIntake')}
         valueLine={`${drankMl}ml / ${goalMl}ml`}
         subLine={
           waterRemainingMl > 0
-            ? `목표까지 ${waterRemainingMl}ml · ${Math.round(waterProgressRatio * 100)}%`
-            : '오늘 목표를 달성했어요'
+            ? t('goalDetail.water.remainingGoal', { ml: waterRemainingMl, percent: Math.round(waterProgressRatio * 100) })
+            : t('goalDetail.water.goalReached')
         }
         ratio={waterProgressRatio}
         palette={palette}
@@ -405,13 +411,13 @@ export function WaterSettings({
       />
 
       <View style={styles.intakeQuickRow}>
-        <Text style={styles.intakeQuickLabel}>빠른 추가</Text>
+        <Text style={styles.intakeQuickLabel}>{t('goalDetail.water.quickAddLabel')}</Text>
         <View style={styles.presetRow}>
           {quickAddPresetsMl.map((ml) => (
             <Pressable
               key={ml}
               accessibilityRole="button"
-              accessibilityLabel={`${ml}ml 추가`}
+              accessibilityLabel={t('goalDetail.water.addMlA11y', { ml })}
               onPress={() => addDrankMl(ml)}
               style={({ pressed }) => [styles.intakeChip, pressed && { opacity: 0.75 }]}>
               <Text style={styles.intakeChipText}>+{ml}ml</Text>
@@ -420,7 +426,7 @@ export function WaterSettings({
           {quickAddPresetsMl.length < MAX_WATER_QUICK_ADD_PRESETS ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="빠른 추가 용량 추가"
+              accessibilityLabel={t('goalDetail.water.addPresetA11y')}
               onPress={() => setShowAddPresetInput(true)}
               style={({ pressed }) => [styles.intakeAddChip, pressed && { opacity: 0.75 }]}>
               <Text style={styles.intakeAddChipText}>+</Text>
@@ -428,10 +434,10 @@ export function WaterSettings({
           ) : null}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="오늘 섭취량 초기화"
+            accessibilityLabel={t('goalDetail.water.resetIntakeA11y')}
             onPress={() => setDrankMl(0)}
             style={({ pressed }) => [styles.intakeResetChip, pressed && { opacity: 0.75 }]}>
-            <Text style={styles.intakeResetText}>초기화</Text>
+            <Text style={styles.intakeResetText}>{t('common.reset')}</Text>
           </Pressable>
         </View>
         {showAddPresetInput ? (
@@ -447,20 +453,20 @@ export function WaterSettings({
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="빠른 추가 용량 저장"
+              accessibilityLabel={t('goalDetail.water.savePresetA11y')}
               onPress={confirmAddQuickPreset}
               style={({ pressed }) => [styles.addPresetConfirmBtn, pressed && { opacity: 0.75 }]}>
-              <Text style={styles.addPresetConfirmText}>추가</Text>
+              <Text style={styles.addPresetConfirmText}>{t('goalDetail.add')}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="빠른 추가 용량 추가 취소"
+              accessibilityLabel={t('goalDetail.water.cancelPresetA11y')}
               onPress={() => {
                 setShowAddPresetInput(false);
                 setAddPresetDraft('');
               }}
               style={({ pressed }) => [styles.addPresetCancelBtn, pressed && { opacity: 0.75 }]}>
-              <Text style={styles.addPresetCancelText}>취소</Text>
+              <Text style={styles.addPresetCancelText}>{t('common.cancel')}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -469,14 +475,14 @@ export function WaterSettings({
       <View style={styles.metricBar}>
         <View style={styles.metricItem}>
           <Text style={styles.metricValue}>{(goalMl / 1000).toFixed(1)}</Text>
-          <Text style={styles.metricLabel}>목표(L)</Text>
+          <Text style={styles.metricLabel}>{t('goalDetail.water.goalLiters')}</Text>
         </View>
       </View>
 
       <View style={styles.rowsWrap}>
         <View style={styles.row}>
           <View style={styles.rowLeft}>
-            <Text style={styles.rowTitle}>하루 목표</Text>
+            <Text style={styles.rowTitle}>{t('goalDetail.water.dailyGoal')}</Text>
           </View>
           <View style={styles.inlineInputWrap}>
             <TextInput
@@ -493,7 +499,7 @@ export function WaterSettings({
         </View>
 
         <View style={styles.row}>
-          <Text style={styles.rowTitle}>빠른 선택</Text>
+          <Text style={styles.rowTitle}>{t('goalDetail.water.quickSelect')}</Text>
           <View style={styles.presetRow}>
             {[
               { ml: 1500, label: '1.5' },
@@ -516,7 +522,7 @@ export function WaterSettings({
         </View>
 
         <View style={styles.row}>
-          <Text style={styles.rowTitle}>스마트 알림</Text>
+          <Text style={styles.rowTitle}>{t('goalDetail.water.smartNotify')}</Text>
           <Switch
             value={smartNotification}
             onValueChange={setSmartNotification}
@@ -529,25 +535,25 @@ export function WaterSettings({
         {smartNotification ? (
           <>
             <View style={styles.routineWindowBand}>
-              <Text style={styles.routineWindowLabel}>오늘 담기 구간(시작~마무리)</Text>
+              <Text style={styles.routineWindowLabel}>{t('goalDetail.water.routineWindow')}</Text>
               <Text style={styles.routineWindowTime}>{routineWindowLine}</Text>
             </View>
 
             <View style={styles.timesSection}>
-              <Text style={styles.timesSectionTitle}>알림 시각</Text>
+              <Text style={styles.timesSectionTitle}>{t('goalDetail.water.notifyTimes')}</Text>
               <Text style={styles.timesSectionHint}>
-                원하는 시각만 직접 추가해요. 아래 「시각 일괄 채우기」는 선택 사항이에요.
+                {t('goalDetail.water.notifyTimesHint')}
               </Text>
 
               {reminderTimes.length === 0 ? (
-                <Text style={styles.timesEmpty}>아직 알림 시각이 없어요. 시각을 추가해 주세요.</Text>
+                <Text style={styles.timesEmpty}>{t('goalDetail.water.noNotifyTimes')}</Text>
               ) : (
                 reminderTimes.map((hhmm, index) => (
                   <View key={`water-time-${index}`} style={styles.slotRow}>
                     <View style={styles.slotField}>
                       <SnappedTimePickerField
-                        label={index === 0 ? '알림 시각' : `추가 시각 ${index + 1}`}
-                        hint="담기 구간 안에서만 선택돼요"
+                        label={index === 0 ? t('goalDetail.water.notifyTimeLabel') : t('goalDetail.water.extraTimeLabel', { index: index + 1 })}
+                        hint={t('goalDetail.water.timeWithinWindow')}
                         valueHhmm={hhmm}
                         onChangeHhmm={(next) => updateTimeAt(index, next)}
                         expanded={openSlotIndex === index}
@@ -565,10 +571,10 @@ export function WaterSettings({
                       <Pressable
                         onPress={() => removeTimeAt(index)}
                         accessibilityRole="button"
-                        accessibilityLabel={`${index + 1}번 시각 삭제`}
+                        accessibilityLabel={t('goalDetail.water.removeTimeA11y', { index: index + 1 })}
                         hitSlop={8}
                         style={({ pressed }) => [styles.removeBtn, pressed && { opacity: 0.65 }]}>
-                        <Text style={styles.removeBtnText}>삭제</Text>
+                        <Text style={styles.removeBtnText}>{t('common.delete')}</Text>
                       </Pressable>
                     ) : null}
                   </View>
@@ -579,9 +585,9 @@ export function WaterSettings({
                 <Pressable
                   onPress={addTimeSlot}
                   accessibilityRole="button"
-                  accessibilityLabel="알림 시각 추가"
+                  accessibilityLabel={t('goalDetail.water.addTimeA11y')}
                   style={({ pressed }) => [styles.addLink, pressed && { opacity: 0.75 }]}>
-                  <Text style={styles.addLinkText}>+ 시각 추가</Text>
+                  <Text style={styles.addLinkText}>{t('goalDetail.water.addTimeLink')}</Text>
                 </Pressable>
               ) : null}
 
@@ -598,7 +604,7 @@ export function WaterSettings({
             </View>
 
             <View style={styles.bulkFillBlock}>
-              <Text style={styles.bulkFillTitle}>시각 일괄 채우기 (선택)</Text>
+              <Text style={styles.bulkFillTitle}>{t('goalDetail.water.bulkFillOptional')}</Text>
               <View style={styles.reminderList}>
                 {reminderRows.map((row) => {
                   const selected = reminderPreset === row.key;
@@ -621,7 +627,7 @@ export function WaterSettings({
               </View>
               {reminderPreset === 'custom' ? (
                 <View style={styles.customRow}>
-                  <Text style={styles.customRowLabel}>간격(분)</Text>
+                  <Text style={styles.customRowLabel}>{t('goalDetail.water.intervalMinutesLabel')}</Text>
                   <TextInput
                     value={reminderCustomMin}
                     onChangeText={(t) => setReminderCustomMin(t.replace(/[^0-9]/g, ''))}
@@ -633,15 +639,15 @@ export function WaterSettings({
               <Pressable
                 onPress={fillTimesFromInterval}
                 accessibilityRole="button"
-                accessibilityLabel="담기 구간에 주기로 시각 일괄 채우기"
+                accessibilityLabel={t('goalDetail.water.bulkFillBtnA11y')}
                 style={({ pressed }) => [styles.bulkFillBtn, pressed && { opacity: 0.88 }]}>
-                <Text style={styles.bulkFillBtnText}>담기 구간에 맞춰 시각 채우기</Text>
+                <Text style={styles.bulkFillBtnText}>{t('goalDetail.water.bulkFillBtn')}</Text>
               </Pressable>
             </View>
           </>
         ) : (
           <Text style={styles.smartOffHint}>
-            스마트 알림을 켜면 알림 시각을 직접 추가할 수 있어요.
+            {t('goalDetail.water.smartNotifyHint')}
           </Text>
         )}
       </View>

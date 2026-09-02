@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { persistWorkStudyNotePageTitle } from '@entities/day-plan';
+import { useTranslation } from '@shared/lib/i18n';
 
 import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
 import { ImeSafeTextInput } from './ImeSafeTextInput';
@@ -25,6 +26,7 @@ export function StudyNotePageTitleField({
   onChangeValue: (next: string) => void;
   palette: Palette;
 }) {
+  const { t } = useTranslation();
   const fallbackTrimmed = autoFallback.trim();
   const customTitle = useMemo(
     () => (hasCustomTitle(value, fallbackTrimmed) ? value : ''),
@@ -44,7 +46,7 @@ export function StudyNotePageTitleField({
       returnKeyType="done"
       multiline={false}
       accessibilityRole="header"
-      accessibilityLabel="메모 제목"
+      accessibilityLabel={t('studyNote.titleA11y')}
     />
   );
 }

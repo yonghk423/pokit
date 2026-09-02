@@ -1,4 +1,5 @@
 import type { PendingRoutineCountsByLayout } from '@entities/day-plan';
+import { t, tIncompleteRoutineCountPart } from '@shared/lib/i18n';
 
 const MODE_NOTIFICATION_SYMBOLS: Record<keyof PendingRoutineCountsByLayout, string> = {
   bag: '▤',
@@ -20,11 +21,14 @@ export function buildIncompleteRoutineReminderNotificationContent(
   const total = normalized.bag + normalized.sections + normalized.spine;
   const body = (Object.keys(normalized) as (keyof PendingRoutineCountsByLayout)[])
     .filter((mode) => normalized[mode] > 0)
-    .map((mode) => `${MODE_NOTIFICATION_SYMBOLS[mode]} ${normalized[mode]}개`)
+    .map(
+      (mode) =>
+        `${MODE_NOTIFICATION_SYMBOLS[mode]} ${tIncompleteRoutineCountPart(normalized[mode])}`,
+    )
     .join('   ');
 
   return {
-    title: `미완료 루틴 ${total}개가 있습니다.`,
+    title: t('notify.incomplete.title', { count: total }),
     body,
   };
 }

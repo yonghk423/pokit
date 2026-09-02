@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { PrimaryColor } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
 import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
 
 import type { GoalDetailCategoryKey } from '../../../../model/types';
@@ -38,6 +39,7 @@ export function MeasurementSettings({
   renameLockedReason?: 'running' | 'today' | null;
   hideTitleField?: boolean;
 }) {
+  const { t } = useTranslation();
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
   const titleFallback = useMemo(
@@ -115,7 +117,7 @@ export function MeasurementSettings({
         value={summary}
         onChangeValue={setSummary}
         palette={c}
-        placeholder="한 줄 메모 (선택)"
+        placeholder={t('goalDetail.memoPlaceholder')}
       />
 
       <CustomFlowTemplateSessionBody

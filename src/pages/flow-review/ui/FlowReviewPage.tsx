@@ -14,6 +14,7 @@ import {
   type DayPlanBlock,
 } from '@entities/day-plan';
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
+import { t, useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -28,13 +29,13 @@ const OUTLINE = '#436086';
 const TEXT = '#181A2E';
 const PRIMARY = '#356668';
 
-const CATEGORY_META: Record<string, { icon: Parameters<typeof IconSymbol>[0]['name']; label: string }> = {
-  work: { icon: 'square.and.pencil', label: '노트' },
-  reading: { icon: 'book.closed.fill', label: '독서' },
-  fasting: { icon: 'person.fill', label: '체중관리' },
-  water: { icon: 'drop.fill', label: '수분섭취' },
-  medicine: { icon: 'pills.fill', label: '약 복용' },
-  other: { icon: 'person.fill', label: '루틴 직접 설정' },
+const CATEGORY_META: Record<string, { icon: Parameters<typeof IconSymbol>[0]['name']; labelKey: Parameters<typeof t>[0] }> = {
+  work: { icon: 'square.and.pencil', labelKey: 'flowReview.category.work' },
+  reading: { icon: 'book.closed.fill', labelKey: 'flowReview.category.reading' },
+  fasting: { icon: 'person.fill', labelKey: 'flowReview.category.fasting' },
+  water: { icon: 'drop.fill', labelKey: 'flowReview.category.water' },
+  medicine: { icon: 'pills.fill', labelKey: 'flowReview.category.medicine' },
+  other: { icon: 'person.fill', labelKey: 'flowReview.category.other' },
 };
 
 type ReviewRow = {
@@ -60,7 +61,7 @@ function getReviewCopy(block: DayPlanBlock, otherLabelFallback: string): { title
 
   const catKey = resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category) ?? 'other';
   const categoryFallback =
-    catKey === 'other' ? otherLabelFallback : (CATEGORY_META[catKey]?.label ?? '루틴');
+    catKey === 'other' ? otherLabelFallback : t(CATEGORY_META[catKey]?.labelKey ?? 'category.routineFallback');
   const first = lines[0] ?? '';
   const looksNumbered = /^\d+\.\s/.test(first);
 
@@ -68,24 +69,25 @@ function getReviewCopy(block: DayPlanBlock, otherLabelFallback: string): { title
     const count = lines.length;
     return {
       title: block.category.trim() || categoryFallback,
-      subtitle: count > 0 ? `${count}개 세부 항목이 준비돼 있어요` : '카드를 눌러 상세 설정을 이어서 할 수 있어요',
+      subtitle: count > 0 ? t('flowReview.subtitle.itemsReady', { count }) : t('flowReview.subtitle.tapToConfigure'),
     };
   }
 
   if (lines.length > 1) {
     return {
       title: first,
-      subtitle: `${lines.length - 1}개 세부 항목이 이어져 있어요`,
+      subtitle: t('flowReview.subtitle.moreItems', { count: lines.length - 1 }),
     };
   }
 
   return {
     title: first,
-    subtitle: `${block.category.trim() || categoryFallback} · 카드를 눌러 상세 설정`,
+    subtitle: t('flowReview.subtitle.categoryTap', { category: block.category.trim() || categoryFallback }),
   };
 }
 
 export function FlowReviewPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { startBlockId, blockIds } = useFlowReviewRoute();
 
@@ -161,10 +163,13 @@ export function FlowReviewPage() {
 
   const handleRemoveFlow = useCallback(
     (row: ReviewRow) => {
-      Alert.alert('루틴 제거', `「${row.title}」를 오늘 루틴에서 제거할까요?`, [
-        { text: '취소', style: 'cancel' },
+      Alert.alert(
+        t('alert.deleteRoutine.title'),
+        t('alert.deleteRoutine.message', { title: row.title }),
+        [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '제거',
+          text: t('common.remove'),
           style: 'destructive',
           onPress: () => removeBlock(row.block.id),
         },
@@ -198,9 +203,9 @@ export function FlowReviewPage() {
           showsVerticalScrollIndicator={false}>
           <View style={styles.heroSection}>
             <ThemedText style={styles.heroKicker}>CURRENT SELECTION</ThemedText>
-            <ThemedText style={styles.heroTitle}>선택된 루틴</ThemedText>
+            <ThemedText style={styles.heroTitle}>{t('flowReview.heroTitle')}</ThemedText>
             <ThemedText style={styles.heroSub}>
-              오늘의 흐름을 위해 {rows.length}개의 루틴과 총 {totalDurationMin}분이 준비되었어요.
+              {t('flowReview.heroSub', { count: rows.length, minutes: totalDurationMin })}
             </ThemedText>
           </View>
 
@@ -255,11 +260,11 @@ export function FlowReviewPage() {
                   </View>
 
                   <View style={styles.cardFooter}>
-                    <ThemedText style={styles.cardFooterText}>상세 설정 열기</ThemedText>
+                    <ThemedText style={styles.cardFooterText}>{t('flowReview.openDetail')}</ThemedText>
                     <View style={styles.cardFooterActions}>
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel="루틴 제거"
+                        accessibilityLabel={t('flowReview.removeRoutine')}
                         hitSlop={8}
                         onPress={(e) => {
                           e.stopPropagation();
@@ -279,10 +284,10 @@ export function FlowReviewPage() {
 
         <View style={styles.bottomActions}>
           <Pressable style={styles.primaryButton} onPress={handleStartTodayFlow}>
-            <ThemedText style={styles.primaryButtonText}>오늘의 루틴 시작</ThemedText>
+            <ThemedText style={styles.primaryButtonText}>{t('flowReview.startToday')}</ThemedText>
           </Pressable>
           <Pressable onPress={handleBackToEdit} style={styles.secondaryAction}>
-            <ThemedText style={styles.secondaryActionText}>루틴 수정하기</ThemedText>
+            <ThemedText style={styles.secondaryActionText}>{t('flowReview.editRoutines')}</ThemedText>
           </Pressable>
         </View>
       </SafeAreaView>

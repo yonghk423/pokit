@@ -9,7 +9,8 @@ import Reanimated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { formatHhmmClockKo, dayPlanAnchorIconColor, dayPlanAnchorNodeBackground } from '@entities/day-plan';
+import { dayPlanAnchorIconColor, dayPlanAnchorNodeBackground } from '@entities/day-plan';
+import { formatHhmmClock, useTranslation } from '@shared/lib/i18n';
 import { PrimaryColor } from '@shared/config/theme';
 import {
   CityPopSpacing,
@@ -293,13 +294,14 @@ function RoutineRowSettingsButton({
   isDark: boolean;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
   const colors = cardColors(isDark);
   const primary = isDark ? RetroFlatColors.dark.primary : PrimaryColor.rgb;
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${label} 상세 설정`}
+      accessibilityLabel={t('dayPlan.detailSettingsA11y', { label })}
       hitSlop={10}
       onPress={() => {
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -334,6 +336,7 @@ function CheckboxRowContent({
   pressed?: boolean;
   onToggleComplete?: () => void;
 }) {
+  const { t } = useTranslation();
   const pressedLabelColor = isDark ? RetroFlatColors.dark.primary : RetroFlatColors.light.text;
 
   return (
@@ -343,7 +346,7 @@ function CheckboxRowContent({
         isDark={isDark}
         shape="square"
         checkedColor={isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT}
-        accessibilityLabel={completed ? `${item.label} 완료 취소` : `${item.label} 완료`}
+        accessibilityLabel={completed ? t('dayPlan.completeCancelA11y', { label: item.label }) : t('dayPlan.completeA11y', { label: item.label })}
         onPress={onToggleComplete}
       />
       {labelHidden ? null : (
@@ -458,6 +461,7 @@ function ReorderableCheckboxRow({
     rowAnchorY: number,
   ) => void;
 }) {
+  const { t } = useTranslation();
   const rowRef = useRef<RNView>(null);
   const rowAnchorYRef = useRef(0);
   const itemKeyRef = useRef(item.key);
@@ -596,7 +600,7 @@ function ReorderableCheckboxRow({
             <View
               style={[styles.checkboxRow, styles.checkboxRowFlex]}
               accessibilityRole="adjustable"
-              accessibilityLabel={`${item.label}, 길게 눌러 순서를 바꿀 수 있어요`}>
+              accessibilityLabel={t('dayPlan.reorderA11y', { label: item.label })}>
               <CheckboxRowContent
                 item={item}
                 palette={palette}
@@ -644,13 +648,14 @@ function SectionSlotCard<T extends MealSlotTimelineItem>({
     rowAnchorY: number,
   ) => void;
 }) {
+  const { t } = useTranslation();
   const { items } = section;
 
   if (items.length === 0) {
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="루틴 연결"
+        accessibilityLabel={t('dayPlan.linkRoutineA11y')}
         onPress={() => {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onPressAddRoutine(section.slot);
@@ -664,7 +669,7 @@ function SectionSlotCard<T extends MealSlotTimelineItem>({
               cityPopFont('600'),
               { color: palette.muted },
             ]}>
-            루틴 연결
+            {t('dayPlan.linkRoutineA11y')}
           </ThemedText>
         </BrutalistCardShell>
       </Pressable>
@@ -696,7 +701,7 @@ function SectionSlotCard<T extends MealSlotTimelineItem>({
         {items.length > 0 ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="루틴 더 연결"
+            accessibilityLabel={t('dayPlan.linkMoreRoutineA11y')}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onPressAddRoutine(section.slot);
@@ -704,7 +709,7 @@ function SectionSlotCard<T extends MealSlotTimelineItem>({
             style={({ pressed }) => [styles.addLinkRow, pressed && styles.pressed]}>
             <IconSymbol name="plus" size={13} color={palette.muted} />
             <ThemedText style={[styles.addLinkLabel, cityPopFont('600'), { color: palette.muted }]}>
-              루틴 더 연결
+              {t('dayPlan.linkMoreRoutine')}
             </ThemedText>
           </Pressable>
         ) : null}
@@ -749,6 +754,7 @@ function TimelineSectionBlock<T extends MealSlotTimelineItem>({
     rowAnchorY: number,
   ) => void;
 }) {
+  const { t, locale } = useTranslation();
   const badge = slotBadgeTheme(section.slot, isDark);
   const isCurrent = section.isCurrent;
   const timeEmphasis = isCurrent || isPast;
@@ -803,7 +809,7 @@ function TimelineSectionBlock<T extends MealSlotTimelineItem>({
               cityPopFont('800'),
               { color: timeEmphasis ? palette.ink : palette.muted },
             ]}>
-            {formatHhmmClockKo(section.hintTime)}
+            {formatHhmmClock(section.hintTime, locale)}
           </ThemedText>
         </View>
 

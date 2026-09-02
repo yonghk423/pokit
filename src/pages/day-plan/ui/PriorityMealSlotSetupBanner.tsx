@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -19,10 +20,12 @@ export function PriorityMealSlotSetupBanner({
   cardBg,
   onPressSetup,
 }: Props) {
+  const { t } = useTranslation();
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="나만의 루틴에서 구간 설정하기"
+      accessibilityLabel={t('dayPlan.sectionsSetupBannerA11y')}
       onPress={onPressSetup}
       style={({ pressed }) => [
         styles.root,
@@ -34,10 +37,10 @@ export function PriorityMealSlotSetupBanner({
       </View>
       <View style={styles.textCol}>
         <ThemedText style={[styles.title, { color: ink }]}>
-          구간별로 보려면 설정이 필요해요
+          {t('dayPlan.sectionsSetupBannerTitle')}
         </ThemedText>
         <ThemedText style={[styles.body, { color: muted }]}>
-          나만의 루틴에서 구간을 설정한 뒤 적용을 켜면, 여기서 구간별로 볼 수 있어요.
+          {t('dayPlan.sectionsSetupBannerBody')}
         </ThemedText>
       </View>
       <IconSymbol name="chevron.right" size={14} color={muted} />

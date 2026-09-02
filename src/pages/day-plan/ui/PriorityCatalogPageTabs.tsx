@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
@@ -10,12 +11,12 @@ export type PriorityCatalogPageTab = 'catalog' | 'fixed';
 
 type TabDef = {
   key: PriorityCatalogPageTab;
-  label: string;
+  labelKey: I18nKey;
 };
 
 const TABS: TabDef[] = [
-  { key: 'catalog', label: '나만의 루틴' },
-  { key: 'fixed', label: '고정 루틴' },
+  { key: 'catalog', labelKey: 'tabs.myRoutines' },
+  { key: 'fixed', labelKey: 'fixedRoutine.tabFixed' },
 ];
 
 const SHADOW_SM = 2;
@@ -36,6 +37,7 @@ export function PriorityCatalogPageTabs({
   c: _c,
   isDark,
 }: Props) {
+  const { t } = useTranslation();
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const border = tone.border;
   const shadowColor = isDark ? tone.solidShadow : tone.text;
@@ -67,7 +69,7 @@ export function PriorityCatalogPageTabs({
             <Pressable
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={item.label}
+              accessibilityLabel={t(item.labelKey)}
               onPress={() => {
                 if (active) return;
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -85,7 +87,7 @@ export function PriorityCatalogPageTabs({
               <ThemedText
                 style={[styles.tabLabel, { color: active ? activeText : inactiveText }]}
                 numberOfLines={1}>
-                {item.label}
+                {t(item.labelKey)}
               </ThemedText>
             </Pressable>
           </View>

@@ -8,7 +8,6 @@ import {
   dayPlanAnchorNodeBackground,
   dayPlanDayEndIconColor,
   dayPlanDayStartIconColor,
-  formatMinuteOfDayKo,
   isSpineBlockActiveAtMinute,
   type SpineTimelineAnchorRow,
   type SpineTimelineGapRow,
@@ -16,6 +15,7 @@ import {
   resolveBlockCategoryKey,
 } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { formatMinuteOfDay, useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { SpineTimelineBlockRow } from './SpineTimelineBlockRow';
@@ -219,6 +219,7 @@ function AnchorRow({
   palette: SpineTimelinePalette;
   isDark: boolean;
 }) {
+  const { locale } = useTranslation();
   const isStart = row.role === 'dayStart';
   return (
     <View style={styles.eventRow}>
@@ -234,7 +235,7 @@ function AnchorRow({
       <View style={styles.anchorContentRow}>
         <View style={styles.anchorMetaCol}>
           <ThemedText style={[styles.metaText, { color: palette.muted }]}>
-            {formatMinuteOfDayKo(row.minutes)}
+            {formatMinuteOfDay(row.minutes, locale)}
           </ThemedText>
           {row.dateCaption ? (
             <ThemedText style={[styles.anchorDateText, { color: palette.muted }]}>
@@ -260,12 +261,13 @@ function GapRow({
   accent: string;
   onAdd: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.gapRow}>
       <View style={styles.railCol}>
         {row.nowMinutes != null ? (
           <View style={styles.railNowWrap}>
-            <ThemedText style={[styles.railTimeNowLabel, { color: accent }]}>지금</ThemedText>
+            <ThemedText style={[styles.railTimeNowLabel, { color: accent }]}>{t('spineTimeline.now')}</ThemedText>
             <ThemedText style={[styles.railTimeNow, { color: accent }]}>
               {formatRailMinutes(row.nowMinutes)}
             </ThemedText>
@@ -278,7 +280,7 @@ function GapRow({
       <View style={styles.gapContentCol}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="일정 추가"
+          accessibilityLabel={t('dayPlan.addBlockA11y')}
           hitSlop={8}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -315,6 +317,7 @@ export function SpineTimelineView({
   onReorderBlocks,
   onReorderDragActiveChange,
 }: Props) {
+  const { t } = useTranslation();
   const blockRowHeightRef = useRef(56);
 
   const displayRows = useMemo(
@@ -438,7 +441,7 @@ export function SpineTimelineView({
     return (
       <View style={styles.emptyWrap}>
         <ThemedText style={{ color: palette.muted, fontSize: 13 }}>
-          시작·마무리 시각을 설정하면 타임라인이 표시돼요.
+          {t('spineTimeline.emptyHint')}
         </ThemedText>
       </View>
     );

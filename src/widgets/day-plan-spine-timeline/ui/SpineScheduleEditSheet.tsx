@@ -20,6 +20,7 @@ import {
   resolveCategoryCatalogIcon,
 } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
+import { formatDurationMinutes, useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -74,14 +75,6 @@ function parseTimeInput(raw: string, fallback: number): number {
   return parsed != null && Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function formatDurationKo(minutes: number): string {
-  if (minutes < 60) return `${minutes}분`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  if (rest === 0) return `${hours}시간`;
-  return `${hours}시간 ${rest}분`;
-}
-
 function resolveRoutineLabel(
   categoryKey: string,
   routineSections: SpineRoutineSection[],
@@ -105,6 +98,7 @@ export function SpineScheduleEditSheet({
   onDelete,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t, locale } = useTranslation();
   const { height: windowHeight } = useWindowDimensions();
   const sheetMaxHeight = Math.min(windowHeight * 0.92, windowHeight - insets.top - 12);
   const [titleText, setTitleText] = useState('');
@@ -195,11 +189,11 @@ export function SpineScheduleEditSheet({
             onPress={(e) => e.stopPropagation()}>
             <View style={[styles.header, { borderBottomColor: palette.line }]}>
               <ThemedText style={[styles.title, { color: palette.ink }]}>
-                {draft?.mode === 'edit' ? '일정 수정' : '일정 추가'}
+                {draft?.mode === 'edit' ? t('dayPlan.blockEditTitle') : t('dayPlan.blockAddTitle')}
               </ThemedText>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="닫기"
+                accessibilityLabel={t('common.close')}
                 onPress={onClose}
                 hitSlop={12}
                 style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.7 }]}>
@@ -213,11 +207,11 @@ export function SpineScheduleEditSheet({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.sheetScroll}>
               <View style={styles.fieldBlock}>
-                <ThemedText style={[styles.label, { color: palette.muted }]}>할 일</ThemedText>
+                <ThemedText style={[styles.label, { color: palette.muted }]}>{t('dayPlan.todoLabel')}</ThemedText>
                 <TextInput
                   value={titleText}
                   onChangeText={setTitleText}
-                  placeholder="무엇을 할까요?"
+                  placeholder={t('dayPlan.todoPlaceholder')}
                   placeholderTextColor={palette.muted}
                   autoFocus={draft?.mode === 'create'}
                   returnKeyType="done"
@@ -237,7 +231,7 @@ export function SpineScheduleEditSheet({
                     </View>
                     <View style={styles.linkedRoutineTextWrap}>
                       <ThemedText style={[styles.linkedRoutineCaption, { color: palette.muted }]}>
-                        연결된 루틴
+                        {t('dayPlan.linkedRoutine')}
                       </ThemedText>
                       <ThemedText style={[styles.linkedRoutineLabel, { color: palette.ink }]} numberOfLines={1}>
                         {linkedRoutineLabel}
@@ -245,7 +239,7 @@ export function SpineScheduleEditSheet({
                     </View>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="루틴 연결 해제"
+                      accessibilityLabel={t('dayPlan.unlinkRoutine')}
                       onPress={clearRoutineLink}
                       hitSlop={8}
                       style={({ pressed }) => [styles.unlinkBtn, pressed && { opacity: 0.72 }]}>
@@ -254,7 +248,7 @@ export function SpineScheduleEditSheet({
                   </View>
                 ) : (
                   <ThemedText style={[styles.hint, { color: palette.muted }]}>
-                    직접 적거나, 아래에서 루틴을 고르면 아이콘이 연결돼요.
+                    {t('dayPlan.routineLinkHint')}
                   </ThemedText>
                 )}
               </View>
@@ -262,7 +256,7 @@ export function SpineScheduleEditSheet({
               {routineSections.length > 0 ? (
                 <View style={styles.fieldBlock}>
                   <ThemedText style={[styles.label, { color: palette.muted }]}>
-                    루틴 연결 (선택)
+                    {t('dayPlan.routineLinkOptional')}
                   </ThemedText>
                   <View
                     style={[
@@ -272,7 +266,7 @@ export function SpineScheduleEditSheet({
                     <Pressable
                       accessibilityRole="button"
                       accessibilityState={{ selected: categoryKey === null }}
-                      accessibilityLabel="직접 입력"
+                      accessibilityLabel={t('dayPlan.directInput')}
                       onPress={selectDirectInput}
                       style={({ pressed }) => [
                         styles.routineRow,
@@ -295,10 +289,10 @@ export function SpineScheduleEditSheet({
                             styles.routineRowLabel,
                             { color: categoryKey === null ? palette.ink : palette.muted },
                           ]}>
-                          직접 입력
+                          {t('dayPlan.directInput')}
                         </ThemedText>
                         <ThemedText style={[styles.routineRowHint, { color: palette.muted }]}>
-                          루틴 없이 할 일만 적어요
+                          {t('dayPlan.directInputHint')}
                         </ThemedText>
                       </View>
                       <IconSymbol
@@ -328,7 +322,7 @@ export function SpineScheduleEditSheet({
                               key={option.key}
                               accessibilityRole="button"
                               accessibilityState={{ selected }}
-                              accessibilityLabel={`${option.label} 루틴`}
+                              accessibilityLabel={t('dayPlan.routineA11y', { label: option.label })}
                               onPress={() => selectRoutine(option.key, option.label)}
                               style={({ pressed }) => [
                                 styles.routineRow,
@@ -383,15 +377,15 @@ export function SpineScheduleEditSheet({
               <View style={styles.fieldBlock}>
                 <View style={styles.timeHeaderRow}>
                   <ThemedText style={[styles.label, styles.timeHeaderLabel, { color: palette.muted }]}>
-                    시간
+                    {t('common.time')}
                   </ThemedText>
                   <ThemedText style={[styles.durationHint, { color: palette.muted }]}>
-                    {formatDurationKo(durationMinutes)}
+                    {formatDurationMinutes(durationMinutes, locale)}
                   </ThemedText>
                 </View>
                 <View style={styles.timeRow}>
                   <View style={styles.timeField}>
-                    <ThemedText style={[styles.timeCaption, { color: palette.muted }]}>시작</ThemedText>
+                    <ThemedText style={[styles.timeCaption, { color: palette.muted }]}>{t('dayPlan.startTimeLabel')}</ThemedText>
                     <TextInput
                       value={startText}
                       onChangeText={setStartText}
@@ -409,7 +403,7 @@ export function SpineScheduleEditSheet({
                     <IconSymbol name="arrow.right" size={14} color={palette.muted} />
                   </View>
                   <View style={styles.timeField}>
-                    <ThemedText style={[styles.timeCaption, { color: palette.muted }]}>종료</ThemedText>
+                    <ThemedText style={[styles.timeCaption, { color: palette.muted }]}>{t('dayPlan.endTimeLabel')}</ThemedText>
                     <TextInput
                       value={endText}
                       onChangeText={setEndText}
@@ -431,7 +425,7 @@ export function SpineScheduleEditSheet({
                   accessibilityRole="button"
                   onPress={() => onDelete(draft.blockId!)}
                   style={[styles.deleteBtn, { borderColor: destructive }]}>
-                  <ThemedText style={[styles.deleteBtnText, { color: destructive }]}>삭제</ThemedText>
+                  <ThemedText style={[styles.deleteBtnText, { color: destructive }]}>{t('common.delete')}</ThemedText>
                 </Pressable>
               ) : null}
             </ScrollView>
@@ -441,7 +435,7 @@ export function SpineScheduleEditSheet({
                 accessibilityRole="button"
                 onPress={onClose}
                 style={[styles.btn, styles.btnGhost, { borderColor: palette.line }]}>
-                <ThemedText style={[styles.btnText, { color: palette.ink }]}>취소</ThemedText>
+                <ThemedText style={[styles.btnText, { color: palette.ink }]}>{t('common.cancel')}</ThemedText>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -451,7 +445,7 @@ export function SpineScheduleEditSheet({
                   styles.btnPrimary,
                   { borderColor: primaryBtnBg, backgroundColor: primaryBtnBg },
                 ]}>
-                <ThemedText style={[styles.btnText, { color: primaryBtnFg }]}>저장</ThemedText>
+                <ThemedText style={[styles.btnText, { color: primaryBtnFg }]}>{t('common.save')}</ThemedText>
               </Pressable>
             </View>
           </Pressable>

@@ -1,13 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 
-import { addDaysToLocalDateKey, formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
+import { addDaysToLocalDateKey, parseHHmmToMinutes } from '@entities/day-plan';
+import { formatDateKeyCompact, formatHhmmClock } from '@shared/lib/i18n';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import {
-  endsOnNextCalendarDay,
-  formatDateKeyCompactKo,
-  sortedPlanDateRange,
-} from '../lib/dayPlanEditorShared';
+import { endsOnNextCalendarDay, sortedPlanDateRange } from '../lib/dayPlanEditorShared';
 import { FixedRoutineSettingsButton } from './FixedRoutineSettingsButton';
 
 type Props = {
@@ -30,6 +28,7 @@ function formatPriorityWindowLines(
   end: string,
   planDateKey: string,
   planDateKeyEnd: string,
+  locale: import('@shared/lib/i18n').AppLocale,
 ): { dateLine: string; timeLine: string } {
   const { lo, hi } = sortedPlanDateRange(planDateKey, planDateKeyEnd);
   const pe = parseHHmmToMinutes(end.trim());
@@ -42,12 +41,12 @@ function formatPriorityWindowLines(
         : hi;
   const dateLine =
     lo === endDateKey
-      ? formatDateKeyCompactKo(lo)
-      : `${formatDateKeyCompactKo(lo)} ~ ${formatDateKeyCompactKo(endDateKey)}`;
-  const startLabel = formatHhmmClockKo(start);
-  const endLabel = formatHhmmClockKo(end);
+      ? formatDateKeyCompact(lo, locale)
+      : `${formatDateKeyCompact(lo, locale)} ~ ${formatDateKeyCompact(endDateKey, locale)}`;
+  const startLabel = formatHhmmClock(start, locale);
+  const endLabel = formatHhmmClock(end, locale);
   const timeLine = crossesNextDay
-    ? `${startLabel} — ${formatDateKeyCompactKo(endDateKey)} ${endLabel}`
+    ? `${startLabel} — ${formatDateKeyCompact(endDateKey, locale)} ${endLabel}`
     : `${startLabel} — ${endLabel}`;
   return { dateLine, timeLine };
 }
@@ -65,17 +64,19 @@ export function FixedRoutinePriorityWindowCard({
   cardBg,
   onPressSettings,
 }: Props) {
+  const { locale, t } = useTranslation();
   const { dateLine, timeLine } = formatPriorityWindowLines(
     priorityStart,
     priorityEnd,
     planDateKey,
     planDateKeyEnd,
+    locale,
   );
 
   return (
     <View style={[styles.root, { backgroundColor: cardBg, borderColor: line }]}>
       <View style={styles.textCol}>
-        <ThemedText style={[styles.title, { color: ink }]}>타임라인 집중 구간</ThemedText>
+        <ThemedText style={[styles.title, { color: ink }]}>{t('fixedRoutine.spineFocusWindowTitle')}</ThemedText>
         <ThemedText style={[styles.summary, { color: muted }]} numberOfLines={2}>
           {dateLine}
           {'\n'}
@@ -86,7 +87,7 @@ export function FixedRoutinePriorityWindowCard({
         isDark={isDark}
         ink={ink}
         line={line}
-        accessibilityLabel="집중 구간 설정"
+        accessibilityLabel={t('fixedRoutine.focusWindowSettingsA11y')}
         onPress={onPressSettings}
       />
     </View>

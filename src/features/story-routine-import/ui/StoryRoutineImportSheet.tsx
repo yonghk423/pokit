@@ -12,6 +12,7 @@ import {
   retroBorderFor,
 } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
 import {
   listCustomCatalogGroups,
   resolveSystemCatalogGroupLabel,
@@ -51,6 +52,7 @@ function sheetPalette(isDark: boolean) {
 }
 
 export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const palette = sheetPalette(isDark);
@@ -89,9 +91,9 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
 
   if (!article) return null;
 
-  const durationLabel = `${article.durationMinutes}분`;
+  const durationLabel = t('common.durationMinutes', { count: article.durationMinutes });
   const selectedGroupLabel =
-    groupOptions.find((g) => g.key === selectedGroupKey)?.label ?? '루틴';
+    groupOptions.find((g) => g.key === selectedGroupKey)?.label ?? t('category.routineFallback');
 
   return (
     <Modal
@@ -100,7 +102,7 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
       transparent
       onRequestClose={handleClose}>
       <View style={styles.backdrop}>
-        <Pressable style={styles.backdropTouch} onPress={handleClose} accessibilityLabel="닫기" />
+        <Pressable style={styles.backdropTouch} onPress={handleClose} accessibilityLabel={t('storyImport.closeA11y')} />
         <View
           style={[
             styles.sheet,
@@ -122,10 +124,10 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
                 <IconSymbol name="checkmark" size={22} color={palette.ink} />
               </View>
               <ThemedText style={[styles.successTitle, { color: palette.ink }]}>
-                {done.created ? '루틴에 저장했어요' : '루틴 내용을 업데이트했어요'}
+                {done.created ? t('storyImport.savedCreate') : t('storyImport.savedUpdate')}
               </ThemedText>
               <ThemedText style={[styles.successSub, { color: palette.muted }]}>
-                {`「${selectedGroupLabel}」에서 확인할 수 있어요`}
+                {t('storyImport.savedInGroup', { group: selectedGroupLabel })}
               </ThemedText>
               <BrutalConfirmButton
                 align="stretch"
@@ -149,7 +151,7 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
                 </ThemedText>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="닫기"
+                  accessibilityLabel={t('storyImport.closeA11y')}
                   hitSlop={12}
                   onPress={handleClose}
                   style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}>
@@ -215,7 +217,7 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
                 ) : null}
 
                 <ThemedText style={[styles.sectionLabel, { color: palette.muted }]}>
-                  저장할 카테고리
+                  {t('storyImport.pickCategory')}
                 </ThemedText>
                 <ScrollView
                   horizontal
@@ -268,7 +270,7 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
                   ]}
                   onPress={handleImport}>
                   <ThemedText style={[styles.primaryBtnText, { color: palette.bg }]}>
-                    루틴에 저장
+                    {t('storyImport.saveToRoutine')}
                   </ThemedText>
                 </Pressable>
               </View>

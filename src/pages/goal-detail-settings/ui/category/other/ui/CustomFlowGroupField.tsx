@@ -11,6 +11,7 @@ import {
   resolveSystemCatalogGroupLabel,
   type CustomCatalogGroup,
 } from '@shared/lib/storage';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -27,6 +28,7 @@ type Props = {
 };
 
 export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
+  const { t } = useTranslation();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -62,13 +64,15 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
     if (isSystemCatalogGroupKey(groupKey)) {
       return resolveSystemCatalogGroupLabel(groupKey);
     }
-    return customGroups.find((g) => g.key === groupKey)?.label ?? '생산성';
-  }, [customGroups, groupKey]);
+    return customGroups.find((g) => g.key === groupKey)?.label ?? t('goalDetail.productivityFallback');
+  }, [customGroups, groupKey, t]);
 
   return (
     <View style={styles.shell}>
       <View style={styles.labelRow}>
-        <ThemedText style={[styles.fieldLabel, { color: tone.textMuted }]}>상위 카테고리</ThemedText>
+        <ThemedText style={[styles.fieldLabel, { color: tone.textMuted }]}>
+          {t('goalDetail.parentCategory')}
+        </ThemedText>
         <ThemedText style={[styles.currentTag, { color: tone.text }]} numberOfLines={1}>
           {currentLabel}
         </ThemedText>
@@ -120,7 +124,7 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
         {!isAddingGroup ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="새 그룹 만들기"
+            accessibilityLabel={t('goalDetail.newGroup')}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setIsAddingGroup(true);
@@ -136,7 +140,7 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
             ]}>
             <IconSymbol name="plus" size={11} color={tone.text} weight="bold" />
             <ThemedText style={[styles.chipText, { color: tone.text, fontWeight: '700' }]}>
-              새 그룹 만들기
+              {t('goalDetail.newGroup')}
             </ThemedText>
           </Pressable>
         ) : null}
@@ -148,7 +152,7 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
             autoFocus
             value={newGroupLabel}
             onChangeText={(v) => setNewGroupLabel(v.slice(0, GROUP_NAME_MAX))}
-            placeholder="새 그룹 이름"
+            placeholder={t('goalDetail.newGroupName')}
             placeholderTextColor={tone.textMuted}
             maxLength={GROUP_NAME_MAX}
             returnKeyType="done"
@@ -165,7 +169,7 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="추가"
+            accessibilityLabel={t('common.add')}
             onPress={handleSubmitNewGroup}
             disabled={newGroupLabel.trim().length === 0}
             style={({ pressed }) => [
@@ -176,11 +180,13 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
                 opacity: newGroupLabel.trim().length === 0 ? 0.45 : pressed ? 0.92 : 1,
               },
             ]}>
-            <ThemedText style={[styles.newGroupBtnText, { color: tone.text }]}>추가</ThemedText>
+            <ThemedText style={[styles.newGroupBtnText, { color: tone.text }]}>
+              {t('common.add')}
+            </ThemedText>
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="취소"
+            accessibilityLabel={t('common.cancel')}
             onPress={() => {
               setIsAddingGroup(false);
               setNewGroupLabel('');

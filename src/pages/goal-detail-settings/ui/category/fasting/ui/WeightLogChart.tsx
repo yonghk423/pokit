@@ -7,6 +7,7 @@ import {
   type FastingWeightLogs,
   type WeightChartPoint,
 } from '@entities/day-plan/lib/weightLog';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
@@ -71,6 +72,7 @@ function WeightLogChartInner({
   targetWeightKg: number;
   palette: Palette;
 }) {
+  const { t } = useTranslation();
   const [width, setWidth] = useState(0);
   const layout = useMemo(
     () => layoutPoints(points, targetWeightKg, width),
@@ -80,9 +82,9 @@ function WeightLogChartInner({
   if (points.length < 2) {
     return (
       <View style={[styles.wrap, { borderColor: palette.outline }]}>
-        <ThemedText style={[styles.title, { color: palette.onSurface }]}>체중 변화</ThemedText>
+        <ThemedText style={[styles.title, { color: palette.onSurface }]}>{t('goalDetail.fasting.chartTitle')}</ThemedText>
         <ThemedText style={[styles.empty, { color: palette.onVariant }]}>
-          기록이 2일 이상 쌓이면 그래프가 표시돼요.
+          {t('goalDetail.fasting.chartHint')}
         </ThemedText>
       </View>
     );
@@ -94,7 +96,7 @@ function WeightLogChartInner({
   return (
     <View style={[styles.wrap, { borderColor: palette.outline }]}>
       <View style={styles.headerRow}>
-        <ThemedText style={[styles.title, { color: palette.onSurface }]}>체중 변화</ThemedText>
+        <ThemedText style={[styles.title, { color: palette.onSurface }]}>{t('goalDetail.fasting.chartTitle')}</ThemedText>
         <ThemedText style={[styles.range, { color: palette.onVariant }]}>
           {firstLabel} – {lastLabel}
         </ThemedText>
@@ -134,7 +136,7 @@ function WeightLogChartInner({
         ) : null}
       </View>
       <ThemedText style={[styles.legend, { color: palette.onVariant }]}>
-        점선 · 목표 {targetWeightKg.toFixed(1)}kg
+        {t('goalDetail.fasting.targetLine', { kg: targetWeightKg.toFixed(1) })}
       </ThemedText>
     </View>
   );

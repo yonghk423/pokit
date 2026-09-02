@@ -1,11 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import {
-  DAY_MEAL_SLOT_LABEL,
-  DAY_MEAL_SLOT_ORDER,
-  type DayMealSlot,
-} from '@shared/lib/storage';
+import { formatMealSlotLabel, type LocaleDayMealSlot } from '@shared/lib/i18n';
+import { useTranslation } from '@shared/lib/i18n';
+import { DAY_MEAL_SLOT_ORDER, type DayMealSlot } from '@shared/lib/storage';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -28,6 +26,7 @@ export function FixedRoutineSlotAddChips({
   line,
   onSelectSlot,
 }: Props) {
+  const { locale, t } = useTranslation();
   const slots =
     occupiedSlots && occupiedSlots.size > 0
       ? DAY_MEAL_SLOT_ORDER.filter((slot) => !occupiedSlots.has(slot))
@@ -43,7 +42,7 @@ export function FixedRoutineSlotAddChips({
           <Pressable
             key={slot}
             accessibilityRole="button"
-            accessibilityLabel={`${DAY_MEAL_SLOT_LABEL[slot]} 구간에 항목 추가`}
+            accessibilityLabel={t('dayPlan.addToSlotA11y', { slot: formatMealSlotLabel(slot as LocaleDayMealSlot, locale) })}
             onPress={() => {
               void Haptics.selectionAsync();
               onSelectSlot(slot);
@@ -57,7 +56,7 @@ export function FixedRoutineSlotAddChips({
               pressed && { opacity: 0.72 },
             ]}>
             <ThemedText style={[styles.chipLabel, { color: ink }]}>
-              {DAY_MEAL_SLOT_LABEL[slot]}
+              {formatMealSlotLabel(slot as LocaleDayMealSlot, locale)}
             </ThemedText>
           </Pressable>
         ))}

@@ -8,6 +8,7 @@ import {
   isOvernightPriorityWindow,
   normalizeOtherDetailConfig,
   parseHHmmToMinutes,
+  getPriorityCatalogPickerLabel,
   PRIORITY_CATALOG_PICKER_LABELS,
   resolveCategoryCatalogIcon,
   resolveCustomFlowCategoryLabelKo,
@@ -27,19 +28,20 @@ export {
 export type { PlanMode } from '@entities/day-plan';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { t } from '@shared/lib/i18n';
 
 export const PRIMARY = RetroFlatColors.light.primary;
 
 export const CATEGORIES: { key: string; label: string; icon: string }[] = [
   // ─── 건강 루틴 ───
-  { key: 'healthIntake', label: PRIORITY_CATALOG_PICKER_LABELS.healthIntake, icon: 'pills.fill' },
-  { key: 'fasting', label: PRIORITY_CATALOG_PICKER_LABELS.fasting, icon: 'person.fill' },
+  { key: 'healthIntake', label: getPriorityCatalogPickerLabel('healthIntake'), icon: 'pills.fill' },
+  { key: 'fasting', label: getPriorityCatalogPickerLabel('fasting'), icon: 'person.fill' },
 
   // ─── 생산성을 높이는 도구 ───
-  { key: 'reading', label: PRIORITY_CATALOG_PICKER_LABELS.reading, icon: 'book.closed.fill' },
+  { key: 'reading', label: getPriorityCatalogPickerLabel('reading'), icon: 'book.closed.fill' },
 
   // ─── 레거시 호환 ───
-  { key: 'other', label: PRIORITY_CATALOG_PICKER_LABELS.other, icon: 'person.fill' },
+  { key: 'other', label: getPriorityCatalogPickerLabel('other'), icon: 'person.fill' },
 ];
 
 /** 담기·우선순위에서 고를 수 있는 카테고리(전체) */
@@ -51,17 +53,17 @@ export type PickerCategoryItem = (typeof PICKER_CATEGORIES)[number];
 const LEGACY_PICKER_BY_KEY: Record<string, PickerCategoryItem> = {
   work: {
     key: 'work',
-    label: PRIORITY_CATALOG_PICKER_LABELS.work,
+    label: getPriorityCatalogPickerLabel('work'),
     icon: 'square.and.pencil',
   } as unknown as PickerCategoryItem,
   water: {
     key: 'water',
-    label: '수분섭취',
+    label: t('category.water'),
     icon: 'drop.fill',
   } as unknown as PickerCategoryItem,
   review: {
     key: 'review',
-    label: '회고·점검',
+    label: t('category.review'),
     icon: 'chart.bar.doc.horizontal',
   } as unknown as PickerCategoryItem,
 };
@@ -115,7 +117,7 @@ export function getPickerCategoryLabel(
     const trimmed = typeof dn === 'string' ? dn.trim() : '';
     if (trimmed.length > 0) return trimmed;
   }
-  return getPickerCategoryItem(categoryKey)?.label ?? '사용자';
+  return getPickerCategoryItem(categoryKey)?.label ?? t('category.userFallback');
 }
 
 export type PriorityTask = { id: string; title: string; categoryKey: string };
@@ -206,7 +208,7 @@ export function planDayIntroFromRange(todayKey: string, startKey: string, endKey
   const lo = startKey <= endKey ? startKey : endKey;
   const hi = startKey <= endKey ? endKey : startKey;
   if (lo === hi) {
-    return lo === todayKey ? '오늘' : formatDateKeyDisplayKo(lo);
+    return lo === todayKey ? t('tabs.dayPlan') : formatDateKeyDisplayKo(lo);
   }
   const a = parseDateKeyYmd(lo);
   const b = parseDateKeyYmd(hi);

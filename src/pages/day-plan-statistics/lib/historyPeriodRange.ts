@@ -1,4 +1,5 @@
 import { parseHistoryDateKey } from '@entities/history/lib/historyDateKey';
+import { getAppLocale, type AppLocale } from '@shared/lib/i18n';
 
 import { historyWeekdayIndexMondayZero } from './buildWeeklyFlowHistory';
 
@@ -12,12 +13,17 @@ export function monthPrefixToAnchorDateKey(monthPrefix: string): string {
   return `${monthPrefix}-01`;
 }
 
-export function formatMonthLabelKo(monthPrefix: string): string {
+export function formatMonthLabelKo(monthPrefix: string, locale?: AppLocale): string {
+  const loc = locale ?? getAppLocale();
   const [yearRaw, monthRaw] = monthPrefix.split('-');
   const year = Number(yearRaw);
   const month = Number(monthRaw);
   if (!Number.isFinite(year) || !Number.isFinite(month)) return monthPrefix;
-  return `${year}년 ${month}월`;
+  if (loc === 'ko') {
+    return `${year}년 ${month}월`;
+  }
+  const date = new Date(year, month - 1, 1);
+  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
 export function buildMonthDateKeys(monthPrefix: string): string[] {

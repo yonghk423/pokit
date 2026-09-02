@@ -8,6 +8,7 @@ import {
   scheduleDailyLocalNotification,
 } from '@shared/lib/notifications';
 import { loadPriorityDayStartAlarm, savePriorityDayStartAlarm } from '@shared/lib/storage';
+import { t } from '@shared/lib/i18n';
 
 /** OS 예약 ID — 재예약 시 동일 ID로 덮어써 중복 방지 */
 export const PRIORITY_DAY_START_NOTIFICATION_ID = 'pokit:priority-day-start';
@@ -75,8 +76,8 @@ export async function syncPriorityDayStartAlarm(input: {
       const startLabel = formatHhmmClockKo(input.startHhmm);
       const nid = await scheduleDailyLocalNotification({
         identifier: PRIORITY_DAY_START_NOTIFICATION_ID,
-        title: '오늘이 시작됐어요',
-        body: `하루 시작 · ${startLabel}입니다.`,
+        title: t('notify.priorityDayStart.title'),
+        body: t('notify.priorityDayStart.body', { time: startLabel }),
         hour,
         minute,
         data: { eventType: PRIORITY_DAY_START_EVENT_TYPE },

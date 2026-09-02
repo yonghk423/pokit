@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from 'react';
 
+import { t } from '@shared/lib/i18n';
+
 export type DayPlanPrimaryMeta = {
   disabled: boolean;
   label: string;
@@ -31,7 +33,7 @@ const DayPlanTabBridgeContext = createContext<Ctx | null>(null);
 
 export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) {
   const runRef = useRef<(() => void) | null>(null);
-  const [meta, setMeta] = useState<DayPlanPrimaryMeta>({ disabled: true, label: '시작하기', hidden: false });
+  const [meta, setMeta] = useState<DayPlanPrimaryMeta>({ disabled: true, label: t('dayPlan.primary.start'), hidden: false });
   const [tabBarHeight, setTabBarHeight] = useState(0);
   const [isDayPlanFocused, setIsDayPlanFocused] = useState(false);
 
@@ -94,7 +96,7 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
 export function useDayPlanTabBridge(): Ctx {
   const ctx = useContext(DayPlanTabBridgeContext);
   if (!ctx) {
-    throw new Error('useDayPlanTabBridge: Provider가 (tabs) 레이아웃에 필요합니다.');
+    throw new Error('useDayPlanTabBridge: Provider is required in the (tabs) layout.');
   }
   return ctx;
 }

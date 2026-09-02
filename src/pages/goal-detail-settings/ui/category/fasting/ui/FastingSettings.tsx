@@ -7,6 +7,7 @@ import {
   weightProgressRatioFromLogs,
   weightDeltaToTarget,
 } from '@entities/day-plan/lib/weightLog';
+import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
@@ -42,6 +43,8 @@ export function FastingSettings({
   renameLockedReason?: 'running' | 'today' | null;
   hideTitleField?: boolean;
 }) {
+  const { t } = useTranslation();
+
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
   const titleFallback = useMemo(
@@ -122,16 +125,16 @@ export function FastingSettings({
       <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
 
       <SettingsProgressBand
-        title="체중 목표"
+        title={t('goalDetail.fasting.weightGoal')}
         valueLine={
           weightAchieved
-            ? '목표 체중 달성'
+            ? t('goalDetail.fasting.goalAchieved')
             : `${effectiveCurrentKg.toFixed(1)}kg → ${parsed.targetWeightKg.toFixed(1)}kg`
         }
         subLine={
           weightAchieved
-            ? `주간 ${parsed.weeklyLossTargetKg.toFixed(1)}kg 감량 목표 유지`
-            : `목표까지 ${weightDeltaKg.toFixed(1)}kg · 주간 ${parsed.weeklyLossTargetKg.toFixed(1)}kg 감량`
+            ? t('goalDetail.fasting.weeklyMaintain', { kg: parsed.weeklyLossTargetKg.toFixed(1) })
+            : t('goalDetail.fasting.goalDelta', { delta: weightDeltaKg.toFixed(1), weekly: parsed.weeklyLossTargetKg.toFixed(1) })
         }
         ratio={weightProgressRatio}
         palette={c}
@@ -157,17 +160,17 @@ export function FastingSettings({
           <Text style={[styles.metricValue, { color: c.onSurface }]}>
             {effectiveCurrentKg.toFixed(1)}
           </Text>
-          <Text style={[styles.metricLabel, { color: c.onVariant }]}>현재(kg)</Text>
+          <Text style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.fasting.currentKg')}</Text>
         </View>
         <View style={styles.metricItem}>
           <Text style={[styles.metricValue, { color: c.onSurface }]}>{parsed.targetWeightKg.toFixed(1)}</Text>
-          <Text style={[styles.metricLabel, { color: c.onVariant }]}>목표(kg)</Text>
+          <Text style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.fasting.targetKg')}</Text>
         </View>
       </View>
 
       <View style={[styles.rowsWrap, { borderTopColor: '#000' }]}>
         <View style={[styles.row, { borderBottomColor: c.outline }]}>
-          <Text style={[styles.rowTitle, { color: c.onSurface }]}>현재 체중(kg)</Text>
+          <Text style={[styles.rowTitle, { color: c.onSurface }]}>{t('goalDetail.fasting.currentWeight')}</Text>
           <View style={styles.inlineInputWrap}>
             <TextInput
               value={currentWeightStr}
@@ -180,7 +183,7 @@ export function FastingSettings({
         </View>
 
         <View style={[styles.row, { borderBottomColor: c.outline }]}>
-          <Text style={[styles.rowTitle, { color: c.onSurface }]}>목표 체중(kg)</Text>
+          <Text style={[styles.rowTitle, { color: c.onSurface }]}>{t('goalDetail.fasting.targetWeight')}</Text>
           <View style={styles.inlineInputWrap}>
             <TextInput
               value={targetWeightStr}
@@ -193,7 +196,7 @@ export function FastingSettings({
         </View>
 
         <View style={[styles.row, { borderBottomColor: c.outline }]}>
-          <Text style={[styles.rowTitle, { color: c.onSurface }]}>주간 감량 목표(kg)</Text>
+          <Text style={[styles.rowTitle, { color: c.onSurface }]}>{t('goalDetail.fasting.weeklyTarget')}</Text>
           <View style={styles.inlineInputWrap}>
             <TextInput
               value={weeklyLossStr}
@@ -207,7 +210,7 @@ export function FastingSettings({
       </View>
 
       <Text style={[styles.note, { color: c.onVariant }]}>
-        달력에 날짜별 체중을 기록하면 그래프와 진행도에 반영돼요.
+        {t('goalDetail.fasting.calendarHint')}
       </Text>
     </View>
   );

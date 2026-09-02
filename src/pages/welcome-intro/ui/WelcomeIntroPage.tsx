@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,24 +14,27 @@ import {
   cityPopFont,
 } from '@shared/config/retroFlat';
 import { markWelcomeIntroSeenAndFlush } from '@shared/lib/storage';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import {
   prefetchWelcomeIntroAssets,
   WELCOME_INTRO_BACKGROUNDS,
 } from '../lib/welcomeIntroAssets';
-import { WELCOME_INTRO_SLIDES } from '../lib/welcomeIntroSlides';
+import { getWelcomeIntroSlides } from '../lib/welcomeIntroSlides';
 
 /** 첫 사용자용 짧은 서비스 소개 (5장 슬라이드) */
 export function WelcomeIntroPage() {
+  const { t, locale } = useTranslation();
+  const slides = useMemo(() => getWelcomeIntroSlides(locale), [locale]);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const rf = RetroFlatColors.light;
   const [index, setIndex] = useState(0);
   const [assetsReady, setAssetsReady] = useState(false);
   const loadedRef = useRef(0);
-  const last = index >= WELCOME_INTRO_SLIDES.length - 1;
-  const item = WELCOME_INTRO_SLIDES[index]!;
+  const last = index >= slides.length - 1;
+  const item = slides[index]!;
   const totalBg = WELCOME_INTRO_BACKGROUNDS.length;
 
   const markBgLoaded = useCallback(() => {
@@ -78,7 +81,7 @@ export function WelcomeIntroPage() {
       finish();
       return;
     }
-    setIndex((i) => Math.min(i + 1, WELCOME_INTRO_SLIDES.length - 1));
+    setIndex((i) => Math.min(i + 1, slides.length - 1));
     void Haptics.selectionAsync();
   }, [finish, last]);
 
@@ -130,12 +133,12 @@ export function WelcomeIntroPage() {
             style={[styles.topLabel, { color: rf.textMuted }, cityPopFont('700')]}
             lightColor={rf.textMuted}
             darkColor={rf.textMuted}>
-            소개 · {index + 1}/{WELCOME_INTRO_SLIDES.length}
+            {t('welcome.pageLabel', { current: index + 1, total: slides.length })}
           </ThemedText>
           <Pressable
             onPress={skip}
             accessibilityRole="button"
-            accessibilityLabel="소개 건너뛰기"
+            accessibilityLabel={t('welcome.skipA11y')}
             hitSlop={10}
             style={[
               styles.skipBtn,
@@ -145,7 +148,7 @@ export function WelcomeIntroPage() {
               style={[styles.skipLabel, { color: rf.text }, cityPopFont('600')]}
               lightColor={rf.text}
               darkColor={rf.text}>
-              건너뛰기
+              {t('welcome.skip')}
             </ThemedText>
           </Pressable>
         </View>
@@ -204,7 +207,7 @@ export function WelcomeIntroPage() {
             },
           ]}>
           <View style={styles.dots}>
-            {WELCOME_INTRO_SLIDES.map((s, i) => (
+            {slides.map((s, i) => (
               <View
                 key={s.id}
                 style={[
@@ -220,7 +223,7 @@ export function WelcomeIntroPage() {
           <Pressable
             onPress={goNext}
             accessibilityRole="button"
-            accessibilityLabel={last ? '시작하기' : '다음'}
+            accessibilityLabel={last ? t('welcome.startBtn') : t('welcome.nextBtn')}
             style={({ pressed }) => [
               styles.cta,
               {
@@ -233,7 +236,7 @@ export function WelcomeIntroPage() {
               style={[styles.ctaLabel, { color: rf.text }, cityPopFont('800')]}
               lightColor={rf.text}
               darkColor={rf.text}>
-              {last ? '시작하기' : '다음'}
+              {last ? t('welcome.startBtn') : t('welcome.nextBtn')}
             </ThemedText>
           </Pressable>
         </View>

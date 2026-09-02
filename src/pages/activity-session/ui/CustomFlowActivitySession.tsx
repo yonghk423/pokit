@@ -19,6 +19,7 @@ import {
   saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
 } from '@shared/lib/storage';
+import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { ThemedText } from '@shared/ui/themed-text';
 import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
@@ -72,6 +73,7 @@ export function CustomFlowActivitySession({
   onPersist,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const templateKey = useMemo(() => resolveCustomFlowTemplateKey(rawConfig), [rawConfig]);
   const appearance = useMemo(() => readSessionAppearance(rawConfig), [rawConfig]);
@@ -99,7 +101,11 @@ export function CustomFlowActivitySession({
   const O = CategoryImmersionTheme.other;
   const accent = appearance.accentColor ?? PRIMARY;
   const sessionLabel = CUSTOM_FLOW_TEMPLATE_LABELS[templateKey];
-  const headerTitle = isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : activityTitle.trim() || sessionLabel;
+  const headerTitle = isPaused
+    ? t('session.paused')
+    : isWaitingToStart
+      ? t('session.waitingToStart')
+      : activityTitle.trim() || sessionLabel;
   const iconName = (appearance.icon ?? 'star.fill') as 'star.fill';
 
   const timerNode = (
@@ -113,8 +119,8 @@ export function CustomFlowActivitySession({
       {templateKey === 'focus' || (!isPaused && !isWaitingToStart)
         ? formatClock(timerSec)
         : isPaused
-          ? '잠시 멈춤'
-          : '시작 전'}
+          ? t('session.pausedBrief')
+          : t('session.beforeStart')}
     </ThemedText>
   );
 
@@ -141,7 +147,7 @@ export function CustomFlowActivitySession({
           borderColor={O.border}
           paddingBottom={Math.max(insets.bottom, 14)}
           onEndSession={onEndSession}
-          completeLabel="루틴 완료"
+          completeLabel={t('session.routineComplete')}
         />
       }>
       <CustomFlowTemplateSessionBody

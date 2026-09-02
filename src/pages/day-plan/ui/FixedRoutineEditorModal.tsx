@@ -8,6 +8,7 @@ import { resolveCategoryCatalogIcon } from '@entities/day-plan';
 import { listAllCustomFlowCatalogEntries } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -39,6 +40,8 @@ export function FixedRoutineEditorModal({
   surface,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+
   const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
   const [catalogLabelTick, setCatalogLabelTick] = useState(0);
   useEffect(() => {
@@ -90,9 +93,9 @@ export function FixedRoutineEditorModal({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.sheet, { backgroundColor: surface, paddingTop: insets.top + 8 }]}>
         <View style={[styles.sheetHeader, { borderBottomColor: border }]}>
-          <ThemedText style={[styles.sheetTitle, { color: ink }]}>나만의 루틴</ThemedText>
+          <ThemedText style={[styles.sheetTitle, { color: ink }]}>{t('tabs.myRoutines')}</ThemedText>
           <ThemedText style={[styles.sheetLead, { color: muted }]}>
-            담기 탭 위쪽에 모아 둘 항목을 고르세요. 순서는 왼쪽 줄을 길게 누른 뒤 위아래로 끌어 바꿀 수 있어요. 비워 두면 아래는 건강 루틴(수분·체중·복약 등)과 생산성 도구로만 나뉘어 보여요.
+            {t('fixedRoutine.editorLead')}
           </ThemedText>
         </View>
 
@@ -102,9 +105,9 @@ export function FixedRoutineEditorModal({
           contentContainerStyle={{ paddingBottom: 24 + insets.bottom, paddingHorizontal: 20, gap: 20 }}
           keyboardShouldPersistTaps="handled">
           <View style={styles.block}>
-            <ThemedText style={[styles.blockTitle, { color: ink }]}>이 세트에 넣은 순서</ThemedText>
+            <ThemedText style={[styles.blockTitle, { color: ink }]}>{t('fixedRoutine.editorOrderBlock')}</ThemedText>
             {draft.length === 0 ? (
-              <ThemedText style={[styles.emptyLine, { color: muted }]}>아직 없어요. 아래에서 항목을 추가해 주세요.</ThemedText>
+              <ThemedText style={[styles.emptyLine, { color: muted }]}>{t('fixedRoutine.editorOrderEmpty')}</ThemedText>
             ) : (
               <FixedRoutineDraftOrderList
                 orderedKeys={draft}
@@ -122,16 +125,16 @@ export function FixedRoutineEditorModal({
           </View>
 
           <View style={styles.block}>
-            <ThemedText style={[styles.blockTitle, { color: ink }]}>추가할 항목</ThemedText>
+            <ThemedText style={[styles.blockTitle, { color: ink }]}>{t('fixedRoutine.editorAddBlock')}</ThemedText>
             {addable.length === 0 ? (
-              <ThemedText style={[styles.emptyLine, { color: muted }]}>추가할 수 있는 항목이 없어요.</ThemedText>
+              <ThemedText style={[styles.emptyLine, { color: muted }]}>{t('fixedRoutine.editorAddEmpty')}</ThemedText>
             ) : (
               <View style={styles.addableList}>
                 {addable.map((cat) => (
                   <Pressable
                     key={cat.key}
                     accessibilityRole="button"
-                    accessibilityLabel={`${cat.label} 나만의 루틴 세트에 추가`}
+                    accessibilityLabel={t('fixedRoutine.editorAddItemA11y', { label: cat.label })}
                     onPress={() => onAdd(cat.key)}
                     style={({ pressed }) => [styles.addRow, pressed && { opacity: 0.72 }]}
                     android_ripple={{ color: 'rgba(0,0,0,0.06)' }}>
@@ -172,7 +175,7 @@ export function FixedRoutineEditorModal({
           ]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="취소"
+            accessibilityLabel={t('common.cancel')}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onClose();
@@ -186,12 +189,12 @@ export function FixedRoutineEditorModal({
               },
             ]}>
             <ThemedText style={[styles.footerTabLabel, { color: tabColors.inactiveIcon }]}>
-              취소
+              {t('common.cancel')}
             </ThemedText>
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="저장"
+            accessibilityLabel={t('common.save')}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               onSave(draft);
@@ -206,7 +209,7 @@ export function FixedRoutineEditorModal({
               },
             ]}>
             <ThemedText style={[styles.footerTabLabel, { color: tabColors.activeIcon }]}>
-              저장
+              {t('common.save')}
             </ThemedText>
           </Pressable>
         </View>

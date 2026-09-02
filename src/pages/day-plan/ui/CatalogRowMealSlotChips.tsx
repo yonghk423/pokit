@@ -1,8 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { formatMealSlotLabel, type LocaleDayMealSlot } from '@shared/lib/i18n';
+import { useTranslation } from '@shared/lib/i18n';
 import {
-  DAY_MEAL_SLOT_LABEL,
   DAY_MEAL_SLOT_ORDER,
   type DayMealSlot,
 } from '@shared/lib/storage';
@@ -38,6 +39,8 @@ export function CatalogRowMealSlotChips({
   contentInsetLeft = 34,
 }: Props) {
   const selectedSet = new Set(selectedSlots);
+  const { locale, t } = useTranslation();
+
   const trackBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
   const selectedFg = isDark ? '#09090b' : '#FAFAFA';
 
@@ -52,7 +55,7 @@ export function CatalogRowMealSlotChips({
               key={slot}
               accessibilityRole="button"
               accessibilityState={{ selected, disabled }}
-              accessibilityLabel={`${DAY_MEAL_SLOT_LABEL[slot]} ${selected ? '선택됨' : '선택'}`}
+              accessibilityLabel={`${formatMealSlotLabel(slot as LocaleDayMealSlot, locale)} ${selected ? t('common.selected') : t('common.select')}`}
               disabled={disabled}
               onPress={() => {
                 if (disabled) return;
@@ -76,7 +79,7 @@ export function CatalogRowMealSlotChips({
                   { color: selected ? selectedFg : muted },
                 ]}
                 numberOfLines={1}>
-                {DAY_MEAL_SLOT_LABEL[slot]}
+                {formatMealSlotLabel(slot as LocaleDayMealSlot, locale)}
               </ThemedText>
             </Pressable>
           );

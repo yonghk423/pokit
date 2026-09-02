@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, type WebViewNavigation } from 'react-native-webview';
 
 import { useThemeColor } from '@shared/lib/hooks/use-theme-color';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
@@ -52,6 +53,7 @@ export function WebViewScreen({
   renderInitialLoading,
   style,
 }: Props) {
+  const { t } = useTranslation();
   const webViewRef = useRef<WebView>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -131,10 +133,10 @@ export function WebViewScreen({
           <View style={styles.toolbar}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="뒤로"
+              accessibilityLabel={t('common.back')}
               onPress={handleGoBack}
               style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}>
-              <ThemedText type="defaultSemiBold">뒤로</ThemedText>
+              <ThemedText type="defaultSemiBold">{t('common.back')}</ThemedText>
             </Pressable>
           </View>
         ) : null}
@@ -142,10 +144,10 @@ export function WebViewScreen({
         {hasError ? (
           <View style={styles.errorContainer}>
             <ThemedText type="subtitle" style={styles.errorTitle}>
-              페이지를 불러올 수 없어요
+              {t('webView.errorTitle')}
             </ThemedText>
             <ThemedText style={styles.errorBody}>
-              네트워크 연결을 확인한 뒤 다시 시도해 주세요.
+              {t('webView.errorBody')}
             </ThemedText>
             <Pressable
               accessibilityRole="button"
@@ -156,7 +158,7 @@ export function WebViewScreen({
                 pressed && styles.retryButtonPressed,
               ]}>
               <ThemedText lightColor="#FFFFFF" darkColor="#151718" type="defaultSemiBold">
-                다시 시도
+                {t('common.retry')}
               </ThemedText>
             </Pressable>
           </View>

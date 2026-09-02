@@ -1,6 +1,7 @@
 import type { TodoPriority } from '@entities/day-plan';
 import { ITEM_PRIORITY_META } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import type { I18nKey } from '@shared/lib/i18n';
 import {
   COMPLETION_CHECKED_COLOR_DARK,
   COMPLETION_CHECKED_COLOR_LIGHT,
@@ -9,6 +10,19 @@ import {
 import type { DayPlanPalette } from './dayPlanPalette';
 
 export const TODO_PRIORITY_META = ITEM_PRIORITY_META;
+
+const TODO_PRIORITY_KEYS: Record<TodoPriority, I18nKey> = {
+  high: 'todo.priority.high',
+  medium: 'todo.priority.medium',
+  low: 'todo.priority.low',
+};
+
+export function todoPriorityLabel(
+  priority: TodoPriority,
+  t: (key: I18nKey) => string,
+): string {
+  return t(TODO_PRIORITY_KEYS[priority]);
+}
 
 export const TODO_TABLE_BORDER_WIDTH = 1;
 

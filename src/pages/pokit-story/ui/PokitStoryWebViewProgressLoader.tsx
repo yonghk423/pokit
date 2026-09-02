@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -11,6 +12,7 @@ type Props = {
 
 /** 스토리 WebView 첫 로딩 — 진행률 바 + 퍼센트 */
 export function PokitStoryWebViewProgressLoader({ progress }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -30,7 +32,7 @@ export function PokitStoryWebViewProgressLoader({ progress }: Props) {
       <View style={styles.center}>
         <ThemedText style={[styles.brand, { color: c.text }]}>POKIT</ThemedText>
         <ThemedText style={[styles.caption, { color: c.textMuted }]} lightColor={c.textMuted} darkColor={c.textMuted}>
-          스토리 불러오는 중
+          {t('storyImport.loadingStory')}
         </ThemedText>
 
         <View style={[styles.track, { borderColor: isDark ? 'rgba(255,255,255,0.22)' : c.borderMuted }]}>

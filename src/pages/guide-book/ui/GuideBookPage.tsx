@@ -12,22 +12,25 @@ import {
 } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { markGuideBookSeenAndFlush } from '@shared/lib/storage';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
-import { buildGuideBookToc, GUIDE_BOOK_PAGES } from '../lib/guideBookPages';
+import { buildGuideBookToc, getGuideBookPages } from '../lib/guideBookPages';
 import { GuideBookFigure } from './GuideBookFigures';
 
 type ViewMode = 'toc' | 'read';
 
 /** 목차로 섹션을 고르고, 섹션 안에서만 이전·다음. 번호는 해당 페이지만. */
 export function GuideBookPage() {
+  const { t, locale } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const rf = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const toc = useMemo(() => buildGuideBookToc(), []);
+  const pages = useMemo(() => getGuideBookPages(locale), [locale]);
+  const toc = useMemo(() => buildGuideBookToc(locale), [locale]);
 
   const [view, setView] = useState<ViewMode>('toc');
   const [sectionIndex, setSectionIndex] = useState(0);
@@ -35,7 +38,7 @@ export function GuideBookPage() {
 
   const section = toc[sectionIndex]!;
   const globalPageIndex = section?.pageIndexes[pageInSection] ?? 0;
-  const item = GUIDE_BOOK_PAGES[globalPageIndex]!;
+  const item = pages[globalPageIndex]!;
   const sectionPageCount = section?.pageIndexes.length ?? 0;
   const isFirstInSection = pageInSection <= 0;
   const isLastInSection = pageInSection >= sectionPageCount - 1;
@@ -89,15 +92,19 @@ export function GuideBookPage() {
             style={[styles.topLabel, { color: rf.textMuted }, cityPopFont('700')]}
             lightColor={rf.textMuted}
             darkColor={rf.textMuted}>
-            사용 설명서
+            {t('guideBook.title')}
           </ThemedText>
           <ThemedText
             style={[styles.topPage, { color: rf.text }, cityPopFont('600')]}
             lightColor={rf.text}
             darkColor={rf.text}>
             {view === 'toc'
-              ? '목차'
-              : `${section.chapter} · ${pageInSection + 1}/${sectionPageCount}`}
+              ? t('common.toc')
+              : t('guideBook.chapterProgress', {
+                  chapter: section.chapter,
+                  current: pageInSection + 1,
+                  total: sectionPageCount,
+                })}
           </ThemedText>
         </View>
         <View style={styles.topRight}>
@@ -105,14 +112,14 @@ export function GuideBookPage() {
             <Pressable
               onPress={backToToc}
               accessibilityRole="button"
-              accessibilityLabel="목차로"
+              accessibilityLabel={t('guideBook.backToTocA11y')}
               hitSlop={10}
               style={styles.skipBtn}>
               <ThemedText
                 style={[styles.skipLabel, { color: rf.text }, cityPopFont('600')]}
                 lightColor={rf.text}
                 darkColor={rf.text}>
-                목차
+                {t('common.toc')}
               </ThemedText>
             </Pressable>
           ) : null}
@@ -122,14 +129,14 @@ export function GuideBookPage() {
               close();
             }}
             accessibilityRole="button"
-            accessibilityLabel="설명서 닫기"
+            accessibilityLabel={t('guideBook.closeA11y')}
             hitSlop={12}
             style={styles.skipBtn}>
             <ThemedText
               style={[styles.skipLabel, { color: rf.text }, cityPopFont('600')]}
               lightColor={rf.text}
               darkColor={rf.text}>
-              닫기
+              {t('common.close')}
             </ThemedText>
           </Pressable>
         </View>
@@ -144,14 +151,14 @@ export function GuideBookPage() {
             style={[styles.tocLead, { color: rf.textMuted }, cityPopFont('500')]}
             lightColor={rf.textMuted}
             darkColor={rf.textMuted}>
-            보고 싶은 항목을 골라 주세요. 각 항목 안에서만 이전·다음으로 넘겨요.
+            {t('guideBook.tocLead')}
           </ThemedText>
           {toc.map((sec, si) => (
             <Pressable
               key={sec.chapter}
               onPress={() => openSection(si)}
               accessibilityRole="button"
-              accessibilityLabel={`${sec.chapter} 설명 보기`}
+              accessibilityLabel={t('guideBook.sectionA11y', { chapter: sec.chapter })}
               style={({ pressed }) => [
                 styles.tocRow,
                 {
@@ -179,7 +186,7 @@ export function GuideBookPage() {
                   lightColor={rf.textMuted}
                   darkColor={rf.textMuted}>
                   {sec.subtitle}
-                  {sec.pageIndexes.length > 1 ? ` · ${sec.pageIndexes.length}쪽` : ''}
+                  {sec.pageIndexes.length > 1 ? t('common.pagesSuffix', { count: sec.pageIndexes.length }) : ''}
                 </ThemedText>
               </View>
               <IconSymbol name="chevron.right" size={16} color={rf.textMuted} />
@@ -233,7 +240,7 @@ export function GuideBookPage() {
                     style={[styles.calloutHeading, { color: rf.text }, cityPopFont('800')]}
                     lightColor={rf.text}
                     darkColor={rf.text}>
-                    화면에서
+                    {t('guideBook.onScreen')}
                   </ThemedText>
                   {item.callouts.map((c) => (
                     <View key={`${item.id}-${c.n}`} style={styles.calloutRow}>
@@ -289,7 +296,7 @@ export function GuideBookPage() {
               <Pressable
                 onPress={backToToc}
                 accessibilityRole="button"
-                accessibilityLabel="목차로"
+                accessibilityLabel={t('guideBook.backToTocA11y')}
                 style={[
                   styles.navBtn,
                   styles.navBtnSingle,
@@ -306,7 +313,7 @@ export function GuideBookPage() {
                   ]}
                   lightColor="#0A0A0A"
                   darkColor={rf.primaryOn}>
-                  목차
+                  {t('common.toc')}
                 </ThemedText>
               </Pressable>
             ) : (
@@ -314,7 +321,7 @@ export function GuideBookPage() {
                 <Pressable
                   onPress={goPrev}
                   accessibilityRole="button"
-                  accessibilityLabel={isFirstInSection ? '목차로' : '이전 페이지'}
+                  accessibilityLabel={isFirstInSection ? t('guideBook.backToTocA11y') : t('guideBook.prevPageA11y')}
                   style={[
                     styles.navBtn,
                     styles.navBtnGhost,
@@ -327,14 +334,14 @@ export function GuideBookPage() {
                     style={[styles.navLabel, { color: rf.text }, cityPopFont('700')]}
                     lightColor={rf.text}
                     darkColor={rf.text}>
-                    {isFirstInSection ? '목차' : '이전'}
+                    {isFirstInSection ? t('common.toc') : t('common.prev')}
                   </ThemedText>
                 </Pressable>
 
                 <Pressable
                   onPress={goNext}
                   accessibilityRole="button"
-                  accessibilityLabel={isLastInSection ? '목차로' : '다음 페이지'}
+                  accessibilityLabel={isLastInSection ? t('guideBook.backToTocA11y') : t('guideBook.nextPageA11y')}
                   style={[
                     styles.navBtn,
                     styles.navBtnPrimary,
@@ -351,7 +358,7 @@ export function GuideBookPage() {
                     ]}
                     lightColor="#0A0A0A"
                     darkColor={rf.primaryOn}>
-                    {isLastInSection ? '목차' : '다음'}
+                    {isLastInSection ? t('common.toc') : t('common.next')}
                   </ThemedText>
                 </Pressable>
               </View>

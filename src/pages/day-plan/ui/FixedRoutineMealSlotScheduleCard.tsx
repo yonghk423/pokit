@@ -1,11 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 
 import {
-  DAY_MEAL_SLOT_LABEL,
   DAY_MEAL_SLOT_ORDER,
   type DayMealSlotSchedule,
 } from '@shared/lib/storage';
-import { formatHhmmClockKo } from '@entities/day-plan';
+import { formatHhmmClock, formatMealSlotLabel, type LocaleDayMealSlot } from '@shared/lib/i18n';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { FixedRoutineSettingsButton } from './FixedRoutineSettingsButton';
@@ -30,13 +30,15 @@ export function FixedRoutineMealSlotScheduleCard({
   cardBg,
   onPressSettings,
 }: Props) {
+  const { locale, t } = useTranslation();
+
   return (
     <View style={[styles.root, { backgroundColor: cardBg, borderColor: line }]}>
       <View style={styles.textCol}>
-        <ThemedText style={[styles.title, { color: ink }]}>시간대 모드</ThemedText>
+        <ThemedText style={[styles.title, { color: ink }]}>{t('fixedRoutine.sectionsModeTitle')}</ThemedText>
         <ThemedText style={[styles.summary, { color: muted }]} numberOfLines={3}>
           {DAY_MEAL_SLOT_ORDER.map(
-            (slot) => `${DAY_MEAL_SLOT_LABEL[slot]} ${formatHhmmClockKo(schedule[slot])}`,
+            (slot) => `${formatMealSlotLabel(slot as LocaleDayMealSlot, locale)} ${formatHhmmClock(schedule[slot], locale)}`,
           ).join(' · ')}
         </ThemedText>
       </View>
@@ -44,7 +46,7 @@ export function FixedRoutineMealSlotScheduleCard({
         isDark={isDark}
         ink={ink}
         line={line}
-        accessibilityLabel="시간대 설정"
+        accessibilityLabel={t('fixedRoutine.mealSlotSettingsA11y')}
         onPress={onPressSettings}
       />
     </View>

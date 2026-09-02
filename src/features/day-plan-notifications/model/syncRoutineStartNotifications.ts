@@ -21,6 +21,7 @@ import {
   saveRoutineStartNotifyRules,
   saveRoutineStartNotifyScheduled,
 } from '@shared/lib/storage';
+import { t } from '@shared/lib/i18n';
 
 const MAX_ROUTINE_START_NOTIFY_SLOTS = 40;
 export const ROUTINE_START_EVENT_TYPE = 'routineStart';
@@ -87,8 +88,8 @@ async function performRoutineStartNotificationSync(): Promise<void> {
       const slotKey = `${slot.slotKey}@${weekday}`;
       const nid = await scheduleWeeklyLocalNotification({
         identifier: buildRoutineStartNotificationId(slotKey),
-        title: '루틴 시작',
-        body: `${label} · ${clock}에 시작할 시간이에요.`,
+        title: t('notify.routineStart.title'),
+        body: t('notify.routineStart.body', { label, clock }),
         weekday,
         hour,
         minute,

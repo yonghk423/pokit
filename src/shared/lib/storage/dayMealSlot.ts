@@ -22,12 +22,37 @@ export {
   saveDayMealSlotSchedule,
 } from './dayMealSlotScheduleStorage';
 
+import { getAppLocale, t, type AppLocale } from '@shared/lib/i18n';
+
+const MEAL_SLOT_I18N_KEY = {
+  dawn: 'mealSlot.dawn',
+  morning: 'mealSlot.morning',
+  lunch: 'mealSlot.lunch',
+  dinner: 'mealSlot.dinner',
+  night: 'mealSlot.night',
+} as const;
+
+export function getDayMealSlotLabel(slot: DayMealSlot, locale?: AppLocale): string {
+  return t(MEAL_SLOT_I18N_KEY[slot], locale ?? getAppLocale());
+}
+
+/** @deprecated use getDayMealSlotLabel — kept for gradual migration */
 export const DAY_MEAL_SLOT_LABEL: Record<DayMealSlot, string> = {
-  dawn: '새벽',
-  morning: '아침',
-  lunch: '점심',
-  dinner: '저녁',
-  night: '밤',
+  get dawn() {
+    return getDayMealSlotLabel('dawn');
+  },
+  get morning() {
+    return getDayMealSlotLabel('morning');
+  },
+  get lunch() {
+    return getDayMealSlotLabel('lunch');
+  },
+  get dinner() {
+    return getDayMealSlotLabel('dinner');
+  },
+  get night() {
+    return getDayMealSlotLabel('night');
+  },
 };
 
 export const DAY_MEAL_SLOT_HINT: Record<DayMealSlot, string> = {

@@ -3,6 +3,7 @@ import { isInternalAutoRoutineLabel } from './customFlowDisplayLabel';
 import { PRIORITY_CATALOG_PICKER_LABELS } from './priorityCatalogPickerLabels';
 import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 import type { DayPlanBlock } from '../model/types';
+import { t } from '@shared/lib/i18n';
 
 /** categoryKey·영문 키·customFlow: 원문이 title로 저장된 경우 */
 export function looksLikeRawCategoryKeyTitle(title: string, categoryKey?: string): boolean {
@@ -19,7 +20,7 @@ export function looksLikeRawCategoryKeyTitle(title: string, categoryKey?: string
 /** 카테고리 키 → 사용자 대면 한글 라벨 */
 export function resolveCategoryKeyDisplayLabelKo(categoryKey: string): string {
   const key = resolvePriorityRoutineCategoryKey(categoryKey);
-  if (!key) return '루틴';
+  if (!key) return t('category.routineFallback');
   return categoryReminderLabelKo(key);
 }
 
@@ -34,5 +35,5 @@ export function resolveDayPlanBlockDisplayTitle(
   }
   if (title) return title;
   if (key) return resolveCategoryKeyDisplayLabelKo(key);
-  return '루틴';
+  return t('category.routineFallback');
 }

@@ -6,7 +6,6 @@ import { useShallow } from 'zustand/react/shallow';
 
 import {
   collectRoutineStartNotifySlots,
-  formatHhmmClockKo,
   formatMinutesToHHmm,
   hasResolvableRoutineStartTime,
   parseHHmmToMinutes,
@@ -20,6 +19,7 @@ import {
   syncRoutineStartNotifications,
 } from '../model/syncRoutineStartNotifications';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { formatHhmmClock, t, useTranslation } from '@shared/lib/i18n';
 import { loadDayMealSlotSchedule } from '@shared/lib/storage';
 import { ThemedText } from '@shared/ui/themed-text';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
@@ -60,6 +60,7 @@ export function RoutineStartNotifyField({
   border,
   isDark: isDarkProp,
 }: Props) {
+  const { t: tr, locale } = useTranslation();
   const colorScheme = useColorScheme();
   const isDark = isDarkProp ?? colorScheme === 'dark';
   const layoutMode = useFixedFlowSetsStore((s) => s.fixedRoutineApplyLayoutMode);
@@ -130,26 +131,26 @@ export function RoutineStartNotifyField({
       const stored = findStoredSpineStartHhmm(sets, categoryKey);
       return stored
         ? enabled
-          ? `목록 모드 · ${formatHhmmClockKo(stored)}에 시작 · 알림도 이 시각에 울려요.`
-          : `목록 모드 · ${formatHhmmClockKo(stored)}에 시작 · 알림을 켜면 이 시각에 울려요.`
-        : '목록 모드에서는 아래에서 시작 시간을 직접 정해 주세요.';
+          ? tr('routineNotify.bagWithAlarm', { clock: formatHhmmClock(stored, locale) })
+          : tr('routineNotify.bagWithoutAlarm', { clock: formatHhmmClock(stored, locale) })
+        : tr('routineNotify.bagPickTime');
     }
     if (!canResolve) {
-      return '나만의 루틴에서 시작 시간(시간대)을 정하면 그 시각에 알려 드려요.';
+      return tr('routineNotify.needMyRoutineTime');
     }
     const slots = collectRoutineStartNotifySlots({
       enabledCategoryKeys: [categoryKey],
       ...resolveInput,
     });
-    const clocks = slots.map((s) => formatHhmmClockKo(s.hhmm)).join(', ');
+    const clocks = slots.map((s) => formatHhmmClock(s.hhmm, locale)).join(', ');
     return clocks
       ? enabled
-        ? `루틴 시작 · ${clocks}에 알려 드려요.`
-        : `알림을 켜면 ${clocks}에 알려 드려요.`
+        ? tr('routineNotify.withClocksOn', { clocks })
+        : tr('routineNotify.withClocksOff', { clocks })
       : enabled
-        ? '루틴이 시작되는 시각에 알려 드려요.'
-        : '알림을 켜면 루틴이 시작되는 시각에 알려 드려요.';
-  }, [canResolve, categoryKey, enabled, isBagLayout, resolveInput, sets]);
+        ? tr('routineNotify.genericOn')
+        : tr('routineNotify.genericOff');
+  }, [canResolve, categoryKey, enabled, isBagLayout, locale, resolveInput, sets, tr]);
 
   const trackOff = isDark ? '#3f3f46' : '#e5e7eb';
 
@@ -175,7 +176,7 @@ export function RoutineStartNotifyField({
       try {
         const ok = await persistBagStartTime(next);
         if (!ok) {
-          Alert.alert('시작 시간', '시작 시간을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
+          Alert.alert(t('alert.startTime.title'), t('alert.startTime.saveFailed'));
           return;
         }
         void Haptics.selectionAsync();
@@ -197,16 +198,13 @@ export function RoutineStartNotifyField({
         if (!stored) {
           const saved = await persistBagStartTime(startHhmm);
           if (!saved) {
-            Alert.alert('시작 알림', '시작 시간을 먼저 정해 주세요.');
+            Alert.alert(t('alert.startNotify.title'), t('alert.startNotify.needStartTime'));
             setTimeExpanded(true);
             return;
           }
         }
       } else if (next && !canResolve) {
-        Alert.alert(
-          '시작 알림',
-          '루틴 시작 시간이 아직 없어요. 나만의 루틴에서 시간대를 정해 주세요.',
-        );
+        Alert.alert(tr('routineNotify.title'), tr('routineNotify.missingTime'));
         return;
       }
       setBusy(true);
@@ -214,7 +212,7 @@ export function RoutineStartNotifyField({
         const ok = await persistRoutineStartNotifyToggle(categoryKey, next);
         if (next && !ok) {
           setEnabled(false);
-          Alert.alert('알림', '알림을 켜려면 기기에서 알림 권한을 허용해 주세요.');
+          Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
           return;
         }
         setEnabled(next && ok);
@@ -234,11 +232,13 @@ export function RoutineStartNotifyField({
     <View style={[styles.wrap, { borderColor: border }]}>
       <View style={styles.row}>
         <View style={styles.textCol}>
-          <ThemedText style={[styles.title, { color: ink }]}>시작 알림</ThemedText>
+          <ThemedText style={[styles.title, { color: ink }]}>{tr('routineNotify.title')}</ThemedText>
           <ThemedText style={[styles.hint, { color: muted }]}>{timeHint}</ThemedText>
         </View>
         <Switch
-          accessibilityLabel={`시작 알림 ${enabled ? '켜짐' : '꺼짐'}`}
+          accessibilityLabel={tr('routineNotify.toggleA11y', {
+            state: enabled ? tr('routineNotify.toggleOn') : tr('routineNotify.toggleOff'),
+          })}
           value={enabled}
           disabled={busy}
           onValueChange={(next) => {
@@ -252,8 +252,8 @@ export function RoutineStartNotifyField({
       {isBagLayout ? (
         <View style={styles.pickerWrap}>
           <SnappedTimePickerField
-            label="시작 시각"
-            hint="목록 모드에서 이 루틴이 시작하는 시각이에요."
+            label={tr('routineNotify.startTimeLabel')}
+            hint={tr('routineNotify.startTimeHint')}
             valueHhmm={startHhmm}
             onChangeHhmm={(next) => {
               void onChangeStartHhmm(next);

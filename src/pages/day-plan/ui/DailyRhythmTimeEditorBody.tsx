@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import { addDaysToLocalDateKey, formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
+import { addDaysToLocalDateKey, parseHHmmToMinutes } from '@entities/day-plan';
 import {
   RETRO_BORDER_WIDTH,
   RetroFlatColors,
@@ -23,8 +23,14 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { DailyRhythmStyleAlarmRow, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import {
+  formatDateKeyCompact,
+  formatHhmmClock,
+  splitDateKeyCompact,
+  useTranslation,
+} from '@shared/lib/i18n';
 import { dailyRhythmOnboardingAssets } from '../lib/dailyRhythmOnboardingAssets';
-import { formatDateKeyCompactKo, isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
+import { isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { DayCycleEmojiMark } from './DayCycleEmojiMark';
 
@@ -38,12 +44,6 @@ function initialEndDateTargetFromRange(rangeLo?: string, rangeHi?: string): 'tod
 function suggestEndDateTarget(start: string, end: string): 'today' | 'nextDay' {
   if (isOvernightHhmmRange(start, end)) return 'nextDay';
   return 'today';
-}
-
-function splitDateKeyCompactKo(dateKey: string): { month: string; day: string } | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
-  if (!m) return null;
-  return { month: `${parseInt(m[2], 10)}월`, day: `${parseInt(m[3], 10)}일` };
 }
 
 function SolidShadowFace({
@@ -111,6 +111,7 @@ function OnboardingTimeRow({
   mapMidnightToEndOfDay?: boolean;
 }) {
   const digitalRef = useRef<DigitalHhmmInputHandle>(null);
+  const { t, locale } = useTranslation();
   const ink = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const selectedFg = isDark ? '#09090b' : '#FAFAFA';
 
@@ -174,7 +175,7 @@ function OnboardingTimeRow({
               style={[styles.timePillText, { color: c.onSurface }, cityPopFont('800')]}
               lightColor={c.onSurface}
               darkColor={c.onSurface}>
-              {formatHhmmClockKo(valueHhmm)}
+              {formatHhmmClock(valueHhmm, locale)}
             </ThemedText>
           </SolidShadowFace>
         </View>
@@ -196,7 +197,7 @@ function OnboardingTimeRow({
             accessibilityLabelPrefix={label}
           />
           <BrutalConfirmButton
-            accessibilityLabel={`${label} 시간 선택 확인`}
+            accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
             fill={c.onSurface}
             labelColor={selectedFg}
             border={c.border}
@@ -261,12 +262,15 @@ export function DailyRhythmTimeEditorBody({
   onDayEndAlarmHhmmChange,
   currentSpansMultiDay: _currentSpansMultiDay = false,
   onEndDateChoice,
-  endDateChoiceTodayLabel = '당일',
-  endDateChoiceNextDayLabel = '다음 날',
+  endDateChoiceTodayLabel,
+  endDateChoiceNextDayLabel,
   priorityPlanRangeLo,
   priorityPlanRangeHi,
   footerSlot,
 }: DailyRhythmTimeEditorBodyProps) {
+  const { t, locale } = useTranslation();
+  const resolvedEndDateTodayLabel = endDateChoiceTodayLabel ?? t('dayRhythm.today');
+  const resolvedEndDateNextDayLabel = endDateChoiceNextDayLabel ?? t('dayRhythm.nextDay');
   const [startHhmm, setStartHhmm] = useState(seedStart);
   const [endHhmm, setEndHhmm] = useState(seedEnd);
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
@@ -344,13 +348,13 @@ export function DailyRhythmTimeEditorBody({
     const ps = parseHHmmToMinutes(startHhmm);
     const pe = parseHHmmToMinutes(endHhmm);
     if (ps === null || pe === null) {
-      Alert.alert('시각 확인', '시작·마무리 시각을 다시 선택해 주세요.');
+      Alert.alert(t('alert.timeCheck.title'), t('alert.timeCheck.pickStartEnd'));
       return;
     }
     if (endDateTarget === 'today' && pe <= ps) {
       Alert.alert(
-        '시간 구간',
-        '당일 마무리를 쓰려면 마무리 시각이 시작 시각보다 늦어야 해요.',
+        t('alert.timeRange.title'),
+        t('alert.timeRange.sameDayEndAfterStart'),
       );
       return;
     }
@@ -382,8 +386,8 @@ export function DailyRhythmTimeEditorBody({
     startHhmm,
   ]);
 
-  const startDateParts = startDateKey ? splitDateKeyCompactKo(startDateKey) : null;
-  const endDateParts = endDateKey ? splitDateKeyCompactKo(endDateKey) : null;
+  const startDateParts = startDateKey ? splitDateKeyCompact(startDateKey, locale) : null;
+  const endDateParts = endDateKey ? splitDateKeyCompact(endDateKey, locale) : null;
 
   const endDateTodayInvalid =
     endDateTarget === 'today' &&
@@ -392,24 +396,24 @@ export function DailyRhythmTimeEditorBody({
     Number(parseHHmmToMinutes(endHhmm)) <= Number(parseHHmmToMinutes(startHhmm));
 
   const rangeSummaryParts = useMemo(() => {
-    const startLabel = formatHhmmClockKo(startHhmm);
-    const endLabel = formatHhmmClockKo(endHhmm);
+    const startLabel = formatHhmmClock(startHhmm, locale);
+    const endLabel = formatHhmmClock(endHhmm, locale);
     if (!priorityPlanRangeLo) {
       return {
         left: startLabel,
-        right: endDateTarget === 'nextDay' ? `${endLabel} · 다음 날` : endLabel,
+        right: endDateTarget === 'nextDay' ? `${endLabel}${t('dayRhythm.nextDaySuffix')}` : endLabel,
       };
     }
-    const startDate = formatDateKeyCompactKo(priorityPlanRangeLo);
+    const startDate = formatDateKeyCompact(priorityPlanRangeLo, locale);
     const endDate =
       endDateTarget === 'nextDay'
-        ? formatDateKeyCompactKo(addDaysToLocalDateKey(priorityPlanRangeLo, 1))
+        ? formatDateKeyCompact(addDaysToLocalDateKey(priorityPlanRangeLo, 1), locale)
         : startDate;
     if (endDate === startDate) {
       return { left: `${startDate} ${startLabel}`, right: endLabel };
     }
     return { left: `${startDate} ${startLabel}`, right: `${endDate} ${endLabel}` };
-  }, [endDateTarget, endHhmm, priorityPlanRangeLo, startHhmm]);
+  }, [endDateTarget, endHhmm, locale, priorityPlanRangeLo, startHhmm, t]);
 
   const timePickerPalette = useMemo(
     () => ({
@@ -428,8 +432,8 @@ export function DailyRhythmTimeEditorBody({
         { backgroundColor: isDark ? ink.surfaceAlt : '#FFFFFF', borderColor: c.border },
       ]}>
       <SnappedTimePickerField
-        label="하루 시작"
-        hint="첫 집중·루틴을 켜기 좋은 시각"
+        label={t('dayRhythm.dayStart')}
+        hint={t('dayRhythm.dayStartHint')}
         valueHhmm={startHhmm}
         onChangeHhmm={setStartHhmmWithSync}
         expanded={pickerTarget === 'start'}
@@ -437,12 +441,12 @@ export function DailyRhythmTimeEditorBody({
         isDark={isDark}
         palette={timePickerPalette}
         snapStepMinutes={1}
-        dateCaption={startDateKey ? formatDateKeyCompactKo(startDateKey) : undefined}
+        dateCaption={startDateKey ? formatDateKeyCompact(startDateKey, locale) : undefined}
       />
       <View style={[styles.divider, { backgroundColor: c.border }]} />
       <SnappedTimePickerField
-        label="하루 마무리"
-        hint="오늘 목표 구간이 끝나는 시각"
+        label={t('dayRhythm.dayEnd')}
+        hint={t('dayRhythm.dayEndHint')}
         valueHhmm={endHhmm}
         onChangeHhmm={setEndHhmmWithChoiceCheck}
         expanded={pickerTarget === 'end'}
@@ -451,7 +455,7 @@ export function DailyRhythmTimeEditorBody({
         palette={timePickerPalette}
         snapStepMinutes={1}
         mapMidnightToEndOfDay
-        dateCaption={endDateKey ? formatDateKeyCompactKo(endDateKey) : undefined}
+        dateCaption={endDateKey ? formatDateKeyCompact(endDateKey, locale) : undefined}
       />
       {onEndDateChoice ? (
         <View style={styles.endDateChoiceInline}>
@@ -459,12 +463,12 @@ export function DailyRhythmTimeEditorBody({
             style={[styles.endDateChoiceQuestion, { color: c.onVariant }]}
             lightColor={c.onVariant}
             darkColor={c.onVariant}>
-            마무리 시각은 당일인가요, 다음 날인가요?
+            {t('dayRhythm.endDateQuestion')}
           </ThemedText>
           <View style={styles.endDateChoiceBtnRow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="당일로 설정"
+              accessibilityLabel={t('dayRhythm.setTodayA11y')}
               onPress={() => {
                 applyEndDateTarget('today', startHhmm, endHhmm, true);
                 void Haptics.selectionAsync();
@@ -482,12 +486,12 @@ export function DailyRhythmTimeEditorBody({
                   styles.endDateChoiceBtnText,
                   { color: endDateTarget === 'today' ? pill.activeIcon : pill.inactiveIcon },
                 ]}>
-                {endDateChoiceTodayLabel}
+                {resolvedEndDateTodayLabel}
               </ThemedText>
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="다음 날로 설정"
+              accessibilityLabel={t('dayRhythm.setNextDayA11y')}
               onPress={() => {
                 applyEndDateTarget('nextDay', startHhmm, endHhmm, true);
                 void Haptics.selectionAsync();
@@ -506,7 +510,7 @@ export function DailyRhythmTimeEditorBody({
                   styles.endDateChoiceBtnText,
                   { color: endDateTarget === 'nextDay' ? pill.activeIcon : pill.inactiveIcon },
                 ]}>
-                {endDateChoiceNextDayLabel}
+                {resolvedEndDateNextDayLabel}
               </ThemedText>
             </Pressable>
           </View>
@@ -540,7 +544,7 @@ export function DailyRhythmTimeEditorBody({
               source={dailyRhythmOnboardingAssets.hero}
               style={styles.heroBannerImage}
               resizeMode="contain"
-              accessibilityLabel="아침 루틴 일러스트"
+              accessibilityLabel={t('dayRhythm.morningIllustrationA11y')}
             />
             <View
               pointerEvents="none"
@@ -556,7 +560,7 @@ export function DailyRhythmTimeEditorBody({
             <View style={styles.heroBannerContent}>
               <View style={styles.heroHeaderRow}>
                 <View style={styles.kickerRow}>
-                  {(['하루', '일과', '시간'] as const).map((word) => (
+                  {([t('dayRhythm.heroWord1'), t('dayRhythm.heroWord2'), t('dayRhythm.heroWord3')] as const).map((word) => (
                     <ThemedText
                       key={word}
                       style={[styles.kickerWord, { color: c.onVariant }, cityPopFont('700')]}
@@ -580,23 +584,22 @@ export function DailyRhythmTimeEditorBody({
                   style={[styles.onboardTitle, { color: c.onSurface }, cityPopFont('800')]}
                   lightColor={c.onSurface}
                   darkColor={c.onSurface}>
-                  내 하루 일과 정하기
+                  {t('dayRhythm.onboardTitle')}
                 </ThemedText>
                 <ThemedText
                   style={[styles.onboardSubtitle, { color: c.onVariant }, cityPopFont('500')]}
                   lightColor={c.onVariant}
                   darkColor={c.onVariant}>
-                  시작·마무리만 잡으면 데이플랜이 그 구간에 맞춰져요. 자정을 넘겨도 괜찮아요.
-                  나중에 설정에서 바꿀 수 있어요.
+                  {t('dayRhythm.onboardSubtitle')}
                 </ThemedText>
               </View>
             </View>
           </SolidShadowFace>
         ) : (
           <View style={styles.settingsHero}>
-            <ThemedText style={[styles.settingsKicker, { color: c.onVariant }]}>데이플랜</ThemedText>
+            <ThemedText style={[styles.settingsKicker, { color: c.onVariant }]}>{t('dayRhythm.settingsKicker')}</ThemedText>
             <ThemedText style={[styles.settingsSubtitle, { color: c.onVariant }]}>
-              우선순위 데이플랜의 하루 시작·마무리 시각입니다. 저장하면 바로 반영돼요.
+              {t('dayRhythm.settingsSubtitle')}
             </ThemedText>
           </View>
         )}
@@ -608,8 +611,8 @@ export function DailyRhythmTimeEditorBody({
             backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
             style={styles.mainCardFace}>
             <OnboardingTimeRow
-              label="하루 시작"
-              hint="첫 집중·루틴을 켜기 좋은 시각"
+              label={t('dayRhythm.dayStart')}
+              hint={t('dayRhythm.dayStartHint')}
               valueHhmm={startHhmm}
               onChangeHhmm={setStartHhmmWithSync}
               expanded={pickerTarget === 'start'}
@@ -623,8 +626,8 @@ export function DailyRhythmTimeEditorBody({
             <View style={[styles.cardRule, { borderTopColor: c.border }]} />
 
             <OnboardingTimeRow
-              label="하루 마무리"
-              hint="오늘 목표 구간이 끝나는 시각"
+              label={t('dayRhythm.dayEnd')}
+              hint={t('dayRhythm.dayEndHint')}
               valueHhmm={endHhmm}
               onChangeHhmm={setEndHhmmWithChoiceCheck}
               expanded={pickerTarget === 'end'}
@@ -642,12 +645,12 @@ export function DailyRhythmTimeEditorBody({
                   style={[styles.endDateChoiceQuestionOnboard, { color: c.onVariant }, cityPopFont('800')]}
                   lightColor={c.onVariant}
                   darkColor={c.onVariant}>
-                  마무리 시각은 당일인가요, 다음 날인가요?
+                  {t('dayRhythm.endDateQuestion')}
                 </ThemedText>
                 <View style={styles.endDateChoiceBtnRow}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="당일로 설정"
+                    accessibilityLabel={t('dayRhythm.setTodayA11y')}
                     onPress={() => {
                       applyEndDateTarget('today', startHhmm, endHhmm, true);
                       void Haptics.selectionAsync();
@@ -678,13 +681,13 @@ export function DailyRhythmTimeEditorBody({
                           },
                           cityPopFont('800'),
                         ]}>
-                        {endDateChoiceTodayLabel}
+                        {resolvedEndDateTodayLabel}
                       </ThemedText>
                     </SolidShadowFace>
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="다음 날로 설정"
+                    accessibilityLabel={t('dayRhythm.setNextDayA11y')}
                     onPress={() => {
                       applyEndDateTarget('nextDay', startHhmm, endHhmm, true);
                       void Haptics.selectionAsync();
@@ -719,18 +722,21 @@ export function DailyRhythmTimeEditorBody({
                           },
                           cityPopFont('800'),
                         ]}>
-                        {endDateChoiceNextDayLabel}
+                        {resolvedEndDateNextDayLabel}
                       </ThemedText>
                     </SolidShadowFace>
                   </Pressable>
                 </View>
                 {endDateTodayInvalid ? (
                   <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
-                    {`마무리(${formatHhmmClockKo(endHhmm)})가 시작(${formatHhmmClockKo(startHhmm)})보다 이릅니다. 저장하려면 마무리를 시작 이후로 맞춰 주세요.`}
+                    {t('dayRhythm.endDateInvalidHint', {
+                      end: formatHhmmClock(endHhmm, locale),
+                      start: formatHhmmClock(startHhmm, locale),
+                    })}
                   </ThemedText>
                 ) : isOvernightHhmmRange(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
                   <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
-                    마무리 시각이 시작보다 이르면 다음 날로 이어지는 하루 구간이에요.
+                    {t('dayRhythm.overnightHint')}
                   </ThemedText>
                 ) : null}
               </View>
@@ -754,7 +760,7 @@ export function DailyRhythmTimeEditorBody({
                 ]}>
                 <ThemedText
                   style={[styles.summaryBadgeText, { color: c.onSurface }, cityPopFont('800')]}>
-                  내 일과
+                  {t('dayRhythm.myDaySummary')}
                 </ThemedText>
               </View>
               <View style={styles.summaryRow}>
@@ -785,8 +791,8 @@ export function DailyRhythmTimeEditorBody({
               { backgroundColor: isDark ? ink.surfaceAlt : '#FFFFFF', borderColor: c.border },
             ]}>
             <DailyRhythmStyleAlarmRow
-              title="하루 시작 알림"
-              hint="위에서 정한「하루 시작」시각에 매일 알려 드려요."
+              title={t('dayRhythm.dayStartAlarmTitle')}
+              hint={t('dayRhythm.dayStartAlarmHint')}
               value={dayStartAlarmOn}
               onValueChange={onDayStartAlarmChange}
               palette={{
@@ -799,8 +805,8 @@ export function DailyRhythmTimeEditorBody({
               <>
                 <View style={[styles.divider, { backgroundColor: c.border }]} />
                 <DailyRhythmStyleAlarmRow
-                  title="오늘 돌아보기 알림"
-                  hint="정해진 시각에 오늘 진행 상황을 돌아보라고 알려 드려요."
+                  title={t('dayRhythm.dayEndAlarmTitle')}
+                  hint={t('dayRhythm.dayEndAlarmHint')}
                   value={dayEndAlarmOn}
                   onValueChange={onDayEndAlarmChange}
                   palette={{
@@ -819,8 +825,8 @@ export function DailyRhythmTimeEditorBody({
                       },
                     ]}>
                     <SnappedTimePickerField
-                      label="알림 시각"
-                      hint="이 시각에 매일 알림이 울려요."
+                      label={t('dayRhythm.reminderTimeLabel')}
+                      hint={t('dayRhythm.reminderTimeHint')}
                       valueHhmm={dayEndAlarmHhmm}
                       onChangeHhmm={onDayEndAlarmHhmmChange}
                       expanded={dayEndAlarmTimeExpanded}

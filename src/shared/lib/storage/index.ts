@@ -58,6 +58,7 @@ export {
 export {
   DAY_MEAL_SLOT_HINT,
   DAY_MEAL_SLOT_LABEL,
+  getDayMealSlotLabel,
   DAY_MEAL_SLOT_ORDER, buildAppliedFixedRoutineMealSlotOverrides,
   buildAppliedFixedRoutineMealSlotsMap,
   buildCategoryMealSlotOverrides,

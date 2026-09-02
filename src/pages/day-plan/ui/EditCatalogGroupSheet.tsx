@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -48,6 +49,8 @@ export function EditCatalogGroupSheet({
   surface,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+
   const [label, setLabel] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const sheetWasVisibleRef = useRef(false);
@@ -72,8 +75,8 @@ export function EditCatalogGroupSheet({
   const trimmedSubtitle = subtitle.trim();
   const canSave = trimmedLabel.length > 0;
   const isCreate = mode === 'create';
-  const title = isCreate ? '새 묶음 만들기' : '묶음 편집';
-  const ctaLabel = isCreate ? '만들기' : '저장';
+  const title = isCreate ? t('catalog.createGroupTitle') : t('catalog.editGroupTitle');
+  const ctaLabel = isCreate ? t('createFlow.create') : t('common.save');
   const showDelete = !isCreate && onDelete != null;
 
   const handleSave = () => {
@@ -92,7 +95,7 @@ export function EditCatalogGroupSheet({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.kavRoot}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
 
         <View
           style={[
@@ -113,7 +116,7 @@ export function EditCatalogGroupSheet({
               <ThemedText style={[styles.title, { color: ink }]}>{title}</ThemedText>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="닫기"
+                accessibilityLabel={t('common.close')}
                 hitSlop={8}
                 onPress={onClose}
                 style={[styles.closeBtn, { backgroundColor: closeBtnBg }]}>
@@ -123,16 +126,16 @@ export function EditCatalogGroupSheet({
 
             {isCreate ? (
               <ThemedText style={[styles.createLead, { color: muted }]}>
-                루틴을 담을 묶음만 먼저 만들 수 있어요. 이름은 목록에 보여요.
+                {t('catalog.createGroupLead')}
               </ThemedText>
             ) : null}
 
             <View style={styles.fieldGroup}>
-              <ThemedText style={[styles.fieldLabel, { color: ink }]}>이름</ThemedText>
+              <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('common.name')}</ThemedText>
               <TextInput
                 value={label}
                 onChangeText={(v) => setLabel(v.slice(0, LABEL_MAX))}
-                placeholder="묶음 이름"
+                placeholder={t('catalog.groupNamePlaceholder')}
                 placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
                 maxLength={LABEL_MAX}
                 returnKeyType="done"
@@ -145,16 +148,16 @@ export function EditCatalogGroupSheet({
 
             <View style={styles.fieldGroup}>
               <ThemedText style={[styles.fieldLabel, { color: ink }]}>
-                설명{' '}
-                <ThemedText style={[styles.fieldOptional, { color: muted }]}>(선택)</ThemedText>
+                {t('catalog.groupDescOptional')}{' '}
+                <ThemedText style={[styles.fieldOptional, { color: muted }]}>{t('common.optional')}</ThemedText>
               </ThemedText>
               <ThemedText style={[styles.fieldHint, { color: muted }]}>
-                비워 두어도 묶음을 만들 수 있어요
+                {t('catalog.groupDescOptionalHint')}
               </ThemedText>
               <TextInput
                 value={subtitle}
                 onChangeText={(v) => setSubtitle(v.slice(0, SUBTITLE_MAX))}
-                placeholder="묶음 설명 (선택)"
+                placeholder={t('catalog.groupDescPlaceholder')}
                 placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
                 maxLength={SUBTITLE_MAX}
                 multiline
@@ -170,11 +173,11 @@ export function EditCatalogGroupSheet({
           {showDelete ? (
             <View style={styles.deleteWrap}>
               <ThemedText style={[styles.deleteHint, { color: muted }]}>
-                {deleteHint ?? '묶음을 삭제하면 안에 있던 항목은 다른 묶음으로 옮겨져요.'}
+                {deleteHint ?? t('catalog.deleteGroupHint')}
               </ThemedText>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="묶음 삭제"
+                accessibilityLabel={t('catalog.deleteGroupA11y')}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onDelete?.();
@@ -186,7 +189,7 @@ export function EditCatalogGroupSheet({
                     backgroundColor: pressed ? 'rgba(239,68,68,0.08)' : 'transparent',
                   },
                 ]}>
-                <ThemedText style={styles.deleteBtnText}>묶음 삭제</ThemedText>
+                <ThemedText style={styles.deleteBtnText}>{t('catalog.deleteGroupTitle')}</ThemedText>
               </Pressable>
             </View>
           ) : null}

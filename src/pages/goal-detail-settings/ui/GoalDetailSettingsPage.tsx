@@ -52,6 +52,7 @@ import {
   updateCatalogItemGroup,
 } from '@shared/lib/storage';
 import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -60,7 +61,7 @@ import type { GoalDetailCategoryKey } from '../model/types';
 import { useGoalDetailSettingsRoute } from '../model/useGoalDetailSettingsRoute';
 import { resolveGoalDetailModuleForTarget } from './category';
 import { RoutineDeleteButton } from './category/lib/RoutineDeleteButton';
-import { RoutineTitleField, ROUTINE_RENAME_LOCK_MESSAGES } from './category/lib/RoutineTitleField';
+import { RoutineTitleField, getRoutineRenameLockMessage } from './category/lib/RoutineTitleField';
 import { resolveRoutineTitleFallback } from './category/lib/routineTitleFallback';
 import { goalDetailSettingsPalette } from './category/lib/settingsPalette';
 import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
@@ -192,6 +193,7 @@ function resolveCatalogGroupKeyForSettings(categoryKey: string): string {
 
 export function GoalDetailSettingsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
@@ -628,7 +630,7 @@ export function GoalDetailSettingsPage() {
             style={styles.headerBtn}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             accessibilityRole="button"
-            accessibilityLabel="뒤로가기">
+            accessibilityLabel={t('settings.back')}>
             <IconSymbol name="chevron.left" size={22} color={headerFg} />
           </Pressable>
           <View style={styles.headerTitleWrap}>
@@ -682,7 +684,7 @@ export function GoalDetailSettingsPage() {
             <View style={[styles.renameLockBanner, { borderBottomColor: headerBorder }]}>
               <IconSymbol name="lock.fill" size={13} color={c.onVariant} />
               <ThemedText style={[styles.renameLockBannerText, { color: c.onVariant }]}>
-                {ROUTINE_RENAME_LOCK_MESSAGES[singleTargetRenameAccess.renameLockedReason]}
+                {getRoutineRenameLockMessage(singleTargetRenameAccess.renameLockedReason)}
               </ThemedText>
             </View>
           ) : null}
@@ -701,10 +703,10 @@ export function GoalDetailSettingsPage() {
                   },
                 ]}>
                 <ThemedText style={[styles.startPickerTitle, { color: c.onSurface }]}>
-                  먼저 진행할 루틴
+                  {t('goalDetail.priorityRoutine')}
                 </ThemedText>
                 <ThemedText style={[styles.startPickerSub, { color: c.onVariant }]}>
-                  선택한 블록이 체크리스트 맨 위·진행 중으로 표시돼요.
+                  {t('goalDetail.priorityRoutineHint')}
                 </ThemedText>
                 <View style={styles.startPickerList}>
                   {sortedTargets.map((t) => {
@@ -808,7 +810,7 @@ export function GoalDetailSettingsPage() {
                   contentFlush && styles.metaSectionInset,
                 ]}>
                 <ThemedText style={[styles.routineMetaSectionTitle, { color: c.onVariant }]}>
-                  루틴 설정
+                  {t('goalDetail.routineSettings')}
                 </ThemedText>
                 <CustomFlowGroupField
                   groupKey={
@@ -864,7 +866,9 @@ export function GoalDetailSettingsPage() {
             ]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={waterDetailUi ? '루틴 설정 완료' : '설정 완료'}
+              accessibilityLabel={
+                waterDetailUi ? t('goalDetail.doneRoutineSettings') : t('goalDetail.doneSettings')
+              }
               hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

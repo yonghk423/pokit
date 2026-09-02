@@ -13,6 +13,7 @@ import { ITEM_PRIORITY_META } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import { CompletionRadioButton, COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { activeIconColorByCategory, categoryAccentColorPastel } from '../lib/activeIconColorByCategory';
@@ -48,6 +49,8 @@ export function DefaultPriorityOrderRow({
   onFinishForToday,
   animateOnMount,
 }: PriorityOrderRowProps) {
+  const { t } = useTranslation();
+  const priorityLabel = t(`todo.priority.${itemPriority}` as const);
   const reorderTranslateY = useSharedValue(0);
   const reorderDragging = useSharedValue(0);
   const onReorderDragTranslationEndRef = useRef(onReorderDragTranslationEnd);
@@ -267,7 +270,7 @@ export function DefaultPriorityOrderRow({
     ? wrapBrutal(
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`중요도 ${priorityMeta.label}, 탭하면 변경`}
+          accessibilityLabel={t('dayPlan.priorityChangeA11y', { label: priorityLabel })}
           hitSlop={8}
           onPress={() => {
             void Haptics.selectionAsync();
@@ -288,7 +291,7 @@ export function DefaultPriorityOrderRow({
               isCompleted && styles.orderRowRomanTitleDone,
             ]}
             numberOfLines={1}>
-            {priorityMeta.label}
+            {priorityLabel}
           </ThemedText>
         </Pressable>,
       )
@@ -301,7 +304,7 @@ export function DefaultPriorityOrderRow({
         ? wrapBrutal(
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${label} 오늘 일정에서 완전 종료`}
+              accessibilityLabel={t('dayPlan.endTodayA11y', { label })}
               hitSlop={10}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -318,7 +321,7 @@ export function DefaultPriorityOrderRow({
               <ThemedText
                 style={[styles.orderFinishBtnText, { color: isDark ? '#FAFAFA' : primary }]}
                 numberOfLines={1}>
-                종료
+                {t('dayPlan.endTodayConfirm')}
               </ThemedText>
             </Pressable>,
           )
@@ -327,7 +330,7 @@ export function DefaultPriorityOrderRow({
         ? wrapBrutal(
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${label} 상세 설정`}
+              accessibilityLabel={t('dayPlan.detailSettingsA11y', { label })}
               hitSlop={10}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -348,7 +351,7 @@ export function DefaultPriorityOrderRow({
           ? wrapBrutal(
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${label} 몰입 화면 자세히 보기`}
+                accessibilityLabel={t('dayPlan.focusDetailA11y', { label })}
                 hitSlop={10}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -372,7 +375,7 @@ export function DefaultPriorityOrderRow({
           isDark={isDark}
           checkedColor={isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT}
           uncheckedColor={isDark ? 'rgba(255,255,255,0.42)' : GRAY_DEFAULT_LIGHT}
-          accessibilityLabel={isCompleted ? `${label} 완료 취소` : `${label} 완료`}
+          accessibilityLabel={isCompleted ? t('dayPlan.completeCancelA11y', { label }) : t('dayPlan.completeA11y', { label })}
           onPress={onToggleFocusComplete}
         />
       ) : null}
@@ -398,7 +401,7 @@ export function DefaultPriorityOrderRow({
             <View
               style={styles.orderRowReorderMain}
               accessibilityRole="adjustable"
-              accessibilityLabel={`${label}, 길게 눌러 순서를 바꿀 수 있어요`}>
+              accessibilityLabel={t('dayPlan.reorderA11y', { label })}>
               {rankIconTitleBlock}
             </View>
           </GestureDetector>

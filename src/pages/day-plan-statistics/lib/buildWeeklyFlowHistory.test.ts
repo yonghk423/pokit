@@ -38,7 +38,8 @@ describe('buildWeeklyFlowHistory', () => {
     expect(rows[0]?.weekdayDone[historyWeekdayIndexMondayZero('2026-07-01')]).toBe(true);
     expect(rows[0]?.weekdayDone[historyWeekdayIndexMondayZero('2026-07-03')]).toBe(true);
     expect(rows[0]?.startDateLabel).toBe('7월 1일');
-    expect(formatWeekRangeLabelKo(mondayStart)).toContain('6월');
+    expect(formatWeekRangeLabelKo(mondayStart, 'ko')).toContain('6월');
+    expect(formatWeekRangeLabelKo(mondayStart, 'en')).toMatch(/Jun|Jul/);
   });
 
   it('merges legacy layout-prefixed keys into one category row', () => {

@@ -7,6 +7,8 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { syncPriorityDayEndAlarm, syncPriorityDayStartAlarm } from '@features/day-plan-notifications';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
+import { formatDateKeyCompact } from '@shared/lib/i18n/lib/formatLocale';
 import {
   loadPriorityDayEndAlarm,
   loadPriorityDayStartAlarm,
@@ -19,7 +21,6 @@ import { ThemedView } from '@shared/ui/themed-view';
 
 import { addDaysToLocalDateKey, useDayPlanDraftStore } from '@entities/day-plan';
 import { palette } from '../lib/dayPlanPalette';
-import { formatDateKeyCompactKo } from '../lib/dayPlanEditorShared';
 import { DailyRhythmTimeEditorBody } from './DailyRhythmTimeEditorBody';
 
 /** 임시 비활성 — 담기 유지(keep) 롤 모드는 UI·저장 경로에서 제외 */
@@ -28,6 +29,7 @@ const SHOW_PRIORITY_DAY_ROLL_KEEP_SETTING = false;
 /** 설정 탭에서 우선순위 데이플랜의 하루 시작·마무리 시각을 바꿀 때 */
 export function DailyRhythmSettingsPage() {
   const router = useRouter();
+  const { t, locale } = useTranslation();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
@@ -71,10 +73,16 @@ export function DailyRhythmSettingsPage() {
       priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKeyEnd : priorityPlanDateKey,
     [priorityPlanDateKey, priorityPlanDateKeyEnd],
   );
-  const todayChoiceLabel = useMemo(() => `당일 · ${formatDateKeyCompactKo(planRangeLo)}`, [planRangeLo]);
+  const todayChoiceLabel = useMemo(
+    () => t('dayRhythm.todayChoice', { date: formatDateKeyCompact(planRangeLo, locale) }),
+    [locale, planRangeLo, t],
+  );
   const nextDayChoiceLabel = useMemo(
-    () => `다음 날 · ${formatDateKeyCompactKo(addDaysToLocalDateKey(planRangeLo, 1))}`,
-    [planRangeLo],
+    () =>
+      t('dayRhythm.nextDayChoice', {
+        date: formatDateKeyCompact(addDaysToLocalDateKey(planRangeLo, 1), locale),
+      }),
+    [locale, planRangeLo, t],
   );
 
   useFocusEffect(
@@ -123,7 +131,7 @@ export function DailyRhythmSettingsPage() {
         setDayEndAlarmOn(false);
       }
       if ((dayStartAlarmOn && !startOk) || (dayEndAlarmOn && !endOk)) {
-        Alert.alert('알림', '알림을 켜려면 기기에서 알림 권한을 허용해 주세요.');
+        Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
       }
 
       router.back();
@@ -160,11 +168,11 @@ export function DailyRhythmSettingsPage() {
             style={styles.headerBtn}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             accessibilityRole="button"
-            accessibilityLabel="뒤로가기">
+            accessibilityLabel={t('settings.back')}>
             <IconSymbol name="chevron.left" size={20} color={headerFg} />
           </Pressable>
           <ThemedText style={[styles.headerTitle, { color: headerFg }]} lightColor={headerFg} darkColor={headerFg}>
-            시작·마무리 시간
+            {t('dayRhythm.settingsPageTitle')}
           </ThemedText>
           <View style={styles.headerBtn} pointerEvents="none" />
         </View>
@@ -176,7 +184,7 @@ export function DailyRhythmSettingsPage() {
           seedEnd={seedEnd}
           seedKey={seedKey}
           variant="settings"
-          primaryLabel="저장"
+          primaryLabel={t('common.save')}
           onPrimaryPress={handleSave}
           currentSpansMultiDay={planRangeHi > planRangeLo}
           onEndDateChoice={handleEndDateChoice}

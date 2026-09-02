@@ -61,6 +61,15 @@ import {
 } from '@entities/day-plan';
 import { useFixedFlowSetsStore } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
+import {
+  formatDateKeyCompact,
+  formatDateKeyDisplay,
+  formatTimelineHeaderDate,
+  formatWeekdayLabel,
+  formatWeekdayShort,
+  type WeekdayIndex,
+} from '@shared/lib/i18n/lib/formatLocale';
 import {
   appendCustomFlowCatalogEntry,
   appendRoutineCatalogSelectionKeys,
@@ -96,8 +105,6 @@ import { SpineTimelineView } from '@widgets/day-plan-spine-timeline';
 import { MealSlotScheduleEditButton, MealSlotTimelineView } from '@widgets/day-plan-meal-slot-timeline';
 import { buildAddablePriorityCatalogSections } from '../lib/priorityCatalog';
 import {
-  formatDateKeyCompactKo,
-  formatDateKeyDisplayKo,
   formatMinutesToHHmm,
   getPickerCategoryItem,
   getPickerCategoryLabel,
@@ -112,7 +119,7 @@ import {
 } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { buildCategoryMealSlotOverrides, clampMealSlotSectionsToWindow, flattenPriorityMealSlotSectionEntries, hasExplicitMealSlotAssignments, reorderFlatKeys, reorderMealSlotSectionEntries, resolvePriorityMealSlot, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
-import { DAY_MEAL_SLOT_LABEL } from '../lib/priorityMealSlotSections';
+import { getDayMealSlotLabel } from '../lib/priorityMealSlotSections';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { CreateCustomFlowSheet, type CreateCustomFlowPlacement } from './CreateCustomFlowSheet';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
@@ -180,24 +187,10 @@ function isSameDay(a: Date, b: Date): boolean {
   );
 }
 
-const WEEKDAY_SHORT_KO = ['일', '월', '화', '수', '목', '금', '토'] as const;
-
-function weekdayShortKoFromDateKey(dk: string): string {
+function weekdayShortFromDateKey(dk: string, locale?: import('@shared/lib/i18n').AppLocale): string {
   const d = parseLocalDateKeyToDate(dk);
   if (!d) return '';
-  return WEEKDAY_SHORT_KO[d.getDay()];
-}
-
-const WEEKDAY_LONG_KO = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'] as const;
-
-/** 카드 헤더 — 모의안 `Monday, 5th April` 대응: `월요일, 4월 18일` */
-function formatTimelineHeaderDateKo(dateKey: string): string {
-  const d = parseLocalDateKeyToDate(dateKey);
-  if (!d) return formatDateKeyDisplayKo(dateKey);
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
-  const mo = m ? parseInt(m[2], 10) : d.getMonth() + 1;
-  const day = m ? parseInt(m[3], 10) : d.getDate();
-  return `${WEEKDAY_LONG_KO[d.getDay()]}, ${mo}월 ${day}일`;
+  return formatWeekdayShort(d, locale);
 }
 
 /** 우선 순위 집중 구간 한 줄 — 날짜 경계를 넘는 종료에는 실제 날짜를 표시 */
@@ -206,6 +199,7 @@ function formatPriorityWindowLine(
   end: string,
   dateKey: string,
   dateKeyEnd: string,
+  locale?: import('@shared/lib/i18n').AppLocale,
 ): string {
   const overnight = isOvernightHhmmRange(start, end);
   const ps = parseHHmmToMinutes(start.trim());
@@ -215,7 +209,7 @@ function formatPriorityWindowLine(
   if (overnight || pe === 24 * 60) {
     const rangeHi = dateKey <= dateKeyEnd ? dateKeyEnd : dateKey;
     const endDateKey = pe === 24 * 60 ? addDaysToLocalDateKey(rangeHi, 1) : rangeHi;
-    return `${formatMinuteOfDayKo(ps)} — ${formatDateKeyDisplayKo(endDateKey)} ${eStr}`;
+    return `${formatMinuteOfDayKo(ps)} — ${formatDateKeyDisplay(endDateKey, locale)} ${eStr}`;
   }
   return `${formatMinuteOfDayKo(ps)} — ${eStr}`;
 }
@@ -245,13 +239,14 @@ function PriorityWindowTimeChip({
   borderColor: string;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Pressable
       onPress={onPress}
       hitSlop={6}
       accessibilityRole="button"
-      accessibilityLabel={`하루 시작·마무리 시간 설정, 현재 ${line}`}
-      accessibilityHint="탭하면 시작·종료 시간을 변경할 수 있어요"
+      accessibilityLabel={t('dayPlan.dayWindowA11y', { line })}
+      accessibilityHint={t('dayPlan.dayWindowHint')}
       style={({ pressed }) => [
         styles.priorityTimelineTimeChip,
         {
@@ -391,6 +386,7 @@ export function PriorityBasedPlanSection({
   onExitTodoList,
   onPressTodoList,
 }: Props) {
+  const { t, locale } = useTranslation();
   const router = useRouter();
   useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -497,11 +493,11 @@ export function PriorityBasedPlanSection({
     return {
       lo,
       hi,
-      loCompact: formatDateKeyCompactKo(lo),
-      hiCompact: formatDateKeyCompactKo(hi),
+      loCompact: formatDateKeyCompact(lo, locale),
+      hiCompact: formatDateKeyCompact(hi, locale),
       isSingle: lo === hi,
     };
-  }, [draftRangeStart, draftRangeEnd]);
+  }, [draftRangeStart, draftRangeEnd, locale]);
 
   useEffect(() => {
     if (iosDateModalOpen) return;
@@ -515,8 +511,14 @@ export function PriorityBasedPlanSection({
   }, [priorityPlanDateKey, priorityPlanDateKeyEnd, iosDateModalOpen]);
 
   const calendarDays = useMemo(() => buildCalendarDays(safeMonthCursor), [safeMonthCursor]);
-  const monthTitle = `${safeMonthCursor.getFullYear()}년 ${safeMonthCursor.getMonth() + 1}월`;
-  const weekdayLabels = ['월', '화', '수', '목', '금', '토', '일'];
+  const monthTitle = t('dayPlan.monthTitle', {
+    year: safeMonthCursor.getFullYear(),
+    month: safeMonthCursor.getMonth() + 1,
+  });
+  const weekdayLabels = useMemo(() => {
+    const order: WeekdayIndex[] = [1, 2, 3, 4, 5, 6, 0];
+    return order.map((index) => formatWeekdayLabel(index, locale));
+  }, [locale]);
 
   /** 목표 상세·커스텀 라벨 갱신 — 설정 화면에서 돌아올 때 */
   const [categoryHintTick, setCategoryHintTick] = useState(0);
@@ -947,42 +949,42 @@ export function PriorityBasedPlanSection({
               icon: 'checklist',
               active: showTodoList,
               onPress: onPressTodoList,
-              accessibilityLabel: '투두 리스트',
+              accessibilityLabel: t('dayPlan.todoListA11y'),
             },
           ]
         : [],
-    [onPressTodoList, showTodoList],
+    [onPressTodoList, showTodoList, t],
   );
 
   const alertSpineBlockSaveError = useCallback(
     (action: 'add' | 'update', reason: string) => {
-      const title = action === 'add' ? '일정 추가' : '일정 수정';
+      const title = action === 'add' ? t('dayPlan.blockAddTitle') : t('dayPlan.blockEditTitle');
       if (reason === 'empty_title') {
-        Alert.alert(title, '제목을 입력해 주세요.');
+        Alert.alert(title, t('dayPlan.blockNeedTitle'));
         return;
       }
       if (reason === 'in_the_past') {
-        Alert.alert(title, '종료 시각이 현재보다 이후인 일정만 저장할 수 있어요.');
+        Alert.alert(title, t('dayPlan.blockEndFuture'));
         return;
       }
       if (reason === 'overlap') {
-        Alert.alert(title, '겹치는 일정이 있어요. 다른 시간을 선택해 주세요.');
+        Alert.alert(title, t('dayPlan.blockOverlap'));
         return;
       }
       if (reason === 'invalid_range') {
-        Alert.alert(title, '종료 시각은 시작 시각보다 뒤여야 해요.');
+        Alert.alert(title, t('dayPlan.blockEndAfterStart'));
         return;
       }
       if (reason === 'outside_window') {
         Alert.alert(
           title,
-          `루틴 종료 시간(${formatHhmmClockKo(priorityEnd)})을 넘는 일정은 저장할 수 없어요. 하루 시작~마무리 안으로 맞춰 주세요.`,
+          t('dayPlan.blockExceedsEnd', { end: formatHhmmClockKo(priorityEnd) }),
         );
         return;
       }
-      Alert.alert(title, '일정을 저장하지 못했어요.');
+      Alert.alert(title, t('dayPlan.blockSaveFailed'));
     },
-    [priorityEnd],
+    [priorityEnd, t],
   );
 
   const reloadRoutineCatalog = useCallback(() => {
@@ -1247,12 +1249,14 @@ export function PriorityBasedPlanSection({
   const addRoutineSheetTitle = useMemo(
     () =>
       addRoutineTargetSlot
-        ? `${DAY_MEAL_SLOT_LABEL[addRoutineTargetSlot]} 루틴 연결`
-        : '루틴 추가',
-    [addRoutineTargetSlot],
+        ? t('dayPlan.linkRoutine', { slot: getDayMealSlotLabel(addRoutineTargetSlot) })
+        : t('dayPlan.addRoutine'),
+    [addRoutineTargetSlot, t],
   );
 
-  const addRoutineSheetConfirmLabel = addRoutineTargetSlot ? '연결' : '추가';
+  const addRoutineSheetConfirmLabel = addRoutineTargetSlot
+    ? t('dayPlan.confirmLink')
+    : t('dayPlan.confirmAdd');
 
   const spineGapAddConfig = useMemo(() => {
     if (!spinePendingGapBounds) return null;
@@ -1550,12 +1554,12 @@ export function PriorityBasedPlanSection({
   const handleFinishPriorityCategoryForToday = useCallback(
     (categoryKey: string, label: string) => {
       Alert.alert(
-        '오늘 일정 종료',
-        `「${label}」을 오늘 목록에서 내릴까요?`,
+        t('dayPlan.endTodayTitle'),
+        t('dayPlan.endTodayMessage', { label }),
         [
-          { text: '취소', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: '종료',
+            text: t('dayPlan.endTodayConfirm'),
             style: 'destructive',
             onPress: () => {
               void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -1730,8 +1734,8 @@ export function PriorityBasedPlanSection({
     const startKey = priorityClockCaptionDateKeyStart(lo);
     const endKey = priorityClockCaptionDateKeyEnd(lo, hi, priorityStart, priorityEnd);
     return {
-      dayStartDateCaption: formatDateKeyCompactKo(startKey),
-      dayEndDateCaption: formatDateKeyCompactKo(endKey),
+      dayStartDateCaption: formatDateKeyCompact(startKey, locale),
+      dayEndDateCaption: formatDateKeyCompact(endKey, locale),
     };
   }, [
     priorityPlanDateKey,
@@ -1739,6 +1743,7 @@ export function PriorityBasedPlanSection({
     priorityPlanExplicitMultiDay,
     priorityStart,
     priorityEnd,
+    locale,
   ]);
 
   const spineTimelineRows = useMemo(
@@ -1792,10 +1797,15 @@ export function PriorityBasedPlanSection({
   const confirmSpineBlockDelete = useCallback(
     (blockId: string) => {
       const block = planBlocks.find((b) => b.id === blockId);
-      Alert.alert('일정 삭제', `「${block?.title ?? '일정'}」을 삭제할까요?`, [
-        { text: '취소', style: 'cancel' },
+      Alert.alert(
+        t('alert.deleteBlock.title'),
+        t('alert.deleteBlock.message', {
+          title: block?.title ?? t('alert.blockFallback'),
+        }),
+        [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '삭제',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => {
             removePlanBlock(blockId);
@@ -1982,8 +1992,9 @@ export function PriorityBasedPlanSection({
         priorityEnd,
         priorityPlanDateKey,
         priorityPlanDateKeyEnd,
+        locale,
       ),
-    [priorityStart, priorityEnd, priorityPlanDateKey, priorityPlanDateKeyEnd],
+    [priorityStart, priorityEnd, priorityPlanDateKey, priorityPlanDateKeyEnd, locale],
   );
 
   const { lo: planRangeLo, hi: planRangeHi } = useMemo(
@@ -2084,7 +2095,7 @@ export function PriorityBasedPlanSection({
             style={styles.dateModalDimTouch}
             onPress={() => setIosDateModalOpen(false)}
             accessibilityRole="button"
-            accessibilityLabel="닫기"
+            accessibilityLabel={t('dayPlan.close')}
           />
           <View
             style={[
@@ -2100,18 +2111,25 @@ export function PriorityBasedPlanSection({
                 styles.dateModalGrabber,
                 { backgroundColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)' },
               ]}
-              accessibilityLabel="시트"
+              accessibilityLabel={t('dayPlan.sheet')}
             />
-            <ThemedText style={[styles.dateModalTitle, { color: c.onSurface }]}>적용 기간 선택</ThemedText>
+            <ThemedText style={[styles.dateModalTitle, { color: c.onSurface }]}>
+              {t('dayPlan.applyRangeTitle')}
+            </ThemedText>
             <ThemedText style={[styles.dateModalRangeSummary, { color: c.onSurface }]}>
               {calendarRangeAnchor !== null
-                ? `시작: ${formatDateKeyCompactKo(calendarRangeAnchor)} · 다른 날을 탭하면 그날까지 범위로 잡혀요`
+                ? t('dayPlan.rangeFromHint', {
+                    date: formatDateKeyCompact(calendarRangeAnchor, locale),
+                  })
                 : modalDraftRange.isSingle
-                  ? `${modalDraftRange.loCompact} 하루 · 설정 완료를 눌러 주세요`
-                  : `현재 기간: ${modalDraftRange.loCompact} ~ ${modalDraftRange.hiCompact} · 바꾸려면 날짜를 탭하세요`}
+                  ? t('dayPlan.rangeSingleDayHint', { date: modalDraftRange.loCompact })
+                  : t('dayPlan.rangeCurrentHint', {
+                      lo: modalDraftRange.loCompact,
+                      hi: modalDraftRange.hiCompact,
+                    })}
             </ThemedText>
             <ThemedText style={[styles.dateModalHint, { color: c.onVariant }]}>
-              첫 탭은 시작일, 두 번째 탭은 끝 날짜예요. 범위가 맞으면 설정 완료를 눌러 주세요. 하루만 쓰면 한 번 탭한 뒤 바로 설정 완료하면 돼요.
+              {t('dayPlan.rangeHintLong')}
             </ThemedText>
             <View style={styles.dateMonthHeader}>
               <View style={styles.dateMonthHeaderSide}>
@@ -2147,7 +2165,7 @@ export function PriorityBasedPlanSection({
                 <Pressable
                   onPress={resetCalendarDraftToToday}
                   accessibilityRole="button"
-                  accessibilityLabel="적용 기간 선택을 오늘 하루로 초기화"
+                  accessibilityLabel={t('dayPlan.resetRangeToday')}
                   style={[
                     styles.calendarTodayBtn,
                     {
@@ -2155,12 +2173,14 @@ export function PriorityBasedPlanSection({
                       backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
                     },
                   ]}>
-                  <ThemedText style={[styles.calendarTodayBtnText, { color: c.onSurface }]}>초기화</ThemedText>
+                  <ThemedText style={[styles.calendarTodayBtnText, { color: c.onSurface }]}>
+                    {t('common.reset')}
+                  </ThemedText>
                 </Pressable>
                 <Pressable
                   onPress={jumpToTodayInCalendar}
                   accessibilityRole="button"
-                  accessibilityLabel="오늘로 이동해 선택"
+                  accessibilityLabel={t('dayPlan.jumpToToday')}
                   style={[
                     styles.calendarTodayBtn,
                     {
@@ -2168,7 +2188,9 @@ export function PriorityBasedPlanSection({
                       backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
                     },
                   ]}>
-                  <ThemedText style={[styles.calendarTodayBtnText, { color: c.onSurface }]}>오늘</ThemedText>
+                  <ThemedText style={[styles.calendarTodayBtnText, { color: c.onSurface }]}>
+                    {t('dayPlan.today')}
+                  </ThemedText>
                 </Pressable>
               </View>
               <View style={styles.calendarWeekHeaderRow}>
@@ -2222,8 +2244,10 @@ export function PriorityBasedPlanSection({
                 style={[styles.dateActionBtn, styles.dateActionGhost, { borderColor: c.catBorderIdle }]}
                 onPress={() => setIosDateModalOpen(false)}
                 accessibilityRole="button"
-                accessibilityLabel="취소하고 닫기">
-                <ThemedText style={[styles.dateActionText, { color: c.onSurface }]}>취소</ThemedText>
+                accessibilityLabel={t('dayPlan.cancelClose')}>
+                <ThemedText style={[styles.dateActionText, { color: c.onSurface }]}>
+                  {t('common.cancel')}
+                </ThemedText>
               </Pressable>
               <Pressable
                 style={[
@@ -2240,7 +2264,7 @@ export function PriorityBasedPlanSection({
                 ]}
                 onPress={onConfirmCalendarRange}
                 accessibilityRole="button"
-                accessibilityLabel="선택한 기간 적용">
+                accessibilityLabel={t('dayPlan.applyRange')}>
                 <ThemedText
                   style={[
                     styles.dateActionText,
@@ -2250,7 +2274,7 @@ export function PriorityBasedPlanSection({
                         : RetroFlatColors.light.text,
                     },
                   ]}>
-                  설정 완료
+                  {t('dayPlan.rangeDone')}
                 </ThemedText>
               </Pressable>
             </View>
@@ -2277,7 +2301,7 @@ export function PriorityBasedPlanSection({
             style={styles.timeModalDim}
             onPress={closePriorityTimeModal}
             accessibilityRole="button"
-            accessibilityLabel="닫기"
+            accessibilityLabel={t('dayPlan.close')}
           />
           <View
             style={[
@@ -2293,7 +2317,7 @@ export function PriorityBasedPlanSection({
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled">
               <ThemedText style={[styles.dateModalHint, styles.timeModalLead, { color: c.onVariant }]}>
-                시작·종료 시각을 탭하여 변경한 뒤 적용해 주세요.
+                {t('dayPlan.timeModalHint')}
               </ThemedText>
               {priorityTimeModalOpen && (
                 <CatalogRowSpineTimePanel
@@ -2316,8 +2340,8 @@ export function PriorityBasedPlanSection({
                 style={[styles.dateActionBtn, styles.dateActionGhost, { borderColor: c.catBorderIdle }]}
                 onPress={closePriorityTimeModal}
                 accessibilityRole="button"
-                accessibilityLabel="취소하고 닫기">
-                <ThemedText style={[styles.dateActionText, { color: c.onSurface }]}>취소</ThemedText>
+                accessibilityLabel={t('dayPlan.cancelClose')}>
+                <ThemedText style={[styles.dateActionText, { color: c.onSurface }]}>{t('common.cancel')}</ThemedText>
               </Pressable>
             </ScrollView>
           </View>
@@ -2378,7 +2402,7 @@ export function PriorityBasedPlanSection({
                         lightColor={editorial.ink}
                         darkColor={editorial.ink}
                         numberOfLines={2}>
-                        {formatTimelineHeaderDateKo(todayKey)}
+                        {formatTimelineHeaderDate(todayKey, locale)}
                       </ThemedText>
                       <MealSlotScheduleEditButton
                         palette={spineTimelinePalette}
@@ -2414,7 +2438,7 @@ export function PriorityBasedPlanSection({
                       lightColor={editorial.ink}
                       darkColor={editorial.ink}
                       numberOfLines={2}>
-                      {formatTimelineHeaderDateKo(todayKey)}
+                      {formatTimelineHeaderDate(todayKey, locale)}
                     </ThemedText>
                     <View style={styles.priorityTimelineSubRow}>
                       <ThemedText
@@ -2499,7 +2523,7 @@ export function PriorityBasedPlanSection({
               timelineThreeDayKeys.map((dk) => {
                 const d = parseLocalDateKeyToDate(dk);
                 const dayNum = d ? d.getDate() : '';
-                const wd = weekdayShortKoFromDateKey(dk);
+                const wd = weekdayShortFromDateKey(dk, locale);
                 const isPastDay = dk < todayKey;
                 const isMainDay = dk === todayKey;
                 const isStoreDay = dk === dayPlanDateKey;
@@ -2618,16 +2642,16 @@ export function PriorityBasedPlanSection({
                               style={[styles.priorityMainEmptyHintTitle, { color: editorial.ink }]}
                               lightColor={editorial.ink}
                               darkColor={editorial.ink}>
-                              담기 목록이 비어 있어요
+                              {t('dayPlan.emptyBagTitle')}
                             </ThemedText>
                             <ThemedText
                               style={[styles.priorityMainEmptyHintBody, { color: editorial.muted }]}
                               lightColor={editorial.muted}
                               darkColor={editorial.muted}>
-                              오늘 할 루틴을 추가해 주세요.
+                              {t('dayPlan.emptyBagBody')}
                             </ThemedText>
                             <PriorityMealSlotAddRoutineRow
-                              label="루틴 추가"
+                              label={t('dayPlan.addRoutine')}
                               ink={editorial.ink}
                               line={editorial.line}
                               isDark={isDark}
@@ -2835,7 +2859,7 @@ export function PriorityBasedPlanSection({
                                 <>
                                   {orderedSelectedItemsForDisplay.map((cat) => renderBagRow(cat))}
                                   <PriorityMealSlotAddRoutineRow
-                                    label="루틴 더 추가"
+                                    label={t('dayPlan.addMoreRoutine')}
                                     ink={editorial.ink}
                                     line={editorial.line}
                                     isDark={isDark}
@@ -2852,7 +2876,7 @@ export function PriorityBasedPlanSection({
                                     style={[styles.prioritySectionsEmptyLead, { color: editorial.muted }]}
                                     lightColor={editorial.muted}
                                     darkColor={editorial.muted}>
-                                    아래에서 항목을 추가하면 구간에 자동 배치돼요.
+                                    {t('dayPlan.sectionsEmptyLead')}
                                   </ThemedText>
                                 ) : null}
                                 {mealSlotSectionsForDisplay.map((section, sectionIndex) => (
@@ -2884,7 +2908,7 @@ export function PriorityBasedPlanSection({
                                           }),
                                         )}
                                         <PriorityMealSlotAddRoutineRow
-                                          label="루틴 더 연결"
+                                          label={t('dayPlan.linkMoreRoutine')}
                                           ink={editorial.ink}
                                           line={editorial.line}
                                           isDark={isDark}

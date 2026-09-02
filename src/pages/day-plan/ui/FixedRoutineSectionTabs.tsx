@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
@@ -10,12 +11,12 @@ export type FixedRoutineSection = 'catalog' | 'templates';
 
 type TabDef = {
   key: FixedRoutineSection;
-  label: string;
+  labelKey: I18nKey;
 };
 
 const TABS: TabDef[] = [
-  { key: 'catalog', label: '루틴 목록' },
-  { key: 'templates', label: '루틴 템플릿' },
+  { key: 'catalog', labelKey: 'catalog.routineListTab' },
+  { key: 'templates', labelKey: 'catalog.routineTemplatesTab' },
 ];
 
 /** 시안 `.brutal-shadow-sm` — 2px 2px 0 #181A2E */
@@ -35,6 +36,7 @@ export function FixedRoutineSectionTabs({
   c: _c,
   isDark,
 }: Props) {
+  const { t } = useTranslation();
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const border = tone.border;
   const shadowColor = isDark ? tone.solidShadow : tone.text;
@@ -66,7 +68,7 @@ export function FixedRoutineSectionTabs({
             <Pressable
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={tab.label}
+              accessibilityLabel={t(tab.labelKey)}
               onPress={() => {
                 if (active) return;
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -84,7 +86,7 @@ export function FixedRoutineSectionTabs({
               <ThemedText
                 style={[styles.tabLabel, { color: active ? activeText : inactiveText }]}
                 numberOfLines={1}>
-                {tab.label}
+                {t(tab.labelKey)}
               </ThemedText>
             </Pressable>
           </View>

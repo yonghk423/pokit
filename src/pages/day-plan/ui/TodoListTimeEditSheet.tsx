@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatMinutesToHHmm, parseHHmmToMinutes } from '@entities/day-plan';
+import { useTranslation } from '@shared/lib/i18n';
 import { RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -49,6 +50,8 @@ export function TodoListTimeEditSheet({
   onSave,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+
   const ui = useMemo(() => todoListUiColors(c, isDark), [c, isDark]);
   const [startText, setStartText] = useState(minutesToInput(startMinutes));
   const [endText, setEndText] = useState(minutesToInput(endMinutes));
@@ -98,7 +101,7 @@ export function TodoListTimeEditSheet({
       statusBarTranslucent
       onRequestClose={onClose}>
       <View style={styles.root}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
         <Pressable
           style={[
             styles.sheet,
@@ -110,12 +113,12 @@ export function TodoListTimeEditSheet({
           ]}
           onPress={(e) => e.stopPropagation()}>
           <ThemedText style={styles.title} lightColor={ui.ink} darkColor={ui.ink}>
-            시간 조절
+            {t('dayPlan.todoAdjustTime')}
           </ThemedText>
           <View style={styles.row}>
             <View style={styles.field}>
               <ThemedText style={styles.label} lightColor={ui.muted} darkColor={ui.muted}>
-                시작
+                {t('goalDetail.study.start')}
               </ThemedText>
               <TextInput
                 value={startText}
@@ -135,7 +138,7 @@ export function TodoListTimeEditSheet({
             </View>
             <View style={styles.field}>
               <ThemedText style={styles.label} lightColor={ui.muted} darkColor={ui.muted}>
-                종료
+                {t('goalDetail.study.end')}
               </ThemedText>
               <TextInput
                 value={endText}
@@ -160,7 +163,7 @@ export function TodoListTimeEditSheet({
               onPress={onClose}
               style={[styles.btn, { borderColor: ui.btnBorder, backgroundColor: ui.btnBg }]}>
               <ThemedText style={styles.btnText} lightColor={ui.ink} darkColor={ui.ink}>
-                취소
+                {t('common.cancel')}
               </ThemedText>
             </Pressable>
             <Pressable
@@ -171,7 +174,7 @@ export function TodoListTimeEditSheet({
                 { borderColor: ui.primary, backgroundColor: ui.primary },
               ]}>
               <ThemedText style={styles.btnText} lightColor={ui.primaryOn} darkColor={ui.primaryOn}>
-                저장
+                {t('common.save')}
               </ThemedText>
             </Pressable>
           </View>

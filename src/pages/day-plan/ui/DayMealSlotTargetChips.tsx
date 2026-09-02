@@ -1,9 +1,13 @@
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { formatHhmmClockKo } from '@entities/day-plan';
 import {
-  DAY_MEAL_SLOT_LABEL,
+  formatHhmmClock,
+  formatMealSlotLabel,
+  type LocaleDayMealSlot,
+} from '@shared/lib/i18n';
+import { useTranslation } from '@shared/lib/i18n';
+import {
   DAY_MEAL_SLOT_ORDER,
   getMealSlotStartHhmm,
   type DayMealSlot,
@@ -31,19 +35,21 @@ export function DayMealSlotTargetChips({
   line,
   onSelectSlot,
 }: Props) {
+  const { locale, t } = useTranslation();
+
   return (
     <View style={styles.root}>
-      <ThemedText style={[styles.title, { color: muted }]}>담을 시간대</ThemedText>
+      <ThemedText style={[styles.title, { color: muted }]}>{t('dayPlan.targetMealSlot')}</ThemedText>
       <View style={styles.chips}>
         {DAY_MEAL_SLOT_ORDER.map((slot) => {
           const selected = slot === selectedSlot;
-          const hint = formatHhmmClockKo(getMealSlotStartHhmm(schedule, slot));
+          const hint = formatHhmmClock(getMealSlotStartHhmm(schedule, slot), locale);
           return (
             <Pressable
               key={slot}
               accessibilityRole="button"
               accessibilityState={{ selected }}
-              accessibilityLabel={`${DAY_MEAL_SLOT_LABEL[slot]} ${hint}, ${selected ? '선택됨' : '선택'}`}
+              accessibilityLabel={`${formatMealSlotLabel(slot as LocaleDayMealSlot, locale)} ${hint}, ${selected ? t('common.selected') : t('common.select')}`}
               onPress={() => {
                 if (selected) return;
                 void Haptics.selectionAsync();
@@ -66,7 +72,7 @@ export function DayMealSlotTargetChips({
               <ThemedText
                 style={[styles.chipLabel, { color: selected ? ink : muted }]}
                 numberOfLines={1}>
-                {DAY_MEAL_SLOT_LABEL[slot]}
+                {formatMealSlotLabel(slot as LocaleDayMealSlot, locale)}
               </ThemedText>
               <ThemedText
                 style={[styles.chipHint, { color: selected ? ink : muted }]}

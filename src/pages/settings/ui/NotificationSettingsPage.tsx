@@ -5,6 +5,7 @@ import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatHhmmClockKo } from '@entities/day-plan';
+import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { loadIncompleteRoutineReminder } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -20,6 +21,7 @@ import {
 
 /** 설정 → 알림 */
 export function NotificationSettingsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
   const p = buildSettingsPalette(isDark);
@@ -61,26 +63,26 @@ export function NotificationSettingsPage() {
             style={chrome.headerBtn}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             accessibilityRole="button"
-            accessibilityLabel="뒤로가기">
+            accessibilityLabel={t('settings.back')}>
             <IconSymbol name="chevron.left" size={20} color={p.title} />
           </Pressable>
           <ThemedText
             style={[chrome.headerTitle, styles.headerTitleCenter, { color: p.title }]}
             lightColor={p.title}
             darkColor={p.title}>
-            알림
+            {t('settings.notificationTitle')}
           </ThemedText>
           <View style={chrome.headerBtn} pointerEvents="none" />
         </View>
 
         <ScrollView contentContainerStyle={chrome.container} showsVerticalScrollIndicator={false}>
           <ThemedText style={[chrome.sectionHint, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-            미완료 일정 알림을 설정해요.
+            {t('settings.notification.incompleteHint')}
           </ThemedText>
 
           <SettingsSection border={p.border} surface={p.surface}>
             <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]} lightColor={p.sectionTitle} darkColor={p.sectionTitle}>
-              데이플랜
+              {t('settings.section.dayPlan')}
             </ThemedText>
 
             <Pressable
@@ -94,7 +96,7 @@ export function NotificationSettingsPage() {
                 router.push('/incomplete-routine-reminder-settings');
               }}
               accessibilityRole="button"
-              accessibilityLabel="미완료 일정 알림 설정">
+              accessibilityLabel={t('settings.notification.incompleteA11y')}>
               <View style={chrome.itemLeft}>
                 <SettingsRowIcon
                   name="bell.badge.fill"
@@ -105,12 +107,12 @@ export function NotificationSettingsPage() {
                 />
                 <View style={chrome.itemTextWrap}>
                   <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                    미완료 일정 알림
+                    {t('settings.notification.incompleteTitle')}
                   </ThemedText>
                   <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                     {incompleteReminderOn
-                      ? `${formatHhmmClockKo(incompleteReminderHhmm)} · 켜짐`
-                      : '꺼짐'}
+                      ? t('settings.notification.onWithTime', { time: formatHhmmClockKo(incompleteReminderHhmm) })
+                      : t('settings.notification.off')}
                   </ThemedText>
                 </View>
               </View>

@@ -8,6 +8,7 @@ import {
   type WorkStudyWeekday,
 } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
@@ -35,6 +36,7 @@ function normalizeHhmmInput(raw: string, fallback: string): string {
 }
 
 export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '', palette }: Props) {
+  const { t } = useTranslation();
   const [selectedWeekday, setSelectedWeekday] = useState<WorkStudyWeekday>(() =>
     weekdayFromDate(new Date()),
   );
@@ -79,10 +81,10 @@ export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '
     <View style={[styles.wrap, { borderColor: palette.outline }]}>
       <View style={styles.headerRow}>
         <IconSymbol name="clock.fill" size={18} color={PRIMARY} />
-        <ThemedText style={[styles.title, { color: palette.onSurface }]}>주간 시간표</ThemedText>
+        <ThemedText style={[styles.title, { color: palette.onSurface }]}>{t('goalDetail.study.timetableTitle')}</ThemedText>
       </View>
       <ThemedText style={[styles.hint, { color: palette.onVariant }]}>
-        요일별 수업·스터디 블록을 추가해요.
+        {t('goalDetail.study.timetableHint')}
       </ThemedText>
 
       <View style={styles.weekdayRow}>
@@ -143,7 +145,7 @@ export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '
               <Pressable
                 onPress={() => removeSlot(slot.id)}
                 hitSlop={8}
-                accessibilityLabel="시간표 항목 삭제"
+                accessibilityLabel={t('goalDetail.study.deleteEntryA11y')}
                 style={styles.removeBtn}>
                 <IconSymbol name="trash" size={14} color={palette.onVariant} />
               </Pressable>
@@ -152,24 +154,24 @@ export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '
         </View>
       ) : (
         <ThemedText style={[styles.empty, { color: palette.onVariant }]}>
-          {WORK_STUDY_WEEKDAY_LABELS_KO[selectedWeekday]}요일 시간표가 비어 있어요.
+          {t('goalDetail.study.emptyTimetable', { weekday: WORK_STUDY_WEEKDAY_LABELS_KO[selectedWeekday] })}
         </ThemedText>
       )}
 
       <View style={[styles.addBlock, { borderColor: palette.outlineVariant }]}>
         <ThemedText style={[styles.addLabel, { color: palette.onVariant }]}>
-          {WORK_STUDY_WEEKDAY_LABELS_KO[selectedWeekday]}요일 추가
+          {t('goalDetail.study.addForWeekday', { weekday: WORK_STUDY_WEEKDAY_LABELS_KO[selectedWeekday] })}
         </ThemedText>
         <TextInput
           value={draftSubject}
           onChangeText={setDraftSubject}
-          placeholder="과목·스터디 이름"
+          placeholder={t('goalDetail.study.subjectPlaceholder')}
           placeholderTextColor={palette.outline}
           style={[styles.fieldInput, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
         />
         <View style={styles.timeRow}>
           <View style={styles.timeField}>
-            <ThemedText style={[styles.timeLabel, { color: palette.onVariant }]}>시작</ThemedText>
+            <ThemedText style={[styles.timeLabel, { color: palette.onVariant }]}>{t('goalDetail.study.start')}</ThemedText>
             <TextInput
               value={startHhmm}
               onChangeText={setStartHhmm}
@@ -181,7 +183,7 @@ export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '
             />
           </View>
           <View style={styles.timeField}>
-            <ThemedText style={[styles.timeLabel, { color: palette.onVariant }]}>종료</ThemedText>
+            <ThemedText style={[styles.timeLabel, { color: palette.onVariant }]}>{t('goalDetail.study.end')}</ThemedText>
             <TextInput
               value={endHhmm}
               onChangeText={setEndHhmm}
@@ -196,12 +198,12 @@ export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '
         <TextInput
           value={place}
           onChangeText={setPlace}
-          placeholder="장소 (선택)"
+          placeholder={t('goalDetail.study.locationPlaceholder')}
           placeholderTextColor={palette.outline}
           style={[styles.fieldInput, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
         />
         <Pressable onPress={addSlot} style={styles.addBtn}>
-          <ThemedText style={styles.addBtnText}>시간표 추가</ThemedText>
+          <ThemedText style={styles.addBtnText}>{t('goalDetail.study.addTimetable')}</ThemedText>
         </Pressable>
       </View>
     </View>

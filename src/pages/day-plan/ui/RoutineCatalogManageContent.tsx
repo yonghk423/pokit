@@ -47,6 +47,7 @@ import {
   type CustomCatalogGroup,
   type CustomFlowCatalogEntry,
 } from '@shared/lib/storage';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -90,6 +91,8 @@ function bookColors(c: DayPlanPalette, isDark: boolean) {
 /** 나만의 루틴 탭 — 루틴 목록 제작·관리 전용 (담기·모드별 시간 설정 없음) */
 export function RoutineCatalogManageContent() {
   const router = useRouter();
+  const { t } = useTranslation();
+
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -274,7 +277,7 @@ export function RoutineCatalogManageContent() {
     ({ label, subtitle }: { label: string; subtitle: string }) => {
       if (!editGroupSheet) return;
       if (label.length === 0) {
-        Alert.alert('입력 확인', '이름을 입력해 주세요.');
+        Alert.alert(t('catalog.inputCheckTitle'), t('catalog.enterName'));
         return;
       }
       if (editGroupSheet.isSystemGroup && isSystemCatalogGroupKey(editGroupSheet.groupKey)) {
@@ -286,29 +289,29 @@ export function RoutineCatalogManageContent() {
       setEditGroupSheet(null);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
-    [editGroupSheet, reloadCatalogData],
+    [editGroupSheet, reloadCatalogData, t],
   );
 
   const onSaveCreateCatalogGroup = useCallback(
     ({ label, subtitle }: { label: string; subtitle: string }) => {
       if (label.length === 0) {
-        Alert.alert('입력 확인', '이름을 입력해 주세요.');
+        Alert.alert(t('catalog.inputCheckTitle'), t('catalog.enterName'));
         return;
       }
       if (listCustomCatalogGroups().some((g) => g.label === label)) {
-        Alert.alert('이미 있는 묶음', '같은 이름의 묶음이 있어요. 다른 이름을 써 주세요.');
+        Alert.alert(t('catalog.duplicateGroupTitle'), t('catalog.duplicateGroupMessage'));
         return;
       }
       const created = createCustomCatalogGroup(label, subtitle);
       if (!created) {
-        Alert.alert('만들기 실패', '묶음을 만들지 못했어요. 잠시 후 다시 시도해 주세요.');
+        Alert.alert(t('catalog.createGroupFailedTitle'), t('catalog.createGroupFailedMessage'));
         return;
       }
       reloadCatalogData();
       setCreateGroupSheetOpen(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
-    [reloadCatalogData],
+    [reloadCatalogData, t],
   );
 
   const performDeleteCatalogGroup = useCallback(
@@ -316,8 +319,8 @@ export function RoutineCatalogManageContent() {
       animateListMutation();
       if (!dismissCatalogGroupWithItemReassign(groupKey)) {
         Alert.alert(
-          '묶음을 삭제할 수 없어요',
-          '다른 묶음도 숨겨져 있어서 항목을 옮길 곳이 없어요. 먼저 숨긴 묶음을 다시 표시한 뒤 시도해 주세요.',
+          t('catalog.cannotDeleteGroupTitle'),
+          t('catalog.cannotDeleteGroupMessage'),
         );
         return;
       }
@@ -325,7 +328,7 @@ export function RoutineCatalogManageContent() {
       setEditGroupSheet(null);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
-    [animateListMutation, reloadCatalogData],
+    [animateListMutation, reloadCatalogData, t],
   );
 
   const onDeleteCatalogGroup = useCallback(
@@ -333,23 +336,23 @@ export function RoutineCatalogManageContent() {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const moveTargetLabel = isSystemCatalogGroupKey(groupKey)
         ? groupKey === 'health'
-          ? '생산성을 높이는 도구'
-          : '건강 루틴'
-        : '생산성을 높이는 도구';
+          ? t('catalog.groupProductivity')
+          : t('catalog.groupHealth')
+        : t('catalog.groupProductivity');
       Alert.alert(
-        '묶음 삭제',
-        `「${currentLabel}」 묶음을 삭제할까요? 안에 있던 항목은 「${moveTargetLabel}」 묶음으로 옮겨져요.`,
+        t('catalog.deleteGroupTitle'),
+        t('catalog.deleteGroupMessage', { current: currentLabel, target: moveTargetLabel }),
         [
-          { text: '취소', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: '삭제',
+            text: t('common.delete'),
             style: 'destructive',
             onPress: () => performDeleteCatalogGroup(groupKey),
           },
         ],
       );
     },
-    [performDeleteCatalogGroup],
+    [performDeleteCatalogGroup, t],
   );
 
   const onDeleteCatalogItem = useCallback(
@@ -357,12 +360,12 @@ export function RoutineCatalogManageContent() {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       if (isCustomFlowCategoryKey(categoryKey)) {
         Alert.alert(
-          '루틴 삭제',
-          `「${label}」 루틴을 삭제할까요? 나만의 루틴과 설정에서 함께 제거됩니다.`,
+          t('catalog.deleteRoutineTitle'),
+          t('catalog.deleteRoutineMessage', { label }),
           [
-            { text: '취소', style: 'cancel' },
+            { text: t('common.cancel'), style: 'cancel' },
             {
-              text: '삭제',
+              text: t('common.delete'),
               style: 'destructive',
               onPress: () => {
                 animateListMutation();
@@ -376,12 +379,12 @@ export function RoutineCatalogManageContent() {
         return;
       }
       Alert.alert(
-        '항목 숨기기',
-        `「${label}」 항목을 목록에서 숨길까요?`,
+        t('catalog.hideItemTitle'),
+        t('catalog.hideItemMessage', { label }),
         [
-          { text: '취소', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: '숨기기',
+            text: t('common.hide'),
             style: 'destructive',
             onPress: () => {
               animateListMutation();
@@ -394,7 +397,7 @@ export function RoutineCatalogManageContent() {
         ],
       );
     },
-    [animateListMutation, bumpCategoryLabelEpoch, reloadCatalogData, runDeleteCustomFlow],
+    [animateListMutation, bumpCategoryLabelEpoch, reloadCatalogData, runDeleteCustomFlow, t],
   );
 
   const onMoveCatalogFlow = useCallback((categoryKey: string, label: string) => {
@@ -429,14 +432,14 @@ export function RoutineCatalogManageContent() {
         <View style={styles.headerBlock}>
           <View style={styles.titleRow}>
             <View style={styles.titleCopy}>
-              <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>루틴 목록</ThemedText>
+              <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>{t('catalog.managePageTitle')}</ThemedText>
               <ThemedText style={[styles.lead, { color: editorial.muted }]}>
-                반복되는 할 일과 습관을 관리해요.
+                {t('catalog.managePageLead')}
               </ThemedText>
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="새 루틴 또는 묶음 만들기"
+              accessibilityLabel={t('catalog.createNewA11y')}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 setCreateChoiceSheetOpen(true);
@@ -537,7 +540,7 @@ export function RoutineCatalogManageContent() {
         }
         deleteHint={
           editGroupSheet?.isSystemGroup
-            ? '묶음을 삭제하면 안에 있던 항목은 다른 기본 묶음으로 옮겨져요.'
+            ? t('catalog.deleteGroupHint')
             : undefined
         }
         isDark={isDark}

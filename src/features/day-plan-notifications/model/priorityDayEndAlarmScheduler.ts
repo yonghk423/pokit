@@ -8,6 +8,7 @@ import {
   scheduleDailyLocalNotification,
 } from '@shared/lib/notifications';
 import { loadPriorityDayEndAlarm, savePriorityDayEndAlarm } from '@shared/lib/storage';
+import { t } from '@shared/lib/i18n';
 
 export const PRIORITY_DAY_END_NOTIFICATION_ID = 'pokit:priority-day-end';
 const PRIORITY_DAY_END_EVENT_TYPE = 'priorityDayEnd';
@@ -70,8 +71,8 @@ export async function syncPriorityDayEndAlarm(input: {
       const timeLabel = formatHhmmClockKo(input.reminderHhmm);
       const nid = await scheduleDailyLocalNotification({
         identifier: PRIORITY_DAY_END_NOTIFICATION_ID,
-        title: '오늘을 돌아볼 시간이에요',
-        body: `${timeLabel} · 진행 상황을 한 번 확인해 보세요.`,
+        title: t('notify.priorityDayEnd.title'),
+        body: t('notify.priorityDayEnd.body', { time: timeLabel }),
         hour,
         minute,
         data: { eventType: PRIORITY_DAY_END_EVENT_TYPE },

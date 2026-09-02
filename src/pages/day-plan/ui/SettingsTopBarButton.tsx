@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { t } from '@shared/lib/i18n';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
@@ -20,7 +21,7 @@ export function SettingsTopBarButton({ c }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="설정"
+      accessibilityLabel={t('settings.title')}
       onPress={() => {
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.push('/settings');

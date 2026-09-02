@@ -11,9 +11,9 @@ import Reanimated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { blockDurationSec, formatMinuteOfDayKo, getBlockTimelineIcon, resolveBlockCategoryKey, resolveCategoryCatalogAccentColor, resolveDayPlanBlockDisplayTitle, type SpineTimelineRow } from '@entities/day-plan';
+import { blockDurationSec, getBlockTimelineIcon, resolveBlockCategoryKey, resolveCategoryCatalogAccentColor, resolveDayPlanBlockDisplayTitle, type SpineTimelineRow } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
-import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
+import { formatDurationMinutes, formatMinuteOfDay, useTranslation } from '@shared/lib/i18n';
 import { toPastelColor } from '@shared/lib/ui/toPastelColor';
 import { CompletionRadioButton, COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -42,6 +42,7 @@ function SettingsButton({
   isDark: boolean;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
   const primary = isDark ? '#FAFAFA' : PrimaryColor.rgb;
   const border = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
   const bg = isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF';
@@ -62,7 +63,7 @@ function SettingsButton({
       />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label} 상세 설정`}
+        accessibilityLabel={t('dayPlan.detailSettingsA11y', { label })}
         hitSlop={10}
         onPress={() => {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -208,6 +209,7 @@ export function SpineTimelineBlockRow({
   onReorderDragActiveChange,
   onCommitReorder,
 }: Props) {
+  const { t, locale } = useTranslation();
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const reorderDragging = useSharedValue(0);
@@ -216,10 +218,12 @@ export function SpineTimelineBlockRow({
   const durationMin = Math.max(0, Math.round(blockDurationSec(row.block) / 60));
   // 라벨은 저장된 종료(익일이면 익일 시각)를 그대로 보여준다. 타임라인 위치용 캡(24:00) 값이 아님
   const railEndMinutes = endsNextDay ? row.block.endMinutes : row.endMinutes;
-  const startClockLabel = formatMinuteOfDayKo(row.startMinutes);
+  const startClockLabel = formatMinuteOfDay(row.startMinutes, locale);
   const endClockLabel = endsNextDay
-    ? `다음날 ${formatMinuteOfDayKo(row.block.endMinutes)}`
-    : formatMinuteOfDayKo(row.endMinutes).replace(/^[^\s]+\s/, '');
+    ? t('spineTimeline.nextDayClock', {
+        clock: formatMinuteOfDay(row.block.endMinutes, locale).replace(/^[^\s]+\s/, ''),
+      })
+    : formatMinuteOfDay(row.endMinutes, locale).replace(/^[^\s]+\s/, '');
   const displayTitle = resolveDayPlanBlockDisplayTitle(row.block);
 
   const triggerDelete = useCallback(() => {
@@ -339,7 +343,7 @@ export function SpineTimelineBlockRow({
           <Reanimated.View
             pointerEvents="none"
             style={[styles.deleteUnderlay, deleteUnderlayStyle]}>
-            <ThemedText style={styles.deleteLabel}>삭제</ThemedText>
+            <ThemedText style={styles.deleteLabel}>{t('common.delete')}</ThemedText>
           </Reanimated.View>
           <GestureDetector gesture={blockGesture}>
             <Reanimated.View
@@ -351,7 +355,7 @@ export function SpineTimelineBlockRow({
               <Pressable
                 onPress={onPress}
                 accessibilityRole="button"
-                accessibilityLabel={`${displayTitle}, 탭하면 수정 · 오른쪽으로 밀면 삭제 · 길게 눌러 순서 변경`}
+                accessibilityLabel={t('dayPlan.blockEditA11y', { title: displayTitle })}
                 style={({ pressed }) => [styles.blockMainPress, pressed && onPress && styles.pressed]}>
                 <View style={styles.railCol}>
                   <ThemedText
@@ -392,7 +396,7 @@ export function SpineTimelineBlockRow({
                       isCurrent && !completed && styles.metaTextLive,
                       completed && styles.textDone,
                     ]}>
-                    {startClockLabel}~{endClockLabel} ({formatDurationMinKo(durationMin)})
+                    {startClockLabel}~{endClockLabel} ({formatDurationMinutes(durationMin, locale)})
                   </ThemedText>
                   <ThemedText
                     style={[

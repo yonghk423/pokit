@@ -1,7 +1,7 @@
 import {
   buildCategoryMealSlotOverrides,
-  DAY_MEAL_SLOT_LABEL,
   DAY_MEAL_SLOT_ORDER,
+  getDayMealSlotLabel,
   getMealSlotStartHhmm,
   mealSlotProgressTowardNext,
   normalizeDayMealSlotSchedule,
@@ -18,8 +18,9 @@ export type { DayMealSlot, DayMealSlotSchedule };
 export {
   DAY_MEAL_SLOT_LABEL,
   DAY_MEAL_SLOT_ORDER,
+  getDayMealSlotLabel,
   resolvePriorityMealSlot,
-};
+} from '@shared/lib/storage';
 
 export type PriorityMealSlotSection<T extends { key: string }> = {
   slot: DayMealSlot;
@@ -93,7 +94,7 @@ function buildPriorityMealSlotSectionBuckets<T extends { key: string }>(
     const isCurrent = currentSlot === slot;
     return {
       slot,
-      title: DAY_MEAL_SLOT_LABEL[slot],
+      title: getDayMealSlotLabel(slot),
       hintTime: getMealSlotStartHhmm(schedule, slot),
       items: buckets.get(slot) ?? [],
       isCurrent,
@@ -200,7 +201,7 @@ export function buildEmptyPriorityMealSlotSections<T extends { key: string }>(
     const isCurrent = currentSlot === slot;
     return {
       slot,
-      title: DAY_MEAL_SLOT_LABEL[slot],
+      title: getDayMealSlotLabel(slot),
       hintTime: getMealSlotStartHhmm(schedule, slot),
       items: [],
       isCurrent,

@@ -120,8 +120,10 @@ describe('priorityCatalogLayoutMode', () => {
   });
 
   it('catalogLayoutModeLead differs by mode', () => {
-    expect(catalogLayoutModeLead('bag')).toContain('목록');
-    expect(catalogLayoutModeLead('sections')).toContain('시간대');
-    expect(catalogLayoutModeLead('spine')).toContain('시간 아이콘');
+    const tr = (key: string) =>
+      ({ 'catalog.layoutLeadBag': '목록', 'catalog.layoutLeadSections': '시간대', 'catalog.layoutLeadSpine': '시간 아이콘' } as Record<string, string>)[key] ?? key;
+    expect(catalogLayoutModeLead('bag', tr)).toContain('목록');
+    expect(catalogLayoutModeLead('sections', tr)).toContain('시간대');
+    expect(catalogLayoutModeLead('spine', tr)).toContain('시간 아이콘');
   });
 });

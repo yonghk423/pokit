@@ -2,8 +2,9 @@ import * as Haptics from 'expo-haptics';
 import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { formatHhmmClockKo } from '@entities/day-plan';
+import { formatHhmmClock } from '@shared/lib/i18n';
 import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
+import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import {
@@ -39,15 +40,18 @@ export function ReminderTimePickerPill({
   muted,
   line,
   surface,
-  placeholder = '시간 선택',
-  accessibilityLabel = '알림 시간',
+  placeholder,
+  accessibilityLabel,
   fullWidth = false,
   emphasizeColor,
 }: Props) {
+  const { t, locale } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('timePicker.placeholder');
+  const resolvedA11y = accessibilityLabel ?? t('timePicker.reminderA11y');
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const hasValue = valueHhmm.trim().length > 0;
-  const label = hasValue ? formatHhmmClockKo(valueHhmm) : placeholder;
+  const label = hasValue ? formatHhmmClock(valueHhmm, locale) : resolvedPlaceholder;
   const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const editorValue = hasValue ? valueHhmm : '09:00';
   const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
@@ -59,7 +63,7 @@ export function ReminderTimePickerPill({
     <View style={[styles.root, fullWidth && styles.rootFull]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
+        accessibilityLabel={resolvedA11y}
         onPress={() => {
           void Haptics.selectionAsync();
           onToggleExpand();
@@ -87,7 +91,7 @@ export function ReminderTimePickerPill({
             </ThemedText>
           </View>
           <ThemedText style={[styles.pillHint, { color: muted }]}>
-            {expanded ? '접기' : '변경'}
+            {expanded ? t('common.collapse') : t('common.change')}
           </ThemedText>
         </View>
       </Pressable>
@@ -103,10 +107,10 @@ export function ReminderTimePickerPill({
             surface={surface}
             selectedForeground={selectedFg}
             snapStepMinutes={1}
-            accessibilityLabelPrefix={accessibilityLabel}
+            accessibilityLabelPrefix={resolvedA11y}
           />
           <BrutalConfirmButton
-            accessibilityLabel="시간 선택 확인"
+            accessibilityLabel={t('timePicker.confirmA11y')}
             fill={ink}
             labelColor={selectedFg}
             border={line}

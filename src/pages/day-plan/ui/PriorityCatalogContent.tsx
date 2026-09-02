@@ -33,6 +33,7 @@ import {
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import {
   appendCustomFlowCatalogEntry,
   appendRoutineCatalogSelectionKeys,
@@ -116,6 +117,7 @@ export function PriorityCatalogContent({
   controlledLayoutMode,
   showLayoutModeTabs = true,
 }: Props) {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
@@ -359,8 +361,8 @@ export function PriorityCatalogContent({
       if (windowEnded) {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         Alert.alert(
-          '집중 시간이 끝났어요',
-          '오늘 집중 구간이 종료되어 지금은 시간을 바꿀 수 없어요.',
+          t('alert.focusEnded.title'),
+          t('catalog.focusEndedChangeTime'),
         );
         return;
       }
@@ -381,9 +383,9 @@ export function PriorityCatalogContent({
         if (!result.ok) {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           if (result.reason === 'in_the_past') {
-            Alert.alert('시간을 바꿀 수 없어요', '이미 지난 시각으로는 설정할 수 없어요.');
+            Alert.alert(t('catalog.cannotChangeTimeTitle'), t('catalog.cannotChangePastTime'));
           } else if (result.reason === 'invalid_range') {
-            Alert.alert('시간을 확인해 주세요', '종료 시각은 시작 시각보다 뒤여야 해요.');
+            Alert.alert(t('catalog.checkTimeTitle'), t('dayPlan.blockEndAfterStart'));
           }
         }
         return;
@@ -401,11 +403,11 @@ export function PriorityCatalogContent({
       if (!result.ok) {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         if (result.reason === 'in_the_past') {
-          Alert.alert('타임라인에 담을 수 없어요', '이미 지난 시각으로는 설정할 수 없어요.');
+          Alert.alert(t('catalog.cannotAddTimelineTitle'), t('catalog.cannotChangePastTime'));
         } else {
           Alert.alert(
-            '타임라인에 담을 수 없어요',
-            '집중 구간 안에 빈 시간이 없어요. 오늘 탭에서 시간을 조정한 뒤 다시 시도해 주세요.',
+            t('catalog.cannotAddTimelineTitle'),
+            t('catalog.timelineFull'),
           );
         }
         return;
@@ -588,8 +590,8 @@ export function PriorityCatalogContent({
         if (windowEnded) {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           Alert.alert(
-            '집중 시간이 끝났어요',
-            '오늘 집중 구간이 종료되어 지금은 담을 수 없어요. 오늘 탭에서 집중 시간을 변경한 뒤 다시 담아 주세요.',
+            t('alert.focusEnded.title'),
+            t('catalog.focusEndedAdd'),
           );
           return;
         }
@@ -612,8 +614,8 @@ export function PriorityCatalogContent({
       if (!result.ok && result.reason === 'spine_window_full') {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         Alert.alert(
-          '타임라인에 담을 수 없어요',
-          '집중 구간 안에 빈 시간이 없어요. 오늘 탭에서 시간을 조정한 뒤 다시 시도해 주세요.',
+          t('catalog.cannotAddTimelineTitle'),
+          t('catalog.timelineFull'),
         );
       }
     },
@@ -717,7 +719,7 @@ export function PriorityCatalogContent({
     ({ label, subtitle }: { label: string; subtitle: string }) => {
       if (!editGroupSheet) return;
       if (label.length === 0) {
-        Alert.alert('입력 확인', '이름을 입력해 주세요.');
+        Alert.alert(t('catalog.inputCheckTitle'), t('catalog.enterName'));
         return;
       }
       if (editGroupSheet.isSystemGroup && isSystemCatalogGroupKey(editGroupSheet.groupKey)) {
@@ -735,16 +737,16 @@ export function PriorityCatalogContent({
   const onSaveCreateCatalogGroup = useCallback(
     ({ label, subtitle }: { label: string; subtitle: string }) => {
       if (label.length === 0) {
-        Alert.alert('입력 확인', '이름을 입력해 주세요.');
+        Alert.alert(t('catalog.inputCheckTitle'), t('catalog.enterName'));
         return;
       }
       if (listCustomCatalogGroups().some((g) => g.label === label)) {
-        Alert.alert('이미 있는 묶음', '같은 이름의 묶음이 있어요. 다른 이름을 써 주세요.');
+        Alert.alert(t('catalog.duplicateGroupTitle'), t('catalog.duplicateGroupMessage'));
         return;
       }
       const created = createCustomCatalogGroup(label, subtitle);
       if (!created) {
-        Alert.alert('만들기 실패', '묶음을 만들지 못했어요. 잠시 후 다시 시도해 주세요.');
+        Alert.alert(t('catalog.createGroupFailedTitle'), t('catalog.createGroupFailedMessage'));
         return;
       }
       reloadCatalogData();
@@ -759,8 +761,8 @@ export function PriorityCatalogContent({
       animateListMutation();
       if (!dismissCatalogGroupWithItemReassign(groupKey)) {
         Alert.alert(
-          '묶음을 삭제할 수 없어요',
-          '다른 묶음도 숨겨져 있어서 항목을 옮길 곳이 없어요. 먼저 숨긴 묶음을 다시 표시한 뒤 시도해 주세요.',
+          t('catalog.cannotDeleteGroupTitle'),
+          t('catalog.cannotDeleteGroupMessage'),
         );
         return;
       }
@@ -776,16 +778,16 @@ export function PriorityCatalogContent({
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const moveTargetLabel = isSystemCatalogGroupKey(groupKey)
         ? groupKey === 'health'
-          ? '생산성을 높이는 도구'
-          : '건강 루틴'
-        : '생산성을 높이는 도구';
+          ? t('catalog.groupProductivity')
+          : t('catalog.groupHealth')
+        : t('catalog.groupProductivity');
       Alert.alert(
-        '묶음 삭제',
-        `「${currentLabel}」 묶음을 삭제할까요? 안에 있던 항목은 「${moveTargetLabel}」 묶음으로 옮겨져요.`,
+        t('catalog.deleteGroupTitle'),
+        t('catalog.deleteGroupMessage', { current: currentLabel, target: moveTargetLabel }),
         [
-          { text: '취소', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: '삭제',
+            text: t('common.delete'),
             style: 'destructive',
             onPress: () => performDeleteCatalogGroup(groupKey),
           },
@@ -800,20 +802,20 @@ export function PriorityCatalogContent({
       if (isFocusStarted && selectedCategoryKeys.includes(categoryKey)) {
         void Haptics.selectionAsync();
         Alert.alert(
-          '삭제할 수 없어요',
-          '집중 실행 중인 항목은 삭제할 수 없어요. 집중을 마친 뒤 다시 시도해 주세요.',
+          t('catalog.cannotDeleteTitle'),
+          t('catalog.cannotDeleteFocusActive'),
         );
         return;
       }
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       if (isCustomFlowCategoryKey(categoryKey)) {
         Alert.alert(
-          '루틴 삭제',
-          `「${label}」 루틴을 삭제할까요? 담기·나만의 루틴과 설정에서 함께 제거됩니다.`,
+          t('catalog.deleteRoutineTitle'),
+          t('catalog.deleteRoutineMessage', { label }),
           [
-            { text: '취소', style: 'cancel' },
+            { text: t('common.cancel'), style: 'cancel' },
             {
-              text: '삭제',
+              text: t('common.delete'),
               style: 'destructive',
               onPress: () => {
                 animateListMutation();
@@ -827,12 +829,12 @@ export function PriorityCatalogContent({
         return;
       }
       Alert.alert(
-        '항목 숨기기',
-        `「${label}」 항목을 담기 목록에서 숨길까요? 오늘 우선 순위에 담겨 있으면 함께 빠집니다.`,
+        t('catalog.hideItemTitle'),
+        t('catalog.hideItemMessage', { label }),
         [
-          { text: '취소', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: '숨기기',
+            text: t('common.hide'),
             style: 'destructive',
             onPress: () => {
               animateListMutation();
@@ -899,7 +901,7 @@ export function PriorityCatalogContent({
         ) : null}
         <View style={styles.headerBlock}>
           <View style={styles.titleRow}>
-            <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>오늘 집중할 것</ThemedText>
+            <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>{t('catalog.pageTitle')}</ThemedText>
             <View style={styles.titleRowEnd}>
               <View
                 style={[
@@ -910,12 +912,12 @@ export function PriorityCatalogContent({
                   },
                 ]}>
                 <ThemedText style={[styles.modeBadgeLabel, { color: editorial.muted }]}>
-                  {catalogLayoutModeActiveLabel(effectiveCatalogLayoutMode)}에 담기
+                  {t('catalog.addToMode', { mode: catalogLayoutModeActiveLabel(effectiveCatalogLayoutMode, t) })}
                 </ThemedText>
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="새 루틴 또는 묶음 만들기"
+                accessibilityLabel={t('catalog.createNewA11y')}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   setCreateChoiceSheetOpen(true);
@@ -931,7 +933,7 @@ export function PriorityCatalogContent({
             </View>
           </View>
           <ThemedText style={[styles.lead, { color: editorial.muted }]}>
-            {catalogLayoutModeLead(effectiveCatalogLayoutMode)}
+            {catalogLayoutModeLead(effectiveCatalogLayoutMode, t)}
           </ThemedText>
         </View>
       </View>
@@ -1029,7 +1031,7 @@ export function PriorityCatalogContent({
         }
         deleteHint={
           editGroupSheet?.isSystemGroup
-            ? '묶음을 삭제하면 안에 있던 항목은 다른 기본 묶음으로 옮겨져요.'
+            ? t('catalog.deleteGroupHint')
             : undefined
         }
         isDark={isDark}

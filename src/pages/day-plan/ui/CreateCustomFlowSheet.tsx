@@ -24,6 +24,7 @@ import {
 } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
+import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import {
   createCustomCatalogGroup,
   DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
@@ -124,6 +125,7 @@ export function CreateCustomFlowSheet({
   line,
   surface,
 }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const [name, setName] = useState('');
@@ -301,15 +303,15 @@ export function CreateCustomFlowSheet({
     setStep('basics');
   };
 
-  const headerTitle = step === 'basics' ? '새 루틴 만들기' : '루틴 방식·상세 설정';
+  const headerTitle = step === 'basics' ? t('createFlow.titleBasics') : t('createFlow.titleSetup');
   const headerSubtitle =
     step === 'basics'
       ? placement?.mode === 'sections'
-        ? '이름·아이콘을 정한 뒤, 담을 시간대(새벽~밤)를 골라 주세요.'
+        ? t('createFlow.hintSections')
         : placement?.mode === 'spine'
-          ? '이름·아이콘을 정한 뒤, 타임라인에 넣을 시작·종료 시각을 맞춰 주세요.'
-          : '이름과 아이콘·색상을 정한 뒤 담을 묶음을 골라 주세요.'
-      : '방식을 고른 뒤 아래에서 할 일·목표를 맞춰 주세요. 만들기를 누르면 바로 추가돼요.';
+          ? t('createFlow.hintSpine')
+          : t('createFlow.hintBag')
+      : t('createFlow.hintSetup');
 
   return (
     <Modal
@@ -323,7 +325,7 @@ export function CreateCustomFlowSheet({
             {step === 'template' ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="이전"
+                accessibilityLabel={t('common.back')}
                 onPress={handleBackStep}
                 hitSlop={10}
                 style={styles.headerBackBtn}>
@@ -335,7 +337,7 @@ export function CreateCustomFlowSheet({
             <ThemedText style={[styles.title, { color: ink }]}>{headerTitle}</ThemedText>
             <ThemedText style={[styles.subtitle, { color: muted }]}>{headerSubtitle}</ThemedText>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} hitSlop={10}>
             <IconSymbol name="xmark" size={20} color={muted} />
           </Pressable>
         </View>
@@ -352,7 +354,7 @@ export function CreateCustomFlowSheet({
           {step === 'basics' ? (
             <>
               <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
-                <ThemedText style={[styles.fieldLabel, { color: ink }]}>루틴 이름</ThemedText>
+                <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('createFlow.nameLabel')}</ThemedText>
                 <TextInput
                   value={name}
                   onChangeText={(v) => setName(v.slice(0, NAME_MAX))}
@@ -375,7 +377,7 @@ export function CreateCustomFlowSheet({
                   accentColor={selectedAccentColor}
                   onChangeIcon={setSelectedIcon}
                   onChangeAccentColor={setSelectedAccentColor}
-                  previewLabel={trimmedName.length > 0 ? trimmedName : '미리보기'}
+                  previewLabel={trimmedName.length > 0 ? trimmedName : t('common.preview')}
                   isDark={isDark}
                   ink={ink}
                   muted={muted}
@@ -384,9 +386,9 @@ export function CreateCustomFlowSheet({
               </View>
 
               <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
-                <ThemedText style={[styles.fieldLabel, { color: ink }]}>상위 카테고리</ThemedText>
+                <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('createFlow.parentCategory')}</ThemedText>
                 <ThemedText style={[styles.fieldHint, { color: muted }]}>
-                  어디에 둘지 골라 주세요
+                  {t('createFlow.pickGroup')}
                 </ThemedText>
 
                 <View style={styles.chipsWrap}>
@@ -430,7 +432,7 @@ export function CreateCustomFlowSheet({
                   {!isAddingGroup ? (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="새 그룹 만들기"
+                      accessibilityLabel={t('createFlow.newGroup')}
                       onPress={() => {
                         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setIsAddingGroup(true);
@@ -442,7 +444,7 @@ export function CreateCustomFlowSheet({
                       ]}>
                       <IconSymbol name="plus" size={11} color={muted} />
                       <ThemedText style={[styles.chipText, { color: muted }]}>
-                        새 그룹 만들기
+                        {t('createFlow.newGroup')}
                       </ThemedText>
                     </Pressable>
                   ) : null}
@@ -454,7 +456,7 @@ export function CreateCustomFlowSheet({
                       autoFocus
                       value={newGroupLabel}
                       onChangeText={(v) => setNewGroupLabel(v.slice(0, GROUP_NAME_MAX))}
-                      placeholder="새 그룹 이름 (예: 운동·체력)"
+                      placeholder={t('createFlow.newGroupPlaceholder')}
                       placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
                       maxLength={GROUP_NAME_MAX}
                       returnKeyType="done"
@@ -467,7 +469,7 @@ export function CreateCustomFlowSheet({
                     />
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="추가"
+                      accessibilityLabel={t('common.add')}
                       onPress={handleSubmitNewGroup}
                       disabled={newGroupLabel.trim().length === 0}
                       style={({ pressed }) => [
@@ -477,11 +479,11 @@ export function CreateCustomFlowSheet({
                           opacity: newGroupLabel.trim().length === 0 ? 0.45 : pressed ? 0.88 : 1,
                         },
                       ]}>
-                      <ThemedText style={styles.newGroupBtnText}>추가</ThemedText>
+                      <ThemedText style={styles.newGroupBtnText}>{t('common.add')}</ThemedText>
                     </Pressable>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="취소"
+                      accessibilityLabel={t('common.cancel')}
                       onPress={() => {
                         setIsAddingGroup(false);
                         setNewGroupLabel('');
@@ -510,9 +512,9 @@ export function CreateCustomFlowSheet({
 
               {placement?.mode === 'spine' ? (
                 <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
-                  <ThemedText style={[styles.fieldLabel, { color: ink }]}>타임라인 시간</ThemedText>
+                  <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('createFlow.timelineTime')}</ThemedText>
                   <ThemedText style={[styles.fieldHint, { color: muted }]}>
-                    하루 시작~마무리 안에서 시작·종료를 맞춰 주세요
+                    {t('createFlow.timelineTimeHint')}
                   </ThemedText>
                   <CatalogRowSpineTimePanel
                     startMinutes={spineSchedule.startMinutes}
@@ -535,7 +537,7 @@ export function CreateCustomFlowSheet({
                   />
                   {!spineScheduleValid ? (
                     <ThemedText style={[styles.fieldHint, { color: muted, marginTop: 8 }]}>
-                      선택한 시간이 하루 시작~마무리 밖이에요. 구간 안으로 맞춰 주세요.
+                      {t('createFlow.outsideWindow')}
                     </ThemedText>
                   ) : null}
                 </View>
@@ -544,16 +546,16 @@ export function CreateCustomFlowSheet({
           ) : (
             <>
               <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
-                <ThemedText style={[styles.fieldHint, { color: muted }]}>새 루틴</ThemedText>
+                <ThemedText style={[styles.fieldHint, { color: muted }]}>{t('createFlow.newRoutineTag')}</ThemedText>
                 <ThemedText style={[styles.routineNamePreview, { color: ink }]}>{trimmedName}</ThemedText>
               </View>
 
               <View style={styles.summaryField}>
-                <ThemedText style={[styles.summaryLabel, { color: muted }]}>요약</ThemedText>
+                <ThemedText style={[styles.summaryLabel, { color: muted }]}>{t('createFlow.summary')}</ThemedText>
                 <TextInput
                   value={summary}
                   onChangeText={setSummary}
-                  placeholder="이 항목에 대한 짧은 설명을 적어 주세요"
+                  placeholder={t('createFlow.summaryPlaceholder')}
                   placeholderTextColor={muted}
                   style={[
                     styles.summaryInput,
@@ -623,9 +625,9 @@ export function CreateCustomFlowSheet({
               </View>
 
               <View style={styles.setupSection}>
-                <ThemedText style={[styles.setupSectionTitle, { color: ink }]}>상세 설정</ThemedText>
+                <ThemedText style={[styles.setupSectionTitle, { color: ink }]}>{t('createFlow.detailSetup')}</ThemedText>
                 <ThemedText style={[styles.setupSectionHint, { color: muted }]}>
-                  여기서 맞춘 내용이 그대로 새 루틴에 저장돼요.
+                  {t('createFlow.detailSetupHint')}
                 </ThemedText>
                 <CustomFlowTemplateSessionBody
                   templateKey={selectedTemplateKey}
@@ -648,7 +650,7 @@ export function CreateCustomFlowSheet({
               </View>
 
               <ThemedText style={[styles.templateNote, { color: muted }]}>
-                기록 방식은 만든 뒤 바꾸기 어려워요. 세부 내용은 나중에 항목을 눌러도 수정할 수 있어요.
+                {t('createFlow.templateWarning')}
               </ThemedText>
             </>
           )}
@@ -665,8 +667,8 @@ export function CreateCustomFlowSheet({
           ]}>
           {step === 'basics' ? (
             <BrutalConfirmButton
-              label="다음"
-              accessibilityLabel="다음"
+              label={t('common.next')}
+              accessibilityLabel={t('common.next')}
               align="stretch"
               fill={ink}
               labelColor={isDark ? '#09090b' : '#FAFAFA'}
@@ -677,8 +679,8 @@ export function CreateCustomFlowSheet({
             />
           ) : (
             <BrutalConfirmButton
-              label="만들기"
-              accessibilityLabel="만들기"
+              label={t('createFlow.create')}
+              accessibilityLabel={t('createFlow.create')}
               align="stretch"
               fill={ink}
               labelColor={isDark ? '#09090b' : '#FAFAFA'}

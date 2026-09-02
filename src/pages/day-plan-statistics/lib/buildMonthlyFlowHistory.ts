@@ -13,6 +13,7 @@ import {
   type HistoryPeriod,
 } from './historyPeriodRange';
 import { resolveTopCategoryLabels } from './resolveTopCategoryLabels';
+import { t } from '@shared/lib/i18n';
 
 export type MonthlyFlowHistoryRow = {
   historyKey: string;
@@ -151,7 +152,5 @@ export function buildMonthlyHistorySummary(input: {
 }
 
 export function historyPeriodDescription(period: HistoryPeriod): string {
-  return period === 'week'
-    ? '이번 주 완료 기록을 요일별로 모아 볼 수 있어요.'
-    : '이번 달 완료 기록을 날짜별로 모아 볼 수 있어요.';
+  return period === 'week' ? t('history.desc.week') : t('history.desc.month');
 }

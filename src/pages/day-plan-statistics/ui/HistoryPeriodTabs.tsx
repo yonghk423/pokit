@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { HistoryPeriod } from '../lib/historyPeriodRange';
@@ -12,15 +13,16 @@ type Props = {
   isDark: boolean;
 };
 
-const TABS: { id: HistoryPeriod; label: string }[] = [
-  { id: 'week', label: '주간' },
-  { id: 'month', label: '월간' },
+const TABS: { id: HistoryPeriod; labelKey: 'history.period.week' | 'history.period.month' }[] = [
+  { id: 'week', labelKey: 'history.period.week' },
+  { id: 'month', labelKey: 'history.period.month' },
 ];
 
 const SHADOW_SM = 2;
 
 /** 히스토리 — 루틴 탭과 동일 톤의 부착 세그먼트 */
 export function HistoryPeriodTabs({ period, onSelectPeriod, isDark }: Props) {
+  const { t } = useTranslation();
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const border = tone.border;
   const shadowColor = isDark ? tone.solidShadow : tone.text;
@@ -52,7 +54,7 @@ export function HistoryPeriodTabs({ period, onSelectPeriod, isDark }: Props) {
             <Pressable
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={tab.label}
+              accessibilityLabel={t(tab.labelKey)}
               onPress={() => {
                 if (active) return;
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -70,7 +72,7 @@ export function HistoryPeriodTabs({ period, onSelectPeriod, isDark }: Props) {
               <ThemedText
                 style={[styles.label, { color: active ? activeText : inactiveText }]}
                 numberOfLines={1}>
-                {tab.label}
+                {t(tab.labelKey)}
               </ThemedText>
             </Pressable>
           </View>

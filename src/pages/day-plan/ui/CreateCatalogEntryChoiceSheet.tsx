@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -29,6 +30,7 @@ export function CreateCatalogEntryChoiceSheet({
   surface,
   line,
 }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const rowBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
   const iconBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
@@ -41,7 +43,7 @@ export function CreateCatalogEntryChoiceSheet({
       statusBarTranslucent
       onRequestClose={onClose}>
       <View style={styles.root}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
         <View
           style={[
             styles.sheet,
@@ -60,16 +62,14 @@ export function CreateCatalogEntryChoiceSheet({
           </View>
 
           <View style={styles.header}>
-            <ThemedText style={[styles.title, { color: ink }]}>무엇을 만들까요?</ThemedText>
-            <ThemedText style={[styles.lead, { color: muted }]}>
-              루틴을 바로 만들거나, 담을 묶음만 먼저 추가할 수 있어요.
-            </ThemedText>
+            <ThemedText style={[styles.title, { color: ink }]}>{t('catalog.choiceTitle')}</ThemedText>
+            <ThemedText style={[styles.lead, { color: muted }]}>{t('catalog.choiceLead')}</ThemedText>
           </View>
 
           <View style={styles.options}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="새 루틴 만들기"
+              accessibilityLabel={t('catalog.choiceNewRoutineA11y')}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onCreateRoutine();
@@ -82,9 +82,11 @@ export function CreateCatalogEntryChoiceSheet({
                 <IconSymbol name="plus.circle.fill" size={20} color={ink} />
               </View>
               <View style={styles.optionText}>
-                <ThemedText style={[styles.optionTitle, { color: ink }]}>새 루틴</ThemedText>
+                <ThemedText style={[styles.optionTitle, { color: ink }]}>
+                  {t('catalog.choiceNewRoutineTitle')}
+                </ThemedText>
                 <ThemedText style={[styles.optionHint, { color: muted }]}>
-                  이름·아이콘·방식까지 설정해요
+                  {t('catalog.choiceNewRoutineHint')}
                 </ThemedText>
               </View>
               <IconSymbol name="chevron.right" size={14} color={muted} />
@@ -92,7 +94,7 @@ export function CreateCatalogEntryChoiceSheet({
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="새 묶음 만들기"
+              accessibilityLabel={t('catalog.choiceNewGroupA11y')}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onCreateGroup();
@@ -105,9 +107,11 @@ export function CreateCatalogEntryChoiceSheet({
                 <IconSymbol name="folder.fill" size={18} color={ink} />
               </View>
               <View style={styles.optionText}>
-                <ThemedText style={[styles.optionTitle, { color: ink }]}>새 묶음</ThemedText>
+                <ThemedText style={[styles.optionTitle, { color: ink }]}>
+                  {t('catalog.choiceNewGroupTitle')}
+                </ThemedText>
                 <ThemedText style={[styles.optionHint, { color: muted }]}>
-                  루틴을 담을 카테고리만 만들어요
+                  {t('catalog.choiceNewGroupHint')}
                 </ThemedText>
               </View>
               <IconSymbol name="chevron.right" size={14} color={muted} />

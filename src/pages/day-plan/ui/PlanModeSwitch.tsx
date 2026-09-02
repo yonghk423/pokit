@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -14,14 +15,14 @@ import type { PlanMode } from '../lib/dayPlanEditorShared';
 type ModeButton = {
   mode: PlanMode;
   icon: string;
-  label: string;
+  labelKey: 'planMode.daily' | 'planMode.quickMemo' | 'planMode.dayNote' | 'planMode.reading';
 };
 
 const MODE_BUTTONS: ModeButton[] = [
-  { mode: 'priority', icon: 'list.bullet.rectangle', label: '데일리' },
-  { mode: 'quickMemo', icon: 'note.text', label: '잠금화면 메모' },
-  { mode: 'dayNote', icon: 'square.and.pencil', label: '노트' },
-  { mode: 'reading', icon: 'book.closed.fill', label: '독서' },
+  { mode: 'priority', icon: 'list.bullet.rectangle', labelKey: 'planMode.daily' },
+  { mode: 'quickMemo', icon: 'note.text', labelKey: 'planMode.quickMemo' },
+  { mode: 'dayNote', icon: 'square.and.pencil', labelKey: 'planMode.dayNote' },
+  { mode: 'reading', icon: 'book.closed.fill', labelKey: 'planMode.reading' },
 ];
 
 type Props = {
@@ -47,6 +48,7 @@ export function PlanModeSwitch({
   description,
   trailing,
 }: Props) {
+  const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const pill = tabPillColors(isDark);
 
@@ -54,7 +56,7 @@ export function PlanModeSwitch({
     description !== undefined
       ? description
       : planMode === 'quickMemo'
-        ? '잠금화면에서 상시 확인할 메모를 적어 두세요.'
+        ? t('planMode.quickMemoHint')
         : planMode === 'dayNote'
           ? null
           : planMode === 'reading'
@@ -77,6 +79,15 @@ export function PlanModeSwitch({
     [onSelectMode, onSelectPriority, onSelectQuickMemo],
   );
 
+  const modeLabels = useMemo(
+    () =>
+      Object.fromEntries(MODE_BUTTONS.map((btn) => [btn.mode, t(btn.labelKey)])) as Record<
+        PlanMode,
+        string
+      >,
+    [t],
+  );
+
   return (
     <View style={styles.root}>
       <View style={styles.bleed}>
@@ -90,11 +101,12 @@ export function PlanModeSwitch({
             {MODE_BUTTONS.map((btn) => {
               const active =
                 planMode === btn.mode || (btn.mode === 'priority' && planMode === 'todoList');
+              const label = modeLabels[btn.mode];
               return (
                 <Pressable
                   key={btn.mode}
                   accessibilityRole="button"
-                  accessibilityLabel={btn.label}
+                  accessibilityLabel={label}
                   onPress={() => handleSelect(btn.mode)}
                   style={({ pressed }) => [
                     styles.iconHit,

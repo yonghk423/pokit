@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Keyboard,
   Modal,
@@ -34,6 +34,7 @@ import { readingBookEntryToShareText } from '@entities/day-plan/lib/readingBookS
 import { AladinAttributionLine, openAladinProductPage } from '@features/aladin-book-search';
 import { OpenLibraryAttributionLine, openOpenLibraryBookPage } from '@features/open-library-book-search';
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -42,12 +43,6 @@ import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 type Palette = ReturnType<typeof goalDetailSettingsPalette>;
 
 const READING_ACCENT = RetroFlatColors.light.primary;
-
-const STATUS_OPTIONS: { key: ReadingBookStatus; label: string }[] = [
-  { key: 'want', label: '읽고 싶은' },
-  { key: 'reading', label: '읽는 중' },
-  { key: 'done', label: '완료' },
-];
 
 function pageToInputValue(value: unknown, fallback: number): string {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -73,6 +68,7 @@ export function ReadingBookDetailSheet({
   onChange,
   onRemove,
 }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const c = palette;
@@ -81,6 +77,15 @@ export function ReadingBookDetailSheet({
   const memoSectionLayoutRef = useRef({ y: 0, height: 0 });
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [isMemoFocused, setIsMemoFocused] = useState(false);
+
+  const statusOptions = useMemo(
+    (): { key: ReadingBookStatus; label: string }[] => [
+      { key: 'want', label: t('goalDetail.reading.status.want') },
+      { key: 'reading', label: t('goalDetail.reading.status.reading') },
+      { key: 'done', label: t('goalDetail.reading.status.done') },
+    ],
+    [t],
+  );
 
   const resolved = entry ? ensureReadingBookPages(entry) : null;
   const [startPageStr, setStartPageStr] = useState('1');
@@ -188,7 +193,7 @@ export function ReadingBookDetailSheet({
         title: entry.title,
       });
     } catch {
-      Alert.alert('공유 실패', '잠시 후 다시 시도해 주세요.');
+      Alert.alert(t('goalDetail.reading.shareFailTitle'), t('goalDetail.reading.shareFailBody'));
     }
   };
 
@@ -209,7 +214,7 @@ export function ReadingBookDetailSheet({
       statusBarTranslucent
       onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('dayPlan.close')} />
         <View
           style={[
             styles.sheet,
@@ -230,7 +235,7 @@ export function ReadingBookDetailSheet({
               <View style={styles.headerActions}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="도서 정보 공유"
+                  accessibilityLabel={t('goalDetail.reading.shareA11y')}
                   onPress={() => {
                     void shareBook();
                   }}
@@ -240,7 +245,7 @@ export function ReadingBookDetailSheet({
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="닫기"
+                  accessibilityLabel={t('dayPlan.close')}
                   onPress={onClose}
                   hitSlop={8}
                   style={styles.headerActionBtn}>
@@ -298,9 +303,11 @@ export function ReadingBookDetailSheet({
             </View>
 
             <View style={styles.statusSection}>
-              <ThemedText style={[styles.fieldLabel, { color: c.onVariant }]}>상태</ThemedText>
+              <ThemedText style={[styles.fieldLabel, { color: c.onVariant }]}>
+                {t('goalDetail.reading.statusLabel')}
+              </ThemedText>
               <View style={styles.statusRow}>
-                {STATUS_OPTIONS.map((opt) => {
+                {statusOptions.map((opt) => {
                   const on = status === opt.key;
                   return (
                     <Pressable
@@ -331,10 +338,10 @@ export function ReadingBookDetailSheet({
 
             <View style={styles.goalSection}>
               <ThemedText style={[styles.sectionTitle, { color: c.onSurface }]}>
-                오늘 목표 분량
+                {t('goalDetail.reading.todayGoal')}
               </ThemedText>
               <ThemedText style={[styles.sectionSub, { color: c.onVariant }]}>
-                시작·목표 페이지로 오늘 읽을 분량을 설정해 주세요.
+                {t('goalDetail.reading.todayGoalHint')}
               </ThemedText>
 
             <View style={styles.progressRow}>
@@ -342,8 +349,10 @@ export function ReadingBookDetailSheet({
                 {startPage}P → {targetPage}P
               </ThemedText>
               <ThemedText style={[styles.progressSub, { color: c.onVariant }]}>
-                {pagesRead}쪽
-                {totalPages != null ? ` · 책 ${progressPct}%` : ''}
+                {t('goalDetail.reading.pagesRead', { pages: pagesRead })}
+                {totalPages != null
+                  ? t('goalDetail.reading.bookProgress', { percent: progressPct })
+                  : ''}
               </ThemedText>
             </View>
             {totalPages != null ? (
@@ -359,7 +368,9 @@ export function ReadingBookDetailSheet({
 
             <View style={styles.pageFields}>
               <View style={[styles.pageField, { borderColor: c.outlineVariant }]}>
-                <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>시작</ThemedText>
+                <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>
+                  {t('goalDetail.reading.start')}
+                </ThemedText>
                 <View style={styles.pageFieldInputRow}>
                   <TextInput
                     value={startPageStr}
@@ -374,7 +385,9 @@ export function ReadingBookDetailSheet({
                 </View>
               </View>
               <View style={[styles.pageField, { borderColor: c.outlineVariant }]}>
-                <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>목표</ThemedText>
+                <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>
+                  {t('goalDetail.reading.target')}
+                </ThemedText>
                 <View style={styles.pageFieldInputRow}>
                   <TextInput
                     value={targetPageStr}
@@ -389,7 +402,9 @@ export function ReadingBookDetailSheet({
                 </View>
               </View>
               <View style={[styles.pageField, styles.pageFieldTotal, { borderColor: c.outlineVariant }]}>
-                <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>전체</ThemedText>
+                <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>
+                  {t('goalDetail.reading.total')}
+                </ThemedText>
                 {totalPages != null ? (
                   <View style={styles.pageFieldInputRow}>
                     <ThemedText style={[styles.pageFieldValue, { color: c.onSurface }]}>
@@ -402,7 +417,9 @@ export function ReadingBookDetailSheet({
                 )}
               </View>
               <View style={[styles.pageField, styles.pageFieldRead, { borderColor: READING_ACCENT }]}>
-                <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>읽을 분량</ThemedText>
+                <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>
+                  {t('goalDetail.reading.pagesToRead')}
+                </ThemedText>
                 <ThemedText style={[styles.pageFieldValue, { color: READING_ACCENT }]}>
                   {pagesRead}
                 </ThemedText>
@@ -416,9 +433,11 @@ export function ReadingBookDetailSheet({
                 const { y, height } = event.nativeEvent.layout;
                 memoSectionLayoutRef.current = { y, height };
               }}>
-              <ThemedText style={[styles.sectionTitle, { color: c.onSurface }]}>메모</ThemedText>
+              <ThemedText style={[styles.sectionTitle, { color: c.onSurface }]}>
+                {t('goalDetail.reading.memo')}
+              </ThemedText>
               <ThemedText style={[styles.sectionSub, { color: c.onVariant }]}>
-                읽는 동안 떠오른 생각이나 기억할 내용을 적어 두세요.
+                {t('goalDetail.reading.memoHint')}
               </ThemedText>
               <TextInput
                 value={memo}
@@ -431,7 +450,7 @@ export function ReadingBookDetailSheet({
                   setIsMemoFocused(false);
                   commitMemo();
                 }}
-                placeholder="예: 3장까지 읽고 내일 이어서"
+                placeholder={t('goalDetail.reading.memoPlaceholder')}
                 placeholderTextColor={c.outline}
                 multiline
                 textAlignVertical="top"
@@ -454,14 +473,16 @@ export function ReadingBookDetailSheet({
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${entry.title} 삭제`}
+              accessibilityLabel={t('goalDetail.reading.removeA11y', { title: entry.title })}
               onPress={() => {
                 onRemove();
                 onClose();
               }}
               style={[styles.removeBtn, { borderColor: c.outline }]}>
               <IconSymbol name="trash" size={14} color={c.onVariant} />
-              <ThemedText style={[styles.removeBtnText, { color: c.onVariant }]}>서재에서 삭제</ThemedText>
+              <ThemedText style={[styles.removeBtnText, { color: c.onVariant }]}>
+                {t('goalDetail.reading.removeFromLibrary')}
+              </ThemedText>
             </Pressable>
           </ScrollView>
         </View>

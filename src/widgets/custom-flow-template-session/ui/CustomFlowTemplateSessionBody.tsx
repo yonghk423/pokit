@@ -22,7 +22,6 @@ import {
   formatMeasurementDelta,
   formatMeasurementValue,
   formatReminderCountdown,
-  formatHhmmClockKo,
   JOURNAL_MOOD_OPTIONS,
   measurementQuickDeltas,
   measurementRecordedToday,
@@ -43,8 +42,8 @@ import {
   type CustomFlowTemplateKey,
   type DayPlanBlock,
 } from '@entities/day-plan';
-import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { formatDurationMinutes, formatHhmmClock, useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import {
   COMPLETION_CHECKED_COLOR_DARK,
@@ -241,12 +240,13 @@ function WeekDots({
   ink: string;
   checkFill: string;
 }) {
-  const labels = ['월', '화', '수', '목', '금', '토', '일'];
+  const { t } = useTranslation();
+  const weekdayKeys = ['mon','tue','wed','thu','fri','sat','sun'] as const;
   const checkIcon = completionCheckIconColor(checkFill);
   return (
     <View style={styles.weekRow}>
       {dots.map((done, idx) => (
-        <View key={labels[idx]} style={styles.weekCol}>
+        <View key={weekdayKeys[idx]} style={styles.weekCol}>
           <View
             style={[
               styles.weekDot,
@@ -257,7 +257,7 @@ function WeekDots({
             ]}>
             {done ? <IconSymbol name="checkmark" size={10} color={checkIcon} /> : null}
           </View>
-          <ThemedText style={[styles.weekLabel, { color: done ? ink : muted }]}>{labels[idx]}</ThemedText>
+          <ThemedText style={[styles.weekLabel, { color: done ? ink : muted }]}>{t(`goalDetail.weekday.${weekdayKeys[idx]}`)}</ThemedText>
         </View>
       ))}
     </View>
@@ -277,6 +277,7 @@ function MeasurementTemplateView({
   theme: TemplateSessionTheme;
   previewMode?: boolean;
 }) {
+  const { t } = useTranslation();
   const { ink, muted, line, surface } = theme;
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -297,7 +298,7 @@ function MeasurementTemplateView({
   const recordedToday = measurementRecordedToday(cfg);
   const showPresetPicker =
     previewMode || (!cfg.metricLabel.trim() && cfg.unit === 'none');
-  const metricTitle = cfg.metricLabel.trim() || '기록';
+  const metricTitle = cfg.metricLabel.trim() || t('customFlowTemplate.recordFallback');
   const displayValue =
     cfg.currentValue > 0 ? formatMeasurementValue(cfg.currentValue, cfg.unit) : '—';
 
@@ -312,10 +313,10 @@ function MeasurementTemplateView({
         <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
           <View style={styles.measureCardInner}>
             <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>
-              무엇을 기록할까요?
+              {t('customFlowTemplate.measurePrompt')}
             </ThemedText>
             <ThemedText style={[styles.sub, { color: muted }]}>
-              예시를 눌러 단위·목표가 바뀌는 걸 체험해 보세요.
+              {t('customFlowTemplate.measurePresetHint')}
             </ThemedText>
             <View style={styles.counterChipRow}>
               {MEASUREMENT_METRIC_PRESETS.map((preset) => {
@@ -385,27 +386,24 @@ function MeasurementTemplateView({
               </ThemedText>
               {delta ? (
                 <ThemedText style={[styles.reminderNextTitle, { color: ink }]} numberOfLines={2}>
-                  어제 대비 {delta}
-                  {unit ? ` ${unit}` : ''}
+                  {t('customFlowTemplate.deltaSinceYesterday', { delta: `${delta}${unit ? ` ${unit}` : ''}` })}
                 </ThemedText>
               ) : cfg.previousValue > 0 ? (
                 <ThemedText style={[styles.reminderNextTitle, { color: ink }]} numberOfLines={2}>
-                  이전 {formatMeasurementValue(cfg.previousValue, cfg.unit)}
-                  {unit ? ` ${unit}` : ''}
+                  {t('customFlowTemplate.previousValue', { value: `${formatMeasurementValue(cfg.previousValue, cfg.unit)}${unit ? ` ${unit}` : ''}` })}
                 </ThemedText>
               ) : (
                 <ThemedText style={[styles.reminderNextTitle, { color: ink }]} numberOfLines={2}>
-                  {recordedToday ? '오늘 기록됨' : '아직 기록 없음'}
+                  {recordedToday ? t('customFlowTemplate.recordedToday') : t('customFlowTemplate.noRecordYet')}
                 </ThemedText>
               )}
               {goalRatio != null ? (
                 <ThemedText style={[styles.reminderNextMeta, { color: muted }]}>
-                  목표 {formatMeasurementValue(cfg.goalValue, cfg.unit)}
-                  {unit ? ` ${unit}` : ''} · {Math.round(goalRatio * 100)}%
+                  {t('customFlowTemplate.goalValue', { value: `${formatMeasurementValue(cfg.goalValue, cfg.unit)}${unit ? ` ${unit}` : ''}` })} · {Math.round(goalRatio * 100)}%
                 </ThemedText>
               ) : (
                 <ThemedText style={[styles.reminderNextMeta, { color: muted }]}>
-                  {cfg.history.length > 0 ? `${cfg.history.length}회 기록` : '값 기록'}
+                  {cfg.history.length > 0 ? t('common.countRecords', { count: cfg.history.length }) : t('customFlowTemplate.valueRecord')}
                 </ThemedText>
               )}
             </View>
@@ -431,7 +429,7 @@ function MeasurementTemplateView({
       {chartValues.length >= 2 ? (
         <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
           <View style={styles.measureCardInner}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>최근 7일 추이</ThemedText>
+            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.recent7DaysTrend')}</ThemedText>
             <MiniBarChart
               values={chartValues}
               goal={cfg.useGoalValue ? cfg.goalValue : undefined}
@@ -445,7 +443,7 @@ function MeasurementTemplateView({
       {cfg.unit !== 'none' || cfg.metricLabel.trim().length > 0 ? (
         <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
           <View style={styles.measureCardInner}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>값 입력</ThemedText>
+            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.valueInput')}</ThemedText>
             {recordedToday ? (
               <View
                 style={[
@@ -453,7 +451,7 @@ function MeasurementTemplateView({
                   { borderColor: line, backgroundColor: tone.primaryContainer },
                 ]}>
                 <ThemedText style={[styles.measureStatusChipText, { color: tone.text }]}>
-                  오늘 기록 완료 · 수정 후 다시 저장하세요
+                  {t('customFlowTemplate.recordDoneResave')}
                 </ThemedText>
               </View>
             ) : null}
@@ -484,7 +482,7 @@ function MeasurementTemplateView({
                 value={draft}
                 onChangeText={setDraft}
                 keyboardType="decimal-pad"
-                placeholder="값 입력"
+                placeholder={t('customFlowTemplate.valueInputPlaceholder')}
                 placeholderTextColor={muted}
                 style={[
                   styles.measureInput,
@@ -497,7 +495,7 @@ function MeasurementTemplateView({
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="기록 저장"
+              accessibilityLabel={t('customFlowTemplate.saveRecordA11y')}
               onPress={() => {
                 const raw = parseFloat(draft.replace(',', '.'));
                 if (!Number.isFinite(raw)) return;
@@ -513,7 +511,7 @@ function MeasurementTemplateView({
                 },
                 pressed ? { transform: [{ translateX: 1 }, { translateY: 1 }] } : null,
               ]}>
-              <ThemedText style={[styles.memoSaveBtnText, { color: selectedFg }]}>기록 저장</ThemedText>
+              <ThemedText style={[styles.memoSaveBtnText, { color: selectedFg }]}>{t('customFlowTemplate.saveRecord')}</ThemedText>
             </Pressable>
           </View>
         </ReminderBrutalShell>
@@ -531,6 +529,7 @@ function JournalTemplateView({
   emit: TemplateEmit;
   theme: TemplateSessionTheme;
 }) {
+  const { t } = useTranslation();
   const { ink, muted, line, accent } = theme;
   const [draft, setDraft] = useState(cfg.lastEntry ?? '');
   const [mood, setMood] = useState(cfg.moodToday ?? '');
@@ -542,8 +541,8 @@ function JournalTemplateView({
   return (
     <View style={styles.root}>
       <Card theme={theme}>
-        <ThemedText style={[styles.prompt, { color: ink }]}>{cfg.prompt.trim() || '한 줄 기록'}</ThemedText>
-        <SectionLabel color={muted}>기분</SectionLabel>
+        <ThemedText style={[styles.prompt, { color: ink }]}>{cfg.prompt.trim() || t('customFlowTemplate.journalFallback')}</ThemedText>
+        <SectionLabel color={muted}>{t('customFlowTemplate.mood')}</SectionLabel>
         <View style={styles.moodRow}>
           {JOURNAL_MOOD_OPTIONS.map((m) => {
             const selected = mood === m;
@@ -570,7 +569,7 @@ function JournalTemplateView({
           value={draft}
           onChangeText={setDraft}
           multiline
-          placeholder="오늘의 한 줄을 남겨요"
+          placeholder={t('customFlowTemplate.journalPlaceholder')}
           placeholderTextColor={muted}
           textAlignVertical="top"
           style={[styles.journalInput, { color: ink, borderColor: line }]}
@@ -581,12 +580,12 @@ function JournalTemplateView({
             emit(applyJournalSave(cfg, draft, mood));
           }}
           style={[styles.primaryBtn, { backgroundColor: accent }]}>
-          <ThemedText style={styles.primaryBtnText}>저장</ThemedText>
+          <ThemedText style={styles.primaryBtnText}>{t('common.save')}</ThemedText>
         </Pressable>
       </Card>
       {cfg.recentEntries.length > 0 ? (
         <Card theme={theme}>
-          <SectionLabel color={muted}>최근 기록</SectionLabel>
+          <SectionLabel color={muted}>{t('customFlowTemplate.recentRecords')}</SectionLabel>
           {cfg.recentEntries.slice(0, 5).map((entry, idx) => (
             <View key={`${entry.dateKey}-${idx}`} style={[styles.entryRow, { borderColor: line }]}>
               <View style={styles.entryMeta}>
@@ -617,6 +616,7 @@ function MemoTemplateView({
   emit: TemplateEmit;
   theme: TemplateSessionTheme;
 }) {
+  const { t } = useTranslation();
   const { ink, muted, line, surface } = theme;
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -641,16 +641,16 @@ function MemoTemplateView({
       <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
         <View style={styles.memoCardInner}>
           <View style={styles.reminderSectionHead}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>메모 작성</ThemedText>
+            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.memoWrite')}</ThemedText>
             <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>
-              {hasDraft ? `${draftLen}자` : '비어 있음'}
+              {hasDraft ? t('common.charCount', { count: draftLen }) : t('customFlowTemplate.emptyDraft')}
             </ThemedText>
           </View>
           <TextInput
             value={draft}
             onChangeText={setDraft}
             multiline
-            placeholder="메모를 적어요"
+            placeholder={t('customFlowTemplate.memoPlaceholder')}
             placeholderTextColor={muted}
             textAlignVertical="top"
             style={[
@@ -660,7 +660,7 @@ function MemoTemplateView({
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="메모 저장"
+            accessibilityLabel={t('customFlowTemplate.saveMemoA11y')}
             onPress={handleSave}
             style={({ pressed }) => [
               styles.memoSaveBtn,
@@ -671,7 +671,7 @@ function MemoTemplateView({
               },
               pressed ? { transform: [{ translateX: 1 }, { translateY: 1 }] } : null,
             ]}>
-            <ThemedText style={[styles.memoSaveBtnText, { color: selectedFg }]}>저장</ThemedText>
+            <ThemedText style={[styles.memoSaveBtnText, { color: selectedFg }]}>{t('common.save')}</ThemedText>
           </Pressable>
         </View>
       </ReminderBrutalShell>
@@ -679,14 +679,14 @@ function MemoTemplateView({
       <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
         <View style={styles.memoCardInner}>
           <View style={styles.reminderSectionHead}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>최근 메모</ThemedText>
+            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.recentMemos')}</ThemedText>
             <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>
-              {recent.length}개
+              {t('common.countItems', { count: recent.length })}
             </ThemedText>
           </View>
           {recent.length === 0 ? (
             <ThemedText style={[styles.sub, { color: muted }]}>
-              저장하면 최근 메모가 여기에 쌓여요.
+              {t('customFlowTemplate.recentMemosHint')}
             </ThemedText>
           ) : (
             recent.map((entry, idx) => (
@@ -705,7 +705,7 @@ function MemoTemplateView({
                     { borderColor: line, backgroundColor: tone.primaryContainer },
                   ]}>
                   <ThemedText style={[styles.memoEntryDateText, { color: tone.text }]}>
-                    {entry.dateKey ? entry.dateKey.slice(5) : '오늘'}
+                    {entry.dateKey ? entry.dateKey.slice(5) : t('common.today')}
                   </ThemedText>
                 </View>
                 <ThemedText style={[styles.memoEntryText, { color: ink }]} numberOfLines={3}>
@@ -736,6 +736,7 @@ function ChecklistTemplateView({
   theme: TemplateSessionTheme;
   variant?: 'checklist' | 'abstain';
 }) {
+  const { t } = useTranslation();
   const { ink, muted, line, surface } = theme;
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -750,18 +751,18 @@ function ChecklistTemplateView({
   const remaining = Math.max(0, total - doneCount);
   const allDone = total > 0 && doneCount === total;
   const completeBadge =
-    variant === 'abstain' ? '모든 금지를 지켰어요!' : '모든 할 일 완료!';
-  const addPlaceholder = variant === 'abstain' ? '금지 항목 추가' : '할 일 추가';
-  const sectionTitle = variant === 'abstain' ? '금지 목록' : '할 일 목록';
-  const statusKicker = variant === 'abstain' ? '지킴' : '완료';
+    variant === 'abstain' ? t('customFlowTemplate.allAbstainDone') : t('customFlowTemplate.allTodosDone');
+  const addPlaceholder = variant === 'abstain' ? t('customFlowTemplate.addAbstainPlaceholder') : t('customFlowTemplate.addTodoPlaceholder');
+  const sectionTitle = variant === 'abstain' ? t('customFlowTemplate.abstainList') : t('customFlowTemplate.todoList');
+  const statusKicker = variant === 'abstain' ? t('customFlowTemplate.kept') : t('customFlowTemplate.statusComplete');
   const remainingLabel =
     variant === 'abstain'
       ? remaining > 0
-        ? `${remaining}개 남음`
-        : '전부 지킴'
+        ? t('common.countRemaining', { count: remaining })
+        : t('customFlowTemplate.allKept')
       : remaining > 0
-        ? `${remaining}개 남음`
-        : '모두 완료';
+        ? t('common.countRemaining', { count: remaining })
+        : t('customFlowTemplate.allDoneShort');
 
   const addTask = () => {
     const text = draft.trim();
@@ -825,11 +826,11 @@ function ChecklistTemplateView({
         <View style={styles.checklistCardInner}>
           <View style={styles.reminderSectionHead}>
             <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{sectionTitle}</ThemedText>
-            <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>{total}개</ThemedText>
+            <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>{t('common.countItems', { count: total })}</ThemedText>
           </View>
 
           {tasks.length === 0 ? (
-            <ThemedText style={[styles.sub, { color: muted }]}>아래에서 항목을 추가해 주세요.</ThemedText>
+            <ThemedText style={[styles.sub, { color: muted }]}>{t('customFlowTemplate.addItemsHint')}</ThemedText>
           ) : null}
 
           {tasks.map((task, index) => (
@@ -879,14 +880,14 @@ function ChecklistTemplateView({
                       { borderColor: line, backgroundColor: tone.primaryContainer },
                     ]}>
                     <ThemedText style={[styles.checklistKeptChipText, { color: tone.text }]}>
-                      지킴
+                      {t('customFlowTemplate.kept')}
                     </ThemedText>
                   </View>
                 ) : null}
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="항목 삭제"
+                accessibilityLabel={t('customFlowTemplate.deleteItemA11y')}
                 hitSlop={6}
                 onPress={() => {
                   void Haptics.selectionAsync();
@@ -921,7 +922,7 @@ function ChecklistTemplateView({
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="추가"
+              accessibilityLabel={t('common.add')}
               onPress={addTask}
               style={({ pressed }) => [
                 styles.checklistAddBtn,
@@ -932,7 +933,7 @@ function ChecklistTemplateView({
                 },
                 pressed ? { transform: [{ translateX: 1 }, { translateY: 1 }] } : null,
               ]}>
-              <ThemedText style={[styles.checklistAddBtnText, { color: selectedFg }]}>추가</ThemedText>
+              <ThemedText style={[styles.checklistAddBtnText, { color: selectedFg }]}>{t('common.add')}</ThemedText>
             </Pressable>
           </View>
         </View>
@@ -952,6 +953,7 @@ function CounterTemplateView({
   theme: TemplateSessionTheme;
   previewMode?: boolean;
 }) {
+  const { t } = useTranslation();
   const { ink, muted, line, surface } = theme;
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -963,7 +965,7 @@ function CounterTemplateView({
   const remaining = Math.max(0, live.goalCount - live.currentCount);
   const chartValues = live.history.slice(-7).map((entry) => entry.count);
   const remainingMessage =
-    remaining <= 0 ? '목표를 달성했어요!' : `${remaining}번 더 하면 목표예요`;
+    remaining <= 0 ? t('customFlowTemplate.goalReached') : t('customFlowTemplate.remainingToGoal', { count: remaining });
   const [goalDraft, setGoalDraft] = useState(() => String(live.goalCount));
   const [stepDraft, setStepDraft] = useState(() => String(live.stepSize));
   const [secondaryStepDraft, setSecondaryStepDraft] = useState(() => String(live.secondaryStepSize));
@@ -1016,12 +1018,12 @@ function CounterTemplateView({
           styles.counterChipText,
           { color: selected ? tone.text : muted, fontWeight: selected ? '800' : '600' },
         ]}>
-        {label}
+        {t(`goalDetail.weekday.${key}` as I18nKey)}
       </ThemedText>
     </Pressable>
   );
 
-  const activityTitle = live.activityLabel.trim() || '횟수';
+  const activityTitle = live.activityLabel.trim() || t('customFlowTemplate.countFallback');
 
   return (
     <View style={[styles.root, styles.counterRoot]}>
@@ -1029,10 +1031,10 @@ function CounterTemplateView({
         <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
           <View style={styles.counterCardInner}>
             <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>
-              자주 쓰는 예시
+              {t('customFlowTemplate.commonPresets')}
             </ThemedText>
             <ThemedText style={[styles.sub, { color: muted }]}>
-              예시를 누르면 이름·목표가 채워져요.
+              {t('customFlowTemplate.presetFillHint')}
             </ThemedText>
             <View style={styles.counterChipRow}>
               {COUNTER_ACTIVITY_PRESETS.map((preset) => {
@@ -1071,10 +1073,10 @@ function CounterTemplateView({
                 {activityTitle}
               </ThemedText>
               <ThemedText style={[styles.reminderNextTitle, { color: ink }]} numberOfLines={2}>
-                {goalReached ? '목표 달성!' : remainingMessage}
+                {goalReached ? t('customFlowTemplate.goalAchieved') : remainingMessage}
               </ThemedText>
               <ThemedText style={[styles.reminderNextMeta, { color: muted }]}>
-                {Math.round(ratio * 100)}% 채움
+                {t('customFlowTemplate.percentFilled', { percent: Math.round(ratio * 100) })}
               </ThemedText>
             </View>
           </View>
@@ -1097,7 +1099,7 @@ function CounterTemplateView({
       {chartValues.length >= 2 ? (
         <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
           <View style={styles.counterCardInner}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>최근 7일 추이</ThemedText>
+            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.recent7DaysTrend')}</ThemedText>
             <MiniBarChart
               values={chartValues}
               goal={live.goalCount}
@@ -1111,7 +1113,7 @@ function CounterTemplateView({
       <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
         <View style={styles.counterCardInner}>
           <View style={styles.reminderSectionHead}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>횟수 조작</ThemedText>
+            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.countControls')}</ThemedText>
             <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>
               +{live.stepSize}/{live.secondaryStepSize}
             </ThemedText>
@@ -1123,7 +1125,7 @@ function CounterTemplateView({
                 { borderColor: line, backgroundColor: tone.primaryContainer },
               ]}>
               <ThemedText style={[styles.measureStatusChipText, { color: tone.text }]}>
-                오늘 목표를 채웠어요
+                {t('customFlowTemplate.todayGoalFilled')}
               </ThemedText>
             </View>
           ) : null}
@@ -1131,7 +1133,7 @@ function CounterTemplateView({
             <Pressable
               disabled={live.currentCount <= 0}
               accessibilityRole="button"
-              accessibilityLabel={`${live.stepSize}만큼 줄이기`}
+              accessibilityLabel={t('customFlowTemplate.decreaseByA11y', { step: live.stepSize })}
               accessibilityState={{ disabled: live.currentCount <= 0 }}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1150,7 +1152,7 @@ function CounterTemplateView({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${live.stepSize}만큼 늘리기`}
+              accessibilityLabel={t('customFlowTemplate.increaseByA11y', { step: live.stepSize })}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 emit(applyCounterDelta(live, live.stepSize));
@@ -1170,7 +1172,7 @@ function CounterTemplateView({
             </Pressable>
           </View>
           <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>
-            잘못 눌렀으면 왼쪽 − 버튼으로 되돌릴 수 있어요
+            {t('customFlowTemplate.undoHint')}
           </ThemedText>
           <View style={styles.counterRow}>
             <Pressable
@@ -1216,7 +1218,7 @@ function CounterTemplateView({
                     opacity: pressed ? 0.88 : 1,
                   },
                 ]}>
-                <ThemedText style={[styles.counterBtnText, { color: tone.text }]}>목표까지</ThemedText>
+                <ThemedText style={[styles.counterBtnText, { color: tone.text }]}>{t('customFlowTemplate.fillToGoal')}</ThemedText>
               </Pressable>
             ) : (
               <Pressable
@@ -1229,20 +1231,20 @@ function CounterTemplateView({
                     opacity: pressed ? 0.88 : 1,
                   },
                 ]}>
-                <ThemedText style={[styles.counterBtnText, { color: muted }]}>리셋</ThemedText>
+                <ThemedText style={[styles.counterBtnText, { color: muted }]}>{t('customFlowTemplate.reset')}</ThemedText>
               </Pressable>
             )}
           </View>
           {!goalReached ? (
             <Pressable onPress={() => emit(resetCounterCount(live))} style={styles.textActionBtn}>
               <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>
-                오늘 기록 초기화
+                {t('customFlowTemplate.resetTodayRecord')}
               </ThemedText>
             </Pressable>
           ) : null}
           {live.dailyReset ? (
             <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>
-              자정에 횟수가 초기화돼요
+              {t('customFlowTemplate.midnightResetHint')}
             </ThemedText>
           ) : null}
         </View>
@@ -1251,25 +1253,25 @@ function CounterTemplateView({
       <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
         <View style={styles.counterCardInner}>
           <View style={styles.reminderSectionHead}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>횟수 설정</ThemedText>
+            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.countSettings')}</ThemedText>
             <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>
-              목표 {live.goalCount}
+              {t('customFlowTemplate.goalCount', { count: live.goalCount })}
             </ThemedText>
           </View>
           <ThemedText style={[styles.sub, { color: muted }]}>
-            이름과 목표를 직접 입력해 맞춰요.
+            {t('customFlowTemplate.countSettingsHint')}
           </ThemedText>
 
-          <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>무엇을 셀까요?</ThemedText>
+          <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.whatToCount')}</ThemedText>
           <TextInput
             value={live.activityLabel}
             onChangeText={(value) => emit(applyCounterActivitySettings(live, { activityLabel: value }))}
-            placeholder="예: 푸쉬업, 독서"
+            placeholder={t('customFlowTemplate.activityPlaceholder')}
             placeholderTextColor={muted}
             style={[styles.reminderLabelInput, { color: ink, borderColor: line, backgroundColor: surface }]}
           />
 
-          <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>하루 목표</ThemedText>
+          <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.dailyGoal')}</ThemedText>
           <TextInput
             value={goalDraft}
             onChangeText={setGoalDraft}
@@ -1281,10 +1283,10 @@ function CounterTemplateView({
             style={[styles.reminderLabelInput, { color: ink, borderColor: line, backgroundColor: surface }]}
           />
 
-          <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>빠른 추가</ThemedText>
+          <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.primaryStep')}</ThemedText>
           <View style={styles.reminderAddRow}>
             <View style={styles.counterStepCol}>
-              <ThemedText style={[styles.counterStepHint, { color: muted }]}>주요</ThemedText>
+              <ThemedText style={[styles.counterStepHint, { color: muted }]}>{t('customFlowTemplate.primaryStep')}</ThemedText>
               <TextInput
                 value={stepDraft}
                 onChangeText={setStepDraft}
@@ -1301,7 +1303,7 @@ function CounterTemplateView({
               />
             </View>
             <View style={styles.counterStepCol}>
-              <ThemedText style={[styles.counterStepHint, { color: muted }]}>보조</ThemedText>
+              <ThemedText style={[styles.counterStepHint, { color: muted }]}>{t('customFlowTemplate.secondaryStep')}</ThemedText>
               <TextInput
                 value={secondaryStepDraft}
                 onChangeText={setSecondaryStepDraft}
@@ -1321,7 +1323,7 @@ function CounterTemplateView({
 
           {!previewMode ? (
             <>
-              <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>자주 쓰는 예시</ThemedText>
+              <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.commonPresets')}</ThemedText>
               <View style={styles.counterChipRow}>
                 {COUNTER_ACTIVITY_PRESETS.map((preset) => {
                   const selected =
@@ -1358,6 +1360,7 @@ function ReminderTemplateView({
   previewMode?: boolean;
   allowScheduleCompletion?: boolean;
 }) {
+  const { t, locale } = useTranslation();
   const { ink, muted, line, surface } = theme;
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -1406,7 +1409,7 @@ function ReminderTemplateView({
     const timeToUse = draftTime.trim() || suggestNextReminderTime(reminderItems);
     const next = addReminderScheduleItem(cfg, timeToUse, draftLabel);
     if (!next) {
-      setAddError('이미 같은 시간이 있거나 추가할 수 없어요.');
+      setAddError(t('customFlowTemplate.duplicateTimeError'));
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -1440,23 +1443,23 @@ function ReminderTemplateView({
                 <View style={styles.reminderProgressCountRow}>
                   <ThemedText style={[styles.reminderProgressCount, { color: tone.primary }]}>{done}</ThemedText>
                   <ThemedText style={[styles.reminderProgressTotal, { color: muted }]}>/{total}</ThemedText>
-                  <ThemedText style={[styles.reminderProgressLabel, { color: muted }]}>완료</ThemedText>
+                  <ThemedText style={[styles.reminderProgressLabel, { color: muted }]}>{t('customFlowTemplate.statusComplete')}</ThemedText>
                 </View>
               </View>
               {nextTime ? (
                 <View style={styles.reminderNextBlock}>
-                  <ThemedText style={[styles.reminderNextKicker, { color: tone.primary }]}>다음 알림</ThemedText>
+                  <ThemedText style={[styles.reminderNextKicker, { color: tone.primary }]}>{t('customFlowTemplate.nextReminder')}</ThemedText>
                   <ThemedText style={[styles.reminderNextTitle, { color: ink }]} numberOfLines={2}>
                     {resolveReminderItemTitle(nextItem ?? { time: nextTime, label: '' })}
                   </ThemedText>
                   <ThemedText style={[styles.reminderNextMeta, { color: muted }]}>
-                    {formatHhmmClockKo(nextTime)}
+                    {formatHhmmClock(nextTime, locale)}
                     {countdown ? ` · ${countdown}` : ''}
                   </ThemedText>
                 </View>
               ) : (
                 <View style={[styles.reminderAllDone, { borderColor: line }]}>
-                  <ThemedText style={[styles.goalBadge, { color: ink }]}>오늘 알림 모두 완료</ThemedText>
+                  <ThemedText style={[styles.goalBadge, { color: ink }]}>{t('customFlowTemplate.allRemindersDone')}</ThemedText>
                 </View>
               )}
             </View>
@@ -1478,20 +1481,20 @@ function ReminderTemplateView({
       ) : null}
 
       <View style={styles.reminderSectionHead}>
-        <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>알림 목록</ThemedText>
+        <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.reminderList')}</ThemedText>
         <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>
-          {reminderItems.length}개
+          {t('common.countItems', { count: reminderItems.length })}
         </ThemedText>
       </View>
 
       <View style={styles.reminderList}>
         {reminderItems.length === 0 ? (
-          <ThemedText style={[styles.sub, { color: muted }]}>아래에서 알림을 추가해 주세요.</ThemedText>
+          <ThemedText style={[styles.sub, { color: muted }]}>{t('customFlowTemplate.addRemindersHint')}</ThemedText>
         ) : null}
         {reminderItems.map((item) => {
           const checked = completedTimes.includes(item.time);
           const isNext = allowScheduleCompletion && nextTime === item.time && !checked;
-          const statusLabel = checked ? '완료' : isNext ? '다음' : '예정';
+          const statusLabel = checked ? t('customFlowTemplate.statusComplete') : isNext ? t('customFlowTemplate.statusNext') : t('customFlowTemplate.statusScheduled');
           const statusBg = checked
             ? tone.primaryContainer
             : isNext
@@ -1536,7 +1539,7 @@ function ReminderTemplateView({
                       <Pressable
                         accessibilityRole="checkbox"
                         accessibilityState={{ checked }}
-                        accessibilityLabel={checked ? '완료 취소' : '완료로 표시'}
+                        accessibilityLabel={checked ? t('common.completeCancel') : t('customFlowTemplate.markDoneA11y')}
                         onPress={() => {
                           void Haptics.selectionAsync();
                           emit(toggleReminderTimeDone(cfg, item.time));
@@ -1552,13 +1555,13 @@ function ReminderTemplateView({
                         ]}>
                         {checked ? <IconSymbol name="checkmark" size={12} color={ink} /> : null}
                         <ThemedText style={[styles.reminderDoneBtnText, { color: ink }]}>
-                          {checked ? '완료됨' : '완료하기'}
+                          {checked ? t('customFlowTemplate.doneState') : t('customFlowTemplate.markDone')}
                         </ThemedText>
                       </Pressable>
                     ) : null}
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="알림 삭제"
+                      accessibilityLabel={t('customFlowTemplate.deleteReminderA11y')}
                       onPress={() => handleRemove(item.time)}
                       style={({ pressed }) => [
                         styles.reminderDeleteBtn,
@@ -1595,7 +1598,7 @@ function ReminderTemplateView({
                   <TextInput
                     value={item.label}
                     onChangeText={(value) => emit(updateReminderItemLabel(cfg, item.time, value))}
-                    placeholder="어떤 알림인지 적어 주세요"
+                    placeholder={t('customFlowTemplate.reminderLabelPlaceholder')}
                     placeholderTextColor={muted}
                     style={[
                       styles.reminderLabelInput,
@@ -1616,9 +1619,9 @@ function ReminderTemplateView({
 
       <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
         <View style={styles.reminderAddInner}>
-          <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>알림 추가</ThemedText>
+          <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.addReminder')}</ThemedText>
           <ThemedText style={[styles.sub, { color: muted }]}>
-            추가하면 마지막 알림에서 1시간 뒤 시각이 기본으로 들어가요.
+            {t('customFlowTemplate.addReminderHint')}
           </ThemedText>
           <ReminderTimePickerPill
             valueHhmm={draftTime}
@@ -1632,8 +1635,8 @@ function ReminderTemplateView({
             muted={muted}
             line={line}
             surface={surface}
-            placeholder="시간 선택"
-            accessibilityLabel="새 알림 시간"
+            placeholder={t('timePicker.placeholder')}
+            accessibilityLabel={t('customFlowTemplate.newReminderTimeA11y')}
             fullWidth
           />
           <TextInput
@@ -1642,7 +1645,7 @@ function ReminderTemplateView({
               setDraftLabel(value);
               setAddError(null);
             }}
-            placeholder="예: 물 마시기"
+            placeholder={t('customFlowTemplate.reminderExamplePlaceholder')}
             placeholderTextColor={muted}
             style={[styles.reminderLabelInput, { color: ink, borderColor: line, backgroundColor: surface }]}
           />
@@ -1650,8 +1653,8 @@ function ReminderTemplateView({
             <ThemedText style={[styles.sub, { color: tone.danger }]}>{addError}</ThemedText>
           ) : null}
           <BrutalConfirmButton
-            label="추가"
-            accessibilityLabel="알림 추가"
+            label={t('common.add')}
+            accessibilityLabel={t('customFlowTemplate.addReminderA11y')}
             align="stretch"
             fill={ink}
             labelColor={selectedFg}
@@ -1675,6 +1678,8 @@ export function CustomFlowTemplateSessionBody({
   previewMode = false,
   allowScheduleCompletion = true,
 }: Props) {
+  const { t, locale } = useTranslation();
+
   const { ink, muted, line, surface, accent } = theme;
   const cfg = useMemo(
     () => normalizeCustomFlowDetailConfig(templateKey, rawConfig),
@@ -1705,7 +1710,7 @@ export function CustomFlowTemplateSessionBody({
             {cfg.streakDays > 0 ? (
               <View style={[styles.streakBadge, { borderColor: accent }]}>
                 <ThemedText style={{ color: accent, fontWeight: '800', fontSize: 15 }}>
-                  🔥 {cfg.streakDays}일 연속
+                  {t('customFlowTemplate.streakDays', { count: cfg.streakDays })}
                 </ThemedText>
               </View>
             ) : null}
@@ -1727,12 +1732,12 @@ export function CustomFlowTemplateSessionBody({
                   fontWeight: '800',
                   fontSize: 18,
                 }}>
-                {cfg.doneToday ? '오늘 완료 ✓' : '오늘 했어요'}
+                {cfg.doneToday ? t('customFlowTemplate.doneTodayCheck') : t('customFlowTemplate.doneTodayBtn')}
               </ThemedText>
             </Pressable>
           </Card>
           <Card theme={theme}>
-            <SectionLabel color={muted}>이번 주</SectionLabel>
+            <SectionLabel color={muted}>{t('customFlowTemplate.thisWeek')}</SectionLabel>
             <WeekDots dots={weekDots} checkFill={checkFill} muted={muted} ink={ink} />
           </Card>
         </View>
@@ -1752,24 +1757,24 @@ export function CustomFlowTemplateSessionBody({
               {String(Math.floor(remainMin)).padStart(2, '0')}:
               {String(Math.round((remainMin % 1) * 60)).padStart(2, '0')}
             </ThemedText>
-            <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>남은 집중 시간</ThemedText>
+            <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>{t('customFlowTemplate.remainingFocusTime')}</ThemedText>
             <View style={[styles.track, { backgroundColor: line, marginTop: 8 }]}>
               <View style={[styles.fill, { width: `${Math.round(focusRatio * 100)}%`, backgroundColor: accent }]} />
             </View>
           </Card>
           <View style={styles.splitRow}>
             <View style={[styles.splitCard, { borderColor: line, backgroundColor: surface }]}>
-              <ThemedText style={[styles.splitLabel, { color: muted }]}>목표</ThemedText>
-              <ThemedText style={[styles.splitValue, { color: ink }]}>{cfg.planMin}분</ThemedText>
+              <ThemedText style={[styles.splitLabel, { color: muted }]}>{t('customFlowTemplate.goalLabel')}</ThemedText>
+              <ThemedText style={[styles.splitValue, { color: ink }]}>{formatDurationMinutes(cfg.planMin, locale)}</ThemedText>
             </View>
             <View style={[styles.splitCard, { borderColor: line, backgroundColor: surface }]}>
-              <ThemedText style={[styles.splitLabel, { color: muted }]}>집중</ThemedText>
-              <ThemedText style={[styles.splitValue, { color: ink }]}>{elapsedMin}분</ThemedText>
+              <ThemedText style={[styles.splitLabel, { color: muted }]}>{t('customFlowTemplate.focusLabel')}</ThemedText>
+              <ThemedText style={[styles.splitValue, { color: ink }]}>{formatDurationMinutes(elapsedMin, locale)}</ThemedText>
             </View>
           </View>
           {cfg.focusMemo.trim() ? (
             <Card theme={theme}>
-              <SectionLabel color={muted}>집중 메모</SectionLabel>
+              <SectionLabel color={muted}>{t('customFlowTemplate.focusMemo')}</SectionLabel>
               <ThemedText style={{ color: ink, fontSize: 14, lineHeight: 20 }}>{cfg.focusMemo.trim()}</ThemedText>
             </Card>
           ) : null}

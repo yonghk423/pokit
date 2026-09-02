@@ -1,5 +1,6 @@
 import { StyleSheet, TextInput, View } from 'react-native';
 
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { goalDetailSettingsPalette } from './settingsPalette';
@@ -10,7 +11,7 @@ export function RoutineSummaryField({
   value,
   onChangeValue,
   palette,
-  placeholder = '이 항목에 대한 짧은 설명을 적어 주세요',
+  placeholder: placeholderProp,
   maxLength = 240,
 }: {
   value: string;
@@ -19,13 +20,18 @@ export function RoutineSummaryField({
   placeholder?: string;
   maxLength?: number;
 }) {
+  const { t } = useTranslation();
+  const placeholderText = placeholderProp ?? t('goalDetail.summaryPlaceholder');
+
   return (
     <View style={styles.wrap}>
-      <ThemedText style={[styles.label, { color: palette.onVariant }]}>요약</ThemedText>
+      <ThemedText style={[styles.label, { color: palette.onVariant }]}>
+        {t('goalDetail.summaryLabel')}
+      </ThemedText>
       <TextInput
         value={value}
         onChangeText={onChangeValue}
-        placeholder={placeholder}
+        placeholder={placeholderText}
         placeholderTextColor={palette.outline}
         style={[
           styles.input,

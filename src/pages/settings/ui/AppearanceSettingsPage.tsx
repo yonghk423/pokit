@@ -4,6 +4,7 @@ import { Pressable, Platform, ScrollView, StatusBar, StyleSheet, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
+import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import type { AppearanceMode } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -18,12 +19,13 @@ import {
 } from '../lib/settingsChrome';
 
 const THEME_OPTIONS = [
-  { key: 'light' as AppearanceMode, label: '라이트 모드', desc: '밝은 배경으로 표시해요.', icon: 'sun.max.fill' as const },
-  { key: 'dark' as AppearanceMode, label: '다크 모드', desc: '어두운 배경으로 표시해요.', icon: 'moon.fill' as const },
+  { key: 'light' as AppearanceMode, labelKey: 'settings.appearance.light', descKey: 'settings.appearance.lightDesc', icon: 'sun.max.fill' as const },
+  { key: 'dark' as AppearanceMode, labelKey: 'settings.appearance.dark', descKey: 'settings.appearance.darkDesc', icon: 'moon.fill' as const },
 ];
 
 /** 설정 → 화면 테마 (라이트 / 다크) */
 export function AppearanceSettingsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
   const p = buildSettingsPalette(isDark);
@@ -50,21 +52,21 @@ export function AppearanceSettingsPage() {
             style={chrome.headerBtn}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             accessibilityRole="button"
-            accessibilityLabel="뒤로가기">
+            accessibilityLabel={t('settings.back')}>
             <IconSymbol name="chevron.left" size={20} color={p.title} />
           </Pressable>
           <ThemedText
             style={[chrome.headerTitle, styles.headerTitleCenter, { color: p.title }]}
             lightColor={p.title}
             darkColor={p.title}>
-            화면 테마
+            {t('settings.appearanceTitle')}
           </ThemedText>
           <View style={chrome.headerBtn} pointerEvents="none" />
         </View>
 
         <ScrollView contentContainerStyle={chrome.container} showsVerticalScrollIndicator={false}>
           <ThemedText style={[chrome.sectionHint, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-            앱 전체의 밝기를 선택해요.
+            {t('settings.appearance.hint')}
           </ThemedText>
 
           <SettingsSection border={p.border} surface={p.surface}>
@@ -85,7 +87,7 @@ export function AppearanceSettingsPage() {
                     void Haptics.selectionAsync();
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={opt.label}>
+                  accessibilityLabel={t(opt.labelKey)}>
                   <View style={chrome.itemLeft}>
                     <SettingsRowIcon
                       name={opt.icon}
@@ -99,13 +101,13 @@ export function AppearanceSettingsPage() {
                         style={chrome.itemTitle}
                         lightColor={p.title}
                         darkColor={p.title}>
-                        {opt.label}
+                        {t(opt.labelKey)}
                       </ThemedText>
                       <ThemedText
                         style={chrome.itemDesc}
                         lightColor={p.desc}
                         darkColor={p.desc}>
-                        {opt.desc}
+                        {t(opt.descKey)}
                       </ThemedText>
                     </View>
                   </View>

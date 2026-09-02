@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { persistRoutineDisplayName } from '@entities/day-plan/lib/routineDisplayName';
+import { t, useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -9,12 +10,14 @@ import type { goalDetailSettingsPalette } from './settingsPalette';
 
 export type RoutineRenameLockedReason = 'running' | 'today';
 
-export const ROUTINE_RENAME_LOCK_MESSAGES: Record<RoutineRenameLockedReason, string> = {
-  running: '루틴 실행 중에는 이름과 아이콘·스타일을 변경할 수 없어요',
-  today: '오늘 일정에서는 이름을 변경할 수 없어요',
+const ROUTINE_RENAME_LOCK_KEYS: Record<RoutineRenameLockedReason, I18nKey> = {
+  running: 'goalDetail.renameLock.running',
+  today: 'goalDetail.renameLock.today',
 };
 
-const LOCK_MESSAGES = ROUTINE_RENAME_LOCK_MESSAGES;
+export function getRoutineRenameLockMessage(reason: RoutineRenameLockedReason): string {
+  return t(ROUTINE_RENAME_LOCK_KEYS[reason]);
+}
 
 type Palette = ReturnType<typeof goalDetailSettingsPalette>;
 
@@ -47,6 +50,7 @@ export function RoutineTitleField({
   /** 헤더 등 좁은 영역에서는 잠금 안내를 숨길 수 있음 */
   showLockHint?: boolean;
 }) {
+  const { t: translate } = useTranslation();
   const titleStyle =
     size === 'header'
       ? styles.mainTitleHeader
@@ -164,7 +168,7 @@ export function RoutineTitleField({
         <View style={styles.renameLockRow}>
           <IconSymbol name="lock.fill" size={13} color={palette.onVariant} />
           <ThemedText style={[styles.renameLockHint, { color: palette.onVariant }]}>
-            {LOCK_MESSAGES[renameLockedReason]}
+            {translate(ROUTINE_RENAME_LOCK_KEYS[renameLockedReason])}
           </ThemedText>
         </View>
       ) : null}

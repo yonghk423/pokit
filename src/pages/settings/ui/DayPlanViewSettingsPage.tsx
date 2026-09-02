@@ -4,6 +4,7 @@ import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, View } 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDayPlanLayoutModeVisibilityStore } from '@entities/day-plan';
+import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import type { DayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -19,14 +20,14 @@ import {
 
 const MODE_OPTIONS: {
   key: DayPlanLayoutMode;
-  label: string;
-  desc: string;
+  labelKey: 'layoutMode.bag';
+  descKey: 'settings.dayPlanView.bagDesc';
   icon: 'list.bullet.rectangle' | 'sun.horizon.fill';
 }[] = [
   {
     key: 'bag',
-    label: '목록',
-    desc: '담은 루틴을 한 목록으로 봐요.',
+    labelKey: 'layoutMode.bag',
+    descKey: 'settings.dayPlanView.bagDesc',
     icon: 'list.bullet.rectangle',
   },
   // 시간대(sections) 모드는 잠정 유보 — UI에서만 숨김, 로직은 보존
@@ -40,6 +41,7 @@ const MODE_OPTIONS: {
 
 /** 설정 → 오늘 탭에서 쓸 보기 방식 on/off */
 export function DayPlanViewSettingsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
   const p = buildSettingsPalette(isDark);
@@ -67,18 +69,18 @@ export function DayPlanViewSettingsPage() {
             style={chrome.headerBtn}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             accessibilityRole="button"
-            accessibilityLabel="뒤로가기">
+            accessibilityLabel={t('settings.back')}>
             <IconSymbol name="chevron.left" size={20} color={p.title} />
           </Pressable>
           <ThemedText style={[chrome.headerTitle, styles.headerTitleCenter, { color: p.title }]}>
-            오늘 탭 보기
+            {t('settings.dayPlanViewTitle')}
           </ThemedText>
           <View style={chrome.headerBtn} pointerEvents="none" />
         </View>
 
         <ScrollView contentContainerStyle={chrome.container} showsVerticalScrollIndicator={false}>
           <ThemedText style={[chrome.sectionHint, { color: p.desc }]}>
-            켜 둔 보기만 오늘 탭 상단에 표시돼요. 하나만 켜 두어도 현재 모드 아이콘은 그대로 보여요.
+            {t('settings.dayPlanView.hint')}
           </ThemedText>
 
           <SettingsSection border={p.border} surface={p.surface}>
@@ -102,8 +104,8 @@ export function DayPlanViewSettingsPage() {
                       shadow={p.shadow}
                     />
                     <View style={chrome.itemTextWrap}>
-                      <ThemedText style={[chrome.itemTitle, { color: p.title }]}>{opt.label}</ThemedText>
-                      <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>{opt.desc}</ThemedText>
+                      <ThemedText style={[chrome.itemTitle, { color: p.title }]}>{t(opt.labelKey)}</ThemedText>
+                      <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>{t(opt.descKey)}</ThemedText>
                     </View>
                   </View>
                   <Switch
@@ -119,7 +121,10 @@ export function DayPlanViewSettingsPage() {
                     }}
                     thumbColor="#FFFFFF"
                     ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
-                    accessibilityLabel={`${opt.label} 보기 ${enabled ? '끄기' : '켜기'}`}
+                    accessibilityLabel={t('settings.dayPlanView.a11yToggle', {
+                      label: t(opt.labelKey),
+                      action: enabled ? t('settings.dayPlanView.toggleOff') : t('settings.dayPlanView.toggleOn'),
+                    })}
                   />
                 </View>
               );

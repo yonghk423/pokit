@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -11,13 +12,13 @@ type Props = {
 
 /** 고정 루틴 목록 모드 — 요약 안내 카드 */
 export function FixedRoutineListModeCard({ ink, muted, line, cardBg }: Props) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.root, { backgroundColor: cardBg, borderColor: line }]}>
       <View style={styles.textCol}>
-        <ThemedText style={[styles.title, { color: ink }]}>목록 모드</ThemedText>
+        <ThemedText style={[styles.title, { color: ink }]}>{t('fixedRoutine.listModeTitle')}</ThemedText>
         <ThemedText style={[styles.summary, { color: muted }]} numberOfLines={3}>
-          그룹·항목을 정리한 뒤 적용을 켜면 오늘 탭 목록 보기에 반영돼요. 시간·시간대 설정은
-          시간대 보기에서 할 수 있어요.
+          {t('fixedRoutine.listModeSummary')}
         </ThemedText>
       </View>
     </View>

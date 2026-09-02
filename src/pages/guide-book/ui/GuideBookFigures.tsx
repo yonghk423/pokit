@@ -4,31 +4,32 @@ import { StyleSheet, View } from 'react-native';
 import { RETRO_BORDER_WIDTH, RetroFlatColors, cityPopFont } from '@shared/config/retroFlat';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { GuideBookFigureId } from '../lib/guideBookPages';
 
 /** `DayPlanCustomTabBar` 와 동일 */
 const APP_TABS = [
-  { key: 'today', icon: 'calendar', label: '오늘', n: 1 },
-  { key: 'routine', icon: 'list.bullet.rectangle', label: '루틴', n: 2 },
-  { key: 'mine', icon: 'figure.walk', label: '나만의 루틴', n: 3 },
-  { key: 'history', icon: 'clock.arrow.circlepath', label: '히스토리', n: 4 },
-  { key: 'story', icon: 'book', label: '스토리', n: 5 },
+  { key: 'today', icon: 'calendar', labelKey: 'guideBook.figure.tabToday', n: 1 },
+  { key: 'routine', icon: 'list.bullet.rectangle', labelKey: 'guideBook.figure.tabRoutine', n: 2 },
+  { key: 'mine', icon: 'figure.walk', labelKey: 'guideBook.figure.tabMyRoutine', n: 3 },
+  { key: 'history', icon: 'clock.arrow.circlepath', labelKey: 'guideBook.figure.tabHistory', n: 4 },
+  { key: 'story', icon: 'book', labelKey: 'guideBook.figure.tabStory', n: 5 },
 ] as const;
 
 /** `PlanModeSwitch` 와 동일 */
 const MODE_BUTTONS = [
-  { icon: 'list.bullet.rectangle', label: '데일리', n: 1 },
-  { icon: 'note.text', label: '잠금화면 메모', n: 2 },
-  { icon: 'square.and.pencil', label: '노트', n: 3 },
-  { icon: 'book.closed.fill', label: '독서', n: 4 },
+  { icon: 'list.bullet.rectangle', labelKey: 'planMode.daily', n: 1 },
+  { icon: 'note.text', labelKey: 'planMode.quickMemo', n: 2 },
+  { icon: 'square.and.pencil', labelKey: 'planMode.dayNote', n: 3 },
+  { icon: 'book.closed.fill', labelKey: 'guideBook.figure.reading', n: 4 },
 ] as const;
 
 /** 오늘 탭 헤더 — 목록 + 투두 바로가기 */
 const HEADER_SHORTCUTS = [
-  { key: 'bag', icon: 'list.bullet.rectangle', label: '목록', n: 1 },
-  { key: 'todo', icon: 'checklist', label: '투두', n: 2 },
+  { key: 'bag', icon: 'list.bullet.rectangle', labelKey: 'guideBook.figure.headerList', n: 1 },
+  { key: 'todo', icon: 'checklist', labelKey: 'guideBook.figure.headerTodo', n: 2 },
 ] as const;
 
 type Tone = {
@@ -119,7 +120,7 @@ function ModeRow({
         {MODE_BUTTONS.map((btn, i) => {
           const active = i === 0;
           return (
-            <View key={btn.label} style={styles.modeHitWrap}>
+            <View key={btn.labelKey} style={styles.modeHitWrap}>
               {showBadges ? <Badge n={btn.n} tone={tone} /> : null}
               <View
                 style={[
@@ -160,6 +161,7 @@ function HeaderShortcuts({
   tone: Tone;
   showBadges?: boolean;
 }) {
+  const { t } = useTranslation();
   const pill = tabPillColors(tone.isDark);
   return (
     <View style={styles.layoutRow}>
@@ -185,7 +187,7 @@ function HeaderShortcuts({
             </View>
             {showBadges ? (
               <ThemedText style={[styles.layoutLabel, { color: tone.muted }, cityPopFont('600')]}>
-                {item.label}
+                {t(item.labelKey)}
               </ThemedText>
             ) : null}
           </View>
@@ -220,14 +222,15 @@ function PhoneShell({
 }
 
 function FigureTabsMap({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   return (
     <PhoneShell tone={tone} tabActive="today" showTabBadges>
       <View style={styles.centerHint}>
         <ThemedText style={[styles.hintTitle, { color: tone.text }, cityPopFont('800')]}>
-          하단 탭
+          {t('guideBook.figure.bottomTabs')}
         </ThemedText>
         <ThemedText style={[styles.hintBody, { color: tone.muted }, cityPopFont('500')]}>
-          앱과 같은 아이콘·순서예요. 번호는 아래 설명과 같아요.
+          {t('guideBook.figure.bottomTabsHint')}
         </ThemedText>
       </View>
     </PhoneShell>
@@ -235,12 +238,13 @@ function FigureTabsMap({ tone }: { tone: Tone }) {
 }
 
 function FigureChromeModes({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.phone, { borderColor: tone.border, backgroundColor: tone.bg }]}>
       <ModeRow tone={tone} showBadges />
       <View style={styles.centerHint}>
         <ThemedText style={[styles.hintBody, { color: tone.muted }, cityPopFont('500')]}>
-          상단은 데일리·메모·노트·독서 + 설정이에요.
+          {t('guideBook.figure.chromeModesHint')}
         </ThemedText>
       </View>
       <View style={styles.tabBarPad}>
@@ -251,6 +255,7 @@ function FigureChromeModes({ tone }: { tone: Tone }) {
 }
 
 function FigureTodayOverview({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   return (
     <PhoneShell tone={tone} tabActive="today">
       <View style={[styles.headerBlock, { borderBottomColor: tone.border }]}>
@@ -258,7 +263,7 @@ function FigureTodayOverview({ tone }: { tone: Tone }) {
           <Badge n={1} tone={tone} />
           <View style={{ flex: 1, gap: 4 }}>
             <ThemedText style={[styles.dateLine, { color: tone.text }, cityPopFont('800')]}>
-              월요일, 7월 30일
+              {t('guideBook.figure.sampleDate')}
             </ThemedText>
             <View
               style={[
@@ -266,7 +271,7 @@ function FigureTodayOverview({ tone }: { tone: Tone }) {
                 { borderColor: tone.border, backgroundColor: tone.primaryContainer },
               ]}>
               <ThemedText style={[styles.windowChipText, { color: tone.text }, cityPopFont('700')]}>
-                오전 7:00 – 오후 11:00
+                {t('guideBook.figure.sampleWindow')}
               </ThemedText>
             </View>
           </View>
@@ -279,10 +284,10 @@ function FigureTodayOverview({ tone }: { tone: Tone }) {
       <View style={[styles.emptyBag, { borderColor: tone.border }]}>
         <Badge n={3} tone={tone} />
         <ThemedText style={[styles.emptyTitle, { color: tone.text }, cityPopFont('800')]}>
-          담기 목록이 비어 있어요
+          {t('dayPlan.emptyBagTitle')}
         </ThemedText>
         <ThemedText style={[styles.emptyBody, { color: tone.muted }, cityPopFont('500')]}>
-          오늘 할 루틴을 추가해 주세요.
+          {t('dayPlan.emptyBagBody')}
         </ThemedText>
         <View
           style={[
@@ -294,31 +299,32 @@ function FigureTodayOverview({ tone }: { tone: Tone }) {
           ]}>
           <IconSymbol name="plus.circle.fill" size={16} color={tone.text} />
           <ThemedText style={[styles.addRowText, { color: tone.text }, cityPopFont('700')]}>
-            루틴 추가
+            {t('dayPlan.addRoutine')}
           </ThemedText>
         </View>
       </View>
       <ThemedText style={[styles.tinyNote, { color: tone.muted }, cityPopFont('500')]}>
-        ④ 하단 「오늘」탭(달력 아이콘)이 선택돼 있어요
+        {t('guideBook.figure.todayTabNote')}
       </ThemedText>
     </PhoneShell>
   );
 }
 
 function FigureTodayWindow({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   return (
     <PhoneShell tone={tone} tabActive="today">
       <View style={[styles.sheet, { borderColor: tone.border, backgroundColor: tone.surface }]}>
         <ThemedText style={[styles.sheetTitle, { color: tone.text }, cityPopFont('800')]}>
-          집중 구간 시간
+          {t('guideBook.figure.focusWindowTitle')}
         </ThemedText>
         <View style={styles.sheetRow}>
           <Badge n={1} tone={tone} />
           <IconSymbol name="clock" size={16} color={tone.muted} />
-          <ThemedText style={[styles.sheetLabel, { color: tone.muted }, cityPopFont('600')]}>시작</ThemedText>
+          <ThemedText style={[styles.sheetLabel, { color: tone.muted }, cityPopFont('600')]}>{t('guideBook.figure.startLabel')}</ThemedText>
           <View style={[styles.timeBox, { borderColor: tone.border }]}>
             <ThemedText style={[styles.timeBoxText, { color: tone.text }, cityPopFont('800')]}>
-              오전 7:00
+              {t('guideBook.figure.sampleStart')}
             </ThemedText>
           </View>
         </View>
@@ -326,11 +332,11 @@ function FigureTodayWindow({ tone }: { tone: Tone }) {
           <View style={{ width: 18 }} />
           <IconSymbol name="moon.stars" size={16} color={tone.muted} />
           <ThemedText style={[styles.sheetLabel, { color: tone.muted }, cityPopFont('600')]}>
-            마무리
+            {t('guideBook.figure.endLabel')}
           </ThemedText>
           <View style={[styles.timeBox, { borderColor: tone.border }]}>
             <ThemedText style={[styles.timeBoxText, { color: tone.text }, cityPopFont('800')]}>
-              오후 11:00
+              {t('guideBook.figure.sampleEnd')}
             </ThemedText>
           </View>
         </View>
@@ -342,12 +348,12 @@ function FigureTodayWindow({ tone }: { tone: Tone }) {
               { borderColor: tone.border, backgroundColor: tone.primaryContainer },
             ]}>
             <ThemedText style={[styles.dayChoiceText, { color: tone.text }, cityPopFont('700')]}>
-              당일
+              {t('dayRhythm.today')}
             </ThemedText>
           </View>
           <View style={[styles.dayChoiceOff, { borderColor: tone.border }]}>
             <ThemedText style={[styles.dayChoiceText, { color: tone.muted }, cityPopFont('600')]}>
-              다음 날
+              {t('dayRhythm.nextDay')}
             </ThemedText>
           </View>
         </View>
@@ -358,11 +364,11 @@ function FigureTodayWindow({ tone }: { tone: Tone }) {
           ]}>
           <Badge n={2} tone={tone} />
           <ThemedText style={[styles.sheetCtaText, { color: tone.text }, cityPopFont('800')]}>
-            설정 완료
+            {t('dayPlan.rangeDone')}
           </ThemedText>
         </View>
         <ThemedText style={[styles.tinyNote, { color: tone.muted }, cityPopFont('500')]}>
-          ④ 적용 기간은 달력에서 시작·끝일을 고를 수 있어요
+          {t('guideBook.figure.rangeNote')}
         </ThemedText>
       </View>
     </PhoneShell>
@@ -370,13 +376,14 @@ function FigureTodayWindow({ tone }: { tone: Tone }) {
 }
 
 function FigureTodayLayouts({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.phone, { borderColor: tone.border, backgroundColor: tone.bg, padding: 12 }]}>
       <ThemedText style={[styles.hintTitle, { color: tone.text }, cityPopFont('800')]}>
-        목록 · 투두
+        {t('guideBook.figure.listTodoTitle')}
       </ThemedText>
       <ThemedText style={[styles.hintBody, { color: tone.muted }, cityPopFont('500')]}>
-        오늘 탭 헤더 오른쪽과 같은 아이콘이에요.
+        {t('guideBook.figure.layoutsHint')}
       </ThemedText>
       <View style={{ height: 10 }} />
       <HeaderShortcuts tone={tone} showBadges />
@@ -385,21 +392,22 @@ function FigureTodayLayouts({ tone }: { tone: Tone }) {
 }
 
 function FigureTodayAddRow({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   const pill = tabPillColors(tone.isDark);
   return (
     <PhoneShell tone={tone} tabActive="today">
       <View style={[styles.rowCard, { borderColor: tone.border, backgroundColor: tone.surface }]}>
         <View style={styles.rowHead}>
           <IconSymbol name="book.closed.fill" size={18} color={pill.activeIcon} />
-          <ThemedText style={[styles.rowTitle, { color: tone.text }, cityPopFont('800')]}>독서</ThemedText>
+          <ThemedText style={[styles.rowTitle, { color: tone.text }, cityPopFont('800')]}>{t('guideBook.figure.reading')}</ThemedText>
         </View>
         <View style={styles.rowActions}>
           {[
-            { n: 2, icon: 'flag.fill' as const, t: '높음' },
-            { n: 3, icon: 'checkmark.circle' as const, t: '완료' },
-            { n: 4, icon: 'slider.horizontal.3' as const, t: '설정' },
+            { n: 2, icon: 'flag.fill' as const, tKey: 'guideBook.figure.priorityHigh' as const },
+            { n: 3, icon: 'checkmark.circle' as const, tKey: 'guideBook.figure.complete' as const },
+            { n: 4, icon: 'slider.horizontal.3' as const, tKey: 'guideBook.figure.settings' as const },
           ].map((a) => (
-            <View key={a.t} style={styles.rowAction}>
+            <View key={a.tKey} style={styles.rowAction}>
               <Badge n={a.n} tone={tone} />
               <View
                 style={[
@@ -408,7 +416,7 @@ function FigureTodayAddRow({ tone }: { tone: Tone }) {
                 ]}>
                 <IconSymbol name={a.icon} size={14} color={tone.text} />
                 <ThemedText style={[styles.miniBtnText, { color: tone.text }, cityPopFont('700')]}>
-                  {a.t}
+                  {t(a.tKey)}
                 </ThemedText>
               </View>
             </View>
@@ -427,14 +435,14 @@ function FigureTodayAddRow({ tone }: { tone: Tone }) {
             ]}>
             <IconSymbol name="plus.circle.fill" size={16} color={tone.text} />
             <ThemedText style={[styles.addRowText, { color: tone.text }, cityPopFont('700')]}>
-              루틴 추가
+              {t('dayPlan.addRoutine')}
             </ThemedText>
           </View>
         </View>
         <View style={styles.sheetRow}>
           <Badge n={5} tone={tone} />
           <ThemedText style={[styles.tinyNote, { color: tone.muted, flex: 1 }, cityPopFont('500')]}>
-            길게 누르기 → 순서 · 집중 중 「종료」
+            {t('guideBook.figure.longPressNote')}
           </ThemedText>
         </View>
       </View>
@@ -443,6 +451,7 @@ function FigureTodayAddRow({ tone }: { tone: Tone }) {
 }
 
 function FigureTodayAutofocus({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   return (
     <PhoneShell tone={tone} tabActive="today">
       <View style={[styles.flowBox, { borderColor: tone.border, backgroundColor: tone.surface }]}>
@@ -450,7 +459,7 @@ function FigureTodayAutofocus({ tone }: { tone: Tone }) {
           <Badge n={1} tone={tone} />
           <IconSymbol name="plus.circle.fill" size={18} color={tone.text} />
           <ThemedText style={[styles.flowText, { color: tone.text }, cityPopFont('700')]}>
-            담기에 루틴 추가
+            {t('guideBook.figure.addToBag')}
           </ThemedText>
         </View>
         <IconSymbol name="arrow.down" size={16} color={tone.muted} />
@@ -461,11 +470,11 @@ function FigureTodayAutofocus({ tone }: { tone: Tone }) {
           ]}>
           <IconSymbol name="flag.fill" size={18} color={tone.text} />
           <ThemedText style={[styles.flowText, { color: tone.text }, cityPopFont('800')]}>
-            오늘 탭 집중 상태 자동
+            {t('guideBook.figure.autoFocus')}
           </ThemedText>
         </View>
         <ThemedText style={[styles.tinyNote, { color: tone.muted }, cityPopFont('500')]}>
-          ② 구간 종료 · ③ 설정→담기 유지 · ④ 적용 연동
+          {t('guideBook.figure.autoFocusNote')}
         </ThemedText>
       </View>
     </PhoneShell>
@@ -473,6 +482,7 @@ function FigureTodayAutofocus({ tone }: { tone: Tone }) {
 }
 
 function FigureRoutineList({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   const pill = tabPillColors(tone.isDark);
   return (
     <PhoneShell tone={tone} tabActive="routine">
@@ -484,12 +494,12 @@ function FigureRoutineList({ tone }: { tone: Tone }) {
             { borderColor: tone.border, backgroundColor: tone.primaryContainer },
           ]}>
           <ThemedText style={[styles.subTabText, { color: tone.text }, cityPopFont('800')]}>
-            루틴 목록
+            {t('catalog.routineListTab')}
           </ThemedText>
         </View>
         <View style={[styles.subTabOff, { borderColor: tone.border }]}>
           <ThemedText style={[styles.subTabText, { color: tone.muted }, cityPopFont('600')]}>
-            루틴 템플릿
+            {t('catalog.routineTemplatesTab')}
           </ThemedText>
         </View>
         <View style={{ marginLeft: 'auto', alignItems: 'center', gap: 2 }}>
@@ -505,18 +515,18 @@ function FigureRoutineList({ tone }: { tone: Tone }) {
       </View>
       <View style={[styles.groupCard, { borderColor: tone.border, backgroundColor: tone.surface }]}>
         <ThemedText style={[styles.groupTitle, { color: tone.muted }, cityPopFont('700')]}>
-          건강 루틴
+          {t('catalog.groupHealth')}
         </ThemedText>
         <View style={[styles.itemRow, { borderColor: tone.border }]}>
           <Badge n={3} tone={tone} />
           <IconSymbol name="book.closed.fill" size={16} color={pill.activeIcon} />
           <ThemedText style={[styles.itemText, { color: tone.text }, cityPopFont('700')]}>
-            독서
+            {t('guideBook.figure.reading')}
           </ThemedText>
           <IconSymbol name="chevron.right" size={14} color={tone.muted} />
         </View>
         <ThemedText style={[styles.tinyNote, { color: tone.muted }, cityPopFont('500')]}>
-          ④ 묶음 편집·이동 · 「+」→ 새 루틴 / 새 묶음
+          {t('guideBook.figure.routineListNote')}
         </ThemedText>
       </View>
     </PhoneShell>
@@ -524,25 +534,26 @@ function FigureRoutineList({ tone }: { tone: Tone }) {
 }
 
 function FigureRoutineTemplates({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   const items = [
-    { n: 1, icon: 'checklist' as const, t: '할 일 체크' },
-    { n: 2, icon: 'note.text' as const, t: '간단한 메모' },
-    { n: 3, icon: 'chart.bar.fill' as const, t: '값 기록' },
-    { n: 4, icon: 'plus.circle' as const, t: '횟수 채우기' },
-    { n: 5, icon: 'bell' as const, t: '시간 알림' },
+    { n: 1, icon: 'checklist' as const, tKey: 'guideBook.figure.templateChecklist' as const },
+    { n: 2, icon: 'note.text' as const, tKey: 'guideBook.figure.templateMemo' as const },
+    { n: 3, icon: 'chart.bar.fill' as const, tKey: 'guideBook.figure.templateMetric' as const },
+    { n: 4, icon: 'plus.circle' as const, tKey: 'guideBook.figure.templateCounter' as const },
+    { n: 5, icon: 'bell' as const, tKey: 'guideBook.figure.templateReminder' as const },
   ];
   return (
     <PhoneShell tone={tone} tabActive="routine">
       <ThemedText style={[styles.tinyNote, { color: tone.muted }, cityPopFont('500')]}>
-        항목을 눌러 방식별 화면 구성을 확인할 수 있어요
+        {t('fixedRoutine.templatesHint')}
       </ThemedText>
       <View style={styles.templateList}>
         {items.map((it) => (
-          <View key={it.t} style={[styles.templateRow, { borderColor: tone.border }]}>
+          <View key={it.tKey} style={[styles.templateRow, { borderColor: tone.border }]}>
             <Badge n={it.n} tone={tone} />
             <IconSymbol name={it.icon} size={16} color={tone.text} />
             <ThemedText style={[styles.templateText, { color: tone.text }, cityPopFont('700')]}>
-              {it.t}
+              {t(it.tKey)}
             </ThemedText>
             <IconSymbol name="chevron.right" size={12} color={tone.muted} />
           </View>
@@ -553,6 +564,7 @@ function FigureRoutineTemplates({ tone }: { tone: Tone }) {
 }
 
 function FigureMyRoutine({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   return (
     <PhoneShell tone={tone} tabActive="mine">
       <View style={styles.layoutMiniRow}>
@@ -571,7 +583,7 @@ function FigureMyRoutine({ tone }: { tone: Tone }) {
             ]}>
             <IconSymbol name="figure.walk" size={14} color={tone.text} />
             <ThemedText style={[styles.subTabText, { color: tone.text }, cityPopFont('800')]}>
-              나만의 루틴
+              {t('tabs.myRoutines')}
             </ThemedText>
           </View>
         </View>
@@ -582,7 +594,7 @@ function FigureMyRoutine({ tone }: { tone: Tone }) {
           <View style={[styles.subTabOff, { borderColor: tone.border }]}>
             <IconSymbol name="list.bullet.rectangle" size={14} color={tone.muted} />
             <ThemedText style={[styles.subTabText, { color: tone.muted }, cityPopFont('600')]}>
-              고정 루틴
+              {t('guideBook.figure.fixedRoutine')}
             </ThemedText>
           </View>
         </View>
@@ -590,7 +602,7 @@ function FigureMyRoutine({ tone }: { tone: Tone }) {
       <View style={[styles.groupCard, { borderColor: tone.border, backgroundColor: tone.surface }]}>
         <View style={styles.sheetRow}>
           <ThemedText style={[styles.groupTitle, { color: tone.text, flex: 1 }, cityPopFont('800')]}>
-            아침 루틴
+            {t('guideBook.figure.morningRoutine')}
           </ThemedText>
           <Badge n={4} tone={tone} />
           <View
@@ -599,12 +611,12 @@ function FigureMyRoutine({ tone }: { tone: Tone }) {
               { borderColor: tone.border, backgroundColor: tone.primaryContainer },
             ]}>
             <ThemedText style={[styles.applyChipText, { color: tone.text }, cityPopFont('800')]}>
-              적용하기
+              {t('fixedRoutine.apply')}
             </ThemedText>
           </View>
         </View>
         <ThemedText style={[styles.tinyNote, { color: tone.muted }, cityPopFont('500')]}>
-          고정 루틴 탭 · 데일리/주말 · 이름 고정
+          {t('guideBook.figure.fixedRoutineNote')}
         </ThemedText>
       </View>
     </PhoneShell>
@@ -612,33 +624,35 @@ function FigureMyRoutine({ tone }: { tone: Tone }) {
 }
 
 function FigureMyRoutineApply({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   const rows = [
-    { n: 1, icon: 'list.bullet.rectangle' as const, t: '목록 — 그룹·항목 정리' },
-    { n: 2, icon: 'plus' as const, t: '항목 켜기 · 새 항목 추가' },
+    { n: 1, icon: 'list.bullet.rectangle' as const, tKey: 'guideBook.figure.myRoutineList' as const },
+    { n: 2, icon: 'plus' as const, tKey: 'guideBook.figure.myRoutineAdd' as const },
   ];
   return (
     <PhoneShell tone={tone} tabActive="mine">
       <View style={styles.templateList}>
         {rows.map((r) => (
-          <View key={r.t} style={[styles.templateRow, { borderColor: tone.border }]}>
+          <View key={r.tKey} style={[styles.templateRow, { borderColor: tone.border }]}>
             <Badge n={r.n} tone={tone} />
             <IconSymbol name={r.icon} size={16} color={tone.text} />
             <ThemedText
               style={[styles.templateText, { color: tone.text, flex: 1 }, cityPopFont('600')]}
               numberOfLines={2}>
-              {r.t}
+              {t(r.tKey)}
             </ThemedText>
           </View>
         ))}
       </View>
       <ThemedText style={[styles.tinyNote, { color: tone.muted }, cityPopFont('500')]}>
-        맞춘 뒤 그룹의 「적용하기」로 오늘 담기에 반영해요
+        {t('guideBook.figure.applyNote')}
       </ThemedText>
     </PhoneShell>
   );
 }
 
 function FigureHistory({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   return (
     <PhoneShell tone={tone} tabActive="history">
       <View style={styles.subTabs}>
@@ -649,12 +663,12 @@ function FigureHistory({ tone }: { tone: Tone }) {
             { borderColor: tone.border, backgroundColor: tone.primaryContainer },
           ]}>
           <ThemedText style={[styles.subTabText, { color: tone.text }, cityPopFont('800')]}>
-            주간
+            {t('guideBook.figure.weekly')}
           </ThemedText>
         </View>
         <View style={[styles.subTabOff, { borderColor: tone.border }]}>
           <ThemedText style={[styles.subTabText, { color: tone.muted }, cityPopFont('600')]}>
-            월간
+            {t('guideBook.figure.monthly')}
           </ThemedText>
         </View>
         <View style={styles.navMini}>
@@ -672,21 +686,21 @@ function FigureHistory({ tone }: { tone: Tone }) {
           <Badge n={3} tone={tone} />
           <IconSymbol name="clock.arrow.circlepath" size={16} color={tone.text} />
           <ThemedText style={[styles.summaryTitle, { color: tone.text }, cityPopFont('800')]}>
-            이번 주 요약
+            {t('guideBook.figure.weekSummary')}
           </ThemedText>
         </View>
         <ThemedText style={[styles.summaryBody, { color: tone.muted }, cityPopFont('500')]}>
-          3일 / 7일 중 활동 · 총 12회 완료
+          {t('guideBook.figure.weekStats')}
         </ThemedText>
         <ThemedText style={[styles.summaryBody, { color: tone.text }, cityPopFont('700')]}>
-          가장 많이 한 루틴: 독서
+          {t('guideBook.figure.topRoutine')}
         </ThemedText>
       </View>
       <View style={[styles.itemRow, { borderColor: tone.border }]}>
         <Badge n={4} tone={tone} />
         <IconSymbol name="book.closed.fill" size={16} color={tone.text} />
         <ThemedText style={[styles.itemText, { color: tone.text }, cityPopFont('700')]}>
-          루틴별 완료 카드
+          {t('guideBook.figure.perRoutineCard')}
         </ThemedText>
       </View>
     </PhoneShell>
@@ -694,6 +708,7 @@ function FigureHistory({ tone }: { tone: Tone }) {
 }
 
 function FigureStory({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   return (
     <PhoneShell tone={tone} tabActive="story">
       <View
@@ -705,18 +720,18 @@ function FigureStory({ tone }: { tone: Tone }) {
           <Badge n={1} tone={tone} />
           <IconSymbol name="book" size={16} color={tone.text} />
           <ThemedText style={[styles.webTitle, { color: tone.text }, cityPopFont('800')]}>
-            스토리 글
+            {t('guideBook.figure.storyPost')}
           </ThemedText>
         </View>
         <ThemedText style={[styles.webBody, { color: tone.muted }, cityPopFont('500')]}>
-          웹 본문을 스크롤하며 읽어요
+          {t('guideBook.figure.storyBody')}
         </ThemedText>
       </View>
       <View style={[styles.sheet, { borderColor: tone.border, backgroundColor: tone.surface }]}>
         <View style={styles.sheetRow}>
           <Badge n={2} tone={tone} />
           <ThemedText style={[styles.sheetTitle, { color: tone.text }, cityPopFont('800')]}>
-            글 제목 · 저장할 카테고리
+            {t('guideBook.figure.storySaveTitle')}
           </ThemedText>
         </View>
         <View
@@ -727,7 +742,7 @@ function FigureStory({ tone }: { tone: Tone }) {
           <Badge n={3} tone={tone} />
           <IconSymbol name="square.and.arrow.down" size={16} color={tone.text} />
           <ThemedText style={[styles.sheetCtaText, { color: tone.text }, cityPopFont('800')]}>
-            루틴에 저장
+            {t('guideBook.figure.saveToRoutine')}
           </ThemedText>
         </View>
       </View>
@@ -736,31 +751,32 @@ function FigureStory({ tone }: { tone: Tone }) {
 }
 
 function FigureSettings({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
   const rows = [
-    { n: 1, icon: 'clock' as const, t: '시작·마무리', section: '데이플랜' },
-    { n: 2, icon: 'book' as const, t: 'POKIT 소개 · 사용 설명서', section: '데이플랜' },
-    { n: 3, icon: 'bell.fill' as const, t: '알림', section: '알림' },
-    { n: 4, icon: 'square.grid.2x2' as const, t: '오늘 탭 보기 · 화면 테마', section: '화면' },
-    { n: 5, icon: 'envelope.fill' as const, t: '문의 · 버전 · 초기화', section: '고객센터·데이터' },
+    { n: 1, icon: 'clock' as const, tKey: 'settings.dayPlanWindow' as const, sectionKey: 'guideBook.figure.settingsDayPlan' as const },
+    { n: 2, icon: 'book' as const, tKey: 'guideBook.figure.settingsIntroGuide' as const, sectionKey: 'guideBook.figure.settingsDayPlan' as const },
+    { n: 3, icon: 'bell.fill' as const, tKey: 'guideBook.figure.settingsNotification' as const, sectionKey: 'guideBook.figure.settingsNotification' as const },
+    { n: 4, icon: 'square.grid.2x2' as const, tKey: 'guideBook.figure.settingsDayPlanViewTheme' as const, sectionKey: 'guideBook.figure.settingsDisplay' as const },
+    { n: 5, icon: 'envelope.fill' as const, tKey: 'guideBook.figure.settingsSupportReset' as const, sectionKey: 'guideBook.figure.settingsSupportData' as const },
   ];
   return (
     <View style={[styles.phone, { borderColor: tone.border, backgroundColor: tone.bg }]}>
       <View style={styles.settingsHeaderRow}>
         <IconSymbol name="gearshape" size={18} color={tone.text} />
         <ThemedText style={[styles.settingsHeader, { color: tone.text }, cityPopFont('800')]}>
-          설정
+          {t('settings.title')}
         </ThemedText>
       </View>
       {rows.map((r) => (
-        <View key={r.t} style={[styles.settingsRow, { borderColor: tone.border }]}>
+        <View key={r.tKey} style={[styles.settingsRow, { borderColor: tone.border }]}>
           <Badge n={r.n} tone={tone} />
           <IconSymbol name={r.icon} size={18} color={tone.muted} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <ThemedText style={[styles.settingsRowText, { color: tone.text }, cityPopFont('700')]}>
-              {r.t}
+              {t(r.tKey)}
             </ThemedText>
             <ThemedText style={[styles.tinyNote, { color: tone.muted, marginTop: 0 }, cityPopFont('500')]}>
-              {r.section}
+              {t(r.sectionKey)}
             </ThemedText>
           </View>
           <IconSymbol name="chevron.right" size={14} color={tone.muted} />
@@ -793,6 +809,7 @@ type Props = {
 };
 
 export function GuideBookFigure({ figureId, isDark }: Props) {
+  useTranslation(); // locale subscription — child figures call t() themselves
   const rf = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const tone: Tone = {
     border: rf.border,

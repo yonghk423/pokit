@@ -10,6 +10,7 @@ import {
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@shared/ui/themed-text';
+import { useTranslation } from '@shared/lib/i18n';
 
 export type DigitalHhmmInputProps = {
   valueHhmm: string;
@@ -39,7 +40,7 @@ export type DigitalHhmmInputHandle = {
   flush: () => string;
 };
 
-type Meridiem = '오전' | '오후';
+type Meridiem = 'am' | 'pm';
 
 function pad2(n: number): string {
   return String(n).padStart(2, '0');
@@ -64,8 +65,8 @@ function formatHhmm(total: number): string {
 }
 
 function h24To12(h24: number): { ap: Meridiem; h12: number } {
-  if (h24 === 24) return { ap: '오전', h12: 12 };
-  const ap: Meridiem = h24 < 12 ? '오전' : '오후';
+  if (h24 === 24) return { ap: 'am', h12: 12 };
+  const ap: Meridiem = h24 < 12 ? 'am' : 'pm';
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
   return { ap, h12 };
 }
@@ -148,6 +149,7 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
     },
     ref,
   ) {
+    const { t } = useTranslation();
     const synced = useMemo(() => parseHhmm(valueHhmm)?.total ?? 9 * 60, [valueHhmm]);
     const [draftTotal, setDraftTotal] = useState<number>(synced);
     const draftTotalRef = useRef(draftTotal);
@@ -159,8 +161,14 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
       setDraftTotal(synced);
     }, [synced]);
 
-    const prefix = accessibilityLabelPrefix?.trim() || '시간';
+    const prefix = accessibilityLabelPrefix?.trim() || t('common.time');
     const display = useMemo(() => draftsFromValue(formatHhmm(draftTotal)), [draftTotal]);
+    const amLabel = t('common.am');
+    const pmLabel = t('common.pm');
+    const meridiemOptions = [
+      { value: 'am' as const, label: amLabel },
+      { value: 'pm' as const, label: pmLabel },
+    ];
 
     const emit = (nextHhmm: string): string => {
       onChangeRef.current(nextHhmm);
@@ -190,7 +198,7 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
       void Haptics.selectionAsync();
       const { hour24, min } = hourMinuteFromTotal(draftTotalRef.current);
       const currentIsPm = hour24 >= 12;
-      const targetIsPm = next === '오후';
+      const targetIsPm = next === 'pm';
       if (currentIsPm === targetIsPm) return;
       const shifted = (hour24 + 12) % 24;
       emit(composeFromParts(shifted, min, mapMidnightToEndOfDay));
@@ -201,16 +209,16 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
         style={[styles.root, disabled && styles.disabled]}
         pointerEvents={disabled ? 'none' : 'auto'}>
         <View style={styles.meridiemRow}>
-          {(['오전', '오후'] as const).map((label) => {
-            const selected = display.ap === label;
+          {meridiemOptions.map(({ value, label }) => {
+            const selected = display.ap === value;
             return (
               <Pressable
-                key={label}
+                key={value}
                 accessibilityRole="button"
                 accessibilityState={{ selected, disabled }}
-                accessibilityLabel={`${prefix} ${label}`}
+                accessibilityLabel={t('timeInput.meridiemA11y', { prefix, meridiem: label })}
                 disabled={disabled}
-                onPress={() => setMeridiem(label)}
+                onPress={() => setMeridiem(value)}
                 style={({ pressed }) => [
                   styles.meridiemBtn,
                   {
@@ -232,39 +240,39 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
           <View style={styles.stepCol}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${prefix} 시 증가`}
+              accessibilityLabel={t('timeInput.hourIncreaseA11y', { prefix })}
               onPress={() => applyHour(1)}
               style={({ pressed }) => [styles.stepBtn, { borderColor: line, opacity: pressed ? 0.8 : 1 }]}>
               <ThemedText style={[styles.stepText, { color: ink }]}>+</ThemedText>
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${prefix} 시 감소`}
+              accessibilityLabel={t('timeInput.hourDecreaseA11y', { prefix })}
               onPress={() => applyHour(-1)}
               style={({ pressed }) => [styles.stepBtn, { borderColor: line, opacity: pressed ? 0.8 : 1 }]}>
               <ThemedText style={[styles.stepText, { color: ink }]}>-</ThemedText>
             </Pressable>
           </View>
           <View style={styles.fieldCol}>
-            <ThemedText style={[styles.fieldCaption, { color: muted }]}>시</ThemedText>
+            <ThemedText style={[styles.fieldCaption, { color: muted }]}>{t('common.hour')}</ThemedText>
             <ThemedText style={[styles.digitText, { color: ink }]}>{display.hour}</ThemedText>
           </View>
           <ThemedText style={[styles.colon, { color: ink }]}>:</ThemedText>
           <View style={styles.fieldCol}>
-            <ThemedText style={[styles.fieldCaption, { color: muted }]}>분</ThemedText>
+            <ThemedText style={[styles.fieldCaption, { color: muted }]}>{t('common.minute')}</ThemedText>
             <ThemedText style={[styles.digitText, { color: ink }]}>{display.min}</ThemedText>
           </View>
           <View style={styles.stepCol}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${prefix} 분 증가`}
+              accessibilityLabel={t('timeInput.minuteIncreaseA11y', { prefix })}
               onPress={() => applyMinute(1)}
               style={({ pressed }) => [styles.stepBtn, { borderColor: line, opacity: pressed ? 0.8 : 1 }]}>
               <ThemedText style={[styles.stepText, { color: ink }]}>+</ThemedText>
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${prefix} 분 감소`}
+              accessibilityLabel={t('timeInput.minuteDecreaseA11y', { prefix })}
               onPress={() => applyMinute(-1)}
               style={({ pressed }) => [styles.stepBtn, { borderColor: line, opacity: pressed ? 0.8 : 1 }]}>
               <ThemedText style={[styles.stepText, { color: ink }]}>-</ThemedText>

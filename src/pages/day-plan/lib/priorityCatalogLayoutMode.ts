@@ -9,6 +9,7 @@ import { filterSpineTimelineBlocks } from '@entities/day-plan/lib/dayPlanFlowBlo
 import { normalizeDayMealSlot, resolveCurrentMealSlotFromSchedule, type DayMealSlot, appendRoutineCatalogSelectionKeys, removeRoutineCatalogSelectionKey } from '@shared/lib/storage';
 
 import { getPickerCategoryLabel } from './dayPlanEditorShared';
+import type { I18nKey } from '@shared/lib/i18n';
 import type { DayPlanLayoutMode } from '../ui/DayPlanLayoutModeTabs';
 
 const DEFAULT_CATALOG_MEAL_SLOT: DayMealSlot = 'morning';
@@ -30,20 +31,23 @@ export function resolveCatalogLayoutMode(input: {
   return 'bag';
 }
 
-export function catalogLayoutModeLead(mode: DayPlanLayoutMode): string {
+export function catalogLayoutModeLead(mode: DayPlanLayoutMode, tr: (key: I18nKey) => string): string {
   if (mode === 'sections') {
-    return '시간대 아이콘을 누르면 바로 구간을 고를 수 있어요.';
+    return tr('catalog.layoutLeadSections');
   }
   if (mode === 'spine') {
-    return '시간 아이콘을 누르면 시작·종료 시각을 정할 수 있어요. 담은 항목은 오늘 탭 타임라인에 쌓여요.';
+    return tr('catalog.layoutLeadSpine');
   }
-  return '목록 보기에 담을 루틴을 골라요. 탭한 항목은 오늘 탭 우선 순위에 순서대로 쌓여요.';
+  return tr('catalog.layoutLeadBag');
 }
 
-export function catalogLayoutModeActiveLabel(mode: DayPlanLayoutMode): string {
-  if (mode === 'sections') return '시간대';
-  if (mode === 'spine') return '타임라인';
-  return '목록';
+export function catalogLayoutModeActiveLabel(
+  mode: DayPlanLayoutMode,
+  tr: (key: I18nKey) => string,
+): string {
+  if (mode === 'sections') return tr('layoutMode.sections');
+  if (mode === 'spine') return tr('layoutMode.spine');
+  return tr('layoutMode.bag');
 }
 
 export function resolveCatalogSelectedKeys(input: {

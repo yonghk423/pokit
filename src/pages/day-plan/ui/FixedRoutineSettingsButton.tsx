@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -23,6 +24,7 @@ export function FixedRoutineSettingsButton({
   onPress,
   accessibilityLabel,
 }: Props) {
+  const { t } = useTranslation();
   const face = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
   const shadow = isDark ? RetroFlatColors.dark.solidShadow : RetroFlatColors.light.text;
   const pressedBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(168, 218, 220, 0.35)';
@@ -57,7 +59,7 @@ export function FixedRoutineSettingsButton({
           pressed && styles.pressed,
         ]}>
         <IconSymbol name="clock" size={12} color={ink} />
-        <ThemedText style={[styles.label, { color: ink }]}>설정</ThemedText>
+        <ThemedText style={[styles.label, { color: ink }]}>{t('fixedRoutine.settingsLabel')}</ThemedText>
       </Pressable>
     </View>
   );

@@ -2,8 +2,9 @@ import * as Haptics from 'expo-haptics';
 import { useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { clampHhmmToPriorityWindow, formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
+import { clampHhmmToPriorityWindow, parseHHmmToMinutes } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { formatHhmmClock, useTranslation } from '@shared/lib/i18n';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import {
   DigitalHhmmInput,
@@ -58,6 +59,7 @@ export function SnappedTimePickerField({
   dateCaption,
   emphasized = false,
 }: SnappedTimePickerFieldProps) {
+  const { t, locale } = useTranslation();
   const applyRoutineWindow = useMemo(() => {
     const rs = routineDayStartHhmm?.trim() ?? '';
     const re = routineDayEndHhmm?.trim() ?? '';
@@ -141,7 +143,7 @@ export function SnappedTimePickerField({
               ]}
               lightColor={palette.onSurface}
               darkColor={palette.onSurface}>
-              {formatHhmmClockKo(valueHhmm)}
+              {formatHhmmClock(valueHhmm, locale)}
             </ThemedText>
           </View>
         </View>
@@ -162,7 +164,7 @@ export function SnappedTimePickerField({
             accessibilityLabelPrefix={label}
           />
           <BrutalConfirmButton
-            accessibilityLabel={`${label} 시간 선택 확인`}
+            accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
             fill={palette.onSurface}
             labelColor={selectedFg}
             border={palette.border}

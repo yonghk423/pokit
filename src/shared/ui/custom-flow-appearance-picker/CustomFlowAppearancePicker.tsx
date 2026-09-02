@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { PrimaryColor } from '@shared/config/theme';
+import { useTranslation } from '@shared/lib/i18n';
 import {
   CUSTOM_FLOW_ACCENT_COLOR_OPTIONS,
   CUSTOM_FLOW_ICON_OPTIONS,
@@ -34,15 +35,18 @@ export function CustomFlowAppearancePicker({
   accentColor,
   onChangeIcon,
   onChangeAccentColor,
-  previewLabel = '미리보기',
+  previewLabel,
   isDark,
   ink,
   muted,
   line,
-  hint = '루틴 목록에서 구분하기 쉽게 골라 주세요',
+  hint,
   defaultExpanded = true,
   compact = false,
 }: CustomFlowAppearancePickerProps) {
+  const { t } = useTranslation();
+  const resolvedPreviewLabel = previewLabel ?? t('common.preview');
+  const resolvedHint = hint ?? t('appearance.hint');
   const border = line ?? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)');
   const cardBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)';
   const chipIdleBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.9)';
@@ -82,10 +86,10 @@ export function CustomFlowAppearancePicker({
   return (
     <View style={[styles.root, compact && styles.rootCompact]}>
       <ThemedText style={[styles.fieldLabel, compact && styles.fieldLabelCompact, { color: ink }]}>
-        아이콘·색상
+        {t('appearance.iconColor')}
       </ThemedText>
-      {hint.length > 0 ? (
-        <ThemedText style={[styles.fieldHint, { color: muted }]}>{hint}</ThemedText>
+      {resolvedHint.length > 0 ? (
+        <ThemedText style={[styles.fieldHint, { color: muted }]}>{resolvedHint}</ThemedText>
       ) : null}
 
       <View
@@ -105,13 +109,13 @@ export function CustomFlowAppearancePicker({
         <ThemedText
           style={[styles.previewLabel, compact && styles.previewLabelCompact, { color: ink }]}
           numberOfLines={1}>
-          {previewLabel}
+          {resolvedPreviewLabel}
         </ThemedText>
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ expanded: showAppearanceEditor }}
           accessibilityLabel={
-            showAppearanceEditor ? '아이콘·색상 고르기 접기' : '아이콘·색상 고르기 펼치기'
+            showAppearanceEditor ? t('appearance.collapseA11y') : t('appearance.expandA11y')
           }
           onPress={toggleAppearanceEditor}
           hitSlop={8}
@@ -151,7 +155,7 @@ export function CustomFlowAppearancePicker({
                   key={iconName}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
-                  accessibilityLabel="아이콘 선택"
+                  accessibilityLabel={t('appearance.pickIconA11y')}
                   onPress={() => handleSelectIcon(iconName)}
                   style={[
                     styles.iconChip,
@@ -171,7 +175,7 @@ export function CustomFlowAppearancePicker({
           </ScrollView>
 
           <View style={styles.colorSection}>
-            <ThemedText style={[styles.presetLabel, { color: muted }]}>색상</ThemedText>
+            <ThemedText style={[styles.presetLabel, { color: muted }]}>{t('common.color')}</ThemedText>
             <View style={styles.colorGrid}>
               {CUSTOM_FLOW_ACCENT_COLOR_OPTIONS.map((color) => {
                 const selected = accentColor.toLowerCase() === color;
@@ -180,7 +184,7 @@ export function CustomFlowAppearancePicker({
                     key={color}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
-                    accessibilityLabel="색상 선택"
+                    accessibilityLabel={t('appearance.pickColorA11y')}
                     onPress={() => {
                       void Haptics.selectionAsync();
                       onChangeAccentColor(color);

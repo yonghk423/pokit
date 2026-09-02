@@ -21,6 +21,7 @@ import {
   resolveSystemCatalogGroupLabel,
   type CustomCatalogGroup,
 } from '@shared/lib/storage';
+import { useTranslation } from '@shared/lib/i18n';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -59,6 +60,8 @@ export function MoveCustomFlowGroupSheet({
   surface,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+
   const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
 
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
@@ -137,7 +140,7 @@ export function MoveCustomFlowGroupSheet({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.kavRoot}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
 
         <View
           style={[
@@ -160,14 +163,14 @@ export function MoveCustomFlowGroupSheet({
             contentContainerStyle={styles.scrollBody}>
             <View style={styles.headerRow}>
               <View style={styles.headerTextCol}>
-                <ThemedText style={[styles.title, { color: ink }]}>묶음 옮기기</ThemedText>
+                <ThemedText style={[styles.title, { color: ink }]}>{t('catalog.moveGroupTitle')}</ThemedText>
                 <ThemedText style={[styles.subtitle, { color: muted }]} numberOfLines={2}>
-                  「{flowLabel}」을(를) 다른 상위 카테고리로 옮길 수 있어요
+                  {t('catalog.moveGroupSubtitle', { label: flowLabel })}
                 </ThemedText>
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="닫기"
+                accessibilityLabel={t('common.close')}
                 hitSlop={8}
                 onPress={onClose}
                 style={[styles.closeBtn, { backgroundColor: closeBtnBg }]}>
@@ -176,9 +179,9 @@ export function MoveCustomFlowGroupSheet({
             </View>
 
             <View style={styles.fieldGroup}>
-              <ThemedText style={[styles.fieldLabel, { color: ink }]}>상위 카테고리</ThemedText>
+              <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('createFlow.parentCategory')}</ThemedText>
               <ThemedText style={[styles.fieldHint, { color: muted }]}>
-                옮길 위치를 골라 주세요
+                {t('catalog.moveGroupPickHint')}
               </ThemedText>
 
               <View style={styles.chipsWrap}>
@@ -222,7 +225,7 @@ export function MoveCustomFlowGroupSheet({
                 {!isAddingGroup ? (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="새 그룹 만들기"
+                    accessibilityLabel={t('createFlow.newGroup')}
                     onPress={() => {
                       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setIsAddingGroup(true);
@@ -233,7 +236,7 @@ export function MoveCustomFlowGroupSheet({
                       { borderColor: inputBorder, backgroundColor: 'transparent' },
                     ]}>
                     <IconSymbol name="plus" size={11} color={muted} />
-                    <ThemedText style={[styles.chipText, { color: muted }]}>새 그룹 만들기</ThemedText>
+                    <ThemedText style={[styles.chipText, { color: muted }]}>{t('createFlow.newGroup')}</ThemedText>
                   </Pressable>
                 ) : null}
               </View>
@@ -244,7 +247,7 @@ export function MoveCustomFlowGroupSheet({
                     autoFocus
                     value={newGroupLabel}
                     onChangeText={(v) => setNewGroupLabel(v.slice(0, GROUP_NAME_MAX))}
-                    placeholder="새 그룹 이름 (예: 운동·체력)"
+                    placeholder={t('createFlow.newGroupPlaceholder')}
                     placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
                     maxLength={GROUP_NAME_MAX}
                     returnKeyType="done"
@@ -256,7 +259,7 @@ export function MoveCustomFlowGroupSheet({
                   />
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="추가"
+                    accessibilityLabel={t('common.add')}
                     onPress={handleSubmitNewGroup}
                     disabled={newGroupLabel.trim().length === 0}
                     style={({ pressed }) => [
@@ -268,12 +271,12 @@ export function MoveCustomFlowGroupSheet({
                       },
                     ]}>
                     <ThemedText style={[styles.newGroupBtnText, { color: tabColors.activeIcon }]}>
-                      추가
+                      {t('common.add')}
                     </ThemedText>
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="취소"
+                    accessibilityLabel={t('common.cancel')}
                     onPress={() => {
                       setIsAddingGroup(false);
                       setNewGroupLabel('');
@@ -291,7 +294,7 @@ export function MoveCustomFlowGroupSheet({
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ disabled: !canSave }}
-              accessibilityLabel="옮기기"
+              accessibilityLabel={t('catalog.moveGroupCta')}
               disabled={!canSave}
               onPress={handleSave}
               style={({ pressed }) => [
@@ -307,7 +310,7 @@ export function MoveCustomFlowGroupSheet({
                 },
               ]}>
               <ThemedText style={[styles.ctaText, { color: canSave ? '#FAFAFA' : muted }]}>
-                옮기기
+                {t('catalog.moveGroupCta')}
               </ThemedText>
             </Pressable>
           </View>

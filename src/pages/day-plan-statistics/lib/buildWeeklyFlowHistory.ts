@@ -9,6 +9,7 @@ import {
 } from '@entities/history/lib/historyDateKey';
 import { getCategoryCompletions } from '@entities/history/lib/historyCompletionMetrics';
 import type { HistoryDailyStat } from '@entities/history/model/types';
+import { formatDateKeyDisplay, formatWeekdayLabel, getAppLocale, type AppLocale } from '@shared/lib/i18n';
 import { normalizeHistoryRecordKey } from '@shared/lib/routineHistoryLayoutKey';
 
 import { resolveTopCategoryLabels } from './resolveTopCategoryLabels';
@@ -33,9 +34,18 @@ export type WeeklyFlowHistoryRow = {
   startDateLabel?: string;
 };
 
+/** Monday-first weekday labels (ko). Prefer `getHistoryWeekdayLabels(locale)`. */
 const WEEKDAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'] as const;
 
 export { WEEKDAY_LABELS };
+
+/** Monday-first: Mon…Sun → Sunday-based indices for `formatWeekdayLabel` */
+const WEEKDAY_SUNDAY_INDEX_MONDAY_FIRST = [1, 2, 3, 4, 5, 6, 0] as const;
+
+export function getHistoryWeekdayLabels(locale?: AppLocale): string[] {
+  const loc = locale ?? getAppLocale();
+  return WEEKDAY_SUNDAY_INDEX_MONDAY_FIRST.map((index) => formatWeekdayLabel(index, loc));
+}
 
 export function historyWeekdayIndexMondayZero(dateKey: string): number {
   const date = parseHistoryDateKey(dateKey);
@@ -47,15 +57,14 @@ export function buildWeekDateKeys(weekStartDateKey: string): string[] {
   return Array.from({ length: 7 }, (_, index) => addDaysToHistoryDateKey(weekStartDateKey, index));
 }
 
-export function formatHistoryMonthDayKo(dateKey: string): string {
-  const date = parseHistoryDateKey(dateKey);
-  if (!date) return dateKey;
-  return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+export function formatHistoryMonthDayKo(dateKey: string, locale?: AppLocale): string {
+  return formatDateKeyDisplay(dateKey, locale ?? getAppLocale());
 }
 
-export function formatWeekRangeLabelKo(weekStartDateKey: string): string {
+export function formatWeekRangeLabelKo(weekStartDateKey: string, locale?: AppLocale): string {
+  const loc = locale ?? getAppLocale();
   const weekEndDateKey = addDaysToHistoryDateKey(weekStartDateKey, 6);
-  return `${formatHistoryMonthDayKo(weekStartDateKey)} — ${formatHistoryMonthDayKo(weekEndDateKey)}`;
+  return `${formatHistoryMonthDayKo(weekStartDateKey, loc)} — ${formatHistoryMonthDayKo(weekEndDateKey, loc)}`;
 }
 
 function mergeCategoryCompletions(stat: HistoryDailyStat | undefined): Record<string, number> {

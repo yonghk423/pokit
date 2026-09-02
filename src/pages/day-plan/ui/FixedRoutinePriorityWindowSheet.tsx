@@ -4,6 +4,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { parseHHmmToMinutes } from '@entities/day-plan';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
@@ -26,6 +27,8 @@ export function FixedRoutinePriorityWindowSheet({
   onSave,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+
   const palette = useMemo(() => paletteForReminderTimeCard(isDark), [isDark]);
   const [draftStart, setDraftStart] = useState(priorityStart);
   const [draftEnd, setDraftEnd] = useState(priorityEnd);
@@ -60,9 +63,9 @@ export function FixedRoutinePriorityWindowSheet({
         ]}>
         <View style={[styles.header, { borderBottomColor: palette.timeField.border }]}>
           <ThemedText style={[styles.title, { color: palette.timeField.onSurface }]}>
-            집중 구간 설정
+            {t('fixedRoutine.focusWindowSheetTitle')}
           </ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} hitSlop={10}>
             <IconSymbol name="xmark" size={20} color={palette.timeField.onVariant} />
           </Pressable>
         </View>
@@ -72,12 +75,12 @@ export function FixedRoutinePriorityWindowSheet({
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled">
           <ThemedText style={[styles.lead, { color: palette.timeField.onVariant }]}>
-            타임라인에 표시되는 하루 집중 구간이에요. 오늘 탭 타임라인과 함께 반영돼요.
+            {t('fixedRoutine.focusWindowSheetLead')}
           </ThemedText>
           <View style={[styles.rowWrap, { borderBottomColor: palette.timeField.border }]}>
             <SnappedTimePickerField
-              label="시작"
-              hint="집중 구간이 시작되는 시각"
+              label={t('goalDetail.study.start')}
+              hint={t('fixedRoutine.focusWindowStartHint')}
               valueHhmm={draftStart}
               onChangeHhmm={setDraftStart}
               expanded={expanded === 'start'}
@@ -89,8 +92,8 @@ export function FixedRoutinePriorityWindowSheet({
           </View>
           <View style={[styles.rowWrap, { borderBottomColor: palette.timeField.border }]}>
             <SnappedTimePickerField
-              label="종료"
-              hint="집중 구간이 끝나는 시각"
+              label={t('goalDetail.study.end')}
+              hint={t('fixedRoutine.focusWindowEndHint')}
               valueHhmm={draftEnd}
               onChangeHhmm={setDraftEnd}
               expanded={expanded === 'end'}
@@ -107,16 +110,16 @@ export function FixedRoutinePriorityWindowSheet({
         <View style={[styles.footer, { borderTopColor: palette.timeField.border }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="취소"
+            accessibilityLabel={t('common.cancel')}
             onPress={onClose}
             style={({ pressed }) => [styles.ghostBtn, pressed && { opacity: 0.72 }]}>
             <ThemedText style={[styles.ghostBtnLabel, { color: palette.timeField.onVariant }]}>
-              취소
+              {t('common.cancel')}
             </ThemedText>
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="집중 구간 저장"
+            accessibilityLabel={t('fixedRoutine.focusWindowSaveA11y')}
             onPress={handleSave}
             style={({ pressed }) => [
               styles.primaryBtn,
@@ -124,7 +127,7 @@ export function FixedRoutinePriorityWindowSheet({
               pressed && { opacity: 0.88 },
             ]}>
             <ThemedText style={[styles.primaryBtnLabel, { color: isDark ? '#09090b' : '#ffffff' }]}>
-              저장
+              {t('common.save')}
             </ThemedText>
           </Pressable>
         </View>

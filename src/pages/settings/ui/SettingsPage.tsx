@@ -30,6 +30,7 @@ import {
 } from '@features/subscriptions';
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { t, useAppLocaleStore } from '@shared/lib/i18n';
 import {
   DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY,
   ensureDefaultPriorityCatalog,
@@ -77,8 +78,10 @@ export function SettingsPage() {
   const appVersionLabel = getDisplayedAppVersionLabel();
   const [isResettingData, setIsResettingData] = useState(false);
   const [isSubscriptionBusy, setIsSubscriptionBusy] = useState(false);
+  const locale = useAppLocaleStore((s) => s.locale);
   const appearanceMode = useAppearanceStore((s) => s.mode);
-  const appearanceLabel = appearanceMode === 'dark' ? '다크 모드' : '라이트 모드';
+  const appearanceLabel =
+    appearanceMode === 'dark' ? t('settings.appearance.dark', locale) : t('settings.appearance.light', locale);
   const isPro = useSubscriptionStore(selectIsPro);
   const subscriptionConfigured = useSubscriptionStore((s) => s.isConfigured);
   const { priorityStart, priorityEnd } = useDayPlanDraftStore(
@@ -107,14 +110,14 @@ export function SettingsPage() {
       await useSubscriptionStore.getState().refreshCustomerInfo();
       if (outcome === 'purchased' || outcome === 'restored') {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('POKIT Pro', '구독이 활성화되었어요.');
+        Alert.alert(t('alert.pro.title', locale), t('alert.pro.activated', locale));
       } else if (outcome === 'error') {
         Alert.alert(
-          '구독 화면',
-          '페이월을 열지 못했어요. RevenueCat 대시보드에 Offering·Paywall이 준비됐는지 확인해 주세요.',
+          t('alert.paywall.title', locale),
+          t('alert.paywall.error', locale),
         );
       } else if (outcome === 'skipped') {
-        Alert.alert('구독', '이 환경에서는 인앱 결제를 사용할 수 없어요.');
+        Alert.alert(t('alert.subscription.title', locale), t('alert.subscription.unavailable', locale));
       }
     } finally {
       setIsSubscriptionBusy(false);
@@ -131,14 +134,14 @@ export function SettingsPage() {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         const entitled = selectIsPro(useSubscriptionStore.getState());
         Alert.alert(
-          '구매 복원',
-          entitled ? 'POKIT Pro 구독을 복원했어요.' : '복원할 구독이 없어요.',
+          t('alert.restore.title', locale),
+          entitled ? t('alert.restore.success', locale) : t('alert.restore.none', locale),
         );
       } else if (result.reason === 'skipped') {
-        Alert.alert('구매 복원', '이 환경에서는 구매 복원을 사용할 수 없어요.');
+        Alert.alert(t('alert.restore.title', locale), t('alert.restore.unavailable', locale));
       } else {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert('구매 복원 실패', result.message ?? '다시 시도해 주세요.');
+        Alert.alert(t('alert.restore.failed', locale), result.message ?? t('alert.retry', locale));
       }
     } finally {
       setIsSubscriptionBusy(false);
@@ -153,11 +156,11 @@ export function SettingsPage() {
       await useSubscriptionStore.getState().refreshCustomerInfo();
       if (outcome === 'error') {
         Alert.alert(
-          '구독 관리',
-          '고객 센터를 열지 못했어요. RevenueCat Customer Center 설정을 확인해 주세요.',
+          t('alert.manage.title', locale),
+          t('alert.manage.error', locale),
         );
       } else if (outcome === 'skipped') {
-        Alert.alert('구독 관리', '이 환경에서는 구독 관리를 사용할 수 없어요.');
+        Alert.alert(t('alert.manage.title', locale), t('alert.manage.unavailable', locale));
       }
     } finally {
       setIsSubscriptionBusy(false);
@@ -248,10 +251,10 @@ export function SettingsPage() {
       await useLocalNotificationsStore.getState().refreshPermission();
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('초기화 완료', '로컬 데이터와 예약 알림을 초기화했어요.');
+      Alert.alert(t('alert.reset.success.title', locale), t('alert.reset.success.message', locale));
     } catch {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('초기화 실패', '데이터 초기화 중 문제가 발생했어요. 다시 시도해 주세요.');
+      Alert.alert(t('alert.reset.failed.title', locale), t('alert.reset.failed.message', locale));
     } finally {
       setIsResettingData(false);
     }
@@ -260,11 +263,11 @@ export function SettingsPage() {
   const confirmResetData = () => {
     if (isResettingData) return;
     Alert.alert(
-      '데이터 초기화',
-      '저장된 일정/루틴/통계/목표 설정과 예약 알림을 모두 삭제합니다. 이 작업은 되돌릴 수 없어요.',
+      t('settings.confirmReset.title', locale),
+      t('settings.confirmReset.message', locale),
       [
-        { text: '취소', style: 'cancel' },
-        { text: '초기화', style: 'destructive', onPress: () => void runResetData() },
+        { text: t('common.cancel', locale), style: 'cancel' },
+        { text: t('common.reset', locale), style: 'destructive', onPress: () => void runResetData() },
       ],
     );
   };
@@ -282,7 +285,7 @@ export function SettingsPage() {
         ]}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="뒤로가기"
+          accessibilityLabel={t('settings.back', locale)}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
@@ -295,7 +298,7 @@ export function SettingsPage() {
           style={[chrome.headerTitle, { color: p.title }]}
           lightColor={p.title}
           darkColor={p.title}>
-          설정
+          {t('settings.title', locale)}
         </ThemedText>
         <View style={chrome.headerBtn} pointerEvents="none" />
       </View>
@@ -311,7 +314,9 @@ export function SettingsPage() {
         ]}
         showsVerticalScrollIndicator={false}>
         <SettingsSection border={p.border} surface={p.surface}>
-          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>데이플랜</ThemedText>
+          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
+            {t('settings.section.dayPlan', locale)}
+          </ThemedText>
 
           <Pressable
             style={[chrome.item, { borderTopColor: p.border }]}
@@ -320,7 +325,7 @@ export function SettingsPage() {
               router.push('/daily-rhythm-settings');
             }}
             accessibilityRole="button"
-            accessibilityLabel="시작과 마무리 시간 설정">
+            accessibilityLabel={t('settings.a11y.dayWindow', locale)}>
             <View style={chrome.itemLeft}>
               <SettingsRowIcon
                 name="clock"
@@ -331,11 +336,11 @@ export function SettingsPage() {
               />
               <View style={chrome.itemTextWrap}>
                 <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  시작·마무리
+                  {t('settings.dayPlanWindow', locale)}
                 </ThemedText>
                 <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                   {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
-                  {dayStartAlarmOn ? ' · 하루 시작 알림 켜짐' : ''}
+                  {dayStartAlarmOn ? t('settings.dayPlanStartAlarmOn', locale) : ''}
                 </ThemedText>
               </View>
             </View>
@@ -351,7 +356,7 @@ export function SettingsPage() {
               });
             }}
             accessibilityRole="button"
-            accessibilityLabel="POKIT 소개 보기">
+            accessibilityLabel={t('settings.a11y.intro', locale)}>
             <View style={chrome.itemLeft}>
               <SettingsRowIcon
                 name="sparkles"
@@ -362,10 +367,10 @@ export function SettingsPage() {
               />
               <View style={chrome.itemTextWrap}>
                 <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  POKIT 소개
+                  {t('settings.introTitle', locale)}
                 </ThemedText>
                 <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  처음 쓸 때처럼 핵심만 짧게 안내해요
+                  {t('settings.introDesc', locale)}
                 </ThemedText>
               </View>
             </View>
@@ -379,7 +384,7 @@ export function SettingsPage() {
               router.push('/guide-book');
             }}
             accessibilityRole="button"
-            accessibilityLabel="사용 설명서 보기">
+            accessibilityLabel={t('settings.a11y.guide', locale)}>
             <View style={chrome.itemLeft}>
               <SettingsRowIcon
                 name="book.fill"
@@ -390,10 +395,10 @@ export function SettingsPage() {
               />
               <View style={chrome.itemTextWrap}>
                 <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  사용 설명서
+                  {t('settings.guideBookTitle', locale)}
                 </ThemedText>
                 <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  실제 화면 기준으로 탭·버튼을 설명해요
+                  {t('settings.guideBookDesc', locale)}
                 </ThemedText>
               </View>
             </View>
@@ -403,7 +408,9 @@ export function SettingsPage() {
 
         {SHOW_NOTIFICATION_SETTINGS ? (
           <SettingsSection border={p.border} surface={p.surface}>
-            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>알림</ThemedText>
+            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
+              {t('settings.section.notification', locale)}
+            </ThemedText>
 
             <Pressable
               style={[chrome.item, { borderTopColor: p.border }]}
@@ -412,7 +419,7 @@ export function SettingsPage() {
                 router.push('/notification-settings');
               }}
               accessibilityRole="button"
-              accessibilityLabel="알림 설정">
+              accessibilityLabel={t('settings.a11y.notification', locale)}>
               <View style={chrome.itemLeft}>
                 <SettingsRowIcon
                   name="bell.fill"
@@ -423,10 +430,10 @@ export function SettingsPage() {
                 />
                 <View style={chrome.itemTextWrap}>
                   <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                    알림
+                    {t('settings.notificationTitle', locale)}
                   </ThemedText>
                   <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                    나를 위한 다양한 알림 기능
+                    {t('settings.notificationDesc', locale)}
                   </ThemedText>
                 </View>
               </View>
@@ -436,7 +443,9 @@ export function SettingsPage() {
         ) : null}
 
         <SettingsSection border={p.border} surface={p.surface}>
-          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>화면</ThemedText>
+          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
+            {t('settings.section.appearance', locale)}
+          </ThemedText>
 
           <Pressable
             style={[chrome.item, { borderTopColor: p.border }]}
@@ -445,7 +454,7 @@ export function SettingsPage() {
               router.push('/day-plan-view-settings');
             }}
             accessibilityRole="button"
-            accessibilityLabel="오늘 탭 보기 설정">
+            accessibilityLabel={t('settings.a11y.dayPlanView', locale)}>
             <View style={chrome.itemLeft}>
               <SettingsRowIcon
                 name="square.grid.2x2"
@@ -456,10 +465,10 @@ export function SettingsPage() {
               />
               <View style={chrome.itemTextWrap}>
                 <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  오늘 탭 보기
+                  {t('settings.dayPlanViewTitle', locale)}
                 </ThemedText>
                 <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  목록 보기 설정
+                  {t('settings.dayPlanViewDesc', locale)}
                 </ThemedText>
               </View>
             </View>
@@ -474,7 +483,7 @@ export function SettingsPage() {
                 router.push('/appearance-settings');
               }}
               accessibilityRole="button"
-              accessibilityLabel="화면 테마 설정">
+              accessibilityLabel={t('settings.a11y.appearance', locale)}>
               <View style={chrome.itemLeft}>
                 <SettingsRowIcon
                   name="paintbrush.fill"
@@ -485,7 +494,7 @@ export function SettingsPage() {
                 />
                 <View style={chrome.itemTextWrap}>
                   <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                    화면 테마
+                    {t('settings.appearanceTitle', locale)}
                   </ThemedText>
                   <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                     {appearanceLabel}
@@ -499,7 +508,9 @@ export function SettingsPage() {
 
         {SHOW_POKIT_PRO_SETTINGS ? (
           <SettingsSection border={p.border} surface={p.surface}>
-            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>POKIT Pro</ThemedText>
+            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
+              {t('settings.section.pro', locale)}
+            </ThemedText>
 
             <Pressable
               style={[chrome.item, { borderTopColor: p.border }, isSubscriptionBusy && styles.disabledItem]}
@@ -513,7 +524,9 @@ export function SettingsPage() {
               }}
               disabled={isSubscriptionBusy}
               accessibilityRole="button"
-              accessibilityLabel={isPro ? 'POKIT Pro 구독 관리' : 'POKIT Pro 구독하기'}>
+              accessibilityLabel={
+                isPro ? t('settings.a11y.pro.manage', locale) : t('settings.a11y.pro.subscribe', locale)
+              }>
               <View style={chrome.itemLeft}>
                 <SettingsRowIcon
                   name="star.fill"
@@ -524,14 +537,14 @@ export function SettingsPage() {
                 />
                 <View style={chrome.itemTextWrap}>
                   <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                    {isPro ? 'Pro 이용 중' : 'Pro 시작하기'}
+                    {isPro ? t('settings.pro.active', locale) : t('settings.pro.start', locale)}
                   </ThemedText>
                   <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                     {!subscriptionConfigured
-                      ? '이 빌드에서는 결제 모듈을 쓸 수 없어요'
+                      ? t('settings.pro.moduleMissing', locale)
                       : isPro
-                        ? '구독·결제 관리 (Customer Center)'
-                        : '월간·연간·평생 — 클라우드 등 Pro 기능'}
+                        ? t('settings.pro.manageDesc', locale)
+                        : t('settings.pro.featuresDesc', locale)}
                   </ThemedText>
                 </View>
               </View>
@@ -546,7 +559,7 @@ export function SettingsPage() {
               }}
               disabled={isSubscriptionBusy}
               accessibilityRole="button"
-              accessibilityLabel="구매 복원">
+              accessibilityLabel={t('settings.a11y.restore', locale)}>
               <View style={chrome.itemLeft}>
                 <SettingsRowIcon
                   name="arrow.clockwise"
@@ -557,10 +570,10 @@ export function SettingsPage() {
                 />
                 <View style={chrome.itemTextWrap}>
                   <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                    구매 복원
+                    {t('settings.restore.title', locale)}
                   </ThemedText>
                   <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                    같은 Apple/Google 계정의 구독을 다시 불러와요
+                    {t('settings.restore.desc', locale)}
                   </ThemedText>
                 </View>
               </View>
@@ -570,7 +583,9 @@ export function SettingsPage() {
         ) : null}
 
         <SettingsSection border={p.border} surface={p.surface}>
-          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>고객센터</ThemedText>
+          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
+            {t('settings.section.support', locale)}
+          </ThemedText>
 
           <Pressable
             style={[chrome.item, { borderTopColor: p.border }]}
@@ -579,7 +594,7 @@ export function SettingsPage() {
               void openSupportMailComposer();
             }}
             accessibilityRole="button"
-            accessibilityLabel="문의 메일 작성">
+            accessibilityLabel={t('settings.a11y.support', locale)}>
             <View style={chrome.itemLeft}>
               <SettingsRowIcon
                 name="paperplane.fill"
@@ -590,7 +605,7 @@ export function SettingsPage() {
               />
               <View style={chrome.itemTextWrap}>
                 <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  문의하기
+                  {t('settings.supportContact', locale)}
                 </ThemedText>
                 <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                   {SUPPORT_EMAIL}
@@ -611,7 +626,7 @@ export function SettingsPage() {
               />
               <View style={chrome.itemTextWrap}>
                 <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  앱 버전
+                  {t('settings.appVersion', locale)}
                 </ThemedText>
                 <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                   {appVersionLabel}
@@ -622,7 +637,9 @@ export function SettingsPage() {
         </SettingsSection>
 
         <SettingsSection border={p.border} surface={p.surface}>
-          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>데이터</ThemedText>
+          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
+            {t('settings.section.data', locale)}
+          </ThemedText>
           <Pressable
             style={({ pressed }) => [
               chrome.item,
@@ -633,7 +650,7 @@ export function SettingsPage() {
             onPress={confirmResetData}
             disabled={isResettingData}
             accessibilityRole="button"
-            accessibilityLabel="앱 데이터 초기화">
+            accessibilityLabel={t('settings.a11y.reset', locale)}>
             <View style={chrome.itemLeft}>
               <SettingsRowIcon
                 name="trash.fill"
@@ -647,13 +664,13 @@ export function SettingsPage() {
                   style={[chrome.itemTitle, { color: p.dangerTitle }]}
                   lightColor={p.dangerTitle}
                   darkColor={p.dangerTitle}>
-                  {isResettingData ? '초기화 중...' : '앱 데이터 초기화'}
+                  {isResettingData ? t('settings.resetData.loading', locale) : t('settings.resetData', locale)}
                 </ThemedText>
                 <ThemedText
                   style={[chrome.itemDesc, { color: p.dangerDesc }]}
                   lightColor={p.dangerDesc}
                   darkColor={p.dangerDesc}>
-                  저장된 로컬 데이터와 예약 알림을 모두 삭제해요
+                  {t('settings.resetData.desc', locale)}
                 </ThemedText>
               </View>
             </View>

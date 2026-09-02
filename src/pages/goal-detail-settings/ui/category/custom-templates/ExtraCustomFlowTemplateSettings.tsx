@@ -19,6 +19,7 @@ import {
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
 
@@ -70,6 +71,7 @@ function TitleSummaryHeader({
   hideTitleField?: boolean;
   c: ReturnType<typeof goalDetailSettingsPalette>;
 }) {
+  const { t } = useTranslation();
   const titleFallback = useMemo(
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],
@@ -90,7 +92,7 @@ function TitleSummaryHeader({
         value={summary}
         onChangeValue={setSummary}
         palette={c}
-        placeholder="한 줄 메모 (선택)"
+        placeholder={t('goalDetail.memoPlaceholder')}
       />
     </>
   );

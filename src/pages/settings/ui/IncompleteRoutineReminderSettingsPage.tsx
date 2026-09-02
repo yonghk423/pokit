@@ -18,6 +18,7 @@ import {
 } from '@features/day-plan-notifications';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { t, useTranslation } from '@shared/lib/i18n';
 import { loadIncompleteRoutineReminder } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -33,6 +34,7 @@ import { buildSettingsPalette, settingsChromeStyles as chrome } from '../lib/set
 
 /** 설정 → 알림 → 미완료 일정 알림 */
 export function IncompleteRoutineReminderSettingsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
   const p = buildSettingsPalette(isDark);
@@ -116,7 +118,7 @@ export function IncompleteRoutineReminderSettingsPage() {
     });
     if (on && !ok) {
       setReminderOn(false);
-      Alert.alert('알림', '알림을 켜려면 기기에서 알림 권한을 허용해 주세요.');
+      Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
     }
   }, []);
 
@@ -176,28 +178,27 @@ export function IncompleteRoutineReminderSettingsPage() {
             style={chrome.headerBtn}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             accessibilityRole="button"
-            accessibilityLabel="뒤로가기">
+            accessibilityLabel={t('settings.back')}>
             <IconSymbol name="chevron.left" size={20} color={p.title} />
           </Pressable>
           <ThemedText
             style={[chrome.headerTitle, styles.headerTitleCenter, { color: p.title }]}
             lightColor={p.title}
             darkColor={p.title}>
-            미완료 일정 알림
+            {t('settings.incompleteReminder.title')}
           </ThemedText>
           <View style={chrome.headerBtn} pointerEvents="none" />
         </View>
 
         <ScrollView contentContainerStyle={chrome.container} showsVerticalScrollIndicator={false}>
           <ThemedText style={[chrome.sectionHint, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-            정해진 시각에 아직 끝내지 못한 일정이 있으면 알려 드려요. 기기 설정에서
-            POKIT이「알림 요약」에 들어 있으면 시각이 밀릴 수 있어요.
+            {t('settings.incompleteReminder.hint')}
           </ThemedText>
 
           <View style={[styles.card, { borderColor: p.border, backgroundColor: p.surface }]}>
             <DailyRhythmStyleAlarmRow
-              title="미완료 일정 알림"
-              hint="매일 지정한 시각에 미완료 일정 개수를 알려 드려요."
+              title={t('settings.incompleteReminder.rowTitle')}
+              hint={t('settings.incompleteReminder.rowHint')}
               value={reminderOn}
               onValueChange={(v) => void onToggleReminder(v)}
               palette={surface.alarm}
@@ -215,8 +216,8 @@ export function IncompleteRoutineReminderSettingsPage() {
                   },
                 ]}>
                 <SnappedTimePickerField
-                  label="알림 시각"
-                  hint="이 시각에 미완료 일정이 있으면 알림이 울려요."
+                  label={t('settings.incompleteReminder.timeLabel')}
+                  hint={t('settings.incompleteReminder.timeHint')}
                   valueHhmm={reminderHhmm}
                   onChangeHhmm={(next) => {
                     setReminderHhmm(next);
@@ -230,8 +231,8 @@ export function IncompleteRoutineReminderSettingsPage() {
                 />
                 <ThemedText style={[styles.previewLine, { color: p.desc }]}>
                   {pendingTotal > 0
-                    ? `현재 예약 · ${formatHhmmClockKo(reminderHhmm)}에 「${pendingPreview.title} · ${pendingPreview.body}」`
-                    : '현재 미완료 루틴이 없어 알림이 예약되지 않아요.'}
+                    ? t('settings.incompleteReminder.previewScheduled', { time: formatHhmmClockKo(reminderHhmm), title: pendingPreview.title, body: pendingPreview.body })
+                    : t('settings.incompleteReminder.previewNone')}
                 </ThemedText>
               </View>
             ) : null}

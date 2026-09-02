@@ -1,11 +1,13 @@
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 const SHADOW = 3;
 
 export function RoutineDeleteButton({ onDelete }: { onDelete: () => void }) {
+  const { t } = useTranslation();
   const tone = RetroFlatColors.light;
 
   return (
@@ -22,16 +24,12 @@ export function RoutineDeleteButton({ onDelete }: { onDelete: () => void }) {
       />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="루틴 삭제"
+        accessibilityLabel={t('goalDetail.routineDelete')}
         onPress={() => {
-          Alert.alert(
-            '루틴 삭제',
-            '이 루틴을 삭제할까요? 담기·나만의 루틴과 설정에서 함께 제거됩니다.',
-            [
-              { text: '취소', style: 'cancel' },
-              { text: '삭제', style: 'destructive', onPress: onDelete },
-            ],
-          );
+          Alert.alert(t('goalDetail.routineDelete'), t('goalDetail.routineDeleteConfirm'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('common.delete'), style: 'destructive', onPress: onDelete },
+          ]);
         }}
         style={({ pressed }) => [
           styles.deleteBtn,
@@ -41,7 +39,9 @@ export function RoutineDeleteButton({ onDelete }: { onDelete: () => void }) {
           },
           pressed && { opacity: 0.94 },
         ]}>
-        <ThemedText style={[styles.deleteLabel, { color: tone.danger }]}>루틴 삭제</ThemedText>
+        <ThemedText style={[styles.deleteLabel, { color: tone.danger }]}>
+          {t('goalDetail.routineDelete')}
+        </ThemedText>
       </Pressable>
     </View>
   );

@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -27,6 +28,7 @@ export function PriorityMealSlotSectionHeader({
   isFirst,
   onPressHintTime,
 }: Props) {
+  const { t } = useTranslation();
   const timeNode = (
     <ThemedText
       style={[styles.hint, { color: onPressHintTime ? ink : muted }]}
@@ -48,7 +50,7 @@ export function PriorityMealSlotSectionHeader({
         {onPressHintTime ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${title} 시작 시각 변경`}
+            accessibilityLabel={t('dayPlan.mealSlotStartChangeA11y', { title })}
             onPress={onPressHintTime}
             hitSlop={6}
             style={({ pressed }) => [

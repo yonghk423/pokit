@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getGoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
+import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -52,6 +53,7 @@ export function SessionImmersionLayout({
   children,
   bottomBar,
 }: Props) {
+  const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const ui = getGoalDetailSessionUi(isDark);
   const insets = useSafeAreaInsets();
@@ -97,7 +99,7 @@ export function SessionImmersionLayout({
         <View style={[styles.header, { borderBottomColor: ui.border }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="뒤로가기"
+            accessibilityLabel={t('settings.back')}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             style={styles.headerBtn}
             onPress={onBack}>
@@ -158,11 +160,13 @@ export function ImmersionBottomControls({
   borderColor,
   paddingBottom,
   onEndSession,
-  completeLabel = '완료',
+  completeLabel,
   completeForeground,
   disabled = false,
 }: BottomProps) {
+  const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
+  const resolvedCompleteLabel = completeLabel ?? t('session.complete');
   const ui = getGoalDetailSessionUi(isDark);
   const fg = completeForeground ?? ui.primaryOnAccent;
 
@@ -179,7 +183,7 @@ export function ImmersionBottomControls({
         disabled={disabled}
         onPress={onEndSession}>
         <IconSymbol name="checkmark.circle.fill" size={20} color={fg} />
-        <ThemedText style={[styles.completeBtnText, { color: fg }]}>{completeLabel}</ThemedText>
+        <ThemedText style={[styles.completeBtnText, { color: fg }]}>{resolvedCompleteLabel}</ThemedText>
       </Pressable>
     </View>
   );

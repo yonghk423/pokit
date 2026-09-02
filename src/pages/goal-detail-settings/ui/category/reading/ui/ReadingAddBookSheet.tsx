@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -34,6 +35,7 @@ export function ReadingAddBookSheet({
   onAddManual,
   onOpenSearch,
 }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const c = palette;
   const accent = c.onSurface;
@@ -66,7 +68,7 @@ export function ReadingAddBookSheet({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.kavRoot}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="닫기" />
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('dayPlan.close')} />
         <View
           style={[
             styles.sheet,
@@ -76,21 +78,23 @@ export function ReadingAddBookSheet({
               paddingBottom: Math.max(insets.bottom, 16),
             },
           ]}>
-          <ThemedText style={[styles.title, { color: c.onSurface }]}>도서 추가</ThemedText>
+          <ThemedText style={[styles.title, { color: c.onSurface }]}>
+            {t('goalDetail.reading.addSheetTitle')}
+          </ThemedText>
           <View style={[styles.inputRow, { borderColor: c.outlineVariant }]}>
             <TextInput
               value={draft}
               onChangeText={setDraft}
               onSubmitEditing={submit}
               returnKeyType="done"
-              placeholder="책 제목을 직접 입력"
+              placeholder={t('goalDetail.reading.addTitlePlaceholder')}
               placeholderTextColor={c.outline}
               style={[styles.input, { color: c.onSurface }]}
               autoFocus
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="도서 추가"
+              accessibilityLabel={t('goalDetail.reading.addBook')}
               onPress={submit}
               style={[styles.addBtn, { backgroundColor: accent }]}>
               <IconSymbol name="plus" size={16} color={c.surfaceLowest} />
@@ -102,7 +106,9 @@ export function ReadingAddBookSheet({
               onPress={openSearch}
               style={[styles.searchBtn, { borderColor: accent }]}>
               <IconSymbol name="magnifyingglass" size={14} color={accent} />
-              <ThemedText style={[styles.searchBtnText, { color: accent }]}>도서 검색</ThemedText>
+              <ThemedText style={[styles.searchBtnText, { color: accent }]}>
+                {t('goalDetail.reading.searchBook')}
+              </ThemedText>
             </Pressable>
           ) : null}
         </View>

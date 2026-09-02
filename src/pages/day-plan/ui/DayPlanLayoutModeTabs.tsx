@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -22,34 +23,39 @@ export type DayPlanHeaderSuffixTab = {
 type TabDef = {
   key: DayPlanLayoutMode;
   icon: string;
-  accessibilityLabel: string;
-};
-
-export const DAY_PLAN_LAYOUT_MODE_LABELS_KO: Record<DayPlanLayoutMode, string> = {
-  bag: '목록',
-  sections: '시간대',
-  spine: '타임라인',
+  labelKey: I18nKey;
+  a11yKey: I18nKey;
 };
 
 const TABS: TabDef[] = [
   {
     key: 'bag',
     icon: 'list.bullet.rectangle',
-    accessibilityLabel: '전체 루틴',
+    labelKey: 'layoutMode.bag',
+    a11yKey: 'layoutMode.a11y.allRoutines',
   },
   {
     key: 'sections',
     icon: 'sun.horizon.fill',
-    accessibilityLabel: '시간대별 보기',
+    labelKey: 'layoutMode.sections',
+    a11yKey: 'layoutMode.a11y.sections',
   },
   {
     key: 'spine',
     icon: 'clock',
-    accessibilityLabel: '타임라인 보기',
+    labelKey: 'layoutMode.spine',
+    a11yKey: 'layoutMode.a11y.spine',
   },
 ];
 
-// 시간대(sections) 모드는 잠정 유보 — UI에서만 숨김, 로직은 보존
+function layoutModeLabel(t: (key: I18nKey) => string, mode: DayPlanLayoutMode): string {
+  const map: Record<DayPlanLayoutMode, I18nKey> = {
+    bag: 'layoutMode.bag',
+    sections: 'layoutMode.sections',
+    spine: 'layoutMode.spine',
+  };
+  return t(map[mode]);
+}
 const ENABLED_LAYOUT_MODES: readonly DayPlanLayoutMode[] = ['bag'];
 
 const SHADOW_SM = 2;
@@ -89,6 +95,7 @@ export function DayPlanLayoutModeTabs({
   layoutTabActive = true,
   suffixTabs,
 }: Props) {
+  const { t } = useTranslation();
   const pill = tabPillColors(isDark);
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const tabs = TABS.filter((item) => ENABLED_LAYOUT_MODES.includes(item.key)).filter((item) =>
@@ -110,7 +117,7 @@ export function DayPlanLayoutModeTabs({
       <View style={styles.attachedRoot}>
         {tabs.map((item, index) => {
           const active = mode === item.key;
-          const label = DAY_PLAN_LAYOUT_MODE_LABELS_KO[item.key];
+          const label = layoutModeLabel(t, item.key);
           const isFirst = index === 0;
           return (
             <View key={item.key} style={styles.attachedShell}>
@@ -167,13 +174,13 @@ export function DayPlanLayoutModeTabs({
     <View style={[styles.root, showLabels && styles.rootLabeled]}>
       {tabs.map((item) => {
         const active = layoutTabActive && mode === item.key;
-        const label = DAY_PLAN_LAYOUT_MODE_LABELS_KO[item.key];
+          const label = layoutModeLabel(t, item.key);
         return (
           <Pressable
             key={item.key}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={showLabels ? label : item.accessibilityLabel}
+            accessibilityLabel={showLabels ? label : t(item.a11yKey)}
             onPress={() => {
               if (active && !allowReselect) return;
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

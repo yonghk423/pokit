@@ -14,12 +14,13 @@ import {
   type WorkStudyDdayEvent,
 } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 
 const PRIMARY = 'rgb(0, 0, 0)';
-const WEEKDAY_HEADERS = ['월', '화', '수', '목', '금', '토', '일'];
+const WEEKDAY_HEADER_KEYS = ['goalDetail.weekday.mon', 'goalDetail.weekday.tue', 'goalDetail.weekday.wed', 'goalDetail.weekday.thu', 'goalDetail.weekday.fri', 'goalDetail.weekday.sat', 'goalDetail.weekday.sun'] as const;
 
 type Props = {
   events: WorkStudyDdayEvent[];
@@ -38,6 +39,7 @@ function shiftDateKey(dateKey: string, dayDelta: number): string {
 }
 
 export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
+  const { t } = useTranslation();
   const todayKey = useMemo(() => getLocalDateKey(), []);
   const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
   const [draftTitle, setDraftTitle] = useState('');
@@ -72,9 +74,9 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
       <View style={styles.headerRow}>
         <IconSymbol name="calendar" size={16} color={PRIMARY} />
         <View style={styles.headerText}>
-          <ThemedText style={[styles.title, { color: palette.onSurface }]}>시험·일정 D-Day</ThemedText>
+          <ThemedText style={[styles.title, { color: palette.onSurface }]}>{t('goalDetail.study.ddayTitle')}</ThemedText>
           <ThemedText style={[styles.hint, { color: palette.onVariant }]}>
-            날짜를 고르고 시험·과제 마감을 추가해요.
+            {t('goalDetail.study.ddayHint')}
           </ThemedText>
         </View>
       </View>
@@ -82,7 +84,7 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
       <View style={styles.monthNav}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="이전 주"
+          accessibilityLabel={t('goalDetail.study.prevWeek')}
           onPress={() => setSelectedDateKey((key) => shiftDateKey(key, -7))}
           hitSlop={8}
           style={styles.navBtn}>
@@ -91,7 +93,7 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
         <ThemedText style={[styles.monthTitle, { color: palette.onSurface }]}>{monthTitle}</ThemedText>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="다음 주"
+          accessibilityLabel={t('goalDetail.study.nextWeek')}
           onPress={() => setSelectedDateKey((key) => shiftDateKey(key, 7))}
           hitSlop={8}
           style={styles.navBtn}>
@@ -100,9 +102,9 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
       </View>
 
       <View style={styles.weekdayRow}>
-        {WEEKDAY_HEADERS.map((label) => (
-          <ThemedText key={label} style={[styles.weekdayLabel, { color: palette.onVariant }]}>
-            {label}
+        {WEEKDAY_HEADER_KEYS.map((dayKey) => (
+          <ThemedText key={dayKey} style={[styles.weekdayLabel, { color: palette.onVariant }]}>
+            {t(dayKey)}
           </ThemedText>
         ))}
       </View>
@@ -119,7 +121,7 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
               key={dateKey}
               accessibilityRole="button"
               accessibilityState={{ selected }}
-              accessibilityLabel={`${formatDateKeyDisplayKo(dateKey)} 선택`}
+              accessibilityLabel={t('goalDetail.fasting.selectDateA11y', { date: formatDateKeyDisplayKo(dateKey) })}
               onPress={() => setSelectedDateKey(dateKey)}
               style={[
                 styles.dayCell,
@@ -152,7 +154,7 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
             onChangeText={setDraftTitle}
             onSubmitEditing={addEvent}
             returnKeyType="done"
-            placeholder="시험·과제 이름"
+            placeholder={t('goalDetail.study.ddayPlaceholder')}
             placeholderTextColor={palette.outline}
             style={[styles.addInput, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
           />
@@ -184,7 +186,7 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
               <Pressable
                 onPress={() => removeEvent(event.id)}
                 hitSlop={8}
-                accessibilityLabel="D-Day 일정 삭제"
+                accessibilityLabel={t('goalDetail.study.deleteDdayA11y')}
                 style={styles.removeBtn}>
                 <IconSymbol name="trash" size={13} color={palette.onVariant} />
               </Pressable>
@@ -193,7 +195,7 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
         </View>
       ) : (
         <ThemedText style={[styles.empty, { color: palette.onVariant }]}>
-          등록된 D-Day가 없어요.
+          {t('goalDetail.study.noDday')}
         </ThemedText>
       )}
     </View>

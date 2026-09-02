@@ -18,12 +18,13 @@ import {
   type FastingWeightLogs,
 } from '@entities/day-plan/lib/weightLog';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 
 const PRIMARY = 'rgb(0, 0, 0)';
-const WEEKDAY_HEADERS = ['월', '화', '수', '목', '금', '토', '일'];
+const WEEKDAY_HEADER_KEYS = ['goalDetail.weekday.mon', 'goalDetail.weekday.tue', 'goalDetail.weekday.wed', 'goalDetail.weekday.thu', 'goalDetail.weekday.fri', 'goalDetail.weekday.sat', 'goalDetail.weekday.sun'] as const;
 
 type Palette = ReturnType<typeof goalDetailSettingsPalette>;
 
@@ -40,6 +41,7 @@ export function WeightLogCalendarSection({
   onLatestWeightChange,
   palette,
 }: Props) {
+  const { t } = useTranslation();
   const todayKey = useMemo(() => getLocalDateKey(), []);
   const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
   const [monthStart, setMonthStart] = useState(() => toMonthStart(new Date()));
@@ -72,9 +74,9 @@ export function WeightLogCalendarSection({
       <View style={styles.headerRow}>
         <IconSymbol name="calendar" size={16} color={PRIMARY} />
         <View style={styles.headerText}>
-          <ThemedText style={[styles.title, { color: palette.onSurface }]}>날짜별 체중 기록</ThemedText>
+          <ThemedText style={[styles.title, { color: palette.onSurface }]}>{t('goalDetail.fasting.weightLogTitle')}</ThemedText>
           <ThemedText style={[styles.hint, { color: palette.onVariant }]}>
-            날짜를 고르고 그날의 체중(kg)을 입력해요.
+            {t('goalDetail.fasting.weightLogHint')}
           </ThemedText>
         </View>
       </View>
@@ -82,7 +84,7 @@ export function WeightLogCalendarSection({
       <View style={styles.monthNav}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="이전 달"
+          accessibilityLabel={t('goalDetail.fasting.prevMonth')}
           onPress={() => setMonthStart((m) => addMonths(m, -1))}
           hitSlop={8}
           style={styles.navBtn}>
@@ -91,7 +93,7 @@ export function WeightLogCalendarSection({
         <ThemedText style={[styles.monthTitle, { color: palette.onSurface }]}>{monthTitle}</ThemedText>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="다음 달"
+          accessibilityLabel={t('goalDetail.fasting.nextMonth')}
           onPress={() => setMonthStart((m) => addMonths(m, 1))}
           hitSlop={8}
           style={styles.navBtn}>
@@ -100,9 +102,9 @@ export function WeightLogCalendarSection({
       </View>
 
       <View style={styles.weekdayRow}>
-        {WEEKDAY_HEADERS.map((label) => (
-          <ThemedText key={label} style={[styles.weekdayLabel, { color: palette.onVariant }]}>
-            {label}
+        {WEEKDAY_HEADER_KEYS.map((dayKey) => (
+          <ThemedText key={dayKey} style={[styles.weekdayLabel, { color: palette.onVariant }]}>
+            {t(dayKey)}
           </ThemedText>
         ))}
       </View>
@@ -119,7 +121,7 @@ export function WeightLogCalendarSection({
               key={dateKey}
               accessibilityRole="button"
               accessibilityState={{ selected }}
-              accessibilityLabel={`${formatDateKeyDisplayKo(dateKey)} 선택`}
+              accessibilityLabel={t('goalDetail.fasting.selectDateA11y', { date: formatDateKeyDisplayKo(dateKey) })}
               onPress={() => setSelectedDateKey(dateKey)}
               style={[
                 styles.dayCell,
@@ -157,21 +159,21 @@ export function WeightLogCalendarSection({
             onSubmitEditing={saveWeight}
             returnKeyType="done"
             keyboardType="decimal-pad"
-            placeholder="체중(kg)"
+            placeholder={t('goalDetail.fasting.weightPlaceholder')}
             placeholderTextColor={palette.outline}
             style={[styles.input, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="체중 저장"
+            accessibilityLabel={t('goalDetail.fasting.save')}
             onPress={saveWeight}
             style={styles.saveBtn}>
-            <ThemedText style={styles.saveBtnText}>저장</ThemedText>
+            <ThemedText style={styles.saveBtnText}>{t('goalDetail.fasting.save')}</ThemedText>
           </Pressable>
           {selectedWeight != null ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="기록 삭제"
+              accessibilityLabel={t('goalDetail.fasting.deleteLogA11y')}
               onPress={clearWeight}
               hitSlop={8}
               style={styles.clearBtn}>

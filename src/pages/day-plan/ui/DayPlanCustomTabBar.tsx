@@ -8,6 +8,7 @@ import { LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
@@ -24,18 +25,19 @@ type TabDef = {
   route: string;
   icon: string;
   size: number;
-  label: string;
+  labelKey: I18nKey;
 };
 
 const TABS: TabDef[] = [
-  { route: 'day-plan', icon: 'calendar', size: 22, label: '오늘' },
-  { route: 'fixed-routines', icon: 'list.bullet.rectangle', size: 22, label: '루틴' },
-  { route: 'priority-catalog', icon: 'figure.walk', size: 22, label: '나만의 루틴' },
-  { route: 'day-plan-statistics', icon: 'clock.arrow.circlepath', size: 22, label: '히스토리' },
-  { route: 'pokit-story', icon: 'book', size: 22, label: '스토리' },
+  { route: 'day-plan', icon: 'calendar', size: 22, labelKey: 'tabs.dayPlan' },
+  { route: 'fixed-routines', icon: 'list.bullet.rectangle', size: 22, labelKey: 'tabs.routines' },
+  { route: 'priority-catalog', icon: 'figure.walk', size: 22, labelKey: 'tabs.myRoutines' },
+  { route: 'day-plan-statistics', icon: 'clock.arrow.circlepath', size: 22, labelKey: 'tabs.history' },
+  { route: 'pokit-story', icon: 'book', size: 22, labelKey: 'tabs.story' },
 ];
 
 export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const onTabBarHeightChange = useContext(BottomTabBarHeightCallbackContext);
   const colorScheme = useColorScheme();
@@ -115,7 +117,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
               key={tab.route}
               accessibilityRole="tab"
               accessibilityState={{ selected: isFocused }}
-              accessibilityLabel={tab.label}
+              accessibilityLabel={t(tab.labelKey)}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 navigation.navigate(tab.route);

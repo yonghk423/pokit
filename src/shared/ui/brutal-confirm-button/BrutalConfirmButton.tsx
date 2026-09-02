@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { RETRO_BORDER_WIDTH, RETRO_RADIUS } from '@shared/config/retroFlat';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 const SHADOW_SM = 2;
@@ -30,7 +31,7 @@ export type BrutalConfirmButtonProps = {
  */
 export function BrutalConfirmButton({
   onPress,
-  label = '확인',
+  label,
   accessibilityLabel,
   fill,
   labelColor,
@@ -40,6 +41,8 @@ export function BrutalConfirmButton({
   align = 'end',
   style,
 }: BrutalConfirmButtonProps) {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t('common.confirm');
   const stretch = align === 'stretch';
   const showShadow = Boolean(shadowColor) && !disabled;
 
@@ -65,7 +68,7 @@ export function BrutalConfirmButton({
       ) : null}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel ?? label}
+        accessibilityLabel={accessibilityLabel ?? resolvedLabel}
         accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={onPress}
@@ -78,7 +81,7 @@ export function BrutalConfirmButton({
             opacity: disabled ? 0.45 : pressed ? 0.88 : 1,
           },
         ]}>
-        <ThemedText style={[styles.label, { color: labelColor }]}>{label}</ThemedText>
+        <ThemedText style={[styles.label, { color: labelColor }]}>{resolvedLabel}</ThemedText>
       </Pressable>
     </View>
   );

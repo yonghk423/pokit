@@ -12,6 +12,7 @@ import Animated, {
 import { resolveCategoryCatalogIcon } from '@entities/day-plan';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -60,6 +61,8 @@ function DraggableFixedRoutineRow({
   onRemove,
 }: RowProps) {
   const translateY = useSharedValue(0);
+  const { t } = useTranslation();
+
   const dragging = useSharedValue(0);
 
   const triggerDragStart = useCallback(() => {
@@ -119,7 +122,7 @@ function DraggableFixedRoutineRow({
         <View
           style={styles.orderRowDragHit}
           accessibilityRole="adjustable"
-          accessibilityLabel={`${cat.label}, 길게 눌러 순서를 바꿀 수 있어요`}>
+          accessibilityLabel={t('fixedRoutine.reorderA11y', { label: cat.label })}>
           <ThemedText style={[styles.orderIdx, { color: muted }]}>{index + 1}</ThemedText>
           <IconSymbol
             name={resolveCategoryCatalogIcon(categoryKey) as any}
@@ -134,7 +137,7 @@ function DraggableFixedRoutineRow({
       <View style={styles.orderActions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${cat.label} 세트에서 빼기`}
+          accessibilityLabel={t('fixedRoutine.removeFromSetA11y', { label: cat.label })}
           hitSlop={8}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

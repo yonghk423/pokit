@@ -15,8 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   addDaysToLocalDateKey,
   computeSpineGapInsertSlot,
-  formatHhmmClockKo,
-  formatMinuteOfDayKo,
   getLocalDateKey,
   isSpineBlockScheduleWithinPriorityWindow,
   resolveCategoryCatalogIcon,
@@ -24,6 +22,12 @@ import {
   type DayPlanBlock,
 } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
+import {
+  formatDateKeyCompact,
+  formatHhmmClock,
+  formatMinuteOfDay,
+  useTranslation,
+} from '@shared/lib/i18n';
 import {
   loadSpineDefaultBlockMinutes,
   saveSpineDefaultBlockMinutes,
@@ -126,14 +130,6 @@ function buildSchedulesForSelectedKeys(
   return schedules;
 }
 
-function formatDateKeyCompactLabel(dateKey: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
-  if (!m) return dateKey;
-  const month = Number(m[2]);
-  const day = Number(m[3]);
-  return `${month}월 ${day}일`;
-}
-
 /** 루틴 탭과 동일한 그룹 구조 — 담기·구간 연결·타임라인 갭 추가용 다중 선택 시트 */
 export function PriorityRoutinePickerSheet({
   visible,
@@ -144,13 +140,15 @@ export function PriorityRoutinePickerSheet({
   muted,
   surface,
   line,
-  confirmLabel = '연결',
+  confirmLabel,
   spineGapAdd = null,
   onClose,
   onConfirm,
   onCreateCustom,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t, locale } = useTranslation();
+  const resolvedConfirmLabel = confirmLabel ?? t('dayPlan.confirmLink');
   const scrollRef = useRef<ScrollView>(null);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [scheduleByKey, setScheduleByKey] = useState<Record<string, RoutinePickerSpineSchedule>>({});
@@ -159,10 +157,10 @@ export function PriorityRoutinePickerSheet({
 
   const spineTimeEnabled = spineGapAdd != null;
   const baseDateKey = useMemo(() => getLocalDateKey(), []);
-  const baseDateLabel = useMemo(() => formatDateKeyCompactLabel(baseDateKey), [baseDateKey]);
+  const baseDateLabel = useMemo(() => formatDateKeyCompact(baseDateKey, locale), [baseDateKey, locale]);
   const nextDateLabel = useMemo(
-    () => formatDateKeyCompactLabel(addDaysToLocalDateKey(baseDateKey, 1)),
-    [baseDateKey],
+    () => formatDateKeyCompact(addDaysToLocalDateKey(baseDateKey, 1), locale),
+    [baseDateKey, locale],
   );
 
   const scrollTimePanelIntoView = useCallback(() => {
@@ -273,8 +271,8 @@ export function PriorityRoutinePickerSheet({
         ) {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           Alert.alert(
-            '시간을 확인해 주세요',
-            `루틴 종료 시간(${formatHhmmClockKo(spineGapAdd.priorityEnd)})을 넘는 일정은 저장할 수 없어요. 하루 시작~마무리 안으로 맞춰 주세요.`,
+            t('catalog.checkTimeTitle'),
+            t('dayPlan.blockExceedsEnd', { end: formatHhmmClock(spineGapAdd.priorityEnd, locale) }),
           );
           return;
         }
@@ -288,7 +286,7 @@ export function PriorityRoutinePickerSheet({
     }));
     onConfirm(items);
     onClose();
-  }, [canConfirm, onClose, onConfirm, scheduleByKey, selectedKeys, spineGapAdd, spineTimeEnabled]);
+  }, [canConfirm, locale, onClose, onConfirm, scheduleByKey, selectedKeys, spineGapAdd, spineTimeEnabled, t]);
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -299,13 +297,13 @@ export function PriorityRoutinePickerSheet({
         <View style={{ flex: 1, backgroundColor: surface, paddingTop: insets.top + 12 }}>
         <View style={[styles.header, { borderBottomColor: line }]}>
           <ThemedText style={[styles.title, { color: ink }]}>{title}</ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} hitSlop={10}>
             <IconSymbol name="xmark" size={20} color={muted} />
           </Pressable>
         </View>
         {spineGapAdd ? (
           <View style={[styles.defaultDurationSection, { borderBottomColor: line }]}>
-            <ThemedText style={[styles.defaultDurationLabel, { color: muted }]}>기본 간격</ThemedText>
+            <ThemedText style={[styles.defaultDurationLabel, { color: muted }]}>{t('dayPlan.defaultGapLabel')}</ThemedText>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -317,7 +315,7 @@ export function PriorityRoutinePickerSheet({
                     key={min}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
-                    accessibilityLabel={`기본 간격 ${min}분`}
+                    accessibilityLabel={t('dayPlan.defaultGapA11y', { count: min })}
                     onPress={() => handleDefaultBlockMinutesChange(min)}
                     style={[
                       styles.defaultDurationChip,
@@ -331,7 +329,7 @@ export function PriorityRoutinePickerSheet({
                         styles.defaultDurationChipText,
                         { color: active ? (isDark ? '#09090b' : '#fff') : ink },
                       ]}>
-                      {min}분
+                      {t('common.minutesUnit', { count: min })}
                     </ThemedText>
                   </Pressable>
                 );
@@ -350,14 +348,14 @@ export function PriorityRoutinePickerSheet({
           {onCreateCustom ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="새로운 루틴 만들기"
+              accessibilityLabel={t('fixedRoutine.createNew')}
               onPress={() => {
                 // 부모에서 픽커만 닫고 슬롯/갭 타깃은 유지한 채 생성 시트를 연다.
                 onCreateCustom();
               }}
               style={({ pressed }) => [styles.createRow, pressed && { opacity: 0.72 }]}>
               <IconSymbol name="plus.circle.fill" size={20} color={ink} />
-              <ThemedText style={[styles.rowLabel, { color: ink }]}>새로운 루틴 만들기</ThemedText>
+              <ThemedText style={[styles.rowLabel, { color: ink }]}>{t('fixedRoutine.createNew')}</ThemedText>
             </Pressable>
           ) : null}
           {sections.map((section) => (
@@ -374,7 +372,7 @@ export function PriorityRoutinePickerSheet({
                     <Pressable
                       accessibilityRole="checkbox"
                       accessibilityState={{ checked: selected }}
-                      accessibilityLabel={`${cat.label} ${selected ? '선택됨' : '선택'}`}
+                      accessibilityLabel={`${cat.label} ${selected ? t('common.selected') : t('common.select')}`}
                       onPress={() => toggleSelection(cat.key)}
                       style={({ pressed }) => [
                         styles.pickRow,
@@ -399,8 +397,12 @@ export function PriorityRoutinePickerSheet({
                           accessibilityState={{ expanded: isTimeExpanded, selected: timeHighlighted }}
                           accessibilityLabel={
                             schedule
-                              ? `${cat.label} 시간 ${formatMinuteOfDayKo(schedule.startMinutes)}~${formatMinuteOfDayKo(schedule.endMinutes)}`
-                              : `${cat.label} 시간 선택`
+                              ? t('dayPlan.categoryTimeRangeA11y', {
+                                  label: cat.label,
+                                  start: formatMinuteOfDay(schedule.startMinutes, locale),
+                                  end: formatMinuteOfDay(schedule.endMinutes, locale),
+                                })
+                              : t('fixedRoutine.timePickA11y', { label: cat.label })
                           }
                           hitSlop={10}
                           onPress={(event) => {
@@ -434,7 +436,7 @@ export function PriorityRoutinePickerSheet({
                                 ? ink
                                 : isDark
                                   ? '#FAFAFA'
-                                  : PrimaryColor
+                                  : PrimaryColor.rgb
                             }
                           />
                         </Pressable>
@@ -476,7 +478,7 @@ export function PriorityRoutinePickerSheet({
           ))}
           {sections.length === 0 ? (
             <ThemedText style={[styles.empty, { color: muted }]}>
-              연결할 수 있는 루틴이 없어요. 위에서 새로운 루틴을 만들어 보세요.
+              {t('fixedRoutine.modalEmpty')}
             </ThemedText>
           ) : null}
         </ScrollView>
@@ -491,7 +493,14 @@ export function PriorityRoutinePickerSheet({
           ]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={canConfirm ? `${selectedCount}개 루틴 ${confirmLabel}` : '루틴을 선택해 주세요'}
+            accessibilityLabel={
+              canConfirm
+                ? t('dayPlan.confirmRoutineCountA11y', {
+                    count: selectedCount,
+                    action: resolvedConfirmLabel,
+                  })
+                : t('dayPlan.pickRoutineHint')
+            }
             disabled={!canConfirm}
             onPress={handleConfirm}
             style={({ pressed }) => [
@@ -506,7 +515,12 @@ export function PriorityRoutinePickerSheet({
                 styles.confirmLabel,
                 { color: canConfirm ? (isDark ? '#09090b' : '#fff') : muted },
               ]}>
-              {canConfirm ? `${selectedCount}개 ${confirmLabel}` : '루틴을 선택해 주세요'}
+              {canConfirm
+                ? t('dayPlan.confirmRoutineCount', {
+                    count: selectedCount,
+                    action: resolvedConfirmLabel,
+                  })
+                : t('dayPlan.pickRoutineHint')}
             </ThemedText>
           </Pressable>
         </View>

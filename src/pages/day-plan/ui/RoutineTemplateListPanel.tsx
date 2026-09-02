@@ -7,6 +7,7 @@ import {
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
 import { CityPopSpacing, RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -30,6 +31,7 @@ export function RoutineTemplateListPanel({
   isDark = false,
   onPressTemplate,
 }: Props) {
+  const { t } = useTranslation();
   const entries = useMemo(() => listCustomFlowTemplateCatalogEntries(), []);
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowColor = isDark ? tone.solidShadow : tone.text;
@@ -40,9 +42,9 @@ export function RoutineTemplateListPanel({
   return (
     <View style={styles.root}>
       <View style={styles.headerBlock}>
-        <ThemedText style={[styles.pageTitle, { color: ink }]}>루틴 템플릿</ThemedText>
+        <ThemedText style={[styles.pageTitle, { color: ink }]}>{t('fixedRoutine.templatesTitle')}</ThemedText>
         <ThemedText style={[styles.lead, { color: muted }]}>
-          방식별 화면 구성을 미리 보고 골라요.
+          {t('fixedRoutine.templatesLead')}
         </ThemedText>
       </View>
 
@@ -70,7 +72,7 @@ export function RoutineTemplateListPanel({
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${entry.label} — ${entry.description}, 자세히 보기`}
+              accessibilityLabel={t('fixedRoutine.templateDetailA11y', { label: entry.label, description: entry.description })}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onPressTemplate(entry.key);

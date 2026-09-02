@@ -13,6 +13,7 @@ import {
   normalizeHexColor,
   type Hsv,
 } from '@shared/lib/colorMath';
+import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -45,6 +46,7 @@ function applyHueFromPoint(x: number, width: number, s: number, v: number): stri
 }
 
 export function HsvColorPicker({ value, onChange, ink, muted, isDark, line }: Props) {
+  const { t } = useTranslation();
   const normalizedValue = normalizeHexColor(value) ?? '#f97316';
   const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(normalizedValue));
   const [hexDraft, setHexDraft] = useState(normalizedValue);
@@ -205,10 +207,10 @@ export function HsvColorPicker({ value, onChange, ink, muted, isDark, line }: Pr
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="색상 코드 적용하기"
+          accessibilityLabel={t('appearance.applyHexA11y')}
           onPress={applyHexDraft}
           style={[styles.applyBtn, { borderColor: inputBorder, backgroundColor: inputBg }]}>
-          <ThemedText style={[styles.applyBtnText, { color: ink }]}>입력</ThemedText>
+          <ThemedText style={[styles.applyBtnText, { color: ink }]}>{t('common.input')}</ThemedText>
         </Pressable>
       </View>
 

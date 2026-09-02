@@ -8,6 +8,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { formatHhmmClockKo, getLocalDateKey, useDayPlanDraftStore } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import { syncRoutineWindowCompletionsToHistory } from '@features/history-routine-sync';
+import { useTranslation } from '@shared/lib/i18n';
 import { buildFlowHistoryPalette } from '../lib/flowHistoryPalette';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
@@ -50,6 +51,7 @@ import { WeeklyHistorySummaryCard } from './WeeklyHistorySummaryCard';
 
 /** 하단 히스토리 탭 — 주간·월간 플로우 완료 기록 */
 export function DayPlanStatisticsPage() {
+  const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const todayDateKey = getLocalDateKey();
@@ -95,9 +97,9 @@ export function DayPlanStatisticsPage() {
   const periodNavLabel = useMemo(
     () =>
       period === 'week'
-        ? formatWeekRangeLabelKo(weekStartDateKey)
-        : formatMonthLabelKo(monthPrefix),
-    [monthPrefix, period, weekStartDateKey],
+        ? formatWeekRangeLabelKo(weekStartDateKey, locale)
+        : formatMonthLabelKo(monthPrefix, locale),
+    [locale, monthPrefix, period, weekStartDateKey],
   );
   const canGoNext = useMemo(
     () =>
@@ -177,11 +179,11 @@ export function DayPlanStatisticsPage() {
 
   const flowRows = period === 'week' ? weeklyGroups : monthlyGroups;
   const emptyTitle =
-    period === 'week' ? '이번 주 기록이 아직 없어요' : '이번 달 기록이 아직 없어요';
+    period === 'week' ? t('history.empty.weekTitle') : t('history.empty.monthTitle');
   const emptyBody =
     period === 'week'
-      ? '오늘 탭에서 루틴을 완료하면 여기에 요일별로 쌓여요.'
-      : '오늘 탭에서 루틴을 완료하면 여기에 날짜별로 쌓여요.';
+      ? t('history.empty.weekBody')
+      : t('history.empty.monthBody');
 
   return (
     <ThemedView
@@ -218,7 +220,7 @@ export function DayPlanStatisticsPage() {
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={period === 'week' ? '이전 주' : '이전 달'}
+              accessibilityLabel={period === 'week' ? t('history.nav.prevWeek') : t('history.nav.prevMonth')}
               hitSlop={8}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -256,7 +258,7 @@ export function DayPlanStatisticsPage() {
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={period === 'week' ? '다음 주' : '다음 달'}
+              accessibilityLabel={period === 'week' ? t('history.nav.nextWeek') : t('history.nav.nextMonth')}
               disabled={!canGoNext}
               hitSlop={8}
               onPress={() => {
@@ -303,7 +305,7 @@ export function DayPlanStatisticsPage() {
         {!isHydrated ? (
           <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
             <ThemedText style={[styles.emptyTitle, { color: palette.ink }]}>
-              기록을 불러오는 중이에요
+              {t('history.loading')}
             </ThemedText>
           </View>
         ) : flowRows.length === 0 ? (
@@ -337,7 +339,7 @@ export function DayPlanStatisticsPage() {
         )}
 
         <ThemedText style={styles.helperText} lightColor={palette.muted} darkColor={palette.muted}>
-          히스토리는 완료 기록을 보여줘요. 체크와 실행은 오늘 탭에서 할 수 있어요.
+          {t('history.helper')}
         </ThemedText>
       </ScrollView>
     </ThemedView>

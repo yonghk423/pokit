@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export function AppUpdateNoticeModal({ visible, version, highlights, onDismiss }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -35,9 +37,9 @@ export function AppUpdateNoticeModal({ visible, version, highlights, onDismiss }
             },
           ]}>
           <View style={styles.header}>
-            <ThemedText style={[styles.title, { color: c.text }]}>업데이트 안내</ThemedText>
+            <ThemedText style={[styles.title, { color: c.text }]}>{t('appUpdate.noticeTitle')}</ThemedText>
             <ThemedText style={[styles.subtitle, { color: c.textMuted }]}>
-              POKIT v{version}이 설치됐어요
+              {t('appUpdate.noticeSubtitle', { version })}
             </ThemedText>
           </View>
 

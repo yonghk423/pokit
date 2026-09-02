@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import {
@@ -22,6 +22,7 @@ import {
 } from '@entities/day-plan';
 import { BookSearchSheet, type BookSearchSelection } from './BookSearchSheet';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -32,24 +33,9 @@ import { ReadingBookDetailSheet } from './ReadingBookDetailSheet';
 
 import type { GoalDetailCategoryKey } from '../../../../model/types';
 
-const LIBRARY_SORT_LABELS: Record<ReadingLibrarySortOrder, string> = {
-  newest: '최신순',
-  oldest: '오래된순',
-};
-
-function nextLibrarySortOrder(order: ReadingLibrarySortOrder): ReadingLibrarySortOrder {
-  return order === 'newest' ? 'oldest' : 'newest';
-}
+type SettingsPalette = ReturnType<typeof goalDetailSettingsPalette>;
 
 type LibraryTab = 'all' | ReadingBookStatus;
-
-const LIBRARY_TABS: { key: LibraryTab; label: string }[] = [
-  { key: 'all', label: '전체' },
-  { key: 'reading', label: '읽는 중' },
-  { key: 'done', label: '완료' },
-];
-
-type SettingsPalette = ReturnType<typeof goalDetailSettingsPalette>;
 
 export type ReadingDetailDataConfig = ReadingLiveActivityConfig;
 export const DEFAULT_READING_DATA_CONFIG = DEFAULT_READING_LIVE_ACTIVITY_CONFIG;
@@ -64,10 +50,8 @@ function countBooksForTab(books: ReadingBookEntry[], tab: LibraryTab): number {
   return books.filter((book) => bookMatchesTab(book, tab)).length;
 }
 
-function statusLabel(status: ReadingBookStatus): string {
-  if (status === 'want') return '읽고 싶은';
-  if (status === 'done') return '완료';
-  return '읽는 중';
+function nextLibrarySortOrder(order: ReadingLibrarySortOrder): ReadingLibrarySortOrder {
+  return order === 'newest' ? 'oldest' : 'newest';
 }
 
 function ReadingBookListRow({
@@ -76,12 +60,14 @@ function ReadingBookListRow({
   isDark,
   onPress,
   showDivider,
+  statusLabelText,
 }: {
   entry: ReadingBookEntry;
   palette: SettingsPalette;
   isDark: boolean;
   onPress: () => void;
   showDivider: boolean;
+  statusLabelText: string;
 }) {
   const c = palette;
   const status = normalizeReadingBookStatus(entry.status);
@@ -119,7 +105,7 @@ function ReadingBookListRow({
           </ThemedText>
         ) : (
           <ThemedText style={[styles.listAuthor, { color: c.onVariant }]} numberOfLines={1}>
-            {statusLabel(status)}
+            {statusLabelText}
           </ThemedText>
         )}
       </View>
@@ -145,10 +131,37 @@ export function ReadingSettings({
   allowRename?: boolean;
   renameLockedReason?: 'running' | 'today' | null;
 }) {
+  const { t } = useTranslation();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const palette = useMemo(() => goalDetailSettingsPalette(isDark), [isDark]);
   const c = palette;
+
+  const librarySortLabels = useMemo(
+    (): Record<ReadingLibrarySortOrder, string> => ({
+      newest: t('goalDetail.reading.sort.newest'),
+      oldest: t('goalDetail.reading.sort.oldest'),
+    }),
+    [t],
+  );
+
+  const libraryTabs = useMemo(
+    (): { key: LibraryTab; label: string }[] => [
+      { key: 'all', label: t('goalDetail.reading.filter.all') },
+      { key: 'reading', label: t('goalDetail.reading.filter.reading') },
+      { key: 'done', label: t('goalDetail.reading.filter.done') },
+    ],
+    [t],
+  );
+
+  const readingStatusLabel = useCallback(
+    (status: ReadingBookStatus) => {
+      if (status === 'want') return t('goalDetail.reading.status.want');
+      if (status === 'done') return t('goalDetail.reading.status.done');
+      return t('goalDetail.reading.status.reading');
+    },
+    [t],
+  );
 
   const initialConfig = useMemo(
     () => normalizeReadingLiveActivityConfig(dataConfig),
@@ -300,15 +313,17 @@ export function ReadingSettings({
       <View style={styles.libraryCanvas}>
         <View style={styles.libraryHeader}>
           <View style={styles.libraryHeaderLeft}>
-            <ThemedText style={[styles.libraryTitle, { color: c.onSurface }]}>내 서재</ThemedText>
+            <ThemedText style={[styles.libraryTitle, { color: c.onSurface }]}>
+              {t('goalDetail.reading.library')}
+            </ThemedText>
             <ThemedText style={[styles.libraryCount, { color: c.onVariant }]}>
-              {books.length}권
+              {t('goalDetail.reading.bookCount', { count: books.length })}
             </ThemedText>
           </View>
           <View style={styles.headerActions}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="도서 추가"
+              accessibilityLabel={t('goalDetail.reading.addBook')}
               onPress={() => setAddSheetVisible(true)}
               style={[styles.headerIconBtn, { borderColor: c.onSurface }]}>
               <IconSymbol name="plus" size={15} color={c.onSurface} />
@@ -316,7 +331,7 @@ export function ReadingSettings({
             {searchEnabled ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="도서 검색"
+                accessibilityLabel={t('goalDetail.reading.searchBook')}
                 onPress={() => setSearchSheetVisible(true)}
                 style={[styles.headerIconBtn, { borderColor: c.onSurface }]}>
                 <IconSymbol name="magnifyingglass" size={15} color={c.onSurface} />
@@ -326,7 +341,7 @@ export function ReadingSettings({
         </View>
 
         <View style={[styles.tabRow, { borderBottomColor: c.outlineVariant }]}>
-          {LIBRARY_TABS.map((tab) => {
+          {libraryTabs.map((tab) => {
             const on = activeTab === tab.key;
             const count = countBooksForTab(books, tab.key);
             return (
@@ -358,7 +373,9 @@ export function ReadingSettings({
           <View style={[styles.listMetaRow, { borderBottomColor: c.outlineVariant }]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`정렬: ${LIBRARY_SORT_LABELS[librarySortOrder]}`}
+              accessibilityLabel={t('goalDetail.reading.sortA11y', {
+                sort: librarySortLabels[librarySortOrder],
+              })}
               hitSlop={8}
               onPress={() => {
                 void Haptics.selectionAsync();
@@ -366,7 +383,7 @@ export function ReadingSettings({
               }}
               style={styles.listSortTrigger}>
               <ThemedText style={[styles.listMetaText, { color: c.onVariant }]}>
-                {LIBRARY_SORT_LABELS[librarySortOrder]}
+                {librarySortLabels[librarySortOrder]}
               </ThemedText>
               <IconSymbol name="arrow.up.arrow.down" size={13} color={c.onVariant} />
             </Pressable>
@@ -381,7 +398,7 @@ export function ReadingSettings({
                   <TextInput
                     value={libraryQuery}
                     onChangeText={setLibraryQuery}
-                    placeholder="제목·작가"
+                    placeholder={t('goalDetail.reading.searchPlaceholder')}
                     placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
                     returnKeyType="search"
                     autoFocus={listSearchActive}
@@ -392,7 +409,7 @@ export function ReadingSettings({
                   />
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="목록 검색 닫기"
+                    accessibilityLabel={t('goalDetail.reading.closeSearch')}
                     hitSlop={8}
                     onPress={() => {
                       setLibraryQuery('');
@@ -405,11 +422,13 @@ export function ReadingSettings({
               ) : (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="도서 목록 검색"
+                  accessibilityLabel={t('goalDetail.reading.searchList')}
                   hitSlop={8}
                   onPress={() => setListSearchActive(true)}
                   style={styles.listSearchTriggerBtn}>
-                  <ThemedText style={[styles.listSearchTrigger, { color: c.onVariant }]}>검색</ThemedText>
+                  <ThemedText style={[styles.listSearchTrigger, { color: c.onVariant }]}>
+                    {t('goalDetail.reading.search')}
+                  </ThemedText>
                 </Pressable>
               )}
             </View>
@@ -431,6 +450,7 @@ export function ReadingSettings({
                   isDark={isDark}
                   onPress={() => setDetailBookId(entry.id)}
                   showDivider={index > 0}
+                  statusLabelText={readingStatusLabel(normalizeReadingBookStatus(entry.status))}
                 />
               ))}
             </View>
@@ -438,24 +458,24 @@ export function ReadingSettings({
             <View style={styles.emptyState}>
               <ThemedText style={[styles.emptyTitle, { color: c.onSurface }]}>
                 {libraryQuery.trim().length > 0
-                  ? '검색 결과가 없어요'
+                  ? t('goalDetail.reading.emptySearch')
                   : activeTab === 'all'
-                    ? '아직 담긴 책이 없어요'
-                    : '이 목록에 책이 없어요'}
+                    ? t('goalDetail.reading.emptyLibrary')
+                    : t('goalDetail.reading.emptyFilter')}
               </ThemedText>
               {libraryQuery.trim().length > 0 ? (
                 <ThemedText style={[styles.emptyBody, { color: c.onVariant }]}>
-                  다른 검색어로 다시 찾아 보세요.
+                  {t('goalDetail.reading.emptySearchHint')}
                 </ThemedText>
               ) : (
                 <View style={styles.emptyBodyRow}>
                   <IconSymbol name="plus" size={13} color={c.onVariant} />
                   <ThemedText style={[styles.emptyBody, { color: c.onVariant }]}>
-                    {' '}버튼을 눌러 직접 추가하거나{' '}
+                    {' '}{t('goalDetail.reading.emptyAddHint1')}{' '}
                   </ThemedText>
                   <IconSymbol name="magnifyingglass" size={13} color={c.onVariant} />
                   <ThemedText style={[styles.emptyBody, { color: c.onVariant }]}>
-                    {' '}으로 검색해 주세요
+                    {' '}{t('goalDetail.reading.emptyAddHint2')}
                   </ThemedText>
                 </View>
               )}

@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { isAladinApiConfigured } from '@shared/config/aladin';
+import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -41,6 +42,7 @@ export function AladinBookSearchSheet({
   onClose,
   onSelect,
 }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<SheetMode>('search');
   const [query, setQuery] = useState('');
@@ -76,7 +78,7 @@ export function AladinBookSearchSheet({
     const trimmed = query.trim();
     if (!apiConfigured || trimmed.length === 0) {
       if (trimmed.length === 0) {
-        setErrorMessage('검색어를 입력해 주세요.');
+        setErrorMessage(t('aladin.needQuery'));
       }
       return;
     }
@@ -90,7 +92,7 @@ export function AladinBookSearchSheet({
       const result = await searchAladinBooks(trimmed, { maxResults: 12 });
       setResults(result.items);
       if (result.items.length === 0) {
-        setErrorMessage('검색 결과가 없어요.');
+        setErrorMessage(t('aladin.noResults'));
       }
     } catch (error: unknown) {
       setResults([]);
@@ -98,11 +100,11 @@ export function AladinBookSearchSheet({
         setErrorMessage(error.message);
         return;
       }
-      setErrorMessage('도서 검색 중 문제가 발생했어요.');
+      setErrorMessage(t('aladin.searchFailed'));
     } finally {
       setLoading(false);
     }
-  }, [apiConfigured, query]);
+  }, [apiConfigured, query, t]);
 
   const openDetail = useCallback(async (item: AladinSearchBookItem) => {
     setMode('detail');
@@ -118,7 +120,7 @@ export function AladinBookSearchSheet({
         setDetailErrorMessage(error.message);
         return;
       }
-      setDetailErrorMessage('도서 상세 정보를 불러오지 못했어요.');
+      setDetailErrorMessage(t('aladin.detailFailed'));
     } finally {
       setDetailLoading(false);
     }
@@ -152,7 +154,7 @@ export function AladinBookSearchSheet({
           {mode === 'detail' ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="검색 결과로 돌아가기"
+              accessibilityLabel={t('aladin.backToSearchA11y')}
               onPress={handleBackToSearch}
               hitSlop={10}
               style={styles.headerBackBtn}>
@@ -160,9 +162,9 @@ export function AladinBookSearchSheet({
             </Pressable>
           ) : null}
           <ThemedText style={[styles.title, { color: ink }]}>
-            {mode === 'detail' ? '도서 상세' : '알라딘 도서 검색'}
+            {mode === 'detail' ? t('aladin.titleDetail') : t('aladin.titleSearch')}
           </ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} hitSlop={10}>
             <IconSymbol name="xmark" size={20} color={muted} />
           </Pressable>
         </View>
@@ -171,8 +173,7 @@ export function AladinBookSearchSheet({
           {!apiConfigured ? (
             <View style={styles.centerBox}>
               <ThemedText style={[styles.helper, { color: muted }]}>
-                알라딘 API 키가 설정되지 않았어요.{'\n'}
-                `.env.local`에 EXPO_PUBLIC_ALADIN_TTB_KEY를 추가한 뒤 앱을 다시 실행해 주세요.
+                {t('aladin.apiMissing')}
               </ThemedText>
             </View>
           ) : mode === 'search' ? (
@@ -183,7 +184,7 @@ export function AladinBookSearchSheet({
                   <TextInput
                     value={query}
                     onChangeText={setQuery}
-                    placeholder="책 제목, 저자, 출판사"
+                    placeholder={t('aladin.placeholder')}
                     placeholderTextColor={muted}
                     autoFocus
                     returnKeyType="search"
@@ -193,7 +194,7 @@ export function AladinBookSearchSheet({
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="도서 검색"
+                  accessibilityLabel={t('aladin.searchA11y')}
                   disabled={loading}
                   onPress={() => void runSearch()}
                   style={({ pressed }) => [
@@ -204,7 +205,7 @@ export function AladinBookSearchSheet({
                   {loading ? (
                     <ActivityIndicator size="small" color={surface} />
                   ) : (
-                    <ThemedText style={[styles.searchSubmitText, { color: surface }]}>검색</ThemedText>
+                    <ThemedText style={[styles.searchSubmitText, { color: surface }]}>{t('common.search')}</ThemedText>
                   )}
                 </Pressable>
               </View>
@@ -213,7 +214,7 @@ export function AladinBookSearchSheet({
                 <ThemedText style={[styles.helper, { color: muted }]}>{errorMessage}</ThemedText>
               ) : lastSubmittedQuery.length === 0 ? (
                 <ThemedText style={[styles.helper, { color: muted }]}>
-                  검색어를 입력한 뒤 검색 버튼을 눌러 주세요.
+                  {t('aladin.searchHint')}
                 </ThemedText>
               ) : null}
 
@@ -224,7 +225,7 @@ export function AladinBookSearchSheet({
                   <Pressable
                     key={item.itemId}
                     accessibilityRole="button"
-                    accessibilityLabel={`${item.title} 상세 보기`}
+                    accessibilityLabel={t('aladin.detailA11y', { title: item.title })}
                     onPress={() => void openDetail(item)}
                     style={({ pressed }) => [
                       styles.resultRow,
@@ -243,7 +244,7 @@ export function AladinBookSearchSheet({
                         {item.title}
                       </ThemedText>
                       <ThemedText style={[styles.resultMeta, { color: muted }]} numberOfLines={1}>
-                        {[item.author, item.publisher].filter(Boolean).join(' · ') || '정보 없음'}
+                        {[item.author, item.publisher].filter(Boolean).join(' · ') || t('common.none')}
                       </ThemedText>
                     </View>
                     <IconSymbol name="chevron.right" size={14} color={muted} />
@@ -260,7 +261,7 @@ export function AladinBookSearchSheet({
               {detailLoading ? (
                 <View style={styles.centerBox}>
                   <ActivityIndicator size="small" color={ink} />
-                  <ThemedText style={[styles.helper, { color: muted }]}>상세 정보를 불러오는 중...</ThemedText>
+                  <ThemedText style={[styles.helper, { color: muted }]}>{t('aladin.loadingDetail')}</ThemedText>
                 </View>
               ) : previewDetail ? (
                 <>
@@ -290,12 +291,12 @@ export function AladinBookSearchSheet({
                       ) : null}
                       {previewDetail.pubDate ? (
                         <ThemedText style={[styles.detailMeta, { color: muted }]}>
-                          출간 {previewDetail.pubDate}
+                          {t('aladin.pubDate', { date: previewDetail.pubDate })}
                         </ThemedText>
                       ) : null}
                       {previewDetail.totalPages ? (
                         <ThemedText style={[styles.detailMeta, { color: muted }]}>
-                          전체 {previewDetail.totalPages}쪽
+                          {t('aladin.totalPages', { count: previewDetail.totalPages })}
                         </ThemedText>
                       ) : null}
                     </View>
@@ -309,15 +310,15 @@ export function AladinBookSearchSheet({
 
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="알라딘에서 도서 보기"
+                    accessibilityLabel={t('aladin.viewOnAladinA11y')}
                     onPress={() => void openAladinProductPage(previewDetail.link)}
                     style={({ pressed }) => [styles.secondaryBtn, { borderColor: line }, pressed && { opacity: 0.72 }]}>
-                    <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>알라딘에서 보기</ThemedText>
+                    <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>{t('aladin.viewOnAladin')}</ThemedText>
                   </Pressable>
 
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="이 도서 선택"
+                    accessibilityLabel={t('aladin.selectBookA11y')}
                     disabled={confirming}
                     onPress={() => void handleConfirmSelect()}
                     style={({ pressed }) => [
@@ -328,21 +329,21 @@ export function AladinBookSearchSheet({
                     {confirming ? (
                       <ActivityIndicator size="small" color={surface} />
                     ) : (
-                      <ThemedText style={[styles.primaryBtnText, { color: surface }]}>이 도서 선택</ThemedText>
+                      <ThemedText style={[styles.primaryBtnText, { color: surface }]}>{t('aladin.selectBook')}</ThemedText>
                     )}
                   </Pressable>
                 </>
               ) : (
                 <View style={styles.centerBox}>
                   <ThemedText style={[styles.helper, { color: muted }]}>
-                    {detailErrorMessage ?? '도서 상세 정보를 불러오지 못했어요.'}
+                    {detailErrorMessage ?? t('aladin.detailFailed')}
                   </ThemedText>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="검색 결과로 돌아가기"
+                    accessibilityLabel={t('aladin.backToSearchA11y')}
                     onPress={handleBackToSearch}
                     style={({ pressed }) => [styles.secondaryBtn, { borderColor: line }, pressed && { opacity: 0.72 }]}>
-                    <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>검색 결과로 돌아가기</ThemedText>
+                    <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>{t('aladin.backToSearch')}</ThemedText>
                   </Pressable>
                 </View>
               )}

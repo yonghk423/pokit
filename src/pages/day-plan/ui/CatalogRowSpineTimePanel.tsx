@@ -13,7 +13,6 @@ import { Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import {
   addDaysToLocalDateKey,
-  formatHhmmClockKo,
   formatMinutesToHHmm,
   getLocalDateKey,
   parseHHmmToMinutes,
@@ -24,14 +23,17 @@ import {
   SOLID_SHADOW_OFFSET,
   cityPopFont,
 } from '@shared/config/retroFlat';
+import {
+  formatDateKeyCompact,
+  formatHhmmClock,
+  useTranslation,
+} from '@shared/lib/i18n';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import {
   DigitalHhmmInput,
   type DigitalHhmmInputHandle,
 } from '@shared/ui/digital-hhmm-input';
 import { ThemedText } from '@shared/ui/themed-text';
-
-import { formatDateKeyCompactKo } from '../lib/dayPlanEditorShared';
 
 /** 시작·종료 트랙 + 당일/다음 날 (숫자 입력 접힘) — 폴백용 */
 export const CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT = 128;
@@ -149,6 +151,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
     },
     ref,
   ) {
+  const { t, locale } = useTranslation();
   const isSheet = presentation === 'sheet';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : '#000000';
@@ -229,7 +232,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
     Keyboard.dismiss();
     const { start, end } = flushActiveFieldToDrafts();
     if (!commitDraft(start, end, draftEndsNext)) {
-      setRangeError('당일 종료 시각은 시작 시각보다 늦어야 해요. 다음 날을 선택하거나 시각을 바꿔 주세요.');
+      setRangeError(t('dayPlan.spineEndAfterStartError'));
       return;
     }
     setRangeError(null);
@@ -260,9 +263,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           parsedEnd === null ||
           (!draftEndsNext && parsedEnd <= parsedStart)
         ) {
-          setRangeError(
-            '당일 종료 시각은 시작 시각보다 늦어야 해요. 다음 날을 선택하거나 시각을 바꿔 주세요.',
-          );
+          setRangeError(t('dayPlan.spineEndAfterStartError'));
           return null;
         }
 
@@ -321,12 +322,12 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       typeof baseDateKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(baseDateKey.trim())
         ? baseDateKey.trim()
         : getLocalDateKey();
-    const start = startDateLabel?.trim() || formatDateKeyCompactKo(key);
+    const start = startDateLabel?.trim() || formatDateKeyCompact(key, locale);
     const today = endDateLabelToday?.trim() || start;
     const next =
-      endDateLabelNextDay?.trim() || formatDateKeyCompactKo(addDaysToLocalDateKey(key, 1));
+      endDateLabelNextDay?.trim() || formatDateKeyCompact(addDaysToLocalDateKey(key, 1), locale);
     return { start, today, next };
-  }, [baseDateKey, endDateLabelNextDay, endDateLabelToday, startDateLabel]);
+  }, [baseDateKey, endDateLabelNextDay, endDateLabelToday, locale, startDateLabel]);
 
   const renderSegment = (field: 'start' | 'end', label: string, valueHhmm: string) => {
     const selected = activeField === field;
@@ -341,7 +342,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected, disabled }}
-        accessibilityLabel={`${label} ${formatHhmmClockKo(valueHhmm)} ${dateLabel}`}
+        accessibilityLabel={`${label} ${formatHhmmClock(valueHhmm, locale)} ${dateLabel}`}
         disabled={disabled}
         onPress={() => toggleExpand(field)}
         style={({ pressed }) => [
@@ -369,7 +370,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
             cityPopFont('800'),
           ]}
           numberOfLines={1}>
-          {formatHhmmClockKo(valueHhmm)}
+          {formatHhmmClock(valueHhmm, locale)}
         </ThemedText>
         <ThemedText
           style={[
@@ -388,7 +389,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
   const renderInlineConfirmSegment = () => (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="선택한 시간 적용"
+      accessibilityLabel={t('dayPlan.applyTimeA11y')}
       disabled={disabled}
       onPress={handleConfirm}
       style={({ pressed }) => [
@@ -400,7 +401,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
         },
       ]}>
       <ThemedText style={[styles.confirmSegmentLabel, { color: isDark ? '#09090b' : '#FAFAFA' }]}>
-        확인
+        {t('common.confirm')}
       </ThemedText>
     </Pressable>
   );
@@ -411,7 +412,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={nextDay ? '종료 시간을 다음 날로 설정' : '종료 시간을 당일로 설정'}
+        accessibilityLabel={nextDay ? t('dayRhythm.setNextDayA11y') : t('dayRhythm.setTodayA11y')}
         disabled={disabled}
         onPress={() => {
           if (disabled) return;
@@ -452,9 +453,9 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
         shellStyle={styles.trackShell}
         faceStyle={styles.trackFace}>
         <View style={styles.trackInner}>
-          {renderSegment('start', '시작', displayStart)}
+          {renderSegment('start', t('goalDetail.study.start'), displayStart)}
           <View style={[styles.segmentDivider, { backgroundColor: line }]} />
-          {renderSegment('end', '종료', displayEnd)}
+          {renderSegment('end', t('goalDetail.study.end'), displayEnd)}
           {!isSheet && showConfirm ? (
             <>
               <View style={[styles.segmentDivider, { backgroundColor: line }]} />
@@ -465,14 +466,14 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       </SolidShadowFace>
 
       <View style={[styles.endDateChoiceRow, isSheet && styles.endDateChoiceRowSheet]}>
-        {renderDayChoice(false, '당일')}
-        {renderDayChoice(true, '다음 날')}
+        {renderDayChoice(false, t('dayRhythm.today'))}
+        {renderDayChoice(true, t('dayRhythm.nextDay'))}
       </View>
 
       {isSheet && showConfirm ? (
         <BrutalConfirmButton
-          label="시간 적용"
-          accessibilityLabel="선택한 시간 적용"
+          label={t('dayPlan.applyTimeLabel')}
+          accessibilityLabel={t('dayPlan.applyTimeA11y')}
           align="stretch"
           fill={ink}
           labelColor={isDark ? '#09090b' : '#FAFAFA'}
@@ -501,7 +502,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           selectedForeground={isDark ? '#09090b' : '#FAFAFA'}
           disabled={disabled}
           snapStepMinutes={1}
-          accessibilityLabelPrefix={activeField === 'end' ? '종료' : '시작'}
+          accessibilityLabelPrefix={activeField === 'end' ? t('goalDetail.study.end') : t('goalDetail.study.start')}
           onInputFocus={onRequestScrollIntoView}
         />
       ) : null}

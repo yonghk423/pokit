@@ -52,6 +52,7 @@ import {
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
 import { GoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
+import { useTranslation, type I18nKey, type TParams } from '@shared/lib/i18n';
 import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
 import {
   loadGoalDetailBlockConfig,
@@ -119,28 +120,34 @@ function formatMeridiemClock(minuteOfDay: number): { hhmm: string; meridiem: 'AM
   return { hhmm: `${String(h12).padStart(2, '0')}:${String(mm).padStart(2, '0')}`, meridiem };
 }
 
+type TranslateFn = (key: I18nKey, params?: TParams) => string;
+
 /** 목표 상세에 저장된 아침·점심·저녁(켜진 슬롯만, 순서 고정) */
-function buildMedicineEnabledSlots(medCfg: {
-  morningOn: boolean;
-  lunchOn: boolean;
-  dinnerOn: boolean;
-  morningTime: string;
-  lunchTime: string;
-  dinnerTime: string;
-}): Array<{ key: string; labelKo: string; timeRaw: string; minutes: number }> {
-  const out: Array<{ key: string; labelKo: string; timeRaw: string; minutes: number }> = [];
-  const add = (key: string, labelKo: string, timeRaw: string) => {
+function buildMedicineEnabledSlots(
+  medCfg: {
+    morningOn: boolean;
+    lunchOn: boolean;
+    dinnerOn: boolean;
+    morningTime: string;
+    lunchTime: string;
+    dinnerTime: string;
+  },
+  t: TranslateFn,
+): Array<{ key: string; label: string; timeRaw: string; minutes: number }> {
+  const out: Array<{ key: string; label: string; timeRaw: string; minutes: number }> = [];
+  const add = (key: string, label: string, timeRaw: string) => {
     const m = parseHHmmToMinutes(timeRaw);
     const minutes = m != null ? m : 0;
-    out.push({ key, labelKo, timeRaw, minutes });
+    out.push({ key, label, timeRaw, minutes });
   };
-  if (medCfg.morningOn) add('m', '아침', medCfg.morningTime);
-  if (medCfg.lunchOn) add('l', '점심', medCfg.lunchTime);
-  if (medCfg.dinnerOn) add('d', '저녁', medCfg.dinnerTime);
+  if (medCfg.morningOn) add('m', t('mealSlot.morning'), medCfg.morningTime);
+  if (medCfg.lunchOn) add('l', t('mealSlot.lunch'), medCfg.lunchTime);
+  if (medCfg.dinnerOn) add('d', t('mealSlot.dinner'), medCfg.dinnerTime);
   return out;
 }
 
 export function ActivitySessionPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{ blockId?: string; liveAction?: string }>();
   const blockId = pickParam(params.blockId, '');
@@ -194,7 +201,9 @@ export function ActivitySessionPage() {
 
   const activityTitle = block?.title ?? '';
   const rawCategoryLabel = block?.category ?? '';
-  const categoryLabel = rawCategoryLabel === '사용쟈' ? '사용자' : rawCategoryLabel;
+  // Legacy typo once stored as category label (misspelled "user" in Korean).
+  const categoryLabel =
+    rawCategoryLabel === '\uC0AC\uC6A9\uC7C8' ? t('category.userFallback') : rawCategoryLabel;
   const categoryKey =
     block != null
       ? resolveBlockCategoryKey({ category: categoryLabel, categoryKey: block.categoryKey }) ?? 'other'
@@ -347,13 +356,13 @@ export function ActivitySessionPage() {
           status: isWaitingToStart ? 'standby' : isPaused ? 'paused' : 'active',
         })
         : {
-          checklistTitle: '오늘 루틴 목록',
-          checklistCountLabel: '0개',
+          checklistTitle: t('session.checklist.title'),
+          checklistCountLabel: t('session.checklist.countZero'),
           checklistRows: [],
-          checklistSummaryLine1: '완료 0개 · 건너뜀 0개 · 남은 0개',
-          checklistSummaryLine2: '오늘 남은 루틴이 없어요',
+          checklistSummaryLine1: t('session.checklist.summary'),
+          checklistSummaryLine2: t('session.checklist.noRemaining'),
         },
-    [block, isPaused, isWaitingToStart],
+    [block, isPaused, isWaitingToStart, t],
   );
 
   const liveActivityPayload = useMemo(() => {
@@ -448,7 +457,7 @@ export function ActivitySessionPage() {
     (delta: 1 | -1) => {
       if (!block || !categoryConfigs.medicine || isWaitingToStart) return;
       const source = categoryConfigs.medicine;
-      const totalDoses = buildMedicineEnabledSlots(source).length;
+      const totalDoses = buildMedicineEnabledSlots(source, t).length;
       if (totalDoses === 0) return;
       const nextTaken = Math.max(0, Math.min(totalDoses, source.takenCount + delta));
       if (nextTaken === source.takenCount) return;
@@ -466,7 +475,7 @@ export function ActivitySessionPage() {
       }
       setGoalDetailStorageTick((n) => n + 1);
     },
-    [block, categoryConfigs.medicine, categoryKey, isWaitingToStart],
+    [block, categoryConfigs.medicine, categoryKey, isWaitingToStart, t],
   );
 
   const onMedicineDoseCheck = useCallback(() => {
@@ -652,10 +661,16 @@ export function ActivitySessionPage() {
         muted={WK.muted}
         brand={WK.brand}
         aboutKicker={WK.aboutKicker}
-        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '노트'}
+        headerTitle={
+          isPaused
+            ? t('session.paused')
+            : isWaitingToStart
+              ? t('session.waitingToStart')
+              : t('session.work.header')
+        }
         iconName={resolveCategoryCatalogIcon('work') as 'square.and.pencil'}
         iconSize={28}
-        sessionKicker="노트 세션"
+        sessionKicker={t('session.work.kicker')}
         timerDisplay={
           <ThemedText
             style={waterStyles.timerHms}
@@ -667,7 +682,7 @@ export function ActivitySessionPage() {
             {formatClock(timerSec)}
           </ThemedText>
         }
-        flowCaption={activityTitle.trim() || '오늘 할 일에 집중해요'}
+        flowCaption={activityTitle.trim() || t('session.work.focusCaption')}
         onBack={() => safeRouterBack(router)}
         scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
         bottomBar={
@@ -676,23 +691,26 @@ export function ActivitySessionPage() {
             borderColor={WK.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
-            completeLabel="노트 완료"
+            completeLabel={t('session.work.complete')}
           />
         }>
         <ImmersionCardShell borderColor={WK.border}>
           <ThemedText style={waterStyles.statLabel} lightColor={WK.muted} darkColor={WK.muted}>
-            집중 플랜
+            {t('session.work.focusPlan')}
           </ThemedText>
           <View style={waterStyles.goalRow}>
             <ThemedText style={waterStyles.goalValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
               {String(workCfg.planMin)}
             </ThemedText>
             <ThemedText style={waterStyles.goalUnit} lightColor={WK.muted} darkColor={WK.muted}>
-              분
+              {t('session.unit.minute')}
             </ThemedText>
           </View>
           <ThemedText style={waterStyles.metaLine} lightColor={WK.muted} darkColor={WK.muted}>
-            기록 {workCfg.doneMin}분 · 세션 {Math.round(progress * 100)}%
+            {t('session.work.recordMeta', {
+              doneMin: workCfg.doneMin,
+              percent: Math.round(progress * 100),
+            })}
           </ThemedText>
           <View style={waterStyles.hydrateTrack}>
             <View
@@ -707,18 +725,18 @@ export function ActivitySessionPage() {
         <ImmersionSplitRow>
           <ImmersionHalfCard borderColor={WK.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={WK.muted} darkColor={WK.muted}>
-              기록 진행
+              {t('session.work.recordProgress')}
             </ThemedText>
             <ThemedText style={waterStyles.halfValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
               {String(workCfg.doneMin)}
             </ThemedText>
             <ThemedText style={waterStyles.halfUnit} lightColor={WK.muted} darkColor={WK.muted}>
-              분
+              {t('session.unit.minute')}
             </ThemedText>
           </ImmersionHalfCard>
           <ImmersionHalfCard borderColor={WK.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={WK.muted} darkColor={WK.muted}>
-              루틴 진행
+              {t('session.routineProgress')}
             </ThemedText>
             <ThemedText style={waterStyles.halfValue} lightColor={WK.onSurface} darkColor={WK.onSurface}>
               {String(Math.round(progress * 100))}
@@ -735,13 +753,13 @@ export function ActivitySessionPage() {
               style={workStyles.checklistTitle}
               lightColor={CategoryImmersionTheme.work.onSurface}
               darkColor={CategoryImmersionTheme.work.onSurface}>
-              할 일 리스트
+              {t('session.work.todoList')}
             </ThemedText>
             <ThemedText
               style={workStyles.checklistRemain}
               lightColor={CategoryImmersionTheme.work.muted}
               darkColor={CategoryImmersionTheme.work.muted}>
-              남은 {workRemainingCount}개
+              {t('session.work.remainingCount', { count: workRemainingCount })}
             </ThemedText>
           </View>
           <View style={workStyles.checklistList}>
@@ -751,7 +769,7 @@ export function ActivitySessionPage() {
                   style={workStyles.checklistEmptyText}
                   lightColor={CategoryImmersionTheme.work.muted}
                   darkColor={CategoryImmersionTheme.work.muted}>
-                  표시할 루틴이 없습니다
+                  {t('session.work.noRoutines')}
                 </ThemedText>
               </View>
             ) : (
@@ -791,7 +809,7 @@ export function ActivitySessionPage() {
                     </View>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={done ? '할 일 체크 해제' : '할 일 체크'}
+                      accessibilityLabel={done ? t('session.work.uncheckTodo') : t('session.work.checkTodo')}
                       disabled={!useTaskChecklist}
                       onPress={() => {
                         if (!useTaskChecklist) return;
@@ -849,10 +867,16 @@ export function ActivitySessionPage() {
         muted={R.muted}
         brand={R.brand}
         aboutKicker={R.aboutKicker}
-        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '독서 집중'}
+        headerTitle={
+          isPaused
+            ? t('session.paused')
+            : isWaitingToStart
+              ? t('session.waitingToStart')
+              : t('session.reading.header')
+        }
         iconName={resolveCategoryCatalogIcon('reading') as 'book.closed.fill'}
         iconSize={28}
-        sessionKicker="독서 세션"
+        sessionKicker={t('session.reading.kicker')}
         timerDisplay={
           <ThemedText
             style={waterStyles.timerHms}
@@ -864,7 +888,7 @@ export function ActivitySessionPage() {
             {formatClock(timerSec)}
           </ThemedText>
         }
-        flowCaption={activityTitle.trim() || '독서'}
+        flowCaption={activityTitle.trim() || t('session.reading.caption')}
         onBack={() => safeRouterBack(router)}
         scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
         bottomBar={
@@ -873,7 +897,7 @@ export function ActivitySessionPage() {
             borderColor={R.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
-            completeLabel="독서 완료"
+            completeLabel={t('session.reading.complete')}
           />
         }>
         {sessionBooks.map((book) => {
@@ -893,7 +917,7 @@ export function ActivitySessionPage() {
             <View key={book.id} style={waterStyles.readingBookBlock}>
               <ImmersionCardShell borderColor={R.border}>
                 <ThemedText style={waterStyles.statLabel} lightColor={R.muted} darkColor={R.muted}>
-                  {sessionBooks.length > 1 ? book.title : '오늘 읽기 구간'}
+                  {sessionBooks.length > 1 ? book.title : t('session.reading.todaySection')}
                 </ThemedText>
                 <View style={waterStyles.goalRow}>
                   <ThemedText style={waterStyles.goalValue} lightColor={R.onSurface} darkColor={R.onSurface}>
@@ -946,7 +970,7 @@ export function ActivitySessionPage() {
               <ImmersionSplitRow>
                 <ImmersionHalfCard borderColor={R.border}>
                   <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
-                    시작 페이지
+                    {t('session.reading.startPage')}
                   </ThemedText>
                   <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
                     {String(book.startPage)}
@@ -957,7 +981,7 @@ export function ActivitySessionPage() {
                 </ImmersionHalfCard>
                 <ImmersionHalfCard borderColor={R.border}>
                   <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
-                    읽을 분량
+                    {t('session.reading.pagesToRead')}
                   </ThemedText>
                   <ThemedText style={waterStyles.halfValue} lightColor={R.accent} darkColor={R.accent}>
                     {String(pagesToRead)}
@@ -971,7 +995,7 @@ export function ActivitySessionPage() {
               <ImmersionSplitRow>
                 <ImmersionHalfCard borderColor={R.border}>
                   <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
-                    목표 페이지
+                    {t('session.reading.targetPage')}
                   </ThemedText>
                   <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
                     {String(book.targetPage)}
@@ -982,7 +1006,7 @@ export function ActivitySessionPage() {
                 </ImmersionHalfCard>
                 <ImmersionHalfCard borderColor={R.border}>
                   <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
-                    진행
+                    {t('session.reading.progress')}
                   </ThemedText>
                   <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
                     {String(readingProgressPct)}
@@ -1002,7 +1026,7 @@ export function ActivitySessionPage() {
         <ImmersionSplitRow>
           <ImmersionHalfCard borderColor={R.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
-              루틴 진행
+              {t('session.routineProgress')}
             </ThemedText>
             <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
               {String(Math.round(progress * 100))}
@@ -1013,13 +1037,13 @@ export function ActivitySessionPage() {
           </ImmersionHalfCard>
           <ImmersionHalfCard borderColor={R.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={R.muted} darkColor={R.muted}>
-              도서 수
+              {t('session.reading.bookCount')}
             </ThemedText>
             <ThemedText style={waterStyles.halfValue} lightColor={R.onSurface} darkColor={R.onSurface}>
               {String(sessionBooks.length)}
             </ThemedText>
             <ThemedText style={waterStyles.halfUnit} lightColor={R.muted} darkColor={R.muted}>
-              권
+              {t('session.unit.book')}
             </ThemedText>
           </ImmersionHalfCard>
         </ImmersionSplitRow>
@@ -1049,10 +1073,16 @@ export function ActivitySessionPage() {
         muted={F.muted}
         brand={F.brand}
         aboutKicker={F.aboutKicker}
-        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '체중조절'}
+        headerTitle={
+          isPaused
+            ? t('session.paused')
+            : isWaitingToStart
+              ? t('session.waitingToStart')
+              : t('session.fasting.header')
+        }
         iconName="person.fill"
         iconSize={28}
-        sessionKicker="체중 · 목표"
+        sessionKicker={t('session.fasting.kicker')}
         timerDisplay={
           <ThemedText
             style={waterStyles.timerHms}
@@ -1064,7 +1094,7 @@ export function ActivitySessionPage() {
             {weightCfg.currentWeightKg.toFixed(1)}
           </ThemedText>
         }
-        flowCaption={activityTitle.trim() ? activityTitle : '현재 체중과 목표를 확인해요'}
+        flowCaption={activityTitle.trim() ? activityTitle : t('session.fasting.caption')}
         onBack={() => safeRouterBack(router)}
         scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
         bottomBar={
@@ -1073,24 +1103,27 @@ export function ActivitySessionPage() {
             borderColor={F.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
-            completeLabel="기록 완료"
+            completeLabel={t('session.fasting.complete')}
           />
         }>
         <ImmersionCardShell borderColor={F.border}>
           <ThemedText style={waterStyles.statLabel} lightColor={F.muted} darkColor={F.muted}>
-            체중 목표
+            {t('session.fasting.goal')}
           </ThemedText>
           <View style={waterStyles.goalRow}>
             <ThemedText style={waterStyles.goalValue} lightColor={F.onSurface} darkColor={F.onSurface}>
               {weightAchieved
-                ? '목표 달성'
+                ? t('session.fasting.goalAchieved')
                 : `${weightCfg.currentWeightKg.toFixed(1)} → ${weightCfg.targetWeightKg.toFixed(1)} kg`}
             </ThemedText>
           </View>
           <ThemedText style={waterStyles.metaLine} lightColor={F.muted} darkColor={F.muted}>
             {weightAchieved
-              ? `주간 ${weightCfg.weeklyLossTargetKg.toFixed(1)}kg 감량 목표 유지`
-              : `목표까지 ${weightDeltaKg.toFixed(1)}kg · 주간 ${weightCfg.weeklyLossTargetKg.toFixed(1)}kg 감량`}
+              ? t('session.fasting.weeklyMaintain', { kg: weightCfg.weeklyLossTargetKg.toFixed(1) })
+              : t('session.fasting.goalDelta', {
+                  delta: weightDeltaKg.toFixed(1),
+                  weekly: weightCfg.weeklyLossTargetKg.toFixed(1),
+                })}
           </ThemedText>
           <View style={waterStyles.hydrateTrack}>
             <View
@@ -1109,7 +1142,7 @@ export function ActivitySessionPage() {
         <ImmersionSplitRow>
           <ImmersionHalfCard borderColor={F.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={F.muted} darkColor={F.muted}>
-              현재
+              {t('session.current')}
             </ThemedText>
             <ThemedText style={waterStyles.halfValue} lightColor={F.onSurface} darkColor={F.onSurface}>
               {weightCfg.currentWeightKg.toFixed(1)}
@@ -1120,7 +1153,7 @@ export function ActivitySessionPage() {
           </ImmersionHalfCard>
           <ImmersionHalfCard borderColor={F.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={F.muted} darkColor={F.muted}>
-              목표
+              {t('session.target')}
             </ThemedText>
             <ThemedText style={waterStyles.halfValue} lightColor={F.onSurface} darkColor={F.onSurface}>
               {weightCfg.targetWeightKg.toFixed(1)}
@@ -1137,7 +1170,7 @@ export function ActivitySessionPage() {
   // ── 건강을 위한 섭취 ──
   if (enableCategoryTimedUi && categoryKey === 'healthIntake' && !isQuickMemoSession && categoryConfigs.medicine) {
     const medCfg = categoryConfigs.medicine;
-    const enabledSlots = buildMedicineEnabledSlots(medCfg);
+    const enabledSlots = buildMedicineEnabledSlots(medCfg, t);
     const totalDoses = enabledSlots.length;
     const takenCount =
       totalDoses === 0 ? 0 : Math.max(0, Math.min(totalDoses, medCfg.takenCount));
@@ -1146,12 +1179,12 @@ export function ActivitySessionPage() {
     ) as `${number}%`;
     const currentSlotLabel =
       totalDoses === 0
-        ? '슬롯 없음'
+        ? t('session.noSlot')
         : takenCount < totalDoses
-          ? enabledSlots[takenCount]?.labelKo ?? '—'
-          : '오늘 섭취 완료';
+          ? enabledSlots[takenCount]?.label ?? '—'
+          : t('session.healthIntake.todayDone');
     const timerSec = isWaitingToStart ? waitRemainingSec : remainingSec;
-    const itemLabel = medCfg.doseLabel.trim() || '섭취 항목';
+    const itemLabel = medCfg.doseLabel.trim() || t('session.healthIntake.itemFallback');
 
     const M = CategoryImmersionTheme.medicine;
 
@@ -1165,11 +1198,15 @@ export function ActivitySessionPage() {
         brand={M.brand}
         aboutKicker={M.aboutKicker}
         headerTitle={
-          isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '건강을 위한 섭취'
+          isPaused
+            ? t('session.paused')
+            : isWaitingToStart
+              ? t('session.waitingToStart')
+              : t('session.healthIntake.header')
         }
         iconName="pills.fill"
         iconSize={28}
-        sessionKicker="섭취 세션"
+        sessionKicker={t('session.healthIntake.kicker')}
         timerDisplay={
           <ThemedText
             style={waterStyles.timerHms}
@@ -1182,7 +1219,7 @@ export function ActivitySessionPage() {
           </ThemedText>
         }
         flowCaption={
-          activityTitle.trim() ? activityTitle : '오늘 예정된 섭취에 맞춰 진행해요'
+          activityTitle.trim() ? activityTitle : t('session.healthIntake.caption')
         }
         onBack={() => safeRouterBack(router)}
         scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
@@ -1192,20 +1229,20 @@ export function ActivitySessionPage() {
             borderColor={M.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
-            completeLabel="섭취 루틴 완료"
+            completeLabel={t('session.healthIntake.complete')}
             disabled={isWaitingToStart}
           />
         }>
         <ImmersionCardShell borderColor={M.border}>
           <ThemedText style={waterStyles.statLabel} lightColor={M.muted} darkColor={M.muted}>
-            오늘 섭취
+            {t('session.healthIntake.today')}
           </ThemedText>
           <View style={waterStyles.goalRow}>
             <ThemedText style={waterStyles.goalValue} lightColor={M.onSurface} darkColor={M.onSurface}>
               {takenCount}
             </ThemedText>
             <ThemedText style={waterStyles.goalUnit} lightColor={M.muted} darkColor={M.muted}>
-              {` / ${totalDoses}회`}
+              {t('session.healthIntake.doseSuffix', { count: totalDoses })}
             </ThemedText>
           </View>
           <ThemedText style={waterStyles.metaLine} lightColor={M.muted} darkColor={M.muted}>
@@ -1222,7 +1259,7 @@ export function ActivitySessionPage() {
           {totalDoses > 0 && takenCount < totalDoses ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${currentSlotLabel} 섭취 체크`}
+              accessibilityLabel={t('session.healthIntake.checkA11y', { slot: currentSlotLabel })}
               disabled={isWaitingToStart}
               onPress={onMedicineDoseCheck}
               style={[
@@ -1231,7 +1268,7 @@ export function ActivitySessionPage() {
                 isWaitingToStart && medScheduleStyles.scheduleCheckBtnDisabled,
               ]}>
               <IconSymbol name="checkmark" size={13} color="#ffffff" />
-              <ThemedText style={medScheduleStyles.scheduleCheckBtnText}>섭취 체크</ThemedText>
+              <ThemedText style={medScheduleStyles.scheduleCheckBtnText}>{t('session.healthIntake.check')}</ThemedText>
             </Pressable>
           ) : null}
         </ImmersionCardShell>
@@ -1242,7 +1279,7 @@ export function ActivitySessionPage() {
   // ── Full-screen medicine session (약 복용, 레거시) ──
   if (enableCategoryTimedUi && categoryKey === 'medicine' && !isQuickMemoSession && categoryConfigs.medicine) {
     const medCfg = categoryConfigs.medicine;
-    const enabledSlots = buildMedicineEnabledSlots(medCfg);
+    const enabledSlots = buildMedicineEnabledSlots(medCfg, t);
     const totalDoses = enabledSlots.length;
     const takenCount =
       totalDoses === 0 ? 0 : Math.max(0, Math.min(totalDoses, medCfg.takenCount));
@@ -1251,10 +1288,10 @@ export function ActivitySessionPage() {
     ) as `${number}%`;
     const currentSlotLabel =
       totalDoses === 0
-        ? '슬롯 없음'
+        ? t('session.noSlot')
         : takenCount < totalDoses
-          ? enabledSlots[takenCount]?.labelKo ?? '—'
-          : '오늘 분량 완료';
+          ? enabledSlots[takenCount]?.label ?? '—'
+          : t('session.medicine.todayDone');
     const scheduleRows = enabledSlots.map((slot, slotIndex) => {
       const clock = formatMeridiemClock(slot.minutes);
       const isDone = slotIndex < takenCount;
@@ -1264,7 +1301,7 @@ export function ActivitySessionPage() {
         key: slot.key,
         hhmm: clock.hhmm,
         meridiem: clock.meridiem,
-        title: `${slot.labelKo} 약 복용`,
+        title: t('session.medicine.doseTitle', { slot: slot.label }),
         isDone,
         isCurrent,
         isScheduled,
@@ -1276,7 +1313,7 @@ export function ActivitySessionPage() {
     const upcomingNotTaken = enabledSlots.filter((_, i) => i > takenCount);
     const upcomingSummaryLine =
       upcomingNotTaken.length > 0
-        ? upcomingNotTaken.map((s) => `${s.labelKo} ${s.timeRaw}`).join(' · ')
+        ? upcomingNotTaken.map((s) => `${s.label} ${s.timeRaw}`).join(' · ')
         : null;
     const headerClock = formatMeridiemClock(block.startMinutes);
 
@@ -1292,11 +1329,11 @@ export function ActivitySessionPage() {
         brand={M.brand}
         aboutKicker={M.aboutKicker}
         headerTitle={
-          isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : activityTitle.trim() || '약 복용'
+          isPaused ? t('session.paused') : isWaitingToStart ? t('session.waitingToStart') : activityTitle.trim() || t('session.medicine.header')
         }
         iconName="pills.fill"
         iconSize={28}
-        sessionKicker="예약된 시간"
+        sessionKicker={t('session.medicine.kicker')}
         timerDisplay={
           <ThemedText
             style={waterStyles.timerHms}
@@ -1314,7 +1351,7 @@ export function ActivitySessionPage() {
             </ThemedText>
           </ThemedText>
         }
-        flowCaption={`${medCfg.doseLabel.trim() || '약'} · ${totalDoses === 0 ? '목표 상세에서 슬롯을 추가해 주세요' : currentSlotLabel
+        flowCaption={`${medCfg.doseLabel.trim() || t('notify.medicineDefault')} · ${totalDoses === 0 ? t('session.medicine.addSlotsHint') : currentSlotLabel
           }`}
         onBack={() => safeRouterBack(router)}
         scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
@@ -1324,24 +1361,24 @@ export function ActivitySessionPage() {
             borderColor={M.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
-            completeLabel="복용 완료"
+            completeLabel={t('session.medicine.complete')}
             disabled={isWaitingToStart}
           />
         }>
         <ImmersionCardShell borderColor={M.border}>
           <ThemedText style={waterStyles.statLabel} lightColor={M.muted} darkColor={M.muted}>
-            오늘 복용
-          </ThemedText>
+            {t('session.medicine.today')}
+            </ThemedText>
           <View style={waterStyles.goalRow}>
             <ThemedText style={waterStyles.goalValue} lightColor={M.onSurface} darkColor={M.onSurface}>
               {takenCount}
             </ThemedText>
             <ThemedText style={waterStyles.goalUnit} lightColor={M.muted} darkColor={M.muted}>
-              {` / ${totalDoses}회`}
+              {t('session.healthIntake.doseSuffix', { count: totalDoses })}
             </ThemedText>
           </View>
           <ThemedText style={waterStyles.metaLine} lightColor={M.muted} darkColor={M.muted}>
-            {medCfg.doseLabel.trim() || '약'} · 복용 시간입니다
+            {medCfg.doseLabel.trim() || t('notify.medicineDefault')} · {t('session.medicine.timeNow')}
           </ThemedText>
           <View style={waterStyles.hydrateTrack}>
             <View
@@ -1356,7 +1393,7 @@ export function ActivitySessionPage() {
         <ImmersionSplitRow>
           <ImmersionHalfCard borderColor={M.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={M.muted} darkColor={M.muted}>
-              현재 슬롯
+              {t('session.medicine.currentSlot')}
             </ThemedText>
             <ThemedText style={waterStyles.halfValue} lightColor={M.onSurface} darkColor={M.onSurface}>
               {currentSlotLabel}
@@ -1364,30 +1401,30 @@ export function ActivitySessionPage() {
           </ImmersionHalfCard>
           <ImmersionHalfCard borderColor={M.border}>
             <ThemedText style={waterStyles.halfLabel} lightColor={M.muted} darkColor={M.muted}>
-              남은 복용
+              {t('session.medicine.remaining')}
             </ThemedText>
             <ThemedText style={waterStyles.halfValue} lightColor={M.onSurface} darkColor={M.onSurface}>
               {Math.max(0, totalDoses - takenCount)}
             </ThemedText>
             <ThemedText style={waterStyles.halfUnit} lightColor={M.muted} darkColor={M.muted}>
-              회
+              {t('session.unit.dose')}
             </ThemedText>
           </ImmersionHalfCard>
         </ImmersionSplitRow>
 
         <ImmersionCardShell borderColor={M.border}>
           <ThemedText style={medScheduleStyles.scheduleHeading} lightColor={M.muted} darkColor={M.muted}>
-            오늘의 일정
-          </ThemedText>
+            {t('session.medicine.todaySchedule')}
+            </ThemedText>
           {upcomingSummaryLine ? (
             <ThemedText style={medScheduleStyles.scheduleUpcomingLine} lightColor={M.onSurface} darkColor={M.onSurface}>
-              이후 예정 · {upcomingSummaryLine}
+              {t('session.medicine.upcoming', { line: upcomingSummaryLine })}
             </ThemedText>
           ) : null}
           <View style={medScheduleStyles.scheduleList}>
             {scheduleRows.length === 0 ? (
               <ThemedText style={medScheduleStyles.scheduleEmpty} lightColor={M.muted} darkColor={M.muted}>
-                복용 슬롯이 없어요. 목표 상세 설정에서 아침·점심·저녁을 켜 주세요.
+                {t('session.medicine.noSlots')}
               </ThemedText>
             ) : null}
             {scheduleRows.map((row, rowIndex) => (
@@ -1425,7 +1462,7 @@ export function ActivitySessionPage() {
                       style={medScheduleStyles.scheduleMeta}
                       lightColor={M.muted}
                       darkColor={M.muted}>
-                      {row.isDone ? '완료' : row.isCurrent ? '현재 복용' : '예정 · 아직 복용 전'}
+                      {row.isDone ? t('session.status.done') : row.isCurrent ? t('session.medicine.currentDose') : t('session.medicine.scheduled')}
                     </ThemedText>
                   </View>
                 </View>
@@ -1433,7 +1470,7 @@ export function ActivitySessionPage() {
                   rowIndex === takenCount - 1 ? (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`${row.title} 복용 체크 취소`}
+                      accessibilityLabel={t('session.medicine.uncheckA11y', { title: row.title })}
                       disabled={isWaitingToStart}
                       onPress={onMedicineDoseUndo}
                       style={[
@@ -1441,7 +1478,7 @@ export function ActivitySessionPage() {
                         isWaitingToStart && medScheduleStyles.scheduleCheckBtnDisabled,
                       ]}>
                       <IconSymbol name="arrow.uturn.backward" size={12} color={PRIMARY} />
-                      <ThemedText style={medScheduleStyles.scheduleUndoBtnText}>취소</ThemedText>
+                      <ThemedText style={medScheduleStyles.scheduleUndoBtnText}>{t('common.cancel')}</ThemedText>
                     </Pressable>
                   ) : (
                     <IconSymbol name="checkmark.circle.fill" size={20} color={PRIMARY} />
@@ -1449,7 +1486,7 @@ export function ActivitySessionPage() {
                 ) : row.isCurrent ? (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`${row.title} 복용 체크`}
+                    accessibilityLabel={t('session.medicine.checkA11y', { title: row.title })}
                     disabled={isWaitingToStart}
                     onPress={onMedicineDoseCheck}
                     style={[
@@ -1457,7 +1494,7 @@ export function ActivitySessionPage() {
                       isWaitingToStart && medScheduleStyles.scheduleCheckBtnDisabled,
                     ]}>
                     <IconSymbol name="checkmark" size={13} color="#ffffff" />
-                    <ThemedText style={medScheduleStyles.scheduleCheckBtnText}>복용 체크</ThemedText>
+                    <ThemedText style={medScheduleStyles.scheduleCheckBtnText}>{t('session.medicine.check')}</ThemedText>
                   </Pressable>
                 ) : (
                   <IconSymbol name="clock" size={20} color="rgba(0, 0, 0, 0.28)" />
@@ -1493,10 +1530,10 @@ export function ActivitySessionPage() {
         muted={W.muted}
         brand={W.brand}
         aboutKicker={W.aboutKicker}
-        headerTitle={isPaused ? '일시정지됨' : isWaitingToStart ? '시작 대기' : '수분섭취 집중'}
+        headerTitle={isPaused ? t('session.paused') : isWaitingToStart ? t('session.waitingToStart') : t('session.water.header')}
         iconName="drop.fill"
         iconSize={28}
-        sessionKicker="수분섭취 세션"
+        sessionKicker={t('session.water.kicker')}
         timerDisplay={
           <ThemedText
             style={waterStyles.timerHms}
@@ -1508,7 +1545,7 @@ export function ActivitySessionPage() {
             {formatClock(timerSec)}
           </ThemedText>
         }
-        flowCaption={activityTitle.trim() ? activityTitle : '오늘의 물 목표에 맞춰요'}
+        flowCaption={activityTitle.trim() ? activityTitle : t('session.water.caption')}
         onBack={() => safeRouterBack(router)}
         scrollBottomPadding={Math.max(insets.bottom, 16) + 88}
         bottomBar={
@@ -1517,7 +1554,7 @@ export function ActivitySessionPage() {
             borderColor={W.border}
             paddingBottom={Math.max(insets.bottom, 14)}
             onEndSession={navigateAfterComplete}
-            completeLabel="수분 섭취 완료"
+            completeLabel={t('session.water.complete')}
             completeForeground={GoalDetailSessionUi.waterCtaOnAccent}
           />
         }>
@@ -1527,7 +1564,7 @@ export function ActivitySessionPage() {
               style={waterStyles.statLabel}
               lightColor={W.muted}
               darkColor={W.muted}>
-              하루 물 목표
+              {t('session.water.dailyGoal')}
             </ThemedText>
             <View style={waterStyles.goalRow}>
               <ThemedText
@@ -1547,7 +1584,7 @@ export function ActivitySessionPage() {
               style={waterStyles.metaLine}
               lightColor={W.muted}
               darkColor={W.muted}>
-              {wCfg.goalMl}ml 기준 · 섭취 {drank}ml · 남은 {remL}L
+              {t('session.water.goalMeta', { goalMl: wCfg.goalMl, drank, remL })}
             </ThemedText>
             <View style={waterStyles.hydrateTrack}>
               <View style={[waterStyles.hydrateFill, { width: `${Math.round(hydrateTrack * 100)}%` }]} />
@@ -1560,7 +1597,7 @@ export function ActivitySessionPage() {
                 style={waterStyles.halfLabel}
                 lightColor={W.muted}
                 darkColor={W.muted}>
-                섭취량
+                {t('session.water.intakeAmount')}
               </ThemedText>
               <ThemedText
                 style={waterStyles.halfValue}
@@ -1580,7 +1617,7 @@ export function ActivitySessionPage() {
                 style={waterStyles.halfLabel}
                 lightColor={W.muted}
                 darkColor={W.muted}>
-                루틴 진행
+                {t('session.routineProgress')}
               </ThemedText>
               <ThemedText
                 style={waterStyles.halfValue}
@@ -1602,20 +1639,20 @@ export function ActivitySessionPage() {
               style={waterStyles.addSectionTitle}
               lightColor={CategoryImmersionTheme.water.onSurface}
               darkColor={CategoryImmersionTheme.water.onSurface}>
-              섭취 추가
+              {t('session.water.addIntake')}
             </ThemedText>
             <ThemedText
               style={waterStyles.addSectionHint}
               lightColor={CategoryImmersionTheme.water.muted}
               darkColor={CategoryImmersionTheme.water.muted}>
-              마신 만큼 눌러 오늘 할당량에 반영해요. 목표량을 넘기지 않아요.
+              {t('session.water.addHint')}
             </ThemedText>
             <View style={waterStyles.addChipWrap}>
               {[100, 200, 250, 500].map((ml) => (
                 <Pressable
                   key={ml}
                   accessibilityRole="button"
-                  accessibilityLabel={`물 ${ml}밀리리터 추가`}
+                  accessibilityLabel={t('session.water.addMlA11y', { ml })}
                   onPress={() => addWaterIntakeMl(ml)}
                   disabled={addIntakeDisabled}
                   style={({ pressed }) => [

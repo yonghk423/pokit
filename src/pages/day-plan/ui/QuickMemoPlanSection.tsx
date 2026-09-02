@@ -5,6 +5,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import type { DayPlanQuickMemo } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
+import { useTranslation } from '@shared/lib/i18n';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 
@@ -22,6 +23,8 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
   ref: ForwardedRef<TextInput>,
 ) {
   const { width } = useWindowDimensions();
+  const { t } = useTranslation();
+
   const bottomTabBarHeight = useBottomTabBarHeight();
   const hydratedRef = useRef(false);
   const pill = tabPillColors(isDark);
@@ -71,7 +74,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
         ref={ref}
         value={draft}
         onChangeText={onChangeDraft}
-        placeholder="잠금화면에 표시할 메모를 입력하세요"
+        placeholder={t('dayPlan.quickMemoPlaceholder')}
         placeholderTextColor={c.outline}
         multiline
         scrollEnabled
@@ -90,7 +93,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
       <View style={styles.gradientHint} />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="잠금화면 메모 저장"
+        accessibilityLabel={t('dayPlan.quickMemoSaveA11y')}
         hitSlop={8}
         onPress={onSavePress}
         style={({ pressed }) => [
