@@ -1,0 +1,10 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "POKIT",
+    "NSPhotoLibraryUsageDescription": "ノートに添付する写真をアルバムから選ぶには、写真へのアクセス許可が必要です。",
+    "NSPhotoLibraryAddUsageDescription": "ノートに添付した写真を保存するには、写真へのアクセス許可が必要です。"
+  },
+  "android": {
+    "app_name": "POKIT"
+  }
+}
