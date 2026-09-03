@@ -7,6 +7,7 @@ import {
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
+import { getAppLocale } from '@shared/lib/i18n';
 import {
   ensureDefaultPriorityCatalog,
   flushLocalStorageClientWrites,
@@ -15,6 +16,7 @@ import {
 } from '@shared/lib/storage';
 import {
   HISTORY_SEED_PROFILE_LABEL_KO,
+  fillCurrentMonthHistoryForScreenshotDemo,
   seedHistoryData,
   type HistorySeedProfile,
 } from '@shared/lib/storage/seedHistoryData';
@@ -45,6 +47,7 @@ function reloadStoresAfterDevMockChange(): void {
   useDayPlanStore.getState().hydrate();
   useDayPlanTodoStore.getState().hydrate();
   useDayPlanLayoutModeVisibilityStore.getState().hydrate();
+  useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
 }
 
 export async function runDevMockSeedWithStoreSync(): Promise<DevMockSeedResult> {
@@ -74,6 +77,7 @@ export async function runScreenshotDemoSeedWithStoreSync(): Promise<DevMockSeedR
   ensureDefaultPriorityCatalog();
   const screenshotPartial = await screenshotDemoMockSeed.seed();
   const historyDays = await seedHistoryData('strong');
+  await fillCurrentMonthHistoryForScreenshotDemo();
   const horizonPartial = await horizonCompletionMockSeed.seed();
   localStorageClient.setItemRaw(
     'pokit:dev-mock-seed-bundle-version',
@@ -92,6 +96,7 @@ export async function runDevMockClearWithStoreSync(): Promise<void> {
 }
 
 export function formatDevMockSeedAlertMessage(result: DevMockSeedResult): string {
+  const locale = getAppLocale();
   const parts: string[] = [];
   if (result.screenshotRoutines != null) parts.push(`루틴 ${result.screenshotRoutines}개`);
   if (result.screenshotTodos != null) parts.push(`투두 ${result.screenshotTodos}개`);
@@ -100,12 +105,12 @@ export function formatDevMockSeedAlertMessage(result: DevMockSeedResult): string
   if (result.historyDays != null) parts.push(`데일리 ${result.historyDays}일`);
   if (result.weeklyCompletions != null) parts.push(`위클리 ${result.weeklyCompletions}주`);
   if (result.monthlyCompletions != null) parts.push(`먼슬리 ${result.monthlyCompletions}달`);
-  if (parts.length === 0) return '목업 데이터를 추가했어요.';
+  if (parts.length === 0) return `목업 데이터를 추가했어요. (${locale})`;
   const hint =
     result.screenshotRoutines != null
       ? '데이플랜·투두·서재·노트·통계 탭에서 확인하세요.'
       : '통계 탭에서 확인하세요.';
-  return `${parts.join(' · ')}\n${hint}`;
+  return `[${locale}] ${parts.join(' · ')}\n${hint}`;
 }
 
 export function formatDevMockSeedProfileAlertMessage(

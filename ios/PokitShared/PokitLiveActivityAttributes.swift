@@ -43,10 +43,13 @@ public struct PokitLiveActivityAttributes: ActivityAttributes {
     public struct QuickMemoLiveContent: Codable, Hashable {
       public let bodyText: String
       public let statusLabel: String
+      /// RN 로케일 제목 — 구버전 페이로드에는 없을 수 있음
+      public let titleLabel: String?
 
-      public init(bodyText: String, statusLabel: String) {
+      public init(bodyText: String, statusLabel: String, titleLabel: String? = nil) {
         self.bodyText = bodyText
         self.statusLabel = statusLabel
+        self.titleLabel = titleLabel
       }
     }
 

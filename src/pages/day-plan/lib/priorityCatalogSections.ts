@@ -3,6 +3,7 @@ import {
   isCustomFlowCategoryKey,
   isSystemCatalogGroupKey,
   PRODUCTIVITY_GROUP_SYSTEM_ORDER,
+  resolveCustomCatalogGroupDisplayLabel,
 } from '@entities/day-plan';
 import type {
   CustomCatalogGroup,
@@ -179,7 +180,7 @@ export function buildPriorityCatalogSections(
     const customItems = customByGroup.get(g.key) ?? [];
     sections.push({
       groupKey: g.key,
-      title: g.label,
+      title: resolveCustomCatalogGroupDisplayLabel(g.key, g.label),
       subtitle: g.subtitle ?? DEFAULT_CUSTOM_GROUP_SUBTITLE_KO,
       items: [...standardItems, ...customItems],
       isCustomGroup: true,

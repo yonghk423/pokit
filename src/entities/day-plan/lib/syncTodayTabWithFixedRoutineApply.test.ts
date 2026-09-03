@@ -27,6 +27,21 @@ describe('syncPriorityOrderWithAppliedFixedRoutines', () => {
       syncPriorityOrderWithAppliedFixedRoutines(order, ['water'], allFixed),
     ).toEqual(['healthIntake', 'water']);
   });
+
+  it('removes orphaned customFlow keys that are no longer in any fixed set', () => {
+    const order = ['healthIntake', 'customFlow:orphan-routine', 'water'];
+    expect(
+      syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed, new Set()),
+    ).toEqual(['healthIntake']);
+  });
+
+  it('keeps catalog-selected customFlow even when not in fixed sets', () => {
+    const order = ['customFlow:kept-manual'];
+    const catalog = new Set(['customFlow:kept-manual']);
+    expect(
+      syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed, catalog),
+    ).toEqual(['customFlow:kept-manual']);
+  });
 });
 
 describe('mergeOrderWithAppliedFixedRoutines', () => {

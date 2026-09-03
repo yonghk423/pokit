@@ -21,6 +21,7 @@ import {
   ROUTINE_SUMMARY_MAX,
   SYSTEM_CATALOG_GROUP_KEYS,
   type CustomFlowTemplateKey,
+  resolveCustomCatalogGroupDisplayLabel,
 } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
@@ -105,13 +106,6 @@ type Props = {
 
 type SheetStep = 'basics' | 'template';
 
-const TEMPLATE_OPTIONS = listCustomFlowTemplateCatalogEntries().map((entry) => ({
-  key: entry.key,
-  title: entry.label,
-  summary: entry.summary,
-  icon: entry.icon,
-}));
-
 export function CreateCustomFlowSheet({
   visible,
   onClose,
@@ -125,8 +119,18 @@ export function CreateCustomFlowSheet({
   line,
   surface,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
+  const templateOptions = useMemo(
+    () =>
+      listCustomFlowTemplateCatalogEntries().map((entry) => ({
+        key: entry.key,
+        title: entry.label,
+        summary: entry.summary,
+        icon: entry.icon,
+      })),
+    [locale],
+  );
 
   const [name, setName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState<CustomFlowIconOption>(DEFAULT_CUSTOM_FLOW_ICON);
@@ -220,7 +224,7 @@ export function CreateCustomFlowSheet({
     }));
     const custom: GroupOption[] = customGroups.map((g) => ({
       key: g.key,
-      label: g.label,
+      label: resolveCustomCatalogGroupDisplayLabel(g.key, g.label),
       isSystem: false,
     }));
     return [...sys, ...custom];
@@ -572,7 +576,7 @@ export function CreateCustomFlowSheet({
               </View>
 
               <View style={styles.templateList}>
-                {TEMPLATE_OPTIONS.map((opt) => {
+                {templateOptions.map((opt) => {
                   const selected = selectedTemplateKey === opt.key;
                   return (
                     <Pressable

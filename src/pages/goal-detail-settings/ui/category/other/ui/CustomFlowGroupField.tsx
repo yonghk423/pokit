@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { isSystemCatalogGroupKey, SYSTEM_CATALOG_GROUP_KEYS } from '@entities/day-plan';
+import { isSystemCatalogGroupKey, resolveCustomCatalogGroupDisplayLabel, SYSTEM_CATALOG_GROUP_KEYS } from '@entities/day-plan';
 import { RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
@@ -44,7 +44,10 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
       key: k,
       label: resolveSystemCatalogGroupLabel(k),
     }));
-    const custom: GroupOption[] = customGroups.map((g) => ({ key: g.key, label: g.label }));
+    const custom: GroupOption[] = customGroups.map((g) => ({
+      key: g.key,
+      label: resolveCustomCatalogGroupDisplayLabel(g.key, g.label),
+    }));
     return [...sys, ...custom];
   }, [customGroups]);
 

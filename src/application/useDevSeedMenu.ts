@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Alert, DevSettings } from 'react-native';
 
+import { getAppLocale } from '@shared/lib/i18n';
 import type { HistorySeedProfile } from '@shared/lib/storage/seedHistoryData';
 
 import {
@@ -31,17 +32,19 @@ const HISTORY_SEED_MENU_ITEMS: ReadonlyArray<{ profile: HistorySeedProfile; labe
 
 /**
  * __DEV__ 전용: React Native Dev Menu에 목업 추가·제거 버튼 등록.
+ * 스크린샷/호라이즌 문구는 현재 앱 로케일(ko/en/ja)에 맞춰 채워진다.
  */
 export function useDevSeedMenu(): void {
   useEffect(() => {
     if (!__DEV__) return;
 
-    DevSettings.addMenuItem('[Seed] 스크린샷 데모', () => {
+    DevSettings.addMenuItem('[Seed] 스크린샷 데모 (locale)', () => {
       void (async () => {
+        const locale = getAppLocale();
         const result = await runScreenshotDemoSeedWithStoreSync();
         Alert.alert(
           'Seed 완료',
-          `${formatDevMockSeedAlertMessage(result)}\n\n담기·시간대·타임라인·메모·투두·서재·노트·통계가 채워졌어요.\n히스토리 주간이 오늘만 보이면 ◀ 로 지난주를 열어 보세요.`,
+          `${formatDevMockSeedAlertMessage(result)}\n\n문구 로케일: ${locale}\n담기·시간대·타임라인·메모·투두·서재·노트·통계가 채워졌어요.\n히스토리 주간이 오늘만 보이면 ◀ 로 지난주를 열어 보세요.`,
         );
       })();
     });

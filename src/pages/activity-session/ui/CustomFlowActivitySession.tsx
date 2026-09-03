@@ -3,9 +3,9 @@ import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  CUSTOM_FLOW_TEMPLATE_LABELS,
   normalizeCustomFlowDetailConfig,
   resolveCustomFlowTemplateKey,
+  resolveCustomFlowTemplateLabel,
   type CustomFlowCategoryKey,
   type DayPlanBlock,
 } from '@entities/day-plan';
@@ -100,7 +100,7 @@ export function CustomFlowActivitySession({
 
   const O = CategoryImmersionTheme.other;
   const accent = appearance.accentColor ?? PRIMARY;
-  const sessionLabel = CUSTOM_FLOW_TEMPLATE_LABELS[templateKey];
+  const sessionLabel = resolveCustomFlowTemplateLabel(templateKey);
   const headerTitle = isPaused
     ? t('session.paused')
     : isWaitingToStart

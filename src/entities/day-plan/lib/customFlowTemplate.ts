@@ -1,3 +1,5 @@
+import { t, type I18nKey } from '@shared/lib/i18n';
+
 import { pickCounterSettingsForCreate } from './counterPresetSamples';
 import {
   getInitialCounterDataConfig,
@@ -46,6 +48,7 @@ export {
 } from './customFlowTemplateConfigs';
 export type { CustomFlowTemplateKey };
 
+/** @deprecated 표시용은 `resolveCustomFlowTemplateLabel` 사용 — 한국어 기본값 보관 */
 export const CUSTOM_FLOW_TEMPLATE_LABELS: Record<CustomFlowTemplateKey, string> = {
   checklist: '할 일 체크',
   abstain: '금지 체크',
@@ -58,6 +61,7 @@ export const CUSTOM_FLOW_TEMPLATE_LABELS: Record<CustomFlowTemplateKey, string> 
   reminder: '시간 알림',
 };
 
+/** @deprecated 표시용은 `resolveCustomFlowTemplateDescription` 사용 */
 export const CUSTOM_FLOW_TEMPLATE_DESCRIPTIONS: Record<CustomFlowTemplateKey, string> = {
   checklist: '할 일을 하나씩 체크해요',
   abstain: '하지 않은 것을 체크해요',
@@ -70,7 +74,7 @@ export const CUSTOM_FLOW_TEMPLATE_DESCRIPTIONS: Record<CustomFlowTemplateKey, st
   reminder: '알림 시간에 맞춰 완료해요',
 };
 
-/** 템플릿 상세·선택 화면용 한 줄 설명 */
+/** @deprecated 표시용은 `resolveCustomFlowTemplateSummary` 사용 */
 export const CUSTOM_FLOW_TEMPLATE_SUMMARIES: Record<CustomFlowTemplateKey, string> = {
   checklist: '할 일 목록을 만들고, 세션에서 하나씩 체크해요.',
   abstain: '하지 말아야 할 습관을 목록으로 두고, 오늘 지켰는지 체크해요.',
@@ -83,6 +87,54 @@ export const CUSTOM_FLOW_TEMPLATE_SUMMARIES: Record<CustomFlowTemplateKey, strin
   reminder: '정해 둔 시간마다 완료 여부를 체크해요.',
 };
 
+const TEMPLATE_NAME_KEYS: Record<CustomFlowTemplateKey, I18nKey> = {
+  checklist: 'customFlowTemplate.name.checklist',
+  abstain: 'customFlowTemplate.name.abstain',
+  measurement: 'customFlowTemplate.name.measurement',
+  habit: 'customFlowTemplate.name.habit',
+  counter: 'customFlowTemplate.name.counter',
+  focus: 'customFlowTemplate.name.focus',
+  journal: 'customFlowTemplate.name.journal',
+  memo: 'customFlowTemplate.name.memo',
+  reminder: 'customFlowTemplate.name.reminder',
+};
+
+const TEMPLATE_DESC_KEYS: Record<CustomFlowTemplateKey, I18nKey> = {
+  checklist: 'customFlowTemplate.desc.checklist',
+  abstain: 'customFlowTemplate.desc.abstain',
+  measurement: 'customFlowTemplate.desc.measurement',
+  habit: 'customFlowTemplate.desc.habit',
+  counter: 'customFlowTemplate.desc.counter',
+  focus: 'customFlowTemplate.desc.focus',
+  journal: 'customFlowTemplate.desc.journal',
+  memo: 'customFlowTemplate.desc.memo',
+  reminder: 'customFlowTemplate.desc.reminder',
+};
+
+const TEMPLATE_SUMMARY_KEYS: Record<CustomFlowTemplateKey, I18nKey> = {
+  checklist: 'customFlowTemplate.summary.checklist',
+  abstain: 'customFlowTemplate.summary.abstain',
+  measurement: 'customFlowTemplate.summary.measurement',
+  habit: 'customFlowTemplate.summary.habit',
+  counter: 'customFlowTemplate.summary.counter',
+  focus: 'customFlowTemplate.summary.focus',
+  journal: 'customFlowTemplate.summary.journal',
+  memo: 'customFlowTemplate.summary.memo',
+  reminder: 'customFlowTemplate.summary.reminder',
+};
+
+export function resolveCustomFlowTemplateLabel(templateKey: CustomFlowTemplateKey): string {
+  return t(TEMPLATE_NAME_KEYS[templateKey]);
+}
+
+export function resolveCustomFlowTemplateDescription(templateKey: CustomFlowTemplateKey): string {
+  return t(TEMPLATE_DESC_KEYS[templateKey]);
+}
+
+export function resolveCustomFlowTemplateSummary(templateKey: CustomFlowTemplateKey): string {
+  return t(TEMPLATE_SUMMARY_KEYS[templateKey]);
+}
+
 export function resolveCustomFlowTemplateKey(raw: unknown): CustomFlowTemplateKey {
   return resolveCustomFlowTemplateKeyFromRaw(raw);
 }
@@ -92,9 +144,9 @@ export function resolveAppliedCustomFlowTemplateLabel(
   templateKey: CustomFlowTemplateKey,
 ): string {
   if (templateKey === 'abstain') {
-    return CUSTOM_FLOW_TEMPLATE_LABELS.checklist;
+    return resolveCustomFlowTemplateLabel('checklist');
   }
-  return CUSTOM_FLOW_TEMPLATE_LABELS[templateKey];
+  return resolveCustomFlowTemplateLabel(templateKey);
 }
 
 export type CustomFlowDetailConfig =

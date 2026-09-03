@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  resolveCustomCatalogGroupDisplayLabel,
   SYSTEM_CATALOG_GROUP_KEYS,
 } from '@entities/day-plan';
 import {
@@ -99,7 +100,7 @@ export function MoveCustomFlowGroupSheet({
     }));
     const custom: GroupOption[] = customGroups.map((g) => ({
       key: g.key,
-      label: g.label,
+      label: resolveCustomCatalogGroupDisplayLabel(g.key, g.label),
       isSystem: false,
     }));
     return [...sys, ...custom];

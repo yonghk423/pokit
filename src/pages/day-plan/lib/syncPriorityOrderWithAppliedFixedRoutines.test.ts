@@ -8,11 +8,11 @@ describe('syncPriorityOrderWithAppliedFixedRoutines', () => {
     expect(syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed)).toEqual(['study']);
   });
 
-  it('prepends applied fixed keys and keeps manual catalog keys', () => {
+  it('keeps applied fixed keys and manual catalog keys in existing order', () => {
     const order = ['study', 'water'];
     expect(
       syncPriorityOrderWithAppliedFixedRoutines(order, ['water', 'reading'], allFixed),
-    ).toEqual(['reading', 'study', 'water']);
+    ).toEqual(['study', 'water']);
   });
 
   it('drops unapplied fixed keys when apply is turned off', () => {
@@ -20,5 +20,10 @@ describe('syncPriorityOrderWithAppliedFixedRoutines', () => {
     expect(
       syncPriorityOrderWithAppliedFixedRoutines(order, ['water'], allFixed),
     ).toEqual(['water', 'study']);
+  });
+
+  it('removes orphaned customFlow keys with no catalog selection', () => {
+    const order = ['study', 'customFlow:deleted-from-fixed'];
+    expect(syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed)).toEqual(['study']);
   });
 });

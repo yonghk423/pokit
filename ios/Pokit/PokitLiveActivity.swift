@@ -51,6 +51,7 @@ private struct LiveActivityPayload: Decodable {
   struct QuickMemoLivePayload: Decodable {
     let bodyText: String
     let statusLabel: String
+    let titleLabel: String?
   }
   let quickMemoLive: QuickMemoLivePayload?
 }
@@ -132,7 +133,8 @@ private actor PokitLiveActivityCoordinator {
         quickMemoLive: payload.quickMemoLive.map {
           PokitLiveActivityAttributes.ContentState.QuickMemoLiveContent(
             bodyText: $0.bodyText,
-            statusLabel: $0.statusLabel
+            statusLabel: $0.statusLabel,
+            titleLabel: $0.titleLabel
           )
         }
       )

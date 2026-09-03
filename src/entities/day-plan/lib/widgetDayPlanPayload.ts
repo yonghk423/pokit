@@ -1,5 +1,6 @@
 import { loadDayPlanDraft } from '@shared/lib/storage/dayPlanDraftStorage';
 import type { PersistedDayPlan } from '@shared/lib/storage/dayPlanStorage';
+import { t } from '@shared/lib/i18n';
 
 import type { DayPlanBlock } from '../model/types';
 import { getBlockTimelineIcon } from './blockIcons';
@@ -22,6 +23,8 @@ export type WidgetDayPlanPayload = PersistedDayPlan & {
   quickMemoDraft: string;
   /** 담기·블록 순서 + 앱과 동일 SF Symbol — 위젯은 이 배열을 우선 사용 */
   priorityRoutineItems: WidgetPriorityRoutineItem[];
+  /** 홈 위젯 「빠른 메모」 섹션 제목 — 현재 앱 로케일 */
+  quickMemoSectionTitle: string;
 };
 
 function sortedFlowBlocks(blocks: DayPlanBlock[]): DayPlanBlock[] {
@@ -88,5 +91,6 @@ export function buildWidgetDayPlanPayload(
     completedFocusCategoryKeys,
     quickMemoDraft,
     priorityRoutineItems,
+    quickMemoSectionTitle: t('liveActivity.quickMemoTitle'),
   };
 }

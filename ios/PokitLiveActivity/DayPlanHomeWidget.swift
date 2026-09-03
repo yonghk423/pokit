@@ -186,6 +186,7 @@ private struct HomeProgressBar: View {
 
 private struct HomeQuickMemoSection: View {
   let memos: [DayPlanQuickMemoLineModel]
+  let title: String
 
   var body: some View {
     VStack(alignment: .leading, spacing: 5) {
@@ -193,7 +194,7 @@ private struct HomeQuickMemoSection: View {
         Image(systemName: "text.bubble.fill")
           .font(.system(size: 10, weight: .bold))
           .foregroundStyle(DayPlanWidgetPalette.ink)
-        Text("빠른 메모")
+        Text(title)
           .font(.system(size: 11, weight: .bold))
           .foregroundStyle(DayPlanWidgetPalette.muted)
       }
@@ -360,7 +361,7 @@ extension DayPlanHomeWidgetEntryView {
         .frame(height: 1)
         .padding(.bottom, 6)
 
-      HomeQuickMemoSection(memos: home.quickMemos)
+      HomeQuickMemoSection(memos: home.quickMemos, title: home.quickMemoSectionTitle)
 
       Spacer(minLength: 0)
     }
@@ -463,7 +464,8 @@ struct DayPlanHomeWidget: Widget {
         DayPlanRoutineStatusItem(categoryKey: "stretching", iconName: "figure.run", isCompleted: false),
         DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.closed.fill", isCompleted: false),
         DayPlanRoutineStatusItem(categoryKey: "planning", iconName: "calendar.badge.clock", isCompleted: false),
-      ]
+      ],
+      quickMemoSectionTitle: "빠른 메모"
     )
   )
 }
@@ -501,7 +503,8 @@ struct DayPlanHomeWidget: Widget {
         DayPlanRoutineStatusItem(categoryKey: "meditation", iconName: "brain.head.profile", isCompleted: true),
         DayPlanRoutineStatusItem(categoryKey: "stretching", iconName: "figure.run", isCompleted: false),
         DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.closed.fill", isCompleted: false),
-      ]
+      ],
+      quickMemoSectionTitle: "빠른 메모"
     )
   )
 }
@@ -539,7 +542,8 @@ struct DayPlanHomeWidget: Widget {
         DayPlanRoutineStatusItem(categoryKey: "breathing", iconName: "wind", isCompleted: true),
         DayPlanRoutineStatusItem(categoryKey: "deepwork", iconName: "brain", isCompleted: false),
         DayPlanRoutineStatusItem(categoryKey: "water", iconName: "drop.fill", isCompleted: false),
-      ]
+      ],
+      quickMemoSectionTitle: "빠른 메모"
     )
   )
 }
@@ -561,7 +565,8 @@ struct DayPlanHomeWidget: Widget {
       today: DayPlanRoutineSectionModel(title: "오늘 루틴", count: 0, iconNames: []),
       completed: DayPlanRoutineSectionModel(title: "완료", count: 0, iconNames: []),
       quickMemos: [],
-      routineItems: []
+      routineItems: [],
+      quickMemoSectionTitle: "빠른 메모"
     )
   )
 }

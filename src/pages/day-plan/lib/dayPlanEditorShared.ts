@@ -12,6 +12,7 @@ import {
   PRIORITY_CATALOG_PICKER_LABELS,
   resolveCategoryCatalogIcon,
   resolveCustomFlowCategoryLabelKo,
+  resolveCustomFlowDisplayLabel,
   resolvePriorityRoutineCategoryKey,
 } from '@entities/day-plan';
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
@@ -100,8 +101,7 @@ export function getPickerCategoryLabel(
         ? otherDetailConfig
         : loadGoalDetailCategoryConfig(categoryKey);
     const cfg = normalizeOtherDetailConfig(raw ?? getInitialOtherDataConfig());
-    const d = cfg.displayName.trim();
-    return d.length > 0 ? d : resolveCustomFlowCategoryLabelKo(categoryKey);
+    return resolveCustomFlowDisplayLabel(categoryKey, cfg.displayName.trim());
   }
   if (categoryKey === 'other') {
     const raw =

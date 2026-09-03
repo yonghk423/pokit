@@ -1,6 +1,14 @@
+import { getAppLocale } from '@shared/lib/i18n/model/localeStore';
+import {
+  getBuiltinFlowDefaultLabel,
+  getBuiltinFlowDefaultSummary,
+  isBuiltinFlowDefaultDisplayName,
+} from '@shared/lib/i18n/lib/builtinFlowLabels';
+
 import {
   BUILTIN_DAILY_LIFE_FLOW_IDS,
   BUILTIN_STRETCHING_FLOW_ID,
+  DEFAULT_BUILTIN_CUSTOM_FLOWS,
 } from '../../defaultPriorityCatalog';
 import { markDailyRhythmOnboardingCompleted } from '../../dailyRhythmOnboardingStorage';
 import { loadDayPlanDraft, saveDayPlanDraft } from '../../dayPlanDraftStorage';
@@ -17,6 +25,12 @@ import {
 import { appendRoutineCatalogSelectionKeys } from '../../priorityCatalogFixedRoutinesStorage';
 
 import type { DevMockSeedModule } from '../types';
+import {
+  getScreenshotDemoCopy,
+  getScreenshotSpineLabel,
+  isScreenshotHealthIntakeSummary,
+  isScreenshotQuickMemoMarker,
+} from './screenshotDemoCopy';
 
 const SCREENSHOT_READING_BOOK_IDS = [
   'rb-screenshot-demo-01',
@@ -32,17 +46,6 @@ const SCREENSHOT_NOTE_PAGE_IDS = [
 
 const SCREENSHOT_TODO_ID_PREFIX = 'todo-screenshot-';
 const SCREENSHOT_SPINE_ID_PREFIX = 'dpb-screenshot-spine-';
-const SCREENSHOT_QUICK_MEMO_MARKER = '·하루 메모';
-
-const SCREENSHOT_LABEL_KO: Record<string, string> = {
-  reading: '독서',
-  healthIntake: '건강을 위한 섭취',
-  fasting: '체중조절',
-  [BUILTIN_DAILY_LIFE_FLOW_IDS[0]!]: '이불정리',
-  [BUILTIN_DAILY_LIFE_FLOW_IDS[1]!]: '청소하기',
-  [BUILTIN_DAILY_LIFE_FLOW_IDS[5]!]: '운동하기',
-  [BUILTIN_STRETCHING_FLOW_ID]: '스트레칭',
-};
 
 function todayDateKey(now = new Date()): string {
   const y = now.getFullYear();
@@ -179,12 +182,10 @@ function seedDayPlanDraft(today: string): void {
       [BUILTIN_STRETCHING_FLOW_ID]: 'low',
       fasting: 'medium',
     },
-    quickMemoDraft: [
-      `${SCREENSHOT_QUICK_MEMO_MARKER}`,
-      '오전 — 독서 30쪽, 물 500ml',
-      '오후 — 운동·스트레칭, 노트에 아이디어 정리',
-      '저녁 — 체중 기록하고 내일 루틴 확인',
-    ].join('\n'),
+    quickMemoDraft: (() => {
+      const copy = getScreenshotDemoCopy(getAppLocale());
+      return [copy.quickMemoMarker, ...copy.quickMemoLines].join('\n');
+    })(),
     // 목록 모드 기본. 시간대·타임라인 데이터는 채워 두어 모드 전환 시 바로 보이게 함
     priorityMealSlotLayoutEnabled: false,
     prioritySpineLayoutEnabled: false,
@@ -220,8 +221,9 @@ function seedSpineTimeline(today: string): void {
   const kept = (prev?.blocks ?? []).filter(
     (block) => typeof block.id === 'string' && !block.id.startsWith(SCREENSHOT_SPINE_ID_PREFIX),
   );
+  const locale = getAppLocale();
   const spineBlocks = buildSpineSeedBlocks().map((row) => {
-    const label = SCREENSHOT_LABEL_KO[row.categoryKey] ?? '루틴';
+    const label = getScreenshotSpineLabel(row.categoryKey, locale);
     return {
       id: row.id,
       title: label,
@@ -255,129 +257,103 @@ function seedSpineTimeline(today: string): void {
 }
 
 function seedTodos(today: string): void {
+  const copy = getScreenshotDemoCopy(getAppLocale());
+  const schedules = [
+    {
+      priority: 'high' as const,
+      startMinutes: 9 * 60 + 30,
+      endMinutes: 10 * 60 + 30,
+      inProgress: true,
+      isDone: false,
+    },
+    {
+      priority: 'medium' as const,
+      startMinutes: 12 * 60,
+      endMinutes: 12 * 60 + 40,
+      inProgress: false,
+      isDone: false,
+    },
+    {
+      priority: 'low' as const,
+      startMinutes: 15 * 60,
+      endMinutes: 15 * 60 + 20,
+      inProgress: false,
+      isDone: true,
+    },
+    {
+      priority: 'high' as const,
+      startMinutes: 20 * 60,
+      endMinutes: 21 * 60,
+      inProgress: false,
+      isDone: false,
+    },
+    {
+      priority: 'medium' as const,
+      startMinutes: 21 * 60 + 10,
+      endMinutes: 21 * 60 + 40,
+      inProgress: false,
+      isDone: false,
+    },
+  ];
   const prev = loadDayPlanTodos();
   saveDayPlanTodos({
     todosByDate: {
       ...(prev?.todosByDate ?? {}),
-      [today]: [
-        {
-          id: `${SCREENSHOT_TODO_ID_PREFIX}01`,
-          what: '오전 미팅 자료 정리',
-          who: '나',
-          priority: 'high',
-          startMinutes: 9 * 60 + 30,
-          endMinutes: 10 * 60 + 30,
-          inProgress: true,
-          isDone: false,
-          order: 0,
-        },
-        {
-          id: `${SCREENSHOT_TODO_ID_PREFIX}02`,
-          what: '장보기 · 저녁 재료',
-          who: '나',
-          priority: 'medium',
-          startMinutes: 12 * 60,
-          endMinutes: 12 * 60 + 40,
-          inProgress: false,
-          isDone: false,
-          order: 1,
-        },
-        {
-          id: `${SCREENSHOT_TODO_ID_PREFIX}03`,
-          what: '친구에게 회신 보내기',
-          who: '나',
-          priority: 'low',
-          startMinutes: 15 * 60,
-          endMinutes: 15 * 60 + 20,
-          inProgress: false,
-          isDone: true,
-          order: 2,
-        },
-        {
-          id: `${SCREENSHOT_TODO_ID_PREFIX}04`,
-          what: '주간 리뷰 초안 쓰기',
-          who: '나',
-          priority: 'high',
-          startMinutes: 20 * 60,
-          endMinutes: 21 * 60,
-          inProgress: false,
-          isDone: false,
-          order: 3,
-        },
-        {
-          id: `${SCREENSHOT_TODO_ID_PREFIX}05`,
-          what: '세탁물 개기',
-          who: '나',
-          priority: 'medium',
-          startMinutes: 21 * 60 + 10,
-          endMinutes: 21 * 60 + 40,
-          inProgress: false,
-          isDone: false,
-          order: 4,
-        },
-      ],
+      [today]: copy.todos.map((todo, index) => {
+        const schedule = schedules[index]!;
+        return {
+          id: `${SCREENSHOT_TODO_ID_PREFIX}${String(index + 1).padStart(2, '0')}`,
+          what: todo.what,
+          who: todo.who,
+          priority: schedule.priority,
+          startMinutes: schedule.startMinutes,
+          endMinutes: schedule.endMinutes,
+          inProgress: schedule.inProgress,
+          isDone: schedule.isDone,
+          order: index,
+        };
+      }),
     },
   });
 }
 
 function seedReadingLibrary(): void {
   const now = Date.now();
+  const copy = getScreenshotDemoCopy(getAppLocale()).reading;
+  const bookMeta = [
+    { targetPage: 248, status: 'reading' as const, addedAtMs: now - 5 * 24 * 60 * 60 * 1000 },
+    { targetPage: 392, status: 'want' as const, addedAtMs: now - 2 * 24 * 60 * 60 * 1000 },
+    { targetPage: 636, status: 'done' as const, addedAtMs: now - 40 * 24 * 60 * 60 * 1000 },
+    { targetPage: 304, status: 'reading' as const, addedAtMs: now - 12 * 24 * 60 * 60 * 1000 },
+  ];
   saveGoalDetailCategoryConfig('reading', {
-    displayName: '독서',
-    bookTitle: '데미안',
+    displayName: copy.displayName,
+    bookTitle: copy.bookTitle,
     aladinBook: null,
-    books: [
-      {
-        id: SCREENSHOT_READING_BOOK_IDS[0],
-        title: '데미안',
-        startPage: 1,
-        targetPage: 248,
-        status: 'reading',
-        addedAtMs: now - 5 * 24 * 60 * 60 * 1000,
-        memo: '오늘 112쪽까지',
-      },
-      {
-        id: SCREENSHOT_READING_BOOK_IDS[1],
-        title: '아토믹 해빗',
-        startPage: 1,
-        targetPage: 392,
-        status: 'want',
-        addedAtMs: now - 2 * 24 * 60 * 60 * 1000,
-        memo: '다음에 읽을 책',
-      },
-      {
-        id: SCREENSHOT_READING_BOOK_IDS[2],
-        title: '사피엔스',
-        startPage: 1,
-        targetPage: 636,
-        status: 'done',
-        addedAtMs: now - 40 * 24 * 60 * 60 * 1000,
-        memo: '완독',
-      },
-      {
-        id: SCREENSHOT_READING_BOOK_IDS[3],
-        title: '미드나잇 라이브러리',
-        startPage: 1,
-        targetPage: 304,
-        status: 'reading',
-        addedAtMs: now - 12 * 24 * 60 * 60 * 1000,
-        memo: '출퇴근용',
-      },
-    ],
+    books: copy.books.map((book, index) => ({
+      id: SCREENSHOT_READING_BOOK_IDS[index]!,
+      title: book.title,
+      startPage: 1,
+      targetPage: bookMeta[index]!.targetPage,
+      status: bookMeta[index]!.status,
+      addedAtMs: bookMeta[index]!.addedAtMs,
+      memo: book.memo,
+    })),
     startPage: 1,
     targetPage: 248,
     selectedMetrics: ['pages_read', 'pages_left'],
-    summary: '오늘 30쪽 · 112/248',
+    summary: copy.summary,
   });
   appendGoalDetailCommittedCategoryKeys(['reading']);
 }
 
 function seedHealthIntakeDetail(): void {
+  const copy = getScreenshotDemoCopy(getAppLocale()).healthIntake;
   saveGoalDetailCategoryConfig('healthIntake', {
-    displayName: '건강을 위한 섭취',
-    summary: '물 1.2L · 약 아침 완료',
+    displayName: copy.displayName,
+    summary: copy.summary,
     water: {
-      displayName: '건강을 위한 섭취',
+      displayName: copy.displayName,
       goalMl: 2000,
       drankMl: 1200,
       quickAddPresetsMl: [200, 250, 500],
@@ -388,8 +364,8 @@ function seedHealthIntakeDetail(): void {
       summary: '',
     },
     medicine: {
-      displayName: '건강을 위한 섭취',
-      doseLabel: '종합비타민',
+      displayName: copy.displayName,
+      doseLabel: copy.doseLabel,
       dosesPerDay: 2,
       takenCount: 1,
       morningOn: true,
@@ -409,9 +385,10 @@ function seedHealthIntakeDetail(): void {
 
 function seedFastingDetail(): void {
   const today = todayDateKey();
+  const copy = getScreenshotDemoCopy(getAppLocale()).fasting;
   saveGoalDetailCategoryConfig('fasting', {
-    displayName: '체중조절',
-    summary: '16:8 단식 · 목표까지 -3.2kg',
+    displayName: copy.displayName,
+    summary: copy.summary,
     fastingMin: 16 * 60,
     elapsedMin: 10 * 60,
     currentWeightKg: 68.4,
@@ -426,86 +403,37 @@ function seedFastingDetail(): void {
 }
 
 function seedDayNotes(today: string): void {
+  const copy = getScreenshotDemoCopy(getAppLocale()).notes;
+  const blockIds = [
+    ['wsb-shot-p1', 'wsb-shot-c1', 'wsb-shot-c2', 'wsb-shot-c3', 'wsb-shot-b1', 'wsb-shot-b2'],
+    ['wsb-shot-p2', 'wsb-shot-n1', 'wsb-shot-n2'],
+  ] as const;
   saveGoalDetailCategoryConfig('work', {
-    displayName: '노트',
-    subject: '일상 노트',
+    displayName: copy.displayName,
+    subject: copy.subject,
     planMin: 60,
     doneMin: 25,
     breakMin: 5,
     studyMode: 'free',
-    tasks: [
-      { id: 'task-screenshot-01', text: '아이디어 3개 적기', done: true },
-      { id: 'task-screenshot-02', text: '내일 루틴 점검', done: false },
-    ],
-    focusMemo: '짧게라도 매일 기록하기',
-    summary: '오늘 메모',
+    tasks: copy.tasks.map((task, index) => ({
+      id: `task-screenshot-0${index + 1}`,
+      text: task.text,
+      done: task.done,
+    })),
+    focusMemo: copy.focusMemo,
+    summary: copy.summary,
     ddayEvents: [],
     timetableSlots: [],
     document: {
-      pages: [
-        {
-          id: SCREENSHOT_NOTE_PAGE_IDS[0],
-          title: '오늘',
-          createdDateKey: today,
-          blocks: [
-            {
-              id: 'wsb-shot-p1',
-              kind: 'paragraph',
-              text: '아침에 산뜻하게 시작했고, 오후에 운동까지 끝냈다. 저녁엔 노트만 정리하면 충분하다.',
-            },
-            {
-              id: 'wsb-shot-c1',
-              kind: 'checklist',
-              text: '물 2L 목표 채우기',
-              checked: false,
-            },
-            {
-              id: 'wsb-shot-c2',
-              kind: 'checklist',
-              text: '독서 30쪽',
-              checked: true,
-            },
-            {
-              id: 'wsb-shot-c3',
-              kind: 'checklist',
-              text: '스트레칭 10분',
-              checked: false,
-            },
-            {
-              id: 'wsb-shot-b1',
-              kind: 'bullet',
-              text: '집중이 잘 되는 시간: 오전 9–11시',
-            },
-            {
-              id: 'wsb-shot-b2',
-              kind: 'bullet',
-              text: '내일은 장보기 전에 루틴부터',
-            },
-          ],
-        },
-        {
-          id: SCREENSHOT_NOTE_PAGE_IDS[1],
-          title: '아이디어',
-          createdDateKey: today,
-          blocks: [
-            {
-              id: 'wsb-shot-p2',
-              kind: 'paragraph',
-              text: '완벽보다 꾸준함이 우선. 작은 완료를 쌓자.',
-            },
-            {
-              id: 'wsb-shot-n1',
-              kind: 'numbered',
-              text: '주말 루틴을 가볍게 다시 짜기',
-            },
-            {
-              id: 'wsb-shot-n2',
-              kind: 'numbered',
-              text: '독서 리스트에 에세이 추가',
-            },
-          ],
-        },
-      ],
+      pages: copy.pages.map((page, pageIndex) => ({
+        id: SCREENSHOT_NOTE_PAGE_IDS[pageIndex]!,
+        title: page.title,
+        createdDateKey: today,
+        blocks: page.blocks.map((block, blockIndex) => ({
+          id: blockIds[pageIndex]![blockIndex]!,
+          ...block,
+        })),
+      })),
       activePageId: SCREENSHOT_NOTE_PAGE_IDS[0],
     },
   });
@@ -528,7 +456,7 @@ function clearDayPlanDraftDemo(): void {
   if (!prev) return;
   const seededOrder = buildPriorityCategoryOrder();
   const looksLikeScreenshotSeed =
-    prev.quickMemoDraft.includes(SCREENSHOT_QUICK_MEMO_MARKER) ||
+    isScreenshotQuickMemoMarker(prev.quickMemoDraft) ||
     (prev.priorityCategoryOrder.length === seededOrder.length &&
       seededOrder.every((key, index) => prev.priorityCategoryOrder[index] === key)) ||
     (prev.prioritySectionsCategoryOrder?.length === seededOrder.length &&
@@ -615,16 +543,74 @@ function clearScreenshotWorkNote(): void {
   });
 }
 
-/**
- * 스크린샷용 — 현재 제품 UI(담기·시간대·타임라인·빠른메모·투두·서재·노트·건강섭취·체중조절) 기준 목업.
- * 히스토리/호라이즌은 `runScreenshotDemoSeedWithStoreSync`가 이어서 채운다.
- */
+function seedLocalizedBuiltinRoutines(): void {
+  const locale = getAppLocale();
+  for (const flow of DEFAULT_BUILTIN_CUSTOM_FLOWS) {
+    const flowId = flow.id;
+    const localizedName = getBuiltinFlowDefaultLabel(flowId, locale);
+    if (!localizedName) continue;
+
+    const raw = loadGoalDetailCategoryConfig(flowId);
+    if (!raw || typeof raw !== 'object') continue;
+    const row = { ...(raw as Record<string, unknown>) };
+    const currentName = typeof row.displayName === 'string' ? row.displayName.trim() : '';
+    // 사용자가 직접 지은 이름은 덮어쓰지 않음
+    if (currentName.length > 0 && !isBuiltinFlowDefaultDisplayName(flowId, currentName)) {
+      continue;
+    }
+
+    row.displayName = localizedName;
+    const summary = getBuiltinFlowDefaultSummary(flowId, locale);
+    if (summary) row.summary = summary;
+
+    if (Array.isArray(row.checklist)) {
+      row.checklist = row.checklist.map((item) => {
+        if (!item || typeof item !== 'object') return item;
+        const entry = item as Record<string, unknown>;
+        const text = typeof entry.text === 'string' ? entry.text.trim() : '';
+        if (!text || isBuiltinFlowDefaultDisplayName(flowId, text)) {
+          return { ...entry, text: localizedName };
+        }
+        return item;
+      });
+    }
+
+    saveGoalDetailCategoryConfig(flowId, row);
+  }
+}
+
+function restoreBuiltinRoutineLabelsToKo(): void {
+  for (const flow of DEFAULT_BUILTIN_CUSTOM_FLOWS) {
+    const raw = loadGoalDetailCategoryConfig(flow.id);
+    if (!raw || typeof raw !== 'object') continue;
+    const row = { ...(raw as Record<string, unknown>) };
+    const currentName = typeof row.displayName === 'string' ? row.displayName.trim() : '';
+    if (!isBuiltinFlowDefaultDisplayName(flow.id, currentName)) continue;
+
+    row.displayName = flow.displayName;
+    if (typeof flow.summary === 'string') row.summary = flow.summary;
+    if (Array.isArray(row.checklist) && flow.checklistLabels?.[0]) {
+      const koLabel = flow.checklistLabels[0];
+      row.checklist = row.checklist.map((item) => {
+        if (!item || typeof item !== 'object') return item;
+        const entry = item as Record<string, unknown>;
+        const text = typeof entry.text === 'string' ? entry.text.trim() : '';
+        if (!text || isBuiltinFlowDefaultDisplayName(flow.id, text)) {
+          return { ...entry, text: koLabel };
+        }
+        return item;
+      });
+    }
+    saveGoalDetailCategoryConfig(flow.id, row);
+  }
+}
 export const screenshotDemoMockSeed: DevMockSeedModule = {
   id: 'screenshot-demo',
-  version: 5,
+  version: 7,
   async seed() {
     const today = todayDateKey();
     markDailyRhythmOnboardingCompleted();
+    seedLocalizedBuiltinRoutines();
     seedDayPlanDraft(today);
     seedSpineTimeline(today);
     seedTodos(today);
@@ -645,6 +631,7 @@ export const screenshotDemoMockSeed: DevMockSeedModule = {
     clearScreenshotTodos();
     clearScreenshotReadingLibrary();
     clearScreenshotWorkNote();
+    restoreBuiltinRoutineLabelsToKo();
     clearScreenshotCategoryIfSeeded(
       'healthIntake',
       (raw) =>
@@ -652,7 +639,7 @@ export const screenshotDemoMockSeed: DevMockSeedModule = {
           raw &&
             typeof raw === 'object' &&
             typeof (raw as { summary?: string }).summary === 'string' &&
-            (raw as { summary: string }).summary.includes('물 1.2L'),
+            isScreenshotHealthIntakeSummary((raw as { summary: string }).summary),
         ),
     );
     clearScreenshotCategoryIfSeeded(

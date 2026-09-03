@@ -607,23 +607,27 @@ struct PokitLiveActivityWidget: Widget {
         let previewLine = q.bodyText.split(separator: "\n", omittingEmptySubsequences: false)
           .map(String.init)
           .first { !$0.trimmingCharacters(in: .whitespaces).isEmpty } ?? q.bodyText
+        let memoChromeTitle: String = {
+          let trimmed = (q.titleLabel ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+          return trimmed.isEmpty ? "메모" : trimmed
+        }()
         /// 컴팩트 trailing 은 체크리스트의 `1개`·중요도의 타이머처럼 **짧은 고정 라벨**만 사용한다.
         /// 본문 미리보기를 넣으면 intrinsic 폭이 커져 다이내믹 아일랜드 알약이 화면에 가깝게 늘어난다.
         let compactTrailingLabel: String = {
-          if isFinished { return "완료" }
+          if isFinished { return q.statusLabel.isEmpty ? "완료" : q.statusLabel }
           switch context.state.status {
           case "paused":
-            return "멈춤"
+            return q.statusLabel.isEmpty ? "멈춤" : q.statusLabel
           case "standby":
-            return "대기"
+            return q.statusLabel.isEmpty ? "대기" : q.statusLabel
           default:
-            return "메모"
+            return memoChromeTitle
           }
         }()
         /// 확장 상단: leading / trailing 을 나누면 양끝 정렬로 가운데 검은 빈 영역이 커짐 → 한 덩어리로만 배치.
         let expandedTopPreview: String = {
           let t = previewLine.trimmingCharacters(in: .whitespacesAndNewlines)
-          if t.isEmpty { return "메모" }
+          if t.isEmpty { return memoChromeTitle }
           if t.count <= 18 { return t }
           return String(t.prefix(18)) + "…"
         }()
@@ -635,7 +639,7 @@ struct PokitLiveActivityWidget: Widget {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(liveGrayAccent)
               VStack(alignment: .leading, spacing: 1) {
-                Text("메모")
+                Text(memoChromeTitle)
                   .font(.caption2.weight(.bold))
                   .foregroundStyle(liveGrayAccent)
                   .lineLimit(1)

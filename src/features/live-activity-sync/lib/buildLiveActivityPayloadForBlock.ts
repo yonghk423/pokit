@@ -10,6 +10,7 @@ import {
   resolveCategoryKeyFromLabel,
 } from '@entities/day-plan';
 import { useDayPlanRuntimeStore, useDayPlanStore } from '@entities/day-plan';
+import { t } from '@shared/lib/i18n';
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 
 import type {
@@ -158,13 +159,13 @@ export function buildLiveActivityChecklistRows(input: {
 function quickMemoStatusLabel(status: PokitLiveActivityStatus): string {
   switch (status) {
     case 'finished':
-      return '완료';
+      return t('session.complete');
     case 'paused':
-      return '일시정지';
+      return t('session.paused');
     case 'standby':
-      return '시작 대기';
+      return t('session.waitingToStart');
     default:
-      return '진행 중';
+      return t('liveActivity.statusInProgress');
   }
 }
 
@@ -237,6 +238,7 @@ export function buildLiveActivityPayloadForBlock(input: {
     ? {
         bodyText: numberedLines.join('\n'),
         statusLabel: quickMemoStatusLabel(status),
+        titleLabel: t('liveActivity.quickMemoTitle'),
       }
     : null;
 

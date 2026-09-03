@@ -1,6 +1,7 @@
 import { SEED_CATEGORY_POOL } from './devMockSeed/seedCatalogConstants';
 import {
   type HistoryDailyStatRow,
+  loadHistoryDailyStats,
   saveHistoryDailyStats,
   saveHistoryMeta,
 } from './historyStorage';
@@ -376,4 +377,60 @@ export async function seedHistoryData(profile: HistorySeedProfile = 'mixed'): Pr
   saveHistoryMeta({ lastUpdatedAt: new Date().toISOString(), schemaVersion: 1 });
   await flushLocalStorageClientWrites();
   return rows.length;
+}
+
+/** 스크린샷용 — 이번 달(오늘 이후 포함)을 고밀도로 채워 월간 히스토리가 꽉 차 보이게 한다. */
+export async function fillCurrentMonthHistoryForScreenshotDemo(
+  anchorDate: Date = new Date(),
+): Promise<number> {
+  const year = anchorDate.getFullYear();
+  const monthIndex = anchorDate.getMonth();
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const existing = loadHistoryDailyStats();
+  const byKey = new Map(existing.map((row) => [row.dateKey, row]));
+
+  const coreCategories = [
+    'healthIntake',
+    'fasting',
+    'reading',
+    'work',
+    'customFlow:preset_daily_bed',
+    'customFlow:preset_daily_clean',
+    'customFlow:preset_daily_laundry',
+    'customFlow:preset_daily_exercise',
+    'customFlow:preset_stretching',
+  ] as const;
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const dateKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const categoryCompletions: Record<string, number> = {};
+    let totalCompleted = 0;
+    for (const cat of coreCategories) {
+      // 약 90% 이상 채워 월간 그리드가 촘촘해 보이게
+      if (unitFloat(`${dateKey}:${cat}:monthFill`) < 0.08) continue;
+      const count = deterministicInt(`${dateKey}:${cat}:monthCount`, 1, 2);
+      categoryCompletions[cat] = count;
+      totalCompleted += count;
+    }
+    if (totalCompleted === 0) {
+      categoryCompletions.healthIntake = 1;
+      categoryCompletions.reading = 1;
+      totalCompleted = 2;
+    }
+    byKey.set(dateKey, {
+      dateKey,
+      focusMinutes: 0,
+      completedFlowCount: totalCompleted,
+      sessionCount: totalCompleted,
+      completionRate: 1,
+      categoryMinutes: {},
+      categoryCompletions,
+    });
+  }
+
+  const merged = Array.from(byKey.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+  saveHistoryDailyStats(merged);
+  saveHistoryMeta({ lastUpdatedAt: new Date().toISOString(), schemaVersion: 1 });
+  await flushLocalStorageClientWrites();
+  return daysInMonth;
 }

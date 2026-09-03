@@ -22,12 +22,14 @@ import {
 } from '@shared/lib/storage';
 
 import { isPriorityCatalogAllowedKey } from '../lib/priorityCatalogRegistry';
+import { purgeFixedRoutineCategoryFromTodayPlan } from '../lib/purgeFixedRoutineCategoryFromTodayPlan';
 import { resolveTodayFixedRoutineKeys } from '../lib/resolveTodayFixedRoutineKeys';
 import {
   registerFixedSyncTodayTabAccessor,
   syncTodayTabWithFixedRoutineApply,
 } from '../lib/runSyncTodayTabWithFixedRoutineApply';
 import { sanitizeFixedFlowSetItems } from '../lib/sanitizeFixedFlowSetItems';
+import { collectAllFixedFlowCategoryKeys } from '../lib/syncTodayTabWithFixedRoutineApply';
 
 function emptyActiveSetIdsByLayoutMode(): FixedRoutineActiveSetIdsByLayoutMode {
   return { bag: [], sections: [], spine: [] };
@@ -636,6 +638,12 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     removeRoutineCatalogSelectionKey(key);
     set({ sets: nextSets });
     persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
+    // 어떤 세트에도 더 이상 없고 오늘 적용도 아니면, sync 가 수동 담기로 남겨 두는 orphan 을 제거
+    const stillInAnySet = collectAllFixedFlowCategoryKeys(get().sets).has(key);
+    const stillAppliedToday = get().todayAppliedCategoryKeys.includes(key);
+    if (!stillInAnySet && !stillAppliedToday) {
+      purgeFixedRoutineCategoryFromTodayPlan(key);
+    }
   },
 
   setSetOrder: (setId, categoryKeys) => {

@@ -1,7 +1,7 @@
 {
   "name": "pokit",
   "main": "expo-router/entry",
-  "version": "1.6.25",
+  "version": "1.6.26",
   "scripts": {
     "start": "expo start",
     "postinstall": "node ./scripts/patch-debugger-locale.js",

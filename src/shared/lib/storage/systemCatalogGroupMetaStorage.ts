@@ -1,3 +1,8 @@
+import { t } from '@shared/lib/i18n';
+
+import { localStorageClient } from './localStorageClient';
+import { StorageKeys } from './storageKeys';
+
 const SYSTEM_CATALOG_GROUP_KEYS = ['health', 'productivity'] as const;
 type SystemCatalogGroupKey = (typeof SYSTEM_CATALOG_GROUP_KEYS)[number];
 
@@ -16,9 +21,6 @@ const SYSTEM_CATALOG_GROUP_SUBTITLE_KO: Record<SystemCatalogGroupKey, string> = 
 function isSystemCatalogGroupKey(k: string): k is SystemCatalogGroupKey {
   return (SYSTEM_CATALOG_GROUP_KEYS as readonly string[]).includes(k);
 }
-
-import { localStorageClient } from './localStorageClient';
-import { StorageKeys } from './storageKeys';
 
 const LABEL_MAX = 24;
 const SUBTITLE_MAX = 120;
@@ -53,6 +55,29 @@ function normalizeMeta(raw: GroupMeta | undefined): GroupMeta {
   };
 }
 
+function defaultSystemGroupLabel(groupKey: SystemCatalogGroupKey): string {
+  return groupKey === 'health' ? t('catalog.groupHealth') : t('catalog.groupProductivity');
+}
+
+function defaultSystemGroupSubtitle(groupKey: SystemCatalogGroupKey): string {
+  return groupKey === 'health'
+    ? t('catalog.groupHealthSubtitle')
+    : t('catalog.groupProductivitySubtitle');
+}
+
+function isDefaultSystemGroupLabel(groupKey: SystemCatalogGroupKey, label: string): boolean {
+  if (label === SYSTEM_CATALOG_GROUP_LABEL_KO[groupKey]) return true;
+  const key = groupKey === 'health' ? 'catalog.groupHealth' : 'catalog.groupProductivity';
+  return label === t(key, 'ko') || label === t(key, 'en') || label === t(key, 'ja');
+}
+
+function isDefaultSystemGroupSubtitle(groupKey: SystemCatalogGroupKey, subtitle: string): boolean {
+  if (subtitle === SYSTEM_CATALOG_GROUP_SUBTITLE_KO[groupKey]) return true;
+  const key =
+    groupKey === 'health' ? 'catalog.groupHealthSubtitle' : 'catalog.groupProductivitySubtitle';
+  return subtitle === t(key, 'ko') || subtitle === t(key, 'en') || subtitle === t(key, 'ja');
+}
+
 export function loadSystemCatalogGroupMeta(): Partial<Record<SystemCatalogGroupKey, GroupMeta>> {
   const raw = readRoot().groups;
   if (!raw || typeof raw !== 'object') return {};
@@ -67,15 +92,19 @@ export function loadSystemCatalogGroupMeta(): Partial<Record<SystemCatalogGroupK
 export function resolveSystemCatalogGroupLabel(groupKey: string): string {
   if (!isSystemCatalogGroupKey(groupKey)) return groupKey;
   const custom = loadSystemCatalogGroupMeta()[groupKey]?.label;
-  return custom && custom.length > 0 ? custom : SYSTEM_CATALOG_GROUP_LABEL_KO[groupKey];
+  if (custom && custom.length > 0 && !isDefaultSystemGroupLabel(groupKey, custom)) {
+    return custom;
+  }
+  return defaultSystemGroupLabel(groupKey);
 }
 
 export function resolveSystemCatalogGroupSubtitle(groupKey: string): string {
   if (!isSystemCatalogGroupKey(groupKey)) return '';
   const custom = loadSystemCatalogGroupMeta()[groupKey]?.subtitle;
-  return custom && custom.length > 0
-    ? custom
-    : SYSTEM_CATALOG_GROUP_SUBTITLE_KO[groupKey];
+  if (custom && custom.length > 0 && !isDefaultSystemGroupSubtitle(groupKey, custom)) {
+    return custom;
+  }
+  return defaultSystemGroupSubtitle(groupKey);
 }
 
 export function updateSystemCatalogGroupMeta(
@@ -87,11 +116,12 @@ export function updateSystemCatalogGroupMeta(
   if (label.length === 0 || subtitle.length === 0) return;
 
   const cur = loadSystemCatalogGroupMeta();
-  const defaultLabel = SYSTEM_CATALOG_GROUP_LABEL_KO[groupKey];
-  const defaultSubtitle = SYSTEM_CATALOG_GROUP_SUBTITLE_KO[groupKey];
   const next = { ...cur };
 
-  if (label === defaultLabel && subtitle === defaultSubtitle) {
+  if (
+    isDefaultSystemGroupLabel(groupKey, label) &&
+    isDefaultSystemGroupSubtitle(groupKey, subtitle)
+  ) {
     delete next[groupKey];
   } else {
     next[groupKey] = { label, subtitle };

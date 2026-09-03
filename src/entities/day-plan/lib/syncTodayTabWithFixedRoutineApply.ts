@@ -14,6 +14,7 @@ import { filterSpineTimelineBlocks, isDayPlanSpineTimelineBlock } from './dayPla
 import { resolveFixedFlowSpineSchedules } from './fixedFlowSpineSchedule';
 import { sortDayPlanBlocks } from './dayPlanTime';
 import { filterKeysToPriorityCatalog, sanitizePriorityCategoryOrderKeys } from './priorityCatalogRegistry';
+import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 import {
   looksLikeRawCategoryKeyTitle,
   resolveCategoryKeyDisplayLabelKo,
@@ -36,6 +37,7 @@ export function collectAllFixedFlowCategoryKeys(sets: FixedFlowSet[]): Set<strin
  * 오늘 탭 담기 순서를 고정 루틴 적용 상태와 맞춘다.
  * - 오늘 적용 중이 아닌 고정 루틴 항목은 제거
  * - 단, 루틴 탭에서 직접 고른 항목은 유지
+ * - 세트에서 삭제된 customFlow orphan(수동 담기 아님)은 제거
  */
 export function syncPriorityOrderWithAppliedFixedRoutines(
   order: string[],
@@ -45,9 +47,21 @@ export function syncPriorityOrderWithAppliedFixedRoutines(
 ): string[] {
   const applied = new Set(appliedKeys);
   return order.filter((key) => {
-    if (!allFixedFlowKeys.has(key)) return true;
-    if (applied.has(key)) return true;
-    if (routineCatalogSelectionKeys.has(key)) return true;
+    const base = resolvePriorityRoutineCategoryKey(key);
+    const isFixed = allFixedFlowKeys.has(key) || allFixedFlowKeys.has(base);
+    if (!isFixed) {
+      // 세트에 없는 customFlow — 카탈로그 수동 선택이 아니면 고정 루틴 삭제 orphan
+      if (isCustomFlowCategoryKey(base)) {
+        return (
+          routineCatalogSelectionKeys.has(key) || routineCatalogSelectionKeys.has(base)
+        );
+      }
+      return true;
+    }
+    if (applied.has(key) || applied.has(base)) return true;
+    if (routineCatalogSelectionKeys.has(key) || routineCatalogSelectionKeys.has(base)) {
+      return true;
+    }
     return false;
   });
 }
@@ -275,10 +289,25 @@ export function syncSpinePlanBlocksWithAppliedFixedRoutines(input: {
   const keptSpineBlocks = filterSpineTimelineBlocks([...input.planBlocks]).filter((block) => {
     const key = block.categoryKey?.trim();
     if (!key) return true;
-    if (input.supersededStandardKeys.has(key)) return false;
-    if (!input.allFixedFlowKeys.has(key)) return true;
-    if (appliedSet.has(key)) return true;
-    return input.routineCatalogSelectionKeys.has(key);
+    const base = resolvePriorityRoutineCategoryKey(key);
+    if (input.supersededStandardKeys.has(key) || input.supersededStandardKeys.has(base)) {
+      return false;
+    }
+    const isFixed = input.allFixedFlowKeys.has(key) || input.allFixedFlowKeys.has(base);
+    if (!isFixed) {
+      if (isCustomFlowCategoryKey(base)) {
+        return (
+          input.routineCatalogSelectionKeys.has(key) ||
+          input.routineCatalogSelectionKeys.has(base)
+        );
+      }
+      return true;
+    }
+    if (appliedSet.has(key) || appliedSet.has(base)) return true;
+    return (
+      input.routineCatalogSelectionKeys.has(key) ||
+      input.routineCatalogSelectionKeys.has(base)
+    );
   });
 
   const spineByKey = new Map<string, DayPlanBlock>();

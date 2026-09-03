@@ -38,6 +38,8 @@ struct DayPlanSnapshotJson: Decodable {
   let priorityRoutineItems: [DayPlanPriorityRoutineItemJson]?
   let quickMemos: [DayPlanQuickMemoJson]?
   let quickMemoDraft: String?
+  /// RN 로케일 — 홈 위젯 「빠른 메모」 섹션 제목
+  let quickMemoSectionTitle: String?
 }
 
 func loadDayPlanWidgetSnapshot() -> DayPlanSnapshotJson? {
@@ -147,6 +149,7 @@ struct DayPlanHomeWidgetModel {
   let quickMemos: [DayPlanQuickMemoLineModel]
   /// Small 위젯 — 담기 순서대로 완료 여부 포함
   let routineItems: [DayPlanRoutineStatusItem]
+  let quickMemoSectionTitle: String
 
   var hasQuickMemos: Bool { !quickMemos.isEmpty }
   var pendingCount: Int { max(0, today.count - completed.count) }
@@ -250,7 +253,8 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
         today: empty,
         completed: DayPlanRoutineSectionModel(title: "완료", count: 0, iconNames: []),
         quickMemos: [],
-        routineItems: []
+        routineItems: [],
+        quickMemoSectionTitle: "빠른 메모"
       )
     )
   }
@@ -344,6 +348,11 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
   }
 
   let homeEmptyMessage: String? = (totalPlanned == 0 && quickMemos.isEmpty) ? emptyMessage : nil
+  let quickMemoSectionTitle: String = {
+    let trimmed = (snapshot.quickMemoSectionTitle ?? "")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmed.isEmpty ? "빠른 메모" : trimmed
+  }()
 
   return (
     lock: DayPlanRoutineIconsModel(
@@ -357,7 +366,8 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
       today: todaySection,
       completed: completedSection,
       quickMemos: quickMemos,
-      routineItems: routineItems
+      routineItems: routineItems,
+      quickMemoSectionTitle: quickMemoSectionTitle
     )
   )
 }
@@ -401,7 +411,8 @@ struct DayPlanWidgetProvider: TimelineProvider {
           DayPlanRoutineStatusItem(categoryKey: "deepwork", iconName: "brain", isCompleted: true),
           DayPlanRoutineStatusItem(categoryKey: "water", iconName: "drop.fill", isCompleted: false),
           DayPlanRoutineStatusItem(categoryKey: "stretching", iconName: "figure.run", isCompleted: false),
-        ]
+        ],
+        quickMemoSectionTitle: "빠른 메모"
       )
     )
   }

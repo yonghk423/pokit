@@ -37,9 +37,11 @@ import {
   resolveBlockCategoryKey,
   resolveCategoryCatalogIcon,
   resolveCategoryKeyFromLabel,
+  resolveFixedFlowSetDisplayName,
   collectSpineTimelineCategoryKeys,
   notifyFixedFlowApplyScheduleChanged,
   resolveFixedFlowSpineSchedules,
+  resolvePriorityRoutineCategoryKey,
   formatMinuteOfDayKo,
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
@@ -874,43 +876,44 @@ function GroupAccordion({
   onToggleStartNotify,
 }: GroupAccordionProps) {
   const { t } = useTranslation();
+  const displaySetName = resolveFixedFlowSetDisplayName(setItem);
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
   const totalCount = setItem.items.length;
   const canRenameSet = !isPresetScheduleSet && Boolean(onRenameSet);
   const [isEditingName, setIsEditingName] = useState(false);
-  const [nameDraft, setNameDraft] = useState(setItem.name);
+  const [nameDraft, setNameDraft] = useState(displaySetName);
 
   useEffect(() => {
     if (!isEditingName) {
-      setNameDraft(setItem.name);
+      setNameDraft(displaySetName);
     }
-  }, [isEditingName, setItem.name]);
+  }, [isEditingName, displaySetName]);
 
   const commitRename = useCallback(() => {
     const trimmed = nameDraft.trim();
     if (!trimmed) {
-      setNameDraft(setItem.name);
+      setNameDraft(displaySetName);
       setIsEditingName(false);
       return;
     }
-    if (trimmed !== setItem.name) {
+    if (trimmed !== setItem.name && trimmed !== displaySetName) {
       onRenameSet?.(trimmed);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
     setIsEditingName(false);
-  }, [nameDraft, onRenameSet, setItem.name]);
+  }, [nameDraft, onRenameSet, setItem.name, displaySetName]);
 
   const cancelRename = useCallback(() => {
-    setNameDraft(setItem.name);
+    setNameDraft(displaySetName);
     setIsEditingName(false);
-  }, [setItem.name]);
+  }, [displaySetName]);
 
   const startRename = useCallback(() => {
     if (!canRenameSet) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setNameDraft(setItem.name);
+    setNameDraft(displaySetName);
     setIsEditingName(true);
-  }, [canRenameSet, setItem.name]);
+  }, [canRenameSet, displaySetName]);
 
   const useSpineLayout = spineLayoutEnabled;
   /** 목록 모드에서는 시간 UI 없음 — 시각·시작 알림은 타임라인 모드에서만 */
@@ -978,7 +981,7 @@ function GroupAccordion({
           {canRenameSet ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('fixedRoutine.renameGroupA11y', { name: setItem.name })}
+              accessibilityLabel={t('fixedRoutine.renameGroupA11y', { name: displaySetName })}
               accessibilityHint={t('fixedRoutine.renameHint')}
               onPress={startRename}
               style={({ pressed }) => [
@@ -988,7 +991,7 @@ function GroupAccordion({
               <ThemedText
                 style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
                 numberOfLines={1}>
-                {setItem.name}
+                {displaySetName}
               </ThemedText>
               <IconSymbol name="pencil" size={10} color={muted} />
             </Pressable>
@@ -996,7 +999,7 @@ function GroupAccordion({
             <ThemedText
               style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
               numberOfLines={1}>
-              {setItem.name}
+              {displaySetName}
             </ThemedText>
           )}
           {isPresetScheduleSet && ruleLabel ? (
@@ -1065,7 +1068,7 @@ function GroupAccordion({
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('fixedRoutine.deleteGroupA11y', { name: setItem.name })}
+              accessibilityLabel={t('fixedRoutine.deleteGroupA11y', { name: displaySetName })}
               onPress={onDeleteSet}
               style={({ pressed }) => [
                 styles.headerDeleteBtn,
@@ -1081,7 +1084,7 @@ function GroupAccordion({
         ) : null}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('fixedRoutine.expandA11y', { name: setItem.name, action: isExpanded ? t('common.collapse') : t('common.expand') })}
+          accessibilityLabel={t('fixedRoutine.expandA11y', { name: displaySetName, action: isExpanded ? t('common.collapse') : t('common.expand') })}
           onPress={onToggleExpand}
           style={({ pressed }) => [styles.accordionHeaderRight, pressed && { opacity: 0.85 }]}>
           <View style={[styles.countPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
@@ -1431,13 +1434,15 @@ export function FixedRoutinePage({
 
   const isCategoryInTodayPlan = useCallback(
     (categoryKey: string) => {
+      const matches = (key: string) => resolvePriorityRoutineCategoryKey(key) === categoryKey;
+
       if (useSpineRoutineLayout) {
-        return collectSpineTimelineCategoryKeys(planBlocks).includes(categoryKey);
+        return collectSpineTimelineCategoryKeys(planBlocks).some(matches);
       }
       if (useSectionsRoutineLayout) {
-        return prioritySectionsCategoryOrder.includes(categoryKey);
+        return prioritySectionsCategoryOrder.some(matches);
       }
-      return priorityCategoryOrder.includes(categoryKey);
+      return priorityCategoryOrder.some(matches);
     },
     [
       planBlocks,
@@ -1610,7 +1615,7 @@ export function FixedRoutinePage({
       const target = sets.find((s) => s.id === setId);
       if (!target) return;
       Alert.alert(
-        t('fixedRoutine.deleteGroupTitle', { name: target.name }),
+        t('fixedRoutine.deleteGroupTitle', { name: resolveFixedFlowSetDisplayName(target) }),
         t('fixedRoutine.deleteGroupMessage'),
         [
           { text: t('common.cancel'), style: 'cancel' },
@@ -1892,9 +1897,14 @@ export function FixedRoutinePage({
                   }}
                   onDeleteItem={(categoryKey, itemLabel) => {
                     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    const isActiveInTodayList = isCategoryInTodayPlan(categoryKey);
                     Alert.alert(
                       t('fixedRoutine.deleteItemTitle', { label: itemLabel }),
-                      t('fixedRoutine.deleteItemMessage'),
+                      t(
+                        isActiveInTodayList
+                          ? 'fixedRoutine.deleteActiveItemMessage'
+                          : 'fixedRoutine.deleteItemMessage',
+                      ),
                       [
                         { text: t('common.cancel'), style: 'cancel' },
                         {

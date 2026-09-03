@@ -41,6 +41,8 @@ export type QuickMemoLiveActivityContent = {
   bodyText: string;
   /** 세션 상태만 표시 — `진행 중` / `일시정지` / `시작 대기` / `완료` */
   statusLabel: string;
+  /** 잠금화면 카드 헤더 — 현재 앱 로케일 */
+  titleLabel: string;
 };
 
 export type PokitLiveActivityPayload = {

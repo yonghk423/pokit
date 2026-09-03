@@ -1,3 +1,5 @@
+import { useAppLocaleStore } from '@shared/lib/i18n/model/localeStore';
+
 import {
   buildInitialCustomFlowDetailConfig,
   buildTemplateSetupConfig,
@@ -14,6 +16,9 @@ import {
 import { normalizeCounterDetailConfig, normalizeHabitDetailConfig } from './customFlowTemplateConfigs';
 
 describe('customFlowTemplate', () => {
+  beforeEach(() => {
+    useAppLocaleStore.setState({ locale: 'ko' });
+  });
   it('defaults to checklist when templateKey is missing', () => {
     expect(resolveCustomFlowTemplateKey({ displayName: '테스트' })).toBe('checklist');
   });

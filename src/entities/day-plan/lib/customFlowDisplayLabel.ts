@@ -21,25 +21,33 @@ export function isInternalAutoRoutineLabel(label: string): boolean {
   return false;
 }
 
-function resolveStoredOrBuiltinLabel(categoryKey: string, displayName: string): string {
+function isBuiltinLocalizedDefaultName(categoryKey: string, displayName: string): boolean {
+  if (!displayName) return false;
+  const names = [
+    getBuiltinFlowDefaultLabel(categoryKey, 'ko'),
+    getBuiltinFlowDefaultLabel(categoryKey, 'en'),
+    getBuiltinFlowDefaultLabel(categoryKey, 'ja'),
+  ];
+  return names.some((name) => name != null && name === displayName);
+}
+
+/**
+ * 내장 루틴: 저장명이 ko/en/ja 기본값이면 현재 로케일 기본명으로 바꾼다.
+ * 사용자가 직접 지은 이름은 그대로 둔다.
+ */
+export function resolveCustomFlowDisplayLabel(categoryKey: string, displayName: string): string {
   const locale = getAppLocale();
-  const koDefault = getBuiltinFlowKoDefaultLabel(categoryKey);
   const localizedDefault = getBuiltinFlowDefaultLabel(categoryKey, locale);
 
   if (displayName.length > 0) {
-    if (
-      koDefault &&
-      displayName === koDefault &&
-      localizedDefault &&
-      (locale === 'en' || locale === 'ja')
-    ) {
+    if (localizedDefault && isBuiltinLocalizedDefaultName(categoryKey, displayName)) {
       return localizedDefault;
     }
     return displayName;
   }
 
   if (localizedDefault) return localizedDefault;
-  return defaultCustomFlowPickerLabel(categoryKey);
+  return getBuiltinFlowKoDefaultLabel(categoryKey) ?? defaultCustomFlowPickerLabel(categoryKey);
 }
 
 /** `customFlow:` 키 → 담기·목표 상세에 저장된 사용자 표시명 */
@@ -48,5 +56,5 @@ export function resolveCustomFlowCategoryLabelKo(categoryKey: string): string {
 
   const raw = loadGoalDetailCategoryConfig(categoryKey);
   const cfg = normalizeOtherDetailConfig(raw ?? getInitialOtherDataConfig());
-  return resolveStoredOrBuiltinLabel(categoryKey, cfg.displayName.trim());
+  return resolveCustomFlowDisplayLabel(categoryKey, cfg.displayName.trim());
 }

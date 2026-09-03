@@ -63,8 +63,13 @@ export {
   SYSTEM_CATALOG_GROUP_SUBTITLE_KO, type SystemCatalogGroupKey
 } from './lib/customCatalogGroup';
 export {
+  resolveCustomCatalogGroupDisplayLabel,
+  resolveFixedFlowSetDisplayName,
+} from './lib/resolveCatalogGroupDisplayLabel';
+export {
   isInternalAutoRoutineLabel,
   resolveCustomFlowCategoryLabelKo,
+  resolveCustomFlowDisplayLabel,
 } from './lib/customFlowDisplayLabel';
 export {
   looksLikeRawCategoryKeyTitle,
@@ -94,6 +99,9 @@ export {
   pickMemoSettingsForCreate,
   resolveCustomFlowTemplateKey,
   resolveAppliedCustomFlowTemplateLabel,
+  resolveCustomFlowTemplateLabel,
+  resolveCustomFlowTemplateDescription,
+  resolveCustomFlowTemplateSummary,
   type CustomFlowTemplateKey
 } from './lib/customFlowTemplate';
 export {

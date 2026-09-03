@@ -31,8 +31,8 @@ export function RoutineTemplateListPanel({
   isDark = false,
   onPressTemplate,
 }: Props) {
-  const { t } = useTranslation();
-  const entries = useMemo(() => listCustomFlowTemplateCatalogEntries(), []);
+  const { t, locale } = useTranslation();
+  const entries = useMemo(() => listCustomFlowTemplateCatalogEntries(), [locale]);
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowColor = isDark ? tone.solidShadow : tone.text;
   const rowFace = isDark ? tone.surfaceAlt : cardBg || '#FFFFFF';

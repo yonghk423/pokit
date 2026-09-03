@@ -494,9 +494,11 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   finishPriorityCategoryForToday: (categoryKey) =>
     set((s) => {
       const key = categoryKey.trim();
-      if (!key || !s.priorityCategoryOrder.includes(key)) return s;
+      if (!key) return s;
+      const matches = (orderKey: string) => resolvePriorityRoutineCategoryKey(orderKey) === key;
+      if (!s.priorityCategoryOrder.some(matches)) return s;
 
-      const priorityCategoryOrder = s.priorityCategoryOrder.filter((k) => k !== key);
+      const priorityCategoryOrder = s.priorityCategoryOrder.filter((k) => !matches(k));
       const completedFocusCategoryKeys = filterCompletionKeysForCategory(
         s.completedFocusCategoryKeys,
         key,

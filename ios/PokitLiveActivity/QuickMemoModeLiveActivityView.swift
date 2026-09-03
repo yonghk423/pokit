@@ -32,6 +32,10 @@ enum QuickMemoModeLiveActivityView {
   ) -> some View {
     let bodySize: CGFloat = 10
     let labelSize: CGFloat = 10
+    let resolvedTitle: String = {
+      let trimmed = (q.titleLabel ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+      return trimmed.isEmpty ? "빠른 메모" : trimmed
+    }()
 
     VStack(alignment: .leading, spacing: 8) {
       HStack(alignment: .center, spacing: 8) {
@@ -44,7 +48,7 @@ enum QuickMemoModeLiveActivityView {
               .foregroundStyle(.white)
           )
 
-        Text("빠른 메모")
+        Text(resolvedTitle)
           .font(.system(size: labelSize, weight: .semibold))
           .foregroundStyle(headlineColor.opacity(0.60))
           .lineLimit(1)

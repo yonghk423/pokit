@@ -1,10 +1,9 @@
 import {
-  CUSTOM_FLOW_TEMPLATE_DESCRIPTIONS,
-  CUSTOM_FLOW_TEMPLATE_LABELS,
-  CUSTOM_FLOW_TEMPLATE_SUMMARIES,
+  resolveCustomFlowTemplateDescription,
+  resolveCustomFlowTemplateLabel,
+  resolveCustomFlowTemplateSummary,
 } from './customFlowTemplate';
 import {
-  CUSTOM_FLOW_TEMPLATE_KEYS,
   CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS,
   type CustomFlowTemplateKey,
 } from './customFlowTemplateConfigs';
@@ -62,9 +61,9 @@ export function resolveCustomFlowTemplateCatalogEntry(
 ): CustomFlowTemplateCatalogEntry {
   return {
     key,
-    label: CUSTOM_FLOW_TEMPLATE_LABELS[key],
-    description: CUSTOM_FLOW_TEMPLATE_DESCRIPTIONS[key],
-    summary: CUSTOM_FLOW_TEMPLATE_SUMMARIES[key],
+    label: resolveCustomFlowTemplateLabel(key),
+    description: resolveCustomFlowTemplateDescription(key),
+    summary: resolveCustomFlowTemplateSummary(key),
     icon: CUSTOM_FLOW_TEMPLATE_ICONS[key],
     previewLines: CUSTOM_FLOW_TEMPLATE_PREVIEW_LINES[key],
   };

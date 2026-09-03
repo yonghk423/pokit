@@ -31,6 +31,20 @@ describe('resolveCategoryCatalogIcon', () => {
     expect(resolveCategoryCatalogAccentColor('healthIntake')).toBe('#8b5a2b');
   });
 
+  it('returns builtin teal accent for fasting (distinct from healthIntake)', () => {
+    expect(resolveCategoryCatalogAccentColor('fasting')).toBe('#14b8a6');
+  });
+
+  it('maps legacy shared brown accent to teal for fasting', () => {
+    saveGoalDetailCategoryConfig('fasting', {
+      displayName: '체중조절',
+      summary: '',
+      icon: 'person.fill',
+      accentColor: '#8b5a2b',
+    });
+    expect(resolveCategoryCatalogAccentColor('fasting')).toBe('#14b8a6');
+  });
+
   it('maps legacy water blue accent to brown for healthIntake', () => {
     saveGoalDetailCategoryConfig('healthIntake', {
       displayName: '건강을 위한 섭취',

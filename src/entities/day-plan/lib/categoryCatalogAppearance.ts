@@ -22,6 +22,10 @@ const HEALTH_INTAKE_LEGACY_ICONS = new Set(['drop.fill', 'cross.case.fill']);
 const HEALTH_INTAKE_CATALOG_ICON = 'pills.fill';
 const HEALTH_INTAKE_CATALOG_ACCENT = '#8b5a2b';
 const HEALTH_INTAKE_LEGACY_ACCENT_COLORS = new Set(['#0ea5e9', '#0891b2', '#22d3ee', '#38bdf8']);
+/** 체중 조절 — 건강 섭취(브라운)와 구분되는 틸 */
+const FASTING_CATALOG_ACCENT = '#14b8a6';
+/** 예전 기본값(건강 섭취와 동일 브라운) → 새 틸로 치환 */
+const FASTING_LEGACY_ACCENT_COLORS = new Set(['#8b5a2b']);
 
 const READING_CATEGORY_KEY = 'reading';
 const READING_CATALOG_ICON = 'book.closed.fill';
@@ -39,6 +43,13 @@ function resolveHealthIntakeCatalogIcon(icon: string | undefined): string | unde
 function resolveHealthIntakeCatalogAccentColor(color: string | undefined): string | undefined {
   if (color != null && HEALTH_INTAKE_LEGACY_ACCENT_COLORS.has(color.toLowerCase())) {
     return HEALTH_INTAKE_CATALOG_ACCENT;
+  }
+  return color;
+}
+
+function resolveFastingCatalogAccentColor(color: string | undefined): string | undefined {
+  if (color != null && FASTING_LEGACY_ACCENT_COLORS.has(color.toLowerCase())) {
+    return FASTING_CATALOG_ACCENT;
   }
   return color;
 }
@@ -69,7 +80,7 @@ const BUILTIN_CATEGORY_ACCENT_COLORS: Record<string, string> = {
   healthIntake: HEALTH_INTAKE_CATALOG_ACCENT,
   water: '#0ea5e9',
   medicine: '#8b5a2b',
-  fasting: '#8b5a2b',
+  fasting: FASTING_CATALOG_ACCENT,
   reading: '#356668',
   work: '#1e3a8a',
   other: '#f97316',
@@ -151,6 +162,9 @@ export function resolveCategoryCatalogAccentColor(categoryKey: string): string {
     if (resolvedCategoryKey === 'healthIntake') {
       return resolveHealthIntakeCatalogAccentColor(stored) ?? stored;
     }
+    if (resolvedCategoryKey === 'fasting') {
+      return resolveFastingCatalogAccentColor(stored) ?? stored;
+    }
     return stored;
   }
   if (isCustomFlowCategoryKey(resolvedCategoryKey)) {
@@ -179,11 +193,17 @@ export function readEditableCategoryAppearance(
     fromStored.icon ??
     fromLegacyWater.icon ??
     resolveBuiltinCategoryIcon(categoryKey);
-  const accentColor =
+  const rawAccent =
     fromRaw.accentColor ??
     fromStored.accentColor ??
     fromLegacyWater.accentColor ??
     resolveBuiltinCategoryAccentColor(categoryKey);
+  const accentColor =
+    categoryKey === 'fasting'
+      ? (resolveFastingCatalogAccentColor(rawAccent) ?? rawAccent)
+      : categoryKey === 'healthIntake'
+        ? (resolveHealthIntakeCatalogAccentColor(rawAccent) ?? rawAccent)
+        : rawAccent;
 
   return { icon, accentColor };
 }

@@ -44,7 +44,7 @@ export function RoutineTemplateDetailPage() {
 
   const entry = useMemo(
     () => (templateKey ? resolveCustomFlowTemplateCatalogEntry(templateKey) : null),
-    [templateKey],
+    [templateKey, t],
   );
 
   const [demoConfig, setDemoConfig] = useState(() =>

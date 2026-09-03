@@ -1,3 +1,5 @@
+import { getAppLocale } from '@shared/lib/i18n/model/localeStore';
+
 import {
   clearHorizonCompletionsStorage,
   saveMonthlyCompletion,
@@ -6,15 +8,15 @@ import {
 } from '../../horizonCompletionsStorage';
 import {
   clearHorizonGoalsStorage,
-  createHorizonBlock,
   saveMonthlyGoalDocument,
   saveWeeklyGoalDocument,
   type HorizonGoalDocument,
 } from '../../horizonGoalsStorage';
 import { loadHistoryDailyStats, type HistoryDailyStatRow } from '../../historyStorage';
 
-import { SEED_CATEGORY_LABEL_KO } from '../seedCatalogConstants';
+import { getSeedCategoryLabel } from '../seedCatalogConstants';
 import type { DevMockSeedModule } from '../types';
+import { getHorizonCompletionCopy } from './horizonCompletionCopy';
 
 const WEEKLY_SEED_COUNT = 12;
 const MONTHLY_SEED_COUNT = 3;
@@ -62,13 +64,13 @@ function formatWeekLabel(weekStartKey: string): string {
   const month = Number(m[2]);
   const day = Number(m[3]);
   const weekOfMonth = Math.max(1, Math.ceil(day / 7));
-  return `${month}월 ${weekOfMonth}주차`;
+  return getHorizonCompletionCopy(getAppLocale()).formatWeekLabel(month, weekOfMonth);
 }
 
 function formatMonthLabel(monthKey: string): string {
   const m = /^(\d{4})-(\d{2})$/.exec(monthKey.trim());
   if (!m) return monthKey;
-  return `${Number(m[1])}년 ${Number(m[2])}월`;
+  return getHorizonCompletionCopy(getAppLocale()).formatMonthLabel(Number(m[1]), Number(m[2]));
 }
 
 function isBetween(dateKey: string, startDateKey: string, endDateKey: string): boolean {
@@ -94,83 +96,26 @@ function aggregateCategoryCounts(
     .sort((a, b) => b.count - a.count);
 }
 
-const CATEGORY_LABEL_KO: Record<string, string> = SEED_CATEGORY_LABEL_KO;
-
 function formatActivitySummary(rows: HistoryDailyStatRow[], startDateKey: string, endDateKey: string): string {
+  const locale = getAppLocale();
+  const copy = getHorizonCompletionCopy(locale);
   const top = aggregateCategoryCounts(rows, startDateKey, endDateKey).slice(0, 3);
-  if (top.length === 0) return '이 기간 활동 기록이 없어요.';
+  if (top.length === 0) return copy.emptyActivity;
   return top
-    .map((row, idx) => `${idx + 1}. ${CATEGORY_LABEL_KO[row.key] ?? row.key} · ${row.count}개`)
+    .map((row, idx) =>
+      copy.activityItem(idx + 1, getSeedCategoryLabel(row.key, locale), row.count),
+    )
     .join('\n');
 }
 
 function buildWeeklyStrategyDocument(weekIndex: number): HorizonGoalDocument {
-  const templates: HorizonGoalDocument[] = [
-    {
-      version: 2,
-      blocks: [
-        createHorizonBlock('heading1', { text: '섹션제목1', bold: true }),
-        createHorizonBlock('paragraph', { text: '아침 30분 집중 루틴을 지키기', underline: true }),
-        createHorizonBlock('heading3', { text: '집중 항목' }),
-        createHorizonBlock('bullet', { text: '독서 3회 이상' }),
-        createHorizonBlock('bullet', { text: '공부 2회', bold: true }),
-        createHorizonBlock('numbered', { text: '수요일 중간 점검' }),
-        createHorizonBlock('numbered', { text: '금요일 주간 회고' }),
-        createHorizonBlock('checklist', { text: '주말 스트레칭', checked: weekIndex % 2 === 0 }),
-      ],
-    },
-    {
-      version: 2,
-      blocks: [
-        createHorizonBlock('heading2', { text: '체력·루틴', bold: true }),
-        createHorizonBlock('paragraph', { text: '수면 7시간 유지', underline: true }),
-        createHorizonBlock('bullet', { text: '물 마시기 알림 5회/일' }),
-        createHorizonBlock('bullet', { text: '스트레칭 4회' }),
-        createHorizonBlock('checklist', { text: '약 챙기기', checked: true }),
-        createHorizonBlock('checklist', { text: '하루 정리 10분', checked: weekIndex % 3 !== 0 }),
-      ],
-    },
-    {
-      version: 2,
-      blocks: [
-        createHorizonBlock('heading1', { text: '성장 목표' }),
-        createHorizonBlock('paragraph', { text: '깊은 작업 2블록 확보', bold: true, underline: true }),
-        createHorizonBlock('numbered', { text: '월·수 오전 집중' }),
-        createHorizonBlock('numbered', { text: '목·금 오후 마무리' }),
-        createHorizonBlock('bullet', { text: '방해 요소 줄이기' }),
-      ],
-    },
-  ];
-  return templates[weekIndex % templates.length];
+  const templates = getHorizonCompletionCopy(getAppLocale()).buildWeekly(weekIndex);
+  return templates[weekIndex % templates.length]!;
 }
 
 function buildMonthlyStrategyDocument(monthIndex: number): HorizonGoalDocument {
-  const templates: HorizonGoalDocument[] = [
-    {
-      version: 2,
-      blocks: [
-        createHorizonBlock('heading1', { text: '섹션제목1', bold: true }),
-        createHorizonBlock('paragraph', { text: '꾸준함보다 회복력 — 놓친 날 바로 이어가기', underline: true }),
-        createHorizonBlock('heading2', { text: '월간 우선순위' }),
-        createHorizonBlock('numbered', { text: '독서 12권 분량' }),
-        createHorizonBlock('numbered', { text: '운동 16회' }),
-        createHorizonBlock('numbered', { text: '주 1회 긴 회고' }),
-        createHorizonBlock('checklist', { text: '첫 주 루틴 고정', checked: monthIndex === 0 }),
-        createHorizonBlock('checklist', { text: '셋째 주 중간 점검', checked: monthIndex !== 1 }),
-      ],
-    },
-    {
-      version: 2,
-      blocks: [
-        createHorizonBlock('heading2', { text: '생활 리듬', bold: true }),
-        createHorizonBlock('bullet', { text: '기상 시간 ±30분 이내' }),
-        createHorizonBlock('bullet', { text: '취침 전 디지털 OFF', underline: true }),
-        createHorizonBlock('heading3', { text: '마무리 기준' }),
-        createHorizonBlock('paragraph', { text: '주 4일 이상 완료하면 성공한 주' }),
-      ],
-    },
-  ];
-  return templates[monthIndex % templates.length];
+  const templates = getHorizonCompletionCopy(getAppLocale()).buildMonthly(monthIndex);
+  return templates[monthIndex % templates.length]!;
 }
 
 function seedHorizonCompletions(historyRows: HistoryDailyStatRow[]): { weekly: number; monthly: number } {
@@ -225,7 +170,7 @@ function seedHorizonCompletions(historyRows: HistoryDailyStatRow[]): { weekly: n
 /** history-daily 모듈 이후에 실행해야 한다. */
 export const horizonCompletionMockSeed: DevMockSeedModule = {
   id: 'horizon-completions',
-  version: 5,
+  version: 6,
   async seed() {
     const historyRows = loadHistoryDailyStats();
     const horizon = seedHorizonCompletions(historyRows);

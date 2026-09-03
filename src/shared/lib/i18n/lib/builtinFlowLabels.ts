@@ -68,6 +68,34 @@ const BUILTIN_FLOW_JA: Record<string, string> = {
   'customFlow:builtin_mind_detox': 'デジタルデトックス',
 };
 
+const BUILTIN_FLOW_SUMMARY_EN: Record<string, string> = {
+  'customFlow:preset_daily_bed': 'Make the bed and start the day light.',
+  'customFlow:preset_daily_clean': 'Quick tidy of your living space.',
+  'customFlow:preset_daily_laundry': 'Wash or fold laundry.',
+  'customFlow:preset_daily_wash': 'Freshen up at the start or end of the day.',
+  'customFlow:preset_daily_recycle': 'Sort recyclables and take them out.',
+  'customFlow:preset_daily_exercise': 'Move your body with a short workout.',
+  'customFlow:preset_daily_shopping': 'Pick up groceries or daily supplies.',
+  'customFlow:preset_abstain': 'Skip a habit you want to cut back on.',
+  'customFlow:preset_stretching': 'Stretch to loosen up.',
+  'customFlow:preset_intermittent_fasting': 'Keep your intermittent fasting window.',
+  'customFlow:preset_good_posture': 'Check posture and sit/stand tall.',
+};
+
+const BUILTIN_FLOW_SUMMARY_JA: Record<string, string> = {
+  'customFlow:preset_daily_bed': '朝にベッドを整え、軽やかに一日を始める。',
+  'customFlow:preset_daily_clean': '部屋やリビングをさっと片づける。',
+  'customFlow:preset_daily_laundry': '洗濯を回すか、たたんで片づける。',
+  'customFlow:preset_daily_wash': '一日の始まり・終わりにきれいに整える。',
+  'customFlow:preset_daily_recycle': '分別してリサイクルに出す。',
+  'customFlow:preset_daily_exercise': '短時間でも体を動かす。',
+  'customFlow:preset_daily_shopping': '食材や日用品を買う。',
+  'customFlow:preset_abstain': '控えたい習慣をやめる。',
+  'customFlow:preset_stretching': 'ストレッチで体をほぐす。',
+  'customFlow:preset_intermittent_fasting': '間歇断食の時間帯を守る。',
+  'customFlow:preset_good_posture': '姿勢を確認して正す。',
+};
+
 export function getBuiltinFlowDefaultLabel(flowId: string, locale: AppLocale): string | null {
   if (locale === 'en') {
     return BUILTIN_FLOW_EN[flowId] ?? null;
@@ -78,6 +106,25 @@ export function getBuiltinFlowDefaultLabel(flowId: string, locale: AppLocale): s
   return BUILTIN_FLOW_KO[flowId] ?? null;
 }
 
+export function getBuiltinFlowDefaultSummary(flowId: string, locale: AppLocale): string | null {
+  if (locale === 'en') return BUILTIN_FLOW_SUMMARY_EN[flowId] ?? null;
+  if (locale === 'ja') return BUILTIN_FLOW_SUMMARY_JA[flowId] ?? null;
+  const flow = [...DEFAULT_BUILTIN_CUSTOM_FLOWS, ...LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS].find(
+    (row) => row.id === flowId,
+  );
+  return flow?.summary ?? null;
+}
+
 export function getBuiltinFlowKoDefaultLabel(flowId: string): string | null {
   return BUILTIN_FLOW_KO[flowId] ?? null;
 }
+
+/** 저장 표시명이 내장 루틴의 ko/en/ja 기본명 중 하나인지 */
+export function isBuiltinFlowDefaultDisplayName(flowId: string, displayName: string): boolean {
+  const trimmed = displayName.trim();
+  if (!trimmed) return false;
+  return (['ko', 'en', 'ja'] as const).some(
+    (locale) => getBuiltinFlowDefaultLabel(flowId, locale) === trimmed,
+  );
+}
+
