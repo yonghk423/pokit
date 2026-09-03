@@ -1,21 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, Share, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import {
   isCustomFlowCategoryKey,
   resolveCustomFlowTemplateKey,
-  type CustomFlowTemplateKey,
 } from '@entities/day-plan';
-import { PrimaryColor } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { useTranslation } from '@shared/lib/i18n';
-import { IconSymbol } from '@shared/ui/icon-symbol';
-import { ThemedText } from '@shared/ui/themed-text';
-import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
 
 import type { GoalDetailCategoryKey } from '../../../../model/types';
 
-import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
 import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
@@ -25,6 +18,10 @@ import {
   normalizeOtherDetailConfig,
 } from './otherConfig';
 
+/**
+ * 할 일/절제 루틴 상세 설정 — 이름만 편집.
+ * 요약·할 일 목록·공유는 데이플랜 아코디언에서 다룬다.
+ */
 export function OtherSettings({
   rhythmTitle,
   dataConfig,
@@ -42,31 +39,15 @@ export function OtherSettings({
   renameLockedReason?: 'running' | 'today' | null;
   hideTitleField?: boolean;
 }) {
-  const { t } = useTranslation();
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
   const seed = () => normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
-  const templateKey: CustomFlowTemplateKey = resolveCustomFlowTemplateKey(
-    dataConfig ?? getInitialOtherDataConfig(),
-  );
+  const templateKey = resolveCustomFlowTemplateKey(dataConfig ?? getInitialOtherDataConfig());
   const isAbstain = templateKey === 'abstain';
-  const sessionTemplateKey = isAbstain ? 'abstain' : 'checklist';
 
   const [displayName, setDisplayName] = useState(() => seed().displayName);
-  const [summary, setSummary] = useState(() => seed().summary);
   const lastPersistedRef = useRef<string | null>(null);
   const isSyncingFromPropsRef = useRef(false);
-
-  const sessionTheme = useMemo(
-    () => ({
-      ink: c.onSurface,
-      muted: c.onVariant,
-      line: c.outline,
-      surface: c.surfaceLowest,
-      accent: PrimaryColor.rgb,
-    }),
-    [c],
-  );
 
   const buildPayload = useCallback(
     (nextRaw: unknown) => {
@@ -76,7 +57,8 @@ export function OtherSettings({
       return normalizeOtherDetailConfig({
         ...mergedRaw,
         displayName,
-        summary,
+        summary: appearanceBase.summary,
+        checklist: appearanceBase.checklist,
         ...(isAbstain ? { templateKey: 'abstain' as const } : {}),
         ...(categoryKey && isCustomFlowCategoryKey(categoryKey) && !isAbstain
           ? { templateKey: 'checklist' as const }
@@ -85,16 +67,13 @@ export function OtherSettings({
         ...(appearanceBase.accentColor ? { accentColor: appearanceBase.accentColor } : {}),
       });
     },
-    [categoryKey, dataConfig, displayName, isAbstain, summary],
+    [categoryKey, dataConfig, displayName, isAbstain],
   );
-
-  const liveConfig = useMemo(() => buildPayload(dataConfig), [buildPayload, dataConfig]);
 
   useEffect(() => {
     const next = seed();
     isSyncingFromPropsRef.current = true;
     setDisplayName(next.displayName);
-    setSummary(next.summary);
     lastPersistedRef.current = JSON.stringify(next);
   }, [dataConfig]);
 
@@ -108,75 +87,26 @@ export function OtherSettings({
     if (lastPersistedRef.current === serialized) return;
     lastPersistedRef.current = serialized;
     onChangeDataConfig(payload);
-  }, [buildPayload, dataConfig, displayName, onChangeDataConfig, summary]);
-
-  const handleSessionChange = useCallback(
-    (next: unknown) => {
-      const payload = buildPayload(next);
-      lastPersistedRef.current = JSON.stringify(payload);
-      onChangeDataConfig(payload);
-    },
-    [buildPayload, onChangeDataConfig],
-  );
-
-  const buildShareText = () => {
-    const checklist = liveConfig.checklist;
-    const doneTag = isAbstain ? t('goalDetail.shareAbstainTag') : t('goalDetail.shareDoneTag');
-    return checklist
-      .filter((x) => x.text.trim().length > 0)
-      .map((x, i) => `${i + 1}. ${x.done ? doneTag : ''}${x.text.trim()}`)
-      .join('\n');
-  };
-
-  const onShare = async () => {
-    const content = buildShareText();
-    if (!content) {
-      Alert.alert(
-        t('goalDetail.shareEmptyTitle'),
-        isAbstain ? t('goalDetail.shareEmptyAbstain') : t('goalDetail.shareEmptyChecklist'),
-      );
-      return;
-    }
-    await Share.share({
-      message: t('goalDetail.shareMessage', { content }),
-    });
-  };
+  }, [buildPayload, dataConfig, displayName, onChangeDataConfig]);
 
   const titleFallback = useMemo(
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],
   );
 
+  if (hideTitleField) {
+    return null;
+  }
+
   return (
     <View style={styles.shell}>
-      {!hideTitleField ? (
-        <RoutineTitleField
-          value={displayName}
-          onChangeValue={setDisplayName}
-          fallback={titleFallback}
-          allowRename={allowRename}
-          renameLockedReason={renameLockedReason}
-          palette={c}
-        />
-      ) : null}
-
-      <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
-
-      <View style={[styles.toolbar, { borderTopColor: c.onSurface, borderBottomColor: c.outline }]}>
-        <Pressable style={styles.toolbarBtn} onPress={onShare}>
-          <IconSymbol name="square.and.arrow.up" size={16} color={c.onSurface} />
-          <ThemedText style={[styles.toolbarText, { color: c.onSurface }]}>
-            {t('goalDetail.share')}
-          </ThemedText>
-        </Pressable>
-      </View>
-
-      <CustomFlowTemplateSessionBody
-        templateKey={sessionTemplateKey}
-        config={liveConfig}
-        onChange={handleSessionChange}
-        theme={sessionTheme}
-        previewMode={false}
+      <RoutineTitleField
+        value={displayName}
+        onChangeValue={setDisplayName}
+        fallback={titleFallback}
+        allowRename={allowRename}
+        renameLockedReason={renameLockedReason}
+        palette={c}
       />
     </View>
   );
@@ -184,14 +114,4 @@ export function OtherSettings({
 
 const styles = StyleSheet.create({
   shell: { gap: 18, paddingVertical: 6 },
-  toolbar: {
-    borderTopWidth: 1,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  toolbarBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  toolbarText: { fontSize: 13, fontWeight: '700' },
 });

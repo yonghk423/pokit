@@ -49,7 +49,35 @@ export function formatHhmmClockKo(hhmm: string): string {
 }
 
 export function formatBlockTimeRange(block: DayPlanBlock): string {
-  return `${formatMinuteOfDayKo(block.startMinutes)} — ${formatMinuteOfDayKo(block.endMinutes)}`;
+  return formatSpineScheduleRangeLabel({
+    startMinutes: block.startMinutes,
+    endMinutes: block.endMinutes,
+    endsNextCalendarDay: block.endsNextCalendarDay === true,
+    separator: ' — ',
+  });
+}
+
+/**
+ * 스파인·담기 행 시간 한 줄.
+ * - 같은 날: `PM 7:00 – AM 10:00`
+ * - 익일 종료 + endDayCaption: `PM 7:00 – 9.4 AM 10:00` / `PM 7:00 – 다음날 AM 10:00`
+ */
+export function formatSpineScheduleRangeLabel(input: {
+  startMinutes: number;
+  endMinutes: number;
+  endsNextCalendarDay?: boolean;
+  /** 익일 종료일 캡션 (날짜 또는 「다음날」 등). 없으면 AM/PM만 붙임 */
+  endDayCaption?: string | null;
+  separator?: string;
+}): string {
+  const sep = input.separator ?? ' – ';
+  const start = formatMinuteOfDayKo(input.startMinutes);
+  const end = formatMinuteOfDayKo(input.endMinutes);
+  if (input.endsNextCalendarDay) {
+    const caption = input.endDayCaption?.trim();
+    if (caption) return `${start}${sep}${caption} ${end}`;
+  }
+  return `${start}${sep}${end}`;
 }
 
 export function sortDayPlanBlocks(blocks: DayPlanBlock[]): DayPlanBlock[] {

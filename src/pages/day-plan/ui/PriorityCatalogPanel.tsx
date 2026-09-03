@@ -12,7 +12,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import {
-  formatMinuteOfDayKo,
+  formatSpineScheduleRangeLabel,
   isNonDeletableCatalogKey,
   resolveCategoryCatalogIcon,
   useDayPlanDraftStore,
@@ -532,7 +532,13 @@ function CatalogListRow({
             }}
             accessibilityLabel={
               spineStartMinutes != null && spineEndMinutes != null
-                ? t('fixedRoutine.timeA11y', { label, time: `${formatMinuteOfDayKo(spineStartMinutes)}~${formatMinuteOfDayKo(spineEndMinutes)}` })
+                ? t('fixedRoutine.timeA11y', {
+                    label,
+                    time: formatSpineScheduleRangeLabel({
+                      startMinutes: spineStartMinutes,
+                      endMinutes: spineEndMinutes,
+                    }),
+                  })
                 : t('fixedRoutine.timePickA11y', { label })
             }
             disabled={spineTimePickerDisabled}
@@ -1324,16 +1330,16 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     flexShrink: 1,
-    fontSize: 17,
-    fontWeight: '800',
-    letterSpacing: -0.35,
-    lineHeight: 22,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.28,
+    lineHeight: 18,
   },
   sectionTitleManage: {
-    fontSize: 17,
-    fontWeight: '800',
-    letterSpacing: -0.35,
-    lineHeight: 22,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.28,
+    lineHeight: 18,
     textTransform: 'none',
   },
   listShell: {

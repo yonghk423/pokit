@@ -25,6 +25,7 @@ import {
   addDaysToLocalDateKey,
   blockMatchesPriorityHhmmWindow,
   buildInitialCustomFlowDetailConfig,
+  buildPrioritySectionCompletionKey,
   buildSpineTimelineModel,
   clampSpineBlockToPriorityWindow,
   computeSpineGapInsertSlot,
@@ -34,32 +35,33 @@ import {
   formatBlockTimeRange,
   formatHhmmClockKo,
   formatMinuteOfDayKo,
+  formatSpineScheduleRangeLabel,
   getFlowCompletionCategoryKeysForBlock,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
   isLikelyPriorityCatalogMonolineTitle,
   isPriorityCompoundBlockTitle,
-  isStoredFixedFlowSpineSchedule,
   isSpineBlockScheduleWithinPriorityWindow,
+  isStoredFixedFlowSpineSchedule,
   isSystemCatalogGroupKey,
   localDateToDateKey,
   materializePriorityRoutineOccurrenceKeys,
   parseHHmmToMinutes,
   parseLocalDateKeyToDate,
-  resolvePriorityRoutineCategoryKey,
-  resolveBlockCategoryKey,
-  resolveCategoryKeyFromLabel,
-  resolveSpinePriorityWindow,
-  sortDayPlanBlocks,
-  buildPrioritySectionCompletionKey,
   parsePrioritySectionCompletionKey,
+  resolveBlockCategoryKey,
   resolveCategoryImportance,
-  resolveCategoryCatalogAccentColor,
-  resolveCategoryCatalogIcon,
-  type CustomFlowTemplateKey,
-  useDayPlanStore
+  resolveCategoryKeyFromLabel,
+  resolvePriorityRoutineCategoryKey,
+  resolveSpinePriorityWindow,
+  formatRoutineSummaryHint,
+  readRoutineSummaryFromConfig,
+  sortDayPlanBlocks,
+  useDayPlanStore,
+  useFixedFlowSetsStore,
+  type CustomFlowTemplateKey
 } from '@entities/day-plan';
-import { useFixedFlowSetsStore } from '@entities/day-plan';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import {
@@ -78,37 +80,28 @@ import {
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
-  loadRoutineCatalogSelectionKeys,
   loadSpineDefaultBlockMinutes,
-  removeRoutineCatalogSelectionKey,
   resolveCurrentMealSlotFromSchedule,
   saveGoalDetailCategoryConfig,
   saveRoutineCatalogSelectionKeys,
   subscribeCustomFlowCatalog,
   type CategoryMealSlotOverride,
-  type DayMealSlot,
+  type DayMealSlot
 } from '@shared/lib/storage';
-import { RetroFlatColors } from '@shared/config/retroFlat';
 import { COMPLETION_TOGGLE_ANIM_MS } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
-import { PriorityOrderRow } from '@widgets/day-plan-priority-order';
-import { SpineBlockEditSheet, type SpineBlockEditDraft } from './SpineBlockEditSheet';
-import {
-  CatalogRowSpineTimePanel,
-  type CatalogRowSpineTimePanelHandle,
-} from './CatalogRowSpineTimePanel';
-import { SpineTimelineView } from '@widgets/day-plan-spine-timeline';
 import { MealSlotScheduleEditButton, MealSlotTimelineView } from '@widgets/day-plan-meal-slot-timeline';
-import { buildAddablePriorityCatalogSections } from '../lib/priorityCatalog';
+import { PriorityOrderRow } from '@widgets/day-plan-priority-order';
+import { SpineTimelineView } from '@widgets/day-plan-spine-timeline';
 import {
+  endsOnNextCalendarDay,
   formatMinutesToHHmm,
   getPickerCategoryItem,
   getPickerCategoryLabel,
-  endsOnNextCalendarDay,
   isOvernightHhmmRange,
   PICKER_CATEGORIES,
   planDayIntroFromRange,
@@ -118,18 +111,28 @@ import {
   sortedPlanDateRange,
 } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
-import { buildCategoryMealSlotOverrides, clampMealSlotSectionsToWindow, flattenPriorityMealSlotSectionEntries, hasExplicitMealSlotAssignments, reorderFlatKeys, reorderMealSlotSectionEntries, resolvePriorityMealSlot, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
-import { getDayMealSlotLabel } from '../lib/priorityMealSlotSections';
+import { buildAddablePriorityCatalogSections } from '../lib/priorityCatalog';
+import {
+  resolveBagItemSpineSchedule,
+  sortByExplicitSpineStartTime,
+} from '../lib/bagRowSpineSchedule';
+import { buildCategoryMealSlotOverrides, clampMealSlotSectionsToWindow, flattenPriorityMealSlotSectionEntries, getDayMealSlotLabel, hasExplicitMealSlotAssignments, reorderFlatKeys, reorderMealSlotSectionEntries, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
+import {
+  CatalogRowSpineTimePanel,
+  type CatalogRowSpineTimePanelHandle,
+} from './CatalogRowSpineTimePanel';
 import { CreateCustomFlowSheet, type CreateCustomFlowPlacement } from './CreateCustomFlowSheet';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
+import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 import { PriorityMealSlotAddRoutineRow } from './PriorityMealSlotAddRoutineRow';
 import { PriorityMealSlotSectionHeader } from './PriorityMealSlotSectionHeader';
 import {
   PriorityRoutinePickerSheet,
   type RoutinePickerConfirmItem,
 } from './PriorityRoutinePickerSheet';
-import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
+import { PriorityBagRowAccordionPanel } from './PriorityBagRowAccordionPanel';
+import { SpineBlockEditSheet, type SpineBlockEditDraft } from './SpineBlockEditSheet';
 import { TodoListPlanSection } from './TodoListPlanSection';
 
 function resolveCatalogGroupKeyForPersist(raw: string): string {
@@ -164,8 +167,8 @@ function partitionDisplayWithDeferredBottom<T>(
   return [...active, ...done];
 }
 
-import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
 import { useDayPlanDraftStore } from '@entities/day-plan';
+import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
 import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
 
 /** 타임라인 내부 스크롤 하단 — 리스트와 카드 둥근 하단 사이 최소만 */
@@ -407,6 +410,16 @@ export function PriorityBasedPlanSection({
   const [priorityTimeModalOpen, setPriorityTimeModalOpen] = useState(false);
   const [priorityTimeModalKey, setPriorityTimeModalKey] = useState(0);
   const priorityTimePanelRef = useRef<CatalogRowSpineTimePanelHandle>(null);
+  const [bagRowTimeEdit, setBagRowTimeEdit] = useState<{
+    rowKey: string;
+    categoryKey: string;
+    label: string;
+    startMinutes: number;
+    endMinutes: number;
+    endsNextCalendarDay: boolean;
+  } | null>(null);
+  const [bagRowTimeModalKey, setBagRowTimeModalKey] = useState(0);
+  const bagRowTimePanelRef = useRef<CatalogRowSpineTimePanelHandle>(null);
   const [monthCursor, setMonthCursor] = useState(() => toMonthStart(new Date()));
   const [draftRangeStart, setDraftRangeStart] = useState(priorityPlanDateKey);
   const [draftRangeEnd, setDraftRangeEnd] = useState(priorityPlanDateKeyEnd);
@@ -414,6 +427,9 @@ export function PriorityBasedPlanSection({
   const [calendarRangeAnchor, setCalendarRangeAnchor] = useState<string | null>(null);
   const [spineEditDraft, setSpineEditDraft] = useState<SpineBlockEditDraft | null>(null);
   const [spineDragActive, setSpineDragActive] = useState(false);
+  const [expandedBagRowKeys, setExpandedBagRowKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
 
   const monthFallbackDate = useMemo(() => {
     const lo =
@@ -691,6 +707,9 @@ export function PriorityBasedPlanSection({
   );
   const activeMealSlotsBySetId = useFixedFlowSetsStore((s) => s.activeMealSlotsBySetId);
   const todayAppliedCategoryKeys = useFixedFlowSetsStore((s) => s.todayAppliedCategoryKeys);
+  const setCategorySpineScheduleInAnySet = useFixedFlowSetsStore(
+    (s) => s.setCategorySpineScheduleInAnySet,
+  );
   const dayPlanDateKey = useDayPlanStore((s) => s.dateKey);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
   const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
@@ -824,16 +843,42 @@ export function PriorityBasedPlanSection({
   );
 
   /**
-   * 미완료는 위쪽·원래 담기 순서 유지, 완료(취소선)는 맨 아래로 모음.
+   * 미완료는 위·완료는 아래. 각 그룹 안에서는 설정한 시작 시각 오름차순
+   * (미설정은 그 그룹의 뒤).
    */
   const orderedSelectedItemsForDisplay = useMemo(() => {
-    return partitionDisplayWithDeferredBottom(
+    const resolveSchedule = (categoryKey: string) =>
+      resolveBagItemSpineSchedule({
+        categoryKey,
+        planBlocks,
+        fixedFlowSets,
+        priorityStart,
+        priorityEnd,
+      });
+    const partitioned = partitionDisplayWithDeferredBottom(
       selectedItems,
       (cat) => cat.key,
       (cat) => isPriorityRowCompleted(cat.key),
       deferredBottomReorderKeys,
     );
-  }, [deferredBottomReorderKeys, selectedItems, isPriorityRowCompleted]);
+    let split = 0;
+    for (const item of partitioned) {
+      if (isPriorityRowCompleted(item.key) && !deferredBottomReorderKeys.has(item.key)) break;
+      split += 1;
+    }
+    return [
+      ...sortByExplicitSpineStartTime(partitioned.slice(0, split), (cat) => cat.key, resolveSchedule),
+      ...sortByExplicitSpineStartTime(partitioned.slice(split), (cat) => cat.key, resolveSchedule),
+    ];
+  }, [
+    deferredBottomReorderKeys,
+    selectedItems,
+    isPriorityRowCompleted,
+    planBlocks,
+    fixedFlowSets,
+    priorityStart,
+    priorityEnd,
+  ]);
 
   const sectionsCatalogItems = useMemo(
     () =>
@@ -849,16 +894,39 @@ export function PriorityBasedPlanSection({
 
   const sectionsCount = sectionsCatalogItems.length;
 
-  const sectionsLayoutItems = useMemo(
-    () =>
-      partitionDisplayWithDeferredBottom(
-        sectionsCatalogItems,
-        (cat) => cat.key,
-        (cat) => isPriorityRowCompleted(cat.key),
-        deferredBottomReorderKeys,
-      ),
-    [deferredBottomReorderKeys, sectionsCatalogItems, isPriorityRowCompleted],
-  );
+  const sectionsLayoutItems = useMemo(() => {
+    const resolveSchedule = (categoryKey: string) =>
+      resolveBagItemSpineSchedule({
+        categoryKey,
+        planBlocks,
+        fixedFlowSets,
+        priorityStart,
+        priorityEnd,
+      });
+    const partitioned = partitionDisplayWithDeferredBottom(
+      sectionsCatalogItems,
+      (cat) => cat.key,
+      (cat) => isPriorityRowCompleted(cat.key),
+      deferredBottomReorderKeys,
+    );
+    let split = 0;
+    for (const item of partitioned) {
+      if (isPriorityRowCompleted(item.key) && !deferredBottomReorderKeys.has(item.key)) break;
+      split += 1;
+    }
+    return [
+      ...sortByExplicitSpineStartTime(partitioned.slice(0, split), (cat) => cat.key, resolveSchedule),
+      ...sortByExplicitSpineStartTime(partitioned.slice(split), (cat) => cat.key, resolveSchedule),
+    ];
+  }, [
+    deferredBottomReorderKeys,
+    sectionsCatalogItems,
+    isPriorityRowCompleted,
+    planBlocks,
+    fixedFlowSets,
+    priorityStart,
+    priorityEnd,
+  ]);
 
   const priorityOrderIndexByKey = useMemo(() => {
     const source = priorityMealSlotLayoutEnabled ? sectionsLayoutItems : selectedItems;
@@ -944,14 +1012,14 @@ export function PriorityBasedPlanSection({
     () =>
       onPressTodoList
         ? [
-            {
-              key: 'todo',
-              icon: 'checklist',
-              active: showTodoList,
-              onPress: onPressTodoList,
-              accessibilityLabel: t('dayPlan.todoListA11y'),
-            },
-          ]
+          {
+            key: 'todo',
+            icon: 'checklist',
+            active: showTodoList,
+            onPress: onPressTodoList,
+            accessibilityLabel: t('dayPlan.todoListA11y'),
+          },
+        ]
         : [],
     [onPressTodoList, showTodoList, t],
   );
@@ -1342,21 +1410,48 @@ export function PriorityBasedPlanSection({
 
   const mealSlotSectionsForDisplay = useMemo(() => {
     if (!showSectionsView) return [];
-    const mapped = priorityMealSlotSections.map((section) => ({
-      ...section,
-      items: partitionDisplayWithDeferredBottom(
+    const resolveSchedule = (categoryKey: string) =>
+      resolveBagItemSpineSchedule({
+        categoryKey,
+        planBlocks,
+        fixedFlowSets,
+        priorityStart,
+        priorityEnd,
+      });
+    const mapped = priorityMealSlotSections.map((section) => {
+      const partitioned = partitionDisplayWithDeferredBottom(
         section.items,
         (cat) => buildPrioritySectionCompletionKey(cat.key, section.slot),
         (cat) => isPrioritySectionItemCompleted(cat.key, section.slot),
         deferredBottomReorderKeys,
-      ),
-    }));
+      );
+      let split = 0;
+      for (const item of partitioned) {
+        const completionKey = buildPrioritySectionCompletionKey(item.key, section.slot);
+        if (
+          isPrioritySectionItemCompleted(item.key, section.slot) &&
+          !deferredBottomReorderKeys.has(completionKey)
+        ) {
+          break;
+        }
+        split += 1;
+      }
+      return {
+        ...section,
+        items: [
+          ...sortByExplicitSpineStartTime(partitioned.slice(0, split), (cat) => cat.key, resolveSchedule),
+          ...sortByExplicitSpineStartTime(partitioned.slice(split), (cat) => cat.key, resolveSchedule),
+        ],
+      };
+    });
     // 달력 다중일(explicit)과 시계 자정 넘김은 별개 — 구간 표시는 HH:mm 창만 따른다.
     const spansNextDay = isOvernightHhmmRange(priorityStart, priorityEnd);
     return clampMealSlotSectionsToWindow(mapped, priorityStart, priorityEnd, spansNextDay);
   }, [
     deferredBottomReorderKeys,
+    fixedFlowSets,
     isPrioritySectionItemCompleted,
+    planBlocks,
     priorityMealSlotSections,
     priorityStart,
     priorityEnd,
@@ -1803,16 +1898,16 @@ export function PriorityBasedPlanSection({
           title: block?.title ?? t('alert.blockFallback'),
         }),
         [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: () => {
-            removePlanBlock(blockId);
-            setSpineEditDraft(null);
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('common.delete'),
+            style: 'destructive',
+            onPress: () => {
+              removePlanBlock(blockId);
+              setSpineEditDraft(null);
+            },
           },
-        },
-      ]);
+        ]);
     },
     [planBlocks, removePlanBlock],
   );
@@ -2045,6 +2140,133 @@ export function PriorityBasedPlanSection({
     setPriorityTimeModalOpen(false);
   }, []);
 
+  const resolveBagRowSpineSchedule = useCallback(
+    (categoryKey: string) =>
+      resolveBagItemSpineSchedule({
+        categoryKey,
+        planBlocks,
+        fixedFlowSets,
+        priorityStart,
+        priorityEnd,
+      }),
+    [fixedFlowSets, planBlocks, priorityEnd, priorityStart],
+  );
+
+  const openBagRowTimeModal = useCallback(
+    (input: { rowKey: string; categoryKey: string; label: string }) => {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const schedule = resolveBagRowSpineSchedule(input.categoryKey);
+      setBagRowTimeModalKey((k) => k + 1);
+      setBagRowTimeEdit({
+        rowKey: input.rowKey,
+        categoryKey: resolvePriorityRoutineCategoryKey(input.categoryKey),
+        label: input.label,
+        startMinutes: schedule.startMinutes,
+        endMinutes: schedule.endMinutes,
+        endsNextCalendarDay: schedule.endsNextCalendarDay,
+      });
+    },
+    [resolveBagRowSpineSchedule],
+  );
+
+  const closeBagRowTimeModal = useCallback(() => {
+    Keyboard.dismiss();
+    setBagRowTimeEdit(null);
+  }, []);
+
+  const applyBagRowTimeFromPanel = useCallback(
+    (startMin: number, endMin: number, endsNext: boolean) => {
+      if (!bagRowTimeEdit) return;
+      Keyboard.dismiss();
+
+      const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
+      if (
+        !window ||
+        !isSpineBlockScheduleWithinPriorityWindow(
+          {
+            startMinutes: startMin,
+            endMinutes: endMin,
+            endsNextCalendarDay: endsNext,
+          },
+          window,
+        )
+      ) {
+        alertSpineBlockSaveError('update', 'outside_window');
+        return;
+      }
+
+      let clamped: { startMinutes: number; endMinutes: number };
+      if (endsNext) {
+        clamped = {
+          startMinutes: Math.max(0, Math.min(Math.floor(startMin), 24 * 60 - 1)),
+          endMinutes: Math.max(0, Math.min(Math.floor(endMin), 24 * 60)),
+        };
+      } else {
+        const next = clampSpineBlockToPriorityWindow(startMin, endMin, window);
+        if (!next) {
+          alertSpineBlockSaveError('update', 'outside_window');
+          return;
+        }
+        clamped = next;
+      }
+
+      const categoryKey = bagRowTimeEdit.categoryKey;
+      setCategorySpineScheduleInAnySet(
+        categoryKey,
+        clamped.startMinutes,
+        clamped.endMinutes,
+        endsNext,
+      );
+
+      const matchingBlocks = planBlocks.filter((b) => {
+        const key = resolveBlockCategoryKey(b) ?? resolveCategoryKeyFromLabel(b.category ?? '');
+        return key === categoryKey;
+      });
+
+      if (matchingBlocks.length > 0) {
+        for (const block of matchingBlocks) {
+          const result = updatePlanBlock(block.id, {
+            startMinutes: clamped.startMinutes,
+            endMinutes: clamped.endMinutes,
+            endsNextCalendarDay: endsNext,
+          });
+          if (!result.ok) {
+            alertSpineBlockSaveError('update', result.reason);
+            return;
+          }
+        }
+      } else {
+        const result = addPlanBlock({
+          title: bagRowTimeEdit.label,
+          category: bagRowTimeEdit.label,
+          categoryKey,
+          startMinutes: clamped.startMinutes,
+          endMinutes: clamped.endMinutes,
+          endsNextCalendarDay: endsNext,
+          blockOrigin: 'spineTimeline',
+          planDateKey: getLocalDateKey(),
+        });
+        if (!result.ok) {
+          alertSpineBlockSaveError('add', result.reason);
+          return;
+        }
+      }
+
+      setBagRowTimeEdit(null);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [
+      addPlanBlock,
+      alertSpineBlockSaveError,
+      bagRowTimeEdit,
+      planBlocks,
+      priorityEnd,
+      priorityStart,
+      setCategorySpineScheduleInAnySet,
+      updatePlanBlock,
+    ],
+  );
+
   const applyPriorityTimeFromPanel = useCallback(
     (startMin: number, endMin: number, endsNext: boolean) => {
       Keyboard.dismiss();
@@ -2119,14 +2341,14 @@ export function PriorityBasedPlanSection({
             <ThemedText style={[styles.dateModalRangeSummary, { color: c.onSurface }]}>
               {calendarRangeAnchor !== null
                 ? t('dayPlan.rangeFromHint', {
-                    date: formatDateKeyCompact(calendarRangeAnchor, locale),
-                  })
+                  date: formatDateKeyCompact(calendarRangeAnchor, locale),
+                })
                 : modalDraftRange.isSingle
                   ? t('dayPlan.rangeSingleDayHint', { date: modalDraftRange.loCompact })
                   : t('dayPlan.rangeCurrentHint', {
-                      lo: modalDraftRange.loCompact,
-                      hi: modalDraftRange.hiCompact,
-                    })}
+                    lo: modalDraftRange.loCompact,
+                    hi: modalDraftRange.hiCompact,
+                  })}
             </ThemedText>
             <ThemedText style={[styles.dateModalHint, { color: c.onVariant }]}>
               {t('dayPlan.rangeHintLong')}
@@ -2348,6 +2570,105 @@ export function PriorityBasedPlanSection({
         </KeyboardAvoidingView>
       </Modal>
 
+      <Modal
+        visible={bagRowTimeEdit != null}
+        transparent
+        animationType="fade"
+        onRequestClose={closeBagRowTimeModal}>
+        <KeyboardAvoidingView
+          style={[
+            styles.timeModalRoot,
+            {
+              paddingTop: Math.max(insets.top, 16),
+              paddingBottom: Math.max(insets.bottom, 16),
+            },
+          ]}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={insets.top + 12}>
+          <Pressable
+            style={styles.timeModalDim}
+            onPress={closeBagRowTimeModal}
+            accessibilityRole="button"
+            accessibilityLabel={t('dayPlan.close')}
+          />
+          <View
+            style={[
+              styles.timeModalCard,
+              styles.timeModalCardNote,
+              {
+                backgroundColor: isDark ? c.containerLow : '#FFFFFF',
+                borderColor: isDark ? RetroFlatColors.dark.border : editorial.line,
+              },
+            ]}>
+            <ScrollView
+              style={styles.timeModalScroll}
+              contentContainerStyle={styles.timeModalScrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled">
+              {bagRowTimeEdit ? (
+                <CatalogRowSpineTimePanel
+                  key={bagRowTimeModalKey}
+                  ref={bagRowTimePanelRef}
+                  startMinutes={bagRowTimeEdit.startMinutes}
+                  endMinutes={bagRowTimeEdit.endMinutes}
+                  endsNextCalendarDay={bagRowTimeEdit.endsNextCalendarDay}
+                  baseDateKey={priorityPlanDateKey}
+                  presentation="sheet"
+                  visualStyle="note"
+                  contentInsetLeft={0}
+                  ink={editorial.ink}
+                  muted={editorial.muted}
+                  line={editorial.line}
+                  isDark={isDark}
+                  priorityStart={priorityStart}
+                  priorityEnd={priorityEnd}
+                  startFieldLabel={t('dayPlan.routineStartLabel')}
+                  endFieldLabel={t('dayPlan.routineEndLabel')}
+                  showSheetConfirm={false}
+                  onScheduleChange={applyBagRowTimeFromPanel}
+                />
+              ) : null}
+              <View
+                style={[styles.timeModalFooterNote, { borderTopColor: editorial.line }]}>
+                <Pressable
+                  style={styles.timeModalFooterCancelHit}
+                  onPress={closeBagRowTimeModal}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('dayPlan.cancelClose')}>
+                  <ThemedText style={[styles.timeModalCancelNoteText, { color: c.onVariant }]}>
+                    {t('common.cancel')}
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.timeModalFooterSaveHit,
+                    pressed && { opacity: 0.55 },
+                  ]}
+                  onPress={() => {
+                    const next = bagRowTimePanelRef.current?.commitPendingSchedule();
+                    if (!next) return;
+                    applyBagRowTimeFromPanel(
+                      next.startMinutes,
+                      next.endMinutes,
+                      next.endsNextCalendarDay,
+                    );
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('dayPlan.saveRoutineTimeA11y')}>
+                  <ThemedText
+                    style={[
+                      styles.timeModalFooterSaveText,
+                      { color: editorial.ink, borderBottomColor: editorial.ink },
+                    ]}>
+                    {t('common.save')}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       <SpineBlockEditSheet
         visible={spineEditDraft != null}
         draft={spineEditDraft}
@@ -2365,12 +2686,12 @@ export function PriorityBasedPlanSection({
         renderRoutineSettings={
           renderRoutineInlineSettings
             ? (categoryKey) =>
-                renderRoutineInlineSettings(categoryKey, {
-                  ink: editorial.ink,
-                  muted: editorial.muted,
-                  border: editorial.line,
-                  isDark,
-                })
+              renderRoutineInlineSettings(categoryKey, {
+                ink: editorial.ink,
+                muted: editorial.muted,
+                border: editorial.line,
+                isDark,
+              })
             : undefined
         }
       />
@@ -2521,413 +2842,455 @@ export function PriorityBasedPlanSection({
                   onReorderDragActiveChange={setSpineDragActive}
                 />
               ) : (
-              timelineThreeDayKeys.map((dk) => {
-                const d = parseLocalDateKeyToDate(dk);
-                const dayNum = d ? d.getDate() : '';
-                const wd = weekdayShortFromDateKey(dk, locale);
-                const isPastDay = dk < todayKey;
-                const isMainDay = dk === todayKey;
-                const isStoreDay = dk === dayPlanDateKey;
-                const blocks = isStoreDay ? sortedTimelineFlowBlocks : [];
-                const overnightWindow = isOvernightHhmmRange(priorityStart, priorityEnd);
-                const tomorrowDk = addDaysToLocalDateKey(todayKey, 1);
-                const todayWithinPriorityPlan = todayKey >= planRangeLo && todayKey <= planRangeHi;
-                /** 자정 넘김 종료일(다음날 새벽) — 전날과 같은 우선순위를 ‘연장’ 블록으로 표시 */
-                const isOvernightTailDay =
-                  overnightWindow && todayWithinPriorityPlan && dk === tomorrowDk;
-                const showPriorityInMainTimeline =
-                  (bagCount > 0 || priorityMealSlotLayoutEnabled) && isMainDay;
-                const showOvernightPriorityContinuation = isOvernightTailDay && bagCount > 0;
-                const showPriorityListBelow =
-                  showPriorityInMainTimeline || showOvernightPriorityContinuation;
-                /** 오늘 + 자정 넘김 종료일(꼬리) — 동일한 ‘활성’ 톤·레이아웃 */
-                const isPriorityStripPrimary = isMainDay || showOvernightPriorityContinuation;
-                const eventTitleColor = isPastDay
-                  ? editorial.muted
-                  : isPriorityStripPrimary
-                    ? editorial.ink
-                    : editorial.muted;
-                const timeColW = isPriorityStripPrimary ? 100 : 58;
-                const timeFont = isPriorityStripPrimary ? 11 : 10;
-                const titleFont = isPriorityStripPrimary ? 15 : 12;
-                const titleWeight: '500' | '600' | '700' = isPriorityStripPrimary ? '600' : '500';
-                const dayLeftW = isPriorityStripPrimary ? 52 : 34;
-                const wdFont = isPriorityStripPrimary ? 11 : 9;
-                const wdLetter = isPriorityStripPrimary ? 1.4 : 0.4;
-                const numSize = isPriorityStripPrimary ? undefined : 14;
-                /** 다줄 합본·집중 구간과 동일 시각의 우선순위 블록은 타임라인 행에서 숨기고 아래 목록만 사용 */
-                const timelineBlocksForDay = blocks.filter((b) => {
-                  if (b.blockOrigin === 'prioritySession') return false;
-                  if (isPriorityCompoundBlockTitle(b.title)) return false;
-                  const matchesPriorityWindow =
-                    isMainDay &&
-                    priorityWindowHhmm.ps !== null &&
-                    priorityWindowHhmm.pe !== null &&
-                    blockMatchesPriorityHhmmWindow(
-                      b,
-                      priorityWindowHhmm.ps,
-                      priorityWindowHhmm.pe,
-                      priorityWindowHhmm.overnight,
-                    );
-                  if (!matchesPriorityWindow) return true;
-                  /** 담기가 비면 showPriority가 꺼져 단일 카탈로그 줄 블록이 다시 노출되는 것을 막음 */
-                  if (showPriorityInMainTimeline) return false;
-                  if (isLikelyPriorityCatalogMonolineTitle(b.title)) return false;
-                  return true;
-                });
-                return (
-                  <View
-                    key={dk}
-                    style={[
-                      styles.priorityTimelineDayColumn,
-                      isPriorityStripPrimary && styles.priorityTimelineDayColumnMain,
-                      isPastDay && styles.priorityTimelineDayPast,
-                      !isPriorityStripPrimary && !isPastDay && styles.priorityTimelineDayFutureSide,
-                    ]}>
+                timelineThreeDayKeys.map((dk) => {
+                  const d = parseLocalDateKeyToDate(dk);
+                  const dayNum = d ? d.getDate() : '';
+                  const wd = weekdayShortFromDateKey(dk, locale);
+                  const isPastDay = dk < todayKey;
+                  const isMainDay = dk === todayKey;
+                  const isStoreDay = dk === dayPlanDateKey;
+                  const blocks = isStoreDay ? sortedTimelineFlowBlocks : [];
+                  const overnightWindow = isOvernightHhmmRange(priorityStart, priorityEnd);
+                  const tomorrowDk = addDaysToLocalDateKey(todayKey, 1);
+                  const todayWithinPriorityPlan = todayKey >= planRangeLo && todayKey <= planRangeHi;
+                  /** 자정 넘김 종료일(다음날 새벽) — 전날과 같은 우선순위를 ‘연장’ 블록으로 표시 */
+                  const isOvernightTailDay =
+                    overnightWindow && todayWithinPriorityPlan && dk === tomorrowDk;
+                  const showPriorityInMainTimeline =
+                    (bagCount > 0 || priorityMealSlotLayoutEnabled) && isMainDay;
+                  const showOvernightPriorityContinuation = isOvernightTailDay && bagCount > 0;
+                  const showPriorityListBelow =
+                    showPriorityInMainTimeline || showOvernightPriorityContinuation;
+                  /** 오늘 + 자정 넘김 종료일(꼬리) — 동일한 ‘활성’ 톤·레이아웃 */
+                  const isPriorityStripPrimary = isMainDay || showOvernightPriorityContinuation;
+                  const eventTitleColor = isPastDay
+                    ? editorial.muted
+                    : isPriorityStripPrimary
+                      ? editorial.ink
+                      : editorial.muted;
+                  const timeColW = isPriorityStripPrimary ? 100 : 58;
+                  const timeFont = isPriorityStripPrimary ? 11 : 10;
+                  const titleFont = isPriorityStripPrimary ? 15 : 12;
+                  const titleWeight: '500' | '600' | '700' = isPriorityStripPrimary ? '600' : '500';
+                  const dayLeftW = isPriorityStripPrimary ? 52 : 34;
+                  const wdFont = isPriorityStripPrimary ? 11 : 9;
+                  const wdLetter = isPriorityStripPrimary ? 1.4 : 0.4;
+                  const numSize = isPriorityStripPrimary ? undefined : 14;
+                  /** 다줄 합본·집중 구간과 동일 시각의 우선순위 블록은 타임라인 행에서 숨기고 아래 목록만 사용 */
+                  const timelineBlocksForDay = blocks.filter((b) => {
+                    if (b.blockOrigin === 'prioritySession') return false;
+                    if (isPriorityCompoundBlockTitle(b.title)) return false;
+                    const matchesPriorityWindow =
+                      isMainDay &&
+                      priorityWindowHhmm.ps !== null &&
+                      priorityWindowHhmm.pe !== null &&
+                      blockMatchesPriorityHhmmWindow(
+                        b,
+                        priorityWindowHhmm.ps,
+                        priorityWindowHhmm.pe,
+                        priorityWindowHhmm.overnight,
+                      );
+                    if (!matchesPriorityWindow) return true;
+                    /** 담기가 비면 showPriority가 꺼져 단일 카탈로그 줄 블록이 다시 노출되는 것을 막음 */
+                    if (showPriorityInMainTimeline) return false;
+                    if (isLikelyPriorityCatalogMonolineTitle(b.title)) return false;
+                    return true;
+                  });
+                  return (
                     <View
+                      key={dk}
                       style={[
-                        styles.priorityTimelineDayRow,
-                        isPriorityStripPrimary
-                          ? styles.priorityTimelineDayRowMain
-                          : styles.priorityTimelineDayRowSide,
+                        styles.priorityTimelineDayColumn,
+                        isPriorityStripPrimary && styles.priorityTimelineDayColumnMain,
+                        isPastDay && styles.priorityTimelineDayPast,
+                        !isPriorityStripPrimary && !isPastDay && styles.priorityTimelineDayFutureSide,
                       ]}>
-                      <View style={[styles.priorityTimelineDayLeft, { width: dayLeftW }]}>
-                        <ThemedText
-                          style={[
-                            styles.priorityTimelineWd,
-                            {
-                              color: isPriorityStripPrimary ? editorial.ink : editorial.muted,
-                              fontWeight: isPriorityStripPrimary ? '800' : '600',
-                              letterSpacing: wdLetter,
-                              fontSize: wdFont,
-                            },
-                          ]}
-                          lightColor={isPriorityStripPrimary ? editorial.ink : editorial.muted}
-                          darkColor={isPriorityStripPrimary ? editorial.ink : editorial.muted}>
-                          {wd}
-                        </ThemedText>
-                        <ThemedText
-                          style={[
-                            styles.priorityTimelineDayNum,
-                            numSize != null && { fontSize: numSize, fontWeight: '700', letterSpacing: -0.3 },
-                            { color: editorial.ink },
-                            isPriorityStripPrimary && styles.priorityTimelineDayNumToday,
-                          ]}
-                          lightColor={editorial.ink}
-                          darkColor={editorial.ink}>
-                          {dayNum}
-                        </ThemedText>
-                      </View>
                       <View
                         style={[
-                          styles.priorityTimelineDayRight,
+                          styles.priorityTimelineDayRow,
                           isPriorityStripPrimary
-                            ? styles.priorityTimelineDayRightMain
-                            : styles.priorityTimelineDayRightSide,
-                          {
-                            paddingTop: isPriorityStripPrimary ? 12 : 4,
-                          },
+                            ? styles.priorityTimelineDayRowMain
+                            : styles.priorityTimelineDayRowSide,
                         ]}>
-                        {isMainDay && bagCount === 0 && !priorityMealSlotLayoutEnabled ? (
-                          <View
+                        <View style={[styles.priorityTimelineDayLeft, { width: dayLeftW }]}>
+                          <ThemedText
                             style={[
-                              styles.priorityMainEmptyHint,
+                              styles.priorityTimelineWd,
                               {
-                                borderColor: editorial.line,
-                                backgroundColor: isDark
-                                  ? 'rgba(255,255,255,0.03)'
-                                  : 'rgba(0,0,0,0.025)',
+                                color: isPriorityStripPrimary ? editorial.ink : editorial.muted,
+                                fontWeight: isPriorityStripPrimary ? '800' : '600',
+                                letterSpacing: wdLetter,
+                                fontSize: wdFont,
                               },
-                            ]}>
-                            <ThemedText
-                              style={[styles.priorityMainEmptyHintTitle, { color: editorial.ink }]}
-                              lightColor={editorial.ink}
-                              darkColor={editorial.ink}>
-                              {t('dayPlan.emptyBagTitle')}
-                            </ThemedText>
-                            <ThemedText
-                              style={[styles.priorityMainEmptyHintBody, { color: editorial.muted }]}
-                              lightColor={editorial.muted}
-                              darkColor={editorial.muted}>
-                              {t('dayPlan.emptyBagBody')}
-                            </ThemedText>
-                            <PriorityMealSlotAddRoutineRow
-                              label={t('dayPlan.addRoutine')}
-                              ink={editorial.ink}
-                              line={editorial.line}
-                              isDark={isDark}
-                              onPress={openAddRoutineForBag}
-                            />
-                          </View>
-                        ) : null}
-                        {timelineBlocksForDay.length > 0
-                          ? timelineBlocksForDay.map((block, bi) => {
-                            const dotTone =
-                              bi % 4 === 0
-                                ? isDark
-                                  ? 'rgba(255,255,255,0.95)'
-                                  : 'rgba(0,0,0,0.85)'
-                                : bi % 4 === 1
-                                  ? isDark
-                                    ? 'rgba(255,255,255,0.55)'
-                                    : 'rgba(0,0,0,0.45)'
-                                  : bi % 4 === 2
-                                    ? isDark
-                                      ? 'rgba(255,255,255,0.4)'
-                                      : 'rgba(0,0,0,0.35)'
-                                    : isDark
-                                      ? 'rgba(255,255,255,0.7)'
-                                      : 'rgba(0,0,0,0.55)';
-                            const dotTop = isPriorityStripPrimary ? 6 : 4;
-                            return (
-                              <View key={block.id} style={styles.priorityTimelineEventRowHoriz}>
-                                <ThemedText
-                                  style={[
-                                    styles.priorityTimelineEventTimeCol,
-                                    { color: editorial.muted, width: timeColW, fontSize: timeFont },
-                                  ]}
-                                  lightColor={editorial.muted}
-                                  darkColor={editorial.muted}
-                                  numberOfLines={3}>
-                                  {formatBlockTimeRange(block)}
-                                </ThemedText>
-                                <View
-                                  style={[styles.priorityTimelineDot, { backgroundColor: dotTone, marginTop: dotTop }]}
-                                />
-                                <ThemedText
-                                  style={[
-                                    styles.priorityTimelineEventTitleHoriz,
-                                    {
-                                      color: eventTitleColor,
-                                      fontWeight: titleWeight,
-                                      fontSize: titleFont,
-                                      lineHeight: isPriorityStripPrimary ? 19 : 17,
-                                    },
-                                  ]}
-                                  lightColor={eventTitleColor}
-                                  darkColor={eventTitleColor}
-                                  numberOfLines={2}>
-                                  {block.title}
-                                </ThemedText>
-                              </View>
-                            );
-                          })
-                          : null}
-
-                        {showOvernightPriorityContinuation ? (
-                          <View
+                            ]}
+                            lightColor={isPriorityStripPrimary ? editorial.ink : editorial.muted}
+                            darkColor={isPriorityStripPrimary ? editorial.ink : editorial.muted}>
+                            {wd}
+                          </ThemedText>
+                          <ThemedText
                             style={[
-                              styles.overnightContinuationBlock,
-                              timelineBlocksForDay.length > 0 || showPriorityInMainTimeline
-                                ? { marginTop: 12 }
-                                : null,
-                            ]}>
-                            <View style={styles.overnightTailHeadBlock}>
+                              styles.priorityTimelineDayNum,
+                              numSize != null && { fontSize: numSize, fontWeight: '700', letterSpacing: -0.3 },
+                              { color: editorial.ink },
+                              isPriorityStripPrimary && styles.priorityTimelineDayNumToday,
+                            ]}
+                            lightColor={editorial.ink}
+                            darkColor={editorial.ink}>
+                            {dayNum}
+                          </ThemedText>
+                        </View>
+                        <View
+                          style={[
+                            styles.priorityTimelineDayRight,
+                            isPriorityStripPrimary
+                              ? styles.priorityTimelineDayRightMain
+                              : styles.priorityTimelineDayRightSide,
+                            {
+                              paddingTop: isPriorityStripPrimary ? 4 : 4,
+                            },
+                          ]}>
+                          {isMainDay && bagCount === 0 && !priorityMealSlotLayoutEnabled ? (
+                            <View
+                              style={[
+                                styles.priorityMainEmptyHint,
+                                {
+                                  borderColor: editorial.line,
+                                  backgroundColor: isDark
+                                    ? 'rgba(255,255,255,0.03)'
+                                    : 'rgba(0,0,0,0.025)',
+                                },
+                              ]}>
                               <ThemedText
-                                style={[styles.overnightTailEndTime, { color: editorial.ink }]}
+                                style={[styles.priorityMainEmptyHintTitle, { color: editorial.ink }]}
                                 lightColor={editorial.ink}
-                                darkColor={editorial.ink}
-                                numberOfLines={1}>
-                                {formatOvernightTailEndHeadline(priorityEnd)}
+                                darkColor={editorial.ink}>
+                                {t('dayPlan.emptyBagTitle')}
                               </ThemedText>
-                              <View
-                                style={[
-                                  styles.overnightTailDivider,
-                                  { backgroundColor: editorial.line },
-                                ]}
+                              <ThemedText
+                                style={[styles.priorityMainEmptyHintBody, { color: editorial.muted }]}
+                                lightColor={editorial.muted}
+                                darkColor={editorial.muted}>
+                                {t('dayPlan.emptyBagBody')}
+                              </ThemedText>
+                              <PriorityMealSlotAddRoutineRow
+                                label={t('dayPlan.addRoutine')}
+                                ink={editorial.ink}
+                                line={editorial.line}
+                                isDark={isDark}
+                                onPress={openAddRoutineForBag}
                               />
                             </View>
-                          </View>
-                        ) : null}
-
-                      </View>
-                    </View>
-
-                    {showPriorityInMainTimeline ? (
-                      <View
-                        style={[
-                          styles.priorityInlineListUnderDate,
-                          isPriorityStripPrimary && styles.priorityInlineListUnderDateMain,
-                          timelineBlocksForDay.length > 0 && styles.priorityInlineListUnderDateAfterEvents,
-                        ]}>
-                        {blocks.length === 0 ? (
-                          <ThemedText
-                            style={[styles.priorityTimelineKicker, { color: editorial.muted }]}
-                            lightColor={editorial.muted}
-                            darkColor={editorial.muted}
-                            numberOfLines={2}>
-                            {priorityWindowLine}
-                          </ThemedText>
-                        ) : null}
-                        <View style={styles.priorityInlineList}>
-                          {(() => {
-                            const allowBagReorder = orderedSelectedItemsForDisplay.length >= 2;
-
-                            const renderBagRow = (
-                              cat: (typeof orderedSelectedItemsForDisplay)[number],
-                              options?: { fromSlot?: DayMealSlot; rowKey?: string },
-                            ) => {
-                              const rowKey = options?.rowKey ?? cat.key;
-                              const rowDone = options?.fromSlot
-                                ? isPrioritySectionItemCompleted(cat.key, options.fromSlot)
-                                : isPriorityRowCompleted(cat.key);
-
+                          ) : null}
+                          {timelineBlocksForDay.length > 0
+                            ? timelineBlocksForDay.map((block, bi) => {
+                              const dotTone =
+                                bi % 4 === 0
+                                  ? isDark
+                                    ? 'rgba(255,255,255,0.95)'
+                                    : 'rgba(0,0,0,0.85)'
+                                  : bi % 4 === 1
+                                    ? isDark
+                                      ? 'rgba(255,255,255,0.55)'
+                                      : 'rgba(0,0,0,0.45)'
+                                    : bi % 4 === 2
+                                      ? isDark
+                                        ? 'rgba(255,255,255,0.4)'
+                                        : 'rgba(0,0,0,0.35)'
+                                      : isDark
+                                        ? 'rgba(255,255,255,0.7)'
+                                        : 'rgba(0,0,0,0.55)';
+                              const dotTop = isPriorityStripPrimary ? 6 : 4;
                               return (
-                                <Reanimated.View
-                                  key={rowKey}
-                                  layout={priorityRowLayoutAnim ? PRIORITY_ROW_LAYOUT : undefined}
-                                  exiting={priorityRowLayoutAnim ? PRIORITY_ROW_EXITING : undefined}
-                                  style={styles.priorityOrderRowAnimWrap}
-                                  onLayout={(e) => {
-                                    const h = e.nativeEvent.layout.height;
-                                    if (h > 0) {
-                                      priorityBagRowHeightRef.current = h;
-                                    }
-                                  }}>
-                                  <PriorityOrderRow
-                                    categoryKey={cat.key}
-                                    icon={cat.icon}
-                                    label={cat.label}
-                                    subtitle={null}
-                                    itemPriority={resolveCategoryImportance(
-                                      priorityCategoryImportance,
-                                      cat.key,
-                                    )}
-                                    onCycleItemPriority={() =>
-                                      cyclePriorityCategoryImportance(cat.key)
-                                    }
-                                    isFocusStarted={isFocusStarted}
-                                    isCompleted={rowDone}
-                                    isDark={isDark}
-                                    ink={editorial.ink}
-                                    inkMuted={editorial.muted}
-                                    line={editorial.line}
-                                    onToggleFocusComplete={() => {
-                                      if (options?.fromSlot) {
-                                        handleTogglePrioritySectionItemComplete(
-                                          cat.key,
-                                          options.fromSlot,
-                                        );
-                                        return;
+                                <View key={block.id} style={styles.priorityTimelineEventRowHoriz}>
+                                  <ThemedText
+                                    style={[
+                                      styles.priorityTimelineEventTimeCol,
+                                      { color: editorial.muted, width: timeColW, fontSize: timeFont },
+                                    ]}
+                                    lightColor={editorial.muted}
+                                    darkColor={editorial.muted}
+                                    numberOfLines={3}>
+                                    {formatBlockTimeRange(block)}
+                                  </ThemedText>
+                                  <View
+                                    style={[styles.priorityTimelineDot, { backgroundColor: dotTone, marginTop: dotTop }]}
+                                  />
+                                  <ThemedText
+                                    style={[
+                                      styles.priorityTimelineEventTitleHoriz,
+                                      {
+                                        color: eventTitleColor,
+                                        fontWeight: titleWeight,
+                                        fontSize: titleFont,
+                                        lineHeight: isPriorityStripPrimary ? 19 : 17,
+                                      },
+                                    ]}
+                                    lightColor={eventTitleColor}
+                                    darkColor={eventTitleColor}
+                                    numberOfLines={2}>
+                                    {block.title}
+                                  </ThemedText>
+                                </View>
+                              );
+                            })
+                            : null}
+
+                          {showOvernightPriorityContinuation ? (
+                            <View
+                              style={[
+                                styles.overnightContinuationBlock,
+                                timelineBlocksForDay.length > 0 || showPriorityInMainTimeline
+                                  ? { marginTop: 12 }
+                                  : null,
+                              ]}>
+                              <View style={styles.overnightTailHeadBlock}>
+                                <ThemedText
+                                  style={[styles.overnightTailEndTime, { color: editorial.ink }]}
+                                  lightColor={editorial.ink}
+                                  darkColor={editorial.ink}
+                                  numberOfLines={1}>
+                                  {formatOvernightTailEndHeadline(priorityEnd)}
+                                </ThemedText>
+                                <View
+                                  style={[
+                                    styles.overnightTailDivider,
+                                    { backgroundColor: editorial.line },
+                                  ]}
+                                />
+                              </View>
+                            </View>
+                          ) : null}
+
+                        </View>
+                      </View>
+
+                      {showPriorityInMainTimeline ? (
+                        <View
+                          style={[
+                            styles.priorityInlineListUnderDate,
+                            isPriorityStripPrimary && styles.priorityInlineListUnderDateMain,
+                            timelineBlocksForDay.length > 0 && styles.priorityInlineListUnderDateAfterEvents,
+                          ]}>
+                          <View style={styles.priorityInlineList}>
+                            {(() => {
+                              const allowBagReorder = orderedSelectedItemsForDisplay.length >= 2;
+
+                              const renderBagRow = (
+                                cat: (typeof orderedSelectedItemsForDisplay)[number],
+                                options?: { fromSlot?: DayMealSlot; rowKey?: string },
+                              ) => {
+                                const rowKey = options?.rowKey ?? cat.key;
+                                const rowDone = options?.fromSlot
+                                  ? isPrioritySectionItemCompleted(cat.key, options.fromSlot)
+                                  : isPriorityRowCompleted(cat.key);
+                                const rowSchedule = resolveBagRowSpineSchedule(cat.key);
+                                const scheduleStartDk = showOvernightPriorityContinuation
+                                  ? todayKey
+                                  : dk;
+                                const timeSubtitle = rowSchedule.isSuggested
+                                  ? null
+                                  : formatSpineScheduleRangeLabel({
+                                      startMinutes: rowSchedule.startMinutes,
+                                      endMinutes: rowSchedule.endMinutes,
+                                      endsNextCalendarDay: rowSchedule.endsNextCalendarDay,
+                                      endDayCaption: rowSchedule.endsNextCalendarDay
+                                        ? formatDateKeyCompact(
+                                            addDaysToLocalDateKey(scheduleStartDk, 1),
+                                            locale,
+                                          )
+                                        : null,
+                                    });
+                                const baseCategoryKey = resolvePriorityRoutineCategoryKey(cat.key);
+                                const rowSummaryHint = formatRoutineSummaryHint(
+                                  readRoutineSummaryFromConfig(
+                                    loadGoalDetailCategoryConfig(baseCategoryKey),
+                                  ),
+                                );
+
+                                return (
+                                  <Reanimated.View
+                                    key={rowKey}
+                                    layout={priorityRowLayoutAnim ? PRIORITY_ROW_LAYOUT : undefined}
+                                    exiting={priorityRowLayoutAnim ? PRIORITY_ROW_EXITING : undefined}
+                                    style={styles.priorityOrderRowAnimWrap}
+                                    onLayout={(e) => {
+                                      const h = e.nativeEvent.layout.height;
+                                      if (h > 0) {
+                                        priorityBagRowHeightRef.current = h;
                                       }
-                                      handleTogglePriorityRowComplete(cat.key);
-                                    }}
-                                    onReorderDragTranslationEnd={
-                                      allowBagReorder
-                                        ? (ty) =>
+                                    }}>
+                                    <PriorityOrderRow
+                                      categoryKey={cat.key}
+                                      icon={cat.icon}
+                                      label={cat.label}
+                                      subtitle={timeSubtitle}
+                                      summaryHint={rowSummaryHint}
+                                      onEditTime={() =>
+                                        openBagRowTimeModal({
+                                          rowKey,
+                                          categoryKey: cat.key,
+                                          label: cat.label,
+                                        })
+                                      }
+                                      itemPriority={resolveCategoryImportance(
+                                        priorityCategoryImportance,
+                                        cat.key,
+                                      )}
+                                      onCycleItemPriority={() =>
+                                        cyclePriorityCategoryImportance(cat.key)
+                                      }
+                                      isFocusStarted={isFocusStarted}
+                                      isCompleted={rowDone}
+                                      isDark={isDark}
+                                      ink={editorial.ink}
+                                      inkMuted={editorial.muted}
+                                      line={editorial.line}
+                                      onToggleFocusComplete={() => {
+                                        if (options?.fromSlot) {
+                                          handleTogglePrioritySectionItemComplete(
+                                            cat.key,
+                                            options.fromSlot,
+                                          );
+                                          return;
+                                        }
+                                        handleTogglePriorityRowComplete(cat.key);
+                                      }}
+                                      onReorderDragTranslationEnd={
+                                        allowBagReorder
+                                          ? (ty) =>
                                             commitPriorityDisplayReorderFromDrag(
                                               cat.key,
                                               ty,
                                               options?.fromSlot,
                                             )
-                                        : undefined
-                                    }
-                                    onReorderDragActiveChange={
-                                      allowBagReorder
-                                        ? (active) => handleBagReorderDragActiveChange(cat.key, active)
-                                        : undefined
-                                    }
-                                    onSettings={
-                                      onOpenCategorySettings
-                                        ? () =>
+                                          : undefined
+                                      }
+                                      onReorderDragActiveChange={
+                                        allowBagReorder
+                                          ? (active) => handleBagReorderDragActiveChange(cat.key, active)
+                                          : undefined
+                                      }
+                                      onSettings={
+                                        onOpenCategorySettings
+                                          ? () =>
                                             onOpenCategorySettings(
                                               resolvePriorityRoutineCategoryKey(cat.key),
                                             )
-                                        : undefined
-                                    }
-                                    onFinishForToday={
-                                      isFocusStarted
-                                        ? () =>
+                                          : undefined
+                                      }
+                                      onFinishForToday={
+                                        isFocusStarted
+                                          ? () =>
                                             handleFinishPriorityCategoryForToday(cat.key, cat.label)
-                                        : undefined
-                                    }
-                                    onFocusDetail={
-                                      onOpenFocusDetail
-                                        ? () =>
+                                          : undefined
+                                      }
+                                      onFocusDetail={
+                                        onOpenFocusDetail
+                                          ? () =>
                                             onOpenFocusDetail(
                                               resolvePriorityRoutineCategoryKey(cat.key),
                                             )
-                                        : undefined
-                                    }
-                                    animateOnMount={lastAddedCategoryKey === cat.key}
-                                  />
-                                </Reanimated.View>
-                              );
-                            };
+                                          : undefined
+                                      }
+                                      animateOnMount={lastAddedCategoryKey === cat.key}
+                                      expanded={expandedBagRowKeys.has(rowKey)}
+                                      onToggleExpand={() =>
+                                        setExpandedBagRowKeys((prev) => {
+                                          const next = new Set(prev);
+                                          if (next.has(rowKey)) next.delete(rowKey);
+                                          else next.add(rowKey);
+                                          return next;
+                                        })
+                                      }
+                                      expandedContent={
+                                        <PriorityBagRowAccordionPanel
+                                          categoryKey={resolvePriorityRoutineCategoryKey(cat.key)}
+                                          label={cat.label}
+                                          startMinutes={rowSchedule.startMinutes}
+                                          endMinutes={rowSchedule.endMinutes}
+                                          ink={editorial.ink}
+                                          muted={editorial.muted}
+                                          isDark={isDark}
+                                        />
+                                      }
+                                    />
+                                  </Reanimated.View>
+                                );
+                              };
 
-                            if (!showSectionsView) {
-                              return (
-                                <>
-                                  {orderedSelectedItemsForDisplay.map((cat) => renderBagRow(cat))}
-                                  <PriorityMealSlotAddRoutineRow
-                                    label={t('dayPlan.addMoreRoutine')}
-                                    ink={editorial.ink}
-                                    line={editorial.line}
-                                    isDark={isDark}
-                                    onPress={openAddRoutineForBag}
-                                  />
-                                </>
-                              );
-                            }
-
-                            return (
-                              <>
-                                {bagCount === 0 ? (
-                                  <ThemedText
-                                    style={[styles.prioritySectionsEmptyLead, { color: editorial.muted }]}
-                                    lightColor={editorial.muted}
-                                    darkColor={editorial.muted}>
-                                    {t('dayPlan.sectionsEmptyLead')}
-                                  </ThemedText>
-                                ) : null}
-                                {mealSlotSectionsForDisplay.map((section, sectionIndex) => (
-                                  <View key={section.slot} style={styles.priorityMealSlotSection}>
-                                    <PriorityMealSlotSectionHeader
-                                      title={section.title}
-                                      hintTime={formatHhmmClockKo(section.hintTime)}
+                              if (!showSectionsView) {
+                                return (
+                                  <>
+                                    {orderedSelectedItemsForDisplay.map((cat) => renderBagRow(cat))}
+                                    <PriorityMealSlotAddRoutineRow
+                                      label={t('dayPlan.addMoreRoutine')}
                                       ink={editorial.ink}
-                                      muted={editorial.muted}
                                       line={editorial.line}
                                       isDark={isDark}
-                                      isCurrent={section.isCurrent}
-                                      isFirst={sectionIndex === 0}
-                                      onPressHintTime={() => openMealSlotScheduleEditor(section.slot)}
+                                      onPress={openAddRoutineForBag}
                                     />
-                                    {section.items.length === 0 ? (
-                                      <PriorityMealSlotAddRoutineRow
+                                  </>
+                                );
+                              }
+
+                              return (
+                                <>
+                                  {bagCount === 0 ? (
+                                    <ThemedText
+                                      style={[styles.prioritySectionsEmptyLead, { color: editorial.muted }]}
+                                      lightColor={editorial.muted}
+                                      darkColor={editorial.muted}>
+                                      {t('dayPlan.sectionsEmptyLead')}
+                                    </ThemedText>
+                                  ) : null}
+                                  {mealSlotSectionsForDisplay.map((section, sectionIndex) => (
+                                    <View key={section.slot} style={styles.priorityMealSlotSection}>
+                                      <PriorityMealSlotSectionHeader
+                                        title={section.title}
+                                        hintTime={formatHhmmClockKo(section.hintTime)}
                                         ink={editorial.ink}
+                                        muted={editorial.muted}
                                         line={editorial.line}
                                         isDark={isDark}
-                                        onPress={() => openAddRoutineForSlot(section.slot)}
+                                        isCurrent={section.isCurrent}
+                                        isFirst={sectionIndex === 0}
+                                        onPressHintTime={() => openMealSlotScheduleEditor(section.slot)}
                                       />
-                                    ) : (
-                                      <>
-                                        {section.items.map((cat) =>
-                                          renderBagRow(cat, {
-                                            fromSlot: section.slot,
-                                            rowKey: `${section.slot}:${cat.key}`,
-                                          }),
-                                        )}
+                                      {section.items.length === 0 ? (
                                         <PriorityMealSlotAddRoutineRow
-                                          label={t('dayPlan.linkMoreRoutine')}
                                           ink={editorial.ink}
                                           line={editorial.line}
                                           isDark={isDark}
                                           onPress={() => openAddRoutineForSlot(section.slot)}
                                         />
-                                      </>
-                                    )}
-                                  </View>
-                                ))}
-                              </>
-                            );
-                          })()}
+                                      ) : (
+                                        <>
+                                          {section.items.map((cat) =>
+                                            renderBagRow(cat, {
+                                              fromSlot: section.slot,
+                                              rowKey: `${section.slot}:${cat.key}`,
+                                            }),
+                                          )}
+                                          <PriorityMealSlotAddRoutineRow
+                                            label={t('dayPlan.linkMoreRoutine')}
+                                            ink={editorial.ink}
+                                            line={editorial.line}
+                                            isDark={isDark}
+                                            onPress={() => openAddRoutineForSlot(section.slot)}
+                                          />
+                                        </>
+                                      )}
+                                    </View>
+                                  ))}
+                                </>
+                              );
+                            })()}
+                          </View>
                         </View>
-                      </View>
-                    ) : null}
-                  </View>
-                );
-              })
+                      ) : null}
+                    </View>
+                  );
+                })
               )}
             </ScrollView>
           </View>
@@ -3107,7 +3470,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   priorityTimelineDayColumnMain: {
-    gap: 10,
+    gap: 2,
   },
   priorityTimelineDayRow: {
     flexDirection: 'row',
@@ -3116,9 +3479,9 @@ const styles = StyleSheet.create({
   },
   /** 당일(오늘) — 넓은 간격·큰 터치 영역 */
   priorityTimelineDayRowMain: {
-    paddingVertical: 10,
+    paddingVertical: 4,
     gap: 12,
-    marginBottom: 2,
+    marginBottom: 0,
   },
   /** 전날·다음날 — 압축 */
   priorityTimelineDayRowSide: {
@@ -3221,7 +3584,7 @@ const styles = StyleSheet.create({
   priorityInlineListUnderDate: {
     width: '100%',
     alignSelf: 'stretch',
-    paddingHorizontal: 10,
+    paddingHorizontal: 6,
   },
   priorityInlineListUnderDateMain: {
     paddingBottom: 2,
@@ -3307,6 +3670,53 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     zIndex: 2,
     elevation: 0,
+  },
+  timeModalCardNote: {
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: '#000000',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  timeModalLeadNote: {
+    paddingBottom: 10,
+    marginBottom: 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  timeModalCancelNote: {
+    alignSelf: 'stretch',
+    marginTop: 4,
+    paddingTop: 12,
+    paddingBottom: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  timeModalFooterNote: {
+    marginTop: 4,
+    paddingTop: 12,
+    paddingBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  timeModalFooterCancelHit: {
+    paddingVertical: 2,
+    paddingRight: 12,
+  },
+  timeModalFooterSaveHit: {
+    paddingVertical: 2,
+    paddingLeft: 12,
+  },
+  timeModalCancelNoteText: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.15,
+  },
+  timeModalFooterSaveText: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.15,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    paddingBottom: 1,
   },
   timeModalScroll: {
     width: '100%',

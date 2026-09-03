@@ -26,7 +26,8 @@ import {
   type OtherDetailDataConfig,
 } from './goalCategorySessionConfig';
 import { addDaysToLocalDateKey, getLocalDateKey } from './localDateKey';
-import { pickMeasurementSettingsForCreate } from './measurementPresetSamples';
+import { pickMeasurementSettingsForCreate, applyMeasurementMetricPreset } from './measurementPresetSamples';
+import { MEASUREMENT_METRIC_PRESETS } from './measurementUnits';
 import { pickReminderSettingsForCreate } from './reminderPresetSamples';
 
 export {
@@ -244,6 +245,14 @@ export function buildTemplateSetupConfig(templateKey: CustomFlowTemplateKey): Cu
         completedTimes: [],
       });
     case 'measurement':
+      return normalizeMeasurementDetailConfig({
+        ...base,
+        ...applyMeasurementMetricPreset(
+          normalizeMeasurementDetailConfig(base),
+          MEASUREMENT_METRIC_PRESETS[0]!,
+          { includeSampleData: false },
+        ),
+      });
     case 'memo':
     case 'habit':
     case 'focus':

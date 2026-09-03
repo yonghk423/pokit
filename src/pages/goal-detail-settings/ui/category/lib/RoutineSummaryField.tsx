@@ -1,6 +1,7 @@
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { useTranslation } from '@shared/lib/i18n';
+import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { goalDetailSettingsPalette } from './settingsPalette';
@@ -21,24 +22,32 @@ export function RoutineSummaryField({
   maxLength?: number;
 }) {
   const { t } = useTranslation();
+  const presentation = useUiSurfacePresentation();
+  const isNote = presentation === 'note';
   const placeholderText = placeholderProp ?? t('goalDetail.summaryPlaceholder');
 
   return (
     <View style={styles.wrap}>
-      <ThemedText style={[styles.label, { color: palette.onVariant }]}>
-        {t('goalDetail.summaryLabel')}
-      </ThemedText>
+      {!isNote ? (
+        <ThemedText style={[styles.label, { color: palette.onVariant }]}>
+          {t('goalDetail.summaryLabel')}
+        </ThemedText>
+      ) : null}
       <TextInput
         value={value}
         onChangeText={onChangeValue}
         placeholder={placeholderText}
         placeholderTextColor={palette.outline}
         style={[
-          styles.input,
+          isNote ? styles.inputNote : styles.input,
           {
             color: palette.onSurface,
-            borderColor: palette.outlineVariant,
-            backgroundColor: palette.surfaceLowest,
+            ...(isNote
+              ? {}
+              : {
+                  borderColor: palette.outlineVariant,
+                  backgroundColor: palette.surfaceLowest,
+                }),
           },
         ]}
         maxLength={maxLength}
@@ -61,5 +70,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     fontWeight: '500',
+  },
+  inputNote: {
+    minHeight: 40,
+    paddingHorizontal: 0,
+    paddingVertical: 2,
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: '500',
+    letterSpacing: -0.1,
   },
 });

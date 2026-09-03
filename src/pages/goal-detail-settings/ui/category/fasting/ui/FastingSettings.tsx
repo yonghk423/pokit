@@ -9,6 +9,7 @@ import {
 } from '@entities/day-plan/lib/weightLog';
 import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useUiSurfacePresentation } from '@shared/ui/presentation';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { SettingsProgressBand } from '../../lib/SettingsProgressBand';
@@ -47,6 +48,7 @@ export function FastingSettings({
 
   const scheme = useColorScheme();
   const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
+  const isNote = useUiSurfacePresentation() === 'note';
   const titleFallback = useMemo(
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],
@@ -155,7 +157,12 @@ export function FastingSettings({
         palette={c}
       />
 
-      <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: c.outline }]}>
+      <View
+        style={[
+          styles.metricBar,
+          !isNote && { borderTopColor: '#000', borderBottomColor: c.outline },
+          isNote && styles.metricBarNote,
+        ]}>
         <View style={styles.metricItem}>
           <Text style={[styles.metricValue, { color: c.onSurface }]}>
             {effectiveCurrentKg.toFixed(1)}
@@ -168,8 +175,8 @@ export function FastingSettings({
         </View>
       </View>
 
-      <View style={[styles.rowsWrap, { borderTopColor: '#000' }]}>
-        <View style={[styles.row, { borderBottomColor: c.outline }]}>
+      <View style={[styles.rowsWrap, !isNote && { borderTopColor: '#000' }, isNote && styles.rowsWrapNote]}>
+        <View style={[styles.row, !isNote && { borderBottomColor: c.outline }, isNote && styles.rowNote]}>
           <Text style={[styles.rowTitle, { color: c.onSurface }]}>{t('goalDetail.fasting.currentWeight')}</Text>
           <View style={styles.inlineInputWrap}>
             <TextInput
@@ -182,7 +189,7 @@ export function FastingSettings({
           </View>
         </View>
 
-        <View style={[styles.row, { borderBottomColor: c.outline }]}>
+        <View style={[styles.row, !isNote && { borderBottomColor: c.outline }, isNote && styles.rowNote]}>
           <Text style={[styles.rowTitle, { color: c.onSurface }]}>{t('goalDetail.fasting.targetWeight')}</Text>
           <View style={styles.inlineInputWrap}>
             <TextInput
@@ -195,7 +202,7 @@ export function FastingSettings({
           </View>
         </View>
 
-        <View style={[styles.row, { borderBottomColor: c.outline }]}>
+        <View style={[styles.row, !isNote && { borderBottomColor: c.outline }, isNote && styles.rowNote]}>
           <Text style={[styles.rowTitle, { color: c.onSurface }]}>{t('goalDetail.fasting.weeklyTarget')}</Text>
           <View style={styles.inlineInputWrap}>
             <TextInput
@@ -241,4 +248,12 @@ const styles = StyleSheet.create({
   inlineInputWrap: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   inlineInput: { minWidth: 72, fontSize: 18, fontWeight: '700', textAlign: 'right', padding: 0 },
   note: { fontSize: 12, lineHeight: 18, fontWeight: '500' },
+  metricBarNote: {
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
+    paddingVertical: 8,
+    justifyContent: 'space-around',
+  },
+  rowsWrapNote: { borderTopWidth: 0, gap: 2 },
+  rowNote: { minHeight: 0, paddingVertical: 6, borderBottomWidth: 0 },
 });

@@ -28,6 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
+  addDaysToLocalDateKey,
   buildInitialCustomFlowDetailConfig,
   createCustomFlowCategoryId,
   filterDayPlanFlowBlocks,
@@ -42,7 +43,7 @@ import {
   notifyFixedFlowApplyScheduleChanged,
   resolveFixedFlowSpineSchedules,
   resolvePriorityRoutineCategoryKey,
-  formatMinuteOfDayKo,
+  formatSpineScheduleRangeLabel,
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
   useDayPlanStore,
@@ -57,7 +58,7 @@ import {
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { t } from '@shared/lib/i18n';
+import { formatDateKeyCompact, t } from '@shared/lib/i18n';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import {
   coerceDayPlanLayoutMode,
@@ -104,8 +105,6 @@ import {
 import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
-import { FixedRoutineLayoutModeHeader } from './FixedRoutineLayoutModeHeader';
-import { FixedRoutineListModeCard } from './FixedRoutineListModeCard';
 import { FixedRoutineMealSlotScheduleCard } from './FixedRoutineMealSlotScheduleCard';
 import { FixedRoutinePriorityWindowCard } from './FixedRoutinePriorityWindowCard';
 import { FixedRoutinePriorityWindowSheet } from './FixedRoutinePriorityWindowSheet';
@@ -292,7 +291,7 @@ function FlowItemCard({
   onToggleEnabled,
   onDelete,
 }: FlowCardProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [mealSlotExpanded, setMealSlotExpanded] = useState(false);
   const [spineTimeExpanded, setSpineTimeExpanded] = useState(false);
   const spineTimePanelRef = useRef<View>(null);
@@ -365,7 +364,17 @@ function FlowItemCard({
     Boolean(spineStartMinutes != null && spineEndMinutes != null) || spineTimeExpanded;
   const spineTimeLabel =
     spineStartMinutes != null && spineEndMinutes != null
-      ? `${formatMinuteOfDayKo(spineStartMinutes)}~${formatMinuteOfDayKo(spineEndMinutes)}`
+      ? formatSpineScheduleRangeLabel({
+          startMinutes: spineStartMinutes,
+          endMinutes: spineEndMinutes,
+          endsNextCalendarDay: spineEndsNextCalendarDay === true,
+          endDayCaption:
+            spineEndsNextCalendarDay === true
+              ? baseDateKey
+                ? formatDateKeyCompact(addDaysToLocalDateKey(baseDateKey, 1), locale)
+                : t('dayPlan.nextDayPrefix')
+              : null,
+        })
       : null;
 
   useEffect(() => {
@@ -509,8 +518,21 @@ function FlowItemCard({
       {showSpineTimePicker && onChangeSpineTime ? (
         <FlowBrutalActionButton
           accessibilityLabel={
-            spineStartMinutes != null && spineEndMinutes != null
-              ? t('fixedRoutine.timeA11y', { label, time: `${formatMinuteOfDayKo(spineStartMinutes)}~${formatMinuteOfDayKo(spineEndMinutes)}` })
+              spineStartMinutes != null && spineEndMinutes != null
+              ? t('fixedRoutine.timeA11y', {
+                  label,
+                  time: formatSpineScheduleRangeLabel({
+                    startMinutes: spineStartMinutes,
+                    endMinutes: spineEndMinutes,
+                    endsNextCalendarDay: spineEndsNextCalendarDay === true,
+                    endDayCaption:
+                      spineEndsNextCalendarDay === true
+                        ? baseDateKey
+                          ? formatDateKeyCompact(addDaysToLocalDateKey(baseDateKey, 1), locale)
+                          : t('dayPlan.nextDayPrefix')
+                        : null,
+                  }),
+                })
               : t('fixedRoutine.timePickA11y', { label })
           }
           accessibilityState={{
@@ -807,7 +829,6 @@ type GroupAccordionProps = {
   ink: string;
   muted: string;
   line: string;
-  cardBg: string;
   actionBg: string;
   actionHoverBg: string;
   shadow: string;
@@ -852,7 +873,6 @@ function GroupAccordion({
   ink,
   muted,
   line,
-  cardBg,
   actionBg,
   actionHoverBg,
   shadow,
@@ -1113,7 +1133,7 @@ function GroupAccordion({
             }
             return null;
           })()}
-              <View style={[styles.cardList, { backgroundColor: cardBg, borderColor: line }]}>
+              <View style={styles.cardList}>
                 {setItem.items.map((item, itemIndex) => {
                   const cat = catalogByKey.get(item.categoryKey);
                   const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
@@ -1275,13 +1295,6 @@ export function FixedRoutinePage({
   
   const layoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
   const hydrateLayoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.hydrate);
-  const visibleLayoutModes = useMemo(
-    () =>
-      (['bag', 'sections', 'spine'] as const).filter(
-        (mode) => layoutModeVisibility[mode as StorageDayPlanLayoutMode],
-      ),
-    [layoutModeVisibility],
-  );
   const canManageCustomGroups = embeddedCustomOnly || false;
   const useSectionsRoutineLayout = layoutMode === 'sections';
   const useSpineRoutineLayout = layoutMode === 'spine';
@@ -1523,18 +1536,6 @@ export function FixedRoutinePage({
     setFixedRoutineApplyLayoutMode(controlledLayoutMode);
   }, [controlledLayoutMode, fixedRoutineApplyLayoutMode, setFixedRoutineApplyLayoutMode]);
 
-  const handleSelectLayoutMode = useCallback(
-    (mode: DayPlanLayoutMode) => {
-      const next = coerceDayPlanLayoutMode(mode, layoutModeVisibility);
-      setFixedRoutineApplyLayoutMode(next);
-      if (controlledLayoutMode === undefined) {
-        setInternalLayoutMode(next);
-      }
-      notifyFixedFlowApplyScheduleChanged();
-    },
-    [controlledLayoutMode, layoutModeVisibility, setFixedRoutineApplyLayoutMode],
-  );
-
   const reloadCatalog = useCallback(() => {
     setCatalogTick((n) => n + 1);
     setCustomFlowEntries(listAllCustomFlowCatalogEntries());
@@ -1728,7 +1729,7 @@ export function FixedRoutinePage({
   const actionBg = isDark ? tone.surfaceAlt : '#FFFFFF';
   const actionHoverBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(168, 218, 220, 0.35)';
   const shadow = isDark ? tone.solidShadow : tone.text;
-  const sectionBg = isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF';
+  const sectionBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
   const ink = useBrutalSurface ? tone.text : c.onSurface;
   const muted = useBrutalSurface ? tone.textMuted : c.onVariant;
   const line = useBrutalSurface ? tone.border : c.catBorderIdle;
@@ -1767,21 +1768,12 @@ export function FixedRoutinePage({
             isDark={isDark}
           />
         ) : null}
-        {activeSection !== 'templates' && activeSection !== 'catalog' && !hideLayoutModeHeader ? (
-          <FixedRoutineLayoutModeHeader
-            layoutMode={layoutMode}
-            onSelectLayoutMode={handleSelectLayoutMode}
-            visibleLayoutModes={visibleLayoutModes}
-            c={c}
-            isDark={isDark}
-          />
-        ) : null}
-        {!hideLayoutModeHeader || isEmbedded || activeSection === 'templates' ? (
-          activeSection !== 'catalog' && activeSection !== 'templates' ? (
-            <ThemedText style={[styles.sectionHint, { color: muted }]}>
-              {sectionHint}
-            </ThemedText>
-          ) : null
+        {activeSection !== 'catalog' &&
+        activeSection !== 'templates' &&
+        (!hideLayoutModeHeader || isEmbedded) ? (
+          <ThemedText style={[styles.sectionHint, { color: muted }]}>
+            {sectionHint}
+          </ThemedText>
         ) : null}
       </View>
       {activeSection === 'catalog' ? (
@@ -1844,14 +1836,6 @@ export function FixedRoutinePage({
                 onPressSettings={() => setMealSlotScheduleSheetOpen(true)}
               />
             ) : null}
-            {!useSpineRoutineLayout && !useSectionsRoutineLayout ? (
-              <FixedRoutineListModeCard
-                ink={ink}
-                muted={muted}
-                line={line}
-                cardBg={cardBg}
-              />
-            ) : null}
             <View style={styles.accordionList}>
               {visibleSets.map((setItem) => (
                 <GroupAccordion
@@ -1875,7 +1859,6 @@ export function FixedRoutinePage({
                   ink={ink}
                   muted={muted}
                   line={line}
-                  cardBg={cardBg}
                   actionBg={actionBg}
                   actionHoverBg={actionHoverBg}
                   shadow={shadow}
@@ -2115,7 +2098,7 @@ const styles = StyleSheet.create({
   accordionSection: {
     width: '100%',
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   accordionHeader: {
@@ -2155,7 +2138,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 1,
   },
   renameGroupSaveLabel: {
     fontSize: 12,
@@ -2199,7 +2182,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 1,
     flexShrink: 0,
   },
   headerApplyChipLabel: {
@@ -2236,24 +2219,29 @@ const styles = StyleSheet.create({
   },
   accordionBody: {
     width: '100%',
-    borderTopWidth: 2,
-    paddingHorizontal: 8,
-    paddingTop: 6,
-    paddingBottom: 6,
+    borderTopWidth: 1,
+    paddingHorizontal: 4,
+    paddingTop: 0,
+    paddingBottom: 0,
     gap: 4,
   },
   accordionRuleHint: {
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
+    paddingHorizontal: 8,
+    paddingTop: 8,
+    paddingBottom: 2,
   },
   accordionEmpty: {
     fontSize: 13,
     fontWeight: '500',
     lineHeight: 18,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   addGroupTrigger: {
-    borderWidth: 2,
+    borderWidth: 1,
     borderStyle: 'dashed',
     borderRadius: 0,
     paddingVertical: 14,
@@ -2270,7 +2258,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   addGroupCard: {
-    borderWidth: 2,
+    borderWidth: 1,
     borderStyle: 'dashed',
     borderRadius: 0,
     padding: 12,
@@ -2303,8 +2291,9 @@ const styles = StyleSheet.create({
   cardList: {
     width: '100%',
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 0,
     overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
   flowRowWrap: {
     borderBottomWidth: 1,

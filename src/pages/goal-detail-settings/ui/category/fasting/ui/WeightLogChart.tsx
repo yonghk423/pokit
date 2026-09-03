@@ -8,6 +8,7 @@ import {
   type WeightChartPoint,
 } from '@entities/day-plan/lib/weightLog';
 import { useTranslation } from '@shared/lib/i18n';
+import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
@@ -73,15 +74,21 @@ function WeightLogChartInner({
   palette: Palette;
 }) {
   const { t } = useTranslation();
+  const isNote = useUiSurfacePresentation() === 'note';
   const [width, setWidth] = useState(0);
   const layout = useMemo(
     () => layoutPoints(points, targetWeightKg, width),
     [points, targetWeightKg, width],
   );
+  const wrapStyle = [
+    styles.wrap,
+    !isNote && { borderColor: palette.outline },
+    isNote && styles.wrapNote,
+  ];
 
   if (points.length < 2) {
     return (
-      <View style={[styles.wrap, { borderColor: palette.outline }]}>
+      <View style={wrapStyle}>
         <ThemedText style={[styles.title, { color: palette.onSurface }]}>{t('goalDetail.fasting.chartTitle')}</ThemedText>
         <ThemedText style={[styles.empty, { color: palette.onVariant }]}>
           {t('goalDetail.fasting.chartHint')}
@@ -94,7 +101,7 @@ function WeightLogChartInner({
   const lastLabel = points[points.length - 1]!.dateKey.slice(5).replace('-', '/');
 
   return (
-    <View style={[styles.wrap, { borderColor: palette.outline }]}>
+    <View style={wrapStyle}>
       <View style={styles.headerRow}>
         <ThemedText style={[styles.title, { color: palette.onSurface }]}>{t('goalDetail.fasting.chartTitle')}</ThemedText>
         <ThemedText style={[styles.range, { color: palette.onVariant }]}>
@@ -153,6 +160,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 6,
+  },
+  wrapNote: {
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 4,
   },
   headerRow: {
     flexDirection: 'row',

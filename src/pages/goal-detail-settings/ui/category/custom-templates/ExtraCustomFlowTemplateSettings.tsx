@@ -20,6 +20,7 @@ import { RetroFlatColors } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
+import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
 
@@ -187,6 +188,7 @@ function GenericTemplateSettings<T extends { displayName: string; summary: strin
 }) {
   const c = useTemplateSettingsPalette();
   const isDark = useColorScheme() === 'dark';
+  const isNote = useUiSurfacePresentation() === 'note';
   const {
     rhythmTitle,
     categoryKey,
@@ -208,7 +210,7 @@ function GenericTemplateSettings<T extends { displayName: string; summary: strin
   const renderTop = topSection ? topSection(liveConfig, handleSessionChange, c) : null;
 
   return (
-    <View style={styles.shell}>
+    <View style={[styles.shell, isNote && styles.shellNote]}>
       <TitleSummaryHeader
         {...{
           rhythmTitle,
@@ -310,4 +312,5 @@ export function ReminderSettings(props: SettingsProps) {
 
 const styles = StyleSheet.create({
   shell: { gap: 16 },
+  shellNote: { gap: 4, width: '100%', alignSelf: 'stretch' },
 });

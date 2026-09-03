@@ -404,18 +404,32 @@ function FigureTodayAddRow({ tone }: { tone: Tone }) {
         <View style={styles.rowActions}>
           {[
             { n: 2, icon: 'flag.fill' as const, tKey: 'guideBook.figure.priorityHigh' as const },
-            { n: 3, icon: 'checkmark.circle' as const, tKey: 'guideBook.figure.complete' as const },
-            { n: 4, icon: 'slider.horizontal.3' as const, tKey: 'guideBook.figure.settings' as const },
+            {
+              n: 3,
+              icon: 'checkmark' as const,
+              tKey: 'guideBook.figure.complete' as const,
+              fill: '#09090b',
+              iconColor: RetroFlatColors.light.bgMint,
+            },
+            { n: 4, icon: 'chevron.down' as const, tKey: 'guideBook.figure.expandRow' as const },
           ].map((a) => (
             <View key={a.tKey} style={styles.rowAction}>
               <Badge n={a.n} tone={tone} />
               <View
                 style={[
                   styles.miniBtn,
-                  { borderColor: tone.border, backgroundColor: tone.surfaceAlt },
+                  {
+                    borderColor: tone.border,
+                    backgroundColor: a.fill ?? tone.surfaceAlt,
+                  },
                 ]}>
-                <IconSymbol name={a.icon} size={14} color={tone.text} />
-                <ThemedText style={[styles.miniBtnText, { color: tone.text }, cityPopFont('700')]}>
+                <IconSymbol name={a.icon} size={14} color={a.iconColor ?? tone.text} />
+                <ThemedText
+                  style={[
+                    styles.miniBtnText,
+                    { color: a.iconColor ?? tone.text },
+                    cityPopFont('700'),
+                  ]}>
                   {t(a.tKey)}
                 </ThemedText>
               </View>
@@ -567,22 +581,29 @@ function FigureMyRoutine({ tone }: { tone: Tone }) {
   const { t } = useTranslation();
   return (
     <PhoneShell tone={tone} tabActive="mine">
-      <View style={styles.layoutMiniRow}>
-        <Badge n={1} tone={tone} />
-        <HeaderShortcuts tone={tone} />
-      </View>
       <View style={styles.subTabs}>
         <View style={{ position: 'relative' }}>
           <View style={{ position: 'absolute', top: -10, left: -4, zIndex: 2 }}>
-            <Badge n={2} tone={tone} />
+            <Badge n={1} tone={tone} />
           </View>
           <View
             style={[
               styles.subTabOn,
               { borderColor: tone.border, backgroundColor: tone.primaryContainer },
             ]}>
-            <IconSymbol name="figure.walk" size={14} color={tone.text} />
+            <IconSymbol name="list.bullet.rectangle" size={14} color={tone.text} />
             <ThemedText style={[styles.subTabText, { color: tone.text }, cityPopFont('800')]}>
+              {t('guideBook.figure.groupList')}
+            </ThemedText>
+          </View>
+        </View>
+        <View style={{ position: 'relative' }}>
+          <View style={{ position: 'absolute', top: -10, left: -4, zIndex: 2 }}>
+            <Badge n={2} tone={tone} />
+          </View>
+          <View style={[styles.subTabOff, { borderColor: tone.border }]}>
+            <IconSymbol name="figure.walk" size={14} color={tone.muted} />
+            <ThemedText style={[styles.subTabText, { color: tone.muted }, cityPopFont('600')]}>
               {t('tabs.myRoutines')}
             </ThemedText>
           </View>
@@ -756,8 +777,7 @@ function FigureSettings({ tone }: { tone: Tone }) {
     { n: 1, icon: 'clock' as const, tKey: 'settings.dayPlanWindow' as const, sectionKey: 'guideBook.figure.settingsDayPlan' as const },
     { n: 2, icon: 'book' as const, tKey: 'guideBook.figure.settingsIntroGuide' as const, sectionKey: 'guideBook.figure.settingsDayPlan' as const },
     { n: 3, icon: 'bell.fill' as const, tKey: 'guideBook.figure.settingsNotification' as const, sectionKey: 'guideBook.figure.settingsNotification' as const },
-    { n: 4, icon: 'square.grid.2x2' as const, tKey: 'guideBook.figure.settingsDayPlanViewTheme' as const, sectionKey: 'guideBook.figure.settingsDisplay' as const },
-    { n: 5, icon: 'envelope.fill' as const, tKey: 'guideBook.figure.settingsSupportReset' as const, sectionKey: 'guideBook.figure.settingsSupportData' as const },
+    { n: 4, icon: 'envelope.fill' as const, tKey: 'guideBook.figure.settingsSupportReset' as const, sectionKey: 'guideBook.figure.settingsSupportData' as const },
   ];
   return (
     <View style={[styles.phone, { borderColor: tone.border, backgroundColor: tone.bg }]}>

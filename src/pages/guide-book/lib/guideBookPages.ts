@@ -60,7 +60,7 @@ const PAGE_SPECS: readonly PageSpec[] = [
   { id: 'my-routine-apply', chapterKey: 'myRoutinesTab', figureId: 'my-routine-apply', callouts: 2, notes: 2, hasLead: true },
   { id: 'history', chapterKey: 'historyTab', figureId: 'history', callouts: 4, notes: 0, hasLead: true },
   { id: 'story', chapterKey: 'storyTab', figureId: 'story', callouts: 3, notes: 0, hasLead: true },
-  { id: 'settings', chapterKey: 'settings', figureId: 'settings', callouts: 5, notes: 0, hasLead: true },
+  { id: 'settings', chapterKey: 'settings', figureId: 'settings', callouts: 4, notes: 0, hasLead: true },
 ] as const;
 
 export type GuideBookTocSection = {

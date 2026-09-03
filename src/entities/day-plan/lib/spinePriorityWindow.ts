@@ -76,8 +76,15 @@ export function isSpineBlockScheduleWithinPriorityWindow(
   if (start < 0 || end < 0 || start > 24 * 60 || end > 24 * 60) return false;
 
   if (block.endsNextCalendarDay) {
-    if (!window.overnight) return false;
-    // 당일 저녁 밴드에서 시작해 다음날 아침 밴드(마무리 시각까지)에서 끝나야 함
+    if (!window.overnight) {
+      // 여러 날짜에 걸친 루틴은 시작일·종료일 각각의 시각이 일일 운영 범위 안이면 허용한다.
+      // 예: 일일 범위 07:00~23:00에서 9/3 07:00 → 9/4 08:00.
+      if (window.endMin <= window.startMin) return false;
+      if (start < window.startMin || start > window.endMin) return false;
+      if (end < window.startMin || end > window.endMin) return false;
+      return 24 * 60 - start + end > 0;
+    }
+    // 자정 넘김 일일 범위: 당일 저녁 밴드에서 시작해 다음날 아침 밴드에서 종료.
     if (start < window.startMin) return false;
     if (end > window.endMin) return false;
     return 24 * 60 - start + end > 0;

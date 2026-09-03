@@ -22,7 +22,7 @@ type Props = {
 
 const BRUTAL_SHADOW_SM = 2;
 
-/** 루틴 템플릿 — Brutalism 리스트 (아이콘은 기존 잉크 톤) */
+/** 루틴 템플릿 목록 — 레트로 시티팝 / Brutalism 카드 */
 export function RoutineTemplateListPanel({
   ink,
   muted,
@@ -42,7 +42,9 @@ export function RoutineTemplateListPanel({
   return (
     <View style={styles.root}>
       <View style={styles.headerBlock}>
-        <ThemedText style={[styles.pageTitle, { color: ink }]}>{t('fixedRoutine.templatesTitle')}</ThemedText>
+        <ThemedText style={[styles.pageTitle, { color: ink }]}>
+          {t('fixedRoutine.templatesTitle')}
+        </ThemedText>
         <ThemedText style={[styles.lead, { color: muted }]}>
           {t('fixedRoutine.templatesLead')}
         </ThemedText>
@@ -72,7 +74,10 @@ export function RoutineTemplateListPanel({
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('fixedRoutine.templateDetailA11y', { label: entry.label, description: entry.description })}
+              accessibilityLabel={t('fixedRoutine.templateDetailA11y', {
+                label: entry.label,
+                description: entry.description,
+              })}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onPressTemplate(entry.key);

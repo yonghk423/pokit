@@ -16,6 +16,7 @@ import {
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
@@ -104,6 +105,7 @@ export function WaterSettings({
     [categoryKey, rhythmTitle],
   );
   const timeFieldPalette = useMemo(() => paletteForReminderTimeCard(false).timeField, []);
+  const isNote = useUiSurfacePresentation() === 'note';
 
   const structuralKey = useMemo(() => waterStructuralConfigKey(dataConfig), [dataConfig]);
 
@@ -380,21 +382,21 @@ export function WaterSettings({
   return (
     <View style={[styles.shell, embedded && styles.shellEmbedded]}>
       {!embedded && !hideTitleField ? (
-        <>
-          <RoutineTitleField
-            value={displayName}
-            onChangeValue={(next) => {
-              setDisplayName(next);
-              persistCatalogAppearanceNow({ displayName: next });
-            }}
-            fallback={titleFallback}
-            allowRename={allowRename}
-            renameLockedReason={renameLockedReason}
-            palette={palette}
-          />
+        <RoutineTitleField
+          value={displayName}
+          onChangeValue={(next) => {
+            setDisplayName(next);
+            persistCatalogAppearanceNow({ displayName: next });
+          }}
+          fallback={titleFallback}
+          allowRename={allowRename}
+          renameLockedReason={renameLockedReason}
+          palette={palette}
+        />
+      ) : null}
 
-          <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={palette} />
-        </>
+      {!embedded ? (
+        <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={palette} />
       ) : null}
 
       <SettingsProgressBand
@@ -419,8 +421,12 @@ export function WaterSettings({
               accessibilityRole="button"
               accessibilityLabel={t('goalDetail.water.addMlA11y', { ml })}
               onPress={() => addDrankMl(ml)}
-              style={({ pressed }) => [styles.intakeChip, pressed && { opacity: 0.75 }]}>
-              <Text style={styles.intakeChipText}>+{ml}ml</Text>
+              style={({ pressed }) => [
+                styles.intakeChip,
+                isNote && styles.intakeChipNote,
+                pressed && { opacity: 0.75 },
+              ]}>
+              <Text style={[styles.intakeChipText, isNote && styles.intakeChipTextNote]}>+{ml}ml</Text>
             </Pressable>
           ))}
           {quickAddPresetsMl.length < MAX_WATER_QUICK_ADD_PRESETS ? (
@@ -428,15 +434,23 @@ export function WaterSettings({
               accessibilityRole="button"
               accessibilityLabel={t('goalDetail.water.addPresetA11y')}
               onPress={() => setShowAddPresetInput(true)}
-              style={({ pressed }) => [styles.intakeAddChip, pressed && { opacity: 0.75 }]}>
-              <Text style={styles.intakeAddChipText}>+</Text>
+              style={({ pressed }) => [
+                styles.intakeAddChip,
+                isNote && styles.intakeAddChipNote,
+                pressed && { opacity: 0.75 },
+              ]}>
+              <Text style={[styles.intakeAddChipText, isNote && { color: T.primary }]}>+</Text>
             </Pressable>
           ) : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('goalDetail.water.resetIntakeA11y')}
             onPress={() => setDrankMl(0)}
-            style={({ pressed }) => [styles.intakeResetChip, pressed && { opacity: 0.75 }]}>
+            style={({ pressed }) => [
+              styles.intakeResetChip,
+              isNote && styles.intakeResetChipNote,
+              pressed && { opacity: 0.75 },
+            ]}>
             <Text style={styles.intakeResetText}>{t('common.reset')}</Text>
           </Pressable>
         </View>
@@ -472,15 +486,15 @@ export function WaterSettings({
         ) : null}
       </View>
 
-      <View style={styles.metricBar}>
+      <View style={[styles.metricBar, isNote && styles.metricBarNote]}>
         <View style={styles.metricItem}>
           <Text style={styles.metricValue}>{(goalMl / 1000).toFixed(1)}</Text>
           <Text style={styles.metricLabel}>{t('goalDetail.water.goalLiters')}</Text>
         </View>
       </View>
 
-      <View style={styles.rowsWrap}>
-        <View style={styles.row}>
+      <View style={[styles.rowsWrap, isNote && styles.rowsWrapNote]}>
+        <View style={[styles.row, isNote && styles.rowNote]}>
           <View style={styles.rowLeft}>
             <Text style={styles.rowTitle}>{t('goalDetail.water.dailyGoal')}</Text>
           </View>
@@ -498,7 +512,7 @@ export function WaterSettings({
           </View>
         </View>
 
-        <View style={styles.row}>
+        <View style={[styles.row, isNote && styles.rowNote]}>
           <Text style={styles.rowTitle}>{t('goalDetail.water.quickSelect')}</Text>
           <View style={styles.presetRow}>
             {[
@@ -511,8 +525,17 @@ export function WaterSettings({
                 <Pressable
                   key={p.ml}
                   onPress={() => onPickPresetMl(p.ml)}
-                  style={[styles.presetChip, active && styles.presetChipOn]}>
-                  <Text style={[styles.presetChipText, active && styles.presetChipTextOn]}>
+                  style={[
+                    styles.presetChip,
+                    isNote && styles.presetChipNote,
+                    active && (isNote ? styles.presetChipNoteOn : styles.presetChipOn),
+                  ]}>
+                  <Text
+                    style={[
+                      styles.presetChipText,
+                      active && styles.presetChipTextOn,
+                      isNote && active && styles.presetChipTextNoteOn,
+                    ]}>
                     {p.label}
                   </Text>
                 </Pressable>
@@ -521,7 +544,7 @@ export function WaterSettings({
           </View>
         </View>
 
-        <View style={styles.row}>
+        <View style={[styles.row, isNote && styles.rowNote]}>
           <Text style={styles.rowTitle}>{t('goalDetail.water.smartNotify')}</Text>
           <Switch
             value={smartNotification}
@@ -534,12 +557,12 @@ export function WaterSettings({
 
         {smartNotification ? (
           <>
-            <View style={styles.routineWindowBand}>
+            <View style={[styles.routineWindowBand, isNote && styles.routineWindowBandNote]}>
               <Text style={styles.routineWindowLabel}>{t('goalDetail.water.routineWindow')}</Text>
               <Text style={styles.routineWindowTime}>{routineWindowLine}</Text>
             </View>
 
-            <View style={styles.timesSection}>
+            <View style={[styles.timesSection, isNote && styles.timesSectionNote]}>
               <Text style={styles.timesSectionTitle}>{t('goalDetail.water.notifyTimes')}</Text>
               <Text style={styles.timesSectionHint}>
                 {t('goalDetail.water.notifyTimesHint')}
@@ -603,7 +626,7 @@ export function WaterSettings({
               ) : null}
             </View>
 
-            <View style={styles.bulkFillBlock}>
+            <View style={[styles.bulkFillBlock, isNote && styles.bulkFillBlockNote]}>
               <Text style={styles.bulkFillTitle}>{t('goalDetail.water.bulkFillOptional')}</Text>
               <View style={styles.reminderList}>
                 {reminderRows.map((row) => {
@@ -640,8 +663,14 @@ export function WaterSettings({
                 onPress={fillTimesFromInterval}
                 accessibilityRole="button"
                 accessibilityLabel={t('goalDetail.water.bulkFillBtnA11y')}
-                style={({ pressed }) => [styles.bulkFillBtn, pressed && { opacity: 0.88 }]}>
-                <Text style={styles.bulkFillBtnText}>{t('goalDetail.water.bulkFillBtn')}</Text>
+                style={({ pressed }) => [
+                  styles.bulkFillBtn,
+                  isNote && styles.bulkFillBtnNote,
+                  pressed && { opacity: 0.88 },
+                ]}>
+                <Text style={[styles.bulkFillBtnText, isNote && { color: T.primary }]}>
+                  {t('goalDetail.water.bulkFillBtn')}
+                </Text>
               </Pressable>
             </View>
           </>
@@ -728,6 +757,62 @@ const styles = StyleSheet.create({
     borderColor: T.outline,
   },
   intakeResetText: { fontSize: 13, fontWeight: '700', color: T.onSurfaceVariant },
+  intakeChipNote: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingRight: 12,
+    paddingVertical: 2,
+  },
+  intakeChipTextNote: { textDecorationLine: 'underline' },
+  intakeAddChipNote: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    minWidth: 0,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+  intakeResetChipNote: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 2,
+  },
+  metricBarNote: {
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
+    paddingVertical: 8,
+  },
+  rowsWrapNote: { borderTopWidth: 0 },
+  rowNote: { minHeight: 0, paddingVertical: 6, borderBottomWidth: 0 },
+  presetChipNote: {
+    backgroundColor: 'transparent',
+    minWidth: 0,
+    paddingHorizontal: 0,
+    paddingRight: 12,
+    paddingVertical: 2,
+  },
+  presetChipNoteOn: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+  },
+  presetChipTextNoteOn: { textDecorationLine: 'underline' },
+  routineWindowBandNote: {
+    borderBottomWidth: 0,
+    backgroundColor: 'transparent',
+    marginHorizontal: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 6,
+  },
+  timesSectionNote: { borderBottomWidth: 0 },
+  bulkFillBlockNote: { borderBottomWidth: 0 },
+  bulkFillBtnNote: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 4,
+    alignItems: 'flex-start',
+  },
   metricBar: {
     flexDirection: 'row',
     borderTopWidth: 1,

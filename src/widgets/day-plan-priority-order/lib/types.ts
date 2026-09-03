@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import type { TodoPriority } from '@entities/day-plan';
 
 export type PriorityOrderRowProps = {
@@ -6,6 +8,10 @@ export type PriorityOrderRowProps = {
   label: string;
   /** 목표 상세에서 온 부가 한 줄 */
   subtitle?: string | null;
+  /** 루틴 요약 — 접힌 목록에서도 표시 */
+  summaryHint?: string | null;
+  /** 부제(시간) 옆 시계 — 탭하면 시간 설정 */
+  onEditTime?: () => void;
   /** 담기 목록 중요도 — 미설정 시 보통 */
   itemPriority?: TodoPriority;
   /** 탭하면 높음 → 보통 → 낮음 순환 */
@@ -29,4 +35,9 @@ export type PriorityOrderRowProps = {
   /** 오늘 담기 목록에서 완전 종료 — 구간 만료와 같이 목록에서 제거 */
   onFinishForToday?: () => void;
   animateOnMount?: boolean;
+  /** 행 아코디언 펼침 — 액션 열 브루탈 › 버튼 */
+  expanded?: boolean;
+  onToggleExpand?: () => void;
+  /** 펼침 패널 — pages에서 조립한 노트 스타일 콘텐츠 */
+  expandedContent?: ReactNode;
 };

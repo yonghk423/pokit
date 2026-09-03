@@ -10,6 +10,7 @@ import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
 import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
@@ -142,6 +143,7 @@ export function MedicineSettings({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const c = useMemo(() => goalDetailSettingsPalette(isDark), [isDark]);
+  const isNote = useUiSurfacePresentation() === 'note';
   const titleFallback = useMemo(
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],
@@ -261,22 +263,22 @@ export function MedicineSettings({
   return (
     <View style={[styles.shell, embedded && styles.shellEmbedded]}>
       {!embedded && !hideTitleField ? (
-        <>
-          <RoutineTitleField
-            value={draft.displayName}
-            onChangeValue={(displayName) => setDraft((prev) => ({ ...prev, displayName }))}
-            fallback={titleFallback}
-            allowRename={allowRename}
-            renameLockedReason={renameLockedReason}
-            palette={c}
-          />
+        <RoutineTitleField
+          value={draft.displayName}
+          onChangeValue={(displayName) => setDraft((prev) => ({ ...prev, displayName }))}
+          fallback={titleFallback}
+          allowRename={allowRename}
+          renameLockedReason={renameLockedReason}
+          palette={c}
+        />
+      ) : null}
 
-          <RoutineSummaryField
-            value={draft.summary}
-            onChangeValue={(summary) => setDraft((prev) => ({ ...prev, summary }))}
-            palette={c}
-          />
-        </>
+      {!embedded ? (
+        <RoutineSummaryField
+          value={draft.summary}
+          onChangeValue={(summary) => setDraft((prev) => ({ ...prev, summary }))}
+          palette={c}
+        />
       ) : null}
 
       <SettingsProgressBand
@@ -302,16 +304,25 @@ export function MedicineSettings({
             disabled={draft.takenCount >= draft.dosesPerDay}
             style={({ pressed }) => [
               styles.doseActionBtn,
-              { backgroundColor: PRIMARY, opacity: draft.takenCount >= draft.dosesPerDay ? 0.35 : pressed ? 0.85 : 1 },
+              isNote && styles.doseActionBtnNote,
+              {
+                backgroundColor: isNote ? 'transparent' : PRIMARY,
+                opacity: draft.takenCount >= draft.dosesPerDay ? 0.35 : pressed ? 0.85 : 1,
+              },
             ]}>
-            <Text style={styles.doseActionBtnText}>{copy.actionDone}</Text>
+            <Text style={[styles.doseActionBtnText, isNote && { color: PRIMARY }]}>{copy.actionDone}</Text>
           </Pressable>
           {draft.takenCount > 0 ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={copy.actionReset}
               onPress={resetDoseTaken}
-              style={({ pressed }) => [styles.doseResetBtn, { borderColor: c.outline }, pressed && { opacity: 0.75 }]}>
+              style={({ pressed }) => [
+                styles.doseResetBtn,
+                isNote && styles.doseResetBtnNote,
+                !isNote && { borderColor: c.outline },
+                pressed && { opacity: 0.75 },
+              ]}>
               <Text style={[styles.doseResetBtnText, { color: c.onVariant }]}>{t('common.reset')}</Text>
             </Pressable>
           ) : null}
@@ -319,7 +330,7 @@ export function MedicineSettings({
       ) : null}
 
       {enabledSlots.length > 0 ? (
-        <View style={[styles.slotStatusWrap, { borderColor: c.outline }]}>
+        <View style={[styles.slotStatusWrap, !isNote && { borderColor: c.outline }, isNote && styles.slotStatusWrapNote]}>
           {enabledSlots.map((slot, index) => {
             const isDone = index < draft.takenCount;
             const isCurrent = index === draft.takenCount;
@@ -329,8 +340,9 @@ export function MedicineSettings({
                 key={slot.key}
                 style={[
                   styles.slotStatusRow,
-                  { borderBottomColor: c.outlineVariant },
-                  isCurrent && { backgroundColor: 'rgba(0,0,0,0.04)' },
+                  !isNote && { borderBottomColor: c.outlineVariant },
+                  isNote && styles.slotStatusRowNote,
+                  isCurrent && !isNote && { backgroundColor: 'rgba(0,0,0,0.04)' },
                 ]}>
                 <View style={styles.slotStatusLeft}>
                   <IconSymbol name={slot.icon} size={16} color={isDone ? PRIMARY : c.onVariant} />
@@ -355,7 +367,12 @@ export function MedicineSettings({
         </View>
       ) : null}
 
-      <View style={[styles.metricBar, { borderTopColor: '#000', borderBottomColor: c.outline }]}>
+      <View
+        style={[
+          styles.metricBar,
+          !isNote && { borderTopColor: '#000', borderBottomColor: c.outline },
+          isNote && styles.metricBarNote,
+        ]}>
         <View style={styles.metricItem}>
           <Text style={[styles.metricValue, { color: c.onSurface }]}>{draft.takenCount}</Text>
           <Text style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.doneCount')}</Text>
@@ -373,14 +390,19 @@ export function MedicineSettings({
       </View>
 
       {!intakeMode ? (
-        <View style={[styles.routineWindowBand, { borderColor: c.outline, backgroundColor: '#f4f4f5' }]}>
+        <View
+          style={[
+            styles.routineWindowBand,
+            !isNote && { borderColor: c.outline, backgroundColor: '#f4f4f5' },
+            isNote && styles.routineWindowBandNote,
+          ]}>
           <Text style={[styles.routineWindowLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.routineWindow')}</Text>
           <Text style={[styles.routineWindowTime, { color: c.onSurface }]}>{routineWindowLine}</Text>
         </View>
       ) : null}
 
-      <View style={[styles.rowsWrap, { borderTopColor: '#000' }]}>
-        <View style={[styles.row, { borderBottomColor: c.outline }]}>
+      <View style={[styles.rowsWrap, !isNote && { borderTopColor: '#000' }, isNote && styles.rowsWrapNote]}>
+        <View style={[styles.row, !isNote && { borderBottomColor: c.outline }, isNote && styles.rowNote]}>
           <View style={styles.rowLeft}>
             <IconSymbol name={copy.itemIcon} size={18} color={PRIMARY} />
             <Text style={[styles.rowTitle, { color: c.onSurface }]}>{copy.itemNameLabel}</Text>
@@ -394,14 +416,20 @@ export function MedicineSettings({
           />
         </View>
 
-        <View style={[styles.row, styles.slotRowWrap, { borderBottomColor: c.outline }]}>
+        <View
+          style={[
+            styles.row,
+            styles.slotRowWrap,
+            !isNote && { borderBottomColor: c.outline },
+            isNote && styles.rowNote,
+          ]}>
           <View style={styles.slotColumn}>
             <Text style={[styles.rowTitle, { color: c.onSurface }]}>{copy.slotSectionLabel}</Text>
             <View style={styles.slotRow}>
               {SLOT_GRID.map((slot) => {
                 const on = slotOn(draft, slot.key);
-                const bg = on ? pill.activeBg : pill.inactiveBg;
-                const borderCol = on ? pill.activeBorder : pill.inactiveBorder;
+                const bg = isNote ? 'transparent' : on ? pill.activeBg : pill.inactiveBg;
+                const borderCol = isNote ? 'transparent' : on ? pill.activeBorder : pill.inactiveBorder;
                 const fg = on ? pill.activeIcon : pill.inactiveIcon;
                 return (
                   <Pressable
@@ -413,10 +441,14 @@ export function MedicineSettings({
                     onPress={() => setDraft((prev) => setSlot(prev, slot.key, !slotOn(prev, slot.key)))}
                     style={({ pressed }) => [
                       styles.slotChip,
-                      { flex: 1, backgroundColor: bg, borderColor: borderCol },
+                      isNote && styles.slotChipNote,
+                      { flex: isNote ? 0 : 1, backgroundColor: bg, borderColor: borderCol },
+                      isNote && on && styles.slotChipNoteOn,
                       pressed && { opacity: 0.88 },
                     ]}>
-                    <Text style={[styles.slotChipText, { color: fg }]}>{t(slot.labelKey)}</Text>
+                    <Text style={[styles.slotChipText, { color: fg }, isNote && on && styles.slotChipTextNoteOn]}>
+                      {t(slot.labelKey)}
+                    </Text>
                   </Pressable>
                 );
               })}
@@ -428,7 +460,13 @@ export function MedicineSettings({
           if (!slotOn(draft, slot.key)) return null;
           const notifyOn = slotNotify(draft, slot.key);
           return (
-            <View key={slot.key} style={[styles.slotDetailBlock, { borderBottomColor: c.outline }]}>
+            <View
+              key={slot.key}
+              style={[
+                styles.slotDetailBlock,
+                !isNote && { borderBottomColor: c.outline },
+                isNote && styles.slotDetailBlockNote,
+              ]}>
               <View style={styles.medicineTimePickerRow}>
                 <SnappedTimePickerField
                   label={copy.slotTimeLabel(t(slot.labelKey))}
@@ -570,4 +608,62 @@ const styles = StyleSheet.create({
   slotStatusLabel: { fontSize: 14, fontWeight: '700' },
   slotStatusTime: { fontSize: 12, fontWeight: '600' },
   slotStatusBadge: { fontSize: 12 },
+  doseActionBtnNote: {
+    flex: 0,
+    paddingVertical: 4,
+    paddingHorizontal: 0,
+    alignItems: 'flex-start',
+  },
+  doseResetBtnNote: {
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 4,
+    backgroundColor: 'transparent',
+  },
+  slotStatusWrapNote: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+  },
+  slotStatusRowNote: {
+    paddingHorizontal: 0,
+    paddingVertical: 5,
+    borderBottomWidth: 0,
+  },
+  metricBarNote: {
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
+    paddingVertical: 8,
+    justifyContent: 'space-around',
+  },
+  routineWindowBandNote: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingVertical: 6,
+  },
+  rowsWrapNote: {
+    borderTopWidth: 0,
+    marginTop: 4,
+    gap: 2,
+  },
+  rowNote: {
+    minHeight: 0,
+    paddingVertical: 6,
+    borderBottomWidth: 0,
+  },
+  slotChipNote: {
+    borderWidth: 0,
+    minHeight: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 2,
+    paddingRight: 14,
+  },
+  slotChipNoteOn: {},
+  slotChipTextNoteOn: {
+    textDecorationLine: 'underline',
+  },
+  slotDetailBlockNote: {
+    borderBottomWidth: 0,
+    paddingVertical: 6,
+  },
 });

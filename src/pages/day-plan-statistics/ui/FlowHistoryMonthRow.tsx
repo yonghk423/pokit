@@ -31,8 +31,8 @@ export function FlowHistoryMonthRow({ row, monthPrefix, palette }: Props) {
                 style={[
                   styles.monthDot,
                   {
-                    borderColor: done ? palette.accent : palette.accentSoft,
-                    backgroundColor: done ? palette.accent : 'transparent',
+                    borderColor: done ? palette.ink : palette.border,
+                    backgroundColor: done ? palette.ink : 'transparent',
                   },
                 ]}
               />

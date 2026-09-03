@@ -69,6 +69,18 @@ type Props = {
   /** 키패드가 필드를 가리지 않도록 부모 ScrollView 스크롤 요청 */
   onRequestScrollIntoView?: () => void;
   contentInsetLeft?: number;
+  /** note: 카드·브루탈 섀도우 없이 텍스트 중심 */
+  visualStyle?: 'default' | 'note';
+  /** 시작 필드 라벨 (기본: 시작) */
+  startFieldLabel?: string;
+  /** 종료 필드 라벨 (기본: 종료) */
+  endFieldLabel?: string;
+  /** 시트 확인 버튼 라벨 (기본: 시간 적용) */
+  confirmLabel?: string;
+  /** 시트 확인 버튼 a11y (기본: applyTimeA11y) */
+  confirmA11yLabel?: string;
+  /** sheet 확인 CTA 표시. note 시트는 기본 항상 표시, default는 dirty일 때만 */
+  showSheetConfirm?: boolean;
 };
 
 export type CatalogRowSpineTimePanelHandle = {
@@ -148,11 +160,22 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       onPickerExpandedChange,
       onRequestScrollIntoView,
       contentInsetLeft = 34,
+      visualStyle = 'default',
+      startFieldLabel,
+      endFieldLabel,
+      confirmLabel,
+      confirmA11yLabel,
+      showSheetConfirm,
     },
     ref,
   ) {
   const { t, locale } = useTranslation();
   const isSheet = presentation === 'sheet';
+  const isNote = visualStyle === 'note';
+  const resolvedStartLabel = startFieldLabel?.trim() || t('goalDetail.study.start');
+  const resolvedEndLabel = endFieldLabel?.trim() || t('goalDetail.study.end');
+  const resolvedConfirmLabel = confirmLabel?.trim() || t('dayPlan.applyTimeLabel');
+  const resolvedConfirmA11y = confirmA11yLabel?.trim() || t('dayPlan.applyTimeA11y');
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : '#000000';
   const panelSurface = isDark ? tone.surfaceAlt : '#FFFFFF';
@@ -267,7 +290,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           return null;
         }
 
-        onScheduleChange(parsedStart, parsedEnd, draftEndsNext);
         setRangeError(null);
         setExpanded(null);
         return {
@@ -283,7 +305,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       endMinutes,
       endsNextCalendarDay,
       flushActiveFieldToDrafts,
-      onScheduleChange,
       startMinutes,
     ],
   );
@@ -316,6 +337,12 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
   const displayEnd = expanded !== null ? draftEnd : committedEnd;
   const isDateChoiceDirty = draftEndsNext !== endsNextCalendarDay;
   const showConfirm = Boolean(activeField || isDateChoiceDirty);
+  const sheetConfirmVisible =
+    showSheetConfirm !== undefined
+      ? showSheetConfirm
+      : isNote
+        ? true
+        : showConfirm;
 
   const resolvedDateLabels = useMemo(() => {
     const key =
@@ -348,7 +375,10 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
         style={({ pressed }) => [
           styles.segment,
           isSheet && styles.segmentSheet,
-          selected && { backgroundColor: tone.bgMint },
+          isNote && styles.segmentNote,
+          isSheet && isNote && styles.segmentNoteSheet,
+          selected && !isNote && { backgroundColor: tone.bgMint },
+          selected && isNote && styles.segmentNoteSelected,
           !selected && pressed && { opacity: 0.88 },
           disabled && { opacity: 0.45 },
         ]}>
@@ -357,6 +387,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
             styles.segmentLabel,
             isSheet && styles.segmentLabelSheet,
             { color: selected ? selectedText : muted },
+            selected && isNote && { color: ink },
             cityPopFont('700'),
           ]}
           numberOfLines={1}>
@@ -366,7 +397,11 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           style={[
             styles.segmentTime,
             isSheet && styles.segmentTimeSheet,
+            isNote && styles.segmentTimeNote,
+            isSheet && isNote && styles.segmentTimeNoteSheet,
             { color: selected ? selectedText : ink },
+            isNote && { color: ink, borderBottomColor: ink },
+            selected && isNote && { borderBottomColor: ink },
             cityPopFont('800'),
           ]}
           numberOfLines={1}>
@@ -377,6 +412,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
             styles.segmentDate,
             isSheet && styles.segmentDateSheet,
             { color: selected ? selectedText : muted },
+            selected && isNote && { color: muted },
             cityPopFont('600'),
           ]}
           numberOfLines={1}>
@@ -389,7 +425,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
   const renderInlineConfirmSegment = () => (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={t('dayPlan.applyTimeA11y')}
+      accessibilityLabel={resolvedConfirmA11y}
       disabled={disabled}
       onPress={handleConfirm}
       style={({ pressed }) => [
@@ -422,67 +458,135 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           setRangeError(null);
         }}
         style={({ pressed }) => [styles.dayChoicePress, pressed && { opacity: 0.92 }]}>
-        <SolidShadowFace
-          borderColor={line}
-          shadowColor={shadowInk}
-          backgroundColor={selected ? tone.bgMint : panelSurface}
-          shadowSize={selected ? shadowSize : Math.max(2, shadowSize - 2)}
-          shellStyle={styles.dayChoiceShell}
-          faceStyle={[styles.dayChoiceFace, isSheet && styles.dayChoiceFaceSheet]}>
-          <ThemedText
-            style={[
-              styles.dayChoiceText,
-              isSheet && styles.dayChoiceTextSheet,
-              { color: selected ? selectedText : muted },
-              cityPopFont('800'),
-            ]}>
-            {label}
-          </ThemedText>
-        </SolidShadowFace>
+        {isNote ? (
+          <View style={[styles.dayChoiceFace, isSheet && styles.dayChoiceFaceSheet, styles.dayChoiceFaceNote]}>
+            <ThemedText
+              style={[
+                styles.dayChoiceText,
+                isSheet && styles.dayChoiceTextSheet,
+                styles.dayChoiceTextNote,
+                { color: selected ? ink : muted },
+                selected && styles.dayChoiceTextNoteOn,
+                cityPopFont(selected ? '700' : '600'),
+              ]}>
+              {label}
+            </ThemedText>
+          </View>
+        ) : (
+          <SolidShadowFace
+            borderColor={line}
+            shadowColor={shadowInk}
+            backgroundColor={selected ? tone.bgMint : panelSurface}
+            shadowSize={selected ? shadowSize : Math.max(2, shadowSize - 2)}
+            shellStyle={styles.dayChoiceShell}
+            faceStyle={[styles.dayChoiceFace, isSheet && styles.dayChoiceFaceSheet]}>
+            <ThemedText
+              style={[
+                styles.dayChoiceText,
+                isSheet && styles.dayChoiceTextSheet,
+                { color: selected ? selectedText : muted },
+                cityPopFont('800'),
+              ]}>
+              {label}
+            </ThemedText>
+          </SolidShadowFace>
+        )}
       </Pressable>
     );
   };
 
-  return (
-    <View style={[styles.root, { paddingLeft: contentInsetLeft }]}>
-      <SolidShadowFace
-        borderColor={line}
-        shadowColor={shadowInk}
-        backgroundColor={panelSurface}
-        shadowSize={shadowSize}
-        shellStyle={styles.trackShell}
-        faceStyle={styles.trackFace}>
-        <View style={styles.trackInner}>
-          {renderSegment('start', t('goalDetail.study.start'), displayStart)}
-          <View style={[styles.segmentDivider, { backgroundColor: line }]} />
-          {renderSegment('end', t('goalDetail.study.end'), displayEnd)}
-          {!isSheet && showConfirm ? (
-            <>
-              <View style={[styles.segmentDivider, { backgroundColor: line }]} />
-              {renderInlineConfirmSegment()}
-            </>
-          ) : null}
-        </View>
-      </SolidShadowFace>
+  const trackInner = (
+    <View style={[styles.trackInner, isNote && styles.trackInnerNote]}>
+      {renderSegment('start', resolvedStartLabel, displayStart)}
+      <View
+        style={[
+          styles.segmentDivider,
+          isNote
+            ? [styles.segmentDividerNote, { backgroundColor: line }]
+            : { backgroundColor: line },
+        ]}
+      />
+      {renderSegment('end', resolvedEndLabel, displayEnd)}
+      {!isSheet && showConfirm ? (
+        <>
+          <View
+            style={[
+              styles.segmentDivider,
+              isNote
+                ? [styles.segmentDividerNote, { backgroundColor: line }]
+                : { backgroundColor: line },
+            ]}
+          />
+          {renderInlineConfirmSegment()}
+        </>
+      ) : null}
+    </View>
+  );
 
-      <View style={[styles.endDateChoiceRow, isSheet && styles.endDateChoiceRowSheet]}>
+  return (
+    <View style={[styles.root, isNote && styles.rootNote, { paddingLeft: contentInsetLeft }]}>
+      {isNote ? (
+        <View style={[styles.trackNote, { borderColor: line }]}>{trackInner}</View>
+      ) : (
+        <SolidShadowFace
+          borderColor={line}
+          shadowColor={shadowInk}
+          backgroundColor={panelSurface}
+          shadowSize={shadowSize}
+          shellStyle={styles.trackShell}
+          faceStyle={styles.trackFace}>
+          {trackInner}
+        </SolidShadowFace>
+      )}
+
+      <View
+        style={[
+          styles.endDateChoiceRow,
+          isSheet && styles.endDateChoiceRowSheet,
+          isNote && styles.endDateChoiceRowNote,
+          isNote && { borderTopColor: line },
+        ]}>
         {renderDayChoice(false, t('dayRhythm.today'))}
         {renderDayChoice(true, t('dayRhythm.nextDay'))}
       </View>
 
-      {isSheet && showConfirm ? (
-        <BrutalConfirmButton
-          label={t('dayPlan.applyTimeLabel')}
-          accessibilityLabel={t('dayPlan.applyTimeA11y')}
-          align="stretch"
-          fill={ink}
-          labelColor={isDark ? '#09090b' : '#FAFAFA'}
-          border={line}
-          shadowColor={shadowInk}
-          disabled={disabled}
-          onPress={handleConfirm}
-          style={styles.sheetConfirmBtn}
-        />
+      {isSheet && sheetConfirmVisible ? (
+        isNote ? (
+          <View style={styles.sheetConfirmNoteRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={resolvedConfirmA11y}
+              disabled={disabled}
+              onPress={handleConfirm}
+              style={({ pressed }) => [
+                styles.sheetConfirmNoteHit,
+                disabled && { opacity: 0.35 },
+                pressed && { opacity: 0.55 },
+              ]}>
+              <ThemedText
+                style={[
+                  styles.sheetConfirmNoteText,
+                  { color: ink, borderBottomColor: ink },
+                  cityPopFont('700'),
+                ]}>
+                {resolvedConfirmLabel}
+              </ThemedText>
+            </Pressable>
+          </View>
+        ) : (
+          <BrutalConfirmButton
+            label={resolvedConfirmLabel}
+            accessibilityLabel={resolvedConfirmA11y}
+            align="stretch"
+            fill={ink}
+            labelColor={isDark ? '#09090b' : '#FAFAFA'}
+            border={line}
+            shadowColor={shadowInk}
+            disabled={disabled}
+            onPress={handleConfirm}
+            style={styles.sheetConfirmBtn}
+          />
+        )
       ) : null}
 
       {rangeError ? (
@@ -498,11 +602,11 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           ink={ink}
           muted={muted}
           line={line}
-          surface={panelSurface}
+          surface={isNote ? 'transparent' : panelSurface}
           selectedForeground={isDark ? '#09090b' : '#FAFAFA'}
           disabled={disabled}
           snapStepMinutes={1}
-          accessibilityLabelPrefix={activeField === 'end' ? t('goalDetail.study.end') : t('goalDetail.study.start')}
+          accessibilityLabelPrefix={activeField === 'end' ? resolvedEndLabel : resolvedStartLabel}
           onInputFocus={onRequestScrollIntoView}
         />
       ) : null}
@@ -637,5 +741,79 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: -0.2,
+  },
+  rootNote: {
+    paddingRight: 0,
+    paddingBottom: 4,
+  },
+  trackNote: {
+    alignSelf: 'stretch',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 4,
+  },
+  trackInnerNote: {
+    gap: 0,
+  },
+  segmentNote: {
+    alignItems: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minHeight: 0,
+    flex: 1,
+  },
+  segmentNoteSheet: {
+    minHeight: 0,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  segmentNoteSelected: {
+    opacity: 1,
+  },
+  segmentTimeNote: {
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    paddingBottom: 2,
+    marginTop: 2,
+    alignSelf: 'stretch',
+  },
+  segmentTimeNoteSheet: {
+    fontSize: 15,
+    letterSpacing: -0.3,
+  },
+  segmentDividerNote: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: 'stretch',
+  },
+  endDateChoiceRowNote: {
+    marginTop: 0,
+    paddingTop: 12,
+    gap: 20,
+    justifyContent: 'flex-start',
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  dayChoiceFaceNote: {
+    minHeight: 0,
+    paddingHorizontal: 0,
+    alignItems: 'flex-start',
+  },
+  dayChoiceTextNote: {
+    fontSize: 13,
+  },
+  dayChoiceTextNoteOn: {
+    textDecorationLine: 'underline',
+  },
+  sheetConfirmNoteRow: {
+    marginTop: 10,
+    alignItems: 'flex-end',
+  },
+  sheetConfirmNoteHit: {
+    paddingVertical: 4,
+    paddingLeft: 12,
+  },
+  sheetConfirmNoteText: {
+    fontSize: 13,
+    letterSpacing: -0.15,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    paddingBottom: 1,
   },
 });

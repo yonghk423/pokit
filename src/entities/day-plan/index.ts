@@ -244,6 +244,7 @@ export {
   formatBlockTimeRange,
   formatHhmmClockKo,
   formatMinuteOfDayKo,
+  formatSpineScheduleRangeLabel,
   getFirstPendingBlock,
   getLocalMinutesOfDayNow,
   getNextPendingAfter,

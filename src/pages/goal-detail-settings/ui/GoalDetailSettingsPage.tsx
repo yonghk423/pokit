@@ -771,33 +771,17 @@ export function GoalDetailSettingsPage() {
             ) : null}
 
             {targets.map((t, idx) => {
+              if (!isCustomFlowCategoryKey(t.categoryKey)) return null;
               const dataConfig = dataByBlockId[t.blockId] ?? {};
-              const module = resolveGoalDetailModuleForTarget(t.categoryKey, dataConfig);
-              const Settings = module.Settings;
-              const previewTitle = previewTitleForBlock(t.blockId, t.categoryKey);
-              const { allowRename, renameLockedReason } = resolveRenameAccess(t.categoryKey);
               return (
-                <View
-                  key={`${t.blockId}-${idx}`}
-                  style={[
-                    styles.blockSection,
-                    (workNoteUi || readingLibraryUi || waterDetailUi) && styles.blockSectionFlush,
-                  ]}>
-                  {isCustomFlowCategoryKey(t.categoryKey) ? (
-                    <CustomFlowTemplateMetaPill
-                      dataConfig={dataConfig}
-                      ink={c.onSurface}
-                      line={c.border}
-                    />
-                  ) : null}
-                  <Settings
-                    rhythmTitle={previewTitle}
-                    categoryKey={t.categoryKey}
+                <View key={`${t.blockId}-meta-${idx}`} style={styles.blockSection}>
+                  <CustomFlowTemplateMetaPill
                     dataConfig={dataConfig}
+                    ink={c.onSurface}
+                    line={c.border}
+                    muted={c.onVariant}
                     onChangeDataConfig={(next) => handleChangeDataConfig(t, next)}
-                    allowRename={allowRename}
-                    renameLockedReason={renameLockedReason}
-                    hideTitleField={targets.length === 1}
+                    disabled={isCategoryRunning(t.categoryKey)}
                   />
                 </View>
               );

@@ -102,10 +102,13 @@ export function DayPlanLayoutModeTabs({
     visibleModes ? visibleModes.includes(item.key) : true,
   );
   const suffix = suffixTabs ?? [];
+  /** 레이아웃 탭 + 투두(checklist) suffix — 단독 목록 아이콘도 유지 */
+  const layoutTabs = tabs;
 
-  if (tabs.length === 0 && suffix.length === 0) return null;
+  if (layoutTabs.length === 0 && suffix.length === 0) return null;
 
   if (attached && showLabels) {
+    if (layoutTabs.length === 0) return null;
     const border = tone.border;
     const shadowColor = isDark ? tone.solidShadow : tone.text;
     const activeBg = tone.primaryContainer;
@@ -115,7 +118,7 @@ export function DayPlanLayoutModeTabs({
 
     return (
       <View style={styles.attachedRoot}>
-        {tabs.map((item, index) => {
+        {layoutTabs.map((item, index) => {
           const active = mode === item.key;
           const label = layoutModeLabel(t, item.key);
           const isFirst = index === 0;
@@ -172,7 +175,7 @@ export function DayPlanLayoutModeTabs({
 
   return (
     <View style={[styles.root, showLabels && styles.rootLabeled]}>
-      {tabs.map((item) => {
+      {layoutTabs.map((item) => {
         const active = layoutTabActive && mode === item.key;
           const label = layoutModeLabel(t, item.key);
         return (

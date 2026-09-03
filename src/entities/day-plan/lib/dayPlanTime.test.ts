@@ -12,6 +12,7 @@ import {
   getNextPendingAfter,
   sortDayPlanBlocks,
   totalPlannedMinutes,
+  formatSpineScheduleRangeLabel,
 } from './dayPlanTime';
 
 function block(partial: Partial<DayPlanBlock> & Pick<DayPlanBlock, 'id'>): DayPlanBlock {
@@ -81,6 +82,31 @@ describe('block duration and formatting', () => {
     expect(formatMinuteOfDayKo(24 * 60)).toBe('AM 00:00');
     expect(formatHhmmClockKo('24:00')).toBe('AM 00:00');
     expect(formatHhmmClockKo('14:30')).toContain('PM');
+  });
+
+  it('formats spine schedule ranges with next-day caption', () => {
+    expect(
+      formatSpineScheduleRangeLabel({
+        startMinutes: 19 * 60,
+        endMinutes: 22 * 60,
+      }),
+    ).toBe('PM 7:00 – PM 10:00');
+    expect(
+      formatSpineScheduleRangeLabel({
+        startMinutes: 19 * 60,
+        endMinutes: 10 * 60,
+        endsNextCalendarDay: true,
+        endDayCaption: '다음날',
+      }),
+    ).toBe('PM 7:00 – 다음날 AM 10:00');
+    expect(
+      formatSpineScheduleRangeLabel({
+        startMinutes: 19 * 60,
+        endMinutes: 10 * 60,
+        endsNextCalendarDay: true,
+        endDayCaption: '9.4',
+      }),
+    ).toBe('PM 7:00 – 9.4 AM 10:00');
   });
 
   it('sums planned minutes and sorts by order', () => {

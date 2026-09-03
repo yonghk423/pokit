@@ -41,7 +41,7 @@ export function PokitStoryWebViewProgressLoader({ progress }: Props) {
               styles.fill,
               {
                 width: `${Math.max(displayPercent, clamped > 0 ? 4 : 0)}%`,
-                backgroundColor: c.primary,
+                backgroundColor: c.text,
               },
             ]}
           />

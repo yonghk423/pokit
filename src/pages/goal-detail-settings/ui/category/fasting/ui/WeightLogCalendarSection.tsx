@@ -19,6 +19,7 @@ import {
 } from '@entities/day-plan/lib/weightLog';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { useTranslation } from '@shared/lib/i18n';
+import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
@@ -42,6 +43,7 @@ export function WeightLogCalendarSection({
   palette,
 }: Props) {
   const { t } = useTranslation();
+  const isNote = useUiSurfacePresentation() === 'note';
   const todayKey = useMemo(() => getLocalDateKey(), []);
   const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
   const [monthStart, setMonthStart] = useState(() => toMonthStart(new Date()));
@@ -70,7 +72,7 @@ export function WeightLogCalendarSection({
   };
 
   return (
-    <View style={[styles.wrap, { borderColor: palette.outline }]}>
+    <View style={[styles.wrap, !isNote && { borderColor: palette.outline }, isNote && styles.wrapNote]}>
       <View style={styles.headerRow}>
         <IconSymbol name="calendar" size={16} color={PRIMARY} />
         <View style={styles.headerText}>
@@ -161,14 +163,21 @@ export function WeightLogCalendarSection({
             keyboardType="decimal-pad"
             placeholder={t('goalDetail.fasting.weightPlaceholder')}
             placeholderTextColor={palette.outline}
-            style={[styles.input, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
+            style={[
+              styles.input,
+              { color: palette.onSurface },
+              !isNote && { borderColor: palette.outlineVariant },
+              isNote && styles.inputNote,
+            ]}
           />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('goalDetail.fasting.save')}
             onPress={saveWeight}
-            style={styles.saveBtn}>
-            <ThemedText style={styles.saveBtnText}>{t('goalDetail.fasting.save')}</ThemedText>
+            style={[styles.saveBtn, isNote && styles.saveBtnNote]}>
+            <ThemedText style={[styles.saveBtnText, isNote && { color: PRIMARY }]}>
+              {t('goalDetail.fasting.save')}
+            </ThemedText>
           </Pressable>
           {selectedWeight != null ? (
             <Pressable
@@ -190,6 +199,11 @@ const styles = StyleSheet.create({
   wrap: {
     borderWidth: StyleSheet.hairlineWidth,
     padding: 12,
+    gap: 8,
+  },
+  wrapNote: {
+    borderWidth: 0,
+    padding: 0,
     gap: 8,
   },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
@@ -239,10 +253,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  inputNote: {
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 4,
+  },
   saveBtn: {
     backgroundColor: PRIMARY,
     paddingHorizontal: 14,
     paddingVertical: 9,
+  },
+  saveBtnNote: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingVertical: 4,
   },
   saveBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
   clearBtn: { padding: 6 },

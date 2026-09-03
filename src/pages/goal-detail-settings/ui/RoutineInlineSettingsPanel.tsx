@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import {
@@ -29,7 +29,6 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { GoalDetailCategoryKey } from '../model/types';
-import { resolveGoalDetailModuleForTarget } from './category';
 import { getRoutineRenameLockMessage } from './category/lib/RoutineTitleField';
 import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
 import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
@@ -77,7 +76,7 @@ function waterReminderSyncFingerprint(raw: unknown): string {
 
 /**
  * 일정 수정 시트 등에 끼워 넣는 루틴 설정 본문.
- * 목표 상세와 동일한 템플릿 Settings + 그룹/아이콘/시작 알림을 모두 포함합니다.
+ * 세션·진행 UI는 데이플랜 아코디언에서 다루고, 여기서는 「루틴 설정」메타만 둡니다.
  */
 export function RoutineInlineSettingsPanel({
   categoryKey,
@@ -108,10 +107,6 @@ export function RoutineInlineSettingsPanel({
     [],
   );
 
-  const module = useMemo(
-    () => resolveGoalDetailModuleForTarget(key, dataConfig),
-    [dataConfig, key],
-  );
   /** 실제 activity-session 활성 블록만 ‘실행 중’ — 오늘 담기 자동 집중(isFocusStarted)과 구분 */
   const isCategoryRunning = useCallback(
     (targetKey: string) => {
@@ -124,7 +119,6 @@ export function RoutineInlineSettingsPanel({
     },
     [activeBlockId, blocks],
   );
-  const Settings = module.Settings;
   const title =
     previewTitle?.trim() ||
     readRoutineDisplayNameFromConfig(dataConfig) ||
@@ -155,7 +149,6 @@ export function RoutineInlineSettingsPanel({
       if (isCustomFlowCategoryKey(key) && resolveCustomFlowTemplateKey(persisted) === 'reminder') {
         void persistReminderTemplateNotificationRule(key, persisted);
       }
-      // medicine normalize path still saves raw when not healthIntake
       if (key === 'medicine') {
         normalizeMedicineDetailConfig(persisted);
       }
@@ -176,7 +169,6 @@ export function RoutineInlineSettingsPanel({
 
   return (
     <View style={styles.root}>
-      {/* 목표 상세와 동일: 잠금 안내 → 루틴 방식 → 템플릿 본문 */}
       {renameLockedReason ? (
         <View style={[styles.renameLockBanner, { borderBottomColor: border }]}>
           <IconSymbol name="lock.fill" size={13} color={muted} />
@@ -187,20 +179,17 @@ export function RoutineInlineSettingsPanel({
       ) : null}
 
       {isCustomFlowCategoryKey(key) ? (
-        <CustomFlowTemplateMetaPill dataConfig={dataConfig} ink={ink} line={border} />
+        <CustomFlowTemplateMetaPill
+          dataConfig={dataConfig}
+          ink={ink}
+          line={border}
+          muted={muted}
+          onChangeDataConfig={handleChangeDataConfig}
+          disabled={running}
+        />
       ) : null}
 
-      <Settings
-        rhythmTitle={title}
-        categoryKey={key}
-        dataConfig={dataConfig}
-        onChangeDataConfig={handleChangeDataConfig}
-        allowRename={!lockRename && !running}
-        renameLockedReason={renameLockedReason}
-        hideTitleField
-      />
-
-      <View style={[styles.metaSection, { borderTopColor: border }]}>
+      <View style={styles.metaSection}>
         <ThemedText style={[styles.metaTitle, { color: muted }]}>
           {t('goalDetail.routineSettings')}
         </ThemedText>
@@ -249,9 +238,7 @@ const styles = StyleSheet.create({
   },
   metaSection: {
     gap: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 12,
-    marginTop: 4,
+    paddingTop: 4,
   },
   metaTitle: {
     fontSize: 13,

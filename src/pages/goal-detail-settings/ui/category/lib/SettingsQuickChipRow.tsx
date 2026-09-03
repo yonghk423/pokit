@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { goalDetailSettingsPalette } from './settingsPalette';
@@ -23,6 +24,8 @@ export function SettingsQuickChipRow({
   onSelect,
   palette,
 }: Props) {
+  const isNote = useUiSurfacePresentation() === 'note';
+
   return (
     <View style={styles.wrap}>
       {label ? (
@@ -38,16 +41,20 @@ export function SettingsQuickChipRow({
               onPress={() => onSelect(v)}
               style={[
                 styles.chip,
-                {
-                  borderColor: active ? palette.onSurface : palette.outline,
-                  backgroundColor: active ? 'rgba(0,0,0,0.06)' : palette.surfaceLowest,
-                },
+                isNote && styles.chipNote,
+                isNote
+                  ? undefined
+                  : {
+                      borderColor: active ? palette.onSurface : palette.outline,
+                      backgroundColor: active ? 'rgba(0,0,0,0.06)' : palette.surfaceLowest,
+                    },
               ]}>
               <ThemedText
                 style={{
                   color: active ? palette.onSurface : palette.onVariant,
                   fontWeight: active ? '800' : '600',
                   fontSize: 13,
+                  textDecorationLine: isNote && active ? 'underline' : 'none',
                 }}>
                 {formatLabel(v)}
               </ThemedText>
@@ -69,5 +76,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     minHeight: 36,
     justifyContent: 'center',
+  },
+  chipNote: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingRight: 14,
+    paddingVertical: 2,
+    minHeight: 0,
   },
 });

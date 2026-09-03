@@ -14,10 +14,13 @@ import { useTranslation } from '@shared/lib/i18n';
 
 export const COMPLETION_TOGGLE_ANIM_MS = 280;
 
-/** 라이트 모드 완료 채움 — Soft Mint (`primaryContainer`) */
-export const COMPLETION_CHECKED_COLOR_LIGHT = RetroFlatColors.light.primaryContainer;
-/** 다크 모드 완료 채움 — Soft Mint (`primaryContainer`) */
-export const COMPLETION_CHECKED_COLOR_DARK = RetroFlatColors.dark.primaryContainer;
+/** 완료 채움 — 검정 원/사각 */
+export const COMPLETION_CHECKED_COLOR_LIGHT = '#09090b';
+/** 다크 모드도 동일하게 검정 채움 + 민트 체크 */
+export const COMPLETION_CHECKED_COLOR_DARK = '#09090b';
+
+/** 완료 체크 아이콘 — Soft Mint */
+export const COMPLETION_CHECK_ICON_COLOR = RetroFlatColors.light.bgMint;
 
 const CIRCLE_OUTER_SIZE = 30;
 const SQUARE_OUTER_SIZE = 20;
@@ -32,7 +35,7 @@ const FILL_OUT_MS = 160;
 const PRESS_IN_MS = 90;
 const PRESS_OUT_MS = 140;
 
-/** 완료 채움 위 체크 아이콘 색 — 밝은 민트면 검정, 어두운 채움이면 흰색 */
+/** 완료 채움 위 체크 아이콘 색 — 어두운 채움이면 민트, 밝은 채움이면 검정 */
 export function completionCheckIconColor(fill: string): string {
   const raw = fill.trim().toLowerCase();
   const hex = /^#?([0-9a-f]{6})$/i.exec(raw);
@@ -42,17 +45,17 @@ export function completionCheckIconColor(fill: string): string {
     const g = parseInt(n.slice(2, 4), 16);
     const b = parseInt(n.slice(4, 6), 16);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.55 ? '#09090b' : '#FFFFFF';
+    return luminance > 0.55 ? '#09090b' : COMPLETION_CHECK_ICON_COLOR;
   }
   const rgb = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/.exec(raw);
   if (rgb) {
     const luminance =
       (0.299 * Number(rgb[1]) + 0.587 * Number(rgb[2]) + 0.114 * Number(rgb[3])) / 255;
-    return luminance > 0.55 ? '#09090b' : '#FFFFFF';
+    return luminance > 0.55 ? '#09090b' : COMPLETION_CHECK_ICON_COLOR;
   }
   const u = fill.toUpperCase();
   if (u === '#FAFAFA' || u === '#FFFFFF' || u === '#A8DADC') return '#09090b';
-  return '#FFFFFF';
+  return COMPLETION_CHECK_ICON_COLOR;
 }
 
 type Props = {
@@ -60,6 +63,8 @@ type Props = {
   isDark: boolean;
   /** circle: 목록 행 · square: 시간대별 타임라인 */
   shape?: 'circle' | 'square';
+  /** 원/사각 외곽 한 변(px). 미지정 시 shape 기본값 */
+  size?: number;
   checkedColor?: string;
   uncheckedColor?: string;
   onPress?: () => void;
@@ -70,15 +75,21 @@ export function CompletionRadioButton({
   checked,
   isDark,
   shape = 'circle',
+  size,
   checkedColor = isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT,
   uncheckedColor,
   onPress,
   accessibilityLabel,
 }: Props) {
   const { t } = useTranslation();
-  const outerSize = shape === 'square' ? SQUARE_OUTER_SIZE : CIRCLE_OUTER_SIZE;
+  const defaultOuter = shape === 'square' ? SQUARE_OUTER_SIZE : CIRCLE_OUTER_SIZE;
+  const outerSize = size ?? defaultOuter;
   const cornerRadius = shape === 'square' ? 0 : outerSize / 2;
-  const checkIconSize = shape === 'square' ? SQUARE_CHECK_ICON_SIZE : CHECK_ICON_SIZE;
+  const defaultCheck = shape === 'square' ? SQUARE_CHECK_ICON_SIZE : CHECK_ICON_SIZE;
+  const checkIconSize =
+    size != null ? Math.max(10, Math.round(outerSize * 0.58)) : defaultCheck;
+  const borderWidth = outerSize <= 26 ? 2 : BORDER_WIDTH;
+  const hitSize = size != null ? outerSize : HIT_SIZE;
   const scale = useSharedValue(1);
   const fillScale = useSharedValue(checked ? 1 : 0);
   const prevCheckedRef = useRef(checked);
@@ -139,7 +150,7 @@ export function CompletionRadioButton({
       onPressOut={() => {
         scale.value = withTiming(1, { duration: PRESS_OUT_MS, easing: EASE_OUT });
       }}
-      style={styles.hit}>
+      style={[styles.hit, { width: hitSize, height: hitSize }]}>
       <Reanimated.View
         style={[styles.visualWrap, { width: outerSize, height: outerSize }, rootAnimatedStyle]}>
         {checked ? (
@@ -165,6 +176,7 @@ export function CompletionRadioButton({
                 height: outerSize,
                 borderRadius: cornerRadius,
                 borderColor: borderIdle,
+                borderWidth,
               },
             ]}
           />
@@ -186,7 +198,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   uncheckedOutline: {
-    borderWidth: BORDER_WIDTH,
     backgroundColor: 'transparent',
   },
   checkedFill: {

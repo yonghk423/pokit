@@ -78,6 +78,31 @@ describe('spinePriorityWindow', () => {
     ).toBe(true);
   });
 
+  it('allows a next-day routine when both calendar-day times fit a normal daily window', () => {
+    const daily = resolveSpinePriorityWindow('07:00', '23:00');
+    expect(daily).not.toBeNull();
+    expect(
+      isSpineBlockScheduleWithinPriorityWindow(
+        {
+          startMinutes: 7 * 60,
+          endMinutes: 8 * 60,
+          endsNextCalendarDay: true,
+        },
+        daily!,
+      ),
+    ).toBe(true);
+    expect(
+      isSpineBlockScheduleWithinPriorityWindow(
+        {
+          startMinutes: 7 * 60,
+          endMinutes: 6 * 60 + 59,
+          endsNextCalendarDay: true,
+        },
+        daily!,
+      ),
+    ).toBe(false);
+  });
+
   it('rejects next-day end past overnight window finish', () => {
     const overnight = resolveSpinePriorityWindow('06:30', '00:00');
     expect(overnight).not.toBeNull();

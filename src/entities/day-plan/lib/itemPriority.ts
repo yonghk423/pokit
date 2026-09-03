@@ -5,7 +5,7 @@ export const ITEM_PRIORITY_CYCLE: readonly TodoPriority[] = ['high', 'medium', '
 export const ITEM_PRIORITY_META: Record<TodoPriority, { label: string; dot: string }> = {
   high: { label: '높음', dot: '#DC2626' },
   medium: { label: '보통', dot: '#5B8DEF' },
-  low: { label: '낮음', dot: '#94A3B8' },
+  low: { label: '낮음', dot: '#64748B' },
 };
 
 export function normalizeItemPriority(raw: unknown): TodoPriority {

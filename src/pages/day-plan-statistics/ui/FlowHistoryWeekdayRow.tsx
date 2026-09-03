@@ -30,13 +30,13 @@ export function FlowHistoryWeekdayRow({ row, palette }: Props) {
                 style={[
                   styles.weekdayDot,
                   {
-                    borderColor: done ? palette.accent : palette.accentSoft,
-                    backgroundColor: done ? palette.accent : 'transparent',
+                    borderColor: done ? palette.ink : palette.border,
+                    backgroundColor: done ? palette.ink : 'transparent',
                   },
                 ]}
               />
               <ThemedText
-                style={[styles.weekdayLabel, { color: done ? palette.accent : palette.muted }]}>
+                style={[styles.weekdayLabel, { color: done ? palette.ink : palette.muted }]}>
                 {label}
               </ThemedText>
             </View>

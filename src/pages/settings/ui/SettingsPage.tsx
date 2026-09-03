@@ -442,40 +442,12 @@ export function SettingsPage() {
           </SettingsSection>
         ) : null}
 
-        <SettingsSection border={p.border} surface={p.surface}>
-          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
-            {t('settings.section.appearance', locale)}
-          </ThemedText>
+        {SHOW_APPEARANCE_SETTINGS ? (
+          <SettingsSection border={p.border} surface={p.surface}>
+            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
+              {t('settings.section.appearance', locale)}
+            </ThemedText>
 
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/day-plan-view-settings');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.dayPlanView', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="square.grid.2x2"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.border}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  {t('settings.dayPlanViewTitle', locale)}
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {t('settings.dayPlanViewDesc', locale)}
-                </ThemedText>
-              </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
-
-          {SHOW_APPEARANCE_SETTINGS ? (
             <Pressable
               style={[chrome.item, { borderTopColor: p.border }]}
               onPress={() => {
@@ -503,8 +475,8 @@ export function SettingsPage() {
               </View>
               <IconSymbol name="chevron.right" size={14} color={p.chevron} />
             </Pressable>
-          ) : null}
-        </SettingsSection>
+          </SettingsSection>
+        ) : null}
 
         {SHOW_POKIT_PRO_SETTINGS ? (
           <SettingsSection border={p.border} surface={p.surface}>

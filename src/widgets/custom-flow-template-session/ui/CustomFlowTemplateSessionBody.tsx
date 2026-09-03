@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import {
@@ -45,6 +45,7 @@ import {
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { formatDurationMinutes, formatHhmmClock, useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
+import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import {
   COMPLETION_CHECKED_COLOR_DARK,
   COMPLETION_CHECKED_COLOR_LIGHT,
@@ -113,6 +114,40 @@ function withAlpha(color: string, alpha: number): string {
   return color;
 }
 
+/** 노트 구조선용 ink — outline(연회색)은 계층이 안 보여 ink를 우선 */
+function resolveNoteInkBase(line: string | undefined, ink: string | undefined): string {
+  if (ink && ink !== 'transparent') return ink;
+  if (line && line !== 'transparent') return line;
+  return '#000000';
+}
+
+/** 필드·칩 등 얇은 보더 폴백 */
+function resolveNoteRuleColor(line: string | undefined, ink: string | undefined): string {
+  const base = resolveNoteInkBase(line, ink);
+  return withAlpha(base, 0.32);
+}
+
+type NoteDividerWeight = 'section' | 'row' | 'none';
+
+/** 노트 섹션=이중 굵은 선, 행=가는 단선 */
+function NoteRuleFooter({
+  ink,
+  weight = 'section',
+}: {
+  ink: string;
+  weight?: Exclude<NoteDividerWeight, 'none'>;
+}) {
+  if (weight === 'row') {
+    return <View style={[styles.noteRuleRow, { backgroundColor: withAlpha(ink, 0.2) }]} />;
+  }
+  return (
+    <View style={styles.noteRuleBlock}>
+      <View style={[styles.noteRulePrimary, { backgroundColor: withAlpha(ink, 0.82) }]} />
+      <View style={[styles.noteRuleSecondary, { backgroundColor: withAlpha(ink, 0.22) }]} />
+    </View>
+  );
+}
+
 function Card({
   children,
   theme,
@@ -124,14 +159,20 @@ function Card({
   gap?: number;
   flushList?: boolean;
 }) {
+  const presentation = useUiSurfacePresentation();
+  const isNote = presentation === 'note';
+  const noteInk = resolveNoteInkBase(theme.line, theme.ink);
   return (
     <View
       style={[
-        styles.card,
+        isNote ? styles.cardNote : styles.card,
         flushList && styles.cardFlushList,
-        { borderColor: theme.line, backgroundColor: theme.surface, gap: flushList ? 0 : gap },
+        isNote
+          ? { gap: flushList ? 0 : gap }
+          : { borderColor: theme.line, backgroundColor: theme.surface, gap: flushList ? 0 : gap },
       ]}>
       {children}
+      {isNote && !flushList ? <NoteRuleFooter ink={noteInk} weight="section" /> : null}
     </View>
   );
 }
@@ -140,24 +181,46 @@ function SectionLabel({ children, color }: { children: string; color: string }) 
   return <ThemedText style={[styles.sectionLabel, { color }]}>{children}</ThemedText>;
 }
 
-/** 시안 `.brutal-shadow` — 배경색은 호출측 surface 유지 */
+/** 시안 `.brutal-shadow` — 노트 표면에서는 보더·섀도우 없이 계층형 구분선만 */
 function ReminderBrutalShell({
   borderColor,
   shadowColor,
   backgroundColor,
+  ink,
   borderWidth = RETRO_BORDER_WIDTH,
   shadowSize = 2,
+  noteDivider = 'section',
   style,
   children,
 }: {
   borderColor: string;
   shadowColor: string;
   backgroundColor: string;
+  /** 노트 구분선 폴백 (line이 transparent일 때) */
+  ink?: string;
   borderWidth?: number;
   shadowSize?: number;
+  /** 노트: section=이중 굵은 선, row=행 단선, none=선 없음 */
+  noteDivider?: NoteDividerWeight;
   style?: object;
   children: React.ReactNode;
 }) {
+  const presentation = useUiSurfacePresentation();
+  if (presentation === 'note') {
+    const noteInk = resolveNoteInkBase(borderColor, ink ?? shadowColor);
+    return (
+      <View
+        style={[
+          styles.noteShell,
+          noteDivider === 'section' && styles.noteShellSection,
+          noteDivider === 'row' && styles.noteShellRow,
+          style,
+        ]}>
+        {children}
+        {noteDivider !== 'none' ? <NoteRuleFooter ink={noteInk} weight={noteDivider} /> : null}
+      </View>
+    );
+  }
   return (
     <View style={[{ marginRight: shadowSize, marginBottom: shadowSize }, style]}>
       <View
@@ -279,15 +342,32 @@ function MeasurementTemplateView({
 }) {
   const { t } = useTranslation();
   const { ink, muted, line, surface } = theme;
+  const isNote = useUiSurfacePresentation() === 'note';
+  const noteRule = resolveNoteRuleColor(line, ink);
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : tone.text;
-  const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const unit = resolveMeasurementUnitLabel(cfg.unit, cfg.customUnitLabel);
+  const hasMetric = cfg.metricLabel.trim().length > 0 || cfg.unit !== 'none';
   const [draft, setDraft] = useState(() => (cfg.currentValue > 0 ? String(cfg.currentValue) : ''));
+  const didSeedMetricRef = useRef(false);
+  const lastCommittedRef = useRef<number | null>(
+    cfg.currentValue > 0 ? cfg.currentValue : null,
+  );
+
   useEffect(() => {
     setDraft(cfg.currentValue > 0 ? String(cfg.currentValue) : '');
+    lastCommittedRef.current = cfg.currentValue > 0 ? cfg.currentValue : null;
   }, [cfg.currentValue, cfg.unit, cfg.metricLabel]);
+
+  /** 실사용(아코디언·설정): 빈 값 기록은 체중으로 바로 시작 — 템플릿 미리보기와 같은 조작 경로 */
+  useEffect(() => {
+    if (previewMode || didSeedMetricRef.current || hasMetric) return;
+    const preset = MEASUREMENT_METRIC_PRESETS[0];
+    if (!preset) return;
+    didSeedMetricRef.current = true;
+    emit(applyMeasurementMetricPreset(cfg, preset, { includeSampleData: false }));
+  }, [previewMode, hasMetric, cfg, emit]);
 
   const parsed = parseFloat(draft.replace(',', '.'));
   const quickDeltas = measurementQuickDeltas(cfg.unit);
@@ -296,72 +376,101 @@ function MeasurementTemplateView({
   const goalRatio =
     cfg.useGoalValue && cfg.goalValue > 0 ? Math.min(1, cfg.currentValue / cfg.goalValue) : null;
   const recordedToday = measurementRecordedToday(cfg);
-  const showPresetPicker =
-    previewMode || (!cfg.metricLabel.trim() && cfg.unit === 'none');
   const metricTitle = cfg.metricLabel.trim() || t('customFlowTemplate.recordFallback');
   const displayValue =
     cfg.currentValue > 0 ? formatMeasurementValue(cfg.currentValue, cfg.unit) : '—';
+  const presetHint = previewMode
+    ? t('customFlowTemplate.measurePresetHint')
+    : t('customFlowTemplate.measurePresetHintLive');
+
+  const commitValue = (raw: number) => {
+    if (!hasMetric || !Number.isFinite(raw)) return;
+    const rounded = roundMeasurementValue(raw, cfg.unit);
+    if (lastCommittedRef.current === rounded) return;
+    if (rounded === cfg.currentValue && recordedToday) {
+      lastCommittedRef.current = rounded;
+      return;
+    }
+    lastCommittedRef.current = rounded;
+    void Haptics.selectionAsync();
+    emit(applyMeasurementSave(cfg, rounded));
+  };
 
   const applyDelta = (d: number) => {
-    const base = Number.isFinite(parsed) ? parsed : cfg.currentValue;
-    setDraft(String(roundMeasurementValue(base + d, cfg.unit)));
+    const base = Number.isFinite(parsed) ? parsed : cfg.currentValue > 0 ? cfg.currentValue : 0;
+    const next = roundMeasurementValue(base + d, cfg.unit);
+    setDraft(String(next));
+    commitValue(next);
+  };
+
+  const commitDraft = () => {
+    const raw = parseFloat(draft.replace(',', '.'));
+    if (!Number.isFinite(raw)) return;
+    commitValue(raw);
   };
 
   return (
-    <View style={[styles.root, styles.measureRoot]}>
-      {showPresetPicker ? (
-        <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
-          <View style={styles.measureCardInner}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>
-              {t('customFlowTemplate.measurePrompt')}
-            </ThemedText>
-            <ThemedText style={[styles.sub, { color: muted }]}>
-              {t('customFlowTemplate.measurePresetHint')}
-            </ThemedText>
-            <View style={styles.counterChipRow}>
-              {MEASUREMENT_METRIC_PRESETS.map((preset) => {
-                const selected =
-                  cfg.metricLabel === preset.metricLabel && cfg.unit === preset.unit;
-                return (
-                  <Pressable
-                    key={preset.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    onPress={() => {
-                      void Haptics.selectionAsync();
-                      emit(
-                        applyMeasurementMetricPreset(cfg, preset, {
-                          includeSampleData: previewMode,
-                        }),
-                      );
-                    }}
-                    style={({ pressed }) => [
-                      styles.counterChip,
+    <View style={[styles.root, styles.measureRoot, isNote && styles.rootNote]}>
+      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+        <View style={styles.measureCardInner}>
+          <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>
+            {t('customFlowTemplate.measurePrompt')}
+          </ThemedText>
+          <ThemedText style={[styles.sub, { color: muted }]}>{presetHint}</ThemedText>
+          <View style={styles.counterChipRow}>
+            {MEASUREMENT_METRIC_PRESETS.map((preset) => {
+              const selected =
+                cfg.metricLabel === preset.metricLabel && cfg.unit === preset.unit;
+              return (
+                <Pressable
+                  key={preset.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    emit(
+                      applyMeasurementMetricPreset(cfg, preset, {
+                        includeSampleData: previewMode,
+                      }),
+                    );
+                  }}
+                  style={({ pressed }) => [
+                    styles.counterChip,
+                    isNote && styles.counterChipNote,
+                    {
+                      borderColor: selected
+                        ? tone.primary
+                        : isNote
+                          ? noteRule
+                          : line === 'transparent'
+                            ? muted
+                            : line,
+                      backgroundColor: selected
+                        ? tone.primaryContainer
+                        : surface === 'transparent' || isNote
+                          ? 'transparent'
+                          : surface,
+                      opacity: pressed ? 0.88 : 1,
+                    },
+                  ]}>
+                  <ThemedText
+                    style={[
+                      styles.counterChipText,
                       {
-                        borderColor: selected ? tone.primary : line,
-                        backgroundColor: selected ? tone.primaryContainer : surface,
-                        opacity: pressed ? 0.88 : 1,
+                        color: selected ? tone.text : muted,
+                        fontWeight: selected ? '800' : '600',
                       },
                     ]}>
-                    <ThemedText
-                      style={[
-                        styles.counterChipText,
-                        {
-                          color: selected ? tone.text : muted,
-                          fontWeight: selected ? '800' : '600',
-                        },
-                      ]}>
-                      {preset.metricLabel}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
-            </View>
+                    {preset.metricLabel}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
           </View>
-        </ReminderBrutalShell>
-      ) : null}
+        </View>
+      </ReminderBrutalShell>
 
-      <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
         <View style={styles.counterProgressInner}>
           <View style={styles.reminderProgressTop}>
             <View style={styles.reminderProgressHero}>
@@ -386,37 +495,55 @@ function MeasurementTemplateView({
               </ThemedText>
               {delta ? (
                 <ThemedText style={[styles.reminderNextTitle, { color: ink }]} numberOfLines={2}>
-                  {t('customFlowTemplate.deltaSinceYesterday', { delta: `${delta}${unit ? ` ${unit}` : ''}` })}
+                  {t('customFlowTemplate.deltaSinceYesterday', {
+                    delta: `${delta}${unit ? ` ${unit}` : ''}`,
+                  })}
                 </ThemedText>
               ) : cfg.previousValue > 0 ? (
                 <ThemedText style={[styles.reminderNextTitle, { color: ink }]} numberOfLines={2}>
-                  {t('customFlowTemplate.previousValue', { value: `${formatMeasurementValue(cfg.previousValue, cfg.unit)}${unit ? ` ${unit}` : ''}` })}
+                  {t('customFlowTemplate.previousValue', {
+                    value: `${formatMeasurementValue(cfg.previousValue, cfg.unit)}${unit ? ` ${unit}` : ''}`,
+                  })}
                 </ThemedText>
               ) : (
                 <ThemedText style={[styles.reminderNextTitle, { color: ink }]} numberOfLines={2}>
-                  {recordedToday ? t('customFlowTemplate.recordedToday') : t('customFlowTemplate.noRecordYet')}
+                  {!hasMetric
+                    ? t('customFlowTemplate.measurePickFirst')
+                    : recordedToday
+                      ? t('customFlowTemplate.recordedToday')
+                      : t('customFlowTemplate.noRecordYet')}
                 </ThemedText>
               )}
               {goalRatio != null ? (
                 <ThemedText style={[styles.reminderNextMeta, { color: muted }]}>
-                  {t('customFlowTemplate.goalValue', { value: `${formatMeasurementValue(cfg.goalValue, cfg.unit)}${unit ? ` ${unit}` : ''}` })} · {Math.round(goalRatio * 100)}%
+                  {t('customFlowTemplate.goalValue', {
+                    value: `${formatMeasurementValue(cfg.goalValue, cfg.unit)}${unit ? ` ${unit}` : ''}`,
+                  })}{' '}
+                  · {Math.round(goalRatio * 100)}%
                 </ThemedText>
               ) : (
                 <ThemedText style={[styles.reminderNextMeta, { color: muted }]}>
-                  {cfg.history.length > 0 ? t('common.countRecords', { count: cfg.history.length }) : t('customFlowTemplate.valueRecord')}
+                  {cfg.history.length > 0
+                    ? t('common.countRecords', { count: cfg.history.length })
+                    : t('customFlowTemplate.valueRecord')}
                 </ThemedText>
               )}
             </View>
           </View>
           {goalRatio != null ? (
-            <View style={[styles.reminderProgressTrack, { borderColor: line }]}>
+            <View
+              style={[
+                styles.reminderProgressTrack,
+                isNote && styles.reminderProgressTrackNote,
+                { borderColor: isNote ? noteRule : line },
+              ]}>
               <View
                 style={[
                   styles.reminderProgressFill,
                   {
                     width: `${Math.round(goalRatio * 100)}%`,
                     backgroundColor: tone.primaryContainer,
-                    borderRightWidth: goalRatio > 0 && goalRatio < 1 ? RETRO_BORDER_WIDTH : 0,
+                    borderRightWidth: !isNote && goalRatio > 0 && goalRatio < 1 ? RETRO_BORDER_WIDTH : 0,
                     borderRightColor: line,
                   },
                 ]}
@@ -427,9 +554,11 @@ function MeasurementTemplateView({
       </ReminderBrutalShell>
 
       {chartValues.length >= 2 ? (
-        <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+        <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
           <View style={styles.measureCardInner}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.recent7DaysTrend')}</ThemedText>
+            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>
+              {t('customFlowTemplate.recent7DaysTrend')}
+            </ThemedText>
             <MiniBarChart
               values={chartValues}
               goal={cfg.useGoalValue ? cfg.goalValue : undefined}
@@ -440,34 +569,42 @@ function MeasurementTemplateView({
         </ReminderBrutalShell>
       ) : null}
 
-      {cfg.unit !== 'none' || cfg.metricLabel.trim().length > 0 ? (
-        <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
-          <View style={styles.measureCardInner}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.valueInput')}</ThemedText>
-            {recordedToday ? (
-              <View
-                style={[
-                  styles.measureStatusChip,
-                  { borderColor: line, backgroundColor: tone.primaryContainer },
-                ]}>
-                <ThemedText style={[styles.measureStatusChipText, { color: tone.text }]}>
-                  {t('customFlowTemplate.recordDoneResave')}
-                </ThemedText>
-              </View>
-            ) : null}
+      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+        <View style={styles.measureCardInner}>
+          {!hasMetric ? (
+            <ThemedText style={[styles.sub, { color: muted }]}>
+              {t('customFlowTemplate.measurePickFirst')}
+            </ThemedText>
+          ) : null}
+          {recordedToday ? (
+            <View
+              style={[
+                styles.measureStatusChip,
+                isNote && styles.measureStatusChipNote,
+                {
+                  borderColor: isNote ? noteRule : line,
+                  backgroundColor: tone.primaryContainer,
+                },
+              ]}>
+              <ThemedText style={[styles.measureStatusChipText, { color: tone.text }]}>
+                {t('customFlowTemplate.recordDoneAuto')}
+              </ThemedText>
+            </View>
+          ) : null}
+          {hasMetric ? (
             <View style={styles.quickRow}>
               {quickDeltas.map((d) => (
                 <Pressable
                   key={d}
                   onPress={() => {
-                    void Haptics.selectionAsync();
                     applyDelta(d);
                   }}
                   style={({ pressed }) => [
                     styles.measureQuickBtn,
+                    isNote && styles.measureQuickBtnNote,
                     {
-                      borderColor: line,
-                      backgroundColor: surface,
+                      borderColor: isNote ? noteRule : line,
+                      backgroundColor: isNote || surface === 'transparent' ? 'transparent' : surface,
                       opacity: pressed ? 0.88 : 1,
                     },
                   ]}>
@@ -477,45 +614,42 @@ function MeasurementTemplateView({
                 </Pressable>
               ))}
             </View>
-            <View style={styles.measureInputRow}>
-              <TextInput
-                value={draft}
-                onChangeText={setDraft}
-                keyboardType="decimal-pad"
-                placeholder={t('customFlowTemplate.valueInputPlaceholder')}
-                placeholderTextColor={muted}
-                style={[
-                  styles.measureInput,
-                  { color: ink, borderColor: line, backgroundColor: surface },
-                ]}
-              />
-              {unit ? (
-                <ThemedText style={[styles.measureUnitLabel, { color: muted }]}>{unit}</ThemedText>
-              ) : null}
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('customFlowTemplate.saveRecordA11y')}
-              onPress={() => {
-                const raw = parseFloat(draft.replace(',', '.'));
-                if (!Number.isFinite(raw)) return;
-                void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                emit(applyMeasurementSave(cfg, raw));
-              }}
-              style={({ pressed }) => [
-                styles.memoSaveBtn,
+          ) : null}
+          <View style={styles.measureInputRow}>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              onEndEditing={commitDraft}
+              onBlur={commitDraft}
+              editable={hasMetric}
+              keyboardType="decimal-pad"
+              placeholder={t('customFlowTemplate.valueInputPlaceholder')}
+              placeholderTextColor={muted}
+              accessibilityLabel={t('customFlowTemplate.valueInput')}
+              style={[
+                styles.measureInput,
+                isNote && styles.measureInputNote,
                 {
-                  borderColor: line,
-                  backgroundColor: ink,
-                  opacity: pressed ? 0.9 : 1,
+                  color: ink,
+                  borderColor: isNote ? noteRule : line,
+                  backgroundColor: isNote || surface === 'transparent' ? 'transparent' : surface,
+                  opacity: hasMetric ? 1 : 0.45,
                 },
-                pressed ? { transform: [{ translateX: 1 }, { translateY: 1 }] } : null,
-              ]}>
-              <ThemedText style={[styles.memoSaveBtnText, { color: selectedFg }]}>{t('customFlowTemplate.saveRecord')}</ThemedText>
-            </Pressable>
+              ]}
+            />
+            {unit ? (
+              <ThemedText
+                style={[
+                  styles.measureUnitLabel,
+                  isNote && styles.measureUnitLabelNote,
+                  { color: muted },
+                ]}>
+                {unit}
+              </ThemedText>
+            ) : null}
           </View>
-        </ReminderBrutalShell>
-      ) : null}
+        </View>
+      </ReminderBrutalShell>
     </View>
   );
 }
@@ -531,6 +665,7 @@ function JournalTemplateView({
 }) {
   const { t } = useTranslation();
   const { ink, muted, line, accent } = theme;
+  const isNote = useUiSurfacePresentation() === 'note';
   const [draft, setDraft] = useState(cfg.lastEntry ?? '');
   const [mood, setMood] = useState(cfg.moodToday ?? '');
   useEffect(() => {
@@ -539,8 +674,8 @@ function JournalTemplateView({
   }, [cfg.lastEntry, cfg.moodToday]);
 
   return (
-    <View style={styles.root}>
-      <Card theme={theme}>
+    <View style={[styles.root, isNote && styles.rootNote]}>
+      <Card theme={theme} gap={isNote ? 6 : 10}>
         <ThemedText style={[styles.prompt, { color: ink }]}>{cfg.prompt.trim() || t('customFlowTemplate.journalFallback')}</ThemedText>
         <SectionLabel color={muted}>{t('customFlowTemplate.mood')}</SectionLabel>
         <View style={styles.moodRow}>
@@ -618,6 +753,8 @@ function MemoTemplateView({
 }) {
   const { t } = useTranslation();
   const { ink, muted, line, surface } = theme;
+  const isNote = useUiSurfacePresentation() === 'note';
+  const noteRule = resolveNoteRuleColor(line, ink);
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : tone.text;
@@ -637,9 +774,9 @@ function MemoTemplateView({
   };
 
   return (
-    <View style={[styles.root, styles.memoRoot]}>
-      <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
-        <View style={styles.memoCardInner}>
+    <View style={[styles.root, styles.memoRoot, isNote && styles.rootNote, isNote && styles.memoRootNote]}>
+      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+        <View style={[styles.memoCardInner, isNote && styles.memoCardInnerNote]}>
           <View style={styles.reminderSectionHead}>
             <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.memoWrite')}</ThemedText>
             <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>
@@ -655,7 +792,12 @@ function MemoTemplateView({
             textAlignVertical="top"
             style={[
               styles.memoInput,
-              { color: ink, borderColor: line, backgroundColor: surface },
+              isNote && styles.memoInputNote,
+              {
+                color: ink,
+                borderColor: isNote ? noteRule : line,
+                backgroundColor: isNote ? 'transparent' : surface,
+              },
             ]}
           />
           <Pressable
@@ -664,20 +806,21 @@ function MemoTemplateView({
             onPress={handleSave}
             style={({ pressed }) => [
               styles.memoSaveBtn,
+              isNote && styles.memoSaveBtnNote,
               {
                 borderColor: line,
                 backgroundColor: ink,
                 opacity: pressed ? 0.9 : 1,
               },
-              pressed ? { transform: [{ translateX: 1 }, { translateY: 1 }] } : null,
+              !isNote && pressed ? { transform: [{ translateX: 1 }, { translateY: 1 }] } : null,
             ]}>
             <ThemedText style={[styles.memoSaveBtnText, { color: selectedFg }]}>{t('common.save')}</ThemedText>
           </Pressable>
         </View>
       </ReminderBrutalShell>
 
-      <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
-        <View style={styles.memoCardInner}>
+      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+        <View style={[styles.memoCardInner, isNote && styles.memoCardInnerNote]}>
           <View style={styles.reminderSectionHead}>
             <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.recentMemos')}</ThemedText>
             <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>
@@ -738,6 +881,8 @@ function ChecklistTemplateView({
 }) {
   const { t } = useTranslation();
   const { ink, muted, line, surface } = theme;
+  const isNote = useUiSurfacePresentation() === 'note';
+  const noteRule = resolveNoteRuleColor(line, ink);
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : tone.text;
@@ -777,9 +922,9 @@ function ChecklistTemplateView({
   };
 
   return (
-    <View style={[styles.root, styles.checklistRoot]}>
-      <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
-        <View style={styles.counterProgressInner}>
+    <View style={[styles.root, styles.checklistRoot, isNote && styles.rootNote, isNote && styles.checklistRootNote]}>
+      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+        <View style={[styles.counterProgressInner, isNote && styles.counterProgressInnerNote]}>
           <View style={styles.reminderProgressTop}>
             <View style={styles.reminderProgressHero}>
               <View style={styles.reminderProgressCountRow}>
@@ -806,7 +951,7 @@ function ChecklistTemplateView({
               </ThemedText>
             </View>
           </View>
-          <View style={[styles.reminderProgressTrack, { borderColor: line }]}>
+          <View style={[styles.reminderProgressTrack, isNote && styles.reminderProgressTrackNote, { borderColor: isNote ? noteRule : line }]}>
             <View
               style={[
                 styles.reminderProgressFill,
@@ -822,8 +967,8 @@ function ChecklistTemplateView({
         </View>
       </ReminderBrutalShell>
 
-      <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
-        <View style={styles.checklistCardInner}>
+      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+        <View style={[styles.checklistCardInner, isNote && styles.checklistCardInnerNote]}>
           <View style={styles.reminderSectionHead}>
             <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{sectionTitle}</ThemedText>
             <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>{t('common.countItems', { count: total })}</ThemedText>
@@ -955,6 +1100,8 @@ function CounterTemplateView({
 }) {
   const { t } = useTranslation();
   const { ink, muted, line, surface } = theme;
+  const isNote = useUiSurfacePresentation() === 'note';
+  const noteRule = resolveNoteRuleColor(line, ink);
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : tone.text;
@@ -1007,9 +1154,10 @@ function CounterTemplateView({
       onPress={onPress}
       style={({ pressed }) => [
         styles.counterChip,
+        isNote && styles.counterChipNote,
         {
-          borderColor: selected ? tone.primary : line,
-          backgroundColor: selected ? tone.primaryContainer : surface,
+          borderColor: selected ? tone.primary : isNote ? noteRule : line === 'transparent' ? muted : line,
+          backgroundColor: selected ? tone.primaryContainer : surface === 'transparent' || isNote ? 'transparent' : surface,
           opacity: pressed ? 0.88 : 1,
         },
       ]}>
@@ -1018,17 +1166,23 @@ function CounterTemplateView({
           styles.counterChipText,
           { color: selected ? tone.text : muted, fontWeight: selected ? '800' : '600' },
         ]}>
-        {t(`goalDetail.weekday.${key}` as I18nKey)}
+        {label}
       </ThemedText>
     </Pressable>
   );
 
+  const resolveCounterPresetLabel = (presetId: string, fallback: string) => {
+    const key = `customFlowTemplate.counterPreset.${presetId}` as I18nKey;
+    const translated = t(key);
+    return translated === key ? fallback : translated;
+  };
+
   const activityTitle = live.activityLabel.trim() || t('customFlowTemplate.countFallback');
 
   return (
-    <View style={[styles.root, styles.counterRoot]}>
+    <View style={[styles.root, styles.counterRoot, isNote && styles.rootNote]}>
       {previewMode ? (
-        <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+        <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
           <View style={styles.counterCardInner}>
             <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>
               {t('customFlowTemplate.commonPresets')}
@@ -1038,15 +1192,21 @@ function CounterTemplateView({
             </ThemedText>
             <View style={styles.counterChipRow}>
               {COUNTER_ACTIVITY_PRESETS.map((preset) => {
+                const presetLabel = resolveCounterPresetLabel(preset.id, preset.activityLabel);
                 const selected =
-                  live.activityLabel === preset.activityLabel &&
+                  (live.activityLabel === presetLabel ||
+                    live.activityLabel === preset.activityLabel) &&
                   live.goalCount === preset.goalCount;
-                return renderChip(preset.id, preset.activityLabel, selected, () => {
+                return renderChip(preset.id, presetLabel, selected, () => {
                   void Haptics.selectionAsync();
                   emit(
-                    applyCounterActivityPreset(live, preset, {
-                      includeSampleData: previewMode,
-                    }),
+                    applyCounterActivityPreset(
+                      live,
+                      { ...preset, activityLabel: presetLabel },
+                      {
+                        includeSampleData: previewMode,
+                      },
+                    ),
                   );
                 });
               })}
@@ -1055,7 +1215,7 @@ function CounterTemplateView({
         </ReminderBrutalShell>
       ) : null}
 
-      <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
         <View style={styles.counterProgressInner}>
           <View style={styles.reminderProgressTop}>
             <View style={styles.reminderProgressHero}>
@@ -1097,7 +1257,7 @@ function CounterTemplateView({
       </ReminderBrutalShell>
 
       {chartValues.length >= 2 ? (
-        <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+        <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
           <View style={styles.counterCardInner}>
             <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.recent7DaysTrend')}</ThemedText>
             <MiniBarChart
@@ -1110,7 +1270,7 @@ function CounterTemplateView({
         </ReminderBrutalShell>
       ) : null}
 
-      <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
         <View style={styles.counterCardInner}>
           <View style={styles.reminderSectionHead}>
             <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.countControls')}</ThemedText>
@@ -1250,7 +1410,7 @@ function CounterTemplateView({
         </View>
       </ReminderBrutalShell>
 
-      <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
         <View style={styles.counterCardInner}>
           <View style={styles.reminderSectionHead}>
             <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.countSettings')}</ThemedText>
@@ -1323,18 +1483,26 @@ function CounterTemplateView({
 
           {!previewMode ? (
             <>
-              <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.commonPresets')}</ThemedText>
+              <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>
+                {t('customFlowTemplate.commonPresets')}
+              </ThemedText>
               <View style={styles.counterChipRow}>
                 {COUNTER_ACTIVITY_PRESETS.map((preset) => {
+                  const presetLabel = resolveCounterPresetLabel(preset.id, preset.activityLabel);
                   const selected =
-                    live.activityLabel === preset.activityLabel &&
+                    (live.activityLabel === presetLabel ||
+                      live.activityLabel === preset.activityLabel) &&
                     live.goalCount === preset.goalCount;
-                  return renderChip(preset.id, preset.activityLabel, selected, () => {
+                  return renderChip(preset.id, presetLabel, selected, () => {
                     void Haptics.selectionAsync();
                     emit(
-                      applyCounterActivityPreset(live, preset, {
-                        includeSampleData: false,
-                      }),
+                      applyCounterActivityPreset(
+                        live,
+                        { ...preset, activityLabel: presetLabel },
+                        {
+                          includeSampleData: false,
+                        },
+                      ),
                     );
                   });
                 })}
@@ -1362,6 +1530,8 @@ function ReminderTemplateView({
 }) {
   const { t, locale } = useTranslation();
   const { ink, muted, line, surface } = theme;
+  const isNote = useUiSurfacePresentation() === 'note';
+  const noteRule = resolveNoteRuleColor(line, ink);
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const selectedFg = isDark ? '#09090b' : '#FAFAFA';
@@ -1430,14 +1600,14 @@ function ReminderTemplateView({
   const mintShadow = tone.bgMint;
 
   return (
-    <View style={[styles.root, styles.reminderRoot]}>
+    <View style={[styles.root, styles.reminderRoot, isNote && styles.rootNote, isNote && styles.reminderRootNote]}>
       {allowScheduleCompletion ? (
-        <ReminderBrutalShell
+        <ReminderBrutalShell ink={ink}
           borderColor={line}
           shadowColor={shadowInk}
           backgroundColor={surface}
           style={styles.reminderProgressShell}>
-          <View style={styles.reminderProgressInner}>
+          <View style={[styles.reminderProgressInner, isNote && styles.reminderProgressInnerNote]}>
             <View style={styles.reminderProgressTop}>
               <View style={styles.reminderProgressHero}>
                 <View style={styles.reminderProgressCountRow}>
@@ -1463,7 +1633,7 @@ function ReminderTemplateView({
                 </View>
               )}
             </View>
-            <View style={[styles.reminderProgressTrack, { borderColor: line }]}>
+            <View style={[styles.reminderProgressTrack, isNote && styles.reminderProgressTrackNote, { borderColor: isNote ? noteRule : line }]}>
               <View
                 style={[
                   styles.reminderProgressFill,
@@ -1480,14 +1650,15 @@ function ReminderTemplateView({
         </ReminderBrutalShell>
       ) : null}
 
-      <View style={styles.reminderSectionHead}>
+      <View style={[styles.reminderSectionHead, isNote && styles.reminderSectionHeadNote]}>
         <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.reminderList')}</ThemedText>
         <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>
           {t('common.countItems', { count: reminderItems.length })}
         </ThemedText>
       </View>
+      {isNote ? <NoteRuleFooter ink={resolveNoteInkBase(line, ink)} weight="section" /> : null}
 
-      <View style={styles.reminderList}>
+      <View style={[styles.reminderList, isNote && styles.reminderListNote]}>
         {reminderItems.length === 0 ? (
           <ThemedText style={[styles.sub, { color: muted }]}>{t('customFlowTemplate.addRemindersHint')}</ThemedText>
         ) : null}
@@ -1506,13 +1677,14 @@ function ReminderTemplateView({
           const cardBorderWidth = isNext ? RETRO_BORDER_WIDTH + 1 : RETRO_BORDER_WIDTH;
 
           return (
-            <ReminderBrutalShell
+            <ReminderBrutalShell ink={ink}
               key={item.time}
               borderColor={cardBorder}
               borderWidth={cardBorderWidth}
               shadowColor={cardShadow}
-              backgroundColor={surface}>
-              <View style={styles.reminderEditRow}>
+              backgroundColor={surface}
+              noteDivider="row">
+              <View style={[styles.reminderEditRow, isNote && styles.reminderEditRowNote]}>
                 <View style={styles.reminderEditToolbar}>
                   {allowScheduleCompletion ? (
                     <View
@@ -1617,8 +1789,8 @@ function ReminderTemplateView({
         })}
       </View>
 
-      <ReminderBrutalShell borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
-        <View style={styles.reminderAddInner}>
+      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
+        <View style={[styles.reminderAddInner, isNote && styles.reminderAddInnerNote]}>
           <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.addReminder')}</ThemedText>
           <ThemedText style={[styles.sub, { color: muted }]}>
             {t('customFlowTemplate.addReminderHint')}
@@ -1679,6 +1851,7 @@ export function CustomFlowTemplateSessionBody({
   allowScheduleCompletion = true,
 }: Props) {
   const { t, locale } = useTranslation();
+  const isNote = useUiSurfacePresentation() === 'note';
 
   const { ink, muted, line, surface, accent } = theme;
   const cfg = useMemo(
@@ -1705,8 +1878,8 @@ export function CustomFlowTemplateSessionBody({
       const checkFill = completionCheckFill(theme);
       const checkIcon = completionCheckIconColor(checkFill);
       return (
-        <View style={styles.root}>
-          <Card theme={theme}>
+        <View style={[styles.root, isNote && styles.rootNote]}>
+          <Card theme={theme} gap={isNote ? 6 : 10}>
             {cfg.streakDays > 0 ? (
               <View style={[styles.streakBadge, { borderColor: accent }]}>
                 <ThemedText style={{ color: accent, fontWeight: '800', fontSize: 15 }}>
@@ -1736,7 +1909,7 @@ export function CustomFlowTemplateSessionBody({
               </ThemedText>
             </Pressable>
           </Card>
-          <Card theme={theme}>
+          <Card theme={theme} gap={isNote ? 6 : 10}>
             <SectionLabel color={muted}>{t('customFlowTemplate.thisWeek')}</SectionLabel>
             <WeekDots dots={weekDots} checkFill={checkFill} muted={muted} ink={ink} />
           </Card>
@@ -1751,8 +1924,8 @@ export function CustomFlowTemplateSessionBody({
       const remainMin = Math.max(0, cfg.planMin - elapsedMin);
       const focusRatio = cfg.planMin > 0 ? Math.min(1, elapsedMin / cfg.planMin) : 0;
       return (
-        <View style={styles.root}>
-          <Card theme={theme}>
+        <View style={[styles.root, isNote && styles.rootNote]}>
+          <Card theme={theme} gap={isNote ? 6 : 10}>
             <ThemedText style={[styles.timerValue, { color: ink }]}>
               {String(Math.floor(remainMin)).padStart(2, '0')}:
               {String(Math.round((remainMin % 1) * 60)).padStart(2, '0')}
@@ -1820,8 +1993,66 @@ export function CustomFlowTemplateSessionBody({
 
 const styles = StyleSheet.create({
   root: { gap: 10, width: '100%' },
+  rootNote: { gap: 4, width: '100%', alignSelf: 'stretch' },
   card: { borderWidth: 2, padding: 14, width: '100%' },
+  cardNote: {
+    paddingVertical: 4,
+    paddingHorizontal: 0,
+    width: '100%',
+  },
   cardFlushList: { paddingHorizontal: 0, paddingVertical: 0, overflow: 'hidden' },
+  noteShell: {
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  noteShellSection: {
+    paddingTop: 4,
+    paddingBottom: 2,
+    marginBottom: 4,
+    gap: 0,
+  },
+  noteShellRow: {
+    paddingTop: 4,
+    paddingBottom: 0,
+    marginBottom: 0,
+  },
+  noteRuleBlock: {
+    marginTop: 6,
+    gap: 2,
+    width: '100%',
+  },
+  noteRulePrimary: {
+    height: 1.5,
+    width: '100%',
+    borderRadius: 0,
+  },
+  noteRuleSecondary: {
+    height: StyleSheet.hairlineWidth * 2,
+    width: '100%',
+    borderRadius: 0,
+  },
+  noteRuleRow: {
+    marginTop: 4,
+    height: StyleSheet.hairlineWidth * 2,
+    width: '100%',
+  },
+  reminderLabelInputNote: {
+    borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    paddingHorizontal: 2,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+  },
+  reminderProgressTrackNote: {
+    height: 8,
+    borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    backgroundColor: 'transparent',
+  },
+  reminderSectionHeadNote: {
+    paddingTop: 2,
+    paddingBottom: 2,
+  },
   sectionLabel: {
     fontSize: 12,
     fontWeight: '700',
@@ -1846,25 +2077,43 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   counterRoot: {
-    gap: 14,
+    gap: 4,
   },
   counterCardInner: {
-    padding: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 0,
     gap: 8,
+    width: '100%',
+    alignSelf: 'stretch',
   },
   counterProgressInner: {
-    padding: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 0,
     gap: 10,
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  counterProgressInnerNote: {
+    paddingVertical: 2,
+    gap: 6,
   },
   counterChipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
+    width: '100%',
   },
   counterChip: {
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 10,
     paddingVertical: 6,
+  },
+  counterChipNote: {
+    borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    paddingHorizontal: 2,
+    paddingVertical: 6,
+    borderRadius: 0,
   },
   counterChipText: {
     fontSize: 11,
@@ -1875,6 +2124,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 15,
     fontWeight: '700',
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   counterStepCol: {
     flex: 1,
@@ -1918,16 +2168,23 @@ const styles = StyleSheet.create({
   quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   quickBtn: { minWidth: 52, minHeight: 36, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   measureRoot: {
-    gap: 14,
+    gap: 4,
   },
   measureCardInner: {
-    padding: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 0,
     gap: 8,
   },
   measureStatusChip: {
     borderWidth: RETRO_BORDER_WIDTH,
     paddingHorizontal: 8,
     paddingVertical: 6,
+  },
+  measureStatusChipNote: {
+    borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    paddingHorizontal: 2,
+    alignSelf: 'flex-start',
   },
   measureStatusChipText: {
     fontSize: 11,
@@ -1941,6 +2198,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
+  },
+  measureQuickBtnNote: {
+    borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    minWidth: 36,
+    paddingHorizontal: 4,
   },
   measureQuickBtnText: {
     fontSize: 12,
@@ -1956,17 +2219,35 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
   },
+  measureInputNote: {
+    borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    paddingHorizontal: 2,
+    minHeight: 36,
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
   measureUnitLabel: {
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: -0.1,
+  },
+  measureUnitLabelNote: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   primaryBtn: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#000' },
   primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   counterTitle: { fontSize: 15, fontWeight: '700' },
   counterSlash: { fontSize: 24, fontWeight: '700', lineHeight: 32 },
   goalBadge: { fontSize: 14, fontWeight: '800', textAlign: 'center' },
-  counterPrimaryRow: { flexDirection: 'row', gap: 8 },
+  counterPrimaryRow: {
+    flexDirection: 'row',
+    gap: 8,
+    width: '100%',
+    alignSelf: 'stretch',
+  },
   bigCounterBtn: {
     flex: 1,
     minHeight: 48,
@@ -1984,7 +2265,12 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
   },
   bigCounterTextOnAccent: { color: '#fff' },
-  counterRow: { flexDirection: 'row', gap: 6 },
+  counterRow: {
+    flexDirection: 'row',
+    gap: 6,
+    width: '100%',
+    alignSelf: 'stretch',
+  },
   counterBtn: {
     flex: 1,
     minHeight: 36,
@@ -2030,9 +2316,19 @@ const styles = StyleSheet.create({
   memoRoot: {
     gap: 14,
   },
+  memoRootNote: {
+    gap: 4,
+  },
   memoCardInner: {
     padding: 12,
     gap: 8,
+  },
+  memoCardInnerNote: {
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+    gap: 6,
+    width: '100%',
+    alignSelf: 'stretch',
   },
   memoInput: {
     borderWidth: RETRO_BORDER_WIDTH,
@@ -2043,12 +2339,27 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 20,
   },
+  memoInputNote: {
+    minHeight: 72,
+    borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    paddingHorizontal: 0,
+    paddingVertical: 6,
+    fontSize: 13,
+    lineHeight: 19,
+    width: '100%',
+  },
   memoSaveBtn: {
     minHeight: 40,
     borderWidth: RETRO_BORDER_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
+  },
+  memoSaveBtnNote: {
+    minHeight: 34,
+    alignSelf: 'stretch',
+    width: '100%',
   },
   memoSaveBtnText: {
     fontSize: 13,
@@ -2100,12 +2411,22 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingTop: 2,
   },
+  reminderRootNote: {
+    gap: 4,
+    paddingTop: 0,
+  },
   reminderProgressShell: {
     overflow: 'visible',
   },
   reminderProgressInner: {
     padding: 12,
     gap: 10,
+  },
+  reminderProgressInnerNote: {
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+    gap: 6,
+    width: '100%',
   },
   reminderProgressTop: {
     flexDirection: 'row',
@@ -2203,9 +2524,16 @@ const styles = StyleSheet.create({
   reminderList: {
     gap: 12,
   },
+  reminderListNote: {
+    gap: 0,
+  },
   reminderEditRow: {
     padding: 12,
     gap: 8,
+  },
+  reminderEditRowNote: {
+    paddingVertical: 4,
+    paddingHorizontal: 0,
   },
   reminderEditToolbar: {
     flexDirection: 'row',
@@ -2275,6 +2603,12 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 8,
   },
+  reminderAddInnerNote: {
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+    gap: 6,
+    width: '100%',
+  },
   reminderAddRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   reminderAddInput: {
     borderWidth: 2,
@@ -2296,9 +2630,19 @@ const styles = StyleSheet.create({
   checklistRoot: {
     gap: 14,
   },
+  checklistRootNote: {
+    gap: 4,
+  },
   checklistCardInner: {
     padding: 12,
     gap: 8,
+  },
+  checklistCardInnerNote: {
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+    gap: 4,
+    width: '100%',
+    alignSelf: 'stretch',
   },
   checklistItem: {
     flexDirection: 'row',

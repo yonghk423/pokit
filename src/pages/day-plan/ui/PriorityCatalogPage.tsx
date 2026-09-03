@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Platform,
   StyleSheet,
   UIManager,
   View,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
@@ -21,7 +20,6 @@ import { ThemedView } from '@shared/ui/themed-view';
 import { palette } from '../lib/dayPlanPalette';
 import { resolveCatalogLayoutMode } from '../lib/priorityCatalogLayoutMode';
 import { coerceDayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
-import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 import { FixedRoutinePage } from './FixedRoutinePage';
 import { PriorityCatalogPageTabs, type PriorityCatalogPageTab } from './PriorityCatalogPageTabs';
 
@@ -57,7 +55,6 @@ export function PriorityCatalogPage() {
   );
 
   const visibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
-  const coerceLayoutMode = useDayPlanLayoutModeVisibilityStore((s) => s.coerceMode);
   const hydrateLayoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.hydrate);
 
   const catalogLayoutMode = useMemo(
@@ -98,24 +95,6 @@ export function PriorityCatalogPage() {
     setFixedRoutineApplyLayoutMode,
   ]);
 
-  const visibleLayoutModes = useMemo(
-    () => (['bag', 'sections', 'spine'] as const).filter((mode) => visibility[mode]),
-    [visibility],
-  );
-
-  const onSelectCatalogLayoutMode = useCallback(
-    (mode: DayPlanLayoutMode) => {
-      const nextMode = coerceLayoutMode(mode);
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setPlanMode('priority');
-      setPriorityMealSlotLayoutEnabled(nextMode === 'sections');
-      setPrioritySpineLayoutEnabled(nextMode === 'spine');
-      setFixedRoutineApplyLayoutMode(nextMode);
-      notifyFixedFlowApplyScheduleChanged();
-    },
-    [coerceLayoutMode, setPlanMode, setPriorityMealSlotLayoutEnabled, setPrioritySpineLayoutEnabled, setFixedRoutineApplyLayoutMode],
-  );
-
   const [catalogPageTab, setCatalogPageTab] = useState<PriorityCatalogPageTab>('catalog');
 
   const shellBg = c.containerLow;
@@ -124,19 +103,6 @@ export function PriorityCatalogPage() {
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
       <View style={[styles.safe, { backgroundColor: shellBg }]}>
         <View style={[styles.stickyHeader, { backgroundColor: shellBg, paddingHorizontal: 20 }]}>
-          {visibleLayoutModes.length > 0 ? (
-            <View style={styles.layoutModeRow}>
-              <DayPlanLayoutModeTabs
-                mode={effectiveCatalogLayoutMode}
-                onSelectMode={onSelectCatalogLayoutMode}
-                c={c}
-                isDark={isDark}
-                visibleModes={visibleLayoutModes}
-                showLabels
-                attached
-              />
-            </View>
-          ) : null}
           <PriorityCatalogPageTabs
             tab={catalogPageTab}
             onSelectTab={setCatalogPageTab}
@@ -171,8 +137,5 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     gap: 10,
     zIndex: 2,
-  },
-  layoutModeRow: {
-    marginBottom: 2,
   },
 });

@@ -40,6 +40,7 @@ import {
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { CustomFlowAppearancePicker } from '@shared/ui/custom-flow-appearance-picker';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { UiSurfacePresentationProvider } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
 
@@ -549,26 +550,25 @@ export function CreateCustomFlowSheet({
             </>
           ) : (
             <>
-              <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
-                <ThemedText style={[styles.fieldHint, { color: muted }]}>{t('createFlow.newRoutineTag')}</ThemedText>
-                <ThemedText style={[styles.routineNamePreview, { color: ink }]}>{trimmedName}</ThemedText>
+              <View style={styles.namePreviewNote}>
+                <ThemedText style={[styles.fieldHint, { color: muted }]}>
+                  {t('createFlow.newRoutineTag')}
+                </ThemedText>
+                <ThemedText style={[styles.routineNamePreview, { color: ink }]}>
+                  {trimmedName}
+                </ThemedText>
               </View>
 
               <View style={styles.summaryField}>
-                <ThemedText style={[styles.summaryLabel, { color: muted }]}>{t('createFlow.summary')}</ThemedText>
+                <ThemedText style={[styles.summaryLabel, { color: muted }]}>
+                  {t('createFlow.summary')}
+                </ThemedText>
                 <TextInput
                   value={summary}
                   onChangeText={setSummary}
                   placeholder={t('createFlow.summaryPlaceholder')}
                   placeholderTextColor={muted}
-                  style={[
-                    styles.summaryInput,
-                    {
-                      color: ink,
-                      borderColor: line,
-                      backgroundColor: inputBg,
-                    },
-                  ]}
+                  style={[styles.summaryInputNote, { color: ink }]}
                   maxLength={ROUTINE_SUMMARY_MAX}
                   multiline
                   textAlignVertical="top"
@@ -588,69 +588,62 @@ export function CreateCustomFlowSheet({
                         setSelectedTemplateKey(opt.key);
                         setTemplateSetupConfig(buildTemplateSetupConfig(opt.key));
                       }}
-                      style={[
-                        styles.templateCard,
-                        {
-                          borderColor: selected ? PrimaryColor.rgb : line,
-                          backgroundColor: selected
-                            ? isDark
-                              ? 'rgba(53,102,104,0.18)'
-                              : 'rgba(53,102,104,0.08)'
-                            : cardBg,
-                        },
+                      style={({ pressed }) => [
+                        styles.templateRow,
+                        pressed && { opacity: 0.55 },
                       ]}>
-                      <View style={styles.templateCardTop}>
-                        <View style={[styles.templateIconBox, { borderColor: line }]}>
-                          <IconSymbol name={opt.icon} size={16} color={ink} />
-                        </View>
-                        <View style={styles.templateCardText}>
-                          <ThemedText style={[styles.templateTitle, { color: ink }]}>
-                            {opt.title}
-                          </ThemedText>
-                          <ThemedText style={[styles.templateDesc, { color: muted }]}>
-                            {opt.summary}
-                          </ThemedText>
-                        </View>
-                        <View
+                      <IconSymbol name={opt.icon} size={17} color={ink} />
+                      <View style={styles.templateCardText}>
+                        <ThemedText
                           style={[
-                            styles.radioOuter,
-                            { borderColor: selected ? PrimaryColor.rgb : line },
+                            styles.templateTitle,
+                            { color: ink },
+                            selected && styles.templateTitleSelected,
                           ]}>
-                          {selected ? (
-                            <View
-                              style={[styles.radioInner, { backgroundColor: PrimaryColor.rgb }]}
-                            />
-                          ) : null}
-                        </View>
+                          {opt.title}
+                        </ThemedText>
+                        <ThemedText style={[styles.templateDesc, { color: muted }]}>
+                          {opt.summary}
+                        </ThemedText>
                       </View>
+                      <ThemedText
+                        style={[
+                          styles.templateSelectMark,
+                          { color: selected ? ink : muted },
+                        ]}>
+                        {selected ? '✓' : ''}
+                      </ThemedText>
                     </Pressable>
                   );
                 })}
               </View>
 
-              <View style={styles.setupSection}>
-                <ThemedText style={[styles.setupSectionTitle, { color: ink }]}>{t('createFlow.detailSetup')}</ThemedText>
+              <View style={[styles.setupSection, { borderTopColor: line }]}>
+                <ThemedText style={[styles.setupSectionTitle, { color: ink }]}>
+                  {t('createFlow.detailSetup')}
+                </ThemedText>
                 <ThemedText style={[styles.setupSectionHint, { color: muted }]}>
                   {t('createFlow.detailSetupHint')}
                 </ThemedText>
-                <CustomFlowTemplateSessionBody
-                  templateKey={selectedTemplateKey}
-                  config={templateSetupConfig}
-                  onChange={(next) => {
-                    setTemplateSetupConfig(
-                      normalizeCustomFlowDetailConfig(selectedTemplateKey, next),
-                    );
-                  }}
-                  previewMode={false}
-                  theme={{
-                    ink,
-                    muted,
-                    line,
-                    /** 루틴 템플릿 미리보기와 동일한 카드 면 색 */
-                    surface: isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF',
-                    accent: PrimaryColor.rgb,
-                  }}
-                />
+                <UiSurfacePresentationProvider value="note">
+                  <CustomFlowTemplateSessionBody
+                    templateKey={selectedTemplateKey}
+                    config={templateSetupConfig}
+                    onChange={(next) => {
+                      setTemplateSetupConfig(
+                        normalizeCustomFlowDetailConfig(selectedTemplateKey, next),
+                      );
+                    }}
+                    previewMode={false}
+                    theme={{
+                      ink,
+                      muted,
+                      line,
+                      surface: 'transparent',
+                      accent: PrimaryColor.rgb,
+                    }}
+                  />
+                </UiSurfacePresentationProvider>
               </View>
 
               <ThemedText style={[styles.templateNote, { color: muted }]}>
@@ -834,15 +827,19 @@ const styles = StyleSheet.create({
   },
   routineNamePreview: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: -0.3,
   },
+  namePreviewNote: {
+    gap: 4,
+    paddingVertical: 2,
+  },
   summaryField: {
-    gap: 8,
+    gap: 6,
   },
   summaryLabel: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     letterSpacing: -0.1,
   },
   summaryInput: {
@@ -855,15 +852,27 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontWeight: '500',
   },
+  summaryInputNote: {
+    minHeight: 44,
+    paddingHorizontal: 0,
+    paddingVertical: 4,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+  },
   templateList: {
-    gap: 10,
+    gap: 2,
   },
   setupSection: {
     gap: 8,
+    marginTop: 4,
+    paddingTop: 14,
+    borderTopWidth: 1.5,
   },
   setupSectionTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '700',
     letterSpacing: -0.2,
   },
   setupSectionHint: {
@@ -876,6 +885,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     padding: 14,
     gap: 10,
+  },
+  templateRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 2,
   },
   templateCardTop: {
     flexDirection: 'row',
@@ -891,17 +907,28 @@ const styles = StyleSheet.create({
   },
   templateCardText: {
     flex: 1,
-    gap: 4,
+    gap: 3,
   },
   templateTitle: {
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: -0.2,
   },
+  templateTitleSelected: {
+    textDecorationLine: 'underline',
+  },
   templateDesc: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
     fontWeight: '500',
+    letterSpacing: -0.1,
+  },
+  templateSelectMark: {
+    fontSize: 14,
+    fontWeight: '700',
+    minWidth: 14,
+    textAlign: 'right',
+    marginTop: 1,
   },
   radioOuter: {
     width: 20,
