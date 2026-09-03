@@ -2483,6 +2483,7 @@ export function PriorityBasedPlanSection({
               style={styles.priorityTimelineScroll}
               contentContainerStyle={[
                 styles.priorityTimelineScrollContent,
+                showTodoList && styles.priorityTimelineScrollContentTodo,
                 { paddingBottom: TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM },
               ]}
               keyboardShouldPersistTaps="handled">
@@ -3082,8 +3083,8 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   todoListBody: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
+    paddingHorizontal: 8,
+    paddingTop: 4,
     paddingBottom: 4,
   },
   priorityTimelineScroll: {
@@ -3095,6 +3096,10 @@ const styles = StyleSheet.create({
   priorityTimelineScrollContent: {
     paddingHorizontal: 12,
     gap: 4,
+  },
+  /** 투두 리스트 — 스크롤 좌우 패딩 제거해 카드가 가로를 최대한 쓰게 함 */
+  priorityTimelineScrollContentTodo: {
+    paddingHorizontal: 0,
   },
   /** 날짜 행 아래에 우선순위 리스트를 두기 위한 세로 래퍼 */
   priorityTimelineDayColumn: {

@@ -411,13 +411,13 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
 
 const styles = StyleSheet.create({
   root: {
-    marginHorizontal: 16,
+    marginHorizontal: 8,
     paddingVertical: 8,
     gap: 8,
   },
   rootEmbedded: {
     width: '100%',
-    paddingHorizontal: 4,
+    paddingHorizontal: 0,
     paddingTop: 0,
     paddingBottom: 8,
     gap: 8,
@@ -431,7 +431,8 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: TODO_TABLE_BORDER_WIDTH,
     borderRadius: 0,
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     gap: 8,
   },
   cardTopRow: {

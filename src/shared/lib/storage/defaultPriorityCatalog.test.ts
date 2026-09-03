@@ -33,7 +33,7 @@ describe('resolveCustomFlowCatalogIcon', () => {
 
   it('returns builtin icon for stretching preset', () => {
     expect(resolveCustomFlowCatalogIcon(BUILTIN_STRETCHING_FLOW_ID)).toBe('figure.flexibility');
-    expect(resolveCustomFlowCatalogColor(BUILTIN_STRETCHING_FLOW_ID)).toBe('#14b8a6');
+    expect(resolveCustomFlowCatalogColor(BUILTIN_STRETCHING_FLOW_ID)).toBe('#8b5cf6');
   });
 
   it('returns hand.raised.fill for abstain preset (picker-compatible icon)', () => {

@@ -172,7 +172,8 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     groupKey: 'health',
     displayName: '스트레칭',
     icon: 'figure.flexibility',
-    color: '#14b8a6',
+    /** 체중조절(fasting `#14b8a6`)과 겹치지 않도록 바이올렛 */
+    color: '#8b5cf6',
     summary: '몸을 풀고 가볍게 늘려 줘요.',
     templateKey: 'checklist',
     checklistLabels: ['스트레칭'],
@@ -273,6 +274,13 @@ export function resolveCustomFlowCatalogIcon(categoryKey: string): string {
 /** 기본·사용자 커스텀 플로우 강조색 — 저장값 → legacy builtin → 오렌지 */
 export function resolveCustomFlowCatalogColor(categoryKey: string): string {
   const fromConfig = readStoredCustomFlowAccentColor(categoryKey);
+  // 스트레칭 예전 기본 틸(#14b8a6)은 체중조절과 겹침 → 바이올렛으로 치환
+  if (
+    categoryKey === BUILTIN_STRETCHING_FLOW_ID &&
+    (fromConfig == null || fromConfig.toLowerCase() === '#14b8a6')
+  ) {
+    return '#8b5cf6';
+  }
   if (fromConfig) return fromConfig;
   if (ACTIVE_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey]) {
     return ACTIVE_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey];

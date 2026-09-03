@@ -5,6 +5,7 @@ import {
   normalizeCustomFlowIcon,
 } from '@shared/lib/customFlowAppearanceCatalog';
 import {
+  BUILTIN_STRETCHING_FLOW_ID,
   loadGoalDetailCategoryConfig,
   resolveCustomFlowCatalogColor,
   resolveCustomFlowCatalogIcon,
@@ -157,6 +158,9 @@ export function resolveCategoryCatalogIcon(categoryKey: string): string {
 
 export function resolveCategoryCatalogAccentColor(categoryKey: string): string {
   const resolvedCategoryKey = resolvePriorityRoutineCategoryKey(categoryKey);
+  if (isCustomFlowCategoryKey(resolvedCategoryKey)) {
+    return resolveCustomFlowCatalogColor(resolvedCategoryKey);
+  }
   const stored = readStoredCategoryAccentColor(resolvedCategoryKey);
   if (stored) {
     if (resolvedCategoryKey === 'healthIntake') {
@@ -166,9 +170,6 @@ export function resolveCategoryCatalogAccentColor(categoryKey: string): string {
       return resolveFastingCatalogAccentColor(stored) ?? stored;
     }
     return stored;
-  }
-  if (isCustomFlowCategoryKey(resolvedCategoryKey)) {
-    return resolveCustomFlowCatalogColor(resolvedCategoryKey);
   }
   return (
     BUILTIN_CATEGORY_ACCENT_COLORS[resolvedCategoryKey] ??
@@ -203,7 +204,10 @@ export function readEditableCategoryAppearance(
       ? (resolveFastingCatalogAccentColor(rawAccent) ?? rawAccent)
       : categoryKey === 'healthIntake'
         ? (resolveHealthIntakeCatalogAccentColor(rawAccent) ?? rawAccent)
-        : rawAccent;
+        : categoryKey === BUILTIN_STRETCHING_FLOW_ID &&
+            (rawAccent == null || rawAccent.toLowerCase() === '#14b8a6')
+          ? '#8b5cf6'
+          : rawAccent;
 
   return { icon, accentColor };
 }

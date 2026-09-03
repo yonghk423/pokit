@@ -372,10 +372,12 @@ export function MedicineSettings({
         </View>
       </View>
 
-      <View style={[styles.routineWindowBand, { borderColor: c.outline, backgroundColor: '#f4f4f5' }]}>
-        <Text style={[styles.routineWindowLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.routineWindow')}</Text>
-        <Text style={[styles.routineWindowTime, { color: c.onSurface }]}>{routineWindowLine}</Text>
-      </View>
+      {!intakeMode ? (
+        <View style={[styles.routineWindowBand, { borderColor: c.outline, backgroundColor: '#f4f4f5' }]}>
+          <Text style={[styles.routineWindowLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.routineWindow')}</Text>
+          <Text style={[styles.routineWindowTime, { color: c.onSurface }]}>{routineWindowLine}</Text>
+        </View>
+      ) : null}
 
       <View style={[styles.rowsWrap, { borderTopColor: '#000' }]}>
         <View style={[styles.row, { borderBottomColor: c.outline }]}>
