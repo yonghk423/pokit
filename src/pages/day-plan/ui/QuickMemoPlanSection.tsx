@@ -3,11 +3,12 @@ import { Keyboard, Platform, Pressable, StyleSheet, TextInput, useWindowDimensio
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import type { DayPlanQuickMemo } from '@entities/day-plan';
-import { IconSymbol } from '@shared/ui/icon-symbol';
-
 import { useTranslation } from '@shared/lib/i18n';
-import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { IconSymbol } from '@shared/ui/icon-symbol';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
+
+import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
 type Props = {
   c: DayPlanPalette;
@@ -70,7 +71,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
 
   return (
     <View style={[styles.root, { backgroundColor: c.containerLowest }]}>
-      <TextInput
+      <ThemedTextInput
         ref={ref}
         value={draft}
         onChangeText={onChangeDraft}

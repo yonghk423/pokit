@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { RetroFlatColors } from '@shared/config/retroFlat';
+import { RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -19,19 +19,18 @@ const TABS: TabDef[] = [
   { key: 'fixed', labelKey: 'fixedRoutine.tabFixed' },
 ];
 
+const SHADOW = 2;
+
 type Props = {
   tab: PriorityCatalogPageTab;
   onSelectTab: (tab: PriorityCatalogPageTab) => void;
   c: DayPlanPalette;
   isDark: boolean;
-  /** @deprecated 트랙형 세그먼트로 통일 — 무시됨 */
+  /** @deprecated */
   compact?: boolean;
 };
 
-/**
- * 나만의 루틴 탭 — City Pop Minimalist 트랙 세그먼트.
- * 두툼한 부착형+솔리드 섀도 대신, 따뜻한 트랙 안 민트 필로 선택감을 준다.
- */
+/** 나만의 루틴 탭 — City Pop 부착형 세그먼트 */
 export function PriorityCatalogPageTabs({
   tab,
   onSelectTab,
@@ -41,77 +40,97 @@ export function PriorityCatalogPageTabs({
   const { t } = useTranslation();
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const border = tone.border;
-  const trackBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(53, 102, 104, 0.08)';
+  const shadowColor = isDark ? tone.solidShadow : tone.primary;
   const activeBg = tone.primaryContainer;
-  const activeText = isDark ? tone.primary : tone.primary;
+  const activeText = tone.primary;
+  const inactiveBg = isDark ? tone.surfaceAlt : '#FFFFFF';
   const inactiveText = tone.textMuted;
 
   return (
-    <View style={[styles.track, { backgroundColor: trackBg, borderColor: border }]}>
-      {TABS.map((item) => {
-        const active = tab === item.key;
-        return (
-          <Pressable
-            key={item.key}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
-            accessibilityLabel={t(item.labelKey)}
-            onPress={() => {
-              if (active) return;
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onSelectTab(item.key);
-            }}
-            style={({ pressed }) => [
-              styles.tab,
-              active && [
-                styles.tabActive,
+    <View style={[styles.root, { marginRight: SHADOW, marginBottom: SHADOW }]}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.trackShadow,
+          {
+            backgroundColor: shadowColor,
+            borderColor: border,
+            transform: [{ translateX: SHADOW }, { translateY: SHADOW }],
+          },
+        ]}
+      />
+      <View style={[styles.track, { borderColor: border, backgroundColor: inactiveBg }]}>
+        {TABS.map((item, index) => {
+          const active = tab === item.key;
+          return (
+            <Pressable
+              key={item.key}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={t(item.labelKey)}
+              onPress={() => {
+                if (active) return;
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onSelectTab(item.key);
+              }}
+              style={({ pressed }) => [
+                styles.tab,
+                index > 0 && styles.tabJoin,
                 {
-                  backgroundColor: activeBg,
+                  backgroundColor: active ? activeBg : 'transparent',
                   borderColor: border,
                 },
-              ],
-              pressed && { opacity: 0.88 },
-            ]}>
-            <ThemedText
-              style={[
-                styles.tabLabel,
-                active && styles.tabLabelActive,
-                { color: active ? activeText : inactiveText },
-              ]}
-              numberOfLines={1}>
-              {t(item.labelKey)}
-            </ThemedText>
-          </Pressable>
-        );
-      })}
+                pressed && { opacity: 0.88 },
+              ]}>
+              <ThemedText
+                style={[
+                  styles.tabLabel,
+                  active && styles.tabLabelActive,
+                  { color: active ? activeText : inactiveText },
+                ]}
+                numberOfLines={1}>
+                {t(item.labelKey)}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    position: 'relative',
+    width: '100%',
+  },
+  trackShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: RETRO_BORDER_WIDTH,
+    borderRadius: 0,
+  },
   track: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    borderWidth: 1,
+    borderWidth: RETRO_BORDER_WIDTH,
     borderRadius: 0,
-    padding: 3,
-    gap: 3,
+    overflow: 'hidden',
+    zIndex: 1,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 9,
+    paddingVertical: 10,
     paddingHorizontal: 8,
     borderRadius: 0,
-    borderWidth: 0,
   },
-  tabActive: {
-    borderWidth: 1,
+  tabJoin: {
+    borderLeftWidth: RETRO_BORDER_WIDTH,
   },
   tabLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: -0.2,
   },
   tabLabelActive: {

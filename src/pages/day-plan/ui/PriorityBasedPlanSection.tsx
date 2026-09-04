@@ -89,6 +89,7 @@ import {
   type DayMealSlot
 } from '@shared/lib/storage';
 import { COMPLETION_TOGGLE_ANIM_MS } from '@shared/ui/completion-radio-button';
+import { DailyQuoteCard } from '@shared/ui/daily-quote-card';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -2949,6 +2950,9 @@ export function PriorityBasedPlanSection({
                               paddingTop: isPriorityStripPrimary ? 4 : 4,
                             },
                           ]}>
+                          {isMainDay ? (
+                            <DailyQuoteCard dateKey={dk} isDark={isDark} />
+                          ) : null}
                           {isMainDay && bagCount === 0 && !priorityMealSlotLayoutEnabled ? (
                             <View
                               style={[

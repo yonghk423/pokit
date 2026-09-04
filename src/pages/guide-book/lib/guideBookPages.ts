@@ -49,18 +49,18 @@ type PageSpec = {
 const PAGE_SPECS: readonly PageSpec[] = [
   { id: 'cover', chapterKey: 'pokit', figureId: 'tabs-map', callouts: 5, notes: 0, hasLead: true },
   { id: 'chrome', chapterKey: 'common', figureId: 'chrome-modes', callouts: 5, notes: 1, hasLead: true },
-  { id: 'today-overview', chapterKey: 'todayTab', figureId: 'today-overview', callouts: 4, notes: 1, hasLead: true },
+  { id: 'today-overview', chapterKey: 'todayTab', figureId: 'today-overview', callouts: 5, notes: 2, hasLead: true },
   { id: 'today-window', chapterKey: 'todayTab', figureId: 'today-window', callouts: 4, notes: 0, hasLead: true },
   { id: 'today-layouts', chapterKey: 'todayTab', figureId: 'today-layouts', callouts: 2, notes: 0, hasLead: true },
   { id: 'today-add-row', chapterKey: 'todayTab', figureId: 'today-add-row', callouts: 5, notes: 0, hasLead: true },
   { id: 'today-autofocus', chapterKey: 'todayTab', figureId: 'today-autofocus', callouts: 4, notes: 0, hasLead: true },
-  { id: 'routine-list', chapterKey: 'routinesTab', figureId: 'routine-list', callouts: 4, notes: 0, hasLead: true },
+  { id: 'routine-list', chapterKey: 'routinesTab', figureId: 'routine-list', callouts: 4, notes: 1, hasLead: true },
   { id: 'routine-templates', chapterKey: 'routinesTab', figureId: 'routine-templates', callouts: 5, notes: 0, hasLead: true },
   { id: 'my-routine', chapterKey: 'myRoutinesTab', figureId: 'my-routine', callouts: 4, notes: 0, hasLead: true },
   { id: 'my-routine-apply', chapterKey: 'myRoutinesTab', figureId: 'my-routine-apply', callouts: 2, notes: 2, hasLead: true },
-  { id: 'history', chapterKey: 'historyTab', figureId: 'history', callouts: 4, notes: 0, hasLead: true },
+  { id: 'history', chapterKey: 'historyTab', figureId: 'history', callouts: 4, notes: 1, hasLead: true },
   { id: 'story', chapterKey: 'storyTab', figureId: 'story', callouts: 3, notes: 0, hasLead: true },
-  { id: 'settings', chapterKey: 'settings', figureId: 'settings', callouts: 4, notes: 0, hasLead: true },
+  { id: 'settings', chapterKey: 'settings', figureId: 'settings', callouts: 5, notes: 0, hasLead: true },
 ] as const;
 
 export type GuideBookTocSection = {

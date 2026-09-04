@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -6,8 +7,12 @@ import {
   listCustomFlowTemplateCatalogEntries,
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
-import { CityPopSpacing, RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
+import { CityPopSpacing, RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
+import {
+  headerArtForVariant,
+  RoutineAtmosphereFooterStrip,
+} from '@shared/ui/routine-atmosphere';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -20,7 +25,7 @@ type Props = {
   onPressTemplate: (templateKey: CustomFlowTemplateKey) => void;
 };
 
-const BRUTAL_SHADOW_SM = 2;
+const BRUTAL_SHADOW_SM = 3;
 
 /** 루틴 템플릿 목록 — 레트로 시티팝 / Brutalism 카드 */
 export function RoutineTemplateListPanel({
@@ -34,19 +39,32 @@ export function RoutineTemplateListPanel({
   const { t, locale } = useTranslation();
   const entries = useMemo(() => listCustomFlowTemplateCatalogEntries(), [locale]);
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const shadowColor = isDark ? tone.solidShadow : tone.text;
+  const shadowColor = isDark ? tone.solidShadow : tone.primary;
   const rowFace = isDark ? tone.surfaceAlt : cardBg || '#FFFFFF';
-  const iconBoxBg = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const iconBoxBg = isDark ? tone.primaryContainer : tone.primaryContainer;
 
   return (
     <View style={styles.root}>
       <View style={styles.headerBlock}>
-        <ThemedText style={[styles.pageTitle, { color: ink }]}>
-          {t('fixedRoutine.templatesTitle')}
-        </ThemedText>
-        <ThemedText style={[styles.lead, { color: muted }]}>
-          {t('fixedRoutine.templatesLead')}
-        </ThemedText>
+        <View style={styles.headerRow}>
+          <View style={styles.headerText}>
+            <ThemedText style={[styles.pageTitle, { color: ink }]}>
+              {t('fixedRoutine.templatesTitle')}
+            </ThemedText>
+            <ThemedText style={[styles.lead, { color: muted }]}>
+              {t('fixedRoutine.templatesLead')}
+            </ThemedText>
+          </View>
+          <View style={styles.headerArtSlot} pointerEvents="none">
+            <Image
+              source={headerArtForVariant('templates')}
+              style={styles.headerArt}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+              transition={0}
+            />
+          </View>
+        </View>
       </View>
 
       <View style={styles.list}>
@@ -129,6 +147,8 @@ export function RoutineTemplateListPanel({
           </View>
         ))}
       </View>
+
+      <RoutineAtmosphereFooterStrip variant="templates" isDark={isDark} density="rich" />
     </View>
   );
 }
@@ -138,19 +158,43 @@ const styles = StyleSheet.create({
     gap: CityPopSpacing.sm,
   },
   headerBlock: {
-    gap: 4,
     marginBottom: CityPopSpacing.base,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  headerText: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  headerArtSlot: {
+    width: 72,
+    height: 56,
+    marginRight: 2,
+    marginBottom: -2,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    overflow: 'visible',
+  },
+  headerArt: {
+    width: 88,
+    height: 88,
+    marginBottom: -18,
+  },
   pageTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    lineHeight: 24,
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.45,
+    lineHeight: 28,
   },
   lead: {
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: '500',
     lineHeight: 17,
+    letterSpacing: -0.1,
   },
   list: {
     width: '100%',

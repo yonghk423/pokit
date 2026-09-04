@@ -8,7 +8,6 @@ import {
   collectRoutineStartNotifySlots,
   formatMinutesToHHmm,
   hasResolvableRoutineStartTime,
-  parseHHmmToMinutes,
   useDayPlanDraftStore,
   useDayPlanStore,
   useFixedFlowSetsStore,
@@ -16,13 +15,11 @@ import {
 import {
   isRoutineStartNotifyEnabled,
   persistRoutineStartNotifyToggle,
-  syncRoutineStartNotifications,
 } from '../model/syncRoutineStartNotifications';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { formatHhmmClock, t, useTranslation } from '@shared/lib/i18n';
 import { loadDayMealSlotSchedule } from '@shared/lib/storage';
 import { ThemedText } from '@shared/ui/themed-text';
-import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
 type Props = {
   categoryKey: string;
@@ -47,12 +44,7 @@ function findStoredSpineStartHhmm(
   return null;
 }
 
-function defaultStartHhmm(): string {
-  const draft = useDayPlanDraftStore.getState();
-  return draft.priorityStart?.trim() || '09:00';
-}
-
-/** 목표 상세 — 루틴 시작 시각에 맞춘 알림 on/off (+ 목록 모드 시작 시각) */
+/** 목표 상세 — 루틴 시작 알림 on/off */
 export function RoutineStartNotifyField({
   categoryKey,
   ink,
@@ -63,40 +55,23 @@ export function RoutineStartNotifyField({
   const { t: tr, locale } = useTranslation();
   const colorScheme = useColorScheme();
   const isDark = isDarkProp ?? colorScheme === 'dark';
-  const layoutMode = useFixedFlowSetsStore((s) => s.fixedRoutineApplyLayoutMode);
   const sets = useFixedFlowSetsStore((s) => s.sets);
   const activeSetIds = useFixedFlowSetsStore((s) => s.activeSetIds);
-  const ensureCategorySpineScheduleInAnySet = useFixedFlowSetsStore(
-    (s) => s.ensureCategorySpineScheduleInAnySet,
-  );
   const planBlocks = useDayPlanStore((s) => s.blocks);
-  const { priorityMealSlotOverrides, prioritySectionsMealSlots, priorityStart } =
-    useDayPlanDraftStore(
-      useShallow((s) => ({
-        priorityMealSlotOverrides: s.priorityMealSlotOverrides,
-        prioritySectionsMealSlots: s.prioritySectionsMealSlots,
-        priorityStart: s.priorityStart,
-      })),
-    );
-
-  /** 목록 모드면 시작 시각 UI를 항상 노출 */
-  const isBagLayout = layoutMode === 'bag';
+  const { priorityMealSlotOverrides, prioritySectionsMealSlots } = useDayPlanDraftStore(
+    useShallow((s) => ({
+      priorityMealSlotOverrides: s.priorityMealSlotOverrides,
+      prioritySectionsMealSlots: s.prioritySectionsMealSlots,
+    })),
+  );
 
   const [enabled, setEnabled] = useState(() => isRoutineStartNotifyEnabled(categoryKey));
   const [busy, setBusy] = useState(false);
-  const [startHhmm, setStartHhmm] = useState(
-    () => findStoredSpineStartHhmm(sets, categoryKey) ?? defaultStartHhmm(),
-  );
-  const [timeExpanded, setTimeExpanded] = useState(false);
-  const timePalette = useMemo(() => paletteForReminderTimeCard(isDark).timeField, [isDark]);
 
   useFocusEffect(
     useCallback(() => {
       setEnabled(isRoutineStartNotifyEnabled(categoryKey));
-      setStartHhmm(
-        findStoredSpineStartHhmm(sets, categoryKey) ?? (priorityStart?.trim() || '09:00'),
-      );
-    }, [categoryKey, priorityStart, sets]),
+    }, [categoryKey]),
   );
 
   const resolveInput = useMemo(() => {
@@ -127,83 +102,34 @@ export function RoutineStartNotifyField({
   );
 
   const timeHint = useMemo(() => {
-    if (isBagLayout) {
-      const stored = findStoredSpineStartHhmm(sets, categoryKey);
-      return stored
-        ? enabled
-          ? tr('routineNotify.bagWithAlarm', { clock: formatHhmmClock(stored, locale) })
-          : tr('routineNotify.bagWithoutAlarm', { clock: formatHhmmClock(stored, locale) })
-        : tr('routineNotify.bagPickTime');
-    }
     if (!canResolve) {
       return tr('routineNotify.needMyRoutineTime');
     }
+    const stored = findStoredSpineStartHhmm(sets, categoryKey);
     const slots = collectRoutineStartNotifySlots({
       enabledCategoryKeys: [categoryKey],
       ...resolveInput,
     });
     const clocks = slots.map((s) => formatHhmmClock(s.hhmm, locale)).join(', ');
-    return clocks
-      ? enabled
+    if (clocks) {
+      return enabled
         ? tr('routineNotify.withClocksOn', { clocks })
-        : tr('routineNotify.withClocksOff', { clocks })
-      : enabled
-        ? tr('routineNotify.genericOn')
-        : tr('routineNotify.genericOff');
-  }, [canResolve, categoryKey, enabled, isBagLayout, locale, resolveInput, sets, tr]);
+        : tr('routineNotify.withClocksOff', { clocks });
+    }
+    if (stored) {
+      return enabled
+        ? tr('routineNotify.bagWithAlarm', { clock: formatHhmmClock(stored, locale) })
+        : tr('routineNotify.bagWithoutAlarm', { clock: formatHhmmClock(stored, locale) });
+    }
+    return enabled ? tr('routineNotify.genericOn') : tr('routineNotify.genericOff');
+  }, [canResolve, categoryKey, enabled, locale, resolveInput, sets, tr]);
 
   const trackOff = isDark ? '#3f3f46' : '#e5e7eb';
-
-  const persistBagStartTime = useCallback(
-    async (hhmm: string) => {
-      const start = parseHHmmToMinutes(hhmm);
-      if (start === null || start >= 24 * 60) return false;
-      const end = Math.min(24 * 60, start + 30);
-      if (end <= start) return false;
-      const ok = ensureCategorySpineScheduleInAnySet(categoryKey, start, end, false);
-      if (!ok) return false;
-      await syncRoutineStartNotifications();
-      return true;
-    },
-    [categoryKey, ensureCategorySpineScheduleInAnySet],
-  );
-
-  const onChangeStartHhmm = useCallback(
-    async (next: string) => {
-      setStartHhmm(next);
-      if (!isBagLayout || busy) return;
-      setBusy(true);
-      try {
-        const ok = await persistBagStartTime(next);
-        if (!ok) {
-          Alert.alert(t('alert.startTime.title'), t('alert.startTime.saveFailed'));
-          return;
-        }
-        void Haptics.selectionAsync();
-      } finally {
-        setBusy(false);
-      }
-    },
-    [busy, isBagLayout, persistBagStartTime],
-  );
 
   const onToggle = useCallback(
     async (next: boolean) => {
       if (busy) return;
-      if (next && isBagLayout) {
-        const stored = findStoredSpineStartHhmm(
-          useFixedFlowSetsStore.getState().sets,
-          categoryKey,
-        );
-        if (!stored) {
-          const saved = await persistBagStartTime(startHhmm);
-          if (!saved) {
-            Alert.alert(t('alert.startNotify.title'), t('alert.startNotify.needStartTime'));
-            setTimeExpanded(true);
-            return;
-          }
-        }
-      } else if (next && !canResolve) {
+      if (next && !canResolve) {
         Alert.alert(tr('routineNotify.title'), tr('routineNotify.missingTime'));
         return;
       }
@@ -225,7 +151,7 @@ export function RoutineStartNotifyField({
         setBusy(false);
       }
     },
-    [busy, canResolve, categoryKey, isBagLayout, persistBagStartTime, startHhmm],
+    [busy, canResolve, categoryKey, tr],
   );
 
   return (
@@ -249,23 +175,6 @@ export function RoutineStartNotifyField({
           ios_backgroundColor={trackOff}
         />
       </View>
-      {isBagLayout ? (
-        <View style={styles.pickerWrap}>
-          <SnappedTimePickerField
-            label={tr('routineNotify.startTimeLabel')}
-            hint={tr('routineNotify.startTimeHint')}
-            valueHhmm={startHhmm}
-            onChangeHhmm={(next) => {
-              void onChangeStartHhmm(next);
-            }}
-            expanded={timeExpanded}
-            onToggleExpand={() => setTimeExpanded((v) => !v)}
-            isDark={isDark}
-            palette={timePalette}
-            snapStepMinutes={1}
-          />
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -295,8 +204,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
-  },
-  pickerWrap: {
-    marginTop: 2,
   },
 });

@@ -1,5 +1,7 @@
 import { localStorageClient } from './localStorageClient';
 import {
+  loadAppFontId,
+  loadAppFontSizeId,
   loadCategoryReminderRules,
   loadCategoryReminderScheduled,
   loadDayPlanScheduledNotifications,
@@ -8,6 +10,8 @@ import {
   loadPriorityDayRollMode,
   loadPriorityDayStartAlarm,
   loadWaterReminderScheduled,
+  saveAppFontId,
+  saveAppFontSizeId,
   saveCategoryReminderRules,
   saveCategoryReminderScheduled,
   saveDayPlanScheduledNotifications,
@@ -112,5 +116,42 @@ describe('settingsStorage', () => {
     expect(loadPriorityDayRollMode()).toBe('keep');
     savePriorityDayRollMode('reset');
     expect(loadPriorityDayRollMode()).toBe('reset');
+  });
+
+  it('persists app font id', () => {
+    expect(loadAppFontId()).toBe('dongle');
+    saveAppFontId('gaegu');
+    expect(loadAppFontId()).toBe('gaegu');
+    saveAppFontId('gothicA1');
+    expect(loadAppFontId()).toBe('gothicA1');
+    saveAppFontId('hiMelody');
+    expect(loadAppFontId()).toBe('hiMelody');
+  });
+
+  it('ignores invalid app font id', () => {
+    localStorageClient.setJson(StorageKeys.settings, { appFontId: 'comic-sans' });
+    expect(loadAppFontId()).toBe('dongle');
+  });
+
+  it('migrates legacy font ids to dongle', () => {
+    localStorageClient.setJson(StorageKeys.settings, { appFontId: 'jua' });
+    expect(loadAppFontId()).toBe('dongle');
+    localStorageClient.setJson(StorageKeys.settings, { appFontId: 'doHyeon' });
+    expect(loadAppFontId()).toBe('dongle');
+    localStorageClient.setJson(StorageKeys.settings, { appFontId: 'system' });
+    expect(loadAppFontId()).toBe('dongle');
+  });
+
+  it('persists app font size id with md default', () => {
+    expect(loadAppFontSizeId()).toBe('md');
+    saveAppFontSizeId('sm');
+    expect(loadAppFontSizeId()).toBe('sm');
+    saveAppFontSizeId('lg');
+    expect(loadAppFontSizeId()).toBe('lg');
+  });
+
+  it('ignores invalid app font size id', () => {
+    localStorageClient.setJson(StorageKeys.settings, { appFontSizeId: 'xl' });
+    expect(loadAppFontSizeId()).toBe('md');
   });
 });

@@ -8,18 +8,19 @@ import {
 import { useShallow } from 'zustand/react/shallow';
 
 import {
-  useDayPlanDraftStore,
-  useDayPlanStore,
-  useDayPlanLayoutModeVisibilityStore,
-  useFixedFlowSetsStore,
   notifyFixedFlowApplyScheduleChanged,
+  useDayPlanDraftStore,
+  useDayPlanLayoutModeVisibilityStore,
+  useDayPlanStore,
+  useFixedFlowSetsStore,
 } from '@entities/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { ThemedView } from '@shared/ui/themed-view';
 
+import { coerceDayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
 import { palette } from '../lib/dayPlanPalette';
 import { resolveCatalogLayoutMode } from '../lib/priorityCatalogLayoutMode';
-import { coerceDayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
 import { FixedRoutinePage } from './FixedRoutinePage';
 import { PriorityCatalogPageTabs, type PriorityCatalogPageTab } from './PriorityCatalogPageTabs';
 
@@ -98,7 +99,7 @@ export function PriorityCatalogPage() {
   const [catalogPageTab, setCatalogPageTab] = useState<PriorityCatalogPageTab>('catalog');
   const [hasMountedFixedTab, setHasMountedFixedTab] = useState(false);
 
-  const shellBg = c.containerLow;
+  const shellBg = isDark ? RetroFlatColors.dark.bg : RetroFlatColors.light.bg;
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>

@@ -1,7 +1,7 @@
 {
   "name": "pokit",
   "main": "expo-router/entry",
-  "version": "1.6.26",
+  "version": "1.7.0",
   "scripts": {
     "start": "expo start",
     "postinstall": "node ./scripts/patch-debugger-locale.js",
@@ -19,7 +19,12 @@
     "sync-app-icons": "node ./scripts/sync-app-icons.mjs"
   },
   "dependencies": {
+    "@expo-google-fonts/dongle": "^0.4.1",
+    "@expo-google-fonts/gaegu": "^0.4.1",
+    "@expo-google-fonts/gothic-a1": "^0.4.1",
     "@expo-google-fonts/hanken-grotesk": "^0.4.3",
+    "@expo-google-fonts/hi-melody": "^0.4.1",
+    "@expo-google-fonts/song-myung": "^0.4.2",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "^8.4.4",

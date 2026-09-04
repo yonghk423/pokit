@@ -59,6 +59,18 @@ export type RoutineStartNotifyScheduledRow = {
 
 export type AppearanceMode = 'light' | 'dark';
 
+/** 앱 글씨체 — ko/en/ja 공통 (한글·라틴 위주 디스플레이 폰트) */
+export type AppFontId =
+  | 'dongle'
+  | 'gaegu'
+  | 'songMyung'
+  | 'gothicA1'
+  | 'hiMelody'
+  | 'hanken';
+
+/** 글씨 크기 — 작게 / 기본 / 크게 */
+export type AppFontSizeId = 'sm' | 'md' | 'lg';
+
 /** 하루(시작~마무리) 구간이 지난 뒤 오늘 탭 담기 처리 */
 export type PriorityDayRollMode = 'reset' | 'keep';
 
@@ -80,6 +92,9 @@ type SettingsStorageShape = {
   routineStartNotifyRules?: RoutineStartNotifyRules;
   routineStartNotifyScheduled?: RoutineStartNotifyScheduledRow[];
   appearanceMode?: AppearanceMode;
+  /** 글씨체 · 글씨 크기 */
+  appFontId?: AppFontId;
+  appFontSizeId?: AppFontSizeId;
   priorityDayRollMode?: PriorityDayRollMode;
 };
 
@@ -364,6 +379,51 @@ export function saveAppearanceMode(mode: AppearanceMode): void {
   localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
     ...root,
     appearanceMode: mode,
+  });
+}
+
+function parseAppFontId(value: unknown): AppFontId {
+  if (
+    value === 'dongle' ||
+    value === 'gaegu' ||
+    value === 'songMyung' ||
+    value === 'gothicA1' ||
+    value === 'hiMelody'
+  ) {
+    return value;
+  }
+  // 이전 후보 → 동글 시티팝으로 이전
+  return 'dongle';
+}
+
+export function loadAppFontId(): AppFontId {
+  const root = readRoot();
+  return parseAppFontId(root.appFontId);
+}
+
+export function saveAppFontId(fontId: AppFontId): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    appFontId: parseAppFontId(fontId),
+  });
+}
+
+function parseAppFontSizeId(value: unknown): AppFontSizeId {
+  if (value === 'sm' || value === 'md' || value === 'lg') return value;
+  return 'md';
+}
+
+export function loadAppFontSizeId(): AppFontSizeId {
+  const root = readRoot();
+  return parseAppFontSizeId(root.appFontSizeId);
+}
+
+export function saveAppFontSizeId(sizeId: AppFontSizeId): void {
+  const root = readRoot();
+  localStorageClient.setJson<SettingsStorageShape>(StorageKeys.settings, {
+    ...root,
+    appFontSizeId: parseAppFontSizeId(sizeId),
   });
 }
 

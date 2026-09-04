@@ -20,6 +20,7 @@ const BUILTIN_FLOW_EN: Record<string, string> = {
   'customFlow:preset_daily_shopping': 'Shopping',
   'customFlow:preset_abstain': 'Abstain',
   'customFlow:preset_stretching': 'Stretching',
+  'customFlow:preset_focus': 'Focus',
   'customFlow:preset_intermittent_fasting': 'Intermittent fasting',
   'customFlow:preset_good_posture': 'Good posture',
   'customFlow:builtin_hobby_draw': 'Drawing practice',
@@ -49,6 +50,7 @@ const BUILTIN_FLOW_JA: Record<string, string> = {
   'customFlow:preset_daily_shopping': '買い物',
   'customFlow:preset_abstain': '禁止',
   'customFlow:preset_stretching': 'ストレッチ',
+  'customFlow:preset_focus': '集中する',
   'customFlow:preset_intermittent_fasting': '間歇断食',
   'customFlow:preset_good_posture': '姿勢を正す',
   'customFlow:builtin_hobby_draw': 'デッサン練習',
@@ -78,6 +80,7 @@ const BUILTIN_FLOW_SUMMARY_EN: Record<string, string> = {
   'customFlow:preset_daily_shopping': 'Pick up groceries or daily supplies.',
   'customFlow:preset_abstain': 'Skip a habit you want to cut back on.',
   'customFlow:preset_stretching': 'Stretch to loosen up.',
+  'customFlow:preset_focus': 'Dive into one thing without distractions.',
   'customFlow:preset_intermittent_fasting': 'Keep your intermittent fasting window.',
   'customFlow:preset_good_posture': 'Check posture and sit/stand tall.',
 };
@@ -92,6 +95,7 @@ const BUILTIN_FLOW_SUMMARY_JA: Record<string, string> = {
   'customFlow:preset_daily_shopping': '食材や日用品を買う。',
   'customFlow:preset_abstain': '控えたい習慣をやめる。',
   'customFlow:preset_stretching': 'ストレッチで体をほぐす。',
+  'customFlow:preset_focus': '邪魔されず、ひとつのことに深く没頭する。',
   'customFlow:preset_intermittent_fasting': '間歇断食の時間帯を守る。',
   'customFlow:preset_good_posture': '姿勢を確認して正す。',
 };

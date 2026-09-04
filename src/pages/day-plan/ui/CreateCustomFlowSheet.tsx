@@ -7,7 +7,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,6 +41,7 @@ import { CustomFlowAppearancePicker } from '@shared/ui/custom-flow-appearance-pi
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { UiSurfacePresentationProvider } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
 
 import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
@@ -360,7 +360,7 @@ export function CreateCustomFlowSheet({
             <>
               <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
                 <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('createFlow.nameLabel')}</ThemedText>
-                <TextInput
+                <ThemedTextInput
                   value={name}
                   onChangeText={(v) => setName(v.slice(0, NAME_MAX))}
                   placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
@@ -457,7 +457,7 @@ export function CreateCustomFlowSheet({
 
                 {isAddingGroup ? (
                   <View style={styles.newGroupRow}>
-                    <TextInput
+                    <ThemedTextInput
                       autoFocus
                       value={newGroupLabel}
                       onChangeText={(v) => setNewGroupLabel(v.slice(0, GROUP_NAME_MAX))}
@@ -563,7 +563,7 @@ export function CreateCustomFlowSheet({
                 <ThemedText style={[styles.summaryLabel, { color: muted }]}>
                   {t('createFlow.summary')}
                 </ThemedText>
-                <TextInput
+                <ThemedTextInput
                   value={summary}
                   onChangeText={setSummary}
                   placeholder={t('createFlow.summaryPlaceholder')}

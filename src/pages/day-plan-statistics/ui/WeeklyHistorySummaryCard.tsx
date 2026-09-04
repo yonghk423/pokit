@@ -1,6 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
+import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { WeeklyHistorySummary } from '../lib/buildWeeklyFlowHistory';
@@ -13,11 +15,15 @@ type Props = {
 
 export function WeeklyHistorySummaryCard({ summary, palette }: Props) {
   const { t } = useTranslation();
+  const isDark = useColorScheme() === 'dark';
+
   return (
-    <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
+    <CityPopCardShell isDark={isDark} faceColor={palette.card} contentStyle={styles.content}>
       <View style={styles.topRow}>
-        <ThemedText style={[styles.title, { color: palette.ink }]}>{t('history.summary.weekTitle')}</ThemedText>
-        <ThemedText style={[styles.percent, { color: palette.accent }]}>
+        <ThemedText style={[styles.title, { color: palette.ink }]}>
+          {t('history.summary.weekTitle')}
+        </ThemedText>
+        <ThemedText style={[styles.percent, { color: palette.ink }]}>
           {summary.progressPercent}%
         </ThemedText>
       </View>
@@ -30,21 +36,20 @@ export function WeeklyHistorySummaryCard({ summary, palette }: Props) {
       </ThemedText>
       {summary.topCategoryLabels.length > 0 ? (
         <ThemedText style={[styles.highlight, { color: palette.ink }]}>
-          {t('history.summary.topRoutine', { labels: summary.topCategoryLabels.join(' · ') })}
+          {t('history.summary.topRoutine', {
+            labels: summary.topCategoryLabels.join(' · '),
+          })}
         </ThemedText>
       ) : null}
-    </View>
+    </CityPopCardShell>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    width: '100%',
-    borderRadius: 0,
-    borderWidth: 2,
+  content: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 4,
+    paddingVertical: 11,
+    gap: 5,
   },
   topRow: {
     flexDirection: 'row',
@@ -53,18 +58,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   title: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
-    letterSpacing: -0.2,
+    letterSpacing: -0.25,
   },
   percent: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '900',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   body: {
     fontSize: 11,
-    lineHeight: 15,
+    lineHeight: 16,
     fontWeight: '600',
   },
   highlight: {

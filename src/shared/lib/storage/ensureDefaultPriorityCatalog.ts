@@ -17,6 +17,7 @@ import {
   DEFAULT_BUILTIN_CUSTOM_FLOWS,
   DEFAULT_BUILTIN_CUSTOM_GROUPS,
   BUILTIN_DAILY_LIFE_FLOW_IDS,
+  BUILTIN_FOCUS_FLOW_ID,
   BUILTIN_HEALTH_GROUP_KEY,
   isRemovedBuiltinCustomFlowId,
   isRemovedBuiltinCustomGroupKey,
@@ -356,7 +357,7 @@ function migrateFastingBuiltinIcon(): void {
 }
 
 function migrateHabitPresetFlowsToChecklist(): void {
-  const presetFlowIds = [...BUILTIN_DAILY_LIFE_FLOW_IDS, BUILTIN_STRETCHING_FLOW_ID];
+  const presetFlowIds = [...BUILTIN_DAILY_LIFE_FLOW_IDS, BUILTIN_STRETCHING_FLOW_ID, BUILTIN_FOCUS_FLOW_ID];
   for (const flowId of presetFlowIds) {
     const flowDef = DEFAULT_BUILTIN_CUSTOM_FLOWS.find((flow) => flow.id === flowId);
     const cfg = loadGoalDetailCategoryConfig(flowId);

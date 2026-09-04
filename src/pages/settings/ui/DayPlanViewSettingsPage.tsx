@@ -83,7 +83,7 @@ export function DayPlanViewSettingsPage() {
             {t('settings.dayPlanView.hint')}
           </ThemedText>
 
-          <SettingsSection border={p.border} surface={p.surface}>
+          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
             {MODE_OPTIONS.map((opt, index) => {
               const enabled = visibility[opt.key];
               const disableOff = enabled && visibleCount <= 1;

@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
+import { RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
+
 import type { MonthlyFlowHistoryRow } from '../lib/buildMonthlyFlowHistory';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 import { buildMonthCalendarCells } from '../lib/historyPeriodRange';
@@ -32,7 +34,7 @@ export function FlowHistoryMonthRow({ row, monthPrefix, palette }: Props) {
                   styles.monthDot,
                   {
                     borderColor: done ? palette.ink : palette.border,
-                    backgroundColor: done ? palette.ink : 'transparent',
+                    backgroundColor: done ? palette.ink : palette.card,
                   },
                 ]}
               />
@@ -65,6 +67,6 @@ const styles = StyleSheet.create({
     width: MONTH_CELL,
     height: MONTH_CELL,
     borderRadius: 0,
-    borderWidth: 1.5,
+    borderWidth: RETRO_BORDER_WIDTH,
   },
 });

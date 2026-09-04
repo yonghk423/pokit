@@ -1,5 +1,6 @@
 import {
   BUILTIN_ABSTAIN_FLOW_ID,
+  BUILTIN_FOCUS_FLOW_ID,
   BUILTIN_GOOD_POSTURE_FLOW_ID,
   BUILTIN_STRETCHING_FLOW_ID,
   DEFAULT_CUSTOM_FLOW_COLOR,
@@ -34,6 +35,11 @@ describe('resolveCustomFlowCatalogIcon', () => {
   it('returns builtin icon for stretching preset', () => {
     expect(resolveCustomFlowCatalogIcon(BUILTIN_STRETCHING_FLOW_ID)).toBe('figure.flexibility');
     expect(resolveCustomFlowCatalogColor(BUILTIN_STRETCHING_FLOW_ID)).toBe('#8b5cf6');
+  });
+
+  it('returns builtin icon for focus preset', () => {
+    expect(resolveCustomFlowCatalogIcon(BUILTIN_FOCUS_FLOW_ID)).toBe('brain.head.profile');
+    expect(resolveCustomFlowCatalogColor(BUILTIN_FOCUS_FLOW_ID)).toBe('#2563eb');
   });
 
   it('returns hand.raised.fill for abstain preset (picker-compatible icon)', () => {

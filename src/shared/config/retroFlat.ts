@@ -1,5 +1,7 @@
 import { StyleSheet, type TextStyle, type ViewStyle } from 'react-native';
 
+import { appFontStyle, getEffectiveAppFontId } from '@shared/lib/ui-font';
+
 /**
  * City Pop Minimalist — Flat Brutalism Lite design tokens.
  * 2px 검정 테두리, 0 radius, 파스텔 단색, 그림자·그라데이션 없음.
@@ -212,12 +214,5 @@ export const retroFlatStyles = StyleSheet.create({
 });
 
 export function cityPopFont(weight: '400' | '500' | '600' | '700' | '800' = '400'): TextStyle {
-  const map = {
-    '400': 'HankenGrotesk_400Regular',
-    '500': 'HankenGrotesk_500Medium',
-    '600': 'HankenGrotesk_600SemiBold',
-    '700': 'HankenGrotesk_700Bold',
-    '800': 'HankenGrotesk_800ExtraBold',
-  } as const;
-  return { fontFamily: map[weight] };
+  return appFontStyle(getEffectiveAppFontId(), weight);
 }

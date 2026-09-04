@@ -1,0 +1,1 @@
+export { DailyQuoteCard } from './DailyQuoteCard';

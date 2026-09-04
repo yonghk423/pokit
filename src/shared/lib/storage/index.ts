@@ -116,7 +116,7 @@ export {
   BUILTIN_ABSTAIN_GROUP_KEY, BUILTIN_CUSTOM_GROUP_FAMILY,
   BUILTIN_CUSTOM_GROUP_HOBBY,
   BUILTIN_CUSTOM_GROUP_MINDSET, BUILTIN_DAILY_LIFE_FLOW_IDS,
-  BUILTIN_DAILY_LIFE_GROUP_KEY, BUILTIN_HEALTH_GROUP_KEY, BUILTIN_INTERMITTENT_FASTING_FLOW_ID, DEFAULT_BUILTIN_CUSTOM_FLOWS,
+  BUILTIN_DAILY_LIFE_GROUP_KEY, BUILTIN_FOCUS_FLOW_ID, BUILTIN_HEALTH_GROUP_KEY, BUILTIN_INTERMITTENT_FASTING_FLOW_ID, BUILTIN_STRETCHING_FLOW_ID, DEFAULT_BUILTIN_CUSTOM_FLOWS,
   DEFAULT_BUILTIN_CUSTOM_GROUPS,
   DEFAULT_CUSTOM_FLOW_COLOR, LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID, resolveCustomFlowCatalogColor,
   resolveCustomFlowCatalogIcon
@@ -234,6 +234,8 @@ export {
 } from './resolveHorizonCompletionDocument';
 export {
   loadAppearanceMode,
+  loadAppFontId,
+  loadAppFontSizeId,
   loadCategoryReminderRules,
   loadCategoryReminderScheduled,
   loadDayPlanScheduledNotifications,
@@ -242,6 +244,8 @@ export {
   loadRoutineStartNotifyScheduled,
   loadWaterReminderScheduled,
   saveAppearanceMode,
+  saveAppFontId,
+  saveAppFontSizeId,
   saveCategoryReminderRules,
   saveCategoryReminderScheduled,
   saveDayPlanScheduledNotifications,
@@ -252,6 +256,8 @@ export {
 } from './settingsStorage';
 export type {
   AppearanceMode,
+  AppFontId,
+  AppFontSizeId,
   CategoryReminderRuleRow,
   CategoryReminderRules,
   CategoryReminderScheduledRow,

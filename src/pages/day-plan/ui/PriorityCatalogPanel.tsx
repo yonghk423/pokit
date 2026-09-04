@@ -1,5 +1,5 @@
-import * as Haptics from 'expo-haptics';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
+import * as Haptics from 'expo-haptics';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
@@ -16,6 +16,7 @@ import {
   resolveCategoryCatalogIcon,
   useDayPlanDraftStore,
 } from '@entities/day-plan';
+import { RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
 import { getDayMealSlotLabel, type CustomCatalogGroup, type CustomFlowCatalogEntry, type DayMealSlot } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -34,6 +35,7 @@ import {
   mealSlotPickerBtnWidth,
 } from './CatalogRowMealSlotChips';
 import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
+import { CityPopCardShell } from './CityPopCardShell';
 
 export type PriorityCatalogEditorial = {
   ink: string;
@@ -46,7 +48,7 @@ export type PriorityCatalogEditorial = {
 };
 
 const MEAL_SLOT_PANEL_HEIGHT = 56;
-const BRUTAL_SHADOW_SM = 2;
+const BRUTAL_SHADOW_SM = 3;
 
 /** 시안 `w-10 h-10 border border-black bg-white brutal-shadow-sm` */
 function BrutalActionButton({
@@ -186,7 +188,7 @@ function CatalogListRow({
       ? 'rgba(255,255,255,0.1)'
       : 'rgba(0,0,0,0.05)';
   const settingsHoverBg = actionHoverBg ?? settingsBg;
-  const brutalShadow = shadow ?? (isDark ? '#9ECFD1' : '#181A2E');
+  const brutalShadow = shadow ?? (isDark ? RetroFlatColors.dark.solidShadow : RetroFlatColors.light.primary);
   const settingsLocked = !manageOnly && isFocusStarted && selected;
   const shouldPulse = !manageOnly && Boolean(selected && isFocusStarted);
   const pulse = useRef(new Animated.Value(1)).current;
@@ -274,404 +276,404 @@ function CatalogListRow({
       ]}>
       <View style={[styles.catalogRow, manageOnly && styles.catalogRowManage]}>
         <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ selected: manageOnly ? undefined : selected }}
-        accessibilityLabel={
-          manageOnly
-            ? subtitle
-              ? t('catalog.settingsOpenA11y', { label, subtitle: t('catalog.settingsOpenSubtitleA11y', { subtitle }) })
-              : t('catalog.settingsOpenA11y', { label, subtitle: '' })
-            : subtitle
-              ? t('catalog.priorityToggleA11y', { label, subtitle: t('catalog.settingsOpenSubtitleA11y', { subtitle }), state: selected ? t('catalog.priorityAdded') : t('catalog.priorityAdd') })
-              : t('catalog.priorityToggleA11y', { label, subtitle: '', state: selected ? t('catalog.priorityAdded') : t('catalog.priorityAdd') })
-        }
-        onPress={() => {
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          if (manageOnly) {
-            onOpenSettings();
-            return;
+          accessibilityRole="button"
+          accessibilityState={{ selected: manageOnly ? undefined : selected }}
+          accessibilityLabel={
+            manageOnly
+              ? subtitle
+                ? t('catalog.settingsOpenA11y', { label, subtitle: t('catalog.settingsOpenSubtitleA11y', { subtitle }) })
+                : t('catalog.settingsOpenA11y', { label, subtitle: '' })
+              : subtitle
+                ? t('catalog.priorityToggleA11y', { label, subtitle: t('catalog.settingsOpenSubtitleA11y', { subtitle }), state: selected ? t('catalog.priorityAdded') : t('catalog.priorityAdd') })
+                : t('catalog.priorityToggleA11y', { label, subtitle: '', state: selected ? t('catalog.priorityAdded') : t('catalog.priorityAdd') })
           }
-          onAddPress();
-        }}
-        style={({ pressed }) => [
-          styles.catalogRowMainHit,
-          manageOnly && styles.catalogRowMainHitManage,
-          manageOnly &&
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            if (manageOnly) {
+              onOpenSettings();
+              return;
+            }
+            onAddPress();
+          }}
+          style={({ pressed }) => [
+            styles.catalogRowMainHit,
+            manageOnly && styles.catalogRowMainHitManage,
+            manageOnly &&
             pressed && {
               backgroundColor: 'rgba(168, 218, 220, 0.1)',
             },
-        ]}>
-        <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
-          {manageOnly ? (
-            <View
-              style={[
-                styles.catalogIconBoxShell,
-                { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
-              ]}>
+          ]}>
+          <Animated.View style={shouldPulse ? { opacity: pulse } : undefined}>
+            {manageOnly ? (
               <View
-                pointerEvents="none"
                 style={[
-                  styles.catalogIconBoxShadow,
-                  {
-                    backgroundColor: brutalShadow,
-                    borderColor: line,
-                    transform: [
-                      { translateX: BRUTAL_SHADOW_SM },
-                      { translateY: BRUTAL_SHADOW_SM },
-                    ],
-                  },
-                ]}
+                  styles.catalogIconBoxShell,
+                  { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+                ]}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.catalogIconBoxShadow,
+                    {
+                      backgroundColor: brutalShadow,
+                      borderColor: line,
+                      transform: [
+                        { translateX: BRUTAL_SHADOW_SM },
+                        { translateY: BRUTAL_SHADOW_SM },
+                      ],
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.catalogIconBox,
+                    {
+                      borderColor: line,
+                      backgroundColor: iconBoxBg ?? '#FFFFFF',
+                    },
+                  ]}>
+                  <IconSymbol
+                    key={`${categoryKey}-${icon}-${iconColor}`}
+                    name={icon as any}
+                    size={16}
+                    color={iconColor}
+                  />
+                </View>
+              </View>
+            ) : (
+              <IconSymbol
+                key={`${categoryKey}-${icon}-${iconColor}`}
+                name={icon as any}
+                size={18}
+                color={iconColor}
               />
-              <View
+            )}
+          </Animated.View>
+          <View style={styles.catalogRowTextCol}>
+            <ThemedText
+              style={[
+                styles.catalogRowLabel,
+                manageOnly && styles.catalogRowLabelManage,
+                { color: labelColor },
+              ]}
+              lightColor={labelColor}
+              darkColor={labelColor}
+              numberOfLines={1}>
+              {label}
+            </ThemedText>
+            {subtitle ? (
+              <ThemedText
                 style={[
-                  styles.catalogIconBox,
+                  styles.catalogRowSubtitle,
+                  manageOnly && styles.catalogRowSubtitleManage,
+                  { color: muted },
+                ]}
+                lightColor={muted}
+                darkColor={muted}
+                numberOfLines={1}>
+                {subtitle}
+              </ThemedText>
+            ) : null}
+          </View>
+        </Pressable>
+
+        <View style={[styles.catalogRowActions, manageOnly && styles.catalogRowActionsManage]}>
+          {onDeleteItem ? (
+            manageOnly ? (
+              <BrutalActionButton
+                accessibilityLabel={t('catalog.deleteA11y', { label })}
+                disabled={settingsLocked}
+                borderColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)') : settingsBorder}
+                backgroundColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)') : settingsBg}
+                pressedBg={settingsHoverBg}
+                shadowColor={brutalShadow}
+                onPress={() => {
+                  if (settingsLocked) return;
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onDeleteItem();
+                }}>
+                <IconSymbol
+                  name="trash"
+                  size={14}
+                  color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
+                />
+              </BrutalActionButton>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('catalog.deleteA11y', { label })}
+                hitSlop={10}
+                disabled={settingsLocked}
+                onPress={() => {
+                  if (settingsLocked) return;
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onDeleteItem();
+                }}
+                style={[
+                  styles.catalogSettingsBtn,
                   {
-                    borderColor: line,
-                    backgroundColor: iconBoxBg ?? '#FFFFFF',
+                    borderColor: settingsLocked
+                      ? isDark
+                        ? 'rgba(255,255,255,0.12)'
+                        : 'rgba(0,0,0,0.08)'
+                      : settingsBorder,
+                    backgroundColor: settingsLocked
+                      ? isDark
+                        ? 'rgba(255,255,255,0.04)'
+                        : 'rgba(0,0,0,0.02)'
+                      : settingsBg,
+                    opacity: settingsLocked ? 0.55 : 1,
                   },
                 ]}>
                 <IconSymbol
-                  key={`${categoryKey}-${icon}-${iconColor}`}
-                  name={icon as any}
-                  size={16}
-                  color={iconColor}
+                  name="trash"
+                  size={14}
+                  color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
                 />
-              </View>
-            </View>
-          ) : (
-            <IconSymbol
-              key={`${categoryKey}-${icon}-${iconColor}`}
-              name={icon as any}
-              size={18}
-              color={iconColor}
-            />
-          )}
-        </Animated.View>
-        <View style={styles.catalogRowTextCol}>
-          <ThemedText
-            style={[
-              styles.catalogRowLabel,
-              manageOnly && styles.catalogRowLabelManage,
-              { color: labelColor },
-            ]}
-            lightColor={labelColor}
-            darkColor={labelColor}
-            numberOfLines={1}>
-            {label}
-          </ThemedText>
-          {subtitle ? (
-            <ThemedText
-              style={[
-                styles.catalogRowSubtitle,
-                manageOnly && styles.catalogRowSubtitleManage,
-                { color: muted },
-              ]}
-              lightColor={muted}
-              darkColor={muted}
-              numberOfLines={1}>
-              {subtitle}
-            </ThemedText>
+              </Pressable>
+            )
           ) : null}
-        </View>
-      </Pressable>
-
-      <View style={[styles.catalogRowActions, manageOnly && styles.catalogRowActionsManage]}>
-        {onDeleteItem ? (
-          manageOnly ? (
-            <BrutalActionButton
-              accessibilityLabel={t('catalog.deleteA11y', { label })}
-              disabled={settingsLocked}
-              borderColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)') : settingsBorder}
-              backgroundColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)') : settingsBg}
-              pressedBg={settingsHoverBg}
-              shadowColor={brutalShadow}
+          {onMoveGroup ? (
+            manageOnly ? (
+              <BrutalActionButton
+                accessibilityLabel={t('catalog.moveGroupA11y', { label })}
+                borderColor={settingsBorder}
+                backgroundColor={settingsBg}
+                pressedBg={settingsHoverBg}
+                shadowColor={brutalShadow}
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onMoveGroup();
+                }}>
+                <IconSymbol
+                  name="arrow.left.arrow.right"
+                  size={14}
+                  color={isDark ? '#FAFAFA' : '#000000'}
+                />
+              </BrutalActionButton>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('catalog.moveGroupA11y', { label })}
+                hitSlop={10}
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onMoveGroup();
+                }}
+                style={[
+                  styles.catalogSettingsBtn,
+                  {
+                    borderColor: settingsBorder,
+                    backgroundColor: settingsBg,
+                  },
+                ]}>
+                <IconSymbol name="arrow.left.arrow.right" size={15} color={isDark ? '#FAFAFA' : '#000000'} />
+              </Pressable>
+            )
+          ) : null}
+          {showMealSlotPicker && !manageOnly && onToggleMealSlotExpand ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{
+                selected: mealSlotIconHighlighted,
+                expanded: isMealSlotExpanded,
+                disabled: mealSlotPickerDisabled,
+              }}
+              accessibilityLabel={
+                mealSlotActive
+                  ? t('fixedRoutine.mealSlotA11y', { label, slots: selectedMealSlots!.map((slot) => getDayMealSlotLabel(slot)).join(', ') })
+                  : t('fixedRoutine.mealSlotPickA11y', { label })
+              }
+              disabled={mealSlotPickerDisabled}
+              hitSlop={mealSlotPickerDisabled ? 0 : 10}
               onPress={() => {
-                if (settingsLocked) return;
+                if (mealSlotPickerDisabled) return;
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onDeleteItem();
-              }}>
-              <IconSymbol
-                name="trash"
-                size={14}
-                color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
-              />
-            </BrutalActionButton>
-          ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('catalog.deleteA11y', { label })}
-            hitSlop={10}
-            disabled={settingsLocked}
-            onPress={() => {
-              if (settingsLocked) return;
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onDeleteItem();
-            }}
-            style={[
-              styles.catalogSettingsBtn,
-              {
-                borderColor: settingsLocked
-                  ? isDark
-                    ? 'rgba(255,255,255,0.12)'
-                    : 'rgba(0,0,0,0.08)'
-                  : settingsBorder,
-                backgroundColor: settingsLocked
-                  ? isDark
-                    ? 'rgba(255,255,255,0.04)'
-                    : 'rgba(0,0,0,0.02)'
-                  : settingsBg,
-                opacity: settingsLocked ? 0.55 : 1,
-              },
-            ]}>
-            <IconSymbol
-              name="trash"
-              size={14}
-              color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
-            />
-          </Pressable>
-          )
-        ) : null}
-        {onMoveGroup ? (
-          manageOnly ? (
-            <BrutalActionButton
-              accessibilityLabel={t('catalog.moveGroupA11y', { label })}
-              borderColor={settingsBorder}
-              backgroundColor={settingsBg}
-              pressedBg={settingsHoverBg}
-              shadowColor={brutalShadow}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onMoveGroup();
-              }}>
-              <IconSymbol
-                name="arrow.left.arrow.right"
-                size={14}
-                color={isDark ? '#FAFAFA' : '#000000'}
-              />
-            </BrutalActionButton>
-          ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('catalog.moveGroupA11y', { label })}
-            hitSlop={10}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onMoveGroup();
-            }}
-            style={[
-              styles.catalogSettingsBtn,
-              {
-                borderColor: settingsBorder,
-                backgroundColor: settingsBg,
-              },
-            ]}>
-            <IconSymbol name="arrow.left.arrow.right" size={15} color={isDark ? '#FAFAFA' : '#000000'} />
-          </Pressable>
-          )
-        ) : null}
-        {showMealSlotPicker && !manageOnly && onToggleMealSlotExpand ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{
-              selected: mealSlotIconHighlighted,
-              expanded: isMealSlotExpanded,
-              disabled: mealSlotPickerDisabled,
-            }}
-            accessibilityLabel={
-              mealSlotActive
-                ? t('fixedRoutine.mealSlotA11y', { label, slots: selectedMealSlots!.map((slot) => getDayMealSlotLabel(slot)).join(', ') })
-                : t('fixedRoutine.mealSlotPickA11y', { label })
-            }
-            disabled={mealSlotPickerDisabled}
-            hitSlop={mealSlotPickerDisabled ? 0 : 10}
-            onPress={() => {
-              if (mealSlotPickerDisabled) return;
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onToggleMealSlotExpand();
-            }}
-            style={[
-              styles.catalogSettingsBtn,
-              {
-                width: mealSlotPickerBtnWidth(selectedMealSlots ?? []),
-                borderColor: mealSlotIconHighlighted ? ink : settingsBorder,
-                backgroundColor: mealSlotIconHighlighted
-                  ? isDark
-                    ? 'rgba(255,255,255,0.14)'
-                    : 'rgba(0,0,0,0.06)'
-                  : settingsBg,
-                opacity: mealSlotPickerDisabled ? 0.55 : 1,
-              },
-            ]}>
-            <Reanimated.View style={mealSlotIconAnimatedStyle}>
-              <CatalogRowMealSlotSelectedIcons
-                selectedSlots={selectedMealSlots ?? []}
-                color={
-                  mealSlotIconHighlighted
-                    ? ink
-                    : mealSlotPickerDisabled
-                      ? muted
-                      : isDark
-                        ? '#FAFAFA'
-                        : PRIMARY
-                }
-                mutedColor={mealSlotPickerDisabled ? muted : isDark ? '#FAFAFA' : PRIMARY}
-                size={15}
-                compactSize={9}
-              />
-            </Reanimated.View>
-          </Pressable>
-        ) : null}
-        {showSpineTimePicker && !manageOnly && onToggleSpineTimeExpand ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{
-              selected: spineTimeIconHighlighted,
-              expanded: isSpineTimeExpanded,
-              disabled: spineTimePickerDisabled,
-            }}
-            accessibilityLabel={
-              spineStartMinutes != null && spineEndMinutes != null
-                ? t('fixedRoutine.timeA11y', {
+                onToggleMealSlotExpand();
+              }}
+              style={[
+                styles.catalogSettingsBtn,
+                {
+                  width: mealSlotPickerBtnWidth(selectedMealSlots ?? []),
+                  borderColor: mealSlotIconHighlighted ? ink : settingsBorder,
+                  backgroundColor: mealSlotIconHighlighted
+                    ? isDark
+                      ? 'rgba(255,255,255,0.14)'
+                      : 'rgba(0,0,0,0.06)'
+                    : settingsBg,
+                  opacity: mealSlotPickerDisabled ? 0.55 : 1,
+                },
+              ]}>
+              <Reanimated.View style={mealSlotIconAnimatedStyle}>
+                <CatalogRowMealSlotSelectedIcons
+                  selectedSlots={selectedMealSlots ?? []}
+                  color={
+                    mealSlotIconHighlighted
+                      ? ink
+                      : mealSlotPickerDisabled
+                        ? muted
+                        : isDark
+                          ? '#FAFAFA'
+                          : PRIMARY
+                  }
+                  mutedColor={mealSlotPickerDisabled ? muted : isDark ? '#FAFAFA' : PRIMARY}
+                  size={15}
+                  compactSize={9}
+                />
+              </Reanimated.View>
+            </Pressable>
+          ) : null}
+          {showSpineTimePicker && !manageOnly && onToggleSpineTimeExpand ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{
+                selected: spineTimeIconHighlighted,
+                expanded: isSpineTimeExpanded,
+                disabled: spineTimePickerDisabled,
+              }}
+              accessibilityLabel={
+                spineStartMinutes != null && spineEndMinutes != null
+                  ? t('fixedRoutine.timeA11y', {
                     label,
                     time: formatSpineScheduleRangeLabel({
                       startMinutes: spineStartMinutes,
                       endMinutes: spineEndMinutes,
                     }),
                   })
-                : t('fixedRoutine.timePickA11y', { label })
-            }
-            disabled={spineTimePickerDisabled}
-            hitSlop={spineTimePickerDisabled ? 0 : 10}
-            onPress={() => {
-              if (spineTimePickerDisabled) return;
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onToggleSpineTimeExpand();
-            }}
-            style={[
-              styles.catalogSettingsBtn,
-              {
-                borderColor: spineTimeIconHighlighted ? ink : settingsBorder,
-                backgroundColor: spineTimeIconHighlighted
+                  : t('fixedRoutine.timePickA11y', { label })
+              }
+              disabled={spineTimePickerDisabled}
+              hitSlop={spineTimePickerDisabled ? 0 : 10}
+              onPress={() => {
+                if (spineTimePickerDisabled) return;
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onToggleSpineTimeExpand();
+              }}
+              style={[
+                styles.catalogSettingsBtn,
+                {
+                  borderColor: spineTimeIconHighlighted ? ink : settingsBorder,
+                  backgroundColor: spineTimeIconHighlighted
+                    ? isDark
+                      ? 'rgba(255,255,255,0.14)'
+                      : 'rgba(0,0,0,0.06)'
+                    : settingsBg,
+                  opacity: spineTimePickerDisabled ? 0.55 : 1,
+                },
+              ]}>
+              <Reanimated.View style={spineTimeIconAnimatedStyle}>
+                <IconSymbol
+                  name="clock.fill"
+                  size={15}
+                  color={
+                    spineTimeIconHighlighted
+                      ? ink
+                      : spineTimePickerDisabled
+                        ? muted
+                        : isDark
+                          ? '#FAFAFA'
+                          : PRIMARY
+                  }
+                />
+              </Reanimated.View>
+            </Pressable>
+          ) : null}
+          {manageOnly ? (
+            <BrutalActionButton
+              accessibilityLabel={
+                settingsLocked
+                  ? t('catalog.goalSettingsLockedA11y', { label })
+                  : t('catalog.goalSettingsA11y', { label })
+              }
+              disabled={settingsLocked}
+              borderColor={
+                settingsLocked
                   ? isDark
-                    ? 'rgba(255,255,255,0.14)'
-                    : 'rgba(0,0,0,0.06)'
-                  : settingsBg,
-                opacity: spineTimePickerDisabled ? 0.55 : 1,
-              },
-            ]}>
-            <Reanimated.View style={spineTimeIconAnimatedStyle}>
+                    ? 'rgba(255,255,255,0.12)'
+                    : 'rgba(0,0,0,0.08)'
+                  : settingsBorder
+              }
+              backgroundColor={
+                settingsLocked
+                  ? isDark
+                    ? 'rgba(255,255,255,0.04)'
+                    : 'rgba(0,0,0,0.02)'
+                  : settingsBg
+              }
+              pressedBg={settingsHoverBg}
+              shadowColor={brutalShadow}
+              onPress={() => {
+                if (settingsLocked) return;
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onOpenSettings();
+              }}>
               <IconSymbol
-                name="clock.fill"
-                size={15}
-                color={
-                  spineTimeIconHighlighted
-                    ? ink
-                    : spineTimePickerDisabled
-                      ? muted
-                      : isDark
-                        ? '#FAFAFA'
-                        : PRIMARY
-                }
+                name={settingsLocked ? 'lock.fill' : 'slider.horizontal.3'}
+                size={settingsLocked ? 13 : 14}
+                color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
               />
-            </Reanimated.View>
-          </Pressable>
-        ) : null}
-        {manageOnly ? (
-          <BrutalActionButton
-            accessibilityLabel={
-              settingsLocked
-                ? t('catalog.goalSettingsLockedA11y', { label })
-                : t('catalog.goalSettingsA11y', { label })
-            }
-            disabled={settingsLocked}
-            borderColor={
-              settingsLocked
-                ? isDark
-                  ? 'rgba(255,255,255,0.12)'
-                  : 'rgba(0,0,0,0.08)'
-                : settingsBorder
-            }
-            backgroundColor={
-              settingsLocked
-                ? isDark
-                  ? 'rgba(255,255,255,0.04)'
-                  : 'rgba(0,0,0,0.02)'
-                : settingsBg
-            }
-            pressedBg={settingsHoverBg}
-            shadowColor={brutalShadow}
-            onPress={() => {
-              if (settingsLocked) return;
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onOpenSettings();
-            }}>
-            <IconSymbol
-              name={settingsLocked ? 'lock.fill' : 'slider.horizontal.3'}
-              size={settingsLocked ? 13 : 14}
-              color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
-            />
-          </BrutalActionButton>
-        ) : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: settingsLocked }}
-          accessibilityLabel={
-            settingsLocked
-              ? t('catalog.goalSettingsLockedA11y', { label })
-              : t('catalog.goalSettingsA11y', { label })
-          }
-          disabled={settingsLocked}
-          hitSlop={settingsLocked ? 0 : 10}
-          onPress={() => {
-            if (settingsLocked) return;
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onOpenSettings();
-          }}
-          style={[
-            styles.catalogSettingsBtn,
-            {
-              borderColor: settingsLocked
-                ? isDark
-                  ? 'rgba(255,255,255,0.12)'
-                  : 'rgba(0,0,0,0.08)'
-                : settingsBorder,
-              backgroundColor: settingsLocked
-                ? isDark
-                  ? 'rgba(255,255,255,0.04)'
-                  : 'rgba(0,0,0,0.02)'
-                : settingsBg,
-              opacity: settingsLocked ? 0.55 : 1,
-            },
-          ]}>
-          <IconSymbol
-            name={settingsLocked ? 'lock.fill' : 'slider.horizontal.3'}
-            size={settingsLocked ? 13 : 14}
-            color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
-          />
-        </Pressable>
-        )}
-        {!manageOnly ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            selected
-              ? t('catalog.removeFromPriorityA11y', { label })
-              : t('catalog.addToPriorityA11y', { label })
-          }
-          hitSlop={10}
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onAddPress();
-          }}
-          style={styles.catalogAddHit}>
-          {selected ? (
-            <IconSymbol name="minus.circle.fill" size={18} color={categoryIconColor} />
+            </BrutalActionButton>
           ) : (
-            <IconSymbol name="plus.circle" size={18} color={muted} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: settingsLocked }}
+              accessibilityLabel={
+                settingsLocked
+                  ? t('catalog.goalSettingsLockedA11y', { label })
+                  : t('catalog.goalSettingsA11y', { label })
+              }
+              disabled={settingsLocked}
+              hitSlop={settingsLocked ? 0 : 10}
+              onPress={() => {
+                if (settingsLocked) return;
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onOpenSettings();
+              }}
+              style={[
+                styles.catalogSettingsBtn,
+                {
+                  borderColor: settingsLocked
+                    ? isDark
+                      ? 'rgba(255,255,255,0.12)'
+                      : 'rgba(0,0,0,0.08)'
+                    : settingsBorder,
+                  backgroundColor: settingsLocked
+                    ? isDark
+                      ? 'rgba(255,255,255,0.04)'
+                      : 'rgba(0,0,0,0.02)'
+                    : settingsBg,
+                  opacity: settingsLocked ? 0.55 : 1,
+                },
+              ]}>
+              <IconSymbol
+                name={settingsLocked ? 'lock.fill' : 'slider.horizontal.3'}
+                size={settingsLocked ? 13 : 14}
+                color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
+              />
+            </Pressable>
           )}
-        </Pressable>
-        ) : null}
-      </View>
+          {!manageOnly ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                selected
+                  ? t('catalog.removeFromPriorityA11y', { label })
+                  : t('catalog.addToPriorityA11y', { label })
+              }
+              hitSlop={10}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onAddPress();
+              }}
+              style={styles.catalogAddHit}>
+              {selected ? (
+                <IconSymbol name="minus.circle.fill" size={18} color={categoryIconColor} />
+              ) : (
+                <IconSymbol name="plus.circle" size={18} color={muted} />
+              )}
+            </Pressable>
+          ) : null}
+        </View>
       </View>
       {showMealSlotPicker && !manageOnly && onToggleMealSlot ? (
         <Reanimated.View
@@ -728,6 +730,7 @@ function CatalogSectionHeader({
   muted,
   trailing,
   manageOnly = false,
+  isDark = false,
 }: {
   title: string;
   itemCount: number;
@@ -735,11 +738,18 @@ function CatalogSectionHeader({
   muted: string;
   trailing?: ReactNode;
   manageOnly?: boolean;
+  isDark?: boolean;
 }) {
   const { t } = useTranslation();
   return (
     <View
-      style={[styles.sectionHeader, manageOnly && styles.sectionHeaderManage]}
+      style={[
+        styles.sectionHeader,
+        manageOnly && styles.sectionHeaderManage,
+        manageOnly && {
+          backgroundColor: isDark ? 'rgba(158, 207, 209, 0.16)' : 'rgba(168, 218, 220, 0.28)',
+        },
+      ]}
       accessibilityRole="header"
       accessibilityLabel={t('catalog.groupA11y', { title, count: itemCount })}>
       <View style={styles.sectionHeaderTop}>
@@ -817,76 +827,76 @@ function renderRows(
     const slotPickerLocked = isFocusStarted && selected;
     const spineSchedule = spineCatalogOptions?.resolveSpineSchedule(cat.key);
     return (
-    <CatalogListRow
-      key={cat.key}
-      categoryKey={cat.key}
-      icon={cat.icon}
-      label={cat.label}
-      subtitle={null}
-      selected={selected}
-      ink={editorial.ink}
-      muted={editorial.muted}
-      line={editorial.line}
-      actionBg={editorial.actionBg}
-      actionHoverBg={editorial.actionHoverBg}
-      shadow={editorial.shadow}
-      isDark={isDark}
-      isFocusStarted={isFocusStarted}
-      onAddPress={() => onCatalogTap(cat.key)}
-      onOpenSettings={() => onOpenCategorySettings(cat.key)}
-      onMoveGroup={
-        onMoveCustomFlow ? () => onMoveCustomFlow(cat.key, cat.label) : undefined
-      }
-      onDeleteItem={
-        onDeleteCatalogItem && !isNonDeletableCatalogKey(cat.key)
-          ? () => onDeleteCatalogItem(cat.key, cat.label)
-          : undefined
-      }
-      showMealSlotPicker={Boolean(sectionsCatalogOptions)}
-      selectedMealSlots={
-        sectionsCatalogOptions
-          ? resolveCatalogRowMealSlots(
+      <CatalogListRow
+        key={cat.key}
+        categoryKey={cat.key}
+        icon={cat.icon}
+        label={cat.label}
+        subtitle={null}
+        selected={selected}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        line={editorial.line}
+        actionBg={editorial.actionBg}
+        actionHoverBg={editorial.actionHoverBg}
+        shadow={editorial.shadow}
+        isDark={isDark}
+        isFocusStarted={isFocusStarted}
+        onAddPress={() => onCatalogTap(cat.key)}
+        onOpenSettings={() => onOpenCategorySettings(cat.key)}
+        onMoveGroup={
+          onMoveCustomFlow ? () => onMoveCustomFlow(cat.key, cat.label) : undefined
+        }
+        onDeleteItem={
+          onDeleteCatalogItem && !isNonDeletableCatalogKey(cat.key)
+            ? () => onDeleteCatalogItem(cat.key, cat.label)
+            : undefined
+        }
+        showMealSlotPicker={Boolean(sectionsCatalogOptions)}
+        selectedMealSlots={
+          sectionsCatalogOptions
+            ? resolveCatalogRowMealSlots(
               cat.key,
               selected,
               sectionsCatalogOptions.prioritySectionsMealSlots,
               sectionsCatalogOptions.defaultMealSlot,
               sectionsCatalogOptions.priorityMealSlotOverrides,
             )
-          : undefined
-      }
-      mealSlotPickerDisabled={slotPickerLocked}
-      isMealSlotExpanded={sectionsCatalogOptions?.expandedMealSlotKey === cat.key}
-      onToggleMealSlotExpand={
-        sectionsCatalogOptions
-          ? () => sectionsCatalogOptions.onToggleMealSlotExpand(cat.key)
-          : undefined
-      }
-      onToggleMealSlot={
-        sectionsCatalogOptions
-          ? (slot) => sectionsCatalogOptions.onToggleCatalogMealSlot(cat.key, slot)
-          : undefined
-      }
-      showSpineTimePicker={Boolean(spineCatalogOptions)}
-      spineStartMinutes={spineSchedule?.startMinutes}
-      spineEndMinutes={spineSchedule?.endMinutes}
-      spineTimePickerDisabled={slotPickerLocked}
-      isSpineTimeExpanded={spineCatalogOptions?.expandedSpineTimeKey === cat.key}
-      onToggleSpineTimeExpand={
-        spineCatalogOptions
-          ? () => spineCatalogOptions.onToggleSpineTimeExpand(cat.key)
-          : undefined
-      }
-      onChangeSpineTime={
-        spineCatalogOptions
-          ? (startMinutes, endMinutes) =>
+            : undefined
+        }
+        mealSlotPickerDisabled={slotPickerLocked}
+        isMealSlotExpanded={sectionsCatalogOptions?.expandedMealSlotKey === cat.key}
+        onToggleMealSlotExpand={
+          sectionsCatalogOptions
+            ? () => sectionsCatalogOptions.onToggleMealSlotExpand(cat.key)
+            : undefined
+        }
+        onToggleMealSlot={
+          sectionsCatalogOptions
+            ? (slot) => sectionsCatalogOptions.onToggleCatalogMealSlot(cat.key, slot)
+            : undefined
+        }
+        showSpineTimePicker={Boolean(spineCatalogOptions)}
+        spineStartMinutes={spineSchedule?.startMinutes}
+        spineEndMinutes={spineSchedule?.endMinutes}
+        spineTimePickerDisabled={slotPickerLocked}
+        isSpineTimeExpanded={spineCatalogOptions?.expandedSpineTimeKey === cat.key}
+        onToggleSpineTimeExpand={
+          spineCatalogOptions
+            ? () => spineCatalogOptions.onToggleSpineTimeExpand(cat.key)
+            : undefined
+        }
+        onChangeSpineTime={
+          spineCatalogOptions
+            ? (startMinutes, endMinutes) =>
               spineCatalogOptions.onChangeSpineTime(cat.key, startMinutes, endMinutes)
-          : undefined
-      }
-      priorityStart={spineCatalogOptions?.priorityStart}
-      priorityEnd={spineCatalogOptions?.priorityEnd}
-      manageOnly={manageOnly}
-    />
-  );
+            : undefined
+        }
+        priorityStart={spineCatalogOptions?.priorityStart}
+        priorityEnd={spineCatalogOptions?.priorityEnd}
+        manageOnly={manageOnly}
+      />
+    );
   });
 }
 
@@ -1062,50 +1072,72 @@ function GroupSectionBlock({
 
   return (
     <View style={[styles.sectionBlock, !isFirst && styles.sectionBlockFollows]}>
-      <View
-        style={
-          manageOnly
-            ? [
-                styles.sectionGroupShell,
-                {
-                  borderColor: editorial.line,
-                  backgroundColor: editorial.actionBg,
-                },
-              ]
-            : undefined
-        }>
-        <CatalogSectionHeader
-          title={section.title}
-          itemCount={section.items.length}
-          ink={editorial.ink}
-          muted={editorial.muted}
-          manageOnly={manageOnly}
-          trailing={groupHeaderTrailing}
-        />
-        <View
-          style={[
-            styles.listShell,
-            manageOnly && styles.listShellManage,
-            { borderTopColor: editorial.line },
-          ]}>
-          {section.items.length > 0
-            ? renderRows(
-              section.items,
-              editorial,
-              isDark,
-              priorityCategoryOrder,
-              isFocusStarted,
-              onCatalogTap,
-              onOpenCategorySettings,
-              onMoveCustomFlow,
-              onDeleteCatalogItem,
-              sectionsCatalogOptions,
-              spineCatalogOptions,
-              manageOnly,
-            )
-            : null}
-        </View>
-      </View>
+      {manageOnly ? (
+        <CityPopCardShell isDark={isDark}>
+          <CatalogSectionHeader
+            title={section.title}
+            itemCount={section.items.length}
+            ink={editorial.ink}
+            muted={editorial.muted}
+            manageOnly={manageOnly}
+            isDark={isDark}
+            trailing={groupHeaderTrailing}
+          />
+          <View
+            style={[
+              styles.listShell,
+              styles.listShellManage,
+              { borderTopColor: editorial.line },
+            ]}>
+            {section.items.length > 0
+              ? renderRows(
+                section.items,
+                editorial,
+                isDark,
+                priorityCategoryOrder,
+                isFocusStarted,
+                onCatalogTap,
+                onOpenCategorySettings,
+                onMoveCustomFlow,
+                onDeleteCatalogItem,
+                sectionsCatalogOptions,
+                spineCatalogOptions,
+                manageOnly,
+              )
+              : null}
+          </View>
+        </CityPopCardShell>
+      ) : (
+        <>
+          <CatalogSectionHeader
+            title={section.title}
+            itemCount={section.items.length}
+            ink={editorial.ink}
+            muted={editorial.muted}
+            manageOnly={manageOnly}
+            isDark={isDark}
+            trailing={groupHeaderTrailing}
+          />
+          <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
+            {section.items.length > 0
+              ? renderRows(
+                section.items,
+                editorial,
+                isDark,
+                priorityCategoryOrder,
+                isFocusStarted,
+                onCatalogTap,
+                onOpenCategorySettings,
+                onMoveCustomFlow,
+                onDeleteCatalogItem,
+                sectionsCatalogOptions,
+                spineCatalogOptions,
+                manageOnly,
+              )
+              : null}
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -1183,13 +1215,13 @@ export function PriorityCatalogPanel({
     () =>
       sectionsCatalogEnabled && onToggleCatalogMealSlot
         ? {
-            prioritySectionsMealSlots,
-            priorityMealSlotOverrides,
-            defaultMealSlot,
-            expandedMealSlotKey,
-            onToggleMealSlotExpand,
-            onToggleCatalogMealSlot: handleToggleCatalogMealSlot,
-          }
+          prioritySectionsMealSlots,
+          priorityMealSlotOverrides,
+          defaultMealSlot,
+          expandedMealSlotKey,
+          onToggleMealSlotExpand,
+          onToggleCatalogMealSlot: handleToggleCatalogMealSlot,
+        }
         : undefined,
     [
       defaultMealSlot,
@@ -1207,13 +1239,13 @@ export function PriorityCatalogPanel({
     () =>
       spineCatalogEnabled && resolveSpineSchedule && onChangeCatalogSpineTime
         ? {
-            priorityStart,
-            priorityEnd,
-            expandedSpineTimeKey,
-            onToggleSpineTimeExpand,
-            onChangeSpineTime: onChangeCatalogSpineTime,
-            resolveSpineSchedule,
-          }
+          priorityStart,
+          priorityEnd,
+          expandedSpineTimeKey,
+          onToggleSpineTimeExpand,
+          onChangeSpineTime: onChangeCatalogSpineTime,
+          resolveSpineSchedule,
+        }
         : undefined,
     [
       expandedSpineTimeKey,
@@ -1260,10 +1292,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   sectionBlockFollows: {
-    marginTop: 28,
+    marginTop: 16,
   },
   sectionGroupShell: {
-    borderWidth: 1,
+    borderWidth: RETRO_BORDER_WIDTH,
     overflow: 'hidden',
   },
   sectionHeader: {
@@ -1273,7 +1305,7 @@ const styles = StyleSheet.create({
   sectionHeaderManage: {
     marginBottom: 0,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 11,
   },
   sectionHeaderTop: {
     flexDirection: 'row',

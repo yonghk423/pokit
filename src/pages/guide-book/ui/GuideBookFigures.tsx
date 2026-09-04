@@ -276,13 +276,24 @@ function FigureTodayOverview({ tone }: { tone: Tone }) {
             </View>
           </View>
           <View>
-            <Badge n={2} tone={tone} />
+            <Badge n={3} tone={tone} />
             <HeaderShortcuts tone={tone} />
           </View>
         </View>
       </View>
+      <View style={styles.quoteRow}>
+        <Badge n={2} tone={tone} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <ThemedText style={[styles.quoteKicker, { color: tone.muted }, cityPopFont('700')]}>
+            {t('dayPlan.dailyQuote.kicker')}
+          </ThemedText>
+          <ThemedText style={[styles.quoteBody, { color: tone.text }, cityPopFont('600')]} numberOfLines={2}>
+            {t('guideBook.figure.sampleDailyQuote')}
+          </ThemedText>
+        </View>
+      </View>
       <View style={[styles.emptyBag, { borderColor: tone.border }]}>
-        <Badge n={3} tone={tone} />
+        <Badge n={4} tone={tone} />
         <ThemedText style={[styles.emptyTitle, { color: tone.text }, cityPopFont('800')]}>
           {t('dayPlan.emptyBagTitle')}
         </ThemedText>
@@ -776,8 +787,9 @@ function FigureSettings({ tone }: { tone: Tone }) {
   const rows = [
     { n: 1, icon: 'clock' as const, tKey: 'settings.dayPlanWindow' as const, sectionKey: 'guideBook.figure.settingsDayPlan' as const },
     { n: 2, icon: 'book' as const, tKey: 'guideBook.figure.settingsIntroGuide' as const, sectionKey: 'guideBook.figure.settingsDayPlan' as const },
-    { n: 3, icon: 'bell.fill' as const, tKey: 'guideBook.figure.settingsNotification' as const, sectionKey: 'guideBook.figure.settingsNotification' as const },
-    { n: 4, icon: 'envelope.fill' as const, tKey: 'guideBook.figure.settingsSupportReset' as const, sectionKey: 'guideBook.figure.settingsSupportData' as const },
+    { n: 3, icon: 'textformat' as const, tKey: 'guideBook.figure.settingsFont' as const, sectionKey: 'guideBook.figure.settingsFontSection' as const },
+    { n: 4, icon: 'envelope.fill' as const, tKey: 'guideBook.figure.settingsSupport' as const, sectionKey: 'guideBook.figure.settingsSupportData' as const },
+    { n: 5, icon: 'arrow.counterclockwise' as const, tKey: 'settings.resetData' as const, sectionKey: 'guideBook.figure.settingsSupportData' as const },
   ];
   return (
     <View style={[styles.phone, { borderColor: tone.border, backgroundColor: tone.bg }]}>
@@ -788,7 +800,7 @@ function FigureSettings({ tone }: { tone: Tone }) {
         </ThemedText>
       </View>
       {rows.map((r) => (
-        <View key={r.tKey} style={[styles.settingsRow, { borderColor: tone.border }]}>
+        <View key={`${r.n}-${r.tKey}`} style={[styles.settingsRow, { borderColor: tone.border }]}>
           <Badge n={r.n} tone={tone} />
           <IconSymbol name={r.icon} size={18} color={tone.muted} />
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -919,6 +931,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   windowChipText: { fontSize: 11 },
+  quoteRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingVertical: 6,
+  },
+  quoteKicker: { fontSize: 10, lineHeight: 12, letterSpacing: 0.3 },
+  quoteBody: { fontSize: 12, lineHeight: 17 },
   emptyBag: { borderWidth: RETRO_BORDER_WIDTH, padding: 12, gap: 6 },
   emptyTitle: { fontSize: 13 },
   emptyBody: { fontSize: 11, lineHeight: 16 },

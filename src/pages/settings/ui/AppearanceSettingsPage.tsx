@@ -69,7 +69,7 @@ export function AppearanceSettingsPage() {
             {t('settings.appearance.hint')}
           </ThemedText>
 
-          <SettingsSection border={p.border} surface={p.surface}>
+          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
             {THEME_OPTIONS.map((opt, index) => {
               const active = appearanceMode === opt.key;
               return (

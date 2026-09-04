@@ -34,6 +34,7 @@ import {
 } from '@shared/lib/notifications';
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import { useAppLocaleStore } from '@shared/lib/i18n';
+import { useAppFontStore } from '@shared/lib/ui-font';
 import {
   ensureDefaultPriorityCatalog,
   flushLocalStorageClientWrites,
@@ -43,6 +44,8 @@ import {
   savePriorityDayRollMode,
 } from '@shared/lib/storage';
 import { useDevSeedMenu } from './useDevSeedMenu';
+import { prefetchRoutineAtmosphereAssets } from '@shared/ui/routine-atmosphere';
+import { prefetchSettingsAtmosphereAssets } from '@shared/ui/settings-atmosphere';
 
 /**
  * 앱 전역 부트스트랩: hydrate + 알림 리스너 + Live Activity 동기화.
@@ -68,6 +71,7 @@ export function useAppBootstrap() {
       // 「하루가 지나면 담기 유지」임시 비활성 — keep 잔존 설정이 롤오버에 영향을 주지 않도록 reset 고정
       savePriorityDayRollMode('reset');
       useAppearanceStore.getState().hydrate();
+      useAppFontStore.getState().hydrate();
       useDayPlanLayoutModeVisibilityStore.getState().hydrate();
 
       useDayPlanStore.getState().hydrate();
@@ -84,6 +88,10 @@ export function useAppBootstrap() {
         blocks: plan.blocks,
       });
       if (!cancelled) setIsReady(true);
+
+      // 탭 전환 시 분위기 PNG 디코드 지연 완화 — 스플래시 해제와 분리
+      void prefetchRoutineAtmosphereAssets();
+      void prefetchSettingsAtmosphereAssets();
 
       /**
        * 구독은 선택 기능이므로 네트워크 상태·RevenueCat 설정 오류가

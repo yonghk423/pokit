@@ -107,6 +107,10 @@ export default function RootLayout() {
                 options={{ headerShown: false, presentation: 'card' }}
               />
               <Stack.Screen
+                name="font-settings"
+                options={{ headerShown: false, presentation: 'card' }}
+              />
+              <Stack.Screen
                 name="day-plan-view-settings"
                 options={{ headerShown: false, presentation: 'card' }}
               />

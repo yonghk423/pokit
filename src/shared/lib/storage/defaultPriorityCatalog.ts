@@ -63,6 +63,9 @@ export const BUILTIN_GOOD_POSTURE_FLOW_ID = 'customFlow:preset_good_posture' as 
 /** 건강 루틴 — 스트레칭 */
 export const BUILTIN_STRETCHING_FLOW_ID = 'customFlow:preset_stretching' as const;
 
+/** 생산성을 높이는 도구 — 집중하기 */
+export const BUILTIN_FOCUS_FLOW_ID = 'customFlow:preset_focus' as const;
+
 /** 금지 루틴 기본 항목 */
 export const ABSTAIN_CHECKLIST_LABELS = [
   '밤늦게 폰 보기',
@@ -177,6 +180,16 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     summary: '몸을 풀고 가볍게 늘려 줘요.',
     templateKey: 'checklist',
     checklistLabels: ['스트레칭'],
+  },
+  {
+    id: BUILTIN_FOCUS_FLOW_ID,
+    groupKey: 'productivity',
+    displayName: '집중하기',
+    icon: 'brain.head.profile',
+    color: '#2563eb',
+    summary: '방해 없이 한 가지에 깊게 몰입해요.',
+    templateKey: 'checklist',
+    checklistLabels: ['집중하기'],
   },
 ];
 

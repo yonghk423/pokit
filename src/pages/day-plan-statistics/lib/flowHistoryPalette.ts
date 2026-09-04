@@ -26,7 +26,7 @@ export function buildFlowHistoryPalette(isDark: boolean): FlowHistoryPalette {
     accent: c.primary,
     accentSoft: c.primaryContainer,
     weekdayIdle: c.accentMuted,
-    shadow: isDark ? c.solidShadow : c.text,
+    shadow: isDark ? c.solidShadow : c.primary,
     actionBg: isDark ? c.surfaceAlt : '#FFFFFF',
     fab: c.primary,
     fabIcon: c.primaryOn,

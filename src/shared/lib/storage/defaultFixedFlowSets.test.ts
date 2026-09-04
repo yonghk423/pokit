@@ -5,9 +5,8 @@ import {
   mergeBuiltInPresetSets,
 } from './defaultFixedFlowSets';
 import {
-  BUILTIN_ABSTAIN_FLOW_ID,
   BUILTIN_DAILY_LIFE_FLOW_IDS,
-  BUILTIN_STRETCHING_FLOW_ID,
+  BUILTIN_FOCUS_FLOW_ID,
 } from './defaultPriorityCatalog';
 
 describe('createDefaultFixedFlowSetsState', () => {
@@ -130,10 +129,7 @@ describe('createDefaultFixedFlowSetsState', () => {
     const examples = createBuiltinExampleCustomFlowSets();
     expect(examples).toHaveLength(2);
     expect(examples.map((set) => set.name)).toEqual(['건강 루틴 예시', '집중 루틴 예시']);
-    expect(examples[1]?.items.map((item) => item.categoryKey)).toEqual([
-      BUILTIN_STRETCHING_FLOW_ID,
-      BUILTIN_ABSTAIN_FLOW_ID,
-    ]);
+    expect(examples[1]?.items.map((item) => item.categoryKey)).toEqual([BUILTIN_FOCUS_FLOW_ID]);
   });
 
   it('merges missing builtin example custom sets into stored state', () => {
@@ -175,8 +171,7 @@ describe('createDefaultFixedFlowSetsState', () => {
       },
     ]);
     expect(merged.find((set) => set.id === 'set_example_focus')?.items.map((item) => item.categoryKey)).toEqual([
-      BUILTIN_STRETCHING_FLOW_ID,
-      BUILTIN_ABSTAIN_FLOW_ID,
+      BUILTIN_FOCUS_FLOW_ID,
     ]);
   });
 

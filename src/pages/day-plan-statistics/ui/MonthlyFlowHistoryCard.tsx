@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { MonthlyFlowHistoryRow } from '../lib/buildMonthlyFlowHistory';
@@ -15,10 +17,11 @@ type Props = {
 };
 
 export function MonthlyFlowHistoryCard({ group, monthPrefix, palette }: Props) {
+  const isDark = useColorScheme() === 'dark';
   const monthCountLabel = `${group.row.completedDays}/${group.row.daysInMonth}`;
 
   return (
-    <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
+    <CityPopCardShell isDark={isDark} faceColor={palette.card} contentStyle={styles.content}>
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
           <FlowHistoryCategoryIcon
@@ -30,22 +33,21 @@ export function MonthlyFlowHistoryCard({ group, monthPrefix, palette }: Props) {
             {group.label}
           </ThemedText>
         </View>
-        <ThemedText style={[styles.monthCount, { color: palette.muted }]}>{monthCountLabel}</ThemedText>
+        <ThemedText style={[styles.monthCount, { color: palette.ink }]}>
+          {monthCountLabel}
+        </ThemedText>
       </View>
 
       <FlowHistoryMonthRow row={group.row} monthPrefix={monthPrefix} palette={palette} />
-    </View>
+    </CityPopCardShell>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    width: '100%',
-    borderRadius: 0,
-    borderWidth: 2,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 8,
+  content: {
+    paddingHorizontal: 11,
+    paddingVertical: 10,
+    gap: 10,
   },
   headerRow: {
     flexDirection: 'row',
@@ -63,16 +65,17 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     minWidth: 0,
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: -0.25,
-    lineHeight: 16,
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    lineHeight: 18,
   },
   monthCount: {
-    fontSize: 10,
-    fontWeight: '700',
-    minWidth: 30,
+    fontSize: 12,
+    fontWeight: '800',
+    minWidth: 36,
     textAlign: 'right',
     flexShrink: 0,
+    letterSpacing: -0.2,
   },
 });

@@ -1,8 +1,9 @@
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { useTranslation } from '@shared/lib/i18n';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import type { goalDetailSettingsPalette } from './settingsPalette';
 
@@ -33,7 +34,7 @@ export function RoutineSummaryField({
           {t('goalDetail.summaryLabel')}
         </ThemedText>
       ) : null}
-      <TextInput
+      <ThemedTextInput
         value={value}
         onChangeText={onChangeValue}
         placeholder={placeholderText}

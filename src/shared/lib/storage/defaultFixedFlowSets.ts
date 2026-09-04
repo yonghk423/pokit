@@ -8,9 +8,8 @@ import {
   type WeekdayIndex,
 } from './fixedFlowWeekdays';
 import {
-  BUILTIN_ABSTAIN_FLOW_ID,
   BUILTIN_DAILY_LIFE_FLOW_IDS,
-  BUILTIN_STRETCHING_FLOW_ID,
+  BUILTIN_FOCUS_FLOW_ID,
 } from './defaultPriorityCatalog';
 
 function items(categoryKeys: string[]) {
@@ -48,14 +47,17 @@ export const EXAMPLE_CUSTOM_FLOW_SET_ITEM_KEYS = [
   BUILTIN_DAILY_LIFE_FLOW_IDS[1],
 ] as const;
 
-/** 집중 루틴 예시 — 담기 카탈로그에 남아 있는 키만 (reading/work는 CATALOG_REMOVED) */
-export const EXAMPLE_FOCUS_FLOW_SET_ITEM_KEYS = [
-  BUILTIN_STRETCHING_FLOW_ID,
-  BUILTIN_ABSTAIN_FLOW_ID,
-] as const;
+/** 집중 루틴 예시 — 생산성 기본 루틴 (reading/work는 CATALOG_REMOVED) */
+export const EXAMPLE_FOCUS_FLOW_SET_ITEM_KEYS = [BUILTIN_FOCUS_FLOW_ID] as const;
 
 /** 레거시 집중 예시 기본 항목 — sanitize로 비워지던 reading/work */
 const LEGACY_FOCUS_SET_DEFAULT_KEYS = ['reading', 'work'] as const;
+
+/** 레거시 집중 예시 — reading/work 제거 후 임시로 넣었던 건강·금지 항목 */
+const LEGACY_FOCUS_SET_HEALTH_FALLBACK_KEYS = [
+  'customFlow:preset_stretching',
+  'customFlow:preset_abstain',
+] as const;
 
 const BUILTIN_EXAMPLE_CUSTOM_SET_TEMPLATES: DefaultSetTemplate[] = [
   {
@@ -125,7 +127,8 @@ export function mergeBuiltInExampleCustomSets(
     const shouldResetFocusItems =
       defaultSet.id === 'set_example_focus' &&
       (existing.items.length === 0 ||
-        isSameCategoryKeySet(existingKeys, LEGACY_FOCUS_SET_DEFAULT_KEYS));
+        isSameCategoryKeySet(existingKeys, LEGACY_FOCUS_SET_DEFAULT_KEYS) ||
+        isSameCategoryKeySet(existingKeys, LEGACY_FOCUS_SET_HEALTH_FALLBACK_KEYS));
     return {
       ...existing,
       name: defaultSet.name,

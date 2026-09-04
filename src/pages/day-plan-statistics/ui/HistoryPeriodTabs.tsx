@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { RetroFlatColors } from '@shared/config/retroFlat';
+import { RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -18,40 +18,38 @@ const TABS: { id: HistoryPeriod; labelKey: 'history.period.week' | 'history.peri
   { id: 'month', labelKey: 'history.period.month' },
 ];
 
-const SHADOW_SM = 2;
+const SHADOW = 2;
 
 /** 히스토리 — 루틴 탭과 동일 톤의 부착 세그먼트 */
 export function HistoryPeriodTabs({ period, onSelectPeriod, isDark }: Props) {
   const { t } = useTranslation();
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const border = tone.border;
-  const shadowColor = isDark ? tone.solidShadow : tone.text;
+  const shadowColor = isDark ? tone.solidShadow : tone.primary;
   const activeBg = tone.primaryContainer;
   const activeText = tone.primary;
   const inactiveBg = isDark ? tone.surfaceAlt : '#FFFFFF';
   const inactiveText = tone.textMuted;
 
   return (
-    <View style={styles.root}>
-      {TABS.map((tab, index) => {
-        const active = period === tab.id;
-        const isFirst = index === 0;
-        return (
-          <View key={tab.id} style={styles.tabShell}>
-            {active ? (
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.tabShadow,
-                  {
-                    backgroundColor: shadowColor,
-                    borderColor: border,
-                    transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
-                  },
-                ]}
-              />
-            ) : null}
+    <View style={[styles.root, { marginRight: SHADOW, marginBottom: SHADOW }]}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.trackShadow,
+          {
+            backgroundColor: shadowColor,
+            borderColor: border,
+            transform: [{ translateX: SHADOW }, { translateY: SHADOW }],
+          },
+        ]}
+      />
+      <View style={[styles.track, { borderColor: border, backgroundColor: inactiveBg }]}>
+        {TABS.map((tab, index) => {
+          const active = period === tab.id;
+          return (
             <Pressable
+              key={tab.id}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
               accessibilityLabel={t(tab.labelKey)}
@@ -62,57 +60,65 @@ export function HistoryPeriodTabs({ period, onSelectPeriod, isDark }: Props) {
               }}
               style={({ pressed }) => [
                 styles.tab,
-                !isFirst && styles.tabJoin,
+                index > 0 && styles.tabJoin,
                 {
-                  backgroundColor: active ? activeBg : inactiveBg,
+                  backgroundColor: active ? activeBg : 'transparent',
                   borderColor: border,
                 },
-                pressed && { opacity: 0.92 },
+                pressed && { opacity: 0.88 },
               ]}>
               <ThemedText
-                style={[styles.label, { color: active ? activeText : inactiveText }]}
+                style={[
+                  styles.label,
+                  active && styles.labelActive,
+                  { color: active ? activeText : inactiveText },
+                ]}
                 numberOfLines={1}>
                 {t(tab.labelKey)}
               </ThemedText>
             </Pressable>
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
+    position: 'relative',
+    width: '100%',
+  },
+  trackShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: RETRO_BORDER_WIDTH,
+    borderRadius: 0,
+  },
+  track: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    marginRight: SHADOW_SM,
-    marginBottom: SHADOW_SM,
-  },
-  tabShell: {
-    flex: 1,
-    position: 'relative',
-  },
-  tabShadow: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 2,
+    borderWidth: RETRO_BORDER_WIDTH,
     borderRadius: 0,
+    overflow: 'hidden',
+    zIndex: 1,
   },
   tab: {
-    borderRadius: 0,
-    borderWidth: 2,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
     paddingHorizontal: 8,
-    zIndex: 1,
+    borderWidth: 0,
   },
   tabJoin: {
-    borderLeftWidth: 0,
+    borderLeftWidth: RETRO_BORDER_WIDTH,
   },
   label: {
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: -0.1,
+  },
+  labelActive: {
+    fontWeight: '800',
   },
 });

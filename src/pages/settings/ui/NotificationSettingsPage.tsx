@@ -80,7 +80,7 @@ export function NotificationSettingsPage() {
             {t('settings.notification.incompleteHint')}
           </ThemedText>
 
-          <SettingsSection border={p.border} surface={p.surface}>
+          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
             <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]} lightColor={p.sectionTitle} darkColor={p.sectionTitle}>
               {t('settings.section.dayPlan')}
             </ThemedText>

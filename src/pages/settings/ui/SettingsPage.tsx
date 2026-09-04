@@ -48,10 +48,12 @@ import {
   openSupportMailComposer,
   SUPPORT_EMAIL,
 } from '@shared/lib/support';
+import { useAppFontStore, type AppFontId } from '@shared/lib/ui-font';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 import { prefetchWelcomeIntroAssets } from '@shared/lib/welcome-intro-assets';
+import { prefetchSettingsAtmosphereAssets } from '@shared/ui/settings-atmosphere';
 
 import {
   buildSettingsPalette,
@@ -59,6 +61,7 @@ import {
   SettingsSection,
   settingsChromeStyles as chrome,
 } from '../lib/settingsChrome';
+import { SettingsTabAtmosphere } from './SettingsTabAtmosphere';
 
 /** Pro 구독 설정 섹션 — 정식 시행 전까지 숨김 (`true`로 바꾸면 다시 표시) */
 const SHOW_POKIT_PRO_SETTINGS = false;
@@ -68,6 +71,21 @@ const SHOW_APPEARANCE_SETTINGS = false;
 
 /** 설정 → 알림 섹션 — 임시 숨김 (`true`로 바꾸면 다시 표시). 알림 예약 로직은 유지 */
 const SHOW_NOTIFICATION_SETTINGS = false;
+
+function fontLabelForId(fontId: AppFontId, locale: 'ko' | 'en' | 'ja'): string {
+  if (fontId === 'gaegu') return t('settings.font.gaegu', locale);
+  if (fontId === 'songMyung') return t('settings.font.songMyung', locale);
+  if (fontId === 'gothicA1') return t('settings.font.gothicA1', locale);
+  if (fontId === 'hiMelody') return t('settings.font.hiMelody', locale);
+  if (fontId === 'hanken') return t('settings.font.hanken', locale);
+  return t('settings.font.dongle', locale);
+}
+
+function fontSizeLabelForId(sizeId: 'sm' | 'md' | 'lg', locale: 'ko' | 'en' | 'ja'): string {
+  if (sizeId === 'sm') return t('settings.font.size.sm', locale);
+  if (sizeId === 'lg') return t('settings.font.size.lg', locale);
+  return t('settings.font.size.md', locale);
+}
 
 /** 앱 설정 (로그인·Profile 없음). 문의하기 탭 시 네이티브 메일 작성을 바로 엽니다. */
 export function SettingsPage() {
@@ -82,6 +100,9 @@ export function SettingsPage() {
   const appearanceMode = useAppearanceStore((s) => s.mode);
   const appearanceLabel =
     appearanceMode === 'dark' ? t('settings.appearance.dark', locale) : t('settings.appearance.light', locale);
+  const appFontId = useAppFontStore((s) => s.fontId);
+  const appFontSizeId = useAppFontStore((s) => s.sizeId);
+  const fontLabel = `${fontLabelForId(appFontId, locale)} · ${fontSizeLabelForId(appFontSizeId, locale)}`;
   const isPro = useSubscriptionStore(selectIsPro);
   const subscriptionConfigured = useSubscriptionStore((s) => s.isConfigured);
   const { priorityStart, priorityEnd } = useDayPlanDraftStore(
@@ -95,6 +116,7 @@ export function SettingsPage() {
   useFocusEffect(
     useCallback(() => {
       setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
+      void prefetchSettingsAtmosphereAssets();
       void prefetchWelcomeIntroAssets();
       if (SHOW_POKIT_PRO_SETTINGS) {
         void useSubscriptionStore.getState().refreshCustomerInfo();
@@ -274,49 +296,49 @@ export function SettingsPage() {
 
   return (
     <ThemedView style={styles.root} lightColor={p.bg} darkColor={p.bg}>
-      <View
-        style={[
-          chrome.header,
-          {
-            paddingTop: insets.top + 8,
-            borderBottomColor: p.border,
-            backgroundColor: p.bg,
-          },
-        ]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('settings.back', locale)}
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={chrome.headerBtn}>
-          <IconSymbol name="chevron.left" size={20} color={p.title} />
-        </Pressable>
-        <ThemedText
-          style={[chrome.headerTitle, { color: p.title }]}
-          lightColor={p.title}
-          darkColor={p.title}>
-          {t('settings.title', locale)}
-        </ThemedText>
-        <View style={chrome.headerBtn} pointerEvents="none" />
-      </View>
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          chrome.container,
-          {
-            paddingTop: 12,
-            paddingBottom: insets.bottom + 20,
-          },
-        ]}
-        showsVerticalScrollIndicator={false}>
-        <SettingsSection border={p.border} surface={p.surface}>
-          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
-            {t('settings.section.dayPlan', locale)}
+      <SettingsTabAtmosphere isDark={isDark} />
+      <View style={styles.foreground}>
+        <View
+          style={[
+            chrome.header,
+            {
+              paddingTop: insets.top + 8,
+            },
+          ]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.back', locale)}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={chrome.headerBtn}>
+            <IconSymbol name="chevron.left" size={20} color={p.title} />
+          </Pressable>
+          <ThemedText
+            style={[chrome.headerTitle, { color: p.title }]}
+            lightColor={p.title}
+            darkColor={p.title}>
+            {t('settings.title', locale)}
           </ThemedText>
+          <View style={chrome.headerBtn} pointerEvents="none" />
+        </View>
+
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            chrome.container,
+            {
+              paddingTop: 12,
+              paddingBottom: insets.bottom + 20,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}>
+          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
+              {t('settings.section.dayPlan', locale)}
+            </ThemedText>
 
           <Pressable
             style={[chrome.item, { borderTopColor: p.border }]}
@@ -407,7 +429,7 @@ export function SettingsPage() {
         </SettingsSection>
 
         {SHOW_NOTIFICATION_SETTINGS ? (
-          <SettingsSection border={p.border} surface={p.surface}>
+          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
             <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
               {t('settings.section.notification', locale)}
             </ThemedText>
@@ -443,7 +465,7 @@ export function SettingsPage() {
         ) : null}
 
         {SHOW_APPEARANCE_SETTINGS ? (
-          <SettingsSection border={p.border} surface={p.surface}>
+          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
             <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
               {t('settings.section.appearance', locale)}
             </ThemedText>
@@ -478,8 +500,42 @@ export function SettingsPage() {
           </SettingsSection>
         ) : null}
 
+        <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
+            {t('settings.section.font', locale)}
+          </ThemedText>
+
+          <Pressable
+            style={[chrome.item, { borderTopColor: p.border }]}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/font-settings');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.a11y.font', locale)}>
+            <View style={chrome.itemLeft}>
+              <SettingsRowIcon
+                name="textformat"
+                color={p.icon}
+                boxBg={p.iconBoxBg}
+                border={p.border}
+                shadow={p.shadow}
+              />
+              <View style={chrome.itemTextWrap}>
+                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                  {t('settings.fontTitle', locale)}
+                </ThemedText>
+                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                  {fontLabel}
+                </ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+          </Pressable>
+        </SettingsSection>
+
         {SHOW_POKIT_PRO_SETTINGS ? (
-          <SettingsSection border={p.border} surface={p.surface}>
+          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
             <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
               {t('settings.section.pro', locale)}
             </ThemedText>
@@ -554,7 +610,7 @@ export function SettingsPage() {
           </SettingsSection>
         ) : null}
 
-        <SettingsSection border={p.border} surface={p.surface}>
+        <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
           <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
             {t('settings.section.support', locale)}
           </ThemedText>
@@ -608,7 +664,7 @@ export function SettingsPage() {
           </View>
         </SettingsSection>
 
-        <SettingsSection border={p.border} surface={p.surface}>
+        <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
           <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
             {t('settings.section.data', locale)}
           </ThemedText>
@@ -650,6 +706,7 @@ export function SettingsPage() {
           </Pressable>
         </SettingsSection>
       </ScrollView>
+      </View>
     </ThemedView>
   );
 }
@@ -658,8 +715,15 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
+  foreground: {
+    flex: 1,
+    minHeight: 0,
+    zIndex: 1,
+    backgroundColor: 'transparent',
+  },
   scroll: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   infoItem: {
     borderBottomWidth: 0,

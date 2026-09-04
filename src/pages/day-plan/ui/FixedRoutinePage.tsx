@@ -30,20 +30,20 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   addDaysToLocalDateKey,
   buildInitialCustomFlowDetailConfig,
+  collectSpineTimelineCategoryKeys,
   createCustomFlowCategoryId,
   filterDayPlanFlowBlocks,
+  formatSpineScheduleRangeLabel,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
   isPriorityWindowEndedForToday,
+  notifyFixedFlowApplyScheduleChanged,
   resolveBlockCategoryKey,
   resolveCategoryCatalogIcon,
   resolveCategoryKeyFromLabel,
   resolveFixedFlowSetDisplayName,
-  collectSpineTimelineCategoryKeys,
-  notifyFixedFlowApplyScheduleChanged,
   resolveFixedFlowSpineSchedules,
   resolvePriorityRoutineCategoryKey,
-  formatSpineScheduleRangeLabel,
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
   useDayPlanStore,
@@ -61,14 +61,10 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { formatDateKeyCompact, t } from '@shared/lib/i18n';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import {
-  coerceDayPlanLayoutMode,
-  type DayPlanLayoutMode as StorageDayPlanLayoutMode,
-} from '@shared/lib/storage/dayPlanLayoutModeVisibility';
-import {
   appendCustomFlowCatalogEntry,
   BUILTIN_PRESET_SCHEDULE_SET_IDS,
-  getDayMealSlotLabel,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
+  getDayMealSlotLabel,
   isBuiltinPresetScheduleSet,
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
@@ -82,6 +78,9 @@ import {
   type FixedFlowSet,
   type FixedFlowSetItem,
 } from '@shared/lib/storage';
+import {
+  coerceDayPlanLayoutMode
+} from '@shared/lib/storage/dayPlanLayoutModeVisibility';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import {
@@ -91,33 +90,39 @@ import {
 
 import { getPickerCategoryLabel, isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
-import { resolveFixedRoutineItemIconColor } from '../lib/fixedRoutineItemAppearance';
 import {
   getFixedFlowPresetScheduleHint,
   getFixedFlowPresetScheduleLabel,
 } from '../lib/fixedFlowPresetLabels';
+import { resolveFixedRoutineItemIconColor } from '../lib/fixedRoutineItemAppearance';
 import {
   buildAddablePriorityCatalogSections,
   buildPriorityCatalogRows,
   type AddablePriorityCatalogSection,
   type PriorityCatalogRow,
 } from '../lib/priorityCatalog';
-import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
-import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
-import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
-import { FixedRoutineMealSlotScheduleCard } from './FixedRoutineMealSlotScheduleCard';
-import { FixedRoutinePriorityWindowCard } from './FixedRoutinePriorityWindowCard';
-import { FixedRoutinePriorityWindowSheet } from './FixedRoutinePriorityWindowSheet';
-import { FixedRoutineSectionTabs, type FixedRoutineSection } from './FixedRoutineSectionTabs';
+import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import {
   CatalogRowMealSlotChips,
   CatalogRowMealSlotSelectedIcons,
   mealSlotPickerBtnWidth,
 } from './CatalogRowMealSlotChips';
 import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
-import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
+import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
+import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
+import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
+import { FixedRoutineMealSlotScheduleCard } from './FixedRoutineMealSlotScheduleCard';
+import { FixedRoutinePriorityWindowCard } from './FixedRoutinePriorityWindowCard';
+import { FixedRoutinePriorityWindowSheet } from './FixedRoutinePriorityWindowSheet';
+import { FixedRoutineSectionTabs, type FixedRoutineSection } from './FixedRoutineSectionTabs';
+import { CityPopCardShell } from './CityPopCardShell';
 import { RoutineCatalogManageContent } from './RoutineCatalogManageContent';
 import { RoutineTemplateListPanel } from './RoutineTemplateListPanel';
+import {
+  RoutineAtmosphereFooterStrip,
+  RoutineTabAtmosphere,
+  type RoutineAtmosphereVariant,
+} from '@shared/ui/routine-atmosphere';
 
 function layoutModeHint(mode: DayPlanLayoutMode): string {
   if (mode === 'spine') {
@@ -365,16 +370,16 @@ function FlowItemCard({
   const spineTimeLabel =
     spineStartMinutes != null && spineEndMinutes != null
       ? formatSpineScheduleRangeLabel({
-          startMinutes: spineStartMinutes,
-          endMinutes: spineEndMinutes,
-          endsNextCalendarDay: spineEndsNextCalendarDay === true,
-          endDayCaption:
-            spineEndsNextCalendarDay === true
-              ? baseDateKey
-                ? formatDateKeyCompact(addDaysToLocalDateKey(baseDateKey, 1), locale)
-                : t('dayPlan.nextDayPrefix')
-              : null,
-        })
+        startMinutes: spineStartMinutes,
+        endMinutes: spineEndMinutes,
+        endsNextCalendarDay: spineEndsNextCalendarDay === true,
+        endDayCaption:
+          spineEndsNextCalendarDay === true
+            ? baseDateKey
+              ? formatDateKeyCompact(addDaysToLocalDateKey(baseDateKey, 1), locale)
+              : t('dayPlan.nextDayPrefix')
+            : null,
+      })
       : null;
 
   useEffect(() => {
@@ -435,91 +440,91 @@ function FlowItemCard({
         { borderBottomColor: line, opacity: enabled ? 1 : 0.5 },
       ]}>
       <View style={styles.flowRow}>
-      <View style={styles.flowRowMain}>
-        <View
-          style={[
-            styles.flowIconBoxShell,
-            { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
-          ]}>
-          <View
-            pointerEvents="none"
-            style={[
-              styles.flowIconBoxShadow,
-              {
-                backgroundColor: brutalShadow,
-                borderColor: line,
-                transform: [
-                  { translateX: BRUTAL_SHADOW_SM },
-                  { translateY: BRUTAL_SHADOW_SM },
-                ],
-              },
-            ]}
-          />
+        <View style={styles.flowRowMain}>
           <View
             style={[
-              styles.flowIconBox,
-              { backgroundColor: iconBoxBg, borderColor: line },
+              styles.flowIconBoxShell,
+              { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
             ]}>
-            <Animated.View
+            <View
+              pointerEvents="none"
               style={[
-                shouldPulse ? { opacity: pulse } : undefined,
-                isCompleted && { opacity: 0.5 },
+                styles.flowIconBoxShadow,
+                {
+                  backgroundColor: brutalShadow,
+                  borderColor: line,
+                  transform: [
+                    { translateX: BRUTAL_SHADOW_SM },
+                    { translateY: BRUTAL_SHADOW_SM },
+                  ],
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.flowIconBox,
+                { backgroundColor: iconBoxBg, borderColor: line },
               ]}>
-              <IconSymbol name={icon as any} size={18} color={iconColor} />
-            </Animated.View>
+              <Animated.View
+                style={[
+                  shouldPulse ? { opacity: pulse } : undefined,
+                  isCompleted && { opacity: 0.5 },
+                ]}>
+                <IconSymbol name={icon as any} size={18} color={iconColor} />
+              </Animated.View>
+            </View>
+          </View>
+          <View style={styles.flowRowTextCol}>
+            <ThemedText
+              style={[styles.flowRowTitle, { color: labelColor }]}
+              numberOfLines={1}>
+              {label}
+            </ThemedText>
+            {showSpineTimePicker && spineTimeLabel ? (
+              <ThemedText
+                style={[
+                  styles.flowRowTime,
+                  { color: muted, opacity: spineTimeIsSuggested ? 0.72 : 1 },
+                ]}
+                numberOfLines={1}>
+                {spineTimeIsSuggested ? t('common.suggested', { time: spineTimeLabel }) : spineTimeLabel}
+              </ThemedText>
+            ) : null}
           </View>
         </View>
-        <View style={styles.flowRowTextCol}>
-          <ThemedText
-            style={[styles.flowRowTitle, { color: labelColor }]}
-            numberOfLines={1}>
-            {label}
-          </ThemedText>
-          {showSpineTimePicker && spineTimeLabel ? (
-            <ThemedText
-              style={[
-                styles.flowRowTime,
-                { color: muted, opacity: spineTimeIsSuggested ? 0.72 : 1 },
-              ]}
-              numberOfLines={1}>
-              {spineTimeIsSuggested ? t('common.suggested', { time: spineTimeLabel }) : spineTimeLabel}
-            </ThemedText>
-          ) : null}
-        </View>
-      </View>
-      {showMealSlotPicker && onToggleMealSlot ? (
-        <FlowBrutalActionButton
-          accessibilityLabel={
-            mealSlots.length > 0
-              ? t('fixedRoutine.mealSlotA11y', { label, slots: mealSlots.map((slot) => getDayMealSlotLabel(slot)).join(', ') })
-              : t('fixedRoutine.mealSlotPickA11y', { label })
-          }
-          accessibilityState={{
-            selected: mealSlotIconHighlighted,
-            expanded: mealSlotExpanded,
-          }}
-          borderColor={line}
-          backgroundColor={actionBg}
-          pressedBg={actionHoverBg}
-          shadowColor={brutalShadow}
-          width={Math.max(32, mealSlotPickerBtnWidth(mealSlots))}
-          onPress={handleToggleMealSlotExpand}>
-          <Reanimated.View style={mealSlotIconAnimatedStyle}>
-            <CatalogRowMealSlotSelectedIcons
-              selectedSlots={mealSlots}
-              color={mealSlotIconHighlighted ? ink : muted}
-              mutedColor={muted}
-              size={12}
-              compactSize={8}
-            />
-          </Reanimated.View>
-        </FlowBrutalActionButton>
-      ) : null}
-      {showSpineTimePicker && onChangeSpineTime ? (
-        <FlowBrutalActionButton
-          accessibilityLabel={
+        {showMealSlotPicker && onToggleMealSlot ? (
+          <FlowBrutalActionButton
+            accessibilityLabel={
+              mealSlots.length > 0
+                ? t('fixedRoutine.mealSlotA11y', { label, slots: mealSlots.map((slot) => getDayMealSlotLabel(slot)).join(', ') })
+                : t('fixedRoutine.mealSlotPickA11y', { label })
+            }
+            accessibilityState={{
+              selected: mealSlotIconHighlighted,
+              expanded: mealSlotExpanded,
+            }}
+            borderColor={line}
+            backgroundColor={actionBg}
+            pressedBg={actionHoverBg}
+            shadowColor={brutalShadow}
+            width={Math.max(32, mealSlotPickerBtnWidth(mealSlots))}
+            onPress={handleToggleMealSlotExpand}>
+            <Reanimated.View style={mealSlotIconAnimatedStyle}>
+              <CatalogRowMealSlotSelectedIcons
+                selectedSlots={mealSlots}
+                color={mealSlotIconHighlighted ? ink : muted}
+                mutedColor={muted}
+                size={12}
+                compactSize={8}
+              />
+            </Reanimated.View>
+          </FlowBrutalActionButton>
+        ) : null}
+        {showSpineTimePicker && onChangeSpineTime ? (
+          <FlowBrutalActionButton
+            accessibilityLabel={
               spineStartMinutes != null && spineEndMinutes != null
-              ? t('fixedRoutine.timeA11y', {
+                ? t('fixedRoutine.timeA11y', {
                   label,
                   time: formatSpineScheduleRangeLabel({
                     startMinutes: spineStartMinutes,
@@ -533,66 +538,66 @@ function FlowItemCard({
                         : null,
                   }),
                 })
-              : t('fixedRoutine.timePickA11y', { label })
-          }
-          accessibilityState={{
-            selected: spineTimeIconHighlighted,
-            expanded: spineTimeExpanded,
-          }}
-          borderColor={line}
-          backgroundColor={actionBg}
-          pressedBg={actionHoverBg}
-          shadowColor={brutalShadow}
-          onPress={handleToggleSpineTimeExpand}>
-          <Reanimated.View style={spineTimeIconAnimatedStyle}>
+                : t('fixedRoutine.timePickA11y', { label })
+            }
+            accessibilityState={{
+              selected: spineTimeIconHighlighted,
+              expanded: spineTimeExpanded,
+            }}
+            borderColor={line}
+            backgroundColor={actionBg}
+            pressedBg={actionHoverBg}
+            shadowColor={brutalShadow}
+            onPress={handleToggleSpineTimeExpand}>
+            <Reanimated.View style={spineTimeIconAnimatedStyle}>
+              <IconSymbol
+                name="clock.fill"
+                size={13}
+                color={spineTimeIconHighlighted ? ink : muted}
+              />
+            </Reanimated.View>
+          </FlowBrutalActionButton>
+        ) : null}
+        {showStartNotify && onToggleStartNotify ? (
+          <FlowBrutalActionButton
+            accessibilityLabel={t('fixedRoutine.startNotifyA11y', { label, state: startNotifyEnabled ? t('common.on') : t('common.off') })}
+            accessibilityState={{ selected: startNotifyEnabled }}
+            borderColor={line}
+            backgroundColor={actionBg}
+            pressedBg={actionHoverBg}
+            shadowColor={brutalShadow}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              handleToggleStartNotify();
+            }}>
             <IconSymbol
-              name="clock.fill"
+              name={startNotifyEnabled ? 'bell.fill' : 'bell'}
               size={13}
-              color={spineTimeIconHighlighted ? ink : muted}
+              color={startNotifyEnabled ? ink : canStartNotify ? ink : muted}
             />
-          </Reanimated.View>
-        </FlowBrutalActionButton>
-      ) : null}
-      {showStartNotify && onToggleStartNotify ? (
+          </FlowBrutalActionButton>
+        ) : null}
         <FlowBrutalActionButton
-          accessibilityLabel={t('fixedRoutine.startNotifyA11y', { label, state: startNotifyEnabled ? t('common.on') : t('common.off') })}
-          accessibilityState={{ selected: startNotifyEnabled }}
+          accessibilityLabel={t('fixedRoutine.deleteRoutineA11y', { label })}
           borderColor={line}
           backgroundColor={actionBg}
           pressedBg={actionHoverBg}
           shadowColor={brutalShadow}
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            handleToggleStartNotify();
-          }}>
-          <IconSymbol
-            name={startNotifyEnabled ? 'bell.fill' : 'bell'}
-            size={13}
-            color={startNotifyEnabled ? ink : canStartNotify ? ink : muted}
-          />
+          onPress={onDelete}>
+          <IconSymbol name="trash" size={13} color={muted} />
         </FlowBrutalActionButton>
-      ) : null}
-      <FlowBrutalActionButton
-        accessibilityLabel={t('fixedRoutine.deleteRoutineA11y', { label })}
-        borderColor={line}
-        backgroundColor={actionBg}
-        pressedBg={actionHoverBg}
-        shadowColor={brutalShadow}
-        onPress={onDelete}>
-        <IconSymbol name="trash" size={13} color={muted} />
-      </FlowBrutalActionButton>
-      <Switch
-        accessibilityLabel={t('fixedRoutine.toggleA11y', { label, state: enabled ? t('common.on') : t('common.off') })}
-        value={enabled}
-        onValueChange={(next) => {
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onToggleEnabled(next);
-        }}
-        trackColor={{ false: trackOff, true: '#000000' }}
-        thumbColor="#FFFFFF"
-        ios_backgroundColor={trackOff}
-        style={styles.flowSwitch}
-      />
+        <Switch
+          accessibilityLabel={t('fixedRoutine.toggleA11y', { label, state: enabled ? t('common.on') : t('common.off') })}
+          value={enabled}
+          onValueChange={(next) => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onToggleEnabled(next);
+          }}
+          trackColor={{ false: trackOff, true: '#000000' }}
+          thumbColor="#FFFFFF"
+          ios_backgroundColor={trackOff}
+          style={styles.flowSwitch}
+        />
       </View>
       {showMealSlotPicker && onToggleMealSlot ? (
         <Reanimated.View
@@ -774,7 +779,7 @@ function AddItemModal({
           ))}
           {sections.length === 0 ? (
             <ThemedText style={[styles.modalEmpty, { color: muted }]}>
-{t('fixedRoutine.modalEmpty')}
+              {t('fixedRoutine.modalEmpty')}
             </ThemedText>
           ) : null}
         </ScrollView>
@@ -947,7 +952,7 @@ function GroupAccordion({
       priorityEnd,
     });
   }, [priorityEnd, priorityStart, setItem.items, useStartTimePicker]);
-  
+
   const applyChipBlocked = applyBlocked && !isActiveForToday;
   const disableApplyToggle = applyChipBlocked;
   const applyLabel = isActiveForToday ? t('fixedRoutine.applying') : t('fixedRoutine.apply');
@@ -960,8 +965,17 @@ function GroupAccordion({
   const scheduleHint = isPresetScheduleSet ? getFixedFlowPresetScheduleHint(setItem.applyRule) : null;
 
   return (
-    <View style={[styles.accordionSection, { backgroundColor: sectionBg, borderColor: line }]}>
-      <View style={styles.accordionHeader}>
+    <CityPopCardShell isDark={isDark} faceColor={sectionBg}>
+    <View style={styles.accordionSectionInner}>
+      <View
+        style={[
+          styles.accordionHeader,
+          {
+            backgroundColor: isDark
+              ? 'rgba(158, 207, 209, 0.16)'
+              : 'rgba(168, 218, 220, 0.28)',
+          },
+        ]}>
         {canRenameSet && isEditingName ? (
           <View style={styles.renameGroupRow}>
             <TextInput
@@ -997,129 +1011,129 @@ function GroupAccordion({
           </View>
         ) : (
           <>
-        <View style={styles.accordionHeaderMain}>
-          {canRenameSet ? (
+            <View style={styles.accordionHeaderMain}>
+              {canRenameSet ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('fixedRoutine.renameGroupA11y', { name: displaySetName })}
+                  accessibilityHint={t('fixedRoutine.renameHint')}
+                  onPress={startRename}
+                  style={({ pressed }) => [
+                    styles.accordionTitlePress,
+                    pressed && { opacity: 0.72 },
+                  ]}>
+                  <ThemedText
+                    style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
+                    numberOfLines={1}>
+                    {displaySetName}
+                  </ThemedText>
+                  <IconSymbol name="pencil" size={10} color={muted} />
+                </Pressable>
+              ) : (
+                <ThemedText
+                  style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
+                  numberOfLines={1}>
+                  {displaySetName}
+                </ThemedText>
+              )}
+              {isPresetScheduleSet && ruleLabel ? (
+                <View
+                  accessibilityRole="text"
+                  accessibilityLabel={ruleLabel}
+                  style={[
+                    styles.rulePill,
+                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' },
+                  ]}>
+                  <ThemedText style={[styles.rulePillText, { color: muted }]}>{ruleLabel}</ThemedText>
+                </View>
+              ) : null}
+            </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('fixedRoutine.renameGroupA11y', { name: displaySetName })}
-              accessibilityHint={t('fixedRoutine.renameHint')}
-              onPress={startRename}
+              accessibilityState={{ disabled: disableApplyToggle }}
+              accessibilityLabel={applyA11yLabel}
+              onPress={() => {
+                if (disableApplyToggle) {
+                  if (applyChipBlocked) onApplyBlocked();
+                  return;
+                }
+                onToggleActiveForToday();
+              }}
               style={({ pressed }) => [
-                styles.accordionTitlePress,
-                pressed && { opacity: 0.72 },
+                styles.headerApplyChip,
+                {
+                  borderColor: line,
+                  backgroundColor: isActiveForToday
+                    ? isDark
+                      ? RetroFlatColors.dark.primaryContainer
+                      : RetroFlatColors.light.primaryContainer
+                    : actionBg,
+                  opacity: disableApplyToggle ? 0.42 : pressed ? 0.88 : 1,
+                },
               ]}>
               <ThemedText
-                style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
+                style={[
+                  styles.headerApplyChipLabel,
+                  {
+                    color: isActiveForToday
+                      ? isDark
+                        ? RetroFlatColors.dark.primary
+                        : '#306163'
+                      : muted,
+                  },
+                ]}
                 numberOfLines={1}>
-                {displaySetName}
+                {applyLabel}
               </ThemedText>
-              <IconSymbol name="pencil" size={10} color={muted} />
             </Pressable>
-          ) : (
-            <ThemedText
-              style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
-              numberOfLines={1}>
-              {displaySetName}
-            </ThemedText>
-          )}
-          {isPresetScheduleSet && ruleLabel ? (
-            <View
-              accessibilityRole="text"
-              accessibilityLabel={ruleLabel}
-              style={[
-                styles.rulePill,
-                { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' },
-              ]}>
-              <ThemedText style={[styles.rulePillText, { color: muted }]}>{ruleLabel}</ThemedText>
-            </View>
-          ) : null}
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: disableApplyToggle }}
-          accessibilityLabel={applyA11yLabel}
-          onPress={() => {
-            if (disableApplyToggle) {
-              if (applyChipBlocked) onApplyBlocked();
-              return;
-            }
-            onToggleActiveForToday();
-          }}
-          style={({ pressed }) => [
-            styles.headerApplyChip,
-            {
-              borderColor: line,
-              backgroundColor: isActiveForToday
-                ? isDark
-                  ? RetroFlatColors.dark.primaryContainer
-                  : RetroFlatColors.light.primaryContainer
-                : actionBg,
-              opacity: disableApplyToggle ? 0.42 : pressed ? 0.88 : 1,
-            },
-          ]}>
-          <ThemedText
-            style={[
-              styles.headerApplyChipLabel,
-              {
-                color: isActiveForToday
-                  ? isDark
-                    ? RetroFlatColors.dark.primary
-                    : '#306163'
-                  : muted,
-              },
-            ]}
-            numberOfLines={1}>
-            {applyLabel}
-          </ThemedText>
-        </Pressable>
-        {!isPresetScheduleSet && canDeleteSet ? (
-          <View
-            style={[
-              styles.brutalBtnShell,
-              { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
-            ]}>
-            <View
-              pointerEvents="none"
-              style={[
-                styles.brutalBtnShadow,
-                {
-                  backgroundColor: shadow,
-                  borderColor: line,
-                  transform: [
-                    { translateX: BRUTAL_SHADOW_SM },
-                    { translateY: BRUTAL_SHADOW_SM },
-                  ],
-                },
-              ]}
-            />
+            {!isPresetScheduleSet && canDeleteSet ? (
+              <View
+                style={[
+                  styles.brutalBtnShell,
+                  { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+                ]}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.brutalBtnShadow,
+                    {
+                      backgroundColor: shadow,
+                      borderColor: line,
+                      transform: [
+                        { translateX: BRUTAL_SHADOW_SM },
+                        { translateY: BRUTAL_SHADOW_SM },
+                      ],
+                    },
+                  ]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('fixedRoutine.deleteGroupA11y', { name: displaySetName })}
+                  onPress={onDeleteSet}
+                  style={({ pressed }) => [
+                    styles.headerDeleteBtn,
+                    {
+                      borderColor: line,
+                      backgroundColor: pressed ? actionHoverBg : actionBg,
+                    },
+                    pressed && { opacity: 0.92 },
+                  ]}>
+                  <IconSymbol name="trash" size={12} color={muted} />
+                </Pressable>
+              </View>
+            ) : null}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('fixedRoutine.deleteGroupA11y', { name: displaySetName })}
-              onPress={onDeleteSet}
-              style={({ pressed }) => [
-                styles.headerDeleteBtn,
-                {
-                  borderColor: line,
-                  backgroundColor: pressed ? actionHoverBg : actionBg,
-                },
-                pressed && { opacity: 0.92 },
-              ]}>
-              <IconSymbol name="trash" size={12} color={muted} />
+              accessibilityLabel={t('fixedRoutine.expandA11y', { name: displaySetName, action: isExpanded ? t('common.collapse') : t('common.expand') })}
+              onPress={onToggleExpand}
+              style={({ pressed }) => [styles.accordionHeaderRight, pressed && { opacity: 0.85 }]}>
+              <View style={[styles.countPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
+                <ThemedText style={[styles.countPillText, { color: muted }]}>
+                  {enabledCount}/{totalCount}
+                </ThemedText>
+              </View>
+              <IconSymbol name={isExpanded ? 'chevron.up' : 'chevron.down'} size={12} color={muted} />
             </Pressable>
-          </View>
-        ) : null}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('fixedRoutine.expandA11y', { name: displaySetName, action: isExpanded ? t('common.collapse') : t('common.expand') })}
-          onPress={onToggleExpand}
-          style={({ pressed }) => [styles.accordionHeaderRight, pressed && { opacity: 0.85 }]}>
-          <View style={[styles.countPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
-            <ThemedText style={[styles.countPillText, { color: muted }]}>
-              {enabledCount}/{totalCount}
-            </ThemedText>
-          </View>
-          <IconSymbol name={isExpanded ? 'chevron.up' : 'chevron.down'} size={12} color={muted} />
-        </Pressable>
           </>
         )}
       </View>
@@ -1133,88 +1147,89 @@ function GroupAccordion({
             if (totalCount === 0) {
               return (
                 <ThemedText style={[styles.accordionEmpty, { color: muted }]}>
-{t('fixedRoutine.groupEmpty')}
+                  {t('fixedRoutine.groupEmpty')}
                 </ThemedText>
               );
             }
             return null;
           })()}
-              <View style={styles.cardList}>
-                {setItem.items.map((item, itemIndex) => {
-                  const cat = catalogByKey.get(item.categoryKey);
-                  const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
-                  const schedule = useStartTimePicker
-                    ? spineSchedules.get(item.categoryKey)
-                    : undefined;
-                  const itemMealSlots = useMealSlotFlatPickerLayout
-                    ? resolveFixedFlowItemMealSlots(item, itemIndex)
-                    : [];
-                  return (
-                    <FlowItemCard
-                      key={item.categoryKey}
-                      item={item}
-                      catalog={cat}
-                      isDark={isDark}
-                      ink={ink}
-                      muted={muted}
-                      line={line}
-                      actionBg={actionBg}
-                      actionHoverBg={actionHoverBg}
-                      shadow={shadow}
-                      isFocusStarted={isFocusStarted}
-                      isInTodayPlan={isCategoryInTodayPlan(item.categoryKey)}
-                      isCompleted={isCategoryCompleted(item.categoryKey)}
-                      mealSlots={itemMealSlots}
-                      showMealSlotPicker={useMealSlotFlatPickerLayout}
-                      onToggleMealSlot={
-                        useMealSlotFlatPickerLayout
-                          ? (slot) => onToggleItemMealSlot?.(item.categoryKey, slot)
-                          : undefined
-                      }
-                      showSpineTimePicker={useStartTimePicker}
-                      spineStartMinutes={schedule?.startMinutes}
-                      spineEndMinutes={schedule?.endMinutes}
-                      spineEndsNextCalendarDay={schedule?.endsNextCalendarDay}
-                      spineTimeIsSuggested={schedule?.isSuggested === true}
-                      baseDateKey={baseDateKey}
-                      onChangeSpineTime={
-                        useStartTimePicker
-                          ? (startMinutes, endMinutes, endsNextCalendarDay) =>
-                              onChangeItemSpineTime?.(
-                                item.categoryKey,
-                                startMinutes,
-                                endMinutes,
-                                endsNextCalendarDay,
-                              )
-                          : undefined
-                      }
-                      onEnsureVisibleAboveKeyboard={onEnsureVisibleAboveKeyboard}
-                      startNotifyEnabled={isStartNotifyEnabled?.(item.categoryKey) ?? false}
-                      onToggleStartNotify={
-                        onToggleStartNotify
-                          ? () => onToggleStartNotify(item.categoryKey)
-                          : undefined
-                      }
-                      onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
-                      onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
-                    />
-                  );
-                })}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('fixedRoutine.addItem')}
-                  onPress={onOpenAddItem}
-                  style={({ pressed }) => [
-                    styles.addRow,
-                    { opacity: pressed ? 0.88 : 1 },
-                  ]}>
-                  <IconSymbol name="plus" size={12} color={muted} />
-                  <ThemedText style={[styles.addRowLabel, { color: muted }]}>{t('fixedRoutine.addItem')}</ThemedText>
-                </Pressable>
-              </View>
+          <View style={styles.cardList}>
+            {setItem.items.map((item, itemIndex) => {
+              const cat = catalogByKey.get(item.categoryKey);
+              const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
+              const schedule = useStartTimePicker
+                ? spineSchedules.get(item.categoryKey)
+                : undefined;
+              const itemMealSlots = useMealSlotFlatPickerLayout
+                ? resolveFixedFlowItemMealSlots(item, itemIndex)
+                : [];
+              return (
+                <FlowItemCard
+                  key={item.categoryKey}
+                  item={item}
+                  catalog={cat}
+                  isDark={isDark}
+                  ink={ink}
+                  muted={muted}
+                  line={line}
+                  actionBg={actionBg}
+                  actionHoverBg={actionHoverBg}
+                  shadow={shadow}
+                  isFocusStarted={isFocusStarted}
+                  isInTodayPlan={isCategoryInTodayPlan(item.categoryKey)}
+                  isCompleted={isCategoryCompleted(item.categoryKey)}
+                  mealSlots={itemMealSlots}
+                  showMealSlotPicker={useMealSlotFlatPickerLayout}
+                  onToggleMealSlot={
+                    useMealSlotFlatPickerLayout
+                      ? (slot) => onToggleItemMealSlot?.(item.categoryKey, slot)
+                      : undefined
+                  }
+                  showSpineTimePicker={useStartTimePicker}
+                  spineStartMinutes={schedule?.startMinutes}
+                  spineEndMinutes={schedule?.endMinutes}
+                  spineEndsNextCalendarDay={schedule?.endsNextCalendarDay}
+                  spineTimeIsSuggested={schedule?.isSuggested === true}
+                  baseDateKey={baseDateKey}
+                  onChangeSpineTime={
+                    useStartTimePicker
+                      ? (startMinutes, endMinutes, endsNextCalendarDay) =>
+                        onChangeItemSpineTime?.(
+                          item.categoryKey,
+                          startMinutes,
+                          endMinutes,
+                          endsNextCalendarDay,
+                        )
+                      : undefined
+                  }
+                  onEnsureVisibleAboveKeyboard={onEnsureVisibleAboveKeyboard}
+                  startNotifyEnabled={isStartNotifyEnabled?.(item.categoryKey) ?? false}
+                  onToggleStartNotify={
+                    onToggleStartNotify
+                      ? () => onToggleStartNotify(item.categoryKey)
+                      : undefined
+                  }
+                  onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
+                  onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
+                />
+              );
+            })}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('fixedRoutine.addItem')}
+              onPress={onOpenAddItem}
+              style={({ pressed }) => [
+                styles.addRow,
+                { opacity: pressed ? 0.88 : 1 },
+              ]}>
+              <IconSymbol name="plus" size={12} color={muted} />
+              <ThemedText style={[styles.addRowLabel, { color: muted }]}>{t('fixedRoutine.addItem')}</ThemedText>
+            </Pressable>
+          </View>
         </View>
       ) : null}
     </View>
+    </CityPopCardShell>
   );
 }
 
@@ -1253,13 +1268,13 @@ export function FixedRoutinePage({
   /** 시안 `px-margin-mobile` 20 */
   const horizontalPad =
     isEmbedded || section === 'catalog' || section === 'templates' ? 20 : 16;
-  
+
   const [priorityWindowSheetOpen, setPriorityWindowSheetOpen] = useState(false);
   const [mealSlotScheduleSheetOpen, setMealSlotScheduleSheetOpen] = useState(false);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [addItemModalOpen, setAddItemModalOpen] = useState(false);
   const [addItemSetId, setAddItemSetId] = useState<string | null>(null);
-  
+
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const targetSetIdRef = useRef<string | null>(null);
@@ -1300,7 +1315,7 @@ export function FixedRoutinePage({
   );
 
   const [nowTick, setNowTick] = useState(() => Date.now());
-  
+
   const layoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
   const hydrateLayoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.hydrate);
   const canManageCustomGroups = embeddedCustomOnly || false;
@@ -1728,7 +1743,12 @@ export function FixedRoutinePage({
   const useBrutalSurface = isEmbedded || isCityPopCatalogSurface;
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   /** 이전 앱 배경 — warm beige (페이지 배경만 유지) */
-  const shellBg = c.bg;
+  const shellBg =
+    isEmbedded || isCityPopCatalogSurface
+      ? isDark
+        ? tone.bg
+        : tone.bg
+      : c.bg;
   const cardBg = useBrutalSurface
     ? isDark
       ? tone.surfaceAlt
@@ -1759,13 +1779,21 @@ export function FixedRoutinePage({
     [router],
   );
 
+  const atmosphereVariant: RoutineAtmosphereVariant = embeddedCustomOnly
+    ? 'myRoutines'
+    : embeddedPresetOnly
+      ? 'fixed'
+      : activeSection === 'templates'
+        ? 'templates'
+        : 'catalog';
+
   const pageBody = (
     <>
       <View
         style={[
           styles.stickyHeader,
           isEmbedded && hideLayoutModeHeader && styles.stickyHeaderEmbedded,
-          { paddingHorizontal: horizontalPad, backgroundColor: shellBg },
+          { paddingHorizontal: horizontalPad, backgroundColor: 'transparent' },
         ]}>
         {!isEmbedded ? (
           <FixedRoutineSectionTabs
@@ -1776,8 +1804,8 @@ export function FixedRoutinePage({
           />
         ) : null}
         {activeSection !== 'catalog' &&
-        activeSection !== 'templates' &&
-        (!hideLayoutModeHeader || isEmbedded) ? (
+          activeSection !== 'templates' &&
+          (!hideLayoutModeHeader || isEmbedded) ? (
           <ThemedText style={[styles.sectionHint, { color: muted }]}>
             {sectionHint}
           </ThemedText>
@@ -1796,230 +1824,234 @@ export function FixedRoutinePage({
         </View>
       ) : null}
       {activeSection !== 'catalog' ? (
-      <KeyboardAvoidingView
-        style={styles.scrollKeyboardRoot}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
-      <ScrollView
-        ref={scrollRef}
-        style={styles.scroll}
-        contentContainerStyle={{
-          paddingBottom: 24 + insets.bottom,
-          paddingHorizontal: horizontalPad,
-          paddingTop: 8,
-        }}
-        automaticallyAdjustKeyboardInsets
-        contentInsetAdjustmentBehavior="automatic"
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        showsVerticalScrollIndicator={false}
-        onScroll={(e) => {
-          scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
-        }}
-        scrollEventThrottle={16}>
-        {activeSection === 'templates' ? (
-          <RoutineTemplateListPanel
-            ink={ink}
-            muted={muted}
-            line={line}
-            cardBg={cardBg}
-            isDark={isDark}
-            onPressTemplate={openRoutineTemplateDetail}
-          />
-        ) : (
-          <>
-            {useSpineRoutineLayout ? (
-              <FixedRoutinePriorityWindowCard
-                priorityStart={priorityStart}
-                priorityEnd={priorityEnd}
-                planDateKey={priorityPlanDateKey}
-                planDateKeyEnd={priorityPlanDateKeyEnd}
-                isDark={isDark}
+        <KeyboardAvoidingView
+          style={styles.scrollKeyboardRoot}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
+          <ScrollView
+            ref={scrollRef}
+            style={styles.scroll}
+            contentContainerStyle={{
+              paddingBottom: 24 + insets.bottom,
+              paddingHorizontal: horizontalPad,
+              paddingTop: 8,
+            }}
+            automaticallyAdjustKeyboardInsets
+            contentInsetAdjustmentBehavior="automatic"
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            showsVerticalScrollIndicator={false}
+            onScroll={(e) => {
+              scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
+            }}
+            scrollEventThrottle={16}>
+            {activeSection === 'templates' ? (
+              <RoutineTemplateListPanel
                 ink={ink}
                 muted={muted}
                 line={line}
                 cardBg={cardBg}
-                onPressSettings={() => setPriorityWindowSheetOpen(true)}
-              />
-            ) : null}
-            {useSectionsRoutineLayout ? (
-              <FixedRoutineMealSlotScheduleCard
-                schedule={mealSlotSchedule}
                 isDark={isDark}
-                ink={ink}
-                muted={muted}
-                line={line}
-                cardBg={cardBg}
-                onPressSettings={() => setMealSlotScheduleSheetOpen(true)}
+                onPressTemplate={openRoutineTemplateDetail}
               />
-            ) : null}
-            <View style={styles.accordionList}>
-              {visibleSets.map((setItem) => (
-                <GroupAccordion
-                  key={setItem.id}
-                  setItem={setItem}
-                  isPresetScheduleSet={isBuiltinPresetScheduleSet(setItem)}
-                  mealSlotLayoutEnabled={useSectionsRoutineLayout}
-                  spineLayoutEnabled={useSpineRoutineLayout}
-                  priorityStart={priorityStart}
-                  priorityEnd={priorityEnd}
-                  baseDateKey={
-                    priorityPlanDateKey <= priorityPlanDateKeyEnd
-                      ? priorityPlanDateKey
-                      : priorityPlanDateKeyEnd
-                  }
-                  isExpanded={expandedIds.has(setItem.id)}
-                  isActiveForToday={isSetActiveForToday(setItem)}
-                  applyBlocked={priorityWindowEndedForToday}
-                  catalogByKey={catalogByKey}
-                  isDark={isDark}
-                  ink={ink}
-                  muted={muted}
-                  line={line}
-                  actionBg={actionBg}
-                  actionHoverBg={actionHoverBg}
-                  shadow={shadow}
-                  sectionBg={sectionBg}
-                  isFocusStarted={isFocusStarted}
-                  isCategoryInTodayPlan={isCategoryInTodayPlan}
-                  isCategoryCompleted={isCategoryCompleted}
-                  onToggleExpand={() => toggleExpanded(setItem.id)}
-                  onToggleActiveForToday={() => {
-                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    toggleSetForToday(setItem.id, layoutMode);
-                  }}
-                  onApplyBlocked={handleApplyBlocked}
-                  canDeleteSet
-                  onDeleteSet={() => handleDeleteSet(setItem.id)}
-                  onRenameSet={(nextName) => renameSet(setItem.id, nextName)}
-                  onToggleItem={(categoryKey, enabled) => {
-                    setCategoryEnabledInSet(setItem.id, categoryKey, enabled);
-                  }}
-                  onDeleteItem={(categoryKey, itemLabel) => {
-                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    const isActiveInTodayList = isCategoryInTodayPlan(categoryKey);
-                    Alert.alert(
-                      t('fixedRoutine.deleteItemTitle', { label: itemLabel }),
-                      t(
-                        isActiveInTodayList
-                          ? 'fixedRoutine.deleteActiveItemMessage'
-                          : 'fixedRoutine.deleteItemMessage',
-                      ),
-                      [
-                        { text: t('common.cancel'), style: 'cancel' },
-                        {
-                          text: t('common.delete'),
-                          style: 'destructive',
-                          onPress: () => {
-                            removeCategoryFromSet(setItem.id, categoryKey);
-                            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            ) : (
+              <>
+                {useSpineRoutineLayout ? (
+                  <FixedRoutinePriorityWindowCard
+                    priorityStart={priorityStart}
+                    priorityEnd={priorityEnd}
+                    planDateKey={priorityPlanDateKey}
+                    planDateKeyEnd={priorityPlanDateKeyEnd}
+                    isDark={isDark}
+                    ink={ink}
+                    muted={muted}
+                    line={line}
+                    cardBg={cardBg}
+                    onPressSettings={() => setPriorityWindowSheetOpen(true)}
+                  />
+                ) : null}
+                {useSectionsRoutineLayout ? (
+                  <FixedRoutineMealSlotScheduleCard
+                    schedule={mealSlotSchedule}
+                    isDark={isDark}
+                    ink={ink}
+                    muted={muted}
+                    line={line}
+                    cardBg={cardBg}
+                    onPressSettings={() => setMealSlotScheduleSheetOpen(true)}
+                  />
+                ) : null}
+                <View style={styles.accordionList}>
+                  {visibleSets.map((setItem) => (
+                    <GroupAccordion
+                      key={setItem.id}
+                      setItem={setItem}
+                      isPresetScheduleSet={isBuiltinPresetScheduleSet(setItem)}
+                      mealSlotLayoutEnabled={useSectionsRoutineLayout}
+                      spineLayoutEnabled={useSpineRoutineLayout}
+                      priorityStart={priorityStart}
+                      priorityEnd={priorityEnd}
+                      baseDateKey={
+                        priorityPlanDateKey <= priorityPlanDateKeyEnd
+                          ? priorityPlanDateKey
+                          : priorityPlanDateKeyEnd
+                      }
+                      isExpanded={expandedIds.has(setItem.id)}
+                      isActiveForToday={isSetActiveForToday(setItem)}
+                      applyBlocked={priorityWindowEndedForToday}
+                      catalogByKey={catalogByKey}
+                      isDark={isDark}
+                      ink={ink}
+                      muted={muted}
+                      line={line}
+                      actionBg={actionBg}
+                      actionHoverBg={actionHoverBg}
+                      shadow={shadow}
+                      sectionBg={sectionBg}
+                      isFocusStarted={isFocusStarted}
+                      isCategoryInTodayPlan={isCategoryInTodayPlan}
+                      isCategoryCompleted={isCategoryCompleted}
+                      onToggleExpand={() => toggleExpanded(setItem.id)}
+                      onToggleActiveForToday={() => {
+                        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        toggleSetForToday(setItem.id, layoutMode);
+                      }}
+                      onApplyBlocked={handleApplyBlocked}
+                      canDeleteSet
+                      onDeleteSet={() => handleDeleteSet(setItem.id)}
+                      onRenameSet={(nextName) => renameSet(setItem.id, nextName)}
+                      onToggleItem={(categoryKey, enabled) => {
+                        setCategoryEnabledInSet(setItem.id, categoryKey, enabled);
+                      }}
+                      onDeleteItem={(categoryKey, itemLabel) => {
+                        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        const isActiveInTodayList = isCategoryInTodayPlan(categoryKey);
+                        Alert.alert(
+                          t('fixedRoutine.deleteItemTitle', { label: itemLabel }),
+                          t(
+                            isActiveInTodayList
+                              ? 'fixedRoutine.deleteActiveItemMessage'
+                              : 'fixedRoutine.deleteItemMessage',
+                          ),
+                          [
+                            { text: t('common.cancel'), style: 'cancel' },
+                            {
+                              text: t('common.delete'),
+                              style: 'destructive',
+                              onPress: () => {
+                                removeCategoryFromSet(setItem.id, categoryKey);
+                                void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                              },
+                            },
+                          ],
+                        );
+                      }}
+                      onOpenAddItem={() => openAddItemModal(setItem.id)}
+                      onToggleItemMealSlot={(categoryKey, slot) =>
+                        handleToggleItemMealSlot(setItem.id, categoryKey, slot)
+                      }
+                      onChangeItemSpineTime={(categoryKey, startMinutes, endMinutes, endsNextCalendarDay) => {
+                        setCategorySpineScheduleInSet(
+                          setItem.id,
+                          categoryKey,
+                          startMinutes,
+                          endMinutes,
+                          endsNextCalendarDay,
+                        );
+                        notifyFixedFlowApplyScheduleChanged();
+                        void Haptics.selectionAsync();
+                      }}
+                      onEnsureVisibleAboveKeyboard={ensureVisibleAboveKeyboard}
+                      isStartNotifyEnabled={isStartNotifyEnabledForCategory}
+                      onToggleStartNotify={(categoryKey) => {
+                        void handleToggleStartNotify(categoryKey);
+                      }}
+                    />
+                  ))}
+                </View>
+
+                {canManageCustomGroups && visibleSets.length === 0 ? (
+                  <ThemedText style={[styles.sectionEmpty, { color: muted }]}>
+                    {t('fixedRoutine.noCustomGroups')}
+                  </ThemedText>
+                ) : null}
+
+                {canManageCustomGroups && (isAddingGroup ? (
+                  <View style={[styles.addGroupCard, { borderColor: line, backgroundColor: cardBg }]}>
+                    <TextInput
+                      value={newGroupName}
+                      onChangeText={setNewGroupName}
+                      autoFocus
+                      style={[styles.addGroupInput, { color: ink, borderBottomColor: line }]}
+                      returnKeyType="done"
+                      onSubmitEditing={submitNewGroup}
+                    />
+                    <View style={styles.addGroupActions}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={t('common.cancel')}
+                        onPress={() => {
+                          setIsAddingGroup(false);
+                          setNewGroupName('');
+                        }}
+                        style={({ pressed }) => [
+                          styles.addGroupCancelBtn,
+                          {
+                            borderColor: line,
+                            backgroundColor: pressed ? actionHoverBg : actionBg,
                           },
-                        },
-                      ],
-                    );
-                  }}
-                  onOpenAddItem={() => openAddItemModal(setItem.id)}
-                  onToggleItemMealSlot={(categoryKey, slot) =>
-                    handleToggleItemMealSlot(setItem.id, categoryKey, slot)
-                  }
-                  onChangeItemSpineTime={(categoryKey, startMinutes, endMinutes, endsNextCalendarDay) => {
-                    setCategorySpineScheduleInSet(
-                      setItem.id,
-                      categoryKey,
-                      startMinutes,
-                      endMinutes,
-                      endsNextCalendarDay,
-                    );
-                    notifyFixedFlowApplyScheduleChanged();
-                    void Haptics.selectionAsync();
-                  }}
-                  onEnsureVisibleAboveKeyboard={ensureVisibleAboveKeyboard}
-                  isStartNotifyEnabled={isStartNotifyEnabledForCategory}
-                  onToggleStartNotify={(categoryKey) => {
-                    void handleToggleStartNotify(categoryKey);
-                  }}
-                />
-              ))}
-            </View>
-
-            {canManageCustomGroups && visibleSets.length === 0 ? (
-              <ThemedText style={[styles.sectionEmpty, { color: muted }]}>
-{t('fixedRoutine.noCustomGroups')}
-              </ThemedText>
-            ) : null}
-
-            {canManageCustomGroups && (isAddingGroup ? (
-              <View style={[styles.addGroupCard, { borderColor: line, backgroundColor: cardBg }]}>
-                <TextInput
-                  value={newGroupName}
-                  onChangeText={setNewGroupName}
-                  autoFocus
-                  style={[styles.addGroupInput, { color: ink, borderBottomColor: line }]}
-                  returnKeyType="done"
-                  onSubmitEditing={submitNewGroup}
-                />
-                <View style={styles.addGroupActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('common.cancel')}
-                    onPress={() => {
-                      setIsAddingGroup(false);
-                      setNewGroupName('');
-                    }}
-                    style={({ pressed }) => [
-                      styles.addGroupCancelBtn,
-                      {
-                        borderColor: line,
-                        backgroundColor: pressed ? actionHoverBg : actionBg,
-                      },
-                    ]}>
-                    <ThemedText style={[styles.addGroupCancel, { color: muted }]}>{t('common.cancel')}</ThemedText>
-                  </Pressable>
+                        ]}>
+                        <ThemedText style={[styles.addGroupCancel, { color: muted }]}>{t('common.cancel')}</ThemedText>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={t('fixedRoutine.addGroupA11y')}
+                        onPress={submitNewGroup}
+                        style={({ pressed }) => [
+                          styles.addGroupSubmit,
+                          {
+                            backgroundColor: ink,
+                            borderColor: ink,
+                            opacity: pressed ? 0.9 : 1,
+                          },
+                        ]}>
+                        <ThemedText style={[styles.addGroupSubmitLabel, { color: isDark ? '#09090b' : '#fff' }]}>
+                          {t('common.add')}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t('fixedRoutine.addGroupA11y')}
-                    onPress={submitNewGroup}
+                    onPress={() => setIsAddingGroup(true)}
                     style={({ pressed }) => [
-                      styles.addGroupSubmit,
+                      styles.addGroupTrigger,
                       {
-                        backgroundColor: ink,
-                        borderColor: ink,
-                        opacity: pressed ? 0.9 : 1,
+                        borderColor: line,
+                        backgroundColor: pressed ? actionHoverBg : cardBg,
                       },
                     ]}>
-                    <ThemedText style={[styles.addGroupSubmitLabel, { color: isDark ? '#09090b' : '#fff' }]}>
-                      {t('common.add')}
+                    <View style={styles.addGroupTriggerMain}>
+                      <IconSymbol name="plus" size={14} color={ink} />
+                      <ThemedText style={[styles.addGroupTriggerLabel, { color: ink }]}>
+                        {t('fixedRoutine.addGroupA11y')}
+                      </ThemedText>
+                    </View>
+                    <ThemedText style={[styles.addGroupHint, { color: muted }]}>
+                      {t('fixedRoutine.addGroupHint')}
                     </ThemedText>
                   </Pressable>
-                </View>
-              </View>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('fixedRoutine.addGroupA11y')}
-                onPress={() => setIsAddingGroup(true)}
-                style={({ pressed }) => [
-                  styles.addGroupTrigger,
-                  {
-                    borderColor: line,
-                    backgroundColor: pressed ? actionHoverBg : cardBg,
-                  },
-                ]}>
-                <View style={styles.addGroupTriggerMain}>
-                  <IconSymbol name="plus" size={14} color={ink} />
-                  <ThemedText style={[styles.addGroupTriggerLabel, { color: ink }]}>
-                    {t('fixedRoutine.addGroupA11y')}
-                  </ThemedText>
-                </View>
-                <ThemedText style={[styles.addGroupHint, { color: muted }]}>
-                  {t('fixedRoutine.addGroupHint')}
-                </ThemedText>
-              </Pressable>
-            ))}
-          </>
-        )}
-      </ScrollView>
-      </KeyboardAvoidingView>
+                ))}
+                <RoutineAtmosphereFooterStrip
+                  variant={embeddedCustomOnly ? 'myRoutines' : 'fixed'}
+                  isDark={isDark}
+                />
+              </>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
       ) : null}
 
       <AddItemModal
@@ -2086,12 +2118,18 @@ export function FixedRoutinePage({
   );
 
   if (isEmbedded) {
-    return <View style={[styles.embeddedRoot, { backgroundColor: shellBg }]}>{pageBody}</View>;
+    return (
+      <View style={[styles.embeddedRoot, { backgroundColor: shellBg }]}>
+        <RoutineTabAtmosphere variant={atmosphereVariant} isDark={isDark} />
+        <View style={styles.foreground}>{pageBody}</View>
+      </View>
+    );
   }
 
   return (
     <View style={[styles.screen, { backgroundColor: shellBg }]}>
-      {pageBody}
+      <RoutineTabAtmosphere variant={atmosphereVariant} isDark={isDark} />
+      <View style={styles.foreground}>{pageBody}</View>
     </View>
   );
 }
@@ -2101,6 +2139,12 @@ const styles = StyleSheet.create({
   embeddedRoot: {
     flex: 1,
     minHeight: 0,
+  },
+  foreground: {
+    flex: 1,
+    minHeight: 0,
+    zIndex: 1,
+    backgroundColor: 'transparent',
   },
   stickyHeader: {
     paddingTop: 8,
@@ -2113,10 +2157,10 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     gap: 6,
   },
-  cachedCatalogPane: { flex: 1 },
+  cachedCatalogPane: { flex: 1, backgroundColor: 'transparent' },
   cachedCatalogPaneHidden: { display: 'none' },
-  scrollKeyboardRoot: { flex: 1 },
-  scroll: { flex: 1 },
+  scrollKeyboardRoot: { flex: 1, backgroundColor: 'transparent' },
+  scroll: { flex: 1, backgroundColor: 'transparent' },
   sectionHint: {
     fontSize: 11,
     lineHeight: 16,
@@ -2130,7 +2174,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   accordionList: {
-    gap: 10,
+    gap: 12,
     marginBottom: 14,
   },
   accordionSection: {
@@ -2138,6 +2182,9 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: 1,
     overflow: 'hidden',
+  },
+  accordionSectionInner: {
+    width: '100%',
   },
   accordionHeader: {
     flexDirection: 'row',
@@ -2217,16 +2264,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   headerApplyChip: {
+    height: 28,
     paddingHorizontal: 9,
-    paddingVertical: 6,
+    paddingVertical: 0,
     borderRadius: 0,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0,
   },
   headerApplyChipLabel: {
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: -0.15,
+    lineHeight: 14,
   },
   headerDeleteBtn: {
     width: 28,

@@ -8,17 +8,23 @@ import { useShallow } from 'zustand/react/shallow';
 import { formatHhmmClockKo, getLocalDateKey, useDayPlanDraftStore } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import { syncRoutineWindowCompletionsToHistory } from '@features/history-routine-sync';
-import { useTranslation } from '@shared/lib/i18n';
-import { buildFlowHistoryPalette } from '../lib/flowHistoryPalette';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
 import {
   loadDayMealSlotSchedule,
   resolvePriorityMealSlot,
   type DayMealSlot,
 } from '@shared/lib/storage';
+import {
+  RoutineAtmosphereFooterStrip,
+  RoutineTabAtmosphere,
+} from '@shared/ui/routine-atmosphere';
+import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
+
+import { buildFlowHistoryPalette } from '../lib/flowHistoryPalette';
 
 import {
   buildMonthlyFlowHistory,
@@ -184,163 +190,188 @@ export function DayPlanStatisticsPage() {
     period === 'week'
       ? t('history.empty.weekBody')
       : t('history.empty.monthBody');
+  const atmosphereVariant = period === 'week' ? 'historyWeek' : 'historyMonth';
 
   return (
     <ThemedView
       style={[styles.root, { backgroundColor: palette.pageBg }]}
       lightColor={palette.pageBg}
       darkColor={palette.pageBg}>
-      <View style={[styles.stickyHeader, { backgroundColor: palette.pageBg }]}>
-        <ThemedText style={styles.pageDesc} lightColor={palette.muted} darkColor={palette.muted}>
-          {historyPeriodDescription(period)}
-        </ThemedText>
+      <RoutineTabAtmosphere variant={atmosphereVariant} isDark={isDark} />
+      <View style={styles.foreground}>
+        <View style={styles.stickyHeader}>
+          <HistoryPeriodTabs
+            period={period}
+            onSelectPeriod={setPeriod}
+            isDark={isDark}
+          />
 
-        <HistoryPeriodTabs
-          period={period}
-          onSelectPeriod={setPeriod}
-          isDark={isDark}
-        />
-
-        <View style={styles.periodNavRow}>
-          <View
-            style={[
-              styles.periodNavShell,
-              { marginRight: 2, marginBottom: 2 },
-            ]}>
+          <View style={styles.periodNavRow}>
             <View
-              pointerEvents="none"
               style={[
-                styles.periodNavShadow,
-                {
-                  backgroundColor: palette.shadow,
-                  borderColor: palette.border,
-                  transform: [{ translateX: 2 }, { translateY: 2 }],
-                },
-              ]}
-            />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={period === 'week' ? t('history.nav.prevWeek') : t('history.nav.prevMonth')}
-              hitSlop={8}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                shiftPeriod(-1);
-              }}
-              style={({ pressed }) => [
-                styles.periodNavBtn,
-                {
-                  backgroundColor: pressed ? palette.accentSoft : palette.actionBg,
-                  borderColor: palette.border,
-                },
-                pressed && styles.periodNavPressed,
+                styles.periodNavShell,
+                { marginRight: 3, marginBottom: 3 },
               ]}>
-              <IconSymbol name="chevron.left" size={13} color={palette.ink} />
-            </Pressable>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.periodNavShadow,
+                  {
+                    backgroundColor: palette.shadow,
+                    borderColor: palette.border,
+                    transform: [{ translateX: 3 }, { translateY: 3 }],
+                  },
+                ]}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={period === 'week' ? t('history.nav.prevWeek') : t('history.nav.prevMonth')}
+                hitSlop={8}
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  shiftPeriod(-1);
+                }}
+                style={({ pressed }) => [
+                  styles.periodNavBtn,
+                  {
+                    backgroundColor: pressed ? palette.accentSoft : palette.actionBg,
+                    borderColor: palette.border,
+                  },
+                  pressed && styles.periodNavPressed,
+                ]}>
+                <IconSymbol name="chevron.left" size={13} color={palette.ink} />
+              </Pressable>
+            </View>
+            <View style={[styles.periodLabelShell, { marginRight: 3, marginBottom: 3 }]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.periodLabelShadow,
+                  {
+                    backgroundColor: palette.shadow,
+                    borderColor: palette.border,
+                    transform: [{ translateX: 3 }, { translateY: 3 }],
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.periodLabelFace,
+                  { backgroundColor: palette.card, borderColor: palette.border },
+                ]}>
+                <ThemedText style={[styles.periodNavLabel, { color: palette.ink }]}>
+                  {periodNavLabel}
+                </ThemedText>
+              </View>
+            </View>
+            <View
+              style={[
+                styles.periodNavShell,
+                { marginRight: 3, marginBottom: 3 },
+              ]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.periodNavShadow,
+                  {
+                    backgroundColor: palette.shadow,
+                    borderColor: palette.border,
+                    transform: [{ translateX: 3 }, { translateY: 3 }],
+                  },
+                ]}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={period === 'week' ? t('history.nav.nextWeek') : t('history.nav.nextMonth')}
+                disabled={!canGoNext}
+                hitSlop={8}
+                onPress={() => {
+                  if (!canGoNext) return;
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  shiftPeriod(1);
+                }}
+                style={({ pressed }) => [
+                  styles.periodNavBtn,
+                  {
+                    backgroundColor:
+                      pressed && canGoNext ? palette.accentSoft : palette.actionBg,
+                    borderColor: palette.border,
+                  },
+                  pressed && canGoNext && styles.periodNavPressed,
+                ]}>
+                <IconSymbol
+                  name="chevron.right"
+                  size={13}
+                  color={canGoNext ? palette.ink : palette.muted}
+                />
+              </Pressable>
+            </View>
           </View>
-          <ThemedText style={[styles.periodNavLabel, { color: palette.ink }]}>
-            {periodNavLabel}
+
+          <ThemedText style={styles.pageDesc} lightColor={palette.muted} darkColor={palette.muted}>
+            {historyPeriodDescription(period)}
           </ThemedText>
-          <View
-            style={[
-              styles.periodNavShell,
-              { marginRight: 2, marginBottom: 2 },
-            ]}>
-            <View
-              pointerEvents="none"
-              style={[
-                styles.periodNavShadow,
-                {
-                  backgroundColor: palette.shadow,
-                  borderColor: palette.border,
-                  transform: [{ translateX: 2 }, { translateY: 2 }],
-                },
-              ]}
-            />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={period === 'week' ? t('history.nav.nextWeek') : t('history.nav.nextMonth')}
-              disabled={!canGoNext}
-              hitSlop={8}
-              onPress={() => {
-                if (!canGoNext) return;
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                shiftPeriod(1);
-              }}
-              style={({ pressed }) => [
-                styles.periodNavBtn,
-                {
-                  backgroundColor:
-                    pressed && canGoNext ? palette.accentSoft : palette.actionBg,
-                  borderColor: palette.border,
-                },
-                pressed && canGoNext && styles.periodNavPressed,
-              ]}>
-              <IconSymbol
-                name="chevron.right"
-                size={13}
-                color={canGoNext ? palette.ink : palette.muted}
-              />
-            </Pressable>
-          </View>
         </View>
+
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: 8,
+              paddingBottom: Math.max(insets.bottom, 12) + 12,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}>
+          {period === 'month' ? (
+            <MonthlyHistorySummaryCard summary={monthlySummary} palette={palette} />
+          ) : (
+            <WeeklyHistorySummaryCard summary={weeklySummary} palette={palette} />
+          )}
+
+          {!isHydrated ? (
+            <CityPopCardShell isDark={isDark} faceColor={palette.card} contentStyle={styles.emptyContent}>
+              <ThemedText style={[styles.emptyTitle, { color: palette.ink }]}>
+                {t('history.loading')}
+              </ThemedText>
+            </CityPopCardShell>
+          ) : flowRows.length === 0 ? (
+            <CityPopCardShell isDark={isDark} faceColor={palette.card} contentStyle={styles.emptyContent}>
+              <ThemedText style={[styles.emptyTitle, { color: palette.ink }]}>{emptyTitle}</ThemedText>
+              <ThemedText style={styles.emptyBody} lightColor={palette.muted} darkColor={palette.muted}>
+                {emptyBody}
+              </ThemedText>
+            </CityPopCardShell>
+          ) : period === 'week' ? (
+            <View style={styles.cardList}>
+              {weeklyGroups.map((group) => (
+                <WeeklyFlowHistoryCard
+                  key={group.categoryKey}
+                  group={group}
+                  palette={palette}
+                />
+              ))}
+            </View>
+          ) : (
+            <View style={styles.cardList}>
+              {monthlyGroups.map((group) => (
+                <MonthlyFlowHistoryCard
+                  key={group.categoryKey}
+                  group={group}
+                  monthPrefix={monthPrefix}
+                  palette={palette}
+                />
+              ))}
+            </View>
+          )}
+
+          <ThemedText style={styles.helperText} lightColor={palette.muted} darkColor={palette.muted}>
+            {t('history.helper')}
+          </ThemedText>
+
+          <RoutineAtmosphereFooterStrip variant={atmosphereVariant} isDark={isDark} />
+        </ScrollView>
       </View>
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingTop: 8,
-            paddingBottom: Math.max(insets.bottom, 12) + 12,
-          },
-        ]}
-        showsVerticalScrollIndicator={false}>
-        {period === 'month' ? (
-          <MonthlyHistorySummaryCard summary={monthlySummary} palette={palette} />
-        ) : (
-          <WeeklyHistorySummaryCard summary={weeklySummary} palette={palette} />
-        )}
-
-        {!isHydrated ? (
-          <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <ThemedText style={[styles.emptyTitle, { color: palette.ink }]}>
-              {t('history.loading')}
-            </ThemedText>
-          </View>
-        ) : flowRows.length === 0 ? (
-          <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <ThemedText style={[styles.emptyTitle, { color: palette.ink }]}>{emptyTitle}</ThemedText>
-            <ThemedText style={styles.emptyBody} lightColor={palette.muted} darkColor={palette.muted}>
-              {emptyBody}
-            </ThemedText>
-          </View>
-        ) : period === 'week' ? (
-          <View style={styles.cardList}>
-            {weeklyGroups.map((group) => (
-              <WeeklyFlowHistoryCard
-                key={group.categoryKey}
-                group={group}
-                palette={palette}
-              />
-            ))}
-          </View>
-        ) : (
-          <View style={styles.cardList}>
-            {monthlyGroups.map((group) => (
-              <MonthlyFlowHistoryCard
-                key={group.categoryKey}
-                group={group}
-                monthPrefix={monthPrefix}
-                palette={palette}
-              />
-            ))}
-          </View>
-        )}
-
-        <ThemedText style={styles.helperText} lightColor={palette.muted} darkColor={palette.muted}>
-          {t('history.helper')}
-        </ThemedText>
-      </ScrollView>
     </ThemedView>
   );
 }
@@ -349,15 +380,23 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
+  foreground: {
+    flex: 1,
+    minHeight: 0,
+    zIndex: 1,
+    backgroundColor: 'transparent',
+  },
   stickyHeader: {
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 8,
     gap: 10,
     zIndex: 2,
+    backgroundColor: 'transparent',
   },
   scroll: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     width: '100%',
@@ -380,14 +419,14 @@ const styles = StyleSheet.create({
   },
   periodNavShadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
+    borderWidth: 2,
     borderRadius: 0,
   },
   periodNavBtn: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
@@ -395,28 +434,43 @@ const styles = StyleSheet.create({
   periodNavPressed: {
     opacity: 0.92,
   },
-  periodNavLabel: {
+  periodLabelShell: {
     flex: 1,
+    position: 'relative',
+    minWidth: 0,
+  },
+  periodLabelShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 2,
+    borderRadius: 0,
+  },
+  periodLabelFace: {
+    borderWidth: 2,
+    borderRadius: 0,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  periodNavLabel: {
     textAlign: 'center',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: -0.2,
   },
   cardList: {
     width: '100%',
-    gap: 8,
+    gap: 10,
   },
-  emptyCard: {
-    width: '100%',
-    borderRadius: 0,
-    borderWidth: 2,
+  emptyContent: {
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 6,
   },
   emptyTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: -0.2,
     lineHeight: 19,
   },

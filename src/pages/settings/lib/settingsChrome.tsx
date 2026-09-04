@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { CityPopSpacing, RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
+import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
 const SHADOW_SM = 2;
@@ -27,7 +28,7 @@ export type SettingsPalette = {
 export function buildSettingsPalette(isDark: boolean): SettingsPalette {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   return {
-    bg: c.bg,
+    bg: 'transparent',
     surface: isDark ? c.surfaceAlt : '#FFFFFF',
     border: c.border,
     sectionTitle: c.textMuted,
@@ -35,9 +36,9 @@ export function buildSettingsPalette(isDark: boolean): SettingsPalette {
     desc: c.textMuted,
     icon: c.primary,
     iconBoxBg: c.primaryContainer,
-    shadow: isDark ? c.solidShadow : c.text,
+    shadow: isDark ? c.solidShadow : c.primary,
     chevron: c.textMuted,
-    dangerBg: c.dangerBg,
+    dangerBg: isDark ? 'rgba(147, 0, 10, 1)' : '#FFDAD6',
     dangerTitle: isDark ? c.danger : '#B91C1C',
     dangerDesc: isDark ? '#FFB4AB' : '#991B1B',
     dangerIcon: isDark ? c.danger : '#DC2626',
@@ -45,7 +46,7 @@ export function buildSettingsPalette(isDark: boolean): SettingsPalette {
   };
 }
 
-/** 설정 행 — 파스텔 아이콘 박스 + solid shadow */
+/** 설정 행 — 파스텔 아이콘 박스 + 민트 solid shadow */
 export function SettingsRowIcon({
   name,
   color,
@@ -81,17 +82,22 @@ export function SettingsRowIcon({
 
 export function SettingsSection({
   children,
-  border,
   surface,
+  isDark = false,
 }: {
   children: ReactNode;
-  border: string;
+  border?: string;
   surface: string;
+  isDark?: boolean;
 }) {
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  /** 카드 오프셋은 검정 — 민트 섀도는 반투명 면에서 전체가 민트로 보임 */
+  const shadowColor = isDark ? tone.solidShadow : tone.text;
+
   return (
-    <View style={[styles.section, { borderColor: border, backgroundColor: surface }]}>
-      {children}
-    </View>
+    <CityPopCardShell isDark={isDark} faceColor={surface} shadowColor={shadowColor}>
+      <View style={styles.sectionInner}>{children}</View>
+    </CityPopCardShell>
   );
 }
 
@@ -102,7 +108,8 @@ export const settingsChromeStyles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 8,
     paddingBottom: 10,
-    borderBottomWidth: 2,
+    borderBottomWidth: 0,
+    backgroundColor: 'transparent',
   },
   headerBtn: {
     width: 44,
@@ -118,7 +125,7 @@ export const settingsChromeStyles = StyleSheet.create({
   container: {
     padding: CityPopSpacing.md,
     paddingHorizontal: CityPopSpacing.marginMobile,
-    gap: 12,
+    gap: 14,
   },
   sectionHint: {
     fontSize: 12,
@@ -167,9 +174,7 @@ export const settingsChromeStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  section: {
-    borderWidth: RETRO_BORDER_WIDTH,
-    borderRadius: 0,
+  sectionInner: {
     overflow: 'hidden',
   },
   iconShell: {
@@ -178,14 +183,14 @@ const styles = StyleSheet.create({
   },
   iconShadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
+    borderWidth: RETRO_BORDER_WIDTH,
     borderRadius: 0,
   },
   iconBox: {
     width: 36,
     height: 36,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: RETRO_BORDER_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,

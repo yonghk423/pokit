@@ -3,6 +3,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  Image,
   LayoutAnimation,
   Platform,
   Pressable,
@@ -14,22 +15,25 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  buildInitialCustomFlowDetailConfig,
   createCustomFlowCategoryId,
   deleteCustomFlowCategory,
   dismissCatalogGroupWithItemReassign,
-  buildInitialCustomFlowDetailConfig,
-  type CustomFlowTemplateKey,
   isCustomFlowCategoryKey,
   isSystemCatalogGroupKey,
   notifyFixedFlowApplyScheduleChanged,
   resolveCategoryCatalogIcon,
   useDayPlanDraftStore,
   useFixedFlowSetsStore,
+  type CustomFlowTemplateKey,
 } from '@entities/day-plan';
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
+import { headerArtForVariant } from '@shared/ui/routine-atmosphere';
+import { RoutineAtmosphereFooterStrip } from '@shared/ui/routine-atmosphere';
 import {
   appendCustomFlowCatalogEntry,
   createCustomCatalogGroup,
@@ -47,7 +51,6 @@ import {
   type CustomCatalogGroup,
   type CustomFlowCatalogEntry,
 } from '@shared/lib/storage';
-import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -79,12 +82,12 @@ function bookColors(c: DayPlanPalette, isDark: boolean) {
     ink: tone.text,
     muted: tone.textMuted,
     line: tone.border,
-    /** 이전 앱 배경 — warm beige (`#F5F2EB`) */
-    shellBg: c.containerLow,
-    sheetSurface: c.containerLow,
+    /** City Pop warm beige */
+    shellBg: isDark ? tone.bg : tone.bg,
+    sheetSurface: isDark ? tone.surfaceAlt : tone.bg,
     actionBg: isDark ? tone.surfaceAlt : '#FFFFFF',
     actionHoverBg: tone.surfacePink,
-    shadow: isDark ? tone.solidShadow : tone.text,
+    shadow: isDark ? tone.solidShadow : tone.primary,
   };
 }
 
@@ -439,10 +442,16 @@ export function RoutineCatalogManageContent() {
         <View style={styles.headerBlock}>
           <View style={styles.titleRow}>
             <View style={styles.titleCopy}>
-              <ThemedText style={[styles.pageTitle, { color: editorial.ink }]}>{t('catalog.managePageTitle')}</ThemedText>
               <ThemedText style={[styles.lead, { color: editorial.muted }]}>
                 {t('catalog.managePageLead')}
               </ThemedText>
+            </View>
+            <View style={styles.headerArtSlot} pointerEvents="none">
+              <Image
+                source={headerArtForVariant('catalog')}
+                style={styles.headerArt}
+                resizeMode="contain"
+              />
             </View>
             <Pressable
               accessibilityRole="button"
@@ -452,10 +461,27 @@ export function RoutineCatalogManageContent() {
                 setCreateChoiceSheetOpen(true);
               }}
               style={({ pressed }) => [
-                styles.headerAddButton,
-                { opacity: pressed ? 0.92 : 1 },
+                styles.headerAddButtonShell,
+                pressed && { opacity: 0.92 },
               ]}>
-              <View style={[styles.headerAddButtonInner, { backgroundColor: editorial.ink }]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.headerAddButtonShadow,
+                  {
+                    backgroundColor: editorial.shadow,
+                    borderColor: editorial.line,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.headerAddButtonInner,
+                  {
+                    backgroundColor: editorial.ink,
+                    borderColor: editorial.line,
+                  },
+                ]}>
                 <IconSymbol name="plus" size={15} color="#FFFFFF" />
               </View>
             </Pressable>
@@ -463,7 +489,7 @@ export function RoutineCatalogManageContent() {
         </View>
       </View>
       <ScrollView
-        style={[styles.scroll, { backgroundColor: editorial.shellBg }]}
+        style={[styles.scroll, { backgroundColor: 'transparent' }]}
         contentContainerStyle={[
           styles.scrollContent,
           {
@@ -477,7 +503,7 @@ export function RoutineCatalogManageContent() {
           editorial={editorial}
           priorityCategoryOrder={[]}
           isFocusStarted={false}
-          onCatalogTap={() => {}}
+          onCatalogTap={() => { }}
           onOpenCategorySettings={onOpenCategorySettings}
           customFlowPickerItems={customFlowPickerItems}
           customFlowEntries={customFlowEntries}
@@ -489,6 +515,7 @@ export function RoutineCatalogManageContent() {
           onDeleteCatalogItem={onDeleteCatalogItem}
           manageOnly
         />
+        <RoutineAtmosphereFooterStrip variant="catalog" isDark={isDark} />
       </ScrollView>
       <CreateCatalogEntryChoiceSheet
         visible={createChoiceSheetOpen}
@@ -590,32 +617,49 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 4,
+    justifyContent: 'center',
   },
-  pageTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    lineHeight: 24,
+  headerArtSlot: {
+    width: 72,
+    height: 56,
+    marginRight: 2,
+    marginBottom: -2,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    overflow: 'visible',
   },
-  headerAddButton: {
+  headerArt: {
+    width: 88,
+    height: 88,
+    marginBottom: -18,
+  },
+  headerAddButtonShell: {
     width: HEADER_ADD_BUTTON_SIZE,
     height: HEADER_ADD_BUTTON_SIZE,
-    borderRadius: HEADER_ADD_BUTTON_SIZE / 2,
-    borderWidth: 2,
-    borderColor: '#000000',
+    position: 'relative',
+    marginRight: 2,
+    marginBottom: 4,
     flexShrink: 0,
-    marginBottom: 2,
+  },
+  headerAddButtonShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 2,
+    borderRadius: 0,
+    transform: [{ translateX: 2 }, { translateY: 2 }],
   },
   headerAddButtonInner: {
-    flex: 1,
-    borderRadius: HEADER_ADD_BUTTON_SIZE / 2,
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 2,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   lead: {
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: '500',
     lineHeight: 17,
+    letterSpacing: -0.1,
   },
   scroll: { flex: 1 },
   scrollContent: {

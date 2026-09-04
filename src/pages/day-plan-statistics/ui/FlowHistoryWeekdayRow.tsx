@@ -1,14 +1,10 @@
 import { StyleSheet, View } from 'react-native';
 import { useMemo } from 'react';
-import type { SymbolViewProps } from 'expo-symbols';
 
+import { RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
-import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import {
-  activeIconColorByCategory,
-  categoryAccentColorPastel,
-} from '@widgets/day-plan-priority-order';
+import { categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
 
 import { getHistoryWeekdayLabels, type WeeklyFlowHistoryRow } from '../lib/buildWeeklyFlowHistory';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
@@ -17,40 +13,49 @@ type Props = {
   row: WeeklyFlowHistoryRow;
   palette: FlowHistoryPalette;
   categoryKey: string;
-  icon: string;
 };
 
-/** 요일별 완료 트랙 — 완료 시 루틴 아이콘 표시 */
-export function FlowHistoryWeekdayRow({ row, palette, categoryKey, icon }: Props) {
+/**
+ * 주간 완료 리듬 — 세그먼트 스트립.
+ * 아이콘 반복 대신 요일 라벨 + 얇은 채움 칸으로 단정하게 표현.
+ */
+export function FlowHistoryWeekdayRow({ row, palette, categoryKey }: Props) {
   const { locale } = useTranslation();
   const weekdayLabels = useMemo(() => getHistoryWeekdayLabels(locale), [locale]);
-  const iconColor = activeIconColorByCategory(categoryKey);
-  const doneBg = categoryAccentColorPastel(categoryKey);
+  const doneFill = categoryAccentColorPastel(categoryKey);
 
   return (
-    <View style={styles.trackWrap}>
-      <View style={styles.weekdayTrack}>
+    <View style={styles.root}>
+      <View style={styles.labelRow}>
         {weekdayLabels.map((label, index) => {
           const done = row.weekdayDone[index] ?? false;
           return (
-            <View key={`${label}-${index}`} style={styles.weekdayCol}>
-              <View
-                style={[
-                  styles.weekdayDot,
-                  {
-                    borderColor: palette.border,
-                    backgroundColor: done ? doneBg : 'transparent',
-                  },
-                ]}>
-                {done ? (
-                  <IconSymbol name={icon as SymbolViewProps['name']} size={14} color={iconColor} />
-                ) : null}
-              </View>
-              <ThemedText
-                style={[styles.weekdayLabel, { color: done ? palette.ink : palette.muted }]}>
-                {label}
-              </ThemedText>
-            </View>
+            <ThemedText
+              key={`label-${label}-${index}`}
+              style={[
+                styles.label,
+                { color: done ? palette.ink : palette.muted },
+                done && styles.labelDone,
+              ]}>
+              {label}
+            </ThemedText>
+          );
+        })}
+      </View>
+
+      <View style={[styles.track, { borderColor: palette.border, backgroundColor: palette.card }]}>
+        {weekdayLabels.map((label, index) => {
+          const done = row.weekdayDone[index] ?? false;
+          const isLast = index === weekdayLabels.length - 1;
+          return (
+            <View
+              key={`cell-${label}-${index}`}
+              style={[
+                styles.cell,
+                !isLast && { borderRightWidth: StyleSheet.hairlineWidth * 2, borderRightColor: palette.border },
+                { backgroundColor: done ? doneFill : 'transparent' },
+              ]}
+            />
           );
         })}
       </View>
@@ -59,33 +64,35 @@ export function FlowHistoryWeekdayRow({ row, palette, categoryKey, icon }: Props
 }
 
 const styles = StyleSheet.create({
-  trackWrap: {
+  root: {
     width: '100%',
-    minWidth: 0,
+    gap: 6,
   },
-  weekdayTrack: {
-    width: '100%',
+  labelRow: {
     flexDirection: 'row',
-    gap: 5,
-    alignItems: 'flex-start',
-  },
-  weekdayCol: {
-    flex: 1,
-    minWidth: 0,
-    alignItems: 'center',
-    gap: 4,
-  },
-  weekdayDot: {
     width: '100%',
-    aspectRatio: 1,
-    borderRadius: 0,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  weekdayLabel: {
+  label: {
+    flex: 1,
+    textAlign: 'center',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '600',
+    letterSpacing: -0.2,
     lineHeight: 12,
+  },
+  labelDone: {
+    fontWeight: '800',
+  },
+  track: {
+    flexDirection: 'row',
+    width: '100%',
+    height: 14,
+    borderWidth: RETRO_BORDER_WIDTH,
+    borderRadius: 0,
+    overflow: 'hidden',
+  },
+  cell: {
+    flex: 1,
+    height: '100%',
   },
 });

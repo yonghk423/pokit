@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { persistRoutineDisplayName } from '@entities/day-plan/lib/routineDisplayName';
 import { t, useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import type { goalDetailSettingsPalette } from './settingsPalette';
 
@@ -141,7 +142,7 @@ export function RoutineTitleField({
   return (
     <View style={size === 'header' ? styles.listHeaderHeader : styles.listHeader}>
       {allowRename ? (
-        <TextInput
+        <ThemedTextInput
           value={inputValue}
           onChangeText={handleChangeText}
           onFocus={handleFocus}

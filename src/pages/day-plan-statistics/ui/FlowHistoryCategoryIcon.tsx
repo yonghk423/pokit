@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import type { SymbolViewProps } from 'expo-symbols';
 
+import { RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import {
   activeIconColorByCategory,
@@ -17,10 +18,11 @@ type Props = {
   palette: FlowHistoryPalette;
 };
 
-/** 히스토리 카드 — 루틴 목록과 같은 pastel 아이콘 박스 */
+/** 히스토리 카드 — 루틴 목록과 같은 pastel 아이콘 박스 + 민트 솔리드 섀도 */
 export function FlowHistoryCategoryIcon({ categoryKey, icon, palette }: Props) {
   const iconColor = activeIconColorByCategory(categoryKey);
   const boxBg = categoryAccentColorPastel(categoryKey);
+  const shadowColor = palette.shadow;
 
   return (
     <View
@@ -33,7 +35,7 @@ export function FlowHistoryCategoryIcon({ categoryKey, icon, palette }: Props) {
         style={[
           styles.shadow,
           {
-            backgroundColor: palette.shadow,
+            backgroundColor: shadowColor,
             borderColor: palette.border,
             transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
           },
@@ -57,14 +59,14 @@ const styles = StyleSheet.create({
   },
   shadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
+    borderWidth: RETRO_BORDER_WIDTH,
     borderRadius: 0,
   },
   box: {
     width: 36,
     height: 36,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: RETRO_BORDER_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,

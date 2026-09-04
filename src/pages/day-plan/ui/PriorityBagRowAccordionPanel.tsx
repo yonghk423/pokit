@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, Share, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, Share, StyleSheet, View } from 'react-native';
 
 import {
   formatMinutesToHHmm,
@@ -21,6 +21,7 @@ import {
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { UiSurfacePresentationProvider } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 type ChecklistTask = { id: string; text: string; done: boolean };
 
@@ -224,8 +225,7 @@ export function PriorityBagRowAccordionPanel({
   const handleCopy = useCallback(async () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await Clipboard.setStringAsync(buildPayload());
-    Alert.alert(t('dayPlan.rowAccordionCopiedTitle'), t('dayPlan.rowAccordionCopiedBody'));
-  }, [buildPayload, t]);
+  }, [buildPayload]);
 
   const handleShare = useCallback(async () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -244,7 +244,7 @@ export function PriorityBagRowAccordionPanel({
   if (checklistTemplate) {
     return (
       <View style={s.root}>
-        <TextInput
+        <ThemedTextInput
           value={summaryDraft}
           onChangeText={handleSummaryChange}
           placeholder={t('goalDetail.summaryPlaceholder')}
@@ -315,7 +315,7 @@ export function PriorityBagRowAccordionPanel({
 
           <View style={s.addRow}>
             <ThemedText style={[s.dash, { color: muted }]}>–</ThemedText>
-            <TextInput
+            <ThemedTextInput
               value={draft}
               onChangeText={setDraft}
               placeholder={addPlaceholder}
