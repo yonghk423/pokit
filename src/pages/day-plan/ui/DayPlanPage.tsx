@@ -650,12 +650,13 @@ export function DayPlanPage({
       return;
     }
 
-    // 구간 종료 후에는 집중 시작 여부와 관계없이 담기·집중 상태를 정리한다.
+    // 구간 밖·종료 후: 집중/완료 상태만 정리.
+    // 담기 목록 리셋은 rollPriorityPlanForwardIfEnded·만료 effect에서
+    // 고정 루틴 재적용과 함께 처리한다(여기서 비우면 고정 루틴까지 사라짐).
     if (priorityWindowEndedForToday || isFocusStarted) {
       setIsFocusStarted(false);
       clearCompletedFocusCategoryKeys();
       clearPlanCompletionDismissedKeys();
-      setPriorityCategoryOrder([]);
       endFocusedLiveActivity();
     }
   }, [
@@ -667,7 +668,6 @@ export function DayPlanPage({
     setIsFocusStarted,
     clearCompletedFocusCategoryKeys,
     clearPlanCompletionDismissedKeys,
-    setPriorityCategoryOrder,
     endFocusedLiveActivity,
   ]);
 
@@ -721,6 +721,8 @@ export function DayPlanPage({
     clearCompletedFocusCategoryKeys();
     clearPlanCompletionDismissedKeys();
     setPriorityCategoryOrder([]);
+    // reset: 수동 담기만 비우고, 오늘 적용 중인 고정 루틴은 다시 반영
+    syncTodayTabWithFixedRoutineApply();
     endFocusedLiveActivity();
   }, [
     planMode,

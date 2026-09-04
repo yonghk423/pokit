@@ -428,8 +428,8 @@ export function MedicineSettings({
             <View style={styles.slotRow}>
               {SLOT_GRID.map((slot) => {
                 const on = slotOn(draft, slot.key);
-                const bg = isNote ? 'transparent' : on ? pill.activeBg : pill.inactiveBg;
-                const borderCol = isNote ? 'transparent' : on ? pill.activeBorder : pill.inactiveBorder;
+                const bg = on ? pill.activeBg : pill.inactiveBg;
+                const borderCol = on ? pill.activeBorder : pill.inactiveBorder;
                 const fg = on ? pill.activeIcon : pill.inactiveIcon;
                 return (
                   <Pressable
@@ -441,14 +441,10 @@ export function MedicineSettings({
                     onPress={() => setDraft((prev) => setSlot(prev, slot.key, !slotOn(prev, slot.key)))}
                     style={({ pressed }) => [
                       styles.slotChip,
-                      isNote && styles.slotChipNote,
-                      { flex: isNote ? 0 : 1, backgroundColor: bg, borderColor: borderCol },
-                      isNote && on && styles.slotChipNoteOn,
+                      { flex: 1, backgroundColor: bg, borderColor: borderCol },
                       pressed && { opacity: 0.88 },
                     ]}>
-                    <Text style={[styles.slotChipText, { color: fg }, isNote && on && styles.slotChipTextNoteOn]}>
-                      {t(slot.labelKey)}
-                    </Text>
+                    <Text style={[styles.slotChipText, { color: fg }]}>{t(slot.labelKey)}</Text>
                   </Pressable>
                 );
               })}
@@ -484,6 +480,7 @@ export function MedicineSettings({
                   snapStepMinutes={1}
                   routineDayStartHhmm={priorityStart}
                   routineDayEndHhmm={priorityEnd}
+                  compact
                 />
               </View>
               <View style={[styles.row, styles.rowInSlotGroup, styles.slotNotifyRow]}>
@@ -535,17 +532,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   slotNotifyRow: {
-    minHeight: 52,
-    paddingVertical: 6,
+    minHeight: 40,
+    paddingVertical: 4,
   },
-  rowSubTitle: { fontSize: 14, fontWeight: '600' },
+  rowSubTitle: { fontSize: 13, fontWeight: '600' },
   slotRowWrap: {
     flexDirection: 'column',
     alignItems: 'stretch',
     minHeight: 0,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
-  slotColumn: { gap: 8, width: '100%' },
+  slotColumn: { gap: 6, width: '100%' },
   row: {
     minHeight: 62,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -556,27 +553,27 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rowTitle: { fontSize: 16, fontWeight: '600' },
+  rowTitle: { fontSize: 14, fontWeight: '600' },
   rowInput: { flex: 1, fontSize: 16, fontWeight: '600', textAlign: 'right', minHeight: 32, maxWidth: '70%' },
   slotRow: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    gap: 8,
-    marginTop: 4,
+    gap: 6,
+    marginTop: 2,
     alignSelf: 'stretch',
   },
   slotChip: {
-    minHeight: 44,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    minHeight: 32,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
     borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 1.5,
   },
-  slotChipText: { fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
+  slotChipText: { fontSize: 12, fontWeight: '800', letterSpacing: -0.2 },
   medicineTimePickerRow: {
-    paddingVertical: 4,
+    paddingVertical: 2,
   },
   doseActionRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   doseActionBtn: {
@@ -650,17 +647,6 @@ const styles = StyleSheet.create({
     minHeight: 0,
     paddingVertical: 6,
     borderBottomWidth: 0,
-  },
-  slotChipNote: {
-    borderWidth: 0,
-    minHeight: 0,
-    paddingHorizontal: 0,
-    paddingVertical: 2,
-    paddingRight: 14,
-  },
-  slotChipNoteOn: {},
-  slotChipTextNoteOn: {
-    textDecorationLine: 'underline',
   },
   slotDetailBlockNote: {
     borderBottomWidth: 0,

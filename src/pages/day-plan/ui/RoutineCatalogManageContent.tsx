@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   LayoutAnimation,
@@ -127,8 +127,13 @@ export function RoutineCatalogManageContent() {
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [createChoiceSheetOpen, setCreateChoiceSheetOpen] = useState(false);
   const [createGroupSheetOpen, setCreateGroupSheetOpen] = useState(false);
-  const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
-  const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
+  const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>(
+    () => listAllCustomFlowCatalogEntries(),
+  );
+  const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>(
+    () => listCustomCatalogGroups(),
+  );
+  const hasHandledInitialFocusRef = useRef(false);
   const [createSheetGroupKey, setCreateSheetGroupKey] = useState<string | undefined>(undefined);
   const [editGroupSheet, setEditGroupSheet] = useState<{
     groupKey: string;
@@ -147,12 +152,14 @@ export function RoutineCatalogManageContent() {
     setCustomGroups(listCustomCatalogGroups());
   }, []);
 
-  useEffect(() => {
-    reloadCatalogData();
-  }, [reloadCatalogData]);
-
   useFocusEffect(
     useCallback(() => {
+      // 초기 데이터는 lazy state에서 동기적으로 읽는다. 마운트 직후 다시
+      // 갱신하면 빈 화면과 완성된 목록 사이에 중간 프레임이 노출된다.
+      if (!hasHandledInitialFocusRef.current) {
+        hasHandledInitialFocusRef.current = true;
+        return;
+      }
       reloadCatalogData();
       bumpCategoryLabelEpoch();
     }, [bumpCategoryLabelEpoch, reloadCatalogData]),
@@ -467,7 +474,6 @@ export function RoutineCatalogManageContent() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <PriorityCatalogPanel
-          key={categoryLabelEpoch}
           editorial={editorial}
           priorityCategoryOrder={[]}
           isFocusStarted={false}

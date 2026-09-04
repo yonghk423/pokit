@@ -273,7 +273,6 @@ export function DayPlanStatisticsPage() {
                     pressed && canGoNext ? palette.accentSoft : palette.actionBg,
                   borderColor: palette.border,
                 },
-                !canGoNext && styles.periodNavBtnDisabled,
                 pressed && canGoNext && styles.periodNavPressed,
               ]}>
               <IconSymbol
@@ -395,9 +394,6 @@ const styles = StyleSheet.create({
   },
   periodNavPressed: {
     opacity: 0.92,
-  },
-  periodNavBtnDisabled: {
-    opacity: 0.35,
   },
   periodNavLabel: {
     flex: 1,

@@ -1,97 +1,76 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Keyboard,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { formatMinutesToHHmm, parseHHmmToMinutes } from '@entities/day-plan';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
-import { RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import type { DayPlanPalette } from '../lib/dayPlanPalette';
-import { todoListUiColors } from '../lib/todoListTheme';
+import {
+  CatalogRowSpineTimePanel,
+  type CatalogRowSpineTimePanelHandle,
+} from './CatalogRowSpineTimePanel';
 
 type Props = {
   visible: boolean;
   startMinutes: number;
   endMinutes: number;
-  c: DayPlanPalette;
   isDark: boolean;
+  ink: string;
+  muted: string;
+  line: string;
   onClose: () => void;
   onSave: (startMinutes: number, endMinutes: number) => void;
 };
 
-function minutesToInput(minutes: number): string {
-  return formatMinutesToHHmm(minutes);
-}
-
-function parseTimeInput(raw: string, fallback: number): number {
-  const trimmed = raw.trim();
-  if (!/^\d{1,2}:\d{2}$/.test(trimmed)) return fallback;
-  const parsed = parseHHmmToMinutes(trimmed);
-  return parsed != null && Number.isFinite(parsed) ? parsed : fallback;
-}
-
-/** 투두 행 — 시작·종료 시각 편집 */
+/** 투두 시간 조절 — 시작·종료만 (당일/다음 날·날짜 라벨 없음) */
 export function TodoListTimeEditSheet({
   visible,
   startMinutes,
   endMinutes,
-  c,
   isDark,
+  ink,
+  muted,
+  line,
   onClose,
   onSave,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-
-  const ui = useMemo(() => todoListUiColors(c, isDark), [c, isDark]);
-  const [startText, setStartText] = useState(minutesToInput(startMinutes));
-  const [endText, setEndText] = useState(minutesToInput(endMinutes));
-  const [keyboardInset, setKeyboardInset] = useState(0);
-
-  useEffect(() => {
-    if (!visible) {
-      setKeyboardInset(0);
-      return;
-    }
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSub = Keyboard.addListener(showEvent, (event) => {
-      setKeyboardInset(event.endCoordinates.height);
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => {
-      setKeyboardInset(0);
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, [visible]);
+  const panelRef = useRef<CatalogRowSpineTimePanelHandle>(null);
+  const [modalKey, setModalKey] = useState(0);
+  const [draft, setDraft] = useState({ startMinutes, endMinutes });
 
   useEffect(() => {
     if (!visible) return;
-    setStartText(minutesToInput(startMinutes));
-    setEndText(minutesToInput(endMinutes));
+    setDraft({ startMinutes, endMinutes });
+    setModalKey((k) => k + 1);
   }, [visible, startMinutes, endMinutes]);
 
-  const handleSave = useCallback(() => {
-    const start = parseTimeInput(startText, startMinutes);
-    let end = parseTimeInput(endText, endMinutes);
-    if (end <= start) end = Math.min(24 * 60, start + 15);
-    onSave(start, end);
+  const handleClose = useCallback(() => {
+    Keyboard.dismiss();
     onClose();
-  }, [startText, endText, startMinutes, endMinutes, onSave, onClose]);
+  }, [onClose]);
 
-  const sheetBottomInset =
-    keyboardInset > 0 ? keyboardInset + 12 : Math.max(insets.bottom, 16);
+  const handleSave = useCallback(() => {
+    const next = panelRef.current?.commitPendingSchedule();
+    const start = next?.startMinutes ?? draft.startMinutes;
+    let end = next?.endMinutes ?? draft.endMinutes;
+    if (end <= start) end = Math.min(24 * 60, start + 15);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onSave(start, end);
+    handleClose();
+  }, [draft.endMinutes, draft.startMinutes, handleClose, onSave]);
 
   return (
     <Modal
@@ -99,87 +78,84 @@ export function TodoListTimeEditSheet({
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={onClose}>
-      <View style={styles.root}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
+      onRequestClose={handleClose}>
+      <KeyboardAvoidingView
+        style={[
+          styles.root,
+          {
+            paddingTop: Math.max(insets.top, 16),
+            paddingBottom: Math.max(insets.bottom, 16),
+          },
+        ]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={insets.top + 12}>
         <Pressable
+          style={styles.dim}
+          onPress={handleClose}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.close')}
+        />
+        <View
           style={[
-            styles.sheet,
+            styles.card,
             {
-              backgroundColor: c.containerLow,
-              borderColor: c.border,
-              marginBottom: sheetBottomInset,
+              backgroundColor: isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF',
+              borderColor: isDark ? RetroFlatColors.dark.border : line,
             },
-          ]}
-          onPress={(e) => e.stopPropagation()}>
-          <ThemedText style={styles.title} lightColor={ui.ink} darkColor={ui.ink}>
-            {t('dayPlan.todoAdjustTime')}
-          </ThemedText>
-          <View style={styles.row}>
-            <View style={styles.field}>
-              <ThemedText style={styles.label} lightColor={ui.muted} darkColor={ui.muted}>
-                {t('goalDetail.study.start')}
-              </ThemedText>
-              <TextInput
-                value={startText}
-                onChangeText={setStartText}
-                placeholder="09:00"
-                placeholderTextColor={ui.placeholder}
-                keyboardType="numbers-and-punctuation"
-                style={[
-                  styles.input,
-                  {
-                    borderColor: ui.btnBorder,
-                    color: ui.ink,
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.72)',
-                  },
-                ]}
+          ]}>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled">
+            {visible ? (
+              <CatalogRowSpineTimePanel
+                key={modalKey}
+                ref={panelRef}
+                startMinutes={draft.startMinutes}
+                endMinutes={draft.endMinutes}
+                endsNextCalendarDay={false}
+                presentation="sheet"
+                visualStyle="note"
+                contentInsetLeft={0}
+                ink={ink}
+                muted={muted}
+                line={line}
+                isDark={isDark}
+                startFieldLabel={t('goalDetail.study.start')}
+                endFieldLabel={t('goalDetail.study.end')}
+                showSheetConfirm={false}
+                showEndDateChoice={false}
+                showDateLabels={false}
+                onScheduleChange={(start, end) => {
+                  setDraft({ startMinutes: start, endMinutes: end });
+                }}
               />
+            ) : null}
+            <View style={[styles.footer, { borderTopColor: line }]}>
+              <Pressable
+                style={styles.cancelHit}
+                onPress={handleClose}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.cancel')}>
+                <ThemedText style={[styles.cancelText, { color: muted }]}>
+                  {t('common.cancel')}
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.saveHit, pressed && { opacity: 0.55 }]}
+                onPress={handleSave}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.save')}>
+                <ThemedText
+                  style={[styles.saveText, { color: ink, borderBottomColor: ink }]}>
+                  {t('common.save')}
+                </ThemedText>
+              </Pressable>
             </View>
-            <View style={styles.field}>
-              <ThemedText style={styles.label} lightColor={ui.muted} darkColor={ui.muted}>
-                {t('goalDetail.study.end')}
-              </ThemedText>
-              <TextInput
-                value={endText}
-                onChangeText={setEndText}
-                placeholder="10:00"
-                placeholderTextColor={ui.placeholder}
-                keyboardType="numbers-and-punctuation"
-                style={[
-                  styles.input,
-                  {
-                    borderColor: ui.btnBorder,
-                    color: ui.ink,
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.72)',
-                  },
-                ]}
-              />
-            </View>
-          </View>
-          <View style={styles.actions}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={onClose}
-              style={[styles.btn, { borderColor: ui.btnBorder, backgroundColor: ui.btnBg }]}>
-              <ThemedText style={styles.btnText} lightColor={ui.ink} darkColor={ui.ink}>
-                {t('common.cancel')}
-              </ThemedText>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={handleSave}
-              style={[
-                styles.btn,
-                { borderColor: ui.primary, backgroundColor: ui.primary },
-              ]}>
-              <ThemedText style={styles.btnText} lightColor={ui.primaryOn} darkColor={ui.primaryOn}>
-                {t('common.save')}
-              </ThemedText>
-            </Pressable>
-          </View>
-        </Pressable>
-      </View>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -187,58 +163,58 @@ export function TodoListTimeEditSheet({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
-  backdrop: {
+  dim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
-  sheet: {
-    borderWidth: RETRO_BORDER_WIDTH,
+  card: {
     borderRadius: 0,
-    padding: 16,
-    gap: 14,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    maxWidth: 420,
+    maxHeight: '88%',
+    width: '100%',
+    alignSelf: 'center',
+    zIndex: 2,
   },
-  title: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.2,
+  scroll: {
+    width: '100%',
   },
-  row: {
+  scrollContent: {
+    gap: 12,
+    paddingBottom: 2,
+  },
+  footer: {
+    marginTop: 4,
+    paddingTop: 12,
+    paddingBottom: 4,
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
-  field: {
-    flex: 1,
-    gap: 6,
+  cancelHit: {
+    paddingVertical: 2,
+    paddingRight: 12,
   },
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+  saveHit: {
+    paddingVertical: 2,
+    paddingLeft: 12,
   },
-  input: {
-    borderWidth: RETRO_BORDER_WIDTH,
-    borderRadius: 0,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    fontSize: 15,
+  cancelText: {
+    fontSize: 13,
     fontWeight: '600',
+    letterSpacing: -0.15,
   },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
-  },
-  btn: {
-    borderWidth: RETRO_BORDER_WIDTH,
-    borderRadius: 0,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  btnText: {
-    fontSize: 14,
+  saveText: {
+    fontSize: 13,
     fontWeight: '700',
+    letterSpacing: -0.15,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    paddingBottom: 1,
   },
 });

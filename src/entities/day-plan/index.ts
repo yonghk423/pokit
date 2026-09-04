@@ -281,10 +281,12 @@ export { formatSpineGapCoaching } from './lib/formatSpineGapCoaching';
 export {
   ITEM_PRIORITY_CYCLE,
   ITEM_PRIORITY_META,
+  priorityRowWash,
   cycleItemPriority,
   normalizeItemPriority,
   resolveCategoryImportance,
 } from './lib/itemPriority';
+
 export * from './lib/goalCategorySessionConfig';
 export {
   ROUTINE_SUMMARY_MAX,

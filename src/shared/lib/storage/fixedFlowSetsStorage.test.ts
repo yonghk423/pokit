@@ -201,8 +201,8 @@ describe('fixedFlowSetsStorage', () => {
       'set_example_focus',
     ]);
     expect(state.sets.find((set) => set.id === 'set_example_focus')?.items.map((item) => item.categoryKey)).toEqual([
-      'reading',
-      'work',
+      'customFlow:preset_stretching',
+      'customFlow:preset_abstain',
     ]);
   });
 
@@ -286,13 +286,17 @@ describe('fixedFlowSetsStorage', () => {
           id: 'set_weekend',
           name: '주말 루틴',
           applyRule: 'weekend',
-          items: [{ categoryKey: 'reading', enabled: true }],
+          items: [
+            { categoryKey: 'customFlow:preset_daily_exercise', enabled: true },
+            { categoryKey: 'healthIntake', enabled: true },
+          ],
         },
       ],
     });
     expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-06T09:00:00+09:00'))).toEqual([]);
     expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-04T09:00:00+09:00'))).toEqual([
-      'reading',
+      'customFlow:preset_daily_exercise',
+      'healthIntake',
     ]);
   });
 

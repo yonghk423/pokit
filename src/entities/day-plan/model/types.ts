@@ -10,6 +10,8 @@ export type DayPlanTodoItem = {
   priority: TodoPriority;
   startMinutes: number;
   endMinutes: number;
+  /** true면 종료 시각은 시작일 다음 날 */
+  endsNextCalendarDay?: boolean;
   inProgress: boolean;
   isDone: boolean;
   order: number;

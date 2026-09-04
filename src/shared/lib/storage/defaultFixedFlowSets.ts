@@ -7,7 +7,11 @@ import {
   defaultWeekdaysForApplyRule,
   type WeekdayIndex,
 } from './fixedFlowWeekdays';
-import { BUILTIN_DAILY_LIFE_FLOW_IDS } from './defaultPriorityCatalog';
+import {
+  BUILTIN_ABSTAIN_FLOW_ID,
+  BUILTIN_DAILY_LIFE_FLOW_IDS,
+  BUILTIN_STRETCHING_FLOW_ID,
+} from './defaultPriorityCatalog';
 
 function items(categoryKeys: string[]) {
   return categoryKeys.map((categoryKey) => ({ categoryKey, enabled: true }));
@@ -44,6 +48,15 @@ export const EXAMPLE_CUSTOM_FLOW_SET_ITEM_KEYS = [
   BUILTIN_DAILY_LIFE_FLOW_IDS[1],
 ] as const;
 
+/** 집중 루틴 예시 — 담기 카탈로그에 남아 있는 키만 (reading/work는 CATALOG_REMOVED) */
+export const EXAMPLE_FOCUS_FLOW_SET_ITEM_KEYS = [
+  BUILTIN_STRETCHING_FLOW_ID,
+  BUILTIN_ABSTAIN_FLOW_ID,
+] as const;
+
+/** 레거시 집중 예시 기본 항목 — sanitize로 비워지던 reading/work */
+const LEGACY_FOCUS_SET_DEFAULT_KEYS = ['reading', 'work'] as const;
+
 const BUILTIN_EXAMPLE_CUSTOM_SET_TEMPLATES: DefaultSetTemplate[] = [
   {
     id: 'set_example_health',
@@ -55,7 +68,7 @@ const BUILTIN_EXAMPLE_CUSTOM_SET_TEMPLATES: DefaultSetTemplate[] = [
     id: 'set_example_focus',
     name: BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_NAMES.set_example_focus,
     applyRule: 'manual',
-    categoryKeys: ['reading', 'work'],
+    categoryKeys: [...EXAMPLE_FOCUS_FLOW_SET_ITEM_KEYS],
   },
 ];
 
@@ -108,11 +121,19 @@ export function mergeBuiltInExampleCustomSets(
   const mergedExamples = defaults.map((defaultSet) => {
     const existing = byId.get(defaultSet.id);
     if (!existing) return defaultSet;
+    const existingKeys = existing.items.map((item) => item.categoryKey);
+    const shouldResetFocusItems =
+      defaultSet.id === 'set_example_focus' &&
+      (existing.items.length === 0 ||
+        isSameCategoryKeySet(existingKeys, LEGACY_FOCUS_SET_DEFAULT_KEYS));
     return {
       ...existing,
       name: defaultSet.name,
       applyRule: 'manual' as const,
-      items: existing.items.length > 0 ? existing.items : defaultSet.items,
+      items:
+        existing.items.length > 0 && !shouldResetFocusItems
+          ? existing.items
+          : defaultSet.items,
     };
   });
 
@@ -150,6 +171,9 @@ export const REMOVED_BUILTIN_PRESET_SET_IDS = [
 /** 레거시 데일리 루틴 기본 항목 — 미수정 저장 데이터 마이그레이션용 */
 const LEGACY_DAILY_SET_DEFAULT_KEYS = ['healthIntake', 'reading', 'work'] as const;
 
+/** 레거시 주말 루틴 기본 항목 — reading은 CATALOG_REMOVED라 비워짐 */
+const LEGACY_WEEKEND_SET_DEFAULT_KEYS = ['reading'] as const;
+
 function isSameCategoryKeySet(keys: string[], expected: readonly string[]): boolean {
   if (keys.length !== expected.length) return false;
   const set = new Set(keys);
@@ -167,7 +191,10 @@ const DEFAULT_SET_TEMPLATES: DefaultSetTemplate[] = [
     id: 'set_weekend',
     name: '주말 루틴',
     applyRule: 'weekend',
-    categoryKeys: ['reading'],
+    categoryKeys: [
+      BUILTIN_DAILY_LIFE_FLOW_IDS[5],
+      BUILTIN_DAILY_LIFE_FLOW_IDS[6],
+    ],
   },
 ];
 
@@ -218,12 +245,19 @@ export function mergeBuiltInPresetSets(sets: FixedFlowSet[]): FixedFlowSet[] {
     const shouldResetDailyItems =
       defaultSet.id === 'set_daily' &&
       isSameCategoryKeySet(existingKeys, LEGACY_DAILY_SET_DEFAULT_KEYS);
+    const shouldResetWeekendItems =
+      defaultSet.id === 'set_weekend' &&
+      (existing.items.length === 0 ||
+        isSameCategoryKeySet(existingKeys, LEGACY_WEEKEND_SET_DEFAULT_KEYS));
+    const shouldResetEmptyPreset = existing.items.length === 0;
     return {
       ...existing,
       name: defaultSet.name,
       applyRule: defaultSet.applyRule,
       applyWeekdays: defaultSet.applyWeekdays,
-      ...(shouldResetDailyItems ? { items: defaultSet.items } : {}),
+      ...(shouldResetDailyItems || shouldResetWeekendItems || shouldResetEmptyPreset
+        ? { items: defaultSet.items }
+        : {}),
     };
   });
   const builtInIds = new Set(defaults.map((set) => set.id));

@@ -58,8 +58,6 @@ function layoutModeLabel(t: (key: I18nKey) => string, mode: DayPlanLayoutMode): 
 }
 const ENABLED_LAYOUT_MODES: readonly DayPlanLayoutMode[] = ['bag'];
 
-const SHADOW_SM = 2;
-
 type Props = {
   mode: DayPlanLayoutMode;
   onSelectMode: (mode: DayPlanLayoutMode) => void;
@@ -110,63 +108,53 @@ export function DayPlanLayoutModeTabs({
   if (attached && showLabels) {
     if (layoutTabs.length === 0) return null;
     const border = tone.border;
-    const shadowColor = isDark ? tone.solidShadow : tone.text;
+    const trackBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(53, 102, 104, 0.08)';
     const activeBg = tone.primaryContainer;
     const activeText = tone.primary;
-    const inactiveBg = isDark ? tone.surfaceAlt : '#FFFFFF';
     const inactiveText = tone.textMuted;
 
     return (
-      <View style={styles.attachedRoot}>
-        {layoutTabs.map((item, index) => {
+      <View style={[styles.attachedRoot, { backgroundColor: trackBg, borderColor: border }]}>
+        {layoutTabs.map((item) => {
           const active = mode === item.key;
           const label = layoutModeLabel(t, item.key);
-          const isFirst = index === 0;
           return (
-            <View key={item.key} style={styles.attachedShell}>
-              {active ? (
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.attachedShadow,
-                    {
-                      backgroundColor: shadowColor,
-                      borderColor: border,
-                      transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
-                    },
-                  ]}
-                />
-              ) : null}
-              <Pressable
-                accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={label}
-                onPress={() => {
-                  if (active && !allowReselect) return;
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onSelectMode(item.key);
-                }}
-                style={({ pressed }) => [
-                  styles.attachedTab,
-                  !isFirst && styles.attachedJoin,
+            <Pressable
+              key={item.key}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={label}
+              onPress={() => {
+                if (active && !allowReselect) return;
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onSelectMode(item.key);
+              }}
+              style={({ pressed }) => [
+                styles.attachedTab,
+                active && [
+                  styles.attachedTabActive,
                   {
-                    backgroundColor: active ? activeBg : inactiveBg,
+                    backgroundColor: activeBg,
                     borderColor: border,
                   },
-                  pressed && { opacity: 0.92 },
-                ]}>
-                <IconSymbol
-                  name={item.icon as 'sun.horizon.fill'}
-                  size={14}
-                  color={active ? activeText : inactiveText}
-                />
-                <ThemedText
-                  style={[styles.attachedLabel, { color: active ? activeText : inactiveText }]}
-                  numberOfLines={1}>
-                  {label}
-                </ThemedText>
-              </Pressable>
-            </View>
+                ],
+                pressed && { opacity: 0.88 },
+              ]}>
+              <IconSymbol
+                name={item.icon as 'sun.horizon.fill'}
+                size={14}
+                color={active ? activeText : inactiveText}
+              />
+              <ThemedText
+                style={[
+                  styles.attachedLabel,
+                  active && styles.attachedLabelActive,
+                  { color: active ? activeText : inactiveText },
+                ]}
+                numberOfLines={1}>
+                {label}
+              </ThemedText>
+            </Pressable>
           );
         })}
       </View>
@@ -304,35 +292,32 @@ const styles = StyleSheet.create({
   attachedRoot: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    marginRight: SHADOW_SM,
-    marginBottom: SHADOW_SM,
-  },
-  attachedShell: {
-    flex: 1,
-    position: 'relative',
-  },
-  attachedShadow: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 2,
+    borderWidth: 1,
     borderRadius: 0,
+    padding: 3,
+    gap: 3,
+    marginBottom: 4,
   },
   attachedTab: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
-    borderWidth: 2,
+    borderWidth: 0,
     borderRadius: 0,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 6,
-    zIndex: 1,
   },
-  attachedJoin: {
-    borderLeftWidth: 0,
+  attachedTabActive: {
+    borderWidth: 1,
   },
   attachedLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     letterSpacing: -0.15,
+  },
+  attachedLabelActive: {
+    fontWeight: '800',
   },
 });

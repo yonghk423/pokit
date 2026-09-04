@@ -1,6 +1,5 @@
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
-import { useFocusEffect } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
@@ -1070,7 +1069,7 @@ function GroupSectionBlock({
                 styles.sectionGroupShell,
                 {
                   borderColor: editorial.line,
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                  backgroundColor: editorial.actionBg,
                 },
               ]
             : undefined
@@ -1158,23 +1157,16 @@ export function PriorityCatalogPanel({
     setExpandedSpineTimeKey((prev) => (prev === categoryKey ? null : categoryKey));
     setExpandedMealSlotKey(null);
   }, []);
-  const [catalogLabelTick, setCatalogLabelTick] = useState(0);
   const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
-  useFocusEffect(
-    useCallback(() => {
-      setCatalogLabelTick((n) => n + 1);
-    }, []),
-  );
 
   const visibleCatalogCategories = useMemo(() => {
-    void catalogLabelTick;
     void categoryLabelEpoch;
     return filterCatalogPickerCategories(PICKER_CATEGORIES).map((item) => ({
       ...item,
       label: getPickerCategoryLabel(item.key),
       icon: resolveCategoryCatalogIcon(item.key),
     }));
-  }, [catalogLabelTick, categoryLabelEpoch]);
+  }, [categoryLabelEpoch]);
 
   const { groupSections } = useMemo(
     () =>

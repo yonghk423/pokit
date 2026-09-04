@@ -19,9 +19,6 @@ const TABS: TabDef[] = [
   { key: 'templates', labelKey: 'catalog.routineTemplatesTab' },
 ];
 
-/** 시안 `.brutal-shadow-sm` — 2px 2px 0 #181A2E */
-const SHADOW_SM = 2;
-
 type Props = {
   section: FixedRoutineSection;
   onSelectSection: (section: FixedRoutineSection) => void;
@@ -29,7 +26,7 @@ type Props = {
   isDark: boolean;
 };
 
-/** 루틴 탭 — 시안형 부착 세그먼트 (색·보더·shadow 동일) */
+/** 루틴 탭 — City Pop Minimalist 트랙 세그먼트 */
 export function FixedRoutineSectionTabs({
   section,
   onSelectSection,
@@ -39,57 +36,47 @@ export function FixedRoutineSectionTabs({
   const { t } = useTranslation();
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const border = tone.border;
-  const shadowColor = isDark ? tone.solidShadow : tone.text;
+  const trackBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(53, 102, 104, 0.08)';
   const activeBg = tone.primaryContainer;
   const activeText = tone.primary;
-  const inactiveBg = isDark ? tone.surfaceAlt : '#FFFFFF';
   const inactiveText = tone.textMuted;
 
   return (
-    <View style={styles.root}>
-      {TABS.map((tab, index) => {
+    <View style={[styles.track, { backgroundColor: trackBg, borderColor: border }]}>
+      {TABS.map((tab) => {
         const active = section === tab.key;
-        const isFirst = index === 0;
         return (
-          <View key={tab.key} style={styles.tabShell}>
-            {active ? (
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.tabShadow,
-                  {
-                    backgroundColor: shadowColor,
-                    borderColor: border,
-                    transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
-                  },
-                ]}
-              />
-            ) : null}
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={t(tab.labelKey)}
-              onPress={() => {
-                if (active) return;
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onSelectSection(tab.key);
-              }}
-              style={({ pressed }) => [
-                styles.tab,
-                !isFirst && styles.tabJoin,
+          <Pressable
+            key={tab.key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={t(tab.labelKey)}
+            onPress={() => {
+              if (active) return;
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onSelectSection(tab.key);
+            }}
+            style={({ pressed }) => [
+              styles.tab,
+              active && [
+                styles.tabActive,
                 {
-                  backgroundColor: active ? activeBg : inactiveBg,
+                  backgroundColor: activeBg,
                   borderColor: border,
                 },
-                pressed && { opacity: 0.92 },
-              ]}>
-              <ThemedText
-                style={[styles.tabLabel, { color: active ? activeText : inactiveText }]}
-                numberOfLines={1}>
-                {t(tab.labelKey)}
-              </ThemedText>
-            </Pressable>
-          </View>
+              ],
+              pressed && { opacity: 0.88 },
+            ]}>
+            <ThemedText
+              style={[
+                styles.tabLabel,
+                active && styles.tabLabelActive,
+                { color: active ? activeText : inactiveText },
+              ]}
+              numberOfLines={1}>
+              {t(tab.labelKey)}
+            </ThemedText>
+          </Pressable>
         );
       })}
     </View>
@@ -97,37 +84,34 @@ export function FixedRoutineSectionTabs({
 }
 
 const styles = StyleSheet.create({
-  root: {
+  track: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    marginRight: SHADOW_SM,
-    /** shadow 여유만 — 탭 전환 시 큰 mb-lg(48)는 콘텐츠 점프처럼 보임 */
-    marginBottom: 12 + SHADOW_SM,
-  },
-  tabShell: {
-    flex: 1,
-    position: 'relative',
-  },
-  tabShadow: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 2,
+    borderWidth: 1,
     borderRadius: 0,
+    padding: 3,
+    gap: 3,
+    marginBottom: 12,
   },
   tab: {
-    borderRadius: 0,
-    borderWidth: 2,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 9,
     paddingHorizontal: 8,
-    zIndex: 1,
+    borderRadius: 0,
+    borderWidth: 0,
   },
-  tabJoin: {
-    borderLeftWidth: 0,
+  tabActive: {
+    borderWidth: 1,
   },
   tabLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: -0.1,
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  tabLabelActive: {
+    fontWeight: '800',
+    letterSpacing: -0.25,
   },
 });

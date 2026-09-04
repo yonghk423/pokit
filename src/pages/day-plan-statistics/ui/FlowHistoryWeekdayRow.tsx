@@ -1,23 +1,31 @@
 import { StyleSheet, View } from 'react-native';
 import { useMemo } from 'react';
+import type { SymbolViewProps } from 'expo-symbols';
 
 import { useTranslation } from '@shared/lib/i18n';
+import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import {
+  activeIconColorByCategory,
+  categoryAccentColorPastel,
+} from '@widgets/day-plan-priority-order';
 
 import { getHistoryWeekdayLabels, type WeeklyFlowHistoryRow } from '../lib/buildWeeklyFlowHistory';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 
-const WEEKDAY_DOT_MAX = 18;
-
 type Props = {
   row: WeeklyFlowHistoryRow;
   palette: FlowHistoryPalette;
+  categoryKey: string;
+  icon: string;
 };
 
-/** 요일별 완료 트랙 */
-export function FlowHistoryWeekdayRow({ row, palette }: Props) {
+/** 요일별 완료 트랙 — 완료 시 루틴 아이콘 표시 */
+export function FlowHistoryWeekdayRow({ row, palette, categoryKey, icon }: Props) {
   const { locale } = useTranslation();
   const weekdayLabels = useMemo(() => getHistoryWeekdayLabels(locale), [locale]);
+  const iconColor = activeIconColorByCategory(categoryKey);
+  const doneBg = categoryAccentColorPastel(categoryKey);
 
   return (
     <View style={styles.trackWrap}>
@@ -30,11 +38,14 @@ export function FlowHistoryWeekdayRow({ row, palette }: Props) {
                 style={[
                   styles.weekdayDot,
                   {
-                    borderColor: done ? palette.ink : palette.border,
-                    backgroundColor: done ? palette.ink : 'transparent',
+                    borderColor: palette.border,
+                    backgroundColor: done ? doneBg : 'transparent',
                   },
-                ]}
-              />
+                ]}>
+                {done ? (
+                  <IconSymbol name={icon as SymbolViewProps['name']} size={14} color={iconColor} />
+                ) : null}
+              </View>
               <ThemedText
                 style={[styles.weekdayLabel, { color: done ? palette.ink : palette.muted }]}>
                 {label}
@@ -55,24 +66,26 @@ const styles = StyleSheet.create({
   weekdayTrack: {
     width: '100%',
     flexDirection: 'row',
-    gap: 3,
+    gap: 5,
     alignItems: 'flex-start',
   },
   weekdayCol: {
     flex: 1,
     minWidth: 0,
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
   },
   weekdayDot: {
-    width: WEEKDAY_DOT_MAX,
-    height: WEEKDAY_DOT_MAX,
+    width: '100%',
+    aspectRatio: 1,
     borderRadius: 0,
     borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   weekdayLabel: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
-    lineHeight: 11,
+    lineHeight: 12,
   },
 });

@@ -1,4 +1,4 @@
-import { parseHHmmToMinutes } from '@entities/day-plan';
+import { parseHHmmToMinutes } from '@shared/lib/time/parseHhmmToMinutes';
 
 import { getAppLocale } from '../model/localeStore';
 import type { AppLocale } from '../model/locale';

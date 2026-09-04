@@ -32,7 +32,12 @@ export function WeeklyFlowHistoryCard({ group, palette }: Props) {
         </ThemedText>
       </View>
 
-      <FlowHistoryWeekdayRow row={group.row} palette={palette} />
+      <FlowHistoryWeekdayRow
+        row={group.row}
+        palette={palette}
+        categoryKey={group.categoryKey}
+        icon={group.icon}
+      />
     </View>
   );
 }

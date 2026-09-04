@@ -51,6 +51,7 @@ function normalizeTodoItem(raw: unknown, fallbackOrder: number): DayPlanTodoItem
     priority,
     startMinutes,
     endMinutes,
+    endsNextCalendarDay: Boolean(o.endsNextCalendarDay),
     inProgress: Boolean(o.inProgress) && !o.isDone,
     isDone: Boolean(o.isDone),
     order: typeof o.order === 'number' ? o.order : fallbackOrder,
@@ -79,7 +80,7 @@ type DayPlanTodoState = {
   setActiveDateKey: (dateKey: string) => void;
   getActiveTodos: () => DayPlanTodoItem[];
   addTodo: () => void;
-  updateTodo: (id: string, patch: Partial<Pick<DayPlanTodoItem, 'what' | 'who' | 'startMinutes' | 'endMinutes'>>) => void;
+  updateTodo: (id: string, patch: Partial<Pick<DayPlanTodoItem, 'what' | 'who' | 'startMinutes' | 'endMinutes' | 'endsNextCalendarDay'>>) => void;
   cyclePriority: (id: string) => void;
   toggleInProgress: (id: string) => void;
   toggleDone: (id: string) => void;
@@ -148,9 +149,13 @@ export const useDayPlanTodoStore = create<DayPlanTodoState>((set, get) => ({
         items.map((item) => {
           if (item.id !== id) return item;
           const next = { ...item, ...patch };
+          if (typeof patch.endsNextCalendarDay === 'boolean') {
+            next.endsNextCalendarDay = patch.endsNextCalendarDay;
+          }
           if (
-            typeof patch.startMinutes === 'number' &&
-            typeof patch.endMinutes !== 'number' &&
+            !next.endsNextCalendarDay &&
+            typeof next.startMinutes === 'number' &&
+            typeof next.endMinutes === 'number' &&
             next.endMinutes <= next.startMinutes
           ) {
             next.endMinutes = next.startMinutes + 15;

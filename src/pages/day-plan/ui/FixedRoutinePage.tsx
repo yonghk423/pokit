@@ -1051,8 +1051,8 @@ function GroupAccordion({
               borderColor: line,
               backgroundColor: isActiveForToday
                 ? isDark
-                  ? 'rgba(255,255,255,0.14)'
-                  : actionHoverBg
+                  ? RetroFlatColors.dark.primaryContainer
+                  : RetroFlatColors.light.primaryContainer
                 : actionBg,
               opacity: disableApplyToggle ? 0.42 : pressed ? 0.88 : 1,
             },
@@ -1060,7 +1060,13 @@ function GroupAccordion({
           <ThemedText
             style={[
               styles.headerApplyChipLabel,
-              { color: isActiveForToday ? ink : muted },
+              {
+                color: isActiveForToday
+                  ? isDark
+                    ? RetroFlatColors.dark.primary
+                    : '#306163'
+                  : muted,
+              },
             ]}
             numberOfLines={1}>
             {applyLabel}
@@ -1238,7 +1244,9 @@ export function FixedRoutinePage({
   const [catalogTick, setCatalogTick] = useState(0);
   const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(
+    () => new Set(useFixedFlowSetsStore.getState().sets.map((setItem) => setItem.id)),
+  );
   const [section, setSection] = useState<FixedRoutineSection>('catalog');
   const [internalLayoutMode, setInternalLayoutMode] = useState<DayPlanLayoutMode>('bag');
   const layoutMode = controlledLayoutMode ?? internalLayoutMode;
@@ -1729,11 +1737,10 @@ export function FixedRoutinePage({
   const actionBg = isDark ? tone.surfaceAlt : '#FFFFFF';
   const actionHoverBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(168, 218, 220, 0.35)';
   const shadow = isDark ? tone.solidShadow : tone.text;
-  const sectionBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+  const sectionBg = isDark ? tone.surfaceAlt : '#FFFFFF';
   const ink = useBrutalSurface ? tone.text : c.onSurface;
   const muted = useBrutalSurface ? tone.textMuted : c.onVariant;
   const line = useBrutalSurface ? tone.border : c.catBorderIdle;
-  const dashedBorder = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)';
   const activeSetIdsForLayout =
     activeSetIdsByLayoutMode?.[layoutMode] ?? activeSetIds ?? [];
   const isSetActiveForToday = useCallback(
@@ -1776,9 +1783,19 @@ export function FixedRoutinePage({
           </ThemedText>
         ) : null}
       </View>
-      {activeSection === 'catalog' ? (
-        <RoutineCatalogManageContent />
-      ) : (
+      {!isEmbedded ? (
+        <View
+          style={[
+            styles.cachedCatalogPane,
+            activeSection !== 'catalog' && styles.cachedCatalogPaneHidden,
+          ]}
+          pointerEvents={activeSection === 'catalog' ? 'auto' : 'none'}
+          accessibilityElementsHidden={activeSection !== 'catalog'}
+          importantForAccessibility={activeSection === 'catalog' ? 'auto' : 'no-hide-descendants'}>
+          <RoutineCatalogManageContent />
+        </View>
+      ) : null}
+      {activeSection !== 'catalog' ? (
       <KeyboardAvoidingView
         style={styles.scrollKeyboardRoot}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -1932,14 +1949,12 @@ export function FixedRoutinePage({
             ) : null}
 
             {canManageCustomGroups && (isAddingGroup ? (
-              <View style={[styles.addGroupCard, { borderColor: dashedBorder, backgroundColor: cardBg }]}>
+              <View style={[styles.addGroupCard, { borderColor: line, backgroundColor: cardBg }]}>
                 <TextInput
                   value={newGroupName}
                   onChangeText={setNewGroupName}
-                  placeholder={t('fixedRoutine.newGroupPlaceholder')}
-                  placeholderTextColor={muted}
                   autoFocus
-                  style={[styles.addGroupInput, { color: ink }]}
+                  style={[styles.addGroupInput, { color: ink, borderBottomColor: line }]}
                   returnKeyType="done"
                   onSubmitEditing={submitNewGroup}
                 />
@@ -1950,14 +1965,28 @@ export function FixedRoutinePage({
                     onPress={() => {
                       setIsAddingGroup(false);
                       setNewGroupName('');
-                    }}>
+                    }}
+                    style={({ pressed }) => [
+                      styles.addGroupCancelBtn,
+                      {
+                        borderColor: line,
+                        backgroundColor: pressed ? actionHoverBg : actionBg,
+                      },
+                    ]}>
                     <ThemedText style={[styles.addGroupCancel, { color: muted }]}>{t('common.cancel')}</ThemedText>
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t('fixedRoutine.addGroupA11y')}
                     onPress={submitNewGroup}
-                    style={[styles.addGroupSubmit, { backgroundColor: ink }]}>
+                    style={({ pressed }) => [
+                      styles.addGroupSubmit,
+                      {
+                        backgroundColor: ink,
+                        borderColor: ink,
+                        opacity: pressed ? 0.9 : 1,
+                      },
+                    ]}>
                     <ThemedText style={[styles.addGroupSubmitLabel, { color: isDark ? '#09090b' : '#fff' }]}>
                       {t('common.add')}
                     </ThemedText>
@@ -1971,12 +2000,19 @@ export function FixedRoutinePage({
                 onPress={() => setIsAddingGroup(true)}
                 style={({ pressed }) => [
                   styles.addGroupTrigger,
-                  { borderColor: dashedBorder, opacity: pressed ? 0.88 : 1 },
+                  {
+                    borderColor: line,
+                    backgroundColor: pressed ? actionHoverBg : cardBg,
+                  },
                 ]}>
-                <IconSymbol name="plus" size={18} color={muted} />
-                <ThemedText style={[styles.addGroupTriggerLabel, { color: muted }]}>{t('fixedRoutine.addGroupA11y')}</ThemedText>
+                <View style={styles.addGroupTriggerMain}>
+                  <IconSymbol name="plus" size={14} color={ink} />
+                  <ThemedText style={[styles.addGroupTriggerLabel, { color: ink }]}>
+                    {t('fixedRoutine.addGroupA11y')}
+                  </ThemedText>
+                </View>
                 <ThemedText style={[styles.addGroupHint, { color: muted }]}>
-{t('fixedRoutine.addGroupHint')}
+                  {t('fixedRoutine.addGroupHint')}
                 </ThemedText>
               </Pressable>
             ))}
@@ -1984,7 +2020,7 @@ export function FixedRoutinePage({
         )}
       </ScrollView>
       </KeyboardAvoidingView>
-      )}
+      ) : null}
 
       <AddItemModal
         visible={addItemModalOpen}
@@ -2077,6 +2113,8 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     gap: 6,
   },
+  cachedCatalogPane: { flex: 1 },
+  cachedCatalogPaneHidden: { display: 'none' },
   scrollKeyboardRoot: { flex: 1 },
   scroll: { flex: 1 },
   sectionHint: {
@@ -2092,8 +2130,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   accordionList: {
-    gap: 6,
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 14,
   },
   accordionSection: {
     width: '100%',
@@ -2104,9 +2142,9 @@ const styles = StyleSheet.create({
   accordionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 11,
   },
   renameGroupRow: {
     flex: 1,
@@ -2179,14 +2217,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   headerApplyChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
     borderRadius: 0,
     borderWidth: 1,
     flexShrink: 0,
   },
   headerApplyChipLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: -0.15,
   },
@@ -2242,50 +2280,67 @@ const styles = StyleSheet.create({
   },
   addGroupTrigger: {
     borderWidth: 1,
-    borderStyle: 'dashed',
     borderRadius: 0,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    alignItems: 'flex-start',
     gap: 4,
   },
+  addGroupTriggerMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   addGroupTriggerLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
+    letterSpacing: -0.2,
   },
   addGroupHint: {
     fontSize: 11,
     fontWeight: '500',
+    lineHeight: 15,
+    paddingLeft: 20,
   },
   addGroupCard: {
     borderWidth: 1,
-    borderStyle: 'dashed',
     borderRadius: 0,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     gap: 10,
   },
   addGroupInput: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.28,
     paddingVertical: 6,
+    paddingHorizontal: 0,
+    borderBottomWidth: 1,
   },
   addGroupActions: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: 12,
+    gap: 8,
+  },
+  addGroupCancelBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 0,
+    borderWidth: 1,
   },
   addGroupCancel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
   addGroupSubmit: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 9,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 0,
+    borderWidth: 1,
   },
   addGroupSubmitLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '800',
   },
   cardList: {

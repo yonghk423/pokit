@@ -41,6 +41,8 @@ export type SnappedTimePickerFieldProps = {
   dateCaption?: string;
   /** 온보딩 등 — 라벨·시각 pill을 조금 키움 */
   emphasized?: boolean;
+  /** 목표 상세 슬롯 등 — 라벨·시각 pill을 작게 */
+  compact?: boolean;
 };
 
 export function SnappedTimePickerField({
@@ -58,6 +60,7 @@ export function SnappedTimePickerField({
   mapMidnightToEndOfDay = false,
   dateCaption,
   emphasized = false,
+  compact = false,
 }: SnappedTimePickerFieldProps) {
   const { t, locale } = useTranslation();
   const applyRoutineWindow = useMemo(() => {
@@ -88,13 +91,15 @@ export function SnappedTimePickerField({
         style={({ pressed }) => [
           styles.timeRow,
           emphasized && styles.timeRowEmphasized,
+          compact && styles.timeRowCompact,
           pressed && { opacity: 0.9 },
         ]}>
-        <View style={styles.timeRowLeft}>
+        <View style={[styles.timeRowLeft, compact && styles.timeRowLeftCompact]}>
           <ThemedText
             style={[
               styles.timeRowLabel,
               emphasized && styles.timeRowLabelEmphasized,
+              compact && styles.timeRowLabelCompact,
               { color: palette.onSurface },
             ]}
             lightColor={palette.onSurface}
@@ -105,6 +110,7 @@ export function SnappedTimePickerField({
             style={[
               styles.timeRowHint,
               emphasized && styles.timeRowHintEmphasized,
+              compact && styles.timeRowHintCompact,
               { color: palette.onVariant },
             ]}
             lightColor={palette.onVariant}
@@ -118,6 +124,7 @@ export function SnappedTimePickerField({
               style={[
                 styles.timeDateAside,
                 emphasized && styles.timeDateAsideEmphasized,
+                compact && styles.timeDateAsideCompact,
                 { color: palette.onVariant },
               ]}
               lightColor={palette.onVariant}
@@ -130,6 +137,7 @@ export function SnappedTimePickerField({
             style={[
               styles.timePill,
               emphasized && styles.timePillEmphasized,
+              compact && styles.timePillCompact,
               {
                 backgroundColor: palette.containerLowest,
                 borderColor: expanded ? palette.onSurface : palette.border,
@@ -139,6 +147,7 @@ export function SnappedTimePickerField({
               style={[
                 styles.timePillText,
                 emphasized && styles.timePillTextEmphasized,
+                compact && styles.timePillTextCompact,
                 { color: palette.onSurface },
               ]}
               lightColor={palette.onSurface}
@@ -193,11 +202,17 @@ const styles = StyleSheet.create({
     minHeight: 56,
     paddingVertical: 4,
   },
+  timeRowCompact: {
+    gap: 8,
+  },
   timeRowLeft: { flex: 1, gap: 2, minWidth: 0 },
+  timeRowLeftCompact: { gap: 1 },
   timeRowLabel: { fontSize: 14, fontWeight: '700' },
   timeRowLabelEmphasized: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
+  timeRowLabelCompact: { fontSize: 13, fontWeight: '700' },
   timeRowHint: { fontSize: 11, fontWeight: '500', lineHeight: 14 },
   timeRowHintEmphasized: { fontSize: 12, lineHeight: 16 },
+  timeRowHintCompact: { fontSize: 10, lineHeight: 13 },
   timeRowRight: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -214,6 +229,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  timeDateAsideCompact: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
   timePill: {
     minWidth: 108,
     paddingHorizontal: 12,
@@ -227,8 +246,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
+  timePillCompact: {
+    minWidth: 86,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
   timePillText: { fontSize: 16, fontWeight: '800', letterSpacing: -0.25 },
   timePillTextEmphasized: { fontSize: 18, letterSpacing: -0.35 },
+  timePillTextCompact: { fontSize: 13, letterSpacing: -0.2 },
   inputBlock: {
     paddingTop: 6,
     gap: 8,

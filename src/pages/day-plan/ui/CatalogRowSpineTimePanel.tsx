@@ -81,6 +81,10 @@ type Props = {
   confirmA11yLabel?: string;
   /** sheet 확인 CTA 표시. note 시트는 기본 항상 표시, default는 dirty일 때만 */
   showSheetConfirm?: boolean;
+  /** false면 당일/다음 날 선택 숨김 (투두 등) */
+  showEndDateChoice?: boolean;
+  /** false면 시작·종료 아래 날짜 라벨 숨김 */
+  showDateLabels?: boolean;
 };
 
 export type CatalogRowSpineTimePanelHandle = {
@@ -166,6 +170,8 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       confirmLabel,
       confirmA11yLabel,
       showSheetConfirm,
+      showEndDateChoice = true,
+      showDateLabels = true,
     },
     ref,
   ) {
@@ -369,7 +375,9 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected, disabled }}
-        accessibilityLabel={`${label} ${formatHhmmClock(valueHhmm, locale)} ${dateLabel}`}
+        accessibilityLabel={`${label} ${formatHhmmClock(valueHhmm, locale)}${
+          showDateLabels ? ` ${dateLabel}` : ''
+        }`}
         disabled={disabled}
         onPress={() => toggleExpand(field)}
         style={({ pressed }) => [
@@ -407,17 +415,19 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           numberOfLines={1}>
           {formatHhmmClock(valueHhmm, locale)}
         </ThemedText>
-        <ThemedText
-          style={[
-            styles.segmentDate,
-            isSheet && styles.segmentDateSheet,
-            { color: selected ? selectedText : muted },
-            selected && isNote && { color: muted },
-            cityPopFont('600'),
-          ]}
-          numberOfLines={1}>
-          {dateLabel}
-        </ThemedText>
+        {showDateLabels ? (
+          <ThemedText
+            style={[
+              styles.segmentDate,
+              isSheet && styles.segmentDateSheet,
+              { color: selected ? selectedText : muted },
+              selected && isNote && { color: muted },
+              cityPopFont('600'),
+            ]}
+            numberOfLines={1}>
+            {dateLabel}
+          </ThemedText>
+        ) : null}
       </Pressable>
     );
   };
@@ -539,16 +549,18 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
         </SolidShadowFace>
       )}
 
-      <View
-        style={[
-          styles.endDateChoiceRow,
-          isSheet && styles.endDateChoiceRowSheet,
-          isNote && styles.endDateChoiceRowNote,
-          isNote && { borderTopColor: line },
-        ]}>
-        {renderDayChoice(false, t('dayRhythm.today'))}
-        {renderDayChoice(true, t('dayRhythm.nextDay'))}
-      </View>
+      {showEndDateChoice ? (
+        <View
+          style={[
+            styles.endDateChoiceRow,
+            isSheet && styles.endDateChoiceRowSheet,
+            isNote && styles.endDateChoiceRowNote,
+            isNote && { borderTopColor: line },
+          ]}>
+          {renderDayChoice(false, t('dayRhythm.today'))}
+          {renderDayChoice(true, t('dayRhythm.nextDay'))}
+        </View>
+      ) : null}
 
       {isSheet && sheetConfirmVisible ? (
         isNote ? (

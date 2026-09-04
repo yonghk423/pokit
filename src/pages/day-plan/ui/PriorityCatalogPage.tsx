@@ -96,6 +96,7 @@ export function PriorityCatalogPage() {
   ]);
 
   const [catalogPageTab, setCatalogPageTab] = useState<PriorityCatalogPageTab>('catalog');
+  const [hasMountedFixedTab, setHasMountedFixedTab] = useState(false);
 
   const shellBg = c.containerLow;
 
@@ -105,25 +106,49 @@ export function PriorityCatalogPage() {
         <View style={[styles.stickyHeader, { backgroundColor: shellBg, paddingHorizontal: 20 }]}>
           <PriorityCatalogPageTabs
             tab={catalogPageTab}
-            onSelectTab={setCatalogPageTab}
+            onSelectTab={(nextTab) => {
+              if (nextTab === 'fixed') setHasMountedFixedTab(true);
+              setCatalogPageTab(nextTab);
+            }}
             c={c}
             isDark={isDark}
             compact
           />
         </View>
-        {catalogPageTab === 'catalog' ? (
+        <View
+          style={[
+            styles.tabPane,
+            catalogPageTab !== 'catalog' && styles.tabPaneHidden,
+          ]}
+          pointerEvents={catalogPageTab === 'catalog' ? 'auto' : 'none'}
+          accessibilityElementsHidden={catalogPageTab !== 'catalog'}
+          importantForAccessibility={
+            catalogPageTab === 'catalog' ? 'auto' : 'no-hide-descendants'
+          }>
           <FixedRoutinePage
             embeddedCustomOnly
             controlledLayoutMode={effectiveCatalogLayoutMode}
             hideLayoutModeHeader
           />
-        ) : (
-          <FixedRoutinePage
-            embeddedPresetOnly
-            controlledLayoutMode={effectiveCatalogLayoutMode}
-            hideLayoutModeHeader
-          />
-        )}
+        </View>
+        {hasMountedFixedTab ? (
+          <View
+            style={[
+              styles.tabPane,
+              catalogPageTab !== 'fixed' && styles.tabPaneHidden,
+            ]}
+            pointerEvents={catalogPageTab === 'fixed' ? 'auto' : 'none'}
+            accessibilityElementsHidden={catalogPageTab !== 'fixed'}
+            importantForAccessibility={
+              catalogPageTab === 'fixed' ? 'auto' : 'no-hide-descendants'
+            }>
+            <FixedRoutinePage
+              embeddedPresetOnly
+              controlledLayoutMode={effectiveCatalogLayoutMode}
+              hideLayoutModeHeader
+            />
+          </View>
+        ) : null}
       </View>
     </ThemedView>
   );
@@ -132,9 +157,11 @@ export function PriorityCatalogPage() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
+  tabPane: { flex: 1 },
+  tabPaneHidden: { display: 'none' },
   stickyHeader: {
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingTop: 10,
+    paddingBottom: 8,
     gap: 10,
     zIndex: 2,
   },

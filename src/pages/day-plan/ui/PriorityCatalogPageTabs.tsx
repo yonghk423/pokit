@@ -19,18 +19,19 @@ const TABS: TabDef[] = [
   { key: 'fixed', labelKey: 'fixedRoutine.tabFixed' },
 ];
 
-const SHADOW_SM = 2;
-
 type Props = {
   tab: PriorityCatalogPageTab;
   onSelectTab: (tab: PriorityCatalogPageTab) => void;
   c: DayPlanPalette;
   isDark: boolean;
-  /** @deprecated 부착 세그먼트로 통일 — 무시됨 */
+  /** @deprecated 트랙형 세그먼트로 통일 — 무시됨 */
   compact?: boolean;
 };
 
-/** 나만의 루틴 탭 — 루틴 목록과 동일 톤의 부착 세그먼트 */
+/**
+ * 나만의 루틴 탭 — City Pop Minimalist 트랙 세그먼트.
+ * 두툼한 부착형+솔리드 섀도 대신, 따뜻한 트랙 안 민트 필로 선택감을 준다.
+ */
 export function PriorityCatalogPageTabs({
   tab,
   onSelectTab,
@@ -40,57 +41,47 @@ export function PriorityCatalogPageTabs({
   const { t } = useTranslation();
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const border = tone.border;
-  const shadowColor = isDark ? tone.solidShadow : tone.text;
+  const trackBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(53, 102, 104, 0.08)';
   const activeBg = tone.primaryContainer;
-  const activeText = tone.primary;
-  const inactiveBg = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const activeText = isDark ? tone.primary : tone.primary;
   const inactiveText = tone.textMuted;
 
   return (
-    <View style={styles.root}>
-      {TABS.map((item, index) => {
+    <View style={[styles.track, { backgroundColor: trackBg, borderColor: border }]}>
+      {TABS.map((item) => {
         const active = tab === item.key;
-        const isFirst = index === 0;
         return (
-          <View key={item.key} style={styles.tabShell}>
-            {active ? (
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.tabShadow,
-                  {
-                    backgroundColor: shadowColor,
-                    borderColor: border,
-                    transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
-                  },
-                ]}
-              />
-            ) : null}
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={t(item.labelKey)}
-              onPress={() => {
-                if (active) return;
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onSelectTab(item.key);
-              }}
-              style={({ pressed }) => [
-                styles.tab,
-                !isFirst && styles.tabJoin,
+          <Pressable
+            key={item.key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={t(item.labelKey)}
+            onPress={() => {
+              if (active) return;
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onSelectTab(item.key);
+            }}
+            style={({ pressed }) => [
+              styles.tab,
+              active && [
+                styles.tabActive,
                 {
-                  backgroundColor: active ? activeBg : inactiveBg,
+                  backgroundColor: activeBg,
                   borderColor: border,
                 },
-                pressed && { opacity: 0.92 },
-              ]}>
-              <ThemedText
-                style={[styles.tabLabel, { color: active ? activeText : inactiveText }]}
-                numberOfLines={1}>
-                {t(item.labelKey)}
-              </ThemedText>
-            </Pressable>
-          </View>
+              ],
+              pressed && { opacity: 0.88 },
+            ]}>
+            <ThemedText
+              style={[
+                styles.tabLabel,
+                active && styles.tabLabelActive,
+                { color: active ? activeText : inactiveText },
+              ]}
+              numberOfLines={1}>
+              {t(item.labelKey)}
+            </ThemedText>
+          </Pressable>
         );
       })}
     </View>
@@ -98,36 +89,33 @@ export function PriorityCatalogPageTabs({
 }
 
 const styles = StyleSheet.create({
-  root: {
+  track: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    marginRight: SHADOW_SM,
-    marginBottom: SHADOW_SM,
-  },
-  tabShell: {
-    flex: 1,
-    position: 'relative',
-  },
-  tabShadow: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 2,
+    borderWidth: 1,
     borderRadius: 0,
+    padding: 3,
+    gap: 3,
   },
   tab: {
-    borderRadius: 0,
-    borderWidth: 2,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-    zIndex: 1,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    borderRadius: 0,
+    borderWidth: 0,
   },
-  tabJoin: {
-    borderLeftWidth: 0,
+  tabActive: {
+    borderWidth: 1,
   },
   tabLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: -0.1,
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  tabLabelActive: {
+    fontWeight: '800',
+    letterSpacing: -0.25,
   },
 });

@@ -37,7 +37,6 @@ export function RoutineTemplateListPanel({
   const shadowColor = isDark ? tone.solidShadow : tone.text;
   const rowFace = isDark ? tone.surfaceAlt : cardBg || '#FFFFFF';
   const iconBoxBg = isDark ? tone.surfaceAlt : '#FFFFFF';
-  const pressedBg = isDark ? 'rgba(158, 207, 209, 0.18)' : 'rgba(168, 218, 220, 0.22)';
 
   return (
     <View style={styles.root}>
@@ -86,7 +85,7 @@ export function RoutineTemplateListPanel({
                 styles.row,
                 {
                   borderColor: line,
-                  backgroundColor: pressed ? pressedBg : rowFace,
+                  backgroundColor: rowFace,
                 },
                 pressed && { opacity: 0.92 },
               ]}>
