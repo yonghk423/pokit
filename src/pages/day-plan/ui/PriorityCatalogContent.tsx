@@ -927,7 +927,7 @@ export function PriorityCatalogContent({
                   { opacity: pressed ? 0.92 : 1 },
                 ]}>
                 <View style={styles.headerAddButtonInner}>
-                  <IconSymbol name="plus" size={18} color="#FAFAFA" />
+                  <IconSymbol name="plus" size={18} color="#FAFAFA" style={styles.headerAddIcon} />
                 </View>
               </Pressable>
             </View>
@@ -1101,6 +1101,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerAddIcon: {
+    marginTop: 1,
   },
   modeBadge: {
     borderWidth: 1,

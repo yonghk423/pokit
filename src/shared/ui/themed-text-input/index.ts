@@ -1,1 +1,2 @@
-export { ThemedTextInput, type ThemedTextInputProps } from './ThemedTextInput';
+export { ThemedTextInput } from './ThemedTextInput';
+export type { ThemedTextInputProps } from './ThemedTextInput';

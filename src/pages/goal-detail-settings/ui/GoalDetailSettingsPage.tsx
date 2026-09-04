@@ -890,6 +890,7 @@ export function GoalDetailSettingsPage() {
                       size={16}
                       weight="bold"
                       color={RetroFlatColors.light.text}
+                      style={styles.footerCompleteIcon}
                     />
                   </View>
                 </>
@@ -1014,6 +1015,9 @@ const styles = StyleSheet.create({
     borderWidth: RETRO_BORDER_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  footerCompleteIcon: {
+    marginTop: 1,
   },
   footerFixed: {
     alignItems: 'center',

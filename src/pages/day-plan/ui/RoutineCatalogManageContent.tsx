@@ -482,7 +482,7 @@ export function RoutineCatalogManageContent() {
                     borderColor: editorial.line,
                   },
                 ]}>
-                <IconSymbol name="plus" size={15} color="#FFFFFF" />
+                <IconSymbol name="plus" size={15} color="#FFFFFF" style={styles.headerAddIcon} />
               </View>
             </Pressable>
           </View>
@@ -654,6 +654,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
+  },
+  headerAddIcon: {
+    marginTop: 1,
   },
   lead: {
     fontSize: 12,

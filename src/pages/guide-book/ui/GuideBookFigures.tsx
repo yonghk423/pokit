@@ -527,14 +527,14 @@ function FigureRoutineList({ tone }: { tone: Tone }) {
             {t('catalog.routineTemplatesTab')}
           </ThemedText>
         </View>
-        <View style={{ marginLeft: 'auto', alignItems: 'center', gap: 2 }}>
+        <View style={{ marginLeft: 'auto', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
           <Badge n={2} tone={tone} />
           <View
             style={[
               styles.plusBtn,
               { borderColor: tone.border, backgroundColor: pill.activeBg },
             ]}>
-            <IconSymbol name="plus" size={16} color={tone.text} />
+            <IconSymbol name="plus" size={16} color={tone.text} style={styles.plusBtnIcon} />
           </View>
         </View>
       </View>
@@ -1028,6 +1028,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
+  },
+  /** SF Symbol plus 광학 보정 — 박스크기 대비 위로 떠 보이는 문제 */
+  plusBtnIcon: {
+    marginTop: 1,
   },
   groupCard: { borderWidth: RETRO_BORDER_WIDTH, padding: 10, gap: 8 },
   groupTitle: { fontSize: 11 },

@@ -34,43 +34,36 @@ const CHECK_MUTED = 'rgba(0,0,0,0.28)';
 const FONT_OPTIONS: {
   key: AppFontId;
   labelKey: I18nKey;
-  descKey: I18nKey;
   previewKey: I18nKey;
 }[] = [
   {
     key: 'dongle',
     labelKey: 'settings.font.dongle',
-    descKey: 'settings.font.dongleDesc',
     previewKey: 'settings.font.donglePreview',
   },
   {
     key: 'gaegu',
     labelKey: 'settings.font.gaegu',
-    descKey: 'settings.font.gaeguDesc',
     previewKey: 'settings.font.gaeguPreview',
   },
   {
     key: 'songMyung',
     labelKey: 'settings.font.songMyung',
-    descKey: 'settings.font.songMyungDesc',
     previewKey: 'settings.font.songMyungPreview',
   },
   {
     key: 'gothicA1',
     labelKey: 'settings.font.gothicA1',
-    descKey: 'settings.font.gothicA1Desc',
     previewKey: 'settings.font.gothicA1Preview',
   },
   {
     key: 'hiMelody',
     labelKey: 'settings.font.hiMelody',
-    descKey: 'settings.font.hiMelodyDesc',
     previewKey: 'settings.font.hiMelodyPreview',
   },
   {
     key: 'hanken',
     labelKey: 'settings.font.hanken',
-    descKey: 'settings.font.hankenDesc',
     previewKey: 'settings.font.hankenPreview',
   },
 ];
@@ -192,8 +185,6 @@ export function FontSettingsPage() {
             {FONT_OPTIONS.filter((opt) => APP_FONT_IDS.includes(opt.key)).map((opt, index) => {
               const active = fontId === opt.key;
               const sampleFamily = resolveAppFontFamily(opt.key, '700');
-              const labelFamily = resolveAppFontFamily(opt.key, '600');
-              const descFamily = resolveAppFontFamily(opt.key, '400');
               return (
                 <Pressable
                   key={opt.key}
@@ -226,32 +217,6 @@ export function FontSettingsPage() {
                         ]}
                         numberOfLines={1}>
                         {t(opt.previewKey)}
-                      </Text>
-                      <Text
-                        style={[
-                          chrome.itemTitle,
-                          labelFamily ? { fontFamily: labelFamily } : null,
-                          {
-                            color: p.title,
-                            fontSize: scaleTypeSize(16, sizeScale),
-                            lineHeight: scaleTypeSize(22, sizeScale),
-                          },
-                        ]}
-                        numberOfLines={1}>
-                        {t(opt.labelKey)}
-                      </Text>
-                      <Text
-                        style={[
-                          chrome.itemDesc,
-                          descFamily ? { fontFamily: descFamily } : null,
-                          {
-                            color: p.desc,
-                            fontSize: scaleTypeSize(13, sizeScale),
-                            lineHeight: scaleTypeSize(18, sizeScale),
-                          },
-                        ]}
-                        numberOfLines={2}>
-                        {t(opt.descKey)}
                       </Text>
                     </View>
                   </View>
@@ -321,7 +286,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
   },
   fontItem: {
-    minHeight: 88,
+    minHeight: 56,
     alignItems: 'center',
   },
   fontItemLeft: {
@@ -332,6 +297,5 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     fontWeight: '400',
     letterSpacing: -0.2,
-    marginBottom: 2,
   },
 });

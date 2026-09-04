@@ -136,6 +136,7 @@ export function CustomFlowAppearancePicker({
             size={16}
             color={showAppearanceEditor ? ink : muted}
             weight="semibold"
+            style={styles.expandButtonIcon}
           />
         </Pressable>
       </View>
@@ -285,6 +286,9 @@ const styles = StyleSheet.create({
   expandButtonCompact: {
     width: 32,
     height: 32,
+  },
+  expandButtonIcon: {
+    marginTop: 1,
   },
   editorBody: {
     gap: 10,

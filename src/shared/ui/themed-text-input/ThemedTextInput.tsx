@@ -1,4 +1,3 @@
-import { forwardRef } from 'react';
 import { StyleSheet, TextInput, type TextInputProps, type TextStyle } from 'react-native';
 
 import {
@@ -32,25 +31,23 @@ function applyFontSizeScale(style: TextStyle, scale: number): TextStyle {
   return next;
 }
 
-/** ThemedText와 같은 앱 글씨체·크기 배율을 TextInput에 적용 */
-export const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
-  function ThemedTextInput({ style, ...rest }, ref) {
-    const fontId = useEffectiveAppFontId();
-    const sizeScale = useAppFontSizeScale();
-    const singleFace = isSingleFaceAppFont(fontId);
-    const flat = (StyleSheet.flatten(style) ?? {}) as TextStyle;
-    const weight = weightFromStyle(flat.fontWeight);
-    const fontFamily = resolveAppFontFamily(fontId, weight);
+/** ThemedText와 같은 앱 글씨체·크기 배율을 TextInput에 적용 (React 19: ref는 props) */
+export function ThemedTextInput({ style, ...rest }: ThemedTextInputProps) {
+  const fontId = useEffectiveAppFontId();
+  const sizeScale = useAppFontSizeScale();
+  const singleFace = isSingleFaceAppFont(fontId);
+  const flat = (StyleSheet.flatten(style) ?? {}) as TextStyle;
+  const weight = weightFromStyle(flat.fontWeight);
+  const fontFamily = resolveAppFontFamily(fontId, weight);
 
-    const scaled = applyFontSizeScale(
-      {
-        ...flat,
-        ...(fontFamily ? { fontFamily } : null),
-        ...(singleFace ? { fontWeight: '400' as const } : null),
-      },
-      sizeScale,
-    );
+  const scaled = applyFontSizeScale(
+    {
+      ...flat,
+      ...(fontFamily ? { fontFamily } : null),
+      ...(singleFace ? { fontWeight: '400' as const } : null),
+    },
+    sizeScale,
+  );
 
-    return <TextInput ref={ref} {...rest} style={scaled} />;
-  },
-);
+  return <TextInput {...rest} style={scaled} />;
+}
