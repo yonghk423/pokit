@@ -1408,7 +1408,8 @@ export function StudyDocumentEditor({
       );
       const keepMarks = normalizeBlockMarks(block.marks ?? resolvePendingMarks());
       const nextMarks = marksForContinuedBlock(keepMarks);
-      if (cursor === 0) {
+      // 빈 줄 Enter는 cursor===0이지만 "줄 앞"이 아니라 "줄 끝"과 같다 → 아래로 새 칸
+      if (cursor === 0 && !isVisuallyEmptyText(text)) {
         const newBlock = createWorkStudyDocBlock('paragraph');
         if (nextMarks) newBlock.marks = nextMarks;
         const index = blocks.findIndex((b) => b.id === blockId);
@@ -1468,7 +1469,8 @@ export function StudyDocumentEditor({
       const keepMarks = normalizeBlockMarks(block.marks ?? resolvePendingMarks());
       const nextMarks = marksForContinuedBlock(keepMarks);
 
-      if (cursor === 0) {
+      // 빈 리스트 줄 Enter도 아래로 새 칸 (cursor===0만으로 위로 끼우지 않음)
+      if (cursor === 0 && !isVisuallyEmptyText(text)) {
         const newBlock = createWorkStudyDocBlock(kind);
         if (kind === 'checklist') newBlock.checked = false;
         if (nextMarks) newBlock.marks = nextMarks;
