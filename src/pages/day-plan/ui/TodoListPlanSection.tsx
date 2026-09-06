@@ -5,7 +5,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
@@ -19,6 +18,7 @@ import { useTranslation } from '@shared/lib/i18n';
 import { completionCheckIconColor } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import {
@@ -145,7 +145,7 @@ function TodoListRow({
       />
 
       <View style={styles.rowBody}>
-        <TextInput
+        <ThemedTextInput
           key={`${item.id}-${item.isDone ? 'done' : 'todo'}`}
           value={item.what}
           onChangeText={onChangeWhat}
@@ -340,7 +340,7 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
               backgroundColor: ui.cellBg,
             },
           ]}>
-          <TextInput
+          <ThemedTextInput
             value={draftWhat}
             onChangeText={setDraftWhat}
             placeholder={t('todo.quickAddPlaceholder')}

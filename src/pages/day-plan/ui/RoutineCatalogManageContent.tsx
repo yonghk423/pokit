@@ -35,6 +35,10 @@ import { useTranslation } from '@shared/lib/i18n';
 import { headerArtForVariant } from '@shared/ui/routine-atmosphere';
 import { RoutineAtmosphereFooterStrip } from '@shared/ui/routine-atmosphere';
 import {
+  POST_IT_YELLOW_DARK,
+  POST_IT_YELLOW_LIGHT,
+} from '@shared/ui/post-it-card-shell';
+import {
   appendCustomFlowCatalogEntry,
   createCustomCatalogGroup,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
@@ -51,8 +55,8 @@ import {
   type CustomCatalogGroup,
   type CustomFlowCatalogEntry,
 } from '@shared/lib/storage';
-import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { IconSymbol } from '@shared/ui/icon-symbol';
 
 import {
   getPickerCategoryItem,
@@ -87,7 +91,7 @@ function bookColors(c: DayPlanPalette, isDark: boolean) {
     sheetSurface: isDark ? tone.surfaceAlt : tone.bg,
     actionBg: isDark ? tone.surfaceAlt : '#FFFFFF',
     actionHoverBg: tone.surfacePink,
-    shadow: isDark ? tone.solidShadow : tone.primary,
+    shadow: '#000000',
   };
 }
 
@@ -441,18 +445,6 @@ export function RoutineCatalogManageContent() {
       <View style={[styles.stickyHeader, { paddingHorizontal: CityPopSpacing.marginMobile }]}>
         <View style={styles.headerBlock}>
           <View style={styles.titleRow}>
-            <View style={styles.titleCopy}>
-              <ThemedText style={[styles.lead, { color: editorial.muted }]}>
-                {t('catalog.managePageLead')}
-              </ThemedText>
-            </View>
-            <View style={styles.headerArtSlot} pointerEvents="none">
-              <Image
-                source={headerArtForVariant('catalog')}
-                style={styles.headerArt}
-                resizeMode="contain"
-              />
-            </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('catalog.createNewA11y')}
@@ -461,30 +453,56 @@ export function RoutineCatalogManageContent() {
                 setCreateChoiceSheetOpen(true);
               }}
               style={({ pressed }) => [
-                styles.headerAddButtonShell,
-                pressed && { opacity: 0.92 },
+                styles.leadButtonShell,
+                pressed && { opacity: 0.9, transform: [{ translateX: 1 }, { translateY: 1 }] },
               ]}>
               <View
                 pointerEvents="none"
                 style={[
-                  styles.headerAddButtonShadow,
-                  {
-                    backgroundColor: editorial.shadow,
-                    borderColor: editorial.line,
-                  },
+                  styles.leadButtonShadow,
+                  { backgroundColor: editorial.shadow },
                 ]}
               />
               <View
                 style={[
-                  styles.headerAddButtonInner,
+                  styles.leadButtonFace,
                   {
-                    backgroundColor: editorial.ink,
-                    borderColor: editorial.line,
+                    backgroundColor: isDark ? POST_IT_YELLOW_DARK : POST_IT_YELLOW_LIGHT,
                   },
                 ]}>
-                <IconSymbol name="plus" size={15} color="#FFFFFF" style={styles.headerAddIcon} />
+                <View style={styles.leadRow}>
+                  <ThemedText style={[styles.lead, { color: isDark ? '#FAFAFA' : editorial.ink }]}>
+                    {t('catalog.managePageLead')}
+                  </ThemedText>
+                  <View style={styles.leadAddShell} pointerEvents="none">
+                    <View
+                      style={[
+                        styles.leadAddShadow,
+                        { backgroundColor: editorial.shadow },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.leadAddFace,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(255,255,255,0.92)'
+                            : '#FFFFFF',
+                        },
+                      ]}>
+                      <IconSymbol name="plus" size={14} color={editorial.ink} />
+                    </View>
+                  </View>
+                </View>
               </View>
             </Pressable>
+            <View style={styles.headerArtSlot} pointerEvents="none">
+              <Image
+                source={headerArtForVariant('catalog')}
+                style={styles.headerArt}
+                resizeMode="contain"
+              />
+            </View>
           </View>
         </View>
       </View>
@@ -596,8 +614,6 @@ export function RoutineCatalogManageContent() {
   );
 }
 
-const HEADER_ADD_BUTTON_SIZE = 34;
-
 const styles = StyleSheet.create({
   stickyHeader: {
     paddingTop: CityPopSpacing.base,
@@ -613,11 +629,51 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: CityPopSpacing.sm,
   },
-  titleCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: 4,
+  leadButtonShell: {
+    flexShrink: 1,
+    maxWidth: '78%',
+    position: 'relative',
+    marginRight: 2,
+    marginBottom: 4,
+    alignSelf: 'flex-start',
+  },
+  leadButtonShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+    transform: [{ translateX: 3 }, { translateY: 3 }],
+  },
+  leadButtonFace: {
+    borderRadius: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    zIndex: 1,
+  },
+  leadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'nowrap',
+    gap: 10,
+  },
+  leadAddShell: {
+    width: 28,
+    height: 28,
+    position: 'relative',
+    marginRight: 2,
+    marginBottom: 2,
+    flexShrink: 0,
+    alignSelf: 'center',
+  },
+  leadAddShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+    transform: [{ translateX: 2 }, { translateY: 2 }],
+  },
+  leadAddFace: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+    alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   headerArtSlot: {
     width: 72,
@@ -633,36 +689,12 @@ const styles = StyleSheet.create({
     height: 88,
     marginBottom: -18,
   },
-  headerAddButtonShell: {
-    width: HEADER_ADD_BUTTON_SIZE,
-    height: HEADER_ADD_BUTTON_SIZE,
-    position: 'relative',
-    marginRight: 2,
-    marginBottom: 4,
-    flexShrink: 0,
-  },
-  headerAddButtonShadow: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 2,
-    borderRadius: 0,
-    transform: [{ translateX: 2 }, { translateY: 2 }],
-  },
-  headerAddButtonInner: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 2,
-    borderRadius: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  headerAddIcon: {
-    marginTop: 1,
-  },
   lead: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
-    letterSpacing: -0.1,
+    flexShrink: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 21,
+    letterSpacing: -0.3,
   },
   scroll: { flex: 1 },
   scrollContent: {

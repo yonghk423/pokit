@@ -234,6 +234,121 @@ describe('fixedFlowSetsStore', () => {
     );
   });
 
+  it('clears catalog selection protection when unapplying a set', () => {
+    appendRoutineCatalogSelectionKeys(['healthIntake', 'fasting']);
+    useFixedFlowSetsStore.setState({
+      activeSetIds: ['set_a'],
+      activeMealSlotsBySetId: {},
+      activeSetIdsByLayoutMode: { bag: ['set_a'], sections: [], spine: [] },
+      activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
+      fixedRoutineApplyLayoutMode: 'bag',
+      sets: [
+        {
+          id: 'set_a',
+          name: '건강 루틴 예시',
+          applyRule: 'manual',
+          items: [
+            { categoryKey: 'healthIntake', enabled: true },
+            { categoryKey: 'fasting', enabled: true },
+          ],
+        },
+      ],
+      todayAppliedCategoryKeys: ['healthIntake', 'fasting'],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+
+    useFixedFlowSetsStore.getState().toggleSetForToday('set_a', 'bag');
+
+    expect(useFixedFlowSetsStore.getState().activeSetIds).toEqual([]);
+    expect(useFixedFlowSetsStore.getState().todayAppliedCategoryKeys).toEqual([]);
+    expect(loadRoutineCatalogSelectionKeys()).not.toContain('healthIntake');
+    expect(loadRoutineCatalogSelectionKeys()).not.toContain('fasting');
+  });
+
+  it('removes unapplied set items from today bag order even if catalog protected them', () => {
+    const { useDayPlanDraftStore } = require('./dayPlanDraftStore') as typeof import('./dayPlanDraftStore');
+    const { useDayPlanStore } = require('./dayPlanStore') as typeof import('./dayPlanStore');
+
+    appendRoutineCatalogSelectionKeys(['healthIntake', 'fasting']);
+    useDayPlanDraftStore.setState({
+      ...useDayPlanDraftStore.getState(),
+      isHydrated: true,
+      priorityMealSlotLayoutEnabled: false,
+      prioritySpineLayoutEnabled: false,
+      priorityCategoryOrder: ['healthIntake', 'fasting'],
+      prioritySectionsCategoryOrder: [],
+      priorityMealSlotOverrides: {},
+      prioritySectionsMealSlots: {},
+      priorityStart: '09:00',
+      priorityEnd: '22:00',
+    });
+    useDayPlanStore.setState({
+      ...useDayPlanStore.getState(),
+      isHydrated: true,
+      blocks: [],
+    });
+    useFixedFlowSetsStore.setState({
+      activeSetIds: ['set_a'],
+      activeMealSlotsBySetId: {},
+      activeSetIdsByLayoutMode: { bag: ['set_a'], sections: [], spine: [] },
+      activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
+      fixedRoutineApplyLayoutMode: 'bag',
+      sets: [
+        {
+          id: 'set_a',
+          name: '건강 루틴 예시',
+          applyRule: 'manual',
+          items: [
+            { categoryKey: 'healthIntake', enabled: true },
+            { categoryKey: 'fasting', enabled: true },
+          ],
+        },
+      ],
+      todayAppliedCategoryKeys: ['healthIntake', 'fasting'],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+
+    useFixedFlowSetsStore.getState().toggleSetForToday('set_a', 'bag');
+
+    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual([]);
+  });
+
+  it('keeps catalog selection for keys still applied by another set', () => {
+    appendRoutineCatalogSelectionKeys(['healthIntake']);
+    useFixedFlowSetsStore.setState({
+      activeSetIds: ['set_a', 'set_b'],
+      activeMealSlotsBySetId: {},
+      activeSetIdsByLayoutMode: { bag: ['set_a', 'set_b'], sections: [], spine: [] },
+      activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
+      fixedRoutineApplyLayoutMode: 'bag',
+      sets: [
+        {
+          id: 'set_a',
+          name: 'A',
+          applyRule: 'manual',
+          items: [{ categoryKey: 'healthIntake', enabled: true }],
+        },
+        {
+          id: 'set_b',
+          name: 'B',
+          applyRule: 'manual',
+          items: [{ categoryKey: 'healthIntake', enabled: true }],
+        },
+      ],
+      todayAppliedCategoryKeys: ['healthIntake'],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+
+    useFixedFlowSetsStore.getState().toggleSetForToday('set_a', 'bag');
+
+    expect(useFixedFlowSetsStore.getState().activeSetIds).toEqual(['set_b']);
+    expect(useFixedFlowSetsStore.getState().todayAppliedCategoryKeys).toEqual(['healthIntake']);
+    expect(loadRoutineCatalogSelectionKeys()).toContain('healthIntake');
+  });
+
   it('pins empty morning slot when adding to preset set', () => {
     useFixedFlowSetsStore.setState({
       sets: [

@@ -44,6 +44,8 @@ export const StorageKeys = {
   lastSeenAppVersion: 'pokit:last-seen-app-version',
   /** 스토어 업데이트 유도 모달을 닫은 최신 버전 */
   updateAvailableDismissedVersion: 'pokit:update-available-dismissed-version',
+  /** 루틴 목록 포스트잇 카드 면 색 */
+  postItFaceColor: 'pokit:post-it-face-color',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];
@@ -77,4 +79,5 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   dayMealSlotSchedule: 'lockflow:day-meal-slot-schedule',
   lastSeenAppVersion: 'lockflow:last-seen-app-version',
   updateAvailableDismissedVersion: 'lockflow:update-available-dismissed-version',
+  postItFaceColor: 'lockflow:post-it-face-color',
 };

@@ -1472,5 +1472,15 @@
   "dayPlan.rowAccordionTimeLabel": "시간",
   "dayPlan.rowAccordionCopy": "복사",
   "dayPlan.rowAccordionCopiedTitle": "복사됨",
-  "dayPlan.rowAccordionCopiedBody": "루틴 요약이 클립보드에 복사됐어요."
+  "dayPlan.rowAccordionCopiedBody": "루틴 요약이 클립보드에 복사됐어요.",
+  "catalog.postItColorTitle": "포스트잇 색",
+  "catalog.postItColorOptionA11y": "{color} 선택",
+  "catalog.postItColor.yellow": "노랑",
+  "catalog.postItColor.mint": "민트",
+  "catalog.postItColor.pink": "핑크",
+  "catalog.postItColor.peach": "피치",
+  "catalog.postItColor.lavender": "라벤더",
+  "catalog.postItColor.white": "화이트",
+  "catalog.postItColor.navy": "네이비",
+  "catalog.postItColor.darkGreen": "다크 그린"
 }

@@ -218,6 +218,27 @@ export {
   saveLastSeenAppVersion
 } from './lastSeenAppVersionStorage';
 export {
+  DEFAULT_POST_IT_FACE_COLOR_ID,
+  POST_IT_FACE_COLOR_PRESETS,
+  POST_IT_LIGHT_INK,
+  POST_IT_LIGHT_MUTED,
+  getPostItFaceColorPreset,
+  isPostItFaceColorId,
+  loadPostItFaceColorByGroup,
+  loadPostItFaceColorId,
+  loadPostItFaceColorIdForGroup,
+  postItFaceUsesLightInk,
+  resolvePostItFaceColor,
+  resolvePostItFaceInk,
+  resolvePostItFaceMuted,
+  savePostItFaceColorForGroup,
+  savePostItFaceColorId,
+  type PostItFaceColorByGroup,
+  type PostItFaceColorId,
+  type PostItFaceColorPreset,
+  type PostItFaceInkTone,
+} from './postItFaceColorStorage';
+export {
   clearPokitLocalStorage,
   flushLocalStorageClientWrites,
   initLocalStorageClient,

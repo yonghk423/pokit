@@ -505,13 +505,12 @@ export function DefaultPriorityOrderRow({
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onToggleExpand?.();
           }}
-          style={({ pressed }) => [
+          style={[
             styles.expandChevronBtn,
             {
               borderColor: actionBorder,
-              backgroundColor: pressed ? actionHoverBg : actionBg,
+              backgroundColor: actionBg,
             },
-            pressed && { opacity: 0.92 },
           ]}>
           <Reanimated.View style={expandChevronAnimatedStyle}>
             <IconSymbol

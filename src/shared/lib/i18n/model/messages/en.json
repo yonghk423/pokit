@@ -1472,5 +1472,15 @@
   "dayPlan.rowAccordionTimeLabel": "Time",
   "dayPlan.rowAccordionCopy": "Copy",
   "dayPlan.rowAccordionCopiedTitle": "Copied",
-  "dayPlan.rowAccordionCopiedBody": "Routine summary copied to the clipboard."
+  "dayPlan.rowAccordionCopiedBody": "Routine summary copied to the clipboard.",
+  "catalog.postItColorTitle": "Post-it color",
+  "catalog.postItColorOptionA11y": "Select {color}",
+  "catalog.postItColor.yellow": "Yellow",
+  "catalog.postItColor.mint": "Mint",
+  "catalog.postItColor.pink": "Pink",
+  "catalog.postItColor.peach": "Peach",
+  "catalog.postItColor.lavender": "Lavender",
+  "catalog.postItColor.white": "White",
+  "catalog.postItColor.navy": "Navy",
+  "catalog.postItColor.darkGreen": "Dark green"
 }

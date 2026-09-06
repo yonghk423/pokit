@@ -17,8 +17,22 @@ import {
   useDayPlanDraftStore,
 } from '@entities/day-plan';
 import { RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
-import { getDayMealSlotLabel, type CustomCatalogGroup, type CustomFlowCatalogEntry, type DayMealSlot } from '@shared/lib/storage';
-import { IconSymbol } from '@shared/ui/icon-symbol';
+import {
+  DEFAULT_POST_IT_FACE_COLOR_ID,
+  getDayMealSlotLabel,
+  loadPostItFaceColorByGroup,
+  postItFaceUsesLightInk,
+  resolvePostItFaceColor,
+  resolvePostItFaceInk,
+  resolvePostItFaceMuted,
+  savePostItFaceColorForGroup,
+  type CustomCatalogGroup,
+  type CustomFlowCatalogEntry,
+  type DayMealSlot,
+  type PostItFaceColorByGroup,
+  type PostItFaceColorId,
+} from '@shared/lib/storage';import { IconSymbol } from '@shared/ui/icon-symbol';
+import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory, categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
 
@@ -35,7 +49,7 @@ import {
   mealSlotPickerBtnWidth,
 } from './CatalogRowMealSlotChips';
 import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
-import { CityPopCardShell } from './CityPopCardShell';
+import { PostItFaceColorChips } from './PostItFaceColorChips';
 
 export type PriorityCatalogEditorial = {
   ink: string;
@@ -59,6 +73,7 @@ function BrutalActionButton({
   pressedBg,
   shadowColor,
   onPress,
+  soft = false,
   children,
 }: {
   accessibilityLabel: string;
@@ -68,25 +83,30 @@ function BrutalActionButton({
   pressedBg: string;
   shadowColor: string;
   onPress: () => void;
+  soft?: boolean;
   children: ReactNode;
 }) {
+  const shadow = soft ? 2 : BRUTAL_SHADOW_SM;
   return (
     <View
       style={[
         styles.brutalBtnShell,
-        { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+        shadow > 0 && { marginRight: shadow, marginBottom: shadow },
       ]}>
-      <View
-        pointerEvents="none"
-        style={[
-          styles.brutalBtnShadow,
-          {
-            backgroundColor: shadowColor,
-            borderColor,
-            transform: [{ translateX: BRUTAL_SHADOW_SM }, { translateY: BRUTAL_SHADOW_SM }],
-          },
-        ]}
-      />
+      {shadow > 0 ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.brutalBtnShadow,
+            {
+              backgroundColor: shadowColor,
+              borderColor: soft ? 'transparent' : borderColor,
+              borderWidth: soft ? 0 : StyleSheet.hairlineWidth,
+              transform: [{ translateX: shadow }, { translateY: shadow }],
+            },
+          ]}
+        />
+      ) : null}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
@@ -94,9 +114,10 @@ function BrutalActionButton({
         hitSlop={disabled ? 0 : 8}
         onPress={onPress}
         style={({ pressed }) => [
-          styles.catalogSettingsBtnManage,
+          soft ? styles.catalogSettingsBtnManageSoft : styles.catalogSettingsBtnManage,
           {
-            borderColor,
+            borderColor: soft ? 'transparent' : borderColor,
+            borderWidth: soft ? 0 : StyleSheet.hairlineWidth,
             backgroundColor: pressed && !disabled ? pressedBg : backgroundColor,
             opacity: disabled ? 0.55 : pressed ? 0.92 : 1,
           },
@@ -178,17 +199,19 @@ function CatalogListRow({
 }) {
   const { t } = useTranslation();
   const settingsBorder = manageOnly
-    ? line
+    ? isDark
+      ? 'rgba(241,239,255,0.28)'
+      : 'rgba(24,26,46,0.14)'
     : isDark
       ? 'rgba(255,255,255,0.28)'
       : 'rgba(0,0,0,0.2)';
   const settingsBg = manageOnly
-    ? (actionBg ?? (isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF'))
+    ? (actionBg ?? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.72)'))
     : isDark
       ? 'rgba(255,255,255,0.1)'
       : 'rgba(0,0,0,0.05)';
   const settingsHoverBg = actionHoverBg ?? settingsBg;
-  const brutalShadow = shadow ?? (isDark ? RetroFlatColors.dark.solidShadow : RetroFlatColors.light.primary);
+  const brutalShadow = shadow ?? '#000000';
   const settingsLocked = !manageOnly && isFocusStarted && selected;
   const shouldPulse = !manageOnly && Boolean(selected && isFocusStarted);
   const pulse = useRef(new Animated.Value(1)).current;
@@ -272,7 +295,9 @@ function CatalogListRow({
       style={[
         styles.catalogRowWrap,
         manageOnly && styles.catalogRowWrapManage,
-        { borderBottomColor: line },
+        {
+          borderBottomColor: line,
+        },
       ]}>
       <View style={[styles.catalogRow, manageOnly && styles.catalogRowManage]}>
         <Pressable
@@ -308,7 +333,7 @@ function CatalogListRow({
               <View
                 style={[
                   styles.catalogIconBoxShell,
-                  { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+                  { marginRight: 2, marginBottom: 2 },
                 ]}>
                 <View
                   pointerEvents="none"
@@ -316,20 +341,16 @@ function CatalogListRow({
                     styles.catalogIconBoxShadow,
                     {
                       backgroundColor: brutalShadow,
-                      borderColor: line,
-                      transform: [
-                        { translateX: BRUTAL_SHADOW_SM },
-                        { translateY: BRUTAL_SHADOW_SM },
-                      ],
+                      transform: [{ translateX: 2 }, { translateY: 2 }],
                     },
                   ]}
                 />
                 <View
                   style={[
                     styles.catalogIconBox,
+                    styles.catalogIconBoxManageSoft,
                     {
-                      borderColor: line,
-                      backgroundColor: iconBoxBg ?? '#FFFFFF',
+                      backgroundColor: iconBoxBg ?? 'rgba(255,255,255,0.85)',
                     },
                   ]}>
                   <IconSymbol
@@ -387,6 +408,7 @@ function CatalogListRow({
                 backgroundColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)') : settingsBg}
                 pressedBg={settingsHoverBg}
                 shadowColor={brutalShadow}
+                soft={manageOnly}
                 onPress={() => {
                   if (settingsLocked) return;
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -441,6 +463,7 @@ function CatalogListRow({
                 backgroundColor={settingsBg}
                 pressedBg={settingsHoverBg}
                 shadowColor={brutalShadow}
+                soft={manageOnly}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onMoveGroup();
@@ -602,6 +625,7 @@ function CatalogListRow({
               }
               pressedBg={settingsHoverBg}
               shadowColor={brutalShadow}
+              soft={manageOnly}
               onPress={() => {
                 if (settingsLocked) return;
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -747,7 +771,7 @@ function CatalogSectionHeader({
         styles.sectionHeader,
         manageOnly && styles.sectionHeaderManage,
         manageOnly && {
-          backgroundColor: isDark ? 'rgba(158, 207, 209, 0.16)' : 'rgba(168, 218, 220, 0.28)',
+          backgroundColor: 'transparent',
         },
       ]}
       accessibilityRole="header"
@@ -958,6 +982,8 @@ function GroupSectionBlock({
   onMoveCustomFlow,
   onDeleteCatalogItem,
   isFirst,
+  postItFaceColorId = DEFAULT_POST_IT_FACE_COLOR_ID,
+  onSelectPostItFaceColor,
   sectionsCatalogOptions,
   spineCatalogOptions,
   manageOnly = false,
@@ -974,6 +1000,9 @@ function GroupSectionBlock({
   onMoveCustomFlow?: (categoryKey: string, label: string) => void;
   onDeleteCatalogItem?: (categoryKey: string, label: string) => void;
   isFirst: boolean;
+  /** manageOnly: 이 그룹 포스트잇 면 색 */
+  postItFaceColorId?: PostItFaceColorId;
+  onSelectPostItFaceColor?: (id: PostItFaceColorId) => void;
   sectionsCatalogOptions?: {
     prioritySectionsMealSlots: Record<string, DayMealSlot[]>;
     priorityMealSlotOverrides: Record<string, DayMealSlot>;
@@ -996,6 +1025,41 @@ function GroupSectionBlock({
   manageOnly?: boolean;
 }) {
   const { t } = useTranslation();
+  const faceUsesLightInk = manageOnly && postItFaceUsesLightInk(postItFaceColorId);
+  const faceInk = manageOnly
+    ? resolvePostItFaceInk(postItFaceColorId, editorial.ink)
+    : editorial.ink;
+  const faceMuted = manageOnly
+    ? resolvePostItFaceMuted(postItFaceColorId, editorial.muted)
+    : editorial.muted;
+  const faceEditorial: PriorityCatalogEditorial = manageOnly
+    ? {
+        ...editorial,
+        ink: faceInk,
+        muted: faceMuted,
+        line: faceUsesLightInk ? 'rgba(255,255,255,0.22)' : editorial.line,
+      }
+    : editorial;
+  const headerIconColor = faceUsesLightInk ? '#FFFFFF' : isDark ? '#FAFAFA' : '#000000';
+  const headerBtnBorder = faceUsesLightInk
+    ? 'rgba(255,255,255,0.32)'
+    : manageOnly
+      ? isDark
+        ? 'rgba(241,239,255,0.28)'
+        : 'rgba(24,26,46,0.14)'
+      : isDark
+        ? 'rgba(255,255,255,0.28)'
+        : 'rgba(0,0,0,0.2)';
+  const headerBtnBg = faceUsesLightInk
+    ? 'rgba(255,255,255,0.14)'
+    : manageOnly
+      ? isDark
+        ? 'rgba(255,255,255,0.1)'
+        : 'rgba(255,255,255,0.72)'
+      : isDark
+        ? 'rgba(255,255,255,0.1)'
+        : 'rgba(0,0,0,0.05)';
+
   const groupHeaderTrailing =
     onRenameCustomGroup || onDeleteCatalogGroup ? (
       <View style={styles.customGroupHeaderActions}>
@@ -1015,24 +1079,12 @@ function GroupSectionBlock({
             style={({ pressed }) => [
               manageOnly ? styles.customGroupHeaderIconBtnManage : styles.customGroupHeaderIconBtn,
               {
-                borderColor: manageOnly
-                  ? isDark
-                    ? 'rgba(255,255,255,0.88)'
-                    : '#000000'
-                  : isDark
-                    ? 'rgba(255,255,255,0.28)'
-                    : 'rgba(0,0,0,0.2)',
-                backgroundColor: manageOnly
-                  ? isDark
-                    ? 'rgba(255,255,255,0.08)'
-                    : '#FFFFFF'
-                  : isDark
-                    ? 'rgba(255,255,255,0.1)'
-                    : 'rgba(0,0,0,0.05)',
+                borderColor: headerBtnBorder,
+                backgroundColor: headerBtnBg,
               },
               manageOnly && pressed && { opacity: 0.92 },
             ]}>
-            <IconSymbol name="pencil" size={13} color={isDark ? '#FAFAFA' : '#000000'} />
+            <IconSymbol name="pencil" size={13} color={headerIconColor} />
           </Pressable>
         ) : null}
         {onDeleteCatalogGroup ? (
@@ -1047,52 +1099,58 @@ function GroupSectionBlock({
             style={({ pressed }) => [
               manageOnly ? styles.customGroupHeaderIconBtnManage : styles.customGroupHeaderIconBtn,
               {
-                borderColor: manageOnly
-                  ? isDark
-                    ? 'rgba(255,255,255,0.88)'
-                    : '#000000'
-                  : isDark
-                    ? 'rgba(255,255,255,0.28)'
-                    : 'rgba(0,0,0,0.2)',
-                backgroundColor: manageOnly
-                  ? isDark
-                    ? 'rgba(255,255,255,0.08)'
-                    : '#FFFFFF'
-                  : isDark
-                    ? 'rgba(255,255,255,0.1)'
-                    : 'rgba(0,0,0,0.05)',
+                borderColor: headerBtnBorder,
+                backgroundColor: headerBtnBg,
               },
               manageOnly && pressed && { opacity: 0.92 },
             ]}>
-            <IconSymbol name="trash" size={13} color={isDark ? '#FAFAFA' : '#000000'} />
+            <IconSymbol name="trash" size={13} color={headerIconColor} />
           </Pressable>
         ) : null}
       </View>
     ) : undefined;
 
+  const postItFaceColor = resolvePostItFaceColor(postItFaceColorId, isDark);
+
   return (
     <View style={[styles.sectionBlock, !isFirst && styles.sectionBlockFollows]}>
       {manageOnly ? (
-        <CityPopCardShell isDark={isDark}>
+        <PostItCardShell isDark={isDark} faceColor={postItFaceColor}>
           <CatalogSectionHeader
             title={section.title}
             itemCount={section.items.length}
-            ink={editorial.ink}
-            muted={editorial.muted}
+            ink={faceInk}
+            muted={faceMuted}
             manageOnly={manageOnly}
             isDark={isDark}
             trailing={groupHeaderTrailing}
           />
+          {onSelectPostItFaceColor ? (
+            <PostItFaceColorChips
+              compact
+              selectedId={postItFaceColorId}
+              isDark={isDark}
+              ink={faceInk}
+              shadowColor={faceEditorial.shadow ?? '#000000'}
+              onSelect={onSelectPostItFaceColor}
+            />
+          ) : null}
           <View
             style={[
               styles.listShell,
               styles.listShellManage,
-              { borderTopColor: editorial.line },
+              {
+                borderTopColor: faceUsesLightInk
+                  ? 'rgba(255,255,255,0.22)'
+                  : isDark
+                    ? 'rgba(241,239,255,0.22)'
+                    : 'rgba(24,26,46,0.12)',
+              },
             ]}>
             {section.items.length > 0
               ? renderRows(
                 section.items,
-                editorial,
+                faceEditorial,
                 isDark,
                 priorityCategoryOrder,
                 isFocusStarted,
@@ -1106,7 +1164,7 @@ function GroupSectionBlock({
               )
               : null}
           </View>
-        </CityPopCardShell>
+        </PostItCardShell>
       ) : (
         <>
           <CatalogSectionHeader
@@ -1171,6 +1229,13 @@ export function PriorityCatalogPanel({
 }: Props) {
   const [expandedMealSlotKey, setExpandedMealSlotKey] = useState<string | null>(null);
   const [expandedSpineTimeKey, setExpandedSpineTimeKey] = useState<string | null>(null);
+  const [postItFaceByGroup, setPostItFaceByGroup] = useState<PostItFaceColorByGroup>(
+    () => loadPostItFaceColorByGroup(),
+  );
+
+  const onSelectPostItFaceColor = useCallback((groupKey: string, id: PostItFaceColorId) => {
+    setPostItFaceByGroup(savePostItFaceColorForGroup(groupKey, id));
+  }, []);
 
   const onToggleMealSlotExpand = useCallback((categoryKey: string) => {
     setExpandedMealSlotKey((prev) => (prev === categoryKey ? null : categoryKey));
@@ -1277,6 +1342,16 @@ export function PriorityCatalogPanel({
           sectionsCatalogOptions={sectionsCatalogOptions}
           spineCatalogOptions={spineCatalogOptions}
           manageOnly={manageOnly}
+          postItFaceColorId={
+            manageOnly
+              ? (postItFaceByGroup[section.groupKey] ?? DEFAULT_POST_IT_FACE_COLOR_ID)
+              : undefined
+          }
+          onSelectPostItFaceColor={
+            manageOnly
+              ? (id) => onSelectPostItFaceColor(section.groupKey, id)
+              : undefined
+          }
           isFirst={index === 0}
         />
       ))}
@@ -1292,7 +1367,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   sectionBlockFollows: {
-    marginTop: 16,
+    marginTop: 22,
   },
   sectionGroupShell: {
     borderWidth: RETRO_BORDER_WIDTH,
@@ -1304,8 +1379,9 @@ const styles = StyleSheet.create({
   },
   sectionHeaderManage: {
     marginBottom: 0,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingHorizontal: 14,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
   sectionHeaderTop: {
     flexDirection: 'row',
@@ -1342,7 +1418,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1372,9 +1448,9 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   listShellManage: {
-    borderTopWidth: 1,
-    paddingBottom: 0,
-    paddingHorizontal: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingBottom: 4,
+    paddingHorizontal: 6,
     backgroundColor: 'transparent',
   },
   catalogRowWrap: {
@@ -1382,8 +1458,7 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   catalogRowWrapManage: {
-    /** 시안 `border-b border-black` + `py-md` */
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     paddingBottom: 0,
   },
   mealSlotPanel: {
@@ -1423,21 +1498,26 @@ const styles = StyleSheet.create({
   },
   catalogIconBoxShell: {
     position: 'relative',
+    width: 36,
+    height: 36,
   },
   catalogIconBoxShadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
     borderRadius: 0,
   },
   catalogIconBox: {
     width: 36,
     height: 36,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
     overflow: 'hidden',
+  },
+  catalogIconBoxManageSoft: {
+    borderRadius: 0,
+    borderWidth: 0,
   },
   catalogRowActions: {
     flexDirection: 'row',
@@ -1461,20 +1541,30 @@ const styles = StyleSheet.create({
   brutalBtnShell: {
     position: 'relative',
   },
-  brutalBtnShadow: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderRadius: 0,
-  },
   catalogSettingsBtnManage: {
     width: 32,
     height: 32,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  catalogSettingsBtnManageSoft: {
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+    backgroundColor: 'rgba(255,255,255,0.72)',
+  },
+  brutalBtnShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 0,
   },
   catalogAddHit: {
     width: 32,

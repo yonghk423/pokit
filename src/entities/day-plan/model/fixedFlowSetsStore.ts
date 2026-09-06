@@ -491,6 +491,21 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       ...activeMealSlotsBySetIdByLayoutMode,
       [mode]: restSlots,
     };
+
+    // 적용 해제 시: 더 이상 오늘 적용되지 않는 항목은 수동 담기 보호도 걷는다.
+    // (보호가 남으면 sync 가 오늘 목록에서 항목을 지우지 못함)
+    if (!isActivating) {
+      const stillApplied = new Set(
+        recomputeTodayApplied(nextActive, restSlots, sets),
+      );
+      for (const item of target.items) {
+        if (item.enabled === false) continue;
+        const key = item.categoryKey.trim();
+        if (!key || stillApplied.has(key)) continue;
+        removeRoutineCatalogSelectionKey(key);
+      }
+    }
+
     set({
       fixedRoutineApplyLayoutMode: mode,
       activeSetIds: nextActive,
@@ -543,6 +558,20 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       ...activeMealSlotsBySetIdByLayoutMode,
       [mode]: modeSlots,
     };
+
+    // 프리셋 구간을 모두 끄면 세트 적용 해제와 동일 — 남은 적용이 없는 키의 수동 담기 보호 제거
+    if (nextSlots.length === 0 && modeActiveIds.includes(setId)) {
+      const stillApplied = new Set(
+        recomputeTodayApplied(nextActiveSetIds, modeSlots, sets),
+      );
+      for (const item of target.items) {
+        if (item.enabled === false) continue;
+        const key = item.categoryKey.trim();
+        if (!key || stillApplied.has(key)) continue;
+        removeRoutineCatalogSelectionKey(key);
+      }
+    }
+
     set({
       fixedRoutineApplyLayoutMode: mode,
       activeSetIds: nextActiveSetIds,
