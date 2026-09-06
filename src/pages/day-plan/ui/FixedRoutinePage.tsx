@@ -1120,7 +1120,11 @@ function GroupAccordion({
   const scheduleHint = isPresetScheduleSet ? getFixedFlowPresetScheduleHint(setItem.applyRule) : null;
 
   return (
-    <PostItCardShell isDark={isDark} faceColor={sectionBg}>
+    <PostItCardShell
+      isDark={isDark}
+      faceColor={sectionBg}
+      borderColor={postItFaceColorId === 'white' && !isDark ? 'rgba(0,0,0,0.16)' : undefined}
+      borderWidth={postItFaceColorId === 'white' && !isDark ? StyleSheet.hairlineWidth : 0}>
     <View style={styles.accordionSectionInner}>
       <View style={[styles.accordionHeader, { backgroundColor: 'transparent' }]}>
         {canRenameSet && isEditingName ? (
@@ -2294,7 +2298,8 @@ export function FixedRoutinePage({
                       }}
                       onOpenCategorySettings={openCategorySettings}
                       postItFaceColorId={
-                        postItFaceByGroup[`my-routine:${setItem.id}`] ?? 'yellow'
+                        postItFaceByGroup[`my-routine:${setItem.id}`] ??
+                        DEFAULT_POST_IT_FACE_COLOR_ID
                       }
                       onSelectPostItFaceColor={(colorId) =>
                         handleSelectPostItFaceColor(setItem.id, colorId)

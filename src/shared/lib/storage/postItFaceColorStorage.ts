@@ -31,12 +31,12 @@ export const POST_IT_FACE_COLOR_PRESETS: readonly PostItFaceColorPreset[] = [
   { id: 'pink', light: '#F5C6C6', dark: '#7A4545', inkTone: 'dark' },
   { id: 'peach', light: '#FFD8A8', dark: '#8A5A28', inkTone: 'dark' },
   { id: 'lavender', light: '#D4C8F5', dark: '#4A3F72', inkTone: 'dark' },
-  { id: 'white', light: '#FFFDF5', dark: '#3A3C52', inkTone: 'dark' },
+  { id: 'white', light: '#FFFFFF', dark: '#3A3C52', inkTone: 'dark' },
   { id: 'navy', light: '#1E3A5F', dark: '#152844', inkTone: 'light' },
   { id: 'darkGreen', light: '#1F4D3A', dark: '#16362A', inkTone: 'light' },
 ] as const;
 
-export const DEFAULT_POST_IT_FACE_COLOR_ID: PostItFaceColorId = 'yellow';
+export const DEFAULT_POST_IT_FACE_COLOR_ID: PostItFaceColorId = 'white';
 
 export const POST_IT_LIGHT_INK = '#FFFFFF';
 export const POST_IT_LIGHT_MUTED = 'rgba(255,255,255,0.72)';

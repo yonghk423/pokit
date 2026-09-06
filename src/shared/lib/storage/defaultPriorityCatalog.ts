@@ -66,6 +66,40 @@ export const BUILTIN_STRETCHING_FLOW_ID = 'customFlow:preset_stretching' as cons
 /** 생산성을 높이는 도구 — 집중하기 */
 export const BUILTIN_FOCUS_FLOW_ID = 'customFlow:preset_focus' as const;
 
+/** 첫 사용자 튜토리얼 — 포킷 일주일 사용해보기 */
+export const BUILTIN_TUTORIAL_GROUP_KEY = 'customGroup:preset_tutorial' as const;
+export const BUILTIN_POKIT_WEEK_TOUR_FLOW_ID = 'customFlow:preset_pokit_week_tour' as const;
+
+/** 튜토리얼 체크리스트 — 하루치로 빠르게 둘러보기 (클릭 시 tip은 i18n) */
+export const POKIT_WEEK_TOUR_CHECKLIST_LABELS = [
+  '루틴 탭 둘러보기',
+  '나만의 루틴 만들기',
+  '히스토리 확인하기',
+  '투두 리스트 써보기',
+  '책방 열어보기',
+  '잠금화면 메모 써보기',
+  '노트 적어보기',
+] as const;
+
+export const POKIT_WEEK_TOUR_DISPLAY_NAME = '포킷 빠르게 둘러보기' as const;
+export const POKIT_WEEK_TOUR_SUMMARY =
+  '항목을 눌러 짧게 읽고 「알겠어요」로 체크해요. 하루 안에 한 번에 끝내도 좋아요.' as const;
+
+export const POKIT_WEEK_TOUR_STEP_COUNT = POKIT_WEEK_TOUR_CHECKLIST_LABELS.length;
+
+export function isPokitWeekTourFlowId(categoryKey: string): boolean {
+  return categoryKey.trim() === BUILTIN_POKIT_WEEK_TOUR_FLOW_ID;
+}
+
+/** `customFlow:preset_pokit_week_tour_item_N` → 0-based step index */
+export function resolvePokitWeekTourStepIndex(taskId: string): number | null {
+  const prefix = `${BUILTIN_POKIT_WEEK_TOUR_FLOW_ID}_item_`;
+  if (!taskId.startsWith(prefix)) return null;
+  const n = Number(taskId.slice(prefix.length));
+  if (!Number.isInteger(n) || n < 0 || n >= POKIT_WEEK_TOUR_STEP_COUNT) return null;
+  return n;
+}
+
 /** 금지 루틴 기본 항목 */
 export const ABSTAIN_CHECKLIST_LABELS = [
   '밤늦게 폰 보기',
@@ -84,12 +118,25 @@ export {
 export const BUILTIN_HEALTH_GROUP_KEY = 'customGroup:preset_health' as const;
 
 /** 신규 설치 시 자동 시드되는 커스텀 그룹 */
+export const BUILTIN_TUTORIAL_GROUP_LABEL = '포킷 사용해보기' as const;
+
 export const DEFAULT_BUILTIN_CUSTOM_GROUPS = [
+  { key: BUILTIN_TUTORIAL_GROUP_KEY, label: BUILTIN_TUTORIAL_GROUP_LABEL },
   { key: BUILTIN_DAILY_LIFE_GROUP_KEY, label: '일상 루틴' },
   { key: BUILTIN_ABSTAIN_GROUP_KEY, label: '금지 루틴' },
 ] as const;
 
 export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
+  {
+    id: BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
+    groupKey: BUILTIN_TUTORIAL_GROUP_KEY,
+    displayName: POKIT_WEEK_TOUR_DISPLAY_NAME,
+    icon: 'sparkles',
+    color: '#0f766e',
+    summary: POKIT_WEEK_TOUR_SUMMARY,
+    templateKey: 'checklist',
+    checklistLabels: POKIT_WEEK_TOUR_CHECKLIST_LABELS,
+  },
   {
     id: BUILTIN_DAILY_LIFE_FLOW_IDS[0],
     groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,

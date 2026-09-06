@@ -2,6 +2,7 @@ import {
   type CustomCatalogGroup,
   listCustomCatalogGroups,
   removeCustomCatalogGroup,
+  updateCustomCatalogGroup,
 } from './customCatalogGroupStorage';
 import {
   appendCustomFlowCatalogEntry,
@@ -14,6 +15,8 @@ import {
   BUILTIN_GOOD_POSTURE_FLOW_ID,
   BUILTIN_STRETCHING_FLOW_ID,
   BUILTIN_INTERMITTENT_FASTING_FLOW_ID,
+  BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
+  BUILTIN_TUTORIAL_GROUP_KEY,
   DEFAULT_BUILTIN_CUSTOM_FLOWS,
   DEFAULT_BUILTIN_CUSTOM_GROUPS,
   BUILTIN_DAILY_LIFE_FLOW_IDS,
@@ -22,6 +25,10 @@ import {
   isRemovedBuiltinCustomFlowId,
   isRemovedBuiltinCustomGroupKey,
   LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID,
+  POKIT_WEEK_TOUR_CHECKLIST_LABELS,
+  POKIT_WEEK_TOUR_DISPLAY_NAME,
+  BUILTIN_TUTORIAL_GROUP_LABEL,
+  POKIT_WEEK_TOUR_SUMMARY,
 } from './defaultPriorityCatalog';
 import { updateStandardCatalogGroup } from './catalogItemGroupStorage';
 import { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
@@ -243,8 +250,18 @@ function mergeDefaultCustomGroups(): void {
   let changed = false;
 
   for (const group of DEFAULT_BUILTIN_CUSTOM_GROUPS) {
-    if (!byKey.has(group.key)) {
+    const existing = byKey.get(group.key);
+    if (!existing) {
       byKey.set(group.key, { key: group.key, label: group.label });
+      changed = true;
+      continue;
+    }
+    // 튜토리얼 그룹 라벨은 제품 카피로 고정 동기화
+    if (
+      group.key === BUILTIN_TUTORIAL_GROUP_KEY &&
+      existing.label !== BUILTIN_TUTORIAL_GROUP_LABEL
+    ) {
+      byKey.set(group.key, { ...existing, label: BUILTIN_TUTORIAL_GROUP_LABEL });
       changed = true;
     }
   }
@@ -254,11 +271,24 @@ function mergeDefaultCustomGroups(): void {
   const merged: CustomCatalogGroup[] = DEFAULT_BUILTIN_CUSTOM_GROUPS.map((g) => ({
     key: g.key,
     label: byKey.get(g.key)?.label ?? g.label,
+    subtitle: byKey.get(g.key)?.subtitle,
   }));
   for (const group of cur) {
     if (!builtinKeys.has(group.key)) merged.push(group);
   }
   localStorageClient.setJson(StorageKeys.customCatalogGroups, { groups: merged });
+}
+
+/** 기존 「시작하기」그룹 라벨 → 「포킷 사용해보기」 */
+function migrateTutorialGroupLabel(): void {
+  const groups = listCustomCatalogGroups();
+  const tutorial = groups.find((g) => g.key === BUILTIN_TUTORIAL_GROUP_KEY);
+  if (!tutorial) return;
+  if (tutorial.label === BUILTIN_TUTORIAL_GROUP_LABEL) return;
+  updateCustomCatalogGroup(BUILTIN_TUTORIAL_GROUP_KEY, {
+    label: BUILTIN_TUTORIAL_GROUP_LABEL,
+    subtitle: tutorial.subtitle,
+  });
 }
 
 function purgeIntermittentFastingFlow(): void {
@@ -330,6 +360,45 @@ function migrateAbstainDisplayName(): void {
   saveGoalDetailCategoryConfig(BUILTIN_ABSTAIN_FLOW_ID, {
     ...(cfg as Record<string, unknown>),
     displayName: '금지',
+  });
+}
+
+/** 「포킷 일주일」일별 투어 → 하루 안에 끝내는 빠른 둘러보기로 갱신 */
+function migratePokitWeekTourToQuickTour(): void {
+  const cfg = loadGoalDetailCategoryConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
+  if (!cfg || typeof cfg !== 'object') return;
+  const displayName =
+    typeof (cfg as { displayName?: unknown }).displayName === 'string'
+      ? (cfg as { displayName: string }).displayName.trim()
+      : '';
+  const checklist = Array.isArray((cfg as { checklist?: unknown }).checklist)
+    ? ((cfg as { checklist: Array<{ text?: unknown; done?: unknown }> }).checklist ?? [])
+    : [];
+  const looksLegacyWeek =
+    displayName === '포킷 일주일 사용해보기' ||
+    checklist.some((item) => typeof item.text === 'string' && /\d+\s*일차/.test(item.text));
+  const alreadyQuick =
+    displayName === POKIT_WEEK_TOUR_DISPLAY_NAME &&
+    checklist.length === POKIT_WEEK_TOUR_CHECKLIST_LABELS.length &&
+    checklist.every(
+      (item, i) => typeof item.text === 'string' && item.text === POKIT_WEEK_TOUR_CHECKLIST_LABELS[i],
+    );
+  if (!looksLegacyWeek && alreadyQuick) return;
+
+  const doneByIndex = checklist.map((item) => item?.done === true);
+  const nextChecklist = buildBuiltinChecklist(
+    BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
+    POKIT_WEEK_TOUR_CHECKLIST_LABELS,
+  ).map((item, index) => ({
+    ...item,
+    done: Boolean(doneByIndex[index]),
+  }));
+  saveGoalDetailCategoryConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID, {
+    ...(cfg as Record<string, unknown>),
+    displayName: POKIT_WEEK_TOUR_DISPLAY_NAME,
+    summary: POKIT_WEEK_TOUR_SUMMARY,
+    templateKey: 'checklist',
+    checklist: nextChecklist,
   });
 }
 
@@ -452,4 +521,6 @@ export function ensureDefaultPriorityCatalog(): void {
   purgeIntermittentFastingFlow();
   purgeGoodPostureFlow();
   mergeDefaultCustomFlows();
+  migratePokitWeekTourToQuickTour();
+  migrateTutorialGroupLabel();
 }

@@ -11,6 +11,8 @@ import {
   BUILTIN_FOCUS_FLOW_ID,
   BUILTIN_HEALTH_GROUP_KEY,
   BUILTIN_INTERMITTENT_FASTING_FLOW_ID,
+  BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
+  BUILTIN_TUTORIAL_GROUP_KEY,
   LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID,
 } from './defaultPriorityCatalog';
 import { loadStandardCatalogGroupOverrides, resolveCatalogItemGroupKey } from './catalogItemGroupStorage';
@@ -33,14 +35,30 @@ describe('ensureDefaultPriorityCatalog', () => {
     ensureDefaultPriorityCatalog();
 
     expect(listCustomCatalogGroups()).toEqual([
+      { key: BUILTIN_TUTORIAL_GROUP_KEY, label: '포킷 사용해보기' },
       { key: BUILTIN_DAILY_LIFE_GROUP_KEY, label: '일상 루틴' },
       { key: BUILTIN_ABSTAIN_GROUP_KEY, label: '금지 루틴' },
     ]);
     expect(listCustomFlowCatalogEntries().map((e) => e.id)).toEqual([
+      BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
       ...BUILTIN_DAILY_LIFE_FLOW_IDS,
       BUILTIN_ABSTAIN_FLOW_ID,
       BUILTIN_STRETCHING_FLOW_ID,
       BUILTIN_FOCUS_FLOW_ID,
+    ]);
+
+    const tourCfg = loadGoalDetailCategoryConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
+    expect(tourCfg?.displayName).toBe('포킷 빠르게 둘러보기');
+    expect((tourCfg as { templateKey?: string })?.templateKey).toBe('checklist');
+    expect(tourCfg?.checklist).toHaveLength(7);
+    expect(tourCfg?.checklist?.map((item) => item.text)).toEqual([
+      '루틴 탭 둘러보기',
+      '나만의 루틴 만들기',
+      '히스토리 확인하기',
+      '투두 리스트 써보기',
+      '책방 열어보기',
+      '잠금화면 메모 써보기',
+      '노트 적어보기',
     ]);
 
     const bedCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_LIFE_FLOW_IDS[0]);
@@ -213,6 +231,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     expect(ids).toContain(BUILTIN_STRETCHING_FLOW_ID);
     expect(ids).toContain(BUILTIN_FOCUS_FLOW_ID);
     expect(listCustomCatalogGroups().map((g) => g.key)).toEqual([
+      BUILTIN_TUTORIAL_GROUP_KEY,
       BUILTIN_DAILY_LIFE_GROUP_KEY,
       BUILTIN_ABSTAIN_GROUP_KEY,
       'customGroup:user01',
@@ -309,7 +328,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     ensureDefaultPriorityCatalog();
     ensureDefaultPriorityCatalog();
 
-    expect(listCustomCatalogGroups()).toHaveLength(3);
-    expect(listCustomFlowCatalogEntries()).toHaveLength(10);
+    expect(listCustomCatalogGroups()).toHaveLength(4);
+    expect(listCustomFlowCatalogEntries()).toHaveLength(11);
   });
 });

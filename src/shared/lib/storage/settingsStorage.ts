@@ -384,16 +384,17 @@ export function saveAppearanceMode(mode: AppearanceMode): void {
 
 function parseAppFontId(value: unknown): AppFontId {
   if (
+    value === 'hiMelody' ||
+    value === 'hanken' ||
+    value === 'gothicA1' ||
     value === 'dongle' ||
     value === 'gaegu' ||
-    value === 'songMyung' ||
-    value === 'gothicA1' ||
-    value === 'hiMelody'
+    value === 'songMyung'
   ) {
     return value;
   }
-  // 이전 후보 → 동글 시티팝으로 이전
-  return 'dongle';
+  // 미설정·레거시 → 기본(Hi Melody)
+  return 'hiMelody';
 }
 
 export function loadAppFontId(): AppFontId {
@@ -411,7 +412,7 @@ export function saveAppFontId(fontId: AppFontId): void {
 
 function parseAppFontSizeId(value: unknown): AppFontSizeId {
   if (value === 'sm' || value === 'md' || value === 'lg') return value;
-  return 'md';
+  return 'sm';
 }
 
 export function loadAppFontSizeId(): AppFontSizeId {

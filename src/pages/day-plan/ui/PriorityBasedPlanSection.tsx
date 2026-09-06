@@ -81,6 +81,7 @@ import {
   listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
   loadSpineDefaultBlockMinutes,
+  isPokitWeekTourFlowId,
   resolveCurrentMealSlotFromSchedule,
   saveGoalDetailCategoryConfig,
   saveRoutineCatalogSelectionKeys,
@@ -431,6 +432,19 @@ export function PriorityBasedPlanSection({
   const [expandedBagRowKeys, setExpandedBagRowKeys] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
+
+  useEffect(() => {
+    const tourKey = priorityCategoryOrder.find((key) =>
+      isPokitWeekTourFlowId(resolvePriorityRoutineCategoryKey(key)),
+    );
+    if (!tourKey) return;
+    setExpandedBagRowKeys((prev) => {
+      if (prev.has(tourKey)) return prev;
+      const next = new Set(prev);
+      next.add(tourKey);
+      return next;
+    });
+  }, [priorityCategoryOrder]);
 
   const monthFallbackDate = useMemo(() => {
     const lo =

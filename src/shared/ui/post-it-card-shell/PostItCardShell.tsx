@@ -1,7 +1,11 @@
 import { type ReactNode } from 'react';
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-/** 클래식 포스트잇 옐로우 — 캔어리에 가까운 쨍한 노랑 */
+/** 클래식 포스트잇 화이트 — 기본 면 */
+export const POST_IT_WHITE_LIGHT = '#FFFFFF';
+export const POST_IT_WHITE_DARK = '#3A3C52';
+
+/** @deprecated 옐로우 프리셋 유지용 — 기본 면은 화이트 */
 export const POST_IT_YELLOW_LIGHT = '#FFE566';
 export const POST_IT_YELLOW_DARK = '#8A7618';
 
@@ -15,7 +19,7 @@ type Props = {
   isDark: boolean;
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
-  /** 카드 면 색 — 기본 포스트잇 옐로우 */
+  /** 카드 면 색 — 기본 포스트잇 화이트 */
   faceColor?: string;
   /** 솔리드 섀도 색 — 기본 검정 */
   shadowColor?: string;
@@ -28,7 +32,7 @@ type Props = {
 };
 
 /**
- * 포스트잇 카드 셸 — 테이프·각진 모서리·솔리드 음영·옐로우 면.
+ * 포스트잇 카드 셸 — 테이프·각진 모서리·솔리드 음영·화이트 면.
  */
 export function PostItCardShell({
   isDark,
@@ -41,10 +45,10 @@ export function PostItCardShell({
   borderColor,
   borderWidth = 0,
 }: Props) {
-  const face = faceColor ?? (isDark ? POST_IT_YELLOW_DARK : POST_IT_YELLOW_LIGHT);
+  const face = faceColor ?? (isDark ? POST_IT_WHITE_DARK : POST_IT_WHITE_LIGHT);
   const shadow = shadowColor ?? POST_IT_SOLID_SHADOW;
   const offset = compact ? SHADOW_COMPACT : SHADOW;
-  const tape = isDark ? 'rgba(255,229,102,0.28)' : 'rgba(255,255,255,0.7)';
+  const tape = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.78)';
   const outlineW = borderColor ? Math.max(borderWidth, 1) : 0;
 
   return (

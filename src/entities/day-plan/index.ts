@@ -504,7 +504,19 @@ export {
   waterReminderIntervalMinutes,
   type WaterRoutineReminderSlot
 } from './lib/waterReminderRoutineSlots';
-export { appendPriorityCategoryKeysIfMissing, notifyFixedFlowApplyScheduleChanged, selectFirstPendingBlock, syncTodayTabWithFixedRoutineApply, useDayPlanDraftStore, useDayPlanLayoutModeVisibilityStore, useDayPlanRuntimeStore, useDayPlanStore, useDayPlanTodoStore, useFixedFlowSetsStore } from './model';
+export { seedPokitWeekTourIntoTodayIfNeeded } from './lib/seedPokitWeekTourIntoToday';
+export {
+  appendPriorityCategoryKeysIfMissing,
+  notifyFixedFlowApplyScheduleChanged,
+  selectFirstPendingBlock,
+  syncTodayTabWithFixedRoutineApply,
+  useDayPlanDraftStore,
+  useDayPlanLayoutModeVisibilityStore,
+  useDayPlanRuntimeStore,
+  useDayPlanStore,
+  useDayPlanTodoStore,
+  useFixedFlowSetsStore,
+} from './model';
 export type { AddBlockResult, PlanMode, UpdateBlockResult } from './model';
 export type { DayPlanBlock, DayPlanQuickMemo, DayPlanTodoItem, TodoPriority } from './model/types';
 

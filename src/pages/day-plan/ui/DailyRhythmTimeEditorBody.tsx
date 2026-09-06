@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Alert,
-  Image,
   type ImageSourcePropType,
   Pressable,
   ScrollView,
@@ -129,7 +129,13 @@ function OnboardingTimeRow({
           backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
           shadowSize={3}
           style={styles.thumbFace}>
-          <Image source={thumb} style={styles.thumbImage} resizeMode="cover" />
+          <Image
+            source={thumb}
+            style={styles.thumbImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={0}
+          />
         </SolidShadowFace>
 
         <View style={styles.onboardTimeCopy}>
@@ -543,7 +549,9 @@ export function DailyRhythmTimeEditorBody({
             <Image
               source={dailyRhythmOnboardingAssets.hero}
               style={styles.heroBannerImage}
-              resizeMode="contain"
+              contentFit="contain"
+              cachePolicy="memory-disk"
+              transition={0}
               accessibilityLabel={t('dayRhythm.morningIllustrationA11y')}
             />
             <View

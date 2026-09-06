@@ -28,8 +28,8 @@ export type SettingsPalette = {
 export function buildSettingsPalette(isDark: boolean): SettingsPalette {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   return {
-    bg: 'transparent',
-    surface: isDark ? c.surfaceAlt : '#FFFFFF',
+    bg: c.bg,
+    surface: c.bg,
     border: c.border,
     sectionTitle: c.textMuted,
     title: c.text,

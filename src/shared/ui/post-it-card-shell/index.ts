@@ -1,6 +1,8 @@
 export {
   PostItCardShell,
   POST_IT_SOLID_SHADOW,
+  POST_IT_WHITE_DARK,
+  POST_IT_WHITE_LIGHT,
   POST_IT_YELLOW_DARK,
   POST_IT_YELLOW_LIGHT,
 } from './PostItCardShell';

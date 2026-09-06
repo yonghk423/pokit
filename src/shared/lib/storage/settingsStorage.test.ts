@@ -119,39 +119,41 @@ describe('settingsStorage', () => {
   });
 
   it('persists app font id', () => {
-    expect(loadAppFontId()).toBe('dongle');
+    expect(loadAppFontId()).toBe('hiMelody');
     saveAppFontId('gaegu');
     expect(loadAppFontId()).toBe('gaegu');
     saveAppFontId('gothicA1');
     expect(loadAppFontId()).toBe('gothicA1');
+    saveAppFontId('hanken');
+    expect(loadAppFontId()).toBe('hanken');
     saveAppFontId('hiMelody');
     expect(loadAppFontId()).toBe('hiMelody');
   });
 
   it('ignores invalid app font id', () => {
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'comic-sans' });
-    expect(loadAppFontId()).toBe('dongle');
+    expect(loadAppFontId()).toBe('hiMelody');
   });
 
-  it('migrates legacy font ids to dongle', () => {
+  it('migrates legacy font ids to hiMelody', () => {
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'jua' });
-    expect(loadAppFontId()).toBe('dongle');
+    expect(loadAppFontId()).toBe('hiMelody');
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'doHyeon' });
-    expect(loadAppFontId()).toBe('dongle');
+    expect(loadAppFontId()).toBe('hiMelody');
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'system' });
-    expect(loadAppFontId()).toBe('dongle');
+    expect(loadAppFontId()).toBe('hiMelody');
   });
 
-  it('persists app font size id with md default', () => {
-    expect(loadAppFontSizeId()).toBe('md');
-    saveAppFontSizeId('sm');
+  it('persists app font size id with sm default', () => {
     expect(loadAppFontSizeId()).toBe('sm');
+    saveAppFontSizeId('md');
+    expect(loadAppFontSizeId()).toBe('md');
     saveAppFontSizeId('lg');
     expect(loadAppFontSizeId()).toBe('lg');
   });
 
   it('ignores invalid app font size id', () => {
     localStorageClient.setJson(StorageKeys.settings, { appFontSizeId: 'xl' });
-    expect(loadAppFontSizeId()).toBe('md');
+    expect(loadAppFontSizeId()).toBe('sm');
   });
 });

@@ -35,8 +35,8 @@ import { useTranslation } from '@shared/lib/i18n';
 import { headerArtForVariant } from '@shared/ui/routine-atmosphere';
 import { RoutineAtmosphereFooterStrip } from '@shared/ui/routine-atmosphere';
 import {
-  POST_IT_YELLOW_DARK,
-  POST_IT_YELLOW_LIGHT,
+  POST_IT_WHITE_DARK,
+  POST_IT_WHITE_LIGHT,
 } from '@shared/ui/post-it-card-shell';
 import {
   appendCustomFlowCatalogEntry,
@@ -467,7 +467,8 @@ export function RoutineCatalogManageContent() {
                 style={[
                   styles.leadButtonFace,
                   {
-                    backgroundColor: isDark ? POST_IT_YELLOW_DARK : POST_IT_YELLOW_LIGHT,
+                    backgroundColor: isDark ? POST_IT_WHITE_DARK : POST_IT_WHITE_LIGHT,
+                    borderColor: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.16)',
                   },
                 ]}>
                 <View style={styles.leadRow}>
@@ -486,8 +487,9 @@ export function RoutineCatalogManageContent() {
                         styles.leadAddFace,
                         {
                           backgroundColor: isDark
-                            ? 'rgba(255,255,255,0.92)'
-                            : '#FFFFFF',
+                            ? 'rgba(255,255,255,0.14)'
+                            : 'rgba(245,242,235,0.95)',
+                          borderColor: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.14)',
                         },
                       ]}>
                       <IconSymbol name="plus" size={14} color={editorial.ink} />
@@ -644,6 +646,7 @@ const styles = StyleSheet.create({
   },
   leadButtonFace: {
     borderRadius: 0,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: 10,
     paddingHorizontal: 12,
     zIndex: 1,
@@ -671,6 +674,7 @@ const styles = StyleSheet.create({
   leadAddFace: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 0,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,

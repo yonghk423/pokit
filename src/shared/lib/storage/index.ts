@@ -56,6 +56,14 @@ export {
   markWelcomeIntroSeenAndFlush,
 } from './welcomeIntroStorage';
 export {
+  isPokitWeekTourChecklistComplete,
+  loadPokitWeekTourFirstTipSeen,
+  loadPokitWeekTourSeeded,
+  markPokitWeekTourFirstTipSeen,
+  markPokitWeekTourSeeded,
+  nextOrderWithPokitWeekTourSeed,
+} from './pokitWeekTourStorage';
+export {
   DAY_MEAL_SLOT_HINT,
   DAY_MEAL_SLOT_LABEL,
   getDayMealSlotLabel,
@@ -116,10 +124,22 @@ export {
   BUILTIN_ABSTAIN_GROUP_KEY, BUILTIN_CUSTOM_GROUP_FAMILY,
   BUILTIN_CUSTOM_GROUP_HOBBY,
   BUILTIN_CUSTOM_GROUP_MINDSET, BUILTIN_DAILY_LIFE_FLOW_IDS,
-  BUILTIN_DAILY_LIFE_GROUP_KEY, BUILTIN_FOCUS_FLOW_ID, BUILTIN_HEALTH_GROUP_KEY, BUILTIN_INTERMITTENT_FASTING_FLOW_ID, BUILTIN_STRETCHING_FLOW_ID, DEFAULT_BUILTIN_CUSTOM_FLOWS,
+  BUILTIN_DAILY_LIFE_GROUP_KEY, BUILTIN_FOCUS_FLOW_ID, BUILTIN_HEALTH_GROUP_KEY, BUILTIN_INTERMITTENT_FASTING_FLOW_ID,
+  BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
+  BUILTIN_STRETCHING_FLOW_ID,
+  BUILTIN_TUTORIAL_GROUP_KEY,
+  BUILTIN_TUTORIAL_GROUP_LABEL,
+  DEFAULT_BUILTIN_CUSTOM_FLOWS,
   DEFAULT_BUILTIN_CUSTOM_GROUPS,
-  DEFAULT_CUSTOM_FLOW_COLOR, LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID, resolveCustomFlowCatalogColor,
-  resolveCustomFlowCatalogIcon
+  DEFAULT_CUSTOM_FLOW_COLOR, LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID,
+  POKIT_WEEK_TOUR_CHECKLIST_LABELS,
+  POKIT_WEEK_TOUR_DISPLAY_NAME,
+  POKIT_WEEK_TOUR_STEP_COUNT,
+  POKIT_WEEK_TOUR_SUMMARY,
+  isPokitWeekTourFlowId,
+  resolveCustomFlowCatalogColor,
+  resolveCustomFlowCatalogIcon,
+  resolvePokitWeekTourStepIndex,
 } from './defaultPriorityCatalog';
 export type { BuiltinCustomFlowDef } from './defaultPriorityCatalog';
 export { ensureDefaultPriorityCatalog } from './ensureDefaultPriorityCatalog';

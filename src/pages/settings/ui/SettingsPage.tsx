@@ -52,8 +52,6 @@ import { useAppFontStore, type AppFontId } from '@shared/lib/ui-font';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
-import { prefetchWelcomeIntroAssets } from '@shared/lib/welcome-intro-assets';
-import { prefetchSettingsAtmosphereAssets } from '@shared/ui/settings-atmosphere';
 
 import {
   buildSettingsPalette,
@@ -61,7 +59,6 @@ import {
   SettingsSection,
   settingsChromeStyles as chrome,
 } from '../lib/settingsChrome';
-import { SettingsTabAtmosphere } from './SettingsTabAtmosphere';
 
 /** Pro 구독 설정 섹션 — 정식 시행 전까지 숨김 (`true`로 바꾸면 다시 표시) */
 const SHOW_POKIT_PRO_SETTINGS = false;
@@ -76,9 +73,9 @@ function fontLabelForId(fontId: AppFontId, locale: 'ko' | 'en' | 'ja'): string {
   if (fontId === 'gaegu') return t('settings.font.gaegu', locale);
   if (fontId === 'songMyung') return t('settings.font.songMyung', locale);
   if (fontId === 'gothicA1') return t('settings.font.gothicA1', locale);
-  if (fontId === 'hiMelody') return t('settings.font.hiMelody', locale);
   if (fontId === 'hanken') return t('settings.font.hanken', locale);
-  return t('settings.font.dongle', locale);
+  if (fontId === 'dongle') return t('settings.font.dongle', locale);
+  return t('settings.font.hiMelody', locale);
 }
 
 function fontSizeLabelForId(sizeId: 'sm' | 'md' | 'lg', locale: 'ko' | 'en' | 'ja'): string {
@@ -93,6 +90,7 @@ export function SettingsPage() {
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const p = buildSettingsPalette(isDark);
+  const pageBg = p.bg;
   const appVersionLabel = getDisplayedAppVersionLabel();
   const [isResettingData, setIsResettingData] = useState(false);
   const [isSubscriptionBusy, setIsSubscriptionBusy] = useState(false);
@@ -116,8 +114,6 @@ export function SettingsPage() {
   useFocusEffect(
     useCallback(() => {
       setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
-      void prefetchSettingsAtmosphereAssets();
-      void prefetchWelcomeIntroAssets();
       if (SHOW_POKIT_PRO_SETTINGS) {
         void useSubscriptionStore.getState().refreshCustomerInfo();
       }
@@ -295,8 +291,7 @@ export function SettingsPage() {
   };
 
   return (
-    <ThemedView style={styles.root} lightColor={p.bg} darkColor={p.bg}>
-      <SettingsTabAtmosphere isDark={isDark} />
+    <ThemedView style={styles.root} lightColor={pageBg} darkColor={pageBg}>
       <View style={styles.foreground}>
         <View
           style={[
@@ -363,36 +358,6 @@ export function SettingsPage() {
                 <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                   {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
                   {dayStartAlarmOn ? t('settings.dayPlanStartAlarmOn', locale) : ''}
-                </ThemedText>
-              </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
-
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              void prefetchWelcomeIntroAssets().finally(() => {
-                router.push('/welcome-intro');
-              });
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.intro', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="sparkles"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.border}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  {t('settings.introTitle', locale)}
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {t('settings.introDesc', locale)}
                 </ThemedText>
               </View>
             </View>

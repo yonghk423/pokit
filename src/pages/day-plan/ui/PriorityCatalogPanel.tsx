@@ -1297,7 +1297,13 @@ function GroupSectionBlock({
   return (
     <View style={[styles.sectionBlock, !isFirst && styles.sectionBlockFollows]}>
       {manageOnly ? (
-        <PostItCardShell isDark={isDark} faceColor={postItFaceColor}>
+        <PostItCardShell
+          isDark={isDark}
+          faceColor={postItFaceColor}
+          borderColor={
+            postItFaceColorId === 'white' && !isDark ? 'rgba(0,0,0,0.16)' : undefined
+          }
+          borderWidth={postItFaceColorId === 'white' && !isDark ? StyleSheet.hairlineWidth : 0}>
           <CatalogSectionHeader
             title={section.title}
             ink={faceInk}

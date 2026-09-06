@@ -3,17 +3,17 @@ import type { AppFontId } from '@shared/lib/storage';
 export type { AppFontId };
 export type AppFontWeight = '400' | '500' | '600' | '700' | '800';
 
-/** 시티팝 기본 — 동글 (ko/en/ja 공통) */
-export const DEFAULT_APP_FONT_ID: AppFontId = 'dongle';
+/** 앱 기본 글씨체 — Hi Melody (손글씨 · 「포킷 · 오늘도 반짝」) */
+export const DEFAULT_APP_FONT_ID: AppFontId = 'hiMelody';
 
 /** 설정에 노출하는 선택지 */
 export const APP_FONT_IDS: readonly AppFontId[] = [
+  'hiMelody',
+  'hanken',
+  'gothicA1',
   'dongle',
   'gaegu',
   'songMyung',
-  'gothicA1',
-  'hiMelody',
-  'hanken',
 ] as const;
 
 export function isAppFontId(value: unknown): value is AppFontId {

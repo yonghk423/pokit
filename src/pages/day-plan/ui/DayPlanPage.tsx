@@ -25,6 +25,7 @@ import {
   notifyFixedFlowApplyScheduleChanged,
   parseHHmmToMinutes,
   resolveBlockCategoryKey,
+  seedPokitWeekTourIntoTodayIfNeeded,
   syncTodayTabWithFixedRoutineApply,
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
@@ -51,13 +52,11 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import {
   loadDailyRhythmOnboardingCompleted,
   loadPriorityDayStartAlarm,
-  loadWelcomeIntroSeen,
   markDailyRhythmOnboardingCompletedAndFlush,
   saveRoutineCatalogSelectionKeys,
 } from '@shared/lib/storage';
 import { coerceDayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
 import { ThemedView } from '@shared/ui/themed-view';
-import { prefetchWelcomeIntroAssets } from '@shared/lib/welcome-intro-assets';
 import { t } from '@shared/lib/i18n';
 
 import {
@@ -191,12 +190,6 @@ export function DayPlanPage({
   }, [hydrateLayoutModeVisibility]);
 
   useEffect(() => {
-    if (!loadWelcomeIntroSeen()) {
-      void prefetchWelcomeIntroAssets();
-    }
-  }, []);
-
-  useEffect(() => {
     if (effectiveLayoutMode === layoutMode) return;
     setPlanMode('priority');
     setPriorityMealSlotLayoutEnabled(effectiveLayoutMode === 'sections');
@@ -234,6 +227,7 @@ export function DayPlanPage({
       setFixedRoutineApplyLayoutMode(effectiveLayoutMode);
       refreshTodayAppliedCategoryKeys();
       syncTodayTabWithFixedRoutineApply();
+      seedPokitWeekTourIntoTodayIfNeeded();
     }, [hydrateLayoutModeVisibility, refreshTodayAppliedCategoryKeys, setFixedRoutineApplyLayoutMode, effectiveLayoutMode]),
   );
 
@@ -246,6 +240,8 @@ export function DayPlanPage({
       // 탭 전환/화면 freeze 이후에도 담기 순서 키를 최신 스토어 스냅샷으로 동기화
       const latestOrder = useDayPlanDraftStore.getState().priorityCategoryOrder;
       setPriorityCategoryOrder([...latestOrder]);
+      // 롤오버로 담기가 비면 튜토리얼을 다시 넣는다
+      seedPokitWeekTourIntoTodayIfNeeded();
       // 온보딩 플래그가 디스크에 반영됐으면 게이트를 닫는다
       if (loadDailyRhythmOnboardingCompleted()) {
         setRhythmGateOpen(false);
@@ -274,6 +270,9 @@ export function DayPlanPage({
   /** 구간이 완전히 끝났으면(지난 날짜 종료 포함) 오늘 기준으로 날짜 전진 — 앱이 떠 있는 채 자정/종료를 넘겨도 갱신 */
   useEffect(() => {
     rollPriorityPlanForwardIfEnded();
+    if (planMode === 'priority') {
+      seedPokitWeekTourIntoTodayIfNeeded();
+    }
   }, [nowTick, planMode, rollPriorityPlanForwardIfEnded]);
 
   /** 우선순위 적용일·집중 구간 안이면 true — FAB 노출·자동 종료 판단에 공통 사용 */
@@ -365,6 +364,7 @@ export function DayPlanPage({
   useEffect(() => {
     if (planMode !== 'priority') return;
     syncTodayTabWithFixedRoutineApply();
+    seedPokitWeekTourIntoTodayIfNeeded();
   }, [planMode, todayAppliedRevision, fixedFlowSets]);
 
   const c = useMemo(() => palette(isDark), [isDark]);
@@ -389,14 +389,9 @@ export function DayPlanPage({
       syncOvernightPriorityPlanDates();
       void markDailyRhythmOnboardingCompletedAndFlush().then(() => {
         setRhythmGateOpen(false);
-        if (!loadWelcomeIntroSeen()) {
-          void prefetchWelcomeIntroAssets().finally(() => {
-            router.push('/welcome-intro');
-          });
-        }
       });
     },
-    [router, setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
+    [setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
   );
 
   const syncScheduledNotifications = useCallback(() => {

@@ -4,6 +4,7 @@ import { AppState } from 'react-native';
 
 import {
   syncTodayTabWithFixedRoutineApply,
+  seedPokitWeekTourIntoTodayIfNeeded,
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
   useDayPlanRuntimeStore,
@@ -39,13 +40,14 @@ import {
   ensureDefaultPriorityCatalog,
   flushLocalStorageClientWrites,
   initLocalStorageClient,
+  loadDailyRhythmOnboardingCompleted,
   loadPriorityDayEndAlarm,
   loadPriorityDayStartAlarm,
   savePriorityDayRollMode,
 } from '@shared/lib/storage';
 import { useDevSeedMenu } from './useDevSeedMenu';
 import { prefetchRoutineAtmosphereAssets } from '@shared/ui/routine-atmosphere';
-import { prefetchSettingsAtmosphereAssets } from '@shared/ui/settings-atmosphere';
+import { prefetchDailyRhythmOnboardingAssets } from '@pages/day-plan/lib/dailyRhythmOnboardingAssets';
 
 /**
  * 앱 전역 부트스트랩: hydrate + 알림 리스너 + Live Activity 동기화.
@@ -66,6 +68,11 @@ export function useAppBootstrap() {
       await initLocalStorageClient();
       if (cancelled) return;
 
+      // 첫 화면(하루 일과 온보딩) 이미지는 hydrate보다 먼저 올려 디코드 지연을 줄인다
+      if (!loadDailyRhythmOnboardingCompleted()) {
+        void prefetchDailyRhythmOnboardingAssets();
+      }
+
       useAppLocaleStore.getState().hydrateFromDevice();
       ensureDefaultPriorityCatalog();
       // 「하루가 지나면 담기 유지」임시 비활성 — keep 잔존 설정이 롤오버에 영향을 주지 않도록 reset 고정
@@ -81,17 +88,22 @@ export function useAppBootstrap() {
       useDayPlanDraftStore.getState().rollPriorityPlanForwardIfEnded();
       useDayPlanStore.getState().prunePastEndedBlocks();
       syncTodayTabWithFixedRoutineApply();
+      seedPokitWeekTourIntoTodayIfNeeded();
       registerOtherCategoryResolverFromStorage();
       const plan = useDayPlanStore.getState();
       useDayPlanRuntimeStore.getState().buildTimelineFromBlocks({
         dateKey: plan.dateKey,
         blocks: plan.blocks,
       });
+
+      // 온보딩이 열려 있을 때는 이미지 프리패치를 스플래시 해제 전에 끝낸다
+      if (!loadDailyRhythmOnboardingCompleted()) {
+        await prefetchDailyRhythmOnboardingAssets();
+      }
       if (!cancelled) setIsReady(true);
 
       // 탭 전환 시 분위기 PNG 디코드 지연 완화 — 스플래시 해제와 분리
       void prefetchRoutineAtmosphereAssets();
-      void prefetchSettingsAtmosphereAssets();
 
       /**
        * 구독은 선택 기능이므로 네트워크 상태·RevenueCat 설정 오류가
@@ -272,6 +284,7 @@ export function useAppBootstrap() {
         useDayPlanDraftStore.getState().rollPriorityPlanForwardIfEnded();
         useDayPlanStore.getState().prunePastEndedBlocks();
         syncTodayTabWithFixedRoutineApply();
+        seedPokitWeekTourIntoTodayIfNeeded();
         syncLiveActivityIfSessionInProgress();
         void useLocalNotificationsStore.getState().refreshPermission();
         void syncCategoryReminderNotifications();

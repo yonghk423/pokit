@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,33 +31,11 @@ export function WelcomeIntroPage() {
   const insets = useSafeAreaInsets();
   const rf = RetroFlatColors.light;
   const [index, setIndex] = useState(0);
-  const [assetsReady, setAssetsReady] = useState(false);
-  const loadedRef = useRef(0);
   const last = index >= slides.length - 1;
   const item = slides[index]!;
-  const totalBg = WELCOME_INTRO_BACKGROUNDS.length;
-
-  const markBgLoaded = useCallback(() => {
-    loadedRef.current += 1;
-    if (loadedRef.current >= totalBg) {
-      setAssetsReady(true);
-    }
-  }, [totalBg]);
 
   useEffect(() => {
-    let cancelled = false;
-    let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
-    void prefetchWelcomeIntroAssets().finally(() => {
-      if (cancelled) return;
-      // prefetch 후에도 디코드 onLoad가 안 오면 화면이 멈추지 않게 폴백
-      fallbackTimer = setTimeout(() => {
-        if (!cancelled) setAssetsReady(true);
-      }, 800);
-    });
-    return () => {
-      cancelled = true;
-      if (fallbackTimer) clearTimeout(fallbackTimer);
-    };
+    void prefetchWelcomeIntroAssets();
   }, []);
 
   const finish = useCallback(() => {
@@ -110,14 +88,13 @@ export function WelcomeIntroPage() {
           source={source}
           style={[
             styles.bgImage,
-            { opacity: assetsReady && i === index ? 1 : 0 },
+            { opacity: i === index ? 1 : 0 },
           ]}
           contentFit="cover"
           cachePolicy="memory-disk"
           priority="high"
           transition={0}
           recyclingKey={`welcome-intro-bg-${i}`}
-          onLoad={markBgLoaded}
           accessibilityIgnoresInvertColors
         />
       ))}
@@ -126,7 +103,7 @@ export function WelcomeIntroPage() {
       <View
         style={[
           styles.column,
-          { paddingTop: Math.max(insets.top, 12), opacity: assetsReady ? 1 : 0 },
+          { paddingTop: Math.max(insets.top, 12) },
         ]}>
         <View style={styles.topBar}>
           <ThemedText

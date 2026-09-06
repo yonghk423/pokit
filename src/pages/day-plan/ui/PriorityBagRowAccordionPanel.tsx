@@ -13,16 +13,25 @@ import {
 } from '@entities/day-plan';
 import type { GoalDetailCategoryKey } from '@pages/goal-detail-settings/model/types';
 import { resolveGoalDetailModuleForTarget } from '@pages/goal-detail-settings/ui/category';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import {
+  isPokitWeekTourFlowId,
   loadGoalDetailCategoryConfig,
+  loadPokitWeekTourFirstTipSeen,
+  markPokitWeekTourFirstTipSeen,
   POST_IT_LIGHT_INK,
+  POKIT_WEEK_TOUR_STEP_COUNT,
+  resolvePokitWeekTourStepIndex,
   saveGoalDetailCategoryConfig,
 } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { UiSurfacePresentationProvider } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
+
+import { PokitWeekTourTipSheet } from './PokitWeekTourTipSheet';
+import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 
 type ChecklistTask = { id: string; text: string; done: boolean };
 
@@ -71,11 +80,16 @@ export function PriorityBagRowAccordionPanel({
   line,
 }: Props) {
   const { t } = useTranslation();
+  const isDark = useColorScheme() === 'dark';
+  const { isDayPlanFocused } = useDayPlanTabBridge();
   const [draft, setDraft] = useState('');
   const [summaryDraft, setSummaryDraft] = useState('');
   const [revision, setRevision] = useState(0);
+  const [tourTipStep, setTourTipStep] = useState<number | null>(null);
+  const [tourTipTaskId, setTourTipTaskId] = useState<string | null>(null);
   const goalKey = asGoalDetailCategoryKey(categoryKey);
   const summaryPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isWeekTour = isPokitWeekTourFlowId(categoryKey);
 
   const rawConfig = useMemo(
     () => loadGoalDetailCategoryConfig(categoryKey),
@@ -109,6 +123,21 @@ export function PriorityBagRowAccordionPanel({
       }
     };
   }, []);
+
+  /**
+   * 오늘 탭에서 실제로 떠날 때만 팁을 닫는다.
+   * (초기 isDayPlanFocused=false 에 막혀 자동 오픈이 영구 스킵되지 않게, false→만 닫기)
+   */
+  const wasDayPlanFocusedRef = useRef(isDayPlanFocused);
+  useEffect(() => {
+    const wasFocused = wasDayPlanFocusedRef.current;
+    wasDayPlanFocusedRef.current = isDayPlanFocused;
+    if (!isWeekTour) return;
+    if (wasFocused && !isDayPlanFocused) {
+      setTourTipStep(null);
+      setTourTipTaskId(null);
+    }
+  }, [isDayPlanFocused, isWeekTour]);
 
   const timeLine = useMemo(() => {
     if (startMinutes == null || endMinutes == null) return null;
@@ -203,6 +232,66 @@ export function PriorityBagRowAccordionPanel({
     [persistChecklist, tasks],
   );
 
+  const openTourTip = useCallback(
+    (taskId: string, listIndex: number) => {
+      const stepFromId = resolvePokitWeekTourStepIndex(taskId);
+      const step =
+        stepFromId != null && stepFromId >= 0 && stepFromId < POKIT_WEEK_TOUR_STEP_COUNT
+          ? stepFromId
+          : Number.isInteger(listIndex) && listIndex >= 0 && listIndex < POKIT_WEEK_TOUR_STEP_COUNT
+            ? listIndex
+            : null;
+      if (step == null) {
+        toggleTask(taskId);
+        return;
+      }
+      void Haptics.selectionAsync();
+      const task = tasks.find((row) => row.id === taskId);
+      if (task && !task.done) {
+        persistChecklist(
+          tasks.map((row) => (row.id === taskId ? { ...row, done: true } : row)),
+        );
+      }
+      setTourTipTaskId(taskId);
+      setTourTipStep(step);
+    },
+    [persistChecklist, tasks, toggleTask],
+  );
+
+  /**
+   * 초기: 첫 항목 체크 + 1번 포스트잇.
+   * 체크만 되고 시트가 사라진 경우(리마운트 등) — firstTipSeen 전까지 다시 연다.
+   */
+  useEffect(() => {
+    if (!isWeekTour || tasks.length === 0) return;
+    const first = tasks[0];
+    if (!first) return;
+
+    if (!first.done) {
+      persistChecklist(
+        tasks.map((row, index) => (index === 0 ? { ...row, done: true } : row)),
+      );
+    }
+
+    if (loadPokitWeekTourFirstTipSeen()) return;
+    if (tourTipStep === 0 && tourTipTaskId === first.id) return;
+
+    setTourTipTaskId(first.id);
+    setTourTipStep(0);
+  }, [isWeekTour, persistChecklist, tasks, tourTipStep, tourTipTaskId]);
+
+  const closeTourTip = useCallback(() => {
+    if (tourTipStep === 0) {
+      markPokitWeekTourFirstTipSeen();
+    }
+    setTourTipStep(null);
+    setTourTipTaskId(null);
+  }, [tourTipStep]);
+
+  const confirmTourTip = useCallback(() => {
+    closeTourTip();
+  }, [closeTourTip]);
+
   const removeTask = useCallback(
     (id: string) => {
       void Haptics.selectionAsync();
@@ -254,16 +343,22 @@ export function PriorityBagRowAccordionPanel({
   if (checklistTemplate) {
     return (
       <View style={s.root}>
-        <ThemedTextInput
-          value={summaryDraft}
-          onChangeText={handleSummaryChange}
-          placeholder={t('goalDetail.summaryPlaceholder')}
-          placeholderTextColor={muted}
-          style={[s.summaryInput, { color: ink }]}
-          multiline
-          textAlignVertical="top"
-          maxLength={240}
-        />
+        {isWeekTour ? (
+          <ThemedText style={[s.tourHint, { color: muted }]}>
+            {t('tour.pokitWeek.listHint')}
+          </ThemedText>
+        ) : (
+          <ThemedTextInput
+            value={summaryDraft}
+            onChangeText={handleSummaryChange}
+            placeholder={t('goalDetail.summaryPlaceholder')}
+            placeholderTextColor={muted}
+            style={[s.summaryInput, { color: ink }]}
+            multiline
+            textAlignVertical="top"
+            maxLength={240}
+          />
+        )}
 
         <View style={[s.noteBlock, { borderTopWidth: StyleSheet.hairlineWidth * 2, borderTopColor: muted, paddingTop: 10 }]}>
           {tasks.length > 0 ? (
@@ -285,10 +380,13 @@ export function PriorityBagRowAccordionPanel({
                 },
               ]}>
               <Pressable
-                accessibilityRole="checkbox"
+                accessibilityRole={isWeekTour ? 'button' : 'checkbox'}
                 accessibilityState={{ checked: task.done }}
+                accessibilityLabel={
+                  isWeekTour ? t('tour.pokitWeek.stepA11y', { title: task.text }) : undefined
+                }
                 hitSlop={4}
-                onPress={() => toggleTask(task.id)}
+                onPress={() => (isWeekTour ? openTourTip(task.id, index) : toggleTask(task.id))}
                 style={s.taskMain}>
                 <View
                   style={[
@@ -312,43 +410,55 @@ export function PriorityBagRowAccordionPanel({
                   {task.text}
                 </ThemedText>
               </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('customFlowTemplate.deleteItemA11y')}
-                hitSlop={8}
-                onPress={() => removeTask(task.id)}
-                style={({ pressed }) => [s.deleteHit, pressed && { opacity: 0.45 }]}>
-                <ThemedText style={[s.deleteMark, { color: muted }]}>×</ThemedText>
-              </Pressable>
+              {!isWeekTour ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('customFlowTemplate.deleteItemA11y')}
+                  hitSlop={8}
+                  onPress={() => removeTask(task.id)}
+                  style={({ pressed }) => [s.deleteHit, pressed && { opacity: 0.45 }]}>
+                  <ThemedText style={[s.deleteMark, { color: muted }]}>×</ThemedText>
+                </Pressable>
+              ) : null}
             </View>
           ))}
 
-          <View style={s.addRow}>
-            <ThemedText style={[s.dash, { color: muted }]}>–</ThemedText>
-            <ThemedTextInput
-              value={draft}
-              onChangeText={setDraft}
-              placeholder={addPlaceholder}
-              placeholderTextColor={muted}
-              style={[s.addInput, { color: ink }]}
-              returnKeyType="done"
-              onSubmitEditing={addTask}
-              blurOnSubmit
-            />
-            {draft.trim().length > 0 ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('common.add')}
-                hitSlop={6}
-                onPress={addTask}
-                style={({ pressed }) => pressed && { opacity: 0.5 }}>
-                <ThemedText style={[s.addConfirm, { color: ink }]}>
-                  {t('common.add')}
-                </ThemedText>
-              </Pressable>
-            ) : null}
-          </View>
+          {!isWeekTour ? (
+            <View style={s.addRow}>
+              <ThemedText style={[s.dash, { color: muted }]}>–</ThemedText>
+              <ThemedTextInput
+                value={draft}
+                onChangeText={setDraft}
+                placeholder={addPlaceholder}
+                placeholderTextColor={muted}
+                style={[s.addInput, { color: ink }]}
+                returnKeyType="done"
+                onSubmitEditing={addTask}
+                blurOnSubmit
+              />
+              {draft.trim().length > 0 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.add')}
+                  hitSlop={6}
+                  onPress={addTask}
+                  style={({ pressed }) => pressed && { opacity: 0.5 }}>
+                  <ThemedText style={[s.addConfirm, { color: ink }]}>
+                    {t('common.add')}
+                  </ThemedText>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
         </View>
+
+        <PokitWeekTourTipSheet
+          visible={tourTipStep != null}
+          stepIndex={tourTipStep ?? 0}
+          isDark={isDark}
+          onClose={closeTourTip}
+          onConfirm={confirmTourTip}
+        />
 
         <View style={s.toolbar}>
           <View style={s.actions}>
@@ -412,6 +522,13 @@ const s = StyleSheet.create({
     fontWeight: '500',
     paddingVertical: 2,
     minHeight: 40,
+  },
+  tourHint: {
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '400',
+    letterSpacing: -0.1,
+    marginBottom: 2,
   },
   body: {
     fontSize: 13,

@@ -96,11 +96,11 @@ export default function RootLayout() {
               />
               <Stack.Screen
                 name="guide-book"
-                options={{ headerShown: false, presentation: 'fullScreenModal' }}
+                options={{ headerShown: false, presentation: 'card' }}
               />
               <Stack.Screen
                 name="welcome-intro"
-                options={{ headerShown: false, presentation: 'fullScreenModal' }}
+                options={{ headerShown: false, presentation: 'card' }}
               />
               <Stack.Screen
                 name="appearance-settings"
