@@ -46,7 +46,6 @@ import {
   savePriorityDayRollMode,
 } from '@shared/lib/storage';
 import { useDevSeedMenu } from './useDevSeedMenu';
-import { prefetchRoutineAtmosphereAssets } from '@shared/ui/routine-atmosphere';
 import { prefetchDailyRhythmOnboardingAssets } from '@pages/day-plan/lib/dailyRhythmOnboardingAssets';
 
 /**
@@ -101,9 +100,6 @@ export function useAppBootstrap() {
         await prefetchDailyRhythmOnboardingAssets();
       }
       if (!cancelled) setIsReady(true);
-
-      // 탭 전환 시 분위기 PNG 디코드 지연 완화 — 스플래시 해제와 분리
-      void prefetchRoutineAtmosphereAssets();
 
       /**
        * 구독은 선택 기능이므로 네트워크 상태·RevenueCat 설정 오류가

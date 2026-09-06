@@ -1,10 +1,6 @@
-import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
+import { memo } from 'react';
 
-import {
-  footerStripForVariant,
-  type RoutineAtmosphereVariant,
-} from './routineAtmosphereAssets';
+import type { RoutineAtmosphereVariant } from './routineAtmosphereAssets';
 
 type Props = {
   variant: RoutineAtmosphereVariant;
@@ -14,64 +10,11 @@ type Props = {
 };
 
 /**
- * 리스트 하단 스크랩북 스트립 — 배경 콜라주와 다른 PNG를 추가로 노출.
+ * 리스트 하단 스크랩북 스트립.
+ * 탭 전환 버벅임 확인용으로 이미지 렌더를 임시 비활성화.
  */
-export function RoutineAtmosphereFooterStrip({
-  variant,
-  isDark = false,
-  density = 'default',
-}: Props) {
-  const sources = footerStripForVariant(variant);
-  const opacity = isDark ? 0.42 : 0.88;
-  const rich = density === 'rich';
-  const tileSize = rich ? 120 : 96;
-
-  return (
-    <View
-      style={[styles.root, rich && styles.rootRich]}
-      pointerEvents="none"
-      accessibilityElementsHidden>
-      {sources.map((source, index) => (
-        <Image
-          key={`footer-${variant}-${index}`}
-          source={source}
-          style={[
-            styles.tile,
-            {
-              width: tileSize,
-              height: tileSize,
-              opacity,
-              zIndex: index + 1,
-              marginLeft: index === 0 ? 0 : rich ? -36 : -28,
-              transform: [{ rotate: `${(index % 2 === 0 ? -1 : 1) * (4 + index)}deg` }],
-            },
-          ]}
-          contentFit="contain"
-          cachePolicy="memory-disk"
-          recyclingKey={`atmosphere-footer-${variant}-${index}`}
-          transition={0}
-        />
-      ))}
-    </View>
-  );
+function RoutineAtmosphereFooterStripBase(_props: Props) {
+  return null;
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    paddingTop: 18,
-    paddingBottom: 8,
-    minHeight: 108,
-  },
-  rootRich: {
-    paddingTop: 28,
-    paddingBottom: 16,
-    minHeight: 148,
-  },
-  tile: {
-    width: 96,
-    height: 96,
-  },
-});
+export const RoutineAtmosphereFooterStrip = memo(RoutineAtmosphereFooterStripBase);

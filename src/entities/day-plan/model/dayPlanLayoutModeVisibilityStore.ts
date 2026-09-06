@@ -26,7 +26,16 @@ export const useDayPlanLayoutModeVisibilityStore = create<DayPlanLayoutModeVisib
   (set, get) => ({
     visibility: { ...DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY },
     hydrate: () => {
-      set({ visibility: loadDayPlanLayoutModeVisibility() });
+      const next = loadDayPlanLayoutModeVisibility();
+      const current = get().visibility;
+      if (
+        current.bag === next.bag &&
+        current.sections === next.sections &&
+        current.spine === next.spine
+      ) {
+        return;
+      }
+      set({ visibility: next });
     },
     setModeVisible: (mode, visible) => {
       // 시간대(sections)·타임라인(spine) 모드는 잠정 유보 — UI 토글 차단

@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Alert,
@@ -250,15 +250,24 @@ const ACCORDION_OPEN_MS = 280;
 const ACCORDION_CLOSE_MS = 220;
 const ACCORDION_EASING = Easing.out(Easing.cubic);
 
-function useMeasuredAccordion(expanded: boolean) {
-  const progress = useSharedValue(expanded ? 1 : 0);
-  const contentHeight = useSharedValue(0);
-  const [mounted, setMounted] = useState(expanded);
+/** 탭 remount 시에도 펼친 높이를 바로 복원해 포스트잇 깜빡임을 막음 */
+const accordionHeightCache = new Map<string, number>();
+
+function useMeasuredAccordion(expanded: boolean, cacheKey?: string) {
+  const cachedHeight = cacheKey ? (accordionHeightCache.get(cacheKey) ?? 0) : 0;
+  const progress = useSharedValue(0);
+  const contentHeight = useSharedValue(cachedHeight);
+  /** 접힌 동안 본문 트리를 아예 내림 — 첫 진입 비용을 헤더만으로 제한 */
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     if (expanded) {
       setMounted(true);
-      if (contentHeight.value > 0) {
+      const knownHeight = cacheKey
+        ? (accordionHeightCache.get(cacheKey) ?? contentHeight.value)
+        : contentHeight.value;
+      if (knownHeight > 0) {
+        contentHeight.value = knownHeight;
         progress.value = withTiming(1, {
           duration: ACCORDION_OPEN_MS,
           easing: ACCORDION_EASING,
@@ -273,14 +282,23 @@ function useMeasuredAccordion(expanded: boolean) {
         if (finished) runOnJS(setMounted)(false);
       },
     );
-  }, [contentHeight, expanded, progress]);
+  }, [cacheKey, contentHeight, expanded, progress]);
 
-  const panelStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    height: progress.value * contentHeight.value,
-    overflow: 'hidden' as const,
-    transform: [{ translateY: (1 - progress.value) * -6 }],
-  }));
+  const panelStyle = useAnimatedStyle(() => {
+    if (contentHeight.value <= 0) {
+      return {
+        opacity: expanded ? 1 : 0,
+        overflow: 'hidden' as const,
+        transform: [{ translateY: 0 }],
+      };
+    }
+    return {
+      opacity: progress.value,
+      height: progress.value * contentHeight.value,
+      overflow: 'hidden' as const,
+      transform: [{ translateY: (1 - progress.value) * -6 }],
+    };
+  });
 
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${progress.value * 180}deg` }],
@@ -289,15 +307,22 @@ function useMeasuredAccordion(expanded: boolean) {
   const onContentLayout = useCallback(
     (height: number) => {
       if (height <= 0 || Math.abs(height - contentHeight.value) <= 0.5) return;
+      if (cacheKey) accordionHeightCache.set(cacheKey, height);
+      const firstMeasure = contentHeight.value <= 0;
       contentHeight.value = height;
-      if (expanded && progress.value < 1) {
+      if (!expanded) return;
+      if (firstMeasure && progress.value >= 0.98) {
+        progress.value = 1;
+        return;
+      }
+      if (progress.value < 1) {
         progress.value = withTiming(1, {
           duration: ACCORDION_OPEN_MS,
           easing: ACCORDION_EASING,
         });
       }
     },
-    [contentHeight, expanded, progress],
+    [cacheKey, contentHeight, expanded, progress],
   );
 
   return { mounted, panelStyle, chevronStyle, onContentLayout };
@@ -376,7 +401,10 @@ function FlowItemCard({
   const [mealSlotExpanded, setMealSlotExpanded] = useState(false);
   const [spineTimeExpanded, setSpineTimeExpanded] = useState(false);
   const [detailExpanded, setDetailExpanded] = useState(false);
-  const detailAccordion = useMeasuredAccordion(detailExpanded);
+  const detailAccordion = useMeasuredAccordion(
+    detailExpanded,
+    `flow-detail:${item.categoryKey}`,
+  );
   const spineTimePanelRef = useRef<View>(null);
   const expandProgress = useSharedValue(0);
   const spineExpandProgress = useSharedValue(0);
@@ -1055,7 +1083,7 @@ function GroupAccordion({
   const actionInk = '#000000';
   const actionMuted = 'rgba(0,0,0,0.55)';
   const shadow = '#000000';
-  const groupAccordion = useMeasuredAccordion(isExpanded);
+  const groupAccordion = useMeasuredAccordion(isExpanded, `group:${setItem.id}`);
   const displaySetName = resolveFixedFlowSetDisplayName(setItem);
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
   const totalCount = setItem.items.length;
@@ -1457,14 +1485,16 @@ export function FixedRoutinePage({
 
   const isEmbedded = embeddedPresetOnly || embeddedCustomOnly;
   const [catalogTick, setCatalogTick] = useState(0);
-  const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
-  const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
+  const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>(
+    () => listAllCustomFlowCatalogEntries(),
+  );
+  const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>(
+    () => listCustomCatalogGroups(),
+  );
   const [postItFaceByGroup, setPostItFaceByGroup] = useState<PostItFaceColorByGroup>(
     () => loadPostItFaceColorByGroup(),
   );
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(
-    () => new Set(useFixedFlowSetsStore.getState().sets.map((setItem) => setItem.id)),
-  );
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [section, setSection] = useState<FixedRoutineSection>('catalog');
   const [internalLayoutMode, setInternalLayoutMode] = useState<DayPlanLayoutMode>('bag');
   const layoutMode = controlledLayoutMode ?? internalLayoutMode;
@@ -1527,6 +1557,7 @@ export function FixedRoutinePage({
   );
 
   const [nowTick, setNowTick] = useState(() => Date.now());
+  const contentOpacity = useSharedValue(0);
 
   const layoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
   const hydrateLayoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.hydrate);
@@ -1539,7 +1570,6 @@ export function FixedRoutinePage({
     activeSetIds,
     activeSetIdsByLayoutMode,
     hydrate,
-    reloadFromStorage,
     addSet,
     toggleSetForToday,
     removeSet,
@@ -1551,13 +1581,13 @@ export function FixedRoutinePage({
     setCategorySpineScheduleInSet,
     fixedRoutineApplyLayoutMode,
     setFixedRoutineApplyLayoutMode,
+    isHydrated: isFixedFlowHydrated,
   } = useFixedFlowSetsStore(
     useShallow((s) => ({
       sets: s.sets,
       activeSetIds: s.activeSetIds,
       activeSetIdsByLayoutMode: s.activeSetIdsByLayoutMode,
       hydrate: s.hydrate,
-      reloadFromStorage: s.reloadFromStorage,
       addSet: s.addSet,
       toggleSetForToday: s.toggleSetForToday,
       removeSet: s.removeSet,
@@ -1569,6 +1599,7 @@ export function FixedRoutinePage({
       setCategorySpineScheduleInSet: s.setCategorySpineScheduleInSet,
       fixedRoutineApplyLayoutMode: s.fixedRoutineApplyLayoutMode,
       setFixedRoutineApplyLayoutMode: s.setFixedRoutineApplyLayoutMode,
+      isHydrated: s.isHydrated,
     })),
   );
 
@@ -1589,7 +1620,6 @@ export function FixedRoutinePage({
     setPriorityCategoryOrder,
     filterCompletedFocusKeysToPriorityOrder,
     categoryLabelEpoch,
-    bumpCategoryLabelEpoch,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       planMode: s.planMode,
@@ -1608,7 +1638,6 @@ export function FixedRoutinePage({
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
       filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
       categoryLabelEpoch: s.categoryLabelEpoch,
-      bumpCategoryLabelEpoch: s.bumpCategoryLabelEpoch,
     })),
   );
 
@@ -1779,30 +1808,42 @@ export function FixedRoutinePage({
   }, []);
 
   useEffect(() => {
+    // 앱 부트스트랩에서 이미 hydrate된 경우 재로드하지 않는다.
+    // 탭 첫 마운트에서 같은 데이터를 다시 set하면 포스트잇 전체가 재렌더된다.
     hydrate();
-    reloadFromStorage();
-    reloadCatalog();
-  }, [hydrate, reloadCatalog, reloadFromStorage]);
+    hydrateLayoutModeVisibility();
+  }, [hydrate, hydrateLayoutModeVisibility]);
 
-  useFocusEffect(
-    useCallback(() => {
-      hydrateLayoutModeVisibility();
-    }, [hydrateLayoutModeVisibility]),
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      reloadCatalog();
-      bumpCategoryLabelEpoch();
-    }, [bumpCategoryLabelEpoch, reloadCatalog]),
-  );
+  useEffect(() => {
+    contentOpacity.value = isFixedFlowHydrated
+      ? withTiming(1, { duration: 220, easing: Easing.out(Easing.cubic) })
+      : 0;
+  }, [contentOpacity, isFixedFlowHydrated]);
 
   useEffect(() => subscribeCustomFlowCatalog(reloadCatalog), [reloadCatalog]);
 
+  /** 세트 id 구성이 바뀔 때만 — 사라진 id만 정리 (전부 자동 펼침 금지) */
+  const visibleSetIdsKey = useMemo(
+    () => visibleSets.map((setItem) => setItem.id).join('\0'),
+    [visibleSets],
+  );
+
   useEffect(() => {
-    if (visibleSets.length === 0) return;
-    setExpandedIds(new Set(visibleSets.map((setItem) => setItem.id)));
-  }, [section, visibleSets]);
+    if (!visibleSetIdsKey) {
+      setExpandedIds((prev) => (prev.size === 0 ? prev : new Set()));
+      return;
+    }
+    const valid = new Set(visibleSetIdsKey.split('\0').filter(Boolean));
+    setExpandedIds((prev) => {
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (valid.has(id)) next.add(id);
+        else changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [section, visibleSetIdsKey]);
 
   useEffect(() => {
     if (!canManageCustomGroups) {
@@ -2390,7 +2431,9 @@ export function FixedRoutinePage({
     return (
       <View style={[styles.embeddedRoot, { backgroundColor: shellBg }]}>
         <RoutineTabAtmosphere variant={atmosphereVariant} isDark={isDark} />
-        <View style={styles.foreground}>{pageBody}</View>
+        <Reanimated.View style={[styles.foreground, { opacity: contentOpacity }]}>
+          {isFixedFlowHydrated ? pageBody : null}
+        </Reanimated.View>
       </View>
     );
   }
@@ -2398,7 +2441,9 @@ export function FixedRoutinePage({
   return (
     <View style={[styles.screen, { backgroundColor: shellBg }]}>
       <RoutineTabAtmosphere variant={atmosphereVariant} isDark={isDark} />
-      <View style={styles.foreground}>{pageBody}</View>
+      <Reanimated.View style={[styles.foreground, { opacity: contentOpacity }]}>
+        {isFixedFlowHydrated ? pageBody : null}
+      </Reanimated.View>
     </View>
   );
 }

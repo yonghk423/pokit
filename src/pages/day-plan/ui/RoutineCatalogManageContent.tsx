@@ -1,17 +1,7 @@
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  Image,
-  LayoutAnimation,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  UIManager,
-  View,
-} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, UIManager, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -32,7 +22,6 @@ import { registerOtherCategoryResolverFromStorage } from '@features/other-catego
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
-import { headerArtForVariant } from '@shared/ui/routine-atmosphere';
 import { RoutineAtmosphereFooterStrip } from '@shared/ui/routine-atmosphere';
 import {
   POST_IT_WHITE_DARK,
@@ -49,6 +38,7 @@ import {
   loadGoalDetailCategoryConfig,
   resolveCatalogItemGroupKey,
   saveGoalDetailCategoryConfig,
+  subscribeCustomFlowCatalog,
   updateCatalogItemGroup,
   updateCustomCatalogGroup,
   updateSystemCatalogGroupMeta,
@@ -140,7 +130,6 @@ export function RoutineCatalogManageContent() {
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>(
     () => listCustomCatalogGroups(),
   );
-  const hasHandledInitialFocusRef = useRef(false);
   const [createSheetGroupKey, setCreateSheetGroupKey] = useState<string | undefined>(undefined);
   const [editGroupSheet, setEditGroupSheet] = useState<{
     groupKey: string;
@@ -159,17 +148,10 @@ export function RoutineCatalogManageContent() {
     setCustomGroups(listCustomCatalogGroups());
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      // 초기 데이터는 lazy state에서 동기적으로 읽는다. 마운트 직후 다시
-      // 갱신하면 빈 화면과 완성된 목록 사이에 중간 프레임이 노출된다.
-      if (!hasHandledInitialFocusRef.current) {
-        hasHandledInitialFocusRef.current = true;
-        return;
-      }
-      reloadCatalogData();
-      bumpCategoryLabelEpoch();
-    }, [bumpCategoryLabelEpoch, reloadCatalogData]),
+  // 포커스마다 전체 카탈로그를 재생성하지 않고 실제 저장 변경에만 갱신한다.
+  useEffect(
+    () => subscribeCustomFlowCatalog(reloadCatalogData),
+    [reloadCatalogData],
   );
 
   const customFlowPickerItems = useMemo(() => {
@@ -498,13 +480,7 @@ export function RoutineCatalogManageContent() {
                 </View>
               </View>
             </Pressable>
-            <View style={styles.headerArtSlot} pointerEvents="none">
-              <Image
-                source={headerArtForVariant('catalog')}
-                style={styles.headerArt}
-                resizeMode="contain"
-              />
-            </View>
+            <View style={styles.headerArtSlot} pointerEvents="none" />
           </View>
         </View>
       </View>

@@ -14,3 +14,4 @@ export type {
 } from './routineAtmosphereAssets';
 export { RoutineAtmosphereFooterStrip } from './RoutineAtmosphereFooterStrip';
 export { RoutineTabAtmosphere } from './RoutineTabAtmosphere';
+export { useDeferredAtmosphereReady } from './useDeferredAtmosphereReady';

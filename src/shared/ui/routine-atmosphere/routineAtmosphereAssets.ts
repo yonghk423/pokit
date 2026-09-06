@@ -79,68 +79,48 @@ export type AtmosphereLayer = {
 
 const A = routineAtmosphereAssets;
 
-/** 화면별로 5~6장 — 전역 17장을 고르게 분산 */
+const ALL_ASSET_KEYS = Object.keys(routineAtmosphereAssets) as RoutineAtmosphereAssetKey[];
+
+/** 탭당 배경 3장 — 모서리로 흩뿌려 부담을 줄임 */
+const LAYER_SLOTS: AtmosphereSlot[] = ['topLeft', 'topRight', 'bottomRight'];
+const LAYER_OPACITIES = [0.62, 0.6, 0.78] as const;
+const ATMOSPHERE_LAYER_COUNT = 3;
+const FOOTER_STRIP_COUNT = 3;
+
+/** 세션 동안 variant별 픽을 고정해 리렌더·탭 재진입 시 깜빡임을 막음 */
+const layerPickCache = new Map<RoutineAtmosphereVariant, AtmosphereLayer[]>();
+const footerPickCache = new Map<RoutineAtmosphereVariant, ImageSourcePropType[]>();
+
+function sampleKeys(
+  count: number,
+  exclude: ReadonlySet<RoutineAtmosphereAssetKey> = new Set(),
+): RoutineAtmosphereAssetKey[] {
+  const pool = ALL_ASSET_KEYS.filter((key) => !exclude.has(key));
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = pool[i]!;
+    pool[i] = pool[j]!;
+    pool[j] = tmp;
+  }
+  return pool.slice(0, Math.min(count, pool.length));
+}
+
+/** 화면별로 랜덤 3장 — 세션 동안 동일 */
 export function atmosphereLayersForVariant(
   variant: RoutineAtmosphereVariant,
 ): AtmosphereLayer[] {
-  switch (variant) {
-    case 'templates':
-      // 목록이 짧아 여백이 크므로 상·중·하 6장 + 불투명도 조금 올림
-      return [
-        { key: 'reading', source: A.reading, slot: 'topLeft', opacity: 0.62 },
-        { key: 'stretch', source: A.stretch, slot: 'topRight', opacity: 0.6 },
-        { key: 'tea', source: A.tea, slot: 'midLeft', opacity: 0.64 },
-        { key: 'desk', source: A.desk, slot: 'midRight', opacity: 0.7 },
-        { key: 'sunset', source: A.sunset, slot: 'bottomLeft', opacity: 0.66 },
-        { key: 'baking', source: A.baking, slot: 'bottomRight', opacity: 0.82 },
-      ];
-    case 'myRoutines':
-      return [
-        { key: 'hydrate', source: A.hydrate, slot: 'topLeft', opacity: 0.56 },
-        { key: 'yoga', source: A.yoga, slot: 'topRight', opacity: 0.54 },
-        { key: 'laundry', source: A.laundry, slot: 'midLeft', opacity: 0.5 },
-        { key: 'commute', source: A.commute, slot: 'midRight', opacity: 0.6 },
-        { key: 'walk', source: A.walk, slot: 'bottomRight', opacity: 0.74 },
-        { key: 'tea', source: A.tea, slot: 'bottomLeft', opacity: 0.5 },
-      ];
-    case 'fixed':
-      return [
-        { key: 'cook', source: A.cook, slot: 'topLeft', opacity: 0.56 },
-        { key: 'sleep', source: A.sleep, slot: 'topRight', opacity: 0.52 },
-        { key: 'plant', source: A.plant, slot: 'midRight', opacity: 0.58 },
-        { key: 'baking', source: A.baking, slot: 'midLeft', opacity: 0.48 },
-        { key: 'music', source: A.music, slot: 'bottomRight', opacity: 0.72 },
-        { key: 'laundry', source: A.laundry, slot: 'bottomLeft', opacity: 0.5 },
-      ];
-    case 'historyWeek':
-      return [
-        { key: 'journal', source: A.journal, slot: 'topLeft', opacity: 0.56 },
-        { key: 'desk', source: A.desk, slot: 'topRight', opacity: 0.54 },
-        { key: 'reading', source: A.reading, slot: 'midLeft', opacity: 0.5 },
-        { key: 'tea', source: A.tea, slot: 'midRight', opacity: 0.58 },
-        { key: 'sunset', source: A.sunset, slot: 'bottomRight', opacity: 0.72 },
-        { key: 'sleep', source: A.sleep, slot: 'bottomLeft', opacity: 0.5 },
-      ];
-    case 'historyMonth':
-      return [
-        { key: 'stretch', source: A.stretch, slot: 'topLeft', opacity: 0.55 },
-        { key: 'yoga', source: A.yoga, slot: 'topRight', opacity: 0.54 },
-        { key: 'commute', source: A.commute, slot: 'midLeft', opacity: 0.5 },
-        { key: 'music', source: A.music, slot: 'midRight', opacity: 0.6 },
-        { key: 'plant', source: A.plant, slot: 'bottomRight', opacity: 0.72 },
-        { key: 'hydrate', source: A.hydrate, slot: 'bottomLeft', opacity: 0.52 },
-      ];
-    case 'catalog':
-    default:
-      return [
-        { key: 'music', source: A.music, slot: 'topLeft', opacity: 0.55 },
-        { key: 'guitar', source: A.guitar, slot: 'topRight', opacity: 0.6 },
-        { key: 'tea', source: A.tea, slot: 'midLeft', opacity: 0.5 },
-        { key: 'plant', source: A.plant, slot: 'midRight', opacity: 0.58 },
-        { key: 'walk', source: A.walk, slot: 'bottomRight', opacity: 0.74 },
-        { key: 'baking', source: A.baking, slot: 'bottomLeft', opacity: 0.52 },
-      ];
-  }
+  const cached = layerPickCache.get(variant);
+  if (cached) return cached;
+
+  const keys = sampleKeys(ATMOSPHERE_LAYER_COUNT);
+  const layers = keys.map((key, index) => ({
+    key,
+    source: A[key],
+    slot: LAYER_SLOTS[index] ?? 'bottomRight',
+    opacity: LAYER_OPACITIES[index] ?? 0.6,
+  }));
+  layerPickCache.set(variant, layers);
+  return layers;
 }
 
 export function headerArtForVariant(
@@ -163,25 +143,20 @@ export function headerArtForVariant(
   }
 }
 
-/** 스크롤 하단 스크랩북 스트립 — 분위기와 다른 장 추가 노출 */
+/** 스크롤 하단 스크랩북 — 배경과 겹치지 않는 랜덤 3장 */
 export function footerStripForVariant(
   variant: RoutineAtmosphereVariant,
 ): ImageSourcePropType[] {
-  switch (variant) {
-    case 'templates':
-      return [A.yoga, A.guitar, A.walk, A.cook, A.music, A.plant];
-    case 'myRoutines':
-      return [A.sunset, A.guitar, A.sleep, A.baking];
-    case 'fixed':
-      return [A.stretch, A.journal, A.desk, A.hydrate];
-    case 'historyWeek':
-      return [A.guitar, A.walk, A.cook, A.music];
-    case 'historyMonth':
-      return [A.baking, A.laundry, A.tea, A.reading];
-    case 'catalog':
-    default:
-      return [A.sunset, A.stretch, A.journal, A.cook];
-  }
+  const cached = footerPickCache.get(variant);
+  if (cached) return cached;
+
+  const usedByLayers = new Set(
+    atmosphereLayersForVariant(variant).map((layer) => layer.key),
+  );
+  const keys = sampleKeys(FOOTER_STRIP_COUNT, usedByLayers);
+  const sources = keys.map((key) => A[key]);
+  footerPickCache.set(variant, sources);
+  return sources;
 }
 
 export const ATMOSPHERE_SLOT_STYLE: Record<AtmosphereSlot, StyleProp<ImageStyle>> = {

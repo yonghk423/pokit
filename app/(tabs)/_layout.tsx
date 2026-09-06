@@ -36,8 +36,10 @@ export default function TabLayout() {
       <Tabs
         key={`${appFontId}-${appFontSizeId}`}
         initialRouteName="day-plan"
+        detachInactiveScreens
         screenOptions={({ route }) => ({
           headerShown: false,
+          lazy: true,
           freezeOnBlur: true,
           tabBarButton: HapticTab,
           tabBarActiveTintColor: isDark ? '#FAFAFA' : '#000000',

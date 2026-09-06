@@ -73,9 +73,9 @@ const GROUP_ACCORDION_CLOSE_MS = 220;
 const GROUP_ACCORDION_EASING = Easing.out(Easing.cubic);
 
 function useMeasuredAccordion(expanded: boolean) {
-  const progress = useSharedValue(expanded ? 1 : 0);
+  const progress = useSharedValue(0);
   const contentHeight = useSharedValue(0);
-  const [mounted, setMounted] = useState(expanded);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     if (expanded) {
@@ -97,12 +97,21 @@ function useMeasuredAccordion(expanded: boolean) {
     );
   }, [contentHeight, expanded, progress]);
 
-  const panelStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    height: progress.value * contentHeight.value,
-    overflow: 'hidden' as const,
-    transform: [{ translateY: (1 - progress.value) * -6 }],
-  }));
+  const panelStyle = useAnimatedStyle(() => {
+    if (contentHeight.value <= 0) {
+      return {
+        opacity: expanded ? 1 : 0,
+        overflow: 'hidden' as const,
+        transform: [{ translateY: 0 }],
+      };
+    }
+    return {
+      opacity: progress.value,
+      height: progress.value * contentHeight.value,
+      overflow: 'hidden' as const,
+      transform: [{ translateY: (1 - progress.value) * -6 }],
+    };
+  });
 
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${progress.value * 180}deg` }],
@@ -1177,7 +1186,7 @@ function GroupSectionBlock({
   manageOnly?: boolean;
 }) {
   const { t } = useTranslation();
-  const [isGroupExpanded, setIsGroupExpanded] = useState(true);
+  const [isGroupExpanded, setIsGroupExpanded] = useState(false);
   const groupAccordion = useMeasuredAccordion(isGroupExpanded);
   const faceUsesLightInk = manageOnly && postItFaceUsesLightInk(postItFaceColorId);
   const faceInk = manageOnly
@@ -1277,7 +1286,7 @@ function GroupSectionBlock({
   const postItFaceColor = resolvePostItFaceColor(postItFaceColorId, isDark);
 
   const listRows =
-    section.items.length > 0
+    groupAccordion.mounted && section.items.length > 0
       ? renderRows(
           section.items,
           faceEditorial,
