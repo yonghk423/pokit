@@ -2,9 +2,10 @@ import * as Haptics from 'expo-haptics';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { RetroFlatColors } from '@shared/config/retroFlat';
+import { RetroFlatColors, cityPopFont } from '@shared/config/retroFlat';
 import { useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { POKIT_WEEK_TOUR_STEP_COUNT } from '@shared/lib/storage';
+import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -27,6 +28,49 @@ const STEP_BODY_KEYS = [
   'tour.pokitWeek.step6.body',
   'tour.pokitWeek.step7.body',
 ] as const satisfies readonly I18nKey[];
+
+/** 앱 실제 버튼과 같은 SF Symbol + 라벨 키 */
+const STEP_TARGETS = [
+  {
+    icon: 'list.bullet.rectangle',
+    labelKey: 'tabs.routines',
+    placeKey: 'tour.pokitWeek.targetPlace.bottomTab',
+  },
+  {
+    icon: 'figure.walk',
+    labelKey: 'tabs.myRoutines',
+    placeKey: 'tour.pokitWeek.targetPlace.bottomTab',
+  },
+  {
+    icon: 'clock.arrow.circlepath',
+    labelKey: 'tabs.history',
+    placeKey: 'tour.pokitWeek.targetPlace.bottomTab',
+  },
+  {
+    icon: 'checklist',
+    labelKey: 'guideBook.figure.headerTodo',
+    placeKey: 'tour.pokitWeek.targetPlace.todayHeader',
+  },
+  {
+    icon: 'book.closed.fill',
+    labelKey: 'planMode.reading',
+    placeKey: 'tour.pokitWeek.targetPlace.topMode',
+  },
+  {
+    icon: 'note.text',
+    labelKey: 'planMode.quickMemo',
+    placeKey: 'tour.pokitWeek.targetPlace.topMode',
+  },
+  {
+    icon: 'square.and.pencil',
+    labelKey: 'planMode.dayNote',
+    placeKey: 'tour.pokitWeek.targetPlace.topMode',
+  },
+] as const satisfies readonly {
+  icon: string;
+  labelKey: I18nKey;
+  placeKey: I18nKey;
+}[];
 
 type Props = {
   visible: boolean;
@@ -53,9 +97,12 @@ export function PokitWeekTourTipSheet({
       : 0;
   const title = t(STEP_TITLE_KEYS[safeIndex]!);
   const body = t(STEP_BODY_KEYS[safeIndex]!);
+  const target = STEP_TARGETS[safeIndex]!;
   const ink = tone.text;
   const muted = tone.textMuted;
   const face = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const chipBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)';
+  const chipBorder = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)';
 
   return (
     <Modal
@@ -81,14 +128,32 @@ export function PokitWeekTourTipSheet({
             borderColor={isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.14)'}
             borderWidth={StyleSheet.hairlineWidth}
             contentStyle={styles.card}>
-            <ThemedText style={[styles.kicker, { color: muted }]}>
+            <ThemedText style={[styles.kicker, { color: muted }, cityPopFont('500')]}>
               {t('tour.pokitWeek.tipKicker', {
                 current: safeIndex + 1,
                 total: POKIT_WEEK_TOUR_STEP_COUNT,
               })}
             </ThemedText>
-            <ThemedText style={[styles.title, { color: ink }]}>{title}</ThemedText>
-            <ThemedText style={[styles.body, { color: muted }]}>{body}</ThemedText>
+            <ThemedText style={[styles.title, { color: ink }, cityPopFont('700')]}>{title}</ThemedText>
+
+            <View
+              style={[styles.targetRow, { backgroundColor: chipBg, borderColor: chipBorder }]}
+              accessibilityRole="text"
+              accessibilityLabel={`${t(target.placeKey)} ${t(target.labelKey)}`}>
+              <View style={[styles.targetIconBox, { borderColor: chipBorder, backgroundColor: face }]}>
+                <IconSymbol name={target.icon as 'book.closed.fill'} size={22} color={ink} />
+              </View>
+              <View style={styles.targetText}>
+                <ThemedText style={[styles.targetPlace, { color: muted }, cityPopFont('500')]}>
+                  {t(target.placeKey)}
+                </ThemedText>
+                <ThemedText style={[styles.targetLabel, { color: ink }, cityPopFont('700')]}>
+                  {t(target.labelKey)}
+                </ThemedText>
+              </View>
+            </View>
+
+            <ThemedText style={[styles.body, { color: muted }, cityPopFont('400')]}>{body}</ThemedText>
             <View style={styles.actions}>
               <Pressable
                 accessibilityRole="button"
@@ -108,7 +173,7 @@ export function PokitWeekTourTipSheet({
                       : 'transparent',
                   },
                 ]}>
-                <ThemedText style={[styles.secondaryLabel, { color: muted }]}>
+                <ThemedText style={[styles.secondaryLabel, { color: muted }, cityPopFont('500')]}>
                   {t('common.close')}
                 </ThemedText>
               </Pressable>
@@ -126,7 +191,7 @@ export function PokitWeekTourTipSheet({
                     opacity: pressed ? 0.88 : 1,
                   },
                 ]}>
-                <ThemedText style={[styles.primaryLabel, { color: face }]}>
+                <ThemedText style={[styles.primaryLabel, { color: face }, cityPopFont('700')]}>
                   {t('tour.pokitWeek.gotIt')}
                 </ThemedText>
               </Pressable>
@@ -156,18 +221,43 @@ const styles = StyleSheet.create({
   },
   kicker: {
     fontSize: 11,
-    fontWeight: '500',
     letterSpacing: -0.1,
   },
   title: {
     fontSize: 17,
-    fontWeight: '600',
     letterSpacing: -0.3,
     lineHeight: 24,
   },
+  targetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  targetIconBox: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+  },
+  targetText: {
+    flex: 1,
+    gap: 2,
+  },
+  targetPlace: {
+    fontSize: 11,
+    letterSpacing: -0.1,
+  },
+  targetLabel: {
+    fontSize: 15,
+    letterSpacing: -0.2,
+  },
   body: {
     fontSize: 14,
-    fontWeight: '400',
     lineHeight: 21,
     letterSpacing: -0.15,
     marginTop: 2,
@@ -185,7 +275,6 @@ const styles = StyleSheet.create({
   },
   secondaryLabel: {
     fontSize: 13,
-    fontWeight: '500',
   },
   primaryBtn: {
     paddingHorizontal: 14,
@@ -193,6 +282,5 @@ const styles = StyleSheet.create({
   },
   primaryLabel: {
     fontSize: 13,
-    fontWeight: '600',
   },
 });

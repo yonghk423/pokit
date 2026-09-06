@@ -1,16 +1,16 @@
+import * as Haptics from 'expo-haptics';
 import type { ReactNode } from 'react';
 import { useCallback, useMemo } from 'react';
-import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import type { PlanMode } from '../lib/dayPlanEditorShared';
+import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
 type ModeButton = {
   mode: PlanMode;
@@ -61,9 +61,9 @@ export function PlanModeSwitch({
           ? null
           : planMode === 'reading'
             ? null
-          : planMode === 'todoList'
-            ? null
-            : null;
+            : planMode === 'todoList'
+              ? null
+              : null;
 
   const handleSelect = useCallback(
     (mode: PlanMode) => {

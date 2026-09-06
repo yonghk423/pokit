@@ -53,13 +53,13 @@ export default function TabLayout() {
             return <IconSymbol name={icon as any} size={24} color={color} />;
           },
         })}>
-          <Tabs.Screen name="index" options={{ href: null }} />
-          <Tabs.Screen name="day-plan" options={{ title: t('tabs.dayPlan') }} />
-          <Tabs.Screen name="fixed-routines" options={{ title: t('tabs.routines') }} />
-          <Tabs.Screen name="priority-catalog" options={{ title: t('tabs.myRoutines') }} />
-          <Tabs.Screen name="day-plan-statistics" options={{ title: t('tabs.history') }} />
-          <Tabs.Screen name="pokit-story" options={{ title: t('tabs.story') }} />
-        </Tabs>
+        <Tabs.Screen name="index" options={{ href: null }} />
+        <Tabs.Screen name="day-plan" options={{ title: t('tabs.dayPlan') }} />
+        <Tabs.Screen name="fixed-routines" options={{ title: t('tabs.routines') }} />
+        <Tabs.Screen name="priority-catalog" options={{ title: t('tabs.myRoutines') }} />
+        <Tabs.Screen name="day-plan-statistics" options={{ title: t('tabs.history') }} />
+        <Tabs.Screen name="pokit-story" options={{ title: t('tabs.story') }} />
+      </Tabs>
     </DayPlanTabBridgeProvider>
   );
 }

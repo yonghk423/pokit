@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, Share, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Pressable, Share, StyleSheet, View } from 'react-native';
 
 import {
   formatMinutesToHHmm,
@@ -20,8 +20,8 @@ import {
   loadGoalDetailCategoryConfig,
   loadPokitWeekTourFirstTipSeen,
   markPokitWeekTourFirstTipSeen,
-  POST_IT_LIGHT_INK,
   POKIT_WEEK_TOUR_STEP_COUNT,
+  POST_IT_LIGHT_INK,
   resolvePokitWeekTourStepIndex,
   saveGoalDetailCategoryConfig,
 } from '@shared/lib/storage';
@@ -30,8 +30,8 @@ import { UiSurfacePresentationProvider } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
-import { PokitWeekTourTipSheet } from './PokitWeekTourTipSheet';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
+import { PokitWeekTourTipSheet } from './PokitWeekTourTipSheet';
 
 type ChecklistTask = { id: string; text: string; done: boolean };
 
@@ -47,6 +47,75 @@ type Props = {
   line?: string;
   isDark: boolean;
 };
+
+function TourChecklistTapNudge({ color }: { color: string }) {
+  const { t } = useTranslation();
+  const bounce = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const bounceLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounce, {
+          toValue: 1,
+          duration: 700,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounce, {
+          toValue: 0,
+          duration: 700,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 0.55,
+          duration: 900,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    bounceLoop.start();
+    pulseLoop.start();
+    return () => {
+      bounceLoop.stop();
+      pulseLoop.stop();
+    };
+  }, [bounce, pulse]);
+
+  const translateY = bounce.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 5],
+  });
+
+  return (
+    <Animated.View
+      style={[s.tapNudge, { opacity: pulse }]}
+      accessibilityRole="text"
+      accessibilityLabel={t('tour.pokitWeek.tapChecklistHint')}>
+      <Animated.View style={{ transform: [{ translateY }] }}>
+        <IconSymbol name="arrow.down" size={13} color={color} />
+      </Animated.View>
+      <ThemedText style={[s.tapNudgeText, { color }]}>
+        {t('tour.pokitWeek.tapChecklistHint')}
+      </ThemedText>
+      <Animated.View style={{ transform: [{ translateY }] }}>
+        <IconSymbol name="arrow.down" size={13} color={color} />
+      </Animated.View>
+    </Animated.View>
+  );
+}
 
 function resolveChecklistTemplate(
   categoryKey: string,
@@ -147,6 +216,38 @@ export function PriorityBagRowAccordionPanel({
   }, [startMinutes, endMinutes]);
 
   const doneCount = tasks.filter((task) => task.done).length;
+  const firstUndoneTourIndex = useMemo(() => {
+    if (!isWeekTour) return -1;
+    return tasks.findIndex((task) => !task.done);
+  }, [isWeekTour, tasks]);
+  const showTourTapNudge =
+    isWeekTour && tourTipStep == null && firstUndoneTourIndex >= 0;
+
+  const nudgePulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (!showTourTapNudge) {
+      nudgePulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(nudgePulse, {
+          toValue: 0.35,
+          duration: 750,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(nudgePulse, {
+          toValue: 1,
+          duration: 750,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [nudgePulse, showTourTapNudge]);
 
   const module = useMemo(
     () => resolveGoalDetailModuleForTarget(goalKey, rawConfig),
@@ -247,23 +348,26 @@ export function PriorityBagRowAccordionPanel({
       }
       void Haptics.selectionAsync();
       const task = tasks.find((row) => row.id === taskId);
-      if (task && !task.done) {
-        persistChecklist(
-          tasks.map((row) => (row.id === taskId ? { ...row, done: true } : row)),
-        );
+      const nextDone = !(task?.done ?? false);
+      persistChecklist(
+        tasks.map((row) => (row.id === taskId ? { ...row, done: nextDone } : row)),
+      );
+      // 체크할 때만 안내 시트 — 해제는 토글만
+      if (nextDone) {
+        setTourTipTaskId(taskId);
+        setTourTipStep(step);
       }
-      setTourTipTaskId(taskId);
-      setTourTipStep(step);
     },
     [persistChecklist, tasks, toggleTask],
   );
 
   /**
-   * 초기: 첫 항목 체크 + 1번 포스트잇.
-   * 체크만 되고 시트가 사라진 경우(리마운트 등) — firstTipSeen 전까지 다시 연다.
+   * 초기(첫 팁 미열람): 첫 항목 체크 + 1번 포스트잇.
+   * 첫 팁을 본 뒤에는 체크 상태를 강제하지 않는다.
    */
   useEffect(() => {
     if (!isWeekTour || tasks.length === 0) return;
+    if (loadPokitWeekTourFirstTipSeen()) return;
     const first = tasks[0];
     if (!first) return;
 
@@ -273,7 +377,6 @@ export function PriorityBagRowAccordionPanel({
       );
     }
 
-    if (loadPokitWeekTourFirstTipSeen()) return;
     if (tourTipStep === 0 && tourTipTaskId === first.id) return;
 
     setTourTipTaskId(first.id);
@@ -367,61 +470,73 @@ export function PriorityBagRowAccordionPanel({
             </ThemedText>
           ) : null}
 
-          {tasks.map((task, index) => (
-            <View
-              key={task.id}
-              style={[
-                s.taskRow,
-                index < tasks.length - 1 && {
-                  borderBottomWidth: StyleSheet.hairlineWidth * 2,
-                  borderBottomColor: muted,
-                  paddingBottom: 8,
-                  marginBottom: 4,
-                },
-              ]}>
-              <Pressable
-                accessibilityRole={isWeekTour ? 'button' : 'checkbox'}
-                accessibilityState={{ checked: task.done }}
-                accessibilityLabel={
-                  isWeekTour ? t('tour.pokitWeek.stepA11y', { title: task.text }) : undefined
-                }
-                hitSlop={4}
-                onPress={() => (isWeekTour ? openTourTip(task.id, index) : toggleTask(task.id))}
-                style={s.taskMain}>
-                <View
-                  style={[
-                    s.check,
-                    {
-                      borderColor: task.done ? ink : muted,
-                      backgroundColor: task.done ? ink : 'transparent',
-                    },
-                  ]}>
-                  {task.done ? (
-                    <IconSymbol name="checkmark" size={9} color="#FAFAFA" />
-                  ) : null}
-                </View>
-                <ThemedText
-                  style={[
-                    s.taskText,
-                    { color: task.done ? muted : ink },
-                    task.done && checklistTemplate === 'checklist' ? s.taskDone : null,
-                  ]}
-                  numberOfLines={3}>
-                  {task.text}
-                </ThemedText>
-              </Pressable>
-              {!isWeekTour ? (
+          {showTourTapNudge ? <TourChecklistTapNudge color={ink} /> : null}
+
+          {tasks.map((task, index) => {
+            const isNudgeTarget = showTourTapNudge && index === firstUndoneTourIndex;
+            const checkBox = (
+              <View
+                style={[
+                  s.check,
+                  {
+                    borderColor: task.done ? ink : muted,
+                    backgroundColor: task.done ? ink : 'transparent',
+                  },
+                ]}>
+                {task.done ? (
+                  <IconSymbol name="checkmark" size={9} color="#FAFAFA" />
+                ) : null}
+              </View>
+            );
+            return (
+              <View
+                key={task.id}
+                style={[
+                  s.taskRow,
+                  index < tasks.length - 1 && {
+                    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+                    borderBottomColor: muted,
+                    paddingBottom: 8,
+                    marginBottom: 4,
+                  },
+                ]}>
                 <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('customFlowTemplate.deleteItemA11y')}
-                  hitSlop={8}
-                  onPress={() => removeTask(task.id)}
-                  style={({ pressed }) => [s.deleteHit, pressed && { opacity: 0.45 }]}>
-                  <ThemedText style={[s.deleteMark, { color: muted }]}>×</ThemedText>
+                  accessibilityRole={isWeekTour ? 'button' : 'checkbox'}
+                  accessibilityState={{ checked: task.done }}
+                  accessibilityLabel={
+                    isWeekTour ? t('tour.pokitWeek.stepA11y', { title: task.text }) : undefined
+                  }
+                  hitSlop={4}
+                  onPress={() => (isWeekTour ? openTourTip(task.id, index) : toggleTask(task.id))}
+                  style={s.taskMain}>
+                  {isNudgeTarget ? (
+                    <Animated.View style={{ opacity: nudgePulse }}>{checkBox}</Animated.View>
+                  ) : (
+                    checkBox
+                  )}
+                  <ThemedText
+                    style={[
+                      s.taskText,
+                      { color: task.done ? muted : ink },
+                      task.done && checklistTemplate === 'checklist' ? s.taskDone : null,
+                    ]}
+                    numberOfLines={3}>
+                    {task.text}
+                  </ThemedText>
                 </Pressable>
-              ) : null}
-            </View>
-          ))}
+                {!isWeekTour ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('customFlowTemplate.deleteItemA11y')}
+                    hitSlop={8}
+                    onPress={() => removeTask(task.id)}
+                    style={({ pressed }) => [s.deleteHit, pressed && { opacity: 0.45 }]}>
+                    <ThemedText style={[s.deleteMark, { color: muted }]}>×</ThemedText>
+                  </Pressable>
+                ) : null}
+              </View>
+            );
+          })}
 
           {!isWeekTour ? (
             <View style={s.addRow}>
@@ -529,6 +644,20 @@ const s = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.1,
     marginBottom: 2,
+  },
+  tapNudge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 4,
+    marginBottom: 2,
+  },
+  tapNudgeText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   body: {
     fontSize: 13,

@@ -83,7 +83,7 @@ export const POKIT_WEEK_TOUR_CHECKLIST_LABELS = [
 
 export const POKIT_WEEK_TOUR_DISPLAY_NAME = '포킷 빠르게 둘러보기' as const;
 export const POKIT_WEEK_TOUR_SUMMARY =
-  '항목을 눌러 짧게 읽고 「알겠어요」로 체크해요. 하루 안에 한 번에 끝내도 좋아요.' as const;
+  '항목을 눌러 버튼을 가리키는 안내를 보고, 「눌러보기」로 바로 이동해요. 하루 안에 한 번에 끝내도 돼요.' as const;
 
 export const POKIT_WEEK_TOUR_STEP_COUNT = POKIT_WEEK_TOUR_CHECKLIST_LABELS.length;
 

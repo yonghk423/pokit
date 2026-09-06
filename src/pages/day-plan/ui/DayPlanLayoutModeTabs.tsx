@@ -165,7 +165,7 @@ export function DayPlanLayoutModeTabs({
     <View style={[styles.root, showLabels && styles.rootLabeled]}>
       {layoutTabs.map((item) => {
         const active = layoutTabActive && mode === item.key;
-          const label = layoutModeLabel(t, item.key);
+        const label = layoutModeLabel(t, item.key);
         return (
           <Pressable
             key={item.key}
