@@ -123,7 +123,7 @@ describe('fixedFlowSetsStorage', () => {
       sets: [
         {
           id: 'set_daily',
-          name: '데일리 루틴',
+          name: '데일리 고정 루틴',
           applyRule: 'daily',
           items: [{ categoryKey: 'water', enabled: true }],
         },
@@ -135,7 +135,7 @@ describe('fixedFlowSetsStorage', () => {
         },
         {
           id: 'set_weekend',
-          name: '주말 루틴',
+          name: '주말 고정 루틴',
           applyRule: 'weekend',
           items: [{ categoryKey: 'journal', enabled: true }],
         },
@@ -187,7 +187,7 @@ describe('fixedFlowSetsStorage', () => {
       sets: [
         {
           id: 'set_daily',
-          name: '데일리 루틴',
+          name: '데일리 고정 루틴',
           applyRule: 'daily',
           items: [{ categoryKey: 'reading', enabled: true }],
         },
@@ -212,7 +212,7 @@ describe('fixedFlowSetsStorage', () => {
       sets: [
         {
           id: 'set_daily',
-          name: '데일리 루틴',
+          name: '데일리 고정 루틴',
           applyRule: 'daily',
           items: [{ categoryKey: 'reading', enabled: true }],
         },
@@ -246,7 +246,7 @@ describe('fixedFlowSetsStorage', () => {
       sets: [
         {
           id: 'set_daily',
-          name: '데일리 루틴',
+          name: '데일리 고정 루틴',
           applyRule: 'daily',
           items: [{ categoryKey: 'water', enabled: true }],
         },
@@ -263,7 +263,7 @@ describe('fixedFlowSetsStorage', () => {
       sets: [
         {
           id: 'set_daily',
-          name: '데일리 루틴',
+          name: '데일리 고정 루틴',
           applyRule: 'daily',
           items: [{ categoryKey: 'water', enabled: true }],
         },
@@ -284,7 +284,7 @@ describe('fixedFlowSetsStorage', () => {
       sets: [
         {
           id: 'set_weekend',
-          name: '주말 루틴',
+          name: '주말 고정 루틴',
           applyRule: 'weekend',
           items: [
             { categoryKey: 'customFlow:preset_daily_exercise', enabled: true },
@@ -307,7 +307,7 @@ describe('fixedFlowSetsStorage', () => {
       sets: [
         {
           id: 'set_daily',
-          name: '데일리 루틴',
+          name: '데일리 고정 루틴',
           applyRule: 'daily',
           items: [
             { categoryKey: 'water', enabled: true, mealSlot: 'morning' },

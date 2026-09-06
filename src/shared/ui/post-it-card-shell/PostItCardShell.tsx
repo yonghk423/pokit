@@ -22,10 +22,13 @@ type Props = {
   contentStyle?: StyleProp<ViewStyle>;
   /** 작은 칩/탭용 — 테이프·여백 축소, 폭은 내용에 맞춤 */
   compact?: boolean;
+  /** 면 테두리 — 흰 면+밝은 배경에서 윤곽이 필요할 때 */
+  borderColor?: string;
+  borderWidth?: number;
 };
 
 /**
- * 포스트잇 카드 셸 — 테이프·각진 모서리·솔리드 음영(테두리 없음)·옐로우 면.
+ * 포스트잇 카드 셸 — 테이프·각진 모서리·솔리드 음영·옐로우 면.
  */
 export function PostItCardShell({
   isDark,
@@ -35,11 +38,14 @@ export function PostItCardShell({
   shadowColor,
   contentStyle,
   compact = false,
+  borderColor,
+  borderWidth = 0,
 }: Props) {
   const face = faceColor ?? (isDark ? POST_IT_YELLOW_DARK : POST_IT_YELLOW_LIGHT);
   const shadow = shadowColor ?? POST_IT_SOLID_SHADOW;
   const offset = compact ? SHADOW_COMPACT : SHADOW;
   const tape = isDark ? 'rgba(255,229,102,0.28)' : 'rgba(255,255,255,0.7)';
+  const outlineW = borderColor ? Math.max(borderWidth, 1) : 0;
 
   return (
     <View
@@ -67,7 +73,18 @@ export function PostItCardShell({
           },
         ]}
       />
-      <View style={[styles.face, { backgroundColor: face }, contentStyle]}>{children}</View>
+      <View
+        style={[
+          styles.face,
+          {
+            backgroundColor: face,
+            borderColor: borderColor ?? 'transparent',
+            borderWidth: outlineW,
+          },
+          contentStyle,
+        ]}>
+        {children}
+      </View>
     </View>
   );
 }

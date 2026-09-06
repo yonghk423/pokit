@@ -7,13 +7,14 @@ import {
   listCustomFlowTemplateCatalogEntries,
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
-import { CityPopSpacing, RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
+import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
+import { IconSymbol } from '@shared/ui/icon-symbol';
+import { POST_IT_SOLID_SHADOW } from '@shared/ui/post-it-card-shell';
 import {
   headerArtForVariant,
   RoutineAtmosphereFooterStrip,
 } from '@shared/ui/routine-atmosphere';
-import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -27,11 +28,11 @@ type Props = {
 
 const BRUTAL_SHADOW_SM = 3;
 
-/** 루틴 템플릿 목록 — 레트로 시티팝 / Brutalism 카드 */
+/** 루틴 템플릿 목록 — 솔리드 음영만 (테두리 없음) */
 export function RoutineTemplateListPanel({
   ink,
   muted,
-  line,
+  line: _line,
   cardBg,
   isDark = false,
   onPressTemplate,
@@ -39,7 +40,7 @@ export function RoutineTemplateListPanel({
   const { t, locale } = useTranslation();
   const entries = useMemo(() => listCustomFlowTemplateCatalogEntries(), [locale]);
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const shadowColor = isDark ? tone.solidShadow : tone.primary;
+  const shadowColor = POST_IT_SOLID_SHADOW;
   const rowFace = isDark ? tone.surfaceAlt : cardBg || '#FFFFFF';
   const iconBoxBg = isDark ? tone.primaryContainer : tone.primaryContainer;
 
@@ -81,7 +82,6 @@ export function RoutineTemplateListPanel({
                 styles.rowShadow,
                 {
                   backgroundColor: shadowColor,
-                  borderColor: line,
                   transform: [
                     { translateX: BRUTAL_SHADOW_SM },
                     { translateY: BRUTAL_SHADOW_SM },
@@ -102,7 +102,6 @@ export function RoutineTemplateListPanel({
               style={({ pressed }) => [
                 styles.row,
                 {
-                  borderColor: line,
                   backgroundColor: rowFace,
                 },
                 pressed && { opacity: 0.92 },
@@ -118,7 +117,6 @@ export function RoutineTemplateListPanel({
                     styles.iconBoxShadow,
                     {
                       backgroundColor: shadowColor,
-                      borderColor: line,
                       transform: [
                         { translateX: BRUTAL_SHADOW_SM },
                         { translateY: BRUTAL_SHADOW_SM },
@@ -126,11 +124,7 @@ export function RoutineTemplateListPanel({
                     },
                   ]}
                 />
-                <View
-                  style={[
-                    styles.iconBox,
-                    { borderColor: line, backgroundColor: iconBoxBg },
-                  ]}>
+                <View style={[styles.iconBox, { backgroundColor: iconBoxBg }]}>
                   <IconSymbol name={entry.icon} size={16} color={ink} />
                 </View>
               </View>
@@ -205,7 +199,7 @@ const styles = StyleSheet.create({
   },
   rowShadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     borderRadius: 0,
   },
   row: {
@@ -214,7 +208,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 12,
     paddingHorizontal: 12,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     borderRadius: 0,
     zIndex: 1,
   },
@@ -224,14 +218,14 @@ const styles = StyleSheet.create({
   },
   iconBoxShadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
+    borderWidth: 0,
     borderRadius: 0,
   },
   iconBox: {
     width: 36,
     height: 36,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,

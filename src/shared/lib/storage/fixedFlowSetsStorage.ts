@@ -249,7 +249,7 @@ function migrateLegacyBuiltInSets(sets: FixedFlowSet[]): FixedFlowSet[] {
   const daily = withoutWeekday[dailyIdx];
   withoutWeekday[dailyIdx] = {
     ...daily,
-    name: '데일리 루틴',
+    name: '데일리 고정 루틴',
     applyRule: 'daily',
     applyWeekdays: defaultWeekdaysForApplyRule('daily'),
     items: mergeSetItems(daily.items, weekdayLegacy.items),

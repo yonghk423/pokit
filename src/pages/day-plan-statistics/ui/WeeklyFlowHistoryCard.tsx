@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
+import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { FlowHistoryCategoryGroup } from '../lib/groupFlowHistoryRows';
@@ -19,7 +19,12 @@ export function WeeklyFlowHistoryCard({ group, palette }: Props) {
   const isDark = useColorScheme() === 'dark';
 
   return (
-    <CityPopCardShell isDark={isDark} faceColor={palette.card} contentStyle={styles.content}>
+    <PostItCardShell
+      isDark={isDark}
+      faceColor={palette.card}
+      borderColor={palette.ink}
+      borderWidth={1}
+      contentStyle={styles.content}>
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
           <FlowHistoryCategoryIcon
@@ -41,7 +46,7 @@ export function WeeklyFlowHistoryCard({ group, palette }: Props) {
         palette={palette}
         categoryKey={group.categoryKey}
       />
-    </CityPopCardShell>
+    </PostItCardShell>
   );
 }
 

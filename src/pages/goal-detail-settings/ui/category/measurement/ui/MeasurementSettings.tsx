@@ -8,7 +8,7 @@ import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-ses
 
 import type { GoalDetailCategoryKey } from '../../../../model/types';
 
-import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { useGoalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
 import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
@@ -41,7 +41,7 @@ export function MeasurementSettings({
 }) {
   const { t } = useTranslation();
   const scheme = useColorScheme();
-  const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
+  const c = useGoalDetailSettingsPalette(scheme === 'dark');
   const titleFallback = useMemo(
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],

@@ -16,6 +16,7 @@ import { resolveGoalDetailModuleForTarget } from '@pages/goal-detail-settings/ui
 import { useTranslation } from '@shared/lib/i18n';
 import {
   loadGoalDetailCategoryConfig,
+  POST_IT_LIGHT_INK,
   saveGoalDetailCategoryConfig,
 } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -28,10 +29,13 @@ type ChecklistTask = { id: string; text: string; done: boolean };
 type Props = {
   categoryKey: string;
   label: string;
-  startMinutes: number;
-  endMinutes: number;
+  /** 오늘 일정에서 열 때만 표시하는 시간 범위 */
+  startMinutes?: number;
+  endMinutes?: number;
   ink: string;
   muted: string;
+  /** 포스트잇 면 divider — 설정 팔레트 outline 에 전달 */
+  line?: string;
   isDark: boolean;
 };
 
@@ -64,6 +68,7 @@ export function PriorityBagRowAccordionPanel({
   endMinutes,
   ink,
   muted,
+  line,
 }: Props) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState('');
@@ -106,6 +111,7 @@ export function PriorityBagRowAccordionPanel({
   }, []);
 
   const timeLine = useMemo(() => {
+    if (startMinutes == null || endMinutes == null) return null;
     const s = formatMinutesToHHmm(startMinutes);
     const e = formatMinutesToHHmm(endMinutes);
     return `${s} – ${e}`;
@@ -118,6 +124,10 @@ export function PriorityBagRowAccordionPanel({
     [goalKey, rawConfig],
   );
   const Settings = module.Settings;
+  const settingsDataConfig = useMemo(
+    () => rawConfig ?? module.getInitialDataConfig?.() ?? {},
+    [module, rawConfig],
+  );
 
   const handleSettingsChange = useCallback(
     (next: unknown) => {
@@ -218,7 +228,7 @@ export function PriorityBagRowAccordionPanel({
         parts.push(`${task.done ? '☑' : '☐'} ${task.text}`);
       }
     }
-    parts.push(timeLine);
+    if (timeLine) parts.push(timeLine);
     return parts.join('\n');
   }, [label, summaryDraft, tasks, timeLine]);
 
@@ -365,11 +375,21 @@ export function PriorityBagRowAccordionPanel({
 
   return (
     <View style={s.root}>
-      <UiSurfacePresentationProvider value="note">
+      <UiSurfacePresentationProvider
+        value="note"
+        noteColors={{
+          onSurface: ink,
+          onVariant: muted,
+          outline: line,
+          usesLightInk:
+            ink === POST_IT_LIGHT_INK ||
+            ink.toLowerCase() === '#ffffff' ||
+            ink.toLowerCase() === '#fafafa',
+        }}>
         <Settings
           rhythmTitle={label}
           categoryKey={goalKey}
-          dataConfig={rawConfig ?? module.getInitialDataConfig?.() ?? {}}
+          dataConfig={settingsDataConfig}
           onChangeDataConfig={handleSettingsChange}
           allowRename={false}
           hideTitleField

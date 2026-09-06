@@ -189,7 +189,7 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
       fixedFlowSets: [
         {
           id: 'set_daily',
-          name: '데일리 루틴',
+          name: '데일리 고정 루틴',
           applyRule: 'daily' as const,
           items: [{ categoryKey: 'reading', enabled: false, mealSlot: 'morning' as const }],
         },
@@ -424,7 +424,7 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
       fixedFlowSets: [
         {
           id: 'set_weekend',
-          name: '주말 루틴',
+          name: '주말 고정 루틴',
           applyRule: 'weekend' as const,
           items: [
             {

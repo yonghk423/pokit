@@ -28,6 +28,9 @@ export function SettingsProgressBand({
   const isNote = presentation === 'note';
   const fill = Math.max(0, Math.min(1, ratio));
   const barColor = accent ?? palette.onSurface;
+  const noteTrackBg = palette.usesLightInk
+    ? 'rgba(255,255,255,0.18)'
+    : 'rgba(0,0,0,0.08)';
 
   return (
     <View
@@ -52,7 +55,7 @@ export function SettingsProgressBand({
       <View
         style={[
           isNote ? styles.trackNote : styles.track,
-          { backgroundColor: isNote ? 'rgba(0,0,0,0.08)' : palette.outlineVariant },
+          { backgroundColor: isNote ? noteTrackBg : palette.outlineVariant },
         ]}>
         <View style={[styles.fill, { width: `${Math.round(fill * 100)}%`, backgroundColor: barColor }]} />
       </View>
@@ -72,35 +75,35 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   titleNote: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '400',
     letterSpacing: -0.1,
   },
   value: {
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-    lineHeight: 26,
-  },
-  valueNote: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: -0.3,
     lineHeight: 22,
   },
+  valueNote: {
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 20,
+  },
   sub: {
-    fontSize: 13,
-    fontWeight: '500',
-    lineHeight: 18,
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 17,
   },
   subNote: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '400',
     lineHeight: 17,
     letterSpacing: -0.1,
   },

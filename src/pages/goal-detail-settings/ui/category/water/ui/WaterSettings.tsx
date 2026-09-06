@@ -19,7 +19,7 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
-import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { useGoalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { SettingsProgressBand } from '../../lib/SettingsProgressBand';
 import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
@@ -91,15 +91,15 @@ export function WaterSettings({
   const { t } = useTranslation();
 
   const scheme = useColorScheme();
+  const basePalette = useGoalDetailSettingsPalette(scheme === 'dark');
   const palette = useMemo(() => {
-    const base = goalDetailSettingsPalette(scheme === 'dark');
     const pageBg = T.screenBg;
     return {
-      ...base,
+      ...basePalette,
       surfaceLow: pageBg,
       surfaceLowest: pageBg,
     };
-  }, [scheme]);
+  }, [basePalette]);
   const titleFallback = useMemo(
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],

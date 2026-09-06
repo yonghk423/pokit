@@ -26,14 +26,14 @@ import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { useGoalDetailSettingsPalette, type GoalDetailSettingsPalette } from '../../lib/settingsPalette';
 
 import { ReadingAddBookSheet } from './ReadingAddBookSheet';
 import { ReadingBookDetailSheet } from './ReadingBookDetailSheet';
 
 import type { GoalDetailCategoryKey } from '../../../../model/types';
 
-type SettingsPalette = ReturnType<typeof goalDetailSettingsPalette>;
+type SettingsPalette = GoalDetailSettingsPalette;
 
 type LibraryTab = 'all' | ReadingBookStatus;
 
@@ -134,7 +134,7 @@ export function ReadingSettings({
   const { t } = useTranslation();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const palette = useMemo(() => goalDetailSettingsPalette(isDark), [isDark]);
+  const palette = useGoalDetailSettingsPalette(isDark);
   const c = palette;
 
   const librarySortLabels = useMemo(

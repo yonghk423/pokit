@@ -13,13 +13,13 @@ import {
   ScrollView,
   StyleSheet,
   Switch,
-  TextInput,
   UIManager,
   useWindowDimensions,
   View,
 } from 'react-native';
 import Reanimated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -56,7 +56,7 @@ import {
   persistRoutineStartNotifyToggle,
 } from '@features/day-plan-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
-import { RetroFlatColors } from '@shared/config/retroFlat';
+import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { formatDateKeyCompact, t } from '@shared/lib/i18n';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
@@ -69,20 +69,31 @@ import {
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
+  loadPostItFaceColorByGroup,
+  DEFAULT_POST_IT_FACE_COLOR_ID,
+  postItFaceUsesLightInk,
   resolveFixedFlowItemMealSlots,
+  resolvePostItFaceColor,
+  resolvePostItFaceInk,
+  resolvePostItFaceMuted,
   saveGoalDetailCategoryConfig,
+  savePostItFaceColorForGroup,
   subscribeCustomFlowCatalog,
   type CustomCatalogGroup,
   type CustomFlowCatalogEntry,
   type DayMealSlot,
   type FixedFlowSet,
   type FixedFlowSetItem,
+  type PostItFaceColorByGroup,
+  type PostItFaceColorId,
 } from '@shared/lib/storage';
 import {
   coerceDayPlanLayoutMode
 } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import {
   activeIconColorByCategory,
   categoryAccentColorPastel,
@@ -115,7 +126,8 @@ import { FixedRoutineMealSlotScheduleCard } from './FixedRoutineMealSlotSchedule
 import { FixedRoutinePriorityWindowCard } from './FixedRoutinePriorityWindowCard';
 import { FixedRoutinePriorityWindowSheet } from './FixedRoutinePriorityWindowSheet';
 import { FixedRoutineSectionTabs, type FixedRoutineSection } from './FixedRoutineSectionTabs';
-import { CityPopCardShell } from './CityPopCardShell';
+import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
+import { PriorityBagRowAccordionPanel } from './PriorityBagRowAccordionPanel';
 import { RoutineCatalogManageContent } from './RoutineCatalogManageContent';
 import { RoutineTemplateListPanel } from './RoutineTemplateListPanel';
 import {
@@ -164,7 +176,7 @@ function FlowBrutalActionButton({
   accessibilityLabel,
   accessibilityState,
   disabled,
-  borderColor,
+  borderColor: _borderColor,
   backgroundColor,
   pressedBg,
   shadowColor,
@@ -172,6 +184,8 @@ function FlowBrutalActionButton({
   minWidth,
   onPress,
   children,
+  /** true면 프레스·활성 시 배경/투명도 변화 없음 */
+  lockVisual = false,
 }: {
   accessibilityLabel: string;
   accessibilityState?: { selected?: boolean; expanded?: boolean; disabled?: boolean };
@@ -184,6 +198,7 @@ function FlowBrutalActionButton({
   minWidth?: number;
   onPress: () => void;
   children: ReactNode;
+  lockVisual?: boolean;
 }) {
   return (
     <View
@@ -197,7 +212,6 @@ function FlowBrutalActionButton({
           styles.brutalBtnShadow,
           {
             backgroundColor: shadowColor,
-            borderColor,
             transform: [{ translateX: BRUTAL_SHADOW_SM }, { translateY: BRUTAL_SHADOW_SM }],
           },
         ]}
@@ -214,9 +228,9 @@ function FlowBrutalActionButton({
           width != null ? { width } : null,
           minWidth != null ? { minWidth } : null,
           {
-            borderColor,
-            backgroundColor: pressed && !disabled ? pressedBg : backgroundColor,
-            opacity: disabled ? 0.55 : pressed ? 0.92 : 1,
+            backgroundColor:
+              lockVisual || !pressed || disabled ? backgroundColor : pressedBg,
+            opacity: disabled ? 0.55 : lockVisual ? 1 : pressed ? 0.92 : 1,
           },
         ]}>
         {children}
@@ -230,6 +244,63 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental
 ) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const ACCORDION_OPEN_MS = 280;
+const ACCORDION_CLOSE_MS = 220;
+const ACCORDION_EASING = Easing.out(Easing.cubic);
+
+function useMeasuredAccordion(expanded: boolean) {
+  const progress = useSharedValue(expanded ? 1 : 0);
+  const contentHeight = useSharedValue(0);
+  const [mounted, setMounted] = useState(expanded);
+
+  useEffect(() => {
+    if (expanded) {
+      setMounted(true);
+      if (contentHeight.value > 0) {
+        progress.value = withTiming(1, {
+          duration: ACCORDION_OPEN_MS,
+          easing: ACCORDION_EASING,
+        });
+      }
+      return;
+    }
+    progress.value = withTiming(
+      0,
+      { duration: ACCORDION_CLOSE_MS, easing: ACCORDION_EASING },
+      (finished) => {
+        if (finished) runOnJS(setMounted)(false);
+      },
+    );
+  }, [contentHeight, expanded, progress]);
+
+  const panelStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    height: progress.value * contentHeight.value,
+    overflow: 'hidden' as const,
+    transform: [{ translateY: (1 - progress.value) * -6 }],
+  }));
+
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${progress.value * 180}deg` }],
+  }));
+
+  const onContentLayout = useCallback(
+    (height: number) => {
+      if (height <= 0 || Math.abs(height - contentHeight.value) <= 0.5) return;
+      contentHeight.value = height;
+      if (expanded && progress.value < 1) {
+        progress.value = withTiming(1, {
+          duration: ACCORDION_OPEN_MS,
+          easing: ACCORDION_EASING,
+        });
+      }
+    },
+    [contentHeight, expanded, progress],
+  );
+
+  return { mounted, panelStyle, chevronStyle, onContentLayout };
 }
 
 type FlowCardProps = {
@@ -263,6 +334,7 @@ type FlowCardProps = {
   onEnsureVisibleAboveKeyboard?: (windowY: number, height: number) => void;
   startNotifyEnabled?: boolean;
   onToggleStartNotify?: () => void;
+  onOpenSettings: () => void;
   onToggleEnabled: (enabled: boolean) => void;
   onDelete: () => void;
 };
@@ -293,16 +365,22 @@ function FlowItemCard({
   onEnsureVisibleAboveKeyboard,
   startNotifyEnabled = false,
   onToggleStartNotify,
+  onOpenSettings,
   onToggleEnabled,
   onDelete,
 }: FlowCardProps) {
   const { t, locale } = useTranslation();
+  /** 액션 버튼 면은 흰색이므로 포스트잇 잉크(밝은 색)와 분리 */
+  const actionInk = '#000000';
+  const actionMuted = 'rgba(0,0,0,0.55)';
   const [mealSlotExpanded, setMealSlotExpanded] = useState(false);
   const [spineTimeExpanded, setSpineTimeExpanded] = useState(false);
+  const [detailExpanded, setDetailExpanded] = useState(false);
+  const detailAccordion = useMeasuredAccordion(detailExpanded);
   const spineTimePanelRef = useRef<View>(null);
   const expandProgress = useSharedValue(0);
   const spineExpandProgress = useSharedValue(0);
-  const label = getPickerCategoryLabel(item.categoryKey);
+  const label = catalog?.label ?? getPickerCategoryLabel(item.categoryKey);
   const enabled = item.enabled !== false;
   const categoryKey = item.categoryKey;
   const icon = resolveCategoryCatalogIcon(categoryKey);
@@ -340,8 +418,8 @@ function FlowItemCard({
     categoryAccentColor: categoryIconColor,
     isInTodayPlan,
   });
-  const labelColor =
-    isInTodayPlan && enabled ? (isCompleted ? muted : ink) : muted;
+  /** 적용 여부와 무관하게 라벨 색 유지 — 적용은 스위치·버튼 문구로만 표시 */
+  const labelColor = isCompleted ? muted : ink;
 
   const mealSlotIconHighlighted = mealSlots.length > 0 || mealSlotExpanded;
 
@@ -440,7 +518,19 @@ function FlowItemCard({
         { borderBottomColor: line, opacity: enabled ? 1 : 0.5 },
       ]}>
       <View style={styles.flowRow}>
-        <View style={styles.flowRowMain}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: detailExpanded }}
+          accessibilityLabel={
+            detailExpanded
+              ? t('dayPlan.collapseA11y', { label })
+              : t('dayPlan.expandA11y', { label })
+          }
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setDetailExpanded((value) => !value);
+          }}
+          style={({ pressed }) => [styles.flowRowMain, pressed && { opacity: 0.82 }]}>
           <View
             style={[
               styles.flowIconBoxShell,
@@ -491,7 +581,22 @@ function FlowItemCard({
               </ThemedText>
             ) : null}
           </View>
-        </View>
+          <View
+            style={[
+              styles.flowDetailChevronShell,
+              { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+            ]}>
+            <View
+              pointerEvents="none"
+              style={[styles.flowDetailChevronShadow, { backgroundColor: brutalShadow }]}
+            />
+            <View style={[styles.flowDetailChevronFace, { backgroundColor: actionBg }]}>
+              <Reanimated.View style={detailAccordion.chevronStyle}>
+                <IconSymbol name="chevron.down" size={13} color={actionInk} />
+              </Reanimated.View>
+            </View>
+          </View>
+        </Pressable>
         {showMealSlotPicker && onToggleMealSlot ? (
           <FlowBrutalActionButton
             accessibilityLabel={
@@ -512,8 +617,8 @@ function FlowItemCard({
             <Reanimated.View style={mealSlotIconAnimatedStyle}>
               <CatalogRowMealSlotSelectedIcons
                 selectedSlots={mealSlots}
-                color={mealSlotIconHighlighted ? ink : muted}
-                mutedColor={muted}
+                color={mealSlotIconHighlighted ? actionInk : actionMuted}
+                mutedColor={actionMuted}
                 size={12}
                 compactSize={8}
               />
@@ -553,7 +658,7 @@ function FlowItemCard({
               <IconSymbol
                 name="clock.fill"
                 size={13}
-                color={spineTimeIconHighlighted ? ink : muted}
+                color={spineTimeIconHighlighted ? actionInk : actionMuted}
               />
             </Reanimated.View>
           </FlowBrutalActionButton>
@@ -573,10 +678,22 @@ function FlowItemCard({
             <IconSymbol
               name={startNotifyEnabled ? 'bell.fill' : 'bell'}
               size={13}
-              color={startNotifyEnabled ? ink : canStartNotify ? ink : muted}
+              color={startNotifyEnabled ? actionInk : canStartNotify ? actionInk : actionMuted}
             />
           </FlowBrutalActionButton>
         ) : null}
+        <FlowBrutalActionButton
+          accessibilityLabel={t('dayPlan.detailSettingsA11y', { label })}
+          borderColor={line}
+          backgroundColor={actionBg}
+          pressedBg={actionHoverBg}
+          shadowColor={brutalShadow}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onOpenSettings();
+          }}>
+          <IconSymbol name="slider.horizontal.3" size={13} color={actionInk} />
+        </FlowBrutalActionButton>
         <FlowBrutalActionButton
           accessibilityLabel={t('fixedRoutine.deleteRoutineA11y', { label })}
           borderColor={line}
@@ -584,7 +701,7 @@ function FlowItemCard({
           pressedBg={actionHoverBg}
           shadowColor={brutalShadow}
           onPress={onDelete}>
-          <IconSymbol name="trash" size={13} color={muted} />
+          <IconSymbol name="trash" size={13} color={actionMuted} />
         </FlowBrutalActionButton>
         <Switch
           accessibilityLabel={t('fixedRoutine.toggleA11y', { label, state: enabled ? t('common.on') : t('common.off') })}
@@ -599,6 +716,26 @@ function FlowItemCard({
           style={styles.flowSwitch}
         />
       </View>
+      {detailAccordion.mounted ? (
+        <Reanimated.View style={[styles.flowDetailPanel, detailAccordion.panelStyle]}>
+          <View
+            style={[styles.flowDetailMeasure, { borderTopColor: line }]}
+            onLayout={(event) => {
+              detailAccordion.onContentLayout(event.nativeEvent.layout.height);
+            }}>
+            <PriorityBagRowAccordionPanel
+              categoryKey={categoryKey}
+              label={label}
+              startMinutes={showSpineTimePicker ? spineStartMinutes : undefined}
+              endMinutes={showSpineTimePicker ? spineEndMinutes : undefined}
+              ink={ink}
+              muted={muted}
+              line={line}
+              isDark={isDark}
+            />
+          </View>
+        </Reanimated.View>
+      ) : null}
       {showMealSlotPicker && onToggleMealSlot ? (
         <Reanimated.View
           pointerEvents={mealSlotExpanded ? 'auto' : 'none'}
@@ -860,6 +997,9 @@ type GroupAccordionProps = {
   onEnsureVisibleAboveKeyboard?: (windowY: number, height: number) => void;
   isStartNotifyEnabled?: (categoryKey: string) => boolean;
   onToggleStartNotify?: (categoryKey: string) => void;
+  onOpenCategorySettings: (categoryKey: string) => void;
+  postItFaceColorId: PostItFaceColorId;
+  onSelectPostItFaceColor: (id: PostItFaceColorId) => void;
 };
 
 function GroupAccordion({
@@ -875,13 +1015,13 @@ function GroupAccordion({
   applyBlocked,
   catalogByKey,
   isDark,
-  ink,
-  muted,
-  line,
-  actionBg,
-  actionHoverBg,
-  shadow,
-  sectionBg,
+  ink: baseInk,
+  muted: baseMuted,
+  line: baseLine,
+  actionBg: baseActionBg,
+  actionHoverBg: baseActionHoverBg,
+  shadow: _baseShadow,
+  sectionBg: _baseSectionBg,
   isFocusStarted,
   isCategoryInTodayPlan,
   isCategoryCompleted,
@@ -899,8 +1039,23 @@ function GroupAccordion({
   onEnsureVisibleAboveKeyboard,
   isStartNotifyEnabled,
   onToggleStartNotify,
+  onOpenCategorySettings,
+  postItFaceColorId,
+  onSelectPostItFaceColor,
 }: GroupAccordionProps) {
   const { t } = useTranslation();
+  const usesLightInk = postItFaceUsesLightInk(postItFaceColorId);
+  const sectionBg = resolvePostItFaceColor(postItFaceColorId, isDark);
+  const ink = resolvePostItFaceInk(postItFaceColorId, baseInk);
+  const muted = resolvePostItFaceMuted(postItFaceColorId, baseMuted);
+  const line = usesLightInk ? 'rgba(255,255,255,0.22)' : baseLine;
+  /** 액션 버튼은 항상 흰 면 + 검정 아이콘 (어두운 포스트잇에서도 아이콘이 보이게) */
+  const actionBg = '#FFFFFF';
+  const actionHoverBg = 'rgba(255,255,255,0.92)';
+  const actionInk = '#000000';
+  const actionMuted = 'rgba(0,0,0,0.55)';
+  const shadow = '#000000';
+  const groupAccordion = useMeasuredAccordion(isExpanded);
   const displaySetName = resolveFixedFlowSetDisplayName(setItem);
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
   const totalCount = setItem.items.length;
@@ -965,20 +1120,12 @@ function GroupAccordion({
   const scheduleHint = isPresetScheduleSet ? getFixedFlowPresetScheduleHint(setItem.applyRule) : null;
 
   return (
-    <CityPopCardShell isDark={isDark} faceColor={sectionBg}>
+    <PostItCardShell isDark={isDark} faceColor={sectionBg}>
     <View style={styles.accordionSectionInner}>
-      <View
-        style={[
-          styles.accordionHeader,
-          {
-            backgroundColor: isDark
-              ? 'rgba(158, 207, 209, 0.16)'
-              : 'rgba(168, 218, 220, 0.28)',
-          },
-        ]}>
+      <View style={[styles.accordionHeader, { backgroundColor: 'transparent' }]}>
         {canRenameSet && isEditingName ? (
           <View style={styles.renameGroupRow}>
-            <TextInput
+            <ThemedTextInput
               value={nameDraft}
               onChangeText={setNameDraft}
               autoFocus
@@ -1003,7 +1150,11 @@ function GroupAccordion({
                 accessibilityLabel={t('fixedRoutine.saveGroupNameA11y')}
                 onPress={commitRename}
                 style={[styles.renameGroupSave, { backgroundColor: ink, borderColor: ink }]}>
-                <ThemedText style={[styles.renameGroupSaveLabel, { color: isDark ? '#09090b' : '#fff' }]}>
+                <ThemedText
+                  style={[
+                    styles.renameGroupSaveLabel,
+                    { color: usesLightInk ? sectionBg : isDark ? '#09090b' : '#fff' },
+                  ]}>
                   {t('common.save')}
                 </ThemedText>
               </Pressable>
@@ -1036,56 +1187,66 @@ function GroupAccordion({
                   {displaySetName}
                 </ThemedText>
               )}
-              {isPresetScheduleSet && ruleLabel ? (
+            </View>
+            {isPresetScheduleSet && ruleLabel ? (
+              <View
+                style={[
+                  styles.brutalBtnShell,
+                  { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+                ]}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.brutalBtnShadow,
+                    {
+                      backgroundColor: shadow,
+                      transform: [
+                        { translateX: BRUTAL_SHADOW_SM },
+                        { translateY: BRUTAL_SHADOW_SM },
+                      ],
+                    },
+                  ]}
+                />
                 <View
                   accessibilityRole="text"
                   accessibilityLabel={ruleLabel}
-                  style={[
-                    styles.rulePill,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' },
-                  ]}>
-                  <ThemedText style={[styles.rulePillText, { color: muted }]}>{ruleLabel}</ThemedText>
+                  style={[styles.rulePill, { backgroundColor: sectionBg }]}>
+                  <ThemedText
+                    style={[styles.rulePillText, { color: ink }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.85}>
+                    {ruleLabel}
+                  </ThemedText>
                 </View>
-              ) : null}
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: disableApplyToggle }}
+              </View>
+            ) : null}
+            <FlowBrutalActionButton
               accessibilityLabel={applyA11yLabel}
+              accessibilityState={{ disabled: disableApplyToggle }}
+              disabled={disableApplyToggle}
+              borderColor={line}
+              backgroundColor={actionBg}
+              pressedBg={actionBg}
+              shadowColor={shadow}
+              width={58}
+              lockVisual
               onPress={() => {
                 if (disableApplyToggle) {
                   if (applyChipBlocked) onApplyBlocked();
                   return;
                 }
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 onToggleActiveForToday();
-              }}
-              style={({ pressed }) => [
-                styles.headerApplyChip,
-                {
-                  borderColor: line,
-                  backgroundColor: isActiveForToday
-                    ? isDark
-                      ? RetroFlatColors.dark.primaryContainer
-                      : RetroFlatColors.light.primaryContainer
-                    : actionBg,
-                  opacity: disableApplyToggle ? 0.42 : pressed ? 0.88 : 1,
-                },
-              ]}>
+              }}>
               <ThemedText
-                style={[
-                  styles.headerApplyChipLabel,
-                  {
-                    color: isActiveForToday
-                      ? isDark
-                        ? RetroFlatColors.dark.primary
-                        : '#306163'
-                      : muted,
-                  },
-                ]}
-                numberOfLines={1}>
+                style={[styles.headerApplyChipLabel, { color: actionInk }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}>
                 {applyLabel}
               </ThemedText>
-            </Pressable>
+            </FlowBrutalActionButton>
             {!isPresetScheduleSet && canDeleteSet ? (
               <View
                 style={[
@@ -1118,28 +1279,61 @@ function GroupAccordion({
                     },
                     pressed && { opacity: 0.92 },
                   ]}>
-                  <IconSymbol name="trash" size={12} color={muted} />
+                  <IconSymbol name="trash" size={12} color={actionMuted} />
                 </Pressable>
               </View>
             ) : null}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('fixedRoutine.expandA11y', { name: displaySetName, action: isExpanded ? t('common.collapse') : t('common.expand') })}
-              onPress={onToggleExpand}
-              style={({ pressed }) => [styles.accordionHeaderRight, pressed && { opacity: 0.85 }]}>
-              <View style={[styles.countPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
-                <ThemedText style={[styles.countPillText, { color: muted }]}>
+            <FlowBrutalActionButton
+              accessibilityLabel={t('fixedRoutine.expandA11y', {
+                name: displaySetName,
+                action: isExpanded ? t('common.collapse') : t('common.expand'),
+              })}
+              accessibilityState={{ expanded: isExpanded }}
+              borderColor={line}
+              backgroundColor={actionBg}
+              pressedBg={actionBg}
+              shadowColor={shadow}
+              width={50}
+              lockVisual
+              onPress={onToggleExpand}>
+              <View style={styles.accordionHeaderRight}>
+                <ThemedText style={[styles.countPillText, { color: actionInk }]}>
                   {enabledCount}/{totalCount}
                 </ThemedText>
+                <Reanimated.View style={groupAccordion.chevronStyle}>
+                  <IconSymbol name="chevron.down" size={11} color={actionInk} />
+                </Reanimated.View>
               </View>
-              <IconSymbol name={isExpanded ? 'chevron.up' : 'chevron.down'} size={12} color={muted} />
-            </Pressable>
+            </FlowBrutalActionButton>
           </>
         )}
       </View>
 
-      {isExpanded ? (
-        <View style={[styles.accordionBody, { borderTopColor: line }]}>
+      <PostItFaceColorChips
+        compact
+        selectedId={postItFaceColorId}
+        isDark={isDark}
+        ink={ink}
+        shadowColor="#000000"
+        onSelect={onSelectPostItFaceColor}
+      />
+
+      {groupAccordion.mounted ? (
+        <Reanimated.View style={[styles.groupAccordionPanel, groupAccordion.panelStyle]}>
+        <View
+          style={[
+            styles.accordionBody,
+            {
+              borderTopColor: usesLightInk
+                ? 'rgba(255,255,255,0.22)'
+                : isDark
+                  ? 'rgba(241,239,255,0.22)'
+                  : 'rgba(24,26,46,0.12)',
+            },
+          ]}
+          onLayout={(event) => {
+            groupAccordion.onContentLayout(event.nativeEvent.layout.height);
+          }}>
           {scheduleHint ? (
             <ThemedText style={[styles.accordionRuleHint, { color: muted }]}>{scheduleHint}</ThemedText>
           ) : null}
@@ -1209,6 +1403,7 @@ function GroupAccordion({
                       ? () => onToggleStartNotify(item.categoryKey)
                       : undefined
                   }
+                  onOpenSettings={() => onOpenCategorySettings(item.categoryKey)}
                   onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
                   onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
                 />
@@ -1227,9 +1422,10 @@ function GroupAccordion({
             </Pressable>
           </View>
         </View>
+        </Reanimated.View>
       ) : null}
     </View>
-    </CityPopCardShell>
+    </PostItCardShell>
   );
 }
 
@@ -1259,6 +1455,9 @@ export function FixedRoutinePage({
   const [catalogTick, setCatalogTick] = useState(0);
   const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>([]);
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
+  const [postItFaceByGroup, setPostItFaceByGroup] = useState<PostItFaceColorByGroup>(
+    () => loadPostItFaceColorByGroup(),
+  );
   const [expandedIds, setExpandedIds] = useState<Set<string>>(
     () => new Set(useFixedFlowSetsStore.getState().sets.map((setItem) => setItem.id)),
   );
@@ -1282,6 +1481,15 @@ export function FixedRoutinePage({
   const scrollOffsetRef = useRef(0);
   const keyboardHeightRef = useRef(0);
   const { height: windowHeight } = useWindowDimensions();
+
+  const handleSelectPostItFaceColor = useCallback(
+    (setId: string, colorId: PostItFaceColorId) => {
+      setPostItFaceByGroup(
+        savePostItFaceColorForGroup(`my-routine:${setId}`, colorId),
+      );
+    },
+    [],
+  );
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -1541,7 +1749,8 @@ export function FixedRoutinePage({
 
   const visibleSets = useMemo(() => {
     if (embeddedPresetOnly) return presetSets;
-    if (embeddedCustomOnly) return customSets;
+    // 나만의 루틴 탭 — 데일리·주말(프리셋) + 직접 만든 그룹을 한 목록으로
+    if (embeddedCustomOnly) return [...presetSets, ...customSets];
     return [];
   }, [customSets, embeddedCustomOnly, embeddedPresetOnly, presetSets]);
 
@@ -1624,7 +1833,6 @@ export function FixedRoutinePage({
   }, [catalogTick, categoryLabelEpoch, customFlowEntries, customGroups, sets, addItemSetId]);
 
   const toggleExpanded = useCallback((setId: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedIds((prev) => {
       const next = new Set(prev);
       if (next.has(setId)) next.delete(setId);
@@ -1768,12 +1976,31 @@ export function FixedRoutinePage({
     [activeSetIdsForLayout],
   );
   const sectionHint = sectionHintText(activeSection, layoutMode);
+  const addGroupFaceId = DEFAULT_POST_IT_FACE_COLOR_ID;
+  const addGroupFace = resolvePostItFaceColor(addGroupFaceId, isDark);
+  const addGroupInk = resolvePostItFaceInk(addGroupFaceId, ink);
+  const addGroupMuted = resolvePostItFaceMuted(addGroupFaceId, muted);
+  const addGroupLine = postItFaceUsesLightInk(addGroupFaceId)
+    ? 'rgba(255,255,255,0.28)'
+    : 'rgba(0,0,0,0.18)';
+  const addGroupActionBg = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.72)';
+  const addGroupActionHover = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.92)';
 
   const openRoutineTemplateDetail = useCallback(
     (templateKey: CustomFlowTemplateKey) => {
       router.push({
         pathname: '/routine-template-detail',
         params: { templateKey },
+      });
+    },
+    [router],
+  );
+
+  const openCategorySettings = useCallback(
+    (categoryKey: string) => {
+      router.push({
+        pathname: '/goal-detail-settings',
+        params: { categoryKey },
       });
     },
     [router],
@@ -1803,7 +2030,107 @@ export function FixedRoutinePage({
             isDark={isDark}
           />
         ) : null}
-        {activeSection !== 'catalog' &&
+        {canManageCustomGroups ? (
+          isAddingGroup ? (
+            <PostItCardShell
+              compact
+              isDark={isDark}
+              faceColor={addGroupFace}
+              style={styles.addGroupCardOuter}
+              contentStyle={styles.addGroupCard}>
+              <ThemedText style={[styles.addGroupCaption, { color: addGroupMuted }]}>
+                {t('fixedRoutine.addGroupA11y')}
+              </ThemedText>
+              <ThemedTextInput
+                value={newGroupName}
+                onChangeText={setNewGroupName}
+                autoFocus
+                maxLength={24}
+                placeholder={t('fixedRoutine.newGroupPlaceholder')}
+                placeholderTextColor={addGroupMuted}
+                style={[
+                  styles.addGroupInput,
+                  { color: addGroupInk, borderBottomColor: addGroupLine },
+                ]}
+                returnKeyType="done"
+                onSubmitEditing={submitNewGroup}
+                accessibilityLabel={t('fixedRoutine.newGroupPlaceholder')}
+              />
+              <View style={styles.addGroupActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.cancel')}
+                  onPress={() => {
+                    setIsAddingGroup(false);
+                    setNewGroupName('');
+                  }}
+                  style={({ pressed }) => [
+                    styles.addGroupCancelBtn,
+                    {
+                      borderColor: addGroupLine,
+                      backgroundColor: pressed ? addGroupActionHover : addGroupActionBg,
+                    },
+                  ]}>
+                  <ThemedText style={[styles.addGroupCancel, { color: addGroupInk }]}>
+                    {t('common.cancel')}
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('fixedRoutine.addGroupA11y')}
+                  onPress={submitNewGroup}
+                  style={({ pressed }) => [
+                    styles.addGroupSubmit,
+                    {
+                      backgroundColor: addGroupInk,
+                      borderColor: addGroupInk,
+                      opacity: pressed ? 0.88 : 1,
+                    },
+                  ]}>
+                  <ThemedText
+                    style={[styles.addGroupSubmitLabel, { color: addGroupFace }]}>
+                    {t('common.add')}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </PostItCardShell>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('fixedRoutine.addGroupA11y')}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setIsAddingGroup(true);
+              }}
+              style={({ pressed }) => [
+                styles.addGroupTriggerHit,
+                pressed && { opacity: 0.9, transform: [{ translateX: 1 }, { translateY: 1 }] },
+              ]}>
+              <PostItCardShell
+                compact
+                isDark={isDark}
+                faceColor={addGroupFace}
+                style={styles.addGroupTriggerOuter}
+                contentStyle={styles.addGroupTrigger}>
+                <View style={styles.addGroupTriggerMain}>
+                  <ThemedText
+                    style={[styles.addGroupTriggerLabel, { color: addGroupInk, flexShrink: 1 }]}
+                    numberOfLines={2}>
+                    {t('fixedRoutine.addGroup')}
+                  </ThemedText>
+                  <View
+                    style={[
+                      styles.addGroupPlusFace,
+                      { backgroundColor: addGroupActionBg, borderColor: addGroupLine },
+                    ]}
+                    pointerEvents="none">
+                    <IconSymbol name="plus" size={13} color={addGroupInk} />
+                  </View>
+                </View>
+              </PostItCardShell>
+            </Pressable>
+          )
+        ) : activeSection !== 'catalog' &&
           activeSection !== 'templates' &&
           (!hideLayoutModeHeader || isEmbedded) ? (
           <ThemedText style={[styles.sectionHint, { color: muted }]}>
@@ -1913,7 +2240,6 @@ export function FixedRoutinePage({
                       isCategoryCompleted={isCategoryCompleted}
                       onToggleExpand={() => toggleExpanded(setItem.id)}
                       onToggleActiveForToday={() => {
-                        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         toggleSetForToday(setItem.id, layoutMode);
                       }}
                       onApplyBlocked={handleApplyBlocked}
@@ -1966,84 +2292,22 @@ export function FixedRoutinePage({
                       onToggleStartNotify={(categoryKey) => {
                         void handleToggleStartNotify(categoryKey);
                       }}
+                      onOpenCategorySettings={openCategorySettings}
+                      postItFaceColorId={
+                        postItFaceByGroup[`my-routine:${setItem.id}`] ?? 'yellow'
+                      }
+                      onSelectPostItFaceColor={(colorId) =>
+                        handleSelectPostItFaceColor(setItem.id, colorId)
+                      }
                     />
                   ))}
                 </View>
 
-                {canManageCustomGroups && visibleSets.length === 0 ? (
+                {canManageCustomGroups && customSets.length === 0 ? (
                   <ThemedText style={[styles.sectionEmpty, { color: muted }]}>
                     {t('fixedRoutine.noCustomGroups')}
                   </ThemedText>
                 ) : null}
-
-                {canManageCustomGroups && (isAddingGroup ? (
-                  <View style={[styles.addGroupCard, { borderColor: line, backgroundColor: cardBg }]}>
-                    <TextInput
-                      value={newGroupName}
-                      onChangeText={setNewGroupName}
-                      autoFocus
-                      style={[styles.addGroupInput, { color: ink, borderBottomColor: line }]}
-                      returnKeyType="done"
-                      onSubmitEditing={submitNewGroup}
-                    />
-                    <View style={styles.addGroupActions}>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={t('common.cancel')}
-                        onPress={() => {
-                          setIsAddingGroup(false);
-                          setNewGroupName('');
-                        }}
-                        style={({ pressed }) => [
-                          styles.addGroupCancelBtn,
-                          {
-                            borderColor: line,
-                            backgroundColor: pressed ? actionHoverBg : actionBg,
-                          },
-                        ]}>
-                        <ThemedText style={[styles.addGroupCancel, { color: muted }]}>{t('common.cancel')}</ThemedText>
-                      </Pressable>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={t('fixedRoutine.addGroupA11y')}
-                        onPress={submitNewGroup}
-                        style={({ pressed }) => [
-                          styles.addGroupSubmit,
-                          {
-                            backgroundColor: ink,
-                            borderColor: ink,
-                            opacity: pressed ? 0.9 : 1,
-                          },
-                        ]}>
-                        <ThemedText style={[styles.addGroupSubmitLabel, { color: isDark ? '#09090b' : '#fff' }]}>
-                          {t('common.add')}
-                        </ThemedText>
-                      </Pressable>
-                    </View>
-                  </View>
-                ) : (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('fixedRoutine.addGroupA11y')}
-                    onPress={() => setIsAddingGroup(true)}
-                    style={({ pressed }) => [
-                      styles.addGroupTrigger,
-                      {
-                        borderColor: line,
-                        backgroundColor: pressed ? actionHoverBg : cardBg,
-                      },
-                    ]}>
-                    <View style={styles.addGroupTriggerMain}>
-                      <IconSymbol name="plus" size={14} color={ink} />
-                      <ThemedText style={[styles.addGroupTriggerLabel, { color: ink }]}>
-                        {t('fixedRoutine.addGroupA11y')}
-                      </ThemedText>
-                    </View>
-                    <ThemedText style={[styles.addGroupHint, { color: muted }]}>
-                      {t('fixedRoutine.addGroupHint')}
-                    </ThemedText>
-                  </Pressable>
-                ))}
                 <RoutineAtmosphereFooterStrip
                   variant={embeddedCustomOnly ? 'myRoutines' : 'fixed'}
                   isDark={isDark}
@@ -2147,15 +2411,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   stickyHeader: {
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: CityPopSpacing.base,
+    paddingBottom: CityPopSpacing.base,
     gap: 10,
     zIndex: 2,
   },
   stickyHeaderEmbedded: {
-    paddingTop: 0,
-    paddingBottom: 6,
-    gap: 6,
+    paddingTop: CityPopSpacing.sm,
+    paddingBottom: CityPopSpacing.base,
+    gap: 10,
   },
   cachedCatalogPane: { flex: 1, backgroundColor: 'transparent' },
   cachedCatalogPaneHidden: { display: 'none' },
@@ -2203,9 +2467,9 @@ const styles = StyleSheet.create({
   renameGroupInput: {
     flex: 1,
     minWidth: 0,
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.28,
+    fontSize: 15,
+    fontWeight: '400',
+    letterSpacing: -0.2,
     paddingVertical: 2,
     paddingHorizontal: 0,
   },
@@ -2217,7 +2481,7 @@ const styles = StyleSheet.create({
   },
   renameGroupCancel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   renameGroupSave: {
     paddingHorizontal: 9,
@@ -2227,7 +2491,7 @@ const styles = StyleSheet.create({
   },
   renameGroupSaveLabel: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   accordionHeaderMain: {
     flex: 1,
@@ -2254,14 +2518,19 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   rulePill: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    width: 58,
+    height: 32,
     borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0,
+    zIndex: 1,
   },
   rulePillText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
+    letterSpacing: -0.15,
+    lineHeight: 14,
   },
   headerApplyChip: {
     height: 28,
@@ -2292,9 +2561,8 @@ const styles = StyleSheet.create({
   accordionHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    minHeight: 32,
-    paddingLeft: 2,
+    justifyContent: 'center',
+    gap: 4,
     flexShrink: 0,
   },
   countPill: {
@@ -2306,7 +2574,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
+  groupAccordionPanel: {
+    position: 'relative',
+    width: '100%',
+    alignSelf: 'stretch',
+  },
   accordionBody: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
     width: '100%',
     borderTopWidth: 1,
     paddingHorizontal: 4,
@@ -2329,70 +2606,89 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
   },
-  addGroupTrigger: {
-    borderWidth: 1,
-    borderRadius: 0,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    alignItems: 'flex-start',
-    gap: 4,
-  },
-  addGroupTriggerMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  addGroupTriggerLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  addGroupHint: {
-    fontSize: 11,
-    fontWeight: '500',
-    lineHeight: 15,
-    paddingLeft: 20,
+  addGroupCardOuter: {
+    alignSelf: 'stretch',
+    maxWidth: 320,
+    marginBottom: 4,
   },
   addGroupCard: {
-    borderWidth: 1,
-    borderRadius: 0,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 12,
     gap: 10,
   },
+  addGroupCaption: {
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+  },
   addGroupInput: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.28,
+    fontSize: 15,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 22,
     paddingVertical: 6,
     paddingHorizontal: 0,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   addGroupActions: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: 8,
+    marginTop: 2,
   },
   addGroupCancelBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   addGroupCancel: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '500',
   },
   addGroupSubmit: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   addGroupSubmitLabel: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  addGroupTriggerHit: {
+    alignSelf: 'flex-start',
+    maxWidth: '86%',
+  },
+  addGroupTriggerOuter: {
+    marginBottom: 4,
+  },
+  addGroupTrigger: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  addGroupTriggerMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  addGroupTriggerLabel: {
+    flexShrink: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: -0.2,
+    lineHeight: 18,
+  },
+  addGroupPlusFace: {
+    width: 26,
+    height: 26,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   cardList: {
     width: '100%',
@@ -2404,6 +2700,20 @@ const styles = StyleSheet.create({
   flowRowWrap: {
     borderBottomWidth: 1,
     paddingBottom: 0,
+  },
+  flowDetailPanel: {
+    position: 'relative',
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  flowDetailMeasure: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
   },
   flowRow: {
     flexDirection: 'row',
@@ -2448,6 +2758,24 @@ const styles = StyleSheet.create({
     minWidth: 0,
     gap: 1,
   },
+  flowDetailChevronShell: {
+    position: 'relative',
+    width: 32,
+    height: 32,
+    flexShrink: 0,
+  },
+  flowDetailChevronShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+    transform: [{ translateX: BRUTAL_SHADOW_SM }, { translateY: BRUTAL_SHADOW_SM }],
+  },
+  flowDetailChevronFace: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
   rowDeleteBtn: {
     width: 30,
     height: 30,
@@ -2462,14 +2790,14 @@ const styles = StyleSheet.create({
   },
   brutalBtnShadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
+    borderWidth: 0,
     borderRadius: 0,
   },
   flowBrutalBtn: {
     width: 32,
     height: 32,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
@@ -2480,14 +2808,14 @@ const styles = StyleSheet.create({
   },
   flowIconBoxShadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
+    borderWidth: 0,
     borderRadius: 0,
   },
   flowIconBox: {
     width: 36,
     height: 36,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

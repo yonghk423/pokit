@@ -19,8 +19,8 @@ import {
   RoutineAtmosphereFooterStrip,
   RoutineTabAtmosphere,
 } from '@shared/ui/routine-atmosphere';
-import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
@@ -218,7 +218,6 @@ export function DayPlanStatisticsPage() {
                   styles.periodNavShadow,
                   {
                     backgroundColor: palette.shadow,
-                    borderColor: palette.border,
                     transform: [{ translateX: 3 }, { translateY: 3 }],
                   },
                 ]}
@@ -235,7 +234,6 @@ export function DayPlanStatisticsPage() {
                   styles.periodNavBtn,
                   {
                     backgroundColor: pressed ? palette.accentSoft : palette.actionBg,
-                    borderColor: palette.border,
                   },
                   pressed && styles.periodNavPressed,
                 ]}>
@@ -249,7 +247,6 @@ export function DayPlanStatisticsPage() {
                   styles.periodLabelShadow,
                   {
                     backgroundColor: palette.shadow,
-                    borderColor: palette.border,
                     transform: [{ translateX: 3 }, { translateY: 3 }],
                   },
                 ]}
@@ -257,7 +254,7 @@ export function DayPlanStatisticsPage() {
               <View
                 style={[
                   styles.periodLabelFace,
-                  { backgroundColor: palette.card, borderColor: palette.border },
+                  { backgroundColor: palette.card },
                 ]}>
                 <ThemedText style={[styles.periodNavLabel, { color: palette.ink }]}>
                   {periodNavLabel}
@@ -275,7 +272,6 @@ export function DayPlanStatisticsPage() {
                   styles.periodNavShadow,
                   {
                     backgroundColor: palette.shadow,
-                    borderColor: palette.border,
                     transform: [{ translateX: 3 }, { translateY: 3 }],
                   },
                 ]}
@@ -295,7 +291,6 @@ export function DayPlanStatisticsPage() {
                   {
                     backgroundColor:
                       pressed && canGoNext ? palette.accentSoft : palette.actionBg,
-                    borderColor: palette.border,
                   },
                   pressed && canGoNext && styles.periodNavPressed,
                 ]}>
@@ -330,18 +325,28 @@ export function DayPlanStatisticsPage() {
           )}
 
           {!isHydrated ? (
-            <CityPopCardShell isDark={isDark} faceColor={palette.card} contentStyle={styles.emptyContent}>
+            <PostItCardShell
+              isDark={isDark}
+              faceColor={palette.card}
+              borderColor={palette.ink}
+              borderWidth={1}
+              contentStyle={styles.emptyContent}>
               <ThemedText style={[styles.emptyTitle, { color: palette.ink }]}>
                 {t('history.loading')}
               </ThemedText>
-            </CityPopCardShell>
+            </PostItCardShell>
           ) : flowRows.length === 0 ? (
-            <CityPopCardShell isDark={isDark} faceColor={palette.card} contentStyle={styles.emptyContent}>
+            <PostItCardShell
+              isDark={isDark}
+              faceColor={palette.card}
+              borderColor={palette.ink}
+              borderWidth={1}
+              contentStyle={styles.emptyContent}>
               <ThemedText style={[styles.emptyTitle, { color: palette.ink }]}>{emptyTitle}</ThemedText>
               <ThemedText style={styles.emptyBody} lightColor={palette.muted} darkColor={palette.muted}>
                 {emptyBody}
               </ThemedText>
-            </CityPopCardShell>
+            </PostItCardShell>
           ) : period === 'week' ? (
             <View style={styles.cardList}>
               {weeklyGroups.map((group) => (
@@ -419,14 +424,14 @@ const styles = StyleSheet.create({
   },
   periodNavShadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 2,
+    borderWidth: 0,
     borderRadius: 0,
   },
   periodNavBtn: {
     width: 34,
     height: 34,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
@@ -441,11 +446,11 @@ const styles = StyleSheet.create({
   },
   periodLabelShadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 2,
+    borderWidth: 0,
     borderRadius: 0,
   },
   periodLabelFace: {
-    borderWidth: 2,
+    borderWidth: 0,
     borderRadius: 0,
     paddingVertical: 8,
     paddingHorizontal: 10,

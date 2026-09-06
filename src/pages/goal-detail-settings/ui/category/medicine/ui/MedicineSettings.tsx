@@ -13,7 +13,7 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
-import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { useGoalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { SettingsProgressBand } from '../../lib/SettingsProgressBand';
 import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
@@ -142,7 +142,7 @@ export function MedicineSettings({
   const { t } = useTranslation();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const c = useMemo(() => goalDetailSettingsPalette(isDark), [isDark]);
+  const c = useGoalDetailSettingsPalette(isDark);
   const isNote = useUiSurfacePresentation() === 'note';
   const titleFallback = useMemo(
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
@@ -356,7 +356,7 @@ export function MedicineSettings({
                     styles.slotStatusBadge,
                     {
                       color: isDone ? PRIMARY : isCurrent ? c.onSurface : c.onVariant,
-                      fontWeight: isCurrent ? '800' : '700',
+                      fontWeight: isCurrent ? '500' : '400',
                     },
                   ]}>
                   {statusLabel}
@@ -512,8 +512,8 @@ const styles = StyleSheet.create({
     gap: 4,
     alignSelf: 'stretch',
   },
-  routineWindowLabel: { fontSize: 12, fontWeight: '600', letterSpacing: -0.15 },
-  routineWindowTime: { fontSize: 16, fontWeight: '800', letterSpacing: -0.35 },
+  routineWindowLabel: { fontSize: 12, fontWeight: '400', letterSpacing: -0.15 },
+  routineWindowTime: { fontSize: 14, fontWeight: '400', letterSpacing: -0.2 },
   metricBar: {
     flexDirection: 'row',
     borderTopWidth: 1,
@@ -521,8 +521,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   metricItem: { flex: 1, alignItems: 'center', gap: 2 },
-  metricValue: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4 },
-  metricLabel: { fontSize: 11, fontWeight: '600' },
+  metricValue: { fontSize: 16, fontWeight: '400', letterSpacing: -0.2 },
+  metricLabel: { fontSize: 11, fontWeight: '400' },
   rowsWrap: { borderTopWidth: 1 },
   slotDetailBlock: {
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingVertical: 4,
   },
-  rowSubTitle: { fontSize: 13, fontWeight: '600' },
+  rowSubTitle: { fontSize: 12, fontWeight: '400' },
   slotRowWrap: {
     flexDirection: 'column',
     alignItems: 'stretch',
@@ -544,17 +544,17 @@ const styles = StyleSheet.create({
   },
   slotColumn: { gap: 6, width: '100%' },
   row: {
-    minHeight: 62,
+    minHeight: 48,
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rowTitle: { fontSize: 14, fontWeight: '600' },
-  rowInput: { flex: 1, fontSize: 16, fontWeight: '600', textAlign: 'right', minHeight: 32, maxWidth: '70%' },
+  rowTitle: { fontSize: 14, fontWeight: '400' },
+  rowInput: { flex: 1, fontSize: 14, fontWeight: '400', textAlign: 'right', minHeight: 32, maxWidth: '70%' },
   slotRow: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1.5,
   },
-  slotChipText: { fontSize: 12, fontWeight: '800', letterSpacing: -0.2 },
+  slotChipText: { fontSize: 12, fontWeight: '500', letterSpacing: -0.2 },
   medicineTimePickerRow: {
     paddingVertical: 2,
   },
@@ -582,13 +582,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  doseActionBtnText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  doseActionBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
   doseResetBtn: {
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  doseResetBtnText: { fontSize: 13, fontWeight: '700' },
+  doseResetBtnText: { fontSize: 13, fontWeight: '400' },
   slotStatusWrap: {
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
@@ -602,9 +602,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   slotStatusLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  slotStatusLabel: { fontSize: 14, fontWeight: '700' },
-  slotStatusTime: { fontSize: 12, fontWeight: '600' },
-  slotStatusBadge: { fontSize: 12 },
+  slotStatusLabel: { fontSize: 13, fontWeight: '400' },
+  slotStatusTime: { fontSize: 12, fontWeight: '400' },
+  slotStatusBadge: { fontSize: 12, fontWeight: '500' },
   doseActionBtnNote: {
     flex: 0,
     paddingVertical: 4,

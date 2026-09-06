@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
-import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
+import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { MonthlyHistorySummary } from '../lib/buildMonthlyFlowHistory';
@@ -18,7 +18,12 @@ export function MonthlyHistorySummaryCard({ summary, palette }: Props) {
   const isDark = useColorScheme() === 'dark';
 
   return (
-    <CityPopCardShell isDark={isDark} faceColor={palette.card} contentStyle={styles.content}>
+    <PostItCardShell
+      isDark={isDark}
+      faceColor={palette.card}
+      borderColor={palette.ink}
+      borderWidth={1}
+      contentStyle={styles.content}>
       <View style={styles.topRow}>
         <ThemedText style={[styles.title, { color: palette.ink }]}>
           {t('history.summary.monthTitle')}
@@ -41,7 +46,7 @@ export function MonthlyHistorySummaryCard({ summary, palette }: Props) {
           })}
         </ThemedText>
       ) : null}
-    </CityPopCardShell>
+    </PostItCardShell>
   );
 }
 

@@ -186,13 +186,13 @@ function isSameCategoryKeySet(keys: string[], expected: readonly string[]): bool
 const DEFAULT_SET_TEMPLATES: DefaultSetTemplate[] = [
   {
     id: 'set_daily',
-    name: '데일리 루틴',
+    name: '데일리 고정 루틴',
     applyRule: 'daily',
     categoryKeys: ['healthIntake', 'fasting', BUILTIN_DAILY_LIFE_FLOW_IDS[1]],
   },
   {
     id: 'set_weekend',
-    name: '주말 루틴',
+    name: '주말 고정 루틴',
     applyRule: 'weekend',
     categoryKeys: [
       BUILTIN_DAILY_LIFE_FLOW_IDS[5],

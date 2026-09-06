@@ -354,7 +354,7 @@ describe('fixedFlowSetsStore', () => {
       sets: [
         {
           id: 'set_daily',
-          name: '데일리 루틴',
+          name: '데일리 고정 루틴',
           applyRule: 'daily',
           items: [{ categoryKey: 'healthIntake', enabled: true, mealSlot: 'dawn' }],
         },

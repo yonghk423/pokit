@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
+import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { MonthlyFlowHistoryRow } from '../lib/buildMonthlyFlowHistory';
@@ -21,7 +21,12 @@ export function MonthlyFlowHistoryCard({ group, monthPrefix, palette }: Props) {
   const monthCountLabel = `${group.row.completedDays}/${group.row.daysInMonth}`;
 
   return (
-    <CityPopCardShell isDark={isDark} faceColor={palette.card} contentStyle={styles.content}>
+    <PostItCardShell
+      isDark={isDark}
+      faceColor={palette.card}
+      borderColor={palette.ink}
+      borderWidth={1}
+      contentStyle={styles.content}>
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
           <FlowHistoryCategoryIcon
@@ -39,7 +44,7 @@ export function MonthlyFlowHistoryCard({ group, monthPrefix, palette }: Props) {
       </View>
 
       <FlowHistoryMonthRow row={group.row} monthPrefix={monthPrefix} palette={palette} />
-    </CityPopCardShell>
+    </PostItCardShell>
   );
 }
 

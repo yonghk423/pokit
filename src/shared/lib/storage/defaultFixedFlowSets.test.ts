@@ -13,7 +13,7 @@ describe('createDefaultFixedFlowSetsState', () => {
   it('creates daily and weekend preset sets only', () => {
     const state = createDefaultFixedFlowSetsState();
     expect(state.sets).toHaveLength(2);
-    expect(state.sets.map((s) => s.name)).toEqual(['데일리 루틴', '주말 루틴']);
+    expect(state.sets.map((s) => s.name)).toEqual(['데일리 고정 루틴', '주말 고정 루틴']);
     expect(state.sets.map((s) => s.applyRule)).toEqual(['daily', 'weekend']);
     const daily = state.sets.find((s) => s.id === 'set_daily');
     expect(daily?.items.map((x) => x.categoryKey)).toEqual([
@@ -33,7 +33,7 @@ describe('createDefaultFixedFlowSetsState', () => {
     const merged = mergeBuiltInPresetSets([
       {
         id: 'set_daily',
-        name: '데일리 루틴',
+        name: '데일리 고정 루틴',
         applyRule: 'daily',
         applyWeekdays: [0, 1, 2, 3, 4, 5, 6],
         items: [{ categoryKey: 'reading', enabled: true }],
@@ -50,14 +50,14 @@ describe('createDefaultFixedFlowSetsState', () => {
     const merged = mergeBuiltInPresetSets([
       {
         id: 'set_daily',
-        name: '데일리 루틴',
+        name: '데일리 고정 루틴',
         applyRule: 'daily',
         applyWeekdays: [0, 1, 2, 3, 4, 5, 6],
         items: [{ categoryKey: 'healthIntake', enabled: true }],
       },
       {
         id: 'set_weekend',
-        name: '주말 루틴',
+        name: '주말 고정 루틴',
         applyRule: 'weekend',
         applyWeekdays: [0, 6],
         items: [],
@@ -73,7 +73,7 @@ describe('createDefaultFixedFlowSetsState', () => {
     const merged = mergeBuiltInPresetSets([
       {
         id: 'set_weekend',
-        name: '주말 루틴',
+        name: '주말 고정 루틴',
         applyRule: 'weekend',
         applyWeekdays: [0, 6],
         items: [{ categoryKey: 'reading', enabled: true }],
@@ -89,7 +89,7 @@ describe('createDefaultFixedFlowSetsState', () => {
     const merged = mergeBuiltInPresetSets([
       {
         id: 'set_daily',
-        name: '데일리 루틴',
+        name: '데일리 고정 루틴',
         applyRule: 'daily',
         applyWeekdays: [0, 1, 2, 3, 4, 5, 6],
         items: [
@@ -110,7 +110,7 @@ describe('createDefaultFixedFlowSetsState', () => {
     const merged = mergeBuiltInPresetSets([
       {
         id: 'set_daily',
-        name: '데일리 루틴',
+        name: '데일리 고정 루틴',
         applyRule: 'daily',
         applyWeekdays: [0, 1, 2, 3, 4, 5, 6],
         items: [
@@ -136,14 +136,14 @@ describe('createDefaultFixedFlowSetsState', () => {
     const merged = mergeBuiltInExampleCustomSets([
       {
         id: 'set_daily',
-        name: '데일리 루틴',
+        name: '데일리 고정 루틴',
         applyRule: 'daily',
         applyWeekdays: [0, 1, 2, 3, 4, 5, 6],
         items: [{ categoryKey: 'reading', enabled: true }],
       },
       {
         id: 'set_weekend',
-        name: '주말 루틴',
+        name: '주말 고정 루틴',
         applyRule: 'weekend',
         applyWeekdays: [0, 6],
         items: [{ categoryKey: 'reading', enabled: true }],

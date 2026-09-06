@@ -28,7 +28,7 @@ import type { GoalDetailCategoryKey } from '../../../model/types';
 import { RoutineSummaryField } from '../lib/RoutineSummaryField';
 import { RoutineTitleField } from '../lib/RoutineTitleField';
 import { resolveRoutineTitleFallback } from '../lib/routineTitleFallback';
-import { goalDetailSettingsPalette } from '../lib/settingsPalette';
+import { useGoalDetailSettingsPalette, type GoalDetailSettingsPalette } from '../lib/settingsPalette';
 
 type SettingsProps = {
   rhythmTitle: string;
@@ -46,7 +46,7 @@ type Seeder<T> = () => T;
 
 function useTemplateSettingsPalette() {
   const scheme = useColorScheme();
-  return useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
+  return useGoalDetailSettingsPalette(scheme === 'dark');
 }
 
 function TitleSummaryHeader({
@@ -70,7 +70,7 @@ function TitleSummaryHeader({
   allowRename: boolean;
   renameLockedReason: 'running' | 'today' | null;
   hideTitleField?: boolean;
-  c: ReturnType<typeof goalDetailSettingsPalette>;
+  c: GoalDetailSettingsPalette;
 }) {
   const { t } = useTranslation();
   const titleFallback = useMemo(
@@ -183,7 +183,7 @@ function GenericTemplateSettings<T extends { displayName: string; summary: strin
   topSection?: (
     cfg: T,
     applyConfig: (next: unknown) => void,
-    c: ReturnType<typeof goalDetailSettingsPalette>,
+    c: GoalDetailSettingsPalette,
   ) => React.ReactNode;
 }) {
   const c = useTemplateSettingsPalette();

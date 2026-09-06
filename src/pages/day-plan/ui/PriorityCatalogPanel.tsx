@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import Reanimated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -16,7 +17,7 @@ import {
   resolveCategoryCatalogIcon,
   useDayPlanDraftStore,
 } from '@entities/day-plan';
-import { RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
+import { RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import {
   DEFAULT_POST_IT_FACE_COLOR_ID,
   getDayMealSlotLabel,
@@ -49,7 +50,8 @@ import {
   mealSlotPickerBtnWidth,
 } from './CatalogRowMealSlotChips';
 import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
-import { PostItFaceColorChips } from './PostItFaceColorChips';
+import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
+import { PriorityBagRowAccordionPanel } from './PriorityBagRowAccordionPanel';
 
 export type PriorityCatalogEditorial = {
   ink: string;
@@ -63,6 +65,65 @@ export type PriorityCatalogEditorial = {
 
 const MEAL_SLOT_PANEL_HEIGHT = 56;
 const BRUTAL_SHADOW_SM = 3;
+const MANAGE_DETAIL_OPEN_MS = 280;
+const MANAGE_DETAIL_CLOSE_MS = 220;
+const MANAGE_DETAIL_EASING = Easing.out(Easing.cubic);
+const GROUP_ACCORDION_OPEN_MS = 280;
+const GROUP_ACCORDION_CLOSE_MS = 220;
+const GROUP_ACCORDION_EASING = Easing.out(Easing.cubic);
+
+function useMeasuredAccordion(expanded: boolean) {
+  const progress = useSharedValue(expanded ? 1 : 0);
+  const contentHeight = useSharedValue(0);
+  const [mounted, setMounted] = useState(expanded);
+
+  useEffect(() => {
+    if (expanded) {
+      setMounted(true);
+      if (contentHeight.value > 0) {
+        progress.value = withTiming(1, {
+          duration: GROUP_ACCORDION_OPEN_MS,
+          easing: GROUP_ACCORDION_EASING,
+        });
+      }
+      return;
+    }
+    progress.value = withTiming(
+      0,
+      { duration: GROUP_ACCORDION_CLOSE_MS, easing: GROUP_ACCORDION_EASING },
+      (finished) => {
+        if (finished) runOnJS(setMounted)(false);
+      },
+    );
+  }, [contentHeight, expanded, progress]);
+
+  const panelStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    height: progress.value * contentHeight.value,
+    overflow: 'hidden' as const,
+    transform: [{ translateY: (1 - progress.value) * -6 }],
+  }));
+
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${progress.value * 180}deg` }],
+  }));
+
+  const onContentLayout = useCallback(
+    (height: number) => {
+      if (height <= 0 || Math.abs(height - contentHeight.value) <= 0.5) return;
+      contentHeight.value = height;
+      if (expanded && progress.value < 1) {
+        progress.value = withTiming(1, {
+          duration: GROUP_ACCORDION_OPEN_MS,
+          easing: GROUP_ACCORDION_EASING,
+        });
+      }
+    },
+    [contentHeight, expanded, progress],
+  );
+
+  return { mounted, panelStyle, chevronStyle, onContentLayout };
+}
 
 /** 시안 `w-10 h-10 border border-black bg-white brutal-shadow-sm` */
 function BrutalActionButton({
@@ -74,6 +135,7 @@ function BrutalActionButton({
   shadowColor,
   onPress,
   soft = false,
+  width,
   children,
 }: {
   accessibilityLabel: string;
@@ -84,6 +146,7 @@ function BrutalActionButton({
   shadowColor: string;
   onPress: () => void;
   soft?: boolean;
+  width?: number;
   children: ReactNode;
 }) {
   const shadow = soft ? 2 : BRUTAL_SHADOW_SM;
@@ -115,6 +178,7 @@ function BrutalActionButton({
         onPress={onPress}
         style={({ pressed }) => [
           soft ? styles.catalogSettingsBtnManageSoft : styles.catalogSettingsBtnManage,
+          width != null ? { width } : null,
           {
             borderColor: soft ? 'transparent' : borderColor,
             borderWidth: soft ? 0 : StyleSheet.hairlineWidth,
@@ -198,6 +262,10 @@ function CatalogListRow({
   manageOnly?: boolean;
 }) {
   const { t } = useTranslation();
+  const [isManageDetailExpanded, setIsManageDetailExpanded] = useState(false);
+  const [manageDetailMounted, setManageDetailMounted] = useState(false);
+  const manageDetailProgress = useSharedValue(0);
+  const manageDetailHeight = useSharedValue(0);
   const settingsBorder = manageOnly
     ? isDark
       ? 'rgba(241,239,255,0.28)'
@@ -206,15 +274,71 @@ function CatalogListRow({
       ? 'rgba(255,255,255,0.28)'
       : 'rgba(0,0,0,0.2)';
   const settingsBg = manageOnly
-    ? (actionBg ?? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.72)'))
+    ? '#FFFFFF'
     : isDark
       ? 'rgba(255,255,255,0.1)'
       : 'rgba(0,0,0,0.05)';
-  const settingsHoverBg = actionHoverBg ?? settingsBg;
+  const settingsHoverBg = manageOnly
+    ? 'rgba(255,255,255,0.92)'
+    : (actionHoverBg ?? settingsBg);
   const brutalShadow = shadow ?? '#000000';
+  /** 관리 행 액션은 항상 흰 면 + 검정 아이콘 (어두운 포스트잇에서도 보이게) */
+  const actionGlyphColor = manageOnly ? '#000000' : ink;
+  const actionGlyphMuted = manageOnly ? 'rgba(0,0,0,0.55)' : muted;
   const settingsLocked = !manageOnly && isFocusStarted && selected;
   const shouldPulse = !manageOnly && Boolean(selected && isFocusStarted);
   const pulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!manageOnly) return;
+    if (isManageDetailExpanded) {
+      setManageDetailMounted(true);
+      if (manageDetailHeight.value > 0) {
+        manageDetailProgress.value = withTiming(1, {
+          duration: MANAGE_DETAIL_OPEN_MS,
+          easing: MANAGE_DETAIL_EASING,
+        });
+      }
+      return;
+    }
+    manageDetailProgress.value = withTiming(
+      0,
+      { duration: MANAGE_DETAIL_CLOSE_MS, easing: MANAGE_DETAIL_EASING },
+      (finished) => {
+        if (finished) runOnJS(setManageDetailMounted)(false);
+      },
+    );
+  }, [isManageDetailExpanded, manageDetailHeight, manageDetailProgress, manageOnly]);
+
+  const manageDetailPanelStyle = useAnimatedStyle(() => {
+    const h = manageDetailHeight.value;
+    return {
+      opacity: manageDetailProgress.value,
+      height: manageDetailProgress.value * h,
+      overflow: 'hidden' as const,
+      transform: [{ translateY: (1 - manageDetailProgress.value) * -6 }],
+    };
+  });
+
+  const manageDetailChevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${manageDetailProgress.value * 180}deg` }],
+  }));
+
+  const handleManageDetailLayout = useCallback(
+    (height: number) => {
+      if (height <= 0) return;
+      const prev = manageDetailHeight.value;
+      if (Math.abs(height - prev) <= 0.5) return;
+      manageDetailHeight.value = height;
+      if (isManageDetailExpanded && manageDetailProgress.value < 1) {
+        manageDetailProgress.value = withTiming(1, {
+          duration: MANAGE_DETAIL_OPEN_MS,
+          easing: MANAGE_DETAIL_EASING,
+        });
+      }
+    },
+    [isManageDetailExpanded, manageDetailHeight, manageDetailProgress],
+  );
 
   useEffect(() => {
     if (!shouldPulse) {
@@ -417,7 +541,7 @@ function CatalogListRow({
                 <IconSymbol
                   name="trash"
                   size={14}
-                  color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
+                  color={settingsLocked ? actionGlyphMuted : actionGlyphColor}
                 />
               </BrutalActionButton>
             ) : (
@@ -471,7 +595,7 @@ function CatalogListRow({
                 <IconSymbol
                   name="arrow.left.arrow.right"
                   size={14}
-                  color={isDark ? '#FAFAFA' : '#000000'}
+                  color={actionGlyphColor}
                 />
               </BrutalActionButton>
             ) : (
@@ -604,6 +728,27 @@ function CatalogListRow({
           {manageOnly ? (
             <BrutalActionButton
               accessibilityLabel={
+                isManageDetailExpanded
+                  ? t('dayPlan.collapseA11y', { label })
+                  : t('dayPlan.expandA11y', { label })
+              }
+              borderColor={settingsBorder}
+              backgroundColor={settingsBg}
+              pressedBg={settingsHoverBg}
+              shadowColor={brutalShadow}
+              soft
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsManageDetailExpanded((value) => !value);
+              }}>
+              <Reanimated.View style={manageDetailChevronStyle}>
+                <IconSymbol name="chevron.down" size={14} color={actionGlyphColor} />
+              </Reanimated.View>
+            </BrutalActionButton>
+          ) : null}
+          {manageOnly ? (
+            <BrutalActionButton
+              accessibilityLabel={
                 settingsLocked
                   ? t('catalog.goalSettingsLockedA11y', { label })
                   : t('catalog.goalSettingsA11y', { label })
@@ -634,7 +779,7 @@ function CatalogListRow({
               <IconSymbol
                 name={settingsLocked ? 'lock.fill' : 'slider.horizontal.3'}
                 size={settingsLocked ? 13 : 14}
-                color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
+                color={settingsLocked ? actionGlyphMuted : actionGlyphColor}
               />
             </BrutalActionButton>
           ) : (
@@ -699,6 +844,24 @@ function CatalogListRow({
           ) : null}
         </View>
       </View>
+      {manageOnly && manageDetailMounted ? (
+        <Reanimated.View style={[styles.catalogManageDetailPanel, manageDetailPanelStyle]}>
+          <View
+            style={[styles.catalogManageDetail, { borderTopColor: line }]}
+            onLayout={(e) => {
+              handleManageDetailLayout(e.nativeEvent.layout.height);
+            }}>
+            <PriorityBagRowAccordionPanel
+              categoryKey={categoryKey}
+              label={label}
+              ink={ink}
+              muted={muted}
+              line={line}
+              isDark={isDark}
+            />
+          </View>
+        </Reanimated.View>
+      ) : null}
       {showMealSlotPicker && !manageOnly && onToggleMealSlot ? (
         <Reanimated.View
           pointerEvents={isMealSlotExpanded ? 'auto' : 'none'}
@@ -749,20 +912,14 @@ function CatalogListRow({
 
 function CatalogSectionHeader({
   title,
-  itemCount,
   ink,
-  muted,
   trailing,
   manageOnly = false,
-  isDark = false,
 }: {
   title: string;
-  itemCount: number;
   ink: string;
-  muted: string;
   trailing?: ReactNode;
   manageOnly?: boolean;
-  isDark?: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -775,23 +932,18 @@ function CatalogSectionHeader({
         },
       ]}
       accessibilityRole="header"
-      accessibilityLabel={t('catalog.groupA11y', { title, count: itemCount })}>
+      accessibilityLabel={t('catalog.groupA11y', { title })}>
       <View style={styles.sectionHeaderTop}>
         <View style={styles.sectionHeaderTextCol}>
-          <View style={styles.sectionHeaderTitleRow}>
-            <ThemedText
-              style={[
-                styles.sectionTitle,
-                manageOnly && styles.sectionTitleManage,
-                { color: ink },
-              ]}
-              numberOfLines={1}>
-              {title}
-            </ThemedText>
-            <ThemedText style={[styles.sectionMeta, { color: muted }]} numberOfLines={1}>
-              {t('catalog.groupCount', { count: itemCount })}
-            </ThemedText>
-          </View>
+          <ThemedText
+            style={[
+              styles.sectionTitle,
+              manageOnly && styles.sectionTitleManage,
+              { color: ink },
+            ]}
+            numberOfLines={1}>
+            {title}
+          </ThemedText>
         </View>
         {trailing ? <View style={styles.sectionHeaderTrailing}>{trailing}</View> : null}
       </View>
@@ -1025,6 +1177,8 @@ function GroupSectionBlock({
   manageOnly?: boolean;
 }) {
   const { t } = useTranslation();
+  const [isGroupExpanded, setIsGroupExpanded] = useState(true);
+  const groupAccordion = useMeasuredAccordion(isGroupExpanded);
   const faceUsesLightInk = manageOnly && postItFaceUsesLightInk(postItFaceColorId);
   const faceInk = manageOnly
     ? resolvePostItFaceInk(postItFaceColorId, editorial.ink)
@@ -1040,77 +1194,105 @@ function GroupSectionBlock({
         line: faceUsesLightInk ? 'rgba(255,255,255,0.22)' : editorial.line,
       }
     : editorial;
-  const headerIconColor = faceUsesLightInk ? '#FFFFFF' : isDark ? '#FAFAFA' : '#000000';
-  const headerBtnBorder = faceUsesLightInk
-    ? 'rgba(255,255,255,0.32)'
-    : manageOnly
-      ? isDark
-        ? 'rgba(241,239,255,0.28)'
-        : 'rgba(24,26,46,0.14)'
-      : isDark
-        ? 'rgba(255,255,255,0.28)'
-        : 'rgba(0,0,0,0.2)';
-  const headerBtnBg = faceUsesLightInk
-    ? 'rgba(255,255,255,0.14)'
-    : manageOnly
-      ? isDark
-        ? 'rgba(255,255,255,0.1)'
-        : 'rgba(255,255,255,0.72)'
-      : isDark
-        ? 'rgba(255,255,255,0.1)'
-        : 'rgba(0,0,0,0.05)';
+  const headerIconColor = '#000000';
+  const headerBtnBorder = 'transparent';
+  const headerBtnBg = '#FFFFFF';
+  const headerActionInk = '#000000';
 
-  const groupHeaderTrailing =
-    onRenameCustomGroup || onDeleteCatalogGroup ? (
-      <View style={styles.customGroupHeaderActions}>
-        {onRenameCustomGroup ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('catalog.editGroupA11y')}
-            hitSlop={8}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onRenameCustomGroup(
-                section.groupKey,
-                section.title,
-                section.subtitle ?? '',
-              );
-            }}
-            style={({ pressed }) => [
-              manageOnly ? styles.customGroupHeaderIconBtnManage : styles.customGroupHeaderIconBtn,
-              {
-                borderColor: headerBtnBorder,
-                backgroundColor: headerBtnBg,
-              },
-              manageOnly && pressed && { opacity: 0.92 },
-            ]}>
-            <IconSymbol name="pencil" size={13} color={headerIconColor} />
-          </Pressable>
-        ) : null}
-        {onDeleteCatalogGroup ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('catalog.deleteGroupA11y')}
-            hitSlop={8}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onDeleteCatalogGroup(section.groupKey, section.title);
-            }}
-            style={({ pressed }) => [
-              manageOnly ? styles.customGroupHeaderIconBtnManage : styles.customGroupHeaderIconBtn,
-              {
-                borderColor: headerBtnBorder,
-                backgroundColor: headerBtnBg,
-              },
-              manageOnly && pressed && { opacity: 0.92 },
-            ]}>
-            <IconSymbol name="trash" size={13} color={headerIconColor} />
-          </Pressable>
-        ) : null}
-      </View>
-    ) : undefined;
+  const groupHeaderTrailing = (
+    <View style={styles.customGroupHeaderActions}>
+      {onRenameCustomGroup ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('catalog.editGroupA11y')}
+          hitSlop={8}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onRenameCustomGroup(
+              section.groupKey,
+              section.title,
+              section.subtitle ?? '',
+            );
+          }}
+          style={({ pressed }) => [
+            manageOnly ? styles.customGroupHeaderIconBtnManage : styles.customGroupHeaderIconBtn,
+            {
+              borderColor: headerBtnBorder,
+              backgroundColor: headerBtnBg,
+            },
+            manageOnly && pressed && { opacity: 0.92 },
+          ]}>
+          <IconSymbol name="pencil" size={13} color={headerIconColor} />
+        </Pressable>
+      ) : null}
+      {onDeleteCatalogGroup ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('catalog.deleteGroupA11y')}
+          hitSlop={8}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onDeleteCatalogGroup(section.groupKey, section.title);
+          }}
+          style={({ pressed }) => [
+            manageOnly ? styles.customGroupHeaderIconBtnManage : styles.customGroupHeaderIconBtn,
+            {
+              borderColor: headerBtnBorder,
+              backgroundColor: headerBtnBg,
+            },
+            manageOnly && pressed && { opacity: 0.92 },
+          ]}>
+          <IconSymbol name="trash" size={13} color={headerIconColor} />
+        </Pressable>
+      ) : null}
+      {manageOnly ? (
+        <BrutalActionButton
+          accessibilityLabel={
+            isGroupExpanded
+              ? t('dayPlan.collapseA11y', { label: section.title })
+              : t('dayPlan.expandA11y', { label: section.title })
+          }
+          borderColor={headerBtnBorder}
+          backgroundColor={headerBtnBg}
+          pressedBg={headerBtnBg}
+          shadowColor="#000000"
+          width={50}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setIsGroupExpanded((value) => !value);
+          }}>
+          <View style={styles.groupExpandRow}>
+            <ThemedText style={[styles.groupExpandCount, { color: headerActionInk }]}>
+              {section.items.length}
+            </ThemedText>
+            <Reanimated.View style={groupAccordion.chevronStyle}>
+              <IconSymbol name="chevron.down" size={11} color={headerActionInk} />
+            </Reanimated.View>
+          </View>
+        </BrutalActionButton>
+      ) : null}
+    </View>
+  );
 
   const postItFaceColor = resolvePostItFaceColor(postItFaceColorId, isDark);
+
+  const listRows =
+    section.items.length > 0
+      ? renderRows(
+          section.items,
+          faceEditorial,
+          isDark,
+          priorityCategoryOrder,
+          isFocusStarted,
+          onCatalogTap,
+          onOpenCategorySettings,
+          onMoveCustomFlow,
+          onDeleteCatalogItem,
+          sectionsCatalogOptions,
+          spineCatalogOptions,
+          manageOnly,
+        )
+      : null;
 
   return (
     <View style={[styles.sectionBlock, !isFirst && styles.sectionBlockFollows]}>
@@ -1118,11 +1300,8 @@ function GroupSectionBlock({
         <PostItCardShell isDark={isDark} faceColor={postItFaceColor}>
           <CatalogSectionHeader
             title={section.title}
-            itemCount={section.items.length}
             ink={faceInk}
-            muted={faceMuted}
             manageOnly={manageOnly}
-            isDark={isDark}
             trailing={groupHeaderTrailing}
           />
           {onSelectPostItFaceColor ? (
@@ -1135,63 +1314,57 @@ function GroupSectionBlock({
               onSelect={onSelectPostItFaceColor}
             />
           ) : null}
-          <View
-            style={[
-              styles.listShell,
-              styles.listShellManage,
-              {
-                borderTopColor: faceUsesLightInk
-                  ? 'rgba(255,255,255,0.22)'
-                  : isDark
-                    ? 'rgba(241,239,255,0.22)'
-                    : 'rgba(24,26,46,0.12)',
-              },
-            ]}>
-            {section.items.length > 0
-              ? renderRows(
-                section.items,
-                faceEditorial,
-                isDark,
-                priorityCategoryOrder,
-                isFocusStarted,
-                onCatalogTap,
-                onOpenCategorySettings,
-                onMoveCustomFlow,
-                onDeleteCatalogItem,
-                sectionsCatalogOptions,
-                spineCatalogOptions,
-                manageOnly,
-              )
-              : null}
-          </View>
+          {groupAccordion.mounted ? (
+            <Reanimated.View style={[styles.groupAccordionPanel, groupAccordion.panelStyle]}>
+              <View
+                style={styles.groupAccordionBody}
+                onLayout={(event) => {
+                  groupAccordion.onContentLayout(event.nativeEvent.layout.height);
+                }}>
+                <View
+                  style={[
+                    styles.listShell,
+                    styles.listShellManage,
+                    {
+                      borderTopColor: faceUsesLightInk
+                        ? 'rgba(255,255,255,0.22)'
+                        : isDark
+                          ? 'rgba(241,239,255,0.22)'
+                          : 'rgba(24,26,46,0.12)',
+                    },
+                  ]}>
+                  {listRows}
+                </View>
+              </View>
+            </Reanimated.View>
+          ) : null}
         </PostItCardShell>
       ) : (
         <>
           <CatalogSectionHeader
             title={section.title}
-            itemCount={section.items.length}
             ink={editorial.ink}
-            muted={editorial.muted}
             manageOnly={manageOnly}
-            isDark={isDark}
-            trailing={groupHeaderTrailing}
+            trailing={
+              onRenameCustomGroup || onDeleteCatalogGroup ? groupHeaderTrailing : undefined
+            }
           />
           <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
             {section.items.length > 0
               ? renderRows(
-                section.items,
-                editorial,
-                isDark,
-                priorityCategoryOrder,
-                isFocusStarted,
-                onCatalogTap,
-                onOpenCategorySettings,
-                onMoveCustomFlow,
-                onDeleteCatalogItem,
-                sectionsCatalogOptions,
-                spineCatalogOptions,
-                manageOnly,
-              )
+                  section.items,
+                  editorial,
+                  isDark,
+                  priorityCategoryOrder,
+                  isFocusStarted,
+                  onCatalogTap,
+                  onOpenCategorySettings,
+                  onMoveCustomFlow,
+                  onDeleteCatalogItem,
+                  sectionsCatalogOptions,
+                  spineCatalogOptions,
+                  manageOnly,
+                )
               : null}
           </View>
         </>
@@ -1392,12 +1565,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  sectionHeaderTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    flexWrap: 'nowrap',
-  },
   sectionHeaderTrailing: {
     paddingTop: 0,
   },
@@ -1418,15 +1585,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 0,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  sectionMeta: {
-    flexShrink: 0,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: -0.1,
   },
   sectionTitle: {
     flexShrink: 1,
@@ -1453,6 +1614,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     backgroundColor: 'transparent',
   },
+  groupAccordionPanel: {
+    position: 'relative',
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  groupAccordionBody: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    width: '100%',
+  },
+  groupExpandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    flexShrink: 0,
+  },
+  groupExpandCount: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
   catalogRowWrap: {
     borderBottomWidth: 1,
     paddingBottom: 6,
@@ -1460,6 +1644,19 @@ const styles = StyleSheet.create({
   catalogRowWrapManage: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingBottom: 0,
+  },
+  catalogManageDetailPanel: {
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  catalogManageDetail: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
   },
   mealSlotPanel: {
     marginTop: -2,
@@ -1555,11 +1752,11 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 0,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
-    backgroundColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: '#FFFFFF',
   },
   brutalBtnShadow: {
     ...StyleSheet.absoluteFillObject,
@@ -1578,15 +1775,15 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   catalogRowLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: -0.3,
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
   catalogRowLabelManage: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '500',
     letterSpacing: -0.2,
-    lineHeight: 17,
+    lineHeight: 16,
   },
   catalogRowSubtitle: {
     fontSize: 11,

@@ -1,8 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 import type { SymbolViewProps } from 'expo-symbols';
 
-import { RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { POST_IT_SOLID_SHADOW } from '@shared/ui/post-it-card-shell';
 import {
   activeIconColorByCategory,
   categoryAccentColorPastel,
@@ -18,11 +18,10 @@ type Props = {
   palette: FlowHistoryPalette;
 };
 
-/** 히스토리 카드 — 루틴 목록과 같은 pastel 아이콘 박스 + 민트 솔리드 섀도 */
-export function FlowHistoryCategoryIcon({ categoryKey, icon, palette }: Props) {
+/** 히스토리 카드 — 루틴 목록과 같은 pastel 아이콘 + 검정 솔리드 음영 */
+export function FlowHistoryCategoryIcon({ categoryKey, icon, palette: _palette }: Props) {
   const iconColor = activeIconColorByCategory(categoryKey);
   const boxBg = categoryAccentColorPastel(categoryKey);
-  const shadowColor = palette.shadow;
 
   return (
     <View
@@ -35,17 +34,12 @@ export function FlowHistoryCategoryIcon({ categoryKey, icon, palette }: Props) {
         style={[
           styles.shadow,
           {
-            backgroundColor: shadowColor,
-            borderColor: palette.border,
+            backgroundColor: POST_IT_SOLID_SHADOW,
             transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
           },
         ]}
       />
-      <View
-        style={[
-          styles.box,
-          { backgroundColor: boxBg, borderColor: palette.border },
-        ]}>
+      <View style={[styles.box, { backgroundColor: boxBg }]}>
         <IconSymbol name={icon as SymbolViewProps['name']} size={16} color={iconColor} />
       </View>
     </View>
@@ -59,14 +53,14 @@ const styles = StyleSheet.create({
   },
   shadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     borderRadius: 0,
   },
   box: {
     width: 36,
     height: 36,
     borderRadius: 0,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,

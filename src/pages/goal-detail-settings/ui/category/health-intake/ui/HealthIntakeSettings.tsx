@@ -10,7 +10,7 @@ import {
 
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 
-import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { useGoalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
 import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
@@ -44,7 +44,7 @@ export function HealthIntakeSettings({
   renameLockedReason?: 'running' | 'today' | null;
   hideTitleField?: boolean;
 }) {
-  const c = useMemo(() => goalDetailSettingsPalette(false), []);
+  const c = useGoalDetailSettingsPalette(false);
   const titleFallback = useMemo(
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],

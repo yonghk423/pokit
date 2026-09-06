@@ -1,13 +1,12 @@
 import { StyleSheet, View } from 'react-native';
-import { useMemo } from 'react';
 
-import { RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
+import type { WeeklyFlowHistoryRow } from '../lib/buildWeeklyFlowHistory';
+import { getHistoryWeekdayLabels } from '../lib/buildWeeklyFlowHistory';
+import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 import { categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
-
-import { getHistoryWeekdayLabels, type WeeklyFlowHistoryRow } from '../lib/buildWeeklyFlowHistory';
-import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
+import { useMemo } from 'react';
 
 type Props = {
   row: WeeklyFlowHistoryRow;
@@ -43,7 +42,14 @@ export function FlowHistoryWeekdayRow({ row, palette, categoryKey }: Props) {
         })}
       </View>
 
-      <View style={[styles.track, { borderColor: palette.border, backgroundColor: palette.card }]}>
+      <View
+        style={[
+          styles.track,
+          {
+            backgroundColor: palette.weekdayIdle,
+            borderColor: palette.ink,
+          },
+        ]}>
         {weekdayLabels.map((label, index) => {
           const done = row.weekdayDone[index] ?? false;
           const isLast = index === weekdayLabels.length - 1;
@@ -52,7 +58,10 @@ export function FlowHistoryWeekdayRow({ row, palette, categoryKey }: Props) {
               key={`cell-${label}-${index}`}
               style={[
                 styles.cell,
-                !isLast && { borderRightWidth: StyleSheet.hairlineWidth * 2, borderRightColor: palette.border },
+                !isLast && {
+                  borderRightWidth: StyleSheet.hairlineWidth,
+                  borderRightColor: palette.ink,
+                },
                 { backgroundColor: done ? doneFill : 'transparent' },
               ]}
             />
@@ -87,7 +96,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
     height: 14,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 0,
     overflow: 'hidden',
   },

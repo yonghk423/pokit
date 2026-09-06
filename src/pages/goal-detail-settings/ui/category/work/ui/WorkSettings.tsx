@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { normalizeWorkDetailConfig, type WorkDetailDataConfig } from '@entities/day-plan';
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
 
-import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { useGoalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { StudyDocumentEditor } from '@widgets/study-note-document';
 import { getInitialWorkDataConfig } from './workConfig';
 
@@ -22,7 +22,7 @@ export function WorkSettings({
   renameLockedReason?: 'running' | 'today' | null;
   onDeleteCategory?: () => void;
 }) {
-  const c = useMemo(() => goalDetailSettingsPalette(false), []);
+  const c = useGoalDetailSettingsPalette(false);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const editorViewportHeight = useMemo(() => {

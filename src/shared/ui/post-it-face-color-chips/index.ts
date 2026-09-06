@@ -1,0 +1,1 @@
+export { PostItFaceColorChips } from './PostItFaceColorChips';

@@ -11,7 +11,7 @@ import type { GoalDetailCategoryKey } from '../../../../model/types';
 
 import { resolveRoutineTitleFallback } from '../../lib/routineTitleFallback';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
-import { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import { useGoalDetailSettingsPalette } from '../../lib/settingsPalette';
 
 import {
   getInitialOtherDataConfig,
@@ -40,7 +40,7 @@ export function OtherSettings({
   hideTitleField?: boolean;
 }) {
   const scheme = useColorScheme();
-  const c = useMemo(() => goalDetailSettingsPalette(scheme === 'dark'), [scheme]);
+  const c = useGoalDetailSettingsPalette(scheme === 'dark');
   const seed = () => normalizeOtherDetailConfig(dataConfig ?? getInitialOtherDataConfig());
   const templateKey = resolveCustomFlowTemplateKey(dataConfig ?? getInitialOtherDataConfig());
   const isAbstain = templateKey === 'abstain';

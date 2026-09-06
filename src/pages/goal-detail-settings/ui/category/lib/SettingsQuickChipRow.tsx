@@ -46,7 +46,11 @@ export function SettingsQuickChipRow({
                   ? undefined
                   : {
                       borderColor: active ? palette.onSurface : palette.outline,
-                      backgroundColor: active ? 'rgba(0,0,0,0.06)' : palette.surfaceLowest,
+                      backgroundColor: active
+                        ? palette.usesLightInk
+                          ? 'rgba(255,255,255,0.14)'
+                          : 'rgba(0,0,0,0.06)'
+                        : palette.surfaceLowest,
                     },
               ]}>
               <ThemedText

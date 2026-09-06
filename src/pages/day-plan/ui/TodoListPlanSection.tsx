@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -349,21 +350,21 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
             onSubmitEditing={handleQuickAdd}
             style={[styles.quickAddInput, { color: ui.ink }]}
           />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('todo.addA11y')}
-            onPress={handleQuickAdd}
-            style={[
-              styles.quickAddBtn,
-              {
-                borderColor: ui.btnBorder,
-                backgroundColor: ui.addBtnBg,
-              },
-            ]}>
-            <ThemedText style={styles.quickAddBtnText} lightColor={ui.ink} darkColor={ui.ink}>
-              +
-            </ThemedText>
-          </Pressable>
+          <View style={styles.quickAddBtnWrap}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('todo.addA11y')}
+              onPress={handleQuickAdd}
+              style={[
+                styles.quickAddBtn,
+                {
+                  borderColor: ui.btnBorder,
+                  backgroundColor: ui.addBtnBg,
+                },
+              ]}>
+              <IconSymbol name="plus" size={15} color={ui.ink} />
+            </Pressable>
+          </View>
         </View>
 
         <View style={[styles.listBody, { backgroundColor: ui.cellBg, borderColor: ui.tableBorder }]}>
@@ -475,19 +476,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: TODO_TABLE_BORDER_WIDTH,
     borderRadius: 0,
-    minHeight: 42,
+    height: 42,
     paddingLeft: 10,
-    paddingRight: 4,
+    paddingRight: 5,
     gap: 6,
+    overflow: 'hidden',
   },
   quickAddInput: {
     flex: 1,
+    alignSelf: 'stretch',
     fontSize: 14,
     fontWeight: '500',
-    paddingVertical: 8,
-    padding: 0,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
     margin: 0,
-    minHeight: 22,
+    ...Platform.select({
+      ios: {
+        lineHeight: 20,
+      },
+      android: {
+        textAlignVertical: 'center',
+      },
+      default: {},
+    }),
+  },
+  quickAddBtnWrap: {
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
   },
   quickAddBtn: {
     width: 32,
@@ -496,12 +513,6 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  quickAddBtnText: {
-    fontSize: 20,
-    fontWeight: '500',
-    lineHeight: 22,
-    marginTop: -1,
   },
   listBody: {
     borderWidth: TODO_TABLE_BORDER_WIDTH,
