@@ -73,9 +73,9 @@ const GROUP_ACCORDION_CLOSE_MS = 220;
 const GROUP_ACCORDION_EASING = Easing.out(Easing.cubic);
 
 function useMeasuredAccordion(expanded: boolean) {
-  const progress = useSharedValue(0);
+  const progress = useSharedValue(expanded ? 1 : 0);
   const contentHeight = useSharedValue(0);
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(expanded);
 
   useEffect(() => {
     if (expanded) {
@@ -85,6 +85,8 @@ function useMeasuredAccordion(expanded: boolean) {
           duration: GROUP_ACCORDION_OPEN_MS,
           easing: GROUP_ACCORDION_EASING,
         });
+      } else {
+        progress.value = 1;
       }
       return;
     }
@@ -121,11 +123,14 @@ function useMeasuredAccordion(expanded: boolean) {
     (height: number) => {
       if (height <= 0 || Math.abs(height - contentHeight.value) <= 0.5) return;
       contentHeight.value = height;
-      if (expanded && progress.value < 1) {
+      if (!expanded) return;
+      if (progress.value < 1) {
         progress.value = withTiming(1, {
           duration: GROUP_ACCORDION_OPEN_MS,
           easing: GROUP_ACCORDION_EASING,
         });
+      } else {
+        progress.value = 1;
       }
     },
     [contentHeight, expanded, progress],
@@ -1186,7 +1191,8 @@ function GroupSectionBlock({
   manageOnly?: boolean;
 }) {
   const { t } = useTranslation();
-  const [isGroupExpanded, setIsGroupExpanded] = useState(false);
+  /** 루틴(카탈로그) 탭: 첫 포스트잇만 기본 펼침 */
+  const [isGroupExpanded, setIsGroupExpanded] = useState(() => Boolean(manageOnly && isFirst));
   const groupAccordion = useMeasuredAccordion(isGroupExpanded);
   const faceUsesLightInk = manageOnly && postItFaceUsesLightInk(postItFaceColorId);
   const faceInk = manageOnly
@@ -1319,16 +1325,6 @@ function GroupSectionBlock({
             manageOnly={manageOnly}
             trailing={groupHeaderTrailing}
           />
-          {onSelectPostItFaceColor ? (
-            <PostItFaceColorChips
-              compact
-              selectedId={postItFaceColorId}
-              isDark={isDark}
-              ink={faceInk}
-              shadowColor={faceEditorial.shadow ?? '#000000'}
-              onSelect={onSelectPostItFaceColor}
-            />
-          ) : null}
           {groupAccordion.mounted ? (
             <Reanimated.View style={[styles.groupAccordionPanel, groupAccordion.panelStyle]}>
               <View
@@ -1336,6 +1332,16 @@ function GroupSectionBlock({
                 onLayout={(event) => {
                   groupAccordion.onContentLayout(event.nativeEvent.layout.height);
                 }}>
+                {onSelectPostItFaceColor ? (
+                  <PostItFaceColorChips
+                    compact
+                    selectedId={postItFaceColorId}
+                    isDark={isDark}
+                    ink={faceInk}
+                    shadowColor={faceEditorial.shadow ?? '#000000'}
+                    onSelect={onSelectPostItFaceColor}
+                  />
+                ) : null}
                 <View
                   style={[
                     styles.listShell,

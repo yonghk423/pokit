@@ -82,6 +82,7 @@ import {
   loadGoalDetailCategoryConfig,
   loadSpineDefaultBlockMinutes,
   isPokitWeekTourFlowId,
+  loadPokitWeekTourFirstTipSeen,
   resolveCurrentMealSlotFromSchedule,
   saveGoalDetailCategoryConfig,
   saveRoutineCatalogSelectionKeys,
@@ -433,7 +434,9 @@ export function PriorityBasedPlanSection({
     () => new Set(),
   );
 
+  /** 첫 튜토리얼 팁은 아코디언 본문에 있음 → 아직 안 본 경우에만 투어 행을 열어 시트가 뜨게 함 */
   useEffect(() => {
+    if (loadPokitWeekTourFirstTipSeen()) return;
     const tourKey = priorityCategoryOrder.find((key) =>
       isPokitWeekTourFlowId(resolvePriorityRoutineCategoryKey(key)),
     );

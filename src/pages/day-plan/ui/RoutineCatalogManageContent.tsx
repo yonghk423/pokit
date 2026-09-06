@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, UIManager, View } from 'react-native';
+import { Alert, Image, LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, UIManager, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -22,7 +22,10 @@ import { registerOtherCategoryResolverFromStorage } from '@features/other-catego
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
-import { RoutineAtmosphereFooterStrip } from '@shared/ui/routine-atmosphere';
+import {
+  headerArtForVariant,
+  RoutineAtmosphereFooterStrip,
+} from '@shared/ui/routine-atmosphere';
 import {
   POST_IT_WHITE_DARK,
   POST_IT_WHITE_LIGHT,
@@ -480,7 +483,13 @@ export function RoutineCatalogManageContent() {
                 </View>
               </View>
             </Pressable>
-            <View style={styles.headerArtSlot} pointerEvents="none" />
+            <View style={styles.headerArtSlot} pointerEvents="none">
+              <Image
+                source={headerArtForVariant('catalog')}
+                style={styles.headerArt}
+                resizeMode="contain"
+              />
+            </View>
           </View>
         </View>
       </View>

@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -10,7 +11,10 @@ import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { POST_IT_SOLID_SHADOW } from '@shared/ui/post-it-card-shell';
-import { RoutineAtmosphereFooterStrip } from '@shared/ui/routine-atmosphere';
+import {
+  headerArtForVariant,
+  RoutineAtmosphereFooterStrip,
+} from '@shared/ui/routine-atmosphere';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -52,7 +56,15 @@ export function RoutineTemplateListPanel({
               {t('fixedRoutine.templatesLead')}
             </ThemedText>
           </View>
-          <View style={styles.headerArtSlot} pointerEvents="none" />
+          <View style={styles.headerArtSlot} pointerEvents="none">
+            <Image
+              source={headerArtForVariant('templates')}
+              style={styles.headerArt}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+              transition={0}
+            />
+          </View>
         </View>
       </View>
 

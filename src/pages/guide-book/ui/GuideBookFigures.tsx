@@ -506,6 +506,27 @@ function FigureTodayAutofocus({ tone }: { tone: Tone }) {
   );
 }
 
+function FigureColorChips({ tone }: { tone: Tone }) {
+  const chips = ['#F6E7A1', '#B8E0D2', '#F2C6D8', '#F5C9A8'];
+  return (
+    <View style={styles.colorChipRow}>
+      {chips.map((c, i) => (
+        <View
+          key={c}
+          style={[
+            styles.colorChip,
+            {
+              backgroundColor: c,
+              borderColor: tone.border,
+              borderWidth: i === 0 ? 2 : 1.5,
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
 function FigureRoutineList({ tone }: { tone: Tone }) {
   const { t } = useTranslation();
   const pill = tabPillColors(tone.isDark);
@@ -538,12 +559,21 @@ function FigureRoutineList({ tone }: { tone: Tone }) {
           </View>
         </View>
       </View>
-      <View style={[styles.groupCard, { borderColor: tone.border, backgroundColor: tone.surface }]}>
-        <ThemedText style={[styles.groupTitle, { color: tone.muted }, cityPopFont('700')]}>
-          {t('catalog.groupHealth')}
-        </ThemedText>
-        <View style={[styles.itemRow, { borderColor: tone.border }]}>
+      <View
+        style={[
+          styles.groupCard,
+          { borderColor: tone.border, backgroundColor: '#F6E7A1' },
+        ]}>
+        <View style={styles.sheetRow}>
           <Badge n={3} tone={tone} />
+          <IconSymbol name="chevron.down" size={12} color={tone.text} />
+          <ThemedText style={[styles.groupTitle, { color: tone.text, flex: 1 }, cityPopFont('800')]}>
+            {t('catalog.groupHealth')}
+          </ThemedText>
+        </View>
+        <FigureColorChips tone={tone} />
+        <View style={[styles.itemRow, { borderColor: tone.border, backgroundColor: tone.surface }]}>
+          <Badge n={4} tone={tone} />
           <IconSymbol name="book.closed.fill" size={16} color={pill.activeIcon} />
           <ThemedText style={[styles.itemText, { color: tone.text }, cityPopFont('700')]}>
             {t('guideBook.figure.reading')}
@@ -590,51 +620,34 @@ function FigureRoutineTemplates({ tone }: { tone: Tone }) {
 
 function FigureMyRoutine({ tone }: { tone: Tone }) {
   const { t } = useTranslation();
+  const pill = tabPillColors(tone.isDark);
   return (
     <PhoneShell tone={tone} tabActive="mine">
-      <View style={styles.subTabs}>
-        <View style={{ position: 'relative' }}>
-          <View style={{ position: 'absolute', top: -10, left: -4, zIndex: 2 }}>
-            <Badge n={1} tone={tone} />
-          </View>
+      <View style={[styles.subTabs, { marginBottom: 8 }]}>
+        <ThemedText style={[styles.tinyNote, { color: tone.muted, flex: 1 }, cityPopFont('500')]}>
+          {t('fixedRoutine.addGroup')}
+        </ThemedText>
+        <View style={{ alignItems: 'center', gap: 2 }}>
+          <Badge n={3} tone={tone} />
           <View
             style={[
-              styles.subTabOn,
-              { borderColor: tone.border, backgroundColor: tone.primaryContainer },
+              styles.plusBtn,
+              { borderColor: tone.border, backgroundColor: pill.activeBg },
             ]}>
-            <IconSymbol name="list.bullet.rectangle" size={14} color={tone.text} />
-            <ThemedText style={[styles.subTabText, { color: tone.text }, cityPopFont('800')]}>
-              {t('guideBook.figure.groupList')}
-            </ThemedText>
-          </View>
-        </View>
-        <View style={{ position: 'relative' }}>
-          <View style={{ position: 'absolute', top: -10, left: -4, zIndex: 2 }}>
-            <Badge n={2} tone={tone} />
-          </View>
-          <View style={[styles.subTabOff, { borderColor: tone.border }]}>
-            <IconSymbol name="figure.walk" size={14} color={tone.muted} />
-            <ThemedText style={[styles.subTabText, { color: tone.muted }, cityPopFont('600')]}>
-              {t('tabs.myRoutines')}
-            </ThemedText>
-          </View>
-        </View>
-        <View style={{ position: 'relative' }}>
-          <View style={{ position: 'absolute', top: -10, left: -4, zIndex: 2 }}>
-            <Badge n={3} tone={tone} />
-          </View>
-          <View style={[styles.subTabOff, { borderColor: tone.border }]}>
-            <IconSymbol name="list.bullet.rectangle" size={14} color={tone.muted} />
-            <ThemedText style={[styles.subTabText, { color: tone.muted }, cityPopFont('600')]}>
-              {t('guideBook.figure.fixedRoutine')}
-            </ThemedText>
+            <IconSymbol name="plus" size={16} color={tone.text} style={styles.plusBtnIcon} />
           </View>
         </View>
       </View>
-      <View style={[styles.groupCard, { borderColor: tone.border, backgroundColor: tone.surface }]}>
+      <View
+        style={[
+          styles.groupCard,
+          { borderColor: tone.border, backgroundColor: '#F6E7A1', marginBottom: 6 },
+        ]}>
         <View style={styles.sheetRow}>
+          <Badge n={1} tone={tone} />
+          <IconSymbol name="chevron.down" size={12} color={tone.text} />
           <ThemedText style={[styles.groupTitle, { color: tone.text, flex: 1 }, cityPopFont('800')]}>
-            {t('guideBook.figure.morningRoutine')}
+            {t('fixedRoutine.presetDaily')}
           </ThemedText>
           <Badge n={4} tone={tone} />
           <View
@@ -647,36 +660,86 @@ function FigureMyRoutine({ tone }: { tone: Tone }) {
             </ThemedText>
           </View>
         </View>
-        <ThemedText style={[styles.tinyNote, { color: tone.muted }, cityPopFont('500')]}>
-          {t('guideBook.figure.fixedRoutineNote')}
-        </ThemedText>
+        <FigureColorChips tone={tone} />
+        <View style={[styles.itemRow, { borderColor: tone.border, backgroundColor: tone.surface }]}>
+          <IconSymbol name="book.closed.fill" size={14} color={pill.activeIcon} />
+          <ThemedText style={[styles.itemText, { color: tone.text }, cityPopFont('700')]}>
+            {t('guideBook.figure.reading')}
+          </ThemedText>
+        </View>
       </View>
+      <View style={[styles.groupCard, { borderColor: tone.border, backgroundColor: '#B8E0D2' }]}>
+        <View style={styles.sheetRow}>
+          <Badge n={2} tone={tone} />
+          <IconSymbol name="chevron.right" size={12} color={tone.text} />
+          <ThemedText style={[styles.groupTitle, { color: tone.text, flex: 1 }, cityPopFont('800')]}>
+            {t('fixedRoutine.presetWeekend')}
+          </ThemedText>
+          <View style={[styles.applyChip, { borderColor: tone.border, backgroundColor: tone.surface }]}>
+            <ThemedText style={[styles.applyChipText, { color: tone.muted }, cityPopFont('700')]}>
+              {t('fixedRoutine.apply')}
+            </ThemedText>
+          </View>
+        </View>
+      </View>
+      <ThemedText style={[styles.tinyNote, { color: tone.muted, marginTop: 4 }, cityPopFont('500')]}>
+        {t('guideBook.figure.fixedRoutineNote')}
+      </ThemedText>
     </PhoneShell>
   );
 }
 
 function FigureMyRoutineApply({ tone }: { tone: Tone }) {
   const { t } = useTranslation();
-  const rows = [
-    { n: 1, icon: 'list.bullet.rectangle' as const, tKey: 'guideBook.figure.myRoutineList' as const },
-    { n: 2, icon: 'plus' as const, tKey: 'guideBook.figure.myRoutineAdd' as const },
-  ];
+  const pill = tabPillColors(tone.isDark);
   return (
     <PhoneShell tone={tone} tabActive="mine">
-      <View style={styles.templateList}>
-        {rows.map((r) => (
-          <View key={r.tKey} style={[styles.templateRow, { borderColor: tone.border }]}>
-            <Badge n={r.n} tone={tone} />
-            <IconSymbol name={r.icon} size={16} color={tone.text} />
-            <ThemedText
-              style={[styles.templateText, { color: tone.text, flex: 1 }, cityPopFont('600')]}
-              numberOfLines={2}>
-              {t(r.tKey)}
+      <View
+        style={[
+          styles.groupCard,
+          { borderColor: tone.border, backgroundColor: '#F6E7A1' },
+        ]}>
+        <View style={styles.sheetRow}>
+          <IconSymbol name="chevron.down" size={12} color={tone.text} />
+          <ThemedText style={[styles.groupTitle, { color: tone.text, flex: 1 }, cityPopFont('800')]}>
+            {t('guideBook.figure.morningRoutine')}
+          </ThemedText>
+          <Badge n={3} tone={tone} />
+          <View
+            style={[
+              styles.applyChip,
+              { borderColor: tone.border, backgroundColor: tone.primaryContainer },
+            ]}>
+            <ThemedText style={[styles.applyChipText, { color: tone.text }, cityPopFont('800')]}>
+              {t('fixedRoutine.apply')}
             </ThemedText>
           </View>
-        ))}
+        </View>
+        <View style={styles.sheetRow}>
+          <Badge n={1} tone={tone} />
+          <FigureColorChips tone={tone} />
+        </View>
+        <ThemedText style={[styles.tinyNote, { color: tone.muted }, cityPopFont('500')]}>
+          {t('guideBook.figure.postItColorHint')}
+        </ThemedText>
+        <View style={[styles.itemRow, { borderColor: tone.border, backgroundColor: tone.surface }]}>
+          <Badge n={2} tone={tone} />
+          <IconSymbol name="book.closed.fill" size={14} color={pill.activeIcon} />
+          <ThemedText style={[styles.itemText, { color: tone.text }, cityPopFont('700')]}>
+            {t('guideBook.figure.reading')}
+          </ThemedText>
+          <ThemedText style={[styles.applyChipText, { color: tone.text }, cityPopFont('700')]}>
+            {t('guideBook.figure.itemOn')}
+          </ThemedText>
+        </View>
+        <View style={[styles.itemRow, { borderColor: tone.border, backgroundColor: tone.surface }]}>
+          <IconSymbol name="plus" size={14} color={tone.text} />
+          <ThemedText style={[styles.itemText, { color: tone.text }, cityPopFont('600')]}>
+            {t('fixedRoutine.addItem')}
+          </ThemedText>
+        </View>
       </View>
-      <ThemedText style={[styles.tinyNote, { color: tone.muted }, cityPopFont('500')]}>
+      <ThemedText style={[styles.tinyNote, { color: tone.muted, marginTop: 4 }, cityPopFont('500')]}>
         {t('guideBook.figure.applyNote')}
       </ThemedText>
     </PhoneShell>
@@ -1035,6 +1098,8 @@ const styles = StyleSheet.create({
   },
   groupCard: { borderWidth: RETRO_BORDER_WIDTH, padding: 10, gap: 8 },
   groupTitle: { fontSize: 11 },
+  colorChipRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  colorChip: { width: 14, height: 14, borderRadius: 7 },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',

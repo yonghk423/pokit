@@ -255,10 +255,10 @@ const accordionHeightCache = new Map<string, number>();
 
 function useMeasuredAccordion(expanded: boolean, cacheKey?: string) {
   const cachedHeight = cacheKey ? (accordionHeightCache.get(cacheKey) ?? 0) : 0;
-  const progress = useSharedValue(0);
+  const progress = useSharedValue(expanded ? 1 : 0);
   const contentHeight = useSharedValue(cachedHeight);
   /** 접힌 동안 본문 트리를 아예 내림 — 첫 진입 비용을 헤더만으로 제한 */
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(expanded);
 
   useEffect(() => {
     if (expanded) {
@@ -272,6 +272,9 @@ function useMeasuredAccordion(expanded: boolean, cacheKey?: string) {
           duration: ACCORDION_OPEN_MS,
           easing: ACCORDION_EASING,
         });
+      } else {
+        // 첫 기본 펼침: 측정 전이라도 progress=1로 본문이 보이게
+        progress.value = 1;
       }
       return;
     }
@@ -308,18 +311,15 @@ function useMeasuredAccordion(expanded: boolean, cacheKey?: string) {
     (height: number) => {
       if (height <= 0 || Math.abs(height - contentHeight.value) <= 0.5) return;
       if (cacheKey) accordionHeightCache.set(cacheKey, height);
-      const firstMeasure = contentHeight.value <= 0;
       contentHeight.value = height;
       if (!expanded) return;
-      if (firstMeasure && progress.value >= 0.98) {
-        progress.value = 1;
-        return;
-      }
       if (progress.value < 1) {
         progress.value = withTiming(1, {
           duration: ACCORDION_OPEN_MS,
           easing: ACCORDION_EASING,
         });
+      } else {
+        progress.value = 1;
       }
     },
     [cacheKey, contentHeight, expanded, progress],
@@ -1341,15 +1341,6 @@ function GroupAccordion({
         )}
       </View>
 
-      <PostItFaceColorChips
-        compact
-        selectedId={postItFaceColorId}
-        isDark={isDark}
-        ink={ink}
-        shadowColor="#000000"
-        onSelect={onSelectPostItFaceColor}
-      />
-
       {groupAccordion.mounted ? (
         <Reanimated.View style={[styles.groupAccordionPanel, groupAccordion.panelStyle]}>
         <View
@@ -1366,6 +1357,14 @@ function GroupAccordion({
           onLayout={(event) => {
             groupAccordion.onContentLayout(event.nativeEvent.layout.height);
           }}>
+          <PostItFaceColorChips
+            compact
+            selectedId={postItFaceColorId}
+            isDark={isDark}
+            ink={ink}
+            shadowColor="#000000"
+            onSelect={onSelectPostItFaceColor}
+          />
           {scheduleHint ? (
             <ThemedText style={[styles.accordionRuleHint, { color: muted }]}>{scheduleHint}</ThemedText>
           ) : null}
@@ -1494,7 +1493,16 @@ export function FixedRoutinePage({
   const [postItFaceByGroup, setPostItFaceByGroup] = useState<PostItFaceColorByGroup>(
     () => loadPostItFaceColorByGroup(),
   );
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
+    if (!embeddedCustomOnly) return new Set();
+    const allSets = useFixedFlowSetsStore.getState().sets;
+    const firstPreset = BUILTIN_PRESET_SCHEDULE_SET_IDS.map((id) =>
+      allSets.find((setItem) => setItem.id === id),
+    ).find((setItem): setItem is FixedFlowSet => Boolean(setItem));
+    if (firstPreset) return new Set([firstPreset.id]);
+    const firstCustom = allSets.find((setItem) => setItem.applyRule === 'manual');
+    return firstCustom ? new Set([firstCustom.id]) : new Set();
+  });
   const [section, setSection] = useState<FixedRoutineSection>('catalog');
   const [internalLayoutMode, setInternalLayoutMode] = useState<DayPlanLayoutMode>('bag');
   const layoutMode = controlledLayoutMode ?? internalLayoutMode;
@@ -1822,7 +1830,7 @@ export function FixedRoutinePage({
 
   useEffect(() => subscribeCustomFlowCatalog(reloadCatalog), [reloadCatalog]);
 
-  /** 세트 id 구성이 바뀔 때만 — 사라진 id만 정리 (전부 자동 펼침 금지) */
+  /** 세트 id 구성이 바뀔 때만 — 사라진 id만 정리. 나만의 루틴은 첫 그룹만 기본 펼침 */
   const visibleSetIdsKey = useMemo(
     () => visibleSets.map((setItem) => setItem.id).join('\0'),
     [visibleSets],
@@ -1833,17 +1841,20 @@ export function FixedRoutinePage({
       setExpandedIds((prev) => (prev.size === 0 ? prev : new Set()));
       return;
     }
-    const valid = new Set(visibleSetIdsKey.split('\0').filter(Boolean));
+    const ids = visibleSetIdsKey.split('\0').filter(Boolean);
+    const valid = new Set(ids);
     setExpandedIds((prev) => {
-      let changed = false;
       const next = new Set<string>();
       for (const id of prev) {
         if (valid.has(id)) next.add(id);
-        else changed = true;
       }
-      return changed ? next : prev;
+      if (embeddedCustomOnly && next.size === 0 && ids[0]) {
+        next.add(ids[0]!);
+      }
+      if (next.size === prev.size && [...next].every((id) => prev.has(id))) return prev;
+      return next;
     });
-  }, [section, visibleSetIdsKey]);
+  }, [embeddedCustomOnly, section, visibleSetIdsKey]);
 
   useEffect(() => {
     if (!canManageCustomGroups) {
