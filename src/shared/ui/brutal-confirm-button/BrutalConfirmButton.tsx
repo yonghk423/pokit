@@ -34,10 +34,17 @@ export type BrutalConfirmButtonProps = {
 export function resolveBrutalConfirmPrimaryColors(isDark: boolean) {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   return {
+    /** 항상 밝은 민트 면 (다크 모드도 primaryContainer 대신 primary) */
     fill: isDark ? c.primary : c.primaryContainer,
     labelColor: isDark ? c.primaryOn : c.primary,
     border: c.border,
     shadowColor: isDark ? c.solidShadow : c.border,
+    /**
+     * 비활성도 민트 계열 불투명 색.
+     * opacity로 흐리면 solid shadow가 비쳐 검게 보임.
+     */
+    disabledFill: isDark ? '#6FA8AA' : '#C5E8E9',
+    disabledLabelColor: isDark ? 'rgba(0,32,33,0.55)' : '#5A8587',
   };
 }
 
@@ -60,12 +67,15 @@ export function BrutalConfirmButton({
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const primary = resolveBrutalConfirmPrimaryColors(isDark);
-  const resolvedFill = fill ?? primary.fill;
-  const resolvedLabelColor = labelColor ?? primary.labelColor;
+  // fill을 넘기면 활성/비활성 모두 그 민트를 쓰고, 비활성은 별도 연한 민트로 대체하지 않음
+  // (요청: 이름 미입력·disabled여도 항상 민트)
+  const resolvedFill = fill ?? (disabled ? primary.disabledFill : primary.fill);
+  const resolvedLabelColor =
+    labelColor ?? (disabled ? primary.disabledLabelColor : primary.labelColor);
   const resolvedShadow = shadowColor ?? primary.shadowColor;
   const resolvedLabel = label ?? t('common.confirm');
   const stretch = align === 'stretch';
-  const showShadow = Boolean(resolvedShadow) && !disabled;
+  const showShadow = Boolean(resolvedShadow);
   const shadowOffset = compact ? 2 : SOLID_SHADOW_OFFSET;
 
   return (
@@ -99,7 +109,8 @@ export function BrutalConfirmButton({
           compact && styles.faceCompact,
           {
             backgroundColor: resolvedFill,
-            opacity: disabled ? 0.45 : pressed ? 0.88 : 1,
+            // opacity 금지 — solid shadow가 비쳐 검게 보임
+            opacity: !disabled && pressed ? 0.92 : 1,
           },
         ]}>
         <ThemedText
@@ -131,8 +142,10 @@ const styles = StyleSheet.create({
   },
   face: {
     minWidth: 76,
+    height: 40,
     minHeight: 40,
     paddingHorizontal: 16,
+    paddingVertical: 0,
     borderWidth: 0,
     borderRadius: RETRO_RADIUS,
     alignItems: 'center',
@@ -142,25 +155,31 @@ const styles = StyleSheet.create({
   faceStretch: {
     alignSelf: 'stretch',
     minWidth: undefined,
+    height: 48,
     minHeight: 48,
     paddingHorizontal: 16,
   },
   faceCompact: {
+    height: 40,
     minHeight: 40,
+    minWidth: 64,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 0,
   },
   label: {
     fontSize: 14,
+    lineHeight: 18,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
   labelStretch: {
     fontSize: 16,
+    lineHeight: 20,
     letterSpacing: -0.25,
   },
   labelCompact: {
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 16,
     letterSpacing: -0.2,
   },
 });

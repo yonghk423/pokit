@@ -40,11 +40,14 @@ export function ThemedTextInput({ style, ...rest }: ThemedTextInputProps) {
   const weight = weightFromStyle(flat.fontWeight);
   const fontFamily = resolveAppFontFamily(fontId, weight);
 
+  // iOS는 fontFamily+fontWeight 조합이 맞지 않으면 시스템 폰트로 폴백한다.
+  // 커스텀 페이스를 마지막에 두고, 단일 페이스는 weight를 Regular로 고정한다.
+  const { fontWeight: _ignoredWeight, fontFamily: _ignoredFamily, ...restFlat } = flat;
   const scaled = applyFontSizeScale(
     {
-      ...flat,
+      ...restFlat,
       ...(fontFamily ? { fontFamily } : null),
-      ...(singleFace ? { fontWeight: '400' as const } : null),
+      ...(singleFace || !fontFamily ? { fontWeight: '400' as const } : { fontWeight: weight }),
     },
     sizeScale,
   );

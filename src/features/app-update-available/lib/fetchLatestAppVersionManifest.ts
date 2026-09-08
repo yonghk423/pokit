@@ -1,3 +1,5 @@
+import { getAppLocale } from '@shared/lib/i18n';
+
 import { parseAppVersionManifest } from './appVersionManifest';
 import type { AppVersionManifest } from './appVersionManifest';
 
@@ -18,7 +20,7 @@ export async function fetchLatestAppVersionManifest(
     });
     if (!response.ok) return null;
     const json: unknown = await response.json();
-    return parseAppVersionManifest(json);
+    return parseAppVersionManifest(json, getAppLocale());
   } catch {
     return null;
   } finally {

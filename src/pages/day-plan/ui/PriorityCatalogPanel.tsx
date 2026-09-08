@@ -786,7 +786,13 @@ function CatalogListRow({
                     : 'rgba(0,0,0,0.02)'
                   : settingsBg
               }
-              pressedBg={settingsHoverBg}
+              pressedBg={
+                settingsLocked
+                  ? isDark
+                    ? 'rgba(255,255,255,0.04)'
+                    : 'rgba(0,0,0,0.02)'
+                  : settingsBg
+              }
               shadowColor={brutalShadow}
               soft={manageOnly}
               onPress={() => {

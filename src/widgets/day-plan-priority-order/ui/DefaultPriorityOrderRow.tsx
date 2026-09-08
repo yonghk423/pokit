@@ -636,9 +636,9 @@ export function DefaultPriorityOrderRow({
               styles.orderSettingsBtn,
               {
                 borderColor: actionBorder,
-                backgroundColor: pressed ? actionHoverBg : actionBg,
+                backgroundColor: actionBg,
               },
-              pressed && { opacity: 0.92 },
+              pressed && { opacity: 0.88 },
             ]}>
             <IconSymbol name="slider.horizontal.3" size={11} color={isDark ? '#FAFAFA' : primary} />
           </Pressable>,
@@ -657,9 +657,9 @@ export function DefaultPriorityOrderRow({
                 styles.orderSettingsBtn,
                 {
                   borderColor: actionBorder,
-                  backgroundColor: pressed ? actionHoverBg : actionBg,
+                  backgroundColor: actionBg,
                 },
-                pressed && { opacity: 0.92 },
+                pressed && { opacity: 0.88 },
               ]}>
               <IconSymbol name="slider.horizontal.3" size={11} color={isDark ? '#FAFAFA' : primary} />
             </Pressable>,

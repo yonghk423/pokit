@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { type ReactNode, useMemo, useState } from 'react';
-import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import {
   isSystemCatalogGroupKey,
@@ -17,7 +17,9 @@ import {
 } from '@shared/lib/storage';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 const GROUP_NAME_MAX = 24;
 const CHIP_SHADOW = 2;
@@ -188,7 +190,7 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
         <View style={styles.newGroupRow}>
           <View style={styles.newGroupInputGrow}>
             <SolidChipShell shadowColor={shadowInk} shadowSize={CHIP_SHADOW}>
-              <TextInput
+              <ThemedTextInput
                 autoFocus
                 value={newGroupLabel}
                 onChangeText={(v) => setNewGroupLabel(v.slice(0, GROUP_NAME_MAX))}
@@ -207,24 +209,16 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
               />
             </SolidChipShell>
           </View>
-          <SolidChipShell shadowColor={shadowInk}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('common.add')}
-              onPress={handleSubmitNewGroup}
-              disabled={newGroupLabel.trim().length === 0}
-              style={({ pressed }) => [
-                styles.newGroupBtn,
-                {
-                  backgroundColor: tone.primaryContainer,
-                  opacity: newGroupLabel.trim().length === 0 ? 0.45 : pressed ? 0.92 : 1,
-                },
-              ]}>
-              <ThemedText style={[styles.newGroupBtnText, { color: tone.primary }]}>
-                {t('common.add')}
-              </ThemedText>
-            </Pressable>
-          </SolidChipShell>
+          <BrutalConfirmButton
+            label={t('common.add')}
+            accessibilityLabel={t('common.add')}
+            compact
+            disabled={newGroupLabel.trim().length === 0}
+            fill={RetroFlatColors.light.primaryContainer}
+            labelColor={RetroFlatColors.light.primary}
+            shadowColor={shadowInk}
+            onPress={handleSubmitNewGroup}
+          />
           <SolidChipShell shadowColor={shadowInk}>
             <Pressable
               accessibilityRole="button"
@@ -298,7 +292,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderRadius: 0,
     paddingHorizontal: 12,
-    height: 42,
+    height: 40,
     fontSize: 14,
     fontWeight: '600',
     paddingVertical: 0,
@@ -307,20 +301,9 @@ const styles = StyleSheet.create({
       ? { textAlignVertical: 'center' as const, includeFontPadding: false }
       : {}),
   },
-  newGroupBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderRadius: 0,
-    borderWidth: 0,
-    zIndex: 1,
-  },
-  newGroupBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
-  },
   cancelBtn: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 0,

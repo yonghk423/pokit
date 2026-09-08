@@ -109,3 +109,14 @@ export function formatHexInput(raw: string): string {
   if (cleaned.startsWith('#')) return cleaned.slice(0, 7).toLowerCase();
   return `#${cleaned.slice(0, 6).toLowerCase()}`;
 }
+
+/** 배경 hex 위 아이콘·체크에 쓸 대비 전경색 */
+export function contrastingForeground(
+  backgroundHex: string,
+  light = '#FAFAFA',
+  dark = '#09090b',
+): string {
+  const { r, g, b } = hexToRgb(backgroundHex);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.55 ? dark : light;
+}

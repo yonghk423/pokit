@@ -7,7 +7,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,9 +23,10 @@ import {
   type CustomCatalogGroup,
 } from '@shared/lib/storage';
 import { useTranslation } from '@shared/lib/i18n';
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import { PRIMARY } from '../lib/dayPlanEditorShared';
 
@@ -64,8 +64,6 @@ export function MoveCustomFlowGroupSheet({
 }: Props) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-
-  const tabColors = useMemo(() => tabPillColors(isDark), [isDark]);
 
   const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
   const [selectedGroupKey, setSelectedGroupKey] = useState('productivity');
@@ -293,7 +291,7 @@ export function MoveCustomFlowGroupSheet({
 
               {isAddingGroup ? (
                 <View style={styles.newGroupRow}>
-                  <TextInput
+                  <ThemedTextInput
                     autoFocus
                     value={newGroupLabel}
                     onChangeText={(v) => setNewGroupLabel(v.slice(0, GROUP_NAME_MAX))}
@@ -304,37 +302,47 @@ export function MoveCustomFlowGroupSheet({
                     onSubmitEditing={handleSubmitNewGroup}
                     style={[
                       styles.input,
-                      { flex: 1, color: ink, backgroundColor: inputBg, borderColor: inputBorder },
+                      styles.newGroupInput,
+                      { color: ink, backgroundColor: inputBg, borderColor: inputBorder },
                     ]}
                   />
-                  <Pressable
-                    accessibilityRole="button"
+                  <BrutalConfirmButton
+                    label={t('common.add')}
                     accessibilityLabel={t('common.add')}
-                    onPress={handleSubmitNewGroup}
+                    compact
                     disabled={newGroupLabel.trim().length === 0}
-                    style={({ pressed }) => [
-                      styles.newGroupBtn,
-                      {
-                        backgroundColor: tabColors.activeBg,
-                        borderColor: tabColors.activeBorder,
-                        opacity: newGroupLabel.trim().length === 0 ? 0.45 : pressed ? 0.88 : 1,
-                      },
+                    fill={RetroFlatColors.light.primaryContainer}
+                    labelColor={RetroFlatColors.light.primary}
+                    shadowColor={shadowInk}
+                    onPress={handleSubmitNewGroup}
+                  />
+                  <View
+                    style={[
+                      styles.cancelShell,
+                      { marginRight: CHIP_SHADOW, marginBottom: CHIP_SHADOW },
                     ]}>
-                    <ThemedText style={[styles.newGroupBtnText, { color: tabColors.activeIcon }]}>
-                      {t('common.add')}
-                    </ThemedText>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('common.cancel')}
-                    onPress={() => {
-                      setIsAddingGroup(false);
-                      setNewGroupLabel('');
-                    }}
-                    hitSlop={8}
-                    style={[styles.closeBtn, { backgroundColor: closeBtnBg }]}>
-                    <IconSymbol name="xmark" size={12} color={muted} />
-                  </Pressable>
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.chipShadow,
+                        {
+                          backgroundColor: shadowInk,
+                          transform: [{ translateX: CHIP_SHADOW }, { translateY: CHIP_SHADOW }],
+                        },
+                      ]}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('common.cancel')}
+                      onPress={() => {
+                        setIsAddingGroup(false);
+                        setNewGroupLabel('');
+                      }}
+                      hitSlop={8}
+                      style={[styles.cancelBtn, { backgroundColor: closeBtnBg }]}>
+                      <IconSymbol name="xmark" size={12} color={muted} />
+                    </Pressable>
+                  </View>
                 </View>
               ) : null}
             </View>
@@ -490,15 +498,21 @@ const styles = StyleSheet.create({
       ? { textAlignVertical: 'center' as const, includeFontPadding: false }
       : {}),
   },
-  newGroupBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 0,
-    borderWidth: 2,
+  newGroupInput: {
+    flex: 1,
+    height: 40,
   },
-  newGroupBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
+  cancelShell: {
+    position: 'relative',
+  },
+  cancelBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 0,
+    borderWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   ctaWrap: {
     paddingHorizontal: 22,

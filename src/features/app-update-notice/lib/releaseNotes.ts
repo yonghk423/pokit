@@ -1,10 +1,16 @@
-/** 버전별 업데이트 안내 문구. 스토어 배포마다 추가합니다. */
-const RELEASE_NOTE_HIGHLIGHTS: Record<string, string[]> = {
+import { getAppLocale, t, type AppLocale, type I18nKey } from '@shared/lib/i18n';
+
+/** 버전별 업데이트 안내 — i18n 키가 있으면 로케일 반영, 없으면 한국어 폴백 */
+const RELEASE_NOTE_I18N_KEYS: Record<string, readonly I18nKey[]> = {
   '1.7.3': [
-    '담기 루틴에 형광펜 중요도 표시(색 마커)를 추가했어요.',
-    '시작·마무리·루틴 시간 설정을 설정 탭과 같은 스타일로 맞췄어요.',
-    '글씨체별 크기 차이를 보정하고, 화면 UI를 시티팝 톤으로 다듬었어요.',
+    'appUpdate.release.1_7_3.h1',
+    'appUpdate.release.1_7_3.h2',
+    'appUpdate.release.1_7_3.h3',
   ],
+};
+
+/** 예전 버전(키 미등록) — 한국어 고정 폴백 */
+const RELEASE_NOTE_HIGHLIGHTS_KO: Record<string, string[]> = {
   '1.7.2': [
     '포킷 빠르게 둘러보기에 눌러볼 버튼 아이콘 안내를 넣었어요.',
     '체크리스트를 눌러보라는 유도 문구와 애니메이션을 추가했어요.',
@@ -153,12 +159,23 @@ const RELEASE_NOTE_HIGHLIGHTS: Record<string, string[]> = {
     '잠금화면 메모 입력 글자 크기를 조정했어요.',
   ],
   '1.4.2': ['앱 안정성과 사용 경험을 개선했어요.'],
+
 };
 
-const DEFAULT_HIGHLIGHTS = ['앱 안정성과 사용 경험을 개선했어요.'];
+export function resolveReleaseNoteHighlights(
+  version: string,
+  locale: AppLocale = getAppLocale(),
+): string[] {
+  const keys = RELEASE_NOTE_I18N_KEYS[version];
+  if (keys && keys.length > 0) {
+    return keys.map((key) => t(key, locale));
+  }
 
-export function resolveReleaseNoteHighlights(version: string): string[] {
-  const highlights = RELEASE_NOTE_HIGHLIGHTS[version];
-  if (!highlights || highlights.length === 0) return DEFAULT_HIGHLIGHTS;
-  return highlights;
+  const koFallback = RELEASE_NOTE_HIGHLIGHTS_KO[version];
+  if (koFallback && koFallback.length > 0) {
+    if (locale === 'ko') return koFallback;
+    return [t('appUpdate.release.default', locale)];
+  }
+
+  return [t('appUpdate.release.default', locale)];
 }

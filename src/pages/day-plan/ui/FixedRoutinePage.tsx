@@ -718,7 +718,7 @@ function FlowItemCard({
           accessibilityLabel={t('dayPlan.detailSettingsA11y', { label })}
           borderColor={line}
           backgroundColor={actionBg}
-          pressedBg={actionHoverBg}
+          pressedBg={actionBg}
           shadowColor={brutalShadow}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

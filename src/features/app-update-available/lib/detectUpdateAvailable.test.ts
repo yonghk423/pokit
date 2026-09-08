@@ -16,6 +16,27 @@ describe('parseAppVersionManifest', () => {
     });
   });
 
+  it('prefers highlightsByLocale for the given locale', () => {
+    expect(
+      parseAppVersionManifest(
+        {
+          latestVersion: '1.7.3',
+          highlights: ['한국어 폴백'],
+          highlightsByLocale: {
+            ko: ['한국어'],
+            en: ['English'],
+            ja: ['日本語'],
+          },
+        },
+        'en',
+      ),
+    ).toEqual({
+      latestVersion: '1.7.3',
+      highlights: ['English'],
+      storeUrls: {},
+    });
+  });
+
   it('rejects invalid manifest', () => {
     expect(parseAppVersionManifest({})).toBeNull();
     expect(parseAppVersionManifest(null)).toBeNull();

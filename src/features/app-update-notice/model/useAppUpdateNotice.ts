@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { getNativeAppVersion } from '@shared/lib/app-version/nativeAppVersion';
+import { useAppLocaleStore } from '@shared/lib/i18n';
 import {
   loadLastSeenAppVersion,
   saveLastSeenAppVersion,
@@ -15,6 +16,7 @@ export type AppUpdateNoticeState = {
 };
 
 export function useAppUpdateNotice(appReady: boolean, enabled = true) {
+  const locale = useAppLocaleStore((s) => s.locale);
   const [notice, setNotice] = useState<AppUpdateNoticeState | null>(null);
 
   useEffect(() => {
@@ -37,9 +39,9 @@ export function useAppUpdateNotice(appReady: boolean, enabled = true) {
 
     setNotice({
       version: detection.currentVersion,
-      highlights: resolveReleaseNoteHighlights(detection.currentVersion),
+      highlights: resolveReleaseNoteHighlights(detection.currentVersion, locale),
     });
-  }, [appReady, enabled]);
+  }, [appReady, enabled, locale]);
 
   const dismiss = useCallback(() => {
     setNotice((prev) => {

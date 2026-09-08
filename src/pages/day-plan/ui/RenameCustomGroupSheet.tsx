@@ -6,7 +6,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import { PRIMARY } from '../lib/dayPlanEditorShared';
 
@@ -123,7 +123,7 @@ export function RenameCustomGroupSheet({
               <ThemedText style={[styles.fieldHint, { color: muted }]}>
                 {t('catalog.renameGroupMaxHint', { count: LABEL_MAX })}
               </ThemedText>
-              <TextInput
+              <ThemedTextInput
                 value={label}
                 onChangeText={(v) => setLabel(v.slice(0, LABEL_MAX))}
                 placeholder={resolvedPlaceholder}

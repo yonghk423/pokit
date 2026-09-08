@@ -523,20 +523,43 @@ export function CreateCustomFlowSheet({
                     <BrutalConfirmButton
                       label={t('common.add')}
                       accessibilityLabel={t('common.add')}
+                      compact
                       disabled={newGroupLabel.trim().length === 0}
+                      fill={RetroFlatColors.light.primaryContainer}
+                      labelColor={RetroFlatColors.light.primary}
+                      shadowColor={isDark ? tone.solidShadow : tone.border}
                       onPress={handleSubmitNewGroup}
                     />
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={t('common.cancel')}
-                      onPress={() => {
-                        setIsAddingGroup(false);
-                        setNewGroupLabel('');
-                      }}
-                      hitSlop={8}
-                      style={[styles.cancelBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF' }]}>
-                      <IconSymbol name="xmark" size={12} color={muted} />
-                    </Pressable>
+                    <View
+                      style={[
+                        styles.cancelShell,
+                        { marginRight: chipShadow, marginBottom: chipShadow },
+                      ]}>
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.chipShadow,
+                          {
+                            backgroundColor: shadowInk,
+                            transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
+                          },
+                        ]}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={t('common.cancel')}
+                        onPress={() => {
+                          setIsAddingGroup(false);
+                          setNewGroupLabel('');
+                        }}
+                        hitSlop={8}
+                        style={[
+                          styles.cancelBtn,
+                          { backgroundColor: isDark ? tone.surfaceAlt : '#FFFFFF' },
+                        ]}>
+                        <IconSymbol name="xmark" size={12} color={muted} />
+                      </Pressable>
+                    </View>
                   </View>
                 ) : null}
               </View>
@@ -856,14 +879,19 @@ const styles = StyleSheet.create({
   },
   newGroupInput: {
     flex: 1,
+    height: 40,
+  },
+  cancelShell: {
+    position: 'relative',
   },
   cancelBtn: {
     width: 40,
-    height: 48,
+    height: 40,
     borderRadius: 0,
     borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   footer: {
     paddingHorizontal: 20,

@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
+import { contrastingForeground } from '@shared/lib/colorMath';
 import { useTranslation } from '@shared/lib/i18n';
 import {
   CUSTOM_FLOW_ACCENT_COLOR_OPTIONS,
@@ -54,6 +55,7 @@ export function CustomFlowAppearancePicker({
   const cardBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
   const chipIdleBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
   const shadowInk = isDark ? RetroFlatColors.dark.solidShadow : '#000000';
+  const accentOnChip = contrastingForeground(accentColor);
 
   const iconScrollRef = useRef<ScrollView>(null);
   const ICON_CHIP_STEP = 46;
@@ -121,11 +123,9 @@ export function CustomFlowAppearancePicker({
             style={[
               styles.previewIconWrap,
               compact && styles.previewIconWrapCompact,
-              {
-                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : `${accentColor}22`,
-              },
+              { backgroundColor: accentColor },
             ]}>
-            <IconSymbol name={icon} size={compact ? 18 : 22} color={accentColor} />
+            <IconSymbol name={icon} size={compact ? 18 : 22} color={accentOnChip} />
           </View>
           <ThemedText
             style={[styles.previewLabel, compact && styles.previewLabelCompact, { color: ink }]}
@@ -201,7 +201,7 @@ export function CustomFlowAppearancePicker({
                     style={[
                       styles.solidShadow,
                       {
-                        backgroundColor: selected ? accentColor : shadowInk,
+                        backgroundColor: shadowInk,
                         transform: [{ translateX: shadow }, { translateY: shadow }],
                       },
                     ]}
@@ -214,14 +214,14 @@ export function CustomFlowAppearancePicker({
                     style={[
                       styles.iconChip,
                       {
-                        backgroundColor: selected
-                          ? isDark
-                            ? 'rgba(255,255,255,0.12)'
-                            : `${accentColor}18`
-                          : chipIdleBg,
+                        backgroundColor: selected ? accentColor : chipIdleBg,
                       },
                     ]}>
-                    <IconSymbol name={iconName} size={18} color={selected ? accentColor : muted} />
+                    <IconSymbol
+                      name={iconName}
+                      size={18}
+                      color={selected ? accentOnChip : muted}
+                    />
                   </Pressable>
                 </View>
               );
@@ -265,7 +265,13 @@ export function CustomFlowAppearancePicker({
                           backgroundColor: color,
                         },
                       ]}>
-                      {selected ? <IconSymbol name="checkmark" size={12} color="#FAFAFA" /> : null}
+                      {selected ? (
+                        <IconSymbol
+                          name="checkmark"
+                          size={12}
+                          color={contrastingForeground(color)}
+                        />
+                      ) : null}
                     </Pressable>
                   </View>
                 );

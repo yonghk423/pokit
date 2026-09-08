@@ -6,7 +6,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +14,7 @@ import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 const LABEL_MAX = 24;
 const SUBTITLE_MAX = 120;
@@ -133,7 +133,7 @@ export function EditCatalogGroupSheet({
 
             <View style={styles.fieldGroup}>
               <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('common.name')}</ThemedText>
-              <TextInput
+              <ThemedTextInput
                 value={label}
                 onChangeText={(v) => setLabel(v.slice(0, LABEL_MAX))}
                 placeholder={t('catalog.groupNamePlaceholder')}
@@ -155,7 +155,7 @@ export function EditCatalogGroupSheet({
               <ThemedText style={[styles.fieldHint, { color: muted }]}>
                 {t('catalog.groupDescOptionalHint')}
               </ThemedText>
-              <TextInput
+              <ThemedTextInput
                 value={subtitle}
                 onChangeText={(v) => setSubtitle(v.slice(0, SUBTITLE_MAX))}
                 placeholder={t('catalog.groupDescPlaceholder')}

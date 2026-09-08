@@ -5,6 +5,23 @@
     "시작·마무리·루틴 시간 설정을 설정 탭과 같은 스타일로 맞췄어요.",
     "글씨체별 크기 차이를 보정하고, 화면 UI를 시티팝 톤으로 다듬었어요."
   ],
+  "highlightsByLocale": {
+    "ko": [
+      "담기 루틴에 형광펜 중요도 표시(색 마커)를 추가했어요.",
+      "시작·마무리·루틴 시간 설정을 설정 탭과 같은 스타일로 맞췄어요.",
+      "글씨체별 크기 차이를 보정하고, 화면 UI를 시티팝 톤으로 다듬었어요."
+    ],
+    "en": [
+      "Added highlighter-style importance marks for routines in your bag.",
+      "Aligned start/end and routine time settings with the Settings tab style.",
+      "Balanced font sizes across typefaces and polished the City Pop UI."
+    ],
+    "ja": [
+      "今日のリストのルーチンに蛍光ペン風の重要度表示を追加しました。",
+      "開始・終了・ルーチン時間設定を設定タブと同じスタイルに揃えました。",
+      "フォントごとのサイズ差を整え、シティポップ調のUIを磨きました。"
+    ]
+  },
   "storeUrls": {
     "ios": "https://apps.apple.com/app/id6762331629",
     "android": "https://play.google.com/store/apps/details?id=com.yonghee.pokit"
