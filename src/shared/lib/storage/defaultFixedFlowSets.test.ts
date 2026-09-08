@@ -125,6 +125,50 @@ describe('createDefaultFixedFlowSetsState', () => {
     ]);
   });
 
+  it('preserves renamed built-in preset titles', () => {
+    const merged = mergeBuiltInPresetSets([
+      {
+        id: 'set_daily',
+        name: '출근 루틴',
+        applyRule: 'daily',
+        applyWeekdays: [1, 2, 3, 4, 5],
+        items: [{ categoryKey: 'healthIntake', enabled: true }],
+      },
+    ]);
+    expect(merged.find((set) => set.id === 'set_daily')?.name).toBe('출근 루틴');
+  });
+
+  it('defaults title mark colors on built-in presets and preserves clears', () => {
+    const withDefaults = mergeBuiltInPresetSets([
+      {
+        id: 'set_daily',
+        name: '데일리 고정 루틴',
+        applyRule: 'daily',
+        applyWeekdays: [1, 2, 3, 4, 5],
+        items: [{ categoryKey: 'healthIntake', enabled: true }],
+      },
+    ]);
+    expect(withDefaults.find((set) => set.id === 'set_daily')?.titleMarkColor).toBe('yellow');
+    expect(withDefaults.find((set) => set.id === 'set_weekend')?.titleMarkColor).toBe('lavender');
+
+    const cleared = mergeBuiltInPresetSets([
+      {
+        id: 'set_daily',
+        name: '데일리 고정 루틴',
+        applyRule: 'daily',
+        applyWeekdays: [1, 2, 3, 4, 5],
+        items: [{ categoryKey: 'healthIntake', enabled: true }],
+        titleMarkColor: null,
+      },
+    ]);
+    expect(cleared.find((set) => set.id === 'set_daily')?.titleMarkColor).toBeNull();
+  });
+
+  it('skips dismissed built-in preset sets', () => {
+    const merged = mergeBuiltInPresetSets([], { dismissedIds: ['set_daily'] });
+    expect(merged.map((set) => set.id)).toEqual(['set_weekend']);
+  });
+
   it('creates two builtin example custom sets', () => {
     const examples = createBuiltinExampleCustomFlowSets();
     expect(examples).toHaveLength(2);

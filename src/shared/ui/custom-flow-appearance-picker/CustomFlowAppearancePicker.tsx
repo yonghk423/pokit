@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
@@ -28,8 +28,6 @@ export type CustomFlowAppearancePickerProps = {
   muted: string;
   line?: string;
   hint?: string;
-  /** true면 아이콘·색상 편집 영역을 처음부터 펼친다 */
-  defaultExpanded?: boolean;
   /** 목표 상세 등 좁은 화면 — 패딩·여백 축소 */
   compact?: boolean;
 };
@@ -45,7 +43,6 @@ export function CustomFlowAppearancePicker({
   muted,
   line,
   hint,
-  defaultExpanded = true,
   compact = false,
 }: CustomFlowAppearancePickerProps) {
   const { t } = useTranslation();
@@ -59,13 +56,6 @@ export function CustomFlowAppearancePicker({
 
   const iconScrollRef = useRef<ScrollView>(null);
   const ICON_CHIP_STEP = 46;
-
-  const [showAppearanceEditor, setShowAppearanceEditor] = useState(defaultExpanded);
-
-  const toggleAppearanceEditor = useCallback(() => {
-    void Haptics.selectionAsync();
-    setShowAppearanceEditor((prev) => !prev);
-  }, []);
 
   const scrollIconIntoView = useCallback((iconName: CustomFlowIconOption) => {
     const index = CUSTOM_FLOW_ICON_OPTIONS.indexOf(iconName);
@@ -132,54 +122,10 @@ export function CustomFlowAppearancePicker({
             numberOfLines={1}>
             {resolvedPreviewLabel}
           </ThemedText>
-          <View
-            style={[
-              styles.expandShell,
-              { marginRight: CHIP_SHADOW, marginBottom: CHIP_SHADOW },
-            ]}>
-            <View
-              pointerEvents="none"
-              style={[
-                styles.solidShadow,
-                {
-                  backgroundColor: shadowInk,
-                  transform: [{ translateX: CHIP_SHADOW }, { translateY: CHIP_SHADOW }],
-                },
-              ]}
-            />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ expanded: showAppearanceEditor }}
-              accessibilityLabel={
-                showAppearanceEditor ? t('appearance.collapseA11y') : t('appearance.expandA11y')
-              }
-              onPress={toggleAppearanceEditor}
-              hitSlop={8}
-              style={[
-                styles.expandButton,
-                compact && styles.expandButtonCompact,
-                {
-                  backgroundColor: showAppearanceEditor
-                    ? isDark
-                      ? 'rgba(255,255,255,0.12)'
-                      : 'rgba(0,0,0,0.06)'
-                    : chipIdleBg,
-                },
-              ]}>
-              <IconSymbol
-                name={showAppearanceEditor ? 'minus' : 'plus'}
-                size={16}
-                color={showAppearanceEditor ? ink : muted}
-                weight="semibold"
-                style={styles.expandButtonIcon}
-              />
-            </Pressable>
-          </View>
         </View>
       </View>
 
-      {showAppearanceEditor ? (
-        <View style={[styles.editorBody, compact && styles.editorBodyCompact]}>
+      <View style={[styles.editorBody, compact && styles.editorBodyCompact]}>
           <ScrollView
             ref={iconScrollRef}
             horizontal
@@ -288,7 +234,6 @@ export function CustomFlowAppearancePicker({
             line={border}
           />
         </View>
-      ) : null}
     </View>
   );
 }
@@ -357,25 +302,6 @@ const styles = StyleSheet.create({
   },
   previewLabelCompact: {
     fontSize: 14,
-  },
-  expandShell: {
-    position: 'relative',
-  },
-  expandButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 0,
-    borderWidth: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  expandButtonCompact: {
-    width: 32,
-    height: 32,
-  },
-  expandButtonIcon: {
-    marginTop: 1,
   },
   editorBody: {
     gap: 10,

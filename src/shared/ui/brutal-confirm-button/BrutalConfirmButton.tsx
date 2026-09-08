@@ -103,14 +103,12 @@ export function BrutalConfirmButton({
         accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={onPress}
-        style={({ pressed }) => [
+        style={[
           styles.face,
           stretch && styles.faceStretch,
           compact && styles.faceCompact,
           {
             backgroundColor: resolvedFill,
-            // opacity 금지 — solid shadow가 비쳐 검게 보임
-            opacity: !disabled && pressed ? 0.92 : 1,
           },
         ]}>
         <ThemedText

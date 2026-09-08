@@ -190,5 +190,35 @@ export function buildPriorityCatalogSections(
   return { groupSections: sections };
 }
 
+/** 루틴 목록(manage)용 — 그룹 카드 없이 섹션 순서대로 항목만 펼친다 */
+export function flattenPriorityCatalogItems(
+  groupSections: PriorityCatalogGroupSection[],
+): PickerCategoryItem[] {
+  const out: PickerCategoryItem[] = [];
+  const seen = new Set<string>();
+  for (const section of groupSections) {
+    for (const item of section.items) {
+      if (!item.key || seen.has(item.key)) continue;
+      seen.add(item.key);
+      out.push(item);
+    }
+  }
+  return out;
+}
+
+function normalizeCatalogSearchText(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, '');
+}
+
+/** 루틴 목록 검색 — 라벨(공백 무시) 부분 일치 */
+export function filterPickerItemsByQuery(
+  items: readonly PickerCategoryItem[],
+  query: string,
+): PickerCategoryItem[] {
+  const needle = normalizeCatalogSearchText(query);
+  if (!needle) return [...items];
+  return items.filter((item) => normalizeCatalogSearchText(item.label).includes(needle));
+}
+
 // Re-export for tests and callers that import picker categories from here.
 export { PICKER_CATEGORIES };

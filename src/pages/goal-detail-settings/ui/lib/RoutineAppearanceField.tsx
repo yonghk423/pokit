@@ -75,7 +75,6 @@ export function RoutineAppearanceField({
       muted={muted}
       hint=""
       compact
-      defaultExpanded
     />
   );
 }

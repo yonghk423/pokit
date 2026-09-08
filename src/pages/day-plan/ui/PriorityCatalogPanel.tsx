@@ -2,7 +2,7 @@ import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import * as Haptics from 'expo-haptics';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Reanimated, {
   Easing,
   runOnJS,
@@ -13,11 +13,19 @@ import Reanimated, {
 
 import {
   formatSpineScheduleRangeLabel,
+  getLocalDateKey,
   isNonDeletableCatalogKey,
+  lookupCategoryPlannedDayCount,
+  PRIORITY_MARK_COLOR_PRESETS,
+  priorityMarkTitleHighlight,
   resolveCategoryCatalogIcon,
+  resolveCategoryMarkColor,
+  sumCategoryPlannedDaysInRange,
+  addDaysToLocalDateKey,
   useDayPlanDraftStore,
+  type PriorityMarkColorId,
 } from '@entities/day-plan';
-import { RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
+import { RETRO_BORDER_WIDTH, RETRO_RADIUS } from '@shared/config/retroFlat';
 import {
   DEFAULT_POST_IT_FACE_COLOR_ID,
   getDayMealSlotLabel,
@@ -28,6 +36,7 @@ import {
   resolvePostItFaceColor,
   resolvePostItFaceInk,
   resolvePostItFaceMuted,
+  ROUTINE_CATALOG_FLAT_POST_IT_KEY,
   savePostItFaceColorForGroup,
   setRoutineCatalogGroupCollapsed,
   type CustomCatalogGroup,
@@ -38,13 +47,17 @@ import {
 } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
+import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { activeIconColorByCategory, categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
 
 import { getPickerCategoryLabel, PICKER_CATEGORIES, PRIMARY } from '../lib/dayPlanEditorShared';
 import {
   buildPriorityCatalogSections,
   filterCatalogPickerCategories,
+  flattenPriorityCatalogItems,
+  filterPickerItemsByQuery,
   type PickerCategoryItem,
   type PriorityCatalogGroupSection,
 } from '../lib/priorityCatalogSections';
@@ -54,8 +67,10 @@ import {
   mealSlotPickerBtnWidth,
 } from './CatalogRowMealSlotChips';
 import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
-import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
 import { PriorityBagRowAccordionPanel } from './PriorityBagRowAccordionPanel';
+
+/** 루틴 목록(플랫) 포스트잇 면색 저장 키 */
+const FLAT_CATALOG_POST_IT_KEY = ROUTINE_CATALOG_FLAT_POST_IT_KEY;
 
 export type PriorityCatalogEditorial = {
   ink: string;
@@ -244,6 +259,8 @@ function CatalogListRow({
   priorityStart,
   priorityEnd,
   manageOnly = false,
+  markColor = null,
+  onSelectMarkColor,
 }: {
   categoryKey: string;
   icon: string;
@@ -278,12 +295,18 @@ function CatalogListRow({
   priorityStart?: string;
   priorityEnd?: string;
   manageOnly?: boolean;
+  markColor?: PriorityMarkColorId | null;
+  onSelectMarkColor?: (color: PriorityMarkColorId | null) => void;
 }) {
   const { t } = useTranslation();
   const [isManageDetailExpanded, setIsManageDetailExpanded] = useState(false);
   const [manageDetailMounted, setManageDetailMounted] = useState(false);
   const manageDetailProgress = useSharedValue(0);
   const manageDetailHeight = useSharedValue(0);
+  const titleHighlight = manageOnly ? priorityMarkTitleHighlight(markColor, isDark) : undefined;
+  const markShadow = shadow ?? '#000000';
+  const MARK_SWATCH = 22;
+  const MARK_SHADOW = 2;
   const settingsBorder = manageOnly
     ? isDark
       ? 'rgba(241,239,255,0.28)'
@@ -513,17 +536,29 @@ function CatalogListRow({
             )}
           </Animated.View>
           <View style={styles.catalogRowTextCol}>
-            <ThemedText
-              style={[
-                styles.catalogRowLabel,
-                manageOnly && styles.catalogRowLabelManage,
-                { color: labelColor },
-              ]}
-              lightColor={labelColor}
-              darkColor={labelColor}
-              numberOfLines={1}>
-              {label}
-            </ThemedText>
+            <View style={styles.catalogRowTitleMark}>
+              {titleHighlight ? (
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.catalogRowTitleHighlight,
+                    { backgroundColor: titleHighlight },
+                  ]}
+                />
+              ) : null}
+              <ThemedText
+                style={[
+                  styles.catalogRowLabel,
+                  manageOnly && styles.catalogRowLabelManage,
+                  styles.catalogRowTitleText,
+                  { color: labelColor },
+                ]}
+                lightColor={labelColor}
+                darkColor={labelColor}
+                numberOfLines={1}>
+                {label}
+              </ThemedText>
+            </View>
             {subtitle ? (
               <ThemedText
                 style={[
@@ -870,20 +905,128 @@ function CatalogListRow({
       </View>
       {manageOnly && manageDetailMounted ? (
         <Reanimated.View style={[styles.catalogManageDetailPanel, manageDetailPanelStyle]}>
-          <View
-            style={[styles.catalogManageDetail, { borderTopColor: line }]}
-            onLayout={(e) => {
-              handleManageDetailLayout(e.nativeEvent.layout.height);
-            }}>
-            <PriorityBagRowAccordionPanel
-              categoryKey={categoryKey}
-              label={label}
-              ink={ink}
-              muted={muted}
-              line={line}
-              isDark={isDark}
-            />
-          </View>
+            <View
+              style={[styles.catalogManageDetail, { borderTopColor: line }]}
+              onLayout={(e) => {
+                handleManageDetailLayout(e.nativeEvent.layout.height);
+              }}>
+              {onSelectMarkColor ? (
+                <View
+                  style={styles.catalogImportanceBlock}
+                  accessibilityRole="toolbar"
+                  accessibilityLabel={t('dayPlan.importanceMarkLabel')}>
+                  <ThemedText style={[styles.catalogImportanceLabel, { color: muted }]}>
+                    {t('dayPlan.importanceMarkLabel')}
+                  </ThemedText>
+                  <View style={styles.catalogImportanceChipRow}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: markColor == null }}
+                      accessibilityLabel={t('dayPlan.importanceMarkClearA11y')}
+                      hitSlop={6}
+                      onPress={() => {
+                        void Haptics.selectionAsync();
+                        onSelectMarkColor(null);
+                      }}
+                      style={({ pressed }) => [
+                        styles.catalogImportanceChipShell,
+                        {
+                          width: MARK_SWATCH,
+                          height: MARK_SWATCH,
+                          marginRight: MARK_SHADOW,
+                          marginBottom: MARK_SHADOW,
+                          opacity: pressed ? 0.88 : 1,
+                        },
+                      ]}>
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.catalogImportanceChipShadow,
+                          {
+                            backgroundColor: markShadow,
+                            transform: [
+                              { translateX: MARK_SHADOW },
+                              { translateY: MARK_SHADOW },
+                            ],
+                          },
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.catalogImportanceChipFace,
+                          {
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
+                            borderColor: line,
+                            borderWidth: markColor == null ? 2 : 1,
+                          },
+                        ]}>
+                        <IconSymbol name="xmark" size={11} color={muted} />
+                      </View>
+                    </Pressable>
+                    {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
+                      const selectedMark = markColor === preset.id;
+                      const face = isDark ? preset.faceDark : preset.face;
+                      return (
+                        <Pressable
+                          key={preset.id}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: selectedMark }}
+                          accessibilityLabel={t('dayPlan.importanceMarkColorA11y', {
+                            color: t(`dayPlan.importanceMarkSwatch.${preset.id}` as const),
+                          })}
+                          hitSlop={6}
+                          onPress={() => {
+                            void Haptics.selectionAsync();
+                            onSelectMarkColor(preset.id);
+                          }}
+                          style={({ pressed }) => [
+                            styles.catalogImportanceChipShell,
+                            {
+                              width: MARK_SWATCH,
+                              height: MARK_SWATCH,
+                              marginRight: MARK_SHADOW,
+                              marginBottom: MARK_SHADOW,
+                              opacity: pressed ? 0.88 : 1,
+                            },
+                          ]}>
+                          <View
+                            pointerEvents="none"
+                            style={[
+                              styles.catalogImportanceChipShadow,
+                              {
+                                backgroundColor: markShadow,
+                                transform: [
+                                  { translateX: MARK_SHADOW },
+                                  { translateY: MARK_SHADOW },
+                                ],
+                              },
+                            ]}
+                          />
+                          <View
+                            style={[
+                              styles.catalogImportanceChipFace,
+                              {
+                                backgroundColor: face,
+                                borderColor: selectedMark ? ink : 'transparent',
+                                borderWidth: selectedMark ? 2 : 0,
+                              },
+                            ]}
+                          />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ) : null}
+              <PriorityBagRowAccordionPanel
+                categoryKey={categoryKey}
+                label={label}
+                ink={ink}
+                muted={muted}
+                line={line}
+                isDark={isDark}
+              />
+            </View>
         </Reanimated.View>
       ) : null}
       {showMealSlotPicker && !manageOnly && onToggleMealSlot ? (
@@ -1021,18 +1164,28 @@ function renderRows(
     };
   },
   manageOnly = false,
+  frequencyByKey?: Record<string, number>,
+  formatFrequency?: (count: number) => string,
+  markColorByKey?: Record<string, PriorityMarkColorId>,
+  onSelectMarkColor?: (categoryKey: string, color: PriorityMarkColorId | null) => void,
 ) {
   return cats.map((cat) => {
     const selected = priorityCategoryOrder.includes(cat.key);
     const slotPickerLocked = isFocusStarted && selected;
     const spineSchedule = spineCatalogOptions?.resolveSpineSchedule(cat.key);
+    const frequencyCount =
+      frequencyByKey != null
+        ? lookupCategoryPlannedDayCount(frequencyByKey, cat.key)
+        : 0;
+    const frequencySubtitle =
+      frequencyCount > 0 && formatFrequency ? formatFrequency(frequencyCount) : null;
     return (
       <CatalogListRow
         key={cat.key}
         categoryKey={cat.key}
         icon={cat.icon}
         label={cat.label}
-        subtitle={null}
+        subtitle={frequencySubtitle}
         selected={selected}
         ink={editorial.ink}
         muted={editorial.muted}
@@ -1044,6 +1197,16 @@ function renderRows(
         isFocusStarted={isFocusStarted}
         onAddPress={() => onCatalogTap(cat.key)}
         onOpenSettings={() => onOpenCategorySettings(cat.key)}
+        markColor={
+          manageOnly && markColorByKey
+            ? resolveCategoryMarkColor(markColorByKey, cat.key)
+            : null
+        }
+        onSelectMarkColor={
+          manageOnly && onSelectMarkColor
+            ? (color) => onSelectMarkColor(cat.key, color)
+            : undefined
+        }
         onMoveGroup={
           onMoveCustomFlow ? () => onMoveCustomFlow(cat.key, cat.label) : undefined
         }
@@ -1143,6 +1306,8 @@ type Props = {
   ) => void;
   /** 담기·시간 설정 없이 루틴 목록만 관리 */
   manageOnly?: boolean;
+  /** manageOnly — 검색 옆 + 로 새 루틴/묶음 만들기 */
+  onCreatePress?: () => void;
 };
 
 function GroupSectionBlock({
@@ -1337,6 +1502,18 @@ function GroupSectionBlock({
             manageOnly={manageOnly}
             trailing={groupHeaderTrailing}
           />
+          {onSelectPostItFaceColor ? (
+            <View style={styles.headerPostItChips}>
+              <PostItFaceColorChips
+                compact
+                selectedId={postItFaceColorId}
+                isDark={isDark}
+                ink={faceInk}
+                shadowColor={faceEditorial.shadow ?? '#000000'}
+                onSelect={onSelectPostItFaceColor}
+              />
+            </View>
+          ) : null}
           {groupAccordion.mounted ? (
             <Reanimated.View style={[styles.groupAccordionPanel, groupAccordion.panelStyle]}>
               <View
@@ -1344,16 +1521,6 @@ function GroupSectionBlock({
                 onLayout={(event) => {
                   groupAccordion.onContentLayout(event.nativeEvent.layout.height);
                 }}>
-                {onSelectPostItFaceColor ? (
-                  <PostItFaceColorChips
-                    compact
-                    selectedId={postItFaceColorId}
-                    isDark={isDark}
-                    ink={faceInk}
-                    shadowColor={faceEditorial.shadow ?? '#000000'}
-                    onSelect={onSelectPostItFaceColor}
-                  />
-                ) : null}
                 <View
                   style={[
                     styles.listShell,
@@ -1432,7 +1599,9 @@ export function PriorityCatalogPanel({
   resolveSpineSchedule,
   onChangeCatalogSpineTime,
   manageOnly = false,
+  onCreatePress,
 }: Props) {
+  const { t } = useTranslation();
   const [expandedMealSlotKey, setExpandedMealSlotKey] = useState<string | null>(null);
   const [expandedSpineTimeKey, setExpandedSpineTimeKey] = useState<string | null>(null);
   const [postItFaceByGroup, setPostItFaceByGroup] = useState<PostItFaceColorByGroup>(
@@ -1441,8 +1610,37 @@ export function PriorityCatalogPanel({
   const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(() =>
     manageOnly ? loadRoutineCatalogCollapsedGroupIds() : new Set(),
   );
+  const [catalogSearchQuery, setCatalogSearchQuery] = useState('');
   const collapsedGroupIdsRef = useRef(collapsedGroupIds);
   collapsedGroupIdsRef.current = collapsedGroupIds;
+
+  const routineHistoryPlannedKeysByDate = useDayPlanDraftStore(
+    (s) => s.routineHistoryPlannedKeysByDate,
+  );
+  const priorityCategoryImportance = useDayPlanDraftStore((s) => s.priorityCategoryImportance);
+  const setPriorityCategoryMarkColor = useDayPlanDraftStore((s) => s.setPriorityCategoryMarkColor);
+
+  useEffect(() => {
+    if (!manageOnly) return;
+    useDayPlanDraftStore.getState().hydrate();
+  }, [manageOnly]);
+
+  const frequencyByKey = useMemo(() => {
+    if (!manageOnly) return {};
+    return sumCategoryPlannedDaysInRange(
+      routineHistoryPlannedKeysByDate,
+      getLocalDateKey(),
+      30,
+      addDaysToLocalDateKey,
+    );
+  }, [manageOnly, routineHistoryPlannedKeysByDate]);
+
+  const onSelectCatalogMarkColor = useCallback(
+    (categoryKey: string, color: PriorityMarkColorId | null) => {
+      setPriorityCategoryMarkColor(categoryKey, color);
+    },
+    [setPriorityCategoryMarkColor],
+  );
 
   const onSelectPostItFaceColor = useCallback((groupKey: string, id: PostItFaceColorId) => {
     setPostItFaceByGroup(savePostItFaceColorForGroup(groupKey, id));
@@ -1485,6 +1683,34 @@ export function PriorityCatalogPanel({
         customGroups,
       }),
     [visibleCatalogCategories, customFlowPickerItems, customFlowEntries, customGroups],
+  );
+
+  const flatManageItems = useMemo(
+    () => (manageOnly ? flattenPriorityCatalogItems(groupSections) : []),
+    [groupSections, manageOnly],
+  );
+
+  const sortedFlatManageItems = useMemo(() => {
+    if (!manageOnly) return flatManageItems;
+    return [...flatManageItems].sort((a, b) => {
+      const ca = lookupCategoryPlannedDayCount(frequencyByKey, a.key);
+      const cb = lookupCategoryPlannedDayCount(frequencyByKey, b.key);
+      if (cb !== ca) return cb - ca;
+      return a.label.localeCompare(b.label, 'ko');
+    });
+  }, [flatManageItems, frequencyByKey, manageOnly]);
+
+  const filteredFlatManageItems = useMemo(
+    () =>
+      manageOnly
+        ? filterPickerItemsByQuery(sortedFlatManageItems, catalogSearchQuery)
+        : sortedFlatManageItems,
+    [catalogSearchQuery, manageOnly, sortedFlatManageItems],
+  );
+
+  const formatFrequency = useCallback(
+    (count: number) => t('catalog.frequencyRecent30', { count }),
+    [t],
   );
 
   const visibleGroupKeysKey = useMemo(
@@ -1564,6 +1790,195 @@ export function PriorityCatalogPanel({
     ],
   );
 
+  if (manageOnly) {
+    const flatFaceColorId =
+      postItFaceByGroup[FLAT_CATALOG_POST_IT_KEY] ?? DEFAULT_POST_IT_FACE_COLOR_ID;
+    const faceColor = resolvePostItFaceColor(flatFaceColorId, isDark);
+    const faceUsesLightInk = postItFaceUsesLightInk(flatFaceColorId);
+    const faceInk = resolvePostItFaceInk(flatFaceColorId, editorial.ink);
+    const faceMuted = resolvePostItFaceMuted(flatFaceColorId, editorial.muted);
+    const faceEditorial: PriorityCatalogEditorial = {
+      ...editorial,
+      ink: faceInk,
+      muted: faceMuted,
+      line: faceUsesLightInk ? 'rgba(255,255,255,0.22)' : editorial.line,
+    };
+    return (
+      <View style={styles.root}>
+        {onCreatePress ? (
+          <View pointerEvents="none" style={styles.createTapeRow}>
+            <View
+              style={[
+                styles.createTape,
+                {
+                  backgroundColor: isDark ? 'rgba(255, 236, 179, 0.92)' : '#FFE8A8',
+                },
+              ]}>
+              <ThemedText
+                style={styles.createTapeText}
+                numberOfLines={2}>
+                {t('catalog.createTapTape')}
+              </ThemedText>
+            </View>
+          </View>
+        ) : null}
+        <PostItCardShell
+          isDark={isDark}
+          faceColor={faceColor}
+          borderColor={
+            flatFaceColorId === 'white' && !isDark ? 'rgba(0,0,0,0.16)' : undefined
+          }
+          borderWidth={
+            flatFaceColorId === 'white' && !isDark ? StyleSheet.hairlineWidth : 0
+          }>
+          <View style={styles.flatSearchPad}>
+            <View style={styles.flatSearchRow}>
+              <View
+                style={[
+                  styles.flatSearchShell,
+                  { marginRight: 2, marginBottom: 2 },
+                ]}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.flatSearchShadow,
+                    { backgroundColor: faceEditorial.shadow ?? '#000000' },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.flatSearchFace,
+                    {
+                      backgroundColor: '#FFFFFF',
+                    },
+                  ]}>
+                  <IconSymbol
+                    name="magnifyingglass"
+                    size={14}
+                    color={faceUsesLightInk ? 'rgba(0,0,0,0.55)' : faceMuted}
+                  />
+                  <ThemedTextInput
+                    value={catalogSearchQuery}
+                    onChangeText={setCatalogSearchQuery}
+                    placeholder={t('catalog.searchPlaceholder')}
+                    placeholderTextColor={
+                      faceUsesLightInk ? 'rgba(0,0,0,0.45)' : faceMuted
+                    }
+                    returnKeyType="search"
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                    clearButtonMode="never"
+                    accessibilityLabel={t('catalog.searchA11y')}
+                    style={[
+                      styles.flatSearchInput,
+                      { color: faceUsesLightInk ? '#111111' : faceInk },
+                    ]}
+                  />
+                  {catalogSearchQuery.length > 0 ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('catalog.clearSearchA11y')}
+                      hitSlop={8}
+                      onPress={() => {
+                        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setCatalogSearchQuery('');
+                      }}
+                      style={styles.flatSearchClear}>
+                      <IconSymbol
+                        name="xmark.circle.fill"
+                        size={16}
+                        color={faceUsesLightInk ? 'rgba(0,0,0,0.45)' : faceMuted}
+                      />
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
+              {onCreatePress ? (
+                <View
+                  style={[
+                    styles.flatSearchAddShell,
+                    { marginRight: 2, marginBottom: 2 },
+                  ]}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.flatSearchAddShadow,
+                      { backgroundColor: faceEditorial.shadow ?? '#000000' },
+                    ]}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('catalog.createRoutineA11y')}
+                    onPress={() => {
+                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      onCreatePress();
+                    }}
+                    style={[styles.flatSearchAddFace, { backgroundColor: '#FFFFFF' }]}>
+                    <IconSymbol
+                      name="plus"
+                      size={16}
+                      color={faceUsesLightInk ? '#111111' : faceInk}
+                    />
+                  </Pressable>
+                </View>
+              ) : null}
+            </View>
+          </View>
+          <View style={styles.flatFaceChipsPad}>
+            <PostItFaceColorChips
+              compact
+              selectedId={flatFaceColorId}
+              isDark={isDark}
+              ink={faceInk}
+              shadowColor={faceEditorial.shadow ?? '#000000'}
+              onSelect={(id) => onSelectPostItFaceColor(FLAT_CATALOG_POST_IT_KEY, id)}
+            />
+          </View>
+          <View
+            style={[
+              styles.listShell,
+              styles.listShellManage,
+              styles.listShellManageFlat,
+              {
+                borderTopColor: faceUsesLightInk
+                  ? 'rgba(255,255,255,0.22)'
+                  : isDark
+                    ? 'rgba(241,239,255,0.22)'
+                    : 'rgba(24,26,46,0.12)',
+              },
+            ]}>
+            {filteredFlatManageItems.length > 0 ? (
+              renderRows(
+                filteredFlatManageItems,
+                faceEditorial,
+                isDark,
+                priorityCategoryOrder,
+                isFocusStarted,
+                onCatalogTap,
+                onOpenCategorySettings,
+                onMoveCustomFlow,
+                onDeleteCatalogItem,
+                undefined,
+                undefined,
+                true,
+                frequencyByKey,
+                formatFrequency,
+                priorityCategoryImportance,
+                onSelectCatalogMarkColor,
+              )
+            ) : (
+              <ThemedText style={[styles.flatSearchEmpty, { color: faceMuted }]}>
+                {catalogSearchQuery.trim().length > 0
+                  ? t('catalog.searchEmpty')
+                  : t('catalog.listEmpty')}
+              </ThemedText>
+            )}
+          </View>
+        </PostItCardShell>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
       {groupSections.map((section, index) => (
@@ -1607,6 +2022,41 @@ export function PriorityCatalogPanel({
 const styles = StyleSheet.create({
   root: {
     width: '100%',
+    overflow: 'visible',
+  },
+  createTapeRow: {
+    alignItems: 'flex-end',
+    paddingRight: 10,
+    marginBottom: -8,
+    zIndex: 8,
+  },
+  createTape: {
+    maxWidth: 220,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 0,
+    borderWidth: 1.5,
+    borderColor: '#111111',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 1,
+        shadowRadius: 0,
+      },
+      android: { elevation: 3 },
+      default: {},
+    }),
+  },
+  createTapeText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    color: '#111111',
+    textAlign: 'center',
   },
   sectionBlock: {
     width: '100%',
@@ -1686,6 +2136,84 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     backgroundColor: 'transparent',
   },
+  listShellManageFlat: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  flatSearchPad: {
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 2,
+  },
+  flatSearchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  flatSearchShell: {
+    position: 'relative',
+    flex: 1,
+    minWidth: 0,
+  },
+  flatSearchShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: RETRO_RADIUS,
+    transform: [{ translateX: 2 }, { translateY: 2 }],
+  },
+  flatSearchFace: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 40,
+    paddingHorizontal: 12,
+    borderWidth: 0,
+    borderRadius: RETRO_RADIUS,
+    zIndex: 1,
+  },
+  flatSearchInput: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 8,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  flatSearchClear: {
+    padding: 2,
+  },
+  flatSearchAddShell: {
+    position: 'relative',
+    flexShrink: 0,
+  },
+  flatSearchAddShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: RETRO_RADIUS,
+    transform: [{ translateX: 2 }, { translateY: 2 }],
+  },
+  flatSearchAddFace: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: RETRO_RADIUS,
+    zIndex: 1,
+  },
+  flatSearchEmpty: {
+    paddingHorizontal: 10,
+    paddingVertical: 18,
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  flatFaceChipsPad: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  headerPostItChips: {
+    paddingBottom: 8,
+  },
   groupAccordionPanel: {
     position: 'relative',
     width: '100%',
@@ -1729,6 +2257,33 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 10,
     paddingVertical: 12,
+  },
+  catalogImportanceBlock: {
+    gap: 6,
+    marginBottom: 10,
+  },
+  catalogImportanceLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  catalogImportanceChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  catalogImportanceChipShell: {
+    position: 'relative',
+  },
+  catalogImportanceChipShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 6,
+  },
+  catalogImportanceChipFace: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mealSlotPanel: {
     marginTop: -2,
@@ -1845,6 +2400,23 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 2,
+  },
+  catalogRowTitleMark: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  catalogRowTitleHighlight: {
+    position: 'absolute',
+    left: -2,
+    right: -2,
+    bottom: -1,
+    height: 7,
+    borderRadius: 0,
+    zIndex: 0,
+  },
+  catalogRowTitleText: {
+    zIndex: 1,
   },
   catalogRowLabel: {
     fontSize: 13,

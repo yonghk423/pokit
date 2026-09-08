@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import {
-  BUILTIN_FIXED_FLOW_SET_IDS,
+  BUILTIN_PRESET_SCHEDULE_SET_IDS,
   createExampleCustomFlowSetItems,
   EXAMPLE_CUSTOM_FLOW_SET_NAME,
   getActiveFixedFlowSet,
@@ -9,16 +9,19 @@ import {
   isBuiltinPresetScheduleSet,
   loadFixedFlowSetsState,
   normalizeDayMealSlot,
+  normalizeApplyWeekdays,
   removeRoutineCatalogSelectionKey,
   buildFixedFlowItemMealSlotsFields,
   toggleFixedFlowItemMealSlots,
   saveFixedFlowSetsState,
+  WEEKDAY_PRESET_DAILY,
   type DayMealSlot,
   type FixedFlowSet,
   type FixedFlowSetItem,
   type FixedRoutineActiveMealSlotsByLayoutMode,
   type FixedRoutineActiveSetIdsByLayoutMode,
   type FixedRoutineApplyLayoutMode,
+  type WeekdayIndex,
 } from '@shared/lib/storage';
 
 import { isPriorityCatalogAllowedKey } from '../lib/priorityCatalogRegistry';
@@ -129,6 +132,7 @@ type FixedFlowSetsStoreState = {
   sets: FixedFlowSet[];
   scheduledMealSlotLayoutEnabled: boolean;
   dismissedExampleCustomFlowSetIds: string[];
+  dismissedBuiltinPresetSetIds: string[];
   fixedRoutineApplyLayoutMode: FixedRoutineApplyLayoutMode;
   /** 현재 편집 모드 기준 오늘 적용 categoryKey */
   todayAppliedCategoryKeys: string[];
@@ -140,6 +144,10 @@ type FixedFlowSetsStoreState = {
   refreshTodayAppliedCategoryKeys: (now?: Date) => void;
   addSet: (name?: string) => void;
   renameSet: (setId: string, nextName: string) => void;
+  /** 그룹 제목 형광펜 (항목 중요도와 별개) */
+  setTitleMarkColor: (setId: string, color: string | null) => void;
+  /** 직접 만든 묶음의 적용 요일 (최소 1일). custom 규칙으로 저장 */
+  setApplyWeekdays: (setId: string, weekdays: WeekdayIndex[]) => void;
   removeSet: (setId: string) => void;
   /** 지정 보기 모드(또는 현재 모드)에만 오늘 적용 토글 */
   toggleSetForToday: (setId: string, layoutMode?: FixedRoutineApplyLayoutMode) => void;
@@ -240,6 +248,7 @@ function persistState(
       | 'sets'
       | 'scheduledMealSlotLayoutEnabled'
       | 'dismissedExampleCustomFlowSetIds'
+      | 'dismissedBuiltinPresetSetIds'
       | 'fixedRoutineApplyLayoutMode'
     >
   >,
@@ -278,6 +287,8 @@ function persistState(
     patch.scheduledMealSlotLayoutEnabled ?? get().scheduledMealSlotLayoutEnabled;
   const dismissedExampleCustomFlowSetIds =
     patch.dismissedExampleCustomFlowSetIds ?? get().dismissedExampleCustomFlowSetIds;
+  const dismissedBuiltinPresetSetIds =
+    patch.dismissedBuiltinPresetSetIds ?? get().dismissedBuiltinPresetSetIds;
   saveFixedFlowSetsState({
     activeSetIds,
     activeMealSlotsBySetId,
@@ -286,6 +297,7 @@ function persistState(
     sets,
     scheduledMealSlotLayoutEnabled,
     dismissedExampleCustomFlowSetIds,
+    dismissedBuiltinPresetSetIds,
     fixedRoutineApplyLayoutMode,
   });
   applyTodayAppliedPatch(set, get, {
@@ -319,6 +331,7 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
   sets: [],
   scheduledMealSlotLayoutEnabled: false,
   dismissedExampleCustomFlowSetIds: [],
+  dismissedBuiltinPresetSetIds: [],
   fixedRoutineApplyLayoutMode: 'bag',
   todayAppliedCategoryKeys: [],
   todayAppliedRevision: 0,
@@ -347,6 +360,7 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       sets: sanitized.sets,
       scheduledMealSlotLayoutEnabled: loaded.scheduledMealSlotLayoutEnabled === true,
       dismissedExampleCustomFlowSetIds: loaded.dismissedExampleCustomFlowSetIds ?? [],
+      dismissedBuiltinPresetSetIds: loaded.dismissedBuiltinPresetSetIds ?? [],
       fixedRoutineApplyLayoutMode: mode,
       todayAppliedCategoryKeys,
       todayAppliedRevision: 1,
@@ -366,6 +380,7 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       sets: sanitized.sets,
       scheduledMealSlotLayoutEnabled: loaded.scheduledMealSlotLayoutEnabled === true,
       dismissedExampleCustomFlowSetIds: loaded.dismissedExampleCustomFlowSetIds ?? [],
+      dismissedBuiltinPresetSetIds: loaded.dismissedBuiltinPresetSetIds ?? [],
       fixedRoutineApplyLayoutMode: loaded.fixedRoutineApplyLayoutMode ?? 'bag',
       isHydrated: true,
     });
@@ -393,7 +408,8 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     const nextSet: FixedFlowSet = {
       id: createSetId(),
       name: nextName,
-      applyRule: 'manual',
+      applyRule: 'custom',
+      applyWeekdays: [...WEEKDAY_PRESET_DAILY],
       items: nextName === EXAMPLE_CUSTOM_FLOW_SET_NAME ? createExampleCustomFlowSetItems() : [],
     };
     const nextSets = [...sets, nextSet];
@@ -402,9 +418,6 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
   },
 
   renameSet: (setId, nextName) => {
-    if (BUILTIN_FIXED_FLOW_SET_IDS.includes(setId as (typeof BUILTIN_FIXED_FLOW_SET_IDS)[number])) {
-      return;
-    }
     const name = nextName.trim();
     if (!name) return;
     const { sets, activeSetIds, activeMealSlotsBySetId } = get();
@@ -413,10 +426,38 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
   },
 
+  setTitleMarkColor: (setId, color) => {
+    const nextColor =
+      color == null || color.trim().length === 0 ? null : color.trim();
+    const { sets, activeSetIds, activeMealSlotsBySetId } = get();
+    if (!sets.some((s) => s.id === setId)) return;
+    const nextSets = sets.map((s) =>
+      s.id === setId ? { ...s, titleMarkColor: nextColor } : s,
+    );
+    set({ sets: nextSets });
+    persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
+  },
+
+  setApplyWeekdays: (setId, weekdays) => {
+    const normalized = normalizeApplyWeekdays(weekdays);
+    if (normalized.length === 0) return;
+    const { sets, activeSetIds, activeMealSlotsBySetId } = get();
+    const target = sets.find((s) => s.id === setId);
+    if (!target) return;
+    const nextSets = sets.map((s) =>
+      s.id === setId
+        ? {
+            ...s,
+            // 데일리·주말 프리셋은 id·applyRule 유지, 요일만 갱신
+            applyRule: isBuiltinPresetScheduleSet(s) ? s.applyRule : ('custom' as const),
+            applyWeekdays: normalized,
+          }
+        : s,
+    );
+    persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
+  },
+
   removeSet: (setId) => {
-    if (BUILTIN_FIXED_FLOW_SET_IDS.includes(setId as (typeof BUILTIN_FIXED_FLOW_SET_IDS)[number])) {
-      return;
-    }
     const {
       sets,
       activeSetIds,
@@ -424,6 +465,7 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       activeSetIdsByLayoutMode,
       activeMealSlotsBySetIdByLayoutMode,
       dismissedExampleCustomFlowSetIds,
+      dismissedBuiltinPresetSetIds,
       fixedRoutineApplyLayoutMode,
     } = get();
     const nextSets = sets.filter((s) => s.id !== setId);
@@ -443,9 +485,14 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       const { [setId]: _removed, ...restSlots } = syncedSlotsByMode[mode];
       nextActiveMealSlotsBySetIdByLayoutMode[mode] = restSlots;
     }
-    const nextDismissed = isBuiltinExampleCustomFlowSet({ id: setId })
+    const nextDismissedExamples = isBuiltinExampleCustomFlowSet({ id: setId })
       ? [...new Set([...dismissedExampleCustomFlowSetIds, setId])]
       : dismissedExampleCustomFlowSetIds;
+    const nextDismissedPresets = (
+      BUILTIN_PRESET_SCHEDULE_SET_IDS as readonly string[]
+    ).includes(setId)
+      ? [...new Set([...dismissedBuiltinPresetSetIds, setId])]
+      : dismissedBuiltinPresetSetIds;
     const mirrors = mirrorsForMode(
       fixedRoutineApplyLayoutMode,
       nextActiveSetIdsByLayoutMode,
@@ -457,13 +504,15 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       activeMealSlotsBySetId: mirrors.activeMealSlotsBySetId,
       activeSetIdsByLayoutMode: nextActiveSetIdsByLayoutMode,
       activeMealSlotsBySetIdByLayoutMode: nextActiveMealSlotsBySetIdByLayoutMode,
-      dismissedExampleCustomFlowSetIds: nextDismissed,
+      dismissedExampleCustomFlowSetIds: nextDismissedExamples,
+      dismissedBuiltinPresetSetIds: nextDismissedPresets,
     });
     persistState(set, get, {
       activeSetIdsByLayoutMode: nextActiveSetIdsByLayoutMode,
       activeMealSlotsBySetIdByLayoutMode: nextActiveMealSlotsBySetIdByLayoutMode,
       sets: nextSets,
-      dismissedExampleCustomFlowSetIds: nextDismissed,
+      dismissedExampleCustomFlowSetIds: nextDismissedExamples,
+      dismissedBuiltinPresetSetIds: nextDismissedPresets,
     });
   },
 

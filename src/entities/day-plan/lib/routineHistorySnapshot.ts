@@ -74,7 +74,61 @@ export function snapshotRoutinePlannedKeys(
   order: string[],
 ): RoutineHistoryByDate {
   if (order.length === 0) return plannedByDate;
-  return { ...plannedByDate, [dateKey]: [...order] };
+  const prev = plannedByDate[dateKey] ?? [];
+  const seen = new Set<string>();
+  const next: string[] = [];
+  for (const raw of prev) {
+    const key = normalizeHistoryRecordKey(raw);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    next.push(key);
+  }
+  let changed = next.length !== prev.length;
+  for (const raw of order) {
+    const key = normalizeHistoryRecordKey(raw);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    next.push(key);
+    changed = true;
+  }
+  if (!changed) return plannedByDate;
+  return { ...plannedByDate, [dateKey]: next };
+}
+
+/**
+ * endDateKey 포함 최근 dayCount일 — 오늘 탭(담기)에 올라간 날 수.
+ * 같은 날 여러 번 담아도 1회로 칩니다.
+ */
+export function sumCategoryPlannedDaysInRange(
+  plannedByDate: Record<string, string[] | undefined>,
+  endDateKey: string,
+  dayCount: number,
+  addDays: (dateKey: string, delta: number) => string,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  const days = Math.max(1, Math.floor(dayCount));
+  for (let i = 0; i < days; i++) {
+    const dateKey = addDays(endDateKey, -i);
+    const keys = plannedByDate[dateKey];
+    if (!keys || keys.length === 0) continue;
+    const seen = new Set<string>();
+    for (const raw of keys) {
+      const key = normalizeHistoryRecordKey(raw);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out[key] = (out[key] ?? 0) + 1;
+    }
+  }
+  return out;
+}
+
+export function lookupCategoryPlannedDayCount(
+  frequencyByKey: Record<string, number>,
+  categoryKey: string,
+): number {
+  const normalized = normalizeHistoryRecordKey(categoryKey);
+  if (normalized && frequencyByKey[normalized] != null) return frequencyByKey[normalized]!;
+  return frequencyByKey[categoryKey] ?? 0;
 }
 
 export function clearRoutineHistoryPendingForDate(

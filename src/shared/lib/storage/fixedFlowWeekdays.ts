@@ -38,10 +38,12 @@ export function normalizeApplyWeekdays(raw: unknown): WeekdayIndex[] {
 }
 
 export function defaultWeekdaysForApplyRule(rule: FixedFlowSetApplyRule): WeekdayIndex[] {
-  if (rule === 'weekday') return [...WEEKDAY_PRESET_WEEKDAY];
+  // 데일리 프리셋 기본 = 평일(월~금). 주말은 토·일.
+  if (rule === 'weekday' || rule === 'daily') return [...WEEKDAY_PRESET_WEEKDAY];
   if (rule === 'weekend') return [...WEEKDAY_PRESET_WEEKEND];
-  if (rule === 'daily' || rule === 'always') return [...WEEKDAY_PRESET_DAILY];
-  if (rule === 'custom') return [1];
+  if (rule === 'always' || rule === 'custom' || rule === 'manual') {
+    return [...WEEKDAY_PRESET_DAILY];
+  }
   return [];
 }
 
@@ -57,6 +59,13 @@ export function resolveApplyWeekdays(input: {
 function sameWeekdaySet(a: WeekdayIndex[], b: WeekdayIndex[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((day, index) => day === b[index]);
+}
+
+export function isSameApplyWeekdaySet(
+  a: readonly WeekdayIndex[] | number[] | undefined,
+  b: readonly WeekdayIndex[] | number[] | undefined,
+): boolean {
+  return sameWeekdaySet(normalizeApplyWeekdays(a), normalizeApplyWeekdays(b));
 }
 
 export function formatApplyWeekdaysLabel(weekdays: WeekdayIndex[]): string {

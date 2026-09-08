@@ -28,8 +28,6 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
-import { PRIMARY } from '../lib/dayPlanEditorShared';
-
 const GROUP_NAME_MAX = 24;
 const CHIP_SHADOW = 2;
 
@@ -355,19 +353,34 @@ export function MoveCustomFlowGroupSheet({
               accessibilityLabel={t('catalog.moveGroupCta')}
               disabled={!canSave}
               onPress={handleSave}
-              style={({ pressed }) => [
+              style={[
                 styles.cta,
                 {
-                  backgroundColor: canSave ? PRIMARY : inputBg,
+                  backgroundColor: canSave
+                    ? isDark
+                      ? RetroFlatColors.dark.bgMint
+                      : RetroFlatColors.light.bgMint
+                    : inputBg,
                   borderColor: canSave
-                    ? PRIMARY
+                    ? isDark
+                      ? RetroFlatColors.dark.border
+                      : RetroFlatColors.light.border
                     : isDark
                       ? 'rgba(255,255,255,0.12)'
                       : 'rgba(0,0,0,0.08)',
-                  opacity: pressed && canSave ? 0.88 : 1,
                 },
               ]}>
-              <ThemedText style={[styles.ctaText, { color: canSave ? '#FAFAFA' : muted }]}>
+              <ThemedText
+                style={[
+                  styles.ctaText,
+                  {
+                    color: canSave
+                      ? isDark
+                        ? RetroFlatColors.dark.primaryOn
+                        : RetroFlatColors.light.primary
+                      : muted,
+                  },
+                ]}>
                 {t('catalog.moveGroupCta')}
               </ThemedText>
             </Pressable>

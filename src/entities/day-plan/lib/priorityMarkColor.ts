@@ -1,7 +1,7 @@
 /**
- * 담기 행 「중요도 표시」— 형광펜 대표색 마커 (파스텔 포스트잇과 구분).
+ * 루틴 「중요도 표시」— 형광펜 대표색 마커 (파스텔 포스트잇과 구분).
  * id 는 저장 호환용(mint/peach/lavender)이며, 표시색은 초록·주황·파랑 형광에 가깝다.
- * 저장 키는 기존 priorityCategoryImportance 를 재사용하고, 값은 색 id 로 마이그레이션한다.
+ * 저장 키 `priorityCategoryImportance` — 루틴 목록·오늘 담기에서 같은 마커를 공유한다.
  */
 
 export const PRIORITY_MARK_COLOR_IDS = [

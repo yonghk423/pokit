@@ -1,28 +1,20 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { SYSTEM_CATALOG_GROUP_KEYS } from '@entities/day-plan';
 import {
   CityPopSpacing,
-  CityPopTypography,
   RetroFlatColors,
-  RETRO_BORDER_WIDTH,
-  retroBorderFor,
+  SOLID_SHADOW_OFFSET,
 } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
-import {
-  listCustomCatalogGroups,
-  resolveSystemCatalogGroupLabel,
-} from '@shared/lib/storage';
-import { IconSymbol } from '@shared/ui/icon-symbol';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
+import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { importStoryAsRoutine } from '../lib/importStoryAsRoutine';
-import { suggestCatalogGroupKey } from '../lib/storyArticleCategoryKey';
 import type { StoryRoutineArticle } from '../model/storyRoutinePayload';
 
 type Props = {
@@ -35,19 +27,21 @@ type DoneState = {
   created: boolean;
 };
 
+const CHIP_SHADOW = 2;
+
 function sheetPalette(isDark: boolean) {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   return {
-    bg: c.bg,
-    surface: c.surface,
-    surfaceAlt: c.surfaceAlt,
+    bg: isDark ? c.surface : '#FFFFFF',
+    surface: isDark ? c.surfaceAlt : '#FFFFFF',
+    surfaceAlt: isDark ? c.surfaceContainer : c.bg,
     ink: c.text,
     muted: c.textMuted,
-    border: c.border,
     primary: c.primary,
-    primaryOn: c.primaryOn,
-    primaryContainer: c.primaryContainer,
-    chipBg: isDark ? c.surfaceContainer : c.primaryContainer,
+    primaryContainer: isDark ? c.bgMint : c.primaryContainer,
+    closeBg: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+    shadowInk: isDark ? c.solidShadow : '#000000',
+    handle: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
   };
 }
 
@@ -56,33 +50,19 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const palette = sheetPalette(isDark);
-  const [selectedGroupKey, setSelectedGroupKey] = useState('productivity');
   const [done, setDone] = useState<DoneState | null>(null);
-
-  const groupOptions = useMemo(() => {
-    const system = (SYSTEM_CATALOG_GROUP_KEYS as readonly string[]).map((key) => ({
-      key,
-      label: resolveSystemCatalogGroupLabel(key),
-    }));
-    const custom = listCustomCatalogGroups().map((g) => ({
-      key: g.key,
-      label: g.label,
-    }));
-    return [...system, ...custom];
-  }, [visible]);
 
   useEffect(() => {
     if (!visible || !article) return;
     setDone(null);
-    setSelectedGroupKey(suggestCatalogGroupKey(article));
   }, [visible, article]);
 
   const handleImport = useCallback(() => {
     if (!article) return;
-    const result = importStoryAsRoutine(article, selectedGroupKey);
+    const result = importStoryAsRoutine(article);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setDone({ created: result.created });
-  }, [article, selectedGroupKey]);
+  }, [article]);
 
   const handleClose = useCallback(() => {
     setDone(null);
@@ -92,42 +72,57 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
   if (!article) return null;
 
   const durationLabel = t('common.durationMinutes', { count: article.durationMinutes });
-  const selectedGroupLabel =
-    groupOptions.find((g) => g.key === selectedGroupKey)?.label ?? t('category.routineFallback');
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
       transparent
+      statusBarTranslucent
       onRequestClose={handleClose}>
       <View style={styles.backdrop}>
-        <Pressable style={styles.backdropTouch} onPress={handleClose} accessibilityLabel={t('storyImport.closeA11y')} />
+        <Pressable
+          style={styles.backdropTouch}
+          onPress={handleClose}
+          accessibilityLabel={t('storyImport.closeA11y')}
+        />
         <View
           style={[
             styles.sheet,
-            retroBorderFor(isDark),
             {
               backgroundColor: palette.bg,
-              borderBottomWidth: 0,
-              paddingBottom: insets.bottom + CityPopSpacing.sm,
+              paddingBottom: Math.max(insets.bottom, 16) + 8,
             },
           ]}>
           {done ? (
             <View style={styles.successContainer}>
               <View
                 style={[
-                  styles.successIconWrap,
-                  retroBorderFor(isDark),
-                  { backgroundColor: palette.primaryContainer },
+                  styles.successIconShell,
+                  { marginRight: SOLID_SHADOW_OFFSET, marginBottom: SOLID_SHADOW_OFFSET },
                 ]}>
-                <IconSymbol name="checkmark" size={22} color={palette.ink} />
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.successIconShadow,
+                    {
+                      backgroundColor: palette.shadowInk,
+                      transform: [
+                        { translateX: SOLID_SHADOW_OFFSET },
+                        { translateY: SOLID_SHADOW_OFFSET },
+                      ],
+                    },
+                  ]}
+                />
+                <View style={[styles.successIconFace, { backgroundColor: palette.primaryContainer }]}>
+                  <IconSymbol name="checkmark" size={22} color={palette.primary} />
+                </View>
               </View>
               <ThemedText style={[styles.successTitle, { color: palette.ink }]}>
                 {done.created ? t('storyImport.savedCreate') : t('storyImport.savedUpdate')}
               </ThemedText>
               <ThemedText style={[styles.successSub, { color: palette.muted }]}>
-                {t('storyImport.savedInGroup', { group: selectedGroupLabel })}
+                {t('storyImport.savedHint')}
               </ThemedText>
               <BrutalConfirmButton
                 align="stretch"
@@ -138,7 +133,7 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
           ) : (
             <>
               <View style={styles.sheetHeader}>
-                <View style={[styles.handle, { backgroundColor: palette.muted }]} />
+                <View style={[styles.handle, { backgroundColor: palette.handle }]} />
               </View>
 
               <View style={styles.titleRow}>
@@ -149,9 +144,12 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
                   accessibilityRole="button"
                   accessibilityLabel={t('storyImport.closeA11y')}
                   hitSlop={12}
-                  onPress={handleClose}
-                  style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}>
-                  <IconSymbol name="xmark" size={18} color={palette.ink} />
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    handleClose();
+                  }}
+                  style={[styles.closeBtn, { backgroundColor: palette.closeBg }]}>
+                  <IconSymbol name="xmark" size={13} color={palette.muted} />
                 </Pressable>
               </View>
 
@@ -170,35 +168,53 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
                   {article.category ? (
                     <View
                       style={[
-                        styles.metaChip,
-                        retroBorderFor(isDark),
-                        { backgroundColor: palette.chipBg },
+                        styles.metaChipShell,
+                        { marginRight: CHIP_SHADOW, marginBottom: CHIP_SHADOW },
                       ]}>
-                      <ThemedText style={[styles.metaChipText, { color: palette.ink }]}>
-                        {article.category}
-                      </ThemedText>
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.metaChipShadow,
+                          {
+                            backgroundColor: palette.shadowInk,
+                            transform: [{ translateX: CHIP_SHADOW }, { translateY: CHIP_SHADOW }],
+                          },
+                        ]}
+                      />
+                      <View
+                        style={[styles.metaChipFace, { backgroundColor: palette.primaryContainer }]}>
+                        <ThemedText style={[styles.metaChipText, { color: palette.primary }]}>
+                          {article.category}
+                        </ThemedText>
+                      </View>
                     </View>
                   ) : null}
                   <View
                     style={[
-                      styles.metaChip,
-                      retroBorderFor(isDark),
-                      { backgroundColor: palette.surface },
+                      styles.metaChipShell,
+                      { marginRight: CHIP_SHADOW, marginBottom: CHIP_SHADOW },
                     ]}>
-                    <IconSymbol name="clock" size={11} color={palette.muted} />
-                    <ThemedText style={[styles.metaChipText, { color: palette.ink }]}>
-                      {durationLabel}
-                    </ThemedText>
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.metaChipShadow,
+                        {
+                          backgroundColor: palette.shadowInk,
+                          transform: [{ translateX: CHIP_SHADOW }, { translateY: CHIP_SHADOW }],
+                        },
+                      ]}
+                    />
+                    <View style={[styles.metaChipFace, { backgroundColor: palette.surface }]}>
+                      <IconSymbol name="clock" size={11} color={palette.muted} />
+                      <ThemedText style={[styles.metaChipText, { color: palette.ink }]}>
+                        {durationLabel}
+                      </ThemedText>
+                    </View>
                   </View>
                 </View>
 
                 {article.steps && article.steps.length > 0 ? (
-                  <View
-                    style={[
-                      styles.stepsCard,
-                      retroBorderFor(isDark),
-                      { backgroundColor: palette.surfaceAlt },
-                    ]}>
+                  <View style={[styles.stepsCard, { backgroundColor: palette.surfaceAlt }]}>
                     {article.steps.slice(0, 4).map((step, i) => (
                       <View key={i} style={styles.stepRow}>
                         <ThemedText style={[styles.stepIndex, { color: palette.muted }]}>
@@ -211,64 +227,15 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
                     ))}
                   </View>
                 ) : null}
-
-                <ThemedText style={[styles.sectionLabel, { color: palette.muted }]}>
-                  {t('storyImport.pickCategory')}
-                </ThemedText>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.groupRow}
-                  style={styles.groupScroll}>
-                  {groupOptions.map((group) => {
-                    const active = group.key === selectedGroupKey;
-                    return (
-                      <Pressable
-                        key={group.key}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                        onPress={() => {
-                          void Haptics.selectionAsync();
-                          setSelectedGroupKey(group.key);
-                        }}
-                        style={[
-                          styles.groupChip,
-                          retroBorderFor(isDark),
-                          {
-                            backgroundColor: active ? palette.ink : palette.surface,
-                            borderColor: active ? palette.ink : palette.border,
-                          },
-                        ]}>
-                        <ThemedText
-                          style={[
-                            styles.groupChipText,
-                            { color: active ? palette.bg : palette.ink },
-                          ]}
-                          numberOfLines={1}>
-                          {group.label}
-                        </ThemedText>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
               </ScrollView>
 
-              <View style={[styles.actions, { borderTopColor: palette.border }]}>
-                <Pressable
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.primaryBtn,
-                    retroBorderFor(isDark),
-                    {
-                      backgroundColor: palette.ink,
-                      opacity: pressed ? 0.88 : 1,
-                    },
-                  ]}
-                  onPress={handleImport}>
-                  <ThemedText style={[styles.primaryBtnText, { color: palette.bg }]}>
-                    {t('storyImport.saveToRoutine')}
-                  </ThemedText>
-                </Pressable>
+              <View style={styles.actions}>
+                <BrutalConfirmButton
+                  align="stretch"
+                  label={t('storyImport.saveToRoutine')}
+                  accessibilityLabel={t('storyImport.saveToRoutine')}
+                  onPress={handleImport}
+                />
               </View>
             </>
           )}
@@ -285,40 +252,38 @@ const styles = StyleSheet.create({
   },
   backdropTouch: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: 'rgba(0, 0, 0, 0.38)',
   },
   sheet: {
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderLeftWidth: 0,
-    borderRightWidth: 0,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
     maxHeight: '88%',
   },
   sheetHeader: {
     alignItems: 'center',
-    paddingTop: CityPopSpacing.sm,
-    paddingHorizontal: CityPopSpacing.marginMobile,
-    paddingBottom: CityPopSpacing.xs,
+    paddingTop: 10,
+    paddingBottom: 4,
   },
   handle: {
-    width: 40,
-    height: 3,
+    width: 36,
+    height: 4,
+    borderRadius: 2,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 12,
     paddingHorizontal: CityPopSpacing.marginMobile,
     paddingBottom: CityPopSpacing.sm,
-    zIndex: 2,
   },
   closeBtn: {
-    width: 36,
-    height: 36,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    marginTop: -4,
+    marginTop: 2,
   },
   scroll: {
     flexGrow: 0,
@@ -331,27 +296,35 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     minWidth: 0,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     lineHeight: 26,
-    letterSpacing: -0.35,
+    letterSpacing: -0.3,
   },
   summary: {
     fontSize: 14,
     lineHeight: 21,
     letterSpacing: -0.1,
+    fontWeight: '500',
   },
   metaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: CityPopSpacing.base,
   },
-  metaChip: {
+  metaChipShell: {
+    position: 'relative',
+  },
+  metaChipShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  metaChipFace: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
+    zIndex: 1,
   },
   metaChipText: {
     fontSize: 12,
@@ -380,46 +353,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     letterSpacing: -0.1,
   },
-  sectionLabel: {
-    ...CityPopTypography.labelMd,
-    marginTop: CityPopSpacing.xs,
-  },
-  groupScroll: {
-    flexGrow: 0,
-    marginHorizontal: -CityPopSpacing.marginMobile,
-  },
-  groupRow: {
-    gap: CityPopSpacing.base,
-    paddingHorizontal: CityPopSpacing.marginMobile,
-    paddingBottom: 2,
-  },
-  groupChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    maxWidth: 220,
-  },
-  groupChipText: {
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-  },
   actions: {
-    gap: CityPopSpacing.base,
     paddingHorizontal: CityPopSpacing.marginMobile,
     paddingTop: CityPopSpacing.sm,
-    borderTopWidth: RETRO_BORDER_WIDTH,
-  },
-  primaryBtn: {
-    paddingVertical: 14,
-    paddingHorizontal: CityPopSpacing.gutter,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 52,
-  },
-  primaryBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.2,
   },
   successContainer: {
     alignItems: 'center',
@@ -432,12 +368,20 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     marginTop: CityPopSpacing.xs,
   },
-  successIconWrap: {
+  successIconShell: {
     width: 48,
     height: 48,
+    position: 'relative',
+    marginBottom: CityPopSpacing.xs,
+  },
+  successIconShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  successIconFace: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: CityPopSpacing.xs,
+    zIndex: 1,
   },
   successTitle: {
     fontSize: 17,
@@ -450,8 +394,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: CityPopSpacing.sm,
-  },
-  pressed: {
-    opacity: 0.72,
   },
 });

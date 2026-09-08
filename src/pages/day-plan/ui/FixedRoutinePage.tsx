@@ -29,18 +29,20 @@ import { useShallow } from 'zustand/react/shallow';
 
 import {
   addDaysToLocalDateKey,
-  buildInitialCustomFlowDetailConfig,
   collectSpineTimelineCategoryKeys,
-  createCustomFlowCategoryId,
   filterDayPlanFlowBlocks,
   formatSpineScheduleRangeLabel,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
+  isPriorityMarkColorId,
   isPriorityWindowEndedForToday,
   notifyFixedFlowApplyScheduleChanged,
+  PRIORITY_MARK_COLOR_PRESETS,
+  priorityMarkTitleHighlight,
   resolveBlockCategoryKey,
   resolveCategoryCatalogIcon,
   resolveCategoryKeyFromLabel,
+  resolveCategoryMarkColor,
   resolveFixedFlowSetDisplayName,
   resolveFixedFlowSpineSchedules,
   resolvePriorityRoutineCategoryKey,
@@ -48,38 +50,34 @@ import {
   useDayPlanLayoutModeVisibilityStore,
   useDayPlanStore,
   useFixedFlowSetsStore,
-  type CustomFlowTemplateKey
+  type CustomFlowTemplateKey,
+  type PriorityMarkColorId,
 } from '@entities/day-plan';
-import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import {
   isRoutineStartNotifyEnabled,
   persistRoutineStartNotifyToggle,
 } from '@features/day-plan-notifications';
-import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { formatDateKeyCompact, t } from '@shared/lib/i18n';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import {
-  appendCustomFlowCatalogEntry,
   BUILTIN_PRESET_SCHEDULE_SET_IDS,
-  DEFAULT_CUSTOM_FLOW_GROUP_KEY,
   getDayMealSlotLabel,
   isBuiltinPresetScheduleSet,
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
-  loadGoalDetailCategoryConfig,
   loadMyRoutineCollapsedGroupIds,
   loadPostItFaceColorByGroup,
   DEFAULT_POST_IT_FACE_COLOR_ID,
   postItFaceUsesLightInk,
   pruneMyRoutineCollapsedGroupIds,
   setMyRoutineGroupCollapsed,
+  resolveApplyWeekdays,
   resolveFixedFlowItemMealSlots,
   resolvePostItFaceColor,
   resolvePostItFaceInk,
   resolvePostItFaceMuted,
-  saveGoalDetailCategoryConfig,
   savePostItFaceColorForGroup,
   subscribeCustomFlowCatalog,
   type CustomCatalogGroup,
@@ -89,13 +87,16 @@ import {
   type FixedFlowSetItem,
   type PostItFaceColorByGroup,
   type PostItFaceColorId,
+  type WeekdayIndex,
 } from '@shared/lib/storage';
 import {
   coerceDayPlanLayoutMode
 } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
+import { ApplyWeekdayChips } from '@shared/ui/apply-weekday-chips';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
+import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import {
@@ -107,7 +108,7 @@ import { getPickerCategoryLabel, isOvernightHhmmRange } from '../lib/dayPlanEdit
 import { palette } from '../lib/dayPlanPalette';
 import {
   getFixedFlowPresetScheduleHint,
-  getFixedFlowPresetScheduleLabel,
+  getFixedFlowSetScheduleLabel,
 } from '../lib/fixedFlowPresetLabels';
 import { resolveFixedRoutineItemIconColor } from '../lib/fixedRoutineItemAppearance';
 import {
@@ -123,14 +124,12 @@ import {
   mealSlotPickerBtnWidth,
 } from './CatalogRowMealSlotChips';
 import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
-import { CreateCustomFlowSheet } from './CreateCustomFlowSheet';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
 import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 import { FixedRoutineMealSlotScheduleCard } from './FixedRoutineMealSlotScheduleCard';
 import { FixedRoutinePriorityWindowCard } from './FixedRoutinePriorityWindowCard';
 import { FixedRoutinePriorityWindowSheet } from './FixedRoutinePriorityWindowSheet';
 import { FixedRoutineSectionTabs, type FixedRoutineSection } from './FixedRoutineSectionTabs';
-import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
 import { PriorityBagRowAccordionPanel } from './PriorityBagRowAccordionPanel';
 import { RoutineCatalogManageContent } from './RoutineCatalogManageContent';
 import { RoutineTemplateListPanel } from './RoutineTemplateListPanel';
@@ -366,6 +365,8 @@ type FlowCardProps = {
   onOpenSettings: () => void;
   onToggleEnabled: (enabled: boolean) => void;
   onDelete: () => void;
+  markColor?: PriorityMarkColorId | null;
+  onSelectMarkColor?: (color: PriorityMarkColorId | null) => void;
 };
 
 function FlowItemCard({
@@ -397,6 +398,8 @@ function FlowItemCard({
   onOpenSettings,
   onToggleEnabled,
   onDelete,
+  markColor = null,
+  onSelectMarkColor,
 }: FlowCardProps) {
   const { t, locale } = useTranslation();
   /** 액션 버튼 면은 흰색이므로 포스트잇 잉크(밝은 색)와 분리 */
@@ -415,6 +418,9 @@ function FlowItemCard({
   const label = catalog?.label ?? getPickerCategoryLabel(item.categoryKey);
   const enabled = item.enabled !== false;
   const categoryKey = item.categoryKey;
+  const titleHighlight = priorityMarkTitleHighlight(markColor, isDark);
+  const MARK_SWATCH = 22;
+  const MARK_SHADOW = 2;
   const icon = resolveCategoryCatalogIcon(categoryKey);
   const trackOff = isDark ? '#3f3f46' : '#e5e7eb';
   const shouldPulse = Boolean(isInTodayPlan && isFocusStarted && enabled && !isCompleted);
@@ -597,11 +603,22 @@ function FlowItemCard({
             </View>
           </View>
           <View style={styles.flowRowTextCol}>
-            <ThemedText
-              style={[styles.flowRowTitle, { color: labelColor }]}
-              numberOfLines={1}>
-              {label}
-            </ThemedText>
+            <View style={styles.flowRowTitleMark}>
+              {titleHighlight ? (
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.flowRowTitleHighlight,
+                    { backgroundColor: titleHighlight },
+                  ]}
+                />
+              ) : null}
+              <ThemedText
+                style={[styles.flowRowTitle, styles.flowRowTitleText, { color: labelColor }]}
+                numberOfLines={1}>
+                {label}
+              </ThemedText>
+            </View>
             {showSpineTimePicker && spineTimeLabel ? (
               <ThemedText
                 style={[
@@ -755,6 +772,114 @@ function FlowItemCard({
             onLayout={(event) => {
               detailAccordion.onContentLayout(event.nativeEvent.layout.height);
             }}>
+            {onSelectMarkColor ? (
+              <View
+                style={styles.flowImportanceBlock}
+                accessibilityRole="toolbar"
+                accessibilityLabel={t('dayPlan.importanceMarkLabel')}>
+                <ThemedText style={[styles.flowImportanceLabel, { color: muted }]}>
+                  {t('dayPlan.importanceMarkLabel')}
+                </ThemedText>
+                <View style={styles.flowImportanceChipRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: markColor == null }}
+                    accessibilityLabel={t('dayPlan.importanceMarkClearA11y')}
+                    hitSlop={6}
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      onSelectMarkColor(null);
+                    }}
+                    style={({ pressed }) => [
+                      styles.flowImportanceChipShell,
+                      {
+                        width: MARK_SWATCH,
+                        height: MARK_SWATCH,
+                        marginRight: MARK_SHADOW,
+                        marginBottom: MARK_SHADOW,
+                        opacity: pressed ? 0.88 : 1,
+                      },
+                    ]}>
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.flowImportanceChipShadow,
+                        {
+                          backgroundColor: shadow,
+                          transform: [
+                            { translateX: MARK_SHADOW },
+                            { translateY: MARK_SHADOW },
+                          ],
+                        },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.flowImportanceChipFace,
+                        {
+                          backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
+                          borderColor: line,
+                          borderWidth: markColor == null ? 2 : 1,
+                        },
+                      ]}>
+                      <IconSymbol name="xmark" size={11} color={muted} />
+                    </View>
+                  </Pressable>
+                  {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
+                    const selectedMark = markColor === preset.id;
+                    const face = isDark ? preset.faceDark : preset.face;
+                    return (
+                      <Pressable
+                        key={preset.id}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: selectedMark }}
+                        accessibilityLabel={t('dayPlan.importanceMarkColorA11y', {
+                          color: t(`dayPlan.importanceMarkSwatch.${preset.id}` as const),
+                        })}
+                        hitSlop={6}
+                        onPress={() => {
+                          void Haptics.selectionAsync();
+                          onSelectMarkColor(preset.id);
+                        }}
+                        style={({ pressed }) => [
+                          styles.flowImportanceChipShell,
+                          {
+                            width: MARK_SWATCH,
+                            height: MARK_SWATCH,
+                            marginRight: MARK_SHADOW,
+                            marginBottom: MARK_SHADOW,
+                            opacity: pressed ? 0.88 : 1,
+                          },
+                        ]}>
+                        <View
+                          pointerEvents="none"
+                          style={[
+                            styles.flowImportanceChipShadow,
+                            {
+                              backgroundColor: shadow,
+                              transform: [
+                                { translateX: MARK_SHADOW },
+                                { translateY: MARK_SHADOW },
+                              ],
+                            },
+                          ]}
+                        />
+                        <View
+                          style={[
+                            styles.flowImportanceChipFace,
+                            {
+                              backgroundColor: face,
+                              borderColor: selectedMark ? ink : 'transparent',
+                              borderWidth: selectedMark ? 2 : 0,
+                            },
+                          ]}
+                        />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
             <PriorityBagRowAccordionPanel
               categoryKey={categoryKey}
               label={label}
@@ -839,7 +964,6 @@ type AddItemModalProps = {
   line: string;
   onClose: () => void;
   onConfirm: (keys: string[]) => void;
-  onCreateCustom: () => void;
 };
 
 function AddItemModal({
@@ -853,7 +977,6 @@ function AddItemModal({
   line,
   onClose,
   onConfirm,
-  onCreateCustom,
 }: AddItemModalProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -895,17 +1018,6 @@ function AddItemModal({
           style={styles.modalScroll}
           contentContainerStyle={{ paddingBottom: 12, paddingHorizontal: 20, gap: 2 }}
           keyboardShouldPersistTaps="handled">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('fixedRoutine.createNew')}
-            onPress={() => {
-              onClose();
-              onCreateCustom();
-            }}
-            style={({ pressed }) => [styles.modalCreateRow, pressed && { opacity: 0.72 }]}>
-            <IconSymbol name="plus.circle.fill" size={20} color={ink} />
-            <ThemedText style={[styles.modalRowLabel, { color: ink }]}>{t('fixedRoutine.createNew')}</ThemedText>
-          </Pressable>
           {sections.map((section) => (
             <View key={section.groupKey}>
               <ThemedText style={[styles.modalSectionTitle, { color: muted }]}>{section.title}</ThemedText>
@@ -1011,6 +1123,7 @@ type GroupAccordionProps = {
   canDeleteSet: boolean;
   onDeleteSet: () => void;
   onRenameSet?: (nextName: string) => void;
+  onSetApplyWeekdays?: (weekdays: WeekdayIndex[]) => void;
   onToggleItem: (categoryKey: string, enabled: boolean) => void;
   onDeleteItem: (categoryKey: string, label: string) => void;
   onOpenAddItem?: () => void;
@@ -1025,6 +1138,9 @@ type GroupAccordionProps = {
   isStartNotifyEnabled?: (categoryKey: string) => boolean;
   onToggleStartNotify?: (categoryKey: string) => void;
   onOpenCategorySettings: (categoryKey: string) => void;
+  markColorByKey?: Record<string, PriorityMarkColorId>;
+  onSelectMarkColor?: (categoryKey: string, color: PriorityMarkColorId | null) => void;
+  onSelectTitleMarkColor?: (color: PriorityMarkColorId | null) => void;
   postItFaceColorId: PostItFaceColorId;
   onSelectPostItFaceColor: (id: PostItFaceColorId) => void;
 };
@@ -1058,6 +1174,7 @@ function GroupAccordion({
   canDeleteSet,
   onDeleteSet,
   onRenameSet,
+  onSetApplyWeekdays,
   onToggleItem,
   onDeleteItem,
   onOpenAddItem,
@@ -1067,6 +1184,9 @@ function GroupAccordion({
   isStartNotifyEnabled,
   onToggleStartNotify,
   onOpenCategorySettings,
+  markColorByKey,
+  onSelectMarkColor,
+  onSelectTitleMarkColor,
   postItFaceColorId,
   onSelectPostItFaceColor,
 }: GroupAccordionProps) {
@@ -1086,7 +1206,7 @@ function GroupAccordion({
   const displaySetName = resolveFixedFlowSetDisplayName(setItem);
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
   const totalCount = setItem.items.length;
-  const canRenameSet = !isPresetScheduleSet && Boolean(onRenameSet);
+  const canRenameSet = Boolean(onRenameSet);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(displaySetName);
 
@@ -1146,29 +1266,13 @@ function GroupAccordion({
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const applyBg = isActiveForToday ? tone.primaryContainer : actionBg;
   const applyInk = isActiveForToday ? tone.primary : actionInk;
-  /** 데일리·주말 고정 루틴 제목 — 형광펜 (면 색과 겹치지 않게) */
-  const presetTitleHighlight = (() => {
-    switch (postItFaceColorId) {
-      case 'yellow':
-      case 'peach':
-        // 따뜻한 면 → 민트
-        return isDark ? 'rgba(168, 218, 220, 0.55)' : 'rgba(168, 218, 220, 0.88)';
-      case 'navy':
-      case 'darkGreen':
-        // 어두운 면 → 밝은 민트/시안
-        return 'rgba(168, 218, 220, 0.72)';
-      case 'mint':
-        // 민트 면 → 노랑
-        return isDark ? 'rgba(255, 229, 102, 0.45)' : 'rgba(255, 229, 102, 0.85)';
-      default:
-        return usesLightInk
-          ? 'rgba(255, 229, 102, 0.5)'
-          : isDark
-            ? 'rgba(255, 229, 102, 0.42)'
-            : 'rgba(255, 229, 102, 0.72)';
-    }
-  })();
-  const ruleLabel = isPresetScheduleSet ? getFixedFlowPresetScheduleLabel(setItem.applyRule) : null;
+  const groupTitleMark = isPriorityMarkColorId(setItem.titleMarkColor)
+    ? setItem.titleMarkColor
+    : null;
+  const setTitleHighlight = priorityMarkTitleHighlight(groupTitleMark, isDark);
+  const TITLE_MARK_SWATCH = 22;
+  const TITLE_MARK_SHADOW = 2;
+  const ruleLabel = isPresetScheduleSet ? getFixedFlowSetScheduleLabel(setItem) : null;
   const scheduleHint = isPresetScheduleSet ? getFixedFlowPresetScheduleHint(setItem.applyRule) : null;
 
   return (
@@ -1205,11 +1309,25 @@ function GroupAccordion({
                 accessibilityRole="button"
                 accessibilityLabel={t('fixedRoutine.saveGroupNameA11y')}
                 onPress={commitRename}
-                style={[styles.renameGroupSave, { backgroundColor: ink, borderColor: ink }]}>
+                style={[
+                  styles.renameGroupSave,
+                  {
+                    backgroundColor: isDark
+                      ? RetroFlatColors.dark.bgMint
+                      : RetroFlatColors.light.bgMint,
+                    borderColor: isDark
+                      ? RetroFlatColors.dark.border
+                      : RetroFlatColors.light.border,
+                  },
+                ]}>
                 <ThemedText
                   style={[
                     styles.renameGroupSaveLabel,
-                    { color: usesLightInk ? sectionBg : isDark ? '#09090b' : '#fff' },
+                    {
+                      color: isDark
+                        ? RetroFlatColors.dark.primaryOn
+                        : RetroFlatColors.light.primary,
+                    },
                   ]}>
                   {t('common.save')}
                 </ThemedText>
@@ -1229,34 +1347,41 @@ function GroupAccordion({
                     styles.accordionTitlePress,
                     pressed && { opacity: 0.72 },
                   ]}>
-                  <ThemedText
-                    style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
-                    numberOfLines={1}>
-                    {displaySetName}
-                  </ThemedText>
+                  <View style={styles.presetTitleMark}>
+                    {setTitleHighlight ? (
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.presetTitleHighlight,
+                          { backgroundColor: setTitleHighlight },
+                        ]}
+                      />
+                    ) : null}
+                    <ThemedText
+                      style={[styles.accordionTitle, styles.presetTitleText, { color: ink }]}
+                      numberOfLines={1}>
+                      {displaySetName}
+                    </ThemedText>
+                  </View>
                   <IconSymbol name="pencil" size={10} color={muted} />
                 </Pressable>
-              ) : isPresetScheduleSet ? (
+              ) : (
                 <View style={styles.presetTitleMark}>
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.presetTitleHighlight,
-                      { backgroundColor: presetTitleHighlight },
-                    ]}
-                  />
+                  {setTitleHighlight ? (
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.presetTitleHighlight,
+                        { backgroundColor: setTitleHighlight },
+                      ]}
+                    />
+                  ) : null}
                   <ThemedText
                     style={[styles.accordionTitle, styles.presetTitleText, { color: ink }]}
                     numberOfLines={1}>
                     {displaySetName}
                   </ThemedText>
                 </View>
-              ) : (
-                <ThemedText
-                  style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
-                  numberOfLines={1}>
-                  {displaySetName}
-                </ThemedText>
               )}
             </View>
             {isPresetScheduleSet && ruleLabel ? (
@@ -1318,7 +1443,7 @@ function GroupAccordion({
                 {applyLabel}
               </ThemedText>
             </FlowBrutalActionButton>
-            {!isPresetScheduleSet && canDeleteSet ? (
+            {canDeleteSet ? (
               <View
                 style={[
                   styles.brutalBtnShell,
@@ -1380,6 +1505,17 @@ function GroupAccordion({
         )}
       </View>
 
+      <View style={styles.headerPostItChips}>
+        <PostItFaceColorChips
+          compact
+          selectedId={postItFaceColorId}
+          isDark={isDark}
+          ink={ink}
+          shadowColor="#000000"
+          onSelect={onSelectPostItFaceColor}
+        />
+      </View>
+
       {groupAccordion.mounted ? (
         <Reanimated.View style={[styles.groupAccordionPanel, groupAccordion.panelStyle]}>
         <View
@@ -1396,15 +1532,129 @@ function GroupAccordion({
           onLayout={(event) => {
             groupAccordion.onContentLayout(event.nativeEvent.layout.height);
           }}>
-          <PostItFaceColorChips
-            compact
-            selectedId={postItFaceColorId}
-            isDark={isDark}
-            ink={ink}
-            shadowColor="#000000"
-            onSelect={onSelectPostItFaceColor}
-          />
-          {scheduleHint ? (
+          {onSelectTitleMarkColor ? (
+            <View
+              style={styles.setTitleMarkBlock}
+              accessibilityRole="toolbar"
+              accessibilityLabel={t('fixedRoutine.titleMarkLabel')}>
+              <ThemedText style={[styles.setTitleMarkLabel, { color: muted }]}>
+                {t('fixedRoutine.titleMarkLabel')}
+              </ThemedText>
+              <View style={styles.setTitleMarkChipRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: groupTitleMark == null }}
+                  accessibilityLabel={t('fixedRoutine.titleMarkClearA11y')}
+                  hitSlop={6}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    onSelectTitleMarkColor(null);
+                  }}
+                  style={({ pressed }) => [
+                    styles.setTitleMarkChipShell,
+                    {
+                      width: TITLE_MARK_SWATCH,
+                      height: TITLE_MARK_SWATCH,
+                      marginRight: TITLE_MARK_SHADOW,
+                      marginBottom: TITLE_MARK_SHADOW,
+                      opacity: pressed ? 0.88 : 1,
+                    },
+                  ]}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.setTitleMarkChipShadow,
+                      {
+                        backgroundColor: shadow,
+                        transform: [
+                          { translateX: TITLE_MARK_SHADOW },
+                          { translateY: TITLE_MARK_SHADOW },
+                        ],
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.setTitleMarkChipFace,
+                      {
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
+                        borderColor: line,
+                        borderWidth: groupTitleMark == null ? 2 : 1,
+                      },
+                    ]}>
+                    <IconSymbol name="xmark" size={11} color={muted} />
+                  </View>
+                </Pressable>
+                {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
+                  const selectedMark = groupTitleMark === preset.id;
+                  const face = isDark ? preset.faceDark : preset.face;
+                  return (
+                    <Pressable
+                      key={preset.id}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: selectedMark }}
+                      accessibilityLabel={t('fixedRoutine.titleMarkColorA11y', {
+                        color: t(`dayPlan.importanceMarkSwatch.${preset.id}` as const),
+                      })}
+                      hitSlop={6}
+                      onPress={() => {
+                        void Haptics.selectionAsync();
+                        onSelectTitleMarkColor(preset.id);
+                      }}
+                      style={({ pressed }) => [
+                        styles.setTitleMarkChipShell,
+                        {
+                          width: TITLE_MARK_SWATCH,
+                          height: TITLE_MARK_SWATCH,
+                          marginRight: TITLE_MARK_SHADOW,
+                          marginBottom: TITLE_MARK_SHADOW,
+                          opacity: pressed ? 0.88 : 1,
+                        },
+                      ]}>
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.setTitleMarkChipShadow,
+                          {
+                            backgroundColor: shadow,
+                            transform: [
+                              { translateX: TITLE_MARK_SHADOW },
+                              { translateY: TITLE_MARK_SHADOW },
+                            ],
+                          },
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.setTitleMarkChipFace,
+                          {
+                            backgroundColor: face,
+                            borderColor: selectedMark ? ink : 'transparent',
+                            borderWidth: selectedMark ? 2 : 0,
+                          },
+                        ]}
+                      />
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <ThemedText style={[styles.setTitleMarkHint, { color: muted }]}>
+                {t('fixedRoutine.titleMarkHint')}
+              </ThemedText>
+            </View>
+          ) : null}
+          {onSetApplyWeekdays ? (
+            <ApplyWeekdayChips
+              selected={resolveApplyWeekdays(setItem)}
+              ink={ink}
+              muted={muted}
+              line={line}
+              faceBg={sectionBg}
+              shadowColor="#000000"
+              onChange={onSetApplyWeekdays}
+            />
+          ) : null}
+          {!onSetApplyWeekdays && scheduleHint ? (
             <ThemedText style={[styles.accordionRuleHint, { color: muted }]}>{scheduleHint}</ThemedText>
           ) : null}
           {(() => {
@@ -1476,6 +1726,16 @@ function GroupAccordion({
                   onOpenSettings={() => onOpenCategorySettings(item.categoryKey)}
                   onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
                   onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
+                  markColor={
+                    markColorByKey
+                      ? resolveCategoryMarkColor(markColorByKey, item.categoryKey)
+                      : null
+                  }
+                  onSelectMarkColor={
+                    onSelectMarkColor
+                      ? (color) => onSelectMarkColor(item.categoryKey, color)
+                      : undefined
+                  }
                 />
               );
             })}
@@ -1548,13 +1808,11 @@ export function FixedRoutinePage({
 
   const [priorityWindowSheetOpen, setPriorityWindowSheetOpen] = useState(false);
   const [mealSlotScheduleSheetOpen, setMealSlotScheduleSheetOpen] = useState(false);
-  const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [addItemModalOpen, setAddItemModalOpen] = useState(false);
   const [addItemSetId, setAddItemSetId] = useState<string | null>(null);
 
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
-  const targetSetIdRef = useRef<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const scrollOffsetRef = useRef(0);
   const keyboardHeightRef = useRef(0);
@@ -1618,6 +1876,8 @@ export function FixedRoutinePage({
     toggleSetForToday,
     removeSet,
     renameSet,
+    setTitleMarkColor,
+    setApplyWeekdays,
     addCategoryToSet,
     removeCategoryFromSet,
     setCategoryEnabledInSet,
@@ -1636,6 +1896,8 @@ export function FixedRoutinePage({
       toggleSetForToday: s.toggleSetForToday,
       removeSet: s.removeSet,
       renameSet: s.renameSet,
+      setTitleMarkColor: s.setTitleMarkColor,
+      setApplyWeekdays: s.setApplyWeekdays,
       addCategoryToSet: s.addCategoryToSet,
       removeCategoryFromSet: s.removeCategoryFromSet,
       setCategoryEnabledInSet: s.setCategoryEnabledInSet,
@@ -1655,6 +1917,7 @@ export function FixedRoutinePage({
     priorityPlanDateKeyEnd,
     isFocusStarted,
     priorityCategoryOrder,
+    priorityCategoryImportance,
     prioritySectionsCategoryOrder,
     completedFocusCategoryKeys,
     planCompletionDismissedKeys,
@@ -1662,6 +1925,7 @@ export function FixedRoutinePage({
     setPriorityEnd,
     syncOvernightPriorityPlanDates,
     setPriorityCategoryOrder,
+    setPriorityCategoryMarkColor,
     filterCompletedFocusKeysToPriorityOrder,
     categoryLabelEpoch,
   } = useDayPlanDraftStore(
@@ -1673,6 +1937,7 @@ export function FixedRoutinePage({
       priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
       isFocusStarted: s.isFocusStarted,
       priorityCategoryOrder: s.priorityCategoryOrder,
+      priorityCategoryImportance: s.priorityCategoryImportance,
       prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
       completedFocusCategoryKeys: s.completedFocusCategoryKeys,
       planCompletionDismissedKeys: s.planCompletionDismissedKeys,
@@ -1680,6 +1945,7 @@ export function FixedRoutinePage({
       setPriorityEnd: s.setPriorityEnd,
       syncOvernightPriorityPlanDates: s.syncOvernightPriorityPlanDates,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
+      setPriorityCategoryMarkColor: s.setPriorityCategoryMarkColor,
       filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
       categoryLabelEpoch: s.categoryLabelEpoch,
     })),
@@ -1820,7 +2086,12 @@ export function FixedRoutinePage({
   }, [sets]);
 
   const customSets = useMemo(
-    () => sets.filter((setItem) => setItem.applyRule === 'manual'),
+    () =>
+      sets.filter(
+        (setItem) =>
+          !isBuiltinPresetScheduleSet(setItem) &&
+          (setItem.applyRule === 'manual' || setItem.applyRule === 'custom'),
+      ),
     [sets],
   );
 
@@ -1951,7 +2222,6 @@ export function FixedRoutinePage({
 
   const handleDeleteSet = useCallback(
     (setId: string) => {
-      if (isBuiltinPresetScheduleSet({ id: setId, applyRule: 'manual' })) return;
       const target = sets.find((s) => s.id === setId);
       if (!target) return;
       Alert.alert(
@@ -2002,57 +2272,7 @@ export function FixedRoutinePage({
     }
   }, [addSet, embeddedCustomOnly, newGroupName]);
 
-  const handleCreateCustomFlow = useCallback(
-    ({
-      name,
-      groupKey,
-      icon,
-      accentColor,
-      templateKey,
-      summary,
-      templateDataConfig,
-    }: {
-      name: string;
-      groupKey: string;
-      icon: string;
-      accentColor: string;
-      templateKey: CustomFlowTemplateKey;
-      summary?: string;
-      templateDataConfig?: unknown;
-    }) => {
-      const id = createCustomFlowCategoryId();
-      const safeGroupKey =
-        typeof groupKey === 'string' && groupKey.trim().length > 0
-          ? groupKey.trim()
-          : DEFAULT_CUSTOM_FLOW_GROUP_KEY;
-      const trimmed = name.trim();
-      const next = buildInitialCustomFlowDetailConfig(templateKey, {
-        ...(trimmed.length > 0 ? { displayName: trimmed } : {}),
-        ...(typeof summary === 'string' && summary.trim().length > 0
-          ? { summary: summary.trim() }
-          : {}),
-        icon,
-        accentColor,
-        ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
-      });
-      saveGoalDetailCategoryConfig(id, next);
-      if (templateKey === 'reminder') {
-        void persistReminderTemplateNotificationRule(id, next);
-      }
-      appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
-      registerOtherCategoryResolverFromStorage();
-      void loadGoalDetailCategoryConfig(id);
-      reloadCatalog();
-      const targetSetId = targetSetIdRef.current ?? addItemSetId ?? sets[0]?.id;
-      if (targetSetId) addCategoryToSet(targetSetId, id);
-      setCreateSheetOpen(false);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    },
-    [addCategoryToSet, sets, addItemSetId, reloadCatalog],
-  );
-
   const openAddItemModal = useCallback((setId: string) => {
-    targetSetIdRef.current = setId;
     setAddItemSetId(setId);
     setAddItemModalOpen(true);
   }, []);
@@ -2122,6 +2342,13 @@ export function FixedRoutinePage({
       });
     },
     [router],
+  );
+
+  const onSelectFixedMarkColor = useCallback(
+    (categoryKey: string, color: PriorityMarkColorId | null) => {
+      setPriorityCategoryMarkColor(categoryKey, color);
+    },
+    [setPriorityCategoryMarkColor],
   );
 
   const atmosphereVariant: RoutineAtmosphereVariant = embeddedCustomOnly
@@ -2349,6 +2576,13 @@ export function FixedRoutinePage({
                       canDeleteSet
                       onDeleteSet={() => handleDeleteSet(setItem.id)}
                       onRenameSet={(nextName) => renameSet(setItem.id, nextName)}
+                      onSelectTitleMarkColor={(color) =>
+                        setTitleMarkColor(setItem.id, color)
+                      }
+                      onSetApplyWeekdays={(weekdays) => {
+                        setApplyWeekdays(setItem.id, weekdays);
+                        notifyFixedFlowApplyScheduleChanged();
+                      }}
                       onToggleItem={(categoryKey, enabled) => {
                         setCategoryEnabledInSet(setItem.id, categoryKey, enabled);
                       }}
@@ -2396,6 +2630,8 @@ export function FixedRoutinePage({
                         void handleToggleStartNotify(categoryKey);
                       }}
                       onOpenCategorySettings={openCategorySettings}
+                      markColorByKey={priorityCategoryImportance}
+                      onSelectMarkColor={onSelectFixedMarkColor}
                       postItFaceColorId={
                         postItFaceByGroup[`my-routine:${setItem.id}`] ??
                         DEFAULT_POST_IT_FACE_COLOR_ID
@@ -2441,22 +2677,6 @@ export function FixedRoutinePage({
             addCategoryToSet(addItemSetId, key),
           );
         }}
-        onCreateCustom={() => {
-          targetSetIdRef.current = addItemSetId;
-          setCreateSheetOpen(true);
-        }}
-      />
-
-      <CreateCustomFlowSheet
-        visible={createSheetOpen}
-        onClose={() => setCreateSheetOpen(false)}
-        onCreate={handleCreateCustomFlow}
-        initialGroupKey={DEFAULT_CUSTOM_FLOW_GROUP_KEY}
-        isDark={isDark}
-        ink={ink}
-        muted={muted}
-        line={line}
-        surface={cardBg}
       />
 
       <FixedRoutinePriorityWindowSheet
@@ -2563,7 +2783,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingTop: 11,
+    paddingBottom: 8,
+  },
+  headerPostItChips: {
+    paddingBottom: 10,
   },
   renameGroupRow: {
     flex: 1,
@@ -2634,13 +2858,46 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: -2,
     right: -2,
-    bottom: 1,
-    height: 9,
+    bottom: 2,
+    height: 10,
     borderRadius: 0,
     zIndex: 0,
   },
   presetTitleText: {
     zIndex: 1,
+  },
+  setTitleMarkBlock: {
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+  },
+  setTitleMarkLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  setTitleMarkChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  setTitleMarkChipShell: {
+    position: 'relative',
+  },
+  setTitleMarkChipShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 6,
+  },
+  setTitleMarkChipFace: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setTitleMarkHint: {
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '500',
   },
   rulePill: {
     width: 58,
@@ -2820,6 +3077,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 12,
   },
+  flowImportanceBlock: {
+    gap: 6,
+    marginBottom: 10,
+  },
+  flowImportanceLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  flowImportanceChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  flowImportanceChipShell: {
+    position: 'relative',
+  },
+  flowImportanceChipShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 6,
+  },
+  flowImportanceChipFace: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   flowRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2862,6 +3146,23 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 1,
+  },
+  flowRowTitleMark: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  flowRowTitleHighlight: {
+    position: 'absolute',
+    left: -2,
+    right: -2,
+    bottom: 2,
+    height: 10,
+    borderRadius: 0,
+    zIndex: 0,
+  },
+  flowRowTitleText: {
+    zIndex: 1,
   },
   flowDetailChevronShell: {
     position: 'relative',

@@ -18,20 +18,15 @@ import {
   normalizeCustomFlowDetailConfig,
   resolveSpinePriorityWindow,
   ROUTINE_SUMMARY_MAX,
-  SYSTEM_CATALOG_GROUP_KEYS,
   type CustomFlowTemplateKey,
-  resolveCustomCatalogGroupDisplayLabel,
 } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import {
-  createCustomCatalogGroup,
   DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
+  DEFAULT_CUSTOM_FLOW_GROUP_KEY,
   DEFAULT_CUSTOM_FLOW_ICON,
-  listCustomCatalogGroups,
-  resolveSystemCatalogGroupLabel,
-  type CustomCatalogGroup,
   type CustomFlowIconOption,
   type DayMealSlot,
   type DayMealSlotSchedule,
@@ -48,13 +43,9 @@ import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
 import { DayMealSlotTargetChips } from './DayMealSlotTargetChips';
 
 const NAME_MAX = 24;
-const GROUP_NAME_MAX = 24;
-
-type GroupOption = {
-  key: string;
-  label: string;
-  isSystem: boolean;
-};
+const INPUT_SHADOW = 2;
+/** 감싸는 레이아웃용 — 안쪽 칩보다 조금 더 뚜렷하게 */
+const BASICS_SHADOW = 3;
 
 export type CreateCustomFlowSpineSchedule = {
   startMinutes: number;
@@ -136,10 +127,6 @@ export function CreateCustomFlowSheet({
   const [name, setName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState<CustomFlowIconOption>(DEFAULT_CUSTOM_FLOW_ICON);
   const [selectedAccentColor, setSelectedAccentColor] = useState<string>(DEFAULT_CUSTOM_FLOW_ACCENT_COLOR);
-  const [customGroups, setCustomGroups] = useState<CustomCatalogGroup[]>([]);
-  const [selectedGroupKey, setSelectedGroupKey] = useState<string>('productivity');
-  const [isAddingGroup, setIsAddingGroup] = useState(false);
-  const [newGroupLabel, setNewGroupLabel] = useState('');
   const [step, setStep] = useState<SheetStep>('basics');
   const [selectedTemplateKey, setSelectedTemplateKey] =
     useState<CustomFlowTemplateKey>('checklist');
@@ -183,8 +170,6 @@ export function CreateCustomFlowSheet({
       sheetWasVisibleRef.current = false;
       return;
     }
-    const groups = listCustomCatalogGroups();
-    setCustomGroups(groups);
     const justOpened = !sheetWasVisibleRef.current;
     sheetWasVisibleRef.current = true;
     if (!justOpened) return;
@@ -192,8 +177,6 @@ export function CreateCustomFlowSheet({
     setName('');
     setSelectedIcon(DEFAULT_CUSTOM_FLOW_ICON);
     setSelectedAccentColor(DEFAULT_CUSTOM_FLOW_ACCENT_COLOR);
-    setIsAddingGroup(false);
-    setNewGroupLabel('');
     setStep('basics');
     setSelectedTemplateKey(initialTemplateKey ?? 'checklist');
     setTemplateSetupConfig(buildTemplateSetupConfig(initialTemplateKey ?? 'checklist'));
@@ -209,27 +192,7 @@ export function CreateCustomFlowSheet({
         endsNextCalendarDay: Boolean(currentPlacement.initialEndsNextCalendarDay),
       });
     }
-    const fallback =
-      initialGroupKey && initialGroupKey.length > 0 ? initialGroupKey : 'productivity';
-    const exists =
-      (SYSTEM_CATALOG_GROUP_KEYS as readonly string[]).includes(fallback) ||
-      groups.some((g) => g.key === fallback);
-    setSelectedGroupKey(exists ? fallback : 'productivity');
-  }, [visible, initialGroupKey, initialTemplateKey]);
-
-  const groupOptions: GroupOption[] = useMemo(() => {
-    const sys: GroupOption[] = (SYSTEM_CATALOG_GROUP_KEYS as readonly string[]).map((k) => ({
-      key: k,
-      label: resolveSystemCatalogGroupLabel(k),
-      isSystem: true,
-    }));
-    const custom: GroupOption[] = customGroups.map((g) => ({
-      key: g.key,
-      label: resolveCustomCatalogGroupDisplayLabel(g.key, g.label),
-      isSystem: false,
-    }));
-    return [...sys, ...custom];
-  }, [customGroups]);
+  }, [visible, initialTemplateKey]);
 
   const spineScheduleValid = useMemo(() => {
     if (placement?.mode !== 'spine') return true;
@@ -250,38 +213,19 @@ export function CreateCustomFlowSheet({
     placement == null ||
     placement.mode === 'sections' ||
     (placement.mode === 'spine' && spineScheduleValid);
-  const canProceedBasics =
-    trimmedName.length > 0 && selectedGroupKey.length > 0 && placementReady;
+  const canProceedBasics = trimmedName.length > 0 && placementReady;
   const canCreate = canProceedBasics && selectedTemplateKey.length > 0;
 
-  const inputBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.72)';
   const cardBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)';
-  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const shadowInk = isDark ? tone.solidShadow : tone.text;
-  const chipIdleBg = isDark ? tone.surfaceAlt : '#FFFFFF';
-  const chipShadow = 2;
-
-  const handleSubmitNewGroup = () => {
-    const label = newGroupLabel.trim().slice(0, GROUP_NAME_MAX);
-    if (label.length === 0) return;
-    const created = createCustomCatalogGroup(label);
-    if (!created) return;
-    void Haptics.selectionAsync();
-    setCustomGroups(listCustomCatalogGroups());
-    setSelectedGroupKey(created.key);
-    setIsAddingGroup(false);
-    setNewGroupLabel('');
-  };
-
-  const selectedGroupKeyRef = useRef(selectedGroupKey);
-  selectedGroupKeyRef.current = selectedGroupKey;
+  const shadowInk = isDark ? RetroFlatColors.dark.solidShadow : '#000000';
+  const inputFaceBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
 
   const handleCreate = () => {
     if (!canCreate) return;
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onCreate({
       name: trimmedName.trim(),
-      groupKey: selectedGroupKeyRef.current,
+      groupKey: initialGroupKey?.trim() || DEFAULT_CUSTOM_FLOW_GROUP_KEY,
       icon: selectedIcon,
       accentColor: selectedAccentColor,
       templateKey: selectedTemplateKey,
@@ -345,7 +289,12 @@ export function CreateCustomFlowSheet({
             <ThemedText style={[styles.title, { color: ink }]}>{headerTitle}</ThemedText>
             <ThemedText style={[styles.subtitle, { color: muted }]}>{headerSubtitle}</ThemedText>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} hitSlop={10}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            onPress={onClose}
+            hitSlop={10}
+            style={styles.headerClose}>
             <IconSymbol name="xmark" size={20} color={muted} />
           </Pressable>
         </View>
@@ -360,27 +309,64 @@ export function CreateCustomFlowSheet({
           keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}>
           {step === 'basics' ? (
-            <>
-              <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
+            <View
+              style={[
+                styles.basicsShell,
+                { marginRight: BASICS_SHADOW, marginBottom: BASICS_SHADOW },
+              ]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.basicsShadow,
+                  {
+                    backgroundColor: shadowInk,
+                    transform: [{ translateX: BASICS_SHADOW }, { translateY: BASICS_SHADOW }],
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.basicsFace,
+                  {
+                    borderColor: isDark ? line : '#111111',
+                    backgroundColor: isDark ? cardBg : '#FFFFFF',
+                  },
+                ]}>
+              <View style={styles.sectionInner}>
                 <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('createFlow.nameLabel')}</ThemedText>
-                <ThemedTextInput
-                  value={name}
-                  onChangeText={(v) => setName(v.slice(0, NAME_MAX))}
-                  placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
-                  maxLength={NAME_MAX}
-                  returnKeyType="done"
-                  multiline={false}
+                <View
                   style={[
-                    styles.input,
-                    { color: ink, backgroundColor: inputBg, borderColor: line },
-                  ]}
-                />
+                    styles.inputShell,
+                    { marginRight: INPUT_SHADOW, marginBottom: INPUT_SHADOW },
+                  ]}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.inputShadow,
+                      {
+                        backgroundColor: shadowInk,
+                        transform: [{ translateX: INPUT_SHADOW }, { translateY: INPUT_SHADOW }],
+                      },
+                    ]}
+                  />
+                  <ThemedTextInput
+                    value={name}
+                    onChangeText={(v) => setName(v.slice(0, NAME_MAX))}
+                    placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
+                    maxLength={NAME_MAX}
+                    returnKeyType="done"
+                    multiline={false}
+                    style={[
+                      styles.input,
+                      { color: ink, backgroundColor: inputFaceBg },
+                    ]}
+                  />
+                </View>
               </View>
 
-              <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
+              <View style={[styles.sectionInner, styles.sectionInnerFollow, { borderTopColor: line }]}>
                 <CustomFlowAppearancePicker
                   key={`create-appearance-${appearancePickerEpoch}`}
-                  defaultExpanded
                   icon={selectedIcon}
                   accentColor={selectedAccentColor}
                   onChangeIcon={setSelectedIcon}
@@ -393,179 +379,8 @@ export function CreateCustomFlowSheet({
                 />
               </View>
 
-              <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
-                <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('createFlow.parentCategory')}</ThemedText>
-                <ThemedText style={[styles.fieldHint, { color: muted }]}>
-                  {t('createFlow.pickGroup')}
-                </ThemedText>
-
-                <View style={styles.chipsWrap}>
-                  {groupOptions.map((g) => {
-                    const selected = selectedGroupKey === g.key;
-                    const shadow = selected ? 3 : chipShadow;
-                    return (
-                      <View
-                        key={g.key}
-                        style={[
-                          styles.chipShell,
-                          { marginRight: shadow, marginBottom: shadow },
-                        ]}>
-                        <View
-                          pointerEvents="none"
-                          style={[
-                            styles.chipShadow,
-                            {
-                              backgroundColor: shadowInk,
-                              transform: [{ translateX: shadow }, { translateY: shadow }],
-                            },
-                          ]}
-                        />
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityState={{ selected }}
-                          onPress={() => {
-                            void Haptics.selectionAsync();
-                            setSelectedGroupKey(g.key);
-                          }}
-                          style={({ pressed }) => [
-                            styles.chip,
-                            {
-                              backgroundColor: selected
-                                ? tone.primaryContainer
-                                : chipIdleBg,
-                              opacity: pressed ? 0.92 : 1,
-                            },
-                          ]}>
-                          {selected ? (
-                            <IconSymbol
-                              name="checkmark"
-                              size={11}
-                              color={tone.primary}
-                              weight="bold"
-                            />
-                          ) : null}
-                          <ThemedText
-                            style={[
-                              styles.chipText,
-                              {
-                                color: selected ? tone.primary : muted,
-                                fontWeight: selected ? '800' : '600',
-                              },
-                            ]}
-                            numberOfLines={1}>
-                            {g.label}
-                          </ThemedText>
-                        </Pressable>
-                      </View>
-                    );
-                  })}
-
-                  {!isAddingGroup ? (
-                    <View
-                      style={[
-                        styles.chipShell,
-                        { marginRight: chipShadow, marginBottom: chipShadow },
-                      ]}>
-                      <View
-                        pointerEvents="none"
-                        style={[
-                          styles.chipShadow,
-                          {
-                            backgroundColor: shadowInk,
-                            transform: [
-                              { translateX: chipShadow },
-                              { translateY: chipShadow },
-                            ],
-                          },
-                        ]}
-                      />
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={t('createFlow.newGroup')}
-                        onPress={() => {
-                          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          setIsAddingGroup(true);
-                        }}
-                        style={({ pressed }) => [
-                          styles.chip,
-                          {
-                            backgroundColor: chipIdleBg,
-                            opacity: pressed ? 0.92 : 1,
-                          },
-                        ]}>
-                        <IconSymbol name="plus" size={11} color={ink} weight="bold" />
-                        <ThemedText
-                          style={[styles.chipText, { color: ink, fontWeight: '700' }]}>
-                          {t('createFlow.newGroup')}
-                        </ThemedText>
-                      </Pressable>
-                    </View>
-                  ) : null}
-                </View>
-
-                {isAddingGroup ? (
-                  <View style={styles.newGroupRow}>
-                    <ThemedTextInput
-                      autoFocus
-                      value={newGroupLabel}
-                      onChangeText={(v) => setNewGroupLabel(v.slice(0, GROUP_NAME_MAX))}
-                      placeholder={t('createFlow.newGroupPlaceholder')}
-                      placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
-                      maxLength={GROUP_NAME_MAX}
-                      returnKeyType="done"
-                      onSubmitEditing={handleSubmitNewGroup}
-                      style={[
-                        styles.input,
-                        styles.newGroupInput,
-                        { color: ink, backgroundColor: inputBg, borderColor: line },
-                      ]}
-                    />
-                    <BrutalConfirmButton
-                      label={t('common.add')}
-                      accessibilityLabel={t('common.add')}
-                      compact
-                      disabled={newGroupLabel.trim().length === 0}
-                      fill={RetroFlatColors.light.primaryContainer}
-                      labelColor={RetroFlatColors.light.primary}
-                      shadowColor={isDark ? tone.solidShadow : tone.border}
-                      onPress={handleSubmitNewGroup}
-                    />
-                    <View
-                      style={[
-                        styles.cancelShell,
-                        { marginRight: chipShadow, marginBottom: chipShadow },
-                      ]}>
-                      <View
-                        pointerEvents="none"
-                        style={[
-                          styles.chipShadow,
-                          {
-                            backgroundColor: shadowInk,
-                            transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
-                          },
-                        ]}
-                      />
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={t('common.cancel')}
-                        onPress={() => {
-                          setIsAddingGroup(false);
-                          setNewGroupLabel('');
-                        }}
-                        hitSlop={8}
-                        style={[
-                          styles.cancelBtn,
-                          { backgroundColor: isDark ? tone.surfaceAlt : '#FFFFFF' },
-                        ]}>
-                        <IconSymbol name="xmark" size={12} color={muted} />
-                      </Pressable>
-                    </View>
-                  </View>
-                ) : null}
-              </View>
-
               {placement?.mode === 'sections' ? (
-                <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
+                <View style={[styles.sectionInner, styles.sectionInnerFollow, { borderTopColor: line }]}>
                   <DayMealSlotTargetChips
                     selectedSlot={selectedMealSlot}
                     schedule={placement.mealSlotSchedule}
@@ -579,7 +394,7 @@ export function CreateCustomFlowSheet({
               ) : null}
 
               {placement?.mode === 'spine' ? (
-                <View style={[styles.sectionCard, { borderColor: line, backgroundColor: cardBg }]}>
+                <View style={[styles.sectionInner, styles.sectionInnerFollow, { borderTopColor: line }]}>
                   <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('createFlow.timelineTime')}</ThemedText>
                   <ThemedText style={[styles.fieldHint, { color: muted }]}>
                     {t('createFlow.timelineTimeHint')}
@@ -610,7 +425,8 @@ export function CreateCustomFlowSheet({
                   ) : null}
                 </View>
               ) : null}
-            </>
+              </View>
+            </View>
           ) : (
             <>
               <View style={styles.namePreviewNote}>
@@ -796,6 +612,11 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 6,
   },
+  headerClose: {
+    marginTop: 6,
+    marginRight: 4,
+    padding: 4,
+  },
   title: {
     fontSize: 18,
     fontWeight: '800',
@@ -814,12 +635,29 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 24,
     gap: 12,
+    overflow: 'visible',
   },
-  sectionCard: {
+  basicsShell: {
+    position: 'relative',
+    zIndex: 1,
+  },
+  basicsShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+    zIndex: 0,
+  },
+  basicsFace: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 0,
+    zIndex: 1,
+    overflow: 'hidden',
+  },
+  sectionInner: {
     padding: 14,
     gap: 10,
+  },
+  sectionInnerFollow: {
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   fieldLabel: {
     fontSize: 14,
@@ -832,8 +670,15 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginTop: -4,
   },
+  inputShell: {
+    position: 'relative',
+  },
+  inputShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
   input: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     borderRadius: 0,
     paddingHorizontal: 14,
     height: 48,
@@ -841,57 +686,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.2,
     paddingVertical: 0,
+    zIndex: 1,
     ...(Platform.OS === 'android'
       ? { textAlignVertical: 'center' as const, includeFontPadding: false }
       : {}),
-  },
-  chipsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chipShell: {
-    position: 'relative',
-  },
-  chipShadow: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 0,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 0,
-    borderWidth: 0,
-    zIndex: 1,
-  },
-  chipText: {
-    fontSize: 13,
-    letterSpacing: -0.2,
-  },
-  newGroupRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
-  },
-  newGroupInput: {
-    flex: 1,
-    height: 40,
-  },
-  cancelShell: {
-    position: 'relative',
-  },
-  cancelBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 0,
-    borderWidth: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
   },
   footer: {
     paddingHorizontal: 20,

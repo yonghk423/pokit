@@ -38,6 +38,12 @@ export const POST_IT_FACE_COLOR_PRESETS: readonly PostItFaceColorPreset[] = [
 
 export const DEFAULT_POST_IT_FACE_COLOR_ID: PostItFaceColorId = 'white';
 
+/** 루틴 탭 플랫 목록 카드 — 기본(상시) 면색 */
+export const ROUTINE_CATALOG_FLAT_POST_IT_KEY = 'routine-catalog:flat';
+
+const ROUTINE_CATALOG_FLAT_FACE_WHITE_MIGRATED_KEY =
+  'pokit:routine-catalog-flat-face-white-migrated';
+
 export const POST_IT_LIGHT_INK = '#FFFFFF';
 export const POST_IT_LIGHT_MUTED = 'rgba(255,255,255,0.72)';
 
@@ -101,9 +107,22 @@ function normalizeByGroup(raw: unknown): PostItFaceColorByGroup {
 export function loadPostItFaceColorByGroup(): PostItFaceColorByGroup {
   const raw = localStorageClient.getJson<unknown>(StorageKeys.postItFaceColor);
   if (typeof raw === 'string') {
-    return {};
+    return migrateRoutineCatalogFlatFaceToWhite({});
   }
-  return normalizeByGroup(raw);
+  return migrateRoutineCatalogFlatFaceToWhite(normalizeByGroup(raw));
+}
+
+/** 루틴 목록 상시 면색을 화이트로 맞춘다 (1회) */
+function migrateRoutineCatalogFlatFaceToWhite(
+  map: PostItFaceColorByGroup,
+): PostItFaceColorByGroup {
+  if (localStorageClient.getItemRaw(ROUTINE_CATALOG_FLAT_FACE_WHITE_MIGRATED_KEY) === '1') {
+    return map;
+  }
+  const next = { ...map, [ROUTINE_CATALOG_FLAT_POST_IT_KEY]: 'white' as const };
+  localStorageClient.setJson(StorageKeys.postItFaceColor, next);
+  localStorageClient.setItemRaw(ROUTINE_CATALOG_FLAT_FACE_WHITE_MIGRATED_KEY, '1');
+  return next;
 }
 
 export function loadPostItFaceColorIdForGroup(groupKey: string): PostItFaceColorId {

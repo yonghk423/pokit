@@ -13,6 +13,7 @@ import type { StoryRoutineArticle } from '../model/storyRoutinePayload';
 import {
   resolveCatalogGroupKeyForPersist,
   storyArticleCategoryKey,
+  suggestCatalogGroupKey,
 } from './storyArticleCategoryKey';
 
 export type ImportStoryResult = {
@@ -24,13 +25,16 @@ export type ImportStoryResult = {
 /**
  * pokitstory 아티클을 커스텀 플로우로 등록한다.
  * 동일 slug는 항상 같은 categoryKey를 써 중복 추가를 막는다.
+ * 카탈로그 그룹은 아티클 메타로 자동 배정한다(UI에서 고르지 않음).
  */
 export function importStoryAsRoutine(
   article: StoryRoutineArticle,
-  groupKey: string,
+  groupKey?: string,
 ): ImportStoryResult {
   const id = storyArticleCategoryKey(article);
-  const safeGroupKey = resolveCatalogGroupKeyForPersist(groupKey);
+  const safeGroupKey = resolveCatalogGroupKeyForPersist(
+    groupKey?.trim() ? groupKey : suggestCatalogGroupKey(article),
+  );
   const existed = listCustomFlowCatalogEntries().some((e) => e.id === id);
 
   const initial = getInitialOtherDataConfig();

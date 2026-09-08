@@ -6,7 +6,8 @@ export const orderRowStyles = StyleSheet.create({
   /** 바깥 띠(보더·세로 패딩만) — 드래그 시 잘리지 않게 flex 행은 `orderRowDragShell` */
   orderRowRoman: {
     width: '100%',
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 6,
     paddingHorizontal: 12,
     borderBottomWidth: RETRO_BORDER_WIDTH,
   },
@@ -189,6 +190,16 @@ export const orderRowStyles = StyleSheet.create({
   },
   orderFinishBtnText: {
     fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  expandFinishBtn: {
+    minWidth: 44,
+    height: 28,
+    paddingHorizontal: 10,
+  },
+  expandFinishBtnText: {
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: -0.2,
   },

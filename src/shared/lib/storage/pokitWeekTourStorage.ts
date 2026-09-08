@@ -25,6 +25,11 @@ export function markPokitWeekTourSeeded(): void {
   });
 }
 
+/** 시드 잠금 해제 — 온보딩 전·데이터 초기화 등 */
+export function clearPokitWeekTourSeeded(): void {
+  localStorageClient.removeItem(StorageKeys.pokitWeekTourSeeded);
+}
+
 /** 첫 포스트잇을 닫기/알겠어요로 본 적 있는지 */
 export function loadPokitWeekTourFirstTipSeen(): boolean {
   const v = localStorageClient.getJson<PersistedPokitWeekTourFirstTip>(
@@ -51,14 +56,26 @@ export function isPokitWeekTourChecklistComplete(): boolean {
   return doneCount >= Math.min(checklist.length, POKIT_WEEK_TOUR_STEP_COUNT);
 }
 
+/** 한 단계라도 체크했으면 이미 사용해 본 것으로 본다. */
+export function hasPokitWeekTourProgress(): boolean {
+  const raw = loadGoalDetailCategoryConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
+  if (!raw || typeof raw !== 'object') return false;
+  const checklist = (raw as { checklist?: unknown }).checklist;
+  if (!Array.isArray(checklist)) return false;
+  return checklist.some(
+    (item) => item && typeof item === 'object' && (item as { done?: unknown }).done === true,
+  );
+}
+
 /**
- * 오늘 담기가 비어 있으면 튜토리얼 루틴을 넣어야 하는지.
- * 시드 플래그와 무관 — 빈 담기 + 미완료면 다시 넣는다 (롤오버·이전 실패 복구).
- * 실제 반영 후에 `markPokitWeekTourSeeded`를 호출한다.
+ * 오늘 담기가 비어 있을 때 튜토리얼 루틴을 넣을지.
+ * 최초 시드 전(`pokitWeekTourSeeded` 없음)에만 넣는다.
+ * 한 번 시드된 뒤에는 빈 담기여도 다시 넣지 않는다.
  */
 export function nextOrderWithPokitWeekTourSeed(order: readonly string[]): string[] | null {
   if (order.includes(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)) return null;
   if (order.length > 0) return null;
+  if (loadPokitWeekTourSeeded()) return null;
   if (isPokitWeekTourChecklistComplete()) return null;
   return [BUILTIN_POKIT_WEEK_TOUR_FLOW_ID];
 }

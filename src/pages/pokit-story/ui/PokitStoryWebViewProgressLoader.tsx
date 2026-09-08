@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { RetroFlatColors } from '@shared/config/retroFlat';
+import { RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -10,7 +10,7 @@ type Props = {
   progress: number;
 };
 
-/** 스토리 WebView 첫 로딩 — 진행률 바 + 퍼센트 */
+/** 스토리 WebView 첫 로딩 — 민트 진행률 바 + 퍼센트 */
 export function PokitStoryWebViewProgressLoader({ progress }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -18,6 +18,9 @@ export function PokitStoryWebViewProgressLoader({ progress }: Props) {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const clamped = Math.min(100, Math.max(0, progress));
   const displayPercent = clamped >= 100 ? 100 : clamped;
+  const fillW = Math.max(displayPercent, clamped > 0 ? 4 : 0);
+  const face = isDark ? c.surfaceAlt : '#FFFFFF';
+  const shadow = isDark ? c.solidShadow : '#000000';
 
   return (
     <View
@@ -31,20 +34,42 @@ export function PokitStoryWebViewProgressLoader({ progress }: Props) {
       ]}>
       <View style={styles.center}>
         <ThemedText style={[styles.brand, { color: c.text }]}>POKIT</ThemedText>
-        <ThemedText style={[styles.caption, { color: c.textMuted }]} lightColor={c.textMuted} darkColor={c.textMuted}>
+        <ThemedText
+          style={[styles.caption, { color: c.textMuted }]}
+          lightColor={c.textMuted}
+          darkColor={c.textMuted}>
           {t('storyImport.loadingStory')}
         </ThemedText>
 
-        <View style={[styles.track, { borderColor: isDark ? 'rgba(255,255,255,0.22)' : c.borderMuted }]}>
+        <View
+          style={[
+            styles.trackShell,
+            { marginRight: SOLID_SHADOW_OFFSET, marginBottom: SOLID_SHADOW_OFFSET },
+          ]}>
           <View
+            pointerEvents="none"
             style={[
-              styles.fill,
+              styles.trackShadow,
               {
-                width: `${Math.max(displayPercent, clamped > 0 ? 4 : 0)}%`,
-                backgroundColor: c.text,
+                backgroundColor: shadow,
+                transform: [
+                  { translateX: SOLID_SHADOW_OFFSET },
+                  { translateY: SOLID_SHADOW_OFFSET },
+                ],
               },
             ]}
           />
+          <View style={[styles.trackFace, { backgroundColor: face }]}>
+            <View
+              style={[
+                styles.fill,
+                {
+                  width: `${fillW}%`,
+                  backgroundColor: isDark ? c.bgMint : c.primaryContainer,
+                },
+              ]}
+            />
+          </View>
         </View>
 
         <ThemedText style={[styles.percent, { color: c.text }]}>{displayPercent}%</ThemedText>
@@ -78,17 +103,21 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
     marginBottom: 8,
   },
-  track: {
+  trackShell: {
     width: '100%',
-    height: 8,
-    borderRadius: 0,
-    borderWidth: 1,
+    height: 12,
+    position: 'relative',
+  },
+  trackShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  trackFace: {
+    ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
-    backgroundColor: 'transparent',
+    zIndex: 1,
   },
   fill: {
     height: '100%',
-    borderRadius: 0,
   },
   percent: {
     fontSize: 12,

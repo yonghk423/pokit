@@ -32,6 +32,8 @@
 
 - **효과 배제:** blur 그림자(`shadowRadius`), `backdrop-filter`, 화려한 그라데이션 **금지**.
 - **단색 채우기:** 면은 100% 단색. 깊이는 **톤 레이어링** + **solid shadow**(4px 오프셋 단색 블록)로만 표현.
+- **버튼 pressed:** 누를 때 **배경·테두리·글자색·opacity가 바뀌지 않게** 한다. 피드백은 햅틱·눌림 translate만.
+- **Primary CTA:** 저장·확인·적용 버튼 면은 **민트**(`bgMint` / `primaryContainer`). 검정·네이비 면 CTA 금지.
 - **일러스트:** 제품 UI 본문에 큰 일러스트 박스를 기본으로 두지 않는다. empty state·스토리 WebView 등 **의도된 화면**만 예외.
 
 ### Color Palette (뮤티드 파스텔)

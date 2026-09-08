@@ -14,10 +14,15 @@ describe('pokitWeekTourStorage', () => {
     localStorageClient.removeItem(StorageKeys.goalDetailSettings);
   });
 
-  it('seeds tour into empty bag even if seeded flag was set (rollover recovery)', () => {
+  it('seeds tour into empty bag for first-time users only', () => {
+    expect(loadPokitWeekTourSeeded()).toBe(false);
+    expect(nextOrderWithPokitWeekTourSeed([])).toEqual([BUILTIN_POKIT_WEEK_TOUR_FLOW_ID]);
+  });
+
+  it('does not re-seed empty bag after seeded flag is set', () => {
     markPokitWeekTourSeeded();
     expect(loadPokitWeekTourSeeded()).toBe(true);
-    expect(nextOrderWithPokitWeekTourSeed([])).toEqual([BUILTIN_POKIT_WEEK_TOUR_FLOW_ID]);
+    expect(nextOrderWithPokitWeekTourSeed([])).toBeNull();
   });
 
   it('does not seed when bag already has items', () => {

@@ -13,7 +13,9 @@ type LocaleMatchKey =
   | 'catalog.groupDailyLife'
   | 'catalog.groupAbstain'
   | 'fixedRoutine.exampleHealth'
-  | 'fixedRoutine.exampleFocus';
+  | 'fixedRoutine.exampleFocus'
+  | 'fixedRoutine.presetDaily'
+  | 'fixedRoutine.presetWeekend';
 
 function matchesAnyLocaleDefault(value: string, key: LocaleMatchKey): boolean {
   const trimmed = value.trim();
@@ -47,7 +49,11 @@ const PRESET_SCHEDULE_NAME_KEYS: Record<'set_daily' | 'set_weekend', I18nKey> = 
 export function resolveFixedFlowSetDisplayName(set: { id: string; name: string }): string {
   if ((BUILTIN_PRESET_SCHEDULE_SET_IDS as readonly string[]).includes(set.id)) {
     const key = PRESET_SCHEDULE_NAME_KEYS[set.id as 'set_daily' | 'set_weekend'];
-    // 이름 변경 불가 프리셋 — 저장명이 옛 한글이어도 항상 로케일 표기
+    if (key && matchesAnyLocaleDefault(set.name, key)) {
+      return t(key);
+    }
+    const trimmed = set.name.trim();
+    if (trimmed.length > 0) return trimmed;
     if (key) return t(key);
   }
 

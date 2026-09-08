@@ -114,7 +114,7 @@ describe('dayPlanDraftStore', () => {
     const state = useDayPlanDraftStore.getState();
     expect(state.priorityPlanDateKey).toBe('2025-05-26');
     expect(state.priorityCategoryOrder).toEqual([]);
-    expect(state.priorityCategoryImportance).toEqual({});
+    expect(state.priorityCategoryImportance).toEqual({ work: 'pink' });
     expect(state.completedFocusCategoryKeys).toEqual([]);
     expect(state.planCompletionDismissedKeys).toEqual([]);
     expect(state.isFocusStarted).toBe(false);
@@ -560,16 +560,16 @@ describe('dayPlanDraftStore', () => {
     useDayPlanDraftStore.getState().finishPriorityCategoryForToday('healthIntake');
     const s = useDayPlanDraftStore.getState();
     expect(s.priorityCategoryOrder).toEqual(['water']);
-    expect(s.priorityCategoryImportance).toEqual({ water: 'yellow' });
+    expect(s.priorityCategoryImportance).toEqual({ healthIntake: 'pink', water: 'yellow' });
     expect(s.completedFocusCategoryKeys).toEqual(['water@morning']);
     expect(s.planCompletionDismissedKeys).toEqual([]);
     expect(s.isFocusStarted).toBe(true);
   });
 
-  it('cycles priority category mark colors and prunes removed categories', () => {
+  it('cycles priority category mark colors without requiring today bag membership', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,
-      priorityCategoryOrder: ['reading', 'water'],
+      priorityCategoryOrder: ['reading'],
       priorityCategoryImportance: { reading: 'lavender' },
     });
     useDayPlanDraftStore.getState().cyclePriorityCategoryImportance('reading');
@@ -577,7 +577,7 @@ describe('dayPlanDraftStore', () => {
     useDayPlanDraftStore.getState().cyclePriorityCategoryImportance('water');
     expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({ water: 'yellow' });
     useDayPlanDraftStore.getState().setPriorityCategoryOrder(['reading']);
-    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({});
+    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({ water: 'yellow' });
   });
 
   it('clears focus started when the last priority category is finished for today', () => {

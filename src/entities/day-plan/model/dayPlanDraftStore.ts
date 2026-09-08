@@ -259,22 +259,6 @@ function normalizePriorityCategoryImportance(
   return out;
 }
 
-function prunePriorityCategoryImportanceForOrder(
-  record: Record<string, PriorityMarkColorId>,
-  order: readonly string[],
-): Record<string, PriorityMarkColorId> {
-  const allowed = new Set(order);
-  const next = { ...record };
-  let changed = false;
-  for (const key of Object.keys(next)) {
-    if (!allowed.has(key)) {
-      delete next[key];
-      changed = true;
-    }
-  }
-  return changed ? next : record;
-}
-
 function createInitialState() {
   return {
     planMode: 'priority' as PlanMode,
@@ -377,9 +361,10 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         : sanitizePriorityCategoryOrderKeys(
             Array.isArray(raw.priorityCategoryOrder) ? raw.priorityCategoryOrder : [],
           ),
-      priorityCategoryImportance: resetDailyPlan
-        ? {}
-        : normalizePriorityCategoryImportance(raw.priorityCategoryImportance),
+      // 중요도 표시는 루틴 목록·담기 공용 — 일일 롤오버로 지우지 않음
+      priorityCategoryImportance: normalizePriorityCategoryImportance(
+        raw.priorityCategoryImportance,
+      ),
       routineHistoryPendingByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPendingByDate),
       routineHistoryPlannedKeysByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPlannedKeysByDate),
       quickMemoDraft: typeof raw.quickMemoDraft === 'string' ? raw.quickMemoDraft : '',
@@ -521,10 +506,6 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         s.priorityMealSlotOverrides,
         priorityCategoryOrder,
       );
-      const priorityCategoryImportance = prunePriorityCategoryImportanceForOrder(
-        s.priorityCategoryImportance,
-        priorityCategoryOrder,
-      );
       const isFocusStarted = priorityCategoryOrder.length > 0 ? s.isFocusStarted : false;
 
       return {
@@ -532,7 +513,6 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         completedFocusCategoryKeys,
         planCompletionDismissedKeys,
         priorityMealSlotOverrides,
-        priorityCategoryImportance,
         isFocusStarted,
       };
     }),
@@ -632,12 +612,12 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       priorityPlanExplicitMultiDay: false,
       priorityOvernightEndAuto: overnight,
       priorityCategoryOrder: [],
-      priorityCategoryImportance: {},
       completedFocusCategoryKeys: [],
       planCompletionDismissedKeys: [],
       isFocusStarted: false,
     });
     // reset 모드: 수동 담기를 비운 뒤 고정 루틴 적용분만 다시 반영.
+    // priorityCategoryImportance 는 루틴 목록 공용이라 유지.
     syncTodayTabWithFixedRoutineApply();
   },
   setPriorityStart: (value) => set({ priorityStart: value }),
@@ -662,21 +642,16 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         s.priorityMealSlotOverrides,
         priorityCategoryOrder,
       );
-      const priorityCategoryImportance = prunePriorityCategoryImportanceForOrder(
-        s.priorityCategoryImportance,
-        priorityCategoryOrder,
-      );
       return {
         priorityCategoryOrder,
         routineHistoryPlannedKeysByDate,
         priorityMealSlotOverrides,
-        priorityCategoryImportance,
       };
     }),
   setPriorityCategoryMarkColor: (categoryKey, color) =>
     set((s) => {
       const key = categoryKey.trim();
-      if (!key || !s.priorityCategoryOrder.includes(key)) return s;
+      if (!key) return s;
       const priorityCategoryImportance = { ...s.priorityCategoryImportance };
       if (color == null) {
         delete priorityCategoryImportance[key];
@@ -688,7 +663,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   cyclePriorityCategoryImportance: (categoryKey) =>
     set((s) => {
       const key = categoryKey.trim();
-      if (!key || !s.priorityCategoryOrder.includes(key)) return s;
+      if (!key) return s;
       const current = s.priorityCategoryImportance[key] ?? null;
       const next = cyclePriorityMarkColor(current);
       const priorityCategoryImportance = { ...s.priorityCategoryImportance };
@@ -733,7 +708,16 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         s.prioritySectionsMealSlots,
         deduped,
       );
-      return { prioritySectionsCategoryOrder: deduped, prioritySectionsMealSlots };
+      const today = getLocalDateKey();
+      const routineHistoryPlannedKeysByDate =
+        shouldTrackRoutineHistoryForDate(s, today) && deduped.length > 0
+          ? snapshotRoutinePlannedKeys(s.routineHistoryPlannedKeysByDate, today, deduped)
+          : s.routineHistoryPlannedKeysByDate;
+      return {
+        prioritySectionsCategoryOrder: deduped,
+        prioritySectionsMealSlots,
+        routineHistoryPlannedKeysByDate,
+      };
     }),
   appendPrioritySectionsCategoryKeys: (keys) =>
     set((s) => {
@@ -747,7 +731,12 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
           changed = true;
         }
       }
-      return changed ? { prioritySectionsCategoryOrder: next } : s;
+      if (!changed) return s;
+      const today = getLocalDateKey();
+      const routineHistoryPlannedKeysByDate = shouldTrackRoutineHistoryForDate(s, today)
+        ? snapshotRoutinePlannedKeys(s.routineHistoryPlannedKeysByDate, today, next)
+        : s.routineHistoryPlannedKeysByDate;
+      return { prioritySectionsCategoryOrder: next, routineHistoryPlannedKeysByDate };
     }),
   appendPrioritySectionsWithMealSlot: (keys, mealSlot) =>
     set((s) => {
@@ -769,9 +758,16 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
           changed = true;
         }
       }
-      return changed
-        ? { prioritySectionsCategoryOrder: nextOrder, prioritySectionsMealSlots: nextSlots }
-        : s;
+      if (!changed) return s;
+      const today = getLocalDateKey();
+      const routineHistoryPlannedKeysByDate = shouldTrackRoutineHistoryForDate(s, today)
+        ? snapshotRoutinePlannedKeys(s.routineHistoryPlannedKeysByDate, today, nextOrder)
+        : s.routineHistoryPlannedKeysByDate;
+      return {
+        prioritySectionsCategoryOrder: nextOrder,
+        prioritySectionsMealSlots: nextSlots,
+        routineHistoryPlannedKeysByDate,
+      };
     }),
   setPriorityMealSlotOverride: (categoryKey, mealSlot) =>
     set((s) => {

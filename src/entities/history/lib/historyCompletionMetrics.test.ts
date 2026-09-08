@@ -1,6 +1,6 @@
 import type { HistoryDailyStat } from '@entities/history/model/types';
 
-import { getCategoryCompletions, sumCategoryCompletions } from './historyCompletionMetrics';
+import { getCategoryCompletions, lookupCategoryCompletionCount, sumCategoryCompletions, sumCategoryCompletionsInRange } from './historyCompletionMetrics';
 
 describe('historyCompletionMetrics', () => {
   it('prefers categoryCompletions over legacy minutes', () => {
@@ -18,5 +18,29 @@ describe('historyCompletionMetrics', () => {
       categoryMinutes: { reading: 30, water: 10 },
     });
     expect(map).toEqual({ reading: 1, water: 1 });
+  });
+
+  it('sums completions across a date range', () => {
+    const dailyStatsByDate = {
+      '2026-03-08': {
+        dateKey: '2026-03-08',
+        completedFlowCount: 2,
+        focusMinutes: 0,
+        categoryMinutes: {},
+        categoryCompletions: { reading: 2, stretch: 1 },
+      } satisfies HistoryDailyStat,
+      '2026-03-07': {
+        dateKey: '2026-03-07',
+        completedFlowCount: 1,
+        focusMinutes: 0,
+        categoryMinutes: {},
+        categoryCompletions: { reading: 1 },
+      } satisfies HistoryDailyStat,
+    };
+    expect(sumCategoryCompletionsInRange(dailyStatsByDate, '2026-03-08', 2)).toEqual({
+      reading: 3,
+      stretch: 1,
+    });
+    expect(lookupCategoryCompletionCount({ reading: 3 }, 'reading')).toBe(3);
   });
 });

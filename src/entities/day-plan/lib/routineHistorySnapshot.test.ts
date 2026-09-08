@@ -1,9 +1,11 @@
 import {
   appendRoutineHistoryPending,
+  lookupCategoryPlannedDayCount,
   normalizeRoutineHistoryByDate,
   removeRoutineHistoryPending,
   shouldTrackRoutineHistoryForDate,
   snapshotRoutinePlannedKeys,
+  sumCategoryPlannedDaysInRange,
 } from './routineHistorySnapshot';
 
 describe('routineHistorySnapshot', () => {
@@ -42,5 +44,34 @@ describe('routineHistorySnapshot', () => {
   it('snapshots planned keys for a date', () => {
     const planned = snapshotRoutinePlannedKeys({}, '2025-06-14', ['reading', 'water']);
     expect(planned['2025-06-14']).toEqual(['reading', 'water']);
+  });
+
+  it('unions planned keys so removed items still count for that day', () => {
+    let planned = snapshotRoutinePlannedKeys({}, '2025-06-14', ['reading', 'water']);
+    planned = snapshotRoutinePlannedKeys(planned, '2025-06-14', ['water', 'stretch']);
+    expect(planned['2025-06-14']).toEqual(['reading', 'water', 'stretch']);
+  });
+
+  it('sums planned days in range once per day', () => {
+    const plannedByDate = {
+      '2025-06-14': ['reading', 'water'],
+      '2025-06-13': ['reading'],
+      '2025-06-12': ['stretch'],
+    };
+    expect(
+      sumCategoryPlannedDaysInRange(plannedByDate, '2025-06-14', 3, (key, delta) => {
+        const d = new Date(`${key}T12:00:00`);
+        d.setDate(d.getDate() + delta);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }),
+    ).toEqual({
+      reading: 2,
+      water: 1,
+      stretch: 1,
+    });
+    expect(lookupCategoryPlannedDayCount({ reading: 2 }, 'reading')).toBe(2);
   });
 });

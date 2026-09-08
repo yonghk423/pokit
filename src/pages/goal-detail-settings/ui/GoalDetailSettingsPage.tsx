@@ -263,7 +263,7 @@ export function GoalDetailSettingsPage() {
       if (source === 'today') {
         return { allowRename: false, renameLockedReason: 'today' as const };
       }
-      return { allowRename: true, renameLockedReason: null as const };
+      return { allowRename: true, renameLockedReason: null };
     },
     [isCategoryRunning, source],
   );
@@ -862,37 +862,30 @@ export function GoalDetailSettingsPage() {
                 styles.footerCompleteShell,
                 pressed && { opacity: 0.92 },
               ]}>
-              {({ pressed }) => (
-                <>
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.footerCompleteShadow,
-                      {
-                        backgroundColor: RetroFlatColors.light.text,
-                      },
-                    ]}
-                  />
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.footerCompleteCircle,
-                      {
-                        backgroundColor: pressed
-                          ? '#8EC8CA'
-                          : RetroFlatColors.light.primaryContainer,
-                      },
-                    ]}>
-                    <IconSymbol
-                      name="checkmark"
-                      size={16}
-                      weight="bold"
-                      color={RetroFlatColors.light.text}
-                      style={styles.footerCompleteIcon}
-                    />
-                  </View>
-                </>
-              )}
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.footerCompleteShadow,
+                  {
+                    backgroundColor: RetroFlatColors.light.text,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.footerCompleteCircle,
+                  {
+                    backgroundColor: RetroFlatColors.light.primaryContainer,
+                  },
+                ]}>
+                <IconSymbol
+                  name="checkmark"
+                  size={16}
+                  weight="bold"
+                  color={RetroFlatColors.light.text}
+                  style={styles.footerCompleteIcon}
+                />
+              </View>
             </Pressable>
           </View>
         )}

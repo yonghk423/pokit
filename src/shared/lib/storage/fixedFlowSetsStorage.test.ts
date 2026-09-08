@@ -117,6 +117,49 @@ describe('fixedFlowSetsStorage', () => {
     expect(isFixedFlowSetMatchedToday(set, new Date('2026-07-08T09:00:00+09:00'))).toBe(false);
   });
 
+  it('keeps custom weekday sets and applies them only on selected days', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: ['custom_mwf'],
+      sets: [
+        {
+          id: 'custom_mwf',
+          name: '월수금',
+          applyRule: 'custom',
+          applyWeekdays: [1, 3, 5],
+          items: [{ categoryKey: 'reading', enabled: true }],
+        },
+      ],
+    });
+    expect(state.sets.some((set) => set.id === 'custom_mwf')).toBe(true);
+    expect(state.sets.find((set) => set.id === 'custom_mwf')?.applyWeekdays).toEqual([1, 3, 5]);
+    // 2026-07-01 = Wednesday
+    expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-01T09:00:00+09:00'))).toEqual([
+      'reading',
+    ]);
+    // 2026-07-02 = Thursday
+    expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-02T09:00:00+09:00'))).toEqual([]);
+  });
+
+  it('applies legacy manual sets every day when weekdays are empty', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: ['manual_a'],
+      sets: [
+        {
+          id: 'manual_a',
+          name: '내 그룹',
+          applyRule: 'manual',
+          items: [{ categoryKey: 'water', enabled: true }],
+        },
+      ],
+    });
+    expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-01T09:00:00+09:00'))).toEqual([
+      'water',
+    ]);
+    expect(collectActiveFixedFlowCategoryKeys(state, new Date('2026-07-04T09:00:00+09:00'))).toEqual([
+      'water',
+    ]);
+  });
+
   it('removes weekday-only scheduled sets and keeps daily, weekend, manual', () => {
     const state = normalizeFixedFlowSetsState({
       activeSetIds: ['set_daily', 'manual_a'],
@@ -201,8 +244,7 @@ describe('fixedFlowSetsStorage', () => {
       'set_example_focus',
     ]);
     expect(state.sets.find((set) => set.id === 'set_example_focus')?.items.map((item) => item.categoryKey)).toEqual([
-      'customFlow:preset_stretching',
-      'customFlow:preset_abstain',
+      'customFlow:preset_focus',
     ]);
   });
 
@@ -238,6 +280,49 @@ describe('fixedFlowSetsStorage', () => {
       'set_example_focus',
     ]);
     expect(state.activeSetIds).toEqual(['set_daily']);
+  });
+
+  it('migrates daily preset weekdays to Mon–Fri once', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: ['set_daily'],
+      fixedRoutinePresetWeekdaysEditableMigrated: false,
+      sets: [
+        {
+          id: 'set_daily',
+          name: '데일리 고정 루틴',
+          applyRule: 'daily',
+          applyWeekdays: [0, 1, 2, 3, 4, 5, 6],
+          items: [{ categoryKey: 'water', enabled: true }],
+        },
+        {
+          id: 'set_weekend',
+          name: '주말 고정 루틴',
+          applyRule: 'weekend',
+          applyWeekdays: [0, 6],
+          items: [{ categoryKey: 'journal', enabled: true }],
+        },
+      ],
+    });
+    expect(state.sets.find((s) => s.id === 'set_daily')?.applyWeekdays).toEqual([1, 2, 3, 4, 5]);
+    expect(state.sets.find((s) => s.id === 'set_weekend')?.applyWeekdays).toEqual([0, 6]);
+    expect(state.fixedRoutinePresetWeekdaysEditableMigrated).toBe(true);
+  });
+
+  it('keeps edited daily weekdays after migration flag is set', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: ['set_daily'],
+      fixedRoutinePresetWeekdaysEditableMigrated: true,
+      sets: [
+        {
+          id: 'set_daily',
+          name: '데일리 고정 루틴',
+          applyRule: 'daily',
+          applyWeekdays: [1, 3, 5],
+          items: [{ categoryKey: 'water', enabled: true }],
+        },
+      ],
+    });
+    expect(state.sets.find((s) => s.id === 'set_daily')?.applyWeekdays).toEqual([1, 3, 5]);
   });
 
   it('includes daily preset keys only when toggled on for today', () => {

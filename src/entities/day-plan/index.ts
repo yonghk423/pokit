@@ -400,6 +400,10 @@ export {
   parseLocalDateKeyToDate
 } from './lib/localDateKey';
 export {
+  lookupCategoryPlannedDayCount,
+  sumCategoryPlannedDaysInRange,
+} from './lib/routineHistorySnapshot';
+export {
   MAX_WATER_REMINDER_TIMES,
   normalizeWaterReminderTimes
 } from './lib/normalizeWaterReminderTimes';

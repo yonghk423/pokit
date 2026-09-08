@@ -56,6 +56,8 @@ export {
   markWelcomeIntroSeenAndFlush,
 } from './welcomeIntroStorage';
 export {
+  clearPokitWeekTourSeeded,
+  hasPokitWeekTourProgress,
   isPokitWeekTourChecklistComplete,
   loadPokitWeekTourFirstTipSeen,
   loadPokitWeekTourSeeded,
@@ -168,6 +170,7 @@ export {
   WEEKDAY_PRESET_WEEKEND, defaultWeekdaysForApplyRule,
   formatApplyWeekdaysHint,
   formatApplyWeekdaysLabel,
+  isSameApplyWeekdaySet,
   normalizeApplyWeekdays,
   resolveApplyWeekdays, type WeekdayIndex
 } from './fixedFlowWeekdays';
@@ -242,6 +245,7 @@ export {
   POST_IT_FACE_COLOR_PRESETS,
   POST_IT_LIGHT_INK,
   POST_IT_LIGHT_MUTED,
+  ROUTINE_CATALOG_FLAT_POST_IT_KEY,
   getPostItFaceColorPreset,
   isPostItFaceColorId,
   loadPostItFaceColorByGroup,

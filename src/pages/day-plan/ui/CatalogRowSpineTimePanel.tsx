@@ -450,15 +450,19 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       accessibilityLabel={resolvedConfirmA11y}
       disabled={disabled}
       onPress={handleConfirm}
-      style={({ pressed }) => [
+      style={[
         styles.confirmSegment,
         {
-          backgroundColor: ink,
+          backgroundColor: isDark ? tone.bgMint : tone.primaryContainer,
           borderColor: line,
-          opacity: disabled ? 0.45 : pressed ? 0.88 : 1,
+          opacity: disabled ? 0.45 : 1,
         },
       ]}>
-      <ThemedText style={[styles.confirmSegmentLabel, { color: isDark ? '#09090b' : '#FAFAFA' }]}>
+      <ThemedText
+        style={[
+          styles.confirmSegmentLabel,
+          { color: isDark ? tone.primaryOn : tone.primary },
+        ]}>
         {t('common.confirm')}
       </ThemedText>
     </Pressable>

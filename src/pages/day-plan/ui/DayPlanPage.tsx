@@ -240,7 +240,7 @@ export function DayPlanPage({
       // 탭 전환/화면 freeze 이후에도 담기 순서 키를 최신 스토어 스냅샷으로 동기화
       const latestOrder = useDayPlanDraftStore.getState().priorityCategoryOrder;
       setPriorityCategoryOrder([...latestOrder]);
-      // 롤오버로 담기가 비면 튜토리얼을 다시 넣는다
+      // 최초 사용자만 빈 담기에 튜토리얼을 넣는다
       seedPokitWeekTourIntoTodayIfNeeded();
       // 온보딩 플래그가 디스크에 반영됐으면 게이트를 닫는다
       if (loadDailyRhythmOnboardingCompleted()) {
@@ -389,6 +389,8 @@ export function DayPlanPage({
       syncOvernightPriorityPlanDates();
       void markDailyRhythmOnboardingCompletedAndFlush().then(() => {
         setRhythmGateOpen(false);
+        // 온보딩 직후 오늘 담기가 비어 있으면 튜토리얼을 넣고, 시드 잠금을 건다
+        seedPokitWeekTourIntoTodayIfNeeded();
       });
     },
     [setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],

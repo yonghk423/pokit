@@ -9,6 +9,7 @@ import {
   defaultPriorityWindowFromNow,
   formatHhmmClockKo,
   getLocalDateKey,
+  seedPokitWeekTourIntoTodayIfNeeded,
   syncTodayTabWithFixedRoutineApply,
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
@@ -263,6 +264,7 @@ export function SettingsPage() {
       saveFixedFlowSetsState(defaultFixedSets);
       useFixedFlowSetsStore.getState().reloadFromStorage();
       syncTodayTabWithFixedRoutineApply();
+      seedPokitWeekTourIntoTodayIfNeeded();
 
       useHistoryStore.getState().reloadFromStorage();
       useHorizonCompletionStore.getState().reloadFromStorage();

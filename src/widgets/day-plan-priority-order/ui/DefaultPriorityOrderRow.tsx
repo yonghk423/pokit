@@ -244,7 +244,6 @@ export function DefaultPriorityOrderRow({
   const actionBg = isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF';
   const actionBorder = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
   const actionShadow = isDark ? '#9ECFD1' : '#181A2E';
-  const actionHoverBg = isDark ? 'rgba(255,255,255,0.16)' : 'rgba(168, 218, 220, 0.35)';
 
   const rankIconTitleBlock = (
     <>
@@ -551,12 +550,11 @@ export function DefaultPriorityOrderRow({
           styles.orderFinishBtn,
           {
             borderColor: actionBorder,
-            backgroundColor: pressed ? actionHoverBg : actionBg,
+            backgroundColor: actionBg,
           },
-          pressed && { opacity: 0.92 },
         ]}>
         <ThemedText
-          style={[styles.orderFinishBtnText, { color: isDark ? '#FAFAFA' : primary }]}
+          style={[styles.orderFinishBtnText, { color: isDark ? '#FAFAFA' : '#000000' }]}
           numberOfLines={1}>
           {t('dayPlan.endTodayConfirm')}
         </ThemedText>
@@ -570,7 +568,7 @@ export function DefaultPriorityOrderRow({
     : null;
 
   const noteFinishAction = expandEnabled && onFinishForToday
-    ? (
+    ? wrapBrutal(
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('dayPlan.endTodayA11y', { label })}
@@ -579,13 +577,24 @@ export function DefaultPriorityOrderRow({
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           onFinishForToday();
         }}
-        style={({ pressed }) => [styles.expandNoteAction, pressed && { opacity: 0.55 }]}>
+        style={[
+          styles.orderFinishBtn,
+          styles.expandFinishBtn,
+          {
+            borderColor: actionBorder,
+            backgroundColor: actionBg,
+          },
+        ]}>
         <ThemedText
-          style={[styles.expandNoteActionText, { color: inkMuted }]}
+          style={[
+            styles.orderFinishBtnText,
+            styles.expandFinishBtnText,
+            { color: isDark ? '#FAFAFA' : '#000000' },
+          ]}
           numberOfLines={1}>
           {t('dayPlan.endTodayConfirm')}
         </ThemedText>
-      </Pressable>
+      </Pressable>,
     )
     : null;
 

@@ -25,6 +25,13 @@ describe('fixedFlowWeekdays', () => {
 
   it('resolves weekdays from applyRule when custom list is missing', () => {
     expect(resolveApplyWeekdays({ applyRule: 'weekend', applyWeekdays: [] })).toEqual([0, 6]);
+    expect(resolveApplyWeekdays({ applyRule: 'daily', applyWeekdays: [] })).toEqual([1, 2, 3, 4, 5]);
+    expect(resolveApplyWeekdays({ applyRule: 'custom', applyWeekdays: [] })).toEqual([
+      0, 1, 2, 3, 4, 5, 6,
+    ]);
+    expect(resolveApplyWeekdays({ applyRule: 'manual', applyWeekdays: [] })).toEqual([
+      0, 1, 2, 3, 4, 5, 6,
+    ]);
     expect(normalizeApplyWeekdays([2, 1, 2])).toEqual([1, 2]);
   });
 });

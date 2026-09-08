@@ -1,6 +1,7 @@
 import { normalizeCategoryMealSlots, normalizeDayMealSlot, resolveFixedFlowItemMealSlot, type DayMealSlot } from './dayMealSlot';
 import {
   BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS,
+  BUILTIN_PRESET_SCHEDULE_SET_IDS,
   LEGACY_WEEKDAY_SET_ID,
   LEGACY_CUSTOM_FLOW_SET_NAME,
   EXAMPLE_CUSTOM_FLOW_SET_NAME,
@@ -17,6 +18,8 @@ import {
   isApplyWeekdayMatchedToday,
   normalizeApplyWeekdays,
   resolveApplyWeekdays,
+  WEEKDAY_PRESET_WEEKDAY,
+  WEEKDAY_PRESET_WEEKEND,
   type WeekdayIndex,
 } from './fixedFlowWeekdays';
 import { localStorageClient } from './localStorageClient';
@@ -54,6 +57,11 @@ export type FixedFlowSet = {
   items: FixedFlowSetItem[];
   /** 데일리·주말 — 사용자가 연 빈 시간대 구간(아침 등) */
   pinnedMealSlots?: DayMealSlot[];
+  /**
+   * 그룹 제목 형광펜 (루틴 항목 중요도와 별개).
+   * null = 표시 없음, undefined = 미설정(프리셋은 병합 시 기본값).
+   */
+  titleMarkColor?: string | null;
 };
 
 export type FixedRoutineApplyLayoutMode = 'bag' | 'sections' | 'spine';
@@ -88,6 +96,8 @@ export type FixedFlowSetsState = {
   scheduledMealSlotLayoutEnabled?: boolean;
   /** 사용자가 삭제한 나만의 루틴 예시 그룹 id — 재생성 방지 */
   dismissedExampleCustomFlowSetIds?: string[];
+  /** 사용자가 삭제한 데일리·주말 프리셋 id — 재생성 방지 */
+  dismissedBuiltinPresetSetIds?: string[];
   /** 고정 루틴 화면에서 편집 중인 보기 모드 */
   fixedRoutineApplyLayoutMode?: FixedRoutineApplyLayoutMode;
   /**
@@ -95,6 +105,10 @@ export type FixedFlowSetsState = {
    * 이전에는 단일 activeSetIds를 세 모드에 복제했음 → 한 번만 현재 모드로 축소.
    */
   fixedRoutinePerModeApplyMigrated?: boolean;
+  /**
+   * 데일리·주말 프리셋에 요일 칩을 열고, 데일리 기본을 평일(월~금)로 맞춘 마이그레이션.
+   */
+  fixedRoutinePresetWeekdaysEditableMigrated?: boolean;
 };
 
 type PersistedShape = Partial<FixedFlowSetsState> & {
@@ -105,6 +119,32 @@ type PersistedShape = Partial<FixedFlowSetsState> & {
 };
 
 const FALLBACK_SET_NAME = EXAMPLE_CUSTOM_FLOW_SET_NAME;
+
+/** 그룹 제목 형광펜 — entities priorityMarkColor id 와 동일 (shared는 entities 미의존) */
+const TITLE_MARK_COLOR_IDS = [
+  'yellow',
+  'mint',
+  'softGreen',
+  'pink',
+  'softPink',
+  'peach',
+  'lavender',
+] as const;
+
+function normalizeOptionalTitleMarkColor(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const trimmed = raw.trim();
+  return (TITLE_MARK_COLOR_IDS as readonly string[]).includes(trimmed) ? trimmed : undefined;
+}
+
+function normalizeTitleMarkColorField(
+  raw: Record<string, unknown>,
+): { titleMarkColor?: string | null } {
+  if (!('titleMarkColor' in raw)) return {};
+  if (raw.titleMarkColor === null) return { titleMarkColor: null };
+  const normalized = normalizeOptionalTitleMarkColor(raw.titleMarkColor);
+  return { titleMarkColor: normalized ?? null };
+}
 
 const VALID_APPLY_RULES = new Set<FixedFlowSetApplyRule>([
   'manual',
@@ -204,6 +244,7 @@ function normalizeSets(raw: unknown): FixedFlowSet[] {
       applyWeekdays: applyRule === 'manual' ? applyWeekdaysRaw : applyWeekdays,
       items,
       ...(pinnedMealSlots ? { pinnedMealSlots } : {}),
+      ...normalizeTitleMarkColorField(r),
     });
     seen.add(id);
   }
@@ -555,6 +596,20 @@ function normalizeDismissedExampleCustomFlowSetIds(raw: unknown): string[] {
   return out;
 }
 
+function normalizeDismissedBuiltinPresetSetIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const valid = new Set(BUILTIN_PRESET_SCHEDULE_SET_IDS as readonly string[]);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of raw) {
+    const t = typeof id === 'string' ? id.trim() : '';
+    if (!t || !valid.has(t) || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
+}
+
 function hadMissingBuiltinExampleCustomSets(raw: unknown): boolean {
   if (!Array.isArray(raw)) return true;
   const ids = new Set(
@@ -574,6 +629,9 @@ export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState 
   const dismissedExampleCustomFlowSetIds = normalizeDismissedExampleCustomFlowSetIds(
     raw.dismissedExampleCustomFlowSetIds,
   );
+  const dismissedBuiltinPresetSetIds = normalizeDismissedBuiltinPresetSetIds(
+    raw.dismissedBuiltinPresetSetIds,
+  );
   const fixedRoutineApplyLayoutMode = normalizeFixedRoutineApplyLayoutMode(
     raw.fixedRoutineApplyLayoutMode,
   );
@@ -584,6 +642,7 @@ export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState 
           migrateRemovedScheduledSets(migrateLegacyBuiltInSets(normalizeSets(raw.sets))),
         ),
       ),
+      { dismissedIds: dismissedBuiltinPresetSetIds },
     ),
     { dismissedIds: dismissedExampleCustomFlowSetIds },
   );
@@ -611,6 +670,19 @@ export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState 
     activeSetIdsByLayoutMode = split.activeSetIdsByLayoutMode;
     activeMealSlotsBySetIdByLayoutMode = split.activeMealSlotsBySetIdByLayoutMode;
   }
+  const presetWeekdaysMigrated = raw.fixedRoutinePresetWeekdaysEditableMigrated === true;
+  let nextSets = sets;
+  if (!presetWeekdaysMigrated) {
+    nextSets = sets.map((set) => {
+      if (set.id === 'set_daily') {
+        return { ...set, applyWeekdays: [...WEEKDAY_PRESET_WEEKDAY] };
+      }
+      if (set.id === 'set_weekend') {
+        return { ...set, applyWeekdays: [...WEEKDAY_PRESET_WEEKEND] };
+      }
+      return set;
+    });
+  }
   const activeSetIds = [...activeSetIdsByLayoutMode[fixedRoutineApplyLayoutMode]];
   const activeMealSlotsBySetId = {
     ...activeMealSlotsBySetIdByLayoutMode[fixedRoutineApplyLayoutMode],
@@ -620,11 +692,13 @@ export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState 
     activeMealSlotsBySetId,
     activeSetIdsByLayoutMode,
     activeMealSlotsBySetIdByLayoutMode,
-    sets,
+    sets: nextSets,
     scheduledMealSlotLayoutEnabled: raw.scheduledMealSlotLayoutEnabled === true,
     dismissedExampleCustomFlowSetIds,
+    dismissedBuiltinPresetSetIds,
     fixedRoutineApplyLayoutMode,
     fixedRoutinePerModeApplyMigrated: true,
+    fixedRoutinePresetWeekdaysEditableMigrated: true,
   };
 }
 
@@ -640,7 +714,6 @@ export function isFixedFlowSetMatchedToday(
   set: Pick<FixedFlowSet, 'applyRule' | 'applyWeekdays'>,
   now: Date = new Date(),
 ): boolean {
-  if (set.applyRule === 'manual') return false;
   return isApplyWeekdayMatchedToday(resolveApplyWeekdays(set), now);
 }
 
@@ -656,7 +729,7 @@ export function collectActiveFixedFlowCategoryKeys(
 
   for (const set of state.sets) {
     if (!active.has(set.id)) continue;
-    if (isBuiltinPresetScheduleSet(set) && !isFixedFlowSetMatchedToday(set, now)) {
+    if (!isFixedFlowSetMatchedToday(set, now)) {
       continue;
     }
     const activeSlotsRaw = activeMealSlotsBySetId[set.id];
@@ -688,7 +761,8 @@ export function loadFixedFlowSetsState(): FixedFlowSetsState {
     hadRemovedBuiltinPresetSets(raw?.sets) ||
     hadExampleCustomFlowSetMigration(raw?.sets) ||
     hadMissingBuiltinExampleCustomSets(raw?.sets) ||
-    raw?.fixedRoutinePerModeApplyMigrated !== true;
+    raw?.fixedRoutinePerModeApplyMigrated !== true ||
+    raw?.fixedRoutinePresetWeekdaysEditableMigrated !== true;
   if (needsPersist) {
     saveFixedFlowSetsState(normalized);
     return normalized;
@@ -732,6 +806,9 @@ export function saveFixedFlowSetsState(next: FixedFlowSetsState): void {
     fixedRoutinePerModeApplyMigrated:
       next.fixedRoutinePerModeApplyMigrated === true ||
       existing?.fixedRoutinePerModeApplyMigrated === true,
+    fixedRoutinePresetWeekdaysEditableMigrated:
+      next.fixedRoutinePresetWeekdaysEditableMigrated === true ||
+      existing?.fixedRoutinePresetWeekdaysEditableMigrated === true,
   });
   localStorageClient.setJson(StorageKeys.fixedFlowSets, normalized);
 }

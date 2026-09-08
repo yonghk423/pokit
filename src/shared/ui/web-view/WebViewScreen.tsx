@@ -14,8 +14,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, type WebViewNavigation } from 'react-native-webview';
 
+import { RetroFlatColors } from '@shared/config/retroFlat';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useThemeColor } from '@shared/lib/hooks/use-theme-color';
 import { useTranslation } from '@shared/lib/i18n';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
@@ -63,6 +66,11 @@ export function WebViewScreen({
   const [canGoBack, setCanGoBack] = useState(false);
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
+  const isDark = useColorScheme() === 'dark';
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const backFace = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const backShadow = isDark ? tone.solidShadow : '#000000';
+  const BACK_SHADOW = 2;
 
   const handleRetry = useCallback(() => {
     setHasError(false);
@@ -131,36 +139,47 @@ export function WebViewScreen({
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {canGoBack ? (
           <View style={styles.toolbar}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('common.back')}
-              onPress={handleGoBack}
-              style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}>
-              <ThemedText type="defaultSemiBold">{t('common.back')}</ThemedText>
-            </Pressable>
+            <View
+              style={[
+                styles.backShell,
+                { marginRight: BACK_SHADOW, marginBottom: BACK_SHADOW },
+              ]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.backShadow,
+                  {
+                    backgroundColor: backShadow,
+                    transform: [{ translateX: BACK_SHADOW }, { translateY: BACK_SHADOW }],
+                  },
+                ]}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('common.back')}
+                onPress={handleGoBack}
+                style={[styles.backButton, { backgroundColor: backFace }]}>
+                <ThemedText style={[styles.backLabel, { color: tone.text }]}>
+                  {t('common.back')}
+                </ThemedText>
+              </Pressable>
+            </View>
           </View>
         ) : null}
 
         {hasError ? (
-          <View style={styles.errorContainer}>
-            <ThemedText type="subtitle" style={styles.errorTitle}>
+          <View style={[styles.errorContainer, { backgroundColor: tone.bg }]}>
+            <ThemedText style={[styles.errorTitle, { color: tone.text }]}>
               {t('webView.errorTitle')}
             </ThemedText>
-            <ThemedText style={styles.errorBody}>
+            <ThemedText style={[styles.errorBody, { color: tone.textMuted }]}>
               {t('webView.errorBody')}
             </ThemedText>
-            <Pressable
-              accessibilityRole="button"
+            <BrutalConfirmButton
+              label={t('common.retry')}
+              accessibilityLabel={t('common.retry')}
               onPress={handleRetry}
-              style={({ pressed }) => [
-                styles.retryButton,
-                { backgroundColor: tintColor },
-                pressed && styles.retryButtonPressed,
-              ]}>
-              <ThemedText lightColor="#FFFFFF" darkColor="#151718" type="defaultSemiBold">
-                {t('common.retry')}
-              </ThemedText>
-            </Pressable>
+            />
           </View>
         ) : (
           <WebView
@@ -228,15 +247,24 @@ const styles = StyleSheet.create({
   },
   toolbar: {
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingBottom: 10,
+  },
+  backShell: {
+    alignSelf: 'flex-start',
+    position: 'relative',
+  },
+  backShadow: {
+    ...StyleSheet.absoluteFillObject,
   },
   backButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 4,
-    paddingHorizontal: 2,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    zIndex: 1,
   },
-  backButtonPressed: {
-    opacity: 0.6,
+  backLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   webView: {
     flex: 1,
@@ -258,18 +286,14 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     textAlign: 'center',
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   errorBody: {
     textAlign: 'center',
-    opacity: 0.72,
-  },
-  retryButton: {
-    marginTop: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  retryButtonPressed: {
-    opacity: 0.85,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 8,
   },
 });

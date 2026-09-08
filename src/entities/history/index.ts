@@ -1,4 +1,14 @@
-export { getCategoryCompletions, sumCategoryCompletions } from './lib/historyCompletionMetrics';
+export {
+  getCategoryCompletions,
+  lookupCategoryCompletionCount,
+  sumCategoryCompletions,
+  sumCategoryCompletionsInRange,
+} from './lib/historyCompletionMetrics';
+export {
+  addDaysToHistoryDateKey,
+  historyDateKeyToday,
+  historyDateToKey,
+} from './lib/historyDateKey';
 export {
   buildRoutineHistoryRecordKey,
   normalizeHistoryRecordKey,

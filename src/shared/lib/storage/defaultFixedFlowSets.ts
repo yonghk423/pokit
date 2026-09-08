@@ -5,6 +5,7 @@ import type {
 } from './fixedFlowSetsStorage';
 import {
   defaultWeekdaysForApplyRule,
+  normalizeApplyWeekdays,
   type WeekdayIndex,
 } from './fixedFlowWeekdays';
 import {
@@ -21,6 +22,7 @@ type DefaultSetTemplate = {
   name: string;
   applyRule: FixedFlowSetApplyRule;
   categoryKeys: string[];
+  titleMarkColor?: string | null;
 };
 
 /** 나만의 루틴 — 예시 그룹 (레거시: 기본 세트) */
@@ -129,10 +131,14 @@ export function mergeBuiltInExampleCustomSets(
       (existing.items.length === 0 ||
         isSameCategoryKeySet(existingKeys, LEGACY_FOCUS_SET_DEFAULT_KEYS) ||
         isSameCategoryKeySet(existingKeys, LEGACY_FOCUS_SET_HEALTH_FALLBACK_KEYS));
+    const keepCustomWeekdays = existing.applyRule === 'custom';
     return {
       ...existing,
       name: defaultSet.name,
-      applyRule: 'manual' as const,
+      applyRule: keepCustomWeekdays ? ('custom' as const) : ('manual' as const),
+      ...(keepCustomWeekdays && existing.applyWeekdays
+        ? { applyWeekdays: existing.applyWeekdays }
+        : {}),
       items:
         existing.items.length > 0 && !shouldResetFocusItems
           ? existing.items
@@ -155,7 +161,7 @@ export function mergeBuiltInExampleCustomSets(
 /** 레거시 — 평일 루틴 → 데일리 루틴으로 통합 */
 export const LEGACY_WEEKDAY_SET_ID = 'set_weekday';
 
-/** 삭제·이름 변경 불가 — 데일리·주말 프리셋 */
+/** 데일리·주말 빌트인 프리셋 id — 스케줄 규칙(daily/weekend) 식별용 */
 export const BUILTIN_FIXED_FLOW_SET_IDS = ['set_daily', 'set_weekend'] as const;
 
 export const BUILTIN_PRESET_SCHEDULE_SET_IDS = ['set_daily', 'set_weekend'] as const;
@@ -189,6 +195,7 @@ const DEFAULT_SET_TEMPLATES: DefaultSetTemplate[] = [
     name: '데일리 고정 루틴',
     applyRule: 'daily',
     categoryKeys: ['healthIntake', 'fasting', BUILTIN_DAILY_LIFE_FLOW_IDS[1]],
+    titleMarkColor: 'yellow',
   },
   {
     id: 'set_weekend',
@@ -198,6 +205,7 @@ const DEFAULT_SET_TEMPLATES: DefaultSetTemplate[] = [
       BUILTIN_DAILY_LIFE_FLOW_IDS[5],
       BUILTIN_DAILY_LIFE_FLOW_IDS[6],
     ],
+    titleMarkColor: 'lavender',
   },
 ];
 
@@ -207,11 +215,11 @@ export function isBuiltinPresetScheduleSet(
   return (BUILTIN_PRESET_SCHEDULE_SET_IDS as readonly string[]).includes(set.id);
 }
 
-/** 요일별 그룹(set_always·custom 등) — 목표 상세로 이전 후 제거 */
+/** 레거시 요일 그룹(set_always·weekday 등) — 목표 상세로 이전 후 제거. custom은 유지 */
 export function shouldMigrateAwayScheduledSet(
   set: Pick<FixedFlowSet, 'id' | 'applyRule'>,
 ): boolean {
-  if (set.applyRule === 'manual') return false;
+  if (set.applyRule === 'manual' || set.applyRule === 'custom') return false;
   if (isBuiltinPresetScheduleSet(set)) return false;
   if (set.applyRule === 'daily' || set.applyRule === 'weekend') return false;
   return true;
@@ -225,6 +233,9 @@ export function createDefaultFixedFlowSetsState(): FixedFlowSetsState {
     applyRule: template.applyRule,
     applyWeekdays: defaultWeekdaysForApplyRule(template.applyRule) as WeekdayIndex[],
     items: items(template.categoryKeys),
+    ...(template.titleMarkColor !== undefined
+      ? { titleMarkColor: template.titleMarkColor }
+      : {}),
   }));
   return {
     activeSetIds: [],
@@ -237,9 +248,15 @@ export function createDefaultFixedFlowSetsState(): FixedFlowSetsState {
   };
 }
 
-/** 데일리·주말 빌트인 병합 — 사용자 항목은 유지, 이름·규칙은 프리셋 고정 */
-export function mergeBuiltInPresetSets(sets: FixedFlowSet[]): FixedFlowSet[] {
-  const defaults = createDefaultFixedFlowSetsState().sets;
+/** 데일리·주말 빌트인 병합 — 사용자 항목·이름·적용 요일 유지, 규칙은 프리셋 고정 */
+export function mergeBuiltInPresetSets(
+  sets: FixedFlowSet[],
+  options?: { dismissedIds?: readonly string[] },
+): FixedFlowSet[] {
+  const dismissedIds = new Set(options?.dismissedIds ?? []);
+  const defaults = createDefaultFixedFlowSetsState().sets.filter(
+    (set) => !dismissedIds.has(set.id),
+  );
   const byId = new Map(sets.map((set) => [set.id, set]));
   const mergedBuiltIns = defaults.map((defaultSet) => {
     const existing = byId.get(defaultSet.id);
@@ -253,17 +270,31 @@ export function mergeBuiltInPresetSets(sets: FixedFlowSet[]): FixedFlowSet[] {
       (existing.items.length === 0 ||
         isSameCategoryKeySet(existingKeys, LEGACY_WEEKEND_SET_DEFAULT_KEYS));
     const shouldResetEmptyPreset = existing.items.length === 0;
+    const storedName = existing.name.trim();
+    const hasExplicitTitleMark = Object.prototype.hasOwnProperty.call(
+      existing,
+      'titleMarkColor',
+    );
     return {
       ...existing,
-      name: defaultSet.name,
+      name: storedName.length > 0 ? storedName : defaultSet.name,
       applyRule: defaultSet.applyRule,
-      applyWeekdays: defaultSet.applyWeekdays,
+      // 사용자가 고른 적용 요일 유지 (비어 있을 때만 프리셋 기본)
+      applyWeekdays:
+        normalizeApplyWeekdays(existing.applyWeekdays).length > 0
+          ? normalizeApplyWeekdays(existing.applyWeekdays)
+          : defaultSet.applyWeekdays,
+      titleMarkColor: hasExplicitTitleMark
+        ? existing.titleMarkColor ?? null
+        : (defaultSet.titleMarkColor ?? null),
       ...(shouldResetDailyItems || shouldResetWeekendItems || shouldResetEmptyPreset
         ? { items: defaultSet.items }
         : {}),
     };
   });
-  const builtInIds = new Set(defaults.map((set) => set.id));
+  const builtInIds = new Set(
+    (BUILTIN_PRESET_SCHEDULE_SET_IDS as readonly string[]).map((id) => id),
+  );
   const customSets = sets.filter((set) => !builtInIds.has(set.id));
   return [...mergedBuiltIns, ...customSets];
 }

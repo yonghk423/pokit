@@ -34,6 +34,7 @@ function resetStore() {
     sets: [],
     scheduledMealSlotLayoutEnabled: false,
     dismissedExampleCustomFlowSetIds: [],
+    dismissedBuiltinPresetSetIds: [],
     fixedRoutineApplyLayoutMode: 'bag',
     todayAppliedCategoryKeys: [],
     todayAppliedRevision: 0,
@@ -81,9 +82,68 @@ describe('fixedFlowSetsStore', () => {
     });
     useFixedFlowSetsStore.getState().addSet('주말');
     const state = useFixedFlowSetsStore.getState();
-    expect(state.sets.some((s) => s.name === '주말')).toBe(true);
+    const added = state.sets.find((s) => s.name === '주말');
+    expect(added).toBeTruthy();
+    expect(added?.applyRule).toBe('custom');
+    expect(added?.applyWeekdays).toEqual([0, 1, 2, 3, 4, 5, 6]);
     expect(state.activeSetIds).toEqual([]);
     expect(mockSave).toHaveBeenCalled();
+  });
+
+  it('setApplyWeekdays stores custom weekdays on user sets', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: ['set_a'],
+      activeMealSlotsBySetId: {},
+      activeSetIdsByLayoutMode: { bag: ['set_a'], sections: [], spine: [] },
+      activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
+      sets: [
+        {
+          id: 'set_a',
+          name: 'A',
+          applyRule: 'manual',
+          items: [{ categoryKey: 'water', enabled: true }],
+        },
+      ],
+      scheduledMealSlotLayoutEnabled: false,
+      dismissedExampleCustomFlowSetIds: [],
+      fixedRoutineApplyLayoutMode: 'bag',
+      todayAppliedCategoryKeys: ['water'],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+    useFixedFlowSetsStore.getState().setApplyWeekdays('set_a', [2, 4]);
+    const updated = useFixedFlowSetsStore.getState().sets.find((s) => s.id === 'set_a');
+    expect(updated?.applyRule).toBe('custom');
+    expect(updated?.applyWeekdays).toEqual([2, 4]);
+    expect(mockSave).toHaveBeenCalled();
+  });
+
+  it('setApplyWeekdays updates builtin preset weekdays without changing applyRule', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: ['set_daily'],
+      activeMealSlotsBySetId: {},
+      activeSetIdsByLayoutMode: { bag: ['set_daily'], sections: [], spine: [] },
+      activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
+      sets: [
+        {
+          id: 'set_daily',
+          name: '데일리 고정 루틴',
+          applyRule: 'daily',
+          applyWeekdays: [1, 2, 3, 4, 5],
+          items: [{ categoryKey: 'water', enabled: true }],
+        },
+      ],
+      scheduledMealSlotLayoutEnabled: false,
+      dismissedExampleCustomFlowSetIds: [],
+      fixedRoutineApplyLayoutMode: 'bag',
+      todayAppliedCategoryKeys: ['water'],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+    useFixedFlowSetsStore.getState().setApplyWeekdays('set_daily', [1, 3, 5]);
+    const updated = useFixedFlowSetsStore.getState().sets.find((s) => s.id === 'set_daily');
+    expect(updated?.applyRule).toBe('daily');
+    expect(updated?.applyWeekdays).toEqual([1, 3, 5]);
   });
 
   it('updates todayAppliedCategoryKeys when toggling set for today', () => {
@@ -140,7 +200,21 @@ describe('fixedFlowSetsStore', () => {
     expect(useFixedFlowSetsStore.getState().activeSetIds).toEqual(['set_b']);
   });
 
-  it('does not remove built-in preset sets', () => {
+  it('removes built-in preset sets and remembers dismissal', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: [],
+      sets: baseState.sets,
+      dismissedBuiltinPresetSetIds: [],
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+    useFixedFlowSetsStore.getState().removeSet('set_daily');
+    expect(useFixedFlowSetsStore.getState().sets.some((s) => s.id === 'set_daily')).toBe(false);
+    expect(useFixedFlowSetsStore.getState().dismissedBuiltinPresetSetIds).toEqual(['set_daily']);
+  });
+
+  it('renames built-in preset sets', () => {
     useFixedFlowSetsStore.setState({
       activeSetIds: [],
       sets: baseState.sets,
@@ -148,8 +222,26 @@ describe('fixedFlowSetsStore', () => {
       todayAppliedRevision: 0,
       isHydrated: true,
     });
-    useFixedFlowSetsStore.getState().removeSet('set_daily');
-    expect(useFixedFlowSetsStore.getState().sets.some((s) => s.id === 'set_daily')).toBe(true);
+    useFixedFlowSetsStore.getState().renameSet('set_daily', '출근 루틴');
+    expect(useFixedFlowSetsStore.getState().sets.find((s) => s.id === 'set_daily')?.name).toBe(
+      '출근 루틴',
+    );
+  });
+
+  it('sets group title mark color independently of item importance', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: [],
+      sets: baseState.sets,
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+    useFixedFlowSetsStore.getState().setTitleMarkColor('set_daily', 'pink');
+    expect(useFixedFlowSetsStore.getState().sets.find((s) => s.id === 'set_daily')?.titleMarkColor).toBe(
+      'pink',
+    );
+    useFixedFlowSetsStore.getState().setTitleMarkColor('set_daily', null);
+    expect(useFixedFlowSetsStore.getState().sets.find((s) => s.id === 'set_daily')?.titleMarkColor).toBeNull();
   });
 
   it('removes builtin example custom sets and remembers dismissal', () => {
