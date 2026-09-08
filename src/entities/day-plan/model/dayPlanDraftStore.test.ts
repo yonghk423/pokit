@@ -105,7 +105,7 @@ describe('dayPlanDraftStore', () => {
       priorityStart: '06:30',
       priorityEnd: '24:00',
       priorityCategoryOrder: ['work', 'pushUp'],
-      priorityCategoryImportance: { work: 'high' },
+      priorityCategoryImportance: { work: 'pink' },
       quickMemoDraft: '',
     });
 
@@ -285,7 +285,7 @@ describe('dayPlanDraftStore', () => {
       priorityStart: '09:00',
       priorityEnd: '18:00',
       priorityCategoryOrder: ['reading', 'fasting'],
-      priorityCategoryImportance: { reading: 'high' },
+      priorityCategoryImportance: { reading: 'pink' },
       completedFocusCategoryKeys: ['reading'],
       isFocusStarted: true,
     });
@@ -295,7 +295,7 @@ describe('dayPlanDraftStore', () => {
     const s = useDayPlanDraftStore.getState();
     expect(s.priorityPlanDateKey).toBe('2025-05-26');
     expect(s.priorityCategoryOrder).toEqual(['reading', 'fasting']);
-    expect(s.priorityCategoryImportance).toEqual({ reading: 'high' });
+    expect(s.priorityCategoryImportance).toEqual({ reading: 'pink' });
     expect(s.completedFocusCategoryKeys).toEqual([]);
     expect(s.isFocusStarted).toBe(false);
     savePriorityDayRollMode('reset');
@@ -553,29 +553,29 @@ describe('dayPlanDraftStore', () => {
       isHydrated: true,
       isFocusStarted: true,
       priorityCategoryOrder: ['healthIntake', 'water'],
-      priorityCategoryImportance: { healthIntake: 'high', water: 'low' },
+      priorityCategoryImportance: { healthIntake: 'pink', water: 'yellow' },
       completedFocusCategoryKeys: ['healthIntake', 'water@morning'],
       planCompletionDismissedKeys: ['healthIntake'],
     });
     useDayPlanDraftStore.getState().finishPriorityCategoryForToday('healthIntake');
     const s = useDayPlanDraftStore.getState();
     expect(s.priorityCategoryOrder).toEqual(['water']);
-    expect(s.priorityCategoryImportance).toEqual({ water: 'low' });
+    expect(s.priorityCategoryImportance).toEqual({ water: 'yellow' });
     expect(s.completedFocusCategoryKeys).toEqual(['water@morning']);
     expect(s.planCompletionDismissedKeys).toEqual([]);
     expect(s.isFocusStarted).toBe(true);
   });
 
-  it('cycles priority category importance and prunes removed categories', () => {
+  it('cycles priority category mark colors and prunes removed categories', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,
       priorityCategoryOrder: ['reading', 'water'],
-      priorityCategoryImportance: { reading: 'high' },
+      priorityCategoryImportance: { reading: 'lavender' },
     });
     useDayPlanDraftStore.getState().cyclePriorityCategoryImportance('reading');
     expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({});
     useDayPlanDraftStore.getState().cyclePriorityCategoryImportance('water');
-    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({ water: 'low' });
+    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({ water: 'yellow' });
     useDayPlanDraftStore.getState().setPriorityCategoryOrder(['reading']);
     expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({});
   });

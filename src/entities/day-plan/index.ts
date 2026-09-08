@@ -281,11 +281,23 @@ export { formatSpineGapCoaching } from './lib/formatSpineGapCoaching';
 export {
   ITEM_PRIORITY_CYCLE,
   ITEM_PRIORITY_META,
-  priorityRowWash,
   cycleItemPriority,
   normalizeItemPriority,
-  resolveCategoryImportance,
 } from './lib/itemPriority';
+export {
+  PRIORITY_MARK_COLOR_CYCLE,
+  PRIORITY_MARK_COLOR_IDS,
+  PRIORITY_MARK_COLOR_PRESETS,
+  cyclePriorityMarkColor,
+  getPriorityMarkPreset,
+  isPriorityMarkColorId,
+  migrateLegacyImportanceToMarkColor,
+  normalizePriorityMarkColor,
+  priorityMarkFaceColor,
+  priorityMarkTitleHighlight,
+  resolveCategoryMarkColor,
+  type PriorityMarkColorId,
+} from './lib/priorityMarkColor';
 
 export * from './lib/goalCategorySessionConfig';
 export {

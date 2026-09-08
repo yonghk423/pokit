@@ -9,7 +9,11 @@ import { syncWidgetTimelineFromStorage } from '../lib/widgetDayPlanSync';
 
 import { getLocalMinutesOfDayNow } from '../lib/dayPlanTime';
 import { defaultPriorityWindowFromNow } from '../lib/dayPlanTimeMath';
-import { cycleItemPriority, normalizeItemPriority } from '../lib/itemPriority';
+import {
+  cyclePriorityMarkColor,
+  normalizePriorityMarkColor,
+  type PriorityMarkColorId,
+} from '../lib/priorityMarkColor';
 import { addDaysToLocalDateKey, getLocalDateKey } from '../lib/localDateKey';
 import { parseHHmmToMinutes } from '../lib/parseTime';
 import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
@@ -30,7 +34,6 @@ import {
   snapshotRoutinePlannedKeys,
 } from '../lib/routineHistorySnapshot';
 import type { PlanMode } from './planMode';
-import type { TodoPriority } from './types';
 import {
   normalizePriorityLayoutLinkMode,
   type PriorityLayoutLinkMode,
@@ -60,8 +63,8 @@ type DayPlanDraftState = {
   priorityStart: string;
   priorityEnd: string;
   priorityCategoryOrder: string[];
-  /** 담기 목록 항목별 중요도 — 미설정 시 보통 */
-  priorityCategoryImportance: Record<string, TodoPriority>;
+  /** 담기 목록 항목별 중요도 표시 색 (형광펜). 미설정 = 표시 없음 */
+  priorityCategoryImportance: Record<string, PriorityMarkColorId>;
   /** 히스토리 데일리 진입 시 반영할 루틴 시간대 완료(담기 체크) */
   routineHistoryPendingByDate: Record<string, string[]>;
   /** 당일 담기 계획 스냅샷 — 구간 종료 후에도 완료율 분모 유지 */
@@ -117,7 +120,12 @@ type DayPlanDraftState = {
   setPriorityStart: (value: string) => void;
   setPriorityEnd: (value: string) => void;
   setPriorityCategoryOrder: (value: string[] | ((prev: string[]) => string[])) => void;
-  /** 담기 목록 항목 중요도 순환 — 높음 → 보통 → 낮음 */
+  /** 담기 목록 항목 중요도 표시 색 지정 (null = 표시 없음) */
+  setPriorityCategoryMarkColor: (
+    categoryKey: string,
+    color: PriorityMarkColorId | null,
+  ) => void;
+  /** @deprecated 순환 — setPriorityCategoryMarkColor 사용 */
   cyclePriorityCategoryImportance: (categoryKey: string) => void;
   clearRoutineHistoryPendingForDate: (dateKey: string) => void;
   bumpCategoryLabelEpoch: () => void;
@@ -237,22 +245,24 @@ function pruneMealSlotsArrayRecordForOrder(
   return changed ? next : record;
 }
 
-function normalizePriorityCategoryImportance(raw: unknown): Record<string, TodoPriority> {
+function normalizePriorityCategoryImportance(
+  raw: unknown,
+): Record<string, PriorityMarkColorId> {
   if (!raw || typeof raw !== 'object') return {};
-  const out: Record<string, TodoPriority> = {};
+  const out: Record<string, PriorityMarkColorId> = {};
   for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
     const trimmed = key.trim();
     if (!trimmed) continue;
-    const priority = normalizeItemPriority(value);
-    if (priority !== 'medium') out[trimmed] = priority;
+    const mark = normalizePriorityMarkColor(value);
+    if (mark) out[trimmed] = mark;
   }
   return out;
 }
 
 function prunePriorityCategoryImportanceForOrder(
-  record: Record<string, TodoPriority>,
+  record: Record<string, PriorityMarkColorId>,
   order: readonly string[],
-): Record<string, TodoPriority> {
+): Record<string, PriorityMarkColorId> {
   const allowed = new Set(order);
   const next = { ...record };
   let changed = false;
@@ -277,7 +287,7 @@ function createInitialState() {
     priorityOvernightEndAuto: false,
     ...createInitialPriorityWindow(),
     priorityCategoryOrder: [] as string[],
-    priorityCategoryImportance: {} as Record<string, TodoPriority>,
+    priorityCategoryImportance: {} as Record<string, PriorityMarkColorId>,
     routineHistoryPendingByDate: {} as Record<string, string[]>,
     routineHistoryPlannedKeysByDate: {} as Record<string, string[]>,
     categoryLabelEpoch: 0,
@@ -663,14 +673,26 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         priorityCategoryImportance,
       };
     }),
+  setPriorityCategoryMarkColor: (categoryKey, color) =>
+    set((s) => {
+      const key = categoryKey.trim();
+      if (!key || !s.priorityCategoryOrder.includes(key)) return s;
+      const priorityCategoryImportance = { ...s.priorityCategoryImportance };
+      if (color == null) {
+        delete priorityCategoryImportance[key];
+      } else {
+        priorityCategoryImportance[key] = color;
+      }
+      return { priorityCategoryImportance };
+    }),
   cyclePriorityCategoryImportance: (categoryKey) =>
     set((s) => {
       const key = categoryKey.trim();
       if (!key || !s.priorityCategoryOrder.includes(key)) return s;
-      const current = normalizeItemPriority(s.priorityCategoryImportance[key]);
-      const next = cycleItemPriority(current);
+      const current = s.priorityCategoryImportance[key] ?? null;
+      const next = cyclePriorityMarkColor(current);
       const priorityCategoryImportance = { ...s.priorityCategoryImportance };
-      if (next === 'medium') {
+      if (next == null) {
         delete priorityCategoryImportance[key];
       } else {
         priorityCategoryImportance[key] = next;

@@ -69,9 +69,12 @@ import {
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
+  loadMyRoutineCollapsedGroupIds,
   loadPostItFaceColorByGroup,
   DEFAULT_POST_IT_FACE_COLOR_ID,
   postItFaceUsesLightInk,
+  pruneMyRoutineCollapsedGroupIds,
+  setMyRoutineGroupCollapsed,
   resolveFixedFlowItemMealSlots,
   resolvePostItFaceColor,
   resolvePostItFaceInk,
@@ -90,6 +93,7 @@ import {
 import {
   coerceDayPlanLayoutMode
 } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -957,26 +961,21 @@ function AddItemModal({
               backgroundColor: surface,
             },
           ]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={selectedCount > 0 ? t('fixedRoutine.addItemsA11y', { count: selectedCount }) : t('fixedRoutine.pickItems')}
+          <BrutalConfirmButton
+            label={
+              selectedCount > 0
+                ? t('fixedRoutine.addCount', { count: selectedCount })
+                : t('fixedRoutine.pickItems')
+            }
+            accessibilityLabel={
+              selectedCount > 0
+                ? t('fixedRoutine.addItemsA11y', { count: selectedCount })
+                : t('fixedRoutine.pickItems')
+            }
+            align="stretch"
             disabled={selectedCount === 0}
             onPress={handleConfirm}
-            style={({ pressed }) => [
-              styles.modalConfirmBtn,
-              {
-                backgroundColor: selectedCount > 0 ? ink : isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
-                opacity: pressed && selectedCount > 0 ? 0.9 : 1,
-              },
-            ]}>
-            <ThemedText
-              style={[
-                styles.modalConfirmLabel,
-                { color: selectedCount > 0 ? (isDark ? '#09090b' : '#fff') : muted },
-              ]}>
-              {selectedCount > 0 ? t('fixedRoutine.addCount', { count: selectedCount }) : t('fixedRoutine.pickItems')}
-            </ThemedText>
-          </Pressable>
+          />
         </View>
       </View>
     </Modal>
@@ -1144,6 +1143,31 @@ function GroupAccordion({
     : applyChipBlocked
       ? t('fixedRoutine.applyBlockedA11y')
       : t('fixedRoutine.apply');
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const applyBg = isActiveForToday ? tone.primaryContainer : actionBg;
+  const applyInk = isActiveForToday ? tone.primary : actionInk;
+  /** 데일리·주말 고정 루틴 제목 — 형광펜 (면 색과 겹치지 않게) */
+  const presetTitleHighlight = (() => {
+    switch (postItFaceColorId) {
+      case 'yellow':
+      case 'peach':
+        // 따뜻한 면 → 민트
+        return isDark ? 'rgba(168, 218, 220, 0.55)' : 'rgba(168, 218, 220, 0.88)';
+      case 'navy':
+      case 'darkGreen':
+        // 어두운 면 → 밝은 민트/시안
+        return 'rgba(168, 218, 220, 0.72)';
+      case 'mint':
+        // 민트 면 → 노랑
+        return isDark ? 'rgba(255, 229, 102, 0.45)' : 'rgba(255, 229, 102, 0.85)';
+      default:
+        return usesLightInk
+          ? 'rgba(255, 229, 102, 0.5)'
+          : isDark
+            ? 'rgba(255, 229, 102, 0.42)'
+            : 'rgba(255, 229, 102, 0.72)';
+    }
+  })();
   const ruleLabel = isPresetScheduleSet ? getFixedFlowPresetScheduleLabel(setItem.applyRule) : null;
   const scheduleHint = isPresetScheduleSet ? getFixedFlowPresetScheduleHint(setItem.applyRule) : null;
 
@@ -1212,6 +1236,21 @@ function GroupAccordion({
                   </ThemedText>
                   <IconSymbol name="pencil" size={10} color={muted} />
                 </Pressable>
+              ) : isPresetScheduleSet ? (
+                <View style={styles.presetTitleMark}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.presetTitleHighlight,
+                      { backgroundColor: presetTitleHighlight },
+                    ]}
+                  />
+                  <ThemedText
+                    style={[styles.accordionTitle, styles.presetTitleText, { color: ink }]}
+                    numberOfLines={1}>
+                    {displaySetName}
+                  </ThemedText>
+                </View>
               ) : (
                 <ThemedText
                   style={[styles.accordionTitle, styles.accordionTitleText, { color: ink }]}
@@ -1255,11 +1294,11 @@ function GroupAccordion({
             ) : null}
             <FlowBrutalActionButton
               accessibilityLabel={applyA11yLabel}
-              accessibilityState={{ disabled: disableApplyToggle }}
+              accessibilityState={{ disabled: disableApplyToggle, selected: isActiveForToday }}
               disabled={disableApplyToggle}
               borderColor={line}
-              backgroundColor={actionBg}
-              pressedBg={actionBg}
+              backgroundColor={applyBg}
+              pressedBg={applyBg}
               shadowColor={shadow}
               width={58}
               lockVisual
@@ -1272,7 +1311,7 @@ function GroupAccordion({
                 onToggleActiveForToday();
               }}>
               <ThemedText
-                style={[styles.headerApplyChipLabel, { color: actionInk }]}
+                style={[styles.headerApplyChipLabel, { color: applyInk }]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.85}>
@@ -1493,16 +1532,13 @@ export function FixedRoutinePage({
   const [postItFaceByGroup, setPostItFaceByGroup] = useState<PostItFaceColorByGroup>(
     () => loadPostItFaceColorByGroup(),
   );
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
-    if (!embeddedCustomOnly) return new Set();
-    const allSets = useFixedFlowSetsStore.getState().sets;
-    const firstPreset = BUILTIN_PRESET_SCHEDULE_SET_IDS.map((id) =>
-      allSets.find((setItem) => setItem.id === id),
-    ).find((setItem): setItem is FixedFlowSet => Boolean(setItem));
-    if (firstPreset) return new Set([firstPreset.id]);
-    const firstCustom = allSets.find((setItem) => setItem.applyRule === 'manual');
-    return firstCustom ? new Set([firstCustom.id]) : new Set();
-  });
+  /** 나만의 루틴: 접힌 id만 저장. 없으면 펼침(기본 전부 열림). */
+  const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(() =>
+    embeddedCustomOnly ? loadMyRoutineCollapsedGroupIds() : new Set(),
+  );
+  const collapsedGroupIdsRef = useRef(collapsedGroupIds);
+  collapsedGroupIdsRef.current = collapsedGroupIds;
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [section, setSection] = useState<FixedRoutineSection>('catalog');
   const [internalLayoutMode, setInternalLayoutMode] = useState<DayPlanLayoutMode>('bag');
   const layoutMode = controlledLayoutMode ?? internalLayoutMode;
@@ -1830,7 +1866,7 @@ export function FixedRoutinePage({
 
   useEffect(() => subscribeCustomFlowCatalog(reloadCatalog), [reloadCatalog]);
 
-  /** 세트 id 구성이 바뀔 때만 — 사라진 id만 정리. 나만의 루틴은 첫 그룹만 기본 펼침 */
+  /** 세트 id 구성이 바뀔 때만 — 사라진 접힘 id만 정리. 사용자 펼침/접힘은 유지 */
   const visibleSetIdsKey = useMemo(
     () => visibleSets.map((setItem) => setItem.id).join('\0'),
     [visibleSets],
@@ -1842,19 +1878,24 @@ export function FixedRoutinePage({
       return;
     }
     const ids = visibleSetIdsKey.split('\0').filter(Boolean);
+    if (embeddedCustomOnly) {
+      const pruned = pruneMyRoutineCollapsedGroupIds(ids);
+      setCollapsedGroupIds((prev) => {
+        if (pruned.size === prev.size && [...pruned].every((id) => prev.has(id))) return prev;
+        return pruned;
+      });
+      return;
+    }
     const valid = new Set(ids);
     setExpandedIds((prev) => {
       const next = new Set<string>();
       for (const id of prev) {
         if (valid.has(id)) next.add(id);
       }
-      if (embeddedCustomOnly && next.size === 0 && ids[0]) {
-        next.add(ids[0]!);
-      }
       if (next.size === prev.size && [...next].every((id) => prev.has(id))) return prev;
       return next;
     });
-  }, [embeddedCustomOnly, section, visibleSetIdsKey]);
+  }, [embeddedCustomOnly, visibleSetIdsKey]);
 
   useEffect(() => {
     if (!canManageCustomGroups) {
@@ -1889,13 +1930,24 @@ export function FixedRoutinePage({
   }, [catalogTick, categoryLabelEpoch, customFlowEntries, customGroups, sets, addItemSetId]);
 
   const toggleExpanded = useCallback((setId: string) => {
+    if (embeddedCustomOnly) {
+      const collapsing = !collapsedGroupIdsRef.current.has(setId);
+      setMyRoutineGroupCollapsed(setId, collapsing);
+      setCollapsedGroupIds((prev) => {
+        const next = new Set(prev);
+        if (collapsing) next.add(setId);
+        else next.delete(setId);
+        return next;
+      });
+      return;
+    }
     setExpandedIds((prev) => {
       const next = new Set(prev);
       if (next.has(setId)) next.delete(setId);
       else next.add(setId);
       return next;
     });
-  }, []);
+  }, [embeddedCustomOnly]);
 
   const handleDeleteSet = useCallback(
     (setId: string) => {
@@ -1936,9 +1988,19 @@ export function FixedRoutinePage({
     const created = nextSets[nextSets.length - 1];
     if (created) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setExpandedIds((prev) => new Set([...prev, created.id]));
+      if (embeddedCustomOnly) {
+        setMyRoutineGroupCollapsed(created.id, false);
+        setCollapsedGroupIds((prev) => {
+          if (!prev.has(created.id)) return prev;
+          const next = new Set(prev);
+          next.delete(created.id);
+          return next;
+        });
+      } else {
+        setExpandedIds((prev) => new Set([...prev, created.id]));
+      }
     }
-  }, [addSet, newGroupName]);
+  }, [addSet, embeddedCustomOnly, newGroupName]);
 
   const handleCreateCustomFlow = useCallback(
     ({
@@ -2113,41 +2175,22 @@ export function FixedRoutinePage({
                 accessibilityLabel={t('fixedRoutine.newGroupPlaceholder')}
               />
               <View style={styles.addGroupActions}>
-                <Pressable
-                  accessibilityRole="button"
+                <BrutalConfirmButton
+                  label={t('common.cancel')}
                   accessibilityLabel={t('common.cancel')}
+                  fill={isDark ? 'rgba(255,255,255,0.16)' : '#FFFFFF'}
+                  labelColor={addGroupInk}
+                  shadowColor={isDark ? tone.solidShadow : tone.border}
                   onPress={() => {
                     setIsAddingGroup(false);
                     setNewGroupName('');
                   }}
-                  style={({ pressed }) => [
-                    styles.addGroupCancelBtn,
-                    {
-                      borderColor: addGroupLine,
-                      backgroundColor: pressed ? addGroupActionHover : addGroupActionBg,
-                    },
-                  ]}>
-                  <ThemedText style={[styles.addGroupCancel, { color: addGroupInk }]}>
-                    {t('common.cancel')}
-                  </ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
+                />
+                <BrutalConfirmButton
+                  label={t('common.add')}
                   accessibilityLabel={t('fixedRoutine.addGroupA11y')}
                   onPress={submitNewGroup}
-                  style={({ pressed }) => [
-                    styles.addGroupSubmit,
-                    {
-                      backgroundColor: addGroupInk,
-                      borderColor: addGroupInk,
-                      opacity: pressed ? 0.88 : 1,
-                    },
-                  ]}>
-                  <ThemedText
-                    style={[styles.addGroupSubmitLabel, { color: addGroupFace }]}>
-                    {t('common.add')}
-                  </ThemedText>
-                </Pressable>
+                />
               </View>
             </PostItCardShell>
           ) : (
@@ -2279,7 +2322,11 @@ export function FixedRoutinePage({
                           ? priorityPlanDateKey
                           : priorityPlanDateKeyEnd
                       }
-                      isExpanded={expandedIds.has(setItem.id)}
+                      isExpanded={
+                        embeddedCustomOnly
+                          ? !collapsedGroupIds.has(setItem.id)
+                          : expandedIds.has(setItem.id)
+                      }
                       isActiveForToday={isSetActiveForToday(setItem)}
                       applyBlocked={priorityWindowEndedForToday}
                       catalogByKey={catalogByKey}
@@ -2578,6 +2625,23 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingVertical: 2,
   },
+  presetTitleMark: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  presetTitleHighlight: {
+    position: 'absolute',
+    left: -2,
+    right: -2,
+    bottom: 1,
+    height: 9,
+    borderRadius: 0,
+    zIndex: 0,
+  },
+  presetTitleText: {
+    zIndex: 1,
+  },
   rulePill: {
     width: 58,
     height: 32,
@@ -2698,26 +2762,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 8,
     marginTop: 2,
-  },
-  addGroupCancelBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 0,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  addGroupCancel: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  addGroupSubmit: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 0,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  addGroupSubmitLabel: {
-    fontSize: 13,
-    fontWeight: '600',
   },
   addGroupTriggerHit: {
     alignSelf: 'flex-start',
@@ -2958,19 +3002,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     borderTopWidth: 1,
-  },
-  modalConfirmBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    borderRadius: 0,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  modalConfirmLabel: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: -0.2,
   },
   modalEmpty: {
     fontSize: 14,

@@ -7,6 +7,7 @@ import { useCallback, useContext, useEffect, useMemo } from 'react';
 import { LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -14,6 +15,7 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 
 export const DAY_PLAN_TAB_BAR_ROW_HEIGHT = 56;
+const TAB_BAR_SHADOW = 3;
 
 const IOS_HOME_INDICATOR_FALLBACK = 34;
 
@@ -79,18 +81,18 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
     () =>
       isDark
         ? {
-          containerBg: '#1C1C1E',
-          containerBorder: 'rgba(255,255,255,0.10)',
-          activeBg: '#3A3A3C',
-          activeIcon: '#FAFAFA',
-          inactiveIcon: '#8E8E93',
+          containerBg: RetroFlatColors.dark.surfaceAlt,
+          shadow: RetroFlatColors.dark.solidShadow,
+          activeBg: RetroFlatColors.dark.bgMint,
+          activeIcon: RetroFlatColors.dark.tertiary,
+          inactiveIcon: RetroFlatColors.dark.textMuted,
         }
         : {
           containerBg: '#FFFFFF',
-          containerBorder: '#E5E5E5',
-          activeBg: '#E8E5E0',
-          activeIcon: '#1A1A1A',
-          inactiveIcon: '#999999',
+          shadow: '#000000',
+          activeBg: RetroFlatColors.light.bgMint,
+          activeIcon: RetroFlatColors.light.tertiary,
+          inactiveIcon: RetroFlatColors.light.textMuted,
         },
     [isDark],
   );
@@ -101,40 +103,53 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
       style={[styles.outerWrap, { paddingBottom: safeBottom }]}>
       <View
         style={[
-          styles.container,
-          {
-            backgroundColor: colors.containerBg,
-            borderColor: colors.containerBorder,
-          },
+          styles.shell,
+          { marginRight: TAB_BAR_SHADOW, marginBottom: TAB_BAR_SHADOW },
         ]}>
-        {TABS.map((tab) => {
-          const isFocused =
-            focusedRoute === tab.route ||
-            (tab.route === 'day-plan' && focusedRoute === 'index');
+        <View
+          pointerEvents="none"
+          style={[
+            styles.shadow,
+            {
+              backgroundColor: colors.shadow,
+              transform: [{ translateX: TAB_BAR_SHADOW }, { translateY: TAB_BAR_SHADOW }],
+            },
+          ]}
+        />
+        <View
+          style={[
+            styles.container,
+            { backgroundColor: colors.containerBg },
+          ]}>
+          {TABS.map((tab) => {
+            const isFocused =
+              focusedRoute === tab.route ||
+              (tab.route === 'day-plan' && focusedRoute === 'index');
 
-          return (
-            <Pressable
-              key={tab.route}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isFocused }}
-              accessibilityLabel={t(tab.labelKey)}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                navigation.navigate(tab.route);
-              }}
-              style={({ pressed }) => [
-                styles.tabItem,
-                isFocused && { backgroundColor: colors.activeBg },
-                pressed && { opacity: 0.8 },
-              ]}>
-              <IconSymbol
-                name={tab.icon as any}
-                size={tab.size}
-                color={isFocused ? colors.activeIcon : colors.inactiveIcon}
-              />
-            </Pressable>
-          );
-        })}
+            return (
+              <Pressable
+                key={tab.route}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isFocused }}
+                accessibilityLabel={t(tab.labelKey)}
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  navigation.navigate(tab.route);
+                }}
+                style={({ pressed }) => [
+                  styles.tabItem,
+                  isFocused && { backgroundColor: colors.activeBg },
+                  pressed && { opacity: 0.8 },
+                ]}>
+                <IconSymbol
+                  name={tab.icon as any}
+                  size={tab.size}
+                  color={isFocused ? colors.activeIcon : colors.inactiveIcon}
+                />
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
@@ -145,15 +160,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
   },
+  shell: {
+    position: 'relative',
+  },
+  shadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     height: DAY_PLAN_TAB_BAR_ROW_HEIGHT,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 0,
     paddingHorizontal: 6,
     gap: 4,
+    zIndex: 1,
   },
   tabItem: {
     flex: 1,

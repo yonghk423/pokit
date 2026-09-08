@@ -181,13 +181,13 @@ function SectionLabel({ children, color }: { children: string; color: string }) 
   return <ThemedText style={[styles.sectionLabel, { color }]}>{children}</ThemedText>;
 }
 
-/** 시안 `.brutal-shadow` — 노트 표면에서는 보더·섀도우 없이 계층형 구분선만 */
+/** Flat Brutalism Lite — 솔리드 오프셋 음영만 (외곽선 없음). 노트 표면에서는 구분선만 */
 function ReminderBrutalShell({
   borderColor,
   shadowColor,
   backgroundColor,
   ink,
-  borderWidth = RETRO_BORDER_WIDTH,
+  borderWidth: _borderWidth = 0,
   shadowSize = 2,
   noteDivider = 'section',
   style,
@@ -222,16 +222,14 @@ function ReminderBrutalShell({
     );
   }
   return (
-    <View style={[{ marginRight: shadowSize, marginBottom: shadowSize }, style]}>
+    <View style={[{ marginRight: shadowSize, marginBottom: shadowSize, position: 'relative' }, style]}>
       <View
+        pointerEvents="none"
         style={[
           StyleSheet.absoluteFillObject,
           {
             backgroundColor: shadowColor,
-            borderWidth,
-            borderColor,
-          },
-          {
+            borderWidth: 0,
             transform: [{ translateX: shadowSize }, { translateY: shadowSize }],
           },
         ]}
@@ -239,8 +237,7 @@ function ReminderBrutalShell({
       <View
         style={{
           backgroundColor,
-          borderWidth,
-          borderColor,
+          borderWidth: 0,
           position: 'relative',
           zIndex: 1,
           overflow: 'visible',
@@ -383,6 +380,9 @@ function MeasurementTemplateView({
     ? t('customFlowTemplate.measurePresetHint')
     : t('customFlowTemplate.measurePresetHintLive');
 
+  const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const chipShadow = 2;
+
   const commitValue = (raw: number) => {
     if (!hasMetric || !Number.isFinite(raw)) return;
     const rounded = roundMeasurementValue(raw, cfg.unit);
@@ -421,49 +421,54 @@ function MeasurementTemplateView({
             {MEASUREMENT_METRIC_PRESETS.map((preset) => {
               const selected =
                 cfg.metricLabel === preset.metricLabel && cfg.unit === preset.unit;
+              const shadow = selected ? 3 : chipShadow;
               return (
-                <Pressable
+                <View
                   key={preset.id}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    emit(
-                      applyMeasurementMetricPreset(cfg, preset, {
-                        includeSampleData: previewMode,
-                      }),
-                    );
-                  }}
-                  style={({ pressed }) => [
-                    styles.counterChip,
-                    isNote && styles.counterChipNote,
-                    {
-                      borderColor: selected
-                        ? tone.primary
-                        : isNote
-                          ? noteRule
-                          : line === 'transparent'
-                            ? muted
-                            : line,
-                      backgroundColor: selected
-                        ? tone.primaryContainer
-                        : surface === 'transparent' || isNote
-                          ? 'transparent'
-                          : surface,
-                      opacity: pressed ? 0.88 : 1,
-                    },
+                  style={[
+                    styles.measureChipShell,
+                    { marginRight: shadow, marginBottom: shadow },
                   ]}>
-                  <ThemedText
+                  <View
+                    pointerEvents="none"
                     style={[
-                      styles.counterChipText,
+                      styles.measureChipShadow,
                       {
-                        color: selected ? tone.text : muted,
-                        fontWeight: selected ? '800' : '600',
+                        backgroundColor: shadowInk,
+                        transform: [{ translateX: shadow }, { translateY: shadow }],
+                      },
+                    ]}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      emit(
+                        applyMeasurementMetricPreset(cfg, preset, {
+                          includeSampleData: previewMode,
+                        }),
+                      );
+                    }}
+                    style={({ pressed }) => [
+                      styles.counterChip,
+                      {
+                        backgroundColor: selected ? tone.primaryContainer : faceWhite,
+                        opacity: pressed ? 0.88 : 1,
                       },
                     ]}>
-                    {preset.metricLabel}
-                  </ThemedText>
-                </Pressable>
+                    <ThemedText
+                      style={[
+                        styles.counterChipText,
+                        {
+                          color: selected ? tone.text : muted,
+                          fontWeight: selected ? '800' : '600',
+                        },
+                      ]}>
+                      {preset.metricLabel}
+                    </ThemedText>
+                  </Pressable>
+                </View>
               );
             })}
           </View>
@@ -535,7 +540,6 @@ function MeasurementTemplateView({
               style={[
                 styles.reminderProgressTrack,
                 isNote && styles.reminderProgressTrackNote,
-                { borderColor: isNote ? noteRule : line },
               ]}>
               <View
                 style={[
@@ -543,8 +547,6 @@ function MeasurementTemplateView({
                   {
                     width: `${Math.round(goalRatio * 100)}%`,
                     backgroundColor: tone.primaryContainer,
-                    borderRightWidth: !isNote && goalRatio > 0 && goalRatio < 1 ? RETRO_BORDER_WIDTH : 0,
-                    borderRightColor: line,
                   },
                 ]}
               />
@@ -579,39 +581,65 @@ function MeasurementTemplateView({
           {recordedToday ? (
             <View
               style={[
-                styles.measureStatusChip,
-                isNote && styles.measureStatusChipNote,
-                {
-                  borderColor: isNote ? noteRule : line,
-                  backgroundColor: tone.primaryContainer,
-                },
+                styles.measureStatusShell,
+                { marginRight: chipShadow, marginBottom: chipShadow },
               ]}>
-              <ThemedText style={[styles.measureStatusChipText, { color: tone.text }]}>
-                {t('customFlowTemplate.recordDoneAuto')}
-              </ThemedText>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.measureChipShadow,
+                  {
+                    backgroundColor: shadowInk,
+                    transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.measureStatusChip,
+                  { backgroundColor: tone.primaryContainer },
+                ]}>
+                <ThemedText style={[styles.measureStatusChipText, { color: tone.text }]}>
+                  {t('customFlowTemplate.recordDoneAuto')}
+                </ThemedText>
+              </View>
             </View>
           ) : null}
           {hasMetric ? (
             <View style={styles.quickRow}>
               {quickDeltas.map((d) => (
-                <Pressable
+                <View
                   key={d}
-                  onPress={() => {
-                    applyDelta(d);
-                  }}
-                  style={({ pressed }) => [
-                    styles.measureQuickBtn,
-                    isNote && styles.measureQuickBtnNote,
-                    {
-                      borderColor: isNote ? noteRule : line,
-                      backgroundColor: isNote || surface === 'transparent' ? 'transparent' : surface,
-                      opacity: pressed ? 0.88 : 1,
-                    },
+                  style={[
+                    styles.measureChipShell,
+                    { marginRight: chipShadow, marginBottom: chipShadow },
                   ]}>
-                  <ThemedText style={[styles.measureQuickBtnText, { color: ink }]}>
-                    {d > 0 ? `+${d}` : String(d)}
-                  </ThemedText>
-                </Pressable>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.measureChipShadow,
+                      {
+                        backgroundColor: shadowInk,
+                        transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
+                      },
+                    ]}
+                  />
+                  <Pressable
+                    onPress={() => {
+                      applyDelta(d);
+                    }}
+                    style={({ pressed }) => [
+                      styles.measureQuickBtn,
+                      {
+                        backgroundColor: faceWhite,
+                        opacity: pressed ? 0.88 : 1,
+                      },
+                    ]}>
+                    <ThemedText style={[styles.measureQuickBtnText, { color: ink }]}>
+                      {d > 0 ? `+${d}` : String(d)}
+                    </ThemedText>
+                  </Pressable>
+                </View>
               ))}
             </View>
           ) : null}
@@ -758,7 +786,6 @@ function MemoTemplateView({
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : tone.text;
-  const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const [draft, setDraft] = useState(cfg.lastEntry ?? '');
   const recent = cfg.recentEntries.slice(0, 5);
   const draftLen = draft.trim().length;
@@ -800,22 +827,12 @@ function MemoTemplateView({
               },
             ]}
           />
-          <Pressable
-            accessibilityRole="button"
+          <BrutalConfirmButton
+            label={t('common.save')}
             accessibilityLabel={t('customFlowTemplate.saveMemoA11y')}
             onPress={handleSave}
-            style={({ pressed }) => [
-              styles.memoSaveBtn,
-              isNote && styles.memoSaveBtnNote,
-              {
-                borderColor: line,
-                backgroundColor: ink,
-                opacity: pressed ? 0.9 : 1,
-              },
-              !isNote && pressed ? { transform: [{ translateX: 1 }, { translateY: 1 }] } : null,
-            ]}>
-            <ThemedText style={[styles.memoSaveBtnText, { color: selectedFg }]}>{t('common.save')}</ThemedText>
-          </Pressable>
+            align="stretch"
+          />
         </View>
       </ReminderBrutalShell>
 
@@ -844,12 +861,28 @@ function MemoTemplateView({
                 ]}>
                 <View
                   style={[
-                    styles.memoEntryDateChip,
-                    { borderColor: line, backgroundColor: tone.primaryContainer },
+                    styles.memoEntryDateShell,
+                    { marginRight: 2, marginBottom: 2 },
                   ]}>
-                  <ThemedText style={[styles.memoEntryDateText, { color: tone.text }]}>
-                    {entry.dateKey ? entry.dateKey.slice(5) : t('common.today')}
-                  </ThemedText>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.memoEntryDateShadow,
+                      {
+                        backgroundColor: shadowInk,
+                        transform: [{ translateX: 2 }, { translateY: 2 }],
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.memoEntryDateChip,
+                      { backgroundColor: tone.primaryContainer },
+                    ]}>
+                    <ThemedText style={[styles.memoEntryDateText, { color: tone.text }]}>
+                      {entry.dateKey ? entry.dateKey.slice(5) : t('common.today')}
+                    </ThemedText>
+                  </View>
                 </View>
                 <ThemedText style={[styles.memoEntryText, { color: ink }]} numberOfLines={3}>
                   {entry.text}
@@ -882,11 +915,9 @@ function ChecklistTemplateView({
   const { t } = useTranslation();
   const { ink, muted, line, surface } = theme;
   const isNote = useUiSurfacePresentation() === 'note';
-  const noteRule = resolveNoteRuleColor(line, ink);
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : tone.text;
-  const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const tasks = cfg.checklist;
   const doneCount = tasks.filter((t) => t.done).length;
   const total = tasks.length;
@@ -908,6 +939,8 @@ function ChecklistTemplateView({
       : remaining > 0
         ? t('common.countRemaining', { count: remaining })
         : t('customFlowTemplate.allDoneShort');
+  const checkShadow = 2;
+  const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
 
   const addTask = () => {
     const text = draft.trim();
@@ -951,15 +984,31 @@ function ChecklistTemplateView({
               </ThemedText>
             </View>
           </View>
-          <View style={[styles.reminderProgressTrack, isNote && styles.reminderProgressTrackNote, { borderColor: isNote ? noteRule : line }]}>
+          <View
+            style={[
+              styles.reminderProgressTrack,
+              isNote && styles.reminderProgressTrackNote,
+              !isNote && { marginRight: checkShadow, marginBottom: checkShadow },
+            ]}>
+            {!isNote ? (
+              <View
+                pointerEvents="none"
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  {
+                    backgroundColor: shadowInk,
+                    transform: [{ translateX: checkShadow }, { translateY: checkShadow }],
+                  },
+                ]}
+              />
+            ) : null}
             <View
               style={[
                 styles.reminderProgressFill,
                 {
                   width: `${Math.round(ratio * 100)}%`,
                   backgroundColor: tone.primaryContainer,
-                  borderRightWidth: ratio > 0 && ratio < 1 ? RETRO_BORDER_WIDTH : 0,
-                  borderRightColor: line,
+                  zIndex: 1,
                 },
               ]}
             />
@@ -999,15 +1048,30 @@ function ChecklistTemplateView({
                 style={styles.checklistItemMain}>
                 <View
                   style={[
-                    styles.checkBox,
-                    {
-                      borderColor: task.done ? tone.primary : line,
-                      backgroundColor: task.done ? tone.primaryContainer : surface,
-                    },
+                    styles.checkBoxShell,
+                    { marginRight: checkShadow, marginBottom: checkShadow },
                   ]}>
-                  {task.done ? (
-                    <IconSymbol name="checkmark" size={12} color={tone.text} />
-                  ) : null}
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.checkBoxShadow,
+                      {
+                        backgroundColor: task.done ? tone.primary : shadowInk,
+                        transform: [{ translateX: checkShadow }, { translateY: checkShadow }],
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.checkBox,
+                      {
+                        backgroundColor: task.done ? tone.primaryContainer : faceWhite,
+                      },
+                    ]}>
+                    {task.done ? (
+                      <IconSymbol name="checkmark" size={12} color={tone.text} />
+                    ) : null}
+                  </View>
                 </View>
                 <ThemedText
                   style={[
@@ -1022,7 +1086,7 @@ function ChecklistTemplateView({
                   <View
                     style={[
                       styles.checklistKeptChip,
-                      { borderColor: line, backgroundColor: tone.primaryContainer },
+                      { backgroundColor: tone.primaryContainer },
                     ]}>
                     <ThemedText style={[styles.checklistKeptChipText, { color: tone.text }]}>
                       {t('customFlowTemplate.kept')}
@@ -1030,56 +1094,80 @@ function ChecklistTemplateView({
                   </View>
                 ) : null}
               </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('customFlowTemplate.deleteItemA11y')}
-                hitSlop={6}
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  emit({
-                    ...cfg,
-                    templateKey,
-                    checklist: tasks.filter((t) => t.id !== task.id),
-                  });
-                }}
-                style={({ pressed }) => [
-                  styles.reminderDeleteBtn,
-                  {
-                    borderColor: line,
-                    backgroundColor: surface,
-                    opacity: pressed ? 0.88 : 1,
-                  },
+              <View
+                style={[
+                  styles.deleteShell,
+                  { marginRight: checkShadow, marginBottom: checkShadow },
                 ]}>
-                <IconSymbol name="trash" size={13} color={muted} />
-              </Pressable>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.checkBoxShadow,
+                    {
+                      backgroundColor: shadowInk,
+                      transform: [{ translateX: checkShadow }, { translateY: checkShadow }],
+                    },
+                  ]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('customFlowTemplate.deleteItemA11y')}
+                  hitSlop={6}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    emit({
+                      ...cfg,
+                      templateKey,
+                      checklist: tasks.filter((t) => t.id !== task.id),
+                    });
+                  }}
+                  style={({ pressed }) => [
+                    styles.reminderDeleteBtn,
+                    {
+                      backgroundColor: faceWhite,
+                      opacity: pressed ? 0.88 : 1,
+                    },
+                  ]}>
+                  <IconSymbol name="trash" size={13} color={muted} />
+                </Pressable>
+              </View>
             </View>
           ))}
 
-          <View style={[styles.checklistAddRow, { borderColor: line }]}>
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              placeholder={addPlaceholder}
-              placeholderTextColor={muted}
-              style={[styles.checklistAddInput, { color: ink }]}
-              returnKeyType="done"
-              onSubmitEditing={addTask}
-            />
-            <Pressable
-              accessibilityRole="button"
+          <View style={styles.checklistAddRow}>
+            <View
+              style={[
+                styles.checklistAddInputShell,
+                { marginRight: checkShadow, marginBottom: checkShadow },
+              ]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.checkBoxShadow,
+                  {
+                    backgroundColor: shadowInk,
+                    transform: [{ translateX: checkShadow }, { translateY: checkShadow }],
+                  },
+                ]}
+              />
+              <TextInput
+                value={draft}
+                onChangeText={setDraft}
+                placeholder={addPlaceholder}
+                placeholderTextColor={muted}
+                style={[
+                  styles.checklistAddInput,
+                  { color: ink, backgroundColor: faceWhite },
+                ]}
+                returnKeyType="done"
+                onSubmitEditing={addTask}
+              />
+            </View>
+            <BrutalConfirmButton
+              label={t('common.add')}
               accessibilityLabel={t('common.add')}
               onPress={addTask}
-              style={({ pressed }) => [
-                styles.checklistAddBtn,
-                {
-                  borderLeftColor: line,
-                  backgroundColor: ink,
-                  opacity: pressed ? 0.9 : 1,
-                },
-                pressed ? { transform: [{ translateX: 1 }, { translateY: 1 }] } : null,
-              ]}>
-              <ThemedText style={[styles.checklistAddBtnText, { color: selectedFg }]}>{t('common.add')}</ThemedText>
-            </Pressable>
+            />
           </View>
         </View>
       </ReminderBrutalShell>
@@ -1101,15 +1189,18 @@ function CounterTemplateView({
   const { t } = useTranslation();
   const { ink, muted, line, surface } = theme;
   const isNote = useUiSurfacePresentation() === 'note';
-  const noteRule = resolveNoteRuleColor(line, ink);
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : tone.text;
-  const selectedFg = isDark ? '#09090b' : '#FAFAFA';
+  const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
+  /** − 버튼 — 민트와 구분되는 따뜻한 베이지(불투명). opacity 줄이면 섀도가 비쳐 검게 보임 */
+  const faceDec = tone.surfacePink;
+  const chipShadow = 2;
   const live = ensureCounterDayBoundary(cfg);
   const ratio = live.goalCount > 0 ? Math.min(1, live.currentCount / live.goalCount) : 0;
   const goalReached = live.currentCount >= live.goalCount;
   const remaining = Math.max(0, live.goalCount - live.currentCount);
+  const canDecrease = live.currentCount > 0;
   const chartValues = live.history.slice(-7).map((entry) => entry.count);
   const remainingMessage =
     remaining <= 0 ? t('customFlowTemplate.goalReached') : t('customFlowTemplate.remainingToGoal', { count: remaining });
@@ -1146,30 +1237,44 @@ function CounterTemplateView({
     label: string,
     selected: boolean,
     onPress: () => void,
-  ) => (
-    <Pressable
-      key={key}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.counterChip,
-        isNote && styles.counterChipNote,
-        {
-          borderColor: selected ? tone.primary : isNote ? noteRule : line === 'transparent' ? muted : line,
-          backgroundColor: selected ? tone.primaryContainer : surface === 'transparent' || isNote ? 'transparent' : surface,
-          opacity: pressed ? 0.88 : 1,
-        },
-      ]}>
-      <ThemedText
-        style={[
-          styles.counterChipText,
-          { color: selected ? tone.text : muted, fontWeight: selected ? '800' : '600' },
-        ]}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
+  ) => {
+    const shadow = selected ? 3 : chipShadow;
+    return (
+      <View
+        key={key}
+        style={[styles.measureChipShell, { marginRight: shadow, marginBottom: shadow }]}>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.measureChipShadow,
+            {
+              backgroundColor: shadowInk,
+              transform: [{ translateX: shadow }, { translateY: shadow }],
+            },
+          ]}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected }}
+          onPress={onPress}
+          style={({ pressed }) => [
+            styles.counterChip,
+            {
+              backgroundColor: selected ? tone.primaryContainer : faceWhite,
+              opacity: pressed ? 0.88 : 1,
+            },
+          ]}>
+          <ThemedText
+            style={[
+              styles.counterChipText,
+              { color: selected ? tone.text : muted, fontWeight: selected ? '800' : '600' },
+            ]}>
+            {label}
+          </ThemedText>
+        </Pressable>
+      </View>
+    );
+  };
 
   const resolveCounterPresetLabel = (presetId: string, fallback: string) => {
     const key = `customFlowTemplate.counterPreset.${presetId}` as I18nKey;
@@ -1240,15 +1345,13 @@ function CounterTemplateView({
               </ThemedText>
             </View>
           </View>
-          <View style={[styles.reminderProgressTrack, { borderColor: line }]}>
+          <View style={[styles.reminderProgressTrack, isNote && styles.reminderProgressTrackNote]}>
             <View
               style={[
                 styles.reminderProgressFill,
                 {
                   width: `${Math.round(ratio * 100)}%`,
                   backgroundColor: tone.primaryContainer,
-                  borderRightWidth: ratio > 0 && ratio < 1 ? RETRO_BORDER_WIDTH : 0,
-                  borderRightColor: line,
                 },
               ]}
             />
@@ -1281,118 +1384,230 @@ function CounterTemplateView({
           {goalReached ? (
             <View
               style={[
-                styles.measureStatusChip,
-                { borderColor: line, backgroundColor: tone.primaryContainer },
+                styles.measureStatusShell,
+                { marginRight: chipShadow, marginBottom: chipShadow },
               ]}>
-              <ThemedText style={[styles.measureStatusChipText, { color: tone.text }]}>
-                {t('customFlowTemplate.todayGoalFilled')}
-              </ThemedText>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.measureChipShadow,
+                  {
+                    backgroundColor: shadowInk,
+                    transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.measureStatusChip,
+                  { backgroundColor: tone.primaryContainer },
+                ]}>
+                <ThemedText style={[styles.measureStatusChipText, { color: tone.text }]}>
+                  {t('customFlowTemplate.todayGoalFilled')}
+                </ThemedText>
+              </View>
             </View>
           ) : null}
           <View style={styles.counterPrimaryRow}>
-            <Pressable
-              disabled={live.currentCount <= 0}
-              accessibilityRole="button"
-              accessibilityLabel={t('customFlowTemplate.decreaseByA11y', { step: live.stepSize })}
-              accessibilityState={{ disabled: live.currentCount <= 0 }}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                emit(applyCounterDelta(live, -live.stepSize));
-              }}
-              style={({ pressed }) => [
-                styles.bigCounterBtn,
-                {
-                  backgroundColor: surface,
-                  borderColor: line,
-                  opacity: live.currentCount <= 0 ? 0.4 : pressed ? 0.88 : 1,
-                },
-                pressed ? { transform: [{ translateX: 1 }, { translateY: 1 }] } : null,
+            <View
+              style={[
+                styles.counterBtnShell,
+                { marginRight: chipShadow, marginBottom: chipShadow, flex: 1 },
               ]}>
-              <ThemedText style={[styles.bigCounterText, { color: ink }]}>−{live.stepSize}</ThemedText>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('customFlowTemplate.increaseByA11y', { step: live.stepSize })}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                emit(applyCounterDelta(live, live.stepSize));
-              }}
-              style={({ pressed }) => [
-                styles.bigCounterBtn,
-                {
-                  backgroundColor: ink,
-                  borderColor: line,
-                  opacity: pressed ? 0.9 : 1,
-                },
-                pressed ? { transform: [{ translateX: 1 }, { translateY: 1 }] } : null,
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.measureChipShadow,
+                  {
+                    backgroundColor: shadowInk,
+                    transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
+                  },
+                ]}
+              />
+              <Pressable
+                disabled={!canDecrease}
+                accessibilityRole="button"
+                accessibilityLabel={t('customFlowTemplate.decreaseByA11y', { step: live.stepSize })}
+                accessibilityState={{ disabled: !canDecrease }}
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  emit(applyCounterDelta(live, -live.stepSize));
+                }}
+                style={({ pressed }) => [
+                  styles.bigCounterBtn,
+                  {
+                    backgroundColor: faceDec,
+                    opacity: pressed && canDecrease ? 0.88 : 1,
+                  },
+                ]}>
+                <ThemedText
+                  style={[styles.bigCounterText, { color: canDecrease ? ink : muted }]}>
+                  −{live.stepSize}
+                </ThemedText>
+              </Pressable>
+            </View>
+            <View
+              style={[
+                styles.counterBtnShell,
+                { marginRight: chipShadow, marginBottom: chipShadow, flex: 1 },
               ]}>
-              <ThemedText style={[styles.bigCounterText, { color: selectedFg }]}>
-                +{live.stepSize}
-              </ThemedText>
-            </Pressable>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.measureChipShadow,
+                  {
+                    backgroundColor: shadowInk,
+                    transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
+                  },
+                ]}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('customFlowTemplate.increaseByA11y', { step: live.stepSize })}
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  emit(applyCounterDelta(live, live.stepSize));
+                }}
+                style={({ pressed }) => [
+                  styles.bigCounterBtn,
+                  {
+                    backgroundColor: tone.primaryContainer,
+                    opacity: pressed ? 0.9 : 1,
+                  },
+                ]}>
+                <ThemedText style={[styles.bigCounterText, { color: tone.primary }]}>
+                  +{live.stepSize}
+                </ThemedText>
+              </Pressable>
+            </View>
           </View>
           <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>
             {t('customFlowTemplate.undoHint')}
           </ThemedText>
           <View style={styles.counterRow}>
-            <Pressable
-              disabled={live.currentCount <= 0}
-              onPress={() => emit(applyCounterDelta(live, -live.secondaryStepSize))}
-              style={({ pressed }) => [
-                styles.counterBtn,
-                {
-                  borderColor: line,
-                  backgroundColor: surface,
-                  opacity: live.currentCount <= 0 ? 0.35 : pressed ? 0.88 : 1,
-                },
+            <View
+              style={[
+                styles.counterBtnShell,
+                { marginRight: chipShadow, marginBottom: chipShadow, flex: 1 },
               ]}>
-              <ThemedText style={[styles.counterBtnText, { color: ink }]}>
-                −{live.secondaryStepSize}
-              </ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={() => emit(applyCounterDelta(live, live.secondaryStepSize))}
-              style={({ pressed }) => [
-                styles.counterBtn,
-                {
-                  borderColor: line,
-                  backgroundColor: surface,
-                  opacity: pressed ? 0.88 : 1,
-                },
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.measureChipShadow,
+                  {
+                    backgroundColor: shadowInk,
+                    transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
+                  },
+                ]}
+              />
+              <Pressable
+                disabled={!canDecrease}
+                onPress={() => emit(applyCounterDelta(live, -live.secondaryStepSize))}
+                style={({ pressed }) => [
+                  styles.counterBtn,
+                  {
+                    backgroundColor: faceDec,
+                    opacity: pressed && canDecrease ? 0.88 : 1,
+                  },
+                ]}>
+                <ThemedText
+                  style={[styles.counterBtnText, { color: canDecrease ? ink : muted }]}>
+                  −{live.secondaryStepSize}
+                </ThemedText>
+              </Pressable>
+            </View>
+            <View
+              style={[
+                styles.counterBtnShell,
+                { marginRight: chipShadow, marginBottom: chipShadow, flex: 1 },
               ]}>
-              <ThemedText style={[styles.counterBtnText, { color: ink }]}>
-                +{live.secondaryStepSize}
-              </ThemedText>
-            </Pressable>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.measureChipShadow,
+                  {
+                    backgroundColor: shadowInk,
+                    transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
+                  },
+                ]}
+              />
+              <Pressable
+                onPress={() => emit(applyCounterDelta(live, live.secondaryStepSize))}
+                style={({ pressed }) => [
+                  styles.counterBtn,
+                  {
+                    backgroundColor: faceWhite,
+                    opacity: pressed ? 0.88 : 1,
+                  },
+                ]}>
+                <ThemedText style={[styles.counterBtnText, { color: ink }]}>
+                  +{live.secondaryStepSize}
+                </ThemedText>
+              </Pressable>
+            </View>
             {!goalReached ? (
-              <Pressable
-                onPress={() => {
-                  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  emit(applyCounterFillRemaining(live));
-                }}
-                style={({ pressed }) => [
-                  styles.counterBtn,
-                  {
-                    borderColor: line,
-                    backgroundColor: tone.primaryContainer,
-                    opacity: pressed ? 0.88 : 1,
-                  },
+              <View
+                style={[
+                  styles.counterBtnShell,
+                  { marginRight: chipShadow, marginBottom: chipShadow, flex: 1 },
                 ]}>
-                <ThemedText style={[styles.counterBtnText, { color: tone.text }]}>{t('customFlowTemplate.fillToGoal')}</ThemedText>
-              </Pressable>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.measureChipShadow,
+                    {
+                      backgroundColor: shadowInk,
+                      transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
+                    },
+                  ]}
+                />
+                <Pressable
+                  onPress={() => {
+                    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    emit(applyCounterFillRemaining(live));
+                  }}
+                  style={({ pressed }) => [
+                    styles.counterBtn,
+                    {
+                      backgroundColor: tone.primaryContainer,
+                      opacity: pressed ? 0.88 : 1,
+                    },
+                  ]}>
+                  <ThemedText style={[styles.counterBtnText, { color: tone.primary }]}>
+                    {t('customFlowTemplate.fillToGoal')}
+                  </ThemedText>
+                </Pressable>
+              </View>
             ) : (
-              <Pressable
-                onPress={() => emit(resetCounterCount(live))}
-                style={({ pressed }) => [
-                  styles.counterBtn,
-                  {
-                    borderColor: line,
-                    backgroundColor: surface,
-                    opacity: pressed ? 0.88 : 1,
-                  },
+              <View
+                style={[
+                  styles.counterBtnShell,
+                  { marginRight: chipShadow, marginBottom: chipShadow, flex: 1 },
                 ]}>
-                <ThemedText style={[styles.counterBtnText, { color: muted }]}>{t('customFlowTemplate.reset')}</ThemedText>
-              </Pressable>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.measureChipShadow,
+                    {
+                      backgroundColor: shadowInk,
+                      transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
+                    },
+                  ]}
+                />
+                <Pressable
+                  onPress={() => emit(resetCounterCount(live))}
+                  style={({ pressed }) => [
+                    styles.counterBtn,
+                    {
+                      backgroundColor: faceWhite,
+                      opacity: pressed ? 0.88 : 1,
+                    },
+                  ]}>
+                  <ThemedText style={[styles.counterBtnText, { color: muted }]}>
+                    {t('customFlowTemplate.reset')}
+                  </ThemedText>
+                </Pressable>
+              </View>
             )}
           </View>
           {!goalReached ? (
@@ -1428,7 +1643,11 @@ function CounterTemplateView({
             onChangeText={(value) => emit(applyCounterActivitySettings(live, { activityLabel: value }))}
             placeholder={t('customFlowTemplate.activityPlaceholder')}
             placeholderTextColor={muted}
-            style={[styles.reminderLabelInput, { color: ink, borderColor: line, backgroundColor: surface }]}
+            style={[
+              styles.reminderLabelInput,
+              isNote && styles.reminderLabelInputNote,
+              { color: ink, backgroundColor: isNote ? 'transparent' : faceWhite },
+            ]}
           />
 
           <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.dailyGoal')}</ThemedText>
@@ -1440,7 +1659,11 @@ function CounterTemplateView({
             keyboardType="number-pad"
             placeholder="8"
             placeholderTextColor={muted}
-            style={[styles.reminderLabelInput, { color: ink, borderColor: line, backgroundColor: surface }]}
+            style={[
+              styles.reminderLabelInput,
+              isNote && styles.reminderLabelInputNote,
+              { color: ink, backgroundColor: isNote ? 'transparent' : faceWhite },
+            ]}
           />
 
           <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.primaryStep')}</ThemedText>
@@ -1458,7 +1681,8 @@ function CounterTemplateView({
                 style={[
                   styles.reminderLabelInput,
                   styles.counterStepInput,
-                  { color: ink, borderColor: line, backgroundColor: surface },
+                  isNote && styles.reminderLabelInputNote,
+                  { color: ink, backgroundColor: isNote ? 'transparent' : faceWhite },
                 ]}
               />
             </View>
@@ -1475,7 +1699,8 @@ function CounterTemplateView({
                 style={[
                   styles.reminderLabelInput,
                   styles.counterStepInput,
-                  { color: ink, borderColor: line, backgroundColor: surface },
+                  isNote && styles.reminderLabelInputNote,
+                  { color: ink, backgroundColor: isNote ? 'transparent' : faceWhite },
                 ]}
               />
             </View>
@@ -1531,10 +1756,8 @@ function ReminderTemplateView({
   const { t, locale } = useTranslation();
   const { ink, muted, line, surface } = theme;
   const isNote = useUiSurfacePresentation() === 'note';
-  const noteRule = resolveNoteRuleColor(line, ink);
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const reminderItems = cfg.reminderItems ?? [];
   const completedTimes = cfg.completedTimes ?? [];
   const { done, total } = reminderProgress({
@@ -1598,6 +1821,8 @@ function ReminderTemplateView({
 
   const shadowInk = isDark ? tone.solidShadow : tone.text;
   const mintShadow = tone.bgMint;
+  const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const chipShadow = 2;
 
   return (
     <View style={[styles.root, styles.reminderRoot, isNote && styles.rootNote, isNote && styles.reminderRootNote]}>
@@ -1628,20 +1853,18 @@ function ReminderTemplateView({
                   </ThemedText>
                 </View>
               ) : (
-                <View style={[styles.reminderAllDone, { borderColor: line }]}>
-                  <ThemedText style={[styles.goalBadge, { color: ink }]}>{t('customFlowTemplate.allRemindersDone')}</ThemedText>
+                <View style={[styles.reminderAllDone, { backgroundColor: tone.primaryContainer }]}>
+                  <ThemedText style={[styles.goalBadge, { color: tone.primary }]}>{t('customFlowTemplate.allRemindersDone')}</ThemedText>
                 </View>
               )}
             </View>
-            <View style={[styles.reminderProgressTrack, isNote && styles.reminderProgressTrackNote, { borderColor: isNote ? noteRule : line }]}>
+            <View style={[styles.reminderProgressTrack, isNote && styles.reminderProgressTrackNote]}>
               <View
                 style={[
                   styles.reminderProgressFill,
                   {
                     width: `${Math.round(progressRatio * 100)}%`,
                     backgroundColor: tone.primaryContainer,
-                    borderRightWidth: progressRatio > 0 && progressRatio < 1 ? RETRO_BORDER_WIDTH : 0,
-                    borderRightColor: line,
                   },
                 ]}
               />
@@ -1666,21 +1889,15 @@ function ReminderTemplateView({
           const checked = completedTimes.includes(item.time);
           const isNext = allowScheduleCompletion && nextTime === item.time && !checked;
           const statusLabel = checked ? t('customFlowTemplate.statusComplete') : isNext ? t('customFlowTemplate.statusNext') : t('customFlowTemplate.statusScheduled');
-          const statusBg = checked
-            ? tone.primaryContainer
-            : isNext
-              ? withAlpha(tone.tertiary, isDark ? 0.28 : 0.16)
-              : withAlpha(line, isDark ? 0.22 : 0.08);
-          const statusFg = checked ? tone.text : isNext ? tone.tertiary : muted;
-          const cardShadow = checked ? mintShadow : shadowInk;
-          const cardBorder = isNext ? tone.primary : line;
-          const cardBorderWidth = isNext ? RETRO_BORDER_WIDTH + 1 : RETRO_BORDER_WIDTH;
+          /** 반투명 면 + 솔리드 섀도 = 칩이 검게 보이므로 불투명 면만 사용 */
+          const statusBg = checked || isNext ? tone.primaryContainer : faceWhite;
+          const statusFg = checked || isNext ? tone.primary : muted;
+          const cardShadow = checked || isNext ? mintShadow : shadowInk;
 
           return (
             <ReminderBrutalShell ink={ink}
               key={item.time}
-              borderColor={cardBorder}
-              borderWidth={cardBorderWidth}
+              borderColor={line}
               shadowColor={cardShadow}
               backgroundColor={surface}
               noteDivider="row">
@@ -1689,17 +1906,29 @@ function ReminderTemplateView({
                   {allowScheduleCompletion ? (
                     <View
                       style={[
-                        styles.reminderStatusChip,
-                        { borderColor: line, backgroundColor: statusBg },
+                        styles.reminderStatusShell,
+                        { marginRight: chipShadow, marginBottom: chipShadow },
                       ]}>
-                      <IconSymbol
-                        name="bell.fill"
-                        size={14}
-                        color={statusFg}
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.reminderActionShadow,
+                          {
+                            backgroundColor: shadowInk,
+                            transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
+                          },
+                        ]}
                       />
-                      <ThemedText style={[styles.reminderStatusChipText, { color: statusFg }]}>
-                        {statusLabel}
-                      </ThemedText>
+                      <View
+                        style={[
+                          styles.reminderStatusChip,
+                          { backgroundColor: statusBg },
+                        ]}>
+                        <IconSymbol name="bell.fill" size={14} color={statusFg} />
+                        <ThemedText style={[styles.reminderStatusChipText, { color: statusFg }]}>
+                          {statusLabel}
+                        </ThemedText>
+                      </View>
                     </View>
                   ) : (
                     <View style={styles.reminderBellWrap}>
@@ -1708,43 +1937,86 @@ function ReminderTemplateView({
                   )}
                   <View style={styles.reminderEditActions}>
                     {allowScheduleCompletion ? (
-                      <Pressable
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked }}
-                        accessibilityLabel={checked ? t('common.completeCancel') : t('customFlowTemplate.markDoneA11y')}
-                        onPress={() => {
-                          void Haptics.selectionAsync();
-                          emit(toggleReminderTimeDone(cfg, item.time));
-                        }}
-                        style={({ pressed }) => [
-                          styles.reminderDoneBtn,
+                      <View
+                        style={[
+                          styles.reminderDoneShell,
+                          { marginRight: chipShadow, marginBottom: chipShadow },
+                        ]}>
+                        <View
+                          pointerEvents="none"
+                          style={[
+                            styles.reminderActionShadow,
+                            {
+                              backgroundColor: shadowInk,
+                              transform: [
+                                { translateX: chipShadow },
+                                { translateY: chipShadow },
+                              ],
+                            },
+                          ]}
+                        />
+                        <Pressable
+                          accessibilityRole="checkbox"
+                          accessibilityState={{ checked }}
+                          accessibilityLabel={checked ? t('common.completeCancel') : t('customFlowTemplate.markDoneA11y')}
+                          onPress={() => {
+                            void Haptics.selectionAsync();
+                            emit(toggleReminderTimeDone(cfg, item.time));
+                          }}
+                          style={({ pressed }) => [
+                            styles.reminderDoneBtn,
+                            {
+                              backgroundColor: checked ? tone.primaryContainer : faceWhite,
+                              opacity: pressed ? 0.88 : 1,
+                            },
+                          ]}>
+                          {checked ? (
+                            <IconSymbol name="checkmark" size={12} color={tone.primary} />
+                          ) : null}
+                          <ThemedText
+                            style={[
+                              styles.reminderDoneBtnText,
+                              { color: checked ? tone.primary : ink },
+                            ]}>
+                            {checked
+                              ? t('customFlowTemplate.doneState')
+                              : t('customFlowTemplate.markDone')}
+                          </ThemedText>
+                        </Pressable>
+                      </View>
+                    ) : null}
+                    <View
+                      style={[
+                        styles.reminderDeleteShell,
+                        { marginRight: chipShadow, marginBottom: chipShadow },
+                      ]}>
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.reminderActionShadow,
                           {
-                            borderColor: line,
-                            backgroundColor: checked ? tone.primaryContainer : surface,
+                            backgroundColor: shadowInk,
+                            transform: [
+                              { translateX: chipShadow },
+                              { translateY: chipShadow },
+                            ],
+                          },
+                        ]}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={t('customFlowTemplate.deleteReminderA11y')}
+                        onPress={() => handleRemove(item.time)}
+                        style={({ pressed }) => [
+                          styles.reminderDeleteBtn,
+                          {
+                            backgroundColor: faceWhite,
                             opacity: pressed ? 0.88 : 1,
                           },
-                          pressed ? { transform: [{ translateX: 2 }, { translateY: 2 }] } : null,
                         ]}>
-                        {checked ? <IconSymbol name="checkmark" size={12} color={ink} /> : null}
-                        <ThemedText style={[styles.reminderDoneBtnText, { color: ink }]}>
-                          {checked ? t('customFlowTemplate.doneState') : t('customFlowTemplate.markDone')}
-                        </ThemedText>
+                        <IconSymbol name="trash" size={13} color={muted} />
                       </Pressable>
-                    ) : null}
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={t('customFlowTemplate.deleteReminderA11y')}
-                      onPress={() => handleRemove(item.time)}
-                      style={({ pressed }) => [
-                        styles.reminderDeleteBtn,
-                        {
-                          borderColor: line,
-                          backgroundColor: surface,
-                          opacity: pressed ? 0.88 : 1,
-                        },
-                      ]}>
-                      <IconSymbol name="trash" size={13} color={muted} />
-                    </Pressable>
+                    </View>
                   </View>
                 </View>
 
@@ -1763,7 +2035,7 @@ function ReminderTemplateView({
                     ink={ink}
                     muted={muted}
                     line={line}
-                    surface={surface}
+                    surface={faceWhite}
                     fullWidth
                     emphasizeColor={isNext ? tone.primary : undefined}
                   />
@@ -1774,10 +2046,10 @@ function ReminderTemplateView({
                     placeholderTextColor={muted}
                     style={[
                       styles.reminderLabelInput,
+                      isNote && styles.reminderLabelInputNote,
                       {
                         color: ink,
-                        borderColor: line,
-                        backgroundColor: surface,
+                        backgroundColor: isNote ? 'transparent' : faceWhite,
                         fontWeight: isNext ? '800' : '600',
                       },
                     ]}
@@ -1806,7 +2078,7 @@ function ReminderTemplateView({
             ink={ink}
             muted={muted}
             line={line}
-            surface={surface}
+            surface={faceWhite}
             placeholder={t('timePicker.placeholder')}
             accessibilityLabel={t('customFlowTemplate.newReminderTimeA11y')}
             fullWidth
@@ -1819,7 +2091,11 @@ function ReminderTemplateView({
             }}
             placeholder={t('customFlowTemplate.reminderExamplePlaceholder')}
             placeholderTextColor={muted}
-            style={[styles.reminderLabelInput, { color: ink, borderColor: line, backgroundColor: surface }]}
+            style={[
+              styles.reminderLabelInput,
+              isNote && styles.reminderLabelInputNote,
+              { color: ink, backgroundColor: isNote ? 'transparent' : faceWhite },
+            ]}
           />
           {addError ? (
             <ThemedText style={[styles.sub, { color: tone.danger }]}>{addError}</ThemedText>
@@ -1828,10 +2104,6 @@ function ReminderTemplateView({
             label={t('common.add')}
             accessibilityLabel={t('customFlowTemplate.addReminderA11y')}
             align="stretch"
-            fill={ink}
-            labelColor={selectedFg}
-            border={line}
-            shadowColor={tone.solidShadow}
             onPress={handleAdd}
           />
         </View>
@@ -2104,20 +2376,31 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   counterChip: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     paddingHorizontal: 10,
     paddingVertical: 6,
+    zIndex: 1,
   },
   counterChipNote: {
     borderWidth: 0,
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
-    paddingHorizontal: 2,
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 0,
   },
   counterChipText: {
     fontSize: 11,
     letterSpacing: -0.1,
+  },
+  measureChipShell: {
+    position: 'relative',
+  },
+  measureStatusShell: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+  measureChipShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
   },
   counterStepInput: {
     minHeight: 40,
@@ -2176,14 +2459,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   measureStatusChip: {
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     paddingHorizontal: 8,
     paddingVertical: 6,
+    zIndex: 1,
   },
   measureStatusChipNote: {
     borderWidth: 0,
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
-    paddingHorizontal: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     alignSelf: 'flex-start',
   },
   measureStatusChipText: {
@@ -2194,16 +2478,16 @@ const styles = StyleSheet.create({
   measureQuickBtn: {
     minWidth: 44,
     minHeight: 32,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
+    zIndex: 1,
   },
   measureQuickBtnNote: {
     borderWidth: 0,
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
-    minWidth: 36,
-    paddingHorizontal: 4,
+    minWidth: 44,
+    paddingHorizontal: 10,
   },
   measureQuickBtnText: {
     fontSize: 12,
@@ -2213,7 +2497,7 @@ const styles = StyleSheet.create({
   measureInputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   measureInput: {
     flex: 1,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     minHeight: 44,
     paddingHorizontal: 12,
     fontSize: 18,
@@ -2250,12 +2534,14 @@ const styles = StyleSheet.create({
   },
   bigCounterBtn: {
     flex: 1,
+    alignSelf: 'stretch',
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     paddingVertical: 8,
     paddingHorizontal: 8,
+    zIndex: 1,
   },
   bigCounterText: {
     fontSize: 22,
@@ -2265,6 +2551,9 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
   },
   bigCounterTextOnAccent: { color: '#fff' },
+  counterBtnShell: {
+    position: 'relative',
+  },
   counterRow: {
     flexDirection: 'row',
     gap: 6,
@@ -2273,11 +2562,13 @@ const styles = StyleSheet.create({
   },
   counterBtn: {
     flex: 1,
+    alignSelf: 'stretch',
     minHeight: 36,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
+    zIndex: 1,
   },
   counterBtnText: {
     fontSize: 12,
@@ -2331,7 +2622,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   memoInput: {
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     minHeight: 120,
     paddingHorizontal: 10,
     paddingVertical: 10,
@@ -2349,33 +2640,24 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     width: '100%',
   },
-  memoSaveBtn: {
-    minHeight: 40,
-    borderWidth: RETRO_BORDER_WIDTH,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  memoSaveBtnNote: {
-    minHeight: 34,
-    alignSelf: 'stretch',
-    width: '100%',
-  },
-  memoSaveBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: -0.1,
-  },
   memoEntryRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
     paddingVertical: 8,
   },
+  memoEntryDateShell: {
+    position: 'relative',
+  },
+  memoEntryDateShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
   memoEntryDateChip: {
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     paddingHorizontal: 6,
-    paddingVertical: 3,
+    paddingVertical: 4,
+    zIndex: 1,
     flexShrink: 0,
   },
   memoEntryDateText: {
@@ -2491,7 +2773,7 @@ const styles = StyleSheet.create({
   },
   reminderAllDone: {
     flex: 1,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     paddingHorizontal: 10,
     paddingVertical: 10,
     justifyContent: 'center',
@@ -2500,7 +2782,9 @@ const styles = StyleSheet.create({
     height: 14,
     width: '100%',
     overflow: 'hidden',
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
+    position: 'relative',
+    backgroundColor: 'rgba(0,0,0,0.06)',
   },
   reminderProgressFill: {
     height: '100%',
@@ -2542,13 +2826,27 @@ const styles = StyleSheet.create({
     gap: 6,
     minHeight: 30,
   },
+  reminderStatusShell: {
+    position: 'relative',
+  },
+  reminderDoneShell: {
+    position: 'relative',
+  },
+  reminderDeleteShell: {
+    position: 'relative',
+  },
+  reminderActionShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
   reminderStatusChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
+    zIndex: 1,
   },
   reminderStatusChipText: {
     fontSize: 11,
@@ -2562,7 +2860,7 @@ const styles = StyleSheet.create({
   },
   reminderEditMain: { gap: 6, minWidth: 0 },
   reminderLabelInput: {
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     minHeight: 40,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -2581,11 +2879,12 @@ const styles = StyleSheet.create({
     minWidth: 72,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
+    zIndex: 1,
   },
   reminderDoneBtnText: {
     fontSize: 11,
@@ -2595,9 +2894,10 @@ const styles = StyleSheet.create({
   reminderDeleteBtn: {
     width: 30,
     height: 30,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   reminderAddInner: {
     padding: 12,
@@ -2664,13 +2964,26 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  checkBoxShell: {
+    position: 'relative',
+    flexShrink: 0,
+  },
+  deleteShell: {
+    position: 'relative',
+    flexShrink: 0,
+  },
+  checkBoxShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
   checkBox: {
     width: 22,
     height: 22,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    zIndex: 1,
   },
   checkText: {
     flex: 1,
@@ -2681,7 +2994,7 @@ const styles = StyleSheet.create({
   },
   checkDone: { textDecorationLine: 'line-through', opacity: 0.55 },
   checklistKeptChip: {
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     paddingHorizontal: 6,
     paddingVertical: 2,
     flexShrink: 0,
@@ -2693,30 +3006,25 @@ const styles = StyleSheet.create({
   checklistAddRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     marginTop: 4,
-    borderWidth: RETRO_BORDER_WIDTH,
-    paddingLeft: 10,
+    borderWidth: 0,
     minHeight: 40,
   },
-  checklistAddInput: {
+  checklistAddInputShell: {
+    position: 'relative',
     flex: 1,
+    minWidth: 0,
+  },
+  checklistAddInput: {
+    width: '100%',
     fontSize: 14,
     fontWeight: '600',
     paddingVertical: 8,
-    minWidth: 0,
-  },
-  checklistAddBtn: {
-    borderLeftWidth: RETRO_BORDER_WIDTH,
-    paddingHorizontal: 12,
-    alignSelf: 'stretch',
-    justifyContent: 'center',
-    minWidth: 52,
-  },
-  checklistAddBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    textAlign: 'center',
+    paddingHorizontal: 10,
+    minHeight: 40,
+    borderWidth: 0,
+    zIndex: 1,
   },
   abstainKeptBadge: { fontSize: 11, fontWeight: '800', marginLeft: 'auto', marginRight: 4 },
 });

@@ -34,6 +34,10 @@ import {
   type DigitalHhmmInputHandle,
 } from '@shared/ui/digital-hhmm-input';
 import { ThemedText } from '@shared/ui/themed-text';
+import {
+  SnappedTimePickerField,
+  type SnappedTimePickerFieldHandle,
+} from '@widgets/daily-rhythm-time-field';
 
 /** 시작·종료 트랙 + 당일/다음 날 (숫자 입력 접힘) — 폴백용 */
 export const CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT = 128;
@@ -75,6 +79,10 @@ type Props = {
   startFieldLabel?: string;
   /** 종료 필드 라벨 (기본: 종료) */
   endFieldLabel?: string;
+  /** 시작 필드 힌트 (sheet 설정형 레이아웃) */
+  startFieldHint?: string;
+  /** 종료 필드 힌트 (sheet 설정형 레이아웃) */
+  endFieldHint?: string;
   /** 시트 확인 버튼 라벨 (기본: 시간 적용) */
   confirmLabel?: string;
   /** 시트 확인 버튼 a11y (기본: applyTimeA11y) */
@@ -97,7 +105,6 @@ export type CatalogRowSpineTimePanelHandle = {
 };
 
 function SolidShadowFace({
-  borderColor,
   shadowColor,
   backgroundColor,
   shadowSize = SOLID_SHADOW_OFFSET,
@@ -105,7 +112,6 @@ function SolidShadowFace({
   faceStyle,
   children,
 }: {
-  borderColor: string;
   shadowColor: string;
   backgroundColor: string;
   shadowSize?: number;
@@ -126,19 +132,11 @@ function SolidShadowFace({
           styles.shadowBlock,
           {
             backgroundColor: shadowColor,
-            borderColor,
             transform: [{ translateX: shadowSize }, { translateY: shadowSize }],
           },
         ]}
       />
-      <View
-        style={[
-          styles.shadowFace,
-          { backgroundColor, borderColor },
-          faceStyle,
-        ]}>
-        {children}
-      </View>
+      <View style={[styles.shadowFace, { backgroundColor }, faceStyle]}>{children}</View>
     </View>
   );
 }
@@ -159,6 +157,8 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       line,
       isDark,
       presentation = 'inline',
+      priorityStart,
+      priorityEnd,
       disabled = false,
       onScheduleChange,
       onPickerExpandedChange,
@@ -167,6 +167,8 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       visualStyle = 'default',
       startFieldLabel,
       endFieldLabel,
+      startFieldHint,
+      endFieldHint,
       confirmLabel,
       confirmA11yLabel,
       showSheetConfirm,
@@ -178,8 +180,12 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
   const { t, locale } = useTranslation();
   const isSheet = presentation === 'sheet';
   const isNote = visualStyle === 'note';
+  const useSettingsSheetLayout = isSheet && !isNote;
   const resolvedStartLabel = startFieldLabel?.trim() || t('goalDetail.study.start');
   const resolvedEndLabel = endFieldLabel?.trim() || t('goalDetail.study.end');
+  const resolvedStartHint =
+    startFieldHint?.trim() || t('fixedRoutine.focusWindowStartHint');
+  const resolvedEndHint = endFieldHint?.trim() || t('fixedRoutine.focusWindowEndHint');
   const resolvedConfirmLabel = confirmLabel?.trim() || t('dayPlan.applyTimeLabel');
   const resolvedConfirmA11y = confirmA11yLabel?.trim() || t('dayPlan.applyTimeA11y');
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -193,6 +199,8 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
   const [expanded, setExpanded] = useState<'start' | 'end' | null>(null);
   const [rangeError, setRangeError] = useState<string | null>(null);
   const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
+  const startPickerRef = useRef<SnappedTimePickerFieldHandle>(null);
+  const endPickerRef = useRef<SnappedTimePickerFieldHandle>(null);
   const expandedRef = useRef(expanded);
   expandedRef.current = expanded;
 
@@ -243,9 +251,19 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
     end: string;
   } => {
     const field = expandedRef.current;
-    const flushed = digitalInputRef.current?.flush();
     let start = draftStart;
     let end = draftEnd;
+    if (useSettingsSheetLayout) {
+      if (field === 'start') {
+        const flushed = startPickerRef.current?.flush();
+        if (flushed) start = flushed;
+      } else if (field === 'end') {
+        const flushed = endPickerRef.current?.flush();
+        if (flushed) end = flushed;
+      }
+      return { start, end };
+    }
+    const flushed = digitalInputRef.current?.flush();
     if (flushed && field === 'start') {
       start = flushed;
       setDraftStart(flushed);
@@ -254,7 +272,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       setDraftEnd(flushed);
     }
     return { start, end };
-  }, [draftEnd, draftStart]);
+  }, [draftEnd, draftStart, useSettingsSheetLayout]);
 
   const handleConfirm = useCallback(() => {
     if (disabled) return;
@@ -279,10 +297,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
     () => ({
       commitPendingSchedule: () => {
         if (disabled) return null;
-        if (expandedRef.current === null && draftEndsNext === endsNextCalendarDay) {
-          return { startMinutes, endMinutes, endsNextCalendarDay };
-        }
-
         Keyboard.dismiss();
         const { start, end } = flushActiveFieldToDrafts();
         const parsedStart = parseHHmmToMinutes(start);
@@ -308,10 +322,8 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
     [
       disabled,
       draftEndsNext,
-      endMinutes,
-      endsNextCalendarDay,
       flushActiveFieldToDrafts,
-      startMinutes,
+      t,
     ],
   );
 
@@ -484,10 +496,9 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           </View>
         ) : (
           <SolidShadowFace
-            borderColor={line}
             shadowColor={shadowInk}
             backgroundColor={selected ? tone.bgMint : panelSurface}
-            shadowSize={selected ? shadowSize : Math.max(2, shadowSize - 2)}
+            shadowSize={2}
             shellStyle={styles.dayChoiceShell}
             faceStyle={[styles.dayChoiceFace, isSheet && styles.dayChoiceFaceSheet]}>
             <ThemedText
@@ -495,7 +506,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
                 styles.dayChoiceText,
                 isSheet && styles.dayChoiceTextSheet,
                 { color: selected ? selectedText : muted },
-                cityPopFont('800'),
+                cityPopFont(selected ? '700' : '600'),
               ]}>
               {label}
             </ThemedText>
@@ -504,6 +515,121 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       </Pressable>
     );
   };
+
+  const timePickerPalette = useMemo(
+    () => ({
+      onSurface: ink,
+      onVariant: muted,
+      border: line,
+      containerLowest: panelSurface,
+    }),
+    [ink, line, muted, panelSurface],
+  );
+
+  if (useSettingsSheetLayout) {
+    const todayChoiceLabel = t('dayRhythm.todayChoice', {
+      date: resolvedDateLabels.today,
+    });
+    const nextDayChoiceLabel = t('dayRhythm.nextDayChoice', {
+      date: resolvedDateLabels.next,
+    });
+    return (
+      <View style={[styles.rootSettings, { paddingLeft: contentInsetLeft }]}>
+        <SnappedTimePickerField
+          ref={startPickerRef}
+          label={resolvedStartLabel}
+          hint={resolvedStartHint}
+          valueHhmm={draftStart}
+          onChangeHhmm={(next) => {
+            setDraftStart(next);
+            setRangeError(null);
+          }}
+          expanded={expanded === 'start'}
+          onToggleExpand={() => {
+            if (disabled) return;
+            const cur = expandedRef.current;
+            if (cur === 'start') {
+              Keyboard.dismiss();
+              setExpanded(null);
+              return;
+            }
+            if (cur === 'end') endPickerRef.current?.flush();
+            setExpanded('start');
+            onRequestScrollIntoView?.();
+          }}
+          isDark={isDark}
+          palette={timePickerPalette}
+          snapStepMinutes={1}
+          dateCaption={showDateLabels ? resolvedDateLabels.start : undefined}
+          disabled={disabled}
+          routineDayStartHhmm={priorityStart}
+          routineDayEndHhmm={priorityEnd}
+        />
+        <View style={[styles.settingsDivider, { backgroundColor: line }]} />
+        <SnappedTimePickerField
+          ref={endPickerRef}
+          label={resolvedEndLabel}
+          hint={resolvedEndHint}
+          valueHhmm={draftEnd}
+          onChangeHhmm={(next) => {
+            setDraftEnd(next);
+            setRangeError(null);
+          }}
+          expanded={expanded === 'end'}
+          onToggleExpand={() => {
+            if (disabled) return;
+            const cur = expandedRef.current;
+            if (cur === 'end') {
+              Keyboard.dismiss();
+              setExpanded(null);
+              return;
+            }
+            if (cur === 'start') startPickerRef.current?.flush();
+            setExpanded('end');
+            onRequestScrollIntoView?.();
+          }}
+          isDark={isDark}
+          palette={timePickerPalette}
+          snapStepMinutes={1}
+          mapMidnightToEndOfDay
+          dateCaption={
+            showDateLabels
+              ? draftEndsNext
+                ? resolvedDateLabels.next
+                : resolvedDateLabels.today
+              : undefined
+          }
+          disabled={disabled}
+          routineDayStartHhmm={priorityStart}
+          routineDayEndHhmm={priorityEnd}
+        />
+        {showEndDateChoice ? (
+          <View style={styles.endDateChoiceInline}>
+            <ThemedText style={[styles.endDateChoiceQuestion, { color: muted }]}>
+              {t('dayRhythm.endDateQuestion')}
+            </ThemedText>
+            <View style={styles.endDateChoiceBtnRow}>
+              {renderDayChoice(false, todayChoiceLabel)}
+              {renderDayChoice(true, nextDayChoiceLabel)}
+            </View>
+          </View>
+        ) : null}
+        {sheetConfirmVisible ? (
+          <BrutalConfirmButton
+            label={resolvedConfirmLabel}
+            accessibilityLabel={resolvedConfirmA11y}
+            align="stretch"
+            disabled={disabled}
+            onPress={handleConfirm}
+            style={styles.sheetConfirmBtn}
+          />
+        ) : null}
+        {rangeError ? (
+          <ThemedText style={[styles.rangeError, { color: muted }]}>{rangeError}</ThemedText>
+        ) : null}
+      </View>
+    );
+  }
 
   const trackInner = (
     <View style={[styles.trackInner, isNote && styles.trackInnerNote]}>
@@ -539,7 +665,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
         <View style={[styles.trackNote, { borderColor: line }]}>{trackInner}</View>
       ) : (
         <SolidShadowFace
-          borderColor={line}
           shadowColor={shadowInk}
           backgroundColor={panelSurface}
           shadowSize={shadowSize}
@@ -590,10 +715,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
             label={resolvedConfirmLabel}
             accessibilityLabel={resolvedConfirmA11y}
             align="stretch"
-            fill={ink}
-            labelColor={isDark ? '#09090b' : '#FAFAFA'}
-            border={line}
-            shadowColor={shadowInk}
             disabled={disabled}
             onPress={handleConfirm}
             style={styles.sheetConfirmBtn}
@@ -638,11 +759,34 @@ const styles = StyleSheet.create({
   },
   shadowBlock: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
   },
   shadowFace: {
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     overflow: 'hidden',
+    zIndex: 1,
+  },
+  rootSettings: {
+    paddingRight: 0,
+    paddingTop: 2,
+    paddingBottom: 4,
+    gap: 8,
+  },
+  settingsDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 2,
+  },
+  endDateChoiceInline: {
+    marginTop: 2,
+    gap: 6,
+  },
+  endDateChoiceQuestion: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  endDateChoiceBtnRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
   trackShell: {
     alignSelf: 'stretch',
@@ -714,21 +858,24 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   dayChoiceFace: {
-    minHeight: 40,
-    paddingHorizontal: 8,
+    minHeight: 34,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayChoiceFaceSheet: {
-    minHeight: 52,
-    paddingHorizontal: 10,
+    minHeight: 36,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
   },
   dayChoiceText: {
     fontSize: 12,
     textAlign: 'center',
   },
   dayChoiceTextSheet: {
-    fontSize: 14,
+    fontSize: 12,
+    fontWeight: '700',
   },
   sheetConfirmBtn: {
     marginTop: 12,

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -195,28 +196,13 @@ export function EditCatalogGroupSheet({
           ) : null}
 
           <View style={styles.ctaWrap}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !canSave }}
+            <BrutalConfirmButton
+              label={ctaLabel}
               accessibilityLabel={ctaLabel}
+              align="stretch"
               disabled={!canSave}
               onPress={handleSave}
-              style={({ pressed }) => [
-                styles.cta,
-                {
-                  backgroundColor: canSave ? ink : inputBg,
-                  borderColor: canSave
-                    ? ink
-                    : isDark
-                      ? 'rgba(255,255,255,0.12)'
-                      : 'rgba(0,0,0,0.08)',
-                  opacity: pressed && canSave ? 0.88 : 1,
-                },
-              ]}>
-              <ThemedText style={[styles.ctaText, { color: canSave ? (isDark ? '#09090b' : '#FAFAFA') : muted }]}>
-                {ctaLabel}
-              </ThemedText>
-            </Pressable>
+            />
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -349,17 +335,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#dc2626',
     letterSpacing: -0.15,
-  },
-  cta: {
-    minHeight: 50,
-    borderRadius: 0,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaText: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.2,
   },
 });

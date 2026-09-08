@@ -12,17 +12,16 @@ import {
 
 import { addDaysToLocalDateKey, parseHHmmToMinutes } from '@entities/day-plan';
 import {
-  RETRO_BORDER_WIDTH,
   RetroFlatColors,
   SOLID_SHADOW_OFFSET,
   cityPopFont,
 } from '@shared/config/retroFlat';
 import { DigitalHhmmInput, type DigitalHhmmInputHandle } from '@shared/ui/digital-hhmm-input';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
+import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 import { DailyRhythmStyleAlarmRow, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import {
   formatDateKeyCompact,
   formatHhmmClock,
@@ -47,7 +46,7 @@ function suggestEndDateTarget(start: string, end: string): 'today' | 'nextDay' {
 }
 
 function SolidShadowFace({
-  borderColor,
+  borderColor: _borderColor,
   shadowColor,
   backgroundColor,
   style,
@@ -55,7 +54,8 @@ function SolidShadowFace({
   children,
   shadowSize = SOLID_SHADOW_OFFSET,
 }: {
-  borderColor: string;
+  /** @deprecated 외곽선 없음 — API 호환용 */
+  borderColor?: string;
   shadowColor: string;
   backgroundColor: string;
   style?: object;
@@ -71,16 +71,16 @@ function SolidShadowFace({
         shellStyle,
       ]}>
       <View
+        pointerEvents="none"
         style={[
           styles.shadowBlock,
           {
             backgroundColor: shadowColor,
-            borderColor,
             transform: [{ translateX: shadowSize }, { translateY: shadowSize }],
           },
         ]}
       />
-      <View style={[styles.shadowFace, { backgroundColor, borderColor }, style]}>{children}</View>
+      <View style={[styles.shadowFace, { backgroundColor }, style]}>{children}</View>
     </View>
   );
 }
@@ -204,10 +204,6 @@ function OnboardingTimeRow({
           />
           <BrutalConfirmButton
             accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
-            fill={c.onSurface}
-            labelColor={selectedFg}
-            border={c.border}
-            shadowColor={isDark ? ink.solidShadow : '#000000'}
             onPress={() => {
               const flushed = digitalRef.current?.flush();
               if (flushed) onChangeHhmm(flushed);
@@ -290,7 +286,6 @@ export function DailyRhythmTimeEditorBody({
   );
 
   const ink = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const pill = useMemo(() => tabPillColors(isDark), [isDark]);
   const isOnboarding = variant === 'onboarding';
   const shadowInk = isDark ? ink.solidShadow : '#000000';
 
@@ -432,11 +427,10 @@ export function DailyRhythmTimeEditorBody({
   );
 
   const settingsTimeCard = (
-    <View
-      style={[
-        styles.settingsCard,
-        { backgroundColor: isDark ? ink.surfaceAlt : '#FFFFFF', borderColor: c.border },
-      ]}>
+    <CityPopCardShell
+      isDark={isDark}
+      faceColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
+      contentStyle={styles.settingsCard}>
       <SnappedTimePickerField
         label={t('dayRhythm.dayStart')}
         hint={t('dayRhythm.dayStartHint')}
@@ -480,20 +474,32 @@ export function DailyRhythmTimeEditorBody({
                 void Haptics.selectionAsync();
               }}
               style={({ pressed }) => [
-                styles.endDateChoiceBtn,
-                {
-                  backgroundColor: endDateTarget === 'today' ? pill.activeBg : pill.inactiveBg,
-                  borderColor: endDateTarget === 'today' ? pill.activeBorder : pill.inactiveBorder,
-                },
-                pressed && { opacity: 0.9 },
+                styles.dayChoicePress,
+                pressed && { opacity: 0.92 },
               ]}>
-              <ThemedText
-                style={[
-                  styles.endDateChoiceBtnText,
-                  { color: endDateTarget === 'today' ? pill.activeIcon : pill.inactiveIcon },
-                ]}>
-                {resolvedEndDateTodayLabel}
-              </ThemedText>
+              <SolidShadowFace
+                shadowColor={shadowInk}
+                backgroundColor={
+                  endDateTarget === 'today' ? ink.bgMint : isDark ? ink.surfaceAlt : '#FFFFFF'
+                }
+                shadowSize={endDateTarget === 'today' ? 4 : 2}
+                shellStyle={styles.dayChoiceShell}
+                style={styles.dayChoiceFace}>
+                <ThemedText
+                  style={[
+                    styles.endDateChoiceBtnText,
+                    {
+                      color:
+                        endDateTarget === 'today'
+                          ? isDark
+                            ? ink.text
+                            : ink.tertiary
+                          : c.onVariant,
+                    },
+                  ]}>
+                  {resolvedEndDateTodayLabel}
+                </ThemedText>
+              </SolidShadowFace>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -503,26 +509,37 @@ export function DailyRhythmTimeEditorBody({
                 void Haptics.selectionAsync();
               }}
               style={({ pressed }) => [
-                styles.endDateChoiceBtn,
-                {
-                  backgroundColor: endDateTarget === 'nextDay' ? pill.activeBg : pill.inactiveBg,
-                  borderColor:
-                    endDateTarget === 'nextDay' ? pill.activeBorder : pill.inactiveBorder,
-                },
-                pressed && { opacity: 0.9 },
+                styles.dayChoicePress,
+                pressed && { opacity: 0.92 },
               ]}>
-              <ThemedText
-                style={[
-                  styles.endDateChoiceBtnText,
-                  { color: endDateTarget === 'nextDay' ? pill.activeIcon : pill.inactiveIcon },
-                ]}>
-                {resolvedEndDateNextDayLabel}
-              </ThemedText>
+              <SolidShadowFace
+                shadowColor={shadowInk}
+                backgroundColor={
+                  endDateTarget === 'nextDay' ? ink.bgMint : isDark ? ink.surfaceAlt : '#FFFFFF'
+                }
+                shadowSize={endDateTarget === 'nextDay' ? 4 : 2}
+                shellStyle={styles.dayChoiceShell}
+                style={styles.dayChoiceFace}>
+                <ThemedText
+                  style={[
+                    styles.endDateChoiceBtnText,
+                    {
+                      color:
+                        endDateTarget === 'nextDay'
+                          ? isDark
+                            ? ink.text
+                            : ink.tertiary
+                          : c.onVariant,
+                    },
+                  ]}>
+                  {resolvedEndDateNextDayLabel}
+                </ThemedText>
+              </SolidShadowFace>
             </Pressable>
           </View>
         </View>
       ) : null}
-    </View>
+    </CityPopCardShell>
   );
 
   return (
@@ -793,11 +810,10 @@ export function DailyRhythmTimeEditorBody({
         {variant === 'settings' &&
         typeof dayStartAlarmOn === 'boolean' &&
         onDayStartAlarmChange ? (
-          <View
-            style={[
-              styles.settingsCard,
-              { backgroundColor: isDark ? ink.surfaceAlt : '#FFFFFF', borderColor: c.border },
-            ]}>
+          <CityPopCardShell
+            isDark={isDark}
+            faceColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
+            contentStyle={styles.settingsCard}>
             <DailyRhythmStyleAlarmRow
               title={t('dayRhythm.dayStartAlarmTitle')}
               hint={t('dayRhythm.dayStartAlarmHint')}
@@ -829,7 +845,6 @@ export function DailyRhythmTimeEditorBody({
                       styles.endAlarmTimeCard,
                       {
                         backgroundColor: isDark ? ink.surfaceAlt : '#F6F3EB',
-                        borderColor: c.border,
                       },
                     ]}>
                     <SnappedTimePickerField
@@ -847,7 +862,7 @@ export function DailyRhythmTimeEditorBody({
                 ) : null}
               </>
             ) : null}
-          </View>
+          </CityPopCardShell>
         ) : null}
 
         {footerSlot}
@@ -879,23 +894,12 @@ export function DailyRhythmTimeEditorBody({
           </Pressable>
         ) : (
           <>
-            <Pressable
+            <BrutalConfirmButton
+              label={primaryLabel}
+              accessibilityLabel={primaryLabel}
               onPress={validateAndPrimary}
-              style={({ pressed }) => [pressed && { opacity: 0.94 }]}>
-              <View
-                style={[
-                  styles.primaryBtn,
-                  {
-                    backgroundColor: pill.activeBg,
-                    borderColor: pill.activeBorder,
-                    borderWidth: 2,
-                  },
-                ]}>
-                <ThemedText style={[styles.primaryBtnText, { color: pill.activeIcon }]}>
-                  {primaryLabel}
-                </ThemedText>
-              </View>
-            </Pressable>
+              align="stretch"
+            />
 
             {secondaryLabel && onSecondaryPress ? (
               <Pressable
@@ -943,11 +947,12 @@ const styles = StyleSheet.create({
   shadowShell: { position: 'relative' },
   shadowBlock: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
   },
   shadowFace: {
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     overflow: 'hidden',
+    zIndex: 1,
   },
 
   onboardHero: { gap: 16 },
@@ -1067,14 +1072,6 @@ const styles = StyleSheet.create({
   endDateChoiceBtnRow: { flexDirection: 'row', gap: 12 },
   dayChoicePress: { flex: 1 },
   dayChoiceShell: { alignSelf: 'stretch', width: '100%' },
-  endDateChoiceBtn: {
-    flex: 1,
-    minHeight: 48,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-  },
   endDateChoiceBtnText: { fontSize: 14, fontWeight: '700', textAlign: 'center' },
   endDateChoiceHint: { fontSize: 12, fontWeight: '500', lineHeight: 16 },
   dayChoiceFace: {
@@ -1088,7 +1085,7 @@ const styles = StyleSheet.create({
 
   summaryBox: {
     marginTop: 8,
-    borderWidth: 2,
+    borderWidth: 0,
     paddingHorizontal: 16,
     paddingTop: 18,
     paddingBottom: 14,
@@ -1098,7 +1095,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -11,
     left: 14,
-    borderWidth: 2,
+    borderWidth: 0,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
@@ -1125,13 +1122,13 @@ const styles = StyleSheet.create({
   },
   settingsSubtitle: { fontSize: 14, lineHeight: 20, fontWeight: '500' },
   settingsCard: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     padding: 12,
     gap: 8,
   },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
   endAlarmTimeCard: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     padding: 12,
     gap: 8,
   },
@@ -1157,14 +1154,6 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   primaryBtnTextOnboard: { fontSize: 15, letterSpacing: -0.2 },
-  primaryBtn: {
-    alignSelf: 'stretch',
-    minHeight: 48,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryBtnText: { fontSize: 15, fontWeight: '800' },
   textBtn: { paddingVertical: 6, alignItems: 'center' },
   textBtnLabel: { fontSize: 14, fontWeight: '600' },
 });

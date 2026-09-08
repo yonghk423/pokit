@@ -29,22 +29,27 @@ export function RoutineSummaryField({
 
   return (
     <View style={styles.wrap}>
-      {!isNote ? (
-        <ThemedText style={[styles.label, { color: palette.onVariant }]}>
-          {t('goalDetail.summaryLabel')}
-        </ThemedText>
-      ) : null}
+      <ThemedText style={[styles.label, { color: palette.onVariant }]}>
+        {t('goalDetail.summaryLabel')}
+      </ThemedText>
       <ThemedTextInput
         value={value}
         onChangeText={onChangeValue}
         placeholder={placeholderText}
-        placeholderTextColor={palette.outline}
+        placeholderTextColor={
+          isNote
+            ? palette.usesLightInk
+              ? 'rgba(255,255,255,0.38)'
+              : 'rgba(0,0,0,0.32)'
+            : palette.outline
+        }
+        accessibilityLabel={t('goalDetail.summaryLabel')}
         style={[
           isNote ? styles.inputNote : styles.input,
           {
             color: palette.onSurface,
             ...(isNote
-              ? {}
+              ? { borderBottomColor: palette.outlineVariant }
               : {
                   borderColor: palette.outlineVariant,
                   backgroundColor: palette.surfaceLowest,
@@ -73,12 +78,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   inputNote: {
-    minHeight: 40,
-    paddingHorizontal: 0,
-    paddingVertical: 2,
+    minHeight: 48,
+    paddingHorizontal: 2,
+    paddingTop: 8,
+    paddingBottom: 10,
     fontSize: 13,
     lineHeight: 20,
     fontWeight: '500',
     letterSpacing: -0.1,
+    borderBottomWidth: 1,
   },
 });

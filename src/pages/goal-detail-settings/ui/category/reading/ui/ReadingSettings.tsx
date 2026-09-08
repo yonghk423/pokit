@@ -21,6 +21,7 @@ import {
   type ReadingLiveActivityConfig,
 } from '@entities/day-plan';
 import { BookSearchSheet, type BookSearchSelection } from './BookSearchSheet';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -34,6 +35,8 @@ import { ReadingBookDetailSheet } from './ReadingBookDetailSheet';
 import type { GoalDetailCategoryKey } from '../../../../model/types';
 
 type SettingsPalette = GoalDetailSettingsPalette;
+
+const HEADER_ICON_SHADOW = 2;
 
 type LibraryTab = 'all' | ReadingBookStatus;
 
@@ -136,6 +139,9 @@ export function ReadingSettings({
   const isDark = scheme === 'dark';
   const palette = useGoalDetailSettingsPalette(isDark);
   const c = palette;
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const shadowInk = isDark ? tone.solidShadow : tone.text;
+  const headerBtnFace = isDark ? tone.surfaceAlt : '#FFFFFF';
 
   const librarySortLabels = useMemo(
     (): Record<ReadingLibrarySortOrder, string> => ({
@@ -321,21 +327,65 @@ export function ReadingSettings({
             </ThemedText>
           </View>
           <View style={styles.headerActions}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('goalDetail.reading.addBook')}
-              onPress={() => setAddSheetVisible(true)}
-              style={[styles.headerIconBtn, { borderColor: c.onSurface }]}>
-              <IconSymbol name="plus" size={15} color={c.onSurface} />
-            </Pressable>
-            {searchEnabled ? (
+            <View
+              style={[
+                styles.headerIconShell,
+                { marginRight: HEADER_ICON_SHADOW, marginBottom: HEADER_ICON_SHADOW },
+              ]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.headerIconShadow,
+                  {
+                    backgroundColor: shadowInk,
+                    transform: [
+                      { translateX: HEADER_ICON_SHADOW },
+                      { translateY: HEADER_ICON_SHADOW },
+                    ],
+                  },
+                ]}
+              />
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t('goalDetail.reading.searchBook')}
-                onPress={() => setSearchSheetVisible(true)}
-                style={[styles.headerIconBtn, { borderColor: c.onSurface }]}>
-                <IconSymbol name="magnifyingglass" size={15} color={c.onSurface} />
+                accessibilityLabel={t('goalDetail.reading.addBook')}
+                onPress={() => setAddSheetVisible(true)}
+                style={({ pressed }) => [
+                  styles.headerIconBtn,
+                  { backgroundColor: headerBtnFace, opacity: pressed ? 0.88 : 1 },
+                ]}>
+                <IconSymbol name="plus" size={15} color={c.onSurface} />
               </Pressable>
+            </View>
+            {searchEnabled ? (
+              <View
+                style={[
+                  styles.headerIconShell,
+                  { marginRight: HEADER_ICON_SHADOW, marginBottom: HEADER_ICON_SHADOW },
+                ]}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.headerIconShadow,
+                    {
+                      backgroundColor: shadowInk,
+                      transform: [
+                        { translateX: HEADER_ICON_SHADOW },
+                        { translateY: HEADER_ICON_SHADOW },
+                      ],
+                    },
+                  ]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('goalDetail.reading.searchBook')}
+                  onPress={() => setSearchSheetVisible(true)}
+                  style={({ pressed }) => [
+                    styles.headerIconBtn,
+                    { backgroundColor: headerBtnFace, opacity: pressed ? 0.88 : 1 },
+                  ]}>
+                  <IconSymbol name="magnifyingglass" size={15} color={c.onSurface} />
+                </Pressable>
+              </View>
             ) : null}
           </View>
         </View>
@@ -536,12 +586,20 @@ const styles = StyleSheet.create({
   libraryTitle: { fontSize: 22, fontWeight: '900', letterSpacing: -0.4 },
   libraryCount: { fontSize: 14, fontWeight: '600' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerIconShell: {
+    position: 'relative',
+  },
+  headerIconShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
   headerIconBtn: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 0,
+    zIndex: 1,
   },
 
   tabRow: {

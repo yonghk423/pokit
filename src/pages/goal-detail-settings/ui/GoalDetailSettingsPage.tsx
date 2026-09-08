@@ -51,7 +51,7 @@ import {
   resolveCatalogItemGroupKey,
   updateCatalogItemGroup,
 } from '@shared/lib/storage';
-import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -870,7 +870,6 @@ export function GoalDetailSettingsPage() {
                       styles.footerCompleteShadow,
                       {
                         backgroundColor: RetroFlatColors.light.text,
-                        borderColor: RetroFlatColors.light.border,
                       },
                     ]}
                   />
@@ -882,7 +881,6 @@ export function GoalDetailSettingsPage() {
                         backgroundColor: pressed
                           ? '#8EC8CA'
                           : RetroFlatColors.light.primaryContainer,
-                        borderColor: RetroFlatColors.light.border,
                       },
                     ]}>
                     <IconSymbol
@@ -1006,13 +1004,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 0,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
   },
   footerCompleteCircle: {
     width: 40,
     height: 40,
     borderRadius: 0,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

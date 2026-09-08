@@ -176,11 +176,11 @@ function seedDayPlanDraft(today: string): void {
     priorityEnd: '23:00',
     priorityCategoryOrder: order,
     priorityCategoryImportance: {
-      reading: 'high',
-      healthIntake: 'high',
-      [BUILTIN_DAILY_LIFE_FLOW_IDS[5]!]: 'medium',
-      [BUILTIN_STRETCHING_FLOW_ID]: 'low',
-      fasting: 'medium',
+      reading: 'pink',
+      healthIntake: 'pink',
+      [BUILTIN_DAILY_LIFE_FLOW_IDS[5]!]: 'mint',
+      [BUILTIN_STRETCHING_FLOW_ID]: 'yellow',
+      fasting: 'lavender',
     },
     quickMemoDraft: (() => {
       const copy = getScreenshotDemoCopy(getAppLocale());

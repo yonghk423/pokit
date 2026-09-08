@@ -22,17 +22,21 @@ import {
   DEFAULT_POST_IT_FACE_COLOR_ID,
   getDayMealSlotLabel,
   loadPostItFaceColorByGroup,
+  loadRoutineCatalogCollapsedGroupIds,
   postItFaceUsesLightInk,
+  pruneRoutineCatalogCollapsedGroupIds,
   resolvePostItFaceColor,
   resolvePostItFaceInk,
   resolvePostItFaceMuted,
   savePostItFaceColorForGroup,
+  setRoutineCatalogGroupCollapsed,
   type CustomCatalogGroup,
   type CustomFlowCatalogEntry,
   type DayMealSlot,
   type PostItFaceColorByGroup,
   type PostItFaceColorId,
-} from '@shared/lib/storage';import { IconSymbol } from '@shared/ui/icon-symbol';
+} from '@shared/lib/storage';
+import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory, categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
@@ -1148,6 +1152,8 @@ function GroupSectionBlock({
   onMoveCustomFlow,
   onDeleteCatalogItem,
   isFirst,
+  isGroupExpanded = true,
+  onToggleGroupExpand,
   postItFaceColorId = DEFAULT_POST_IT_FACE_COLOR_ID,
   onSelectPostItFaceColor,
   sectionsCatalogOptions,
@@ -1166,6 +1172,8 @@ function GroupSectionBlock({
   onMoveCustomFlow?: (categoryKey: string, label: string) => void;
   onDeleteCatalogItem?: (categoryKey: string, label: string) => void;
   isFirst: boolean;
+  isGroupExpanded?: boolean;
+  onToggleGroupExpand?: () => void;
   /** manageOnly: 이 그룹 포스트잇 면 색 */
   postItFaceColorId?: PostItFaceColorId;
   onSelectPostItFaceColor?: (id: PostItFaceColorId) => void;
@@ -1191,8 +1199,6 @@ function GroupSectionBlock({
   manageOnly?: boolean;
 }) {
   const { t } = useTranslation();
-  /** 루틴(카탈로그) 탭: 첫 포스트잇만 기본 펼침 */
-  const [isGroupExpanded, setIsGroupExpanded] = useState(() => Boolean(manageOnly && isFirst));
   const groupAccordion = useMeasuredAccordion(isGroupExpanded);
   const faceUsesLightInk = manageOnly && postItFaceUsesLightInk(postItFaceColorId);
   const faceInk = manageOnly
@@ -1274,7 +1280,7 @@ function GroupSectionBlock({
           width={50}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setIsGroupExpanded((value) => !value);
+            onToggleGroupExpand?.();
           }}>
           <View style={styles.groupExpandRow}>
             <ThemedText style={[styles.groupExpandCount, { color: headerActionInk }]}>
@@ -1426,6 +1432,11 @@ export function PriorityCatalogPanel({
   const [postItFaceByGroup, setPostItFaceByGroup] = useState<PostItFaceColorByGroup>(
     () => loadPostItFaceColorByGroup(),
   );
+  const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(() =>
+    manageOnly ? loadRoutineCatalogCollapsedGroupIds() : new Set(),
+  );
+  const collapsedGroupIdsRef = useRef(collapsedGroupIds);
+  collapsedGroupIdsRef.current = collapsedGroupIds;
 
   const onSelectPostItFaceColor = useCallback((groupKey: string, id: PostItFaceColorId) => {
     setPostItFaceByGroup(savePostItFaceColorForGroup(groupKey, id));
@@ -1468,6 +1479,36 @@ export function PriorityCatalogPanel({
         customGroups,
       }),
     [visibleCatalogCategories, customFlowPickerItems, customFlowEntries, customGroups],
+  );
+
+  const visibleGroupKeysKey = useMemo(
+    () => groupSections.map((section) => section.groupKey).join('\0'),
+    [groupSections],
+  );
+
+  useEffect(() => {
+    if (!manageOnly || !visibleGroupKeysKey) return;
+    const ids = visibleGroupKeysKey.split('\0').filter(Boolean);
+    const pruned = pruneRoutineCatalogCollapsedGroupIds(ids);
+    setCollapsedGroupIds((prev) => {
+      if (pruned.size === prev.size && [...pruned].every((id) => prev.has(id))) return prev;
+      return pruned;
+    });
+  }, [manageOnly, visibleGroupKeysKey]);
+
+  const onToggleGroupExpand = useCallback(
+    (groupKey: string) => {
+      if (!manageOnly) return;
+      const collapsing = !collapsedGroupIdsRef.current.has(groupKey);
+      setRoutineCatalogGroupCollapsed(groupKey, collapsing);
+      setCollapsedGroupIds((prev) => {
+        const next = new Set(prev);
+        if (collapsing) next.add(groupKey);
+        else next.delete(groupKey);
+        return next;
+      });
+    },
+    [manageOnly],
   );
 
   const sectionsCatalogOptions = useMemo(
@@ -1547,6 +1588,10 @@ export function PriorityCatalogPanel({
               : undefined
           }
           isFirst={index === 0}
+          isGroupExpanded={manageOnly ? !collapsedGroupIds.has(section.groupKey) : true}
+          onToggleGroupExpand={
+            manageOnly ? () => onToggleGroupExpand(section.groupKey) : undefined
+          }
         />
       ))}
     </View>

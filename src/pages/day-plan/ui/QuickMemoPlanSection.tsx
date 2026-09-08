@@ -3,6 +3,7 @@ import { Keyboard, Platform, Pressable, StyleSheet, TextInput, useWindowDimensio
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import type { DayPlanQuickMemo } from '@entities/day-plan';
+import { RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -92,22 +93,41 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
         ]}
       />
       <View style={styles.gradientHint} />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('dayPlan.quickMemoSaveA11y')}
-        hitSlop={8}
-        onPress={onSavePress}
-        style={({ pressed }) => [
-          styles.saveBtn,
-          {
-            backgroundColor: pill.activeBg,
-            borderColor: pill.activeBorder,
-            marginBottom: footerBottomPad,
-          },
-          pressed && { opacity: 0.92 },
+      <View
+        style={[
+          styles.saveShell,
+          { marginRight: SOLID_SHADOW_OFFSET, marginBottom: SOLID_SHADOW_OFFSET + footerBottomPad },
         ]}>
-        <IconSymbol name="square.and.arrow.down" size={22} color={pill.activeIcon} />
-      </Pressable>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.saveShadow,
+            {
+              backgroundColor: isDark
+                ? RetroFlatColors.dark.solidShadow
+                : '#000000',
+              transform: [
+                { translateX: SOLID_SHADOW_OFFSET },
+                { translateY: SOLID_SHADOW_OFFSET },
+              ],
+            },
+          ]}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('dayPlan.quickMemoSaveA11y')}
+          hitSlop={8}
+          onPress={onSavePress}
+          style={({ pressed }) => [
+            styles.saveBtn,
+            {
+              backgroundColor: pill.activeBg,
+              opacity: pressed ? 0.92 : 1,
+            },
+          ]}>
+          <IconSymbol name="square.and.arrow.down" size={22} color={pill.activeIcon} />
+        </Pressable>
+      </View>
     </View>
   );
 });
@@ -138,15 +158,24 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     backgroundColor: 'rgba(0, 0, 0, 0.12)',
   },
-  saveBtn: {
+  saveShell: {
     marginTop: 18,
+    alignSelf: 'stretch',
+    position: 'relative',
+  },
+  saveShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
+  saveBtn: {
     alignSelf: 'stretch',
     minHeight: 44,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
 });

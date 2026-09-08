@@ -13,6 +13,7 @@ export type {
 } from './ui/DailyRhythmStyleAlarmRow';
 export { SnappedTimePickerField } from './ui/SnappedTimePickerField';
 export type {
+  SnappedTimePickerFieldHandle,
   SnappedTimePickerFieldPalette,
   SnappedTimePickerFieldProps
 } from './ui/SnappedTimePickerField';

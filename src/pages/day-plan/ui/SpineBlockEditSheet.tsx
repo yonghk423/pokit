@@ -83,7 +83,6 @@ export function SpineBlockEditSheet({
   const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const shadowInk = isDark ? tone.solidShadow : '#000000';
   const [categoryKey, setCategoryKey] = useState<string | null>(null);
   const [startMinutes, setStartMinutes] = useState(9 * 60);
   const [endMinutes, setEndMinutes] = useState(9 * 60 + 30);
@@ -238,10 +237,6 @@ export function SpineBlockEditSheet({
             label={t('common.save')}
             accessibilityLabel={t('common.save')}
             align="stretch"
-            fill={ink}
-            labelColor={isDark ? '#09090b' : '#FAFAFA'}
-            border={line}
-            shadowColor={shadowInk}
             onPress={handleSave}
           />
         </View>

@@ -256,7 +256,10 @@ export function CreateCustomFlowSheet({
 
   const inputBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.72)';
   const cardBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)';
-  const chipIdleBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.9)';
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const shadowInk = isDark ? tone.solidShadow : tone.text;
+  const chipIdleBg = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const chipShadow = 2;
 
   const handleSubmitNewGroup = () => {
     const label = newGroupLabel.trim().slice(0, GROUP_NAME_MAX);
@@ -399,59 +402,104 @@ export function CreateCustomFlowSheet({
                 <View style={styles.chipsWrap}>
                   {groupOptions.map((g) => {
                     const selected = selectedGroupKey === g.key;
+                    const shadow = selected ? 3 : chipShadow;
                     return (
-                      <Pressable
+                      <View
                         key={g.key}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                        onPress={() => {
-                          void Haptics.selectionAsync();
-                          setSelectedGroupKey(g.key);
-                        }}
                         style={[
-                          styles.chip,
-                          {
-                            borderColor: selected ? PrimaryColor.rgb : line,
-                            backgroundColor: selected
-                              ? isDark
-                                ? 'rgba(255,255,255,0.16)'
-                                : 'rgba(0,0,0,0.06)'
-                              : chipIdleBg,
-                          },
+                          styles.chipShell,
+                          { marginRight: shadow, marginBottom: shadow },
                         ]}>
-                        {selected ? (
-                          <IconSymbol name="checkmark" size={11} color={ink} />
-                        ) : null}
-                        <ThemedText
+                        <View
+                          pointerEvents="none"
                           style={[
-                            styles.chipText,
-                            { color: selected ? ink : muted, fontWeight: selected ? '700' : '500' },
+                            styles.chipShadow,
+                            {
+                              backgroundColor: shadowInk,
+                              transform: [{ translateX: shadow }, { translateY: shadow }],
+                            },
                           ]}
-                          numberOfLines={1}>
-                          {g.label}
-                        </ThemedText>
-                      </Pressable>
+                        />
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          onPress={() => {
+                            void Haptics.selectionAsync();
+                            setSelectedGroupKey(g.key);
+                          }}
+                          style={({ pressed }) => [
+                            styles.chip,
+                            {
+                              backgroundColor: selected
+                                ? tone.primaryContainer
+                                : chipIdleBg,
+                              opacity: pressed ? 0.92 : 1,
+                            },
+                          ]}>
+                          {selected ? (
+                            <IconSymbol
+                              name="checkmark"
+                              size={11}
+                              color={tone.primary}
+                              weight="bold"
+                            />
+                          ) : null}
+                          <ThemedText
+                            style={[
+                              styles.chipText,
+                              {
+                                color: selected ? tone.primary : muted,
+                                fontWeight: selected ? '800' : '600',
+                              },
+                            ]}
+                            numberOfLines={1}>
+                            {g.label}
+                          </ThemedText>
+                        </Pressable>
+                      </View>
                     );
                   })}
 
                   {!isAddingGroup ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={t('createFlow.newGroup')}
-                      onPress={() => {
-                        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setIsAddingGroup(true);
-                      }}
+                    <View
                       style={[
-                        styles.chip,
-                        styles.chipDashed,
-                        { borderColor: line, backgroundColor: 'transparent' },
+                        styles.chipShell,
+                        { marginRight: chipShadow, marginBottom: chipShadow },
                       ]}>
-                      <IconSymbol name="plus" size={11} color={muted} />
-                      <ThemedText style={[styles.chipText, { color: muted }]}>
-                        {t('createFlow.newGroup')}
-                      </ThemedText>
-                    </Pressable>
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.chipShadow,
+                          {
+                            backgroundColor: shadowInk,
+                            transform: [
+                              { translateX: chipShadow },
+                              { translateY: chipShadow },
+                            ],
+                          },
+                        ]}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={t('createFlow.newGroup')}
+                        onPress={() => {
+                          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setIsAddingGroup(true);
+                        }}
+                        style={({ pressed }) => [
+                          styles.chip,
+                          {
+                            backgroundColor: chipIdleBg,
+                            opacity: pressed ? 0.92 : 1,
+                          },
+                        ]}>
+                        <IconSymbol name="plus" size={11} color={ink} weight="bold" />
+                        <ThemedText
+                          style={[styles.chipText, { color: ink, fontWeight: '700' }]}>
+                          {t('createFlow.newGroup')}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
                   ) : null}
                 </View>
 
@@ -472,20 +520,12 @@ export function CreateCustomFlowSheet({
                         { color: ink, backgroundColor: inputBg, borderColor: line },
                       ]}
                     />
-                    <Pressable
-                      accessibilityRole="button"
+                    <BrutalConfirmButton
+                      label={t('common.add')}
                       accessibilityLabel={t('common.add')}
-                      onPress={handleSubmitNewGroup}
                       disabled={newGroupLabel.trim().length === 0}
-                      style={({ pressed }) => [
-                        styles.newGroupBtn,
-                        {
-                          backgroundColor: ink,
-                          opacity: newGroupLabel.trim().length === 0 ? 0.45 : pressed ? 0.88 : 1,
-                        },
-                      ]}>
-                      <ThemedText style={styles.newGroupBtnText}>{t('common.add')}</ThemedText>
-                    </Pressable>
+                      onPress={handleSubmitNewGroup}
+                    />
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={t('common.cancel')}
@@ -494,7 +534,7 @@ export function CreateCustomFlowSheet({
                         setNewGroupLabel('');
                       }}
                       hitSlop={8}
-                      style={[styles.cancelBtn, { borderColor: line }]}>
+                      style={[styles.cancelBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF' }]}>
                       <IconSymbol name="xmark" size={12} color={muted} />
                     </Pressable>
                   </View>
@@ -567,15 +607,26 @@ export function CreateCustomFlowSheet({
                   value={summary}
                   onChangeText={setSummary}
                   placeholder={t('createFlow.summaryPlaceholder')}
-                  placeholderTextColor={muted}
-                  style={[styles.summaryInputNote, { color: ink }]}
+                  placeholderTextColor={isDark ? 'rgba(255,255,255,0.34)' : 'rgba(0,0,0,0.32)'}
+                  accessibilityLabel={t('createFlow.summary')}
+                  style={[
+                    styles.summaryInputNote,
+                    { color: ink, borderBottomColor: line },
+                  ]}
                   maxLength={ROUTINE_SUMMARY_MAX}
                   multiline
                   textAlignVertical="top"
                 />
               </View>
 
-              <View style={styles.templateList}>
+              <View style={styles.templateSection}>
+                <ThemedText style={[styles.setupSectionTitle, { color: ink }]}>
+                  {t('createFlow.templatePick')}
+                </ThemedText>
+                <ThemedText style={[styles.setupSectionHint, { color: muted }]}>
+                  {t('createFlow.templatePickHint')}
+                </ThemedText>
+                <View style={styles.templateList}>
                 {templateOptions.map((opt) => {
                   const selected = selectedTemplateKey === opt.key;
                   return (
@@ -583,6 +634,7 @@ export function CreateCustomFlowSheet({
                       key={opt.key}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
+                      accessibilityLabel={opt.title}
                       onPress={() => {
                         void Haptics.selectionAsync();
                         setSelectedTemplateKey(opt.key);
@@ -590,7 +642,15 @@ export function CreateCustomFlowSheet({
                       }}
                       style={({ pressed }) => [
                         styles.templateRow,
-                        pressed && { opacity: 0.55 },
+                        {
+                          borderLeftColor: selected ? ink : 'transparent',
+                          backgroundColor: selected
+                            ? isDark
+                              ? 'rgba(168, 218, 220, 0.18)'
+                              : 'rgba(168, 218, 220, 0.32)'
+                            : 'transparent',
+                        },
+                        pressed && { opacity: 0.7 },
                       ]}>
                       <IconSymbol name={opt.icon} size={17} color={ink} />
                       <View style={styles.templateCardText}>
@@ -606,16 +666,17 @@ export function CreateCustomFlowSheet({
                           {opt.summary}
                         </ThemedText>
                       </View>
-                      <ThemedText
-                        style={[
-                          styles.templateSelectMark,
-                          { color: selected ? ink : muted },
-                        ]}>
-                        {selected ? '✓' : ''}
-                      </ThemedText>
+                      {selected ? (
+                        <ThemedText style={[styles.templateSelectMark, { color: ink }]}>
+                          ✓
+                        </ThemedText>
+                      ) : (
+                        <View style={styles.templateSelectMarkSpacer} />
+                      )}
                     </Pressable>
                   );
                 })}
+                </View>
               </View>
 
               <View style={[styles.setupSection, { borderTopColor: line }]}>
@@ -667,10 +728,6 @@ export function CreateCustomFlowSheet({
               label={t('common.next')}
               accessibilityLabel={t('common.next')}
               align="stretch"
-              fill={ink}
-              labelColor={isDark ? '#09090b' : '#FAFAFA'}
-              border={line}
-              shadowColor={isDark ? RetroFlatColors.dark.solidShadow : '#000000'}
               disabled={!canProceedBasics}
               onPress={handleNextStep}
             />
@@ -679,10 +736,6 @@ export function CreateCustomFlowSheet({
               label={t('createFlow.create')}
               accessibilityLabel={t('createFlow.create')}
               align="stretch"
-              fill={ink}
-              labelColor={isDark ? '#09090b' : '#FAFAFA'}
-              border={line}
-              shadowColor={isDark ? RetroFlatColors.dark.solidShadow : '#000000'}
               disabled={!canCreate}
               onPress={handleCreate}
             />
@@ -772,19 +825,24 @@ const styles = StyleSheet.create({
   chipsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
+  },
+  chipShell: {
+    position: 'relative',
+  },
+  chipShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderRadius: 0,
-    borderWidth: 2,
-  },
-  chipDashed: {
-    borderStyle: 'dashed',
+    borderWidth: 0,
+    zIndex: 1,
   },
   chipText: {
     fontSize: 13,
@@ -799,24 +857,11 @@ const styles = StyleSheet.create({
   newGroupInput: {
     flex: 1,
   },
-  newGroupBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 0,
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  newGroupBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FAFAFA',
-  },
   cancelBtn: {
     width: 40,
     height: 48,
     borderRadius: 0,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -853,16 +898,22 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   summaryInputNote: {
-    minHeight: 44,
-    paddingHorizontal: 0,
-    paddingVertical: 4,
+    minHeight: 48,
+    paddingHorizontal: 2,
+    paddingTop: 8,
+    paddingBottom: 10,
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '500',
     letterSpacing: -0.1,
+    borderBottomWidth: 1,
   },
   templateList: {
-    gap: 2,
+    gap: 4,
+  },
+  templateSection: {
+    gap: 8,
+    marginTop: 8,
   },
   setupSection: {
     gap: 8,
@@ -891,7 +942,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 12,
     paddingVertical: 11,
-    paddingHorizontal: 2,
+    paddingRight: 10,
+    paddingLeft: 10,
+    borderLeftWidth: 2,
   },
   templateCardTop: {
     flexDirection: 'row',
@@ -924,10 +977,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
   },
   templateSelectMark: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
-    minWidth: 14,
+    minWidth: 16,
     textAlign: 'right',
+    marginTop: 1,
+  },
+  templateSelectMarkSpacer: {
+    width: 16,
     marginTop: 1,
   },
   radioOuter: {

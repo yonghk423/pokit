@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
@@ -8,6 +9,63 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
+
+const CHROME_SHADOW = 2;
+
+function ChromeShadowTab({
+  active,
+  activeBg,
+  inactiveBg,
+  shadowColor,
+  onPress,
+  accessibilityLabel,
+  accessibilityState,
+  children,
+  labeled,
+}: {
+  active: boolean;
+  activeBg: string;
+  inactiveBg: string;
+  shadowColor: string;
+  onPress: () => void;
+  accessibilityLabel: string;
+  accessibilityState: { selected: boolean };
+  children: ReactNode;
+  labeled?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={accessibilityState}
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.chromeShell,
+        { marginRight: CHROME_SHADOW, marginBottom: CHROME_SHADOW },
+        pressed && styles.pressed,
+      ]}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.chromeShadow,
+          {
+            backgroundColor: shadowColor,
+            transform: [{ translateX: CHROME_SHADOW }, { translateY: CHROME_SHADOW }],
+          },
+        ]}
+      />
+      <View
+        style={[
+          labeled ? styles.labeledTab : styles.tab,
+          {
+            backgroundColor: active ? activeBg : inactiveBg,
+          },
+        ]}>
+        {children}
+      </View>
+    </Pressable>
+  );
+}
 
 /** 데일리 타임라인 헤더 — 전체 / 시간대별 / 스파인 레이아웃 */
 export type DayPlanLayoutMode = 'bag' | 'sections' | 'spine';
@@ -107,14 +165,13 @@ export function DayPlanLayoutModeTabs({
 
   if (attached && showLabels) {
     if (layoutTabs.length === 0) return null;
-    const border = tone.border;
     const trackBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(53, 102, 104, 0.08)';
     const activeBg = tone.primaryContainer;
     const activeText = tone.primary;
     const inactiveText = tone.textMuted;
 
     return (
-      <View style={[styles.attachedRoot, { backgroundColor: trackBg, borderColor: border }]}>
+      <View style={[styles.attachedRoot, { backgroundColor: trackBg }]}>
         {layoutTabs.map((item) => {
           const active = mode === item.key;
           const label = layoutModeLabel(t, item.key);
@@ -131,13 +188,9 @@ export function DayPlanLayoutModeTabs({
               }}
               style={({ pressed }) => [
                 styles.attachedTab,
-                active && [
-                  styles.attachedTabActive,
-                  {
-                    backgroundColor: activeBg,
-                    borderColor: border,
-                  },
-                ],
+                active && {
+                  backgroundColor: activeBg,
+                },
                 pressed && { opacity: 0.88 },
               ]}>
               <IconSymbol
@@ -167,25 +220,20 @@ export function DayPlanLayoutModeTabs({
         const active = layoutTabActive && mode === item.key;
         const label = layoutModeLabel(t, item.key);
         return (
-          <Pressable
+          <ChromeShadowTab
             key={item.key}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
+            active={active}
+            activeBg={pill.activeBg}
+            inactiveBg={isDark ? pill.inactiveBg : '#FFFFFF'}
+            shadowColor={isDark ? tone.solidShadow : '#000000'}
             accessibilityLabel={showLabels ? label : t(item.a11yKey)}
+            accessibilityState={{ selected: active }}
+            labeled={showLabels}
             onPress={() => {
               if (active && !allowReselect) return;
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onSelectMode(item.key);
-            }}
-            style={({ pressed }) => [
-              showLabels ? styles.labeledTab : styles.tab,
-              {
-                backgroundColor: active ? pill.activeBg : pill.inactiveBg,
-                borderColor: active ? pill.activeBorder : pill.inactiveBorder,
-                borderWidth: active ? 2 : 1,
-              },
-              pressed && styles.pressed,
-            ]}>
+            }}>
             <View
               style={[
                 styles.iconBox,
@@ -211,35 +259,29 @@ export function DayPlanLayoutModeTabs({
                 {label}
               </ThemedText>
             ) : null}
-          </Pressable>
+          </ChromeShadowTab>
         );
       })}
       {suffix.map((item) => (
-        <Pressable
+        <ChromeShadowTab
           key={item.key}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: item.active }}
+          active={item.active}
+          activeBg={pill.activeBg}
+          inactiveBg={isDark ? pill.inactiveBg : '#FFFFFF'}
+          shadowColor={isDark ? tone.solidShadow : '#000000'}
           accessibilityLabel={item.accessibilityLabel}
+          accessibilityState={{ selected: item.active }}
           onPress={() => {
             if (item.active) return;
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             item.onPress();
-          }}
-          style={({ pressed }) => [
-            styles.tab,
-            {
-              backgroundColor: item.active ? pill.activeBg : pill.inactiveBg,
-              borderColor: item.active ? pill.activeBorder : pill.inactiveBorder,
-              borderWidth: item.active ? 2 : 1,
-            },
-            pressed && !item.active && styles.pressed,
-          ]}>
+          }}>
           <IconSymbol
             name={item.icon as 'checklist'}
             size={15}
             color={item.active ? pill.activeIcon : pill.inactiveIcon}
           />
-        </Pressable>
+        </ChromeShadowTab>
       ))}
     </View>
   );
@@ -258,8 +300,10 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 0,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   labeledTab: {
     flexDirection: 'row',
@@ -267,9 +311,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 34,
     borderRadius: 0,
+    borderWidth: 0,
     paddingHorizontal: 10,
     paddingVertical: 7,
     gap: 5,
+    zIndex: 1,
+  },
+  chromeShell: {
+    position: 'relative',
+  },
+  chromeShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
   },
   iconBox: {
     width: 34,
@@ -292,7 +345,7 @@ const styles = StyleSheet.create({
   attachedRoot: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    borderWidth: 1,
+    borderWidth: 0,
     borderRadius: 0,
     padding: 3,
     gap: 3,
@@ -308,9 +361,6 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     paddingVertical: 8,
     paddingHorizontal: 6,
-  },
-  attachedTabActive: {
-    borderWidth: 1,
   },
   attachedLabel: {
     fontSize: 12,

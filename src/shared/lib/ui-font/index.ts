@@ -16,6 +16,10 @@ export {
   type AppFontSizeId,
 } from './appFontSize';
 export {
+  APP_FONT_OPTICAL_SCALE,
+  resolveAppFontOpticalScale,
+} from './appFontOpticalScale';
+export {
   useAppFontStore,
   getEffectiveAppFontId,
   useEffectiveAppFontId,

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RetroFlatColors, cityPopFont } from '@shared/config/retroFlat';
 import { useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { POKIT_WEEK_TOUR_STEP_COUNT } from '@shared/lib/storage';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -72,6 +73,8 @@ const STEP_TARGETS = [
   placeKey: I18nKey;
 }[];
 
+const CLOSE_SHADOW = 2;
+
 type Props = {
   visible: boolean;
   stepIndex: number;
@@ -102,7 +105,7 @@ export function PokitWeekTourTipSheet({
   const muted = tone.textMuted;
   const face = isDark ? tone.surfaceAlt : '#FFFFFF';
   const chipBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)';
-  const chipBorder = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)';
+  const shadowInk = isDark ? tone.solidShadow : '#000000';
 
   return (
     <Modal
@@ -122,12 +125,7 @@ export function PokitWeekTourTipSheet({
         <View
           style={[styles.sheetWrap, { paddingBottom: Math.max(insets.bottom, 16) }]}
           pointerEvents="box-none">
-          <PostItCardShell
-            isDark={isDark}
-            faceColor={face}
-            borderColor={isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.14)'}
-            borderWidth={StyleSheet.hairlineWidth}
-            contentStyle={styles.card}>
+          <PostItCardShell isDark={isDark} faceColor={face} contentStyle={styles.card}>
             <ThemedText style={[styles.kicker, { color: muted }, cityPopFont('500')]}>
               {t('tour.pokitWeek.tipKicker', {
                 current: safeIndex + 1,
@@ -137,11 +135,27 @@ export function PokitWeekTourTipSheet({
             <ThemedText style={[styles.title, { color: ink }, cityPopFont('700')]}>{title}</ThemedText>
 
             <View
-              style={[styles.targetRow, { backgroundColor: chipBg, borderColor: chipBorder }]}
+              style={[styles.targetRow, { backgroundColor: chipBg }]}
               accessibilityRole="text"
               accessibilityLabel={`${t(target.placeKey)} ${t(target.labelKey)}`}>
-              <View style={[styles.targetIconBox, { borderColor: chipBorder, backgroundColor: face }]}>
-                <IconSymbol name={target.icon as 'book.closed.fill'} size={22} color={ink} />
+              <View
+                style={[
+                  styles.targetIconShell,
+                  { marginRight: CLOSE_SHADOW, marginBottom: CLOSE_SHADOW },
+                ]}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.targetIconShadow,
+                    {
+                      backgroundColor: shadowInk,
+                      transform: [{ translateX: CLOSE_SHADOW }, { translateY: CLOSE_SHADOW }],
+                    },
+                  ]}
+                />
+                <View style={[styles.targetIconBox, { backgroundColor: face }]}>
+                  <IconSymbol name={target.icon as 'book.closed.fill'} size={22} color={ink} />
+                </View>
               </View>
               <View style={styles.targetText}>
                 <ThemedText style={[styles.targetPlace, { color: muted }, cityPopFont('500')]}>
@@ -155,46 +169,48 @@ export function PokitWeekTourTipSheet({
 
             <ThemedText style={[styles.body, { color: muted }, cityPopFont('400')]}>{body}</ThemedText>
             <View style={styles.actions}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('common.close')}
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  onClose();
-                }}
-                style={({ pressed }) => [
-                  styles.secondaryBtn,
-                  {
-                    borderColor: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.16)',
-                    backgroundColor: pressed
-                      ? isDark
-                        ? 'rgba(255,255,255,0.08)'
-                        : 'rgba(0,0,0,0.04)'
-                      : 'transparent',
-                  },
+              <View
+                style={[
+                  styles.closeShell,
+                  { marginRight: CLOSE_SHADOW, marginBottom: CLOSE_SHADOW },
                 ]}>
-                <ThemedText style={[styles.secondaryLabel, { color: muted }, cityPopFont('500')]}>
-                  {t('common.close')}
-                </ThemedText>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.closeShadow,
+                    {
+                      backgroundColor: shadowInk,
+                      transform: [{ translateX: CLOSE_SHADOW }, { translateY: CLOSE_SHADOW }],
+                    },
+                  ]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.close')}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    onClose();
+                  }}
+                  style={({ pressed }) => [
+                    styles.secondaryBtn,
+                    {
+                      backgroundColor: isDark ? tone.surfaceAlt : '#FFFFFF',
+                      opacity: pressed ? 0.88 : 1,
+                    },
+                  ]}>
+                  <ThemedText style={[styles.secondaryLabel, { color: muted }, cityPopFont('500')]}>
+                    {t('common.close')}
+                  </ThemedText>
+                </Pressable>
+              </View>
+              <BrutalConfirmButton
+                label={t('tour.pokitWeek.gotIt')}
                 accessibilityLabel={t('tour.pokitWeek.gotIt')}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onConfirm();
                 }}
-                style={({ pressed }) => [
-                  styles.primaryBtn,
-                  {
-                    backgroundColor: ink,
-                    opacity: pressed ? 0.88 : 1,
-                  },
-                ]}>
-                <ThemedText style={[styles.primaryLabel, { color: face }, cityPopFont('700')]}>
-                  {t('tour.pokitWeek.gotIt')}
-                </ThemedText>
-              </Pressable>
+              />
             </View>
           </PostItCardShell>
         </View>
@@ -235,14 +251,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
+  },
+  targetIconShell: {
+    position: 'relative',
+  },
+  targetIconShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
   },
   targetIconBox: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 0,
+    zIndex: 1,
   },
   targetText: {
     flex: 1,
@@ -265,22 +289,24 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 8,
+    alignItems: 'center',
+    gap: 10,
     marginTop: 10,
+  },
+  closeShell: {
+    position: 'relative',
+  },
+  closeShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
   },
   secondaryBtn: {
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
+    zIndex: 1,
   },
   secondaryLabel: {
-    fontSize: 13,
-  },
-  primaryBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  primaryLabel: {
     fontSize: 13,
   },
 });

@@ -29,13 +29,16 @@ import {
   type OpenLibrarySearchBookItem,
 } from '@features/open-library-book-search';
 import { isAladinApiConfigured } from '@shared/config/aladin';
+import { RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
 import {
   bookSearchProviderLabel,
   isBookSearchAvailable,
   resolveBookSearchProvider,
   type BookSearchProvider,
 } from '@shared/lib/bookSearch/resolveBookSearchProvider';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -121,6 +124,10 @@ function toUnifiedDetail(
 export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, onSelect }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const isDark = useColorScheme() === 'dark';
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const shadowInk = isDark ? tone.solidShadow : tone.text;
+  const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
   const aladinConfigured = useMemo(() => isAladinApiConfigured(), []);
 
   const [mode, setMode] = useState<SheetMode>('search');
@@ -452,47 +459,126 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                     </ThemedText>
                   ) : null}
 
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={externalLinkLabel}
-                    onPress={openExternalLink}
-                    style={({ pressed }) => [styles.secondaryBtn, { borderColor: line }, pressed && { opacity: 0.72 }]}>
-                    <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>{externalLinkLabel}</ThemedText>
-                  </Pressable>
-
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('goalDetail.bookSearch.selectA11y')}
-                    disabled={confirming}
-                    onPress={() => void handleConfirmSelect()}
-                    style={({ pressed }) => [
-                      styles.primaryBtn,
-                      { borderColor: ink, backgroundColor: ink },
-                      (confirming || pressed) && { opacity: 0.72 },
+                  <View
+                    style={[
+                      styles.btnShell,
+                      {
+                        marginRight: SOLID_SHADOW_OFFSET,
+                        marginBottom: SOLID_SHADOW_OFFSET,
+                      },
                     ]}>
-                    {confirming ? (
-                      <ActivityIndicator size="small" color={surface} />
-                    ) : (
-                      <ThemedText style={[styles.primaryBtnText, { color: surface }]}>
-                        {t('goalDetail.bookSearch.selectBook')}
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.btnShadow,
+                        {
+                          backgroundColor: shadowInk,
+                          transform: [
+                            { translateX: SOLID_SHADOW_OFFSET },
+                            { translateY: SOLID_SHADOW_OFFSET },
+                          ],
+                        },
+                      ]}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={externalLinkLabel}
+                      onPress={openExternalLink}
+                      style={({ pressed }) => [
+                        styles.secondaryBtn,
+                        {
+                          backgroundColor: faceWhite,
+                          opacity: pressed ? 0.88 : 1,
+                        },
+                      ]}>
+                      <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>
+                        {externalLinkLabel}
                       </ThemedText>
-                    )}
-                  </Pressable>
+                    </Pressable>
+                  </View>
+
+                  {confirming ? (
+                    <View
+                      style={[
+                        styles.btnShell,
+                        {
+                          marginRight: SOLID_SHADOW_OFFSET,
+                          marginBottom: SOLID_SHADOW_OFFSET,
+                        },
+                      ]}>
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.btnShadow,
+                          {
+                            backgroundColor: shadowInk,
+                            transform: [
+                              { translateX: SOLID_SHADOW_OFFSET },
+                              { translateY: SOLID_SHADOW_OFFSET },
+                            ],
+                          },
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.primaryBtnFace,
+                          { backgroundColor: tone.primaryContainer },
+                        ]}>
+                        <ActivityIndicator size="small" color={tone.primary} />
+                      </View>
+                    </View>
+                  ) : (
+                    <BrutalConfirmButton
+                      align="stretch"
+                      label={t('goalDetail.bookSearch.selectBook')}
+                      accessibilityLabel={t('goalDetail.bookSearch.selectA11y')}
+                      onPress={() => void handleConfirmSelect()}
+                    />
+                  )}
                 </>
               ) : (
                 <View style={styles.centerBox}>
                   <ThemedText style={[styles.helper, { color: muted }]}>
                     {detailErrorMessage ?? t('goalDetail.bookSearch.detailError')}
                   </ThemedText>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('goalDetail.bookSearch.backToResults')}
-                    onPress={handleBackToSearch}
-                    style={({ pressed }) => [styles.secondaryBtn, { borderColor: line }, pressed && { opacity: 0.72 }]}>
-                    <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>
-                      {t('goalDetail.bookSearch.backToResults')}
-                    </ThemedText>
-                  </Pressable>
+                  <View
+                    style={[
+                      styles.btnShell,
+                      {
+                        marginRight: SOLID_SHADOW_OFFSET,
+                        marginBottom: SOLID_SHADOW_OFFSET,
+                        alignSelf: 'stretch',
+                      },
+                    ]}>
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.btnShadow,
+                        {
+                          backgroundColor: shadowInk,
+                          transform: [
+                            { translateX: SOLID_SHADOW_OFFSET },
+                            { translateY: SOLID_SHADOW_OFFSET },
+                          ],
+                        },
+                      ]}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('goalDetail.bookSearch.backToResults')}
+                      onPress={handleBackToSearch}
+                      style={({ pressed }) => [
+                        styles.secondaryBtn,
+                        {
+                          backgroundColor: faceWhite,
+                          opacity: pressed ? 0.88 : 1,
+                        },
+                      ]}>
+                      <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>
+                        {t('goalDetail.bookSearch.backToResults')}
+                      </ThemedText>
+                    </Pressable>
+                  </View>
                 </View>
               )}
             </ScrollView>
@@ -632,25 +718,31 @@ const styles = StyleSheet.create({
   },
   secondaryBtn: {
     minHeight: 44,
-    borderWidth: 2,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 14,
+    zIndex: 1,
   },
   secondaryBtnText: {
     fontSize: 14,
     fontWeight: '700',
   },
-  primaryBtn: {
+  btnShell: {
+    position: 'relative',
+    alignSelf: 'stretch',
+  },
+  btnShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
+  primaryBtnFace: {
     minHeight: 48,
-    borderWidth: 2,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 14,
-  },
-  primaryBtnText: {
-    fontSize: 15,
-    fontWeight: '800',
+    zIndex: 1,
   },
   footer: {
     borderTopWidth: StyleSheet.hairlineWidth,

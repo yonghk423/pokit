@@ -259,6 +259,18 @@ export {
   type PostItFaceInkTone,
 } from './postItFaceColorStorage';
 export {
+  loadMyRoutineCollapsedGroupIds,
+  loadRoutineCatalogCollapsedGroupIds,
+  pruneMyRoutineCollapsedGroupIds,
+  pruneRoutineCatalogCollapsedGroupIds,
+  resolveMyRoutineExpandedGroupIds,
+  resolveRoutineCatalogExpandedGroupIds,
+  saveMyRoutineCollapsedGroupIds,
+  saveRoutineCatalogCollapsedGroupIds,
+  setMyRoutineGroupCollapsed,
+  setRoutineCatalogGroupCollapsed,
+} from './postItGroupCollapsedStorage';
+export {
   clearPokitLocalStorage,
   flushLocalStorageClientWrites,
   initLocalStorageClient,

@@ -13,6 +13,7 @@ import {
   normalizeHexColor,
   type Hsv,
 } from '@shared/lib/colorMath';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -27,6 +28,7 @@ type Props = {
 
 const SV_HEIGHT = 132;
 const HUE_HEIGHT = 20;
+const FIELD_SHADOW = 2;
 
 function applySvFromPoint(
   x: number,
@@ -45,7 +47,7 @@ function applyHueFromPoint(x: number, width: number, s: number, v: number): stri
   return hsvToHex({ h, s, v });
 }
 
-export function HsvColorPicker({ value, onChange, ink, muted, isDark, line }: Props) {
+export function HsvColorPicker({ value, onChange, ink, muted, isDark, line: _line }: Props) {
   const { t } = useTranslation();
   const normalizedValue = normalizeHexColor(value) ?? '#f97316';
   const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(normalizedValue));
@@ -167,8 +169,12 @@ export function HsvColorPicker({ value, onChange, ink, muted, isDark, line }: Pr
 
   const hueCursorLeft = clamp01(hsv.h / 360) * Math.max(hueWidth - 16, 0);
   const hueColor = hueToHex(hsv.h);
-  const inputBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.72)';
-  const inputBorder = line ?? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)');
+  const inputBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
+  const shadowInk = isDark ? RetroFlatColors.dark.solidShadow : '#000000';
+  const applyFill = isDark
+    ? RetroFlatColors.dark.primaryContainer
+    : RetroFlatColors.light.primaryContainer;
+  const applyLabel = isDark ? RetroFlatColors.dark.primaryOn : RetroFlatColors.light.primary;
 
   const applyHexDraft = () => {
     const normalized = normalizeHexColor(formatHexInput(hexDraft));
@@ -186,93 +192,170 @@ export function HsvColorPicker({ value, onChange, ink, muted, isDark, line }: Pr
       <View style={styles.hexRow}>
         <View
           style={[
-            styles.previewSwatch,
-            { backgroundColor: hexDraft, borderColor: inputBorder },
-          ]}
-        />
-        <TextInput
-          value={hexDraft}
-          onChangeText={(text) => setHexDraft(formatHexInput(text))}
-          autoCapitalize="none"
-          autoCorrect={false}
-          maxLength={7}
-          placeholder="#000000"
-          placeholderTextColor={muted}
+            styles.fieldShell,
+            { marginRight: FIELD_SHADOW, marginBottom: FIELD_SHADOW },
+          ]}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.fieldShadow,
+              {
+                backgroundColor: shadowInk,
+                transform: [{ translateX: FIELD_SHADOW }, { translateY: FIELD_SHADOW }],
+              },
+            ]}
+          />
+          <View style={[styles.previewSwatch, { backgroundColor: hexDraft }]} />
+        </View>
+        <View
           style={[
-            styles.hexInput,
-            { color: ink, backgroundColor: inputBg, borderColor: inputBorder },
-          ]}
-          onSubmitEditing={applyHexDraft}
-          returnKeyType="done"
-        />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('appearance.applyHexA11y')}
-          onPress={applyHexDraft}
-          style={[styles.applyBtn, { borderColor: inputBorder, backgroundColor: inputBg }]}>
-          <ThemedText style={[styles.applyBtnText, { color: ink }]}>{t('common.input')}</ThemedText>
-        </Pressable>
+            styles.hexInputShell,
+            { marginRight: FIELD_SHADOW, marginBottom: FIELD_SHADOW },
+          ]}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.fieldShadow,
+              {
+                backgroundColor: shadowInk,
+                transform: [{ translateX: FIELD_SHADOW }, { translateY: FIELD_SHADOW }],
+              },
+            ]}
+          />
+          <TextInput
+            value={hexDraft}
+            onChangeText={(text) => setHexDraft(formatHexInput(text))}
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={7}
+            placeholder="#000000"
+            placeholderTextColor={muted}
+            style={[styles.hexInput, { color: ink, backgroundColor: inputBg }]}
+            onSubmitEditing={applyHexDraft}
+            returnKeyType="done"
+          />
+        </View>
+        <View
+          style={[
+            styles.fieldShell,
+            { marginRight: FIELD_SHADOW, marginBottom: FIELD_SHADOW },
+          ]}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.fieldShadow,
+              {
+                backgroundColor: shadowInk,
+                transform: [{ translateX: FIELD_SHADOW }, { translateY: FIELD_SHADOW }],
+              },
+            ]}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('appearance.applyHexA11y')}
+            onPress={applyHexDraft}
+            style={({ pressed }) => [
+              styles.applyBtn,
+              { backgroundColor: applyFill, opacity: pressed ? 0.88 : 1 },
+            ]}>
+            <ThemedText style={[styles.applyBtnText, { color: applyLabel }]}>
+              {t('common.input')}
+            </ThemedText>
+          </Pressable>
+        </View>
       </View>
 
-      <GestureDetector gesture={svPan}>
-        <View style={[styles.svPanel, { borderColor: inputBorder }]} onLayout={handleSvLayout}>
-          <Svg width="100%" height="100%" style={StyleSheet.absoluteFillObject}>
-            <Defs>
-              <LinearGradient id="svHue" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor="#ffffff" />
-                <Stop offset="1" stopColor={hueColor} />
-              </LinearGradient>
-              <LinearGradient id="svValue" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="#000000" stopOpacity="0" />
-                <Stop offset="1" stopColor="#000000" stopOpacity="1" />
-              </LinearGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#svHue)" />
-            <Rect width="100%" height="100%" fill="url(#svValue)" />
-          </Svg>
-          <View
-            pointerEvents="none"
-            style={[
-              styles.cursor,
-              {
-                left: svCursor.left,
-                top: svCursor.top,
-                borderColor: hsv.v > 0.65 ? '#18181b' : '#fafafa',
-              },
-            ]}
-          />
-        </View>
-      </GestureDetector>
+      <View
+        style={[
+          styles.panelShell,
+          { marginRight: FIELD_SHADOW, marginBottom: FIELD_SHADOW },
+        ]}>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.fieldShadow,
+            {
+              backgroundColor: shadowInk,
+              transform: [{ translateX: FIELD_SHADOW }, { translateY: FIELD_SHADOW }],
+            },
+          ]}
+        />
+        <GestureDetector gesture={svPan}>
+          <View style={styles.svPanel} onLayout={handleSvLayout}>
+            <Svg width="100%" height="100%" style={StyleSheet.absoluteFillObject}>
+              <Defs>
+                <LinearGradient id="svHue" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor="#ffffff" />
+                  <Stop offset="1" stopColor={hueColor} />
+                </LinearGradient>
+                <LinearGradient id="svValue" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor="#000000" stopOpacity="0" />
+                  <Stop offset="1" stopColor="#000000" stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#svHue)" />
+              <Rect width="100%" height="100%" fill="url(#svValue)" />
+            </Svg>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.cursor,
+                {
+                  left: svCursor.left,
+                  top: svCursor.top,
+                  borderColor: hsv.v > 0.65 ? '#18181b' : '#fafafa',
+                },
+              ]}
+            />
+          </View>
+        </GestureDetector>
+      </View>
 
-      <GestureDetector gesture={huePan}>
-        <View style={[styles.hueTrack, { borderColor: inputBorder }]} onLayout={handleHueLayout}>
-          <Svg width="100%" height="100%" style={StyleSheet.absoluteFillObject}>
-            <Defs>
-              <LinearGradient id="hueRainbow" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor="#ff0000" />
-                <Stop offset="0.17" stopColor="#ffff00" />
-                <Stop offset="0.33" stopColor="#00ff00" />
-                <Stop offset="0.5" stopColor="#00ffff" />
-                <Stop offset="0.67" stopColor="#0000ff" />
-                <Stop offset="0.83" stopColor="#ff00ff" />
-                <Stop offset="1" stopColor="#ff0000" />
-              </LinearGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#hueRainbow)" />
-          </Svg>
-          <View
-            pointerEvents="none"
-            style={[
-              styles.hueCursor,
-              {
-                left: hueCursorLeft,
-                borderColor: ink,
-                backgroundColor: hueColor,
-              },
-            ]}
-          />
-        </View>
-      </GestureDetector>
+      <View
+        style={[
+          styles.panelShell,
+          { marginRight: FIELD_SHADOW, marginBottom: FIELD_SHADOW },
+        ]}>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.fieldShadow,
+            {
+              backgroundColor: shadowInk,
+              transform: [{ translateX: FIELD_SHADOW }, { translateY: FIELD_SHADOW }],
+            },
+          ]}
+        />
+        <GestureDetector gesture={huePan}>
+          <View style={styles.hueTrack} onLayout={handleHueLayout}>
+            <Svg width="100%" height="100%" style={StyleSheet.absoluteFillObject}>
+              <Defs>
+                <LinearGradient id="hueRainbow" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor="#ff0000" />
+                  <Stop offset="0.17" stopColor="#ffff00" />
+                  <Stop offset="0.33" stopColor="#00ff00" />
+                  <Stop offset="0.5" stopColor="#00ffff" />
+                  <Stop offset="0.67" stopColor="#0000ff" />
+                  <Stop offset="0.83" stopColor="#ff00ff" />
+                  <Stop offset="1" stopColor="#ff0000" />
+                </LinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#hueRainbow)" />
+            </Svg>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.hueCursor,
+                {
+                  left: hueCursorLeft,
+                  borderColor: ink,
+                  backgroundColor: hueColor,
+                },
+              ]}
+            />
+          </View>
+        </GestureDetector>
+      </View>
     </View>
   );
 }
@@ -286,29 +369,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  fieldShell: {
+    position: 'relative',
+  },
+  hexInputShell: {
+    position: 'relative',
+    flex: 1,
+  },
+  panelShell: {
+    position: 'relative',
+  },
+  fieldShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
   previewSwatch: {
     width: 40,
     height: 40,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 0,
+    zIndex: 1,
   },
   hexInput: {
-    flex: 1,
+    width: '100%',
     minHeight: 40,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     borderRadius: 0,
     paddingHorizontal: 12,
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: 0.4,
+    zIndex: 1,
   },
   applyBtn: {
     minHeight: 40,
     paddingHorizontal: 14,
     borderRadius: 0,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   applyBtnText: {
     fontSize: 14,
@@ -318,13 +418,15 @@ const styles = StyleSheet.create({
     height: SV_HEIGHT,
     borderRadius: 0,
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
+    zIndex: 1,
   },
   hueTrack: {
     height: HUE_HEIGHT,
     borderRadius: 0,
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
+    zIndex: 1,
   },
   cursor: {
     position: 'absolute',

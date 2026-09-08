@@ -73,6 +73,23 @@ export const orderRowStyles = StyleSheet.create({
     minWidth: 0,
     paddingRight: 8,
   },
+  orderRowTitleMark: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  orderRowTitleHighlight: {
+    position: 'absolute',
+    left: -2,
+    right: -2,
+    bottom: 1,
+    height: 9,
+    borderRadius: 0,
+    zIndex: 0,
+  },
+  orderRowTitleText: {
+    zIndex: 1,
+  },
   orderRowRomanTitle: {
     fontSize: 13,
     fontWeight: '700',
@@ -131,13 +148,13 @@ export const orderRowStyles = StyleSheet.create({
   },
   orderRowPriorityBtn: {
     minWidth: 26,
-    height: 26,
     borderRadius: 0,
     borderWidth: 1,
     borderColor: '#000000',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
     zIndex: 1,
     backgroundColor: '#FFFFFF',
   },
@@ -197,6 +214,10 @@ export const orderRowStyles = StyleSheet.create({
     gap: 14,
     marginTop: 2,
   },
+  expandActionsCol: {
+    gap: 8,
+    marginTop: 4,
+  },
   expandNoteAction: {
     paddingVertical: 2,
     paddingHorizontal: 2,
@@ -206,6 +227,35 @@ export const orderRowStyles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.2,
     lineHeight: 16,
+  },
+  importanceMarkBlock: {
+    gap: 6,
+    alignSelf: 'stretch',
+  },
+  importanceMarkBlockCompact: {
+    gap: 4,
+    paddingVertical: 2,
+  },
+  importanceMarkChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+  },
+  importanceMarkChipShell: {
+    position: 'relative',
+  },
+  importanceMarkChipShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
+  importanceMarkChipFace: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   expandChevronBtn: {
     width: 26,

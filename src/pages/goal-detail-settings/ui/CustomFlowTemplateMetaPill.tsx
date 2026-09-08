@@ -23,6 +23,8 @@ import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
+const PILL_SHADOW = 2;
+
 type Props = {
   dataConfig: unknown;
   ink: string;
@@ -62,6 +64,8 @@ export function CustomFlowTemplateMetaPill({
   const label = resolveAppliedCustomFlowTemplateLabel(templateKey);
   const mutedColor = muted ?? ink;
   const canChange = Boolean(onChangeDataConfig) && !disabled;
+  const shadowInk = '#000000';
+  const faceBg = '#FFFFFF';
 
   const templateOptions = useMemo(() => {
     const creatable = listCustomFlowTemplateCatalogEntries();
@@ -104,17 +108,33 @@ export function CustomFlowTemplateMetaPill({
   const pill = (
     <View
       style={[
-        styles.pill,
-        { borderColor: line },
-        canChange && styles.pillInteractive,
+        styles.pillShell,
+        { marginRight: PILL_SHADOW, marginBottom: PILL_SHADOW },
         disabled && onChangeDataConfig ? styles.pillDisabled : null,
       ]}>
-      <ThemedText style={[styles.text, { color: ink }]}>
-        {t('goalDetail.routineMode', { label })}
-      </ThemedText>
-      {canChange ? (
-        <IconSymbol name="chevron.down" size={11} color={mutedColor} />
-      ) : null}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.pillShadow,
+          {
+            backgroundColor: shadowInk,
+            transform: [{ translateX: PILL_SHADOW }, { translateY: PILL_SHADOW }],
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.pill,
+          { backgroundColor: faceBg },
+          canChange && styles.pillInteractive,
+        ]}>
+        <ThemedText style={[styles.text, { color: ink }]}>
+          {t('goalDetail.routineMode', { label })}
+        </ThemedText>
+        {canChange ? (
+          <IconSymbol name="chevron.down" size={11} color={mutedColor} />
+        ) : null}
+      </View>
     </View>
   );
 
@@ -147,18 +167,37 @@ export function CustomFlowTemplateMetaPill({
               <ThemedText style={[styles.sheetTitle, { color: ink }]}>
                 {t('goalDetail.changeRoutineModeTitle')}
               </ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('common.cancel')}
-                hitSlop={10}
-                onPress={() => setPickerOpen(false)}
-                style={({ pressed }) => [
-                  styles.sheetCloseBtn,
-                  { borderColor: line },
-                  pressed && { opacity: 0.7 },
+              <View
+                style={[
+                  styles.closeShell,
+                  { marginRight: PILL_SHADOW, marginBottom: PILL_SHADOW },
                 ]}>
-                <IconSymbol name="xmark" size={14} color={ink} />
-              </Pressable>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.pillShadow,
+                    {
+                      backgroundColor: shadowInk,
+                      transform: [
+                        { translateX: PILL_SHADOW },
+                        { translateY: PILL_SHADOW },
+                      ],
+                    },
+                  ]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.cancel')}
+                  hitSlop={10}
+                  onPress={() => setPickerOpen(false)}
+                  style={({ pressed }) => [
+                    styles.sheetCloseBtn,
+                    { backgroundColor: '#FFFFFF' },
+                    pressed && { opacity: 0.7 },
+                  ]}>
+                  <IconSymbol name="xmark" size={14} color={ink} />
+                </Pressable>
+              </View>
             </View>
             <ThemedText style={[styles.sheetHint, { color: mutedColor }]}>
               {t('goalDetail.changeRoutineModeHint')}
@@ -215,14 +254,22 @@ export function CustomFlowTemplateMetaPill({
 }
 
 const styles = StyleSheet.create({
-  pill: {
+  pillShell: {
     alignSelf: 'flex-start',
-    borderWidth: 2,
+    position: 'relative',
+  },
+  pillShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
+  pill: {
+    borderWidth: 0,
     paddingHorizontal: 10,
     paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    zIndex: 1,
   },
   pillInteractive: {
     paddingRight: 8,
@@ -252,12 +299,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.3,
   },
+  closeShell: {
+    position: 'relative',
+  },
   sheetCloseBtn: {
     width: 32,
     height: 32,
-    borderWidth: 1.5,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   sheetHint: {
     paddingHorizontal: 18,

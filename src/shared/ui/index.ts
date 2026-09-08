@@ -1,4 +1,4 @@
-export { BrutalConfirmButton } from './brutal-confirm-button';
+export { BrutalConfirmButton, resolveBrutalConfirmPrimaryColors } from './brutal-confirm-button';
 export type { BrutalConfirmButtonProps } from './brutal-confirm-button';
 export { Collapsible } from './collapsible';
 export { CompletionRadioButton } from './completion-radio-button';

@@ -16,7 +16,7 @@ export type PersistedDayPlanDraft = {
   priorityEnd: string;
   priorityCategoryOrder: string[];
   /** 담기 목록 항목별 중요도 */
-  priorityCategoryImportance?: Record<string, 'high' | 'medium' | 'low'>;
+  priorityCategoryImportance?: Record<string, string>;
   /** 히스토리 동기화 대기 — 루틴 시간대 담기 체크 완료 */
   routineHistoryPendingByDate?: Record<string, string[]>;
   /** 당일 담기 계획 스냅샷 — 완료율 분모 */

@@ -11,7 +11,8 @@ import {
 
 import {
   formatMinutesToHHmm,
-  priorityRowWash,
+  migrateLegacyImportanceToMarkColor,
+  priorityMarkTitleHighlight,
   useDayPlanTodoStore,
   type DayPlanTodoItem,
 } from '@entities/day-plan';
@@ -107,7 +108,10 @@ function TodoListRow({
   const rowMuted = item.isDone;
   const timeLabel = `${formatMinutesToHHmm(item.startMinutes)}–${formatMinutesToHHmm(item.endMinutes)}`;
   const title = item.what || t('todo.fallbackTitle');
-  const rowWash = priorityRowWash(item.priority, isDark);
+  const titleHighlight = priorityMarkTitleHighlight(
+    migrateLegacyImportanceToMarkColor(item.priority),
+    isDark,
+  );
 
   return (
     <Pressable
@@ -126,7 +130,6 @@ function TodoListRow({
       delayLongPress={280}
       style={[
         styles.row,
-        { backgroundColor: rowWash },
         !isLast && { borderBottomColor: ui.line, borderBottomWidth: TODO_TABLE_BORDER_WIDTH },
         deleteMode && { backgroundColor: deleteSelected ? ui.dangerBg : ui.cellBg },
       ]}>
@@ -146,26 +149,35 @@ function TodoListRow({
       />
 
       <View style={styles.rowBody}>
-        <ThemedTextInput
-          key={`${item.id}-${item.isDone ? 'done' : 'todo'}`}
-          value={item.what}
-          onChangeText={onChangeWhat}
-          editable={!deleteMode}
-          pointerEvents={deleteMode ? 'none' : 'auto'}
-          placeholder={t('todo.placeholder')}
-          placeholderTextColor={ui.placeholder}
-          multiline
-          style={[
-            styles.taskInput,
-            {
-              color: rowMuted ? ui.done : ui.ink,
-              textDecorationLine: rowMuted ? 'line-through' : 'none',
-              textDecorationStyle: rowMuted ? 'dashed' : 'solid',
-              textDecorationColor: rowMuted ? ui.muted : ui.ink,
-              opacity: rowMuted ? 0.42 : 1,
-            },
-          ]}
-        />
+        <View style={styles.taskInputMark}>
+          {titleHighlight && !rowMuted ? (
+            <View
+              pointerEvents="none"
+              style={[styles.taskInputHighlight, { backgroundColor: titleHighlight }]}
+            />
+          ) : null}
+          <ThemedTextInput
+            key={`${item.id}-${item.isDone ? 'done' : 'todo'}`}
+            value={item.what}
+            onChangeText={onChangeWhat}
+            editable={!deleteMode}
+            pointerEvents={deleteMode ? 'none' : 'auto'}
+            placeholder={t('todo.placeholder')}
+            placeholderTextColor={ui.placeholder}
+            multiline
+            style={[
+              styles.taskInput,
+              {
+                color: rowMuted ? ui.done : ui.ink,
+                textDecorationLine: rowMuted ? 'line-through' : 'none',
+                textDecorationStyle: rowMuted ? 'dashed' : 'solid',
+                textDecorationColor: rowMuted ? ui.muted : ui.ink,
+                opacity: rowMuted ? 0.42 : 1,
+                zIndex: 1,
+              },
+            ]}
+          />
+        </View>
         {!deleteMode ? (
           <Pressable
             accessibilityRole="button"
@@ -554,6 +566,19 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 4,
+  },
+  taskInputMark: {
+    position: 'relative',
+    alignSelf: 'stretch',
+  },
+  taskInputHighlight: {
+    position: 'absolute',
+    left: -2,
+    right: -2,
+    bottom: 2,
+    height: 10,
+    borderRadius: 0,
+    zIndex: 0,
   },
   taskInput: {
     fontSize: 14,

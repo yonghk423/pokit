@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { formatHhmmClock } from '@shared/lib/i18n';
-import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
@@ -13,6 +13,8 @@ import {
 } from '@shared/ui/digital-hhmm-input';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+
+const PILL_SHADOW = 2;
 
 type Props = {
   valueHhmm: string;
@@ -58,6 +60,9 @@ export function ReminderTimePickerPill({
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const timeColor = emphasizeColor ?? (hasValue ? ink : muted);
   const iconColor = emphasizeColor ?? muted;
+  const shadowInk = isDark ? tone.solidShadow : '#000000';
+  const faceBg = surface === 'transparent' ? (isDark ? tone.surfaceAlt : '#FFFFFF') : surface;
+  const pillShadow = expanded ? 0 : PILL_SHADOW;
 
   return (
     <View style={[styles.root, fullWidth && styles.rootFull]}>
@@ -71,28 +76,44 @@ export function ReminderTimePickerPill({
         style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
         <View
           style={[
-            styles.pill,
-            fullWidth && styles.pillFull,
-            {
-              backgroundColor: surface,
-              borderColor: line,
-            },
+            styles.pillShell,
+            fullWidth && styles.pillShellFull,
+            pillShadow > 0 && { marginRight: pillShadow, marginBottom: pillShadow },
           ]}>
-          <View style={styles.pillLeft}>
-            <IconSymbol name="clock" size={15} color={iconColor} />
-            <ThemedText
+          {pillShadow > 0 ? (
+            <View
+              pointerEvents="none"
               style={[
-                styles.pillText,
-                fullWidth && styles.pillTextFull,
-                { color: timeColor },
+                styles.pillShadow,
+                {
+                  backgroundColor: emphasizeColor ?? shadowInk,
+                  transform: [{ translateX: pillShadow }, { translateY: pillShadow }],
+                },
               ]}
-              numberOfLines={1}>
-              {label}
+            />
+          ) : null}
+          <View
+            style={[
+              styles.pill,
+              fullWidth && styles.pillFull,
+              { backgroundColor: faceBg },
+            ]}>
+            <View style={styles.pillLeft}>
+              <IconSymbol name="clock" size={15} color={iconColor} />
+              <ThemedText
+                style={[
+                  styles.pillText,
+                  fullWidth && styles.pillTextFull,
+                  { color: timeColor },
+                ]}
+                numberOfLines={1}>
+                {label}
+              </ThemedText>
+            </View>
+            <ThemedText style={[styles.pillHint, { color: muted }]}>
+              {expanded ? t('common.collapse') : t('common.change')}
             </ThemedText>
           </View>
-          <ThemedText style={[styles.pillHint, { color: muted }]}>
-            {expanded ? t('common.collapse') : t('common.change')}
-          </ThemedText>
         </View>
       </Pressable>
       {expanded ? (
@@ -104,17 +125,13 @@ export function ReminderTimePickerPill({
             ink={ink}
             muted={muted}
             line={line}
-            surface={surface}
+            surface={faceBg}
             selectedForeground={selectedFg}
             snapStepMinutes={1}
             accessibilityLabelPrefix={resolvedA11y}
           />
           <BrutalConfirmButton
             accessibilityLabel={t('timePicker.confirmA11y')}
-            fill={ink}
-            labelColor={selectedFg}
-            border={line}
-            shadowColor={tone.solidShadow}
             onPress={() => {
               const flushed = digitalInputRef.current?.flush();
               if (flushed) onChangeHhmm(flushed);
@@ -136,17 +153,29 @@ const styles = StyleSheet.create({
   rootFull: {
     alignSelf: 'stretch',
   },
+  pillShell: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+  pillShellFull: {
+    alignSelf: 'stretch',
+  },
+  pillShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
   pill: {
     minWidth: 84,
     maxWidth: 148,
     minHeight: 34,
     paddingHorizontal: 8,
     paddingVertical: 6,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 6,
+    zIndex: 1,
   },
   pillFull: {
     maxWidth: '100%',
@@ -182,8 +211,7 @@ const styles = StyleSheet.create({
     textDecorationStyle: 'solid',
   },
   inputBlock: {
-    marginTop: 6,
-    paddingTop: 2,
-    gap: 6,
+    marginTop: 8,
+    gap: 8,
   },
 });

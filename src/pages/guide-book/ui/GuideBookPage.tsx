@@ -8,6 +8,7 @@ import {
   CityPopSpacing,
   RETRO_BORDER_WIDTH,
   RetroFlatColors,
+  SOLID_SHADOW_OFFSET,
   cityPopFont,
 } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -153,45 +154,62 @@ export function GuideBookPage() {
             darkColor={rf.textMuted}>
             {t('guideBook.tocLead')}
           </ThemedText>
-          {toc.map((sec, si) => (
-            <Pressable
+          {toc.map((sec, si) => {
+            const rowBg = isDark ? rf.surfaceAlt : '#FFFFFF';
+            const rowBgPressed = isDark ? rf.surfaceContainer : '#F3F0E8';
+            return (
+            <View
               key={sec.chapter}
-              onPress={() => openSection(si)}
-              accessibilityRole="button"
-              accessibilityLabel={t('guideBook.sectionA11y', { chapter: sec.chapter })}
-              style={({ pressed }) => [
-                styles.tocRow,
-                {
-                  borderColor: rf.border,
-                  backgroundColor: isDark ? rf.surfaceAlt : '#FFFFFF',
-                  opacity: pressed ? 0.92 : 1,
-                },
+              style={[
+                styles.tocRowShell,
+                { marginRight: SOLID_SHADOW_OFFSET, marginBottom: SOLID_SHADOW_OFFSET },
               ]}>
               <View
+                pointerEvents="none"
                 style={[
-                  styles.tocIcon,
-                  { borderColor: rf.border, backgroundColor: rf.primaryContainer },
+                  styles.tocRowShadow,
+                  {
+                    backgroundColor: isDark ? rf.solidShadow : rf.border,
+                    transform: [
+                      { translateX: SOLID_SHADOW_OFFSET },
+                      { translateY: SOLID_SHADOW_OFFSET },
+                    ],
+                  },
+                ]}
+              />
+              <Pressable
+                onPress={() => openSection(si)}
+                accessibilityRole="button"
+                accessibilityLabel={t('guideBook.sectionA11y', { chapter: sec.chapter })}
+                style={({ pressed }) => [
+                  styles.tocRow,
+                  { backgroundColor: pressed ? rowBgPressed : rowBg },
                 ]}>
-                <IconSymbol name={sec.icon as 'calendar'} size={20} color={rf.text} />
-              </View>
-              <View style={styles.tocText}>
-                <ThemedText
-                  style={[styles.tocTitle, { color: rf.text }, cityPopFont('800')]}
-                  lightColor={rf.text}
-                  darkColor={rf.text}>
-                  {sec.chapter}
-                </ThemedText>
-                <ThemedText
-                  style={[styles.tocSub, { color: rf.textMuted }, cityPopFont('500')]}
-                  lightColor={rf.textMuted}
-                  darkColor={rf.textMuted}>
-                  {sec.subtitle}
-                  {sec.pageIndexes.length > 1 ? t('common.pagesSuffix', { count: sec.pageIndexes.length }) : ''}
-                </ThemedText>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color={rf.textMuted} />
-            </Pressable>
-          ))}
+                <View style={[styles.tocIcon, { backgroundColor: rf.primaryContainer }]}>
+                  <IconSymbol name={sec.icon as 'calendar'} size={20} color={rf.text} />
+                </View>
+                <View style={styles.tocText}>
+                  <ThemedText
+                    style={[styles.tocTitle, { color: rf.text }, cityPopFont('800')]}
+                    lightColor={rf.text}
+                    darkColor={rf.text}>
+                    {sec.chapter}
+                  </ThemedText>
+                  <ThemedText
+                    style={[styles.tocSub, { color: rf.textMuted }, cityPopFont('500')]}
+                    lightColor={rf.textMuted}
+                    darkColor={rf.textMuted}>
+                    {sec.subtitle}
+                    {sec.pageIndexes.length > 1
+                      ? t('common.pagesSuffix', { count: sec.pageIndexes.length })
+                      : ''}
+                  </ThemedText>
+                </View>
+                <IconSymbol name="chevron.right" size={16} color={rf.textMuted} />
+              </Pressable>
+            </View>
+            );
+          })}
         </ScrollView>
       ) : (
         <>
@@ -396,18 +414,25 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     marginBottom: 6,
   },
+  tocRowShell: {
+    position: 'relative',
+  },
+  tocRowShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
   tocRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     paddingVertical: 14,
     paddingHorizontal: 12,
+    zIndex: 1,
   },
   tocIcon: {
     width: 40,
     height: 40,
-    borderWidth: 1.5,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

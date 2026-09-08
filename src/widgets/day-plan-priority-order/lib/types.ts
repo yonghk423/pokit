@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import type { TodoPriority } from '@entities/day-plan';
+import type { PriorityMarkColorId } from '@entities/day-plan';
 
 export type PriorityOrderRowProps = {
   categoryKey: string;
@@ -12,10 +12,10 @@ export type PriorityOrderRowProps = {
   summaryHint?: string | null;
   /** 부제(시간) 옆 시계 — 탭하면 시간 설정 */
   onEditTime?: () => void;
-  /** 담기 목록 중요도 — 미설정 시 보통 */
-  itemPriority?: TodoPriority;
-  /** 탭하면 높음 → 보통 → 낮음 순환 */
-  onCycleItemPriority?: () => void;
+  /** 중요도 표시 색 — 미설정 시 표시 없음 */
+  itemMarkColor?: PriorityMarkColorId | null;
+  /** 색 스와치에서 직접 선택 (null = 표시 해제) */
+  onSelectItemMarkColor?: (color: PriorityMarkColorId | null) => void;
   isFocusStarted?: boolean;
   isCompleted?: boolean;
   isDark: boolean;

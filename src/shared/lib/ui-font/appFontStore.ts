@@ -10,6 +10,7 @@ import {
 } from '@shared/lib/storage';
 
 import { DEFAULT_APP_FONT_ID } from './appFontIds';
+import { resolveAppFontOpticalScale } from './appFontOpticalScale';
 import { DEFAULT_APP_FONT_SIZE_ID, resolveAppFontSizeScale } from './appFontSize';
 
 type AppFontState = {
@@ -52,13 +53,15 @@ export function useEffectiveAppFontId(): AppFontId {
 
 export function getAppFontSizeScale(
   sizeId: AppFontSizeId = useAppFontStore.getState().sizeId,
+  fontId: AppFontId = useAppFontStore.getState().fontId,
 ): number {
-  return resolveAppFontSizeScale(sizeId);
+  return resolveAppFontSizeScale(sizeId) * resolveAppFontOpticalScale(fontId);
 }
 
 export function useAppFontSizeScale(): number {
   const sizeId = useAppFontStore((s) => s.sizeId);
-  return resolveAppFontSizeScale(sizeId);
+  const fontId = useAppFontStore((s) => s.fontId);
+  return resolveAppFontSizeScale(sizeId) * resolveAppFontOpticalScale(fontId);
 }
 
 export function useAppFontSizeId(): AppFontSizeId {

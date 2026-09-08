@@ -5,8 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   CityPopSpacing,
-  RETRO_BORDER_WIDTH,
   RetroFlatColors,
+  SOLID_SHADOW_OFFSET,
 } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation, type I18nKey } from '@shared/lib/i18n';
@@ -15,6 +15,7 @@ import {
   APP_FONT_SIZE_IDS,
   isSingleFaceAppFont,
   resolveAppFontFamily,
+  resolveAppFontOpticalScale,
   resolveAppFontSizeScale,
   scaleTypeSize,
   useAppFontSizeScale,
@@ -98,8 +99,10 @@ export function FontSettingsPage() {
   const sizeId = useAppFontStore((s) => s.sizeId);
   const setSizeId = useAppFontStore((s) => s.setSizeId);
   const sizeScale = useAppFontSizeScale();
-  /** 카드 면은 화면 배경과 동일 — 선택 시에만 primaryContainer */
-  const cardFace = rf.bg;
+  /** 외곽선 없이 음영만 — 면은 불투명 */
+  const cardFace = isDark ? rf.surfaceAlt : '#FFFFFF';
+  const cardFacePressed = isDark ? rf.surfaceContainer : '#F3F0E8';
+  const shadowColor = isDark ? rf.solidShadow : rf.border;
   const checkOn = rf.text;
   const checkOff = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.28)';
 
@@ -180,51 +183,69 @@ export function FontSettingsPage() {
           <View style={styles.sizeRow}>
             {SIZE_OPTIONS.filter((opt) => APP_FONT_SIZE_IDS.includes(opt.key)).map((opt) => {
               const active = sizeId === opt.key;
-              const optScale = resolveAppFontSizeScale(opt.key);
+              const optScale =
+                resolveAppFontSizeScale(opt.key) * resolveAppFontOpticalScale(fontId);
+              const face = active ? rf.primaryContainer : cardFace;
+              const facePressed = active ? rf.primaryContainer : cardFacePressed;
               return (
-                <Pressable
+                <View
                   key={opt.key}
-                  accessibilityRole="button"
-                  accessibilityLabel={t(opt.labelKey)}
-                  accessibilityState={{ selected: active }}
-                  onPress={() => {
-                    if (active) return;
-                    setSizeId(opt.key);
-                    void Haptics.selectionAsync();
-                  }}
-                  style={({ pressed }) => [
-                    styles.sizeCard,
-                    {
-                      borderColor: rf.border,
-                      backgroundColor: active ? rf.primaryContainer : cardFace,
-                      opacity: pressed ? 0.92 : 1,
-                    },
+                  style={[
+                    styles.sizeCardShell,
+                    { marginRight: SOLID_SHADOW_OFFSET, marginBottom: SOLID_SHADOW_OFFSET },
                   ]}>
-                  <Text
+                  <View
+                    pointerEvents="none"
                     style={[
-                      styles.sizeCardTitle,
+                      styles.cardShadow,
                       {
-                        color: rf.text,
-                        fontSize: scaleTypeSize(15, optScale),
-                        lineHeight: scaleTypeSize(20, optScale),
+                        backgroundColor: shadowColor,
+                        transform: [
+                          { translateX: SOLID_SHADOW_OFFSET },
+                          { translateY: SOLID_SHADOW_OFFSET },
+                        ],
                       },
-                      sizeLabelStyle,
-                    ]}>
-                    {t(opt.labelKey)}
-                  </Text>
-                  <Text
-                    style={[
-                      {
-                        color: rf.textMuted,
-                        fontSize: scaleTypeSize(11, optScale),
-                        lineHeight: scaleTypeSize(15, optScale),
-                      },
-                      sizeDescStyle,
                     ]}
-                    numberOfLines={2}>
-                    {t(opt.descKey)}
-                  </Text>
-                </Pressable>
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t(opt.labelKey)}
+                    accessibilityState={{ selected: active }}
+                    onPress={() => {
+                      if (active) return;
+                      setSizeId(opt.key);
+                      void Haptics.selectionAsync();
+                    }}
+                    style={({ pressed }) => [
+                      styles.sizeCard,
+                      { backgroundColor: pressed ? facePressed : face },
+                    ]}>
+                    <Text
+                      style={[
+                        styles.sizeCardTitle,
+                        {
+                          color: rf.text,
+                          fontSize: scaleTypeSize(15, optScale),
+                          lineHeight: scaleTypeSize(20, optScale),
+                        },
+                        sizeLabelStyle,
+                      ]}>
+                      {t(opt.labelKey)}
+                    </Text>
+                    <Text
+                      style={[
+                        {
+                          color: rf.textMuted,
+                          fontSize: scaleTypeSize(11, optScale),
+                          lineHeight: scaleTypeSize(15, optScale),
+                        },
+                        sizeDescStyle,
+                      ]}
+                      numberOfLines={2}>
+                      {t(opt.descKey)}
+                    </Text>
+                  </Pressable>
+                </View>
               );
             })}
           </View>
@@ -243,68 +264,81 @@ export function FontSettingsPage() {
             const active = fontId === opt.key;
             const sampleFamily = resolveAppFontFamily(opt.key, '700');
             const sampleWeight = isSingleFaceAppFont(opt.key) ? ('400' as const) : ('700' as const);
+            const previewScale =
+              resolveAppFontSizeScale(sizeId) * resolveAppFontOpticalScale(opt.key);
             return (
-              <Pressable
+              <View
                 key={opt.key}
-                accessibilityRole="button"
-                accessibilityLabel={t(opt.labelKey)}
-                accessibilityState={{ selected: active }}
-                onPress={() => {
-                  if (active) return;
-                  setFontId(opt.key);
-                  void Haptics.selectionAsync();
-                }}
-                style={({ pressed }) => [
-                  styles.fontCard,
-                  {
-                    borderColor: rf.border,
-                    backgroundColor: cardFace,
-                    opacity: pressed ? 0.92 : 1,
-                  },
+                style={[
+                  styles.fontCardShell,
+                  { marginRight: SOLID_SHADOW_OFFSET, marginBottom: SOLID_SHADOW_OFFSET },
                 ]}>
                 <View
+                  pointerEvents="none"
                   style={[
-                    styles.fontIcon,
+                    styles.cardShadow,
                     {
-                      borderColor: rf.border,
-                      backgroundColor: rf.primaryContainer,
+                      backgroundColor: shadowColor,
+                      transform: [
+                        { translateX: SOLID_SHADOW_OFFSET },
+                        { translateY: SOLID_SHADOW_OFFSET },
+                      ],
                     },
-                  ]}>
-                  <Text
-                    style={[
-                      styles.fontIconGlyph,
-                      sampleFamily ? { fontFamily: sampleFamily, fontWeight: sampleWeight } : null,
-                      { color: rf.text },
-                    ]}>
-                    Aa
-                  </Text>
-                </View>
-                <View style={styles.fontText}>
-                  <Text
-                    style={[
-                      styles.fontPreview,
-                      sampleFamily ? { fontFamily: sampleFamily, fontWeight: sampleWeight } : null,
-                      {
-                        color: rf.text,
-                        fontSize: scaleTypeSize(17, sizeScale),
-                        lineHeight: scaleTypeSize(23, sizeScale),
-                      },
-                    ]}
-                    numberOfLines={1}>
-                    {t(opt.previewKey)}
-                  </Text>
-                  <Text
-                    style={[styles.fontSub, { color: rf.textMuted }, appFontTextStyle(fontId, '500')]}
-                    numberOfLines={2}>
-                    {t(opt.labelKey)} · {t(opt.descKey)}
-                  </Text>
-                </View>
-                <IconSymbol
-                  name={active ? 'checkmark.circle.fill' : 'circle'}
-                  size={20}
-                  color={active ? checkOn : checkOff}
+                  ]}
                 />
-              </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t(opt.labelKey)}
+                  accessibilityState={{ selected: active }}
+                  onPress={() => {
+                    if (active) return;
+                    setFontId(opt.key);
+                    void Haptics.selectionAsync();
+                  }}
+                  style={({ pressed }) => [
+                    styles.fontCard,
+                    { backgroundColor: pressed ? cardFacePressed : cardFace },
+                  ]}>
+                  <View style={[styles.fontIcon, { backgroundColor: rf.primaryContainer }]}>
+                    <Text
+                      style={[
+                        styles.fontIconGlyph,
+                        sampleFamily ? { fontFamily: sampleFamily, fontWeight: sampleWeight } : null,
+                        {
+                          color: rf.text,
+                          fontSize: scaleTypeSize(15, resolveAppFontOpticalScale(opt.key)),
+                        },
+                      ]}>
+                      Aa
+                    </Text>
+                  </View>
+                  <View style={styles.fontText}>
+                    <Text
+                      style={[
+                        styles.fontPreview,
+                        sampleFamily ? { fontFamily: sampleFamily, fontWeight: sampleWeight } : null,
+                        {
+                          color: rf.text,
+                          fontSize: scaleTypeSize(17, previewScale),
+                          lineHeight: scaleTypeSize(23, previewScale),
+                        },
+                      ]}
+                      numberOfLines={1}>
+                      {t(opt.previewKey)}
+                    </Text>
+                    <Text
+                      style={[styles.fontSub, { color: rf.textMuted }, appFontTextStyle(fontId, '500')]}
+                      numberOfLines={2}>
+                      {t(opt.labelKey)} · {t(opt.descKey)}
+                    </Text>
+                  </View>
+                  <IconSymbol
+                    name={active ? 'checkmark.circle.fill' : 'circle'}
+                    size={20}
+                    color={active ? checkOn : checkOff}
+                  />
+                </Pressable>
+              </View>
             );
           })}
         </ScrollView>
@@ -360,29 +394,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  sizeCardShell: {
+    flex: 1,
+    position: 'relative',
+  },
+  cardShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
   sizeCard: {
     flex: 1,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     paddingVertical: 12,
     paddingHorizontal: 8,
     gap: 4,
     minHeight: 84,
+    zIndex: 1,
   },
   sizeCardTitle: {
     letterSpacing: -0.2,
+  },
+  fontCardShell: {
+    position: 'relative',
   },
   fontCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     paddingVertical: 14,
     paddingHorizontal: 12,
+    zIndex: 1,
   },
   fontIcon: {
     width: 40,
     height: 40,
-    borderWidth: 1.5,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

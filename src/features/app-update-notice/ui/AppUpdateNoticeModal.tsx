@@ -60,10 +60,6 @@ export function AppUpdateNoticeModal({ visible, version, highlights, onDismiss }
 
           <BrutalConfirmButton
             align="stretch"
-            fill={c.primary}
-            labelColor={c.primaryOn}
-            border={c.border}
-            shadowColor={c.solidShadow}
             onPress={onDismiss}
           />
         </View>

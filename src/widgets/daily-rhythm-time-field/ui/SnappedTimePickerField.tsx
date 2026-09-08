@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useMemo, useRef } from 'react';
+import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { clampHhmmToPriorityWindow, parseHHmmToMinutes } from '@entities/day-plan';
@@ -19,6 +19,10 @@ export type SnappedTimePickerFieldPalette = {
   onVariant: string;
   border: string;
   containerLowest: string;
+};
+
+export type SnappedTimePickerFieldHandle = {
+  flush: () => string | null;
 };
 
 export type SnappedTimePickerFieldProps = {
@@ -43,25 +47,33 @@ export type SnappedTimePickerFieldProps = {
   emphasized?: boolean;
   /** 목표 상세 슬롯 등 — 라벨·시각 pill을 작게 */
   compact?: boolean;
+  disabled?: boolean;
 };
 
-export function SnappedTimePickerField({
-  label,
-  hint,
-  valueHhmm,
-  onChangeHhmm,
-  expanded,
-  onToggleExpand,
-  isDark,
-  palette,
-  snapStepMinutes = TIME_SNAP_MINUTES,
-  routineDayStartHhmm,
-  routineDayEndHhmm,
-  mapMidnightToEndOfDay = false,
-  dateCaption,
-  emphasized = false,
-  compact = false,
-}: SnappedTimePickerFieldProps) {
+export const SnappedTimePickerField = forwardRef<
+  SnappedTimePickerFieldHandle,
+  SnappedTimePickerFieldProps
+>(function SnappedTimePickerField(
+  {
+    label,
+    hint,
+    valueHhmm,
+    onChangeHhmm,
+    expanded,
+    onToggleExpand,
+    isDark,
+    palette,
+    snapStepMinutes = TIME_SNAP_MINUTES,
+    routineDayStartHhmm,
+    routineDayEndHhmm,
+    mapMidnightToEndOfDay = false,
+    dateCaption,
+    emphasized = false,
+    compact = false,
+    disabled = false,
+  },
+  ref,
+) {
   const { t, locale } = useTranslation();
   const applyRoutineWindow = useMemo(() => {
     const rs = routineDayStartHhmm?.trim() ?? '';
@@ -79,12 +91,29 @@ export function SnappedTimePickerField({
   }, [routineDayStartHhmm, routineDayEndHhmm]);
 
   const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
+  useImperativeHandle(
+    ref,
+    () => ({
+      flush: () => {
+        const flushed = digitalInputRef.current?.flush();
+        if (!flushed) return null;
+        const next = applyRoutineWindow(flushed);
+        onChangeHhmm(next);
+        return next;
+      },
+    }),
+    [applyRoutineWindow, onChangeHhmm],
+  );
   const selectedFg = isDark ? '#09090b' : '#FAFAFA';
+  const shadowInk = isDark ? RetroFlatColors.dark.solidShadow : '#000000';
+  const pillShadow = expanded ? 0 : 2;
 
   return (
     <View>
       <Pressable
+        disabled={disabled}
         onPress={() => {
+          if (disabled) return;
           void Haptics.selectionAsync();
           onToggleExpand();
         }}
@@ -92,7 +121,8 @@ export function SnappedTimePickerField({
           styles.timeRow,
           emphasized && styles.timeRowEmphasized,
           compact && styles.timeRowCompact,
-          pressed && { opacity: 0.9 },
+          pressed && !disabled && { opacity: 0.9 },
+          disabled && { opacity: 0.45 },
         ]}>
         <View style={[styles.timeRowLeft, compact && styles.timeRowLeftCompact]}>
           <ThemedText
@@ -135,25 +165,40 @@ export function SnappedTimePickerField({
           ) : null}
           <View
             style={[
-              styles.timePill,
-              emphasized && styles.timePillEmphasized,
-              compact && styles.timePillCompact,
-              {
-                backgroundColor: palette.containerLowest,
-                borderColor: expanded ? palette.onSurface : palette.border,
-              },
+              styles.timePillShell,
+              pillShadow > 0 && { marginRight: pillShadow, marginBottom: pillShadow },
             ]}>
-            <ThemedText
+            {pillShadow > 0 ? (
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.timePillShadow,
+                  {
+                    backgroundColor: shadowInk,
+                    transform: [{ translateX: pillShadow }, { translateY: pillShadow }],
+                  },
+                ]}
+              />
+            ) : null}
+            <View
               style={[
-                styles.timePillText,
-                emphasized && styles.timePillTextEmphasized,
-                compact && styles.timePillTextCompact,
-                { color: palette.onSurface },
-              ]}
-              lightColor={palette.onSurface}
-              darkColor={palette.onSurface}>
-              {formatHhmmClock(valueHhmm, locale)}
-            </ThemedText>
+                styles.timePill,
+                emphasized && styles.timePillEmphasized,
+                compact && styles.timePillCompact,
+                { backgroundColor: palette.containerLowest },
+              ]}>
+              <ThemedText
+                style={[
+                  styles.timePillText,
+                  emphasized && styles.timePillTextEmphasized,
+                  compact && styles.timePillTextCompact,
+                  { color: palette.onSurface },
+                ]}
+                lightColor={palette.onSurface}
+                darkColor={palette.onSurface}>
+                {formatHhmmClock(valueHhmm, locale)}
+              </ThemedText>
+            </View>
           </View>
         </View>
       </Pressable>
@@ -171,13 +216,11 @@ export function SnappedTimePickerField({
             snapStepMinutes={snapStepMinutes}
             mapMidnightToEndOfDay={mapMidnightToEndOfDay}
             accessibilityLabelPrefix={label}
+            disabled={disabled}
           />
           <BrutalConfirmButton
             accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
-            fill={palette.onSurface}
-            labelColor={selectedFg}
-            border={palette.border}
-            shadowColor={isDark ? RetroFlatColors.dark.solidShadow : RetroFlatColors.light.solidShadow}
+            disabled={disabled}
             onPress={() => {
               const flushed = digitalInputRef.current?.flush();
               if (flushed) onChangeHhmm(applyRoutineWindow(flushed));
@@ -189,7 +232,7 @@ export function SnappedTimePickerField({
       ) : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   timeRow: {
@@ -233,13 +276,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
+  timePillShell: {
+    position: 'relative',
+  },
+  timePillShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
   timePill: {
     minWidth: 108,
     paddingHorizontal: 12,
     paddingVertical: 9,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 0,
     alignItems: 'center',
+    zIndex: 1,
   },
   timePillEmphasized: {
     minWidth: 118,

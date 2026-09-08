@@ -33,6 +33,7 @@ import {
   saveSpineDefaultBlockMinutes,
   SPINE_GAP_BLOCK_MINUTE_OPTIONS,
 } from '@shared/lib/storage';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
@@ -491,8 +492,15 @@ export function PriorityRoutinePickerSheet({
               backgroundColor: surface,
             },
           ]}>
-          <Pressable
-            accessibilityRole="button"
+          <BrutalConfirmButton
+            label={
+              canConfirm
+                ? t('dayPlan.confirmRoutineCount', {
+                    count: selectedCount,
+                    action: resolvedConfirmLabel,
+                  })
+                : t('dayPlan.pickRoutineHint')
+            }
             accessibilityLabel={
               canConfirm
                 ? t('dayPlan.confirmRoutineCountA11y', {
@@ -501,28 +509,10 @@ export function PriorityRoutinePickerSheet({
                   })
                 : t('dayPlan.pickRoutineHint')
             }
+            align="stretch"
             disabled={!canConfirm}
             onPress={handleConfirm}
-            style={({ pressed }) => [
-              styles.confirmBtn,
-              {
-                backgroundColor: canConfirm ? ink : isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
-                opacity: pressed && canConfirm ? 0.9 : 1,
-              },
-            ]}>
-            <ThemedText
-              style={[
-                styles.confirmLabel,
-                { color: canConfirm ? (isDark ? '#09090b' : '#fff') : muted },
-              ]}>
-              {canConfirm
-                ? t('dayPlan.confirmRoutineCount', {
-                    count: selectedCount,
-                    action: resolvedConfirmLabel,
-                  })
-                : t('dayPlan.pickRoutineHint')}
-            </ThemedText>
-          </Pressable>
+          />
         </View>
         </View>
       </KeyboardAvoidingView>
@@ -619,19 +609,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     borderTopWidth: 1,
-  },
-  confirmBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    borderRadius: 0,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  confirmLabel: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: -0.2,
   },
   empty: {
     fontSize: 14,

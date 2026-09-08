@@ -11,8 +11,11 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { ITEM_PRIORITY_META, priorityRowWash } from '@entities/day-plan';
-import type { TodoPriority } from '@entities/day-plan';
+import {
+  PRIORITY_MARK_COLOR_PRESETS,
+  priorityMarkTitleHighlight,
+  type PriorityMarkColorId,
+} from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import { useTranslation } from '@shared/lib/i18n';
 import { COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT, CompletionRadioButton } from '@shared/ui/completion-radio-button';
@@ -22,6 +25,9 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory, categoryAccentColorPastel } from '../lib/activeIconColorByCategory';
 import { orderRowStyles as styles } from '../lib/orderRowStyles';
 import type { PriorityOrderRowProps } from '../lib/types';
+
+const MARK_SWATCH = 28;
+const MARK_SHADOW = 2;
 
 /** 완료 버튼 — 집중 시작 전·후 모두 표시(담기 목록에서 완료 표시 가능) */
 const GRAY_DEFAULT_LIGHT = '#9CA3AF';
@@ -42,8 +48,8 @@ export function DefaultPriorityOrderRow({
   label,
   subtitle,
   summaryHint,
-  itemPriority = 'medium',
-  onCycleItemPriority,
+  itemMarkColor = null,
+  onSelectItemMarkColor,
   isFocusStarted,
   isCompleted,
   isDark,
@@ -63,7 +69,7 @@ export function DefaultPriorityOrderRow({
   onEditTime,
 }: PriorityOrderRowProps) {
   const { t } = useTranslation();
-  const priorityLabel = t(`todo.priority.${itemPriority}` as const);
+  const titleHighlight = priorityMarkTitleHighlight(itemMarkColor, isDark);
   const reorderTranslateY = useSharedValue(0);
   const reorderDragging = useSharedValue(0);
   const expandProgress = useSharedValue(expanded ? 1 : 0);
@@ -195,7 +201,6 @@ export function DefaultPriorityOrderRow({
   const pulse = useRef(new Animated.Value(1)).current;
   const shouldPulse = Boolean(isFocusStarted && !isCompleted);
   const primary = PrimaryColor.rgb;
-  const priorityMeta = ITEM_PRIORITY_META[itemPriority];
   const iconColor = activeIconColorByCategory(categoryKey);
 
   useEffect(() => {
@@ -285,13 +290,26 @@ export function DefaultPriorityOrderRow({
         </View>
       </View>
       <View style={styles.orderRowRomanText}>
-        <ThemedText
-          style={[styles.orderRowRomanTitle, { color: ink }, isCompleted && styles.orderRowRomanTitleDone]}
-          numberOfLines={1}
-          lightColor={ink}
-          darkColor={ink}>
-          {label}
-        </ThemedText>
+        <View style={styles.orderRowTitleMark}>
+          {titleHighlight ? (
+            <View
+              pointerEvents="none"
+              style={[styles.orderRowTitleHighlight, { backgroundColor: titleHighlight }]}
+            />
+          ) : null}
+          <ThemedText
+            style={[
+              styles.orderRowRomanTitle,
+              styles.orderRowTitleText,
+              { color: ink },
+              isCompleted && styles.orderRowRomanTitleDone,
+            ]}
+            numberOfLines={1}
+            lightColor={ink}
+            darkColor={ink}>
+            {label}
+          </ThemedText>
+        </View>
         {summaryHint ? (
           <ThemedText
             style={[
@@ -391,34 +409,131 @@ export function DefaultPriorityOrderRow({
     </View>
   );
 
-  const priorityButton = onCycleItemPriority
-    ? wrapBrutal(
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('dayPlan.priorityChangeA11y', { label: priorityLabel })}
-        hitSlop={8}
-        onPress={() => {
-          void Haptics.selectionAsync();
-          onCycleItemPriority();
-        }}
-        style={({ pressed }) => [
-          styles.orderRowPriorityBtn,
-          {
-            borderColor: actionBorder,
-            backgroundColor: pressed ? actionHoverBg : actionBg,
-          },
-          pressed && { opacity: 0.92 },
-        ]}>
+  const renderMarkPalette = (compact: boolean) => {
+    if (!onSelectItemMarkColor) return null;
+    const pick = (color: PriorityMarkColorId | null) => {
+      void Haptics.selectionAsync();
+      onSelectItemMarkColor(color);
+    };
+    return (
+      <View
+        style={[styles.importanceMarkBlock, compact && styles.importanceMarkBlockCompact]}
+        accessibilityRole="toolbar"
+        accessibilityLabel={t('dayPlan.importanceMarkLabel')}>
         <ThemedText
           style={[
-            styles.orderRowPriorityBtnText,
-            { color: priorityMeta.dot },
+            styles.expandNoteActionText,
+            { color: inkMuted },
             isCompleted && styles.orderRowRomanTitleDone,
           ]}
           numberOfLines={1}>
-          {priorityLabel}
+          {t('dayPlan.importanceMarkLabel')}
         </ThemedText>
-      </Pressable>,
+        <View style={styles.importanceMarkChipRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: itemMarkColor == null }}
+            accessibilityLabel={t('dayPlan.importanceMarkClearA11y')}
+            hitSlop={6}
+            onPress={() => pick(null)}
+            style={({ pressed }) => [
+              styles.importanceMarkChipShell,
+              {
+                width: MARK_SWATCH,
+                height: MARK_SWATCH,
+                marginRight: MARK_SHADOW,
+                marginBottom: MARK_SHADOW,
+                opacity: pressed ? 0.88 : 1,
+              },
+            ]}>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.importanceMarkChipShadow,
+                {
+                  backgroundColor: actionShadow,
+                  transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.importanceMarkChipFace,
+                {
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
+                  borderColor: actionBorder,
+                  borderWidth: itemMarkColor == null ? 2 : 1,
+                },
+              ]}>
+              <IconSymbol name="xmark" size={12} color={inkMuted} />
+            </View>
+          </Pressable>
+          {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
+            const selected = itemMarkColor === preset.id;
+            const face = isDark ? preset.faceDark : preset.face;
+            return (
+              <Pressable
+                key={preset.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={t('dayPlan.importanceMarkColorA11y', {
+                  color: t(`dayPlan.importanceMarkSwatch.${preset.id}` as const),
+                })}
+                hitSlop={6}
+                onPress={() => pick(preset.id)}
+                style={({ pressed }) => [
+                  styles.importanceMarkChipShell,
+                  {
+                    width: MARK_SWATCH,
+                    height: MARK_SWATCH,
+                    marginRight: MARK_SHADOW,
+                    marginBottom: MARK_SHADOW,
+                    opacity: pressed ? 0.88 : 1,
+                  },
+                ]}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.importanceMarkChipShadow,
+                    {
+                      backgroundColor: actionShadow,
+                      transform: [
+                        { translateX: MARK_SHADOW },
+                        { translateY: MARK_SHADOW },
+                      ],
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.importanceMarkChipFace,
+                    {
+                      backgroundColor: face,
+                      borderColor: selected ? actionBorder : 'transparent',
+                      borderWidth: selected ? 2 : 0,
+                    },
+                  ]}
+                />
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    );
+  };
+
+  const priorityButton = onSelectItemMarkColor
+    ? wrapBrutal(
+      <View
+        style={[
+          styles.orderRowPriorityBtn,
+          {
+            borderColor: actionBorder,
+            backgroundColor: actionBg,
+          },
+        ]}>
+        {renderMarkPalette(true)}
+      </View>,
     )
     : null;
 
@@ -450,27 +565,8 @@ export function DefaultPriorityOrderRow({
     : null;
 
   const expandEnabled = Boolean(onToggleExpand);
-  const notePriorityAction = expandEnabled && onCycleItemPriority
-    ? (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('dayPlan.priorityChangeA11y', { label: priorityLabel })}
-        hitSlop={8}
-        onPress={() => {
-          void Haptics.selectionAsync();
-          onCycleItemPriority();
-        }}
-        style={({ pressed }) => [styles.expandNoteAction, pressed && { opacity: 0.55 }]}>
-        <ThemedText
-          style={[
-            styles.expandNoteActionText,
-            { color: priorityMeta.dot },
-          ]}
-          numberOfLines={1}>
-          {t('dayPlan.priorityNoteLabel', { label: priorityLabel })}
-        </ThemedText>
-      </Pressable>
-    )
+  const notePriorityAction = expandEnabled && onSelectItemMarkColor
+    ? renderMarkPalette(false)
     : null;
 
   const noteFinishAction = expandEnabled && onFinishForToday
@@ -494,7 +590,6 @@ export function DefaultPriorityOrderRow({
     : null;
 
   const expandInlineActions = Boolean(notePriorityAction || noteFinishAction);
-  const rowWash = priorityRowWash(itemPriority, isDark);
   const expandButton = expandEnabled
     ? wrapBrutal(
         <Pressable
@@ -591,7 +686,7 @@ export function DefaultPriorityOrderRow({
     <Animated.View
       style={[
         styles.orderRowRoman,
-        { borderBottomColor: line, backgroundColor: rowWash },
+        { borderBottomColor: line },
         {
           opacity: enter,
           transform: [
@@ -627,9 +722,11 @@ export function DefaultPriorityOrderRow({
             }}>
             {expandedContent}
             {expandInlineActions ? (
-              <View style={styles.expandActionsRow}>
+              <View style={styles.expandActionsCol}>
                 {notePriorityAction}
-                {noteFinishAction}
+                {noteFinishAction ? (
+                  <View style={styles.expandActionsRow}>{noteFinishAction}</View>
+                ) : null}
               </View>
             ) : null}
           </View>

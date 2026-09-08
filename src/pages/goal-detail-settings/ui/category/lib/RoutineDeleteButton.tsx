@@ -1,6 +1,6 @@
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
-import { RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -18,7 +18,6 @@ export function RoutineDeleteButton({ onDelete }: { onDelete: () => void }) {
           styles.shadow,
           {
             backgroundColor: tone.danger,
-            borderColor: tone.border,
           },
         ]}
       />
@@ -34,7 +33,6 @@ export function RoutineDeleteButton({ onDelete }: { onDelete: () => void }) {
         style={({ pressed }) => [
           styles.deleteBtn,
           {
-            borderColor: tone.border,
             backgroundColor: pressed ? '#F5B8B2' : tone.dangerBg,
           },
           pressed && { opacity: 0.94 },
@@ -60,11 +58,11 @@ const styles = StyleSheet.create({
     left: SHADOW,
     right: -SHADOW,
     bottom: -SHADOW,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     borderRadius: 0,
   },
   deleteBtn: {
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     borderRadius: 0,
     paddingVertical: 14,
     alignItems: 'center',

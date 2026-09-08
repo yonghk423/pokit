@@ -131,10 +131,6 @@ export function StoryRoutineImportSheet({ visible, article, onClose }: Props) {
               </ThemedText>
               <BrutalConfirmButton
                 align="stretch"
-                fill={palette.ink}
-                labelColor={palette.bg}
-                border={palette.border}
-                shadowColor={isDark ? RetroFlatColors.dark.solidShadow : RetroFlatColors.light.solidShadow}
                 onPress={handleClose}
                 style={styles.successConfirm}
               />

@@ -16,6 +16,7 @@ import {
   resolveCustomCatalogGroupDisplayLabel,
   SYSTEM_CATALOG_GROUP_KEYS,
 } from '@entities/day-plan';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import {
   createCustomCatalogGroup,
   listCustomCatalogGroups,
@@ -30,6 +31,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { PRIMARY } from '../lib/dayPlanEditorShared';
 
 const GROUP_NAME_MAX = 24;
+const CHIP_SHADOW = 2;
 
 type GroupOption = {
   key: string;
@@ -130,6 +132,9 @@ export function MoveCustomFlowGroupSheet({
   const inputBorder = isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)';
   const closeBtnBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
   const sheetBg = surface;
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const shadowInk = isDark ? tone.solidShadow : tone.text;
+  const chipIdleBg = isDark ? tone.surfaceAlt : '#FFFFFF';
 
   return (
     <Modal
@@ -188,57 +193,101 @@ export function MoveCustomFlowGroupSheet({
               <View style={styles.chipsWrap}>
                 {groupOptions.map((g) => {
                   const selected = selectedGroupKey === g.key;
-                  const chipBg = selected
-                    ? isDark
-                      ? 'rgba(255,255,255,0.14)'
-                      : 'rgba(0,0,0,0.07)'
-                    : isDark
-                      ? 'rgba(255,255,255,0.04)'
-                      : 'rgba(0,0,0,0.02)';
-                  const chipBorder = selected
-                    ? isDark
-                      ? 'rgba(255,255,255,0.4)'
-                      : PRIMARY
-                    : inputBorder;
+                  const shadow = selected ? 3 : CHIP_SHADOW;
                   return (
-                    <Pressable
+                    <View
                       key={g.key}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      onPress={() => {
-                        void Haptics.selectionAsync();
-                        setSelectedGroupKey(g.key);
-                      }}
-                      style={[styles.chip, { borderColor: chipBorder, backgroundColor: chipBg }]}>
-                      {selected ? <IconSymbol name="checkmark" size={11} color={ink} /> : null}
-                      <ThemedText
+                      style={[
+                        styles.chipShell,
+                        { marginRight: shadow, marginBottom: shadow },
+                      ]}>
+                      <View
+                        pointerEvents="none"
                         style={[
-                          styles.chipText,
-                          { color: selected ? ink : muted, fontWeight: selected ? '700' : '500' },
+                          styles.chipShadow,
+                          {
+                            backgroundColor: shadowInk,
+                            transform: [{ translateX: shadow }, { translateY: shadow }],
+                          },
                         ]}
-                        numberOfLines={1}>
-                        {g.label}
-                      </ThemedText>
-                    </Pressable>
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        onPress={() => {
+                          void Haptics.selectionAsync();
+                          setSelectedGroupKey(g.key);
+                        }}
+                        style={({ pressed }) => [
+                          styles.chip,
+                          {
+                            backgroundColor: selected ? tone.primaryContainer : chipIdleBg,
+                            opacity: pressed ? 0.92 : 1,
+                          },
+                        ]}>
+                        {selected ? (
+                          <IconSymbol
+                            name="checkmark"
+                            size={11}
+                            color={tone.primary}
+                            weight="bold"
+                          />
+                        ) : null}
+                        <ThemedText
+                          style={[
+                            styles.chipText,
+                            {
+                              color: selected ? tone.primary : muted,
+                              fontWeight: selected ? '800' : '600',
+                            },
+                          ]}
+                          numberOfLines={1}>
+                          {g.label}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
                   );
                 })}
 
                 {!isAddingGroup ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('createFlow.newGroup')}
-                    onPress={() => {
-                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setIsAddingGroup(true);
-                    }}
+                  <View
                     style={[
-                      styles.chip,
-                      styles.chipDashed,
-                      { borderColor: inputBorder, backgroundColor: 'transparent' },
+                      styles.chipShell,
+                      { marginRight: CHIP_SHADOW, marginBottom: CHIP_SHADOW },
                     ]}>
-                    <IconSymbol name="plus" size={11} color={muted} />
-                    <ThemedText style={[styles.chipText, { color: muted }]}>{t('createFlow.newGroup')}</ThemedText>
-                  </Pressable>
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.chipShadow,
+                        {
+                          backgroundColor: shadowInk,
+                          transform: [
+                            { translateX: CHIP_SHADOW },
+                            { translateY: CHIP_SHADOW },
+                          ],
+                        },
+                      ]}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('createFlow.newGroup')}
+                      onPress={() => {
+                        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setIsAddingGroup(true);
+                      }}
+                      style={({ pressed }) => [
+                        styles.chip,
+                        {
+                          backgroundColor: chipIdleBg,
+                          opacity: pressed ? 0.92 : 1,
+                        },
+                      ]}>
+                      <IconSymbol name="plus" size={11} color={ink} weight="bold" />
+                      <ThemedText style={[styles.chipText, { color: ink, fontWeight: '700' }]}>
+                        {t('createFlow.newGroup')}
+                      </ThemedText>
+                    </Pressable>
+                  </View>
                 ) : null}
               </View>
 
@@ -401,6 +450,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  chipShell: {
+    position: 'relative',
+  },
+  chipShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -408,10 +464,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 0,
-    borderWidth: 2,
-  },
-  chipDashed: {
-    borderStyle: 'dashed',
+    borderWidth: 0,
+    zIndex: 1,
   },
   chipText: {
     fontSize: 13,

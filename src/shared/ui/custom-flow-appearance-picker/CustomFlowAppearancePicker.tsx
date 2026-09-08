@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
 import { useTranslation } from '@shared/lib/i18n';
 import {
@@ -12,6 +13,8 @@ import {
 import { HsvColorPicker } from '@shared/ui/hsv-color-picker';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+
+const CHIP_SHADOW = 2;
 
 export type CustomFlowAppearancePickerProps = {
   icon: CustomFlowIconOption;
@@ -48,8 +51,9 @@ export function CustomFlowAppearancePicker({
   const resolvedPreviewLabel = previewLabel ?? t('common.preview');
   const resolvedHint = hint ?? t('appearance.hint');
   const border = line ?? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)');
-  const cardBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)';
-  const chipIdleBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.9)';
+  const cardBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
+  const chipIdleBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
+  const shadowInk = isDark ? RetroFlatColors.dark.solidShadow : '#000000';
 
   const iconScrollRef = useRef<ScrollView>(null);
   const ICON_CHIP_STEP = 46;
@@ -94,51 +98,84 @@ export function CustomFlowAppearancePicker({
 
       <View
         style={[
-          styles.previewCard,
-          compact && styles.previewCardCompact,
-          { borderColor: border, backgroundColor: cardBg },
+          styles.previewShell,
+          { marginRight: CHIP_SHADOW, marginBottom: CHIP_SHADOW },
         ]}>
         <View
+          pointerEvents="none"
           style={[
-            styles.previewIconWrap,
-            compact && styles.previewIconWrapCompact,
-            { borderColor: accentColor, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' },
-          ]}>
-          <IconSymbol name={icon} size={compact ? 18 : 22} color={accentColor} />
-        </View>
-        <ThemedText
-          style={[styles.previewLabel, compact && styles.previewLabelCompact, { color: ink }]}
-          numberOfLines={1}>
-          {resolvedPreviewLabel}
-        </ThemedText>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ expanded: showAppearanceEditor }}
-          accessibilityLabel={
-            showAppearanceEditor ? t('appearance.collapseA11y') : t('appearance.expandA11y')
-          }
-          onPress={toggleAppearanceEditor}
-          hitSlop={8}
-          style={[
-            styles.expandButton,
-            compact && styles.expandButtonCompact,
+            styles.solidShadow,
             {
-              borderColor: border,
-              backgroundColor: showAppearanceEditor
-                ? isDark
-                  ? 'rgba(255,255,255,0.12)'
-                  : 'rgba(0,0,0,0.06)'
-                : chipIdleBg,
+              backgroundColor: shadowInk,
+              transform: [{ translateX: CHIP_SHADOW }, { translateY: CHIP_SHADOW }],
             },
+          ]}
+        />
+        <View
+          style={[
+            styles.previewCard,
+            compact && styles.previewCardCompact,
+            { backgroundColor: cardBg },
           ]}>
-          <IconSymbol
-            name={showAppearanceEditor ? 'minus' : 'plus'}
-            size={16}
-            color={showAppearanceEditor ? ink : muted}
-            weight="semibold"
-            style={styles.expandButtonIcon}
-          />
-        </Pressable>
+          <View
+            style={[
+              styles.previewIconWrap,
+              compact && styles.previewIconWrapCompact,
+              {
+                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : `${accentColor}22`,
+              },
+            ]}>
+            <IconSymbol name={icon} size={compact ? 18 : 22} color={accentColor} />
+          </View>
+          <ThemedText
+            style={[styles.previewLabel, compact && styles.previewLabelCompact, { color: ink }]}
+            numberOfLines={1}>
+            {resolvedPreviewLabel}
+          </ThemedText>
+          <View
+            style={[
+              styles.expandShell,
+              { marginRight: CHIP_SHADOW, marginBottom: CHIP_SHADOW },
+            ]}>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.solidShadow,
+                {
+                  backgroundColor: shadowInk,
+                  transform: [{ translateX: CHIP_SHADOW }, { translateY: CHIP_SHADOW }],
+                },
+              ]}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: showAppearanceEditor }}
+              accessibilityLabel={
+                showAppearanceEditor ? t('appearance.collapseA11y') : t('appearance.expandA11y')
+              }
+              onPress={toggleAppearanceEditor}
+              hitSlop={8}
+              style={[
+                styles.expandButton,
+                compact && styles.expandButtonCompact,
+                {
+                  backgroundColor: showAppearanceEditor
+                    ? isDark
+                      ? 'rgba(255,255,255,0.12)'
+                      : 'rgba(0,0,0,0.06)'
+                    : chipIdleBg,
+                },
+              ]}>
+              <IconSymbol
+                name={showAppearanceEditor ? 'minus' : 'plus'}
+                size={16}
+                color={showAppearanceEditor ? ink : muted}
+                weight="semibold"
+                style={styles.expandButtonIcon}
+              />
+            </Pressable>
+          </View>
+        </View>
       </View>
 
       {showAppearanceEditor ? (
@@ -151,26 +188,42 @@ export function CustomFlowAppearancePicker({
             keyboardShouldPersistTaps="handled">
             {CUSTOM_FLOW_ICON_OPTIONS.map((iconName) => {
               const selected = icon === iconName;
+              const shadow = selected ? 3 : CHIP_SHADOW;
               return (
-                <Pressable
+                <View
                   key={iconName}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  accessibilityLabel={t('appearance.pickIconA11y')}
-                  onPress={() => handleSelectIcon(iconName)}
                   style={[
-                    styles.iconChip,
-                    {
-                      borderColor: selected ? accentColor : border,
-                      backgroundColor: selected
-                        ? isDark
-                          ? 'rgba(255,255,255,0.12)'
-                          : 'rgba(0,0,0,0.06)'
-                        : chipIdleBg,
-                    },
+                    styles.iconChipShell,
+                    { marginRight: shadow, marginBottom: shadow },
                   ]}>
-                  <IconSymbol name={iconName} size={18} color={selected ? accentColor : muted} />
-                </Pressable>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.solidShadow,
+                      {
+                        backgroundColor: selected ? accentColor : shadowInk,
+                        transform: [{ translateX: shadow }, { translateY: shadow }],
+                      },
+                    ]}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={t('appearance.pickIconA11y')}
+                    onPress={() => handleSelectIcon(iconName)}
+                    style={[
+                      styles.iconChip,
+                      {
+                        backgroundColor: selected
+                          ? isDark
+                            ? 'rgba(255,255,255,0.12)'
+                            : `${accentColor}18`
+                          : chipIdleBg,
+                      },
+                    ]}>
+                    <IconSymbol name={iconName} size={18} color={selected ? accentColor : muted} />
+                  </Pressable>
+                </View>
               );
             })}
           </ScrollView>
@@ -180,25 +233,41 @@ export function CustomFlowAppearancePicker({
             <View style={styles.colorGrid}>
               {CUSTOM_FLOW_ACCENT_COLOR_OPTIONS.map((color) => {
                 const selected = accentColor.toLowerCase() === color;
+                const shadow = selected ? 3 : CHIP_SHADOW;
                 return (
-                  <Pressable
+                  <View
                     key={color}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    accessibilityLabel={t('appearance.pickColorA11y')}
-                    onPress={() => {
-                      void Haptics.selectionAsync();
-                      onChangeAccentColor(color);
-                    }}
                     style={[
-                      styles.colorSwatch,
-                      {
-                        backgroundColor: color,
-                        borderColor: selected ? PrimaryColor.rgb : border,
-                      },
+                      styles.swatchShell,
+                      { marginRight: shadow, marginBottom: shadow },
                     ]}>
-                    {selected ? <IconSymbol name="checkmark" size={12} color="#FAFAFA" /> : null}
-                  </Pressable>
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.solidShadow,
+                        {
+                          backgroundColor: selected ? PrimaryColor.rgb : shadowInk,
+                          transform: [{ translateX: shadow }, { translateY: shadow }],
+                        },
+                      ]}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={t('appearance.pickColorA11y')}
+                      onPress={() => {
+                        void Haptics.selectionAsync();
+                        onChangeAccentColor(color);
+                      }}
+                      style={[
+                        styles.colorSwatch,
+                        {
+                          backgroundColor: color,
+                        },
+                      ]}>
+                      {selected ? <IconSymbol name="checkmark" size={12} color="#FAFAFA" /> : null}
+                    </Pressable>
+                  </View>
                 );
               })}
             </View>
@@ -240,14 +309,22 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginTop: -4,
   },
+  previewShell: {
+    position: 'relative',
+  },
+  solidShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
   previewCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    zIndex: 1,
   },
   previewCardCompact: {
     gap: 8,
@@ -258,7 +335,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -275,13 +352,17 @@ const styles = StyleSheet.create({
   previewLabelCompact: {
     fontSize: 14,
   },
+  expandShell: {
+    position: 'relative',
+  },
   expandButton: {
     width: 36,
     height: 36,
     borderRadius: 0,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   expandButtonCompact: {
     width: 32,
@@ -300,14 +381,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     paddingVertical: 2,
+    paddingRight: 4,
+  },
+  iconChipShell: {
+    position: 'relative',
   },
   iconChip: {
     width: 40,
     height: 40,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   colorSection: {
     gap: 8,
@@ -321,12 +407,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  swatchShell: {
+    position: 'relative',
+  },
   colorSwatch: {
     width: 32,
     height: 32,
     borderRadius: 0,
-    borderWidth: 2,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
 });

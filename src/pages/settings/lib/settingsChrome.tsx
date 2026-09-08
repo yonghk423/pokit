@@ -51,7 +51,7 @@ export function SettingsRowIcon({
   name,
   color,
   boxBg,
-  border,
+  border: _border,
   shadow,
 }: {
   name: string;
@@ -68,12 +68,11 @@ export function SettingsRowIcon({
           styles.iconShadow,
           {
             backgroundColor: shadow,
-            borderColor: border,
             transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
           },
         ]}
       />
-      <View style={[styles.iconBox, { backgroundColor: boxBg, borderColor: border }]}>
+      <View style={[styles.iconBox, { backgroundColor: boxBg }]}>
         <IconSymbol name={name as 'bell.fill'} size={15} color={color} />
       </View>
     </View>
@@ -183,14 +182,13 @@ const styles = StyleSheet.create({
   },
   iconShadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: RETRO_BORDER_WIDTH,
     borderRadius: 0,
   },
   iconBox: {
     width: 36,
     height: 36,
     borderRadius: 0,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,

@@ -50,7 +50,7 @@ import {
   parseLocalDateKeyToDate,
   parsePrioritySectionCompletionKey,
   resolveBlockCategoryKey,
-  resolveCategoryImportance,
+  resolveCategoryMarkColor,
   resolveCategoryKeyFromLabel,
   resolvePriorityRoutineCategoryKey,
   resolveSpinePriorityWindow,
@@ -61,7 +61,7 @@ import {
   useFixedFlowSetsStore,
   type CustomFlowTemplateKey
 } from '@entities/day-plan';
-import { RetroFlatColors } from '@shared/config/retroFlat';
+import { RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import {
@@ -90,6 +90,7 @@ import {
   type CategoryMealSlotOverride,
   type DayMealSlot
 } from '@shared/lib/storage';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { COMPLETION_TOGGLE_ANIM_MS } from '@shared/ui/completion-radio-button';
 import { DailyQuoteCard } from '@shared/ui/daily-quote-card';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -622,7 +623,7 @@ export function PriorityBasedPlanSection({
     migrateSectionCompletionOnSlotMove,
     finishPriorityCategoryForToday,
     priorityCategoryImportance,
-    cyclePriorityCategoryImportance,
+    setPriorityCategoryMarkColor,
     prioritySectionsCategoryOrder,
     appendPrioritySectionsCategoryKeys,
     setPrioritySectionsCategoryOrder,
@@ -649,7 +650,7 @@ export function PriorityBasedPlanSection({
       migrateSectionCompletionOnSlotMove: s.migrateSectionCompletionOnSlotMove,
       finishPriorityCategoryForToday: s.finishPriorityCategoryForToday,
       priorityCategoryImportance: s.priorityCategoryImportance,
-      cyclePriorityCategoryImportance: s.cyclePriorityCategoryImportance,
+      setPriorityCategoryMarkColor: s.setPriorityCategoryMarkColor,
       prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
       appendPrioritySectionsCategoryKeys: s.appendPrioritySectionsCategoryKeys,
       setPrioritySectionsCategoryOrder: s.setPrioritySectionsCategoryOrder,
@@ -2545,45 +2546,98 @@ export function PriorityBasedPlanSection({
           />
           <View
             style={[
-              styles.timeModalCard,
+              styles.timeModalCardShell,
               {
-                backgroundColor: isDark ? c.containerLow : '#FFFFFF',
-                borderColor: isDark ? RetroFlatColors.dark.border : '#000000',
+                marginRight: SOLID_SHADOW_OFFSET,
+                marginBottom: SOLID_SHADOW_OFFSET,
               },
             ]}>
-            <ScrollView
-              style={styles.timeModalScroll}
-              contentContainerStyle={styles.timeModalScrollContent}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled">
-              <ThemedText style={[styles.dateModalHint, styles.timeModalLead, { color: c.onVariant }]}>
-                {t('dayPlan.timeModalHint')}
-              </ThemedText>
-              {priorityTimeModalOpen && (
-                <CatalogRowSpineTimePanel
-                  key={priorityTimeModalKey}
-                  ref={priorityTimePanelRef}
-                  startMinutes={parseHHmmToMinutes(priorityStart) ?? 9 * 60}
-                  endMinutes={parseHHmmToMinutes(priorityEnd) ?? 18 * 60}
-                  endsNextCalendarDay={endsOnNextCalendarDay(priorityStart, priorityEnd)}
-                  baseDateKey={priorityPlanDateKey}
-                  presentation="sheet"
-                  contentInsetLeft={0}
-                  ink={editorial.ink}
-                  muted={editorial.muted}
-                  line={editorial.line}
-                  isDark={isDark}
-                  onScheduleChange={applyPriorityTimeFromPanel}
-                />
-              )}
-              <Pressable
-                style={[styles.dateActionBtn, styles.dateActionGhost, { borderColor: c.catBorderIdle }]}
-                onPress={closePriorityTimeModal}
-                accessibilityRole="button"
-                accessibilityLabel={t('dayPlan.cancelClose')}>
-                <ThemedText style={[styles.dateActionText, { color: c.onSurface }]}>{t('common.cancel')}</ThemedText>
-              </Pressable>
-            </ScrollView>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.timeModalCardShadow,
+                {
+                  backgroundColor: isDark
+                    ? RetroFlatColors.dark.solidShadow
+                    : RetroFlatColors.light.text,
+                  transform: [
+                    { translateX: SOLID_SHADOW_OFFSET },
+                    { translateY: SOLID_SHADOW_OFFSET },
+                  ],
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.timeModalCard,
+                {
+                  backgroundColor: isDark
+                    ? RetroFlatColors.dark.surface
+                    : '#FFFFFF',
+                },
+              ]}>
+              <ScrollView
+                style={styles.timeModalScroll}
+                contentContainerStyle={styles.timeModalScrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled">
+                <ThemedText
+                  style={[styles.dateModalHint, styles.timeModalLead, { color: editorial.muted }]}>
+                  {t('dayPlan.timeModalHint')}
+                </ThemedText>
+                {priorityTimeModalOpen ? (
+                  <CatalogRowSpineTimePanel
+                    key={priorityTimeModalKey}
+                    ref={priorityTimePanelRef}
+                    startMinutes={parseHHmmToMinutes(priorityStart) ?? 9 * 60}
+                    endMinutes={parseHHmmToMinutes(priorityEnd) ?? 18 * 60}
+                    endsNextCalendarDay={endsOnNextCalendarDay(priorityStart, priorityEnd)}
+                    baseDateKey={priorityPlanDateKey}
+                    presentation="sheet"
+                    visualStyle="default"
+                    contentInsetLeft={0}
+                    ink={editorial.ink}
+                    muted={editorial.muted}
+                    line={editorial.line}
+                    isDark={isDark}
+                    showSheetConfirm={false}
+                    startFieldLabel={t('dayRhythm.dayStart')}
+                    endFieldLabel={t('dayRhythm.dayEnd')}
+                    startFieldHint={t('dayRhythm.dayStartHint')}
+                    endFieldHint={t('dayRhythm.dayEndHint')}
+                    onScheduleChange={applyPriorityTimeFromPanel}
+                  />
+                ) : null}
+                <View style={styles.timeModalFooterActions}>
+                  <BrutalConfirmButton
+                    align="stretch"
+                    compact
+                    label={t('common.cancel')}
+                    accessibilityLabel={t('dayPlan.cancelClose')}
+                    fill={isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF'}
+                    labelColor={editorial.muted}
+                    style={styles.timeModalCancelBtn}
+                    onPress={closePriorityTimeModal}
+                  />
+                  <BrutalConfirmButton
+                    align="stretch"
+                    compact
+                    label={t('dayPlan.applyTime')}
+                    accessibilityLabel={t('dayPlan.applyTimeA11y')}
+                    style={styles.timeModalSaveBtn}
+                    onPress={() => {
+                      const next = priorityTimePanelRef.current?.commitPendingSchedule();
+                      if (!next) return;
+                      applyPriorityTimeFromPanel(
+                        next.startMinutes,
+                        next.endMinutes,
+                        next.endsNextCalendarDay,
+                      );
+                    }}
+                  />
+                </View>
+              </ScrollView>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -2611,57 +2665,99 @@ export function PriorityBasedPlanSection({
           />
           <View
             style={[
-              styles.timeModalCard,
-              styles.timeModalCardNote,
+              styles.timeModalCardShell,
               {
-                backgroundColor: isDark ? c.containerLow : '#FFFFFF',
-                borderColor: isDark ? RetroFlatColors.dark.border : editorial.line,
+                marginRight: SOLID_SHADOW_OFFSET,
+                marginBottom: SOLID_SHADOW_OFFSET,
               },
             ]}>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.timeModalCardShadow,
+                {
+                  backgroundColor: isDark
+                    ? RetroFlatColors.dark.solidShadow
+                    : RetroFlatColors.light.text,
+                  transform: [
+                    { translateX: SOLID_SHADOW_OFFSET },
+                    { translateY: SOLID_SHADOW_OFFSET },
+                  ],
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.timeModalCard,
+                {
+                  backgroundColor: isDark
+                    ? RetroFlatColors.dark.surface
+                    : '#FFFFFF',
+                },
+              ]}>
             <ScrollView
               style={styles.timeModalScroll}
               contentContainerStyle={styles.timeModalScrollContent}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled">
               {bagRowTimeEdit ? (
-                <CatalogRowSpineTimePanel
-                  key={bagRowTimeModalKey}
-                  ref={bagRowTimePanelRef}
-                  startMinutes={bagRowTimeEdit.startMinutes}
-                  endMinutes={bagRowTimeEdit.endMinutes}
-                  endsNextCalendarDay={bagRowTimeEdit.endsNextCalendarDay}
-                  baseDateKey={priorityPlanDateKey}
-                  presentation="sheet"
-                  visualStyle="note"
-                  contentInsetLeft={0}
-                  ink={editorial.ink}
-                  muted={editorial.muted}
-                  line={editorial.line}
-                  isDark={isDark}
-                  priorityStart={priorityStart}
-                  priorityEnd={priorityEnd}
-                  startFieldLabel={t('dayPlan.routineStartLabel')}
-                  endFieldLabel={t('dayPlan.routineEndLabel')}
-                  showSheetConfirm={false}
-                  onScheduleChange={applyBagRowTimeFromPanel}
-                />
-              ) : null}
-              <View
-                style={[styles.timeModalFooterNote, { borderTopColor: editorial.line }]}>
-                <Pressable
-                  style={styles.timeModalFooterCancelHit}
-                  onPress={closeBagRowTimeModal}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('dayPlan.cancelClose')}>
-                  <ThemedText style={[styles.timeModalCancelNoteText, { color: c.onVariant }]}>
-                    {t('common.cancel')}
+                <>
+                  <ThemedText
+                    style={[
+                      styles.dateModalHint,
+                      styles.timeModalLead,
+                      { color: editorial.muted },
+                    ]}>
+                    {t('dayPlan.bagRowDayWindowCaption', {
+                      window: priorityWindowLine || `${priorityStart} — ${priorityEnd}`,
+                    })}
                   </ThemedText>
-                </Pressable>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.timeModalFooterSaveHit,
-                    pressed && { opacity: 0.55 },
-                  ]}
+                  <CatalogRowSpineTimePanel
+                    key={bagRowTimeModalKey}
+                    ref={bagRowTimePanelRef}
+                    startMinutes={bagRowTimeEdit.startMinutes}
+                    endMinutes={bagRowTimeEdit.endMinutes}
+                    endsNextCalendarDay={bagRowTimeEdit.endsNextCalendarDay}
+                    baseDateKey={priorityPlanDateKey}
+                    presentation="sheet"
+                    visualStyle="default"
+                    contentInsetLeft={0}
+                    ink={editorial.ink}
+                    muted={editorial.muted}
+                    line={editorial.line}
+                    isDark={isDark}
+                    priorityStart={priorityStart}
+                    priorityEnd={priorityEnd}
+                    startFieldLabel={t('dayPlan.routineNamedStartLabel', {
+                      label: bagRowTimeEdit.label,
+                    })}
+                    endFieldLabel={t('dayPlan.routineNamedEndLabel', {
+                      label: bagRowTimeEdit.label,
+                    })}
+                    startFieldHint={t('dayPlan.routineNamedStartHint')}
+                    endFieldHint={t('dayPlan.routineNamedEndHint')}
+                    showSheetConfirm={false}
+                    onScheduleChange={applyBagRowTimeFromPanel}
+                  />
+                </>
+              ) : null}
+              <View style={styles.timeModalFooterActions}>
+                <BrutalConfirmButton
+                  align="stretch"
+                  compact
+                  label={t('common.cancel')}
+                  accessibilityLabel={t('dayPlan.cancelClose')}
+                  fill={isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF'}
+                  labelColor={editorial.muted}
+                  style={styles.timeModalCancelBtn}
+                  onPress={closeBagRowTimeModal}
+                />
+                <BrutalConfirmButton
+                  align="stretch"
+                  compact
+                  label={t('common.save')}
+                  accessibilityLabel={t('dayPlan.saveRoutineTimeA11y')}
+                  style={styles.timeModalSaveBtn}
                   onPress={() => {
                     const next = bagRowTimePanelRef.current?.commitPendingSchedule();
                     if (!next) return;
@@ -2671,18 +2767,10 @@ export function PriorityBasedPlanSection({
                       next.endsNextCalendarDay,
                     );
                   }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('dayPlan.saveRoutineTimeA11y')}>
-                  <ThemedText
-                    style={[
-                      styles.timeModalFooterSaveText,
-                      { color: editorial.ink, borderBottomColor: editorial.ink },
-                    ]}>
-                    {t('common.save')}
-                  </ThemedText>
-                </Pressable>
+                />
               </View>
             </ScrollView>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -3153,12 +3241,12 @@ export function PriorityBasedPlanSection({
                                           label: cat.label,
                                         })
                                       }
-                                      itemPriority={resolveCategoryImportance(
+                                      itemMarkColor={resolveCategoryMarkColor(
                                         priorityCategoryImportance,
                                         cat.key,
                                       )}
-                                      onCycleItemPriority={() =>
-                                        cyclePriorityCategoryImportance(cat.key)
+                                      onSelectItemMarkColor={(color) =>
+                                        setPriorityCategoryMarkColor(cat.key, color)
                                       }
                                       isFocusStarted={isFocusStarted}
                                       isCompleted={rowDone}
@@ -3680,16 +3768,26 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
-  timeModalCard: {
-    borderRadius: 0,
-    borderWidth: 2,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+  timeModalCardShell: {
+    position: 'relative',
     maxWidth: 420,
     maxHeight: '88%',
     width: '100%',
     alignSelf: 'center',
     zIndex: 2,
+  },
+  timeModalCardShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
+  timeModalCard: {
+    borderRadius: 0,
+    borderWidth: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    width: '100%',
+    maxHeight: '100%',
+    zIndex: 1,
     elevation: 0,
   },
   timeModalCardNote: {
@@ -3719,6 +3817,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderTopWidth: StyleSheet.hairlineWidth,
   },
+  timeModalFooterActions: {
+    marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 8,
+  },
+  timeModalCancelBtn: {
+    flex: 1,
+  },
+  timeModalCancelShell: {
+    position: 'relative',
+    flex: 1,
+  },
+  timeModalCancelFace: {
+    minHeight: 40,
+    borderWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    zIndex: 1,
+  },
+  timeModalSaveBtn: {
+    flex: 1,
+  },
   timeModalFooterCancelHit: {
     paddingVertical: 2,
     paddingRight: 12,
@@ -3729,7 +3851,7 @@ const styles = StyleSheet.create({
   },
   timeModalCancelNoteText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: -0.15,
   },
   timeModalFooterSaveText: {

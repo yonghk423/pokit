@@ -8,7 +8,6 @@ import {
   ScrollView,
   Share,
   StyleSheet,
-  TextInput,
   useWindowDimensions,
   View,
   Alert,
@@ -34,15 +33,17 @@ import { readingBookEntryToShareText } from '@entities/day-plan/lib/readingBookS
 import { AladinAttributionLine, openAladinProductPage } from '@features/aladin-book-search';
 import { OpenLibraryAttributionLine, openOpenLibraryBookPage } from '@features/open-library-book-search';
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 
 type Palette = ReturnType<typeof goalDetailSettingsPalette>;
 
-const READING_ACCENT = RetroFlatColors.light.primary;
+const CHIP_SHADOW = 2;
 
 function pageToInputValue(value: unknown, fallback: number): string {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -70,6 +71,10 @@ export function ReadingBookDetailSheet({
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const isDark = useColorScheme() === 'dark';
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const shadowInk = isDark ? tone.solidShadow : tone.text;
+  const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
   const { height: windowHeight } = useWindowDimensions();
   const c = palette;
   const scrollRef = useRef<ScrollView>(null);
@@ -91,6 +96,7 @@ export function ReadingBookDetailSheet({
   const [startPageStr, setStartPageStr] = useState('1');
   const [targetPageStr, setTargetPageStr] = useState('100');
   const [memo, setMemo] = useState('');
+  const [pageFieldFocus, setPageFieldFocus] = useState<'start' | 'target' | null>(null);
 
   // entry 식별자·저장된 페이지만 의존 — ensureReadingBookPages 결과 객체는 매 렌더 새로 생겨
   // 입력 중 값이 리셋되는 것을 막는다.
@@ -309,28 +315,45 @@ export function ReadingBookDetailSheet({
               <View style={styles.statusRow}>
                 {statusOptions.map((opt) => {
                   const on = status === opt.key;
+                  const shadow = on ? 3 : CHIP_SHADOW;
                   return (
-                    <Pressable
+                    <View
                       key={opt.key}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: on }}
-                      onPress={() => setStatus(opt.key)}
                       style={[
-                        styles.statusChip,
-                        {
-                          borderColor: on ? c.onSurface : c.outline,
-                          backgroundColor: on ? 'rgba(0,0,0,0.06)' : 'transparent',
-                        },
+                        styles.chipShell,
+                        { marginRight: shadow, marginBottom: shadow },
                       ]}>
-                      <ThemedText
-                        style={{
-                          fontSize: 12,
-                          fontWeight: on ? '800' : '600',
-                          color: on ? c.onSurface : c.onVariant,
-                        }}>
-                        {opt.label}
-                      </ThemedText>
-                    </Pressable>
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.chipShadow,
+                          {
+                            backgroundColor: shadowInk,
+                            transform: [{ translateX: shadow }, { translateY: shadow }],
+                          },
+                        ]}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: on }}
+                        onPress={() => setStatus(opt.key)}
+                        style={({ pressed }) => [
+                          styles.statusChip,
+                          {
+                            backgroundColor: on ? tone.primaryContainer : faceWhite,
+                            opacity: pressed ? 0.9 : 1,
+                          },
+                        ]}>
+                        <ThemedText
+                          style={{
+                            fontSize: 12,
+                            fontWeight: on ? '800' : '600',
+                            color: on ? tone.primary : c.onVariant,
+                          }}>
+                          {opt.label}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
                   );
                 })}
               </View>
@@ -360,70 +383,148 @@ export function ReadingBookDetailSheet({
                 <View
                   style={[
                     styles.progressFill,
-                    { width: `${progressPct}%`, backgroundColor: READING_ACCENT },
+                    { width: `${progressPct}%`, backgroundColor: isDark ? tone.text : '#000000' },
                   ]}
                 />
               </View>
             ) : null}
 
             <View style={styles.pageFields}>
-              <View style={[styles.pageField, { borderColor: c.outlineVariant }]}>
-                <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>
-                  {t('goalDetail.reading.start')}
-                </ThemedText>
-                <View style={styles.pageFieldInputRow}>
-                  <TextInput
-                    value={startPageStr}
-                    onChangeText={setStartPageStr}
-                    onBlur={() => commitPages(startPage, targetPage)}
-                    placeholder="1"
-                    placeholderTextColor={c.outline}
-                    keyboardType="number-pad"
-                    style={[styles.pageFieldInput, { color: c.onSurface }]}
+              {(
+                [
+                  {
+                    key: 'start' as const,
+                    label: t('goalDetail.reading.start'),
+                    accent: false,
+                    editable: true,
+                    content: (
+                      <View
+                        style={[
+                          styles.pageFieldEditableValue,
+                          {
+                            borderBottomColor:
+                              pageFieldFocus === 'start' ? tone.primary : shadowInk,
+                          },
+                        ]}>
+                        <ThemedTextInput
+                          value={startPageStr}
+                          onChangeText={setStartPageStr}
+                          onFocus={() => setPageFieldFocus('start')}
+                          onBlur={() => {
+                            setPageFieldFocus(null);
+                            commitPages(startPage, targetPage);
+                          }}
+                          placeholder="1"
+                          placeholderTextColor={c.outline}
+                          keyboardType="number-pad"
+                          selectionColor={tone.primary}
+                          style={[styles.pageFieldInput, { color: c.onSurface }]}
+                        />
+                        <ThemedText style={[styles.pageFieldSuffix, { color: c.onVariant }]}>P</ThemedText>
+                      </View>
+                    ),
+                  },
+                  {
+                    key: 'target' as const,
+                    label: t('goalDetail.reading.target'),
+                    accent: false,
+                    editable: true,
+                    content: (
+                      <View
+                        style={[
+                          styles.pageFieldEditableValue,
+                          {
+                            borderBottomColor:
+                              pageFieldFocus === 'target' ? tone.primary : shadowInk,
+                          },
+                        ]}>
+                        <ThemedTextInput
+                          value={targetPageStr}
+                          onChangeText={setTargetPageStr}
+                          onFocus={() => setPageFieldFocus('target')}
+                          onBlur={() => {
+                            setPageFieldFocus(null);
+                            commitPages(startPage, targetPage);
+                          }}
+                          placeholder="100"
+                          placeholderTextColor={c.outline}
+                          keyboardType="number-pad"
+                          selectionColor={tone.primary}
+                          style={[styles.pageFieldInput, { color: c.onSurface }]}
+                        />
+                        <ThemedText style={[styles.pageFieldSuffix, { color: c.onVariant }]}>P</ThemedText>
+                      </View>
+                    ),
+                  },
+                  {
+                    key: 'total' as const,
+                    label: t('goalDetail.reading.total'),
+                    accent: false,
+                    editable: false,
+                    content:
+                      totalPages != null ? (
+                        <View style={styles.pageFieldInputRow}>
+                          <ThemedText style={[styles.pageFieldValue, { color: c.onSurface }]}>
+                            {totalPages}
+                          </ThemedText>
+                          <ThemedText style={[styles.pageFieldSuffix, { color: c.onVariant }]}>P</ThemedText>
+                        </View>
+                      ) : (
+                        <ThemedText style={[styles.pageFieldValueMuted, { color: c.outline }]}>—</ThemedText>
+                      ),
+                  },
+                  {
+                    key: 'read' as const,
+                    label: t('goalDetail.reading.pagesToRead'),
+                    accent: true,
+                    editable: false,
+                    content: (
+                      <ThemedText style={[styles.pageFieldValue, { color: tone.primary }]}>
+                        {pagesRead}
+                      </ThemedText>
+                    ),
+                  },
+                ]
+              ).map((field) => (
+                <View
+                  key={field.key}
+                  style={[
+                    styles.chipShell,
+                    styles.pageFieldShell,
+                    { marginRight: CHIP_SHADOW, marginBottom: CHIP_SHADOW },
+                  ]}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.chipShadow,
+                      {
+                        backgroundColor: shadowInk,
+                        transform: [
+                          { translateX: CHIP_SHADOW },
+                          { translateY: CHIP_SHADOW },
+                        ],
+                      },
+                    ]}
                   />
-                  <ThemedText style={[styles.pageFieldSuffix, { color: c.onVariant }]}>P</ThemedText>
-                </View>
-              </View>
-              <View style={[styles.pageField, { borderColor: c.outlineVariant }]}>
-                <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>
-                  {t('goalDetail.reading.target')}
-                </ThemedText>
-                <View style={styles.pageFieldInputRow}>
-                  <TextInput
-                    value={targetPageStr}
-                    onChangeText={setTargetPageStr}
-                    onBlur={() => commitPages(startPage, targetPage)}
-                    placeholder="100"
-                    placeholderTextColor={c.outline}
-                    keyboardType="number-pad"
-                    style={[styles.pageFieldInput, { color: c.onSurface }]}
-                  />
-                  <ThemedText style={[styles.pageFieldSuffix, { color: c.onVariant }]}>P</ThemedText>
-                </View>
-              </View>
-              <View style={[styles.pageField, styles.pageFieldTotal, { borderColor: c.outlineVariant }]}>
-                <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>
-                  {t('goalDetail.reading.total')}
-                </ThemedText>
-                {totalPages != null ? (
-                  <View style={styles.pageFieldInputRow}>
-                    <ThemedText style={[styles.pageFieldValue, { color: c.onSurface }]}>
-                      {totalPages}
-                    </ThemedText>
-                    <ThemedText style={[styles.pageFieldSuffix, { color: c.onVariant }]}>P</ThemedText>
+                  <View
+                    style={[
+                      styles.pageField,
+                      {
+                        backgroundColor: field.accent ? tone.primaryContainer : faceWhite,
+                      },
+                    ]}>
+                    <View style={styles.pageFieldLabelRow}>
+                      <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>
+                        {field.label}
+                      </ThemedText>
+                      {field.editable ? (
+                        <IconSymbol name="pencil" size={8} color={c.onVariant} />
+                      ) : null}
+                    </View>
+                    {field.content}
                   </View>
-                ) : (
-                  <ThemedText style={[styles.pageFieldValueMuted, { color: c.outline }]}>—</ThemedText>
-                )}
-              </View>
-              <View style={[styles.pageField, styles.pageFieldRead, { borderColor: READING_ACCENT }]}>
-                <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>
-                  {t('goalDetail.reading.pagesToRead')}
-                </ThemedText>
-                <ThemedText style={[styles.pageFieldValue, { color: READING_ACCENT }]}>
-                  {pagesRead}
-                </ThemedText>
-              </View>
+                </View>
+              ))}
             </View>
             </View>
 
@@ -439,30 +540,48 @@ export function ReadingBookDetailSheet({
               <ThemedText style={[styles.sectionSub, { color: c.onVariant }]}>
                 {t('goalDetail.reading.memoHint')}
               </ThemedText>
-              <TextInput
-                value={memo}
-                onChangeText={(text) => setMemo(text.slice(0, READING_BOOK_MEMO_MAX))}
-                onFocus={() => {
-                  setIsMemoFocused(true);
-                  scrollMemoIntoView();
-                }}
-                onBlur={() => {
-                  setIsMemoFocused(false);
-                  commitMemo();
-                }}
-                placeholder={t('goalDetail.reading.memoPlaceholder')}
-                placeholderTextColor={c.outline}
-                multiline
-                textAlignVertical="top"
+              <View
                 style={[
-                  styles.memoInput,
-                  {
-                    color: c.onSurface,
-                    borderColor: c.outlineVariant,
-                    backgroundColor: c.surfaceLow,
-                  },
-                ]}
-              />
+                  styles.chipShell,
+                  { marginRight: CHIP_SHADOW, marginBottom: CHIP_SHADOW },
+                ]}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.chipShadow,
+                    {
+                      backgroundColor: shadowInk,
+                      transform: [
+                        { translateX: CHIP_SHADOW },
+                        { translateY: CHIP_SHADOW },
+                      ],
+                    },
+                  ]}
+                />
+                <ThemedTextInput
+                  value={memo}
+                  onChangeText={(text) => setMemo(text.slice(0, READING_BOOK_MEMO_MAX))}
+                  onFocus={() => {
+                    setIsMemoFocused(true);
+                    scrollMemoIntoView();
+                  }}
+                  onBlur={() => {
+                    setIsMemoFocused(false);
+                    commitMemo();
+                  }}
+                  placeholder={t('goalDetail.reading.memoPlaceholder')}
+                  placeholderTextColor={c.outline}
+                  multiline
+                  textAlignVertical="top"
+                  style={[
+                    styles.memoInput,
+                    {
+                      color: c.onSurface,
+                      backgroundColor: faceWhite,
+                    },
+                  ]}
+                />
+              </View>
             </View>
 
             {catalogSource === 'aladin' ? (
@@ -471,19 +590,44 @@ export function ReadingBookDetailSheet({
               <OpenLibraryAttributionLine color={c.outline} compact />
             ) : null}
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('goalDetail.reading.removeA11y', { title: entry.title })}
-              onPress={() => {
-                onRemove();
-                onClose();
-              }}
-              style={[styles.removeBtn, { borderColor: c.outline }]}>
-              <IconSymbol name="trash" size={14} color={c.onVariant} />
-              <ThemedText style={[styles.removeBtnText, { color: c.onVariant }]}>
-                {t('goalDetail.reading.removeFromLibrary')}
-              </ThemedText>
-            </Pressable>
+            <View
+              style={[
+                styles.chipShell,
+                { marginRight: 3, marginBottom: 3 },
+              ]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.chipShadow,
+                  {
+                    backgroundColor: tone.danger,
+                    transform: [{ translateX: 3 }, { translateY: 3 }],
+                  },
+                ]}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('goalDetail.reading.removeA11y', { title: entry.title })}
+                onPress={() => {
+                  onRemove();
+                  onClose();
+                }}
+                style={({ pressed }) => [
+                  styles.removeBtn,
+                  {
+                    backgroundColor: pressed
+                      ? isDark
+                        ? '#B3261E'
+                        : '#F5B8B2'
+                      : tone.dangerBg,
+                    opacity: pressed ? 0.94 : 1,
+                  },
+                ]}>
+                <ThemedText style={[styles.removeBtnText, { color: tone.danger }]}>
+                  {t('goalDetail.reading.removeFromLibrary')}
+                </ThemedText>
+              </Pressable>
+            </View>
           </ScrollView>
         </View>
       </View>
@@ -536,12 +680,20 @@ const styles = StyleSheet.create({
   statusSection: { gap: 8 },
   fieldLabel: { fontSize: 12, fontWeight: '800', letterSpacing: -0.1 },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chipShell: {
+    position: 'relative',
+  },
+  chipShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
   statusChip: {
-    borderWidth: 2,
+    borderWidth: 0,
     paddingHorizontal: 10,
     paddingVertical: 7,
     minHeight: 34,
     justifyContent: 'center',
+    zIndex: 1,
   },
   goalSection: { gap: 8 },
   sectionTitle: { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
@@ -557,41 +709,58 @@ const styles = StyleSheet.create({
   progressTrack: { height: 4, width: '100%', overflow: 'hidden' },
   progressFill: { height: '100%' },
   pageFields: { flexDirection: 'row', gap: 4 },
+  pageFieldShell: {
+    flex: 1,
+    minWidth: 0,
+  },
   pageField: {
     flex: 1,
-    borderWidth: 2,
+    borderWidth: 0,
     paddingVertical: 6,
     paddingHorizontal: 2,
     gap: 2,
     alignItems: 'center',
     minWidth: 0,
+    zIndex: 1,
   },
-  pageFieldRead: { justifyContent: 'center' },
-  pageFieldTotal: { justifyContent: 'center' },
   pageFieldLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 0.2 },
+  pageFieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
   pageFieldInputRow: { flexDirection: 'row', alignItems: 'baseline', gap: 1 },
-  pageFieldInput: { fontSize: 15, fontWeight: '800', textAlign: 'center', padding: 0, minWidth: 22 },
-  pageFieldSuffix: { fontSize: 10, fontWeight: '700' },
-  pageFieldValue: { fontSize: 15, fontWeight: '800', letterSpacing: -0.3 },
-  pageFieldValueMuted: { fontSize: 15, fontWeight: '700' },
+  pageFieldEditableValue: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 1,
+    borderBottomWidth: 2,
+    paddingBottom: 1,
+    minWidth: 28,
+    justifyContent: 'center',
+  },
+  pageFieldInput: { fontSize: 15, fontWeight: '600', textAlign: 'center', padding: 0, minWidth: 22 },
+  pageFieldSuffix: { fontSize: 10, fontWeight: '600' },
+  pageFieldValue: { fontSize: 15, fontWeight: '600', letterSpacing: -0.3 },
+  pageFieldValueMuted: { fontSize: 15, fontWeight: '500' },
   memoSection: { gap: 8 },
   memoInput: {
     minHeight: 88,
-    borderWidth: 2,
+    borderWidth: 0,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
     fontWeight: '600',
     lineHeight: 20,
+    zIndex: 1,
   },
   removeBtn: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    borderWidth: 2,
-    paddingVertical: 12,
+    borderWidth: 0,
+    paddingVertical: 14,
     marginTop: 4,
+    zIndex: 1,
   },
-  removeBtnText: { fontSize: 14, fontWeight: '700' },
+  removeBtnText: { fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
 });

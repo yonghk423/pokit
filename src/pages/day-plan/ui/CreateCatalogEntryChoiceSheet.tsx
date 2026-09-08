@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -18,6 +19,68 @@ type Props = {
   line: string;
 };
 
+const SHADOW_SM = 2;
+
+function ChoiceOption({
+  accessibilityLabel,
+  title,
+  hint,
+  icon,
+  iconSize,
+  ink,
+  muted,
+  rowBg,
+  rowBgPressed,
+  iconBg,
+  shadow,
+  onPress,
+}: {
+  accessibilityLabel: string;
+  title: string;
+  hint: string;
+  icon: 'plus.circle.fill' | 'folder.fill';
+  iconSize: number;
+  ink: string;
+  muted: string;
+  rowBg: string;
+  rowBgPressed: string;
+  iconBg: string;
+  shadow: string;
+  onPress: () => void;
+}) {
+  return (
+    <View style={[styles.optionShell, { marginRight: SHADOW_SM, marginBottom: SHADOW_SM }]}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.optionShadow,
+          {
+            backgroundColor: shadow,
+            transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
+          },
+        ]}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.optionRow,
+          { backgroundColor: pressed ? rowBgPressed : rowBg },
+        ]}>
+        <View style={[styles.optionIcon, { backgroundColor: iconBg }]}>
+          <IconSymbol name={icon} size={iconSize} color={ink} />
+        </View>
+        <View style={styles.optionText}>
+          <ThemedText style={[styles.optionTitle, { color: ink }]}>{title}</ThemedText>
+          <ThemedText style={[styles.optionHint, { color: muted }]}>{hint}</ThemedText>
+        </View>
+        <IconSymbol name="chevron.right" size={14} color={muted} />
+      </Pressable>
+    </View>
+  );
+}
+
 /** `+` 버튼 — 새 루틴 / 새 묶음 선택 */
 export function CreateCatalogEntryChoiceSheet({
   visible,
@@ -32,8 +95,10 @@ export function CreateCatalogEntryChoiceSheet({
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const rowBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
-  const iconBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+  /** 외곽선 없이 음영만 쓸 때는 면이 불투명해야 뒤 그림자가 비치지 않음 */
+  const rowBg = isDark ? RetroFlatColors.dark.surfaceContainer : '#FFFFFF';
+  const rowBgPressed = isDark ? RetroFlatColors.dark.surfaceAlt : '#F3F0E8';
+  const iconBg = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.06)';
 
   return (
     <Modal
@@ -67,55 +132,40 @@ export function CreateCatalogEntryChoiceSheet({
           </View>
 
           <View style={styles.options}>
-            <Pressable
-              accessibilityRole="button"
+            <ChoiceOption
               accessibilityLabel={t('catalog.choiceNewRoutineA11y')}
+              title={t('catalog.choiceNewRoutineTitle')}
+              hint={t('catalog.choiceNewRoutineHint')}
+              icon="plus.circle.fill"
+              iconSize={20}
+              ink={ink}
+              muted={muted}
+              rowBg={rowBg}
+              rowBgPressed={rowBgPressed}
+              iconBg={iconBg}
+              shadow={line}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onCreateRoutine();
               }}
-              style={({ pressed }) => [
-                styles.optionRow,
-                { backgroundColor: rowBg, borderColor: line, opacity: pressed ? 0.82 : 1 },
-              ]}>
-              <View style={[styles.optionIcon, { backgroundColor: iconBg }]}>
-                <IconSymbol name="plus.circle.fill" size={20} color={ink} />
-              </View>
-              <View style={styles.optionText}>
-                <ThemedText style={[styles.optionTitle, { color: ink }]}>
-                  {t('catalog.choiceNewRoutineTitle')}
-                </ThemedText>
-                <ThemedText style={[styles.optionHint, { color: muted }]}>
-                  {t('catalog.choiceNewRoutineHint')}
-                </ThemedText>
-              </View>
-              <IconSymbol name="chevron.right" size={14} color={muted} />
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
+            />
+            <ChoiceOption
               accessibilityLabel={t('catalog.choiceNewGroupA11y')}
+              title={t('catalog.choiceNewGroupTitle')}
+              hint={t('catalog.choiceNewGroupHint')}
+              icon="folder.fill"
+              iconSize={18}
+              ink={ink}
+              muted={muted}
+              rowBg={rowBg}
+              rowBgPressed={rowBgPressed}
+              iconBg={iconBg}
+              shadow={line}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onCreateGroup();
               }}
-              style={({ pressed }) => [
-                styles.optionRow,
-                { backgroundColor: rowBg, borderColor: line, opacity: pressed ? 0.82 : 1 },
-              ]}>
-              <View style={[styles.optionIcon, { backgroundColor: iconBg }]}>
-                <IconSymbol name="folder.fill" size={18} color={ink} />
-              </View>
-              <View style={styles.optionText}>
-                <ThemedText style={[styles.optionTitle, { color: ink }]}>
-                  {t('catalog.choiceNewGroupTitle')}
-                </ThemedText>
-                <ThemedText style={[styles.optionHint, { color: muted }]}>
-                  {t('catalog.choiceNewGroupHint')}
-                </ThemedText>
-              </View>
-              <IconSymbol name="chevron.right" size={14} color={muted} />
-            </Pressable>
+            />
           </View>
         </View>
       </View>
@@ -170,6 +220,12 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     gap: 10,
   },
+  optionShell: {
+    position: 'relative',
+  },
+  optionShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -177,8 +233,9 @@ const styles = StyleSheet.create({
     minHeight: 68,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderWidth: 2,
+    borderWidth: 0,
     borderRadius: 0,
+    zIndex: 1,
   },
   optionIcon: {
     width: 40,

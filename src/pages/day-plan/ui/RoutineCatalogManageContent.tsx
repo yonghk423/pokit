@@ -460,25 +460,18 @@ export function RoutineCatalogManageContent() {
                   <ThemedText style={[styles.lead, { color: isDark ? '#FAFAFA' : editorial.ink }]}>
                     {t('catalog.managePageLead')}
                   </ThemedText>
-                  <View style={styles.leadAddShell} pointerEvents="none">
-                    <View
-                      style={[
-                        styles.leadAddShadow,
-                        { backgroundColor: editorial.shadow },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.leadAddFace,
-                        {
-                          backgroundColor: isDark
-                            ? 'rgba(255,255,255,0.14)'
-                            : 'rgba(245,242,235,0.95)',
-                          borderColor: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.14)',
-                        },
-                      ]}>
-                      <IconSymbol name="plus" size={14} color={editorial.ink} />
-                    </View>
+                  <View
+                    style={[
+                      styles.leadAddFace,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255,255,255,0.14)'
+                          : 'rgba(255,255,255,0.72)',
+                        borderColor: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.14)',
+                      },
+                    ]}
+                    pointerEvents="none">
+                    <IconSymbol name="plus" size={13} color={isDark ? '#FAFAFA' : editorial.ink} />
                   </View>
                 </View>
               </View>
@@ -642,27 +635,14 @@ const styles = StyleSheet.create({
     flexWrap: 'nowrap',
     gap: 10,
   },
-  leadAddShell: {
-    width: 28,
-    height: 28,
-    position: 'relative',
-    marginRight: 2,
-    marginBottom: 2,
-    flexShrink: 0,
-    alignSelf: 'center',
-  },
-  leadAddShadow: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 0,
-    transform: [{ translateX: 2 }, { translateY: 2 }],
-  },
   leadAddFace: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 0,
+    width: 26,
+    height: 26,
     borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1,
+    flexShrink: 0,
   },
   headerArtSlot: {
     width: 72,

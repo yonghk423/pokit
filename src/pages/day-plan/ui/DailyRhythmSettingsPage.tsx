@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 8,
     paddingBottom: 10,
-    borderBottomWidth: 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerBtn: {
     width: 44,
