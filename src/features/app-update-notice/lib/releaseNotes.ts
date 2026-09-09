@@ -2,15 +2,20 @@ import { getAppLocale, t, type AppLocale, type I18nKey } from '@shared/lib/i18n'
 
 /** 버전별 업데이트 안내 — i18n 키가 있으면 로케일 반영, 없으면 한국어 폴백 */
 const RELEASE_NOTE_I18N_KEYS: Record<string, readonly I18nKey[]> = {
-  '1.7.3': [
-    'appUpdate.release.1_7_3.h1',
-    'appUpdate.release.1_7_3.h2',
-    'appUpdate.release.1_7_3.h3',
+  '1.7.4': [
+    'appUpdate.release.1_7_4.h1',
+    'appUpdate.release.1_7_4.h2',
+    'appUpdate.release.1_7_4.h3',
   ],
 };
 
 /** 예전 버전(키 미등록) — 한국어 고정 폴백 */
 const RELEASE_NOTE_HIGHLIGHTS_KO: Record<string, string[]> = {
+  '1.7.3': [
+    '담기 루틴에 형광펜 중요도 표시(색 마커)를 추가했어요.',
+    '시작·마무리·루틴 시간 설정을 설정 탭과 같은 스타일로 맞췄어요.',
+    '글씨체별 크기 차이를 보정하고, 화면 UI를 시티팝 톤으로 다듬었어요.',
+  ],
   '1.7.2': [
     '포킷 빠르게 둘러보기에 눌러볼 버튼 아이콘 안내를 넣었어요.',
     '체크리스트를 눌러보라는 유도 문구와 애니메이션을 추가했어요.',

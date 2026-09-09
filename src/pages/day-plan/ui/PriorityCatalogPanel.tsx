@@ -14,7 +14,6 @@ import Reanimated, {
 import {
   formatSpineScheduleRangeLabel,
   getLocalDateKey,
-  isNonDeletableCatalogKey,
   lookupCategoryPlannedDayCount,
   PRIORITY_MARK_COLOR_PRESETS,
   priorityMarkTitleHighlight,
@@ -1211,9 +1210,7 @@ function renderRows(
           onMoveCustomFlow ? () => onMoveCustomFlow(cat.key, cat.label) : undefined
         }
         onDeleteItem={
-          onDeleteCatalogItem && !isNonDeletableCatalogKey(cat.key)
-            ? () => onDeleteCatalogItem(cat.key, cat.label)
-            : undefined
+          onDeleteCatalogItem ? () => onDeleteCatalogItem(cat.key, cat.label) : undefined
         }
         showMealSlotPicker={Boolean(sectionsCatalogOptions)}
         selectedMealSlots={

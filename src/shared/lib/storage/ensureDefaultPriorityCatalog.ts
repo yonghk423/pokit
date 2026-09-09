@@ -47,6 +47,7 @@ import {
 } from './migrateHealthIntakeCatalog';
 import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
+import { loadHiddenStandardCatalogKeys } from './hiddenStandardCatalogStorage';
 import { normalizeCustomFlowIcon } from '../customFlowAppearanceCatalog';
 
 /** 제거된 표준 카탈로그 키 — 기존 저장 데이터 마이그레이션용 */
@@ -463,8 +464,10 @@ function migrateHabitPresetFlowsToChecklist(): void {
 
 function mergeDefaultCustomFlows(): void {
   const curIds = new Set(listCustomFlowCatalogEntries().map((e) => e.id));
+  const hiddenIds = new Set(loadHiddenStandardCatalogKeys());
 
   for (const flow of DEFAULT_BUILTIN_CUSTOM_FLOWS) {
+    if (hiddenIds.has(flow.id)) continue;
     if (!curIds.has(flow.id)) {
       appendCustomFlowCatalogEntry({ id: flow.id, groupKey: flow.groupKey });
     }
@@ -489,7 +492,9 @@ function mergeDefaultCustomFlows(): void {
   }
 
   if (DEFAULT_BUILTIN_CUSTOM_FLOWS.length > 0) {
-    appendGoalDetailCommittedCategoryKeys(DEFAULT_BUILTIN_CUSTOM_FLOWS.map((f) => f.id));
+    appendGoalDetailCommittedCategoryKeys(
+      DEFAULT_BUILTIN_CUSTOM_FLOWS.map((f) => f.id).filter((id) => !hiddenIds.has(id)),
+    );
   }
 }
 

@@ -1,8 +1,10 @@
 import {
+  hideStandardCatalogKey,
   removeCustomFlowCatalogId,
   removeGoalDetailCategoryConfig,
   savePriorityCatalogFixedRoutineKeys,
 } from '@shared/lib/storage';
+import { isBuiltinPresetCustomFlowId } from '@shared/lib/storage/defaultPriorityCatalog';
 
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
@@ -30,6 +32,10 @@ export function deleteCustomFlowCategory(
 
   removeCustomFlowCatalogId(categoryKey);
   removeGoalDetailCategoryConfig(categoryKey);
+  // 기본 프리셋은 ensureDefault 시 다시 붙지 않도록 숨김 기록
+  if (isBuiltinPresetCustomFlowId(categoryKey)) {
+    hideStandardCatalogKey(categoryKey);
+  }
 
   deps.hydrateFixedFlowSets();
   const nextFixed = [
