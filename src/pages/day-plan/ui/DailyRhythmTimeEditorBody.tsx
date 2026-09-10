@@ -9,6 +9,14 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import Animated, {
+  Easing,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { addDaysToLocalDateKey, parseHHmmToMinutes } from '@entities/day-plan';
 import {
@@ -19,8 +27,9 @@ import {
 import { DigitalHhmmInput, type DigitalHhmmInputHandle } from '@shared/ui/digital-hhmm-input';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
+import { SmoothSegmentedControl } from '@shared/ui/smooth-segmented-control';
 import { ThemedText } from '@shared/ui/themed-text';
-import { DailyRhythmStyleAlarmRow, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
+import { DailyRhythmStyleAlarmRow, DayCycleDial, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
 import {
   formatDateKeyCompact,
@@ -28,20 +37,87 @@ import {
   splitDateKeyCompact,
   useTranslation,
 } from '@shared/lib/i18n';
+import { useMeasuredAccordion } from '@shared/lib/hooks';
 import { dailyRhythmOnboardingAssets } from '../lib/dailyRhythmOnboardingAssets';
-import { isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
+import { isOvernightHhmmRange, isInvalidSameDayEnd, endsOnNextCalendarDay } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
-import { DayCycleEmojiMark } from './DayCycleEmojiMark';
 
 type PickerTarget = 'start' | 'end' | null;
 
-function initialEndDateTargetFromRange(rangeLo?: string, rangeHi?: string): 'today' | 'nextDay' {
-  if (rangeLo && rangeHi && rangeHi > rangeLo) return 'nextDay';
-  return 'today';
+const TITLE_EASE = Easing.out(Easing.cubic);
+
+/** 온보딩 타이틀 — 단어 단위로 살짝 떠오르며, 민트 밑줄로 강조 (스케일 바운스 없음) */
+function OnboardingHeroTitle({
+  text,
+  color,
+  underlineColor,
+}: {
+  text: string;
+  color: string;
+  underlineColor: string;
+}) {
+  const parts = useMemo(() => {
+    const tokens = text.trim().split(/\s+/).filter(Boolean);
+    return tokens.length > 0 ? tokens : [text];
+  }, [text]);
+
+  const [underlineWidth, setUnderlineWidth] = useState(0);
+  const underline = useSharedValue(0);
+
+  useEffect(() => {
+    underline.value = 0;
+    underline.value = withDelay(
+      90 + parts.length * 75,
+      withTiming(1, { duration: 440, easing: TITLE_EASE }),
+    );
+  }, [parts.length, text, underline]);
+
+  const underlineStyle = useAnimatedStyle(() => ({
+    width: Math.max(0, underlineWidth * underline.value),
+    opacity: underlineWidth > 0 ? 0.9 : 0,
+  }));
+
+  return (
+    <View
+      style={styles.onboardTitleWrap}
+      accessible
+      accessibilityRole="header"
+      accessibilityLabel={text}
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        if (w > 0 && Math.abs(w - underlineWidth) > 1) setUnderlineWidth(w);
+      }}>
+      <View style={styles.onboardTitleRow} accessibilityElementsHidden>
+        {parts.map((part, i) => (
+          <Animated.View
+            key={`${part}-${i}`}
+            entering={FadeInDown.delay(50 + i * 75)
+              .duration(360)
+              .easing(TITLE_EASE)}>
+            <ThemedText
+              style={[styles.onboardTitle, { color }, cityPopFont('800')]}
+              lightColor={color}
+              darkColor={color}>
+              {part}
+              {i < parts.length - 1 ? ' ' : ''}
+            </ThemedText>
+          </Animated.View>
+        ))}
+      </View>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.onboardTitleUnderline,
+          { backgroundColor: underlineColor },
+          underlineStyle,
+        ]}
+      />
+    </View>
+  );
 }
 
-function suggestEndDateTarget(start: string, end: string): 'today' | 'nextDay' {
-  if (isOvernightHhmmRange(start, end)) return 'nextDay';
+function initialEndDateTargetFromRange(rangeLo?: string, rangeHi?: string): 'today' | 'nextDay' {
+  if (rangeLo && rangeHi && rangeHi > rangeLo) return 'nextDay';
   return 'today';
 }
 
@@ -114,6 +190,9 @@ function OnboardingTimeRow({
   const { t, locale } = useTranslation();
   const ink = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const selectedFg = isDark ? '#09090b' : '#FAFAFA';
+  const dateCaption =
+    dateParts != null ? `${dateParts.month} ${dateParts.day}`.replace(/\s+/g, ' ').trim() : null;
+  const accordion = useMeasuredAccordion(expanded);
 
   return (
     <View style={styles.onboardTimeBlock}>
@@ -155,21 +234,14 @@ function OnboardingTimeRow({
         </View>
 
         <View style={styles.onboardTimeRight}>
-          {dateParts ? (
-            <View style={styles.dateStack}>
-              <ThemedText
-                style={[styles.dateStackLine, { color: c.onVariant }, cityPopFont('700')]}
-                lightColor={c.onVariant}
-                darkColor={c.onVariant}>
-                {dateParts.month}
-              </ThemedText>
-              <ThemedText
-                style={[styles.dateStackLine, { color: c.onVariant }, cityPopFont('700')]}
-                lightColor={c.onVariant}
-                darkColor={c.onVariant}>
-                {dateParts.day}
-              </ThemedText>
-            </View>
+          {dateCaption ? (
+            <ThemedText
+              style={[styles.dateInline, { color: c.onVariant }, cityPopFont('700')]}
+              lightColor={c.onVariant}
+              darkColor={c.onVariant}
+              numberOfLines={1}>
+              {dateCaption}
+            </ThemedText>
           ) : null}
           <SolidShadowFace
             borderColor={c.border}
@@ -187,31 +259,35 @@ function OnboardingTimeRow({
         </View>
       </Pressable>
 
-      {expanded ? (
-        <View style={styles.inputBlock}>
-          <DigitalHhmmInput
-            ref={digitalRef}
-            valueHhmm={valueHhmm}
-            onChangeHhmm={onChangeHhmm}
-            ink={c.onSurface}
-            muted={c.onVariant}
-            line={c.border}
-            surface={isDark ? ink.surfaceAlt : '#FFFFFF'}
-            selectedForeground={selectedFg}
-            snapStepMinutes={1}
-            mapMidnightToEndOfDay={mapMidnightToEndOfDay}
-            accessibilityLabelPrefix={label}
-          />
-          <BrutalConfirmButton
-            accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
-            onPress={() => {
-              const flushed = digitalRef.current?.flush();
-              if (flushed) onChangeHhmm(flushed);
-              void Haptics.selectionAsync();
-              onToggleExpand();
-            }}
-          />
-        </View>
+      {accordion.mounted ? (
+        <Animated.View style={[styles.inputBlockPanel, accordion.panelStyle]}>
+          <View
+            style={styles.inputBlock}
+            onLayout={(e) => accordion.onContentLayout(e.nativeEvent.layout.height)}>
+            <DigitalHhmmInput
+              ref={digitalRef}
+              valueHhmm={valueHhmm}
+              onChangeHhmm={onChangeHhmm}
+              ink={c.onSurface}
+              muted={c.onVariant}
+              line={c.border}
+              surface={isDark ? ink.surfaceAlt : '#FFFFFF'}
+              selectedForeground={selectedFg}
+              snapStepMinutes={1}
+              mapMidnightToEndOfDay={mapMidnightToEndOfDay}
+              accessibilityLabelPrefix={label}
+            />
+            <BrutalConfirmButton
+              accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
+              onPress={() => {
+                const flushed = digitalRef.current?.flush();
+                if (flushed) onChangeHhmm(flushed);
+                void Haptics.selectionAsync();
+                onToggleExpand();
+              }}
+            />
+          </View>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -280,7 +356,6 @@ export function DailyRhythmTimeEditorBody({
   const [endDateTarget, setEndDateTarget] = useState<'today' | 'nextDay'>(() =>
     initialEndDateTargetFromRange(priorityPlanRangeLo, priorityPlanRangeHi),
   );
-  const endDatePinnedRef = useRef(false);
   const endDateTargetRef = useRef<'today' | 'nextDay'>(
     initialEndDateTargetFromRange(priorityPlanRangeLo, priorityPlanRangeHi),
   );
@@ -297,17 +372,14 @@ export function DailyRhythmTimeEditorBody({
     setStartHhmm(seedStart);
     setEndHhmm(seedEnd);
     setPickerTarget(null);
-    endDatePinnedRef.current = false;
+    // 당일/다음 날은 사용자가 직접 고른 값만 쓴다. 시각으로 자동 추론하지 않음.
     const initial = initialEndDateTargetFromRange(priorityPlanRangeLo, priorityPlanRangeHi);
-    const suggested =
-      initial === 'today' && isOvernightHhmmRange(seedStart, seedEnd) ? 'nextDay' : initial;
-    endDateTargetRef.current = suggested;
-    setEndDateTarget(suggested);
+    endDateTargetRef.current = initial;
+    setEndDateTarget(initial);
   }, [seedKey, seedStart, seedEnd, priorityPlanRangeLo, priorityPlanRangeHi]);
 
   const applyEndDateTarget = useCallback(
-    (target: 'today' | 'nextDay', start: string, end: string, fromUser = false) => {
-      if (fromUser) endDatePinnedRef.current = true;
+    (target: 'today' | 'nextDay', start: string, end: string) => {
       endDateTargetRef.current = target;
       setEndDateTarget(target);
       onEndDateChoice?.(start, end, target);
@@ -315,16 +387,10 @@ export function DailyRhythmTimeEditorBody({
     [onEndDateChoice],
   );
 
-  const syncEndDateForTimes = useCallback(
+  /** 시각만 갱신 — 당일/다음 날 선택은 그대로 유지 */
+  const syncTimesKeepingEndDate = useCallback(
     (start: string, end: string) => {
-      const target = endDatePinnedRef.current
-        ? endDateTargetRef.current
-        : suggestEndDateTarget(start, end);
-      if (!endDatePinnedRef.current) {
-        endDateTargetRef.current = target;
-        setEndDateTarget(target);
-      }
-      onEndDateChoice?.(start, end, target);
+      onEndDateChoice?.(start, end, endDateTargetRef.current);
     },
     [onEndDateChoice],
   );
@@ -332,18 +398,33 @@ export function DailyRhythmTimeEditorBody({
   const setStartHhmmWithSync = useCallback(
     (nextStart: string) => {
       setStartHhmm(nextStart);
-      syncEndDateForTimes(nextStart, endHhmm);
+      syncTimesKeepingEndDate(nextStart, endHhmm);
     },
-    [endHhmm, syncEndDateForTimes],
+    [endHhmm, syncTimesKeepingEndDate],
   );
 
   const setEndHhmmWithChoiceCheck = useCallback(
     (nextEnd: string) => {
       setEndHhmm(nextEnd);
-      syncEndDateForTimes(startHhmm, nextEnd);
+      syncTimesKeepingEndDate(startHhmm, nextEnd);
     },
-    [startHhmm, syncEndDateForTimes],
+    [startHhmm, syncTimesKeepingEndDate],
   );
+
+  /** 다이얼 onChange — 인라인 람다는 드래그 중 제스처 재생성·크래시 유발 가능 */
+  const onDialChange = useCallback(
+    (nextStart: string, nextEnd: string, endNextDay: boolean) => {
+      setStartHhmm(nextStart);
+      setEndHhmm(nextEnd);
+      applyEndDateTarget(endNextDay ? 'nextDay' : 'today', nextStart, nextEnd);
+    },
+    [applyEndDateTarget],
+  );
+
+  const [dialDragging, setDialDragging] = useState(false);
+  const onDialInteractionChange = useCallback((active: boolean) => {
+    setDialDragging(active);
+  }, []);
 
   const validateAndPrimary = useCallback(() => {
     const ps = parseHHmmToMinutes(startHhmm);
@@ -352,17 +433,21 @@ export function DailyRhythmTimeEditorBody({
       Alert.alert(t('alert.timeCheck.title'), t('alert.timeCheck.pickStartEnd'));
       return;
     }
-    if (endDateTarget === 'today' && pe <= ps) {
+    // 당일 + 자정(24:00/00:00) 또는 시작 이후가 아니면 통과 금지
+    // (이전에는 24:00이 수치상 통과한 뒤 표시만 다음 날로 바뀌어 혼란을 줌)
+    if (endDateTarget === 'today' && isInvalidSameDayEnd(startHhmm, endHhmm)) {
       Alert.alert(
         t('alert.timeRange.title'),
-        t('alert.timeRange.sameDayEndAfterStart'),
+        pe === 24 * 60 || pe === 0
+          ? t('alert.timeRange.sameDayMidnightNeedsNextDay')
+          : t('alert.timeRange.sameDayEndAfterStart'),
       );
       return;
     }
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onEndDateChoice?.(startHhmm, endHhmm, endDateTarget);
     onPrimaryPress(startHhmm, endHhmm);
-  }, [endDateTarget, endHhmm, onEndDateChoice, onPrimaryPress, startHhmm]);
+  }, [endDateTarget, endHhmm, onEndDateChoice, onPrimaryPress, startHhmm, t]);
 
   const startDateKey = priorityPlanRangeLo;
   const endDateKey = useMemo(() => {
@@ -374,7 +459,7 @@ export function DailyRhythmTimeEditorBody({
     }
     const hi = priorityPlanRangeHi ?? priorityPlanRangeLo;
     if (hi > priorityPlanRangeLo) return hi;
-    if (isOvernightHhmmRange(startHhmm, endHhmm)) {
+    if (endsOnNextCalendarDay(startHhmm, endHhmm)) {
       return addDaysToLocalDateKey(priorityPlanRangeLo, 1);
     }
     return priorityPlanRangeLo;
@@ -391,10 +476,32 @@ export function DailyRhythmTimeEditorBody({
   const endDateParts = endDateKey ? splitDateKeyCompact(endDateKey, locale) : null;
 
   const endDateTodayInvalid =
-    endDateTarget === 'today' &&
-    parseHHmmToMinutes(endHhmm) !== null &&
-    parseHHmmToMinutes(startHhmm) !== null &&
-    Number(parseHHmmToMinutes(endHhmm)) <= Number(parseHHmmToMinutes(startHhmm));
+    endDateTarget === 'today' && isInvalidSameDayEnd(startHhmm, endHhmm);
+
+  const endDateSegmentControl = (
+    <SmoothSegmentedControl
+      options={[
+        {
+          value: 'today',
+          label: resolvedEndDateTodayLabel,
+          accessibilityLabel: t('dayRhythm.setTodayA11y'),
+        },
+        {
+          value: 'nextDay',
+          label: resolvedEndDateNextDayLabel,
+          accessibilityLabel: t('dayRhythm.setNextDayA11y'),
+        },
+      ]}
+      value={endDateTarget}
+      onChange={(next) => applyEndDateTarget(next, startHhmm, endHhmm)}
+      selectedFill={ink.bgMint}
+      trackFill={isDark ? ink.surfaceAlt : '#FFFFFF'}
+      selectedInk={isDark ? ink.text : ink.tertiary}
+      unselectedInk={c.onVariant}
+      shadowColor={shadowInk}
+      minHeight={36}
+    />
+  );
 
   const rangeSummaryParts = useMemo(() => {
     const startLabel = formatHhmmClock(startHhmm, locale);
@@ -465,78 +572,25 @@ export function DailyRhythmTimeEditorBody({
             darkColor={c.onVariant}>
             {t('dayRhythm.endDateQuestion')}
           </ThemedText>
-          <View style={styles.endDateChoiceBtnRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('dayRhythm.setTodayA11y')}
-              onPress={() => {
-                applyEndDateTarget('today', startHhmm, endHhmm, true);
-                void Haptics.selectionAsync();
-              }}
-              style={({ pressed }) => [
-                styles.dayChoicePress,
-                pressed && { opacity: 0.92 },
-              ]}>
-              <SolidShadowFace
-                shadowColor={shadowInk}
-                backgroundColor={
-                  endDateTarget === 'today' ? ink.bgMint : isDark ? ink.surfaceAlt : '#FFFFFF'
-                }
-                shadowSize={endDateTarget === 'today' ? 4 : 2}
-                shellStyle={styles.dayChoiceShell}
-                style={styles.dayChoiceFace}>
-                <ThemedText
-                  style={[
-                    styles.endDateChoiceBtnText,
-                    {
-                      color:
-                        endDateTarget === 'today'
-                          ? isDark
-                            ? ink.text
-                            : ink.tertiary
-                          : c.onVariant,
-                    },
-                  ]}>
-                  {resolvedEndDateTodayLabel}
-                </ThemedText>
-              </SolidShadowFace>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('dayRhythm.setNextDayA11y')}
-              onPress={() => {
-                applyEndDateTarget('nextDay', startHhmm, endHhmm, true);
-                void Haptics.selectionAsync();
-              }}
-              style={({ pressed }) => [
-                styles.dayChoicePress,
-                pressed && { opacity: 0.92 },
-              ]}>
-              <SolidShadowFace
-                shadowColor={shadowInk}
-                backgroundColor={
-                  endDateTarget === 'nextDay' ? ink.bgMint : isDark ? ink.surfaceAlt : '#FFFFFF'
-                }
-                shadowSize={endDateTarget === 'nextDay' ? 4 : 2}
-                shellStyle={styles.dayChoiceShell}
-                style={styles.dayChoiceFace}>
-                <ThemedText
-                  style={[
-                    styles.endDateChoiceBtnText,
-                    {
-                      color:
-                        endDateTarget === 'nextDay'
-                          ? isDark
-                            ? ink.text
-                            : ink.tertiary
-                          : c.onVariant,
-                    },
-                  ]}>
-                  {resolvedEndDateNextDayLabel}
-                </ThemedText>
-              </SolidShadowFace>
-            </Pressable>
-          </View>
+          <View style={styles.endDateChoiceBtnRow}>{endDateSegmentControl}</View>
+          {endDateTodayInvalid ? (
+            <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+              {parseHHmmToMinutes(endHhmm) === 24 * 60 || parseHHmmToMinutes(endHhmm) === 0
+                ? t('dayRhythm.endDateMidnightHint')
+                : t('dayRhythm.endDateInvalidHint', {
+                    end: formatHhmmClock(endHhmm, locale),
+                    start: formatHhmmClock(startHhmm, locale),
+                  })}
+            </ThemedText>
+          ) : isOvernightHhmmRange(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
+            <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+              {t('dayRhythm.overnightHint')}
+            </ThemedText>
+          ) : endsOnNextCalendarDay(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
+            <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+              {t('dayRhythm.midnightNextDayHint')}
+            </ThemedText>
+          ) : null}
         </View>
       ) : null}
     </CityPopCardShell>
@@ -554,72 +608,47 @@ export function DailyRhythmTimeEditorBody({
       bounces={isOnboarding}
       alwaysBounceVertical={false}
       keyboardShouldPersistTaps="handled"
-      scrollEnabled>
+      scrollEnabled={!dialDragging}>
       <View style={[styles.topBlock, isOnboarding && styles.topBlockOnboarding]}>
         {isOnboarding ? (
-          <SolidShadowFace
-            borderColor={c.border}
-            shadowColor={shadowInk}
-            backgroundColor={isDark ? ink.surfaceAlt : '#F6F3EB'}
-            shellStyle={styles.heroBannerShell}
-            style={styles.heroBannerFace}>
-            <Image
-              source={dailyRhythmOnboardingAssets.hero}
-              style={styles.heroBannerImage}
-              contentFit="contain"
-              cachePolicy="memory-disk"
-              transition={0}
-              accessibilityLabel={t('dayRhythm.morningIllustrationA11y')}
-            />
-            <View
-              pointerEvents="none"
-              style={[
-                styles.heroBannerScrim,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(45, 47, 68, 0.55)'
-                    : 'rgba(246, 243, 235, 0.72)',
-                },
-              ]}
-            />
-            <View style={styles.heroBannerContent}>
-              <View style={styles.heroHeaderRow}>
-                <View style={styles.kickerRow}>
-                  {([t('dayRhythm.heroWord1'), t('dayRhythm.heroWord2'), t('dayRhythm.heroWord3')] as const).map((word) => (
-                    <ThemedText
-                      key={word}
-                      style={[styles.kickerWord, { color: c.onVariant }, cityPopFont('700')]}
-                      lightColor={c.onVariant}
-                      darkColor={c.onVariant}>
-                      {word}
-                    </ThemedText>
-                  ))}
-                </View>
-                <SolidShadowFace
-                  borderColor={c.border}
-                  shadowColor={shadowInk}
-                  backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
-                  style={styles.sunFace}>
-                  <DayCycleEmojiMark size={22} color={c.border} />
-                </SolidShadowFace>
-              </View>
-
-              <View style={styles.heroBannerCopy}>
-                <ThemedText
-                  style={[styles.onboardTitle, { color: c.onSurface }, cityPopFont('800')]}
-                  lightColor={c.onSurface}
-                  darkColor={c.onSurface}>
-                  {t('dayRhythm.onboardTitle')}
-                </ThemedText>
-                <ThemedText
-                  style={[styles.onboardSubtitle, { color: c.onVariant }, cityPopFont('500')]}
-                  lightColor={c.onVariant}
-                  darkColor={c.onVariant}>
-                  {t('dayRhythm.onboardSubtitle')}
-                </ThemedText>
-              </View>
+          <View style={styles.onboardHeroCompact}>
+            <View style={styles.kickerRow}>
+              {([t('dayRhythm.heroWord1'), t('dayRhythm.heroWord2'), t('dayRhythm.heroWord3')] as const).map(
+                (word) => (
+                  <ThemedText
+                    key={word}
+                    style={[styles.kickerWord, { color: c.onVariant }, cityPopFont('700')]}
+                    lightColor={c.onVariant}
+                    darkColor={c.onVariant}>
+                    {word}
+                  </ThemedText>
+                ),
+              )}
             </View>
-          </SolidShadowFace>
+            <OnboardingHeroTitle
+              text={t('dayRhythm.onboardTitle')}
+              color={c.onSurface}
+              underlineColor={ink.bgMint}
+            />
+            <ThemedText
+              style={[styles.onboardSubtitle, { color: c.onVariant }, cityPopFont('500')]}
+              lightColor={c.onVariant}
+              darkColor={c.onVariant}>
+              {t('dayRhythm.onboardSubtitle')}
+            </ThemedText>
+
+            <View style={styles.onboardDialEnter}>
+              <DayCycleDial
+                startHhmm={startHhmm}
+                endHhmm={endHhmm}
+                endNextDay={endDateTarget === 'nextDay'}
+                baseDateKey={priorityPlanRangeLo}
+                isDark={isDark}
+                onChange={onDialChange}
+                onInteractionChange={onDialInteractionChange}
+              />
+            </View>
+          </View>
         ) : (
           <View style={styles.settingsHero}>
             <ThemedText style={[styles.settingsKicker, { color: c.onVariant }]}>{t('dayRhythm.settingsKicker')}</ThemedText>
@@ -672,96 +701,25 @@ export function DailyRhythmTimeEditorBody({
                   darkColor={c.onVariant}>
                   {t('dayRhythm.endDateQuestion')}
                 </ThemedText>
-                <View style={styles.endDateChoiceBtnRow}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('dayRhythm.setTodayA11y')}
-                    onPress={() => {
-                      applyEndDateTarget('today', startHhmm, endHhmm, true);
-                      void Haptics.selectionAsync();
-                    }}
-                    style={({ pressed }) => [
-                      styles.dayChoicePress,
-                      pressed && { opacity: 0.92 },
-                    ]}>
-                    <SolidShadowFace
-                      borderColor={c.border}
-                      shadowColor={shadowInk}
-                      backgroundColor={
-                        endDateTarget === 'today' ? ink.bgMint : isDark ? ink.surfaceAlt : '#FFFFFF'
-                      }
-                      shadowSize={endDateTarget === 'today' ? 4 : 2}
-                      shellStyle={styles.dayChoiceShell}
-                      style={styles.dayChoiceFace}>
-                      <ThemedText
-                        style={[
-                          styles.dayChoiceText,
-                          {
-                            color:
-                              endDateTarget === 'today'
-                                ? isDark
-                                  ? ink.text
-                                  : ink.tertiary
-                                : c.onVariant,
-                          },
-                          cityPopFont('800'),
-                        ]}>
-                        {resolvedEndDateTodayLabel}
-                      </ThemedText>
-                    </SolidShadowFace>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('dayRhythm.setNextDayA11y')}
-                    onPress={() => {
-                      applyEndDateTarget('nextDay', startHhmm, endHhmm, true);
-                      void Haptics.selectionAsync();
-                    }}
-                    style={({ pressed }) => [
-                      styles.dayChoicePress,
-                      pressed && { opacity: 0.92 },
-                    ]}>
-                    <SolidShadowFace
-                      borderColor={c.border}
-                      shadowColor={shadowInk}
-                      backgroundColor={
-                        endDateTarget === 'nextDay'
-                          ? ink.bgMint
-                          : isDark
-                            ? ink.surfaceAlt
-                            : '#FFFFFF'
-                      }
-                      shadowSize={endDateTarget === 'nextDay' ? 4 : 2}
-                      shellStyle={styles.dayChoiceShell}
-                      style={styles.dayChoiceFace}>
-                      <ThemedText
-                        style={[
-                          styles.dayChoiceText,
-                          {
-                            color:
-                              endDateTarget === 'nextDay'
-                                ? isDark
-                                  ? ink.text
-                                  : ink.tertiary
-                                : c.onVariant,
-                          },
-                          cityPopFont('800'),
-                        ]}>
-                        {resolvedEndDateNextDayLabel}
-                      </ThemedText>
-                    </SolidShadowFace>
-                  </Pressable>
-                </View>
+                <View style={styles.endDateChoiceBtnRow}>{endDateSegmentControl}</View>
                 {endDateTodayInvalid ? (
                   <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
-                    {t('dayRhythm.endDateInvalidHint', {
-                      end: formatHhmmClock(endHhmm, locale),
-                      start: formatHhmmClock(startHhmm, locale),
-                    })}
+                    {parseHHmmToMinutes(endHhmm) === 24 * 60 ||
+                    parseHHmmToMinutes(endHhmm) === 0
+                      ? t('dayRhythm.endDateMidnightHint')
+                      : t('dayRhythm.endDateInvalidHint', {
+                          end: formatHhmmClock(endHhmm, locale),
+                          start: formatHhmmClock(startHhmm, locale),
+                        })}
                   </ThemedText>
                 ) : isOvernightHhmmRange(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
                   <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
                     {t('dayRhythm.overnightHint')}
+                  </ThemedText>
+                ) : endsOnNextCalendarDay(startHhmm, endHhmm) &&
+                  endDateTarget === 'nextDay' ? (
+                  <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+                    {t('dayRhythm.midnightNextDayHint')}
                   </ThemedText>
                 ) : null}
               </View>
@@ -789,17 +747,19 @@ export function DailyRhythmTimeEditorBody({
                 </ThemedText>
               </View>
               <View style={styles.summaryRow}>
-                <ThemedText
-                  style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
-                  numberOfLines={2}>
-                  {rangeSummaryParts.left}
-                </ThemedText>
-                <ThemedText style={[styles.summaryArrow, { color: c.onSurface }]}>→</ThemedText>
-                <ThemedText
-                  style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
-                  numberOfLines={2}>
-                  {rangeSummaryParts.right}
-                </ThemedText>
+                <View style={styles.summaryRowInner}>
+                  <ThemedText
+                    style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
+                    numberOfLines={2}>
+                    {rangeSummaryParts.left}
+                  </ThemedText>
+                  <ThemedText style={[styles.summaryArrow, { color: c.onSurface }]}>→</ThemedText>
+                  <ThemedText
+                    style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
+                    numberOfLines={2}>
+                    {rangeSummaryParts.right}
+                  </ThemedText>
+                </View>
               </View>
             </View>
           </SolidShadowFace>
@@ -933,7 +893,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   scrollContentOnboarding: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 14,
     paddingTop: 8,
     paddingBottom: 24,
   },
@@ -942,8 +902,9 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   topBlock: { gap: 16, paddingBottom: 4 },
-  topBlockOnboarding: { gap: 22 },
-
+  topBlockOnboarding: { gap: 18 },
+  onboardHeroCompact: { gap: 10 },
+  onboardDialEnter: { width: '100%', marginTop: 4 },
   shadowShell: { position: 'relative' },
   shadowBlock: {
     ...StyleSheet.absoluteFillObject,
@@ -1002,10 +963,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  onboardTitleWrap: {
+    alignSelf: 'flex-start',
+    gap: 8,
+    paddingBottom: 2,
+  },
+  onboardTitleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+  },
   onboardTitle: {
     fontSize: 24,
     lineHeight: 30,
     letterSpacing: -0.5,
+  },
+  onboardTitleUnderline: {
+    height: 4,
+    borderRadius: 2,
   },
   onboardSubtitle: {
     fontSize: 13,
@@ -1049,6 +1024,7 @@ const styles = StyleSheet.create({
   },
   dateStack: { alignItems: 'flex-end' },
   dateStackLine: { fontSize: 11, lineHeight: 14, textAlign: 'right' },
+  dateInline: { fontSize: 11, lineHeight: 14, textAlign: 'right', marginBottom: 2 },
   timePillFace: {
     minWidth: 110,
     paddingHorizontal: 14,
@@ -1058,6 +1034,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   timePillText: { fontSize: 15, letterSpacing: -0.2 },
+  inputBlockPanel: {
+    overflow: 'hidden',
+  },
   inputBlock: { paddingTop: 4, gap: 8 },
 
   endDateChoiceOnboard: { gap: 12, paddingTop: 4 },
@@ -1069,7 +1048,7 @@ const styles = StyleSheet.create({
   },
   endDateChoiceInline: { marginTop: 12, gap: 10 },
   endDateChoiceQuestion: { fontSize: 13, fontWeight: '600' },
-  endDateChoiceBtnRow: { flexDirection: 'row', gap: 12 },
+  endDateChoiceBtnRow: { alignSelf: 'stretch' },
   dayChoicePress: { flex: 1 },
   dayChoiceShell: { alignSelf: 'stretch', width: '100%' },
   endDateChoiceBtnText: { fontSize: 14, fontWeight: '700', textAlign: 'center' },
@@ -1105,6 +1084,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  summaryRowInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

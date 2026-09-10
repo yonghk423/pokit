@@ -1,9 +1,11 @@
 import * as Haptics from 'expo-haptics';
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { clampHhmmToPriorityWindow, parseHHmmToMinutes } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { useMeasuredAccordion } from '@shared/lib/hooks';
 import { formatHhmmClock, useTranslation } from '@shared/lib/i18n';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import {
@@ -107,6 +109,7 @@ export const SnappedTimePickerField = forwardRef<
   const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const shadowInk = isDark ? RetroFlatColors.dark.solidShadow : '#000000';
   const pillShadow = expanded ? 0 : 2;
+  const accordion = useMeasuredAccordion(expanded);
 
   return (
     <View>
@@ -202,33 +205,37 @@ export const SnappedTimePickerField = forwardRef<
           </View>
         </View>
       </Pressable>
-      {expanded ? (
-        <View style={styles.inputBlock}>
-          <DigitalHhmmInput
-            ref={digitalInputRef}
-            valueHhmm={valueHhmm}
-            onChangeHhmm={onChangeHhmm}
-            ink={palette.onSurface}
-            muted={palette.onVariant}
-            line={palette.border}
-            surface={palette.containerLowest}
-            selectedForeground={selectedFg}
-            snapStepMinutes={snapStepMinutes}
-            mapMidnightToEndOfDay={mapMidnightToEndOfDay}
-            accessibilityLabelPrefix={label}
-            disabled={disabled}
-          />
-          <BrutalConfirmButton
-            accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
-            disabled={disabled}
-            onPress={() => {
-              const flushed = digitalInputRef.current?.flush();
-              if (flushed) onChangeHhmm(applyRoutineWindow(flushed));
-              void Haptics.selectionAsync();
-              onToggleExpand();
-            }}
-          />
-        </View>
+      {accordion.mounted ? (
+        <Animated.View style={[styles.inputBlockPanel, accordion.panelStyle]}>
+          <View
+            style={styles.inputBlock}
+            onLayout={(e) => accordion.onContentLayout(e.nativeEvent.layout.height)}>
+            <DigitalHhmmInput
+              ref={digitalInputRef}
+              valueHhmm={valueHhmm}
+              onChangeHhmm={onChangeHhmm}
+              ink={palette.onSurface}
+              muted={palette.onVariant}
+              line={palette.border}
+              surface={palette.containerLowest}
+              selectedForeground={selectedFg}
+              snapStepMinutes={snapStepMinutes}
+              mapMidnightToEndOfDay={mapMidnightToEndOfDay}
+              accessibilityLabelPrefix={label}
+              disabled={disabled}
+            />
+            <BrutalConfirmButton
+              accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
+              disabled={disabled}
+              onPress={() => {
+                const flushed = digitalInputRef.current?.flush();
+                if (flushed) onChangeHhmm(applyRoutineWindow(flushed));
+                void Haptics.selectionAsync();
+                onToggleExpand();
+              }}
+            />
+          </View>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -305,6 +312,9 @@ const styles = StyleSheet.create({
   timePillText: { fontSize: 16, fontWeight: '800', letterSpacing: -0.25 },
   timePillTextEmphasized: { fontSize: 18, letterSpacing: -0.35 },
   timePillTextCompact: { fontSize: 13, letterSpacing: -0.2 },
+  inputBlockPanel: {
+    overflow: 'hidden',
+  },
   inputBlock: {
     paddingTop: 6,
     gap: 8,

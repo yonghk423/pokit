@@ -6,11 +6,19 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { ThemedText } from '@shared/ui/themed-text';
+import {
+  RETRO_RADIUS,
+  RetroFlatColors,
+  cityPopFont,
+} from '@shared/config/retroFlat';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
+import { SmoothSegmentedControl } from '@shared/ui/smooth-segmented-control';
+import { ThemedText } from '@shared/ui/themed-text';
 
 export type DigitalHhmmInputProps = {
   valueHhmm: string;
@@ -19,7 +27,7 @@ export type DigitalHhmmInputProps = {
   muted: string;
   line: string;
   surface?: string;
-  /** 오전/오후 선택 시 글자색 (기본: 밝은 전경) */
+  /** @deprecated 민트 선택면 + 틸 잉크로 통일. API 호환용 */
   selectedForeground?: string;
   disabled?: boolean;
   /** 분 증감 간격. 기본 1분 */
@@ -41,6 +49,9 @@ export type DigitalHhmmInputHandle = {
 };
 
 type Meridiem = 'am' | 'pm';
+
+const PANEL_SHADOW = 3;
+const STEP_SHADOW = 2;
 
 function pad2(n: number): string {
   return String(n).padStart(2, '0');
@@ -73,12 +84,14 @@ function h24To12(h24: number): { ap: Meridiem; h12: number } {
 
 function draftsFromValue(valueHhmm: string): { hour: string; min: string; ap: Meridiem } {
   const parsed = parseHhmm(valueHhmm);
-  /** `24:00`은 편집 시 오전 12:00으로 취급(하루 끝 표기는 상위에서) */
+  /** `24:00`은 편집 시 자정(00:xx)으로 취급(하루 끝 표기는 상위에서) */
   const total = parsed?.total === 24 * 60 ? 0 : (parsed?.total ?? 9 * 60);
   const h24 = Math.floor(total / 60) % 24;
   const min = total % 60;
   const { ap, h12 } = h24To12(h24);
-  return { hour: pad2(h12), min: pad2(min), ap };
+  // 자정은 12가 아니라 00 — 「오전 12:00」혼동 방지
+  const hour = h24 === 0 ? '00' : pad2(h12);
+  return { hour, min: pad2(min), ap };
 }
 
 function normalizeTotal(total: number): number {
@@ -86,7 +99,7 @@ function normalizeTotal(total: number): number {
   if (!Number.isFinite(m)) return 9 * 60;
   if (m >= 24 * 60) return 24 * 60;
   if (m < 0) {
-    const cycle = ((m % (24 * 60)) + (24 * 60)) % (24 * 60);
+    const cycle = ((m % (24 * 60)) + 24 * 60) % (24 * 60);
     return cycle;
   }
   return m;
@@ -110,10 +123,19 @@ function composeFromParts(
   return formatHhmm(total);
 }
 
-function nextHour(total: number, delta: number, mapMidnightToEndOfDay: boolean): string {
+/**
+ * 시(+/-)는 같은 오전·오후 안에서만 순환한다.
+ * 예: 오후 11 → 오후 12(정오). 오전/오후 전환은 탭으로만.
+ */
+export function nextHourWithinMeridiem(
+  total: number,
+  delta: number,
+  mapMidnightToEndOfDay: boolean,
+): string {
   const { hour24, min } = hourMinuteFromTotal(total);
-  const h = (hour24 + delta + 24) % 24;
-  return composeFromParts(h, min, mapMidnightToEndOfDay);
+  const base = hour24 >= 12 ? 12 : 0;
+  const offset = ((hour24 - base + delta) % 12 + 12) % 12;
+  return composeFromParts(base + offset, min, mapMidnightToEndOfDay);
 }
 
 function nextMinute(
@@ -129,8 +151,84 @@ function nextMinute(
   return formatHhmm(moved);
 }
 
+function SolidShadowFace({
+  shadowColor,
+  backgroundColor,
+  shadowSize,
+  children,
+  shellStyle,
+  faceStyle,
+}: {
+  shadowColor: string;
+  backgroundColor: string;
+  shadowSize: number;
+  children: ReactNode;
+  shellStyle?: StyleProp<ViewStyle>;
+  faceStyle?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <View
+      style={[
+        styles.shadowShell,
+        { marginRight: shadowSize, marginBottom: shadowSize },
+        shellStyle,
+      ]}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.shadowBlock,
+          {
+            backgroundColor: shadowColor,
+            transform: [{ translateX: shadowSize }, { translateY: shadowSize }],
+          },
+        ]}
+      />
+      <View style={[styles.shadowFaceBase, { backgroundColor }, faceStyle]}>{children}</View>
+    </View>
+  );
+}
+
+function StepButton({
+  a11y,
+  label,
+  ink,
+  fill,
+  shadowColor,
+  disabled,
+  onPress,
+}: {
+  a11y: string;
+  label: string;
+  ink: string;
+  fill: string;
+  shadowColor: string;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={a11y}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.stepPress,
+        pressed && !disabled && { transform: [{ translateX: 1 }, { translateY: 1 }] },
+      ]}>
+      <SolidShadowFace
+        shadowColor={shadowColor}
+        backgroundColor={fill}
+        shadowSize={STEP_SHADOW}
+        faceStyle={styles.stepFace}>
+        <ThemedText style={[styles.stepText, { color: ink }, cityPopFont('800')]}>{label}</ThemedText>
+      </SolidShadowFace>
+    </Pressable>
+  );
+}
+
 /**
  * 키패드 없이 시·분 증감 버튼 + 오전/오후 토글로 `HH:mm`을 입력합니다.
+ * City Pop / Flat Brutalism Lite — 민트 선택 · solid shadow · 눌림 시 면색 유지.
  */
 export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmInputProps>(
   function DigitalHhmmInput(
@@ -139,9 +237,9 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
       onChangeHhmm,
       ink,
       muted,
-      line,
-      surface = 'transparent',
-      selectedForeground = '#FAFAFA',
+      line: _line,
+      surface = '#FFFFFF',
+      selectedForeground: _selectedForeground,
       disabled = false,
       snapStepMinutes = 1,
       mapMidnightToEndOfDay = false,
@@ -150,6 +248,14 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
     ref,
   ) {
     const { t } = useTranslation();
+    const isDark = useColorScheme() === 'dark';
+    const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+    const shadowInk = isDark ? tone.solidShadow : '#000000';
+    const selectedFill = tone.bgMint;
+    const selectedInk = isDark ? tone.text : tone.tertiary;
+    const unselectedFill = isDark ? tone.surfaceAlt : surface;
+    const unselectedInk = muted;
+
     const synced = useMemo(() => parseHhmm(valueHhmm)?.total ?? 9 * 60, [valueHhmm]);
     const [draftTotal, setDraftTotal] = useState<number>(synced);
     const draftTotalRef = useRef(draftTotal);
@@ -163,12 +269,6 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
 
     const prefix = accessibilityLabelPrefix?.trim() || t('common.time');
     const display = useMemo(() => draftsFromValue(formatHhmm(draftTotal)), [draftTotal]);
-    const amLabel = t('common.am');
-    const pmLabel = t('common.pm');
-    const meridiemOptions = [
-      { value: 'am' as const, label: amLabel },
-      { value: 'pm' as const, label: pmLabel },
-    ];
 
     const emit = (nextHhmm: string): string => {
       onChangeRef.current(nextHhmm);
@@ -178,13 +278,19 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
     };
 
     useImperativeHandle(ref, () => ({
-      flush: () => formatHhmm(draftTotalRef.current),
+      flush: () => {
+        const total = draftTotalRef.current;
+        if (mapMidnightToEndOfDay && (total === 0 || total >= 24 * 60)) {
+          return '24:00';
+        }
+        return formatHhmm(total);
+      },
     }));
 
     const applyHour = (delta: number) => {
       if (disabled) return;
       void Haptics.selectionAsync();
-      emit(nextHour(draftTotalRef.current, delta, mapMidnightToEndOfDay));
+      emit(nextHourWithinMeridiem(draftTotalRef.current, delta, mapMidnightToEndOfDay));
     };
 
     const applyMinute = (delta: number) => {
@@ -195,7 +301,6 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
 
     const setMeridiem = (next: Meridiem) => {
       if (disabled || next === display.ap) return;
-      void Haptics.selectionAsync();
       const { hour24, min } = hourMinuteFromTotal(draftTotalRef.current);
       const currentIsPm = hour24 >= 12;
       const targetIsPm = next === 'pm';
@@ -204,81 +309,108 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
       emit(composeFromParts(shifted, min, mapMidnightToEndOfDay));
     };
 
+    const meridiemSegmentOptions = [
+      {
+        value: 'am' as const,
+        label: t('common.am'),
+        accessibilityLabel: t('timeInput.meridiemA11y', { prefix, meridiem: t('common.am') }),
+      },
+      {
+        value: 'pm' as const,
+        label: t('common.pm'),
+        accessibilityLabel: t('timeInput.meridiemA11y', { prefix, meridiem: t('common.pm') }),
+      },
+    ] as const;
+
     return (
       <View
         style={[styles.root, disabled && styles.disabled]}
         pointerEvents={disabled ? 'none' : 'auto'}>
-        <View style={styles.meridiemRow}>
-          {meridiemOptions.map(({ value, label }) => {
-            const selected = display.ap === value;
-            return (
-              <Pressable
-                key={value}
-                accessibilityRole="button"
-                accessibilityState={{ selected, disabled }}
-                accessibilityLabel={t('timeInput.meridiemA11y', { prefix, meridiem: label })}
-                disabled={disabled}
-                onPress={() => setMeridiem(value)}
-                style={({ pressed }) => [
-                  styles.meridiemBtn,
-                  {
-                    backgroundColor: selected ? ink : surface,
-                    borderColor: line,
-                    opacity: pressed ? 0.88 : 1,
-                  },
-                ]}>
-                <ThemedText
-                  style={[styles.meridiemText, { color: selected ? selectedForeground : ink }]}>
-                  {label}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-        </View>
+        <SmoothSegmentedControl
+          options={meridiemSegmentOptions}
+          value={display.ap}
+          onChange={setMeridiem}
+          selectedFill={selectedFill}
+          trackFill={unselectedFill}
+          selectedInk={selectedInk}
+          unselectedInk={unselectedInk}
+          shadowColor={shadowInk}
+          disabled={disabled}
+          minHeight={34}
+        />
 
-        <View style={[styles.fieldsRow, { borderColor: line, backgroundColor: surface }]}>
-          <View style={styles.stepCol}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('timeInput.hourIncreaseA11y', { prefix })}
-              onPress={() => applyHour(1)}
-              style={({ pressed }) => [styles.stepBtn, { borderColor: line, opacity: pressed ? 0.8 : 1 }]}>
-              <ThemedText style={[styles.stepText, { color: ink }]}>+</ThemedText>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('timeInput.hourDecreaseA11y', { prefix })}
-              onPress={() => applyHour(-1)}
-              style={({ pressed }) => [styles.stepBtn, { borderColor: line, opacity: pressed ? 0.8 : 1 }]}>
-              <ThemedText style={[styles.stepText, { color: ink }]}>-</ThemedText>
-            </Pressable>
+        <SolidShadowFace
+          shadowColor={shadowInk}
+          backgroundColor={unselectedFill}
+          shadowSize={PANEL_SHADOW}
+          shellStyle={styles.panelShell}
+          faceStyle={styles.panelFace}>
+          <View style={styles.fieldsRow}>
+            <View style={styles.unitBlock}>
+              <ThemedText style={[styles.fieldCaption, { color: muted }, cityPopFont('700')]}>
+                {t('common.hour')}
+              </ThemedText>
+              <View style={styles.unitRow}>
+                <View style={styles.stepStack}>
+                  <StepButton
+                    a11y={t('timeInput.hourIncreaseA11y', { prefix })}
+                    label="+"
+                    ink={ink}
+                    fill={unselectedFill}
+                    shadowColor={shadowInk}
+                    disabled={disabled}
+                    onPress={() => applyHour(1)}
+                  />
+                  <StepButton
+                    a11y={t('timeInput.hourDecreaseA11y', { prefix })}
+                    label="−"
+                    ink={ink}
+                    fill={unselectedFill}
+                    shadowColor={shadowInk}
+                    disabled={disabled}
+                    onPress={() => applyHour(-1)}
+                  />
+                </View>
+                <ThemedText style={[styles.digitText, { color: ink }, cityPopFont('800')]}>
+                  {display.hour}
+                </ThemedText>
+              </View>
+            </View>
+
+            <ThemedText style={[styles.colon, { color: ink }, cityPopFont('800')]}>:</ThemedText>
+
+            <View style={styles.unitBlock}>
+              <ThemedText style={[styles.fieldCaption, { color: muted }, cityPopFont('700')]}>
+                {t('common.minute')}
+              </ThemedText>
+              <View style={styles.unitRow}>
+                <View style={styles.stepStack}>
+                  <StepButton
+                    a11y={t('timeInput.minuteIncreaseA11y', { prefix })}
+                    label="+"
+                    ink={ink}
+                    fill={unselectedFill}
+                    shadowColor={shadowInk}
+                    disabled={disabled}
+                    onPress={() => applyMinute(1)}
+                  />
+                  <StepButton
+                    a11y={t('timeInput.minuteDecreaseA11y', { prefix })}
+                    label="−"
+                    ink={ink}
+                    fill={unselectedFill}
+                    shadowColor={shadowInk}
+                    disabled={disabled}
+                    onPress={() => applyMinute(-1)}
+                  />
+                </View>
+                <ThemedText style={[styles.digitText, { color: ink }, cityPopFont('800')]}>
+                  {display.min}
+                </ThemedText>
+              </View>
+            </View>
           </View>
-          <View style={styles.fieldCol}>
-            <ThemedText style={[styles.fieldCaption, { color: muted }]}>{t('common.hour')}</ThemedText>
-            <ThemedText style={[styles.digitText, { color: ink }]}>{display.hour}</ThemedText>
-          </View>
-          <ThemedText style={[styles.colon, { color: ink }]}>:</ThemedText>
-          <View style={styles.fieldCol}>
-            <ThemedText style={[styles.fieldCaption, { color: muted }]}>{t('common.minute')}</ThemedText>
-            <ThemedText style={[styles.digitText, { color: ink }]}>{display.min}</ThemedText>
-          </View>
-          <View style={styles.stepCol}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('timeInput.minuteIncreaseA11y', { prefix })}
-              onPress={() => applyMinute(1)}
-              style={({ pressed }) => [styles.stepBtn, { borderColor: line, opacity: pressed ? 0.8 : 1 }]}>
-              <ThemedText style={[styles.stepText, { color: ink }]}>+</ThemedText>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('timeInput.minuteDecreaseA11y', { prefix })}
-              onPress={() => applyMinute(-1)}
-              style={({ pressed }) => [styles.stepBtn, { borderColor: line, opacity: pressed ? 0.8 : 1 }]}>
-              <ThemedText style={[styles.stepText, { color: ink }]}>-</ThemedText>
-            </Pressable>
-          </View>
-        </View>
+        </SolidShadowFace>
       </View>
     );
   },
@@ -286,81 +418,91 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
 
 const styles = StyleSheet.create({
   root: {
-    gap: 8,
+    gap: 10,
     paddingTop: 4,
     paddingBottom: 2,
   },
   disabled: {
     opacity: 0.45,
   },
-  meridiemRow: {
-    flexDirection: 'row',
-    gap: 6,
+  shadowShell: {
+    position: 'relative',
   },
-  meridiemBtn: {
-    flex: 1,
-    minHeight: 32,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
+  shadowBlock: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: RETRO_RADIUS,
   },
-  meridiemText: {
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+  shadowFaceBase: {
+    borderRadius: RETRO_RADIUS,
+    borderWidth: 0,
+    zIndex: 1,
+  },
+  panelShell: {
+    alignSelf: 'stretch',
+    width: '100%',
+  },
+  panelFace: {
+    paddingHorizontal: 10,
+    paddingVertical: 12,
   },
   fieldsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    minHeight: 92,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 4,
-  },
-  stepCol: {
-    width: 36,
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    width: '100%',
     gap: 6,
   },
-  stepBtn: {
-    width: 32,
-    height: 32,
-    borderWidth: StyleSheet.hairlineWidth,
+  unitBlock: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 0,
+  },
+  unitRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+  },
+  /** + / − 를 숫자 왼쪽에 세로로 */
+  stepStack: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 4,
+  },
+  stepPress: {
+    alignItems: 'center',
+  },
+  stepFace: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   stepText: {
     fontSize: 18,
-    fontWeight: '800',
     lineHeight: 20,
-  },
-  fieldCol: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    minWidth: 0,
-  },
-  fieldCaption: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: -0.15,
-  },
-  digitText: {
-    fontSize: 28,
-    lineHeight: 32,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
     textAlign: 'center',
   },
+  fieldCaption: {
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  digitText: {
+    fontSize: 32,
+    lineHeight: 36,
+    fontVariant: ['tabular-nums'],
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    minWidth: 44,
+  },
   colon: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 28,
+    lineHeight: 32,
     paddingBottom: 2,
-    marginTop: 12,
+    paddingHorizontal: 2,
   },
 });

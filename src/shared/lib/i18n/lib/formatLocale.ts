@@ -9,23 +9,26 @@ function resolveLocale(locale?: AppLocale): AppLocale {
 }
 
 export function formatMinuteOfDay(minutes: number, locale?: AppLocale): string {
-  if (minutes >= 24 * 60) {
-    return 'AM 00:00';
+  // 자정·하루 끝(24:00)은 AM/PM 없이 00:00 — 「오전 12:00」혼동 방지
+  if (minutes <= 0 || minutes >= 24 * 60) {
+    return '00:00';
   }
-  const m = Math.max(0, Math.min(minutes, 24 * 60 - 1));
+  const m = Math.min(minutes, 24 * 60 - 1);
   const h24 = Math.floor(m / 60);
   const min = m % 60;
+  if (h24 === 0) {
+    return `00:${String(min).padStart(2, '0')}`;
+  }
   const isAm = h24 < 12;
-  const h12 = h24 === 0 ? 0 : h24 % 12 === 0 ? 12 : h24 % 12;
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
   const prefix = isAm ? 'AM' : 'PM';
-  const hour = h12 === 0 ? '00' : String(h12);
-  return `${prefix} ${hour}:${String(min).padStart(2, '0')}`;
+  return `${prefix} ${h12}:${String(min).padStart(2, '0')}`;
 }
 
 export function formatHhmmClock(hhmm: string, locale?: AppLocale): string {
   void locale;
   const trimmed = hhmm.trim();
-  if (trimmed === '24:00') return 'AM 00:00';
+  if (trimmed === '24:00' || trimmed === '00:00') return '00:00';
   const m = parseHHmmToMinutes(trimmed);
   if (m === null) return hhmm;
   return formatMinuteOfDay(m, locale);

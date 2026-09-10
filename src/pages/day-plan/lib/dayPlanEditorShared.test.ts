@@ -29,6 +29,7 @@ import {
   formatDateKeyDisplayKo,
   formatEndHhmmFrom12hParts,
   endsOnNextCalendarDay,
+  isInvalidSameDayEnd,
   pickPlanDateKeyForBlock,
   planDayIntroFromRange,
   priorityClockCaptionDateKeyEnd,
@@ -67,6 +68,13 @@ describe('dayPlanEditorShared', () => {
     expect(endsOnNextCalendarDay('23:15', '24:00')).toBe(true);
     expect(endsOnNextCalendarDay('09:00', '18:00')).toBe(false);
     expect(endsOnNextCalendarDay('22:00', '06:00')).toBe(true);
+  });
+
+  it('rejects same-day end at midnight or not after start', () => {
+    expect(isInvalidSameDayEnd('07:00', '24:00')).toBe(true);
+    expect(isInvalidSameDayEnd('07:00', '00:00')).toBe(true);
+    expect(isInvalidSameDayEnd('07:00', '06:00')).toBe(true);
+    expect(isInvalidSameDayEnd('07:00', '23:00')).toBe(false);
   });
 
   it('extends end caption to next day for overnight window', () => {

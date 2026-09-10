@@ -244,12 +244,21 @@ export { isOvernightPriorityWindow as isOvernightHhmmRange } from '@entities/day
 
 /**
  * 종료가 UI상 다음 날짜인지.
- * 저장값 `24:00`(당일 끝)은 화면에서 다음 날짜 `AM 00:00`이므로 true.
+ * 저장값 `24:00`(당일 끝)은 화면에서 다음 날짜 `00:00`이므로 true.
  */
 export function endsOnNextCalendarDay(start: string, end: string): boolean {
   const pe = parseHHmmToMinutes(end.trim());
   if (pe === 24 * 60) return true;
   return isOvernightPriorityWindow(start, end);
+}
+
+/** 당일 마무리로 둘 수 없는 시각인지 (시작 이후가 아니거나 자정/24:00). */
+export function isInvalidSameDayEnd(startHhmm: string, endHhmm: string): boolean {
+  const ps = parseHHmmToMinutes(startHhmm.trim());
+  const pe = parseHHmmToMinutes(endHhmm.trim());
+  if (ps === null || pe === null) return true;
+  if (pe === 24 * 60) return true;
+  return pe <= ps;
 }
 
 type MeridiemKo = '오전' | '오후';
