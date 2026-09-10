@@ -246,6 +246,7 @@ export {
   POST_IT_LIGHT_INK,
   POST_IT_LIGHT_MUTED,
   ROUTINE_CATALOG_FLAT_POST_IT_KEY,
+  TODO_LIST_POST_IT_KEY,
   getPostItFaceColorPreset,
   isPostItFaceColorId,
   loadPostItFaceColorByGroup,

@@ -1638,9 +1638,6 @@ function GroupAccordion({
                   );
                 })}
               </View>
-              <ThemedText style={[styles.setTitleMarkHint, { color: muted }]}>
-                {t('fixedRoutine.titleMarkHint')}
-              </ThemedText>
             </View>
           ) : null}
           {onSetApplyWeekdays ? (
@@ -2893,11 +2890,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  setTitleMarkHint: {
-    fontSize: 11,
-    lineHeight: 15,
-    fontWeight: '500',
   },
   rulePill: {
     width: 58,

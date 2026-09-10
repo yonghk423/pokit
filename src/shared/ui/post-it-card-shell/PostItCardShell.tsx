@@ -29,6 +29,11 @@ type Props = {
   /** 면 테두리 — 흰 면+밝은 배경에서 윤곽이 필요할 때 */
   borderColor?: string;
   borderWidth?: number;
+  /**
+   * 솔리드(각진 오프셋) 음영. false면 테두리·솔리드 바 없이 소프트 드롭 섀도만.
+   * @default true
+   */
+  solidShadow?: boolean;
 };
 
 /**
@@ -44,19 +49,20 @@ export function PostItCardShell({
   compact = false,
   borderColor,
   borderWidth = 0,
+  solidShadow = true,
 }: Props) {
   const face = faceColor ?? (isDark ? POST_IT_WHITE_DARK : POST_IT_WHITE_LIGHT);
   const shadow = shadowColor ?? POST_IT_SOLID_SHADOW;
   const offset = compact ? SHADOW_COMPACT : SHADOW;
   const tape = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.78)';
-  const outlineW = borderColor ? Math.max(borderWidth, 1) : 0;
+  const outlineW = solidShadow && borderColor ? Math.max(borderWidth, 1) : 0;
 
   return (
     <View
       style={[
         styles.outer,
         compact ? styles.outerCompact : styles.outerFull,
-        { marginRight: offset, marginBottom: offset },
+        solidShadow ? { marginRight: offset, marginBottom: offset } : null,
         style,
       ]}>
       <View
@@ -66,25 +72,30 @@ export function PostItCardShell({
           style={[styles.tape, compact && styles.tapeCompact, { backgroundColor: tape }]}
         />
       </View>
-      <View
-        pointerEvents="none"
-        style={[
-          styles.solidShadow,
-          compact && styles.solidShadowCompact,
-          {
-            backgroundColor: shadow,
-            transform: [{ translateX: offset }, { translateY: offset }],
-          },
-        ]}
-      />
+      {solidShadow ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.solidShadow,
+            compact && styles.solidShadowCompact,
+            {
+              backgroundColor: shadow,
+              transform: [{ translateX: offset }, { translateY: offset }],
+            },
+          ]}
+        />
+      ) : null}
       <View
         style={[
           styles.face,
           {
             backgroundColor: face,
-            borderColor: borderColor ?? 'transparent',
+            borderColor: outlineW > 0 ? (borderColor ?? 'transparent') : 'transparent',
             borderWidth: outlineW,
+            // soft shadow는 overflow:hidden 이면 잘림
+            overflow: solidShadow ? 'hidden' : 'visible',
           },
+          !solidShadow && styles.faceSoftShadow,
           contentStyle,
         ]}>
         {children}
@@ -149,5 +160,17 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     overflow: 'hidden',
     zIndex: 1,
+  },
+  faceSoftShadow: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.16,
+        shadowRadius: 8,
+      },
+      android: { elevation: 4 },
+      default: {},
+    }),
   },
 });

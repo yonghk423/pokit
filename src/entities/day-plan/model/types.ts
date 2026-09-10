@@ -1,4 +1,14 @@
+import type { PriorityMarkColorId } from '../lib/priorityMarkColor';
+
 export type TodoPriority = 'high' | 'medium' | 'low';
+
+/** 투두 행 안의 세부 할 일 */
+export type DayPlanTodoSubItem = {
+  id: string;
+  text: string;
+  isDone: boolean;
+  order: number;
+};
 
 /** 투두 리스트 모드 — 사용자가 직접 적는 할 일 행 */
 export type DayPlanTodoItem = {
@@ -7,7 +17,10 @@ export type DayPlanTodoItem = {
   what: string;
   /** 대상·장소·담당 */
   who: string;
+  /** @deprecated 형광펜 마커로 대체 — 저장 호환용 */
   priority: TodoPriority;
+  /** 제목 형광펜 밑줄 색 — 없으면 표시 없음 */
+  markColor?: PriorityMarkColorId | null;
   startMinutes: number;
   endMinutes: number;
   /** true면 종료 시각은 시작일 다음 날 */
@@ -15,6 +28,8 @@ export type DayPlanTodoItem = {
   inProgress: boolean;
   isDone: boolean;
   order: number;
+  /** 세부 투두 (없으면 빈 목록) */
+  subItems?: DayPlanTodoSubItem[];
 };
 
 /** 새 플로우 설정 — 퀵메모 모드에서 캡처만 하다가 시간/우선순위로 옮길 수 있는 항목 */

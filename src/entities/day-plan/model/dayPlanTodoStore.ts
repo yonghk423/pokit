@@ -5,13 +5,20 @@ import { loadDayPlanTodos, saveDayPlanTodos } from '@shared/lib/storage';
 import { defaultEditorBlockTimesFromNow } from '../lib/dayPlanTimeMath';
 import { getLocalDateKey } from '../lib/localDateKey';
 import { parseHHmmToMinutes } from '../lib/parseTime';
-import type { DayPlanTodoItem, TodoPriority } from './types';
+import {
+  isPriorityMarkColorId,
+  type PriorityMarkColorId,
+} from '../lib/priorityMarkColor';
+import type { DayPlanTodoItem, DayPlanTodoSubItem, TodoPriority } from './types';
 
-const PRIORITY_CYCLE: TodoPriority[] = ['high', 'medium', 'low'];
 const EMPTY_TODOS: DayPlanTodoItem[] = [];
 
 function createTodoId(): string {
   return `todo-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function createSubItemId(): string {
+  return `todo-sub-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 function createEmptyTodo(order: number): DayPlanTodoItem {
@@ -23,17 +30,49 @@ function createEmptyTodo(order: number): DayPlanTodoItem {
     what: '',
     who: '',
     priority: 'medium',
+    markColor: null,
     startMinutes,
     endMinutes,
     inProgress: false,
     isDone: false,
     order,
+    subItems: [],
   };
+}
+
+function createEmptySubItem(order: number, text = ''): DayPlanTodoSubItem {
+  return {
+    id: createSubItemId(),
+    text,
+    isDone: false,
+    order,
+  };
+}
+
+function normalizeSubItem(raw: unknown, fallbackOrder: number): DayPlanTodoSubItem | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Partial<DayPlanTodoSubItem>;
+  const id = typeof o.id === 'string' && o.id.trim() ? o.id.trim() : createSubItemId();
+  return {
+    id,
+    text: typeof o.text === 'string' ? o.text : '',
+    isDone: Boolean(o.isDone),
+    order: typeof o.order === 'number' ? o.order : fallbackOrder,
+  };
+}
+
+function normalizeSubItems(raw: unknown): DayPlanTodoSubItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item, index) => normalizeSubItem(item, index))
+    .filter((item): item is DayPlanTodoSubItem => item != null)
+    .sort((a, b) => a.order - b.order)
+    .map((item, index) => ({ ...item, order: index }));
 }
 
 function normalizeTodoItem(raw: unknown, fallbackOrder: number): DayPlanTodoItem | null {
   if (!raw || typeof raw !== 'object') return null;
-  const o = raw as Partial<DayPlanTodoItem>;
+  const o = raw as Partial<DayPlanTodoItem> & { markColor?: unknown };
   const id = typeof o.id === 'string' && o.id.trim() ? o.id.trim() : createTodoId();
   const priority: TodoPriority =
     o.priority === 'high' || o.priority === 'low' ? o.priority : 'medium';
@@ -44,17 +83,24 @@ function normalizeTodoItem(raw: unknown, fallbackOrder: number): DayPlanTodoItem
       ? o.endMinutes
       : startMinutes + 60;
   if (endMinutes <= startMinutes) endMinutes = startMinutes + 15;
+  const markColor: PriorityMarkColorId | null = isPriorityMarkColorId(o.markColor)
+    ? o.markColor
+    : o.markColor === null
+      ? null
+      : null;
   return {
     id,
     what: typeof o.what === 'string' ? o.what : '',
     who: typeof o.who === 'string' ? o.who : '',
     priority,
+    markColor,
     startMinutes,
     endMinutes,
     endsNextCalendarDay: Boolean(o.endsNextCalendarDay),
     inProgress: Boolean(o.inProgress) && !o.isDone,
     isDone: Boolean(o.isDone),
     order: typeof o.order === 'number' ? o.order : fallbackOrder,
+    subItems: normalizeSubItems(o.subItems),
   };
 }
 
@@ -80,8 +126,20 @@ type DayPlanTodoState = {
   setActiveDateKey: (dateKey: string) => void;
   getActiveTodos: () => DayPlanTodoItem[];
   addTodo: () => void;
-  updateTodo: (id: string, patch: Partial<Pick<DayPlanTodoItem, 'what' | 'who' | 'startMinutes' | 'endMinutes' | 'endsNextCalendarDay'>>) => void;
-  cyclePriority: (id: string) => void;
+  updateTodo: (
+    id: string,
+    patch: Partial<
+      Pick<
+        DayPlanTodoItem,
+        'what' | 'who' | 'startMinutes' | 'endMinutes' | 'endsNextCalendarDay' | 'markColor'
+      >
+    >,
+  ) => void;
+  setMarkColor: (id: string, markColor: PriorityMarkColorId | null) => void;
+  addSubItem: (parentId: string, text?: string) => void;
+  updateSubItem: (parentId: string, subId: string, text: string) => void;
+  toggleSubItemDone: (parentId: string, subId: string) => void;
+  removeSubItem: (parentId: string, subId: string) => void;
   toggleInProgress: (id: string) => void;
   toggleDone: (id: string) => void;
   removeTodo: (id: string) => void;
@@ -104,6 +162,21 @@ function patchActiveTodos(
       [key]: nextItems,
     },
   };
+}
+
+function patchParentSubItems(
+  items: DayPlanTodoItem[],
+  parentId: string,
+  updater: (subs: DayPlanTodoSubItem[]) => DayPlanTodoSubItem[],
+): DayPlanTodoItem[] {
+  return items.map((item) => {
+    if (item.id !== parentId) return item;
+    const nextSubs = updater(item.subItems ?? []).map((sub, index) => ({
+      ...sub,
+      order: index,
+    }));
+    return { ...item, subItems: nextSubs };
+  });
 }
 
 export const useDayPlanTodoStore = create<DayPlanTodoState>((set, get) => ({
@@ -152,6 +225,9 @@ export const useDayPlanTodoStore = create<DayPlanTodoState>((set, get) => ({
           if (typeof patch.endsNextCalendarDay === 'boolean') {
             next.endsNextCalendarDay = patch.endsNextCalendarDay;
           }
+          if ('markColor' in patch) {
+            next.markColor = patch.markColor ?? null;
+          }
           if (
             !next.endsNextCalendarDay &&
             typeof next.startMinutes === 'number' &&
@@ -167,15 +243,53 @@ export const useDayPlanTodoStore = create<DayPlanTodoState>((set, get) => ({
     persistTodos(get());
   },
 
-  cyclePriority: (id) => {
+  setMarkColor: (id, markColor) => {
     set((s) =>
       patchActiveTodos(s, (items) =>
-        items.map((item) => {
-          if (item.id !== id) return item;
-          const idx = PRIORITY_CYCLE.indexOf(item.priority);
-          const next = PRIORITY_CYCLE[(idx + 1) % PRIORITY_CYCLE.length] ?? 'medium';
-          return { ...item, priority: next };
-        }),
+        items.map((item) => (item.id === id ? { ...item, markColor } : item)),
+      ),
+    );
+    persistTodos(get());
+  },
+
+  addSubItem: (parentId, text = '') => {
+    set((s) =>
+      patchActiveTodos(s, (items) =>
+        patchParentSubItems(items, parentId, (subs) => [
+          ...subs,
+          createEmptySubItem(subs.length, text),
+        ]),
+      ),
+    );
+    persistTodos(get());
+  },
+
+  updateSubItem: (parentId, subId, text) => {
+    set((s) =>
+      patchActiveTodos(s, (items) =>
+        patchParentSubItems(items, parentId, (subs) =>
+          subs.map((sub) => (sub.id === subId ? { ...sub, text } : sub)),
+        ),
+      ),
+    );
+    persistTodos(get());
+  },
+
+  toggleSubItemDone: (parentId, subId) => {
+    set((s) =>
+      patchActiveTodos(s, (items) =>
+        patchParentSubItems(items, parentId, (subs) =>
+          subs.map((sub) => (sub.id === subId ? { ...sub, isDone: !sub.isDone } : sub)),
+        ),
+      ),
+    );
+    persistTodos(get());
+  },
+
+  removeSubItem: (parentId, subId) => {
+    set((s) =>
+      patchActiveTodos(s, (items) =>
+        patchParentSubItems(items, parentId, (subs) => subs.filter((sub) => sub.id !== subId)),
       ),
     );
     persistTodos(get());

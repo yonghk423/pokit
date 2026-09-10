@@ -258,6 +258,10 @@ export {
   PRIORITY_WINDOW_DEFAULT_SPAN_MINUTES, snapMinutes, TIME_SNAP_MINUTES
 } from './lib/dayPlanTimeMath';
 export {
+  formatTodoItemShareText,
+  formatTodoListShareText,
+} from './lib/formatTodoListShareText';
+export {
   collectRoutineStartNotifySlots,
   hasResolvableRoutineStartTime,
   type RoutineStartNotifySlot,
@@ -534,5 +538,5 @@ export {
   useFixedFlowSetsStore,
 } from './model';
 export type { AddBlockResult, PlanMode, UpdateBlockResult } from './model';
-export type { DayPlanBlock, DayPlanQuickMemo, DayPlanTodoItem, TodoPriority } from './model/types';
+export type { DayPlanBlock, DayPlanQuickMemo, DayPlanTodoItem, DayPlanTodoSubItem, TodoPriority } from './model/types';
 

@@ -41,6 +41,9 @@ export const DEFAULT_POST_IT_FACE_COLOR_ID: PostItFaceColorId = 'white';
 /** 루틴 탭 플랫 목록 카드 — 기본(상시) 면색 */
 export const ROUTINE_CATALOG_FLAT_POST_IT_KEY = 'routine-catalog:flat';
 
+/** 오늘 탭 투두 리스트 카드 — 면색 */
+export const TODO_LIST_POST_IT_KEY = 'todo-list:today';
+
 const ROUTINE_CATALOG_FLAT_FACE_WHITE_MIGRATED_KEY =
   'pokit:routine-catalog-flat-face-white-migrated';
 

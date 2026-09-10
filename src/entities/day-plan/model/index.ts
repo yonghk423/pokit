@@ -11,4 +11,4 @@ export { useDayPlanTodoStore } from './dayPlanTodoStore';
 export type { PlanMode } from './planMode';
 export type { AddBlockResult, UpdateBlockResult, DayPlanStoreState } from './dayPlanStore';
 export type { DayPlanRuntimeStoreState } from './dayPlanRuntimeStore';
-export type { DayPlanBlock, DayPlanQuickMemo, DayPlanTodoItem, TodoPriority } from './types';
+export type { DayPlanBlock, DayPlanQuickMemo, DayPlanTodoItem, DayPlanTodoSubItem, TodoPriority } from './types';

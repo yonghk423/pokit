@@ -32,7 +32,11 @@ function applyFontSizeScale(style: TextStyle, scale: number): TextStyle {
 }
 
 /** ThemedText와 같은 앱 글씨체·크기 배율을 TextInput에 적용 (React 19: ref는 props) */
-export function ThemedTextInput({ style, ...rest }: ThemedTextInputProps) {
+export function ThemedTextInput({
+  style,
+  underlineColorAndroid = 'transparent',
+  ...rest
+}: ThemedTextInputProps) {
   const fontId = useEffectiveAppFontId();
   const sizeScale = useAppFontSizeScale();
   const singleFace = isSingleFaceAppFont(fontId);
@@ -52,5 +56,11 @@ export function ThemedTextInput({ style, ...rest }: ThemedTextInputProps) {
     sizeScale,
   );
 
-  return <TextInput {...rest} style={scaled} />;
+  return (
+    <TextInput
+      underlineColorAndroid={underlineColorAndroid}
+      {...rest}
+      style={scaled}
+    />
+  );
 }

@@ -47,6 +47,8 @@ export type TodoListUiColors = {
   cellBg: string;
   cardBg: string;
   checkFill: string;
+  /** 세부 할 일 체크 — 본 항목보다 옅은 채움 */
+  checkFillSub: string;
   addBtnBg: string;
   tagBg: string;
   tagText: string;
@@ -70,8 +72,9 @@ export function todoListUiColors(c: DayPlanPalette, isDark: boolean): TodoListUi
     cellBg: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
     cardBg: isDark ? 'rgba(255,255,255,0.04)' : '#F3F0EA',
     checkFill: isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT,
+    checkFillSub: isDark ? '#52525b' : '#78716c',
     addBtnBg: rc.primaryContainer,
-    tagBg: isDark ? '#FAFAFA' : '#000000',
-    tagText: isDark ? '#09090b' : '#FAFAFA',
+    tagBg: rc.bgMint,
+    tagText: rc.primary,
   };
 }

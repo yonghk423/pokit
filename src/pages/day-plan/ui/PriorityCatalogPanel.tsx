@@ -1830,18 +1830,7 @@ export function PriorityCatalogPanel({
           }>
           <View style={styles.flatSearchPad}>
             <View style={styles.flatSearchRow}>
-              <View
-                style={[
-                  styles.flatSearchShell,
-                  { marginRight: 2, marginBottom: 2 },
-                ]}>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.flatSearchShadow,
-                    { backgroundColor: faceEditorial.shadow ?? '#000000' },
-                  ]}
-                />
+              <View style={styles.flatSearchShell}>
                 <View
                   style={[
                     styles.flatSearchFace,
@@ -1854,23 +1843,39 @@ export function PriorityCatalogPanel({
                     size={14}
                     color={faceUsesLightInk ? 'rgba(0,0,0,0.55)' : faceMuted}
                   />
-                  <ThemedTextInput
-                    value={catalogSearchQuery}
-                    onChangeText={setCatalogSearchQuery}
-                    placeholder={t('catalog.searchPlaceholder')}
-                    placeholderTextColor={
-                      faceUsesLightInk ? 'rgba(0,0,0,0.45)' : faceMuted
-                    }
-                    returnKeyType="search"
-                    autoCorrect={false}
-                    autoCapitalize="none"
-                    clearButtonMode="never"
-                    accessibilityLabel={t('catalog.searchA11y')}
-                    style={[
-                      styles.flatSearchInput,
-                      { color: faceUsesLightInk ? '#111111' : faceInk },
-                    ]}
-                  />
+                  <View style={styles.flatSearchInputWrap}>
+                    {catalogSearchQuery.length === 0 ? (
+                      <ThemedText
+                        pointerEvents="none"
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants"
+                        style={[
+                          styles.flatSearchPlaceholder,
+                          {
+                            color: faceUsesLightInk
+                              ? 'rgba(0,0,0,0.45)'
+                              : faceMuted,
+                          },
+                        ]}>
+                        {t('catalog.searchPlaceholder')}
+                      </ThemedText>
+                    ) : null}
+                    <ThemedTextInput
+                      value={catalogSearchQuery}
+                      onChangeText={setCatalogSearchQuery}
+                      placeholder=""
+                      returnKeyType="search"
+                      autoCorrect={false}
+                      autoCapitalize="none"
+                      clearButtonMode="never"
+                      underlineColorAndroid="transparent"
+                      accessibilityLabel={t('catalog.searchA11y')}
+                      style={[
+                        styles.flatSearchInput,
+                        { color: faceUsesLightInk ? '#111111' : faceInk },
+                      ]}
+                    />
+                  </View>
                   {catalogSearchQuery.length > 0 ? (
                     <Pressable
                       accessibilityRole="button"
@@ -1891,18 +1896,7 @@ export function PriorityCatalogPanel({
                 </View>
               </View>
               {onCreatePress ? (
-                <View
-                  style={[
-                    styles.flatSearchAddShell,
-                    { marginRight: 2, marginBottom: 2 },
-                  ]}>
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.flatSearchAddShadow,
-                      { backgroundColor: faceEditorial.shadow ?? '#000000' },
-                    ]}
-                  />
+                <View style={styles.flatSearchAddShell}>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t('catalog.createRoutineA11y')}
@@ -2153,11 +2147,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  flatSearchShadow: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: RETRO_RADIUS,
-    transform: [{ translateX: 2 }, { translateY: 2 }],
-  },
   flatSearchFace: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2167,13 +2156,51 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderRadius: RETRO_RADIUS,
     zIndex: 1,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+      },
+      android: { elevation: 2 },
+      default: {},
+    }),
+  },
+  flatSearchInputWrap: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  flatSearchPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.15,
+    textDecorationLine: 'none',
   },
   flatSearchInput: {
     flex: 1,
     minWidth: 0,
     paddingVertical: 8,
+    margin: 0,
     fontSize: 14,
     fontWeight: '600',
+    letterSpacing: -0.15,
+    borderWidth: 0,
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
+    backgroundColor: 'transparent',
+    textDecorationLine: 'none',
+    ...Platform.select({
+      android: { includeFontPadding: false, textAlignVertical: 'center' },
+      default: {},
+    }),
   },
   flatSearchClear: {
     padding: 2,
@@ -2182,11 +2209,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     flexShrink: 0,
   },
-  flatSearchAddShadow: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: RETRO_RADIUS,
-    transform: [{ translateX: 2 }, { translateY: 2 }],
-  },
   flatSearchAddFace: {
     width: 40,
     height: 40,
@@ -2194,6 +2216,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: RETRO_RADIUS,
     zIndex: 1,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+      },
+      android: { elevation: 2 },
+      default: {},
+    }),
   },
   flatSearchEmpty: {
     paddingHorizontal: 10,
