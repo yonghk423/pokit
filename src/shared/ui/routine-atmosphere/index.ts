@@ -13,5 +13,6 @@ export type {
   RoutineAtmosphereVariant,
 } from './routineAtmosphereAssets';
 export { RoutineAtmosphereFooterStrip } from './RoutineAtmosphereFooterStrip';
+export { RoutineMarginSlideshow } from './RoutineMarginSlideshow';
 export { RoutineTabAtmosphere } from './RoutineTabAtmosphere';
 export { useDeferredAtmosphereReady } from './useDeferredAtmosphereReady';

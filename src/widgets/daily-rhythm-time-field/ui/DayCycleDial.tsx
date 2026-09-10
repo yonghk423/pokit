@@ -266,11 +266,17 @@ export function DayCycleDial({
 
   const hapticForHour = useCallback((activeMinutes: number) => {
     const hour = Math.floor(cycleDisplayMinutes(activeMinutes) / 60) % 48;
+    if (lastHapticHourRef.current === null) {
+      lastHapticHourRef.current = hour;
+      return;
+    }
     if (lastHapticHourRef.current === hour) return;
-    // 정각(분=0)에만 — 드래그 중 햅틱 과다로 인한 버벅임 방지
-    if (cycleDisplayMinutes(activeMinutes) % 60 !== 0) return;
     lastHapticHourRef.current = hour;
-    void Haptics.selectionAsync().catch(() => undefined);
+    // 시가 바뀔 때마다 — 0·12·24·36은 조금 더 또렷하게
+    const isMajor = hour % 12 === 0;
+    void Haptics.impactAsync(
+      isMajor ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light,
+    ).catch(() => undefined);
   }, []);
 
   const applyLocalPoint = useCallback(
@@ -301,12 +307,7 @@ export function DayCycleDial({
       if (draggingRef.current) {
         const active =
           handleKindRef.current === 'start' ? clamped.start : clamped.end;
-        if (lastHapticHourRef.current === null) {
-          lastHapticHourRef.current =
-            Math.floor(cycleDisplayMinutes(active) / 60) % 48;
-        } else {
-          hapticForHour(active);
-        }
+        hapticForHour(active);
       }
     },
     [hapticForHour, scheduleDraftFlush],
@@ -764,7 +765,13 @@ export function DayCycleDial({
             styles.summaryFace,
             { backgroundColor: colors.summaryBg },
           ]}>
-          <ThemedText style={[styles.summaryCaption, { color: colors.ink }, cityPopFont('700')]}>
+          <ThemedText
+            style={[styles.summaryCaption, { color: colors.ink }, cityPopFont('800')]}
+            lightColor={colors.ink}
+            darkColor={colors.ink}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.72}>
             {rangeSummaryText}
           </ThemedText>
         </View>
@@ -777,11 +784,11 @@ const styles = StyleSheet.create({
   root: {
     width: '100%',
     alignItems: 'center',
-    gap: 14,
+    gap: 8,
   },
   headerRow: {
     width: '100%',
-    gap: 10,
+    gap: 6,
   },
   titleRow: {
     flexDirection: 'row',
@@ -801,7 +808,7 @@ const styles = StyleSheet.create({
   },
   legendChip: {
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 4,
   },
   legendText: {
@@ -859,13 +866,17 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   summaryFace: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
   },
   summaryCaption: {
-    fontSize: 12,
+    width: '100%',
+    fontSize: 17,
+    lineHeight: 22,
     textAlign: 'center',
-    letterSpacing: -0.2,
+    letterSpacing: -0.35,
   },
 });

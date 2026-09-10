@@ -107,7 +107,7 @@ export const CityPopTypography = {
 export const RETRO_BORDER_WIDTH = 2;
 export const RETRO_BORDER_COLOR = '#000000';
 export const RETRO_RADIUS = 0;
-export const SOLID_SHADOW_OFFSET = 4;
+export const SOLID_SHADOW_OFFSET = 2;
 
 export const retroBorder: ViewStyle = {
   borderWidth: RETRO_BORDER_WIDTH,

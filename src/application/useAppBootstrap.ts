@@ -140,47 +140,10 @@ export function useAppBootstrap() {
   useEffect(() => {
     if (!isReady) return;
     return useDayPlanStore.subscribe((state, prev) => {
-      if (
-        state.blocks !== prev.blocks ||
-        state.completedBlockIds !== prev.completedBlockIds ||
-        state.skippedBlockIds !== prev.skippedBlockIds ||
-        state.dateKey !== prev.dateKey
-      ) {
-        void syncIncompleteRoutineReminderNotifications();
-      }
       if (state.blocks !== prev.blocks || state.dateKey !== prev.dateKey) {
         void syncCategoryReminderNotifications();
         void syncRoutineStartNotifications();
       }
-    });
-  }, [isReady]);
-
-  /** 목록·시간대 루틴 구성/완료가 바뀌면 미완료 알림 개수도 다시 맞춘다. */
-  useEffect(() => {
-    if (!isReady) return;
-    return useDayPlanDraftStore.subscribe((state, prev) => {
-      if (
-        state.priorityCategoryOrder === prev.priorityCategoryOrder &&
-        state.prioritySectionsCategoryOrder === prev.prioritySectionsCategoryOrder &&
-        state.prioritySectionsMealSlots === prev.prioritySectionsMealSlots &&
-        state.completedFocusCategoryKeys === prev.completedFocusCategoryKeys &&
-        state.planCompletionDismissedKeys === prev.planCompletionDismissedKeys &&
-        state.isFocusStarted === prev.isFocusStarted &&
-        state.priorityStart === prev.priorityStart &&
-        state.priorityEnd === prev.priorityEnd
-      ) {
-        return;
-      }
-      void syncIncompleteRoutineReminderNotifications();
-    });
-  }, [isReady]);
-
-  /** 설정에서 사용하는 레이아웃 모드를 바꾸면 숨긴 모드를 알림 집계에서 제외한다. */
-  useEffect(() => {
-    if (!isReady) return;
-    return useDayPlanLayoutModeVisibilityStore.subscribe((state, prev) => {
-      if (state.visibility === prev.visibility) return;
-      void syncIncompleteRoutineReminderNotifications();
     });
   }, [isReady]);
 

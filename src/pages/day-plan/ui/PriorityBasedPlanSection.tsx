@@ -102,8 +102,6 @@ import { MealSlotScheduleEditButton, MealSlotTimelineView } from '@widgets/day-p
 import { PriorityOrderRow } from '@widgets/day-plan-priority-order';
 import { SpineTimelineView } from '@widgets/day-plan-spine-timeline';
 import {
-  endsOnNextCalendarDay,
-  formatMinutesToHHmm,
   getPickerCategoryItem,
   getPickerCategoryLabel,
   isOvernightHhmmRange,
@@ -122,10 +120,7 @@ import {
 } from '../lib/bagRowSpineSchedule';
 import { buildCategoryMealSlotOverrides, clampMealSlotSectionsToWindow, flattenPriorityMealSlotSectionEntries, getDayMealSlotLabel, hasExplicitMealSlotAssignments, reorderFlatKeys, reorderMealSlotSectionEntries, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
-import {
-  CatalogRowSpineTimePanel,
-  type CatalogRowSpineTimePanelHandle,
-} from './CatalogRowSpineTimePanel';
+import { CatalogRowSpineTimePanel, type CatalogRowSpineTimePanelHandle } from './CatalogRowSpineTimePanel';
 import { CreateCustomFlowSheet, type CreateCustomFlowPlacement } from './CreateCustomFlowSheet';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
 import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
@@ -411,9 +406,6 @@ export function PriorityBasedPlanSection({
   const todayKey = getLocalDateKey();
 
   const [iosDateModalOpen, setIosDateModalOpen] = useState(false);
-  const [priorityTimeModalOpen, setPriorityTimeModalOpen] = useState(false);
-  const [priorityTimeModalKey, setPriorityTimeModalKey] = useState(0);
-  const priorityTimePanelRef = useRef<CatalogRowSpineTimePanelHandle>(null);
   const [bagRowTimeEdit, setBagRowTimeEdit] = useState<{
     rowKey: string;
     categoryKey: string;
@@ -2148,16 +2140,10 @@ export function PriorityBasedPlanSection({
     [todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd],
   );
 
-  const openPriorityTimeModal = useCallback(() => {
+  const openPriorityTimeEditor = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setPriorityTimeModalKey((k) => k + 1);
-    setPriorityTimeModalOpen(true);
-  }, []);
-
-  const closePriorityTimeModal = useCallback(() => {
-    Keyboard.dismiss();
-    setPriorityTimeModalOpen(false);
-  }, []);
+    router.push('/daily-rhythm-settings');
+  }, [router]);
 
   const resolveBagRowSpineSchedule = useCallback(
     (categoryKey: string) =>
@@ -2283,41 +2269,6 @@ export function PriorityBasedPlanSection({
       priorityStart,
       setCategorySpineScheduleInAnySet,
       updatePlanBlock,
-    ],
-  );
-
-  const applyPriorityTimeFromPanel = useCallback(
-    (startMin: number, endMin: number, endsNext: boolean) => {
-      Keyboard.dismiss();
-      const startHhmm = formatMinutesToHHmm(startMin);
-      const endHhmm = formatMinutesToHHmm(endMin);
-      onChangePriorityStart(startHhmm);
-      onChangePriorityEnd(endHhmm);
-      const isNaturalOvernight = isOvernightHhmmRange(startHhmm, endHhmm);
-      if (endMin === 24 * 60) {
-        // 현재 날짜 범위를 유지
-      } else if (endsNext && !isNaturalOvernight) {
-        const { lo } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
-        const nextDay = addDaysToLocalDateKey(lo, 1);
-        applyPriorityPlanCalendarRange(lo, nextDay);
-      } else if (!endsNext && isNaturalOvernight) {
-        const { lo } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
-        applyPriorityPlanCalendarRange(lo, lo);
-      } else if (!endsNext && !isNaturalOvernight) {
-        const { lo, hi } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
-        if (hi === addDaysToLocalDateKey(lo, 1)) {
-          applyPriorityPlanCalendarRange(lo, lo);
-        }
-      }
-      setPriorityTimeModalOpen(false);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    },
-    [
-      onChangePriorityEnd,
-      onChangePriorityStart,
-      priorityPlanDateKey,
-      priorityPlanDateKeyEnd,
-      applyPriorityPlanCalendarRange,
     ],
   );
 
@@ -2521,125 +2472,6 @@ export function PriorityBasedPlanSection({
             </View>
           </View>
         </View>
-      </Modal>
-
-      <Modal
-        visible={priorityTimeModalOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={closePriorityTimeModal}>
-        <KeyboardAvoidingView
-          style={[
-            styles.timeModalRoot,
-            {
-              paddingTop: Math.max(insets.top, 16),
-              paddingBottom: Math.max(insets.bottom, 16),
-            },
-          ]}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={insets.top + 12}>
-          <Pressable
-            style={styles.timeModalDim}
-            onPress={closePriorityTimeModal}
-            accessibilityRole="button"
-            accessibilityLabel={t('dayPlan.close')}
-          />
-          <View
-            style={[
-              styles.timeModalCardShell,
-              {
-                marginRight: SOLID_SHADOW_OFFSET,
-                marginBottom: SOLID_SHADOW_OFFSET,
-              },
-            ]}>
-            <View
-              pointerEvents="none"
-              style={[
-                styles.timeModalCardShadow,
-                {
-                  backgroundColor: isDark
-                    ? RetroFlatColors.dark.solidShadow
-                    : RetroFlatColors.light.text,
-                  transform: [
-                    { translateX: SOLID_SHADOW_OFFSET },
-                    { translateY: SOLID_SHADOW_OFFSET },
-                  ],
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.timeModalCard,
-                {
-                  backgroundColor: isDark
-                    ? RetroFlatColors.dark.surface
-                    : '#FFFFFF',
-                },
-              ]}>
-              <ScrollView
-                style={styles.timeModalScroll}
-                contentContainerStyle={styles.timeModalScrollContent}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled">
-                <ThemedText
-                  style={[styles.dateModalHint, styles.timeModalLead, { color: editorial.muted }]}>
-                  {t('dayPlan.timeModalHint')}
-                </ThemedText>
-                {priorityTimeModalOpen ? (
-                  <CatalogRowSpineTimePanel
-                    key={priorityTimeModalKey}
-                    ref={priorityTimePanelRef}
-                    startMinutes={parseHHmmToMinutes(priorityStart) ?? 9 * 60}
-                    endMinutes={parseHHmmToMinutes(priorityEnd) ?? 18 * 60}
-                    endsNextCalendarDay={endsOnNextCalendarDay(priorityStart, priorityEnd)}
-                    baseDateKey={priorityPlanDateKey}
-                    presentation="sheet"
-                    visualStyle="default"
-                    contentInsetLeft={0}
-                    ink={editorial.ink}
-                    muted={editorial.muted}
-                    line={editorial.line}
-                    isDark={isDark}
-                    showSheetConfirm={false}
-                    startFieldLabel={t('dayRhythm.dayStart')}
-                    endFieldLabel={t('dayRhythm.dayEnd')}
-                    startFieldHint={t('dayRhythm.dayStartHint')}
-                    endFieldHint={t('dayRhythm.dayEndHint')}
-                    onScheduleChange={applyPriorityTimeFromPanel}
-                  />
-                ) : null}
-                <View style={styles.timeModalFooterActions}>
-                  <BrutalConfirmButton
-                    align="stretch"
-                    compact
-                    label={t('common.cancel')}
-                    accessibilityLabel={t('dayPlan.cancelClose')}
-                    fill={isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF'}
-                    labelColor={editorial.muted}
-                    style={styles.timeModalCancelBtn}
-                    onPress={closePriorityTimeModal}
-                  />
-                  <BrutalConfirmButton
-                    align="stretch"
-                    compact
-                    label={t('dayPlan.applyTime')}
-                    accessibilityLabel={t('dayPlan.applyTimeA11y')}
-                    style={styles.timeModalSaveBtn}
-                    onPress={() => {
-                      const next = priorityTimePanelRef.current?.commitPendingSchedule();
-                      if (!next) return;
-                      applyPriorityTimeFromPanel(
-                        next.startMinutes,
-                        next.endMinutes,
-                        next.endsNextCalendarDay,
-                      );
-                    }}
-                  />
-                </View>
-              </ScrollView>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
       </Modal>
 
       <Modal
@@ -2854,7 +2686,7 @@ export function PriorityBasedPlanSection({
                         chipBg={priorityTimeChipColors.bg}
                         chipBgPressed={priorityTimeChipColors.pressed}
                         borderColor={editorial.line}
-                        onPress={openPriorityTimeModal}
+                        onPress={openPriorityTimeEditor}
                       />
                     </View>
                   </>
@@ -2882,7 +2714,7 @@ export function PriorityBasedPlanSection({
                         chipBg={priorityTimeChipColors.bg}
                         chipBgPressed={priorityTimeChipColors.pressed}
                         borderColor={editorial.line}
-                        onPress={openPriorityTimeModal}
+                        onPress={openPriorityTimeEditor}
                       />
                     </View>
                   </>

@@ -1,23 +1,26 @@
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { formatHhmmClockKo } from '@entities/day-plan';
-import { useTranslation } from '@shared/lib/i18n';
+import { useDayPlanDraftStore } from '@entities/day-plan';
+import { syncPriorityDayEndAlarm, syncPriorityDayStartAlarm } from '@features/day-plan-notifications';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { loadIncompleteRoutineReminder } from '@shared/lib/storage';
+import { useTranslation } from '@shared/lib/i18n';
+import { loadPriorityDayEndAlarm, loadPriorityDayStartAlarm } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
-
 import {
-  buildSettingsPalette,
-  SettingsRowIcon,
-  SettingsSection,
-  settingsChromeStyles as chrome,
-} from '../lib/settingsChrome';
+  DailyRhythmStyleAlarmRow,
+  paletteForReminderTimeCard,
+  SnappedTimePickerField,
+} from '@widgets/daily-rhythm-time-field';
+
+import { buildSettingsPalette, settingsChromeStyles as chrome } from '../lib/settingsChrome';
 
 /** 설정 → 알림 */
 export function NotificationSettingsPage() {
@@ -26,19 +29,88 @@ export function NotificationSettingsPage() {
   const isDark = useColorScheme() === 'dark';
   const p = buildSettingsPalette(isDark);
   const insets = useSafeAreaInsets();
-  const [incompleteReminderOn, setIncompleteReminderOn] = useState(
-    () => loadIncompleteRoutineReminder().enabled,
+  const surface = useMemo(() => paletteForReminderTimeCard(isDark), [isDark]);
+  const priorityStart = useDayPlanDraftStore((s) => s.priorityStart);
+
+  const [dayStartAlarmOn, setDayStartAlarmOn] = useState(
+    () => loadPriorityDayStartAlarm().enabled,
   );
-  const [incompleteReminderHhmm, setIncompleteReminderHhmm] = useState(
-    () => loadIncompleteRoutineReminder().reminderHhmm,
+  const [dayEndAlarmOn, setDayEndAlarmOn] = useState(() => loadPriorityDayEndAlarm().enabled);
+  const [dayEndAlarmHhmm, setDayEndAlarmHhmm] = useState(
+    () => loadPriorityDayEndAlarm().reminderHhmm,
   );
+  const [dayEndAlarmTimeExpanded, setDayEndAlarmTimeExpanded] = useState(false);
+
+  const endPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingEndPersistRef = useRef<{ on: boolean; hhmm: string } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      const incomplete = loadIncompleteRoutineReminder();
-      setIncompleteReminderOn(incomplete.enabled);
-      setIncompleteReminderHhmm(incomplete.reminderHhmm);
+      setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
+      const endAlarm = loadPriorityDayEndAlarm();
+      setDayEndAlarmOn(endAlarm.enabled);
+      setDayEndAlarmHhmm(endAlarm.reminderHhmm);
+      setDayEndAlarmTimeExpanded(false);
     }, []),
+  );
+
+  const flushDayEndPersist = useCallback(async (on: boolean, hhmm: string) => {
+    const ok = await syncPriorityDayEndAlarm({ enabled: on, reminderHhmm: hhmm });
+    if (on && !ok) {
+      setDayEndAlarmOn(false);
+      Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
+    }
+  }, [t]);
+
+  const scheduleDayEndPersist = useCallback(
+    (on: boolean, hhmm: string) => {
+      if (endPersistTimerRef.current) clearTimeout(endPersistTimerRef.current);
+      pendingEndPersistRef.current = { on, hhmm };
+      endPersistTimerRef.current = setTimeout(() => {
+        endPersistTimerRef.current = null;
+        pendingEndPersistRef.current = null;
+        void flushDayEndPersist(on, hhmm);
+      }, 380);
+    },
+    [flushDayEndPersist],
+  );
+
+  useEffect(
+    () => () => {
+      if (!endPersistTimerRef.current) return;
+      clearTimeout(endPersistTimerRef.current);
+      endPersistTimerRef.current = null;
+      const pending = pendingEndPersistRef.current;
+      pendingEndPersistRef.current = null;
+      if (pending) void flushDayEndPersist(pending.on, pending.hhmm);
+    },
+    [flushDayEndPersist],
+  );
+
+  const onToggleDayStart = useCallback(
+    async (next: boolean) => {
+      void Haptics.selectionAsync();
+      setDayStartAlarmOn(next);
+      const ok = await syncPriorityDayStartAlarm({
+        enabled: next,
+        startHhmm: priorityStart,
+      });
+      if (next && !ok) {
+        setDayStartAlarmOn(false);
+        Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
+      }
+    },
+    [priorityStart, t],
+  );
+
+  const onToggleDayEnd = useCallback(
+    async (next: boolean) => {
+      void Haptics.selectionAsync();
+      setDayEndAlarmOn(next);
+      if (!next) setDayEndAlarmTimeExpanded(false);
+      await flushDayEndPersist(next, dayEndAlarmHhmm);
+    },
+    [dayEndAlarmHhmm, flushDayEndPersist],
   );
 
   const topInset =
@@ -77,48 +149,56 @@ export function NotificationSettingsPage() {
 
         <ScrollView contentContainerStyle={chrome.container} showsVerticalScrollIndicator={false}>
           <ThemedText style={[chrome.sectionHint, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-            {t('settings.notification.incompleteHint')}
+            {t('settings.notification.pageHint')}
           </ThemedText>
 
-          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]} lightColor={p.sectionTitle} darkColor={p.sectionTitle}>
-              {t('settings.section.dayPlan')}
-            </ThemedText>
-
-            <Pressable
-              style={({ pressed }) => [
-                chrome.item,
-                { borderTopColor: p.border },
-                pressed && { opacity: 0.85 },
-              ]}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/incomplete-routine-reminder-settings');
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t('settings.notification.incompleteA11y')}>
-              <View style={chrome.itemLeft}>
-                <SettingsRowIcon
-                  name="bell.badge.fill"
-                  color={p.icon}
-                  boxBg={p.iconBoxBg}
-                  border={p.border}
-                  shadow={p.shadow}
+          <CityPopCardShell
+            isDark={isDark}
+            faceColor={p.surface}
+            shadowColor={isDark ? RetroFlatColors.dark.solidShadow : RetroFlatColors.light.text}
+            contentStyle={styles.card}>
+            <DailyRhythmStyleAlarmRow
+              title={t('dayRhythm.dayStartAlarmTitle')}
+              hint={t('dayRhythm.dayStartAlarmHint')}
+              value={dayStartAlarmOn}
+              onValueChange={(v) => void onToggleDayStart(v)}
+              palette={surface.alarm}
+            />
+            <View style={[styles.divider, { backgroundColor: p.border }]} />
+            <DailyRhythmStyleAlarmRow
+              title={t('dayRhythm.dayEndAlarmTitle')}
+              hint={t('dayRhythm.dayEndAlarmHint')}
+              value={dayEndAlarmOn}
+              onValueChange={(v) => void onToggleDayEnd(v)}
+              palette={surface.alarm}
+            />
+            {dayEndAlarmOn ? (
+              <View
+                style={[
+                  styles.innerCard,
+                  {
+                    backgroundColor: isDark
+                      ? RetroFlatColors.dark.surfaceAlt
+                      : RetroFlatColors.light.bg,
+                  },
+                ]}>
+                <SnappedTimePickerField
+                  label={t('dayRhythm.reminderTimeLabel')}
+                  hint={t('dayRhythm.reminderTimeHint')}
+                  valueHhmm={dayEndAlarmHhmm}
+                  onChangeHhmm={(next) => {
+                    setDayEndAlarmHhmm(next);
+                    scheduleDayEndPersist(true, next);
+                  }}
+                  expanded={dayEndAlarmTimeExpanded}
+                  onToggleExpand={() => setDayEndAlarmTimeExpanded((v) => !v)}
+                  isDark={isDark}
+                  palette={surface.timeField}
+                  snapStepMinutes={1}
                 />
-                <View style={chrome.itemTextWrap}>
-                  <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                    {t('settings.notification.incompleteTitle')}
-                  </ThemedText>
-                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                    {incompleteReminderOn
-                      ? t('settings.notification.onWithTime', { time: formatHhmmClockKo(incompleteReminderHhmm) })
-                      : t('settings.notification.off')}
-                  </ThemedText>
-                </View>
               </View>
-              <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-            </Pressable>
-          </SettingsSection>
+            ) : null}
+          </CityPopCardShell>
         </ScrollView>
       </View>
     </ThemedView>
@@ -131,5 +211,18 @@ const styles = StyleSheet.create({
   headerTitleCenter: {
     flex: 1,
     textAlign: 'center',
+  },
+  card: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+  },
+  innerCard: {
+    borderRadius: 0,
+    padding: 12,
+    gap: 10,
   },
 });

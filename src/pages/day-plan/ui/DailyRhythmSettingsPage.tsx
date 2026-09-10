@@ -5,12 +5,11 @@ import { Alert, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
-import { syncPriorityDayEndAlarm, syncPriorityDayStartAlarm } from '@features/day-plan-notifications';
+import { syncPriorityDayStartAlarm } from '@features/day-plan-notifications';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { formatDateKeyCompact } from '@shared/lib/i18n/lib/formatLocale';
 import {
-  loadPriorityDayEndAlarm,
   loadPriorityDayStartAlarm,
   savePriorityDayRollMode,
   syncDayMealSlotScheduleWithPriorityWindow,
@@ -26,7 +25,7 @@ import { DailyRhythmTimeEditorBody } from './DailyRhythmTimeEditorBody';
 /** 임시 비활성 — 담기 유지(keep) 롤 모드는 UI·저장 경로에서 제외 */
 const SHOW_PRIORITY_DAY_ROLL_KEEP_SETTING = false;
 
-/** 설정 탭에서 우선순위 데이플랜의 하루 시작·마무리 시각을 바꿀 때 */
+/** 하루 시작·마무리 시각 전체 화면 (오늘 탭·설정에서 진입) */
 export function DailyRhythmSettingsPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
@@ -60,9 +59,6 @@ export function DailyRhythmSettingsPage() {
   const [seedStart, setSeedStart] = useState(priorityStart);
   const [seedEnd, setSeedEnd] = useState(priorityEnd);
   const [seedKey, setSeedKey] = useState(0);
-  const [dayStartAlarmOn, setDayStartAlarmOn] = useState(true);
-  const [dayEndAlarmOn, setDayEndAlarmOn] = useState(false);
-  const [dayEndAlarmHhmm, setDayEndAlarmHhmm] = useState('22:00');
   const planRangeLo = useMemo(
     () =>
       priorityPlanDateKey <= priorityPlanDateKeyEnd ? priorityPlanDateKey : priorityPlanDateKeyEnd,
@@ -90,10 +86,6 @@ export function DailyRhythmSettingsPage() {
       const st = useDayPlanDraftStore.getState();
       setSeedStart(st.priorityStart);
       setSeedEnd(st.priorityEnd);
-      setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
-      const endAlarm = loadPriorityDayEndAlarm();
-      setDayEndAlarmOn(endAlarm.enabled);
-      setDayEndAlarmHhmm(endAlarm.reminderHhmm);
       if (!SHOW_PRIORITY_DAY_ROLL_KEEP_SETTING) {
         savePriorityDayRollMode('reset');
       }
@@ -119,24 +111,21 @@ export function DailyRhythmSettingsPage() {
       syncDayMealSlotScheduleWithPriorityWindow(start, end);
       savePriorityDayRollMode('reset');
 
-      const [startOk, endOk] = await Promise.all([
-        syncPriorityDayStartAlarm({ enabled: dayStartAlarmOn, startHhmm: start }),
-        syncPriorityDayEndAlarm({ enabled: dayEndAlarmOn, reminderHhmm: dayEndAlarmHhmm }),
-      ]);
-
-      if (dayStartAlarmOn && !startOk) {
-        setDayStartAlarmOn(false);
-      }
-      if (dayEndAlarmOn && !endOk) {
-        setDayEndAlarmOn(false);
-      }
-      if ((dayStartAlarmOn && !startOk) || (dayEndAlarmOn && !endOk)) {
-        Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
+      // 알림 on/off는 설정 → 알림 탭에서 관리. 시각만 바뀌면 스케줄 재동기화.
+      const dayStartAlarm = loadPriorityDayStartAlarm();
+      if (dayStartAlarm.enabled) {
+        const startOk = await syncPriorityDayStartAlarm({
+          enabled: true,
+          startHhmm: start,
+        });
+        if (!startOk) {
+          Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
+        }
       }
 
       router.back();
     },
-    [dayEndAlarmHhmm, dayEndAlarmOn, dayStartAlarmOn, router, setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
+    [router, setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates, t],
   );
 
   const handleEndDateChoice = useCallback(
@@ -172,7 +161,7 @@ export function DailyRhythmSettingsPage() {
             <IconSymbol name="chevron.left" size={20} color={headerFg} />
           </Pressable>
           <ThemedText style={[styles.headerTitle, { color: headerFg }]} lightColor={headerFg} darkColor={headerFg}>
-            {t('dayRhythm.settingsPageTitle')}
+            {t('dayCycleDial.title')}
           </ThemedText>
           <View style={styles.headerBtn} pointerEvents="none" />
         </View>
@@ -183,21 +172,21 @@ export function DailyRhythmSettingsPage() {
           seedStart={seedStart}
           seedEnd={seedEnd}
           seedKey={seedKey}
-          variant="settings"
+          variant="onboarding"
+          hideOnboardingHero
           primaryLabel={t('common.save')}
           onPrimaryPress={handleSave}
+          secondaryLabel={t('common.cancel')}
+          onSecondaryPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
           currentSpansMultiDay={planRangeHi > planRangeLo}
           onEndDateChoice={handleEndDateChoice}
           endDateChoiceTodayLabel={todayChoiceLabel}
           endDateChoiceNextDayLabel={nextDayChoiceLabel}
           priorityPlanRangeLo={planRangeLo}
           priorityPlanRangeHi={planRangeHi}
-          dayStartAlarmOn={dayStartAlarmOn}
-          onDayStartAlarmChange={setDayStartAlarmOn}
-          dayEndAlarmOn={dayEndAlarmOn}
-          dayEndAlarmHhmm={dayEndAlarmHhmm}
-          onDayEndAlarmChange={setDayEndAlarmOn}
-          onDayEndAlarmHhmmChange={setDayEndAlarmHhmm}
         />
       </View>
     </ThemedView>

@@ -11,10 +11,10 @@ import {
 } from 'react-native';
 import Animated, {
   Easing,
-  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withRepeat,
   withTiming,
 } from 'react-native-reanimated';
 
@@ -28,8 +28,10 @@ import { DigitalHhmmInput, type DigitalHhmmInputHandle } from '@shared/ui/digita
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { SmoothSegmentedControl } from '@shared/ui/smooth-segmented-control';
+import { ScrapTapeLabel } from '@shared/ui/scrap-tape-label';
+import { RoutineMarginSlideshow } from '@shared/ui/routine-atmosphere';
 import { ThemedText } from '@shared/ui/themed-text';
-import { DailyRhythmStyleAlarmRow, DayCycleDial, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
+import { DayCycleDial, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
 import {
   formatDateKeyCompact,
@@ -44,74 +46,149 @@ import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
 type PickerTarget = 'start' | 'end' | null;
 
-const TITLE_EASE = Easing.out(Easing.cubic);
+const HERO_EASE = Easing.bezier(0.22, 1, 0.36, 1);
+const HERO_RISE_PX = 10;
+const HERO_FADE_MS = 560;
+const BREATHE_MS = 2600;
 
-/** 온보딩 타이틀 — 단어 단위로 살짝 떠오르며, 민트 밑줄로 강조 (스케일 바운스 없음) */
-function OnboardingHeroTitle({
-  text,
-  color,
-  underlineColor,
+/** opacity + 살짝 상승 — entering layout 애니보다 부드럽게 */
+function SmoothFadeRise({
+  delayMs,
+  style,
+  children,
 }: {
-  text: string;
-  color: string;
-  underlineColor: string;
+  delayMs: number;
+  style?: object;
+  children: ReactNode;
 }) {
-  const parts = useMemo(() => {
-    const tokens = text.trim().split(/\s+/).filter(Boolean);
-    return tokens.length > 0 ? tokens : [text];
-  }, [text]);
-
-  const [underlineWidth, setUnderlineWidth] = useState(0);
-  const underline = useSharedValue(0);
+  const progress = useSharedValue(0);
 
   useEffect(() => {
-    underline.value = 0;
-    underline.value = withDelay(
-      90 + parts.length * 75,
-      withTiming(1, { duration: 440, easing: TITLE_EASE }),
+    progress.value = 0;
+    progress.value = withDelay(
+      delayMs,
+      withTiming(1, { duration: HERO_FADE_MS, easing: HERO_EASE }),
     );
-  }, [parts.length, text, underline]);
+  }, [delayMs, progress]);
 
-  const underlineStyle = useAnimatedStyle(() => ({
-    width: Math.max(0, underlineWidth * underline.value),
-    opacity: underlineWidth > 0 ? 0.9 : 0,
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ translateY: (1 - progress.value) * HERO_RISE_PX }],
   }));
 
+  return <Animated.View style={[style, animStyle]}>{children}</Animated.View>;
+}
+
+/** 등장 후 계속 — 아주 약한 opacity·상하 호흡 (스케일 바운스 없음) */
+function SoftBreathe({
+  delayMs = 0,
+  amplitudePx = 2.5,
+  opacityMin = 0.82,
+  style,
+  children,
+}: {
+  delayMs?: number;
+  amplitudePx?: number;
+  opacityMin?: number;
+  style?: object;
+  children: ReactNode;
+}) {
+  const wave = useSharedValue(0);
+
+  useEffect(() => {
+    wave.value = 0;
+    wave.value = withDelay(
+      delayMs,
+      withRepeat(
+        withTiming(1, { duration: BREATHE_MS, easing: Easing.inOut(Easing.sin) }),
+        -1,
+        true,
+      ),
+    );
+  }, [delayMs, wave]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacityMin + wave.value * (1 - opacityMin),
+    transform: [{ translateY: -wave.value * amplitudePx }],
+  }));
+
+  return <Animated.View style={[style, animStyle]}>{children}</Animated.View>;
+}
+
+/** 온보딩 히어로 카피 — 킥커 → 제목 단어 → 서브 등장 후, 제목·서브는 부드럽게 루프 */
+function OnboardingHeroCopy({
+  kickerWords,
+  title,
+  subtitle,
+  titleColor,
+  mutedColor,
+}: {
+  kickerWords: readonly string[];
+  title: string;
+  subtitle: string;
+  titleColor: string;
+  mutedColor: string;
+}) {
+  const titleParts = useMemo(() => {
+    const tokens = title.trim().split(/\s+/).filter(Boolean);
+    return tokens.length > 0 ? tokens : [title];
+  }, [title]);
+
+  const kickerStart = 40;
+  const kickerStep = 70;
+  const titleStart = kickerStart + kickerWords.length * kickerStep + 40;
+  const titleStep = 85;
+  const subtitleDelay = titleStart + titleParts.length * titleStep + 80;
+  const titleBreatheDelay = titleStart + Math.max(0, titleParts.length - 1) * titleStep + HERO_FADE_MS;
+  const subtitleBreatheDelay = subtitleDelay + HERO_FADE_MS;
+
   return (
-    <View
-      style={styles.onboardTitleWrap}
-      accessible
-      accessibilityRole="header"
-      accessibilityLabel={text}
-      onLayout={(e) => {
-        const w = e.nativeEvent.layout.width;
-        if (w > 0 && Math.abs(w - underlineWidth) > 1) setUnderlineWidth(w);
-      }}>
-      <View style={styles.onboardTitleRow} accessibilityElementsHidden>
-        {parts.map((part, i) => (
-          <Animated.View
-            key={`${part}-${i}`}
-            entering={FadeInDown.delay(50 + i * 75)
-              .duration(360)
-              .easing(TITLE_EASE)}>
+    <View style={styles.onboardHeroCopy}>
+      <View style={styles.kickerRow}>
+        {kickerWords.map((word, i) => (
+          <SmoothFadeRise key={`${word}-${i}`} delayMs={kickerStart + i * kickerStep}>
             <ThemedText
-              style={[styles.onboardTitle, { color }, cityPopFont('800')]}
-              lightColor={color}
-              darkColor={color}>
-              {part}
-              {i < parts.length - 1 ? ' ' : ''}
+              style={[styles.kickerWord, { color: mutedColor }, cityPopFont('700')]}
+              lightColor={mutedColor}
+              darkColor={mutedColor}>
+              {word}
             </ThemedText>
-          </Animated.View>
+          </SmoothFadeRise>
         ))}
       </View>
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.onboardTitleUnderline,
-          { backgroundColor: underlineColor },
-          underlineStyle,
-        ]}
-      />
+
+      <SoftBreathe delayMs={titleBreatheDelay} amplitudePx={2.5} opacityMin={0.84}>
+        <View
+          style={styles.onboardTitleWrap}
+          accessible
+          accessibilityRole="header"
+          accessibilityLabel={title}>
+          <View style={styles.onboardTitleRow} accessibilityElementsHidden>
+            {titleParts.map((part, i) => (
+              <SmoothFadeRise key={`${part}-${i}`} delayMs={titleStart + i * titleStep}>
+                <ThemedText
+                  style={[styles.onboardTitle, { color: titleColor }, cityPopFont('800')]}
+                  lightColor={titleColor}
+                  darkColor={titleColor}>
+                  {part}
+                  {i < titleParts.length - 1 ? ' ' : ''}
+                </ThemedText>
+              </SmoothFadeRise>
+            ))}
+          </View>
+        </View>
+      </SoftBreathe>
+
+      <SoftBreathe delayMs={subtitleBreatheDelay} amplitudePx={2} opacityMin={0.8}>
+        <SmoothFadeRise delayMs={subtitleDelay}>
+          <ThemedText
+            style={[styles.onboardSubtitle, { color: titleColor }, cityPopFont('800')]}
+            lightColor={titleColor}
+            darkColor={titleColor}>
+            {subtitle}
+          </ThemedText>
+        </SmoothFadeRise>
+      </SoftBreathe>
     </View>
   );
 }
@@ -206,7 +283,7 @@ function OnboardingTimeRow({
           borderColor={c.border}
           shadowColor={isDark ? ink.solidShadow : '#000000'}
           backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
-          shadowSize={3}
+          shadowSize={2}
           style={styles.thumbFace}>
           <Image
             source={thumb}
@@ -302,16 +379,12 @@ export type DailyRhythmTimeEditorBodyProps = {
   seedEnd: string;
   seedKey: number;
   variant: DailyRhythmTimeEditorVariant;
+  /** 온보딩 히어로·슬라이드쇼 숨김 — 다이얼+시간 행만 (오늘 탭 시간 시트 등) */
+  hideOnboardingHero?: boolean;
   primaryLabel: string;
   onPrimaryPress: (startHhmm: string, endHhmm: string) => void;
   secondaryLabel?: string;
   onSecondaryPress?: () => void;
-  dayStartAlarmOn?: boolean;
-  onDayStartAlarmChange?: (value: boolean) => void;
-  dayEndAlarmOn?: boolean;
-  dayEndAlarmHhmm?: string;
-  onDayEndAlarmChange?: (value: boolean) => void;
-  onDayEndAlarmHhmmChange?: (hhmm: string) => void;
   currentSpansMultiDay?: boolean;
   onEndDateChoice?: (startHhmm: string, endHhmm: string, target: 'today' | 'nextDay') => void;
   endDateChoiceTodayLabel?: string;
@@ -328,16 +401,11 @@ export function DailyRhythmTimeEditorBody({
   seedEnd,
   seedKey,
   variant,
+  hideOnboardingHero = false,
   primaryLabel,
   onPrimaryPress,
   secondaryLabel,
   onSecondaryPress,
-  dayStartAlarmOn,
-  onDayStartAlarmChange,
-  dayEndAlarmOn,
-  dayEndAlarmHhmm,
-  onDayEndAlarmChange,
-  onDayEndAlarmHhmmChange,
   currentSpansMultiDay: _currentSpansMultiDay = false,
   onEndDateChoice,
   endDateChoiceTodayLabel,
@@ -352,7 +420,6 @@ export function DailyRhythmTimeEditorBody({
   const [startHhmm, setStartHhmm] = useState(seedStart);
   const [endHhmm, setEndHhmm] = useState(seedEnd);
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
-  const [dayEndAlarmTimeExpanded, setDayEndAlarmTimeExpanded] = useState(false);
   const [endDateTarget, setEndDateTarget] = useState<'today' | 'nextDay'>(() =>
     initialEndDateTargetFromRange(priorityPlanRangeLo, priorityPlanRangeHi),
   );
@@ -362,6 +429,7 @@ export function DailyRhythmTimeEditorBody({
 
   const ink = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const isOnboarding = variant === 'onboarding';
+  const showOnboardingHero = isOnboarding && !hideOnboardingHero;
   const shadowInk = isDark ? ink.solidShadow : '#000000';
 
   useEffect(() => {
@@ -610,32 +678,30 @@ export function DailyRhythmTimeEditorBody({
       keyboardShouldPersistTaps="handled"
       scrollEnabled={!dialDragging}>
       <View style={[styles.topBlock, isOnboarding && styles.topBlockOnboarding]}>
-        {isOnboarding ? (
+        {showOnboardingHero ? (
           <View style={styles.onboardHeroCompact}>
-            <View style={styles.kickerRow}>
-              {([t('dayRhythm.heroWord1'), t('dayRhythm.heroWord2'), t('dayRhythm.heroWord3')] as const).map(
-                (word) => (
-                  <ThemedText
-                    key={word}
-                    style={[styles.kickerWord, { color: c.onVariant }, cityPopFont('700')]}
-                    lightColor={c.onVariant}
-                    darkColor={c.onVariant}>
-                    {word}
-                  </ThemedText>
-                ),
-              )}
+            <View style={styles.onboardHeroTopRow}>
+              <RoutineMarginSlideshow
+                isDark={isDark}
+                blendColor={ink.bg}
+                width={120}
+                height={128}
+                style={styles.onboardHeroArt}
+              />
+              <View style={styles.onboardHeroCopyCol}>
+                <OnboardingHeroCopy
+                  kickerWords={[
+                    t('dayRhythm.heroWord1'),
+                    t('dayRhythm.heroWord2'),
+                    t('dayRhythm.heroWord3'),
+                  ]}
+                  title={t('dayRhythm.onboardTitle')}
+                  subtitle={t('dayRhythm.onboardSubtitle')}
+                  titleColor={c.onSurface}
+                  mutedColor={c.onVariant}
+                />
+              </View>
             </View>
-            <OnboardingHeroTitle
-              text={t('dayRhythm.onboardTitle')}
-              color={c.onSurface}
-              underlineColor={ink.bgMint}
-            />
-            <ThemedText
-              style={[styles.onboardSubtitle, { color: c.onVariant }, cityPopFont('500')]}
-              lightColor={c.onVariant}
-              darkColor={c.onVariant}>
-              {t('dayRhythm.onboardSubtitle')}
-            </ThemedText>
 
             <View style={styles.onboardDialEnter}>
               <DayCycleDial
@@ -649,6 +715,18 @@ export function DailyRhythmTimeEditorBody({
               />
             </View>
           </View>
+        ) : isOnboarding ? (
+          <View style={styles.onboardDialEnter}>
+            <DayCycleDial
+              startHhmm={startHhmm}
+              endHhmm={endHhmm}
+              endNextDay={endDateTarget === 'nextDay'}
+              baseDateKey={priorityPlanRangeLo}
+              isDark={isDark}
+              onChange={onDialChange}
+              onInteractionChange={onDialInteractionChange}
+            />
+          </View>
         ) : (
           <View style={styles.settingsHero}>
             <ThemedText style={[styles.settingsKicker, { color: c.onVariant }]}>{t('dayRhythm.settingsKicker')}</ThemedText>
@@ -659,11 +737,20 @@ export function DailyRhythmTimeEditorBody({
         )}
 
         {isOnboarding ? (
-          <SolidShadowFace
-            borderColor={c.border}
-            shadowColor={shadowInk}
-            backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
-            style={styles.mainCardFace}>
+          <View style={styles.onboardCardStack}>
+            <View pointerEvents="none" style={styles.onboardEditTapeRow}>
+              <ScrapTapeLabel
+                text={t('dayRhythm.editTapTape')}
+                isDark={isDark}
+                rotateDeg={0}
+                style={styles.onboardEditTape}
+              />
+            </View>
+            <SolidShadowFace
+              borderColor={c.border}
+              shadowColor={shadowInk}
+              backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
+              style={styles.mainCardFace}>
             <OnboardingTimeRow
               label={t('dayRhythm.dayStart')}
               hint={t('dayRhythm.dayStartHint')}
@@ -763,95 +850,55 @@ export function DailyRhythmTimeEditorBody({
               </View>
             </View>
           </SolidShadowFace>
+          </View>
         ) : (
           settingsTimeCard
         )}
-
-        {variant === 'settings' &&
-        typeof dayStartAlarmOn === 'boolean' &&
-        onDayStartAlarmChange ? (
-          <CityPopCardShell
-            isDark={isDark}
-            faceColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
-            contentStyle={styles.settingsCard}>
-            <DailyRhythmStyleAlarmRow
-              title={t('dayRhythm.dayStartAlarmTitle')}
-              hint={t('dayRhythm.dayStartAlarmHint')}
-              value={dayStartAlarmOn}
-              onValueChange={onDayStartAlarmChange}
-              palette={{
-                onSurface: c.onSurface,
-                onVariant: c.onVariant,
-                trackOff: c.trackOff,
-              }}
-            />
-            {typeof dayEndAlarmOn === 'boolean' && onDayEndAlarmChange ? (
-              <>
-                <View style={[styles.divider, { backgroundColor: c.border }]} />
-                <DailyRhythmStyleAlarmRow
-                  title={t('dayRhythm.dayEndAlarmTitle')}
-                  hint={t('dayRhythm.dayEndAlarmHint')}
-                  value={dayEndAlarmOn}
-                  onValueChange={onDayEndAlarmChange}
-                  palette={{
-                    onSurface: c.onSurface,
-                    onVariant: c.onVariant,
-                    trackOff: c.trackOff,
-                  }}
-                />
-                {dayEndAlarmOn && dayEndAlarmHhmm && onDayEndAlarmHhmmChange ? (
-                  <View
-                    style={[
-                      styles.endAlarmTimeCard,
-                      {
-                        backgroundColor: isDark ? ink.surfaceAlt : '#F6F3EB',
-                      },
-                    ]}>
-                    <SnappedTimePickerField
-                      label={t('dayRhythm.reminderTimeLabel')}
-                      hint={t('dayRhythm.reminderTimeHint')}
-                      valueHhmm={dayEndAlarmHhmm}
-                      onChangeHhmm={onDayEndAlarmHhmmChange}
-                      expanded={dayEndAlarmTimeExpanded}
-                      onToggleExpand={() => setDayEndAlarmTimeExpanded((v) => !v)}
-                      isDark={isDark}
-                      palette={timePickerPalette}
-                      snapStepMinutes={1}
-                    />
-                  </View>
-                ) : null}
-              </>
-            ) : null}
-          </CityPopCardShell>
-        ) : null}
 
         {footerSlot}
       </View>
 
       <View style={[styles.footer, isOnboarding && styles.footerOnboarding]}>
         {isOnboarding ? (
-          <Pressable
-            onPress={validateAndPrimary}
-            style={({ pressed }) => [
-              styles.primaryPress,
-              pressed && { opacity: 0.94 },
-            ]}>
-            <SolidShadowFace
-              borderColor={c.border}
-              shadowColor={shadowInk}
-              backgroundColor={ink.bgMint}
-              shellStyle={styles.primaryShell}
-              style={styles.primaryFace}>
-              <ThemedText
-                style={[
-                  styles.primaryBtnTextOnboard,
-                  { color: isDark ? ink.text : ink.tertiary },
-                  cityPopFont('800'),
-                ]}>
-                {primaryLabel}
-              </ThemedText>
-            </SolidShadowFace>
-          </Pressable>
+          <>
+            <Pressable
+              onPress={validateAndPrimary}
+              style={({ pressed }) => [
+                styles.primaryPress,
+                pressed && { opacity: 0.94 },
+              ]}>
+              <SolidShadowFace
+                borderColor={c.border}
+                shadowColor={shadowInk}
+                backgroundColor={ink.bgMint}
+                shellStyle={styles.primaryShell}
+                style={styles.primaryFace}>
+                <ThemedText
+                  style={[
+                    styles.primaryBtnTextOnboard,
+                    { color: isDark ? ink.text : ink.tertiary },
+                    cityPopFont('800'),
+                  ]}>
+                  {primaryLabel}
+                </ThemedText>
+              </SolidShadowFace>
+            </Pressable>
+            {secondaryLabel && onSecondaryPress ? (
+              <Pressable
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onSecondaryPress();
+                }}
+                style={({ pressed }) => [styles.textBtn, pressed && { opacity: 0.7 }]}>
+                <ThemedText
+                  style={[styles.textBtnLabel, { color: c.onVariant }, cityPopFont('700')]}
+                  lightColor={c.onVariant}
+                  darkColor={c.onVariant}>
+                  {secondaryLabel}
+                </ThemedText>
+              </Pressable>
+            ) : null}
+          </>
         ) : (
           <>
             <BrutalConfirmButton
@@ -894,17 +941,32 @@ const styles = StyleSheet.create({
   },
   scrollContentOnboarding: {
     paddingHorizontal: 14,
-    paddingTop: 8,
-    paddingBottom: 24,
+    paddingTop: 4,
+    paddingBottom: 20,
   },
   scrollContentSettings: {
     paddingTop: 0,
     paddingBottom: 4,
   },
   topBlock: { gap: 16, paddingBottom: 4 },
-  topBlockOnboarding: { gap: 18 },
-  onboardHeroCompact: { gap: 10 },
-  onboardDialEnter: { width: '100%', marginTop: 4 },
+  topBlockOnboarding: { gap: 10 },
+  onboardHeroCompact: { gap: 4 },
+  onboardHeroTopRow: {
+    position: 'relative',
+    minHeight: 96,
+  },
+  onboardHeroCopyCol: {
+    zIndex: 2,
+    paddingRight: 72,
+  },
+  onboardHeroArt: {
+    position: 'absolute',
+    right: -10,
+    top: -4,
+    zIndex: 0,
+  },
+  onboardHeroCopy: { gap: 6 },
+  onboardDialEnter: { width: '100%', marginTop: 0 },
   shadowShell: { position: 'relative' },
   shadowBlock: {
     ...StyleSheet.absoluteFillObject,
@@ -951,7 +1013,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
-  kickerRow: { flexDirection: 'row', gap: 18, paddingTop: 4 },
+  kickerRow: { flexDirection: 'row', gap: 18, paddingTop: 0 },
   kickerWord: {
     fontSize: 13,
     letterSpacing: 2.4,
@@ -965,8 +1027,6 @@ const styles = StyleSheet.create({
   },
   onboardTitleWrap: {
     alignSelf: 'flex-start',
-    gap: 8,
-    paddingBottom: 2,
   },
   onboardTitleRow: {
     flexDirection: 'row',
@@ -978,18 +1038,31 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     letterSpacing: -0.5,
   },
-  onboardTitleUnderline: {
-    height: 4,
-    borderRadius: 2,
-  },
   onboardSubtitle: {
-    fontSize: 13,
+    fontSize: 14,
     lineHeight: 20,
+    letterSpacing: -0.2,
   },
 
   mainCardFace: {
     padding: 22,
     gap: 18,
+  },
+  onboardCardStack: {
+    width: '100%',
+    overflow: 'visible',
+  },
+  onboardEditTapeRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingRight: 4,
+    marginBottom: -10,
+    zIndex: 8,
+  },
+  onboardEditTape: {
+    maxWidth: 200,
+    alignSelf: 'flex-end',
   },
   cardRule: {
     borderTopWidth: 2,
@@ -1113,11 +1186,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
-  endAlarmTimeCard: {
-    borderWidth: 0,
-    padding: 12,
-    gap: 8,
-  },
 
   footer: { flexShrink: 0, gap: 4, paddingTop: 14 },
   footerOnboarding: {

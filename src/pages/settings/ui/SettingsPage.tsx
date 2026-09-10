@@ -67,8 +67,8 @@ const SHOW_POKIT_PRO_SETTINGS = false;
 /** 화면 테마(라이트/다크) 설정 — 출시 전까지 숨김 (`true`로 바꾸면 다시 표시) */
 const SHOW_APPEARANCE_SETTINGS = false;
 
-/** 설정 → 알림 섹션 — 임시 숨김 (`true`로 바꾸면 다시 표시). 알림 예약 로직은 유지 */
-const SHOW_NOTIFICATION_SETTINGS = false;
+/** 설정 → 알림 섹션 */
+const SHOW_NOTIFICATION_SETTINGS = true;
 
 function fontLabelForId(fontId: AppFontId, locale: 'ko' | 'en' | 'ja'): string {
   if (fontId === 'gaegu') return t('settings.font.gaegu', locale);

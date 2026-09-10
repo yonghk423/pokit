@@ -68,8 +68,8 @@ const styles = StyleSheet.create({
   },
   alarmTextCol: { flex: 1, minWidth: 0, gap: 6 },
   alarmTextColCompact: { gap: 2 },
-  alarmTitle: { fontSize: 15, fontWeight: '800' },
-  alarmTitleCompact: { fontSize: 13, fontWeight: '800' },
+  alarmTitle: { fontSize: 15, fontWeight: '500' },
+  alarmTitleCompact: { fontSize: 13, fontWeight: '500' },
   alarmHint: { fontSize: 11, fontWeight: '500', lineHeight: 15 },
   alarmHintCompact: { fontSize: 10, lineHeight: 14 },
 });
