@@ -781,7 +781,7 @@ export function DayPlanPage({
       <KeyboardAvoidingView
         style={[styles.keyboardColumn, { backgroundColor: shellBg }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        enabled={planMode !== 'dayNote' && planMode !== 'quickMemo'}
+        enabled={planMode !== 'dayNote' && planMode !== 'quickMemo' && planMode !== 'todoList'}
         keyboardVerticalOffset={0}>
         <View style={[styles.mainColumn, { backgroundColor: shellBg }]}>
           {planMode === 'quickMemo' ? (

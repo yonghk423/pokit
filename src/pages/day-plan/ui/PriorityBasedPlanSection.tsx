@@ -12,6 +12,7 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  TextInput,
   UIManager,
   useWindowDimensions,
   View,
@@ -656,6 +657,9 @@ export function PriorityBasedPlanSection({
   );
   const deferredReorderTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const priorityTimelineScrollRef = useRef<ScrollView>(null);
+  const priorityTimelineScrollOffsetRef = useRef(0);
+  const todoKeyboardHeightRef = useRef(0);
+  const [todoKeyboardPad, setTodoKeyboardPad] = useState(0);
   const priorityReorderDragActiveRef = useRef(false);
   const [mealSlotScheduleSheetOpen, setMealSlotScheduleSheetOpen] = useState(false);
   const [mealSlotScheduleFocusSlot, setMealSlotScheduleFocusSlot] = useState<DayMealSlot | null>(
@@ -2135,6 +2139,49 @@ export function PriorityBasedPlanSection({
     return Math.max(240, cappedHeight);
   }, [windowHeight, insets.top, insets.bottom, bottomTabBarHeight]);
 
+  const ensureTodoFieldVisible = useCallback((windowY: number, height: number) => {
+    const kb = todoKeyboardHeightRef.current;
+    if (kb <= 0) return;
+    if (!Number.isFinite(windowY) || !Number.isFinite(height)) return;
+    const keyboardTop = windowHeight - kb;
+    const overlap = windowY + height - keyboardTop + 24;
+    if (overlap <= 0) return;
+    priorityTimelineScrollRef.current?.scrollTo({
+      y: Math.max(0, priorityTimelineScrollOffsetRef.current + overlap),
+      animated: true,
+    });
+  }, [windowHeight]);
+
+  useEffect(() => {
+    if (!showTodoList) {
+      todoKeyboardHeightRef.current = 0;
+      setTodoKeyboardPad(0);
+      return;
+    }
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      const kb = e.endCoordinates.height;
+      todoKeyboardHeightRef.current = kb;
+      setTodoKeyboardPad(Math.max(24, kb - bottomTabBarHeight + 28));
+      requestAnimationFrame(() => {
+        const focused = TextInput.State.currentlyFocusedInput?.();
+        if (!focused || typeof focused.measureInWindow !== 'function') return;
+        focused.measureInWindow((_x, y, _w, h) => {
+          ensureTodoFieldVisible(y, h);
+        });
+      });
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      todoKeyboardHeightRef.current = 0;
+      setTodoKeyboardPad(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [bottomTabBarHeight, ensureTodoFieldVisible, showTodoList, windowHeight]);
+
   const timelineDateIntro = useMemo(
     () => planDayIntroFromRange(todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd),
     [todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd],
@@ -2743,12 +2790,30 @@ export function PriorityBasedPlanSection({
               contentContainerStyle={[
                 styles.priorityTimelineScrollContent,
                 showTodoList && styles.priorityTimelineScrollContentTodo,
-                { paddingBottom: TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM },
+                {
+                  paddingBottom: showTodoList
+                    ? Math.max(TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM, todoKeyboardPad)
+                    : TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM,
+                },
               ]}
-              keyboardShouldPersistTaps="handled">
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode={showTodoList ? 'interactive' : 'none'}
+              onScroll={
+                showTodoList
+                  ? (e) => {
+                      priorityTimelineScrollOffsetRef.current = e.nativeEvent.contentOffset.y;
+                    }
+                  : undefined
+              }
+              scrollEventThrottle={showTodoList ? 16 : undefined}>
               {showTodoList ? (
                 <View style={styles.todoListBody}>
-                  <TodoListPlanSection c={c} isDark={isDark} embedded />
+                  <TodoListPlanSection
+                    c={c}
+                    isDark={isDark}
+                    embedded
+                    onFieldFocus={ensureTodoFieldVisible}
+                  />
                 </View>
               ) : layoutMode === 'sections' ? (
                 <MealSlotTimelineView

@@ -144,8 +144,80 @@ export function formatHoursShort(minutes: number): string {
   return `${h}h`;
 }
 
+/** 다이얼 표시용 — `5h 30m`, 정시면 `16h`, 1시간 미만이면 `45m`. */
+export function formatBalanceDuration(
+  minutes: number,
+  _locale: 'ko' | 'en' | 'ja' = 'ko',
+): string {
+  const total = Math.max(0, Math.round(minutes));
+  const hours = Math.floor(total / 60);
+  const mins = total % 60;
+  if (hours === 0) return `${mins}m`;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}m`;
+}
+
+/**
+ * 마무리 이후 돌아오는 다음「시작」시각(언랩).
+ * 예: 시작 06:30, 마무리 01:00(다음날) → 다음 기상 30:30 (하루+06:30).
+ */
+export function nextWakeAfterEnd(startUnwrapped: number, endUnwrapped: number): number {
+  const start = Math.max(0, startUnwrapped);
+  let wake = start;
+  const end = Math.max(start, endUnwrapped);
+  while (wake <= end) {
+    wake += DAY_MINUTES;
+  }
+  return wake;
+}
+
+/** 하룻밤 수면 = 마무리 → 다음 시작. 48시간 나머지 전체가 아님. */
+export function sleepSpanUntilNextWake(startUnwrapped: number, endUnwrapped: number): number {
+  return Math.max(0, nextWakeAfterEnd(startUnwrapped, endUnwrapped) - endUnwrapped);
+}
+
+export type DayCycleSegmentKind = 'activity' | 'sleep' | 'rest';
+
+export type DayCycleSegment = {
+  kind: DayCycleSegmentKind;
+  startDisplay: number;
+  endDisplay: number;
+};
+
+/**
+ * 48시간 다이얼을 활동 / 수면(하룻밤) / 그 외로 나눈다.
+ * 수면은 달 핸들 → 다음 해 핸들만.
+ */
+export function buildDayCycleSegments(
+  startUnwrapped: number,
+  endUnwrapped: number,
+): DayCycleSegment[] {
+  const start = Math.max(0, startUnwrapped);
+  const end = Math.max(start, endUnwrapped);
+  const nextWake = nextWakeAfterEnd(start, end);
+  const activityEnd = cycleDisplayMinutes(end);
+  const sleepEnd = cycleDisplayMinutes(nextWake);
+  const restEnd = cycleDisplayMinutes(start);
+
+  const out: DayCycleSegment[] = [];
+  const push = (kind: DayCycleSegmentKind, from: number, to: number) => {
+    const span = clockwiseSpanMinutes(from, to);
+    if (span < 1 || span >= CYCLE_MINUTES - 0.5) return;
+    out.push({ kind, startDisplay: from, endDisplay: to });
+  };
+
+  push('activity', cycleDisplayMinutes(start), activityEnd);
+  push('sleep', activityEnd, sleepEnd);
+  push('rest', sleepEnd, restEnd);
+  return out;
+}
+
 /** 핸들 간 최소 간격(분) — 활동 구간이 비지 않게 */
 export const MIN_ACTIVITY_SPAN_MINUTES = 60;
+/** 수면 최소(분) — 달→다음 해 */
+export const MIN_SLEEP_SPAN_MINUTES = 30;
+
+export type DialHandleKind = 'start' | 'end' | 'wake';
 
 /**
  * 다이얼 각도(0~CYCLE)를 마무리(언랩) 분으로.
@@ -163,7 +235,7 @@ export function resolveEndCycleMinutes(rawCycle: number, startCycle: number): nu
  * start는 당일(0~DAY), end는 언랩 분(start+MIN ~ start+CYCLE-MIN).
  */
 export function clampDialHandle(
-  kind: 'start' | 'end',
+  kind: DialHandleKind,
   nextMinutes: number,
   startMinutes: number,
   endMinutes: number,
@@ -178,6 +250,23 @@ export function clampDialHandle(
   let endU =
     endMinutes > start0 ? endMinutes : resolveEndCycleMinutes(endMinutes, start0);
   endU = Math.max(start0 + minSpan, endU);
+
+  if (kind === 'wake') {
+    const raw = snapCycleMinutes(nextMinutes, snapStep) % CYCLE_MINUTES;
+    let wake = raw;
+    while (wake <= endU) {
+      wake += DAY_MINUTES;
+    }
+    wake = Math.round(wake / snapStep) * snapStep;
+    const minWake = endU + MIN_SLEEP_SPAN_MINUTES;
+    const maxWake = endU + DAY_MINUTES - minSpan;
+    if (wake < minWake) wake = minWake;
+    if (wake > maxWake) wake = maxWake;
+    let nextStart = wake - DAY_MINUTES;
+    nextStart = ((nextStart % DAY_MINUTES) + DAY_MINUTES) % DAY_MINUTES;
+    nextStart = Math.min(DAY_MINUTES - snapStep, Math.max(0, nextStart));
+    return { start: nextStart, end: endU };
+  }
 
   if (kind === 'start') {
     let next = snapCycleMinutes(nextMinutes, snapStep) % CYCLE_MINUTES;

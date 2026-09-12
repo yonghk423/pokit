@@ -149,7 +149,24 @@ type Props = {
   isDark: boolean;
   dateLabel?: string;
   embedded?: boolean;
+  /** 키보드에 가리지 않도록 부모 스크롤이 입력칸을 보이게 함 */
+  onFieldFocus?: (windowY: number, height: number) => void;
 };
+
+function reportFieldFocus(
+  target: { measureInWindow?: (cb: (x: number, y: number, w: number, h: number) => void) => void },
+  onFieldFocus?: (windowY: number, height: number) => void,
+) {
+  if (!onFieldFocus || typeof target.measureInWindow !== 'function') return;
+  const measure = () => {
+    target.measureInWindow((_x, y, _w, h) => {
+      if (Number.isFinite(y) && Number.isFinite(h)) onFieldFocus(y, h);
+    });
+  };
+  requestAnimationFrame(() => {
+    setTimeout(measure, 80);
+  });
+}
 
 function DoneCheckbox({
   checked,
@@ -211,6 +228,7 @@ function TodoListRow({
   onUpdateSubItem,
   onToggleSubItemDone,
   onRemoveSubItem,
+  onFieldFocus,
 }: {
   item: DayPlanTodoItem;
   ui: TodoListUiColors;
@@ -233,6 +251,7 @@ function TodoListRow({
   onUpdateSubItem: (subId: string, text: string) => void;
   onToggleSubItemDone: (subId: string) => void;
   onRemoveSubItem: (subId: string) => void;
+  onFieldFocus?: (windowY: number, height: number) => void;
 }) {
   const { t } = useTranslation();
   const rowMuted = item.isDone;
@@ -384,6 +403,7 @@ function TodoListRow({
               key={`${item.id}-${item.isDone ? 'done' : 'todo'}`}
               value={item.what}
               onChangeText={onChangeWhat}
+              onFocus={(e) => reportFieldFocus(e.target, onFieldFocus)}
               editable={!deleteMode}
               pointerEvents={deleteMode ? 'none' : 'auto'}
               placeholder={t('todo.placeholder')}
@@ -655,6 +675,7 @@ function TodoListRow({
                   <ThemedTextInput
                     value={sub.text}
                     onChangeText={(value) => onUpdateSubItem(sub.id, value)}
+                    onFocus={(e) => reportFieldFocus(e.target, onFieldFocus)}
                     editable={!deleteMode}
                     placeholder={t('todo.subPlaceholder')}
                     placeholderTextColor={ui.placeholder}
@@ -684,6 +705,7 @@ function TodoListRow({
                 <ThemedTextInput
                   value={subDraft}
                   onChangeText={setSubDraft}
+                  onFocus={(e) => reportFieldFocus(e.target, onFieldFocus)}
                   placeholder={t('todo.subPlaceholder')}
                   placeholderTextColor={ui.placeholder}
                   returnKeyType="done"
@@ -732,7 +754,13 @@ function TodoListRow({
 }
 
 /** 투두 리스트 — 체크·할 일·우선순위 리스트형 + 포스트잇 면색 */
-export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: Props) {
+export function TodoListPlanSection({
+  c,
+  isDark,
+  dateLabel,
+  embedded = false,
+  onFieldFocus,
+}: Props) {
   const { t } = useTranslation();
   const baseUi = useMemo(() => todoListUiColors(c, isDark), [c, isDark]);
   const activeDateKey = useDayPlanTodoStore((s) => s.activeDateKey);
@@ -980,6 +1008,7 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
             <ThemedTextInput
               value={draftWhat}
               onChangeText={setDraftWhat}
+              onFocus={(e) => reportFieldFocus(e.target, onFieldFocus)}
               placeholder={t('todo.quickAddPlaceholder')}
               placeholderTextColor={baseUi.placeholder}
               returnKeyType="done"
@@ -1069,6 +1098,7 @@ export function TodoListPlanSection({ c, isDark, dateLabel, embedded = false }: 
                 onUpdateSubItem={(subId, text) => updateSubItem(item.id, subId, text)}
                 onToggleSubItemDone={(subId) => toggleSubItemDone(item.id, subId)}
                 onRemoveSubItem={(subId) => removeSubItem(item.id, subId)}
+                onFieldFocus={onFieldFocus}
               />
             ))
           )}

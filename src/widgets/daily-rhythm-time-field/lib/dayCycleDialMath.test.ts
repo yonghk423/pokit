@@ -1,15 +1,18 @@
 import {
   CYCLE_MINUTES,
   DAY_MINUTES,
+  buildDayCycleSegments,
   clampDialHandle,
   clockwiseSpanMinutes,
   cycleDisplayMinutes,
   cycleEndIsNextDay,
   cycleMinutesToClockHhmm,
   describeDonutSegment,
+  formatBalanceDuration,
   minutesFromDialPointRaw,
   polarToCartesian,
   resolveEndCycleMinutes,
+  sleepSpanUntilNextWake,
   snapCycleMinutes,
   toCycleEndMinutes,
   toCycleStartMinutes,
@@ -73,5 +76,56 @@ describe('dayCycleDialMath 48h', () => {
     const d = describeDonutSegment(100, 100, 50, 30, 0, 6 * 60);
     expect(d.startsWith('M ')).toBe(true);
     expect(d.includes(' A ')).toBe(true);
+  });
+});
+
+describe('dayCycleDialMath sleep vs leftover', () => {
+  it('same-day 07:00–23:00 is 16h active and 8h sleep, not 32h', () => {
+    const start = toCycleStartMinutes(7 * 60);
+    const end = toCycleEndMinutes(23 * 60, false);
+    expect(end - start).toBe(16 * 60);
+    expect(sleepSpanUntilNextWake(start, end)).toBe(8 * 60);
+  });
+
+  it('wake 06:30 and sleep 01:00 next morning is 5h 30m', () => {
+    const start = toCycleStartMinutes(6 * 60 + 30);
+    const end = toCycleEndMinutes(1 * 60, true);
+    expect(end - start).toBe(18 * 60 + 30);
+    expect(sleepSpanUntilNextWake(start, end)).toBe(5 * 60 + 30);
+  });
+
+  it('sleeps 01:00→06:30 even when both clock times are the same calendar morning', () => {
+    const start = toCycleStartMinutes(6 * 60 + 30);
+    const end = toCycleEndMinutes(1 * 60, false);
+    // 시작이 마무리보다 늦으면 마무리는 다음날로 해석된 언랩을 써야 한다
+    const endU = end <= start ? end + DAY_MINUTES : end;
+    expect(sleepSpanUntilNextWake(start, endU)).toBe(5 * 60 + 30);
+  });
+
+  it('splits 48h into activity, one night of sleep, and leftover', () => {
+    const start = toCycleStartMinutes(7 * 60);
+    const end = toCycleEndMinutes(23 * 60, false);
+    const segs = buildDayCycleSegments(start, end);
+    const byKind = Object.fromEntries(segs.map((s) => [s.kind, s]));
+    expect(clockwiseSpanMinutes(byKind.activity.startDisplay, byKind.activity.endDisplay)).toBe(
+      16 * 60,
+    );
+    expect(clockwiseSpanMinutes(byKind.sleep.startDisplay, byKind.sleep.endDisplay)).toBe(8 * 60);
+    expect(clockwiseSpanMinutes(byKind.rest.startDisplay, byKind.rest.endDisplay)).toBe(24 * 60);
+  });
+
+  it('formats duration with h and m units', () => {
+    expect(formatBalanceDuration(5 * 60 + 30, 'ko')).toBe('5h 30m');
+    expect(formatBalanceDuration(16 * 60, 'ko')).toBe('16h');
+    expect(formatBalanceDuration(45, 'ko')).toBe('45m');
+  });
+
+  it('wake handle lengthens sleep without moving wrap-up', () => {
+    const start = toCycleStartMinutes(6 * 60 + 30);
+    const end = toCycleEndMinutes(1 * 60, true);
+    const laterWake = end + 8 * 60;
+    const moved = clampDialHandle('wake', laterWake, start, end, 60, 5);
+    expect(moved.end).toBe(end);
+    expect(sleepSpanUntilNextWake(moved.start, moved.end)).toBe(8 * 60);
   });
 });

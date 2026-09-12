@@ -1,25 +1,25 @@
 {
-  "latestVersion": "1.7.5",
+  "latestVersion": "1.7.6",
   "highlights": [
-    "오늘 탭 투두 리스트를 세부 할 일·형광펜·항목별 복사·공유까지 다듬었어요.",
-    "투두 시간 설정 화면을 스냅 타임 피커와 민트 저장 버튼으로 맞췄어요.",
-    "초록·네이비 포스트잇에서도 체크·휴지통 박스 색이 일정하게 보이도록 고쳤어요."
+    "하루 시작·마무리를 48시간 원형 다이얼로 보고 활동·수면 시간을 맞출 수 있어요.",
+    "시작·마무리 알림을 설정 > 알림에서 켜고 끌 수 있어요.",
+    "오늘 탭 투두를 입력할 때 키보드에 가리지 않도록 고쳤어요."
   ],
   "highlightsByLocale": {
     "ko": [
-      "오늘 탭 투두 리스트를 세부 할 일·형광펜·항목별 복사·공유까지 다듬었어요.",
-      "투두 시간 설정 화면을 스냅 타임 피커와 민트 저장 버튼으로 맞췄어요.",
-      "초록·네이비 포스트잇에서도 체크·휴지통 박스 색이 일정하게 보이도록 고쳤어요."
+      "하루 시작·마무리를 48시간 원형 다이얼로 보고 활동·수면 시간을 맞출 수 있어요.",
+      "시작·마무리 알림을 설정 > 알림에서 켜고 끌 수 있어요.",
+      "오늘 탭 투두를 입력할 때 키보드에 가리지 않도록 고쳤어요."
     ],
     "en": [
-      "Polished today’s todo list with sub-tasks, highlighter marks, and per-item copy/share.",
-      "Retouched the todo time sheet with snapped pickers and a mint save button.",
-      "Kept check and trash boxes consistent on green and navy post-it faces."
+      "Set day start and wrap-up on a 48-hour dial that shows active and sleep time.",
+      "Turn day-start and daily-review alerts on or off in Settings > Notifications.",
+      "Fixed the today-tab todo list so the keyboard no longer covers what you’re typing."
     ],
     "ja": [
-      "今日タブのToDoリストをサブタスク・蛍光ペン・項目ごとのコピー／共有まで整えました。",
-      "ToDoの時間設定をスナップピッカーとミントの保存ボタンに合わせました。",
-      "緑・ネイビーのポストイットでもチェック・ゴミ箱ボックスの色が一定になるよう修正しました。"
+      "1日の開始・終了を48時間の円形ダイヤルで見て、活動・睡眠時間を合わせられます。",
+      "開始・振り返り通知を設定 > 通知でオン／オフできます。",
+      "今日タブのToDo入力がキーボードに隠れないように修正しました。"
     ]
   },
   "storeUrls": {

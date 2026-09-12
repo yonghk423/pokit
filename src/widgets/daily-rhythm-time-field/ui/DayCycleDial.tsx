@@ -22,23 +22,28 @@ import {
   cityPopFont,
 } from '@shared/config/retroFlat';
 import { formatDateKeyCompact, formatHhmmClock, useTranslation } from '@shared/lib/i18n';
-import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { DialHandleBadge } from './DialHandleBadge';
 
 import {
   CYCLE_MINUTES,
   DAY_MINUTES,
+  buildDayCycleSegments,
   clampDialHandle,
   clockwiseSpanMinutes,
   cycleDisplayMinutes,
   cycleEndIsNextDay,
   cycleMinutesToClockHhmm,
   describeDonutSegment,
+  formatBalanceDuration,
   minutesFromDialPointRaw,
+  nextWakeAfterEnd,
   polarToCartesian,
+  sleepSpanUntilNextWake,
   snapCycleMinutes,
   toCycleEndMinutes,
   toCycleStartMinutes,
+  type DialHandleKind,
 } from '../lib/dayCycleDialMath';
 
 export type DayCycleDialProps = {
@@ -81,9 +86,21 @@ function parseEndToCycle(hhmm: string, nextDay: boolean): number {
 }
 
 const HOUR_TICKS = Array.from({ length: 48 }, (_, h) => h);
-/** 라벨을 다는 시각(3시간 간격) — 0,3,6…45 */
+/** 라벨을 다는 사이클 시(3시간 간격). 표시는 시계 시(0–23) */
 const LABEL_HOURS = new Set(Array.from({ length: 16 }, (_, i) => i * 3));
 const MAJOR_HOURS = new Set([0, 12, 24, 36]);
+
+function cycleHourToClockLabel(cycleHour: number): string {
+  return String(((cycleHour % 24) + 24) % 24);
+}
+
+/** 하루마다 AM/PM을 한 번씩 — 오전 6시·오후 6시 옆에만 */
+const MERIDIEM_HOURS = new Set([6, 18, 30, 42]);
+
+function cycleHourToMeridiem(cycleHour: number): 'AM' | 'PM' | null {
+  if (!MERIDIEM_HOURS.has(cycleHour)) return null;
+  return cycleHour % 24 < 12 ? 'AM' : 'PM';
+}
 
 type DraftRange = { start: number; end: number };
 
@@ -107,7 +124,7 @@ export function DayCycleDial({
   const originRef = useRef({ x: 0, y: 0 });
   const sizeRef = useRef(300);
   const ringMidRRef = useRef(100);
-  const handleKindRef = useRef<'start' | 'end'>('start');
+  const handleKindRef = useRef<DialHandleKind>('start');
   const draggingRef = useRef(false);
   /** 드래그 중 마지막 햅틱을 준 「시」 — 정시만 피드백 (버벅임 완화) */
   const lastHapticHourRef = useRef<number | null>(null);
@@ -124,7 +141,7 @@ export function DayCycleDial({
   /** 첫 페인트부터 최종 크기에 가깝게 — layout 전 300 폴백으로 커지는 점프 방지 */
   const estimatedContentW = Math.max(260, windowWidth - DIAL_CONTENT_INSET);
   const [layoutW, setLayoutW] = useState(estimatedContentW);
-  const [activeHandle, setActiveHandle] = useState<'start' | 'end' | null>(null);
+  const [activeHandle, setActiveHandle] = useState<DialHandleKind | null>(null);
   const [draft, setDraft] = useState<DraftRange | null>(null);
 
   const size = sizeProp ?? clampDialSize(layoutW);
@@ -132,13 +149,14 @@ export function DayCycleDial({
   const cx = size / 2;
   const cy = size / 2;
   // 바깥 라벨(0·24 + 날짜)이 사각 테두리에 잘리지 않도록 링을 안쪽으로
-  const labelInset = Math.max(44, size * 0.13);
+  const labelInset = Math.max(52, size * 0.16);
   const outerR = size / 2 - labelInset;
   const innerR = outerR * 0.58;
   const ringMidR = (outerR + innerR) / 2;
   ringMidRRef.current = ringMidR;
   const handleR = Math.max(10, size * 0.055);
-  const labelR = outerR + labelInset * 0.52;
+  const labelR = outerR + labelInset * 0.42;
+  const meridiemR = outerR + labelInset * 0.70;
   const minorTickInner = outerR - 6;
   const majorTickInner = outerR - 11;
 
@@ -166,44 +184,49 @@ export function DayCycleDial({
   const displayEnd = cycleDisplayMinutes(endU);
 
   const activitySpanMin = endU - startU;
-  const sleepSpanMin = CYCLE_MINUTES - activitySpanMin;
-  const activityHours = Math.max(0, Math.round(activitySpanMin / 60));
-  const sleepHours = Math.max(0, Math.round(sleepSpanMin / 60));
+  const sleepSpanMin = sleepSpanUntilNextWake(startU, endU);
+  const activityDuration = formatBalanceDuration(activitySpanMin, locale);
+  const sleepDuration = formatBalanceDuration(sleepSpanMin, locale);
 
-  const activityPath = useMemo(
-    () => describeDonutSegment(cx, cy, outerR, innerR, displayStart, displayEnd),
-    [cx, cy, outerR, innerR, displayStart, displayEnd],
+  const cycleSegments = useMemo(
+    () => buildDayCycleSegments(startU, endU),
+    [endU, startU],
   );
-  const sleepPath = useMemo(
-    () => describeDonutSegment(cx, cy, outerR, innerR, displayEnd, displayStart),
-    [cx, cy, outerR, innerR, displayStart, displayEnd],
+  const segmentPaths = useMemo(
+    () =>
+      cycleSegments.map((seg) => ({
+        ...seg,
+        path: describeDonutSegment(cx, cy, outerR, innerR, seg.startDisplay, seg.endDisplay),
+        span: clockwiseSpanMinutes(seg.startDisplay, seg.endDisplay),
+        mid: polarToCartesian(
+          cx,
+          cy,
+          ringMidR,
+          (seg.startDisplay + clockwiseSpanMinutes(seg.startDisplay, seg.endDisplay) / 2) %
+            CYCLE_MINUTES,
+        ),
+      })),
+    [cx, cy, cycleSegments, innerR, outerR, ringMidR],
   );
 
+  const wakeU = nextWakeAfterEnd(startU, endU);
+  const displayWake = cycleDisplayMinutes(wakeU);
+  const wakeDisplayOffset = Math.abs(displayWake - displayStart);
+  const wakeHandleDistinct =
+    Math.min(wakeDisplayOffset, CYCLE_MINUTES - wakeDisplayOffset) > 20;
   const startPos = polarToCartesian(cx, cy, ringMidR, displayStart);
   const endPos = polarToCartesian(cx, cy, ringMidR, displayEnd);
-  const activePos = activeHandle === 'end' ? endPos : startPos;
+  const wakePos = polarToCartesian(cx, cy, ringMidR, displayWake);
+  const activePos =
+    activeHandle === 'end' ? endPos : activeHandle === 'wake' ? wakePos : startPos;
 
-  const activityArcSpan = clockwiseSpanMinutes(displayStart, displayEnd);
-  const activityMid = polarToCartesian(
-    cx,
-    cy,
-    ringMidR,
-    (displayStart + activityArcSpan / 2) % CYCLE_MINUTES,
-  );
-  const sleepArcSpan = clockwiseSpanMinutes(displayEnd, displayStart);
-  const sleepMid = polarToCartesian(
-    cx,
-    cy,
-    ringMidR,
-    (displayEnd + sleepArcSpan / 2) % CYCLE_MINUTES,
-  );
-
-  /** City Pop Flat — 민트(활동) / 잉크(수면) · 레이아웃 테두리 없음 · 검정 solid shadow */
+  /** City Pop Flat — 민트(활동) / 잉크(수면) / 트랙(그 외) */
   const colors = {
     dialStroke: tone.border,
     dialTrack: isDark ? tone.surfaceAlt : tone.bg,
     activityFill: isDark ? tone.primaryContainer : tone.bgMint,
     sleepFill: isDark ? '#12152A' : tone.text,
+    restFill: isDark ? '#2A2D3A' : '#E7E2D8',
     /** 해 핸들 — 맑은 하늘(선명) + 노란 해 */
     startHandle: isDark ? '#2F8FCB' : '#2EA7E0',
     startHandleIcon: '#FFE566',
@@ -214,9 +237,8 @@ export function DayCycleDial({
     ink: tone.text,
     muted: tone.textMuted,
     sleepLabel: isDark ? tone.text : '#FFFFFF',
+    restLabel: isDark ? tone.textMuted : tone.textMuted,
     sleepAccent: tone.accent,
-    legendActivity: isDark ? tone.primaryContainer : tone.bgMint,
-    legendSleep: isDark ? '#12152A' : tone.text,
     /** 레이아웃 음영은 항상 검정 */
     shadow: '#000000',
     summaryBg: isDark ? tone.surfaceAlt : '#FFFFFF',
@@ -305,8 +327,13 @@ export function DayCycleDial({
       scheduleDraftFlush();
 
       if (draggingRef.current) {
+        const kind = handleKindRef.current;
         const active =
-          handleKindRef.current === 'start' ? clamped.start : clamped.end;
+          kind === 'end'
+            ? clamped.end
+            : kind === 'wake'
+              ? nextWakeAfterEnd(clamped.start, clamped.end)
+              : clamped.start;
         hapticForHour(active);
       }
     },
@@ -317,9 +344,16 @@ export function DayCycleDial({
     const start = snapCycleMinutes(startMinRef.current, COMMIT_SNAP_STEP);
     const endSnapped =
       Math.round(endMinRef.current / COMMIT_SNAP_STEP) * COMMIT_SNAP_STEP;
+    const kind = handleKindRef.current;
+    const target =
+      kind === 'end'
+        ? endSnapped
+        : kind === 'wake'
+          ? nextWakeAfterEnd(start, endSnapped)
+          : start;
     const snapped = clampDialHandle(
-      handleKindRef.current,
-      handleKindRef.current === 'start' ? start : endSnapped,
+      kind,
+      target,
       start,
       endSnapped,
       undefined,
@@ -366,8 +400,24 @@ export function DayCycleDial({
       midR,
       cycleDisplayMinutes(endMinRef.current),
     );
+    const wakeP = polarToCartesian(
+      center,
+      center,
+      midR,
+      cycleDisplayMinutes(nextWakeAfterEnd(startMinRef.current, endMinRef.current)),
+    );
     const dStart = (localX - startP.x) ** 2 + (localY - startP.y) ** 2;
     const dEnd = (localX - endP.x) ** 2 + (localY - endP.y) ** 2;
+    const dWake = (localX - wakeP.x) ** 2 + (localY - wakeP.y) ** 2;
+    const wakeOff = Math.abs(
+      cycleDisplayMinutes(nextWakeAfterEnd(startMinRef.current, endMinRef.current)) -
+        cycleDisplayMinutes(startMinRef.current),
+    );
+    const wakeDistinct = Math.min(wakeOff, CYCLE_MINUTES - wakeOff) > 20;
+    if (wakeDistinct && dWake <= dStart && dWake <= dEnd) {
+      handleKindRef.current = 'wake';
+      return;
+    }
     handleKindRef.current = dStart <= dEnd ? 'start' : 'end';
   }, []);
 
@@ -497,34 +547,6 @@ export function DayCycleDial({
             {t('dayCycleDial.title')}
           </ThemedText>
         </View>
-        <View style={styles.legendRow}>
-          <View
-            style={[
-              styles.legendChip,
-              {
-                backgroundColor: colors.legendActivity,
-              },
-            ]}>
-            <ThemedText style={[styles.legendText, { color: tone.primary }, cityPopFont('700')]}>
-              {t('dayCycleDial.legendActivity', { hours: activityHours })}
-            </ThemedText>
-          </View>
-          <View
-            style={[
-              styles.legendChip,
-              {
-                backgroundColor: colors.legendSleep,
-              },
-            ]}>
-            <ThemedText
-              style={[styles.legendText, { color: '#FFFFFF' }, cityPopFont('700')]}>
-              {t('dayCycleDial.legendSleep', { hours: sleepHours })}
-            </ThemedText>
-          </View>
-          <ThemedText style={[styles.cycleHint, { color: colors.muted }, cityPopFont('600')]}>
-            {t('dayCycleDial.cycleHint')}
-          </ThemedText>
-        </View>
       </View>
 
       <View style={[styles.dialShell, { width: dialBox, height: dialBox }]}>
@@ -565,15 +587,30 @@ export function DayCycleDial({
               strokeWidth={RETRO_BORDER_WIDTH}
               fill={colors.dialTrack}
             />
-            <Path d={sleepPath} fill={colors.sleepFill} />
-            <Path d={activityPath} fill={colors.activityFill} />
-            {/* 세그먼트 경계 윤곽 */}
-            <Path
-              d={activityPath}
-              fill="none"
-              stroke={colors.dialStroke}
-              strokeWidth={RETRO_BORDER_WIDTH}
-            />
+            {segmentPaths.map((seg) => (
+              <Path
+                key={`seg-${seg.kind}-${seg.startDisplay}`}
+                d={seg.path}
+                fill={
+                  seg.kind === 'activity'
+                    ? colors.activityFill
+                    : seg.kind === 'sleep'
+                      ? colors.sleepFill
+                      : colors.restFill
+                }
+              />
+            ))}
+            {segmentPaths
+              .filter((seg) => seg.kind === 'activity')
+              .map((seg) => (
+                <Path
+                  key={`seg-stroke-${seg.startDisplay}`}
+                  d={seg.path}
+                  fill="none"
+                  stroke={colors.dialStroke}
+                  strokeWidth={RETRO_BORDER_WIDTH}
+                />
+              ))}
             <Circle
               cx={cx}
               cy={cy}
@@ -606,6 +643,10 @@ export function DayCycleDial({
                 m,
               );
               const lab = polarToCartesian(cx, cy, labelR, m);
+              const meridiem = cycleHourToMeridiem(h);
+              const meridiemPos = meridiem
+                ? polarToCartesian(cx, cy, meridiemR, m)
+                : null;
               return (
                 <G key={`tick-${h}`}>
                   <Line
@@ -628,7 +669,7 @@ export function DayCycleDial({
                         textAnchor="middle"
                         alignmentBaseline="central"
                         dy={h === 0 ? 5 : h === 24 ? -4 : 3}>
-                        {String(h)}
+                        {cycleHourToClockLabel(h)}
                       </SvgText>
                       {h === 0 || h === 24 ? (
                         <SvgText
@@ -643,87 +684,87 @@ export function DayCycleDial({
                           {h === 0 ? day0RingLabel : day1RingLabel}
                         </SvgText>
                       ) : null}
+                      {meridiem && meridiemPos ? (
+                        <SvgText
+                          x={meridiemPos.x}
+                          y={meridiemPos.y}
+                          fill={colors.muted}
+                          fontSize={8}
+                          fontWeight="700"
+                          textAnchor="middle"
+                          alignmentBaseline="central">
+                          {meridiem}
+                        </SvgText>
+                      ) : null}
                     </>
                   ) : null}
                 </G>
               );
             })}
 
-            {activitySpanMin >= 120 ? (
-              <SvgText
-                x={activityMid.x}
-                y={activityMid.y}
-                fill={isDark ? tone.primary : tone.primary}
-                fontSize={10}
-                fontWeight="800"
-                textAnchor="middle">
-                {t('dayCycleDial.arcActivityShort', { hours: activityHours })}
-              </SvgText>
-            ) : null}
-            {sleepSpanMin >= 120 ? (
-              <SvgText
-                x={sleepMid.x}
-                y={sleepMid.y}
-                fill={colors.sleepLabel}
-                fontSize={10}
-                fontWeight="800"
-                textAnchor="middle">
-                {t('dayCycleDial.arcSleepShort', { hours: sleepHours })}
-              </SvgText>
-            ) : null}
+            {segmentPaths.map((seg) => {
+              if (seg.kind === 'rest' || seg.span < 120) return null;
+              const label = seg.kind === 'activity' ? activityDuration : sleepDuration;
+              return (
+                <SvgText
+                  key={`arc-label-${seg.kind}-${seg.startDisplay}`}
+                  x={seg.mid.x}
+                  y={seg.mid.y}
+                  fill={seg.kind === 'sleep' ? colors.sleepLabel : tone.primary}
+                  fontSize={10}
+                  fontWeight="800"
+                  textAnchor="middle">
+                  {label}
+                </SvgText>
+              );
+            })}
           </Svg>
 
-          {/* 시작=해 · 마무리=달 — 타임라인 앵커와 동일 심볼 */}
           {(() => {
             const startActive = activeHandle === 'start';
             const endActive = activeHandle === 'end';
+            const wakeActive = activeHandle === 'wake';
             const startSize = handleR * 2 * (startActive ? 1.12 : 1);
             const endSize = handleR * 2 * (endActive ? 1.12 : 1);
+            const wakeSize = handleR * 2 * (wakeActive ? 1.12 : 1);
             const iconSize = Math.round(handleR * 1.15);
             return (
               <>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.handleBadge,
-                    {
-                      width: startSize,
-                      height: startSize,
-                      borderRadius: startSize / 2,
-                      left: startPos.x - startSize / 2,
-                      top: startPos.y - startSize / 2,
-                      backgroundColor: colors.startHandle,
-                      borderColor: colors.dialStroke,
-                    },
-                  ]}>
-                  <IconSymbol
-                    name="sun.max.fill"
-                    size={iconSize}
-                    color={colors.startHandleIcon}
-                    weight="semibold"
+                <DialHandleBadge
+                  kind="sun"
+                  size={startSize}
+                  left={startPos.x - startSize / 2}
+                  top={startPos.y - startSize / 2}
+                  backgroundColor={colors.startHandle}
+                  borderColor={colors.dialStroke}
+                  iconColor={colors.startHandleIcon}
+                  iconSize={iconSize}
+                  active={startActive}
+                />
+                {wakeHandleDistinct ? (
+                  <DialHandleBadge
+                    kind="sun"
+                    size={wakeSize}
+                    left={wakePos.x - wakeSize / 2}
+                    top={wakePos.y - wakeSize / 2}
+                    backgroundColor={colors.startHandle}
+                    borderColor={colors.dialStroke}
+                    iconColor={colors.startHandleIcon}
+                    iconSize={iconSize}
+                    active={wakeActive}
                   />
-                </View>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.handleBadge,
-                    {
-                      width: endSize,
-                      height: endSize,
-                      borderRadius: endSize / 2,
-                      left: endPos.x - endSize / 2,
-                      top: endPos.y - endSize / 2,
-                      backgroundColor: colors.endHandle,
-                      borderColor: colors.dialStroke,
-                    },
-                  ]}>
-                  <IconSymbol
-                    name="moon.fill"
-                    size={iconSize}
-                    color={colors.endHandleIcon}
-                    weight="semibold"
-                  />
-                </View>
+                ) : null}
+                <DialHandleBadge
+                  kind="moon"
+                  size={endSize}
+                  left={endPos.x - endSize / 2}
+                  top={endPos.y - endSize / 2}
+                  backgroundColor={colors.endHandle}
+                  borderColor={colors.dialStroke}
+                  iconColor={colors.endHandleIcon}
+                  iconSize={iconSize}
+                  active={endActive}
+                />
               </>
             );
           })()}
@@ -736,11 +777,11 @@ export function DayCycleDial({
               {t('dayCycleDial.centerKicker')}
             </ThemedText>
             <ThemedText style={[styles.centerActivity, { color: colors.ink }, cityPopFont('800')]}>
-              {t('dayCycleDial.centerActivity', { hours: activityHours })}
+              {t('dayCycleDial.centerActivity', { duration: activityDuration })}
             </ThemedText>
             <ThemedText
               style={[styles.centerSleep, { color: colors.sleepAccent }, cityPopFont('700')]}>
-              {t('dayCycleDial.centerSleep', { hours: sleepHours })}
+              {t('dayCycleDial.centerSleep', { duration: sleepDuration })}
             </ThemedText>
           </View>
         </View>
@@ -800,25 +841,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     letterSpacing: -0.35,
   },
-  legendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  legendChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  legendText: {
-    fontSize: 12,
-    letterSpacing: -0.1,
-  },
-  cycleHint: {
-    fontSize: 12,
-    letterSpacing: -0.1,
-  },
   dialShell: {
     position: 'relative',
   },
@@ -831,13 +853,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  handleBadge: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: RETRO_BORDER_WIDTH,
-    zIndex: 2,
   },
   centerCard: {
     position: 'absolute',
