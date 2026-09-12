@@ -1,5 +1,6 @@
 import {
   appendCustomFlowCatalogEntry,
+  appendRoutineCatalogSelectionKeys,
   BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
   BUILTIN_TUTORIAL_GROUP_KEY,
   clearPokitWeekTourSeeded,
@@ -60,6 +61,7 @@ export function seedPokitWeekTourIntoTodayIfNeeded(): void {
   if (
     useDayPlanDraftStore.getState().priorityCategoryOrder.includes(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)
   ) {
+    appendRoutineCatalogSelectionKeys([BUILTIN_POKIT_WEEK_TOUR_FLOW_ID]);
     markSeededIfOnboardingDone();
   }
 }

@@ -10,6 +10,7 @@ import {
   parseHHmmToMinutes,
   getPriorityCatalogPickerLabel,
   PRIORITY_CATALOG_PICKER_LABELS,
+  resolveStandardCatalogDisplayLabel,
   resolveCategoryCatalogIcon,
   resolveCustomFlowCategoryLabelKo,
   resolveCustomFlowDisplayLabel,
@@ -115,9 +116,11 @@ export function getPickerCategoryLabel(
   if (raw && typeof raw === 'object') {
     const dn = ((raw as Record<string, unknown>).displayName ?? '') as string;
     const trimmed = typeof dn === 'string' ? dn.trim() : '';
-    if (trimmed.length > 0) return trimmed;
+    if (trimmed.length > 0) {
+      return resolveStandardCatalogDisplayLabel(categoryKey, trimmed);
+    }
   }
-  return getPickerCategoryItem(categoryKey)?.label ?? t('category.userFallback');
+  return getPriorityCatalogPickerLabel(categoryKey);
 }
 
 export type PriorityTask = { id: string; title: string; categoryKey: string };

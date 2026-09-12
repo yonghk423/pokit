@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import {
   applyCounterDelta,
@@ -54,6 +54,7 @@ import {
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import { ReminderTimePickerPill } from './ReminderTimePickerPill';
 
@@ -481,7 +482,7 @@ function MeasurementTemplateView({
             <View style={styles.reminderProgressHero}>
               <View style={styles.reminderProgressCountRow}>
                 <ThemedText
-                  style={[styles.reminderProgressCount, { color: tone.primary }]}
+                  style={[styles.reminderProgressCount, { color: ink }]}
                   numberOfLines={1}
                   adjustsFontSizeToFit
                   minimumFontScale={0.6}>
@@ -495,7 +496,7 @@ function MeasurementTemplateView({
               </View>
             </View>
             <View style={styles.reminderNextBlock}>
-              <ThemedText style={[styles.reminderNextKicker, { color: tone.primary }]}>
+              <ThemedText style={[styles.reminderNextKicker, { color: ink }]}>
                 {metricTitle}
               </ThemedText>
               {delta ? (
@@ -564,7 +565,7 @@ function MeasurementTemplateView({
             <MiniBarChart
               values={chartValues}
               goal={cfg.useGoalValue ? cfg.goalValue : undefined}
-              accent={tone.primary}
+              accent={ink}
               muted={muted}
             />
           </View>
@@ -644,7 +645,7 @@ function MeasurementTemplateView({
             </View>
           ) : null}
           <View style={styles.measureInputRow}>
-            <TextInput
+            <ThemedTextInput
               value={draft}
               onChangeText={setDraft}
               onEndEditing={commitDraft}
@@ -728,7 +729,7 @@ function JournalTemplateView({
             );
           })}
         </View>
-        <TextInput
+        <ThemedTextInput
           value={draft}
           onChangeText={setDraft}
           multiline
@@ -810,7 +811,7 @@ function MemoTemplateView({
               {hasDraft ? t('common.charCount', { count: draftLen }) : t('customFlowTemplate.emptyDraft')}
             </ThemedText>
           </View>
-          <TextInput
+          <ThemedTextInput
             value={draft}
             onChangeText={setDraft}
             multiline
@@ -961,7 +962,7 @@ function ChecklistTemplateView({
           <View style={styles.reminderProgressTop}>
             <View style={styles.reminderProgressHero}>
               <View style={styles.reminderProgressCountRow}>
-                <ThemedText style={[styles.reminderProgressCount, { color: tone.primary }]}>
+                <ThemedText style={[styles.reminderProgressCount, { color: ink }]}>
                   {doneCount}
                 </ThemedText>
                 <ThemedText style={[styles.reminderProgressTotal, { color: muted }]}>
@@ -973,7 +974,7 @@ function ChecklistTemplateView({
               </View>
             </View>
             <View style={styles.reminderNextBlock}>
-              <ThemedText style={[styles.reminderNextKicker, { color: tone.primary }]}>
+              <ThemedText style={[styles.reminderNextKicker, { color: ink }]}>
                 {sectionTitle}
               </ThemedText>
               <ThemedText style={[styles.reminderNextTitle, { color: ink }]} numberOfLines={2}>
@@ -1056,7 +1057,7 @@ function ChecklistTemplateView({
                     style={[
                       styles.checkBoxShadow,
                       {
-                        backgroundColor: task.done ? tone.primary : shadowInk,
+                        backgroundColor: task.done ? ink : shadowInk,
                         transform: [{ translateX: checkShadow }, { translateY: checkShadow }],
                       },
                     ]}
@@ -1150,7 +1151,7 @@ function ChecklistTemplateView({
                   },
                 ]}
               />
-              <TextInput
+              <ThemedTextInput
                 value={draft}
                 onChangeText={setDraft}
                 placeholder={addPlaceholder}
@@ -1325,7 +1326,7 @@ function CounterTemplateView({
           <View style={styles.reminderProgressTop}>
             <View style={styles.reminderProgressHero}>
               <View style={styles.reminderProgressCountRow}>
-                <ThemedText style={[styles.reminderProgressCount, { color: tone.primary }]}>
+                <ThemedText style={[styles.reminderProgressCount, { color: ink }]}>
                   {live.currentCount}
                 </ThemedText>
                 <ThemedText style={[styles.reminderProgressTotal, { color: muted }]}>
@@ -1334,7 +1335,7 @@ function CounterTemplateView({
               </View>
             </View>
             <View style={styles.reminderNextBlock}>
-              <ThemedText style={[styles.reminderNextKicker, { color: tone.primary }]}>
+              <ThemedText style={[styles.reminderNextKicker, { color: ink }]}>
                 {activityTitle}
               </ThemedText>
               <ThemedText style={[styles.reminderNextTitle, { color: ink }]} numberOfLines={2}>
@@ -1366,7 +1367,7 @@ function CounterTemplateView({
             <MiniBarChart
               values={chartValues}
               goal={live.goalCount}
-              accent={tone.primary}
+              accent={ink}
               muted={muted}
             />
           </View>
@@ -1475,7 +1476,7 @@ function CounterTemplateView({
                     opacity: pressed ? 0.9 : 1,
                   },
                 ]}>
-                <ThemedText style={[styles.bigCounterText, { color: tone.primary }]}>
+                <ThemedText style={[styles.bigCounterText, { color: ink }]}>
                   +{live.stepSize}
                 </ThemedText>
               </Pressable>
@@ -1573,7 +1574,7 @@ function CounterTemplateView({
                       opacity: pressed ? 0.88 : 1,
                     },
                   ]}>
-                  <ThemedText style={[styles.counterBtnText, { color: tone.primary }]}>
+                  <ThemedText style={[styles.counterBtnText, { color: ink }]}>
                     {t('customFlowTemplate.fillToGoal')}
                   </ThemedText>
                 </Pressable>
@@ -1638,7 +1639,7 @@ function CounterTemplateView({
           </ThemedText>
 
           <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.whatToCount')}</ThemedText>
-          <TextInput
+          <ThemedTextInput
             value={live.activityLabel}
             onChangeText={(value) => emit(applyCounterActivitySettings(live, { activityLabel: value }))}
             placeholder={t('customFlowTemplate.activityPlaceholder')}
@@ -1651,7 +1652,7 @@ function CounterTemplateView({
           />
 
           <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.dailyGoal')}</ThemedText>
-          <TextInput
+          <ThemedTextInput
             value={goalDraft}
             onChangeText={setGoalDraft}
             onEndEditing={() => commitGoal(goalDraft)}
@@ -1670,7 +1671,7 @@ function CounterTemplateView({
           <View style={styles.reminderAddRow}>
             <View style={styles.counterStepCol}>
               <ThemedText style={[styles.counterStepHint, { color: muted }]}>{t('customFlowTemplate.primaryStep')}</ThemedText>
-              <TextInput
+              <ThemedTextInput
                 value={stepDraft}
                 onChangeText={setStepDraft}
                 onEndEditing={() => commitStep(stepDraft)}
@@ -1688,7 +1689,7 @@ function CounterTemplateView({
             </View>
             <View style={styles.counterStepCol}>
               <ThemedText style={[styles.counterStepHint, { color: muted }]}>{t('customFlowTemplate.secondaryStep')}</ThemedText>
-              <TextInput
+              <ThemedTextInput
                 value={secondaryStepDraft}
                 onChangeText={setSecondaryStepDraft}
                 onEndEditing={() => commitSecondaryStep(secondaryStepDraft)}
@@ -1820,7 +1821,6 @@ function ReminderTemplateView({
   };
 
   const shadowInk = isDark ? tone.solidShadow : tone.text;
-  const mintShadow = tone.bgMint;
   const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
   const chipShadow = 2;
 
@@ -1836,14 +1836,14 @@ function ReminderTemplateView({
             <View style={styles.reminderProgressTop}>
               <View style={styles.reminderProgressHero}>
                 <View style={styles.reminderProgressCountRow}>
-                  <ThemedText style={[styles.reminderProgressCount, { color: tone.primary }]}>{done}</ThemedText>
+                  <ThemedText style={[styles.reminderProgressCount, { color: ink }]}>{done}</ThemedText>
                   <ThemedText style={[styles.reminderProgressTotal, { color: muted }]}>/{total}</ThemedText>
                   <ThemedText style={[styles.reminderProgressLabel, { color: muted }]}>{t('customFlowTemplate.statusComplete')}</ThemedText>
                 </View>
               </View>
               {nextTime ? (
                 <View style={styles.reminderNextBlock}>
-                  <ThemedText style={[styles.reminderNextKicker, { color: tone.primary }]}>{t('customFlowTemplate.nextReminder')}</ThemedText>
+                  <ThemedText style={[styles.reminderNextKicker, { color: ink }]}>{t('customFlowTemplate.nextReminder')}</ThemedText>
                   <ThemedText style={[styles.reminderNextTitle, { color: ink }]} numberOfLines={2}>
                     {resolveReminderItemTitle(nextItem ?? { time: nextTime, label: '' })}
                   </ThemedText>
@@ -1854,7 +1854,7 @@ function ReminderTemplateView({
                 </View>
               ) : (
                 <View style={[styles.reminderAllDone, { backgroundColor: tone.primaryContainer }]}>
-                  <ThemedText style={[styles.goalBadge, { color: tone.primary }]}>{t('customFlowTemplate.allRemindersDone')}</ThemedText>
+                  <ThemedText style={[styles.goalBadge, { color: ink }]}>{t('customFlowTemplate.allRemindersDone')}</ThemedText>
                 </View>
               )}
             </View>
@@ -1891,8 +1891,8 @@ function ReminderTemplateView({
           const statusLabel = checked ? t('customFlowTemplate.statusComplete') : isNext ? t('customFlowTemplate.statusNext') : t('customFlowTemplate.statusScheduled');
           /** 반투명 면 + 솔리드 섀도 = 칩이 검게 보이므로 불투명 면만 사용 */
           const statusBg = checked || isNext ? tone.primaryContainer : faceWhite;
-          const statusFg = checked || isNext ? tone.primary : muted;
-          const cardShadow = checked || isNext ? mintShadow : shadowInk;
+          const statusFg = checked || isNext ? ink : muted;
+          const cardShadow = shadowInk;
 
           return (
             <ReminderBrutalShell ink={ink}
@@ -1971,12 +1971,12 @@ function ReminderTemplateView({
                             },
                           ]}>
                           {checked ? (
-                            <IconSymbol name="checkmark" size={12} color={tone.primary} />
+                            <IconSymbol name="checkmark" size={12} color={ink} />
                           ) : null}
                           <ThemedText
                             style={[
                               styles.reminderDoneBtnText,
-                              { color: checked ? tone.primary : ink },
+                              { color: ink },
                             ]}>
                             {checked
                               ? t('customFlowTemplate.doneState')
@@ -2037,9 +2037,9 @@ function ReminderTemplateView({
                     line={line}
                     surface={faceWhite}
                     fullWidth
-                    emphasizeColor={isNext ? tone.primary : undefined}
+                    emphasizeColor={isNext ? ink : undefined}
                   />
-                  <TextInput
+                  <ThemedTextInput
                     value={item.label}
                     onChangeText={(value) => emit(updateReminderItemLabel(cfg, item.time, value))}
                     placeholder={t('customFlowTemplate.reminderLabelPlaceholder')}
@@ -2083,7 +2083,7 @@ function ReminderTemplateView({
             accessibilityLabel={t('customFlowTemplate.newReminderTimeA11y')}
             fullWidth
           />
-          <TextInput
+          <ThemedTextInput
             value={draftLabel}
             onChangeText={(value) => {
               setDraftLabel(value);

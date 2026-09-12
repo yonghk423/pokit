@@ -57,6 +57,7 @@ import {
   resolveSpinePriorityWindow,
   formatRoutineSummaryHint,
   readRoutineSummaryFromConfig,
+  resolveRoutineSummaryForDisplay,
   sortDayPlanBlocks,
   useDayPlanStore,
   useFixedFlowSetsStore,
@@ -3108,8 +3109,11 @@ export function PriorityBasedPlanSection({
                                     });
                                 const baseCategoryKey = resolvePriorityRoutineCategoryKey(cat.key);
                                 const rowSummaryHint = formatRoutineSummaryHint(
-                                  readRoutineSummaryFromConfig(
-                                    loadGoalDetailCategoryConfig(baseCategoryKey),
+                                  resolveRoutineSummaryForDisplay(
+                                    baseCategoryKey,
+                                    readRoutineSummaryFromConfig(
+                                      loadGoalDetailCategoryConfig(baseCategoryKey),
+                                    ),
                                   ),
                                 );
 

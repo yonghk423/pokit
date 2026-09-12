@@ -120,12 +120,12 @@ describe('dayCycleDialMath sleep vs leftover', () => {
     expect(formatBalanceDuration(45, 'ko')).toBe('45m');
   });
 
-  it('wake handle lengthens sleep without moving wrap-up', () => {
+  it('wake handle is a +24h mirror of start and does not move wrap-up', () => {
     const start = toCycleStartMinutes(6 * 60 + 30);
     const end = toCycleEndMinutes(1 * 60, true);
-    const laterWake = end + 8 * 60;
-    const moved = clampDialHandle('wake', laterWake, start, end, 60, 5);
+    const twin = start + DAY_MINUTES;
+    const moved = clampDialHandle('wake', twin + 30, start, end, 60, 5);
     expect(moved.end).toBe(end);
-    expect(sleepSpanUntilNextWake(moved.start, moved.end)).toBe(8 * 60);
+    expect(moved.start).toBe(start + 30);
   });
 });

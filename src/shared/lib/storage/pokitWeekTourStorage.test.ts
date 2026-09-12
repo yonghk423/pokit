@@ -19,10 +19,10 @@ describe('pokitWeekTourStorage', () => {
     expect(nextOrderWithPokitWeekTourSeed([])).toEqual([BUILTIN_POKIT_WEEK_TOUR_FLOW_ID]);
   });
 
-  it('does not re-seed empty bag after seeded flag is set', () => {
+  it('re-seeds empty bag when tutorial is not finished, even after seeded flag', () => {
     markPokitWeekTourSeeded();
     expect(loadPokitWeekTourSeeded()).toBe(true);
-    expect(nextOrderWithPokitWeekTourSeed([])).toBeNull();
+    expect(nextOrderWithPokitWeekTourSeed([])).toEqual([BUILTIN_POKIT_WEEK_TOUR_FLOW_ID]);
   });
 
   it('does not seed when bag already has items', () => {

@@ -35,6 +35,13 @@ describe('syncPriorityOrderWithAppliedFixedRoutines', () => {
     ).toEqual(['healthIntake']);
   });
 
+  it('keeps the tutorial routine even without catalog selection', () => {
+    const order = ['customFlow:preset_pokit_week_tour', 'healthIntake'];
+    expect(
+      syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed, new Set()),
+    ).toEqual(['customFlow:preset_pokit_week_tour', 'healthIntake']);
+  });
+
   it('keeps catalog-selected customFlow even when not in fixed sets', () => {
     const order = ['customFlow:kept-manual'];
     const catalog = new Set(['customFlow:kept-manual']);

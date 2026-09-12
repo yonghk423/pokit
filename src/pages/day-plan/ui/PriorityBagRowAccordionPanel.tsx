@@ -15,6 +15,7 @@ import type { GoalDetailCategoryKey } from '@pages/goal-detail-settings/model/ty
 import { resolveGoalDetailModuleForTarget } from '@pages/goal-detail-settings/ui/category';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
+import { resolvePokitWeekTourTaskLabel } from '@shared/lib/i18n/lib/pokitWeekTourLabels';
 import {
   isPokitWeekTourFlowId,
   loadGoalDetailCategoryConfig,
@@ -411,18 +412,24 @@ export function PriorityBagRowAccordionPanel({
     setDraft('');
   }, [draft, persistChecklist, tasks]);
 
+  const tourTaskLabel = useCallback(
+    (task: ChecklistTask) =>
+      isWeekTour ? resolvePokitWeekTourTaskLabel(task.id, task.text) : task.text,
+    [isWeekTour],
+  );
+
   const buildPayload = useCallback(() => {
     const parts: string[] = [`[${label}]`];
     const summaryTrimmed = summaryDraft.trim();
     if (summaryTrimmed) parts.push(summaryTrimmed);
     if (tasks.length > 0) {
       for (const task of tasks) {
-        parts.push(`${task.done ? '☑' : '☐'} ${task.text}`);
+        parts.push(`${task.done ? '☑' : '☐'} ${tourTaskLabel(task)}`);
       }
     }
     if (timeLine) parts.push(timeLine);
     return parts.join('\n');
-  }, [label, summaryDraft, tasks, timeLine]);
+  }, [label, summaryDraft, tasks, timeLine, tourTaskLabel]);
 
   const handleCopy = useCallback(async () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -504,7 +511,9 @@ export function PriorityBagRowAccordionPanel({
                   accessibilityRole={isWeekTour ? 'button' : 'checkbox'}
                   accessibilityState={{ checked: task.done }}
                   accessibilityLabel={
-                    isWeekTour ? t('tour.pokitWeek.stepA11y', { title: task.text }) : undefined
+                    isWeekTour
+                      ? t('tour.pokitWeek.stepA11y', { title: tourTaskLabel(task) })
+                      : undefined
                   }
                   hitSlop={4}
                   onPress={() => (isWeekTour ? openTourTip(task.id, index) : toggleTask(task.id))}
@@ -521,7 +530,7 @@ export function PriorityBagRowAccordionPanel({
                       task.done && checklistTemplate === 'checklist' ? s.taskDone : null,
                     ]}
                     numberOfLines={3}>
-                    {task.text}
+                    {tourTaskLabel(task)}
                   </ThemedText>
                 </Pressable>
                 {!isWeekTour ? (

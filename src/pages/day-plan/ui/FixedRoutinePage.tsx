@@ -57,7 +57,7 @@ import {
   isRoutineStartNotifyEnabled,
   persistRoutineStartNotifyToggle,
 } from '@features/day-plan-notifications';
-import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
+import { CityPopSpacing, RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { formatDateKeyCompact, t } from '@shared/lib/i18n';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
@@ -2318,8 +2318,8 @@ export function FixedRoutinePage({
   const addGroupLine = postItFaceUsesLightInk(addGroupFaceId)
     ? 'rgba(255,255,255,0.28)'
     : 'rgba(0,0,0,0.18)';
-  const addGroupActionBg = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.72)';
-  const addGroupActionHover = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.92)';
+  const addGroupPlusRest = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
+  const addGroupPlusPressed = isDark ? '#3D5E60' : '#D5E8E9';
 
   const openRoutineTemplateDetail = useCallback(
     (templateKey: CustomFlowTemplateKey) => {
@@ -2425,32 +2425,46 @@ export function FixedRoutinePage({
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 setIsAddingGroup(true);
               }}
-              style={({ pressed }) => [
-                styles.addGroupTriggerHit,
-                pressed && { opacity: 0.9, transform: [{ translateX: 1 }, { translateY: 1 }] },
-              ]}>
-              <PostItCardShell
-                compact
-                isDark={isDark}
-                faceColor={addGroupFace}
-                style={styles.addGroupTriggerOuter}
-                contentStyle={styles.addGroupTrigger}>
-                <View style={styles.addGroupTriggerMain}>
-                  <ThemedText
-                    style={[styles.addGroupTriggerLabel, { color: addGroupInk, flexShrink: 1 }]}
-                    numberOfLines={2}>
-                    {t('fixedRoutine.addGroup')}
-                  </ThemedText>
-                  <View
-                    style={[
-                      styles.addGroupPlusFace,
-                      { backgroundColor: addGroupActionBg, borderColor: addGroupLine },
-                    ]}
-                    pointerEvents="none">
-                    <IconSymbol name="plus" size={13} color={addGroupInk} />
+              style={styles.addGroupTriggerHit}>
+              {({ pressed }) => (
+                <PostItCardShell
+                  compact
+                  isDark={isDark}
+                  faceColor={addGroupFace}
+                  style={styles.addGroupTriggerOuter}
+                  contentStyle={styles.addGroupTrigger}>
+                  <View style={styles.addGroupTriggerMain}>
+                    <ThemedText
+                      style={[styles.addGroupTriggerLabel, { color: addGroupInk, flexShrink: 1 }]}
+                      numberOfLines={2}>
+                      {t('fixedRoutine.addGroup')}
+                    </ThemedText>
+                    <View style={styles.addGroupPlusShell} pointerEvents="none">
+                      <View
+                        style={[
+                          styles.addGroupPlusShadow,
+                          { backgroundColor: isDark ? RetroFlatColors.dark.solidShadow : '#000000' },
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.addGroupPlusFace,
+                          { backgroundColor: pressed ? addGroupPlusPressed : addGroupPlusRest },
+                          pressed
+                            ? {
+                                transform: [
+                                  { translateX: SOLID_SHADOW_OFFSET },
+                                  { translateY: SOLID_SHADOW_OFFSET },
+                                ],
+                              }
+                            : null,
+                        ]}>
+                        <IconSymbol name="plus" size={13} color={addGroupInk} />
+                      </View>
+                    </View>
                   </View>
-                </View>
-              </PostItCardShell>
+                </PostItCardShell>
+              )}
             </Pressable>
           )
         ) : activeSection !== 'catalog' &&
@@ -3035,14 +3049,25 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     lineHeight: 18,
   },
+  addGroupPlusShell: {
+    position: 'relative',
+    width: 26 + SOLID_SHADOW_OFFSET,
+    height: 26 + SOLID_SHADOW_OFFSET,
+    flexShrink: 0,
+  },
+  addGroupPlusShadow: {
+    position: 'absolute',
+    left: SOLID_SHADOW_OFFSET,
+    top: SOLID_SHADOW_OFFSET,
+    width: 26,
+    height: 26,
+  },
   addGroupPlusFace: {
     width: 26,
     height: 26,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
+    zIndex: 1,
   },
   cardList: {
     width: '100%',

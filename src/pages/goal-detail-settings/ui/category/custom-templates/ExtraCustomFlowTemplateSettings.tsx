@@ -21,7 +21,6 @@ import { PrimaryColor } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
-import { ThemedText } from '@shared/ui/themed-text';
 import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
 
 import type { GoalDetailCategoryKey } from '../../../model/types';

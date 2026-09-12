@@ -41,6 +41,12 @@ export type DigitalHhmmInputProps = {
   accessibilityLabelPrefix?: string;
   /** 레거시 호환용(키패드 제거로 현재 미사용) */
   onInputFocus?: () => void;
+  /** 오전/오후 선택면. 생략 시 시티팝 민트 */
+  accentFill?: string;
+  /** 오전/오후 선택 글자. 생략 시 틸 잉크 */
+  accentInk?: string;
+  /** 시·분 숫자색. 생략 시 ink */
+  digitColor?: string;
 };
 
 /** 키보드가 열린 채 확인을 누를 때 등 — blur 없이 현재 초안을 확정 */
@@ -244,6 +250,9 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
       snapStepMinutes = 1,
       mapMidnightToEndOfDay = false,
       accessibilityLabelPrefix,
+      accentFill,
+      accentInk,
+      digitColor,
     },
     ref,
   ) {
@@ -251,8 +260,9 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
     const isDark = useColorScheme() === 'dark';
     const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
     const shadowInk = isDark ? tone.solidShadow : '#000000';
-    const selectedFill = tone.bgMint;
-    const selectedInk = isDark ? tone.text : tone.tertiary;
+    const selectedFill = accentFill ?? tone.bgMint;
+    const selectedInk = accentInk ?? (isDark ? tone.text : tone.tertiary);
+    const resolvedDigit = digitColor ?? ink;
     const unselectedFill = isDark ? tone.surfaceAlt : surface;
     const unselectedInk = muted;
 
@@ -371,13 +381,13 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
                     onPress={() => applyHour(-1)}
                   />
                 </View>
-                <ThemedText style={[styles.digitText, { color: ink }, cityPopFont('800')]}>
+                <ThemedText style={[styles.digitText, { color: resolvedDigit }, cityPopFont('800')]}>
                   {display.hour}
                 </ThemedText>
               </View>
             </View>
 
-            <ThemedText style={[styles.colon, { color: ink }, cityPopFont('800')]}>:</ThemedText>
+            <ThemedText style={[styles.colon, { color: resolvedDigit }, cityPopFont('800')]}>:</ThemedText>
 
             <View style={styles.unitBlock}>
               <ThemedText style={[styles.fieldCaption, { color: muted }, cityPopFont('700')]}>
@@ -404,7 +414,7 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
                     onPress={() => applyMinute(-1)}
                   />
                 </View>
-                <ThemedText style={[styles.digitText, { color: ink }, cityPopFont('800')]}>
+                <ThemedText style={[styles.digitText, { color: resolvedDigit }, cityPopFont('800')]}>
                   {display.min}
                 </ThemedText>
               </View>

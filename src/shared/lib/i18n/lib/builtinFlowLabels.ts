@@ -11,6 +11,7 @@ const BUILTIN_FLOW_KO = Object.fromEntries([
 
 /** 기본 내장 루틴 — 영어 표시명 (ko는 카탈로그 원문 사용) */
 const BUILTIN_FLOW_EN: Record<string, string> = {
+  'customFlow:preset_pokit_week_tour': 'Try POKIT quickly',
   'customFlow:preset_daily_bed': 'Make the bed',
   'customFlow:preset_daily_clean': 'Quick clean',
   'customFlow:preset_daily_laundry': 'Do laundry',
@@ -41,6 +42,7 @@ const BUILTIN_FLOW_EN: Record<string, string> = {
 };
 
 const BUILTIN_FLOW_JA: Record<string, string> = {
+  'customFlow:preset_pokit_week_tour': 'POKITをさっと見てみる',
   'customFlow:preset_daily_bed': 'ベッドを整える',
   'customFlow:preset_daily_clean': '掃除',
   'customFlow:preset_daily_laundry': '洗濯',
@@ -71,6 +73,8 @@ const BUILTIN_FLOW_JA: Record<string, string> = {
 };
 
 const BUILTIN_FLOW_SUMMARY_EN: Record<string, string> = {
+  'customFlow:preset_pokit_week_tour':
+    'Tap an item for a tip. “Got it” checks it off. You can finish them all in one go.',
   'customFlow:preset_daily_bed': 'Make the bed and start the day light.',
   'customFlow:preset_daily_clean': 'Quick tidy of your living space.',
   'customFlow:preset_daily_laundry': 'Wash or fold laundry.',
@@ -86,6 +90,8 @@ const BUILTIN_FLOW_SUMMARY_EN: Record<string, string> = {
 };
 
 const BUILTIN_FLOW_SUMMARY_JA: Record<string, string> = {
+  'customFlow:preset_pokit_week_tour':
+    '項目をタップすると説明が開きます。「了解」でチェック。全部まとめて進めてOKです。',
   'customFlow:preset_daily_bed': '朝にベッドを整え、軽やかに一日を始める。',
   'customFlow:preset_daily_clean': '部屋やリビングをさっと片づける。',
   'customFlow:preset_daily_laundry': '洗濯を回すか、たたんで片づける。',

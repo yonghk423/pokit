@@ -7,7 +7,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -128,7 +127,7 @@ export function SessionImmersionLayout({
           <View style={[styles.summaryCard, { borderColor: ui.border, backgroundColor: ui.cardBg }]}>
             <IconSymbol name={iconName} size={iconSize} color={accentColor} />
             <View style={styles.summaryTexts}>
-              <Text style={[styles.sessionKicker, { color: muted }]}>{sessionKicker}</Text>
+              <ThemedText style={[styles.sessionKicker, { color: muted }]}>{sessionKicker}</ThemedText>
               <View style={styles.timerSlot}>{timerDisplay}</View>
               <ThemedText style={styles.flowCaption} lightColor={muted} darkColor={muted} numberOfLines={3}>
                 {flowCaption}

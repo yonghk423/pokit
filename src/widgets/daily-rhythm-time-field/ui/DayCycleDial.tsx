@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   LayoutChangeEvent,
@@ -7,6 +8,7 @@ import {
   useWindowDimensions,
   View,
   type GestureResponderEvent,
+  type ImageSourcePropType,
 } from 'react-native';
 import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
 
@@ -37,7 +39,6 @@ import {
   describeDonutSegment,
   formatBalanceDuration,
   minutesFromDialPointRaw,
-  nextWakeAfterEnd,
   polarToCartesian,
   sleepSpanUntilNextWake,
   snapCycleMinutes,
@@ -45,6 +46,8 @@ import {
   toCycleStartMinutes,
   type DialHandleKind,
 } from '../lib/dayCycleDialMath';
+
+const DIAL_BACKDROP = require('../../../../assets/main.png') as ImageSourcePropType;
 
 export type DayCycleDialProps = {
   startHhmm: string;
@@ -209,11 +212,8 @@ export function DayCycleDial({
     [cx, cy, cycleSegments, innerR, outerR, ringMidR],
   );
 
-  const wakeU = nextWakeAfterEnd(startU, endU);
-  const displayWake = cycleDisplayMinutes(wakeU);
-  const wakeDisplayOffset = Math.abs(displayWake - displayStart);
-  const wakeHandleDistinct =
-    Math.min(wakeDisplayOffset, CYCLE_MINUTES - wakeDisplayOffset) > 20;
+  /** 둘째 해 — 시작과 같은 시계 시각의 다음날(48h 다이얼 맞은편). 활동이 길어도 숨기지 않음 */
+  const displayWake = cycleDisplayMinutes(startU + DAY_MINUTES);
   const startPos = polarToCartesian(cx, cy, ringMidR, displayStart);
   const endPos = polarToCartesian(cx, cy, ringMidR, displayEnd);
   const wakePos = polarToCartesian(cx, cy, ringMidR, displayWake);
@@ -226,14 +226,14 @@ export function DayCycleDial({
     dialTrack: isDark ? tone.surfaceAlt : tone.bg,
     activityFill: isDark ? tone.primaryContainer : tone.bgMint,
     sleepFill: isDark ? '#12152A' : tone.text,
-    restFill: isDark ? '#2A2D3A' : '#E7E2D8',
+    restFill: 'transparent',
     /** 해 핸들 — 맑은 하늘(선명) + 노란 해 */
     startHandle: isDark ? '#2F8FCB' : '#2EA7E0',
     startHandleIcon: '#FFE566',
     /** 달 핸들 — 깜깜한 밤 + 노란 달 */
     endHandle: isDark ? '#050508' : '#0A0A0C',
     endHandleIcon: '#F5D76E',
-    centerBg: isDark ? tone.surface : '#FFFFFF',
+    centerBg: isDark ? 'rgba(45, 47, 68, 0.58)' : 'rgba(255, 255, 255, 0.58)',
     ink: tone.text,
     muted: tone.textMuted,
     sleepLabel: isDark ? tone.text : '#FFFFFF',
@@ -332,7 +332,7 @@ export function DayCycleDial({
           kind === 'end'
             ? clamped.end
             : kind === 'wake'
-              ? nextWakeAfterEnd(clamped.start, clamped.end)
+              ? clamped.start + DAY_MINUTES
               : clamped.start;
         hapticForHour(active);
       }
@@ -349,7 +349,7 @@ export function DayCycleDial({
       kind === 'end'
         ? endSnapped
         : kind === 'wake'
-          ? nextWakeAfterEnd(start, endSnapped)
+          ? start + DAY_MINUTES
           : start;
     const snapped = clampDialHandle(
       kind,
@@ -404,17 +404,12 @@ export function DayCycleDial({
       center,
       center,
       midR,
-      cycleDisplayMinutes(nextWakeAfterEnd(startMinRef.current, endMinRef.current)),
+      cycleDisplayMinutes(startMinRef.current + DAY_MINUTES),
     );
     const dStart = (localX - startP.x) ** 2 + (localY - startP.y) ** 2;
     const dEnd = (localX - endP.x) ** 2 + (localY - endP.y) ** 2;
     const dWake = (localX - wakeP.x) ** 2 + (localY - wakeP.y) ** 2;
-    const wakeOff = Math.abs(
-      cycleDisplayMinutes(nextWakeAfterEnd(startMinRef.current, endMinRef.current)) -
-        cycleDisplayMinutes(startMinRef.current),
-    );
-    const wakeDistinct = Math.min(wakeOff, CYCLE_MINUTES - wakeOff) > 20;
-    if (wakeDistinct && dWake <= dStart && dWake <= dEnd) {
+    if (dWake <= dStart && dWake <= dEnd) {
       handleKindRef.current = 'wake';
       return;
     }
@@ -578,6 +573,28 @@ export function DayCycleDial({
             },
           ]}
           {...panResponder.panHandlers}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.dialInnerArtClip,
+              {
+                width: outerR * 2,
+                height: outerR * 2,
+                borderRadius: outerR,
+                left: cx - outerR,
+                top: cy - outerR,
+              },
+            ]}>
+            <Image
+              source={DIAL_BACKDROP}
+              style={[styles.dialInnerArt, { opacity: isDark ? 0.4 : 0.55 }]}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              recyclingKey="day-cycle-dial-inner"
+              transition={0}
+              accessibilityElementsHidden
+            />
+          </View>
           <Svg width={size} height={size} pointerEvents="none">
             <Circle
               cx={cx}
@@ -585,7 +602,7 @@ export function DayCycleDial({
               r={outerR}
               stroke={colors.dialStroke}
               strokeWidth={RETRO_BORDER_WIDTH}
-              fill={colors.dialTrack}
+              fill="transparent"
             />
             {segmentPaths.map((seg) => (
               <Path
@@ -741,19 +758,17 @@ export function DayCycleDial({
                   iconSize={iconSize}
                   active={startActive}
                 />
-                {wakeHandleDistinct ? (
-                  <DialHandleBadge
-                    kind="sun"
-                    size={wakeSize}
-                    left={wakePos.x - wakeSize / 2}
-                    top={wakePos.y - wakeSize / 2}
-                    backgroundColor={colors.startHandle}
-                    borderColor={colors.dialStroke}
-                    iconColor={colors.startHandleIcon}
-                    iconSize={iconSize}
-                    active={wakeActive}
-                  />
-                ) : null}
+                <DialHandleBadge
+                  kind="sun"
+                  size={wakeSize}
+                  left={wakePos.x - wakeSize / 2}
+                  top={wakePos.y - wakeSize / 2}
+                  backgroundColor={colors.startHandle}
+                  borderColor={colors.dialStroke}
+                  iconColor={colors.startHandleIcon}
+                  iconSize={iconSize}
+                  active={wakeActive}
+                />
                 <DialHandleBadge
                   kind="moon"
                   size={endSize}
@@ -853,6 +868,15 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dialInnerArtClip: {
+    position: 'absolute',
+    overflow: 'hidden',
+    zIndex: 0,
+  },
+  dialInnerArt: {
+    width: '100%',
+    height: '100%',
   },
   centerCard: {
     position: 'absolute',

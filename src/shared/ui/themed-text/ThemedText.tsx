@@ -6,6 +6,7 @@ import {
   isSingleFaceAppFont,
   useAppFontSizeScale,
   scaleTypeSize,
+  type AppFontWeight,
 } from '@shared/lib/ui-font';
 import { useThemeColor } from '@shared/lib/hooks/use-theme-color';
 
@@ -14,6 +15,25 @@ export type ThemedTextProps = TextProps & {
   darkColor?: string;
   type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link' | 'label';
 };
+
+function weightFromStyle(fontWeight: TextStyle['fontWeight'] | undefined): AppFontWeight | undefined {
+  if (fontWeight == null) return undefined;
+  if (fontWeight === '800' || fontWeight === '900' || fontWeight === 'bold') return '800';
+  if (fontWeight === '700') return '700';
+  if (fontWeight === '600' || fontWeight === 'semibold') return '600';
+  if (fontWeight === '500' || fontWeight === 'medium') return '500';
+  return '400';
+}
+
+function typeWeight(
+  type: NonNullable<ThemedTextProps['type']>,
+): AppFontWeight {
+  if (type === 'title') return '800';
+  if (type === 'subtitle') return '700';
+  if (type === 'defaultSemiBold' || type === 'label') return '600';
+  if (type === 'link') return '500';
+  return '400';
+}
 
 function applyFontSizeScale(style: TextStyle, scale: number): TextStyle {
   if (scale === 1) return style;
@@ -39,19 +59,14 @@ export function ThemedText({
   const sizeScale = useAppFontSizeScale();
   const singleFace = isSingleFaceAppFont(fontId);
 
-  const weightFamily =
-    type === 'title'
-      ? resolveAppFontFamily(fontId, '800')
-      : type === 'subtitle'
-        ? resolveAppFontFamily(fontId, '700')
-        : type === 'defaultSemiBold' || type === 'label'
-          ? resolveAppFontFamily(fontId, '600')
-          : type === 'link'
-            ? resolveAppFontFamily(fontId, '500')
-            : resolveAppFontFamily(fontId, '400');
+  const userFlat = (StyleSheet.flatten(style) ?? {}) as TextStyle;
+  const weight = weightFromStyle(userFlat.fontWeight) ?? typeWeight(type);
+  const fontFamily = resolveAppFontFamily(fontId, weight);
+  const { fontWeight: _ignoredWeight, fontFamily: _ignoredFamily, ...restUser } = userFlat;
 
-  const flat = StyleSheet.flatten([
-    weightFamily ? { fontFamily: weightFamily } : null,
+  // iOS는 fontFamily+fontWeight 조합이 맞지 않으면 시스템 폰트로 폴백한다.
+  // 앱 페이스를 마지막에 두고, 단일 페이스는 weight를 Regular로 고정한다.
+  const resolved = StyleSheet.flatten([
     { color },
     type === 'default' ? styles.default : undefined,
     type === 'title' ? styles.title : undefined,
@@ -59,12 +74,12 @@ export function ThemedText({
     type === 'subtitle' ? styles.subtitle : undefined,
     type === 'link' ? styles.link : undefined,
     type === 'label' ? styles.label : undefined,
-    // 단일 페이스 한글 폰트는 가짜 bold 합성 대신 Regular 유지
-    singleFace ? { fontWeight: '400' as const } : null,
-    style,
+    restUser,
+    fontFamily ? { fontFamily } : null,
+    singleFace || !fontFamily ? { fontWeight: '400' as const } : { fontWeight: weight },
   ]) as TextStyle;
 
-  return <Text style={applyFontSizeScale(flat, sizeScale)} {...rest} />;
+  return <Text style={applyFontSizeScale(resolved, sizeScale)} {...rest} />;
 }
 
 const styles = StyleSheet.create({

@@ -24,7 +24,12 @@ import {
   useDayPlanDraftStore,
   type PriorityMarkColorId,
 } from '@entities/day-plan';
-import { RETRO_BORDER_WIDTH, RETRO_RADIUS } from '@shared/config/retroFlat';
+import {
+  RETRO_BORDER_WIDTH,
+  RETRO_RADIUS,
+  RetroFlatColors,
+  SOLID_SHADOW_OFFSET,
+} from '@shared/config/retroFlat';
 import {
   DEFAULT_POST_IT_FACE_COLOR_ID,
   getDayMealSlotLabel,
@@ -1897,6 +1902,13 @@ export function PriorityCatalogPanel({
               </View>
               {onCreatePress ? (
                 <View style={styles.flatSearchAddShell}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.flatSearchAddShadow,
+                      { backgroundColor: isDark ? RetroFlatColors.dark.solidShadow : '#000000' },
+                    ]}
+                  />
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t('catalog.createRoutineA11y')}
@@ -1904,7 +1916,26 @@ export function PriorityCatalogPanel({
                       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                       onCreatePress();
                     }}
-                    style={[styles.flatSearchAddFace, { backgroundColor: '#FFFFFF' }]}>
+                    style={({ pressed }) => [
+                      styles.flatSearchAddFace,
+                      {
+                        backgroundColor: pressed
+                          ? isDark
+                            ? '#3D5E60'
+                            : '#D5E8E9'
+                          : isDark
+                            ? RetroFlatColors.dark.surfaceAlt
+                            : '#FFFFFF',
+                      },
+                      pressed
+                        ? {
+                            transform: [
+                              { translateX: SOLID_SHADOW_OFFSET },
+                              { translateY: SOLID_SHADOW_OFFSET },
+                            ],
+                          }
+                        : null,
+                    ]}>
                     <IconSymbol
                       name="plus"
                       size={16}
@@ -2207,7 +2238,17 @@ const styles = StyleSheet.create({
   },
   flatSearchAddShell: {
     position: 'relative',
+    width: 40 + SOLID_SHADOW_OFFSET,
+    height: 40 + SOLID_SHADOW_OFFSET,
     flexShrink: 0,
+  },
+  flatSearchAddShadow: {
+    position: 'absolute',
+    left: SOLID_SHADOW_OFFSET,
+    top: SOLID_SHADOW_OFFSET,
+    width: 40,
+    height: 40,
+    borderRadius: RETRO_RADIUS,
   },
   flatSearchAddFace: {
     width: 40,
@@ -2216,16 +2257,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: RETRO_RADIUS,
     zIndex: 1,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
-        shadowRadius: 6,
-      },
-      android: { elevation: 2 },
-      default: {},
-    }),
   },
   flatSearchEmpty: {
     paddingHorizontal: 10,

@@ -7,7 +7,7 @@ import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 import { readRoutineDisplayNameFromConfig } from './routineDisplayName';
 import {
   getPriorityCatalogPickerLabel,
-  PRIORITY_CATALOG_PICKER_LABELS,
+  resolveStandardCatalogDisplayLabel,
 } from './priorityCatalogPickerLabels';
 
 /** 카테고리별 반복 알림 설정 UI·스케줄에 쓰는 키 순서 */
@@ -33,11 +33,7 @@ export function categoryReminderLabelKo(key: string): string {
     loadGoalDetailCategoryConfig(categoryKey),
   );
   if (customName.length > 0) {
-    const picker = getPriorityCatalogPickerLabel(categoryKey);
-    const koPicker = PRIORITY_CATALOG_PICKER_LABELS[categoryKey];
-    // 저장명이 한국어 카탈로그 기본값이면 현재 로케일 라벨 사용
-    if (koPicker && customName === koPicker) return picker;
-    return customName;
+    return resolveStandardCatalogDisplayLabel(categoryKey, customName);
   }
   return getPriorityCatalogPickerLabel(categoryKey);
 }

@@ -309,6 +309,7 @@ export {
   formatRoutineSummaryHint,
   normalizeRoutineSummary,
   readRoutineSummaryFromConfig,
+  resolveRoutineSummaryForDisplay,
 } from './lib/routineSummary';
 export {
   extractMedicineConfigFromRaw,
@@ -418,7 +419,10 @@ export {
   parseNumberedFlowLines
 } from './lib/priorityBlockTitle';
 export {
-  getPriorityCatalogPickerLabel, PRIORITY_CATALOG_PICKER_LABELS
+  getPriorityCatalogPickerLabel,
+  isStandardCatalogDefaultDisplayName,
+  PRIORITY_CATALOG_PICKER_LABELS,
+  resolveStandardCatalogDisplayLabel,
 } from './lib/priorityCatalogPickerLabels';
 export {
   CATALOG_REMOVED_KEYS,

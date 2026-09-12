@@ -2,6 +2,7 @@ import { t, type I18nKey } from '@shared/lib/i18n';
 import {
   BUILTIN_ABSTAIN_GROUP_KEY,
   BUILTIN_DAILY_LIFE_GROUP_KEY,
+  BUILTIN_TUTORIAL_GROUP_KEY,
 } from '@shared/lib/storage/defaultPriorityCatalog';
 import {
   BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_NAMES,
@@ -12,6 +13,7 @@ import {
 type LocaleMatchKey =
   | 'catalog.groupDailyLife'
   | 'catalog.groupAbstain'
+  | 'catalog.groupTutorial'
   | 'fixedRoutine.exampleHealth'
   | 'fixedRoutine.exampleFocus'
   | 'fixedRoutine.presetDaily'
@@ -27,6 +29,11 @@ function matchesAnyLocaleDefault(value: string, key: LocaleMatchKey): boolean {
 
 /** 커스텀 카탈로그 그룹 — 내장 기본명이면 현재 로케일 라벨 */
 export function resolveCustomCatalogGroupDisplayLabel(groupKey: string, storedLabel: string): string {
+  if (groupKey === BUILTIN_TUTORIAL_GROUP_KEY) {
+    if (matchesAnyLocaleDefault(storedLabel, 'catalog.groupTutorial')) {
+      return t('catalog.groupTutorial');
+    }
+  }
   if (groupKey === BUILTIN_DAILY_LIFE_GROUP_KEY) {
     if (matchesAnyLocaleDefault(storedLabel, 'catalog.groupDailyLife')) {
       return t('catalog.groupDailyLife');

@@ -252,20 +252,8 @@ export function clampDialHandle(
   endU = Math.max(start0 + minSpan, endU);
 
   if (kind === 'wake') {
-    const raw = snapCycleMinutes(nextMinutes, snapStep) % CYCLE_MINUTES;
-    let wake = raw;
-    while (wake <= endU) {
-      wake += DAY_MINUTES;
-    }
-    wake = Math.round(wake / snapStep) * snapStep;
-    const minWake = endU + MIN_SLEEP_SPAN_MINUTES;
-    const maxWake = endU + DAY_MINUTES - minSpan;
-    if (wake < minWake) wake = minWake;
-    if (wake > maxWake) wake = maxWake;
-    let nextStart = wake - DAY_MINUTES;
-    nextStart = ((nextStart % DAY_MINUTES) + DAY_MINUTES) % DAY_MINUTES;
-    nextStart = Math.min(DAY_MINUTES - snapStep, Math.max(0, nextStart));
-    return { start: nextStart, end: endU };
+    // 둘째 해 = 시작+24h 미러. 드래그하면 시작 시각만 이동
+    return clampDialHandle('start', nextMinutes, startMinutes, endMinutes, minSpan, snapStep);
   }
 
   if (kind === 'start') {

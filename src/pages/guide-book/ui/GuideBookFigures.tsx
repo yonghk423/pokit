@@ -323,34 +323,55 @@ function FigureTodayOverview({ tone }: { tone: Tone }) {
 
 function FigureTodayWindow({ tone }: { tone: Tone }) {
   const { t } = useTranslation();
+  const handleInk = tone.isDark ? '#F1EFFF' : '#111111';
+  const handleFace = tone.isDark ? tone.surface : '#FFFFFF';
   return (
     <PhoneShell tone={tone} tabActive="today">
       <View style={[styles.sheet, { borderColor: tone.border, backgroundColor: tone.surface }]}>
-        <ThemedText style={[styles.sheetTitle, { color: tone.text }, cityPopFont('800')]}>
-          {t('guideBook.figure.focusWindowTitle')}
-        </ThemedText>
-        <View style={styles.sheetRow}>
+        <View style={styles.dialTitleRow}>
           <Badge n={1} tone={tone} />
-          <IconSymbol name="clock" size={16} color={tone.muted} />
-          <ThemedText style={[styles.sheetLabel, { color: tone.muted }, cityPopFont('600')]}>{t('guideBook.figure.startLabel')}</ThemedText>
-          <View style={[styles.timeBox, { borderColor: tone.border }]}>
-            <ThemedText style={[styles.timeBoxText, { color: tone.text }, cityPopFont('800')]}>
-              {t('guideBook.figure.sampleStart')}
-            </ThemedText>
-          </View>
-        </View>
-        <View style={styles.sheetRow}>
-          <View style={{ width: 18 }} />
-          <IconSymbol name="moon.stars" size={16} color={tone.muted} />
-          <ThemedText style={[styles.sheetLabel, { color: tone.muted }, cityPopFont('600')]}>
-            {t('guideBook.figure.endLabel')}
+          <ThemedText style={[styles.sheetTitle, { color: tone.text }, cityPopFont('800')]}>
+            {t('guideBook.figure.focusWindowTitle')}
           </ThemedText>
-          <View style={[styles.timeBox, { borderColor: tone.border }]}>
-            <ThemedText style={[styles.timeBoxText, { color: tone.text }, cityPopFont('800')]}>
-              {t('guideBook.figure.sampleEnd')}
-            </ThemedText>
+        </View>
+
+        <View style={styles.dialStage}>
+          <View
+            style={[
+              styles.dialRing,
+              { borderColor: tone.border, backgroundColor: tone.primaryContainer },
+            ]}>
+            <View
+              style={[
+                styles.dialSleepArc,
+                { backgroundColor: tone.isDark ? tone.surfaceAlt : '#111111' },
+              ]}
+            />
+            <View
+              style={[
+                styles.dialHub,
+                { borderColor: tone.border, backgroundColor: handleFace },
+              ]}>
+              <View style={styles.dialHubBadge}>
+                <Badge n={2} tone={tone} />
+              </View>
+              <ThemedText style={[styles.dialHubActivity, { color: tone.text }, cityPopFont('800')]}>
+                {t('guideBook.figure.sampleActivity')}
+              </ThemedText>
+              <ThemedText style={[styles.dialHubSleep, { color: tone.muted }, cityPopFont('700')]}>
+                {t('guideBook.figure.sampleSleep')}
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={[styles.dialHandle, styles.dialHandleSun, { backgroundColor: handleFace, borderColor: tone.border }]}>
+            <IconSymbol name="sun.max.fill" size={13} color={handleInk} />
+          </View>
+          <View style={[styles.dialHandle, styles.dialHandleMoon, { backgroundColor: handleInk, borderColor: tone.border }]}>
+            <IconSymbol name="moon.fill" size={12} color={handleFace} />
           </View>
         </View>
+
         <View style={styles.dayChoiceRow}>
           <Badge n={3} tone={tone} />
           <View
@@ -373,7 +394,7 @@ function FigureTodayWindow({ tone }: { tone: Tone }) {
             styles.sheetCta,
             { borderColor: tone.border, backgroundColor: tone.primaryContainer },
           ]}>
-          <Badge n={2} tone={tone} />
+          <Badge n={4} tone={tone} />
           <ThemedText style={[styles.sheetCtaText, { color: tone.text }, cityPopFont('800')]}>
             {t('dayPlan.rangeDone')}
           </ThemedText>
@@ -1018,10 +1039,56 @@ const styles = StyleSheet.create({
   addRowText: { fontSize: 12 },
   sheet: { borderWidth: RETRO_BORDER_WIDTH, padding: 12, gap: 8 },
   sheetTitle: { fontSize: 14 },
+  dialTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dialStage: {
+    alignSelf: 'center',
+    width: 168,
+    height: 168,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dialRing: {
+    width: 148,
+    height: 148,
+    borderRadius: 74,
+    borderWidth: RETRO_BORDER_WIDTH,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dialSleepArc: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 74,
+    height: 148,
+  },
+  dialHub: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    borderWidth: RETRO_BORDER_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    zIndex: 1,
+  },
+  dialHubBadge: { position: 'absolute', top: 6 },
+  dialHubActivity: { fontSize: 12, marginTop: 10 },
+  dialHubSleep: { fontSize: 11 },
+  dialHandle: {
+    position: 'absolute',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: RETRO_BORDER_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  dialHandleSun: { left: 18, top: 28 },
+  dialHandleMoon: { right: 14, bottom: 36 },
   sheetRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sheetLabel: { width: 40, fontSize: 12 },
-  timeBox: { flex: 1, borderWidth: 1.5, paddingVertical: 8, paddingHorizontal: 10 },
-  timeBoxText: { fontSize: 13 },
   dayChoiceRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dayChoiceOn: { borderWidth: 1.5, paddingHorizontal: 10, paddingVertical: 6 },
   dayChoiceOff: { borderWidth: 1.5, paddingHorizontal: 10, paddingVertical: 6 },

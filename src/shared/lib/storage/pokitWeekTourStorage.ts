@@ -69,13 +69,12 @@ export function hasPokitWeekTourProgress(): boolean {
 
 /**
  * 오늘 담기가 비어 있을 때 튜토리얼 루틴을 넣을지.
- * 최초 시드 전(`pokitWeekTourSeeded` 없음)에만 넣는다.
- * 한 번 시드된 뒤에는 빈 담기여도 다시 넣지 않는다.
+ * 7단계를 모두 끝내지 않았으면 빈 담기에 다시 넣는다.
+ * (탭 전환 동기화가 튜토리얼을 orphan으로 지운 경우 복구)
  */
 export function nextOrderWithPokitWeekTourSeed(order: readonly string[]): string[] | null {
   if (order.includes(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)) return null;
   if (order.length > 0) return null;
-  if (loadPokitWeekTourSeeded()) return null;
   if (isPokitWeekTourChecklistComplete()) return null;
   return [BUILTIN_POKIT_WEEK_TOUR_FLOW_ID];
 }

@@ -56,6 +56,17 @@ describe('resolveCustomFlowDisplayLabel', () => {
     ).toBe(getBuiltinFlowDefaultLabel(cleanId, 'ko'));
   });
 
+  it('localizes the tutorial routine default name', () => {
+    useAppLocaleStore.setState({ locale: 'en' });
+    expect(
+      resolveCustomFlowDisplayLabel('customFlow:preset_pokit_week_tour', '포킷 빠르게 둘러보기'),
+    ).toBe('Try POKIT quickly');
+    useAppLocaleStore.setState({ locale: 'ja' });
+    expect(
+      resolveCustomFlowDisplayLabel('customFlow:preset_pokit_week_tour', '포킷 빠르게 둘러보기'),
+    ).toBe('POKITをさっと見てみる');
+  });
+
   it('keeps user-custom names', () => {
     expect(resolveCustomFlowDisplayLabel('customFlow:preset_daily_bed', 'My morning reset')).toBe(
       'My morning reset',

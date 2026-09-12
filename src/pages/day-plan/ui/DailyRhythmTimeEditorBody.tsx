@@ -15,6 +15,7 @@ import Animated, {
   useSharedValue,
   withDelay,
   withRepeat,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 
@@ -113,6 +114,47 @@ function SoftBreathe({
   }));
 
   return <Animated.View style={[style, animStyle]}>{children}</Animated.View>;
+}
+
+/** 편집을 마친 순간 요약을 도장처럼 짧게 강조해 최종 확인을 유도한다. */
+function FinalReviewCue({
+  active,
+  children,
+}: {
+  active: boolean;
+  children: ReactNode;
+}) {
+  const scale = useSharedValue(1);
+  const lift = useSharedValue(0);
+  const tilt = useSharedValue(0);
+
+  useEffect(() => {
+    if (!active) return;
+
+    scale.value = 0.96;
+    lift.value = 8;
+    tilt.value = -1.2;
+    scale.value = withSequence(
+      withTiming(1.035, { duration: 180, easing: HERO_EASE }),
+      withTiming(0.99, { duration: 100, easing: Easing.out(Easing.quad) }),
+      withTiming(1, { duration: 120, easing: Easing.out(Easing.quad) }),
+    );
+    lift.value = withTiming(0, { duration: 220, easing: HERO_EASE });
+    tilt.value = withSequence(
+      withTiming(0.8, { duration: 150, easing: Easing.out(Easing.quad) }),
+      withTiming(0, { duration: 190, easing: Easing.out(Easing.quad) }),
+    );
+  }, [active, lift, scale, tilt]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: lift.value },
+      { scale: scale.value },
+      { rotate: `${tilt.value}deg` },
+    ],
+  }));
+
+  return <Animated.View style={animStyle}>{children}</Animated.View>;
 }
 
 /** 온보딩 히어로 카피 — 킥커 → 제목 단어 → 서브 등장 후, 제목·서브는 부드럽게 루프 */
@@ -270,6 +312,8 @@ function OnboardingTimeRow({
   const dateCaption =
     dateParts != null ? `${dateParts.month} ${dateParts.day}`.replace(/\s+/g, ' ').trim() : null;
   const accordion = useMeasuredAccordion(expanded);
+  const pillBg = isDark ? ink.surfaceAlt : ink.bg;
+  const pillFg = c.onSurface;
 
   return (
     <View style={styles.onboardTimeBlock}>
@@ -278,13 +322,17 @@ function OnboardingTimeRow({
           void Haptics.selectionAsync();
           onToggleExpand();
         }}
-        style={({ pressed }) => [styles.onboardTimeRow, pressed && { opacity: 0.92 }]}>
+        style={({ pressed }) => [
+          styles.onboardTimeRow,
+          pressed && { transform: [{ translateY: 1 }] },
+        ]}>
         <SolidShadowFace
           borderColor={c.border}
           shadowColor={isDark ? ink.solidShadow : '#000000'}
           backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
           shadowSize={2}
-          style={styles.thumbFace}>
+          style={styles.thumbFace}
+          shellStyle={styles.thumbShell}>
           <Image
             source={thumb}
             style={styles.thumbImage}
@@ -323,13 +371,13 @@ function OnboardingTimeRow({
           <SolidShadowFace
             borderColor={c.border}
             shadowColor={isDark ? ink.solidShadow : '#000000'}
-            backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
+            backgroundColor={pillBg}
             shadowSize={expanded ? 0 : 2}
             style={styles.timePillFace}>
             <ThemedText
-              style={[styles.timePillText, { color: c.onSurface }, cityPopFont('800')]}
-              lightColor={c.onSurface}
-              darkColor={c.onSurface}>
+              style={[styles.timePillText, { color: pillFg }, cityPopFont('800')]}
+              lightColor={pillFg}
+              darkColor={pillFg}>
               {formatHhmmClock(valueHhmm, locale)}
             </ThemedText>
           </SolidShadowFace>
@@ -749,7 +797,7 @@ export function DailyRhythmTimeEditorBody({
             <SolidShadowFace
               borderColor={c.border}
               shadowColor={shadowInk}
-              backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
+              backgroundColor={isDark ? ink.surfaceAlt : ink.bg}
               style={styles.mainCardFace}>
             <OnboardingTimeRow
               label={t('dayRhythm.dayStart')}
@@ -812,43 +860,53 @@ export function DailyRhythmTimeEditorBody({
               </View>
             ) : null}
 
-            <View
-              style={[
-                styles.summaryBox,
-                {
-                  borderColor: c.border,
-                  backgroundColor: isDark ? 'rgba(48, 97, 99, 0.35)' : 'rgba(246, 243, 235, 0.7)',
-                },
-              ]}>
-              <View
-                style={[
-                  styles.summaryBadge,
-                  {
-                    borderColor: c.border,
-                    backgroundColor: isDark ? ink.surfaceAlt : '#FFFFFF',
-                  },
-                ]}>
-                <ThemedText
-                  style={[styles.summaryBadgeText, { color: c.onSurface }, cityPopFont('800')]}>
-                  {t('dayRhythm.myDaySummary')}
-                </ThemedText>
-              </View>
-              <View style={styles.summaryRow}>
-                <View style={styles.summaryRowInner}>
+            <FinalReviewCue active={pickerTarget === null && !dialDragging}>
+              <View style={styles.summaryBox}>
+                <View
+                  style={[
+                    styles.summaryBadge,
+                    {
+                      backgroundColor: isDark ? 'rgba(255, 236, 179, 0.92)' : '#FFE8A8',
+                      borderColor: '#111111',
+                    },
+                  ]}>
                   <ThemedText
-                    style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
-                    numberOfLines={2}>
-                    {rangeSummaryParts.left}
-                  </ThemedText>
-                  <ThemedText style={[styles.summaryArrow, { color: c.onSurface }]}>→</ThemedText>
-                  <ThemedText
-                    style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
-                    numberOfLines={2}>
-                    {rangeSummaryParts.right}
+                    style={[styles.summaryBadgeText, { color: '#111111' }, cityPopFont('800')]}>
+                    {t('dayRhythm.myDaySummary')}
                   </ThemedText>
                 </View>
+                <View style={styles.summarySplit}>
+                  <View
+                    style={[
+                      styles.summaryHalf,
+                      { backgroundColor: isDark ? ink.surfaceAlt : ink.bg },
+                    ]}>
+                    <ThemedText
+                      style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
+                      numberOfLines={2}>
+                      {rangeSummaryParts.left}
+                    </ThemedText>
+                  </View>
+                  <ThemedText
+                    style={[styles.summaryWave, { color: c.onVariant }, cityPopFont('800')]}
+                    lightColor={c.onVariant}
+                    darkColor={c.onVariant}>
+                    ~
+                  </ThemedText>
+                  <View
+                    style={[
+                      styles.summaryHalf,
+                      { backgroundColor: isDark ? ink.surfaceAlt : ink.bg },
+                    ]}>
+                    <ThemedText
+                      style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
+                      numberOfLines={2}>
+                      {rangeSummaryParts.right}
+                    </ThemedText>
+                  </View>
+                </View>
               </View>
-            </View>
+            </FinalReviewCue>
           </SolidShadowFace>
           </View>
         ) : (
@@ -1074,11 +1132,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    marginHorizontal: -6,
+  },
+  thumbShell: {
+    flexShrink: 0,
   },
   thumbFace: {
     width: 48,
     height: 48,
     borderRadius: 2,
+    flexShrink: 0,
   },
   thumbImage: { width: '100%', height: '100%' },
   onboardTimeCopy: { flex: 1, minWidth: 0, gap: 2 },
@@ -1090,9 +1155,10 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   onboardTimeRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: 4,
     flexShrink: 0,
   },
   dateStack: { alignItems: 'flex-end' },
@@ -1137,41 +1203,43 @@ const styles = StyleSheet.create({
 
   summaryBox: {
     marginTop: 8,
-    borderWidth: 0,
-    paddingHorizontal: 16,
-    paddingTop: 18,
-    paddingBottom: 14,
     position: 'relative',
   },
   summaryBadge: {
     position: 'absolute',
     top: -11,
     left: 14,
-    borderWidth: 0,
+    zIndex: 2,
     paddingHorizontal: 8,
     paddingVertical: 2,
+    borderWidth: 1.5,
   },
   summaryBadgeText: {
     fontSize: 10,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
   },
-  summaryRow: {
+  summarySplit: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    flexWrap: 'wrap',
+    minHeight: 52,
+    overflow: 'hidden',
   },
-  summaryRowInner: {
-    flexDirection: 'row',
+  summaryWave: {
+    fontSize: 18,
+    lineHeight: 20,
+    paddingHorizontal: 2,
+    marginTop: 4,
+  },
+  summaryHalf: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    flexWrap: 'wrap',
+    paddingHorizontal: 10,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
   summaryValue: { fontSize: 13, letterSpacing: -0.2, textAlign: 'center', lineHeight: 18 },
-  summaryArrow: { fontSize: 13, fontWeight: '800' },
 
   settingsHero: { gap: 6 },
   settingsKicker: {
