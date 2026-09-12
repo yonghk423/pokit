@@ -346,6 +346,8 @@ export {
   stepWorkStudyImageDisplayHeight,
   createEmptyTableRows,
   createWorkStudyDocBlock,
+  resolveWorkStudyTextRoleMetrics,
+  WORK_STUDY_TEXT_ROLE_METRICS,
   createWorkStudyNotePage,
   getInitialWorkStudyDocument,
   migrateLegacyWorkContentToDocument,

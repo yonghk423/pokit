@@ -9,6 +9,10 @@ import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
 type Palette = StudyNoteDocumentPalette;
 
 export type StudyToolbarAction =
+  | 'heading-1'
+  | 'heading-2'
+  | 'heading-3'
+  | 'body-text'
   | 'checklist'
   | 'bullet'
   | 'numbered'
@@ -36,6 +40,7 @@ type Props = {
   activeTextColor?: string;
   colorPickerOpen?: boolean;
   linkPickerOpen?: boolean;
+  activeHeadingLevel?: 1 | 2 | 3 | null;
   activeListKind?: 'checklist' | 'bullet' | 'numbered' | null;
   onAction: (action: StudyToolbarAction) => void;
   /** 툴바 탭 시 본문 입력 포커스·키보드 유지 */
@@ -97,6 +102,44 @@ function TextColorIcon({
   );
 }
 
+function LabelToolBtn({
+  label,
+  text,
+  onPress,
+  onRetainKeyboardFocus,
+  palette,
+  surfaceBg = '#F5F2EB',
+  active = false,
+  textStyle,
+}: {
+  label: string;
+  text: string;
+  onPress: () => void;
+  onRetainKeyboardFocus?: () => void;
+  palette: Palette;
+  surfaceBg?: string;
+  active?: boolean;
+  textStyle?: object;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onTouchStart={onRetainKeyboardFocus}
+      onPressIn={onRetainKeyboardFocus}
+      onPress={onPress}
+      style={[
+        styles.toolBtn,
+        {
+          borderColor: active ? palette.onSurface : palette.outlineVariant,
+          backgroundColor: active ? 'rgba(0,0,0,0.06)' : surfaceBg,
+        },
+      ]}>
+      <ThemedText style={[styles.labelBtnText, { color: palette.onSurface }, textStyle]}>{text}</ThemedText>
+    </Pressable>
+  );
+}
+
 function ColorToolBtn({
   label,
   onPress,
@@ -147,6 +190,7 @@ export function StudyDocumentToolbar({
   activeTextColor,
   colorPickerOpen = false,
   linkPickerOpen = false,
+  activeHeadingLevel = null,
   activeListKind = null,
   onAction,
   onRetainKeyboardFocus,
@@ -194,6 +238,45 @@ export function StudyDocumentToolbar({
         <ToolBtn label={t('studyNote.toolbarChecklist')} icon="checkmark.square" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'checklist'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('checklist')} />
         <ToolBtn label={t('studyNote.toolbarBullet')} icon="list.bullet" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'bullet'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('bullet')} />
         <ToolBtn label={t('studyNote.toolbarNumbered')} icon="list.number" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'numbered'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('numbered')} />
+        <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
+        <LabelToolBtn
+          label={t('studyNote.toolbarHeading1')}
+          text="H1"
+          palette={palette}
+          surfaceBg={surfaceBg}
+          active={activeHeadingLevel === 1}
+          onRetainKeyboardFocus={onRetainKeyboardFocus}
+          onPress={() => onAction('heading-1')}
+          textStyle={styles.headingBtnH1}
+        />
+        <LabelToolBtn
+          label={t('studyNote.toolbarHeading2')}
+          text="H2"
+          palette={palette}
+          surfaceBg={surfaceBg}
+          active={activeHeadingLevel === 2}
+          onRetainKeyboardFocus={onRetainKeyboardFocus}
+          onPress={() => onAction('heading-2')}
+          textStyle={styles.headingBtnH2}
+        />
+        <LabelToolBtn
+          label={t('studyNote.toolbarHeading3')}
+          text="H3"
+          palette={palette}
+          surfaceBg={surfaceBg}
+          active={activeHeadingLevel === 3}
+          onRetainKeyboardFocus={onRetainKeyboardFocus}
+          onPress={() => onAction('heading-3')}
+        />
+        <LabelToolBtn
+          label={t('studyNote.toolbarBodyText')}
+          text="가"
+          palette={palette}
+          surfaceBg={surfaceBg}
+          active={activeHeadingLevel == null}
+          onRetainKeyboardFocus={onRetainKeyboardFocus}
+          onPress={() => onAction('body-text')}
+        />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
         <ToolBtn label={t('studyNote.toolbarBold')} icon="bold" palette={palette} surfaceBg={surfaceBg} active={activeBold} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('bold')} />
         <ToolBtn label={t('studyNote.toolbarUnderline')} icon="underline" palette={palette} surfaceBg={surfaceBg} active={activeUnderline} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('underline')} />
@@ -274,4 +357,13 @@ const styles = StyleSheet.create({
     height: 3,
     borderRadius: 1,
   },
+  labelBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    lineHeight: 13,
+    includeFontPadding: false,
+    letterSpacing: -0.2,
+  },
+  headingBtnH1: { fontSize: 13, lineHeight: 14 },
+  headingBtnH2: { fontSize: 12, lineHeight: 13 },
 });

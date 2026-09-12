@@ -35,6 +35,7 @@ import {
   WORK_STUDY_IMAGE_MIN_DISPLAY_HEIGHT,
   clampWorkStudyImageDisplayHeight,
   resolveWorkStudyImageDisplayHeight,
+  resolveWorkStudyTextRoleMetrics,
   stepWorkStudyImageDisplayHeight,
   type WorkStudyDocBlock,
   type WorkStudyDocument,
@@ -64,7 +65,6 @@ const NOTE_PAGE_BG = RetroFlatColors.light.bg;
 /** 노트 본문 기본 — 앱 설정 글씨 크기 배율이 이 값에 적용된다 */
 const NOTE_BODY_FONT_SIZE = 20;
 const NOTE_BODY_LINE_HEIGHT = 26;
-const NOTE_HEADING_FONT_SIZE = [20, 18, 16] as const;
 const DRAWER_MAX_WIDTH = 320;
 const DRAWER_WIDTH_RATIO = 0.82;
 const KEYBOARD_ACCESSORY_ESTIMATED_HEIGHT = 132;
@@ -140,6 +140,10 @@ function isCanvasFocusableBlock(block: WorkStudyDocBlock): boolean {
 
 function isEditableLinkBlock(kind: WorkStudyDocBlock['kind']): boolean {
   return kind !== 'table' && kind !== 'image' && kind !== 'heading';
+}
+
+function isHeadingStyleTarget(kind: WorkStudyDocBlock['kind']): boolean {
+  return kind === 'paragraph' || kind === 'heading' || isListBlockKind(kind);
 }
 
 function blockHasToolbarFormatting(
@@ -284,7 +288,8 @@ function BlockText({
   fillPageBottomInset?: number;
 }) {
   const sizeScale = useAppFontSizeScale();
-  const bodyLineHeight = scaleTypeSize(NOTE_BODY_LINE_HEIGHT, sizeScale);
+  const textRole = resolveWorkStudyTextRoleMetrics(block.headingLevel);
+  const bodyLineHeight = scaleTypeSize(textRole.lineHeight, sizeScale);
   const bold = block.marks?.bold;
   const underline = block.marks?.underline;
   const checkedDone = block.kind === 'checklist' && block.checked === true;
@@ -500,8 +505,8 @@ function BlockText({
           styles.blockInput,
           compact ? styles.listBlockInput : null,
           {
-            fontSize: NOTE_BODY_FONT_SIZE,
-            lineHeight: NOTE_BODY_LINE_HEIGHT,
+            fontSize: textRole.fontSize,
+            lineHeight: textRole.lineHeight,
             minHeight: fillPage ? 120 : lineMinHeight,
             ...(fillPage
               ? { flex: 1, paddingBottom: Math.max(10, fillPageBottomInset) }
@@ -509,7 +514,7 @@ function BlockText({
             paddingHorizontal: compact ? 0 : 2,
             paddingTop: compact ? 2 : 8,
             ...(fillPage ? null : { paddingBottom: compact ? 2 : 10 }),
-            fontWeight: bold ? '800' : '400',
+            fontWeight: bold ? '800' : textRole.fontWeight,
           },
           {
             color: checkedDone
@@ -592,11 +597,8 @@ function StudyDocumentBlockView({
 
   if (block.kind === 'heading') {
     const accent = WORK_STUDY_HEADING_ACCENTS[block.accentIndex ?? 0] ?? WORK_STUDY_HEADING_ACCENTS[0];
-    const level = block.headingLevel ?? 1;
-    const titleSize = scaleTypeSize(
-      NOTE_HEADING_FONT_SIZE[Math.min(2, Math.max(0, level - 1))] ?? NOTE_BODY_FONT_SIZE,
-      sizeScale,
-    );
+    const titleRole = resolveWorkStudyTextRoleMetrics(block.headingLevel ?? 1);
+    const titleSize = scaleTypeSize(titleRole.fontSize, sizeScale);
     return (
       <View
         style={[rowShellStyle, styles.headingWrap]}
@@ -609,7 +611,10 @@ function StudyDocumentBlockView({
             inputAccessoryViewID={inputAccessoryViewID}
             placeholder={t('studyNote.titlePlaceholder')}
             placeholderTextColor="rgba(255,255,255,0.55)"
-            style={[styles.headingPrimary, { fontSize: titleSize, color: '#fff' }]}
+            style={[
+              styles.headingPrimary,
+              { fontSize: titleSize, lineHeight: scaleTypeSize(titleRole.lineHeight, sizeScale), color: '#fff' },
+            ]}
           />
         </View>
       </View>
@@ -858,7 +863,11 @@ function StudyDocumentBlockView({
       <ThemedText
         style={[
           styles.listMarker,
-          { color: palette.onVariant, fontSize: NOTE_BODY_FONT_SIZE, lineHeight: NOTE_BODY_LINE_HEIGHT },
+          {
+            color: palette.onVariant,
+            fontSize: resolveWorkStudyTextRoleMetrics(block.headingLevel).fontSize,
+            lineHeight: resolveWorkStudyTextRoleMetrics(block.headingLevel).lineHeight,
+          },
         ]}>
         •
       </ThemedText>
@@ -867,7 +876,11 @@ function StudyDocumentBlockView({
         style={[
           styles.listMarker,
           styles.numberedMarker,
-          { color: palette.onVariant, fontSize: NOTE_BODY_FONT_SIZE, lineHeight: NOTE_BODY_LINE_HEIGHT },
+          {
+            color: palette.onVariant,
+            fontSize: resolveWorkStudyTextRoleMetrics(block.headingLevel).fontSize,
+            lineHeight: resolveWorkStudyTextRoleMetrics(block.headingLevel).lineHeight,
+          },
         ]}
         numberOfLines={1}>
         {numberedIndexForBlock(blocks, block.id)}.
@@ -2032,6 +2045,10 @@ export function StudyDocumentEditor({
   const toolbarActiveTextColor = resolveActiveTextColor(focusedBlock, pendingMarks);
   const toolbarActiveListKind =
     focusedBlock && isListBlockKind(focusedBlock.kind) ? focusedBlock.kind : activeListKind;
+  const toolbarActiveHeadingLevel =
+    focusedBlock && isHeadingStyleTarget(focusedBlock.kind)
+      ? focusedBlock.headingLevel ?? null
+      : null;
 
   const toggleListKind = useCallback(
     (kind: ListBlockKind) => {
@@ -2083,6 +2100,75 @@ export function StudyDocumentEditor({
       insertBlock,
       pushHistory,
       replaceActiveBlocks,
+      retainEditorKeyboardFocus,
+    ],
+  );
+
+  const applyHeadingStyle = useCallback(
+    (level: WorkStudyHeadingLevel | null) => {
+      const withPage = ensurePageDocument();
+      const page = getWorkStudyActivePage(withPage);
+      const blocks = page?.blocks ?? [];
+      let target =
+        (activeBlockId
+          ? blocks.find((b) => b.id === activeBlockId && isHeadingStyleTarget(b.kind))
+          : null) ??
+        [...blocks].reverse().find((b) => isHeadingStyleTarget(b.kind)) ??
+        null;
+
+      const keepFocusOn = (blockId: string) => {
+        pendingFocusBlockIdRef.current = blockId;
+        setActiveBlockId(blockId);
+        requestAnimationFrame(() => {
+          retainEditorKeyboardFocus({ retries: 3 });
+        });
+        setTimeout(() => retainEditorKeyboardFocus({ retries: 2 }), 16);
+      };
+
+      if (target && level == null && target.kind !== 'heading' && target.headingLevel == null) {
+        keepFocusOn(target.id);
+        return;
+      }
+
+      if (!target) {
+        const created = createWorkStudyDocBlock('paragraph', {
+          headingLevel: level ?? undefined,
+        });
+        const marks = resolvePendingMarks();
+        if (marks) created.marks = marks;
+        commitStructuralChange([...blocks, created]);
+        keepFocusOn(created.id);
+        void Haptics.selectionAsync();
+        return;
+      }
+
+      const nextLevel = target.headingLevel === level ? null : level;
+      pushHistory();
+      replaceActiveBlocks(
+        blocks.map((b) => {
+          if (b.id !== target.id) return b;
+          if (nextLevel == null) {
+            const next = { ...b, kind: b.kind === 'heading' ? 'paragraph' : b.kind };
+            delete next.headingLevel;
+            if (next.kind !== 'heading') delete next.accentIndex;
+            return next;
+          }
+          if (b.kind === 'heading') {
+            return { ...b, headingLevel: nextLevel };
+          }
+          return { ...b, headingLevel: nextLevel };
+        }),
+      );
+      keepFocusOn(target.id);
+      void Haptics.selectionAsync();
+    },
+    [
+      activeBlockId,
+      commitStructuralChange,
+      ensurePageDocument,
+      pushHistory,
+      replaceActiveBlocks,
+      resolvePendingMarks,
       retainEditorKeyboardFocus,
     ],
   );
@@ -2369,6 +2455,18 @@ export function StudyDocumentEditor({
         case 'numbered':
           toggleListKind('numbered');
           break;
+        case 'heading-1':
+          applyHeadingStyle(1);
+          break;
+        case 'heading-2':
+          applyHeadingStyle(2);
+          break;
+        case 'heading-3':
+          applyHeadingStyle(3);
+          break;
+        case 'body-text':
+          applyHeadingStyle(null);
+          break;
         case 'table': {
           const withPage = ensurePageDocument();
           const page = getWorkStudyActivePage(withPage);
@@ -2429,6 +2527,7 @@ export function StudyDocumentEditor({
       resetDocument,
       resolvePendingMarks,
       retainEditorKeyboardFocus,
+      applyHeadingStyle,
       toggleListKind,
       toggleMark,
     ],
@@ -2551,6 +2650,7 @@ export function StudyDocumentEditor({
           colorPickerOpen={showColorPicker}
           linkPickerOpen={showLinkInput}
           activeListKind={toolbarActiveListKind}
+          activeHeadingLevel={toolbarActiveHeadingLevel}
           onAction={onToolbarAction}
           onRetainKeyboardFocus={toolbarRetainFocusHandler}
         />

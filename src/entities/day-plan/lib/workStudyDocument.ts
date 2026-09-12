@@ -13,6 +13,20 @@ export type WorkStudyBlockKind =
 
 export type WorkStudyHeadingLevel = 1 | 2 | 3;
 
+export const WORK_STUDY_TEXT_ROLE_METRICS = {
+  body: { fontSize: 20, lineHeight: 26, fontWeight: '400' as const },
+  1: { fontSize: 28, lineHeight: 34, fontWeight: '800' as const },
+  2: { fontSize: 24, lineHeight: 30, fontWeight: '800' as const },
+  3: { fontSize: 22, lineHeight: 28, fontWeight: '700' as const },
+} as const;
+
+export function resolveWorkStudyTextRoleMetrics(headingLevel?: WorkStudyHeadingLevel | null) {
+  if (headingLevel === 1 || headingLevel === 2 || headingLevel === 3) {
+    return WORK_STUDY_TEXT_ROLE_METRICS[headingLevel];
+  }
+  return WORK_STUDY_TEXT_ROLE_METRICS.body;
+}
+
 export const WORK_STUDY_TYPE_SIZE_IDS = ['xs', 'sm', 'md', 'lg', 'xl'] as const;
 export type WorkStudyTypeSizeId = (typeof WORK_STUDY_TYPE_SIZE_IDS)[number];
 
@@ -112,6 +126,13 @@ function normalizeHeadingLevel(raw: unknown): WorkStudyHeadingLevel {
   if (n === 2) return 2;
   if (n === 3) return 3;
   return 1;
+}
+
+function normalizeOptionalHeadingLevel(raw: unknown): WorkStudyHeadingLevel | undefined {
+  if (raw == null || raw === '') return undefined;
+  const n = Number(raw);
+  if (n === 1 || n === 2 || n === 3) return n;
+  return undefined;
 }
 
 function normalizeTextColor(raw: unknown): string | undefined {
@@ -257,9 +278,11 @@ export function normalizeWorkStudyDocBlock(raw: unknown): WorkStudyDocBlock | nu
     };
   }
 
+  const headingLevel = normalizeOptionalHeadingLevel(o.headingLevel);
+
   if (!text && kind !== 'checklist' && kind !== 'bullet' && kind !== 'numbered') {
     return kind === 'paragraph'
-      ? { id, kind, text: '', marks: normalizeMarks(o.marks) }
+      ? { id, kind, text: '', marks: normalizeMarks(o.marks), headingLevel }
       : null;
   }
 
@@ -269,6 +292,7 @@ export function normalizeWorkStudyDocBlock(raw: unknown): WorkStudyDocBlock | nu
     text,
     checked: kind === 'checklist' ? o.checked === true : undefined,
     marks: normalizeMarks(o.marks),
+    headingLevel,
   };
 }
 
@@ -499,7 +523,13 @@ export function createWorkStudyDocBlock(
   if (kind === 'image') {
     return { id, kind, text: '', imageUri: '' };
   }
-  return { id, kind, text: '', checked: kind === 'checklist' ? false : undefined };
+  return {
+    id,
+    kind,
+    text: '',
+    checked: kind === 'checklist' ? false : undefined,
+    headingLevel: options?.headingLevel,
+  };
 }
 
 export function workStudyPageBlocksToPlainText(blocks: WorkStudyDocBlock[]): string {

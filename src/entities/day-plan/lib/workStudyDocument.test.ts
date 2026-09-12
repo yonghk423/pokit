@@ -105,6 +105,23 @@ describe('normalizeWorkStudyDocument', () => {
     expect(block?.marks?.color).toBe('#C62828');
   });
 
+  it('keeps headingLevel on empty and filled paragraphs', () => {
+    const empty = normalizeWorkStudyDocBlock({
+      id: 'e',
+      kind: 'paragraph',
+      text: '',
+      headingLevel: 2,
+    });
+    expect(empty?.headingLevel).toBe(2);
+    const filled = normalizeWorkStudyDocBlock({
+      id: 'f',
+      kind: 'paragraph',
+      text: '제목',
+      headingLevel: 1,
+    });
+    expect(filled?.headingLevel).toBe(1);
+  });
+
   it('keeps typeSize on empty and filled paragraphs', () => {
     const empty = normalizeWorkStudyDocBlock({
       id: 'e',
