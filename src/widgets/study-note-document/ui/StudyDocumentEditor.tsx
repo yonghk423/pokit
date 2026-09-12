@@ -43,11 +43,13 @@ import {
 } from '@entities/day-plan';
 import { workStudyPageBlocksToPlainText } from '@entities/day-plan/lib/workStudyDocument';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { cityPopFont, RetroFlatColors } from '@shared/config/retroFlat';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { pickImageFromLibrary } from '@shared/lib/media/pickImageFromLibrary';
 import { normalizeWebUrl, openWebLink } from '@shared/lib/url/openWebLink';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
+import { scaleTypeSize, useAppFontSizeScale } from '@shared/lib/ui-font';
 
 import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
 
@@ -59,11 +61,17 @@ import { StudyNotePageTitleField } from './StudyNotePageTitleField';
 type Palette = StudyNoteDocumentPalette;
 
 const NOTE_PAGE_BG = RetroFlatColors.light.bg;
+/** 노트 본문 기본 — 앱 설정 글씨 크기 배율이 이 값에 적용된다 */
+const NOTE_BODY_FONT_SIZE = 20;
+const NOTE_BODY_LINE_HEIGHT = 26;
+const NOTE_HEADING_FONT_SIZE = [20, 18, 16] as const;
 const DRAWER_MAX_WIDTH = 320;
 const DRAWER_WIDTH_RATIO = 0.82;
 const KEYBOARD_ACCESSORY_ESTIMATED_HEIGHT = 132;
 const STUDY_DOCUMENT_INPUT_ACCESSORY_ID = 'study-document-toolbar';
 const EDITOR_HEADER_HEIGHT = 52;
+const BLOCKS_INNER_PAD_TOP = 10;
+const BLOCKS_INNER_PAD_BOTTOM = 8;
 /** iOS 빈 TextInput에서 Backspace onKeyPress가 안 오는 문제 우회용 */
 const EMPTY_BACKSPACE_SENTINEL = '\u200B';
 
@@ -106,6 +114,7 @@ function normalizeBlockMarks(marks?: WorkStudyBlockMarks): WorkStudyBlockMarks |
   if (!next.underline) delete next.underline;
   if (!next.link) delete next.link;
   if (!next.color) delete next.color;
+  if (!next.typeSize) delete next.typeSize;
   return Object.keys(next).length ? next : undefined;
 }
 
@@ -248,6 +257,8 @@ function BlockText({
   style,
   inputAccessoryViewID,
   inputRef,
+  fillPage = false,
+  fillPageBottomInset = 0,
 }: {
   block: WorkStudyDocBlock;
   palette: Palette;
@@ -268,7 +279,12 @@ function BlockText({
   style?: object;
   inputAccessoryViewID?: string;
   inputRef?: (ref: TextInput | null) => void;
+  /** 빠른 메모처럼 남은 페이지를 채움 */
+  fillPage?: boolean;
+  fillPageBottomInset?: number;
 }) {
+  const sizeScale = useAppFontSizeScale();
+  const bodyLineHeight = scaleTypeSize(NOTE_BODY_LINE_HEIGHT, sizeScale);
   const bold = block.marks?.bold;
   const underline = block.marks?.underline;
   const checkedDone = block.kind === 'checklist' && block.checked === true;
@@ -283,6 +299,7 @@ function BlockText({
   onBackspaceAtStartRef.current = onBackspaceAtStart;
   const [isFocused, setIsFocused] = useState(false);
   const [draftText, setDraftText] = useState(block.text);
+  const [contentHeight, setContentHeight] = useState(0);
   const draftTextRef = useRef(block.text);
   const committedTextRef = useRef(block.text);
 
@@ -298,6 +315,7 @@ function BlockText({
     draftTextRef.current = block.text;
     setDraftText(block.text);
     committedTextRef.current = block.text;
+    setContentHeight(0);
   }, [block.id, contentRevision]);
 
   useEffect(() => {
@@ -417,15 +435,21 @@ function BlockText({
     onBlur?.();
   }, [onBlur, onChangeText]);
 
-  // 레이아웃용 style/compact는 래퍼에만 적용 — TextInput native props 변동 시 iOS 키보드 reload 방지
+  const lineMinHeight = compact
+    ? bodyLineHeight + 2
+    : Math.max(bodyLineHeight + 2, scaleTypeSize(NOTE_BODY_FONT_SIZE, sizeScale) + 4);
+  const resolvedInputHeight = Math.max(lineMinHeight, contentHeight);
+
+  // 빠른 메모: stretch + flex:1 + multiline + scrollEnabled + textAlignVertical top.
   return (
     <View
       style={[
         styles.blockTextWrap,
+        fillPage ? styles.blockTextWrapFill : null,
         compact ? styles.listBlockInputWrap : null,
         style,
       ]}>
-      <TextInput
+      <ThemedTextInput
         ref={setInputRef}
         value={displayValue}
         onChangeText={handleChangeText}
@@ -461,20 +485,36 @@ function BlockText({
             }
           }
         }}
-        // TextInput placeholder는 빈 값 한 프레임에 깜빡이므로 본문에서는 쓰지 않는다.
         placeholder={placeholder}
         placeholderTextColor={placeholder ? palette.outline : 'transparent'}
         multiline
-        scrollEnabled={false}
+        scrollEnabled
         textAlignVertical="top"
+        onContentSizeChange={(event) => {
+          const next = Math.ceil(event.nativeEvent.contentSize.height);
+          if (next > 0 && Math.abs(next - contentHeight) >= 1) {
+            setContentHeight(next);
+          }
+        }}
         style={[
           styles.blockInput,
           compact ? styles.listBlockInput : null,
           {
+            fontSize: NOTE_BODY_FONT_SIZE,
+            lineHeight: NOTE_BODY_LINE_HEIGHT,
+            minHeight: fillPage ? 120 : lineMinHeight,
+            ...(fillPage
+              ? { flex: 1, paddingBottom: Math.max(10, fillPageBottomInset) }
+              : { height: resolvedInputHeight }),
+            paddingHorizontal: compact ? 0 : 2,
+            paddingTop: compact ? 2 : 8,
+            ...(fillPage ? null : { paddingBottom: compact ? 2 : 10 }),
+            fontWeight: bold ? '800' : '400',
+          },
+          {
             color: checkedDone
               ? palette.onVariant
               : textColor ?? pendingTextColor ?? palette.onSurface,
-            ...(bold ? cityPopFont('800') : cityPopFont('400')),
             opacity: checkedDone ? 0.42 : 1,
             textDecorationLine:
               checkedDone && underline
@@ -489,7 +529,6 @@ function BlockText({
               : textColor ?? pendingTextColor ?? palette.onSurface,
             textDecorationStyle: checkedDone ? 'dashed' : 'solid',
           },
-          // iOS: 커스텀 라틴 폰트 + 한글 폴백 시 첫 줄 글리프가 아래로 처짐 → 패딩 재고정
           compact && Platform.OS === 'ios' ? styles.listBlockInputIos : null,
         ]}
       />
@@ -515,6 +554,8 @@ function StudyDocumentBlockView({
   contentRevision,
   onOpenLink,
   onBlockLayout,
+  fillPage,
+  fillPageBottomInset,
 }: {
   block: WorkStudyDocBlock;
   blocks: WorkStudyDocBlock[];
@@ -533,8 +574,13 @@ function StudyDocumentBlockView({
   contentRevision?: number;
   onOpenLink?: (url: string) => void;
   onBlockLayout?: (blockId: string, y: number) => void;
+  fillPage?: boolean;
+  fillPageBottomInset?: number;
 }) {
   const { t } = useTranslation();
+  const sizeScale = useAppFontSizeScale();
+  const bodyFontSize = scaleTypeSize(NOTE_BODY_FONT_SIZE, sizeScale);
+  const bodyLineHeight = scaleTypeSize(NOTE_BODY_LINE_HEIGHT, sizeScale);
   const [failedImageUri, setFailedImageUri] = useState<string | null>(null);
   const isFormattedParagraph = block.kind === 'paragraph' && Boolean(onEnterKey);
   const rowShellStyle = isListBlockKind(block.kind)
@@ -547,7 +593,10 @@ function StudyDocumentBlockView({
   if (block.kind === 'heading') {
     const accent = WORK_STUDY_HEADING_ACCENTS[block.accentIndex ?? 0] ?? WORK_STUDY_HEADING_ACCENTS[0];
     const level = block.headingLevel ?? 1;
-    const titleSize = level === 1 ? 14 : level === 2 ? 13 : 12;
+    const titleSize = scaleTypeSize(
+      NOTE_HEADING_FONT_SIZE[Math.min(2, Math.max(0, level - 1))] ?? NOTE_BODY_FONT_SIZE,
+      sizeScale,
+    );
     return (
       <View
         style={[rowShellStyle, styles.headingWrap]}
@@ -603,7 +652,15 @@ function StudyDocumentBlockView({
                   inputAccessoryViewID={inputAccessoryViewID}
                   placeholder={`${rowIdx + 1}-${colIdx + 1}`}
                   placeholderTextColor={palette.outline}
-                  style={[styles.tableCell, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
+                  style={[
+                    styles.tableCell,
+                    {
+                      color: palette.onSurface,
+                      borderColor: palette.outlineVariant,
+                      fontSize: bodyFontSize,
+                      lineHeight: bodyLineHeight,
+                    },
+                  ]}
                 />
               ))}
             </View>
@@ -798,73 +855,104 @@ function StudyDocumentBlockView({
         </View>
       </Pressable>
     ) : block.kind === 'bullet' ? (
-      <ThemedText style={[styles.listMarker, { color: palette.onVariant }]}>•</ThemedText>
+      <ThemedText
+        style={[
+          styles.listMarker,
+          { color: palette.onVariant, fontSize: NOTE_BODY_FONT_SIZE, lineHeight: NOTE_BODY_LINE_HEIGHT },
+        ]}>
+        •
+      </ThemedText>
     ) : block.kind === 'numbered' ? (
       <ThemedText
-        style={[styles.listMarker, styles.numberedMarker, { color: palette.onVariant }]}
+        style={[
+          styles.listMarker,
+          styles.numberedMarker,
+          { color: palette.onVariant, fontSize: NOTE_BODY_FONT_SIZE, lineHeight: NOTE_BODY_LINE_HEIGHT },
+        ]}
         numberOfLines={1}>
         {numberedIndexForBlock(blocks, block.id)}.
       </ThemedText>
     ) : null;
 
+  const bodyInput = (
+    <BlockText
+      block={block}
+      palette={palette}
+      onChangeText={(text) => onChangeBlock(block.id, { text })}
+      onFocus={() => onFocusBlock(block.id)}
+      onBlur={onBlurBlock}
+      onBackspaceAtStart={onBackspaceAtStart}
+      inputAccessoryViewID={inputAccessoryViewID}
+      inputRef={(ref) => registerInputRef(block.id, ref)}
+      onEnterKey={onEnterKey}
+      onSelectionChange={onSelectionChange}
+      contentRevision={contentRevision}
+      compact={isListBlock}
+      pendingTextColor={pendingTextColor}
+      fillPage={fillPage}
+      fillPageBottomInset={fillPageBottomInset}
+      multiline
+      style={
+        block.kind === 'paragraph'
+          ? [
+              onEnterKey ? styles.formattedParagraphInput : null,
+              blockIndex > 0 && blockNeedsTailParagraph(blocks[blockIndex - 1]!)
+                ? styles.structuralTailParagraph
+                : blocks[blockIndex + 1] && blockNeedsTailParagraph(blocks[blockIndex + 1]!)
+                  ? styles.compactParagraph
+                  : null,
+            ]
+          : undefined
+      }
+    />
+  );
+
+  const linkMeta = block.marks?.link ? (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={t('studyNote.openLinkA11y', { url: block.marks.link })}
+      onPress={() => onOpenLink?.(block.marks!.link!)}
+      style={({ pressed }) => [styles.linkMetaHit, pressed && { opacity: 0.65 }]}>
+      <ThemedText style={[styles.linkMeta, { color: palette.onSurface }]} numberOfLines={1}>
+        🔗 {block.marks.link}
+      </ThemedText>
+    </Pressable>
+  ) : null;
+
+  if (isListBlock) {
+    return (
+      <View
+        style={[rowShellStyle, styles.row, styles.listRow]}
+        onLayout={(e) => onBlockLayout?.(block.id, e.nativeEvent.layout.y)}>
+        <View
+          style={
+            block.kind === 'checklist'
+              ? [
+                  styles.checklistPrefixSlot,
+                  { paddingTop: Math.round((LIST_CHECK_OPTICAL_TOP * bodyLineHeight) / LIST_LINE_HEIGHT) },
+                ]
+              : [
+                  styles.listPrefixSlot,
+                  { paddingTop: Math.round((Platform.OS === 'ios' ? 2 : 1) * bodyLineHeight / LIST_LINE_HEIGHT) },
+                ]
+          }
+          pointerEvents="box-none">
+          {rowPrefix}
+        </View>
+        <View style={[styles.rowBody, styles.listRowBody]}>
+          {bodyInput}
+          {linkMeta}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View
-      style={[rowShellStyle, styles.row, isListBlock ? styles.listRow : null]}
+      style={[rowShellStyle, styles.paragraphBlock, fillPage ? styles.paragraphBlockFill : null]}
       onLayout={(e) => onBlockLayout?.(block.id, e.nativeEvent.layout.y)}>
-      {/* prefix를 항상 두어 형제 인덱스 변동으로 TextInput이 리마운트되지 않게 한다 */}
-      <View
-        style={
-          isListBlock
-            ? block.kind === 'checklist'
-              ? styles.checklistPrefixSlot
-              : styles.listPrefixSlot
-            : styles.paragraphPrefixSlot
-        }
-        pointerEvents={isListBlock ? 'box-none' : 'none'}>
-        {rowPrefix}
-      </View>
-      <View style={[styles.rowBody, isListBlock ? styles.listRowBody : null]}>
-        <BlockText
-          block={block}
-          palette={palette}
-          onChangeText={(text) => onChangeBlock(block.id, { text })}
-          onFocus={() => onFocusBlock(block.id)}
-          onBlur={onBlurBlock}
-          onBackspaceAtStart={onBackspaceAtStart}
-          inputAccessoryViewID={inputAccessoryViewID}
-          inputRef={(ref) => registerInputRef(block.id, ref)}
-          onEnterKey={onEnterKey}
-          onSelectionChange={onSelectionChange}
-          contentRevision={contentRevision}
-          compact={isListBlock}
-          pendingTextColor={pendingTextColor}
-          multiline
-          style={
-            block.kind === 'paragraph'
-              ? [
-                  styles.paragraphInput,
-                  onEnterKey ? styles.formattedParagraphInput : null,
-                  blockIndex > 0 && blockNeedsTailParagraph(blocks[blockIndex - 1]!)
-                    ? styles.structuralTailParagraph
-                    : blocks[blockIndex + 1] && blockNeedsTailParagraph(blocks[blockIndex + 1]!)
-                      ? styles.compactParagraph
-                      : null,
-                ]
-              : undefined
-          }
-        />
-        {block.marks?.link ? (
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={t('studyNote.openLinkA11y', { url: block.marks.link })}
-            onPress={() => onOpenLink?.(block.marks!.link!)}
-            style={({ pressed }) => [styles.linkMetaHit, pressed && { opacity: 0.65 }]}>
-            <ThemedText style={[styles.linkMeta, { color: palette.onSurface }]} numberOfLines={1}>
-              🔗 {block.marks.link}
-            </ThemedText>
-          </Pressable>
-        ) : null}
-      </View>
+      {bodyInput}
+      {linkMeta}
     </View>
   );
 }
@@ -902,6 +990,7 @@ export function StudyDocumentEditor({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [scrollViewportHeight, setScrollViewportHeight] = useState<number | null>(null);
+  const [scrollViewportWidth, setScrollViewportWidth] = useState(0);
   const drawerOpenRef = useRef(false);
   const undoStack = useRef<WorkStudyDocument[]>([]);
   const redoStack = useRef<WorkStudyDocument[]>([]);
@@ -946,6 +1035,12 @@ export function StudyDocumentEditor({
     }
   }, []);
 
+  const retainFocusGenRef = useRef(0);
+  const cancelRetainKeyboardFocus = useCallback(() => {
+    retainFocusGenRef.current += 1;
+    toolbarInteractionRef.current = false;
+  }, []);
+
   const transferFocusToBlock = useCallback(
     (blockId: string, cursor: number) => {
       pendingFocusBlockIdRef.current = blockId;
@@ -966,12 +1061,16 @@ export function StudyDocumentEditor({
   const retainEditorKeyboardFocus = useCallback(
     (options?: { retries?: number }) => {
       const retries = options?.retries ?? 0;
+      const gen = retainFocusGenRef.current;
       const blockId = activeBlockIdRef.current ?? pendingFocusBlockIdRef.current;
       if (!blockId) return;
       const input = blockInputRefs.current[blockId];
       if (!input) {
         if (retries > 0) {
-          requestAnimationFrame(() => retainEditorKeyboardFocus({ retries: retries - 1 }));
+          requestAnimationFrame(() => {
+            if (retainFocusGenRef.current !== gen) return;
+            retainEditorKeyboardFocus({ retries: retries - 1 });
+          });
         }
         return;
       }
@@ -981,7 +1080,10 @@ export function StudyDocumentEditor({
         applyInputSelection(input, sel.start);
       }
       if (retries > 0) {
-        requestAnimationFrame(() => retainEditorKeyboardFocus({ retries: retries - 1 }));
+        requestAnimationFrame(() => {
+          if (retainFocusGenRef.current !== gen) return;
+          retainEditorKeyboardFocus({ retries: retries - 1 });
+        });
       }
     },
     [applyInputSelection],
@@ -1042,15 +1144,18 @@ export function StudyDocumentEditor({
     [keyboardInset, keyboardToolbarMode, showColorPicker, showLinkInput],
   );
 
+  const scrollActiveBlockIntoViewRef = useRef(scrollActiveBlockIntoView);
+  scrollActiveBlockIntoViewRef.current = scrollActiveBlockIntoView;
+
   const registerBlockLayout = useCallback(
     (blockId: string, y: number) => {
       blockLayoutYRef.current[blockId] = y;
       if (pendingEnterScrollBlockIdRef.current === blockId) {
         pendingEnterScrollBlockIdRef.current = null;
-        scrollActiveBlockIntoView(blockId, { animated: false });
+        scrollActiveBlockIntoViewRef.current(blockId, { animated: false });
       }
     },
-    [scrollActiveBlockIntoView],
+    [],
   );
 
   const registerInputRef = useCallback(
@@ -1070,7 +1175,7 @@ export function StudyDocumentEditor({
             const target = blockId;
             pendingEnterScrollBlockIdRef.current = null;
             requestAnimationFrame(() => {
-              scrollActiveBlockIntoView(target, { animated: false });
+              scrollActiveBlockIntoViewRef.current(target, { animated: false });
             });
           }
         }
@@ -1078,7 +1183,7 @@ export function StudyDocumentEditor({
       }
       delete blockInputRefs.current[blockId];
     },
-    [applyInputSelection, scrollActiveBlockIntoView],
+    [applyInputSelection],
   );
 
   const pushHistory = useCallback(() => {
@@ -1134,10 +1239,10 @@ export function StudyDocumentEditor({
     if (blockLayoutYRef.current[blockId] != null) {
       pendingEnterScrollBlockIdRef.current = null;
       requestAnimationFrame(() => {
-        scrollActiveBlockIntoView(blockId, { animated: false });
+        scrollActiveBlockIntoViewRef.current(blockId, { animated: false });
       });
     }
-  }, [activeBlockId, activeBlocks, applyInputSelection, scrollActiveBlockIntoView]);
+  }, [activeBlockId, applyInputSelection]);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -1292,6 +1397,9 @@ export function StudyDocumentEditor({
 
   const handleFocusBlock = useCallback(
     (blockId: string) => {
+      if (activeBlockIdRef.current !== blockId) {
+        cancelRetainKeyboardFocus();
+      }
       setActiveBlockId(blockId);
       const block = activeBlocks.find((b) => b.id === blockId);
       const synced = {
@@ -1331,7 +1439,7 @@ export function StudyDocumentEditor({
         ),
       );
     },
-    [activeBlocks, replaceActiveBlocks, resolvePendingMarks, scrollActiveBlockIntoView],
+    [activeBlocks, cancelRetainKeyboardFocus, replaceActiveBlocks, resolvePendingMarks, scrollActiveBlockIntoView],
   );
 
   const handleChangeBlock = useCallback(
@@ -1732,12 +1840,14 @@ export function StudyDocumentEditor({
     const block = createWorkStudyDocBlock('image');
     block.imageUri = imageUri;
     const tail = createWorkStudyDocBlock('paragraph');
+    const tailMarks = marksForContinuedBlock(resolvePendingMarks());
+    if (tailMarks) tail.marks = tailMarks;
 
     pendingEnterScrollBlockIdRef.current = block.id;
     commitStructuralChange([...blocks, block, tail]);
     setActiveBlockId(tail.id);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [commitStructuralChange, ensurePageDocument, pickImageUri]);
+  }, [commitStructuralChange, ensurePageDocument, pickImageUri, resolvePendingMarks]);
 
   const insertBlock = useCallback(
     (kind: WorkStudyDocBlock['kind'], options?: { headingLevel?: WorkStudyHeadingLevel }) => {
@@ -1767,6 +1877,8 @@ export function StudyDocumentEditor({
       const page = getWorkStudyActivePage(withPage);
       const blocks = page?.blocks ?? [];
       const block = createWorkStudyDocBlock('paragraph');
+      const marks = marksForContinuedBlock(resolvePendingMarks());
+      if (marks) block.marks = marks;
       const next = edge === 'top' ? [block, ...blocks] : [...blocks, block];
 
       pendingFocusBlockIdRef.current = block.id;
@@ -1778,7 +1890,7 @@ export function StudyDocumentEditor({
       setActiveListKind(null);
       void Haptics.selectionAsync();
     },
-    [commitStructuralChange, ensurePageDocument],
+    [commitStructuralChange, ensurePageDocument, resolvePendingMarks],
   );
 
   /** 메모 빈 영역 탭 → 키보드 활성화(마지막 본문 포커스, 없으면 문단 추가) */
@@ -2263,6 +2375,8 @@ export function StudyDocumentEditor({
           const blocks = page?.blocks ?? [];
           const block = createWorkStudyDocBlock('table');
           const tail = createWorkStudyDocBlock('paragraph');
+          const tailMarks = marksForContinuedBlock(resolvePendingMarks());
+          if (tailMarks) tail.marks = tailMarks;
           commitStructuralChange([...blocks, block, tail]);
           setActiveBlockId(tail.id);
           void Haptics.selectionAsync();
@@ -2313,6 +2427,7 @@ export function StudyDocumentEditor({
       pickAndInsertImageBlock,
       replaceDocument,
       resetDocument,
+      resolvePendingMarks,
       retainEditorKeyboardFocus,
       toggleListKind,
       toggleMark,
@@ -2350,10 +2465,14 @@ export function StudyDocumentEditor({
 
   const canvasMinHeight =
     useFlexCanvas
-      ? 120
+      ? Math.max(120, scrollViewportHeight ?? 120)
       : resolvedScrollHeight != null
         ? Math.max(120, resolvedScrollHeight - 8)
         : Math.round(Math.max(380, windowHeight * 0.5));
+  const lastBlock = activeBlocks[activeBlocks.length - 1];
+  const fillPageBlockId = lastBlock?.kind === 'paragraph' ? lastBlock.id : null;
+  const fillPageBottomInset =
+    useFlexCanvas && showDockedToolbar ? accessoryReserve : 0;
 
   const onShellLayout = useCallback(
     (event: LayoutChangeEvent) => {
@@ -2508,12 +2627,10 @@ export function StudyDocumentEditor({
         contentContainerStyle={[
           useFlexCanvas ? styles.canvasScrollContentFlex : null,
           {
-            paddingBottom:
-              useDockedKeyboardToolbar
-                ? accessoryReserve + (keyboardOpen ? dockedToolbarBottom : 0) + 24
-                : useFlexCanvas
-                  ? 16
-                  : accessoryReserve + 16,
+            width: scrollViewportWidth > 0 ? scrollViewportWidth : '100%',
+            maxWidth: '100%',
+            overflow: 'visible',
+            paddingBottom: 16,
           },
         ]}
         keyboardShouldPersistTaps="always"
@@ -2524,7 +2641,16 @@ export function StudyDocumentEditor({
         }}
         scrollEventThrottle={16}
         onLayout={(e) => {
-          scrollViewportLayoutHeightRef.current = e.nativeEvent.layout.height;
+          const { width, height } = e.nativeEvent.layout;
+          scrollViewportLayoutHeightRef.current = height;
+          const nextWidth = Math.round(width);
+          const nextHeight = Math.round(height);
+          if (nextWidth > 0 && nextWidth !== scrollViewportWidth) {
+            setScrollViewportWidth(nextWidth);
+          }
+          if (viewportHeight == null && nextHeight > 0) {
+            setScrollViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+          }
         }}>
         <View style={[styles.canvas, useFlexCanvas ? styles.canvasFlex : null, { minHeight: canvasMinHeight, backgroundColor: NOTE_PAGE_BG }]}>
         {!empty ? (
@@ -2585,6 +2711,8 @@ export function StudyDocumentEditor({
                 }
                 pendingTextColor={block.id === activeBlockId ? pendingMarks.color : undefined}
                 contentRevision={contentRevision}
+                fillPage={block.id === fillPageBlockId}
+                fillPageBottomInset={fillPageBottomInset}
               />
             ))}
           </View>
@@ -2780,6 +2908,9 @@ const styles = StyleSheet.create({
   },
   canvas: {
     width: '100%',
+    maxWidth: '100%',
+    alignSelf: 'stretch',
+    overflow: 'visible',
     position: 'relative',
   },
   canvasDismissBackdrop: {
@@ -2788,9 +2919,13 @@ const styles = StyleSheet.create({
   },
   blocksInner: {
     width: '100%',
+    maxWidth: '100%',
+    flexGrow: 1,
+    minHeight: 0,
+    overflow: 'visible',
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingTop: BLOCKS_INNER_PAD_TOP,
+    paddingBottom: BLOCKS_INNER_PAD_BOTTOM,
     gap: 0,
     zIndex: 1,
   },
@@ -2812,15 +2947,18 @@ const styles = StyleSheet.create({
   emptyBody: { fontSize: 12, lineHeight: 17, fontWeight: '600', textAlign: 'center' },
   blockRow: {
     width: '100%',
+    maxWidth: '100%',
     paddingVertical: 0,
   },
   formattedBlockRow: {
     width: '100%',
+    maxWidth: '100%',
     paddingTop: 0,
     paddingBottom: 1,
   },
   listBlockRow: {
     width: '100%',
+    maxWidth: '100%',
     paddingVertical: 0,
     marginVertical: 0,
   },
@@ -2834,12 +2972,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headingPrimary: { flex: 1, fontWeight: '800', letterSpacing: 0.6 },
-  row: { flexDirection: 'row', alignItems: 'flex-start', width: '100%' },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    alignSelf: 'stretch',
+  },
   listRow: { alignItems: 'flex-start', gap: 10 },
-  paragraphPrefixSlot: {
-    width: 0,
-    marginRight: 0,
-    overflow: 'hidden',
+  paragraphBlock: {
+    alignSelf: 'stretch',
+  },
+  paragraphBlockFill: {
+    flex: 1,
+    minHeight: 0,
   },
   listPrefixSlot: {
     minWidth: 22,
@@ -2865,38 +3009,35 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     overflow: 'visible',
   },
-  rowBody: { flex: 1, gap: 4 },
+  rowBody: { flex: 1, minWidth: 0, gap: 4 },
   listRowBody: { gap: 0 },
-  blockInput: { fontSize: 15, lineHeight: LIST_LINE_HEIGHT, paddingVertical: 0, minHeight: 28, width: '100%' },
+  blockInput: {
+    alignSelf: 'stretch',
+    letterSpacing: -0.1,
+  },
   blockTextWrap: {
-    width: '100%',
-    position: 'relative',
-    justifyContent: 'flex-start',
+    alignSelf: 'stretch',
+  },
+  blockTextWrapFill: {
+    flex: 1,
+    minHeight: 0,
   },
   listBlockInputWrap: {
     minHeight: LIST_LINE_HEIGHT,
     justifyContent: 'flex-start',
   },
   listBlockInput: {
-    minHeight: LIST_LINE_HEIGHT,
-    fontSize: 15,
-    lineHeight: LIST_LINE_HEIGHT,
+    alignSelf: 'stretch',
     padding: 0,
     margin: 0,
     includeFontPadding: false,
     textAlignVertical: 'top',
   },
   listBlockInputIos: {
-    // 네이티브 기본 inset을 눌러 첫 줄 y를 체크 슬롯과 맞춤
     paddingTop: 0,
-    lineHeight: LIST_LINE_HEIGHT,
   },
-  paragraphInput: { textAlignVertical: 'top', width: '100%' },
   formattedParagraphInput: {
-    minHeight: 24,
-    lineHeight: LIST_LINE_HEIGHT,
-    paddingTop: 0,
-    paddingBottom: 2,
+    minHeight: 36,
   },
   compactParagraph: { minHeight: 28 },
   structuralTailParagraph: { minHeight: 32, textAlignVertical: 'top' },

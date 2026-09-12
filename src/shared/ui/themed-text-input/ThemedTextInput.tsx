@@ -1,3 +1,4 @@
+import { type Ref } from 'react';
 import { StyleSheet, TextInput, type TextInputProps, type TextStyle } from 'react-native';
 
 import {
@@ -9,7 +10,9 @@ import {
   type AppFontWeight,
 } from '@shared/lib/ui-font';
 
-export type ThemedTextInputProps = TextInputProps;
+export type ThemedTextInputProps = TextInputProps & {
+  ref?: Ref<TextInput>;
+};
 
 function weightFromStyle(fontWeight: TextStyle['fontWeight']): AppFontWeight {
   if (fontWeight === '800' || fontWeight === '900' || fontWeight === 'bold') return '800';
@@ -35,6 +38,7 @@ function applyFontSizeScale(style: TextStyle, scale: number): TextStyle {
 export function ThemedTextInput({
   style,
   underlineColorAndroid = 'transparent',
+  ref,
   ...rest
 }: ThemedTextInputProps) {
   const fontId = useEffectiveAppFontId();
@@ -58,6 +62,7 @@ export function ThemedTextInput({
 
   return (
     <TextInput
+      ref={ref}
       underlineColorAndroid={underlineColorAndroid}
       {...rest}
       style={scaled}

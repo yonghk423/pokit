@@ -361,6 +361,7 @@ export {
   resolveWorkStudyNotePagePreview,
   persistWorkStudyNotePageTitle,
   isLegacyAutoWorkStudyNoteTitle,
+  WORK_STUDY_TYPE_SIZE_IDS,
   getWorkStudyActivePage,
   setWorkStudyActivePageBlocks,
   updateWorkStudyNotePageTitle,
@@ -372,6 +373,7 @@ export type {
   WorkStudyDocument,
   WorkStudyHeadingLevel,
   WorkStudyNotePage,
+  WorkStudyTypeSizeId,
 } from './lib/workStudyDocument';
 export {
   addMonths,

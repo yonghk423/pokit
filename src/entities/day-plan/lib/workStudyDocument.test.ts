@@ -105,6 +105,23 @@ describe('normalizeWorkStudyDocument', () => {
     expect(block?.marks?.color).toBe('#C62828');
   });
 
+  it('keeps typeSize on empty and filled paragraphs', () => {
+    const empty = normalizeWorkStudyDocBlock({
+      id: 'e',
+      kind: 'paragraph',
+      text: '',
+      marks: { typeSize: 'xl' },
+    });
+    expect(empty?.marks?.typeSize).toBe('xl');
+    const filled = normalizeWorkStudyDocBlock({
+      id: 'f',
+      kind: 'paragraph',
+      text: '본문',
+      marks: { typeSize: 'sm' },
+    });
+    expect(filled?.marks?.typeSize).toBe('sm');
+  });
+
   it('normalizes image display height and defaults when unset', () => {
     const block = normalizeWorkStudyDocBlock({
       id: 'img1',

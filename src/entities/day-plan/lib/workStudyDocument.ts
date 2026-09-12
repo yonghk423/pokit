@@ -13,11 +13,16 @@ export type WorkStudyBlockKind =
 
 export type WorkStudyHeadingLevel = 1 | 2 | 3;
 
+export const WORK_STUDY_TYPE_SIZE_IDS = ['xs', 'sm', 'md', 'lg', 'xl'] as const;
+export type WorkStudyTypeSizeId = (typeof WORK_STUDY_TYPE_SIZE_IDS)[number];
+
 export type WorkStudyBlockMarks = {
   bold?: boolean;
   underline?: boolean;
   link?: string;
   color?: string;
+  /** 레거시 노트 전용 글씨 크기. 표시는 앱 설정 글씨 크기를 따른다 */
+  typeSize?: WorkStudyTypeSizeId;
 };
 
 /** 스터디 노트 본문 글자색 프리셋 */
@@ -115,6 +120,12 @@ function normalizeTextColor(raw: unknown): string | undefined {
   return value.toUpperCase();
 }
 
+function normalizeTypeSize(raw: unknown): WorkStudyTypeSizeId | undefined {
+  return WORK_STUDY_TYPE_SIZE_IDS.includes(raw as WorkStudyTypeSizeId)
+    ? (raw as WorkStudyTypeSizeId)
+    : undefined;
+}
+
 function normalizeMarks(raw: unknown): WorkStudyBlockMarks | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const o = raw as Record<string, unknown>;
@@ -122,12 +133,14 @@ function normalizeMarks(raw: unknown): WorkStudyBlockMarks | undefined {
   const underline = o.underline === true || o.highlight === true;
   const link = clampStr(o.link, 500);
   const color = normalizeTextColor(o.color);
-  if (!bold && !underline && !link && !color) return undefined;
+  const typeSize = normalizeTypeSize(o.typeSize);
+  if (!bold && !underline && !link && !color && !typeSize) return undefined;
   return {
     bold: bold || undefined,
     underline: underline || undefined,
     link: link || undefined,
     color: color || undefined,
+    typeSize: typeSize || undefined,
   };
 }
 
@@ -245,7 +258,9 @@ export function normalizeWorkStudyDocBlock(raw: unknown): WorkStudyDocBlock | nu
   }
 
   if (!text && kind !== 'checklist' && kind !== 'bullet' && kind !== 'numbered') {
-    return kind === 'paragraph' ? { id, kind, text: '' } : null;
+    return kind === 'paragraph'
+      ? { id, kind, text: '', marks: normalizeMarks(o.marks) }
+      : null;
   }
 
   return {
