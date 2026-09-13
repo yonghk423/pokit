@@ -1326,6 +1326,8 @@
   "studyNote.toolbarImage": "이미지",
   "studyNote.toolbarClearAll": "노트 전체 지우기",
   "studyNote.toolbarDismissKeyboard": "키보드 내리기",
+  "studyNote.toolbarFabMockA11y": "서식 버튼 목업",
+  "studyNote.toolbarFabCloseA11y": "서식 도구 닫기",
   "customFlowTemplate.recordFallback": "기록",
   "customFlowTemplate.measurePrompt": "무엇을 기록할까요?",
   "customFlowTemplate.measurePresetHint": "예시를 눌러 단위·목표가 바뀌는 걸 체험해 보세요.",
