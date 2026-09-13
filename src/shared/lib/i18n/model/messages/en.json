@@ -1168,6 +1168,8 @@
   "studyNote.deleteMemoA11y": "Delete note {title}",
   "studyNote.deleteMemoMessage": "Delete note “{title}”?",
   "studyNote.deleteMemoTitle": "Delete note",
+  "studyNote.deleteLinkMessage": "Remove this link?",
+  "studyNote.deleteLinkTitle": "Remove link",
   "studyNote.deletePhotoMessage": "Delete this photo?",
   "studyNote.deletePhotoTitle": "Delete photo",
   "studyNote.editBodyA11y": "Edit body",

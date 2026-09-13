@@ -28,7 +28,9 @@ import {
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { pickImageFromLibrary } from '@shared/lib/media/pickImageFromLibrary';
+import { normalizeWebUrl, openWebLink } from '@shared/lib/url/openWebLink';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import {
@@ -37,13 +39,21 @@ import {
   canvasBlocksToDraft,
   canvasDraftToBlocks,
   canvasLineHeadingLevel,
+  canvasLineIndex,
+  canvasLineLinkLead,
   canvasLineListKind,
   canvasLineRange,
   continueCanvasListAfterChange,
+  detectCanvasLinkBackspace,
+  ensureCanvasLinkGaps,
   exitCanvasListAfterBackspace,
+  extractCanvasLineLink,
+  insertCanvasLinkText,
   isCanvasProgrammaticTextEcho,
   mergeCanvasImageUris,
+  removeCanvasLinkSpan,
   shiftCursorAfterLinePrefixChange,
+  type CanvasLinkSpan,
 } from '../lib/studyNoteCanvasToolbar';
 import { studyNoteKeyboardBottomPad } from '../lib/studyNoteKeyboardPad';
 import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
@@ -52,6 +62,10 @@ import { StudyNotePageList } from './StudyNotePageList';
 import { StudyNotePageTitleField } from './StudyNotePageTitleField';
 
 const NOTE_PAGE_BG = RetroFlatColors.light.bg;
+const NOTE_LINK_COLOR = '#1565C0';
+const LINK_ICON_SIZE = 16;
+const LINK_HIT_SIZE = 28;
+const LINK_ICON_Y_ALIGN = 7;
 const MAX_NOTE_PAGES = 30;
 
 function ensurePageDocument(doc: WorkStudyDocument): WorkStudyDocument {
@@ -62,7 +76,7 @@ function ensurePageDocument(doc: WorkStudyDocument): WorkStudyDocument {
 
 function documentToDraft(doc: WorkStudyDocument): string {
   const page = getWorkStudyActivePage(doc);
-  return canvasBlocksToDraft(page?.blocks ?? []);
+  return ensureCanvasLinkGaps(canvasBlocksToDraft(page?.blocks ?? []));
 }
 
 type Props = {
@@ -85,6 +99,11 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
   const [fabOpen, setFabOpen] = useState(false);
   const [draft, setDraft] = useState(() => documentToDraft(document));
   const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const [linkEditorOpen, setLinkEditorOpen] = useState(false);
+  const [linkDraft, setLinkDraft] = useState('');
+  const [linkAnchor, setLinkAnchor] = useState<{ start: number; end: number; line: number } | null>(null);
+  const [linkIconPos, setLinkIconPos] = useState<Record<string, { x: number; y: number }>>({});
+  const [noteColumnWidth, setNoteColumnWidth] = useState(0);
   const [historyTick, setHistoryTick] = useState(0);
   const inputRef = useRef<TextInput>(null);
   const keyboardInsetRef = useRef(0);
@@ -92,6 +111,7 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
   const undoStackRef = useRef<string[]>([]);
   const redoStackRef = useRef<string[]>([]);
   const programmaticEchoRef = useRef<{ expected: string; stale: string; until: number } | null>(null);
+  const linkDeleteGuardRef = useRef(false);
   const fabProgress = useRef(new Animated.Value(0)).current;
   draftRef.current = draft;
 
@@ -119,6 +139,9 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
 
   useEffect(() => {
     setDraft(documentToDraft(document));
+    setLinkEditorOpen(false);
+    setLinkDraft('');
+    setLinkAnchor(null);
     undoStackRef.current = [];
     redoStackRef.current = [];
     setHistoryTick((n) => n + 1);
@@ -275,6 +298,63 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
     Alert.alert(t('studyNote.photoLoadFailedTitle'), t('studyNote.photoLoadFailedMessage'));
   }, [document, onChangeDocument, persistDraft, pushUndo, selection.end, selection.start, t]);
 
+  const handleOpenLink = useCallback(
+    async (url: string) => {
+      const opened = await openWebLink(url);
+      if (!opened) {
+        Alert.alert(t('studyNote.openLinkFailedTitle'), t('studyNote.openLinkFailedMessage'));
+      }
+    },
+    [t],
+  );
+
+  const applyLink = useCallback(() => {
+    const url = normalizeWebUrl(linkDraft) ?? linkDraft.trim();
+    if (!url) return;
+    const current = draftRef.current;
+    const cursor = linkAnchor ?? { start: selection.start, end: selection.end, line: 0 };
+    const inserted = insertCanvasLinkText(current, cursor.start, cursor.end, url);
+    pushUndo(current);
+    persistDraft(inserted.text, { programmatic: true, cursor: inserted.cursor });
+    setLinkEditorOpen(false);
+    setLinkDraft('');
+    setLinkAnchor(null);
+    void Haptics.selectionAsync();
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }, [linkAnchor, linkDraft, persistDraft, pushUndo, selection.end, selection.start]);
+
+  const confirmRemoveLink = useCallback(
+    (span: CanvasLinkSpan) => {
+      if (linkDeleteGuardRef.current) return;
+      linkDeleteGuardRef.current = true;
+      const current = draftRef.current;
+      Alert.alert(t('studyNote.deleteLinkTitle'), t('studyNote.deleteLinkMessage'), [
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+          onPress: () => {
+            linkDeleteGuardRef.current = false;
+            persistDraft(current, { programmatic: true, cursor: span.end });
+            requestAnimationFrame(() => inputRef.current?.focus());
+          },
+        },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => {
+            linkDeleteGuardRef.current = false;
+            const removed = removeCanvasLinkSpan(current, span);
+            pushUndo(current);
+            persistDraft(removed.text, { programmatic: true, cursor: removed.cursor });
+            void Haptics.selectionAsync();
+            requestAnimationFrame(() => inputRef.current?.focus());
+          },
+        },
+      ]);
+    },
+    [persistDraft, pushUndo, t],
+  );
+
   const onToolbarAction = useCallback(
     (action: StudyToolbarAction) => {
       if (action === 'dismiss-keyboard') {
@@ -309,6 +389,9 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
             onPress: () => {
               pushUndo(draftRef.current);
               persistDraft('', { programmatic: true });
+              setLinkEditorOpen(false);
+              setLinkDraft('');
+              setLinkAnchor(null);
               void Haptics.selectionAsync();
             },
           },
@@ -317,6 +400,31 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
       }
       if (action === 'image') {
         void pickAndInsertImage();
+        return;
+      }
+      if (action === 'link') {
+        if (linkEditorOpen) {
+          setLinkEditorOpen(false);
+          setLinkDraft('');
+          setLinkAnchor(null);
+          void Haptics.selectionAsync();
+          return;
+        }
+        const current = draftRef.current;
+        setLinkAnchor({
+          start: selection.start,
+          end: selection.end,
+          line: canvasLineIndex(current, selection.start),
+        });
+        setLinkDraft(
+          extractCanvasLineLink(
+            current.slice(Math.min(selection.start, selection.end), Math.max(selection.start, selection.end)),
+          )
+            ?? extractCanvasLineLink(canvasLineRange(current, selection.start).line)
+            ?? '',
+        );
+        setLinkEditorOpen(true);
+        void Haptics.selectionAsync();
         return;
       }
       const current = draftRef.current;
@@ -346,13 +454,22 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
       });
       void Haptics.selectionAsync();
     },
-    [persistDraft, pickAndInsertImage, pushUndo, selection.end, selection.start, t],
+    [linkEditorOpen, persistDraft, pickAndInsertImage, pushUndo, selection.end, selection.start, t],
   );
 
   const fontSize = width >= 768 ? 26 : width >= 390 ? 22 : 20;
   const lineHeight = Math.round(fontSize * 1.45);
   const keyboardPad = studyNoteKeyboardBottomPad(keyboardInset, bottomTabBarHeight);
   const currentLine = canvasLineRange(draft, selection.start).line;
+  const lineLinkHits = useMemo(
+    () =>
+      draft.split('\n').flatMap((line, index) => {
+        const url = extractCanvasLineLink(line);
+        if (!url || url === 'https://') return [];
+        return [{ index, url, lead: canvasLineLinkLead(line, url) }];
+      }),
+    [draft],
+  );
   const canUndo = undoStackRef.current.length > 0;
   const canRedo = redoStackRef.current.length > 0;
   void historyTick;
@@ -405,6 +522,12 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
       </View>
 
       <View style={[styles.editor, { paddingBottom: keyboardPad }]}>
+        <View
+          style={styles.noteBody}
+          onLayout={(event) => {
+            const next = Math.round(event.nativeEvent.layout.width);
+            if (next > 0 && next !== noteColumnWidth) setNoteColumnWidth(next);
+          }}>
         <ThemedTextInput
           ref={inputRef}
           value={draft}
@@ -417,6 +540,17 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
               return;
             }
             programmaticEchoRef.current = null;
+            const prev = draftRef.current;
+            if (linkDeleteGuardRef.current) {
+              persistDraft(prev, { programmatic: true });
+              return;
+            }
+            const linkSpan = detectCanvasLinkBackspace(prev, text);
+            if (linkSpan) {
+              persistDraft(prev, { programmatic: true, cursor: linkSpan.end });
+              confirmRemoveLink(linkSpan);
+              return;
+            }
             const prefixed = continueCanvasListAfterChange(draftRef.current, text);
             if (prefixed) {
               persistDraft(prefixed.text, { programmatic: true, cursor: prefixed.cursor });
@@ -439,6 +573,89 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
           }}
           style={inputStyle}
         />
+            {linkEditorOpen && linkAnchor ? (
+              <View
+                style={[
+                  styles.cursorLinkEditor,
+                  {
+                    top: linkAnchor.line * lineHeight,
+                    backgroundColor: NOTE_PAGE_BG,
+                    borderColor: palette.outlineVariant,
+                  },
+                ]}>
+                <TextInput
+                  value={linkDraft}
+                  onChangeText={setLinkDraft}
+                  placeholder="https://"
+                  placeholderTextColor={palette.outline}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  autoFocus
+                  style={[styles.cursorLinkInput, { color: palette.onSurface }]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.apply')}
+                  onPress={applyLink}
+                  style={[styles.cursorLinkApply, { borderColor: palette.onSurface }]}>
+                  <ThemedText style={[styles.cursorLinkApplyLabel, { color: palette.onSurface }]}>
+                    {t('common.apply')}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            ) : null}
+            {!linkEditorOpen
+              ? lineLinkHits.map((item) => {
+                  const key = `${item.index}-${item.url}`;
+                  const pos = linkIconPos[key];
+                  return (
+                    <View key={key} pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+                      <ThemedText
+                        pointerEvents="none"
+                        onTextLayout={(event) => {
+                          const last = event.nativeEvent.lines.at(-1);
+                          const textLineH = last?.height ?? lineHeight;
+                          const next = {
+                            x: (last?.width ?? 0) + 2,
+                            y:
+                              item.index * lineHeight +
+                              (last?.y ?? 0) +
+                              (textLineH - LINK_HIT_SIZE) / 2 +
+                              LINK_ICON_Y_ALIGN,
+                          };
+                          setLinkIconPos((prevPos) => {
+                            const cur = prevPos[key];
+                            if (cur && Math.abs(cur.x - next.x) < 0.5 && Math.abs(cur.y - next.y) < 0.5) {
+                              return prevPos;
+                            }
+                            return { ...prevPos, [key]: next };
+                          });
+                        }}
+                        style={[
+                          styles.cursorLinkMeasure,
+                          {
+                            fontSize,
+                            lineHeight,
+                            width: noteColumnWidth > 0 ? noteColumnWidth : '100%',
+                          },
+                        ]}>
+                        {item.lead}
+                      </ThemedText>
+                      {pos ? (
+                        <Pressable
+                          accessibilityRole="link"
+                          accessibilityLabel={t('studyNote.openLinkA11y', { url: item.url })}
+                          onPress={() => void handleOpenLink(item.url)}
+                          style={[styles.cursorLinkHit, { top: pos.y, left: pos.x }]}>
+                          <IconSymbol name="link" size={LINK_ICON_SIZE} color={NOTE_LINK_COLOR} />
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  );
+                })
+              : null}
+        </View>
       </View>
 
       {!listOpen && keyboardInset > 0 ? (
@@ -483,6 +700,7 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
           <StudyDocumentToolbar
             palette={palette}
             surfaceBg={NOTE_PAGE_BG}
+            linkPickerOpen={linkEditorOpen}
             canUndo={canUndo}
             canRedo={canRedo}
             canResetDocument={draft.trim().length > 0}
@@ -616,10 +834,61 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 14,
   },
+  noteBody: {
+    flex: 1,
+    minHeight: 0,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  cursorLinkEditor: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 36,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  cursorLinkInput: {
+    flex: 1,
+    paddingVertical: 6,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cursorLinkApply: {
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  cursorLinkApplyLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  cursorLinkMeasure: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    opacity: 0,
+    includeFontPadding: false,
+    fontWeight: '500',
+  },
+  cursorLinkHit: {
+    position: 'absolute',
+    zIndex: 2,
+    width: LINK_HIT_SIZE,
+    height: LINK_HIT_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   input: {
     flex: 1,
     minHeight: 120,
     minWidth: 0,
+    maxWidth: '100%',
     alignSelf: 'stretch',
     padding: 0,
     margin: 0,

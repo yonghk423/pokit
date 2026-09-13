@@ -300,13 +300,160 @@ export function applyCanvasToolbarToDraft(
       return `${text}${text.endsWith('\n') || text.length === 0 ? '' : '\n'}[표]`;
     case 'image':
       return `${text}${text.endsWith('\n') || text.length === 0 ? '' : '\n'}[이미지]`;
-    case 'link': {
-      if (body.length === 0) return replaceLine(text, cursor, '[링크](https://)');
-      return replaceLine(text, cursor, `[${body}](https://)`);
-    }
+    case 'link':
+      return text;
     default:
       return null;
   }
+}
+
+export function extractCanvasLineLink(line: string): string | undefined {
+  const markdown = /\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/i.exec(line);
+  if (markdown?.[1]) return markdown[1];
+  const bare = /https?:\/\/[^\s]+/i.exec(line);
+  if (bare?.[0]) return bare[0].replace(/[),.;]+$/, '');
+  const www = /\bwww\.[^\s]+/i.exec(line);
+  if (www?.[0]) return `https://${www[0].replace(/[),.;]+$/, '')}`;
+  return undefined;
+}
+
+/** 줄 시작부터 주소 끝까지. 클립 아이콘을 주소 바로 옆에 둘 때 쓴다. */
+export function canvasLineLinkLead(line: string, url: string): string {
+  const markdown = /\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/i.exec(line);
+  if (markdown?.[0]) {
+    return line.slice(0, (markdown.index ?? 0) + markdown[0].length);
+  }
+  const bare = /https?:\/\/[^\s]+/i.exec(line);
+  if (bare?.[0]) {
+    const mark = bare[0].replace(/[),.;]+$/, '');
+    return line.slice(0, (bare.index ?? 0) + mark.length);
+  }
+  const www = /\bwww\.[^\s]+/i.exec(line);
+  if (www?.[0]) {
+    const mark = www[0].replace(/[),.;]+$/, '');
+    return line.slice(0, (www.index ?? 0) + mark.length);
+  }
+  const idx = line.indexOf(url);
+  if (idx >= 0) return line.slice(0, idx + url.length);
+  return line;
+}
+
+export function canvasLineIndex(text: string, cursor: number): number {
+  return Math.max(0, text.slice(0, Math.max(0, cursor)).split('\n').length - 1);
+}
+
+/** 주소 뒤에 클립 아이콘·커서가 앉을 자리. `\s`라 URL 매칭에 포함되지 않는다. */
+export const CANVAS_LINK_ICON_GAP = '\u2003\u2003';
+
+export type CanvasLinkSpan = {
+  start: number;
+  end: number;
+  url: string;
+};
+
+export function ensureCanvasLinkGaps(text: string): string {
+  return text
+    .split('\n')
+    .map((line) => {
+      const url = extractCanvasLineLink(line);
+      if (!url) return line;
+      const lead = canvasLineLinkLead(line, url);
+      const after = line.slice(lead.length);
+      if (after.startsWith(CANVAS_LINK_ICON_GAP)) return line;
+      return `${lead}${CANVAS_LINK_ICON_GAP}${after}`;
+    })
+    .join('\n');
+}
+
+function canvasLineLinkMarkStart(line: string, url: string): number {
+  const markdown = /\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/i.exec(line);
+  if (markdown) return markdown.index ?? 0;
+  const bare = /https?:\/\/[^\s]+/i.exec(line);
+  if (bare) return bare.index ?? 0;
+  const www = /\bwww\.[^\s]+/i.exec(line);
+  if (www) return www.index ?? 0;
+  const idx = line.indexOf(url);
+  if (idx >= 0) return idx;
+  return 0;
+}
+
+export function findCanvasLinkSpans(text: string): CanvasLinkSpan[] {
+  const spans: CanvasLinkSpan[] = [];
+  let offset = 0;
+  for (const line of text.split('\n')) {
+    const url = extractCanvasLineLink(line);
+    if (url) {
+      const lead = canvasLineLinkLead(line, url);
+      const after = line.slice(lead.length);
+      const gap = after.startsWith(CANVAS_LINK_ICON_GAP) ? CANVAS_LINK_ICON_GAP.length : 0;
+      spans.push({
+        start: offset + canvasLineLinkMarkStart(line, url),
+        end: offset + lead.length + gap,
+        url,
+      });
+    }
+    offset += line.length + 1;
+  }
+  return spans;
+}
+
+export function findDeletedRange(prev: string, next: string): { start: number; end: number } | null {
+  if (next.length >= prev.length) return null;
+  let start = 0;
+  while (start < next.length && prev[start] === next[start]) start += 1;
+  let prevEnd = prev.length;
+  let nextEnd = next.length;
+  while (prevEnd > start && nextEnd > start && prev[prevEnd - 1] === next[nextEnd - 1]) {
+    prevEnd -= 1;
+    nextEnd -= 1;
+  }
+  if (next !== `${prev.slice(0, start)}${prev.slice(prevEnd)}`) return null;
+  return { start, end: prevEnd };
+}
+
+export function detectCanvasLinkBackspace(prev: string, next: string): CanvasLinkSpan | null {
+  const range = findDeletedRange(prev, next);
+  if (!range) return null;
+  return (
+    findCanvasLinkSpans(prev).find((span) => range.start < span.end && range.end > span.start) ?? null
+  );
+}
+
+export function removeCanvasLinkSpan(text: string, span: CanvasLinkSpan): { text: string; cursor: number } {
+  return {
+    text: `${text.slice(0, span.start)}${text.slice(span.end)}`,
+    cursor: span.start,
+  };
+}
+
+/** 커서(또는 선택 뒤)에 링크 주소를 본문 텍스트로 넣는다. */
+export function insertCanvasLinkText(
+  text: string,
+  start: number,
+  end: number,
+  url: string,
+): { text: string; cursor: number } {
+  const from = Math.min(start, end);
+  const to = Math.max(start, end);
+  if (!url) return { text, cursor: to };
+  if (text.slice(from, to) === url || (text.includes(url) && canvasLineRange(text, from).line.includes(url))) {
+    const ensured = ensureCanvasLinkGaps(text);
+    const span = findCanvasLinkSpans(ensured).find((item) => item.url === url);
+    return { text: ensured, cursor: span?.end ?? to };
+  }
+  const selected = text.slice(from, to);
+  const insertAt = selected.length > 0 ? to : from;
+  const before = text[insertAt - 1] ?? '';
+  const prefix = insertAt > 0 && !/[\s\n]/.test(before) ? ' ' : '';
+  const snippet = `${prefix}${url}${CANVAS_LINK_ICON_GAP}`;
+  const next = `${text.slice(0, insertAt)}${snippet}${text.slice(insertAt)}`;
+  return { text: next, cursor: insertAt + snippet.length };
+}
+
+function withExtractedLineLink(block: WorkStudyDocBlock, raw: string): WorkStudyDocBlock {
+  const link = extractCanvasLineLink(raw);
+  if (!link) return block;
+  return { ...block, marks: { ...block.marks, link } };
 }
 
 export function canvasDraftToBlocks(text: string): WorkStudyDocBlock[] {
@@ -326,26 +473,26 @@ export function canvasDraftToBlocks(text: string): WorkStudyDocBlock[] {
     if (heading) {
       const block = createWorkStudyDocBlock('heading', { headingLevel: heading });
       block.text = stripCanvasLinePrefix(raw);
-      return block;
+      return withExtractedLineLink(block, raw);
     }
     if (CHECKED_RE.test(raw) || UNCHECKED_RE.test(raw)) {
       const block = createWorkStudyDocBlock('paragraph');
       block.text = stripCanvasLinePrefix(raw);
-      return block;
+      return withExtractedLineLink(block, raw);
     }
     if (BULLET_RE.test(raw)) {
       const block = createWorkStudyDocBlock('bullet');
       block.text = raw.replace(BULLET_RE, '');
-      return block;
+      return withExtractedLineLink(block, raw);
     }
     if (NUMBERED_RE.test(raw)) {
       const block = createWorkStudyDocBlock('numbered');
       block.text = raw.replace(NUMBERED_RE, '');
-      return block;
+      return withExtractedLineLink(block, raw);
     }
     const block = createWorkStudyDocBlock('paragraph');
     block.text = raw;
-    return block;
+    return withExtractedLineLink(block, raw);
   });
 }
 

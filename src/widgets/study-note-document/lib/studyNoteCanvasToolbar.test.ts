@@ -4,9 +4,15 @@ import {
   canvasBlocksToDraft,
   canvasDraftToBlocks,
   canvasLineListKind,
+  CANVAS_LINK_ICON_GAP,
   continueCanvasListAfterChange,
+  detectCanvasLinkBackspace,
+  ensureCanvasLinkGaps,
   exitCanvasListAfterBackspace,
+  extractCanvasLineLink,
+  insertCanvasLinkText,
   isCanvasProgrammaticTextEcho,
+  removeCanvasLinkSpan,
 } from './studyNoteCanvasToolbar';
 
 describe('studyNoteCanvasToolbar', () => {
@@ -97,6 +103,31 @@ describe('studyNoteCanvasToolbar', () => {
       text: '• 장보기\n• ',
       cursor: '• 장보기\n• '.length,
     });
+  });
+
+  it('inserts the url at the cursor and asks to remove it as a unit', () => {
+    expect(insertCanvasLinkText('장보기', 3, 3, 'https://www.naver.com')).toEqual({
+      text: `장보기 https://www.naver.com${CANVAS_LINK_ICON_GAP}`,
+      cursor: `장보기 https://www.naver.com${CANVAS_LINK_ICON_GAP}`.length,
+    });
+    expect(insertCanvasLinkText('', 0, 0, 'https://www.naver.com')).toEqual({
+      text: `https://www.naver.com${CANVAS_LINK_ICON_GAP}`,
+      cursor: `https://www.naver.com${CANVAS_LINK_ICON_GAP}`.length,
+    });
+    expect(extractCanvasLineLink('https://www.naver.com')).toBe('https://www.naver.com');
+    expect(ensureCanvasLinkGaps('https://www.naver.com')).toBe(
+      `https://www.naver.com${CANVAS_LINK_ICON_GAP}`,
+    );
+    const inserted = insertCanvasLinkText('', 0, 0, 'https://www.naver.com');
+    const afterBackspace = inserted.text.slice(0, -1);
+    expect(detectCanvasLinkBackspace(inserted.text, afterBackspace)?.url).toBe('https://www.naver.com');
+    expect(removeCanvasLinkSpan(inserted.text, detectCanvasLinkBackspace(inserted.text, afterBackspace)!)).toEqual({
+      text: '',
+      cursor: 0,
+    });
+    expect(canvasDraftToBlocks(`장보기 https://www.naver.com${CANVAS_LINK_ICON_GAP}`)[0]?.marks?.link).toBe(
+      'https://www.naver.com',
+    );
   });
 
   it('ignores only native rollback after a list prefix is applied', () => {

@@ -1168,6 +1168,8 @@
   "studyNote.deleteMemoA11y": "ノート「{title}」を削除",
   "studyNote.deleteMemoMessage": "ノート「{title}」を削除しますか？",
   "studyNote.deleteMemoTitle": "ノートを削除",
+  "studyNote.deleteLinkMessage": "このリンクを削除しますか？",
+  "studyNote.deleteLinkTitle": "リンクを削除",
   "studyNote.deletePhotoMessage": "この写真を削除しますか？",
   "studyNote.deletePhotoTitle": "写真を削除",
   "studyNote.editBodyA11y": "本文を編集",
