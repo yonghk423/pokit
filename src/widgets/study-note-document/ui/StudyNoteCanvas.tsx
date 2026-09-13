@@ -1,6 +1,16 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Keyboard, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Keyboard,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import {
@@ -64,15 +74,21 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
   const bottomTabBarHeight = useBottomTabBarHeight();
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [listOpen, setListOpen] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
   const [draft, setDraft] = useState(() => documentToDraft(document));
+  const inputRef = useRef<TextInput>(null);
+  const keyboardInsetRef = useRef(0);
+  const fabProgress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
     const showSub = Keyboard.addListener(showEvent, (event) => {
+      keyboardInsetRef.current = event.endCoordinates.height;
       setKeyboardInset(event.endCoordinates.height);
     });
     const hideSub = Keyboard.addListener(hideEvent, () => {
+      keyboardInsetRef.current = 0;
       setKeyboardInset(0);
     });
     return () => {
@@ -101,11 +117,30 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
     [onChangeDocument],
   );
 
+  const animateFab = useCallback(
+    (open: boolean) => {
+      setFabOpen(open);
+      Animated.timing(fabProgress, {
+        toValue: open ? 1 : 0,
+        duration: 240,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    },
+    [fabProgress],
+  );
+
+  const retainEditorKeyboard = useCallback(() => {
+    if (keyboardInsetRef.current <= 0) return;
+    inputRef.current?.focus();
+  }, []);
+
   const openList = useCallback(() => {
     void Haptics.selectionAsync();
     Keyboard.dismiss();
+    animateFab(false);
     setListOpen(true);
-  }, []);
+  }, [animateFab]);
 
   const closeList = useCallback(() => {
     void Haptics.selectionAsync();
@@ -219,6 +254,7 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
 
       <View style={[styles.editor, { paddingBottom: keyboardPad }]}>
         <ThemedTextInput
+          ref={inputRef}
           value={draft}
           onChangeText={persistDraft}
           placeholder={t('studyNote.emptyTitle')}
@@ -246,6 +282,69 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
             },
           ]}>
           <IconSymbol name="keyboard.chevron.compact.down" size={16} color="rgba(24, 24, 27, 0.28)" />
+        </Pressable>
+      ) : null}
+
+      {!listOpen ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={fabOpen ? t('studyNote.toolbarFabCloseA11y') : t('studyNote.toolbarFabMockA11y')}
+          onPressIn={retainEditorKeyboard}
+          onPress={() => {
+            void Haptics.selectionAsync();
+            animateFab(!fabOpen);
+          }}
+          style={[
+            styles.fabMock,
+            {
+              bottom: keyboardPad + 16,
+              backgroundColor: RetroFlatColors.light.bgMint,
+            },
+          ]}>
+          <View style={styles.fabIconSlot}>
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.fabIconLayer,
+                {
+                  opacity: fabProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 0],
+                  }),
+                  transform: [
+                    {
+                      rotate: fabProgress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0deg', '90deg'],
+                      }),
+                    },
+                  ],
+                },
+              ]}>
+              <IconSymbol name="plus" size={16} color="#000000" />
+            </Animated.View>
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.fabIconLayer,
+                {
+                  opacity: fabProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 1],
+                  }),
+                  transform: [
+                    {
+                      rotate: fabProgress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['-90deg', '0deg'],
+                      }),
+                    },
+                  ],
+                },
+              ]}>
+              <IconSymbol name="xmark" size={16} color="#000000" />
+            </Animated.View>
+          </View>
         </Pressable>
       ) : null}
 
@@ -329,5 +428,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
+  },
+  /** 목업. 본문 padding에 더하지 말 것 — 키패드 위에만 겹친다. */
+  fabMock: {
+    position: 'absolute',
+    right: 16,
+    zIndex: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+  },
+  fabIconSlot: {
+    width: 16,
+    height: 16,
+  },
+  fabIconLayer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
