@@ -244,7 +244,7 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
       ink,
       muted,
       line: _line,
-      surface = '#FFFFFF',
+      surface,
       selectedForeground: _selectedForeground,
       disabled = false,
       snapStepMinutes = 1,
@@ -263,7 +263,7 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
     const selectedFill = accentFill ?? tone.bgMint;
     const selectedInk = accentInk ?? (isDark ? tone.text : tone.tertiary);
     const resolvedDigit = digitColor ?? ink;
-    const unselectedFill = isDark ? tone.surfaceAlt : surface;
+    const unselectedFill = surface ?? (isDark ? tone.surfaceAlt : tone.bg);
     const unselectedInk = muted;
 
     const synced = useMemo(() => parseHhmm(valueHhmm)?.total ?? 9 * 60, [valueHhmm]);

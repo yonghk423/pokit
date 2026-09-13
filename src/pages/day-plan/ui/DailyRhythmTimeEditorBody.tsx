@@ -396,7 +396,7 @@ function OnboardingTimeRow({
               ink={c.onSurface}
               muted={c.onVariant}
               line={c.border}
-              surface={isDark ? ink.surfaceAlt : '#FFFFFF'}
+              surface={isDark ? ink.surfaceAlt : ink.bg}
               selectedForeground={selectedFg}
               snapStepMinutes={1}
               mapMidnightToEndOfDay={mapMidnightToEndOfDay}
@@ -634,9 +634,9 @@ export function DailyRhythmTimeEditorBody({
         ? formatDateKeyCompact(addDaysToLocalDateKey(priorityPlanRangeLo, 1), locale)
         : startDate;
     if (endDate === startDate) {
-      return { left: `${startDate} ${startLabel}`, right: endLabel };
+      return { left: `${startDate}\n${startLabel}`, right: endLabel };
     }
-    return { left: `${startDate} ${startLabel}`, right: `${endDate} ${endLabel}` };
+    return { left: `${startDate}\n${startLabel}`, right: `${endDate}\n${endLabel}` };
   }, [endDateTarget, endHhmm, locale, priorityPlanRangeLo, startHhmm, t]);
 
   const timePickerPalette = useMemo(
@@ -644,9 +644,9 @@ export function DailyRhythmTimeEditorBody({
       onSurface: c.onSurface,
       onVariant: c.onVariant,
       border: c.border,
-      containerLowest: isDark ? ink.surfaceAlt : '#FFFFFF',
+      containerLowest: isDark ? ink.surfaceAlt : ink.bg,
     }),
-    [c, ink.surfaceAlt, isDark],
+    [c, ink.bg, ink.surfaceAlt, isDark],
   );
 
   const settingsTimeCard = (
@@ -1202,13 +1202,13 @@ const styles = StyleSheet.create({
   dayChoiceText: { fontSize: 12, textAlign: 'center' },
 
   summaryBox: {
-    marginTop: 8,
+    marginTop: 10,
     position: 'relative',
   },
   summaryBadge: {
     position: 'absolute',
-    top: -11,
-    left: 14,
+    top: -16,
+    right: 14,
     zIndex: 2,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -1222,24 +1222,24 @@ const styles = StyleSheet.create({
   summarySplit: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 52,
+    minHeight: 40,
     overflow: 'hidden',
   },
   summaryWave: {
     fontSize: 18,
     lineHeight: 20,
     paddingHorizontal: 2,
-    marginTop: 4,
+    marginTop: 2,
   },
   summaryHalf: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingTop: 22,
+    paddingBottom: 6,
   },
-  summaryValue: { fontSize: 13, letterSpacing: -0.2, textAlign: 'center', lineHeight: 18 },
+  summaryValue: { fontSize: 16, letterSpacing: -0.2, textAlign: 'center', lineHeight: 24 },
 
   settingsHero: { gap: 6 },
   settingsKicker: {

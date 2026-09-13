@@ -69,6 +69,8 @@ const DRAWER_MAX_WIDTH = 320;
 const DRAWER_WIDTH_RATIO = 0.82;
 const KEYBOARD_ACCESSORY_ESTIMATED_HEIGHT = 132;
 const STUDY_DOCUMENT_INPUT_ACCESSORY_ID = 'study-document-toolbar';
+/** 임시: 노트 툴바 숨김 — 다시 켤 때 false */
+const TEMP_HIDE_STUDY_TOOLBAR = true;
 const EDITOR_HEADER_HEIGHT = 52;
 const BLOCKS_INNER_PAD_TOP = 10;
 const BLOCKS_INNER_PAD_BOTTOM = 8;
@@ -2540,9 +2542,12 @@ export function StudyDocumentEditor({
    * accessory 모드에서 TextInput props가 자주 바뀌면 iOS가 reloadInputViews로 키보드를 깜빡인다.
    * 리스트 토글 시 props는 안정화하고, 도킹 모드에서는 터치 시 포커스를 붙잡는다.
    */
-  const useInputAccessory = Platform.OS === 'ios' && !useDockedKeyboardToolbar;
+  const useInputAccessory =
+    !TEMP_HIDE_STUDY_TOOLBAR && Platform.OS === 'ios' && !useDockedKeyboardToolbar;
   const textInputAccessoryViewID = useInputAccessory ? STUDY_DOCUMENT_INPUT_ACCESSORY_ID : undefined;
-  const showDockedToolbar = useDockedKeyboardToolbar || Platform.OS !== 'ios' || !keyboardOpen;
+  const showDockedToolbar =
+    !TEMP_HIDE_STUDY_TOOLBAR &&
+    (useDockedKeyboardToolbar || Platform.OS !== 'ios' || !keyboardOpen);
   const toolbarPanelHeight = showLinkInput ? 56 : showColorPicker ? 44 : 0;
   const toolbarLayoutActive = useInputAccessory || showDockedToolbar;
   const accessoryReserve =
