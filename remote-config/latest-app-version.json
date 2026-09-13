@@ -1,25 +1,25 @@
 {
-  "latestVersion": "1.7.6",
+  "latestVersion": "1.7.7",
   "highlights": [
-    "하루 시작·마무리를 48시간 원형 다이얼로 보고 활동·수면 시간을 맞출 수 있어요.",
-    "시작·마무리 알림을 설정 > 알림에서 켜고 끌 수 있어요.",
-    "오늘 탭 투두를 입력할 때 키보드에 가리지 않도록 고쳤어요."
+    "오늘 탭 노트에 글머리·번호 목록과 실행 취소 툴바를 넣었어요.",
+    "키패드가 올라와도 노트 본문이 가리지 않도록 고쳤어요.",
+    "메모 목록이 부드럽게 열리고 닫히도록 다듬었어요."
   ],
   "highlightsByLocale": {
     "ko": [
-      "하루 시작·마무리를 48시간 원형 다이얼로 보고 활동·수면 시간을 맞출 수 있어요.",
-      "시작·마무리 알림을 설정 > 알림에서 켜고 끌 수 있어요.",
-      "오늘 탭 투두를 입력할 때 키보드에 가리지 않도록 고쳤어요."
+      "오늘 탭 노트에 글머리·번호 목록과 실행 취소 툴바를 넣었어요.",
+      "키패드가 올라와도 노트 본문이 가리지 않도록 고쳤어요.",
+      "메모 목록이 부드럽게 열리고 닫히도록 다듬었어요."
     ],
     "en": [
-      "Set day start and wrap-up on a 48-hour dial that shows active and sleep time.",
-      "Turn day-start and daily-review alerts on or off in Settings > Notifications.",
-      "Fixed the today-tab todo list so the keyboard no longer covers what you’re typing."
+      "The today-tab note now has a toolbar for bullets, numbered lists, and undo.",
+      "Fixed the note so the keyboard no longer covers what you’re writing.",
+      "The memo list now opens and closes more smoothly."
     ],
     "ja": [
-      "1日の開始・終了を48時間の円形ダイヤルで見て、活動・睡眠時間を合わせられます。",
-      "開始・振り返り通知を設定 > 通知でオン／オフできます。",
-      "今日タブのToDo入力がキーボードに隠れないように修正しました。"
+      "今日タブのノートに箇条書き・番号リスト・取り消しツールバーを追加しました。",
+      "キーボードがノート本文を隠さないように修正しました。",
+      "メモ一覧の開閉がよりスムーズになりました。"
     ]
   },
   "storeUrls": {
