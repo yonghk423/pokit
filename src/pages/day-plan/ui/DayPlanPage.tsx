@@ -781,6 +781,8 @@ export function DayPlanPage({
       <KeyboardAvoidingView
         style={[styles.keyboardColumn, { backgroundColor: shellBg }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // dayNote: StudyNoteCanvas가 Keyboard inset → paddingBottom으로 본문을 줄인다.
+        // 여기서 avoiding을 켜면 키패드가 노트를 가리거나 이중으로 민다. 끄지 말 것.
         enabled={planMode !== 'dayNote' && planMode !== 'quickMemo' && planMode !== 'todoList'}
         keyboardVerticalOffset={0}>
         <View style={[styles.mainColumn, { backgroundColor: shellBg }]}>

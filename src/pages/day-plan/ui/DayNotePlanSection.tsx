@@ -1,4 +1,3 @@
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -10,7 +9,8 @@ import {
   loadGoalDetailCategoryConfig,
   saveGoalDetailCategoryConfig,
 } from '@shared/lib/storage/goalDetailSettingsStorage';
-import { StudyDocumentEditor, studyNoteDocumentPalette } from '@widgets/study-note-document';
+import { StudyNoteCanvas, studyNoteDocumentPalette } from '@widgets/study-note-document';
+// 레거시: import { StudyDocumentEditor } from '@widgets/study-note-document';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
@@ -35,7 +35,8 @@ type Props = {
 /** 오늘 탭 — 노트 루틴과 동일한 문서 편집 (상시 접근) */
 export function DayNotePlanSection({ c, isDark }: Props) {
   const palette = useMemo(() => studyNoteDocumentPalette(isDark), [isDark]);
-  const keyboardBottomChromeInset = useBottomTabBarHeight();
+  // 레거시 StudyDocumentEditor 도킹용
+  // const keyboardBottomChromeInset = useBottomTabBarHeight();
 
   const [document, setDocument] = useState<WorkStudyDocument>(loadWorkDocument);
   const documentRef = useRef(document);
@@ -80,6 +81,12 @@ export function DayNotePlanSection({ c, isDark }: Props) {
 
   return (
     <View style={[styles.root, { backgroundColor: c.containerLow }]}>
+      <StudyNoteCanvas
+        document={document}
+        onChangeDocument={setDocument}
+        palette={palette}
+      />
+      {/*
       <StudyDocumentEditor
         document={document}
         onChangeDocument={setDocument}
@@ -87,6 +94,7 @@ export function DayNotePlanSection({ c, isDark }: Props) {
         keyboardToolbarMode="docked"
         keyboardBottomChromeInset={keyboardBottomChromeInset}
       />
+      */}
     </View>
   );
 }

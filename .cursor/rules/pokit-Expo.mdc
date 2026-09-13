@@ -185,6 +185,12 @@ pokit 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상태�
 - 한국어 UI에서 사용자 대면 용어는 **「루틴」**을 기본으로 쓴다. **「리듬」** 표기는 쓰지 않는다. 일본어 UI에서는 **「ルーチン」**을 쓴다. 데이플랜·알림 등에서는 **「일정」「항목」「집중」** 등으로 통일해도 된다. 코드·API·파일명의 `customFlow`·`flow` 식별자는 내부용으로 유지한다.
 - 코드/주석/변수명은 기존 프로젝트 컨벤션을 따르고, 사용자 대면 문자열은 로케일 사전(`src/shared/lib/i18n/model/messages/{ko,en,ja}.json`)과 번역 함수를 통해 관리한다.
 
+## 7.1.0 오늘 탭 노트 — 키패드가 본문을 가리지 않음 (고정)
+
+- **검증된 동작:** 키패드가 올라와도 노트 본문이 가려지지 않는다. 서식·툴바를 붙여도 이 경로를 바꾸지 않는다.
+- **상세 불변·금지 목록:** `.cursor/rules/study-note-keyboard.mdc`
+- **기준 코드:** `StudyNoteCanvas` + `studyNoteKeyboardBottomPad`. `DayPlanPage`의 `KeyboardAvoidingView`는 `dayNote`에서 disabled.
+
 ## 7.1 초기 화면(Empty State) 규칙 — 데이플랜 온보딩
 
 - 앱 최초 진입 또는 **하루 주기(시작·마무리 시각) 온보딩**이 완료되지 않았을 때, `day-plan` 화면은 `DailyRhythmOnboardingGate`로 첫 설정을 유도한다.

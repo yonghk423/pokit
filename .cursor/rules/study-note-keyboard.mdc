@@ -1,0 +1,32 @@
+---
+description: 오늘 탭 노트 — 키패드가 본문을 가리면 안 됨 (고정 불변)
+globs: src/widgets/study-note-document/**/*,src/pages/day-plan/ui/DayNotePlanSection.tsx,src/pages/day-plan/ui/DayPlanPage.tsx
+alwaysApply: true
+---
+
+# 오늘 탭 노트 키패드 (훼손 금지)
+
+키패드가 올라와도 **노트 본문이 가려지지 않는 것**은 검증된 동작이다. 서식·툴바·목록을 붙일 때도 이 경로를 바꾸지 않는다.
+
+## 기준 구현
+
+- 캔버스: `src/widgets/study-note-document/ui/StudyNoteCanvas.tsx`
+- 여백 계산: `src/widgets/study-note-document/lib/studyNoteKeyboardPad.ts`
+- 페이지: `DayPlanPage`의 `KeyboardAvoidingView`는 `planMode === 'dayNote'`일 때 **반드시 disabled**
+
+## 동작 방식 (이것만 유지)
+
+1. 페이지 `KeyboardAvoidingView`로 화면을 밀어올리지 않는다. (빠른메모·할 일과 동일)
+2. `Keyboard` show/hide로 `keyboardInset`만 받는다.
+3. 노트 루트 `paddingBottom`으로 입력 영역을 줄인다. 공식은 `studyNoteKeyboardBottomPad`만 쓴다. (탭바가 키보드에 가려지므로 `keyboardInset - tabBarHeight`를 뺀다.)
+4. 루트·입력칸은 `flex: 1` + `minHeight: 0`. 입력칸은 `scrollEnabled` + `textAlignVertical: 'top'`.
+
+## 금지 (과거에 본문을 가리거나 잘리게 만든 것)
+
+- 노트 안에 `KeyboardAvoidingView` / `keyboardVerticalOffset` 추가
+- `InputAccessoryView`·도킹 툴바·FAB로 본문 높이를 또 빼기
+- 엔터마다 `scrollIntoView` / 포커스 스크롤
+- 마지막 문단 `flex: 1`로 `onContentSizeChange` 높이를 고정
+- `DayPlanPage`에서 `dayNote`일 때 avoiding을 다시 켜기
+
+레거시 `StudyDocumentEditor`의 accessory/docked 툴바 키보드 처리는 **참고만** 하고 새 캔버스에 그대로 이식하지 않는다.

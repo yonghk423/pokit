@@ -972,6 +972,10 @@ function StudyDocumentBlockView({
   );
 }
 
+/**
+ * 레거시 노트 에디터 — 삭제하지 말 것.
+ * 오늘 탭은 `StudyNoteCanvas`를 쓴다. 서식·페이지·툴바 구현을 여기 참고한다.
+ */
 export function StudyDocumentEditor({
   document,
   onChangeDocument,
