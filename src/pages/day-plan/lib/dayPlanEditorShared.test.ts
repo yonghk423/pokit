@@ -93,6 +93,18 @@ describe('dayPlanEditorShared', () => {
     expect(priorityClockCaptionDateKeyEnd('2025-07-14', '2025-07-15', '06:30', '00:00')).toBe(
       '2025-07-15',
     );
+    expect(priorityClockCaptionDateKeyEnd('2026-09-13', '2026-09-14', '06:30', '24:00')).toBe(
+      '2026-09-14',
+    );
+    expect(priorityClockCaptionDateKeyEnd('2026-09-13', '2026-09-14', '06:30', '00:00')).toBe(
+      '2026-09-14',
+    );
+    expect(priorityClockCaptionDateKeyEnd('2026-09-13', '2026-09-15', '06:30', '24:00')).toBe(
+      '2026-09-14',
+    );
+    expect(priorityClockCaptionDateKeyEnd('2026-09-13', '2026-09-15', '06:30', '00:00')).toBe(
+      '2026-09-14',
+    );
   });
 
   it('resolves end noon vs midnight for ambiguous 오전 12:xx', () => {

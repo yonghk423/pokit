@@ -211,8 +211,8 @@ function formatPriorityWindowLine(
   if (ps === null || pe === null) return '';
   const eStr = formatMinuteOfDayKo(pe);
   if (overnight || pe === 24 * 60) {
-    const rangeHi = dateKey <= dateKeyEnd ? dateKeyEnd : dateKey;
-    const endDateKey = pe === 24 * 60 ? addDaysToLocalDateKey(rangeHi, 1) : rangeHi;
+    const { lo, hi } = sortedPlanDateRange(dateKey, dateKeyEnd);
+    const endDateKey = priorityClockCaptionDateKeyEnd(lo, hi, start, end);
     return `${formatMinuteOfDayKo(ps)} — ${formatDateKeyDisplay(endDateKey, locale)} ${eStr}`;
   }
   return `${formatMinuteOfDayKo(ps)} — ${eStr}`;

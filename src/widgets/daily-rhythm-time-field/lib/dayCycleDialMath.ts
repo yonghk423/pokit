@@ -226,6 +226,8 @@ export type DialHandleKind = 'start' | 'end' | 'wake';
 export function resolveEndCycleMinutes(rawCycle: number, startCycle: number): number {
   const raw = ((rawCycle % CYCLE_MINUTES) + CYCLE_MINUTES) % CYCLE_MINUTES;
   const start = ((startCycle % CYCLE_MINUTES) + CYCLE_MINUTES) % CYCLE_MINUTES;
+  // 12시 방향(0)은 48시간 끝이 아니라 첫째 자정.
+  if (raw === 0) return DAY_MINUTES;
   if (raw > start) return raw;
   return raw + CYCLE_MINUTES;
 }
@@ -289,21 +291,36 @@ export function toCycleStartMinutes(dayMinutes: number): number {
 }
 
 export function toCycleEndMinutes(dayMinutes: number, nextDay: boolean): number {
-  // 24:00 (하루 끝)
-  if (dayMinutes === DAY_MINUTES) {
-    return nextDay ? CYCLE_MINUTES : DAY_MINUTES;
+  // 24:00 / 00:00 + 다음 날 = 첫째 자정(1440). 48시간 끝(2880)으로 올리면
+  // 06:30→다음날 00:00 활동이 41h 30m으로 부풀어 오른다.
+  if (dayMinutes === DAY_MINUTES || dayMinutes === 0) {
+    return nextDay || dayMinutes === DAY_MINUTES ? DAY_MINUTES : 0;
   }
   const clock = ((dayMinutes % DAY_MINUTES) + DAY_MINUTES) % DAY_MINUTES;
   return nextDay ? clock + DAY_MINUTES : clock;
 }
 
-/** 사이클 분 → 시계 HH:mm (저장용). 자정 끝은 24:00 */
+/**
+ * 시작보다 앞이거나 같은 마무리(00:00 등)는 다음 자정으로 언랩.
+ * 활동 길이 = 이 값 − 시작.
+ */
+export function unwrapEndAfterStart(startUnwrapped: number, endUnwrapped: number): number {
+  const start = Math.max(0, startUnwrapped);
+  let end = endUnwrapped;
+  if (end <= start) {
+    end += DAY_MINUTES;
+  }
+  if (end >= CYCLE_MINUTES) {
+    end = DAY_MINUTES;
+  }
+  return Math.max(start, end);
+}
+
+/** 사이클 분 → 시계 HH:mm (저장용). 첫째 자정은 00:00 + 다음 날로 왕복한다 */
 export function cycleMinutesToClockHhmm(cycleMinutes: number, asEnd: boolean): string {
   let m = ((cycleMinutes % DAY_MINUTES) + DAY_MINUTES) % DAY_MINUTES;
-  // 언랩이 정확히 DAY 또는 CYCLE 배수면 하루 끝
   if (asEnd && (cycleMinutes === DAY_MINUTES || cycleMinutes === CYCLE_MINUTES || m === 0)) {
-    if (cycleMinutes === 0) return '00:00';
-    if (cycleMinutes > 0 && m === 0) return '24:00';
+    return '00:00';
   }
   if (!asEnd && m === 0) return '00:00';
   const h = Math.floor(m / 60);

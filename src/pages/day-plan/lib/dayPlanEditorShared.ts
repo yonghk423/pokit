@@ -380,9 +380,12 @@ export function priorityClockCaptionDateKeyEnd(
   const ps = parseHHmmToMinutes(priorityStart.trim());
   const pe = parseHHmmToMinutes(priorityEnd.trim());
   if (ps === null || pe === null) return rangeHi;
-  if (pe === 24 * 60 && pe > ps) return addDaysToLocalDateKey(rangeHi, 1);
-  if (pe < ps) {
-    return rangeLo === rangeHi ? addDaysToLocalDateKey(rangeHi, 1) : rangeHi;
+  // 자정(00:00/24:00)과 overnight는「시작일 다음 날」이다.
+  // 이미 13~14처럼 이틀이면 14를 유지하고, 15로 한 번 더 넘기지 않는다.
+  if (pe === 24 * 60 || pe < ps) {
+    const nextDay = addDaysToLocalDateKey(rangeLo, 1);
+    if (rangeLo === rangeHi) return nextDay;
+    return rangeHi > nextDay ? nextDay : rangeHi;
   }
   return rangeHi;
 }

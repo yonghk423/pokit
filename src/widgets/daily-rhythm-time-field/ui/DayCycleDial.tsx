@@ -44,6 +44,7 @@ import {
   snapCycleMinutes,
   toCycleEndMinutes,
   toCycleStartMinutes,
+  unwrapEndAfterStart,
   type DialHandleKind,
 } from '../lib/dayCycleDialMath';
 
@@ -181,12 +182,15 @@ export function DayCycleDial({
   }, []);
 
   const startU = draft?.start ?? parseStartToCycle(startHhmm);
-  const endU = draft?.end ?? parseEndToCycle(endHhmm, endNextDay);
+  const endU = unwrapEndAfterStart(
+    startU,
+    draft?.end ?? parseEndToCycle(endHhmm, endNextDay),
+  );
 
   const displayStart = cycleDisplayMinutes(startU);
   const displayEnd = cycleDisplayMinutes(endU);
 
-  const activitySpanMin = endU - startU;
+  const activitySpanMin = Math.max(0, endU - startU);
   const sleepSpanMin = sleepSpanUntilNextWake(startU, endU);
   const activityDuration = formatBalanceDuration(activitySpanMin, locale);
   const sleepDuration = formatBalanceDuration(sleepSpanMin, locale);

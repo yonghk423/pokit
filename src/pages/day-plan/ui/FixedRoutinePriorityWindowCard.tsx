@@ -1,11 +1,14 @@
 import { StyleSheet, View } from 'react-native';
 
-import { addDaysToLocalDateKey, parseHHmmToMinutes } from '@entities/day-plan';
 import { formatDateKeyCompact, formatHhmmClock } from '@shared/lib/i18n';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { endsOnNextCalendarDay, sortedPlanDateRange } from '../lib/dayPlanEditorShared';
+import {
+  endsOnNextCalendarDay,
+  priorityClockCaptionDateKeyEnd,
+  sortedPlanDateRange,
+} from '../lib/dayPlanEditorShared';
 import { FixedRoutineSettingsButton } from './FixedRoutineSettingsButton';
 
 type Props = {
@@ -31,14 +34,8 @@ function formatPriorityWindowLines(
   locale: import('@shared/lib/i18n').AppLocale,
 ): { dateLine: string; timeLine: string } {
   const { lo, hi } = sortedPlanDateRange(planDateKey, planDateKeyEnd);
-  const pe = parseHHmmToMinutes(end.trim());
   const crossesNextDay = endsOnNextCalendarDay(start, end);
-  const endDateKey =
-    pe === 24 * 60
-      ? addDaysToLocalDateKey(hi, 1)
-      : crossesNextDay && lo === hi
-        ? addDaysToLocalDateKey(lo, 1)
-        : hi;
+  const endDateKey = priorityClockCaptionDateKeyEnd(lo, hi, start, end);
   const dateLine =
     lo === endDateKey
       ? formatDateKeyCompact(lo, locale)

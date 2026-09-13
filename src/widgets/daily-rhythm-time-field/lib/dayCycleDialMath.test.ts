@@ -16,6 +16,7 @@ import {
   snapCycleMinutes,
   toCycleEndMinutes,
   toCycleStartMinutes,
+  unwrapEndAfterStart,
 } from './dayCycleDialMath';
 
 describe('dayCycleDialMath 48h', () => {
@@ -41,7 +42,8 @@ describe('dayCycleDialMath 48h', () => {
     expect(toCycleEndMinutes(2 * 60, true)).toBe(DAY_MINUTES + 2 * 60);
     expect(toCycleEndMinutes(23 * 60, false)).toBe(23 * 60);
     expect(toCycleEndMinutes(DAY_MINUTES, false)).toBe(DAY_MINUTES);
-    expect(toCycleEndMinutes(DAY_MINUTES, true)).toBe(CYCLE_MINUTES);
+    expect(toCycleEndMinutes(DAY_MINUTES, true)).toBe(DAY_MINUTES);
+    expect(toCycleEndMinutes(0, true)).toBe(DAY_MINUTES);
   });
 
   it('span across next-day morning is > 24h when intended', () => {
@@ -54,6 +56,7 @@ describe('dayCycleDialMath 48h', () => {
   it('resolveEndCycleMinutes wraps before start', () => {
     expect(resolveEndCycleMinutes(100, 420)).toBe(100 + CYCLE_MINUTES);
     expect(resolveEndCycleMinutes(800, 420)).toBe(800);
+    expect(resolveEndCycleMinutes(0, 6 * 60 + 30)).toBe(DAY_MINUTES);
   });
 
   it('clamps start within first day', () => {
@@ -85,6 +88,16 @@ describe('dayCycleDialMath sleep vs leftover', () => {
     const end = toCycleEndMinutes(23 * 60, false);
     expect(end - start).toBe(16 * 60);
     expect(sleepSpanUntilNextWake(start, end)).toBe(8 * 60);
+  });
+
+  it('06:30 to next-day 00:00 is 17h 30m activity and 6h 30m sleep', () => {
+    const start = toCycleStartMinutes(6 * 60 + 30);
+    const end = toCycleEndMinutes(0, true);
+    expect(end - start).toBe(17 * 60 + 30);
+    expect(sleepSpanUntilNextWake(start, end)).toBe(6 * 60 + 30);
+    expect(cycleMinutesToClockHhmm(end, true)).toBe('00:00');
+    expect(cycleEndIsNextDay(end)).toBe(true);
+    expect(unwrapEndAfterStart(start, CYCLE_MINUTES) - start).toBe(17 * 60 + 30);
   });
 
   it('wake 06:30 and sleep 01:00 next morning is 5h 30m', () => {
