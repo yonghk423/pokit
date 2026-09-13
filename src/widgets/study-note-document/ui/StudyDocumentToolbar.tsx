@@ -45,6 +45,8 @@ type Props = {
   onAction: (action: StudyToolbarAction) => void;
   /** 툴바 탭 시 본문 입력 포커스·키보드 유지 */
   onRetainKeyboardFocus?: () => void;
+  /** `stack`: 오늘 탭 노트. 3행 3열로 플로트 버튼 위에 둔다. */
+  layout?: 'bar' | 'stack';
 };
 
 function ToolBtn({
@@ -140,63 +142,121 @@ export function StudyDocumentToolbar({
   activeListKind = null,
   onAction,
   onRetainKeyboardFocus,
+  layout = 'bar',
 }: Props) {
   const { t } = useTranslation();
+  const undo = (
+    <ToolBtn
+      label={t('studyNote.undo')}
+      icon="arrow.uturn.backward"
+      palette={palette}
+      surfaceBg={surfaceBg}
+      disabled={!canUndo}
+      onRetainKeyboardFocus={onRetainKeyboardFocus}
+      onPress={() => onAction('undo')}
+    />
+  );
+  const redo = (
+    <ToolBtn
+      label={t('studyNote.redo')}
+      icon="arrow.uturn.forward"
+      palette={palette}
+      surfaceBg={surfaceBg}
+      disabled={!canRedo}
+      onRetainKeyboardFocus={onRetainKeyboardFocus}
+      onPress={() => onAction('redo')}
+    />
+  );
+  const bullet = (
+    <ToolBtn
+      label={t('studyNote.toolbarBullet')}
+      icon="list.bullet"
+      palette={palette}
+      surfaceBg={surfaceBg}
+      active={activeListKind === 'bullet'}
+      onRetainKeyboardFocus={onRetainKeyboardFocus}
+      onPress={() => onAction('bullet')}
+    />
+  );
+  const numbered = (
+    <ToolBtn
+      label={t('studyNote.toolbarNumbered')}
+      icon="list.number"
+      palette={palette}
+      surfaceBg={surfaceBg}
+      active={activeListKind === 'numbered'}
+      onRetainKeyboardFocus={onRetainKeyboardFocus}
+      onPress={() => onAction('numbered')}
+    />
+  );
+  const body = (
+    <LabelToolBtn
+      label={t('studyNote.toolbarBodyText')}
+      text="가"
+      palette={palette}
+      surfaceBg={surfaceBg}
+      active={activeHeadingLevel == null}
+      onRetainKeyboardFocus={onRetainKeyboardFocus}
+      onPress={() => onAction('body-text')}
+    />
+  );
+  const reset = (
+    <ToolBtn
+      label={t('studyNote.toolbarClearAll')}
+      icon="arrow.counterclockwise"
+      palette={palette}
+      surfaceBg={surfaceBg}
+      disabled={!canResetDocument}
+      onRetainKeyboardFocus={onRetainKeyboardFocus}
+      onPress={() => onAction('reset-document')}
+    />
+  );
+  const dismiss = (
+    <ToolBtn
+      label={t('studyNote.toolbarDismissKeyboard')}
+      icon="keyboard.chevron.compact.down"
+      palette={palette}
+      surfaceBg={surfaceBg}
+      onPress={() => onAction('dismiss-keyboard')}
+    />
+  );
+
+  if (layout === 'stack') {
+    return (
+      <View style={styles.stack}>
+        <View style={styles.stackRow}>
+          {undo}
+          {redo}
+          {bullet}
+        </View>
+        <View style={styles.stackRow}>
+          {numbered}
+          {body}
+          {reset}
+        </View>
+        <View style={styles.stackRow}>
+          <View style={styles.stackSlot} />
+          <View style={styles.stackSlot} />
+          {dismiss}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.root, surfaceBg ? { backgroundColor: surfaceBg } : null]}>
       <View style={styles.row}>
-        <ToolBtn
-          label={t('studyNote.undo')}
-          icon="arrow.uturn.backward"
-          palette={palette}
-          surfaceBg={surfaceBg}
-          disabled={!canUndo}
-          onRetainKeyboardFocus={onRetainKeyboardFocus}
-          onPress={() => onAction('undo')}
-        />
-        <ToolBtn
-          label={t('studyNote.redo')}
-          icon="arrow.uturn.forward"
-          palette={palette}
-          surfaceBg={surfaceBg}
-          disabled={!canRedo}
-          onRetainKeyboardFocus={onRetainKeyboardFocus}
-          onPress={() => onAction('redo')}
-        />
+        {undo}
+        {redo}
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
-        <ToolBtn label={t('studyNote.toolbarBullet')} icon="list.bullet" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'bullet'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('bullet')} />
-        <ToolBtn label={t('studyNote.toolbarNumbered')} icon="list.number" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'numbered'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('numbered')} />
+        {bullet}
+        {numbered}
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
-        <LabelToolBtn
-          label={t('studyNote.toolbarBodyText')}
-          text="가"
-          palette={palette}
-          surfaceBg={surfaceBg}
-          active={activeHeadingLevel == null}
-          onRetainKeyboardFocus={onRetainKeyboardFocus}
-          onPress={() => onAction('body-text')}
-        />
+        {body}
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
-        <ToolBtn label={t('studyNote.toolbarLink')} icon="link" palette={palette} surfaceBg={surfaceBg} active={linkPickerOpen} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('link')} />
-        <ToolBtn label={t('studyNote.toolbarImage')} icon="photo" palette={palette} surfaceBg={surfaceBg} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('image')} />
+        {reset}
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
-        <ToolBtn
-          label={t('studyNote.toolbarClearAll')}
-          icon="arrow.counterclockwise"
-          palette={palette}
-          surfaceBg={surfaceBg}
-          disabled={!canResetDocument}
-          onRetainKeyboardFocus={onRetainKeyboardFocus}
-          onPress={() => onAction('reset-document')}
-        />
-        <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
-        <ToolBtn
-          label={t('studyNote.toolbarDismissKeyboard')}
-          icon="keyboard.chevron.compact.down"
-          palette={palette}
-          surfaceBg={surfaceBg}
-          onPress={() => onAction('dismiss-keyboard')}
-        />
+        {dismiss}
       </View>
     </View>
   );
@@ -214,6 +274,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     width: '100%',
+  },
+  stack: {
+    alignItems: 'flex-end',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  stackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+  },
+  stackSlot: {
+    width: 34,
+    height: 34,
   },
   toolBtn: {
     width: 34,
