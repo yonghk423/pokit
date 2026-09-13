@@ -71,7 +71,6 @@ function ToolBtn({
       accessibilityRole="button"
       accessibilityLabel={label}
       disabled={disabled}
-      onTouchStart={onRetainKeyboardFocus}
       onPressIn={onRetainKeyboardFocus}
       onPress={onPress}
       style={[
@@ -125,9 +124,10 @@ function LabelToolBtn({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      onTouchStart={onRetainKeyboardFocus}
-      onPressIn={onRetainKeyboardFocus}
-      onPress={onPress}
+      onPressIn={() => {
+        onRetainKeyboardFocus?.();
+        onPress();
+      }}
       style={[
         styles.toolBtn,
         {
@@ -161,9 +161,10 @@ function ColorToolBtn({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      onTouchStart={onRetainKeyboardFocus}
-      onPressIn={onRetainKeyboardFocus}
-      onPress={onPress}
+      onPressIn={() => {
+        onRetainKeyboardFocus?.();
+        onPress();
+      }}
       style={[
         styles.toolBtn,
         {
@@ -218,24 +219,6 @@ export function StudyDocumentToolbar({
           onPress={() => onAction('redo')}
         />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
-        <ToolBtn
-          label={t('studyNote.insertLineTop')}
-          icon="arrow.up.to.line"
-          palette={palette}
-          surfaceBg={surfaceBg}
-          onRetainKeyboardFocus={onRetainKeyboardFocus}
-          onPress={() => onAction('insert-line-top')}
-        />
-        <ToolBtn
-          label={t('studyNote.insertLineBottom')}
-          icon="arrow.down.to.line"
-          palette={palette}
-          surfaceBg={surfaceBg}
-          onRetainKeyboardFocus={onRetainKeyboardFocus}
-          onPress={() => onAction('insert-line-bottom')}
-        />
-        <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />
-        <ToolBtn label={t('studyNote.toolbarChecklist')} icon="checkmark.square" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'checklist'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('checklist')} />
         <ToolBtn label={t('studyNote.toolbarBullet')} icon="list.bullet" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'bullet'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('bullet')} />
         <ToolBtn label={t('studyNote.toolbarNumbered')} icon="list.number" palette={palette} surfaceBg={surfaceBg} active={activeListKind === 'numbered'} onRetainKeyboardFocus={onRetainKeyboardFocus} onPress={() => onAction('numbered')} />
         <View style={[styles.divider, { backgroundColor: palette.outlineVariant }]} />

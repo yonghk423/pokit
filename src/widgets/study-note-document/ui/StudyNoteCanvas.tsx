@@ -32,13 +32,18 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import {
+  applyCanvasListToDraft,
   applyCanvasToolbarToDraft,
   canvasBlocksToDraft,
   canvasDraftToBlocks,
   canvasLineHeadingLevel,
   canvasLineListKind,
   canvasLineRange,
+  continueCanvasListAfterChange,
+  exitCanvasListAfterBackspace,
+  isCanvasProgrammaticTextEcho,
   mergeCanvasImageUris,
+  shiftCursorAfterLinePrefixChange,
 } from '../lib/studyNoteCanvasToolbar';
 import { studyNoteKeyboardBottomPad } from '../lib/studyNoteKeyboardPad';
 import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
@@ -86,6 +91,7 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
   const draftRef = useRef(draft);
   const undoStackRef = useRef<string[]>([]);
   const redoStackRef = useRef<string[]>([]);
+  const programmaticEchoRef = useRef<{ expected: string; stale: string; until: number } | null>(null);
   const fabProgress = useRef(new Animated.Value(0)).current;
   draftRef.current = draft;
 
@@ -119,8 +125,26 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
   }, [document.activePageId, document.pages.length]);
 
   const persistDraft = useCallback(
-    (text: string) => {
+    (text: string, options?: { programmatic?: boolean; cursor?: number }) => {
+      if (options?.programmatic) {
+        programmaticEchoRef.current = {
+          expected: text,
+          stale: draftRef.current,
+          until: Date.now() + 800,
+        };
+      } else {
+        programmaticEchoRef.current = null;
+      }
+      draftRef.current = text;
       setDraft(text);
+      if (options?.cursor != null) {
+        setSelection({ start: options.cursor, end: options.cursor });
+        requestAnimationFrame(() => {
+          inputRef.current?.setNativeProps({
+            selection: { start: options.cursor, end: options.cursor },
+          });
+        });
+      }
       onChangeDocument((prev) => {
         const withPage = ensurePageDocument(prev);
         const page = getWorkStudyActivePage(withPage);
@@ -234,7 +258,7 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
       const blocks = mergeCanvasImageUris(canvasDraftToBlocks(next), pageBlocks);
       const emptyImage = [...blocks].reverse().find((block) => block.kind === 'image' && !block.imageUri?.trim());
       if (emptyImage) emptyImage.imageUri = result.uri;
-      setDraft(canvasBlocksToDraft(blocks));
+      persistDraft(canvasBlocksToDraft(blocks), { programmatic: true });
       onChangeDocument((prev) => setWorkStudyActivePageBlocks(ensurePageDocument(prev), blocks));
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       return;
@@ -249,7 +273,7 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
       return;
     }
     Alert.alert(t('studyNote.photoLoadFailedTitle'), t('studyNote.photoLoadFailedMessage'));
-  }, [document, onChangeDocument, pushUndo, selection.end, selection.start, t]);
+  }, [document, onChangeDocument, persistDraft, pushUndo, selection.end, selection.start, t]);
 
   const onToolbarAction = useCallback(
     (action: StudyToolbarAction) => {
@@ -262,7 +286,7 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
         const prev = undoStackRef.current.pop();
         if (prev == null) return;
         redoStackRef.current.push(draftRef.current);
-        persistDraft(prev);
+        persistDraft(prev, { programmatic: true });
         setHistoryTick((n) => n + 1);
         void Haptics.selectionAsync();
         return;
@@ -271,7 +295,7 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
         const next = redoStackRef.current.pop();
         if (next == null) return;
         undoStackRef.current.push(draftRef.current);
-        persistDraft(next);
+        persistDraft(next, { programmatic: true });
         setHistoryTick((n) => n + 1);
         void Haptics.selectionAsync();
         return;
@@ -284,7 +308,7 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
             style: 'destructive',
             onPress: () => {
               pushUndo(draftRef.current);
-              persistDraft('');
+              persistDraft('', { programmatic: true });
               void Haptics.selectionAsync();
             },
           },
@@ -295,13 +319,31 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
         void pickAndInsertImage();
         return;
       }
-      const next = applyCanvasToolbarToDraft(draftRef.current, selection.start, action, selection.end);
-      if (next == null || next === draftRef.current) {
+      const current = draftRef.current;
+      if (action === 'bullet' || action === 'numbered') {
+        const next = applyCanvasListToDraft(current, selection.start, selection.end, action);
+        if (next.text === current) {
+          void Haptics.selectionAsync();
+          return;
+        }
+        pushUndo(current);
+        persistDraft(next.text, { programmatic: true, cursor: next.cursor });
         void Haptics.selectionAsync();
         return;
       }
-      pushUndo(draftRef.current);
-      persistDraft(next);
+      const next = applyCanvasToolbarToDraft(current, selection.start, action, selection.end);
+      if (next == null || next === current) {
+        void Haptics.selectionAsync();
+        return;
+      }
+      pushUndo(current);
+      persistDraft(next, {
+        programmatic: true,
+        cursor:
+          action === 'heading-1' || action === 'heading-2' || action === 'heading-3'
+            ? shiftCursorAfterLinePrefixChange(current, next, selection.start)
+            : undefined,
+      });
       void Haptics.selectionAsync();
     },
     [persistDraft, pickAndInsertImage, pushUndo, selection.end, selection.start, t],
@@ -366,7 +408,27 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
         <ThemedTextInput
           ref={inputRef}
           value={draft}
-          onChangeText={persistDraft}
+          onChangeText={(text) => {
+            const echo = programmaticEchoRef.current;
+            if (isCanvasProgrammaticTextEcho(echo, text, Date.now())) {
+              if (echo && text === echo.expected) {
+                programmaticEchoRef.current = null;
+              }
+              return;
+            }
+            programmaticEchoRef.current = null;
+            const prefixed = continueCanvasListAfterChange(draftRef.current, text);
+            if (prefixed) {
+              persistDraft(prefixed.text, { programmatic: true, cursor: prefixed.cursor });
+              return;
+            }
+            const exited = exitCanvasListAfterBackspace(draftRef.current, text);
+            if (exited) {
+              persistDraft(exited.text, { programmatic: true, cursor: exited.cursor });
+              return;
+            }
+            persistDraft(text);
+          }}
           placeholder={t('studyNote.emptyTitle')}
           placeholderTextColor={palette.outline}
           multiline
@@ -550,15 +612,18 @@ const styles = StyleSheet.create({
   editor: {
     flex: 1,
     minHeight: 0,
+    overflow: 'hidden',
     paddingHorizontal: 16,
     paddingTop: 14,
   },
   input: {
     flex: 1,
     minHeight: 120,
+    minWidth: 0,
     alignSelf: 'stretch',
     padding: 0,
     margin: 0,
+    includeFontPadding: false,
     fontWeight: '500',
     borderWidth: 0,
     backgroundColor: 'transparent',
@@ -572,6 +637,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 11,
+    elevation: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   keyboardDismissBtn: {

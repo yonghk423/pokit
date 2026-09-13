@@ -6,11 +6,11 @@ import {
 
 import type { StudyToolbarAction } from '../ui/StudyDocumentToolbar';
 
-export type CanvasListKind = 'checklist' | 'bullet' | 'numbered';
+export type CanvasListKind = 'bullet' | 'numbered';
 
 const HEADING_RE = /^(#{1,3})\s/;
-const CHECKED_RE = /^\[x\]\s/i;
-const UNCHECKED_RE = /^\[\s\]\s/;
+const CHECKED_RE = /^(?:\[x\]|☑)\s/i;
+const UNCHECKED_RE = /^(?:\[\s\]|☐)\s/;
 const BULLET_RE = /^•\s/;
 const NUMBERED_RE = /^\d+\.\s/;
 
@@ -40,10 +40,197 @@ export function canvasLineHeadingLevel(line: string): WorkStudyHeadingLevel | nu
 }
 
 export function canvasLineListKind(line: string): CanvasListKind | null {
-  if (CHECKED_RE.test(line) || UNCHECKED_RE.test(line)) return 'checklist';
   if (BULLET_RE.test(line)) return 'bullet';
   if (NUMBERED_RE.test(line)) return 'numbered';
   return null;
+}
+
+export function canvasLinePrefixLength(line: string): number {
+  const match = /^(?:#{1,3}|\[x\]|\[\s\]|☐|☑|•|\d+\.)\s/i.exec(line);
+  return match?.[0].length ?? 0;
+}
+
+export function shiftCursorAfterLinePrefixChange(
+  prev: string,
+  next: string,
+  cursor: number,
+): number {
+  const prevRange = canvasLineRange(prev, cursor);
+  const offsetInLine = Math.max(0, cursor - prevRange.start);
+  const nextRange = canvasLineRange(next, Math.min(prevRange.start, next.length));
+  const delta = canvasLinePrefixLength(nextRange.line) - canvasLinePrefixLength(prevRange.line);
+  const nextOffset = Math.max(canvasLinePrefixLength(nextRange.line), offsetInLine + delta);
+  return Math.max(0, Math.min(next.length, nextRange.start + nextOffset));
+}
+
+function numberedValue(line: string): number {
+  const match = /^(\d+)\.\s/.exec(line);
+  const value = match ? Number(match[1]) : NaN;
+  return Number.isFinite(value) ? value : 0;
+}
+
+function numberedPrefix(value: number): string {
+  return `${Math.max(1, value)}. `;
+}
+
+function nextNumberedPrefix(line: string): string {
+  return numberedPrefix(numberedValue(line) + 1);
+}
+
+function listPrefixForContinuedLine(line: string, kind: CanvasListKind): string {
+  if (kind === 'bullet') return '• ';
+  return nextNumberedPrefix(line);
+}
+
+function lineIndexAt(text: string, cursor: number): number {
+  return text.slice(0, Math.max(0, cursor)).split('\n').length - 1;
+}
+
+function lineStartAt(lines: string[], index: number): number {
+  let start = 0;
+  for (let i = 0; i < index; i += 1) start += (lines[i]?.length ?? 0) + 1;
+  return start;
+}
+
+export function syncCanvasNumberedLines(text: string): string {
+  const lines = text.split('\n');
+  let n = 0;
+  let changed = false;
+  const next = lines.map((line) => {
+    if (!NUMBERED_RE.test(line)) {
+      n = 0;
+      return line;
+    }
+    n += 1;
+    const synced = `${numberedPrefix(n)}${stripCanvasLinePrefix(line)}`;
+    if (synced !== line) changed = true;
+    return synced;
+  });
+  return changed ? next.join('\n') : text;
+}
+
+export function applyCanvasListToDraft(
+  text: string,
+  start: number,
+  end: number,
+  kind: CanvasListKind,
+): { text: string; cursor: number } {
+  const from = Math.min(start, end);
+  const to = Math.max(start, end);
+  const first = lineIndexAt(text, from);
+  const last = lineIndexAt(text, to);
+  const lines = text.split('\n');
+  const selected = lines.slice(first, last + 1);
+  const allSame = selected.length > 0 && selected.every((line) => canvasLineListKind(line) === kind);
+  const nextLines = [...lines];
+
+  if (allSame) {
+    for (let i = first; i <= last; i += 1) {
+      nextLines[i] = stripCanvasLinePrefix(nextLines[i] ?? '');
+    }
+  } else {
+    let n = 1;
+    if (kind === 'numbered') {
+      const prev = nextLines[first - 1];
+      if (prev && NUMBERED_RE.test(prev)) n = numberedValue(prev) + 1;
+    }
+    for (let i = first; i <= last; i += 1) {
+      const body = stripCanvasLinePrefix(nextLines[i] ?? '');
+      nextLines[i] = kind === 'bullet' ? `• ${body}` : `${numberedPrefix(n)}${body}`;
+      n += 1;
+    }
+  }
+
+  const next = syncCanvasNumberedLines(nextLines.join('\n'));
+  const syncedLines = next.split('\n');
+  const cursorLine = Math.max(0, Math.min(syncedLines.length - 1, lineIndexAt(text, start)));
+  const prevRange = canvasLineRange(text, start);
+  const bodyOffset = Math.max(0, start - prevRange.start - canvasLinePrefixLength(prevRange.line));
+  const prefixLen = canvasLinePrefixLength(syncedLines[cursorLine] ?? '');
+  const cursor = Math.max(0, Math.min(next.length, lineStartAt(syncedLines, cursorLine) + prefixLen + bodyOffset));
+  return { text: next, cursor };
+}
+
+export type CanvasProgrammaticEcho = {
+  expected: string;
+  stale: string;
+  until: number;
+};
+
+/** iOS가 접두어 적용 직후 보내는 되돌림만 무시한다. 새로 친 글은 통과시킨다. */
+export function isCanvasProgrammaticTextEcho(
+  echo: CanvasProgrammaticEcho | null,
+  text: string,
+  now: number,
+): boolean {
+  if (!echo || now >= echo.until) return false;
+  if (text === echo.expected || text === echo.stale) return true;
+  if (text.length < echo.expected.length && echo.expected.startsWith(text)) return true;
+  if (text.length < echo.stale.length && echo.stale.startsWith(text)) return true;
+  const deletedAt = findDeletedCharIndex(echo.expected, text);
+  if (deletedAt == null) return false;
+  const range = canvasLineRange(echo.expected, deletedAt + 1);
+  return deletedAt - range.start < canvasLinePrefixLength(range.line);
+}
+
+function findDeletedCharIndex(prev: string, next: string): number | null {
+  if (next.length !== prev.length - 1) return null;
+  for (let i = 0; i < prev.length; i += 1) {
+    if (prev[i] === next[i]) continue;
+    return prev.slice(i + 1) === next.slice(i) ? i : null;
+  }
+  return null;
+}
+
+/** 목록 접두어 안에서 백스페이스하면 목록을 해제한다. */
+export function exitCanvasListAfterBackspace(
+  prev: string,
+  next: string,
+): { text: string; cursor: number } | null {
+  const deletedAt = findDeletedCharIndex(prev, next);
+  if (deletedAt == null) return null;
+  const range = canvasLineRange(prev, deletedAt + 1);
+  if (!canvasLineListKind(range.line)) return null;
+  if (deletedAt - range.start >= canvasLinePrefixLength(range.line)) return null;
+  const text = syncCanvasNumberedLines(
+    `${prev.slice(0, range.start)}${stripCanvasLinePrefix(range.line)}${prev.slice(range.end)}`,
+  );
+  return { text, cursor: range.start };
+}
+
+function findInsertedNewline(prev: string, next: string): number | null {
+  if (next.length !== prev.length + 1) return null;
+  for (let i = 0; i < next.length; i += 1) {
+    if (next[i] === prev[i]) continue;
+    if (next[i] === '\n' && next.slice(i + 1) === prev.slice(i)) return i;
+    return null;
+  }
+  return next.endsWith('\n') ? next.length - 1 : null;
+}
+
+/** 리스트 줄에서 엔터: 다음 항목을 이어 쓰거나, 빈 항목이면 목록을 끝낸다. */
+export function continueCanvasListAfterChange(
+  prev: string,
+  next: string,
+): { text: string; cursor: number } | null {
+  const insertedAt = findInsertedNewline(prev, next);
+  if (insertedAt == null) return null;
+  const lineBefore = canvasLineRange(prev, insertedAt).line;
+  const kind = canvasLineListKind(lineBefore);
+  if (!kind) return null;
+
+  if (stripCanvasLinePrefix(lineBefore).length === 0) {
+    const range = canvasLineRange(prev, insertedAt);
+    const text = syncCanvasNumberedLines(`${prev.slice(0, range.start)}${prev.slice(insertedAt)}`);
+    return { text, cursor: range.start };
+  }
+
+  const prefix = listPrefixForContinuedLine(lineBefore, kind);
+  const after = next.slice(insertedAt + 1);
+  if (canvasLineListKind(after.split('\n')[0] ?? '')) return null;
+  const text = syncCanvasNumberedLines(`${next.slice(0, insertedAt + 1)}${prefix}${after}`);
+  const newLine = canvasLineRange(text, insertedAt + 1).line;
+  return { text, cursor: insertedAt + 1 + canvasLinePrefixLength(newLine) };
 }
 
 function replaceLine(text: string, cursor: number, nextLine: string): string {
@@ -54,6 +241,16 @@ function replaceLine(text: string, cursor: number, nextLine: string): string {
 function applyLinePrefix(text: string, cursor: number, prefix: string): string {
   const range = canvasLineRange(text, cursor);
   return replaceLine(text, cursor, `${prefix}${stripCanvasLinePrefix(range.line)}`);
+}
+
+function stripInlineMarks(text: string): string {
+  return text.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/__([^_]+)__/g, '$1');
+}
+
+/** 제목·목록·볼드·밑줄을 빼고 본문만 남긴다. */
+export function clearCanvasLineFormat(text: string, cursor: number): string {
+  const range = canvasLineRange(text, cursor);
+  return replaceLine(text, cursor, stripInlineMarks(stripCanvasLinePrefix(range.line)));
 }
 
 function wrapSelection(
@@ -88,17 +285,13 @@ export function applyCanvasToolbarToDraft(
     case 'heading-3':
       return applyLinePrefix(text, cursor, heading === 3 ? '' : '### ');
     case 'body-text':
-      return replaceLine(text, cursor, body);
+      return clearCanvasLineFormat(text, cursor);
     case 'checklist':
-      return applyLinePrefix(text, cursor, canvasLineListKind(range.line) === 'checklist' ? '' : '[ ] ');
+      return text;
     case 'bullet':
-      return applyLinePrefix(text, cursor, canvasLineListKind(range.line) === 'bullet' ? '' : '• ');
+      return applyCanvasListToDraft(text, cursor, selectionEnd, 'bullet').text;
     case 'numbered':
-      return applyLinePrefix(text, cursor, canvasLineListKind(range.line) === 'numbered' ? '' : '1. ');
-    case 'insert-line-top':
-      return `${text.slice(0, range.start)}\n${text.slice(range.start)}`;
-    case 'insert-line-bottom':
-      return `${text.slice(0, range.end)}\n${text.slice(range.end)}`;
+      return applyCanvasListToDraft(text, cursor, selectionEnd, 'numbered').text;
     case 'bold':
       return wrapSelection(text, cursor, selectionEnd, '**', '**', replaceLine(text, cursor, `**${body}**`));
     case 'underline':
@@ -135,15 +328,9 @@ export function canvasDraftToBlocks(text: string): WorkStudyDocBlock[] {
       block.text = stripCanvasLinePrefix(raw);
       return block;
     }
-    if (CHECKED_RE.test(raw)) {
-      const block = createWorkStudyDocBlock('checklist');
-      block.checked = true;
-      block.text = raw.replace(CHECKED_RE, '');
-      return block;
-    }
-    if (UNCHECKED_RE.test(raw)) {
-      const block = createWorkStudyDocBlock('checklist');
-      block.text = raw.replace(UNCHECKED_RE, '');
+    if (CHECKED_RE.test(raw) || UNCHECKED_RE.test(raw)) {
+      const block = createWorkStudyDocBlock('paragraph');
+      block.text = stripCanvasLinePrefix(raw);
       return block;
     }
     if (BULLET_RE.test(raw)) {
@@ -163,17 +350,21 @@ export function canvasDraftToBlocks(text: string): WorkStudyDocBlock[] {
 }
 
 export function canvasBlocksToDraft(blocks: WorkStudyDocBlock[]): string {
+  let numberedRun = 0;
   return blocks
     .map((block) => {
+      if (block.kind !== 'numbered') numberedRun = 0;
       switch (block.kind) {
         case 'heading':
           return `${'#'.repeat(block.headingLevel ?? 1)} ${block.text}`;
         case 'checklist':
-          return `${block.checked ? '[x]' : '[ ]'} ${block.text}`;
+          return block.text;
         case 'bullet':
           return `• ${block.text}`;
-        case 'numbered':
-          return `1. ${block.text}`;
+        case 'numbered': {
+          numberedRun += 1;
+          return `${numberedRun}. ${block.text}`;
+        }
         case 'table':
           return '[표]';
         case 'image':
