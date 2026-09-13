@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   Easing,
   Keyboard,
@@ -10,27 +11,38 @@ import {
   TextInput,
   useWindowDimensions,
   View,
+  type NativeSyntheticEvent,
+  type TextInputSelectionChangeEventData,
 } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import {
-  createWorkStudyDocBlock,
   createWorkStudyNotePage,
   getWorkStudyActivePage,
   persistWorkStudyNotePageTitle,
   resolveWorkStudyNotePageAutoTitle,
   setWorkStudyActivePageBlocks,
   updateWorkStudyNotePageTitle,
-  workStudyPageBlocksToPlainText,
   type WorkStudyDocument,
 } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
+import { pickImageFromLibrary } from '@shared/lib/media/pickImageFromLibrary';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
+import {
+  applyCanvasToolbarToDraft,
+  canvasBlocksToDraft,
+  canvasDraftToBlocks,
+  canvasLineHeadingLevel,
+  canvasLineListKind,
+  canvasLineRange,
+  mergeCanvasImageUris,
+} from '../lib/studyNoteCanvasToolbar';
 import { studyNoteKeyboardBottomPad } from '../lib/studyNoteKeyboardPad';
 import type { StudyNoteDocumentPalette } from '../lib/studyNoteDocumentPalette';
+import { StudyDocumentToolbar, type StudyToolbarAction } from './StudyDocumentToolbar';
 import { StudyNotePageList } from './StudyNotePageList';
 import { StudyNotePageTitleField } from './StudyNotePageTitleField';
 
@@ -45,16 +57,7 @@ function ensurePageDocument(doc: WorkStudyDocument): WorkStudyDocument {
 
 function documentToDraft(doc: WorkStudyDocument): string {
   const page = getWorkStudyActivePage(doc);
-  return workStudyPageBlocksToPlainText(page?.blocks ?? []);
-}
-
-function draftToBlocks(text: string) {
-  const lines = text.split('\n');
-  return lines.map((line) => {
-    const block = createWorkStudyDocBlock('paragraph');
-    block.text = line;
-    return block;
-  });
+  return canvasBlocksToDraft(page?.blocks ?? []);
 }
 
 type Props = {
@@ -76,9 +79,15 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
   const [listOpen, setListOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
   const [draft, setDraft] = useState(() => documentToDraft(document));
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const [historyTick, setHistoryTick] = useState(0);
   const inputRef = useRef<TextInput>(null);
   const keyboardInsetRef = useRef(0);
+  const draftRef = useRef(draft);
+  const undoStackRef = useRef<string[]>([]);
+  const redoStackRef = useRef<string[]>([]);
   const fabProgress = useRef(new Animated.Value(0)).current;
+  draftRef.current = draft;
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -104,6 +113,9 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
 
   useEffect(() => {
     setDraft(documentToDraft(document));
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+    setHistoryTick((n) => n + 1);
   }, [document.activePageId, document.pages.length]);
 
   const persistDraft = useCallback(
@@ -111,11 +123,22 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
       setDraft(text);
       onChangeDocument((prev) => {
         const withPage = ensurePageDocument(prev);
-        return setWorkStudyActivePageBlocks(withPage, draftToBlocks(text));
+        const page = getWorkStudyActivePage(withPage);
+        const next = mergeCanvasImageUris(canvasDraftToBlocks(text), page?.blocks ?? []);
+        return setWorkStudyActivePageBlocks(withPage, next);
       });
     },
     [onChangeDocument],
   );
+
+  const pushUndo = useCallback((snapshot: string) => {
+    const stack = undoStackRef.current;
+    if (stack[stack.length - 1] === snapshot) return;
+    stack.push(snapshot);
+    if (stack.length > 40) stack.shift();
+    redoStackRef.current = [];
+    setHistoryTick((n) => n + 1);
+  }, []);
 
   const animateFab = useCallback(
     (open: boolean) => {
@@ -201,9 +224,96 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
     [onChangeDocument],
   );
 
+  const pickAndInsertImage = useCallback(async () => {
+    const result = await pickImageFromLibrary();
+    if (result.ok) {
+      const current = draftRef.current;
+      pushUndo(current);
+      const next = applyCanvasToolbarToDraft(current, selection.start, 'image', selection.end) ?? `${current}\n[이미지]`;
+      const pageBlocks = getWorkStudyActivePage(document)?.blocks ?? [];
+      const blocks = mergeCanvasImageUris(canvasDraftToBlocks(next), pageBlocks);
+      const emptyImage = [...blocks].reverse().find((block) => block.kind === 'image' && !block.imageUri?.trim());
+      if (emptyImage) emptyImage.imageUri = result.uri;
+      setDraft(canvasBlocksToDraft(blocks));
+      onChangeDocument((prev) => setWorkStudyActivePageBlocks(ensurePageDocument(prev), blocks));
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      return;
+    }
+    if (result.reason === 'cancelled') return;
+    if (result.reason === 'permission_denied') {
+      Alert.alert(t('studyNote.photoPermissionTitle'), t('studyNote.photoPermissionMessage'));
+      return;
+    }
+    if (result.reason === 'module_unavailable') {
+      Alert.alert(t('studyNote.rebuildTitle'), t('studyNote.rebuildMessage'));
+      return;
+    }
+    Alert.alert(t('studyNote.photoLoadFailedTitle'), t('studyNote.photoLoadFailedMessage'));
+  }, [document, onChangeDocument, pushUndo, selection.end, selection.start, t]);
+
+  const onToolbarAction = useCallback(
+    (action: StudyToolbarAction) => {
+      if (action === 'dismiss-keyboard') {
+        void Haptics.selectionAsync();
+        Keyboard.dismiss();
+        return;
+      }
+      if (action === 'undo') {
+        const prev = undoStackRef.current.pop();
+        if (prev == null) return;
+        redoStackRef.current.push(draftRef.current);
+        persistDraft(prev);
+        setHistoryTick((n) => n + 1);
+        void Haptics.selectionAsync();
+        return;
+      }
+      if (action === 'redo') {
+        const next = redoStackRef.current.pop();
+        if (next == null) return;
+        undoStackRef.current.push(draftRef.current);
+        persistDraft(next);
+        setHistoryTick((n) => n + 1);
+        void Haptics.selectionAsync();
+        return;
+      }
+      if (action === 'reset-document') {
+        Alert.alert(t('studyNote.clearAllTitle'), t('studyNote.clearAllMessage'), [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('studyNote.clearAllConfirm'),
+            style: 'destructive',
+            onPress: () => {
+              pushUndo(draftRef.current);
+              persistDraft('');
+              void Haptics.selectionAsync();
+            },
+          },
+        ]);
+        return;
+      }
+      if (action === 'image') {
+        void pickAndInsertImage();
+        return;
+      }
+      const next = applyCanvasToolbarToDraft(draftRef.current, selection.start, action, selection.end);
+      if (next == null || next === draftRef.current) {
+        void Haptics.selectionAsync();
+        return;
+      }
+      pushUndo(draftRef.current);
+      persistDraft(next);
+      void Haptics.selectionAsync();
+    },
+    [persistDraft, pickAndInsertImage, pushUndo, selection.end, selection.start, t],
+  );
+
   const fontSize = width >= 768 ? 26 : width >= 390 ? 22 : 20;
   const lineHeight = Math.round(fontSize * 1.45);
   const keyboardPad = studyNoteKeyboardBottomPad(keyboardInset, bottomTabBarHeight);
+  const currentLine = canvasLineRange(draft, selection.start).line;
+  const canUndo = undoStackRef.current.length > 0;
+  const canRedo = redoStackRef.current.length > 0;
+  void historyTick;
 
   const inputStyle = useMemo(
     () => [
@@ -262,6 +372,9 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
           multiline
           scrollEnabled
           textAlignVertical="top"
+          onSelectionChange={(event: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
+            setSelection(event.nativeEvent.selection);
+          }}
           style={inputStyle}
         />
       </View>
@@ -283,6 +396,42 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
           ]}>
           <IconSymbol name="keyboard.chevron.compact.down" size={16} color="rgba(24, 24, 27, 0.28)" />
         </Pressable>
+      ) : null}
+
+      {!listOpen ? (
+        <Animated.View
+          pointerEvents={fabOpen ? 'auto' : 'none'}
+          style={[
+            styles.toolbarFloat,
+            {
+              bottom: keyboardPad + 64,
+              backgroundColor: NOTE_PAGE_BG,
+              borderTopColor: palette.outlineVariant,
+              opacity: fabProgress,
+              transform: [
+                {
+                  translateY: fabProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [12, 0],
+                  }),
+                },
+              ],
+            },
+          ]}>
+          <StudyDocumentToolbar
+            palette={palette}
+            surfaceBg={NOTE_PAGE_BG}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            canResetDocument={draft.trim().length > 0}
+            activeBold={currentLine.includes('**')}
+            activeUnderline={currentLine.includes('__')}
+            activeListKind={canvasLineListKind(currentLine)}
+            activeHeadingLevel={canvasLineHeadingLevel(currentLine)}
+            onAction={onToolbarAction}
+            onRetainKeyboardFocus={retainEditorKeyboard}
+          />
+        </Animated.View>
       ) : null}
 
       {!listOpen ? (
@@ -417,6 +566,13 @@ const styles = StyleSheet.create({
   listLayer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 20,
+  },
+  toolbarFloat: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 11,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   keyboardDismissBtn: {
     position: 'absolute',
