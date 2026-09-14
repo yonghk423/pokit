@@ -6,4 +6,4 @@
   <img src="assets/pokit5.png" width="120" alt="POKIT" />
 </p>
 
-[앱 소개](https://www.pokitstory.com/ko/app) · [App Store](https://apps.apple.com/app/id6762331629)
+[앱 소개](https://www.pokitstory.com/ko/app) · [App Store](https://apps.apple.com/kr/app/id6762331629)
