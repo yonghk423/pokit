@@ -53,7 +53,7 @@ describe('priorityCatalogSections', () => {
     const result = buildPriorityCatalogSections({
       available: [
         { key: 'healthIntake', label: '건강 섭취', icon: 'pills.fill' },
-        { key: 'fasting', label: '단식', icon: 'person.fill' },
+        { key: 'fasting', label: '단식', icon: 'figure.stand' },
       ],
       customFlowPickerItems: [],
       customFlowEntries: [],
@@ -91,7 +91,7 @@ describe('priorityCatalogSections', () => {
     const result = buildPriorityCatalogSections({
       available: [
         { key: 'healthIntake', label: '건강 섭취', icon: 'pills.fill' },
-        { key: 'fasting', label: '단식', icon: 'person.fill' },
+        { key: 'fasting', label: '단식', icon: 'figure.stand' },
       ],
       customFlowPickerItems: [
         { key: 'customFlow:a', label: '나만의 플로우', icon: 'book.fill' },

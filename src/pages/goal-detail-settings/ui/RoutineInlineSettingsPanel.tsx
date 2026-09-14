@@ -15,7 +15,10 @@ import {
 } from '@entities/day-plan';
 import { readRoutineDisplayNameFromConfig } from '@entities/day-plan/lib/routineDisplayName';
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
-import { syncMedicineReminderNotifications } from '@features/day-plan-notifications/model/syncMedicineReminderNotifications';
+import {
+  isMedicineReminderCategory,
+  syncMedicineReminderNotifications,
+} from '@features/day-plan-notifications/model/syncMedicineReminderNotifications';
 import { RoutineStartNotifyField } from '@features/day-plan-notifications/ui/RoutineStartNotifyField';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
@@ -40,7 +43,7 @@ type Props = {
   muted: string;
   border: string;
   isDark?: boolean;
-  /** 오늘 일정에서 열면 이름 변경 잠금 */
+  /** true면 이름 변경을 오늘 일정 잠금으로 취급. 실행 중이 아니면 기본 허용 */
   lockRename?: boolean;
   previewTitle?: string;
 };
@@ -84,7 +87,7 @@ export function RoutineInlineSettingsPanel({
   muted,
   border,
   isDark = false,
-  lockRename = true,
+  lockRename = false,
   previewTitle,
 }: Props) {
   const { t } = useTranslation();
@@ -133,7 +136,7 @@ export function RoutineInlineSettingsPanel({
       registerOtherCategoryResolverFromStorage();
       useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
 
-      if (key === 'healthIntake' || key === 'medicine') {
+      if (isMedicineReminderCategory(key, persisted)) {
         if (medicineTimerRef.current) clearTimeout(medicineTimerRef.current);
         medicineTimerRef.current = setTimeout(() => {
           medicineTimerRef.current = null;

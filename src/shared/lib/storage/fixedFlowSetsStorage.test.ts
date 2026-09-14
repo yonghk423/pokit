@@ -194,14 +194,12 @@ describe('fixedFlowSetsStorage', () => {
     expect(state.sets.map((set) => set.id)).toEqual([
       'set_daily',
       'set_weekend',
-      'set_example_health',
-      'set_example_focus',
       'manual_a',
     ]);
     expect(state.activeSetIds).toEqual(['set_daily', 'manual_a']);
   });
 
-  it('renames legacy 기본 세트 to 예시 세트 and seeds example items when empty', () => {
+  it('drops legacy 기본 세트 and retired example custom flow sets', () => {
     const state = normalizeFixedFlowSetsState({
       activeSetIds: [],
       sets: [
@@ -211,20 +209,31 @@ describe('fixedFlowSetsStorage', () => {
           applyRule: 'manual',
           items: [],
         },
+        {
+          id: 'set_example_health',
+          name: '건강 루틴 예시',
+          applyRule: 'manual',
+          items: [{ categoryKey: 'healthIntake', enabled: true }],
+        },
+        {
+          id: 'set_example_focus',
+          name: '집중 루틴 예시',
+          applyRule: 'manual',
+          items: [{ categoryKey: 'customFlow:preset_focus', enabled: true }],
+        },
       ],
     });
 
-    const exampleSet = state.sets.find((set) => set.id === 'set_example_health');
-    expect(exampleSet?.name).toBe('건강 루틴 예시');
-    expect(exampleSet?.items.map((item) => item.categoryKey)).toEqual([
-      'healthIntake',
-      'fasting',
-      'customFlow:preset_daily_clean',
+    expect(state.sets.map((set) => set.id)).toEqual(['set_daily', 'set_weekend']);
+    expect(state.sets.find((set) => set.id === 'set_example_health')).toBeUndefined();
+    expect(state.sets.find((set) => set.id === 'set_example_focus')).toBeUndefined();
+    expect(state.dismissedExampleCustomFlowSetIds).toEqual([
+      'set_example_health',
+      'set_example_focus',
     ]);
-    expect(state.sets.find((set) => set.id === 'set_example_focus')?.name).toBe('집중 루틴 예시');
   });
 
-  it('always includes two builtin example custom flow sets', () => {
+  it('does not seed health or focus example custom flow sets', () => {
     const state = normalizeFixedFlowSetsState({
       activeSetIds: [],
       sets: [
@@ -237,14 +246,10 @@ describe('fixedFlowSetsStorage', () => {
       ],
     });
 
-    expect(state.sets.map((set) => set.id)).toEqual([
-      'set_daily',
-      'set_weekend',
+    expect(state.sets.map((set) => set.id)).toEqual(['set_daily', 'set_weekend']);
+    expect(state.dismissedExampleCustomFlowSetIds).toEqual([
       'set_example_health',
       'set_example_focus',
-    ]);
-    expect(state.sets.find((set) => set.id === 'set_example_focus')?.items.map((item) => item.categoryKey)).toEqual([
-      'customFlow:preset_focus',
     ]);
   });
 
@@ -276,8 +281,6 @@ describe('fixedFlowSetsStorage', () => {
     expect(state.sets.map((set) => set.id)).toEqual([
       'set_daily',
       'set_weekend',
-      'set_example_health',
-      'set_example_focus',
     ]);
     expect(state.activeSetIds).toEqual(['set_daily']);
   });

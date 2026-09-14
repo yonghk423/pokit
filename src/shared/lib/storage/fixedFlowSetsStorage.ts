@@ -94,7 +94,7 @@ export type FixedFlowSetsState = {
   sets: FixedFlowSet[];
   /** 데일리·주말 고정 루틴 — 시간대 구간 레이아웃 (기본: 목록) */
   scheduledMealSlotLayoutEnabled?: boolean;
-  /** 사용자가 삭제한 나만의 루틴 예시 그룹 id — 재생성 방지 */
+  /** 사용자가 삭제한 나만의 루틴 예시 그룹 id — 재생성 방지(건강·집중 예시는 기본 제거) */
   dismissedExampleCustomFlowSetIds?: string[];
   /** 사용자가 삭제한 데일리·주말 프리셋 id — 재생성 방지 */
   dismissedBuiltinPresetSetIds?: string[];
@@ -610,24 +610,28 @@ function normalizeDismissedBuiltinPresetSetIds(raw: unknown): string[] {
   return out;
 }
 
-function hadMissingBuiltinExampleCustomSets(raw: unknown): boolean {
-  if (!Array.isArray(raw)) return true;
-  const ids = new Set(
-    raw
-      .map((row) =>
-        row && typeof row === 'object' && typeof (row as Record<string, unknown>).id === 'string'
-          ? (row as Record<string, unknown>).id.trim()
-          : '',
-      )
-      .filter(Boolean),
-  );
-  return !ids.has('set_example_health') || !ids.has('set_example_focus');
+function hadRetiredExampleCustomSets(raw: unknown): boolean {
+  if (!Array.isArray(raw)) return false;
+  return raw.some((row) => {
+    if (!row || typeof row !== 'object') return false;
+    const id =
+      typeof (row as Record<string, unknown>).id === 'string'
+        ? (row as Record<string, unknown>).id.trim()
+        : '';
+    return (
+      (BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS as readonly string[]).includes(id) ||
+      id === 'default'
+    );
+  });
 }
 
 export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState {
   const raw = input && typeof input === 'object' ? (input as PersistedShape) : {};
-  const dismissedExampleCustomFlowSetIds = normalizeDismissedExampleCustomFlowSetIds(
-    raw.dismissedExampleCustomFlowSetIds,
+  const dismissedExampleCustomFlowSetIds = Array.from(
+    new Set([
+      ...normalizeDismissedExampleCustomFlowSetIds(raw.dismissedExampleCustomFlowSetIds),
+      ...BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS,
+    ]),
   );
   const dismissedBuiltinPresetSetIds = normalizeDismissedBuiltinPresetSetIds(
     raw.dismissedBuiltinPresetSetIds,
@@ -760,7 +764,10 @@ export function loadFixedFlowSetsState(): FixedFlowSetsState {
     hadRemovedScheduledSets(raw?.sets) ||
     hadRemovedBuiltinPresetSets(raw?.sets) ||
     hadExampleCustomFlowSetMigration(raw?.sets) ||
-    hadMissingBuiltinExampleCustomSets(raw?.sets) ||
+    hadRetiredExampleCustomSets(raw?.sets) ||
+    !BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS.every((id) =>
+      normalizeDismissedExampleCustomFlowSetIds(raw?.dismissedExampleCustomFlowSetIds).includes(id),
+    ) ||
     raw?.fixedRoutinePerModeApplyMigrated !== true ||
     raw?.fixedRoutinePresetWeekdaysEditableMigrated !== true;
   if (needsPersist) {

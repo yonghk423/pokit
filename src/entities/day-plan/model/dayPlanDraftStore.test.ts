@@ -40,6 +40,8 @@ function resetDraftStore() {
     completedFocusCategoryKeys: [],
     planCompletionDismissedKeys: [],
     quickMemoDraft: '',
+    priorityEndedTodayKeys: [],
+    priorityEndedTodayDateKey: '',
   });
 }
 
@@ -564,6 +566,25 @@ describe('dayPlanDraftStore', () => {
     expect(s.completedFocusCategoryKeys).toEqual(['water@morning']);
     expect(s.planCompletionDismissedKeys).toEqual([]);
     expect(s.isFocusStarted).toBe(true);
+    expect(s.priorityEndedTodayKeys).toEqual(['healthIntake']);
+    expect(s.priorityEndedTodayDateKey).toBe('2025-05-26');
+  });
+
+  it('keeps an ended category out of today until the user adds it back', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      priorityCategoryOrder: ['healthIntake', 'fasting'],
+      prioritySectionsCategoryOrder: ['healthIntake'],
+      priorityEndedTodayKeys: [],
+      priorityEndedTodayDateKey: '',
+    });
+    useDayPlanDraftStore.getState().finishPriorityCategoryForToday('healthIntake');
+    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['fasting']);
+    expect(useDayPlanDraftStore.getState().prioritySectionsCategoryOrder).toEqual([]);
+    expect(useDayPlanDraftStore.getState().priorityEndedTodayKeys).toEqual(['healthIntake']);
+
+    useDayPlanDraftStore.getState().setPriorityCategoryOrder(['fasting', 'healthIntake']);
+    expect(useDayPlanDraftStore.getState().priorityEndedTodayKeys).toEqual([]);
   });
 
   it('cycles priority category mark colors without requiring today bag membership', () => {

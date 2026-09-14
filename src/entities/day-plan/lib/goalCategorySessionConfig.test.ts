@@ -56,6 +56,7 @@ describe('normalizeFastingDetailConfig', () => {
     expect(cfg.currentWeightKg).toBe(70);
     expect(cfg.fastingEnabled).toBe(false);
     expect(getInitialFastingDataConfig().targetWeightKg).toBe(65);
+    expect(cfg.templateKey).toBe('fasting');
   });
 });
 
@@ -99,7 +100,7 @@ describe('normalizeMedicineDetailConfig', () => {
     const cfg = normalizeMedicineDetailConfig({});
     expect(cfg.morningOn).toBe(false);
     expect(cfg.dosesPerDay).toBe(0);
-    expect(cfg.morningNotify).toBe(true);
+    expect(cfg.morningNotify).toBe(false);
   });
 
   it('maps legacy dosesPerDay to slots', () => {
@@ -109,6 +110,18 @@ describe('normalizeMedicineDetailConfig', () => {
     expect(cfg.dinnerOn).toBe(false);
     expect(cfg.dosesPerDay).toBe(2);
     expect(cfg.takenCount).toBe(1);
+  });
+
+  it('keeps next-day flags on slot times', () => {
+    const cfg = normalizeMedicineDetailConfig({
+      morningOn: true,
+      morningTime: '01:00',
+      morningTimeNextDay: true,
+    });
+    expect(cfg.morningTime).toBe('01:00');
+    expect(cfg.morningTimeNextDay).toBe(true);
+    expect(cfg.lunchTimeNextDay).toBe(false);
+    expect(cfg.dinnerTimeNextDay).toBe(false);
   });
 
   it('uses explicit slot flags', () => {

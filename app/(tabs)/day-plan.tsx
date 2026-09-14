@@ -12,7 +12,6 @@ export default function DayPlanTabScreen() {
             muted={theme.muted}
             border={theme.border}
             isDark={theme.isDark}
-            lockRename
           />
         )}
       />

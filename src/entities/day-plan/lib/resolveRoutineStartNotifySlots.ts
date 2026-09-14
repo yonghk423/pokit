@@ -79,6 +79,7 @@ function pushMealSlots(
  * - 고정 루틴 항목의 타임라인 시작 / 배정 시간대 (+ 요일 규칙)
  * - 오늘 일정 블록 시작 시각
  * - 오늘 탭 시간대 배정
+ * 루틴 시작 시각이 없으면 하루 시작으로 채우지 않는다.
  */
 export function collectRoutineStartNotifySlots(input: {
   enabledCategoryKeys: readonly string[];
@@ -91,6 +92,10 @@ export function collectRoutineStartNotifySlots(input: {
   mealSchedule: DayMealSlotSchedule;
   planBlocks?: readonly RoutineStartNotifyPlanBlock[];
   sectionsMealSlots?: Record<string, DayMealSlot[] | DayMealSlot | undefined>;
+  /** 오늘 루틴 목록에 있는 카테고리 */
+  todayCategoryKeys?: readonly string[];
+  /** @deprecated 루틴 시각이 없을 때 하루 시작으로 채우지 않음(호환용) */
+  priorityStart?: string;
 }): RoutineStartNotifySlot[] {
   const enabled = new Set(input.enabledCategoryKeys.filter(Boolean));
   if (enabled.size === 0) return [];
@@ -164,6 +169,8 @@ export function hasResolvableRoutineStartTime(input: {
   mealSchedule: DayMealSlotSchedule;
   planBlocks?: readonly RoutineStartNotifyPlanBlock[];
   sectionsMealSlots?: Record<string, DayMealSlot[] | DayMealSlot | undefined>;
+  todayCategoryKeys?: readonly string[];
+  priorityStart?: string;
 }): boolean {
   return (
     collectRoutineStartNotifySlots({
@@ -175,6 +182,8 @@ export function hasResolvableRoutineStartTime(input: {
       mealSchedule: input.mealSchedule,
       planBlocks: input.planBlocks,
       sectionsMealSlots: input.sectionsMealSlots,
+      todayCategoryKeys: input.todayCategoryKeys,
+      priorityStart: input.priorityStart,
     }).length > 0
   );
 }

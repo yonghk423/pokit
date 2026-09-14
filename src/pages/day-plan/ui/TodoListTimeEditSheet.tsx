@@ -51,7 +51,7 @@ export function TodoListTimeEditSheet({
   const timePickerPalette = useMemo(
     () => ({
       ...palette.timeField,
-      containerLowest: isDark ? tone.surfaceAlt : '#FFFFFF',
+      containerLowest: isDark ? tone.surfaceAlt : tone.bg,
     }),
     [isDark, palette.timeField, tone.surfaceAlt],
   );
@@ -108,7 +108,7 @@ export function TodoListTimeEditSheet({
         <View style={styles.cardWrap}>
           <CityPopCardShell
             isDark={isDark}
-            faceColor={isDark ? tone.surfaceAlt : '#FFFFFF'}
+            faceColor={isDark ? tone.surfaceAlt : tone.bg}
             contentStyle={styles.cardContent}>
             <View style={styles.header}>
               <ThemedText style={[styles.title, { color: timePickerPalette.onSurface }]}>

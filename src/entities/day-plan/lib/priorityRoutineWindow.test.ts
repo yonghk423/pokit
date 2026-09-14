@@ -1,5 +1,6 @@
 import {
   clampHhmmToPriorityWindow,
+  isHhmmBeforeSameDayWindowStart,
   isOvernightPriorityWindow,
 } from './priorityRoutineWindow';
 
@@ -8,6 +9,17 @@ describe('isOvernightPriorityWindow', () => {
     expect(isOvernightPriorityWindow('22:00', '06:00')).toBe(true);
     expect(isOvernightPriorityWindow('09:00', '12:00')).toBe(false);
     expect(isOvernightPriorityWindow('09:00', '24:00')).toBe(false);
+  });
+});
+
+describe('isHhmmBeforeSameDayWindowStart', () => {
+  it('treats 01:00 as next day when the window is 07:00–23:00', () => {
+    expect(isHhmmBeforeSameDayWindowStart('01:00', '07:00', '23:00')).toBe(true);
+    expect(isHhmmBeforeSameDayWindowStart('08:00', '07:00', '23:00')).toBe(false);
+  });
+
+  it('does not flag overnight windows', () => {
+    expect(isHhmmBeforeSameDayWindowStart('01:00', '22:00', '06:00')).toBe(false);
   });
 });
 

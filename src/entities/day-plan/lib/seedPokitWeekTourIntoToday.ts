@@ -5,12 +5,14 @@ import {
   BUILTIN_TUTORIAL_GROUP_KEY,
   clearPokitWeekTourSeeded,
   ensureDefaultPriorityCatalog,
+  isStandardCatalogKeyHidden,
   loadDailyRhythmOnboardingCompleted,
   loadPokitWeekTourSeeded,
   markPokitWeekTourSeeded,
   nextOrderWithPokitWeekTourSeed,
 } from '@shared/lib/storage';
 
+import { isEndedTodayCategoryKey, resolveEndedTodayCategoryKeys } from './endedTodayCategoryKeys';
 import { useDayPlanDraftStore } from '../model/dayPlanDraftStore';
 
 function markSeededIfOnboardingDone(): void {
@@ -23,11 +25,18 @@ function markSeededIfOnboardingDone(): void {
 export function seedPokitWeekTourIntoTodayIfNeeded(): void {
   const draft = useDayPlanDraftStore.getState();
   if (!draft.isHydrated) return;
+  if (isStandardCatalogKeyHidden(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)) return;
 
   // 온보딩 중인데 이전에 시드 잠금만 남은 경우 — 초기 담기를 위해 잠금 해제
   if (!loadDailyRhythmOnboardingCompleted() && loadPokitWeekTourSeeded()) {
     clearPokitWeekTourSeeded();
   }
+
+  const endedToday = resolveEndedTodayCategoryKeys(
+    draft.priorityEndedTodayKeys,
+    draft.priorityEndedTodayDateKey,
+  );
+  if (isEndedTodayCategoryKey(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID, endedToday)) return;
 
   const { priorityCategoryOrder, setPriorityCategoryOrder } = draft;
   if (priorityCategoryOrder.includes(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)) {

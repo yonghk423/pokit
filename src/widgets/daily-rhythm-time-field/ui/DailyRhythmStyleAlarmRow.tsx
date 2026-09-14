@@ -1,5 +1,6 @@
-import { StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { OutlinedSwitch } from '@shared/ui/outlined-switch';
 import { ThemedText } from '@shared/ui/themed-text';
 
 const PRIMARY = 'rgb(0, 0, 0)';
@@ -46,9 +47,10 @@ export function DailyRhythmStyleAlarmRow({
           </ThemedText>
         ) : null}
       </View>
-      <Switch
+      <OutlinedSwitch
         trackColor={{ true: PRIMARY, false: palette.trackOff }}
         thumbColor="#fff"
+        ios_backgroundColor={palette.trackOff}
         value={value}
         onValueChange={onValueChange}
       />

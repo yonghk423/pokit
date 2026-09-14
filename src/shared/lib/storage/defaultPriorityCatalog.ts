@@ -40,15 +40,27 @@ export const BUILTIN_DAILY_LIFE_GROUP_KEY = 'customGroup:preset_daily_life' as c
 /** 통합 체크리스트 프리셋 — 7개 개별 루틴으로 분리됨 */
 export const LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID = 'customFlow:preset_daily_life' as const;
 
-export const BUILTIN_DAILY_LIFE_FLOW_IDS = [
+export const BUILTIN_DAILY_CLEAN_FLOW_ID = 'customFlow:preset_daily_clean' as const;
+export const BUILTIN_DAILY_RECYCLE_FLOW_ID = 'customFlow:preset_daily_recycle' as const;
+export const BUILTIN_DAILY_EXERCISE_FLOW_ID = 'customFlow:preset_daily_exercise' as const;
+
+/** 일상 루틴에서 뺀 기본 항목 — 기존 저장 데이터 제거·히스토리 표시용 */
+export const RETIRED_DAILY_LIFE_FLOW_IDS = [
   'customFlow:preset_daily_bed',
-  'customFlow:preset_daily_clean',
   'customFlow:preset_daily_laundry',
   'customFlow:preset_daily_wash',
-  'customFlow:preset_daily_recycle',
-  'customFlow:preset_daily_exercise',
   'customFlow:preset_daily_shopping',
+  BUILTIN_DAILY_CLEAN_FLOW_ID,
+  BUILTIN_DAILY_RECYCLE_FLOW_ID,
 ] as const;
+
+export const BUILTIN_DAILY_LIFE_FLOW_IDS = [
+  BUILTIN_DAILY_EXERCISE_FLOW_ID,
+] as const;
+
+export function isRetiredDailyLifeFlowId(id: string): boolean {
+  return (RETIRED_DAILY_LIFE_FLOW_IDS as readonly string[]).includes(id);
+}
 
 /** @deprecated — `BUILTIN_DAILY_LIFE_FLOW_IDS[0]` 등 개별 ID 사용 */
 export const BUILTIN_DAILY_LIFE_FLOW_ID = BUILTIN_DAILY_LIFE_FLOW_IDS[0];
@@ -63,7 +75,7 @@ export const BUILTIN_GOOD_POSTURE_FLOW_ID = 'customFlow:preset_good_posture' as 
 /** 건강 루틴 — 스트레칭 */
 export const BUILTIN_STRETCHING_FLOW_ID = 'customFlow:preset_stretching' as const;
 
-/** 생산성을 높이는 도구 — 집중하기 */
+/** @deprecated 제거됨 — 마이그레이션·히스토리 표시용 */
 export const BUILTIN_FOCUS_FLOW_ID = 'customFlow:preset_focus' as const;
 
 /** 첫 사용자 튜토리얼 — 포킷 일주일 사용해보기 */
@@ -138,57 +150,7 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     checklistLabels: POKIT_WEEK_TOUR_CHECKLIST_LABELS,
   },
   {
-    id: BUILTIN_DAILY_LIFE_FLOW_IDS[0],
-    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
-    displayName: '이불정리',
-    icon: 'bed.double.fill',
-    color: '#0d9488',
-    summary: '아침에 이불을 정리해 하루를 가볍게 시작해요.',
-    templateKey: 'checklist',
-    checklistLabels: ['이불정리'],
-  },
-  {
-    id: BUILTIN_DAILY_LIFE_FLOW_IDS[1],
-    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
-    displayName: '청소하기',
-    icon: 'sparkles',
-    color: '#0891b2',
-    summary: '방·거실 등 생활 공간을 간단히 정리해요.',
-    templateKey: 'checklist',
-    checklistLabels: ['청소하기'],
-  },
-  {
-    id: BUILTIN_DAILY_LIFE_FLOW_IDS[2],
-    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
-    displayName: '빨래하기',
-    icon: 'washer.fill',
-    color: '#6366f1',
-    summary: '쌓인 빨래를 돌리거나 개어 정리해요.',
-    templateKey: 'checklist',
-    checklistLabels: ['빨래하기'],
-  },
-  {
-    id: BUILTIN_DAILY_LIFE_FLOW_IDS[3],
-    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
-    displayName: '세수하기',
-    icon: 'hands.sparkles.fill',
-    color: '#14b8a6',
-    summary: '하루를 시작·마무리할 때 깨끗이 씻어요.',
-    templateKey: 'checklist',
-    checklistLabels: ['세수하기'],
-  },
-  {
-    id: BUILTIN_DAILY_LIFE_FLOW_IDS[4],
-    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
-    displayName: '분리수거',
-    icon: 'arrow.3.trianglepath',
-    color: '#22c55e',
-    summary: '재활용·분리수거를 챙겨요.',
-    templateKey: 'checklist',
-    checklistLabels: ['분리수거'],
-  },
-  {
-    id: BUILTIN_DAILY_LIFE_FLOW_IDS[5],
+    id: BUILTIN_DAILY_EXERCISE_FLOW_ID,
     groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
     displayName: '운동하기',
     icon: 'figure.run',
@@ -196,16 +158,6 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     summary: '가벼운 스트레칭부터 유산소까지, 오늘 몸을 움직여요.',
     templateKey: 'checklist',
     checklistLabels: ['운동하기'],
-  },
-  {
-    id: BUILTIN_DAILY_LIFE_FLOW_IDS[6],
-    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
-    displayName: '쇼핑하기',
-    icon: 'cart.fill',
-    color: '#f59e0b',
-    summary: '장보기·필요한 물건을 사러 나가요.',
-    templateKey: 'checklist',
-    checklistLabels: ['쇼핑하기'],
   },
   {
     id: BUILTIN_ABSTAIN_FLOW_ID,
@@ -228,6 +180,62 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     templateKey: 'checklist',
     checklistLabels: ['스트레칭'],
   },
+];
+
+/** 제거된 기본 커스텀 플로우 — 히스토리·레거시 표시·마이그레이션용 */
+export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
+  {
+    id: 'customFlow:preset_daily_bed',
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '이불정리',
+    icon: 'bed.double.fill',
+    color: '#0d9488',
+    summary: '아침에 이불을 정리해 하루를 가볍게 시작해요.',
+  },
+  {
+    id: 'customFlow:preset_daily_laundry',
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '빨래하기',
+    icon: 'washer.fill',
+    color: '#6366f1',
+    summary: '쌓인 빨래를 돌리거나 개어 정리해요.',
+  },
+  {
+    id: 'customFlow:preset_daily_wash',
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '세수하기',
+    icon: 'hands.sparkles.fill',
+    color: '#14b8a6',
+    summary: '하루를 시작·마무리할 때 깨끗이 씻어요.',
+  },
+  {
+    id: 'customFlow:preset_daily_shopping',
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '쇼핑하기',
+    icon: 'cart.fill',
+    color: '#f59e0b',
+    summary: '장보기·필요한 물건을 사러 나가요.',
+  },
+  {
+    id: BUILTIN_DAILY_CLEAN_FLOW_ID,
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '청소하기',
+    icon: 'sparkles',
+    color: '#0891b2',
+    summary: '방·거실 등 생활 공간을 간단히 정리해요.',
+    templateKey: 'checklist',
+    checklistLabels: ['청소하기'],
+  },
+  {
+    id: BUILTIN_DAILY_RECYCLE_FLOW_ID,
+    groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
+    displayName: '분리수거',
+    icon: 'arrow.3.trianglepath',
+    color: '#22c55e',
+    summary: '재활용·분리수거를 챙겨요.',
+    templateKey: 'checklist',
+    checklistLabels: ['분리수거'],
+  },
   {
     id: BUILTIN_FOCUS_FLOW_ID,
     groupKey: 'productivity',
@@ -238,10 +246,6 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     templateKey: 'checklist',
     checklistLabels: ['집중하기'],
   },
-];
-
-/** 제거된 기본 커스텀 플로우 — 히스토리·레거시 표시·마이그레이션용 */
-export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
   {
     id: BUILTIN_INTERMITTENT_FASTING_FLOW_ID,
     groupKey: 'health',

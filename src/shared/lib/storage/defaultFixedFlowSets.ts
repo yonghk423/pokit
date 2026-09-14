@@ -9,7 +9,9 @@ import {
   type WeekdayIndex,
 } from './fixedFlowWeekdays';
 import {
-  BUILTIN_DAILY_LIFE_FLOW_IDS,
+  BUILTIN_DAILY_CLEAN_FLOW_ID,
+  BUILTIN_DAILY_EXERCISE_FLOW_ID,
+  BUILTIN_DAILY_RECYCLE_FLOW_ID,
   BUILTIN_FOCUS_FLOW_ID,
 } from './defaultPriorityCatalog';
 
@@ -29,7 +31,7 @@ type DefaultSetTemplate = {
 export const EXAMPLE_CUSTOM_FLOW_SET_NAME = '예시 세트';
 export const LEGACY_CUSTOM_FLOW_SET_NAME = '기본 세트';
 
-/** 나만의 루틴 기본 예시 그룹 — 삭제 시 dismissedExampleCustomFlowSetIds에 기록 */
+/** 나만의 루틴에서 뺀 기본 예시 그룹 — 기존 저장 데이터 제거·표시명용 */
 export const BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS = [
   'set_example_health',
   'set_example_focus',
@@ -46,20 +48,11 @@ export const BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_NAMES: Record<
 export const EXAMPLE_CUSTOM_FLOW_SET_ITEM_KEYS = [
   'healthIntake',
   'fasting',
-  BUILTIN_DAILY_LIFE_FLOW_IDS[1],
+  BUILTIN_DAILY_EXERCISE_FLOW_ID,
 ] as const;
 
 /** 집중 루틴 예시 — 생산성 기본 루틴 (reading/work는 CATALOG_REMOVED) */
 export const EXAMPLE_FOCUS_FLOW_SET_ITEM_KEYS = [BUILTIN_FOCUS_FLOW_ID] as const;
-
-/** 레거시 집중 예시 기본 항목 — sanitize로 비워지던 reading/work */
-const LEGACY_FOCUS_SET_DEFAULT_KEYS = ['reading', 'work'] as const;
-
-/** 레거시 집중 예시 — reading/work 제거 후 임시로 넣었던 건강·금지 항목 */
-const LEGACY_FOCUS_SET_HEALTH_FALLBACK_KEYS = [
-  'customFlow:preset_stretching',
-  'customFlow:preset_abstain',
-] as const;
 
 const BUILTIN_EXAMPLE_CUSTOM_SET_TEMPLATES: DefaultSetTemplate[] = [
   {
@@ -99,63 +92,26 @@ export function createBuiltinExampleCustomFlowSets(): FixedFlowSet[] {
   }));
 }
 
-/** 나만의 루틴 예시 그룹 2개 — 없으면 추가, 이름·빈 항목은 기본값으로 보강 */
+const RETIRED_EXAMPLE_OR_LEGACY_DEFAULT_IDS = new Set<string>([
+  ...BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS,
+  'default',
+]);
+
+/** 건강·집중 루틴 예시와 레거시 `default` 세트를 목록에서 뺀다 */
 export function mergeBuiltInExampleCustomSets(
   sets: FixedFlowSet[],
-  options?: { dismissedIds?: readonly string[] },
+  _options?: { dismissedIds?: readonly string[] },
 ): FixedFlowSet[] {
-  const dismissedIds = new Set(options?.dismissedIds ?? []);
-  const defaults = createBuiltinExampleCustomFlowSets().filter((set) => !dismissedIds.has(set.id));
-  const exampleIds = new Set(BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS as readonly string[]);
-  const byId = new Map(sets.map((set) => [set.id, set]));
-
-  const legacyDefault = byId.get('default');
-  if (legacyDefault?.applyRule === 'manual' && !byId.has('set_example_health')) {
-    byId.set('set_example_health', {
-      ...legacyDefault,
-      id: 'set_example_health',
-      name: defaults[0]!.name,
-      applyRule: 'manual',
-      items:
-        legacyDefault.items.length > 0 ? legacyDefault.items : defaults[0]!.items,
-    });
-    byId.delete('default');
-  }
-
-  const mergedExamples = defaults.map((defaultSet) => {
-    const existing = byId.get(defaultSet.id);
-    if (!existing) return defaultSet;
-    const existingKeys = existing.items.map((item) => item.categoryKey);
-    const shouldResetFocusItems =
-      defaultSet.id === 'set_example_focus' &&
-      (existing.items.length === 0 ||
-        isSameCategoryKeySet(existingKeys, LEGACY_FOCUS_SET_DEFAULT_KEYS) ||
-        isSameCategoryKeySet(existingKeys, LEGACY_FOCUS_SET_HEALTH_FALLBACK_KEYS));
-    const keepCustomWeekdays = existing.applyRule === 'custom';
-    return {
-      ...existing,
-      name: defaultSet.name,
-      applyRule: keepCustomWeekdays ? ('custom' as const) : ('manual' as const),
-      ...(keepCustomWeekdays && existing.applyWeekdays
-        ? { applyWeekdays: existing.applyWeekdays }
-        : {}),
-      items:
-        existing.items.length > 0 && !shouldResetFocusItems
-          ? existing.items
-          : defaultSet.items,
-    };
-  });
-
   const presetIds = new Set(BUILTIN_PRESET_SCHEDULE_SET_IDS as readonly string[]);
-  const presets = sets.filter((set) => presetIds.has(set.id as (typeof BUILTIN_PRESET_SCHEDULE_SET_IDS)[number]));
+  const presets = sets.filter((set) =>
+    presetIds.has(set.id as (typeof BUILTIN_PRESET_SCHEDULE_SET_IDS)[number]),
+  );
   const others = sets.filter(
     (set) =>
       !presetIds.has(set.id as (typeof BUILTIN_PRESET_SCHEDULE_SET_IDS)[number]) &&
-      !exampleIds.has(set.id) &&
-      set.id !== 'default',
+      !RETIRED_EXAMPLE_OR_LEGACY_DEFAULT_IDS.has(set.id),
   );
-
-  return [...presets, ...mergedExamples, ...others];
+  return [...presets, ...others];
 }
 
 /** 레거시 — 평일 루틴 → 데일리 루틴으로 통합 */
@@ -179,9 +135,18 @@ export const REMOVED_BUILTIN_PRESET_SET_IDS = [
 
 /** 레거시 데일리 루틴 기본 항목 — 미수정 저장 데이터 마이그레이션용 */
 const LEGACY_DAILY_SET_DEFAULT_KEYS = ['healthIntake', 'reading', 'work'] as const;
+const LEGACY_DAILY_SET_WITH_CLEAN_KEYS = [
+  'healthIntake',
+  'fasting',
+  BUILTIN_DAILY_CLEAN_FLOW_ID,
+] as const;
 
 /** 레거시 주말 루틴 기본 항목 — reading은 CATALOG_REMOVED라 비워짐 */
 const LEGACY_WEEKEND_SET_DEFAULT_KEYS = ['reading'] as const;
+const LEGACY_WEEKEND_SET_WITH_RECYCLE_KEYS = [
+  BUILTIN_DAILY_EXERCISE_FLOW_ID,
+  BUILTIN_DAILY_RECYCLE_FLOW_ID,
+] as const;
 
 function isSameCategoryKeySet(keys: string[], expected: readonly string[]): boolean {
   if (keys.length !== expected.length) return false;
@@ -194,17 +159,14 @@ const DEFAULT_SET_TEMPLATES: DefaultSetTemplate[] = [
     id: 'set_daily',
     name: '데일리 고정 루틴',
     applyRule: 'daily',
-    categoryKeys: ['healthIntake', 'fasting', BUILTIN_DAILY_LIFE_FLOW_IDS[1]],
+    categoryKeys: ['healthIntake', 'fasting'],
     titleMarkColor: 'yellow',
   },
   {
     id: 'set_weekend',
     name: '주말 고정 루틴',
     applyRule: 'weekend',
-    categoryKeys: [
-      BUILTIN_DAILY_LIFE_FLOW_IDS[5],
-      BUILTIN_DAILY_LIFE_FLOW_IDS[6],
-    ],
+    categoryKeys: [BUILTIN_DAILY_EXERCISE_FLOW_ID],
     titleMarkColor: 'lavender',
   },
 ];
@@ -264,11 +226,13 @@ export function mergeBuiltInPresetSets(
     const existingKeys = existing.items.map((item) => item.categoryKey);
     const shouldResetDailyItems =
       defaultSet.id === 'set_daily' &&
-      isSameCategoryKeySet(existingKeys, LEGACY_DAILY_SET_DEFAULT_KEYS);
+      (isSameCategoryKeySet(existingKeys, LEGACY_DAILY_SET_DEFAULT_KEYS) ||
+        isSameCategoryKeySet(existingKeys, LEGACY_DAILY_SET_WITH_CLEAN_KEYS));
     const shouldResetWeekendItems =
       defaultSet.id === 'set_weekend' &&
       (existing.items.length === 0 ||
-        isSameCategoryKeySet(existingKeys, LEGACY_WEEKEND_SET_DEFAULT_KEYS));
+        isSameCategoryKeySet(existingKeys, LEGACY_WEEKEND_SET_DEFAULT_KEYS) ||
+        isSameCategoryKeySet(existingKeys, LEGACY_WEEKEND_SET_WITH_RECYCLE_KEYS));
     const shouldResetEmptyPreset = existing.items.length === 0;
     const storedName = existing.name.trim();
     const hasExplicitTitleMark = Object.prototype.hasOwnProperty.call(

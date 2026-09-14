@@ -11,10 +11,9 @@ import Reanimated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { blockDurationSec, getBlockTimelineIcon, resolveBlockCategoryKey, resolveCategoryCatalogAccentColor, resolveDayPlanBlockDisplayTitle, type SpineTimelineRow } from '@entities/day-plan';
+import { blockDurationSec, getBlockTimelineIcon, resolveBlockCategoryKey, resolveCategoryCatalogIconTile, resolveDayPlanBlockDisplayTitle, type SpineTimelineRow } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import { formatDurationMinutes, formatMinuteOfDay, useTranslation } from '@shared/lib/i18n';
-import { toPastelColor } from '@shared/lib/ui/toPastelColor';
 import { CompletionRadioButton, COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -125,8 +124,7 @@ function SpineNode({
   const iconName = getBlockTimelineIcon(block);
   const shouldPulse = isCurrent && !completed;
   const pulse = useRef(new Animated.Value(1)).current;
-  const iconColor = resolveCategoryCatalogAccentColor(categoryKey);
-  const iconBoxBg = toPastelColor(iconColor);
+  const { boxBg: iconBoxBg, iconColor } = resolveCategoryCatalogIconTile(categoryKey);
 
   useEffect(() => {
     if (!shouldPulse) {

@@ -131,6 +131,8 @@ export type DayPlanStoreState = {
     blockOrigin?: 'quickMemo' | 'prioritySession' | 'spineTimeline';
     /** 지정 시 해당 날짜 기준으로 종료 시각 검증·스토어 dateKey 정렬 (우선순위 플로우 등) */
     planDateKey?: string;
+    /** 오늘 탭에서 직접 정한 시각 — 고정 루틴 동기화가 덮지 않음 */
+    hasManualScheduleOverride?: boolean;
   }) => AddBlockResult;
 
   /** 블록 제거 + 완료/건너뛰기 id 정리 */
@@ -490,6 +492,7 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
         ...(endsNext ? { endsNextCalendarDay: true as const } : {}),
         ...(input.blockOrigin ? { blockOrigin: input.blockOrigin } : {}),
         ...(ck ? { categoryKey: ck } : {}),
+        ...(input.hasManualScheduleOverride ? { hasManualScheduleOverride: true as const } : {}),
       };
 
       const next = sortDayPlanBlocks([...current, block]);

@@ -37,7 +37,7 @@ describe('resolveCustomFlowCatalogIcon', () => {
     expect(resolveCustomFlowCatalogColor(BUILTIN_STRETCHING_FLOW_ID)).toBe('#8b5cf6');
   });
 
-  it('returns builtin icon for focus preset', () => {
+  it('returns legacy icon metadata for removed focus preset', () => {
     expect(resolveCustomFlowCatalogIcon(BUILTIN_FOCUS_FLOW_ID)).toBe('brain.head.profile');
     expect(resolveCustomFlowCatalogColor(BUILTIN_FOCUS_FLOW_ID)).toBe('#2563eb');
   });

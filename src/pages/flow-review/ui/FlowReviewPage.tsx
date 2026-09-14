@@ -32,7 +32,7 @@ const PRIMARY = '#356668';
 const CATEGORY_META: Record<string, { icon: Parameters<typeof IconSymbol>[0]['name']; labelKey: Parameters<typeof t>[0] }> = {
   work: { icon: 'square.and.pencil', labelKey: 'flowReview.category.work' },
   reading: { icon: 'book.closed.fill', labelKey: 'flowReview.category.reading' },
-  fasting: { icon: 'person.fill', labelKey: 'flowReview.category.fasting' },
+  fasting: { icon: 'figure.stand', labelKey: 'flowReview.category.fasting' },
   water: { icon: 'drop.fill', labelKey: 'flowReview.category.water' },
   medicine: { icon: 'pills.fill', labelKey: 'flowReview.category.medicine' },
   other: { icon: 'person.fill', labelKey: 'flowReview.category.other' },

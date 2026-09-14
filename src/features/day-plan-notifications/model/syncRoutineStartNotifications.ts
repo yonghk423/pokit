@@ -2,6 +2,7 @@ import {
   categoryReminderLabelKo,
   collectRoutineStartNotifySlots,
   formatHhmmClockKo,
+  listTodayPlanCategoryKeys,
   parseHHmmToMinutes,
   useDayPlanDraftStore,
   useDayPlanStore,
@@ -73,6 +74,8 @@ async function performRoutineStartNotificationSync(): Promise<void> {
       ...draft.priorityMealSlotOverrides,
       ...draft.prioritySectionsMealSlots,
     },
+    todayCategoryKeys: listTodayPlanCategoryKeys(),
+    priorityStart: draft.priorityStart,
   }).slice(0, MAX_ROUTINE_START_NOTIFY_SLOTS);
 
   const nextRows: { slotKey: string; notificationId: string }[] = [];

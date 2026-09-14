@@ -18,13 +18,22 @@ import {
   type CustomFlowTemplateKey,
 } from './customFlowTemplateConfigs';
 import {
+  getInitialFastingDataConfig,
   getInitialMeasurementDataConfig,
+  getInitialMedicineDataConfig,
   getInitialOtherDataConfig,
+  normalizeFastingDetailConfig,
   normalizeMeasurementDetailConfig,
   normalizeOtherDetailConfig,
+  type FastingDetailDataConfig,
   type MeasurementDetailDataConfig,
   type OtherDetailDataConfig,
 } from './goalCategorySessionConfig';
+import {
+  getInitialHealthIntakeDataConfig,
+  normalizeHealthIntakeDetailConfig,
+  type HealthIntakeDetailDataConfig,
+} from './healthIntakeDetailConfig';
 import { addDaysToLocalDateKey, getLocalDateKey } from './localDateKey';
 import { pickMeasurementSettingsForCreate, applyMeasurementMetricPreset } from './measurementPresetSamples';
 import { MEASUREMENT_METRIC_PRESETS } from './measurementUnits';
@@ -54,6 +63,8 @@ export const CUSTOM_FLOW_TEMPLATE_LABELS: Record<CustomFlowTemplateKey, string> 
   checklist: '할 일 체크',
   abstain: '금지 체크',
   measurement: '값 기록',
+  healthIntake: '약 복용',
+  fasting: '체중조절',
   habit: '오늘 했/안 했',
   counter: '횟수 채우기',
   focus: '집중 시간',
@@ -67,6 +78,8 @@ export const CUSTOM_FLOW_TEMPLATE_DESCRIPTIONS: Record<CustomFlowTemplateKey, st
   checklist: '할 일을 하나씩 체크해요',
   abstain: '하지 않은 것을 체크해요',
   measurement: '숫자·값을 꾸준히 기록해요',
+  healthIntake: '약·영양제를 챙겨요',
+  fasting: '체중 목표를 기록해요',
   habit: '했는지만 간단히 남겨요',
   counter: '목표 횟수를 채워요',
   focus: '정해진 시간 동안 집중해요',
@@ -80,6 +93,8 @@ export const CUSTOM_FLOW_TEMPLATE_SUMMARIES: Record<CustomFlowTemplateKey, strin
   checklist: '할 일 목록을 만들고, 세션에서 하나씩 체크해요.',
   abstain: '하지 말아야 할 습관을 목록으로 두고, 오늘 지켰는지 체크해요.',
   measurement: '체중·혈압처럼 숫자를 기록하고 추이·목표를 확인해요.',
+  healthIntake: '약·영양제 복용을 챙기고 세션에서 기록해요.',
+  fasting: '현재·목표 체중과 주간 감량 목표를 두고 날짜별로 기록해요.',
   habit: '오늘 했는지만 남기고 연속 기록을 쌓아요.',
   counter: '횟수를 세고 하루 목표까지 채워요.',
   focus: '정해 둔 시간 동안 집중 타이머로 진행해요.',
@@ -92,6 +107,8 @@ const TEMPLATE_NAME_KEYS: Record<CustomFlowTemplateKey, I18nKey> = {
   checklist: 'customFlowTemplate.name.checklist',
   abstain: 'customFlowTemplate.name.abstain',
   measurement: 'customFlowTemplate.name.measurement',
+  healthIntake: 'customFlowTemplate.name.healthIntake',
+  fasting: 'customFlowTemplate.name.fasting',
   habit: 'customFlowTemplate.name.habit',
   counter: 'customFlowTemplate.name.counter',
   focus: 'customFlowTemplate.name.focus',
@@ -104,6 +121,8 @@ const TEMPLATE_DESC_KEYS: Record<CustomFlowTemplateKey, I18nKey> = {
   checklist: 'customFlowTemplate.desc.checklist',
   abstain: 'customFlowTemplate.desc.abstain',
   measurement: 'customFlowTemplate.desc.measurement',
+  healthIntake: 'customFlowTemplate.desc.healthIntake',
+  fasting: 'customFlowTemplate.desc.fasting',
   habit: 'customFlowTemplate.desc.habit',
   counter: 'customFlowTemplate.desc.counter',
   focus: 'customFlowTemplate.desc.focus',
@@ -116,6 +135,8 @@ const TEMPLATE_SUMMARY_KEYS: Record<CustomFlowTemplateKey, I18nKey> = {
   checklist: 'customFlowTemplate.summary.checklist',
   abstain: 'customFlowTemplate.summary.abstain',
   measurement: 'customFlowTemplate.summary.measurement',
+  healthIntake: 'customFlowTemplate.summary.healthIntake',
+  fasting: 'customFlowTemplate.summary.fasting',
   habit: 'customFlowTemplate.summary.habit',
   counter: 'customFlowTemplate.summary.counter',
   focus: 'customFlowTemplate.summary.focus',
@@ -153,6 +174,8 @@ export function resolveAppliedCustomFlowTemplateLabel(
 export type CustomFlowDetailConfig =
   | OtherDetailDataConfig
   | MeasurementDetailDataConfig
+  | HealthIntakeDetailDataConfig
+  | FastingDetailDataConfig
   | ReturnType<typeof normalizeHabitDetailConfig>
   | ReturnType<typeof normalizeCounterDetailConfig>
   | ReturnType<typeof normalizeFocusDetailConfig>
@@ -253,6 +276,8 @@ export function buildTemplateSetupConfig(templateKey: CustomFlowTemplateKey): Cu
           { includeSampleData: false },
         ),
       });
+    case 'healthIntake':
+    case 'fasting':
     case 'memo':
     case 'habit':
     case 'focus':
@@ -290,6 +315,38 @@ export function buildInitialCustomFlowDetailConfig(
       return normalizeMeasurementDetailConfig({
         ...getInitialMeasurementDataConfig(),
         ...(measurementSeed ?? {}),
+        ...appearance,
+      });
+    }
+    case 'healthIntake': {
+      const intakeSeed = input.templateSeed
+        ? normalizeHealthIntakeDetailConfig(input.templateSeed)
+        : null;
+      return normalizeHealthIntakeDetailConfig({
+        ...getInitialHealthIntakeDataConfig(),
+        ...(intakeSeed
+          ? {
+              summary: intakeSeed.summary,
+              water: intakeSeed.water,
+              medicine: intakeSeed.medicine,
+            }
+          : {}),
+        ...appearance,
+      });
+    }
+    case 'fasting': {
+      const fastingSeed = input.templateSeed ? normalizeFastingDetailConfig(input.templateSeed) : null;
+      return normalizeFastingDetailConfig({
+        ...getInitialFastingDataConfig(),
+        ...(fastingSeed
+          ? {
+              summary: fastingSeed.summary,
+              currentWeightKg: fastingSeed.currentWeightKg,
+              targetWeightKg: fastingSeed.targetWeightKg,
+              weeklyLossTargetKg: fastingSeed.weeklyLossTargetKg,
+              weightLogs: fastingSeed.weightLogs,
+            }
+          : {}),
         ...appearance,
       });
     }
@@ -356,6 +413,10 @@ export function normalizeCustomFlowDetailConfig(
   switch (templateKey) {
     case 'measurement':
       return normalizeMeasurementDetailConfig(raw);
+    case 'healthIntake':
+      return normalizeHealthIntakeDetailConfig(raw);
+    case 'fasting':
+      return normalizeFastingDetailConfig(raw);
     case 'habit':
       return normalizeHabitDetailConfig(raw);
     case 'counter':
@@ -409,6 +470,23 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
           { dateKey: addDaysToLocalDateKey(today, -1), value: 68.9 },
           { dateKey: today, value: 68.5 },
         ],
+      });
+    case 'healthIntake':
+      return normalizeHealthIntakeDetailConfig({
+        ...base,
+        medicine: getInitialMedicineDataConfig(),
+      });
+    case 'fasting':
+      return normalizeFastingDetailConfig({
+        ...base,
+        currentWeightKg: 68.5,
+        targetWeightKg: 65,
+        weeklyLossTargetKg: 0.5,
+        weightLogs: {
+          [addDaysToLocalDateKey(today, -2)]: 69.0,
+          [addDaysToLocalDateKey(today, -1)]: 68.8,
+          [today]: 68.5,
+        },
       });
     case 'counter':
       return normalizeCounterDetailConfig({

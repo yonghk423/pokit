@@ -2139,6 +2139,10 @@ export function CustomFlowTemplateSessionBody({
       return <MeasurementTemplateView cfg={cfg} emit={emit} theme={theme} previewMode={previewMode} />;
     }
 
+    case 'healthIntake':
+    case 'fasting':
+      return null;
+
     case 'counter': {
       if (!('goalCount' in cfg)) return null;
       return <CounterTemplateView cfg={cfg} emit={emit} theme={theme} previewMode={previewMode} />;

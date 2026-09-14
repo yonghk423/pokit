@@ -2,9 +2,8 @@ import * as Haptics from 'expo-haptics';
 import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { formatHhmmClock } from '@shared/lib/i18n';
+import { formatHhmmClock, useTranslation } from '@shared/lib/i18n';
 import { RetroFlatColors } from '@shared/config/retroFlat';
-import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import {

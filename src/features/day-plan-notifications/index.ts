@@ -4,7 +4,11 @@ export {
 } from './model/dayPlanNotificationScheduler';
 export { syncPriorityDayStartAlarm } from './model/priorityDayStartAlarmScheduler';
 export { syncPriorityDayEndAlarm } from './model/priorityDayEndAlarmScheduler';
-export { syncMedicineReminderNotifications } from './model/syncMedicineReminderNotifications';
+export {
+  collectMedicineReminderSlots,
+  isMedicineReminderCategory,
+  syncMedicineReminderNotifications,
+} from './model/syncMedicineReminderNotifications';
 export {
   INCOMPLETE_ROUTINE_REMINDER_EVENT_TYPE,
   INCOMPLETE_ROUTINE_REMINDER_NOTIFICATION_ID,

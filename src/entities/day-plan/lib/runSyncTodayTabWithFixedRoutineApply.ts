@@ -6,6 +6,7 @@ import {
   type FixedRoutineApplyLayoutMode,
 } from '@shared/lib/storage';
 
+import { resolveEndedTodayCategoryKeys } from './endedTodayCategoryKeys';
 import { resolveTodayFixedRoutineKeys } from './resolveTodayFixedRoutineKeys';
 import {
   computeSyncTodayTabWithFixedRoutineApply,
@@ -23,6 +24,8 @@ type DraftSyncState = {
   priorityEnd: string;
   priorityMealSlotLayoutEnabled: boolean;
   prioritySpineLayoutEnabled: boolean;
+  priorityEndedTodayKeys: string[];
+  priorityEndedTodayDateKey: string;
 };
 
 type FixedSyncState = {
@@ -112,6 +115,10 @@ export function syncTodayTabWithFixedRoutineApply(): void {
     fixedRoutineApplyLayoutMode: effectiveLayoutMode,
     fixedFlowSets: fixed.sets,
     routineCatalogSelectionKeys: loadRoutineCatalogSelectionKeys(),
+    endedTodayCategoryKeys: resolveEndedTodayCategoryKeys(
+      draft.priorityEndedTodayKeys,
+      draft.priorityEndedTodayDateKey,
+    ),
   });
 
   if (!patch) return;

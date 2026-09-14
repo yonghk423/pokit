@@ -2,6 +2,7 @@ import {
   buildAppliedFixedRoutineMealSlotsMap,
   isBuiltinPresetScheduleSet,
   isPokitWeekTourFlowId,
+  isStandardCatalogKeyHidden,
   resolveFixedFlowItemMealSlot,
   resolveFixedFlowItemMealSlots,
   type DayMealSlot,
@@ -11,6 +12,7 @@ import {
 } from '@shared/lib/storage';
 
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
+import { excludeEndedTodayCategoryKeys } from './endedTodayCategoryKeys';
 import { filterSpineTimelineBlocks, isDayPlanSpineTimelineBlock } from './dayPlanFlowBlock';
 import { resolveFixedFlowSpineSchedules } from './fixedFlowSpineSchedule';
 import { sortDayPlanBlocks } from './dayPlanTime';
@@ -51,8 +53,8 @@ export function syncPriorityOrderWithAppliedFixedRoutines(
     const base = resolvePriorityRoutineCategoryKey(key);
     const isFixed = allFixedFlowKeys.has(key) || allFixedFlowKeys.has(base);
     if (!isFixed) {
-      // 자동 시드 튜토리얼은 고정 세트에 없어도 유지한다
-      if (isPokitWeekTourFlowId(base)) return true;
+      // 자동 시드 튜토리얼은 고정 세트에 없어도 유지한다. 삭제한 뒤에는 빼 둔다.
+      if (isPokitWeekTourFlowId(base) && !isStandardCatalogKeyHidden(base)) return true;
       // 세트에 없는 customFlow — 카탈로그 수동 선택이 아니면 고정 루틴 삭제 orphan
       if (isCustomFlowCategoryKey(base)) {
         return (
@@ -420,6 +422,8 @@ export type SyncTodayTabWithFixedRoutineInput = {
   fixedFlowSets: FixedFlowSet[];
   /** 루틴 탭에서 직접 선택한 categoryKey */
   routineCatalogSelectionKeys?: string[];
+  /** 오늘 탭에서 「종료」한 카테고리 — 적용 세트여도 다시 넣지 않음 */
+  endedTodayCategoryKeys?: string[];
 };
 
 export type SyncTodayTabWithFixedRoutinePatch = {
@@ -434,7 +438,10 @@ export type SyncTodayTabWithFixedRoutinePatch = {
 export function computeSyncTodayTabWithFixedRoutineApply(
   input: SyncTodayTabWithFixedRoutineInput,
 ): SyncTodayTabWithFixedRoutinePatch | null {
-  const appliedKeys = filterKeysToPriorityCatalog(input.todayAppliedCategoryKeys);
+  const appliedKeys = excludeEndedTodayCategoryKeys(
+    filterKeysToPriorityCatalog(input.todayAppliedCategoryKeys),
+    input.endedTodayCategoryKeys ?? [],
+  );
   const allFixedFlowKeys = collectAllFixedFlowCategoryKeys(input.fixedFlowSets);
   const appliedSet = new Set(appliedKeys);
   const activeSetIds = new Set(input.activeSetIds);

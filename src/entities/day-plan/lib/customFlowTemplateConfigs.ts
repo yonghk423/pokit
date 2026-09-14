@@ -6,10 +6,18 @@ import {
 } from '@shared/lib/customFlowAppearanceCatalog';
 
 import {
+  normalizeFastingDetailConfig,
   normalizeMeasurementDetailConfig,
+  normalizeMedicineDetailConfig,
   normalizeOtherDetailConfig,
+  normalizeWaterDetailConfig,
+  type FastingDetailDataConfig,
   type MeasurementDetailDataConfig,
 } from './goalCategorySessionConfig';
+import {
+  normalizeHealthIntakeDetailConfig,
+  type HealthIntakeDetailDataConfig,
+} from './healthIntakeDetailConfig';
 import {
   normalizeCounterCustomUnitLabel,
   normalizeCounterStepSize,
@@ -89,6 +97,8 @@ export type CustomFlowTemplateKey =
   | 'checklist'
   | 'abstain'
   | 'measurement'
+  | 'healthIntake'
+  | 'fasting'
   | 'habit'
   | 'counter'
   | 'focus'
@@ -101,6 +111,8 @@ export const CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS = [
   'checklist',
   'memo',
   'measurement',
+  'healthIntake',
+  'fasting',
   'counter',
   'reminder',
 ] as const satisfies readonly CustomFlowTemplateKey[];
@@ -478,6 +490,8 @@ export function getInitialReminderDataConfig(): ReminderDetailDataConfig {
 
 export type CustomFlowTemplateDetailConfig =
   | MeasurementDetailDataConfig
+  | HealthIntakeDetailDataConfig
+  | FastingDetailDataConfig
   | HabitDetailDataConfig
   | CounterDetailDataConfig
   | FocusDetailDataConfig
@@ -555,6 +569,65 @@ export function mergeCustomFlowGoalDetailData(
           c?.lastRecordedDateKey ?? '',
         ),
         frequency: b?.frequency ?? c?.frequency ?? 'once',
+        ...pickAppearance(b, c),
+      });
+    }
+    case 'healthIntake': {
+      const b = blockRaw != null ? normalizeHealthIntakeDetailConfig(blockRaw) : null;
+      const c = categoryRaw != null ? normalizeHealthIntakeDetailConfig(categoryRaw) : null;
+      return normalizeHealthIntakeDetailConfig({
+        templateKey: 'healthIntake',
+        displayName: pickDisplayName(
+          (b?.displayName ?? '').trim(),
+          (c?.displayName ?? '').trim(),
+          b?.displayName ?? '',
+          c?.displayName ?? '',
+        ),
+        summary: pickSummary(
+          (b?.summary ?? '').trim(),
+          (c?.summary ?? '').trim(),
+          b?.summary ?? '',
+          c?.summary ?? '',
+        ),
+        water: normalizeWaterDetailConfig({
+          ...(c?.water ?? {}),
+          ...(b?.water ?? {}),
+          drankMl: Math.max(b?.water.drankMl ?? 0, c?.water.drankMl ?? 0),
+        }),
+        medicine: normalizeMedicineDetailConfig({
+          ...(c?.medicine ?? {}),
+          ...(b?.medicine ?? {}),
+          takenCount: Math.max(b?.medicine.takenCount ?? 0, c?.medicine.takenCount ?? 0),
+        }),
+        ...pickAppearance(b, c),
+      });
+    }
+    case 'fasting': {
+      const b = blockRaw != null ? normalizeFastingDetailConfig(blockRaw) : null;
+      const c = categoryRaw != null ? normalizeFastingDetailConfig(categoryRaw) : null;
+      const bLogs = b?.weightLogs ?? {};
+      const cLogs = c?.weightLogs ?? {};
+      return normalizeFastingDetailConfig({
+        templateKey: 'fasting',
+        displayName: pickDisplayName(
+          (b?.displayName ?? '').trim(),
+          (c?.displayName ?? '').trim(),
+          b?.displayName ?? '',
+          c?.displayName ?? '',
+        ),
+        summary: pickSummary(
+          (b?.summary ?? '').trim(),
+          (c?.summary ?? '').trim(),
+          b?.summary ?? '',
+          c?.summary ?? '',
+        ),
+        fastingMin: b?.fastingMin ?? c?.fastingMin,
+        elapsedMin: Math.max(b?.elapsedMin ?? 0, c?.elapsedMin ?? 0),
+        currentWeightKg: b?.currentWeightKg ?? c?.currentWeightKg,
+        targetWeightKg: b?.targetWeightKg ?? c?.targetWeightKg,
+        weeklyLossTargetKg: b?.weeklyLossTargetKg ?? c?.weeklyLossTargetKg,
+        fastingEnabled: b?.fastingEnabled ?? c?.fastingEnabled ?? false,
+        weightLogs: Object.keys(bLogs).length >= Object.keys(cLogs).length ? bLogs : cLogs,
         ...pickAppearance(b, c),
       });
     }

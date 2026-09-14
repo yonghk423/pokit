@@ -60,6 +60,10 @@ function hintFromCustomFlowRaw(raw: unknown): string | null {
   switch (resolveCustomFlowTemplateKey(raw)) {
     case 'measurement':
       return hintFromMeasurementRaw(raw);
+    case 'healthIntake':
+      return hintFromHealthIntakeRaw(raw);
+    case 'fasting':
+      return hintFromFastingRaw(raw);
     case 'habit': {
       const cfg = normalizeHabitDetailConfig(raw ?? {});
       if (cfg.doneToday) {
@@ -111,6 +115,43 @@ function hintFromCustomFlowRaw(raw: unknown): string | null {
   }
 }
 
+function hintFromHealthIntakeRaw(raw: unknown): string | null {
+  const hi = normalizeHealthIntakeDetailConfig(raw);
+  const med = hi.medicine;
+  const scheduleParts: string[] = [];
+  if (med.morningOn) scheduleParts.push(`아침 ${med.morningTime}`);
+  if (med.lunchOn) scheduleParts.push(`점심 ${med.lunchTime}`);
+  if (med.dinnerOn) scheduleParts.push(`저녁 ${med.dinnerTime}`);
+  const label = med.doseLabel.trim();
+  if (scheduleParts.length === 0) {
+    const drankL = (hi.water.drankMl / 1000).toFixed(1);
+    const goalL = (hi.water.goalMl / 1000).toFixed(1);
+    return label.length > 0 ? label : `섭취 ${drankL}L · 목표 ${goalL}L`;
+  }
+  const line = scheduleParts.join(' · ');
+  const slots = medicineEnabledSlots(med);
+  if (med.takenCount > 0 && slots.length > 0) {
+    const item = label.length > 0 ? `${label} · ` : '';
+    return `${item}${med.takenCount}/${med.dosesPerDay}회 · ${line}`;
+  }
+  return label.length > 0 ? `${label} · ${line}` : line;
+}
+
+function hintFromFastingRaw(raw: unknown): string | null {
+  const cfg = normalizeFastingDetailConfig(raw);
+  const current = latestWeightFromLogs(cfg.weightLogs, cfg.currentWeightKg);
+  if (current > 0 && cfg.targetWeightKg > 0) {
+    if (current <= cfg.targetWeightKg) {
+      return `목표 ${cfg.targetWeightKg.toFixed(1)}kg 달성`;
+    }
+    const delta = current - cfg.targetWeightKg;
+    return `${current.toFixed(1)}kg · 목표까지 ${delta.toFixed(1)}kg`;
+  }
+  return cfg.weeklyLossTargetKg > 0
+    ? `주간 ${cfg.weeklyLossTargetKg.toFixed(1)}kg 감량 목표`
+    : null;
+}
+
 function hintFromAbstainRaw(raw: unknown): string | null {
   const cfg = normalizeOtherDetailConfig(raw ?? {});
   const total = cfg.checklist.length;
@@ -154,39 +195,10 @@ export function getPriorityCategoryGoalHint(
       const t = cfg.bookTitle.trim();
       return t.length > 0 ? t : null;
     }
-    case 'fasting': {
-      const cfg = normalizeFastingDetailConfig(raw);
-      const current = latestWeightFromLogs(cfg.weightLogs, cfg.currentWeightKg);
-      if (current > 0 && cfg.targetWeightKg > 0) {
-        if (current <= cfg.targetWeightKg) {
-          return `목표 ${cfg.targetWeightKg.toFixed(1)}kg 달성`;
-        }
-        const delta = current - cfg.targetWeightKg;
-        return `${current.toFixed(1)}kg · 목표까지 ${delta.toFixed(1)}kg`;
-      }
-      return cfg.weeklyLossTargetKg > 0
-        ? `주간 ${cfg.weeklyLossTargetKg.toFixed(1)}kg 감량 목표`
-        : null;
-    }
-    case 'healthIntake': {
-      const hi = normalizeHealthIntakeDetailConfig(raw);
-      const med = hi.medicine;
-      const scheduleParts: string[] = [];
-      if (med.morningOn) scheduleParts.push(`아침 ${med.morningTime}`);
-      if (med.lunchOn) scheduleParts.push(`점심 ${med.lunchTime}`);
-      if (med.dinnerOn) scheduleParts.push(`저녁 ${med.dinnerTime}`);
-      const label = med.doseLabel.trim();
-      if (scheduleParts.length === 0) {
-        return label.length > 0 ? label : null;
-      }
-      const line = scheduleParts.join(' · ');
-      const slots = medicineEnabledSlots(med);
-      if (med.takenCount > 0 && slots.length > 0) {
-        const item = label.length > 0 ? `${label} · ` : '';
-        return `${item}${med.takenCount}/${med.dosesPerDay}회 · ${line}`;
-      }
-      return label.length > 0 ? `${label} · ${line}` : line;
-    }
+    case 'fasting':
+      return hintFromFastingRaw(raw);
+    case 'healthIntake':
+      return hintFromHealthIntakeRaw(raw);
     case 'water': {
       const cfg = normalizeWaterDetailConfig(raw);
       const drankL = (cfg.drankMl / 1000).toFixed(1);

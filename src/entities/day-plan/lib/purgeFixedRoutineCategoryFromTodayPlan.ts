@@ -20,7 +20,9 @@ export function purgeFixedRoutineCategoryFromTodayPlan(categoryKey: string): voi
   const sectionsHad = draft.prioritySectionsCategoryOrder.some((k) => matchesCategoryKey(k, key));
 
   if (bagHad) {
-    useDayPlanDraftStore.getState().finishPriorityCategoryForToday(key);
+    useDayPlanDraftStore.getState().finishPriorityCategoryForToday(key, {
+      persistEnded: false,
+    });
   }
 
   if (sectionsHad) {

@@ -1,5 +1,10 @@
 /** 목표 상세(플로우별) 저장 구조 — 세션·위젯에서 공용으로 사용 */
 
+import {
+  normalizeCustomFlowAccentColor,
+  normalizeCustomFlowIcon,
+} from '@shared/lib/customFlowAppearanceCatalog';
+
 import { normalizeFastingWeightLogs, type FastingWeightLogs } from './weightLog';
 import { normalizeWaterReminderTimes } from './normalizeWaterReminderTimes';
 import { parseHHmmToMinutes } from './parseTime';
@@ -157,6 +162,7 @@ export function getInitialWorkDataConfig(): WorkDetailDataConfig {
 
 // --- fasting ---
 export type FastingDetailDataConfig = {
+  templateKey: 'fasting';
   displayName: string;
   fastingMin: number;
   elapsedMin: number;
@@ -167,10 +173,14 @@ export type FastingDetailDataConfig = {
   summary: string;
   /** YYYY-MM-DD → kg — 날짜별 체중 기록 */
   weightLogs: FastingWeightLogs;
+  icon?: string;
+  accentColor?: string;
 };
 
 const FASTING_MIN = 60;
 const FASTING_MAX = 48 * 60;
+export const FASTING_WEEKLY_LOSS_MIN_KG = 0.1;
+export const FASTING_WEEKLY_LOSS_MAX_KG = 5;
 
 export function normalizeFastingDetailConfig(raw: unknown): FastingDetailDataConfig {
   const o = asObj(raw);
@@ -189,14 +199,17 @@ export function normalizeFastingDetailConfig(raw: unknown): FastingDetailDataCon
   );
   const weeklyLossRaw = Number(o.weeklyLossTargetKg);
   const weeklyLossTargetKg = Math.max(
-    0.1,
-    Math.min(2, Number.isFinite(weeklyLossRaw) ? weeklyLossRaw : 0.5),
+    FASTING_WEEKLY_LOSS_MIN_KG,
+    Math.min(FASTING_WEEKLY_LOSS_MAX_KG, Number.isFinite(weeklyLossRaw) ? weeklyLossRaw : 0.5),
   );
   const fastingEnabled = typeof o.fastingEnabled === 'boolean' ? o.fastingEnabled : false;
   const summary = normalizeRoutineSummary(o.summary);
   const displayName = normalizeRoutineDisplayName(o.displayName);
   const weightLogs = normalizeFastingWeightLogs(o.weightLogs);
+  const icon = normalizeCustomFlowIcon(o.icon);
+  const accentColor = normalizeCustomFlowAccentColor(o.accentColor);
   return {
+    templateKey: 'fasting',
     displayName,
     fastingMin,
     elapsedMin,
@@ -206,11 +219,14 @@ export function normalizeFastingDetailConfig(raw: unknown): FastingDetailDataCon
     fastingEnabled,
     summary,
     weightLogs,
+    ...(icon ? { icon } : {}),
+    ...(accentColor ? { accentColor } : {}),
   };
 }
 
 export function getInitialFastingDataConfig(): FastingDetailDataConfig {
-  return {
+  return normalizeFastingDetailConfig({
+    templateKey: 'fasting',
     displayName: '',
     fastingMin: 16 * 60,
     elapsedMin: 0,
@@ -220,7 +236,7 @@ export function getInitialFastingDataConfig(): FastingDetailDataConfig {
     fastingEnabled: false,
     summary: '',
     weightLogs: {},
-  };
+  });
 }
 
 // --- water ---
@@ -339,6 +355,10 @@ export type MedicineDetailDataConfig = {
   morningTime: string;
   lunchTime: string;
   dinnerTime: string;
+  /** 슬롯 시각이 루틴 기준 다음 날(새벽 등)인지 */
+  morningTimeNextDay: boolean;
+  lunchTimeNextDay: boolean;
+  dinnerTimeNextDay: boolean;
   /** 슬롯별 매일 로컬 알림(슬롯이 켜져 있을 때만 적용) */
   morningNotify: boolean;
   lunchNotify: boolean;
@@ -377,6 +397,9 @@ export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataC
   const morningTime = normalizeMedicineHHmm(o.morningTime, '08:30');
   const lunchTime = normalizeMedicineHHmm(o.lunchTime, '12:30');
   const dinnerTime = normalizeMedicineHHmm(o.dinnerTime, '19:30');
+  const morningTimeNextDay = o.morningTimeNextDay === true;
+  const lunchTimeNextDay = o.lunchTimeNextDay === true;
+  const dinnerTimeNextDay = o.dinnerTimeNextDay === true;
 
   const enabledCount = [morningOn, lunchOn, dinnerOn].filter(Boolean).length;
   const dosesPerDay = Math.max(0, Math.min(12, enabledCount));
@@ -398,18 +421,18 @@ export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataC
     typeof o.lunchNotify === 'boolean' ||
     typeof o.dinnerNotify === 'boolean'
   ) {
-    const fallbackLegacy = legacyMedicationNotify !== false;
+    const fallbackLegacy = legacyMedicationNotify === true;
     morningNotify = typeof o.morningNotify === 'boolean' ? o.morningNotify : fallbackLegacy;
     lunchNotify = typeof o.lunchNotify === 'boolean' ? o.lunchNotify : fallbackLegacy;
     dinnerNotify = typeof o.dinnerNotify === 'boolean' ? o.dinnerNotify : fallbackLegacy;
-  } else if (legacyMedicationNotify === false) {
-    morningNotify = false;
-    lunchNotify = false;
-    dinnerNotify = false;
-  } else {
+  } else if (legacyMedicationNotify === true) {
     morningNotify = true;
     lunchNotify = true;
     dinnerNotify = true;
+  } else {
+    morningNotify = false;
+    lunchNotify = false;
+    dinnerNotify = false;
   }
 
   return {
@@ -423,6 +446,9 @@ export function normalizeMedicineDetailConfig(raw: unknown): MedicineDetailDataC
     morningTime,
     lunchTime,
     dinnerTime,
+    morningTimeNextDay,
+    lunchTimeNextDay,
+    dinnerTimeNextDay,
     morningNotify,
     lunchNotify,
     dinnerNotify,
@@ -442,17 +468,15 @@ export function getInitialMedicineDataConfig(): MedicineDetailDataConfig {
     morningTime: '08:30',
     lunchTime: '12:30',
     dinnerTime: '19:30',
-    morningNotify: true,
-    lunchNotify: true,
-    dinnerNotify: true,
+    morningTimeNextDay: false,
+    lunchTimeNextDay: false,
+    dinnerTimeNextDay: false,
+    morningNotify: false,
+    lunchNotify: false,
+    dinnerNotify: false,
     summary: '',
   };
 }
-
-import {
-  normalizeCustomFlowAccentColor,
-  normalizeCustomFlowIcon,
-} from '@shared/lib/customFlowAppearanceCatalog';
 
 // --- other ---
 export type OtherChecklistTask = {

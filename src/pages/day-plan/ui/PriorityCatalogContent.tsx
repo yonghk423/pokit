@@ -14,11 +14,10 @@ import { useShallow } from 'zustand/react/shallow';
 
 import {
   createCustomFlowCategoryId,
-  deleteCustomFlowCategory,
+  deleteCatalogCategory,
   dismissCatalogGroupWithItemReassign,
   buildInitialCustomFlowDetailConfig,
   type CustomFlowTemplateKey,
-  isCustomFlowCategoryKey,
   isPriorityWindowEndedForToday,
   isSystemCatalogGroupKey,
   notifyFixedFlowApplyScheduleChanged,
@@ -39,7 +38,6 @@ import {
   appendRoutineCatalogSelectionKeys,
   createCustomCatalogGroup,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
-  hideStandardCatalogKey,
   isCustomCatalogGroupKey,
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
@@ -430,9 +428,9 @@ export function PriorityCatalogContent({
     ],
   );
 
-  const runDeleteCustomFlow = useCallback(
+  const runDeleteCatalogItem = useCallback(
     (categoryKey: string) => {
-      deleteCustomFlowCategory(categoryKey, {
+      deleteCatalogCategory(categoryKey, {
         hydrateFixedFlowSets: () => useFixedFlowSetsStore.getState().hydrate(),
         getTodayAppliedCategoryKeys: () =>
           useFixedFlowSetsStore.getState().todayAppliedCategoryKeys,
@@ -808,42 +806,17 @@ export function PriorityCatalogContent({
         return;
       }
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      if (isCustomFlowCategoryKey(categoryKey)) {
-        Alert.alert(
-          t('catalog.deleteRoutineTitle'),
-          t('catalog.deleteRoutineMessage', { label }),
-          [
-            { text: t('common.cancel'), style: 'cancel' },
-            {
-              text: t('common.delete'),
-              style: 'destructive',
-              onPress: () => {
-                animateListMutation();
-                runDeleteCustomFlow(categoryKey);
-                reloadCatalogData();
-                void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              },
-            },
-          ],
-        );
-        return;
-      }
       Alert.alert(
-        t('catalog.hideItemTitle'),
-        t('catalog.hideItemMessage', { label }),
+        t('catalog.deleteRoutineTitle'),
+        t('catalog.deleteRoutineMessage', { label }),
         [
           { text: t('common.cancel'), style: 'cancel' },
           {
-            text: t('common.hide'),
+            text: t('common.delete'),
             style: 'destructive',
             onPress: () => {
               animateListMutation();
-              hideStandardCatalogKey(categoryKey);
-              const nextOrder = priorityCategoryOrder.filter((k) => k !== categoryKey);
-              setPriorityCategoryOrder(nextOrder);
-              saveRoutineCatalogSelectionKeys(nextOrder);
-              filterCompletedFocusKeysToPriorityOrder(nextOrder);
-              bumpCategoryLabelEpoch();
+              runDeleteCatalogItem(categoryKey);
               reloadCatalogData();
               void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             },
@@ -853,13 +826,11 @@ export function PriorityCatalogContent({
     },
     [
       animateListMutation,
-      bumpCategoryLabelEpoch,
-      filterCompletedFocusKeysToPriorityOrder,
       isFocusStarted,
-      priorityCategoryOrder,
       reloadCatalogData,
-      runDeleteCustomFlow,
-      setPriorityCategoryOrder,
+      runDeleteCatalogItem,
+      selectedCategoryKeys,
+      t,
     ],
   );
 

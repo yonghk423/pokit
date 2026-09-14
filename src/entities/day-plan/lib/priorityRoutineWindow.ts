@@ -81,6 +81,22 @@ function clampMinutesCore(
  * `HH:mm` 시각을 데이플랜 시작~마무리 구간 안으로 맞춥니다.
  * 시작·끝 파싱에 실패하면 원본 문자열을 그대로 돌려줍니다.
  */
+/**
+ * 같은 날 집중 구간(예: 07:00–23:00)에서 시작보다 이른 시계는
+ * 다음 날 새벽으로 본다. 자정 넘김 구간이면 false.
+ */
+export function isHhmmBeforeSameDayWindowStart(
+  hhmm: string,
+  windowStartHhmm: string,
+  windowEndHhmm: string,
+): boolean {
+  if (isOvernightPriorityWindow(windowStartHhmm, windowEndHhmm)) return false;
+  const t = parseHHmmToMinutes(hhmm.trim());
+  const ps = parseHHmmToMinutes(windowStartHhmm.trim());
+  if (t === null || ps === null) return false;
+  return t < ps;
+}
+
 export function clampHhmmToPriorityWindow(
   hhmm: string,
   routineStartHhmm: string,

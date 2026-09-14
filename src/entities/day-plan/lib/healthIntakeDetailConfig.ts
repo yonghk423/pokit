@@ -23,6 +23,7 @@ export const LEGACY_WATER_CATEGORY_KEY = 'water';
 export const LEGACY_MEDICINE_CATEGORY_KEY = 'medicine';
 
 export type HealthIntakeDetailDataConfig = {
+  templateKey: 'healthIntake';
   displayName: string;
   summary: string;
   water: WaterDetailDataConfig;
@@ -60,6 +61,7 @@ export function normalizeHealthIntakeDetailConfig(raw: unknown): HealthIntakeDet
   const icon = normalizeCustomFlowIcon(o.icon);
   const accentColor = normalizeCustomFlowAccentColor(o.accentColor);
   return {
+    templateKey: 'healthIntake',
     displayName,
     summary,
     water: { ...water, displayName, summary: '' },

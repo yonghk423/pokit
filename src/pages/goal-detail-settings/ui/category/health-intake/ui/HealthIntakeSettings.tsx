@@ -8,8 +8,6 @@ import {
   type HealthIntakeDetailDataConfig,
 } from '@entities/day-plan';
 
-import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
-
 import { useGoalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { RoutineSummaryField } from '../../lib/RoutineSummaryField';
 import { RoutineTitleField } from '../../lib/RoutineTitleField';
@@ -78,13 +76,9 @@ export function HealthIntakeSettings({
       return;
     }
     const payload: HealthIntakeDetailDataConfig = normalizeHealthIntakeDetailConfig({
-      ...(hideTitleField
-        ? normalizeHealthIntakeDetailConfig(
-            loadGoalDetailCategoryConfig(categoryKey) ?? getInitialHealthIntakeDataConfig(),
-          )
-        : normalizeHealthIntakeDetailConfig(
-            dataConfigRef.current ?? getInitialHealthIntakeDataConfig(),
-          )),
+      ...normalizeHealthIntakeDetailConfig(
+        dataConfigRef.current ?? getInitialHealthIntakeDataConfig(),
+      ),
       ...(hideTitleField ? {} : { displayName }),
       summary,
       water: waterSnapshotRef.current,
@@ -116,7 +110,7 @@ export function HealthIntakeSettings({
         embedded
         intakeMode
         rhythmTitle={rhythmTitle}
-        categoryKey="healthIntake"
+        categoryKey={categoryKey}
         dataConfig={medicine}
         onChangeDataConfig={(next) => setMedicine(normalizeMedicineDetailConfig(next))}
         allowRename={false}

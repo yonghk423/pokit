@@ -105,6 +105,30 @@ describe('collectRoutineStartNotifySlots', () => {
     expect(slots[0]?.weekdays).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 
+  it('오늘 담기만 있고 루틴 시간이 없으면 슬롯이 없다', () => {
+    const slots = collectRoutineStartNotifySlots({
+      enabledCategoryKeys: ['healthIntake'],
+      sets,
+      activeSetIds: [],
+      includeInactiveSets: false,
+      mealSchedule: DEFAULT_DAY_MEAL_SLOT_SCHEDULE,
+      todayCategoryKeys: ['healthIntake'],
+      priorityStart: '07:30',
+    });
+    expect(slots).toEqual([]);
+    expect(
+      hasResolvableRoutineStartTime({
+        categoryKey: 'healthIntake',
+        sets,
+        activeSetIds: [],
+        includeInactiveSets: false,
+        mealSchedule: DEFAULT_DAY_MEAL_SLOT_SCHEDULE,
+        todayCategoryKeys: ['healthIntake'],
+        priorityStart: '07:30',
+      }),
+    ).toBe(false);
+  });
+
   it('꺼진 항목은 제외한다', () => {
     expect(
       hasResolvableRoutineStartTime({

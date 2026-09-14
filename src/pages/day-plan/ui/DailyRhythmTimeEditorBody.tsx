@@ -611,7 +611,7 @@ export function DailyRhythmTimeEditorBody({
       value={endDateTarget}
       onChange={(next) => applyEndDateTarget(next, startHhmm, endHhmm)}
       selectedFill={ink.bgMint}
-      trackFill={isDark ? ink.surfaceAlt : '#FFFFFF'}
+      trackFill={isDark ? ink.surfaceAlt : ink.bg}
       selectedInk={isDark ? ink.text : ink.tertiary}
       unselectedInk={c.onVariant}
       shadowColor={shadowInk}
@@ -652,7 +652,7 @@ export function DailyRhythmTimeEditorBody({
   const settingsTimeCard = (
     <CityPopCardShell
       isDark={isDark}
-      faceColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
+      faceColor={isDark ? ink.surfaceAlt : ink.bg}
       contentStyle={styles.settingsCard}>
       <SnappedTimePickerField
         label={t('dayRhythm.dayStart')}

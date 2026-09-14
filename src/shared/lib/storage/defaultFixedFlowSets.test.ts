@@ -5,7 +5,8 @@ import {
   mergeBuiltInPresetSets,
 } from './defaultFixedFlowSets';
 import {
-  BUILTIN_DAILY_LIFE_FLOW_IDS,
+  BUILTIN_DAILY_EXERCISE_FLOW_ID,
+  BUILTIN_DAILY_RECYCLE_FLOW_ID,
   BUILTIN_FOCUS_FLOW_ID,
 } from './defaultPriorityCatalog';
 
@@ -19,12 +20,10 @@ describe('createDefaultFixedFlowSetsState', () => {
     expect(daily?.items.map((x) => x.categoryKey)).toEqual([
       'healthIntake',
       'fasting',
-      'customFlow:preset_daily_clean',
     ]);
     const weekend = state.sets.find((s) => s.id === 'set_weekend');
     expect(weekend?.items.map((x) => x.categoryKey)).toEqual([
-      BUILTIN_DAILY_LIFE_FLOW_IDS[5],
-      BUILTIN_DAILY_LIFE_FLOW_IDS[6],
+      BUILTIN_DAILY_EXERCISE_FLOW_ID,
     ]);
     expect(state.activeSetIds).toEqual([]);
   });
@@ -41,8 +40,7 @@ describe('createDefaultFixedFlowSetsState', () => {
     ]);
     expect(merged.map((set) => set.id)).toEqual(['set_daily', 'set_weekend']);
     expect(merged.find((set) => set.id === 'set_weekend')?.items.map((item) => item.categoryKey)).toEqual([
-      BUILTIN_DAILY_LIFE_FLOW_IDS[5],
-      BUILTIN_DAILY_LIFE_FLOW_IDS[6],
+      BUILTIN_DAILY_EXERCISE_FLOW_ID,
     ]);
   });
 
@@ -64,8 +62,7 @@ describe('createDefaultFixedFlowSetsState', () => {
       },
     ]);
     expect(merged.find((set) => set.id === 'set_weekend')?.items.map((item) => item.categoryKey)).toEqual([
-      BUILTIN_DAILY_LIFE_FLOW_IDS[5],
-      BUILTIN_DAILY_LIFE_FLOW_IDS[6],
+      BUILTIN_DAILY_EXERCISE_FLOW_ID,
     ]);
   });
 
@@ -80,8 +77,45 @@ describe('createDefaultFixedFlowSetsState', () => {
       },
     ]);
     expect(merged.find((set) => set.id === 'set_weekend')?.items.map((item) => item.categoryKey)).toEqual([
-      BUILTIN_DAILY_LIFE_FLOW_IDS[5],
-      BUILTIN_DAILY_LIFE_FLOW_IDS[6],
+      BUILTIN_DAILY_EXERCISE_FLOW_ID,
+    ]);
+  });
+
+  it('migrates weekend default that still includes retired recycle', () => {
+    const merged = mergeBuiltInPresetSets([
+      {
+        id: 'set_weekend',
+        name: '주말 고정 루틴',
+        applyRule: 'weekend',
+        applyWeekdays: [0, 6],
+        items: [
+          { categoryKey: BUILTIN_DAILY_EXERCISE_FLOW_ID, enabled: true },
+          { categoryKey: BUILTIN_DAILY_RECYCLE_FLOW_ID, enabled: true },
+        ],
+      },
+    ]);
+    expect(merged.find((set) => set.id === 'set_weekend')?.items.map((item) => item.categoryKey)).toEqual([
+      BUILTIN_DAILY_EXERCISE_FLOW_ID,
+    ]);
+  });
+
+  it('migrates daily default that still includes retired clean', () => {
+    const merged = mergeBuiltInPresetSets([
+      {
+        id: 'set_daily',
+        name: '데일리 고정 루틴',
+        applyRule: 'daily',
+        applyWeekdays: [0, 1, 2, 3, 4, 5, 6],
+        items: [
+          { categoryKey: 'healthIntake', enabled: true },
+          { categoryKey: 'fasting', enabled: true },
+          { categoryKey: 'customFlow:preset_daily_clean', enabled: true },
+        ],
+      },
+    ]);
+    expect(merged.find((set) => set.id === 'set_daily')?.items.map((item) => item.categoryKey)).toEqual([
+      'healthIntake',
+      'fasting',
     ]);
   });
 
@@ -102,7 +136,6 @@ describe('createDefaultFixedFlowSetsState', () => {
     expect(merged.find((set) => set.id === 'set_daily')?.items.map((item) => item.categoryKey)).toEqual([
       'healthIntake',
       'fasting',
-      'customFlow:preset_daily_clean',
     ]);
   });
 
@@ -169,14 +202,14 @@ describe('createDefaultFixedFlowSetsState', () => {
     expect(merged.map((set) => set.id)).toEqual(['set_weekend']);
   });
 
-  it('creates two builtin example custom sets', () => {
+  it('factory still describes retired example custom sets', () => {
     const examples = createBuiltinExampleCustomFlowSets();
     expect(examples).toHaveLength(2);
     expect(examples.map((set) => set.name)).toEqual(['건강 루틴 예시', '집중 루틴 예시']);
     expect(examples[1]?.items.map((item) => item.categoryKey)).toEqual([BUILTIN_FOCUS_FLOW_ID]);
   });
 
-  it('merges missing builtin example custom sets into stored state', () => {
+  it('strips retired example custom sets from stored state', () => {
     const merged = mergeBuiltInExampleCustomSets([
       {
         id: 'set_daily',
@@ -192,35 +225,41 @@ describe('createDefaultFixedFlowSetsState', () => {
         applyWeekdays: [0, 6],
         items: [{ categoryKey: 'reading', enabled: true }],
       },
-    ]);
-    expect(merged.map((set) => set.id)).toEqual([
-      'set_daily',
-      'set_weekend',
-      'set_example_health',
-      'set_example_focus',
-    ]);
-  });
-
-  it('migrates legacy empty or reading/work focus example items', () => {
-    const merged = mergeBuiltInExampleCustomSets([
+      {
+        id: 'set_example_health',
+        name: '건강 루틴 예시',
+        applyRule: 'manual',
+        applyWeekdays: [],
+        items: [{ categoryKey: 'healthIntake', enabled: true }],
+      },
       {
         id: 'set_example_focus',
         name: '집중 루틴 예시',
         applyRule: 'manual',
         applyWeekdays: [],
-        items: [
-          { categoryKey: 'reading', enabled: true },
-          { categoryKey: 'work', enabled: true },
-        ],
+        items: [{ categoryKey: BUILTIN_FOCUS_FLOW_ID, enabled: true }],
+      },
+      {
+        id: 'manual_mine',
+        name: '내 그룹',
+        applyRule: 'manual',
+        applyWeekdays: [],
+        items: [{ categoryKey: 'fasting', enabled: true }],
       },
     ]);
-    expect(merged.find((set) => set.id === 'set_example_focus')?.items.map((item) => item.categoryKey)).toEqual([
-      BUILTIN_FOCUS_FLOW_ID,
-    ]);
+    expect(merged.map((set) => set.id)).toEqual(['set_daily', 'set_weekend', 'manual_mine']);
   });
 
-  it('skips dismissed builtin example custom sets', () => {
-    const merged = mergeBuiltInExampleCustomSets([], { dismissedIds: ['set_example_health'] });
-    expect(merged.map((set) => set.id)).toEqual(['set_example_focus']);
+  it('drops legacy default example set', () => {
+    const merged = mergeBuiltInExampleCustomSets([
+      {
+        id: 'default',
+        name: '기본 세트',
+        applyRule: 'manual',
+        applyWeekdays: [],
+        items: [],
+      },
+    ]);
+    expect(merged.map((set) => set.id)).toEqual([]);
   });
 });

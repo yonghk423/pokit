@@ -47,6 +47,8 @@ export type DigitalHhmmInputProps = {
   accentInk?: string;
   /** 시·분 숫자색. 생략 시 ink */
   digitColor?: string;
+  /** 시·분 패널 박스 안 하단 (당일/다음 날 등) */
+  panelExtra?: ReactNode;
 };
 
 /** 키보드가 열린 채 확인을 누를 때 등 — blur 없이 현재 초안을 확정 */
@@ -253,6 +255,7 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
       accentFill,
       accentInk,
       digitColor,
+      panelExtra,
     },
     ref,
   ) {
@@ -355,7 +358,8 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
           shadowSize={PANEL_SHADOW}
           shellStyle={styles.panelShell}
           faceStyle={styles.panelFace}>
-          <View style={styles.fieldsRow}>
+          <View style={[styles.panelInner, panelExtra ? styles.panelInnerWithExtra : null]}>
+            <View style={styles.fieldsRow}>
             <View style={styles.unitBlock}>
               <ThemedText style={[styles.fieldCaption, { color: muted }, cityPopFont('700')]}>
                 {t('common.hour')}
@@ -419,6 +423,8 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
                 </ThemedText>
               </View>
             </View>
+            </View>
+            {panelExtra}
           </View>
         </SolidShadowFace>
       </View>
@@ -454,6 +460,12 @@ const styles = StyleSheet.create({
   panelFace: {
     paddingHorizontal: 10,
     paddingVertical: 12,
+  },
+  panelInner: {
+    gap: 0,
+  },
+  panelInnerWithExtra: {
+    gap: 12,
   },
   fieldsRow: {
     flexDirection: 'row',

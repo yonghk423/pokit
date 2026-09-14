@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import {
   addMonths,
@@ -25,7 +25,6 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import type { GoalDetailSettingsPalette } from '../../lib/settingsPalette';
 
-const PRIMARY = 'rgb(0, 0, 0)';
 const WEEKDAY_HEADER_KEYS = [
   'goalDetail.weekday.mon',
   'goalDetail.weekday.tue',
@@ -36,30 +35,28 @@ const WEEKDAY_HEADER_KEYS = [
   'goalDetail.weekday.sun',
 ] as const;
 
-const WEIGHT_STEP_KG = 0.1;
 const DEFAULT_DRAFT_KG = 70;
+
+/** 월=0 … 토=5 · 일=6 — 주말만 구분색 */
+function weekendLabelColor(weekdayIndexMon0: number, fallback: string, lightInk: boolean): string {
+  if (weekdayIndexMon0 === 5) return lightInk ? '#9EC4F0' : '#3D6FA6';
+  if (weekdayIndexMon0 === 6) return lightInk ? '#F0A8A8' : '#C45C5C';
+  return fallback;
+}
 
 type Palette = GoalDetailSettingsPalette;
 
 type Props = {
   weightLogs: FastingWeightLogs;
+  currentWeightKg?: number;
   onChangeWeightLogs: (next: FastingWeightLogs) => void;
-  onLatestWeightChange?: (weightKg: number) => void;
   palette: Palette;
 };
 
-function roundKg1(n: number): number {
-  return Math.round(n * 10) / 10;
-}
-
-function formatKg(n: number): string {
-  return roundKg1(n).toFixed(1);
-}
-
 export function WeightLogCalendarSection({
   weightLogs,
+  currentWeightKg,
   onChangeWeightLogs,
-  onLatestWeightChange,
   palette,
 }: Props) {
   const { t } = useTranslation();
@@ -67,68 +64,80 @@ export function WeightLogCalendarSection({
   const todayKey = useMemo(() => getLocalDateKey(), []);
   const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
   const [monthStart, setMonthStart] = useState(() => toMonthStart(new Date()));
-  /** 선택일 편집용 체중 — 로그가 없으면 최근값/기본값으로 시작 */
-  const [draftKg, setDraftKg] = useState(DEFAULT_DRAFT_KG);
 
   const monthGrid = useMemo(() => buildMonthCalendarGrid(monthStart), [monthStart]);
   const monthTitle = useMemo(() => formatMonthTitleKo(monthStart), [monthStart]);
-  const selectedWeight = readWeightLogForDate(weightLogs, selectedDateKey);
+  const hasLogs = Object.keys(weightLogs).length > 0;
   const weightLogsRef = useRef(weightLogs);
   weightLogsRef.current = weightLogs;
 
-  const resolveFallbackKg = useCallback((logs: FastingWeightLogs) => {
-    const keys = Object.keys(logs).sort();
-    if (keys.length === 0) return DEFAULT_DRAFT_KG;
-    const latestKey = keys[keys.length - 1]!;
-    return logs[latestKey] ?? DEFAULT_DRAFT_KG;
-  }, []);
-
-  useEffect(() => {
-    if (selectedWeight != null) {
-      setDraftKg(selectedWeight);
-      return;
-    }
-    setDraftKg(clampWeightKg(resolveFallbackKg(weightLogs)));
-  }, [resolveFallbackKg, selectedDateKey, selectedWeight, weightLogs]);
+  const resolveFallbackKg = useCallback(
+    (logs: FastingWeightLogs) => {
+      const keys = Object.keys(logs).sort();
+      if (keys.length === 0) {
+        return clampWeightKg(currentWeightKg ?? DEFAULT_DRAFT_KG);
+      }
+      const latestKey = keys[keys.length - 1]!;
+      return logs[latestKey] ?? clampWeightKg(currentWeightKg ?? DEFAULT_DRAFT_KG);
+    },
+    [currentWeightKg],
+  );
 
   const persistWeight = useCallback(
     (dateKey: string, weightKg: number, logs: FastingWeightLogs = weightLogsRef.current) => {
       const nextLogs = setFastingWeightLog(logs, dateKey, clampWeightKg(weightKg));
       onChangeWeightLogs(nextLogs);
-      onLatestWeightChange?.(clampWeightKg(weightKg));
       return nextLogs;
     },
-    [onChangeWeightLogs, onLatestWeightChange],
+    [onChangeWeightLogs],
+  );
+
+  const clearDateWeight = useCallback(
+    (dateKey: string) => {
+      onChangeWeightLogs(removeFastingWeightLog(weightLogsRef.current, dateKey));
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    },
+    [onChangeWeightLogs],
   );
 
   const selectDate = useCallback(
-    (dateKey: string) => {
-      if (dateKey === selectedDateKey) return;
-      // 날짜 이동 전 현재 드래프트를 저장 — 저장 버튼 없이도 기록이 남도록
-      persistWeight(selectedDateKey, draftKg);
+    (dateKey: string, day: Date, inMonth: boolean) => {
+      if (dateKey > todayKey) return;
+      if (!inMonth) setMonthStart(toMonthStart(day));
+
+      const logs = weightLogsRef.current;
+      const existing = readWeightLogForDate(logs, dateKey);
+
+      if (existing != null && dateKey === selectedDateKey) {
+        clearDateWeight(dateKey);
+        return;
+      }
+
+      if (existing == null) {
+        persistWeight(dateKey, resolveFallbackKg(logs), logs);
+      }
+
       void Haptics.selectionAsync();
       setSelectedDateKey(dateKey);
     },
-    [draftKg, persistWeight, selectedDateKey],
+    [clearDateWeight, persistWeight, resolveFallbackKg, selectedDateKey, todayKey],
   );
 
-  const nudgeDraft = useCallback(
-    (dir: -1 | 1) => {
-      const next = clampWeightKg(draftKg + dir * WEIGHT_STEP_KG);
-      if (Math.abs(next - draftKg) < 1e-9) return;
-      void Haptics.selectionAsync();
-      setDraftKg(next);
-      persistWeight(selectedDateKey, next);
-    },
-    [draftKg, persistWeight, selectedDateKey],
-  );
-
-  const clearWeight = useCallback(() => {
-    const nextLogs = removeFastingWeightLog(weightLogsRef.current, selectedDateKey);
-    onChangeWeightLogs(nextLogs);
-    setDraftKg(clampWeightKg(resolveFallbackKg(nextLogs)));
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, [onChangeWeightLogs, resolveFallbackKg, selectedDateKey]);
+  const resetAllLogs = useCallback(() => {
+    if (!hasLogs) return;
+    Alert.alert(t('goalDetail.fasting.resetLogsTitle'), t('goalDetail.fasting.resetLogsMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.reset'),
+        style: 'destructive',
+        onPress: () => {
+          onChangeWeightLogs({});
+          setSelectedDateKey(todayKey);
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        },
+      },
+    ]);
+  }, [hasLogs, onChangeWeightLogs, t, todayKey]);
 
   return (
     <View style={[styles.wrap, !isNote && { borderColor: palette.outline }, isNote && styles.wrapNote]}>
@@ -142,6 +151,22 @@ export function WeightLogCalendarSection({
             {t('goalDetail.fasting.weightLogHint')}
           </ThemedText>
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('goalDetail.fasting.resetLogsA11y')}
+          accessibilityState={{ disabled: !hasLogs }}
+          disabled={!hasLogs}
+          hitSlop={8}
+          onPress={resetAllLogs}
+          style={styles.resetBtn}>
+          <ThemedText
+            style={[
+              styles.resetLabel,
+              { color: palette.onVariant, opacity: hasLogs ? 1 : 0.35 },
+            ]}>
+            {t('common.reset')}
+          </ThemedText>
+        </Pressable>
       </View>
 
       <View style={styles.monthNav}>
@@ -151,7 +176,7 @@ export function WeightLogCalendarSection({
           onPress={() => setMonthStart((m) => addMonths(m, -1))}
           hitSlop={8}
           style={styles.navBtn}>
-          <IconSymbol name="chevron.left" size={14} color={palette.onSurface} />
+          <IconSymbol name="chevron.left" size={18} color={palette.onSurface} />
         </Pressable>
         <ThemedText style={[styles.monthTitle, { color: palette.onSurface }]}>{monthTitle}</ThemedText>
         <Pressable
@@ -160,13 +185,18 @@ export function WeightLogCalendarSection({
           onPress={() => setMonthStart((m) => addMonths(m, 1))}
           hitSlop={8}
           style={styles.navBtn}>
-          <IconSymbol name="chevron.right" size={14} color={palette.onSurface} />
+          <IconSymbol name="chevron.right" size={18} color={palette.onSurface} />
         </Pressable>
       </View>
 
       <View style={styles.weekdayRow}>
-        {WEEKDAY_HEADER_KEYS.map((dayKey) => (
-          <ThemedText key={dayKey} style={[styles.weekdayLabel, { color: palette.onVariant }]}>
+        {WEEKDAY_HEADER_KEYS.map((dayKey, index) => (
+          <ThemedText
+            key={dayKey}
+            style={[
+              styles.weekdayLabel,
+              { color: weekendLabelColor(index, palette.onVariant, palette.usesLightInk) },
+            ]}>
             {t(dayKey)}
           </ThemedText>
         ))}
@@ -179,15 +209,21 @@ export function WeightLogCalendarSection({
           const selected = dateKey === selectedDateKey;
           const logged = readWeightLogForDate(weightLogs, dateKey);
           const isToday = dateKey === todayKey;
+          const isFuture = dateKey > todayKey;
+          const weekdayIndexMon0 = (day.getDay() + 6) % 7;
+          const dayColor = inMonth
+            ? weekendLabelColor(weekdayIndexMon0, palette.onSurface, palette.usesLightInk)
+            : palette.outline;
           return (
             <Pressable
               key={dateKey}
               accessibilityRole="button"
-              accessibilityState={{ selected }}
+              accessibilityState={{ selected, disabled: isFuture }}
               accessibilityLabel={t('goalDetail.fasting.selectDateA11y', {
                 date: formatDateKeyDisplayKo(dateKey),
               })}
-              onPress={() => selectDate(dateKey)}
+              disabled={isFuture}
+              onPress={() => selectDate(dateKey, day, inMonth)}
               style={[
                 styles.dayCell,
                 selected && {
@@ -196,14 +232,14 @@ export function WeightLogCalendarSection({
                     : 'rgba(0,0,0,0.08)',
                   borderColor: palette.onSurface,
                 },
-                !inMonth && styles.dayCellMuted,
+                (!inMonth || isFuture) && styles.dayCellMuted,
               ]}>
               <ThemedText
                 style={[
                   styles.dayLabel,
                   {
-                    color: inMonth ? palette.onSurface : palette.outline,
-                    fontWeight: isToday ? '900' : selected ? '800' : '600',
+                    color: dayColor,
+                    fontWeight: isToday || selected ? '900' : '600',
                   },
                 ]}>
                 {day.getDate()}
@@ -216,53 +252,6 @@ export function WeightLogCalendarSection({
             </Pressable>
           );
         })}
-      </View>
-
-      <View style={[styles.inputBlock, { borderColor: palette.outlineVariant }]}>
-        <ThemedText style={[styles.selectedDate, { color: palette.onVariant }]}>
-          {formatDateKeyDisplayKo(selectedDateKey)}
-        </ThemedText>
-        <View style={styles.inputRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('customFlowTemplate.decreaseByA11y', {
-              step: formatKg(WEIGHT_STEP_KG),
-            })}
-            hitSlop={6}
-            onPress={() => nudgeDraft(-1)}
-            style={({ pressed }) => [
-              styles.stepBtn,
-              { borderColor: palette.outline, opacity: pressed ? 0.75 : 1 },
-            ]}>
-            <IconSymbol name="minus" size={13} color={palette.onSurface} />
-          </Pressable>
-          <ThemedText style={[styles.stepValue, { color: palette.onSurface }]}>
-            {formatKg(draftKg)}
-          </ThemedText>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('customFlowTemplate.increaseByA11y', {
-              step: formatKg(WEIGHT_STEP_KG),
-            })}
-            hitSlop={6}
-            onPress={() => nudgeDraft(1)}
-            style={({ pressed }) => [
-              styles.stepBtn,
-              { borderColor: palette.outline, opacity: pressed ? 0.75 : 1 },
-            ]}>
-            <IconSymbol name="plus" size={13} color={palette.onSurface} />
-          </Pressable>
-          {selectedWeight != null ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('goalDetail.fasting.deleteLogA11y')}
-              onPress={clearWeight}
-              hitSlop={8}
-              style={styles.clearBtn}>
-              <IconSymbol name="trash" size={14} color={palette.onVariant} />
-            </Pressable>
-          ) : null}
-        </View>
       </View>
     </View>
   );
@@ -281,6 +270,8 @@ const styles = StyleSheet.create({
   },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   headerText: { flex: 1, gap: 2 },
+  resetBtn: { paddingVertical: 2, paddingHorizontal: 2 },
+  resetLabel: { fontSize: 12, fontWeight: '700' },
   title: { fontSize: 15, fontWeight: '800' },
   hint: { fontSize: 11, fontWeight: '600', lineHeight: 16 },
   monthNav: {
@@ -289,49 +280,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   navBtn: { padding: 4 },
-  monthTitle: { fontSize: 13, fontWeight: '800' },
+  monthTitle: { fontSize: 22, fontWeight: '800' },
   weekdayRow: { flexDirection: 'row' },
   weekdayLabel: {
     width: '14.2857%',
     textAlign: 'center',
-    fontSize: 10,
+    fontSize: 16,
     fontWeight: '700',
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   dayCell: {
     width: '14.2857%',
-    minHeight: 42,
+    minHeight: 70,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'transparent',
-    paddingVertical: 2,
-    gap: 0,
+    paddingVertical: 3,
+    gap: 1,
   },
-  dayLabel: { fontSize: 12, lineHeight: 14 },
-  weightMini: { fontSize: 8, fontWeight: '700', lineHeight: 10 },
+  dayLabel: { fontSize: 20, lineHeight: 24 },
+  weightMini: { fontSize: 13, fontWeight: '700', lineHeight: 16 },
   dayCellMuted: { opacity: 0.35 },
-  inputBlock: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 10,
-    gap: 8,
-  },
-  selectedDate: { fontSize: 12, fontWeight: '700' },
-  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  stepBtn: {
-    width: 32,
-    height: 32,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepValue: {
-    minWidth: 44,
-    fontSize: 14,
-    fontWeight: '400',
-    textAlign: 'center',
-    fontVariant: ['tabular-nums'],
-  },
-  clearBtn: { padding: 6, marginLeft: 4 },
 });

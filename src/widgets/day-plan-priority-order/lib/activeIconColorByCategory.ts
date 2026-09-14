@@ -1,5 +1,8 @@
 import { PrimaryColor } from '@shared/config/theme';
-import { resolveCategoryCatalogAccentColor } from '@entities/day-plan';
+import {
+  resolveCategoryCatalogAccentColor,
+  resolveCategoryCatalogIconTile,
+} from '@entities/day-plan';
 import { toPastelColor } from '@shared/lib/ui/toPastelColor';
 
 export function activeIconColorByCategory(categoryKey: string): string {
@@ -11,8 +14,8 @@ export function categoryAccentColorPastel(categoryKey: string): string {
   return toPastelColor(activeIconColorByCategory(categoryKey));
 }
 
-/** 루틴 탭 집중 아이콘과 동일한 색 + 연한 배경(히스토리 데일리 등) */
+/** 목표 상세 미리보기와 동일한 아이콘 칸 */
 export function categoryIconAccent(categoryKey: string): { color: string; surface: string } {
-  const color = activeIconColorByCategory(categoryKey);
-  return { color, surface: categoryAccentColorPastel(categoryKey) };
+  const tile = resolveCategoryCatalogIconTile(categoryKey);
+  return { color: tile.iconColor, surface: tile.boxBg };
 }

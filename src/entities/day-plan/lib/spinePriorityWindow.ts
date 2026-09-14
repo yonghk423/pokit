@@ -77,11 +77,10 @@ export function isSpineBlockScheduleWithinPriorityWindow(
 
   if (block.endsNextCalendarDay) {
     if (!window.overnight) {
-      // 여러 날짜에 걸친 루틴은 시작일·종료일 각각의 시각이 일일 운영 범위 안이면 허용한다.
-      // 예: 일일 범위 07:00~23:00에서 9/3 07:00 → 9/4 08:00.
+      // 시작은 당일 집중 구간 안. 종료는 다음날 어느 시계든 허용한다.
+      // 예: 07:00~23:00에서 07:00 → 다음날 08:00, 또는 07:00 → 다음날 01:30(새벽 섭취).
       if (window.endMin <= window.startMin) return false;
       if (start < window.startMin || start > window.endMin) return false;
-      if (end < window.startMin || end > window.endMin) return false;
       return 24 * 60 - start + end > 0;
     }
     // 자정 넘김 일일 범위: 당일 저녁 밴드에서 시작해 다음날 아침 밴드에서 종료.
@@ -91,6 +90,57 @@ export function isSpineBlockScheduleWithinPriorityWindow(
   }
 
   return isSpineBlockWithinPriorityWindow({ startMinutes: start, endMinutes: end }, window);
+}
+
+/**
+ * 알림 시각 — 집중 구간 안에만 둔다.
+ * 당일 창(07:00–23:00)에서 다음 날 밤 11시처럼 창 밖 시계는 불가.
+ * 자정 넘김 창(22:00–07:00)만 다음 날 아침 밴드까지 허용.
+ */
+export function isNotifyTimeWithinPriorityWindow(
+  minutes: number,
+  nextCalendarDay: boolean,
+  window: SpinePriorityWindow,
+): boolean {
+  const m = Math.max(0, Math.min(Math.floor(minutes), 24 * 60));
+  if (!window.overnight) {
+    if (nextCalendarDay) return false;
+    if (window.endMin <= window.startMin) return false;
+    return m >= window.startMin && m <= window.endMin;
+  }
+  if (!nextCalendarDay) return m >= window.startMin && m <= 24 * 60;
+  return m <= window.endMin;
+}
+
+/** 알림 시각을 집중 구간 안으로 당긴다. */
+export function clampNotifyTimeToPriorityWindow(
+  minutes: number,
+  nextCalendarDay: boolean,
+  window: SpinePriorityWindow,
+): { minutes: number; nextCalendarDay: boolean } {
+  const m = Math.max(0, Math.min(Math.floor(minutes), 24 * 60));
+  if (!window.overnight) {
+    if (window.endMin <= window.startMin) {
+      return { minutes: window.startMin, nextCalendarDay: false };
+    }
+    return {
+      minutes: Math.min(window.endMin, Math.max(window.startMin, m)),
+      nextCalendarDay: false,
+    };
+  }
+  if (!nextCalendarDay) {
+    if (m >= window.startMin) {
+      return { minutes: Math.min(24 * 60, m), nextCalendarDay: false };
+    }
+    if (m <= window.endMin) {
+      return { minutes: m, nextCalendarDay: true };
+    }
+    return { minutes: window.startMin, nextCalendarDay: false };
+  }
+  if (m <= window.endMin) {
+    return { minutes: m, nextCalendarDay: true };
+  }
+  return { minutes: window.endMin, nextCalendarDay: true };
 }
 
 /** 갭 구간을 하루 시작~마무리와 교차하는 부분만 남깁니다. */

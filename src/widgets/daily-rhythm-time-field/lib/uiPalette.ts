@@ -18,7 +18,7 @@ export function paletteForReminderTimeCard(isDark: boolean): ReminderCardSurface
       onSurface: c.text,
       onVariant: c.textMuted,
       border: c.border,
-      containerLowest: c.surface,
+      containerLowest: c.bg,
     },
     alarm: {
       onSurface: c.text,

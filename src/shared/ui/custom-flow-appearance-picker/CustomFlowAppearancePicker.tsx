@@ -14,6 +14,7 @@ import {
 import { HsvColorPicker } from '@shared/ui/hsv-color-picker';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 const CHIP_SHADOW = 2;
 
@@ -23,6 +24,9 @@ export type CustomFlowAppearancePickerProps = {
   onChangeIcon: (icon: CustomFlowIconOption) => void;
   onChangeAccentColor: (color: string) => void;
   previewLabel?: string;
+  onChangePreviewLabel?: (next: string) => void;
+  onPreviewLabelFocus?: () => void;
+  onPreviewLabelBlur?: () => void;
   isDark: boolean;
   ink: string;
   muted: string;
@@ -38,6 +42,9 @@ export function CustomFlowAppearancePicker({
   onChangeIcon,
   onChangeAccentColor,
   previewLabel,
+  onChangePreviewLabel,
+  onPreviewLabelFocus,
+  onPreviewLabelBlur,
   isDark,
   ink,
   muted,
@@ -117,11 +124,26 @@ export function CustomFlowAppearancePicker({
             ]}>
             <IconSymbol name={icon} size={compact ? 18 : 22} color={accentOnChip} />
           </View>
-          <ThemedText
-            style={[styles.previewLabel, compact && styles.previewLabelCompact, { color: ink }]}
-            numberOfLines={1}>
-            {resolvedPreviewLabel}
-          </ThemedText>
+          {onChangePreviewLabel ? (
+            <ThemedTextInput
+              value={resolvedPreviewLabel}
+              onChangeText={onChangePreviewLabel}
+              onFocus={onPreviewLabelFocus}
+              onBlur={onPreviewLabelBlur}
+              accessibilityLabel={t('appearance.renameA11y')}
+              placeholder={t('appearance.renameA11y')}
+              placeholderTextColor={muted}
+              maxLength={40}
+              returnKeyType="done"
+              style={[styles.previewLabel, compact && styles.previewLabelCompact, { color: ink }]}
+            />
+          ) : (
+            <ThemedText
+              style={[styles.previewLabel, compact && styles.previewLabelCompact, { color: ink }]}
+              numberOfLines={1}>
+              {resolvedPreviewLabel}
+            </ThemedText>
+          )}
         </View>
       </View>
 
@@ -299,6 +321,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
+    padding: 0,
   },
   previewLabelCompact: {
     fontSize: 14,

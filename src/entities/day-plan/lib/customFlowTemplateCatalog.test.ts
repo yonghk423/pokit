@@ -26,6 +26,8 @@ describe('listCustomFlowTemplateCatalogEntries', () => {
     const checklist = entries.find((entry) => entry.key === 'checklist');
     expect(checklist?.label).toBe('Task checklist');
     expect(checklist?.description).toContain('Check off tasks');
+    expect(entries.some((entry) => entry.key === 'healthIntake')).toBe(true);
+    expect(entries.some((entry) => entry.key === 'fasting')).toBe(true);
   });
 });
 

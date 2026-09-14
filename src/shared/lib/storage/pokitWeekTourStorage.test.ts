@@ -1,6 +1,7 @@
 import { localStorageClient } from './localStorageClient';
 import {
   BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
+  hideStandardCatalogKey,
   loadPokitWeekTourSeeded,
   markPokitWeekTourSeeded,
   nextOrderWithPokitWeekTourSeed,
@@ -12,6 +13,7 @@ describe('pokitWeekTourStorage', () => {
   beforeEach(() => {
     localStorageClient.removeItem(StorageKeys.pokitWeekTourSeeded);
     localStorageClient.removeItem(StorageKeys.goalDetailSettings);
+    localStorageClient.removeItem(StorageKeys.hiddenStandardCatalogKeys);
   });
 
   it('seeds tour into empty bag for first-time users only', () => {
@@ -42,6 +44,11 @@ describe('pokitWeekTourStorage', () => {
         done: true,
       })),
     });
+    expect(nextOrderWithPokitWeekTourSeed([])).toBeNull();
+  });
+
+  it('does not seed when the tutorial routine was deleted', () => {
+    hideStandardCatalogKey(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
     expect(nextOrderWithPokitWeekTourSeed([])).toBeNull();
   });
 });

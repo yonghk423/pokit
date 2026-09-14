@@ -41,6 +41,7 @@ import {
   priorityMarkTitleHighlight,
   resolveBlockCategoryKey,
   resolveCategoryCatalogIcon,
+  resolveCategoryCatalogIconTile,
   resolveCategoryKeyFromLabel,
   resolveCategoryMarkColor,
   resolveFixedFlowSetDisplayName,
@@ -99,10 +100,7 @@ import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
-import {
-  activeIconColorByCategory,
-  categoryAccentColorPastel,
-} from '@widgets/day-plan-priority-order';
+import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import { getPickerCategoryLabel, isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
@@ -425,7 +423,8 @@ function FlowItemCard({
   const trackOff = isDark ? '#3f3f46' : '#e5e7eb';
   const shouldPulse = Boolean(isInTodayPlan && isFocusStarted && enabled && !isCompleted);
   const pulse = useRef(new Animated.Value(1)).current;
-  const iconBoxBg = categoryAccentColorPastel(categoryKey);
+  const catalogTile = resolveCategoryCatalogIconTile(categoryKey);
+  const iconBoxBg = catalogTile.boxBg;
   const brutalShadow = shadow;
 
   useEffect(() => {
@@ -451,7 +450,7 @@ function FlowItemCard({
     return () => loop.stop();
   }, [shouldPulse, pulse]);
 
-  const categoryIconColor = activeIconColorByCategory(categoryKey);
+  const categoryIconColor = catalogTile.iconColor;
   const iconColor = resolveFixedRoutineItemIconColor({
     categoryAccentColor: categoryIconColor,
     isInTodayPlan,

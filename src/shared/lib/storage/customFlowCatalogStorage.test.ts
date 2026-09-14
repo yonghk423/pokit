@@ -12,12 +12,14 @@ import {
   updateCustomFlowCatalogGroup,
 } from './customFlowCatalogStorage';
 import { saveGoalDetailCategoryConfig } from './goalDetailSettingsStorage';
+import { hideStandardCatalogKey } from './hiddenStandardCatalogStorage';
 import { StorageKeys } from './storageKeys';
 
 describe('customFlowCatalogStorage', () => {
   beforeEach(() => {
     localStorageClient.removeItem(StorageKeys.customFlowCatalog);
     localStorageClient.removeItem(StorageKeys.goalDetailSettings);
+    localStorageClient.removeItem(StorageKeys.hiddenStandardCatalogKeys);
   });
 
   it('migrates legacy ids array to productivity group', () => {
@@ -50,6 +52,17 @@ describe('customFlowCatalogStorage', () => {
     appendCustomFlowCatalogId('customFlow:z');
     removeCustomFlowCatalogId('customFlow:z');
     expect(listCustomFlowCatalogEntries()).toHaveLength(0);
+  });
+
+  it('listAllCustomFlowCatalogEntries hides deleted builtin presets', () => {
+    appendCustomFlowCatalogEntry({
+      id: 'customFlow:preset_pokit_week_tour',
+      groupKey: 'customGroup:preset_tutorial',
+    });
+    hideStandardCatalogKey('customFlow:preset_pokit_week_tour');
+    expect(listAllCustomFlowCatalogEntries().map((e) => e.id)).not.toContain(
+      'customFlow:preset_pokit_week_tour',
+    );
   });
 
   it('listAllCustomFlowCatalogEntries merges config-only customFlow keys', () => {

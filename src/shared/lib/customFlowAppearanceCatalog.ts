@@ -80,6 +80,7 @@ export const CUSTOM_FLOW_ACCENT_COLOR_OPTIONS = [
   '#16a34a',
   '#ca8a04',
   '#f59e0b',
+  '#e9a23b',
   '#64748b',
   '#0ea5e9',
 ] as const;

@@ -87,6 +87,16 @@ const customFlowTemplateModules: Record<
     getInitialDataConfig: getInitialMeasurementDataConfig,
     Settings: MeasurementSettings,
   },
+  healthIntake: {
+    titleKo: '약 복용',
+    getInitialDataConfig: getInitialHealthIntakeDataConfig,
+    Settings: HealthIntakeSettings,
+  },
+  fasting: {
+    titleKo: '체중조절',
+    getInitialDataConfig: getInitialFastingDataConfig,
+    Settings: FastingSettings,
+  },
   habit: {
     titleKo: '오늘 했/안 했',
     getInitialDataConfig: getInitialHabitDataConfig,

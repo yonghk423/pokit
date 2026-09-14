@@ -1,12 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 import type { SymbolViewProps } from 'expo-symbols';
 
+import { resolveCategoryCatalogIconTile } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { POST_IT_SOLID_SHADOW } from '@shared/ui/post-it-card-shell';
-import {
-  activeIconColorByCategory,
-  categoryAccentColorPastel,
-} from '@widgets/day-plan-priority-order';
 
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 
@@ -18,10 +15,9 @@ type Props = {
   palette: FlowHistoryPalette;
 };
 
-/** 히스토리 카드 — 루틴 목록과 같은 pastel 아이콘 + 검정 솔리드 음영 */
+/** 히스토리 카드 — 목표 상세와 같은 강조색 칸 + 대비 아이콘 */
 export function FlowHistoryCategoryIcon({ categoryKey, icon, palette: _palette }: Props) {
-  const iconColor = activeIconColorByCategory(categoryKey);
-  const boxBg = categoryAccentColorPastel(categoryKey);
+  const { boxBg, iconColor } = resolveCategoryCatalogIconTile(categoryKey);
 
   return (
     <View

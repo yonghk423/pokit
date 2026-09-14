@@ -1,4 +1,10 @@
 import {
+  hideStandardCatalogKey,
+  localStorageClient,
+  StorageKeys,
+} from '@shared/lib/storage';
+
+import {
   computeSyncTodayTabWithFixedRoutineApply,
   mergeOrderWithAppliedFixedRoutines,
   syncPriorityOrderWithAppliedFixedRoutines,
@@ -40,6 +46,19 @@ describe('syncPriorityOrderWithAppliedFixedRoutines', () => {
     expect(
       syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed, new Set()),
     ).toEqual(['customFlow:preset_pokit_week_tour', 'healthIntake']);
+  });
+
+  it('drops the tutorial routine after it was deleted', () => {
+    localStorageClient.removeItem(StorageKeys.hiddenStandardCatalogKeys);
+    hideStandardCatalogKey('customFlow:preset_pokit_week_tour');
+    const order = ['customFlow:preset_pokit_week_tour', 'healthIntake'];
+    try {
+      expect(
+        syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed, new Set()),
+      ).toEqual(['healthIntake']);
+    } finally {
+      localStorageClient.removeItem(StorageKeys.hiddenStandardCatalogKeys);
+    }
   });
 
   it('keeps catalog-selected customFlow even when not in fixed sets', () => {
@@ -108,6 +127,29 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
       priorityCategoryOrder: ['healthIntake'],
       priorityMealSlotOverrides: {},
     });
+  });
+
+  it('does not put back a category the user ended today', () => {
+    const patch = computeSyncTodayTabWithFixedRoutineApply({
+      ...baseInput,
+      priorityCategoryOrder: ['healthIntake'],
+      priorityMealSlotOverrides: {},
+      todayAppliedCategoryKeys: ['healthIntake', 'fasting'],
+      endedTodayCategoryKeys: ['fasting'],
+      fixedFlowSets: [
+        {
+          id: 'set_example_health',
+          name: '건강',
+          applyRule: 'manual' as const,
+          items: [
+            { categoryKey: 'healthIntake', enabled: true },
+            { categoryKey: 'fasting', enabled: true },
+          ],
+        },
+      ],
+      activeSetIds: ['set_example_health'],
+    });
+    expect(patch).toBeNull();
   });
 
   it('strips legacy water from order when user only picked healthIntake', () => {

@@ -2,6 +2,7 @@ import {
   hideStandardCatalogKey,
   removeCustomFlowCatalogId,
   removeGoalDetailCategoryConfig,
+  removeRoutineCatalogSelectionKey,
   savePriorityCatalogFixedRoutineKeys,
 } from '@shared/lib/storage';
 import { isBuiltinPresetCustomFlowId } from '@shared/lib/storage/defaultPriorityCatalog';
@@ -9,7 +10,7 @@ import { isBuiltinPresetCustomFlowId } from '@shared/lib/storage/defaultPriority
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 
-type DeleteCustomFlowDeps = {
+export type DeleteCatalogCategoryDeps = {
   hydrateFixedFlowSets: () => void;
   getTodayAppliedCategoryKeys: () => string[];
   reloadFixedFlowSetsFromStorage: () => void;
@@ -23,19 +24,8 @@ type DeleteCustomFlowDeps = {
   bumpCategoryLabelEpoch: () => void;
 };
 
-/** 사용자 플로우(customFlow) 삭제 — 담기·설정·고정 루틴·오늘 순서에서 제거 */
-export function deleteCustomFlowCategory(
-  categoryKey: string,
-  deps: DeleteCustomFlowDeps,
-): boolean {
-  if (!isCustomFlowCategoryKey(categoryKey)) return false;
-
-  removeCustomFlowCatalogId(categoryKey);
-  removeGoalDetailCategoryConfig(categoryKey);
-  // 기본 프리셋은 ensureDefault 시 다시 붙지 않도록 숨김 기록
-  if (isBuiltinPresetCustomFlowId(categoryKey)) {
-    hideStandardCatalogKey(categoryKey);
-  }
+function purgeCatalogCategoryFromPlan(categoryKey: string, deps: DeleteCatalogCategoryDeps): void {
+  removeRoutineCatalogSelectionKey(categoryKey);
 
   deps.hydrateFixedFlowSets();
   const nextFixed = [
@@ -60,5 +50,37 @@ export function deleteCustomFlowCategory(
 
   deps.registerOtherCategoryResolverFromStorage();
   deps.bumpCategoryLabelEpoch();
+}
+
+/** 담기 항목 삭제 — 사용자 루틴은 제거, 표준 항목은 재시드되지 않게 숨김 후 설정·일정에서 제거 */
+export function deleteCatalogCategory(
+  categoryKey: string,
+  deps: DeleteCatalogCategoryDeps,
+): boolean {
+  const key = categoryKey.trim();
+  if (!key) return false;
+
+  if (isCustomFlowCategoryKey(key)) {
+    if (isBuiltinPresetCustomFlowId(key)) {
+      hideStandardCatalogKey(key);
+    }
+    removeCustomFlowCatalogId(key);
+    removeGoalDetailCategoryConfig(key);
+    purgeCatalogCategoryFromPlan(key, deps);
+    return true;
+  }
+
+  hideStandardCatalogKey(key);
+  removeGoalDetailCategoryConfig(key);
+  purgeCatalogCategoryFromPlan(key, deps);
   return true;
+}
+
+/** 사용자 플로우(customFlow) 삭제 — 담기·설정·고정 루틴·오늘 순서에서 제거 */
+export function deleteCustomFlowCategory(
+  categoryKey: string,
+  deps: DeleteCatalogCategoryDeps,
+): boolean {
+  if (!isCustomFlowCategoryKey(categoryKey)) return false;
+  return deleteCatalogCategory(categoryKey, deps);
 }

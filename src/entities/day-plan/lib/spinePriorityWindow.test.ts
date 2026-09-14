@@ -1,6 +1,8 @@
 import {
+  clampNotifyTimeToPriorityWindow,
   clampSpineBlockToPriorityWindow,
   clipGapToSpinePriorityWindow,
+  isNotifyTimeWithinPriorityWindow,
   isSpineBlockScheduleWithinPriorityWindow,
   isSpineBlockWithinPriorityWindow,
   resolveSpinePriorityWindow,
@@ -100,6 +102,26 @@ describe('spinePriorityWindow', () => {
         },
         daily!,
       ),
+    ).toBe(true);
+    expect(
+      isSpineBlockScheduleWithinPriorityWindow(
+        {
+          startMinutes: 7 * 60,
+          endMinutes: 90,
+          endsNextCalendarDay: true,
+        },
+        daily!,
+      ),
+    ).toBe(true);
+    expect(
+      isSpineBlockScheduleWithinPriorityWindow(
+        {
+          startMinutes: 6 * 60,
+          endMinutes: 90,
+          endsNextCalendarDay: true,
+        },
+        daily!,
+      ),
     ).toBe(false);
   });
 
@@ -151,5 +173,31 @@ describe('spinePriorityWindow', () => {
         overnight!,
       ),
     ).toBe(false);
+  });
+});
+
+describe('notify time vs priority window', () => {
+  it('rejects next-day night on a same-day focus window', () => {
+    const daily = resolveSpinePriorityWindow('07:00', '23:00');
+    expect(daily).not.toBeNull();
+    expect(isNotifyTimeWithinPriorityWindow(23 * 60, true, daily!)).toBe(false);
+    expect(isNotifyTimeWithinPriorityWindow(23 * 60, false, daily!)).toBe(true);
+    expect(isNotifyTimeWithinPriorityWindow(1 * 60, true, daily!)).toBe(false);
+    expect(clampNotifyTimeToPriorityWindow(23 * 60, true, daily!)).toEqual({
+      minutes: 23 * 60,
+      nextCalendarDay: false,
+    });
+  });
+
+  it('allows next-day morning only on an overnight window', () => {
+    const overnight = resolveSpinePriorityWindow('22:00', '07:00');
+    expect(overnight).not.toBeNull();
+    expect(isNotifyTimeWithinPriorityWindow(23 * 60, false, overnight!)).toBe(true);
+    expect(isNotifyTimeWithinPriorityWindow(6 * 60, true, overnight!)).toBe(true);
+    expect(isNotifyTimeWithinPriorityWindow(23 * 60, true, overnight!)).toBe(false);
+    expect(clampNotifyTimeToPriorityWindow(23 * 60, true, overnight!)).toEqual({
+      minutes: 7 * 60,
+      nextCalendarDay: true,
+    });
   });
 });

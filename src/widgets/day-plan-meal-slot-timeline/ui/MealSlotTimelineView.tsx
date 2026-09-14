@@ -23,10 +23,7 @@ import type { DayMealSlot } from '@shared/lib/storage';
 import { CompletionRadioButton, COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import {
-  activeIconColorByCategory,
-  categoryIconAccent,
-} from '@widgets/day-plan-priority-order/lib/activeIconColorByCategory';
+import { categoryIconAccent } from '@widgets/day-plan-priority-order/lib/activeIconColorByCategory';
 
 import { DAY_MEAL_SLOT_ICON, dayMealSlotIconColor } from '../lib/mealSlotIcons';
 
@@ -126,7 +123,7 @@ function RoutineIconBadge({
 }) {
   const accent = categoryIconAccent(categoryKey);
   const colors = cardColors(isDark);
-  const iconColor = activeIconColorByCategory(categoryKey);
+  const iconColor = accent.color;
 
   return (
     <View

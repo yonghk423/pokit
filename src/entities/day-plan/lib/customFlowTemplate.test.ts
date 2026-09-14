@@ -28,11 +28,43 @@ describe('customFlowTemplate', () => {
   });
 
   it('has labels for every template key', () => {
-    expect(CUSTOM_FLOW_TEMPLATE_KEYS).toHaveLength(9);
+    expect(CUSTOM_FLOW_TEMPLATE_KEYS).toHaveLength(11);
   });
 
   it('maps legacy abstain template to checklist label', () => {
     expect(resolveAppliedCustomFlowTemplateLabel('abstain')).toBe('할 일 체크');
+  });
+
+  it('builds health intake and fasting initial configs', () => {
+    const intake = buildInitialCustomFlowDetailConfig('healthIntake', { displayName: '영양제' });
+    expect(resolveCustomFlowTemplateKey(intake)).toBe('healthIntake');
+    const fasting = buildInitialCustomFlowDetailConfig('fasting', { displayName: '체중' });
+    expect(resolveCustomFlowTemplateKey(fasting)).toBe('fasting');
+  });
+
+  it('persists health intake medicine seed when creating custom flow', () => {
+    const created = buildInitialCustomFlowDetailConfig('healthIntake', {
+      displayName: '비타민',
+      templateSeed: {
+        templateKey: 'healthIntake',
+        medicine: {
+          doseLabel: '비타민 D',
+          morningOn: true,
+          lunchOn: false,
+          dinnerOn: true,
+        },
+      },
+    });
+    expect(created).toMatchObject({
+      templateKey: 'healthIntake',
+      displayName: '비타민',
+      medicine: {
+        doseLabel: '비타민 D',
+        morningOn: true,
+        lunchOn: false,
+        dinnerOn: true,
+      },
+    });
   });
 
   it('builds measurement initial config with appearance', () => {

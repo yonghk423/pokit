@@ -31,6 +31,7 @@ import {
   clampSpineBlockToPriorityWindow,
   computeSpineGapInsertSlot,
   createCustomFlowCategoryId,
+  endCategoryOnTodayPlan,
   filterBagTimelineFlowBlocks,
   filterDayPlanFlowBlocks,
   formatBlockTimeRange,
@@ -87,7 +88,6 @@ import {
   loadPokitWeekTourFirstTipSeen,
   resolveCurrentMealSlotFromSchedule,
   saveGoalDetailCategoryConfig,
-  saveRoutineCatalogSelectionKeys,
   subscribeCustomFlowCatalog,
   type CategoryMealSlotOverride,
   type DayMealSlot
@@ -615,7 +615,6 @@ export function PriorityBasedPlanSection({
     addPrioritySectionMealSlot,
     setPrioritySectionsMealSlots,
     migrateSectionCompletionOnSlotMove,
-    finishPriorityCategoryForToday,
     priorityCategoryImportance,
     setPriorityCategoryMarkColor,
     prioritySectionsCategoryOrder,
@@ -642,7 +641,6 @@ export function PriorityBasedPlanSection({
       addPrioritySectionMealSlot: s.addPrioritySectionMealSlot,
       setPrioritySectionsMealSlots: s.setPrioritySectionsMealSlots,
       migrateSectionCompletionOnSlotMove: s.migrateSectionCompletionOnSlotMove,
-      finishPriorityCategoryForToday: s.finishPriorityCategoryForToday,
       priorityCategoryImportance: s.priorityCategoryImportance,
       setPriorityCategoryMarkColor: s.setPriorityCategoryMarkColor,
       prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
@@ -1176,6 +1174,7 @@ export function PriorityBasedPlanSection({
 
         if (addedKeys.length > 0) {
           appendRoutineCatalogSelectionKeys(addedKeys);
+          useDayPlanDraftStore.getState().releaseEndedTodayCategoryKeys(addedKeys);
           setLastAddedCategoryKey(addedKeys[addedKeys.length - 1] ?? null);
         }
         setSpinePendingGapBounds(null);
@@ -1675,16 +1674,13 @@ export function PriorityBasedPlanSection({
             onPress: () => {
               void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               setPriorityRowLayoutAnim(true);
-              finishPriorityCategoryForToday(categoryKey);
-              saveRoutineCatalogSelectionKeys(
-                useDayPlanDraftStore.getState().priorityCategoryOrder,
-              );
+              endCategoryOnTodayPlan(categoryKey);
             },
           },
         ],
       );
     },
-    [finishPriorityCategoryForToday],
+    [],
   );
 
   const resolveTimelineItemCompleted = useCallback(
@@ -2057,6 +2053,7 @@ export function PriorityBasedPlanSection({
         }
         if (linkedKey) {
           appendRoutineCatalogSelectionKeys([linkedKey]);
+          useDayPlanDraftStore.getState().releaseEndedTodayCategoryKeys([linkedKey]);
         }
       } else {
         const result = addPlanBlock({
@@ -2075,6 +2072,7 @@ export function PriorityBasedPlanSection({
         }
         if (linkedKey) {
           appendRoutineCatalogSelectionKeys([linkedKey]);
+          useDayPlanDraftStore.getState().releaseEndedTodayCategoryKeys([linkedKey]);
         }
       }
 
@@ -2298,6 +2296,7 @@ export function PriorityBasedPlanSection({
           endsNextCalendarDay: endsNext,
           blockOrigin: 'spineTimeline',
           planDateKey: getLocalDateKey(),
+          hasManualScheduleOverride: true,
         });
         if (!result.ok) {
           alertSpineBlockSaveError('add', result.reason);
@@ -2572,7 +2571,7 @@ export function PriorityBasedPlanSection({
                 {
                   backgroundColor: isDark
                     ? RetroFlatColors.dark.surface
-                    : '#FFFFFF',
+                    : RetroFlatColors.light.bg,
                 },
               ]}>
             <ScrollView
@@ -2627,7 +2626,7 @@ export function PriorityBasedPlanSection({
                   compact
                   label={t('common.cancel')}
                   accessibilityLabel={t('dayPlan.cancelClose')}
-                  fill={isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF'}
+                  fill={isDark ? RetroFlatColors.dark.surfaceAlt : RetroFlatColors.light.bg}
                   labelColor={editorial.muted}
                   style={styles.timeModalCancelBtn}
                   onPress={closeBagRowTimeModal}

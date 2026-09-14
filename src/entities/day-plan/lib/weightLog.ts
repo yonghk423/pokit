@@ -1,4 +1,13 @@
+import { parseLocalDateKeyToDate } from './localDateKey';
+
 const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export function daysBetweenWeightLogKeys(fromKey: string, toKey: string): number {
+  const a = parseLocalDateKeyToDate(fromKey);
+  const b = parseLocalDateKeyToDate(toKey);
+  if (!a || !b) return 0;
+  return Math.round((b.getTime() - a.getTime()) / 86_400_000);
+}
 
 export type FastingWeightLogs = Record<string, number>;
 
@@ -57,6 +66,17 @@ export function latestWeightFromLogs(logs: FastingWeightLogs, fallbackKg: number
   return entries[entries.length - 1]!.weightKg;
 }
 
+/** 현재 체중을 최신 기록일(없으면 오늘)에 반영 */
+export function applyCurrentWeightToLogs(
+  logs: FastingWeightLogs,
+  weightKg: number,
+  todayKey: string,
+): FastingWeightLogs {
+  const entries = sortedWeightLogEntries(logs);
+  const dateKey = entries.length > 0 ? entries[entries.length - 1]!.dateKey : todayKey;
+  return setFastingWeightLog(logs, dateKey, weightKg);
+}
+
 export function weightDeltaToTarget(currentKg: number, targetKg: number): number {
   return Math.max(0, currentKg - targetKg);
 }
@@ -91,4 +111,24 @@ export function buildWeightChartSeries(
   const entries = sortedWeightLogEntries(logs);
   if (entries.length <= maxPoints) return entries;
   return entries.slice(entries.length - maxPoints);
+}
+
+/** 현재 체중 − 주간 감량 = 이번 주 목표. 최근 7일만 기울기 */
+export function buildWeeklyLossGuideline(
+  points: WeightChartPoint[],
+  weeklyLossTargetKg: number,
+  floorKg: number,
+): WeightChartPoint[] {
+  if (points.length === 0 || weeklyLossTargetKg <= 0) return [];
+  const current = points[points.length - 1]!;
+  const weeklyGoalKg = clampWeightKg(Math.max(floorKg, current.weightKg - weeklyLossTargetKg));
+  return points.map((point) => {
+    const daysBeforeEnd = daysBetweenWeightLogKeys(point.dateKey, current.dateKey);
+    const weekRemain = Math.min(1, Math.max(0, daysBeforeEnd / 7));
+    const expected = weeklyGoalKg + weekRemain * weeklyLossTargetKg;
+    return {
+      dateKey: point.dateKey,
+      weightKg: clampWeightKg(Math.max(floorKg, expected)),
+    };
+  });
 }

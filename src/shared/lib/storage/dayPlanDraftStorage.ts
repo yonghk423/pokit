@@ -40,6 +40,9 @@ export type PersistedDayPlanDraft = {
   priorityBagLinkMode?: 'linked' | 'independent';
   /** 시간대별 독립 모드 — 담기 목록과 별도 루틴 순서 */
   prioritySectionsCategoryOrder?: string[];
+  /** 오늘 탭에서 「종료」한 카테고리 — 날짜가 바뀌면 무효 */
+  priorityEndedTodayKeys?: string[];
+  priorityEndedTodayDateKey?: string;
 };
 
 export function loadDayPlanDraft(): PersistedDayPlanDraft | null {

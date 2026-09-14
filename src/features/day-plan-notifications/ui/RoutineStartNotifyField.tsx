@@ -1,13 +1,14 @@
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, StyleSheet, Switch, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
   collectRoutineStartNotifySlots,
   formatMinutesToHHmm,
   hasResolvableRoutineStartTime,
+  listTodayPlanCategoryKeys,
   useDayPlanDraftStore,
   useDayPlanStore,
   useFixedFlowSetsStore,
@@ -19,6 +20,7 @@ import {
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { formatHhmmClock, t, useTranslation } from '@shared/lib/i18n';
 import { loadDayMealSlotSchedule } from '@shared/lib/storage';
+import { OutlinedSwitch } from '@shared/ui/outlined-switch';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -58,12 +60,22 @@ export function RoutineStartNotifyField({
   const sets = useFixedFlowSetsStore((s) => s.sets);
   const activeSetIds = useFixedFlowSetsStore((s) => s.activeSetIds);
   const planBlocks = useDayPlanStore((s) => s.blocks);
-  const { priorityMealSlotOverrides, prioritySectionsMealSlots } = useDayPlanDraftStore(
+  const {
+    priorityMealSlotOverrides,
+    prioritySectionsMealSlots,
+    priorityCategoryOrder,
+    prioritySectionsCategoryOrder,
+    priorityStart,
+  } = useDayPlanDraftStore(
     useShallow((s) => ({
       priorityMealSlotOverrides: s.priorityMealSlotOverrides,
       prioritySectionsMealSlots: s.prioritySectionsMealSlots,
+      priorityCategoryOrder: s.priorityCategoryOrder,
+      prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
+      priorityStart: s.priorityStart,
     })),
   );
+  const todayAppliedCategoryKeys = useFixedFlowSetsStore((s) => s.todayAppliedCategoryKeys);
 
   const [enabled, setEnabled] = useState(() => isRoutineStartNotifyEnabled(categoryKey));
   const [busy, setBusy] = useState(false);
@@ -86,14 +98,20 @@ export function RoutineStartNotifyField({
         ...priorityMealSlotOverrides,
         ...prioritySectionsMealSlots,
       },
+      todayCategoryKeys: listTodayPlanCategoryKeys(),
+      priorityStart,
     };
   }, [
     activeSetIds,
     categoryKey,
     planBlocks,
+    priorityCategoryOrder,
     priorityMealSlotOverrides,
+    prioritySectionsCategoryOrder,
     prioritySectionsMealSlots,
+    priorityStart,
     sets,
+    todayAppliedCategoryKeys,
   ]);
 
   const canResolve = useMemo(
@@ -161,12 +179,12 @@ export function RoutineStartNotifyField({
           <ThemedText style={[styles.title, { color: ink }]}>{tr('routineNotify.title')}</ThemedText>
           <ThemedText style={[styles.hint, { color: muted }]}>{timeHint}</ThemedText>
         </View>
-        <Switch
+        <OutlinedSwitch
           accessibilityLabel={tr('routineNotify.toggleA11y', {
             state: enabled ? tr('routineNotify.toggleOn') : tr('routineNotify.toggleOff'),
           })}
           value={enabled}
-          disabled={busy}
+          disabled={busy || (!canResolve && !enabled)}
           onValueChange={(next) => {
             void onToggle(next);
           }}

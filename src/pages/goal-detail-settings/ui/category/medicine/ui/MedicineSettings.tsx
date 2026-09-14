@@ -1,17 +1,27 @@
+import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import Animated, { Easing, FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import {
-  clampHhmmToPriorityWindow,
+  addCategoryToTodayRoutine,
   formatHhmmClockKo,
+  formatMinutesToHHmm,
+  isCategoryOnTodayPlan,
+  parseHHmmToMinutes,
   useDayPlanDraftStore,
 } from '@entities/day-plan';
+import { useLocalNotificationsStore } from '@entities/local-notifications';
+import { syncMedicineReminderNotifications } from '@features/day-plan-notifications';
+import { RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { OutlinedSwitch } from '@shared/ui/outlined-switch';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
-import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
+import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
+import { CatalogRowSpineTimePanel } from '@widgets/daily-rhythm-time-field';
 
 import { useGoalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { SettingsProgressBand } from '../../lib/SettingsProgressBand';
@@ -40,6 +50,10 @@ const SLOT_GRID: {
   { key: 'dinner', labelKey: 'mealSlot.dinner', cardSubKey: 'goalDetail.medicine.dinnerSub', icon: 'moon.fill' },
 ];
 
+const SLOT_APPEAR = FadeIn.duration(240).easing(Easing.out(Easing.cubic));
+const SLOT_DISAPPEAR = FadeOut.duration(180).easing(Easing.in(Easing.cubic));
+const SLOT_LAYOUT = LinearTransition.duration(280).easing(Easing.out(Easing.cubic));
+
 function slotOn(cfg: MedicineDetailDataConfig, key: 'morning' | 'lunch' | 'dinner'): boolean {
   if (key === 'morning') return cfg.morningOn;
   if (key === 'lunch') return cfg.lunchOn;
@@ -56,6 +70,13 @@ function setSlot(
     morningOn: key === 'morning' ? on : cfg.morningOn,
     lunchOn: key === 'lunch' ? on : cfg.lunchOn,
     dinnerOn: key === 'dinner' ? on : cfg.dinnerOn,
+    ...(on
+      ? {
+          morningNotify: key === 'morning' ? false : cfg.morningNotify,
+          lunchNotify: key === 'lunch' ? false : cfg.lunchNotify,
+          dinnerNotify: key === 'dinner' ? false : cfg.dinnerNotify,
+        }
+      : {}),
   };
   const enabled = [next.morningOn, next.lunchOn, next.dinnerOn].filter(Boolean).length;
   next.dosesPerDay = Math.max(0, Math.min(12, enabled));
@@ -72,15 +93,32 @@ function timeField(
   return cfg.dinnerTime;
 }
 
+function slotTimeNextDay(
+  cfg: MedicineDetailDataConfig,
+  key: 'morning' | 'lunch' | 'dinner',
+): boolean {
+  if (key === 'morning') return cfg.morningTimeNextDay;
+  if (key === 'lunch') return cfg.lunchTimeNextDay;
+  return cfg.dinnerTimeNextDay;
+}
+
 function withTime(
   cfg: MedicineDetailDataConfig,
   key: 'morning' | 'lunch' | 'dinner',
   time: string,
+  nextDay = false,
 ): MedicineDetailDataConfig {
-  const n = { ...cfg, morningTime: cfg.morningTime, lunchTime: cfg.lunchTime, dinnerTime: cfg.dinnerTime };
-  if (key === 'morning') n.morningTime = time;
-  else if (key === 'lunch') n.lunchTime = time;
-  else n.dinnerTime = time;
+  const n = { ...cfg };
+  if (key === 'morning') {
+    n.morningTime = time;
+    n.morningTimeNextDay = nextDay;
+  } else if (key === 'lunch') {
+    n.lunchTime = time;
+    n.lunchTimeNextDay = nextDay;
+  } else {
+    n.dinnerTime = time;
+    n.dinnerTimeNextDay = nextDay;
+  }
   return normalizeMedicineDetailConfig(n);
 }
 
@@ -100,20 +138,6 @@ function setSlotNotify(
     morningNotify: key === 'morning' ? on : cfg.morningNotify,
     lunchNotify: key === 'lunch' ? on : cfg.lunchNotify,
     dinnerNotify: key === 'dinner' ? on : cfg.dinnerNotify,
-  });
-}
-
-function clampMedicineTimesToRoutine(
-  cfg: MedicineDetailDataConfig,
-  routineStart: string,
-  routineEnd: string,
-): MedicineDetailDataConfig {
-  const n = normalizeMedicineDetailConfig(cfg);
-  return normalizeMedicineDetailConfig({
-    ...n,
-    morningTime: clampHhmmToPriorityWindow(n.morningTime, routineStart, routineEnd, 1),
-    lunchTime: clampHhmmToPriorityWindow(n.lunchTime, routineStart, routineEnd, 1),
-    dinnerTime: clampHhmmToPriorityWindow(n.dinnerTime, routineStart, routineEnd, 1),
   });
 }
 
@@ -148,10 +172,8 @@ export function MedicineSettings({
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],
   );
-  const pill = useMemo(() => tabPillColors(isDark), [isDark]);
   const priorityStart = useDayPlanDraftStore((s) => s.priorityStart);
   const priorityEnd = useDayPlanDraftStore((s) => s.priorityEnd);
-
   const [draft, setDraft] = useState<MedicineDetailDataConfig>(() =>
     normalizeMedicineDetailConfig(dataConfig ?? getInitialMedicineDataConfig()),
   );
@@ -160,12 +182,11 @@ export function MedicineSettings({
 
   useEffect(() => {
     const incoming = normalizeMedicineDetailConfig(dataConfig ?? getInitialMedicineDataConfig());
-    const clamped = clampMedicineTimesToRoutine(incoming, priorityStart, priorityEnd);
-    const s = JSON.stringify(clamped);
+    const s = JSON.stringify(incoming);
     if (lastSyncedJsonRef.current === s) return;
     lastSyncedJsonRef.current = s;
-    setDraft(clamped);
-  }, [dataConfig, priorityEnd, priorityStart]);
+    setDraft(incoming);
+  }, [dataConfig]);
 
   useEffect(() => {
     const payload = normalizeMedicineDetailConfig(draft);
@@ -235,33 +256,69 @@ export function MedicineSettings({
         itemIcon: 'pills.fill' as const,
       };
 
-  const markDoseTaken = () => {
+  const toggleSlotTaken = (slotKey: 'morning' | 'lunch' | 'dinner') => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDraft((prev) => {
-      if (prev.takenCount >= prev.dosesPerDay) return prev;
-      return normalizeMedicineDetailConfig({ ...prev, takenCount: prev.takenCount + 1 });
+      const slots = SLOT_GRID.filter((slot) => slotOn(prev, slot.key));
+      const index = slots.findIndex((slot) => slot.key === slotKey);
+      if (index < 0) return prev;
+      const nextTaken = index < prev.takenCount ? index : index + 1;
+      return normalizeMedicineDetailConfig({ ...prev, takenCount: nextTaken });
     });
   };
 
-  const resetDoseTaken = () => {
-    setDraft((prev) => normalizeMedicineDetailConfig({ ...prev, takenCount: 0 }));
+  const handleSlotEnabledChange = (slotKey: 'morning' | 'lunch' | 'dinner', enabled: boolean) => {
+    void Haptics.selectionAsync();
+    setDraft((prev) => setSlot(prev, slotKey, enabled));
   };
 
-  const timePickerPalette = useMemo(() => paletteForReminderTimeCard(isDark).timeField, [isDark]);
-  const [expandedMedicineTimeKey, setExpandedMedicineTimeKey] = useState<
-    'morning' | 'lunch' | 'dinner' | null
-  >(null);
+  const reminderOverlayRaw = (medicine: unknown) =>
+    intakeMode ? { templateKey: 'healthIntake' as const, medicine } : medicine;
 
-  useEffect(() => {
-    if (
-      expandedMedicineTimeKey &&
-      !slotOn(draft, expandedMedicineTimeKey)
-    ) {
-      setExpandedMedicineTimeKey(null);
-    }
-  }, [draft, expandedMedicineTimeKey]);
+  const promptAddToTodayRoutine = (overlayRaw: unknown) => {
+    const key = categoryKey.trim();
+    if (!key || isCategoryOnTodayPlan(key)) return;
+    Alert.alert(
+      t('goalDetail.medicine.addToTodayTitle'),
+      t('goalDetail.medicine.addToTodayMessage'),
+      [
+        { text: t('common.later'), style: 'cancel' },
+        {
+          text: t('goalDetail.medicine.addToTodayAction'),
+          onPress: () => {
+            addCategoryToTodayRoutine(key);
+            void syncMedicineReminderNotifications({ categoryKey: key, raw: overlayRaw });
+          },
+        },
+      ],
+    );
+  };
+
+  const handleSlotNotifyChange = (slotKey: 'morning' | 'lunch' | 'dinner', enabled: boolean) => {
+    const next = setSlotNotify(draft, slotKey, enabled);
+    setDraft(next);
+    const key = categoryKey.trim();
+    const overlayRaw = reminderOverlayRaw(next);
+    void (async () => {
+      if (enabled) {
+        const permitted = await useLocalNotificationsStore.getState().ensurePermission();
+        if (!permitted) {
+          setDraft((prev) => setSlotNotify(prev, slotKey, false));
+          Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
+          return;
+        }
+        if (key && !isCategoryOnTodayPlan(key)) {
+          promptAddToTodayRoutine(overlayRaw);
+        }
+      }
+      await syncMedicineReminderNotifications(
+        key ? { categoryKey: key, raw: overlayRaw } : undefined,
+      );
+    })();
+  };
 
   return (
-    <View style={[styles.shell, embedded && styles.shellEmbedded]}>
+    <Animated.View layout={SLOT_LAYOUT} style={[styles.shell, embedded && styles.shellEmbedded]}>
       {!embedded && !hideTitleField ? (
         <RoutineTitleField
           value={draft.displayName}
@@ -281,6 +338,44 @@ export function MedicineSettings({
         />
       ) : null}
 
+      <View style={[styles.slotRowWrap, isNote && styles.rowNote]}>
+        <View style={styles.slotColumn}>
+          <ThemedText style={[styles.rowTitle, { color: c.onSurface }]}>{copy.slotSectionLabel}</ThemedText>
+          <View style={styles.slotRow}>
+            {SLOT_GRID.map((slot) => {
+              const on = slotOn(draft, slot.key);
+              const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+              const bg = on ? tone.bgMint : isDark ? tone.surfaceAlt : '#FFFFFF';
+              const borderCol = tone.border;
+              const fg = on ? (isDark ? tone.text : tone.tertiary) : tone.text;
+              const shadowInk = isDark ? tone.solidShadow : '#000000';
+              return (
+                <View key={slot.key} style={styles.slotChipShell}>
+                  <View
+                    pointerEvents="none"
+                    style={[styles.slotChipShadow, { backgroundColor: shadowInk }]}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    accessibilityLabel={copy.slotToggleA11y(t(slot.labelKey), on)}
+                    android_ripple={{ color: 'rgba(0,0,0,0.12)' }}
+                    onPress={() => handleSlotEnabledChange(slot.key, !on)}
+                    style={[
+                      styles.slotChip,
+                      { backgroundColor: bg, borderColor: borderCol },
+                    ]}>
+                    <ThemedText style={[styles.slotChipText, { color: fg }]}>
+                      {t(slot.labelKey)}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      </View>
+
       <SettingsProgressBand
         title={copy.progressTitle}
         valueLine={t('goalDetail.medicine.doseValue', { taken: draft.takenCount, total: draft.dosesPerDay })}
@@ -295,76 +390,66 @@ export function MedicineSettings({
         palette={c}
       />
 
-      {draft.dosesPerDay > 0 ? (
-        <View style={styles.doseActionRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={copy.actionDone}
-            onPress={markDoseTaken}
-            disabled={draft.takenCount >= draft.dosesPerDay}
-            style={({ pressed }) => [
-              styles.doseActionBtn,
-              isNote && styles.doseActionBtnNote,
-              {
-                backgroundColor: isNote ? 'transparent' : PRIMARY,
-                opacity: draft.takenCount >= draft.dosesPerDay ? 0.35 : pressed ? 0.85 : 1,
-              },
-            ]}>
-            <Text style={[styles.doseActionBtnText, isNote && { color: PRIMARY }]}>{copy.actionDone}</Text>
-          </Pressable>
-          {draft.takenCount > 0 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={copy.actionReset}
-              onPress={resetDoseTaken}
-              style={({ pressed }) => [
-                styles.doseResetBtn,
-                isNote && styles.doseResetBtnNote,
-                !isNote && { borderColor: c.outline },
-                pressed && { opacity: 0.75 },
-              ]}>
-              <Text style={[styles.doseResetBtnText, { color: c.onVariant }]}>{t('common.reset')}</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      ) : null}
-
       {enabledSlots.length > 0 ? (
-        <View style={[styles.slotStatusWrap, !isNote && { borderColor: c.outline }, isNote && styles.slotStatusWrapNote]}>
+        <Animated.View
+          entering={SLOT_APPEAR}
+          exiting={SLOT_DISAPPEAR}
+          layout={SLOT_LAYOUT}
+          style={styles.slotStatusShell}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.slotStatusShadow,
+              { backgroundColor: isDark ? RetroFlatColors.dark.solidShadow : '#000000' },
+            ]}
+          />
+        <View style={[styles.slotStatusWrap, { borderColor: '#000000', backgroundColor: c.surfaceLowest }]}>
           {enabledSlots.map((slot, index) => {
             const isDone = index < draft.takenCount;
             const isCurrent = index === draft.takenCount;
             const statusLabel = isDone ? t('goalDetail.medicine.statusDone') : isCurrent ? t('goalDetail.medicine.statusNext') : t('goalDetail.medicine.statusScheduled');
+            const slotTitle = t(slot.labelKey);
             return (
-              <View
+              <Animated.View
                 key={slot.key}
-                style={[
-                  styles.slotStatusRow,
-                  !isNote && { borderBottomColor: c.outlineVariant },
-                  isNote && styles.slotStatusRowNote,
-                  isCurrent && !isNote && { backgroundColor: 'rgba(0,0,0,0.04)' },
-                ]}>
-                <View style={styles.slotStatusLeft}>
-                  <IconSymbol name={slot.icon} size={16} color={isDone ? PRIMARY : c.onVariant} />
-                  <Text style={[styles.slotStatusLabel, { color: c.onSurface }]}>{t(slot.labelKey)}</Text>
-                  <Text style={[styles.slotStatusTime, { color: c.onVariant }]}>
-                    {formatHhmmClockKo(timeField(draft, slot.key))}
-                  </Text>
-                </View>
-                <Text
-                  style={[
-                    styles.slotStatusBadge,
-                    {
-                      color: isDone ? PRIMARY : isCurrent ? c.onSurface : c.onVariant,
-                      fontWeight: isCurrent ? '500' : '400',
-                    },
+                entering={SLOT_APPEAR}
+                exiting={SLOT_DISAPPEAR}
+                layout={SLOT_LAYOUT}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${slotTitle} · ${t('common.remove')}`}
+                  onPress={() => handleSlotEnabledChange(slot.key, false)}
+                  style={({ pressed }) => [
+                    styles.slotStatusRow,
+                    index < enabledSlots.length - 1 && { borderBottomColor: c.outlineVariant },
+                    index === enabledSlots.length - 1 && { borderBottomWidth: 0 },
+                    isCurrent && { backgroundColor: 'rgba(0,0,0,0.04)' },
+                    pressed && { transform: [{ translateY: 1 }] },
                   ]}>
-                  {statusLabel}
-                </Text>
-              </View>
+                  <View style={styles.slotStatusLeft}>
+                    <IconSymbol name={slot.icon} size={16} color={isDone ? PRIMARY : c.onVariant} />
+                    <ThemedText style={[styles.slotStatusLabel, { color: c.onSurface }]}>{slotTitle}</ThemedText>
+                    <ThemedText style={[styles.slotStatusTime, { color: c.onVariant }]}>
+                      {slotTimeNextDay(draft, slot.key)
+                        ? `${t('dayPlan.nextDayPrefix')} ${formatHhmmClockKo(timeField(draft, slot.key))}`
+                        : formatHhmmClockKo(timeField(draft, slot.key))}
+                    </ThemedText>
+                  </View>
+                  <ThemedText
+                    style={[
+                      styles.slotStatusBadge,
+                      {
+                        color: isDone ? PRIMARY : isCurrent ? c.onSurface : c.onVariant,
+                      },
+                    ]}>
+                    {statusLabel}
+                  </ThemedText>
+                </Pressable>
+              </Animated.View>
             );
           })}
         </View>
+        </Animated.View>
       ) : null}
 
       <View
@@ -374,18 +459,18 @@ export function MedicineSettings({
           isNote && styles.metricBarNote,
         ]}>
         <View style={styles.metricItem}>
-          <Text style={[styles.metricValue, { color: c.onSurface }]}>{draft.takenCount}</Text>
-          <Text style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.doneCount')}</Text>
+          <ThemedText style={[styles.metricValue, { color: c.onSurface }]}>{draft.takenCount}</ThemedText>
+          <ThemedText style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.doneCount')}</ThemedText>
         </View>
         <View style={styles.metricItem}>
-          <Text style={[styles.metricValue, { color: c.onSurface }]}>{draft.dosesPerDay}</Text>
-          <Text style={[styles.metricLabel, { color: c.onVariant }]}>{copy.doseCountLabel}</Text>
+          <ThemedText style={[styles.metricValue, { color: c.onSurface }]}>{draft.dosesPerDay}</ThemedText>
+          <ThemedText style={[styles.metricLabel, { color: c.onVariant }]}>{copy.doseCountLabel}</ThemedText>
         </View>
         <View style={styles.metricItem}>
-          <Text style={[styles.metricValue, { color: c.onSurface }]}>
+          <ThemedText style={[styles.metricValue, { color: c.onSurface }]}>
             {Math.max(0, draft.dosesPerDay - draft.takenCount)}
-          </Text>
-          <Text style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.remainingCount')}</Text>
+          </ThemedText>
+          <ThemedText style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.remainingCount')}</ThemedText>
         </View>
       </View>
 
@@ -396,8 +481,8 @@ export function MedicineSettings({
             !isNote && { borderColor: c.outline, backgroundColor: '#f4f4f5' },
             isNote && styles.routineWindowBandNote,
           ]}>
-          <Text style={[styles.routineWindowLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.routineWindow')}</Text>
-          <Text style={[styles.routineWindowTime, { color: c.onSurface }]}>{routineWindowLine}</Text>
+          <ThemedText style={[styles.routineWindowLabel, { color: c.onVariant }]}>{t('goalDetail.medicine.routineWindow')}</ThemedText>
+          <ThemedText style={[styles.routineWindowTime, { color: c.onSurface }]}>{routineWindowLine}</ThemedText>
         </View>
       ) : null}
 
@@ -405,99 +490,124 @@ export function MedicineSettings({
         <View style={[styles.row, !isNote && { borderBottomColor: c.outline }, isNote && styles.rowNote]}>
           <View style={styles.rowLeft}>
             <IconSymbol name={copy.itemIcon} size={18} color={PRIMARY} />
-            <Text style={[styles.rowTitle, { color: c.onSurface }]}>{copy.itemNameLabel}</Text>
+            <ThemedText style={[styles.rowTitle, { color: c.onSurface }]}>{copy.itemNameLabel}</ThemedText>
           </View>
-          <TextInput
+          <ThemedTextInput
             value={draft.doseLabel}
-            onChangeText={(t) => setDraft((prev) => ({ ...prev, doseLabel: t }))}
+            onChangeText={(next) => setDraft((prev) => ({ ...prev, doseLabel: next }))}
             placeholder={copy.itemNamePlaceholder}
             placeholderTextColor={c.outline}
             style={[styles.rowInput, { color: c.onSurface }]}
           />
         </View>
 
-        <View
-          style={[
-            styles.row,
-            styles.slotRowWrap,
-            !isNote && { borderBottomColor: c.outline },
-            isNote && styles.rowNote,
-          ]}>
-          <View style={styles.slotColumn}>
-            <Text style={[styles.rowTitle, { color: c.onSurface }]}>{copy.slotSectionLabel}</Text>
-            <View style={styles.slotRow}>
-              {SLOT_GRID.map((slot) => {
-                const on = slotOn(draft, slot.key);
-                const bg = on ? pill.activeBg : pill.inactiveBg;
-                const borderCol = on ? pill.activeBorder : pill.inactiveBorder;
-                const fg = on ? pill.activeIcon : pill.inactiveIcon;
-                return (
-                  <Pressable
-                    key={slot.key}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: on }}
-                    accessibilityLabel={copy.slotToggleA11y(t(slot.labelKey), on)}
-                    android_ripple={{ color: 'rgba(0,0,0,0.12)' }}
-                    onPress={() => setDraft((prev) => setSlot(prev, slot.key, !slotOn(prev, slot.key)))}
-                    style={({ pressed }) => [
-                      styles.slotChip,
-                      { flex: 1, backgroundColor: bg, borderColor: borderCol },
-                      pressed && { opacity: 0.88 },
-                    ]}>
-                    <Text style={[styles.slotChipText, { color: fg }]}>{t(slot.labelKey)}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        </View>
-
         {SLOT_GRID.map((slot) => {
           if (!slotOn(draft, slot.key)) return null;
           const notifyOn = slotNotify(draft, slot.key);
+          const enabledIndex = enabledSlots.findIndex((row) => row.key === slot.key);
+          const isSlotDone = enabledIndex >= 0 && enabledIndex < draft.takenCount;
+          const slotTitle = t(slot.labelKey);
           return (
-            <View
+            <Animated.View
               key={slot.key}
+              entering={SLOT_APPEAR}
+              exiting={SLOT_DISAPPEAR}
+              layout={SLOT_LAYOUT}
               style={[
                 styles.slotDetailBlock,
                 !isNote && { borderBottomColor: c.outline },
                 isNote && styles.slotDetailBlockNote,
               ]}>
               <View style={styles.medicineTimePickerRow}>
-                <SnappedTimePickerField
-                  label={copy.slotTimeLabel(t(slot.labelKey))}
-                  hint={t('goalDetail.medicine.timeWithinWindow', { window: routineWindowLine })}
-                  valueHhmm={timeField(draft, slot.key)}
-                  onChangeHhmm={(next) =>
-                    setDraft((prev) => withTime(prev, slot.key, next))
-                  }
-                  expanded={expandedMedicineTimeKey === slot.key}
-                  onToggleExpand={() =>
-                    setExpandedMedicineTimeKey((cur) => (cur === slot.key ? null : slot.key))
-                  }
+                <ThemedText style={[styles.notifyWindowCaption, { color: c.onVariant }]}>
+                  {t('dayPlan.bagRowDayWindowCaption', { window: routineWindowLine })}
+                </ThemedText>
+                <CatalogRowSpineTimePanel
+                  startMinutes={parseHHmmToMinutes(timeField(draft, slot.key)) ?? 8 * 60 + 30}
+                  endMinutes={parseHHmmToMinutes(timeField(draft, slot.key)) ?? 8 * 60 + 30}
+                  endsNextCalendarDay={slotTimeNextDay(draft, slot.key)}
+                  presentation="sheet"
+                  visualStyle="default"
+                  contentInsetLeft={0}
+                  ink={c.onSurface}
+                  muted={c.onVariant}
+                  line={c.border}
                   isDark={isDark}
-                  palette={timePickerPalette}
-                  snapStepMinutes={1}
-                  routineDayStartHhmm={priorityStart}
-                  routineDayEndHhmm={priorityEnd}
-                  compact
+                  priorityStart={priorityStart}
+                  priorityEnd={priorityEnd}
+                  scheduleMode="single"
+                  showSheetConfirm={false}
+                  showEndDateChoice
+                  startFieldLabel={t('goalDetail.medicine.notifyTimeLabel', {
+                    label: t(slot.labelKey),
+                  })}
+                  startFieldHint={t('goalDetail.medicine.notifyTimeHint')}
+                  dayChoiceQuestion={t('goalDetail.medicine.notifyDayQuestion')}
+                  onScheduleChange={(start, _end, endsNext) => {
+                    setDraft((prev) =>
+                      withTime(prev, slot.key, formatMinutesToHHmm(start), endsNext),
+                    );
+                  }}
                 />
               </View>
               <View style={[styles.row, styles.rowInSlotGroup, styles.slotNotifyRow]}>
-                <Text style={[styles.rowSubTitle, { color: c.onVariant }]}>{copy.slotNotifyLabel(t(slot.labelKey))}</Text>
-                <Switch
-                  value={notifyOn}
-                  onValueChange={(v) => setDraft((prev) => setSlotNotify(prev, slot.key, v))}
-                  trackColor={{ true: PRIMARY, false: 'rgba(0,0,0,0.12)' }}
-                  thumbColor="#fff"
-                />
+                <ThemedText style={[styles.rowSubTitle, { color: c.onVariant }]}>{copy.slotNotifyLabel(t(slot.labelKey))}</ThemedText>
+                <View style={styles.slotNotifySwitchWrap}>
+                  <OutlinedSwitch
+                    value={notifyOn}
+                    onValueChange={(v) => handleSlotNotifyChange(slot.key, v)}
+                    trackColor={{ true: PRIMARY, false: 'rgba(0,0,0,0.28)' }}
+                    thumbColor="#fff"
+                  />
+                </View>
               </View>
-            </View>
+              <View style={styles.slotDoseAction} pointerEvents="box-none">
+                <View style={styles.doseActionBtnCompact} collapsable={false}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.doseActionShadow,
+                      { backgroundColor: isDark ? RetroFlatColors.dark.solidShadow : '#000000' },
+                    ]}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSlotDone }}
+                    accessibilityLabel={
+                      isSlotDone
+                        ? t('session.medicine.uncheckA11y', { title: slotTitle })
+                        : `${slotTitle} · ${copy.actionDone}`
+                    }
+                    onPress={() => toggleSlotTaken(slot.key)}
+                    style={[
+                      styles.doseActionBtn,
+                      {
+                        backgroundColor: isDark
+                          ? RetroFlatColors.dark.primary
+                          : RetroFlatColors.light.primaryContainer,
+                      },
+                      isSlotDone && styles.doseActionBtnDone,
+                    ]}>
+                    <ThemedText
+                      style={[
+                        styles.doseActionBtnText,
+                        {
+                          color: isDark
+                            ? RetroFlatColors.dark.primaryOn
+                            : RetroFlatColors.light.primary,
+                        },
+                      ]}>
+                      {isSlotDone ? t('goalDetail.medicine.statusDone') : copy.actionDone}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+            </Animated.View>
           );
         })}
       </View>
 
-    </View>
+    </Animated.View>
   );
 }
 
@@ -534,7 +644,38 @@ const styles = StyleSheet.create({
   slotNotifyRow: {
     minHeight: 40,
     paddingVertical: 4,
+    alignItems: 'center',
   },
+  slotNotifySwitchWrap: {
+    overflow: 'hidden',
+    borderRadius: 20,
+  },
+  slotDoseAction: {
+    paddingTop: 2,
+    paddingBottom: 8,
+    alignItems: 'flex-end',
+  },
+  doseActionBtnCompact: {
+    alignSelf: 'flex-end',
+    marginRight: SOLID_SHADOW_OFFSET,
+    marginBottom: SOLID_SHADOW_OFFSET,
+  },
+  doseActionShadow: {
+    ...StyleSheet.absoluteFillObject,
+    transform: [{ translateX: SOLID_SHADOW_OFFSET }, { translateY: SOLID_SHADOW_OFFSET }],
+  },
+  doseActionBtn: {
+    minHeight: 32,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  doseActionBtnDone: {
+    backgroundColor: '#C5E8E9',
+  },
+  doseActionBtnText: { fontSize: 13, fontWeight: '400' },
   rowSubTitle: { fontSize: 12, fontWeight: '400' },
   slotRowWrap: {
     flexDirection: 'column',
@@ -558,39 +699,55 @@ const styles = StyleSheet.create({
   slotRow: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    gap: 6,
+    gap: 8,
     marginTop: 2,
     alignSelf: 'stretch',
   },
+  slotChipShell: {
+    flex: 1,
+    marginRight: SOLID_SHADOW_OFFSET,
+    marginBottom: SOLID_SHADOW_OFFSET,
+  },
+  slotChipShadow: {
+    ...StyleSheet.absoluteFillObject,
+    transform: [{ translateX: SOLID_SHADOW_OFFSET }, { translateY: SOLID_SHADOW_OFFSET }],
+  },
   slotChip: {
-    minHeight: 32,
-    paddingHorizontal: 6,
-    paddingVertical: 6,
+    minHeight: 36,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
     borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
-  slotChipText: { fontSize: 12, fontWeight: '500', letterSpacing: -0.2 },
+  slotChipText: { fontSize: 12, fontWeight: '400', letterSpacing: -0.2 },
   medicineTimePickerRow: {
     paddingVertical: 2,
+    gap: 8,
+  },
+  notifyWindowCaption: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: -0.15,
   },
   doseActionRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  doseActionBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  doseActionBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
   doseResetBtn: {
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: StyleSheet.hairlineWidth,
   },
   doseResetBtnText: { fontSize: 13, fontWeight: '400' },
+  slotStatusShell: {
+    marginRight: SOLID_SHADOW_OFFSET,
+    marginBottom: SOLID_SHADOW_OFFSET,
+  },
+  slotStatusShadow: {
+    ...StyleSheet.absoluteFillObject,
+    transform: [{ translateX: SOLID_SHADOW_OFFSET }, { translateY: SOLID_SHADOW_OFFSET }],
+  },
   slotStatusWrap: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   slotStatusRow: {
@@ -604,27 +761,12 @@ const styles = StyleSheet.create({
   slotStatusLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   slotStatusLabel: { fontSize: 13, fontWeight: '400' },
   slotStatusTime: { fontSize: 12, fontWeight: '400' },
-  slotStatusBadge: { fontSize: 12, fontWeight: '500' },
-  doseActionBtnNote: {
-    flex: 0,
-    paddingVertical: 4,
-    paddingHorizontal: 0,
-    alignItems: 'flex-start',
-  },
+  slotStatusBadge: { fontSize: 12, fontWeight: '400' },
   doseResetBtnNote: {
     borderWidth: 0,
     paddingHorizontal: 0,
     paddingVertical: 4,
     backgroundColor: 'transparent',
-  },
-  slotStatusWrapNote: {
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-  },
-  slotStatusRowNote: {
-    paddingHorizontal: 0,
-    paddingVertical: 5,
-    borderBottomWidth: 0,
   },
   metricBarNote: {
     borderTopWidth: 0,

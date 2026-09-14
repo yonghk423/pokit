@@ -11,6 +11,10 @@ import {
   resolveCustomFlowTemplateKey,
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
+import {
+  isMedicineReminderCategory,
+  syncMedicineReminderNotifications,
+} from '@features/day-plan-notifications';
 import type { GoalDetailCategoryKey } from '@pages/goal-detail-settings/model/types';
 import { resolveGoalDetailModuleForTarget } from '@pages/goal-detail-settings/ui/category';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -159,6 +163,7 @@ export function PriorityBagRowAccordionPanel({
   const [tourTipTaskId, setTourTipTaskId] = useState<string | null>(null);
   const goalKey = asGoalDetailCategoryKey(categoryKey);
   const summaryPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isWeekTour = isPokitWeekTourFlowId(categoryKey);
 
   const rawConfig = useMemo(
@@ -190,6 +195,9 @@ export function PriorityBagRowAccordionPanel({
     return () => {
       if (summaryPersistTimerRef.current) {
         clearTimeout(summaryPersistTimerRef.current);
+      }
+      if (medicineReminderSyncTimerRef.current) {
+        clearTimeout(medicineReminderSyncTimerRef.current);
       }
     };
   }, []);
@@ -272,6 +280,15 @@ export function PriorityBagRowAccordionPanel({
           : next;
       saveGoalDetailCategoryConfig(categoryKey, merged);
       setRevision((n) => n + 1);
+      if (isMedicineReminderCategory(categoryKey, merged)) {
+        if (medicineReminderSyncTimerRef.current) {
+          clearTimeout(medicineReminderSyncTimerRef.current);
+        }
+        medicineReminderSyncTimerRef.current = setTimeout(() => {
+          medicineReminderSyncTimerRef.current = null;
+          void syncMedicineReminderNotifications();
+        }, 450);
+      }
     },
     [categoryKey, rawConfig],
   );

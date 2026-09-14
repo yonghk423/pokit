@@ -36,6 +36,7 @@ import {
 } from '@entities/day-plan';
 import { readRoutineDisplayNameFromConfig } from '@entities/day-plan/lib/routineDisplayName';
 import {
+  isMedicineReminderCategory,
   rescheduleDayPlanNotifications,
   syncMedicineReminderNotifications,
 } from '@features/day-plan-notifications';
@@ -201,7 +202,7 @@ export function GoalDetailSettingsPage() {
   /** 목표 상세는 항상 라이트(화이트) 기준 UI */
   const c = useMemo(() => palette(false), []);
 
-  const { categoryKey, startBlockId, blockIds, source } = useGoalDetailSettingsRoute();
+  const { categoryKey, startBlockId, blockIds } = useGoalDetailSettingsRoute();
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -260,12 +261,9 @@ export function GoalDetailSettingsPage() {
       if (isCategoryRunning(key)) {
         return { allowRename: false, renameLockedReason: 'running' as const };
       }
-      if (source === 'today') {
-        return { allowRename: false, renameLockedReason: 'today' as const };
-      }
       return { allowRename: true, renameLockedReason: null };
     },
-    [isCategoryRunning, source],
+    [isCategoryRunning],
   );
 
   const targets = useMemo<EditingTarget[]>(() => {
@@ -403,7 +401,7 @@ export function GoalDetailSettingsPage() {
     saveGoalDetailCategoryConfig(target.categoryKey, persisted);
     registerOtherCategoryResolverFromStorage();
     useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
-    if (target.categoryKey === 'healthIntake' || target.categoryKey === 'medicine') {
+    if (isMedicineReminderCategory(target.categoryKey, persisted)) {
       if (medicineReminderSyncTimerRef.current) {
         clearTimeout(medicineReminderSyncTimerRef.current);
       }
@@ -472,33 +470,28 @@ export function GoalDetailSettingsPage() {
     }
     appendGoalDetailCommittedCategoryKeys(keysToAppend);
 
-    void (async () => {
-      const dayPlanState = useDayPlanStore.getState();
-      useDayPlanRuntimeStore.getState().buildTimelineFromBlocks({
-        dateKey: dayPlanState.dateKey,
-        blocks: dayPlanState.blocks,
-      });
-      await rescheduleDayPlanNotifications();
-      await syncMedicineReminderNotifications();
-      useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
+    const dayPlanState = useDayPlanStore.getState();
+    useDayPlanRuntimeStore.getState().buildTimelineFromBlocks({
+      dateKey: dayPlanState.dateKey,
+      blocks: dayPlanState.blocks,
+    });
 
-      const ids = sortedTargets
-        .map((t) => t.blockId)
-        .filter(
-          (id) =>
-            Boolean(id) &&
-            id !== 'single' &&
-            !id.startsWith('customFlow:') &&
-            blocks.some((b) => b.id === id && isDayPlanFlowBlock(b)),
-        );
-      if (ids.length === 0) {
-        if (router.canGoBack()) {
-          router.back();
-        } else {
-          router.replace('/day-plan');
-        }
-        return;
+    const ids = sortedTargets
+      .map((t) => t.blockId)
+      .filter(
+        (id) =>
+          Boolean(id) &&
+          id !== 'single' &&
+          !id.startsWith('customFlow:') &&
+          blocks.some((b) => b.id === id && isDayPlanFlowBlock(b)),
+      );
+    if (ids.length === 0) {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/day-plan');
       }
+    } else {
       const focusId = dayPlanState.liveActivityChecklistFocusBlockId;
       const startForReview = focusId && ids.includes(focusId) ? focusId : ids[0];
       router.replace({
@@ -508,6 +501,12 @@ export function GoalDetailSettingsPage() {
           blockIds: JSON.stringify(ids),
         },
       });
+    }
+
+    void (async () => {
+      await rescheduleDayPlanNotifications();
+      await syncMedicineReminderNotifications();
+      useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
     })();
   }, [blocks, dataByBlockId, router, sortedTargets, targets]);
 
@@ -840,11 +839,11 @@ export function GoalDetailSettingsPage() {
         </ScrollView>
         {keyboardOpen ? null : (
           <View
-            pointerEvents="box-none"
             style={[
               styles.footerFixed,
               workNoteUi && styles.footerFixedCompact,
               {
+                backgroundColor: screenBg,
                 paddingBottom: Math.max(insets.bottom, workNoteUi ? 4 : 6),
               },
             ]}>
@@ -860,7 +859,7 @@ export function GoalDetailSettingsPage() {
               }}
               style={({ pressed }) => [
                 styles.footerCompleteShell,
-                pressed && { opacity: 0.92 },
+                pressed && { transform: [{ translateY: 1 }] },
               ]}>
               <View
                 pointerEvents="none"
@@ -872,6 +871,7 @@ export function GoalDetailSettingsPage() {
                 ]}
               />
               <View
+                pointerEvents="none"
                 style={[
                   styles.footerCompleteCircle,
                   {

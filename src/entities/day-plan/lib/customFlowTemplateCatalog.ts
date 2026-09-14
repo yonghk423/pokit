@@ -12,6 +12,8 @@ export type CustomFlowTemplateIconName =
   | 'checklist'
   | 'hand.raised.fill'
   | 'chart.bar.fill'
+  | 'pills.fill'
+  | 'figure.stand'
   | 'checkmark.circle'
   | 'plus.circle'
   | 'timer'
@@ -23,6 +25,8 @@ export const CUSTOM_FLOW_TEMPLATE_ICONS: Record<CustomFlowTemplateKey, CustomFlo
   checklist: 'checklist',
   abstain: 'hand.raised.fill',
   measurement: 'chart.bar.fill',
+  healthIntake: 'pills.fill',
+  fasting: 'figure.stand',
   habit: 'checkmark.circle',
   counter: 'plus.circle',
   focus: 'timer',
@@ -35,6 +39,8 @@ export const CUSTOM_FLOW_TEMPLATE_PREVIEW_LINES: Record<CustomFlowTemplateKey, s
   checklist: ['□ 물 마시기', '□ 스트레칭'],
   abstain: ['✓ 밤늦게 폰 보기', '□ 과자·야식'],
   measurement: ['체중·혈압·수면 등', '단위·목표 설정'],
+  healthIntake: ['아침·점심·저녁 중 필요한 슬롯', '복용 시간 설정'],
+  fasting: ['현재·목표 체중', '주간 감량 목표'],
   habit: ['오늘 완료 ✓', '연속 5일'],
   counter: ['이름·목표 설정', '+1 / 추이'],
   focus: ['25분 집중', '남은 12분'],

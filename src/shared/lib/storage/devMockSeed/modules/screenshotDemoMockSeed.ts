@@ -6,7 +6,7 @@ import {
 } from '@shared/lib/i18n/lib/builtinFlowLabels';
 
 import {
-  BUILTIN_DAILY_LIFE_FLOW_IDS,
+  BUILTIN_DAILY_EXERCISE_FLOW_ID,
   BUILTIN_STRETCHING_FLOW_ID,
   DEFAULT_BUILTIN_CUSTOM_FLOWS,
 } from '../../defaultPriorityCatalog';
@@ -59,23 +59,19 @@ function buildPriorityCategoryOrder(): string[] {
   return [
     'reading',
     'healthIntake',
-    BUILTIN_DAILY_LIFE_FLOW_IDS[0]!, // 이불정리
-    BUILTIN_DAILY_LIFE_FLOW_IDS[5]!, // 운동하기
+    BUILTIN_DAILY_EXERCISE_FLOW_ID,
     BUILTIN_STRETCHING_FLOW_ID, // 스트레칭
     'fasting',
-    BUILTIN_DAILY_LIFE_FLOW_IDS[1]!, // 청소하기
   ];
 }
 
 function buildSectionsMealSlots(): Record<string, DayMealSlot[]> {
   return {
-    [BUILTIN_DAILY_LIFE_FLOW_IDS[0]!]: ['morning'],
     healthIntake: ['morning'],
     reading: ['morning', 'lunch'],
-    [BUILTIN_DAILY_LIFE_FLOW_IDS[5]!]: ['lunch'],
+    [BUILTIN_DAILY_EXERCISE_FLOW_ID]: ['lunch'],
     [BUILTIN_STRETCHING_FLOW_ID]: ['dinner'],
     fasting: ['dinner'],
-    [BUILTIN_DAILY_LIFE_FLOW_IDS[1]!]: ['night'],
   };
 }
 
@@ -91,52 +87,38 @@ function buildSpineSeedBlocks(): SpineSeedBlock[] {
   return [
     {
       id: `${SCREENSHOT_SPINE_ID_PREFIX}01`,
-      categoryKey: BUILTIN_DAILY_LIFE_FLOW_IDS[0]!,
-      startMinutes: 7 * 60,
-      endMinutes: 7 * 60 + 20,
+      categoryKey: 'healthIntake',
+      startMinutes: 8 * 60,
+      endMinutes: 8 * 60 + 25,
       order: 0,
     },
     {
       id: `${SCREENSHOT_SPINE_ID_PREFIX}02`,
-      categoryKey: 'healthIntake',
-      startMinutes: 8 * 60,
-      endMinutes: 8 * 60 + 25,
+      categoryKey: 'reading',
+      startMinutes: 9 * 60,
+      endMinutes: 10 * 60,
       order: 1,
     },
     {
       id: `${SCREENSHOT_SPINE_ID_PREFIX}03`,
-      categoryKey: 'reading',
-      startMinutes: 9 * 60,
-      endMinutes: 10 * 60,
+      categoryKey: BUILTIN_DAILY_EXERCISE_FLOW_ID,
+      startMinutes: 12 * 60 + 30,
+      endMinutes: 13 * 60 + 20,
       order: 2,
     },
     {
       id: `${SCREENSHOT_SPINE_ID_PREFIX}04`,
-      categoryKey: BUILTIN_DAILY_LIFE_FLOW_IDS[5]!,
-      startMinutes: 12 * 60 + 30,
-      endMinutes: 13 * 60 + 20,
+      categoryKey: BUILTIN_STRETCHING_FLOW_ID,
+      startMinutes: 18 * 60,
+      endMinutes: 18 * 60 + 20,
       order: 3,
     },
     {
       id: `${SCREENSHOT_SPINE_ID_PREFIX}05`,
-      categoryKey: BUILTIN_STRETCHING_FLOW_ID,
-      startMinutes: 18 * 60,
-      endMinutes: 18 * 60 + 20,
-      order: 4,
-    },
-    {
-      id: `${SCREENSHOT_SPINE_ID_PREFIX}06`,
       categoryKey: 'fasting',
       startMinutes: 20 * 60,
       endMinutes: 20 * 60 + 30,
-      order: 5,
-    },
-    {
-      id: `${SCREENSHOT_SPINE_ID_PREFIX}07`,
-      categoryKey: BUILTIN_DAILY_LIFE_FLOW_IDS[1]!,
-      startMinutes: 21 * 60,
-      endMinutes: 21 * 60 + 30,
-      order: 6,
+      order: 4,
     },
   ];
 }
@@ -145,7 +127,7 @@ function seedDayPlanDraft(today: string): void {
   const order = buildPriorityCategoryOrder();
   /** 히스토리 동기화가 시드 완료를 지우지 않도록 오늘 담기 대부분을 완료로 둠 */
   const completedFocusCategoryKeys = order.filter(
-    (key) => key !== BUILTIN_DAILY_LIFE_FLOW_IDS[1], // 청소하기만 미완료로 남겨 진행 중 느낌
+    (key) => key !== 'fasting', // 체중조절만 미완료로 남겨 진행 중 느낌
   );
   const prev = loadDayPlanDraft();
   saveDayPlanDraft({
@@ -178,7 +160,7 @@ function seedDayPlanDraft(today: string): void {
     priorityCategoryImportance: {
       reading: 'pink',
       healthIntake: 'pink',
-      [BUILTIN_DAILY_LIFE_FLOW_IDS[5]!]: 'mint',
+      [BUILTIN_DAILY_EXERCISE_FLOW_ID]: 'mint',
       [BUILTIN_STRETCHING_FLOW_ID]: 'yellow',
       fasting: 'lavender',
     },

@@ -9,6 +9,7 @@ import {
   type CustomFlowCategoryKey,
   type DayPlanBlock,
 } from '@entities/day-plan';
+import { RoutineTemplatePreviewBody } from '@pages/goal-detail-settings/ui/RoutineTemplatePreviewBody';
 import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import {
@@ -22,7 +23,6 @@ import {
 import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { ThemedText } from '@shared/ui/themed-text';
-import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
 
 import { ImmersionBottomControls, SessionImmersionLayout } from './SessionImmersionLayout';
 
@@ -150,20 +150,20 @@ export function CustomFlowActivitySession({
           completeLabel={t('session.routineComplete')}
         />
       }>
-      <CustomFlowTemplateSessionBody
+      <RoutineTemplatePreviewBody
         templateKey={templateKey}
         config={config}
         onChange={persist}
+        rhythmTitle={activityTitle}
+        block={block}
+        sessionProgress={progress}
         theme={{
           ink: O.onSurface,
           muted: O.muted,
           line: O.border,
-          /** 루틴 템플릿 미리보기와 동일한 카드 면 색 */
           surface: isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF',
           accent,
         }}
-        block={block}
-        sessionProgress={progress}
       />
     </SessionImmersionLayout>
   );

@@ -18,6 +18,7 @@ import {
   PRIORITY_MARK_COLOR_PRESETS,
   priorityMarkTitleHighlight,
   resolveCategoryCatalogIcon,
+  resolveCategoryCatalogIconTile,
   resolveCategoryMarkColor,
   sumCategoryPlannedDaysInRange,
   addDaysToLocalDateKey,
@@ -54,7 +55,7 @@ import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
-import { activeIconColorByCategory, categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
+import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import { getPickerCategoryLabel, PICKER_CATEGORIES, PRIMARY } from '../lib/dayPlanEditorShared';
 import {
@@ -409,7 +410,10 @@ function CatalogListRow({
   }, [shouldPulse, pulse]);
 
   const labelColor = manageOnly ? ink : selected ? ink : muted;
-  const categoryIconColor = activeIconColorByCategory(categoryKey);
+  const catalogTile = resolveCategoryCatalogIconTile(categoryKey);
+  const categoryIconColor = manageOnly
+    ? catalogTile.iconColor
+    : activeIconColorByCategory(categoryKey);
   const iconColor = shouldPulse
     ? categoryIconColor
     : manageOnly
@@ -417,9 +421,7 @@ function CatalogListRow({
       : selected
         ? categoryIconColor
         : muted;
-  const iconBoxBg = manageOnly
-    ? categoryAccentColorPastel(categoryKey)
-    : undefined;
+  const iconBoxBg = manageOnly ? catalogTile.boxBg : undefined;
 
   const mealSlotActive = Boolean(selectedMealSlots && selectedMealSlots.length > 0);
   const mealSlotIconHighlighted = mealSlotActive || isMealSlotExpanded;
@@ -1285,7 +1287,7 @@ type Props = {
   onDeleteCatalogGroup?: (groupKey: string, currentLabel: string) => void;
   /** 사용자 루틴 — 다른 상위 묶음으로 옮기기 */
   onMoveCustomFlow?: (categoryKey: string, label: string) => void;
-  /** 담기 항목 — 삭제(사용자 플로우) 또는 목록에서 숨기기(표준) */
+  /** 담기 항목 삭제 */
   onDeleteCatalogItem?: (categoryKey: string, label: string) => void;
   /** 시간대 보기 — 행별 구간 선택 */
   sectionsCatalogEnabled?: boolean;

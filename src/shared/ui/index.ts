@@ -9,6 +9,7 @@ export { HsvColorPicker } from './hsv-color-picker';
 export { ExternalLink } from './external-link';
 export { HapticTab } from './haptic-tab';
 export { IconSymbol } from './icon-symbol';
+export { OutlinedSwitch } from './outlined-switch';
 export { ThemedText } from './themed-text';
 export { ThemedView } from './themed-view';
 export { TopAppBar } from './top-app-bar';

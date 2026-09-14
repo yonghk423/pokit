@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { buildTemplateDemoConfig, resolveCustomFlowTemplateCatalogEntry } from '@entities/day-plan';
+import { RoutineTemplatePreviewBody } from '@pages/goal-detail-settings/ui/RoutineTemplatePreviewBody';
 import { CityPopSpacing } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
 import { useTranslation } from '@shared/lib/i18n';
@@ -21,8 +22,6 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { UiSurfacePresentationProvider } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
-import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
-
 import { palette } from '../lib/dayPlanPalette';
 import { useRoutineTemplateDetailRoute } from '../model/useRoutineTemplateDetailRoute';
 
@@ -150,11 +149,12 @@ export function RoutineTemplateDetailPage() {
           </View>
 
           <UiSurfacePresentationProvider value="note">
-            <CustomFlowTemplateSessionBody
+            <RoutineTemplatePreviewBody
               templateKey={entry.key}
               config={demoConfig}
               onChange={(next) => setDemoConfig(next as typeof demoConfig)}
               previewMode
+              rhythmTitle={entry.label}
               theme={{
                 ink: c.onSurface,
                 muted: c.onVariant,

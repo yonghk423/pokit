@@ -7,8 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   buildInitialCustomFlowDetailConfig,
   createCustomFlowCategoryId,
-  deleteCustomFlowCategory,
-  isCustomFlowCategoryKey,
+  deleteCatalogCategory,
   notifyFixedFlowApplyScheduleChanged,
   resolveCategoryCatalogIcon,
   useDayPlanDraftStore,
@@ -24,7 +23,6 @@ import { RoutineAtmosphereFooterStrip } from '@shared/ui/routine-atmosphere';
 import {
   appendCustomFlowCatalogEntry,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
-  hideStandardCatalogKey,
   listAllCustomFlowCatalogEntries,
   listCustomCatalogGroups,
   loadGoalDetailCategoryConfig,
@@ -125,9 +123,9 @@ export function RoutineCatalogManageContent() {
     });
   }, [customFlowEntries, categoryLabelEpoch]);
 
-  const runDeleteCustomFlow = useCallback(
+  const runDeleteCatalogItem = useCallback(
     (categoryKey: string) => {
-      deleteCustomFlowCategory(categoryKey, {
+      deleteCatalogCategory(categoryKey, {
         hydrateFixedFlowSets: () => useFixedFlowSetsStore.getState().hydrate(),
         getTodayAppliedCategoryKeys: () =>
           useFixedFlowSetsStore.getState().todayAppliedCategoryKeys,
@@ -212,38 +210,17 @@ export function RoutineCatalogManageContent() {
   const onDeleteCatalogItem = useCallback(
     (categoryKey: string, label: string) => {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      if (isCustomFlowCategoryKey(categoryKey)) {
-        Alert.alert(
-          t('catalog.deleteRoutineTitle'),
-          t('catalog.deleteRoutineMessage', { label }),
-          [
-            { text: t('common.cancel'), style: 'cancel' },
-            {
-              text: t('common.delete'),
-              style: 'destructive',
-              onPress: () => {
-                animateListMutation();
-                runDeleteCustomFlow(categoryKey);
-                reloadCatalogData();
-                void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              },
-            },
-          ],
-        );
-        return;
-      }
       Alert.alert(
-        t('catalog.hideItemTitle'),
-        t('catalog.hideItemMessage', { label }),
+        t('catalog.deleteRoutineTitle'),
+        t('catalog.deleteRoutineMessage', { label }),
         [
           { text: t('common.cancel'), style: 'cancel' },
           {
-            text: t('common.hide'),
+            text: t('common.delete'),
             style: 'destructive',
             onPress: () => {
               animateListMutation();
-              hideStandardCatalogKey(categoryKey);
-              bumpCategoryLabelEpoch();
+              runDeleteCatalogItem(categoryKey);
               reloadCatalogData();
               void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             },
@@ -251,7 +228,7 @@ export function RoutineCatalogManageContent() {
         ],
       );
     },
-    [animateListMutation, bumpCategoryLabelEpoch, reloadCatalogData, runDeleteCustomFlow, t],
+    [animateListMutation, reloadCatalogData, runDeleteCatalogItem, t],
   );
 
   const scrollBottomPad = useMemo(

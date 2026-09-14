@@ -21,6 +21,8 @@ import {
   DEFAULT_BUILTIN_CUSTOM_GROUPS,
   BUILTIN_DAILY_LIFE_FLOW_IDS,
   BUILTIN_FOCUS_FLOW_ID,
+  isRetiredDailyLifeFlowId,
+  RETIRED_DAILY_LIFE_FLOW_IDS,
   BUILTIN_HEALTH_GROUP_KEY,
   isRemovedBuiltinCustomFlowId,
   isRemovedBuiltinCustomGroupKey,
@@ -192,7 +194,8 @@ function migrateDailyLifeFixedFlowSetItems(): void {
   );
   const currentKeys = dailyLifeSet.items.map((item) => item.categoryKey);
   const hasAllDailyFlows = BUILTIN_DAILY_LIFE_FLOW_IDS.every((id) => currentKeys.includes(id));
-  if (!hasLegacy && hasAllDailyFlows) return;
+  const hasRetiredDaily = currentKeys.some((key) => isRetiredDailyLifeFlowId(key));
+  if (!hasLegacy && hasAllDailyFlows && !hasRetiredDaily) return;
 
   const sets = state.sets.map((set) => {
     if (set.id !== 'set_daily_life') return set;
@@ -317,6 +320,29 @@ function purgeIntermittentFastingFlow(): void {
   }
 }
 
+function purgeRetiredDailyLifeFlows(): void {
+  purgeCustomFlowIds([...RETIRED_DAILY_LIFE_FLOW_IDS]);
+
+  const state = loadFixedFlowSetsState();
+  let fixedChanged = false;
+  const sets = state.sets.map((set) => {
+    const items = set.items.filter((item) => !isRetiredDailyLifeFlowId(item.categoryKey));
+    if (items.length !== set.items.length) fixedChanged = true;
+    return { ...set, items };
+  });
+  if (fixedChanged) {
+    saveFixedFlowSetsState({ ...state, sets });
+  }
+
+  const draft = loadDayPlanDraft();
+  if (draft) {
+    const nextOrder = draft.priorityCategoryOrder.filter((key) => !isRetiredDailyLifeFlowId(key));
+    if (nextOrder.length !== draft.priorityCategoryOrder.length) {
+      saveDayPlanDraft({ ...draft, priorityCategoryOrder: nextOrder });
+    }
+  }
+}
+
 function purgeGoodPostureFlow(): void {
   purgeCustomFlowIds([BUILTIN_GOOD_POSTURE_FLOW_ID]);
 
@@ -336,6 +362,29 @@ function purgeGoodPostureFlow(): void {
     const nextOrder = draft.priorityCategoryOrder.filter(
       (key) => key !== BUILTIN_GOOD_POSTURE_FLOW_ID,
     );
+    if (nextOrder.length !== draft.priorityCategoryOrder.length) {
+      saveDayPlanDraft({ ...draft, priorityCategoryOrder: nextOrder });
+    }
+  }
+}
+
+function purgeFocusFlow(): void {
+  purgeCustomFlowIds([BUILTIN_FOCUS_FLOW_ID]);
+
+  const state = loadFixedFlowSetsState();
+  let fixedChanged = false;
+  const sets = state.sets.map((set) => {
+    const items = set.items.filter((item) => item.categoryKey !== BUILTIN_FOCUS_FLOW_ID);
+    if (items.length !== set.items.length) fixedChanged = true;
+    return { ...set, items };
+  });
+  if (fixedChanged) {
+    saveFixedFlowSetsState({ ...state, sets });
+  }
+
+  const draft = loadDayPlanDraft();
+  if (draft) {
+    const nextOrder = draft.priorityCategoryOrder.filter((key) => key !== BUILTIN_FOCUS_FLOW_ID);
     if (nextOrder.length !== draft.priorityCategoryOrder.length) {
       saveDayPlanDraft({ ...draft, priorityCategoryOrder: nextOrder });
     }
@@ -404,7 +453,7 @@ function migratePokitWeekTourToQuickTour(): void {
 }
 
 function migrateDailyWashIcon(): void {
-  const flowId = BUILTIN_DAILY_LIFE_FLOW_IDS[3];
+  const flowId = 'customFlow:preset_daily_wash';
   const cfg = loadGoalDetailCategoryConfig(flowId);
   if (!cfg) return;
   const icon = normalizeCustomFlowIcon((cfg as { icon?: unknown }).icon);
@@ -419,15 +468,15 @@ function migrateFastingBuiltinIcon(): void {
   const cfg = loadGoalDetailCategoryConfig('fasting');
   if (!cfg) return;
   const icon = normalizeCustomFlowIcon((cfg as { icon?: unknown }).icon);
-  if (icon != null && icon !== 'figure.stand' && icon !== 'scalemass.fill') return;
+  if (icon != null && icon !== 'person.fill' && icon !== 'scalemass.fill') return;
   saveGoalDetailCategoryConfig('fasting', {
     ...(cfg as Record<string, unknown>),
-    icon: 'person.fill',
+    icon: 'figure.stand',
   });
 }
 
 function migrateHabitPresetFlowsToChecklist(): void {
-  const presetFlowIds = [...BUILTIN_DAILY_LIFE_FLOW_IDS, BUILTIN_STRETCHING_FLOW_ID, BUILTIN_FOCUS_FLOW_ID];
+  const presetFlowIds = [...BUILTIN_DAILY_LIFE_FLOW_IDS, BUILTIN_STRETCHING_FLOW_ID];
   for (const flowId of presetFlowIds) {
     const flowDef = DEFAULT_BUILTIN_CUSTOM_FLOWS.find((flow) => flow.id === flowId);
     const cfg = loadGoalDetailCategoryConfig(flowId);
@@ -525,6 +574,8 @@ export function ensureDefaultPriorityCatalog(): void {
   migrateHabitPresetFlowsToChecklist();
   purgeIntermittentFastingFlow();
   purgeGoodPostureFlow();
+  purgeFocusFlow();
+  purgeRetiredDailyLifeFlows();
   mergeDefaultCustomFlows();
   migratePokitWeekTourToQuickTour();
   migrateTutorialGroupLabel();

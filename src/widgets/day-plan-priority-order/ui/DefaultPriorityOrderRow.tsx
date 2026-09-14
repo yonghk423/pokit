@@ -14,6 +14,7 @@ import Reanimated, {
 import {
   PRIORITY_MARK_COLOR_PRESETS,
   priorityMarkTitleHighlight,
+  resolveCategoryCatalogIconTile,
   type PriorityMarkColorId,
 } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
@@ -22,7 +23,6 @@ import { COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT, Completi
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { activeIconColorByCategory, categoryAccentColorPastel } from '../lib/activeIconColorByCategory';
 import { orderRowStyles as styles } from '../lib/orderRowStyles';
 import type { PriorityOrderRowProps } from '../lib/types';
 
@@ -201,7 +201,7 @@ export function DefaultPriorityOrderRow({
   const pulse = useRef(new Animated.Value(1)).current;
   const shouldPulse = Boolean(isFocusStarted && !isCompleted);
   const primary = PrimaryColor.rgb;
-  const iconColor = activeIconColorByCategory(categoryKey);
+  const { boxBg: iconBoxBg, iconColor } = resolveCategoryCatalogIconTile(categoryKey);
 
   useEffect(() => {
     if (!animateOnMount) {
@@ -240,7 +240,6 @@ export function DefaultPriorityOrderRow({
     return () => loop.stop();
   }, [shouldPulse, pulse]);
 
-  const iconBoxBg = categoryAccentColorPastel(categoryKey);
   const actionBg = isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF';
   const actionBorder = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
   const actionShadow = isDark ? '#9ECFD1' : '#181A2E';

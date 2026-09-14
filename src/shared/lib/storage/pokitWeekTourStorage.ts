@@ -5,6 +5,7 @@ import {
   POKIT_WEEK_TOUR_STEP_COUNT,
 } from './defaultPriorityCatalog';
 import { loadGoalDetailCategoryConfig } from './goalDetailSettingsStorage';
+import { isStandardCatalogKeyHidden } from './hiddenStandardCatalogStorage';
 
 type PersistedPokitWeekTourSeed = {
   seeded: boolean;
@@ -73,6 +74,7 @@ export function hasPokitWeekTourProgress(): boolean {
  * (탭 전환 동기화가 튜토리얼을 orphan으로 지운 경우 복구)
  */
 export function nextOrderWithPokitWeekTourSeed(order: readonly string[]): string[] | null {
+  if (isStandardCatalogKeyHidden(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)) return null;
   if (order.includes(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)) return null;
   if (order.length > 0) return null;
   if (isPokitWeekTourChecklistComplete()) return null;

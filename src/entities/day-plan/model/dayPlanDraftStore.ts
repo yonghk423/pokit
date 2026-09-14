@@ -17,6 +17,11 @@ import {
 import { addDaysToLocalDateKey, getLocalDateKey } from '../lib/localDateKey';
 import { parseHHmmToMinutes } from '../lib/parseTime';
 import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
+import {
+  categoryKeysReferToSameRoutine,
+  dropReaddedEndedTodayKeys,
+  resolveEndedTodayCategoryKeys,
+} from '../lib/endedTodayCategoryKeys';
 import { sanitizePriorityCategoryOrderKeys } from '../lib/priorityCatalogRegistry';
 import { resolvePriorityRoutineCategoryKey } from '../lib/priorityRoutineInstance';
 import {
@@ -90,6 +95,9 @@ type DayPlanDraftState = {
   priorityBagLinkMode: PriorityLayoutLinkMode | null;
   /** 시간대별 독립 모드 전용 루틴 순서 */
   prioritySectionsCategoryOrder: string[];
+  /** 오늘 탭에서 「종료」한 카테고리 — 고정 루틴 동기화가 다시 넣지 않음 */
+  priorityEndedTodayKeys: string[];
+  priorityEndedTodayDateKey: string;
   isHydrated: boolean;
   hydrate: () => void;
   setPlanMode: (mode: PlanMode) => void;
@@ -153,7 +161,12 @@ type DayPlanDraftState = {
     toSlot: DayMealSlot,
   ) => void;
   /** 오늘 담기 목록에서 항목을 완전히 종료 — 구간 만료 리셋과 같이 목록·완료 상태를 정리 */
-  finishPriorityCategoryForToday: (categoryKey: string) => void;
+  finishPriorityCategoryForToday: (
+    categoryKey: string,
+    options?: { persistEnded?: boolean },
+  ) => void;
+  /** 다시 담으면 오늘 종료 기록을 풀어 동기화가 넣을 수 있게 함 */
+  releaseEndedTodayCategoryKeys: (keys: string[]) => void;
 };
 
 function createInitialPriorityWindow() {
@@ -285,6 +298,8 @@ function createInitialState() {
     prioritySpineLinkMode: null,
     priorityBagLinkMode: null,
     prioritySectionsCategoryOrder: [] as string[],
+    priorityEndedTodayKeys: [] as string[],
+    priorityEndedTodayDateKey: '',
   };
 }
 
@@ -378,6 +393,15 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       prioritySectionsCategoryOrder: sanitizePriorityCategoryOrderKeys(
         Array.isArray(raw.prioritySectionsCategoryOrder) ? raw.prioritySectionsCategoryOrder : [],
       ),
+      priorityEndedTodayKeys: keepDailyProgress
+        ? resolveEndedTodayCategoryKeys(
+            raw.priorityEndedTodayKeys,
+            raw.priorityEndedTodayDateKey,
+            today,
+          )
+        : [],
+      priorityEndedTodayDateKey:
+        keepDailyProgress && raw.priorityEndedTodayDateKey === today ? today : '',
       isHydrated: true,
     });
     syncTodayTabWithFixedRoutineApply();
@@ -486,14 +510,27 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       if (s.planCompletionDismissedKeys.length === 0) return s;
       return { planCompletionDismissedKeys: [] };
     }),
-  finishPriorityCategoryForToday: (categoryKey) =>
+  finishPriorityCategoryForToday: (categoryKey, options) =>
     set((s) => {
       const key = categoryKey.trim();
       if (!key) return s;
-      const matches = (orderKey: string) => resolvePriorityRoutineCategoryKey(orderKey) === key;
-      if (!s.priorityCategoryOrder.some(matches)) return s;
+      const persistEnded = options?.persistEnded !== false;
+      const matches = (orderKey: string) => categoryKeysReferToSameRoutine(orderKey, key);
+      const bagHad = s.priorityCategoryOrder.some(matches);
+      const sectionsHad = s.prioritySectionsCategoryOrder.some(matches);
+      const today = getLocalDateKey();
+      const currentEnded = resolveEndedTodayCategoryKeys(
+        s.priorityEndedTodayKeys,
+        s.priorityEndedTodayDateKey,
+        today,
+      );
+      const alreadyEnded = currentEnded.some((ended) => categoryKeysReferToSameRoutine(ended, key));
+      if (!bagHad && !sectionsHad && (!persistEnded || alreadyEnded)) return s;
 
       const priorityCategoryOrder = s.priorityCategoryOrder.filter((k) => !matches(k));
+      const prioritySectionsCategoryOrder = s.prioritySectionsCategoryOrder.filter(
+        (k) => !matches(k),
+      );
       const completedFocusCategoryKeys = filterCompletionKeysForCategory(
         s.completedFocusCategoryKeys,
         key,
@@ -506,14 +543,51 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         s.priorityMealSlotOverrides,
         priorityCategoryOrder,
       );
-      const isFocusStarted = priorityCategoryOrder.length > 0 ? s.isFocusStarted : false;
+      const prioritySectionsMealSlots = pruneMealSlotsArrayRecordForOrder(
+        s.prioritySectionsMealSlots,
+        prioritySectionsCategoryOrder,
+      );
+      const isFocusStarted =
+        priorityCategoryOrder.length > 0 || prioritySectionsCategoryOrder.length > 0
+          ? s.isFocusStarted
+          : false;
 
       return {
         priorityCategoryOrder,
+        prioritySectionsCategoryOrder,
         completedFocusCategoryKeys,
         planCompletionDismissedKeys,
         priorityMealSlotOverrides,
+        prioritySectionsMealSlots,
         isFocusStarted,
+        ...(persistEnded
+          ? {
+              priorityEndedTodayKeys: alreadyEnded ? currentEnded : [...currentEnded, key],
+              priorityEndedTodayDateKey: today,
+            }
+          : {}),
+      };
+    }),
+  releaseEndedTodayCategoryKeys: (keys) =>
+    set((s) => {
+      const trimmed = keys.map((key) => key.trim()).filter(Boolean);
+      if (trimmed.length === 0) return s;
+      const today = getLocalDateKey();
+      const currentEnded = resolveEndedTodayCategoryKeys(
+        s.priorityEndedTodayKeys,
+        s.priorityEndedTodayDateKey,
+        today,
+      );
+      if (currentEnded.length === 0) {
+        return s.priorityEndedTodayDateKey === today || !s.priorityEndedTodayDateKey
+          ? s
+          : { priorityEndedTodayKeys: [], priorityEndedTodayDateKey: '' };
+      }
+      const next = dropReaddedEndedTodayKeys(currentEnded, trimmed);
+      if (next.length === currentEnded.length && s.priorityEndedTodayDateKey === today) return s;
+      return {
+        priorityEndedTodayKeys: next,
+        priorityEndedTodayDateKey: next.length > 0 ? today : '',
       };
     }),
   setPriorityPlanDateKey: (value) => set({ priorityPlanDateKey: value }),
@@ -601,6 +675,8 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         completedFocusCategoryKeys: [],
         planCompletionDismissedKeys: [],
         isFocusStarted: false,
+        priorityEndedTodayKeys: [],
+        priorityEndedTodayDateKey: '',
       });
       syncTodayTabWithFixedRoutineApply();
       return;
@@ -615,6 +691,8 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       completedFocusCategoryKeys: [],
       planCompletionDismissedKeys: [],
       isFocusStarted: false,
+      priorityEndedTodayKeys: [],
+      priorityEndedTodayDateKey: '',
     });
     // reset 모드: 수동 담기를 비운 뒤 고정 루틴 적용분만 다시 반영.
     // priorityCategoryImportance 는 루틴 목록 공용이라 유지.
@@ -642,10 +720,21 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         s.priorityMealSlotOverrides,
         priorityCategoryOrder,
       );
+      const currentEnded = resolveEndedTodayCategoryKeys(
+        s.priorityEndedTodayKeys,
+        s.priorityEndedTodayDateKey,
+        today,
+      );
+      const priorityEndedTodayKeys = dropReaddedEndedTodayKeys(
+        currentEnded,
+        priorityCategoryOrder,
+      );
       return {
         priorityCategoryOrder,
         routineHistoryPlannedKeysByDate,
         priorityMealSlotOverrides,
+        priorityEndedTodayKeys,
+        priorityEndedTodayDateKey: priorityEndedTodayKeys.length > 0 ? today : '',
       };
     }),
   setPriorityCategoryMarkColor: (categoryKey, color) =>
@@ -713,10 +802,18 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         shouldTrackRoutineHistoryForDate(s, today) && deduped.length > 0
           ? snapshotRoutinePlannedKeys(s.routineHistoryPlannedKeysByDate, today, deduped)
           : s.routineHistoryPlannedKeysByDate;
+      const currentEnded = resolveEndedTodayCategoryKeys(
+        s.priorityEndedTodayKeys,
+        s.priorityEndedTodayDateKey,
+        today,
+      );
+      const priorityEndedTodayKeys = dropReaddedEndedTodayKeys(currentEnded, deduped);
       return {
         prioritySectionsCategoryOrder: deduped,
         prioritySectionsMealSlots,
         routineHistoryPlannedKeysByDate,
+        priorityEndedTodayKeys,
+        priorityEndedTodayDateKey: priorityEndedTodayKeys.length > 0 ? today : '',
       };
     }),
   appendPrioritySectionsCategoryKeys: (keys) =>
@@ -731,12 +828,25 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
           changed = true;
         }
       }
-      if (!changed) return s;
       const today = getLocalDateKey();
-      const routineHistoryPlannedKeysByDate = shouldTrackRoutineHistoryForDate(s, today)
-        ? snapshotRoutinePlannedKeys(s.routineHistoryPlannedKeysByDate, today, next)
-        : s.routineHistoryPlannedKeysByDate;
-      return { prioritySectionsCategoryOrder: next, routineHistoryPlannedKeysByDate };
+      const currentEnded = resolveEndedTodayCategoryKeys(
+        s.priorityEndedTodayKeys,
+        s.priorityEndedTodayDateKey,
+        today,
+      );
+      const priorityEndedTodayKeys = dropReaddedEndedTodayKeys(currentEnded, trimmed);
+      const endedChanged = priorityEndedTodayKeys.length !== currentEnded.length;
+      if (!changed && !endedChanged) return s;
+      const routineHistoryPlannedKeysByDate =
+        changed && shouldTrackRoutineHistoryForDate(s, today)
+          ? snapshotRoutinePlannedKeys(s.routineHistoryPlannedKeysByDate, today, next)
+          : s.routineHistoryPlannedKeysByDate;
+      return {
+        prioritySectionsCategoryOrder: next,
+        routineHistoryPlannedKeysByDate,
+        priorityEndedTodayKeys,
+        priorityEndedTodayDateKey: priorityEndedTodayKeys.length > 0 ? today : '',
+      };
     }),
   appendPrioritySectionsWithMealSlot: (keys, mealSlot) =>
     set((s) => {
@@ -758,15 +868,25 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
           changed = true;
         }
       }
-      if (!changed) return s;
       const today = getLocalDateKey();
-      const routineHistoryPlannedKeysByDate = shouldTrackRoutineHistoryForDate(s, today)
-        ? snapshotRoutinePlannedKeys(s.routineHistoryPlannedKeysByDate, today, nextOrder)
-        : s.routineHistoryPlannedKeysByDate;
+      const currentEnded = resolveEndedTodayCategoryKeys(
+        s.priorityEndedTodayKeys,
+        s.priorityEndedTodayDateKey,
+        today,
+      );
+      const priorityEndedTodayKeys = dropReaddedEndedTodayKeys(currentEnded, trimmed);
+      const endedChanged = priorityEndedTodayKeys.length !== currentEnded.length;
+      if (!changed && !endedChanged) return s;
+      const routineHistoryPlannedKeysByDate =
+        changed && shouldTrackRoutineHistoryForDate(s, today)
+          ? snapshotRoutinePlannedKeys(s.routineHistoryPlannedKeysByDate, today, nextOrder)
+          : s.routineHistoryPlannedKeysByDate;
       return {
         prioritySectionsCategoryOrder: nextOrder,
         prioritySectionsMealSlots: nextSlots,
         routineHistoryPlannedKeysByDate,
+        priorityEndedTodayKeys,
+        priorityEndedTodayDateKey: priorityEndedTodayKeys.length > 0 ? today : '',
       };
     }),
   setPriorityMealSlotOverride: (categoryKey, mealSlot) =>
@@ -903,6 +1023,8 @@ useDayPlanDraftStore.subscribe((state) => {
     prioritySpineLinkMode: state.prioritySpineLinkMode ?? undefined,
     priorityBagLinkMode: state.priorityBagLinkMode ?? undefined,
     prioritySectionsCategoryOrder: state.prioritySectionsCategoryOrder,
+    priorityEndedTodayKeys: state.priorityEndedTodayKeys,
+    priorityEndedTodayDateKey: state.priorityEndedTodayDateKey,
   });
   syncWidgetTimelineFromStorage();
 });
@@ -935,6 +1057,8 @@ function persistDayPlanDraft(): void {
     prioritySpineLinkMode: s.prioritySpineLinkMode ?? undefined,
     priorityBagLinkMode: s.priorityBagLinkMode ?? undefined,
     prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
+    priorityEndedTodayKeys: s.priorityEndedTodayKeys,
+    priorityEndedTodayDateKey: s.priorityEndedTodayDateKey,
   });
 }
 

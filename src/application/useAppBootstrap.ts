@@ -142,6 +142,7 @@ export function useAppBootstrap() {
     return useDayPlanStore.subscribe((state, prev) => {
       if (state.blocks !== prev.blocks || state.dateKey !== prev.dateKey) {
         void syncCategoryReminderNotifications();
+        void syncMedicineReminderNotifications();
         void syncRoutineStartNotifications();
       }
     });
@@ -159,6 +160,7 @@ export function useAppBootstrap() {
         return;
       }
       void syncCategoryReminderNotifications();
+      void syncMedicineReminderNotifications();
       void syncRoutineStartNotifications();
     });
   }, [isReady]);
@@ -173,6 +175,7 @@ export function useAppBootstrap() {
         return;
       }
       void syncCategoryReminderNotifications();
+      void syncMedicineReminderNotifications();
       void syncRoutineStartNotifications();
     });
   }, [isReady]);

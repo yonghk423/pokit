@@ -20,3 +20,9 @@ export type {
   SnappedTimePickerFieldPalette,
   SnappedTimePickerFieldProps,
 } from './ui/SnappedTimePickerField';
+export {
+  CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT,
+  CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT,
+  CatalogRowSpineTimePanel,
+} from './ui/CatalogRowSpineTimePanel';
+export type { CatalogRowSpineTimePanelHandle } from './ui/CatalogRowSpineTimePanel';

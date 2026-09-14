@@ -8,6 +8,7 @@ import {
   readEditableCategoryAppearance,
   resolveCategoryCatalogAccentColor,
   resolveCategoryCatalogIcon,
+  resolveCategoryCatalogIconTile,
 } from './categoryCatalogAppearance';
 
 beforeEach(() => {
@@ -18,7 +19,7 @@ describe('resolveCategoryCatalogIcon', () => {
   it('returns builtin icon for standard categories', () => {
     expect(resolveCategoryCatalogIcon('healthIntake')).toBe('pills.fill');
     expect(resolveCategoryCatalogIcon('water')).toBe('drop.fill');
-    expect(resolveCategoryCatalogIcon('fasting')).toBe('person.fill');
+    expect(resolveCategoryCatalogIcon('fasting')).toBe('figure.stand');
     expect(resolveCategoryCatalogIcon('work')).toBe('square.and.pencil');
     expect(resolveCategoryCatalogIcon('reading')).toBe('book.closed.fill');
   });
@@ -27,8 +28,35 @@ describe('resolveCategoryCatalogIcon', () => {
     expect(resolveCategoryCatalogAccentColor('water')).toBe('#0ea5e9');
   });
 
-  it('returns builtin brown accent for healthIntake', () => {
-    expect(resolveCategoryCatalogAccentColor('healthIntake')).toBe('#8b5a2b');
+  it('returns builtin amber accent for healthIntake', () => {
+    expect(resolveCategoryCatalogAccentColor('healthIntake')).toBe('#e9a23b');
+  });
+
+  it('uses the settings accent as the icon tile, with contrasting glyph', () => {
+    expect(resolveCategoryCatalogIconTile('healthIntake')).toEqual({
+      boxBg: '#e9a23b',
+      iconColor: '#09090b',
+    });
+    expect(resolveCategoryCatalogIconTile('fasting')).toEqual({
+      boxBg: '#14b8a6',
+      iconColor: '#FAFAFA',
+    });
+  });
+
+  it('maps legacy person and scale icons to standing figure for fasting', () => {
+    saveGoalDetailCategoryConfig('fasting', {
+      displayName: '체중조절',
+      summary: '',
+      icon: 'person.fill',
+    });
+    expect(resolveCategoryCatalogIcon('fasting')).toBe('figure.stand');
+
+    saveGoalDetailCategoryConfig('fasting', {
+      displayName: '체중조절',
+      summary: '',
+      icon: 'scalemass.fill',
+    });
+    expect(resolveCategoryCatalogIcon('fasting')).toBe('figure.stand');
   });
 
   it('returns builtin teal accent for fasting (distinct from healthIntake)', () => {
@@ -45,7 +73,7 @@ describe('resolveCategoryCatalogIcon', () => {
     expect(resolveCategoryCatalogAccentColor('fasting')).toBe('#14b8a6');
   });
 
-  it('maps legacy water blue accent to brown for healthIntake', () => {
+  it('maps legacy water blue accent to amber for healthIntake', () => {
     saveGoalDetailCategoryConfig('healthIntake', {
       displayName: '건강을 위한 섭취',
       summary: '',
@@ -69,7 +97,17 @@ describe('resolveCategoryCatalogIcon', () => {
         dinnerTime: '18:00',
       },
     });
-    expect(resolveCategoryCatalogAccentColor('healthIntake')).toBe('#8b5a2b');
+    expect(resolveCategoryCatalogAccentColor('healthIntake')).toBe('#e9a23b');
+  });
+
+  it('maps legacy brown accent to amber for healthIntake', () => {
+    saveGoalDetailCategoryConfig('healthIntake', {
+      displayName: '건강을 위한 섭취',
+      summary: '',
+      icon: 'pills.fill',
+      accentColor: '#8b5a2b',
+    });
+    expect(resolveCategoryCatalogAccentColor('healthIntake')).toBe('#e9a23b');
   });
 
   it('maps legacy water drop icon to pills for healthIntake', () => {
@@ -202,7 +240,7 @@ describe('readEditableCategoryAppearance', () => {
     };
     expect(readEditableCategoryAppearance('healthIntake', cfg)).toEqual({
       icon: 'drop.fill',
-      accentColor: '#0ea5e9',
+      accentColor: '#e9a23b',
     });
   });
 

@@ -15,7 +15,8 @@ export {
   mergeCategoryAppearanceIntoConfig,
   readEditableCategoryAppearance,
   resolveCategoryCatalogAccentColor,
-  resolveCategoryCatalogIcon
+  resolveCategoryCatalogIcon,
+  resolveCategoryCatalogIconTile,
 } from './lib/categoryCatalogAppearance';
 export {
   registerCategoryKeyByDisplayNameResolver,
@@ -42,9 +43,11 @@ export {
   type PriorityLayoutRoutineSourceMode,
 } from './lib/priorityCrossLayoutRoutines';
 export {
+  clampNotifyTimeToPriorityWindow,
   clampSpineBlockToPriorityWindow,
   clipGapToSpinePriorityWindow,
   isMinuteWithinSpinePriorityWindow,
+  isNotifyTimeWithinPriorityWindow,
   isSpineBlockScheduleWithinPriorityWindow,
   isSpineBlockWithinPriorityWindow,
   resolveSpinePriorityWindow,
@@ -160,7 +163,10 @@ export type {
   ReminderDetailDataConfig,
 } from './lib/customFlowTemplateConfigs';
 export {
+  applyCurrentWeightToLogs,
+  buildWeeklyLossGuideline,
   buildWeightChartSeries,
+  daysBetweenWeightLogKeys,
   clampWeightKg,
   latestWeightFromLogs,
   normalizeFastingWeightLogs,
@@ -268,7 +274,7 @@ export {
 } from './lib/resolveRoutineStartNotifySlots';
 export { resolveCategoryReminderNotifyWeekdays } from './lib/resolveCategoryReminderNotifyWeekdays';
 export { DEFAULT_DAY_PLAN_BLOCKS } from './lib/defaultBlocks';
-export { deleteCustomFlowCategory } from './lib/deleteCustomFlowCategory';
+export { deleteCatalogCategory, deleteCustomFlowCategory } from './lib/deleteCustomFlowCategory';
 export { dismissCatalogGroupWithItemReassign } from './lib/dismissCatalogGroup';
 export {
   getFlowCompletionCategoryKeysForBlock,
@@ -446,8 +452,15 @@ export {
   materializePriorityRoutineOccurrenceKeys,
   resolvePriorityRoutineCategoryKey,
 } from './lib/priorityRoutineInstance';
+export { endCategoryOnTodayPlan } from './lib/endCategoryOnTodayPlan';
+export {
+  addCategoryToTodayRoutine,
+  isCategoryOnTodayPlan,
+  listTodayPlanCategoryKeys,
+} from './lib/todayPlanCategoryPresence';
 export {
   clampHhmmToPriorityWindow,
+  isHhmmBeforeSameDayWindowStart,
   isOvernightPriorityWindow
 } from './lib/priorityRoutineWindow';
 export {

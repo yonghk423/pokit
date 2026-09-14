@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, useImperativeHandle, useMemo, useRef, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -29,7 +29,7 @@ export type SnappedTimePickerFieldHandle = {
 
 export type SnappedTimePickerFieldProps = {
   label: string;
-  hint: string;
+  hint?: string;
   valueHhmm: string;
   onChangeHhmm: (next: string) => void;
   expanded: boolean;
@@ -50,6 +50,13 @@ export type SnappedTimePickerFieldProps = {
   /** 목표 상세 슬롯 등 — 라벨·시각 pill을 작게 */
   compact?: boolean;
   disabled?: boolean;
+  /** 펼친 시간 입력 박스 안 — 당일/다음 날 등 */
+  expandedExtra?: ReactNode;
+  /**
+   * 확인 직전. false면 접지 않음(범위 검사 실패 등).
+   * 조정 중에는 호출하지 않는다.
+   */
+  onBeforeConfirm?: (hhmm: string) => boolean;
 };
 
 export const SnappedTimePickerField = forwardRef<
@@ -73,6 +80,8 @@ export const SnappedTimePickerField = forwardRef<
     emphasized = false,
     compact = false,
     disabled = false,
+    expandedExtra,
+    onBeforeConfirm,
   },
   ref,
 ) {
@@ -139,17 +148,19 @@ export const SnappedTimePickerField = forwardRef<
             darkColor={palette.onSurface}>
             {label}
           </ThemedText>
-          <ThemedText
-            style={[
-              styles.timeRowHint,
-              emphasized && styles.timeRowHintEmphasized,
-              compact && styles.timeRowHintCompact,
-              { color: palette.onVariant },
-            ]}
-            lightColor={palette.onVariant}
-            darkColor={palette.onVariant}>
-            {hint}
-          </ThemedText>
+          {hint ? (
+            <ThemedText
+              style={[
+                styles.timeRowHint,
+                emphasized && styles.timeRowHintEmphasized,
+                compact && styles.timeRowHintCompact,
+                { color: palette.onVariant },
+              ]}
+              lightColor={palette.onVariant}
+              darkColor={palette.onVariant}>
+              {hint}
+            </ThemedText>
+          ) : null}
         </View>
         <View style={styles.timeRowRight}>
           {dateCaption ? (
@@ -223,13 +234,16 @@ export const SnappedTimePickerField = forwardRef<
               mapMidnightToEndOfDay={mapMidnightToEndOfDay}
               accessibilityLabelPrefix={label}
               disabled={disabled}
+              panelExtra={expandedExtra}
             />
             <BrutalConfirmButton
               accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
               disabled={disabled}
               onPress={() => {
                 const flushed = digitalInputRef.current?.flush();
-                if (flushed) onChangeHhmm(applyRoutineWindow(flushed));
+                const next = flushed ? applyRoutineWindow(flushed) : valueHhmm;
+                if (onBeforeConfirm && !onBeforeConfirm(next)) return;
+                if (flushed) onChangeHhmm(next);
                 void Haptics.selectionAsync();
                 onToggleExpand();
               }}

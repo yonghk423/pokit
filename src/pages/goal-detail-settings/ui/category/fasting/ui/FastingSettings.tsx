@@ -1,8 +1,14 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
+  FASTING_WEEKLY_LOSS_MAX_KG,
+  FASTING_WEEKLY_LOSS_MIN_KG,
+  getLocalDateKey,
+} from '@entities/day-plan';
+import {
+  applyCurrentWeightToLogs,
   latestWeightFromLogs,
   weightGoalAchieved,
   weightProgressRatioFromLogs,
@@ -12,6 +18,7 @@ import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
+import { ThemedText } from '@shared/ui/themed-text';
 
 import { useGoalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { SettingsProgressBand } from '../../lib/SettingsProgressBand';
@@ -31,8 +38,6 @@ import { WeightLogChart } from './WeightLogChart';
 
 const WEIGHT_MIN_KG = 30;
 const WEIGHT_MAX_KG = 250;
-const WEEKLY_MIN_KG = 0.1;
-const WEEKLY_MAX_KG = 2;
 const WEIGHT_STEP_KG = 0.1;
 
 function roundKg1(n: number): number {
@@ -44,7 +49,10 @@ function clampWeightKg(n: number): number {
 }
 
 function clampWeeklyKg(n: number): number {
-  return Math.max(WEEKLY_MIN_KG, Math.min(WEEKLY_MAX_KG, roundKg1(n)));
+  return Math.max(
+    FASTING_WEEKLY_LOSS_MIN_KG,
+    Math.min(FASTING_WEEKLY_LOSS_MAX_KG, roundKg1(n)),
+  );
 }
 
 function formatKg(n: number): string {
@@ -104,7 +112,7 @@ function WeightKgStepper({
         ]}>
         <IconSymbol name="minus" size={13} color={ink} />
       </Pressable>
-      <Text style={[styles.stepValue, { color: ink }]}>{formatKg(valueKg)}</Text>
+      <ThemedText style={[styles.stepValue, { color: ink }]}>{formatKg(valueKg)}</ThemedText>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('customFlowTemplate.increaseByA11y', { step: stepLabel })}
@@ -151,49 +159,46 @@ export function FastingSettings({
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],
   );
-  const initial = normalizeFastingDetailConfig(dataConfig ?? getInitialFastingDataConfig());
-
-  const [displayName, setDisplayName] = useState(initial.displayName);
-  const [currentWeightKg, setCurrentWeightKg] = useState(initial.currentWeightKg);
-  const [targetWeightKg, setTargetWeightKg] = useState(initial.targetWeightKg);
-  const [weeklyLossKg, setWeeklyLossKg] = useState(initial.weeklyLossTargetKg);
-  const [summary, setSummary] = useState(initial.summary);
-  const [weightLogs, setWeightLogs] = useState(initial.weightLogs);
-  const lastRef = useRef<string | null>(null);
-  const hydratedKeyRef = useRef<string | null>(null);
+  const [draft, setDraft] = useState<FastingDetailDataConfig>(() =>
+    normalizeFastingDetailConfig(dataConfig ?? getInitialFastingDataConfig()),
+  );
+  const lastJsonRef = useRef<string | null>(null);
+  const pendingLocalRef = useRef(false);
+  const onChangeDataConfigRef = useRef(onChangeDataConfig);
+  onChangeDataConfigRef.current = onChangeDataConfig;
 
   useEffect(() => {
-    const next = normalizeFastingDetailConfig(dataConfig ?? getInitialFastingDataConfig());
-    const fingerprint = JSON.stringify(next);
-    // 방금 우리가 저장한 페이로드의 에코이거나 동일 내용이면 로컬 상태 덮어쓰지 않음
-    if (hydratedKeyRef.current === fingerprint || lastRef.current === fingerprint) {
-      hydratedKeyRef.current = fingerprint;
+    const incoming = normalizeFastingDetailConfig(dataConfig ?? getInitialFastingDataConfig());
+    const s = JSON.stringify(incoming);
+    if (s === lastJsonRef.current) {
+      pendingLocalRef.current = false;
       return;
     }
-    hydratedKeyRef.current = fingerprint;
-    lastRef.current = fingerprint;
-    setDisplayName(next.displayName);
-    setCurrentWeightKg(next.currentWeightKg);
-    setTargetWeightKg(next.targetWeightKg);
-    setWeeklyLossKg(next.weeklyLossTargetKg);
-    setSummary(next.summary);
-    setWeightLogs(next.weightLogs);
+    if (pendingLocalRef.current) return;
+    lastJsonRef.current = s;
+    setDraft((prev) => (JSON.stringify(prev) === s ? prev : incoming));
   }, [dataConfig]);
 
-  const parsed = useMemo(
-    () =>
-      normalizeFastingDetailConfig({
-        displayName,
-        currentWeightKg,
-        targetWeightKg,
-        weeklyLossTargetKg: weeklyLossKg,
-        fastingEnabled: false,
-        summary,
-        weightLogs,
-      }),
-    [currentWeightKg, displayName, summary, targetWeightKg, weeklyLossKg, weightLogs],
-  );
+  useEffect(() => {
+    const s = JSON.stringify(draft);
+    if (lastJsonRef.current === s) return;
+    lastJsonRef.current = s;
+    pendingLocalRef.current = true;
+    onChangeDataConfigRef.current(draft);
+  }, [draft]);
 
+  const applyCurrentWeightKg = (next: number) => {
+    const kg = clampWeightKg(next);
+    setDraft((prev) =>
+      normalizeFastingDetailConfig({
+        ...prev,
+        currentWeightKg: kg,
+        weightLogs: applyCurrentWeightToLogs(prev.weightLogs, kg, getLocalDateKey()),
+      }),
+    );
+  };
+
+  const parsed = draft;
   const effectiveCurrentKg = latestWeightFromLogs(parsed.weightLogs, parsed.currentWeightKg);
   const weightDeltaKg = weightDeltaToTarget(effectiveCurrentKg, parsed.targetWeightKg);
   const weightAchieved = weightGoalAchieved(effectiveCurrentKg, parsed.targetWeightKg);
@@ -205,25 +210,12 @@ export function FastingSettings({
         ? Math.min(0.95, parsed.weeklyLossTargetKg / Math.max(0.1, weightDeltaKg))
         : 0;
 
-  useEffect(() => {
-    const payload: FastingDetailDataConfig = parsed;
-    const s = JSON.stringify(payload);
-    if (lastRef.current === s) return;
-    lastRef.current = s;
-    onChangeDataConfig(payload);
-  }, [onChangeDataConfig, parsed]);
-
-  const syncCurrentFromLogs = (logs: typeof weightLogs) => {
-    const latest = latestWeightFromLogs(logs, currentWeightKg);
-    setCurrentWeightKg(clampWeightKg(latest));
-  };
-
   return (
     <View style={styles.shell}>
       {!hideTitleField ? (
         <RoutineTitleField
-          value={displayName}
-          onChangeValue={setDisplayName}
+          value={draft.displayName}
+          onChangeValue={(displayName) => setDraft((prev) => ({ ...prev, displayName }))}
           fallback={titleFallback}
           allowRename={allowRename}
           renameLockedReason={renameLockedReason}
@@ -231,7 +223,11 @@ export function FastingSettings({
         />
       ) : null}
 
-      <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
+      <RoutineSummaryField
+        value={draft.summary}
+        onChangeValue={(summary) => setDraft((prev) => ({ ...prev, summary }))}
+        palette={c}
+      />
 
       <SettingsProgressBand
         title={t('goalDetail.fasting.weightGoal')}
@@ -255,14 +251,21 @@ export function FastingSettings({
       <WeightLogChart
         weightLogs={parsed.weightLogs}
         targetWeightKg={parsed.targetWeightKg}
+        weeklyLossTargetKg={parsed.weeklyLossTargetKg}
         palette={c}
       />
 
       <WeightLogCalendarSection
         weightLogs={parsed.weightLogs}
+        currentWeightKg={parsed.currentWeightKg}
         onChangeWeightLogs={(next) => {
-          setWeightLogs(next);
-          syncCurrentFromLogs(next);
+          setDraft((prev) =>
+            normalizeFastingDetailConfig({
+              ...prev,
+              weightLogs: next,
+              currentWeightKg: latestWeightFromLogs(next, prev.currentWeightKg),
+            }),
+          );
         }}
         palette={c}
       />
@@ -274,24 +277,24 @@ export function FastingSettings({
           isNote && styles.metricBarNote,
         ]}>
         <View style={styles.metricItem}>
-          <Text style={[styles.metricValue, { color: c.onSurface }]}>
+          <ThemedText style={[styles.metricValue, { color: c.onSurface }]}>
             {effectiveCurrentKg.toFixed(1)}
-          </Text>
-          <Text style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.fasting.currentKg')}</Text>
+          </ThemedText>
+          <ThemedText style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.fasting.currentKg')}</ThemedText>
         </View>
         <View style={styles.metricItem}>
-          <Text style={[styles.metricValue, { color: c.onSurface }]}>{parsed.targetWeightKg.toFixed(1)}</Text>
-          <Text style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.fasting.targetKg')}</Text>
+          <ThemedText style={[styles.metricValue, { color: c.onSurface }]}>{parsed.targetWeightKg.toFixed(1)}</ThemedText>
+          <ThemedText style={[styles.metricLabel, { color: c.onVariant }]}>{t('goalDetail.fasting.targetKg')}</ThemedText>
         </View>
       </View>
 
       <View style={[styles.rowsWrap, !isNote && { borderTopColor: '#000' }, isNote && styles.rowsWrapNote]}>
         <View style={[styles.row, !isNote && { borderBottomColor: c.outline }, isNote && styles.rowNote]}>
-          <Text style={[styles.rowTitle, { color: c.onSurface }]}>{t('goalDetail.fasting.currentWeight')}</Text>
+          <ThemedText style={[styles.rowTitle, { color: c.onSurface }]}>{t('goalDetail.fasting.currentWeight')}</ThemedText>
           <WeightKgStepper
             label={t('goalDetail.fasting.currentWeight')}
-            valueKg={currentWeightKg}
-            onChangeKg={(next) => setCurrentWeightKg(clampWeightKg(next))}
+            valueKg={draft.currentWeightKg}
+            onChangeKg={applyCurrentWeightKg}
             stepKg={WEIGHT_STEP_KG}
             minKg={WEIGHT_MIN_KG}
             maxKg={WEIGHT_MAX_KG}
@@ -301,11 +304,13 @@ export function FastingSettings({
         </View>
 
         <View style={[styles.row, !isNote && { borderBottomColor: c.outline }, isNote && styles.rowNote]}>
-          <Text style={[styles.rowTitle, { color: c.onSurface }]}>{t('goalDetail.fasting.targetWeight')}</Text>
+          <ThemedText style={[styles.rowTitle, { color: c.onSurface }]}>{t('goalDetail.fasting.targetWeight')}</ThemedText>
           <WeightKgStepper
             label={t('goalDetail.fasting.targetWeight')}
-            valueKg={targetWeightKg}
-            onChangeKg={(next) => setTargetWeightKg(clampWeightKg(next))}
+            valueKg={draft.targetWeightKg}
+            onChangeKg={(next) =>
+              setDraft((prev) => ({ ...prev, targetWeightKg: clampWeightKg(next) }))
+            }
             stepKg={WEIGHT_STEP_KG}
             minKg={WEIGHT_MIN_KG}
             maxKg={WEIGHT_MAX_KG}
@@ -315,23 +320,25 @@ export function FastingSettings({
         </View>
 
         <View style={[styles.row, !isNote && { borderBottomColor: c.outline }, isNote && styles.rowNote]}>
-          <Text style={[styles.rowTitle, { color: c.onSurface }]}>{t('goalDetail.fasting.weeklyTarget')}</Text>
+          <ThemedText style={[styles.rowTitle, { color: c.onSurface }]}>{t('goalDetail.fasting.weeklyTarget')}</ThemedText>
           <WeightKgStepper
             label={t('goalDetail.fasting.weeklyTarget')}
-            valueKg={weeklyLossKg}
-            onChangeKg={(next) => setWeeklyLossKg(clampWeeklyKg(next))}
+            valueKg={draft.weeklyLossTargetKg}
+            onChangeKg={(next) =>
+              setDraft((prev) => ({ ...prev, weeklyLossTargetKg: clampWeeklyKg(next) }))
+            }
             stepKg={WEIGHT_STEP_KG}
-            minKg={WEEKLY_MIN_KG}
-            maxKg={WEEKLY_MAX_KG}
+            minKg={FASTING_WEEKLY_LOSS_MIN_KG}
+            maxKg={FASTING_WEEKLY_LOSS_MAX_KG}
             ink={c.onSurface}
             outline={c.outline}
           />
         </View>
       </View>
 
-      <Text style={[styles.note, { color: c.onVariant }]}>
+      <ThemedText style={[styles.note, { color: c.onVariant }]}>
         {t('goalDetail.fasting.calendarHint')}
-      </Text>
+      </ThemedText>
     </View>
   );
 }

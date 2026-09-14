@@ -20,6 +20,7 @@ import {
   ROUTINE_SUMMARY_MAX,
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
+import { RoutineTemplatePreviewBody } from '@pages/goal-detail-settings/ui/RoutineTemplatePreviewBody';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
@@ -37,8 +38,6 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { UiSurfacePresentationProvider } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
-import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
-
 import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
 import { DayMealSlotTargetChips } from './DayMealSlotTargetChips';
 
@@ -526,7 +525,7 @@ export function CreateCustomFlowSheet({
                   {t('createFlow.detailSetupHint')}
                 </ThemedText>
                 <UiSurfacePresentationProvider value="note">
-                  <CustomFlowTemplateSessionBody
+                  <RoutineTemplatePreviewBody
                     templateKey={selectedTemplateKey}
                     config={templateSetupConfig}
                     onChange={(next) => {

@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
   buildWaterRoutineReminderSlots,
-  clampHhmmToPriorityWindow,
   formatHhmmClockKo,
   formatMinuteOfDayKo,
   MAX_WATER_QUICK_ADD_PRESETS,
@@ -15,6 +14,7 @@ import {
 } from '@entities/day-plan';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { OutlinedSwitch } from '@shared/ui/outlined-switch';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
@@ -65,10 +65,6 @@ function waterStructuralConfigKey(raw: unknown): string {
   return JSON.stringify(structural);
 }
 
-function clampWaterTimes(times: string[], routineStart: string, routineEnd: string): string[] {
-  return times.map((t) => clampHhmmToPriorityWindow(t, routineStart, routineEnd, 1));
-}
-
 export function WaterSettings({
   rhythmTitle,
   categoryKey = 'water',
@@ -91,7 +87,8 @@ export function WaterSettings({
   const { t } = useTranslation();
 
   const scheme = useColorScheme();
-  const basePalette = useGoalDetailSettingsPalette(scheme === 'dark');
+  const isDark = scheme === 'dark';
+  const basePalette = useGoalDetailSettingsPalette(isDark);
   const palette = useMemo(() => {
     const pageBg = T.screenBg;
     return {
@@ -104,7 +101,7 @@ export function WaterSettings({
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],
   );
-  const timeFieldPalette = useMemo(() => paletteForReminderTimeCard(false).timeField, []);
+  const timeFieldPalette = useMemo(() => paletteForReminderTimeCard(isDark).timeField, [isDark]);
   const isNote = useUiSurfacePresentation() === 'note';
 
   const structuralKey = useMemo(() => waterStructuralConfigKey(dataConfig), [dataConfig]);
@@ -160,7 +157,7 @@ export function WaterSettings({
     setReminderPreset(next.reminderPreset);
     setReminderCustomMin(String(next.reminderCustomMin));
     setSmartNotification(next.smartNotification);
-    setReminderTimes(clampWaterTimes(next.reminderTimes, priorityStart, priorityEnd));
+    setReminderTimes(next.reminderTimes);
     setSummary(next.summary);
     setDisplayName(next.displayName);
     setOpenSlotIndex(null);
@@ -178,7 +175,7 @@ export function WaterSettings({
       reminderPreset,
       reminderCustomMin: customMin,
       smartNotification,
-      reminderTimes: clampWaterTimes(reminderTimes, priorityStart, priorityEnd),
+      reminderTimes,
       summary,
       displayName,
     });
@@ -303,26 +300,20 @@ export function WaterSettings({
     setShowAddPresetInput(false);
   };
 
-  const updateTimeAt = useCallback(
-    (index: number, hhmm: string) => {
-      setReminderTimes((prev) => {
-        const next = [...prev];
-        next[index] = clampHhmmToPriorityWindow(hhmm, priorityStart, priorityEnd, 1);
-        return next;
-      });
-    },
-    [priorityEnd, priorityStart],
-  );
+  const updateTimeAt = useCallback((index: number, hhmm: string) => {
+    setReminderTimes((prev) => {
+      const next = [...prev];
+      next[index] = hhmm;
+      return next;
+    });
+  }, []);
 
   const addTimeSlot = useCallback(() => {
     if (reminderTimes.length >= MAX_TIME_SLOTS) return;
-    const seed =
-      reminderTimes.length > 0
-        ? reminderTimes[reminderTimes.length - 1]!
-        : clampHhmmToPriorityWindow('09:00', priorityStart, priorityEnd, 1);
+    const seed = reminderTimes.length > 0 ? reminderTimes[reminderTimes.length - 1]! : '09:00';
     setReminderTimes((prev) => [...prev, seed]);
     setOpenSlotIndex(reminderTimes.length);
-  }, [priorityEnd, priorityStart, reminderTimes]);
+  }, [reminderTimes]);
 
   const removeTimeAt = useCallback((index: number) => {
     setReminderTimes((prev) => prev.filter((_, i) => i !== index));
@@ -340,12 +331,7 @@ export function WaterSettings({
       intervalMinutes: interval,
     });
     const filled = slots.map((s) =>
-      clampHhmmToPriorityWindow(
-        `${String(Math.floor(s.wallMinuteOfDay / 60)).padStart(2, '0')}:${String(s.wallMinuteOfDay % 60).padStart(2, '0')}`,
-        priorityStart,
-        priorityEnd,
-        1,
-      ),
+      `${String(Math.floor(s.wallMinuteOfDay / 60)).padStart(2, '0')}:${String(s.wallMinuteOfDay % 60).padStart(2, '0')}`,
     );
     if (filled.length === 0) {
       Alert.alert(t('alert.permission.title'), t('goalDetail.water.noFillTimes'));
@@ -546,7 +532,7 @@ export function WaterSettings({
 
         <View style={[styles.row, isNote && styles.rowNote]}>
           <Text style={styles.rowTitle}>{t('goalDetail.water.smartNotify')}</Text>
-          <Switch
+          <OutlinedSwitch
             value={smartNotification}
             onValueChange={setSmartNotification}
             trackColor={{ false: T.surfaceContainerHighest, true: T.primary }}
@@ -576,18 +562,16 @@ export function WaterSettings({
                     <View style={styles.slotField}>
                       <SnappedTimePickerField
                         label={index === 0 ? t('goalDetail.water.notifyTimeLabel') : t('goalDetail.water.extraTimeLabel', { index: index + 1 })}
-                        hint={t('goalDetail.water.timeWithinWindow')}
                         valueHhmm={hhmm}
                         onChangeHhmm={(next) => updateTimeAt(index, next)}
                         expanded={openSlotIndex === index}
                         onToggleExpand={() =>
                           setOpenSlotIndex((j) => (j === index ? null : index))
                         }
-                        isDark={false}
+                        isDark={isDark}
                         palette={timeFieldPalette}
-                        routineDayStartHhmm={priorityStart}
-                        routineDayEndHhmm={priorityEnd}
                         snapStepMinutes={1}
+                        compact
                       />
                     </View>
                     {reminderTimes.length > 1 ? (

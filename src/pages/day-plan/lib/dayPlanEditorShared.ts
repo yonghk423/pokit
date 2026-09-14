@@ -37,7 +37,7 @@ export const PRIMARY = RetroFlatColors.light.primary;
 export const CATEGORIES: { key: string; label: string; icon: string }[] = [
   // ─── 건강 루틴 ───
   { key: 'healthIntake', label: getPriorityCatalogPickerLabel('healthIntake'), icon: 'pills.fill' },
-  { key: 'fasting', label: getPriorityCatalogPickerLabel('fasting'), icon: 'person.fill' },
+  { key: 'fasting', label: getPriorityCatalogPickerLabel('fasting'), icon: 'figure.stand' },
 
   // ─── 생산성을 높이는 도구 ───
   { key: 'reading', label: getPriorityCatalogPickerLabel('reading'), icon: 'book.closed.fill' },
