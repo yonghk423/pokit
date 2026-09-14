@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
-  Pressable,
   RefreshControl,
   StyleSheet,
   View,
@@ -12,7 +11,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView, type WebViewNavigation } from 'react-native-webview';
+import { WebView } from 'react-native-webview';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -63,24 +62,16 @@ export function WebViewScreen({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [canGoBack, setCanGoBack] = useState(false);
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const backFace = isDark ? tone.surfaceAlt : '#FFFFFF';
-  const backShadow = isDark ? tone.solidShadow : '#000000';
-  const BACK_SHADOW = 2;
 
   const handleRetry = useCallback(() => {
     setHasError(false);
     setIsLoading(true);
     setLoadProgress(0);
     webViewRef.current?.reload();
-  }, []);
-
-  const handleNavigationStateChange = useCallback((event: WebViewNavigation) => {
-    setCanGoBack(event.canGoBack);
   }, []);
 
   const handleShouldStartLoadWithRequest = useCallback(
@@ -101,10 +92,6 @@ export function WebViewScreen({
     },
     [allowedHostSuffixes],
   );
-
-  const handleGoBack = useCallback(() => {
-    webViewRef.current?.goBack();
-  }, []);
 
   const handleRefresh = useCallback(() => {
     if (hasError) {
@@ -137,36 +124,6 @@ export function WebViewScreen({
   return (
     <ThemedView style={[styles.container, style]}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {canGoBack ? (
-          <View style={styles.toolbar}>
-            <View
-              style={[
-                styles.backShell,
-                { marginRight: BACK_SHADOW, marginBottom: BACK_SHADOW },
-              ]}>
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.backShadow,
-                  {
-                    backgroundColor: backShadow,
-                    transform: [{ translateX: BACK_SHADOW }, { translateY: BACK_SHADOW }],
-                  },
-                ]}
-              />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('common.back')}
-                onPress={handleGoBack}
-                style={[styles.backButton, { backgroundColor: backFace }]}>
-                <ThemedText style={[styles.backLabel, { color: tone.text }]}>
-                  {t('common.back')}
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
-        ) : null}
-
         {hasError ? (
           <View style={[styles.errorContainer, { backgroundColor: tone.bg }]}>
             <ThemedText style={[styles.errorTitle, { color: tone.text }]}>
@@ -210,7 +167,6 @@ export function WebViewScreen({
               setHasError(true);
               setIsLoading(false);
             }}
-            onNavigationStateChange={handleNavigationStateChange}
             onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
             onMessage={onMessage ? handleMessage : undefined}
             startInLoadingState
@@ -244,27 +200,6 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-  },
-  toolbar: {
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-  },
-  backShell: {
-    alignSelf: 'flex-start',
-    position: 'relative',
-  },
-  backShadow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  backButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    zIndex: 1,
-  },
-  backLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.2,
   },
   webView: {
     flex: 1,

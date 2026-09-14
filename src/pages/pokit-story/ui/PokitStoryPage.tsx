@@ -7,17 +7,20 @@ import {
   StoryRoutineImportSheet,
   type StoryRoutineArticle,
 } from '@features/story-routine-import';
+import { useTranslation } from '@shared/lib/i18n';
 import { WebViewScreen } from '@shared/ui/web-view';
 
 import {
   POKIT_STORY_ALLOWED_HOST_SUFFIXES,
-  POKIT_STORY_URL,
+  resolvePokitStoryUrl,
 } from '../config/pokitStoryUrl';
 import { PokitStoryWebViewProgressLoader } from './PokitStoryWebViewProgressLoader';
 
 /** POKIT 공식 웹사이트(pokitstory.com) WebView 탭 + 루틴 추가 브릿지 */
 export function PokitStoryPage() {
   const isFocused = useIsFocused();
+  const { locale } = useTranslation();
+  const storyUri = resolvePokitStoryUrl(locale);
   const [sheetArticle, setSheetArticle] = useState<StoryRoutineArticle | null>(null);
 
   const handleWebMessage = useCallback((data: unknown) => {
@@ -34,7 +37,7 @@ export function PokitStoryPage() {
     <>
       {isFocused ? (
         <WebViewScreen
-          uri={POKIT_STORY_URL}
+          uri={storyUri}
           allowedHostSuffixes={POKIT_STORY_ALLOWED_HOST_SUFFIXES}
           onMessage={handleWebMessage}
           renderInitialLoading={(progress) => (
