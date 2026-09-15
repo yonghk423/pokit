@@ -7,6 +7,7 @@ export { syncPriorityDayEndAlarm } from './model/priorityDayEndAlarmScheduler';
 export {
   collectMedicineReminderSlots,
   isMedicineReminderCategory,
+  MEDICINE_DOSE_REMINDER_EVENT_TYPE,
   syncMedicineReminderNotifications,
 } from './model/syncMedicineReminderNotifications';
 export {

@@ -6,4 +6,16 @@
   <img src="assets/pokit5.png" width="120" alt="POKIT" />
 </p>
 
-[앱 소개](https://www.pokitstory.com/ko/app) · [App Store](https://apps.apple.com/kr/app/id6762331629)
+<table width="100%">
+  <tr>
+    <td align="center" bgcolor="#E8F3EF">
+      <br />
+      <font color="#3A5C57">일상 루틴·웰니스 BY POKIT</font>
+      <br /><br />
+      <a href="https://www.pokitstory.com/ko/app"><font color="#3A5C57">앱 소개</font></a>
+      &nbsp;·&nbsp;
+      <a href="https://apps.apple.com/kr/app/id6762331629"><font color="#3A5C57">App Store</font></a>
+      <br /><br />
+    </td>
+  </tr>
+</table>

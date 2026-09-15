@@ -4,6 +4,7 @@ const mockLoadGoalDetailCategoryConfig = jest.fn();
 const mockLoadMedicineReminderScheduled = jest.fn();
 const mockSaveMedicineReminderScheduled = jest.fn();
 const mockCancelLocalNotificationsById = jest.fn();
+const mockCancelScheduledNotificationsByEventType = jest.fn();
 const mockScheduleDailyLocalNotification = jest.fn();
 const mockRefreshPermission = jest.fn();
 const mockEnsurePermission = jest.fn();
@@ -37,6 +38,8 @@ jest.mock('@shared/lib/storage', () => ({
 
 jest.mock('@shared/lib/notifications', () => ({
   cancelLocalNotificationsById: (...args: unknown[]) => mockCancelLocalNotificationsById(...args),
+  cancelScheduledNotificationsByEventType: (...args: unknown[]) =>
+    mockCancelScheduledNotificationsByEventType(...args),
   scheduleDailyLocalNotification: (...args: unknown[]) => mockScheduleDailyLocalNotification(...args),
 }));
 
@@ -45,13 +48,22 @@ jest.mock('@shared/lib/i18n', () => ({
     vars ? `${key}:${JSON.stringify(vars)}` : key,
 }));
 
-import { useDayPlanDraftStore } from '@entities/day-plan/model/dayPlanDraftStore';
-import { useDayPlanStore } from '@entities/day-plan/model/dayPlanStore';
-import { useFixedFlowSetsStore } from '@entities/day-plan/model/fixedFlowSetsStore';
-
 type MedicineSyncModule = typeof import('./syncMedicineReminderNotifications');
+type DayPlanBarrel = typeof import('@entities/day-plan');
 
-function loadModule(): MedicineSyncModule {
+function loadModule(seed?: (dayPlan: DayPlanBarrel) => void): MedicineSyncModule {
+  const dayPlan = require('@entities/day-plan') as DayPlanBarrel;
+  dayPlan.useDayPlanStore.setState({ ...dayPlan.useDayPlanStore.getState(), blocks: [] });
+  dayPlan.useFixedFlowSetsStore.setState({
+    ...dayPlan.useFixedFlowSetsStore.getState(),
+    todayAppliedCategoryKeys: [],
+  });
+  dayPlan.useDayPlanDraftStore.setState({
+    ...dayPlan.useDayPlanDraftStore.getState(),
+    priorityCategoryOrder: ['healthIntake'],
+    prioritySectionsCategoryOrder: [],
+  });
+  seed?.(dayPlan);
   return require('./syncMedicineReminderNotifications') as MedicineSyncModule;
 }
 
@@ -73,6 +85,7 @@ const intakeConfig = {
 
 describe('syncMedicineReminderNotifications', () => {
   beforeEach(() => {
+    jest.resetModules();
     jest.clearAllMocks();
     mockPermission = 'granted';
     mockRefreshPermission.mockResolvedValue(undefined);
@@ -82,18 +95,9 @@ describe('syncMedicineReminderNotifications', () => {
     });
     mockLoadMedicineReminderScheduled.mockReturnValue([]);
     mockCancelLocalNotificationsById.mockResolvedValue(undefined);
+    mockCancelScheduledNotificationsByEventType.mockResolvedValue(undefined);
     mockScheduleDailyLocalNotification.mockResolvedValue('med-1');
     mockFilterDayPlanFlowBlocks.mockReturnValue([]);
-    useDayPlanStore.setState({ ...useDayPlanStore.getState(), blocks: [] });
-    useFixedFlowSetsStore.setState({
-      ...useFixedFlowSetsStore.getState(),
-      todayAppliedCategoryKeys: [],
-    });
-    useDayPlanDraftStore.setState({
-      ...useDayPlanDraftStore.getState(),
-      priorityCategoryOrder: ['healthIntake'],
-      prioritySectionsCategoryOrder: [],
-    });
     mockLoadGoalDetailBlockConfig.mockReturnValue(null);
     mockLoadGoalDetailCategoryConfig.mockImplementation((key: string) =>
       key === 'healthIntake' ? intakeConfig : null,
@@ -108,12 +112,22 @@ describe('syncMedicineReminderNotifications', () => {
 
     await syncMedicineReminderNotifications();
     expect(mockEnsurePermission).toHaveBeenCalled();
+    expect(mockCancelScheduledNotificationsByEventType).toHaveBeenCalledWith('medicineDoseReminder');
     expect(mockScheduleDailyLocalNotification).toHaveBeenCalledTimes(2);
     expect(mockScheduleDailyLocalNotification).toHaveBeenCalledWith(
-      expect.objectContaining({ hour: 8, minute: 30 }),
+      expect.objectContaining({
+        identifier: 'pokit:medicine-reminder:healthIntake:morning',
+        hour: 8,
+        minute: 30,
+        data: { eventType: 'medicineDoseReminder', blockId: 'healthIntake' },
+      }),
     );
     expect(mockScheduleDailyLocalNotification).toHaveBeenCalledWith(
-      expect.objectContaining({ hour: 12, minute: 30 }),
+      expect.objectContaining({
+        identifier: 'pokit:medicine-reminder:healthIntake:lunch',
+        hour: 12,
+        minute: 30,
+      }),
     );
   });
 
@@ -126,16 +140,57 @@ describe('syncMedicineReminderNotifications', () => {
     expect(collectMedicineReminderSlots().map((s) => s.slotKey)).toEqual(['healthIntake:lunch']);
   });
 
-  it('includes custom health-intake routines on today', () => {
-    useDayPlanDraftStore.setState({
-      ...useDayPlanDraftStore.getState(),
-      priorityCategoryOrder: ['customFlow:vitamins'],
-      prioritySectionsCategoryOrder: [],
+  it('아침·점심·저녁을 각각 고정 ID와 지정 시각으로 예약한다', async () => {
+    mockLoadGoalDetailCategoryConfig.mockReturnValue({
+      ...intakeConfig,
+      medicine: {
+        ...intakeConfig.medicine,
+        dinnerOn: true,
+        dinnerNotify: true,
+      },
     });
+    const { syncMedicineReminderNotifications } = loadModule();
+
+    await syncMedicineReminderNotifications();
+
+    expect(mockScheduleDailyLocalNotification).toHaveBeenCalledTimes(3);
+    expect(mockScheduleDailyLocalNotification).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        identifier: 'pokit:medicine-reminder:healthIntake:morning',
+        hour: 8,
+        minute: 30,
+      }),
+    );
+    expect(mockScheduleDailyLocalNotification).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        identifier: 'pokit:medicine-reminder:healthIntake:lunch',
+        hour: 12,
+        minute: 30,
+      }),
+    );
+    expect(mockScheduleDailyLocalNotification).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        identifier: 'pokit:medicine-reminder:healthIntake:dinner',
+        hour: 19,
+        minute: 30,
+      }),
+    );
+  });
+
+  it('includes custom health-intake routines on today', () => {
     mockLoadGoalDetailCategoryConfig.mockImplementation((key: string) =>
       key === 'customFlow:vitamins' ? intakeConfig : null,
     );
-    const { collectMedicineReminderSlots } = loadModule();
+    const { collectMedicineReminderSlots } = loadModule((dayPlan) => {
+      dayPlan.useDayPlanDraftStore.setState({
+        ...dayPlan.useDayPlanDraftStore.getState(),
+        priorityCategoryOrder: ['customFlow:vitamins'],
+        prioritySectionsCategoryOrder: [],
+      });
+    });
     expect(collectMedicineReminderSlots().map((s) => s.slotKey)).toEqual([
       'customFlow:vitamins:morning',
       'customFlow:vitamins:lunch',
@@ -163,7 +218,11 @@ describe('syncMedicineReminderNotifications', () => {
     expect(mockEnsurePermission).toHaveBeenCalled();
     expect(mockScheduleDailyLocalNotification).toHaveBeenCalledTimes(1);
     expect(mockScheduleDailyLocalNotification).toHaveBeenCalledWith(
-      expect.objectContaining({ hour: 8, minute: 30 }),
+      expect.objectContaining({
+        identifier: 'pokit:medicine-reminder:healthIntake:morning',
+        hour: 8,
+        minute: 30,
+      }),
     );
   });
 
@@ -176,6 +235,56 @@ describe('syncMedicineReminderNotifications', () => {
     const ok = await syncMedicineReminderNotifications();
     expect(ok).toBe(false);
     expect(mockScheduleDailyLocalNotification).not.toHaveBeenCalled();
+    expect(mockCancelScheduledNotificationsByEventType).toHaveBeenCalledWith('medicineDoseReminder');
     expect(mockSaveMedicineReminderScheduled).toHaveBeenCalledWith([]);
+  });
+
+  it('동일 입력 동시 호출을 1회 예약으로 합친다', async () => {
+    const { syncMedicineReminderNotifications } = loadModule();
+
+    await Promise.all([syncMedicineReminderNotifications(), syncMedicineReminderNotifications()]);
+
+    expect(mockScheduleDailyLocalNotification).toHaveBeenCalledTimes(2);
+    expect(mockCancelScheduledNotificationsByEventType).toHaveBeenCalledTimes(1);
+  });
+
+  it('같은 스펙 재호출 시 재예약을 건너뛴다', async () => {
+    const { syncMedicineReminderNotifications } = loadModule();
+
+    await syncMedicineReminderNotifications();
+    await syncMedicineReminderNotifications();
+
+    expect(mockScheduleDailyLocalNotification).toHaveBeenCalledTimes(2);
+    expect(mockCancelScheduledNotificationsByEventType).toHaveBeenCalledTimes(1);
+  });
+
+  it('지정 시각이 바뀌면 옛 예약을 정리하고 새 시각으로 다시 예약한다', async () => {
+    const { syncMedicineReminderNotifications } = loadModule();
+
+    await syncMedicineReminderNotifications();
+    mockLoadGoalDetailCategoryConfig.mockReturnValue({
+      ...intakeConfig,
+      medicine: { ...intakeConfig.medicine, morningTime: '10:17' },
+    });
+    await syncMedicineReminderNotifications();
+
+    expect(mockCancelScheduledNotificationsByEventType).toHaveBeenCalledTimes(2);
+    expect(mockCancelScheduledNotificationsByEventType).toHaveBeenLastCalledWith(
+      'medicineDoseReminder',
+    );
+    expect(mockScheduleDailyLocalNotification).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        identifier: 'pokit:medicine-reminder:healthIntake:lunch',
+        hour: 12,
+        minute: 30,
+      }),
+    );
+    expect(mockScheduleDailyLocalNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        identifier: 'pokit:medicine-reminder:healthIntake:morning',
+        hour: 10,
+        minute: 17,
+      }),
+    );
   });
 });
