@@ -146,6 +146,101 @@ describe('fixedFlowSetsStore', () => {
     expect(updated?.applyWeekdays).toEqual([1, 3, 5]);
   });
 
+  it('clears catalog protection when turning off today weekday so bag sync can drop items', () => {
+    // 2026-09-16 = Wednesday (getDay() === 3)
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 8, 16, 13, 0, 0));
+    try {
+      appendRoutineCatalogSelectionKeys(['healthIntake', 'fasting']);
+      const { useDayPlanDraftStore } = require('./dayPlanDraftStore') as typeof import('./dayPlanDraftStore');
+      const { useDayPlanStore } = require('./dayPlanStore') as typeof import('./dayPlanStore');
+      useDayPlanDraftStore.setState({
+        ...useDayPlanDraftStore.getState(),
+        isHydrated: true,
+        priorityMealSlotLayoutEnabled: false,
+        prioritySpineLayoutEnabled: false,
+        priorityCategoryOrder: ['healthIntake', 'fasting'],
+        prioritySectionsCategoryOrder: [],
+        priorityMealSlotOverrides: {},
+        prioritySectionsMealSlots: {},
+        priorityStart: '09:00',
+        priorityEnd: '22:00',
+      });
+      useDayPlanStore.setState({
+        ...useDayPlanStore.getState(),
+        isHydrated: true,
+        blocks: [],
+      });
+      useFixedFlowSetsStore.setState({
+        activeSetIds: ['set_daily'],
+        activeMealSlotsBySetId: {},
+        activeSetIdsByLayoutMode: { bag: ['set_daily'], sections: [], spine: [] },
+        activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
+        fixedRoutineApplyLayoutMode: 'bag',
+        sets: [
+          {
+            id: 'set_daily',
+            name: '데일리 고정 루틴',
+            applyRule: 'daily',
+            applyWeekdays: [1, 2, 3, 4, 5],
+            items: [
+              { categoryKey: 'healthIntake', enabled: true },
+              { categoryKey: 'fasting', enabled: true },
+            ],
+          },
+        ],
+        todayAppliedCategoryKeys: ['healthIntake', 'fasting'],
+        todayAppliedRevision: 0,
+        isHydrated: true,
+      });
+
+      // 오늘(수)만 끄기 → 월화목금
+      useFixedFlowSetsStore.getState().setApplyWeekdays('set_daily', [1, 2, 4, 5]);
+
+      expect(useFixedFlowSetsStore.getState().todayAppliedCategoryKeys).toEqual([]);
+      expect(loadRoutineCatalogSelectionKeys()).not.toContain('healthIntake');
+      expect(loadRoutineCatalogSelectionKeys()).not.toContain('fasting');
+      expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual([]);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('keeps catalog selection when turning off a weekday that is not today', () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 8, 16, 13, 0, 0)); // Wed
+    try {
+      appendRoutineCatalogSelectionKeys(['healthIntake']);
+      useFixedFlowSetsStore.setState({
+        activeSetIds: ['set_daily'],
+        activeMealSlotsBySetId: {},
+        activeSetIdsByLayoutMode: { bag: ['set_daily'], sections: [], spine: [] },
+        activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
+        fixedRoutineApplyLayoutMode: 'bag',
+        sets: [
+          {
+            id: 'set_daily',
+            name: '데일리 고정 루틴',
+            applyRule: 'daily',
+            applyWeekdays: [1, 2, 3, 4, 5],
+            items: [{ categoryKey: 'healthIntake', enabled: true }],
+          },
+        ],
+        todayAppliedCategoryKeys: ['healthIntake'],
+        todayAppliedRevision: 0,
+        isHydrated: true,
+      });
+
+      // 월요일만 끄기 — 오늘은 수요일이라 적용 유지
+      useFixedFlowSetsStore.getState().setApplyWeekdays('set_daily', [2, 3, 4, 5]);
+
+      expect(useFixedFlowSetsStore.getState().todayAppliedCategoryKeys).toEqual(['healthIntake']);
+      expect(loadRoutineCatalogSelectionKeys()).toContain('healthIntake');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('updates todayAppliedCategoryKeys when toggling set for today', () => {
     useFixedFlowSetsStore.setState({
       activeSetIds: [],

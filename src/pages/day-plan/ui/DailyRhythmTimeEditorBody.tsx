@@ -430,11 +430,15 @@ export type DailyRhythmTimeEditorBodyProps = {
   /** 온보딩 히어로·슬라이드쇼 숨김 — 다이얼+시간 행만 (오늘 탭 시간 시트 등) */
   hideOnboardingHero?: boolean;
   primaryLabel: string;
-  onPrimaryPress: (startHhmm: string, endHhmm: string) => void;
+  /** 화면 검증 통과 후에만 호출. endDateTarget은 당일/다음 날 선택 */
+  onPrimaryPress: (
+    startHhmm: string,
+    endHhmm: string,
+    endDateTarget: 'today' | 'nextDay',
+  ) => void;
   secondaryLabel?: string;
   onSecondaryPress?: () => void;
   currentSpansMultiDay?: boolean;
-  onEndDateChoice?: (startHhmm: string, endHhmm: string, target: 'today' | 'nextDay') => void;
   endDateChoiceTodayLabel?: string;
   endDateChoiceNextDayLabel?: string;
   priorityPlanRangeLo?: string;
@@ -455,7 +459,6 @@ export function DailyRhythmTimeEditorBody({
   secondaryLabel,
   onSecondaryPress,
   currentSpansMultiDay: _currentSpansMultiDay = false,
-  onEndDateChoice,
   endDateChoiceTodayLabel,
   endDateChoiceNextDayLabel,
   priorityPlanRangeLo,
@@ -488,54 +491,37 @@ export function DailyRhythmTimeEditorBody({
     setStartHhmm(seedStart);
     setEndHhmm(seedEnd);
     setPickerTarget(null);
-    // 당일/다음 날은 사용자가 직접 고른 값만 쓴다. 시각으로 자동 추론하지 않음.
+  }, [seedKey, seedStart, seedEnd]);
+
+  useEffect(() => {
+    // 화면이 다시 열릴 때만 구간에 맞춘다. 편집 중 스토어 날짜가 바뀌어도
+    // 당일/다음 날 선택을 덮어쓰지 않는다.
     const initial = initialEndDateTargetFromRange(priorityPlanRangeLo, priorityPlanRangeHi);
     endDateTargetRef.current = initial;
     setEndDateTarget(initial);
-  }, [seedKey, seedStart, seedEnd, priorityPlanRangeLo, priorityPlanRangeHi]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seedKey 재시드 전용
+  }, [seedKey]);
 
-  const applyEndDateTarget = useCallback(
-    (target: 'today' | 'nextDay', start: string, end: string) => {
-      endDateTargetRef.current = target;
-      setEndDateTarget(target);
-      onEndDateChoice?.(start, end, target);
-    },
-    [onEndDateChoice],
-  );
+  const applyEndDateTarget = useCallback((target: 'today' | 'nextDay') => {
+    endDateTargetRef.current = target;
+    setEndDateTarget(target);
+  }, []);
 
-  /** 시각만 갱신 — 당일/다음 날 선택은 그대로 유지 */
-  const syncTimesKeepingEndDate = useCallback(
-    (start: string, end: string) => {
-      onEndDateChoice?.(start, end, endDateTargetRef.current);
-    },
-    [onEndDateChoice],
-  );
+  /** 편집 중에는 로컬만 갱신 — 스토어/자동시작 검증은 하단 확인 시에만 */
+  const setStartHhmmLocal = useCallback((nextStart: string) => {
+    setStartHhmm(nextStart);
+  }, []);
 
-  const setStartHhmmWithSync = useCallback(
-    (nextStart: string) => {
-      setStartHhmm(nextStart);
-      syncTimesKeepingEndDate(nextStart, endHhmm);
-    },
-    [endHhmm, syncTimesKeepingEndDate],
-  );
-
-  const setEndHhmmWithChoiceCheck = useCallback(
-    (nextEnd: string) => {
-      setEndHhmm(nextEnd);
-      syncTimesKeepingEndDate(startHhmm, nextEnd);
-    },
-    [startHhmm, syncTimesKeepingEndDate],
-  );
+  const setEndHhmmLocal = useCallback((nextEnd: string) => {
+    setEndHhmm(nextEnd);
+  }, []);
 
   /** 다이얼 onChange — 인라인 람다는 드래그 중 제스처 재생성·크래시 유발 가능 */
-  const onDialChange = useCallback(
-    (nextStart: string, nextEnd: string, endNextDay: boolean) => {
-      setStartHhmm(nextStart);
-      setEndHhmm(nextEnd);
-      applyEndDateTarget(endNextDay ? 'nextDay' : 'today', nextStart, nextEnd);
-    },
-    [applyEndDateTarget],
-  );
+  const onDialChange = useCallback((nextStart: string, nextEnd: string, endNextDay: boolean) => {
+    setStartHhmm(nextStart);
+    setEndHhmm(nextEnd);
+    applyEndDateTarget(endNextDay ? 'nextDay' : 'today');
+  }, [applyEndDateTarget]);
 
   const [dialDragging, setDialDragging] = useState(false);
   const onDialInteractionChange = useCallback((active: boolean) => {
@@ -561,32 +547,17 @@ export function DailyRhythmTimeEditorBody({
       return;
     }
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onEndDateChoice?.(startHhmm, endHhmm, endDateTarget);
-    onPrimaryPress(startHhmm, endHhmm);
-  }, [endDateTarget, endHhmm, onEndDateChoice, onPrimaryPress, startHhmm, t]);
+    // 스토어 반영·화면 이동은 호출측 onPrimaryPress에서 — 검증 실패 시 이 화면에 남음
+    onPrimaryPress(startHhmm, endHhmm, endDateTarget);
+  }, [endDateTarget, endHhmm, onPrimaryPress, startHhmm, t]);
 
   const startDateKey = priorityPlanRangeLo;
   const endDateKey = useMemo(() => {
     if (!priorityPlanRangeLo) return undefined;
-    if (onEndDateChoice) {
-      return endDateTarget === 'nextDay'
-        ? addDaysToLocalDateKey(priorityPlanRangeLo, 1)
-        : priorityPlanRangeLo;
-    }
-    const hi = priorityPlanRangeHi ?? priorityPlanRangeLo;
-    if (hi > priorityPlanRangeLo) return hi;
-    if (endsOnNextCalendarDay(startHhmm, endHhmm)) {
-      return addDaysToLocalDateKey(priorityPlanRangeLo, 1);
-    }
-    return priorityPlanRangeLo;
-  }, [
-    endDateTarget,
-    endHhmm,
-    onEndDateChoice,
-    priorityPlanRangeHi,
-    priorityPlanRangeLo,
-    startHhmm,
-  ]);
+    return endDateTarget === 'nextDay'
+      ? addDaysToLocalDateKey(priorityPlanRangeLo, 1)
+      : priorityPlanRangeLo;
+  }, [endDateTarget, priorityPlanRangeLo]);
 
   const startDateParts = startDateKey ? splitDateKeyCompact(startDateKey, locale) : null;
   const endDateParts = endDateKey ? splitDateKeyCompact(endDateKey, locale) : null;
@@ -609,7 +580,7 @@ export function DailyRhythmTimeEditorBody({
         },
       ]}
       value={endDateTarget}
-      onChange={(next) => applyEndDateTarget(next, startHhmm, endHhmm)}
+      onChange={(next) => applyEndDateTarget(next)}
       selectedFill={ink.bgMint}
       trackFill={isDark ? ink.surfaceAlt : ink.bg}
       selectedInk={isDark ? ink.text : ink.tertiary}
@@ -658,7 +629,7 @@ export function DailyRhythmTimeEditorBody({
         label={t('dayRhythm.dayStart')}
         hint={t('dayRhythm.dayStartHint')}
         valueHhmm={startHhmm}
-        onChangeHhmm={setStartHhmmWithSync}
+        onChangeHhmm={setStartHhmmLocal}
         expanded={pickerTarget === 'start'}
         onToggleExpand={() => setPickerTarget((t) => (t === 'start' ? null : 'start'))}
         isDark={isDark}
@@ -671,7 +642,7 @@ export function DailyRhythmTimeEditorBody({
         label={t('dayRhythm.dayEnd')}
         hint={t('dayRhythm.dayEndHint')}
         valueHhmm={endHhmm}
-        onChangeHhmm={setEndHhmmWithChoiceCheck}
+        onChangeHhmm={setEndHhmmLocal}
         expanded={pickerTarget === 'end'}
         onToggleExpand={() => setPickerTarget((t) => (t === 'end' ? null : 'end'))}
         isDark={isDark}
@@ -680,35 +651,33 @@ export function DailyRhythmTimeEditorBody({
         mapMidnightToEndOfDay
         dateCaption={endDateKey ? formatDateKeyCompact(endDateKey, locale) : undefined}
       />
-      {onEndDateChoice ? (
-        <View style={styles.endDateChoiceInline}>
-          <ThemedText
-            style={[styles.endDateChoiceQuestion, { color: c.onVariant }]}
-            lightColor={c.onVariant}
-            darkColor={c.onVariant}>
-            {t('dayRhythm.endDateQuestion')}
+      <View style={styles.endDateChoiceInline}>
+        <ThemedText
+          style={[styles.endDateChoiceQuestion, { color: c.onVariant }]}
+          lightColor={c.onVariant}
+          darkColor={c.onVariant}>
+          {t('dayRhythm.endDateQuestion')}
+        </ThemedText>
+        <View style={styles.endDateChoiceBtnRow}>{endDateSegmentControl}</View>
+        {endDateTodayInvalid ? (
+          <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+            {parseHHmmToMinutes(endHhmm) === 24 * 60 || parseHHmmToMinutes(endHhmm) === 0
+              ? t('dayRhythm.endDateMidnightHint')
+              : t('dayRhythm.endDateInvalidHint', {
+                  end: formatHhmmClock(endHhmm, locale),
+                  start: formatHhmmClock(startHhmm, locale),
+                })}
           </ThemedText>
-          <View style={styles.endDateChoiceBtnRow}>{endDateSegmentControl}</View>
-          {endDateTodayInvalid ? (
-            <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
-              {parseHHmmToMinutes(endHhmm) === 24 * 60 || parseHHmmToMinutes(endHhmm) === 0
-                ? t('dayRhythm.endDateMidnightHint')
-                : t('dayRhythm.endDateInvalidHint', {
-                    end: formatHhmmClock(endHhmm, locale),
-                    start: formatHhmmClock(startHhmm, locale),
-                  })}
-            </ThemedText>
-          ) : isOvernightHhmmRange(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
-            <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
-              {t('dayRhythm.overnightHint')}
-            </ThemedText>
-          ) : endsOnNextCalendarDay(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
-            <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
-              {t('dayRhythm.midnightNextDayHint')}
-            </ThemedText>
-          ) : null}
-        </View>
-      ) : null}
+        ) : isOvernightHhmmRange(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
+          <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+            {t('dayRhythm.overnightHint')}
+          </ThemedText>
+        ) : endsOnNextCalendarDay(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
+          <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+            {t('dayRhythm.midnightNextDayHint')}
+          </ThemedText>
+        ) : null}
+      </View>
     </CityPopCardShell>
   );
 
@@ -803,7 +772,7 @@ export function DailyRhythmTimeEditorBody({
               label={t('dayRhythm.dayStart')}
               hint={t('dayRhythm.dayStartHint')}
               valueHhmm={startHhmm}
-              onChangeHhmm={setStartHhmmWithSync}
+              onChangeHhmm={setStartHhmmLocal}
               expanded={pickerTarget === 'start'}
               onToggleExpand={() => setPickerTarget((t) => (t === 'start' ? null : 'start'))}
               isDark={isDark}
@@ -818,7 +787,7 @@ export function DailyRhythmTimeEditorBody({
               label={t('dayRhythm.dayEnd')}
               hint={t('dayRhythm.dayEndHint')}
               valueHhmm={endHhmm}
-              onChangeHhmm={setEndHhmmWithChoiceCheck}
+              onChangeHhmm={setEndHhmmLocal}
               expanded={pickerTarget === 'end'}
               onToggleExpand={() => setPickerTarget((t) => (t === 'end' ? null : 'end'))}
               isDark={isDark}
@@ -828,37 +797,35 @@ export function DailyRhythmTimeEditorBody({
               mapMidnightToEndOfDay
             />
 
-            {onEndDateChoice ? (
-              <View style={styles.endDateChoiceOnboard}>
-                <ThemedText
-                  style={[styles.endDateChoiceQuestionOnboard, { color: c.onVariant }, cityPopFont('800')]}
-                  lightColor={c.onVariant}
-                  darkColor={c.onVariant}>
-                  {t('dayRhythm.endDateQuestion')}
+            <View style={styles.endDateChoiceOnboard}>
+              <ThemedText
+                style={[styles.endDateChoiceQuestionOnboard, { color: c.onVariant }, cityPopFont('800')]}
+                lightColor={c.onVariant}
+                darkColor={c.onVariant}>
+                {t('dayRhythm.endDateQuestion')}
+              </ThemedText>
+              <View style={styles.endDateChoiceBtnRow}>{endDateSegmentControl}</View>
+              {endDateTodayInvalid ? (
+                <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+                  {parseHHmmToMinutes(endHhmm) === 24 * 60 ||
+                  parseHHmmToMinutes(endHhmm) === 0
+                    ? t('dayRhythm.endDateMidnightHint')
+                    : t('dayRhythm.endDateInvalidHint', {
+                        end: formatHhmmClock(endHhmm, locale),
+                        start: formatHhmmClock(startHhmm, locale),
+                      })}
                 </ThemedText>
-                <View style={styles.endDateChoiceBtnRow}>{endDateSegmentControl}</View>
-                {endDateTodayInvalid ? (
-                  <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
-                    {parseHHmmToMinutes(endHhmm) === 24 * 60 ||
-                    parseHHmmToMinutes(endHhmm) === 0
-                      ? t('dayRhythm.endDateMidnightHint')
-                      : t('dayRhythm.endDateInvalidHint', {
-                          end: formatHhmmClock(endHhmm, locale),
-                          start: formatHhmmClock(startHhmm, locale),
-                        })}
-                  </ThemedText>
-                ) : isOvernightHhmmRange(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
-                  <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
-                    {t('dayRhythm.overnightHint')}
-                  </ThemedText>
-                ) : endsOnNextCalendarDay(startHhmm, endHhmm) &&
-                  endDateTarget === 'nextDay' ? (
-                  <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
-                    {t('dayRhythm.midnightNextDayHint')}
-                  </ThemedText>
-                ) : null}
-              </View>
-            ) : null}
+              ) : isOvernightHhmmRange(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
+                <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+                  {t('dayRhythm.overnightHint')}
+                </ThemedText>
+              ) : endsOnNextCalendarDay(startHhmm, endHhmm) &&
+                endDateTarget === 'nextDay' ? (
+                <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+                  {t('dayRhythm.midnightNextDayHint')}
+                </ThemedText>
+              ) : null}
+            </View>
 
             <FinalReviewCue active={pickerTarget === null && !dialDragging}>
               <View style={styles.summaryBox}>

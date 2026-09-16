@@ -7,9 +7,12 @@ import {
   type DayPlanBlock,
 } from '@entities/day-plan';
 import {
+  isPokitWeekTourFlowId,
   loadSpineDefaultBlockMinutes,
   type FixedFlowSet,
 } from '@shared/lib/storage';
+
+import { isOvernightHhmmRange } from './dayPlanEditorShared';
 
 export type BagRowSpineSchedule = {
   startMinutes: number;
@@ -33,6 +36,22 @@ export function resolveBagItemSpineSchedule(input: {
     const key = resolveBlockCategoryKey(b) ?? resolveCategoryKeyFromLabel(b.category ?? '');
     return key === baseKey || key === categoryKey;
   });
+  // 튜토리얼은 수동 시간 오버라이드가 없으면 집중 구간을 따른다
+  if (
+    isPokitWeekTourFlowId(baseKey) &&
+    (!block || block.hasManualScheduleOverride !== true)
+  ) {
+    const windowStart = parseHHmmToMinutes(input.priorityStart);
+    const windowEnd = parseHHmmToMinutes(input.priorityEnd);
+    if (windowStart !== null && windowEnd !== null) {
+      return {
+        startMinutes: windowStart,
+        endMinutes: windowEnd,
+        endsNextCalendarDay: isOvernightHhmmRange(input.priorityStart, input.priorityEnd),
+        isSuggested: false,
+      };
+    }
+  }
   if (block) {
     return {
       startMinutes: block.startMinutes,

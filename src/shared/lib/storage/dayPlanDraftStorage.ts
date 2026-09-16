@@ -43,6 +43,11 @@ export type PersistedDayPlanDraft = {
   /** 오늘 탭에서 「종료」한 카테고리 — 날짜가 바뀌면 무효 */
   priorityEndedTodayKeys?: string[];
   priorityEndedTodayDateKey?: string;
+  /**
+   * 집중 구간 종료로 담기를 이미 비운 경계 키.
+   * 같은 종료 상태에서 10초 틱·리마운트마다 담기를 반복 삭제하지 않기 위함.
+   */
+  priorityBagResetForEndedKey?: string;
 };
 
 export function loadDayPlanDraft(): PersistedDayPlanDraft | null {

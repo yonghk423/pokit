@@ -13,6 +13,7 @@ import {
 } from '@shared/lib/storage';
 
 import { isEndedTodayCategoryKey, resolveEndedTodayCategoryKeys } from './endedTodayCategoryKeys';
+import { isPriorityWindowEndedForToday } from './priorityWindowEligibility';
 import { useDayPlanDraftStore } from '../model/dayPlanDraftStore';
 
 function markSeededIfOnboardingDone(): void {
@@ -26,6 +27,19 @@ export function seedPokitWeekTourIntoTodayIfNeeded(): void {
   const draft = useDayPlanDraftStore.getState();
   if (!draft.isHydrated) return;
   if (isStandardCatalogKeyHidden(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)) return;
+
+  // 집중 구간이 이미 끝났으면 재시드하지 않음 — 종료 리셋 직후 튜토리얼이 다시 붙는 것 방지
+  if (
+    isPriorityWindowEndedForToday({
+      planMode: draft.planMode,
+      priorityStart: draft.priorityStart,
+      priorityEnd: draft.priorityEnd,
+      priorityPlanDateKey: draft.priorityPlanDateKey,
+      priorityPlanDateKeyEnd: draft.priorityPlanDateKeyEnd,
+    })
+  ) {
+    return;
+  }
 
   // 온보딩 중인데 이전에 시드 잠금만 남은 경우 — 초기 담기를 위해 잠금 해제
   if (!loadDailyRhythmOnboardingCompleted() && loadPokitWeekTourSeeded()) {

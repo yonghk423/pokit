@@ -104,9 +104,12 @@ export function DailyRhythmSettingsPage() {
   const headerFg = c.onSurface;
 
   const handleSave = useCallback(
-    async (start: string, end: string) => {
+    async (start: string, end: string, target: 'today' | 'nextDay') => {
+      // 에디터에서 이미 검증된 뒤에만 여기로 온다. 반영 후 뒤로가기.
       setPriorityStart(start);
       setPriorityEnd(end);
+      const endDate = target === 'nextDay' ? addDaysToLocalDateKey(planRangeLo, 1) : planRangeLo;
+      applyPriorityPlanCalendarRange(planRangeLo, endDate, true);
       syncOvernightPriorityPlanDates();
       syncDayMealSlotScheduleWithPriorityWindow(start, end);
       savePriorityDayRollMode('reset');
@@ -119,23 +122,25 @@ export function DailyRhythmSettingsPage() {
           startHhmm: start,
         });
         if (!startOk) {
-          Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
+          // 뒤로가기 전에 이 화면에서 안내 (확인 후 이동)
+          Alert.alert(t('alert.permission.title'), t('alert.permission.message'), [
+            { text: t('common.confirm'), onPress: () => router.back() },
+          ]);
+          return;
         }
       }
 
       router.back();
     },
-    [router, setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates, t],
-  );
-
-  const handleEndDateChoice = useCallback(
-    (start: string, end: string, target: 'today' | 'nextDay') => {
-      setPriorityStart(start);
-      setPriorityEnd(end);
-      const endDate = target === 'nextDay' ? addDaysToLocalDateKey(planRangeLo, 1) : planRangeLo;
-      applyPriorityPlanCalendarRange(planRangeLo, endDate);
-    },
-    [applyPriorityPlanCalendarRange, planRangeLo, setPriorityEnd, setPriorityStart],
+    [
+      applyPriorityPlanCalendarRange,
+      planRangeLo,
+      router,
+      setPriorityEnd,
+      setPriorityStart,
+      syncOvernightPriorityPlanDates,
+      t,
+    ],
   );
 
   return (
@@ -182,7 +187,6 @@ export function DailyRhythmSettingsPage() {
             router.back();
           }}
           currentSpansMultiDay={planRangeHi > planRangeLo}
-          onEndDateChoice={handleEndDateChoice}
           endDateChoiceTodayLabel={todayChoiceLabel}
           endDateChoiceNextDayLabel={nextDayChoiceLabel}
           priorityPlanRangeLo={planRangeLo}

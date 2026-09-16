@@ -441,7 +441,13 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
   setApplyWeekdays: (setId, weekdays) => {
     const normalized = normalizeApplyWeekdays(weekdays);
     if (normalized.length === 0) return;
-    const { sets, activeSetIds, activeMealSlotsBySetId } = get();
+    const {
+      sets,
+      activeSetIds,
+      activeMealSlotsBySetId,
+      activeSetIdsByLayoutMode,
+      activeMealSlotsBySetIdByLayoutMode,
+    } = get();
     const target = sets.find((s) => s.id === setId);
     if (!target) return;
     const nextSets = sets.map((s) =>
@@ -454,6 +460,23 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
           }
         : s,
     );
+
+    // 오늘 요일을 끄면 해당 항목이 오늘 적용에서 빠진다.
+    // catalog 보호가 남으면 sync 가 담기에서 지우지 못해 「됐다가 안 됐다가」가 난다.
+    for (const mode of ['bag', 'sections', 'spine'] as const) {
+      const ids = activeSetIdsByLayoutMode[mode] ?? [];
+      if (!ids.includes(setId)) continue;
+      const slots = activeMealSlotsBySetIdByLayoutMode[mode] ?? {};
+      const wasApplied = new Set(recomputeTodayApplied(ids, slots, sets));
+      const stillApplied = new Set(recomputeTodayApplied(ids, slots, nextSets));
+      for (const item of target.items) {
+        if (item.enabled === false) continue;
+        const key = item.categoryKey.trim();
+        if (!key || !wasApplied.has(key) || stillApplied.has(key)) continue;
+        removeRoutineCatalogSelectionKey(key);
+      }
+    }
+
     persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
   },
 

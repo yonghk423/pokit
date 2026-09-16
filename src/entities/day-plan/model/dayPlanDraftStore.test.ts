@@ -189,6 +189,23 @@ describe('dayPlanDraftStore', () => {
     expect(useDayPlanDraftStore.getState().priorityOvernightEndAuto).toBe(true);
   });
 
+  it('keeps an explicit same-day choice even when the clock looks overnight', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      priorityPlanDateKey: '2025-05-26',
+      priorityPlanDateKeyEnd: '2025-05-27',
+      priorityPlanExplicitMultiDay: true,
+      priorityStart: '11:40',
+      priorityEnd: '00:35',
+    });
+    useDayPlanDraftStore.getState().applyPriorityPlanCalendarRange('2025-05-26', '2025-05-26', true);
+    useDayPlanDraftStore.getState().syncOvernightPriorityPlanDates();
+    const state = useDayPlanDraftStore.getState();
+    expect(state.priorityPlanDateKeyEnd).toBe('2025-05-26');
+    expect(state.priorityPlanExplicitMultiDay).toBe(true);
+    expect(state.priorityOvernightEndAuto).toBe(false);
+  });
+
   it('appends missing priority category keys', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,
@@ -330,6 +347,7 @@ describe('dayPlanDraftStore', () => {
       priorityStart: '09:00',
       priorityEnd: '18:00',
       priorityCategoryOrder: ['reading'],
+      priorityBagResetForEndedKey: '',
     });
     savePriorityDayRollMode('reset');
     // 오늘 18:00 종료가 지난 20:00 — 같은 날짜여도 종료 후에는 초기화
@@ -342,6 +360,31 @@ describe('dayPlanDraftStore', () => {
     expect(s.priorityCategoryOrder).toEqual([]);
     expect(s.completedFocusCategoryKeys).toEqual([]);
     expect(s.isFocusStarted).toBe(false);
+  });
+
+  it('does not re-clear bag on repeated roll after same-day end', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      planMode: 'priority',
+      priorityPlanDateKey: '2025-05-26',
+      priorityPlanDateKeyEnd: '2025-05-26',
+      priorityStart: '09:00',
+      priorityEnd: '18:00',
+      priorityCategoryOrder: ['reading'],
+      priorityBagResetForEndedKey: '',
+    });
+    savePriorityDayRollMode('reset');
+    useDayPlanDraftStore
+      .getState()
+      .rollPriorityPlanForwardIfEnded({ nowKey: '2025-05-26', nowMin: 20 * 60 });
+    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual([]);
+
+    // 종료 후 사용자가 다시 담은 루틴 — 같은 종료 경계의 반복 roll 에 지워지면 안 됨
+    useDayPlanDraftStore.setState({ priorityCategoryOrder: ['reading', 'water'] });
+    useDayPlanDraftStore
+      .getState()
+      .rollPriorityPlanForwardIfEnded({ nowKey: '2025-05-26', nowMin: 20 * 60 + 10 });
+    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['reading', 'water']);
   });
 
   it('collapses overnight auto end when window becomes same-day', () => {

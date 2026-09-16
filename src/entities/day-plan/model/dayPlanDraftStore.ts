@@ -59,7 +59,8 @@ type DayPlanDraftState = {
   /** 우선 순위 일정 적용 기간 종료일 (YYYY-MM-DD) */
   priorityPlanDateKeyEnd: string;
   /**
-   * 달력에서 시작·끝을 다르게 잡은 적 있음(여러 날짜 구간).
+   * 종료일을 사용자가 명시적으로 확정함.
+   * 달력 다중일, 또는 하루 주기 화면의 당일/다음 날 버튼.
    * true면 자정 넘김에 따른 종료일 자동 보정을 하지 않음.
    */
   priorityPlanExplicitMultiDay: boolean;
@@ -98,6 +99,11 @@ type DayPlanDraftState = {
   /** 오늘 탭에서 「종료」한 카테고리 — 고정 루틴 동기화가 다시 넣지 않음 */
   priorityEndedTodayKeys: string[];
   priorityEndedTodayDateKey: string;
+  /**
+   * 집중 구간 종료로 담기 초기화를 이미 수행한 경계.
+   * `${nextStart}|${nextEnd}|${priorityStart}|${priorityEnd}`
+   */
+  priorityBagResetForEndedKey: string;
   isHydrated: boolean;
   hydrate: () => void;
   setPlanMode: (mode: PlanMode) => void;
@@ -115,8 +121,11 @@ type DayPlanDraftState = {
   clearPlanCompletionDismissedKeys: () => void;
   setPriorityPlanDateKey: (value: string) => void;
   setPriorityPlanDateKeyEnd: (value: string) => void;
-  /** 달력 적용 시 명시 구간·자동 플래그까지 한 번에 */
-  applyPriorityPlanCalendarRange: (lo: string, hi: string) => void;
+  /**
+   * 달력·당일/다음 날 적용 시 명시 구간·자동 플래그까지 한 번에.
+   * `lockEndDate`면 같은 날이어도 자정 넘김 자동 보정을 하지 않는다.
+   */
+  applyPriorityPlanCalendarRange: (lo: string, hi: string, lockEndDate?: boolean) => void;
   /** 시작·종료 시각과 단일/다중일 플래그에 맞춰 종료일 자동 보정 */
   syncOvernightPriorityPlanDates: () => void;
   /**
@@ -300,6 +309,7 @@ function createInitialState() {
     prioritySectionsCategoryOrder: [] as string[],
     priorityEndedTodayKeys: [] as string[],
     priorityEndedTodayDateKey: '',
+    priorityBagResetForEndedKey: '',
   };
 }
 
@@ -402,6 +412,8 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         : [],
       priorityEndedTodayDateKey:
         keepDailyProgress && raw.priorityEndedTodayDateKey === today ? today : '',
+      priorityBagResetForEndedKey:
+        typeof raw.priorityBagResetForEndedKey === 'string' ? raw.priorityBagResetForEndedKey : '',
       isHydrated: true,
     });
     syncTodayTabWithFixedRoutineApply();
@@ -592,11 +604,11 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     }),
   setPriorityPlanDateKey: (value) => set({ priorityPlanDateKey: value }),
   setPriorityPlanDateKeyEnd: (value) => set({ priorityPlanDateKeyEnd: value }),
-  applyPriorityPlanCalendarRange: (lo, hi) =>
+  applyPriorityPlanCalendarRange: (lo, hi, lockEndDate) =>
     set({
       priorityPlanDateKey: lo,
       priorityPlanDateKeyEnd: hi,
-      priorityPlanExplicitMultiDay: lo !== hi,
+      priorityPlanExplicitMultiDay: lockEndDate === true ? true : lo !== hi,
       priorityOvernightEndAuto: false,
     }),
   syncOvernightPriorityPlanDates: () => {
@@ -642,6 +654,10 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
 
     const today = now?.nowKey ?? getLocalDateKey();
     const nowMin = now?.nowMin ?? getLocalMinutesOfDayNow();
+    const rangeLo =
+      s.priorityPlanDateKey <= s.priorityPlanDateKeyEnd
+        ? s.priorityPlanDateKey
+        : s.priorityPlanDateKeyEnd;
     const rangeHi =
       s.priorityPlanDateKey <= s.priorityPlanDateKeyEnd
         ? s.priorityPlanDateKeyEnd
@@ -649,11 +665,24 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
 
     // 구간 종료 시각이 현재보다 과거인지 (00:00 종료는 종료일 00:00과 동일하게 취급)
     const ended = today > rangeHi || (today === rangeHi && nowMin >= pe);
-    if (!ended) return;
+    if (!ended) {
+      // 구간이 다시 유효하면 종료 리셋 가드를 풀어 다음 종료에 대비
+      if (s.priorityBagResetForEndedKey) {
+        set({ priorityBagResetForEndedKey: '' });
+      }
+      return;
+    }
 
     const overnight = isOvernightPriorityWindow(s.priorityStart, s.priorityEnd);
     const nextStart = today;
     const nextEnd = overnight ? addDaysToLocalDateKey(today, 1) : today;
+    // 같은 종료 경계에서 반복 호출돼도 담기를 다시 비우지 않음
+    // (상세설정 중 10초 틱·화면 리마운트로 루틴이 통째로 사라지던 원인)
+    const endedBoundaryKey = `${nextStart}|${nextEnd}|${s.priorityStart}|${s.priorityEnd}`;
+    if (s.priorityBagResetForEndedKey === endedBoundaryKey) {
+      return;
+    }
+
     const rollMode = loadPriorityDayRollMode();
     if (rollMode === 'keep') {
       const retainedBaseKeys = [
@@ -677,6 +706,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         isFocusStarted: false,
         priorityEndedTodayKeys: [],
         priorityEndedTodayDateKey: '',
+        priorityBagResetForEndedKey: endedBoundaryKey,
       });
       syncTodayTabWithFixedRoutineApply();
       return;
@@ -693,6 +723,7 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       isFocusStarted: false,
       priorityEndedTodayKeys: [],
       priorityEndedTodayDateKey: '',
+      priorityBagResetForEndedKey: endedBoundaryKey,
     });
     // reset 모드: 수동 담기를 비운 뒤 고정 루틴 적용분만 다시 반영.
     // priorityCategoryImportance 는 루틴 목록 공용이라 유지.
@@ -1025,6 +1056,7 @@ useDayPlanDraftStore.subscribe((state) => {
     prioritySectionsCategoryOrder: state.prioritySectionsCategoryOrder,
     priorityEndedTodayKeys: state.priorityEndedTodayKeys,
     priorityEndedTodayDateKey: state.priorityEndedTodayDateKey,
+    priorityBagResetForEndedKey: state.priorityBagResetForEndedKey,
   });
   syncWidgetTimelineFromStorage();
 });
@@ -1059,6 +1091,7 @@ function persistDayPlanDraft(): void {
     prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
     priorityEndedTodayKeys: s.priorityEndedTodayKeys,
     priorityEndedTodayDateKey: s.priorityEndedTodayDateKey,
+    priorityBagResetForEndedKey: s.priorityBagResetForEndedKey,
   });
 }
 

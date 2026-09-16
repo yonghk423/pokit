@@ -218,6 +218,11 @@ function StepButton({
       accessibilityRole="button"
       accessibilityLabel={a11y}
       disabled={disabled}
+      // 누르는 순간에 바로 — selection보다 impact가 시·분 스텝에 더 또렷함
+      onPressIn={() => {
+        if (disabled) return;
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
+      }}
       onPress={onPress}
       style={({ pressed }) => [
         styles.stepPress,
@@ -302,13 +307,11 @@ export const DigitalHhmmInput = forwardRef<DigitalHhmmInputHandle, DigitalHhmmIn
 
     const applyHour = (delta: number) => {
       if (disabled) return;
-      void Haptics.selectionAsync();
       emit(nextHourWithinMeridiem(draftTotalRef.current, delta, mapMidnightToEndOfDay));
     };
 
     const applyMinute = (delta: number) => {
       if (disabled) return;
-      void Haptics.selectionAsync();
       emit(nextMinute(draftTotalRef.current, delta, snapStepMinutes, mapMidnightToEndOfDay));
     };
 

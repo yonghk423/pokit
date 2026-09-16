@@ -37,7 +37,9 @@ describe('clampHhmmToPriorityWindow', () => {
     expect(clampHhmmToPriorityWindow('12:00', '22:00', '06:00')).toBe('06:00');
   });
 
-  it('returns fallback when parse fails', () => {
-    expect(clampHhmmToPriorityWindow('', 'bad', '12:00')).toBe('09:00');
+  it('clamps a late-night clock into a same-day afternoon window end', () => {
+    // 확인 버튼에서 이 함수로 입력을 덮으면 11:30이 PM 2:30으로 바뀐다.
+    expect(clampHhmmToPriorityWindow('23:30', '11:30', '14:30', 1)).toBe('14:30');
+    expect(clampHhmmToPriorityWindow('23:28', '11:28', '13:30', 1)).toBe('13:30');
   });
 });

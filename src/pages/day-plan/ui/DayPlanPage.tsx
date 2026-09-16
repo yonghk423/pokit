@@ -75,6 +75,15 @@ import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
 import { ReadingPlanSection } from './ReadingPlanSection';
 
+/** 같은 「지난 시간」알림이 연달아 쌓이지 않게 */
+let pastTimeAlertQuietUntil = 0;
+function showPastTimeAlertOnce(title: string, message: string) {
+  const now = Date.now();
+  if (now < pastTimeAlertQuietUntil) return;
+  pastTimeAlertQuietUntil = now + 2500;
+  Alert.alert(title, message);
+}
+
 export function DayPlanPage({
   renderRoutineInlineSettings,
 }: {
@@ -90,6 +99,7 @@ export function DayPlanPage({
   const [rhythmGateOpen, setRhythmGateOpen] = useState(
     () => !loadDailyRhythmOnboardingCompleted(),
   );
+  const [windowChipGuideNonce, setWindowChipGuideNonce] = useState(0);
 
   const {
     planMode,
@@ -369,31 +379,23 @@ export function DayPlanPage({
 
   const c = useMemo(() => palette(isDark), [isDark]);
 
-  const handleRhythmEndDateChoice = useCallback(
+  const handleRhythmConfirm = useCallback(
     (start: string, end: string, target: 'today' | 'nextDay') => {
+      // 에디터 검증 통과 후에만 호출됨. 반영과 게이트 닫기를 한 번에.
       setPriorityStart(start);
       setPriorityEnd(end);
       const lo = getLocalDateKey();
       const endDate = target === 'nextDay' ? addDaysToLocalDateKey(lo, 1) : lo;
-      applyPriorityPlanCalendarRange(lo, endDate);
-    },
-    [applyPriorityPlanCalendarRange, setPriorityEnd, setPriorityStart],
-  );
-
-  const handleRhythmConfirm = useCallback(
-    (start: string, end: string) => {
-      setPriorityStart(start);
-      setPriorityEnd(end);
-      // 온보딩에서 당일/다음 날을 이미 골랐다면 explicit multi-day가 유지되고,
-      // 아니면 overnight 시각 규칙으로 날짜를 맞춘다.
+      applyPriorityPlanCalendarRange(lo, endDate, true);
       syncOvernightPriorityPlanDates();
       void markDailyRhythmOnboardingCompletedAndFlush().then(() => {
         setRhythmGateOpen(false);
-        // 온보딩 직후 오늘 담기가 비어 있으면 튜토리얼을 넣고, 시드 잠금을 건다
         seedPokitWeekTourIntoTodayIfNeeded();
+        // 게이트가 닫힌 뒤 집중 시간 칩 강조 (섹션이 이미 마운트된 경우 nonce로 재시도)
+        setWindowChipGuideNonce((n) => n + 1);
       });
     },
-    [setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
+    [applyPriorityPlanCalendarRange, setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
   );
 
   const syncScheduledNotifications = useCallback(() => {
@@ -464,7 +466,7 @@ export function DayPlanPage({
     [addBlock, priorityEnd, priorityStart, router],
   );
 
-  const onSave = () => {
+  const onSave = (options?: { silent?: boolean }) => {
     if (planMode === 'quickMemo') {
       const draftLines = quickMemoDraft
         .split(/\r?\n/)
@@ -510,10 +512,14 @@ export function DayPlanPage({
 
       if (!result.ok) {
         if (result.reason === 'in_the_past') {
-          Alert.alert(t('alert.pastTime.title'), t('alert.pastTime.endMustBeFuture'));
+          if (!options?.silent) {
+            showPastTimeAlertOnce(t('alert.pastTime.title'), t('alert.pastTime.endMustBeFuture'));
+          }
           return;
         }
-        Alert.alert(t('alert.saveFailed.title'), t('alert.saveFailed.quickMemo'));
+        if (!options?.silent) {
+          Alert.alert(t('alert.saveFailed.title'), t('alert.saveFailed.quickMemo'));
+        }
         return;
       }
 
@@ -545,22 +551,8 @@ export function DayPlanPage({
         return;
       }
       const today = getLocalDateKey();
-      let effectiveStart = priorityStart;
-      let effectiveEnd = priorityEnd;
-      if (!priorityWindowEligible) {
-        const fresh = defaultPriorityWindowFromNow();
-        effectiveStart = fresh.startTime;
-        effectiveEnd = fresh.endTime;
-        const freshOvernight = isOvernightHhmmRange(effectiveStart, effectiveEnd);
-        setPriorityStart(effectiveStart);
-        setPriorityEnd(effectiveEnd);
-        applyPriorityPlanCalendarRange(
-          today,
-          freshOvernight ? addDaysToLocalDateKey(today, 1) : today,
-        );
-        clearCompletedFocusCategoryKeys();
-        clearPlanCompletionDismissedKeys();
-      }
+      const effectiveStart = priorityStart;
+      const effectiveEnd = priorityEnd;
 
       const ps = parseHHmmToMinutes(effectiveStart);
       const pe = parseHHmmToMinutes(effectiveEnd);
@@ -592,12 +584,14 @@ export function DayPlanPage({
       });
 
       if (!result.ok) {
+        // 자동 시작은 알림 없이 스킵 — 하루 밸런스 조정 중 알림 폭주 방지
+        if (options?.silent) return;
         if (result.reason === 'overlap') {
           Alert.alert(t('alert.overlap.title'), t('alert.overlap.message'));
           return;
         }
         if (result.reason === 'in_the_past') {
-          Alert.alert(t('alert.pastTime.title'), t('alert.pastTime.endMustBeFuture'));
+          showPastTimeAlertOnce(t('alert.pastTime.title'), t('alert.pastTime.endMustBeFuture'));
           return;
         }
         Alert.alert(t('alert.startFailed.title'), t('alert.startFailed.priorityPlan'));
@@ -621,9 +615,18 @@ export function DayPlanPage({
   }, []);
 
   /**
-   * 우선순위 모드: 담기에 루틴이 있으면 집중 세션을 자동으로 연다.
-   * 적용일·집중 구간 밖이거나 담기가 비면 집중 상태·Live Activity를 자동으로 정리한다.
+   * 우선순위 모드: 담기에 루틴이 있으면 시작 버튼 없이 바로 집중 세션을 연다.
+   * 집중 구간이 이미 끝났으면 시도하지 않는다 — 예전에는 실패 알림만 쌓였다.
    */
+  useEffect(() => {
+    if (planMode !== 'priority') return;
+    if (isFocusStarted) return;
+    if (priorityCategoryOrder.length === 0) return;
+    if (!priorityWindowEligible) return;
+
+    onSaveRef.current({ silent: true });
+  }, [planMode, isFocusStarted, priorityCategoryOrder, priorityWindowEligible]);
+
   const endFocusedLiveActivity = useCallback(() => {
     const activeBlockId = useDayPlanRuntimeStore.getState().activeBlockId;
     const focusBlockId = useDayPlanStore.getState().liveActivityChecklistFocusBlockId;
@@ -717,9 +720,8 @@ export function DayPlanPage({
     setIsFocusStarted(false);
     clearCompletedFocusCategoryKeys();
     clearPlanCompletionDismissedKeys();
-    setPriorityCategoryOrder([]);
-    // reset: 수동 담기만 비우고, 오늘 적용 중인 고정 루틴은 다시 반영
-    syncTodayTabWithFixedRoutineApply();
+    // 담기 초기화는 roll 이 once-guard 로 담당 (리마운트·틱마다 재삭제 방지)
+    rollPriorityPlanForwardIfEnded();
     endFocusedLiveActivity();
   }, [
     planMode,
@@ -728,18 +730,9 @@ export function DayPlanPage({
     setIsFocusStarted,
     clearCompletedFocusCategoryKeys,
     clearPlanCompletionDismissedKeys,
-    setPriorityCategoryOrder,
+    rollPriorityPlanForwardIfEnded,
     endFocusedLiveActivity,
   ]);
-
-  /** 담기·루틴 탭에서 항목이 선택되면 시작 버튼 없이 바로 집중 세션을 연다 */
-  useEffect(() => {
-    if (planMode !== 'priority') return;
-    if (isFocusStarted) return;
-    if (priorityCategoryOrder.length === 0) return;
-
-    onSaveRef.current();
-  }, [planMode, isFocusStarted, priorityCategoryOrder]);
 
   const { registerPrimaryAction } = useDayPlanTabBridge();
 
@@ -835,6 +828,7 @@ export function DayPlanPage({
                 showTodoList={planMode === 'todoList'}
                 onPressTodoList={() => setPlanMode('todoList')}
                 onExitTodoList={() => setPlanMode('priority')}
+                windowChipGuideNonce={windowChipGuideNonce}
               />
             </View>
           )}
@@ -845,7 +839,6 @@ export function DayPlanPage({
         isDark={isDark}
         c={c}
         onConfirm={handleRhythmConfirm}
-        onEndDateChoice={handleRhythmEndDateChoice}
       />
     </ThemedView>
   );

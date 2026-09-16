@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal, Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,8 +14,11 @@ type Props = {
   visible: boolean;
   isDark: boolean;
   c: DayPlanPalette;
-  onConfirm: (startHhmm: string, endHhmm: string) => void;
-  onEndDateChoice?: (startHhmm: string, endHhmm: string, target: 'today' | 'nextDay') => void;
+  onConfirm: (
+    startHhmm: string,
+    endHhmm: string,
+    endDateTarget: 'today' | 'nextDay',
+  ) => void;
 };
 
 export function DailyRhythmOnboardingGate({
@@ -23,7 +26,6 @@ export function DailyRhythmOnboardingGate({
   isDark,
   c,
   onConfirm,
-  onEndDateChoice,
 }: Props) {
   const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -53,13 +55,6 @@ export function DailyRhythmOnboardingGate({
     void prefetchDailyRhythmOnboardingAssets();
   }, [visible]);
 
-  const handleEndDateChoice = useCallback(
-    (start: string, end: string, target: 'today' | 'nextDay') => {
-      onEndDateChoice?.(start, end, target);
-    },
-    [onEndDateChoice],
-  );
-
   return (
     <Modal visible={visible} animationType="fade" presentationStyle="fullScreen">
       <View
@@ -80,7 +75,6 @@ export function DailyRhythmOnboardingGate({
           variant="onboarding"
           primaryLabel={t('welcome.startBtn')}
           onPrimaryPress={onConfirm}
-          onEndDateChoice={handleEndDateChoice}
           endDateChoiceTodayLabel={todayChoiceLabel}
           endDateChoiceNextDayLabel={nextDayChoiceLabel}
           priorityPlanRangeLo={todayKey}

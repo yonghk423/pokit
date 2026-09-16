@@ -41,7 +41,9 @@ export {
 } from './customFlowCatalogStorage';
 export type { CustomFlowCatalogEntry } from './customFlowCatalogStorage';
 export {
+  clearDailyRhythmWindowChipGuidePending,
   loadDailyRhythmOnboardingCompleted,
+  loadDailyRhythmWindowChipGuidePending,
   markDailyRhythmOnboardingCompleted,
   markDailyRhythmOnboardingCompletedAndFlush
 } from './dailyRhythmOnboardingStorage';

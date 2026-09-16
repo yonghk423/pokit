@@ -2,6 +2,11 @@ import { getAppLocale, t, type AppLocale, type I18nKey } from '@shared/lib/i18n'
 
 /** 버전별 업데이트 안내 — i18n 키가 있으면 로케일 반영, 없으면 한국어 폴백 */
 const RELEASE_NOTE_I18N_KEYS: Record<string, readonly I18nKey[]> = {
+  '1.7.10': [
+    'appUpdate.release.1_7_10.h1',
+    'appUpdate.release.1_7_10.h2',
+    'appUpdate.release.1_7_10.h3',
+  ],
   '1.7.8': [
     'appUpdate.release.1_7_8.h1',
     'appUpdate.release.1_7_8.h2',

@@ -1,9 +1,8 @@
 import * as Haptics from 'expo-haptics';
-import { forwardRef, useImperativeHandle, useMemo, useRef, type ReactNode } from 'react';
+import { forwardRef, useImperativeHandle, useRef, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { clampHhmmToPriorityWindow, parseHHmmToMinutes } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useMeasuredAccordion } from '@shared/lib/hooks';
 import { formatHhmmClock, useTranslation } from '@shared/lib/i18n';
@@ -38,7 +37,7 @@ export type SnappedTimePickerFieldProps = {
   palette: SnappedTimePickerFieldPalette;
   /** 분 스냅 간격. 생략 시 5분(타임라인과 동일). 시작·마무리 등은 `1` 권장 */
   snapStepMinutes?: number;
-  /** 데이플랜「시작~마무리」안으로만 시각이 잡힘(둘 다 유효할 때만) */
+  /** 범위 검사는 저장 단계에서. 여기서 창 안으로 몰아넣으면 입력값이 창 끝으로 바뀐다. */
   routineDayStartHhmm?: string;
   routineDayEndHhmm?: string;
   /** 오전 12:00 → `24:00`(하루 끝). 밤 구간 등 */
@@ -73,8 +72,8 @@ export const SnappedTimePickerField = forwardRef<
     isDark,
     palette,
     snapStepMinutes = TIME_SNAP_MINUTES,
-    routineDayStartHhmm,
-    routineDayEndHhmm,
+    routineDayStartHhmm: _routineDayStartHhmm,
+    routineDayEndHhmm: _routineDayEndHhmm,
     mapMidnightToEndOfDay = false,
     dateCaption,
     emphasized = false,
@@ -86,21 +85,6 @@ export const SnappedTimePickerField = forwardRef<
   ref,
 ) {
   const { t, locale } = useTranslation();
-  const applyRoutineWindow = useMemo(() => {
-    const rs = routineDayStartHhmm?.trim() ?? '';
-    const re = routineDayEndHhmm?.trim() ?? '';
-    if (
-      !rs ||
-      !re ||
-      parseHHmmToMinutes(rs) === null ||
-      parseHHmmToMinutes(re) === null
-    ) {
-      return (hhmm: string) => hhmm;
-    }
-    /** 입력 중 스냅 간섭 방지 — 최종 스냅은 DigitalHhmmInput blur */
-    return (hhmm: string) => clampHhmmToPriorityWindow(hhmm, rs, re, 1);
-  }, [routineDayStartHhmm, routineDayEndHhmm]);
-
   const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
   useImperativeHandle(
     ref,
@@ -108,12 +92,11 @@ export const SnappedTimePickerField = forwardRef<
       flush: () => {
         const flushed = digitalInputRef.current?.flush();
         if (!flushed) return null;
-        const next = applyRoutineWindow(flushed);
-        onChangeHhmm(next);
-        return next;
+        onChangeHhmm(flushed);
+        return flushed;
       },
     }),
-    [applyRoutineWindow, onChangeHhmm],
+    [onChangeHhmm],
   );
   const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const shadowInk = isDark ? RetroFlatColors.dark.solidShadow : '#000000';
@@ -241,9 +224,9 @@ export const SnappedTimePickerField = forwardRef<
               disabled={disabled}
               onPress={() => {
                 const flushed = digitalInputRef.current?.flush();
-                const next = flushed ? applyRoutineWindow(flushed) : valueHhmm;
+                const next = flushed ?? valueHhmm;
                 if (onBeforeConfirm && !onBeforeConfirm(next)) return;
-                if (flushed) onChangeHhmm(next);
+                if (flushed) onChangeHhmm(flushed);
                 void Haptics.selectionAsync();
                 onToggleExpand();
               }}

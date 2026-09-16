@@ -1,10 +1,4 @@
 import {
-  hideStandardCatalogKey,
-  localStorageClient,
-  StorageKeys,
-} from '@shared/lib/storage';
-
-import {
   computeSyncTodayTabWithFixedRoutineApply,
   mergeOrderWithAppliedFixedRoutines,
   syncPriorityOrderWithAppliedFixedRoutines,
@@ -41,24 +35,19 @@ describe('syncPriorityOrderWithAppliedFixedRoutines', () => {
     ).toEqual(['healthIntake']);
   });
 
-  it('keeps the tutorial routine even without catalog selection', () => {
+  it('drops tutorial routine without catalog selection like other customFlow orphans', () => {
     const order = ['customFlow:preset_pokit_week_tour', 'healthIntake'];
     expect(
       syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed, new Set()),
-    ).toEqual(['customFlow:preset_pokit_week_tour', 'healthIntake']);
+    ).toEqual(['healthIntake']);
   });
 
-  it('drops the tutorial routine after it was deleted', () => {
-    localStorageClient.removeItem(StorageKeys.hiddenStandardCatalogKeys);
-    hideStandardCatalogKey('customFlow:preset_pokit_week_tour');
+  it('keeps tutorial routine when catalog-selected', () => {
     const order = ['customFlow:preset_pokit_week_tour', 'healthIntake'];
-    try {
-      expect(
-        syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed, new Set()),
-      ).toEqual(['healthIntake']);
-    } finally {
-      localStorageClient.removeItem(StorageKeys.hiddenStandardCatalogKeys);
-    }
+    const catalog = new Set(['customFlow:preset_pokit_week_tour']);
+    expect(
+      syncPriorityOrderWithAppliedFixedRoutines(order, [], allFixed, catalog),
+    ).toEqual(['customFlow:preset_pokit_week_tour', 'healthIntake']);
   });
 
   it('keeps catalog-selected customFlow even when not in fixed sets', () => {

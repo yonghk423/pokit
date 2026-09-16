@@ -18,7 +18,18 @@ import {
   View,
 } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import Reanimated, { Easing, FadeOut, LinearTransition } from 'react-native-reanimated';
+import Reanimated, {
+  cancelAnimation,
+  Easing,
+  FadeOut,
+  interpolateColor,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -41,8 +52,10 @@ import {
   getFlowCompletionCategoryKeysForBlock,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
+  isBlockEndInPastForDateKey,
   isLikelyPriorityCatalogMonolineTitle,
   isPriorityCompoundBlockTitle,
+  isPriorityWindowEndedForToday,
   isSpineBlockScheduleWithinPriorityWindow,
   isStoredFixedFlowSpineSchedule,
   isSystemCatalogGroupKey,
@@ -86,6 +99,8 @@ import {
   loadSpineDefaultBlockMinutes,
   isPokitWeekTourFlowId,
   loadPokitWeekTourFirstTipSeen,
+  clearDailyRhythmWindowChipGuidePending,
+  loadDailyRhythmWindowChipGuidePending,
   resolveCurrentMealSlotFromSchedule,
   saveGoalDetailCategoryConfig,
   subscribeCustomFlowCatalog,
@@ -231,8 +246,9 @@ function PriorityWindowTimeChip({
   ink,
   muted,
   chipBg,
-  chipBgPressed,
+  chipBgPressed: _chipBgPressed,
   borderColor,
+  emphasize = false,
   onPress,
 }: {
   line: string;
@@ -241,32 +257,79 @@ function PriorityWindowTimeChip({
   chipBg: string;
   chipBgPressed: string;
   borderColor: string;
+  emphasize?: boolean;
   onPress: () => void;
 }) {
   const { t } = useTranslation();
+  const isDark = useColorScheme() === 'dark';
+  const mint = isDark ? RetroFlatColors.dark.bgMint : RetroFlatColors.light.bgMint;
+  const scale = useSharedValue(1);
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    if (!emphasize) {
+      cancelAnimation(scale);
+      cancelAnimation(pulse);
+      scale.value = withTiming(1, { duration: 160 });
+      pulse.value = withTiming(0, { duration: 160 });
+      return;
+    }
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.07, { duration: 320, easing: Easing.out(Easing.cubic) }),
+        withTiming(1, { duration: 320, easing: Easing.inOut(Easing.quad) }),
+      ),
+      4,
+      false,
+    );
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) }),
+        withTiming(0, { duration: 320, easing: Easing.inOut(Easing.quad) }),
+      ),
+      4,
+      false,
+    );
+  }, [emphasize, pulse, scale]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    borderColor: interpolateColor(pulse.value, [0, 1], [borderColor, mint]),
+    shadowOpacity: 0.08 + pulse.value * 0.2,
+    shadowRadius: 1 + pulse.value * 7,
+    elevation: pulse.value > 0.15 ? 4 : 0,
+  }));
+
   return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={6}
-      accessibilityRole="button"
-      accessibilityLabel={t('dayPlan.dayWindowA11y', { line })}
-      accessibilityHint={t('dayPlan.dayWindowHint')}
-      style={({ pressed }) => [
+    <Reanimated.View
+      style={[
+        styles.priorityTimelineTimeChipShadow,
         styles.priorityTimelineTimeChip,
         {
-          backgroundColor: pressed ? chipBgPressed : chipBg,
+          backgroundColor: chipBg,
           borderColor,
+          shadowColor: mint,
         },
+        animStyle,
       ]}>
-      <IconSymbol name="clock" size={11} color={muted} />
-      <ThemedText
-        style={[styles.priorityTimelineSub, styles.priorityTimelineTimeTap, { color: ink }]}
-        lightColor={ink}
-        darkColor={ink}
-        numberOfLines={2}>
-        {line}
-      </ThemedText>
-    </Pressable>
+      <Pressable
+        onPress={onPress}
+        hitSlop={6}
+        accessibilityRole="button"
+        accessibilityLabel={t('dayPlan.dayWindowA11y', { line })}
+        accessibilityHint={t('dayPlan.dayWindowHint')}
+        style={styles.priorityTimelineTimeChipPressable}>
+        <IconSymbol name="clock" size={11} color={muted} />
+        <ThemedText
+          style={[styles.priorityTimelineSub, styles.priorityTimelineTimeTap, { color: ink }]}
+          lightColor={ink}
+          darkColor={ink}
+          numberOfLines={2}>
+          {line}
+        </ThemedText>
+      </Pressable>
+    </Reanimated.View>
   );
 }
 
@@ -328,7 +391,7 @@ type Props = {
   priorityPlanDateKeyEnd: string;
   onChangePriorityPlanDateKeyEnd: (v: string) => void;
   /** 달력에서 기간 적용 시(명시 다중일·자동 플래그 포함) */
-  applyPriorityPlanCalendarRange: (lo: string, hi: string) => void;
+  applyPriorityPlanCalendarRange: (lo: string, hi: string, lockEndDate?: boolean) => void;
   /** 달력에서 서로 다른 날짜로 구간을 잡은 경우 — 시계 박스에만 짧은 날짜 표시 */
   priorityPlanExplicitMultiDay: boolean;
   priorityStart: string;
@@ -360,6 +423,11 @@ type Props = {
   onExitTodoList?: () => void;
   /** 헤더 레이아웃 탭 옆 투두 아이콘 — 탭하면 todoList 모드로 전환 */
   onPressTodoList?: () => void;
+  /**
+   * 하루 주기 온보딩 직후 증가 — 집중 시간 칩 1회 강조를 다시 시도한다.
+   * (섹션이 이미 마운트된 채 게이트만 닫히는 경우)
+   */
+  windowChipGuideNonce?: number;
 };
 
 /* ─── 메인 ─── */
@@ -389,6 +457,7 @@ export function PriorityBasedPlanSection({
   showTodoList = false,
   onExitTodoList,
   onPressTodoList,
+  windowChipGuideNonce = 0,
 }: Props) {
   const { t, locale } = useTranslation();
   const router = useRouter();
@@ -418,6 +487,7 @@ export function PriorityBasedPlanSection({
   } | null>(null);
   const [bagRowTimeModalKey, setBagRowTimeModalKey] = useState(0);
   const bagRowTimePanelRef = useRef<CatalogRowSpineTimePanelHandle>(null);
+  const spinePastAlertQuietUntilRef = useRef(0);
   const [monthCursor, setMonthCursor] = useState(() => toMonthStart(new Date()));
   const [draftRangeStart, setDraftRangeStart] = useState(priorityPlanDateKey);
   const [draftRangeEnd, setDraftRangeEnd] = useState(priorityPlanDateKeyEnd);
@@ -666,6 +736,8 @@ export function PriorityBasedPlanSection({
   );
   const [addRoutineSheetOpen, setAddRoutineSheetOpen] = useState(false);
   const [addRoutineTargetSlot, setAddRoutineTargetSlot] = useState<DayMealSlot | null>(null);
+  const [emphasizePriorityWindowChip, setEmphasizePriorityWindowChip] = useState(false);
+  const emphasizePriorityWindowChipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [createSheetGroupKey, setCreateSheetGroupKey] = useState<string | undefined>(undefined);
   const [spinePendingGapBounds, setSpinePendingGapBounds] = useState<{
@@ -1046,6 +1118,9 @@ export function PriorityBasedPlanSection({
         return;
       }
       if (reason === 'in_the_past') {
+        const now = Date.now();
+        if (now < spinePastAlertQuietUntilRef.current) return;
+        spinePastAlertQuietUntilRef.current = now + 2500;
         Alert.alert(title, t('dayPlan.blockEndFuture'));
         return;
       }
@@ -1105,17 +1180,98 @@ export function PriorityBasedPlanSection({
     customGroups,
   ]);
 
+  const triggerPriorityWindowChipEmphasis = useCallback(() => {
+    if (emphasizePriorityWindowChipTimerRef.current) {
+      clearTimeout(emphasizePriorityWindowChipTimerRef.current);
+    }
+    setEmphasizePriorityWindowChip(true);
+    emphasizePriorityWindowChipTimerRef.current = setTimeout(() => {
+      setEmphasizePriorityWindowChip(false);
+      emphasizePriorityWindowChipTimerRef.current = null;
+    }, 2800);
+  }, []);
+
+  /** 첫 온보딩 완료 직후 — 집중 시간 칩을 한 번 강조해 탭을 유도 */
+  useEffect(() => {
+    if (!loadDailyRhythmWindowChipGuidePending()) return;
+    const timer = setTimeout(() => {
+      if (!loadDailyRhythmWindowChipGuidePending()) return;
+      clearDailyRhythmWindowChipGuidePending();
+      triggerPriorityWindowChipEmphasis();
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [triggerPriorityWindowChipEmphasis, windowChipGuideNonce]);
+
+  const alertFocusEndedGuideToWindow = useCallback(
+    (messageKey: 'catalog.focusEndedAdd' | 'catalog.focusEndedChangeTime') => {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Alert.alert(t('alert.focusEnded.title'), t(messageKey), [
+        {
+          text: t('common.confirm'),
+          onPress: () => {
+            triggerPriorityWindowChipEmphasis();
+          },
+        },
+      ]);
+    },
+    [t, triggerPriorityWindowChipEmphasis],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (emphasizePriorityWindowChipTimerRef.current) {
+        clearTimeout(emphasizePriorityWindowChipTimerRef.current);
+      }
+    };
+  }, []);
+
   const openAddRoutineForSlot = useCallback((slot: DayMealSlot) => {
+    if (
+      isPriorityWindowEndedForToday({
+        planMode: 'priority',
+        priorityStart,
+        priorityEnd,
+        priorityPlanDateKey,
+        priorityPlanDateKeyEnd,
+      })
+    ) {
+      alertFocusEndedGuideToWindow('catalog.focusEndedAdd');
+      return;
+    }
     setSpinePendingGapBounds(null);
     setAddRoutineTargetSlot(slot);
     setAddRoutineSheetOpen(true);
-  }, []);
+  }, [
+    alertFocusEndedGuideToWindow,
+    priorityEnd,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+    priorityStart,
+  ]);
 
   const openAddRoutineForBag = useCallback(() => {
+    if (
+      isPriorityWindowEndedForToday({
+        planMode: 'priority',
+        priorityStart,
+        priorityEnd,
+        priorityPlanDateKey,
+        priorityPlanDateKeyEnd,
+      })
+    ) {
+      alertFocusEndedGuideToWindow('catalog.focusEndedAdd');
+      return;
+    }
     setSpinePendingGapBounds(null);
     setAddRoutineTargetSlot(null);
     setAddRoutineSheetOpen(true);
-  }, []);
+  }, [
+    alertFocusEndedGuideToWindow,
+    priorityEnd,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+    priorityStart,
+  ]);
 
   const clearAddRoutineTargetContext = useCallback(() => {
     setAddRoutineTargetSlot(null);
@@ -1125,6 +1281,19 @@ export function PriorityBasedPlanSection({
   const handleConfirmAddRoutinesToSlot = useCallback(
     (items: RoutinePickerConfirmItem[]) => {
       if (items.length === 0) return;
+
+      if (
+        isPriorityWindowEndedForToday({
+          planMode: 'priority',
+          priorityStart,
+          priorityEnd,
+          priorityPlanDateKey,
+          priorityPlanDateKeyEnd,
+        })
+      ) {
+        alertFocusEndedGuideToWindow('catalog.focusEndedAdd');
+        return;
+      }
 
       const allHaveSpineSchedule = items.every((item) => item.schedule != null);
       if (allHaveSpineSchedule) {
@@ -1211,13 +1380,17 @@ export function PriorityBasedPlanSection({
       addPlanBlock,
       addRoutineTargetSlot,
       addPrioritySectionMealSlot,
+      alertFocusEndedGuideToWindow,
       alertSpineBlockSaveError,
       appendPrioritySectionsCategoryKeys,
       priorityCategoryOrder,
       priorityEnd,
+      priorityPlanDateKey,
+      priorityPlanDateKeyEnd,
       prioritySectionsCategoryOrder,
       priorityStart,
       setPriorityCategoryOrder,
+      t,
     ],
   );
 
@@ -1793,11 +1966,34 @@ export function PriorityBasedPlanSection({
     const fixedFlowItems = fixedFlowSets
       .filter((set) => activeSetIds.has(set.id))
       .flatMap((set) => set.items);
+    const overnight = isOvernightHhmmRange(priorityStart, priorityEnd);
 
     for (const block of planBlocks) {
       if (block.blockOrigin !== 'spineTimeline') continue;
       // 고정 루틴에서 명시적으로 저장한 시각은 집중 구간보다 우선한다.
       if (isStoredFixedFlowSpineSchedule(block, fixedFlowItems)) continue;
+      // 사용자가 직접 맞춘 시각은 창이 바뀌어도 강제로 창 끝에 붙이지 않는다.
+      if (block.hasManualScheduleOverride) continue;
+
+      const blockKey =
+        resolveBlockCategoryKey(block) ?? resolveCategoryKeyFromLabel(block.category ?? '');
+      // 튜토리얼은 집중 구간 전체를 따라간다 (자정 넘김 포함)
+      if (blockKey && isPokitWeekTourFlowId(blockKey)) {
+        if (
+          block.startMinutes === window.startMin &&
+          block.endMinutes === window.endMin &&
+          block.endsNextCalendarDay === overnight
+        ) {
+          continue;
+        }
+        updatePlanBlock(block.id, {
+          startMinutes: window.startMin,
+          endMinutes: window.endMin,
+          endsNextCalendarDay: overnight,
+        });
+        continue;
+      }
+
       // 자정 넘김 일정은 당일 밴드 클램프 대상이 아님
       if (block.endsNextCalendarDay) continue;
       const clamped = clampSpineBlockToPriorityWindow(
@@ -1925,10 +2121,28 @@ export function PriorityBasedPlanSection({
   );
 
   const handleSpineAddBlockInGap = useCallback((fromMinutes: number, toMinutes: number) => {
+    if (
+      isPriorityWindowEndedForToday({
+        planMode: 'priority',
+        priorityStart,
+        priorityEnd,
+        priorityPlanDateKey,
+        priorityPlanDateKeyEnd,
+      })
+    ) {
+      alertFocusEndedGuideToWindow('catalog.focusEndedAdd');
+      return;
+    }
     setAddRoutineTargetSlot(null);
     setSpinePendingGapBounds({ fromMinutes, toMinutes });
     setAddRoutineSheetOpen(true);
-  }, []);
+  }, [
+    alertFocusEndedGuideToWindow,
+    priorityEnd,
+    priorityPlanDateKey,
+    priorityPlanDateKeyEnd,
+    priorityStart,
+  ]);
 
   const handleSpineToggleBlockComplete = useCallback(
     (blockId: string) => {
@@ -2188,6 +2402,12 @@ export function PriorityBasedPlanSection({
 
   const openPriorityTimeEditor = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (emphasizePriorityWindowChipTimerRef.current) {
+      clearTimeout(emphasizePriorityWindowChipTimerRef.current);
+      emphasizePriorityWindowChipTimerRef.current = null;
+    }
+    setEmphasizePriorityWindowChip(false);
+    clearDailyRhythmWindowChipGuidePending();
     router.push('/daily-rhythm-settings');
   }, [router]);
 
@@ -2246,19 +2466,20 @@ export function PriorityBasedPlanSection({
         return;
       }
 
-      let clamped: { startMinutes: number; endMinutes: number };
-      if (endsNext) {
-        clamped = {
-          startMinutes: Math.max(0, Math.min(Math.floor(startMin), 24 * 60 - 1)),
-          endMinutes: Math.max(0, Math.min(Math.floor(endMin), 24 * 60)),
-        };
-      } else {
-        const next = clampSpineBlockToPriorityWindow(startMin, endMin, window);
-        if (!next) {
-          alertSpineBlockSaveError('update', 'outside_window');
-          return;
-        }
-        clamped = next;
+      const clamped = {
+        startMinutes: Math.max(0, Math.min(Math.floor(startMin), 24 * 60 - 1)),
+        endMinutes: Math.max(0, Math.min(Math.floor(endMin), 24 * 60)),
+      };
+
+      // 저장·반영 전에 과거 종료인지 검사 — 적용 후 알림이 뜨며 막히는 일을 없앤다
+      if (
+        isBlockEndInPastForDateKey(getLocalDateKey(), {
+          endMinutes: clamped.endMinutes,
+          endsNextCalendarDay: endsNext,
+        })
+      ) {
+        alertSpineBlockSaveError('update', 'in_the_past');
+        return;
       }
 
       const categoryKey = bagRowTimeEdit.categoryKey;
@@ -2733,6 +2954,7 @@ export function PriorityBasedPlanSection({
                         chipBg={priorityTimeChipColors.bg}
                         chipBgPressed={priorityTimeChipColors.pressed}
                         borderColor={editorial.line}
+                        emphasize={emphasizePriorityWindowChip}
                         onPress={openPriorityTimeEditor}
                       />
                     </View>
@@ -2761,6 +2983,7 @@ export function PriorityBasedPlanSection({
                         chipBg={priorityTimeChipColors.bg}
                         chipBgPressed={priorityTimeChipColors.pressed}
                         borderColor={editorial.line}
+                        emphasize={emphasizePriorityWindowChip}
                         onPress={openPriorityTimeEditor}
                       />
                     </View>
@@ -3446,6 +3669,16 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: 1,
     marginTop: 1,
+  },
+  priorityTimelineTimeChipShadow: {
+    shadowOffset: { width: 0, height: 0 },
+  },
+  priorityTimelineTimeChipPressable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 1,
+    maxWidth: '100%',
   },
   priorityTimelineHeaderActions: {
     flexDirection: 'row',

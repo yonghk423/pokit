@@ -1,25 +1,25 @@
 {
-  "latestVersion": "1.7.8",
+  "latestVersion": "1.7.10",
   "highlights": [
-    "섭취·약 알림 시간을 오늘 루틴 안에서 고를 수 있어요.",
-    "상세설정에서 고른 아이콘 색이 오늘 탭 루틴과 같아졌어요.",
-    "오늘 일정에서도 루틴 이름을 바꿀 수 있어요."
+    "하루 집중 시간·당일/다음 날 설정이 더 정확히 반영돼요.",
+    "집중이 끝난 뒤·요일을 끈 고정 루틴이 오늘 탭에서 바로 정리돼요.",
+    "집중이 끝났을 때 시간 버튼이 강조되어 변경을 안내해요."
   ],
   "highlightsByLocale": {
     "ko": [
-      "섭취·약 알림 시간을 오늘 루틴 안에서 고를 수 있어요.",
-      "상세설정에서 고른 아이콘 색이 오늘 탭 루틴과 같아졌어요.",
-      "오늘 일정에서도 루틴 이름을 바꿀 수 있어요."
+      "하루 집중 시간·당일/다음 날 설정이 더 정확히 반영돼요.",
+      "집중이 끝난 뒤·요일을 끈 고정 루틴이 오늘 탭에서 바로 정리돼요.",
+      "집중이 끝났을 때 시간 버튼이 강조되어 변경을 안내해요."
     ],
     "en": [
-      "Reminder times for intake and medicine stay inside today’s routine.",
-      "Icon colors from routine settings now match the Today list.",
-      "You can rename a routine even from today’s plan."
+      "Daily focus time and same-day / next-day settings apply more reliably.",
+      "Routines clear from Today after focus ends or when a weekday is turned off.",
+      "When focus ends, the time button is highlighted to guide a change."
     ],
     "ja": [
-      "摂取・薬の通知時間を今日のルーチンの中で選べます。",
-      "詳細設定で選んだアイコン色が今日タブのルーチンと同じになりました。",
-      "今日の予定からもルーチン名を変更できます。"
+      "1日の集中時間・当日／翌日の設定がより正確に反映されます。",
+      "集中終了後や曜日をオフにした固定ルーチンが今日タブからすぐ整理されます。",
+      "集中が終わると時間ボタンが強調され、変更を案内します。"
     ]
   },
   "storeUrls": {

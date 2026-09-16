@@ -133,7 +133,9 @@ export function DayCycleDial({
   /** 드래그 중 마지막 햅틱을 준 「시」 — 정시만 피드백 (버벅임 완화) */
   const lastHapticHourRef = useRef<number | null>(null);
   const startMinRef = useRef(parseStartToCycle(startHhmm));
-  const endMinRef = useRef(parseEndToCycle(endHhmm, endNextDay));
+  const endMinRef = useRef(
+    unwrapEndAfterStart(parseStartToCycle(startHhmm), parseEndToCycle(endHhmm, endNextDay)),
+  );
   const lastEmittedRef = useRef({ start: startHhmm, end: endHhmm, endNextDay });
   const onChangeRef = useRef(onChange);
   const onInteractionChangeRef = useRef(onInteractionChange);
@@ -164,11 +166,15 @@ export function DayCycleDial({
   const minorTickInner = outerR - 6;
   const majorTickInner = outerR - 11;
 
+  const dragMovedRef = useRef(false);
+  const grantPtRef = useRef<{ x: number; y: number } | null>(null);
+
   // 드래그 중에는 props로 덮어쓰지 않음 — 손가락 궤적이 끊기지 않게
   useEffect(() => {
     if (draggingRef.current) return;
-    startMinRef.current = parseStartToCycle(startHhmm);
-    endMinRef.current = parseEndToCycle(endHhmm, endNextDay);
+    const startCycle = parseStartToCycle(startHhmm);
+    startMinRef.current = startCycle;
+    endMinRef.current = unwrapEndAfterStart(startCycle, parseEndToCycle(endHhmm, endNextDay));
     lastEmittedRef.current = { start: startHhmm, end: endHhmm, endNextDay };
     setDraft(null);
   }, [endHhmm, endNextDay, startHhmm]);
@@ -389,6 +395,32 @@ export function DayCycleDial({
     return null;
   }, []);
 
+  const isDialGestureTarget = useCallback((localX: number, localY: number) => {
+    const size = sizeRef.current;
+    const center = size / 2;
+    const dist = Math.hypot(localX - center, localY - center);
+    const labelInset = Math.max(52, size * 0.16);
+    const outerR = size / 2 - labelInset;
+    const innerR = outerR * 0.58;
+    const handleHitR = Math.max(28, size * 0.1);
+    if (dist >= innerR * 0.85 && dist <= outerR + handleHitR) return true;
+
+    const midR = ringMidRRef.current;
+    const startP = polarToCartesian(center, center, midR, cycleDisplayMinutes(startMinRef.current));
+    const endP = polarToCartesian(center, center, midR, cycleDisplayMinutes(endMinRef.current));
+    const wakeP = polarToCartesian(
+      center,
+      center,
+      midR,
+      cycleDisplayMinutes(startMinRef.current + DAY_MINUTES),
+    );
+    const hit2 = handleHitR * handleHitR;
+    const dStart = (localX - startP.x) ** 2 + (localY - startP.y) ** 2;
+    const dEnd = (localX - endP.x) ** 2 + (localY - endP.y) ** 2;
+    const dWake = (localX - wakeP.x) ** 2 + (localY - wakeP.y) ** 2;
+    return dStart <= hit2 || dEnd <= hit2 || dWake <= hit2;
+  }, []);
+
   const pickNearestHandle = useCallback((localX: number, localY: number) => {
     const center = sizeRef.current / 2;
     const midR = ringMidRRef.current;
@@ -423,72 +455,95 @@ export function DayCycleDial({
   const applyLocalPointRef = useRef(applyLocalPoint);
   const localFromEventRef = useRef(localFromEvent);
   const pickNearestHandleRef = useRef(pickNearestHandle);
+  const isDialGestureTargetRef = useRef(isDialGestureTarget);
   const measureOriginSyncRef = useRef(measureOriginSync);
   const commitDragRef = useRef(commitDrag);
   applyLocalPointRef.current = applyLocalPoint;
   localFromEventRef.current = localFromEvent;
   pickNearestHandleRef.current = pickNearestHandle;
+  isDialGestureTargetRef.current = isDialGestureTarget;
   measureOriginSyncRef.current = measureOriginSync;
   commitDragRef.current = commitDrag;
+
+  const finishGestureRef = useRef<(commit: boolean) => void>(() => undefined);
+  finishGestureRef.current = (commit: boolean) => {
+    const moved = dragMovedRef.current;
+    draggingRef.current = false;
+    lastHapticHourRef.current = null;
+    grantPtRef.current = null;
+    if (draftFlushRafRef.current != null) {
+      cancelAnimationFrame(draftFlushRafRef.current);
+      draftFlushRafRef.current = null;
+    }
+    if (commit && moved) {
+      commitDragRef.current();
+    } else {
+      setDraft(null);
+    }
+    dragMovedRef.current = false;
+    setActiveHandle(null);
+    onInteractionChangeRef.current?.(false);
+  };
 
   /** PanResponder는 마운트 시 1회만 — 핸들러는 ref로 최신 로직 참조 */
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onStartShouldSetPanResponderCapture: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponderCapture: () => true,
-      onPanResponderTerminationRequest: () => false,
+      onStartShouldSetPanResponder: (e) => {
+        const { locationX, locationY } = e.nativeEvent;
+        if (!Number.isFinite(locationX) || !Number.isFinite(locationY)) return false;
+        return isDialGestureTargetRef.current(locationX, locationY);
+      },
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponder: (e, g) => {
+        if (Math.abs(g.dx) + Math.abs(g.dy) < 8) return false;
+        const { locationX, locationY } = e.nativeEvent;
+        if (!Number.isFinite(locationX) || !Number.isFinite(locationY)) return false;
+        return isDialGestureTargetRef.current(locationX, locationY);
+      },
+      onMoveShouldSetPanResponderCapture: () => false,
+      onPanResponderTerminationRequest: () => true,
       onShouldBlockNativeResponder: () => true,
       onPanResponderGrant: (e) => {
         draggingRef.current = true;
+        dragMovedRef.current = false;
         lastHapticHourRef.current = null;
         onInteractionChangeRef.current?.(true);
         const { locationX, locationY } = e.nativeEvent;
         if (Number.isFinite(locationX) && Number.isFinite(locationY)) {
+          grantPtRef.current = { x: locationX, y: locationY };
           pickNearestHandleRef.current(locationX, locationY);
           setActiveHandle(handleKindRef.current);
-          applyLocalPointRef.current(locationX, locationY);
         }
         measureOriginSyncRef.current(() => {
           const pt = localFromEventRef.current(e);
           if (!pt) return;
+          grantPtRef.current = pt;
           if (!Number.isFinite(locationX) || !Number.isFinite(locationY)) {
             pickNearestHandleRef.current(pt.x, pt.y);
             setActiveHandle(handleKindRef.current);
           }
-          applyLocalPointRef.current(pt.x, pt.y);
         });
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
       },
       onPanResponderMove: (e) => {
         if (!draggingRef.current) return;
         const pt = localFromEventRef.current(e);
         if (!pt) return;
+        const grant = grantPtRef.current;
+        if (!dragMovedRef.current) {
+          if (grant && Math.hypot(pt.x - grant.x, pt.y - grant.y) < 12) return;
+          dragMovedRef.current = true;
+        }
         applyLocalPointRef.current(pt.x, pt.y);
       },
       onPanResponderRelease: () => {
-        draggingRef.current = false;
-        lastHapticHourRef.current = null;
-        if (draftFlushRafRef.current != null) {
-          cancelAnimationFrame(draftFlushRafRef.current);
-          draftFlushRafRef.current = null;
+        const moved = dragMovedRef.current;
+        finishGestureRef.current(true);
+        if (moved) {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
         }
-        commitDragRef.current();
-        setActiveHandle(null);
-        onInteractionChangeRef.current?.(false);
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
       },
       onPanResponderTerminate: () => {
-        draggingRef.current = false;
-        lastHapticHourRef.current = null;
-        if (draftFlushRafRef.current != null) {
-          cancelAnimationFrame(draftFlushRafRef.current);
-          draftFlushRafRef.current = null;
-        }
-        commitDragRef.current();
-        setActiveHandle(null);
-        onInteractionChangeRef.current?.(false);
+        finishGestureRef.current(false);
       },
     }),
   ).current;
@@ -725,7 +780,10 @@ export function DayCycleDial({
 
             {segmentPaths.map((seg) => {
               if (seg.kind === 'rest' || seg.span < 120) return null;
-              const label = seg.kind === 'activity' ? activityDuration : sleepDuration;
+              const label =
+                seg.kind === 'activity'
+                  ? t('dayCycleDial.arcActivityShort', { duration: activityDuration })
+                  : t('dayCycleDial.arcSleepShort', { duration: sleepDuration });
               return (
                 <SvgText
                   key={`arc-label-${seg.kind}-${seg.startDisplay}`}

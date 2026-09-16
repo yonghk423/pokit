@@ -1,8 +1,6 @@
 import {
   buildAppliedFixedRoutineMealSlotsMap,
   isBuiltinPresetScheduleSet,
-  isPokitWeekTourFlowId,
-  isStandardCatalogKeyHidden,
   resolveFixedFlowItemMealSlot,
   resolveFixedFlowItemMealSlots,
   type DayMealSlot,
@@ -53,9 +51,7 @@ export function syncPriorityOrderWithAppliedFixedRoutines(
     const base = resolvePriorityRoutineCategoryKey(key);
     const isFixed = allFixedFlowKeys.has(key) || allFixedFlowKeys.has(base);
     if (!isFixed) {
-      // 자동 시드 튜토리얼은 고정 세트에 없어도 유지한다. 삭제한 뒤에는 빼 둔다.
-      if (isPokitWeekTourFlowId(base) && !isStandardCatalogKeyHidden(base)) return true;
-      // 세트에 없는 customFlow — 카탈로그 수동 선택이 아니면 고정 루틴 삭제 orphan
+      // 튜토리얼도 고정 적용이 아니면 일반 customFlow와 동일 — catalog 선택만 유지
       if (isCustomFlowCategoryKey(base)) {
         return (
           routineCatalogSelectionKeys.has(key) || routineCatalogSelectionKeys.has(base)
@@ -300,7 +296,6 @@ export function syncSpinePlanBlocksWithAppliedFixedRoutines(input: {
     }
     const isFixed = input.allFixedFlowKeys.has(key) || input.allFixedFlowKeys.has(base);
     if (!isFixed) {
-      if (isPokitWeekTourFlowId(base)) return true;
       if (isCustomFlowCategoryKey(base)) {
         return (
           input.routineCatalogSelectionKeys.has(key) ||
