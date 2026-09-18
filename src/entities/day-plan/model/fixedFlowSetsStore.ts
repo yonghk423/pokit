@@ -23,6 +23,7 @@ import {
   type FixedRoutineApplyLayoutMode,
   type WeekdayIndex,
 } from '@shared/lib/storage';
+import { getClockNow } from '@shared/lib/time/appClock';
 
 import { isPriorityCatalogAllowedKey } from '../lib/priorityCatalogRegistry';
 import { purgeFixedRoutineCategoryFromTodayPlan } from '../lib/purgeFixedRoutineCategoryFromTodayPlan';
@@ -207,7 +208,7 @@ function recomputeTodayApplied(
   activeSetIds: string[],
   activeMealSlotsBySetId: Record<string, DayMealSlot[]>,
   sets: FixedFlowSet[],
-  now: Date = new Date(),
+  now: Date = getClockNow(),
 ): string[] {
   return resolveTodayFixedRoutineKeys({ activeSetIds, activeMealSlotsBySetId, sets }, { now });
 }
@@ -388,17 +389,18 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
 
   refreshTodayAppliedCategoryKeys: (now) => {
     const { activeSetIds, activeMealSlotsBySetId, sets } = get();
+    const appliedAt = now ?? getClockNow();
     const todayAppliedCategoryKeys = recomputeTodayApplied(
       activeSetIds,
       activeMealSlotsBySetId,
       sets,
-      now,
+      appliedAt,
     );
     set((state) => ({
       todayAppliedCategoryKeys,
       todayAppliedRevision: state.todayAppliedRevision + 1,
     }));
-    syncTodayTabWithFixedRoutineApply();
+    syncTodayTabWithFixedRoutineApply(appliedAt);
   },
 
   addSet: (name) => {
@@ -1007,7 +1009,22 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
   },
 }));
 
-registerFixedSyncTodayTabAccessor(() => useFixedFlowSetsStore.getState());
+registerFixedSyncTodayTabAccessor(
+  () => useFixedFlowSetsStore.getState(),
+  (now) => {
+    const { activeSetIds, activeMealSlotsBySetId, sets } = useFixedFlowSetsStore.getState();
+    const todayAppliedCategoryKeys = recomputeTodayApplied(
+      activeSetIds,
+      activeMealSlotsBySetId,
+      sets,
+      now,
+    );
+    useFixedFlowSetsStore.setState((state) => ({
+      todayAppliedCategoryKeys,
+      todayAppliedRevision: state.todayAppliedRevision + 1,
+    }));
+  },
+);
 
 /** 목표 상세 요일 설정 등 fixedFlowSetsState 밖 변경 후 오늘 적용 목록 갱신 */
 export function notifyFixedFlowApplyScheduleChanged(now?: Date): void {

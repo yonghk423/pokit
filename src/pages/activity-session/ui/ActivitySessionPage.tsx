@@ -12,12 +12,10 @@ import {
   formatBlockTimeRange,
   getFlowCompletionCategoryKeysForBlock,
   getFlowCompletionUnitCountForBlock,
-  getLocalDateKey,
-  getLocalMinutesOfDayNow,
   getNextPendingAfter,
   isCustomFlowCategoryKey,
   isGoalDetailChecklistStyleCategoryKey,
-  isOvernightPriorityWindow,
+  isPriorityWindowEndedForToday,
   normalizeFastingDetailConfig,
   normalizeHealthIntakeDetailConfig,
   normalizeMedicineDetailConfig,
@@ -26,22 +24,21 @@ import {
   normalizeWaterDetailConfig,
   normalizeWorkDetailConfig,
   parseHHmmToMinutes,
-  readingDisplayTitle,
   readingBookExternalLinkLabel,
+  readingDisplayTitle,
+  resolveBlockCategoryKey,
+  resolveCategoryCatalogIcon,
   resolveReadingBookCatalogSource,
   resolveReadingBookExternalLink,
   resolveReadingBookTotalPages,
-  resolveBlockCategoryKey,
-  resolveCategoryCatalogIcon,
   toRuntimeTiming,
   useDayPlanDraftStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
-import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
 import { AladinAttributionLine, openAladinProductPage } from '@features/aladin-book-search';
-import { OpenLibraryAttributionLine, openOpenLibraryBookPage } from '@features/open-library-book-search';
+import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
 import {
   buildLiveActivityChecklistRows,
   buildLiveActivityPayloadForBlock,
@@ -49,11 +46,11 @@ import {
   upsertFinishedLiveActivityForBlockId,
   useLiveActivitySync,
 } from '@features/live-activity-sync';
+import { OpenLibraryAttributionLine, openOpenLibraryBookPage } from '@features/open-library-book-search';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
 import { GoalDetailSessionUi } from '@shared/config/goalDetailSessionUi';
 import { useTranslation, type I18nKey, type TParams } from '@shared/lib/i18n';
-import { formatDurationMinKo } from '@shared/lib/formatDurationMinKo';
 import {
   loadGoalDetailBlockConfig,
   loadGoalDetailCategoryConfig,
@@ -220,9 +217,9 @@ export function ActivitySessionPage() {
     () =>
       Boolean(
         block &&
-          isCustomFlowCategoryKey(categoryKey) &&
-          !isQuickMemoSession &&
-          customFlowRawConfig != null,
+        isCustomFlowCategoryKey(categoryKey) &&
+        !isQuickMemoSession &&
+        customFlowRawConfig != null,
       ),
     [block, categoryKey, customFlowRawConfig, isQuickMemoSession],
   );
@@ -581,29 +578,13 @@ export function ActivitySessionPage() {
 
     const check = () => {
       const draft = useDayPlanDraftStore.getState();
-      if (draft.planMode !== 'priority') return false;
-      const ps = parseHHmmToMinutes(draft.priorityStart);
-      const pe = parseHHmmToMinutes(draft.priorityEnd);
-      if (ps === null || pe === null) return false;
-
-      const rangeLo =
-        draft.priorityPlanDateKey <= draft.priorityPlanDateKeyEnd
-          ? draft.priorityPlanDateKey
-          : draft.priorityPlanDateKeyEnd;
-      const rangeHi =
-        draft.priorityPlanDateKey <= draft.priorityPlanDateKeyEnd
-          ? draft.priorityPlanDateKeyEnd
-          : draft.priorityPlanDateKey;
-      const nowKey = getLocalDateKey();
-      const nowMin = getLocalMinutesOfDayNow();
-      const inRange = nowKey >= rangeLo && nowKey <= rangeHi;
-      if (!inRange) return false;
-
-      const overnight = isOvernightPriorityWindow(draft.priorityStart, draft.priorityEnd);
-      if (!overnight) return nowMin >= pe;
-      if (nowKey === rangeLo) return false;
-      if (nowKey === rangeHi) return nowMin >= pe;
-      return false;
+      return isPriorityWindowEndedForToday({
+        planMode: draft.planMode,
+        priorityStart: draft.priorityStart,
+        priorityEnd: draft.priorityEnd,
+        priorityPlanDateKey: draft.priorityPlanDateKey,
+        priorityPlanDateKeyEnd: draft.priorityPlanDateKeyEnd,
+      });
     };
 
     if (check()) {
@@ -847,14 +828,14 @@ export function ActivitySessionPage() {
       readingCfg.books.length > 0
         ? readingCfg.books
         : [
-            {
-              id: 'legacy',
-              title: readingDisplayTitle(activityTitle, readingCfg),
-              startPage: readingCfg.startPage,
-              targetPage: readingCfg.targetPage,
-              aladin: readingCfg.aladinBook ?? null,
-            },
-          ];
+          {
+            id: 'legacy',
+            title: readingDisplayTitle(activityTitle, readingCfg),
+            startPage: readingCfg.startPage,
+            targetPage: readingCfg.targetPage,
+            aladin: readingCfg.aladinBook ?? null,
+          },
+        ];
     const hasAladinBook = sessionBooks.some((book) => book.aladin);
     const hasOpenLibraryBook = sessionBooks.some((book) => book.openLibrary);
 
@@ -1121,9 +1102,9 @@ export function ActivitySessionPage() {
             {weightAchieved
               ? t('session.fasting.weeklyMaintain', { kg: weightCfg.weeklyLossTargetKg.toFixed(1) })
               : t('session.fasting.goalDelta', {
-                  delta: weightDeltaKg.toFixed(1),
-                  weekly: weightCfg.weeklyLossTargetKg.toFixed(1),
-                })}
+                delta: weightDeltaKg.toFixed(1),
+                weekly: weightCfg.weeklyLossTargetKg.toFixed(1),
+              })}
           </ThemedText>
           <View style={waterStyles.hydrateTrack}>
             <View
@@ -1368,7 +1349,7 @@ export function ActivitySessionPage() {
         <ImmersionCardShell borderColor={M.border}>
           <ThemedText style={waterStyles.statLabel} lightColor={M.muted} darkColor={M.muted}>
             {t('session.medicine.today')}
-            </ThemedText>
+          </ThemedText>
           <View style={waterStyles.goalRow}>
             <ThemedText style={waterStyles.goalValue} lightColor={M.onSurface} darkColor={M.onSurface}>
               {takenCount}
@@ -1415,7 +1396,7 @@ export function ActivitySessionPage() {
         <ImmersionCardShell borderColor={M.border}>
           <ThemedText style={medScheduleStyles.scheduleHeading} lightColor={M.muted} darkColor={M.muted}>
             {t('session.medicine.todaySchedule')}
-            </ThemedText>
+          </ThemedText>
           {upcomingSummaryLine ? (
             <ThemedText style={medScheduleStyles.scheduleUpcomingLine} lightColor={M.onSurface} darkColor={M.onSurface}>
               {t('session.medicine.upcoming', { line: upcomingSummaryLine })}

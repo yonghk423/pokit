@@ -1,9 +1,10 @@
 import type { DayPlanBlock } from '@entities/day-plan/model/types';
+import { getClockNow } from '@shared/lib/time/appClock';
 
 import { parseHHmmToMinutes } from './parseTime';
 
 /** 로컬 기준 오늘 자정부터의 “현재” 분 (0 ~ 1439, 초는 버림) */
-export function getLocalMinutesOfDayNow(now: Date = new Date()): number {
+export function getLocalMinutesOfDayNow(now: Date = getClockNow()): number {
   return now.getHours() * 60 + now.getMinutes();
 }
 

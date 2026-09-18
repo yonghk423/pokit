@@ -63,6 +63,7 @@ export {
   isPokitWeekTourChecklistComplete,
   loadPokitWeekTourFirstTipSeen,
   loadPokitWeekTourSeeded,
+  loadPokitWeekTourSeededDate,
   markPokitWeekTourFirstTipSeen,
   markPokitWeekTourSeeded,
   nextOrderWithPokitWeekTourSeed,

@@ -1,5 +1,7 @@
+import { getClockNow } from '@shared/lib/time/appClock';
+
 /** 로컬 캘린더 기준 `YYYY-MM-DD` */
-export function getLocalDateKey(d: Date = new Date()): string {
+export function getLocalDateKey(d: Date = getClockNow()): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');

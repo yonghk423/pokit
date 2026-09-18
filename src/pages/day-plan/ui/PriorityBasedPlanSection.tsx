@@ -88,6 +88,7 @@ import {
   formatWeekdayShort,
   type WeekdayIndex,
 } from '@shared/lib/i18n/lib/formatLocale';
+import { useAppClockEpoch } from '@shared/lib/time/appClock';
 import {
   appendCustomFlowCatalogEntry,
   appendRoutineCatalogSelectionKeys,
@@ -474,7 +475,8 @@ export function PriorityBasedPlanSection({
   const { height: windowHeight } = useWindowDimensions();
   const bc = bookColors(c, isDark);
 
-  const todayKey = getLocalDateKey();
+  const clockEpoch = useAppClockEpoch();
+  const todayKey = useMemo(() => getLocalDateKey(), [clockEpoch]);
 
   const [iosDateModalOpen, setIosDateModalOpen] = useState(false);
   const [bagRowTimeEdit, setBagRowTimeEdit] = useState<{

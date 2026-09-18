@@ -11,6 +11,7 @@ jest.mock('../lib/widgetDayPlanSync', () => ({
 jest.mock('../lib/localDateKey', () => ({
   getLocalDateKey: () => '2025-05-26',
   addDaysToLocalDateKey: jest.requireActual('../lib/localDateKey').addDaysToLocalDateKey,
+  parseLocalDateKeyToDate: jest.requireActual('../lib/localDateKey').parseLocalDateKeyToDate,
 }));
 
 import { loadDayPlanDraft, saveDayPlanDraft, savePriorityDayRollMode } from '@shared/lib/storage';
@@ -35,6 +36,9 @@ function resetDraftStore() {
     priorityStart: '09:00',
     priorityEnd: '18:00',
     priorityCategoryOrder: [],
+    priorityMealSlotOverrides: {},
+    prioritySectionsCategoryOrder: [],
+    prioritySectionsMealSlots: {},
     routineHistoryPendingByDate: {},
     routineHistoryPlannedKeysByDate: {},
     completedFocusCategoryKeys: [],
@@ -107,8 +111,11 @@ describe('dayPlanDraftStore', () => {
       priorityStart: '06:30',
       priorityEnd: '24:00',
       priorityCategoryOrder: ['work', 'pushUp'],
+      priorityMealSlotOverrides: { work: 'morning' },
+      prioritySectionsCategoryOrder: ['work'],
+      prioritySectionsMealSlots: { work: ['morning'] },
       priorityCategoryImportance: { work: 'pink' },
-      quickMemoDraft: '',
+      quickMemoDraft: '어제 메모',
     });
 
     useDayPlanDraftStore.getState().hydrate();
@@ -116,7 +123,11 @@ describe('dayPlanDraftStore', () => {
     const state = useDayPlanDraftStore.getState();
     expect(state.priorityPlanDateKey).toBe('2025-05-26');
     expect(state.priorityCategoryOrder).toEqual([]);
+    expect(state.priorityMealSlotOverrides).toEqual({});
+    expect(state.prioritySectionsCategoryOrder).toEqual([]);
+    expect(state.prioritySectionsMealSlots).toEqual({});
     expect(state.priorityCategoryImportance).toEqual({ work: 'pink' });
+    expect(state.quickMemoDraft).toBe('');
     expect(state.completedFocusCategoryKeys).toEqual([]);
     expect(state.planCompletionDismissedKeys).toEqual([]);
     expect(state.isFocusStarted).toBe(false);
@@ -126,7 +137,7 @@ describe('dayPlanDraftStore', () => {
     mockLoadDayPlanDraft.mockReturnValue({
       planMode: 'priority',
       isFocusStarted: true,
-      completedFocusCategoryKeys: ['reading'],
+      completedFocusCategoryKeys: ['fasting'],
       planCompletionDismissedKeys: [],
       priorityPlanDateKey: '2025-05-26',
       priorityPlanDateKeyEnd: '2025-05-26',
@@ -134,14 +145,14 @@ describe('dayPlanDraftStore', () => {
       priorityOvernightEndAuto: false,
       priorityStart: '06:30',
       priorityEnd: '24:00',
-      priorityCategoryOrder: ['reading', 'work'],
+      priorityCategoryOrder: ['fasting', 'work'],
       quickMemoDraft: '',
     });
 
     useDayPlanDraftStore.getState().hydrate();
 
     const state = useDayPlanDraftStore.getState();
-    expect(state.priorityCategoryOrder).toEqual(['reading']);
+    expect(state.priorityCategoryOrder).toEqual(['fasting']);
     expect(state.completedFocusCategoryKeys).toEqual([]);
     expect(mockSaveDayPlanDraft).toHaveBeenCalledWith(
       expect.objectContaining({ dailyRolloverVersion: 1 }),
@@ -153,22 +164,22 @@ describe('dayPlanDraftStore', () => {
     mockLoadDayPlanDraft.mockReturnValue({
       planMode: 'priority',
       isFocusStarted: true,
-      completedFocusCategoryKeys: ['reading'],
-      planCompletionDismissedKeys: ['reading'],
+      completedFocusCategoryKeys: ['fasting'],
+      planCompletionDismissedKeys: ['fasting'],
       priorityPlanDateKey: '2025-05-25',
       priorityPlanDateKeyEnd: '2025-05-25',
       priorityPlanExplicitMultiDay: false,
       priorityOvernightEndAuto: false,
       priorityStart: '06:30',
       priorityEnd: '24:00',
-      priorityCategoryOrder: ['reading'],
+      priorityCategoryOrder: ['fasting'],
       quickMemoDraft: '',
     });
 
     useDayPlanDraftStore.getState().hydrate();
 
     const state = useDayPlanDraftStore.getState();
-    expect(state.priorityCategoryOrder).toEqual(['reading']);
+    expect(state.priorityCategoryOrder).toEqual(['fasting']);
     expect(state.completedFocusCategoryKeys).toEqual([]);
     expect(state.planCompletionDismissedKeys).toEqual([]);
     expect(state.isFocusStarted).toBe(false);
@@ -209,10 +220,10 @@ describe('dayPlanDraftStore', () => {
   it('appends missing priority category keys', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,
-      priorityCategoryOrder: ['reading'],
+      priorityCategoryOrder: ['fasting'],
     });
-    appendPriorityCategoryKeysIfMissing(['water', 'reading', 'fasting']);
-    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['reading', 'fasting']);
+    appendPriorityCategoryKeysIfMissing(['water', 'reading', 'healthIntake']);
+    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['fasting', 'healthIntake']);
   });
 
   it('keeps repeated routine occurrences independently in the bag order', () => {
@@ -221,15 +232,15 @@ describe('dayPlanDraftStore', () => {
       priorityCategoryOrder: [],
       completedFocusCategoryKeys: [],
     });
-    const repeated = 'reading::instance:second';
+    const repeated = 'fasting::instance:second';
 
     useDayPlanDraftStore
       .getState()
-      .setPriorityCategoryOrder(['reading', repeated]);
+      .setPriorityCategoryOrder(['fasting', repeated]);
     useDayPlanDraftStore.getState().toggleFocusCategoryCompleted(repeated);
 
     expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual([
-      'reading',
+      'fasting',
       repeated,
     ]);
     expect(useDayPlanDraftStore.getState().completedFocusCategoryKeys).toEqual([
@@ -290,6 +301,48 @@ describe('dayPlanDraftStore', () => {
     expect(s.priorityPlanDateKeyEnd).toBe('2025-05-27');
     expect(s.priorityOvernightEndAuto).toBe(true);
     expect(s.priorityCategoryOrder).toEqual([]);
+  });
+
+  it('rolls 06:30~24:00 next-day range to today~tomorrow after the end date begins', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      planMode: 'priority',
+      priorityPlanDateKey: '2026-09-18',
+      priorityPlanDateKeyEnd: '2026-09-19',
+      priorityPlanExplicitMultiDay: true,
+      priorityOvernightEndAuto: true,
+      priorityStart: '06:30',
+      priorityEnd: '24:00',
+      priorityCategoryOrder: ['fasting'],
+      priorityBagResetForEndedKey: '',
+    });
+    useDayPlanDraftStore
+      .getState()
+      .rollPriorityPlanForwardIfEnded({ nowKey: '2026-09-19', nowMin: 8 * 60 });
+    const s = useDayPlanDraftStore.getState();
+    expect(s.priorityPlanDateKey).toBe('2026-09-19');
+    expect(s.priorityPlanDateKeyEnd).toBe('2026-09-20');
+  });
+
+  it('rolls overnight dates even when the visible tab is not priority', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      planMode: 'dayNote',
+      priorityPlanDateKey: '2026-09-18',
+      priorityPlanDateKeyEnd: '2026-09-19',
+      priorityPlanExplicitMultiDay: true,
+      priorityOvernightEndAuto: true,
+      priorityStart: '06:30',
+      priorityEnd: '00:00',
+      priorityCategoryOrder: ['fasting'],
+      priorityBagResetForEndedKey: '',
+    });
+    useDayPlanDraftStore
+      .getState()
+      .rollPriorityPlanForwardIfEnded({ nowKey: '2026-09-19', nowMin: 8 * 60 });
+    const s = useDayPlanDraftStore.getState();
+    expect(s.priorityPlanDateKey).toBe('2026-09-19');
+    expect(s.priorityPlanDateKeyEnd).toBe('2026-09-20');
   });
 
   it('keeps bag order when priority day roll mode is keep', () => {
@@ -358,6 +411,38 @@ describe('dayPlanDraftStore', () => {
     expect(s.priorityPlanDateKey).toBe('2025-05-26');
     expect(s.priorityPlanDateKeyEnd).toBe('2025-05-26');
     expect(s.priorityCategoryOrder).toEqual([]);
+    expect(s.completedFocusCategoryKeys).toEqual([]);
+    expect(s.isFocusStarted).toBe(false);
+  });
+
+  it('clears sections layout, meal slots, and quick memo draft on reset roll', () => {
+    savePriorityDayRollMode('reset');
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      planMode: 'priority',
+      priorityPlanDateKey: '2025-05-25',
+      priorityPlanDateKeyEnd: '2025-05-25',
+      priorityStart: '09:00',
+      priorityEnd: '18:00',
+      priorityCategoryOrder: ['reading'],
+      prioritySectionsCategoryOrder: ['fasting'],
+      prioritySectionsMealSlots: { fasting: ['morning'] },
+      priorityMealSlotOverrides: { reading: 'morning' },
+      quickMemoDraft: '어제 메모',
+      completedFocusCategoryKeys: ['reading'],
+      isFocusStarted: true,
+      priorityBagResetForEndedKey: '',
+    });
+    useDayPlanDraftStore
+      .getState()
+      .rollPriorityPlanForwardIfEnded({ nowKey: '2025-05-26', nowMin: 8 * 60 });
+    const s = useDayPlanDraftStore.getState();
+    expect(s.priorityPlanDateKey).toBe('2025-05-26');
+    expect(s.priorityCategoryOrder).toEqual([]);
+    expect(s.prioritySectionsCategoryOrder).toEqual([]);
+    expect(s.prioritySectionsMealSlots).toEqual({});
+    expect(s.priorityMealSlotOverrides).toEqual({});
+    expect(s.quickMemoDraft).toBe('');
     expect(s.completedFocusCategoryKeys).toEqual([]);
     expect(s.isFocusStarted).toBe(false);
   });
@@ -557,10 +642,10 @@ describe('dayPlanDraftStore', () => {
   it('updates priority category order with updater', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,
-      priorityCategoryOrder: ['reading'],
+      priorityCategoryOrder: ['fasting'],
     });
-    useDayPlanDraftStore.getState().setPriorityCategoryOrder((prev) => [...prev, 'fasting']);
-    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['reading', 'fasting']);
+    useDayPlanDraftStore.getState().setPriorityCategoryOrder((prev) => [...prev, 'healthIntake']);
+    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['fasting', 'healthIntake']);
   });
 
   it('keeps independent sections placement when bag order changes', () => {
@@ -574,17 +659,17 @@ describe('dayPlanDraftStore', () => {
     });
     mockSaveDayPlanDraft.mockClear();
 
-    useDayPlanDraftStore.getState().setPriorityCategoryOrder(['reading']);
+    useDayPlanDraftStore.getState().setPriorityCategoryOrder(['fasting']);
 
     const state = useDayPlanDraftStore.getState();
-    expect(state.priorityCategoryOrder).toEqual(['reading']);
+    expect(state.priorityCategoryOrder).toEqual(['fasting']);
     expect(state.prioritySectionsCategoryOrder).toEqual(['customFlow:new-routine']);
     expect(state.prioritySectionsMealSlots).toEqual({
       'customFlow:new-routine': ['morning'],
     });
     expect(mockSaveDayPlanDraft).toHaveBeenCalledWith(
       expect.objectContaining({
-        priorityCategoryOrder: ['reading'],
+        priorityCategoryOrder: ['fasting'],
         prioritySectionsCategoryOrder: ['customFlow:new-routine'],
         prioritySectionsMealSlots: {
           'customFlow:new-routine': ['morning'],

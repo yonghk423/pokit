@@ -3,32 +3,45 @@ import { create } from 'zustand';
 import {
   buildRoutineHistoryRecordKey,
 } from '@shared/lib/routineHistoryLayoutKey';
-import { appendRoutineCatalogSelectionKeys, loadDayPlanDraft, saveDayPlanDraft, normalizeDayMealSlot, normalizeCategoryMealSlots, loadPriorityDayRollMode, type DayMealSlot } from '@shared/lib/storage';
+import { appendRoutineCatalogSelectionKeys, loadDayPlanDraft, loadPriorityDayRollMode, normalizeCategoryMealSlots, normalizeDayMealSlot, saveDayPlanDraft, type DayMealSlot } from '@shared/lib/storage';
+import { getClockNow } from '@shared/lib/time/appClock';
 
 import { syncWidgetTimelineFromStorage } from '../lib/widgetDayPlanSync';
 
 import { getLocalMinutesOfDayNow } from '../lib/dayPlanTime';
 import { defaultPriorityWindowFromNow } from '../lib/dayPlanTimeMath';
 import {
-  cyclePriorityMarkColor,
-  normalizePriorityMarkColor,
-  type PriorityMarkColorId,
-} from '../lib/priorityMarkColor';
-import { addDaysToLocalDateKey, getLocalDateKey } from '../lib/localDateKey';
-import { parseHHmmToMinutes } from '../lib/parseTime';
-import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
-import {
   categoryKeysReferToSameRoutine,
   dropReaddedEndedTodayKeys,
   resolveEndedTodayCategoryKeys,
 } from '../lib/endedTodayCategoryKeys';
+import {
+  addDaysToLocalDateKey,
+  getLocalDateKey,
+  parseLocalDateKeyToDate,
+} from '../lib/localDateKey';
+import { parseHHmmToMinutes } from '../lib/parseTime';
 import { sanitizePriorityCategoryOrderKeys } from '../lib/priorityCatalogRegistry';
+import {
+  type PriorityLayoutLinkMode
+} from '../lib/priorityLayoutLinkMode';
+import {
+  cyclePriorityMarkColor,
+  normalizePriorityMarkColor,
+  type PriorityMarkColorId,
+} from '../lib/priorityMarkColor';
 import { resolvePriorityRoutineCategoryKey } from '../lib/priorityRoutineInstance';
+import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
+import {
+  isPriorityPlanRangeExpiredOnDate,
+  isPriorityPlanWindowEnded,
+  priorityEndLandsOnNextCalendarDay,
+} from '../lib/priorityWindowEligibility';
 import {
   buildPrioritySectionCompletionKey,
+  migrateCompletionKeyInList,
   parsePrioritySectionCompletionKey,
   toRoutineHistoryCategoryKey,
-  migrateCompletionKeyInList,
 } from '../lib/prioritySectionCompletionKey';
 import {
   appendRoutineHistoryPending,
@@ -38,15 +51,13 @@ import {
   shouldTrackRoutineHistoryForDate,
   snapshotRoutinePlannedKeys,
 } from '../lib/routineHistorySnapshot';
-import type { PlanMode } from './planMode';
 import {
-  normalizePriorityLayoutLinkMode,
-  type PriorityLayoutLinkMode,
-} from '../lib/priorityLayoutLinkMode';
-import {
+  prepareTodayTabForDateRoll,
+  refreshFixedRoutineApplyForDate,
   registerDraftSyncTodayTabAccessors,
   syncTodayTabWithFixedRoutineApply,
 } from '../lib/runSyncTodayTabWithFixedRoutineApply';
+import type { PlanMode } from './planMode';
 
 type DayPlanDraftState = {
   planMode: PlanMode;
@@ -181,6 +192,13 @@ type DayPlanDraftState = {
 function createInitialPriorityWindow() {
   const w = defaultPriorityWindowFromNow();
   return { priorityStart: w.startTime, priorityEnd: w.endTime };
+}
+
+function dateKeyAtMinute(dateKey: string, minuteOfDay: number): Date {
+  const date = parseLocalDateKeyToDate(dateKey) ?? getClockNow();
+  const safeMinute = Math.max(0, Math.min(24 * 60 - 1, Math.floor(minuteOfDay)));
+  date.setHours(Math.floor(safeMinute / 60), safeMinute % 60, 0, 0);
+  return date;
 }
 
 function normalizePriorityMealSlotOverrides(raw: unknown): Record<string, DayMealSlot> {
@@ -334,7 +352,15 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       raw.priorityPlanDateKey <= raw.priorityPlanDateKeyEnd
         ? raw.priorityPlanDateKeyEnd
         : raw.priorityPlanDateKey;
-    const keepRange = rangeHi >= today;
+    const keepRange =
+      rangeHi >= today &&
+      !isPriorityPlanRangeExpiredOnDate({
+        startHhmm: typeof raw.priorityStart === 'string' ? raw.priorityStart : get().priorityStart,
+        endHhmm: typeof raw.priorityEnd === 'string' ? raw.priorityEnd : get().priorityEnd,
+        rangeLo,
+        rangeHi,
+        todayKey: today,
+      });
     const needsDailyRolloverMigration = raw.dailyRolloverVersion !== 1;
     const rollMode = loadPriorityDayRollMode();
     const resetDailyPlan = !keepRange && rollMode === 'reset';
@@ -365,9 +391,9 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
             ? 'todoList'
             : raw.planMode === 'reading'
               ? 'reading'
-            : raw.planMode === 'dayNote'
-              ? 'dayNote'
-              : 'priority',
+              : raw.planMode === 'dayNote'
+                ? 'dayNote'
+                : 'priority',
       isFocusStarted: keepDailyProgress && Boolean(raw.isFocusStarted),
       completedFocusCategoryKeys: keepDailyProgress && Array.isArray(raw.completedFocusCategoryKeys)
         ? raw.completedFocusCategoryKeys
@@ -384,36 +410,47 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       priorityCategoryOrder: resetDailyPlan
         ? []
         : sanitizePriorityCategoryOrderKeys(
-            Array.isArray(raw.priorityCategoryOrder) ? raw.priorityCategoryOrder : [],
-          ),
+          Array.isArray(raw.priorityCategoryOrder) ? raw.priorityCategoryOrder : [],
+        ),
       // 중요도 표시는 루틴 목록·담기 공용 — 일일 롤오버로 지우지 않음
       priorityCategoryImportance: normalizePriorityCategoryImportance(
         raw.priorityCategoryImportance,
       ),
       routineHistoryPendingByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPendingByDate),
       routineHistoryPlannedKeysByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPlannedKeysByDate),
-      quickMemoDraft: typeof raw.quickMemoDraft === 'string' ? raw.quickMemoDraft : '',
+      quickMemoDraft:
+        resetDailyPlan || typeof raw.quickMemoDraft !== 'string' ? '' : raw.quickMemoDraft,
       priorityMealSlotLayoutEnabled: Boolean(raw.priorityMealSlotLayoutEnabled),
       prioritySpineLayoutEnabled: Boolean(raw.prioritySpineLayoutEnabled),
-      priorityMealSlotOverrides: normalizePriorityMealSlotOverrides(raw.priorityMealSlotOverrides),
-      prioritySectionsMealSlots: normalizePrioritySectionsMealSlots(raw.prioritySectionsMealSlots),
+      priorityMealSlotOverrides: resetDailyPlan
+        ? {}
+        : normalizePriorityMealSlotOverrides(raw.priorityMealSlotOverrides),
+      prioritySectionsMealSlots: resetDailyPlan
+        ? {}
+        : normalizePrioritySectionsMealSlots(raw.prioritySectionsMealSlots),
       prioritySectionsLinkMode: resolveSectionsLinkModeOnHydrate(raw.prioritySectionsLinkMode),
       prioritySpineLinkMode: resolveSpineLinkModeOnHydrate(raw.prioritySpineLinkMode),
       priorityBagLinkMode: resolveBagLinkModeOnHydrate(raw.priorityBagLinkMode),
-      prioritySectionsCategoryOrder: sanitizePriorityCategoryOrderKeys(
-        Array.isArray(raw.prioritySectionsCategoryOrder) ? raw.prioritySectionsCategoryOrder : [],
-      ),
+      prioritySectionsCategoryOrder: resetDailyPlan
+        ? []
+        : sanitizePriorityCategoryOrderKeys(
+            Array.isArray(raw.prioritySectionsCategoryOrder)
+              ? raw.prioritySectionsCategoryOrder
+              : [],
+          ),
       priorityEndedTodayKeys: keepDailyProgress
         ? resolveEndedTodayCategoryKeys(
-            raw.priorityEndedTodayKeys,
-            raw.priorityEndedTodayDateKey,
-            today,
-          )
+          raw.priorityEndedTodayKeys,
+          raw.priorityEndedTodayDateKey,
+          today,
+        )
         : [],
       priorityEndedTodayDateKey:
         keepDailyProgress && raw.priorityEndedTodayDateKey === today ? today : '',
       priorityBagResetForEndedKey:
-        typeof raw.priorityBagResetForEndedKey === 'string' ? raw.priorityBagResetForEndedKey : '',
+        resetDailyPlan || typeof raw.priorityBagResetForEndedKey !== 'string'
+          ? ''
+          : raw.priorityBagResetForEndedKey,
       isHydrated: true,
     });
     syncTodayTabWithFixedRoutineApply();
@@ -574,9 +611,9 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         isFocusStarted,
         ...(persistEnded
           ? {
-              priorityEndedTodayKeys: alreadyEnded ? currentEnded : [...currentEnded, key],
-              priorityEndedTodayDateKey: today,
-            }
+            priorityEndedTodayKeys: alreadyEnded ? currentEnded : [...currentEnded, key],
+            priorityEndedTodayDateKey: today,
+          }
           : {}),
       };
     }),
@@ -647,13 +684,13 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
   },
   rollPriorityPlanForwardIfEnded: (now) => {
     const s = get();
-    if (s.planMode !== 'priority') return;
     const ps = parseHHmmToMinutes(s.priorityStart);
     const pe = parseHHmmToMinutes(s.priorityEnd);
     if (ps === null || pe === null) return;
 
     const today = now?.nowKey ?? getLocalDateKey();
     const nowMin = now?.nowMin ?? getLocalMinutesOfDayNow();
+    const rollNow = dateKeyAtMinute(today, nowMin);
     const rangeLo =
       s.priorityPlanDateKey <= s.priorityPlanDateKeyEnd
         ? s.priorityPlanDateKey
@@ -663,23 +700,38 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         ? s.priorityPlanDateKeyEnd
         : s.priorityPlanDateKey;
 
-    // 구간 종료 시각이 현재보다 과거인지 (00:00 종료는 종료일 00:00과 동일하게 취급)
-    const ended = today > rangeHi || (today === rangeHi && nowMin >= pe);
+    const ended = isPriorityPlanWindowEnded({
+      startHhmm: s.priorityStart,
+      endHhmm: s.priorityEnd,
+      rangeLo,
+      rangeHi,
+      nowKey: today,
+      nowMin,
+    });
     if (!ended) {
-      // 구간이 다시 유효하면 종료 리셋 가드를 풀어 다음 종료에 대비
       if (s.priorityBagResetForEndedKey) {
         set({ priorityBagResetForEndedKey: '' });
       }
       return;
     }
 
-    const overnight = isOvernightPriorityWindow(s.priorityStart, s.priorityEnd);
+    const overnight = priorityEndLandsOnNextCalendarDay(s.priorityStart, s.priorityEnd);
     const nextStart = today;
     const nextEnd = overnight ? addDaysToLocalDateKey(today, 1) : today;
-    // 같은 종료 경계에서 반복 호출돼도 담기를 다시 비우지 않음
-    // (상세설정 중 10초 틱·화면 리마운트로 루틴이 통째로 사라지던 원인)
     const endedBoundaryKey = `${nextStart}|${nextEnd}|${s.priorityStart}|${s.priorityEnd}`;
     if (s.priorityBagResetForEndedKey === endedBoundaryKey) {
+      if (s.priorityPlanDateKey === nextStart && s.priorityPlanDateKeyEnd === nextEnd) {
+        return;
+      }
+      set({
+        priorityPlanDateKey: nextStart,
+        priorityPlanDateKeyEnd: nextEnd,
+        priorityPlanExplicitMultiDay: false,
+        priorityOvernightEndAuto: overnight,
+        priorityBagResetForEndedKey: endedBoundaryKey,
+      });
+      refreshFixedRoutineApplyForDate(rollNow);
+      syncTodayTabWithFixedRoutineApply(rollNow);
       return;
     }
 
@@ -708,7 +760,8 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
         priorityEndedTodayDateKey: '',
         priorityBagResetForEndedKey: endedBoundaryKey,
       });
-      syncTodayTabWithFixedRoutineApply();
+      refreshFixedRoutineApplyForDate(rollNow);
+      syncTodayTabWithFixedRoutineApply(rollNow);
       return;
     }
 
@@ -718,16 +771,21 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       priorityPlanExplicitMultiDay: false,
       priorityOvernightEndAuto: overnight,
       priorityCategoryOrder: [],
+      priorityMealSlotOverrides: {},
+      prioritySectionsCategoryOrder: [],
+      prioritySectionsMealSlots: {},
       completedFocusCategoryKeys: [],
       planCompletionDismissedKeys: [],
       isFocusStarted: false,
+      quickMemoDraft: '',
       priorityEndedTodayKeys: [],
       priorityEndedTodayDateKey: '',
       priorityBagResetForEndedKey: endedBoundaryKey,
     });
-    // reset 모드: 수동 담기를 비운 뒤 고정 루틴 적용분만 다시 반영.
+    // reset 모드: 이전 날짜의 모든 오늘 상태를 비운 뒤 새 요일 고정 루틴만 다시 반영.
     // priorityCategoryImportance 는 루틴 목록 공용이라 유지.
-    syncTodayTabWithFixedRoutineApply();
+    prepareTodayTabForDateRoll(nextStart, rollNow);
+    syncTodayTabWithFixedRoutineApply(rollNow);
   },
   setPriorityStart: (value) => set({ priorityStart: value }),
   setPriorityEnd: (value) => set({ priorityEnd: value }),
@@ -742,10 +800,10 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       const routineHistoryPlannedKeysByDate =
         shouldTrackRoutineHistoryForDate(s, today) && priorityCategoryOrder.length > 0
           ? snapshotRoutinePlannedKeys(
-              s.routineHistoryPlannedKeysByDate,
-              today,
-              priorityCategoryOrder,
-            )
+            s.routineHistoryPlannedKeysByDate,
+            today,
+            priorityCategoryOrder,
+          )
           : s.routineHistoryPlannedKeysByDate;
       const priorityMealSlotOverrides = pruneMealSlotRecordForOrder(
         s.priorityMealSlotOverrides,

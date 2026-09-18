@@ -36,7 +36,8 @@ export function resolveBagItemSpineSchedule(input: {
     const key = resolveBlockCategoryKey(b) ?? resolveCategoryKeyFromLabel(b.category ?? '');
     return key === baseKey || key === categoryKey;
   });
-  // 튜토리얼은 수동 시간 오버라이드가 없으면 집중 구간을 따른다
+  // 튜토리얼만 집중 구간을 「사용한 것처럼」보여 준다. 그 외 루틴은 사용자가
+  // 직접 맞춘 시각이 있을 때만 표시한다.
   if (
     isPokitWeekTourFlowId(baseKey) &&
     (!block || block.hasManualScheduleOverride !== true)
@@ -52,7 +53,7 @@ export function resolveBagItemSpineSchedule(input: {
       };
     }
   }
-  if (block) {
+  if (block?.hasManualScheduleOverride === true) {
     return {
       startMinutes: block.startMinutes,
       endMinutes: block.endMinutes,

@@ -9,6 +9,8 @@ import { isStandardCatalogKeyHidden } from './hiddenStandardCatalogStorage';
 
 type PersistedPokitWeekTourSeed = {
   seeded: boolean;
+  /** 시드한 로컬 날짜 `YYYY-MM-DD` — 다음날 빈 담기에 다시 넣지 않기 위함 */
+  dateKey?: string;
 };
 
 type PersistedPokitWeekTourFirstTip = {
@@ -20,10 +22,21 @@ export function loadPokitWeekTourSeeded(): boolean {
   return v?.seeded === true;
 }
 
-export function markPokitWeekTourSeeded(): void {
+export function markPokitWeekTourSeeded(dateKey?: string): void {
+  const prev = localStorageClient.getJson<PersistedPokitWeekTourSeed>(
+    StorageKeys.pokitWeekTourSeeded,
+  );
   localStorageClient.setJson<PersistedPokitWeekTourSeed>(StorageKeys.pokitWeekTourSeeded, {
     seeded: true,
+    dateKey: dateKey || prev?.dateKey,
   });
+}
+
+/** 튜토리얼을 오늘 담기에 넣은 날짜. 없으면 레거시(날짜 없음). */
+export function loadPokitWeekTourSeededDate(): string | null {
+  const v = localStorageClient.getJson<PersistedPokitWeekTourSeed>(StorageKeys.pokitWeekTourSeeded);
+  const key = v?.dateKey?.trim();
+  return key ? key : null;
 }
 
 /** 시드 잠금 해제 — 온보딩 전·데이터 초기화 등 */
@@ -70,13 +83,20 @@ export function hasPokitWeekTourProgress(): boolean {
 
 /**
  * 오늘 담기가 비어 있을 때 튜토리얼 루틴을 넣을지.
- * 7단계를 모두 끝내지 않았으면 빈 담기에 다시 넣는다.
- * (탭 전환 동기화가 튜토리얼을 orphan으로 지운 경우 복구)
+ * 같은 날 탭 전환이 튜토리얼을 orphan으로 지운 경우만 복구한다.
+ * 이미 시드한 뒤 날짜가 바뀌면(다음날 롤오버) 빈 담기에 다시 넣지 않는다.
  */
-export function nextOrderWithPokitWeekTourSeed(order: readonly string[]): string[] | null {
+export function nextOrderWithPokitWeekTourSeed(
+  order: readonly string[],
+  todayKey?: string,
+): string[] | null {
   if (isStandardCatalogKeyHidden(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)) return null;
   if (order.includes(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)) return null;
   if (order.length > 0) return null;
   if (isPokitWeekTourChecklistComplete()) return null;
+  if (todayKey) {
+    const seededOn = loadPokitWeekTourSeededDate();
+    if (seededOn && seededOn !== todayKey) return null;
+  }
   return [BUILTIN_POKIT_WEEK_TOUR_FLOW_ID];
 }

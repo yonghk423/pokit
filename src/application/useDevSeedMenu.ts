@@ -1,9 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Alert, DevSettings } from 'react-native';
 
 import { getAppLocale } from '@shared/lib/i18n';
 import type { HistorySeedProfile } from '@shared/lib/storage/seedHistoryData';
 
+import {
+  alertDevClockReset,
+  alertOvernightRollResult,
+  alertOvernightSeedResult,
+  resetDevAppClockToDeviceNow,
+  rollOvernightWindowAsEndDateMorning,
+  seedOvernightWindowTodayToTomorrow,
+} from './devOvernightWindowTimeTravel';
 import {
   formatDevMockSeedAlertMessage,
   formatDevMockSeedProfileAlertMessage,
@@ -35,6 +43,13 @@ const HISTORY_SEED_MENU_ITEMS: ReadonlyArray<{ profile: HistorySeedProfile; labe
  * 스크린샷/호라이즌 문구는 현재 앱 로케일(ko/en/ja)에 맞춰 채워진다.
  */
 export function useDevSeedMenu(): void {
+  const seedOvernightRef = useRef(seedOvernightWindowTodayToTomorrow);
+  seedOvernightRef.current = seedOvernightWindowTodayToTomorrow;
+  const rollOvernightRef = useRef(rollOvernightWindowAsEndDateMorning);
+  rollOvernightRef.current = rollOvernightWindowAsEndDateMorning;
+  const resetClockRef = useRef(resetDevAppClockToDeviceNow);
+  resetClockRef.current = resetDevAppClockToDeviceNow;
+
   useEffect(() => {
     if (!__DEV__) return;
 
@@ -57,6 +72,18 @@ export function useDevSeedMenu(): void {
         })();
       });
     }
+
+    DevSettings.addMenuItem('[Time] 오늘→내일 시드', () => {
+      alertOvernightSeedResult(seedOvernightRef.current());
+    });
+
+    DevSettings.addMenuItem('[Time] 다음날로 넘기기', () => {
+      alertOvernightRollResult(rollOvernightRef.current());
+    });
+
+    DevSettings.addMenuItem('[Time] 시계 되돌리기', () => {
+      alertDevClockReset(resetClockRef.current());
+    });
 
     DevSettings.addMenuItem('[Clear] 목업 데이터 전체', () => {
       void (async () => {

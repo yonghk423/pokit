@@ -644,6 +644,26 @@ registerDayPlanSyncTodayTabAccessors(
     saveDayPlan(payload);
     syncDayPlanToWidget(payload);
   },
+  (dateKey) => {
+    useDayPlanStore.setState({
+      dateKey,
+      blocks: [],
+      completedBlockIds: [],
+      skippedBlockIds: [],
+      liveActivityChecklistFocusBlockId: null,
+      quickMemos: [],
+    });
+    const payload = {
+      dateKey,
+      blocks: [],
+      completedBlockIds: [],
+      skippedBlockIds: [],
+      liveActivityChecklistFocusBlockId: null,
+      quickMemos: [],
+    };
+    saveDayPlan(payload);
+    syncDayPlanToWidget(payload);
+  },
 );
 
 export function selectFirstPendingBlock(state: DayPlanStoreState): DayPlanBlock | null {

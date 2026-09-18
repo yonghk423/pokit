@@ -49,6 +49,7 @@ import {
   upsertPokitLiveActivity,
 } from '@features/live-activity-sync';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { t } from '@shared/lib/i18n';
 import {
   loadDailyRhythmOnboardingCompleted,
   loadPriorityDayStartAlarm,
@@ -56,8 +57,8 @@ import {
   saveRoutineCatalogSelectionKeys,
 } from '@shared/lib/storage';
 import { coerceDayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
+import { getClockNow, useAppClockEpoch } from '@shared/lib/time/appClock';
 import { ThemedView } from '@shared/ui/themed-view';
-import { t } from '@shared/lib/i18n';
 
 import {
   defaultPriorityWindowFromNow,
@@ -235,8 +236,8 @@ export function DayPlanPage({
     useCallback(() => {
       hydrateLayoutModeVisibility();
       setFixedRoutineApplyLayoutMode(effectiveLayoutMode);
-      refreshTodayAppliedCategoryKeys();
-      syncTodayTabWithFixedRoutineApply();
+      refreshTodayAppliedCategoryKeys(getClockNow());
+      syncTodayTabWithFixedRoutineApply(getClockNow());
       seedPokitWeekTourIntoTodayIfNeeded();
     }, [hydrateLayoutModeVisibility, refreshTodayAppliedCategoryKeys, setFixedRoutineApplyLayoutMode, effectiveLayoutMode]),
   );
@@ -272,6 +273,7 @@ export function DayPlanPage({
   const quickMemoInputRef = useRef<TextInput>(null);
 
   const [nowTick, setNowTick] = useState(Date.now);
+  const clockEpoch = useAppClockEpoch();
   useEffect(() => {
     const id = setInterval(() => setNowTick(Date.now()), 10_000);
     return () => clearInterval(id);
@@ -283,7 +285,7 @@ export function DayPlanPage({
     if (planMode === 'priority') {
       seedPokitWeekTourIntoTodayIfNeeded();
     }
-  }, [nowTick, planMode, rollPriorityPlanForwardIfEnded]);
+  }, [nowTick, clockEpoch, planMode, rollPriorityPlanForwardIfEnded]);
 
   /** 우선순위 적용일·집중 구간 안이면 true — FAB 노출·자동 종료 판단에 공통 사용 */
   const priorityWindowCtx = useMemo(
@@ -296,7 +298,7 @@ export function DayPlanPage({
       nowKey: getLocalDateKey(),
       nowMin: getLocalMinutesOfDayNow(),
     }),
-    [planMode, priorityStart, priorityEnd, priorityPlanDateKey, priorityPlanDateKeyEnd, nowTick],
+    [planMode, priorityStart, priorityEnd, priorityPlanDateKey, priorityPlanDateKeyEnd, nowTick, clockEpoch],
   );
 
   const priorityWindowEligible = useMemo(
@@ -311,7 +313,7 @@ export function DayPlanPage({
   );
 
   const setTodoActiveDateKey = useDayPlanTodoStore((s) => s.setActiveDateKey);
-  const todayKey = getLocalDateKey();
+  const todayKey = useMemo(() => getLocalDateKey(), [clockEpoch]);
 
   useEffect(() => {
     setTodoActiveDateKey(todayKey);

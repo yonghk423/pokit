@@ -1,25 +1,25 @@
 {
-  "latestVersion": "1.7.10",
+  "latestVersion": "1.7.11",
   "highlights": [
-    "하루 집중 시간·당일/다음 날 설정이 더 정확히 반영돼요.",
-    "집중이 끝난 뒤·요일을 끈 고정 루틴이 오늘 탭에서 바로 정리돼요.",
-    "집중이 끝났을 때 시간 버튼이 강조되어 변경을 안내해요."
+    "하루가 지나면 날짜가 바뀌고, 그날 요일에 맞는 고정 루틴만 다시 담겨요.",
+    "다음 날로 넘어가면 어제 담기·구간·빠른 메모는 비우고 새로 시작해요.",
+    "루틴을 추가해도 시간을 임의로 넣지 않아요. 직접 설정한 시각만 보여요."
   ],
   "highlightsByLocale": {
     "ko": [
-      "하루 집중 시간·당일/다음 날 설정이 더 정확히 반영돼요.",
-      "집중이 끝난 뒤·요일을 끈 고정 루틴이 오늘 탭에서 바로 정리돼요.",
-      "집중이 끝났을 때 시간 버튼이 강조되어 변경을 안내해요."
+      "하루가 지나면 날짜가 바뀌고, 그날 요일에 맞는 고정 루틴만 다시 담겨요.",
+      "다음 날로 넘어가면 어제 담기·구간·빠른 메모는 비우고 새로 시작해요.",
+      "루틴을 추가해도 시간을 임의로 넣지 않아요. 직접 설정한 시각만 보여요."
     ],
     "en": [
-      "Daily focus time and same-day / next-day settings apply more reliably.",
-      "Routines clear from Today after focus ends or when a weekday is turned off.",
-      "When focus ends, the time button is highlighted to guide a change."
+      "When the day rolls over, the date advances and only weekday-matched fixed routines return.",
+      "Yesterday’s bag, sections, and quick memos clear so today starts fresh.",
+      "Adding a routine no longer fills in a time—only times you set yourself appear."
     ],
     "ja": [
-      "1日の集中時間・当日／翌日の設定がより正確に反映されます。",
-      "集中終了後や曜日をオフにした固定ルーチンが今日タブからすぐ整理されます。",
-      "集中が終わると時間ボタンが強調され、変更を案内します。"
+      "日が変わると日付が進み、その曜日に合う固定ルーチンだけが再び入ります。",
+      "翌日に進むと昨日のリスト・区間・クイックメモは空にして新しく始まります。",
+      "ルーチンを追加しても時間が勝手に入らず、自分で設定した時間だけ表示されます。"
     ]
   },
   "storeUrls": {

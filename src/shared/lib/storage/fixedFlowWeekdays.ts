@@ -1,3 +1,5 @@
+import { getClockNow } from '@shared/lib/time/appClock';
+
 import type { FixedFlowSetApplyRule } from './fixedFlowSetsStorage';
 
 /** JS `Date#getDay()` — 0=일, 1=월, …, 6=토 */
@@ -90,7 +92,7 @@ export function formatApplyWeekdaysHint(weekdays: WeekdayIndex[]): string {
 
 export function isApplyWeekdayMatchedToday(
   weekdays: WeekdayIndex[],
-  now: Date = new Date(),
+  now: Date = getClockNow(),
 ): boolean {
   const normalized = normalizeApplyWeekdays(weekdays);
   if (normalized.length === 0) return false;

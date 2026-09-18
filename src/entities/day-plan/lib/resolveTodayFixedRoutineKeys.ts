@@ -1,3 +1,4 @@
+import { getClockNow } from '@shared/lib/time/appClock';
 import {
   collectActiveFixedFlowCategoryKeys,
   type FixedFlowSetsState,
@@ -13,7 +14,7 @@ export function resolveTodayFixedRoutineKeys(
   flowSets: Pick<FixedFlowSetsState, 'activeSetIds' | 'activeMealSlotsBySetId' | 'sets'>,
   options?: ResolveTodayFixedRoutineKeysOptions,
 ): string[] {
-  const keys = collectActiveFixedFlowCategoryKeys(flowSets, options?.now ?? new Date());
+  const keys = collectActiveFixedFlowCategoryKeys(flowSets, options?.now ?? getClockNow());
   if (!options?.excludedKeys) return keys;
   const excluded = new Set(options.excludedKeys);
   return keys.filter((key) => !excluded.has(key));

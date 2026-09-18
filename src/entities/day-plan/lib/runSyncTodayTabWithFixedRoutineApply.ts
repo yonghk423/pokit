@@ -6,6 +6,8 @@ import {
   type FixedRoutineApplyLayoutMode,
 } from '@shared/lib/storage';
 
+import { getClockNow } from '@shared/lib/time/appClock';
+
 import { resolveEndedTodayCategoryKeys } from './endedTodayCategoryKeys';
 import { resolveTodayFixedRoutineKeys } from './resolveTodayFixedRoutineKeys';
 import {
@@ -48,8 +50,10 @@ type DayPlanSyncState = {
 let getDraftSyncState: (() => DraftSyncState) | null = null;
 let setDraftSyncPatch: ((patch: SyncTodayTabWithFixedRoutinePatch) => void) | null = null;
 let getFixedSyncState: (() => FixedSyncState) | null = null;
+let refreshFixedSyncStateForDate: ((now: Date) => void) | null = null;
 let getDayPlanSyncState: (() => DayPlanSyncState) | null = null;
 let setDayPlanSyncPatch: ((blocks: DayPlanBlock[]) => void) | null = null;
+let resetDayPlanSyncStateForDate: ((dateKey: string) => void) | null = null;
 
 export function registerDraftSyncTodayTabAccessors(
   getState: () => DraftSyncState,
@@ -59,20 +63,40 @@ export function registerDraftSyncTodayTabAccessors(
   setDraftSyncPatch = applyPatch;
 }
 
-export function registerFixedSyncTodayTabAccessor(getState: () => FixedSyncState): void {
+export function registerFixedSyncTodayTabAccessor(
+  getState: () => FixedSyncState,
+  refreshForDate: (now: Date) => void,
+): void {
   getFixedSyncState = getState;
+  refreshFixedSyncStateForDate = refreshForDate;
 }
 
 export function registerDayPlanSyncTodayTabAccessors(
   getState: () => DayPlanSyncState,
   applyBlocks: (blocks: DayPlanBlock[]) => void,
+  resetForDate: (dateKey: string) => void,
 ): void {
   getDayPlanSyncState = getState;
   setDayPlanSyncPatch = applyBlocks;
+  resetDayPlanSyncStateForDate = resetForDate;
+}
+
+/**
+ * 새 날짜의 오늘 탭을 만들기 전, 요일별 고정 루틴을 다시 계산하고
+ * 이전 날짜의 타임라인·빠른 메모·진행 상태를 비운다.
+ */
+export function prepareTodayTabForDateRoll(dateKey: string, now: Date): void {
+  refreshFixedRoutineApplyForDate(now);
+  resetDayPlanSyncStateForDate?.(dateKey);
+}
+
+/** 새 날짜·요일 기준으로 「오늘 적용」 고정 루틴 키를 다시 계산한다. */
+export function refreshFixedRoutineApplyForDate(now: Date): void {
+  refreshFixedSyncStateForDate?.(now);
 }
 
 /** 오늘의 루틴「오늘 적용」→ 오늘 탭 담기·구간·타임라인 동기화 */
-export function syncTodayTabWithFixedRoutineApply(): void {
+export function syncTodayTabWithFixedRoutineApply(now: Date = getClockNow()): void {
   if (!getDraftSyncState || !setDraftSyncPatch || !getFixedSyncState || !getDayPlanSyncState || !setDayPlanSyncPatch) {
     return;
   }
@@ -98,7 +122,7 @@ export function syncTodayTabWithFixedRoutineApply(): void {
     activeSetIds: modeApply.activeSetIds,
     activeMealSlotsBySetId: modeApply.activeMealSlotsBySetId,
     sets: fixed.sets,
-  });
+  }, { now });
 
   const patch = computeSyncTodayTabWithFixedRoutineApply({
     priorityCategoryOrder: draft.priorityCategoryOrder,

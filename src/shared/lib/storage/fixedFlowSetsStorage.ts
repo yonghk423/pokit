@@ -1,3 +1,4 @@
+import { getClockNow } from '@shared/lib/time/appClock';
 import { normalizeCategoryMealSlots, normalizeDayMealSlot, resolveFixedFlowItemMealSlot, type DayMealSlot } from './dayMealSlot';
 import {
   BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS,
@@ -708,7 +709,7 @@ export function normalizeFixedFlowSetsState(input: unknown): FixedFlowSetsState 
 
 export function isFixedFlowSetRuleMatchedToday(
   applyRule: FixedFlowSetApplyRule,
-  now: Date = new Date(),
+  now: Date = getClockNow(),
 ): boolean {
   if (applyRule === 'manual') return false;
   return isApplyWeekdayMatchedToday(defaultWeekdaysForApplyRule(applyRule), now);
@@ -716,7 +717,7 @@ export function isFixedFlowSetRuleMatchedToday(
 
 export function isFixedFlowSetMatchedToday(
   set: Pick<FixedFlowSet, 'applyRule' | 'applyWeekdays'>,
-  now: Date = new Date(),
+  now: Date = getClockNow(),
 ): boolean {
   return isApplyWeekdayMatchedToday(resolveApplyWeekdays(set), now);
 }
@@ -724,7 +725,7 @@ export function isFixedFlowSetMatchedToday(
 /** 오늘 적용 켠 그룹 categoryKey */
 export function collectActiveFixedFlowCategoryKeys(
   state: Pick<FixedFlowSetsState, 'activeSetIds' | 'activeMealSlotsBySetId' | 'sets'>,
-  now: Date = new Date(),
+  now: Date = getClockNow(),
 ): string[] {
   const active = new Set(state.activeSetIds);
   const activeMealSlotsBySetId = state.activeMealSlotsBySetId ?? {};
