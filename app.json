@@ -21,6 +21,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
       "buildNumber": "69",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
         "CFBundleLocalizations": ["en", "ko", "ja"]
@@ -69,6 +70,31 @@
           "icon": "./assets/pokit5.png",
           "color": "#000000",
           "defaultChannel": "default"
+        }
+      ],
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
+      [
+        "@react-native-firebase/analytics",
+        {
+          "ios": {
+            "withoutAdIdSupport": true
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "forceStaticLinking": ["RNFBApp", "RNFBAnalytics"]
+          }
         }
       ]
     ],

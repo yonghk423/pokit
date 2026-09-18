@@ -1,4 +1,5 @@
 import Expo
+import FirebaseCore
 import React
 import ReactAppDependencyProvider
 
@@ -23,6 +24,9 @@ public class AppDelegate: ExpoAppDelegate {
 
 #if os(iOS) || os(tvOS)
     window = UIWindow(frame: UIScreen.main.bounds)
+    // @generated begin @react-native-firebase/app-didFinishLaunchingWithOptions - expo prebuild (DO NOT MODIFY)
+    FirebaseApp.configure()
+    // @generated end @react-native-firebase/app-didFinishLaunchingWithOptions
     factory.startReactNative(
       withModuleName: "main",
       in: window,

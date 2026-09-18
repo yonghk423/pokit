@@ -20,6 +20,14 @@ platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
 
 prepare_react_native_project!
 
+# @generated begin @react-native-firebase/app-disableSPM - expo prebuild (DO NOT MODIFY)
+$RNFirebaseDisableSPM = true
+# @generated end @react-native-firebase/app-disableSPM
+# @generated begin @react-native-firebase/analytics-withoutAdIdSupport - expo prebuild (DO NOT MODIFY)
+$RNFirebaseAnalyticsWithoutAdIdSupport = true
+# @generated end @react-native-firebase/analytics-withoutAdIdSupport
+$RNFirebaseAsStaticFramework = true
+
 target 'Pokit' do
   use_expo_modules!
 
