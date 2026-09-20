@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { forwardRef, useImperativeHandle, useRef, type ReactNode } from 'react';
+import { forwardRef, useImperativeHandle, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -7,10 +7,7 @@ import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useMeasuredAccordion } from '@shared/lib/hooks';
 import { formatHhmmClock, useTranslation } from '@shared/lib/i18n';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
-import {
-  DigitalHhmmInput,
-  type DigitalHhmmInputHandle,
-} from '@shared/ui/digital-hhmm-input';
+import { NativeHhmmWheelPicker } from '@shared/ui/native-hhmm-wheel-picker';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { TIME_SNAP_MINUTES } from '../lib/snappedPickerMath';
@@ -58,6 +55,19 @@ export type SnappedTimePickerFieldProps = {
   onBeforeConfirm?: (hhmm: string) => boolean;
 };
 
+type NativeMinuteInterval = 1 | 2 | 3 | 4 | 5 | 6 | 10 | 12 | 15 | 20 | 30;
+
+const NATIVE_MINUTE_INTERVALS: readonly NativeMinuteInterval[] = [
+  1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30,
+];
+
+function toNativeMinuteInterval(step: number): NativeMinuteInterval {
+  if ((NATIVE_MINUTE_INTERVALS as readonly number[]).includes(step)) {
+    return step as NativeMinuteInterval;
+  }
+  return 1;
+}
+
 export const SnappedTimePickerField = forwardRef<
   SnappedTimePickerFieldHandle,
   SnappedTimePickerFieldProps
@@ -85,23 +95,20 @@ export const SnappedTimePickerField = forwardRef<
   ref,
 ) {
   const { t, locale } = useTranslation();
-  const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
   useImperativeHandle(
     ref,
     () => ({
       flush: () => {
-        const flushed = digitalInputRef.current?.flush();
-        if (!flushed) return null;
-        onChangeHhmm(flushed);
-        return flushed;
+        // 네이티브 휠은 onChange로 이미 반영됨
+        return valueHhmm;
       },
     }),
-    [onChangeHhmm],
+    [valueHhmm],
   );
-  const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const shadowInk = isDark ? RetroFlatColors.dark.solidShadow : '#000000';
   const pillShadow = expanded ? 0 : 2;
   const accordion = useMeasuredAccordion(expanded);
+  const minuteInterval = toNativeMinuteInterval(snapStepMinutes);
 
   return (
     <View>
@@ -116,7 +123,7 @@ export const SnappedTimePickerField = forwardRef<
           styles.timeRow,
           emphasized && styles.timeRowEmphasized,
           compact && styles.timeRowCompact,
-          pressed && !disabled && { opacity: 0.9 },
+          pressed && !disabled && { transform: [{ translateY: 1 }] },
           disabled && { opacity: 0.45 },
         ]}>
         <View style={[styles.timeRowLeft, compact && styles.timeRowLeftCompact]}>
@@ -204,29 +211,26 @@ export const SnappedTimePickerField = forwardRef<
           <View
             style={styles.inputBlock}
             onLayout={(e) => accordion.onContentLayout(e.nativeEvent.layout.height)}>
-            <DigitalHhmmInput
-              ref={digitalInputRef}
+            <NativeHhmmWheelPicker
               valueHhmm={valueHhmm}
               onChangeHhmm={onChangeHhmm}
+              mapMidnightToEndOfDay={mapMidnightToEndOfDay}
+              minuteInterval={minuteInterval}
+              isDark={isDark}
+              textColor={palette.onSurface}
+              accessibilityLabelPrefix={label}
+              disabled={disabled}
               ink={palette.onSurface}
               muted={palette.onVariant}
               line={palette.border}
               surface={palette.containerLowest}
-              selectedForeground={selectedFg}
-              snapStepMinutes={snapStepMinutes}
-              mapMidnightToEndOfDay={mapMidnightToEndOfDay}
-              accessibilityLabelPrefix={label}
-              disabled={disabled}
-              panelExtra={expandedExtra}
             />
+            {expandedExtra}
             <BrutalConfirmButton
               accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
               disabled={disabled}
               onPress={() => {
-                const flushed = digitalInputRef.current?.flush();
-                const next = flushed ?? valueHhmm;
-                if (onBeforeConfirm && !onBeforeConfirm(next)) return;
-                if (flushed) onChangeHhmm(flushed);
+                if (onBeforeConfirm && !onBeforeConfirm(valueHhmm)) return;
                 void Haptics.selectionAsync();
                 onToggleExpand();
               }}

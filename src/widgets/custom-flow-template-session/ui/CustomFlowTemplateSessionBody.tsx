@@ -2024,11 +2024,15 @@ function ReminderTemplateView({
                   <ReminderTimePickerPill
                     valueHhmm={item.time}
                     onChangeHhmm={(next) => {
+                      if (next.trim() === item.time.trim()) return;
                       const updated = updateReminderItemTime(cfg, item.time, next);
-                      if (updated) {
-                        emit(updated);
-                        setExpandedTimeKey(next);
+                      if (!updated) {
+                        void Haptics.notificationAsync(
+                          Haptics.NotificationFeedbackType.Error,
+                        );
+                        return false;
                       }
+                      emit(updated);
                     }}
                     expanded={expandedTimeKey === item.time}
                     onToggleExpand={() => openTimePicker(item.time)}
@@ -2082,6 +2086,7 @@ function ReminderTemplateView({
             placeholder={t('timePicker.placeholder')}
             accessibilityLabel={t('customFlowTemplate.newReminderTimeA11y')}
             fullWidth
+            commitOnChange
           />
           <ThemedTextInput
             value={draftLabel}

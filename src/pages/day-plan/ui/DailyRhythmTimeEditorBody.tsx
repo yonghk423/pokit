@@ -25,9 +25,9 @@ import {
   SOLID_SHADOW_OFFSET,
   cityPopFont,
 } from '@shared/config/retroFlat';
-import { DigitalHhmmInput, type DigitalHhmmInputHandle } from '@shared/ui/digital-hhmm-input';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
+import { NativeHhmmWheelPicker } from '@shared/ui/native-hhmm-wheel-picker';
 import { SmoothSegmentedControl } from '@shared/ui/smooth-segmented-control';
 import { ScrapTapeLabel } from '@shared/ui/scrap-tape-label';
 import { RoutineMarginSlideshow } from '@shared/ui/routine-atmosphere';
@@ -305,10 +305,8 @@ function OnboardingTimeRow({
   dateParts: { month: string; day: string } | null;
   mapMidnightToEndOfDay?: boolean;
 }) {
-  const digitalRef = useRef<DigitalHhmmInputHandle>(null);
   const { t, locale } = useTranslation();
   const ink = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const selectedFg = isDark ? '#09090b' : '#FAFAFA';
   const dateCaption =
     dateParts != null ? `${dateParts.month} ${dateParts.day}`.replace(/\s+/g, ' ').trim() : null;
   const accordion = useMeasuredAccordion(expanded);
@@ -389,24 +387,22 @@ function OnboardingTimeRow({
           <View
             style={styles.inputBlock}
             onLayout={(e) => accordion.onContentLayout(e.nativeEvent.layout.height)}>
-            <DigitalHhmmInput
-              ref={digitalRef}
+            <NativeHhmmWheelPicker
               valueHhmm={valueHhmm}
               onChangeHhmm={onChangeHhmm}
+              mapMidnightToEndOfDay={mapMidnightToEndOfDay}
+              minuteInterval={1}
+              isDark={isDark}
+              textColor={c.onSurface}
+              accessibilityLabelPrefix={label}
               ink={c.onSurface}
               muted={c.onVariant}
               line={c.border}
               surface={isDark ? ink.surfaceAlt : ink.bg}
-              selectedForeground={selectedFg}
-              snapStepMinutes={1}
-              mapMidnightToEndOfDay={mapMidnightToEndOfDay}
-              accessibilityLabelPrefix={label}
             />
             <BrutalConfirmButton
               accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
               onPress={() => {
-                const flushed = digitalRef.current?.flush();
-                if (flushed) onChangeHhmm(flushed);
                 void Haptics.selectionAsync();
                 onToggleExpand();
               }}

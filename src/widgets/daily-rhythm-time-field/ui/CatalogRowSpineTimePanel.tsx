@@ -31,16 +31,13 @@ import {
   useTranslation,
 } from '@shared/lib/i18n';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
-import {
-  DigitalHhmmInput,
-  type DigitalHhmmInputHandle,
-} from '@shared/ui/digital-hhmm-input';
+import { NativeHhmmWheelPicker } from '@shared/ui/native-hhmm-wheel-picker';
 import { ThemedText } from '@shared/ui/themed-text';
 import { SnappedTimePickerField, type SnappedTimePickerFieldHandle } from './SnappedTimePickerField';
 
-/** 시작·종료 트랙 + 당일/다음 날 (숫자 입력 접힘) — 폴백용 */
+/** 시작·종료 트랙 + 당일/다음 날 (피커 접힘) — 폴백용 */
 export const CATALOG_SPINE_TIME_PANEL_COLLAPSED_HEIGHT = 128;
-/** 위 + 오전/오후·시·분 입력 — 폴백용 (실측 onLayout 우선) */
+/** 위 + 네이티브 시간 휠 — 폴백용 (실측 onLayout 우선) */
 export const CATALOG_SPINE_TIME_PANEL_EXPANDED_HEIGHT = 300;
 
 type Props = {
@@ -146,7 +143,7 @@ function SolidShadowFace({
   );
 }
 
-/** 루틴 목록 행 — 펼침 시 시작·종료 시각 선택(숫자 입력) */
+/** 루틴 목록 행 — 펼침 시 시작·종료 시각 선택(네이티브 휠) */
 export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandle, Props>(
   function CatalogRowSpineTimePanel(
     {
@@ -205,7 +202,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
   const [draftEnd, setDraftEnd] = useState(() => formatMinutesToHHmm(endMinutes));
   const [draftEndsNext, setDraftEndsNext] = useState(endsNextCalendarDay);
   const [expanded, setExpanded] = useState<'start' | 'end' | null>(null);
-  const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
   const startPickerRef = useRef<SnappedTimePickerFieldHandle>(null);
   const endPickerRef = useRef<SnappedTimePickerFieldHandle>(null);
   const expandedRef = useRef(expanded);
@@ -287,7 +283,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
     Alert.alert(t('catalog.checkTimeTitle'), t('dayPlan.blockEndAfterStart'));
   }, [t]);
 
-  /** 현재 편집 필드의 DigitalHhmmInput 초안을 draftStart/End에 반영 */
+  /** 현재 편집 필드의 초안을 draftStart/End에 반영 (휠은 onChange로 이미 동기화) */
   const flushActiveFieldToDrafts = useCallback((): {
     start: string;
     end: string;
@@ -303,15 +299,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
         const flushed = endPickerRef.current?.flush();
         if (flushed) end = flushed;
       }
-      return { start, end };
-    }
-    const flushed = digitalInputRef.current?.flush();
-    if (flushed && field === 'start') {
-      start = flushed;
-      setDraftStart(flushed);
-    } else if (flushed && field === 'end') {
-      end = flushed;
-      setDraftEnd(flushed);
     }
     return { start, end };
   }, [draftEnd, draftStart, useSettingsSheetLayout]);
@@ -794,20 +781,21 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       ) : null}
 
       {activeField ? (
-        <DigitalHhmmInput
+        <NativeHhmmWheelPicker
           key={activeField}
-          ref={digitalInputRef}
           valueHhmm={activeField === 'end' ? draftEnd : draftStart}
           onChangeHhmm={activeField === 'end' ? setDraftEnd : setDraftStart}
+          minuteInterval={1}
+          isDark={isDark}
+          textColor={ink}
+          disabled={disabled}
+          accessibilityLabelPrefix={
+            activeField === 'end' ? resolvedEndLabel : resolvedStartLabel
+          }
           ink={ink}
           muted={muted}
           line={line}
           surface={isNote ? 'transparent' : panelSurface}
-          selectedForeground={isDark ? '#09090b' : '#FAFAFA'}
-          disabled={disabled}
-          snapStepMinutes={1}
-          accessibilityLabelPrefix={activeField === 'end' ? resolvedEndLabel : resolvedStartLabel}
-          onInputFocus={onRequestScrollIntoView}
         />
       ) : null}
     </View>

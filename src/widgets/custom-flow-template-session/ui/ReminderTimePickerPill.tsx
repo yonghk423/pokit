@@ -1,23 +1,25 @@
 import * as Haptics from 'expo-haptics';
-import { useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { formatHhmmClock, useTranslation } from '@shared/lib/i18n';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
-import {
-  DigitalHhmmInput,
-  type DigitalHhmmInputHandle,
-} from '@shared/ui/digital-hhmm-input';
+import { NativeHhmmWheelPicker } from '@shared/ui/native-hhmm-wheel-picker';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 const PILL_SHADOW = 2;
+const DEFAULT_DRAFT = '09:00';
 
 type Props = {
   valueHhmm: string;
-  onChangeHhmm: (next: string) => void;
+  /**
+   * 기본: 확인 시에만 호출. `false`를 반환하면 접지 않음(중복 시각 등).
+   * `commitOnChange`면 휠 변경마다 호출.
+   */
+  onChangeHhmm: (next: string) => void | boolean;
   expanded: boolean;
   onToggleExpand: () => void;
   ink: string;
@@ -30,6 +32,11 @@ type Props = {
   fullWidth?: boolean;
   /** 다음 알림 등 강조 색 */
   emphasizeColor?: string;
+  /**
+   * true면 휠을 돌릴 때마다 onChangeHhmm (알림 추가 초안용).
+   * 목록 행은 false(기본) — 확인 전에는 리스트 key/정렬을 건드리지 않음.
+   */
+  commitOnChange?: boolean;
 };
 
 export function ReminderTimePickerPill({
@@ -45,6 +52,7 @@ export function ReminderTimePickerPill({
   accessibilityLabel,
   fullWidth = false,
   emphasizeColor,
+  commitOnChange = false,
 }: Props) {
   const { t, locale } = useTranslation();
   const resolvedPlaceholder = placeholder ?? t('timePicker.placeholder');
@@ -52,12 +60,23 @@ export function ReminderTimePickerPill({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const hasValue = valueHhmm.trim().length > 0;
-  const label = hasValue ? formatHhmmClock(valueHhmm, locale) : resolvedPlaceholder;
-  const selectedFg = isDark ? '#09090b' : '#FAFAFA';
-  const editorValue = hasValue ? valueHhmm : '09:00';
-  const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
+  const [draftHhmm, setDraftHhmm] = useState(() =>
+    hasValue ? valueHhmm.trim() : DEFAULT_DRAFT,
+  );
+
+  // 펼칠 때만 props → draft 동기화. 스크롤 중에는 부모가 바뀌지 않음.
+  useEffect(() => {
+    if (!expanded) return;
+    setDraftHhmm(hasValue ? valueHhmm.trim() : DEFAULT_DRAFT);
+  }, [expanded, hasValue, valueHhmm]);
+
+  const displayHhmm = expanded ? draftHhmm : valueHhmm;
+  const showPlaceholder = !expanded && !hasValue;
+  const label = showPlaceholder
+    ? resolvedPlaceholder
+    : formatHhmmClock(displayHhmm, locale);
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const timeColor = emphasizeColor ?? (hasValue ? ink : muted);
+  const timeColor = emphasizeColor ?? (showPlaceholder ? muted : ink);
   const iconColor = emphasizeColor ?? muted;
   const shadowInk = isDark ? tone.solidShadow : '#000000';
   const faceBg = surface === 'transparent' ? (isDark ? tone.surfaceAlt : '#FFFFFF') : surface;
@@ -72,7 +91,7 @@ export function ReminderTimePickerPill({
           void Haptics.selectionAsync();
           onToggleExpand();
         }}
-        style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
+        style={({ pressed }) => [pressed && { transform: [{ translateY: 1 }] }]}>
         <View
           style={[
             styles.pillShell,
@@ -117,23 +136,26 @@ export function ReminderTimePickerPill({
       </Pressable>
       {expanded ? (
         <View style={styles.inputBlock}>
-          <DigitalHhmmInput
-            ref={digitalInputRef}
-            valueHhmm={editorValue}
-            onChangeHhmm={onChangeHhmm}
+          <NativeHhmmWheelPicker
+            valueHhmm={draftHhmm}
+            onChangeHhmm={(next) => {
+              setDraftHhmm(next);
+              if (commitOnChange) onChangeHhmm(next);
+            }}
+            minuteInterval={1}
+            isDark={isDark}
+            textColor={ink}
+            accessibilityLabelPrefix={resolvedA11y}
             ink={ink}
             muted={muted}
             line={line}
             surface={faceBg}
-            selectedForeground={selectedFg}
-            snapStepMinutes={1}
-            accessibilityLabelPrefix={resolvedA11y}
           />
           <BrutalConfirmButton
             accessibilityLabel={t('timePicker.confirmA11y')}
             onPress={() => {
-              const flushed = digitalInputRef.current?.flush();
-              if (flushed) onChangeHhmm(flushed);
+              const result = onChangeHhmm(draftHhmm);
+              if (result === false) return;
               void Haptics.selectionAsync();
               onToggleExpand();
             }}
