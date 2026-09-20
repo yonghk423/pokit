@@ -53,6 +53,7 @@ import { t } from '@shared/lib/i18n';
 import {
   loadDailyRhythmOnboardingCompleted,
   loadPriorityDayStartAlarm,
+  markDailyRhythmOnboardingCompleted,
   markDailyRhythmOnboardingCompletedAndFlush,
   saveRoutineCatalogSelectionKeys,
 } from '@shared/lib/storage';
@@ -253,10 +254,8 @@ export function DayPlanPage({
       setPriorityCategoryOrder([...latestOrder]);
       // 최초 사용자만 빈 담기에 튜토리얼을 넣는다
       seedPokitWeekTourIntoTodayIfNeeded();
-      // 온보딩 플래그가 디스크에 반영됐으면 게이트를 닫는다
-      if (loadDailyRhythmOnboardingCompleted()) {
-        setRhythmGateOpen(false);
-      }
+      // 스토리지·세션 래치와 게이트를 맞춘다 (완료면 닫고, 초기화 후면 연다)
+      setRhythmGateOpen(!loadDailyRhythmOnboardingCompleted());
     }, [bumpCategoryLabelEpoch, rollPriorityPlanForwardIfEnded, setPriorityCategoryOrder]),
   );
 
@@ -390,12 +389,13 @@ export function DayPlanPage({
       const endDate = target === 'nextDay' ? addDaysToLocalDateKey(lo, 1) : lo;
       applyPriorityPlanCalendarRange(lo, endDate, true);
       syncOvernightPriorityPlanDates();
-      void markDailyRhythmOnboardingCompletedAndFlush().then(() => {
-        setRhythmGateOpen(false);
-        seedPokitWeekTourIntoTodayIfNeeded();
-        // 게이트가 닫힌 뒤 집중 시간 칩 강조 (섹션이 이미 마운트된 경우 nonce로 재시도)
-        setWindowChipGuideNonce((n) => n + 1);
-      });
+      // 온보딩 완료는 즉시 반영·게이트 닫기. flush는 백그라운드.
+      // (flush 완료를 기다리면 전체 화면 모달이 길게 남아 탭이 먹통처럼 보인다.)
+      markDailyRhythmOnboardingCompleted();
+      setRhythmGateOpen(false);
+      seedPokitWeekTourIntoTodayIfNeeded();
+      setWindowChipGuideNonce((n) => n + 1);
+      void markDailyRhythmOnboardingCompletedAndFlush();
     },
     [applyPriorityPlanCalendarRange, setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
   );

@@ -1,4 +1,5 @@
 import {
+  clearDailyRhythmOnboardingCompleted,
   loadDailyRhythmOnboardingCompleted,
   markDailyRhythmOnboardingCompleted,
   loadDailyRhythmWindowChipGuidePending,
@@ -9,7 +10,7 @@ import { StorageKeys } from './storageKeys';
 
 describe('dailyRhythmOnboardingStorage', () => {
   beforeEach(() => {
-    localStorageClient.removeItem(StorageKeys.dailyRhythmOnboarding);
+    clearDailyRhythmOnboardingCompleted();
   });
 
   it('defaults to not completed', () => {
@@ -23,6 +24,19 @@ describe('dailyRhythmOnboardingStorage', () => {
     expect(loadDailyRhythmWindowChipGuidePending()).toBe(true);
   });
 
+  it('keeps session latch after storage key is removed', () => {
+    markDailyRhythmOnboardingCompleted();
+    localStorageClient.removeItem(StorageKeys.dailyRhythmOnboarding);
+    // 디스크 키만 지워도 세션 중에는 완료로 본다 (탭 remount 방어)
+    expect(loadDailyRhythmOnboardingCompleted()).toBe(true);
+  });
+
+  it('clears session latch on explicit clear', () => {
+    markDailyRhythmOnboardingCompleted();
+    clearDailyRhythmOnboardingCompleted();
+    expect(loadDailyRhythmOnboardingCompleted()).toBe(false);
+  });
+
   it('clears window chip guide pending after play', () => {
     markDailyRhythmOnboardingCompleted();
     clearDailyRhythmWindowChipGuidePending();
@@ -31,7 +45,9 @@ describe('dailyRhythmOnboardingStorage', () => {
   });
 
   it('does not treat legacy completed users as pending', () => {
+    clearDailyRhythmOnboardingCompleted();
     localStorageClient.setJson(StorageKeys.dailyRhythmOnboarding, { completed: true });
     expect(loadDailyRhythmWindowChipGuidePending()).toBe(false);
+    expect(loadDailyRhythmOnboardingCompleted()).toBe(true);
   });
 });

@@ -48,11 +48,9 @@ import {
   formatBlockTimeRange,
   formatHhmmClockKo,
   formatMinuteOfDayKo,
-  formatSpineScheduleRangeLabel,
   getFlowCompletionCategoryKeysForBlock,
   getLocalDateKey,
   getLocalMinutesOfDayNow,
-  isBlockEndInPastForDateKey,
   isLikelyPriorityCatalogMonolineTitle,
   isPriorityCompoundBlockTitle,
   isPriorityWindowEndedForToday,
@@ -134,6 +132,7 @@ import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { buildAddablePriorityCatalogSections } from '../lib/priorityCatalog';
 import {
   resolveBagItemSpineSchedule,
+  deriveBagRowScheduleFromStart,
   sortByExplicitSpineStartTime,
 } from '../lib/bagRowSpineSchedule';
 import { buildCategoryMealSlotOverrides, clampMealSlotSectionsToWindow, flattenPriorityMealSlotSectionEntries, getDayMealSlotLabel, hasExplicitMealSlotAssignments, reorderFlatKeys, reorderMealSlotSectionEntries, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
@@ -2435,8 +2434,8 @@ export function PriorityBasedPlanSection({
         categoryKey: resolvePriorityRoutineCategoryKey(input.categoryKey),
         label: input.label,
         startMinutes: schedule.startMinutes,
-        endMinutes: schedule.endMinutes,
-        endsNextCalendarDay: schedule.endsNextCalendarDay,
+        endMinutes: schedule.startMinutes,
+        endsNextCalendarDay: schedule.startsNextCalendarDay,
       });
     },
     [resolveBagRowSpineSchedule],
@@ -2448,41 +2447,27 @@ export function PriorityBasedPlanSection({
   }, []);
 
   const applyBagRowTimeFromPanel = useCallback(
-    (startMin: number, endMin: number, endsNext: boolean) => {
+    (startMin: number, _endMin: number, startsNext: boolean) => {
       if (!bagRowTimeEdit) return;
       Keyboard.dismiss();
 
-      const window = resolveSpinePriorityWindow(priorityStart, priorityEnd);
-      if (
-        !window ||
-        !isSpineBlockScheduleWithinPriorityWindow(
-          {
-            startMinutes: startMin,
-            endMinutes: endMin,
-            endsNextCalendarDay: endsNext,
-          },
-          window,
-        )
-      ) {
+      const derived = deriveBagRowScheduleFromStart({
+        startMinutes: startMin,
+        startsNextCalendarDay: startsNext,
+        priorityStart,
+        priorityEnd,
+        durationMinutes: loadSpineDefaultBlockMinutes(),
+      });
+      if (!derived) {
         alertSpineBlockSaveError('update', 'outside_window');
         return;
       }
 
       const clamped = {
-        startMinutes: Math.max(0, Math.min(Math.floor(startMin), 24 * 60 - 1)),
-        endMinutes: Math.max(0, Math.min(Math.floor(endMin), 24 * 60)),
+        startMinutes: derived.startMinutes,
+        endMinutes: derived.endMinutes,
       };
-
-      // 저장·반영 전에 과거 종료인지 검사 — 적용 후 알림이 뜨며 막히는 일을 없앤다
-      if (
-        isBlockEndInPastForDateKey(getLocalDateKey(), {
-          endMinutes: clamped.endMinutes,
-          endsNextCalendarDay: endsNext,
-        })
-      ) {
-        alertSpineBlockSaveError('update', 'in_the_past');
-        return;
-      }
+      const endsNext = derived.endsNextCalendarDay;
 
       const categoryKey = bagRowTimeEdit.categoryKey;
       setCategorySpineScheduleInAnySet(
@@ -2521,7 +2506,8 @@ export function PriorityBasedPlanSection({
           planDateKey: getLocalDateKey(),
           hasManualScheduleOverride: true,
         });
-        if (!result.ok) {
+        // 담기 행은 시작 시각만 저장한다. 파생 종료가 과거여도 고정 루틴 스케줄은 유지한다.
+        if (!result.ok && result.reason !== 'in_the_past') {
           alertSpineBlockSaveError('add', result.reason);
           return;
         }
@@ -2818,7 +2804,7 @@ export function PriorityBasedPlanSection({
                     key={bagRowTimeModalKey}
                     ref={bagRowTimePanelRef}
                     startMinutes={bagRowTimeEdit.startMinutes}
-                    endMinutes={bagRowTimeEdit.endMinutes}
+                    endMinutes={bagRowTimeEdit.startMinutes}
                     endsNextCalendarDay={bagRowTimeEdit.endsNextCalendarDay}
                     baseDateKey={priorityPlanDateKey}
                     presentation="sheet"
@@ -2830,15 +2816,14 @@ export function PriorityBasedPlanSection({
                     isDark={isDark}
                     priorityStart={priorityStart}
                     priorityEnd={priorityEnd}
+                    scheduleMode="single"
+                    showSheetConfirm={false}
+                    showEndDateChoice={isOvernightHhmmRange(priorityStart, priorityEnd)}
                     startFieldLabel={t('dayPlan.routineNamedStartLabel', {
                       label: bagRowTimeEdit.label,
                     })}
-                    endFieldLabel={t('dayPlan.routineNamedEndLabel', {
-                      label: bagRowTimeEdit.label,
-                    })}
                     startFieldHint={t('dayPlan.routineNamedStartHint')}
-                    endFieldHint={t('dayPlan.routineNamedEndHint')}
-                    showSheetConfirm={false}
+                    dayChoiceQuestion={t('dayPlan.routineStartDayQuestion')}
                     onScheduleChange={applyBagRowTimeFromPanel}
                   />
                 </>
@@ -3320,17 +3305,12 @@ export function PriorityBasedPlanSection({
                                   : dk;
                                 const timeSubtitle = rowSchedule.isSuggested
                                   ? null
-                                  : formatSpineScheduleRangeLabel({
-                                      startMinutes: rowSchedule.startMinutes,
-                                      endMinutes: rowSchedule.endMinutes,
-                                      endsNextCalendarDay: rowSchedule.endsNextCalendarDay,
-                                      endDayCaption: rowSchedule.endsNextCalendarDay
-                                        ? formatDateKeyCompact(
-                                            addDaysToLocalDateKey(scheduleStartDk, 1),
-                                            locale,
-                                          )
-                                        : null,
-                                    });
+                                  : rowSchedule.startsNextCalendarDay
+                                    ? `${formatDateKeyCompact(
+                                        addDaysToLocalDateKey(scheduleStartDk, 1),
+                                        locale,
+                                      )} ${formatMinuteOfDayKo(rowSchedule.startMinutes)}`
+                                    : formatMinuteOfDayKo(rowSchedule.startMinutes);
                                 const baseCategoryKey = resolvePriorityRoutineCategoryKey(cat.key);
                                 const rowSummaryHint = formatRoutineSummaryHint(
                                   resolveRoutineSummaryForDisplay(

@@ -1,4 +1,4 @@
-import { sortByExplicitSpineStartTime, resolveBagItemSpineSchedule } from './bagRowSpineSchedule';
+import { sortByExplicitSpineStartTime, resolveBagItemSpineSchedule, deriveBagRowScheduleFromStart } from './bagRowSpineSchedule';
 import {
   BUILTIN_DAILY_EXERCISE_FLOW_ID,
   BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
@@ -29,6 +29,7 @@ describe('resolveBagItemSpineSchedule', () => {
       startMinutes: 11 * 60 + 40,
       endMinutes: 2 * 60 + 20,
       endsNextCalendarDay: true,
+      startsNextCalendarDay: false,
       isSuggested: false,
     });
   });
@@ -58,6 +59,7 @@ describe('resolveBagItemSpineSchedule', () => {
       startMinutes: 11 * 60 + 40,
       endMinutes: 35,
       endsNextCalendarDay: true,
+      startsNextCalendarDay: false,
       isSuggested: false,
     });
   });
@@ -116,6 +118,7 @@ describe('resolveBagItemSpineSchedule', () => {
       startMinutes: 8 * 60,
       endMinutes: 8 * 60 + 30,
       endsNextCalendarDay: false,
+      startsNextCalendarDay: false,
       isSuggested: false,
     });
   });
@@ -146,6 +149,7 @@ describe('resolveBagItemSpineSchedule', () => {
       startMinutes: 9 * 60,
       endMinutes: 9 * 60 + 45,
       endsNextCalendarDay: false,
+      startsNextCalendarDay: false,
       isSuggested: false,
     });
   });
@@ -165,8 +169,8 @@ describe('sortByExplicitSpineStartTime', () => {
       (key) => {
         const item = items.find((row) => row.key === key)!;
         return item.start == null
-          ? { startMinutes: 0, isSuggested: true }
-          : { startMinutes: item.start, isSuggested: false };
+          ? { startMinutes: 0, isSuggested: true, startsNextCalendarDay: false }
+          : { startMinutes: item.start, isSuggested: false, startsNextCalendarDay: false };
       },
     );
     expect(sorted.map((row) => row.key)).toEqual(['early', 'mid', 'late', 'unset']);
@@ -182,9 +186,95 @@ describe('sortByExplicitSpineStartTime', () => {
       (item) => item.key,
       (key) => {
         const item = items.find((row) => row.key === key)!;
-        return { startMinutes: item.start, isSuggested: false };
+        return {
+          startMinutes: item.start,
+          isSuggested: false,
+          startsNextCalendarDay: false,
+        };
       },
     );
     expect(sorted.map((row) => row.key)).toEqual(['a', 'b']);
+  });
+
+  it('orders same-day morning before next-day dawn in overnight window', () => {
+    const items = [
+      { key: 'dawn', start: 1 * 60 + 45, nextDay: true },
+      { key: 'morning', start: 7 * 60 + 35, nextDay: false },
+    ];
+    const sorted = sortByExplicitSpineStartTime(
+      items,
+      (item) => item.key,
+      (key) => {
+        const item = items.find((row) => row.key === key)!;
+        return {
+          startMinutes: item.start,
+          isSuggested: false,
+          startsNextCalendarDay: item.nextDay,
+        };
+      },
+    );
+    expect(sorted.map((row) => row.key)).toEqual(['morning', 'dawn']);
+  });
+});
+
+describe('deriveBagRowScheduleFromStart', () => {
+  it('derives same-day end from start within daily window', () => {
+    expect(
+      deriveBagRowScheduleFromStart({
+        startMinutes: 7 * 60 + 35,
+        startsNextCalendarDay: false,
+        priorityStart: '07:00',
+        priorityEnd: '23:00',
+        durationMinutes: 30,
+      }),
+    ).toEqual({
+      startMinutes: 7 * 60 + 35,
+      endMinutes: 8 * 60 + 5,
+      endsNextCalendarDay: false,
+    });
+  });
+
+  it('rejects start outside daily window', () => {
+    expect(
+      deriveBagRowScheduleFromStart({
+        startMinutes: 6 * 60,
+        startsNextCalendarDay: false,
+        priorityStart: '07:00',
+        priorityEnd: '23:00',
+        durationMinutes: 30,
+      }),
+    ).toBeNull();
+  });
+
+  it('stores overnight morning start as same-day morning block', () => {
+    expect(
+      deriveBagRowScheduleFromStart({
+        startMinutes: 6 * 60,
+        startsNextCalendarDay: true,
+        priorityStart: '22:00',
+        priorityEnd: '07:00',
+        durationMinutes: 30,
+      }),
+    ).toEqual({
+      startMinutes: 6 * 60,
+      endMinutes: 6 * 60 + 30,
+      endsNextCalendarDay: false,
+    });
+  });
+
+  it('wraps evening start past midnight into next-day end', () => {
+    expect(
+      deriveBagRowScheduleFromStart({
+        startMinutes: 23 * 60 + 50,
+        startsNextCalendarDay: false,
+        priorityStart: '22:00',
+        priorityEnd: '07:00',
+        durationMinutes: 30,
+      }),
+    ).toEqual({
+      startMinutes: 23 * 60 + 50,
+      endMinutes: 20,
+      endsNextCalendarDay: true,
+    });
   });
 });

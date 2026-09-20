@@ -1,25 +1,25 @@
 {
-  "latestVersion": "1.7.11",
+  "latestVersion": "1.8.0",
   "highlights": [
-    "하루가 지나면 날짜가 바뀌고, 그날 요일에 맞는 고정 루틴만 다시 담겨요.",
-    "다음 날로 넘어가면 어제 담기·구간·빠른 메모는 비우고 새로 시작해요.",
-    "루틴을 추가해도 시간을 임의로 넣지 않아요. 직접 설정한 시각만 보여요."
+    "담기 루틴 시간은 시작 시각만 설정하면 돼요.",
+    "자정을 넘는 하루에서는 당일 시작이 다음 날 새벽보다 위에 정렬돼요.",
+    "첫 시간 설정 화면이 탭 이동 후 다시 뜨거나 화면이 먹통처럼 보이던 문제를 고쳤어요."
   ],
   "highlightsByLocale": {
     "ko": [
-      "하루가 지나면 날짜가 바뀌고, 그날 요일에 맞는 고정 루틴만 다시 담겨요.",
-      "다음 날로 넘어가면 어제 담기·구간·빠른 메모는 비우고 새로 시작해요.",
-      "루틴을 추가해도 시간을 임의로 넣지 않아요. 직접 설정한 시각만 보여요."
+      "담기 루틴 시간은 시작 시각만 설정하면 돼요.",
+      "자정을 넘는 하루에서는 당일 시작이 다음 날 새벽보다 위에 정렬돼요.",
+      "첫 시간 설정 화면이 탭 이동 후 다시 뜨거나 화면이 먹통처럼 보이던 문제를 고쳤어요."
     ],
     "en": [
-      "When the day rolls over, the date advances and only weekday-matched fixed routines return.",
-      "Yesterday’s bag, sections, and quick memos clear so today starts fresh.",
-      "Adding a routine no longer fills in a time—only times you set yourself appear."
+      "Bag routines now only need a start time.",
+      "In overnight day windows, same-day starts sort above next-day dawn times.",
+      "Fixed the first-time setup screen reappearing or blocking taps after switching tabs."
     ],
     "ja": [
-      "日が変わると日付が進み、その曜日に合う固定ルーチンだけが再び入ります。",
-      "翌日に進むと昨日のリスト・区間・クイックメモは空にして新しく始まります。",
-      "ルーチンを追加しても時間が勝手に入らず、自分で設定した時間だけ表示されます。"
+      "リストのルーチン時刻は開始時刻だけ設定すれば大丈夫です。",
+      "日付をまたぐ一日では、当日の開始が翌日深夜より上に並びます。",
+      "タブ移動後に初回の時間設定画面が再表示されたり、操作できなくなる問題を直しました。"
     ]
   },
   "storeUrls": {

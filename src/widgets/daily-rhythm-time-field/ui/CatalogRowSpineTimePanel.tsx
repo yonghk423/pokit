@@ -205,7 +205,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
   const [draftEnd, setDraftEnd] = useState(() => formatMinutesToHHmm(endMinutes));
   const [draftEndsNext, setDraftEndsNext] = useState(endsNextCalendarDay);
   const [expanded, setExpanded] = useState<'start' | 'end' | null>(null);
-  const [rangeError, setRangeError] = useState<string | null>(null);
   const digitalInputRef = useRef<DigitalHhmmInputHandle>(null);
   const startPickerRef = useRef<SnappedTimePickerFieldHandle>(null);
   const endPickerRef = useRef<SnappedTimePickerFieldHandle>(null);
@@ -219,7 +218,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
     setDraftStart(formatMinutesToHHmm(startMinutes));
     setDraftEnd(formatMinutesToHHmm(endMinutes));
     setDraftEndsNext(endsNextCalendarDay);
-    setRangeError(null);
   }, [startMinutes, endMinutes, endsNextCalendarDay]);
 
   useEffect(() => {
@@ -283,8 +281,11 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
     setDraftStart(formatMinutesToHHmm(startMinutes));
     setDraftEnd(formatMinutesToHHmm(endMinutes));
     setDraftEndsNext(endsNextCalendarDay);
-    setRangeError(null);
   }, [endMinutes, endsNextCalendarDay, startMinutes]);
+
+  const alertInvalidSameDayRange = useCallback(() => {
+    Alert.alert(t('catalog.checkTimeTitle'), t('dayPlan.blockEndAfterStart'));
+  }, [t]);
 
   /** 현재 편집 필드의 DigitalHhmmInput 초안을 draftStart/End에 반영 */
   const flushActiveFieldToDrafts = useCallback((): {
@@ -322,20 +323,19 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
     if (isSingle) {
       if (!confirmSingleNotify(start, draftEndsNext)) return;
     } else if (!commitDraft(start, end, draftEndsNext)) {
-      setRangeError(t('dayPlan.spineEndAfterStartError'));
+      alertInvalidSameDayRange();
       return;
     }
-    setRangeError(null);
     setExpanded(null);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, [
+    alertInvalidSameDayRange,
     commitDraft,
     confirmSingleNotify,
     disabled,
     draftEndsNext,
     flushActiveFieldToDrafts,
     isSingle,
-    t,
   ]);
 
   useImperativeHandle(
@@ -352,11 +352,10 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           parsedEnd === null ||
           (!isSingle && !draftEndsNext && parsedEnd <= parsedStart)
         ) {
-          setRangeError(t('dayPlan.spineEndAfterStartError'));
+          alertInvalidSameDayRange();
           return null;
         }
 
-        setRangeError(null);
         setExpanded(null);
         return {
           startMinutes: parsedStart,
@@ -366,11 +365,11 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       },
     }),
     [
+      alertInvalidSameDayRange,
       disabled,
       draftEndsNext,
       flushActiveFieldToDrafts,
       isSingle,
-      t,
     ],
   );
 
@@ -528,7 +527,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           void Haptics.selectionAsync();
           const { start, end } = flushActiveFieldToDrafts();
           setDraftEndsNext(nextDay);
-          setRangeError(null);
           if (commitOnChange) {
             emitSchedule(
               start,
@@ -613,7 +611,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           valueHhmm={draftStart}
           onChangeHhmm={(next) => {
             setDraftStart(next);
-            setRangeError(null);
             if (commitOnChange && isSingle) {
               emitSchedule(next, next, draftEndsNext);
             }
@@ -662,7 +659,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           valueHhmm={draftEnd}
           onChangeHhmm={(next) => {
             setDraftEnd(next);
-            setRangeError(null);
           }}
           expanded={expanded === 'end'}
           onToggleExpand={() => {
@@ -701,9 +697,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
             onPress={handleConfirm}
             style={styles.sheetConfirmBtn}
           />
-        ) : null}
-        {rangeError ? (
-          <ThemedText style={[styles.rangeError, { color: muted }]}>{rangeError}</ThemedText>
         ) : null}
       </View>
     );
@@ -798,10 +791,6 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
             style={styles.sheetConfirmBtn}
           />
         )
-      ) : null}
-
-      {rangeError ? (
-        <ThemedText style={[styles.rangeError, { color: muted }]}>{rangeError}</ThemedText>
       ) : null}
 
       {activeField ? (
@@ -957,13 +946,6 @@ const styles = StyleSheet.create({
   },
   sheetConfirmBtn: {
     marginTop: 12,
-  },
-  rangeError: {
-    marginTop: 8,
-    fontSize: 12,
-    fontWeight: '600',
-    lineHeight: 17,
-    letterSpacing: -0.15,
   },
   confirmSegment: {
     width: 52,
