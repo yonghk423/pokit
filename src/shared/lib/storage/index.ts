@@ -110,6 +110,13 @@ export {
   type DayPlanLayoutMode,
   type DayPlanLayoutModeVisibility
 } from './dayPlanLayoutModeVisibility';
+export {
+  DEFAULT_DAY_PLAN_CHROME_SETTINGS,
+  loadDayPlanChromeSettings,
+  normalizeDayPlanChromeSettings,
+  saveDayPlanChromeSettings,
+  type DayPlanChromeSettings,
+} from './dayPlanChromeSettings';
 export { loadDayPlan, saveDayPlan } from './dayPlanStorage';
 export type { PersistedDayPlan } from './dayPlanStorage';
 export { loadDayPlanTodos, saveDayPlanTodos } from './dayPlanTodoStorage';
@@ -255,6 +262,7 @@ export {
 } from './lastSeenAppVersionStorage';
 export {
   DEFAULT_POST_IT_FACE_COLOR_ID,
+  DEFAULT_TODO_LIST_POST_IT_FACE_COLOR_ID,
   POST_IT_FACE_COLOR_PRESETS,
   POST_IT_LIGHT_INK,
   POST_IT_LIGHT_MUTED,

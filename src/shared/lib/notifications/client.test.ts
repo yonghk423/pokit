@@ -36,8 +36,10 @@ import {
   cancelLocalNotificationsById,
   cancelScheduledNotificationByIdentifier,
   cancelScheduledNotificationsByEventType,
+  cancelScheduledNotificationsByEventTypeExcept,
   ensureLocalNotificationPermission,
   getLocalNotificationPermissionSnapshot,
+  getScheduledDailyLocalTrigger,
   scheduleDailyLocalNotification,
   scheduleLocalNotification,
   scheduleWeeklyLocalNotification,
@@ -104,6 +106,40 @@ describe('notifications client', () => {
     await cancelScheduledNotificationByIdentifier('pokit:test');
     await cancelScheduledNotificationsByEventType('priorityDayStart');
     expect(mockCancelScheduledNotificationAsync).toHaveBeenCalled();
+  });
+
+  it('keeps fixed identifier when cancelling event-type orphans', async () => {
+    mockGetAllScheduledNotificationsAsync.mockResolvedValueOnce([
+      {
+        identifier: 'pokit:priority-day-start',
+        content: { data: { eventType: 'priorityDayStart' } },
+      },
+      {
+        identifier: 'orphan-2',
+        content: { data: { eventType: 'priorityDayStart' } },
+      },
+    ]);
+    await cancelScheduledNotificationsByEventTypeExcept(
+      'priorityDayStart',
+      'pokit:priority-day-start',
+    );
+    expect(mockCancelScheduledNotificationAsync).toHaveBeenCalledTimes(1);
+    expect(mockCancelScheduledNotificationAsync).toHaveBeenCalledWith('orphan-2');
+  });
+
+  it('reads scheduled daily hour and minute', async () => {
+    mockGetAllScheduledNotificationsAsync.mockResolvedValueOnce([
+      {
+        identifier: 'pokit:priority-day-start',
+        content: { title: 't', body: 'b' },
+        trigger: { type: 'daily', hour: 7, minute: 30 },
+      },
+    ]);
+    await expect(getScheduledDailyLocalTrigger('pokit:priority-day-start')).resolves.toEqual({
+      identifier: 'pokit:priority-day-start',
+      hour: 7,
+      minute: 30,
+    });
   });
 
   it('sends immediate notification', async () => {

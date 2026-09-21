@@ -1,8 +1,10 @@
 const mockScheduleDailyLocalNotification = jest.fn();
 const mockCancelScheduledNotificationByIdentifier = jest.fn();
 const mockCancelScheduledNotificationsByEventType = jest.fn();
+const mockCancelScheduledNotificationsByEventTypeExcept = jest.fn();
 const mockCancelLocalNotificationsById = jest.fn();
 const mockEnsureLocalNotificationPermission = jest.fn();
+const mockGetScheduledDailyLocalTrigger = jest.fn();
 const mockSavePriorityDayEndAlarm = jest.fn();
 const mockLoadPriorityDayEndAlarm = jest.fn();
 
@@ -13,9 +15,12 @@ jest.mock('@shared/lib/notifications', () => ({
     mockCancelScheduledNotificationByIdentifier(...args),
   cancelScheduledNotificationsByEventType: (...args: unknown[]) =>
     mockCancelScheduledNotificationsByEventType(...args),
+  cancelScheduledNotificationsByEventTypeExcept: (...args: unknown[]) =>
+    mockCancelScheduledNotificationsByEventTypeExcept(...args),
   cancelLocalNotificationsById: (...args: unknown[]) => mockCancelLocalNotificationsById(...args),
   ensureLocalNotificationPermission: (...args: unknown[]) =>
     mockEnsureLocalNotificationPermission(...args),
+  getScheduledDailyLocalTrigger: (...args: unknown[]) => mockGetScheduledDailyLocalTrigger(...args),
 }));
 
 jest.mock('@shared/lib/storage', () => ({
@@ -44,7 +49,9 @@ describe('priorityDayEndAlarmScheduler', () => {
     mockScheduleDailyLocalNotification.mockResolvedValue('pokit:priority-day-end');
     mockCancelScheduledNotificationByIdentifier.mockResolvedValue(undefined);
     mockCancelScheduledNotificationsByEventType.mockResolvedValue(undefined);
+    mockCancelScheduledNotificationsByEventTypeExcept.mockResolvedValue(undefined);
     mockCancelLocalNotificationsById.mockResolvedValue(undefined);
+    mockGetScheduledDailyLocalTrigger.mockResolvedValue(null);
   });
 
   it('schedules daily notification with fixed identifier when enabled', async () => {
@@ -62,6 +69,10 @@ describe('priorityDayEndAlarmScheduler', () => {
         minute: 0,
         data: { eventType: 'priorityDayEnd', reminderNextDay: false },
       }),
+    );
+    expect(mockCancelScheduledNotificationsByEventTypeExcept).toHaveBeenCalledWith(
+      'priorityDayEnd',
+      PRIORITY_DAY_END_NOTIFICATION_ID,
     );
     expect(mockSavePriorityDayEndAlarm).toHaveBeenCalledWith({
       enabled: true,
@@ -121,7 +132,7 @@ describe('priorityDayEndAlarmScheduler', () => {
     });
   });
 
-  it('dedupes concurrent sync calls', async () => {
+  it('serializes concurrent sync calls with the same time', async () => {
     const { syncPriorityDayEndAlarm } = loadScheduler();
 
     const [a, b] = await Promise.all([

@@ -483,6 +483,7 @@ export {
   syncTodayTabWithFixedRoutineApply,
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
+  useDayPlanChromeSettingsStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
   useDayPlanTodoStore,

@@ -7,6 +7,7 @@ import {
   seedPokitWeekTourIntoTodayIfNeeded,
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
+  useDayPlanChromeSettingsStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
   useDayPlanTodoStore,
@@ -81,6 +82,7 @@ export function useAppBootstrap() {
       useAppearanceStore.getState().hydrate();
       useAppFontStore.getState().hydrate();
       useDayPlanLayoutModeVisibilityStore.getState().hydrate();
+      useDayPlanChromeSettingsStore.getState().hydrate();
 
       useDayPlanStore.getState().hydrate();
       useDayPlanDraftStore.getState().hydrate();

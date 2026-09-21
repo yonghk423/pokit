@@ -3,9 +3,9 @@ import type { ReactNode } from 'react';
 import { useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -24,6 +24,17 @@ const MODE_BUTTONS: ModeButton[] = [
   { mode: 'dayNote', icon: 'square.and.pencil', labelKey: 'planMode.dayNote' },
   { mode: 'reading', icon: 'book.closed.fill', labelKey: 'planMode.reading' },
 ];
+
+/** 설정·펼침 액션 버튼과 동일 — 흰 면 · 얇은 검정 테두리 · 솔리드 음영 */
+const SHADOW = 2;
+const FACE = 34;
+const BORDER = 1;
+const ICON_LIGHT = '#000000';
+const ICON_DARK = '#FAFAFA';
+const BORDER_LIGHT = '#000000';
+const BORDER_DARK = 'rgba(255,255,255,0.55)';
+const SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
+const SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
 
 type Props = {
   planMode: PlanMode;
@@ -50,7 +61,12 @@ export function PlanModeSwitch({
 }: Props) {
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
-  const pill = tabPillColors(isDark);
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const shadow = isDark ? SHADOW_DARK : SHADOW_LIGHT;
+  const border = isDark ? BORDER_DARK : BORDER_LIGHT;
+  const inactiveFace = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const activeFace = isDark ? tone.primaryContainer : tone.bgMint;
+  const iconColor = isDark ? ICON_DARK : ICON_LIGHT;
 
   const hint =
     description !== undefined
@@ -106,21 +122,34 @@ export function PlanModeSwitch({
                 <Pressable
                   key={btn.mode}
                   accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
                   accessibilityLabel={label}
                   onPress={() => handleSelect(btn.mode)}
                   style={({ pressed }) => [
-                    styles.iconHit,
-                    {
-                      backgroundColor: active ? pill.activeBg : c.containerLowest,
-                      borderColor: active ? pill.activeBorder : c.border,
-                    },
-                    pressed && styles.iconPressed,
+                    styles.shell,
+                    { marginRight: SHADOW, marginBottom: SHADOW },
+                    pressed && styles.pressed,
                   ]}>
-                  <IconSymbol
-                    name={btn.icon as any}
-                    size={18}
-                    color={active ? pill.activeIcon : c.onVariant}
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.shadow,
+                      {
+                        backgroundColor: shadow,
+                        transform: [{ translateX: SHADOW }, { translateY: SHADOW }],
+                      },
+                    ]}
                   />
+                  <View
+                    style={[
+                      styles.face,
+                      {
+                        backgroundColor: active ? activeFace : inactiveFace,
+                        borderColor: border,
+                      },
+                    ]}>
+                    <IconSymbol name={btn.icon as 'book.closed.fill'} size={18} color={iconColor} />
+                  </View>
                 </Pressable>
               );
             })}
@@ -165,16 +194,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  iconHit: {
-    width: 34,
-    height: 34,
+  shell: {
+    position: 'relative',
+    width: FACE + SHADOW,
+    height: FACE + SHADOW,
+  },
+  shadow: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: FACE,
+    height: FACE,
+    borderRadius: 0,
+  },
+  face: {
+    width: FACE,
+    height: FACE,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 11,
-    borderWidth: 2,
+    borderRadius: 0,
+    borderWidth: BORDER,
+    zIndex: 1,
   },
-  iconPressed: {
-    opacity: 0.72,
+  pressed: {
+    transform: [{ translateY: 1 }],
   },
   modeHint: {
     fontSize: 13,

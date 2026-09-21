@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   addDaysToLocalDateKey,
   clampNotifyTimeToPriorityWindow,
+  formatHhmmClockKo,
   formatMinutesToHHmm,
   getLocalDateKey,
   isNotifyTimeWithinPriorityWindow,
@@ -234,11 +235,13 @@ export function NotificationSettingsPage() {
           <CityPopCardShell
             isDark={isDark}
             faceColor={p.surface}
-            shadowColor={isDark ? RetroFlatColors.dark.solidShadow : RetroFlatColors.light.text}
+            shadowColor={isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)'}
             contentStyle={styles.card}>
             <DailyRhythmStyleAlarmRow
               title={t('dayRhythm.dayStartAlarmTitle')}
-              hint={t('dayRhythm.dayStartAlarmHint')}
+              hint={t('dayRhythm.dayStartAlarmHint', {
+                time: formatHhmmClockKo(priorityStart),
+              })}
               value={dayStartAlarmOn}
               onValueChange={(v) => void onToggleDayStart(v)}
               palette={surface.alarm}
@@ -303,7 +306,7 @@ export function NotificationSettingsPage() {
                           trackFill={isDark ? ink.surfaceAlt : ink.bg}
                           selectedInk={isDark ? ink.text : ink.tertiary}
                           unselectedInk={surface.timeField.onVariant}
-                          shadowColor={isDark ? RetroFlatColors.dark.solidShadow : '#000000'}
+                          shadowColor={isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)'}
                           minHeight={36}
                         />
                         {dayEndAlarmNextDay ? (

@@ -9,6 +9,7 @@ import {
 import { POST_IT_SOLID_SHADOW } from '@shared/ui/post-it-card-shell';
 
 const COLOR_LABEL_KEYS: Record<PostItFaceColorId, I18nKey> = {
+  cream: 'catalog.postItColor.cream',
   yellow: 'catalog.postItColor.yellow',
   mint: 'catalog.postItColor.mint',
   pink: 'catalog.postItColor.pink',

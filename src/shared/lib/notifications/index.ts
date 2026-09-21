@@ -5,8 +5,10 @@ export {
   cancelLocalNotificationsById,
   cancelScheduledNotificationByIdentifier,
   cancelScheduledNotificationsByEventType,
+  cancelScheduledNotificationsByEventTypeExcept,
   ensureLocalNotificationPermission,
   getLocalNotificationPermissionSnapshot,
+  getScheduledDailyLocalTrigger,
   getScheduledLocalNotifications,
   scheduleDailyLocalNotification,
   scheduleLocalNotification,
@@ -15,5 +17,6 @@ export {
 } from './client';
 export type {
   LocalNotificationPermissionSnapshot,
+  ScheduledDailyLocalTrigger,
   ScheduledLocalNotificationSnapshot,
 } from './client';

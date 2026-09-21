@@ -1,25 +1,25 @@
 {
-  "latestVersion": "1.8.1",
+  "latestVersion": "1.8.2",
   "highlights": [
-    "담기 루틴 시간은 시작 시각만 설정하면 돼요.",
-    "자정을 넘는 하루에서는 당일 시작이 다음 날 새벽보다 위에 정렬돼요.",
-    "첫 시간 설정 화면이 탭 이동 후 다시 뜨거나 화면이 먹통처럼 보이던 문제를 고쳤어요."
+    "레이아웃 설정에서 오늘 탭 루틴 아이콘을 숨길 수 있어요.",
+    "하루 시작 알림이 지정한 시각에 맞게, 중복 없이 울리도록 고쳤어요.",
+    "오늘 탭 상단 아이콘·알림·설정 화면 UI를 다듬었어요."
   ],
   "highlightsByLocale": {
     "ko": [
-      "담기 루틴 시간은 시작 시각만 설정하면 돼요.",
-      "자정을 넘는 하루에서는 당일 시작이 다음 날 새벽보다 위에 정렬돼요.",
-      "첫 시간 설정 화면이 탭 이동 후 다시 뜨거나 화면이 먹통처럼 보이던 문제를 고쳤어요."
+      "레이아웃 설정에서 오늘 탭 루틴 아이콘을 숨길 수 있어요.",
+      "하루 시작 알림이 지정한 시각에 맞게, 중복 없이 울리도록 고쳤어요.",
+      "오늘 탭 상단 아이콘·알림·설정 화면 UI를 다듬었어요."
     ],
     "en": [
-      "Bag routines now only need a start time.",
-      "In overnight day windows, same-day starts sort above next-day dawn times.",
-      "Fixed the first-time setup screen reappearing or blocking taps after switching tabs."
+      "You can hide Today-tab routine icons in Layout settings.",
+      "Day-start alerts now fire at the time you set—without duplicates.",
+      "Polished Today-tab icons and Settings / Notifications UI."
     ],
     "ja": [
-      "リストのルーチン時刻は開始時刻だけ設定すれば大丈夫です。",
-      "日付をまたぐ一日では、当日の開始が翌日深夜より上に並びます。",
-      "タブ移動後に初回の時間設定画面が再表示されたり、操作できなくなる問題を直しました。"
+      "レイアウト設定で今日タブのルーチンアイコンを隠せます。",
+      "一日の開始通知が設定時刻どおりに、重複なく届くよう修正しました。",
+      "今日タブの上部アイコンと設定・通知画面のUIを整えました。"
     ]
   },
   "storeUrls": {

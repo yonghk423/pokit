@@ -9,7 +9,6 @@ import { getClockNow } from '@shared/lib/time/appClock';
 import { syncWidgetTimelineFromStorage } from '../lib/widgetDayPlanSync';
 
 import { getLocalMinutesOfDayNow } from '../lib/dayPlanTime';
-import { defaultPriorityWindowFromNow } from '../lib/dayPlanTimeMath';
 import {
   categoryKeysReferToSameRoutine,
   dropReaddedEndedTodayKeys,
@@ -189,9 +188,9 @@ type DayPlanDraftState = {
   releaseEndedTodayCategoryKeys: (keys: string[]) => void;
 };
 
+/** hydrate 전·빈 초깃값 — 「지금」스냅을 쓰면 하루 시작 알림이 현재 분에 예약될 수 있음 */
 function createInitialPriorityWindow() {
-  const w = defaultPriorityWindowFromNow();
-  return { priorityStart: w.startTime, priorityEnd: w.endTime };
+  return { priorityStart: '07:00', priorityEnd: '23:00' };
 }
 
 function dateKeyAtMinute(dateKey: string, minuteOfDay: number): Date {

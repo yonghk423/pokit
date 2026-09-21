@@ -88,7 +88,10 @@ export type PriorityCatalogEditorial = {
 };
 
 const MEAL_SLOT_PANEL_HEIGHT = 56;
-const BRUTAL_SHADOW_SM = 3;
+const BRUTAL_SHADOW_SM = 2;
+/** 레이아웃 솔리드 음영 — 순검정보다 옅은 잉크 */
+const SOFT_SOLID_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
+const SOFT_SOLID_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
 const MANAGE_DETAIL_OPEN_MS = 280;
 const MANAGE_DETAIL_CLOSE_MS = 220;
 const MANAGE_DETAIL_EASING = Easing.out(Easing.cubic);
@@ -309,7 +312,7 @@ function CatalogListRow({
   const manageDetailProgress = useSharedValue(0);
   const manageDetailHeight = useSharedValue(0);
   const titleHighlight = manageOnly ? priorityMarkTitleHighlight(markColor, isDark) : undefined;
-  const markShadow = shadow ?? '#000000';
+  const markShadow = shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT);
   const MARK_SWATCH = 22;
   const MARK_SHADOW = 2;
   const settingsBorder = manageOnly
@@ -327,7 +330,7 @@ function CatalogListRow({
   const settingsHoverBg = manageOnly
     ? 'rgba(255,255,255,0.92)'
     : (actionHoverBg ?? settingsBg);
-  const brutalShadow = shadow ?? '#000000';
+  const brutalShadow = shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT);
   /** 관리 행 액션은 항상 흰 면 + 검정 아이콘 (어두운 포스트잇에서도 보이게) */
   const actionGlyphColor = manageOnly ? '#000000' : ink;
   const actionGlyphMuted = manageOnly ? 'rgba(0,0,0,0.55)' : muted;
@@ -1388,6 +1391,7 @@ function GroupSectionBlock({
         ink: faceInk,
         muted: faceMuted,
         line: faceUsesLightInk ? 'rgba(255,255,255,0.22)' : editorial.line,
+        shadow: isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT,
       }
     : editorial;
   const headerIconColor = '#000000';
@@ -1451,7 +1455,7 @@ function GroupSectionBlock({
           borderColor={headerBtnBorder}
           backgroundColor={headerBtnBg}
           pressedBg={headerBtnBg}
-          shadowColor="#000000"
+          shadowColor={isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT}
           width={50}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1496,6 +1500,7 @@ function GroupSectionBlock({
         <PostItCardShell
           isDark={isDark}
           faceColor={postItFaceColor}
+          shadowColor={isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT}
           borderColor={
             postItFaceColorId === 'white' && !isDark ? 'rgba(0,0,0,0.16)' : undefined
           }
@@ -1513,7 +1518,7 @@ function GroupSectionBlock({
                 selectedId={postItFaceColorId}
                 isDark={isDark}
                 ink={faceInk}
-                shadowColor={faceEditorial.shadow ?? '#000000'}
+                shadowColor={faceEditorial.shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT)}
                 onSelect={onSelectPostItFaceColor}
               />
             </View>
@@ -1806,6 +1811,7 @@ export function PriorityCatalogPanel({
       ink: faceInk,
       muted: faceMuted,
       line: faceUsesLightInk ? 'rgba(255,255,255,0.22)' : editorial.line,
+      shadow: isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT,
     };
     return (
       <View style={styles.root}>
@@ -1829,6 +1835,7 @@ export function PriorityCatalogPanel({
         <PostItCardShell
           isDark={isDark}
           faceColor={faceColor}
+          shadowColor={isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT}
           borderColor={
             flatFaceColorId === 'white' && !isDark ? 'rgba(0,0,0,0.16)' : undefined
           }
@@ -1908,7 +1915,7 @@ export function PriorityCatalogPanel({
                     pointerEvents="none"
                     style={[
                       styles.flatSearchAddShadow,
-                      { backgroundColor: isDark ? RetroFlatColors.dark.solidShadow : '#000000' },
+                      { backgroundColor: isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT },
                     ]}
                   />
                   <Pressable
@@ -1954,7 +1961,9 @@ export function PriorityCatalogPanel({
               selectedId={flatFaceColorId}
               isDark={isDark}
               ink={faceInk}
-              shadowColor={faceEditorial.shadow ?? '#000000'}
+              shadowColor={
+                faceEditorial.shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT)
+              }
               onSelect={(id) => onSelectPostItFaceColor(FLAT_CATALOG_POST_IT_KEY, id)}
             />
           </View>

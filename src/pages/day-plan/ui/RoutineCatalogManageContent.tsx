@@ -53,7 +53,8 @@ function bookColors(c: DayPlanPalette, isDark: boolean) {
     sheetSurface: isDark ? tone.surfaceAlt : tone.bg,
     actionBg: isDark ? tone.surfaceAlt : '#FFFFFF',
     actionHoverBg: tone.surfacePink,
-    shadow: '#000000',
+    /** 레이아웃 솔리드 음영 — 순검정보다 옅게 */
+    shadow: isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)',
   };
 }
 

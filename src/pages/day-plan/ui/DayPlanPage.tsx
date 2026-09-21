@@ -67,6 +67,7 @@ import {
   isOvernightHhmmRange,
   PRIMARY,
 } from '../lib/dayPlanEditorShared';
+import { DEFAULT_DAILY_RHYTHM } from '../lib/dailyRhythmPresets';
 import { palette } from '../lib/dayPlanPalette';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { DailyRhythmOnboardingGate } from './DailyRhythmOnboardingGate';
@@ -352,10 +353,13 @@ export function DayPlanPage({
   const priorityStartAlarmSyncRef = useRef<string | null>(null);
   useEffect(() => {
     if (!loadPriorityDayStartAlarm().enabled) return;
+    const target = priorityStart;
+    if (priorityStartAlarmSyncRef.current === target) return;
     const timer = setTimeout(() => {
-      if (priorityStartAlarmSyncRef.current === priorityStart) return;
-      priorityStartAlarmSyncRef.current = priorityStart;
-      void syncPriorityDayStartAlarm({ enabled: true, startHhmm: priorityStart });
+      void (async () => {
+        const ok = await syncPriorityDayStartAlarm({ enabled: true, startHhmm: target });
+        if (ok) priorityStartAlarmSyncRef.current = target;
+      })();
     }, 400);
     return () => clearTimeout(timer);
   }, [priorityStart]);
@@ -366,9 +370,9 @@ export function DayPlanPage({
     const hasValidRange =
       parseHHmmToMinutes(priorityStart) !== null && parseHHmmToMinutes(priorityEnd) !== null;
     if (hasValidRange) return;
-    const w = defaultPriorityWindowFromNow();
-    setPriorityStart(w.startTime);
-    setPriorityEnd(w.endTime);
+    /** 「지금」스냅 금지 — 하루 시작 알림이 현재 시각에 묶이지 않게 기본 일과 구간 사용 */
+    setPriorityStart(DEFAULT_DAILY_RHYTHM.start);
+    setPriorityEnd(DEFAULT_DAILY_RHYTHM.end);
   }, [planMode, priorityCategoryOrder.length, priorityEnd, priorityStart, setPriorityEnd, setPriorityStart]);
 
   /** 고정 루틴「오늘 적용」상태와 오늘 탭 담기·구간 동기화 */

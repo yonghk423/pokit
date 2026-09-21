@@ -54,6 +54,7 @@ import {
 } from '@shared/lib/storage';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
@@ -544,8 +545,8 @@ export function GoalDetailSettingsPage() {
     Platform.OS === 'ios' && keyboardOpen
       ? Math.max(24, keyboardHeight + 16)
       : workNoteUi
-        ? 0
-        : 8;
+        ? Math.max(insets.bottom, 12)
+        : Math.max(insets.bottom + 16, 24);
 
   const topInset =
     insets.top >= 1
@@ -671,7 +672,7 @@ export function GoalDetailSettingsPage() {
               backgroundColor: c.bg,
             },
           ]}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
           keyboardDismissMode="interactive"
           automaticallyAdjustKeyboardInsets={false}
           contentInsetAdjustmentBehavior="never"
@@ -835,60 +836,30 @@ export function GoalDetailSettingsPage() {
               />
             </View>
             ) : null}
+
+            <View
+              style={[
+                styles.contentConfirmWrap,
+                contentFlush && styles.metaSectionInset,
+              ]}>
+              <BrutalConfirmButton
+                align="stretch"
+                label={t('common.confirm')}
+                accessibilityLabel={
+                  waterDetailUi
+                    ? t('goalDetail.doneRoutineSettings')
+                    : t('goalDetail.doneSettings')
+                }
+                pressRetentionOffset={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                style={styles.footerConfirm}
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  handleCompleteAndStart();
+                }}
+              />
+            </View>
           </View>
         </ScrollView>
-        {keyboardOpen ? null : (
-          <View
-            style={[
-              styles.footerFixed,
-              workNoteUi && styles.footerFixedCompact,
-              {
-                backgroundColor: screenBg,
-                paddingBottom: Math.max(insets.bottom, workNoteUi ? 4 : 6),
-              },
-            ]}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
-                waterDetailUi ? t('goalDetail.doneRoutineSettings') : t('goalDetail.doneSettings')
-              }
-              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                handleCompleteAndStart();
-              }}
-              style={({ pressed }) => [
-                styles.footerCompleteShell,
-                pressed && { transform: [{ translateY: 1 }] },
-              ]}>
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.footerCompleteShadow,
-                  {
-                    backgroundColor: RetroFlatColors.light.text,
-                  },
-                ]}
-              />
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.footerCompleteCircle,
-                  {
-                    backgroundColor: RetroFlatColors.light.primaryContainer,
-                  },
-                ]}>
-                <IconSymbol
-                  name="checkmark"
-                  size={16}
-                  weight="bold"
-                  color={RetroFlatColors.light.text}
-                  style={styles.footerCompleteIcon}
-                />
-              </View>
-            </Pressable>
-          </View>
-        )}
       </View>
     </ThemedView>
   );
@@ -980,43 +951,13 @@ const styles = StyleSheet.create({
   startPickerRowText: { flex: 1, minWidth: 0, gap: 2 },
   startPickerRowTitle: { fontSize: 15, fontWeight: '700' },
   startPickerRowMeta: { fontSize: 12, fontWeight: '600' },
-  /** 하단 고정 완료 — 민트 CTA + solid shadow */
-  footerCompleteShell: {
-    position: 'relative',
-    width: 44,
-    height: 44,
-    marginRight: 3,
-    marginBottom: 3,
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
+  /** 상세 설정 콘텐츠 마지막 확인 — 스크롤 영역 안에 배치 */
+  contentConfirmWrap: {
+    alignItems: 'stretch',
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-  footerCompleteShadow: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    width: 40,
-    height: 40,
-    borderRadius: 0,
-    borderWidth: 0,
-  },
-  footerCompleteCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 0,
-    borderWidth: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  footerCompleteIcon: {
-    marginTop: 1,
-  },
-  footerFixed: {
-    alignItems: 'center',
-    paddingTop: 4,
-    zIndex: 30,
-    elevation: 30,
-  },
-  footerFixedCompact: {
-    paddingTop: 0,
+  footerConfirm: {
+    alignSelf: 'stretch',
   },
 });

@@ -13,6 +13,7 @@ import {
   syncTodayTabWithFixedRoutineApply,
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
+  useDayPlanChromeSettingsStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
   useDayPlanTodoStore,
@@ -33,12 +34,14 @@ import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { t, useAppLocaleStore } from '@shared/lib/i18n';
 import {
+  DEFAULT_DAY_PLAN_CHROME_SETTINGS,
   DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY,
   ensureDefaultPriorityCatalog,
   loadFixedFlowSetsState,
   loadPriorityDayStartAlarm,
   resetAppLocalData,
   saveDayPlan,
+  saveDayPlanChromeSettings,
   saveDayPlanLayoutModeVisibility,
   saveDayPlanTodos,
   saveFixedFlowSetsState,
@@ -196,6 +199,8 @@ export function SettingsPage() {
       const defaultWindow = defaultPriorityWindowFromNow();
       saveRoutineCatalogSelectionKeys([]);
       saveDayPlanLayoutModeVisibility({ ...DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY });
+      saveDayPlanChromeSettings({ ...DEFAULT_DAY_PLAN_CHROME_SETTINGS });
+      useDayPlanChromeSettingsStore.getState().hydrate();
       saveDayPlanTodos({ todosByDate: {} });
 
       useDayPlanStore.setState({
@@ -360,6 +365,34 @@ export function SettingsPage() {
                 <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                   {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
                   {dayStartAlarmOn ? t('settings.dayPlanStartAlarmOn', locale) : ''}
+                </ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+          </Pressable>
+
+          <Pressable
+            style={[chrome.item, { borderTopColor: p.border }]}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/layout-settings');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.a11y.layout', locale)}>
+            <View style={chrome.itemLeft}>
+              <SettingsRowIcon
+                name="list.bullet.rectangle"
+                color={p.icon}
+                boxBg={p.iconBoxBg}
+                border={p.border}
+                shadow={p.shadow}
+              />
+              <View style={chrome.itemTextWrap}>
+                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                  {t('settings.layoutTitle', locale)}
+                </ThemedText>
+                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                  {t('settings.layoutDesc', locale)}
                 </ThemedText>
               </View>
             </View>

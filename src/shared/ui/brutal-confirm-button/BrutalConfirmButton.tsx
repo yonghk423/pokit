@@ -1,4 +1,11 @@
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  type Insets,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import {
   RETRO_RADIUS,
@@ -23,6 +30,8 @@ export type BrutalConfirmButtonProps = {
   /** 있으면 solid shadow. 생략 시 검정(라이트) / 민트(다크) */
   shadowColor?: string;
   disabled?: boolean;
+  /** 스크롤 영역에서도 탭이 쉽게 취소되지 않도록 유지할 거리 */
+  pressRetentionOffset?: Insets | number;
   /** end: 시간 피커용 우측 정렬 / stretch: 시트·모달 풀폭 */
   align?: 'end' | 'stretch';
   /** stretch 일 때 바깥 여백 등 */
@@ -60,6 +69,7 @@ export function BrutalConfirmButton({
   border: _border,
   shadowColor,
   disabled = false,
+  pressRetentionOffset,
   align = 'end',
   style,
   compact = false,
@@ -103,6 +113,7 @@ export function BrutalConfirmButton({
         accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={onPress}
+        pressRetentionOffset={pressRetentionOffset}
         style={[
           styles.face,
           stretch && styles.faceStretch,

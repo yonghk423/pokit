@@ -149,7 +149,7 @@ export const orderRowStyles = StyleSheet.create({
   },
   orderBrutalBtnShadow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
+    borderWidth: 0,
     borderRadius: 0,
   },
   orderRowPriorityBtn: {
@@ -277,7 +277,7 @@ export const orderRowStyles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 0,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 1,
     borderColor: '#000000',
     alignItems: 'center' as const,
     justifyContent: 'center' as const,

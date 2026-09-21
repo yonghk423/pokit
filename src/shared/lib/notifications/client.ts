@@ -131,6 +131,32 @@ export async function scheduleDailyLocalNotification(params: {
   });
 }
 
+export type ScheduledDailyLocalTrigger = {
+  identifier: string;
+  hour: number;
+  minute: number;
+};
+
+/**
+ * 이미 OS에 올라간 매일(시·분) 예약이 있으면 그 시각을 반환합니다.
+ * 같은 시각으로 cancel→재예약하면 현재 분에 즉시 울릴 수 있어, 재동기화 전에 확인합니다.
+ */
+export async function getScheduledDailyLocalTrigger(
+  identifier: string,
+): Promise<ScheduledDailyLocalTrigger | null> {
+  if (!isNativeNotificationPlatform() || !identifier) return null;
+  await ensureConfigured();
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const hit = scheduled.find((req) => req.identifier === identifier);
+  if (!hit?.trigger || typeof hit.trigger !== 'object') return null;
+  const row = hit.trigger as Record<string, unknown>;
+  const hour = typeof row.hour === 'number' ? row.hour : null;
+  const minute = typeof row.minute === 'number' ? row.minute : null;
+  if (hour === null || minute === null) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return { identifier, hour, minute };
+}
+
 /** 매주 특정 요일·시·분에 울리는 로컬 알림. (`weekday`: 0=일~6=토) */
 export async function scheduleWeeklyLocalNotification(params: {
   title: string;
@@ -174,12 +200,24 @@ export async function cancelScheduledNotificationByIdentifier(
 export async function cancelScheduledNotificationsByEventType(
   eventType: string,
 ): Promise<void> {
+  await cancelScheduledNotificationsByEventTypeExcept(eventType, null);
+}
+
+/**
+ * `data.eventType`이 일치하는 예약 중 `keepIdentifier`만 남기고 취소.
+ * 고정 ID로 다시 예약한 뒤 레이스 고아를 정리할 때 사용합니다.
+ */
+export async function cancelScheduledNotificationsByEventTypeExcept(
+  eventType: string,
+  keepIdentifier: string | null,
+): Promise<void> {
   if (!isNativeNotificationPlatform() || !eventType) return;
   await ensureConfigured();
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(
     scheduled
       .filter((req) => {
+        if (keepIdentifier && req.identifier === keepIdentifier) return false;
         const data = req.content.data;
         return (
           data &&

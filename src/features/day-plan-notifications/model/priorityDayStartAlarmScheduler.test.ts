@@ -1,8 +1,10 @@
 const mockScheduleDailyLocalNotification = jest.fn();
 const mockCancelScheduledNotificationByIdentifier = jest.fn();
 const mockCancelScheduledNotificationsByEventType = jest.fn();
+const mockCancelScheduledNotificationsByEventTypeExcept = jest.fn();
 const mockCancelLocalNotificationsById = jest.fn();
 const mockEnsureLocalNotificationPermission = jest.fn();
+const mockGetScheduledDailyLocalTrigger = jest.fn();
 const mockSavePriorityDayStartAlarm = jest.fn();
 const mockLoadPriorityDayStartAlarm = jest.fn();
 
@@ -13,9 +15,12 @@ jest.mock('@shared/lib/notifications', () => ({
     mockCancelScheduledNotificationByIdentifier(...args),
   cancelScheduledNotificationsByEventType: (...args: unknown[]) =>
     mockCancelScheduledNotificationsByEventType(...args),
+  cancelScheduledNotificationsByEventTypeExcept: (...args: unknown[]) =>
+    mockCancelScheduledNotificationsByEventTypeExcept(...args),
   cancelLocalNotificationsById: (...args: unknown[]) => mockCancelLocalNotificationsById(...args),
   ensureLocalNotificationPermission: (...args: unknown[]) =>
     mockEnsureLocalNotificationPermission(...args),
+  getScheduledDailyLocalTrigger: (...args: unknown[]) => mockGetScheduledDailyLocalTrigger(...args),
 }));
 
 jest.mock('@shared/lib/storage', () => ({
@@ -44,7 +49,9 @@ describe('priorityDayStartAlarmScheduler', () => {
     mockScheduleDailyLocalNotification.mockResolvedValue('pokit:priority-day-start');
     mockCancelScheduledNotificationByIdentifier.mockResolvedValue(undefined);
     mockCancelScheduledNotificationsByEventType.mockResolvedValue(undefined);
+    mockCancelScheduledNotificationsByEventTypeExcept.mockResolvedValue(undefined);
     mockCancelLocalNotificationsById.mockResolvedValue(undefined);
+    mockGetScheduledDailyLocalTrigger.mockResolvedValue(null);
   });
 
   it('schedules daily notification with fixed identifier when enabled', async () => {
@@ -62,6 +69,10 @@ describe('priorityDayStartAlarmScheduler', () => {
         minute: 0,
         data: { eventType: 'priorityDayStart' },
       }),
+    );
+    expect(mockCancelScheduledNotificationsByEventTypeExcept).toHaveBeenCalledWith(
+      'priorityDayStart',
+      PRIORITY_DAY_START_NOTIFICATION_ID,
     );
     expect(mockSavePriorityDayStartAlarm).toHaveBeenCalledWith({
       enabled: true,
@@ -102,7 +113,7 @@ describe('priorityDayStartAlarmScheduler', () => {
     });
   });
 
-  it('dedupes concurrent sync calls', async () => {
+  it('serializes concurrent sync calls with the same time', async () => {
     const { syncPriorityDayStartAlarm } = loadScheduler();
 
     const [a, b] = await Promise.all([
@@ -113,5 +124,40 @@ describe('priorityDayStartAlarmScheduler', () => {
     expect(a).toBe(true);
     expect(b).toBe(true);
     expect(mockScheduleDailyLocalNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies the later time when concurrent syncs request different hours', async () => {
+    const { syncPriorityDayStartAlarm } = loadScheduler();
+
+    const [a, b] = await Promise.all([
+      syncPriorityDayStartAlarm({ enabled: true, startHhmm: '07:00' }),
+      syncPriorityDayStartAlarm({ enabled: true, startHhmm: '08:30' }),
+    ]);
+
+    expect(a).toBe(true);
+    expect(b).toBe(true);
+    expect(mockScheduleDailyLocalNotification).toHaveBeenCalledTimes(2);
+    expect(mockScheduleDailyLocalNotification).toHaveBeenLastCalledWith(
+      expect.objectContaining({ hour: 8, minute: 30 }),
+    );
+  });
+
+  it('skips cancel and reschedule when OS already has the same daily time', async () => {
+    const { syncPriorityDayStartAlarm, PRIORITY_DAY_START_NOTIFICATION_ID } = loadScheduler();
+    mockGetScheduledDailyLocalTrigger.mockResolvedValue({
+      identifier: PRIORITY_DAY_START_NOTIFICATION_ID,
+      hour: 9,
+      minute: 0,
+    });
+
+    const ok = await syncPriorityDayStartAlarm({ enabled: true, startHhmm: '09:00' });
+
+    expect(ok).toBe(true);
+    expect(mockScheduleDailyLocalNotification).not.toHaveBeenCalled();
+    expect(mockCancelScheduledNotificationByIdentifier).not.toHaveBeenCalled();
+    expect(mockSavePriorityDayStartAlarm).toHaveBeenCalledWith({
+      enabled: true,
+      notificationId: PRIORITY_DAY_START_NOTIFICATION_ID,
+    });
   });
 });

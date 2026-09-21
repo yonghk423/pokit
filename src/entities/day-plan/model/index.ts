@@ -1,5 +1,6 @@
 export { useDayPlanStore, selectFirstPendingBlock } from './dayPlanStore';
 export { useDayPlanLayoutModeVisibilityStore } from './dayPlanLayoutModeVisibilityStore';
+export { useDayPlanChromeSettingsStore } from './dayPlanChromeSettingsStore';
 export { useDayPlanRuntimeStore } from './dayPlanRuntimeStore';
 export { useFixedFlowSetsStore, notifyFixedFlowApplyScheduleChanged } from './fixedFlowSetsStore';
 export { syncTodayTabWithFixedRoutineApply } from '../lib/runSyncTodayTabWithFixedRoutineApply';

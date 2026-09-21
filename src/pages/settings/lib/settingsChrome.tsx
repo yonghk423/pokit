@@ -5,7 +5,9 @@ import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
+/** 아이콘 박스 솔리드 음영 — 옅게 */
 const SHADOW_SM = 2;
+const ICON_FACE = 36;
 
 export type SettingsPalette = {
   bg: string;
@@ -40,20 +42,20 @@ export function buildSettingsPalette(isDark: boolean): SettingsPalette {
     desc: c.textMuted,
     icon: c.primary,
     iconBoxBg: c.primaryContainer,
-    // 아이콘 오프셋 — primary보다 한 단계 연한 민트
-    shadow: isDark ? '#4A6A6C' : '#9ECFD1',
+    /** 아이콘 오프셋 — 크림/민트 면에서 보이도록 옅은 잉크 */
+    shadow: isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)',
     chevron: c.textMuted,
     dangerBg: isDark ? 'rgba(147, 0, 10, 1)' : '#FFDAD6',
     dangerTitle: isDark ? c.danger : '#B91C1C',
     dangerDesc: isDark ? '#FFB4AB' : '#991B1B',
     dangerIcon: isDark ? c.danger : '#DC2626',
     dangerChevron: isDark ? '#FFB4AB' : '#FCA5A5',
-    dangerShadow: isDark ? '#7A3030' : '#E8A8A4',
+    dangerShadow: isDark ? 'rgba(120, 40, 40, 0.55)' : 'rgba(185, 28, 28, 0.28)',
     dangerIconBoxBg: isDark ? 'rgba(255, 255, 255, 0.12)' : '#FFFFFF',
   };
 }
 
-/** 설정 행 — 파스텔 아이콘 박스 + 민트 solid shadow */
+/** 설정 행 — 파스텔 아이콘 박스 + 옅은 solid shadow */
 export function SettingsRowIcon({
   name,
   color,
@@ -68,14 +70,13 @@ export function SettingsRowIcon({
   shadow: string;
 }) {
   return (
-    <View style={[styles.iconShell, { marginRight: SHADOW_SM, marginBottom: SHADOW_SM }]}>
+    <View style={styles.iconShell}>
       <View
         pointerEvents="none"
         style={[
           styles.iconShadow,
           {
             backgroundColor: shadow,
-            transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
           },
         ]}
       />
@@ -184,19 +185,26 @@ export const settingsChromeStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   sectionInner: {
-    overflow: 'hidden',
+    /** 아이콘 솔리드 음영이 잘리지 않게 — 셸이 음영 면적을 포함 */
+    overflow: 'visible',
   },
   iconShell: {
     position: 'relative',
+    width: ICON_FACE + SHADOW_SM,
+    height: ICON_FACE + SHADOW_SM,
     flexShrink: 0,
   },
   iconShadow: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    left: SHADOW_SM,
+    top: SHADOW_SM,
+    width: ICON_FACE,
+    height: ICON_FACE,
     borderRadius: 0,
   },
   iconBox: {
-    width: 36,
-    height: 36,
+    width: ICON_FACE,
+    height: ICON_FACE,
     borderRadius: 0,
     borderWidth: 0,
     alignItems: 'center',

@@ -1200,7 +1200,7 @@ function GroupAccordion({
   const actionHoverBg = 'rgba(255,255,255,0.92)';
   const actionInk = '#000000';
   const actionMuted = 'rgba(0,0,0,0.55)';
-  const shadow = '#000000';
+  const shadow = isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)';
   const groupAccordion = useMeasuredAccordion(isExpanded, `group:${setItem.id}`);
   const displaySetName = resolveFixedFlowSetDisplayName(setItem);
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
@@ -1278,6 +1278,7 @@ function GroupAccordion({
     <PostItCardShell
       isDark={isDark}
       faceColor={sectionBg}
+      shadowColor={shadow}
       borderColor={postItFaceColorId === 'white' && !isDark ? 'rgba(0,0,0,0.16)' : undefined}
       borderWidth={postItFaceColorId === 'white' && !isDark ? StyleSheet.hairlineWidth : 0}>
     <View style={styles.accordionSectionInner}>
@@ -1510,7 +1511,7 @@ function GroupAccordion({
           selectedId={postItFaceColorId}
           isDark={isDark}
           ink={ink}
-          shadowColor="#000000"
+          shadowColor={shadow}
           onSelect={onSelectPostItFaceColor}
         />
       </View>
@@ -1646,7 +1647,7 @@ function GroupAccordion({
               muted={muted}
               line={line}
               faceBg={sectionBg}
-              shadowColor="#000000"
+              shadowColor={shadow}
               onChange={onSetApplyWeekdays}
             />
           ) : null}

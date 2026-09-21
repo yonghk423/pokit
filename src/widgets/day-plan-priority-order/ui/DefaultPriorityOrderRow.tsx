@@ -15,9 +15,9 @@ import {
   PRIORITY_MARK_COLOR_PRESETS,
   priorityMarkTitleHighlight,
   resolveCategoryCatalogIconTile,
+  useDayPlanChromeSettingsStore,
   type PriorityMarkColorId,
 } from '@entities/day-plan';
-import { PrimaryColor } from '@shared/config/theme';
 import { useTranslation } from '@shared/lib/i18n';
 import { COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT, CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -35,6 +35,9 @@ const MARK_SHADOW = 2;
 
 /** 완료 버튼 — 집중 시작 전·후 모두 표시(담기 목록에서 완료 표시 가능) */
 const GRAY_DEFAULT_LIGHT = '#9CA3AF';
+/** 설정·펼침 액션 아이콘 — 솔리드 음영과 맞춘 순수 검정 */
+const ACTION_ICON_LIGHT = '#000000';
+const ACTION_ICON_DARK = '#FAFAFA';
 const BRUTAL_SHADOW_SM = 2;
 /** 설정·펼침·완료 액션 얼굴 크기 (통일) */
 const ORDER_ACTION_FACE = 26;
@@ -73,6 +76,7 @@ export function DefaultPriorityOrderRow({
   onEditTime,
 }: PriorityOrderRowProps) {
   const { t } = useTranslation();
+  const hideCategoryIcons = useDayPlanChromeSettingsStore((s) => s.settings.hideLayoutIcons);
   const titleHighlight = priorityMarkTitleHighlight(itemMarkColor, isDark);
   const reorderTranslateY = useSharedValue(0);
   const reorderDragging = useSharedValue(0);
@@ -204,7 +208,6 @@ export function DefaultPriorityOrderRow({
   const enter = useRef(new Animated.Value(animateOnMount ? 0 : 1)).current;
   const pulse = useRef(new Animated.Value(1)).current;
   const shouldPulse = Boolean(isFocusStarted && !isCompleted);
-  const primary = PrimaryColor.rgb;
   const { boxBg: iconBoxBg, iconColor } = resolveCategoryCatalogIconTile(categoryKey);
 
   useEffect(() => {
@@ -246,51 +249,54 @@ export function DefaultPriorityOrderRow({
 
   const actionBg = isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF';
   const actionBorder = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
-  const actionShadow = isDark ? '#9ECFD1' : '#181A2E';
+  /** 설정·펼침·카테고리 아이콘 오프셋 — 순검정보다 옅은 잉크 */
+  const actionShadow = isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)';
 
   const rankIconTitleBlock = (
     <>
-      <View
-        style={[
-          styles.orderIconBoxShell,
-          { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
-        ]}>
-        <View
-          pointerEvents="none"
-          style={[
-            styles.orderIconBoxShadow,
-            {
-              backgroundColor: actionShadow,
-              borderColor: actionBorder,
-              transform: [
-                { translateX: BRUTAL_SHADOW_SM },
-                { translateY: BRUTAL_SHADOW_SM },
-              ],
-            },
-          ]}
-        />
+      {hideCategoryIcons ? null : (
         <View
           style={[
-            styles.orderIconBox,
-            {
-              backgroundColor: iconBoxBg,
-              borderColor: actionBorder,
-            },
+            styles.orderIconBoxShell,
+            { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
           ]}>
-          <Animated.View
+          <View
+            pointerEvents="none"
             style={[
-              shouldPulse ? { opacity: pulse } : undefined,
-              isCompleted && { opacity: 0.5 },
+              styles.orderIconBoxShadow,
+              {
+                backgroundColor: actionShadow,
+                borderColor: actionBorder,
+                transform: [
+                  { translateX: BRUTAL_SHADOW_SM },
+                  { translateY: BRUTAL_SHADOW_SM },
+                ],
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.orderIconBox,
+              {
+                backgroundColor: iconBoxBg,
+                borderColor: actionBorder,
+              },
             ]}>
-            <IconSymbol
-              key={`${categoryKey}-${iconColor}-${isCompleted ? 1 : 0}`}
-              name={icon as any}
-              size={16}
-              color={iconColor}
-            />
-          </Animated.View>
+            <Animated.View
+              style={[
+                shouldPulse ? { opacity: pulse } : undefined,
+                isCompleted && { opacity: 0.5 },
+              ]}>
+              <IconSymbol
+                key={`${categoryKey}-${iconColor}-${isCompleted ? 1 : 0}`}
+                name={icon as any}
+                size={16}
+                color={iconColor}
+              />
+            </Animated.View>
+          </View>
         </View>
-      </View>
+      )}
       <View style={styles.orderRowRomanText}>
         <View style={styles.orderRowTitleMark}>
           {titleHighlight ? (
@@ -399,7 +405,6 @@ export function DefaultPriorityOrderRow({
           styles.orderBrutalBtnShadow,
           {
             backgroundColor: actionShadow,
-            borderColor: actionBorder,
             transform: [
               { translateX: BRUTAL_SHADOW_SM },
               { translateY: BRUTAL_SHADOW_SM },
@@ -623,7 +628,7 @@ export function DefaultPriorityOrderRow({
             <IconSymbol
               name="chevron.down"
               size={10}
-              color={isDark ? '#FAFAFA' : primary}
+              color={isDark ? ACTION_ICON_DARK : ACTION_ICON_LIGHT}
             />
           </Reanimated.View>
         </Pressable>,
@@ -652,7 +657,7 @@ export function DefaultPriorityOrderRow({
               },
               pressed && { opacity: 0.88 },
             ]}>
-            <IconSymbol name="slider.horizontal.3" size={11} color={isDark ? '#FAFAFA' : primary} />
+            <IconSymbol name="slider.horizontal.3" size={11} color={isDark ? ACTION_ICON_DARK : ACTION_ICON_LIGHT} />
           </Pressable>,
         )
         : isFocusStarted && onFocusDetail
@@ -673,7 +678,7 @@ export function DefaultPriorityOrderRow({
                 },
                 pressed && { opacity: 0.88 },
               ]}>
-              <IconSymbol name="slider.horizontal.3" size={11} color={isDark ? '#FAFAFA' : primary} />
+              <IconSymbol name="slider.horizontal.3" size={11} color={isDark ? ACTION_ICON_DARK : ACTION_ICON_LIGHT} />
             </Pressable>,
           )
           : null}
