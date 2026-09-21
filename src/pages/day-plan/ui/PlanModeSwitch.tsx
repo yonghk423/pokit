@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   leftButtonGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
   shell: {
     position: 'relative',
