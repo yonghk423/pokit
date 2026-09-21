@@ -3,12 +3,12 @@ export const SPLASH_BACKGROUND_COLOR = '#B1C8B6';
 
 /** 스플래시 한 화면에 깔 6장 (2열 × 3행) */
 export const SPLASH_IMAGE_SOURCES = [
-  require('../../assets/splash.png'),
-  require('../../assets/splash2.png'),
-  require('../../assets/splash3.png'),
-  require('../../assets/splash4.png'),
-  require('../../assets/splash5.png'),
-  require('../../assets/splash6.png'),
+  require('../../assets/splash.webp'),
+  require('../../assets/splash2.webp'),
+  require('../../assets/splash3.webp'),
+  require('../../assets/splash4.webp'),
+  require('../../assets/splash5.webp'),
+  require('../../assets/splash6.webp'),
 ] as const;
 
 export type SplashImageSource = (typeof SPLASH_IMAGE_SOURCES)[number];

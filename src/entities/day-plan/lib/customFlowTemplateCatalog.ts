@@ -45,7 +45,7 @@ export const CUSTOM_FLOW_TEMPLATE_PREVIEW_LINES: Record<CustomFlowTemplateKey, s
   counter: ['이름·목표 설정', '+1 / 추이'],
   focus: ['25분 집중', '남은 12분'],
   journal: ['오늘 기분: 좋음', '한 줄 메모'],
-  memo: ['오늘 할 일 정리', '짧게 메모 남기기'],
+  memo: ['장보기·예약·할 일', '짧게 남기고 저장'],
   reminder: ['약·물·식사 알림', '시간별 문구 설정'],
 };
 

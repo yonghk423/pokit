@@ -23,7 +23,11 @@ import { COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT, Completi
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { orderRowStyles as styles } from '../lib/orderRowStyles';
+import {
+  ORDER_ROW_DIVIDER_DARK,
+  ORDER_ROW_DIVIDER_LIGHT,
+  orderRowStyles as styles,
+} from '../lib/orderRowStyles';
 import type { PriorityOrderRowProps } from '../lib/types';
 
 const MARK_SWATCH = 28;
@@ -55,7 +59,7 @@ export function DefaultPriorityOrderRow({
   isDark,
   ink,
   inkMuted,
-  line,
+  line: _line,
   onToggleFocusComplete,
   onReorderDragTranslationEnd,
   onReorderDragActiveChange,
@@ -694,7 +698,7 @@ export function DefaultPriorityOrderRow({
     <Animated.View
       style={[
         styles.orderRowRoman,
-        { borderBottomColor: line },
+        { borderBottomColor: isDark ? ORDER_ROW_DIVIDER_DARK : ORDER_ROW_DIVIDER_LIGHT },
         {
           opacity: enter,
           transform: [

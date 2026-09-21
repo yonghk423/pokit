@@ -135,7 +135,11 @@ export function useAppBootstrap() {
     const { priorityStart: initialPriorityStart } = useDayPlanDraftStore.getState();
     void (async () => {
       await syncPriorityDayStartAlarm({ enabled: startEnabled, startHhmm: initialPriorityStart });
-      await syncPriorityDayEndAlarm({ enabled: endAlarm.enabled, reminderHhmm: endAlarm.reminderHhmm });
+      await syncPriorityDayEndAlarm({
+        enabled: endAlarm.enabled,
+        reminderHhmm: endAlarm.reminderHhmm,
+        reminderNextDay: endAlarm.reminderNextDay,
+      });
       await syncCategoryReminderNotifications();
       await syncMedicineReminderNotifications();
       await syncRoutineStartNotifications();

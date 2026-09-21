@@ -5,7 +5,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
 
@@ -82,7 +82,7 @@ export function ReadingAddBookSheet({
             {t('goalDetail.reading.addSheetTitle')}
           </ThemedText>
           <View style={[styles.inputRow, { borderColor: c.outlineVariant }]}>
-            <TextInput
+            <ThemedTextInput
               value={draft}
               onChangeText={setDraft}
               onSubmitEditing={submit}

@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,6 +40,7 @@ import { useTranslation } from '@shared/lib/i18n';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 export type BookSearchSelection =
   | { source: 'aladin'; book: AladinBookDetail }
@@ -322,7 +322,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
               <View style={styles.searchControls}>
                 <View style={[styles.searchRow, { borderColor: line, backgroundColor: surface }]}>
                   <IconSymbol name="magnifyingglass" size={18} color={muted} />
-                  <TextInput
+                  <ThemedTextInput
                     value={query}
                     onChangeText={setQuery}
                     placeholder={t('goalDetail.bookSearch.placeholder')}

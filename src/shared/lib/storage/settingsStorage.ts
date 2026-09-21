@@ -77,6 +77,8 @@ export type PriorityDayRollMode = 'reset' | 'keep';
 export type PriorityDayEndAlarmPersisted = {
   enabled: boolean;
   reminderHhmm: string;
+  /** 자정 넘김 하루 구간에서 알림 시각이 다음 날(아침 밴드)인지 */
+  reminderNextDay: boolean;
   notificationId: string | null;
 };
 
@@ -161,6 +163,7 @@ export function savePriorityDayStartAlarm(next: PriorityDayStartAlarmPersisted):
 const DEFAULT_PRIORITY_DAY_END_ALARM: PriorityDayEndAlarmPersisted = {
   enabled: false,
   reminderHhmm: '22:00',
+  reminderNextDay: false,
   notificationId: null,
 };
 
@@ -177,6 +180,7 @@ export function loadPriorityDayEndAlarm(): PriorityDayEndAlarmPersisted {
   return {
     enabled: Boolean(v.enabled),
     reminderHhmm: hhmm,
+    reminderNextDay: Boolean((v as PriorityDayEndAlarmPersisted).reminderNextDay),
     notificationId: typeof v.notificationId === 'string' ? v.notificationId : null,
   };
 }
@@ -188,6 +192,7 @@ export function savePriorityDayEndAlarm(next: PriorityDayEndAlarmPersisted): voi
     priorityDayEndAlarm: {
       enabled: next.enabled,
       reminderHhmm: next.reminderHhmm,
+      reminderNextDay: Boolean(next.reminderNextDay),
       notificationId: next.notificationId,
     },
   });

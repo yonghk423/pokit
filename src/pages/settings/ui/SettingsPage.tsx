@@ -650,9 +650,9 @@ export function SettingsPage() {
               <SettingsRowIcon
                 name="trash.fill"
                 color={p.dangerIcon}
-                boxBg={p.dangerBg}
+                boxBg={p.dangerIconBoxBg}
                 border={p.border}
-                shadow={p.shadow}
+                shadow={p.dangerShadow}
               />
               <View style={chrome.itemTextWrap}>
                 <ThemedText

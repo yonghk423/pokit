@@ -15,6 +15,12 @@ export {
   restoreCatalogGroupKey
 } from './catalogGroupDismissStorage';
 export {
+  dismissAllCounterPresets,
+  dismissCounterPresetId,
+  isCounterPresetDismissed,
+  loadDismissedCounterPresetIds,
+} from './counterPresetDismissStorage';
+export {
   loadStandardCatalogGroupOverrides,
   resolveCatalogItemGroupKey,
   updateCatalogItemGroup,

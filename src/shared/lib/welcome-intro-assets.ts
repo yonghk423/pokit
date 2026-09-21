@@ -7,11 +7,11 @@ import type { ImageSourcePropType } from 'react-native';
  * 1: pokit5 · 4: pokit4 · 나머지 splash
  */
 export const WELCOME_INTRO_BACKGROUNDS: readonly ImageSourcePropType[] = [
-  require('../../../assets/pokit5.png'),
-  require('../../../assets/splash4.png'),
-  require('../../../assets/splash3.png'),
-  require('../../../assets/pokit4.png'),
-  require('../../../assets/splash5.png'),
+  require('../../../assets/pokit5.png'), // 아이콘용 PNG 유지
+  require('../../../assets/splash4.webp'),
+  require('../../../assets/splash3.webp'),
+  require('../../../assets/pokit4.webp'),
+  require('../../../assets/splash5.webp'),
 ] as const;
 
 let prefetchPromise: Promise<void> | null = null;

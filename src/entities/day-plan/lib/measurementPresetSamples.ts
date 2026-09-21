@@ -15,38 +15,38 @@ type SampleSeries = {
 const MEASUREMENT_PRESET_SAMPLES: Record<string, SampleSeries> = {
   weight: {
     currentValue: 68.5,
-    previousValue: 68.9,
-    values: [69.2, 69.0, 68.8, 69.1, 68.7, 68.9, 68.5],
+    previousValue: 69.1,
+    values: [70.2, 69.8, 69.4, 69.9, 69.1, 68.8, 68.5],
   },
   bp: {
     currentValue: 118,
-    previousValue: 122,
-    values: [125, 122, 120, 118, 119, 121, 118],
+    previousValue: 124,
+    values: [128, 124, 121, 119, 126, 122, 118],
   },
   sleep: {
     currentValue: 7.5,
-    previousValue: 6.5,
-    values: [6, 7, 6.5, 8, 7, 6.5, 7.5],
+    previousValue: 5.5,
+    values: [5.0, 6.5, 7.0, 4.5, 8.0, 6.0, 7.5],
   },
   steps: {
     currentValue: 8432,
-    previousValue: 7200,
-    values: [5000, 6200, 8000, 7500, 9000, 7200, 8432],
+    previousValue: 4200,
+    values: [3200, 5800, 9100, 4500, 10200, 6800, 8432],
   },
   water: {
     currentValue: 1500,
-    previousValue: 1200,
-    values: [1000, 1500, 1800, 1200, 2000, 1200, 1500],
+    previousValue: 800,
+    values: [600, 1200, 2000, 900, 1800, 1100, 1500],
   },
   heart: {
     currentValue: 72,
-    previousValue: 78,
-    values: [75, 80, 72, 78, 74, 78, 72],
+    previousValue: 84,
+    values: [88, 82, 76, 90, 78, 80, 72],
   },
   bodyfat: {
     currentValue: 22.5,
-    previousValue: 23.1,
-    values: [24, 23.8, 23.5, 23.2, 23, 23.1, 22.5],
+    previousValue: 23.4,
+    values: [24.2, 23.9, 23.6, 23.8, 23.2, 22.9, 22.5],
   },
   height: {
     currentValue: 172,
@@ -55,8 +55,8 @@ const MEASUREMENT_PRESET_SAMPLES: Record<string, SampleSeries> = {
   },
   calories: {
     currentValue: 1850,
-    previousValue: 2100,
-    values: [2000, 1900, 2200, 1800, 1950, 2100, 1850],
+    previousValue: 2400,
+    values: [2100, 1950, 2500, 1600, 2200, 2050, 1850],
   },
 };
 

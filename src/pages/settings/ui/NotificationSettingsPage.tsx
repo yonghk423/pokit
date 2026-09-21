@@ -4,14 +4,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useDayPlanDraftStore } from '@entities/day-plan';
+import {
+  addDaysToLocalDateKey,
+  clampNotifyTimeToPriorityWindow,
+  formatMinutesToHHmm,
+  getLocalDateKey,
+  isNotifyTimeWithinPriorityWindow,
+  parseHHmmToMinutes,
+  resolveSpinePriorityWindow,
+  useDayPlanDraftStore,
+} from '@entities/day-plan';
 import { syncPriorityDayEndAlarm, syncPriorityDayStartAlarm } from '@features/day-plan-notifications';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { useTranslation } from '@shared/lib/i18n';
+import { formatDateKeyCompact, useTranslation } from '@shared/lib/i18n';
 import { loadPriorityDayEndAlarm, loadPriorityDayStartAlarm } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
+import { SmoothSegmentedControl } from '@shared/ui/smooth-segmented-control';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 import {
@@ -24,13 +34,21 @@ import { buildSettingsPalette, settingsChromeStyles as chrome } from '../lib/set
 
 /** 설정 → 알림 */
 export function NotificationSettingsPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
   const p = buildSettingsPalette(isDark);
   const insets = useSafeAreaInsets();
   const surface = useMemo(() => paletteForReminderTimeCard(isDark), [isDark]);
+  const ink = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const priorityStart = useDayPlanDraftStore((s) => s.priorityStart);
+  const priorityEnd = useDayPlanDraftStore((s) => s.priorityEnd);
+
+  const priorityWindow = useMemo(
+    () => resolveSpinePriorityWindow(priorityStart, priorityEnd),
+    [priorityEnd, priorityStart],
+  );
+  const overnight = priorityWindow?.overnight === true;
 
   const [dayStartAlarmOn, setDayStartAlarmOn] = useState(
     () => loadPriorityDayStartAlarm().enabled,
@@ -39,10 +57,17 @@ export function NotificationSettingsPage() {
   const [dayEndAlarmHhmm, setDayEndAlarmHhmm] = useState(
     () => loadPriorityDayEndAlarm().reminderHhmm,
   );
+  const [dayEndAlarmNextDay, setDayEndAlarmNextDay] = useState(
+    () => loadPriorityDayEndAlarm().reminderNextDay,
+  );
   const [dayEndAlarmTimeExpanded, setDayEndAlarmTimeExpanded] = useState(false);
 
   const endPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingEndPersistRef = useRef<{ on: boolean; hhmm: string } | null>(null);
+  const pendingEndPersistRef = useRef<{
+    on: boolean;
+    hhmm: string;
+    nextDay: boolean;
+  } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -50,26 +75,34 @@ export function NotificationSettingsPage() {
       const endAlarm = loadPriorityDayEndAlarm();
       setDayEndAlarmOn(endAlarm.enabled);
       setDayEndAlarmHhmm(endAlarm.reminderHhmm);
+      setDayEndAlarmNextDay(endAlarm.reminderNextDay);
       setDayEndAlarmTimeExpanded(false);
     }, []),
   );
 
-  const flushDayEndPersist = useCallback(async (on: boolean, hhmm: string) => {
-    const ok = await syncPriorityDayEndAlarm({ enabled: on, reminderHhmm: hhmm });
-    if (on && !ok) {
-      setDayEndAlarmOn(false);
-      Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
-    }
-  }, [t]);
+  const flushDayEndPersist = useCallback(
+    async (on: boolean, hhmm: string, nextDay: boolean) => {
+      const ok = await syncPriorityDayEndAlarm({
+        enabled: on,
+        reminderHhmm: hhmm,
+        reminderNextDay: nextDay,
+      });
+      if (on && !ok) {
+        setDayEndAlarmOn(false);
+        Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
+      }
+    },
+    [t],
+  );
 
   const scheduleDayEndPersist = useCallback(
-    (on: boolean, hhmm: string) => {
+    (on: boolean, hhmm: string, nextDay: boolean) => {
       if (endPersistTimerRef.current) clearTimeout(endPersistTimerRef.current);
-      pendingEndPersistRef.current = { on, hhmm };
+      pendingEndPersistRef.current = { on, hhmm, nextDay };
       endPersistTimerRef.current = setTimeout(() => {
         endPersistTimerRef.current = null;
         pendingEndPersistRef.current = null;
-        void flushDayEndPersist(on, hhmm);
+        void flushDayEndPersist(on, hhmm, nextDay);
       }, 380);
     },
     [flushDayEndPersist],
@@ -82,9 +115,41 @@ export function NotificationSettingsPage() {
       endPersistTimerRef.current = null;
       const pending = pendingEndPersistRef.current;
       pendingEndPersistRef.current = null;
-      if (pending) void flushDayEndPersist(pending.on, pending.hhmm);
+      if (pending) void flushDayEndPersist(pending.on, pending.hhmm, pending.nextDay);
     },
     [flushDayEndPersist],
+  );
+
+  /** 당일 구간이면 다음 날 플래그 해제 */
+  useEffect(() => {
+    if (overnight || !dayEndAlarmNextDay) return;
+    setDayEndAlarmNextDay(false);
+    if (dayEndAlarmOn) {
+      scheduleDayEndPersist(true, dayEndAlarmHhmm, false);
+    }
+  }, [dayEndAlarmHhmm, dayEndAlarmNextDay, dayEndAlarmOn, overnight, scheduleDayEndPersist]);
+
+  const applyDayEndTime = useCallback(
+    (hhmm: string, nextDay: boolean) => {
+      if (!priorityWindow) {
+        setDayEndAlarmHhmm(hhmm);
+        setDayEndAlarmNextDay(false);
+        scheduleDayEndPersist(true, hhmm, false);
+        return;
+      }
+      const minutes = parseHHmmToMinutes(hhmm);
+      if (minutes === null) return;
+      const wantNext = overnight && nextDay;
+      const clamped = isNotifyTimeWithinPriorityWindow(minutes, wantNext, priorityWindow)
+        ? { minutes, nextCalendarDay: wantNext }
+        : clampNotifyTimeToPriorityWindow(minutes, wantNext, priorityWindow);
+      const nextHhmm = formatMinutesToHHmm(clamped.minutes);
+      const nextDayFlag = overnight && clamped.nextCalendarDay;
+      setDayEndAlarmHhmm(nextHhmm);
+      setDayEndAlarmNextDay(nextDayFlag);
+      scheduleDayEndPersist(true, nextHhmm, nextDayFlag);
+    },
+    [overnight, priorityWindow, scheduleDayEndPersist],
   );
 
   const onToggleDayStart = useCallback(
@@ -108,10 +173,24 @@ export function NotificationSettingsPage() {
       void Haptics.selectionAsync();
       setDayEndAlarmOn(next);
       if (!next) setDayEndAlarmTimeExpanded(false);
-      await flushDayEndPersist(next, dayEndAlarmHhmm);
+      await flushDayEndPersist(next, dayEndAlarmHhmm, overnight && dayEndAlarmNextDay);
     },
-    [dayEndAlarmHhmm, flushDayEndPersist],
+    [dayEndAlarmHhmm, dayEndAlarmNextDay, flushDayEndPersist, overnight],
   );
+
+  const todayKey = getLocalDateKey();
+  const todayChoiceLabel = t('dayRhythm.todayChoice', {
+    date: formatDateKeyCompact(todayKey, locale),
+  });
+  const nextDayChoiceLabel = t('dayRhythm.nextDayChoice', {
+    date: formatDateKeyCompact(addDaysToLocalDateKey(todayKey, 1), locale),
+  });
+  const dateCaption = overnight
+    ? formatDateKeyCompact(
+        dayEndAlarmNextDay ? addDaysToLocalDateKey(todayKey, 1) : todayKey,
+        locale,
+      )
+    : undefined;
 
   const topInset =
     insets.top >= 1
@@ -186,15 +265,58 @@ export function NotificationSettingsPage() {
                   label={t('dayRhythm.reminderTimeLabel')}
                   hint={t('dayRhythm.reminderTimeHint')}
                   valueHhmm={dayEndAlarmHhmm}
-                  onChangeHhmm={(next) => {
-                    setDayEndAlarmHhmm(next);
-                    scheduleDayEndPersist(true, next);
-                  }}
+                  onChangeHhmm={(next) => applyDayEndTime(next, dayEndAlarmNextDay)}
                   expanded={dayEndAlarmTimeExpanded}
                   onToggleExpand={() => setDayEndAlarmTimeExpanded((v) => !v)}
                   isDark={isDark}
                   palette={surface.timeField}
                   snapStepMinutes={1}
+                  dateCaption={dateCaption}
+                  expandedExtra={
+                    overnight ? (
+                      <View style={styles.endDateChoiceInline}>
+                        <ThemedText
+                          style={[styles.endDateChoiceQuestion, { color: surface.timeField.onVariant }]}
+                          lightColor={surface.timeField.onVariant}
+                          darkColor={surface.timeField.onVariant}>
+                          {t('dayRhythm.endDateQuestion')}
+                        </ThemedText>
+                        <SmoothSegmentedControl
+                          options={[
+                            {
+                              value: 'today',
+                              label: todayChoiceLabel,
+                              accessibilityLabel: t('dayRhythm.setTodayA11y'),
+                            },
+                            {
+                              value: 'nextDay',
+                              label: nextDayChoiceLabel,
+                              accessibilityLabel: t('dayRhythm.setNextDayA11y'),
+                            },
+                          ]}
+                          value={dayEndAlarmNextDay ? 'nextDay' : 'today'}
+                          onChange={(next) => {
+                            void Haptics.selectionAsync();
+                            applyDayEndTime(dayEndAlarmHhmm, next === 'nextDay');
+                          }}
+                          selectedFill={ink.bgMint}
+                          trackFill={isDark ? ink.surfaceAlt : ink.bg}
+                          selectedInk={isDark ? ink.text : ink.tertiary}
+                          unselectedInk={surface.timeField.onVariant}
+                          shadowColor={isDark ? RetroFlatColors.dark.solidShadow : '#000000'}
+                          minHeight={36}
+                        />
+                        {dayEndAlarmNextDay ? (
+                          <ThemedText
+                            style={[styles.endDateChoiceHint, { color: surface.timeField.onVariant }]}
+                            lightColor={surface.timeField.onVariant}
+                            darkColor={surface.timeField.onVariant}>
+                            {t('dayRhythm.overnightHint')}
+                          </ThemedText>
+                        ) : null}
+                      </View>
+                    ) : undefined
+                  }
                 />
               </View>
             ) : null}
@@ -224,5 +346,18 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     padding: 12,
     gap: 10,
+  },
+  endDateChoiceInline: {
+    marginTop: 4,
+    gap: 10,
+  },
+  endDateChoiceQuestion: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  endDateChoiceHint: {
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16,
   },
 });

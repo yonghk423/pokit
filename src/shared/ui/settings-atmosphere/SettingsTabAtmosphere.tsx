@@ -8,7 +8,7 @@ type Props = {
 };
 
 /**
- * 설정 화면 전체 배경 — splash5.png.
+ * 설정 화면 전체 배경 — splash5.webp.
  * absoluteFill — 레이아웃 높이에 영향 없음.
  */
 export function SettingsTabAtmosphere({ isDark = false }: Props) {

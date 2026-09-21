@@ -47,6 +47,7 @@ export function FixedRoutineSectionTabs({
       compact
       isDark={isDark}
       faceColor={face}
+      shadowColor={isDark ? '#5A5C72' : '#707979'}
       style={styles.root}
       contentStyle={styles.track}>
       {TABS.map((tab, index) => {

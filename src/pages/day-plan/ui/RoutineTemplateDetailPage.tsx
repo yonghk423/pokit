@@ -133,8 +133,7 @@ export function RoutineTemplateDetailPage() {
             </View>
             <ThemedText style={[styles.summary, { color: c.onVariant }]}>{entry.summary}</ThemedText>
             <View style={styles.noteRuleBlock}>
-              <View style={[styles.noteRulePrimary, { backgroundColor: c.onSurface }]} />
-              <View style={[styles.noteRuleSecondary, { backgroundColor: c.outline }]} />
+              <View style={[styles.noteRuleLine, { backgroundColor: c.outline }]} />
             </View>
           </View>
 
@@ -143,8 +142,7 @@ export function RoutineTemplateDetailPage() {
               {t('fixedRoutine.templatePreviewHint')}
             </ThemedText>
             <View style={styles.noteRuleBlock}>
-              <View style={[styles.noteRulePrimary, { backgroundColor: c.onSurface }]} />
-              <View style={[styles.noteRuleSecondary, { backgroundColor: c.outline }]} />
+              <View style={[styles.noteRuleLine, { backgroundColor: c.outline }]} />
             </View>
           </View>
 
@@ -237,15 +235,9 @@ const styles = StyleSheet.create({
   },
   noteRuleBlock: {
     marginTop: 4,
-    gap: 3,
     width: '100%',
   },
-  noteRulePrimary: {
-    height: 1.5,
-    width: '100%',
-    opacity: 0.82,
-  },
-  noteRuleSecondary: {
+  noteRuleLine: {
     height: StyleSheet.hairlineWidth * 2,
     width: '100%',
   },

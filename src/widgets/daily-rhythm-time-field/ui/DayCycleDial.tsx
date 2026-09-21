@@ -48,7 +48,7 @@ import {
   type DialHandleKind,
 } from '../lib/dayCycleDialMath';
 
-const DIAL_BACKDROP = require('../../../../assets/main.png') as ImageSourcePropType;
+const DIAL_BACKDROP = require('../../../../assets/main.webp') as ImageSourcePropType;
 
 export type DayCycleDialProps = {
   startHhmm: string;

@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { CityPopSpacing, RETRO_BORDER_WIDTH, RetroFlatColors } from '@shared/config/retroFlat';
+import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
@@ -23,6 +23,9 @@ export type SettingsPalette = {
   dangerDesc: string;
   dangerIcon: string;
   dangerChevron: string;
+  /** 초기화 등 위험 행 아이콘 오프셋 — 민트 대신 코럴 */
+  dangerShadow: string;
+  dangerIconBoxBg: string;
 };
 
 export function buildSettingsPalette(isDark: boolean): SettingsPalette {
@@ -30,19 +33,23 @@ export function buildSettingsPalette(isDark: boolean): SettingsPalette {
   return {
     bg: c.bg,
     surface: c.bg,
-    border: c.border,
+    /** 행 구분 — 순검정 2px 대신 연한 구분선 */
+    border: isDark ? 'rgba(241, 239, 255, 0.16)' : 'rgba(24, 26, 46, 0.12)',
     sectionTitle: c.textMuted,
     title: c.text,
     desc: c.textMuted,
     icon: c.primary,
     iconBoxBg: c.primaryContainer,
-    shadow: isDark ? c.solidShadow : c.primary,
+    // 아이콘 오프셋 — primary보다 한 단계 연한 민트
+    shadow: isDark ? '#4A6A6C' : '#9ECFD1',
     chevron: c.textMuted,
     dangerBg: isDark ? 'rgba(147, 0, 10, 1)' : '#FFDAD6',
     dangerTitle: isDark ? c.danger : '#B91C1C',
     dangerDesc: isDark ? '#FFB4AB' : '#991B1B',
     dangerIcon: isDark ? c.danger : '#DC2626',
     dangerChevron: isDark ? '#FFB4AB' : '#FCA5A5',
+    dangerShadow: isDark ? '#7A3030' : '#E8A8A4',
+    dangerIconBoxBg: isDark ? 'rgba(255, 255, 255, 0.12)' : '#FFFFFF',
   };
 }
 
@@ -89,12 +96,15 @@ export function SettingsSection({
   surface: string;
   isDark?: boolean;
 }) {
-  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  /** 카드 오프셋은 검정 — 민트 섀도는 반투명 면에서 전체가 민트로 보임 */
-  const shadowColor = isDark ? tone.solidShadow : tone.text;
+  /** 카드 오프셋 — 순검정보다 한 단계 흐린 잉크 (볼드감만 완화) */
+  const shadowColor = isDark ? '#5A5C72' : '#707979';
 
   return (
-    <CityPopCardShell isDark={isDark} faceColor={surface} shadowColor={shadowColor}>
+    <CityPopCardShell
+      isDark={isDark}
+      faceColor={surface}
+      shadowColor={shadowColor}
+      shadowOffset={SHADOW_SM}>
       <View style={styles.sectionInner}>{children}</View>
     </CityPopCardShell>
   );
@@ -144,7 +154,7 @@ export const settingsChromeStyles = StyleSheet.create({
     minHeight: 64,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderTopWidth: RETRO_BORDER_WIDTH,
+    borderTopWidth: StyleSheet.hairlineWidth * 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

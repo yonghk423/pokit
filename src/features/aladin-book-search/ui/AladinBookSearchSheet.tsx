@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +14,7 @@ import { isAladinApiConfigured } from '@shared/config/aladin';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import { AladinAttributionLine } from './AladinAttributionLine';
 import { AladinApiError, type AladinBookDetail, type AladinSearchBookItem } from '../lib/aladinApiTypes';
@@ -181,7 +181,7 @@ export function AladinBookSearchSheet({
               <View style={styles.searchControls}>
                 <View style={[styles.searchRow, { borderColor: line, backgroundColor: surface }]}>
                   <IconSymbol name="magnifyingglass" size={18} color={muted} />
-                  <TextInput
+                  <ThemedTextInput
                     value={query}
                     onChangeText={setQuery}
                     placeholder={t('aladin.placeholder')}

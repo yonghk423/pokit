@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
   DEFAULT_READING_LIVE_ACTIVITY_CONFIG,
@@ -26,6 +26,7 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import { useGoalDetailSettingsPalette, type GoalDetailSettingsPalette } from '../../lib/settingsPalette';
 
@@ -445,7 +446,7 @@ export function ReadingSettings({
               {listSearchActive || libraryQuery.length > 0 ? (
                 <>
                   <IconSymbol name="text.magnifyingglass" size={13} color={c.onVariant} />
-                  <TextInput
+                  <ThemedTextInput
                     value={libraryQuery}
                     onChangeText={setLibraryQuery}
                     placeholder={t('goalDetail.reading.searchPlaceholder')}

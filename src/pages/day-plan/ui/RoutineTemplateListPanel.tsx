@@ -10,7 +10,6 @@ import {
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { POST_IT_SOLID_SHADOW } from '@shared/ui/post-it-card-shell';
 import {
   headerArtForVariant,
   RoutineAtmosphereFooterStrip,
@@ -26,7 +25,7 @@ type Props = {
   onPressTemplate: (templateKey: CustomFlowTemplateKey) => void;
 };
 
-const BRUTAL_SHADOW_SM = 3;
+const BRUTAL_SHADOW_SM = 2;
 
 /** 루틴 템플릿 목록 — 솔리드 음영만 (테두리 없음) */
 export function RoutineTemplateListPanel({
@@ -40,7 +39,9 @@ export function RoutineTemplateListPanel({
   const { t, locale } = useTranslation();
   const entries = useMemo(() => listCustomFlowTemplateCatalogEntries(), [locale]);
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const shadowColor = POST_IT_SOLID_SHADOW;
+  /** 설정 화면과 동일 — 순검정보다 한 단계 흐린 오프셋 */
+  const rowShadowColor = isDark ? '#5A5C72' : '#707979';
+  const iconShadowColor = isDark ? '#4A6A6C' : '#9ECFD1';
   const rowFace = isDark ? tone.surfaceAlt : cardBg || '#FFFFFF';
   const iconBoxBg = isDark ? tone.primaryContainer : tone.primaryContainer;
 
@@ -81,7 +82,7 @@ export function RoutineTemplateListPanel({
               style={[
                 styles.rowShadow,
                 {
-                  backgroundColor: shadowColor,
+                  backgroundColor: rowShadowColor,
                   transform: [
                     { translateX: BRUTAL_SHADOW_SM },
                     { translateY: BRUTAL_SHADOW_SM },
@@ -116,7 +117,7 @@ export function RoutineTemplateListPanel({
                   style={[
                     styles.iconBoxShadow,
                     {
-                      backgroundColor: shadowColor,
+                      backgroundColor: iconShadowColor,
                       transform: [
                         { translateX: BRUTAL_SHADOW_SM },
                         { translateY: BRUTAL_SHADOW_SM },

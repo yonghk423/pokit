@@ -487,6 +487,8 @@ export function PriorityBasedPlanSection({
     endsNextCalendarDay: boolean;
   } | null>(null);
   const [bagRowTimeModalKey, setBagRowTimeModalKey] = useState(0);
+  /** 피커 「확인」 후에만 하단 저장 활성 */
+  const [bagRowTimeConfirmed, setBagRowTimeConfirmed] = useState(false);
   const bagRowTimePanelRef = useRef<CatalogRowSpineTimePanelHandle>(null);
   const spinePastAlertQuietUntilRef = useRef(0);
   const [monthCursor, setMonthCursor] = useState(() => toMonthStart(new Date()));
@@ -794,8 +796,8 @@ export function PriorityBasedPlanSection({
   );
   const activeMealSlotsBySetId = useFixedFlowSetsStore((s) => s.activeMealSlotsBySetId);
   const todayAppliedCategoryKeys = useFixedFlowSetsStore((s) => s.todayAppliedCategoryKeys);
-  const setCategorySpineScheduleInAnySet = useFixedFlowSetsStore(
-    (s) => s.setCategorySpineScheduleInAnySet,
+  const ensureCategorySpineScheduleInAnySet = useFixedFlowSetsStore(
+    (s) => s.ensureCategorySpineScheduleInAnySet,
   );
   const dayPlanDateKey = useDayPlanStore((s) => s.dateKey);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
@@ -2429,6 +2431,7 @@ export function PriorityBasedPlanSection({
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const schedule = resolveBagRowSpineSchedule(input.categoryKey);
       setBagRowTimeModalKey((k) => k + 1);
+      setBagRowTimeConfirmed(false);
       setBagRowTimeEdit({
         rowKey: input.rowKey,
         categoryKey: resolvePriorityRoutineCategoryKey(input.categoryKey),
@@ -2443,6 +2446,7 @@ export function PriorityBasedPlanSection({
 
   const closeBagRowTimeModal = useCallback(() => {
     Keyboard.dismiss();
+    setBagRowTimeConfirmed(false);
     setBagRowTimeEdit(null);
   }, []);
 
@@ -2470,7 +2474,8 @@ export function PriorityBasedPlanSection({
       const endsNext = derived.endsNextCalendarDay;
 
       const categoryKey = bagRowTimeEdit.categoryKey;
-      setCategorySpineScheduleInAnySet(
+      // 담기만 하고 고정 세트에 없는 커스텀 루틴도 스케줄을 남긴다 (표시·정렬용).
+      const scheduleSaved = ensureCategorySpineScheduleInAnySet(
         categoryKey,
         clamped.startMinutes,
         clamped.endMinutes,
@@ -2505,14 +2510,21 @@ export function PriorityBasedPlanSection({
           blockOrigin: 'spineTimeline',
           planDateKey: getLocalDateKey(),
           hasManualScheduleOverride: true,
+          // 다음 날 새벽 밴드는 시계상 오늘 00:xx로 저장 → 주간에는 과거로 오인됨
+          allowPastEnd: startsNext,
         });
-        // 담기 행은 시작 시각만 저장한다. 파생 종료가 과거여도 고정 루틴 스케줄은 유지한다.
         if (!result.ok && result.reason !== 'in_the_past') {
           alertSpineBlockSaveError('add', result.reason);
           return;
         }
+        // 블록 추가가 막혀도 세트 스케줄이 남으면 담기 행에 시각이 표시된다.
+        if (!result.ok && result.reason === 'in_the_past' && !scheduleSaved) {
+          alertSpineBlockSaveError('add', 'in_the_past');
+          return;
+        }
       }
 
+      setBagRowTimeConfirmed(false);
       setBagRowTimeEdit(null);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
@@ -2520,10 +2532,10 @@ export function PriorityBasedPlanSection({
       addPlanBlock,
       alertSpineBlockSaveError,
       bagRowTimeEdit,
+      ensureCategorySpineScheduleInAnySet,
       planBlocks,
       priorityEnd,
       priorityStart,
-      setCategorySpineScheduleInAnySet,
       updatePlanBlock,
     ],
   );
@@ -2818,12 +2830,17 @@ export function PriorityBasedPlanSection({
                     priorityEnd={priorityEnd}
                     scheduleMode="single"
                     showSheetConfirm={false}
+                    commitOnConfirm={false}
                     showEndDateChoice={isOvernightHhmmRange(priorityStart, priorityEnd)}
                     startFieldLabel={t('dayPlan.routineNamedStartLabel', {
                       label: bagRowTimeEdit.label,
                     })}
                     startFieldHint={t('dayPlan.routineNamedStartHint')}
                     dayChoiceQuestion={t('dayPlan.routineStartDayQuestion')}
+                    onConfirmSuccess={() => setBagRowTimeConfirmed(true)}
+                    onPickerExpandedChange={(expanded) => {
+                      if (expanded) setBagRowTimeConfirmed(false);
+                    }}
                     onScheduleChange={applyBagRowTimeFromPanel}
                   />
                 </>
@@ -2845,7 +2862,9 @@ export function PriorityBasedPlanSection({
                   label={t('common.save')}
                   accessibilityLabel={t('dayPlan.saveRoutineTimeA11y')}
                   style={styles.timeModalSaveBtn}
+                  disabled={!bagRowTimeConfirmed}
                   onPress={() => {
+                    if (!bagRowTimeConfirmed) return;
                     const next = bagRowTimePanelRef.current?.commitPendingSchedule();
                     if (!next) return;
                     applyBagRowTimeFromPanel(

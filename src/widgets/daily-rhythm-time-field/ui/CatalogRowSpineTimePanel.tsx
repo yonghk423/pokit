@@ -95,6 +95,13 @@ type Props = {
   dayChoiceQuestion?: string;
   /** true면 시각·날짜 선택이 바로 onScheduleChange */
   commitOnChange?: boolean;
+  /**
+   * single 모드 「확인」 시 onScheduleChange 호출 여부.
+   * false면 구간 검증·초안 확정만 하고, 적용은 외부 저장(commitPendingSchedule)에 맡긴다.
+   */
+  commitOnConfirm?: boolean;
+  /** 「확인」이 검증을 통과했을 때 (접기 직전). 외부 저장 CTA 활성화용 */
+  onConfirmSuccess?: () => void;
 };
 
 export type CatalogRowSpineTimePanelHandle = {
@@ -179,6 +186,8 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
       scheduleMode = 'range',
       dayChoiceQuestion,
       commitOnChange = false,
+      commitOnConfirm = true,
+      onConfirmSuccess,
     },
     ref,
   ) {
@@ -268,9 +277,15 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
         );
         return false;
       }
-      return emitSchedule(hhmm, hhmm, nextDay);
+      if (!commitOnConfirm) {
+        onConfirmSuccess?.();
+        return true;
+      }
+      const ok = emitSchedule(hhmm, hhmm, nextDay);
+      if (ok) onConfirmSuccess?.();
+      return ok;
     },
-    [emitSchedule, priorityEnd, priorityStart, t],
+    [commitOnConfirm, emitSchedule, onConfirmSuccess, priorityEnd, priorityStart, t],
   );
 
   const resetDraftFromProps = useCallback(() => {

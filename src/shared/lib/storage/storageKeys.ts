@@ -40,6 +40,8 @@ export const StorageKeys = {
   systemCatalogGroupMeta: 'pokit:system-catalog-group-meta',
   /** 담기 화면에서 숨긴 상위 묶음 */
   dismissedCatalogGroups: 'pokit:dismissed-catalog-groups',
+  /** 횟수 루틴「자주 쓰는 예시」에서 숨긴 프리셋 id */
+  dismissedCounterPresets: 'pokit:dismissed-counter-presets',
   /** 담기 목록에서 숨긴 표준 카테고리 */
   hiddenStandardCatalogKeys: 'pokit:hidden-standard-catalog-keys',
   /** 데일리 시간대 구간(새벽·아침·점심·저녁·밤) 시작 시각 */
@@ -85,6 +87,7 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   standardCatalogGroupOverrides: 'lockflow:standard-catalog-group-overrides',
   systemCatalogGroupMeta: 'lockflow:system-catalog-group-meta',
   dismissedCatalogGroups: 'lockflow:dismissed-catalog-groups',
+  dismissedCounterPresets: 'lockflow:dismissed-counter-presets',
   hiddenStandardCatalogKeys: 'lockflow:hidden-standard-catalog-keys',
   dayMealSlotSchedule: 'lockflow:day-meal-slot-schedule',
   lastSeenAppVersion: 'lockflow:last-seen-app-version',

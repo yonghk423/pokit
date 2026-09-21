@@ -60,12 +60,13 @@ describe('priorityDayEndAlarmScheduler', () => {
         title: '오늘을 돌아볼 시간이에요',
         hour: 23,
         minute: 0,
-        data: { eventType: 'priorityDayEnd' },
+        data: { eventType: 'priorityDayEnd', reminderNextDay: false },
       }),
     );
     expect(mockSavePriorityDayEndAlarm).toHaveBeenCalledWith({
       enabled: true,
       reminderHhmm: '23:00',
+      reminderNextDay: false,
       notificationId: PRIORITY_DAY_END_NOTIFICATION_ID,
     });
   });
@@ -90,6 +91,21 @@ describe('priorityDayEndAlarmScheduler', () => {
     expect(mockScheduleDailyLocalNotification).toHaveBeenCalledTimes(1);
   });
 
+  it('re-schedules when next-day flag changes', async () => {
+    const { syncPriorityDayEndAlarm } = loadScheduler();
+
+    await syncPriorityDayEndAlarm({ enabled: true, reminderHhmm: '05:00', reminderNextDay: false });
+    await syncPriorityDayEndAlarm({ enabled: true, reminderHhmm: '05:00', reminderNextDay: true });
+
+    expect(mockScheduleDailyLocalNotification).toHaveBeenCalledTimes(2);
+    expect(mockSavePriorityDayEndAlarm).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        reminderHhmm: '05:00',
+        reminderNextDay: true,
+      }),
+    );
+  });
+
   it('disables alarm without scheduling when enabled is false', async () => {
     const { syncPriorityDayEndAlarm } = loadScheduler();
 
@@ -100,6 +116,7 @@ describe('priorityDayEndAlarmScheduler', () => {
     expect(mockSavePriorityDayEndAlarm).toHaveBeenCalledWith({
       enabled: false,
       reminderHhmm: '23:00',
+      reminderNextDay: false,
       notificationId: null,
     });
   });

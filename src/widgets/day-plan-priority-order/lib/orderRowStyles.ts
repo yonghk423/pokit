@@ -2,6 +2,10 @@ import { StyleSheet } from 'react-native';
 
 import { RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 
+/** 우선순위 행 구분선 — 풀 블랙보다 연하되, 행 구분은 또렷하게 */
+export const ORDER_ROW_DIVIDER_LIGHT = 'rgba(0, 0, 0, 0.32)';
+export const ORDER_ROW_DIVIDER_DARK = 'rgba(241, 239, 255, 0.38)';
+
 export const orderRowStyles = StyleSheet.create({
   /** 바깥 띠(보더·세로 패딩만) — 드래그 시 잘리지 않게 flex 행은 `orderRowDragShell` */
   orderRowRoman: {
@@ -9,7 +13,8 @@ export const orderRowStyles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 6,
     paddingHorizontal: 12,
-    borderBottomWidth: RETRO_BORDER_WIDTH,
+    /** 행 구분 — 브루탈 2px 대신 얇고 연한 선 */
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
   },
   /** 아이콘·제목과 액션 버튼을 한 줄로 — 리오더 시 전체가 함께 움직임 */
   orderRowDragShell: {

@@ -133,6 +133,12 @@ export type DayPlanStoreState = {
     planDateKey?: string;
     /** 오늘 탭에서 직접 정한 시각 — 고정 루틴 동기화가 덮지 않음 */
     hasManualScheduleOverride?: boolean;
+    /**
+     * true면 종료 시각이 과거여도 추가 허용.
+     * 자정 넘김 집중 구간의 「다음 날 새벽」 시작은 시계상 오늘 00:xx로 저장되지만
+     * 실제로는 다가올 새벽이므로 담기 행에서 쓴다.
+     */
+    allowPastEnd?: boolean;
   }) => AddBlockResult;
 
   /** 블록 제거 + 완료/건너뛰기 id 정리 */
@@ -437,7 +443,10 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
       }
 
       const dateKeyForBlock = get().dateKey;
-      if (isBlockEndInPastForDateKey(dateKeyForBlock, { endMinutes: end, endsNextCalendarDay: endsNext })) {
+      if (
+        !input.allowPastEnd &&
+        isBlockEndInPastForDateKey(dateKeyForBlock, { endMinutes: end, endsNextCalendarDay: endsNext })
+      ) {
         return { ok: false, reason: 'in_the_past' };
       }
 

@@ -2,9 +2,9 @@ import { Asset } from 'expo-asset';
 import { Image } from 'expo-image';
 import type { ImageSourcePropType } from 'react-native';
 
-/** 설정 화면 배경 — splash5.png 단독 */
+/** 설정 화면 배경 — splash5.webp 단독 */
 export const settingsAtmosphereAssets = {
-  desk: require('../../../../assets/splash5.png') as ImageSourcePropType,
+  desk: require('../../../../assets/splash5.webp') as ImageSourcePropType,
 } as const;
 
 let prefetchPromise: Promise<void> | null = null;

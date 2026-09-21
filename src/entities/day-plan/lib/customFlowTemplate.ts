@@ -1,6 +1,7 @@
 import { t, type I18nKey } from '@shared/lib/i18n';
 
-import { pickCounterSettingsForCreate } from './counterPresetSamples';
+import { applyCounterActivityPreset, pickCounterSettingsForCreate } from './counterPresetSamples';
+import { COUNTER_ACTIVITY_PRESETS } from './counterUnits';
 import {
   getInitialCounterDataConfig,
   getInitialFocusDataConfig,
@@ -84,7 +85,7 @@ export const CUSTOM_FLOW_TEMPLATE_DESCRIPTIONS: Record<CustomFlowTemplateKey, st
   counter: '목표 횟수를 채워요',
   focus: '정해진 시간 동안 집중해요',
   journal: '짧은 메모를 남겨요',
-  memo: '자유롭게 메모를 적어요',
+  memo: '장보기·약속·할 일을 짧게 남겨요',
   reminder: '알림 시간에 맞춰 완료해요',
 };
 
@@ -99,7 +100,7 @@ export const CUSTOM_FLOW_TEMPLATE_SUMMARIES: Record<CustomFlowTemplateKey, strin
   counter: '횟수를 세고 하루 목표까지 채워요.',
   focus: '정해 둔 시간 동안 집중 타이머로 진행해요.',
   journal: '질문에 답하고 기분과 함께 짧게 남겨요.',
-  memo: '세션에서 짧은 메모를 자유롭게 적고 저장해요.',
+  memo: '세션에서 할 일·약속·쇼핑 목록을 짧게 적고 저장해요.',
   reminder: '정해 둔 시간마다 완료 여부를 체크해요.',
 };
 
@@ -287,6 +288,110 @@ export function buildTemplateSetupConfig(templateKey: CustomFlowTemplateKey): Cu
   }
 }
 
+/** 만들기 시 시드에 섞인 체험·세션 기록은 전부 비운다(설정값만 유지). */
+export function clearCustomFlowRuntimeRecords(
+  templateKey: CustomFlowTemplateKey,
+  raw: unknown,
+): CustomFlowDetailConfig {
+  switch (templateKey) {
+    case 'measurement': {
+      const cfg = normalizeMeasurementDetailConfig(raw);
+      return normalizeMeasurementDetailConfig({
+        ...cfg,
+        currentValue: 0,
+        previousValue: 0,
+        history: [],
+        lastRecordedDateKey: '',
+      });
+    }
+    case 'counter': {
+      const cfg = normalizeCounterDetailConfig(raw);
+      return normalizeCounterDetailConfig({
+        ...cfg,
+        currentCount: 0,
+        history: [],
+        countDateKey: getLocalDateKey(),
+      });
+    }
+    case 'reminder': {
+      const cfg = normalizeReminderDetailConfig(raw);
+      return normalizeReminderDetailConfig({
+        ...cfg,
+        completedTimes: [],
+      });
+    }
+    case 'habit': {
+      const cfg = normalizeHabitDetailConfig(raw);
+      return normalizeHabitDetailConfig({
+        ...cfg,
+        doneToday: false,
+        streakDays: 0,
+        lastDoneDateKey: '',
+        recentDoneDateKeys: [],
+      });
+    }
+    case 'focus': {
+      const cfg = normalizeFocusDetailConfig(raw);
+      return normalizeFocusDetailConfig({
+        ...cfg,
+        doneMin: 0,
+        focusMemo: '',
+      });
+    }
+    case 'journal': {
+      const cfg = normalizeJournalDetailConfig(raw);
+      return normalizeJournalDetailConfig({
+        ...cfg,
+        lastEntry: '',
+        moodToday: '',
+        recentEntries: [],
+      });
+    }
+    case 'memo': {
+      const cfg = normalizeMemoDetailConfig(raw);
+      return normalizeMemoDetailConfig({
+        ...cfg,
+        lastEntry: '',
+        recentEntries: [],
+      });
+    }
+    case 'fasting': {
+      const cfg = normalizeFastingDetailConfig(raw);
+      return normalizeFastingDetailConfig({
+        ...cfg,
+        elapsedMin: 0,
+        fastingEnabled: false,
+        weightLogs: {},
+      });
+    }
+    case 'healthIntake': {
+      const cfg = normalizeHealthIntakeDetailConfig(raw);
+      return normalizeHealthIntakeDetailConfig({
+        ...cfg,
+        water: {
+          ...cfg.water,
+          drankMl: 0,
+        },
+        medicine: {
+          ...cfg.medicine,
+          takenCount: 0,
+        },
+      });
+    }
+    case 'abstain':
+    case 'checklist':
+    default: {
+      const cfg = normalizeOtherDetailConfig(raw);
+      const key = templateKey === 'abstain' ? 'abstain' : 'checklist';
+      return normalizeOtherDetailConfig({
+        ...cfg,
+        templateKey: key,
+        checklist: cfg.checklist.map((item) => ({ ...item, done: false })),
+      });
+    }
+  }
+}
+
 export function buildInitialCustomFlowDetailConfig(
   templateKey: CustomFlowTemplateKey,
   input: {
@@ -307,36 +412,45 @@ export function buildInitialCustomFlowDetailConfig(
     ...(accentColor ? { accentColor } : {}),
   };
 
+  let built: CustomFlowDetailConfig;
   switch (templateKey) {
     case 'measurement': {
       const measurementSeed = input.templateSeed
         ? pickMeasurementSettingsForCreate(input.templateSeed)
         : null;
-      return normalizeMeasurementDetailConfig({
+      built = normalizeMeasurementDetailConfig({
         ...getInitialMeasurementDataConfig(),
         ...(measurementSeed ?? {}),
         ...appearance,
       });
+      break;
     }
     case 'healthIntake': {
       const intakeSeed = input.templateSeed
         ? normalizeHealthIntakeDetailConfig(input.templateSeed)
         : null;
-      return normalizeHealthIntakeDetailConfig({
+      built = normalizeHealthIntakeDetailConfig({
         ...getInitialHealthIntakeDataConfig(),
         ...(intakeSeed
           ? {
               summary: intakeSeed.summary,
-              water: intakeSeed.water,
-              medicine: intakeSeed.medicine,
+              water: {
+                ...intakeSeed.water,
+                drankMl: 0,
+              },
+              medicine: {
+                ...intakeSeed.medicine,
+                takenCount: 0,
+              },
             }
           : {}),
         ...appearance,
       });
+      break;
     }
     case 'fasting': {
       const fastingSeed = input.templateSeed ? normalizeFastingDetailConfig(input.templateSeed) : null;
-      return normalizeFastingDetailConfig({
+      built = normalizeFastingDetailConfig({
         ...getInitialFastingDataConfig(),
         ...(fastingSeed
           ? {
@@ -344,66 +458,75 @@ export function buildInitialCustomFlowDetailConfig(
               currentWeightKg: fastingSeed.currentWeightKg,
               targetWeightKg: fastingSeed.targetWeightKg,
               weeklyLossTargetKg: fastingSeed.weeklyLossTargetKg,
-              weightLogs: fastingSeed.weightLogs,
             }
           : {}),
         ...appearance,
       });
+      break;
     }
     case 'habit':
-      return normalizeHabitDetailConfig({ ...getInitialHabitDataConfig(), ...appearance });
+      built = normalizeHabitDetailConfig({ ...getInitialHabitDataConfig(), ...appearance });
+      break;
     case 'counter': {
       const counterSeed = input.templateSeed ? pickCounterSettingsForCreate(input.templateSeed) : null;
-      return normalizeCounterDetailConfig({
+      built = normalizeCounterDetailConfig({
         ...getInitialCounterDataConfig(),
         ...(counterSeed ?? {}),
         ...appearance,
       });
+      break;
     }
     case 'focus':
-      return normalizeFocusDetailConfig({ ...getInitialFocusDataConfig(), ...appearance });
+      built = normalizeFocusDetailConfig({ ...getInitialFocusDataConfig(), ...appearance });
+      break;
     case 'journal':
-      return normalizeJournalDetailConfig({ ...getInitialJournalDataConfig(), ...appearance });
+      built = normalizeJournalDetailConfig({ ...getInitialJournalDataConfig(), ...appearance });
+      break;
     case 'memo': {
       const memoSeed = input.templateSeed ? pickMemoSettingsForCreate(input.templateSeed) : null;
-      return normalizeMemoDetailConfig({
+      built = normalizeMemoDetailConfig({
         ...getInitialMemoDataConfig(),
         ...(memoSeed ?? {}),
         ...appearance,
       });
+      break;
     }
     case 'reminder': {
       const reminderSeed = input.templateSeed ? pickReminderSettingsForCreate(input.templateSeed) : null;
-      return normalizeReminderDetailConfig({
+      built = normalizeReminderDetailConfig({
         ...getInitialReminderDataConfig(),
         ...(reminderSeed ?? {}),
         ...appearance,
       });
+      break;
     }
     case 'abstain': {
       const abstainSeed = input.templateSeed
         ? pickChecklistSettingsForCreate(input.templateSeed, 'abstain')
         : null;
-      return normalizeOtherDetailConfig({
+      built = normalizeOtherDetailConfig({
         ...getInitialOtherDataConfig(),
         templateKey: 'abstain',
         ...(abstainSeed ?? {}),
         ...appearance,
       });
+      break;
     }
     case 'checklist':
     default: {
       const checklistSeed = input.templateSeed
         ? pickChecklistSettingsForCreate(input.templateSeed, 'checklist')
         : null;
-      return normalizeOtherDetailConfig({
+      built = normalizeOtherDetailConfig({
         ...getInitialOtherDataConfig(),
         templateKey: 'checklist',
         ...(checklistSeed ?? {}),
         ...appearance,
       });
+      break;
     }
   }
+  return clearCustomFlowRuntimeRecords(templateKey, built);
 }
 
 export function normalizeCustomFlowDetailConfig(
@@ -459,15 +582,15 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
         useGoalValue: true,
         goalValue: 65,
         currentValue: 68.5,
-        previousValue: 68.9,
+        previousValue: 68.8,
         lastRecordedDateKey: today,
         history: [
-          { dateKey: addDaysToLocalDateKey(today, -6), value: 69.2 },
-          { dateKey: addDaysToLocalDateKey(today, -5), value: 69.0 },
-          { dateKey: addDaysToLocalDateKey(today, -4), value: 68.8 },
-          { dateKey: addDaysToLocalDateKey(today, -3), value: 69.1 },
-          { dateKey: addDaysToLocalDateKey(today, -2), value: 68.7 },
-          { dateKey: addDaysToLocalDateKey(today, -1), value: 68.9 },
+          { dateKey: addDaysToLocalDateKey(today, -6), value: 70.2 },
+          { dateKey: addDaysToLocalDateKey(today, -5), value: 69.8 },
+          { dateKey: addDaysToLocalDateKey(today, -4), value: 69.4 },
+          { dateKey: addDaysToLocalDateKey(today, -3), value: 69.9 },
+          { dateKey: addDaysToLocalDateKey(today, -2), value: 69.1 },
+          { dateKey: addDaysToLocalDateKey(today, -1), value: 68.8 },
           { dateKey: today, value: 68.5 },
         ],
       });
@@ -488,19 +611,32 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
           [today]: 68.5,
         },
       });
-    case 'counter':
-      return normalizeCounterDetailConfig({
-        ...base,
-        activityLabel: '',
-        unitKey: 'count',
-        goalCount: 8,
-        currentCount: 0,
-        stepSize: 1,
-        secondaryStepSize: 2,
-        dailyReset: true,
-        countDateKey: today,
-        history: [],
-      });
+    case 'counter': {
+      const pushup = COUNTER_ACTIVITY_PRESETS.find((row) => row.id === 'pushup');
+      if (!pushup) {
+        return normalizeCounterDetailConfig({
+          ...base,
+          activityLabel: '푸쉬업',
+          unitKey: 'rep',
+          goalCount: 50,
+          currentCount: 0,
+          stepSize: 5,
+          secondaryStepSize: 10,
+          dailyReset: true,
+          countDateKey: today,
+          history: [],
+        });
+      }
+      return applyCounterActivityPreset(
+        normalizeCounterDetailConfig({
+          ...base,
+          dailyReset: true,
+          countDateKey: today,
+        }),
+        pushup,
+        { includeSampleData: true },
+      );
+    }
     case 'habit':
       return normalizeHabitDetailConfig({
         ...base,
@@ -524,9 +660,28 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
     case 'memo':
       return normalizeMemoDetailConfig({
         ...base,
-        lastEntry: '오늘 할 일 정리 완료',
+        lastEntry: '출근 전 가방에 충전기·이어폰 챙기기',
         recentEntries: [
-          { dateKey: addDaysToLocalDateKey(today, -1), text: '어제 메모 예시' },
+          {
+            dateKey: addDaysToLocalDateKey(today, -1),
+            text: '장보기: 계란·우유·샐러드 재료',
+          },
+          {
+            dateKey: addDaysToLocalDateKey(today, -2),
+            text: '병원 예약 — 목요일 오후 3시',
+          },
+          {
+            dateKey: addDaysToLocalDateKey(today, -3),
+            text: '책 30쪽까지 읽기 (챕터 4)',
+          },
+          {
+            dateKey: addDaysToLocalDateKey(today, -4),
+            text: '팀 회고: 다음 주 스프린트 목표 정리',
+          },
+          {
+            dateKey: addDaysToLocalDateKey(today, -5),
+            text: '세탁·빨래 개기 끝',
+          },
         ],
       });
     case 'reminder':

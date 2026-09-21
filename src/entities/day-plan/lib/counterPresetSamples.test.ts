@@ -29,6 +29,8 @@ describe('counterPresetSamples', () => {
     expect(next.unitKey).toBe('rep');
     expect(next.stepSize).toBe(5);
     expect(next.history.length).toBe(7);
+    expect(next.currentCount).toBe(35);
+    expect(next.history.map((row) => row.count)).toEqual([20, 45, 50, 30, 55, 50, 35]);
   });
 
   it('applies counter settings patch', () => {
