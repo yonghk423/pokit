@@ -1,4 +1,3 @@
-import { POST_IT_SOLID_SHADOW } from '@shared/ui/post-it-card-shell';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 
 export type FlowHistoryPalette = {
@@ -29,7 +28,8 @@ export function buildFlowHistoryPalette(isDark: boolean): FlowHistoryPalette {
     accent: c.primary,
     accentSoft: c.primaryContainer,
     weekdayIdle: face,
-    shadow: POST_IT_SOLID_SHADOW,
+    /** 설정 카드와 같은 옅은 잉크 음영 (순검정 대신) */
+    shadow: isDark ? '#5A5C72' : '#9A9AA8',
     actionBg: face,
     fab: c.primary,
     fabIcon: c.primaryOn,

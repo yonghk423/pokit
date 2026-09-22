@@ -124,6 +124,10 @@ export default function RootLayout() {
                 options={{ headerShown: false, presentation: 'card' }}
               />
               <Stack.Screen
+                name="announcements"
+                options={{ headerShown: false, presentation: 'card' }}
+              />
+              <Stack.Screen
                 name="activity-session"
                 options={{ headerShown: false, presentation: 'fullScreenModal' }}
               />

@@ -3,7 +3,6 @@ import type { SymbolViewProps } from 'expo-symbols';
 
 import { resolveCategoryCatalogIconTile } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { POST_IT_SOLID_SHADOW } from '@shared/ui/post-it-card-shell';
 
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 
@@ -16,7 +15,7 @@ type Props = {
 };
 
 /** 히스토리 카드 — 목표 상세와 같은 강조색 칸 + 대비 아이콘 */
-export function FlowHistoryCategoryIcon({ categoryKey, icon, palette: _palette }: Props) {
+export function FlowHistoryCategoryIcon({ categoryKey, icon, palette }: Props) {
   const { boxBg, iconColor } = resolveCategoryCatalogIconTile(categoryKey);
 
   return (
@@ -30,7 +29,7 @@ export function FlowHistoryCategoryIcon({ categoryKey, icon, palette: _palette }
         style={[
           styles.shadow,
           {
-            backgroundColor: POST_IT_SOLID_SHADOW,
+            backgroundColor: palette.shadow,
             transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
           },
         ]}

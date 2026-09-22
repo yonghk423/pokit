@@ -62,12 +62,18 @@ export function SettingsRowIcon({
   boxBg,
   border: _border,
   shadow,
+  showBadge = false,
+  /** 배지 링 — 카드/배경면과 맞춰야 자연스러움 */
+  badgeRingColor = '#FFFFFF',
 }: {
   name: string;
   color: string;
   boxBg: string;
   border: string;
   shadow: string;
+  /** 아이콘 우측 상단 미읽음 점 (iOS/Android 관례) */
+  showBadge?: boolean;
+  badgeRingColor?: string;
 }) {
   return (
     <View style={styles.iconShell}>
@@ -83,6 +89,14 @@ export function SettingsRowIcon({
       <View style={[styles.iconBox, { backgroundColor: boxBg }]}>
         <IconSymbol name={name as 'bell.fill'} size={15} color={color} />
       </View>
+      {showBadge ? (
+        <View
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[styles.badge, { borderColor: badgeRingColor }]}
+        />
+      ) : null}
     </View>
   );
 }
@@ -193,6 +207,7 @@ const styles = StyleSheet.create({
     width: ICON_FACE + SHADOW_SM,
     height: ICON_FACE + SHADOW_SM,
     flexShrink: 0,
+    overflow: 'visible',
   },
   iconShadow: {
     position: 'absolute',
@@ -211,5 +226,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 1,
     overflow: 'hidden',
+  },
+  /**
+   * 미읽음 점 — Material/iOS 관례: 부모 우측 상단(TOP_END),
+   * 모서리에 살짝 걸침 + 면색 스트로크. 순수 #EF4444 대신 soft coral.
+   */
+  badge: {
+    position: 'absolute',
+    top: -2,
+    left: ICON_FACE - 7,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E57373',
+    borderWidth: 1.5,
+    zIndex: 3,
   },
 });

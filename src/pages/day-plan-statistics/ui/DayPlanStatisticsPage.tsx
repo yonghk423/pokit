@@ -328,6 +328,7 @@ export function DayPlanStatisticsPage() {
             <PostItCardShell
               isDark={isDark}
               faceColor={palette.card}
+              shadowColor={palette.shadow}
               borderColor={palette.ink}
               borderWidth={1}
               contentStyle={styles.emptyContent}>
@@ -339,6 +340,7 @@ export function DayPlanStatisticsPage() {
             <PostItCardShell
               isDark={isDark}
               faceColor={palette.card}
+              shadowColor={palette.shadow}
               borderColor={palette.ink}
               borderWidth={1}
               contentStyle={styles.emptyContent}>

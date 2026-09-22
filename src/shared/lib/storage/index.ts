@@ -9,6 +9,11 @@ export {
   type CustomFlowIconOption
 } from '../customFlowAppearanceCatalog';
 export {
+  isAnnouncementRead,
+  loadAnnouncementReadIds,
+  markAnnouncementRead,
+} from './announcementReadStorage';
+export {
   dismissCatalogGroupKey,
   isCatalogGroupDismissed,
   loadDismissedCatalogGroupKeys,

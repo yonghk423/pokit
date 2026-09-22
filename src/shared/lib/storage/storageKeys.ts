@@ -56,6 +56,8 @@ export const StorageKeys = {
   myRoutineGroupCollapsed: 'pokit:my-routine-group-collapsed',
   /** 루틴 탭 카탈로그 포스트잇 — 접힌 그룹 id (없으면 펼침) */
   routineCatalogGroupCollapsed: 'pokit:routine-catalog-group-collapsed',
+  /** 읽은 공지 id 목록 */
+  announcementReadIds: 'pokit:announcement-read-ids',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];
@@ -95,4 +97,5 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   postItFaceColor: 'lockflow:post-it-face-color',
   myRoutineGroupCollapsed: 'lockflow:my-routine-group-collapsed',
   routineCatalogGroupCollapsed: 'lockflow:routine-catalog-group-collapsed',
+  announcementReadIds: 'lockflow:announcement-read-ids',
 };

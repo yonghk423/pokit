@@ -34,6 +34,7 @@ export function HistoryPeriodTabs({ period, onSelectPeriod, isDark }: Props) {
       compact
       isDark={isDark}
       faceColor={face}
+      shadowColor={isDark ? '#5A5C72' : '#9A9AA8'}
       style={styles.root}
       contentStyle={styles.track}>
       {TABS.map((tab, index) => {
