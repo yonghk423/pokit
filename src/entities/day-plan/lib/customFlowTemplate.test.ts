@@ -151,10 +151,14 @@ describe('customFlowTemplate', () => {
     );
   });
 
-  it('setup config starts checklist items unchecked', () => {
+  it('setup config starts checklist empty without template examples', () => {
     const cfg = normalizeOtherDetailConfig(buildTemplateSetupConfig('checklist'));
-    expect(cfg.checklist.length).toBeGreaterThan(0);
-    expect(cfg.checklist.every((item) => item.done === false)).toBe(true);
+    expect(cfg.checklist).toEqual([]);
+  });
+
+  it('setup config starts abstain empty without template examples', () => {
+    const cfg = normalizeOtherDetailConfig(buildTemplateSetupConfig('abstain'));
+    expect(cfg.checklist).toEqual([]);
   });
 
   it('persists checklist seed when creating custom flow', () => {

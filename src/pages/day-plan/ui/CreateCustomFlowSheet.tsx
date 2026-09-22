@@ -533,7 +533,7 @@ export function CreateCustomFlowSheet({
                         normalizeCustomFlowDetailConfig(selectedTemplateKey, next),
                       );
                     }}
-                    previewMode={false}
+                    previewMode
                     theme={{
                       ink,
                       muted,

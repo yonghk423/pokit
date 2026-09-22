@@ -786,10 +786,13 @@ function MemoTemplateView({
   cfg,
   emit,
   theme,
+  previewMode = false,
 }: {
   cfg: Parameters<typeof applyMemoSave>[0];
   emit: TemplateEmit;
   theme: TemplateSessionTheme;
+  /** 만들기·템플릿 미리보기에서만 예시 placeholder 표시. 이미 추가된 루틴에서는 비움 */
+  previewMode?: boolean;
 }) {
   const { t } = useTranslation();
   const { ink, muted, line, surface } = theme;
@@ -802,6 +805,7 @@ function MemoTemplateView({
   const recent = cfg.recentEntries.slice(0, 5);
   const draftLen = draft.trim().length;
   const hasDraft = draftLen > 0;
+  const memoPlaceholder = previewMode ? t('customFlowTemplate.memoPlaceholder') : '';
 
   useEffect(() => {
     setDraft(cfg.lastEntry ?? '');
@@ -826,7 +830,7 @@ function MemoTemplateView({
             value={draft}
             onChangeText={setDraft}
             multiline
-            placeholder={t('customFlowTemplate.memoPlaceholder')}
+            placeholder={memoPlaceholder}
             placeholderTextColor={muted}
             textAlignVertical="top"
             style={[
@@ -2262,7 +2266,7 @@ export function CustomFlowTemplateSessionBody({
 
     case 'memo': {
       if (!('recentEntries' in cfg) || 'prompt' in cfg) return null;
-      return <MemoTemplateView cfg={cfg} emit={emit} theme={theme} />;
+      return <MemoTemplateView cfg={cfg} emit={emit} theme={theme} previewMode={previewMode} />;
     }
 
     case 'reminder': {

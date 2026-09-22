@@ -227,23 +227,17 @@ export function buildTemplateSetupConfig(templateKey: CustomFlowTemplateKey): Cu
 
   switch (templateKey) {
     case 'checklist':
+      /** 새로 만든 루틴에는 템플릿 예시를 넣지 않음 — 빈 목록에서 「할 일 추가」 */
       return normalizeCustomFlowDetailConfig('checklist', {
         ...base,
-        checklist: [
-          { id: 'd1', text: '물 한 잔 마시기', done: false },
-          { id: 'd2', text: '5분 스트레칭', done: false },
-          { id: 'd3', text: '창문 열고 환기', done: false },
-        ],
+        checklist: [],
         templateKey: 'checklist',
       });
     case 'abstain':
+      /** 새로 만든 루틴에는 템플릿 예시를 넣지 않음 */
       return normalizeCustomFlowDetailConfig('abstain', {
         ...base,
-        checklist: [
-          { id: 'a1', text: '밤늦게 폰 보기', done: false },
-          { id: 'a2', text: '과자·야식 먹기', done: false },
-          { id: 'a3', text: 'SNS 무한 스크롤', done: false },
-        ],
+        checklist: [],
         templateKey: 'abstain',
       });
     case 'counter':
