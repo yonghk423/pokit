@@ -52,7 +52,6 @@ import {
   saveFixedFlowSetsState,
   saveRoutineCatalogSelectionKeys,
 } from '@shared/lib/storage';
-import { fetchInstruments, isSupabaseConfigured } from '@shared/lib/supabase';
 import {
   getDisplayedAppVersionLabel,
   openSupportMailComposer,
@@ -104,7 +103,6 @@ export function SettingsPage() {
   const appVersionLabel = getDisplayedAppVersionLabel();
   const [isResettingData, setIsResettingData] = useState(false);
   const [isSubscriptionBusy, setIsSubscriptionBusy] = useState(false);
-  const [isSupabaseProbeBusy, setIsSupabaseProbeBusy] = useState(false);
   const [hasUnreadAnnouncements, setHasUnreadAnnouncements] = useState(false);
   const locale = useAppLocaleStore((s) => s.locale);
   const appearanceMode = useAppearanceStore((s) => s.mode);
@@ -210,25 +208,6 @@ export function SettingsPage() {
       }
     } finally {
       setIsSubscriptionBusy(false);
-    }
-  };
-
-  const runSupabaseProbe = async () => {
-    if (isSupabaseProbeBusy) return;
-    setIsSupabaseProbeBusy(true);
-    try {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const result = await fetchInstruments();
-      if (!result.ok) {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert('Supabase', result.message);
-        return;
-      }
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const names = result.rows.map((row) => row.name).join(', ');
-      Alert.alert('Supabase 연결됨', names.length > 0 ? names : '(행 없음)');
-    } finally {
-      setIsSupabaseProbeBusy(false);
     }
   };
 
@@ -745,41 +724,6 @@ export function SettingsPage() {
             </View>
           </View>
         </SettingsSection>
-
-        {__DEV__ ? (
-          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>개발 · Supabase</ThemedText>
-            <Pressable
-              style={[chrome.item, { borderTopColor: p.border }, isSupabaseProbeBusy && styles.disabledItem]}
-              onPress={() => {
-                void runSupabaseProbe();
-              }}
-              disabled={isSupabaseProbeBusy}
-              accessibilityRole="button"
-              accessibilityLabel="Supabase 연동 테스트">
-              <View style={chrome.itemLeft}>
-                <SettingsRowIcon
-                  name="antenna.radiowaves.left.and.right"
-                  color={p.icon}
-                  boxBg={p.iconBoxBg}
-                  border={p.border}
-                  shadow={p.shadow}
-                />
-                <View style={chrome.itemTextWrap}>
-                  <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                    {isSupabaseProbeBusy ? '조회 중…' : 'instruments 조회'}
-                  </ThemedText>
-                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                    {isSupabaseConfigured()
-                      ? '개발 빌드 전용 · 연결 스모크 테스트'
-                      : 'EXPO_PUBLIC_SUPABASE_* env가 비어 있어요'}
-                  </ThemedText>
-                </View>
-              </View>
-              <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-            </Pressable>
-          </SettingsSection>
-        ) : null}
 
         <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
           <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
