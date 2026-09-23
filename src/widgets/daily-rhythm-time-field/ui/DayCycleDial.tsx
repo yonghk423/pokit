@@ -5,8 +5,8 @@ import {
   LayoutChangeEvent,
   PanResponder,
   StyleSheet,
-  useWindowDimensions,
   View,
+  useWindowDimensions,
   type GestureResponderEvent,
   type ImageSourcePropType,
 } from 'react-native';
@@ -216,7 +216,7 @@ export function DayCycleDial({
           cy,
           ringMidR,
           (seg.startDisplay + clockwiseSpanMinutes(seg.startDisplay, seg.endDisplay) / 2) %
-            CYCLE_MINUTES,
+          CYCLE_MINUTES,
         ),
       })),
     [cx, cy, cycleSegments, innerR, outerR, ringMidR],
@@ -233,7 +233,8 @@ export function DayCycleDial({
   /** City Pop Flat — 민트(활동) / 잉크(수면) / 트랙(그 외) */
   const colors = {
     dialStroke: tone.border,
-    dialTrack: isDark ? tone.surfaceAlt : tone.bg,
+    /** 라이트: 다이얼 사각면만 퍼플 베이스 */
+    dialTrack: isDark ? tone.surfaceAlt : '#9A7CED',
     activityFill: isDark ? tone.primaryContainer : tone.bgMint,
     sleepFill: isDark ? '#12152A' : tone.text,
     restFill: 'transparent',
@@ -580,16 +581,16 @@ export function DayCycleDial({
   const rangeSummaryText =
     endDateLabel === startDateLabel
       ? t('dayCycleDial.rangeSummarySameDay', {
-          date: startDateLabel,
-          start: startLabel,
-          end: endLabel,
-        })
+        date: startDateLabel,
+        start: startLabel,
+        end: endLabel,
+      })
       : t('dayCycleDial.rangeSummary', {
-          startDate: startDateLabel,
-          start: startLabel,
-          endDate: endDateLabel,
-          end: endLabel,
-        });
+        startDate: startDateLabel,
+        start: startLabel,
+        endDate: endDateLabel,
+        end: endLabel,
+      });
 
   const dialBox = size + SOLID_SHADOW_OFFSET;
 

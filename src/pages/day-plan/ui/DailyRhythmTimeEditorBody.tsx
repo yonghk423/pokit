@@ -3,11 +3,11 @@ import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Alert,
-  type ImageSourcePropType,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
+  type ImageSourcePropType,
 } from 'react-native';
 import Animated, {
   Easing,
@@ -28,21 +28,21 @@ import {
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { NativeHhmmWheelPicker } from '@shared/ui/native-hhmm-wheel-picker';
-import { SmoothSegmentedControl } from '@shared/ui/smooth-segmented-control';
-import { ScrapTapeLabel } from '@shared/ui/scrap-tape-label';
 import { RoutineMarginSlideshow } from '@shared/ui/routine-atmosphere';
+import { ScrapTapeLabel } from '@shared/ui/scrap-tape-label';
+import { SmoothSegmentedControl } from '@shared/ui/smooth-segmented-control';
 import { ThemedText } from '@shared/ui/themed-text';
 import { DayCycleDial, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
 
+import { useMeasuredAccordion } from '@shared/lib/hooks';
 import {
   formatDateKeyCompact,
   formatHhmmClock,
   splitDateKeyCompact,
   useTranslation,
 } from '@shared/lib/i18n';
-import { useMeasuredAccordion } from '@shared/lib/hooks';
 import { dailyRhythmOnboardingAssets } from '../lib/dailyRhythmOnboardingAssets';
-import { isOvernightHhmmRange, isInvalidSameDayEnd, endsOnNextCalendarDay } from '../lib/dayPlanEditorShared';
+import { endsOnNextCalendarDay, isInvalidSameDayEnd, isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
 type PickerTarget = 'start' | 'end' | null;
@@ -660,9 +660,9 @@ export function DailyRhythmTimeEditorBody({
             {parseHHmmToMinutes(endHhmm) === 24 * 60 || parseHHmmToMinutes(endHhmm) === 0
               ? t('dayRhythm.endDateMidnightHint')
               : t('dayRhythm.endDateInvalidHint', {
-                  end: formatHhmmClock(endHhmm, locale),
-                  start: formatHhmmClock(startHhmm, locale),
-                })}
+                end: formatHhmmClock(endHhmm, locale),
+                start: formatHhmmClock(startHhmm, locale),
+              })}
           </ThemedText>
         ) : isOvernightHhmmRange(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
           <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
@@ -764,113 +764,113 @@ export function DailyRhythmTimeEditorBody({
               shadowColor={shadowInk}
               backgroundColor={isDark ? ink.surfaceAlt : ink.bg}
               style={styles.mainCardFace}>
-            <OnboardingTimeRow
-              label={t('dayRhythm.dayStart')}
-              hint={t('dayRhythm.dayStartHint')}
-              valueHhmm={startHhmm}
-              onChangeHhmm={setStartHhmmLocal}
-              expanded={pickerTarget === 'start'}
-              onToggleExpand={() => setPickerTarget((t) => (t === 'start' ? null : 'start'))}
-              isDark={isDark}
-              c={c}
-              thumb={dailyRhythmOnboardingAssets.startThumb}
-              dateParts={startDateParts}
-            />
+              <OnboardingTimeRow
+                label={t('dayRhythm.dayStart')}
+                hint={t('dayRhythm.dayStartHint')}
+                valueHhmm={startHhmm}
+                onChangeHhmm={setStartHhmmLocal}
+                expanded={pickerTarget === 'start'}
+                onToggleExpand={() => setPickerTarget((t) => (t === 'start' ? null : 'start'))}
+                isDark={isDark}
+                c={c}
+                thumb={dailyRhythmOnboardingAssets.startThumb}
+                dateParts={startDateParts}
+              />
 
-            <View style={[styles.cardRule, { borderTopColor: c.border }]} />
+              <View style={[styles.cardRule, { borderTopColor: c.border }]} />
 
-            <OnboardingTimeRow
-              label={t('dayRhythm.dayEnd')}
-              hint={t('dayRhythm.dayEndHint')}
-              valueHhmm={endHhmm}
-              onChangeHhmm={setEndHhmmLocal}
-              expanded={pickerTarget === 'end'}
-              onToggleExpand={() => setPickerTarget((t) => (t === 'end' ? null : 'end'))}
-              isDark={isDark}
-              c={c}
-              thumb={dailyRhythmOnboardingAssets.endThumb}
-              dateParts={endDateParts}
-              mapMidnightToEndOfDay
-            />
+              <OnboardingTimeRow
+                label={t('dayRhythm.dayEnd')}
+                hint={t('dayRhythm.dayEndHint')}
+                valueHhmm={endHhmm}
+                onChangeHhmm={setEndHhmmLocal}
+                expanded={pickerTarget === 'end'}
+                onToggleExpand={() => setPickerTarget((t) => (t === 'end' ? null : 'end'))}
+                isDark={isDark}
+                c={c}
+                thumb={dailyRhythmOnboardingAssets.endThumb}
+                dateParts={endDateParts}
+                mapMidnightToEndOfDay
+              />
 
-            <View style={styles.endDateChoiceOnboard}>
-              <ThemedText
-                style={[styles.endDateChoiceQuestionOnboard, { color: c.onVariant }, cityPopFont('800')]}
-                lightColor={c.onVariant}
-                darkColor={c.onVariant}>
-                {t('dayRhythm.endDateQuestion')}
-              </ThemedText>
-              <View style={styles.endDateChoiceBtnRow}>{endDateSegmentControl}</View>
-              {endDateTodayInvalid ? (
-                <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
-                  {parseHHmmToMinutes(endHhmm) === 24 * 60 ||
-                  parseHHmmToMinutes(endHhmm) === 0
-                    ? t('dayRhythm.endDateMidnightHint')
-                    : t('dayRhythm.endDateInvalidHint', {
+              <View style={styles.endDateChoiceOnboard}>
+                <ThemedText
+                  style={[styles.endDateChoiceQuestionOnboard, { color: c.onVariant }, cityPopFont('800')]}
+                  lightColor={c.onVariant}
+                  darkColor={c.onVariant}>
+                  {t('dayRhythm.endDateQuestion')}
+                </ThemedText>
+                <View style={styles.endDateChoiceBtnRow}>{endDateSegmentControl}</View>
+                {endDateTodayInvalid ? (
+                  <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+                    {parseHHmmToMinutes(endHhmm) === 24 * 60 ||
+                      parseHHmmToMinutes(endHhmm) === 0
+                      ? t('dayRhythm.endDateMidnightHint')
+                      : t('dayRhythm.endDateInvalidHint', {
                         end: formatHhmmClock(endHhmm, locale),
                         start: formatHhmmClock(startHhmm, locale),
                       })}
-                </ThemedText>
-              ) : isOvernightHhmmRange(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
-                <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
-                  {t('dayRhythm.overnightHint')}
-                </ThemedText>
-              ) : endsOnNextCalendarDay(startHhmm, endHhmm) &&
-                endDateTarget === 'nextDay' ? (
-                <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
-                  {t('dayRhythm.midnightNextDayHint')}
-                </ThemedText>
-              ) : null}
-            </View>
-
-            <FinalReviewCue active={pickerTarget === null && !dialDragging}>
-              <View style={styles.summaryBox}>
-                <View
-                  style={[
-                    styles.summaryBadge,
-                    {
-                      backgroundColor: isDark ? 'rgba(255, 236, 179, 0.92)' : '#FFE8A8',
-                      borderColor: '#111111',
-                    },
-                  ]}>
-                  <ThemedText
-                    style={[styles.summaryBadgeText, { color: '#111111' }, cityPopFont('800')]}>
-                    {t('dayRhythm.myDaySummary')}
                   </ThemedText>
-                </View>
-                <View style={styles.summarySplit}>
-                  <View
-                    style={[
-                      styles.summaryHalf,
-                      { backgroundColor: isDark ? ink.surfaceAlt : ink.bg },
-                    ]}>
-                    <ThemedText
-                      style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
-                      numberOfLines={2}>
-                      {rangeSummaryParts.left}
-                    </ThemedText>
-                  </View>
-                  <ThemedText
-                    style={[styles.summaryWave, { color: c.onVariant }, cityPopFont('800')]}
-                    lightColor={c.onVariant}
-                    darkColor={c.onVariant}>
-                    ~
+                ) : isOvernightHhmmRange(startHhmm, endHhmm) && endDateTarget === 'nextDay' ? (
+                  <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+                    {t('dayRhythm.overnightHint')}
                   </ThemedText>
-                  <View
-                    style={[
-                      styles.summaryHalf,
-                      { backgroundColor: isDark ? ink.surfaceAlt : ink.bg },
-                    ]}>
-                    <ThemedText
-                      style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
-                      numberOfLines={2}>
-                      {rangeSummaryParts.right}
-                    </ThemedText>
-                  </View>
-                </View>
+                ) : endsOnNextCalendarDay(startHhmm, endHhmm) &&
+                  endDateTarget === 'nextDay' ? (
+                  <ThemedText style={[styles.endDateChoiceHint, { color: c.onVariant }]}>
+                    {t('dayRhythm.midnightNextDayHint')}
+                  </ThemedText>
+                ) : null}
               </View>
-            </FinalReviewCue>
-          </SolidShadowFace>
+
+              <FinalReviewCue active={pickerTarget === null && !dialDragging}>
+                <View style={styles.summaryBox}>
+                  <View
+                    style={[
+                      styles.summaryBadge,
+                      {
+                        backgroundColor: isDark ? 'rgba(255, 236, 179, 0.92)' : '#FFE8A8',
+                        borderColor: '#111111',
+                      },
+                    ]}>
+                    <ThemedText
+                      style={[styles.summaryBadgeText, { color: '#111111' }, cityPopFont('800')]}>
+                      {t('dayRhythm.myDaySummary')}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.summarySplit}>
+                    <View
+                      style={[
+                        styles.summaryHalf,
+                        { backgroundColor: isDark ? ink.surfaceAlt : ink.bg },
+                      ]}>
+                      <ThemedText
+                        style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
+                        numberOfLines={2}>
+                        {rangeSummaryParts.left}
+                      </ThemedText>
+                    </View>
+                    <ThemedText
+                      style={[styles.summaryWave, { color: c.onVariant }, cityPopFont('800')]}
+                      lightColor={c.onVariant}
+                      darkColor={c.onVariant}>
+                      ~
+                    </ThemedText>
+                    <View
+                      style={[
+                        styles.summaryHalf,
+                        { backgroundColor: isDark ? ink.surfaceAlt : ink.bg },
+                      ]}>
+                      <ThemedText
+                        style={[styles.summaryValue, { color: c.onSurface }, cityPopFont('800')]}
+                        numberOfLines={2}>
+                        {rangeSummaryParts.right}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </View>
+              </FinalReviewCue>
+            </SolidShadowFace>
           </View>
         ) : (
           settingsTimeCard

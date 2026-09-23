@@ -4,10 +4,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { addDaysToLocalDateKey, getLocalDateKey } from '@entities/day-plan';
 
-import { DEFAULT_DAILY_RHYTHM } from '../lib/dailyRhythmPresets';
-import { prefetchDailyRhythmOnboardingAssets } from '../lib/dailyRhythmOnboardingAssets';
-import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { formatDateKeyCompact, useTranslation } from '@shared/lib/i18n';
+import { prefetchDailyRhythmOnboardingAssets } from '../lib/dailyRhythmOnboardingAssets';
+import { DEFAULT_DAILY_RHYTHM } from '../lib/dailyRhythmPresets';
+import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { DailyRhythmTimeEditorBody } from './DailyRhythmTimeEditorBody';
 
 type Props = {
