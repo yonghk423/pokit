@@ -12,7 +12,7 @@ import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { getPickerCategoryItem, getPickerCategoryLabel, PICKER_CATEGORIES } from '../lib/dayPlanEditorShared';
+import { getPickerCategoryLabel, PICKER_CATEGORIES } from '../lib/dayPlanEditorShared';
 import { filterCatalogPickerCategories } from '../lib/priorityCatalogSections';
 import { FixedRoutineDraftOrderList } from './FixedRoutineDraftOrderList';
 
@@ -52,11 +52,10 @@ export function FixedRoutineEditorModal({
     void catalogLabelTick;
     const base = filterCatalogPickerCategories(PICKER_CATEGORIES);
     const customs = listAllCustomFlowCatalogEntries().map((entry) => {
-      const item = getPickerCategoryItem(entry.id);
       return {
         key: entry.id,
         label: getPickerCategoryLabel(entry.id),
-        icon: (item?.icon ?? 'person.fill') as typeof PICKER_CATEGORIES[number]['icon'],
+        icon: resolveCategoryCatalogIcon(entry.id) as typeof PICKER_CATEGORIES[number]['icon'],
       };
     });
     return [...base, ...customs];

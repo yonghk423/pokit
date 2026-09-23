@@ -11,7 +11,15 @@ import Reanimated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { blockDurationSec, getBlockTimelineIcon, resolveBlockCategoryKey, resolveCategoryCatalogIconTile, resolveDayPlanBlockDisplayTitle, type SpineTimelineRow } from '@entities/day-plan';
+import {
+  blockDurationSec,
+  getBlockTimelineIcon,
+  resolveBlockCategoryKey,
+  resolveCategoryCatalogIconTile,
+  resolveDayPlanBlockDisplayTitle,
+  useGoalDetailSettingsStore,
+  type SpineTimelineRow,
+} from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
 import { formatDurationMinutes, formatMinuteOfDay, useTranslation } from '@shared/lib/i18n';
 import { CompletionRadioButton, COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT } from '@shared/ui/completion-radio-button';
@@ -208,6 +216,8 @@ export function SpineTimelineBlockRow({
   onCommitReorder,
 }: Props) {
   const { t, locale } = useTranslation();
+  const categoryLabelEpoch = useGoalDetailSettingsStore((s) => s.revision);
+  void categoryLabelEpoch;
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const reorderDragging = useSharedValue(0);

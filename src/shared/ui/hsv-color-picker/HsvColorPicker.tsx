@@ -16,7 +16,10 @@ import { RetroFlatColors } from '@shared/config/retroFlat';
 
 type Props = {
   value: string;
+  /** 드래그 중 미리보기용 — 매 프레임 호출될 수 있음 (저장 금지) */
   onChange: (hex: string) => void;
+  /** 제스처 종료 시 최종 색 — 영속화는 여기서 */
+  onChangeEnd?: (hex: string) => void;
   ink: string;
   muted: string;
   isDark: boolean;
@@ -44,7 +47,7 @@ function applyHueFromPoint(x: number, width: number, s: number, v: number): stri
   return hsvToHex({ h, s, v });
 }
 
-export function HsvColorPicker({ value, onChange, ink, isDark }: Props) {
+export function HsvColorPicker({ value, onChange, onChangeEnd, ink, isDark }: Props) {
   const normalizedValue = normalizeHexColor(value) ?? '#f97316';
   const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(normalizedValue));
   const [svSize, setSvSize] = useState({ width: 1, height: SV_HEIGHT });
@@ -57,6 +60,8 @@ export function HsvColorPicker({ value, onChange, ink, isDark }: Props) {
   const isInteractingRef = useRef(false);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const onChangeEndRef = useRef(onChangeEnd);
+  onChangeEndRef.current = onChangeEnd;
 
   useEffect(() => {
     if (isInteractingRef.current) return;
@@ -110,7 +115,9 @@ export function HsvColorPicker({ value, onChange, ink, isDark }: Props) {
   }, []);
 
   const markInteractionEnd = useCallback(() => {
+    if (!isInteractingRef.current) return;
     isInteractingRef.current = false;
+    onChangeEndRef.current?.(valueRef.current);
     void Haptics.selectionAsync();
   }, []);
 
@@ -129,7 +136,7 @@ export function HsvColorPicker({ value, onChange, ink, isDark }: Props) {
           markInteractionEnd();
         })
         .onFinalize(() => {
-          isInteractingRef.current = false;
+          markInteractionEnd();
         }),
     [markInteractionEnd, markInteractionStart, updateSvAt],
   );
@@ -149,7 +156,7 @@ export function HsvColorPicker({ value, onChange, ink, isDark }: Props) {
           markInteractionEnd();
         })
         .onFinalize(() => {
-          isInteractingRef.current = false;
+          markInteractionEnd();
         }),
     [markInteractionEnd, markInteractionStart, updateHueAt],
   );

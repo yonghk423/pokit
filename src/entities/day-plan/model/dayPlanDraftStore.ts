@@ -3,7 +3,16 @@ import { create } from 'zustand';
 import {
   buildRoutineHistoryRecordKey,
 } from '@shared/lib/routineHistoryLayoutKey';
-import { appendRoutineCatalogSelectionKeys, loadDayPlanDraft, loadPriorityDayRollMode, normalizeCategoryMealSlots, normalizeDayMealSlot, saveDayPlanDraft, type DayMealSlot } from '@shared/lib/storage';
+import {
+  appendRoutineCatalogSelectionKeys,
+  loadDayPlanDraft,
+  loadPriorityDayRollMode,
+  normalizeCategoryMealSlots,
+  normalizeDayMealSlot,
+  saveDayPlanDraft,
+  subscribeGoalDetailCategoryConfig,
+  type DayMealSlot,
+} from '@shared/lib/storage';
 import { getClockNow } from '@shared/lib/time/appClock';
 
 import { syncWidgetTimelineFromStorage } from '../lib/widgetDayPlanSync';
@@ -1078,6 +1087,13 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       return { completedFocusCategoryKeys, planCompletionDismissedKeys };
     }),
 }));
+
+// LocalStorage 카테고리 설정을 단일 변경 소스로 삼아 이름·아이콘·색상 UI를 즉시 무효화한다.
+subscribeGoalDetailCategoryConfig(() => {
+  useDayPlanDraftStore.setState((state) => ({
+    categoryLabelEpoch: state.categoryLabelEpoch + 1,
+  }));
+});
 
 registerDraftSyncTodayTabAccessors(
   () => useDayPlanDraftStore.getState(),

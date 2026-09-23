@@ -1,12 +1,12 @@
 import {
   getInitialOtherDataConfig,
-  useDayPlanDraftStore,
+  normalizeOtherDetailConfig,
+  useGoalDetailSettingsStore,
 } from '@entities/day-plan';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
   appendCustomFlowCatalogEntry,
   listCustomFlowCatalogEntries,
-  saveGoalDetailCategoryConfig,
 } from '@shared/lib/storage';
 
 import type { StoryRoutineArticle } from '../model/storyRoutinePayload';
@@ -36,6 +36,10 @@ export function importStoryAsRoutine(
     groupKey?.trim() ? groupKey : suggestCatalogGroupKey(article),
   );
   const existed = listCustomFlowCatalogEntries().some((e) => e.id === id);
+  const goalDetailSettings = useGoalDetailSettingsStore.getState();
+  const existing = normalizeOtherDetailConfig(
+    goalDetailSettings.getCategoryConfig(id) ?? getInitialOtherDataConfig(),
+  );
 
   const initial = getInitialOtherDataConfig();
   const config = {
@@ -47,12 +51,13 @@ export function importStoryAsRoutine(
       text: text.trim(),
       done: false,
     })),
+    ...(existing.icon ? { icon: existing.icon } : {}),
+    ...(existing.accentColor ? { accentColor: existing.accentColor } : {}),
   };
-  saveGoalDetailCategoryConfig(id, config);
+  goalDetailSettings.saveCategoryConfig(id, config);
   appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
 
   registerOtherCategoryResolverFromStorage();
-  useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
 
   return { categoryKey: id, created: !existed };
 }

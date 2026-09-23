@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   mergeCategoryAppearanceIntoConfig,
@@ -41,9 +41,14 @@ export function RoutineAppearanceField({
   muted,
 }: Props) {
   const initialAppearance = readEditableCategoryAppearance(categoryKey, dataConfig);
-  const nameFallback = resolveRoutineTitleFallback(
+  /**
+   * persist 폴백은 카탈로그 기본명만 쓴다.
+   * previewLabel(현재 표시명)을 넣으면 `persistRoutineDisplayName`이
+   * 「이름 === 폴백」으로 보고 displayName을 지워 버린다.
+   */
+  const catalogNameFallback = resolveRoutineTitleFallback(
     categoryKey as GoalDetailCategoryKey,
-    previewLabel,
+    '',
   );
 
   const [selectedIcon, setSelectedIcon] = useState<CustomFlowIconOption>(initialAppearance.icon);
@@ -52,60 +57,92 @@ export function RoutineAppearanceField({
     () => readRoutineDisplayNameFromConfig(dataConfig) || previewLabel,
   );
   const lastPersistedRef = useRef<string | null>(null);
-  const isSyncingFromPropsRef = useRef(false);
   const nameFocusedRef = useRef(false);
   const dataConfigRef = useRef(dataConfig);
   const onChangeDataConfigRef = useRef(onChangeDataConfig);
-  const nameFallbackRef = useRef(nameFallback);
+  const catalogNameFallbackRef = useRef(catalogNameFallback);
+  const selectedIconRef = useRef(selectedIcon);
+  const selectedAccentColorRef = useRef(selectedAccentColor);
+  const previewNameRef = useRef(previewName);
   dataConfigRef.current = dataConfig;
   onChangeDataConfigRef.current = onChangeDataConfig;
-  nameFallbackRef.current = nameFallback;
+  catalogNameFallbackRef.current = catalogNameFallback;
+  selectedIconRef.current = selectedIcon;
+  selectedAccentColorRef.current = selectedAccentColor;
+  previewNameRef.current = previewName;
 
+  const persistAppearance = useCallback(
+    (next: {
+      icon: CustomFlowIconOption;
+      accentColor: string;
+      /** true일 때만 displayName을 갱신 — 아이콘·색만 바꿀 때 이름을 덮지 않는다 */
+      updateDisplayName: boolean;
+      previewName: string;
+    }) => {
+      const merged = mergeCategoryAppearanceIntoConfig(categoryKey, dataConfigRef.current, {
+        icon: next.icon,
+        accentColor: next.accentColor,
+      });
+      const payload = next.updateDisplayName
+        ? withDisplayName(merged, next.previewName, catalogNameFallbackRef.current)
+        : merged;
+      const serialized = JSON.stringify(payload);
+      if (lastPersistedRef.current === serialized) return;
+      lastPersistedRef.current = serialized;
+      onChangeDataConfigRef.current(payload);
+    },
+    [categoryKey],
+  );
+
+  // 외부 저장값 → UI만 동기화. 저장 effect와 분리해 무한 루프를 막는다.
   useEffect(() => {
     const appearance = readEditableCategoryAppearance(categoryKey, dataConfig);
     const nextName = readRoutineDisplayNameFromConfig(dataConfig) || previewLabel;
-    isSyncingFromPropsRef.current = true;
-    setSelectedIcon(appearance.icon);
-    setSelectedAccentColor(appearance.accentColor);
+    setSelectedIcon((prev) => (prev === appearance.icon ? prev : appearance.icon));
+    setSelectedAccentColor((prev) =>
+      prev === appearance.accentColor ? prev : appearance.accentColor,
+    );
     if (!nameFocusedRef.current) {
-      setPreviewName(nextName);
+      setPreviewName((prev) => (prev === nextName ? prev : nextName));
     }
     lastPersistedRef.current = JSON.stringify(
-      withDisplayName(
-        mergeCategoryAppearanceIntoConfig(categoryKey, dataConfig, appearance),
-        nextName,
-        nameFallbackRef.current,
-      ),
+      mergeCategoryAppearanceIntoConfig(categoryKey, dataConfig, appearance),
     );
   }, [categoryKey, dataConfig, previewLabel]);
-
-  useEffect(() => {
-    if (isSyncingFromPropsRef.current) {
-      isSyncingFromPropsRef.current = false;
-      return;
-    }
-    const payload = withDisplayName(
-      mergeCategoryAppearanceIntoConfig(categoryKey, dataConfigRef.current, {
-        icon: selectedIcon,
-        accentColor: selectedAccentColor,
-      }),
-      previewName,
-      nameFallbackRef.current,
-    );
-    const serialized = JSON.stringify(payload);
-    if (lastPersistedRef.current === serialized) return;
-    lastPersistedRef.current = serialized;
-    onChangeDataConfigRef.current(payload);
-  }, [categoryKey, previewName, selectedAccentColor, selectedIcon]);
 
   return (
     <CustomFlowAppearancePicker
       icon={selectedIcon}
       accentColor={selectedAccentColor}
-      onChangeIcon={setSelectedIcon}
-      onChangeAccentColor={setSelectedAccentColor}
+      onChangeIcon={(icon) => {
+        setSelectedIcon(icon);
+        persistAppearance({
+          icon,
+          accentColor: selectedAccentColorRef.current,
+          previewName: previewNameRef.current,
+          updateDisplayName: false,
+        });
+      }}
+      onChangeAccentColor={(accentColor) => {
+        setSelectedAccentColor(accentColor);
+        persistAppearance({
+          icon: selectedIconRef.current,
+          accentColor,
+          previewName: previewNameRef.current,
+          updateDisplayName: false,
+        });
+      }}
+      onAccentColorPreview={setSelectedAccentColor}
       previewLabel={previewName}
-      onChangePreviewLabel={setPreviewName}
+      onChangePreviewLabel={(nextName) => {
+        setPreviewName(nextName);
+        persistAppearance({
+          icon: selectedIconRef.current,
+          accentColor: selectedAccentColorRef.current,
+          previewName: nextName,
+          updateDisplayName: true,
+        });
+      }}
       onPreviewLabelFocus={() => {
         nameFocusedRef.current = true;
       }}

@@ -12,4 +12,9 @@ describe('resolveRoutineTitleFallback', () => {
       '나만의 금지',
     );
   });
+
+  it('uses catalog label when rhythm title is empty (persist fallback)', () => {
+    expect(resolveRoutineTitleFallback('customFlow:preset_abstain', '')).toBe('금지');
+    expect(resolveRoutineTitleFallback('customFlow:abcd1234', '')).toBe('루틴');
+  });
 });

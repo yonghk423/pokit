@@ -207,7 +207,8 @@ export {
   loadGoalDetailCategoryConfig,
   removeGoalDetailCategoryConfig,
   saveGoalDetailBlockConfig,
-  saveGoalDetailCategoryConfig
+  saveGoalDetailCategoryConfig,
+  subscribeGoalDetailCategoryConfig
 } from './goalDetailSettingsStorage';
 export {
   hideStandardCatalogKey,

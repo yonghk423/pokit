@@ -2,7 +2,6 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { useDayPlanDraftStore } from '@entities/day-plan';
 import {
   getInitialReadingDataConfig,
   ReadingSettings,
@@ -26,7 +25,6 @@ function persistReadingConfig(next: unknown): void {
   const base = prev && typeof prev === 'object' ? prev : {};
   const patch = next && typeof next === 'object' ? next : {};
   saveGoalDetailCategoryConfig(READING_CATEGORY_KEY, { ...base, ...patch });
-  useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
 }
 
 type Props = {

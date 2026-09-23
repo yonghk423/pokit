@@ -7,13 +7,13 @@ import {
 } from '@shared/lib/customFlowAppearanceCatalog';
 import {
   BUILTIN_STRETCHING_FLOW_ID,
-  loadGoalDetailCategoryConfig,
   resolveCustomFlowCatalogColor,
   resolveCustomFlowCatalogIcon,
   type CustomFlowAccentColorOption,
   type CustomFlowIconOption,
 } from '@shared/lib/storage';
 
+import { useGoalDetailSettingsStore } from '../model/goalDetailSettingsStore';
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 import { normalizeOtherDetailConfig } from './goalCategorySessionConfig';
 import { HEALTH_INTAKE_CATEGORY_KEY, normalizeHealthIntakeDetailConfig } from './healthIntakeDetailConfig';
@@ -107,6 +107,10 @@ function asConfigObj(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
 }
 
+function readCategoryConfig(categoryKey: string): unknown | null {
+  return useGoalDetailSettingsStore.getState().getCategoryConfig(categoryKey);
+}
+
 function readAppearanceFieldsFromRaw(raw: unknown): {
   icon?: CustomFlowIconOption;
   accentColor?: CustomFlowAccentColorOption;
@@ -141,18 +145,23 @@ function resolveBuiltinCategoryAccentColor(categoryKey: string): CustomFlowAccen
 }
 
 function readStoredCategoryIcon(categoryKey: string): CustomFlowIconOption | undefined {
-  const cfg = loadGoalDetailCategoryConfig(categoryKey);
+  const cfg = readCategoryConfig(categoryKey);
   return normalizeCustomFlowIcon((cfg as { icon?: unknown } | null)?.icon);
 }
 
 function readStoredCategoryAccentColor(categoryKey: string): CustomFlowAccentColorOption | undefined {
-  const cfg = loadGoalDetailCategoryConfig(categoryKey);
+  const cfg = readCategoryConfig(categoryKey);
   return normalizeCustomFlowAccentColor((cfg as { accentColor?: unknown } | null)?.accentColor);
 }
 
 /** 목표 상세·담기·집중 UI — 저장값 → builtin/customFlow 기본값 */
 export function resolveCategoryCatalogIcon(categoryKey: string): string {
   const resolvedCategoryKey = resolvePriorityRoutineCategoryKey(categoryKey);
+  // customFlow는 accent와 동일하게 catalog(LocalStorage 저장값) 경로를 우선한다.
+  // store-only 조회는 색은 최신·아이콘만 옛값으로 남는 비대칭을 만든다.
+  if (isCustomFlowCategoryKey(resolvedCategoryKey)) {
+    return resolveCustomFlowCatalogIcon(resolvedCategoryKey);
+  }
   const stored = readStoredCategoryIcon(resolvedCategoryKey);
   if (stored) {
     if (resolvedCategoryKey === 'healthIntake') {
@@ -168,9 +177,6 @@ export function resolveCategoryCatalogIcon(categoryKey: string): string {
       return resolveWorkCatalogIcon(stored) ?? stored;
     }
     return stored;
-  }
-  if (isCustomFlowCategoryKey(resolvedCategoryKey)) {
-    return resolveCustomFlowCatalogIcon(resolvedCategoryKey);
   }
   return BUILTIN_CATEGORY_ICONS[resolvedCategoryKey] ?? DEFAULT_CUSTOM_FLOW_ICON;
 }
@@ -211,10 +217,10 @@ export function readEditableCategoryAppearance(
   raw: unknown,
 ): { icon: CustomFlowIconOption; accentColor: CustomFlowAccentColorOption } {
   const fromRaw = readAppearanceFieldsFromRaw(raw);
-  const fromStored = readAppearanceFieldsFromRaw(loadGoalDetailCategoryConfig(categoryKey));
+  const fromStored = readAppearanceFieldsFromRaw(readCategoryConfig(categoryKey));
   const fromLegacyWater =
     categoryKey === 'healthIntake'
-      ? readAppearanceFieldsFromRaw(loadGoalDetailCategoryConfig('water'))
+      ? readAppearanceFieldsFromRaw(readCategoryConfig('water'))
       : {};
 
   const rawIcon =
@@ -251,7 +257,7 @@ export function mergeCategoryAppearanceIntoConfig(
   const fromRaw = asConfigObj(raw);
   const fromStored =
     categoryKey === HEALTH_INTAKE_CATEGORY_KEY
-      ? asConfigObj(loadGoalDetailCategoryConfig(HEALTH_INTAKE_CATEGORY_KEY))
+      ? asConfigObj(readCategoryConfig(HEALTH_INTAKE_CATEGORY_KEY))
       : {};
   const base =
     categoryKey === HEALTH_INTAKE_CATEGORY_KEY ? { ...fromStored, ...fromRaw } : fromRaw;

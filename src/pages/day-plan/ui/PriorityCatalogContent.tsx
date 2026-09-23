@@ -28,6 +28,7 @@ import {
   useDayPlanStore,
   useDayPlanLayoutModeVisibilityStore,
   useFixedFlowSetsStore,
+  useGoalDetailSettingsStore,
 } from '@entities/day-plan';
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
@@ -58,7 +59,6 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import {
-  getPickerCategoryItem,
   getPickerCategoryLabel,
   PICKER_CATEGORIES,
 } from '../lib/dayPlanEditorShared';
@@ -170,9 +170,6 @@ export function PriorityCatalogContent({
     priorityEnd,
     priorityPlanDateKey,
     priorityPlanDateKeyEnd,
-    bumpCategoryLabelEpoch,
-    categoryLabelEpoch,
-    filterCompletedFocusKeysToPriorityOrder,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       priorityCategoryOrder: s.priorityCategoryOrder,
@@ -197,11 +194,9 @@ export function PriorityCatalogContent({
       priorityEnd: s.priorityEnd,
       priorityPlanDateKey: s.priorityPlanDateKey,
       priorityPlanDateKeyEnd: s.priorityPlanDateKeyEnd,
-      bumpCategoryLabelEpoch: s.bumpCategoryLabelEpoch,
-      categoryLabelEpoch: s.categoryLabelEpoch,
-      filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
     })),
   );
+  const categoryLabelEpoch = useGoalDetailSettingsStore((s) => s.revision);
 
   const planBlocks = useDayPlanStore((s) => s.blocks);
   const addPlanBlock = useDayPlanStore((s) => s.addBlock);
@@ -487,12 +482,12 @@ export function PriorityCatalogContent({
   );
 
   const customFlowPickerItems = useMemo(() => {
+    void categoryLabelEpoch;
     return customFlowEntries.map((e) => {
-      const item = getPickerCategoryItem(e.id);
       return {
         key: e.id,
         label: getPickerCategoryLabel(e.id),
-        icon: (item?.icon ?? resolveCategoryCatalogIcon(e.id)) as typeof PICKER_CATEGORIES[number]['icon'],
+        icon: resolveCategoryCatalogIcon(e.id) as typeof PICKER_CATEGORIES[number]['icon'],
       };
     });
   }, [customFlowEntries, categoryLabelEpoch]);

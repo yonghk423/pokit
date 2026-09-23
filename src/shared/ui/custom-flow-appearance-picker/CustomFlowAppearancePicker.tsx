@@ -22,7 +22,10 @@ export type CustomFlowAppearancePickerProps = {
   icon: CustomFlowIconOption;
   accentColor: string;
   onChangeIcon: (icon: CustomFlowIconOption) => void;
+  /** 프리셋 탭·HSV 확정 시 — 영속화에 적합 */
   onChangeAccentColor: (color: string) => void;
+  /** HSV 드래그 중 미리보기만 (없으면 onChangeAccentColor로 매 프레임 전달) */
+  onAccentColorPreview?: (color: string) => void;
   previewLabel?: string;
   onChangePreviewLabel?: (next: string) => void;
   onPreviewLabelFocus?: () => void;
@@ -41,6 +44,7 @@ export function CustomFlowAppearancePicker({
   accentColor,
   onChangeIcon,
   onChangeAccentColor,
+  onAccentColorPreview,
   previewLabel,
   onChangePreviewLabel,
   onPreviewLabelFocus,
@@ -249,7 +253,8 @@ export function CustomFlowAppearancePicker({
 
           <HsvColorPicker
             value={accentColor}
-            onChange={onChangeAccentColor}
+            onChange={onAccentColorPreview ?? onChangeAccentColor}
+            onChangeEnd={onAccentColorPreview ? onChangeAccentColor : undefined}
             ink={ink}
             muted={muted}
             isDark={isDark}

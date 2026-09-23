@@ -8,6 +8,7 @@ import {
   removeGoalDetailCategoryConfig,
   saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
+  subscribeGoalDetailCategoryConfig,
 } from './goalDetailSettingsStorage';
 import { StorageKeys } from './storageKeys';
 
@@ -48,5 +49,21 @@ describe('goalDetailSettingsStorage', () => {
   it('no-ops block save when id is empty', () => {
     saveGoalDetailBlockConfig('', { note: 'x' });
     expect(loadGoalDetailBlockConfig('')).toBeNull();
+  });
+
+  it('notifies category config subscribers immediately on save and remove', () => {
+    const listener = jest.fn();
+    const unsubscribe = subscribeGoalDetailCategoryConfig(listener);
+
+    saveGoalDetailCategoryConfig('customFlow:story:test', {
+      icon: 'heart.fill',
+      accentColor: '#3b82f6',
+    });
+    removeGoalDetailCategoryConfig('customFlow:story:test');
+
+    expect(listener).toHaveBeenNthCalledWith(1, 'customFlow:story:test');
+    expect(listener).toHaveBeenNthCalledWith(2, 'customFlow:story:test');
+
+    unsubscribe();
   });
 });

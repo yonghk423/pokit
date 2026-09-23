@@ -9,7 +9,11 @@ import Reanimated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { dayPlanAnchorIconColor, dayPlanAnchorNodeBackground } from '@entities/day-plan';
+import {
+  dayPlanAnchorIconColor,
+  dayPlanAnchorNodeBackground,
+  useGoalDetailSettingsStore,
+} from '@entities/day-plan';
 import { formatHhmmClock, useTranslation } from '@shared/lib/i18n';
 import { PrimaryColor } from '@shared/config/theme';
 import {
@@ -859,6 +863,8 @@ export function MealSlotTimelineView<T extends MealSlotTimelineItem>({
   onReorderDragActiveChange,
   onReorderItemDragEnd,
 }: Props<T>) {
+  const categoryLabelEpoch = useGoalDetailSettingsStore((s) => s.revision);
+  void categoryLabelEpoch;
   const timelineTrackRef = useRef<RNView>(null);
   const sectionBoundsRef = useRef<Partial<Record<DayMealSlot, MealSlotSectionBounds>>>({});
   const [sectionBounds, setSectionBounds] = useState<

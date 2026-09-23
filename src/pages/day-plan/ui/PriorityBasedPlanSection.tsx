@@ -63,6 +63,7 @@ import {
   parseLocalDateKeyToDate,
   parsePrioritySectionCompletionKey,
   resolveBlockCategoryKey,
+  resolveCategoryCatalogIcon,
   resolveCategoryMarkColor,
   resolveCategoryKeyFromLabel,
   resolvePriorityRoutineCategoryKey,
@@ -73,6 +74,7 @@ import {
   sortDayPlanBlocks,
   useDayPlanStore,
   useFixedFlowSetsStore,
+  useGoalDetailSettingsStore,
   type CustomFlowTemplateKey
 } from '@entities/day-plan';
 import { RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
@@ -645,7 +647,7 @@ export function PriorityBasedPlanSection({
       sub.remove();
     };
   }, []);
-  const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
+  const categoryLabelEpoch = useGoalDetailSettingsStore((s) => s.revision);
   useFocusEffect(
     useCallback(() => {
       registerOtherCategoryResolverFromStorage();
@@ -655,14 +657,23 @@ export function PriorityBasedPlanSection({
   );
 
   const selectedItems = useMemo(
-    () =>
-      priorityCategoryOrder
-        .map((key) => {
-          const base = getPickerCategoryItem(key);
-          if (!base) return null;
-          return { ...base, label: getPickerCategoryLabel(key) };
-        })
-        .filter(Boolean) as (typeof PICKER_CATEGORIES)[number][],
+    () => {
+      void categoryLabelEpoch;
+      void categoryHintTick;
+      return (
+        priorityCategoryOrder
+          .map((key) => {
+            const base = getPickerCategoryItem(key);
+            if (!base) return null;
+            return {
+              ...base,
+              label: getPickerCategoryLabel(key),
+              icon: resolveCategoryCatalogIcon(key) as (typeof PICKER_CATEGORIES)[number]['icon'],
+            };
+          })
+          .filter(Boolean) as (typeof PICKER_CATEGORIES)[number][]
+      );
+    },
     [priorityCategoryOrder, categoryHintTick, categoryLabelEpoch],
   );
 
@@ -970,14 +981,23 @@ export function PriorityBasedPlanSection({
   ]);
 
   const sectionsCatalogItems = useMemo(
-    () =>
-      prioritySectionsCategoryOrder
-        .map((key) => {
-          const base = getPickerCategoryItem(key);
-          if (!base) return null;
-          return { ...base, label: getPickerCategoryLabel(key) };
-        })
-        .filter(Boolean) as (typeof PICKER_CATEGORIES)[number][],
+    () => {
+      void categoryLabelEpoch;
+      void categoryHintTick;
+      return (
+        prioritySectionsCategoryOrder
+          .map((key) => {
+            const base = getPickerCategoryItem(key);
+            if (!base) return null;
+            return {
+              ...base,
+              label: getPickerCategoryLabel(key),
+              icon: resolveCategoryCatalogIcon(key) as (typeof PICKER_CATEGORIES)[number]['icon'],
+            };
+          })
+          .filter(Boolean) as (typeof PICKER_CATEGORIES)[number][]
+      );
+    },
     [prioritySectionsCategoryOrder, categoryHintTick, categoryLabelEpoch],
   );
 

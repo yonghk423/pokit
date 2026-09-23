@@ -14,7 +14,12 @@ jest.mock('../lib/localDateKey', () => ({
   parseLocalDateKeyToDate: jest.requireActual('../lib/localDateKey').parseLocalDateKeyToDate,
 }));
 
-import { loadDayPlanDraft, saveDayPlanDraft, savePriorityDayRollMode } from '@shared/lib/storage';
+import {
+  loadDayPlanDraft,
+  saveDayPlanDraft,
+  saveGoalDetailCategoryConfig,
+  savePriorityDayRollMode,
+} from '@shared/lib/storage';
 
 import {
   appendPriorityCategoryKeysIfMissing,
@@ -614,6 +619,20 @@ describe('dayPlanDraftStore', () => {
     });
     useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
     expect(useDayPlanDraftStore.getState().categoryLabelEpoch).toBe(3);
+  });
+
+  it('bumps category label epoch when category config storage changes', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      categoryLabelEpoch: 4,
+    });
+
+    saveGoalDetailCategoryConfig('customFlow:story:test', {
+      icon: 'heart.fill',
+      accentColor: '#3b82f6',
+    });
+
+    expect(useDayPlanDraftStore.getState().categoryLabelEpoch).toBe(5);
   });
 
   it('persists via subscribe when focus toggles', () => {

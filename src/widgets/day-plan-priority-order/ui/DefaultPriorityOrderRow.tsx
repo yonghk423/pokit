@@ -14,8 +14,10 @@ import Reanimated, {
 import {
   PRIORITY_MARK_COLOR_PRESETS,
   priorityMarkTitleHighlight,
+  resolveCategoryCatalogIcon,
   resolveCategoryCatalogIconTile,
   useDayPlanChromeSettingsStore,
+  useGoalDetailSettingsStore,
   type PriorityMarkColorId,
 } from '@entities/day-plan';
 import { useTranslation } from '@shared/lib/i18n';
@@ -51,7 +53,7 @@ const EXPAND_EASING = Easing.out(Easing.cubic);
 /** 우선순위 목록 공통 행 — 카테고리별 파일에서 그대로 쓰거나 감싸서 전문화 */
 export function DefaultPriorityOrderRow({
   categoryKey,
-  icon,
+  icon: _iconProp,
   label,
   subtitle,
   summaryHint,
@@ -76,6 +78,9 @@ export function DefaultPriorityOrderRow({
   onEditTime,
 }: PriorityOrderRowProps) {
   const { t } = useTranslation();
+  const categoryLabelEpoch = useGoalDetailSettingsStore((s) => s.revision);
+  void categoryLabelEpoch;
+  const icon = resolveCategoryCatalogIcon(categoryKey);
   const hideCategoryIcons = useDayPlanChromeSettingsStore((s) => s.settings.hideLayoutIcons);
   const titleHighlight = priorityMarkTitleHighlight(itemMarkColor, isDark);
   const reorderTranslateY = useSharedValue(0);
@@ -288,7 +293,7 @@ export function DefaultPriorityOrderRow({
                 isCompleted && { opacity: 0.5 },
               ]}>
               <IconSymbol
-                key={`${categoryKey}-${iconColor}-${isCompleted ? 1 : 0}`}
+                key={`${categoryKey}-${icon}-${iconColor}-${isCompleted ? 1 : 0}`}
                 name={icon as any}
                 size={16}
                 color={iconColor}

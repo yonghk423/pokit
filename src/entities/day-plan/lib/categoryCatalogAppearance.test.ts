@@ -3,6 +3,7 @@ import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { saveGoalDetailCategoryConfig } from '@shared/lib/storage/goalDetailSettingsStorage';
 import { StorageKeys } from '@shared/lib/storage/storageKeys';
 
+import { useGoalDetailSettingsStore } from '../model/goalDetailSettingsStore';
 import {
   mergeCategoryAppearanceIntoConfig,
   readEditableCategoryAppearance,
@@ -13,6 +14,7 @@ import {
 
 beforeEach(() => {
   localStorageClient.removeItem(StorageKeys.goalDetailSettings);
+  useGoalDetailSettingsStore.setState({ byCategory: {}, revision: 0 });
 });
 
 describe('resolveCategoryCatalogIcon', () => {
@@ -210,6 +212,17 @@ describe('resolveCategoryCatalogIcon', () => {
     });
     expect(resolveCategoryCatalogIcon('healthIntake')).toBe('star.fill');
     expect(resolveCategoryCatalogAccentColor('healthIntake')).toBe('#3b82f6');
+  });
+  it('reads customFlow icon from goal-detail storage like accent color', () => {
+    saveGoalDetailCategoryConfig(BUILTIN_ABSTAIN_FLOW_ID, {
+      displayName: '금지',
+      summary: '',
+      icon: 'moon.fill',
+      accentColor: '#f97316',
+      templateKey: 'abstain',
+    });
+    expect(resolveCategoryCatalogIcon(BUILTIN_ABSTAIN_FLOW_ID)).toBe('moon.fill');
+    expect(resolveCategoryCatalogAccentColor(BUILTIN_ABSTAIN_FLOW_ID)).toBe('#f97316');
   });
 });
 

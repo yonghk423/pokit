@@ -4,6 +4,7 @@ export {
   SPINE_GAP_BLOCK_MINUTE_OPTIONS,
   type SpineGapBlockMinuteOption
 } from '@shared/lib/spineDefaultBlockMinutes';
+export { useGoalDetailSettingsStore } from './model/goalDetailSettingsStore';
 export { getBlockTimelineIcon } from './lib/blockIcons';
 export { buildSpineTimelineModel } from './lib/buildSpineTimelineModel';
 export type { BuildSpineTimelineModelInput } from './lib/buildSpineTimelineModel';

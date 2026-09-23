@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  deleteCustomFlowCategory,
+  deleteCatalogCategory,
   formatBlockTimeRange,
   isCustomFlowCategoryKey,
   isDayPlanFlowBlock,
@@ -27,6 +27,7 @@ import {
   resolveCategoryKeyFromLabel,
   resolveCustomFlowTemplateKey,
   useDayPlanDraftStore,
+  useGoalDetailSettingsStore,
   useDayPlanRuntimeStore,
   categoryReminderLabelKo,
   notifyFixedFlowApplyScheduleChanged,
@@ -38,6 +39,7 @@ import { readRoutineDisplayNameFromConfig } from '@entities/day-plan/lib/routine
 import {
   isMedicineReminderCategory,
   rescheduleDayPlanNotifications,
+  RoutineStartNotifyField,
   syncMedicineReminderNotifications,
 } from '@features/day-plan-notifications';
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
@@ -70,7 +72,6 @@ import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
 import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
 import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
 import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
-import { RoutineStartNotifyField } from '@features/day-plan-notifications';
 
 function palette(isDark: boolean) {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -242,7 +243,7 @@ export function GoalDetailSettingsPage() {
   }, []);
   const blocks = useDayPlanStore((s) => s.blocks);
   const activeBlockId = useDayPlanRuntimeStore((s) => s.activeBlockId);
-  const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
+  const categoryLabelEpoch = useGoalDetailSettingsStore((s) => s.revision);
 
   /** 실제 activity-session 활성 블록만 ‘실행 중’ — 오늘 담기 자동 집중(isFocusStarted)과 구분 */
   const isCategoryRunning = useCallback(
@@ -401,7 +402,6 @@ export function GoalDetailSettingsPage() {
     saveGoalDetailBlockConfig(target.blockId, persisted);
     saveGoalDetailCategoryConfig(target.categoryKey, persisted);
     registerOtherCategoryResolverFromStorage();
-    useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
     if (isMedicineReminderCategory(target.categoryKey, persisted)) {
       if (medicineReminderSyncTimerRef.current) {
         clearTimeout(medicineReminderSyncTimerRef.current);
@@ -425,9 +425,9 @@ export function GoalDetailSettingsPage() {
     }
   }, []);
 
-  const handleDeleteCustomFlow = useCallback(
+  const handleDeleteRoutine = useCallback(
     (categoryKey: GoalDetailCategoryKey) => {
-      deleteCustomFlowCategory(categoryKey, {
+      deleteCatalogCategory(categoryKey, {
         hydrateFixedFlowSets: () => useFixedFlowSetsStore.getState().hydrate(),
         getTodayAppliedCategoryKeys: () =>
           useFixedFlowSetsStore.getState().todayAppliedCategoryKeys,
@@ -528,8 +528,6 @@ export function GoalDetailSettingsPage() {
     targets.length === 1 && categoryKey === 'work' && sortedTargets.length <= 1;
   const readingLibraryUi =
     targets.length === 1 && categoryKey === 'reading' && sortedTargets.length <= 1;
-  const customFlowRoutineUi =
-    targets.length === 1 && isCustomFlowCategoryKey(categoryKey);
   const contentFlush = waterDetailUi || workNoteUi || readingLibraryUi;
   /** 접기 없이 한 화면에 루틴 설정을 모두 보여 준다 */
   const routineMetaVisible = targets.length === 1;
@@ -825,18 +823,6 @@ export function GoalDetailSettingsPage() {
               </View>
             ) : null}
 
-            {routineMetaVisible && customFlowRoutineUi ? (
-            <View
-              style={[
-                styles.metaSection,
-                contentFlush && styles.metaSectionInset,
-              ]}>
-              <RoutineDeleteButton
-                onDelete={() => handleDeleteCustomFlow(categoryKey)}
-              />
-            </View>
-            ) : null}
-
             <View
               style={[
                 styles.contentConfirmWrap,
@@ -857,6 +843,11 @@ export function GoalDetailSettingsPage() {
                   handleCompleteAndStart();
                 }}
               />
+              {routineMetaVisible ? (
+                <RoutineDeleteButton
+                  onDelete={() => handleDeleteRoutine(categoryKey)}
+                />
+              ) : null}
             </View>
           </View>
         </ScrollView>
@@ -951,9 +942,10 @@ const styles = StyleSheet.create({
   startPickerRowText: { flex: 1, minWidth: 0, gap: 2 },
   startPickerRowTitle: { fontSize: 15, fontWeight: '700' },
   startPickerRowMeta: { fontSize: 12, fontWeight: '600' },
-  /** 상세 설정 콘텐츠 마지막 확인 — 스크롤 영역 안에 배치 */
+  /** 상세 설정 콘텐츠 마지막 확인(+삭제) — 스크롤 영역 안에 배치 */
   contentConfirmWrap: {
     alignItems: 'stretch',
+    gap: 4,
     paddingTop: 12,
     paddingBottom: 8,
   },

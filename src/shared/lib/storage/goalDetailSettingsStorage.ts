@@ -10,6 +10,25 @@ type GoalDetailSettingsStorageShape = {
   committedCategoryKeysMigrated?: boolean;
 };
 
+type GoalDetailCategoryConfigListener = (categoryKey: string) => void;
+const categoryConfigListeners = new Set<GoalDetailCategoryConfigListener>();
+
+function notifyGoalDetailCategoryConfigChanged(categoryKey: string): void {
+  for (const listener of categoryConfigListeners) {
+    listener(categoryKey);
+  }
+}
+
+/** 카테고리 설정(이름·아이콘·색상 등) 변경 구독 — 화면 간 즉시 동기화용 */
+export function subscribeGoalDetailCategoryConfig(
+  listener: GoalDetailCategoryConfigListener,
+): () => void {
+  categoryConfigListeners.add(listener);
+  return () => {
+    categoryConfigListeners.delete(listener);
+  };
+}
+
 function readRoot(): GoalDetailSettingsStorageShape {
   const raw =
     localStorageClient.getJson<GoalDetailSettingsStorageShape>(
@@ -88,6 +107,7 @@ export function saveGoalDetailCategoryConfig(
     byCategory,
     byBlockId: root.byBlockId ?? {},
   });
+  notifyGoalDetailCategoryConfigChanged(categoryKey);
 }
 
 /** 카테고리 설정/확정 표시를 제거한다. (`byBlockId`는 블록 단위라 유지) */
@@ -106,6 +126,7 @@ export function removeGoalDetailCategoryConfig(categoryKey: string): void {
     byBlockId: root.byBlockId ?? {},
     committedCategoryKeys,
   });
+  notifyGoalDetailCategoryConfigChanged(key);
 }
 
 export function loadGoalDetailBlockConfig(blockId: string): unknown | null {

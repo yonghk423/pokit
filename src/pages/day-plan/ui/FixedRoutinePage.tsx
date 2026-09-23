@@ -51,6 +51,7 @@ import {
   useDayPlanLayoutModeVisibilityStore,
   useDayPlanStore,
   useFixedFlowSetsStore,
+  useGoalDetailSettingsStore,
   type CustomFlowTemplateKey,
   type PriorityMarkColorId,
 } from '@entities/day-plan';
@@ -1924,7 +1925,6 @@ export function FixedRoutinePage({
     setPriorityCategoryOrder,
     setPriorityCategoryMarkColor,
     filterCompletedFocusKeysToPriorityOrder,
-    categoryLabelEpoch,
   } = useDayPlanDraftStore(
     useShallow((s) => ({
       planMode: s.planMode,
@@ -1944,9 +1944,9 @@ export function FixedRoutinePage({
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
       setPriorityCategoryMarkColor: s.setPriorityCategoryMarkColor,
       filterCompletedFocusKeysToPriorityOrder: s.filterCompletedFocusKeysToPriorityOrder,
-      categoryLabelEpoch: s.categoryLabelEpoch,
     })),
   );
+  const categoryLabelEpoch = useGoalDetailSettingsStore((s) => s.revision);
 
   const planBlocks = useDayPlanStore((s) => s.blocks);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);

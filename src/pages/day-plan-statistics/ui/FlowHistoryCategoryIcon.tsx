@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import type { SymbolViewProps } from 'expo-symbols';
 
-import { resolveCategoryCatalogIconTile } from '@entities/day-plan';
+import { resolveCategoryCatalogIconTile, useGoalDetailSettingsStore } from '@entities/day-plan';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
@@ -16,6 +16,8 @@ type Props = {
 
 /** 히스토리 카드 — 목표 상세와 같은 강조색 칸 + 대비 아이콘 */
 export function FlowHistoryCategoryIcon({ categoryKey, icon, palette }: Props) {
+  const categoryLabelEpoch = useGoalDetailSettingsStore((s) => s.revision);
+  void categoryLabelEpoch;
   const { boxBg, iconColor } = resolveCategoryCatalogIconTile(categoryKey);
 
   return (

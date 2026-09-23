@@ -3,7 +3,6 @@ import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/sto
 import { listAllCustomFlowCatalogEntries, listCustomCatalogGroups } from '@shared/lib/storage';
 
 import {
-  getPickerCategoryItem,
   getPickerCategoryLabel,
   PICKER_CATEGORIES,
   type PickerCategoryItem,
@@ -24,11 +23,10 @@ export type AddablePriorityCatalogSection = {
 };
 
 function pickerItemToRow(item: PickerCategoryItem): PriorityCatalogRow {
-  const resolved = getPickerCategoryItem(item.key);
   return {
     key: item.key,
     label: item.label,
-    icon: (resolved?.icon ?? item.icon) as string,
+    icon: resolveCategoryCatalogIcon(item.key),
     isCustom: isCustomFlowCategoryKey(item.key),
   };
 }
@@ -56,7 +54,7 @@ export function buildPriorityCatalogRows(): PriorityCatalogRow[] {
     pickerItemToRow({
       key: entry.id,
       label: getPickerCategoryLabel(entry.id),
-      icon: (getPickerCategoryItem(entry.id)?.icon ?? 'person.fill') as typeof PICKER_CATEGORIES[number]['icon'],
+      icon: resolveCategoryCatalogIcon(entry.id) as typeof PICKER_CATEGORIES[number]['icon'],
     }),
   );
   return dedupeRowsByKey([...base, ...customs]);
@@ -79,11 +77,10 @@ export function buildRoutineTabPickerSections(catalogLabelEpoch = 0): {
     label: getPickerCategoryLabel(item.key),
   }));
   const customFlowPickerItems: PickerCategoryItem[] = customFlowEntries.map((entry) => {
-    const item = getPickerCategoryItem(entry.id);
     return {
       key: entry.id,
       label: getPickerCategoryLabel(entry.id),
-      icon: (item?.icon ?? 'person.fill') as typeof PICKER_CATEGORIES[number]['icon'],
+      icon: resolveCategoryCatalogIcon(entry.id) as typeof PICKER_CATEGORIES[number]['icon'],
     };
   });
   const { groupSections } = buildPriorityCatalogSections({
@@ -113,11 +110,10 @@ function buildRoutineTabCatalogPickerItems(
   customFlowEntries: CustomFlowCatalogEntry[],
 ): PickerCategoryItem[] {
   return customFlowEntries.map((entry) => {
-    const item = getPickerCategoryItem(entry.id);
     return {
       key: entry.id,
       label: getPickerCategoryLabel(entry.id),
-      icon: (item?.icon ?? 'person.fill') as typeof PICKER_CATEGORIES[number]['icon'],
+      icon: resolveCategoryCatalogIcon(entry.id) as typeof PICKER_CATEGORIES[number]['icon'],
     };
   });
 }

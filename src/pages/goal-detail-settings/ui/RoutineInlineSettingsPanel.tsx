@@ -134,7 +134,6 @@ export function RoutineInlineSettingsPanel({
       setDataConfig(persisted);
       saveGoalDetailCategoryConfig(key, persisted);
       registerOtherCategoryResolverFromStorage();
-      useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
 
       if (isMedicineReminderCategory(key, persisted)) {
         if (medicineTimerRef.current) clearTimeout(medicineTimerRef.current);

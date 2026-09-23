@@ -23,6 +23,7 @@ import {
   sumCategoryPlannedDaysInRange,
   addDaysToLocalDateKey,
   useDayPlanDraftStore,
+  useGoalDetailSettingsStore,
   type PriorityMarkColorId,
 } from '@entities/day-plan';
 import {
@@ -235,8 +236,8 @@ function BrutalActionButton({
 
 function CatalogListRow({
   categoryKey,
-  icon,
-  label,
+  icon: _iconProp,
+  label: labelProp,
   subtitle,
   selected,
   ink,
@@ -412,6 +413,10 @@ function CatalogListRow({
     return () => loop.stop();
   }, [shouldPulse, pulse]);
 
+  // 색과 동일하게 매 렌더·revision 기준으로 읽어 props 캐시를 피한다.
+  void useGoalDetailSettingsStore((s) => s.revision);
+  const icon = resolveCategoryCatalogIcon(categoryKey);
+  const label = getPickerCategoryLabel(categoryKey) || labelProp;
   const labelColor = manageOnly ? ink : selected ? ink : muted;
   const catalogTile = resolveCategoryCatalogIconTile(categoryKey);
   const categoryIconColor = manageOnly
@@ -1672,7 +1677,7 @@ export function PriorityCatalogPanel({
     setExpandedSpineTimeKey((prev) => (prev === categoryKey ? null : categoryKey));
     setExpandedMealSlotKey(null);
   }, []);
-  const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
+  const categoryLabelEpoch = useGoalDetailSettingsStore((s) => s.revision);
 
   const visibleCatalogCategories = useMemo(() => {
     void categoryLabelEpoch;
