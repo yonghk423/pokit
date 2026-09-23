@@ -234,7 +234,7 @@ export function DayCycleDial({
   const colors = {
     dialStroke: tone.border,
     /** 라이트: 다이얼 사각면만 퍼플 베이스 */
-    dialTrack: isDark ? tone.surfaceAlt : '#9A7CED',
+    dialTrack: isDark ? tone.surfaceAlt : '#aea8ef',
     activityFill: isDark ? tone.primaryContainer : tone.bgMint,
     sleepFill: isDark ? '#12152A' : tone.text,
     restFill: 'transparent',
