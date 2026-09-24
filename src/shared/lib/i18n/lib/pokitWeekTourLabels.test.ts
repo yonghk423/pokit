@@ -17,5 +17,11 @@ describe('resolvePokitWeekTourTaskLabel', () => {
     expect(
       resolvePokitWeekTourTaskLabel('customFlow:preset_pokit_week_tour_item_1', '나만의 루틴 만들기'),
     ).toBe('自分のルーチンを作る');
+    expect(
+      resolvePokitWeekTourTaskLabel(
+        'customFlow:preset_pokit_week_tour_item_7',
+        '설정에서 레이아웃 바꿔보기',
+      ),
+    ).toBe('設定でレイアウトを変えてみる');
   });
 });

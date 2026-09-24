@@ -18,6 +18,7 @@ const STEP_TITLE_KEYS = [
   'tour.pokitWeek.step5.title',
   'tour.pokitWeek.step6.title',
   'tour.pokitWeek.step7.title',
+  'tour.pokitWeek.step8.title',
 ] as const satisfies readonly I18nKey[];
 
 const STEP_BODY_KEYS = [
@@ -28,6 +29,7 @@ const STEP_BODY_KEYS = [
   'tour.pokitWeek.step5.body',
   'tour.pokitWeek.step6.body',
   'tour.pokitWeek.step7.body',
+  'tour.pokitWeek.step8.body',
 ] as const satisfies readonly I18nKey[];
 
 /** 앱 실제 버튼과 같은 SF Symbol + 라벨 키 */
@@ -66,6 +68,11 @@ const STEP_TARGETS = [
     icon: 'square.and.pencil',
     labelKey: 'planMode.dayNote',
     placeKey: 'tour.pokitWeek.targetPlace.topMode',
+  },
+  {
+    icon: 'gearshape',
+    labelKey: 'settings.title',
+    placeKey: 'tour.pokitWeek.targetPlace.todayHeader',
   },
 ] as const satisfies readonly {
   icon: string;

@@ -10,6 +10,7 @@ const STEP_TITLE_KEYS = [
   'tour.pokitWeek.step5.title',
   'tour.pokitWeek.step6.title',
   'tour.pokitWeek.step7.title',
+  'tour.pokitWeek.step8.title',
 ] as const satisfies readonly I18nKey[];
 
 /** 저장된 한글 체크 문구를 현재 로케일 단계 제목으로 보여 준다. */

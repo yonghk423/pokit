@@ -26,6 +26,12 @@ export function LayoutSettingsPage() {
   const insets = useSafeAreaInsets();
   const hideLayoutIcons = useDayPlanChromeSettingsStore((s) => s.settings.hideLayoutIcons);
   const setHideLayoutIcons = useDayPlanChromeSettingsStore((s) => s.setHideLayoutIcons);
+  const hideDailyQuote = useDayPlanChromeSettingsStore((s) => s.settings.hideDailyQuote);
+  const setHideDailyQuote = useDayPlanChromeSettingsStore((s) => s.setHideDailyQuote);
+  const completeInAccordion = useDayPlanChromeSettingsStore((s) => s.settings.completeInAccordion);
+  const setCompleteInAccordion = useDayPlanChromeSettingsStore((s) => s.setCompleteInAccordion);
+  const hideCompleteTape = useDayPlanChromeSettingsStore((s) => s.settings.hideCompleteTape);
+  const setHideCompleteTape = useDayPlanChromeSettingsStore((s) => s.setHideCompleteTape);
 
   const topInset =
     insets.top >= 1
@@ -98,6 +104,136 @@ export function LayoutSettingsPage() {
                 })}
               />
             </View>
+            <View style={[chrome.item, { borderTopColor: p.border }]}>
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon
+                  name="text.quote"
+                  color={p.icon}
+                  boxBg={p.iconBoxBg}
+                  border={p.border}
+                  shadow={p.shadow}
+                />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]}>
+                    {t('settings.layout.hideDailyQuote')}
+                  </ThemedText>
+                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>
+                    {t('settings.layout.hideDailyQuoteDesc')}
+                  </ThemedText>
+                </View>
+              </View>
+              <Switch
+                value={hideDailyQuote}
+                onValueChange={(next) => {
+                  void Haptics.selectionAsync();
+                  setHideDailyQuote(next);
+                }}
+                trackColor={{
+                  false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
+                  true: '#000000',
+                }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
+                accessibilityLabel={t('settings.layout.hideDailyQuoteA11y', {
+                  action: hideDailyQuote
+                    ? t('settings.dayPlanView.toggleOff')
+                    : t('settings.dayPlanView.toggleOn'),
+                })}
+              />
+            </View>
+            <View style={[chrome.item, { borderTopColor: p.border }]}>
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon
+                  name="checkmark.circle"
+                  color={p.icon}
+                  boxBg={p.iconBoxBg}
+                  border={p.border}
+                  shadow={p.shadow}
+                />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]}>
+                    {t('settings.layout.completeInAccordion')}
+                  </ThemedText>
+                  <View
+                    style={styles.descWithIcon}
+                    accessibilityLabel={`${t('settings.layout.completeInAccordionDescBefore')}${t('settings.layout.completeInAccordionDescAfter')}`}>
+                    <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>
+                      {t('settings.layout.completeInAccordionDescBefore')}
+                    </ThemedText>
+                    <View
+                      style={[
+                        styles.expandHintChip,
+                        {
+                          borderColor: p.border,
+                          backgroundColor: isDark ? p.surface : '#FFFFFF',
+                        },
+                      ]}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no">
+                      <IconSymbol name="chevron.down" size={9} color={p.title} />
+                    </View>
+                    <ThemedText style={[chrome.itemDesc, { color: p.desc, flexShrink: 1 }]}>
+                      {t('settings.layout.completeInAccordionDescAfter')}
+                    </ThemedText>
+                  </View>
+                </View>
+              </View>
+              <Switch
+                value={completeInAccordion}
+                onValueChange={(next) => {
+                  void Haptics.selectionAsync();
+                  setCompleteInAccordion(next);
+                }}
+                trackColor={{
+                  false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
+                  true: '#000000',
+                }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
+                accessibilityLabel={t('settings.layout.completeInAccordionA11y', {
+                  action: completeInAccordion
+                    ? t('settings.dayPlanView.toggleOff')
+                    : t('settings.dayPlanView.toggleOn'),
+                })}
+              />
+            </View>
+            <View style={[chrome.item, { borderTopColor: p.border }]}>
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon
+                  name="tag"
+                  color={p.icon}
+                  boxBg={p.iconBoxBg}
+                  border={p.border}
+                  shadow={p.shadow}
+                />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]}>
+                    {t('settings.layout.hideCompleteTape')}
+                  </ThemedText>
+                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>
+                    {t('settings.layout.hideCompleteTapeDesc')}
+                  </ThemedText>
+                </View>
+              </View>
+              <Switch
+                value={hideCompleteTape}
+                onValueChange={(next) => {
+                  void Haptics.selectionAsync();
+                  setHideCompleteTape(next);
+                }}
+                trackColor={{
+                  false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
+                  true: '#000000',
+                }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
+                accessibilityLabel={t('settings.layout.hideCompleteTapeA11y', {
+                  action: hideCompleteTape
+                    ? t('settings.dayPlanView.toggleOff')
+                    : t('settings.dayPlanView.toggleOn'),
+                })}
+              />
+            </View>
           </SettingsSection>
         </ScrollView>
       </View>
@@ -114,5 +250,21 @@ const styles = StyleSheet.create({
   },
   firstItem: {
     borderTopWidth: 0,
+  },
+  descWithIcon: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 3,
+  },
+  /** 오늘 탭 행의 펼침(chevron) 버튼과 같은 톤의 미니 칩 */
+  expandHintChip: {
+    width: 16,
+    height: 16,
+    borderWidth: 1,
+    borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
   },
 });

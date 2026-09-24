@@ -1,2 +1,2 @@
 export { ScrapTapeLabel } from './ScrapTapeLabel';
-export type { ScrapTapeLabelProps } from './ScrapTapeLabel';
+export type { ScrapTapeLabelProps, ScrapTapeLabelTone } from './ScrapTapeLabel';

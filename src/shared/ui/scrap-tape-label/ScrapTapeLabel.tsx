@@ -3,12 +3,19 @@ import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewS
 import { cityPopFont } from '@shared/config/retroFlat';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
+export type ScrapTapeLabelTone = 'scrap' | 'masking';
+
 export type ScrapTapeLabelProps = {
   /** 테이프 본문 */
   text: string;
   /** 본문 위 보조 (날짜 등) */
   caption?: string;
   isDark?: boolean;
+  /**
+   * scrap: 노란 면 + 검정 테두리 (기본)
+   * masking: 흰 마스킹 테이프 (포스티 상단 테이프 톤)
+   */
+  tone?: ScrapTapeLabelTone;
   /** 살짝 기운 각도 */
   rotateDeg?: number;
   onPress?: () => void;
@@ -25,11 +32,13 @@ export type ScrapTapeLabelProps = {
 
 /**
  * 루틴 탭 스크랩 테이프와 동일 톤 — 노란 면 + 검정 테두리 + solid 모서리.
+ * `tone="masking"` 이면 흰 마스킹 테이프(테두리 없음·소프트 섀도우).
  */
 export function ScrapTapeLabel({
   text,
   caption,
   isDark = false,
+  tone = 'scrap',
   rotateDeg = -1.5,
   onPress,
   editable = false,
@@ -40,20 +49,29 @@ export function ScrapTapeLabel({
   style,
   flat = false,
 }: ScrapTapeLabelProps) {
-  const face = isDark ? 'rgba(255, 236, 179, 0.92)' : '#FFE8A8';
-  const ink = '#111111';
+  const isMasking = tone === 'masking';
+  const face = isMasking
+    ? isDark
+      ? 'rgba(255,255,255,0.88)'
+      : 'rgba(255,255,255,0.94)'
+    : isDark
+      ? 'rgba(255, 236, 179, 0.92)'
+      : '#FFE8A8';
+  const ink = isMasking ? (isDark ? '#1A1A1A' : '#2A2A2A') : '#111111';
   const deg = flat ? 0 : rotateDeg;
 
   const body = (
     <View
       style={[
         styles.tape,
+        isMasking && styles.tapeMasking,
         {
           backgroundColor: face,
-          borderColor: ink,
+          borderColor: isMasking ? 'transparent' : ink,
+          borderWidth: isMasking ? 0 : 1.5,
           transform: [{ rotate: `${deg}deg` }],
         },
-        !flat && styles.tapeShadow,
+        !flat && (isMasking ? styles.tapeShadowSoft : styles.tapeShadow),
         style,
       ]}>
       {caption ? (
@@ -105,6 +123,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
+  tapeMasking: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
   /** 루틴 탭 createTape 와 같은 solid 오프셋 그림자 (약한 톤) */
   tapeShadow: Platform.select({
     ios: {
@@ -114,6 +136,17 @@ const styles = StyleSheet.create({
       shadowRadius: 0,
     },
     android: { elevation: 2 },
+    default: {},
+  }) as ViewStyle,
+  /** 포스티 상단 마스킹 테이프 — soft drop */
+  tapeShadowSoft: Platform.select({
+    ios: {
+      shadowColor: 'rgba(44,42,41,0.22)',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 1,
+      shadowRadius: 1.5,
+    },
+    android: { elevation: 1 },
     default: {},
   }) as ViewStyle,
   caption: {

@@ -73,6 +73,7 @@ import {
   resolveRoutineSummaryForDisplay,
   sortDayPlanBlocks,
   useDayPlanStore,
+  useDayPlanChromeSettingsStore,
   useFixedFlowSetsStore,
   useGoalDetailSettingsStore,
   type CustomFlowTemplateKey
@@ -112,6 +113,7 @@ import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { COMPLETION_TOGGLE_ANIM_MS } from '@shared/ui/completion-radio-button';
 import { DailyQuoteCard } from '@shared/ui/daily-quote-card';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { ScrapTapeLabel } from '@shared/ui/scrap-tape-label';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
@@ -471,6 +473,8 @@ export function PriorityBasedPlanSection({
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const hideDailyQuote = useDayPlanChromeSettingsStore((s) => s.settings.hideDailyQuote);
+  const hideCompleteTape = useDayPlanChromeSettingsStore((s) => s.settings.hideCompleteTape);
   const insets = useSafeAreaInsets();
   const bottomTabBarHeight = useBottomTabBarHeight();
   const { height: windowHeight } = useWindowDimensions();
@@ -3148,6 +3152,14 @@ export function PriorityBasedPlanSection({
                     if (isLikelyPriorityCatalogMonolineTitle(b.title)) return false;
                     return true;
                   });
+                  const hideMainQuoteLayout = isMainDay && hideDailyQuote;
+                  const showMainEmptyHint =
+                    isMainDay && bagCount === 0 && !priorityMealSlotLayoutEnabled;
+                  const shouldRenderDayRow =
+                    !hideMainQuoteLayout ||
+                    showMainEmptyHint ||
+                    timelineBlocksForDay.length > 0 ||
+                    showOvernightPriorityContinuation;
                   return (
                     <View
                       key={dk}
@@ -3157,6 +3169,7 @@ export function PriorityBasedPlanSection({
                         isPastDay && styles.priorityTimelineDayPast,
                         !isPriorityStripPrimary && !isPastDay && styles.priorityTimelineDayFutureSide,
                       ]}>
+                      {shouldRenderDayRow ? (
                       <View
                         style={[
                           styles.priorityTimelineDayRow,
@@ -3164,6 +3177,7 @@ export function PriorityBasedPlanSection({
                             ? styles.priorityTimelineDayRowMain
                             : styles.priorityTimelineDayRowSide,
                         ]}>
+                        {!hideMainQuoteLayout ? (
                         <View style={[styles.priorityTimelineDayLeft, { width: dayLeftW }]}>
                           <ThemedText
                             style={[
@@ -3191,6 +3205,7 @@ export function PriorityBasedPlanSection({
                             {dayNum}
                           </ThemedText>
                         </View>
+                        ) : null}
                         <View
                           style={[
                             styles.priorityTimelineDayRight,
@@ -3201,10 +3216,10 @@ export function PriorityBasedPlanSection({
                               paddingTop: isPriorityStripPrimary ? 4 : 4,
                             },
                           ]}>
-                          {isMainDay ? (
+                          {!hideMainQuoteLayout && isMainDay ? (
                             <DailyQuoteCard dateKey={dk} isDark={isDark} />
                           ) : null}
-                          {isMainDay && bagCount === 0 && !priorityMealSlotLayoutEnabled ? (
+                          {showMainEmptyHint ? (
                             <View
                               style={[
                                 styles.priorityMainEmptyHint,
@@ -3318,6 +3333,7 @@ export function PriorityBasedPlanSection({
 
                         </View>
                       </View>
+                      ) : null}
 
                       {showPriorityInMainTimeline ? (
                         <View
@@ -3372,6 +3388,17 @@ export function PriorityBasedPlanSection({
                                         priorityBagRowHeightRef.current = h;
                                       }
                                     }}>
+                                    {rowDone && !hideCompleteTape ? (
+                                      <View pointerEvents="none" style={styles.rowSuccessTapeAnchor}>
+                                        <ScrapTapeLabel
+                                          text={t('dayPlan.todaySuccessTape')}
+                                          isDark={isDark}
+                                          tone="masking"
+                                          rotateDeg={-3}
+                                          accessibilityLabel={t('dayPlan.todaySuccessTape')}
+                                        />
+                                      </View>
+                                    ) : null}
                                     <PriorityOrderRow
                                       categoryKey={cat.key}
                                       icon={cat.icon}
@@ -3840,14 +3867,22 @@ const styles = StyleSheet.create({
   },
   /** Reanimated layout/exit — 드래그 중 `translateY`가 잘리지 않도록 visible */
   priorityOrderRowAnimWrap: {
+    position: 'relative',
     width: '100%',
     overflow: 'visible',
+  },
+  rowSuccessTapeAnchor: {
+    position: 'absolute',
+    top: -6,
+    left: -2,
+    zIndex: 6,
   },
   /** 날짜(요일·일) 열과 같은 좌측 시작선 — 리스트를 그 아래 전체 너비로 */
   priorityInlineListUnderDate: {
     width: '100%',
     alignSelf: 'stretch',
     paddingHorizontal: 6,
+    overflow: 'visible',
   },
   priorityInlineListUnderDateMain: {
     paddingBottom: 2,

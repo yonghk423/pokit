@@ -21,6 +21,7 @@ import {
   type PriorityMarkColorId,
 } from '@entities/day-plan';
 import { useTranslation } from '@shared/lib/i18n';
+import { resolveBrutalConfirmPrimaryColors } from '@shared/ui/brutal-confirm-button';
 import { COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT, CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -82,6 +83,7 @@ export function DefaultPriorityOrderRow({
   void categoryLabelEpoch;
   const icon = resolveCategoryCatalogIcon(categoryKey);
   const hideCategoryIcons = useDayPlanChromeSettingsStore((s) => s.settings.hideLayoutIcons);
+  const completeInAccordion = useDayPlanChromeSettingsStore((s) => s.settings.completeInAccordion);
   const titleHighlight = priorityMarkTitleHighlight(itemMarkColor, isDark);
   const reorderTranslateY = useSharedValue(0);
   const reorderDragging = useSharedValue(0);
@@ -254,6 +256,7 @@ export function DefaultPriorityOrderRow({
 
   const actionBg = isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF';
   const actionBorder = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
+  const completeCta = resolveBrutalConfirmPrimaryColors(isDark);
   /** 설정·펼침·카테고리 아이콘 오프셋 — 순검정보다 옅은 잉크 */
   const actionShadow = isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)';
 
@@ -611,7 +614,44 @@ export function DefaultPriorityOrderRow({
     )
     : null;
 
-  const expandInlineActions = Boolean(notePriorityAction || noteFinishAction);
+  /** 레이아웃「완료를 펼침에 두기」— 민트 면으로 종료(흰 면)와 구분 */
+  const noteCompleteAction =
+    expandEnabled && completeInAccordion && onToggleFocusComplete
+      ? wrapBrutal(
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              isCompleted
+                ? t('dayPlan.completeCancelA11y', { label })
+                : t('dayPlan.completeA11y', { label })
+            }
+            hitSlop={8}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onToggleFocusComplete();
+            }}
+            style={[
+              styles.orderFinishBtn,
+              styles.expandFinishBtn,
+              {
+                borderColor: completeCta.border,
+                backgroundColor: completeCta.fill,
+              },
+            ]}>
+            <ThemedText
+              style={[
+                styles.orderFinishBtnText,
+                styles.expandFinishBtnText,
+                { color: completeCta.labelColor },
+              ]}
+              numberOfLines={1}>
+              {isCompleted ? t('common.completeCancel') : t('common.complete')}
+            </ThemedText>
+          </Pressable>,
+        )
+      : null;
+
+  const expandInlineActions = Boolean(notePriorityAction || noteFinishAction || noteCompleteAction);
   const expandButton = expandEnabled
     ? wrapBrutal(
         <Pressable
@@ -688,7 +728,7 @@ export function DefaultPriorityOrderRow({
           )
           : null}
       {expandButton}
-      {onToggleFocusComplete ? (
+      {onToggleFocusComplete && !completeInAccordion ? (
         <View style={{ marginBottom: BRUTAL_SHADOW_SM }}>
           <CompletionRadioButton
             checked={Boolean(isCompleted)}
@@ -746,8 +786,11 @@ export function DefaultPriorityOrderRow({
             {expandInlineActions ? (
               <View style={styles.expandActionsCol}>
                 {notePriorityAction}
-                {noteFinishAction ? (
-                  <View style={styles.expandActionsRow}>{noteFinishAction}</View>
+                {noteCompleteAction || noteFinishAction ? (
+                  <View style={styles.expandActionsRow}>
+                    {noteCompleteAction}
+                    {noteFinishAction}
+                  </View>
                 ) : null}
               </View>
             ) : null}

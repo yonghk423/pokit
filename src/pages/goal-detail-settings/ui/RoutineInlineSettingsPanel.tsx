@@ -23,9 +23,7 @@ import { RoutineStartNotifyField } from '@features/day-plan-notifications/ui/Rou
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
   loadGoalDetailCategoryConfig,
-  resolveCatalogItemGroupKey,
   saveGoalDetailCategoryConfig,
-  updateCatalogItemGroup,
 } from '@shared/lib/storage';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -33,7 +31,6 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import type { GoalDetailCategoryKey } from '../model/types';
 import { getRoutineRenameLockMessage } from './category/lib/RoutineTitleField';
-import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
 import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
 import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
 
@@ -93,14 +90,12 @@ export function RoutineInlineSettingsPanel({
   const { t } = useTranslation();
   const key = categoryKey as GoalDetailCategoryKey;
   const [dataConfig, setDataConfig] = useState<unknown>(() => loadGoalDetailCategoryConfig(key) ?? {});
-  const [groupKey, setGroupKey] = useState(() => resolveCatalogItemGroupKey(key));
   const medicineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const blocks = useDayPlanStore((s) => s.blocks);
   const activeBlockId = useDayPlanRuntimeStore((s) => s.activeBlockId);
 
   useEffect(() => {
     setDataConfig(loadGoalDetailCategoryConfig(key) ?? {});
-    setGroupKey(resolveCatalogItemGroupKey(key));
   }, [key]);
 
   useEffect(
@@ -158,14 +153,6 @@ export function RoutineInlineSettingsPanel({
     [key],
   );
 
-  const handleChangeGroup = useCallback(
-    (nextGroupKey: string) => {
-      updateCatalogItemGroup(key, nextGroupKey);
-      setGroupKey(nextGroupKey);
-    },
-    [key],
-  );
-
   const running = isCategoryRunning(key);
   const renameLockedReason = running ? 'running' : lockRename ? 'today' : null;
 
@@ -195,7 +182,6 @@ export function RoutineInlineSettingsPanel({
         <ThemedText style={[styles.metaTitle, { color: muted }]}>
           {t('goalDetail.routineSettings')}
         </ThemedText>
-        <CustomFlowGroupField groupKey={groupKey} onChangeGroupKey={handleChangeGroup} />
         {!running ? (
           <RoutineAppearanceField
             categoryKey={key}

@@ -587,17 +587,23 @@ function FigureRoutineList({ tone }: { tone: Tone }) {
         ]}>
         <View style={styles.sheetRow}>
           <Badge n={3} tone={tone} />
-          <IconSymbol name="chevron.down" size={12} color={tone.text} />
-          <ThemedText style={[styles.groupTitle, { color: tone.text, flex: 1 }, cityPopFont('800')]}>
-            {t('catalog.groupHealth')}
+          <IconSymbol name="magnifyingglass" size={12} color={tone.muted} />
+          <ThemedText style={[styles.itemText, { color: tone.muted, flex: 1 }, cityPopFont('600')]}>
+            {t('guideBook.figure.routineSearchHint')}
           </ThemedText>
         </View>
-        <FigureColorChips tone={tone} />
         <View style={[styles.itemRow, { borderColor: tone.border, backgroundColor: tone.surface }]}>
           <Badge n={4} tone={tone} />
           <IconSymbol name="book.closed.fill" size={16} color={pill.activeIcon} />
           <ThemedText style={[styles.itemText, { color: tone.text }, cityPopFont('700')]}>
             {t('guideBook.figure.reading')}
+          </ThemedText>
+          <IconSymbol name="chevron.right" size={14} color={tone.muted} />
+        </View>
+        <View style={[styles.itemRow, { borderColor: tone.border, backgroundColor: tone.surface }]}>
+          <IconSymbol name="figure.run" size={16} color={pill.activeIcon} />
+          <ThemedText style={[styles.itemText, { color: tone.text }, cityPopFont('700')]}>
+            {t('guideBook.figure.exerciseSample')}
           </ThemedText>
           <IconSymbol name="chevron.right" size={14} color={tone.muted} />
         </View>
@@ -870,10 +876,11 @@ function FigureSettings({ tone }: { tone: Tone }) {
   const { t } = useTranslation();
   const rows = [
     { n: 1, icon: 'clock' as const, tKey: 'settings.dayPlanWindow' as const, sectionKey: 'guideBook.figure.settingsDayPlan' as const },
-    { n: 2, icon: 'book' as const, tKey: 'guideBook.figure.settingsIntroGuide' as const, sectionKey: 'guideBook.figure.settingsDayPlan' as const },
-    { n: 3, icon: 'textformat' as const, tKey: 'guideBook.figure.settingsFont' as const, sectionKey: 'guideBook.figure.settingsFontSection' as const },
-    { n: 4, icon: 'envelope.fill' as const, tKey: 'guideBook.figure.settingsSupport' as const, sectionKey: 'guideBook.figure.settingsSupportData' as const },
-    { n: 5, icon: 'arrow.counterclockwise' as const, tKey: 'settings.resetData' as const, sectionKey: 'guideBook.figure.settingsSupportData' as const },
+    { n: 2, icon: 'rectangle.split.3x1' as const, tKey: 'settings.layoutTitle' as const, sectionKey: 'guideBook.figure.settingsLayout' as const },
+    { n: 3, icon: 'book' as const, tKey: 'guideBook.figure.settingsIntroGuide' as const, sectionKey: 'guideBook.figure.settingsDayPlan' as const },
+    { n: 4, icon: 'textformat' as const, tKey: 'guideBook.figure.settingsFont' as const, sectionKey: 'guideBook.figure.settingsFontSection' as const },
+    { n: 5, icon: 'envelope.fill' as const, tKey: 'guideBook.figure.settingsSupport' as const, sectionKey: 'guideBook.figure.settingsSupportData' as const },
+    { n: 6, icon: 'arrow.counterclockwise' as const, tKey: 'settings.resetData' as const, sectionKey: 'guideBook.figure.settingsSupportData' as const },
   ];
   return (
     <View style={[styles.phone, { borderColor: tone.border, backgroundColor: tone.bg }]}>

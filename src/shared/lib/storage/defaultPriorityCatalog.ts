@@ -91,6 +91,7 @@ export const POKIT_WEEK_TOUR_CHECKLIST_LABELS = [
   '책방 열어보기',
   '잠금화면 메모 써보기',
   '노트 적어보기',
+  '설정에서 레이아웃 바꿔보기',
 ] as const;
 
 export const POKIT_WEEK_TOUR_DISPLAY_NAME = '포킷 빠르게 둘러보기' as const;

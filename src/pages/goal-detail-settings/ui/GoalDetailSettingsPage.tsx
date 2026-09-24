@@ -51,8 +51,6 @@ import {
   loadGoalDetailCategoryConfig,
   saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
-  resolveCatalogItemGroupKey,
-  updateCatalogItemGroup,
 } from '@shared/lib/storage';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
@@ -68,7 +66,6 @@ import { RoutineDeleteButton } from './category/lib/RoutineDeleteButton';
 import { RoutineTitleField, getRoutineRenameLockMessage } from './category/lib/RoutineTitleField';
 import { resolveRoutineTitleFallback } from './category/lib/routineTitleFallback';
 import { goalDetailSettingsPalette } from './category/lib/settingsPalette';
-import { CustomFlowGroupField } from './category/other/ui/CustomFlowGroupField';
 import { WATER_GOAL_DETAIL_THEME as WATER } from './category/water/lib/waterGoalDetailTheme';
 import { CustomFlowTemplateMetaPill } from './CustomFlowTemplateMetaPill';
 import { RoutineAppearanceField } from './lib/RoutineAppearanceField';
@@ -188,10 +185,6 @@ function withPreservedRoutineFields(categoryKey: string, next: unknown): unknown
     o.templateKey = prevO.templateKey;
   }
   return o;
-}
-
-function resolveCatalogGroupKeyForSettings(categoryKey: string): string {
-  return resolveCatalogItemGroupKey(categoryKey);
 }
 
 export function GoalDetailSettingsPage() {
@@ -334,9 +327,6 @@ export function GoalDetailSettingsPage() {
     [targets],
   );
   const [patchByBlockId, setPatchByBlockId] = useState<Record<string, unknown>>({});
-  const [customFlowGroupByCategoryKey, setCustomFlowGroupByCategoryKey] = useState<
-    Record<string, string>
-  >({});
   const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -353,14 +343,6 @@ export function GoalDetailSettingsPage() {
       }
     }
   }, [loadedDataByBlockId, targetBlockIdsKey, targets]);
-
-  useEffect(() => {
-    const next: Record<string, string> = {};
-    for (const t of targets) {
-      next[t.categoryKey] = resolveCatalogGroupKeyForSettings(t.categoryKey);
-    }
-    setCustomFlowGroupByCategoryKey(next);
-  }, [targets]);
 
   const dataByBlockId = useMemo(
     () => ({ ...loadedDataByBlockId, ...patchByBlockId }),
@@ -443,14 +425,6 @@ export function GoalDetailSettingsPage() {
       router.back();
     },
     [router],
-  );
-
-  const handleChangeCatalogGroup = useCallback(
-    (categoryKey: GoalDetailCategoryKey, groupKey: string) => {
-      updateCatalogItemGroup(categoryKey, groupKey);
-      setCustomFlowGroupByCategoryKey((prev) => ({ ...prev, [categoryKey]: groupKey }));
-    },
-    [],
   );
 
   const handleCompleteAndStart = useCallback(() => {
@@ -787,13 +761,6 @@ export function GoalDetailSettingsPage() {
                 <ThemedText style={[styles.routineMetaSectionTitle, { color: c.onVariant }]}>
                   {t('goalDetail.routineSettings')}
                 </ThemedText>
-                <CustomFlowGroupField
-                  groupKey={
-                    customFlowGroupByCategoryKey[categoryKey] ??
-                    resolveCatalogGroupKeyForSettings(categoryKey)
-                  }
-                  onChangeGroupKey={(groupKey) => handleChangeCatalogGroup(categoryKey, groupKey)}
-                />
                 {!isCategoryRunning(categoryKey) ? (
                   <RoutineAppearanceField
                     categoryKey={categoryKey}
