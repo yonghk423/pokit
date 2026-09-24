@@ -85,7 +85,6 @@ export function RoutineCatalogManageContent() {
   }, []);
 
   const categoryLabelEpoch = useGoalDetailSettingsStore((s) => s.revision);
-  const bumpCategoryLabelEpoch = useDayPlanDraftStore((s) => s.bumpCategoryLabelEpoch);
   const filterCompletedFocusKeysToPriorityOrder = useDayPlanDraftStore(
     (s) => s.filterCompletedFocusKeysToPriorityOrder,
   );
@@ -140,11 +139,9 @@ export function RoutineCatalogManageContent() {
         setPrioritySectionsCategoryOrder: (order) => setPrioritySectionsCategoryOrder(order),
         filterCompletedFocusKeysToPriorityOrder,
         registerOtherCategoryResolverFromStorage,
-        bumpCategoryLabelEpoch,
       });
     },
     [
-      bumpCategoryLabelEpoch,
       filterCompletedFocusKeysToPriorityOrder,
       setPriorityCategoryOrder,
       setPrioritySectionsCategoryOrder,

@@ -270,7 +270,6 @@ export function SettingsPage() {
         waterReminderSyncEpoch: 0,
         isHydrated: true,
       });
-      useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
       registerOtherCategoryResolverFromStorage();
 
       useDayPlanRuntimeStore.getState().stopTicker();

@@ -28,7 +28,6 @@ function createDeps(order: string[]): DeleteCatalogCategoryDeps & { order: strin
     },
     filterCompletedFocusKeysToPriorityOrder: () => {},
     registerOtherCategoryResolverFromStorage: () => {},
-    bumpCategoryLabelEpoch: () => {},
   };
 }
 

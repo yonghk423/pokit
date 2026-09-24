@@ -442,7 +442,6 @@ export function PriorityCatalogContent({
         filterCompletedFocusKeysToPriorityOrder: (order) =>
           useDayPlanDraftStore.getState().filterCompletedFocusKeysToPriorityOrder(order),
         registerOtherCategoryResolverFromStorage,
-        bumpCategoryLabelEpoch: () => useDayPlanDraftStore.getState().bumpCategoryLabelEpoch(),
       });
     },
     [],
@@ -467,7 +466,6 @@ export function PriorityCatalogContent({
     useCallback(() => {
       hydrateLayoutModeVisibility();
       reloadCatalogData();
-      useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
       const order = useDayPlanDraftStore.getState().priorityCategoryOrder;
       const saved = loadRoutineCatalogSelectionKeys();
       if (saved.length === 0 && order.length > 0) {

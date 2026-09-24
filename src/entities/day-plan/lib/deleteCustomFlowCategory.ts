@@ -21,7 +21,6 @@ export type DeleteCatalogCategoryDeps = {
   setPrioritySectionsCategoryOrder: (order: string[]) => void;
   filterCompletedFocusKeysToPriorityOrder: (order: string[]) => void;
   registerOtherCategoryResolverFromStorage: () => void;
-  bumpCategoryLabelEpoch: () => void;
 };
 
 function purgeCatalogCategoryFromPlan(categoryKey: string, deps: DeleteCatalogCategoryDeps): void {
@@ -49,7 +48,6 @@ function purgeCatalogCategoryFromPlan(categoryKey: string, deps: DeleteCatalogCa
   }
 
   deps.registerOtherCategoryResolverFromStorage();
-  deps.bumpCategoryLabelEpoch();
 }
 
 /** 담기 항목 삭제 — 사용자 루틴은 제거, 표준 항목은 재시드되지 않게 숨김 후 설정·일정에서 제거 */

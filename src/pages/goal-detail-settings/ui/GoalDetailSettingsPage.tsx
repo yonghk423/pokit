@@ -236,11 +236,6 @@ export function GoalDetailSettingsPage() {
     registerOtherCategoryResolverFromStorage();
   }, []);
 
-  useEffect(() => {
-    return () => {
-      useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
-    };
-  }, []);
   const blocks = useDayPlanStore((s) => s.blocks);
   const activeBlockId = useDayPlanRuntimeStore((s) => s.activeBlockId);
   const categoryLabelEpoch = useGoalDetailSettingsStore((s) => s.revision);
@@ -444,7 +439,6 @@ export function GoalDetailSettingsPage() {
         filterCompletedFocusKeysToPriorityOrder: (order) =>
           useDayPlanDraftStore.getState().filterCompletedFocusKeysToPriorityOrder(order),
         registerOtherCategoryResolverFromStorage,
-        bumpCategoryLabelEpoch: () => useDayPlanDraftStore.getState().bumpCategoryLabelEpoch(),
       });
       router.back();
     },
@@ -605,7 +599,6 @@ export function GoalDetailSettingsPage() {
 
   const handleGoBack = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
     router.back();
   }, [router]);
 

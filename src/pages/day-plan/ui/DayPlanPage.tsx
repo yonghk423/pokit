@@ -126,7 +126,6 @@ export function DayPlanPage({
     setPriorityStart,
     setPriorityEnd,
     setPriorityCategoryOrder,
-    bumpCategoryLabelEpoch,
     clearCompletedFocusCategoryKeys,
     clearPlanCompletionDismissedKeys,
     setQuickMemoDraft,
@@ -155,7 +154,6 @@ export function DayPlanPage({
       setPriorityStart: s.setPriorityStart,
       setPriorityEnd: s.setPriorityEnd,
       setPriorityCategoryOrder: s.setPriorityCategoryOrder,
-      bumpCategoryLabelEpoch: s.bumpCategoryLabelEpoch,
       clearCompletedFocusCategoryKeys: s.clearCompletedFocusCategoryKeys,
       clearPlanCompletionDismissedKeys: s.clearPlanCompletionDismissedKeys,
       setQuickMemoDraft: s.setQuickMemoDraft,
@@ -248,8 +246,6 @@ export function DayPlanPage({
     useCallback(() => {
       // 적용 구간이 지난 날짜에 끝났다면 오늘 기준으로 날짜를 전진
       rollPriorityPlanForwardIfEnded();
-      // 목표 상세(모달)에서 복귀할 때 카테고리 라벨 즉시 재평가
-      bumpCategoryLabelEpoch();
       // 탭 전환/화면 freeze 이후에도 담기 순서 키를 최신 스토어 스냅샷으로 동기화
       const latestOrder = useDayPlanDraftStore.getState().priorityCategoryOrder;
       setPriorityCategoryOrder([...latestOrder]);
@@ -257,7 +253,7 @@ export function DayPlanPage({
       seedPokitWeekTourIntoTodayIfNeeded();
       // 스토리지·세션 래치와 게이트를 맞춘다 (완료면 닫고, 초기화 후면 연다)
       setRhythmGateOpen(!loadDailyRhythmOnboardingCompleted());
-    }, [bumpCategoryLabelEpoch, rollPriorityPlanForwardIfEnded, setPriorityCategoryOrder]),
+    }, [rollPriorityPlanForwardIfEnded, setPriorityCategoryOrder]),
   );
 
   useEffect(() => {

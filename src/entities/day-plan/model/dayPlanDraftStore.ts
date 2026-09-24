@@ -10,7 +10,6 @@ import {
   normalizeCategoryMealSlots,
   normalizeDayMealSlot,
   saveDayPlanDraft,
-  subscribeGoalDetailCategoryConfig,
   type DayMealSlot,
 } from '@shared/lib/storage';
 import { getClockNow } from '@shared/lib/time/appClock';
@@ -164,6 +163,10 @@ type DayPlanDraftState = {
   /** @deprecated 순환 — setPriorityCategoryMarkColor 사용 */
   cyclePriorityCategoryImportance: (categoryKey: string) => void;
   clearRoutineHistoryPendingForDate: (dateKey: string) => void;
+  /**
+   * @deprecated 이름·아이콘·색 무효화는 `useGoalDetailSettingsStore.revision`을 구독한다.
+   * 개발/시드 등 draft 강제 갱신용으로만 남긴다.
+   */
   bumpCategoryLabelEpoch: () => void;
   bumpWaterReminderSyncEpoch: () => void;
   setQuickMemoDraft: (value: string) => void;
@@ -1087,13 +1090,6 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       return { completedFocusCategoryKeys, planCompletionDismissedKeys };
     }),
 }));
-
-// LocalStorage 카테고리 설정을 단일 변경 소스로 삼아 이름·아이콘·색상 UI를 즉시 무효화한다.
-subscribeGoalDetailCategoryConfig(() => {
-  useDayPlanDraftStore.setState((state) => ({
-    categoryLabelEpoch: state.categoryLabelEpoch + 1,
-  }));
-});
 
 registerDraftSyncTodayTabAccessors(
   () => useDayPlanDraftStore.getState(),
