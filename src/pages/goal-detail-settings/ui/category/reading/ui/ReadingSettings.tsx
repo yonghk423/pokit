@@ -2,6 +2,12 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Reanimated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 
 import {
@@ -12,10 +18,14 @@ import {
   makeReadingBookId,
   normalizeReadingBookStatus,
   normalizeReadingLiveActivityConfig,
+  normalizeReadingPageLogs,
+  resolveFurthestReadingTargetPage,
   resolveReadingBookAuthor,
   resolveReadingBookCoverUrl,
+  resolveReadingBookTotalPages,
   SEED_READING_LITTLE_PRINCE_BOOK_ID,
   sortReadingBooksByAddedAt,
+  sortedReadingPageLogKeys,
   type ReadingBookEntry,
   type ReadingBookStatus,
   type ReadingLibrarySortOrder,
@@ -79,6 +89,36 @@ function nextLibrarySortOrder(order: ReadingLibrarySortOrder): ReadingLibrarySor
   return order === 'newest' ? 'oldest' : 'newest';
 }
 
+/** 리스트: 현재 읽은 쪽 / 전체 쪽 (오늘 구간 start→target 아님) */
+function formatReadingBookPagesLine(entry: ReadingBookEntry): string {
+  const book = ensureReadingBookPages(entry);
+  const logs = normalizeReadingPageLogs(book.pageLogs);
+  const hasLogs = Object.keys(logs).length > 0;
+  const currentPage = hasLogs
+    ? resolveFurthestReadingTargetPage(logs, book.targetPage)
+    : book.targetPage;
+  const totalPages = resolveReadingBookTotalPages(book);
+  if (totalPages != null && totalPages > 0) {
+    return `${currentPage}P / ${totalPages}P`;
+  }
+  return `${currentPage}P`;
+}
+
+function resolveLatestReadingDateKey(entry: ReadingBookEntry): string | null {
+  const keys = sortedReadingPageLogKeys(normalizeReadingPageLogs(entry.pageLogs));
+  return keys.length > 0 ? keys[keys.length - 1]! : null;
+}
+
+function formatReadingListDateKey(dateKey: string, locale: 'ko' | 'en' | 'ja'): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
+  if (!m) return dateKey;
+  const month = parseInt(m[2], 10);
+  const day = parseInt(m[3], 10);
+  if (locale === 'ja') return `${month}月${day}日`;
+  if (locale === 'en') return `${month}/${day}`;
+  return `${month}월 ${day}일`;
+}
+
 function ReadingBookListRow({
   entry,
   palette,
@@ -92,6 +132,7 @@ function ReadingBookListRow({
   onPress: () => void;
   statusLabelText: string;
 }) {
+  const { locale, t } = useTranslation();
   const c = palette;
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const status = normalizeReadingBookStatus(entry.status);
@@ -99,7 +140,14 @@ function ReadingBookListRow({
   const coverUrl = resolveReadingBookCoverUrl(entry);
   const softShadow = isDark ? LIST_SOFT_SHADOW_DARK : LIST_SOFT_SHADOW_LIGHT;
   const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
-  const pagesLine = `${entry.startPage}P → ${entry.targetPage}P`;
+  const pagesLine = formatReadingBookPagesLine(entry);
+  const latestDateKey = resolveLatestReadingDateKey(entry);
+  const lastReadLine =
+    latestDateKey != null
+      ? t('goalDetail.reading.lastReadDate', {
+          date: formatReadingListDateKey(latestDateKey, locale),
+        })
+      : null;
   const statusFace =
     status === 'done'
       ? readingStatusDoneFace(isDark)
@@ -170,6 +218,7 @@ function ReadingBookListRow({
               </View>
               <ThemedText style={[styles.pagesChipText, { color: c.onVariant }]} numberOfLines={1}>
                 {pagesLine}
+                {lastReadLine ? ` · ${lastReadLine}` : ''}
               </ThemedText>
             </View>
           </View>
@@ -254,6 +303,47 @@ export function ReadingSettings({
   const [librarySortOrder, setLibrarySortOrder] = useState<ReadingLibrarySortOrder>('newest');
   const [showTapGuideNote, setShowTapGuideNote] = useState(false);
   const [showSearchGuideNote, setShowSearchGuideNote] = useState(false);
+  const tabLayoutsRef = useRef<Partial<Record<LibraryTab, { x: number; width: number }>>>({});
+  const tabIndicatorX = useSharedValue(0);
+  const tabIndicatorW = useSharedValue(0);
+  const tabIndicatorReady = useSharedValue(0);
+  const listFade = useSharedValue(1);
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+
+  const moveTabIndicator = useCallback(
+    (key: LibraryTab, animated: boolean) => {
+      const layout = tabLayoutsRef.current[key];
+      if (!layout || layout.width <= 0) return;
+      const timing = {
+        duration: animated ? 240 : 0,
+        easing: Easing.out(Easing.cubic),
+      };
+      tabIndicatorX.value = withTiming(layout.x, timing);
+      tabIndicatorW.value = withTiming(layout.width, timing);
+      tabIndicatorReady.value = withTiming(1, { duration: animated ? 160 : 0 });
+    },
+    [tabIndicatorReady, tabIndicatorW, tabIndicatorX],
+  );
+
+  useEffect(() => {
+    moveTabIndicator(activeTab, true);
+    listFade.value = 0.4;
+    listFade.value = withTiming(1, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [activeTab, listFade, moveTabIndicator]);
+
+  const tabIndicatorStyle = useAnimatedStyle(() => ({
+    opacity: tabIndicatorReady.value,
+    width: tabIndicatorW.value,
+    transform: [{ translateX: tabIndicatorX.value }],
+  }));
+
+  const listFadeStyle = useAnimatedStyle(() => ({
+    opacity: listFade.value,
+  }));
 
   const lastPushedRef = useRef<string | null>(JSON.stringify(initialConfig));
   const hydratedKeyRef = useRef<string | null>(JSON.stringify(initialConfig));
@@ -352,7 +442,7 @@ export function ReadingSettings({
         id: makeReadingBookId(),
         title: trimmed,
         startPage: 1,
-        targetPage: 100,
+        targetPage: 1,
         status: activeTab === 'done' ? 'done' : 'reading',
         addedAtMs: now,
       },
@@ -365,6 +455,7 @@ export function ReadingSettings({
     const base = {
       id: makeReadingBookId(),
       startPage: 1,
+      targetPage: 1,
       status: (activeTab === 'done' ? 'done' : 'reading') as ReadingBookStatus,
       addedAtMs: now,
     };
@@ -375,7 +466,6 @@ export function ReadingSettings({
         {
           ...base,
           title: book.title,
-          targetPage: book.totalPages && book.totalPages > 0 ? book.totalPages : 100,
           aladin: {
             itemId: book.itemId,
             link: book.link,
@@ -394,7 +484,6 @@ export function ReadingSettings({
       {
         ...base,
         title: book.title,
-        targetPage: book.totalPages && book.totalPages > 0 ? book.totalPages : 100,
         openLibrary: {
           workKey: book.workKey,
           editionKey: book.editionKey,
@@ -523,7 +612,18 @@ export function ReadingSettings({
                 key={tab.key}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
-                onPress={() => setActiveTab(tab.key)}
+                onPress={() => {
+                  if (tab.key === activeTab) return;
+                  void Haptics.selectionAsync();
+                  setActiveTab(tab.key);
+                }}
+                onLayout={(event) => {
+                  const { x, width } = event.nativeEvent.layout;
+                  tabLayoutsRef.current[tab.key] = { x, width };
+                  if (tab.key === activeTabRef.current) {
+                    moveTabIndicator(tab.key, false);
+                  }
+                }}
                 style={styles.tabItem}>
                 <ThemedText
                   style={[
@@ -532,15 +632,17 @@ export function ReadingSettings({
                   ]}>
                   {tab.label} ({count})
                 </ThemedText>
-                <View
-                  style={[
-                    styles.tabUnderline,
-                    { backgroundColor: on ? c.onSurface : 'transparent' },
-                  ]}
-                />
               </Pressable>
             );
           })}
+          <Reanimated.View
+            pointerEvents="none"
+            style={[
+              styles.tabIndicator,
+              { backgroundColor: c.onSurface },
+              tabIndicatorStyle,
+            ]}
+          />
         </View>
 
         {books.length > 0 ? (
@@ -614,6 +716,7 @@ export function ReadingSettings({
           contentContainerStyle={styles.listScrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
+          <Reanimated.View style={listFadeStyle}>
           {displayBooks.length > 0 ? (
             <View style={styles.listShell}>
               {showTapGuideNote ? (
@@ -675,6 +778,7 @@ export function ReadingSettings({
               )}
             </View>
           )}
+          </Reanimated.View>
         </ScrollView>
       </View>
 
@@ -767,6 +871,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   tabRow: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'stretch',
     paddingHorizontal: 16,
@@ -777,6 +882,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingTop: 10,
+    paddingBottom: 12,
     minHeight: 44,
   },
   tabLabel: {
@@ -785,11 +891,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     textAlign: 'center',
   },
-  tabUnderline: {
+  tabIndicator: {
+    position: 'absolute',
+    left: 0,
+    bottom: -StyleSheet.hairlineWidth,
     height: 2,
-    alignSelf: 'stretch',
-    marginTop: 10,
-    marginBottom: -StyleSheet.hairlineWidth,
   },
 
   listMetaRow: {

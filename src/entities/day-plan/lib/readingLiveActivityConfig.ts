@@ -116,7 +116,7 @@ export function makeSeedLittlePrinceBook(): ReadingBookEntry {
     id: SEED_READING_LITTLE_PRINCE_BOOK_ID,
     title: '어린왕자 (소프트커버 에디션) - 개정판',
     startPage: 1,
-    targetPage: 20,
+    targetPage: 1,
     status: 'reading',
     addedAtMs: 1,
     memo: '',

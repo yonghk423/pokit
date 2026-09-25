@@ -27,7 +27,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.8.9</string>
+    <string>1.8.10</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -47,7 +47,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>79</string>
+    <string>80</string>
     <key>LSApplicationQueriesSchemes</key>
     <array>
       <string>airmail</string>

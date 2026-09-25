@@ -1,25 +1,25 @@
 {
-  "latestVersion": "1.8.9",
+  "latestVersion": "1.8.10",
   "highlights": [
-    "책방 추가·검색·안내 UI를 각진 레이아웃과 버건디 톤으로 다듬었어요.",
-    "책 추가·검색 버튼과 가이드 문구를 더 가볍게 정리했어요.",
-    "책 리스트를 눌러 자세히 보는 흐름을 더 명확하게 안내해요."
+    "책 리스트에 현재 쪽/전체 쪽과 최근 읽은 날짜를 보여 줘요.",
+    "오늘 읽은 쪽 기본값을 0으로 맞추고, 완료·메모 안내 문구를 다듬었어요.",
+    "책방 입력 밑줄·가이드 UI를 더 깔끔하게 정리했어요."
   ],
   "highlightsByLocale": {
     "ko": [
-      "책방 추가·검색·안내 UI를 각진 레이아웃과 버건디 톤으로 다듬었어요.",
-      "책 추가·검색 버튼과 가이드 문구를 더 가볍게 정리했어요.",
-      "책 리스트를 눌러 자세히 보는 흐름을 더 명확하게 안내해요."
+      "책 리스트에 현재 쪽/전체 쪽과 최근 읽은 날짜를 보여 줘요.",
+      "오늘 읽은 쪽 기본값을 0으로 맞추고, 완료·메모 안내 문구를 다듬었어요.",
+      "책방 입력 밑줄·가이드 UI를 더 깔끔하게 정리했어요."
     ],
     "en": [
-      "Bookstore add, search, and guides polished with angular layout and burgundy accents.",
-      "Lighter add/search buttons and clearer guide copy.",
-      "Clearer nudge to tap a book in the list for details."
+      "Book list now shows current/total pages and last read date.",
+      "Today’s pages default to 0; polished completion and memo copy.",
+      "Cleaner bookstore input underlines and guide UI."
     ],
     "ja": [
-      "読書の追加・検索・ガイドUIを角のあるレイアウトとバーガンディ調に整えました。",
-      "本の追加・検索ボタンとガイド文言をより軽く整理しました。",
-      "リストの本をタップして詳しく見る流れをよりはっきり案内します。"
+      "本のリストに現在ページ/全体ページと最近読んだ日を表示します。",
+      "今日読んだページの初期値を0にし、完了・メモ案内を整えました。",
+      "読書の入力下線とガイドUIをよりすっきり整理しました。"
     ]
   },
   "storeUrls": {

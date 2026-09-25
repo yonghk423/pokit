@@ -167,7 +167,7 @@ export function ReadingBookDetailSheet({
   const [monthStart, setMonthStart] = useState(() => toMonthStart(new Date()));
   const [startPageStr, setStartPageStr] = useState('1');
   const [targetPageStr, setTargetPageStr] = useState('100');
-  const [todayPagesStr, setTodayPagesStr] = useState('10');
+  const [todayPagesStr, setTodayPagesStr] = useState('0');
   const [memo, setMemo] = useState('');
   const [pageFieldFocus, setPageFieldFocus] = useState<'start' | 'today' | null>(null);
   const [showDoneCelebrate, setShowDoneCelebrate] = useState(false);
@@ -656,7 +656,11 @@ export function ReadingBookDetailSheet({
                           styles.pageFieldEditableValue,
                           {
                             borderBottomColor:
-                              pageFieldFocus === 'start' ? tone.primary : softShadow,
+                              pageFieldFocus === 'start'
+                                ? isDark
+                                  ? '#FAFAFA'
+                                  : '#000000'
+                                : softShadow,
                           },
                         ]}>
                         <ThemedTextInput
@@ -693,7 +697,11 @@ export function ReadingBookDetailSheet({
                           styles.pageFieldEditableValue,
                           {
                             borderBottomColor:
-                              pageFieldFocus === 'today' ? tone.primary : softShadow,
+                              pageFieldFocus === 'today'
+                                ? isDark
+                                  ? '#FAFAFA'
+                                  : '#000000'
+                                : softShadow,
                           },
                         ]}>
                         <ThemedTextInput
@@ -917,7 +925,6 @@ export function ReadingBookDetailSheet({
               <Animated.View style={[styles.celebrateCard, celebrateStyle]}>
                 <ScrapTapeLabel
                   text={t('goalDetail.reading.doneCelebrateWithTitle', { title: entry.title })}
-                  caption={t('goalDetail.reading.doneCelebrateCaption')}
                   isDark={isDark}
                   tone="scrap"
                   rotateDeg={0}
