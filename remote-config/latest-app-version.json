@@ -1,25 +1,25 @@
 {
-  "latestVersion": "1.8.8",
+  "latestVersion": "1.8.9",
   "highlights": [
-    "책방에서 읽은 페이지·진행도·완료 축하 흐름을 다듬었어요.",
-    "횟수 루틴은 이름·목표를 먼저 정한 뒤 −1/+1로 채우도록 바꿨어요.",
-    "할 일 목록 그림자를 더 부드럽게 정리했어요."
+    "책방 추가·검색·안내 UI를 각진 레이아웃과 버건디 톤으로 다듬었어요.",
+    "책 추가·검색 버튼과 가이드 문구를 더 가볍게 정리했어요.",
+    "책 리스트를 눌러 자세히 보는 흐름을 더 명확하게 안내해요."
   ],
   "highlightsByLocale": {
     "ko": [
-      "책방에서 읽은 페이지·진행도·완료 축하 흐름을 다듬었어요.",
-      "횟수 루틴은 이름·목표를 먼저 정한 뒤 −1/+1로 채우도록 바꿨어요.",
-      "할 일 목록 그림자를 더 부드럽게 정리했어요."
+      "책방 추가·검색·안내 UI를 각진 레이아웃과 버건디 톤으로 다듬었어요.",
+      "책 추가·검색 버튼과 가이드 문구를 더 가볍게 정리했어요.",
+      "책 리스트를 눌러 자세히 보는 흐름을 더 명확하게 안내해요."
     ],
     "en": [
-      "Polished reading: pages logged, progress, and completion share.",
-      "Count routines now set name and goal first, then fill with −1/+1.",
-      "Softer shadows on the to-do list."
+      "Bookstore add, search, and guides polished with angular layout and burgundy accents.",
+      "Lighter add/search buttons and clearer guide copy.",
+      "Clearer nudge to tap a book in the list for details."
     ],
     "ja": [
-      "読書のページ記録・進捗・完了シェアの流れを整えました。",
-      "回数ルーチンは名前と目標を先に決めてから −1/+1 で積む形に。",
-      "ToDoリストの影をより柔らかくしました。"
+      "読書の追加・検索・ガイドUIを角のあるレイアウトとバーガンディ調に整えました。",
+      "本の追加・検索ボタンとガイド文言をより軽く整理しました。",
+      "リストの本をタップして詳しく見る流れをよりはっきり案内します。"
     ]
   },
   "storeUrls": {

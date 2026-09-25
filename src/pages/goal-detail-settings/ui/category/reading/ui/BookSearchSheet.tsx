@@ -37,12 +37,16 @@ import {
 } from '@shared/lib/bookSearch/resolveBookSearchProvider';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
-import { BrutalConfirmButton, resolveBrutalConfirmPrimaryColors } from '@shared/ui/brutal-confirm-button';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
-import { readingStatusReadingFace } from '../lib/readingAccent';
+import {
+  READING_ACCENT,
+  READING_ACCENT_ON,
+  readingStatusReadingFace,
+} from '../lib/readingAccent';
 
 export type BookSearchSelection =
   | { source: 'aladin'; book: AladinBookDetail }
@@ -135,7 +139,9 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
   const shadowInk = isDark ? tone.solidShadow : tone.text;
   const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
   const softShadow = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
-  const cta = resolveBrutalConfirmPrimaryColors(isDark);
+  const searchCtaFill = READING_ACCENT;
+  const searchCtaLabel = READING_ACCENT_ON;
+  const searchCtaDisabledFill = isDark ? 'rgba(92, 61, 72, 0.45)' : '#A88A92';
   const aladinConfigured = useMemo(() => isAladinApiConfigured(), []);
 
   const [mode, setMode] = useState<SheetMode>('search');
@@ -386,13 +392,13 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                     style={[
                       styles.searchSubmitBtn,
                       {
-                        backgroundColor: loading ? cta.disabledFill : cta.fill,
+                        backgroundColor: loading ? searchCtaDisabledFill : searchCtaFill,
                       },
                     ]}>
                     {loading ? (
-                      <ActivityIndicator size="small" color={cta.labelColor} />
+                      <ActivityIndicator size="small" color={searchCtaLabel} />
                     ) : (
-                      <ThemedText style={[styles.searchSubmitText, { color: cta.labelColor }]}>
+                      <ThemedText style={[styles.searchSubmitText, { color: searchCtaLabel }]}>
                         {t('common.search')}
                       </ThemedText>
                     )}
@@ -579,6 +585,8 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                       align="stretch"
                       label={t('goalDetail.bookSearch.selectBook')}
                       accessibilityLabel={t('goalDetail.bookSearch.selectA11y')}
+                      fill={READING_ACCENT}
+                      labelColor={READING_ACCENT_ON}
                       onPress={() => void handleConfirmSelect()}
                     />
                   )}

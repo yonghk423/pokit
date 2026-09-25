@@ -2,15 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Reanimated, {
-  cancelAnimation,
-  Easing,
-  interpolateColor,
-  useAnimatedStyle,
-  useSharedValue,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+
 
 import {
   DEFAULT_READING_LIVE_ACTIVITY_CONFIG,
@@ -55,7 +47,6 @@ import { ReadingBookDetailSheet } from './ReadingBookDetailSheet';
 import { ReadingBookstoreAtmosphere } from './ReadingBookstoreAtmosphere';
 import {
   readingAccentOnInk,
-  readingPurpleTint,
   readingStatusDoneFace,
   readingStatusReadingFace,
 } from '../lib/readingAccent';
@@ -94,14 +85,12 @@ function ReadingBookListRow({
   isDark,
   onPress,
   statusLabelText,
-  emphasize = false,
 }: {
   entry: ReadingBookEntry;
   palette: SettingsPalette;
   isDark: boolean;
   onPress: () => void;
   statusLabelText: string;
-  emphasize?: boolean;
 }) {
   const c = palette;
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -110,10 +99,6 @@ function ReadingBookListRow({
   const coverUrl = resolveReadingBookCoverUrl(entry);
   const softShadow = isDark ? LIST_SOFT_SHADOW_DARK : LIST_SOFT_SHADOW_LIGHT;
   const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
-  const faceIdle = faceWhite;
-  const faceEmphasize = readingPurpleTint(isDark);
-  const scale = useSharedValue(1);
-  const pulse = useSharedValue(0);
   const pagesLine = `${entry.startPage}P → ${entry.targetPage}P`;
   const statusFace =
     status === 'done'
@@ -125,30 +110,6 @@ function ReadingBookListRow({
         : readingStatusReadingFace(isDark);
   const statusLabelColor =
     status === 'want' ? c.onSurface : readingAccentOnInk(isDark);
-
-  useEffect(() => {
-    if (!emphasize) {
-      cancelAnimation(scale);
-      cancelAnimation(pulse);
-      scale.value = withTiming(1, { duration: 160 });
-      pulse.value = withTiming(0, { duration: 160 });
-      return;
-    }
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    scale.value = withSequence(
-      withTiming(1.015, { duration: 280, easing: Easing.out(Easing.cubic) }),
-      withTiming(1, { duration: 320, easing: Easing.inOut(Easing.quad) }),
-    );
-    pulse.value = withSequence(
-      withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) }),
-      withTiming(0, { duration: 420, easing: Easing.inOut(Easing.quad) }),
-    );
-  }, [emphasize, pulse, scale]);
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    backgroundColor: interpolateColor(pulse.value, [0, 1], [faceIdle, faceEmphasize]),
-  }));
 
   return (
     <View
@@ -169,10 +130,10 @@ function ReadingBookListRow({
           },
         ]}
       />
-      <Reanimated.View style={[styles.listRowFace, { backgroundColor: faceWhite }, animStyle]}>
+      <View style={[styles.listRowFace, { backgroundColor: faceWhite }]}>
         <Pressable
           accessibilityRole="button"
-          accessibilityHint={emphasize ? statusLabelText : undefined}
+          accessibilityHint={statusLabelText}
           onPress={() => {
             void Haptics.selectionAsync();
             onPress();
@@ -219,7 +180,7 @@ function ReadingBookListRow({
             <IconSymbol name="chevron.right" size={14} color={c.outline} />
           </View>
         </Pressable>
-      </Reanimated.View>
+      </View>
     </View>
   );
 }
@@ -291,12 +252,8 @@ export function ReadingSettings({
   const [libraryQuery, setLibraryQuery] = useState('');
   const [listSearchActive, setListSearchActive] = useState(false);
   const [librarySortOrder, setLibrarySortOrder] = useState<ReadingLibrarySortOrder>('newest');
-  const [emphasizeSeedBook, setEmphasizeSeedBook] = useState(false);
   const [showTapGuideNote, setShowTapGuideNote] = useState(false);
   const [showSearchGuideNote, setShowSearchGuideNote] = useState(false);
-  const emphasizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** 리스트 펄스 애니메이션은 마운트당 1회 */
-  const tapGuideStartedRef = useRef(false);
 
   const lastPushedRef = useRef<string | null>(JSON.stringify(initialConfig));
   const hydratedKeyRef = useRef<string | null>(JSON.stringify(initialConfig));
@@ -307,11 +264,6 @@ export function ReadingSettings({
   const dismissTapGuide = useCallback(() => {
     clearReadingBookstoreTapGuidePending();
     setShowTapGuideNote(false);
-    setEmphasizeSeedBook(false);
-    if (emphasizeTimerRef.current) {
-      clearTimeout(emphasizeTimerRef.current);
-      emphasizeTimerRef.current = null;
-    }
   }, []);
 
   const dismissSearchGuide = useCallback(() => {
@@ -350,20 +302,6 @@ export function ReadingSettings({
       return;
     }
     setShowTapGuideNote(true);
-    if (tapGuideStartedRef.current) return;
-    tapGuideStartedRef.current = true;
-    setEmphasizeSeedBook(true);
-    if (emphasizeTimerRef.current) clearTimeout(emphasizeTimerRef.current);
-    emphasizeTimerRef.current = setTimeout(() => {
-      setEmphasizeSeedBook(false);
-      emphasizeTimerRef.current = null;
-    }, 900);
-    return () => {
-      if (emphasizeTimerRef.current) {
-        clearTimeout(emphasizeTimerRef.current);
-        emphasizeTimerRef.current = null;
-      }
-    };
   }, [books]);
 
   const draftReading = useMemo((): ReadingLiveActivityConfig => {
@@ -495,6 +433,27 @@ export function ReadingSettings({
             </ThemedText>
           </View>
           <View style={styles.headerActions}>
+            {showSearchGuideNote ? (
+              <View
+                style={styles.searchGuideNoteWrap}
+                pointerEvents="none"
+                accessibilityRole="text">
+                <PostItCardShell
+                  isDark={isDark}
+                  compact
+                  faceColor={isDark ? POST_IT_YELLOW_DARK : POST_IT_YELLOW_LIGHT}
+                  shadowColor={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)'}
+                  contentStyle={styles.searchGuideNoteContent}>
+                  <ThemedText
+                    style={[
+                      styles.searchGuideNoteText,
+                      { color: isDark ? 'rgba(255,255,255,0.92)' : '#1A1A1A' },
+                    ]}>
+                    {t('goalDetail.reading.searchGuideNote')}
+                  </ThemedText>
+                </PostItCardShell>
+              </View>
+            ) : null}
             <View
               style={[
                 styles.headerIconShell,
@@ -517,65 +476,39 @@ export function ReadingSettings({
                 accessibilityRole="button"
                 accessibilityLabel={t('goalDetail.reading.addBook')}
                 onPress={() => setAddSheetVisible(true)}
-                style={({ pressed }) => [
-                  styles.headerIconBtn,
-                  { backgroundColor: headerBtnFace, opacity: pressed ? 0.88 : 1 },
-                ]}>
+                style={[styles.headerIconBtn, { backgroundColor: headerBtnFace }]}>
                 <IconSymbol name="plus" size={15} color={c.onSurface} />
               </Pressable>
             </View>
             {searchEnabled ? (
-              <View style={styles.headerSearchCluster}>
-                {showSearchGuideNote ? (
-                  <View
-                    style={styles.searchGuideNoteWrap}
-                    pointerEvents="none"
-                    accessibilityRole="text">
-                    <PostItCardShell
-                      isDark={isDark}
-                      compact
-                      faceColor={isDark ? POST_IT_YELLOW_DARK : POST_IT_YELLOW_LIGHT}
-                      shadowColor={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)'}
-                      contentStyle={styles.searchGuideNoteContent}>
-                      <ThemedText
-                        style={[
-                          styles.searchGuideNoteText,
-                          { color: isDark ? 'rgba(255,255,255,0.92)' : '#1A1A1A' },
-                        ]}>
-                        {t('goalDetail.reading.searchGuideNote')}
-                      </ThemedText>
-                    </PostItCardShell>
-                  </View>
-                ) : null}
+              <View
+                style={[
+                  styles.headerIconShell,
+                  { marginRight: HEADER_ICON_SHADOW, marginBottom: HEADER_ICON_SHADOW },
+                ]}>
                 <View
+                  pointerEvents="none"
                   style={[
-                    styles.headerIconShell,
-                    { marginRight: HEADER_ICON_SHADOW, marginBottom: HEADER_ICON_SHADOW },
-                  ]}>
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.headerIconShadow,
-                      {
-                        backgroundColor: shadowInk,
-                        transform: [
-                          { translateX: HEADER_ICON_SHADOW },
-                          { translateY: HEADER_ICON_SHADOW },
-                        ],
-                      },
-                    ]}
-                  />
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('goalDetail.reading.searchBook')}
-                    onPress={() => {
-                      dismissSearchGuide();
-                      setSearchSheetVisible(true);
-                    }}
-                    style={[styles.headerIconBtn, { backgroundColor: headerBtnFace }]}>
-                    <IconSymbol name="magnifyingglass" size={15} color={c.onSurface} />
-                  </Pressable>
-                </View>
+                    styles.headerIconShadow,
+                    {
+                      backgroundColor: shadowInk,
+                      transform: [
+                        { translateX: HEADER_ICON_SHADOW },
+                        { translateY: HEADER_ICON_SHADOW },
+                      ],
+                    },
+                  ]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('goalDetail.reading.searchBook')}
+                  onPress={() => {
+                    dismissSearchGuide();
+                    setSearchSheetVisible(true);
+                  }}
+                  style={[styles.headerIconBtn, { backgroundColor: headerBtnFace }]}>
+                  <IconSymbol name="magnifyingglass" size={15} color={c.onSurface} />
+                </Pressable>
               </View>
             ) : null}
           </View>
@@ -698,13 +631,6 @@ export function ReadingSettings({
                       ]}>
                       {t('goalDetail.reading.tapGuideNote')}
                     </ThemedText>
-                    <ThemedText
-                      style={[
-                        styles.tapGuideNoteCaption,
-                        { color: isDark ? 'rgba(255,255,255,0.62)' : 'rgba(26,26,26,0.55)' },
-                      ]}>
-                      {t('goalDetail.reading.tapGuideNoteCaption')}
-                    </ThemedText>
                   </PostItCardShell>
                 </View>
               ) : null}
@@ -714,9 +640,6 @@ export function ReadingSettings({
                   entry={entry}
                   palette={palette}
                   isDark={isDark}
-                  emphasize={
-                    emphasizeSeedBook && entry.id === SEED_READING_LITTLE_PRINCE_BOOK_ID
-                  }
                   onPress={() => {
                     dismissTapGuide();
                     setDetailBookId(entry.id);
@@ -773,6 +696,7 @@ export function ReadingSettings({
       <ReadingAddBookSheet
         visible={addSheetVisible}
         palette={palette}
+        isDark={isDark}
         searchEnabled={searchEnabled}
         onClose={() => setAddSheetVisible(false)}
         onAddManual={addManualBook}
@@ -803,20 +727,17 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     marginBottom: 14,
   },
-  libraryHeaderLeft: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  libraryHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    flexShrink: 1,
+    minWidth: 0,
+  },
   libraryTitle: { fontSize: 22, fontWeight: '900', letterSpacing: -0.4 },
   libraryCount: { fontSize: 14, fontWeight: '600' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerSearchCluster: {
-    position: 'relative',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   searchGuideNoteWrap: {
-    position: 'absolute',
-    right: 44,
-    top: -6,
-    zIndex: 4,
     transform: [{ rotate: '-2deg' }],
   },
   searchGuideNoteContent: {
@@ -845,7 +766,6 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     zIndex: 1,
   },
-
   tabRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -954,7 +874,6 @@ const styles = StyleSheet.create({
   tapGuideNoteContent: {
     paddingHorizontal: 12,
     paddingVertical: 10,
-    gap: 2,
     maxWidth: 220,
   },
   tapGuideNoteText: {
@@ -962,12 +881,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.2,
     lineHeight: 18,
-  },
-  tapGuideNoteCaption: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: -0.1,
-    lineHeight: 15,
   },
   listRowShell: {
     position: 'relative',
