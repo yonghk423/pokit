@@ -73,7 +73,7 @@ export function LayoutSettingsPage() {
                   name="list.bullet.rectangle"
                   color={p.icon}
                   boxBg={p.iconBoxBg}
-                  border={p.border}
+                  border={p.iconBorder}
                   shadow={p.shadow}
                 />
                 <View style={chrome.itemTextWrap}>
@@ -110,7 +110,7 @@ export function LayoutSettingsPage() {
                   name="text.quote"
                   color={p.icon}
                   boxBg={p.iconBoxBg}
-                  border={p.border}
+                  border={p.iconBorder}
                   shadow={p.shadow}
                 />
                 <View style={chrome.itemTextWrap}>
@@ -147,7 +147,7 @@ export function LayoutSettingsPage() {
                   name="checkmark.circle"
                   color={p.icon}
                   boxBg={p.iconBoxBg}
-                  border={p.border}
+                  border={p.iconBorder}
                   shadow={p.shadow}
                 />
                 <View style={chrome.itemTextWrap}>
@@ -203,7 +203,7 @@ export function LayoutSettingsPage() {
                   name="tag"
                   color={p.icon}
                   boxBg={p.iconBoxBg}
-                  border={p.border}
+                  border={p.iconBorder}
                   shadow={p.shadow}
                 />
                 <View style={chrome.itemTextWrap}>

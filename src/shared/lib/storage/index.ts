@@ -60,6 +60,14 @@ export {
   markDailyRhythmOnboardingCompletedAndFlush
 } from './dailyRhythmOnboardingStorage';
 export {
+  clearReadingBookstoreTapGuide,
+  clearReadingBookstoreSearchGuidePending,
+  clearReadingBookstoreTapGuidePending,
+  loadReadingBookstoreSearchGuidePending,
+  loadReadingBookstoreTapGuidePending,
+  markReadingBookstoreTapGuidePending,
+} from './readingBookstoreTapGuideStorage';
+export {
   loadGuideBookSeen,
   markGuideBookSeen,
   markGuideBookSeenAndFlush,

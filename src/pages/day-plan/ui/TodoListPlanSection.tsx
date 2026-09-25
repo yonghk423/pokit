@@ -39,7 +39,7 @@ import {
 } from '@shared/lib/storage';
 import { CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { PostItCardShell, POST_IT_SOLID_SHADOW } from '@shared/ui/post-it-card-shell';
+import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -54,8 +54,11 @@ import {
 import { TodoListTimeEditSheet } from './TodoListTimeEditSheet';
 
 const EMPTY_TODOS: DayPlanTodoItem[] = [];
-const FIELD_SHADOW = 2;
-const ACTION_SHADOW = 2;
+const FIELD_SHADOW = 1;
+const ACTION_SHADOW = 1;
+/** solid shadow — 검정 면 대신 옅은 반투명 */
+const TODO_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
+const TODO_SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
 const MARK_SWATCH = 22;
 const MARK_CHIP_RADIUS = 6;
 /** 형광펜 밑줄 — FixedRoutine / priority row 와 동일 톤 */
@@ -67,7 +70,7 @@ type TitleUnderlineLine = {
   top: number;
   width: number;
 };
-const MARK_SHADOW = 2;
+const MARK_SHADOW = 1;
 const MARK_ACCORDION_OPEN_MS = 240;
 const MARK_ACCORDION_CLOSE_MS = 200;
 const MARK_ACCORDION_EASING = Easing.out(Easing.cubic);
@@ -785,6 +788,7 @@ export function TodoListPlanSection({
   const [deleteSelection, setDeleteSelection] = useState<Set<string>>(() => new Set());
 
   const faceUsesLightInk = postItFaceUsesLightInk(faceColorId);
+  const softShadow = isDark ? TODO_SOFT_SHADOW_DARK : TODO_SOFT_SHADOW_LIGHT;
   const faceColor = resolvePostItFaceColor(faceColorId, isDark);
   const faceInk = resolvePostItFaceInk(faceColorId, baseUi.ink);
   const faceMuted = resolvePostItFaceMuted(faceColorId, baseUi.muted);
@@ -940,7 +944,7 @@ export function TodoListPlanSection({
                 style={[
                   styles.trashShadow,
                   {
-                    backgroundColor: POST_IT_SOLID_SHADOW,
+                    backgroundColor: softShadow,
                     transform: [
                       { translateX: ACTION_SHADOW },
                       { translateY: ACTION_SHADOW },
@@ -978,7 +982,7 @@ export function TodoListPlanSection({
             selectedId={faceColorId}
             isDark={isDark}
             ink={faceInk}
-            shadowColor={POST_IT_SOLID_SHADOW}
+            shadowColor={softShadow}
             onSelect={onSelectFaceColor}
           />
         </View>
@@ -993,7 +997,7 @@ export function TodoListPlanSection({
             style={[
               styles.fieldShadow,
               {
-                backgroundColor: POST_IT_SOLID_SHADOW,
+                backgroundColor: softShadow,
                 transform: [{ translateX: FIELD_SHADOW }, { translateY: FIELD_SHADOW }],
               },
             ]}
@@ -1026,7 +1030,7 @@ export function TodoListPlanSection({
                   style={[
                     styles.quickAddBtnShadow,
                     {
-                      backgroundColor: POST_IT_SOLID_SHADOW,
+                      backgroundColor: softShadow,
                       transform: [
                         { translateX: ACTION_SHADOW },
                         { translateY: ACTION_SHADOW },
@@ -1071,7 +1075,7 @@ export function TodoListPlanSection({
                 item={item}
                 ui={ui}
                 isDark={isDark}
-                shadow={POST_IT_SOLID_SHADOW}
+                shadow={softShadow}
                 checkboxFill="#FFFFFF"
                 actionBtnBg={actionBtnBg}
                 actionIconColor={actionIconColor}

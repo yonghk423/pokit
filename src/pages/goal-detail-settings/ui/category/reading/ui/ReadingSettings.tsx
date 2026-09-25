@@ -2,6 +2,15 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Reanimated, {
+  cancelAnimation,
+  Easing,
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import {
   DEFAULT_READING_LIVE_ACTIVITY_CONFIG,
@@ -11,9 +20,9 @@ import {
   makeReadingBookId,
   normalizeReadingBookStatus,
   normalizeReadingLiveActivityConfig,
-  normalizeReadingMetricSelection,
   resolveReadingBookAuthor,
   resolveReadingBookCoverUrl,
+  SEED_READING_LITTLE_PRINCE_BOOK_ID,
   sortReadingBooksByAddedAt,
   type ReadingBookEntry,
   type ReadingBookStatus,
@@ -24,7 +33,18 @@ import { BookSearchSheet, type BookSearchSelection } from './BookSearchSheet';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
+import {
+  clearReadingBookstoreSearchGuidePending,
+  clearReadingBookstoreTapGuidePending,
+  loadReadingBookstoreSearchGuidePending,
+  loadReadingBookstoreTapGuidePending,
+} from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import {
+  PostItCardShell,
+  POST_IT_YELLOW_DARK,
+  POST_IT_YELLOW_LIGHT,
+} from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
@@ -32,12 +52,22 @@ import { useGoalDetailSettingsPalette, type GoalDetailSettingsPalette } from '..
 
 import { ReadingAddBookSheet } from './ReadingAddBookSheet';
 import { ReadingBookDetailSheet } from './ReadingBookDetailSheet';
+import { ReadingBookstoreAtmosphere } from './ReadingBookstoreAtmosphere';
+import {
+  readingAccentOnInk,
+  readingPurpleTint,
+  readingStatusDoneFace,
+  readingStatusReadingFace,
+} from '../lib/readingAccent';
 
 import type { GoalDetailCategoryKey } from '../../../../model/types';
 
 type SettingsPalette = GoalDetailSettingsPalette;
 
 const HEADER_ICON_SHADOW = 2;
+const LIST_ROW_SHADOW = 3;
+const LIST_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.14)';
+const LIST_SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.35)';
 
 type LibraryTab = 'all' | ReadingBookStatus;
 
@@ -63,63 +93,134 @@ function ReadingBookListRow({
   palette,
   isDark,
   onPress,
-  showDivider,
   statusLabelText,
+  emphasize = false,
 }: {
   entry: ReadingBookEntry;
   palette: SettingsPalette;
   isDark: boolean;
   onPress: () => void;
-  showDivider: boolean;
   statusLabelText: string;
+  emphasize?: boolean;
 }) {
   const c = palette;
+  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const status = normalizeReadingBookStatus(entry.status);
   const author = resolveReadingBookAuthor(entry);
   const coverUrl = resolveReadingBookCoverUrl(entry);
+  const softShadow = isDark ? LIST_SOFT_SHADOW_DARK : LIST_SOFT_SHADOW_LIGHT;
+  const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const faceIdle = faceWhite;
+  const faceEmphasize = readingPurpleTint(isDark);
+  const scale = useSharedValue(1);
+  const pulse = useSharedValue(0);
+  const pagesLine = `${entry.startPage}P → ${entry.targetPage}P`;
+  const statusFace =
+    status === 'done'
+      ? readingStatusDoneFace(isDark)
+      : status === 'want'
+        ? isDark
+          ? 'rgba(255, 236, 179, 0.28)'
+          : '#FFE8A8'
+        : readingStatusReadingFace(isDark);
+  const statusLabelColor =
+    status === 'want' ? c.onSurface : readingAccentOnInk(isDark);
+
+  useEffect(() => {
+    if (!emphasize) {
+      cancelAnimation(scale);
+      cancelAnimation(pulse);
+      scale.value = withTiming(1, { duration: 160 });
+      pulse.value = withTiming(0, { duration: 160 });
+      return;
+    }
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    scale.value = withSequence(
+      withTiming(1.015, { duration: 280, easing: Easing.out(Easing.cubic) }),
+      withTiming(1, { duration: 320, easing: Easing.inOut(Easing.quad) }),
+    );
+    pulse.value = withSequence(
+      withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) }),
+      withTiming(0, { duration: 420, easing: Easing.inOut(Easing.quad) }),
+    );
+  }, [emphasize, pulse, scale]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    backgroundColor: interpolateColor(pulse.value, [0, 1], [faceIdle, faceEmphasize]),
+  }));
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.listRow,
-        showDivider && [styles.listRowDivider, { borderTopColor: c.outlineVariant }],
-        pressed && { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' },
+    <View
+      style={[
+        styles.listRowShell,
+        {
+          marginRight: LIST_ROW_SHADOW,
+          marginBottom: LIST_ROW_SHADOW,
+        },
       ]}>
-      {coverUrl ? (
-        <Image source={{ uri: coverUrl }} style={styles.listCover} contentFit="cover" />
-      ) : (
-        <View
-          style={[
-            styles.listCover,
-            styles.listCoverFallback,
-            { borderColor: c.outlineVariant, backgroundColor: c.surfaceLow },
-          ]}>
-          <IconSymbol name="book.closed.fill" size={16} color={c.outline} />
-        </View>
-      )}
-      <View style={styles.listBody}>
-        <ThemedText style={[styles.listTitle, { color: c.onSurface }]} numberOfLines={2}>
-          {entry.title}
-        </ThemedText>
-        {author ? (
-          <ThemedText style={[styles.listAuthor, { color: c.onVariant }]} numberOfLines={1}>
-            {author}
-          </ThemedText>
-        ) : (
-          <ThemedText style={[styles.listAuthor, { color: c.onVariant }]} numberOfLines={1}>
-            {statusLabelText}
-          </ThemedText>
-        )}
-      </View>
-      <View style={styles.listTrailing}>
-        {status === 'done' ? (
-          <IconSymbol name="checkmark.circle.fill" size={16} color={c.onSurface} />
-        ) : null}
-        <IconSymbol name="chevron.right" size={14} color={c.outline} />
-      </View>
-    </Pressable>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.listRowShadow,
+          {
+            backgroundColor: softShadow,
+            transform: [{ translateX: LIST_ROW_SHADOW }, { translateY: LIST_ROW_SHADOW }],
+          },
+        ]}
+      />
+      <Reanimated.View style={[styles.listRowFace, { backgroundColor: faceWhite }, animStyle]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityHint={emphasize ? statusLabelText : undefined}
+          onPress={() => {
+            void Haptics.selectionAsync();
+            onPress();
+          }}
+          style={styles.listRow}>
+          {coverUrl ? (
+            <View style={styles.listCoverFrame}>
+              <Image source={{ uri: coverUrl }} style={styles.listCover} contentFit="cover" />
+            </View>
+          ) : (
+            <View
+              style={[
+                styles.listCoverFrame,
+                styles.listCoverFallback,
+                { backgroundColor: c.surfaceLow },
+              ]}>
+              <IconSymbol name="book.closed.fill" size={18} color={c.outline} />
+            </View>
+          )}
+          <View style={styles.listBody}>
+            <ThemedText style={[styles.listTitle, { color: c.onSurface }]} numberOfLines={2}>
+              {entry.title}
+            </ThemedText>
+            {author ? (
+              <ThemedText style={[styles.listAuthor, { color: c.onVariant }]} numberOfLines={1}>
+                {author}
+              </ThemedText>
+            ) : null}
+            <View style={styles.listMetaChips}>
+              <View style={[styles.statusChip, { backgroundColor: statusFace }]}>
+                <ThemedText style={[styles.statusChipText, { color: statusLabelColor }]}>
+                  {statusLabelText}
+                </ThemedText>
+              </View>
+              <ThemedText style={[styles.pagesChipText, { color: c.onVariant }]} numberOfLines={1}>
+                {pagesLine}
+              </ThemedText>
+            </View>
+          </View>
+          <View style={styles.listTrailing}>
+            {status === 'done' ? (
+              <IconSymbol name="checkmark.circle.fill" size={16} color={isDark ? '#FAFAFA' : '#111111'} />
+            ) : null}
+            <IconSymbol name="chevron.right" size={14} color={c.outline} />
+          </View>
+        </Pressable>
+      </Reanimated.View>
+    </View>
   );
 }
 
@@ -184,27 +285,88 @@ export function ReadingSettings({
   const [searchSheetVisible, setSearchSheetVisible] = useState(false);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [summary, setSummary] = useState(initialConfig.summary ?? '');
+  const [selectedMetrics, setSelectedMetrics] = useState(initialConfig.selectedMetrics);
   const [activeTab, setActiveTab] = useState<LibraryTab>('all');
   const [detailBookId, setDetailBookId] = useState<string | null>(null);
   const [libraryQuery, setLibraryQuery] = useState('');
   const [listSearchActive, setListSearchActive] = useState(false);
   const [librarySortOrder, setLibrarySortOrder] = useState<ReadingLibrarySortOrder>('newest');
+  const [emphasizeSeedBook, setEmphasizeSeedBook] = useState(false);
+  const [showTapGuideNote, setShowTapGuideNote] = useState(false);
+  const [showSearchGuideNote, setShowSearchGuideNote] = useState(false);
+  const emphasizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** 리스트 펄스 애니메이션은 마운트당 1회 */
+  const tapGuideStartedRef = useRef(false);
 
   const lastPushedRef = useRef<string | null>(JSON.stringify(initialConfig));
   const hydratedKeyRef = useRef<string | null>(JSON.stringify(initialConfig));
+  const pendingLocalRef = useRef(false);
+  const onChangeDataConfigRef = useRef(onChangeDataConfig);
+  onChangeDataConfigRef.current = onChangeDataConfig;
+
+  const dismissTapGuide = useCallback(() => {
+    clearReadingBookstoreTapGuidePending();
+    setShowTapGuideNote(false);
+    setEmphasizeSeedBook(false);
+    if (emphasizeTimerRef.current) {
+      clearTimeout(emphasizeTimerRef.current);
+      emphasizeTimerRef.current = null;
+    }
+  }, []);
+
+  const dismissSearchGuide = useCallback(() => {
+    clearReadingBookstoreSearchGuidePending();
+    setShowSearchGuideNote(false);
+  }, []);
 
   useEffect(() => {
     const next = normalizeReadingLiveActivityConfig(dataConfig);
     const key = JSON.stringify(next);
-    if (hydratedKeyRef.current === key) return;
+    if (key === lastPushedRef.current || key === hydratedKeyRef.current) {
+      pendingLocalRef.current = false;
+      hydratedKeyRef.current = key;
+      lastPushedRef.current = key;
+      return;
+    }
+    // 로컬 편집을 부모에 올리는 중이면 디스크로 다시 덮지 않음
+    if (pendingLocalRef.current) return;
     hydratedKeyRef.current = key;
+    lastPushedRef.current = key;
     setDisplayName(next.displayName ?? '');
     setBooks(next.books.map((book) => ensureReadingBookPages(book)));
     setSummary(next.summary ?? '');
+    setSelectedMetrics(next.selectedMetrics);
   }, [dataConfig]);
 
+  useEffect(() => {
+    setShowSearchGuideNote(loadReadingBookstoreSearchGuidePending());
+  }, [books.length]);
+
+  useEffect(() => {
+    const hasSeed = books.some((book) => book.id === SEED_READING_LITTLE_PRINCE_BOOK_ID);
+    const pending = loadReadingBookstoreTapGuidePending();
+    if (!hasSeed || !pending) {
+      if (!pending) setShowTapGuideNote(false);
+      return;
+    }
+    setShowTapGuideNote(true);
+    if (tapGuideStartedRef.current) return;
+    tapGuideStartedRef.current = true;
+    setEmphasizeSeedBook(true);
+    if (emphasizeTimerRef.current) clearTimeout(emphasizeTimerRef.current);
+    emphasizeTimerRef.current = setTimeout(() => {
+      setEmphasizeSeedBook(false);
+      emphasizeTimerRef.current = null;
+    }, 900);
+    return () => {
+      if (emphasizeTimerRef.current) {
+        clearTimeout(emphasizeTimerRef.current);
+        emphasizeTimerRef.current = null;
+      }
+    };
+  }, [books]);
+
   const draftReading = useMemo((): ReadingLiveActivityConfig => {
-    const persisted = normalizeReadingLiveActivityConfig(dataConfig);
     const normalizedBooks = books.map((book) => ensureReadingBookPages(book));
     const firstBook = normalizedBooks[0];
     return normalizeReadingLiveActivityConfig({
@@ -214,17 +376,21 @@ export function ReadingSettings({
       books: normalizedBooks,
       startPage: firstBook?.startPage,
       targetPage: firstBook?.targetPage,
-      selectedMetrics: normalizeReadingMetricSelection(persisted.selectedMetrics),
+      selectedMetrics,
       summary,
     });
-  }, [books, dataConfig, displayName, summary]);
+  }, [books, displayName, selectedMetrics, summary]);
 
   useEffect(() => {
     const serialized = JSON.stringify(draftReading);
-    if (lastPushedRef.current === serialized) return;
+    if (lastPushedRef.current === serialized) {
+      pendingLocalRef.current = false;
+      return;
+    }
     lastPushedRef.current = serialized;
-    onChangeDataConfig(draftReading);
-  }, [draftReading, onChangeDataConfig]);
+    pendingLocalRef.current = true;
+    onChangeDataConfigRef.current(draftReading);
+  }, [draftReading]);
 
   const displayBooks = useMemo(() => {
     const tabbed = books.filter((book) => bookMatchesTab(book, activeTab));
@@ -317,6 +483,7 @@ export function ReadingSettings({
 
   return (
     <View style={styles.root}>
+      <ReadingBookstoreAtmosphere isDark={isDark} />
       <View style={styles.libraryCanvas}>
         <View style={styles.libraryHeader}>
           <View style={styles.libraryHeaderLeft}>
@@ -358,34 +525,57 @@ export function ReadingSettings({
               </Pressable>
             </View>
             {searchEnabled ? (
-              <View
-                style={[
-                  styles.headerIconShell,
-                  { marginRight: HEADER_ICON_SHADOW, marginBottom: HEADER_ICON_SHADOW },
-                ]}>
+              <View style={styles.headerSearchCluster}>
+                {showSearchGuideNote ? (
+                  <View
+                    style={styles.searchGuideNoteWrap}
+                    pointerEvents="none"
+                    accessibilityRole="text">
+                    <PostItCardShell
+                      isDark={isDark}
+                      compact
+                      faceColor={isDark ? POST_IT_YELLOW_DARK : POST_IT_YELLOW_LIGHT}
+                      shadowColor={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)'}
+                      contentStyle={styles.searchGuideNoteContent}>
+                      <ThemedText
+                        style={[
+                          styles.searchGuideNoteText,
+                          { color: isDark ? 'rgba(255,255,255,0.92)' : '#1A1A1A' },
+                        ]}>
+                        {t('goalDetail.reading.searchGuideNote')}
+                      </ThemedText>
+                    </PostItCardShell>
+                  </View>
+                ) : null}
                 <View
-                  pointerEvents="none"
                   style={[
-                    styles.headerIconShadow,
-                    {
-                      backgroundColor: shadowInk,
-                      transform: [
-                        { translateX: HEADER_ICON_SHADOW },
-                        { translateY: HEADER_ICON_SHADOW },
-                      ],
-                    },
-                  ]}
-                />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('goalDetail.reading.searchBook')}
-                  onPress={() => setSearchSheetVisible(true)}
-                  style={({ pressed }) => [
-                    styles.headerIconBtn,
-                    { backgroundColor: headerBtnFace, opacity: pressed ? 0.88 : 1 },
+                    styles.headerIconShell,
+                    { marginRight: HEADER_ICON_SHADOW, marginBottom: HEADER_ICON_SHADOW },
                   ]}>
-                  <IconSymbol name="magnifyingglass" size={15} color={c.onSurface} />
-                </Pressable>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.headerIconShadow,
+                      {
+                        backgroundColor: shadowInk,
+                        transform: [
+                          { translateX: HEADER_ICON_SHADOW },
+                          { translateY: HEADER_ICON_SHADOW },
+                        ],
+                      },
+                    ]}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('goalDetail.reading.searchBook')}
+                    onPress={() => {
+                      dismissSearchGuide();
+                      setSearchSheetVisible(true);
+                    }}
+                    style={[styles.headerIconBtn, { backgroundColor: headerBtnFace }]}>
+                    <IconSymbol name="magnifyingglass" size={15} color={c.onSurface} />
+                  </Pressable>
+                </View>
               </View>
             ) : null}
           </View>
@@ -492,15 +682,45 @@ export function ReadingSettings({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
           {displayBooks.length > 0 ? (
-            <View style={[styles.listShell, { borderColor: c.outlineVariant }]}>
-              {displayBooks.map((entry, index) => (
+            <View style={styles.listShell}>
+              {showTapGuideNote ? (
+                <View style={styles.tapGuideNoteWrap} accessibilityRole="text">
+                  <PostItCardShell
+                    isDark={isDark}
+                    compact
+                    faceColor={isDark ? POST_IT_YELLOW_DARK : POST_IT_YELLOW_LIGHT}
+                    shadowColor={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)'}
+                    contentStyle={styles.tapGuideNoteContent}>
+                    <ThemedText
+                      style={[
+                        styles.tapGuideNoteText,
+                        { color: isDark ? 'rgba(255,255,255,0.92)' : '#1A1A1A' },
+                      ]}>
+                      {t('goalDetail.reading.tapGuideNote')}
+                    </ThemedText>
+                    <ThemedText
+                      style={[
+                        styles.tapGuideNoteCaption,
+                        { color: isDark ? 'rgba(255,255,255,0.62)' : 'rgba(26,26,26,0.55)' },
+                      ]}>
+                      {t('goalDetail.reading.tapGuideNoteCaption')}
+                    </ThemedText>
+                  </PostItCardShell>
+                </View>
+              ) : null}
+              {displayBooks.map((entry) => (
                 <ReadingBookListRow
                   key={entry.id}
                   entry={entry}
                   palette={palette}
                   isDark={isDark}
-                  onPress={() => setDetailBookId(entry.id)}
-                  showDivider={index > 0}
+                  emphasize={
+                    emphasizeSeedBook && entry.id === SEED_READING_LITTLE_PRINCE_BOOK_ID
+                  }
+                  onPress={() => {
+                    dismissTapGuide();
+                    setDetailBookId(entry.id);
+                  }}
                   statusLabelText={readingStatusLabel(normalizeReadingBookStatus(entry.status))}
                 />
               ))}
@@ -573,8 +793,8 @@ export function ReadingSettings({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, minHeight: 0, width: '100%' },
-  libraryCanvas: { flex: 1, minHeight: 0, width: '100%' },
+  root: { flex: 1, minHeight: 0, width: '100%', overflow: 'hidden' },
+  libraryCanvas: { flex: 1, minHeight: 0, width: '100%', zIndex: 1 },
   libraryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -587,6 +807,29 @@ const styles = StyleSheet.create({
   libraryTitle: { fontSize: 22, fontWeight: '900', letterSpacing: -0.4 },
   libraryCount: { fontSize: 14, fontWeight: '600' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerSearchCluster: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  searchGuideNoteWrap: {
+    position: 'absolute',
+    right: 44,
+    top: -6,
+    zIndex: 4,
+    transform: [{ rotate: '-2deg' }],
+  },
+  searchGuideNoteContent: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    maxWidth: 132,
+  },
+  searchGuideNoteText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    lineHeight: 16,
+  },
   headerIconShell: {
     position: 'relative',
   },
@@ -695,27 +938,83 @@ const styles = StyleSheet.create({
   },
   listScrollContent: {
     flexGrow: 1,
-    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 28,
   },
 
   listShell: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 10,
+  },
+  tapGuideNoteWrap: {
+    alignSelf: 'flex-start',
+    marginBottom: 2,
+    transform: [{ rotate: '-1.5deg' }],
+  },
+  tapGuideNoteContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 2,
+    maxWidth: 220,
+  },
+  tapGuideNoteText: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    lineHeight: 18,
+  },
+  tapGuideNoteCaption: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+    lineHeight: 15,
+  },
+  listRowShell: {
+    position: 'relative',
+  },
+  listRowShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
+  listRowFace: {
+    borderWidth: 0,
+    borderRadius: 0,
+    zIndex: 1,
+    overflow: 'hidden',
   },
   listRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 12,
-    minHeight: 76,
+    minHeight: 88,
   },
-  listRowDivider: { borderTopWidth: StyleSheet.hairlineWidth },
-  listCover: { width: 42, height: 58 },
-  listCoverFallback: { alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },
-  listBody: { flex: 1, minWidth: 0, gap: 3 },
-  listTitle: { fontSize: 15, fontWeight: '700', letterSpacing: -0.2, lineHeight: 20 },
-  listAuthor: { fontSize: 12, fontWeight: '500' },
+  listCoverFrame: {
+    width: 52,
+    height: 72,
+    borderWidth: 0,
+    overflow: 'hidden',
+  },
+  listCover: { width: '100%', height: '100%' },
+  listCoverFallback: { alignItems: 'center', justifyContent: 'center' },
+  listBody: { flex: 1, minWidth: 0, gap: 4 },
+  listTitle: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2, lineHeight: 20 },
+  listAuthor: { fontSize: 12, fontWeight: '600', lineHeight: 16 },
+  listMetaChips: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+    flexWrap: 'wrap',
+  },
+  statusChip: {
+    borderWidth: 0,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  statusChipText: { fontSize: 10, fontWeight: '800', letterSpacing: -0.1 },
+  pagesChipText: { fontSize: 11, fontWeight: '700', letterSpacing: -0.1 },
   listTrailing: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 
   emptyState: {

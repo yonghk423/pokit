@@ -235,7 +235,7 @@ export function NotificationSettingsPage() {
           <CityPopCardShell
             isDark={isDark}
             faceColor={p.surface}
-            shadowColor={isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)'}
+            shadowColor={isDark ? 'rgba(0, 0, 0, 0.28)' : 'rgba(24, 26, 46, 0.10)'}
             contentStyle={styles.card}>
             <DailyRhythmStyleAlarmRow
               title={t('dayRhythm.dayStartAlarmTitle')}
@@ -306,7 +306,7 @@ export function NotificationSettingsPage() {
                           trackFill={isDark ? ink.surfaceAlt : ink.bg}
                           selectedInk={isDark ? ink.text : ink.tertiary}
                           unselectedInk={surface.timeField.onVariant}
-                          shadowColor={isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)'}
+                          shadowColor={isDark ? 'rgba(0, 0, 0, 0.28)' : 'rgba(24, 26, 46, 0.10)'}
                           minHeight={36}
                         />
                         {dayEndAlarmNextDay ? (

@@ -1,10 +1,17 @@
 import { normalizeReadingAladinBook, type ReadingAladinBook } from './readingAladinBook';
 import { defaultTargetPageForCatalogBook } from './readingBookCatalog';
+import {
+  normalizeReadingPageLogs,
+  resolveFurthestReadingTargetPage,
+  sumPagesFromReadingLogs,
+  type ReadingPageLogs,
+} from './readingPageLog';
 import { normalizeReadingOpenLibraryBook, type ReadingOpenLibraryBook } from './readingOpenLibraryBook';
 import { normalizeRoutineDisplayName } from './routineDisplayName';
 import { normalizeRoutineSummary } from './routineSummary';
 
 export type { ReadingAladinBook, ReadingOpenLibraryBook };
+export type { ReadingPageDayLog, ReadingPageLogs } from './readingPageLog';
 
 export type ReadingMetricKey = 'pages_read' | 'pages_left' | 'focus_level';
 
@@ -26,6 +33,8 @@ export type ReadingBookEntry = {
   addedAtMs?: number;
   /** 읽는 중 간단 메모 */
   memo?: string;
+  /** 날짜별 시작·목표 페이지 (YYYY-MM-DD) */
+  pageLogs?: ReadingPageLogs;
   aladin?: ReadingAladinBook | null;
   openLibrary?: ReadingOpenLibraryBook | null;
 };
@@ -95,6 +104,50 @@ function defaultTargetPageForBook(
 
 export function makeReadingBookId(): string {
   return `rb-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+/** 첫 실행 책방 시드 — 문예출판사 소프트커버 에디션(알라딘) */
+export const SEED_READING_LITTLE_PRINCE_BOOK_ID = 'rb-seed-little-prince';
+/** 알라딘 ItemId — 어린왕자 (소프트커버 에디션) - 개정판 */
+export const SEED_READING_LITTLE_PRINCE_ALADIN_ITEM_ID = 251847567;
+
+export function makeSeedLittlePrinceBook(): ReadingBookEntry {
+  return {
+    id: SEED_READING_LITTLE_PRINCE_BOOK_ID,
+    title: '어린왕자 (소프트커버 에디션) - 개정판',
+    startPage: 1,
+    targetPage: 20,
+    status: 'reading',
+    addedAtMs: 1,
+    memo: '',
+    pageLogs: {},
+    openLibrary: null,
+    aladin: {
+      itemId: SEED_READING_LITTLE_PRINCE_ALADIN_ITEM_ID,
+      link: 'https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=251847567',
+      coverUrl: 'https://image.aladin.co.kr/product/25184/75/cover/8931021291_1.jpg',
+      author: '앙투안 드 생텍쥐페리 (지은이), 전성자 (옮긴이)',
+      totalPages: 144,
+    },
+  };
+}
+
+/** 기존 Open Library 시드를 알라딘 에디션으로 교체(진행 페이지·메모는 유지) */
+export function upgradeSeedLittlePrinceBookEntry(book: ReadingBookEntry): ReadingBookEntry {
+  if (book.id !== SEED_READING_LITTLE_PRINCE_BOOK_ID) return book;
+  if (book.aladin?.itemId === SEED_READING_LITTLE_PRINCE_ALADIN_ITEM_ID) {
+    return ensureReadingBookPages(book);
+  }
+  const seed = makeSeedLittlePrinceBook();
+  return ensureReadingBookPages({
+    ...seed,
+    startPage: book.startPage,
+    targetPage: book.targetPage,
+    status: book.status,
+    memo: book.memo,
+    pageLogs: book.pageLogs,
+    addedAtMs: book.addedAtMs,
+  });
 }
 
 function resolveReadingBookAddedAtMsFromId(id: string): number | null {
@@ -170,6 +223,7 @@ function normalizeBookEntry(
     status: normalizeReadingBookStatus(raw.status),
     addedAtMs: normalizeReadingBookAddedAtMs(raw.addedAtMs, id),
     memo: normalizeReadingBookMemo(raw.memo),
+    pageLogs: normalizeReadingPageLogs(raw.pageLogs),
     aladin,
     openLibrary,
   };
@@ -191,6 +245,7 @@ export function ensureReadingBookPages(
     status: normalizeReadingBookStatus(entry.status),
     addedAtMs: normalizeReadingBookAddedAtMs(entry.addedAtMs, entry.id),
     memo: normalizeReadingBookMemo(entry.memo),
+    pageLogs: normalizeReadingPageLogs(entry.pageLogs),
     aladin,
     openLibrary,
   };
@@ -262,32 +317,41 @@ export function firstAladinBookEntry(
 export function deriveReadingBookProgress(
   entry: Pick<ReadingBookEntry, 'startPage' | 'targetPage'> & {
     totalPages?: number | null;
+    pageLogs?: ReadingPageLogs | null;
   },
 ): {
   pagesRead: number;
   pagesLeft: number;
   progressPct: number;
 } {
-  const pagesRead = Math.max(0, entry.targetPage - entry.startPage);
+  const logs = normalizeReadingPageLogs(entry.pageLogs);
+  const hasLogs = Object.keys(logs).length > 0;
+  const pagesRead = hasLogs
+    ? sumPagesFromReadingLogs(logs)
+    : Math.max(0, entry.targetPage - entry.startPage);
+  const furthestTarget = hasLogs
+    ? resolveFurthestReadingTargetPage(logs, entry.targetPage)
+    : entry.targetPage;
   const pagesLeft = Math.max(0, entry.startPage);
   const totalPages =
     typeof entry.totalPages === 'number' && entry.totalPages > 0 ? entry.totalPages : null;
   const progressPct =
     totalPages == null
       ? 0
-      : Math.max(0, Math.min(100, Math.round((entry.targetPage / totalPages) * 100)));
+      : Math.max(0, Math.min(100, Math.round((furthestTarget / totalPages) * 100)));
 
   return { pagesRead, pagesLeft, progressPct };
 }
 
 export function getInitialReadingLiveActivityConfig(): ReadingLiveActivityConfig {
+  const seedBook = makeSeedLittlePrinceBook();
   return {
     displayName: '',
-    bookTitle: '',
+    bookTitle: seedBook.title,
     aladinBook: null,
-    books: [],
-    startPage: DEFAULT_READING_LIVE_ACTIVITY_CONFIG.startPage,
-    targetPage: DEFAULT_READING_LIVE_ACTIVITY_CONFIG.targetPage,
+    books: [seedBook],
+    startPage: seedBook.startPage,
+    targetPage: seedBook.targetPage,
     selectedMetrics: [...DEFAULT_READING_LIVE_ACTIVITY_CONFIG.selectedMetrics],
     summary: '',
   };
@@ -366,6 +430,7 @@ export function deriveReadingProgress(config: ReadingLiveActivityConfig): {
           book.aladin?.totalPages ??
           book.openLibrary?.totalPages ??
           null,
+        pageLogs: book.pageLogs,
       }),
     );
     const pagesRead = totals.reduce((sum, item) => sum + item.pagesRead, 0);

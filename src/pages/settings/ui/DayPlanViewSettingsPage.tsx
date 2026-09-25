@@ -100,7 +100,7 @@ export function DayPlanViewSettingsPage() {
                       name={opt.icon}
                       color={p.icon}
                       boxBg={p.iconBoxBg}
-                      border={p.border}
+                      border={p.iconBorder}
                       shadow={p.shadow}
                     />
                     <View style={chrome.itemTextWrap}>

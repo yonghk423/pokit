@@ -52,12 +52,16 @@ export function ScrapTapeLabel({
   const isMasking = tone === 'masking';
   const face = isMasking
     ? isDark
-      ? 'rgba(255,255,255,0.88)'
-      : 'rgba(255,255,255,0.94)'
+      ? 'rgba(255,255,255,0.52)'
+      : 'rgba(255,255,255,0.58)'
     : isDark
       ? 'rgba(255, 236, 179, 0.92)'
       : '#FFE8A8';
-  const ink = isMasking ? (isDark ? '#1A1A1A' : '#2A2A2A') : '#111111';
+  const ink = isMasking
+    ? isDark
+      ? 'rgba(26,26,26,0.78)'
+      : 'rgba(42,42,42,0.72)'
+    : '#111111';
   const deg = flat ? 0 : rotateDeg;
 
   const body = (
@@ -75,7 +79,9 @@ export function ScrapTapeLabel({
         style,
       ]}>
       {caption ? (
-        <Text style={[styles.caption, { color: ink }, cityPopFont('700')]} numberOfLines={1}>
+        <Text
+          style={[styles.caption, isMasking && styles.captionMasking, { color: ink }, cityPopFont('700')]}
+          numberOfLines={1}>
           {caption}
         </Text>
       ) : null}
@@ -90,7 +96,9 @@ export function ScrapTapeLabel({
           accessibilityLabel={accessibilityLabel}
         />
       ) : (
-        <Text style={[styles.text, { color: ink }, cityPopFont('800')]} numberOfLines={2}>
+        <Text
+          style={[styles.text, isMasking && styles.textMasking, { color: ink }, cityPopFont('800')]}
+          numberOfLines={2}>
           {text}
         </Text>
       )}
@@ -124,8 +132,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   tapeMasking: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
   },
   /** 루틴 탭 createTape 와 같은 solid 오프셋 그림자 (약한 톤) */
   tapeShadow: Platform.select({
@@ -141,10 +149,10 @@ const styles = StyleSheet.create({
   /** 포스티 상단 마스킹 테이프 — soft drop */
   tapeShadowSoft: Platform.select({
     ios: {
-      shadowColor: 'rgba(44,42,41,0.22)',
+      shadowColor: 'rgba(44,42,41,0.12)',
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 1,
-      shadowRadius: 1.5,
+      shadowRadius: 1,
     },
     android: { elevation: 1 },
     default: {},
@@ -155,12 +163,21 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     textAlign: 'center',
   },
+  captionMasking: {
+    fontSize: 9,
+    lineHeight: 11,
+  },
   text: {
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: -0.3,
     textAlign: 'center',
     fontWeight: '800',
+  },
+  textMasking: {
+    fontSize: 10,
+    lineHeight: 12,
+    letterSpacing: -0.2,
   },
   input: {
     minWidth: 88,

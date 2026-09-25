@@ -6,6 +6,10 @@ import {
   getInitialReadingDataConfig,
   ReadingSettings,
 } from '@pages/goal-detail-settings/ui/category/reading';
+import {
+  normalizeReadingLiveActivityConfig,
+  seedReadingBookstoreIfNeeded,
+} from '@entities/day-plan';
 import { useTranslation } from '@shared/lib/i18n';
 import {
   loadGoalDetailCategoryConfig,
@@ -16,15 +20,18 @@ import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
 const READING_CATEGORY_KEY = 'reading';
 
-function loadReadingConfig(): unknown {
-  return loadGoalDetailCategoryConfig(READING_CATEGORY_KEY) ?? getInitialReadingDataConfig();
+function serializeReadingConfig(value: unknown): string {
+  return JSON.stringify(normalizeReadingLiveActivityConfig(value));
+}
+
+function loadReadingConfig(): ReturnType<typeof normalizeReadingLiveActivityConfig> {
+  seedReadingBookstoreIfNeeded();
+  const raw = loadGoalDetailCategoryConfig(READING_CATEGORY_KEY);
+  return normalizeReadingLiveActivityConfig(raw ?? getInitialReadingDataConfig());
 }
 
 function persistReadingConfig(next: unknown): void {
-  const prev = loadGoalDetailCategoryConfig(READING_CATEGORY_KEY);
-  const base = prev && typeof prev === 'object' ? prev : {};
-  const patch = next && typeof next === 'object' ? next : {};
-  saveGoalDetailCategoryConfig(READING_CATEGORY_KEY, { ...base, ...patch });
+  saveGoalDetailCategoryConfig(READING_CATEGORY_KEY, normalizeReadingLiveActivityConfig(next));
 }
 
 type Props = {
@@ -35,10 +42,11 @@ type Props = {
 /** 오늘 탭 — 독서 루틴과 동일한 내 서재 UI (상시 접근) */
 export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
   const { t } = useTranslation();
-  const [dataConfig, setDataConfig] = useState<unknown>(() => loadReadingConfig());
+  const [dataConfig, setDataConfig] = useState(() => loadReadingConfig());
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastPersistedRef = useRef(JSON.stringify(dataConfig));
-  const pendingDraftRef = useRef<unknown>(dataConfig);
+  const lastPersistedRef = useRef(serializeReadingConfig(dataConfig));
+  const pendingDraftRef = useRef(dataConfig);
+  const skipNextFocusSyncRef = useRef(false);
 
   const flushPersist = useCallback(() => {
     if (persistTimerRef.current) {
@@ -46,7 +54,7 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
       persistTimerRef.current = null;
     }
     const next = pendingDraftRef.current;
-    const serialized = JSON.stringify(next);
+    const serialized = serializeReadingConfig(next);
     if (lastPersistedRef.current === serialized) return;
     lastPersistedRef.current = serialized;
     persistReadingConfig(next);
@@ -54,17 +62,23 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
 
   const handleChangeDataConfig = useCallback(
     (next: unknown) => {
-      pendingDraftRef.current = next;
-      setDataConfig(next);
+      const normalized = normalizeReadingLiveActivityConfig(next);
+      const serialized = JSON.stringify(normalized);
+      pendingDraftRef.current = normalized;
 
-      const serialized = JSON.stringify(next);
-      // early-return 이더라도 이전(빈 books 등) 타이머는 반드시 취소한다.
+      setDataConfig((prev) => {
+        if (JSON.stringify(prev) === serialized) return prev;
+        return normalized;
+      });
+
       if (persistTimerRef.current) {
         clearTimeout(persistTimerRef.current);
         persistTimerRef.current = null;
       }
       if (lastPersistedRef.current === serialized) return;
 
+      // 로컬 저장 직후 focus sync가 디스크로 되돌리지 않게
+      skipNextFocusSyncRef.current = true;
       persistTimerRef.current = setTimeout(() => {
         persistTimerRef.current = null;
         flushPersist();
@@ -75,21 +89,22 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
 
   useEffect(() => {
     return () => {
-      // 탭 이탈 시 대기 중인 draft를 항상 저장 (빈 값 wipe 레이스 방지)
       flushPersist();
     };
   }, [flushPersist]);
 
   useFocusEffect(
     useCallback(() => {
+      if (skipNextFocusSyncRef.current) {
+        skipNextFocusSyncRef.current = false;
+        return;
+      }
+      if (persistTimerRef.current) return;
+
       const latest = loadReadingConfig();
       const serialized = JSON.stringify(latest);
       if (serialized === lastPersistedRef.current) return;
-      // 포커스 복귀 시 디스크가 최신이면 UI에 반영
-      if (persistTimerRef.current) {
-        clearTimeout(persistTimerRef.current);
-        persistTimerRef.current = null;
-      }
+
       lastPersistedRef.current = serialized;
       pendingDraftRef.current = latest;
       setDataConfig(latest);

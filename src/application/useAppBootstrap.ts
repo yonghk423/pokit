@@ -5,6 +5,7 @@ import { AppState } from 'react-native';
 import {
   syncTodayTabWithFixedRoutineApply,
   seedPokitWeekTourIntoTodayIfNeeded,
+  seedReadingBookstoreIfNeeded,
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
   useDayPlanChromeSettingsStore,
@@ -77,6 +78,7 @@ export function useAppBootstrap() {
 
       useAppLocaleStore.getState().hydrateFromDevice();
       ensureDefaultPriorityCatalog();
+      seedReadingBookstoreIfNeeded();
       // 「하루가 지나면 담기 유지」임시 비활성 — keep 잔존 설정이 롤오버에 영향을 주지 않도록 reset 고정
       savePriorityDayRollMode('reset');
       useAppearanceStore.getState().hydrate();

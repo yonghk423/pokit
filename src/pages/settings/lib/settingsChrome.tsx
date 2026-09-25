@@ -5,9 +5,10 @@ import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
-/** 아이콘 박스 솔리드 음영 — 옅게 */
+/** 오늘 탭 PlanModeSwitch 아이콘과 동일 스펙 */
 const SHADOW_SM = 2;
-const ICON_FACE = 36;
+const ICON_FACE = 34;
+const ICON_BORDER = 1;
 
 export type SettingsPalette = {
   bg: string;
@@ -18,6 +19,8 @@ export type SettingsPalette = {
   desc: string;
   icon: string;
   iconBoxBg: string;
+  /** 아이콘 박스 테두리 — 오늘 탭 모드 아이콘과 동일 */
+  iconBorder: string;
   shadow: string;
   chevron: string;
   dangerBg: string;
@@ -40,9 +43,10 @@ export function buildSettingsPalette(isDark: boolean): SettingsPalette {
     sectionTitle: c.textMuted,
     title: c.text,
     desc: c.textMuted,
-    icon: c.primary,
-    iconBoxBg: c.primaryContainer,
-    /** 아이콘 오프셋 — 크림/민트 면에서 보이도록 옅은 잉크 */
+    /** 오늘 탭 상단 모드 아이콘과 동일 — 검정 글리프 · 흰 면 */
+    icon: isDark ? '#FAFAFA' : '#000000',
+    iconBoxBg: isDark ? c.surfaceAlt : '#FFFFFF',
+    iconBorder: isDark ? 'rgba(255,255,255,0.55)' : '#000000',
     shadow: isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)',
     chevron: c.textMuted,
     dangerBg: isDark ? 'rgba(147, 0, 10, 1)' : '#FFDAD6',
@@ -50,17 +54,17 @@ export function buildSettingsPalette(isDark: boolean): SettingsPalette {
     dangerDesc: isDark ? '#FFB4AB' : '#991B1B',
     dangerIcon: isDark ? c.danger : '#DC2626',
     dangerChevron: isDark ? '#FFB4AB' : '#FCA5A5',
-    dangerShadow: isDark ? 'rgba(120, 40, 40, 0.55)' : 'rgba(185, 28, 28, 0.28)',
+    dangerShadow: isDark ? 'rgba(120, 40, 40, 0.35)' : 'rgba(185, 28, 28, 0.16)',
     dangerIconBoxBg: isDark ? 'rgba(255, 255, 255, 0.12)' : '#FFFFFF',
   };
 }
 
-/** 설정 행 — 파스텔 아이콘 박스 + 옅은 solid shadow */
+/** 설정 행 아이콘 — 오늘 탭 PlanModeSwitch와 동일 (흰 면 · 검정 테두리 · 솔리드 음영) */
 export function SettingsRowIcon({
   name,
   color,
   boxBg,
-  border: _border,
+  border,
   shadow,
   showBadge = false,
   /** 배지 링 — 카드/배경면과 맞춰야 자연스러움 */
@@ -76,18 +80,19 @@ export function SettingsRowIcon({
   badgeRingColor?: string;
 }) {
   return (
-    <View style={styles.iconShell}>
+    <View style={[styles.iconShell, { marginRight: SHADOW_SM, marginBottom: SHADOW_SM }]}>
       <View
         pointerEvents="none"
         style={[
           styles.iconShadow,
           {
             backgroundColor: shadow,
+            transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
           },
         ]}
       />
-      <View style={[styles.iconBox, { backgroundColor: boxBg }]}>
-        <IconSymbol name={name as 'bell.fill'} size={15} color={color} />
+      <View style={[styles.iconBox, { backgroundColor: boxBg, borderColor: border }]}>
+        <IconSymbol name={name as 'bell.fill'} size={16} color={color} />
       </View>
       {showBadge ? (
         <View
@@ -111,8 +116,8 @@ export function SettingsSection({
   surface: string;
   isDark?: boolean;
 }) {
-  /** 카드 오프셋 — 순검정보다 한 단계 흐린 잉크 (볼드감만 완화) */
-  const shadowColor = isDark ? '#5A5C72' : '#707979';
+  /** 카드 오프셋 — 소프트 드롭에 가까운 옅은 잉크 */
+  const shadowColor = isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.10)';
 
   return (
     <CityPopCardShell
@@ -211,8 +216,8 @@ const styles = StyleSheet.create({
   },
   iconShadow: {
     position: 'absolute',
-    left: SHADOW_SM,
-    top: SHADOW_SM,
+    left: 0,
+    top: 0,
     width: ICON_FACE,
     height: ICON_FACE,
     borderRadius: 0,
@@ -221,7 +226,7 @@ const styles = StyleSheet.create({
     width: ICON_FACE,
     height: ICON_FACE,
     borderRadius: 0,
-    borderWidth: 0,
+    borderWidth: ICON_BORDER,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,

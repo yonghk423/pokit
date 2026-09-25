@@ -1,25 +1,25 @@
 {
-  "latestVersion": "1.8.7",
+  "latestVersion": "1.8.8",
   "highlights": [
-    "루틴 아이콘·색·이름이 상세 설정과 목록·오늘 탭에 바로 맞춰져요.",
-    "웹뷰로 가져온 루틴도 아이콘만 바꿔도 이름이 유지돼요.",
-    "색 고르기·기본 루틴 삭제 등 설정 사용감을 다듬었어요."
+    "책방에서 읽은 페이지·진행도·완료 축하 흐름을 다듬었어요.",
+    "횟수 루틴은 이름·목표를 먼저 정한 뒤 −1/+1로 채우도록 바꿨어요.",
+    "할 일 목록 그림자를 더 부드럽게 정리했어요."
   ],
   "highlightsByLocale": {
     "ko": [
-      "루틴 아이콘·색·이름이 상세 설정과 목록·오늘 탭에 바로 맞춰져요.",
-      "웹뷰로 가져온 루틴도 아이콘만 바꿔도 이름이 유지돼요.",
-      "색 고르기·기본 루틴 삭제 등 설정 사용감을 다듬었어요."
+      "책방에서 읽은 페이지·진행도·완료 축하 흐름을 다듬었어요.",
+      "횟수 루틴은 이름·목표를 먼저 정한 뒤 −1/+1로 채우도록 바꿨어요.",
+      "할 일 목록 그림자를 더 부드럽게 정리했어요."
     ],
     "en": [
-      "Routine icon, color, and name now stay in sync across detail settings, the list, and Today.",
-      "Routines imported from the web keep their name when you only change the icon.",
-      "Smoother color picking and delete support for built-in routines."
+      "Polished reading: pages logged, progress, and completion share.",
+      "Count routines now set name and goal first, then fill with −1/+1.",
+      "Softer shadows on the to-do list."
     ],
     "ja": [
-      "ルーチンのアイコン・色・名前が詳細設定と一覧・今日タブですぐ揃うようになりました。",
-      "Webから追加したルーチンも、アイコンだけ変えても名前が残ります。",
-      "色の選択や標準ルーチンの削除など、設定の使い心地を整えました。"
+      "読書のページ記録・進捗・完了シェアの流れを整えました。",
+      "回数ルーチンは名前と目標を先に決めてから −1/+1 で積む形に。",
+      "ToDoリストの影をより柔らかくしました。"
     ]
   },
   "storeUrls": {

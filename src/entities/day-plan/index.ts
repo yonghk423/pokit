@@ -383,11 +383,15 @@ export { readingBookEntryToShareText } from './lib/readingBookShareText';
 export {
   bookMatchesReadingLibraryQuery, DEFAULT_READING_LIVE_ACTIVITY_CONFIG, deriveReadingBookProgress, deriveReadingProgress, ensureReadingBookPages,
   firstAladinBookEntry, getInitialReadingLiveActivityConfig, makeReadingBookId,
+  makeSeedLittlePrinceBook,
   normalizeReadingBookMemo,
   normalizeReadingBookStatus, normalizeReadingLiveActivityConfig,
   normalizeReadingMetricSelection, READING_BOOK_MEMO_MAX, readingDisplayTitle, resolveReadingBookAddedAtMs,
+  SEED_READING_LITTLE_PRINCE_ALADIN_ITEM_ID,
+  SEED_READING_LITTLE_PRINCE_BOOK_ID,
   sortReadingBooksByAddedAt,
-  sortReadingBooksByNewestFirst
+  sortReadingBooksByNewestFirst,
+  upgradeSeedLittlePrinceBookEntry,
 } from './lib/readingLiveActivityConfig';
 export type {
   ReadingAladinBook,
@@ -395,8 +399,24 @@ export type {
   ReadingBookStatus,
   ReadingLibrarySortOrder,
   ReadingLiveActivityConfig,
-  ReadingMetricKey
+  ReadingMetricKey,
+  ReadingPageDayLog,
+  ReadingPageLogs,
 } from './lib/readingLiveActivityConfig';
+export {
+  normalizeReadingPageDayLog,
+  normalizeReadingPageLogs,
+  pagesToReadFromLog,
+  readPageLogForDate,
+  removeReadingPageLog,
+  resolveFallbackReadingPages,
+  resolveFurthestReadingTargetPage,
+  setReadingPageLog,
+  sortedReadingPageLogKeys,
+  sumPagesFromReadingLogs,
+  sumPagesFromReadingLogsInMonth,
+  syncTodayPagesToLogs,
+} from './lib/readingPageLog';
 export { normalizeReadingOpenLibraryBook } from './lib/readingOpenLibraryBook';
 export type { ReadingOpenLibraryBook } from './lib/readingOpenLibraryBook';
 export { resolveTodayFixedRoutineKeys } from './lib/resolveTodayFixedRoutineKeys';
@@ -411,6 +431,7 @@ export {
   resolveRoutineSummaryForDisplay, ROUTINE_SUMMARY_MAX
 } from './lib/routineSummary';
 export { seedPokitWeekTourIntoTodayIfNeeded } from './lib/seedPokitWeekTourIntoToday';
+export { seedReadingBookstoreIfNeeded } from './lib/seedReadingBookstore';
 export type {
   SpineTimelineAnchorRow,
   SpineTimelineBlockRow,

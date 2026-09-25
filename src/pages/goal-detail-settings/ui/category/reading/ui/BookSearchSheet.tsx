@@ -37,10 +37,12 @@ import {
 } from '@shared/lib/bookSearch/resolveBookSearchProvider';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
-import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
+import { BrutalConfirmButton, resolveBrutalConfirmPrimaryColors } from '@shared/ui/brutal-confirm-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
+
+import { readingStatusReadingFace } from '../lib/readingAccent';
 
 export type BookSearchSelection =
   | { source: 'aladin'; book: AladinBookDetail }
@@ -65,6 +67,10 @@ type UnifiedBookSearchDetail = UnifiedBookSearchItem & {
 };
 
 type SheetMode = 'search' | 'detail';
+
+const SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.10)';
+const SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.10)';
+const SEARCH_SOFT_OFFSET = 3;
 
 type Props = {
   visible: boolean;
@@ -128,6 +134,8 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : tone.text;
   const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const softShadow = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
+  const cta = resolveBrutalConfirmPrimaryColors(isDark);
   const aladinConfigured = useMemo(() => isAladinApiConfigured(), []);
 
   const [mode, setMode] = useState<SheetMode>('search');
@@ -320,37 +328,76 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
           ) : mode === 'search' ? (
             <>
               <View style={styles.searchControls}>
-                <View style={[styles.searchRow, { borderColor: line, backgroundColor: surface }]}>
-                  <IconSymbol name="magnifyingglass" size={18} color={muted} />
-                  <ThemedTextInput
-                    value={query}
-                    onChangeText={setQuery}
-                    placeholder={t('goalDetail.bookSearch.placeholder')}
-                    placeholderTextColor={muted}
-                    autoFocus
-                    returnKeyType="search"
-                    onSubmitEditing={() => void runSearch()}
-                    style={[styles.searchInput, { color: ink }]}
-                  />
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('goalDetail.bookSearch.searchTitle')}
-                  disabled={loading}
-                  onPress={() => void runSearch()}
-                  style={({ pressed }) => [
-                    styles.searchSubmitBtn,
-                    { borderColor: ink, backgroundColor: ink },
-                    (loading || pressed) && { opacity: 0.72 },
+                <View
+                  style={[
+                    styles.searchRowShell,
+                    { marginRight: SEARCH_SOFT_OFFSET, marginBottom: SEARCH_SOFT_OFFSET, flex: 1 },
                   ]}>
-                  {loading ? (
-                    <ActivityIndicator size="small" color={surface} />
-                  ) : (
-                    <ThemedText style={[styles.searchSubmitText, { color: surface }]}>
-                      {t('common.search')}
-                    </ThemedText>
-                  )}
-                </Pressable>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.searchRowShadow,
+                      {
+                        backgroundColor: softShadow,
+                        transform: [
+                          { translateX: SEARCH_SOFT_OFFSET },
+                          { translateY: SEARCH_SOFT_OFFSET },
+                        ],
+                      },
+                    ]}
+                  />
+                  <View style={[styles.searchRow, { backgroundColor: faceWhite }]}>
+                    <IconSymbol name="magnifyingglass" size={18} color={muted} />
+                    <ThemedTextInput
+                      value={query}
+                      onChangeText={setQuery}
+                      placeholder={t('goalDetail.bookSearch.placeholder')}
+                      placeholderTextColor={muted}
+                      autoFocus
+                      returnKeyType="search"
+                      onSubmitEditing={() => void runSearch()}
+                      style={[styles.searchInput, { color: ink }]}
+                    />
+                  </View>
+                </View>
+                <View
+                  style={[
+                    styles.searchSubmitShell,
+                    { marginRight: SEARCH_SOFT_OFFSET, marginBottom: SEARCH_SOFT_OFFSET },
+                  ]}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.searchSubmitShadow,
+                      {
+                        backgroundColor: softShadow,
+                        transform: [
+                          { translateX: SEARCH_SOFT_OFFSET },
+                          { translateY: SEARCH_SOFT_OFFSET },
+                        ],
+                      },
+                    ]}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('goalDetail.bookSearch.searchTitle')}
+                    disabled={loading}
+                    onPress={() => void runSearch()}
+                    style={[
+                      styles.searchSubmitBtn,
+                      {
+                        backgroundColor: loading ? cta.disabledFill : cta.fill,
+                      },
+                    ]}>
+                    {loading ? (
+                      <ActivityIndicator size="small" color={cta.labelColor} />
+                    ) : (
+                      <ThemedText style={[styles.searchSubmitText, { color: cta.labelColor }]}>
+                        {t('common.search')}
+                      </ThemedText>
+                    )}
+                  </Pressable>
+                </View>
               </View>
 
               {errorMessage ? (
@@ -522,7 +569,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                       <View
                         style={[
                           styles.primaryBtnFace,
-                          { backgroundColor: tone.primaryContainer },
+                          { backgroundColor: readingStatusReadingFace(isDark) },
                         ]}>
                         <ActivityIndicator size="small" color={tone.primary} />
                       </View>
@@ -623,32 +670,43 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     gap: 10,
   },
+  searchRowShell: {
+    position: 'relative',
+  },
+  searchRowShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
   searchRow: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderWidth: 2,
+    borderWidth: 0,
     paddingHorizontal: 12,
     minHeight: 48,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
     paddingVertical: 10,
+  },
+  searchSubmitShell: {
+    position: 'relative',
+  },
+  searchSubmitShadow: {
+    ...StyleSheet.absoluteFillObject,
   },
   searchSubmitBtn: {
     minWidth: 72,
     minHeight: 48,
-    borderWidth: 2,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 14,
   },
   searchSubmitText: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   helper: {
     fontSize: 13,

@@ -379,7 +379,7 @@ export function SettingsPage() {
                   name="megaphone.fill"
                   color={p.icon}
                   boxBg={p.iconBoxBg}
-                  border={p.border}
+                  border={p.iconBorder}
                   shadow={p.shadow}
                   showBadge={hasUnreadAnnouncements}
                   badgeRingColor={p.surface}
@@ -415,7 +415,7 @@ export function SettingsPage() {
                 name="clock"
                 color={p.icon}
                 boxBg={p.iconBoxBg}
-                border={p.border}
+                border={p.iconBorder}
                 shadow={p.shadow}
               />
               <View style={chrome.itemTextWrap}>
@@ -444,7 +444,7 @@ export function SettingsPage() {
                 name="list.bullet.rectangle"
                 color={p.icon}
                 boxBg={p.iconBoxBg}
-                border={p.border}
+                border={p.iconBorder}
                 shadow={p.shadow}
               />
               <View style={chrome.itemTextWrap}>
@@ -458,7 +458,12 @@ export function SettingsPage() {
             </View>
             <IconSymbol name="chevron.right" size={14} color={p.chevron} />
           </Pressable>
+        </SettingsSection>
 
+        <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
+            {t('settings.section.help', locale)}
+          </ThemedText>
           <Pressable
             style={[chrome.item, { borderTopColor: p.border }]}
             onPress={() => {
@@ -472,7 +477,7 @@ export function SettingsPage() {
                 name="book.fill"
                 color={p.icon}
                 boxBg={p.iconBoxBg}
-                border={p.border}
+                border={p.iconBorder}
                 shadow={p.shadow}
               />
               <View style={chrome.itemTextWrap}>
@@ -507,7 +512,7 @@ export function SettingsPage() {
                   name="bell.fill"
                   color={p.icon}
                   boxBg={p.iconBoxBg}
-                  border={p.border}
+                  border={p.iconBorder}
                   shadow={p.shadow}
                 />
                 <View style={chrome.itemTextWrap}>
@@ -543,7 +548,7 @@ export function SettingsPage() {
                   name="paintbrush.fill"
                   color={p.icon}
                   boxBg={p.iconBoxBg}
-                  border={p.border}
+                  border={p.iconBorder}
                   shadow={p.shadow}
                 />
                 <View style={chrome.itemTextWrap}>
@@ -578,7 +583,7 @@ export function SettingsPage() {
                 name="textformat"
                 color={p.icon}
                 boxBg={p.iconBoxBg}
-                border={p.border}
+                border={p.iconBorder}
                 shadow={p.shadow}
               />
               <View style={chrome.itemTextWrap}>
@@ -620,7 +625,7 @@ export function SettingsPage() {
                   name="star.fill"
                   color={p.icon}
                   boxBg={p.iconBoxBg}
-                  border={p.border}
+                  border={p.iconBorder}
                   shadow={p.shadow}
                 />
                 <View style={chrome.itemTextWrap}>
@@ -653,7 +658,7 @@ export function SettingsPage() {
                   name="arrow.clockwise"
                   color={p.icon}
                   boxBg={p.iconBoxBg}
-                  border={p.border}
+                  border={p.iconBorder}
                   shadow={p.shadow}
                 />
                 <View style={chrome.itemTextWrap}>
@@ -688,7 +693,7 @@ export function SettingsPage() {
                 name="paperplane.fill"
                 color={p.icon}
                 boxBg={p.iconBoxBg}
-                border={p.border}
+                border={p.iconBorder}
                 shadow={p.shadow}
               />
               <View style={chrome.itemTextWrap}>
@@ -709,7 +714,7 @@ export function SettingsPage() {
                 name="info.circle"
                 color={p.icon}
                 boxBg={p.iconBoxBg}
-                border={p.border}
+                border={p.iconBorder}
                 shadow={p.shadow}
               />
               <View style={chrome.itemTextWrap}>
@@ -744,7 +749,7 @@ export function SettingsPage() {
                 name="trash.fill"
                 color={p.dangerIcon}
                 boxBg={p.dangerIconBoxBg}
-                border={p.border}
+                border={p.iconBorder}
                 shadow={p.dangerShadow}
               />
               <View style={chrome.itemTextWrap}>

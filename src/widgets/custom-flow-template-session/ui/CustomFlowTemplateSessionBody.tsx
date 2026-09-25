@@ -6,7 +6,6 @@ import {
   applyCounterDelta,
   applyCounterActivityPreset,
   applyCounterActivitySettings,
-  applyCounterFillRemaining,
   addReminderScheduleItem,
   applyHabitDoneToggle,
   applyJournalSave,
@@ -1349,6 +1348,82 @@ function CounterTemplateView({
         </ReminderBrutalShell>
       ) : null}
 
+
+      <ReminderBrutalShell
+        ink={ink}
+        borderColor={line}
+        shadowColor={shadowInk}
+        backgroundColor={surface}
+        noteDivider={isNote ? 'none' : 'section'}>
+        <View style={styles.counterCardInner}>
+          <View style={styles.reminderSectionHead}>
+            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.countSettings')}</ThemedText>
+            <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>
+              {t('customFlowTemplate.goalCount', { count: live.goalCount })}
+            </ThemedText>
+          </View>
+
+          <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.whatToCount')}</ThemedText>
+          <ThemedTextInput
+            value={live.activityLabel}
+            onChangeText={(value) => emit(applyCounterActivitySettings(live, { activityLabel: value }))}
+            placeholder={t('customFlowTemplate.activityPlaceholder')}
+            placeholderTextColor={muted}
+            style={[
+              styles.reminderLabelInput,
+              isNote && styles.reminderLabelInputNote,
+              { color: ink, backgroundColor: isNote ? 'transparent' : faceWhite },
+            ]}
+          />
+
+          <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.dailyGoal')}</ThemedText>
+          <ThemedTextInput
+            value={goalDraft}
+            onChangeText={setGoalDraft}
+            onEndEditing={() => commitGoal(goalDraft)}
+            onBlur={() => commitGoal(goalDraft)}
+            keyboardType="number-pad"
+            placeholder="8"
+            placeholderTextColor={muted}
+            style={[
+              styles.reminderLabelInput,
+              isNote && styles.reminderLabelInputNote,
+              { color: ink, backgroundColor: isNote ? 'transparent' : faceWhite },
+            ]}
+          />
+
+          <ThemedText style={[styles.sub, { color: muted }]}>
+            {t('customFlowTemplate.countSettingsHint')}
+          </ThemedText>
+
+          {!previewMode && visibleCounterPresets.length > 0 ? (
+            <>
+              {renderPresetsHeader()}
+              <View style={styles.counterChipRow}>
+                {visibleCounterPresets.map((preset) => {
+                  const presetLabel = resolveCounterPresetLabel(preset.id, preset.activityLabel);
+                  const selected =
+                    (live.activityLabel === presetLabel ||
+                      live.activityLabel === preset.activityLabel) &&
+                    live.goalCount === preset.goalCount;
+                  return renderChip(preset.id, presetLabel, selected, () => {
+                    void Haptics.selectionAsync();
+                    emit(
+                      applyCounterActivityPreset(
+                        live,
+                        { ...preset, activityLabel: presetLabel },
+                        {
+                          includeSampleData: false,
+                        },
+                      ),
+                    );
+                  });
+                })}
+              </View>
+            </>
+          ) : null}
+        </View>
+      </ReminderBrutalShell>
       <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
         <View style={styles.counterProgressInner}>
           <View style={styles.reminderProgressTop}>
@@ -1408,9 +1483,8 @@ function CounterTemplateView({
       <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
         <View style={styles.counterCardInner}>
           <View style={styles.reminderSectionHead}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.countControls')}</ThemedText>
-            <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>
-              +{live.stepSize}/{live.secondaryStepSize}
+            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>
+              {t('customFlowTemplate.countControls')}
             </ThemedText>
           </View>
           {goalReached ? (
@@ -1459,11 +1533,11 @@ function CounterTemplateView({
               <Pressable
                 disabled={!canDecrease}
                 accessibilityRole="button"
-                accessibilityLabel={t('customFlowTemplate.decreaseByA11y', { step: live.stepSize })}
+                accessibilityLabel={t('customFlowTemplate.decreaseByA11y', { step: 1 })}
                 accessibilityState={{ disabled: !canDecrease }}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  emit(applyCounterDelta(live, -live.stepSize));
+                  emit(applyCounterDelta(live, -1));
                 }}
                 style={({ pressed }) => [
                   styles.bigCounterBtn,
@@ -1474,7 +1548,7 @@ function CounterTemplateView({
                 ]}>
                 <ThemedText
                   style={[styles.bigCounterText, { color: canDecrease ? ink : muted }]}>
-                  −{live.stepSize}
+                  −1
                 </ThemedText>
               </Pressable>
             </View>
@@ -1495,10 +1569,10 @@ function CounterTemplateView({
               />
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t('customFlowTemplate.increaseByA11y', { step: live.stepSize })}
+                accessibilityLabel={t('customFlowTemplate.increaseByA11y', { step: 1 })}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  emit(applyCounterDelta(live, live.stepSize));
+                  emit(applyCounterDelta(live, 1));
                 }}
                 style={({ pressed }) => [
                   styles.bigCounterBtn,
@@ -1507,20 +1581,13 @@ function CounterTemplateView({
                     opacity: pressed ? 0.9 : 1,
                   },
                 ]}>
-                <ThemedText style={[styles.bigCounterText, { color: ink }]}>
-                  +{live.stepSize}
-                </ThemedText>
+                <ThemedText style={[styles.bigCounterText, { color: ink }]}>+1</ThemedText>
               </Pressable>
             </View>
-          </View>
-          <ThemedText style={[styles.sub, { color: muted, textAlign: 'center' }]}>
-            {t('customFlowTemplate.undoHint')}
-          </ThemedText>
-          <View style={styles.counterRow}>
             <View
               style={[
                 styles.counterBtnShell,
-                { marginRight: chipShadow, marginBottom: chipShadow, flex: 1 },
+                { marginRight: chipShadow, marginBottom: chipShadow, flex: 1.4 },
               ]}>
               <View
                 pointerEvents="none"
@@ -1533,225 +1600,29 @@ function CounterTemplateView({
                 ]}
               />
               <Pressable
-                disabled={!canDecrease}
-                onPress={() => emit(applyCounterDelta(live, -live.secondaryStepSize))}
+                accessibilityRole="button"
+                accessibilityLabel={t('customFlowTemplate.resetTodayRecord')}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  emit(resetCounterCount(live));
+                }}
                 style={({ pressed }) => [
-                  styles.counterBtn,
-                  {
-                    backgroundColor: faceDec,
-                    opacity: pressed && canDecrease ? 0.88 : 1,
-                  },
-                ]}>
-                <ThemedText
-                  style={[styles.counterBtnText, { color: canDecrease ? ink : muted }]}>
-                  −{live.secondaryStepSize}
-                </ThemedText>
-              </Pressable>
-            </View>
-            <View
-              style={[
-                styles.counterBtnShell,
-                { marginRight: chipShadow, marginBottom: chipShadow, flex: 1 },
-              ]}>
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.measureChipShadow,
-                  {
-                    backgroundColor: shadowInk,
-                    transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
-                  },
-                ]}
-              />
-              <Pressable
-                onPress={() => emit(applyCounterDelta(live, live.secondaryStepSize))}
-                style={({ pressed }) => [
-                  styles.counterBtn,
+                  styles.bigCounterBtn,
+                  styles.counterResetInlineBtn,
                   {
                     backgroundColor: faceWhite,
                     opacity: pressed ? 0.88 : 1,
                   },
                 ]}>
-                <ThemedText style={[styles.counterBtnText, { color: ink }]}>
-                  +{live.secondaryStepSize}
+                <ThemedText style={[styles.counterResetInlineText, { color: muted }]} numberOfLines={1}>
+                  {t('customFlowTemplate.resetTodayRecord')}
                 </ThemedText>
               </Pressable>
             </View>
-            {!goalReached ? (
-              <View
-                style={[
-                  styles.counterBtnShell,
-                  { marginRight: chipShadow, marginBottom: chipShadow, flex: 1 },
-                ]}>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.measureChipShadow,
-                    {
-                      backgroundColor: shadowInk,
-                      transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
-                    },
-                  ]}
-                />
-                <Pressable
-                  onPress={() => {
-                    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    emit(applyCounterFillRemaining(live));
-                  }}
-                  style={({ pressed }) => [
-                    styles.counterBtn,
-                    {
-                      backgroundColor: tone.primaryContainer,
-                      opacity: pressed ? 0.88 : 1,
-                    },
-                  ]}>
-                  <ThemedText style={[styles.counterBtnText, { color: ink }]}>
-                    {t('customFlowTemplate.fillToGoal')}
-                  </ThemedText>
-                </Pressable>
-              </View>
-            ) : (
-              <View
-                style={[
-                  styles.counterBtnShell,
-                  { marginRight: chipShadow, marginBottom: chipShadow, flex: 1 },
-                ]}>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.measureChipShadow,
-                    {
-                      backgroundColor: shadowInk,
-                      transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
-                    },
-                  ]}
-                />
-                <Pressable
-                  onPress={() => emit(resetCounterCount(live))}
-                  style={({ pressed }) => [
-                    styles.counterBtn,
-                    {
-                      backgroundColor: faceWhite,
-                      opacity: pressed ? 0.88 : 1,
-                    },
-                  ]}>
-                  <ThemedText style={[styles.counterBtnText, { color: muted }]}>
-                    {t('customFlowTemplate.reset')}
-                  </ThemedText>
-                </Pressable>
-              </View>
-            )}
           </View>
-          {!goalReached ? (
-            <View style={styles.counterResetRow}>
-              <View
-                style={[
-                  styles.counterBtnShell,
-                  styles.counterResetShell,
-                  { marginRight: chipShadow, marginBottom: chipShadow },
-                ]}>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.measureChipShadow,
-                    {
-                      backgroundColor: shadowInk,
-                      transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
-                    },
-                  ]}
-                />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('customFlowTemplate.resetTodayRecord')}
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    emit(resetCounterCount(live));
-                  }}
-                  style={[styles.counterBtn, styles.counterResetBtn, { backgroundColor: faceWhite }]}>
-                  <ThemedText style={[styles.counterBtnText, { color: muted }]}>
-                    {t('customFlowTemplate.resetTodayRecord')}
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </View>
-          ) : null}
         </View>
       </ReminderBrutalShell>
 
-      <ReminderBrutalShell
-        ink={ink}
-        borderColor={line}
-        shadowColor={shadowInk}
-        backgroundColor={surface}
-        noteDivider={isNote ? 'none' : 'section'}>
-        <View style={styles.counterCardInner}>
-          <View style={styles.reminderSectionHead}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.countSettings')}</ThemedText>
-            <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>
-              {t('customFlowTemplate.goalCount', { count: live.goalCount })}
-            </ThemedText>
-          </View>
-          <ThemedText style={[styles.sub, { color: muted }]}>
-            {t('customFlowTemplate.countSettingsHint')}
-          </ThemedText>
-
-          <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.whatToCount')}</ThemedText>
-          <ThemedTextInput
-            value={live.activityLabel}
-            onChangeText={(value) => emit(applyCounterActivitySettings(live, { activityLabel: value }))}
-            placeholder={t('customFlowTemplate.activityPlaceholder')}
-            placeholderTextColor={muted}
-            style={[
-              styles.reminderLabelInput,
-              isNote && styles.reminderLabelInputNote,
-              { color: ink, backgroundColor: isNote ? 'transparent' : faceWhite },
-            ]}
-          />
-
-          <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>{t('customFlowTemplate.dailyGoal')}</ThemedText>
-          <ThemedTextInput
-            value={goalDraft}
-            onChangeText={setGoalDraft}
-            onEndEditing={() => commitGoal(goalDraft)}
-            onBlur={() => commitGoal(goalDraft)}
-            keyboardType="number-pad"
-            placeholder="8"
-            placeholderTextColor={muted}
-            style={[
-              styles.reminderLabelInput,
-              isNote && styles.reminderLabelInputNote,
-              { color: ink, backgroundColor: isNote ? 'transparent' : faceWhite },
-            ]}
-          />
-
-          {!previewMode && visibleCounterPresets.length > 0 ? (
-            <>
-              {renderPresetsHeader()}
-              <View style={styles.counterChipRow}>
-                {visibleCounterPresets.map((preset) => {
-                  const presetLabel = resolveCounterPresetLabel(preset.id, preset.activityLabel);
-                  const selected =
-                    (live.activityLabel === presetLabel ||
-                      live.activityLabel === preset.activityLabel) &&
-                    live.goalCount === preset.goalCount;
-                  return renderChip(preset.id, presetLabel, selected, () => {
-                    void Haptics.selectionAsync();
-                    emit(
-                      applyCounterActivityPreset(
-                        live,
-                        { ...preset, activityLabel: presetLabel },
-                        {
-                          includeSampleData: false,
-                        },
-                      ),
-                    );
-                  });
-                })}
-              </View>
-            </>
-          ) : null}
-        </View>
-      </ReminderBrutalShell>
     </View>
   );
 }
@@ -2576,27 +2447,37 @@ const styles = StyleSheet.create({
   goalBadge: { fontSize: 14, fontWeight: '800', textAlign: 'center' },
   counterPrimaryRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     width: '100%',
     alignSelf: 'stretch',
+    alignItems: 'stretch',
   },
   bigCounterBtn: {
     flex: 1,
     alignSelf: 'stretch',
-    minHeight: 48,
+    minHeight: 36,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 0,
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 8,
     zIndex: 1,
   },
   bigCounterText: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: '800',
-    lineHeight: 28,
+    lineHeight: 20,
     textAlign: 'center',
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
+  },
+  counterResetInlineBtn: {
+    paddingHorizontal: 8,
+  },
+  counterResetInlineText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
   bigCounterTextOnAccent: { color: '#fff' },
   counterBtnShell: {

@@ -30,13 +30,16 @@ export function readingBookEntryToShareText(entry: ReadingBookEntry): string {
     totalPages,
   });
 
-  const lines: string[] = [resolved.title];
+  const lines: string[] =
+    status === 'done' ? [`${resolved.title} 읽기 완료 📚`] : [resolved.title];
 
   const author = resolveReadingBookAuthor(resolved);
   if (author) lines.push(`저자: ${author}`);
 
   lines.push(`상태: ${STATUS_LABEL_KO[status]}`);
-  lines.push(`오늘 목표: ${resolved.startPage}P → ${resolved.targetPage}P (${pagesRead}쪽)`);
+  if (status !== 'done') {
+    lines.push(`오늘 목표: ${resolved.startPage}P → ${resolved.targetPage}P (${pagesRead}쪽)`);
+  }
 
   if (totalPages != null) {
     lines.push(`전체: ${totalPages}쪽 · 진행 ${progressPct}%`);

@@ -30,11 +30,21 @@ describe('readingLiveActivityConfig', () => {
     ).toEqual(['pages_read', 'focus_level']);
   });
 
-  it('prefers book title over flow title', () => {
+  it('seeds Little Prince on initial reading config', () => {
     const cfg = getInitialReadingLiveActivityConfig();
-    expect(readingDisplayTitle('플로우 제목', { ...cfg, bookTitle: '책' })).toBe('책');
-    expect(readingDisplayTitle('플로우 제목', cfg)).toBe('플로우 제목');
-    expect(readingDisplayTitle('', cfg)).toBe('제목 없음');
+    expect(cfg.books).toHaveLength(1);
+    expect(cfg.books[0]?.title).toBe('어린왕자 (소프트커버 에디션) - 개정판');
+    expect(cfg.books[0]?.id).toBe('rb-seed-little-prince');
+    expect(cfg.books[0]?.aladin?.itemId).toBe(251847567);
+    expect(cfg.books[0]?.aladin?.totalPages).toBe(144);
+    expect(cfg.bookTitle).toBe('어린왕자 (소프트커버 에디션) - 개정판');
+  });
+
+  it('prefers book title over flow title', () => {
+    const base = { ...getInitialReadingLiveActivityConfig(), books: [] as ReadingBookEntry[] };
+    expect(readingDisplayTitle('플로우 제목', { ...base, bookTitle: '책' })).toBe('책');
+    expect(readingDisplayTitle('플로우 제목', { ...base, bookTitle: '' })).toBe('플로우 제목');
+    expect(readingDisplayTitle('', { ...base, bookTitle: '' })).toBe('제목 없음');
   });
 
   it('prefers books[] titles over bookTitle', () => {
@@ -89,6 +99,20 @@ describe('readingLiveActivityConfig', () => {
     const progress = deriveReadingBookProgress({ startPage: 10, targetPage: 100 });
     expect(progress.pagesRead).toBe(90);
     expect(progress.progressPct).toBe(0);
+  });
+
+  it('sums pageLogs for pagesRead and uses furthest target for progress', () => {
+    const progress = deriveReadingBookProgress({
+      startPage: 1,
+      targetPage: 20,
+      totalPages: 100,
+      pageLogs: {
+        '2026-09-01': { startPage: 1, targetPage: 20 },
+        '2026-09-02': { startPage: 20, targetPage: 45 },
+      },
+    });
+    expect(progress.pagesRead).toBe(44);
+    expect(progress.progressPct).toBe(45);
   });
 
   it('derives book completion from total pages', () => {

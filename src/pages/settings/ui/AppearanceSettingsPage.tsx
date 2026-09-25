@@ -93,7 +93,7 @@ export function AppearanceSettingsPage() {
                       name={opt.icon}
                       color={active ? p.icon : p.desc}
                       boxBg={p.iconBoxBg}
-                      border={p.border}
+                      border={p.iconBorder}
                       shadow={p.shadow}
                     />
                     <View style={chrome.itemTextWrap}>

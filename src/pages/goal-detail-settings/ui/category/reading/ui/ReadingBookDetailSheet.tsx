@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Keyboard,
@@ -13,12 +14,25 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  Easing,
+  interpolateColor,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import {
   deriveReadingBookProgress,
   ensureReadingBookPages,
+  formatDateKeyDisplayKo,
+  getLocalDateKey,
   normalizeReadingBookMemo,
   normalizeReadingBookStatus,
+  normalizeReadingPageLogs,
+  pagesToReadFromLog,
+  readPageLogForDate,
   READING_BOOK_MEMO_MAX,
   readingBookExternalLinkLabel,
   resolveReadingBookAuthor,
@@ -26,6 +40,8 @@ import {
   resolveReadingBookCoverUrl,
   resolveReadingBookExternalLink,
   resolveReadingBookTotalPages,
+  setReadingPageLog,
+  toMonthStart,
   type ReadingBookEntry,
   type ReadingBookStatus,
 } from '@entities/day-plan';
@@ -35,15 +51,68 @@ import { OpenLibraryAttributionLine, openOpenLibraryBookPage } from '@features/o
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
+import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { ScrapTapeLabel } from '@shared/ui/scrap-tape-label';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import type { goalDetailSettingsPalette } from '../../lib/settingsPalette';
+import {
+  READING_ACCENT,
+  READING_ACCENT_ON,
+  READING_PROGRESS_FILL_DARK,
+  READING_PROGRESS_FILL_LIGHT,
+  readingAccentOnInk,
+  readingStatusDoneFace,
+  readingStatusReadingFace,
+} from '../lib/readingAccent';
+import { ReadingPageLogCalendarSection } from './ReadingPageLogCalendarSection';
 
 type Palette = ReturnType<typeof goalDetailSettingsPalette>;
 
-const CHIP_SHADOW = 2;
+const CHIP_SHADOW = 1;
+/** 칩·필드 solid shadow — 검정 면보다 옅은 반투명 */
+const SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.10)';
+const SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.10)';
+const DELETE_SHADOW = 1;
+
+const PROGRESS_BAR_HEIGHT = 6;
+
+const PROGRESS_FILL_LIGHT = READING_PROGRESS_FILL_LIGHT;
+const PROGRESS_FILL_DARK = READING_PROGRESS_FILL_DARK;
+
+function ReadingBookProgressBar({
+  progressPct,
+  trackColor,
+  isDark,
+}: {
+  progressPct: number;
+  trackColor: string;
+  isDark: boolean;
+}) {
+  const progress = useSharedValue(0);
+  const fillStops = isDark ? PROGRESS_FILL_DARK : PROGRESS_FILL_LIGHT;
+
+  useEffect(() => {
+    const next = Math.max(0, Math.min(100, progressPct));
+    progress.value = withTiming(next, {
+      duration: 560,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [progressPct, progress]);
+
+  const fillStyle = useAnimatedStyle(() => ({
+    width: `${progress.value}%`,
+    backgroundColor: interpolateColor(progress.value, [0, 50, 100], [...fillStops]),
+  }));
+
+  return (
+    <View style={[styles.progressTrack, { backgroundColor: trackColor }]}>
+      <Animated.View style={[styles.progressFill, fillStyle]} />
+    </View>
+  );
+}
 
 function pageToInputValue(value: unknown, fallback: number): string {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -73,7 +142,7 @@ export function ReadingBookDetailSheet({
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const shadowInk = isDark ? tone.solidShadow : tone.text;
+  const softShadow = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
   const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
   const { height: windowHeight } = useWindowDimensions();
   const c = palette;
@@ -93,22 +162,134 @@ export function ReadingBookDetailSheet({
   );
 
   const resolved = entry ? ensureReadingBookPages(entry) : null;
+  const todayKey = useMemo(() => getLocalDateKey(), []);
+  const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
+  const [monthStart, setMonthStart] = useState(() => toMonthStart(new Date()));
   const [startPageStr, setStartPageStr] = useState('1');
   const [targetPageStr, setTargetPageStr] = useState('100');
+  const [todayPagesStr, setTodayPagesStr] = useState('10');
   const [memo, setMemo] = useState('');
-  const [pageFieldFocus, setPageFieldFocus] = useState<'start' | 'target' | null>(null);
+  const [pageFieldFocus, setPageFieldFocus] = useState<'start' | 'today' | null>(null);
+  const [showDoneCelebrate, setShowDoneCelebrate] = useState(false);
+  const celebrateScale = useSharedValue(0.4);
+  const celebrateOpacity = useSharedValue(0);
+  const pageLogsRef = useRef<ReturnType<typeof normalizeReadingPageLogs>>({});
+  const celebrateHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevProgressPctRef = useRef<number | null>(null);
+  const progressWatchBookIdRef = useRef<string | null>(null);
 
-  // entry 식별자·저장된 페이지만 의존 — ensureReadingBookPages 결과 객체는 매 렌더 새로 생겨
-  // 입력 중 값이 리셋되는 것을 막는다.
+  const clearCelebrateHideTimer = useCallback(() => {
+    if (celebrateHideTimerRef.current) {
+      clearTimeout(celebrateHideTimerRef.current);
+      celebrateHideTimerRef.current = null;
+    }
+  }, []);
+
+  const hideDoneCelebrate = useCallback(() => {
+    clearCelebrateHideTimer();
+    celebrateOpacity.value = withTiming(0, { duration: 220 }, (finished) => {
+      if (finished) runOnJS(setShowDoneCelebrate)(false);
+    });
+  }, [celebrateOpacity, clearCelebrateHideTimer]);
+
+  const playDoneCelebrate = useCallback(() => {
+    clearCelebrateHideTimer();
+    setShowDoneCelebrate(true);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    celebrateOpacity.value = 1;
+    celebrateScale.value = 0.88;
+    celebrateScale.value = withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) });
+    celebrateHideTimerRef.current = setTimeout(() => {
+      celebrateHideTimerRef.current = null;
+      hideDoneCelebrate();
+    }, 5600);
+  }, [celebrateOpacity, celebrateScale, clearCelebrateHideTimer, hideDoneCelebrate]);
+
+  useEffect(() => {
+    if (!visible) {
+      clearCelebrateHideTimer();
+      setShowDoneCelebrate(false);
+      celebrateOpacity.value = 0;
+      celebrateScale.value = 0.4;
+      prevProgressPctRef.current = null;
+      progressWatchBookIdRef.current = null;
+      return;
+    }
+    setSelectedDateKey(todayKey);
+    setMonthStart(toMonthStart(new Date()));
+  }, [visible, entry?.id, todayKey, clearCelebrateHideTimer, celebrateOpacity, celebrateScale]);
+
+  // 책 진행도가 100%에 도달하면 완료 축하 애니메이션 (+ 상태 done)
+  useEffect(() => {
+    if (!visible || !entry) {
+      prevProgressPctRef.current = null;
+      progressWatchBookIdRef.current = null;
+      return;
+    }
+    if (progressWatchBookIdRef.current !== entry.id) {
+      progressWatchBookIdRef.current = entry.id;
+      prevProgressPctRef.current = null;
+    }
+    const next = ensureReadingBookPages(entry);
+    const pct = deriveReadingBookProgress({
+      startPage: next.startPage,
+      targetPage: next.targetPage,
+      totalPages: resolveReadingBookTotalPages(next),
+      pageLogs: next.pageLogs,
+    }).progressPct;
+    const prev = prevProgressPctRef.current;
+    prevProgressPctRef.current = pct;
+    if (prev == null) return;
+    if (pct < 100 || prev >= 100) return;
+
+    if (normalizeReadingBookStatus(entry.status) !== 'done') {
+      onChange({ ...entry, status: 'done' });
+    }
+    playDoneCelebrate();
+  }, [
+    visible,
+    entry,
+    onChange,
+    playDoneCelebrate,
+  ]);
+
+  // 선택 날짜의 pageLogs(또는 오늘이면 책 필드)로 입력칸 동기화
   useEffect(() => {
     if (!entry) return;
     const next = ensureReadingBookPages(entry);
-    setStartPageStr(pageToInputValue(next.startPage, 1));
-    setTargetPageStr(
-      pageToInputValue(next.targetPage, resolveReadingBookTotalPages(next) ?? 100),
-    );
+    const logs = normalizeReadingPageLogs(next.pageLogs);
+    const dayLog = readPageLogForDate(logs, selectedDateKey);
+    if (dayLog) {
+      setStartPageStr(pageToInputValue(dayLog.startPage, 1));
+      setTargetPageStr(pageToInputValue(dayLog.targetPage, dayLog.startPage));
+      setTodayPagesStr(pageToInputValue(pagesToReadFromLog(dayLog), 0));
+    } else if (selectedDateKey === todayKey) {
+      setStartPageStr(pageToInputValue(next.startPage, 1));
+      setTargetPageStr(
+        pageToInputValue(next.targetPage, resolveReadingBookTotalPages(next) ?? 100),
+      );
+      setTodayPagesStr(
+        pageToInputValue(Math.max(0, next.targetPage - next.startPage), 0),
+      );
+    } else {
+      setStartPageStr(pageToInputValue(next.startPage, 1));
+      setTargetPageStr(
+        pageToInputValue(next.targetPage, resolveReadingBookTotalPages(next) ?? 100),
+      );
+      setTodayPagesStr(
+        pageToInputValue(Math.max(0, next.targetPage - next.startPage), 0),
+      );
+    }
     setMemo(next.memo ?? '');
-  }, [entry?.id, entry?.startPage, entry?.targetPage, entry?.memo, entry?.totalPages]);
+  }, [
+    entry?.id,
+    entry?.startPage,
+    entry?.targetPage,
+    entry?.memo,
+    entry?.pageLogs,
+    selectedDateKey,
+    todayKey,
+  ]);
 
   useEffect(() => {
     if (!visible) {
@@ -145,6 +326,11 @@ export function ReadingBookDetailSheet({
     return () => clearTimeout(timer);
   }, [visible, keyboardInset, isMemoFocused, scrollMemoIntoView]);
 
+  const celebrateStyle = useAnimatedStyle(() => ({
+    opacity: celebrateOpacity.value,
+    transform: [{ scale: celebrateScale.value }],
+  }));
+
   if (!entry || !resolved) return null;
 
   const sheetMaxHeight = Math.round(windowHeight * 0.88);
@@ -152,10 +338,13 @@ export function ReadingBookDetailSheet({
   const startPage = Math.max(0, parseInt(startPageStr, 10) || 0);
   const targetPage = Math.max(0, parseInt(targetPageStr, 10) || 0);
   const totalPages = resolveReadingBookTotalPages(entry);
+  const pageLogs = normalizeReadingPageLogs(entry.pageLogs);
+  pageLogsRef.current = pageLogs;
   const { pagesRead, progressPct } = deriveReadingBookProgress({
     startPage,
     targetPage,
     totalPages,
+    pageLogs,
   });
   const status = normalizeReadingBookStatus(entry.status);
   const metaLine = resolveReadingBookAuthor(entry) || null;
@@ -163,19 +352,54 @@ export function ReadingBookDetailSheet({
   const externalLink = resolveReadingBookExternalLink(entry);
   const catalogSource = resolveReadingBookCatalogSource(entry);
   const externalLinkLabel = readingBookExternalLinkLabel(catalogSource);
+  const isSelectedToday = selectedDateKey === todayKey;
+  const goalSectionTitle = isSelectedToday
+    ? t('goalDetail.reading.todayGoal')
+    : t('goalDetail.reading.dayGoal', { date: formatDateKeyDisplayKo(selectedDateKey) });
+  const goalSectionHint = isSelectedToday
+    ? t('goalDetail.reading.todayGoalHint')
+    : t('goalDetail.reading.dayGoalHint');
 
   const commitPages = (nextStart: number, nextTarget: number) => {
+    const nextLogs = setReadingPageLog(pageLogsRef.current, selectedDateKey, {
+      startPage: nextStart,
+      targetPage: nextTarget,
+    });
+    pageLogsRef.current = nextLogs;
     onChange(
       ensureReadingBookPages({
         ...entry,
-        startPage: nextStart,
-        targetPage: nextTarget,
+        ...(selectedDateKey === todayKey
+          ? { startPage: nextStart, targetPage: nextTarget }
+          : {}),
+        pageLogs: nextLogs,
+      }),
+    );
+  };
+
+  const commitPageLogs = (nextLogs: typeof pageLogs) => {
+    pageLogsRef.current = nextLogs;
+    const todayLog = readPageLogForDate(nextLogs, todayKey);
+    const cleared = Object.keys(nextLogs).length === 0;
+    onChange(
+      ensureReadingBookPages({
+        ...entry,
+        pageLogs: nextLogs,
+        ...(todayLog
+          ? { startPage: todayLog.startPage, targetPage: todayLog.targetPage }
+          : cleared
+            ? { startPage: 1, targetPage: 1 }
+            : {}),
       }),
     );
   };
 
   const setStatus = (nextStatus: ReadingBookStatus) => {
+    const wasDone = status === 'done';
     onChange({ ...entry, status: nextStatus });
+    if (nextStatus === 'done' && !wasDone) {
+      playDoneCelebrate();
+    }
   };
 
   const commitMemo = () => {
@@ -191,6 +415,7 @@ export function ReadingBookDetailSheet({
       startPage,
       targetPage,
       memo: normalizeReadingBookMemo(memo),
+      status: showDoneCelebrate ? 'done' : entry.status,
     });
     const message = readingBookEntryToShareText(shareEntry);
     try {
@@ -198,6 +423,7 @@ export function ReadingBookDetailSheet({
         message,
         title: entry.title,
       });
+      if (showDoneCelebrate) hideDoneCelebrate();
     } catch {
       Alert.alert(t('goalDetail.reading.shareFailTitle'), t('goalDetail.reading.shareFailBody'));
     }
@@ -232,7 +458,12 @@ export function ReadingBookDetailSheet({
               maxHeight: effectiveSheetMaxHeight,
             },
           ]}>
-            <View style={[styles.sheetHandle, { backgroundColor: c.outlineVariant }]} />
+            <View
+              style={[
+                styles.sheetHandle,
+                { backgroundColor: isDark ? 'rgba(241,239,255,0.55)' : '#000000' },
+              ]}
+            />
 
             <View style={styles.sheetHeader}>
               <ThemedText style={[styles.sheetTitle, { color: c.onSurface }]} numberOfLines={2}>
@@ -246,8 +477,19 @@ export function ReadingBookDetailSheet({
                     void shareBook();
                   }}
                   hitSlop={8}
-                  style={styles.headerActionBtn}>
-                  <IconSymbol name="square.and.arrow.up" size={16} color={c.onSurface} />
+                  style={[
+                    styles.headerActionBtn,
+                    showDoneCelebrate && {
+                      backgroundColor: readingStatusReadingFace(isDark),
+                      borderWidth: 1.5,
+                      borderColor: tone.border,
+                    },
+                  ]}>
+                  <IconSymbol
+                    name="square.and.arrow.up"
+                    size={16}
+                    color={showDoneCelebrate ? READING_ACCENT_ON : c.onSurface}
+                  />
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -315,7 +557,21 @@ export function ReadingBookDetailSheet({
               <View style={styles.statusRow}>
                 {statusOptions.map((opt) => {
                   const on = status === opt.key;
-                  const shadow = on ? 3 : CHIP_SHADOW;
+                  const shadow = on ? 2 : CHIP_SHADOW;
+                  const doneFace = readingStatusDoneFace(isDark);
+                  const wantFace = isDark ? 'rgba(255, 236, 179, 0.28)' : '#FFE8A8';
+                  const onFace =
+                    opt.key === 'done'
+                      ? doneFace
+                      : opt.key === 'want'
+                        ? wantFace
+                        : readingStatusReadingFace(isDark);
+                  const onLabelColor =
+                    on && (opt.key === 'done' || opt.key === 'reading')
+                      ? readingAccentOnInk(isDark)
+                      : on
+                        ? tone.text
+                        : c.onVariant;
                   return (
                     <View
                       key={opt.key}
@@ -328,7 +584,7 @@ export function ReadingBookDetailSheet({
                         style={[
                           styles.chipShadow,
                           {
-                            backgroundColor: shadowInk,
+                            backgroundColor: softShadow,
                             transform: [{ translateX: shadow }, { translateY: shadow }],
                           },
                         ]}
@@ -340,7 +596,7 @@ export function ReadingBookDetailSheet({
                         style={({ pressed }) => [
                           styles.statusChip,
                           {
-                            backgroundColor: on ? tone.primaryContainer : faceWhite,
+                            backgroundColor: on ? onFace : faceWhite,
                             opacity: pressed ? 0.9 : 1,
                           },
                         ]}>
@@ -348,7 +604,7 @@ export function ReadingBookDetailSheet({
                           style={{
                             fontSize: 12,
                             fontWeight: on ? '800' : '600',
-                            color: on ? tone.primary : c.onVariant,
+                            color: onLabelColor,
                           }}>
                           {opt.label}
                         </ThemedText>
@@ -361,32 +617,29 @@ export function ReadingBookDetailSheet({
 
             <View style={styles.goalSection}>
               <ThemedText style={[styles.sectionTitle, { color: c.onSurface }]}>
-                {t('goalDetail.reading.todayGoal')}
+                {goalSectionTitle}
               </ThemedText>
               <ThemedText style={[styles.sectionSub, { color: c.onVariant }]}>
-                {t('goalDetail.reading.todayGoalHint')}
+                {goalSectionHint}
               </ThemedText>
 
             <View style={styles.progressRow}>
               <ThemedText style={[styles.progressLine, { color: c.onSurface }]}>
-                {startPage}P → {targetPage}P
+                {t('goalDetail.reading.pagesRead', { pages: pagesRead })}
               </ThemedText>
               <ThemedText style={[styles.progressSub, { color: c.onVariant }]}>
-                {t('goalDetail.reading.pagesRead', { pages: pagesRead })}
+                {startPage}P
                 {totalPages != null
                   ? t('goalDetail.reading.bookProgress', { percent: progressPct })
                   : ''}
               </ThemedText>
             </View>
             {totalPages != null ? (
-              <View style={[styles.progressTrack, { backgroundColor: c.outlineVariant }]}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${progressPct}%`, backgroundColor: isDark ? tone.text : '#000000' },
-                  ]}
-                />
-              </View>
+              <ReadingBookProgressBar
+                progressPct={progressPct}
+                trackColor={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(24,26,46,0.08)'}
+                isDark={isDark}
+              />
             ) : null}
 
             <View style={styles.pageFields}>
@@ -403,7 +656,7 @@ export function ReadingBookDetailSheet({
                           styles.pageFieldEditableValue,
                           {
                             borderBottomColor:
-                              pageFieldFocus === 'start' ? tone.primary : shadowInk,
+                              pageFieldFocus === 'start' ? tone.primary : softShadow,
                           },
                         ]}>
                         <ThemedTextInput
@@ -412,12 +665,15 @@ export function ReadingBookDetailSheet({
                           onFocus={() => setPageFieldFocus('start')}
                           onBlur={() => {
                             setPageFieldFocus(null);
-                            commitPages(startPage, targetPage);
+                            const nextStart = Math.max(0, parseInt(startPageStr, 10) || 0);
+                            const dayPages = Math.max(0, parseInt(todayPagesStr, 10) || 0);
+                            commitPages(nextStart, nextStart + dayPages);
                           }}
                           placeholder="1"
                           placeholderTextColor={c.outline}
                           keyboardType="number-pad"
                           selectionColor={tone.primary}
+                          hitSlop={12}
                           style={[styles.pageFieldInput, { color: c.onSurface }]}
                         />
                         <ThemedText style={[styles.pageFieldSuffix, { color: c.onVariant }]}>P</ThemedText>
@@ -425,8 +681,10 @@ export function ReadingBookDetailSheet({
                     ),
                   },
                   {
-                    key: 'target' as const,
-                    label: t('goalDetail.reading.target'),
+                    key: 'today' as const,
+                    label: isSelectedToday
+                      ? t('goalDetail.reading.todayPagesRead')
+                      : t('goalDetail.reading.dayPagesRead'),
                     accent: false,
                     editable: true,
                     content: (
@@ -435,21 +693,23 @@ export function ReadingBookDetailSheet({
                           styles.pageFieldEditableValue,
                           {
                             borderBottomColor:
-                              pageFieldFocus === 'target' ? tone.primary : shadowInk,
+                              pageFieldFocus === 'today' ? tone.primary : softShadow,
                           },
                         ]}>
                         <ThemedTextInput
-                          value={targetPageStr}
-                          onChangeText={setTargetPageStr}
-                          onFocus={() => setPageFieldFocus('target')}
+                          value={todayPagesStr}
+                          onChangeText={setTodayPagesStr}
+                          onFocus={() => setPageFieldFocus('today')}
                           onBlur={() => {
                             setPageFieldFocus(null);
-                            commitPages(startPage, targetPage);
+                            const dayPages = Math.max(0, parseInt(todayPagesStr, 10) || 0);
+                            commitPages(startPage, startPage + dayPages);
                           }}
-                          placeholder="100"
+                          placeholder="0"
                           placeholderTextColor={c.outline}
                           keyboardType="number-pad"
                           selectionColor={tone.primary}
+                          hitSlop={12}
                           style={[styles.pageFieldInput, { color: c.onSurface }]}
                         />
                         <ThemedText style={[styles.pageFieldSuffix, { color: c.onVariant }]}>P</ThemedText>
@@ -458,31 +718,34 @@ export function ReadingBookDetailSheet({
                   },
                   {
                     key: 'total' as const,
-                    label: t('goalDetail.reading.total'),
-                    accent: false,
+                    label: t('goalDetail.reading.totalPages'),
+                    accent: true,
                     editable: false,
                     content:
                       totalPages != null ? (
-                        <View style={styles.pageFieldInputRow}>
-                          <ThemedText style={[styles.pageFieldValue, { color: c.onSurface }]}>
+                        <View style={styles.pageFieldStaticValue}>
+                          <ThemedText
+                            style={[
+                              styles.pageFieldValue,
+                              { color: readingAccentOnInk(isDark) },
+                            ]}>
                             {totalPages}
                           </ThemedText>
-                          <ThemedText style={[styles.pageFieldSuffix, { color: c.onVariant }]}>P</ThemedText>
+                          <ThemedText
+                            style={[
+                              styles.pageFieldSuffix,
+                              {
+                                color: isDark
+                                  ? c.onVariant
+                                  : 'rgba(247, 242, 243, 0.72)',
+                              },
+                            ]}>
+                            P
+                          </ThemedText>
                         </View>
                       ) : (
                         <ThemedText style={[styles.pageFieldValueMuted, { color: c.outline }]}>—</ThemedText>
                       ),
-                  },
-                  {
-                    key: 'read' as const,
-                    label: t('goalDetail.reading.pagesToRead'),
-                    accent: true,
-                    editable: false,
-                    content: (
-                      <ThemedText style={[styles.pageFieldValue, { color: tone.primary }]}>
-                        {pagesRead}
-                      </ThemedText>
-                    ),
                   },
                 ]
               ).map((field) => (
@@ -498,7 +761,7 @@ export function ReadingBookDetailSheet({
                     style={[
                       styles.chipShadow,
                       {
-                        backgroundColor: shadowInk,
+                        backgroundColor: softShadow,
                         transform: [
                           { translateX: CHIP_SHADOW },
                           { translateY: CHIP_SHADOW },
@@ -510,15 +773,28 @@ export function ReadingBookDetailSheet({
                     style={[
                       styles.pageField,
                       {
-                        backgroundColor: field.accent ? tone.primaryContainer : faceWhite,
+                        backgroundColor: field.accent
+                          ? readingStatusDoneFace(isDark)
+                          : faceWhite,
                       },
                     ]}>
                     <View style={styles.pageFieldLabelRow}>
-                      <ThemedText style={[styles.pageFieldLabel, { color: c.onVariant }]}>
+                      <ThemedText
+                        style={[
+                          styles.pageFieldLabel,
+                          {
+                            color: field.accent
+                              ? isDark
+                                ? c.onVariant
+                                : 'rgba(247, 242, 243, 0.78)'
+                              : c.onVariant,
+                          },
+                        ]}
+                        numberOfLines={2}>
                         {field.label}
                       </ThemedText>
                       {field.editable ? (
-                        <IconSymbol name="pencil" size={8} color={c.onVariant} />
+                        <IconSymbol name="pencil" size={11} color={c.onVariant} />
                       ) : null}
                     </View>
                     {field.content}
@@ -526,6 +802,17 @@ export function ReadingBookDetailSheet({
                 </View>
               ))}
             </View>
+
+            <ReadingPageLogCalendarSection
+              pageLogs={pageLogs}
+              selectedDateKey={selectedDateKey}
+              monthStart={monthStart}
+              fallbackPages={{ startPage, targetPage }}
+              palette={c}
+              onChangePageLogs={commitPageLogs}
+              onSelectDate={setSelectedDateKey}
+              onChangeMonthStart={setMonthStart}
+            />
             </View>
 
             <View
@@ -550,7 +837,7 @@ export function ReadingBookDetailSheet({
                   style={[
                     styles.chipShadow,
                     {
-                      backgroundColor: shadowInk,
+                      backgroundColor: softShadow,
                       transform: [
                         { translateX: CHIP_SHADOW },
                         { translateY: CHIP_SHADOW },
@@ -590,45 +877,70 @@ export function ReadingBookDetailSheet({
               <OpenLibraryAttributionLine color={c.outline} compact />
             ) : null}
 
-            <View
-              style={[
-                styles.chipShell,
-                { marginRight: 3, marginBottom: 3 },
-              ]}>
+            <View style={styles.removeShell}>
               <View
                 pointerEvents="none"
                 style={[
-                  styles.chipShadow,
-                  {
-                    backgroundColor: tone.danger,
-                    transform: [{ translateX: 3 }, { translateY: 3 }],
-                  },
+                  styles.removeShadow,
+                  { backgroundColor: 'rgba(186, 26, 26, 0.12)' },
                 ]}
               />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('goalDetail.reading.removeA11y', { title: entry.title })}
                 onPress={() => {
-                  onRemove();
-                  onClose();
+                  Alert.alert(
+                    t('goalDetail.reading.removeFromLibrary'),
+                    t('goalDetail.reading.removeConfirm', { title: entry.title }),
+                    [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      {
+                        text: t('common.delete'),
+                        style: 'destructive',
+                        onPress: () => {
+                          onRemove();
+                          onClose();
+                        },
+                      },
+                    ],
+                  );
                 }}
-                style={({ pressed }) => [
-                  styles.removeBtn,
-                  {
-                    backgroundColor: pressed
-                      ? isDark
-                        ? '#B3261E'
-                        : '#F5B8B2'
-                      : tone.dangerBg,
-                    opacity: pressed ? 0.94 : 1,
-                  },
-                ]}>
+                style={[styles.removeBtn, { backgroundColor: 'rgba(255, 218, 214, 0.35)' }]}>
                 <ThemedText style={[styles.removeBtnText, { color: tone.danger }]}>
                   {t('goalDetail.reading.removeFromLibrary')}
                 </ThemedText>
               </Pressable>
             </View>
           </ScrollView>
+          {showDoneCelebrate ? (
+            <View pointerEvents="box-none" style={styles.celebrateLayer}>
+              <Animated.View style={[styles.celebrateCard, celebrateStyle]}>
+                <ScrapTapeLabel
+                  text={t('goalDetail.reading.doneCelebrateWithTitle', { title: entry.title })}
+                  caption={t('goalDetail.reading.doneCelebrateCaption')}
+                  isDark={isDark}
+                  tone="scrap"
+                  rotateDeg={0}
+                  style={styles.celebrateTape}
+                  accessibilityLabel={t('goalDetail.reading.doneCelebrateWithTitle', {
+                    title: entry.title,
+                  })}
+                />
+                <View style={styles.celebrateShareWrap}>
+                  <BrutalConfirmButton
+                    align="stretch"
+                    fill={READING_ACCENT}
+                    labelColor={READING_ACCENT_ON}
+                    label={t('goalDetail.reading.shareCompletion')}
+                    accessibilityLabel={t('goalDetail.reading.shareCompletion')}
+                    onPress={() => {
+                      void shareBook();
+                    }}
+                  />
+                </View>
+              </Animated.View>
+            </View>
+          ) : null}
         </View>
       </View>
     </Modal>
@@ -643,6 +955,28 @@ const styles = StyleSheet.create({
     borderLeftWidth: 2,
     borderRightWidth: 2,
     paddingTop: 8,
+    overflow: 'hidden',
+  },
+  celebrateLayer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  celebrateCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    paddingHorizontal: 20,
+    maxWidth: 320,
+  },
+  celebrateShareWrap: {
+    alignSelf: 'stretch',
+    minWidth: 240,
+  },
+  celebrateTape: {
+    maxWidth: 300,
+    alignSelf: 'center',
   },
   sheetHandle: {
     alignSelf: 'center',
@@ -706,9 +1040,16 @@ const styles = StyleSheet.create({
   },
   progressLine: { fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
   progressSub: { fontSize: 12, fontWeight: '600' },
-  progressTrack: { height: 4, width: '100%', overflow: 'hidden' },
-  progressFill: { height: '100%' },
-  pageFields: { flexDirection: 'row', gap: 4 },
+  progressTrack: {
+    height: PROGRESS_BAR_HEIGHT,
+    width: '100%',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    overflow: 'hidden',
+  },
+  pageFields: { flexDirection: 'row', gap: 8 },
   pageFieldShell: {
     flex: 1,
     minWidth: 0,
@@ -716,33 +1057,60 @@ const styles = StyleSheet.create({
   pageField: {
     flex: 1,
     borderWidth: 0,
-    paddingVertical: 6,
-    paddingHorizontal: 2,
-    gap: 2,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    gap: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     minWidth: 0,
+    minHeight: 72,
     zIndex: 1,
   },
-  pageFieldLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 0.2 },
+  pageFieldLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.15,
+    textAlign: 'center',
+    lineHeight: 14,
+  },
   pageFieldLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    justifyContent: 'center',
+    gap: 4,
+    minHeight: 16,
   },
-  pageFieldInputRow: { flexDirection: 'row', alignItems: 'baseline', gap: 1 },
+  pageFieldInputRow: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
   pageFieldEditableValue: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 1,
+    alignItems: 'center',
+    gap: 4,
     borderBottomWidth: 2,
-    paddingBottom: 1,
-    minWidth: 28,
+    paddingBottom: 4,
+    paddingTop: 2,
+    minWidth: 56,
+    minHeight: 36,
     justifyContent: 'center',
   },
-  pageFieldInput: { fontSize: 15, fontWeight: '600', textAlign: 'center', padding: 0, minWidth: 22 },
-  pageFieldSuffix: { fontSize: 10, fontWeight: '600' },
-  pageFieldValue: { fontSize: 15, fontWeight: '600', letterSpacing: -0.3 },
-  pageFieldValueMuted: { fontSize: 15, fontWeight: '500' },
+  pageFieldStaticValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  pageFieldInput: {
+    fontSize: 22,
+    fontWeight: '700',
+    textAlign: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    minWidth: 40,
+    minHeight: 32,
+  },
+  pageFieldSuffix: { fontSize: 13, fontWeight: '700' },
+  pageFieldValue: { fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
+  pageFieldValueMuted: { fontSize: 22, fontWeight: '500' },
   memoSection: { gap: 8 },
   memoInput: {
     minHeight: 88,
@@ -754,13 +1122,36 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     zIndex: 1,
   },
+  /** 루틴 삭제 버튼과 동일 — 우측 하단 작은 CTA */
+  removeShell: {
+    position: 'relative',
+    alignSelf: 'flex-end',
+    marginTop: 12,
+    marginRight: DELETE_SHADOW,
+    marginBottom: DELETE_SHADOW,
+  },
+  removeShadow: {
+    position: 'absolute',
+    top: DELETE_SHADOW,
+    left: DELETE_SHADOW,
+    right: -DELETE_SHADOW,
+    bottom: -DELETE_SHADOW,
+    borderWidth: 0,
+    borderRadius: 0,
+  },
   removeBtn: {
+    borderWidth: 0,
+    borderRadius: 0,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 0,
-    paddingVertical: 14,
-    marginTop: 4,
     zIndex: 1,
   },
-  removeBtnText: { fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
+  removeBtnText: {
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+    opacity: 0.5,
+  },
 });
