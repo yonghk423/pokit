@@ -54,7 +54,9 @@ import {
 } from '@shared/lib/storage';
 import {
   getDisplayedAppVersionLabel,
+  openAppStoreWriteReview,
   openSupportMailComposer,
+  shareAppWithFriends,
   SUPPORT_EMAIL,
 } from '@shared/lib/support';
 import { useAppFontStore, type AppFontId } from '@shared/lib/ui-font';
@@ -674,6 +676,68 @@ export function SettingsPage() {
             </Pressable>
           </SettingsSection>
         ) : null}
+
+        <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
+            {t('settings.section.growth', locale)}
+          </ThemedText>
+
+          <Pressable
+            style={[chrome.item, { borderTopColor: p.border }]}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              void openAppStoreWriteReview();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.a11y.praiseApp', locale)}>
+            <View style={chrome.itemLeft}>
+              <SettingsRowIcon
+                name="star.fill"
+                color={p.icon}
+                boxBg={p.iconBoxBg}
+                border={p.iconBorder}
+                shadow={p.shadow}
+              />
+              <View style={chrome.itemTextWrap}>
+                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                  {t('settings.praiseApp', locale)}
+                </ThemedText>
+                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                  {t('settings.praiseApp.desc', locale)}
+                </ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+          </Pressable>
+
+          <Pressable
+            style={[chrome.item, { borderTopColor: p.border }]}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              void shareAppWithFriends();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.a11y.shareApp', locale)}>
+            <View style={chrome.itemLeft}>
+              <SettingsRowIcon
+                name="square.and.arrow.up"
+                color={p.icon}
+                boxBg={p.iconBoxBg}
+                border={p.iconBorder}
+                shadow={p.shadow}
+              />
+              <View style={chrome.itemTextWrap}>
+                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                  {t('settings.shareApp', locale)}
+                </ThemedText>
+                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                  {t('settings.shareApp.desc', locale)}
+                </ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+          </Pressable>
+        </SettingsSection>
 
         <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
           <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
