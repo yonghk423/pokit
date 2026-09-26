@@ -253,6 +253,29 @@ describe('fixedFlowSetsStorage', () => {
     ]);
   });
 
+  it('keeps user-removed items in built-in presets (no auto-resurrection)', () => {
+    const state = normalizeFixedFlowSetsState({
+      activeSetIds: [],
+      sets: [
+        {
+          id: 'set_daily',
+          name: '데일리 고정 루틴',
+          applyRule: 'daily',
+          items: [],
+        },
+        {
+          id: 'set_weekend',
+          name: '주말 고정 루틴',
+          applyRule: 'weekend',
+          items: [],
+        },
+      ],
+    });
+
+    expect(state.sets.find((set) => set.id === 'set_daily')?.items).toEqual([]);
+    expect(state.sets.find((set) => set.id === 'set_weekend')?.items).toEqual([]);
+  });
+
   it('removes legacy built-in preset sets (fasting, water, daily life, abstain)', () => {
     const state = normalizeFixedFlowSetsState({
       activeSetIds: ['set_water', 'set_daily'],

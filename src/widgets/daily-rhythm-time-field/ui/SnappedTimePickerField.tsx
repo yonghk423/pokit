@@ -17,6 +17,10 @@ export type SnappedTimePickerFieldPalette = {
   onVariant: string;
   border: string;
   containerLowest: string;
+  /** pill 오프셋 섀도. 생략 시 테마 기본 */
+  shadow?: string;
+  /** 날짜 캡션. 생략 시 onVariant */
+  dateCaption?: string;
 };
 
 export type SnappedTimePickerFieldHandle = {
@@ -105,7 +109,8 @@ export const SnappedTimePickerField = forwardRef<
     }),
     [valueHhmm],
   );
-  const shadowInk = isDark ? RetroFlatColors.dark.solidShadow : '#000000';
+  const shadowInk = palette.shadow ?? (isDark ? RetroFlatColors.dark.solidShadow : '#000000');
+  const dateCaptionColor = palette.dateCaption ?? palette.onVariant;
   const pillShadow = expanded ? 0 : 2;
   const accordion = useMeasuredAccordion(expanded);
   const minuteInterval = toNativeMinuteInterval(snapStepMinutes);
@@ -159,10 +164,10 @@ export const SnappedTimePickerField = forwardRef<
                 styles.timeDateAside,
                 emphasized && styles.timeDateAsideEmphasized,
                 compact && styles.timeDateAsideCompact,
-                { color: palette.onVariant },
+                { color: dateCaptionColor },
               ]}
-              lightColor={palette.onVariant}
-              darkColor={palette.onVariant}
+              lightColor={dateCaptionColor}
+              darkColor={dateCaptionColor}
               numberOfLines={1}>
               {dateCaption}
             </ThemedText>

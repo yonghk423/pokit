@@ -32,7 +32,13 @@ import { RoutineMarginSlideshow } from '@shared/ui/routine-atmosphere';
 import { ScrapTapeLabel } from '@shared/ui/scrap-tape-label';
 import { SmoothSegmentedControl } from '@shared/ui/smooth-segmented-control';
 import { ThemedText } from '@shared/ui/themed-text';
-import { DayCycleDial, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
+import {
+  DayBalanceOcean,
+  DayCycleDial,
+  SnappedTimePickerField,
+  dayBalanceSegmentPalette,
+  dayBalanceTimeFieldPalette,
+} from '@widgets/daily-rhythm-time-field';
 
 import { useMeasuredAccordion } from '@shared/lib/hooks';
 import {
@@ -288,10 +294,10 @@ function OnboardingTimeRow({
   expanded,
   onToggleExpand,
   isDark,
-  c,
   thumb,
   dateParts,
   mapMidnightToEndOfDay,
+  role,
 }: {
   label: string;
   hint: string;
@@ -300,18 +306,19 @@ function OnboardingTimeRow({
   expanded: boolean;
   onToggleExpand: () => void;
   isDark: boolean;
-  c: DayPlanPalette;
   thumb: ImageSourcePropType;
   dateParts: { month: string; day: string } | null;
   mapMidnightToEndOfDay?: boolean;
+  role: 'start' | 'end';
 }) {
   const { t, locale } = useTranslation();
   const ink = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const ocean = dayBalanceTimeFieldPalette(isDark, role);
   const dateCaption =
     dateParts != null ? `${dateParts.month} ${dateParts.day}`.replace(/\s+/g, ' ').trim() : null;
   const accordion = useMeasuredAccordion(expanded);
-  const pillBg = isDark ? ink.surfaceAlt : ink.bg;
-  const pillFg = c.onSurface;
+  const pillBg = ocean.pillBg;
+  const pillFg = ocean.pillInk;
 
   return (
     <View style={styles.onboardTimeBlock}>
@@ -325,8 +332,8 @@ function OnboardingTimeRow({
           pressed && { transform: [{ translateY: 1 }] },
         ]}>
         <SolidShadowFace
-          borderColor={c.border}
-          shadowColor={isDark ? ink.solidShadow : '#000000'}
+          borderColor={ocean.border}
+          shadowColor={ocean.shadow}
           backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
           shadowSize={2}
           style={styles.thumbFace}
@@ -342,15 +349,15 @@ function OnboardingTimeRow({
 
         <View style={styles.onboardTimeCopy}>
           <ThemedText
-            style={[styles.onboardTimeLabel, { color: c.onSurface }, cityPopFont('800')]}
-            lightColor={c.onSurface}
-            darkColor={c.onSurface}>
+            style={[styles.onboardTimeLabel, { color: ocean.label }, cityPopFont('800')]}
+            lightColor={ocean.label}
+            darkColor={ocean.label}>
             {label}
           </ThemedText>
           <ThemedText
-            style={[styles.onboardTimeHint, { color: c.onVariant }, cityPopFont('700')]}
-            lightColor={c.onVariant}
-            darkColor={c.onVariant}
+            style={[styles.onboardTimeHint, { color: ocean.hint }, cityPopFont('700')]}
+            lightColor={ocean.hint}
+            darkColor={ocean.hint}
             numberOfLines={2}>
             {hint}
           </ThemedText>
@@ -359,16 +366,16 @@ function OnboardingTimeRow({
         <View style={styles.onboardTimeRight}>
           {dateCaption ? (
             <ThemedText
-              style={[styles.dateInline, { color: c.onVariant }, cityPopFont('700')]}
-              lightColor={c.onVariant}
-              darkColor={c.onVariant}
+              style={[styles.dateInline, { color: ocean.date }, cityPopFont('700')]}
+              lightColor={ocean.date}
+              darkColor={ocean.date}
               numberOfLines={1}>
               {dateCaption}
             </ThemedText>
           ) : null}
           <SolidShadowFace
-            borderColor={c.border}
-            shadowColor={isDark ? ink.solidShadow : '#000000'}
+            borderColor={ocean.border}
+            shadowColor={ocean.shadow}
             backgroundColor={pillBg}
             shadowSize={expanded ? 0 : 2}
             style={styles.timePillFace}>
@@ -393,12 +400,12 @@ function OnboardingTimeRow({
               mapMidnightToEndOfDay={mapMidnightToEndOfDay}
               minuteInterval={1}
               isDark={isDark}
-              textColor={c.onSurface}
+              textColor={ocean.pillInk}
               accessibilityLabelPrefix={label}
-              ink={c.onSurface}
-              muted={c.onVariant}
-              line={c.border}
-              surface={isDark ? ink.surfaceAlt : ink.bg}
+              ink={ocean.pillInk}
+              muted={ocean.hint}
+              line={ocean.border}
+              surface={pillBg}
             />
             <BrutalConfirmButton
               accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
@@ -477,7 +484,8 @@ export function DailyRhythmTimeEditorBody({
   const ink = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const isOnboarding = variant === 'onboarding';
   const showOnboardingHero = isOnboarding && !hideOnboardingHero;
-  const shadowInk = isDark ? ink.solidShadow : '#000000';
+  const shadowInk = isDark ? ink.solidShadow : DayBalanceOcean.deepSpace;
+  const endDateSegmentColors = dayBalanceSegmentPalette(isDark);
 
   useEffect(() => {
     endDateTargetRef.current = endDateTarget;
@@ -577,11 +585,11 @@ export function DailyRhythmTimeEditorBody({
       ]}
       value={endDateTarget}
       onChange={(next) => applyEndDateTarget(next)}
-      selectedFill={ink.bgMint}
-      trackFill={isDark ? ink.surfaceAlt : ink.bg}
-      selectedInk={isDark ? ink.text : ink.tertiary}
-      unselectedInk={c.onVariant}
-      shadowColor={shadowInk}
+      selectedFill={endDateSegmentColors.selectedFill}
+      trackFill={endDateSegmentColors.trackFill}
+      selectedInk={endDateSegmentColors.selectedInk}
+      unselectedInk={endDateSegmentColors.unselectedInk}
+      shadowColor={endDateSegmentColors.shadow}
       minHeight={36}
     />
   );
@@ -606,15 +614,29 @@ export function DailyRhythmTimeEditorBody({
     return { left: `${startDate}\n${startLabel}`, right: `${endDate}\n${endLabel}` };
   }, [endDateTarget, endHhmm, locale, priorityPlanRangeLo, startHhmm, t]);
 
-  const timePickerPalette = useMemo(
-    () => ({
-      onSurface: c.onSurface,
-      onVariant: c.onVariant,
-      border: c.border,
-      containerLowest: isDark ? ink.surfaceAlt : ink.bg,
-    }),
-    [c, ink.bg, ink.surfaceAlt, isDark],
-  );
+  const timePickerPaletteStart = useMemo(() => {
+    const ocean = dayBalanceTimeFieldPalette(isDark, 'start');
+    return {
+      onSurface: ocean.pillInk,
+      onVariant: ocean.hint,
+      border: ocean.border,
+      containerLowest: ocean.pillBg,
+      shadow: ocean.shadow,
+      dateCaption: ocean.date,
+    };
+  }, [isDark]);
+
+  const timePickerPaletteEnd = useMemo(() => {
+    const ocean = dayBalanceTimeFieldPalette(isDark, 'end');
+    return {
+      onSurface: ocean.pillInk,
+      onVariant: ocean.hint,
+      border: ocean.border,
+      containerLowest: ocean.pillBg,
+      shadow: ocean.shadow,
+      dateCaption: ocean.date,
+    };
+  }, [isDark]);
 
   const settingsTimeCard = (
     <CityPopCardShell
@@ -629,11 +651,11 @@ export function DailyRhythmTimeEditorBody({
         expanded={pickerTarget === 'start'}
         onToggleExpand={() => setPickerTarget((t) => (t === 'start' ? null : 'start'))}
         isDark={isDark}
-        palette={timePickerPalette}
+        palette={timePickerPaletteStart}
         snapStepMinutes={1}
         dateCaption={startDateKey ? formatDateKeyCompact(startDateKey, locale) : undefined}
       />
-      <View style={[styles.divider, { backgroundColor: c.border }]} />
+      <View style={[styles.divider, { backgroundColor: DayBalanceOcean.sky }]} />
       <SnappedTimePickerField
         label={t('dayRhythm.dayEnd')}
         hint={t('dayRhythm.dayEndHint')}
@@ -642,7 +664,7 @@ export function DailyRhythmTimeEditorBody({
         expanded={pickerTarget === 'end'}
         onToggleExpand={() => setPickerTarget((t) => (t === 'end' ? null : 'end'))}
         isDark={isDark}
-        palette={timePickerPalette}
+        palette={timePickerPaletteEnd}
         snapStepMinutes={1}
         mapMidnightToEndOfDay
         dateCaption={endDateKey ? formatDateKeyCompact(endDateKey, locale) : undefined}
@@ -772,12 +794,12 @@ export function DailyRhythmTimeEditorBody({
                 expanded={pickerTarget === 'start'}
                 onToggleExpand={() => setPickerTarget((t) => (t === 'start' ? null : 'start'))}
                 isDark={isDark}
-                c={c}
                 thumb={dailyRhythmOnboardingAssets.startThumb}
                 dateParts={startDateParts}
+                role="start"
               />
 
-              <View style={[styles.cardRule, { borderTopColor: c.border }]} />
+              <View style={[styles.cardRule, { borderTopColor: DayBalanceOcean.sky }]} />
 
               <OnboardingTimeRow
                 label={t('dayRhythm.dayEnd')}
@@ -787,10 +809,10 @@ export function DailyRhythmTimeEditorBody({
                 expanded={pickerTarget === 'end'}
                 onToggleExpand={() => setPickerTarget((t) => (t === 'end' ? null : 'end'))}
                 isDark={isDark}
-                c={c}
                 thumb={dailyRhythmOnboardingAssets.endThumb}
                 dateParts={endDateParts}
                 mapMidnightToEndOfDay
+                role="end"
               />
 
               <View style={styles.endDateChoiceOnboard}>
@@ -829,12 +851,18 @@ export function DailyRhythmTimeEditorBody({
                     style={[
                       styles.summaryBadge,
                       {
-                        backgroundColor: isDark ? 'rgba(255, 236, 179, 0.92)' : '#FFE8A8',
-                        borderColor: '#111111',
+                        backgroundColor: isDark
+                          ? 'rgba(255, 183, 3, 0.88)'
+                          : DayBalanceOcean.amber,
+                        borderColor: DayBalanceOcean.deepSpace,
                       },
                     ]}>
                     <ThemedText
-                      style={[styles.summaryBadgeText, { color: '#111111' }, cityPopFont('800')]}>
+                      style={[
+                        styles.summaryBadgeText,
+                        { color: DayBalanceOcean.deepSpace },
+                        cityPopFont('800'),
+                      ]}>
                       {t('dayRhythm.myDaySummary')}
                     </ThemedText>
                   </View>
@@ -889,15 +917,15 @@ export function DailyRhythmTimeEditorBody({
                 pressed && { opacity: 0.94 },
               ]}>
               <SolidShadowFace
-                borderColor={c.border}
-                shadowColor={shadowInk}
-                backgroundColor={ink.bgMint}
+                borderColor={DayBalanceOcean.deepSpace}
+                shadowColor={DayBalanceOcean.deepSpace}
+                backgroundColor={DayBalanceOcean.amber}
                 shellStyle={styles.primaryShell}
                 style={styles.primaryFace}>
                 <ThemedText
                   style={[
                     styles.primaryBtnTextOnboard,
-                    { color: isDark ? ink.text : ink.tertiary },
+                    { color: DayBalanceOcean.deepSpace },
                     cityPopFont('800'),
                   ]}>
                   {primaryLabel}

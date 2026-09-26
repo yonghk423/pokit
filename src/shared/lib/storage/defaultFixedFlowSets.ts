@@ -9,9 +9,7 @@ import {
   type WeekdayIndex,
 } from './fixedFlowWeekdays';
 import {
-  BUILTIN_DAILY_CLEAN_FLOW_ID,
   BUILTIN_DAILY_EXERCISE_FLOW_ID,
-  BUILTIN_DAILY_RECYCLE_FLOW_ID,
   BUILTIN_FOCUS_FLOW_ID,
 } from './defaultPriorityCatalog';
 
@@ -133,27 +131,6 @@ export const REMOVED_BUILTIN_PRESET_SET_IDS = [
   'set_abstain',
 ] as const;
 
-/** 레거시 데일리 루틴 기본 항목 — 미수정 저장 데이터 마이그레이션용 */
-const LEGACY_DAILY_SET_DEFAULT_KEYS = ['healthIntake', 'reading', 'work'] as const;
-const LEGACY_DAILY_SET_WITH_CLEAN_KEYS = [
-  'healthIntake',
-  'fasting',
-  BUILTIN_DAILY_CLEAN_FLOW_ID,
-] as const;
-
-/** 레거시 주말 루틴 기본 항목 — reading은 CATALOG_REMOVED라 비워짐 */
-const LEGACY_WEEKEND_SET_DEFAULT_KEYS = ['reading'] as const;
-const LEGACY_WEEKEND_SET_WITH_RECYCLE_KEYS = [
-  BUILTIN_DAILY_EXERCISE_FLOW_ID,
-  BUILTIN_DAILY_RECYCLE_FLOW_ID,
-] as const;
-
-function isSameCategoryKeySet(keys: string[], expected: readonly string[]): boolean {
-  if (keys.length !== expected.length) return false;
-  const set = new Set(keys);
-  return expected.every((key) => set.has(key));
-}
-
 const DEFAULT_SET_TEMPLATES: DefaultSetTemplate[] = [
   {
     id: 'set_daily',
@@ -223,17 +200,6 @@ export function mergeBuiltInPresetSets(
   const mergedBuiltIns = defaults.map((defaultSet) => {
     const existing = byId.get(defaultSet.id);
     if (!existing) return defaultSet;
-    const existingKeys = existing.items.map((item) => item.categoryKey);
-    const shouldResetDailyItems =
-      defaultSet.id === 'set_daily' &&
-      (isSameCategoryKeySet(existingKeys, LEGACY_DAILY_SET_DEFAULT_KEYS) ||
-        isSameCategoryKeySet(existingKeys, LEGACY_DAILY_SET_WITH_CLEAN_KEYS));
-    const shouldResetWeekendItems =
-      defaultSet.id === 'set_weekend' &&
-      (existing.items.length === 0 ||
-        isSameCategoryKeySet(existingKeys, LEGACY_WEEKEND_SET_DEFAULT_KEYS) ||
-        isSameCategoryKeySet(existingKeys, LEGACY_WEEKEND_SET_WITH_RECYCLE_KEYS));
-    const shouldResetEmptyPreset = existing.items.length === 0;
     const storedName = existing.name.trim();
     const hasExplicitTitleMark = Object.prototype.hasOwnProperty.call(
       existing,
@@ -251,9 +217,6 @@ export function mergeBuiltInPresetSets(
       titleMarkColor: hasExplicitTitleMark
         ? existing.titleMarkColor ?? null
         : (defaultSet.titleMarkColor ?? null),
-      ...(shouldResetDailyItems || shouldResetWeekendItems || shouldResetEmptyPreset
-        ? { items: defaultSet.items }
-        : {}),
     };
   });
   const builtInIds = new Set(

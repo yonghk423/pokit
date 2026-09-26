@@ -27,6 +27,7 @@ import { formatDateKeyCompact, formatHhmmClock, useTranslation } from '@shared/l
 import { ThemedText } from '@shared/ui/themed-text';
 import { DialHandleBadge } from './DialHandleBadge';
 
+import { DayBalanceOcean } from '../lib/dayBalanceOceanPalette';
 import {
   CYCLE_MINUTES,
   DAY_MINUTES,
@@ -230,28 +231,25 @@ export function DayCycleDial({
   const activePos =
     activeHandle === 'end' ? endPos : activeHandle === 'wake' ? wakePos : startPos;
 
-  /** City Pop Flat — 민트(활동) / 잉크(수면) / 트랙(그 외) */
+  /** Ocean — Sky 트랙 / Blue Green 활동 / Deep Space 수면 / Amber 해·달 */
   const colors = {
-    dialStroke: tone.border,
-    /** 라이트: 다이얼 사각면만 퍼플 베이스 */
-    dialTrack: isDark ? tone.surfaceAlt : '#aea8ef',
-    activityFill: isDark ? tone.primaryContainer : tone.bgMint,
-    sleepFill: isDark ? '#12152A' : tone.text,
+    dialStroke: isDark ? tone.border : DayBalanceOcean.deepSpace,
+    dialTrack: isDark ? tone.surfaceAlt : DayBalanceOcean.sky,
+    activityFill: DayBalanceOcean.blueGreen,
+    sleepFill: isDark ? '#011824' : DayBalanceOcean.deepSpace,
     restFill: 'transparent',
-    /** 해 핸들 — 맑은 하늘(선명) + 노란 해 */
-    startHandle: isDark ? '#2F8FCB' : '#2EA7E0',
-    startHandleIcon: '#FFE566',
-    /** 달 핸들 — 깜깜한 밤 + 노란 달 */
-    endHandle: isDark ? '#050508' : '#0A0A0C',
-    endHandleIcon: '#F5D76E',
-    centerBg: isDark ? 'rgba(45, 47, 68, 0.58)' : 'rgba(255, 255, 255, 0.58)',
-    ink: tone.text,
-    muted: tone.textMuted,
+    startHandle: isDark ? DayBalanceOcean.blueGreen : DayBalanceOcean.sky,
+    startHandleIcon: DayBalanceOcean.amber,
+    endHandle: isDark ? '#011824' : DayBalanceOcean.deepSpace,
+    endHandleIcon: DayBalanceOcean.amber,
+    centerBg: isDark ? 'rgba(2, 48, 71, 0.58)' : 'rgba(255, 255, 255, 0.62)',
+    /** Sky 트랙 위 시·날짜·AM/PM은 블랙으로 대비 */
+    ink: isDark ? tone.text : '#000000',
+    muted: isDark ? tone.textMuted : '#000000',
     sleepLabel: isDark ? tone.text : '#FFFFFF',
     restLabel: isDark ? tone.textMuted : tone.textMuted,
-    sleepAccent: tone.accent,
-    /** 레이아웃 음영은 항상 검정 */
-    shadow: '#000000',
+    sleepAccent: DayBalanceOcean.blueGreen,
+    shadow: DayBalanceOcean.deepSpace,
     summaryBg: isDark ? tone.surfaceAlt : '#FFFFFF',
   };
 
@@ -790,7 +788,7 @@ export function DayCycleDial({
                   key={`arc-label-${seg.kind}-${seg.startDisplay}`}
                   x={seg.mid.x}
                   y={seg.mid.y}
-                  fill={seg.kind === 'sleep' ? colors.sleepLabel : tone.primary}
+                  fill={seg.kind === 'sleep' ? colors.sleepLabel : '#FFFFFF'}
                   fontSize={10}
                   fontWeight="800"
                   textAnchor="middle">
