@@ -1445,40 +1445,15 @@ function GroupAccordion({
               </ThemedText>
             </FlowBrutalActionButton>
             {canDeleteSet ? (
-              <View
-                style={[
-                  styles.brutalBtnShell,
-                  { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
-                ]}>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.brutalBtnShadow,
-                    {
-                      backgroundColor: shadow,
-                      borderColor: line,
-                      transform: [
-                        { translateX: BRUTAL_SHADOW_SM },
-                        { translateY: BRUTAL_SHADOW_SM },
-                      ],
-                    },
-                  ]}
-                />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('fixedRoutine.deleteGroupA11y', { name: displaySetName })}
-                  onPress={onDeleteSet}
-                  style={({ pressed }) => [
-                    styles.headerDeleteBtn,
-                    {
-                      borderColor: line,
-                      backgroundColor: pressed ? actionHoverBg : actionBg,
-                    },
-                    pressed && { opacity: 0.92 },
-                  ]}>
-                  <IconSymbol name="trash" size={12} color={actionMuted} />
-                </Pressable>
-              </View>
+              <FlowBrutalActionButton
+                accessibilityLabel={t('fixedRoutine.deleteGroupA11y', { name: displaySetName })}
+                borderColor={line}
+                backgroundColor={actionBg}
+                pressedBg={actionHoverBg}
+                shadowColor={shadow}
+                onPress={onDeleteSet}>
+                <IconSymbol name="trash" size={13} color={actionMuted} />
+              </FlowBrutalActionButton>
             ) : null}
             <FlowBrutalActionButton
               accessibilityLabel={t('fixedRoutine.expandA11y', {
@@ -2935,16 +2910,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.15,
     lineHeight: 14,
-  },
-  headerDeleteBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 0,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    zIndex: 1,
   },
   accordionHeaderRight: {
     flexDirection: 'row',

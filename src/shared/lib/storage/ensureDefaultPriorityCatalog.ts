@@ -12,6 +12,7 @@ import {
 } from './customFlowCatalogStorage';
 import {
   BUILTIN_ABSTAIN_FLOW_ID,
+  BUILTIN_DAILY_EXERCISE_FLOW_ID,
   BUILTIN_GOOD_POSTURE_FLOW_ID,
   BUILTIN_STRETCHING_FLOW_ID,
   BUILTIN_INTERMITTENT_FASTING_FLOW_ID,
@@ -413,6 +414,38 @@ function migrateAbstainDisplayName(): void {
   });
 }
 
+/** 운동하기 → 주말 러닝 (주말 고정 루틴과 명칭 맞춤) */
+const LEGACY_EXERCISE_DISPLAY_NAMES = new Set(['운동하기', 'Exercise', '運動']);
+const LEGACY_EXERCISE_CHECKLIST_TEXTS = new Set(['운동하기', 'Exercise', '運動']);
+
+function migrateExerciseDisplayNameToWeekendRun(): void {
+  const flowDef = DEFAULT_BUILTIN_CUSTOM_FLOWS.find((flow) => flow.id === BUILTIN_DAILY_EXERCISE_FLOW_ID);
+  if (!flowDef) return;
+  const cfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID);
+  if (!cfg || typeof cfg !== 'object') return;
+  const row = cfg as Record<string, unknown>;
+  const displayName = typeof row.displayName === 'string' ? row.displayName.trim() : '';
+  const checklist = Array.isArray(row.checklist)
+    ? (row.checklist as Array<{ id?: unknown; text?: unknown; done?: unknown }>)
+    : [];
+  const shouldRenameTitle = LEGACY_EXERCISE_DISPLAY_NAMES.has(displayName);
+  const nextChecklist = checklist.map((item, index) => {
+    const text = typeof item.text === 'string' ? item.text.trim() : '';
+    if (!LEGACY_EXERCISE_CHECKLIST_TEXTS.has(text)) return item;
+    const label = flowDef.checklistLabels?.[index] ?? flowDef.checklistLabels?.[0] ?? flowDef.displayName;
+    return { ...item, text: label };
+  });
+  const checklistChanged = nextChecklist.some((item, index) => item !== checklist[index]);
+  if (!shouldRenameTitle && !checklistChanged) return;
+  saveGoalDetailCategoryConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID, {
+    ...row,
+    ...(shouldRenameTitle
+      ? { displayName: flowDef.displayName, summary: flowDef.summary ?? row.summary }
+      : {}),
+    ...(checklistChanged ? { checklist: nextChecklist } : {}),
+  });
+}
+
 /** 「포킷 일주일」일별 투어 → 하루 안에 끝내는 빠른 둘러보기로 갱신 */
 function migratePokitWeekTourToQuickTour(): void {
   const cfg = loadGoalDetailCategoryConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
@@ -571,6 +604,7 @@ export function ensureDefaultPriorityCatalog(): void {
   migrateDailyWashIcon();
   migrateFastingBuiltinIcon();
   migrateAbstainDisplayName();
+  migrateExerciseDisplayNameToWeekendRun();
   migrateHabitPresetFlowsToChecklist();
   purgeIntermittentFastingFlow();
   purgeGoodPostureFlow();

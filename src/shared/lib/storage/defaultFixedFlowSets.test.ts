@@ -17,10 +17,7 @@ describe('createDefaultFixedFlowSetsState', () => {
     expect(state.sets.map((s) => s.name)).toEqual(['데일리 고정 루틴', '주말 고정 루틴']);
     expect(state.sets.map((s) => s.applyRule)).toEqual(['daily', 'weekend']);
     const daily = state.sets.find((s) => s.id === 'set_daily');
-    expect(daily?.items.map((x) => x.categoryKey)).toEqual([
-      'healthIntake',
-      'fasting',
-    ]);
+    expect(daily?.items.map((x) => x.categoryKey)).toEqual(['fasting']);
     const weekend = state.sets.find((s) => s.id === 'set_weekend');
     expect(weekend?.items.map((x) => x.categoryKey)).toEqual([
       BUILTIN_DAILY_EXERCISE_FLOW_ID,
@@ -44,14 +41,14 @@ describe('createDefaultFixedFlowSetsState', () => {
     ]);
   });
 
-  it('refills empty weekend preset with current defaults', () => {
+  it('preserves empty weekend preset items (no auto-refill)', () => {
     const merged = mergeBuiltInPresetSets([
       {
         id: 'set_daily',
         name: '데일리 고정 루틴',
         applyRule: 'daily',
         applyWeekdays: [0, 1, 2, 3, 4, 5, 6],
-        items: [{ categoryKey: 'healthIntake', enabled: true }],
+        items: [{ categoryKey: 'fasting', enabled: true }],
       },
       {
         id: 'set_weekend',
@@ -61,27 +58,10 @@ describe('createDefaultFixedFlowSetsState', () => {
         items: [],
       },
     ]);
-    expect(merged.find((set) => set.id === 'set_weekend')?.items.map((item) => item.categoryKey)).toEqual([
-      BUILTIN_DAILY_EXERCISE_FLOW_ID,
-    ]);
+    expect(merged.find((set) => set.id === 'set_weekend')?.items).toEqual([]);
   });
 
-  it('migrates legacy weekend reading-only default', () => {
-    const merged = mergeBuiltInPresetSets([
-      {
-        id: 'set_weekend',
-        name: '주말 고정 루틴',
-        applyRule: 'weekend',
-        applyWeekdays: [0, 6],
-        items: [{ categoryKey: 'reading', enabled: true }],
-      },
-    ]);
-    expect(merged.find((set) => set.id === 'set_weekend')?.items.map((item) => item.categoryKey)).toEqual([
-      BUILTIN_DAILY_EXERCISE_FLOW_ID,
-    ]);
-  });
-
-  it('migrates weekend default that still includes retired recycle', () => {
+  it('preserves weekend items that differ from current defaults', () => {
     const merged = mergeBuiltInPresetSets([
       {
         id: 'set_weekend',
@@ -96,10 +76,29 @@ describe('createDefaultFixedFlowSetsState', () => {
     ]);
     expect(merged.find((set) => set.id === 'set_weekend')?.items.map((item) => item.categoryKey)).toEqual([
       BUILTIN_DAILY_EXERCISE_FLOW_ID,
+      BUILTIN_DAILY_RECYCLE_FLOW_ID,
     ]);
   });
 
-  it('migrates daily default that still includes retired clean', () => {
+  it('migrates previous daily default by dropping healthIntake', () => {
+    const merged = mergeBuiltInPresetSets([
+      {
+        id: 'set_daily',
+        name: '데일리 고정 루틴',
+        applyRule: 'daily',
+        applyWeekdays: [0, 1, 2, 3, 4, 5, 6],
+        items: [
+          { categoryKey: 'healthIntake', enabled: true },
+          { categoryKey: 'fasting', enabled: true },
+        ],
+      },
+    ]);
+    expect(merged.find((set) => set.id === 'set_daily')?.items.map((item) => item.categoryKey)).toEqual([
+      'fasting',
+    ]);
+  });
+
+  it('keeps daily items when user customized beyond previous default', () => {
     const merged = mergeBuiltInPresetSets([
       {
         id: 'set_daily',
@@ -116,26 +115,7 @@ describe('createDefaultFixedFlowSetsState', () => {
     expect(merged.find((set) => set.id === 'set_daily')?.items.map((item) => item.categoryKey)).toEqual([
       'healthIntake',
       'fasting',
-    ]);
-  });
-
-  it('migrates legacy daily default items to the new preset', () => {
-    const merged = mergeBuiltInPresetSets([
-      {
-        id: 'set_daily',
-        name: '데일리 고정 루틴',
-        applyRule: 'daily',
-        applyWeekdays: [0, 1, 2, 3, 4, 5, 6],
-        items: [
-          { categoryKey: 'healthIntake', enabled: true },
-          { categoryKey: 'reading', enabled: true },
-          { categoryKey: 'work', enabled: true },
-        ],
-      },
-    ]);
-    expect(merged.find((set) => set.id === 'set_daily')?.items.map((item) => item.categoryKey)).toEqual([
-      'healthIntake',
-      'fasting',
+      'customFlow:preset_daily_clean',
     ]);
   });
 

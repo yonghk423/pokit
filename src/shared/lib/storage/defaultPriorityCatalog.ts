@@ -153,12 +153,12 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
   {
     id: BUILTIN_DAILY_EXERCISE_FLOW_ID,
     groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
-    displayName: '운동하기',
+    displayName: '주말 러닝',
     icon: 'figure.run',
     color: '#ef4444',
-    summary: '가벼운 스트레칭부터 유산소까지, 오늘 몸을 움직여요.',
+    summary: '주말에 가볍게 뛰며 몸을 움직여요.',
     templateKey: 'checklist',
-    checklistLabels: ['운동하기'],
+    checklistLabels: ['주말 러닝'],
   },
   {
     id: BUILTIN_ABSTAIN_FLOW_ID,

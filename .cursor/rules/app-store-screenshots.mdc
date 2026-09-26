@@ -10,13 +10,66 @@ alwaysApply: false
 - **필수 크기:** `1320 × 2868` px (App Store Connect 6.9" Display)
 - **배경:** 민트 세로 그라데이션 `#D9F8FB` → `#C4ECE8` (또는 RGB 217,248,251 → 196,236,232)
 - **점선 카드/외곽 프레임은 쓰지 않음** — 민트 풀블리드만
-- 출력: `assets/store/iphone-6.9-<slug>.png` + 바탕화면 `POKIT-6.9-<slug>.png`
+- 출력:
+  - `assets/store/iphone-6.9-<slug>.png`
+  - `Documents/스크린샷/` 또는 `Documents/스크린샷2/`
+  - Desktop `POKIT-6.9-<slug>.png`
 
-## 헤드라인
+## 헤드라인 (검증됨 — 반드시 이 수치)
 
-- 좌상단, Apple SD Gothic Neo **Bold**, 잉크 `#141618`
-- 2줄로 자연스럽게 끊기. 줄 간격은 **아주 살짝** (gap ≈ 18px @1x / LINE_GAP 36 @2x)
-- 사용자가 준 멘트를 **그대로** 씀 (임의 수정·「루틴」치환 금지 — 마케팅 카피)
+레퍼런스: `iphone-6.9-history.png` / `iphone-6.9-today.png` / `iphone-6.9-reading.png`  
+(잉크 박스: 1줄 `131–196`, 2줄 `223–289`, left ≈ `88`)
+
+| 상수 (@1x) | 값 | 비고 |
+|---|---|---|
+| `HEAD_LEFT` | **76** | draw x. 첫 글자 베어링+stroke 후 **잉크 left ≈ 88** |
+| `HEAD_TOP` | **125** | draw y. 폰트 내부 패딩 후 **잉크 top ≈ 131** |
+| `HEAD_SIZE` | **72** | Apple SD Gothic Neo **Bold** |
+| `LINE_ADVANCE` | **92** | 2번째 줄 draw y = `125+92` → 잉크 ≈ **223** |
+| `FONT_INDEX` | **6** | `/System/Library/Fonts/AppleSDGothicNeo.ttc` Bold |
+| `INK` | `#141618` | |
+
+### 2× 렌더 (필수)
+
+```
+SCALE = 2
+fontSize   = HEAD_SIZE * SCALE      # 144
+left       = HEAD_LEFT * SCALE      # 152
+top        = HEAD_TOP * SCALE       # 250
+lineAdvance= LINE_ADVANCE * SCALE   # 184
+stroke_width = 2                    # 2× 캔버스 기준 (다운스케일 후 레퍼런스 굵기)
+```
+
+다운스케일: `2640×5736` → `1320×2868` (LANCZOS)
+
+### 그리기 방식
+
+```python
+for i, line in enumerate(lines):
+    y = (HEAD_TOP + i * LINE_ADVANCE) * SCALE
+    draw.text(
+        (HEAD_LEFT * SCALE, y),
+        line,
+        font=font,  # Bold index 6, size HEAD_SIZE*SCALE
+        fill=INK,
+        stroke_width=2,
+        stroke_fill=INK,
+    )
+```
+
+- 줄 간격은 **getbbox 높이 + gap 금지** → 반드시 **고정 `LINE_ADVANCE=92`**
+- 카피는 사용자가 준 문구 **그대로** (임의 수정·「루틴」치환 금지)
+
+### 자주 하는 실수 (금지)
+
+1. **`left=86`을 2× 캔버스에 그대로 넣기** → 다운스케일 후 left≈43, 글자가 왼쪽·위로 찌그러져 보임  
+   → 항상 `* SCALE`
+2. **Bold 대신 ExtraBold/Heavy만 키우기** → 레퍼런스와 크기·위치가 안 맞음  
+   → Bold(6) + `stroke_width=2`(@2x)
+3. **fontSize 48~62만 쓰기** → 레퍼런스보다 작음  
+   → **72 @1x**
+4. **합성 후 검증 생략** → 잉크 박스가 히스토리와 같은지 확인할 것  
+   - top≈131, line2≈223, left≈88, 줄 높이≈65~67
 
 ## 폰 목업 (검증된 2D만)
 
@@ -27,13 +80,14 @@ alwaysApply: false
 - 라운드 ≈ 화면폭 비율의 165px (`165 * screenW / 1320`)
 - 그림자: soft drop shadow
 - 기울기: **시계방향 약 −7.4°** (단일·듀얼 모두 동일 방향)
+- 단일 폰 상단(@1x): 헤드라인 아래, 대략 **`PHONE_TOP ≈ 320`**
 - **금지(반려됨):** CSS 3D / 옆면 두꺼운 입체 · **티타늄 메탈 섀시 · 볼륨/전원 사이드 버튼 돌출** · 두꺼운 커스텀 베젤 재발명
 
 ## 레이아웃 A — 단일 폰
 
-예: 오늘, 하루 밸런스, 책방, 스토리
+예: 오늘, 하루 밸런스, 책방, 스토리, 히스토리
 
-1. 헤드라인 아래
+1. 헤드라인(위 수치) 아래
 2. 화면 폭 ≈ **1088px @1x**, 가로 중앙
 3. 하단은 캔버스 밖으로 잘려도 됨
 
@@ -46,14 +100,19 @@ alwaysApply: false
 3. 위 폰: 중앙에서 **왼쪽·아래**로 약간 오프셋 (`≈ −100x, +130y` @1x 기준)
 4. 아래 폰: 위 폰과 **살짝 겹침** (`overlap ≈ 420px @1x`), 아래 레이어가 위
 5. 하단 잘림 OK
+6. 헤드라인 수치는 레이아웃 A와 **동일**
 
-## 합성 방법
+## 합성 체크리스트
 
-- Python Pillow로 2× 렌더 후 `1320×2868`로 다운스케일 (텍스트 선명도)
-- 폰트: `/System/Library/Fonts/AppleSDGothicNeo.ttc` index 6 (Bold)
+1. 원본 캡처 1320×2868 확인
+2. 2× 캔버스 + 헤드라인 상수(`76/125/72/92` + stroke 2) 적용
+3. 폰 목업 −7.4°, bezel 18@1x
+4. 다운스케일 후 잉크 박스가 히스토리와 맞는지 계측
+5. `assets/store` + Desktop `POKIT-6.9-…` 저장
 
 ## 금지
 
 - 폰 화면만 납작하게 크롭해 비율 깨기
 - 3D 원근(옆면 과다)·서로 반대 방향 기울기
 - 헤드라인·UI 카피를 멋대로 바꾸기
+- 헤드라인 크기/위치를 “대충 비슷하게” 추정 (위 표 수치만 사용)

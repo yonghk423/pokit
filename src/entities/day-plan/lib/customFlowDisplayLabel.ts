@@ -28,7 +28,15 @@ function isBuiltinLocalizedDefaultName(categoryKey: string, displayName: string)
     getBuiltinFlowDefaultLabel(categoryKey, 'en'),
     getBuiltinFlowDefaultLabel(categoryKey, 'ja'),
   ];
-  return names.some((name) => name != null && name === displayName);
+  if (names.some((name) => name != null && name === displayName)) return true;
+  // 운동하기 → 주말 러닝 개명 전 저장된 기본명도 로케일 기본값으로 취급
+  if (
+    categoryKey === 'customFlow:preset_daily_exercise' &&
+    (displayName === '운동하기' || displayName === 'Exercise' || displayName === '運動')
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /**

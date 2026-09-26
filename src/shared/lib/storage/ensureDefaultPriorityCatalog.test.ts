@@ -65,7 +65,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     ]);
 
     const exerciseCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID);
-    expect(exerciseCfg?.displayName).toBe('운동하기');
+    expect(exerciseCfg?.displayName).toBe('주말 러닝');
     expect((exerciseCfg as { templateKey?: string })?.templateKey).toBe('checklist');
 
     expect(loadGoalDetailCategoryConfig('customFlow:preset_daily_bed')).toBeNull();
@@ -359,9 +359,10 @@ describe('ensureDefaultPriorityCatalog', () => {
     ensureDefaultPriorityCatalog();
 
     const exerciseCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID);
+    expect(exerciseCfg?.displayName).toBe('주말 러닝');
     expect((exerciseCfg as { templateKey?: string })?.templateKey).toBe('checklist');
     expect(exerciseCfg?.checklist).toEqual([
-      { id: `${BUILTIN_DAILY_EXERCISE_FLOW_ID}_item_0`, text: '운동하기', done: true },
+      { id: `${BUILTIN_DAILY_EXERCISE_FLOW_ID}_item_0`, text: '주말 러닝', done: true },
     ]);
     expect((exerciseCfg as { doneToday?: boolean }).doneToday).toBeUndefined();
   });

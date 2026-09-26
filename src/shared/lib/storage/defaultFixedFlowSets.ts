@@ -131,12 +131,21 @@ export const REMOVED_BUILTIN_PRESET_SET_IDS = [
   'set_abstain',
 ] as const;
 
+/** 이전 데일리 기본 항목 — 미수정 저장본만 새 기본값으로 교체 */
+const PREVIOUS_DAILY_SET_DEFAULT_KEYS = ['healthIntake', 'fasting'] as const;
+
+function isSameCategoryKeySet(keys: string[], expected: readonly string[]): boolean {
+  if (keys.length !== expected.length) return false;
+  const set = new Set(keys);
+  return expected.every((key) => set.has(key));
+}
+
 const DEFAULT_SET_TEMPLATES: DefaultSetTemplate[] = [
   {
     id: 'set_daily',
     name: '데일리 고정 루틴',
     applyRule: 'daily',
-    categoryKeys: ['healthIntake', 'fasting'],
+    categoryKeys: ['fasting'],
     titleMarkColor: 'yellow',
   },
   {
@@ -200,6 +209,11 @@ export function mergeBuiltInPresetSets(
   const mergedBuiltIns = defaults.map((defaultSet) => {
     const existing = byId.get(defaultSet.id);
     if (!existing) return defaultSet;
+    const existingKeys = existing.items.map((item) => item.categoryKey);
+    // 이전 데일리 기본(건강 섭취+체중조절)만 새 기본으로 교체. 사용자가 손댄 항목은 유지.
+    const shouldResetPreviousDailyDefault =
+      defaultSet.id === 'set_daily' &&
+      isSameCategoryKeySet(existingKeys, PREVIOUS_DAILY_SET_DEFAULT_KEYS);
     const storedName = existing.name.trim();
     const hasExplicitTitleMark = Object.prototype.hasOwnProperty.call(
       existing,
@@ -217,6 +231,7 @@ export function mergeBuiltInPresetSets(
       titleMarkColor: hasExplicitTitleMark
         ? existing.titleMarkColor ?? null
         : (defaultSet.titleMarkColor ?? null),
+      ...(shouldResetPreviousDailyDefault ? { items: defaultSet.items } : {}),
     };
   });
   const builtInIds = new Set(
