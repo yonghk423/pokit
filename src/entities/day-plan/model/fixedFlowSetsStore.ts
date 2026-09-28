@@ -955,10 +955,12 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
     endsNextCalendarDay,
   ) => {
     const key = categoryKey.trim();
-    if (!key || !isPriorityCatalogAllowedKey(key)) return false;
+    if (!key) return false;
 
     const { sets, activeSetIds } = get();
     const alreadyInSet = sets.some((s) => s.items.some((x) => x.categoryKey === key));
+    // 이미 세트에 있으면 카탈로그 허용 여부와 무관하게 기존 항목의 시간을 보존/수정한다.
+    if (!alreadyInSet && !isPriorityCatalogAllowedKey(key)) return false;
     if (!alreadyInSet) {
       const customSets = sets.filter((s) => !isBuiltinPresetScheduleSet(s));
       const activeCustom = customSets.find((s) => activeSetIds.includes(s.id));
@@ -970,6 +972,18 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       }
       if (!targetId) return false;
       get().addCategoryToSet(targetId, key);
+    } else {
+      // 비활성 세트에만 있으면 활성 커스텀 세트에도 넣어 담기·시작 알림이 같은 저장을 보게 한다.
+      const onActiveSet = sets.some(
+        (s) => activeSetIds.includes(s.id) && s.items.some((x) => x.categoryKey === key),
+      );
+      if (!onActiveSet) {
+        const customSets = sets.filter((s) => !isBuiltinPresetScheduleSet(s));
+        const activeCustom = customSets.find((s) => activeSetIds.includes(s.id));
+        if (activeCustom) {
+          get().addCategoryToSet(activeCustom.id, key);
+        }
+      }
     }
 
     return get().setCategorySpineScheduleInAnySet(

@@ -125,13 +125,52 @@ export function resolveBagItemSpineSchedule(input: {
   fixedFlowSets: readonly FixedFlowSet[];
   priorityStart: string;
   priorityEnd: string;
+  /**
+   * 전역 루틴 시작 시각 저장소(우선).
+   * 담기에서 사용자가 저장한 시각 — 앱 재실행 후에도 유지되는 단일 진실원.
+   */
+  storedStartTimes?: ReadonlyMap<string, {
+    startMinutes: number;
+    endMinutes: number;
+    endsNextCalendarDay?: boolean;
+  }> | Readonly<Record<string, {
+    startMinutes: number;
+    endMinutes: number;
+    endsNextCalendarDay?: boolean;
+  }>>;
 }): BagRowSpineSchedule {
   const categoryKey = input.categoryKey;
   const baseKey = resolvePriorityRoutineCategoryKey(categoryKey);
-  const block = input.planBlocks.find((b) => {
+
+  const storedRaw = input.storedStartTimes;
+  const stored =
+    storedRaw instanceof Map
+      ? storedRaw.get(baseKey) ?? storedRaw.get(categoryKey)
+      : storedRaw?.[baseKey] ?? storedRaw?.[categoryKey];
+  if (
+    stored &&
+    typeof stored.startMinutes === 'number' &&
+    typeof stored.endMinutes === 'number'
+  ) {
+    return withStartsNextDay(
+      {
+        startMinutes: stored.startMinutes,
+        endMinutes: stored.endMinutes,
+        endsNextCalendarDay: stored.endsNextCalendarDay === true,
+        isSuggested: false,
+      },
+      input.priorityStart,
+      input.priorityEnd,
+    );
+  }
+
+  const matchingBlocks = input.planBlocks.filter((b) => {
     const key = resolveBlockCategoryKey(b) ?? resolveCategoryKeyFromLabel(b.category ?? '');
     return key === baseKey || key === categoryKey;
   });
+  // 같은 카테고리에 자동 세션 블록과 수동 시간 블록이 같이 있으면 수동 시간을 우선한다.
+  const block =
+    matchingBlocks.find((b) => b.hasManualScheduleOverride === true) ?? matchingBlocks[0];
   // 튜토리얼만 집중 구간을 「사용한 것처럼」보여 준다. 그 외 루틴은 사용자가
   // 직접 맞춘 시각이 있을 때만 표시한다.
   if (

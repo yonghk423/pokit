@@ -4,23 +4,24 @@ import {
   formatHhmmClockKo,
   listTodayPlanCategoryKeys,
   parseHHmmToMinutes,
-  useDayPlanDraftStore,
   useDayPlanStore,
   useFixedFlowSetsStore,
+  useRoutineStartTimesStore,
 } from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import {
   cancelLocalNotificationsById,
   cancelScheduledNotificationsByEventType,
   ensureLocalNotificationPermission,
+  scheduleDailyLocalNotification,
   scheduleWeeklyLocalNotification,
 } from '@shared/lib/notifications';
 import {
-  loadDayMealSlotSchedule,
   loadRoutineStartNotifyRules,
   loadRoutineStartNotifyScheduled,
   saveRoutineStartNotifyRules,
   saveRoutineStartNotifyScheduled,
+  WEEKDAY_PRESET_DAILY,
 } from '@shared/lib/storage';
 import { t } from '@shared/lib/i18n';
 
@@ -33,12 +34,22 @@ function buildRoutineStartNotificationId(slotKey: string): string {
   return `${ROUTINE_START_NOTIFICATION_ID_PREFIX}${slotKey}`;
 }
 
+function isDailyWeekdays(weekdays: readonly number[]): boolean {
+  if (weekdays.length !== WEEKDAY_PRESET_DAILY.length) return false;
+  const set = new Set(weekdays);
+  return WEEKDAY_PRESET_DAILY.every((d) => set.has(d));
+}
+
 /**
  * 켜진 루틴 시작 알림을 취소 후 다시 예약합니다.
  * 권한이 없으면 예약만 비웁니다(규칙은 유지).
  * 알림 시각은 루틴/일정 시작 시각에서만 해석합니다.
  */
 async function performRoutineStartNotificationSync(): Promise<void> {
+  /** 권한을 먼저 확인한다. 취소→권한실패 순이면 잘 되던 예약이 통째로 지워질 수 있다. */
+  await useLocalNotificationsStore.getState().refreshPermission();
+  const granted = useLocalNotificationsStore.getState().permission === 'granted';
+
   const prev = loadRoutineStartNotifyScheduled();
   if (prev.length > 0) {
     await cancelLocalNotificationsById(prev.map((r) => r.notificationId));
@@ -47,10 +58,7 @@ async function performRoutineStartNotificationSync(): Promise<void> {
   await cancelScheduledNotificationsByEventType(ROUTINE_START_EVENT_TYPE);
   saveRoutineStartNotifyScheduled([]);
 
-  await useLocalNotificationsStore.getState().refreshPermission();
-  if (useLocalNotificationsStore.getState().permission !== 'granted') {
-    return;
-  }
+  if (!granted) return;
 
   const rules = loadRoutineStartNotifyRules();
   const enabledKeys = Object.entries(rules)
@@ -59,26 +67,21 @@ async function performRoutineStartNotificationSync(): Promise<void> {
   if (enabledKeys.length === 0) return;
 
   const fixed = useFixedFlowSetsStore.getState();
-  const draft = useDayPlanDraftStore.getState();
   const plan = useDayPlanStore.getState();
+  const storedStartTimes = useRoutineStartTimesStore.getState().byCategoryKey;
 
   const slots = collectRoutineStartNotifySlots({
     enabledCategoryKeys: enabledKeys,
     sets: fixed.sets,
     activeSetIds: fixed.activeSetIds,
-    includeInactiveSets: false,
-    layoutMode: fixed.fixedRoutineApplyLayoutMode,
-    mealSchedule: loadDayMealSlotSchedule(),
+    includeInactiveSets: true,
     planBlocks: plan.blocks,
-    sectionsMealSlots: {
-      ...draft.priorityMealSlotOverrides,
-      ...draft.prioritySectionsMealSlots,
-    },
     todayCategoryKeys: listTodayPlanCategoryKeys(),
-    priorityStart: draft.priorityStart,
+    storedStartTimes,
   }).slice(0, MAX_ROUTINE_START_NOTIFY_SLOTS);
 
   const nextRows: { slotKey: string; notificationId: string }[] = [];
+  const seenIds = new Set<string>();
   for (const slot of slots) {
     const total = parseHHmmToMinutes(slot.hhmm);
     if (total === null || total >= 24 * 60) continue;
@@ -87,19 +90,46 @@ async function performRoutineStartNotificationSync(): Promise<void> {
 
     const label = categoryReminderLabelKo(slot.categoryKey);
     const clock = formatHhmmClockKo(slot.hhmm);
+    const title = t('notify.routineStart.title');
+    const body = t('notify.routineStart.body', { label, clock });
+    const data = {
+      eventType: ROUTINE_START_EVENT_TYPE,
+      categoryKey: slot.categoryKey,
+    };
+
+    /** 매일 요일이면 WEEKLY×7 대신 DAILY 1건 — 하루 시작 알림과 같은 경로로 안정화 */
+    if (isDailyWeekdays(slot.weekdays)) {
+      const slotKey = slot.slotKey;
+      const identifier = buildRoutineStartNotificationId(slotKey);
+      if (seenIds.has(identifier)) continue;
+      seenIds.add(identifier);
+      const nid = await scheduleDailyLocalNotification({
+        identifier,
+        title,
+        body,
+        hour,
+        minute,
+        data,
+      });
+      if (nid) {
+        nextRows.push({ slotKey, notificationId: nid });
+      }
+      continue;
+    }
+
     for (const weekday of slot.weekdays) {
       const slotKey = `${slot.slotKey}@${weekday}`;
+      const identifier = buildRoutineStartNotificationId(slotKey);
+      if (seenIds.has(identifier)) continue;
+      seenIds.add(identifier);
       const nid = await scheduleWeeklyLocalNotification({
-        identifier: buildRoutineStartNotificationId(slotKey),
-        title: t('notify.routineStart.title'),
-        body: t('notify.routineStart.body', { label, clock }),
+        identifier,
+        title,
+        body,
         weekday,
         hour,
         minute,
-        data: {
-          eventType: ROUTINE_START_EVENT_TYPE,
-          categoryKey: slot.categoryKey,
-        },
+        data,
       });
       if (nid) {
         nextRows.push({ slotKey, notificationId: nid });

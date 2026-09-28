@@ -154,6 +154,8 @@ export type DayPlanStoreState = {
       endsNextCalendarDay?: boolean;
       category?: string;
       categoryKey?: string | null;
+      /** 오늘 탭에서 직접 정한 시각 — 재실행 후에도 유지 */
+      hasManualScheduleOverride?: boolean;
     },
   ) => UpdateBlockResult;
 
@@ -608,10 +610,11 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
             startMinutes: start,
             endMinutes: end,
             ...(endsNext ? { endsNextCalendarDay: true as const } : { endsNextCalendarDay: undefined }),
-            ...(existing.blockOrigin === 'spineTimeline' &&
-            (patch.startMinutes !== undefined ||
-              patch.endMinutes !== undefined ||
-              patch.endsNextCalendarDay !== undefined)
+            ...(patch.hasManualScheduleOverride === true ||
+            (existing.blockOrigin === 'spineTimeline' &&
+              (patch.startMinutes !== undefined ||
+                patch.endMinutes !== undefined ||
+                patch.endsNextCalendarDay !== undefined))
               ? { hasManualScheduleOverride: true as const }
               : {}),
             category: nextCategory,

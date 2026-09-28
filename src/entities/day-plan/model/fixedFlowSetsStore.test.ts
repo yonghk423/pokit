@@ -146,6 +146,94 @@ describe('fixedFlowSetsStore', () => {
     expect(updated?.applyWeekdays).toEqual([1, 3, 5]);
   });
 
+  it('persists a routine spine schedule for restoration after relaunch', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: [],
+      activeMealSlotsBySetId: {},
+      activeSetIdsByLayoutMode: { bag: [], sections: [], spine: [] },
+      activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
+      sets: [
+        {
+          id: 'set_pushups',
+          name: '매일 푸쉬업 50개',
+          applyRule: 'manual',
+          items: [{ categoryKey: 'customFlow:pushups', enabled: true }],
+        },
+      ],
+      scheduledMealSlotLayoutEnabled: false,
+      dismissedExampleCustomFlowSetIds: [],
+      dismissedBuiltinPresetSetIds: [],
+      fixedRoutineApplyLayoutMode: 'bag',
+      todayAppliedCategoryKeys: [],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+
+    const saved = useFixedFlowSetsStore
+      .getState()
+      .setCategorySpineScheduleInAnySet('customFlow:pushups', 23 * 60, 24 * 60);
+
+    expect(saved).toBe(true);
+    expect(useFixedFlowSetsStore.getState().sets[0]?.items[0]).toMatchObject({
+      categoryKey: 'customFlow:pushups',
+      spineStartMinutes: 23 * 60,
+      spineEndMinutes: 24 * 60,
+    });
+    expect(mockSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sets: [
+          expect.objectContaining({
+            items: [
+              expect.objectContaining({
+                categoryKey: 'customFlow:pushups',
+                spineStartMinutes: 23 * 60,
+                spineEndMinutes: 24 * 60,
+              }),
+            ],
+          }),
+        ],
+      }),
+    );
+  });
+
+  it('updates spine schedule even when key is no longer catalog-allowed if item already exists', () => {
+    useFixedFlowSetsStore.setState({
+      activeSetIds: ['set_legacy'],
+      activeMealSlotsBySetId: {},
+      activeSetIdsByLayoutMode: { bag: ['set_legacy'], sections: [], spine: [] },
+      activeMealSlotsBySetIdByLayoutMode: { bag: {}, sections: {}, spine: {} },
+      sets: [
+        {
+          id: 'set_legacy',
+          name: '레거시',
+          applyRule: 'manual',
+          items: [{ categoryKey: 'legacy:retired_routine', enabled: true }],
+        },
+      ],
+      scheduledMealSlotLayoutEnabled: false,
+      dismissedExampleCustomFlowSetIds: [],
+      dismissedBuiltinPresetSetIds: [],
+      fixedRoutineApplyLayoutMode: 'bag',
+      todayAppliedCategoryKeys: ['legacy:retired_routine'],
+      todayAppliedRevision: 0,
+      isHydrated: true,
+    });
+
+    const saved = useFixedFlowSetsStore.getState().ensureCategorySpineScheduleInAnySet(
+      'legacy:retired_routine',
+      22 * 60,
+      22 * 60 + 45,
+      false,
+    );
+
+    expect(saved).toBe(true);
+    expect(useFixedFlowSetsStore.getState().sets[0]?.items[0]).toMatchObject({
+      categoryKey: 'legacy:retired_routine',
+      spineStartMinutes: 22 * 60,
+      spineEndMinutes: 22 * 60 + 45,
+    });
+  });
+
   it('clears catalog protection when turning off today weekday so bag sync can drop items', () => {
     // 2026-09-16 = Wednesday (getDay() === 3)
     jest.useFakeTimers();

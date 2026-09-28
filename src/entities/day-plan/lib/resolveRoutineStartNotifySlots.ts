@@ -1,7 +1,4 @@
 import {
-  getMealSlotStartHhmm,
-  normalizeCategoryMealSlots,
-  normalizeDayMealSlotSchedule,
   resolveApplyWeekdays,
   WEEKDAY_PRESET_DAILY,
   type WeekdayIndex,
@@ -13,6 +10,7 @@ import {
 
 import { formatMinutesToHHmm } from './dayPlanTimeMath';
 import { parseHHmmToMinutes } from './parseTime';
+import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 
 export type RoutineStartNotifySlot = {
   categoryKey: string;
@@ -26,6 +24,9 @@ export type RoutineStartNotifySlot = {
 export type RoutineStartNotifyPlanBlock = {
   categoryKey?: string;
   startMinutes?: number;
+  blockOrigin?: 'quickMemo' | 'prioritySession' | 'spineTimeline';
+  /** 사용자가 직접 맞춘 시각만 알림 후보로 쓴다 */
+  hasManualScheduleOverride?: boolean;
 };
 
 function minutesToNotifyHhmm(minutes: number): string | null {
@@ -42,44 +43,41 @@ function normalizeWeekdaysOrDaily(weekdays?: readonly WeekdayIndex[]): WeekdayIn
   return [...normalized].sort((a, b) => a - b);
 }
 
-function pushUnique(
+/**
+ * 시작 알림은 루틴(카테고리)당 시각 하나만 예약한다.
+ * 같은 시각이면 요일만 합치고, 다른 시각이면 먼저 채택된 후보를 유지한다.
+ */
+function pushPreferredStart(
   out: Map<string, RoutineStartNotifySlot>,
   categoryKey: string,
   hhmm: string,
   weekdays?: readonly WeekdayIndex[],
 ): void {
+  const key = categoryKey.trim();
+  if (!key) return;
   const normalized = hhmm.trim();
   const m = parseHHmmToMinutes(normalized);
   if (m === null || m >= 24 * 60) return;
-  const slotKey = `${categoryKey}:${normalized}`;
   const nextWeekdays = normalizeWeekdaysOrDaily(weekdays);
-  const prev = out.get(slotKey);
+  const prev = out.get(key);
   if (!prev) {
-    out.set(slotKey, { categoryKey, hhmm: normalized, slotKey, weekdays: nextWeekdays });
+    out.set(key, {
+      categoryKey: key,
+      hhmm: normalized,
+      slotKey: `${key}:${normalized}`,
+      weekdays: nextWeekdays,
+    });
     return;
   }
+  if (prev.hhmm !== normalized) return;
   const merged = [...new Set([...prev.weekdays, ...nextWeekdays])].sort((a, b) => a - b);
-  out.set(slotKey, { ...prev, weekdays: merged });
-}
-
-function pushMealSlots(
-  out: Map<string, RoutineStartNotifySlot>,
-  categoryKey: string,
-  slots: readonly DayMealSlot[],
-  schedule: DayMealSlotSchedule,
-  weekdays?: readonly WeekdayIndex[],
-): void {
-  for (const slot of slots) {
-    pushUnique(out, categoryKey, getMealSlotStartHhmm(schedule, slot), weekdays);
-  }
+  out.set(key, { ...prev, weekdays: merged });
 }
 
 /**
  * 카테고리별「시작 알림」시각을 모읍니다.
- * - 고정 루틴 항목의 타임라인 시작 / 배정 시간대 (+ 요일 규칙)
- * - 오늘 일정 블록 시작 시각
- * - 오늘 탭 시간대 배정
- * 루틴 시작 시각이 없으면 하루 시작으로 채우지 않는다.
+ * 우선순위: 전역 저장 시각 → 오늘 수동 블록 → 고정 루틴 spine
+ * (시간대/식사 구간 모드는 미사용 — 시작 알림 후보에서 제외)
  */
 export function collectRoutineStartNotifySlots(input: {
   enabledCategoryKeys: readonly string[];
@@ -87,25 +85,53 @@ export function collectRoutineStartNotifySlots(input: {
   activeSetIds: readonly string[];
   /** false면 활성 세트만 반영 (실제 예약 생성용) */
   includeInactiveSets?: boolean;
-  /** @deprecated 해석에 더 이상 필수로 쓰지 않음(호환용) */
+  /** @deprecated 해석에 쓰지 않음(호환용) */
   layoutMode?: FixedRoutineApplyLayoutMode;
-  mealSchedule: DayMealSlotSchedule;
+  /** @deprecated 시간대 모드 미사용 — 시작 알림에 반영하지 않음 */
+  mealSchedule?: DayMealSlotSchedule;
   planBlocks?: readonly RoutineStartNotifyPlanBlock[];
+  /** @deprecated 시간대 모드 미사용 — 시작 알림에 반영하지 않음 */
   sectionsMealSlots?: Record<string, DayMealSlot[] | DayMealSlot | undefined>;
   /** 오늘 루틴 목록에 있는 카테고리 */
   todayCategoryKeys?: readonly string[];
   /** @deprecated 루틴 시각이 없을 때 하루 시작으로 채우지 않음(호환용) */
   priorityStart?: string;
+  /** 전역 루틴 시작 시각 저장소(담기에서 저장) */
+  storedStartTimes?: Readonly<
+    Record<string, { startMinutes: number; endMinutes?: number; endsNextCalendarDay?: boolean }>
+  >;
 }): RoutineStartNotifySlot[] {
   const enabled = new Set(input.enabledCategoryKeys.filter(Boolean));
   if (enabled.size === 0) return [];
 
-  const schedule = normalizeDayMealSlotSchedule(input.mealSchedule);
   const activeIds = new Set(input.activeSetIds);
   const slotMap = new Map<string, RoutineStartNotifySlot>();
   const includeInactiveSets = input.includeInactiveSets !== false;
 
-  // 1) 고정 루틴 — 활성 세트 우선, 필요 시 비활성 세트도 참고
+  // 1) 전역 루틴 시작 시각(담기 저장) — 최우선
+  if (input.storedStartTimes) {
+    for (const categoryKey of enabled) {
+      const entry = input.storedStartTimes[categoryKey];
+      if (!entry || typeof entry.startMinutes !== 'number') continue;
+      const hhmm = minutesToNotifyHhmm(entry.startMinutes);
+      if (hhmm) pushPreferredStart(slotMap, categoryKey, hhmm, WEEKDAY_PRESET_DAILY);
+    }
+  }
+
+  // 2) 오늘 일정 — 사용자가 직접 맞춘 시작 시각
+  if (input.planBlocks) {
+    for (const block of input.planBlocks) {
+      if (block.hasManualScheduleOverride !== true) continue;
+      const rawKey = typeof block.categoryKey === 'string' ? block.categoryKey : '';
+      const key = resolvePriorityRoutineCategoryKey(rawKey);
+      if (!key || !enabled.has(key)) continue;
+      if (typeof block.startMinutes !== 'number') continue;
+      const hhmm = minutesToNotifyHhmm(block.startMinutes);
+      if (hhmm) pushPreferredStart(slotMap, key, hhmm, WEEKDAY_PRESET_DAILY);
+    }
+  }
+
+  // 3) 고정 루틴 spine — 활성 세트 우선
   const orderedSets = includeInactiveSets
     ? [
         ...input.sets.filter((set) => activeIds.has(set.id)),
@@ -120,39 +146,9 @@ export function collectRoutineStartNotifySlots(input: {
     for (const item of set.items) {
       if (item.enabled === false) continue;
       if (!enabled.has(item.categoryKey)) continue;
-
-      if (typeof item.spineStartMinutes === 'number') {
-        const hhmm = minutesToNotifyHhmm(item.spineStartMinutes);
-        if (hhmm) pushUnique(slotMap, item.categoryKey, hhmm, weekdays);
-      }
-
-      const mealSlots = normalizeCategoryMealSlots(
-        item.mealSlots !== undefined ? item.mealSlots : item.mealSlot,
-      );
-      if (mealSlots.length > 0) {
-        pushMealSlots(slotMap, item.categoryKey, mealSlots, schedule, weekdays);
-      }
-    }
-  }
-
-  // 2) 오늘 탭 시간대 배정
-  if (input.sectionsMealSlots) {
-    for (const categoryKey of enabled) {
-      const slots = normalizeCategoryMealSlots(input.sectionsMealSlots[categoryKey]);
-      if (slots.length > 0) {
-        pushMealSlots(slotMap, categoryKey, slots, schedule, WEEKDAY_PRESET_DAILY);
-      }
-    }
-  }
-
-  // 3) 오늘 일정 블록 시작 시각
-  if (input.planBlocks) {
-    for (const block of input.planBlocks) {
-      const key = typeof block.categoryKey === 'string' ? block.categoryKey : '';
-      if (!key || !enabled.has(key)) continue;
-      if (typeof block.startMinutes !== 'number') continue;
-      const hhmm = minutesToNotifyHhmm(block.startMinutes);
-      if (hhmm) pushUnique(slotMap, key, hhmm, WEEKDAY_PRESET_DAILY);
+      if (typeof item.spineStartMinutes !== 'number') continue;
+      const hhmm = minutesToNotifyHhmm(item.spineStartMinutes);
+      if (hhmm) pushPreferredStart(slotMap, item.categoryKey, hhmm, weekdays);
     }
   }
 
@@ -166,11 +162,14 @@ export function hasResolvableRoutineStartTime(input: {
   activeSetIds: readonly string[];
   includeInactiveSets?: boolean;
   layoutMode?: FixedRoutineApplyLayoutMode;
-  mealSchedule: DayMealSlotSchedule;
+  mealSchedule?: DayMealSlotSchedule;
   planBlocks?: readonly RoutineStartNotifyPlanBlock[];
   sectionsMealSlots?: Record<string, DayMealSlot[] | DayMealSlot | undefined>;
   todayCategoryKeys?: readonly string[];
   priorityStart?: string;
+  storedStartTimes?: Readonly<
+    Record<string, { startMinutes: number; endMinutes?: number; endsNextCalendarDay?: boolean }>
+  >;
 }): boolean {
   return (
     collectRoutineStartNotifySlots({
@@ -179,11 +178,10 @@ export function hasResolvableRoutineStartTime(input: {
       activeSetIds: input.activeSetIds,
       includeInactiveSets: input.includeInactiveSets,
       layoutMode: input.layoutMode,
-      mealSchedule: input.mealSchedule,
       planBlocks: input.planBlocks,
-      sectionsMealSlots: input.sectionsMealSlots,
       todayCategoryKeys: input.todayCategoryKeys,
       priorityStart: input.priorityStart,
+      storedStartTimes: input.storedStartTimes,
     }).length > 0
   );
 }

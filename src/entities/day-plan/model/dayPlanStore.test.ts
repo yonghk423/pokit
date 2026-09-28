@@ -299,6 +299,30 @@ describe('dayPlanStore', () => {
     expect(useDayPlanStore.getState().liveActivityChecklistFocusBlockId).toBeNull();
   });
 
+  it('marks priority session time edits as manual overrides', () => {
+    resetStore({
+      blocks: [
+        block({
+          id: 'session-a',
+          title: '주말 러닝',
+          startMinutes: 7 * 60,
+          endMinutes: 23 * 60,
+          blockOrigin: 'prioritySession',
+          categoryKey: 'customFlow:preset_daily_exercise',
+        }),
+      ],
+    });
+    const result = useDayPlanStore.getState().updateBlock('session-a', {
+      startMinutes: 23 * 60,
+      endMinutes: 23 * 60 + 1,
+      hasManualScheduleOverride: true,
+    });
+    expect(result).toEqual({ ok: true });
+    const updated = useDayPlanStore.getState().blocks[0];
+    expect(updated?.startMinutes).toBe(23 * 60);
+    expect(updated?.hasManualScheduleOverride).toBe(true);
+  });
+
   it('updates block title and time without spine overlap', () => {
     resetStore({
       blocks: [

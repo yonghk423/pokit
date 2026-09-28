@@ -3,6 +3,7 @@ export { useDayPlanLayoutModeVisibilityStore } from './dayPlanLayoutModeVisibili
 export { useDayPlanChromeSettingsStore } from './dayPlanChromeSettingsStore';
 export { useDayPlanRuntimeStore } from './dayPlanRuntimeStore';
 export { useFixedFlowSetsStore, notifyFixedFlowApplyScheduleChanged } from './fixedFlowSetsStore';
+export { useRoutineStartTimesStore } from './routineStartTimesStore';
 export { syncTodayTabWithFixedRoutineApply } from '../lib/runSyncTodayTabWithFixedRoutineApply';
 export {
   appendPriorityCategoryKeysIfMissing,

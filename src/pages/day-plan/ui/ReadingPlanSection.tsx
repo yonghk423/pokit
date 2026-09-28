@@ -25,7 +25,8 @@ function serializeReadingConfig(value: unknown): string {
 }
 
 function loadReadingConfig(): ReturnType<typeof normalizeReadingLiveActivityConfig> {
-  seedReadingBookstoreIfNeeded();
+  // seedReadingBookstoreIfNeeded는 save → store setState를 유발한다.
+  // useState 초기화·렌더 경로에서 호출하면 PriorityBasedPlanSection 등과 충돌한다.
   const raw = loadGoalDetailCategoryConfig(READING_CATEGORY_KEY);
   return normalizeReadingLiveActivityConfig(raw ?? getInitialReadingDataConfig());
 }
@@ -86,6 +87,17 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
     },
     [flushPersist],
   );
+
+  useEffect(() => {
+    seedReadingBookstoreIfNeeded();
+    const latest = loadReadingConfig();
+    const serialized = serializeReadingConfig(latest);
+    if (serialized !== lastPersistedRef.current) {
+      lastPersistedRef.current = serialized;
+      pendingDraftRef.current = latest;
+      setDataConfig(latest);
+    }
+  }, []);
 
   useEffect(() => {
     return () => {

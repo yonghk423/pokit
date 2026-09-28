@@ -440,6 +440,7 @@
   "dayPlan.applyTimeLabel": "時刻を適用",
   "dayPlan.applyTimeA11y": "選択した時刻を適用",
   "routineNotify.title": "開始アラート",
+  "routineNotify.toggleEnableConfirmMessage": "開始アラートをオンにしますか？",
   "routineNotify.startTimeLabel": "開始時刻",
   "routineNotify.startTimeHint": "一覧モードでこのルーチンが始まる時刻です。",
   "routineNotify.toggleA11y": "開始アラート {state}",

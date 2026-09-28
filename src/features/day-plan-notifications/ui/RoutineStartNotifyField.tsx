@@ -2,16 +2,15 @@ import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
-import { useShallow } from 'zustand/react/shallow';
 
 import {
   collectRoutineStartNotifySlots,
   formatMinutesToHHmm,
   hasResolvableRoutineStartTime,
   listTodayPlanCategoryKeys,
-  useDayPlanDraftStore,
   useDayPlanStore,
   useFixedFlowSetsStore,
+  useRoutineStartTimesStore,
 } from '@entities/day-plan';
 import {
   isRoutineStartNotifyEnabled,
@@ -19,7 +18,6 @@ import {
 } from '../model/syncRoutineStartNotifications';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { formatHhmmClock, t, useTranslation } from '@shared/lib/i18n';
-import { loadDayMealSlotSchedule } from '@shared/lib/storage';
 import { OutlinedSwitch } from '@shared/ui/outlined-switch';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -60,21 +58,7 @@ export function RoutineStartNotifyField({
   const sets = useFixedFlowSetsStore((s) => s.sets);
   const activeSetIds = useFixedFlowSetsStore((s) => s.activeSetIds);
   const planBlocks = useDayPlanStore((s) => s.blocks);
-  const {
-    priorityMealSlotOverrides,
-    prioritySectionsMealSlots,
-    priorityCategoryOrder,
-    prioritySectionsCategoryOrder,
-    priorityStart,
-  } = useDayPlanDraftStore(
-    useShallow((s) => ({
-      priorityMealSlotOverrides: s.priorityMealSlotOverrides,
-      prioritySectionsMealSlots: s.prioritySectionsMealSlots,
-      priorityCategoryOrder: s.priorityCategoryOrder,
-      prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
-      priorityStart: s.priorityStart,
-    })),
-  );
+  const storedStartTimes = useRoutineStartTimesStore((s) => s.byCategoryKey);
   const todayAppliedCategoryKeys = useFixedFlowSetsStore((s) => s.todayAppliedCategoryKeys);
 
   const [enabled, setEnabled] = useState(() => isRoutineStartNotifyEnabled(categoryKey));
@@ -91,26 +75,17 @@ export function RoutineStartNotifyField({
       categoryKey,
       sets,
       activeSetIds,
-      includeInactiveSets: false,
-      mealSchedule: loadDayMealSlotSchedule(),
+      includeInactiveSets: true,
       planBlocks,
-      sectionsMealSlots: {
-        ...priorityMealSlotOverrides,
-        ...prioritySectionsMealSlots,
-      },
       todayCategoryKeys: listTodayPlanCategoryKeys(),
-      priorityStart,
+      storedStartTimes,
     };
   }, [
     activeSetIds,
     categoryKey,
     planBlocks,
-    priorityCategoryOrder,
-    priorityMealSlotOverrides,
-    prioritySectionsCategoryOrder,
-    prioritySectionsMealSlots,
-    priorityStart,
     sets,
+    storedStartTimes,
     todayAppliedCategoryKeys,
   ]);
 

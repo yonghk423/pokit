@@ -440,6 +440,7 @@
   "dayPlan.applyTimeLabel": "Apply time",
   "dayPlan.applyTimeA11y": "Apply selected time",
   "routineNotify.title": "Start alert",
+  "routineNotify.toggleEnableConfirmMessage": "Turn on the start alert?",
   "routineNotify.startTimeLabel": "Start time",
   "routineNotify.startTimeHint": "When this routine starts in list mode.",
   "routineNotify.toggleA11y": "Start alert {state}",

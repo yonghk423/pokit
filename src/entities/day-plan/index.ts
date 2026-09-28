@@ -509,8 +509,10 @@ export {
   useDayPlanRuntimeStore,
   useDayPlanStore,
   useDayPlanTodoStore,
-  useFixedFlowSetsStore
+  useFixedFlowSetsStore,
+  useRoutineStartTimesStore,
 } from './model';
+export { seedRoutineStartTimesFromLegacySources } from './lib/seedRoutineStartTimesFromLegacySources';
 export type { AddBlockResult, PlanMode, UpdateBlockResult } from './model';
 export type { DayPlanBlock, DayPlanQuickMemo, DayPlanTodoItem, DayPlanTodoSubItem, TodoPriority } from './model/types';
 

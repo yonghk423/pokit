@@ -8,8 +8,14 @@ describe('sanitizeFixedFlowSetItems', () => {
       { categoryKey: 'water', enabled: true },
     ]);
     expect(items).toEqual([
-      { categoryKey: 'reading', enabled: false, mealSlot: undefined },
-      { categoryKey: 'water', enabled: true, mealSlot: undefined },
+      {
+        categoryKey: 'water',
+        enabled: true,
+        mealSlot: undefined,
+        mealSlots: undefined,
+        spineStartMinutes: undefined,
+        spineEndMinutes: undefined,
+      },
     ]);
   });
 
@@ -19,5 +25,26 @@ describe('sanitizeFixedFlowSetItems', () => {
       { categoryKey: 'water', enabled: false },
     ]);
     expect(items).toEqual([{ categoryKey: 'water', enabled: false, mealSlot: undefined }]);
+  });
+
+  it('keeps non-catalog keys when a manual spine schedule exists', () => {
+    const items = sanitizeFixedFlowSetItems([
+      {
+        categoryKey: 'legacy:unknown_routine',
+        enabled: true,
+        spineStartMinutes: 8 * 60,
+        spineEndMinutes: 8 * 60 + 30,
+      },
+    ]);
+    expect(items).toEqual([
+      {
+        categoryKey: 'legacy:unknown_routine',
+        enabled: true,
+        mealSlot: undefined,
+        mealSlots: undefined,
+        spineStartMinutes: 8 * 60,
+        spineEndMinutes: 8 * 60 + 30,
+      },
+    ]);
   });
 });

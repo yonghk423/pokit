@@ -1943,17 +1943,38 @@ export function FixedRoutinePage({
 
   const handleToggleStartNotify = useCallback(async (categoryKey: string) => {
     const nextEnabled = !isRoutineStartNotifyEnabled(categoryKey);
-    const ok = await persistRoutineStartNotifyToggle(categoryKey, nextEnabled);
-    setStartNotifyRevision((n) => n + 1);
-    if (nextEnabled && !ok) {
-      Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
+    const applyToggle = async () => {
+      const ok = await persistRoutineStartNotifyToggle(categoryKey, nextEnabled);
+      setStartNotifyRevision((n) => n + 1);
+      if (nextEnabled && !ok) {
+        Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
+        return;
+      }
+      void Haptics.notificationAsync(
+        nextEnabled && ok
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Warning,
+      );
+    };
+
+    if (nextEnabled) {
+      Alert.alert(
+        t('routineNotify.title'),
+        t('routineNotify.toggleEnableConfirmMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('common.confirm'),
+            onPress: () => {
+              void applyToggle();
+            },
+          },
+        ],
+      );
       return;
     }
-    void Haptics.notificationAsync(
-      nextEnabled && ok
-        ? Haptics.NotificationFeedbackType.Success
-        : Haptics.NotificationFeedbackType.Warning,
-    );
+
+    await applyToggle();
   }, []);
 
   const isStartNotifyEnabledForCategory = useCallback(

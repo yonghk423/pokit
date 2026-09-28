@@ -10,6 +10,8 @@ export const StorageKeys = {
   priorityCatalogFixedRoutines: 'pokit:priority-catalog-fixed-routines',
   /** 고정 플로우 세트(여러 세트/활성 세트/세트별 항목) */
   fixedFlowSets: 'pokit:fixed-flow-sets',
+  /** 루틴(카테고리)별 시작 시각 — 담기 행 「시간」표시·보존용 */
+  routineStartTimes: 'pokit:routine-start-times',
   /** 첫 실행 하루 주기(시작·마무리 시각) 온보딩 완료 여부 */
   dailyRhythmOnboarding: 'pokit:daily-rhythm-onboarding',
   /** 사용 설명서(가이드북) 열람 여부 */
@@ -76,6 +78,7 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   goalDetailSettings: 'lockflow:goal-detail-settings',
   priorityCatalogFixedRoutines: 'lockflow:priority-catalog-fixed-routines',
   fixedFlowSets: 'lockflow:fixed-flow-sets',
+  routineStartTimes: 'lockflow:routine-start-times',
   dailyRhythmOnboarding: 'lockflow:daily-rhythm-onboarding',
   guideBook: 'lockflow:guide-book',
   welcomeIntro: 'lockflow:welcome-intro',

@@ -135,6 +135,13 @@ export type { PersistedDayPlan } from './dayPlanStorage';
 export { loadDayPlanTodos, saveDayPlanTodos } from './dayPlanTodoStorage';
 export type { PersistedDayPlanTodos } from './dayPlanTodoStorage';
 export {
+  loadRoutineStartTimes,
+  normalizeRoutineStartTimes,
+  saveRoutineStartTimes,
+  type PersistedRoutineStartTimes,
+  type RoutineStartTimeEntry,
+} from './routineStartTimesStorage';
+export {
   BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS,
   BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_NAMES,
   BUILTIN_FIXED_FLOW_SET_IDS,

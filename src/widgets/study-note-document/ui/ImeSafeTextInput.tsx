@@ -1,7 +1,9 @@
 import { forwardRef, useEffect, useRef, useState, type ComponentProps } from 'react';
 import { TextInput } from 'react-native';
 
-type Props = Omit<ComponentProps<typeof TextInput>, 'value' | 'onChangeText'> & {
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
+
+type Props = Omit<ComponentProps<typeof ThemedTextInput>, 'value' | 'onChangeText' | 'ref'> & {
   value: string;
   onChangeText: (text: string) => void;
 };
@@ -9,6 +11,7 @@ type Props = Omit<ComponentProps<typeof TextInput>, 'value' | 'onChangeText'> & 
 /**
  * 한글 IME 조합 중 controlled value 재주입으로 자모가 분리되는 문제를 막기 위해,
  * 포커스 동안은 로컬 draft만 갱신하고 blur 시 부모에 반영한다.
+ * 글씨체는 ThemedTextInput과 동일하게 앱 설정을 따른다.
  */
 export const ImeSafeTextInput = forwardRef<TextInput, Props>(function ImeSafeTextInput(
   { value, onChangeText, onFocus, onBlur, ...rest },
@@ -28,7 +31,7 @@ export const ImeSafeTextInput = forwardRef<TextInput, Props>(function ImeSafeTex
   }, [value, focused]);
 
   return (
-    <TextInput
+    <ThemedTextInput
       ref={ref}
       value={focused ? draft : value}
       onChangeText={(text) => {

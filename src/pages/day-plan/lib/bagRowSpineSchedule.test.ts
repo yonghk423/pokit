@@ -94,6 +94,35 @@ describe('resolveBagItemSpineSchedule', () => {
     expect(schedule.isSuggested).toBe(true);
   });
 
+  it('prefers global stored start times over auto session and suggested slots', () => {
+    const schedule = resolveBagItemSpineSchedule({
+      categoryKey: 'healthIntake',
+      planBlocks: [
+        {
+          id: 'auto',
+          title: '건강을 위한 섭취',
+          category: '건강을 위한 섭취',
+          categoryKey: 'healthIntake',
+          startMinutes: 7 * 60,
+          endMinutes: 7 * 60 + 30,
+          order: 0,
+          blockOrigin: 'prioritySession',
+        },
+      ],
+      fixedFlowSets: [],
+      priorityStart: '07:00',
+      priorityEnd: '23:00',
+      storedStartTimes: {
+        healthIntake: { startMinutes: 13 * 60 + 10, endMinutes: 13 * 60 + 40 },
+      },
+    });
+    expect(schedule).toMatchObject({
+      startMinutes: 13 * 60 + 10,
+      endMinutes: 13 * 60 + 40,
+      isSuggested: false,
+    });
+  });
+
   it('keeps a time the user set on a regular routine', () => {
     const schedule = resolveBagItemSpineSchedule({
       categoryKey: BUILTIN_DAILY_EXERCISE_FLOW_ID,
@@ -121,6 +150,69 @@ describe('resolveBagItemSpineSchedule', () => {
       startsNextCalendarDay: false,
       isSuggested: false,
     });
+  });
+
+  it('prefers a manual override over an auto priority session block', () => {
+    const schedule = resolveBagItemSpineSchedule({
+      categoryKey: BUILTIN_DAILY_EXERCISE_FLOW_ID,
+      planBlocks: [
+        {
+          id: 'auto-session',
+          title: '주말 러닝',
+          category: '주말 러닝',
+          categoryKey: BUILTIN_DAILY_EXERCISE_FLOW_ID,
+          startMinutes: 7 * 60,
+          endMinutes: 23 * 60,
+          order: 0,
+          blockOrigin: 'prioritySession',
+        },
+        {
+          id: 'manual',
+          title: '주말 러닝',
+          category: '주말 러닝',
+          categoryKey: BUILTIN_DAILY_EXERCISE_FLOW_ID,
+          startMinutes: 23 * 60,
+          endMinutes: 23 * 60 + 1,
+          order: 1,
+          blockOrigin: 'spineTimeline',
+          hasManualScheduleOverride: true,
+        },
+      ],
+      fixedFlowSets: [],
+      priorityStart: '07:00',
+      priorityEnd: '23:00',
+    });
+    expect(schedule).toEqual({
+      startMinutes: 23 * 60,
+      endMinutes: 23 * 60 + 1,
+      endsNextCalendarDay: false,
+      startsNextCalendarDay: false,
+      isSuggested: false,
+    });
+  });
+
+  it('keeps a manual time on a priority session block after relaunch', () => {
+    const schedule = resolveBagItemSpineSchedule({
+      categoryKey: BUILTIN_DAILY_EXERCISE_FLOW_ID,
+      planBlocks: [
+        {
+          id: 'auto-session',
+          title: '주말 러닝',
+          category: '주말 러닝',
+          categoryKey: BUILTIN_DAILY_EXERCISE_FLOW_ID,
+          startMinutes: 23 * 60,
+          endMinutes: 23 * 60 + 1,
+          order: 0,
+          blockOrigin: 'prioritySession',
+          hasManualScheduleOverride: true,
+        },
+      ],
+      fixedFlowSets: [],
+      priorityStart: '07:00',
+      priorityEnd: '23:00',
+    });
+    expect(schedule.isSuggested).toBe(false);
+    expect(schedule.startMinutes).toBe(23 * 60);
   });
 
   it('shows a stored fixed-routine time without treating it as a suggestion', () => {

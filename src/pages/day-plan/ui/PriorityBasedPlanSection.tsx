@@ -76,6 +76,7 @@ import {
   useDayPlanChromeSettingsStore,
   useFixedFlowSetsStore,
   useGoalDetailSettingsStore,
+  useRoutineStartTimesStore,
   type CustomFlowTemplateKey
 } from '@entities/day-plan';
 import { RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
@@ -102,6 +103,7 @@ import {
   isPokitWeekTourFlowId,
   loadPokitWeekTourFirstTipSeen,
   clearDailyRhythmWindowChipGuidePending,
+  flushLocalStorageClientWrites,
   loadDailyRhythmWindowChipGuidePending,
   resolveCurrentMealSlotFromSchedule,
   saveGoalDetailCategoryConfig,
@@ -814,6 +816,8 @@ export function PriorityBasedPlanSection({
   const ensureCategorySpineScheduleInAnySet = useFixedFlowSetsStore(
     (s) => s.ensureCategorySpineScheduleInAnySet,
   );
+  const routineStartTimesByKey = useRoutineStartTimesStore((s) => s.byCategoryKey);
+  const setRoutineStartTime = useRoutineStartTimesStore((s) => s.setRoutineStartTime);
   const dayPlanDateKey = useDayPlanStore((s) => s.dateKey);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
   const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
@@ -958,6 +962,7 @@ export function PriorityBasedPlanSection({
         fixedFlowSets,
         priorityStart,
         priorityEnd,
+        storedStartTimes: routineStartTimesByKey,
       });
     const partitioned = partitionDisplayWithDeferredBottom(
       selectedItems,
@@ -982,6 +987,7 @@ export function PriorityBasedPlanSection({
     fixedFlowSets,
     priorityStart,
     priorityEnd,
+    routineStartTimesByKey,
   ]);
 
   const sectionsCatalogItems = useMemo(
@@ -1015,6 +1021,7 @@ export function PriorityBasedPlanSection({
         fixedFlowSets,
         priorityStart,
         priorityEnd,
+        storedStartTimes: routineStartTimesByKey,
       });
     const partitioned = partitionDisplayWithDeferredBottom(
       sectionsCatalogItems,
@@ -1039,6 +1046,7 @@ export function PriorityBasedPlanSection({
     fixedFlowSets,
     priorityStart,
     priorityEnd,
+    routineStartTimesByKey,
   ]);
 
   const priorityOrderIndexByKey = useMemo(() => {
@@ -1632,6 +1640,7 @@ export function PriorityBasedPlanSection({
         fixedFlowSets,
         priorityStart,
         priorityEnd,
+        storedStartTimes: routineStartTimesByKey,
       });
     const mapped = priorityMealSlotSections.map((section) => {
       const partitioned = partitionDisplayWithDeferredBottom(
@@ -1670,6 +1679,7 @@ export function PriorityBasedPlanSection({
     priorityMealSlotSections,
     priorityStart,
     priorityEnd,
+    routineStartTimesByKey,
     showSectionsView,
   ]);
 
@@ -2446,8 +2456,9 @@ export function PriorityBasedPlanSection({
         fixedFlowSets,
         priorityStart,
         priorityEnd,
+        storedStartTimes: routineStartTimesByKey,
       }),
-    [fixedFlowSets, planBlocks, priorityEnd, priorityStart],
+    [fixedFlowSets, planBlocks, priorityEnd, priorityStart, routineStartTimesByKey],
   );
 
   const openBagRowTimeModal = useCallback(
@@ -2475,7 +2486,7 @@ export function PriorityBasedPlanSection({
   }, []);
 
   const applyBagRowTimeFromPanel = useCallback(
-    (startMin: number, _endMin: number, startsNext: boolean) => {
+    async (startMin: number, _endMin: number, startsNext: boolean) => {
       if (!bagRowTimeEdit) return;
       Keyboard.dismiss();
 
@@ -2498,7 +2509,18 @@ export function PriorityBasedPlanSection({
       const endsNext = derived.endsNextCalendarDay;
 
       const categoryKey = bagRowTimeEdit.categoryKey;
-      // 담기만 하고 고정 세트에 없는 커스텀 루틴도 스케줄을 남긴다 (표시·정렬용).
+      // 단일 진실원: 루틴별 시작 시각 전역 스토어(+ LocalStorage)
+      const storedOk = setRoutineStartTime(categoryKey, {
+        startMinutes: clamped.startMinutes,
+        endMinutes: clamped.endMinutes,
+        endsNextCalendarDay: endsNext,
+      });
+      if (!storedOk) {
+        alertSpineBlockSaveError('update', 'invalid_range');
+        return;
+      }
+
+      // 고정 세트·오늘 블록은 부가 동기화(실패해도 담기 행 시각은 유지)
       const scheduleSaved = ensureCategorySpineScheduleInAnySet(
         categoryKey,
         clamped.startMinutes,
@@ -2508,23 +2530,22 @@ export function PriorityBasedPlanSection({
 
       const matchingBlocks = planBlocks.filter((b) => {
         const key = resolveBlockCategoryKey(b) ?? resolveCategoryKeyFromLabel(b.category ?? '');
-        return key === categoryKey;
+        return (
+          resolvePriorityRoutineCategoryKey(key ?? '') === categoryKey || key === categoryKey
+        );
       });
 
       if (matchingBlocks.length > 0) {
         for (const block of matchingBlocks) {
-          const result = updatePlanBlock(block.id, {
+          updatePlanBlock(block.id, {
             startMinutes: clamped.startMinutes,
             endMinutes: clamped.endMinutes,
             endsNextCalendarDay: endsNext,
+            hasManualScheduleOverride: true,
           });
-          if (!result.ok) {
-            alertSpineBlockSaveError('update', result.reason);
-            return;
-          }
         }
       } else {
-        const result = addPlanBlock({
+        addPlanBlock({
           title: bagRowTimeEdit.label,
           category: bagRowTimeEdit.label,
           categoryKey,
@@ -2534,19 +2555,12 @@ export function PriorityBasedPlanSection({
           blockOrigin: 'spineTimeline',
           planDateKey: getLocalDateKey(),
           hasManualScheduleOverride: true,
-          // 다음 날 새벽 밴드는 시계상 오늘 00:xx로 저장 → 주간에는 과거로 오인됨
           allowPastEnd: startsNext,
         });
-        if (!result.ok && result.reason !== 'in_the_past') {
-          alertSpineBlockSaveError('add', result.reason);
-          return;
-        }
-        // 블록 추가가 막혀도 세트 스케줄이 남으면 담기 행에 시각이 표시된다.
-        if (!result.ok && result.reason === 'in_the_past' && !scheduleSaved) {
-          alertSpineBlockSaveError('add', 'in_the_past');
-          return;
-        }
       }
+
+      void scheduleSaved;
+      await flushLocalStorageClientWrites();
 
       setBagRowTimeConfirmed(false);
       setBagRowTimeEdit(null);
@@ -2560,6 +2574,7 @@ export function PriorityBasedPlanSection({
       planBlocks,
       priorityEnd,
       priorityStart,
+      setRoutineStartTime,
       updatePlanBlock,
     ],
   );

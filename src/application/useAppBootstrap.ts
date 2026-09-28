@@ -13,6 +13,8 @@ import {
   useDayPlanStore,
   useDayPlanTodoStore,
   useFixedFlowSetsStore,
+  seedRoutineStartTimesFromLegacySources,
+  useRoutineStartTimesStore,
 } from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { syncCategoryReminderNotifications } from '@features/category-reminder-notifications';
@@ -90,6 +92,8 @@ export function useAppBootstrap() {
       useDayPlanDraftStore.getState().hydrate();
       useDayPlanTodoStore.getState().hydrate();
       useFixedFlowSetsStore.getState().hydrate();
+      useRoutineStartTimesStore.getState().hydrate();
+      seedRoutineStartTimesFromLegacySources();
       useDayPlanDraftStore.getState().rollPriorityPlanForwardIfEnded();
       useDayPlanStore.getState().prunePastEndedBlocks();
       syncTodayTabWithFixedRoutineApply();
@@ -175,6 +179,15 @@ export function useAppBootstrap() {
       }
       void syncCategoryReminderNotifications();
       void syncMedicineReminderNotifications();
+      void syncRoutineStartNotifications();
+    });
+  }, [isReady]);
+
+  /** 담기에서 저장한 전역 루틴 시작 시각 변경 시 시작 알림 재예약 */
+  useEffect(() => {
+    if (!isReady) return;
+    return useRoutineStartTimesStore.subscribe((state, prev) => {
+      if (state.byCategoryKey === prev.byCategoryKey) return;
       void syncRoutineStartNotifications();
     });
   }, [isReady]);
