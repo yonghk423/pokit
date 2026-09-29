@@ -258,6 +258,7 @@ export function SettingsPage() {
         priorityEnd: defaultWindow.endTime,
         priorityCategoryOrder: [],
         priorityCategoryImportance: {},
+        priorityCategoryFaceColor: {},
         routineHistoryPendingByDate: {},
         routineHistoryPlannedKeysByDate: {},
         quickMemoDraft: '',
@@ -772,7 +773,14 @@ export function SettingsPage() {
             <IconSymbol name="chevron.right" size={14} color={p.chevron} />
           </Pressable>
 
-          <View style={[chrome.item, styles.infoItem, { borderTopColor: p.border }]}>
+          <Pressable
+            style={[chrome.item, styles.infoItem, { borderTopColor: p.border }]}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/release-notes');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.a11y.appVersion', locale)}>
             <View style={chrome.itemLeft}>
               <SettingsRowIcon
                 name="info.circle"
@@ -790,7 +798,8 @@ export function SettingsPage() {
                 </ThemedText>
               </View>
             </View>
-          </View>
+            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+          </Pressable>
         </SettingsSection>
 
         <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>

@@ -38,6 +38,8 @@ import {
   addLocalNotificationResponseListener,
 } from '@shared/lib/notifications';
 import { logAppOpen } from '@shared/lib/analytics';
+import { initCrashlytics } from '@shared/lib/crashlytics';
+
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import { useAppLocaleStore } from '@shared/lib/i18n';
 import { useAppFontStore } from '@shared/lib/ui-font';
@@ -128,6 +130,9 @@ export function useAppBootstrap() {
       /** Analytics도 선택 경로 — 네이티브 모듈/네트워크 실패가 스플래시를 막지 않게 한다. */
       void logAppOpen().catch((error) => {
         console.warn('[analytics] background init failed', error);
+      });
+      void initCrashlytics().catch((error) => {
+        console.warn('[crashlytics] background init failed', error);
       });
     })();
 

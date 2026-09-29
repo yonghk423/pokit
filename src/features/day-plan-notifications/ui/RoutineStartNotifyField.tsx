@@ -44,7 +44,7 @@ function findStoredSpineStartHhmm(
   return null;
 }
 
-/** 목표 상세 — 루틴 시작 알림 on/off */
+/** 목표 상세 — 루틴 시작 알림 on/off (식사 구간·mealSchedule 미사용) */
 export function RoutineStartNotifyField({
   categoryKey,
   ink,

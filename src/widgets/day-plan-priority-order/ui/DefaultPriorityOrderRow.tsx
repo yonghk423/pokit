@@ -20,7 +20,14 @@ import {
   useGoalDetailSettingsStore,
   type PriorityMarkColorId,
 } from '@entities/day-plan';
-import { useTranslation } from '@shared/lib/i18n';
+import { useTranslation, type I18nKey } from '@shared/lib/i18n';
+import {
+  POST_IT_FACE_COLOR_PRESETS,
+  resolvePostItFaceColor,
+  resolvePostItFaceInk,
+  resolvePostItFaceMuted,
+  type PostItFaceColorId,
+} from '@shared/lib/storage';
 import { resolveBrutalConfirmPrimaryColors } from '@shared/ui/brutal-confirm-button';
 import { COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT, CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -60,6 +67,8 @@ export function DefaultPriorityOrderRow({
   summaryHint,
   itemMarkColor = null,
   onSelectItemMarkColor,
+  itemFaceColor = null,
+  onSelectItemFaceColor,
   isFocusStarted,
   isCompleted,
   isDark,
@@ -85,6 +94,9 @@ export function DefaultPriorityOrderRow({
   const hideCategoryIcons = useDayPlanChromeSettingsStore((s) => s.settings.hideLayoutIcons);
   const completeInAccordion = useDayPlanChromeSettingsStore((s) => s.settings.completeInAccordion);
   const titleHighlight = priorityMarkTitleHighlight(itemMarkColor, isDark);
+  const rowFaceBg = itemFaceColor ? resolvePostItFaceColor(itemFaceColor, isDark) : undefined;
+  const rowInk = itemFaceColor ? resolvePostItFaceInk(itemFaceColor, ink) : ink;
+  const rowInkMuted = itemFaceColor ? resolvePostItFaceMuted(itemFaceColor, inkMuted) : inkMuted;
   const reorderTranslateY = useSharedValue(0);
   const reorderDragging = useSharedValue(0);
   const expandProgress = useSharedValue(expanded ? 1 : 0);
@@ -317,12 +329,12 @@ export function DefaultPriorityOrderRow({
             style={[
               styles.orderRowRomanTitle,
               styles.orderRowTitleText,
-              { color: ink },
+              { color: rowInk },
               isCompleted && styles.orderRowRomanTitleDone,
             ]}
             numberOfLines={1}
-            lightColor={ink}
-            darkColor={ink}>
+            lightColor={rowInk}
+            darkColor={rowInk}>
             {label}
           </ThemedText>
         </View>
@@ -330,12 +342,12 @@ export function DefaultPriorityOrderRow({
           <ThemedText
             style={[
               styles.orderRowSummaryHint,
-              { color: inkMuted },
+              { color: rowInkMuted },
               isCompleted && styles.orderRowRomanTitleDone,
             ]}
             numberOfLines={2}
-            lightColor={inkMuted}
-            darkColor={inkMuted}>
+            lightColor={rowInkMuted}
+            darkColor={rowInkMuted}>
             {summaryHint}
           </ThemedText>
         ) : null}
@@ -359,27 +371,27 @@ export function DefaultPriorityOrderRow({
             <IconSymbol
               name="clock"
               size={11}
-              color={inkMuted}
+              color={rowInkMuted}
               style={styles.subtitleTimeIcon}
             />
             {subtitle ? (
               <ThemedText
                 style={[
                   styles.orderRowRomanSubtitle,
-                  { color: inkMuted },
+                  { color: rowInkMuted },
                   isCompleted && styles.orderRowRomanTitleDone,
                 ]}
                 numberOfLines={1}
-                lightColor={inkMuted}
-                darkColor={inkMuted}>
+                lightColor={rowInkMuted}
+                darkColor={rowInkMuted}>
                 {subtitle}
               </ThemedText>
             ) : (
               <ThemedText
-                style={[styles.orderRowTimeUnset, { color: inkMuted }]}
+                style={[styles.orderRowTimeUnset, { color: rowInkMuted }]}
                 numberOfLines={1}
-                lightColor={inkMuted}
-                darkColor={inkMuted}>
+                lightColor={rowInkMuted}
+                darkColor={rowInkMuted}>
                 {t('dayPlan.timeUnsetHint')}
               </ThemedText>
             )}
@@ -388,12 +400,12 @@ export function DefaultPriorityOrderRow({
           <ThemedText
             style={[
               styles.orderRowRomanSubtitle,
-              { color: inkMuted, marginTop: 2 },
+              { color: rowInkMuted, marginTop: 2 },
               isCompleted && styles.orderRowRomanTitleDone,
             ]}
             numberOfLines={1}
-            lightColor={inkMuted}
-            darkColor={inkMuted}>
+            lightColor={rowInkMuted}
+            darkColor={rowInkMuted}>
             {subtitle}
           </ThemedText>
         ) : null}
@@ -424,6 +436,118 @@ export function DefaultPriorityOrderRow({
     </View>
   );
 
+  const renderFacePalette = (compact: boolean) => {
+    if (!onSelectItemFaceColor) return null;
+    const pick = (color: PostItFaceColorId | null) => {
+      void Haptics.selectionAsync();
+      onSelectItemFaceColor(color);
+    };
+    return (
+      <View
+        style={[styles.importanceMarkBlock, compact && styles.importanceMarkBlockCompact]}
+        accessibilityRole="toolbar"
+        accessibilityLabel={t('dayPlan.routineFaceColorLabel')}>
+        <ThemedText
+          style={[
+            styles.expandNoteActionText,
+            { color: rowInkMuted },
+            isCompleted && styles.orderRowRomanTitleDone,
+          ]}
+          numberOfLines={1}>
+          {t('dayPlan.routineFaceColorLabel')}
+        </ThemedText>
+        <View style={styles.importanceMarkChipRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: itemFaceColor == null }}
+            accessibilityLabel={t('dayPlan.routineFaceColorClearA11y')}
+            hitSlop={6}
+            onPress={() => pick(null)}
+            style={({ pressed }) => [
+              styles.importanceMarkChipShell,
+              {
+                width: MARK_SWATCH,
+                height: MARK_SWATCH,
+                marginRight: MARK_SHADOW,
+                marginBottom: MARK_SHADOW,
+                opacity: pressed ? 0.88 : 1,
+              },
+            ]}>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.importanceMarkChipShadow,
+                {
+                  backgroundColor: actionShadow,
+                  transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.importanceMarkChipFace,
+                {
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
+                  borderColor: actionBorder,
+                  borderWidth: itemFaceColor == null ? 2 : 1,
+                },
+              ]}>
+              <IconSymbol name="xmark" size={12} color={rowInkMuted} />
+            </View>
+          </Pressable>
+          {POST_IT_FACE_COLOR_PRESETS.map((preset) => {
+            const selected = itemFaceColor === preset.id;
+            const face = isDark ? preset.dark : preset.light;
+            const colorLabel = t(`catalog.postItColor.${preset.id}` as I18nKey);
+            return (
+              <Pressable
+                key={preset.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={t('dayPlan.routineFaceColorA11y', { color: colorLabel })}
+                hitSlop={6}
+                onPress={() => pick(preset.id)}
+                style={({ pressed }) => [
+                  styles.importanceMarkChipShell,
+                  {
+                    width: MARK_SWATCH,
+                    height: MARK_SWATCH,
+                    marginRight: MARK_SHADOW,
+                    marginBottom: MARK_SHADOW,
+                    opacity: pressed ? 0.88 : 1,
+                  },
+                ]}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.importanceMarkChipShadow,
+                    {
+                      backgroundColor: actionShadow,
+                      transform: [
+                        { translateX: MARK_SHADOW },
+                        { translateY: MARK_SHADOW },
+                      ],
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.importanceMarkChipFace,
+                    {
+                      backgroundColor: face,
+                      borderColor: selected ? actionBorder : 'transparent',
+                      borderWidth: selected ? 2 : 0,
+                    },
+                  ]}
+                />
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    );
+  };
+
   const renderMarkPalette = (compact: boolean) => {
     if (!onSelectItemMarkColor) return null;
     const pick = (color: PriorityMarkColorId | null) => {
@@ -438,7 +562,7 @@ export function DefaultPriorityOrderRow({
         <ThemedText
           style={[
             styles.expandNoteActionText,
-            { color: inkMuted },
+            { color: rowInkMuted },
             isCompleted && styles.orderRowRomanTitleDone,
           ]}
           numberOfLines={1}>
@@ -480,7 +604,7 @@ export function DefaultPriorityOrderRow({
                   borderWidth: itemMarkColor == null ? 2 : 1,
                 },
               ]}>
-              <IconSymbol name="xmark" size={12} color={inkMuted} />
+              <IconSymbol name="xmark" size={12} color={rowInkMuted} />
             </View>
           </Pressable>
           {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
@@ -537,20 +661,22 @@ export function DefaultPriorityOrderRow({
     );
   };
 
-  const priorityButton = onSelectItemMarkColor
-    ? wrapBrutal(
-      <View
-        style={[
-          styles.orderRowPriorityBtn,
-          {
-            borderColor: actionBorder,
-            backgroundColor: actionBg,
-          },
-        ]}>
-        {renderMarkPalette(true)}
-      </View>,
-    )
-    : null;
+  const priorityButton =
+    onSelectItemMarkColor || onSelectItemFaceColor
+      ? wrapBrutal(
+          <View
+            style={[
+              styles.orderRowPriorityBtn,
+              {
+                borderColor: actionBorder,
+                backgroundColor: actionBg,
+              },
+            ]}>
+            {renderFacePalette(true)}
+            {renderMarkPalette(true)}
+          </View>,
+        )
+      : null;
 
   const finishButton = onFinishForToday
     ? wrapBrutal(
@@ -579,6 +705,7 @@ export function DefaultPriorityOrderRow({
     : null;
 
   const expandEnabled = Boolean(onToggleExpand);
+  const noteFaceAction = expandEnabled && onSelectItemFaceColor ? renderFacePalette(false) : null;
   const notePriorityAction = expandEnabled && onSelectItemMarkColor
     ? renderMarkPalette(false)
     : null;
@@ -651,7 +778,9 @@ export function DefaultPriorityOrderRow({
         )
       : null;
 
-  const expandInlineActions = Boolean(notePriorityAction || noteFinishAction || noteCompleteAction);
+  const expandInlineActions = Boolean(
+    noteFaceAction || notePriorityAction || noteFinishAction || noteCompleteAction,
+  );
   const expandButton = expandEnabled
     ? wrapBrutal(
         <Pressable
@@ -749,6 +878,7 @@ export function DefaultPriorityOrderRow({
       style={[
         styles.orderRowRoman,
         { borderBottomColor: isDark ? ORDER_ROW_DIVIDER_DARK : ORDER_ROW_DIVIDER_LIGHT },
+        rowFaceBg ? { backgroundColor: rowFaceBg } : null,
         {
           opacity: enter,
           transform: [
@@ -785,6 +915,7 @@ export function DefaultPriorityOrderRow({
             {expandedContent}
             {expandInlineActions ? (
               <View style={styles.expandActionsCol}>
+                {noteFaceAction}
                 {notePriorityAction}
                 {noteCompleteAction || noteFinishAction ? (
                   <View style={styles.expandActionsRow}>

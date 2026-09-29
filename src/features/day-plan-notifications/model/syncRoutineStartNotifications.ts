@@ -68,6 +68,7 @@ async function performRoutineStartNotificationSync(): Promise<void> {
 
   const fixed = useFixedFlowSetsStore.getState();
   const plan = useDayPlanStore.getState();
+  /** draft/mealSchedule 없이 전역 시작 시각·오늘 블록·spine만 사용 */
   const storedStartTimes = useRoutineStartTimesStore.getState().byCategoryKey;
 
   const slots = collectRoutineStartNotifySlots({

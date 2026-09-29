@@ -1,7 +1,20 @@
 import { getAppLocale, t, type AppLocale, type I18nKey } from '@shared/lib/i18n';
 
+/** 설정 → 앱 버전 목록에 보여줄 최근 버전 개수 (전부 노출하지 않음) */
+export const RECENT_RELEASE_NOTES_LIMIT = 12;
+
 /** 버전별 업데이트 안내 — i18n 키가 있으면 로케일 반영, 없으면 한국어 폴백 */
 const RELEASE_NOTE_I18N_KEYS: Record<string, readonly I18nKey[]> = {
+  '1.8.15': [
+    'appUpdate.release.1_8_15.h1',
+    'appUpdate.release.1_8_15.h2',
+    'appUpdate.release.1_8_15.h3',
+  ],
+  '1.8.14': [
+    'appUpdate.release.1_8_14.h1',
+    'appUpdate.release.1_8_14.h2',
+    'appUpdate.release.1_8_14.h3',
+  ],
   '1.8.10': [
     'appUpdate.release.1_8_10.h1',
     'appUpdate.release.1_8_10.h2',
@@ -263,4 +276,37 @@ export function resolveReleaseNoteHighlights(
   }
 
   return [t('appUpdate.release.default', locale)];
+}
+
+export type ReleaseNoteListItem = {
+  version: string;
+  highlights: string[];
+};
+
+function compareSemverDesc(a: string, b: string): number {
+  const pa = a.split('.').map((n) => Number.parseInt(n, 10) || 0);
+  const pb = b.split('.').map((n) => Number.parseInt(n, 10) || 0);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i += 1) {
+    const da = pa[i] ?? 0;
+    const db = pb[i] ?? 0;
+    if (da !== db) return db - da;
+  }
+  return 0;
+}
+
+/**
+ * 로케일화된 릴리즈 노트만, 최신 버전부터 제한 개수.
+ * (구버전 한국어 폴백만 있는 항목은 목록에 넣지 않음 — 최근부터 추가)
+ */
+export function listRecentReleaseNotes(
+  locale: AppLocale = getAppLocale(),
+  limit: number = RECENT_RELEASE_NOTES_LIMIT,
+): ReleaseNoteListItem[] {
+  const versions = Object.keys(RELEASE_NOTE_I18N_KEYS).sort(compareSemverDesc);
+  const capped = Math.max(0, Math.floor(limit));
+  return versions.slice(0, capped).map((version) => ({
+    version,
+    highlights: resolveReleaseNoteHighlights(version, locale),
+  }));
 }

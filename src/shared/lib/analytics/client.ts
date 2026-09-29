@@ -24,6 +24,25 @@ export async function logAppOpen(): Promise<void> {
   }
 }
 
+/** 화면 전환 — GA에 RNSScreen 대신 의미 있는 screen_name이 보이도록 합니다. */
+export async function logScreenView(screenName: string, screenClass?: string): Promise<void> {
+  if (Platform.OS !== 'ios') return;
+  const name = screenName.trim().slice(0, 100);
+  if (!name) return;
+  try {
+    const { logScreenView: firebaseLogScreenView } = await import(
+      '@react-native-firebase/analytics'
+    );
+    const analytics = await getNativeAnalytics();
+    await firebaseLogScreenView(analytics, {
+      screen_name: name,
+      screen_class: (screenClass ?? name).trim().slice(0, 100),
+    });
+  } catch (error) {
+    console.warn('[analytics] logScreenView failed', error, name);
+  }
+}
+
 export async function logAnalyticsEvent(
   name: string,
   params?: Record<string, string | number | boolean>,

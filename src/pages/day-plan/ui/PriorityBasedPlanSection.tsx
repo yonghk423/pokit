@@ -109,7 +109,9 @@ import {
   saveGoalDetailCategoryConfig,
   subscribeCustomFlowCatalog,
   type CategoryMealSlotOverride,
-  type DayMealSlot
+  type DayMealSlot,
+  resolvePostItFaceInk,
+  resolvePostItFaceMuted,
 } from '@shared/lib/storage';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { COMPLETION_TOGGLE_ANIM_MS } from '@shared/ui/completion-radio-button';
@@ -707,6 +709,8 @@ export function PriorityBasedPlanSection({
     migrateSectionCompletionOnSlotMove,
     priorityCategoryImportance,
     setPriorityCategoryMarkColor,
+    priorityCategoryFaceColor,
+    setPriorityCategoryFaceColor,
     prioritySectionsCategoryOrder,
     appendPrioritySectionsCategoryKeys,
     setPrioritySectionsCategoryOrder,
@@ -733,6 +737,8 @@ export function PriorityBasedPlanSection({
       migrateSectionCompletionOnSlotMove: s.migrateSectionCompletionOnSlotMove,
       priorityCategoryImportance: s.priorityCategoryImportance,
       setPriorityCategoryMarkColor: s.setPriorityCategoryMarkColor,
+      priorityCategoryFaceColor: s.priorityCategoryFaceColor,
+      setPriorityCategoryFaceColor: s.setPriorityCategoryFaceColor,
       prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
       appendPrioritySectionsCategoryKeys: s.appendPrioritySectionsCategoryKeys,
       setPrioritySectionsCategoryOrder: s.setPrioritySectionsCategoryOrder,
@@ -3434,6 +3440,10 @@ export function PriorityBasedPlanSection({
                                       onSelectItemMarkColor={(color) =>
                                         setPriorityCategoryMarkColor(cat.key, color)
                                       }
+                                      itemFaceColor={priorityCategoryFaceColor[cat.key] ?? null}
+                                      onSelectItemFaceColor={(color) =>
+                                        setPriorityCategoryFaceColor(cat.key, color)
+                                      }
                                       isFocusStarted={isFocusStarted}
                                       isCompleted={rowDone}
                                       isDark={isDark}
@@ -3503,8 +3513,14 @@ export function PriorityBasedPlanSection({
                                           label={cat.label}
                                           startMinutes={rowSchedule.startMinutes}
                                           endMinutes={rowSchedule.endMinutes}
-                                          ink={editorial.ink}
-                                          muted={editorial.muted}
+                                          ink={resolvePostItFaceInk(
+                                            priorityCategoryFaceColor[cat.key] ?? null,
+                                            editorial.ink,
+                                          )}
+                                          muted={resolvePostItFaceMuted(
+                                            priorityCategoryFaceColor[cat.key] ?? null,
+                                            editorial.muted,
+                                          )}
                                           isDark={isDark}
                                         />
                                       }

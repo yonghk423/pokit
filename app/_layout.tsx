@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AnalyticsScreenTracker } from '@app/AnalyticsScreenTracker';
 import { AppStatusBar } from '@app/AppStatusBar';
 import { AppUpdateNoticeHost } from '@app/AppUpdateNoticeHost';
 import { useAppBootstrap, useCityPopFonts } from '@app/index';
@@ -128,10 +129,15 @@ export default function RootLayout() {
                 options={{ headerShown: false, presentation: 'card' }}
               />
               <Stack.Screen
+                name="release-notes"
+                options={{ headerShown: false, presentation: 'card' }}
+              />
+              <Stack.Screen
                 name="activity-session"
                 options={{ headerShown: false, presentation: 'fullScreenModal' }}
               />
             </Stack>
+            <AnalyticsScreenTracker />
             <AppUpdateNoticeHost appReady={appReady} />
             <AppStatusBar />
           </ThemeProvider>

@@ -733,6 +733,17 @@ describe('dayPlanDraftStore', () => {
     expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({ water: 'yellow' });
   });
 
+  it('sets and clears priority category face colors', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      priorityCategoryFaceColor: {},
+    });
+    useDayPlanDraftStore.getState().setPriorityCategoryFaceColor('reading', 'pink');
+    expect(useDayPlanDraftStore.getState().priorityCategoryFaceColor).toEqual({ reading: 'pink' });
+    useDayPlanDraftStore.getState().setPriorityCategoryFaceColor('reading', null);
+    expect(useDayPlanDraftStore.getState().priorityCategoryFaceColor).toEqual({});
+  });
+
   it('clears focus started when the last priority category is finished for today', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,

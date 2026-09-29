@@ -4,9 +4,11 @@
  * Expo Router의 app/ 은 라우팅만 담당하고, 여기서는 앱 레벨 로직/프로바이더를 export 합니다.
  */
 
+export { AnalyticsScreenTracker } from './AnalyticsScreenTracker';
 export { AppStatusBar } from './AppStatusBar';
 export { RandomSplashOverlay } from './RandomSplashOverlay';
 export { SPLASH_BACKGROUND_COLOR, SPLASH_IMAGE_SOURCES } from './splashAssets';
 export { resetAppStatusBarCache, syncAppStatusBar } from '@shared/lib/status-bar/appStatusBar';
 export { useAppBootstrap } from './useAppBootstrap';
+export { useAnalyticsScreenViews } from './useAnalyticsScreenViews';
 export { useCityPopFonts } from './useCityPopFonts';

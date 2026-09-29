@@ -67,5 +67,32 @@ target 'Pokit' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    # RNFBCrashlytics quoted imports ("RNFBApp/RNFBSharedUtils.h", "RNFBPreferences.h")
+    # need Private + RNFBApp public headers when use_frameworks :static.
+    installer.pods_project.targets.each do |target|
+      next unless target.name == 'RNFBCrashlytics'
+      target.build_configurations.each do |bc|
+        headers = bc.build_settings['HEADER_SEARCH_PATHS']
+        headers = ['$(inherited)'] if headers.nil?
+        headers = [headers] unless headers.is_a?(Array)
+        extras = [
+          '"${PODS_ROOT}/Headers/Private"',
+          '"${PODS_ROOT}/Headers/Public/RNFBApp"',
+        ]
+        extras.each do |path|
+          headers << path unless headers.include?(path)
+        end
+        bc.build_settings['HEADER_SEARCH_PATHS'] = headers
+      end
+    end
+
+    # Xcode 26 + C++20에서 fmt pod의 consteval 파싱 이슈 회피
+    installer.pods_project.targets.each do |target|
+      next unless target.name == 'fmt'
+      target.build_configurations.each do |bc|
+        bc.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'gnu++17'
+      end
+    end
   end
 end

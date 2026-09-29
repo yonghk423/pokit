@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import type { PriorityMarkColorId } from '@entities/day-plan';
+import type { PostItFaceColorId } from '@shared/lib/storage';
 
 export type PriorityOrderRowProps = {
   categoryKey: string;
@@ -16,6 +17,10 @@ export type PriorityOrderRowProps = {
   itemMarkColor?: PriorityMarkColorId | null;
   /** 색 스와치에서 직접 선택 (null = 표시 해제) */
   onSelectItemMarkColor?: (color: PriorityMarkColorId | null) => void;
+  /** 루틴 색(행 면색) — 미설정 시 기본(투명) */
+  itemFaceColor?: PostItFaceColorId | null;
+  /** 루틴 색 스와치 선택 (null = 기본) */
+  onSelectItemFaceColor?: (color: PostItFaceColorId | null) => void;
   isFocusStarted?: boolean;
   isCompleted?: boolean;
   isDark: boolean;
