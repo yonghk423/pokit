@@ -1,0 +1,97 @@
+---
+description: Supabase 새소식/업데이트 공지 작성. 사용자가 공지·업데이트 소식·announcements·새소식을 요청할 때 적용.
+alwaysApply: false
+---
+
+# Supabase 업데이트 공지 (새소식)
+
+앱 **설정 → 새소식**은 Supabase `public.announcements`만 읽는다.  
+스키마 참고(실행용 아님): `supabase/announcements.sql`  
+앱 fetch: `src/entities/announcement/api/fetchAnnouncements.ts`
+
+## 에이전트 역할
+
+- **INSERT SQL을 채팅에 바로 보여준다.** 사용자가 Dashboard SQL Editor에 직접 붙여넣는다.
+- 저장소에 seed 파일을 새로 만들지 않는다 (요청 시에만).
+- `announcements.sql` 전체를 다시 실행하라고 안내하지 않는다. (테이블 생성용 문서)
+
+## 필수 규칙
+
+- 항상 **ko / en / ja** 3행을 한 번에 INSERT
+- `locale` ∈ `ko` | `en` | `ja`
+- `priority` ∈ `info` | `important` | `force` (버전 업데이트는 보통 `important`)
+- `published_at`: `now()` (또는 예약 시각)
+- `is_active`: `true`
+- `body`: 불릿 `• ` + `\n` 구분. SQL에서는 `E'...\n...'` 사용
+- 사용자 대면 문구: 한국어는 「루틴」(「리듬」 금지). 앱 이름만 `POKIT`
+- **중복 방지:** INSERT 끝에 반드시 `on conflict (locale, title) do nothing`
+
+## 사전 조건 (프로젝트당 1회, DB에 아직 없으면)
+
+```sql
+create unique index if not exists announcements_locale_title_uidx
+  on public.announcements (locale, title);
+```
+
+이미 중복이 있으면 인덱스 생성이 실패한다 → 아래 **중복 정리**를 먼저 한다.
+
+## SQL 템플릿 (멱등)
+
+```sql
+insert into public.announcements (locale, title, body, priority, published_at, is_active)
+values
+  (
+    'ko',
+    'POKIT x.y.z 업데이트',
+    E'• 항목1\n• 항목2',
+    'important',
+    now(),
+    true
+  ),
+  (
+    'en',
+    'POKIT x.y.z update',
+    E'• item1\n• item2',
+    'important',
+    now(),
+    true
+  ),
+  (
+    'ja',
+    'POKIT x.y.z アップデート',
+    E'• 項目1\n• 項目2',
+    'important',
+    now(),
+    true
+  )
+on conflict (locale, title) do nothing;
+```
+
+문구만 고치려면:
+
+```sql
+on conflict (locale, title) do update set
+  body = excluded.body,
+  priority = excluded.priority,
+  published_at = excluded.published_at,
+  is_active = excluded.is_active;
+```
+
+## 중복 정리
+
+```sql
+delete from public.announcements a
+using public.announcements b
+where a.locale = b.locale
+  and a.title = b.title
+  and a.created_at > b.created_at;
+```
+
+## 혼동 금지
+
+| 채널 | 용도 |
+|---|---|
+| Supabase `announcements` | 설정 → **새소식** |
+| `remote-config/latest-app-version.json` | 스토어 업데이트 모달 |
+
+새소식만 요청하면 remote-config는 건드리지 않는다.

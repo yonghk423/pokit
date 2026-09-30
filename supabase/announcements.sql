@@ -18,6 +18,10 @@ create index if not exists announcements_active_locale_published_idx
   on public.announcements (locale, published_at desc)
   where is_active = true;
 
+-- Prevent duplicate notices for the same locale + title (safe re-run of INSERT).
+create unique index if not exists announcements_locale_title_uidx
+  on public.announcements (locale, title);
+
 alter table public.announcements enable row level security;
 
 drop policy if exists "public can read active announcements" on public.announcements;
