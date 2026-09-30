@@ -449,11 +449,7 @@ export function DefaultPriorityOrderRow({
         accessibilityRole="toolbar"
         accessibilityLabel={t('dayPlan.routineFaceColorLabel')}>
         <ThemedText
-          style={[
-            styles.expandNoteActionText,
-            { color: rowInkMuted },
-            isCompleted && styles.orderRowRomanTitleDone,
-          ]}
+          style={[styles.expandNoteActionText, { color: rowInkMuted }]}
           numberOfLines={1}>
           {t('dayPlan.routineFaceColorLabel')}
         </ThemedText>
@@ -561,11 +557,7 @@ export function DefaultPriorityOrderRow({
         accessibilityRole="toolbar"
         accessibilityLabel={t('dayPlan.importanceMarkLabel')}>
         <ThemedText
-          style={[
-            styles.expandNoteActionText,
-            { color: rowInkMuted },
-            isCompleted && styles.orderRowRomanTitleDone,
-          ]}
+          style={[styles.expandNoteActionText, { color: rowInkMuted }]}
           numberOfLines={1}>
           {t('dayPlan.importanceMarkLabel')}
         </ThemedText>
