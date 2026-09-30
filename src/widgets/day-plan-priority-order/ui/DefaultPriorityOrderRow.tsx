@@ -29,6 +29,7 @@ import {
   type PostItFaceColorId,
 } from '@shared/lib/storage';
 import { resolveBrutalConfirmPrimaryColors } from '@shared/ui/brutal-confirm-button';
+import { ColorPaletteAccordion } from '@shared/ui/color-palette-accordion';
 import { COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT, CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -781,6 +782,7 @@ export function DefaultPriorityOrderRow({
   const expandInlineActions = Boolean(
     noteFaceAction || notePriorityAction || noteFinishAction || noteCompleteAction,
   );
+  const colorSectionActions = Boolean(noteFaceAction || notePriorityAction);
   const expandButton = expandEnabled
     ? wrapBrutal(
         <Pressable
@@ -915,8 +917,19 @@ export function DefaultPriorityOrderRow({
             {expandedContent}
             {expandInlineActions ? (
               <View style={styles.expandActionsCol}>
-                {noteFaceAction}
-                {notePriorityAction}
+                {colorSectionActions ? (
+                  <ColorPaletteAccordion
+                    key={expanded ? 'color-open' : 'color-closed'}
+                    ink={rowInk}
+                    isDark={isDark}
+                    headerPaddingHorizontal={2}
+                    shadowColor={actionShadow}>
+                    <View style={styles.colorSectionBody}>
+                      {noteFaceAction}
+                      {notePriorityAction}
+                    </View>
+                  </ColorPaletteAccordion>
+                ) : null}
                 {noteCompleteAction || noteFinishAction ? (
                   <View style={styles.expandActionsRow}>
                     {noteCompleteAction}

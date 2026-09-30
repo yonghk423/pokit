@@ -8,7 +8,8 @@ export function IconSymbol({
   style,
   weight = 'regular',
 }: {
-  name: SymbolViewProps['name'];
+  /** SF Symbol 이름 — 카탈로그 전량 지원을 위해 string 허용 */
+  name: SymbolViewProps['name'] | string;
   size?: number;
   color: string;
   style?: StyleProp<ViewStyle>;
@@ -19,7 +20,7 @@ export function IconSymbol({
       weight={weight}
       tintColor={color}
       resizeMode="scaleAspectFit"
-      name={name}
+      name={name as SymbolViewProps['name']}
       style={[
         {
           width: size,

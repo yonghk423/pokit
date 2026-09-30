@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
+import { categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
+
 import type { MonthlyFlowHistoryRow } from '../lib/buildMonthlyFlowHistory';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 import { buildMonthCalendarCells } from '../lib/historyPeriodRange';
@@ -11,11 +13,13 @@ type Props = {
   row: MonthlyFlowHistoryRow;
   monthPrefix: string;
   palette: FlowHistoryPalette;
+  categoryKey: string;
 };
 
-/** 월간 완료 dot 트랙 */
-export function FlowHistoryMonthRow({ row, monthPrefix, palette }: Props) {
+/** 월간 완료 dot 트랙 — 주간과 같이 카테고리 강조색으로 채움 */
+export function FlowHistoryMonthRow({ row, monthPrefix, palette, categoryKey }: Props) {
   const calendarCells = buildMonthCalendarCells(monthPrefix);
+  const doneFill = categoryAccentColorPastel(categoryKey);
 
   return (
     <View style={styles.trackWrap}>
@@ -31,7 +35,7 @@ export function FlowHistoryMonthRow({ row, monthPrefix, palette }: Props) {
                 style={[
                   styles.monthDot,
                   {
-                    backgroundColor: done ? palette.ink : palette.weekdayIdle,
+                    backgroundColor: done ? doneFill : palette.weekdayIdle,
                     borderColor: palette.ink,
                   },
                 ]}

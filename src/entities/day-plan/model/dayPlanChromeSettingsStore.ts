@@ -14,6 +14,8 @@ type DayPlanChromeSettingsState = {
   setHideDailyQuote: (hide: boolean) => void;
   setCompleteInAccordion: (enabled: boolean) => void;
   setHideCompleteTape: (hide: boolean) => void;
+  setHideTopAnnouncementsButton: (hide: boolean) => void;
+  setHideTopContactButton: (hide: boolean) => void;
 };
 
 function chromeSettingsEqual(a: DayPlanChromeSettings, b: DayPlanChromeSettings): boolean {
@@ -21,7 +23,9 @@ function chromeSettingsEqual(a: DayPlanChromeSettings, b: DayPlanChromeSettings)
     a.hideLayoutIcons === b.hideLayoutIcons &&
     a.hideDailyQuote === b.hideDailyQuote &&
     a.completeInAccordion === b.completeInAccordion &&
-    a.hideCompleteTape === b.hideCompleteTape
+    a.hideCompleteTape === b.hideCompleteTape &&
+    a.hideTopAnnouncementsButton === b.hideTopAnnouncementsButton &&
+    a.hideTopContactButton === b.hideTopContactButton
   );
 }
 
@@ -49,6 +53,16 @@ export const useDayPlanChromeSettingsStore = create<DayPlanChromeSettingsState>(
   },
   setHideCompleteTape: (hide) => {
     const next = { ...get().settings, hideCompleteTape: hide };
+    saveDayPlanChromeSettings(next);
+    set({ settings: next });
+  },
+  setHideTopAnnouncementsButton: (hide) => {
+    const next = { ...get().settings, hideTopAnnouncementsButton: hide };
+    saveDayPlanChromeSettings(next);
+    set({ settings: next });
+  },
+  setHideTopContactButton: (hide) => {
+    const next = { ...get().settings, hideTopContactButton: hide };
     saveDayPlanChromeSettings(next);
     set({ settings: next });
   },

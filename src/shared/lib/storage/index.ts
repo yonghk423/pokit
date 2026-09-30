@@ -1,8 +1,10 @@
 export {
   CUSTOM_FLOW_ACCENT_COLOR_OPTIONS,
   CUSTOM_FLOW_ICON_OPTIONS,
+  CUSTOM_FLOW_ICON_RECOMMENDED,
   DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
   DEFAULT_CUSTOM_FLOW_ICON,
+  filterCustomFlowIcons,
   normalizeCustomFlowAccentColor,
   normalizeCustomFlowIcon,
   type CustomFlowAccentColorOption,

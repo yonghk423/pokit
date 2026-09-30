@@ -65,8 +65,8 @@ export const orderRowStyles = StyleSheet.create({
     borderRadius: 0,
   },
   orderIconBox: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 0,
     borderWidth: 1,
     alignItems: 'center',
@@ -233,6 +233,47 @@ export const orderRowStyles = StyleSheet.create({
   expandActionsCol: {
     gap: 8,
     marginTop: 4,
+  },
+  colorSection: {
+    alignSelf: 'stretch',
+    gap: 0,
+  },
+  colorSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  colorSectionGlyph: {
+    width: 18,
+    height: 18,
+    position: 'relative',
+  },
+  colorSectionGlyphChipShell: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+  },
+  colorSectionGlyphChipShadow: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    transform: [{ translateX: 1.5 }, { translateY: 1.5 }],
+  },
+  colorSectionGlyphChipFace: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  colorSectionTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    lineHeight: 18,
+  },
+  colorSectionBody: {
+    gap: 8,
+    paddingTop: 4,
+    paddingBottom: 2,
   },
   expandNoteAction: {
     paddingVertical: 2,

@@ -234,16 +234,16 @@ const styles = StyleSheet.create({
   },
   /**
    * 미읽음 점 — Material/iOS 관례: 부모 우측 상단(TOP_END),
-   * 모서리에 살짝 걸침 + 면색 스트로크. 순수 #EF4444 대신 soft coral.
+   * 모서리에 살짝 걸침 + 면색 스트로크.
    */
   badge: {
     position: 'absolute',
-    top: -2,
-    left: ICON_FACE - 7,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#E57373',
+    top: -3,
+    left: ICON_FACE - 9,
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: '#DC2626',
     borderWidth: 1.5,
     zIndex: 3,
   },

@@ -13,6 +13,10 @@ export type DayPlanChromeSettings = {
   completeInAccordion: boolean;
   /** 완료한 루틴의 「완료!」 마스킹 테이프 숨김 */
   hideCompleteTape: boolean;
+  /** 오늘 탭 상단 공지 바로가기 숨김 */
+  hideTopAnnouncementsButton: boolean;
+  /** 오늘 탭 상단 문의 바로가기 숨김 */
+  hideTopContactButton: boolean;
 };
 
 export const DEFAULT_DAY_PLAN_CHROME_SETTINGS: DayPlanChromeSettings = {
@@ -20,6 +24,8 @@ export const DEFAULT_DAY_PLAN_CHROME_SETTINGS: DayPlanChromeSettings = {
   hideDailyQuote: false,
   completeInAccordion: false,
   hideCompleteTape: false,
+  hideTopAnnouncementsButton: false,
+  hideTopContactButton: false,
 };
 
 type SettingsWithChrome = {
@@ -44,6 +50,18 @@ export function normalizeDayPlanChromeSettings(raw: unknown): DayPlanChromeSetti
   } else if (typeof o.showCompleteTape === 'boolean') {
     /** 레거시 showCompleteTape — 표시 ON이면 숨김 OFF */
     base.hideCompleteTape = !o.showCompleteTape;
+  }
+  const legacyHideTopSupport =
+    typeof o.hideTopSupportButtons === 'boolean' ? o.hideTopSupportButtons : undefined;
+  if (typeof o.hideTopAnnouncementsButton === 'boolean') {
+    base.hideTopAnnouncementsButton = o.hideTopAnnouncementsButton;
+  } else if (legacyHideTopSupport !== undefined) {
+    base.hideTopAnnouncementsButton = legacyHideTopSupport;
+  }
+  if (typeof o.hideTopContactButton === 'boolean') {
+    base.hideTopContactButton = o.hideTopContactButton;
+  } else if (legacyHideTopSupport !== undefined) {
+    base.hideTopContactButton = legacyHideTopSupport;
   }
   return base;
 }

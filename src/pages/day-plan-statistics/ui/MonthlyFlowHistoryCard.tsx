@@ -44,7 +44,12 @@ export function MonthlyFlowHistoryCard({ group, monthPrefix, palette }: Props) {
         </ThemedText>
       </View>
 
-      <FlowHistoryMonthRow row={group.row} monthPrefix={monthPrefix} palette={palette} />
+      <FlowHistoryMonthRow
+        row={group.row}
+        monthPrefix={monthPrefix}
+        palette={palette}
+        categoryKey={group.categoryKey}
+      />
     </PostItCardShell>
   );
 }

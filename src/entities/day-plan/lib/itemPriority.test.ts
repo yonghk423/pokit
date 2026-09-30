@@ -23,9 +23,9 @@ describe('itemPriority', () => {
 describe('priorityMarkColor', () => {
   it('cycles none → yellow → … → none', () => {
     expect(cyclePriorityMarkColor(null)).toBe('yellow');
-    expect(cyclePriorityMarkColor('yellow')).toBe('mint');
+    expect(cyclePriorityMarkColor('yellow')).toBe('softYellow');
     expect(cyclePriorityMarkColor('mint')).toBe('softGreen');
-    expect(cyclePriorityMarkColor('lavender')).toBe(null);
+    expect(cyclePriorityMarkColor('red')).toBe(null);
   });
 
   it('accepts soft green / soft pink ids', () => {

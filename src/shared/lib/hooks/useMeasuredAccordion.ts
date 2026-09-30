@@ -51,8 +51,12 @@ export function useMeasuredAccordion(expanded: boolean) {
 
   const onContentLayout = useCallback(
     (height: number) => {
-      if (height <= 0 || Math.abs(height - contentHeight.value) <= 0.5) return;
-      const wasUnmeasured = contentHeight.value <= 0;
+      if (height <= 0) return;
+      const prev = contentHeight.value;
+      if (Math.abs(height - prev) <= 0.5) return;
+      // 펼침 중 부모 height/overflow 때문에 줄어든 재측정은 무시 (클리핑 루프 방지)
+      if (expanded && prev > 0 && height < prev - 0.5) return;
+      const wasUnmeasured = prev <= 0;
       contentHeight.value = height;
       if (!expanded) return;
       if (wasUnmeasured) {

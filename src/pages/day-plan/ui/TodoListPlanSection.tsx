@@ -40,6 +40,7 @@ import {
 import { CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
+import { ColorPaletteAccordion } from '@shared/ui/color-palette-accordion';
 import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -977,14 +978,17 @@ export function TodoListPlanSection({
         </View>
 
         <View style={styles.faceChipsPad}>
-          <PostItFaceColorChips
-            compact
-            selectedId={faceColorId}
-            isDark={isDark}
-            ink={faceInk}
-            shadowColor={softShadow}
-            onSelect={onSelectFaceColor}
-          />
+          <ColorPaletteAccordion ink={faceInk} isDark={isDark} shadowColor={softShadow}>
+            <PostItFaceColorChips
+              compact
+              collapsible={false}
+              selectedId={faceColorId}
+              isDark={isDark}
+              ink={faceInk}
+              shadowColor={softShadow}
+              onSelect={onSelectFaceColor}
+            />
+          </ColorPaletteAccordion>
         </View>
 
         <View

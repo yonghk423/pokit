@@ -1,0 +1,1 @@
+export { ColorPaletteAccordion } from './ColorPaletteAccordion';

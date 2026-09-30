@@ -98,6 +98,7 @@ import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { ApplyWeekdayChips } from '@shared/ui/apply-weekday-chips';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
+import { ColorPaletteAccordion } from '@shared/ui/color-palette-accordion';
 import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -1482,14 +1483,17 @@ function GroupAccordion({
       </View>
 
       <View style={styles.headerPostItChips}>
-        <PostItFaceColorChips
-          compact
-          selectedId={postItFaceColorId}
-          isDark={isDark}
-          ink={ink}
-          shadowColor={shadow}
-          onSelect={onSelectPostItFaceColor}
-        />
+        <ColorPaletteAccordion ink={ink} isDark={isDark} shadowColor={shadow}>
+          <PostItFaceColorChips
+            compact
+            collapsible={false}
+            selectedId={postItFaceColorId}
+            isDark={isDark}
+            ink={ink}
+            shadowColor={shadow}
+            onSelect={onSelectPostItFaceColor}
+          />
+        </ColorPaletteAccordion>
       </View>
 
       {groupAccordion.mounted ? (
@@ -2794,7 +2798,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   headerPostItChips: {
-    paddingBottom: 10,
+    paddingBottom: 6,
   },
   renameGroupRow: {
     flex: 1,

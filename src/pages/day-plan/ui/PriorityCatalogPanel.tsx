@@ -53,6 +53,7 @@ import {
 } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
+import { ColorPaletteAccordion } from '@shared/ui/color-palette-accordion';
 import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -1518,14 +1519,20 @@ function GroupSectionBlock({
           />
           {onSelectPostItFaceColor ? (
             <View style={styles.headerPostItChips}>
-              <PostItFaceColorChips
-                compact
-                selectedId={postItFaceColorId}
-                isDark={isDark}
+              <ColorPaletteAccordion
                 ink={faceInk}
-                shadowColor={faceEditorial.shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT)}
-                onSelect={onSelectPostItFaceColor}
-              />
+                isDark={isDark}
+                shadowColor={faceEditorial.shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT)}>
+                <PostItFaceColorChips
+                  compact
+                  collapsible={false}
+                  selectedId={postItFaceColorId}
+                  isDark={isDark}
+                  ink={faceInk}
+                  shadowColor={faceEditorial.shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT)}
+                  onSelect={onSelectPostItFaceColor}
+                />
+              </ColorPaletteAccordion>
             </View>
           ) : null}
           {groupAccordion.mounted ? (
@@ -1961,16 +1968,24 @@ export function PriorityCatalogPanel({
             </View>
           </View>
           <View style={styles.flatFaceChipsPad}>
-            <PostItFaceColorChips
-              compact
-              selectedId={flatFaceColorId}
-              isDark={isDark}
+            <ColorPaletteAccordion
               ink={faceInk}
+              isDark={isDark}
               shadowColor={
                 faceEditorial.shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT)
-              }
-              onSelect={(id) => onSelectPostItFaceColor(FLAT_CATALOG_POST_IT_KEY, id)}
-            />
+              }>
+              <PostItFaceColorChips
+                compact
+                collapsible={false}
+                selectedId={flatFaceColorId}
+                isDark={isDark}
+                ink={faceInk}
+                shadowColor={
+                  faceEditorial.shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT)
+                }
+                onSelect={(id) => onSelectPostItFaceColor(FLAT_CATALOG_POST_IT_KEY, id)}
+              />
+            </ColorPaletteAccordion>
           </View>
           <View
             style={[
@@ -2283,12 +2298,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   flatFaceChipsPad: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
+    paddingTop: 4,
     paddingBottom: 4,
   },
   headerPostItChips: {
-    paddingBottom: 8,
+    paddingBottom: 6,
   },
   groupAccordionPanel: {
     position: 'relative',

@@ -6,17 +6,25 @@
 
 export const PRIORITY_MARK_COLOR_IDS = [
   'yellow',
+  'softYellow',
   'mint',
   'softGreen',
+  'lime',
+  'turquoise',
+  'lavender',
+  'softBlue',
+  'violet',
   'pink',
   'softPink',
+  'magenta',
   'peach',
-  'lavender',
+  'coral',
+  'red',
 ] as const;
 
 export type PriorityMarkColorId = (typeof PRIORITY_MARK_COLOR_IDS)[number];
 
-/** 순환: 없음 → 노랑 → 초록 → 연초록 → 핑크 → 연분홍 → 주황 → 파랑 → 없음 */
+/** 순환: 없음 → … → 없음 */
 export const PRIORITY_MARK_COLOR_CYCLE: readonly (PriorityMarkColorId | null)[] = [
   null,
   ...PRIORITY_MARK_COLOR_IDS,
@@ -41,6 +49,13 @@ export const PRIORITY_MARK_COLOR_PRESETS: readonly MarkPreset[] = [
     highlightDark: 'rgba(255, 230, 0, 0.55)',
   },
   {
+    id: 'softYellow',
+    face: '#FFE99A',
+    faceDark: '#8A7828',
+    highlight: 'rgba(255, 233, 154, 0.92)',
+    highlightDark: 'rgba(255, 233, 154, 0.5)',
+  },
+  {
     id: 'mint',
     face: '#7CFF00',
     faceDark: '#3A7A00',
@@ -53,6 +68,41 @@ export const PRIORITY_MARK_COLOR_PRESETS: readonly MarkPreset[] = [
     faceDark: '#4A6B28',
     highlight: 'rgba(198, 255, 122, 0.9)',
     highlightDark: 'rgba(198, 255, 122, 0.5)',
+  },
+  {
+    id: 'lime',
+    face: '#B8F000',
+    faceDark: '#5A7000',
+    highlight: 'rgba(184, 240, 0, 0.9)',
+    highlightDark: 'rgba(184, 240, 0, 0.5)',
+  },
+  {
+    id: 'turquoise',
+    face: '#00E0C8',
+    faceDark: '#008A7A',
+    highlight: 'rgba(0, 224, 200, 0.85)',
+    highlightDark: 'rgba(0, 224, 200, 0.48)',
+  },
+  {
+    id: 'lavender',
+    face: '#3DB8FF',
+    faceDark: '#185A8A',
+    highlight: 'rgba(61, 184, 255, 0.85)',
+    highlightDark: 'rgba(61, 184, 255, 0.48)',
+  },
+  {
+    id: 'softBlue',
+    face: '#9AD4FF',
+    faceDark: '#2A5A8A',
+    highlight: 'rgba(154, 212, 255, 0.9)',
+    highlightDark: 'rgba(154, 212, 255, 0.5)',
+  },
+  {
+    id: 'violet',
+    face: '#B47CFF',
+    faceDark: '#5A388A',
+    highlight: 'rgba(180, 124, 255, 0.85)',
+    highlightDark: 'rgba(180, 124, 255, 0.48)',
   },
   {
     id: 'pink',
@@ -69,6 +119,13 @@ export const PRIORITY_MARK_COLOR_PRESETS: readonly MarkPreset[] = [
     highlightDark: 'rgba(255, 176, 212, 0.5)',
   },
   {
+    id: 'magenta',
+    face: '#FF4DFF',
+    faceDark: '#8A288A',
+    highlight: 'rgba(255, 77, 255, 0.82)',
+    highlightDark: 'rgba(255, 77, 255, 0.48)',
+  },
+  {
     id: 'peach',
     face: '#FF8A00',
     faceDark: '#8A4A00',
@@ -76,11 +133,18 @@ export const PRIORITY_MARK_COLOR_PRESETS: readonly MarkPreset[] = [
     highlightDark: 'rgba(255, 138, 0, 0.5)',
   },
   {
-    id: 'lavender',
-    face: '#3DB8FF',
-    faceDark: '#185A8A',
-    highlight: 'rgba(61, 184, 255, 0.85)',
-    highlightDark: 'rgba(61, 184, 255, 0.48)',
+    id: 'coral',
+    face: '#FF6B4A',
+    faceDark: '#8A3828',
+    highlight: 'rgba(255, 107, 74, 0.88)',
+    highlightDark: 'rgba(255, 107, 74, 0.5)',
+  },
+  {
+    id: 'red',
+    face: '#FF3B30',
+    faceDark: '#8A1E18',
+    highlight: 'rgba(255, 59, 48, 0.85)',
+    highlightDark: 'rgba(255, 59, 48, 0.48)',
   },
 ] as const;
 

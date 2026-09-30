@@ -3,14 +3,29 @@ import { StorageKeys } from './storageKeys';
 
 export type PostItFaceColorId =
   | 'cream'
+  | 'sand'
   | 'yellow'
-  | 'mint'
-  | 'pink'
+  | 'butter'
   | 'peach'
+  | 'apricot'
+  | 'coral'
+  | 'pink'
+  | 'rose'
+  | 'mint'
+  | 'sage'
+  | 'aqua'
+  | 'sky'
+  | 'powderBlue'
   | 'lavender'
+  | 'lilac'
   | 'white'
+  | 'taupe'
   | 'navy'
-  | 'darkGreen';
+  | 'darkGreen'
+  | 'teal'
+  | 'burgundy'
+  | 'plum'
+  | 'charcoal';
 
 /** 면 위 텍스트·아이콘 — light = 화이트 계열 */
 export type PostItFaceInkTone = 'dark' | 'light';
@@ -29,14 +44,29 @@ export type PostItFaceColorByGroup = Record<string, PostItFaceColorId>;
 export const POST_IT_FACE_COLOR_PRESETS: readonly PostItFaceColorPreset[] = [
   /** 앱 기본 베이지 (`RetroFlatColors.light.bg`) */
   { id: 'cream', light: '#F5F2EB', dark: '#2D2F44', inkTone: 'dark' },
+  { id: 'sand', light: '#EDE4D4', dark: '#3A3428', inkTone: 'dark' },
   { id: 'yellow', light: '#FFE566', dark: '#8A7618', inkTone: 'dark' },
-  { id: 'mint', light: '#A8DADC', dark: '#1A4E50', inkTone: 'dark' },
-  { id: 'pink', light: '#F5C6C6', dark: '#7A4545', inkTone: 'dark' },
+  { id: 'butter', light: '#FFF3B8', dark: '#6E6528', inkTone: 'dark' },
   { id: 'peach', light: '#FFD8A8', dark: '#8A5A28', inkTone: 'dark' },
+  { id: 'apricot', light: '#FFC9A0', dark: '#7A4A28', inkTone: 'dark' },
+  { id: 'coral', light: '#FFB4A8', dark: '#7A3A34', inkTone: 'dark' },
+  { id: 'pink', light: '#F5C6C6', dark: '#7A4545', inkTone: 'dark' },
+  { id: 'rose', light: '#F2B8C8', dark: '#6E3848', inkTone: 'dark' },
+  { id: 'mint', light: '#A8DADC', dark: '#1A4E50', inkTone: 'dark' },
+  { id: 'sage', light: '#C5D9B8', dark: '#3A4E32', inkTone: 'dark' },
+  { id: 'aqua', light: '#B8E8E0', dark: '#2A5550', inkTone: 'dark' },
+  { id: 'sky', light: '#B8D4F0', dark: '#2A4568', inkTone: 'dark' },
+  { id: 'powderBlue', light: '#D0E4F5', dark: '#33485C', inkTone: 'dark' },
   { id: 'lavender', light: '#D4C8F5', dark: '#4A3F72', inkTone: 'dark' },
+  { id: 'lilac', light: '#E4D4F0', dark: '#4A3858', inkTone: 'dark' },
   { id: 'white', light: '#FFFFFF', dark: '#3A3C52', inkTone: 'dark' },
+  { id: 'taupe', light: '#D8D0C8', dark: '#3A3632', inkTone: 'dark' },
   { id: 'navy', light: '#1E3A5F', dark: '#152844', inkTone: 'light' },
   { id: 'darkGreen', light: '#1F4D3A', dark: '#16362A', inkTone: 'light' },
+  { id: 'teal', light: '#1A5C5A', dark: '#124240', inkTone: 'light' },
+  { id: 'burgundy', light: '#6B2D3C', dark: '#4A1E2A', inkTone: 'light' },
+  { id: 'plum', light: '#4A3560', dark: '#342440', inkTone: 'light' },
+  { id: 'charcoal', light: '#3A3A42', dark: '#25252C', inkTone: 'light' },
 ] as const;
 
 export const DEFAULT_POST_IT_FACE_COLOR_ID: PostItFaceColorId = 'white';
