@@ -114,6 +114,11 @@ function ModeRow({
   showBadges?: boolean;
 }) {
   const pill = tabPillColors(tone.isDark);
+  const topBarIcons = [
+    { icon: 'megaphone.fill' as const, key: 'announce' },
+    { icon: 'paperplane.fill' as const, key: 'contact' },
+    { icon: 'gearshape' as const, key: 'settings' },
+  ];
   return (
     <View style={[styles.modeRow, { borderBottomColor: tone.border, backgroundColor: tone.bg }]}>
       <View style={styles.modeLeft}>
@@ -140,14 +145,19 @@ function ModeRow({
           );
         })}
       </View>
-      <View style={styles.modeHitWrap}>
+      <View style={styles.modeTopBarCluster}>
         {showBadges ? <Badge n={5} tone={tone} /> : null}
-        <View
-          style={[
-            styles.modeHit,
-            { backgroundColor: tone.surface, borderColor: tone.border },
-          ]}>
-          <IconSymbol name="gearshape" size={18} color={pill.inactiveIcon} />
+        <View style={styles.modeTopBarIcons}>
+          {topBarIcons.map((item) => (
+            <View
+              key={item.key}
+              style={[
+                styles.modeHitCompact,
+                { backgroundColor: tone.surface, borderColor: tone.border },
+              ]}>
+              <IconSymbol name={item.icon} size={14} color={pill.inactiveIcon} />
+            </View>
+          ))}
         </View>
       </View>
     </View>
@@ -301,13 +311,7 @@ function FigureTodayOverview({ tone }: { tone: Tone }) {
           {t('dayPlan.emptyBagBody')}
         </ThemedText>
         <View
-          style={[
-            styles.addRow,
-            {
-              borderColor: tone.border,
-              backgroundColor: tone.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
-            },
-          ]}>
+          style={styles.addRow}>
           <IconSymbol name="plus.circle.fill" size={16} color={tone.text} />
           <ThemedText style={[styles.addRowText, { color: tone.text }, cityPopFont('700')]}>
             {t('dayPlan.addRoutine')}
@@ -470,15 +474,7 @@ function FigureTodayAddRow({ tone }: { tone: Tone }) {
         </View>
         <View style={styles.sheetRow}>
           <Badge n={1} tone={tone} />
-          <View
-            style={[
-              styles.addRow,
-              {
-                flex: 1,
-                borderColor: tone.border,
-                backgroundColor: tone.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
-              },
-            ]}>
+          <View style={styles.addRow}>
             <IconSymbol name="plus.circle.fill" size={16} color={tone.text} />
             <ThemedText style={[styles.addRowText, { color: tone.text }, cityPopFont('700')]}>
               {t('dayPlan.addRoutine')}
@@ -991,13 +987,23 @@ const styles = StyleSheet.create({
   },
   modeLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   modeHitWrap: { alignItems: 'center', gap: 2 },
+  modeTopBarCluster: { alignItems: 'flex-end', gap: 2 },
+  modeTopBarIcons: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   modeHit: {
     width: 34,
     height: 34,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 11,
-    borderWidth: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  modeHitCompact: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   layoutRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   layoutHitWrap: { alignItems: 'center', gap: 3 },
@@ -1037,10 +1043,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
     gap: 6,
-    minHeight: 36,
-    borderWidth: 2,
-    borderStyle: 'dashed',
+    paddingVertical: 8,
     marginTop: 4,
   },
   addRowText: { fontSize: 12 },
