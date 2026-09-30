@@ -3696,7 +3696,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 12,
-    borderBottomWidth: 2,
+    /** PlanModeSwitch 하단 구분선과 동일 */
+    borderBottomWidth: StyleSheet.hairlineWidth,
     zIndex: 10,
     elevation: 10,
   },

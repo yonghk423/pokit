@@ -698,6 +698,33 @@ export function DefaultPriorityOrderRow({
     : null;
 
   const expandEnabled = Boolean(onToggleExpand);
+
+  const handleToggleExpand = useCallback(() => {
+    if (!onToggleExpand) return;
+    void Haptics.selectionAsync();
+    onToggleExpand();
+  }, [onToggleExpand]);
+
+  const mainContent = expandEnabled ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ expanded: Boolean(expanded) }}
+      accessibilityLabel={
+        expanded ? t('dayPlan.collapseA11y', { label }) : t('dayPlan.expandA11y', { label })
+      }
+      onPress={handleToggleExpand}
+      style={styles.orderRowReorderMain}>
+      {rankIconTitleBlock}
+    </Pressable>
+  ) : (
+    <View
+      style={styles.orderRowReorderMain}
+      accessibilityRole={reorderPanGesture ? 'adjustable' : undefined}
+      accessibilityLabel={reorderPanGesture ? t('dayPlan.reorderA11y', { label }) : undefined}>
+      {rankIconTitleBlock}
+    </View>
+  );
+
   const noteFaceAction = expandEnabled && onSelectItemFaceColor ? renderFacePalette(false) : null;
   const notePriorityAction = expandEnabled && onSelectItemMarkColor
     ? renderMarkPalette(false)
@@ -883,19 +910,12 @@ export function DefaultPriorityOrderRow({
       ]}>
       {reorderPanGesture ? (
         <Reanimated.View style={[styles.orderRowDragShell, reorderMainAnimatedStyle]}>
-          <GestureDetector gesture={reorderPanGesture}>
-            <View
-              style={styles.orderRowReorderMain}
-              accessibilityRole="adjustable"
-              accessibilityLabel={t('dayPlan.reorderA11y', { label })}>
-              {rankIconTitleBlock}
-            </View>
-          </GestureDetector>
+          <GestureDetector gesture={reorderPanGesture}>{mainContent}</GestureDetector>
           {actionsColumn}
         </Reanimated.View>
       ) : (
         <View style={styles.orderRowDragShell}>
-          <View style={styles.orderRowReorderMain}>{rankIconTitleBlock}</View>
+          {mainContent}
           {actionsColumn}
         </View>
       )}
