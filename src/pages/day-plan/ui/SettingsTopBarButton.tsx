@@ -85,10 +85,10 @@ export function SettingsTopBarButton({ c: _c }: Props) {
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
   const locale = useAppLocaleStore((s) => s.locale);
-  const hideTopAnnouncementsButton = useDayPlanChromeSettingsStore(
-    (s) => s.settings.hideTopAnnouncementsButton,
+  const showTopAnnouncementsButton = useDayPlanChromeSettingsStore(
+    (s) => s.settings.showTopAnnouncementsButton,
   );
-  const hideTopContactButton = useDayPlanChromeSettingsStore((s) => s.settings.hideTopContactButton);
+  const showTopContactButton = useDayPlanChromeSettingsStore((s) => s.settings.showTopContactButton);
   const [hasUnreadAnnouncements, setHasUnreadAnnouncements] = useState(false);
 
   const shadow = isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)';
@@ -98,7 +98,7 @@ export function SettingsTopBarButton({ c: _c }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      if (hideTopAnnouncementsButton) {
+      if (!showTopAnnouncementsButton) {
         setHasUnreadAnnouncements(false);
         return;
       }
@@ -116,12 +116,12 @@ export function SettingsTopBarButton({ c: _c }: Props) {
       return () => {
         cancelled = true;
       };
-    }, [hideTopAnnouncementsButton, locale]),
+    }, [showTopAnnouncementsButton, locale]),
   );
 
   return (
     <View style={styles.row}>
-      {!hideTopAnnouncementsButton ? (
+      {showTopAnnouncementsButton ? (
         <TopBarIconButton
           name="megaphone.fill"
           accessibilityLabel={
@@ -141,7 +141,7 @@ export function SettingsTopBarButton({ c: _c }: Props) {
           }}
         />
       ) : null}
-      {!hideTopContactButton ? (
+      {showTopContactButton ? (
         <TopBarIconButton
           name="paperplane.fill"
           accessibilityLabel={t('settings.a11y.support')}
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     width: 11,
     height: 11,
     borderRadius: 6,
-    backgroundColor: '#DC2626',
+    backgroundColor: '#C45C5C',
     borderWidth: 1.5,
     zIndex: 3,
   },

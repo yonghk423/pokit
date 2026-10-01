@@ -13,10 +13,10 @@ export type DayPlanChromeSettings = {
   completeInAccordion: boolean;
   /** 완료한 루틴의 「완료!」 마스킹 테이프 숨김 */
   hideCompleteTape: boolean;
-  /** 오늘 탭 상단 공지 바로가기 숨김 */
-  hideTopAnnouncementsButton: boolean;
-  /** 오늘 탭 상단 문의 바로가기 숨김 */
-  hideTopContactButton: boolean;
+  /** 오늘 탭 상단 공지 바로가기 표시 (기본 OFF) */
+  showTopAnnouncementsButton: boolean;
+  /** 오늘 탭 상단 문의 바로가기 표시 (기본 OFF) */
+  showTopContactButton: boolean;
 };
 
 export const DEFAULT_DAY_PLAN_CHROME_SETTINGS: DayPlanChromeSettings = {
@@ -24,13 +24,29 @@ export const DEFAULT_DAY_PLAN_CHROME_SETTINGS: DayPlanChromeSettings = {
   hideDailyQuote: false,
   completeInAccordion: false,
   hideCompleteTape: false,
-  hideTopAnnouncementsButton: false,
-  hideTopContactButton: false,
+  showTopAnnouncementsButton: false,
+  showTopContactButton: false,
 };
+
+/** 공지·문의 상단 버튼 기본 숨김 + 표시 토글 전환 1회 마이그레이션 */
+const TOP_SUPPORT_SHOW_DEFAULT_MIGRATED_KEY = 'pokit:chrome-top-support-show-default-v2';
 
 type SettingsWithChrome = {
   dayPlanChromeSettings?: unknown;
 };
+
+function resolveShowTopButton(
+  o: Record<string, unknown>,
+  showKey: 'showTopAnnouncementsButton' | 'showTopContactButton',
+  hideKey: 'hideTopAnnouncementsButton' | 'hideTopContactButton',
+  legacyHideTopSupport: boolean | undefined,
+  fallback: boolean,
+): boolean {
+  if (typeof o[showKey] === 'boolean') return o[showKey] as boolean;
+  if (typeof o[hideKey] === 'boolean') return !(o[hideKey] as boolean);
+  if (legacyHideTopSupport !== undefined) return !legacyHideTopSupport;
+  return fallback;
+}
 
 export function normalizeDayPlanChromeSettings(raw: unknown): DayPlanChromeSettings {
   const base = { ...DEFAULT_DAY_PLAN_CHROME_SETTINGS };
@@ -53,29 +69,56 @@ export function normalizeDayPlanChromeSettings(raw: unknown): DayPlanChromeSetti
   }
   const legacyHideTopSupport =
     typeof o.hideTopSupportButtons === 'boolean' ? o.hideTopSupportButtons : undefined;
-  if (typeof o.hideTopAnnouncementsButton === 'boolean') {
-    base.hideTopAnnouncementsButton = o.hideTopAnnouncementsButton;
-  } else if (legacyHideTopSupport !== undefined) {
-    base.hideTopAnnouncementsButton = legacyHideTopSupport;
-  }
-  if (typeof o.hideTopContactButton === 'boolean') {
-    base.hideTopContactButton = o.hideTopContactButton;
-  } else if (legacyHideTopSupport !== undefined) {
-    base.hideTopContactButton = legacyHideTopSupport;
-  }
+  base.showTopAnnouncementsButton = resolveShowTopButton(
+    o,
+    'showTopAnnouncementsButton',
+    'hideTopAnnouncementsButton',
+    legacyHideTopSupport,
+    base.showTopAnnouncementsButton,
+  );
+  base.showTopContactButton = resolveShowTopButton(
+    o,
+    'showTopContactButton',
+    'hideTopContactButton',
+    legacyHideTopSupport,
+    base.showTopContactButton,
+  );
   return base;
+}
+
+function persistDayPlanChromeSettings(next: DayPlanChromeSettings): void {
+  const root = localStorageClient.getJson<Record<string, unknown>>(StorageKeys.settings) ?? {};
+  localStorageClient.setJson(StorageKeys.settings, {
+    ...root,
+    dayPlanChromeSettings: next,
+  });
+}
+
+/** 예전 기본값(표시)으로 저장된 기기도 공지·문의 버튼을 한 번 숨김으로 맞춘다. */
+function migrateTopSupportButtonsHiddenByDefault(
+  settings: DayPlanChromeSettings,
+): DayPlanChromeSettings {
+  if (localStorageClient.getItemRaw(TOP_SUPPORT_SHOW_DEFAULT_MIGRATED_KEY) === '1') {
+    return settings;
+  }
+  const next = {
+    ...settings,
+    showTopAnnouncementsButton: false,
+    showTopContactButton: false,
+  };
+  persistDayPlanChromeSettings(next);
+  localStorageClient.setItemRaw(TOP_SUPPORT_SHOW_DEFAULT_MIGRATED_KEY, '1');
+  return next;
 }
 
 export function loadDayPlanChromeSettings(): DayPlanChromeSettings {
   const root = localStorageClient.getJson<SettingsWithChrome>(StorageKeys.settings) ?? {};
-  return normalizeDayPlanChromeSettings(root.dayPlanChromeSettings);
+  return migrateTopSupportButtonsHiddenByDefault(
+    normalizeDayPlanChromeSettings(root.dayPlanChromeSettings),
+  );
 }
 
 export function saveDayPlanChromeSettings(next: DayPlanChromeSettings): void {
   const normalized = normalizeDayPlanChromeSettings(next);
-  const root = localStorageClient.getJson<Record<string, unknown>>(StorageKeys.settings) ?? {};
-  localStorageClient.setJson(StorageKeys.settings, {
-    ...root,
-    dayPlanChromeSettings: normalized,
-  });
+  persistDayPlanChromeSettings(normalized);
 }

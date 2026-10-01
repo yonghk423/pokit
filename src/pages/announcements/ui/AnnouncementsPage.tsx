@@ -29,10 +29,10 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
-const ICON = 36;
+const ICON = 34;
 const ICON_SHADOW = 2;
-/** soft coral — Material Red 300 계열, 면 스트로크와 함께 씀 */
-const BADGE = '#E57373';
+/** 미읽음 점 — 파스텔 톤 진한 레드 */
+const BADGE = '#C45C5C';
 
 function formatPublishedAt(iso: string, locale: AnnouncementLocale): string {
   const d = new Date(iso);
@@ -51,21 +51,32 @@ function formatPublishedAt(iso: string, locale: AnnouncementLocale): string {
 function RowIcon({
   color,
   boxBg,
+  border,
   shadow,
   ringColor,
   showBadge,
 }: {
   color: string;
   boxBg: string;
+  border: string;
   shadow: string;
   ringColor: string;
   showBadge: boolean;
 }) {
   return (
-    <View style={styles.iconShell}>
-      <View pointerEvents="none" style={[styles.iconShadow, { backgroundColor: shadow }]} />
-      <View style={[styles.iconBox, { backgroundColor: boxBg }]}>
-        <IconSymbol name="megaphone.fill" size={15} color={color} />
+    <View style={[styles.iconShell, { marginRight: ICON_SHADOW, marginBottom: ICON_SHADOW }]}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.iconShadow,
+          {
+            backgroundColor: shadow,
+            transform: [{ translateX: ICON_SHADOW }, { translateY: ICON_SHADOW }],
+          },
+        ]}
+      />
+      <View style={[styles.iconBox, { backgroundColor: boxBg, borderColor: border }]}>
+        <IconSymbol name="megaphone.fill" size={16} color={color} />
       </View>
       {showBadge ? (
         <View pointerEvents="none" style={[styles.badge, { borderColor: ringColor }]} />
@@ -92,6 +103,10 @@ export function AnnouncementsPage() {
   const pageBg = rf.bg;
   const cardFace = isDark ? rf.surfaceAlt : pageBg;
   const rowBorder = isDark ? 'rgba(241, 239, 255, 0.16)' : 'rgba(24, 26, 46, 0.12)';
+  /** 설정 탭 SettingsRowIcon과 동일 — 흰 면 · 검정 테두리 · 솔리드 음영 */
+  const iconColor = isDark ? '#FAFAFA' : '#000000';
+  const iconBoxBg = isDark ? rf.surfaceAlt : '#FFFFFF';
+  const iconBorder = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
   const iconShadow = isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)';
   const cardShadow = isDark ? '#5A5C72' : '#707979';
 
@@ -185,8 +200,9 @@ export function AnnouncementsPage() {
             <CityPopCardShell isDark={isDark} faceColor={cardFace} shadowColor={cardShadow} shadowOffset={2}>
               <View style={styles.emptyInner}>
                 <RowIcon
-                  color={rf.primary}
-                  boxBg={rf.primaryContainer}
+                  color={iconColor}
+                  boxBg={iconBoxBg}
+                  border={iconBorder}
                   shadow={iconShadow}
                   ringColor={cardFace}
                   showBadge={false}
@@ -215,8 +231,9 @@ export function AnnouncementsPage() {
                     ]}>
                     <View style={styles.rowLeft}>
                       <RowIcon
-                        color={rf.primary}
-                        boxBg={rf.primaryContainer}
+                        color={iconColor}
+                        boxBg={iconBoxBg}
+                        border={iconBorder}
                         shadow={iconShadow}
                         ringColor={cardFace}
                         showBadge={unread}
@@ -350,15 +367,15 @@ const styles = StyleSheet.create({
   rowDesc: { fontSize: 11, fontWeight: '500', lineHeight: 15 },
   iconShell: {
     position: 'relative',
-    width: ICON + ICON_SHADOW,
-    height: ICON + ICON_SHADOW,
+    width: ICON,
+    height: ICON,
     flexShrink: 0,
     overflow: 'visible',
   },
   iconShadow: {
     position: 'absolute',
-    left: ICON_SHADOW,
-    top: ICON_SHADOW,
+    left: 0,
+    top: 0,
     width: ICON,
     height: ICON,
   },
@@ -367,12 +384,13 @@ const styles = StyleSheet.create({
     height: ICON,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
     zIndex: 1,
   },
   badge: {
     position: 'absolute',
     top: -2,
-    left: ICON - 7,
+    right: -2,
     width: 8,
     height: 8,
     borderRadius: 4,

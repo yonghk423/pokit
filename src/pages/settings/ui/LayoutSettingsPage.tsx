@@ -32,14 +32,14 @@ export function LayoutSettingsPage() {
   const setCompleteInAccordion = useDayPlanChromeSettingsStore((s) => s.setCompleteInAccordion);
   const hideCompleteTape = useDayPlanChromeSettingsStore((s) => s.settings.hideCompleteTape);
   const setHideCompleteTape = useDayPlanChromeSettingsStore((s) => s.setHideCompleteTape);
-  const hideTopAnnouncementsButton = useDayPlanChromeSettingsStore(
-    (s) => s.settings.hideTopAnnouncementsButton,
+  const showTopAnnouncementsButton = useDayPlanChromeSettingsStore(
+    (s) => s.settings.showTopAnnouncementsButton,
   );
-  const setHideTopAnnouncementsButton = useDayPlanChromeSettingsStore(
-    (s) => s.setHideTopAnnouncementsButton,
+  const setShowTopAnnouncementsButton = useDayPlanChromeSettingsStore(
+    (s) => s.setShowTopAnnouncementsButton,
   );
-  const hideTopContactButton = useDayPlanChromeSettingsStore((s) => s.settings.hideTopContactButton);
-  const setHideTopContactButton = useDayPlanChromeSettingsStore((s) => s.setHideTopContactButton);
+  const showTopContactButton = useDayPlanChromeSettingsStore((s) => s.settings.showTopContactButton);
+  const setShowTopContactButton = useDayPlanChromeSettingsStore((s) => s.setShowTopContactButton);
 
   const topInset =
     insets.top >= 1
@@ -123,18 +123,18 @@ export function LayoutSettingsPage() {
                 />
                 <View style={chrome.itemTextWrap}>
                   <ThemedText style={[chrome.itemTitle, { color: p.title }]}>
-                    {t('settings.layout.hideTopAnnouncementsButton')}
+                    {t('settings.layout.showTopAnnouncementsButton')}
                   </ThemedText>
                   <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>
-                    {t('settings.layout.hideTopAnnouncementsButtonDesc')}
+                    {t('settings.layout.showTopAnnouncementsButtonDesc')}
                   </ThemedText>
                 </View>
               </View>
               <Switch
-                value={hideTopAnnouncementsButton}
+                value={showTopAnnouncementsButton}
                 onValueChange={(next) => {
                   void Haptics.selectionAsync();
-                  setHideTopAnnouncementsButton(next);
+                  setShowTopAnnouncementsButton(next);
                 }}
                 trackColor={{
                   false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
@@ -142,8 +142,8 @@ export function LayoutSettingsPage() {
                 }}
                 thumbColor="#FFFFFF"
                 ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
-                accessibilityLabel={t('settings.layout.hideTopAnnouncementsButtonA11y', {
-                  action: hideTopAnnouncementsButton
+                accessibilityLabel={t('settings.layout.showTopAnnouncementsButtonA11y', {
+                  action: showTopAnnouncementsButton
                     ? t('settings.dayPlanView.toggleOff')
                     : t('settings.dayPlanView.toggleOn'),
                 })}
@@ -160,18 +160,18 @@ export function LayoutSettingsPage() {
                 />
                 <View style={chrome.itemTextWrap}>
                   <ThemedText style={[chrome.itemTitle, { color: p.title }]}>
-                    {t('settings.layout.hideTopContactButton')}
+                    {t('settings.layout.showTopContactButton')}
                   </ThemedText>
                   <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>
-                    {t('settings.layout.hideTopContactButtonDesc')}
+                    {t('settings.layout.showTopContactButtonDesc')}
                   </ThemedText>
                 </View>
               </View>
               <Switch
-                value={hideTopContactButton}
+                value={showTopContactButton}
                 onValueChange={(next) => {
                   void Haptics.selectionAsync();
-                  setHideTopContactButton(next);
+                  setShowTopContactButton(next);
                 }}
                 trackColor={{
                   false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
@@ -179,8 +179,8 @@ export function LayoutSettingsPage() {
                 }}
                 thumbColor="#FFFFFF"
                 ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
-                accessibilityLabel={t('settings.layout.hideTopContactButtonA11y', {
-                  action: hideTopContactButton
+                accessibilityLabel={t('settings.layout.showTopContactButtonA11y', {
+                  action: showTopContactButton
                     ? t('settings.dayPlanView.toggleOff')
                     : t('settings.dayPlanView.toggleOn'),
                 })}
