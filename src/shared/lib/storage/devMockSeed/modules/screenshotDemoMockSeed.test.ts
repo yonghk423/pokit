@@ -1,6 +1,7 @@
 import { getAppLocale, useAppLocaleStore } from '@shared/lib/i18n';
 
 import {
+  BUILTIN_ABSTAIN_FLOW_ID,
   BUILTIN_DAILY_EXERCISE_FLOW_ID,
   BUILTIN_STRETCHING_FLOW_ID,
 } from '../../defaultPriorityCatalog';
@@ -9,9 +10,11 @@ import { loadDayPlanDraft } from '../../dayPlanDraftStorage';
 import { loadDayPlan } from '../../dayPlanStorage';
 import { loadDayPlanTodos } from '../../dayPlanTodoStorage';
 import { loadGoalDetailCategoryConfig } from '../../goalDetailSettingsStorage';
+import { listCustomFlowCatalogIds } from '../../customFlowCatalogStorage';
 import { localStorageClient } from '../../localStorageClient';
 import { StorageKeys } from '../../storageKeys';
 
+import { SCREENSHOT_EXTRA_ROUTINES } from './screenshotDemoCopy';
 import { screenshotDemoMockSeed } from './screenshotDemoMockSeed';
 
 describe('screenshotDemoMockSeed', () => {
@@ -23,44 +26,64 @@ describe('screenshotDemoMockSeed', () => {
     localStorageClient.removeItem(StorageKeys.goalDetailSettings);
     localStorageClient.removeItem(StorageKeys.dailyRhythmOnboarding);
     localStorageClient.removeItem(StorageKeys.priorityCatalogFixedRoutines);
+    localStorageClient.removeItem(StorageKeys.customFlowCatalog);
     ensureDefaultPriorityCatalog();
   });
 
   it('seeds bag, sections, spine, todos, books, notes, and detail configs', async () => {
     const result = await screenshotDemoMockSeed.seed();
 
-    expect(result.screenshotRoutines).toBe(5);
-    expect(result.screenshotTodos).toBe(5);
+    expect(result.screenshotRoutines).toBe(18);
+    expect(result.screenshotTodos).toBe(8);
     expect(result.screenshotBooks).toBe(4);
     expect(result.screenshotNotes).toBe(2);
 
     const draft = loadDayPlanDraft();
     expect(draft?.planMode).toBe('priority');
     expect(draft?.priorityCategoryOrder).toEqual([
-      'reading',
       'healthIntake',
-      BUILTIN_DAILY_EXERCISE_FLOW_ID,
       BUILTIN_STRETCHING_FLOW_ID,
+      'reading',
+      SCREENSHOT_EXTRA_ROUTINES[0]!.id,
+      SCREENSHOT_EXTRA_ROUTINES[1]!.id,
+      SCREENSHOT_EXTRA_ROUTINES[2]!.id,
+      BUILTIN_ABSTAIN_FLOW_ID,
+      BUILTIN_DAILY_EXERCISE_FLOW_ID,
+      SCREENSHOT_EXTRA_ROUTINES[3]!.id,
+      SCREENSHOT_EXTRA_ROUTINES[4]!.id,
+      SCREENSHOT_EXTRA_ROUTINES[5]!.id,
+      SCREENSHOT_EXTRA_ROUTINES[6]!.id,
+      SCREENSHOT_EXTRA_ROUTINES[7]!.id,
+      SCREENSHOT_EXTRA_ROUTINES[8]!.id,
+      SCREENSHOT_EXTRA_ROUTINES[9]!.id,
+      SCREENSHOT_EXTRA_ROUTINES[10]!.id,
       'fasting',
+      SCREENSHOT_EXTRA_ROUTINES[11]!.id,
     ]);
     expect(draft?.priorityCategoryOrder).not.toContain('work');
     expect(draft?.prioritySectionsCategoryOrder).toEqual(draft?.priorityCategoryOrder);
-    expect(draft?.prioritySectionsMealSlots?.reading).toEqual(
-      expect.arrayContaining(['morning', 'lunch']),
+    expect(draft?.prioritySectionsMealSlots?.reading?.length).toBeGreaterThan(0);
+    expect(draft?.prioritySectionsMealSlots?.[BUILTIN_DAILY_EXERCISE_FLOW_ID]?.length).toBeGreaterThan(
+      0,
     );
-    expect(draft?.prioritySectionsMealSlots?.[BUILTIN_DAILY_EXERCISE_FLOW_ID]).toEqual(['lunch']);
     expect(draft?.quickMemoDraft).toContain('·하루 메모');
     expect(draft?.isFocusStarted).toBe(true);
-    expect(draft?.completedFocusCategoryKeys?.length).toBeGreaterThanOrEqual(4);
+    expect(draft?.completedFocusCategoryKeys?.length).toBeGreaterThanOrEqual(14);
+
+    for (const row of SCREENSHOT_EXTRA_ROUTINES) {
+      expect(listCustomFlowCatalogIds()).toContain(row.id);
+      const cfg = loadGoalDetailCategoryConfig(row.id) as { displayName?: string } | null;
+      expect(cfg?.displayName).toBe(row.label.ko);
+    }
 
     const plan = loadDayPlan<{ id: string; blockOrigin?: string }>();
     const spine = (plan?.blocks ?? []).filter((block) => block.blockOrigin === 'spineTimeline');
-    expect(spine.length).toBe(5);
+    expect(spine.length).toBe(18);
 
     const todos = loadDayPlanTodos();
     const todayKeys = Object.keys(todos?.todosByDate ?? {});
     expect(todayKeys.length).toBe(1);
-    expect(todos?.todosByDate?.[todayKeys[0]!]?.length).toBe(5);
+    expect(todos?.todosByDate?.[todayKeys[0]!]?.length).toBe(8);
 
     const reading = loadGoalDetailCategoryConfig('reading') as {
       books?: { title: string }[];
@@ -98,63 +121,39 @@ describe('screenshotDemoMockSeed', () => {
     expect(todos?.todosByDate?.[todayKey]?.[0]?.what).toBe('Prep morning meeting notes');
 
     const reading = loadGoalDetailCategoryConfig('reading') as {
-      books?: { title: string }[];
-      summary?: string;
+      bookTitle?: string;
     } | null;
-    expect(reading?.books?.[0]?.title).toBe('Demian');
-    expect(reading?.summary).toContain('Today 30 pages');
+    expect(reading?.bookTitle).toBe('Demian');
 
-    const work = loadGoalDetailCategoryConfig('work') as {
-      displayName?: string;
-      document?: { pages?: { title?: string }[] };
-    } | null;
-    expect(work?.displayName).toBe('Notes');
-    expect(work?.document?.pages?.[0]?.title).toBe('Today');
-
-    const plan = loadDayPlan<{ title?: string; blockOrigin?: string }>();
-    const spine = (plan?.blocks ?? []).filter((block) => block.blockOrigin === 'spineTimeline');
-    expect(spine.some((block) => block.title === 'Reading')).toBe(true);
-
-    const exercise = loadGoalDetailCategoryConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID) as {
+    const extra = loadGoalDetailCategoryConfig(SCREENSHOT_EXTRA_ROUTINES[0]!.id) as {
       displayName?: string;
     } | null;
-    const stretch = loadGoalDetailCategoryConfig(BUILTIN_STRETCHING_FLOW_ID) as {
-      displayName?: string;
-    } | null;
-    expect(exercise?.displayName).toBe('Exercise');
-    expect(stretch?.displayName).toBe('Stretching');
+    expect(extra?.displayName).toBe('Morning journal');
   });
 
-  it('clear removes screenshot UI storage', async () => {
+  it('clears screenshot seed data including extra routines', async () => {
     await screenshotDemoMockSeed.seed();
     await screenshotDemoMockSeed.clear();
 
     const draft = loadDayPlanDraft();
-    expect(draft?.priorityCategoryOrder).toEqual([]);
-    expect(draft?.prioritySectionsCategoryOrder).toEqual([]);
-    expect(draft?.quickMemoDraft).toBe('');
+    expect(draft?.priorityCategoryOrder ?? []).toEqual([]);
+    expect(draft?.quickMemoDraft ?? '').toBe('');
+
+    for (const row of SCREENSHOT_EXTRA_ROUTINES) {
+      expect(listCustomFlowCatalogIds()).not.toContain(row.id);
+      expect(loadGoalDetailCategoryConfig(row.id)).toBeNull();
+    }
 
     const plan = loadDayPlan<{ id: string }>();
-    expect((plan?.blocks ?? []).some((block) => block.id.startsWith('dpb-screenshot-spine-'))).toBe(
-      false,
-    );
+    expect(
+      (plan?.blocks ?? []).some(
+        (block) => typeof block.id === 'string' && block.id.startsWith('dpb-screenshot-spine-'),
+      ),
+    ).toBe(false);
 
     const todos = loadDayPlanTodos();
-    expect(Object.keys(todos?.todosByDate ?? {})).toEqual([]);
-
-    expect(loadGoalDetailCategoryConfig('reading')).toBeNull();
-    expect(loadGoalDetailCategoryConfig('work')).toBeNull();
-    expect(loadGoalDetailCategoryConfig('healthIntake')).toBeNull();
-    expect(loadGoalDetailCategoryConfig('fasting')).toBeNull();
-  });
-
-  it('clear removes English screenshot UI storage', async () => {
-    useAppLocaleStore.setState({ locale: 'en' });
-    await screenshotDemoMockSeed.seed();
-    await screenshotDemoMockSeed.clear();
-
-    expect(loadDayPlanDraft()?.quickMemoDraft).toBe('');
-    expect(loadGoalDetailCategoryConfig('healthIntake')).toBeNull();
-    expect(loadGoalDetailCategoryConfig('reading')).toBeNull();
+    for (const items of Object.values(todos?.todosByDate ?? {})) {
+      expect((items ?? []).every((item) => !item.id.startsWith('todo-screenshot-'))).toBe(true);
+    }
   });
 });

@@ -84,9 +84,11 @@ export {
   hasPokitWeekTourProgress,
   isPokitWeekTourChecklistComplete,
   loadPokitWeekTourFirstTipSeen,
+  loadPokitWeekTourLayoutNudgeSeen,
   loadPokitWeekTourSeeded,
   loadPokitWeekTourSeededDate,
   markPokitWeekTourFirstTipSeen,
+  markPokitWeekTourLayoutNudgeSeen,
   markPokitWeekTourSeeded,
   nextOrderWithPokitWeekTourSeed,
 } from './pokitWeekTourStorage';

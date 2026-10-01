@@ -1,5 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, Share, StyleSheet, View } from 'react-native';
 
@@ -24,7 +25,9 @@ import {
   isPokitWeekTourFlowId,
   loadGoalDetailCategoryConfig,
   loadPokitWeekTourFirstTipSeen,
+  loadPokitWeekTourLayoutNudgeSeen,
   markPokitWeekTourFirstTipSeen,
+  markPokitWeekTourLayoutNudgeSeen,
   POKIT_WEEK_TOUR_STEP_COUNT,
   POST_IT_LIGHT_INK,
   resolvePokitWeekTourStepIndex,
@@ -36,6 +39,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
+import { PokitWeekTourLayoutNudgeSheet } from './PokitWeekTourLayoutNudgeSheet';
 import { PokitWeekTourTipSheet } from './PokitWeekTourTipSheet';
 
 type ChecklistTask = { id: string; text: string; done: boolean };
@@ -161,6 +165,8 @@ export function PriorityBagRowAccordionPanel({
   const [revision, setRevision] = useState(0);
   const [tourTipStep, setTourTipStep] = useState<number | null>(null);
   const [tourTipTaskId, setTourTipTaskId] = useState<string | null>(null);
+  const [layoutNudgeVisible, setLayoutNudgeVisible] = useState(false);
+  const router = useRouter();
   const goalKey = asGoalDetailCategoryKey(categoryKey);
   const summaryPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -407,11 +413,26 @@ export function PriorityBagRowAccordionPanel({
     }
     setTourTipStep(null);
     setTourTipTaskId(null);
+    // 「닫기」「알겠어요」모두 여기로 옴 — 체크리스트 전부 완료 여부와 무관, 1회만
+    if (!loadPokitWeekTourLayoutNudgeSeen()) {
+      setTimeout(() => setLayoutNudgeVisible(true), 280);
+    }
   }, [tourTipStep]);
 
   const confirmTourTip = useCallback(() => {
     closeTourTip();
   }, [closeTourTip]);
+
+  const dismissLayoutNudge = useCallback(() => {
+    markPokitWeekTourLayoutNudgeSeen();
+    setLayoutNudgeVisible(false);
+  }, []);
+
+  const openLayoutFromNudge = useCallback(() => {
+    markPokitWeekTourLayoutNudgeSeen();
+    setLayoutNudgeVisible(false);
+    router.push('/layout-settings');
+  }, [router]);
 
   const removeTask = useCallback(
     (id: string) => {
@@ -599,6 +620,12 @@ export function PriorityBagRowAccordionPanel({
           isDark={isDark}
           onClose={closeTourTip}
           onConfirm={confirmTourTip}
+        />
+        <PokitWeekTourLayoutNudgeSheet
+          visible={layoutNudgeVisible}
+          isDark={isDark}
+          onClose={dismissLayoutNudge}
+          onOpenLayout={openLayoutFromNudge}
         />
 
         <View style={s.toolbar}>

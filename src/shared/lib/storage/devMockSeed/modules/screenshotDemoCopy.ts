@@ -57,6 +57,9 @@ const KO: ScreenshotDemoCopy = {
     { what: '친구에게 회신 보내기', who: '나' },
     { what: '주간 리뷰 초안 쓰기', who: '나' },
     { what: '세탁물 개기', who: '나' },
+    { what: '약 저녁분 챙기기', who: '나' },
+    { what: '내일 가방 미리 싸기', who: '나' },
+    { what: '책상 위 정리', who: '나' },
   ],
   reading: {
     displayName: '독서',
@@ -128,6 +131,9 @@ const EN: ScreenshotDemoCopy = {
     { what: 'Reply to a friend', who: 'Me' },
     { what: 'Draft the weekly review', who: 'Me' },
     { what: 'Fold the laundry', who: 'Me' },
+    { what: 'Take evening meds', who: 'Me' },
+    { what: 'Pack tomorrow’s bag', who: 'Me' },
+    { what: 'Clear the desk', who: 'Me' },
   ],
   reading: {
     displayName: 'Reading',
@@ -199,6 +205,9 @@ const JA: ScreenshotDemoCopy = {
     { what: '友人に返信する', who: '自分' },
     { what: '週間レビューの下書き', who: '自分' },
     { what: '洗濯物をたたむ', who: '自分' },
+    { what: '夜の薬を用意', who: '自分' },
+    { what: '明日のバッグを準備', who: '自分' },
+    { what: 'デスク周りを片づける', who: '自分' },
   ],
   reading: {
     displayName: '読書',
@@ -268,6 +277,8 @@ export function getScreenshotDemoCopy(locale: AppLocale): ScreenshotDemoCopy {
 
 /** 스크린샷 타임라인 블록용 표시명 */
 export function getScreenshotSpineLabel(categoryKey: string, locale: AppLocale): string {
+  const extra = getScreenshotExtraRoutineLabel(categoryKey, locale);
+  if (extra) return extra;
   const labeled = getSeedCategoryLabel(categoryKey, locale);
   if (labeled !== categoryKey) return labeled;
   return getScreenshotDemoCopy(locale).spineFallbackLabel;
@@ -283,4 +294,173 @@ export function isScreenshotHealthIntakeSummary(summary: string): boolean {
     summary.includes('Water 1.2L') ||
     summary.includes('水1.2L')
   );
+}
+
+/** 스크린샷 데모 전용 추가 루틴 — clear 시 id prefix로 제거 */
+export const SCREENSHOT_EXTRA_FLOW_ID_PREFIX = 'customFlow:screenshot_demo_' as const;
+
+export type ScreenshotExtraRoutineDef = {
+  id: `${typeof SCREENSHOT_EXTRA_FLOW_ID_PREFIX}${string}`;
+  groupKey: 'health' | 'productivity';
+  icon: string;
+  color: string;
+  label: Record<AppLocale, string>;
+  summary: Record<AppLocale, string>;
+};
+
+export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
+  {
+    id: 'customFlow:screenshot_demo_01',
+    groupKey: 'productivity',
+    icon: 'pencil.and.list.clipboard',
+    color: '#0ea5e9',
+    label: { ko: '아침 일기', en: 'Morning journal', ja: '朝の日記' },
+    summary: {
+      ko: '일어나서 짧게 오늘을 적어 둬요.',
+      en: 'Jot a short morning note.',
+      ja: '起きてすぐ今日を短く書く。',
+    },
+  },
+  {
+    id: 'customFlow:screenshot_demo_02',
+    groupKey: 'productivity',
+    icon: 'brain.head.profile',
+    color: '#2563eb',
+    label: { ko: '딥 워크', en: 'Deep work', ja: 'ディープワーク' },
+    summary: {
+      ko: '방해 없이 한 가지에 깊게 몰입해요.',
+      en: 'Focus deeply without interruptions.',
+      ja: '邪魔なく深く集中する。',
+    },
+  },
+  {
+    id: 'customFlow:screenshot_demo_03',
+    groupKey: 'productivity',
+    icon: 'text.book.closed.fill',
+    color: '#7c3aed',
+    label: { ko: '영어 공부', en: 'English study', ja: '英語学習' },
+    summary: {
+      ko: '단어·회화를 조금씩 쌓아요.',
+      en: 'Build vocab and conversation daily.',
+      ja: '単語・会話を少しずつ積み上げる。',
+    },
+  },
+  {
+    id: 'customFlow:screenshot_demo_04',
+    groupKey: 'health',
+    icon: 'figure.walk',
+    color: '#10b981',
+    label: { ko: '점심 산책', en: 'Lunch walk', ja: '昼の散歩' },
+    summary: {
+      ko: '식후에 가볍게 걸으며 환기해요.',
+      en: 'A light walk after lunch.',
+      ja: '食後に軽く歩いてリフレッシュ。',
+    },
+  },
+  {
+    id: 'customFlow:screenshot_demo_05',
+    groupKey: 'productivity',
+    icon: 'frying.pan.fill',
+    color: '#ea580c',
+    label: { ko: '저녁 요리', en: 'Cook dinner', ja: '夕食づくり' },
+    summary: {
+      ko: '집밥을 간단히 해 먹어요.',
+      en: 'Cook a simple home dinner.',
+      ja: 'シンプルな家ご飯をつくる。',
+    },
+  },
+  {
+    id: 'customFlow:screenshot_demo_06',
+    groupKey: 'productivity',
+    icon: 'sparkles',
+    color: '#0891b2',
+    label: { ko: '집 정리', en: 'Tidy home', ja: '家の片づけ' },
+    summary: {
+      ko: '방·책상을 짧게 정리해요.',
+      en: 'Quick tidy of desk and room.',
+      ja: '部屋・デスクを短く片づける。',
+    },
+  },
+  {
+    id: 'customFlow:screenshot_demo_07',
+    groupKey: 'productivity',
+    icon: 'cart.fill',
+    color: '#f59e0b',
+    label: { ko: '장보기', en: 'Groceries', ja: '買い物' },
+    summary: {
+      ko: '필요한 재료를 사러 나가요.',
+      en: 'Pick up what you need.',
+      ja: '必要な食材を買いに行く。',
+    },
+  },
+  {
+    id: 'customFlow:screenshot_demo_08',
+    groupKey: 'health',
+    icon: 'headphones',
+    color: '#d946ef',
+    label: { ko: '음악 감상', en: 'Listen to music', ja: '音楽鑑賞' },
+    summary: {
+      ko: '좋아하는 곡으로 마음을 풀어요.',
+      en: 'Unwind with favorite tracks.',
+      ja: '好きな曲でリラックス。',
+    },
+  },
+  {
+    id: 'customFlow:screenshot_demo_09',
+    groupKey: 'productivity',
+    icon: 'heart.text.square.fill',
+    color: '#14b8a6',
+    label: { ko: '감사 일기', en: 'Gratitude note', ja: '感謝日記' },
+    summary: {
+      ko: '오늘 고마운 일을 한 줄 남겨요.',
+      en: 'Write one thing you’re grateful for.',
+      ja: '今日感謝したことを一行残す。',
+    },
+  },
+  {
+    id: 'customFlow:screenshot_demo_10',
+    groupKey: 'productivity',
+    icon: 'phone.fill',
+    color: '#3b82f6',
+    label: { ko: '가족 통화', en: 'Call family', ja: '家族に電話' },
+    summary: {
+      ko: '짧게라도 안부를 전해요.',
+      en: 'A short check-in call.',
+      ja: '短くても安否を伝える。',
+    },
+  },
+  {
+    id: 'customFlow:screenshot_demo_11',
+    groupKey: 'health',
+    icon: 'leaf.fill',
+    color: '#22c55e',
+    label: { ko: '디지털 디톡스', en: 'Digital detox', ja: 'デジタルデトックス' },
+    summary: {
+      ko: '알림을 끄고 화면에서 멀어져요.',
+      en: 'Mute alerts and step away.',
+      ja: '通知を切って画面から離れる。',
+    },
+  },
+  {
+    id: 'customFlow:screenshot_demo_12',
+    groupKey: 'health',
+    icon: 'moon.zzz.fill',
+    color: '#64748b',
+    label: { ko: '수면 준비', en: 'Wind down', ja: '就寝準備' },
+    summary: {
+      ko: '취침 전 루틴으로 하루를 닫아요.',
+      en: 'Close the day with a bedtime routine.',
+      ja: '就寝前のルーチンで一日を閉じる。',
+    },
+  },
+];
+
+export function isScreenshotExtraFlowId(id: string): boolean {
+  return id.startsWith(SCREENSHOT_EXTRA_FLOW_ID_PREFIX);
+}
+
+export function getScreenshotExtraRoutineLabel(id: string, locale: AppLocale): string | null {
+  const row = SCREENSHOT_EXTRA_ROUTINES.find((item) => item.id === id);
+  if (!row) return null;
+  return row.label[locale] ?? row.label.en;
 }

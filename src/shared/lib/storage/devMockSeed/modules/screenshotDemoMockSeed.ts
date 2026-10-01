@@ -6,6 +6,7 @@ import {
 } from '@shared/lib/i18n/lib/builtinFlowLabels';
 
 import {
+  BUILTIN_ABSTAIN_FLOW_ID,
   BUILTIN_DAILY_EXERCISE_FLOW_ID,
   BUILTIN_STRETCHING_FLOW_ID,
   DEFAULT_BUILTIN_CUSTOM_FLOWS,
@@ -22,14 +23,24 @@ import {
   removeGoalDetailCategoryConfig,
   saveGoalDetailCategoryConfig,
 } from '../../goalDetailSettingsStorage';
-import { appendRoutineCatalogSelectionKeys } from '../../priorityCatalogFixedRoutinesStorage';
+import {
+  appendCustomFlowCatalogEntry,
+  removeCustomFlowCatalogId,
+} from '../../customFlowCatalogStorage';
+import {
+  appendRoutineCatalogSelectionKeys,
+  loadRoutineCatalogSelectionKeys,
+  saveRoutineCatalogSelectionKeys,
+} from '../../priorityCatalogFixedRoutinesStorage';
 
 import type { DevMockSeedModule } from '../types';
 import {
   getScreenshotDemoCopy,
   getScreenshotSpineLabel,
+  isScreenshotExtraFlowId,
   isScreenshotHealthIntakeSummary,
   isScreenshotQuickMemoMarker,
+  SCREENSHOT_EXTRA_ROUTINES,
 } from './screenshotDemoCopy';
 
 const SCREENSHOT_READING_BOOK_IDS = [
@@ -54,25 +65,48 @@ function todayDateKey(now = new Date()): string {
   return `${y}-${m}-${d}`;
 }
 
-/** 현재 카탈로그 기준 담기 — `work`/`water`/`medicine` 제외 */
+/** 현재 카탈로그 + 스크린샷 전용 커스텀으로 담기를 가득 채움 */
 function buildPriorityCategoryOrder(): string[] {
   return [
-    'reading',
     'healthIntake',
+    BUILTIN_STRETCHING_FLOW_ID,
+    'reading',
+    SCREENSHOT_EXTRA_ROUTINES[0]!.id, // 아침 일기
+    SCREENSHOT_EXTRA_ROUTINES[1]!.id, // 딥 워크
+    SCREENSHOT_EXTRA_ROUTINES[2]!.id, // 영어 공부
+    BUILTIN_ABSTAIN_FLOW_ID,
     BUILTIN_DAILY_EXERCISE_FLOW_ID,
-    BUILTIN_STRETCHING_FLOW_ID, // 스트레칭
+    SCREENSHOT_EXTRA_ROUTINES[3]!.id, // 점심 산책
+    SCREENSHOT_EXTRA_ROUTINES[4]!.id, // 저녁 요리
+    SCREENSHOT_EXTRA_ROUTINES[5]!.id, // 집 정리
+    SCREENSHOT_EXTRA_ROUTINES[6]!.id, // 장보기
+    SCREENSHOT_EXTRA_ROUTINES[7]!.id, // 음악 감상
+    SCREENSHOT_EXTRA_ROUTINES[8]!.id, // 감사 일기
+    SCREENSHOT_EXTRA_ROUTINES[9]!.id, // 가족 통화
+    SCREENSHOT_EXTRA_ROUTINES[10]!.id, // 디지털 디톡스
     'fasting',
+    SCREENSHOT_EXTRA_ROUTINES[11]!.id, // 수면 준비
   ];
 }
 
-function buildSectionsMealSlots(): Record<string, DayMealSlot[]> {
-  return {
-    healthIntake: ['morning'],
-    reading: ['morning', 'lunch'],
-    [BUILTIN_DAILY_EXERCISE_FLOW_ID]: ['lunch'],
-    [BUILTIN_STRETCHING_FLOW_ID]: ['dinner'],
-    fasting: ['dinner'],
-  };
+const IMPORTANCE_CYCLE = ['pink', 'mint', 'yellow', 'lavender'] as const;
+
+function buildImportanceByOrder(order: string[]): Record<string, (typeof IMPORTANCE_CYCLE)[number]> {
+  const out: Record<string, (typeof IMPORTANCE_CYCLE)[number]> = {};
+  order.forEach((key, index) => {
+    out[key] = IMPORTANCE_CYCLE[index % IMPORTANCE_CYCLE.length]!;
+  });
+  return out;
+}
+
+function buildSectionsMealSlots(order: string[]): Record<string, DayMealSlot[]> {
+  const slots: DayMealSlot[] = ['morning', 'lunch', 'dinner'];
+  const out: Record<string, DayMealSlot[]> = {};
+  order.forEach((key, index) => {
+    const primary = slots[index % slots.length]!;
+    out[key] = index % 5 === 0 ? [primary, slots[(index + 1) % slots.length]!] : [primary];
+  });
+  return out;
 }
 
 type SpineSeedBlock = {
@@ -84,50 +118,78 @@ type SpineSeedBlock = {
 };
 
 function buildSpineSeedBlocks(): SpineSeedBlock[] {
-  return [
-    {
-      id: `${SCREENSHOT_SPINE_ID_PREFIX}01`,
-      categoryKey: 'healthIntake',
-      startMinutes: 8 * 60,
-      endMinutes: 8 * 60 + 25,
-      order: 0,
-    },
-    {
-      id: `${SCREENSHOT_SPINE_ID_PREFIX}02`,
-      categoryKey: 'reading',
-      startMinutes: 9 * 60,
-      endMinutes: 10 * 60,
-      order: 1,
-    },
-    {
-      id: `${SCREENSHOT_SPINE_ID_PREFIX}03`,
-      categoryKey: BUILTIN_DAILY_EXERCISE_FLOW_ID,
-      startMinutes: 12 * 60 + 30,
-      endMinutes: 13 * 60 + 20,
-      order: 2,
-    },
-    {
-      id: `${SCREENSHOT_SPINE_ID_PREFIX}04`,
-      categoryKey: BUILTIN_STRETCHING_FLOW_ID,
-      startMinutes: 18 * 60,
-      endMinutes: 18 * 60 + 20,
-      order: 3,
-    },
-    {
-      id: `${SCREENSHOT_SPINE_ID_PREFIX}05`,
-      categoryKey: 'fasting',
-      startMinutes: 20 * 60,
-      endMinutes: 20 * 60 + 30,
-      order: 4,
-    },
+  const order = buildPriorityCategoryOrder();
+  /** 07:00~22:30 사이를 촘촘히 — 약 18개 블록 */
+  const starts = [
+    7 * 60,
+    7 * 60 + 40,
+    8 * 60 + 20,
+    9 * 60,
+    10 * 60,
+    11 * 60,
+    11 * 60 + 40,
+    12 * 60 + 30,
+    13 * 60 + 20,
+    14 * 60 + 10,
+    15 * 60,
+    16 * 60,
+    17 * 60,
+    18 * 60,
+    18 * 60 + 50,
+    19 * 60 + 40,
+    20 * 60 + 30,
+    21 * 60 + 20,
   ];
+  const durations = [35, 35, 40, 55, 50, 35, 40, 45, 40, 45, 50, 50, 50, 40, 40, 40, 40, 40];
+  return order.slice(0, starts.length).map((categoryKey, index) => {
+    const startMinutes = starts[index]!;
+    const endMinutes = startMinutes + durations[index]!;
+    return {
+      id: `${SCREENSHOT_SPINE_ID_PREFIX}${String(index + 1).padStart(2, '0')}`,
+      categoryKey,
+      startMinutes,
+      endMinutes,
+      order: index,
+    };
+  });
+}
+
+function seedScreenshotExtraRoutines(): void {
+  const locale = getAppLocale();
+  for (const row of SCREENSHOT_EXTRA_ROUTINES) {
+    appendCustomFlowCatalogEntry({ id: row.id, groupKey: row.groupKey });
+    saveGoalDetailCategoryConfig(row.id, {
+      templateKey: 'checklist',
+      displayName: row.label[locale] ?? row.label.en,
+      summary: row.summary[locale] ?? row.summary.en,
+      icon: row.icon,
+      accentColor: row.color,
+      checklist: [
+        {
+          id: `${row.id}_item_01`,
+          text: row.label[locale] ?? row.label.en,
+          done: false,
+        },
+      ],
+    });
+  }
+  appendGoalDetailCommittedCategoryKeys(SCREENSHOT_EXTRA_ROUTINES.map((row) => row.id));
+}
+
+function clearScreenshotExtraRoutines(): void {
+  for (const row of SCREENSHOT_EXTRA_ROUTINES) {
+    removeCustomFlowCatalogId(row.id);
+    removeGoalDetailCategoryConfig(row.id);
+  }
+  const selection = loadRoutineCatalogSelectionKeys().filter((key) => !isScreenshotExtraFlowId(key));
+  saveRoutineCatalogSelectionKeys(selection);
 }
 
 function seedDayPlanDraft(today: string): void {
   const order = buildPriorityCategoryOrder();
   /** 히스토리 동기화가 시드 완료를 지우지 않도록 오늘 담기 대부분을 완료로 둠 */
   const completedFocusCategoryKeys = order.filter(
-    (key) => key !== 'fasting', // 체중조절만 미완료로 남겨 진행 중 느낌
+    (key) => key !== 'fasting' && key !== SCREENSHOT_EXTRA_ROUTINES[11]!.id,
   );
   const prev = loadDayPlanDraft();
   saveDayPlanDraft({
@@ -157,13 +219,7 @@ function seedDayPlanDraft(today: string): void {
     priorityStart: '07:00',
     priorityEnd: '23:00',
     priorityCategoryOrder: order,
-    priorityCategoryImportance: {
-      reading: 'pink',
-      healthIntake: 'pink',
-      [BUILTIN_DAILY_EXERCISE_FLOW_ID]: 'mint',
-      [BUILTIN_STRETCHING_FLOW_ID]: 'yellow',
-      fasting: 'lavender',
-    },
+    priorityCategoryImportance: buildImportanceByOrder(order),
     quickMemoDraft: (() => {
       const copy = getScreenshotDemoCopy(getAppLocale());
       return [copy.quickMemoMarker, ...copy.quickMemoLines].join('\n');
@@ -175,7 +231,7 @@ function seedDayPlanDraft(today: string): void {
     prioritySpineLinkMode: 'independent',
     priorityBagLinkMode: 'independent',
     prioritySectionsCategoryOrder: order,
-    prioritySectionsMealSlots: buildSectionsMealSlots(),
+    prioritySectionsMealSlots: buildSectionsMealSlots(order),
     routineHistoryPlannedKeysByDate: {
       ...(prev?.routineHistoryPlannedKeysByDate ?? {}),
       [today]: order,
@@ -218,7 +274,7 @@ function seedSpineTimeline(today: string): void {
     };
   });
   const completedIds = spineBlocks
-    .filter((block) => block.order <= 2)
+    .filter((block) => block.order <= Math.floor(spineBlocks.length * 0.55))
     .map((block) => block.id);
 
   saveDayPlan({
@@ -264,6 +320,27 @@ function seedTodos(today: string): void {
     },
     {
       priority: 'high' as const,
+      startMinutes: 16 * 60 + 30,
+      endMinutes: 17 * 60,
+      inProgress: false,
+      isDone: false,
+    },
+    {
+      priority: 'medium' as const,
+      startMinutes: 18 * 60,
+      endMinutes: 18 * 60 + 40,
+      inProgress: false,
+      isDone: false,
+    },
+    {
+      priority: 'low' as const,
+      startMinutes: 19 * 60 + 10,
+      endMinutes: 19 * 60 + 30,
+      inProgress: false,
+      isDone: true,
+    },
+    {
+      priority: 'high' as const,
       startMinutes: 20 * 60,
       endMinutes: 21 * 60,
       inProgress: false,
@@ -282,7 +359,7 @@ function seedTodos(today: string): void {
     todosByDate: {
       ...(prev?.todosByDate ?? {}),
       [today]: copy.todos.map((todo, index) => {
-        const schedule = schedules[index]!;
+        const schedule = schedules[index] ?? schedules[schedules.length - 1]!;
         return {
           id: `${SCREENSHOT_TODO_ID_PREFIX}${String(index + 1).padStart(2, '0')}`,
           what: todo.what,
@@ -588,11 +665,12 @@ function restoreBuiltinRoutineLabelsToKo(): void {
 }
 export const screenshotDemoMockSeed: DevMockSeedModule = {
   id: 'screenshot-demo',
-  version: 7,
+  version: 8,
   async seed() {
     const today = todayDateKey();
     markDailyRhythmOnboardingCompleted();
     seedLocalizedBuiltinRoutines();
+    seedScreenshotExtraRoutines();
     seedDayPlanDraft(today);
     seedSpineTimeline(today);
     seedTodos(today);
@@ -602,7 +680,7 @@ export const screenshotDemoMockSeed: DevMockSeedModule = {
     seedDayNotes(today);
     return {
       screenshotRoutines: buildPriorityCategoryOrder().length,
-      screenshotTodos: 5,
+      screenshotTodos: getScreenshotDemoCopy(getAppLocale()).todos.length,
       screenshotBooks: SCREENSHOT_READING_BOOK_IDS.length,
       screenshotNotes: SCREENSHOT_NOTE_PAGE_IDS.length,
     };
@@ -613,6 +691,7 @@ export const screenshotDemoMockSeed: DevMockSeedModule = {
     clearScreenshotTodos();
     clearScreenshotReadingLibrary();
     clearScreenshotWorkNote();
+    clearScreenshotExtraRoutines();
     restoreBuiltinRoutineLabelsToKo();
     clearScreenshotCategoryIfSeeded(
       'healthIntake',

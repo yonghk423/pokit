@@ -58,6 +58,25 @@ export function markPokitWeekTourFirstTipSeen(): void {
   });
 }
 
+type PersistedPokitWeekTourLayoutNudge = {
+  seen: boolean;
+};
+
+/** 투어 완료 후 「레이아웃 설정」안내를 이미 봤는지 */
+export function loadPokitWeekTourLayoutNudgeSeen(): boolean {
+  const v = localStorageClient.getJson<PersistedPokitWeekTourLayoutNudge>(
+    StorageKeys.pokitWeekTourLayoutNudgeSeen,
+  );
+  return v?.seen === true;
+}
+
+export function markPokitWeekTourLayoutNudgeSeen(): void {
+  localStorageClient.setJson<PersistedPokitWeekTourLayoutNudge>(
+    StorageKeys.pokitWeekTourLayoutNudgeSeen,
+    { seen: true },
+  );
+}
+
 /** 체크리스트 7단계가 모두 완료됐는지 — 완료 후에는 빈 담기에 다시 넣지 않는다. */
 export function isPokitWeekTourChecklistComplete(): boolean {
   const raw = loadGoalDetailCategoryConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
