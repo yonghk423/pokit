@@ -12,7 +12,6 @@ import {
   normalizeHexColor,
   type Hsv,
 } from '@shared/lib/colorMath';
-import { RetroFlatColors } from '@shared/config/retroFlat';
 
 type Props = {
   value: string;
@@ -29,6 +28,9 @@ type Props = {
 const SV_HEIGHT = 132;
 const HUE_HEIGHT = 20;
 const FIELD_SHADOW = 2;
+/** 루틴 상세 레이아웃과 같은 옅은 솔리드 음영 */
+const SOFT_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
+const SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
 
 function applySvFromPoint(
   x: number,
@@ -168,7 +170,7 @@ export function HsvColorPicker({ value, onChange, onChangeEnd, ink, isDark }: Pr
 
   const hueCursorLeft = clamp01(hsv.h / 360) * Math.max(hueWidth - 16, 0);
   const hueColor = hueToHex(hsv.h);
-  const shadowInk = isDark ? RetroFlatColors.dark.solidShadow : '#000000';
+  const shadowInk = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
 
   return (
     <View style={styles.root}>

@@ -23,7 +23,7 @@ export type BrutalConfirmButtonProps = {
   accessibilityLabel?: string;
   /** 면 색. 생략 시 시티팝 민트 primary */
   fill?: string;
-  /** 글자색. 생략 시 민트 위 틸 잉크 */
+  /** 글자색. 생략 시 민트 위 검정 */
   labelColor?: string;
   /** 윤곽선 */
   border?: string;
@@ -45,7 +45,8 @@ export function resolveBrutalConfirmPrimaryColors(isDark: boolean) {
   return {
     /** 항상 밝은 민트 면 (다크 모드도 primaryContainer 대신 primary) */
     fill: isDark ? c.primary : c.primaryContainer,
-    labelColor: isDark ? c.primaryOn : c.primary,
+    /** 민트 위 글자 — 검정 (틸 잉크 대신) */
+    labelColor: isDark ? c.primaryOn : '#000000',
     border: c.border,
     shadowColor: isDark ? c.solidShadow : c.border,
     /**
@@ -53,7 +54,7 @@ export function resolveBrutalConfirmPrimaryColors(isDark: boolean) {
      * opacity로 흐리면 solid shadow가 비쳐 검게 보임.
      */
     disabledFill: isDark ? '#6FA8AA' : '#C5E8E9',
-    disabledLabelColor: isDark ? 'rgba(0,32,33,0.55)' : '#5A8587',
+    disabledLabelColor: isDark ? 'rgba(0,32,33,0.55)' : 'rgba(0,0,0,0.45)',
   };
 }
 

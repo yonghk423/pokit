@@ -9,6 +9,7 @@ import {
 } from '@entities/day-plan';
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
+import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import {
   headerArtForVariant,
@@ -25,25 +26,34 @@ type Props = {
   onPressTemplate: (templateKey: CustomFlowTemplateKey) => void;
 };
 
-const BRUTAL_SHADOW_SM = 2;
+/** 설정 탭 SettingsRowIcon / settingsChrome 과 동일 스펙 */
+const SHADOW_SM = 2;
+const ICON_FACE = 34;
+const ICON_BORDER = 1;
 
-/** 루틴 템플릿 목록 — 솔리드 음영만 (테두리 없음) */
+/**
+ * 루틴 템플릿 목록 — 설정 탭 리스트와 동일:
+ * 카드 셸 + 구분선 행 + 흰 면·검정 테두리·솔리드 음영 아이콘
+ */
 export function RoutineTemplateListPanel({
   ink,
   muted,
   line: _line,
-  cardBg,
+  cardBg: _cardBg,
   isDark = false,
   onPressTemplate,
 }: Props) {
   const { t, locale } = useTranslation();
   const entries = useMemo(() => listCustomFlowTemplateCatalogEntries(), [locale]);
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  /** 설정 화면과 동일 — 순검정보다 한 단계 흐린 오프셋 */
-  const rowShadowColor = isDark ? '#5A5C72' : '#707979';
-  const iconShadowColor = isDark ? '#4A6A6C' : '#9ECFD1';
-  const rowFace = isDark ? tone.surfaceAlt : cardBg || '#FFFFFF';
-  const iconBoxBg = isDark ? tone.primaryContainer : tone.primaryContainer;
+  const sectionSurface = tone.bg;
+  const sectionShadow = isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.10)';
+  const rowBorder = isDark ? 'rgba(241, 239, 255, 0.16)' : 'rgba(24, 26, 46, 0.12)';
+  const iconColor = isDark ? '#FAFAFA' : '#000000';
+  const iconBoxBg = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const iconBorder = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
+  const iconShadow = isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)';
+  const chevron = muted;
 
   return (
     <View style={styles.root}>
@@ -69,28 +79,15 @@ export function RoutineTemplateListPanel({
         </View>
       </View>
 
-      <View style={styles.list}>
-        {entries.map((entry) => (
-          <View
-            key={entry.key}
-            style={[
-              styles.rowShell,
-              { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
-            ]}>
-            <View
-              pointerEvents="none"
-              style={[
-                styles.rowShadow,
-                {
-                  backgroundColor: rowShadowColor,
-                  transform: [
-                    { translateX: BRUTAL_SHADOW_SM },
-                    { translateY: BRUTAL_SHADOW_SM },
-                  ],
-                },
-              ]}
-            />
+      <CityPopCardShell
+        isDark={isDark}
+        faceColor={sectionSurface}
+        shadowColor={sectionShadow}
+        shadowOffset={SHADOW_SM}>
+        <View style={styles.sectionInner}>
+          {entries.map((entry, index) => (
             <Pressable
+              key={entry.key}
               accessibilityRole="button"
               accessibilityLabel={t('fixedRoutine.templateDetailA11y', {
                 label: entry.label,
@@ -100,48 +97,45 @@ export function RoutineTemplateListPanel({
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onPressTemplate(entry.key);
               }}
-              style={({ pressed }) => [
-                styles.row,
+              style={[
+                styles.item,
                 {
-                  backgroundColor: rowFace,
+                  borderTopColor: rowBorder,
+                  borderTopWidth: index === 0 ? 0 : StyleSheet.hairlineWidth * 2,
                 },
-                pressed && { opacity: 0.92 },
               ]}>
-              <View
-                style={[
-                  styles.iconBoxShell,
-                  { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
-                ]}>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.iconBoxShadow,
-                    {
-                      backgroundColor: iconShadowColor,
-                      transform: [
-                        { translateX: BRUTAL_SHADOW_SM },
-                        { translateY: BRUTAL_SHADOW_SM },
-                      ],
-                    },
-                  ]}
-                />
-                <View style={[styles.iconBox, { backgroundColor: iconBoxBg }]}>
-                  <IconSymbol name={entry.icon} size={16} color={ink} />
+              <View style={styles.itemLeft}>
+                <View style={[styles.iconShell, { marginRight: SHADOW_SM, marginBottom: SHADOW_SM }]}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.iconShadow,
+                      {
+                        backgroundColor: iconShadow,
+                        transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.iconBox,
+                      { backgroundColor: iconBoxBg, borderColor: iconBorder },
+                    ]}>
+                    <IconSymbol name={entry.icon} size={16} color={iconColor} />
+                  </View>
+                </View>
+                <View style={styles.itemTextWrap}>
+                  <ThemedText style={[styles.itemTitle, { color: ink }]}>{entry.label}</ThemedText>
+                  <ThemedText style={[styles.itemDesc, { color: muted }]} numberOfLines={2}>
+                    {entry.description}
+                  </ThemedText>
                 </View>
               </View>
-
-              <View style={styles.cardText}>
-                <ThemedText style={[styles.title, { color: ink }]}>{entry.label}</ThemedText>
-                <ThemedText style={[styles.desc, { color: muted }]} numberOfLines={2}>
-                  {entry.description}
-                </ThemedText>
-              </View>
-
-              <IconSymbol name="chevron.right" size={13} color={muted} />
+              <IconSymbol name="chevron.right" size={14} color={chevron} />
             </Pressable>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      </CityPopCardShell>
 
       <RoutineAtmosphereFooterStrip variant="templates" isDark={isDark} density="rich" />
     </View>
@@ -191,61 +185,62 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     letterSpacing: -0.1,
   },
-  list: {
-    width: '100%',
-    gap: 10,
+  sectionInner: {
+    overflow: 'visible',
   },
-  rowShell: {
-    position: 'relative',
+  item: {
+    minHeight: 64,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
-  rowShadow: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 0,
-    borderRadius: 0,
-  },
-  row: {
+  itemLeft: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderWidth: 0,
-    borderRadius: 0,
-    zIndex: 1,
   },
-  iconBoxShell: {
+  iconShell: {
     position: 'relative',
+    width: ICON_FACE + SHADOW_SM,
+    height: ICON_FACE + SHADOW_SM,
     flexShrink: 0,
+    overflow: 'visible',
   },
-  iconBoxShadow: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 0,
+  iconShadow: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: ICON_FACE,
+    height: ICON_FACE,
     borderRadius: 0,
   },
   iconBox: {
-    width: 36,
-    height: 36,
+    width: ICON_FACE,
+    height: ICON_FACE,
     borderRadius: 0,
-    borderWidth: 0,
+    borderWidth: ICON_BORDER,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
+    overflow: 'hidden',
   },
-  cardText: {
+  itemTextWrap: {
     flex: 1,
-    minWidth: 0,
     gap: 2,
+    minWidth: 0,
   },
-  title: {
+  itemTitle: {
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: -0.2,
-    lineHeight: 17,
   },
-  desc: {
+  itemDesc: {
     fontSize: 11,
     fontWeight: '500',
-    letterSpacing: -0.1,
     lineHeight: 15,
   },
 });

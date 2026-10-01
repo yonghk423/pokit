@@ -845,6 +845,7 @@ function MemoTemplateView({
           <BrutalConfirmButton
             label={t('common.save')}
             accessibilityLabel={t('customFlowTemplate.saveMemoA11y')}
+            labelColor={ink}
             onPress={handleSave}
             align="stretch"
           />
@@ -928,34 +929,16 @@ function ChecklistTemplateView({
   variant?: 'checklist' | 'abstain';
 }) {
   const { t } = useTranslation();
-  const { ink, muted, line, surface } = theme;
+  const { ink, muted } = theme;
   const isNote = useUiSurfacePresentation() === 'note';
-  const isDark = useColorScheme() === 'dark';
-  const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const shadowInk = isDark ? tone.solidShadow : tone.text;
   const tasks = cfg.checklist;
-  const doneCount = tasks.filter((t) => t.done).length;
-  const total = tasks.length;
-  const ratio = total > 0 ? doneCount / total : 0;
+  const doneCount = tasks.filter((task) => task.done).length;
   const [draft, setDraft] = useState('');
   const templateKey = variant === 'abstain' ? 'abstain' : 'checklist';
-  const remaining = Math.max(0, total - doneCount);
-  const allDone = total > 0 && doneCount === total;
-  const completeBadge =
-    variant === 'abstain' ? t('customFlowTemplate.allAbstainDone') : t('customFlowTemplate.allTodosDone');
-  const addPlaceholder = variant === 'abstain' ? t('customFlowTemplate.addAbstainPlaceholder') : t('customFlowTemplate.addTodoPlaceholder');
-  const sectionTitle = variant === 'abstain' ? t('customFlowTemplate.abstainList') : t('customFlowTemplate.todoList');
-  const statusKicker = variant === 'abstain' ? t('customFlowTemplate.kept') : t('customFlowTemplate.statusComplete');
-  const remainingLabel =
+  const addPlaceholder =
     variant === 'abstain'
-      ? remaining > 0
-        ? t('common.countRemaining', { count: remaining })
-        : t('customFlowTemplate.allKept')
-      : remaining > 0
-        ? t('common.countRemaining', { count: remaining })
-        : t('customFlowTemplate.allDoneShort');
-  const checkShadow = 2;
-  const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
+      ? t('customFlowTemplate.addAbstainPlaceholder')
+      : t('customFlowTemplate.addTodoPlaceholder');
 
   const addTask = () => {
     const text = draft.trim();
@@ -969,223 +952,110 @@ function ChecklistTemplateView({
     setDraft('');
   };
 
+  const toggleTask = (id: string) => {
+    void Haptics.selectionAsync();
+    emit({
+      ...cfg,
+      templateKey,
+      checklist: tasks.map((task) => (task.id === id ? { ...task, done: !task.done } : task)),
+    });
+  };
+
+  const removeTask = (id: string) => {
+    void Haptics.selectionAsync();
+    emit({
+      ...cfg,
+      templateKey,
+      checklist: tasks.filter((task) => task.id !== id),
+    });
+  };
+
+  /** 루틴 행 아코디언(PriorityBagRowAccordionPanel)과 같은 노트형 할 일 체크 UI */
   return (
     <View style={[styles.root, styles.checklistRoot, isNote && styles.rootNote, isNote && styles.checklistRootNote]}>
-      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
-        <View style={[styles.counterProgressInner, isNote && styles.counterProgressInnerNote]}>
-          <View style={styles.reminderProgressTop}>
-            <View style={styles.reminderProgressHero}>
-              <View style={styles.reminderProgressCountRow}>
-                <ThemedText style={[styles.reminderProgressCount, { color: ink }]}>
-                  {doneCount}
-                </ThemedText>
-                <ThemedText style={[styles.reminderProgressTotal, { color: muted }]}>
-                  /{total}
-                </ThemedText>
-                <ThemedText style={[styles.reminderProgressLabel, { color: muted }]}>
-                  {statusKicker}
-                </ThemedText>
-              </View>
-            </View>
-            <View style={styles.reminderNextBlock}>
-              <ThemedText style={[styles.reminderNextKicker, { color: ink }]}>
-                {sectionTitle}
-              </ThemedText>
-              <ThemedText style={[styles.reminderNextTitle, { color: ink }]} numberOfLines={2}>
-                {allDone ? completeBadge : remainingLabel}
-              </ThemedText>
-              <ThemedText style={[styles.reminderNextMeta, { color: muted }]}>
-                {Math.round(ratio * 100)}%
-              </ThemedText>
-            </View>
-          </View>
+      <View style={[styles.checklistNoteBlock, { borderTopColor: muted }]}>
+        {tasks.length > 0 ? (
+          <ThemedText style={[styles.checklistProgressLine, { color: muted }]}>
+            {doneCount}/{tasks.length}
+          </ThemedText>
+        ) : (
+          <ThemedText style={[styles.sub, { color: muted }]}>{t('customFlowTemplate.addItemsHint')}</ThemedText>
+        )}
+
+        {tasks.map((task, index) => (
           <View
+            key={task.id}
             style={[
-              styles.reminderProgressTrack,
-              isNote && styles.reminderProgressTrackNote,
-              !isNote && { marginRight: checkShadow, marginBottom: checkShadow },
+              styles.checklistNoteRow,
+              index < tasks.length - 1 && {
+                borderBottomWidth: StyleSheet.hairlineWidth * 2,
+                borderBottomColor: muted,
+                paddingBottom: 8,
+                marginBottom: 4,
+              },
             ]}>
-            {!isNote ? (
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: task.done }}
+              hitSlop={4}
+              onPress={() => toggleTask(task.id)}
+              style={styles.checklistNoteMain}>
               <View
-                pointerEvents="none"
                 style={[
-                  StyleSheet.absoluteFillObject,
+                  styles.checklistNoteCheck,
                   {
-                    backgroundColor: shadowInk,
-                    transform: [{ translateX: checkShadow }, { translateY: checkShadow }],
+                    borderColor: task.done ? ink : muted,
+                    backgroundColor: task.done ? ink : 'transparent',
                   },
-                ]}
-              />
-            ) : null}
-            <View
-              style={[
-                styles.reminderProgressFill,
-                {
-                  width: `${Math.round(ratio * 100)}%`,
-                  backgroundColor: tone.primaryContainer,
-                  zIndex: 1,
-                },
-              ]}
-            />
-          </View>
-        </View>
-      </ReminderBrutalShell>
-
-      <ReminderBrutalShell ink={ink} borderColor={line} shadowColor={shadowInk} backgroundColor={surface}>
-        <View style={[styles.checklistCardInner, isNote && styles.checklistCardInnerNote]}>
-          <View style={styles.reminderSectionHead}>
-            <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{sectionTitle}</ThemedText>
-            <ThemedText style={[styles.reminderCountBadge, { color: muted }]}>{t('common.countItems', { count: total })}</ThemedText>
-          </View>
-
-          {tasks.length === 0 ? (
-            <ThemedText style={[styles.sub, { color: muted }]}>{t('customFlowTemplate.addItemsHint')}</ThemedText>
-          ) : null}
-
-          {tasks.map((task, index) => (
-            <View
-              key={task.id}
-              style={[
-                styles.checklistItem,
-                index < tasks.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: line },
-              ]}>
-              <Pressable
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: task.done }}
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  emit({
-                    ...cfg,
-                    templateKey,
-                    checklist: tasks.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t)),
-                  });
-                }}
-                style={styles.checklistItemMain}>
-                <View
-                  style={[
-                    styles.checkBoxShell,
-                    { marginRight: checkShadow, marginBottom: checkShadow },
-                  ]}>
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.checkBoxShadow,
-                      {
-                        backgroundColor: task.done ? ink : shadowInk,
-                        transform: [{ translateX: checkShadow }, { translateY: checkShadow }],
-                      },
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.checkBox,
-                      {
-                        backgroundColor: task.done ? tone.primaryContainer : faceWhite,
-                      },
-                    ]}>
-                    {task.done ? (
-                      <IconSymbol name="checkmark" size={12} color={tone.text} />
-                    ) : null}
-                  </View>
-                </View>
-                <ThemedText
-                  style={[
-                    styles.checkText,
-                    { color: task.done ? muted : ink },
-                    variant === 'checklist' && task.done && styles.checkDone,
-                  ]}
-                  numberOfLines={3}>
-                  {task.text}
-                </ThemedText>
-                {variant === 'abstain' && task.done ? (
-                  <View
-                    style={[
-                      styles.checklistKeptChip,
-                      { backgroundColor: tone.primaryContainer },
-                    ]}>
-                    <ThemedText style={[styles.checklistKeptChipText, { color: tone.text }]}>
-                      {t('customFlowTemplate.kept')}
-                    </ThemedText>
-                  </View>
-                ) : null}
-              </Pressable>
-              <View
-                style={[
-                  styles.deleteShell,
-                  { marginRight: checkShadow, marginBottom: checkShadow },
                 ]}>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.checkBoxShadow,
-                    {
-                      backgroundColor: shadowInk,
-                      transform: [{ translateX: checkShadow }, { translateY: checkShadow }],
-                    },
-                  ]}
-                />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('customFlowTemplate.deleteItemA11y')}
-                  hitSlop={6}
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    emit({
-                      ...cfg,
-                      templateKey,
-                      checklist: tasks.filter((t) => t.id !== task.id),
-                    });
-                  }}
-                  style={({ pressed }) => [
-                    styles.reminderDeleteBtn,
-                    {
-                      backgroundColor: faceWhite,
-                      opacity: pressed ? 0.88 : 1,
-                    },
-                  ]}>
-                  <IconSymbol name="trash" size={13} color={muted} />
-                </Pressable>
+                {task.done ? <IconSymbol name="checkmark" size={9} color="#FAFAFA" /> : null}
               </View>
-            </View>
-          ))}
-
-          <View style={styles.checklistAddRow}>
-            <View
-              style={[
-                styles.checklistAddInputShell,
-                { marginRight: checkShadow, marginBottom: checkShadow },
-              ]}>
-              <View
-                pointerEvents="none"
+              <ThemedText
                 style={[
-                  styles.checkBoxShadow,
-                  {
-                    backgroundColor: shadowInk,
-                    transform: [{ translateX: checkShadow }, { translateY: checkShadow }],
-                  },
+                  styles.checklistNoteText,
+                  { color: task.done ? muted : ink },
+                  variant === 'checklist' && task.done ? styles.checkDone : null,
                 ]}
-              />
-              <ThemedTextInput
-                value={draft}
-                onChangeText={setDraft}
-                placeholder={addPlaceholder}
-                placeholderTextColor={muted}
-                style={[
-                  styles.checklistAddInput,
-                  { color: ink, backgroundColor: faceWhite },
-                ]}
-                returnKeyType="done"
-                onSubmitEditing={addTask}
-              />
-            </View>
-            <BrutalConfirmButton
-              label={t('common.add')}
-              accessibilityLabel={t('common.add')}
-              onPress={addTask}
-            />
+                numberOfLines={3}>
+                {task.text}
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('customFlowTemplate.deleteItemA11y')}
+              hitSlop={8}
+              onPress={() => removeTask(task.id)}
+              style={styles.checklistNoteDeleteHit}>
+              <ThemedText style={[styles.checklistNoteDeleteMark, { color: muted }]}>×</ThemedText>
+            </Pressable>
           </View>
+        ))}
+
+        <View style={styles.checklistAddRow}>
+          <ThemedText style={[styles.checklistAddDash, { color: muted }]}>–</ThemedText>
+          <ThemedTextInput
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={addPlaceholder}
+            placeholderTextColor={muted}
+            style={[styles.checklistAddInput, { color: ink }]}
+            returnKeyType="done"
+            onSubmitEditing={addTask}
+            blurOnSubmit
+          />
+          {draft.trim().length > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('common.add')}
+              hitSlop={6}
+              onPress={addTask}>
+              <ThemedText style={[styles.checklistAddConfirm, { color: ink }]}>
+                {t('common.add')}
+              </ThemedText>
+            </Pressable>
+          ) : null}
         </View>
-      </ReminderBrutalShell>
+      </View>
     </View>
   );
 }
@@ -2911,6 +2781,57 @@ const styles = StyleSheet.create({
   checklistRootNote: {
     gap: 4,
   },
+  checklistNoteBlock: {
+    gap: 8,
+    width: '100%',
+    alignSelf: 'stretch',
+    borderTopWidth: StyleSheet.hairlineWidth * 2,
+    paddingTop: 10,
+  },
+  checklistProgressLine: {
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: -0.2,
+    marginBottom: 2,
+  },
+  checklistNoteRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 4,
+  },
+  checklistNoteMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    minWidth: 0,
+    paddingVertical: 2,
+  },
+  checklistNoteCheck: {
+    width: 14,
+    height: 14,
+    borderWidth: 1.5,
+    borderRadius: 0,
+    marginTop: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  checklistNoteText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    letterSpacing: -0.1,
+  },
+  checklistNoteDeleteHit: {
+    paddingHorizontal: 4,
+    paddingVertical: 0,
+  },
+  checklistNoteDeleteMark: {
+    fontSize: 16,
+    lineHeight: 18,
+    fontWeight: '400',
+  },
   checklistCardInner: {
     padding: 12,
     gap: 8,
@@ -2984,25 +2905,31 @@ const styles = StyleSheet.create({
   checklistAddRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: 4,
+    gap: 6,
+    marginTop: 6,
+    paddingVertical: 2,
     borderWidth: 0,
-    minHeight: 40,
   },
-  checklistAddInputShell: {
-    position: 'relative',
-    flex: 1,
-    minWidth: 0,
+  checklistAddDash: {
+    fontSize: 13,
+    lineHeight: 18,
+    width: 14,
+    textAlign: 'center',
   },
   checklistAddInput: {
-    width: '100%',
-    fontSize: 14,
-    fontWeight: '600',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    minHeight: 40,
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+    margin: 0,
     borderWidth: 0,
-    zIndex: 1,
+  },
+  checklistAddConfirm: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   abstainKeptBadge: { fontSize: 11, fontWeight: '800', marginLeft: 'auto', marginRight: 4 },
 });

@@ -3,7 +3,6 @@ import { StyleSheet, View } from 'react-native';
 
 import { PrimaryColor } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { useTranslation } from '@shared/lib/i18n';
 import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
 
 import type { GoalDetailCategoryKey } from '../../../../model/types';
@@ -39,7 +38,6 @@ export function MeasurementSettings({
   renameLockedReason?: 'running' | 'today' | null;
   hideTitleField?: boolean;
 }) {
-  const { t } = useTranslation();
   const scheme = useColorScheme();
   const c = useGoalDetailSettingsPalette(scheme === 'dark');
   const titleFallback = useMemo(
@@ -113,12 +111,7 @@ export function MeasurementSettings({
         />
       ) : null}
 
-      <RoutineSummaryField
-        value={summary}
-        onChangeValue={setSummary}
-        palette={c}
-        placeholder={t('goalDetail.memoPlaceholder')}
-      />
+      <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
 
       <CustomFlowTemplateSessionBody
         templateKey="measurement"

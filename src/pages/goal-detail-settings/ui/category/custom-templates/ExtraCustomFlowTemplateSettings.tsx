@@ -19,7 +19,6 @@ import {
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { PrimaryColor } from '@shared/config/theme';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { useTranslation } from '@shared/lib/i18n';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { CustomFlowTemplateSessionBody } from '@widgets/custom-flow-template-session';
 
@@ -71,7 +70,6 @@ function TitleSummaryHeader({
   hideTitleField?: boolean;
   c: GoalDetailSettingsPalette;
 }) {
-  const { t } = useTranslation();
   const titleFallback = useMemo(
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],
@@ -88,12 +86,7 @@ function TitleSummaryHeader({
           palette={c}
         />
       ) : null}
-      <RoutineSummaryField
-        value={summary}
-        onChangeValue={setSummary}
-        palette={c}
-        placeholder={t('goalDetail.memoPlaceholder')}
-      />
+      <RoutineSummaryField value={summary} onChangeValue={setSummary} palette={c} />
     </>
   );
 }

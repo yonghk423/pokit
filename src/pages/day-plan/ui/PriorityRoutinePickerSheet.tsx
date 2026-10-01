@@ -509,6 +509,7 @@ export function PriorityRoutinePickerSheet({
                   })
                 : t('dayPlan.pickRoutineHint')
             }
+            labelColor={ink}
             align="stretch"
             disabled={!canConfirm}
             onPress={handleConfirm}

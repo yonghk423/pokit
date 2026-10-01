@@ -36,6 +36,9 @@ const COLOR_COLS = 9;
 const ICON_PAGE_SIZE = 40;
 const SKELETON_COUNT = ICON_COLS * 2;
 const LOAD_MORE_DELAY_MS = 140;
+/** 설정 탭과 같은 옅은 솔리드 음영 — 순검정 대신 */
+const SOFT_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
+const SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
 
 
 export type CustomFlowAppearancePickerProps = {
@@ -88,7 +91,7 @@ export function CustomFlowAppearancePicker({
   const border = line ?? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)');
   const cardBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
   const chipIdleBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
-  const shadowInk = isDark ? RetroFlatColors.dark.solidShadow : '#000000';
+  const shadowInk = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
   const accentOnChip = contrastingForeground(accentColor);
   const skeletonFace = isDark ? RetroFlatColors.dark.surfaceAlt : '#F3F3F5';
   const skeletonBorder = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.08)';

@@ -36,11 +36,12 @@ export function FixedRoutineSectionTabs({
 }: Props) {
   const { t } = useTranslation();
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const face = tone.primaryContainer;
-  const divider = isDark ? 'rgba(241,239,255,0.22)' : 'rgba(48,97,99,0.18)';
-  const activeBg = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.72)';
-  const activeText = isDark ? tone.text : tone.primary;
-  const inactiveText = isDark ? tone.textMuted : tone.primary;
+  /** 설정·템플릿 리스트와 같이 흰 면 */
+  const face = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const divider = isDark ? 'rgba(241,239,255,0.22)' : 'rgba(24,26,46,0.12)';
+  const activeBg = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(24,26,46,0.06)';
+  const activeText = isDark ? tone.text : '#000000';
+  const inactiveText = isDark ? tone.textMuted : '#000000';
 
   return (
     <PostItCardShell

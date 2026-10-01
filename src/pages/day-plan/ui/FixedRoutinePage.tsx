@@ -1085,6 +1085,7 @@ function AddItemModal({
                 ? t('fixedRoutine.addItemsA11y', { count: selectedCount })
                 : t('fixedRoutine.pickItems')
             }
+            labelColor={ink}
             align="stretch"
             disabled={selectedCount === 0}
             onPress={handleConfirm}
