@@ -49,6 +49,13 @@ export function useDevSeedMenu(): void {
   rollOvernightRef.current = rollOvernightWindowAsEndDateMorning;
   const resetClockRef = useRef(resetDevAppClockToDeviceNow);
   resetClockRef.current = resetDevAppClockToDeviceNow;
+  /** Fast Refresh 후에도 Dev Menu가 최신 seed 모듈을 쓰도록 ref로 유지 */
+  const screenshotSeedRef = useRef(runScreenshotDemoSeedWithStoreSync);
+  screenshotSeedRef.current = runScreenshotDemoSeedWithStoreSync;
+  const historySeedRef = useRef(runDevMockSeedProfileWithStoreSync);
+  historySeedRef.current = runDevMockSeedProfileWithStoreSync;
+  const clearSeedRef = useRef(runDevMockClearWithStoreSync);
+  clearSeedRef.current = runDevMockClearWithStoreSync;
 
   useEffect(() => {
     if (!__DEV__) return;
@@ -56,7 +63,7 @@ export function useDevSeedMenu(): void {
     DevSettings.addMenuItem('[Seed] 스크린샷 데모 (locale)', () => {
       void (async () => {
         const locale = getAppLocale();
-        const result = await runScreenshotDemoSeedWithStoreSync();
+        const result = await screenshotSeedRef.current();
         Alert.alert(
           'Seed 완료',
           `${formatDevMockSeedAlertMessage(result)}\n\n문구 로케일: ${locale}\n담기·시간대·타임라인·메모·투두·서재·노트·통계가 채워졌어요.\n히스토리 주간이 오늘만 보이면 ◀ 로 지난주를 열어 보세요.`,
@@ -67,7 +74,7 @@ export function useDevSeedMenu(): void {
     for (const item of HISTORY_SEED_MENU_ITEMS) {
       DevSettings.addMenuItem(item.label, () => {
         void (async () => {
-          const result = await runDevMockSeedProfileWithStoreSync(item.profile);
+          const result = await historySeedRef.current(item.profile);
           Alert.alert('Seed 완료', `${formatDevMockSeedProfileAlertMessage(item.profile, result)}\n\n${item.hint}`);
         })();
       });
@@ -87,7 +94,7 @@ export function useDevSeedMenu(): void {
 
     DevSettings.addMenuItem('[Clear] 목업 데이터 전체', () => {
       void (async () => {
-        await runDevMockClearWithStoreSync();
+        await clearSeedRef.current();
         Alert.alert(
           'Clear 완료',
           '목업 데이터를 모두 제거했어요.\n통계·스크린샷 데모(루틴·투두·도서·노트)가 비어 있어야 정상이에요.',

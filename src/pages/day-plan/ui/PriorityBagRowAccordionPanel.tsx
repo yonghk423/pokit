@@ -10,6 +10,7 @@ import {
   normalizeCustomFlowDetailConfig,
   readRoutineSummaryFromConfig,
   resolveCustomFlowTemplateKey,
+  useGoalDetailSettingsStore,
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
 import {
@@ -172,10 +173,11 @@ export function PriorityBagRowAccordionPanel({
   const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isWeekTour = isPokitWeekTourFlowId(categoryKey);
 
+  const goalDetailRevision = useGoalDetailSettingsStore((s) => s.revision);
   const rawConfig = useMemo(
     () => loadGoalDetailCategoryConfig(categoryKey),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [categoryKey, revision],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- revision/goalDetailRevision로 시드·저장 동기화
+    [categoryKey, revision, goalDetailRevision],
   );
 
   const checklistTemplate = useMemo(

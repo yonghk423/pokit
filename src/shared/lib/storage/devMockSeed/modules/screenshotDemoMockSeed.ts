@@ -42,6 +42,10 @@ import {
   isScreenshotQuickMemoMarker,
   SCREENSHOT_EXTRA_ROUTINES,
 } from './screenshotDemoCopy';
+import {
+  SCREENSHOT_DEMO_READING_ALADIN_BOOKS,
+  toReadingAladinPayload,
+} from './screenshotDemoReadingAladinBooks';
 
 const SCREENSHOT_READING_BOOK_IDS = [
   'rb-screenshot-demo-01',
@@ -380,26 +384,54 @@ function seedReadingLibrary(): void {
   const now = Date.now();
   const copy = getScreenshotDemoCopy(getAppLocale()).reading;
   const bookMeta = [
-    { targetPage: 248, status: 'reading' as const, addedAtMs: now - 5 * 24 * 60 * 60 * 1000 },
-    { targetPage: 392, status: 'want' as const, addedAtMs: now - 2 * 24 * 60 * 60 * 1000 },
-    { targetPage: 636, status: 'done' as const, addedAtMs: now - 40 * 24 * 60 * 60 * 1000 },
-    { targetPage: 304, status: 'reading' as const, addedAtMs: now - 12 * 24 * 60 * 60 * 1000 },
+    {
+      startPage: 1,
+      targetPage: 112,
+      status: 'reading' as const,
+      addedAtMs: now - 5 * 24 * 60 * 60 * 1000,
+    },
+    {
+      startPage: 1,
+      targetPage: 1,
+      status: 'want' as const,
+      addedAtMs: now - 2 * 24 * 60 * 60 * 1000,
+    },
+    {
+      startPage: 1,
+      targetPage: SCREENSHOT_DEMO_READING_ALADIN_BOOKS[2]!.totalPages,
+      status: 'done' as const,
+      addedAtMs: now - 40 * 24 * 60 * 60 * 1000,
+    },
+    {
+      startPage: 1,
+      targetPage: 86,
+      status: 'reading' as const,
+      addedAtMs: now - 12 * 24 * 60 * 60 * 1000,
+    },
   ];
+  const books = copy.books.map((book, index) => {
+    const aladin = SCREENSHOT_DEMO_READING_ALADIN_BOOKS[index]!;
+    const meta = bookMeta[index]!;
+    return {
+      id: SCREENSHOT_READING_BOOK_IDS[index]!,
+      title: book.title,
+      startPage: meta.startPage,
+      targetPage: meta.targetPage,
+      status: meta.status,
+      addedAtMs: meta.addedAtMs,
+      memo: book.memo,
+      openLibrary: null,
+      aladin: toReadingAladinPayload(aladin),
+    };
+  });
+  const first = books[0]!;
   saveGoalDetailCategoryConfig('reading', {
     displayName: copy.displayName,
     bookTitle: copy.bookTitle,
-    aladinBook: null,
-    books: copy.books.map((book, index) => ({
-      id: SCREENSHOT_READING_BOOK_IDS[index]!,
-      title: book.title,
-      startPage: 1,
-      targetPage: bookMeta[index]!.targetPage,
-      status: bookMeta[index]!.status,
-      addedAtMs: bookMeta[index]!.addedAtMs,
-      memo: book.memo,
-    })),
-    startPage: 1,
-    targetPage: 248,
+    aladinBook: first.aladin,
+    books,
+    startPage: first.startPage,
+    targetPage: first.targetPage,
     selectedMetrics: ['pages_read', 'pages_left'],
     summary: copy.summary,
   });
@@ -665,7 +697,7 @@ function restoreBuiltinRoutineLabelsToKo(): void {
 }
 export const screenshotDemoMockSeed: DevMockSeedModule = {
   id: 'screenshot-demo',
-  version: 8,
+  version: 10,
   async seed() {
     const today = todayDateKey();
     markDailyRhythmOnboardingCompleted();

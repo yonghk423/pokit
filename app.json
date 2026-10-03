@@ -2,9 +2,9 @@
   "expo": {
     "name": "POKIT",
     "slug": "pokit",
-    "version": "1.8.18",
+    "version": "1.8.19",
     "orientation": "portrait",
-    "icon": "./assets/pokit5.png",
+    "icon": "./assets/app-icon.png",
     "scheme": "pokit",
     "userInterfaceStyle": "automatic",
     "notification": {
@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "88",
+      "buildNumber": "89",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -33,11 +33,11 @@
       }
     },
     "android": {
-      "version": "1.8.18",
-      "versionCode": 88,
+      "version": "1.8.19",
+      "versionCode": 89,
       "adaptiveIcon": {
         "backgroundColor": "#F2EDE4",
-        "foregroundImage": "./assets/pokit5.png"
+        "foregroundImage": "./assets/app-icon.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -48,7 +48,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/pokit5.png"
+      "favicon": "./assets/app-icon.png"
     },
     "plugins": [
       "expo-router",
@@ -62,7 +62,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-collage.png",
+          "image": "./assets/splash-routines-9.png",
           "resizeMode": "contain",
           "enableFullScreenImage_legacy": true,
           "backgroundColor": "#B1C8B6",

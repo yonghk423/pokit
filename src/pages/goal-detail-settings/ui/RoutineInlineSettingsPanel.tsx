@@ -11,6 +11,7 @@ import {
   useDayPlanDraftStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
+  useGoalDetailSettingsStore,
   categoryReminderLabelKo,
 } from '@entities/day-plan';
 import { readRoutineDisplayNameFromConfig } from '@entities/day-plan/lib/routineDisplayName';
@@ -93,10 +94,11 @@ export function RoutineInlineSettingsPanel({
   const medicineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const blocks = useDayPlanStore((s) => s.blocks);
   const activeBlockId = useDayPlanRuntimeStore((s) => s.activeBlockId);
+  const goalDetailRevision = useGoalDetailSettingsStore((s) => s.revision);
 
   useEffect(() => {
     setDataConfig(loadGoalDetailCategoryConfig(key) ?? {});
-  }, [key]);
+  }, [key, goalDetailRevision]);
 
   useEffect(
     () => () => {

@@ -15,6 +15,8 @@ type GoalDetailSettingsState = {
   saveCategoryConfig: (categoryKey: string, config: unknown) => void;
   removeCategoryConfig: (categoryKey: string) => void;
   reloadCategoryConfig: (categoryKey: string) => void;
+  /** 시드/클리어 등 외부 저장 변경 후 전체 재로드 */
+  reloadAllFromStorage: () => void;
 };
 
 function loadAllCategoryConfigs(): Record<string, unknown> {
@@ -59,6 +61,12 @@ export const useGoalDetailSettingsStore = create<GoalDetailSettingsState>((set, 
       if (config == null) delete byCategory[key];
       else byCategory[key] = config;
       return { byCategory, revision: state.revision + 1 };
+    });
+  },
+  reloadAllFromStorage: () => {
+    set({
+      byCategory: loadAllCategoryConfigs(),
+      revision: get().revision + 1,
     });
   },
 }));

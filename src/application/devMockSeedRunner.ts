@@ -4,6 +4,7 @@ import {
   useDayPlanStore,
   useDayPlanTodoStore,
   useFixedFlowSetsStore,
+  useGoalDetailSettingsStore,
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
@@ -32,6 +33,7 @@ import { screenshotDemoMockSeed } from '@shared/lib/storage/devMockSeed/modules/
 function reloadStoresAfterDevMockChange(): void {
   useHistoryStore.getState().reloadFromStorage();
   useHorizonCompletionStore.getState().reloadFromStorage();
+  useGoalDetailSettingsStore.getState().reloadAllFromStorage();
 
   const fixed = loadFixedFlowSetsState();
   useFixedFlowSetsStore.setState({

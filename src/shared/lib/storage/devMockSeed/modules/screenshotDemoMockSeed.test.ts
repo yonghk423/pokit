@@ -86,9 +86,22 @@ describe('screenshotDemoMockSeed', () => {
     expect(todos?.todosByDate?.[todayKeys[0]!]?.length).toBe(8);
 
     const reading = loadGoalDetailCategoryConfig('reading') as {
-      books?: { title: string }[];
+      books?: {
+        title: string;
+        targetPage?: number;
+        aladin?: { itemId?: number; coverUrl?: string; totalPages?: number } | null;
+      }[];
+      aladinBook?: { itemId?: number } | null;
     } | null;
     expect(reading?.books?.length).toBe(4);
+    expect(reading?.aladinBook?.itemId).toBe(260084);
+    expect(reading?.books?.map((book) => book.aladin?.itemId)).toEqual([
+      260084, 379447436, 314240466, 269873776,
+    ]);
+    expect(reading?.books?.[0]?.targetPage).toBe(112);
+    expect(reading?.books?.[0]?.aladin?.totalPages).toBe(248);
+    expect(reading?.books?.[0]?.aladin?.coverUrl).toContain('image.aladin.co.kr');
+    expect(reading?.books?.[1]?.title).toBe('아주 작은 습관의 힘');
 
     const health = loadGoalDetailCategoryConfig('healthIntake') as {
       water?: { drankMl?: number };
@@ -128,7 +141,20 @@ describe('screenshotDemoMockSeed', () => {
     const extra = loadGoalDetailCategoryConfig(SCREENSHOT_EXTRA_ROUTINES[0]!.id) as {
       displayName?: string;
     } | null;
-    expect(extra?.displayName).toBe('Morning journal');
+    expect(extra?.displayName).toBe('Journal');
+  });
+
+  it('uses mixed-length routine labels for layout screenshots', async () => {
+    await screenshotDemoMockSeed.seed();
+
+    const labels = SCREENSHOT_EXTRA_ROUTINES.map((row) => row.label.ko);
+    const lengths = labels.map((label) => label.length);
+    expect(Math.min(...lengths)).toBeLessThanOrEqual(3);
+    expect(Math.max(...lengths)).toBeGreaterThanOrEqual(14);
+    expect(new Set(lengths).size).toBeGreaterThanOrEqual(4);
+
+    const fasting = loadGoalDetailCategoryConfig('fasting') as { displayName?: string } | null;
+    expect(fasting?.displayName).toBe('체중 관리 · 16:8 간헐적 단식');
   });
 
   it('clears screenshot seed data including extra routines', async () => {

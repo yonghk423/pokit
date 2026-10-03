@@ -67,18 +67,18 @@ const KO: ScreenshotDemoCopy = {
     summary: '오늘 30쪽 · 112/248',
     books: [
       { title: '데미안', memo: '오늘 112쪽까지' },
-      { title: '아토믹 해빗', memo: '다음에 읽을 책' },
+      { title: '아주 작은 습관의 힘', memo: '다음에 읽을 책' },
       { title: '사피엔스', memo: '완독' },
       { title: '미드나잇 라이브러리', memo: '출퇴근용' },
     ],
   },
   healthIntake: {
-    displayName: '건강을 위한 섭취',
+    displayName: '물·비타민·약 챙기기',
     summary: '물 1.2L · 약 아침 완료',
     doseLabel: '종합비타민',
   },
   fasting: {
-    displayName: '체중조절',
+    displayName: '체중 관리 · 16:8 간헐적 단식',
     summary: '16:8 단식 · 목표까지 -3.2kg',
   },
   notes: {
@@ -147,12 +147,12 @@ const EN: ScreenshotDemoCopy = {
     ],
   },
   healthIntake: {
-    displayName: 'Health intake',
+    displayName: 'Water, vitamins & meds',
     summary: 'Water 1.2L · morning dose done',
     doseLabel: 'Multivitamin',
   },
   fasting: {
-    displayName: 'Weight control',
+    displayName: 'Weight · 16:8 intermittent fasting',
     summary: '16:8 fasting · −3.2kg to goal',
   },
   notes: {
@@ -221,12 +221,12 @@ const JA: ScreenshotDemoCopy = {
     ],
   },
   healthIntake: {
-    displayName: '健康のための摂取',
+    displayName: '水・ビタミン・薬を整える',
     summary: '水1.2L · 朝の服薬完了',
     doseLabel: 'マルチビタミン',
   },
   fasting: {
-    displayName: '体重管理',
+    displayName: '体重管理 · 16:8 断続的ファスティング',
     summary: '16:8断食 · 目標まで −3.2kg',
   },
   notes: {
@@ -314,7 +314,8 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
     groupKey: 'productivity',
     icon: 'pencil.and.list.clipboard',
     color: '#0ea5e9',
-    label: { ko: '아침 일기', en: 'Morning journal', ja: '朝の日記' },
+    /** 짧음 */
+    label: { ko: '일기', en: 'Journal', ja: '日記' },
     summary: {
       ko: '일어나서 짧게 오늘을 적어 둬요.',
       en: 'Jot a short morning note.',
@@ -326,7 +327,12 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
     groupKey: 'productivity',
     icon: 'brain.head.profile',
     color: '#2563eb',
-    label: { ko: '딥 워크', en: 'Deep work', ja: 'ディープワーク' },
+    /** 김 */
+    label: {
+      ko: '딥 워크 90분 — 방해금지·슬랙 끄기',
+      en: 'Deep work 90m — mute Slack & focus',
+      ja: 'ディープワーク90分 — 通知オフで集中',
+    },
     summary: {
       ko: '방해 없이 한 가지에 깊게 몰입해요.',
       en: 'Focus deeply without interruptions.',
@@ -338,7 +344,8 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
     groupKey: 'productivity',
     icon: 'text.book.closed.fill',
     color: '#7c3aed',
-    label: { ko: '영어 공부', en: 'English study', ja: '英語学習' },
+    /** 중간 */
+    label: { ko: '영어 단어 복습', en: 'English vocab drill', ja: '英単語の復習' },
     summary: {
       ko: '단어·회화를 조금씩 쌓아요.',
       en: 'Build vocab and conversation daily.',
@@ -350,7 +357,12 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
     groupKey: 'health',
     icon: 'figure.walk',
     color: '#10b981',
-    label: { ko: '점심 산책', en: 'Lunch walk', ja: '昼の散歩' },
+    /** 김 */
+    label: {
+      ko: '점심 먹고 근처 공원 20분 걷기',
+      en: 'Post-lunch 20-minute park walk',
+      ja: '昼食後に近くの公園を20分歩く',
+    },
     summary: {
       ko: '식후에 가볍게 걸으며 환기해요.',
       en: 'A light walk after lunch.',
@@ -362,7 +374,8 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
     groupKey: 'productivity',
     icon: 'frying.pan.fill',
     color: '#ea580c',
-    label: { ko: '저녁 요리', en: 'Cook dinner', ja: '夕食づくり' },
+    /** 짧음 */
+    label: { ko: '요리', en: 'Cook', ja: '料理' },
     summary: {
       ko: '집밥을 간단히 해 먹어요.',
       en: 'Cook a simple home dinner.',
@@ -374,7 +387,12 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
     groupKey: 'productivity',
     icon: 'sparkles',
     color: '#0891b2',
-    label: { ko: '집 정리', en: 'Tidy home', ja: '家の片づけ' },
+    /** 김 */
+    label: {
+      ko: '주말 전 방·책상·싱크대 싹 정리하기',
+      en: 'Pre-weekend desk, room & sink reset',
+      ja: '週末前に部屋・デスク・シンクを片づける',
+    },
     summary: {
       ko: '방·책상을 짧게 정리해요.',
       en: 'Quick tidy of desk and room.',
@@ -386,6 +404,7 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
     groupKey: 'productivity',
     icon: 'cart.fill',
     color: '#f59e0b',
+    /** 짧음 */
     label: { ko: '장보기', en: 'Groceries', ja: '買い物' },
     summary: {
       ko: '필요한 재료를 사러 나가요.',
@@ -398,7 +417,12 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
     groupKey: 'health',
     icon: 'headphones',
     color: '#d946ef',
-    label: { ko: '음악 감상', en: 'Listen to music', ja: '音楽鑑賞' },
+    /** 중간~김 */
+    label: {
+      ko: '좋아하는 앨범으로 저녁 음악 듣기',
+      en: 'Evening album listening wind-down',
+      ja: '好きなアルバムで夜の音楽タイム',
+    },
     summary: {
       ko: '좋아하는 곡으로 마음을 풀어요.',
       en: 'Unwind with favorite tracks.',
@@ -410,7 +434,8 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
     groupKey: 'productivity',
     icon: 'heart.text.square.fill',
     color: '#14b8a6',
-    label: { ko: '감사 일기', en: 'Gratitude note', ja: '感謝日記' },
+    /** 짧음 */
+    label: { ko: '감사', en: 'Thanks', ja: '感謝' },
     summary: {
       ko: '오늘 고마운 일을 한 줄 남겨요.',
       en: 'Write one thing you’re grateful for.',
@@ -422,7 +447,12 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
     groupKey: 'productivity',
     icon: 'phone.fill',
     color: '#3b82f6',
-    label: { ko: '가족 통화', en: 'Call family', ja: '家族に電話' },
+    /** 중간 */
+    label: {
+      ko: '가족에게 안부 전화',
+      en: 'Quick family check-in call',
+      ja: '家族に安否の電話',
+    },
     summary: {
       ko: '짧게라도 안부를 전해요.',
       en: 'A short check-in call.',
@@ -434,6 +464,7 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
     groupKey: 'health',
     icon: 'leaf.fill',
     color: '#22c55e',
+    /** 중간 */
     label: { ko: '디지털 디톡스', en: 'Digital detox', ja: 'デジタルデトックス' },
     summary: {
       ko: '알림을 끄고 화면에서 멀어져요.',
@@ -446,7 +477,12 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
     groupKey: 'health',
     icon: 'moon.zzz.fill',
     color: '#64748b',
-    label: { ko: '수면 준비', en: 'Wind down', ja: '就寝準備' },
+    /** 김 */
+    label: {
+      ko: '수면 준비 — 조명 낮추고 폰 내려놓기',
+      en: 'Wind down — dim lights, phone away',
+      ja: '就寝準備 — 明かりを落としスマホを置く',
+    },
     summary: {
       ko: '취침 전 루틴으로 하루를 닫아요.',
       en: 'Close the day with a bedtime routine.',
