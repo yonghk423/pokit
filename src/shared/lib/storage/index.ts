@@ -331,6 +331,15 @@ export {
   type PostItInkColorPreset,
 } from './postItInkColorStorage';
 export {
+  getScheduledCategoryKeysForDate,
+  loadScheduledRoutinePlan,
+  normalizeScheduledRoutinePlan,
+  saveScheduledRoutinePlan,
+  setScheduledCategoryKeysForDate,
+  type ScheduledRoutineAssignment,
+  type ScheduledRoutinePlanPersisted,
+} from './scheduledRoutinePlanStorage';
+export {
   loadMyRoutineCollapsedGroupIds,
   loadRoutineCatalogCollapsedGroupIds,
   pruneMyRoutineCollapsedGroupIds,

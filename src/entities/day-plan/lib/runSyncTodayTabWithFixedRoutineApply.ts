@@ -9,11 +9,13 @@ import {
 import { getClockNow } from '@shared/lib/time/appClock';
 
 import { resolveEndedTodayCategoryKeys } from './endedTodayCategoryKeys';
+import { getLocalDateKey } from './localDateKey';
 import { resolveTodayFixedRoutineKeys } from './resolveTodayFixedRoutineKeys';
 import {
   computeSyncTodayTabWithFixedRoutineApply,
   type SyncTodayTabWithFixedRoutinePatch,
 } from './syncTodayTabWithFixedRoutineApply';
+import { useScheduledRoutinePlanStore } from '../model/scheduledRoutinePlanStore';
 import type { DayPlanBlock } from '../model/types';
 
 type DraftSyncState = {
@@ -118,11 +120,19 @@ export function syncTodayTabWithFixedRoutineApply(now: Date = getClockNow()): vo
 
   // 오늘 탭 보기 모드의 적용 상태만 사용 (고정 루틴 화면의 현재 편집 모드와 독립)
   const modeApply = resolveActiveFixedFlowApplyForLayoutMode(fixed, effectiveLayoutMode);
-  const todayAppliedCategoryKeys = resolveTodayFixedRoutineKeys({
+  const fixedAppliedKeys = resolveTodayFixedRoutineKeys({
     activeSetIds: modeApply.activeSetIds,
     activeMealSlotsBySetId: modeApply.activeMealSlotsBySetId,
     sets: fixed.sets,
   }, { now });
+  const todayKey = getLocalDateKey(now);
+  const scheduledKeys = useScheduledRoutinePlanStore.getState().isHydrated
+    ? useScheduledRoutinePlanStore.getState().getKeysForDate(todayKey)
+    : [];
+  const todayAppliedCategoryKeys = [...new Set([...fixedAppliedKeys, ...scheduledKeys])];
+  const routineCatalogSelectionKeys = [
+    ...new Set([...loadRoutineCatalogSelectionKeys(), ...scheduledKeys]),
+  ];
 
   const patch = computeSyncTodayTabWithFixedRoutineApply({
     priorityCategoryOrder: draft.priorityCategoryOrder,
@@ -138,7 +148,7 @@ export function syncTodayTabWithFixedRoutineApply(now: Date = getClockNow()): vo
     scheduledMealSlotLayoutEnabled: fixed.scheduledMealSlotLayoutEnabled,
     fixedRoutineApplyLayoutMode: effectiveLayoutMode,
     fixedFlowSets: fixed.sets,
-    routineCatalogSelectionKeys: loadRoutineCatalogSelectionKeys(),
+    routineCatalogSelectionKeys,
     endedTodayCategoryKeys: resolveEndedTodayCategoryKeys(
       draft.priorityEndedTodayKeys,
       draft.priorityEndedTodayDateKey,

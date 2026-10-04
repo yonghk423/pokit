@@ -157,6 +157,7 @@ import {
   type RoutinePickerConfirmItem,
 } from './PriorityRoutinePickerSheet';
 import { PriorityBagRowAccordionPanel } from './PriorityBagRowAccordionPanel';
+import { ScheduledRoutineCalendarSheet } from './ScheduledRoutineCalendarSheet';
 import { SpineBlockEditSheet, type SpineBlockEditDraft } from './SpineBlockEditSheet';
 import { TodoListPlanSection } from './TodoListPlanSection';
 
@@ -489,6 +490,7 @@ export function PriorityBasedPlanSection({
   const todayKey = useMemo(() => getLocalDateKey(), [clockEpoch]);
 
   const [iosDateModalOpen, setIosDateModalOpen] = useState(false);
+  const [scheduledRoutineSheetOpen, setScheduledRoutineSheetOpen] = useState(false);
   const [bagRowTimeEdit, setBagRowTimeEdit] = useState<{
     rowKey: string;
     categoryKey: string;
@@ -2634,6 +2636,15 @@ export function PriorityBasedPlanSection({
 
   return (
     <View style={[styles.prioritySectionRoot, { backgroundColor: surfaceBg }]}>
+      <ScheduledRoutineCalendarSheet
+        visible={scheduledRoutineSheetOpen}
+        isDark={isDark}
+        ink={editorial.ink}
+        muted={editorial.muted}
+        surface={c.containerLow}
+        line={editorial.line}
+        onClose={() => setScheduledRoutineSheetOpen(false)}
+      />
       <Modal
         visible={iosDateModalOpen}
         transparent
@@ -3086,16 +3097,29 @@ export function PriorityBasedPlanSection({
                         {timelineDateIntro}
                         {' · '}
                       </ThemedText>
-                      <PriorityWindowTimeChip
-                        line={priorityWindowLine}
-                        ink={editorial.ink}
-                        muted={editorial.muted}
-                        chipBg={priorityTimeChipColors.bg}
-                        chipBgPressed={priorityTimeChipColors.pressed}
-                        borderColor={editorial.line}
-                        emphasize={emphasizePriorityWindowChip}
-                        onPress={openPriorityTimeEditor}
-                      />
+                      <View style={styles.priorityTimelineTimeChipRow}>
+                        <PriorityWindowTimeChip
+                          line={priorityWindowLine}
+                          ink={editorial.ink}
+                          muted={editorial.muted}
+                          chipBg={priorityTimeChipColors.bg}
+                          chipBgPressed={priorityTimeChipColors.pressed}
+                          borderColor={editorial.line}
+                          emphasize={emphasizePriorityWindowChip}
+                          onPress={openPriorityTimeEditor}
+                        />
+                        <Pressable
+                          onPress={() => {
+                            void Haptics.selectionAsync();
+                            setScheduledRoutineSheetOpen(true);
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
+                          hitSlop={10}
+                          style={styles.priorityTimelineCalendarIcon}>
+                          <IconSymbol name="calendar" size={18} color={editorial.muted} />
+                        </Pressable>
+                      </View>
                     </View>
                   </>
                 ) : (
@@ -3115,16 +3139,29 @@ export function PriorityBasedPlanSection({
                         {timelineDateIntro}
                         {' · '}
                       </ThemedText>
-                      <PriorityWindowTimeChip
-                        line={priorityWindowLine}
-                        ink={editorial.ink}
-                        muted={editorial.muted}
-                        chipBg={priorityTimeChipColors.bg}
-                        chipBgPressed={priorityTimeChipColors.pressed}
-                        borderColor={editorial.line}
-                        emphasize={emphasizePriorityWindowChip}
-                        onPress={openPriorityTimeEditor}
-                      />
+                      <View style={styles.priorityTimelineTimeChipRow}>
+                        <PriorityWindowTimeChip
+                          line={priorityWindowLine}
+                          ink={editorial.ink}
+                          muted={editorial.muted}
+                          chipBg={priorityTimeChipColors.bg}
+                          chipBgPressed={priorityTimeChipColors.pressed}
+                          borderColor={editorial.line}
+                          emphasize={emphasizePriorityWindowChip}
+                          onPress={openPriorityTimeEditor}
+                        />
+                        <Pressable
+                          onPress={() => {
+                            void Haptics.selectionAsync();
+                            setScheduledRoutineSheetOpen(true);
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
+                          hitSlop={10}
+                          style={styles.priorityTimelineCalendarIcon}>
+                          <IconSymbol name="calendar" size={18} color={editorial.muted} />
+                        </Pressable>
+                      </View>
                     </View>
                   </>
                 )}
@@ -3849,6 +3886,17 @@ const styles = StyleSheet.create({
     gap: 4,
     flexShrink: 1,
     maxWidth: '100%',
+  },
+  priorityTimelineTimeChipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 1,
+    maxWidth: '100%',
+  },
+  priorityTimelineCalendarIcon: {
+    flexShrink: 0,
+    marginTop: 1,
   },
   priorityTimelineHeaderActions: {
     flexDirection: 'row',

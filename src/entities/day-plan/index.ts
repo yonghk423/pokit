@@ -511,6 +511,7 @@ export {
   useDayPlanTodoStore,
   useFixedFlowSetsStore,
   useRoutineStartTimesStore,
+  useScheduledRoutinePlanStore,
 } from './model';
 export { seedRoutineStartTimesFromLegacySources } from './lib/seedRoutineStartTimesFromLegacySources';
 export type { AddBlockResult, PlanMode, UpdateBlockResult } from './model';

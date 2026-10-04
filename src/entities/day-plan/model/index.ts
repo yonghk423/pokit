@@ -10,6 +10,7 @@ export {
   useDayPlanDraftStore,
 } from './dayPlanDraftStore';
 export { useDayPlanTodoStore } from './dayPlanTodoStore';
+export { useScheduledRoutinePlanStore } from './scheduledRoutinePlanStore';
 export type { PlanMode } from './planMode';
 export type { AddBlockResult, UpdateBlockResult, DayPlanStoreState } from './dayPlanStore';
 export type { DayPlanRuntimeStoreState } from './dayPlanRuntimeStore';

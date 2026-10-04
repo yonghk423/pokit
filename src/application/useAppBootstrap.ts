@@ -15,6 +15,7 @@ import {
   useFixedFlowSetsStore,
   seedRoutineStartTimesFromLegacySources,
   useRoutineStartTimesStore,
+  useScheduledRoutinePlanStore,
 } from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { syncCategoryReminderNotifications } from '@features/category-reminder-notifications';
@@ -95,6 +96,7 @@ export function useAppBootstrap() {
       useDayPlanTodoStore.getState().hydrate();
       useFixedFlowSetsStore.getState().hydrate();
       useRoutineStartTimesStore.getState().hydrate();
+      useScheduledRoutinePlanStore.getState().hydrate();
       seedRoutineStartTimesFromLegacySources();
       useDayPlanDraftStore.getState().rollPriorityPlanForwardIfEnded();
       useDayPlanStore.getState().prunePastEndedBlocks();
