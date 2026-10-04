@@ -20,7 +20,8 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 const SWATCH = 22;
 const SWATCH_COMPACT = 20;
-const SHADOW = 2;
+/** 액션 버튼·요일 칩과 동일 솔리드 음영 오프셋 */
+const SHADOW = 1;
 const CHEVRON_MS = 220;
 const CHEVRON_EASE = Easing.out(Easing.cubic);
 

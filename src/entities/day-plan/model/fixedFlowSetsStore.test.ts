@@ -232,6 +232,16 @@ describe('fixedFlowSetsStore', () => {
       spineStartMinutes: 22 * 60,
       spineEndMinutes: 22 * 60 + 45,
     });
+
+    const cleared = useFixedFlowSetsStore
+      .getState()
+      .clearCategorySpineScheduleInAnySet('legacy:retired_routine');
+    expect(cleared).toBe(true);
+    expect(useFixedFlowSetsStore.getState().sets[0]?.items[0]).toMatchObject({
+      categoryKey: 'legacy:retired_routine',
+    });
+    expect(useFixedFlowSetsStore.getState().sets[0]?.items[0]?.spineStartMinutes).toBeUndefined();
+    expect(useFixedFlowSetsStore.getState().sets[0]?.items[0]?.spineEndMinutes).toBeUndefined();
   });
 
   it('clears catalog protection when turning off today weekday so bag sync can drop items', () => {

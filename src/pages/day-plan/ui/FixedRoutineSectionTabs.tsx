@@ -20,6 +20,11 @@ const TABS: TabDef[] = [
   { key: 'templates', labelKey: 'catalog.routineTemplatesTab' },
 ];
 
+/** 투두 휴지통·액션 버튼과 동일 솔리드 음영 */
+const ACTION_SHADOW = 1;
+const ACTION_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
+const ACTION_SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
+
 type Props = {
   section: FixedRoutineSection;
   onSelectSection: (section: FixedRoutineSection) => void;
@@ -42,13 +47,15 @@ export function FixedRoutineSectionTabs({
   const activeBg = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(24,26,46,0.06)';
   const activeText = isDark ? tone.text : '#000000';
   const inactiveText = isDark ? tone.textMuted : '#000000';
+  const softShadow = isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT;
 
   return (
     <PostItCardShell
       compact
       isDark={isDark}
       faceColor={face}
-      shadowColor={isDark ? '#5A5C72' : '#707979'}
+      shadowColor={softShadow}
+      shadowOffset={ACTION_SHADOW}
       style={styles.root}
       contentStyle={styles.track}>
       {TABS.map((tab, index) => {

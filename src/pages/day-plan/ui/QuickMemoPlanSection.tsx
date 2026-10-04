@@ -3,13 +3,17 @@ import { Keyboard, Platform, Pressable, StyleSheet, TextInput, useWindowDimensio
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import type { DayPlanQuickMemo } from '@entities/day-plan';
-import { RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
+
+/** 투두 휴지통·액션 버튼과 동일 솔리드 음영 */
+const ACTION_SHADOW = 1;
+const ACTION_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
+const ACTION_SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
 
 type Props = {
   c: DayPlanPalette;
@@ -96,20 +100,18 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
       <View
         style={[
           styles.saveShell,
-          { marginRight: SOLID_SHADOW_OFFSET, marginBottom: SOLID_SHADOW_OFFSET + footerBottomPad },
+          {
+            marginRight: ACTION_SHADOW,
+            marginBottom: ACTION_SHADOW + footerBottomPad,
+          },
         ]}>
         <View
           pointerEvents="none"
           style={[
             styles.saveShadow,
             {
-              backgroundColor: isDark
-                ? RetroFlatColors.dark.solidShadow
-                : '#000000',
-              transform: [
-                { translateX: SOLID_SHADOW_OFFSET },
-                { translateY: SOLID_SHADOW_OFFSET },
-              ],
+              backgroundColor: isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT,
+              transform: [{ translateX: ACTION_SHADOW }, { translateY: ACTION_SHADOW }],
             },
           ]}
         />
@@ -118,13 +120,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
           accessibilityLabel={t('dayPlan.quickMemoSaveA11y')}
           hitSlop={8}
           onPress={onSavePress}
-          style={({ pressed }) => [
-            styles.saveBtn,
-            {
-              backgroundColor: pill.activeBg,
-              opacity: pressed ? 0.92 : 1,
-            },
-          ]}>
+          style={[styles.saveBtn, { backgroundColor: pill.activeBg }]}>
           <IconSymbol name="square.and.arrow.down" size={22} color={pill.activeIcon} />
         </Pressable>
       </View>

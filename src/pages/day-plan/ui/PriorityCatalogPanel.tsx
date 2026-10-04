@@ -30,7 +30,6 @@ import {
   RETRO_BORDER_WIDTH,
   RETRO_RADIUS,
   RetroFlatColors,
-  SOLID_SHADOW_OFFSET,
 } from '@shared/config/retroFlat';
 import {
   DEFAULT_POST_IT_FACE_COLOR_ID,
@@ -91,6 +90,10 @@ export type PriorityCatalogEditorial = {
 
 const MEAL_SLOT_PANEL_HEIGHT = 56;
 const BRUTAL_SHADOW_SM = 2;
+/** 투두 휴지통과 동일 — offset 1 + 옅은 반투명 */
+const ACTION_SHADOW = 1;
+const ACTION_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
+const ACTION_SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
 /** 레이아웃 솔리드 음영 — 순검정보다 옅은 잉크 */
 const SOFT_SOLID_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
 const SOFT_SOLID_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
@@ -168,7 +171,7 @@ function useMeasuredAccordion(expanded: boolean) {
   return { mounted, panelStyle, chevronStyle, onContentLayout };
 }
 
-/** 시안 `w-10 h-10 border border-black bg-white brutal-shadow-sm` */
+/** 시안 `w-10 h-10 border border-black bg-white` — soft는 투두 휴지통 음영 */
 function BrutalActionButton({
   accessibilityLabel,
   disabled,
@@ -192,27 +195,25 @@ function BrutalActionButton({
   width?: number;
   children: ReactNode;
 }) {
-  const shadow = soft ? 2 : BRUTAL_SHADOW_SM;
+  const shadow = soft ? ACTION_SHADOW : BRUTAL_SHADOW_SM;
   return (
     <View
       style={[
         styles.brutalBtnShell,
-        shadow > 0 && { marginRight: shadow, marginBottom: shadow },
+        { marginRight: shadow, marginBottom: shadow },
       ]}>
-      {shadow > 0 ? (
-        <View
-          pointerEvents="none"
-          style={[
-            styles.brutalBtnShadow,
-            {
-              backgroundColor: shadowColor,
-              borderColor: soft ? 'transparent' : borderColor,
-              borderWidth: soft ? 0 : StyleSheet.hairlineWidth,
-              transform: [{ translateX: shadow }, { translateY: shadow }],
-            },
-          ]}
-        />
-      ) : null}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.brutalBtnShadow,
+          {
+            backgroundColor: shadowColor,
+            borderColor: soft ? 'transparent' : borderColor,
+            borderWidth: soft ? 0 : StyleSheet.hairlineWidth,
+            transform: [{ translateX: shadow }, { translateY: shadow }],
+          },
+        ]}
+      />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
@@ -332,7 +333,7 @@ function CatalogListRow({
   const settingsHoverBg = manageOnly
     ? 'rgba(255,255,255,0.92)'
     : (actionHoverBg ?? settingsBg);
-  const brutalShadow = shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT);
+  const actionSoftShadow = isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT;
   /** 관리 행 액션은 항상 흰 면 + 검정 아이콘 (어두운 포스트잇에서도 보이게) */
   const actionGlyphColor = manageOnly ? '#000000' : ink;
   const actionGlyphMuted = manageOnly ? 'rgba(0,0,0,0.55)' : muted;
@@ -513,15 +514,18 @@ function CatalogListRow({
               <View
                 style={[
                   styles.catalogIconBoxShell,
-                  { marginRight: 2, marginBottom: 2 },
+                  { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
                 ]}>
                 <View
                   pointerEvents="none"
                   style={[
                     styles.catalogIconBoxShadow,
                     {
-                      backgroundColor: brutalShadow,
-                      transform: [{ translateX: 2 }, { translateY: 2 }],
+                      backgroundColor: actionSoftShadow,
+                      transform: [
+                        { translateX: ACTION_SHADOW },
+                        { translateY: ACTION_SHADOW },
+                      ],
                     },
                   ]}
                 />
@@ -599,7 +603,7 @@ function CatalogListRow({
                 borderColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)') : settingsBorder}
                 backgroundColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)') : settingsBg}
                 pressedBg={settingsHoverBg}
-                shadowColor={brutalShadow}
+                shadowColor={actionSoftShadow}
                 soft={manageOnly}
                 onPress={() => {
                   if (settingsLocked) return;
@@ -654,7 +658,7 @@ function CatalogListRow({
                 borderColor={settingsBorder}
                 backgroundColor={settingsBg}
                 pressedBg={settingsHoverBg}
-                shadowColor={brutalShadow}
+                shadowColor={actionSoftShadow}
                 soft={manageOnly}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -803,7 +807,7 @@ function CatalogListRow({
               borderColor={settingsBorder}
               backgroundColor={settingsBg}
               pressedBg={settingsHoverBg}
-              shadowColor={brutalShadow}
+              shadowColor={actionSoftShadow}
               soft
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -843,7 +847,7 @@ function CatalogListRow({
                     : 'rgba(0,0,0,0.02)'
                   : settingsBg
               }
-              shadowColor={brutalShadow}
+              shadowColor={actionSoftShadow}
               soft={manageOnly}
               onPress={() => {
                 if (settingsLocked) return;
@@ -1461,7 +1465,8 @@ function GroupSectionBlock({
           borderColor={headerBtnBorder}
           backgroundColor={headerBtnBg}
           pressedBg={headerBtnBg}
-          shadowColor={isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT}
+          shadowColor={isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT}
+          soft
           width={50}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1506,7 +1511,8 @@ function GroupSectionBlock({
         <PostItCardShell
           isDark={isDark}
           faceColor={postItFaceColor}
-          shadowColor={isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT}
+          shadowColor={isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT}
+          shadowOffset={ACTION_SHADOW}
           borderColor={
             postItFaceColorId === 'white' && !isDark ? 'rgba(0,0,0,0.16)' : undefined
           }
@@ -1847,7 +1853,8 @@ export function PriorityCatalogPanel({
         <PostItCardShell
           isDark={isDark}
           faceColor={faceColor}
-          shadowColor={isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT}
+          shadowColor={isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT}
+          shadowOffset={ACTION_SHADOW}
           borderColor={
             flatFaceColorId === 'white' && !isDark ? 'rgba(0,0,0,0.16)' : undefined
           }
@@ -1922,12 +1929,24 @@ export function PriorityCatalogPanel({
                 </View>
               </View>
               {onCreatePress ? (
-                <View style={styles.flatSearchAddShell}>
+                <View
+                  style={[
+                    styles.flatSearchAddShell,
+                    { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
+                  ]}>
                   <View
                     pointerEvents="none"
                     style={[
                       styles.flatSearchAddShadow,
-                      { backgroundColor: isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT },
+                      {
+                        backgroundColor: isDark
+                          ? ACTION_SOFT_SHADOW_DARK
+                          : ACTION_SOFT_SHADOW_LIGHT,
+                        transform: [
+                          { translateX: ACTION_SHADOW },
+                          { translateY: ACTION_SHADOW },
+                        ],
+                      },
                     ]}
                   />
                   <Pressable
@@ -1937,25 +1956,11 @@ export function PriorityCatalogPanel({
                       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                       onCreatePress();
                     }}
-                    style={({ pressed }) => [
+                    style={[
                       styles.flatSearchAddFace,
                       {
-                        backgroundColor: pressed
-                          ? isDark
-                            ? '#3D5E60'
-                            : '#D5E8E9'
-                          : isDark
-                            ? RetroFlatColors.dark.surfaceAlt
-                            : '#FFFFFF',
+                        backgroundColor: isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF',
                       },
-                      pressed
-                        ? {
-                            transform: [
-                              { translateX: SOLID_SHADOW_OFFSET },
-                              { translateY: SOLID_SHADOW_OFFSET },
-                            ],
-                          }
-                        : null,
                     ]}>
                     <IconSymbol
                       name="plus"
@@ -2269,16 +2274,10 @@ const styles = StyleSheet.create({
   },
   flatSearchAddShell: {
     position: 'relative',
-    width: 40 + SOLID_SHADOW_OFFSET,
-    height: 40 + SOLID_SHADOW_OFFSET,
     flexShrink: 0,
   },
   flatSearchAddShadow: {
-    position: 'absolute',
-    left: SOLID_SHADOW_OFFSET,
-    top: SOLID_SHADOW_OFFSET,
-    width: 40,
-    height: 40,
+    ...StyleSheet.absoluteFillObject,
     borderRadius: RETRO_RADIUS,
   },
   flatSearchAddFace: {

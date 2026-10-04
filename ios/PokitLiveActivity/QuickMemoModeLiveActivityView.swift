@@ -34,7 +34,7 @@ enum QuickMemoModeLiveActivityView {
     let labelSize: CGFloat = 10
     let resolvedTitle: String = {
       let trimmed = (q.titleLabel ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-      return trimmed.isEmpty ? "빠른 메모" : trimmed
+      return trimmed.isEmpty ? "포스트잇" : trimmed
     }()
 
     VStack(alignment: .leading, spacing: 8) {

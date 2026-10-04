@@ -203,9 +203,10 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
   const resolvedConfirmLabel = confirmLabel?.trim() || t('dayPlan.applyTimeLabel');
   const resolvedConfirmA11y = confirmA11yLabel?.trim() || t('dayPlan.applyTimeA11y');
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const shadowInk = isDark ? tone.solidShadow : '#000000';
+  /** 투두 휴지통·액션 버튼과 동일 솔리드 음영 */
+  const shadowInk = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)';
   const panelSurface = isDark ? tone.surfaceAlt : tone.bg;
-  const shadowSize = isSheet ? 4 : 2;
+  const shadowSize = 1;
 
   const [draftStart, setDraftStart] = useState(() => formatMinutesToHHmm(startMinutes));
   const [draftEnd, setDraftEnd] = useState(() => formatMinutesToHHmm(endMinutes));
@@ -556,7 +557,7 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
           <SolidShadowFace
             shadowColor={shadowInk}
             backgroundColor={selected ? tone.bgMint : panelSurface}
-            shadowSize={2}
+            shadowSize={shadowSize}
             shellStyle={styles.dayChoiceShell}
             faceStyle={[styles.dayChoiceFace, isSheet && styles.dayChoiceFaceSheet]}>
             <ThemedText
@@ -695,7 +696,9 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
             label={resolvedConfirmLabel}
             accessibilityLabel={resolvedConfirmA11y}
             align="stretch"
+            compact
             disabled={disabled}
+            shadowColor={shadowInk}
             onPress={handleConfirm}
             style={styles.sheetConfirmBtn}
           />
@@ -788,7 +791,9 @@ export const CatalogRowSpineTimePanel = forwardRef<CatalogRowSpineTimePanelHandl
             label={resolvedConfirmLabel}
             accessibilityLabel={resolvedConfirmA11y}
             align="stretch"
+            compact
             disabled={disabled}
+            shadowColor={shadowInk}
             onPress={handleConfirm}
             style={styles.sheetConfirmBtn}
           />

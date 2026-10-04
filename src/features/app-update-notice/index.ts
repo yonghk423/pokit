@@ -6,6 +6,3 @@ export {
   resolveReleaseNoteHighlights,
 } from './lib/releaseNotes';
 export type { ReleaseNoteListItem } from './lib/releaseNotes';
-export { useAppUpdateNotice } from './model/useAppUpdateNotice';
-export type { AppUpdateNoticeState } from './model/useAppUpdateNotice';
-export { AppUpdateNoticeModal } from './ui/AppUpdateNoticeModal';

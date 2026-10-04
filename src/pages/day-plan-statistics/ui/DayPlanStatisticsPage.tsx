@@ -55,6 +55,11 @@ import { MonthlyHistorySummaryCard } from './MonthlyHistorySummaryCard';
 import { WeeklyFlowHistoryCard } from './WeeklyFlowHistoryCard';
 import { WeeklyHistorySummaryCard } from './WeeklyHistorySummaryCard';
 
+/** 투두 휴지통·액션 버튼과 동일 솔리드 음영 */
+const PERIOD_NAV_SHADOW = 1;
+const PERIOD_NAV_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
+const PERIOD_NAV_SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
+
 /** 하단 히스토리 탭 — 주간·월간 플로우 완료 기록 */
 export function DayPlanStatisticsPage() {
   const { t, locale } = useTranslation();
@@ -94,6 +99,9 @@ export function DayPlanStatisticsPage() {
   );
 
   const palette = useMemo(() => buildFlowHistoryPalette(isDark), [isDark]);
+  const periodNavSoftShadow = isDark
+    ? PERIOD_NAV_SOFT_SHADOW_DARK
+    : PERIOD_NAV_SOFT_SHADOW_LIGHT;
 
   const monthPrefix = useMemo(() => resolveMonthPrefix(anchorDateKey), [anchorDateKey]);
   const weekStartDateKey = useMemo(
@@ -210,15 +218,18 @@ export function DayPlanStatisticsPage() {
             <View
               style={[
                 styles.periodNavShell,
-                { marginRight: 3, marginBottom: 3 },
+                { marginRight: PERIOD_NAV_SHADOW, marginBottom: PERIOD_NAV_SHADOW },
               ]}>
               <View
                 pointerEvents="none"
                 style={[
                   styles.periodNavShadow,
                   {
-                    backgroundColor: palette.shadow,
-                    transform: [{ translateX: 3 }, { translateY: 3 }],
+                    backgroundColor: periodNavSoftShadow,
+                    transform: [
+                      { translateX: PERIOD_NAV_SHADOW },
+                      { translateY: PERIOD_NAV_SHADOW },
+                    ],
                   },
                 ]}
               />
@@ -230,24 +241,28 @@ export function DayPlanStatisticsPage() {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   shiftPeriod(-1);
                 }}
-                style={({ pressed }) => [
+                style={[
                   styles.periodNavBtn,
-                  {
-                    backgroundColor: pressed ? palette.accentSoft : palette.actionBg,
-                  },
-                  pressed && styles.periodNavPressed,
+                  { backgroundColor: palette.actionBg },
                 ]}>
                 <IconSymbol name="chevron.left" size={13} color={palette.ink} />
               </Pressable>
             </View>
-            <View style={[styles.periodLabelShell, { marginRight: 3, marginBottom: 3 }]}>
+            <View
+              style={[
+                styles.periodLabelShell,
+                { marginRight: PERIOD_NAV_SHADOW, marginBottom: PERIOD_NAV_SHADOW },
+              ]}>
               <View
                 pointerEvents="none"
                 style={[
                   styles.periodLabelShadow,
                   {
-                    backgroundColor: palette.shadow,
-                    transform: [{ translateX: 3 }, { translateY: 3 }],
+                    backgroundColor: periodNavSoftShadow,
+                    transform: [
+                      { translateX: PERIOD_NAV_SHADOW },
+                      { translateY: PERIOD_NAV_SHADOW },
+                    ],
                   },
                 ]}
               />
@@ -264,15 +279,18 @@ export function DayPlanStatisticsPage() {
             <View
               style={[
                 styles.periodNavShell,
-                { marginRight: 3, marginBottom: 3 },
+                { marginRight: PERIOD_NAV_SHADOW, marginBottom: PERIOD_NAV_SHADOW },
               ]}>
               <View
                 pointerEvents="none"
                 style={[
                   styles.periodNavShadow,
                   {
-                    backgroundColor: palette.shadow,
-                    transform: [{ translateX: 3 }, { translateY: 3 }],
+                    backgroundColor: periodNavSoftShadow,
+                    transform: [
+                      { translateX: PERIOD_NAV_SHADOW },
+                      { translateY: PERIOD_NAV_SHADOW },
+                    ],
                   },
                 ]}
               />
@@ -286,13 +304,9 @@ export function DayPlanStatisticsPage() {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   shiftPeriod(1);
                 }}
-                style={({ pressed }) => [
+                style={[
                   styles.periodNavBtn,
-                  {
-                    backgroundColor:
-                      pressed && canGoNext ? palette.accentSoft : palette.actionBg,
-                  },
-                  pressed && canGoNext && styles.periodNavPressed,
+                  { backgroundColor: palette.actionBg },
                 ]}>
                 <IconSymbol
                   name="chevron.right"
@@ -437,9 +451,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
-  },
-  periodNavPressed: {
-    opacity: 0.92,
   },
   periodLabelShell: {
     flex: 1,

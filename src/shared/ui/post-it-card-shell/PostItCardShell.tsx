@@ -34,6 +34,8 @@ type Props = {
    * @default true
    */
   solidShadow?: boolean;
+  /** 솔리드 음영 오프셋(px). 생략 시 compact면 2, 아니면 3 */
+  shadowOffset?: number;
 };
 
 /**
@@ -50,10 +52,11 @@ export function PostItCardShell({
   borderColor,
   borderWidth = 0,
   solidShadow = true,
+  shadowOffset,
 }: Props) {
   const face = faceColor ?? (isDark ? POST_IT_WHITE_DARK : POST_IT_WHITE_LIGHT);
   const shadow = shadowColor ?? POST_IT_SOLID_SHADOW;
-  const offset = compact ? SHADOW_COMPACT : SHADOW;
+  const offset = shadowOffset ?? (compact ? SHADOW_COMPACT : SHADOW);
   const tape = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.78)';
   const outlineW = solidShadow && borderColor ? Math.max(borderWidth, 1) : 0;
 

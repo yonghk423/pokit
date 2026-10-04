@@ -604,19 +604,28 @@ export const useDayPlanStore = create<DayPlanStoreState>((set, get) => {
               : b.categoryKey;
           const nextCategory =
             patch.category !== undefined ? patch.category.trim() : b.category;
+          let hasManualOverride = existing.hasManualScheduleOverride === true;
+          if (patch.hasManualScheduleOverride === false) {
+            hasManualOverride = false;
+          } else if (patch.hasManualScheduleOverride === true) {
+            hasManualOverride = true;
+          } else if (
+            existing.blockOrigin === 'spineTimeline' &&
+            (patch.startMinutes !== undefined ||
+              patch.endMinutes !== undefined ||
+              patch.endsNextCalendarDay !== undefined)
+          ) {
+            hasManualOverride = true;
+          }
           return {
             ...b,
             title,
             startMinutes: start,
             endMinutes: end,
             ...(endsNext ? { endsNextCalendarDay: true as const } : { endsNextCalendarDay: undefined }),
-            ...(patch.hasManualScheduleOverride === true ||
-            (existing.blockOrigin === 'spineTimeline' &&
-              (patch.startMinutes !== undefined ||
-                patch.endMinutes !== undefined ||
-                patch.endsNextCalendarDay !== undefined))
+            ...(hasManualOverride
               ? { hasManualScheduleOverride: true as const }
-              : {}),
+              : { hasManualScheduleOverride: undefined }),
             category: nextCategory,
             ...(nextCategoryKey ? { categoryKey: nextCategoryKey } : { categoryKey: undefined }),
           };

@@ -3,7 +3,6 @@ import { forwardRef, useImperativeHandle, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useMeasuredAccordion } from '@shared/lib/hooks';
 import { formatHhmmClock, useTranslation } from '@shared/lib/i18n';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
@@ -109,9 +108,10 @@ export const SnappedTimePickerField = forwardRef<
     }),
     [valueHhmm],
   );
-  const shadowInk = palette.shadow ?? (isDark ? RetroFlatColors.dark.solidShadow : '#000000');
+  const softShadow = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)';
+  const shadowInk = palette.shadow ?? softShadow;
   const dateCaptionColor = palette.dateCaption ?? palette.onVariant;
-  const pillShadow = expanded ? 0 : 2;
+  const pillShadow = expanded ? 0 : 1;
   const accordion = useMeasuredAccordion(expanded);
   const minuteInterval = toNativeMinuteInterval(snapStepMinutes);
 
@@ -234,6 +234,8 @@ export const SnappedTimePickerField = forwardRef<
             <BrutalConfirmButton
               accessibilityLabel={t('dayPlan.timeConfirmA11y', { label })}
               disabled={disabled}
+              compact
+              shadowColor={softShadow}
               onPress={() => {
                 if (onBeforeConfirm && !onBeforeConfirm(valueHhmm)) return;
                 void Haptics.selectionAsync();

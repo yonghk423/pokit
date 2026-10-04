@@ -191,6 +191,8 @@ type FixedFlowSetsStoreState = {
     endMinutes: number,
     endsNextCalendarDay?: boolean,
   ) => boolean;
+  /** 루틴 시작·종료 시각을 미설정으로 되돌림 (모든 세트) */
+  clearCategorySpineScheduleInAnySet: (categoryKey: string) => boolean;
 
   setActiveSetOrder: (categoryKeys: string[]) => void;
   addCategoryToActiveSet: (categoryKey: string) => void;
@@ -992,6 +994,41 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       endMinutes,
       endsNextCalendarDay,
     );
+  },
+
+  clearCategorySpineScheduleInAnySet: (categoryKey) => {
+    const key = categoryKey.trim();
+    if (!key) return false;
+    const { sets, activeSetIds, activeMealSlotsBySetId } = get();
+    let changed = false;
+    const nextSets = sets.map((s) => {
+      if (!s.items.some((x) => x.categoryKey === key)) return s;
+      let setChanged = false;
+      const items = s.items.map((x) => {
+        if (x.categoryKey !== key) return x;
+        if (
+          x.spineStartMinutes == null &&
+          x.spineEndMinutes == null &&
+          x.spineEndsNextCalendarDay == null
+        ) {
+          return x;
+        }
+        setChanged = true;
+        changed = true;
+        const {
+          spineStartMinutes: _s,
+          spineEndMinutes: _e,
+          spineEndsNextCalendarDay: _n,
+          ...rest
+        } = x;
+        return rest;
+      });
+      return setChanged ? { ...s, items } : s;
+    });
+    if (!changed) return false;
+    set({ sets: nextSets });
+    persistState(set, get, { activeSetIds, activeMealSlotsBySetId, sets: nextSets });
+    return true;
   },
 
   setActiveSetOrder: (categoryKeys) => {

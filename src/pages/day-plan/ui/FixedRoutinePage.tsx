@@ -59,7 +59,7 @@ import {
   isRoutineStartNotifyEnabled,
   persistRoutineStartNotifyToggle,
 } from '@features/day-plan-notifications';
-import { CityPopSpacing, RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
+import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { formatDateKeyCompact, t } from '@shared/lib/i18n';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
@@ -172,9 +172,12 @@ function sectionHintText(
 }
 
 const FLOW_MEAL_SLOT_PANEL_HEIGHT = 56;
-const BRUTAL_SHADOW_SM = 2;
+/** 투두 휴지통과 동일 — offset 1 + 옅은 반투명 */
+const ACTION_SHADOW = 1;
+const ACTION_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
+const ACTION_SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
 
-/** 시안 `w-10 h-10 border bg-white brutal-shadow-sm` */
+/** 시안 `w-10 h-10 border bg-white` — 투두 휴지통 음영 */
 function FlowBrutalActionButton({
   accessibilityLabel,
   accessibilityState,
@@ -207,7 +210,7 @@ function FlowBrutalActionButton({
     <View
       style={[
         styles.brutalBtnShell,
-        { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+        { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
       ]}>
       <View
         pointerEvents="none"
@@ -215,7 +218,7 @@ function FlowBrutalActionButton({
           styles.brutalBtnShadow,
           {
             backgroundColor: shadowColor,
-            transform: [{ translateX: BRUTAL_SHADOW_SM }, { translateY: BRUTAL_SHADOW_SM }],
+            transform: [{ translateX: ACTION_SHADOW }, { translateY: ACTION_SHADOW }],
           },
         ]}
       />
@@ -420,14 +423,14 @@ function FlowItemCard({
   const categoryKey = item.categoryKey;
   const titleHighlight = priorityMarkTitleHighlight(markColor, isDark);
   const MARK_SWATCH = 22;
-  const MARK_SHADOW = 2;
+  const MARK_SHADOW = ACTION_SHADOW;
   const icon = resolveCategoryCatalogIcon(categoryKey);
   const trackOff = isDark ? '#3f3f46' : '#e5e7eb';
   const shouldPulse = Boolean(isInTodayPlan && isFocusStarted && enabled && !isCompleted);
   const pulse = useRef(new Animated.Value(1)).current;
   const catalogTile = resolveCategoryCatalogIconTile(categoryKey);
   const iconBoxBg = catalogTile.boxBg;
-  const brutalShadow = shadow;
+  const actionSoftShadow = isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT;
 
   useEffect(() => {
     if (!shouldPulse) {
@@ -573,18 +576,17 @@ function FlowItemCard({
           <View
             style={[
               styles.flowIconBoxShell,
-              { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+              { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
             ]}>
             <View
               pointerEvents="none"
               style={[
                 styles.flowIconBoxShadow,
                 {
-                  backgroundColor: brutalShadow,
-                  borderColor: line,
+                  backgroundColor: actionSoftShadow,
                   transform: [
-                    { translateX: BRUTAL_SHADOW_SM },
-                    { translateY: BRUTAL_SHADOW_SM },
+                    { translateX: ACTION_SHADOW },
+                    { translateY: ACTION_SHADOW },
                   ],
                 },
               ]}
@@ -634,11 +636,11 @@ function FlowItemCard({
           <View
             style={[
               styles.flowDetailChevronShell,
-              { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+              { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
             ]}>
             <View
               pointerEvents="none"
-              style={[styles.flowDetailChevronShadow, { backgroundColor: brutalShadow }]}
+              style={[styles.flowDetailChevronShadow, { backgroundColor: actionSoftShadow }]}
             />
             <View style={[styles.flowDetailChevronFace, { backgroundColor: actionBg }]}>
               <Reanimated.View style={detailAccordion.chevronStyle}>
@@ -661,7 +663,7 @@ function FlowItemCard({
             borderColor={line}
             backgroundColor={actionBg}
             pressedBg={actionHoverBg}
-            shadowColor={brutalShadow}
+            shadowColor={actionSoftShadow}
             width={Math.max(32, mealSlotPickerBtnWidth(mealSlots))}
             onPress={handleToggleMealSlotExpand}>
             <Reanimated.View style={mealSlotIconAnimatedStyle}>
@@ -702,7 +704,7 @@ function FlowItemCard({
             borderColor={line}
             backgroundColor={actionBg}
             pressedBg={actionHoverBg}
-            shadowColor={brutalShadow}
+            shadowColor={actionSoftShadow}
             onPress={handleToggleSpineTimeExpand}>
             <Reanimated.View style={spineTimeIconAnimatedStyle}>
               <IconSymbol
@@ -720,7 +722,7 @@ function FlowItemCard({
             borderColor={line}
             backgroundColor={actionBg}
             pressedBg={actionHoverBg}
-            shadowColor={brutalShadow}
+            shadowColor={actionSoftShadow}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               handleToggleStartNotify();
@@ -737,7 +739,7 @@ function FlowItemCard({
           borderColor={line}
           backgroundColor={actionBg}
           pressedBg={actionBg}
-          shadowColor={brutalShadow}
+          shadowColor={actionSoftShadow}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onOpenSettings();
@@ -749,7 +751,7 @@ function FlowItemCard({
           borderColor={line}
           backgroundColor={actionBg}
           pressedBg={actionHoverBg}
-          shadowColor={brutalShadow}
+          shadowColor={actionSoftShadow}
           onPress={onDelete}>
           <IconSymbol name="trash" size={13} color={actionMuted} />
         </FlowBrutalActionButton>
@@ -806,7 +808,7 @@ function FlowItemCard({
                       style={[
                         styles.flowImportanceChipShadow,
                         {
-                          backgroundColor: shadow,
+                          backgroundColor: actionSoftShadow,
                           transform: [
                             { translateX: MARK_SHADOW },
                             { translateY: MARK_SHADOW },
@@ -857,7 +859,7 @@ function FlowItemCard({
                           style={[
                             styles.flowImportanceChipShadow,
                             {
-                              backgroundColor: shadow,
+                              backgroundColor: actionSoftShadow,
                               transform: [
                                 { translateX: MARK_SHADOW },
                                 { translateY: MARK_SHADOW },
@@ -1204,6 +1206,7 @@ function GroupAccordion({
   const actionInk = '#000000';
   const actionMuted = 'rgba(0,0,0,0.55)';
   const shadow = isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)';
+  const actionSoftShadow = isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT;
   const groupAccordion = useMeasuredAccordion(isExpanded, `group:${setItem.id}`);
   const displaySetName = resolveFixedFlowSetDisplayName(setItem);
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
@@ -1273,7 +1276,7 @@ function GroupAccordion({
     : null;
   const setTitleHighlight = priorityMarkTitleHighlight(groupTitleMark, isDark);
   const TITLE_MARK_SWATCH = 22;
-  const TITLE_MARK_SHADOW = 2;
+  const TITLE_MARK_SHADOW = ACTION_SHADOW;
   const ruleLabel = isPresetScheduleSet ? getFixedFlowSetScheduleLabel(setItem) : null;
   const scheduleHint = isPresetScheduleSet ? getFixedFlowPresetScheduleHint(setItem.applyRule) : null;
 
@@ -1281,7 +1284,8 @@ function GroupAccordion({
     <PostItCardShell
       isDark={isDark}
       faceColor={sectionBg}
-      shadowColor={shadow}
+      shadowColor={actionSoftShadow}
+      shadowOffset={ACTION_SHADOW}
       borderColor={postItFaceColorId === 'white' && !isDark ? 'rgba(0,0,0,0.16)' : undefined}
       borderWidth={postItFaceColorId === 'white' && !isDark ? StyleSheet.hairlineWidth : 0}>
     <View style={styles.accordionSectionInner}>
@@ -1391,17 +1395,17 @@ function GroupAccordion({
               <View
                 style={[
                   styles.brutalBtnShell,
-                  { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
+                  { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
                 ]}>
                 <View
                   pointerEvents="none"
                   style={[
                     styles.brutalBtnShadow,
                     {
-                      backgroundColor: shadow,
+                      backgroundColor: actionSoftShadow,
                       transform: [
-                        { translateX: BRUTAL_SHADOW_SM },
-                        { translateY: BRUTAL_SHADOW_SM },
+                        { translateX: ACTION_SHADOW },
+                        { translateY: ACTION_SHADOW },
                       ],
                     },
                   ]}
@@ -1427,7 +1431,7 @@ function GroupAccordion({
               borderColor={line}
               backgroundColor={applyBg}
               pressedBg={applyBg}
-              shadowColor={shadow}
+              shadowColor={actionSoftShadow}
               width={58}
               lockVisual
               onPress={() => {
@@ -1452,7 +1456,7 @@ function GroupAccordion({
                 borderColor={line}
                 backgroundColor={actionBg}
                 pressedBg={actionHoverBg}
-                shadowColor={shadow}
+                shadowColor={actionSoftShadow}
                 onPress={onDeleteSet}>
                 <IconSymbol name="trash" size={13} color={actionMuted} />
               </FlowBrutalActionButton>
@@ -1466,7 +1470,7 @@ function GroupAccordion({
               borderColor={line}
               backgroundColor={actionBg}
               pressedBg={actionBg}
-              shadowColor={shadow}
+              shadowColor={actionSoftShadow}
               width={50}
               lockVisual
               onPress={onToggleExpand}>
@@ -1484,14 +1488,14 @@ function GroupAccordion({
       </View>
 
       <View style={styles.headerPostItChips}>
-        <ColorPaletteAccordion ink={ink} isDark={isDark} shadowColor={shadow}>
+        <ColorPaletteAccordion ink={ink} isDark={isDark} shadowColor={actionSoftShadow}>
           <PostItFaceColorChips
             compact
             collapsible={false}
             selectedId={postItFaceColorId}
             isDark={isDark}
             ink={ink}
-            shadowColor={shadow}
+            shadowColor={actionSoftShadow}
             onSelect={onSelectPostItFaceColor}
           />
         </ColorPaletteAccordion>
@@ -1546,7 +1550,7 @@ function GroupAccordion({
                     style={[
                       styles.setTitleMarkChipShadow,
                       {
-                        backgroundColor: shadow,
+                        backgroundColor: actionSoftShadow,
                         transform: [
                           { translateX: TITLE_MARK_SHADOW },
                           { translateY: TITLE_MARK_SHADOW },
@@ -1597,7 +1601,7 @@ function GroupAccordion({
                         style={[
                           styles.setTitleMarkChipShadow,
                           {
-                            backgroundColor: shadow,
+                            backgroundColor: actionSoftShadow,
                             transform: [
                               { translateX: TITLE_MARK_SHADOW },
                               { translateY: TITLE_MARK_SHADOW },
@@ -1628,7 +1632,7 @@ function GroupAccordion({
               muted={muted}
               line={line}
               faceBg={sectionBg}
-              shadowColor={shadow}
+              shadowColor={actionSoftShadow}
               onChange={onSetApplyWeekdays}
             />
           ) : null}
@@ -2320,7 +2324,7 @@ export function FixedRoutinePage({
     ? 'rgba(255,255,255,0.28)'
     : 'rgba(0,0,0,0.18)';
   const addGroupPlusRest = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
-  const addGroupPlusPressed = isDark ? '#3D5E60' : '#D5E8E9';
+  const addGroupActionShadow = isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT;
 
   const openRoutineTemplateDetail = useCallback(
     (templateKey: CustomFlowTemplateKey) => {
@@ -2379,6 +2383,8 @@ export function FixedRoutinePage({
               compact
               isDark={isDark}
               faceColor={addGroupFace}
+              shadowColor={addGroupActionShadow}
+              shadowOffset={ACTION_SHADOW}
               style={styles.addGroupCardOuter}
               contentStyle={styles.addGroupCard}>
               <ThemedText style={[styles.addGroupCaption, { color: addGroupMuted }]}>
@@ -2427,45 +2433,48 @@ export function FixedRoutinePage({
                 setIsAddingGroup(true);
               }}
               style={styles.addGroupTriggerHit}>
-              {({ pressed }) => (
-                <PostItCardShell
-                  compact
-                  isDark={isDark}
-                  faceColor={addGroupFace}
-                  style={styles.addGroupTriggerOuter}
-                  contentStyle={styles.addGroupTrigger}>
-                  <View style={styles.addGroupTriggerMain}>
-                    <ThemedText
-                      style={[styles.addGroupTriggerLabel, { color: addGroupInk, flexShrink: 1 }]}
-                      numberOfLines={2}>
-                      {t('fixedRoutine.addGroup')}
-                    </ThemedText>
-                    <View style={styles.addGroupPlusShell} pointerEvents="none">
-                      <View
-                        style={[
-                          styles.addGroupPlusShadow,
-                          { backgroundColor: isDark ? RetroFlatColors.dark.solidShadow : '#000000' },
-                        ]}
-                      />
-                      <View
-                        style={[
-                          styles.addGroupPlusFace,
-                          { backgroundColor: pressed ? addGroupPlusPressed : addGroupPlusRest },
-                          pressed
-                            ? {
-                                transform: [
-                                  { translateX: SOLID_SHADOW_OFFSET },
-                                  { translateY: SOLID_SHADOW_OFFSET },
-                                ],
-                              }
-                            : null,
-                        ]}>
-                        <IconSymbol name="plus" size={13} color={addGroupInk} />
-                      </View>
+              <PostItCardShell
+                compact
+                isDark={isDark}
+                faceColor={addGroupFace}
+                shadowColor={addGroupActionShadow}
+                shadowOffset={ACTION_SHADOW}
+                style={styles.addGroupTriggerOuter}
+                contentStyle={styles.addGroupTrigger}>
+                <View style={styles.addGroupTriggerMain}>
+                  <ThemedText
+                    style={[styles.addGroupTriggerLabel, { color: addGroupInk, flexShrink: 1 }]}
+                    numberOfLines={2}>
+                    {t('fixedRoutine.addGroup')}
+                  </ThemedText>
+                  <View
+                    style={[
+                      styles.addGroupPlusShell,
+                      { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
+                    ]}
+                    pointerEvents="none">
+                    <View
+                      style={[
+                        styles.addGroupPlusShadow,
+                        {
+                          backgroundColor: addGroupActionShadow,
+                          transform: [
+                            { translateX: ACTION_SHADOW },
+                            { translateY: ACTION_SHADOW },
+                          ],
+                        },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.addGroupPlusFace,
+                        { backgroundColor: addGroupPlusRest },
+                      ]}>
+                      <IconSymbol name="plus" size={13} color={addGroupInk} />
                     </View>
                   </View>
-                </PostItCardShell>
-              )}
+                </View>
+              </PostItCardShell>
             </Pressable>
           )
         ) : activeSection !== 'catalog' &&
@@ -3042,16 +3051,10 @@ const styles = StyleSheet.create({
   },
   addGroupPlusShell: {
     position: 'relative',
-    width: 26 + SOLID_SHADOW_OFFSET,
-    height: 26 + SOLID_SHADOW_OFFSET,
     flexShrink: 0,
   },
   addGroupPlusShadow: {
-    position: 'absolute',
-    left: SOLID_SHADOW_OFFSET,
-    top: SOLID_SHADOW_OFFSET,
-    width: 26,
-    height: 26,
+    ...StyleSheet.absoluteFillObject,
   },
   addGroupPlusFace: {
     width: 26,
@@ -3181,7 +3184,7 @@ const styles = StyleSheet.create({
   flowDetailChevronShadow: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 0,
-    transform: [{ translateX: BRUTAL_SHADOW_SM }, { translateY: BRUTAL_SHADOW_SM }],
+    transform: [{ translateX: ACTION_SHADOW }, { translateY: ACTION_SHADOW }],
   },
   flowDetailChevronFace: {
     ...StyleSheet.absoluteFillObject,

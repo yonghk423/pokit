@@ -22,7 +22,11 @@ import {
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useAppLocaleStore, useTranslation } from '@shared/lib/i18n';
-import { loadAnnouncementReadIds, markAnnouncementRead } from '@shared/lib/storage';
+import {
+  loadAnnouncementReadIds,
+  markAnnouncementRead,
+  markAnnouncementsRead,
+} from '@shared/lib/storage';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -144,6 +148,19 @@ export function AnnouncementsPage() {
     setSelected(item);
   }, []);
 
+  const markAllRead = useCallback(() => {
+    if (items.length === 0) return;
+    const unreadIds = items.map((item) => item.id).filter((id) => !readIds.has(id));
+    if (unreadIds.length === 0) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    markAnnouncementsRead(unreadIds);
+    setReadIds((prev) => {
+      const next = new Set(prev);
+      for (const id of unreadIds) next.add(id);
+      return next;
+    });
+  }, [items, readIds]);
+
   const priorityLabel = useCallback(
     (priority: Announcement['priority']) => {
       if (priority === 'force') return t('announcements.priority.force');
@@ -154,6 +171,7 @@ export function AnnouncementsPage() {
   );
 
   const empty = !loading && !error && items.length === 0;
+  const hasUnread = items.some((item) => !readIds.has(item.id));
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: pageBg }]} darkColor={pageBg} lightColor={pageBg}>
@@ -174,7 +192,17 @@ export function AnnouncementsPage() {
             <ThemedText style={[styles.topLabel, { color: rf.textMuted }]}>{t('settings.title')}</ThemedText>
             <ThemedText style={[styles.topPage, { color: rf.text }]}>{t('announcements.title')}</ThemedText>
           </View>
-          <View style={styles.headerBtn} pointerEvents="none" />
+          {hasUnread ? (
+            <BrutalConfirmButton
+              compact
+              label={t('announcements.markAllRead')}
+              accessibilityLabel={t('announcements.a11y.markAllRead')}
+              onPress={markAllRead}
+              style={styles.headerActionBtn}
+            />
+          ) : (
+            <View style={styles.headerActionSpacer} pointerEvents="none" />
+          )}
         </View>
 
         <ScrollView
@@ -323,16 +351,31 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: CityPopSpacing.gutter,
     marginBottom: 8,
+    minHeight: 44,
   },
   headerBtn: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
-  topTitles: { flex: 1, alignItems: 'center' },
+  headerActionBtn: {
+    zIndex: 1,
+  },
+  headerActionSpacer: {
+    width: 72,
+    height: 40,
+  },
+  topTitles: {
+    position: 'absolute',
+    left: CityPopSpacing.gutter + 88,
+    right: CityPopSpacing.gutter + 88,
+    alignItems: 'center',
+  },
   topLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.4 },
   topPage: { fontSize: 16, fontWeight: '700', marginTop: 2, letterSpacing: -0.2 },
   bodyPad: { flex: 1, paddingHorizontal: CityPopSpacing.marginMobile },

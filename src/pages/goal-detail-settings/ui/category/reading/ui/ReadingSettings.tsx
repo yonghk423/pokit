@@ -65,10 +65,13 @@ import type { GoalDetailCategoryKey } from '../../../../model/types';
 
 type SettingsPalette = GoalDetailSettingsPalette;
 
-const HEADER_ICON_SHADOW = 2;
-const LIST_ROW_SHADOW = 3;
-const LIST_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.14)';
-const LIST_SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.35)';
+/** +·돋보기 헤더 아이콘과 동일 솔리드 음영 */
+const HEADER_ICON_SHADOW = 1;
+const HEADER_ICON_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
+const HEADER_ICON_SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
+const LIST_ROW_SHADOW = HEADER_ICON_SHADOW;
+const LIST_SOFT_SHADOW_LIGHT = HEADER_ICON_SOFT_SHADOW_LIGHT;
+const LIST_SOFT_SHADOW_DARK = HEADER_ICON_SOFT_SHADOW_DARK;
 
 type LibraryTab = 'all' | ReadingBookStatus;
 
@@ -252,7 +255,9 @@ export function ReadingSettings({
   const palette = useGoalDetailSettingsPalette(isDark);
   const c = palette;
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const shadowInk = isDark ? tone.solidShadow : tone.text;
+  const headerIconShadow = isDark
+    ? HEADER_ICON_SOFT_SHADOW_DARK
+    : HEADER_ICON_SOFT_SHADOW_LIGHT;
   const headerBtnFace = isDark ? tone.surfaceAlt : '#FFFFFF';
 
   const librarySortLabels = useMemo(
@@ -553,7 +558,7 @@ export function ReadingSettings({
                 style={[
                   styles.headerIconShadow,
                   {
-                    backgroundColor: shadowInk,
+                    backgroundColor: headerIconShadow,
                     transform: [
                       { translateX: HEADER_ICON_SHADOW },
                       { translateY: HEADER_ICON_SHADOW },
@@ -580,7 +585,7 @@ export function ReadingSettings({
                   style={[
                     styles.headerIconShadow,
                     {
-                      backgroundColor: shadowInk,
+                      backgroundColor: headerIconShadow,
                       transform: [
                         { translateX: HEADER_ICON_SHADOW },
                         { translateY: HEADER_ICON_SHADOW },

@@ -72,6 +72,7 @@ import {
   readRoutineSummaryFromConfig,
   resolveRoutineSummaryForDisplay,
   sortDayPlanBlocks,
+  notifyFixedFlowApplyScheduleChanged,
   useDayPlanStore,
   useDayPlanChromeSettingsStore,
   useFixedFlowSetsStore,
@@ -79,7 +80,7 @@ import {
   useRoutineStartTimesStore,
   type CustomFlowTemplateKey
 } from '@entities/day-plan';
-import { RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import {
@@ -822,8 +823,12 @@ export function PriorityBasedPlanSection({
   const ensureCategorySpineScheduleInAnySet = useFixedFlowSetsStore(
     (s) => s.ensureCategorySpineScheduleInAnySet,
   );
+  const clearCategorySpineScheduleInAnySet = useFixedFlowSetsStore(
+    (s) => s.clearCategorySpineScheduleInAnySet,
+  );
   const routineStartTimesByKey = useRoutineStartTimesStore((s) => s.byCategoryKey);
   const setRoutineStartTime = useRoutineStartTimesStore((s) => s.setRoutineStartTime);
+  const clearRoutineStartTime = useRoutineStartTimesStore((s) => s.clearRoutineStartTime);
   const dayPlanDateKey = useDayPlanStore((s) => s.dateKey);
   const completedBlockIds = useDayPlanStore((s) => s.completedBlockIds);
   const skippedBlockIds = useDayPlanStore((s) => s.skippedBlockIds);
@@ -2585,6 +2590,45 @@ export function PriorityBasedPlanSection({
     ],
   );
 
+  const bagRowTimeCanReset = useMemo(() => {
+    if (!bagRowTimeEdit) return false;
+    return !resolveBagRowSpineSchedule(bagRowTimeEdit.categoryKey).isSuggested;
+  }, [bagRowTimeEdit, resolveBagRowSpineSchedule]);
+
+  const resetBagRowTime = useCallback(async () => {
+    if (!bagRowTimeEdit || !bagRowTimeCanReset) return;
+    Keyboard.dismiss();
+    const categoryKey = bagRowTimeEdit.categoryKey;
+
+    clearRoutineStartTime(categoryKey);
+    clearCategorySpineScheduleInAnySet(categoryKey);
+
+    const matchingBlocks = planBlocks.filter((b) => {
+      const key = resolveBlockCategoryKey(b) ?? resolveCategoryKeyFromLabel(b.category ?? '');
+      return (
+        resolvePriorityRoutineCategoryKey(key ?? '') === categoryKey || key === categoryKey
+      );
+    });
+    for (const block of matchingBlocks) {
+      if (block.hasManualScheduleOverride !== true) continue;
+      updatePlanBlock(block.id, { hasManualScheduleOverride: false });
+    }
+
+    notifyFixedFlowApplyScheduleChanged();
+    await flushLocalStorageClientWrites();
+
+    setBagRowTimeConfirmed(false);
+    setBagRowTimeEdit(null);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [
+    bagRowTimeCanReset,
+    bagRowTimeEdit,
+    clearCategorySpineScheduleInAnySet,
+    clearRoutineStartTime,
+    planBlocks,
+    updatePlanBlock,
+  ]);
+
   /** c.containerLow 한 값을 모든 컨테이너에 직접 지정 — 중간 View 투명 영역에서 톤 차이 원천 제거 */
   const surfaceBg = c.containerLow;
 
@@ -2812,8 +2856,8 @@ export function PriorityBasedPlanSection({
             style={[
               styles.timeModalCardShell,
               {
-                marginRight: SOLID_SHADOW_OFFSET,
-                marginBottom: SOLID_SHADOW_OFFSET,
+                marginRight: 1,
+                marginBottom: 1,
               },
             ]}>
             <View
@@ -2822,12 +2866,9 @@ export function PriorityBasedPlanSection({
                 styles.timeModalCardShadow,
                 {
                   backgroundColor: isDark
-                    ? RetroFlatColors.dark.solidShadow
-                    : RetroFlatColors.light.text,
-                  transform: [
-                    { translateX: SOLID_SHADOW_OFFSET },
-                    { translateY: SOLID_SHADOW_OFFSET },
-                  ],
+                    ? 'rgba(255, 255, 255, 0.12)'
+                    : 'rgba(0, 0, 0, 0.12)',
+                  transform: [{ translateX: 1 }, { translateY: 1 }],
                 },
               ]}
             />
@@ -2890,35 +2931,82 @@ export function PriorityBasedPlanSection({
                   />
                 </>
               ) : null}
-              <View style={styles.timeModalFooterActions}>
-                <BrutalConfirmButton
-                  align="stretch"
-                  compact
-                  label={t('common.cancel')}
-                  accessibilityLabel={t('dayPlan.cancelClose')}
-                  fill={isDark ? RetroFlatColors.dark.surfaceAlt : RetroFlatColors.light.bg}
-                  labelColor={editorial.muted}
-                  style={styles.timeModalCancelBtn}
-                  onPress={closeBagRowTimeModal}
-                />
-                <BrutalConfirmButton
-                  align="stretch"
-                  compact
-                  label={t('common.save')}
-                  accessibilityLabel={t('dayPlan.saveRoutineTimeA11y')}
-                  style={styles.timeModalSaveBtn}
-                  disabled={!bagRowTimeConfirmed}
-                  onPress={() => {
-                    if (!bagRowTimeConfirmed) return;
-                    const next = bagRowTimePanelRef.current?.commitPendingSchedule();
-                    if (!next) return;
-                    applyBagRowTimeFromPanel(
-                      next.startMinutes,
-                      next.endMinutes,
-                      next.endsNextCalendarDay,
-                    );
-                  }}
-                />
+              <View style={styles.timeModalFooterStack}>
+                <View style={styles.timeModalFooterActions}>
+                  <BrutalConfirmButton
+                    align="stretch"
+                    compact
+                    label={t('common.cancel')}
+                    accessibilityLabel={t('dayPlan.cancelClose')}
+                    fill={isDark ? RetroFlatColors.dark.surfaceAlt : RetroFlatColors.light.bg}
+                    labelColor={editorial.muted}
+                    shadowColor={
+                      isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'
+                    }
+                    style={styles.timeModalCancelBtn}
+                    onPress={closeBagRowTimeModal}
+                  />
+                  <BrutalConfirmButton
+                    align="stretch"
+                    compact
+                    label={t('common.save')}
+                    accessibilityLabel={t('dayPlan.saveRoutineTimeA11y')}
+                    shadowColor={
+                      isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'
+                    }
+                    style={styles.timeModalSaveBtn}
+                    disabled={!bagRowTimeConfirmed}
+                    onPress={() => {
+                      if (!bagRowTimeConfirmed) return;
+                      const next = bagRowTimePanelRef.current?.commitPendingSchedule();
+                      if (!next) return;
+                      applyBagRowTimeFromPanel(
+                        next.startMinutes,
+                        next.endMinutes,
+                        next.endsNextCalendarDay,
+                      );
+                    }}
+                  />
+                </View>
+                <View
+                  style={[
+                    styles.timeModalResetShell,
+                    { marginRight: 1, marginBottom: 1 },
+                  ]}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.timeModalResetShadow,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255, 255, 255, 0.12)'
+                          : 'rgba(0, 0, 0, 0.12)',
+                      },
+                    ]}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('dayPlan.resetRoutineTimeA11y')}
+                    accessibilityState={{ disabled: !bagRowTimeCanReset }}
+                    disabled={!bagRowTimeCanReset}
+                    hitSlop={6}
+                    onPress={() => {
+                      void resetBagRowTime();
+                    }}
+                    style={[
+                      styles.timeModalResetFace,
+                      {
+                        backgroundColor: isDark
+                          ? RetroFlatColors.dark.surfaceAlt
+                          : '#FFFFFF',
+                        opacity: bagRowTimeCanReset ? 1 : 0.55,
+                      },
+                    ]}>
+                    <ThemedText style={[styles.timeModalResetText, { color: editorial.ink }]}>
+                      {t('dayPlan.resetRoutineTime')}
+                    </ThemedText>
+                  </Pressable>
+                </View>
               </View>
             </ScrollView>
             </View>
@@ -4038,11 +4126,37 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  timeModalFooterActions: {
+  timeModalFooterStack: {
     marginTop: 6,
+    gap: 4,
+  },
+  timeModalFooterActions: {
     flexDirection: 'row',
     alignItems: 'stretch',
     gap: 8,
+  },
+  timeModalResetShell: {
+    alignSelf: 'flex-end',
+    position: 'relative',
+  },
+  timeModalResetShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+    transform: [{ translateX: 1 }, { translateY: 1 }],
+  },
+  timeModalResetFace: {
+    minHeight: 28,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 0,
+    zIndex: 1,
+  },
+  timeModalResetText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.15,
   },
   timeModalCancelBtn: {
     flex: 1,

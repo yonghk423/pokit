@@ -65,6 +65,8 @@ const MARK_CHIP_RADIUS = 6;
 /** 형광펜 밑줄 — FixedRoutine / priority row 와 동일 톤 */
 const TITLE_UNDERLINE_HEIGHT = 10;
 const TITLE_UNDERLINE_BOTTOM_INSET = 2;
+/** taskInput.lineHeight 와 동일 — onTextLayout height가 짧게 나와도 밑줄 위치 유지 */
+const TASK_INPUT_LINE_HEIGHT = 20;
 
 type TitleUnderlineLine = {
   left: number;
@@ -356,15 +358,22 @@ function TodoListRow({
                 pointerEvents="none"
                 accessibilityElementsHidden
                 importantForAccessibility="no-hide-descendants"
-                type="defaultSemiBold"
                 onTextLayout={(event) => {
-                  const next = event.nativeEvent.lines.map((line) => ({
-                    left: Math.round(line.x) - 2,
-                    top: Math.round(
-                      line.y + line.height - TITLE_UNDERLINE_HEIGHT - TITLE_UNDERLINE_BOTTOM_INSET,
-                    ),
-                    width: Math.ceil(line.width) + 4,
-                  }));
+                  const next = event.nativeEvent.lines.map((line) => {
+                    // 짧은 CJK 등에서 line.height가 실제 줄간보다 작게 보고되면
+                    // 밑줄이 글자 전체를 덮는 것처럼 보이므로 스타일 lineHeight를 바닥으로 쓴다.
+                    const lineBoxHeight = Math.max(line.height, TASK_INPUT_LINE_HEIGHT);
+                    return {
+                      left: Math.round(line.x) - 2,
+                      top: Math.round(
+                        line.y +
+                          lineBoxHeight -
+                          TITLE_UNDERLINE_HEIGHT -
+                          TITLE_UNDERLINE_BOTTOM_INSET,
+                      ),
+                      width: Math.ceil(line.width) + 4,
+                    };
+                  });
                   setUnderlineLines((prev) => {
                     if (
                       prev.length === next.length &&
@@ -1313,10 +1322,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: -0.15,
-    lineHeight: 20,
+    lineHeight: TASK_INPUT_LINE_HEIGHT,
     padding: 0,
     margin: 0,
-    minHeight: 20,
+    minHeight: TASK_INPUT_LINE_HEIGHT,
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
   },
   measureGhost: {

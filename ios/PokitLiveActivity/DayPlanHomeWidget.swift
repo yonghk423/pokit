@@ -465,7 +465,7 @@ struct DayPlanHomeWidget: Widget {
         DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.closed.fill", isCompleted: false),
         DayPlanRoutineStatusItem(categoryKey: "planning", iconName: "calendar.badge.clock", isCompleted: false),
       ],
-      quickMemoSectionTitle: "빠른 메모"
+      quickMemoSectionTitle: "포스트잇"
     )
   )
 }
@@ -504,7 +504,7 @@ struct DayPlanHomeWidget: Widget {
         DayPlanRoutineStatusItem(categoryKey: "stretching", iconName: "figure.run", isCompleted: false),
         DayPlanRoutineStatusItem(categoryKey: "reading", iconName: "book.closed.fill", isCompleted: false),
       ],
-      quickMemoSectionTitle: "빠른 메모"
+      quickMemoSectionTitle: "포스트잇"
     )
   )
 }
@@ -543,7 +543,7 @@ struct DayPlanHomeWidget: Widget {
         DayPlanRoutineStatusItem(categoryKey: "deepwork", iconName: "brain", isCompleted: false),
         DayPlanRoutineStatusItem(categoryKey: "water", iconName: "drop.fill", isCompleted: false),
       ],
-      quickMemoSectionTitle: "빠른 메모"
+      quickMemoSectionTitle: "포스트잇"
     )
   )
 }
@@ -566,7 +566,7 @@ struct DayPlanHomeWidget: Widget {
       completed: DayPlanRoutineSectionModel(title: "완료", count: 0, iconNames: []),
       quickMemos: [],
       routineItems: [],
-      quickMemoSectionTitle: "빠른 메모"
+      quickMemoSectionTitle: "포스트잇"
     )
   )
 }

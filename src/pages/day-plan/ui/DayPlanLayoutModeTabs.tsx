@@ -10,13 +10,20 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
+/** PlanModeSwitch(오늘/메모/노트/책방)와 동일 — 테두리 + offset 2 솔리드 음영 */
 const CHROME_SHADOW = 2;
+const CHROME_BORDER = 1;
+const CHROME_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
+const CHROME_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
+const CHROME_BORDER_LIGHT = '#000000';
+const CHROME_BORDER_DARK = 'rgba(255,255,255,0.55)';
 
 function ChromeShadowTab({
   active,
   activeBg,
   inactiveBg,
   shadowColor,
+  borderColor,
   onPress,
   accessibilityLabel,
   accessibilityState,
@@ -27,6 +34,7 @@ function ChromeShadowTab({
   activeBg: string;
   inactiveBg: string;
   shadowColor: string;
+  borderColor: string;
   onPress: () => void;
   accessibilityLabel: string;
   accessibilityState: { selected: boolean };
@@ -59,6 +67,7 @@ function ChromeShadowTab({
           labeled ? styles.labeledTab : styles.tab,
           {
             backgroundColor: active ? activeBg : inactiveBg,
+            borderColor,
           },
         ]}>
         {children}
@@ -214,6 +223,9 @@ export function DayPlanLayoutModeTabs({
     );
   }
 
+  const chromeShadow = isDark ? CHROME_SHADOW_DARK : CHROME_SHADOW_LIGHT;
+  const chromeBorder = isDark ? CHROME_BORDER_DARK : CHROME_BORDER_LIGHT;
+
   return (
     <View style={[styles.root, showLabels && styles.rootLabeled]}>
       {layoutTabs.map((item) => {
@@ -225,7 +237,8 @@ export function DayPlanLayoutModeTabs({
             active={active}
             activeBg={pill.activeBg}
             inactiveBg={isDark ? pill.inactiveBg : '#FFFFFF'}
-            shadowColor={isDark ? tone.solidShadow : '#000000'}
+            shadowColor={chromeShadow}
+            borderColor={chromeBorder}
             accessibilityLabel={showLabels ? label : t(item.a11yKey)}
             accessibilityState={{ selected: active }}
             labeled={showLabels}
@@ -268,7 +281,8 @@ export function DayPlanLayoutModeTabs({
           active={item.active}
           activeBg={pill.activeBg}
           inactiveBg={isDark ? pill.inactiveBg : '#FFFFFF'}
-          shadowColor={isDark ? tone.solidShadow : '#000000'}
+          shadowColor={chromeShadow}
+          borderColor={chromeBorder}
           accessibilityLabel={item.accessibilityLabel}
           accessibilityState={{ selected: item.active }}
           onPress={() => {
@@ -300,7 +314,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 0,
-    borderWidth: 0,
+    borderWidth: CHROME_BORDER,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
@@ -311,7 +325,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 34,
     borderRadius: 0,
-    borderWidth: 0,
+    borderWidth: CHROME_BORDER,
     paddingHorizontal: 10,
     paddingVertical: 7,
     gap: 5,
@@ -340,7 +354,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.15,
   },
   pressed: {
-    opacity: 0.72,
+    transform: [{ translateY: 1 }],
   },
   attachedRoot: {
     flexDirection: 'row',

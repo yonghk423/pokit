@@ -27,7 +27,9 @@ const OFF_FILL = '#FFFFFF';
 const OFF_INK = 'rgba(0,0,0,0.38)';
 
 const CHIP = 32;
-const SHADOW = 2;
+/** 투두 휴지통·액션 버튼과 동일 솔리드 음영 */
+const SHADOW = 1;
+const DEFAULT_SOFT_SHADOW = 'rgba(0, 0, 0, 0.12)';
 
 type Props = {
   selected: readonly WeekdayIndex[];
@@ -43,7 +45,7 @@ type Props = {
 export function ApplyWeekdayChips({
   selected,
   muted,
-  shadowColor = '#000000',
+  shadowColor = DEFAULT_SOFT_SHADOW,
   onChange,
 }: Props) {
   const { t } = useTranslation();
@@ -79,16 +81,13 @@ export function ApplyWeekdayChips({
               })}
               hitSlop={4}
               onPress={() => toggle(day)}
-              style={({ pressed }) => [
-                styles.chipShell,
-                pressed && { opacity: 0.88, transform: [{ translateX: 1 }, { translateY: 1 }] },
-              ]}>
+              style={styles.chipShell}>
               <View
                 pointerEvents="none"
                 style={[
                   styles.chipShadow,
                   {
-                    backgroundColor: on ? shadowColor : 'rgba(0,0,0,0.28)',
+                    backgroundColor: shadowColor,
                     transform: [{ translateX: SHADOW }, { translateY: SHADOW }],
                   },
                 ]}

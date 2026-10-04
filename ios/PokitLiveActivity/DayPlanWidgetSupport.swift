@@ -254,7 +254,7 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
         completed: DayPlanRoutineSectionModel(title: "완료", count: 0, iconNames: []),
         quickMemos: [],
         routineItems: [],
-        quickMemoSectionTitle: "빠른 메모"
+        quickMemoSectionTitle: "포스트잇"
       )
     )
   }
@@ -351,7 +351,7 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
   let quickMemoSectionTitle: String = {
     let trimmed = (snapshot.quickMemoSectionTitle ?? "")
       .trimmingCharacters(in: .whitespacesAndNewlines)
-    return trimmed.isEmpty ? "빠른 메모" : trimmed
+    return trimmed.isEmpty ? "포스트잇" : trimmed
   }()
 
   return (
@@ -412,7 +412,7 @@ struct DayPlanWidgetProvider: TimelineProvider {
           DayPlanRoutineStatusItem(categoryKey: "water", iconName: "drop.fill", isCompleted: false),
           DayPlanRoutineStatusItem(categoryKey: "stretching", iconName: "figure.run", isCompleted: false),
         ],
-        quickMemoSectionTitle: "빠른 메모"
+        quickMemoSectionTitle: "포스트잇"
       )
     )
   }

@@ -5,6 +5,11 @@ export const RECENT_RELEASE_NOTES_LIMIT = 12;
 
 /** 버전별 업데이트 안내 — i18n 키가 있으면 로케일 반영, 없으면 한국어 폴백 */
 const RELEASE_NOTE_I18N_KEYS: Record<string, readonly I18nKey[]> = {
+  '1.8.20': [
+    'appUpdate.release.1_8_20.h1',
+    'appUpdate.release.1_8_20.h2',
+    'appUpdate.release.1_8_20.h3',
+  ],
   '1.8.15': [
     'appUpdate.release.1_8_15.h1',
     'appUpdate.release.1_8_15.h2',

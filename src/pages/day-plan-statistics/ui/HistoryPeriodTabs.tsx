@@ -19,6 +19,11 @@ const TABS: { id: HistoryPeriod; labelKey: 'history.period.week' | 'history.peri
   { id: 'month', labelKey: 'history.period.month' },
 ];
 
+/** 투두 휴지통·액션 버튼과 동일 솔리드 음영 */
+const ACTION_SHADOW = 1;
+const ACTION_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
+const ACTION_SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
+
 /** 히스토리 — 루틴 탭(목록/템플릿)과 동일한 컴팩트 포스트잇 세그먼트 */
 export function HistoryPeriodTabs({ period, onSelectPeriod, isDark }: Props) {
   const { t } = useTranslation();
@@ -28,13 +33,15 @@ export function HistoryPeriodTabs({ period, onSelectPeriod, isDark }: Props) {
   const activeBg = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.72)';
   const activeText = isDark ? tone.text : tone.primary;
   const inactiveText = isDark ? tone.textMuted : tone.primary;
+  const softShadow = isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT;
 
   return (
     <PostItCardShell
       compact
       isDark={isDark}
       faceColor={face}
-      shadowColor={isDark ? '#5A5C72' : '#9A9AA8'}
+      shadowColor={softShadow}
+      shadowOffset={ACTION_SHADOW}
       style={styles.root}
       contentStyle={styles.track}>
       {TABS.map((tab, index) => {

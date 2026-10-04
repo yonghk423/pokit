@@ -87,7 +87,8 @@ export function BrutalConfirmButton({
   const resolvedLabel = label ?? t('common.confirm');
   const stretch = align === 'stretch';
   const showShadow = Boolean(resolvedShadow);
-  const shadowOffset = compact ? 2 : SOLID_SHADOW_OFFSET;
+  /** compact도 액션 버튼과 동일 offset 1 */
+  const shadowOffset = compact ? 1 : SOLID_SHADOW_OFFSET;
 
   return (
     <View

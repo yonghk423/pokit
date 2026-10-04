@@ -14,6 +14,7 @@ export {
   isAnnouncementRead,
   loadAnnouncementReadIds,
   markAnnouncementRead,
+  markAnnouncementsRead,
 } from './announcementReadStorage';
 export {
   dismissCatalogGroupKey,
