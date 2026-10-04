@@ -28,7 +28,7 @@ export const TODO_TABLE_BORDER_WIDTH = 1;
 
 export const TODO_LAYOUT = {
   checkboxSize: 22,
-  rowMinHeight: 46,
+  rowMinHeight: 36,
 } as const;
 
 export type TodoListUiColors = {

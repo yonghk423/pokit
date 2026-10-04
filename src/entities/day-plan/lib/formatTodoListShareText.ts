@@ -1,4 +1,3 @@
-import { formatMinutesToHHmm } from './dayPlanTimeMath';
 import type { DayPlanTodoItem } from '../model/types';
 
 /** 단일 할 일(+세부) 본문 — 복사·공유용 */
@@ -8,8 +7,7 @@ export function formatTodoItemShareText(params: {
 }): string {
   const { item, fallbackTitle } = params;
   const title = item.what.trim() || fallbackTitle;
-  const time = `${formatMinutesToHHmm(item.startMinutes)}–${formatMinutesToHHmm(item.endMinutes)}`;
-  const lines: string[] = [`${item.isDone ? '☑' : '☐'} ${title} (${time})`];
+  const lines: string[] = [`${item.isDone ? '☑' : '☐'} ${title}`];
 
   const subs = item.subItems ?? [];
   for (const sub of [...subs].sort((a, b) => a.order - b.order)) {

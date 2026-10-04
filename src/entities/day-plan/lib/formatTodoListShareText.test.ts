@@ -26,7 +26,7 @@ describe('formatTodoItemShareText', () => {
       item: sample,
       fallbackTitle: '할 일',
     });
-    expect(text).toContain('☐ 장보기 (01:00–02:00)');
+    expect(text).toContain('☐ 장보기');
     expect(text).toContain('☑ 우유');
     expect(text).toContain('☐ 계란');
   });

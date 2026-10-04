@@ -18,7 +18,6 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import {
-  formatMinutesToHHmm,
   formatTodoItemShareText,
   PRIORITY_MARK_COLOR_PRESETS,
   priorityMarkTitleHighlight,
@@ -52,8 +51,6 @@ import {
   todoListUiColors,
   type TodoListUiColors,
 } from '../lib/todoListTheme';
-import { TodoListTimeEditSheet } from './TodoListTimeEditSheet';
-
 const EMPTY_TODOS: DayPlanTodoItem[] = [];
 const FIELD_SHADOW = 1;
 const ACTION_SHADOW = 1;
@@ -106,6 +103,7 @@ function useMeasuredAccordion(expanded: boolean) {
   const panelStyle = useAnimatedStyle(() => {
     if (contentHeight.value <= 0) {
       return {
+        height: expanded ? undefined : 0,
         opacity: expanded ? 1 : 0,
         overflow: 'hidden' as const,
         transform: [{ translateY: 0 }],
@@ -125,8 +123,13 @@ function useMeasuredAccordion(expanded: boolean) {
 
   const onContentLayout = useCallback(
     (height: number) => {
-      if (height <= 0 || Math.abs(height - contentHeight.value) <= 0.5) return;
-      const wasUnmeasured = contentHeight.value <= 0;
+      if (height <= 0) return;
+      const prev = contentHeight.value;
+      if (Math.abs(height - prev) <= 0.5) return;
+      // 접는 중 줄어든 재측정은 무시
+      if (!expanded && prev > 0 && height < prev - 0.5) return;
+      if (expanded && prev > 0 && height < prev - 0.5) return;
+      const wasUnmeasured = prev <= 0;
       contentHeight.value = height;
       if (!expanded) return;
       if (wasUnmeasured) {
@@ -227,7 +230,6 @@ function TodoListRow({
   onToggleMarkPicker,
   onSelectMarkColor,
   onChangeWhat,
-  onPressTime,
   onToggleDone,
   onToggleDeleteSelect,
   onAddSubItem,
@@ -250,7 +252,6 @@ function TodoListRow({
   onToggleMarkPicker: () => void;
   onSelectMarkColor: (color: PriorityMarkColorId | null) => void;
   onChangeWhat: (value: string) => void;
-  onPressTime: () => void;
   onToggleDone: () => void;
   onToggleDeleteSelect: () => void;
   onAddSubItem: (text: string) => void;
@@ -261,7 +262,6 @@ function TodoListRow({
 }) {
   const { t } = useTranslation();
   const rowMuted = item.isDone;
-  const timeLabel = `${formatMinutesToHHmm(item.startMinutes)}–${formatMinutesToHHmm(item.endMinutes)}`;
   const title = item.what || t('todo.fallbackTitle');
   const markColor = item.markColor ?? null;
   const underlineColor = priorityMarkTitleHighlight(markColor, false);
@@ -318,254 +318,235 @@ function TodoListRow({
         !isLast && { borderBottomColor: ui.line, borderBottomWidth: StyleSheet.hairlineWidth },
         deleteMode && { backgroundColor: deleteSelected ? ui.dangerBg : 'transparent' },
       ]}>
-      <Pressable
-        accessibilityRole={deleteMode ? 'button' : undefined}
-        accessibilityLabel={deleteMode ? t('todo.tapToSelectDelete') : undefined}
-        accessibilityState={deleteMode ? { selected: deleteSelected } : undefined}
-        onPress={deleteMode ? onToggleDeleteSelect : undefined}
-        onLongPress={
-          deleteMode
-            ? undefined
-            : () => {
-                void Haptics.selectionAsync();
-                onToggleDone();
-              }
-        }
-        delayLongPress={280}
-        style={styles.row}>
-        <DoneCheckbox
-          checked={deleteMode ? deleteSelected : item.isDone}
-          isDark={isDark}
-          ui={ui}
-          shadow={shadow}
-          uncheckedFill={checkboxFill}
-          accessibilityLabel={
+      <View style={styles.row}>
+        <Pressable
+          accessibilityRole={deleteMode ? 'button' : undefined}
+          accessibilityLabel={deleteMode ? t('todo.tapToSelectDelete') : undefined}
+          accessibilityState={deleteMode ? { selected: deleteSelected } : undefined}
+          onPress={deleteMode ? onToggleDeleteSelect : undefined}
+          onLongPress={
             deleteMode
-              ? deleteSelected
-                ? t('todo.deselectDelete', { title })
-                : t('todo.selectDelete', { title })
-              : item.isDone
-                ? t('todo.undoDone', { title })
-                : t('todo.markDone', { title })
+              ? undefined
+              : () => {
+                  void Haptics.selectionAsync();
+                  onToggleDone();
+                }
           }
-          onPress={deleteMode ? onToggleDeleteSelect : onToggleDone}
-        />
+          delayLongPress={280}
+          style={styles.rowMain}>
+          <DoneCheckbox
+            checked={deleteMode ? deleteSelected : item.isDone}
+            isDark={isDark}
+            ui={ui}
+            shadow={shadow}
+            uncheckedFill={checkboxFill}
+            accessibilityLabel={
+              deleteMode
+                ? deleteSelected
+                  ? t('todo.deselectDelete', { title })
+                  : t('todo.selectDelete', { title })
+                : item.isDone
+                  ? t('todo.undoDone', { title })
+                  : t('todo.markDone', { title })
+            }
+            onPress={deleteMode ? onToggleDeleteSelect : onToggleDone}
+          />
 
-        <View style={styles.rowBody}>
-          <View style={styles.taskInputMark}>
-            {displayForMeasure.length > 0 ? (
-              <ThemedText
-                pointerEvents="none"
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-                onTextLayout={(event) => {
-                  const next = event.nativeEvent.lines.map((line) => {
-                    // 짧은 CJK 등에서 line.height가 실제 줄간보다 작게 보고되면
-                    // 밑줄이 글자 전체를 덮는 것처럼 보이므로 스타일 lineHeight를 바닥으로 쓴다.
-                    const lineBoxHeight = Math.max(line.height, TASK_INPUT_LINE_HEIGHT);
-                    return {
-                      left: Math.round(line.x) - 2,
-                      top: Math.round(
-                        line.y +
-                          lineBoxHeight -
-                          TITLE_UNDERLINE_HEIGHT -
-                          TITLE_UNDERLINE_BOTTOM_INSET,
-                      ),
-                      width: Math.ceil(line.width) + 4,
-                    };
-                  });
-                  setUnderlineLines((prev) => {
-                    if (
-                      prev.length === next.length &&
-                      prev.every(
-                        (p, i) =>
-                          p.left === next[i]!.left &&
-                          p.top === next[i]!.top &&
-                          p.width === next[i]!.width,
-                      )
-                    ) {
-                      return prev;
-                    }
-                    return next;
-                  });
-                }}
-                style={[styles.taskInput, styles.measureGhost]}
-                lightColor={ui.ink}
-                darkColor={ui.ink}>
-                {displayForMeasure}
-              </ThemedText>
-            ) : null}
-            {underlineColor && !rowMuted
-              ? underlineLines.map((line, index) => (
-                  <View
-                    key={`ul-${index}`}
-                    pointerEvents="none"
-                    style={[
-                      styles.taskInputUnderline,
-                      {
-                        backgroundColor: underlineColor,
-                        left: line.left,
-                        top: line.top,
-                        width: line.width,
-                      },
-                    ]}
-                  />
-                ))
-              : null}
-            <ThemedTextInput
-              key={`${item.id}-${item.isDone ? 'done' : 'todo'}`}
-              value={item.what}
-              onChangeText={onChangeWhat}
-              onFocus={(e) => reportFieldFocus(e.target, onFieldFocus)}
-              editable={!deleteMode}
-              pointerEvents={deleteMode ? 'none' : 'auto'}
-              placeholder={t('todo.placeholder')}
-              placeholderTextColor={ui.placeholder}
-              multiline
-              style={[
-                styles.taskInput,
-                {
-                  color: rowMuted ? ui.done : ui.ink,
-                  textDecorationLine: rowMuted ? 'line-through' : 'none',
-                  textDecorationStyle: rowMuted ? 'dashed' : 'solid',
-                  textDecorationColor: rowMuted ? ui.muted : ui.ink,
-                  opacity: rowMuted ? 0.42 : 1,
-                  zIndex: 1,
-                },
-              ]}
-            />
-          </View>
-          {!deleteMode ? (
-            <View style={styles.metaRow}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('todo.timeA11y', { time: timeLabel })}
-                hitSlop={6}
-                onPress={onPressTime}
-                style={styles.timeMetaRow}>
-                <IconSymbol name="clock" size={11} color={actionIconColor} />
-                <ThemedText style={styles.timeMeta} lightColor={ui.muted} darkColor={ui.muted}>
-                  {timeLabel}
+          <View style={styles.rowBody}>
+            <View style={styles.taskInputMark}>
+              {displayForMeasure.length > 0 ? (
+                <ThemedText
+                  pointerEvents="none"
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                  onTextLayout={(event) => {
+                    const next = event.nativeEvent.lines.map((line) => {
+                      // 짧은 CJK 등에서 line.height가 실제 줄간보다 작게 보고되면
+                      // 밑줄이 글자 전체를 덮는 것처럼 보이므로 스타일 lineHeight를 바닥으로 쓴다.
+                      const lineBoxHeight = Math.max(line.height, TASK_INPUT_LINE_HEIGHT);
+                      return {
+                        left: Math.round(line.x) - 2,
+                        top: Math.round(
+                          line.y +
+                            lineBoxHeight -
+                            TITLE_UNDERLINE_HEIGHT -
+                            TITLE_UNDERLINE_BOTTOM_INSET,
+                        ),
+                        width: Math.ceil(line.width) + 4,
+                      };
+                    });
+                    setUnderlineLines((prev) => {
+                      if (
+                        prev.length === next.length &&
+                        prev.every(
+                          (p, i) =>
+                            p.left === next[i]!.left &&
+                            p.top === next[i]!.top &&
+                            p.width === next[i]!.width,
+                        )
+                      ) {
+                        return prev;
+                      }
+                      return next;
+                    });
+                  }}
+                  style={[styles.taskInput, styles.measureGhost]}
+                  lightColor={ui.ink}
+                  darkColor={ui.ink}>
+                  {displayForMeasure}
                 </ThemedText>
-              </Pressable>
-              {subItems.length > 0 ? (
+              ) : null}
+              {underlineColor && !rowMuted
+                ? underlineLines.map((line, index) => (
+                    <View
+                      key={`ul-${index}`}
+                      pointerEvents="none"
+                      style={[
+                        styles.taskInputUnderline,
+                        {
+                          backgroundColor: underlineColor,
+                          left: line.left,
+                          top: line.top,
+                          width: line.width,
+                        },
+                      ]}
+                    />
+                  ))
+                : null}
+              <ThemedTextInput
+                key={`${item.id}-${item.isDone ? 'done' : 'todo'}`}
+                value={item.what}
+                onChangeText={onChangeWhat}
+                onFocus={(e) => reportFieldFocus(e.target, onFieldFocus)}
+                editable={!deleteMode}
+                pointerEvents={deleteMode ? 'none' : 'auto'}
+                placeholder={t('todo.placeholder')}
+                placeholderTextColor={ui.placeholder}
+                multiline
+                style={[
+                  styles.taskInput,
+                  {
+                    color: rowMuted ? ui.done : ui.ink,
+                    textDecorationLine: rowMuted ? 'line-through' : 'none',
+                    textDecorationStyle: rowMuted ? 'dashed' : 'solid',
+                    textDecorationColor: rowMuted ? ui.muted : ui.ink,
+                    opacity: rowMuted ? 0.42 : 1,
+                    zIndex: 1,
+                  },
+                ]}
+              />
+            </View>
+            {!deleteMode && subItems.length > 0 ? (
+              <View style={styles.metaRow}>
                 <ThemedText style={styles.subProgress} lightColor={ui.muted} darkColor={ui.muted}>
                   {t('todo.subProgress', { done: subDoneCount, total: subItems.length })}
                 </ThemedText>
-              ) : null}
-              <View style={styles.itemShareActions}>
-                <View
-                  style={[
-                    styles.itemActionShell,
-                    { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
-                  ]}>
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.itemActionShadow,
-                      {
-                        backgroundColor: shadow,
-                        transform: [
-                          { translateX: ACTION_SHADOW },
-                          { translateY: ACTION_SHADOW },
-                        ],
-                      },
-                    ]}
-                  />
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      copiedFlash ? t('todo.copiedItem') : t('todo.copyItemA11y')
-                    }
-                    hitSlop={6}
-                    onPress={() => {
-                      void handleCopyItem();
-                    }}
-                    style={[styles.itemActionBtn, { backgroundColor: actionBtnBg }]}>
-                    <IconSymbol
-                      name={copiedFlash ? 'checkmark' : 'doc.on.doc'}
-                      size={11}
-                      color={copiedFlash ? ui.primary : actionIconColor}
-                    />
-                  </Pressable>
-                </View>
-                <View
-                  style={[
-                    styles.itemActionShell,
-                    { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
-                  ]}>
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.itemActionShadow,
-                      {
-                        backgroundColor: shadow,
-                        transform: [
-                          { translateX: ACTION_SHADOW },
-                          { translateY: ACTION_SHADOW },
-                        ],
-                      },
-                    ]}
-                  />
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('todo.shareItemA11y')}
-                    hitSlop={6}
-                    onPress={() => {
-                      void handleShareItem();
-                    }}
-                    style={[styles.itemActionBtn, { backgroundColor: actionBtnBg }]}>
-                    <IconSymbol name="square.and.arrow.up" size={11} color={actionIconColor} />
-                  </Pressable>
-                </View>
               </View>
-            </View>
-          ) : null}
-        </View>
+            ) : null}
+          </View>
+        </Pressable>
 
         {!deleteMode ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: markPickerOpen }}
-            accessibilityLabel={
-              markColor
-                ? t('dayPlan.importanceMarkA11yOn', {
-                    color: t(`dayPlan.importanceMarkSwatch.${markColor}` as const),
-                  })
-                : t('dayPlan.importanceMarkA11yOff')
-            }
-            onPress={() => {
-              void Haptics.selectionAsync();
-              onToggleMarkPicker();
-            }}
-            style={[
-              styles.markTriggerShell,
-              { marginRight: MARK_SHADOW, marginBottom: MARK_SHADOW },
-            ]}>
-            <View
-              pointerEvents="none"
-              style={[
-                styles.markTriggerShadow,
-                {
-                  backgroundColor: shadow,
-                  transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
-                },
-              ]}
-            />
+          <View style={styles.rowTrailing}>
             <View
               style={[
-                styles.markTriggerFace,
-                {
-                  backgroundColor: actionBtnBg,
-                },
+                styles.itemActionShell,
+                { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
               ]}>
-              <Reanimated.View style={markAccordion.chevronStyle}>
-                <IconSymbol name="chevron.down" size={11} color={actionIconColor} />
-              </Reanimated.View>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.itemActionShadow,
+                  {
+                    backgroundColor: shadow,
+                    transform: [{ translateX: ACTION_SHADOW }, { translateY: ACTION_SHADOW }],
+                  },
+                ]}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  copiedFlash ? t('todo.copiedItem') : t('todo.copyItemA11y')
+                }
+                hitSlop={6}
+                onPress={() => {
+                  void handleCopyItem();
+                }}
+                style={[styles.itemActionBtn, { backgroundColor: actionBtnBg }]}>
+                <IconSymbol
+                  name={copiedFlash ? 'checkmark' : 'doc.on.doc'}
+                  size={11}
+                  color={copiedFlash ? ui.primary : actionIconColor}
+                />
+              </Pressable>
             </View>
-          </Pressable>
+            <View
+              style={[
+                styles.itemActionShell,
+                { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
+              ]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.itemActionShadow,
+                  {
+                    backgroundColor: shadow,
+                    transform: [{ translateX: ACTION_SHADOW }, { translateY: ACTION_SHADOW }],
+                  },
+                ]}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('todo.shareItemA11y')}
+                hitSlop={6}
+                onPress={() => {
+                  void handleShareItem();
+                }}
+                style={[styles.itemActionBtn, { backgroundColor: actionBtnBg }]}>
+                <IconSymbol name="square.and.arrow.up" size={11} color={actionIconColor} />
+              </Pressable>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: markPickerOpen }}
+              accessibilityLabel={
+                markPickerOpen
+                  ? t('dayPlan.colorSectionCollapseA11y')
+                  : t('dayPlan.colorSectionExpandA11y')
+              }
+              onPress={() => {
+                void Haptics.selectionAsync();
+                onToggleMarkPicker();
+              }}
+              style={[
+                styles.markTriggerShell,
+                { marginRight: MARK_SHADOW, marginBottom: MARK_SHADOW },
+              ]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.markTriggerShadow,
+                  {
+                    backgroundColor: shadow,
+                    transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.markTriggerFace,
+                  {
+                    backgroundColor: actionBtnBg,
+                  },
+                ]}>
+                <Reanimated.View style={markAccordion.chevronStyle}>
+                  <IconSymbol name="chevron.down" size={11} color={actionIconColor} />
+                </Reanimated.View>
+              </View>
+            </Pressable>
+          </View>
         ) : null}
-      </Pressable>
+      </View>
 
       {markAccordion.mounted ? (
         <Reanimated.View style={[styles.markPickerPanel, markAccordion.panelStyle]}>
@@ -792,8 +773,10 @@ export function TodoListPlanSection({
     loadPostItFaceColorIdForGroup(TODO_LIST_POST_IT_KEY),
   );
   const [draftWhat, setDraftWhat] = useState('');
-  const [timeEditId, setTimeEditId] = useState<string | null>(null);
-  const [markPickerIds, setMarkPickerIds] = useState<Set<string>>(() => new Set());
+  /** 접힌 항목만 추적 — 기본은 아코디언 펼침 */
+  const [collapsedMarkPickerIds, setCollapsedMarkPickerIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [deleteMode, setDeleteMode] = useState(false);
   const [deleteSelection, setDeleteSelection] = useState<Set<string>>(() => new Set());
 
@@ -843,11 +826,6 @@ export function TodoListPlanSection({
     ],
   );
 
-  const timeEditItem = useMemo(
-    () => todos.find((todo) => todo.id === timeEditId) ?? null,
-    [todos, timeEditId],
-  );
-
   const onSelectFaceColor = useCallback((id: PostItFaceColorId) => {
     setFaceColorId(id);
     savePostItFaceColorForGroup(TODO_LIST_POST_IT_KEY, id);
@@ -870,8 +848,6 @@ export function TodoListPlanSection({
         setDeleteSelection(new Set());
         return false;
       }
-      setTimeEditId(null);
-      setMarkPickerIds(new Set());
       setDeleteSelection(new Set());
       return true;
     });
@@ -1095,9 +1071,9 @@ export function TodoListPlanSection({
                 deleteMode={deleteMode}
                 deleteSelected={deleteSelection.has(item.id)}
                 isLast={index === todos.length - 1}
-                markPickerOpen={markPickerIds.has(item.id)}
+                markPickerOpen={!collapsedMarkPickerIds.has(item.id)}
                 onToggleMarkPicker={() =>
-                  setMarkPickerIds((prev) => {
+                  setCollapsedMarkPickerIds((prev) => {
                     const next = new Set(prev);
                     if (next.has(item.id)) next.delete(item.id);
                     else next.add(item.id);
@@ -1108,7 +1084,6 @@ export function TodoListPlanSection({
                   setMarkColor(item.id, color);
                 }}
                 onChangeWhat={(what) => updateTodo(item.id, { what })}
-                onPressTime={() => setTimeEditId(item.id)}
                 onToggleDone={() => toggleDone(item.id)}
                 onToggleDeleteSelect={() => toggleDeleteSelection(item.id)}
                 onAddSubItem={(text) => addSubItem(item.id, text)}
@@ -1126,26 +1101,6 @@ export function TodoListPlanSection({
         <ThemedText style={styles.hint} lightColor={baseUi.muted} darkColor={baseUi.muted}>
           {hintText}
         </ThemedText>
-      ) : null}
-
-      {timeEditItem ? (
-        <TodoListTimeEditSheet
-          visible={timeEditId != null}
-          startMinutes={timeEditItem.startMinutes}
-          endMinutes={timeEditItem.endMinutes}
-          isDark={isDark}
-          ink={baseUi.ink}
-          muted={baseUi.muted}
-          line={baseUi.btnBorder}
-          onClose={() => setTimeEditId(null)}
-          onSave={(startMinutes, endMinutes) =>
-            updateTodo(timeEditItem.id, {
-              startMinutes,
-              endMinutes,
-              endsNextCalendarDay: false,
-            })
-          }
-        />
       ) : null}
     </View>
   );
@@ -1292,20 +1247,28 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   rowWrap: {
-    paddingBottom: 2,
+    paddingBottom: 0,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
     paddingHorizontal: 4,
-    paddingVertical: 10,
+    paddingTop: 6,
+    paddingBottom: 5,
     minHeight: TODO_LAYOUT.rowMinHeight,
+  },
+  rowMain: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
   },
   rowBody: {
     flex: 1,
     minWidth: 0,
-    gap: 4,
+    gap: 2,
   },
   taskInputMark: {
     position: 'relative',
@@ -1342,11 +1305,13 @@ const styles = StyleSheet.create({
     gap: 8,
     alignSelf: 'stretch',
   },
-  itemShareActions: {
-    marginLeft: 'auto',
+  rowTrailing: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: 6,
+    marginTop: 2,
+    flexShrink: 0,
   },
   itemActionShell: {
     position: 'relative',
@@ -1362,12 +1327,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
-  },
-  timeMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
   },
   subProgress: {
     fontSize: 10,
@@ -1429,15 +1388,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 1,
   },
-  timeMeta: {
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: -0.1,
-  },
   markTriggerShell: {
     position: 'relative',
     flexShrink: 0,
-    marginTop: 2,
   },
   markTriggerShadow: {
     ...StyleSheet.absoluteFillObject,

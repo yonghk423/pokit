@@ -96,7 +96,6 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
           },
         ]}
       />
-      <View style={styles.gradientHint} />
       <View
         style={[
           styles.saveShell,
@@ -147,15 +146,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     borderWidth: 0,
   },
-  gradientHint: {
-    height: 4,
-    borderRadius: 0,
-    marginTop: 12,
-    alignSelf: 'stretch',
-    backgroundColor: 'rgba(0, 0, 0, 0.12)',
-  },
   saveShell: {
-    marginTop: 18,
+    marginTop: 12,
     alignSelf: 'stretch',
     position: 'relative',
   },
