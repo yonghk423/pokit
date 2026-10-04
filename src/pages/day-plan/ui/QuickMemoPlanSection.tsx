@@ -1,11 +1,30 @@
-import { forwardRef, useEffect, useRef, useState, type ForwardedRef } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, useState, type ForwardedRef } from 'react';
 import { Keyboard, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import type { DayPlanQuickMemo } from '@entities/day-plan';
 import { useTranslation } from '@shared/lib/i18n';
+import {
+  colorHexUsesLightInk,
+  loadPostItFaceColorIdForGroup,
+  loadPostItInkColorIdForGroup,
+  QUICK_MEMO_POST_IT_INK_KEY,
+  QUICK_MEMO_POST_IT_KEY,
+  resolvePostItFaceColor,
+  resolvePostItInkHex,
+  resolvePostItInkMuted,
+  savePostItFaceColorForGroup,
+  savePostItInkColorForGroup,
+  type PostItFaceColorId,
+  type PostItInkColorId,
+} from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
+import { ColorPaletteAccordion } from '@shared/ui/color-palette-accordion';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { PostItCardShell } from '@shared/ui/post-it-card-shell';
+import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
+import { PostItInkColorChips } from '@shared/ui/post-it-ink-color-chips';
+import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
@@ -14,6 +33,10 @@ import type { DayPlanPalette } from '../lib/dayPlanPalette';
 const ACTION_SHADOW = 1;
 const ACTION_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
 const ACTION_SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
+/** 모드 아이콘(PlanModeSwitch)과 동일 톤 */
+const CARD_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
+const CARD_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
+const CARD_SHADOW_OFFSET = 2;
 
 type Props = {
   c: DayPlanPalette;
@@ -22,10 +45,12 @@ type Props = {
   draft: string;
   onChangeDraft: (v: string) => void;
   onSavePress: () => void;
+  /** 면색·글자색 변경 시 Live Activity 재동기화 */
+  onFaceColorChange?: () => void;
 };
 
 export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
-  { c, isDark, memos, draft, onChangeDraft, onSavePress }: Props,
+  { c, isDark, memos, draft, onChangeDraft, onSavePress, onFaceColorChange }: Props,
   ref: ForwardedRef<TextInput>,
 ) {
   const { width } = useWindowDimensions();
@@ -35,6 +60,12 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
   const hydratedRef = useRef(false);
   const pill = tabPillColors(isDark);
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const [faceColorId, setFaceColorId] = useState<PostItFaceColorId>(() =>
+    loadPostItFaceColorIdForGroup(QUICK_MEMO_POST_IT_KEY),
+  );
+  const [inkColorId, setInkColorId] = useState<PostItInkColorId>(() =>
+    loadPostItInkColorIdForGroup(QUICK_MEMO_POST_IT_INK_KEY),
+  );
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -69,19 +100,76 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
     hydratedRef.current = true;
   }, [draft, memos, onChangeDraft]);
 
+  const faceBg = resolvePostItFaceColor(faceColorId, isDark);
+  const faceInk = resolvePostItInkHex(inkColorId, faceColorId, isDark);
+  const faceMuted = resolvePostItInkMuted(faceInk);
+  /** 글자색이 밝으면(화이트 계열) 아코디언 크롬도 밝은 톤 */
+  const chromeIsLightInk = !colorHexUsesLightInk(faceInk);
+
+  const onSelectFaceColor = useCallback(
+    (id: PostItFaceColorId) => {
+      setFaceColorId(id);
+      savePostItFaceColorForGroup(QUICK_MEMO_POST_IT_KEY, id);
+      onFaceColorChange?.();
+    },
+    [onFaceColorChange],
+  );
+
+  const onSelectInkColor = useCallback(
+    (id: PostItInkColorId) => {
+      setInkColorId(id);
+      savePostItInkColorForGroup(QUICK_MEMO_POST_IT_INK_KEY, id);
+      onFaceColorChange?.();
+    },
+    [onFaceColorChange],
+  );
+
   const fontSize = width >= 768 ? 26 : width >= 390 ? 22 : 20;
   const lineHeight = Math.round(fontSize * 1.45);
   const footerBottomPad =
     keyboardInset > 0 ? Math.max(12, keyboardInset - bottomTabBarHeight + 8) : 12;
 
   return (
-    <View style={[styles.root, { backgroundColor: c.containerLowest }]}>
+    <PostItCardShell
+      // 테이프는 밝은 마스킹 톤 고정 — 어두운 면색에서도 위쪽 테이프가 보이게
+      isDark={false}
+      faceColor={faceBg}
+      solidShadow
+      shadowColor={isDark ? CARD_SHADOW_DARK : CARD_SHADOW_LIGHT}
+      shadowOffset={CARD_SHADOW_OFFSET}
+      style={styles.shell}
+      contentStyle={styles.root}>
+      <ColorPaletteAccordion ink={faceInk} isDark={isDark || chromeIsLightInk} defaultExpanded={false}>
+        <View style={styles.colorBlock}>
+          <ThemedText style={[styles.colorLabel, { color: faceMuted }]} numberOfLines={1}>
+            {t('dayPlan.quickMemoFaceColorLabel')}
+          </ThemedText>
+          <PostItFaceColorChips
+            selectedId={faceColorId}
+            isDark={isDark}
+            ink={faceInk}
+            onSelect={onSelectFaceColor}
+            compact
+            collapsible={false}
+          />
+          <ThemedText style={[styles.colorLabel, { color: faceMuted }]} numberOfLines={1}>
+            {t('dayPlan.quickMemoInkColorLabel')}
+          </ThemedText>
+          <PostItInkColorChips
+            selectedId={inkColorId}
+            chromeInk={faceInk}
+            onSelect={onSelectInkColor}
+          />
+        </View>
+      </ColorPaletteAccordion>
+
       <ThemedTextInput
+        key={`quick-memo-ink-${inkColorId}-${faceInk}`}
         ref={ref}
         value={draft}
         onChangeText={onChangeDraft}
         placeholder={t('dayPlan.quickMemoPlaceholder')}
-        placeholderTextColor={c.outline}
+        placeholderTextColor={faceMuted}
         multiline
         scrollEnabled
         textAlignVertical="top"
@@ -90,7 +178,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
           styles.zenInput,
           {
             backgroundColor: 'transparent',
-            color: c.onSurface,
+            color: faceInk,
             fontSize,
             lineHeight,
           },
@@ -123,19 +211,33 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
           <IconSymbol name="square.and.arrow.down" size={22} color={pill.activeIcon} />
         </Pressable>
       </View>
-    </View>
+    </PostItCardShell>
   );
 });
 
 const styles = StyleSheet.create({
+  shell: {
+    flex: 1,
+    minHeight: 0,
+    width: '100%',
+  },
   root: {
     flex: 1,
     minHeight: 0,
     borderRadius: 0,
     paddingHorizontal: 14,
-    paddingTop: 14,
+    paddingTop: 10,
     paddingBottom: 0,
-    overflow: 'hidden',
+  },
+  colorBlock: {
+    gap: 8,
+    paddingBottom: 8,
+  },
+  colorLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    paddingHorizontal: 2,
   },
   zenInput: {
     flex: 1,

@@ -52,6 +52,9 @@ private struct LiveActivityPayload: Decodable {
     let bodyText: String
     let statusLabel: String
     let titleLabel: String?
+    let faceHex: String?
+    let inkHex: String?
+    let usesLightInk: Bool?
   }
   let quickMemoLive: QuickMemoLivePayload?
 }
@@ -134,7 +137,10 @@ private actor PokitLiveActivityCoordinator {
           PokitLiveActivityAttributes.ContentState.QuickMemoLiveContent(
             bodyText: $0.bodyText,
             statusLabel: $0.statusLabel,
-            titleLabel: $0.titleLabel
+            titleLabel: $0.titleLabel,
+            faceHex: $0.faceHex,
+            inkHex: $0.inkHex,
+            usesLightInk: $0.usesLightInk
           )
         }
       )
@@ -144,19 +150,60 @@ private actor PokitLiveActivityCoordinator {
       let startsLog = state.startsAt.map { fmt.string(from: $0) } ?? "nil"
       let endsLog = state.endsAt.map { fmt.string(from: $0) } ?? "nil"
 
-      if let activity = Activity<PokitLiveActivityAttributes>.activities.first(
-        where: { $0.attributes.blockId == payload.blockId }
+      let isQuickMemo = payload.planMode == "quickMemo"
+      /// 퀵메모는 저장마다 plan blockId가 바뀌므로 고정 키로 1장만 유지(update 우선).
+      let activityBlockId = isQuickMemo ? "pokit-quick-memo" : payload.blockId
+
+      if isQuickMemo {
+        let existing = Activity<PokitLiveActivityAttributes>.activities.first {
+          $0.attributes.blockId == activityBlockId
+        }
+        for activity in Activity<PokitLiveActivityAttributes>.activities
+          where activity.attributes.blockId != activityBlockId
+        {
+          await activity.end(dismissalPolicy: .immediate)
+        }
+        if let existing {
+          await existing.update(using: state)
+          NSLog(
+            "[PokitLA] upsert quickMemo update blockId=%@ status=%@ startsAt=%@ endsAt=%@",
+            activityBlockId,
+            state.status,
+            startsLog,
+            endsLog
+          )
+        } else {
+          // 이전에 다른 blockId로 남아 있던 퀵메모 활동까지 정리
+          for activity in Activity<PokitLiveActivityAttributes>.activities {
+            await activity.end(dismissalPolicy: .immediate)
+          }
+          let attributes = PokitLiveActivityAttributes(blockId: activityBlockId)
+          _ = try Activity.request(
+            attributes: attributes,
+            contentState: state,
+            pushType: nil
+          )
+          NSLog(
+            "[PokitLA] upsert quickMemo request blockId=%@ status=%@ startsAt=%@ endsAt=%@",
+            activityBlockId,
+            state.status,
+            startsLog,
+            endsLog
+          )
+        }
+      } else if let activity = Activity<PokitLiveActivityAttributes>.activities.first(
+        where: { $0.attributes.blockId == activityBlockId }
       ) {
         await activity.update(using: state)
         NSLog(
           "[PokitLA] upsert update blockId=%@ status=%@ startsAt=%@ endsAt=%@",
-          payload.blockId,
+          activityBlockId,
           state.status,
           startsLog,
           endsLog
         )
       } else {
-        let attributes = PokitLiveActivityAttributes(blockId: payload.blockId)
+        let attributes = PokitLiveActivityAttributes(blockId: activityBlockId)
         _ = try Activity.request(
           attributes: attributes,
           contentState: state,
@@ -164,7 +211,7 @@ private actor PokitLiveActivityCoordinator {
         )
         NSLog(
           "[PokitLA] upsert request blockId=%@ status=%@ startsAt=%@ endsAt=%@",
-          payload.blockId,
+          activityBlockId,
           state.status,
           startsLog,
           endsLog

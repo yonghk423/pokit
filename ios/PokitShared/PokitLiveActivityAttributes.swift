@@ -45,11 +45,27 @@ public struct PokitLiveActivityAttributes: ActivityAttributes {
       public let statusLabel: String
       /// RN 로케일 제목 — 구버전 페이로드에는 없을 수 있음
       public let titleLabel: String?
+      /// 카드 면색 `#RRGGBB` — 구버전에는 없을 수 있음
+      public let faceHex: String?
+      /// 글자색 `#RRGGBB` — 구버전에는 없을 수 있음
+      public let inkHex: String?
+      /// 어두운 면 — 흰 글자 (inkHex 없을 때 폴백)
+      public let usesLightInk: Bool?
 
-      public init(bodyText: String, statusLabel: String, titleLabel: String? = nil) {
+      public init(
+        bodyText: String,
+        statusLabel: String,
+        titleLabel: String? = nil,
+        faceHex: String? = nil,
+        inkHex: String? = nil,
+        usesLightInk: Bool? = nil
+      ) {
         self.bodyText = bodyText
         self.statusLabel = statusLabel
         self.titleLabel = titleLabel
+        self.faceHex = faceHex
+        self.inkHex = inkHex
+        self.usesLightInk = usesLightInk
       }
     }
 

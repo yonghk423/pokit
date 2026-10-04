@@ -1195,10 +1195,10 @@ function GroupAccordion({
   onSelectPostItFaceColor,
 }: GroupAccordionProps) {
   const { t } = useTranslation();
-  const usesLightInk = postItFaceUsesLightInk(postItFaceColorId);
+  const usesLightInk = postItFaceUsesLightInk(postItFaceColorId, isDark);
   const sectionBg = resolvePostItFaceColor(postItFaceColorId, isDark);
-  const ink = resolvePostItFaceInk(postItFaceColorId, baseInk);
-  const muted = resolvePostItFaceMuted(postItFaceColorId, baseMuted);
+  const ink = resolvePostItFaceInk(postItFaceColorId, baseInk, isDark);
+  const muted = resolvePostItFaceMuted(postItFaceColorId, baseMuted, isDark);
   const line = usesLightInk ? 'rgba(255,255,255,0.22)' : baseLine;
   /** 액션 버튼은 항상 흰 면 + 검정 아이콘 (어두운 포스트잇에서도 아이콘이 보이게) */
   const actionBg = '#FFFFFF';
@@ -2318,9 +2318,9 @@ export function FixedRoutinePage({
   const sectionHint = sectionHintText(activeSection, layoutMode);
   const addGroupFaceId = DEFAULT_POST_IT_FACE_COLOR_ID;
   const addGroupFace = resolvePostItFaceColor(addGroupFaceId, isDark);
-  const addGroupInk = resolvePostItFaceInk(addGroupFaceId, ink);
-  const addGroupMuted = resolvePostItFaceMuted(addGroupFaceId, muted);
-  const addGroupLine = postItFaceUsesLightInk(addGroupFaceId)
+  const addGroupInk = resolvePostItFaceInk(addGroupFaceId, ink, isDark);
+  const addGroupMuted = resolvePostItFaceMuted(addGroupFaceId, muted, isDark);
+  const addGroupLine = postItFaceUsesLightInk(addGroupFaceId, isDark)
     ? 'rgba(255,255,255,0.28)'
     : 'rgba(0,0,0,0.18)';
   const addGroupPlusRest = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';

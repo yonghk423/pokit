@@ -1,0 +1,1 @@
+export { PostItInkColorChips } from './PostItInkColorChips';

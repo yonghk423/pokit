@@ -4,7 +4,6 @@ import WidgetKit
 
 @available(iOS 16.1, *)
 enum PriorityModeLiveActivityView {
-  private static let orange = Color(red: 0.78, green: 0.78, blue: 0.82)
   private static let headlineColor = Color(red: 0.10, green: 0.10, blue: 0.10)
   private static let mutedColor = headlineColor.opacity(0.55)
 
@@ -151,7 +150,6 @@ enum PriorityModeLiveActivityView {
     /// 숫자가 너무 작으면 내용이 적을 때도 일찍 말줄임됨 → 넉넉히 20.
     let maxListLines = 20
     let listTitleSize: CGFloat = 19
-    let pokitLabelSize: CGFloat = 11
 
     let visibleRows = Array(listSource.prefix(maxListLines))
     let hasMore = listSource.count > visibleRows.count
@@ -171,17 +169,6 @@ enum PriorityModeLiveActivityView {
     let window = p.windowLabel.trimmingCharacters(in: .whitespacesAndNewlines)
 
     VStack(alignment: .leading, spacing: 8) {
-      HStack(alignment: .center, spacing: 8) {
-        Image(systemName: "bag.fill")
-          .font(.system(size: 12, weight: .semibold))
-          .foregroundStyle(orange)
-        Text("POKIT")
-          .font(.system(size: pokitLabelSize, weight: .heavy))
-          .foregroundStyle(headlineColor.opacity(0.60))
-          .tracking(-0.2)
-          .lineLimit(1)
-      }
-
       if !window.isEmpty {
         Text(window)
           .font(.system(size: 10, weight: .bold))

@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import Reanimated, {
   Easing,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -25,6 +24,7 @@ import {
   type DayPlanTodoItem,
   type PriorityMarkColorId,
 } from '@entities/day-plan';
+import { useMeasuredAccordion } from '@shared/lib/hooks/useMeasuredAccordion';
 import { useTranslation } from '@shared/lib/i18n';
 import {
   loadPostItFaceColorIdForGroup,
@@ -71,87 +71,6 @@ type TitleUnderlineLine = {
   width: number;
 };
 const MARK_SHADOW = 1;
-const MARK_ACCORDION_OPEN_MS = 240;
-const MARK_ACCORDION_CLOSE_MS = 200;
-const MARK_ACCORDION_EASING = Easing.out(Easing.cubic);
-
-function useMeasuredAccordion(expanded: boolean) {
-  const progress = useSharedValue(expanded ? 1 : 0);
-  const contentHeight = useSharedValue(0);
-  const [mounted, setMounted] = useState(expanded);
-
-  useEffect(() => {
-    if (expanded) {
-      setMounted(true);
-      if (contentHeight.value > 0) {
-        progress.value = withTiming(1, {
-          duration: MARK_ACCORDION_OPEN_MS,
-          easing: MARK_ACCORDION_EASING,
-        });
-      }
-      return;
-    }
-    progress.value = withTiming(
-      0,
-      { duration: MARK_ACCORDION_CLOSE_MS, easing: MARK_ACCORDION_EASING },
-      (finished) => {
-        if (finished) runOnJS(setMounted)(false);
-      },
-    );
-  }, [contentHeight, expanded, progress]);
-
-  const panelStyle = useAnimatedStyle(() => {
-    if (contentHeight.value <= 0) {
-      return {
-        height: expanded ? undefined : 0,
-        opacity: expanded ? 1 : 0,
-        overflow: 'hidden' as const,
-        transform: [{ translateY: 0 }],
-      };
-    }
-    return {
-      opacity: progress.value,
-      height: progress.value * contentHeight.value,
-      overflow: 'hidden' as const,
-      transform: [{ translateY: (1 - progress.value) * -4 }],
-    };
-  });
-
-  const chevronStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${progress.value * 180}deg` }],
-  }));
-
-  const onContentLayout = useCallback(
-    (height: number) => {
-      if (height <= 0) return;
-      const prev = contentHeight.value;
-      if (Math.abs(height - prev) <= 0.5) return;
-      // 접는 중 줄어든 재측정은 무시
-      if (!expanded && prev > 0 && height < prev - 0.5) return;
-      if (expanded && prev > 0 && height < prev - 0.5) return;
-      const wasUnmeasured = prev <= 0;
-      contentHeight.value = height;
-      if (!expanded) return;
-      if (wasUnmeasured) {
-        progress.value = 0;
-        progress.value = withTiming(1, {
-          duration: MARK_ACCORDION_OPEN_MS,
-          easing: MARK_ACCORDION_EASING,
-        });
-        return;
-      }
-      if (progress.value < 1) {
-        progress.value = withTiming(1, {
-          duration: MARK_ACCORDION_OPEN_MS,
-          easing: MARK_ACCORDION_EASING,
-        });
-      }
-    },
-    [contentHeight, expanded, progress],
-  );
-
-  return { mounted, panelStyle, chevronStyle, onContentLayout };
-}
 
 type Props = {
   c: DayPlanPalette;
@@ -269,9 +188,21 @@ function TodoListRow({
   const [subDraft, setSubDraft] = useState('');
   const [copiedFlash, setCopiedFlash] = useState(false);
   const displayForMeasure = item.what.length > 0 ? item.what : '';
-  const markAccordion = useMeasuredAccordion(markPickerOpen && !deleteMode);
+  const detailOpen = markPickerOpen && !deleteMode;
   const subItems = [...(item.subItems ?? [])].sort((a, b) => a.order - b.order);
   const subDoneCount = subItems.filter((s) => s.isDone).length;
+
+  const accordion = useMeasuredAccordion(detailOpen);
+  const chevronProgress = useSharedValue(detailOpen ? 1 : 0);
+  useEffect(() => {
+    chevronProgress.value = withTiming(detailOpen ? 1 : 0, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [chevronProgress, detailOpen]);
+  const chevronAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${chevronProgress.value * 180}deg` }],
+  }));
 
   useEffect(() => {
     if (displayForMeasure.length === 0) {
@@ -320,10 +251,17 @@ function TodoListRow({
       ]}>
       <View style={styles.row}>
         <Pressable
-          accessibilityRole={deleteMode ? 'button' : undefined}
+          accessibilityRole="button"
           accessibilityLabel={deleteMode ? t('todo.tapToSelectDelete') : undefined}
           accessibilityState={deleteMode ? { selected: deleteSelected } : undefined}
-          onPress={deleteMode ? onToggleDeleteSelect : undefined}
+          onPress={
+            deleteMode
+              ? onToggleDeleteSelect
+              : () => {
+                  void Haptics.selectionAsync();
+                  onToggleMarkPicker();
+                }
+          }
           onLongPress={
             deleteMode
               ? undefined
@@ -334,24 +272,6 @@ function TodoListRow({
           }
           delayLongPress={280}
           style={styles.rowMain}>
-          <DoneCheckbox
-            checked={deleteMode ? deleteSelected : item.isDone}
-            isDark={isDark}
-            ui={ui}
-            shadow={shadow}
-            uncheckedFill={checkboxFill}
-            accessibilityLabel={
-              deleteMode
-                ? deleteSelected
-                  ? t('todo.deselectDelete', { title })
-                  : t('todo.selectDelete', { title })
-                : item.isDone
-                  ? t('todo.undoDone', { title })
-                  : t('todo.markDone', { title })
-            }
-            onPress={deleteMode ? onToggleDeleteSelect : onToggleDone}
-          />
-
           <View style={styles.rowBody}>
             <View style={styles.taskInputMark}>
               {displayForMeasure.length > 0 ? (
@@ -508,12 +428,13 @@ function TodoListRow({
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityState={{ expanded: markPickerOpen }}
+              accessibilityState={{ expanded: detailOpen }}
               accessibilityLabel={
-                markPickerOpen
+                detailOpen
                   ? t('dayPlan.colorSectionCollapseA11y')
                   : t('dayPlan.colorSectionExpandA11y')
               }
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               onPress={() => {
                 void Haptics.selectionAsync();
                 onToggleMarkPicker();
@@ -533,13 +454,14 @@ function TodoListRow({
                 ]}
               />
               <View
+                pointerEvents="none"
                 style={[
                   styles.markTriggerFace,
                   {
                     backgroundColor: actionBtnBg,
                   },
                 ]}>
-                <Reanimated.View style={markAccordion.chevronStyle}>
+                <Reanimated.View style={chevronAnimStyle}>
                   <IconSymbol name="chevron.down" size={11} color={actionIconColor} />
                 </Reanimated.View>
               </View>
@@ -548,195 +470,198 @@ function TodoListRow({
         ) : null}
       </View>
 
-      {markAccordion.mounted ? (
-        <Reanimated.View style={[styles.markPickerPanel, markAccordion.panelStyle]}>
+      {accordion.mounted ? (
+        <Reanimated.View style={accordion.panelStyle}>
           <View
-            style={styles.detailPanelBody}
-            onLayout={(event) => {
-              markAccordion.onContentLayout(event.nativeEvent.layout.height);
-            }}>
-            <View
-              style={styles.markPickerRow}
-              accessibilityRole="toolbar"
-              accessibilityLabel={t('dayPlan.importanceMarkLabel')}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected: markColor == null }}
-                accessibilityLabel={t('dayPlan.importanceMarkClearA11y')}
-                hitSlop={6}
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  onSelectMarkColor(null);
-                }}
-                style={[
-                  styles.markChipShell,
-                  {
-                    width: MARK_SWATCH,
-                    height: MARK_SWATCH,
-                    marginRight: MARK_SHADOW,
-                    marginBottom: MARK_SHADOW,
-                  },
-                ]}>
-                <View
-                  pointerEvents="none"
+            style={styles.markPickerPanel}
+            onLayout={(e) => accordion.onContentLayout(e.nativeEvent.layout.height)}>
+            <View style={styles.detailPanelBody}>
+              <View
+                style={styles.markPickerRow}
+                accessibilityRole="toolbar"
+                accessibilityLabel={t('dayPlan.importanceMarkLabel')}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: markColor == null }}
+                  accessibilityLabel={t('dayPlan.importanceMarkClearA11y')}
+                  hitSlop={6}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    onSelectMarkColor(null);
+                  }}
                   style={[
-                    styles.markChipShadow,
+                    styles.markChipShell,
                     {
-                      backgroundColor: shadow,
-                      transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
+                      width: MARK_SWATCH,
+                      height: MARK_SWATCH,
+                      marginRight: MARK_SHADOW,
+                      marginBottom: MARK_SHADOW,
                     },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.markChipFace,
-                    {
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
-                      borderColor: ui.line,
-                      borderWidth: markColor == null ? 2 : 1,
-                    },
-                  ]}>
-                  <IconSymbol name="xmark" size={11} color={ui.muted} />
-                </View>
-              </Pressable>
-              {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
-                const selectedMark = markColor === preset.id;
-                const face = preset.face;
-                return (
-                  <Pressable
-                    key={preset.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: selectedMark }}
-                    accessibilityLabel={t('dayPlan.importanceMarkColorA11y', {
-                      color: t(`dayPlan.importanceMarkSwatch.${preset.id}` as const),
-                    })}
-                    hitSlop={6}
-                    onPress={() => {
-                      void Haptics.selectionAsync();
-                      onSelectMarkColor(preset.id);
-                    }}
-                    style={[
-                      styles.markChipShell,
-                      {
-                        width: MARK_SWATCH,
-                        height: MARK_SWATCH,
-                        marginRight: MARK_SHADOW,
-                        marginBottom: MARK_SHADOW,
-                      },
-                    ]}>
-                    <View
-                      pointerEvents="none"
-                      style={[
-                        styles.markChipShadow,
-                        {
-                          backgroundColor: shadow,
-                          transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
-                        },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.markChipFace,
-                        {
-                          backgroundColor: face,
-                          borderColor: selectedMark ? ui.ink : 'transparent',
-                          borderWidth: selectedMark ? 2 : 0,
-                        },
-                      ]}
-                    />
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <View style={styles.subSection}>
-              <ThemedText style={styles.subSectionLabel} lightColor={ui.muted} darkColor={ui.muted}>
-                {t('todo.subSectionLabel')}
-              </ThemedText>
-              {subItems.map((sub) => (
-                <View key={sub.id} style={styles.subRow}>
-                  <DoneCheckbox
-                    checked={sub.isDone}
-                    isDark={isDark}
-                    ui={ui}
-                    shadow={shadow}
-                    uncheckedFill={checkboxFill}
-                    checkedColor={ui.checkFillSub}
-                    size={18}
-                    accessibilityLabel={t('todo.subToggleA11y')}
-                    onPress={() => onToggleSubItemDone(sub.id)}
-                  />
-                  <ThemedTextInput
-                    value={sub.text}
-                    onChangeText={(value) => onUpdateSubItem(sub.id, value)}
-                    onFocus={(e) => reportFieldFocus(e.target, onFieldFocus)}
-                    editable={!deleteMode}
-                    placeholder={t('todo.subPlaceholder')}
-                    placeholderTextColor={ui.placeholder}
-                    style={[
-                      styles.subInput,
-                      {
-                        color: sub.isDone ? ui.done : ui.ink,
-                        textDecorationLine: sub.isDone ? 'line-through' : 'none',
-                        opacity: sub.isDone ? 0.5 : 1,
-                      },
-                    ]}
-                  />
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('todo.subRemoveA11y')}
-                    hitSlop={8}
-                    onPress={() => {
-                      void Haptics.selectionAsync();
-                      onRemoveSubItem(sub.id);
-                    }}
-                    style={styles.subRemoveBtn}>
-                    <IconSymbol name="xmark" size={10} color={ui.muted} />
-                  </Pressable>
-                </View>
-              ))}
-              <View style={styles.subAddRow}>
-                <ThemedTextInput
-                  value={subDraft}
-                  onChangeText={setSubDraft}
-                  onFocus={(e) => reportFieldFocus(e.target, onFieldFocus)}
-                  placeholder={t('todo.subPlaceholder')}
-                  placeholderTextColor={ui.placeholder}
-                  returnKeyType="done"
-                  onSubmitEditing={handleAddSub}
-                  style={[styles.subInput, { color: ui.ink, flex: 1 }]}
-                />
-                <View
-                  style={[
-                    styles.subAddBtnShell,
-                    { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
                   ]}>
                   <View
                     pointerEvents="none"
                     style={[
-                      styles.subAddBtnShadow,
+                      styles.markChipShadow,
                       {
                         backgroundColor: shadow,
-                        transform: [
-                          { translateX: ACTION_SHADOW },
-                          { translateY: ACTION_SHADOW },
-                        ],
+                        transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
                       },
                     ]}
                   />
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('todo.subAddA11y')}
-                    hitSlop={6}
-                    onPress={handleAddSub}
+                  <View
                     style={[
-                      styles.subAddBtn,
+                      styles.markChipFace,
                       {
-                        backgroundColor: ui.addBtnBg,
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
+                        borderColor: ui.line,
+                        borderWidth: markColor == null ? 2 : 1,
                       },
                     ]}>
-                    <IconSymbol name="plus" size={12} color={ui.ink} />
-                  </Pressable>
+                    <IconSymbol name="xmark" size={11} color={ui.muted} />
+                  </View>
+                </Pressable>
+                {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
+                  const selectedMark = markColor === preset.id;
+                  const face = preset.face;
+                  return (
+                    <Pressable
+                      key={preset.id}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: selectedMark }}
+                      accessibilityLabel={t('dayPlan.importanceMarkColorA11y', {
+                        color: t(`dayPlan.importanceMarkSwatch.${preset.id}` as const),
+                      })}
+                      hitSlop={6}
+                      onPress={() => {
+                        void Haptics.selectionAsync();
+                        onSelectMarkColor(preset.id);
+                      }}
+                      style={[
+                        styles.markChipShell,
+                        {
+                          width: MARK_SWATCH,
+                          height: MARK_SWATCH,
+                          marginRight: MARK_SHADOW,
+                          marginBottom: MARK_SHADOW,
+                        },
+                      ]}>
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.markChipShadow,
+                          {
+                            backgroundColor: shadow,
+                            transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
+                          },
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.markChipFace,
+                          {
+                            backgroundColor: face,
+                            borderColor: selectedMark ? ui.ink : 'transparent',
+                            borderWidth: selectedMark ? 2 : 0,
+                          },
+                        ]}
+                      />
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <View style={styles.subSection}>
+                <ThemedText
+                  style={styles.subSectionLabel}
+                  lightColor={ui.muted}
+                  darkColor={ui.muted}>
+                  {t('todo.subSectionLabel')}
+                </ThemedText>
+                {subItems.map((sub) => (
+                  <View key={sub.id} style={styles.subRow}>
+                    <DoneCheckbox
+                      checked={sub.isDone}
+                      isDark={isDark}
+                      ui={ui}
+                      shadow={shadow}
+                      uncheckedFill={checkboxFill}
+                      checkedColor={ui.checkFillSub}
+                      size={18}
+                      accessibilityLabel={t('todo.subToggleA11y')}
+                      onPress={() => onToggleSubItemDone(sub.id)}
+                    />
+                    <ThemedTextInput
+                      value={sub.text}
+                      onChangeText={(value) => onUpdateSubItem(sub.id, value)}
+                      onFocus={(e) => reportFieldFocus(e.target, onFieldFocus)}
+                      editable={!deleteMode}
+                      placeholder={t('todo.subPlaceholder')}
+                      placeholderTextColor={ui.placeholder}
+                      style={[
+                        styles.subInput,
+                        {
+                          color: sub.isDone ? ui.done : ui.ink,
+                          textDecorationLine: sub.isDone ? 'line-through' : 'none',
+                          opacity: sub.isDone ? 0.5 : 1,
+                        },
+                      ]}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('todo.subRemoveA11y')}
+                      hitSlop={8}
+                      onPress={() => {
+                        void Haptics.selectionAsync();
+                        onRemoveSubItem(sub.id);
+                      }}
+                      style={styles.subRemoveBtn}>
+                      <IconSymbol name="xmark" size={10} color={ui.muted} />
+                    </Pressable>
+                  </View>
+                ))}
+                <View style={styles.subAddRow}>
+                  <ThemedTextInput
+                    value={subDraft}
+                    onChangeText={setSubDraft}
+                    onFocus={(e) => reportFieldFocus(e.target, onFieldFocus)}
+                    placeholder={t('todo.subPlaceholder')}
+                    placeholderTextColor={ui.placeholder}
+                    returnKeyType="done"
+                    onSubmitEditing={handleAddSub}
+                    style={[styles.subInput, { color: ui.ink, flex: 1 }]}
+                  />
+                  <View
+                    style={[
+                      styles.subAddBtnShell,
+                      { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
+                    ]}>
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.subAddBtnShadow,
+                        {
+                          backgroundColor: shadow,
+                          transform: [
+                            { translateX: ACTION_SHADOW },
+                            { translateY: ACTION_SHADOW },
+                          ],
+                        },
+                      ]}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('todo.subAddA11y')}
+                      hitSlop={6}
+                      onPress={handleAddSub}
+                      style={[
+                        styles.subAddBtn,
+                        {
+                          backgroundColor: ui.addBtnBg,
+                        },
+                      ]}>
+                      <IconSymbol name="plus" size={12} color={ui.ink} />
+                    </Pressable>
+                  </View>
                 </View>
               </View>
             </View>
@@ -773,18 +698,16 @@ export function TodoListPlanSection({
     loadPostItFaceColorIdForGroup(TODO_LIST_POST_IT_KEY),
   );
   const [draftWhat, setDraftWhat] = useState('');
-  /** 접힌 항목만 추적 — 기본은 아코디언 펼침 */
-  const [collapsedMarkPickerIds, setCollapsedMarkPickerIds] = useState<Set<string>>(
-    () => new Set(),
-  );
+  /** 펼친 항목만 추적 — 기본은 아코디언 닫힘 */
+  const [openMarkPickerIds, setOpenMarkPickerIds] = useState<Set<string>>(() => new Set());
   const [deleteMode, setDeleteMode] = useState(false);
   const [deleteSelection, setDeleteSelection] = useState<Set<string>>(() => new Set());
 
-  const faceUsesLightInk = postItFaceUsesLightInk(faceColorId);
+  const faceUsesLightInk = postItFaceUsesLightInk(faceColorId, isDark);
   const softShadow = isDark ? TODO_SOFT_SHADOW_DARK : TODO_SOFT_SHADOW_LIGHT;
   const faceColor = resolvePostItFaceColor(faceColorId, isDark);
-  const faceInk = resolvePostItFaceInk(faceColorId, baseUi.ink);
-  const faceMuted = resolvePostItFaceMuted(faceColorId, baseUi.muted);
+  const faceInk = resolvePostItFaceInk(faceColorId, baseUi.ink, isDark);
+  const faceMuted = resolvePostItFaceMuted(faceColorId, baseUi.muted, isDark);
   const faceLine = faceUsesLightInk
     ? 'rgba(255,255,255,0.28)'
     : isDark
@@ -1071,9 +994,9 @@ export function TodoListPlanSection({
                 deleteMode={deleteMode}
                 deleteSelected={deleteSelection.has(item.id)}
                 isLast={index === todos.length - 1}
-                markPickerOpen={!collapsedMarkPickerIds.has(item.id)}
+                markPickerOpen={openMarkPickerIds.has(item.id)}
                 onToggleMarkPicker={() =>
-                  setCollapsedMarkPickerIds((prev) => {
+                  setOpenMarkPickerIds((prev) => {
                     const next = new Set(prev);
                     if (next.has(item.id)) next.delete(item.id);
                     else next.add(item.id);
@@ -1338,7 +1261,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   subSection: {
-    paddingLeft: TODO_LAYOUT.checkboxSize + 10,
+    paddingLeft: 0,
     paddingRight: 4,
     gap: 6,
   },
@@ -1411,7 +1334,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    paddingLeft: TODO_LAYOUT.checkboxSize + 10,
+    paddingLeft: 0,
     paddingRight: 4,
     gap: 4,
   },

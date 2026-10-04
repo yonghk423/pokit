@@ -96,8 +96,10 @@ export function DefaultPriorityOrderRow({
   const completeInAccordion = useDayPlanChromeSettingsStore((s) => s.settings.completeInAccordion);
   const titleHighlight = priorityMarkTitleHighlight(itemMarkColor, isDark);
   const rowFaceBg = itemFaceColor ? resolvePostItFaceColor(itemFaceColor, isDark) : undefined;
-  const rowInk = itemFaceColor ? resolvePostItFaceInk(itemFaceColor, ink) : ink;
-  const rowInkMuted = itemFaceColor ? resolvePostItFaceMuted(itemFaceColor, inkMuted) : inkMuted;
+  const rowInk = itemFaceColor ? resolvePostItFaceInk(itemFaceColor, ink, isDark) : ink;
+  const rowInkMuted = itemFaceColor
+    ? resolvePostItFaceMuted(itemFaceColor, inkMuted, isDark)
+    : inkMuted;
   const reorderTranslateY = useSharedValue(0);
   const reorderDragging = useSharedValue(0);
   const expandProgress = useSharedValue(expanded ? 1 : 0);

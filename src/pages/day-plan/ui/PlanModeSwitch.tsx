@@ -158,7 +158,9 @@ export function PlanModeSwitch({
         </View>
       </View>
       {hint != null && hint !== '' ? (
-        <ThemedText style={[styles.modeHint, { color: c.outline }]}>{hint}</ThemedText>
+        <ThemedText style={[styles.modeHint, { color: isDark ? '#FAFAFA' : '#000000' }]}>
+          {hint}
+        </ThemedText>
       ) : null}
     </View>
   );

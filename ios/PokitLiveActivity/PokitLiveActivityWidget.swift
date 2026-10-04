@@ -568,13 +568,15 @@ private struct PokitLiveActivityView: View {
 
   @ViewBuilder
   private func quickMemoLockScreenContainer() -> some View {
-    /// 잠금화면 Live Activity는 시스템이 **콘텐츠 intrinsic 높이**로 하단 슬롯 크기를 정한다.
-    /// `maxHeight: .infinity`로 영역을 늘리면 시뮬레이터 등에서 상단 대형 배너처럼 배치될 수 있다.
-    quickMemoLockScreenBody()
-      .padding(QuickMemoModeLiveActivityView.lockScreenContentInsets)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .background(QuickMemoModeLiveActivityView.lockScreenBackground)
-      .fixedSize(horizontal: false, vertical: true)
+    let faceBg = QuickMemoModeLiveActivityView.lockScreenBackground(for: context.state.quickMemoLive)
+    /// 면색을 슬롯 전체에 깔고, 본문만 안쪽 패딩. (카드 속 카드·상하 틈 방지)
+    ZStack(alignment: .topLeading) {
+      faceBg
+      quickMemoLockScreenBody()
+        .padding(QuickMemoModeLiveActivityView.lockScreenContentInsets)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .modifier(QuickMemoZeroContentMargins())
   }
 
   // MARK: - Body
@@ -590,15 +592,31 @@ private struct PokitLiveActivityView: View {
   }
 }
 
+/// iOS 17+ Live Activity 기본 content margin 제거 — 면색이 슬롯 끝까지 차게.
+@available(iOS 16.1, *)
+private struct QuickMemoZeroContentMargins: ViewModifier {
+  func body(content: Content) -> some View {
+    if #available(iOS 17.0, *) {
+      content.contentMargins(.all, 0)
+    } else {
+      content
+    }
+  }
+}
+
 // MARK: - Dynamic Island (unified)
 
 @available(iOS 16.1, *)
 struct PokitLiveActivityWidget: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: PokitLiveActivityAttributes.self) { context in
+      let quickMemoFace =
+        context.state.planMode == "quickMemo"
+          ? QuickMemoModeLiveActivityView.lockScreenBackground(for: context.state.quickMemoLive)
+          : Color.clear
       PokitLiveActivityView(context: context)
-        // 내용 뷰가 `ZStack`으로 영역 전체를 불투명하게 채움 — 여기는 이중 틴트만 막는다.
-        .activityBackgroundTint(.clear)
+        // 퀵메모: 시스템 슬롯 tint까지 면색으로 맞춰 상·하 틈이 비치지 않게 한다.
+        .activityBackgroundTint(quickMemoFace)
         .activitySystemActionForegroundColor(liveGrayAccent)
         .widgetURL(nil)
     } dynamicIsland: { context in
@@ -607,12 +625,7 @@ struct PokitLiveActivityWidget: Widget {
         let previewLine = q.bodyText.split(separator: "\n", omittingEmptySubsequences: false)
           .map(String.init)
           .first { !$0.trimmingCharacters(in: .whitespaces).isEmpty } ?? q.bodyText
-        let memoChromeTitle: String = {
-          let trimmed = (q.titleLabel ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-          return trimmed.isEmpty ? "메모" : trimmed
-        }()
-        /// 컴팩트 trailing 은 체크리스트의 `1개`·중요도의 타이머처럼 **짧은 고정 라벨**만 사용한다.
-        /// 본문 미리보기를 넣으면 intrinsic 폭이 커져 다이내믹 아일랜드 알약이 화면에 가깝게 늘어난다.
+        /// 컴팩트 trailing — 짧은 본문 미리보기(또는 상태). 타이틀/아이콘 크롬은 쓰지 않는다.
         let compactTrailingLabel: String = {
           if isFinished { return q.statusLabel.isEmpty ? "완료" : q.statusLabel }
           switch context.state.status {
@@ -621,37 +634,28 @@ struct PokitLiveActivityWidget: Widget {
           case "standby":
             return q.statusLabel.isEmpty ? "대기" : q.statusLabel
           default:
-            return memoChromeTitle
+            let t = previewLine.trimmingCharacters(in: .whitespacesAndNewlines)
+            if t.isEmpty { return "···" }
+            if t.count <= 4 { return t }
+            return String(t.prefix(4))
           }
         }()
-        /// 확장 상단: leading / trailing 을 나누면 양끝 정렬로 가운데 검은 빈 영역이 커짐 → 한 덩어리로만 배치.
         let expandedTopPreview: String = {
           let t = previewLine.trimmingCharacters(in: .whitespacesAndNewlines)
-          if t.isEmpty { return memoChromeTitle }
-          if t.count <= 18 { return t }
-          return String(t.prefix(18)) + "…"
+          if t.isEmpty { return "···" }
+          if t.count <= 22 { return t }
+          return String(t.prefix(22)) + "…"
         }()
 
         return DynamicIsland {
           DynamicIslandExpandedRegion(.leading) {
-            HStack(alignment: .center, spacing: 6) {
-              Image(systemName: "note.text")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(liveGrayAccent)
-              VStack(alignment: .leading, spacing: 1) {
-                Text(memoChromeTitle)
-                  .font(.caption2.weight(.bold))
-                  .foregroundStyle(liveGrayAccent)
-                  .lineLimit(1)
-                Text(expandedTopPreview)
-                  .font(.caption2.weight(.semibold))
-                  .foregroundStyle(Color.secondary)
-                  .lineLimit(1)
-                  .truncationMode(.tail)
-              }
-              .frame(maxWidth: 118, alignment: .leading)
-            }
-            .fixedSize(horizontal: true, vertical: false)
+            Text(expandedTopPreview)
+              .font(.caption2.weight(.semibold))
+              .foregroundStyle(liveGrayAccent)
+              .lineLimit(1)
+              .truncationMode(.tail)
+              .frame(maxWidth: 140, alignment: .leading)
+              .fixedSize(horizontal: true, vertical: false)
           }
           DynamicIslandExpandedRegion(.bottom) {
             VStack(alignment: .leading, spacing: 6) {
@@ -666,6 +670,7 @@ struct PokitLiveActivityWidget: Widget {
             .padding(.bottom, 4)
           }
         } compactLeading: {
+          /// 포스트잇/메모에 가장 가까운 SF Symbol (`note.text`)
           Image(systemName: isFinished ? "checkmark" : "note.text")
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(liveGrayAccent)
@@ -679,6 +684,7 @@ struct PokitLiveActivityWidget: Widget {
             .frame(maxWidth: 44, alignment: .trailing)
         } minimal: {
           Image(systemName: isFinished ? "checkmark" : "note.text")
+            .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(liveGrayAccent)
         }
         .widgetURL(nil)

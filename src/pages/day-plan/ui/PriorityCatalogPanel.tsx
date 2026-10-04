@@ -1388,12 +1388,12 @@ function GroupSectionBlock({
 }) {
   const { t } = useTranslation();
   const groupAccordion = useMeasuredAccordion(isGroupExpanded);
-  const faceUsesLightInk = manageOnly && postItFaceUsesLightInk(postItFaceColorId);
+  const faceUsesLightInk = manageOnly && postItFaceUsesLightInk(postItFaceColorId, isDark);
   const faceInk = manageOnly
-    ? resolvePostItFaceInk(postItFaceColorId, editorial.ink)
+    ? resolvePostItFaceInk(postItFaceColorId, editorial.ink, isDark)
     : editorial.ink;
   const faceMuted = manageOnly
-    ? resolvePostItFaceMuted(postItFaceColorId, editorial.muted)
+    ? resolvePostItFaceMuted(postItFaceColorId, editorial.muted, isDark)
     : editorial.muted;
   const faceEditorial: PriorityCatalogEditorial = manageOnly
     ? {
@@ -1821,9 +1821,9 @@ export function PriorityCatalogPanel({
     const flatFaceColorId =
       postItFaceByGroup[FLAT_CATALOG_POST_IT_KEY] ?? DEFAULT_POST_IT_FACE_COLOR_ID;
     const faceColor = resolvePostItFaceColor(flatFaceColorId, isDark);
-    const faceUsesLightInk = postItFaceUsesLightInk(flatFaceColorId);
-    const faceInk = resolvePostItFaceInk(flatFaceColorId, editorial.ink);
-    const faceMuted = resolvePostItFaceMuted(flatFaceColorId, editorial.muted);
+    const faceUsesLightInk = postItFaceUsesLightInk(flatFaceColorId, isDark);
+    const faceInk = resolvePostItFaceInk(flatFaceColorId, editorial.ink, isDark);
+    const faceMuted = resolvePostItFaceMuted(flatFaceColorId, editorial.muted, isDark);
     const faceEditorial: PriorityCatalogEditorial = {
       ...editorial,
       ink: faceInk,

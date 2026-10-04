@@ -3604,10 +3604,12 @@ export function PriorityBasedPlanSection({
                                           ink={resolvePostItFaceInk(
                                             priorityCategoryFaceColor[cat.key] ?? null,
                                             editorial.ink,
+                                            isDark,
                                           )}
                                           muted={resolvePostItFaceMuted(
                                             priorityCategoryFaceColor[cat.key] ?? null,
                                             editorial.muted,
+                                            isDark,
                                           )}
                                           isDark={isDark}
                                         />

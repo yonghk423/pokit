@@ -58,6 +58,8 @@ export const StorageKeys = {
   updateAvailableDismissedVersion: 'pokit:update-available-dismissed-version',
   /** 루틴 목록 포스트잇 카드 면 색 */
   postItFaceColor: 'pokit:post-it-face-color',
+  /** 잠금화면 포스트잇 글자색 */
+  postItInkColor: 'pokit:post-it-ink-color',
   /** 나만의 루틴 포스트잇 — 접힌 그룹 id (없으면 펼침) */
   myRoutineGroupCollapsed: 'pokit:my-routine-group-collapsed',
   /** 루틴 탭 카탈로그 포스트잇 — 접힌 그룹 id (없으면 펼침) */
@@ -104,6 +106,7 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   readingBookstoreTapGuide: 'lockflow:reading-bookstore-tap-guide',
   updateAvailableDismissedVersion: 'lockflow:update-available-dismissed-version',
   postItFaceColor: 'lockflow:post-it-face-color',
+  postItInkColor: 'lockflow:post-it-ink-color',
   myRoutineGroupCollapsed: 'lockflow:my-routine-group-collapsed',
   routineCatalogGroupCollapsed: 'lockflow:routine-catalog-group-collapsed',
   announcementReadIds: 'lockflow:announcement-read-ids',

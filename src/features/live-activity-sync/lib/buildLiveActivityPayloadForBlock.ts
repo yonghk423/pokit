@@ -11,7 +11,16 @@ import {
 } from '@entities/day-plan';
 import { useDayPlanRuntimeStore, useDayPlanStore } from '@entities/day-plan';
 import { t } from '@shared/lib/i18n';
-import { loadGoalDetailCategoryConfig } from '@shared/lib/storage';
+import {
+  colorHexUsesLightInk,
+  getPostItFaceColorPreset,
+  loadGoalDetailCategoryConfig,
+  loadPostItFaceColorIdForGroup,
+  loadPostItInkColorIdForGroup,
+  QUICK_MEMO_POST_IT_INK_KEY,
+  QUICK_MEMO_POST_IT_KEY,
+  resolvePostItInkHex,
+} from '@shared/lib/storage';
 
 import type {
   PokitLiveActivityChecklistRow,
@@ -234,11 +243,22 @@ export function buildLiveActivityPayloadForBlock(input: {
     status,
   });
 
+  const quickMemoFaceId = loadPostItFaceColorIdForGroup(QUICK_MEMO_POST_IT_KEY);
+  const quickMemoFace = getPostItFaceColorPreset(quickMemoFaceId);
+  const quickMemoFaceHex = quickMemoFace.light;
+  const quickMemoInkHex = resolvePostItInkHex(
+    loadPostItInkColorIdForGroup(QUICK_MEMO_POST_IT_INK_KEY),
+    quickMemoFaceId,
+    false,
+  );
   const quickMemoLive: QuickMemoLiveActivityContent | null = isQuickMemoBlock
     ? {
         bodyText: numberedLines.join('\n'),
         statusLabel: quickMemoStatusLabel(status),
         titleLabel: t('liveActivity.quickMemoTitle'),
+        faceHex: quickMemoFaceHex,
+        inkHex: quickMemoInkHex,
+        usesLightInk: colorHexUsesLightInk(quickMemoFaceHex),
       }
     : null;
 

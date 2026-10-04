@@ -43,6 +43,12 @@ export type QuickMemoLiveActivityContent = {
   statusLabel: string;
   /** 잠금화면 카드 헤더 — 현재 앱 로케일 */
   titleLabel: string;
+  /** 카드 면색 `#RRGGBB` (라이트 팔레트) */
+  faceHex: string;
+  /** 글자색 `#RRGGBB` — 수동 선택(또는 auto 해석 결과) */
+  inkHex: string;
+  /** 어두운 면 — 흰 글자/아이콘 (폴백·크롬용) */
+  usesLightInk: boolean;
 };
 
 export type PokitLiveActivityPayload = {

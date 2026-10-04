@@ -130,6 +130,9 @@ export const ROUTINE_CATALOG_FLAT_POST_IT_KEY = 'routine-catalog:flat';
 /** 오늘 탭 투두 리스트 카드 — 면색 */
 export const TODO_LIST_POST_IT_KEY = 'todo-list:today';
 
+/** 잠금화면 메모(포스트잇) Live Activity — 면색 */
+export const QUICK_MEMO_POST_IT_KEY = 'quick-memo:lock';
+
 const ROUTINE_CATALOG_FLAT_FACE_WHITE_MIGRATED_KEY =
   'pokit:routine-catalog-flat-face-white-migrated';
 
@@ -137,6 +140,51 @@ const TODO_LIST_FACE_CREAM_MIGRATED_KEY = 'pokit:todo-list-face-cream-migrated';
 
 export const POST_IT_LIGHT_INK = '#FFFFFF';
 export const POST_IT_LIGHT_MUTED = 'rgba(255,255,255,0.72)';
+/** 밝은 면 위 기본 잉크 — 테마 onSurface가 밝아도 가독성 유지 */
+export const POST_IT_DARK_INK = '#111111';
+export const POST_IT_DARK_MUTED = 'rgba(17,17,17,0.55)';
+
+/** WCAG 상대 휘도 — 어두우면 화이트 잉크 */
+const LIGHT_INK_LUMINANCE_THRESHOLD = 0.45;
+
+function parseHexRgb(hex: string): { r: number; g: number; b: number } | null {
+  let value = hex.trim();
+  if (value.startsWith('#')) value = value.slice(1);
+  if (value.length === 3) {
+    value = value
+      .split('')
+      .map((ch) => ch + ch)
+      .join('');
+  }
+  if (value.length !== 6) return null;
+  const n = Number.parseInt(value, 16);
+  if (!Number.isFinite(n)) return null;
+  return {
+    r: (n >> 16) & 0xff,
+    g: (n >> 8) & 0xff,
+    b: n & 0xff,
+  };
+}
+
+function channelToLinear(channel: number): number {
+  const c = channel / 255;
+  return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+}
+
+/** `#RRGGBB` 상대 휘도 (0~1). 파싱 실패 시 밝은 면으로 취급 */
+export function hexRelativeLuminance(hex: string): number {
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return 1;
+  const r = channelToLinear(rgb.r);
+  const g = channelToLinear(rgb.g);
+  const b = channelToLinear(rgb.b);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** 실제 면색 hex 기준 — 어두우면 화이트 잉크 */
+export function colorHexUsesLightInk(hex: string): boolean {
+  return hexRelativeLuminance(hex) < LIGHT_INK_LUMINANCE_THRESHOLD;
+}
 
 export function isPostItFaceColorId(value: unknown): value is PostItFaceColorId {
   return (
@@ -154,13 +202,6 @@ export function getPostItFaceColorPreset(
   );
 }
 
-/** 어두운 면(네이비·다크 그린 등) — 화이트 잉크 필요 */
-export function postItFaceUsesLightInk(
-  id: PostItFaceColorId | null | undefined,
-): boolean {
-  return getPostItFaceColorPreset(id).inkTone === 'light';
-}
-
 export function resolvePostItFaceColor(
   id: PostItFaceColorId | null | undefined,
   isDark: boolean,
@@ -169,18 +210,31 @@ export function resolvePostItFaceColor(
   return isDark ? preset.dark : preset.light;
 }
 
+/**
+ * 실제 표시 면색 휘도 기준 — 어두운 면이면 화이트 잉크.
+ * `isDark`를 넘기면 다크모드용 `preset.dark` 면색으로 판정한다.
+ */
+export function postItFaceUsesLightInk(
+  id: PostItFaceColorId | null | undefined,
+  isDark = false,
+): boolean {
+  return colorHexUsesLightInk(resolvePostItFaceColor(id, isDark));
+}
+
 export function resolvePostItFaceInk(
   id: PostItFaceColorId | null | undefined,
   fallbackInk: string,
+  isDark = false,
 ): string {
-  return postItFaceUsesLightInk(id) ? POST_IT_LIGHT_INK : fallbackInk;
+  return postItFaceUsesLightInk(id, isDark) ? POST_IT_LIGHT_INK : fallbackInk;
 }
 
 export function resolvePostItFaceMuted(
   id: PostItFaceColorId | null | undefined,
   fallbackMuted: string,
+  isDark = false,
 ): string {
-  return postItFaceUsesLightInk(id) ? POST_IT_LIGHT_MUTED : fallbackMuted;
+  return postItFaceUsesLightInk(id, isDark) ? POST_IT_LIGHT_MUTED : fallbackMuted;
 }
 
 function normalizeByGroup(raw: unknown): PostItFaceColorByGroup {

@@ -484,10 +484,11 @@ export function DayPlanPage({
         }
         setQuickMemoDraft('');
         syncScheduledNotifications();
-        reconcileLiveActivityFromPlan();
+        // 빈 저장: reconcile(end) + endAndSuspend 이중 호출 방지 → dismiss 한 경로만
         void (async () => {
           const dismissed = await endLiveActivityAndDismiss();
           if (!dismissed) {
+            await endPokitLiveActivity();
             await suspendPokitApp();
           }
         })();
@@ -503,6 +504,13 @@ export function DayPlanPage({
       }
 
       const blockTitle = draftLines.join('\n');
+      // 이전 퀵메모 블록이 남아 reconcile/upsert가 엇갈리지 않게 먼저 정리
+      {
+        const planState = useDayPlanStore.getState();
+        for (const block of [...planState.blocks].filter((b) => b.blockOrigin === 'quickMemo')) {
+          planState.removeBlock(block.id);
+        }
+      }
       const result = addBlock({
         title: blockTitle,
         startMinutes: ps,
@@ -530,8 +538,7 @@ export function DayPlanPage({
       }
 
       syncScheduledNotifications();
-      reconcileLiveActivityFromPlan();
-
+      // reconcile + upsertAndSuspend를 같이 치면 Live Activity가 두 장 쌓일 수 있음 → 저장 경로는 upsert 한 번만.
       const payload = buildLiveActivityPayloadForBlock({
         blockId: result.blockId,
         status: 'active',
@@ -541,8 +548,11 @@ export function DayPlanPage({
           const dismissed = await upsertLiveActivityAndDismiss(payload);
           if (!dismissed) {
             await upsertPokitLiveActivity(payload);
+            await suspendPokitApp();
           }
         })();
+      } else {
+        void endLiveActivityAndDismiss();
       }
       return;
     }
@@ -609,11 +619,35 @@ export function DayPlanPage({
 
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
+  const quickMemoSaveLockRef = useRef(false);
+  const quickMemoSaveUnlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleQuickMemoSavePress = useCallback(() => {
+    if (quickMemoSaveLockRef.current) return;
+    quickMemoSaveLockRef.current = true;
+    if (quickMemoSaveUnlockTimerRef.current) {
+      clearTimeout(quickMemoSaveUnlockTimerRef.current);
+      quickMemoSaveUnlockTimerRef.current = null;
+    }
     quickMemoInputRef.current?.blur();
     Keyboard.dismiss();
-    onSaveRef.current();
+    try {
+      onSaveRef.current();
+    } finally {
+      // 더블 탭/중복 onPress 방지: 짧은 윈도우 동안 저장 재진입 잠금
+      quickMemoSaveUnlockTimerRef.current = setTimeout(() => {
+        quickMemoSaveLockRef.current = false;
+        quickMemoSaveUnlockTimerRef.current = null;
+      }, 500);
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (quickMemoSaveUnlockTimerRef.current) {
+        clearTimeout(quickMemoSaveUnlockTimerRef.current);
+      }
+    };
   }, []);
 
   /**
@@ -792,6 +826,9 @@ export function DayPlanPage({
                   draft={quickMemoDraft}
                   onChangeDraft={setQuickMemoDraft}
                   onSavePress={handleQuickMemoSavePress}
+                  onFaceColorChange={() => {
+                    reconcileLiveActivityFromPlan();
+                  }}
                 />
               </View>
             </View>
