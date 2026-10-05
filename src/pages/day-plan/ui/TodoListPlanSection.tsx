@@ -250,6 +250,25 @@ function TodoListRow({
         deleteMode && { backgroundColor: deleteSelected ? ui.dangerBg : 'transparent' },
       ]}>
       <View style={styles.row}>
+        <View style={styles.rowCheckWrap}>
+          <DoneCheckbox
+            checked={deleteMode ? deleteSelected : item.isDone}
+            isDark={isDark}
+            ui={ui}
+            shadow={shadow}
+            uncheckedFill={checkboxFill}
+            accessibilityLabel={
+              deleteMode
+                ? deleteSelected
+                  ? t('todo.deselectDelete', { title })
+                  : t('todo.selectDelete', { title })
+                : item.isDone
+                  ? t('todo.undoDone', { title })
+                  : t('todo.markDone', { title })
+            }
+            onPress={deleteMode ? onToggleDeleteSelect : onToggleDone}
+          />
+        </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={deleteMode ? t('todo.tapToSelectDelete') : undefined}
@@ -586,7 +605,7 @@ function TodoListRow({
                       shadow={shadow}
                       uncheckedFill={checkboxFill}
                       checkedColor={ui.checkFillSub}
-                      size={18}
+                      size={16}
                       accessibilityLabel={t('todo.subToggleA11y')}
                       onPress={() => onToggleSubItemDone(sub.id)}
                     />
@@ -1180,6 +1199,10 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 5,
     minHeight: TODO_LAYOUT.rowMinHeight,
+  },
+  rowCheckWrap: {
+    marginTop: 2,
+    flexShrink: 0,
   },
   rowMain: {
     flex: 1,
