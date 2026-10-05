@@ -7,6 +7,7 @@ import { getBlockTimelineIcon } from './blockIcons';
 import { resolveCategoryCatalogIcon } from './categoryCatalogAppearance';
 import { resolveBlockCategoryKey } from './dayPlanRuntimeTime';
 import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
+import { resolveWidgetPostItAppearance } from './widgetPostItAppearance';
 
 export type WidgetPriorityRoutineItem = {
   categoryKey: string;
@@ -25,6 +26,11 @@ export type WidgetDayPlanPayload = PersistedDayPlan & {
   priorityRoutineItems: WidgetPriorityRoutineItem[];
   /** 홈 위젯 「빠른 메모」 섹션 제목 — 현재 앱 로케일 */
   quickMemoSectionTitle: string;
+  /** 홈 위젯 포스트잇 면색 */
+  faceHex: string;
+  /** 홈 위젯 글자색 */
+  inkHex: string;
+  mutedHex: string;
 };
 
 function sortedFlowBlocks(blocks: DayPlanBlock[]): DayPlanBlock[] {
@@ -85,6 +91,7 @@ export function buildWidgetDayPlanPayload(
       ? buildRoutineItemsFromPriorityList(priorityCategoryKeys, completedFocusCategoryKeys)
       : buildRoutineItemsFromBlocks(snapshot);
 
+  const appearance = resolveWidgetPostItAppearance(false);
   return {
     ...snapshot,
     priorityCategoryKeys,
@@ -92,5 +99,8 @@ export function buildWidgetDayPlanPayload(
     quickMemoDraft,
     priorityRoutineItems,
     quickMemoSectionTitle: t('liveActivity.quickMemoTitle'),
+    faceHex: appearance.faceHex,
+    inkHex: appearance.inkHex,
+    mutedHex: appearance.mutedHex,
   };
 }

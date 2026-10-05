@@ -1,4 +1,4 @@
-import { t, type I18nKey } from '@shared/lib/i18n';
+import { t } from '@shared/lib/i18n';
 import {
   BUILTIN_ABSTAIN_GROUP_KEY,
   BUILTIN_DAILY_LIFE_GROUP_KEY,
@@ -47,7 +47,7 @@ export function resolveCustomCatalogGroupDisplayLabel(groupKey: string, storedLa
   return storedLabel.trim().length > 0 ? storedLabel.trim() : groupKey;
 }
 
-const PRESET_SCHEDULE_NAME_KEYS: Record<'set_daily' | 'set_weekend', I18nKey> = {
+const PRESET_SCHEDULE_NAME_KEYS: Record<'set_daily' | 'set_weekend', LocaleMatchKey> = {
   set_daily: 'fixedRoutine.presetDaily',
   set_weekend: 'fixedRoutine.presetWeekend',
 };

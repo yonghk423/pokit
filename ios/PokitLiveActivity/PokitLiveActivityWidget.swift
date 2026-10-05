@@ -710,8 +710,24 @@ struct PokitLiveActivityWidget: Widget {
 @main
 struct PokitLiveActivityBundle: WidgetBundle {
   var body: some Widget {
-    PokitLiveActivityWidget()
-    DayPlanLockWidget()
-    DayPlanHomeWidget()
+    allWidgets()
+  }
+
+  private func allWidgets() -> some Widget {
+    if #available(iOS 17.0, *) {
+      return WidgetBundleBuilder.buildBlock(
+        PinnedRoutineWidget(),
+        BookstoreWidget(),
+        NoteWidget(),
+        DayPlanHomeWidget(),
+        DayPlanLockWidget(),
+        PokitLiveActivityWidget()
+      )
+    }
+    return WidgetBundleBuilder.buildBlock(
+      DayPlanHomeWidget(),
+      DayPlanLockWidget(),
+      PokitLiveActivityWidget()
+    )
   }
 }

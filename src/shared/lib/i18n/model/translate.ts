@@ -1,35 +1,20 @@
 import type { AppLocale } from './locale';
+import { i18n } from './i18nInstance';
 import { getAppLocale } from './localeStore';
-import enMessages from './messages/en.json';
-import jaMessages from './messages/ja.json';
 import koMessages from './messages/ko.json';
-
-const MESSAGES = {
-  ko: koMessages,
-  en: enMessages,
-  ja: jaMessages,
-} as const;
 
 export type I18nKey = keyof typeof koMessages;
 
 export type TParams = Record<string, string | number>;
 
-function messagesFor(locale: AppLocale): Record<string, string> {
-  return MESSAGES[locale] as Record<string, string>;
-}
-
-function applyParams(text: string, params?: TParams): string {
-  if (!params) return text;
-  return Object.entries(params).reduce(
-    (acc, [key, value]) => acc.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value)),
-    text,
-  );
-}
-
 function isAppLocale(value: unknown): value is AppLocale {
   return value === 'ko' || value === 'en' || value === 'ja';
 }
 
+/**
+ * i18next 기반 번역.
+ * `count` 등은 복수형 옵션과 충돌하지 않도록 `replace`로만 넘긴다.
+ */
 export function t(
   key: I18nKey,
   localeOrParams?: AppLocale | TParams,
@@ -45,9 +30,13 @@ export function t(
     replacements = localeOrParams;
   }
 
-  const selected = messagesFor(locale);
-  const raw = selected[key] ?? messagesFor('en')[key] ?? key;
-  return applyParams(raw, replacements);
+  const translated = i18n.t(key, {
+    lng: locale,
+    defaultValue: key,
+    ...(replacements ? { replace: replacements } : {}),
+  });
+
+  return typeof translated === 'string' ? translated : String(translated);
 }
 
 /** 알림 본문 등 — 모드별 `{symbol} {count}{suffix}` 조각 */

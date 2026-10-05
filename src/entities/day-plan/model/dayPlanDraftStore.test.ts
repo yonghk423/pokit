@@ -744,6 +744,20 @@ describe('dayPlanDraftStore', () => {
     expect(useDayPlanDraftStore.getState().priorityCategoryFaceColor).toEqual({});
   });
 
+  it('sets and clears priority category ink colors', () => {
+    useDayPlanDraftStore.setState({
+      isHydrated: true,
+      priorityCategoryInkColor: {},
+    });
+    useDayPlanDraftStore.getState().setPriorityCategoryInkColor('reading', 'navy');
+    expect(useDayPlanDraftStore.getState().priorityCategoryInkColor).toEqual({ reading: 'navy' });
+    useDayPlanDraftStore.getState().setPriorityCategoryInkColor('reading', 'auto');
+    expect(useDayPlanDraftStore.getState().priorityCategoryInkColor).toEqual({});
+    useDayPlanDraftStore.getState().setPriorityCategoryInkColor('water', 'teal');
+    useDayPlanDraftStore.getState().setPriorityCategoryInkColor('water', null);
+    expect(useDayPlanDraftStore.getState().priorityCategoryInkColor).toEqual({});
+  });
+
   it('clears focus started when the last priority category is finished for today', () => {
     useDayPlanDraftStore.setState({
       isHydrated: true,

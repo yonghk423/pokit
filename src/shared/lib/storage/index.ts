@@ -289,6 +289,7 @@ export {
 export {
   DEFAULT_POST_IT_FACE_COLOR_ID,
   DEFAULT_TODO_LIST_POST_IT_FACE_COLOR_ID,
+  DEFAULT_WIDGET_POST_IT_FACE_COLOR_ID,
   POST_IT_FACE_COLOR_PRESETS,
   POST_IT_LIGHT_INK,
   POST_IT_LIGHT_MUTED,
@@ -339,6 +340,12 @@ export {
   type ScheduledRoutineAssignment,
   type ScheduledRoutinePlanPersisted,
 } from './scheduledRoutinePlanStorage';
+export {
+  loadPinnedRoutineCategoryKey,
+  normalizePinnedRoutineWidget,
+  savePinnedRoutineCategoryKey,
+  type PinnedRoutineWidgetPersisted,
+} from './pinnedRoutineWidgetStorage';
 export {
   loadMyRoutineCollapsedGroupIds,
   loadRoutineCatalogCollapsedGroupIds,

@@ -98,6 +98,36 @@ describe('searchAladinBooks', () => {
     );
   });
 
+  it('parses itemId and itemPage when Aladin sends strings', async () => {
+    process.env.EXPO_PUBLIC_ALADIN_TTB_KEY = 'test-key';
+    jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          item: [
+            {
+              itemId: '456',
+              title: '페이지 책',
+              author: '작가',
+              publisher: '출판',
+              cover: 'https://example.com/cover.jpg',
+              link: 'https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=456',
+              pubDate: '2025-01-01',
+              subInfo: { itemPage: '320' },
+            },
+          ],
+        }),
+      ),
+    );
+
+    const detail = await lookupAladinBook(456);
+    expect(detail).toEqual(
+      expect.objectContaining({
+        itemId: 456,
+        totalPages: 320,
+      }),
+    );
+  });
+
   it('falls back to search item when lookup keeps failing', async () => {
     process.env.EXPO_PUBLIC_ALADIN_TTB_KEY = 'test-key';
     jest.spyOn(global, 'fetch').mockResolvedValue(

@@ -120,3 +120,17 @@ export function contrastingForeground(
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luminance > 0.55 ? dark : light;
 }
+
+/**
+ * 강조 accent를 아이콘 타일용 파스텔로 완화.
+ * `amount`↑ → 더 밝고 연한 톤 (0=원색, 1=흰색).
+ */
+export function pastelizeAccentHex(hex: string, amount = 0.58): string {
+  const { r, g, b } = hexToRgb(hex);
+  const t = clamp01(amount);
+  return rgbToHex({
+    r: r + (255 - r) * t,
+    g: g + (255 - g) * t,
+    b: b + (255 - b) * t,
+  });
+}

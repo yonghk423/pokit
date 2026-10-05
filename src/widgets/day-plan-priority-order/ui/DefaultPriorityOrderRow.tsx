@@ -23,10 +23,12 @@ import {
 import { useTranslation, type I18nKey } from '@shared/lib/i18n';
 import {
   POST_IT_FACE_COLOR_PRESETS,
+  POST_IT_INK_COLOR_PRESETS,
   resolvePostItFaceColor,
-  resolvePostItFaceInk,
-  resolvePostItFaceMuted,
+  resolvePostItInkHex,
+  resolvePostItInkMuted,
   type PostItFaceColorId,
+  type PostItInkColorId,
 } from '@shared/lib/storage';
 import { resolveBrutalConfirmPrimaryColors } from '@shared/ui/brutal-confirm-button';
 import { ColorPaletteAccordion } from '@shared/ui/color-palette-accordion';
@@ -70,6 +72,8 @@ export function DefaultPriorityOrderRow({
   onSelectItemMarkColor,
   itemFaceColor = null,
   onSelectItemFaceColor,
+  itemInkColor = null,
+  onSelectItemInkColor,
   isFocusStarted,
   isCompleted,
   isDark,
@@ -96,10 +100,11 @@ export function DefaultPriorityOrderRow({
   const completeInAccordion = useDayPlanChromeSettingsStore((s) => s.settings.completeInAccordion);
   const titleHighlight = priorityMarkTitleHighlight(itemMarkColor, isDark);
   const rowFaceBg = itemFaceColor ? resolvePostItFaceColor(itemFaceColor, isDark) : undefined;
-  const rowInk = itemFaceColor ? resolvePostItFaceInk(itemFaceColor, ink, isDark) : ink;
-  const rowInkMuted = itemFaceColor
-    ? resolvePostItFaceMuted(itemFaceColor, inkMuted, isDark)
-    : inkMuted;
+  const customInk = Boolean(itemInkColor || itemFaceColor);
+  const rowInk = customInk
+    ? resolvePostItInkHex(itemInkColor ?? 'auto', itemFaceColor, isDark)
+    : ink;
+  const rowInkMuted = customInk ? resolvePostItInkMuted(rowInk) : inkMuted;
   const reorderTranslateY = useSharedValue(0);
   const reorderDragging = useSharedValue(0);
   const expandProgress = useSharedValue(expanded ? 1 : 0);
@@ -547,6 +552,85 @@ export function DefaultPriorityOrderRow({
     );
   };
 
+  const renderInkPalette = (compact: boolean) => {
+    if (!onSelectItemInkColor) return null;
+    const pick = (color: PostItInkColorId | null) => {
+      void Haptics.selectionAsync();
+      onSelectItemInkColor(color === 'auto' ? null : color);
+    };
+    const selectedId: PostItInkColorId = itemInkColor ?? 'auto';
+    return (
+      <View
+        style={[styles.importanceMarkBlock, compact && styles.importanceMarkBlockCompact]}
+        accessibilityRole="toolbar"
+        accessibilityLabel={t('dayPlan.routineInkColorLabel')}>
+        <ThemedText
+          style={[styles.expandNoteActionText, { color: rowInkMuted }]}
+          numberOfLines={1}>
+          {t('dayPlan.routineInkColorLabel')}
+        </ThemedText>
+        <View style={styles.importanceMarkChipRow}>
+          {POST_IT_INK_COLOR_PRESETS.map((preset) => {
+            const selected = selectedId === preset.id;
+            const isAuto = preset.id === 'auto';
+            const colorLabel = t(`dayPlan.quickMemoInkSwatch.${preset.id}` as I18nKey);
+            return (
+              <Pressable
+                key={preset.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={t('dayPlan.routineInkColorA11y', { color: colorLabel })}
+                hitSlop={6}
+                onPress={() => pick(preset.id)}
+                style={({ pressed }) => [
+                  styles.importanceMarkChipShell,
+                  {
+                    width: MARK_SWATCH,
+                    height: MARK_SWATCH,
+                    marginRight: MARK_SHADOW,
+                    marginBottom: MARK_SHADOW,
+                    opacity: pressed ? 0.88 : 1,
+                  },
+                ]}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.importanceMarkChipShadow,
+                    {
+                      backgroundColor: actionShadow,
+                      transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.importanceMarkChipFace,
+                    {
+                      backgroundColor: isAuto
+                        ? isDark
+                          ? 'rgba(255,255,255,0.08)'
+                          : '#FFFFFF'
+                        : preset.hex,
+                      borderColor: isAuto || selected ? actionBorder : 'transparent',
+                      borderWidth: isAuto ? (selected ? 2 : 1) : selected ? 2 : 0,
+                    },
+                  ]}>
+                  {isAuto ? (
+                    <IconSymbol
+                      name="circle.lefthalf.filled"
+                      size={14}
+                      color={rowInkMuted}
+                    />
+                  ) : null}
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    );
+  };
+
   const renderMarkPalette = (compact: boolean) => {
     if (!onSelectItemMarkColor) return null;
     const pick = (color: PriorityMarkColorId | null) => {
@@ -657,7 +741,7 @@ export function DefaultPriorityOrderRow({
   };
 
   const priorityButton =
-    onSelectItemMarkColor || onSelectItemFaceColor
+    onSelectItemMarkColor || onSelectItemFaceColor || onSelectItemInkColor
       ? wrapBrutal(
           <View
             style={[
@@ -668,6 +752,7 @@ export function DefaultPriorityOrderRow({
               },
             ]}>
             {renderFacePalette(true)}
+            {renderInkPalette(true)}
             {renderMarkPalette(true)}
           </View>,
         )
@@ -728,6 +813,7 @@ export function DefaultPriorityOrderRow({
   );
 
   const noteFaceAction = expandEnabled && onSelectItemFaceColor ? renderFacePalette(false) : null;
+  const noteInkAction = expandEnabled && onSelectItemInkColor ? renderInkPalette(false) : null;
   const notePriorityAction = expandEnabled && onSelectItemMarkColor
     ? renderMarkPalette(false)
     : null;
@@ -801,9 +887,13 @@ export function DefaultPriorityOrderRow({
       : null;
 
   const expandInlineActions = Boolean(
-    noteFaceAction || notePriorityAction || noteFinishAction || noteCompleteAction,
+    noteFaceAction ||
+      noteInkAction ||
+      notePriorityAction ||
+      noteFinishAction ||
+      noteCompleteAction,
   );
-  const colorSectionActions = Boolean(noteFaceAction || notePriorityAction);
+  const colorSectionActions = Boolean(noteFaceAction || noteInkAction || notePriorityAction);
   const expandButton = expandEnabled
     ? wrapBrutal(
         <Pressable
@@ -940,6 +1030,7 @@ export function DefaultPriorityOrderRow({
                     shadowColor={actionShadow}>
                     <View style={styles.colorSectionBody}>
                       {noteFaceAction}
+                      {noteInkAction}
                       {notePriorityAction}
                     </View>
                   </ColorPaletteAccordion>

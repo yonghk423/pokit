@@ -4,6 +4,9 @@ import { AppState } from 'react-native';
 
 import {
   syncTodayTabWithFixedRoutineApply,
+  syncPinnedRoutineToWidget,
+  ensureBookstoreNoteWidgetLifecycle,
+  syncBookstoreAndNoteWidgets,
   seedPokitWeekTourIntoTodayIfNeeded,
   seedReadingBookstoreIfNeeded,
   useDayPlanDraftStore,
@@ -101,6 +104,9 @@ export function useAppBootstrap() {
       useDayPlanDraftStore.getState().rollPriorityPlanForwardIfEnded();
       useDayPlanStore.getState().prunePastEndedBlocks();
       syncTodayTabWithFixedRoutineApply();
+      syncPinnedRoutineToWidget();
+      ensureBookstoreNoteWidgetLifecycle();
+      syncBookstoreAndNoteWidgets();
       seedPokitWeekTourIntoTodayIfNeeded();
       registerOtherCategoryResolverFromStorage();
       const plan = useDayPlanStore.getState();

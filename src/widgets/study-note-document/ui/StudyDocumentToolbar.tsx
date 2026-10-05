@@ -192,7 +192,7 @@ export function StudyDocumentToolbar({
   const body = (
     <LabelToolBtn
       label={t('studyNote.toolbarBodyText')}
-      text="가"
+      text={t('studyNote.toolbarBodyGlyph')}
       palette={palette}
       surfaceBg={surfaceBg}
       active={activeHeadingLevel == null}

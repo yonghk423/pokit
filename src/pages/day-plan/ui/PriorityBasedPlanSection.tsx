@@ -111,8 +111,8 @@ import {
   subscribeCustomFlowCatalog,
   type CategoryMealSlotOverride,
   type DayMealSlot,
-  resolvePostItFaceInk,
-  resolvePostItFaceMuted,
+  resolvePostItInkHex,
+  resolvePostItInkMuted,
 } from '@shared/lib/storage';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { COMPLETION_TOGGLE_ANIM_MS } from '@shared/ui/completion-radio-button';
@@ -714,6 +714,8 @@ export function PriorityBasedPlanSection({
     setPriorityCategoryMarkColor,
     priorityCategoryFaceColor,
     setPriorityCategoryFaceColor,
+    priorityCategoryInkColor,
+    setPriorityCategoryInkColor,
     prioritySectionsCategoryOrder,
     appendPrioritySectionsCategoryKeys,
     setPrioritySectionsCategoryOrder,
@@ -742,6 +744,8 @@ export function PriorityBasedPlanSection({
       setPriorityCategoryMarkColor: s.setPriorityCategoryMarkColor,
       priorityCategoryFaceColor: s.priorityCategoryFaceColor,
       setPriorityCategoryFaceColor: s.setPriorityCategoryFaceColor,
+      priorityCategoryInkColor: s.priorityCategoryInkColor,
+      setPriorityCategoryInkColor: s.setPriorityCategoryInkColor,
       prioritySectionsCategoryOrder: s.prioritySectionsCategoryOrder,
       appendPrioritySectionsCategoryKeys: s.appendPrioritySectionsCategoryKeys,
       setPrioritySectionsCategoryOrder: s.setPrioritySectionsCategoryOrder,
@@ -3081,6 +3085,17 @@ export function PriorityBasedPlanSection({
                         numberOfLines={2}>
                         {formatTimelineHeaderDate(todayKey, locale)}
                       </ThemedText>
+                      <Pressable
+                        onPress={() => {
+                          void Haptics.selectionAsync();
+                          setScheduledRoutineSheetOpen(true);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
+                        hitSlop={10}
+                        style={styles.priorityTimelineCalendarIcon}>
+                        <IconSymbol name="calendar" size={18} color={editorial.muted} />
+                      </Pressable>
                       <MealSlotScheduleEditButton
                         palette={spineTimelinePalette}
                         isDark={isDark}
@@ -3108,29 +3123,31 @@ export function PriorityBasedPlanSection({
                           emphasize={emphasizePriorityWindowChip}
                           onPress={openPriorityTimeEditor}
                         />
-                        <Pressable
-                          onPress={() => {
-                            void Haptics.selectionAsync();
-                            setScheduledRoutineSheetOpen(true);
-                          }}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
-                          hitSlop={10}
-                          style={styles.priorityTimelineCalendarIcon}>
-                          <IconSymbol name="calendar" size={18} color={editorial.muted} />
-                        </Pressable>
                       </View>
                     </View>
                   </>
                 ) : (
                   <>
-                    <ThemedText
-                      style={[styles.priorityTimelineTitle, { color: editorial.ink }]}
-                      lightColor={editorial.ink}
-                      darkColor={editorial.ink}
-                      numberOfLines={2}>
-                      {formatTimelineHeaderDate(todayKey, locale)}
-                    </ThemedText>
+                    <View style={styles.priorityTimelineTitleRow}>
+                      <ThemedText
+                        style={[styles.priorityTimelineTitle, { color: editorial.ink }]}
+                        lightColor={editorial.ink}
+                        darkColor={editorial.ink}
+                        numberOfLines={2}>
+                        {formatTimelineHeaderDate(todayKey, locale)}
+                      </ThemedText>
+                      <Pressable
+                        onPress={() => {
+                          void Haptics.selectionAsync();
+                          setScheduledRoutineSheetOpen(true);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
+                        hitSlop={10}
+                        style={styles.priorityTimelineCalendarIcon}>
+                        <IconSymbol name="calendar" size={18} color={editorial.muted} />
+                      </Pressable>
+                    </View>
                     <View style={styles.priorityTimelineSubRow}>
                       <ThemedText
                         style={[styles.priorityTimelineSub, { color: editorial.muted }]}
@@ -3150,17 +3167,6 @@ export function PriorityBasedPlanSection({
                           emphasize={emphasizePriorityWindowChip}
                           onPress={openPriorityTimeEditor}
                         />
-                        <Pressable
-                          onPress={() => {
-                            void Haptics.selectionAsync();
-                            setScheduledRoutineSheetOpen(true);
-                          }}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
-                          hitSlop={10}
-                          style={styles.priorityTimelineCalendarIcon}>
-                          <IconSymbol name="calendar" size={18} color={editorial.muted} />
-                        </Pressable>
                       </View>
                     </View>
                   </>
@@ -3521,6 +3527,16 @@ export function PriorityBasedPlanSection({
                                     ),
                                   ),
                                 );
+                                const rowFaceId = priorityCategoryFaceColor[cat.key] ?? null;
+                                const rowInkId = priorityCategoryInkColor[cat.key] ?? null;
+                                const rowPanelInk =
+                                  rowFaceId || rowInkId
+                                    ? resolvePostItInkHex(rowInkId ?? 'auto', rowFaceId, isDark)
+                                    : editorial.ink;
+                                const rowPanelMuted =
+                                  rowFaceId || rowInkId
+                                    ? resolvePostItInkMuted(rowPanelInk)
+                                    : editorial.muted;
 
                                 return (
                                   <Reanimated.View
@@ -3568,6 +3584,10 @@ export function PriorityBasedPlanSection({
                                       itemFaceColor={priorityCategoryFaceColor[cat.key] ?? null}
                                       onSelectItemFaceColor={(color) =>
                                         setPriorityCategoryFaceColor(cat.key, color)
+                                      }
+                                      itemInkColor={priorityCategoryInkColor[cat.key] ?? null}
+                                      onSelectItemInkColor={(color) =>
+                                        setPriorityCategoryInkColor(cat.key, color)
                                       }
                                       isFocusStarted={isFocusStarted}
                                       isCompleted={rowDone}
@@ -3638,16 +3658,8 @@ export function PriorityBasedPlanSection({
                                           label={cat.label}
                                           startMinutes={rowSchedule.startMinutes}
                                           endMinutes={rowSchedule.endMinutes}
-                                          ink={resolvePostItFaceInk(
-                                            priorityCategoryFaceColor[cat.key] ?? null,
-                                            editorial.ink,
-                                            isDark,
-                                          )}
-                                          muted={resolvePostItFaceMuted(
-                                            priorityCategoryFaceColor[cat.key] ?? null,
-                                            editorial.muted,
-                                            isDark,
-                                          )}
+                                          ink={rowPanelInk}
+                                          muted={rowPanelMuted}
                                           isDark={isDark}
                                         />
                                       }
@@ -3897,6 +3909,7 @@ const styles = StyleSheet.create({
   priorityTimelineCalendarIcon: {
     flexShrink: 0,
     marginTop: 1,
+    marginLeft: 2,
   },
   priorityTimelineHeaderActions: {
     flexDirection: 'row',

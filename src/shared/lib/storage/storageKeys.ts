@@ -62,6 +62,8 @@ export const StorageKeys = {
   postItInkColor: 'pokit:post-it-ink-color',
   /** 특정 날짜에 미리 담아 둘 루틴 (먼슬리·가끔 루틴) */
   scheduledRoutinePlan: 'pokit:scheduled-routine-plan',
+  /** 홈 위젯에 고정할 루틴 1개 categoryKey */
+  pinnedRoutineWidget: 'pokit:pinned-routine-widget',
   /** 나만의 루틴 포스트잇 — 접힌 그룹 id (없으면 펼침) */
   myRoutineGroupCollapsed: 'pokit:my-routine-group-collapsed',
   /** 루틴 탭 카탈로그 포스트잇 — 접힌 그룹 id (없으면 펼침) */
@@ -110,6 +112,7 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   postItFaceColor: 'lockflow:post-it-face-color',
   postItInkColor: 'lockflow:post-it-ink-color',
   scheduledRoutinePlan: 'lockflow:scheduled-routine-plan',
+  pinnedRoutineWidget: 'lockflow:pinned-routine-widget',
   myRoutineGroupCollapsed: 'lockflow:my-routine-group-collapsed',
   routineCatalogGroupCollapsed: 'lockflow:routine-catalog-group-collapsed',
   announcementReadIds: 'lockflow:announcement-read-ids',

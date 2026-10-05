@@ -7,6 +7,7 @@ import {
   CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS,
   type CustomFlowTemplateKey,
 } from './customFlowTemplateConfigs';
+import { getTemplateDemoCopy } from './templateDemoCopy';
 
 export type CustomFlowTemplateIconName =
   | 'checklist'
@@ -35,19 +36,14 @@ export const CUSTOM_FLOW_TEMPLATE_ICONS: Record<CustomFlowTemplateKey, CustomFlo
   reminder: 'bell',
 };
 
-export const CUSTOM_FLOW_TEMPLATE_PREVIEW_LINES: Record<CustomFlowTemplateKey, string[]> = {
-  checklist: ['□ 물 마시기', '□ 스트레칭'],
-  abstain: ['✓ 밤늦게 폰 보기', '□ 과자·야식'],
-  measurement: ['체중·혈압·수면 등', '단위·목표 설정'],
-  healthIntake: ['아침·점심·저녁 중 필요한 슬롯', '복용 시간 설정'],
-  fasting: ['현재·목표 체중', '주간 감량 목표'],
-  habit: ['오늘 완료 ✓', '연속 5일'],
-  counter: ['이름·목표 설정', '+1 / 추이'],
-  focus: ['25분 집중', '남은 12분'],
-  journal: ['오늘 기분: 좋음', '한 줄 메모'],
-  memo: ['장보기·예약·할 일', '짧게 남기고 저장'],
-  reminder: ['약·물·식사 알림', '시간별 문구 설정'],
-};
+/** 카탈로그 미리보기 줄 — 현재 로케일 기준 스냅샷(호환 export) */
+export function getCustomFlowTemplatePreviewLines(): Record<CustomFlowTemplateKey, string[]> {
+  return getTemplateDemoCopy().previewLines;
+}
+
+/** @deprecated `getCustomFlowTemplatePreviewLines()` 사용 */
+export const CUSTOM_FLOW_TEMPLATE_PREVIEW_LINES: Record<CustomFlowTemplateKey, string[]> =
+  getTemplateDemoCopy('ko').previewLines;
 
 export type CustomFlowTemplateCatalogEntry = {
   key: CustomFlowTemplateKey;
@@ -71,6 +67,6 @@ export function resolveCustomFlowTemplateCatalogEntry(
     description: resolveCustomFlowTemplateDescription(key),
     summary: resolveCustomFlowTemplateSummary(key),
     icon: CUSTOM_FLOW_TEMPLATE_ICONS[key],
-    previewLines: CUSTOM_FLOW_TEMPLATE_PREVIEW_LINES[key],
+    previewLines: [...getTemplateDemoCopy().previewLines[key]],
   };
 }

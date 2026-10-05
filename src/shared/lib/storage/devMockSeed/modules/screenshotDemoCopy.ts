@@ -70,6 +70,8 @@ const KO: ScreenshotDemoCopy = {
       { title: '아주 작은 습관의 힘', memo: '다음에 읽을 책' },
       { title: '사피엔스', memo: '완독' },
       { title: '미드나잇 라이브러리', memo: '출퇴근용' },
+      { title: '어린 왕자', memo: '주말 재독' },
+      { title: '해리 포터와 마법사의 돌', memo: '120쪽 근처' },
     ],
   },
   healthIntake: {
@@ -144,6 +146,8 @@ const EN: ScreenshotDemoCopy = {
       { title: 'Atomic Habits', memo: 'Next up' },
       { title: 'Sapiens', memo: 'Finished' },
       { title: 'The Midnight Library', memo: 'Commute read' },
+      { title: 'The Little Prince', memo: 'Weekend reread' },
+      { title: "Harry Potter and the Sorcerer's Stone", memo: 'Around page 120' },
     ],
   },
   healthIntake: {
@@ -218,6 +222,8 @@ const JA: ScreenshotDemoCopy = {
       { title: 'アトミック・ハビッツ', memo: '次に読む本' },
       { title: 'サピエンス', memo: '読了' },
       { title: 'ミッドナイト・ライブラリ', memo: '通勤用' },
+      { title: '星の王子さま', memo: '週末の再読' },
+      { title: 'ハリー・ポッターと賢者の石', memo: '120ページ付近' },
     ],
   },
   healthIntake: {

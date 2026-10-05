@@ -38,6 +38,7 @@ import {
 import { addDaysToLocalDateKey, getLocalDateKey } from './localDateKey';
 import { pickMeasurementSettingsForCreate, applyMeasurementMetricPreset } from './measurementPresetSamples';
 import { MEASUREMENT_METRIC_PRESETS } from './measurementUnits';
+import { getTemplateDemoCopy } from './templateDemoCopy';
 import { pickReminderSettingsForCreate } from './reminderPresetSamples';
 
 export {
@@ -558,11 +559,12 @@ export function normalizeCustomFlowDetailConfig(
   }
 }
 
-/** 템플릿 상세·만들기 시트 체험용 — 샘플 데이터 포함 */
+/** 템플릿 상세·만들기 시트 체험용 — 샘플 데이터 포함 (현재 앱 로케일) */
 export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): CustomFlowDetailConfig {
   const today = getLocalDateKey();
+  const copy = getTemplateDemoCopy();
   const base = buildInitialCustomFlowDetailConfig(templateKey, {
-    displayName: '체험',
+    displayName: copy.experienceName,
     icon: 'star.fill',
     accentColor: '#356668',
   });
@@ -571,7 +573,7 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
     case 'measurement':
       return normalizeMeasurementDetailConfig({
         ...base,
-        metricLabel: '체중',
+        metricLabel: copy.measurementMetricLabel,
         unit: 'kg',
         useGoalValue: true,
         goalValue: 65,
@@ -591,7 +593,24 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
     case 'healthIntake':
       return normalizeHealthIntakeDetailConfig({
         ...base,
-        medicine: getInitialMedicineDataConfig(),
+        medicine: {
+          ...getInitialMedicineDataConfig(),
+          doseLabel: copy.healthDoseLabel,
+          morningOn: true,
+          lunchOn: true,
+          dinnerOn: false,
+          morningTime: '08:00',
+          lunchTime: '12:30',
+          dinnerTime: '19:00',
+          takenCount: 1,
+          morningNotify: true,
+          lunchNotify: true,
+        },
+        water: {
+          goalMl: 2000,
+          drankMl: 800,
+          reminderTimes: ['09:00', '15:00'],
+        },
       });
     case 'fasting':
       return normalizeFastingDetailConfig({
@@ -610,7 +629,7 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
       if (!pushup) {
         return normalizeCounterDetailConfig({
           ...base,
-          activityLabel: '푸쉬업',
+          activityLabel: copy.counterActivityLabel,
           unitKey: 'rep',
           goalCount: 50,
           currentCount: 0,
@@ -621,7 +640,7 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
           history: [],
         });
       }
-      return applyCounterActivityPreset(
+      const withPreset = applyCounterActivityPreset(
         normalizeCounterDetailConfig({
           ...base,
           dailyReset: true,
@@ -630,6 +649,10 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
         pushup,
         { includeSampleData: true },
       );
+      return normalizeCounterDetailConfig({
+        ...withPreset,
+        activityLabel: copy.counterActivityLabel,
+      });
     }
     case 'habit':
       return normalizeHabitDetailConfig({
@@ -645,46 +668,36 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
     case 'journal':
       return normalizeJournalDetailConfig({
         ...base,
-        prompt: '오늘 기분은?',
+        prompt: copy.journalPrompt,
         recentEntries: [
-          { dateKey: addDaysToLocalDateKey(today, -1), text: '어제는 괜찮았어요', mood: '보통' },
-          { dateKey: addDaysToLocalDateKey(today, -2), text: '운동하고 기분 좋음', mood: '좋음' },
+          {
+            dateKey: addDaysToLocalDateKey(today, -1),
+            text: copy.journalEntries[0]!.text,
+            mood: copy.journalEntries[0]!.mood,
+          },
+          {
+            dateKey: addDaysToLocalDateKey(today, -2),
+            text: copy.journalEntries[1]!.text,
+            mood: copy.journalEntries[1]!.mood,
+          },
         ],
       });
     case 'memo':
       return normalizeMemoDetailConfig({
         ...base,
-        lastEntry: '출근 전 가방에 충전기·이어폰 챙기기',
-        recentEntries: [
-          {
-            dateKey: addDaysToLocalDateKey(today, -1),
-            text: '장보기: 계란·우유·샐러드 재료',
-          },
-          {
-            dateKey: addDaysToLocalDateKey(today, -2),
-            text: '병원 예약 — 목요일 오후 3시',
-          },
-          {
-            dateKey: addDaysToLocalDateKey(today, -3),
-            text: '책 30쪽까지 읽기 (챕터 4)',
-          },
-          {
-            dateKey: addDaysToLocalDateKey(today, -4),
-            text: '팀 회고: 다음 주 스프린트 목표 정리',
-          },
-          {
-            dateKey: addDaysToLocalDateKey(today, -5),
-            text: '세탁·빨래 개기 끝',
-          },
-        ],
+        lastEntry: copy.memoLastEntry,
+        recentEntries: copy.memoRecent.map((text, index) => ({
+          dateKey: addDaysToLocalDateKey(today, -(index + 1)),
+          text,
+        })),
       });
     case 'reminder':
       return normalizeReminderDetailConfig({
         ...base,
         reminderItems: [
-          { time: '09:00', label: '아침 영양제' },
-          { time: '12:00', label: '물 한 잔' },
-          { time: '18:00', label: '저녁 약' },
+          { time: '09:00', label: copy.reminderLabels[0] },
+          { time: '12:00', label: copy.reminderLabels[1] },
+          { time: '18:00', label: copy.reminderLabels[2] },
         ],
         completedTimes: ['09:00'],
       });
@@ -692,15 +705,15 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
       return normalizeFocusDetailConfig({
         ...base,
         planMin: 25,
-        focusMemo: '방해 금지 모드 켜기',
+        focusMemo: copy.focusMemo,
       });
     case 'abstain':
       return normalizeCustomFlowDetailConfig('abstain', {
         ...base,
         checklist: [
-          { id: 'a1', text: '밤늦게 폰 보기', done: true },
-          { id: 'a2', text: '과자·야식 먹기', done: false },
-          { id: 'a3', text: 'SNS 무한 스크롤', done: false },
+          { id: 'a1', text: copy.abstainItems[0], done: true },
+          { id: 'a2', text: copy.abstainItems[1], done: false },
+          { id: 'a3', text: copy.abstainItems[2], done: false },
         ],
         templateKey: 'abstain',
       });
@@ -709,9 +722,9 @@ export function buildTemplateDemoConfig(templateKey: CustomFlowTemplateKey): Cus
       return normalizeCustomFlowDetailConfig('checklist', {
         ...base,
         checklist: [
-          { id: 'd1', text: '물 한 잔 마시기', done: true },
-          { id: 'd2', text: '5분 스트레칭', done: false },
-          { id: 'd3', text: '창문 열고 환기', done: false },
+          { id: 'd1', text: copy.checklistItems[0], done: true },
+          { id: 'd2', text: copy.checklistItems[1], done: false },
+          { id: 'd3', text: copy.checklistItems[2], done: false },
         ],
         templateKey: 'checklist',
       });

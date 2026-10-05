@@ -16,7 +16,7 @@ private struct HomeRoutineIconCell: View {
         .foregroundStyle(completed ? DayPlanWidgetPalette.completedTint : DayPlanWidgetPalette.ink)
         .frame(width: size, height: size)
         .background(
-          RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+          RoundedRectangle(cornerRadius: 0)
             .fill(completed ? DayPlanWidgetPalette.completedIconBox : DayPlanWidgetPalette.iconBox)
         )
 
@@ -260,18 +260,20 @@ private struct DayPlanHomeWidgetEntryView: View {
   let entry: DayPlanWidgetEntry
 
   var body: some View {
-    Group {
-      switch family {
-      case .systemSmall:
-        smallBody
-      case .systemMedium:
-        mediumBody
-      default:
-        smallBody
+    let _ = DayPlanWidgetPalette.apply(from: loadDayPlanWidgetSnapshot())
+    return DayPlanPostItChrome {
+      Group {
+        switch family {
+        case .systemSmall:
+          smallBody
+        case .systemMedium:
+          mediumBody
+        default:
+          smallBody
+        }
       }
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    .padding(family == .systemSmall ? 12 : 14)
   }
 }
 
@@ -413,18 +415,18 @@ struct DayPlanHomeWidget: Widget {
 
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: kind, provider: DayPlanWidgetProvider()) { entry in
+      let face = DayPlanWidgetPalette.faceColor(hex: loadDayPlanWidgetSnapshot()?.faceHex)
       if #available(iOSApplicationExtension 17.0, *) {
         DayPlanHomeWidgetEntryView(entry: entry)
-          .containerBackground(for: .widget) {
-            DayPlanWidgetPalette.cream
-          }
+          .containerBackground(for: .widget) { face }
+          .contentMargins(.all, 0)
       } else {
         DayPlanHomeWidgetEntryView(entry: entry)
-          .background(DayPlanWidgetPalette.cream)
+          .background(face)
       }
     }
-    .configurationDisplayName("오늘 루틴")
-    .description("홈 화면에서 오늘·완료 루틴과 빠른 메모를 확인해요.")
+    .configurationDisplayName("widget.today.name")
+    .description("widget.today.galleryDescription")
     .supportedFamilies([.systemSmall, .systemMedium])
   }
 }
@@ -558,10 +560,10 @@ struct DayPlanHomeWidget: Widget {
       headerTitle: "오늘 루틴",
       count: 0,
       iconNames: [],
-      emptyMessage: "등록된 루틴이 없어요"
+      emptyMessage: String(localized: "widget.today.emptyRoutines")
     ),
     homeModel: DayPlanHomeWidgetModel(
-      emptyMessage: "등록된 루틴이 없어요",
+      emptyMessage: String(localized: "widget.today.emptyRoutines"),
       today: DayPlanRoutineSectionModel(title: "오늘 루틴", count: 0, iconNames: []),
       completed: DayPlanRoutineSectionModel(title: "완료", count: 0, iconNames: []),
       quickMemos: [],

@@ -6,6 +6,7 @@ import {
 import {
   appendRoutineCatalogSelectionKeys,
   isPostItFaceColorId,
+  isPostItInkColorId,
   loadDayPlanDraft,
   loadPriorityDayRollMode,
   normalizeCategoryMealSlots,
@@ -13,6 +14,7 @@ import {
   saveDayPlanDraft,
   type DayMealSlot,
   type PostItFaceColorId,
+  type PostItInkColorId,
 } from '@shared/lib/storage';
 import { getClockNow } from '@shared/lib/time/appClock';
 
@@ -93,6 +95,8 @@ type DayPlanDraftState = {
   priorityCategoryImportance: Record<string, PriorityMarkColorId>;
   /** 담기 목록 항목별 루틴 색(행 면색). 미설정 = 기본(투명) */
   priorityCategoryFaceColor: Record<string, PostItFaceColorId>;
+  /** 담기 목록 항목별 글자색. 미설정 = 자동(면색 기준) */
+  priorityCategoryInkColor: Record<string, PostItInkColorId>;
   /** 히스토리 데일리 진입 시 반영할 루틴 시간대 완료(담기 체크) */
   routineHistoryPendingByDate: Record<string, string[]>;
   /** 당일 담기 계획 스냅샷 — 구간 종료 후에도 완료율 분모 유지 */
@@ -168,6 +172,11 @@ type DayPlanDraftState = {
   setPriorityCategoryFaceColor: (
     categoryKey: string,
     color: PostItFaceColorId | null,
+  ) => void;
+  /** 담기 목록 항목 글자색 지정 (null = 자동) */
+  setPriorityCategoryInkColor: (
+    categoryKey: string,
+    color: PostItInkColorId | null,
   ) => void;
   /** @deprecated 순환 — setPriorityCategoryMarkColor 사용 */
   cyclePriorityCategoryImportance: (categoryKey: string) => void;
@@ -332,6 +341,19 @@ function normalizePriorityCategoryFaceColor(
   return out;
 }
 
+function normalizePriorityCategoryInkColor(
+  raw: unknown,
+): Record<string, PostItInkColorId> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, PostItInkColorId> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    const trimmed = key.trim();
+    if (!trimmed) continue;
+    if (isPostItInkColorId(value) && value !== 'auto') out[trimmed] = value;
+  }
+  return out;
+}
+
 function createInitialState() {
   return {
     planMode: 'priority' as PlanMode,
@@ -346,6 +368,7 @@ function createInitialState() {
     priorityCategoryOrder: [] as string[],
     priorityCategoryImportance: {} as Record<string, PriorityMarkColorId>,
     priorityCategoryFaceColor: {} as Record<string, PostItFaceColorId>,
+    priorityCategoryInkColor: {} as Record<string, PostItInkColorId>,
     routineHistoryPendingByDate: {} as Record<string, string[]>,
     routineHistoryPlannedKeysByDate: {} as Record<string, string[]>,
     categoryLabelEpoch: 0,
@@ -453,6 +476,9 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       // 루틴 색도 목록 공용 — 롤오버로 지우지 않음
       priorityCategoryFaceColor: normalizePriorityCategoryFaceColor(
         raw.priorityCategoryFaceColor,
+      ),
+      priorityCategoryInkColor: normalizePriorityCategoryInkColor(
+        raw.priorityCategoryInkColor,
       ),
       routineHistoryPendingByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPendingByDate),
       routineHistoryPlannedKeysByDate: normalizeRoutineHistoryByDate(raw.routineHistoryPlannedKeysByDate),
@@ -888,6 +914,18 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       }
       return { priorityCategoryFaceColor };
     }),
+  setPriorityCategoryInkColor: (categoryKey, color) =>
+    set((s) => {
+      const key = categoryKey.trim();
+      if (!key) return s;
+      const priorityCategoryInkColor = { ...s.priorityCategoryInkColor };
+      if (color == null || color === 'auto') {
+        delete priorityCategoryInkColor[key];
+      } else {
+        priorityCategoryInkColor[key] = color;
+      }
+      return { priorityCategoryInkColor };
+    }),
   cyclePriorityCategoryImportance: (categoryKey) =>
     set((s) => {
       const key = categoryKey.trim();
@@ -1152,6 +1190,7 @@ useDayPlanDraftStore.subscribe((state) => {
     priorityCategoryOrder: state.priorityCategoryOrder,
     priorityCategoryImportance: state.priorityCategoryImportance,
     priorityCategoryFaceColor: state.priorityCategoryFaceColor,
+    priorityCategoryInkColor: state.priorityCategoryInkColor,
     routineHistoryPendingByDate: state.routineHistoryPendingByDate,
     routineHistoryPlannedKeysByDate: state.routineHistoryPlannedKeysByDate,
     quickMemoDraft: state.quickMemoDraft,
@@ -1188,6 +1227,7 @@ function persistDayPlanDraft(): void {
     priorityCategoryOrder: s.priorityCategoryOrder,
     priorityCategoryImportance: s.priorityCategoryImportance,
     priorityCategoryFaceColor: s.priorityCategoryFaceColor,
+    priorityCategoryInkColor: s.priorityCategoryInkColor,
     routineHistoryPendingByDate: s.routineHistoryPendingByDate,
     routineHistoryPlannedKeysByDate: s.routineHistoryPlannedKeysByDate,
     quickMemoDraft: s.quickMemoDraft,

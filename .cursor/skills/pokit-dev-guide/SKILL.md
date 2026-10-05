@@ -100,7 +100,6 @@ description: pokit 프로젝트에서 디렉토리 구조, 도메인 모델, zus
 - **통계** → `src/pages/day-plan-statistics`, `src/entities/history` (`historyStore`)
 - **설정** → `src/pages/settings`, `src/shared/lib/storage`의 `settings` 키
 - **담기(우선순위 카탈로그)** → `app/(tabs)/priority-catalog.tsx` → `src/pages/day-plan` 내 패널/탭 연동
-- **위젯 설정** → `src/pages/widget-settings`
 - **하루 주기 설정** → `app/daily-rhythm-settings.tsx`
 
 ---

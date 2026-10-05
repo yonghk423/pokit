@@ -103,8 +103,8 @@ struct DayPlanLockWidget: Widget {
     StaticConfiguration(kind: kind, provider: DayPlanWidgetProvider()) { entry in
       DayPlanLockWidgetEntryView(entry: entry)
     }
-    .configurationDisplayName("오늘 루틴")
-    .description("오늘 루틴 아이콘과 개수를 보여 줍니다.")
+    .configurationDisplayName("widget.today.name")
+    .description("widget.today.lockDescription")
     .supportedFamilies([.accessoryRectangular, .accessoryInline])
   }
 }

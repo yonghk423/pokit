@@ -4,6 +4,7 @@ import {
   hsvToHex,
   hueToHex,
   normalizeHexColor,
+  pastelizeAccentHex,
 } from './colorMath';
 
 describe('colorMath', () => {
@@ -25,5 +26,13 @@ describe('colorMath', () => {
   it('returns pure hue colors', () => {
     expect(hueToHex(0)).toBe('#ff0000');
     expect(hueToHex(120)).toBe('#00ff00');
+  });
+
+  it('softens accent hex toward pastel', () => {
+    expect(pastelizeAccentHex('#e9a23b', 0)).toBe('#e9a23b');
+    expect(pastelizeAccentHex('#e9a23b', 1)).toBe('#ffffff');
+    const soft = pastelizeAccentHex('#dc2626');
+    expect(soft).not.toBe('#dc2626');
+    expect(soft.toLowerCase()).toMatch(/^#[0-9a-f]{6}$/);
   });
 });

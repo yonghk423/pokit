@@ -1,0 +1,27 @@
+/* Widget gallery & Edit Widget — Japanese */
+
+"widget.routine.name" = "ルーチン";
+"widget.routine.galleryDescription" = "ウィジェットごとにルーチンを選び、ふせんのように表示します。";
+"widget.routine.intentDescription" = "ホーム画面に表示するルーチンを選びます。ウィジェットごとに別のルーチンを選べます。";
+"widget.routine.pick" = "ルーチンを開く";
+
+"widget.bookstore.name" = "書店";
+"widget.bookstore.galleryDescription" = "ウィジェット編集で「タップして本を選ぶ」を押し、書店の本を選びます。";
+"widget.bookstore.intentDescription" = "ウィジェット編集で「タップして本を選ぶ」を押すと書店の一覧が開きます。";
+"widget.bookstore.pick" = "タップして本を選ぶ";
+"widget.bookstore.emptyMessage" = "このウィジェットに表示する本がありません";
+"widget.bookstore.untitled" = "タイトルなし";
+"widget.bookstore.pickAgain" = "書店から選び直してください";
+
+"widget.note.name" = "ノート";
+"widget.note.galleryDescription" = "ノートのページをウィジェットごとに選び、ホーム画面に固定します。";
+"widget.note.intentDescription" = "ホーム画面に固定するノートのページを選びます。";
+"widget.note.pick" = "ノートを開く";
+"widget.note.openDescription" = "POKITのノート画面を開きます。";
+"widget.note.emptyMessage" = "このウィジェットに表示するメモがありません";
+
+"widget.today.name" = "今日のルーチン";
+"widget.today.galleryDescription" = "ふせんのように今日・完了ルーチンとクイックメモを表示します。";
+"widget.today.lockDescription" = "今日のルーチンのアイコンと件数を表示します。";
+"widget.today.emptyRoutines" = "ルーチンがまだありません";
+"widget.today.loadError" = "予定を読み込めません";

@@ -15,9 +15,14 @@ function clampText(raw: unknown, max: number): string {
 }
 
 function toPositiveInt(value: unknown): number | undefined {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
-  const rounded = Math.round(value);
-  return rounded > 0 ? rounded : undefined;
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.round(value);
+  }
+  if (typeof value === 'string') {
+    const n = Number(value.replace(/[^\d.]/g, '').trim());
+    if (Number.isFinite(n) && n > 0) return Math.round(n);
+  }
+  return undefined;
 }
 
 function normalizeEditionKey(raw: unknown): string | undefined {

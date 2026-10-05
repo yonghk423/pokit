@@ -23,8 +23,8 @@ const EXACT_SCREEN_NAMES: Record<string, string> = {
   'font-settings': 'font_settings',
   'day-plan-view-settings': 'today_view_settings',
   'layout-settings': 'layout_settings',
-  'widget-settings': 'widget_settings',
   'guide-book': 'guide_book',
+  'widget-guide': 'widget_guide',
   'welcome-intro': 'welcome_intro',
 };
 

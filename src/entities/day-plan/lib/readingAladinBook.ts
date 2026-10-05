@@ -13,19 +13,25 @@ function clampText(raw: unknown, max: number): string {
   return trimmed.length > max ? trimmed.slice(0, max) : trimmed;
 }
 
+function parsePositiveInt(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.round(value);
+  }
+  if (typeof value === 'string') {
+    const n = Number(value.replace(/[^\d.]/g, '').trim());
+    if (Number.isFinite(n) && n > 0) return Math.round(n);
+  }
+  return undefined;
+}
+
 function toPositiveInt(value: unknown): number | undefined {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
-  const rounded = Math.round(value);
-  return rounded > 0 ? rounded : undefined;
+  return parsePositiveInt(value);
 }
 
 export function normalizeReadingAladinBook(input: unknown): ReadingAladinBook | null {
   if (!input || typeof input !== 'object') return null;
   const raw = input as Partial<ReadingAladinBook>;
-  const itemId =
-    typeof raw.itemId === 'number' && Number.isFinite(raw.itemId) && raw.itemId > 0
-      ? Math.round(raw.itemId)
-      : null;
+  const itemId = toPositiveInt(raw.itemId) ?? null;
   const link = clampText(raw.link, 500);
   if (itemId == null || link.length === 0) return null;
 

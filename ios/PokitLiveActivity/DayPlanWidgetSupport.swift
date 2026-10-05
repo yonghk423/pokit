@@ -40,6 +40,9 @@ struct DayPlanSnapshotJson: Decodable {
   let quickMemoDraft: String?
   /// RN 로케일 — 홈 위젯 「빠른 메모」 섹션 제목
   let quickMemoSectionTitle: String?
+  let faceHex: String?
+  let inkHex: String?
+  let mutedHex: String?
 }
 
 func loadDayPlanWidgetSnapshot() -> DayPlanSnapshotJson? {
@@ -246,10 +249,10 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
         headerTitle: "오늘 루틴",
         count: 0,
         iconNames: [],
-        emptyMessage: "일정을 불러올 수 없어요"
+        emptyMessage: String(localized: "widget.today.loadError")
       ),
       home: DayPlanHomeWidgetModel(
-        emptyMessage: "일정을 불러올 수 없어요",
+        emptyMessage: String(localized: "widget.today.loadError"),
         today: empty,
         completed: DayPlanRoutineSectionModel(title: "완료", count: 0, iconNames: []),
         quickMemos: [],
@@ -340,7 +343,7 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
   } else if totalPlanned == 0 {
     lockIcons = []
     lockCount = 0
-    emptyMessage = "등록된 루틴이 없어요"
+    emptyMessage = String(localized: "widget.today.emptyRoutines")
   } else {
     lockIcons = todaySection.iconNames + completedSection.iconNames
     lockCount = totalPlanned
@@ -433,15 +436,83 @@ struct DayPlanWidgetProvider: TimelineProvider {
   }
 }
 
-/// `src/shared/config/retroFlat.ts` `RetroFlatColors.light` 와 동기
+/// `#RRGGBB` / `#RGB` → SwiftUI Color
+func dayPlanWidgetColor(hex: String?, fallback: Color) -> Color {
+  guard var value = hex?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+    return fallback
+  }
+  if value.hasPrefix("#") { value.removeFirst() }
+  if value.count == 3 {
+    value = value.map { "\($0)\($0)" }.joined()
+  }
+  guard value.count == 6, let int = UInt64(value, radix: 16) else { return fallback }
+  let r = Double((int >> 16) & 0xff) / 255
+  let g = Double((int >> 8) & 0xff) / 255
+  let b = Double(int & 0xff) / 255
+  return Color(red: r, green: g, blue: b)
+}
+
+/// 홈 위젯 공용 포스트잇 팔레트 — RN `faceHex`/`inkHex` 로 갱신
 enum DayPlanWidgetPalette {
-  static let cream = Color(red: 245 / 255, green: 242 / 255, blue: 235 / 255)
-  static let ink = Color(red: 24 / 255, green: 26 / 255, blue: 46 / 255)
-  static let muted = Color(red: 64 / 255, green: 72 / 255, blue: 72 / 255)
-  static let iconBox = Color.black.opacity(0.06)
-  /// 완료 아이콘·진행 바·완료 수치 — `primary` `#356668`
-  static let completedTint = Color(red: 53 / 255, green: 102 / 255, blue: 104 / 255)
-  /// 완료 루틴 아이콘 배경 — `primaryContainer` `#A8DADC`
-  static let completedIconBox = Color(red: 168 / 255, green: 218 / 255, blue: 220 / 255)
-  static let divider = Color.black.opacity(0.08)
+  static let defaultFace = Color(red: 1, green: 229 / 255, blue: 102 / 255)
+  private static let defaultInk = Color(red: 17 / 255, green: 17 / 255, blue: 17 / 255)
+
+  private(set) static var face = defaultFace
+  /// 하위 호환 — `face`와 동일
+  static var cream: Color { face }
+
+  /// `containerBackground` 등 — 정적 팔레트 적용 전에 읽어도 안전한 면색
+  static func faceColor(hex: String?) -> Color {
+    dayPlanWidgetColor(hex: hex, fallback: defaultFace)
+  }
+  private(set) static var ink = defaultInk
+  private(set) static var muted = Color.black.opacity(0.55)
+  private(set) static var iconBox = Color.black.opacity(0.08)
+  /// 체크·완료 강조 — 글자색(검정)과 동일
+  private(set) static var completedTint = defaultInk
+  private(set) static var completedIconBox = Color.black.opacity(0.10)
+  private(set) static var divider = Color.black.opacity(0.12)
+
+  static func apply(faceHex: String?, inkHex: String?, mutedHex: String?) {
+    let nextFace = dayPlanWidgetColor(hex: faceHex, fallback: defaultFace)
+    let nextInk = dayPlanWidgetColor(hex: inkHex, fallback: defaultInk)
+    face = nextFace
+    ink = nextInk
+    if let mutedHex, !mutedHex.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      muted = dayPlanWidgetColor(hex: mutedHex, fallback: nextInk.opacity(0.55))
+    } else {
+      muted = nextInk.opacity(0.55)
+    }
+    iconBox = nextInk.opacity(0.08)
+    completedTint = nextInk
+    completedIconBox = nextInk.opacity(0.12)
+    divider = nextInk.opacity(0.14)
+  }
+
+  static func apply(from snapshot: DayPlanSnapshotJson?) {
+    apply(faceHex: snapshot?.faceHex, inkHex: snapshot?.inkHex, mutedHex: snapshot?.mutedHex)
+  }
+}
+
+/// 홈 위젯 공통 포스트잇 크롬 — 패딩만.
+/// 면색은 `containerBackground` / `.background(face)` 한곳에서만 칠한다.
+/// (여기서 또 `DayPlanWidgetPalette.face`를 칠하면 바깥·안쪽이 미묘하게 달라 보일 수 있음)
+struct DayPlanPostItChrome<Content: View>: View {
+  @Environment(\.widgetFamily) private var family
+  private let content: Content
+
+  init(@ViewBuilder content: () -> Content) {
+    self.content = content()
+  }
+
+  var body: some View {
+    let isSmall = family == .systemSmall
+    content
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+      .padding(.horizontal, isSmall ? 12 : 14)
+      // 타이틀이 위 모서리에 붙지 않도록 상단 여백을 넉넉히
+      .padding(.top, isSmall ? 22 : 24)
+      .padding(.bottom, isSmall ? 12 : 14)
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+  }
 }

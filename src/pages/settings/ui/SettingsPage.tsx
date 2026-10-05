@@ -64,6 +64,8 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
+import { prefetchWidgetGuideAssets } from '@shared/lib/widget-guide-assets';
+
 import {
   buildSettingsPalette,
   SettingsRowIcon,
@@ -126,6 +128,8 @@ export function SettingsPage() {
   useFocusEffect(
     useCallback(() => {
       setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
+      // 위젯 설명서 진입 전에 노트북 이미지를 미리 올려 흰 스테이지 대기를 줄인다.
+      void prefetchWidgetGuideAssets(locale);
       if (SHOW_POKIT_PRO_SETTINGS) {
         void useSubscriptionStore.getState().refreshCustomerInfo();
       }
@@ -259,6 +263,7 @@ export function SettingsPage() {
         priorityCategoryOrder: [],
         priorityCategoryImportance: {},
         priorityCategoryFaceColor: {},
+        priorityCategoryInkColor: {},
         routineHistoryPendingByDate: {},
         routineHistoryPlannedKeysByDate: {},
         quickMemoDraft: '',
@@ -489,6 +494,33 @@ export function SettingsPage() {
                 </ThemedText>
                 <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                   {t('settings.guideBookDesc', locale)}
+                </ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+          </Pressable>
+          <Pressable
+            style={[chrome.item, { borderTopColor: p.border }]}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/widget-guide');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.a11y.widgetGuide', locale)}>
+            <View style={chrome.itemLeft}>
+              <SettingsRowIcon
+                name="square.grid.2x2"
+                color={p.icon}
+                boxBg={p.iconBoxBg}
+                border={p.iconBorder}
+                shadow={p.shadow}
+              />
+              <View style={chrome.itemTextWrap}>
+                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                  {t('settings.widgetGuideTitle', locale)}
+                </ThemedText>
+                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                  {t('settings.widgetGuideDesc', locale)}
                 </ThemedText>
               </View>
             </View>

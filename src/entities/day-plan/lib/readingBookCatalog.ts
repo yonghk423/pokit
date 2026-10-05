@@ -11,7 +11,18 @@ export function resolveReadingBookCatalogSource(entry: Pick<ReadingBookEntry, 'a
 }
 
 export function resolveReadingBookAuthor(entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary'>): string {
-  return entry.aladin?.author?.trim() || entry.openLibrary?.author?.trim() || '';
+  const raw = entry.aladin?.author?.trim() || entry.openLibrary?.author?.trim() || '';
+  return formatReadingBookAuthorLine(raw);
+}
+
+/** 알라딘 「(지은이)·(옮긴이)」표기를 목록용으로 정리 */
+export function formatReadingBookAuthorLine(author: string): string {
+  return author
+    .replace(/\s*[\(（](?:지은이|옮긴이|엮은이|그림|원작)[\)）]/g, '')
+    .replace(/\s*,\s*,/g, ', ')
+    .replace(/\s+/g, ' ')
+    .replace(/^,\s*|,\s*$/g, '')
+    .trim();
 }
 
 export function resolveReadingBookCoverUrl(entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary'>): string {
@@ -22,14 +33,24 @@ export function resolveReadingBookExternalLink(entry: Pick<ReadingBookEntry, 'al
   return entry.aladin?.link?.trim() || entry.openLibrary?.link?.trim() || '';
 }
 
+function toPositivePageCount(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.round(value);
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const n = Number(value.replace(/[^\d.]/g, '').trim());
+    if (Number.isFinite(n) && n > 0) return Math.round(n);
+  }
+  return null;
+}
+
 export function resolveReadingBookTotalPages(
   entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary'>,
 ): number | null {
-  const aladinPages = entry.aladin?.totalPages;
-  if (typeof aladinPages === 'number' && aladinPages > 0) return aladinPages;
-  const openLibraryPages = entry.openLibrary?.totalPages;
-  if (typeof openLibraryPages === 'number' && openLibraryPages > 0) return openLibraryPages;
-  return null;
+  return (
+    toPositivePageCount(entry.aladin?.totalPages) ??
+    toPositivePageCount(entry.openLibrary?.totalPages)
+  );
 }
 
 export function readingBookExternalLinkLabel(source: ReadingBookCatalogSource): string | null {
@@ -49,9 +70,9 @@ export function defaultTargetPageForCatalogBook(
   openLibrary: ReadingOpenLibraryBook | null,
   fallback: number,
 ): number {
-  const aladinPages = aladin?.totalPages;
-  if (typeof aladinPages === 'number' && aladinPages > 0) return aladinPages;
-  const openLibraryPages = openLibrary?.totalPages;
-  if (typeof openLibraryPages === 'number' && openLibraryPages > 0) return openLibraryPages;
+  const aladinPages = toPositivePageCount(aladin?.totalPages);
+  if (aladinPages != null) return aladinPages;
+  const openLibraryPages = toPositivePageCount(openLibrary?.totalPages);
+  if (openLibraryPages != null) return openLibraryPages;
   return fallback;
 }

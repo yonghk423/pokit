@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef } from 'react';
+import { I18nextProvider } from 'react-i18next';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -11,6 +12,7 @@ import { AppStatusBar } from '@app/AppStatusBar';
 import { AppUpdateNoticeHost } from '@app/AppUpdateNoticeHost';
 import { useAppBootstrap, useCityPopFonts } from '@app/index';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { i18n } from '@shared/lib/i18n';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
 
@@ -69,80 +71,82 @@ export default function RootLayout() {
   }, [contentReady]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: rootBg }}>
-      <SafeAreaProvider>
-        {contentReady ? (
-          <ThemeProvider value={navigationTheme}>
-            <Stack
-              screenOptions={{
-                contentStyle: { backgroundColor: rootBg },
-              }}>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="goal-detail-settings"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen
-                name="routine-template-detail"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen name="flow-review" options={{ headerShown: false, presentation: 'card' }} />
-              <Stack.Screen
-                name="widget-settings"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen
-                name="daily-rhythm-settings"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen
-                name="guide-book"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen
-                name="welcome-intro"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen
-                name="appearance-settings"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen
-                name="font-settings"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen
-                name="day-plan-view-settings"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen
-                name="layout-settings"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen name="settings" options={{ headerShown: false, presentation: 'card' }} />
-              <Stack.Screen
-                name="notification-settings"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen
-                name="announcements"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen
-                name="release-notes"
-                options={{ headerShown: false, presentation: 'card' }}
-              />
-              <Stack.Screen
-                name="activity-session"
-                options={{ headerShown: false, presentation: 'fullScreenModal' }}
-              />
-            </Stack>
-            <AnalyticsScreenTracker />
-            <AppUpdateNoticeHost appReady={appReady} />
-            <AppStatusBar />
-          </ThemeProvider>
-        ) : null}
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <I18nextProvider i18n={i18n}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: rootBg }}>
+        <SafeAreaProvider>
+          {contentReady ? (
+            <ThemeProvider value={navigationTheme}>
+              <Stack
+                screenOptions={{
+                  contentStyle: { backgroundColor: rootBg },
+                }}>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="goal-detail-settings"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="routine-template-detail"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen name="flow-review" options={{ headerShown: false, presentation: 'card' }} />
+                <Stack.Screen
+                  name="daily-rhythm-settings"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="guide-book"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="widget-guide"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="welcome-intro"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="appearance-settings"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="font-settings"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="day-plan-view-settings"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="layout-settings"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen name="settings" options={{ headerShown: false, presentation: 'card' }} />
+                <Stack.Screen
+                  name="notification-settings"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="announcements"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="release-notes"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="activity-session"
+                  options={{ headerShown: false, presentation: 'fullScreenModal' }}
+                />
+              </Stack>
+              <AnalyticsScreenTracker />
+              <AppUpdateNoticeHost appReady={appReady} />
+              <AppStatusBar />
+            </ThemeProvider>
+          ) : null}
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </I18nextProvider>
   );
 }

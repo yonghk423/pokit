@@ -22,7 +22,7 @@ type AladinItemLookUpResponse = {
 };
 
 type AladinRawItem = {
-  itemId?: number;
+  itemId?: number | string;
   title?: string;
   author?: string;
   publisher?: string;
@@ -31,7 +31,7 @@ type AladinRawItem = {
   pubDate?: string;
   description?: string;
   subInfo?: {
-    itemPage?: number;
+    itemPage?: number | string;
   };
 };
 
@@ -47,11 +47,19 @@ function toItemArray(item: AladinRawItem | AladinRawItem[] | undefined): AladinR
   return Array.isArray(item) ? item : [item];
 }
 
+function parsePositiveInt(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.round(value);
+  }
+  if (typeof value === 'string') {
+    const n = Number(value.replace(/[^\d.]/g, '').trim());
+    if (Number.isFinite(n) && n > 0) return Math.round(n);
+  }
+  return undefined;
+}
+
 function mapSearchItem(raw: AladinRawItem): AladinSearchBookItem | null {
-  const itemId =
-    typeof raw.itemId === 'number' && Number.isFinite(raw.itemId) && raw.itemId > 0
-      ? Math.round(raw.itemId)
-      : null;
+  const itemId = parsePositiveInt(raw.itemId) ?? null;
   const title = stripAladinHtml(raw.title);
   const link = typeof raw.link === 'string' ? raw.link.trim() : '';
   if (itemId == null || title.length === 0 || link.length === 0) return null;
@@ -85,12 +93,7 @@ function mapBookDetail(raw: AladinRawItem): AladinBookDetail | null {
   const base = mapSearchItem(raw);
   if (!base) return null;
 
-  const totalPages =
-    typeof raw.subInfo?.itemPage === 'number' &&
-    Number.isFinite(raw.subInfo.itemPage) &&
-    raw.subInfo.itemPage > 0
-      ? Math.round(raw.subInfo.itemPage)
-      : undefined;
+  const totalPages = parsePositiveInt(raw.subInfo?.itemPage);
 
   return {
     ...base,

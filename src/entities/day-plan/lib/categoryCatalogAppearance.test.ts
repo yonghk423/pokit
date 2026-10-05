@@ -34,15 +34,15 @@ describe('resolveCategoryCatalogIcon', () => {
     expect(resolveCategoryCatalogAccentColor('healthIntake')).toBe('#e9a23b');
   });
 
-  it('uses the settings accent as the icon tile, with contrasting glyph', () => {
-    expect(resolveCategoryCatalogIconTile('healthIntake')).toEqual({
-      boxBg: '#e9a23b',
-      iconColor: '#09090b',
-    });
-    expect(resolveCategoryCatalogIconTile('fasting')).toEqual({
-      boxBg: '#14b8a6',
-      iconColor: '#FAFAFA',
-    });
+  it('uses a pastelized accent for the icon tile, with dark glyph', () => {
+    const health = resolveCategoryCatalogIconTile('healthIntake');
+    expect(health.boxBg).not.toBe('#e9a23b');
+    expect(health.boxBg.toLowerCase()).toMatch(/^#[0-9a-f]{6}$/);
+    expect(health.iconColor).toBe('#09090b');
+
+    const fasting = resolveCategoryCatalogIconTile('fasting');
+    expect(fasting.boxBg).not.toBe('#14b8a6');
+    expect(fasting.iconColor).toBe('#09090b');
   });
 
   it('maps legacy person and scale icons to standing figure for fasting', () => {

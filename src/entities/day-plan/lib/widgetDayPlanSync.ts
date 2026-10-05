@@ -3,6 +3,9 @@ import { NativeModules, Platform } from 'react-native';
 import { loadDayPlan } from '@shared/lib/storage/dayPlanStorage';
 import type { DayPlanBlock } from '../model/types';
 
+import { syncPinnedRoutineToWidget } from './pinnedRoutineWidgetSync';
+import { syncBookstoreWidgetToWidget } from './bookstoreWidgetSync';
+import { syncNoteWidgetToWidget } from './noteWidgetSync';
 import { buildWidgetDayPlanPayload } from './widgetDayPlanPayload';
 
 type PokitWidgetSyncNative = {
@@ -18,6 +21,9 @@ function pushWidgetPayload(snapshot: Parameters<typeof buildWidgetDayPlanPayload
   } catch {
     // 위젯 동기화 실패는 앱 동작을 막지 않음
   }
+  syncPinnedRoutineToWidget();
+  syncBookstoreWidgetToWidget();
+  syncNoteWidgetToWidget();
 }
 
 export function syncDayPlanToWidget(snapshot: Parameters<typeof buildWidgetDayPlanPayload>[0]): void {

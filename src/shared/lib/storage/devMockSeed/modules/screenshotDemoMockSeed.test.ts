@@ -35,7 +35,7 @@ describe('screenshotDemoMockSeed', () => {
 
     expect(result.screenshotRoutines).toBe(18);
     expect(result.screenshotTodos).toBe(8);
-    expect(result.screenshotBooks).toBe(4);
+    expect(result.screenshotBooks).toBe(6);
     expect(result.screenshotNotes).toBe(2);
 
     const draft = loadDayPlanDraft();
@@ -93,10 +93,10 @@ describe('screenshotDemoMockSeed', () => {
       }[];
       aladinBook?: { itemId?: number } | null;
     } | null;
-    expect(reading?.books?.length).toBe(4);
+    expect(reading?.books?.length).toBe(6);
     expect(reading?.aladinBook?.itemId).toBe(260084);
     expect(reading?.books?.map((book) => book.aladin?.itemId)).toEqual([
-      260084, 379447436, 314240466, 269873776,
+      260084, 379447436, 314240466, 269873776, 251847567, 300101,
     ]);
     expect(reading?.books?.[0]?.targetPage).toBe(112);
     expect(reading?.books?.[0]?.aladin?.totalPages).toBe(248);

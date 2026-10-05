@@ -52,6 +52,8 @@ const SCREENSHOT_READING_BOOK_IDS = [
   'rb-screenshot-demo-02',
   'rb-screenshot-demo-03',
   'rb-screenshot-demo-04',
+  'rb-screenshot-demo-05',
+  'rb-screenshot-demo-06',
 ] as const;
 
 const SCREENSHOT_NOTE_PAGE_IDS = [
@@ -408,6 +410,18 @@ function seedReadingLibrary(): void {
       status: 'reading' as const,
       addedAtMs: now - 12 * 24 * 60 * 60 * 1000,
     },
+    {
+      startPage: 1,
+      targetPage: 48,
+      status: 'want' as const,
+      addedAtMs: now - 1 * 24 * 60 * 60 * 1000,
+    },
+    {
+      startPage: 1,
+      targetPage: 120,
+      status: 'reading' as const,
+      addedAtMs: now - 8 * 24 * 60 * 60 * 1000,
+    },
   ];
   const books = copy.books.map((book, index) => {
     const aladin = SCREENSHOT_DEMO_READING_ALADIN_BOOKS[index]!;
@@ -632,6 +646,107 @@ function clearScreenshotWorkNote(): void {
     ...raw,
     document: { pages: keptPages, activePageId },
   });
+}
+
+const TEMPLATE_DEMO_QUICK_MEMO_ID_PREFIX = 'qm-template-demo-';
+
+/** 빠른 메모(초안 + 당일 quickMemos) — 담기 순서는 건드리지 않음 */
+function seedQuickMemoSurfaces(today: string): number {
+  const copy = getScreenshotDemoCopy(getAppLocale());
+  const draft = loadDayPlanDraft();
+  if (draft) {
+    saveDayPlanDraft({
+      ...draft,
+      quickMemoDraft: [copy.quickMemoMarker, ...copy.quickMemoLines].join('\n'),
+    });
+  }
+
+  const prev = loadDayPlan<{ id: string }>();
+  const now = Date.now();
+  const seeded = copy.quickMemoLines.map((text, index) => ({
+    id: `${TEMPLATE_DEMO_QUICK_MEMO_ID_PREFIX}${String(index + 1).padStart(2, '0')}`,
+    text,
+    createdAt: now - index * 90_000,
+    isDone: index === copy.quickMemoLines.length - 1,
+  }));
+  const kept =
+    prev?.dateKey === today
+      ? (prev.quickMemos ?? []).filter(
+          (memo) => typeof memo.id === 'string' && !memo.id.startsWith(TEMPLATE_DEMO_QUICK_MEMO_ID_PREFIX),
+        )
+      : [];
+  saveDayPlan({
+    dateKey: today,
+    blocks: prev?.dateKey === today ? (prev.blocks ?? []) : [],
+    completedBlockIds: prev?.dateKey === today ? (prev.completedBlockIds ?? []) : [],
+    skippedBlockIds: prev?.dateKey === today ? (prev.skippedBlockIds ?? []) : [],
+    quickMemos: [...kept, ...seeded],
+  });
+  return seeded.length;
+}
+
+function clearQuickMemoSurfaces(): void {
+  const draft = loadDayPlanDraft();
+  if (draft && isScreenshotQuickMemoMarker(draft.quickMemoDraft)) {
+    saveDayPlanDraft({ ...draft, quickMemoDraft: '' });
+  }
+  const prev = loadDayPlan<{ id: string }>();
+  if (!prev?.quickMemos?.length) return;
+  const next = prev.quickMemos.filter(
+    (memo) => !(typeof memo.id === 'string' && memo.id.startsWith(TEMPLATE_DEMO_QUICK_MEMO_ID_PREFIX)),
+  );
+  if (next.length === prev.quickMemos.length) return;
+  saveDayPlan({ ...prev, quickMemos: next });
+}
+
+/**
+ * 위젯·탭 테스트용 표면 데이터만 — 알라딘 책방 / 상세 노트 / 빠른 메모.
+ * 템플릿 체험 Dev Menu에서 루틴 7종과 함께 쓴다.
+ */
+export function seedScreenshotDemoSurfacesForWidgetTest(): {
+  screenshotBooks: number;
+  screenshotNotes: number;
+  screenshotQuickMemos: number;
+} {
+  const today = todayDateKey();
+  seedReadingLibrary();
+  seedDayNotes(today);
+  const quickMemoCount = seedQuickMemoSurfaces(today);
+  appendRoutineCatalogSelectionKeys(['reading', 'work']);
+  appendGoalDetailCommittedCategoryKeys(['reading', 'work']);
+
+  const draft = loadDayPlanDraft();
+  if (draft) {
+    const withSurfaces = Array.from(
+      new Set([...(draft.priorityCategoryOrder ?? []), 'reading', 'work']),
+    );
+    const withSections = Array.from(
+      new Set([...(draft.prioritySectionsCategoryOrder ?? []), 'reading', 'work']),
+    );
+    saveDayPlanDraft({
+      ...draft,
+      priorityCategoryOrder: withSurfaces,
+      prioritySectionsCategoryOrder: withSections,
+      routineHistoryPlannedKeysByDate: {
+        ...(draft.routineHistoryPlannedKeysByDate ?? {}),
+        [today]: Array.from(
+          new Set([...(draft.routineHistoryPlannedKeysByDate?.[today] ?? withSurfaces), 'reading', 'work']),
+        ),
+      },
+    });
+  }
+
+  return {
+    screenshotBooks: SCREENSHOT_READING_BOOK_IDS.length,
+    screenshotNotes: SCREENSHOT_NOTE_PAGE_IDS.length,
+    screenshotQuickMemos: quickMemoCount,
+  };
+}
+
+export function clearScreenshotDemoSurfacesForWidgetTest(): void {
+  clearScreenshotReadingLibrary();
+  clearScreenshotWorkNote();
+  clearQuickMemoSurfaces();
 }
 
 function seedLocalizedBuiltinRoutines(): void {

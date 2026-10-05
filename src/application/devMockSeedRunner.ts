@@ -1,4 +1,6 @@
 import {
+  syncBookstoreAndNoteWidgets,
+  syncPinnedRoutineToWidget,
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
   useDayPlanStore,
@@ -29,6 +31,10 @@ import {
 } from '@shared/lib/storage/devMockSeed';
 import { horizonCompletionMockSeed } from '@shared/lib/storage/devMockSeed/modules/horizonCompletionMockSeed';
 import { screenshotDemoMockSeed } from '@shared/lib/storage/devMockSeed/modules/screenshotDemoMockSeed';
+import {
+  clearDevTemplateDemoRoutines,
+  seedDevTemplateDemoRoutines,
+} from './devTemplateDemoRoutinesSeed';
 
 function reloadStoresAfterDevMockChange(): void {
   useHistoryStore.getState().reloadFromStorage();
@@ -74,6 +80,16 @@ export async function runDevMockSeedProfileWithStoreSync(
   return { historyDays, ...horizonPartial };
 }
 
+/** 생성 가능 템플릿 7종 + 책방·노트·빠른 메모 체험 (`buildTemplateDemoConfig`) */
+export async function runTemplateDemoRoutinesSeedWithStoreSync(): Promise<DevMockSeedResult> {
+  const result = await seedDevTemplateDemoRoutines();
+  await flushLocalStorageClientWrites();
+  reloadStoresAfterDevMockChange();
+  syncPinnedRoutineToWidget();
+  syncBookstoreAndNoteWidgets();
+  return result;
+}
+
 /** 앱스토어 스크린샷용 — 오늘 루틴·투두·도서·노트 + 고달성 히스토리/호라이즌 */
 export async function runScreenshotDemoSeedWithStoreSync(): Promise<DevMockSeedResult> {
   ensureDefaultPriorityCatalog();
@@ -93,6 +109,7 @@ export async function runScreenshotDemoSeedWithStoreSync(): Promise<DevMockSeedR
 export async function runDevMockClearWithStoreSync(): Promise<void> {
   await runDevMockClear();
   await screenshotDemoMockSeed.clear();
+  await clearDevTemplateDemoRoutines();
   await flushLocalStorageClientWrites();
   reloadStoresAfterDevMockChange();
 }
@@ -101,17 +118,23 @@ export function formatDevMockSeedAlertMessage(result: DevMockSeedResult): string
   const locale = getAppLocale();
   const parts: string[] = [];
   if (result.screenshotRoutines != null) parts.push(`루틴 ${result.screenshotRoutines}개`);
+  if (result.templateDemoRoutines != null) {
+    parts.push(`템플릿 체험 루틴 ${result.templateDemoRoutines}개`);
+  }
   if (result.screenshotTodos != null) parts.push(`투두 ${result.screenshotTodos}개`);
   if (result.screenshotBooks != null) parts.push(`도서 ${result.screenshotBooks}권`);
   if (result.screenshotNotes != null) parts.push(`노트 ${result.screenshotNotes}개`);
+  if (result.screenshotQuickMemos != null) parts.push(`빠른 메모 ${result.screenshotQuickMemos}개`);
   if (result.historyDays != null) parts.push(`데일리 ${result.historyDays}일`);
   if (result.weeklyCompletions != null) parts.push(`위클리 ${result.weeklyCompletions}주`);
   if (result.monthlyCompletions != null) parts.push(`먼슬리 ${result.monthlyCompletions}달`);
   if (parts.length === 0) return `목업 데이터를 추가했어요. (${locale})`;
   const hint =
-    result.screenshotRoutines != null
-      ? '데이플랜·투두·서재·노트·통계 탭에서 확인하세요.'
-      : '통계 탭에서 확인하세요.';
+    result.templateDemoRoutines != null
+      ? '오늘 탭·책방·노트·빠른 메모·위젯 Edit에서 확인하세요.'
+      : result.screenshotRoutines != null
+        ? '데이플랜·투두·서재·노트·통계 탭에서 확인하세요.'
+        : '통계 탭에서 확인하세요.';
   return `[${locale}] ${parts.join(' · ')}\n${hint}`;
 }
 

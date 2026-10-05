@@ -99,6 +99,7 @@ describe('readingLiveActivityConfig', () => {
     const progress = deriveReadingBookProgress({ startPage: 10, targetPage: 100 });
     expect(progress.pagesRead).toBe(90);
     expect(progress.progressPct).toBe(0);
+    expect(progress.currentPage).toBe(100);
   });
 
   it('sums pageLogs for pagesRead and uses furthest target for progress', () => {
@@ -113,6 +114,7 @@ describe('readingLiveActivityConfig', () => {
     });
     expect(progress.pagesRead).toBe(44);
     expect(progress.progressPct).toBe(45);
+    expect(progress.currentPage).toBe(45);
   });
 
   it('derives book completion from total pages', () => {
@@ -123,6 +125,26 @@ describe('readingLiveActivityConfig', () => {
     });
     expect(progress.pagesRead).toBe(25);
     expect(progress.progressPct).toBe(13);
+    expect(progress.currentPage).toBe(26);
+  });
+
+  it('keeps currentPage finite even when start/target are missing or NaN', () => {
+    const progress = deriveReadingBookProgress({
+      startPage: Number.NaN,
+      targetPage: Number.NaN,
+      totalPages: 144,
+    });
+    expect(Number.isFinite(progress.currentPage)).toBe(true);
+    expect(progress.currentPage).toBe(0);
+  });
+
+  it('parses string start/target pages for currentPage', () => {
+    const progress = deriveReadingBookProgress({
+      startPage: '1' as unknown as number,
+      targetPage: '12' as unknown as number,
+      totalPages: 144,
+    });
+    expect(progress.currentPage).toBe(12);
   });
 
   it('preserves book memo within max length', () => {

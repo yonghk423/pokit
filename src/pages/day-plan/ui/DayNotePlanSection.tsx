@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import {
   normalizeWorkDetailConfig,
+  syncNoteWidgetToWidget,
   type WorkStudyDocument,
 } from '@entities/day-plan';
 import {
@@ -25,6 +26,7 @@ function persistWorkDocument(document: WorkStudyDocument): void {
   const raw = loadGoalDetailCategoryConfig(WORK_CATEGORY_KEY);
   const base = raw && typeof raw === 'object' ? raw : {};
   saveGoalDetailCategoryConfig(WORK_CATEGORY_KEY, { ...base, document });
+  syncNoteWidgetToWidget();
 }
 
 type Props = {
@@ -44,6 +46,7 @@ export function DayNotePlanSection({ c, isDark }: Props) {
 
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSentRef = useRef<string | null>(null);
+  const lastPageIdsRef = useRef(document.pages.map((page) => page.id).join('|'));
 
   const flushPersist = useCallback(() => {
     if (persistTimerRef.current) {
@@ -59,9 +62,16 @@ export function DayNotePlanSection({ c, isDark }: Props) {
   useEffect(() => {
     const serialized = JSON.stringify(document);
     if (lastSentRef.current === serialized) return;
+    const pageIds = document.pages.map((page) => page.id).join('|');
+    const pagesChanged = pageIds !== lastPageIdsRef.current;
+    lastPageIdsRef.current = pageIds;
 
     if (persistTimerRef.current) {
       clearTimeout(persistTimerRef.current);
+    }
+    if (pagesChanged) {
+      flushPersist();
+      return;
     }
     persistTimerRef.current = setTimeout(flushPersist, 450);
 

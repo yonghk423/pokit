@@ -84,8 +84,14 @@ const READING_METRIC_SET = new Set<ReadingMetricKey>([
 ]);
 
 function toNonNegativeInt(value: unknown, fallback: number): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
-  return Math.max(0, Math.round(value));
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.max(0, Math.round(value));
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const n = Number(value.replace(/[^\d.-]/g, '').trim());
+    if (Number.isFinite(n)) return Math.max(0, Math.round(n));
+  }
+  return fallback;
 }
 
 function clampReadingBookTitle(raw: unknown, max: number): string {
@@ -323,24 +329,31 @@ export function deriveReadingBookProgress(
   pagesRead: number;
   pagesLeft: number;
   progressPct: number;
+  /** 현재까지 읽은 위치(가장 먼 목표 페이지) */
+  currentPage: number;
 } {
   const logs = normalizeReadingPageLogs(entry.pageLogs);
   const hasLogs = Object.keys(logs).length > 0;
+  const startPage = toNonNegativeInt(entry.startPage, 0);
+  const targetPage = toNonNegativeInt(entry.targetPage, startPage);
   const pagesRead = hasLogs
     ? sumPagesFromReadingLogs(logs)
-    : Math.max(0, entry.targetPage - entry.startPage);
+    : Math.max(0, targetPage - startPage);
   const furthestTarget = hasLogs
-    ? resolveFurthestReadingTargetPage(logs, entry.targetPage)
-    : entry.targetPage;
-  const pagesLeft = Math.max(0, entry.startPage);
+    ? resolveFurthestReadingTargetPage(logs, targetPage)
+    : targetPage;
+  const currentPage = Number.isFinite(furthestTarget) ? Math.max(0, furthestTarget) : startPage;
+  const pagesLeft = Math.max(0, startPage);
   const totalPages =
-    typeof entry.totalPages === 'number' && entry.totalPages > 0 ? entry.totalPages : null;
+    typeof entry.totalPages === 'number' && Number.isFinite(entry.totalPages) && entry.totalPages > 0
+      ? entry.totalPages
+      : null;
   const progressPct =
     totalPages == null
       ? 0
-      : Math.max(0, Math.min(100, Math.round((furthestTarget / totalPages) * 100)));
+      : Math.max(0, Math.min(100, Math.round((currentPage / totalPages) * 100)));
 
-  return { pagesRead, pagesLeft, progressPct };
+  return { pagesRead, pagesLeft, progressPct, currentPage };
 }
 
 export function getInitialReadingLiveActivityConfig(): ReadingLiveActivityConfig {

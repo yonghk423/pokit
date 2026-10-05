@@ -537,7 +537,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 0,
-    paddingVertical: 2,
+    paddingTop: 0,
+    paddingBottom: 5,
   },
   dayCellOut: {
     opacity: 0.45,
@@ -550,12 +551,12 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2,
-    marginTop: 2,
+    marginTop: 0,
   },
   dotSpacer: {
     width: 5,
     height: 5,
-    marginTop: 2,
+    marginTop: 0,
   },
   selectedLabel: {
     fontSize: 14,

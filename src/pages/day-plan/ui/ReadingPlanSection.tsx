@@ -9,6 +9,7 @@ import {
 import {
   normalizeReadingLiveActivityConfig,
   seedReadingBookstoreIfNeeded,
+  syncBookstoreWidgetToWidget,
 } from '@entities/day-plan';
 import { useTranslation } from '@shared/lib/i18n';
 import {
@@ -32,7 +33,9 @@ function loadReadingConfig(): ReturnType<typeof normalizeReadingLiveActivityConf
 }
 
 function persistReadingConfig(next: unknown): void {
-  saveGoalDetailCategoryConfig(READING_CATEGORY_KEY, normalizeReadingLiveActivityConfig(next));
+  const normalized = normalizeReadingLiveActivityConfig(next);
+  saveGoalDetailCategoryConfig(READING_CATEGORY_KEY, normalized);
+  syncBookstoreWidgetToWidget(normalized);
 }
 
 type Props = {
@@ -48,6 +51,7 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
   const lastPersistedRef = useRef(serializeReadingConfig(dataConfig));
   const pendingDraftRef = useRef(dataConfig);
   const skipNextFocusSyncRef = useRef(false);
+  const lastBookIdsRef = useRef(dataConfig.books.map((book) => book.id).join('|'));
 
   const flushPersist = useCallback(() => {
     if (persistTimerRef.current) {
@@ -78,8 +82,14 @@ export function ReadingPlanSection({ c, isDark: _isDark }: Props) {
       }
       if (lastPersistedRef.current === serialized) return;
 
-      // 로컬 저장 직후 focus sync가 디스크로 되돌리지 않게
       skipNextFocusSyncRef.current = true;
+      const bookIds = normalized.books.map((book) => book.id).join('|');
+      const booksChanged = bookIds !== lastBookIdsRef.current;
+      lastBookIdsRef.current = bookIds;
+      if (booksChanged) {
+        flushPersist();
+        return;
+      }
       persistTimerRef.current = setTimeout(() => {
         persistTimerRef.current = null;
         flushPersist();

@@ -52,11 +52,33 @@ export const SCREENSHOT_ALADIN_MIDNIGHT_LIBRARY: ScreenshotDemoReadingAladinBook
   totalPages: 408,
 };
 
+/** 어린왕자 — 앱 시드와 동일 알라딘 에디션 */
+export const SCREENSHOT_ALADIN_LITTLE_PRINCE: ScreenshotDemoReadingAladinBook = {
+  itemId: 251847567,
+  aladinTitle: '어린왕자 (소프트커버 에디션) - 개정판',
+  author: '앙투안 드 생텍쥐페리 (지은이), 전성자 (옮긴이)',
+  coverUrl: 'https://image.aladin.co.kr/product/25184/75/cover/8931021291_1.jpg',
+  link: 'https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=251847567',
+  totalPages: 144,
+};
+
+/** 해리 포터와 마법사의 돌 1 — 문학수첩 */
+export const SCREENSHOT_ALADIN_HARRY_POTTER: ScreenshotDemoReadingAladinBook = {
+  itemId: 300101,
+  aladinTitle: '해리 포터와 마법사의 돌 1',
+  author: 'J.K. 롤링 (지은이), 김혜원 (옮긴이)',
+  coverUrl: 'https://image.aladin.co.kr/product/30/1/cover/8983921485_1.jpg',
+  link: 'https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=300101',
+  totalPages: 295,
+};
+
 export const SCREENSHOT_DEMO_READING_ALADIN_BOOKS = [
   SCREENSHOT_ALADIN_DEMIAN,
   SCREENSHOT_ALADIN_ATOMIC_HABITS,
   SCREENSHOT_ALADIN_SAPIENS,
   SCREENSHOT_ALADIN_MIDNIGHT_LIBRARY,
+  SCREENSHOT_ALADIN_LITTLE_PRINCE,
+  SCREENSHOT_ALADIN_HARRY_POTTER,
 ] as const;
 
 export function toReadingAladinPayload(book: ScreenshotDemoReadingAladinBook) {

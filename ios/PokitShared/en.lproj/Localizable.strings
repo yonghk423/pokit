@@ -1,0 +1,28 @@
+/* Widget gallery & Edit Widget — English (development language)
+   Keys are stable ASCII ids (not full English sentences) so lookup never breaks on curly quotes. */
+
+"widget.routine.name" = "Routine";
+"widget.routine.galleryDescription" = "Pick a routine for each widget and show it like a post-it.";
+"widget.routine.intentDescription" = "Choose which routine to show on the Home Screen. Each widget can be different.";
+"widget.routine.pick" = "Expand routine";
+
+"widget.bookstore.name" = "Bookstore";
+"widget.bookstore.galleryDescription" = "In Edit Widget, tap “Tap to pick a book” to choose a title from the bookstore.";
+"widget.bookstore.intentDescription" = "In Edit Widget, tap “Tap to pick a book” to open the bookstore list.";
+"widget.bookstore.pick" = "Tap to pick a book";
+"widget.bookstore.emptyMessage" = "No books to show on this widget yet";
+"widget.bookstore.untitled" = "Untitled book";
+"widget.bookstore.pickAgain" = "Choose a book again";
+
+"widget.note.name" = "Note";
+"widget.note.galleryDescription" = "Pick a note page for each widget and pin it to the Home Screen.";
+"widget.note.intentDescription" = "Choose which note page to pin on the Home Screen.";
+"widget.note.pick" = "Open note";
+"widget.note.openDescription" = "Opens the POKIT note screen.";
+"widget.note.emptyMessage" = "No notes to show on this widget yet";
+
+"widget.today.name" = "Today routines";
+"widget.today.galleryDescription" = "Shows today’s routines, completion, and quick memo like a post-it.";
+"widget.today.lockDescription" = "Shows today’s routine icon and count.";
+"widget.today.emptyRoutines" = "No routines yet";
+"widget.today.loadError" = "Couldn’t load the schedule";

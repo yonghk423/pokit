@@ -282,6 +282,44 @@ export {
   type WidgetPriorityRoutineItem
 } from './lib/widgetDayPlanPayload';
 export { syncDayPlanToWidget, syncWidgetTimelineFromStorage } from './lib/widgetDayPlanSync';
+export {
+  buildPinnedRoutineWidgetPayload,
+  type PinnedRoutineMetricKind,
+  type PinnedRoutineWidgetPayload,
+} from './lib/pinnedRoutineWidgetPayload';
+export {
+  listPinnedRoutineWidgetCandidates,
+  type PinnedRoutineWidgetCandidate,
+} from './lib/pinnedRoutineWidgetCatalog';
+export {
+  buildPinnedRoutineWidgetBundle,
+  syncPinnedRoutineToWidget,
+  type PinnedRoutineWidgetBundle,
+} from './lib/pinnedRoutineWidgetSync';
+export {
+  buildBookstoreWidgetBundlePayload,
+  toBookstoreWidgetBook,
+  toBookstoreWidgetBooks,
+  type BookstoreWidgetBook,
+  type BookstoreWidgetBundlePayload,
+} from './lib/bookstoreWidgetPayload';
+export { syncBookstoreWidgetToWidget } from './lib/bookstoreWidgetSync';
+export {
+  buildNoteWidgetBundlePayload,
+  toNoteWidgetPages,
+  type NoteWidgetBundlePayload,
+  type NoteWidgetPage,
+} from './lib/noteWidgetPayload';
+export { syncNoteWidgetToWidget } from './lib/noteWidgetSync';
+export { consumePendingWidgetPlanMode } from './lib/consumePendingWidgetPlanMode';
+export {
+  ensureBookstoreNoteWidgetLifecycle,
+  syncBookstoreAndNoteWidgets,
+} from './lib/bookstoreNoteWidgetLifecycle';
+export {
+  resolveWidgetPostItAppearance,
+  type WidgetPostItAppearance,
+} from './lib/widgetPostItAppearance';
 
 export { buildSpineImportFromBag } from './lib/buildSpineImportFromBag';
 export type { SpineBagImportBlock } from './lib/buildSpineImportFromBag';

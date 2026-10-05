@@ -13,13 +13,13 @@ import Reanimated, {
 import {
   DEFAULT_READING_LIVE_ACTIVITY_CONFIG,
   bookMatchesReadingLibraryQuery,
+  deriveReadingBookProgress,
   ensureReadingBookPages,
   getInitialReadingLiveActivityConfig,
   makeReadingBookId,
   normalizeReadingBookStatus,
   normalizeReadingLiveActivityConfig,
   normalizeReadingPageLogs,
-  resolveFurthestReadingTargetPage,
   resolveReadingBookAuthor,
   resolveReadingBookCoverUrl,
   resolveReadingBookTotalPages,
@@ -95,16 +95,16 @@ function nextLibrarySortOrder(order: ReadingLibrarySortOrder): ReadingLibrarySor
 /** 리스트: 현재 읽은 쪽 / 전체 쪽 (오늘 구간 start→target 아님) */
 function formatReadingBookPagesLine(entry: ReadingBookEntry): string {
   const book = ensureReadingBookPages(entry);
-  const logs = normalizeReadingPageLogs(book.pageLogs);
-  const hasLogs = Object.keys(logs).length > 0;
-  const currentPage = hasLogs
-    ? resolveFurthestReadingTargetPage(logs, book.targetPage)
-    : book.targetPage;
   const totalPages = resolveReadingBookTotalPages(book);
+  const { currentPage } = deriveReadingBookProgress({
+    ...book,
+    totalPages,
+  });
+  const current = Number.isFinite(currentPage) ? Math.max(0, currentPage) : 0;
   if (totalPages != null && totalPages > 0) {
-    return `${currentPage}P / ${totalPages}P`;
+    return `${current}P / ${totalPages}P`;
   }
-  return `${currentPage}P`;
+  return `${current}P`;
 }
 
 function resolveLatestReadingDateKey(entry: ReadingBookEntry): string | null {

@@ -10,8 +10,14 @@ export type ReadingPageDayLog = {
 export type ReadingPageLogs = Record<string, ReadingPageDayLog>;
 
 function toNonNegativeInt(value: unknown, fallback: number): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
-  return Math.max(0, Math.round(value));
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.max(0, Math.round(value));
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const n = Number(value.replace(/[^\d.-]/g, '').trim());
+    if (Number.isFinite(n)) return Math.max(0, Math.round(n));
+  }
+  return fallback;
 }
 
 export function normalizeReadingPageDayLog(

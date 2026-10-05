@@ -133,6 +133,9 @@ export const TODO_LIST_POST_IT_KEY = 'todo-list:today';
 /** 잠금화면 메모(포스트잇) Live Activity — 면색 */
 export const QUICK_MEMO_POST_IT_KEY = 'quick-memo:lock';
 
+/** 홈 위젯 기본 면 — 클래식 포스트잇 옐로우 */
+export const DEFAULT_WIDGET_POST_IT_FACE_COLOR_ID: PostItFaceColorId = 'yellow';
+
 const ROUTINE_CATALOG_FLAT_FACE_WHITE_MIGRATED_KEY =
   'pokit:routine-catalog-flat-face-white-migrated';
 

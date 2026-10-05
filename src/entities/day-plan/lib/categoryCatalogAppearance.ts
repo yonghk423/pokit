@@ -1,4 +1,4 @@
-import { contrastingForeground } from '@shared/lib/colorMath';
+import { contrastingForeground, pastelizeAccentHex } from '@shared/lib/colorMath';
 import {
   DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
   DEFAULT_CUSTOM_FLOW_ICON,
@@ -202,12 +202,13 @@ export function resolveCategoryCatalogAccentColor(categoryKey: string): string {
   );
 }
 
-/** 목표 상세 미리보기와 동일 — 칸은 강조색, 아이콘은 대비 전경 */
+/** 담기·루틴 목록 아이콘 칸 — accent를 파스텔로 풀어 쓰고, 글리프는 대비 전경 */
 export function resolveCategoryCatalogIconTile(categoryKey: string): {
   boxBg: string;
   iconColor: string;
 } {
-  const boxBg = resolveCategoryCatalogAccentColor(categoryKey);
+  const accent = resolveCategoryCatalogAccentColor(categoryKey);
+  const boxBg = pastelizeAccentHex(accent);
   return { boxBg, iconColor: contrastingForeground(boxBg) };
 }
 

@@ -18,6 +18,7 @@ import {
   runDevMockClearWithStoreSync,
   runDevMockSeedProfileWithStoreSync,
   runScreenshotDemoSeedWithStoreSync,
+  runTemplateDemoRoutinesSeedWithStoreSync,
 } from './devMockSeedRunner';
 
 const HISTORY_SEED_MENU_ITEMS: ReadonlyArray<{ profile: HistorySeedProfile; label: string; hint: string }> = [
@@ -52,6 +53,8 @@ export function useDevSeedMenu(): void {
   /** Fast Refresh 후에도 Dev Menu가 최신 seed 모듈을 쓰도록 ref로 유지 */
   const screenshotSeedRef = useRef(runScreenshotDemoSeedWithStoreSync);
   screenshotSeedRef.current = runScreenshotDemoSeedWithStoreSync;
+  const templateDemoSeedRef = useRef(runTemplateDemoRoutinesSeedWithStoreSync);
+  templateDemoSeedRef.current = runTemplateDemoRoutinesSeedWithStoreSync;
   const historySeedRef = useRef(runDevMockSeedProfileWithStoreSync);
   historySeedRef.current = runDevMockSeedProfileWithStoreSync;
   const clearSeedRef = useRef(runDevMockClearWithStoreSync);
@@ -67,6 +70,16 @@ export function useDevSeedMenu(): void {
         Alert.alert(
           'Seed 완료',
           `${formatDevMockSeedAlertMessage(result)}\n\n문구 로케일: ${locale}\n담기·시간대·타임라인·메모·투두·서재·노트·통계가 채워졌어요.\n히스토리 주간이 오늘만 보이면 ◀ 로 지난주를 열어 보세요.`,
+        );
+      })();
+    });
+
+    DevSettings.addMenuItem('[Seed] 템플릿 체험 + 책·메모·노트', () => {
+      void (async () => {
+        const result = await templateDemoSeedRef.current();
+        Alert.alert(
+          'Seed 완료',
+          `${formatDevMockSeedAlertMessage(result)}\n\n템플릿 루틴 7종 + 알라딘 책방 + 빠른 메모 + 상세 노트 목업이 채워졌어요.\n면색·잉크·중요도 색도 템플릿마다 다르게 들어가 있어요.\n위젯(루틴·책방·노트)·오늘 탭에서 확인하세요.`,
         );
       })();
     });
@@ -97,7 +110,7 @@ export function useDevSeedMenu(): void {
         await clearSeedRef.current();
         Alert.alert(
           'Clear 완료',
-          '목업 데이터를 모두 제거했어요.\n통계·스크린샷 데모(루틴·투두·도서·노트)가 비어 있어야 정상이에요.',
+          '목업 데이터를 모두 제거했어요.\n통계·스크린샷 데모·템플릿 체험 루틴이 비어 있어야 정상이에요.',
         );
       })();
     });

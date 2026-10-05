@@ -8,6 +8,7 @@ export {
   getAppLocale,
   useAppLocaleStore,
 } from './model/localeStore';
+export { i18n } from './model/i18nInstance';
 export { t, tIncompleteRoutineCountPart } from './model/translate';
 export type { I18nKey, TParams } from './model/translate';
 export { useTranslation } from './hooks/useTranslation';
