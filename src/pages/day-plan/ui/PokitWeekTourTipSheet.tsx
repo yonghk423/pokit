@@ -112,7 +112,8 @@ export function PokitWeekTourTipSheet({
   const muted = tone.textMuted;
   const face = isDark ? tone.surfaceAlt : '#FFFFFF';
   const chipBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)';
-  const shadowInk = isDark ? tone.solidShadow : '#000000';
+  /** 오늘 탭 상단 아이콘과 동일 소프트 음영 */
+  const shadowInk = isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)';
 
   return (
     <Modal
@@ -213,6 +214,7 @@ export function PokitWeekTourTipSheet({
               <BrutalConfirmButton
                 label={t('tour.pokitWeek.gotIt')}
                 accessibilityLabel={t('tour.pokitWeek.gotIt')}
+                shadowColor={shadowInk}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onConfirm();

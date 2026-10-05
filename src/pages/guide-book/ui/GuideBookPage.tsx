@@ -6,20 +6,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   CityPopSpacing,
-  RETRO_BORDER_WIDTH,
   RetroFlatColors,
-  SOLID_SHADOW_OFFSET,
   cityPopFont,
 } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { markGuideBookSeenAndFlush } from '@shared/lib/storage';
 import { useTranslation } from '@shared/lib/i18n';
+import { markGuideBookSeenAndFlush } from '@shared/lib/storage';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
 import { buildGuideBookToc, getGuideBookPages } from '../lib/guideBookPages';
 import { GuideBookFigure } from './GuideBookFigures';
+
+/** 오늘 탭 상단 아이콘과 동일 소프트 음영 */
+const SOFT_SHADOW = 2;
+const SOFT_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
+const SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
 
 type ViewMode = 'toc' | 'read';
 
@@ -30,6 +33,7 @@ export function GuideBookPage() {
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const rf = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const softShadow = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
   const pages = useMemo(() => getGuideBookPages(locale), [locale]);
   const toc = useMemo(() => buildGuideBookToc(locale), [locale]);
 
@@ -162,17 +166,17 @@ export function GuideBookPage() {
               key={sec.chapter}
               style={[
                 styles.tocRowShell,
-                { marginRight: SOLID_SHADOW_OFFSET, marginBottom: SOLID_SHADOW_OFFSET },
+                { marginRight: SOFT_SHADOW, marginBottom: SOFT_SHADOW },
               ]}>
               <View
                 pointerEvents="none"
                 style={[
                   styles.tocRowShadow,
                   {
-                    backgroundColor: isDark ? rf.solidShadow : rf.border,
+                    backgroundColor: softShadow,
                     transform: [
-                      { translateX: SOLID_SHADOW_OFFSET },
-                      { translateY: SOLID_SHADOW_OFFSET },
+                      { translateX: SOFT_SHADOW },
+                      { translateY: SOFT_SHADOW },
                     ],
                   },
                 ]}
@@ -214,14 +218,24 @@ export function GuideBookPage() {
       ) : (
         <>
           <View style={styles.bodyPad}>
-            <View
-              style={[
-                styles.frame,
-                {
-                  borderColor: rf.border,
-                  backgroundColor: isDark ? rf.surfaceAlt : '#F6F3EB',
-                },
-              ]}>
+            <View style={styles.frameShell}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.frameShadow,
+                  {
+                    backgroundColor: softShadow,
+                    transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.frame,
+                  {
+                    backgroundColor: isDark ? rf.surfaceAlt : '#F6F3EB',
+                  },
+                ]}>
               <ScrollView
                 key={`${section.chapter}-${pageInSection}`}
                 style={styles.scroll}
@@ -306,67 +320,35 @@ export function GuideBookPage() {
                   ))}
                 </View>
               </ScrollView>
+              </View>
             </View>
           </View>
 
           <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 14) }]}>
             {sectionPageCount <= 1 ? (
-              <Pressable
-                onPress={backToToc}
-                accessibilityRole="button"
-                accessibilityLabel={t('guideBook.backToTocA11y')}
+              <View
                 style={[
-                  styles.navBtn,
+                  styles.navBtnShell,
                   styles.navBtnSingle,
-                  {
-                    borderColor: rf.border,
-                    backgroundColor: rf.primaryContainer,
-                  },
+                  { marginRight: SOFT_SHADOW, marginBottom: SOFT_SHADOW },
                 ]}>
-                <ThemedText
+                <View
+                  pointerEvents="none"
                   style={[
-                    styles.navLabel,
-                    { color: isDark ? rf.primaryOn : '#0A0A0A' },
-                    cityPopFont('800'),
+                    styles.navBtnShadow,
+                    {
+                      backgroundColor: softShadow,
+                      transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
+                    },
                   ]}
-                  lightColor="#0A0A0A"
-                  darkColor={rf.primaryOn}>
-                  {t('common.toc')}
-                </ThemedText>
-              </Pressable>
-            ) : (
-              <View style={styles.navRow}>
+                />
                 <Pressable
-                  onPress={goPrev}
+                  onPress={backToToc}
                   accessibilityRole="button"
-                  accessibilityLabel={isFirstInSection ? t('guideBook.backToTocA11y') : t('guideBook.prevPageA11y')}
+                  accessibilityLabel={t('guideBook.backToTocA11y')}
                   style={[
                     styles.navBtn,
-                    styles.navBtnGhost,
-                    {
-                      borderColor: rf.border,
-                      backgroundColor: isDark ? rf.surfaceAlt : '#FFFFFF',
-                    },
-                  ]}>
-                  <ThemedText
-                    style={[styles.navLabel, { color: rf.text }, cityPopFont('700')]}
-                    lightColor={rf.text}
-                    darkColor={rf.text}>
-                    {isFirstInSection ? t('common.toc') : t('common.prev')}
-                  </ThemedText>
-                </Pressable>
-
-                <Pressable
-                  onPress={goNext}
-                  accessibilityRole="button"
-                  accessibilityLabel={isLastInSection ? t('guideBook.backToTocA11y') : t('guideBook.nextPageA11y')}
-                  style={[
-                    styles.navBtn,
-                    styles.navBtnPrimary,
-                    {
-                      borderColor: rf.border,
-                      backgroundColor: rf.primaryContainer,
-                    },
+                    { backgroundColor: rf.primaryContainer },
                   ]}>
                   <ThemedText
                     style={[
@@ -376,9 +358,85 @@ export function GuideBookPage() {
                     ]}
                     lightColor="#0A0A0A"
                     darkColor={rf.primaryOn}>
-                    {isLastInSection ? t('common.toc') : t('common.next')}
+                    {t('common.toc')}
                   </ThemedText>
                 </Pressable>
+              </View>
+            ) : (
+              <View style={styles.navRow}>
+                <View
+                  style={[
+                    styles.navBtnShell,
+                    styles.navBtnGhost,
+                    { marginRight: SOFT_SHADOW, marginBottom: SOFT_SHADOW },
+                  ]}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.navBtnShadow,
+                      {
+                        backgroundColor: softShadow,
+                        transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
+                      },
+                    ]}
+                  />
+                  <Pressable
+                    onPress={goPrev}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      isFirstInSection ? t('guideBook.backToTocA11y') : t('guideBook.prevPageA11y')
+                    }
+                    style={[
+                      styles.navBtn,
+                      { backgroundColor: isDark ? rf.surfaceAlt : '#FFFFFF' },
+                    ]}>
+                    <ThemedText
+                      style={[styles.navLabel, { color: rf.text }, cityPopFont('700')]}
+                      lightColor={rf.text}
+                      darkColor={rf.text}>
+                      {isFirstInSection ? t('common.toc') : t('common.prev')}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+
+                <View
+                  style={[
+                    styles.navBtnShell,
+                    styles.navBtnPrimary,
+                    { marginRight: SOFT_SHADOW, marginBottom: SOFT_SHADOW },
+                  ]}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.navBtnShadow,
+                      {
+                        backgroundColor: softShadow,
+                        transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
+                      },
+                    ]}
+                  />
+                  <Pressable
+                    onPress={goNext}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      isLastInSection ? t('guideBook.backToTocA11y') : t('guideBook.nextPageA11y')
+                    }
+                    style={[
+                      styles.navBtn,
+                      { backgroundColor: rf.primaryContainer },
+                    ]}>
+                    <ThemedText
+                      style={[
+                        styles.navLabel,
+                        { color: isDark ? rf.primaryOn : '#0A0A0A' },
+                        cityPopFont('800'),
+                      ]}
+                      lightColor="#0A0A0A"
+                      darkColor={rf.primaryOn}>
+                      {isLastInSection ? t('common.toc') : t('common.next')}
+                    </ThemedText>
+                  </Pressable>
+                </View>
               </View>
             )}
           </View>
@@ -439,11 +497,19 @@ const styles = StyleSheet.create({
   tocText: { flex: 1, gap: 2 },
   tocTitle: { fontSize: 16, letterSpacing: -0.2 },
   tocSub: { fontSize: 12, lineHeight: 17 },
+  frameShell: {
+    flex: 1,
+    position: 'relative',
+    marginBottom: 8,
+  },
+  frameShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
   frame: {
     flex: 1,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     overflow: 'hidden',
-    marginBottom: 8,
+    zIndex: 1,
   },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 28, flexGrow: 1 },
@@ -478,7 +544,7 @@ const styles = StyleSheet.create({
     minWidth: 22,
     height: 22,
     borderRadius: 11,
-    borderWidth: 1.5,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 1,
@@ -491,20 +557,28 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
     lineHeight: 18,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     padding: 10,
+    backgroundColor: 'rgba(0,0,0,0.04)',
   },
   footer: {
     paddingHorizontal: CityPopSpacing.gutter,
     paddingTop: 10,
   },
   navRow: { flexDirection: 'row', gap: 10 },
+  navBtnShell: {
+    position: 'relative',
+  },
+  navBtnShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
   navBtn: {
     minHeight: 52,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
+    zIndex: 1,
   },
   navBtnGhost: { flex: 0.42 },
   navBtnPrimary: { flex: 1 },

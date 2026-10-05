@@ -15,16 +15,16 @@ type Props = {
   visible: boolean;
   isDark: boolean;
   onClose: () => void;
-  /** 「확인해 보기」— 레이아웃 설정으로 이동 */
-  onOpenLayout: () => void;
+  /** 「확인해 보기」— 위젯 설명서로 이동 */
+  onOpenWidgetGuide: () => void;
 };
 
-/** 「포킷 빠르게 둘러보기」완료 후 — 오늘 탭 레이아웃 설정 안내 */
-export function PokitWeekTourLayoutNudgeSheet({
+/** 「포킷 빠르게 둘러보기」레이아웃 안내 다음 — 홈 위젯 써보기 */
+export function PokitWeekTourWidgetNudgeSheet({
   visible,
   isDark,
   onClose,
-  onOpenLayout,
+  onOpenWidgetGuide,
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -54,21 +54,21 @@ export function PokitWeekTourLayoutNudgeSheet({
           pointerEvents="box-none">
           <PostItCardShell isDark={isDark} faceColor={face} contentStyle={styles.card}>
             <ThemedText style={[styles.kicker, { color: muted }, cityPopFont('500')]}>
-              {t('tour.pokitWeek.layoutNudge.kicker')}
+              {t('tour.pokitWeek.widgetNudge.kicker')}
             </ThemedText>
             <ThemedText style={[styles.title, { color: ink }, cityPopFont('700')]}>
-              {t('tour.pokitWeek.layoutNudge.title')}
+              {t('tour.pokitWeek.widgetNudge.title')}
             </ThemedText>
             <ThemedText style={[styles.body, { color: muted }, cityPopFont('400')]}>
-              {t('tour.pokitWeek.layoutNudge.body')}
+              {t('tour.pokitWeek.widgetNudge.body')}
             </ThemedText>
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('settings.a11y.layout')}
+              accessibilityLabel={t('settings.a11y.widgetGuide')}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onOpenLayout();
+                onOpenWidgetGuide();
               }}
               style={[styles.previewRow, { borderColor: rowBorder }]}>
               <View
@@ -94,15 +94,15 @@ export function PokitWeekTourLayoutNudgeSheet({
                       borderColor: isDark ? 'rgba(255,255,255,0.55)' : '#000000',
                     },
                   ]}>
-                  <IconSymbol name="list.bullet.rectangle" size={16} color={isDark ? '#FAFAFA' : '#000000'} />
+                  <IconSymbol name="square.grid.2x2" size={16} color={isDark ? '#FAFAFA' : '#000000'} />
                 </View>
               </View>
               <View style={styles.previewText}>
                 <ThemedText style={[styles.previewTitle, { color: ink }, cityPopFont('700')]}>
-                  {t('settings.layoutTitle')}
+                  {t('settings.widgetGuideTitle')}
                 </ThemedText>
                 <ThemedText style={[styles.previewDesc, { color: muted }, cityPopFont('500')]}>
-                  {t('settings.layoutDesc')}
+                  {t('settings.widgetGuideDesc')}
                 </ThemedText>
               </View>
               <IconSymbol name="chevron.right" size={14} color={muted} />
@@ -141,13 +141,13 @@ export function PokitWeekTourLayoutNudgeSheet({
                 </Pressable>
               </View>
               <BrutalConfirmButton
-                label={t('tour.pokitWeek.layoutNudge.cta')}
-                accessibilityLabel={t('tour.pokitWeek.layoutNudge.cta')}
+                label={t('tour.pokitWeek.widgetNudge.cta')}
+                accessibilityLabel={t('tour.pokitWeek.widgetNudge.cta')}
                 labelColor="#000000"
                 shadowColor={shadowInk}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onOpenLayout();
+                  onOpenWidgetGuide();
                 }}
               />
             </View>

@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, Share, StyleSheet, View } from 'react-native';
 
@@ -27,13 +27,16 @@ import {
   loadGoalDetailCategoryConfig,
   loadPokitWeekTourFirstTipSeen,
   loadPokitWeekTourLayoutNudgeSeen,
+  loadPokitWeekTourWidgetNudgeSeen,
   markPokitWeekTourFirstTipSeen,
   markPokitWeekTourLayoutNudgeSeen,
+  markPokitWeekTourWidgetNudgeSeen,
   POKIT_WEEK_TOUR_STEP_COUNT,
   POST_IT_LIGHT_INK,
   resolvePokitWeekTourStepIndex,
   saveGoalDetailCategoryConfig,
 } from '@shared/lib/storage';
+import { prefetchWidgetGuideAssets } from '@shared/lib/widget-guide-assets';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { UiSurfacePresentationProvider } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -42,6 +45,7 @@ import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { PokitWeekTourLayoutNudgeSheet } from './PokitWeekTourLayoutNudgeSheet';
 import { PokitWeekTourTipSheet } from './PokitWeekTourTipSheet';
+import { PokitWeekTourWidgetNudgeSheet } from './PokitWeekTourWidgetNudgeSheet';
 
 type ChecklistTask = { id: string; text: string; done: boolean };
 
@@ -158,7 +162,7 @@ export function PriorityBagRowAccordionPanel({
   muted,
   line,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const { isDayPlanFocused } = useDayPlanTabBridge();
   const [draft, setDraft] = useState('');
@@ -167,6 +171,7 @@ export function PriorityBagRowAccordionPanel({
   const [tourTipStep, setTourTipStep] = useState<number | null>(null);
   const [tourTipTaskId, setTourTipTaskId] = useState<string | null>(null);
   const [layoutNudgeVisible, setLayoutNudgeVisible] = useState(false);
+  const [widgetNudgeVisible, setWidgetNudgeVisible] = useState(false);
   const router = useRouter();
   const goalKey = asGoalDetailCategoryKey(categoryKey);
   const summaryPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -409,6 +414,34 @@ export function PriorityBagRowAccordionPanel({
     setTourTipStep(0);
   }, [isWeekTour, persistChecklist, tasks, tourTipStep, tourTipTaskId]);
 
+  const widgetNudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tourTipStepRef = useRef(tourTipStep);
+  const layoutNudgeVisibleRef = useRef(layoutNudgeVisible);
+  const widgetNudgeVisibleRef = useRef(widgetNudgeVisible);
+  tourTipStepRef.current = tourTipStep;
+  layoutNudgeVisibleRef.current = layoutNudgeVisible;
+  widgetNudgeVisibleRef.current = widgetNudgeVisible;
+
+  const clearWidgetNudgeTimer = useCallback(() => {
+    if (widgetNudgeTimerRef.current) {
+      clearTimeout(widgetNudgeTimerRef.current);
+      widgetNudgeTimerRef.current = null;
+    }
+  }, []);
+
+  const queueWidgetNudgeSoon = useCallback(() => {
+    if (loadPokitWeekTourWidgetNudgeSeen()) return;
+    clearWidgetNudgeTimer();
+    void prefetchWidgetGuideAssets(locale);
+    widgetNudgeTimerRef.current = setTimeout(() => {
+      widgetNudgeTimerRef.current = null;
+      if (loadPokitWeekTourWidgetNudgeSeen()) return;
+      setWidgetNudgeVisible(true);
+    }, 280);
+  }, [clearWidgetNudgeTimer, locale]);
+
+  useEffect(() => () => clearWidgetNudgeTimer(), [clearWidgetNudgeTimer]);
+
   const closeTourTip = useCallback(() => {
     if (tourTipStep === 0) {
       markPokitWeekTourFirstTipSeen();
@@ -416,10 +449,13 @@ export function PriorityBagRowAccordionPanel({
     setTourTipStep(null);
     setTourTipTaskId(null);
     // 「닫기」「알겠어요」모두 여기로 옴 — 체크리스트 전부 완료 여부와 무관, 1회만
+    // 1) 레이아웃 안내 → 2) 위젯 안내 (이미 본 단계는 건너뜀)
     if (!loadPokitWeekTourLayoutNudgeSeen()) {
       setTimeout(() => setLayoutNudgeVisible(true), 280);
+    } else {
+      queueWidgetNudgeSoon();
     }
-  }, [tourTipStep]);
+  }, [queueWidgetNudgeSoon, tourTipStep]);
 
   const confirmTourTip = useCallback(() => {
     closeTourTip();
@@ -428,13 +464,61 @@ export function PriorityBagRowAccordionPanel({
   const dismissLayoutNudge = useCallback(() => {
     markPokitWeekTourLayoutNudgeSeen();
     setLayoutNudgeVisible(false);
-  }, []);
+    queueWidgetNudgeSoon();
+  }, [queueWidgetNudgeSoon]);
 
   const openLayoutFromNudge = useCallback(() => {
     markPokitWeekTourLayoutNudgeSeen();
     setLayoutNudgeVisible(false);
+    clearWidgetNudgeTimer();
+    // 복귀 후 useFocusEffect에서 위젯 안내를 띄운다.
     router.push('/layout-settings');
+  }, [clearWidgetNudgeTimer, router]);
+
+  const dismissWidgetNudge = useCallback(() => {
+    markPokitWeekTourWidgetNudgeSeen();
+    setWidgetNudgeVisible(false);
+  }, []);
+
+  const openWidgetGuideFromNudge = useCallback(() => {
+    markPokitWeekTourWidgetNudgeSeen();
+    setWidgetNudgeVisible(false);
+    router.push('/widget-guide');
   }, [router]);
+
+  /**
+   * 레이아웃 안내를 본 뒤 위젯 안내 1회.
+   * - 「닫기」: dismissLayoutNudge가 즉시 큐잉
+   * - 「확인해 보기」: 레이아웃 설정에서 돌아온 화면 포커스에서 큐잉
+   *   (탭 isDayPlanFocused는 스택 푸시 때 안 바뀌므로 useFocusEffect 사용)
+   */
+  useFocusEffect(
+    useCallback(() => {
+      if (!isWeekTour) return;
+
+      const tryShowWidgetNudge = () => {
+        if (!loadPokitWeekTourFirstTipSeen()) return;
+        if (!loadPokitWeekTourLayoutNudgeSeen()) return;
+        if (loadPokitWeekTourWidgetNudgeSeen()) return;
+        if (
+          tourTipStepRef.current != null ||
+          layoutNudgeVisibleRef.current ||
+          widgetNudgeVisibleRef.current
+        ) {
+          return;
+        }
+        queueWidgetNudgeSoon();
+      };
+
+      // 레이아웃 설정 푸시 직후 콜백 갱신으로 바로 뜨지 않게 한 틱 뒤
+      const focusTimer = setTimeout(tryShowWidgetNudge, 0);
+
+      return () => {
+        clearTimeout(focusTimer);
+        clearWidgetNudgeTimer();
+      };
+    }, [clearWidgetNudgeTimer, isWeekTour, queueWidgetNudgeSoon]),
+  );
 
   const removeTask = useCallback(
     (id: string) => {
@@ -628,6 +712,12 @@ export function PriorityBagRowAccordionPanel({
           isDark={isDark}
           onClose={dismissLayoutNudge}
           onOpenLayout={openLayoutFromNudge}
+        />
+        <PokitWeekTourWidgetNudgeSheet
+          visible={widgetNudgeVisible}
+          isDark={isDark}
+          onClose={dismissWidgetNudge}
+          onOpenWidgetGuide={openWidgetGuideFromNudge}
         />
 
         <View style={s.toolbar}>

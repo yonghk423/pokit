@@ -24,6 +24,8 @@ export const StorageKeys = {
   pokitWeekTourFirstTipSeen: 'pokit:pokit-week-tour-first-tip-seen',
   /** 「포킷 빠르게 둘러보기」완료 후 레이아웃 설정 안내 모달 */
   pokitWeekTourLayoutNudgeSeen: 'pokit:pokit-week-tour-layout-nudge-seen',
+  /** 투어 후 「홈 위젯」안내를 이미 봤는지 */
+  pokitWeekTourWidgetNudgeSeen: 'pokit:pokit-week-tour-widget-nudge-seen',
   /** 데이플랜 화면 드래프트(모드/시작·마무리/순서 등) */
   dayPlanDraft: 'pokit:day-plan-draft',
   /** 투두 리스트 모드 — 날짜별 할 일 표 */
@@ -93,6 +95,7 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   pokitWeekTourSeeded: 'lockflow:pokit-week-tour-seeded',
   pokitWeekTourFirstTipSeen: 'lockflow:pokit-week-tour-first-tip-seen',
   pokitWeekTourLayoutNudgeSeen: 'lockflow:pokit-week-tour-layout-nudge-seen',
+  pokitWeekTourWidgetNudgeSeen: 'lockflow:pokit-week-tour-widget-nudge-seen',
   dayPlanDraft: 'lockflow:day-plan-draft',
   dayPlanTodos: 'lockflow:day-plan-todos',
   horizonGoals: 'lockflow:horizon-goals',

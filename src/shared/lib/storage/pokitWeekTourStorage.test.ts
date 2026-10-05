@@ -3,7 +3,9 @@ import {
   BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
   hideStandardCatalogKey,
   loadPokitWeekTourSeeded,
+  loadPokitWeekTourWidgetNudgeSeen,
   markPokitWeekTourSeeded,
+  markPokitWeekTourWidgetNudgeSeen,
   nextOrderWithPokitWeekTourSeed,
   saveGoalDetailCategoryConfig,
 } from './index';
@@ -12,6 +14,7 @@ import { StorageKeys } from './storageKeys';
 describe('pokitWeekTourStorage', () => {
   beforeEach(() => {
     localStorageClient.removeItem(StorageKeys.pokitWeekTourSeeded);
+    localStorageClient.removeItem(StorageKeys.pokitWeekTourWidgetNudgeSeen);
     localStorageClient.removeItem(StorageKeys.goalDetailSettings);
     localStorageClient.removeItem(StorageKeys.hiddenStandardCatalogKeys);
   });
@@ -57,5 +60,11 @@ describe('pokitWeekTourStorage', () => {
   it('does not seed when the tutorial routine was deleted', () => {
     hideStandardCatalogKey(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
     expect(nextOrderWithPokitWeekTourSeed([])).toBeNull();
+  });
+
+  it('tracks widget nudge seen flag', () => {
+    expect(loadPokitWeekTourWidgetNudgeSeen()).toBe(false);
+    markPokitWeekTourWidgetNudgeSeen();
+    expect(loadPokitWeekTourWidgetNudgeSeen()).toBe(true);
   });
 });

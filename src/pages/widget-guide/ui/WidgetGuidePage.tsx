@@ -1,17 +1,15 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   CityPopSpacing,
-  RETRO_BORDER_WIDTH,
   RetroFlatColors,
-  SOLID_SHADOW_OFFSET,
   cityPopFont,
 } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -28,6 +26,10 @@ import { ThemedView } from '@shared/ui/themed-view';
 import { getWidgetGuideSlides } from '../lib/widgetGuideContent';
 
 const SWIPE_THRESHOLD = 56;
+/** 오늘 탭 상단 아이콘(SettingsTopBarButton)과 동일 오프셋·톤 */
+const SOFT_SHADOW = 2;
+const SOFT_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
+const SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
 
 /** 위젯 설명서 — 사진·짧은 설명. 넘김은 즉시 전환(흔들림 애니메이션 없음). */
 export function WidgetGuidePage() {
@@ -41,10 +43,39 @@ export function WidgetGuidePage() {
   const [loadedIds, setLoadedIds] = useState<Record<string, true>>({});
   const last = index >= slides.length - 1;
   const item = slides[index]!;
-  const shadowInk = isDark ? rf.solidShadow : '#000000';
+  const softShadow = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
   const progressRatio = index / Math.max(1, slides.length - 1);
   const stageCream = isDark ? WIDGET_GUIDE_STAGE_CREAM_DARK : WIDGET_GUIDE_STAGE_CREAM;
   const currentLoaded = Boolean(loadedIds[item.id]);
+  const skeletonPulse = useRef(new Animated.Value(0.55)).current;
+  const skeletonFace = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const skeletonBlock = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
+
+  useEffect(() => {
+    if (currentLoaded) {
+      skeletonPulse.stopAnimation();
+      skeletonPulse.setValue(0.55);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(skeletonPulse, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(skeletonPulse, {
+          toValue: 0.45,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => {
+      loop.stop();
+    };
+  }, [currentLoaded, skeletonPulse]);
 
   const mountedIndexes = useMemo(() => {
     const next = new Set<number>([index]);
@@ -111,7 +142,7 @@ export function WidgetGuidePage() {
     <ThemedView style={[styles.screen, { backgroundColor: rf.bg }]} lightColor={rf.bg} darkColor={rf.bg}>
       <View
         pointerEvents="none"
-        style={[styles.accentWash, { backgroundColor: accentFace, borderColor: rf.border }]}
+        style={[styles.accentWash, { backgroundColor: accentFace }]}
       />
 
       <View style={[styles.column, { paddingTop: Math.max(insets.top, 10) }]}>
@@ -139,42 +170,82 @@ export function WidgetGuidePage() {
               />
             </View>
           </View>
-          <Pressable
-            onPress={() => {
-              void Haptics.selectionAsync();
-              close();
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('widgetGuide.closeA11y')}
-            hitSlop={12}
-            style={[styles.closeBtn, { borderColor: rf.border, backgroundColor: rf.surface }]}>
-            <ThemedText
-              style={[styles.closeLabel, { color: rf.text }, cityPopFont('700')]}
-              lightColor={rf.text}
-              darkColor={rf.text}>
-              {t('common.close')}
-            </ThemedText>
-          </Pressable>
+          <View
+            style={[
+              styles.closeShell,
+              { marginRight: SOFT_SHADOW, marginBottom: SOFT_SHADOW },
+            ]}>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.closeShadow,
+                {
+                  backgroundColor: softShadow,
+                  transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
+                },
+              ]}
+            />
+            <Pressable
+              onPress={() => {
+                void Haptics.selectionAsync();
+                close();
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('widgetGuide.closeA11y')}
+              hitSlop={12}
+              style={({ pressed }) => [
+                styles.closeBtn,
+                {
+                  backgroundColor: rf.surface,
+                  transform: [{ translateY: pressed ? 1 : 0 }],
+                },
+              ]}>
+              <ThemedText
+                style={[styles.closeLabel, { color: rf.text }, cityPopFont('700')]}
+                lightColor={rf.text}
+                darkColor={rf.text}>
+                {t('common.close')}
+              </ThemedText>
+            </Pressable>
+          </View>
         </View>
 
         <GestureDetector gesture={swipe}>
           <View style={styles.stageArea}>
-            <View style={[styles.stageShadow, { backgroundColor: shadowInk }]} />
             <View
+              pointerEvents="none"
               style={[
-                styles.stage,
+                styles.stageShadow,
                 {
-                  borderColor: rf.border,
-                  backgroundColor: stageCream,
+                  backgroundColor: softShadow,
+                  transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
                 },
-              ]}>
-              <View style={[styles.stepChip, { borderColor: rf.border, backgroundColor: accentFace }]}>
-                <ThemedText
-                  style={[styles.stepChipText, { color: chipInk }, cityPopFont('800')]}
-                  lightColor={chipInk}
-                  darkColor={chipInk}>
-                  {String(index + 1).padStart(2, '0')}
-                </ThemedText>
+              ]}
+            />
+            <View style={[styles.stage, { backgroundColor: stageCream }]}>
+              <View
+                style={[
+                  styles.stepChipShell,
+                  { marginRight: SOFT_SHADOW, marginBottom: SOFT_SHADOW },
+                ]}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.stepChipShadow,
+                    {
+                      backgroundColor: softShadow,
+                      transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
+                    },
+                  ]}
+                />
+                <View style={[styles.stepChip, { backgroundColor: accentFace }]}>
+                  <ThemedText
+                    style={[styles.stepChipText, { color: chipInk }, cityPopFont('800')]}
+                    lightColor={chipInk}
+                    darkColor={chipInk}>
+                    {String(index + 1).padStart(2, '0')}
+                  </ThemedText>
+                </View>
               </View>
 
               {mountedIndexes.map((i) => {
@@ -184,12 +255,12 @@ export function WidgetGuidePage() {
                   <Image
                     key={`${locale}-${slide.id}`}
                     source={getWidgetGuideImage(slide.id, locale)}
-                      style={[
-                        styles.photo,
-                        {
-                          opacity: active && loadedIds[slide.id] ? 1 : 0,
-                        },
-                      ]}
+                    style={[
+                      styles.photo,
+                      {
+                        opacity: active && loadedIds[slide.id] ? 1 : 0,
+                      },
+                    ]}
                     contentFit="cover"
                     cachePolicy="memory-disk"
                     priority={active || i === index + 1 ? 'high' : 'low'}
@@ -204,42 +275,66 @@ export function WidgetGuidePage() {
               })}
 
               {!currentLoaded ? (
-                <View style={styles.stageLoading} pointerEvents="none">
-                  <ActivityIndicator color={rf.textMuted} />
-                </View>
+                <Animated.View
+                  style={[styles.stageSkeleton, { opacity: skeletonPulse }]}
+                  pointerEvents="none"
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants">
+                  <View style={[styles.skeletonFill, { backgroundColor: skeletonFace }]} />
+                  <View style={styles.skeletonBlocks}>
+                    <View style={[styles.skeletonBarWide, { backgroundColor: skeletonBlock }]} />
+                    <View style={[styles.skeletonBarMid, { backgroundColor: skeletonBlock }]} />
+                    <View style={styles.skeletonCards}>
+                      <View style={[styles.skeletonCard, { backgroundColor: skeletonBlock }]} />
+                      <View style={[styles.skeletonCard, { backgroundColor: skeletonBlock }]} />
+                      <View style={[styles.skeletonCard, { backgroundColor: skeletonBlock }]} />
+                    </View>
+                  </View>
+                </Animated.View>
               ) : null}
             </View>
           </View>
         </GestureDetector>
 
-        <View
-          style={[
-            styles.copyCard,
-            {
-              borderColor: rf.border,
-              backgroundColor: isDark ? rf.surfaceAlt : stageCream,
-            },
-          ]}>
-          <ThemedText
-            style={[styles.copyTitle, { color: rf.text }, cityPopFont('800')]}
-            lightColor={rf.text}
-            darkColor={rf.text}>
-            {item.title}
-          </ThemedText>
-          <ThemedText
-            style={[styles.copyBody, { color: rf.textMuted }, cityPopFont('500')]}
-            lightColor={rf.textMuted}
-            darkColor={rf.textMuted}>
-            {item.body}
-          </ThemedText>
-          {index === 0 ? (
+        <View style={styles.copyCardShell}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.copyCardShadow,
+              {
+                backgroundColor: softShadow,
+                transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.copyCard,
+              {
+                backgroundColor: isDark ? rf.surfaceAlt : stageCream,
+              },
+            ]}>
             <ThemedText
-              style={[styles.swipeHint, { color: rf.textMuted }, cityPopFont('600')]}
+              style={[styles.copyTitle, { color: rf.text }, cityPopFont('800')]}
+              lightColor={rf.text}
+              darkColor={rf.text}>
+              {item.title}
+            </ThemedText>
+            <ThemedText
+              style={[styles.copyBody, { color: rf.textMuted }, cityPopFont('500')]}
               lightColor={rf.textMuted}
               darkColor={rf.textMuted}>
-              {t('widgetGuide.swipeHint')}
+              {item.body}
             </ThemedText>
-          ) : null}
+            {index === 0 ? (
+              <ThemedText
+                style={[styles.swipeHint, { color: rf.textMuted }, cityPopFont('600')]}
+                lightColor={rf.textMuted}
+                darkColor={rf.textMuted}>
+                {t('widgetGuide.swipeHint')}
+              </ThemedText>
+            ) : null}
+          </View>
         </View>
 
         <View
@@ -268,7 +363,16 @@ export function WidgetGuidePage() {
             })}
           </View>
           <View style={styles.ctaWrap}>
-            <View style={[styles.ctaShadow, { backgroundColor: shadowInk }]} />
+            <View
+              pointerEvents="none"
+              style={[
+                styles.ctaShadow,
+                {
+                  backgroundColor: softShadow,
+                  transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
+                },
+              ]}
+            />
             <Pressable
               onPress={goNext}
               accessibilityRole="button"
@@ -276,11 +380,10 @@ export function WidgetGuidePage() {
               style={({ pressed }) => [
                 styles.cta,
                 {
-                  borderColor: rf.border,
                   backgroundColor: rf.primaryContainer,
                   transform: [
-                    { translateX: pressed ? SOLID_SHADOW_OFFSET : 0 },
-                    { translateY: pressed ? SOLID_SHADOW_OFFSET : 0 },
+                    { translateX: pressed ? SOFT_SHADOW : 0 },
+                    { translateY: pressed ? SOFT_SHADOW : 0 },
                   ],
                 },
               ]}>
@@ -306,7 +409,6 @@ const styles = StyleSheet.create({
     right: -48,
     width: 220,
     height: 220,
-    borderWidth: RETRO_BORDER_WIDTH,
     transform: [{ rotate: '18deg' }],
   },
   column: { flex: 1 },
@@ -329,37 +431,50 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
   },
+  closeShell: {
+    position: 'relative',
+  },
+  closeShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
   closeBtn: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
+    zIndex: 1,
   },
   closeLabel: { fontSize: 14 },
   stageArea: {
     flex: 1,
     marginHorizontal: CityPopSpacing.gutter,
     marginBottom: 12,
+    position: 'relative',
   },
   stageShadow: {
     ...StyleSheet.absoluteFillObject,
-    top: SOLID_SHADOW_OFFSET + 2,
-    left: SOLID_SHADOW_OFFSET + 2,
   },
   stage: {
     flex: 1,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     overflow: 'hidden',
+    zIndex: 1,
   },
-  stepChip: {
+  stepChipShell: {
     position: 'absolute',
     top: 10,
     left: 10,
     zIndex: 2,
+  },
+  stepChipShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  stepChip: {
     minWidth: 40,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     alignItems: 'center',
+    zIndex: 1,
   },
   stepChipText: { fontSize: 14, letterSpacing: 0.6 },
   photo: {
@@ -367,20 +482,58 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  stageLoading: {
+  stageSkeleton: {
     ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
     zIndex: 1,
   },
-  copyCard: {
+  skeletonFill: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  skeletonBlocks: {
+    flex: 1,
+    paddingHorizontal: 28,
+    paddingTop: 56,
+    paddingBottom: 28,
+    gap: 14,
+    justifyContent: 'center',
+  },
+  skeletonBarWide: {
+    height: 18,
+    width: '62%',
+    borderRadius: 4,
+  },
+  skeletonBarMid: {
+    height: 12,
+    width: '44%',
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  skeletonCards: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  skeletonCard: {
+    flex: 1,
+    aspectRatio: 0.62,
+    borderRadius: 6,
+    maxHeight: 160,
+  },
+  copyCardShell: {
     marginHorizontal: CityPopSpacing.gutter,
     marginBottom: 10,
-    borderWidth: RETRO_BORDER_WIDTH,
+    position: 'relative',
+  },
+  copyCardShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  copyCard: {
+    borderWidth: 0,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 12,
     gap: 4,
+    zIndex: 1,
   },
   copyTitle: { fontSize: 20, letterSpacing: -0.35, lineHeight: 26 },
   copyBody: { fontSize: 14, lineHeight: 21, letterSpacing: -0.1 },
@@ -405,14 +558,13 @@ const styles = StyleSheet.create({
   },
   ctaShadow: {
     ...StyleSheet.absoluteFillObject,
-    top: SOLID_SHADOW_OFFSET,
-    left: SOLID_SHADOW_OFFSET,
   },
   cta: {
-    borderWidth: RETRO_BORDER_WIDTH,
+    borderWidth: 0,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   ctaLabel: { fontSize: 16, lineHeight: 22, letterSpacing: -0.2 },
 });
