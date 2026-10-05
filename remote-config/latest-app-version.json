@@ -1,25 +1,25 @@
 {
-  "latestVersion": "1.8.20",
+  "latestVersion": "1.9.0",
   "highlights": [
-    "루틴 메모지·중요도 표시 컬러를 훨씬 다양하게 고를 수 있어요.",
-    "공지사항에서 「모두 읽음」으로 한 번에 읽음 처리할 수 있어요.",
-    "잠금화면 메모 카드 제목을 「포스트잇」으로 바꿨어요."
+    "포킷 둘러보기 다음에 홈 위젯 안내가 이어서 나와요.",
+    "위젯 설명서 이미지가 로딩될 때 스켈레톤으로 보여요.",
+    "튜토리얼·설명서 화면의 테두리를 부드러운 음영으로 바꿨어요."
   ],
   "highlightsByLocale": {
     "ko": [
-      "루틴 메모지·중요도 표시 컬러를 훨씬 다양하게 고를 수 있어요.",
-      "공지사항에서 「모두 읽음」으로 한 번에 읽음 처리할 수 있어요.",
-      "잠금화면 메모 카드 제목을 「포스트잇」으로 바꿨어요."
+      "포킷 둘러보기 다음에 홈 위젯 안내가 이어서 나와요.",
+      "위젯 설명서 이미지가 로딩될 때 스켈레톤으로 보여요.",
+      "튜토리얼·설명서 화면의 테두리를 부드러운 음영으로 바꿨어요."
     ],
     "en": [
-      "Many more colors for routine memo faces and importance marks.",
-      "Mark all announcements as read in one tap.",
-      "Lock-screen memo cards are now titled Post-it."
+      "After Trying POKIT, a Home widget tip follows next.",
+      "Widget guide images show a skeleton while loading.",
+      "Tutorial screens use soft shadows instead of heavy borders."
     ],
     "ja": [
-      "ルーチンメモ紙・重要度表示のカラーが大幅に増えました。",
-      "お知らせを「すべて既読」でまとめて既読にできます。",
-      "ロック画面メモのタイトルを「ポストイット」に変更しました。"
+      "POKITを使ってみるのあとに、ホームウィジェット案内が続きます。",
+      "ウィジェットガイドの画像は読み込み中にスケルトン表示になります。",
+      "チュートリアル画面の枠線をやわらかい影に変えました。"
     ]
   },
   "storeUrls": {

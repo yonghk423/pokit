@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { categoryAccentColorPastel } from '@widgets/day-plan-priority-order';
 
@@ -14,10 +15,17 @@ type Props = {
   monthPrefix: string;
   palette: FlowHistoryPalette;
   categoryKey: string;
+  onPressDay?: (day: number, done: boolean) => void;
 };
 
 /** 월간 완료 dot 트랙 — 주간과 같이 카테고리 강조색으로 채움 */
-export function FlowHistoryMonthRow({ row, monthPrefix, palette, categoryKey }: Props) {
+export function FlowHistoryMonthRow({
+  row,
+  monthPrefix,
+  palette,
+  categoryKey,
+  onPressDay,
+}: Props) {
   const calendarCells = buildMonthCalendarCells(monthPrefix);
   const doneFill = categoryAccentColorPastel(categoryKey);
 
@@ -30,7 +38,16 @@ export function FlowHistoryMonthRow({ row, monthPrefix, palette, categoryKey }: 
           }
           const done = row.dayDone[day - 1] ?? false;
           return (
-            <View key={`day-${day}`} style={styles.monthCol}>
+            <Pressable
+              key={`day-${day}`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: done }}
+              hitSlop={4}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                onPressDay?.(day, done);
+              }}
+              style={styles.monthCol}>
               <View
                 style={[
                   styles.monthDot,
@@ -40,7 +57,7 @@ export function FlowHistoryMonthRow({ row, monthPrefix, palette, categoryKey }: 
                   },
                 ]}
               />
-            </View>
+            </Pressable>
           );
         })}
       </View>

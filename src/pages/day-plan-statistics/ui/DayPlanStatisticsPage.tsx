@@ -9,7 +9,7 @@ import { formatHhmmClockKo, getLocalDateKey, useDayPlanDraftStore } from '@entit
 import { useHistoryStore } from '@entities/history';
 import { syncRoutineWindowCompletionsToHistory } from '@features/history-routine-sync';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { useTranslation } from '@shared/lib/i18n';
+import { formatDateKeyDisplay, useTranslation } from '@shared/lib/i18n';
 import {
   loadDayMealSlotSchedule,
   resolvePriorityMealSlot,
@@ -49,6 +49,7 @@ import {
   groupMonthlyFlowHistoryRows,
   groupWeeklyFlowHistoryRows,
 } from '../lib/groupFlowHistoryRows';
+import { HistoryDayDetailSheet, type HistoryDayDetail } from './HistoryDayDetailSheet';
 import { HistoryPeriodTabs } from './HistoryPeriodTabs';
 import { MonthlyFlowHistoryCard } from './MonthlyFlowHistoryCard';
 import { MonthlyHistorySummaryCard } from './MonthlyHistorySummaryCard';
@@ -70,6 +71,7 @@ export function DayPlanStatisticsPage() {
   const [period, setPeriod] = useState<HistoryPeriod>('week');
   const [anchorDateKey, setAnchorDateKey] = useState(todayDateKey);
   const [mealSlotSchedule] = useState(() => loadDayMealSlotSchedule());
+  const [dayDetail, setDayDetail] = useState<HistoryDayDetail | null>(null);
 
   const { priorityCategoryOrder, priorityMealSlotOverrides } = useDayPlanDraftStore(
     useShallow((s) => ({
@@ -141,8 +143,9 @@ export function DayPlanStatisticsPage() {
         dailyStatsByDate,
         weekStartDateKey,
         timeLabelByCategoryKey,
+        todayDateKey,
       }),
-    [dailyStatsByDate, timeLabelByCategoryKey, weekStartDateKey],
+    [dailyStatsByDate, timeLabelByCategoryKey, todayDateKey, weekStartDateKey],
   );
 
   const monthlyRows = useMemo(
@@ -151,8 +154,9 @@ export function DayPlanStatisticsPage() {
         dailyStatsByDate,
         monthPrefix,
         timeLabelByCategoryKey,
+        todayDateKey,
       }),
-    [dailyStatsByDate, monthPrefix, timeLabelByCategoryKey],
+    [dailyStatsByDate, monthPrefix, timeLabelByCategoryKey, todayDateKey],
   );
 
   const weeklyGroups = useMemo(() => groupWeeklyFlowHistoryRows(weeklyRows), [weeklyRows]);
@@ -189,6 +193,30 @@ export function DayPlanStatisticsPage() {
       setAnchorDateKey(`${nextMonth}-01`);
     },
     [anchorDateKey, monthPrefix, period, todayDateKey],
+  );
+
+  const openWeekDayDetail = useCallback(
+    (categoryLabel: string, weekdayIndex: number, done: boolean) => {
+      const dateKey = addDaysToHistoryDateKey(weekStartDateKey, weekdayIndex);
+      setDayDetail({
+        categoryLabel,
+        dateLabel: formatDateKeyDisplay(dateKey, locale),
+        done,
+      });
+    },
+    [locale, weekStartDateKey],
+  );
+
+  const openMonthDayDetail = useCallback(
+    (categoryLabel: string, day: number, done: boolean) => {
+      const dateKey = `${monthPrefix}-${String(day).padStart(2, '0')}`;
+      setDayDetail({
+        categoryLabel,
+        dateLabel: formatDateKeyDisplay(dateKey, locale),
+        done,
+      });
+    },
+    [locale, monthPrefix],
   );
 
   const flowRows = period === 'week' ? weeklyGroups : monthlyGroups;
@@ -370,6 +398,9 @@ export function DayPlanStatisticsPage() {
                   key={group.categoryKey}
                   group={group}
                   palette={palette}
+                  onPressDay={(weekdayIndex, done) =>
+                    openWeekDayDetail(group.label, weekdayIndex, done)
+                  }
                 />
               ))}
             </View>
@@ -381,18 +412,25 @@ export function DayPlanStatisticsPage() {
                   group={group}
                   monthPrefix={monthPrefix}
                   palette={palette}
+                  onPressDay={(day, done) => openMonthDayDetail(group.label, day, done)}
                 />
               ))}
             </View>
           )}
 
           <ThemedText style={styles.helperText} lightColor={palette.muted} darkColor={palette.muted}>
-            {t('history.helper')}
+            {t('history.dayDetail.hint')}
           </ThemedText>
 
           <RoutineAtmosphereFooterStrip variant={atmosphereVariant} isDark={isDark} />
         </ScrollView>
       </View>
+
+      <HistoryDayDetailSheet
+        detail={dayDetail}
+        isDark={isDark}
+        onClose={() => setDayDetail(null)}
+      />
     </ThemedView>
   );
 }

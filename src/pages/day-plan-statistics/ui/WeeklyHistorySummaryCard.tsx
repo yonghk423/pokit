@@ -6,6 +6,7 @@ import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { WeeklyHistorySummary } from '../lib/buildWeeklyFlowHistory';
+import { formatHistoryCompareLine } from '../lib/formatHistoryCompareLine';
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 
 type Props = {
@@ -16,6 +17,7 @@ type Props = {
 export function WeeklyHistorySummaryCard({ summary, palette }: Props) {
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
+  const compareLine = formatHistoryCompareLine(summary.compare, 'week');
 
   return (
     <PostItCardShell
@@ -40,6 +42,9 @@ export function WeeklyHistorySummaryCard({ summary, palette }: Props) {
           completions: summary.totalCompletions,
         })}
       </ThemedText>
+      {compareLine ? (
+        <ThemedText style={[styles.compare, { color: palette.ink }]}>{compareLine}</ThemedText>
+      ) : null}
       {summary.topCategoryLabels.length > 0 ? (
         <ThemedText style={[styles.highlight, { color: palette.ink }]}>
           {t('history.summary.topRoutine', {
@@ -77,6 +82,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     fontWeight: '600',
+  },
+  compare: {
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '700',
   },
   highlight: {
     fontSize: 11,

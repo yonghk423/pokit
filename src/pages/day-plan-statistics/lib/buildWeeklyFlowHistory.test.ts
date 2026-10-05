@@ -72,6 +72,38 @@ describe('buildWeeklyFlowHistory', () => {
     expect(summary.daysInWeek).toBe(7);
     expect(summary.totalCompletions).toBe(2);
     expect(summary.progressPercent).toBe(Math.round((2 / 7) * 100));
+    expect(summary.compare.hasPreviousData).toBe(false);
+    expect(summary.compare.activeDaysDelta).toBe(2);
+  });
+
+  it('compares with the previous week when prior data exists', () => {
+    const summary = buildWeeklyHistorySummary({
+      weekStartDateKey: '2026-07-06',
+      dailyStatsByDate: {
+        '2026-06-29': stat('2026-06-29', { reading: 1 }),
+        '2026-07-06': stat('2026-07-06', { reading: 1 }),
+        '2026-07-07': stat('2026-07-07', { reading: 1 }),
+        '2026-07-08': stat('2026-07-08', { reading: 1 }),
+      },
+    });
+
+    expect(summary.activeDays).toBe(3);
+    expect(summary.compare.hasPreviousData).toBe(true);
+    expect(summary.compare.activeDaysDelta).toBe(2);
+  });
+
+  it('computes streak days for weekly rows', () => {
+    const rows = buildWeeklyFlowHistory({
+      weekStartDateKey: '2026-06-29',
+      todayDateKey: '2026-07-01',
+      dailyStatsByDate: {
+        '2026-06-29': stat('2026-06-29', { reading: 1 }),
+        '2026-06-30': stat('2026-06-30', { reading: 1 }),
+        '2026-07-01': stat('2026-07-01', { reading: 1 }),
+      },
+    });
+
+    expect(rows[0]?.streakDays).toBe(3);
   });
 
   it('includes all tied top categories in summary', () => {

@@ -12,6 +12,11 @@ import type { HistoryDailyStat } from '@entities/history/model/types';
 import { formatDateKeyDisplay, formatWeekdayLabel, getAppLocale, type AppLocale } from '@shared/lib/i18n';
 import { normalizeHistoryRecordKey } from '@shared/lib/routineHistoryLayoutKey';
 
+import {
+  buildHistoryPeriodCompare,
+  type HistoryPeriodCompare,
+} from './historyPeriodCompare';
+import { resolveDisplayStreak } from './historyStreak';
 import { resolveTopCategoryLabels } from './resolveTopCategoryLabels';
 
 export type WeeklyHistorySummary = {
@@ -20,6 +25,7 @@ export type WeeklyHistorySummary = {
   totalCompletions: number;
   progressPercent: number;
   topCategoryLabels: string[];
+  compare: HistoryPeriodCompare;
 };
 
 export type WeeklyFlowHistoryRow = {
@@ -30,6 +36,8 @@ export type WeeklyFlowHistoryRow = {
   /** 월=0 … 일=6 */
   weekdayDone: boolean[];
   completedDays: number;
+  /** 표시용 연속 완료 일수 (0이면 UI에서 숨김) */
+  streakDays: number;
   timeLabel?: string;
   startDateLabel?: string;
 };
@@ -90,13 +98,23 @@ function findFirstCompletionDateKey(
   return undefined;
 }
 
+function resolveWeekStreakUpToIndex(weekDateKeys: string[], todayDateKey?: string): number {
+  if (!todayDateKey) return weekDateKeys.length - 1;
+  const index = weekDateKeys.indexOf(todayDateKey);
+  if (index >= 0) return index;
+  if (todayDateKey < weekDateKeys[0]!) return -1;
+  return weekDateKeys.length - 1;
+}
+
 export function buildWeeklyFlowHistory(input: {
   dailyStatsByDate: Record<string, HistoryDailyStat>;
   weekStartDateKey: string;
   trackedCategoryKeys?: readonly string[];
   timeLabelByCategoryKey?: Readonly<Record<string, string | undefined>>;
+  todayDateKey?: string;
 }): WeeklyFlowHistoryRow[] {
   const weekDateKeys = buildWeekDateKeys(input.weekStartDateKey);
+  const streakUpTo = resolveWeekStreakUpToIndex(weekDateKeys, input.todayDateKey);
   const historyKeys = new Set<string>(
     (input.trackedCategoryKeys ?? []).map((key) => normalizeHistoryRecordKey(key)).filter(Boolean),
   );
@@ -126,6 +144,7 @@ export function buildWeeklyFlowHistory(input: {
       icon: categoryReminderIconName(categoryKey),
       weekdayDone,
       completedDays,
+      streakDays: streakUpTo < 0 ? 0 : resolveDisplayStreak(weekdayDone, streakUpTo),
       timeLabel: input.timeLabelByCategoryKey?.[categoryKey],
       startDateLabel: firstDateKey ? formatHistoryMonthDayKo(firstDateKey) : undefined,
     });
@@ -139,19 +158,17 @@ export function buildWeeklyFlowHistory(input: {
   return rows;
 }
 
-export function buildWeeklyHistorySummary(input: {
-  dailyStatsByDate: Record<string, HistoryDailyStat>;
-  weekStartDateKey: string;
-}): WeeklyHistorySummary {
-  const weekDateKeys = buildWeekDateKeys(input.weekStartDateKey);
-  const daysInWeek = weekDateKeys.length;
+function summarizeWeekRange(
+  dailyStatsByDate: Record<string, HistoryDailyStat>,
+  weekStartDateKey: string,
+): { activeDays: number; totalCompletions: number; totalsByCategory: Map<string, number> } {
+  const weekDateKeys = buildWeekDateKeys(weekStartDateKey);
   const totalsByCategory = new Map<string, number>();
-
   let activeDays = 0;
   let totalCompletions = 0;
 
   for (const dateKey of weekDateKeys) {
-    const row = input.dailyStatsByDate[dateKey];
+    const row = dailyStatsByDate[dateKey];
     const merged = mergeCategoryCompletions(row);
     const categoryTotal = Object.values(merged).reduce((sum, n) => sum + n, 0);
     const dayTotal = row && row.completedFlowCount > 0 ? row.completedFlowCount : 0;
@@ -165,14 +182,33 @@ export function buildWeeklyHistorySummary(input: {
     }
   }
 
-  const progressPercent = daysInWeek > 0 ? Math.round((activeDays / daysInWeek) * 100) : 0;
+  return { activeDays, totalCompletions, totalsByCategory };
+}
+
+export function buildWeeklyHistorySummary(input: {
+  dailyStatsByDate: Record<string, HistoryDailyStat>;
+  weekStartDateKey: string;
+}): WeeklyHistorySummary {
+  const daysInWeek = 7;
+  const current = summarizeWeekRange(input.dailyStatsByDate, input.weekStartDateKey);
+  const prev = summarizeWeekRange(
+    input.dailyStatsByDate,
+    addDaysToHistoryDateKey(input.weekStartDateKey, -7),
+  );
+  const progressPercent = daysInWeek > 0 ? Math.round((current.activeDays / daysInWeek) * 100) : 0;
 
   return {
-    activeDays,
+    activeDays: current.activeDays,
     daysInWeek,
-    totalCompletions,
+    totalCompletions: current.totalCompletions,
     progressPercent,
-    topCategoryLabels: resolveTopCategoryLabels(totalsByCategory),
+    topCategoryLabels: resolveTopCategoryLabels(current.totalsByCategory),
+    compare: buildHistoryPeriodCompare({
+      activeDays: current.activeDays,
+      totalCompletions: current.totalCompletions,
+      prevActiveDays: prev.activeDays,
+      prevTotalCompletions: prev.totalCompletions,
+    }),
   };
 }
 

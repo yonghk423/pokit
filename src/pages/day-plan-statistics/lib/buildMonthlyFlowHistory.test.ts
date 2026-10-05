@@ -49,6 +49,36 @@ describe('buildMonthlyFlowHistory', () => {
     expect(summary.totalCompletions).toBe(2);
     expect(summary.progressPercent).toBe(Math.round((2 / 31) * 100));
     expect(summary.topCategoryLabels).toEqual(expect.arrayContaining([expect.any(String)]));
+    expect(summary.compare.hasPreviousData).toBe(false);
+  });
+
+  it('compares with the previous month when prior data exists', () => {
+    const summary = buildMonthlyHistorySummary({
+      monthPrefix: '2026-07',
+      dailyStatsByDate: {
+        '2026-06-10': stat('2026-06-10', { reading: 1 }),
+        '2026-06-11': stat('2026-06-11', { reading: 1 }),
+        '2026-07-01': stat('2026-07-01', { reading: 1 }),
+      },
+    });
+
+    expect(summary.activeDays).toBe(1);
+    expect(summary.compare.hasPreviousData).toBe(true);
+    expect(summary.compare.activeDaysDelta).toBe(-1);
+  });
+
+  it('computes streak days for monthly rows', () => {
+    const rows = buildMonthlyFlowHistory({
+      monthPrefix: '2026-07',
+      todayDateKey: '2026-07-03',
+      dailyStatsByDate: {
+        '2026-07-01': stat('2026-07-01', { reading: 1 }),
+        '2026-07-02': stat('2026-07-02', { reading: 1 }),
+        '2026-07-03': stat('2026-07-03', { reading: 1 }),
+      },
+    });
+
+    expect(rows[0]?.streakDays).toBe(3);
   });
 
   it('includes all tied top categories in summary', () => {

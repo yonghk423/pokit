@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useTranslation } from '@shared/lib/i18n';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -14,11 +15,14 @@ type Props = {
   group: FlowHistoryCategoryGroup<MonthlyFlowHistoryRow>;
   monthPrefix: string;
   palette: FlowHistoryPalette;
+  onPressDay?: (day: number, done: boolean) => void;
 };
 
-export function MonthlyFlowHistoryCard({ group, monthPrefix, palette }: Props) {
+export function MonthlyFlowHistoryCard({ group, monthPrefix, palette, onPressDay }: Props) {
+  const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const monthCountLabel = `${group.row.completedDays}/${group.row.daysInMonth}`;
+  const streakDays = group.row.streakDays;
 
   return (
     <PostItCardShell
@@ -39,9 +43,16 @@ export function MonthlyFlowHistoryCard({ group, monthPrefix, palette }: Props) {
             {group.label}
           </ThemedText>
         </View>
-        <ThemedText style={[styles.monthCount, { color: palette.ink }]}>
-          {monthCountLabel}
-        </ThemedText>
+        <View style={styles.metaWrap}>
+          {streakDays > 0 ? (
+            <ThemedText style={[styles.streak, { color: palette.ink }]}>
+              {t('history.streak.label', { count: streakDays })}
+            </ThemedText>
+          ) : null}
+          <ThemedText style={[styles.monthCount, { color: palette.ink }]}>
+            {monthCountLabel}
+          </ThemedText>
+        </View>
       </View>
 
       <FlowHistoryMonthRow
@@ -49,6 +60,7 @@ export function MonthlyFlowHistoryCard({ group, monthPrefix, palette }: Props) {
         monthPrefix={monthPrefix}
         palette={palette}
         categoryKey={group.categoryKey}
+        onPressDay={onPressDay}
       />
     </PostItCardShell>
   );
@@ -80,6 +92,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.3,
     lineHeight: 18,
+  },
+  metaWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  streak: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   monthCount: {
     fontSize: 12,
