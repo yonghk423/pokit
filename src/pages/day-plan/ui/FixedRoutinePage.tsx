@@ -559,7 +559,7 @@ function FlowItemCard({
     <View
       style={[
         styles.flowRowWrap,
-        { borderBottomColor: line, opacity: enabled ? 1 : 0.5 },
+        { borderBottomColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)', opacity: enabled ? 1 : 0.5 },
       ]}>
       <View style={styles.flowRow}>
         <Pressable
@@ -1293,7 +1293,7 @@ function GroupAccordion({
       faceColor={sectionBg}
       shadowColor={actionSoftShadow}
       shadowOffset={ACTION_SHADOW}
-      borderColor={postItFaceColorId === 'white' && !isDark ? 'rgba(0,0,0,0.16)' : undefined}
+      borderColor={postItFaceColorId === 'white' && !isDark ? 'rgba(0,0,0,0.08)' : undefined}
       borderWidth={postItFaceColorId === 'white' && !isDark ? StyleSheet.hairlineWidth : 0}>
     <View style={styles.accordionSectionInner}>
       <View style={[styles.accordionHeader, { backgroundColor: 'transparent' }]}>
@@ -3121,7 +3121,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   flowRowWrap: {
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     paddingBottom: 0,
   },
   flowDetailPanel: {

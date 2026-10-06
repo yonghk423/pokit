@@ -53,6 +53,7 @@ export function FlowHistoryMonthRow({
                   styles.monthDot,
                   {
                     backgroundColor: done ? doneFill : palette.weekdayIdle,
+                    borderColor: palette.ink,
                   },
                 ]}
               />
@@ -85,5 +86,6 @@ const styles = StyleSheet.create({
     width: MONTH_CELL,
     height: MONTH_CELL,
     borderRadius: 0,
+    borderWidth: StyleSheet.hairlineWidth,
   },
 });

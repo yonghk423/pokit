@@ -50,10 +50,12 @@ export function FlowHistoryWeekdayRow({ row, palette, categoryKey, onPressDay }:
           styles.track,
           {
             backgroundColor: palette.weekdayIdle,
+            borderColor: palette.ink,
           },
         ]}>
         {weekdayLabels.map((label, index) => {
           const done = row.weekdayDone[index] ?? false;
+          const isLast = index === weekdayLabels.length - 1;
           return (
             <Pressable
               key={`cell-${label}-${index}`}
@@ -65,6 +67,10 @@ export function FlowHistoryWeekdayRow({ row, palette, categoryKey, onPressDay }:
               }}
               style={[
                 styles.cell,
+                !isLast && {
+                  borderRightWidth: StyleSheet.hairlineWidth,
+                  borderRightColor: palette.ink,
+                },
                 { backgroundColor: done ? doneFill : 'transparent' },
               ]}
             />
@@ -99,6 +105,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
     height: 14,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 0,
     overflow: 'hidden',
   },
