@@ -894,11 +894,15 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     set((s) => {
       const key = categoryKey.trim();
       if (!key) return s;
+      const base = resolvePriorityRoutineCategoryKey(key);
       const priorityCategoryImportance = { ...s.priorityCategoryImportance };
       if (color == null) {
         delete priorityCategoryImportance[key];
+        if (base !== key) delete priorityCategoryImportance[base];
       } else {
         priorityCategoryImportance[key] = color;
+        // 홈 위젯 후보는 카탈로그 키로 조회
+        priorityCategoryImportance[base] = color;
       }
       return { priorityCategoryImportance };
     }),
@@ -906,11 +910,14 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     set((s) => {
       const key = categoryKey.trim();
       if (!key) return s;
+      const base = resolvePriorityRoutineCategoryKey(key);
       const priorityCategoryFaceColor = { ...s.priorityCategoryFaceColor };
       if (color == null) {
         delete priorityCategoryFaceColor[key];
+        if (base !== key) delete priorityCategoryFaceColor[base];
       } else {
         priorityCategoryFaceColor[key] = color;
+        priorityCategoryFaceColor[base] = color;
       }
       return { priorityCategoryFaceColor };
     }),
@@ -918,11 +925,14 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
     set((s) => {
       const key = categoryKey.trim();
       if (!key) return s;
+      const base = resolvePriorityRoutineCategoryKey(key);
       const priorityCategoryInkColor = { ...s.priorityCategoryInkColor };
       if (color == null || color === 'auto') {
         delete priorityCategoryInkColor[key];
+        if (base !== key) delete priorityCategoryInkColor[base];
       } else {
         priorityCategoryInkColor[key] = color;
+        priorityCategoryInkColor[base] = color;
       }
       return { priorityCategoryInkColor };
     }),

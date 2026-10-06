@@ -108,10 +108,33 @@ export type PinnedRoutineWidgetPayload = {
   emptyMessage: string;
 };
 
+/**
+ * 담기 행은 인스턴스 키로, 위젯 후보는 카탈로그 키로 색을 둘 수 있어
+ * 동일 루틴 base 키·인스턴스 키를 모두 본다.
+ */
+function lookupDraftMapValue(
+  map: Record<string, string> | undefined,
+  categoryKey: string,
+): string | undefined {
+  if (!map) return undefined;
+  const trimmed = categoryKey.trim();
+  if (!trimmed) return undefined;
+  const direct = map[trimmed];
+  if (direct != null && direct !== '') return direct;
+  const base = resolvePriorityRoutineCategoryKey(trimmed);
+  const onBase = map[base];
+  if (onBase != null && onBase !== '') return onBase;
+  for (const [key, value] of Object.entries(map)) {
+    if (value == null || value === '') continue;
+    if (resolvePriorityRoutineCategoryKey(key) === base) return value;
+  }
+  return undefined;
+}
+
 function resolveRoutineWidgetAppearance(categoryKey: string) {
   const draft = loadDayPlanDraft();
-  const rawFace = draft?.priorityCategoryFaceColor?.[categoryKey];
-  const rawInk = draft?.priorityCategoryInkColor?.[categoryKey];
+  const rawFace = lookupDraftMapValue(draft?.priorityCategoryFaceColor, categoryKey);
+  const rawInk = lookupDraftMapValue(draft?.priorityCategoryInkColor, categoryKey);
   const faceId = isPostItFaceColorId(rawFace) ? rawFace : null;
   const inkId = isPostItInkColorId(rawInk) ? rawInk : null;
   return resolveWidgetPostItAppearance(false, { faceId, inkId });
@@ -127,7 +150,10 @@ function loadImportanceHighlight(categoryKey: string): {
   for (const [key, value] of Object.entries(rawMap)) {
     if (isPriorityMarkColorId(value)) map[key] = value;
   }
-  const markId = resolveCategoryMarkColor(map, categoryKey);
+  const markRaw = lookupDraftMapValue(rawMap, categoryKey);
+  const markId = isPriorityMarkColorId(markRaw)
+    ? markRaw
+    : resolveCategoryMarkColor(map, categoryKey);
   const preset = getPriorityMarkPreset(markId);
   if (!preset) {
     return { titleHighlightHex: null, titleHighlightOpacity: 0 };

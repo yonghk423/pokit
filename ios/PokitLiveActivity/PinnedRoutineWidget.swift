@@ -338,6 +338,9 @@ private struct PinnedWeightSparkline: View {
   let weights: [Double]
   /// large 위젯 — 면 채움·점·축 여백을 키움
   var emphasized: Bool = false
+  @Environment(\.pokitWidgetInk) private var ink
+  @Environment(\.pokitWidgetMuted) private var muted
+  @Environment(\.pokitWidgetCompletedTint) private var completedTint
 
   var body: some View {
     GeometryReader { geo in
@@ -363,7 +366,7 @@ private struct PinnedWeightSparkline: View {
           path.addLine(to: CGPoint(x: pts[pts.count - 1].x, y: geo.size.height - 1))
           path.closeSubpath()
         }
-        .fill(DayPlanWidgetPalette.ink.opacity(emphasized ? 0.10 : 0.07))
+        .fill(ink.opacity(emphasized ? 0.10 : 0.07))
 
         Path { path in
           path.move(to: pts[0])
@@ -372,14 +375,14 @@ private struct PinnedWeightSparkline: View {
           }
         }
         .stroke(
-          DayPlanWidgetPalette.ink,
+          ink,
           style: StrokeStyle(lineWidth: emphasized ? 2.2 : 1.8, lineCap: .round, lineJoin: .round)
         )
 
         if emphasized {
           ForEach(Array(pts.enumerated()), id: \.offset) { _, p in
             Circle()
-              .fill(DayPlanWidgetPalette.ink)
+              .fill(ink)
               .frame(width: 4, height: 4)
               .position(p)
           }
@@ -387,14 +390,14 @@ private struct PinnedWeightSparkline: View {
 
         if let last = pts.last {
           Circle()
-            .fill(DayPlanWidgetPalette.completedTint)
+            .fill(completedTint)
             .frame(width: emphasized ? 7 : 5, height: emphasized ? 7 : 5)
             .position(last)
 
           // 최근 체중 수치
           Text(Self.formatKg(lastV))
             .font(.system(size: emphasized ? 11 : 9, weight: .heavy, design: .rounded))
-            .foregroundStyle(DayPlanWidgetPalette.ink)
+            .foregroundStyle(ink)
             .position(
               x: min(geo.size.width - 16, last.x - (emphasized ? 2 : 0)),
               y: max(padY * 0.55, last.y - (emphasized ? 12 : 9))
@@ -404,13 +407,13 @@ private struct PinnedWeightSparkline: View {
         // 좌측 min / max
         Text(Self.formatKg(maxV))
           .font(.system(size: emphasized ? 9 : 8, weight: .bold, design: .rounded))
-          .foregroundStyle(DayPlanWidgetPalette.muted)
+          .foregroundStyle(muted)
           .frame(width: labelW, alignment: .trailing)
           .position(x: labelW * 0.5, y: padY + 3)
 
         Text(Self.formatKg(minV))
           .font(.system(size: emphasized ? 9 : 8, weight: .bold, design: .rounded))
-          .foregroundStyle(DayPlanWidgetPalette.muted)
+          .foregroundStyle(muted)
           .frame(width: labelW, alignment: .trailing)
           .position(x: labelW * 0.5, y: geo.size.height - padY + 1)
       }
@@ -437,14 +440,16 @@ private struct PinnedWeightSparkline: View {
 
 private struct PinnedProgressBar: View {
   let ratio: Double
+  @Environment(\.pokitWidgetIconBox) private var iconBox
+  @Environment(\.pokitWidgetCompletedTint) private var completedTint
 
   var body: some View {
     GeometryReader { geo in
       ZStack(alignment: .leading) {
         Capsule()
-          .fill(DayPlanWidgetPalette.iconBox)
+          .fill(iconBox)
         Capsule()
-          .fill(DayPlanWidgetPalette.completedTint)
+          .fill(completedTint)
           .frame(width: max(0, geo.size.width * CGFloat(min(1, max(0, ratio)))))
       }
     }
@@ -477,7 +482,7 @@ private struct PinnedCompletionCheck: View {
   }
 }
 
-/// 제목 + 중요도 형광펜. 형광펜은 글자 아래, 잉크는 위에 불투명하게 올려 탁해지지 않게 한다.
+/// 제목 + 중요도 형광펜. 형광펜은 글자 아래 — Text는 한 겹만 써서 small에서 말줄임이 깨지지 않게 한다.
 private struct PinnedHighlightedTitle: View {
   let title: String
   let fontSize: CGFloat
@@ -485,9 +490,9 @@ private struct PinnedHighlightedTitle: View {
   let highlightOpacity: Double
   var lineLimit: Int = 1
   var minimumScaleFactor: CGFloat = 1
+  @Environment(\.pokitWidgetInk) private var ink
 
   var body: some View {
-    let ink = DayPlanWidgetPalette.ink
     let trimmed = (highlightHex ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
     let alpha = min(1, max(0, highlightOpacity))
     let hasHighlight = !trimmed.isEmpty && alpha > 0.01
@@ -497,7 +502,9 @@ private struct PinnedHighlightedTitle: View {
       .font(.system(size: fontSize, weight: .heavy))
       .foregroundStyle(ink)
       .lineLimit(lineLimit)
+      .truncationMode(.tail)
       .minimumScaleFactor(minimumScaleFactor)
+      .allowsTightening(true)
       .background(alignment: .bottom) {
         if hasHighlight {
           Rectangle()
@@ -508,19 +515,16 @@ private struct PinnedHighlightedTitle: View {
             .allowsHitTesting(false)
         }
       }
-      .overlay {
-        Text(title)
-          .font(.system(size: fontSize, weight: .heavy))
-          .foregroundStyle(ink)
-          .lineLimit(lineLimit)
-          .minimumScaleFactor(minimumScaleFactor)
-          .allowsHitTesting(false)
-      }
   }
 }
 
 private struct PinnedRoutineEntryView: View {
   @Environment(\.widgetFamily) private var family
+  @Environment(\.pokitWidgetInk) private var ink
+  @Environment(\.pokitWidgetMuted) private var muted
+  @Environment(\.pokitWidgetCompletedTint) private var completedTint
+  @Environment(\.pokitWidgetIconBox) private var iconBox
+  @Environment(\.pokitWidgetCompletedIconBox) private var completedIconBox
   let entry: PinnedRoutineEntry
 
   private var maxChecklistRows: Int {
@@ -529,11 +533,6 @@ private struct PinnedRoutineEntryView: View {
 
   var body: some View {
     let model = entry.model
-    let _ = DayPlanWidgetPalette.apply(
-      faceHex: model.faceHex,
-      inkHex: model.inkHex,
-      mutedHex: model.mutedHex
-    )
     return DayPlanPostItChrome {
       Group {
         if model.hasRoutine {
@@ -551,7 +550,7 @@ private struct PinnedRoutineEntryView: View {
     VStack(alignment: .leading, spacing: 8) {
       Text(message)
         .font(.system(size: family == .systemSmall ? 13 : 14, weight: .semibold))
-        .foregroundStyle(DayPlanWidgetPalette.ink)
+        .foregroundStyle(ink)
         .fixedSize(horizontal: false, vertical: true)
       Spacer(minLength: 0)
     }
@@ -583,20 +582,25 @@ private struct PinnedRoutineEntryView: View {
           title: model.title,
           fontSize: isSmall ? 15 : 16,
           highlightHex: model.titleHighlightHex,
-          highlightOpacity: model.titleHighlightOpacity
+          highlightOpacity: model.titleHighlightOpacity,
+          minimumScaleFactor: isSmall ? 0.85 : 1
         )
-        Spacer(minLength: 0)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        .layoutPriority(1)
         if !model.progressLabel.isEmpty {
           Text(model.progressLabel)
             .font(.system(size: 11, weight: .bold))
-            .foregroundStyle(DayPlanWidgetPalette.completedTint)
+            .foregroundStyle(completedTint)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(2)
         }
       }
 
       if !model.heroLine.isEmpty {
         Text(model.heroLine)
           .font(.system(size: isSmall ? 20 : 22, weight: .heavy, design: .rounded))
-          .foregroundStyle(DayPlanWidgetPalette.ink)
+          .foregroundStyle(ink)
           .lineLimit(1)
           .minimumScaleFactor(0.75)
       }
@@ -604,7 +608,7 @@ private struct PinnedRoutineEntryView: View {
       if !model.subLine.isEmpty {
         Text(model.subLine)
           .font(.system(size: isSmall ? 11 : 12, weight: .semibold))
-          .foregroundStyle(DayPlanWidgetPalette.muted)
+          .foregroundStyle(muted)
           .lineLimit(1)
           .minimumScaleFactor(0.85)
       }
@@ -615,12 +619,12 @@ private struct PinnedRoutineEntryView: View {
             VStack(spacing: showsAlarmTimes ? 2 : 0) {
               Text(item.text)
                 .font(.system(size: isSmall ? 11 : 12, weight: .bold))
-                .foregroundStyle(item.done ? DayPlanWidgetPalette.completedTint : DayPlanWidgetPalette.ink)
+                .foregroundStyle(item.done ? completedTint : ink)
                 .lineLimit(1)
               if showsAlarmTimes, !item.timeLabel.isEmpty {
                 Text(item.timeLabel)
                   .font(.system(size: 9, weight: .semibold, design: .rounded))
-                  .foregroundStyle(DayPlanWidgetPalette.muted)
+                  .foregroundStyle(muted)
                   .lineLimit(1)
                   .minimumScaleFactor(0.7)
               }
@@ -630,11 +634,11 @@ private struct PinnedRoutineEntryView: View {
             .padding(.horizontal, 2)
             .background(
               RoundedRectangle(cornerRadius: 0)
-                .fill(item.done ? DayPlanWidgetPalette.completedIconBox : DayPlanWidgetPalette.iconBox)
+                .fill(item.done ? completedIconBox : iconBox)
             )
             .overlay(
               RoundedRectangle(cornerRadius: 0)
-                .stroke(DayPlanWidgetPalette.ink.opacity(item.done ? 0.12 : 0.2), lineWidth: 1)
+                .stroke(ink.opacity(item.done ? 0.12 : 0.2), lineWidth: 1)
             )
           }
         }
@@ -649,7 +653,7 @@ private struct PinnedRoutineEntryView: View {
       if showsAlarmTimes, !model.alarmLine.isEmpty {
         Text(model.alarmLine)
           .font(.system(size: 10, weight: .semibold))
-          .foregroundStyle(DayPlanWidgetPalette.muted)
+          .foregroundStyle(muted)
           .lineLimit(1)
           .minimumScaleFactor(0.8)
           .padding(.top, 1)
@@ -681,20 +685,25 @@ private struct PinnedRoutineEntryView: View {
           title: model.title,
           fontSize: isSmall ? 15 : 16,
           highlightHex: model.titleHighlightHex,
-          highlightOpacity: model.titleHighlightOpacity
+          highlightOpacity: model.titleHighlightOpacity,
+          minimumScaleFactor: isSmall ? 0.85 : 1
         )
-        Spacer(minLength: 0)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        .layoutPriority(1)
         if !model.progressLabel.isEmpty {
           Text(model.progressLabel)
             .font(.system(size: 11, weight: .bold))
-            .foregroundStyle(DayPlanWidgetPalette.completedTint)
+            .foregroundStyle(completedTint)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(2)
         }
       }
 
       if !model.heroLine.isEmpty {
         Text(model.heroLine)
           .font(.system(size: isSmall ? 18 : 20, weight: .heavy, design: .rounded))
-          .foregroundStyle(DayPlanWidgetPalette.ink)
+          .foregroundStyle(ink)
           .lineLimit(1)
           .minimumScaleFactor(0.75)
       }
@@ -702,7 +711,7 @@ private struct PinnedRoutineEntryView: View {
       if !model.subLine.isEmpty {
         Text(model.subLine)
           .font(.system(size: isSmall ? 11 : 12, weight: .semibold))
-          .foregroundStyle(DayPlanWidgetPalette.muted)
+          .foregroundStyle(muted)
           .lineLimit(isSmall ? 2 : 1)
           .minimumScaleFactor(0.85)
       }
@@ -735,13 +744,18 @@ private struct PinnedRoutineEntryView: View {
           lineLimit: 2,
           minimumScaleFactor: 0.85
         )
-        Spacer(minLength: 0)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        .layoutPriority(1)
         if !model.progressLabel.isEmpty {
           Text(model.progressLabel)
             .font(.system(size: 11, weight: .bold))
-            .foregroundStyle(DayPlanWidgetPalette.muted)
+            .foregroundStyle(muted)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(2)
         } else if model.isCompleted {
           PinnedCompletionCheck(checked: true, size: 16)
+            .layoutPriority(2)
         }
       }
 
@@ -756,10 +770,10 @@ private struct PinnedRoutineEntryView: View {
                 .font(.system(size: family == .systemSmall ? 12 : 13, weight: .semibold))
                 .foregroundStyle(
                   item.done
-                    ? DayPlanWidgetPalette.muted
-                    : DayPlanWidgetPalette.ink
+                    ? muted
+                    : ink
                 )
-                .strikethrough(item.done, color: DayPlanWidgetPalette.muted)
+                .strikethrough(item.done, color: muted)
                 .lineLimit(1)
               Spacer(minLength: 0)
             }
@@ -767,14 +781,14 @@ private struct PinnedRoutineEntryView: View {
           if model.checklistItems.count > maxChecklistRows {
             Text("…")
               .font(.system(size: 12, weight: .bold))
-              .foregroundStyle(DayPlanWidgetPalette.muted)
+              .foregroundStyle(muted)
           }
         }
       } else {
         ForEach(Array(model.detailLines.enumerated()), id: \.offset) { _, line in
           Text(line)
             .font(.system(size: family == .systemSmall ? 12 : 13, weight: .semibold))
-            .foregroundStyle(DayPlanWidgetPalette.muted)
+            .foregroundStyle(muted)
             .lineLimit(2)
         }
       }
@@ -796,6 +810,11 @@ struct PinnedRoutineWidget: Widget {
     ) { entry in
       let face = DayPlanWidgetPalette.faceColor(hex: entry.model.faceHex)
       PinnedRoutineEntryView(entry: entry)
+        .pokitWidgetInkEnvironment(
+          faceHex: entry.model.faceHex,
+          inkHex: entry.model.inkHex,
+          mutedHex: entry.model.mutedHex
+        )
         .containerBackground(for: .widget) { face }
         .contentMargins(.all, 0)
         .widgetURL(PokitAppGroup.WidgetOpenURL.dayPlan)
@@ -1052,6 +1071,11 @@ struct BookstoreWidget: Widget {
     ) { entry in
       let face = DayPlanWidgetPalette.faceColor(hex: entry.model.faceHex)
       BookstoreWidgetEntryView(entry: entry)
+        .pokitWidgetInkEnvironment(
+          faceHex: entry.model.faceHex,
+          inkHex: entry.model.inkHex,
+          mutedHex: entry.model.mutedHex
+        )
         .containerBackground(for: .widget) { face }
         .contentMargins(.all, 0)
         .widgetURL(PokitAppGroup.WidgetOpenURL.bookstore)
@@ -1281,6 +1305,11 @@ struct NoteWidget: Widget {
       // 설정 Intent가 아니라 전용 Open Intent로 앱을 연다 (홈 흐림 고정 방지).
       Button(intent: OpenPokitDayNoteIntent()) {
         NoteWidgetEntryView(entry: entry)
+          .pokitWidgetInkEnvironment(
+            faceHex: entry.model.faceHex,
+            inkHex: entry.model.inkHex,
+            mutedHex: entry.model.mutedHex
+          )
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       }
       .buttonStyle(.plain)

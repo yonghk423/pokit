@@ -465,6 +465,20 @@ enum DayPlanWidgetPalette {
   static func faceColor(hex: String?) -> Color {
     dayPlanWidgetColor(hex: hex, fallback: defaultFace)
   }
+
+  /// 면색과 같이 엔트리 hex에서 바로 읽는 글자색 (정적 `ink`에만 의존하지 않음)
+  static func inkColor(hex: String?) -> Color {
+    dayPlanWidgetColor(hex: hex, fallback: defaultInk)
+  }
+
+  static func mutedColor(hex: String?, inkHex: String?) -> Color {
+    let trimmed = (hex ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    if !trimmed.isEmpty {
+      return dayPlanWidgetColor(hex: trimmed, fallback: inkColor(hex: inkHex).opacity(0.55))
+    }
+    return inkColor(hex: inkHex).opacity(0.55)
+  }
+
   private(set) static var ink = defaultInk
   private(set) static var muted = Color.black.opacity(0.55)
   private(set) static var iconBox = Color.black.opacity(0.08)
@@ -475,14 +489,10 @@ enum DayPlanWidgetPalette {
 
   static func apply(faceHex: String?, inkHex: String?, mutedHex: String?) {
     let nextFace = dayPlanWidgetColor(hex: faceHex, fallback: defaultFace)
-    let nextInk = dayPlanWidgetColor(hex: inkHex, fallback: defaultInk)
+    let nextInk = inkColor(hex: inkHex)
     face = nextFace
     ink = nextInk
-    if let mutedHex, !mutedHex.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-      muted = dayPlanWidgetColor(hex: mutedHex, fallback: nextInk.opacity(0.55))
-    } else {
-      muted = nextInk.opacity(0.55)
-    }
+    muted = mutedColor(hex: mutedHex, inkHex: inkHex)
     iconBox = nextInk.opacity(0.08)
     completedTint = nextInk
     completedIconBox = nextInk.opacity(0.12)
@@ -491,6 +501,70 @@ enum DayPlanWidgetPalette {
 
   static func apply(from snapshot: DayPlanSnapshotJson?) {
     apply(faceHex: snapshot?.faceHex, inkHex: snapshot?.inkHex, mutedHex: snapshot?.mutedHex)
+  }
+}
+
+// MARK: - Widget ink environment (정적 팔레트 대신 엔트리별 hex)
+
+private struct PokitWidgetInkKey: EnvironmentKey {
+  static let defaultValue = Color(red: 17 / 255, green: 17 / 255, blue: 17 / 255)
+}
+
+private struct PokitWidgetMutedKey: EnvironmentKey {
+  static let defaultValue = Color.black.opacity(0.55)
+}
+
+private struct PokitWidgetCompletedTintKey: EnvironmentKey {
+  static let defaultValue = Color(red: 17 / 255, green: 17 / 255, blue: 17 / 255)
+}
+
+private struct PokitWidgetIconBoxKey: EnvironmentKey {
+  static let defaultValue = Color.black.opacity(0.08)
+}
+
+private struct PokitWidgetCompletedIconBoxKey: EnvironmentKey {
+  static let defaultValue = Color.black.opacity(0.10)
+}
+
+extension EnvironmentValues {
+  var pokitWidgetInk: Color {
+    get { self[PokitWidgetInkKey.self] }
+    set { self[PokitWidgetInkKey.self] = newValue }
+  }
+
+  var pokitWidgetMuted: Color {
+    get { self[PokitWidgetMutedKey.self] }
+    set { self[PokitWidgetMutedKey.self] = newValue }
+  }
+
+  var pokitWidgetCompletedTint: Color {
+    get { self[PokitWidgetCompletedTintKey.self] }
+    set { self[PokitWidgetCompletedTintKey.self] = newValue }
+  }
+
+  var pokitWidgetIconBox: Color {
+    get { self[PokitWidgetIconBoxKey.self] }
+    set { self[PokitWidgetIconBoxKey.self] = newValue }
+  }
+
+  var pokitWidgetCompletedIconBox: Color {
+    get { self[PokitWidgetCompletedIconBoxKey.self] }
+    set { self[PokitWidgetCompletedIconBoxKey.self] = newValue }
+  }
+}
+
+extension View {
+  /// 면색처럼 엔트리 `inkHex`/`mutedHex`를 뷰 트리에 주입
+  func pokitWidgetInkEnvironment(faceHex: String?, inkHex: String?, mutedHex: String?) -> some View {
+    let ink = DayPlanWidgetPalette.inkColor(hex: inkHex)
+    let muted = DayPlanWidgetPalette.mutedColor(hex: mutedHex, inkHex: inkHex)
+    DayPlanWidgetPalette.apply(faceHex: faceHex, inkHex: inkHex, mutedHex: mutedHex)
+    return self
+      .environment(\.pokitWidgetInk, ink)
+      .environment(\.pokitWidgetMuted, muted)
+      .environment(\.pokitWidgetCompletedTint, ink)
+      .environment(\.pokitWidgetIconBox, ink.opacity(0.08))
+      .environment(\.pokitWidgetCompletedIconBox, ink.opacity(0.12))
   }
 }
 
