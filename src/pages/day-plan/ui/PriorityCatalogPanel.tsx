@@ -55,6 +55,8 @@ import {
   type PostItFaceColorId,
   type PostItInkColorId,
 } from '@shared/lib/storage';
+import { useChunkedPaintLimit } from '@shared/lib/chunked-list-paint';
+import { ListRowSkeletonStack, SmoothEnter } from '@shared/ui/list-row-skeleton';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ColorPaletteAccordion } from '@shared/ui/color-palette-accordion';
@@ -1419,8 +1421,8 @@ function renderRows(
     const frequencySubtitle =
       frequencyCount > 0 && formatFrequency ? formatFrequency(frequencyCount) : null;
     return (
+      <SmoothEnter key={cat.key}>
       <CatalogListRow
-        key={cat.key}
         categoryKey={cat.key}
         icon={cat.icon}
         label={cat.label}
@@ -1512,6 +1514,7 @@ function renderRows(
         priorityEnd={spineCatalogOptions?.priorityEnd}
         manageOnly={manageOnly}
       />
+      </SmoothEnter>
     );
   });
 }
@@ -1577,6 +1580,7 @@ function GroupSectionBlock({
   onDeleteCatalogItem,
   isFirst,
   isGroupExpanded = true,
+  paintedItemCount,
   onToggleGroupExpand,
   postItFaceColorId = DEFAULT_POST_IT_FACE_COLOR_ID,
   onSelectPostItFaceColor,
@@ -1597,6 +1601,7 @@ function GroupSectionBlock({
   onDeleteCatalogItem?: (categoryKey: string, label: string) => void;
   isFirst: boolean;
   isGroupExpanded?: boolean;
+  paintedItemCount?: number;
   onToggleGroupExpand?: () => void;
   /** manageOnly: 이 그룹 포스트잇 면 색 */
   postItFaceColorId?: PostItFaceColorId;
@@ -1726,7 +1731,7 @@ function GroupSectionBlock({
   const listRows =
     groupAccordion.mounted && section.items.length > 0
       ? renderRows(
-          section.items,
+          section.items.slice(0, paintedItemCount ?? section.items.length),
           faceEditorial,
           isDark,
           priorityCategoryOrder,
@@ -1797,6 +1802,12 @@ function GroupSectionBlock({
                     },
                   ]}>
                   {listRows}
+                  {(paintedItemCount ?? section.items.length) < section.items.length ? (
+                    <ListRowSkeletonStack
+                      count={section.items.length - (paintedItemCount ?? section.items.length)}
+                      isDark={isDark}
+                    />
+                  ) : null}
                 </View>
               </View>
             </Reanimated.View>
@@ -1815,7 +1826,7 @@ function GroupSectionBlock({
           <View style={[styles.listShell, { borderTopColor: editorial.line }]}>
             {section.items.length > 0
               ? renderRows(
-                  section.items,
+                  section.items.slice(0, paintedItemCount ?? section.items.length),
                   editorial,
                   isDark,
                   priorityCategoryOrder,
@@ -1829,6 +1840,12 @@ function GroupSectionBlock({
                   manageOnly,
                 )
               : null}
+            {paintedItemCount != null && paintedItemCount < section.items.length ? (
+              <ListRowSkeletonStack
+                count={section.items.length - paintedItemCount}
+                isDark={isDark}
+              />
+            ) : null}
           </View>
         </>
       )}
@@ -1988,6 +2005,30 @@ export function PriorityCatalogPanel({
         : sortedFlatManageItems,
     [catalogSearchQuery, manageOnly, sortedFlatManageItems],
   );
+
+  const catalogSearchActive = manageOnly && catalogSearchQuery.trim().length > 0;
+  const catalogPaintTotal = catalogSearchActive
+    ? filteredFlatManageItems.length
+    : groupSections.reduce((n, section) => {
+        const expanded = manageOnly ? !collapsedGroupIds.has(section.groupKey) : true;
+        return expanded ? n + section.items.length : n;
+      }, 0);
+  const catalogPaintLimit = useChunkedPaintLimit(catalogPaintTotal);
+  const paintedCountByGroupKey = useMemo(() => {
+    const next = new Map<string, number>();
+    let remain = catalogPaintLimit;
+    for (const section of groupSections) {
+      const expanded = manageOnly ? !collapsedGroupIds.has(section.groupKey) : true;
+      if (!expanded) {
+        next.set(section.groupKey, 0);
+        continue;
+      }
+      const take = Math.min(section.items.length, Math.max(0, remain));
+      next.set(section.groupKey, take);
+      remain -= take;
+    }
+    return next;
+  }, [catalogPaintLimit, collapsedGroupIds, groupSections, manageOnly]);
 
   const formatFrequency = useCallback(
     (count: number) => t('catalog.frequencyRecent30', { count }),
@@ -2260,28 +2301,36 @@ export function PriorityCatalogPanel({
               },
             ]}>
             {filteredFlatManageItems.length > 0 ? (
-              renderRows(
-                filteredFlatManageItems,
-                faceEditorial,
-                isDark,
-                priorityCategoryOrder,
-                isFocusStarted,
-                onCatalogTap,
-                onOpenCategorySettings,
-                onMoveCustomFlow,
-                onDeleteCatalogItem,
-                undefined,
-                undefined,
-                true,
-                frequencyByKey,
-                formatFrequency,
-                priorityCategoryImportance,
-                onSelectCatalogMarkColor,
-                priorityCategoryFaceColor,
-                onSelectCatalogFaceColor,
-                priorityCategoryInkColor,
-                onSelectCatalogInkColor,
-              )
+              <>
+                {renderRows(
+                  filteredFlatManageItems.slice(0, catalogPaintLimit),
+                  faceEditorial,
+                  isDark,
+                  priorityCategoryOrder,
+                  isFocusStarted,
+                  onCatalogTap,
+                  onOpenCategorySettings,
+                  onMoveCustomFlow,
+                  onDeleteCatalogItem,
+                  undefined,
+                  undefined,
+                  true,
+                  frequencyByKey,
+                  formatFrequency,
+                  priorityCategoryImportance,
+                  onSelectCatalogMarkColor,
+                  priorityCategoryFaceColor,
+                  onSelectCatalogFaceColor,
+                  priorityCategoryInkColor,
+                  onSelectCatalogInkColor,
+                )}
+                {filteredFlatManageItems.length > catalogPaintLimit ? (
+                  <ListRowSkeletonStack
+                    count={filteredFlatManageItems.length - catalogPaintLimit}
+                    isDark={isDark}
+                  />
+                ) : null}
+              </>
             ) : (
               <ThemedText style={[styles.flatSearchEmpty, { color: faceMuted }]}>
                 {catalogSearchQuery.trim().length > 0
@@ -2326,6 +2375,9 @@ export function PriorityCatalogPanel({
           }
           isFirst={index === 0}
           isGroupExpanded={manageOnly ? !collapsedGroupIds.has(section.groupKey) : true}
+          paintedItemCount={
+            paintedCountByGroupKey.get(section.groupKey) ?? section.items.length
+          }
           onToggleGroupExpand={
             manageOnly ? () => onToggleGroupExpand(section.groupKey) : undefined
           }
@@ -2459,7 +2511,7 @@ const styles = StyleSheet.create({
   },
   flatSearchPad: {
     paddingHorizontal: 12,
-    paddingTop: 12,
+    paddingTop: 4,
     paddingBottom: 2,
   },
   flatSearchRow: {

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -17,7 +18,7 @@ type Props = {
   onPressDay?: (weekdayIndex: number, done: boolean) => void;
 };
 
-export function WeeklyFlowHistoryCard({ group, palette, onPressDay }: Props) {
+export const WeeklyFlowHistoryCard = memo(function WeeklyFlowHistoryCard({ group, palette, onPressDay }: Props) {
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const streakDays = group.row.streakDays;
@@ -27,8 +28,7 @@ export function WeeklyFlowHistoryCard({ group, palette, onPressDay }: Props) {
       isDark={isDark}
       faceColor={palette.card}
       shadowColor={palette.shadow}
-      borderColor={palette.ink}
-      borderWidth={1}
+      shadowOffset={1}
       contentStyle={styles.content}>
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
@@ -61,7 +61,7 @@ export function WeeklyFlowHistoryCard({ group, palette, onPressDay }: Props) {
       />
     </PostItCardShell>
   );
-}
+});
 
 const styles = StyleSheet.create({
   content: {

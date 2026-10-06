@@ -24,8 +24,7 @@ export function MonthlyHistorySummaryCard({ summary, palette }: Props) {
       isDark={isDark}
       faceColor={palette.card}
       shadowColor={palette.shadow}
-      borderColor={palette.ink}
-      borderWidth={1}
+      shadowOffset={1}
       contentStyle={styles.content}>
       <View style={styles.topRow}>
         <ThemedText style={[styles.title, { color: palette.ink }]}>

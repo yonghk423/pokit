@@ -179,7 +179,14 @@ function ChecklistAccordionSummary({
   isDark: boolean;
 }) {
   const palette = useGoalDetailSettingsPalette(isDark);
-  return <RoutineSummaryField value={value} onChangeValue={onChangeValue} palette={palette} />;
+  return (
+    <RoutineSummaryField
+      value={value}
+      onChangeValue={onChangeValue}
+      palette={palette}
+      underline={false}
+    />
+  );
 }
 
 export function PriorityBagRowAccordionPanel({

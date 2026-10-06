@@ -219,7 +219,7 @@ export const orderRowStyles = StyleSheet.create({
     top: 0,
     paddingLeft: 0,
     paddingRight: 0,
-    paddingTop: 0,
+    paddingTop: 10,
     paddingBottom: 4,
     gap: 4,
   },

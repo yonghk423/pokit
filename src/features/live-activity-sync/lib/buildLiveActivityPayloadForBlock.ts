@@ -193,6 +193,10 @@ export function buildLiveActivityPayloadForBlock(input: {
   const block = plan.blocks.find((b) => b.id === blockId);
   if (!block) return null;
 
+  const isQuickMemoOrigin = block.blockOrigin === 'quickMemo';
+  const numberedLines = parseNumberedFlowLines(block.title);
+  const isQuickMemoBlock = isQuickMemoOrigin && (numberedLines.length >= 1 || (block.title?.trim().length ?? 0) > 0);
+
   const runtime = useDayPlanRuntimeStore.getState();
   let timing = runtime.timelineByBlockId[blockId];
   const dayMismatch = runtime.sessionDateKey !== plan.dateKey;
@@ -200,7 +204,7 @@ export function buildLiveActivityPayloadForBlock(input: {
     runtime.buildTimelineFromBlocks({ dateKey: plan.dateKey, blocks: plan.blocks });
     timing = useDayPlanRuntimeStore.getState().timelineByBlockId[blockId];
   }
-  if (!timing) return null;
+  if (!timing && !isQuickMemoBlock) return null;
 
   const categoryLabel = normalizeCategoryLabel(block.category ?? '');
   const categoryKey =
@@ -211,9 +215,6 @@ export function buildLiveActivityPayloadForBlock(input: {
     categoryKey === 'reading'
       ? normalizeReadingLiveActivityConfig(loadGoalDetailCategoryConfig('reading'))
       : null;
-  const numberedLines = parseNumberedFlowLines(block.title);
-  const isQuickMemoBlock =
-    block.blockOrigin === 'quickMemo' && numberedLines.length >= 1;
 
   if (
     !isQuickMemoBlock &&
@@ -225,7 +226,7 @@ export function buildLiveActivityPayloadForBlock(input: {
   const totalSec = isQuickMemoBlock ? 0 : Math.round(blockDurationSec(block));
 
   const startsAtIso =
-    !isQuickMemoBlock && status === 'standby'
+    !isQuickMemoBlock && status === 'standby' && timing
       ? new Date(timing.startAtMs).toISOString()
       : null;
 
@@ -234,7 +235,7 @@ export function buildLiveActivityPayloadForBlock(input: {
     endsAtIso = null;
   } else if (status === 'paused') {
     endsAtIso = null;
-  } else {
+  } else if (timing) {
     endsAtIso = new Date(timing.endAtMs).toISOString();
   }
 
@@ -253,7 +254,7 @@ export function buildLiveActivityPayloadForBlock(input: {
   );
   const quickMemoLive: QuickMemoLiveActivityContent | null = isQuickMemoBlock
     ? {
-        bodyText: numberedLines.join('\n'),
+        bodyText: (numberedLines.length > 0 ? numberedLines.join('\n') : title),
         statusLabel: quickMemoStatusLabel(status),
         titleLabel: t('liveActivity.quickMemoTitle'),
         faceHex: quickMemoFaceHex,

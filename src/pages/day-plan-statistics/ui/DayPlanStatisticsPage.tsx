@@ -1,13 +1,15 @@
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { InteractionManager, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import { formatHhmmClockKo, getLocalDateKey, useDayPlanDraftStore } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import { syncRoutineWindowCompletionsToHistory } from '@features/history-routine-sync';
+import { useChunkedPaintLimit } from '@shared/lib/chunked-list-paint';
+import { ListRowSkeletonStack, SmoothEnter } from '@shared/ui/list-row-skeleton';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { formatDateKeyDisplay, useTranslation } from '@shared/lib/i18n';
 import {
@@ -95,8 +97,16 @@ export function DayPlanStatisticsPage() {
 
   useFocusEffect(
     useCallback(() => {
-      syncRoutineWindowCompletionsToHistory(todayDateKey);
-      reloadFromStorage();
+      let cancelled = false;
+      const task = InteractionManager.runAfterInteractions(() => {
+        if (cancelled) return;
+        syncRoutineWindowCompletionsToHistory(todayDateKey);
+        reloadFromStorage();
+      });
+      return () => {
+        cancelled = true;
+        task.cancel();
+      };
     }, [reloadFromStorage, todayDateKey]),
   );
 
@@ -162,6 +172,8 @@ export function DayPlanStatisticsPage() {
   const weeklyGroups = useMemo(() => groupWeeklyFlowHistoryRows(weeklyRows), [weeklyRows]);
 
   const monthlyGroups = useMemo(() => groupMonthlyFlowHistoryRows(monthlyRows), [monthlyRows]);
+  const historyPaintTotal = period === 'week' ? weeklyGroups.length : monthlyGroups.length;
+  const historyPaintLimit = useChunkedPaintLimit(historyPaintTotal);
 
   const weeklySummary = useMemo(
     () => buildWeeklyHistorySummary({ dailyStatsByDate, weekStartDateKey }),
@@ -371,8 +383,7 @@ export function DayPlanStatisticsPage() {
               isDark={isDark}
               faceColor={palette.card}
               shadowColor={palette.shadow}
-              borderColor={palette.ink}
-              borderWidth={1}
+              shadowOffset={1}
               contentStyle={styles.emptyContent}>
               <ThemedText style={[styles.emptyTitle, { color: palette.ink }]}>
                 {t('history.loading')}
@@ -383,8 +394,7 @@ export function DayPlanStatisticsPage() {
               isDark={isDark}
               faceColor={palette.card}
               shadowColor={palette.shadow}
-              borderColor={palette.ink}
-              borderWidth={1}
+              shadowOffset={1}
               contentStyle={styles.emptyContent}>
               <ThemedText style={[styles.emptyTitle, { color: palette.ink }]}>{emptyTitle}</ThemedText>
               <ThemedText style={styles.emptyBody} lightColor={palette.muted} darkColor={palette.muted}>
@@ -393,28 +403,42 @@ export function DayPlanStatisticsPage() {
             </PostItCardShell>
           ) : period === 'week' ? (
             <View style={styles.cardList}>
-              {weeklyGroups.map((group) => (
+              {weeklyGroups.slice(0, historyPaintLimit).map((group) => (
+                <SmoothEnter key={group.categoryKey}>
                 <WeeklyFlowHistoryCard
-                  key={group.categoryKey}
                   group={group}
                   palette={palette}
                   onPressDay={(weekdayIndex, done) =>
                     openWeekDayDetail(group.label, weekdayIndex, done)
                   }
                 />
+                </SmoothEnter>
               ))}
+              {weeklyGroups.length > historyPaintLimit ? (
+                <ListRowSkeletonStack
+                  count={weeklyGroups.length - historyPaintLimit}
+                  isDark={isDark}
+                />
+              ) : null}
             </View>
           ) : (
             <View style={styles.cardList}>
-              {monthlyGroups.map((group) => (
+              {monthlyGroups.slice(0, historyPaintLimit).map((group) => (
+                <SmoothEnter key={group.categoryKey}>
                 <MonthlyFlowHistoryCard
-                  key={group.categoryKey}
                   group={group}
                   monthPrefix={monthPrefix}
                   palette={palette}
                   onPressDay={(day, done) => openMonthDayDetail(group.label, day, done)}
                 />
+                </SmoothEnter>
               ))}
+              {monthlyGroups.length > historyPaintLimit ? (
+                <ListRowSkeletonStack
+                  count={monthlyGroups.length - historyPaintLimit}
+                  isDark={isDark}
+                />
+              ) : null}
             </View>
           )}
 

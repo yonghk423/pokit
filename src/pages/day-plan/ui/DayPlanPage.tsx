@@ -2,13 +2,13 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Alert,
+  InteractionManager,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   TextInput,
-  View,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
@@ -28,6 +28,7 @@ import {
   seedPokitWeekTourIntoTodayIfNeeded,
   syncTodayTabWithFixedRoutineApply,
   useDayPlanDraftStore,
+  type PlanMode,
   useDayPlanLayoutModeVisibilityStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
@@ -61,13 +62,13 @@ import { coerceDayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVi
 import { getClockNow, useAppClockEpoch } from '@shared/lib/time/appClock';
 import { ThemedView } from '@shared/ui/themed-view';
 
+import { DEFAULT_DAILY_RHYTHM } from '../lib/dailyRhythmPresets';
 import {
   defaultPriorityWindowFromNow,
   getPickerCategoryLabel,
   isOvernightHhmmRange,
   PRIMARY,
 } from '../lib/dayPlanEditorShared';
-import { DEFAULT_DAILY_RHYTHM } from '../lib/dailyRhythmPresets';
 import { palette } from '../lib/dayPlanPalette';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { DailyRhythmOnboardingGate } from './DailyRhythmOnboardingGate';
@@ -77,6 +78,14 @@ import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 import { PriorityBasedPlanSection } from './PriorityBasedPlanSection';
 import { QuickMemoPlanSection } from './QuickMemoPlanSection';
 import { ReadingPlanSection } from './ReadingPlanSection';
+
+type DayPlanSurface = 'priority' | 'quickMemo' | 'dayNote' | 'reading';
+
+/** 상단 스위치의 한 화면. 투두는 데일리 본문 안에서 바뀐다. */
+function dayPlanSurface(mode: PlanMode): DayPlanSurface {
+  if (mode === 'quickMemo' || mode === 'dayNote' || mode === 'reading') return mode;
+  return 'priority';
+}
 
 /** 같은 「지난 시간」알림이 연달아 쌓이지 않게 */
 let pastTimeAlertQuietUntil = 0;
@@ -234,25 +243,37 @@ export function DayPlanPage({
 
   useFocusEffect(
     useCallback(() => {
-      hydrateLayoutModeVisibility();
-      setFixedRoutineApplyLayoutMode(effectiveLayoutMode);
-      refreshTodayAppliedCategoryKeys(getClockNow());
-      syncTodayTabWithFixedRoutineApply(getClockNow());
-      seedPokitWeekTourIntoTodayIfNeeded();
+      let cancelled = false;
+      const task = InteractionManager.runAfterInteractions(() => {
+        if (cancelled) return;
+        hydrateLayoutModeVisibility();
+        setFixedRoutineApplyLayoutMode(effectiveLayoutMode);
+        refreshTodayAppliedCategoryKeys(getClockNow());
+        syncTodayTabWithFixedRoutineApply(getClockNow());
+        seedPokitWeekTourIntoTodayIfNeeded();
+      });
+      return () => {
+        cancelled = true;
+        task.cancel();
+      };
     }, [hydrateLayoutModeVisibility, refreshTodayAppliedCategoryKeys, setFixedRoutineApplyLayoutMode, effectiveLayoutMode]),
   );
 
   useFocusEffect(
     useCallback(() => {
-      // 적용 구간이 지난 날짜에 끝났다면 오늘 기준으로 날짜를 전진
-      rollPriorityPlanForwardIfEnded();
-      // 탭 전환/화면 freeze 이후에도 담기 순서 키를 최신 스토어 스냅샷으로 동기화
-      const latestOrder = useDayPlanDraftStore.getState().priorityCategoryOrder;
-      setPriorityCategoryOrder([...latestOrder]);
-      // 최초 사용자만 빈 담기에 튜토리얼을 넣는다
-      seedPokitWeekTourIntoTodayIfNeeded();
-      // 스토리지·세션 래치와 게이트를 맞춘다 (완료면 닫고, 초기화 후면 연다)
-      setRhythmGateOpen(!loadDailyRhythmOnboardingCompleted());
+      let cancelled = false;
+      const task = InteractionManager.runAfterInteractions(() => {
+        if (cancelled) return;
+        rollPriorityPlanForwardIfEnded();
+        const latestOrder = useDayPlanDraftStore.getState().priorityCategoryOrder;
+        setPriorityCategoryOrder(latestOrder);
+        seedPokitWeekTourIntoTodayIfNeeded();
+        setRhythmGateOpen(!loadDailyRhythmOnboardingCompleted());
+      });
+      return () => {
+        cancelled = true;
+        task.cancel();
+      };
     }, [rollPriorityPlanForwardIfEnded, setPriorityCategoryOrder]),
   );
 
@@ -267,6 +288,22 @@ export function DayPlanPage({
   ]);
 
   const quickMemoInputRef = useRef<TextInput>(null);
+  const surface = dayPlanSurface(planMode);
+  const [visitedSurfaces, setVisitedSurfaces] = useState(
+    () => new Set<DayPlanSurface>([dayPlanSurface(planMode)]),
+  );
+  const mountedSurfaces = visitedSurfaces.has(surface)
+    ? visitedSurfaces
+    : new Set(visitedSurfaces).add(surface);
+  if (mountedSurfaces !== visitedSurfaces) {
+    setVisitedSurfaces(mountedSurfaces);
+  }
+
+  useEffect(() => {
+    if (surface === 'quickMemo') return;
+    quickMemoInputRef.current?.blur();
+    if (surface !== 'dayNote') Keyboard.dismiss();
+  }, [surface]);
 
   const [nowTick, setNowTick] = useState(Date.now);
   const clockEpoch = useAppClockEpoch();
@@ -496,11 +533,11 @@ export function DayPlanPage({
       }
 
       const w = defaultPriorityWindowFromNow();
-      const ps = parseHHmmToMinutes(w.startTime);
-      const pe = parseHHmmToMinutes(w.endTime);
+      let ps = parseHHmmToMinutes(w.startTime);
+      let pe = parseHHmmToMinutes(w.endTime);
       if (ps === null || pe === null || pe <= ps) {
-        Alert.alert(t('alert.saveFailed.title'), t('alert.saveFailed.defaultWindow'));
-        return;
+        ps = 0;
+        pe = 60;
       }
 
       const blockTitle = draftLines.join('\n');
@@ -518,6 +555,7 @@ export function DayPlanPage({
         category: t('category.userFallback'),
         replaceOverlapping: true,
         blockOrigin: 'quickMemo',
+        allowPastEnd: true,
       });
 
       if (!result.ok) {
@@ -552,7 +590,7 @@ export function DayPlanPage({
           }
         })();
       } else {
-        void endLiveActivityAndDismiss();
+        void suspendPokitApp();
       }
       return;
     }
@@ -815,8 +853,16 @@ export function DayPlanPage({
         enabled={planMode !== 'dayNote' && planMode !== 'quickMemo' && planMode !== 'todoList'}
         keyboardVerticalOffset={0}>
         <View style={[styles.mainColumn, { backgroundColor: shellBg }]}>
-          {planMode === 'quickMemo' ? (
-            <View style={[styles.quickMemoColumn, { backgroundColor: shellBg }]}>
+          {mountedSurfaces.has('quickMemo') ? (
+            <View
+              style={[
+                styles.quickMemoColumn,
+                surface !== 'quickMemo' && styles.cachedModeHidden,
+                surface === 'quickMemo' && styles.cachedModeActive,
+                { backgroundColor: shellBg },
+              ]}
+              pointerEvents={surface === 'quickMemo' ? 'auto' : 'none'}
+              accessibilityElementsHidden={surface !== 'quickMemo'}>
               <View style={[styles.contentPad, styles.quickMemoContentPad]}>
                 <QuickMemoPlanSection
                   ref={quickMemoInputRef}
@@ -832,16 +878,43 @@ export function DayPlanPage({
                 />
               </View>
             </View>
-          ) : planMode === 'dayNote' ? (
-            <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
+          ) : null}
+          {mountedSurfaces.has('dayNote') ? (
+            <View
+              style={[
+                styles.priorityModeStack,
+                surface !== 'dayNote' && styles.cachedModeHidden,
+                surface === 'dayNote' && styles.cachedModeActive,
+                { backgroundColor: c.containerLow },
+              ]}
+              pointerEvents={surface === 'dayNote' ? 'auto' : 'none'}
+              accessibilityElementsHidden={surface !== 'dayNote'}>
               <DayNotePlanSection c={c} isDark={isDark} />
             </View>
-          ) : planMode === 'reading' ? (
-            <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
+          ) : null}
+          {mountedSurfaces.has('reading') ? (
+            <View
+              style={[
+                styles.priorityModeStack,
+                surface !== 'reading' && styles.cachedModeHidden,
+                surface === 'reading' && styles.cachedModeActive,
+                { backgroundColor: c.containerLow },
+              ]}
+              pointerEvents={surface === 'reading' ? 'auto' : 'none'}
+              accessibilityElementsHidden={surface !== 'reading'}>
               <ReadingPlanSection c={c} isDark={isDark} />
             </View>
-          ) : (
-            <View style={[styles.priorityModeStack, { backgroundColor: c.containerLow }]}>
+          ) : null}
+          {mountedSurfaces.has('priority') ? (
+            <View
+              style={[
+                styles.priorityModeStack,
+                surface !== 'priority' && styles.cachedModeHidden,
+                surface === 'priority' && styles.cachedModeActive,
+                { backgroundColor: c.containerLow },
+              ]}
+              pointerEvents={surface === 'priority' ? 'auto' : 'none'}
+              accessibilityElementsHidden={surface !== 'priority'}>
               <PriorityBasedPlanSection
                 c={c}
                 isFocusStarted={isFocusStarted}
@@ -868,9 +941,10 @@ export function DayPlanPage({
                 onPressTodoList={() => setPlanMode('todoList')}
                 onExitTodoList={() => setPlanMode('priority')}
                 windowChipGuideNonce={windowChipGuideNonce}
+                listPaintActive={surface === 'priority'}
               />
             </View>
-          )}
+          ) : null}
         </View>
       </KeyboardAvoidingView>
       <DailyRhythmOnboardingGate
@@ -892,6 +966,8 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 0, gap: 16 },
   priorityModeStack: { flex: 1, minHeight: 0, width: '100%', gap: 0 },
+  cachedModeHidden: { display: 'none' },
+  cachedModeActive: { zIndex: 2 },
   /** 다이어리 등 풀블리드 섹션 제외 영역만 좌우 여백 */
   contentPad: { paddingHorizontal: 24 },
   quickMemoColumn: { flex: 1, minHeight: 0, width: '100%' },

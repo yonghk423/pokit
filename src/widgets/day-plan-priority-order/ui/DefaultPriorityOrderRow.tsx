@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Animated, Pressable, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, {
@@ -66,7 +66,7 @@ const EXPAND_CLOSE_MS = 220;
 const EXPAND_EASING = Easing.out(Easing.cubic);
 
 /** 우선순위 목록 공통 행 — 카테고리별 파일에서 그대로 쓰거나 감싸서 전문화 */
-export function DefaultPriorityOrderRow({
+function DefaultPriorityOrderRowInner({
   categoryKey,
   icon: _iconProp,
   label,
@@ -1077,3 +1077,5 @@ export function DefaultPriorityOrderRow({
     </Animated.View>
   );
 }
+
+export const DefaultPriorityOrderRow = memo(DefaultPriorityOrderRowInner);

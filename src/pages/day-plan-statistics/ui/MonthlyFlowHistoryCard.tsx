@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -18,7 +19,7 @@ type Props = {
   onPressDay?: (day: number, done: boolean) => void;
 };
 
-export function MonthlyFlowHistoryCard({ group, monthPrefix, palette, onPressDay }: Props) {
+export const MonthlyFlowHistoryCard = memo(function MonthlyFlowHistoryCard({ group, monthPrefix, palette, onPressDay }: Props) {
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const monthCountLabel = `${group.row.completedDays}/${group.row.daysInMonth}`;
@@ -29,8 +30,7 @@ export function MonthlyFlowHistoryCard({ group, monthPrefix, palette, onPressDay
       isDark={isDark}
       faceColor={palette.card}
       shadowColor={palette.shadow}
-      borderColor={palette.ink}
-      borderWidth={1}
+      shadowOffset={1}
       contentStyle={styles.content}>
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
@@ -64,7 +64,7 @@ export function MonthlyFlowHistoryCard({ group, monthPrefix, palette, onPressDay
       />
     </PostItCardShell>
   );
-}
+});
 
 const styles = StyleSheet.create({
   content: {

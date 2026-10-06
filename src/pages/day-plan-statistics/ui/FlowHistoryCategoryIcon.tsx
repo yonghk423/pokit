@@ -6,7 +6,7 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 
 import type { FlowHistoryPalette } from '../lib/flowHistoryPalette';
 
-const SHADOW_SM = 2;
+const SHADOW_SM = 1;
 
 type Props = {
   categoryKey: string;

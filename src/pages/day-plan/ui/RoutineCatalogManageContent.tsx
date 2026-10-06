@@ -242,7 +242,7 @@ export function RoutineCatalogManageContent() {
           styles.scrollContent,
           {
             paddingBottom: scrollBottomPad,
-            paddingTop: CityPopSpacing.base,
+            paddingTop: 0,
           },
         ]}
         keyboardShouldPersistTaps="handled"

@@ -28,8 +28,8 @@ export function buildFlowHistoryPalette(isDark: boolean): FlowHistoryPalette {
     accent: c.primary,
     accentSoft: c.primaryContainer,
     weekdayIdle: face,
-    /** 설정 카드와 같은 옅은 잉크 음영 (순검정 대신) */
-    shadow: isDark ? '#5A5C72' : '#9A9AA8',
+    /** 나만의 루틴 세트 카드와 같은 옅은 솔리드 음영 */
+    shadow: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
     actionBg: face,
     fab: c.primary,
     fabIcon: c.primaryOn,

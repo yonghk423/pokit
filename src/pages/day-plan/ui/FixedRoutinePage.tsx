@@ -60,6 +60,8 @@ import {
   persistRoutineStartNotifyToggle,
 } from '@features/day-plan-notifications';
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
+import { useChunkedPaintLimit } from '@shared/lib/chunked-list-paint';
+import { ListRowSkeletonStack, SmoothEnter } from '@shared/ui/list-row-skeleton';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { formatDateKeyCompact, t } from '@shared/lib/i18n';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
@@ -1100,6 +1102,8 @@ function AddItemModal({
 
 type GroupAccordionProps = {
   setItem: FixedFlowSet;
+  /** 펼친 본문에 실제로 마운트할 행 수. 생략 시 전체 */
+  paintedItemCount?: number;
   isPresetScheduleSet: boolean;
   mealSlotLayoutEnabled: boolean;
   spineLayoutEnabled: boolean;
@@ -1151,6 +1155,7 @@ type GroupAccordionProps = {
 
 function GroupAccordion({
   setItem,
+  paintedItemCount,
   isPresetScheduleSet,
   mealSlotLayoutEnabled,
   spineLayoutEnabled,
@@ -1211,6 +1216,8 @@ function GroupAccordion({
   const displaySetName = resolveFixedFlowSetDisplayName(setItem);
   const enabledCount = setItem.items.filter((x) => x.enabled !== false).length;
   const totalCount = setItem.items.length;
+  const paintedCount = paintedItemCount ?? totalCount;
+  const unpaintedCount = Math.max(0, totalCount - paintedCount);
   const canRenameSet = Boolean(onRenameSet);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(displaySetName);
@@ -1277,7 +1284,7 @@ function GroupAccordion({
   const setTitleHighlight = priorityMarkTitleHighlight(groupTitleMark, isDark);
   const TITLE_MARK_SWATCH = 22;
   const TITLE_MARK_SHADOW = ACTION_SHADOW;
-  const ruleLabel = isPresetScheduleSet ? getFixedFlowSetScheduleLabel(setItem) : null;
+  const ruleLabel = getFixedFlowSetScheduleLabel(setItem);
   const scheduleHint = isPresetScheduleSet ? getFixedFlowPresetScheduleHint(setItem.applyRule) : null;
 
   return (
@@ -1391,7 +1398,7 @@ function GroupAccordion({
                 </View>
               )}
             </View>
-            {isPresetScheduleSet && ruleLabel ? (
+            {ruleLabel ? (
               <View
                 style={[
                   styles.brutalBtnShell,
@@ -1650,7 +1657,7 @@ function GroupAccordion({
             return null;
           })()}
           <View style={styles.cardList}>
-            {setItem.items.map((item, itemIndex) => {
+            {setItem.items.slice(0, paintedCount).map((item, itemIndex) => {
               const cat = catalogByKey.get(item.categoryKey);
               const itemLabel = cat?.label ?? getPickerCategoryLabel(item.categoryKey);
               const schedule = useStartTimePicker
@@ -1660,8 +1667,8 @@ function GroupAccordion({
                 ? resolveFixedFlowItemMealSlots(item, itemIndex)
                 : [];
               return (
+                <SmoothEnter key={item.categoryKey}>
                 <FlowItemCard
-                  key={item.categoryKey}
                   item={item}
                   catalog={cat}
                   isDark={isDark}
@@ -1719,8 +1726,12 @@ function GroupAccordion({
                       : undefined
                   }
                 />
+                </SmoothEnter>
               );
             })}
+            {unpaintedCount > 0 ? (
+              <ListRowSkeletonStack count={unpaintedCount} isDark={isDark} />
+            ) : null}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('fixedRoutine.addItem')}
@@ -2145,6 +2156,41 @@ export function FixedRoutinePage({
     [visibleSets],
   );
 
+  const expandedItemPaintTotal = useMemo(
+    () =>
+      visibleSets.reduce((n, setItem) => {
+        const expanded = embeddedCustomOnly
+          ? !collapsedGroupIds.has(setItem.id)
+          : expandedIds.has(setItem.id);
+        return expanded ? n + setItem.items.length : n;
+      }, 0),
+    [collapsedGroupIds, embeddedCustomOnly, expandedIds, visibleSets],
+  );
+  const groupItemPaintLimit = useChunkedPaintLimit(expandedItemPaintTotal);
+  const paintedCountBySetId = useMemo(() => {
+    const next = new Map<string, number>();
+    let remain = groupItemPaintLimit;
+    for (const setItem of visibleSets) {
+      const expanded = embeddedCustomOnly
+        ? !collapsedGroupIds.has(setItem.id)
+        : expandedIds.has(setItem.id);
+      if (!expanded) {
+        next.set(setItem.id, 0);
+        continue;
+      }
+      const take = Math.min(setItem.items.length, Math.max(0, remain));
+      next.set(setItem.id, take);
+      remain -= take;
+    }
+    return next;
+  }, [
+    collapsedGroupIds,
+    embeddedCustomOnly,
+    expandedIds,
+    groupItemPaintLimit,
+    visibleSets,
+  ]);
+
   useEffect(() => {
     if (!visibleSetIdsKey) {
       setExpandedIds((prev) => (prev.size === 0 ? prev : new Set()));
@@ -2557,9 +2603,12 @@ export function FixedRoutinePage({
                 ) : null}
                 <View style={styles.accordionList}>
                   {visibleSets.map((setItem) => (
+                    <SmoothEnter key={setItem.id}>
                     <GroupAccordion
-                      key={setItem.id}
                       setItem={setItem}
+                      paintedItemCount={
+                        paintedCountBySetId.get(setItem.id) ?? setItem.items.length
+                      }
                       isPresetScheduleSet={isBuiltinPresetScheduleSet(setItem)}
                       mealSlotLayoutEnabled={useSectionsRoutineLayout}
                       spineLayoutEnabled={useSpineRoutineLayout}
@@ -2661,6 +2710,7 @@ export function FixedRoutinePage({
                         handleSelectPostItFaceColor(setItem.id, colorId)
                       }
                     />
+                    </SmoothEnter>
                   ))}
                 </View>
 

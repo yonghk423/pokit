@@ -28,7 +28,7 @@ export function getFixedFlowPresetScheduleLabel(
   return null;
 }
 
-/** 실제 적용 요일 기준 라벨 (프리셋 헤더 필용) */
+/** 실제 적용 요일 기준 라벨 (매일·평일·주말 또는 월·수 등) */
 export function getFixedFlowSetScheduleLabel(
   set: Pick<FixedFlowSet, 'applyRule' | 'applyWeekdays'>,
 ): string {

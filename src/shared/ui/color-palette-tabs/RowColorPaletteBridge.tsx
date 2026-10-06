@@ -93,7 +93,7 @@ export function RowColorPaletteBridgeProvider({
   );
 }
 
-/** 「요약」라벨 바로 아래·폴백 헤더용 탭 스트립 */
+/** 「요약」라벨 바로 위·폴백 헤더용 탭 스트립 */
 export function RowColorPaletteTabStrip() {
   const bridge = useRowColorPaletteBridge();
   if (!bridge || bridge.tabs.length === 0) return null;

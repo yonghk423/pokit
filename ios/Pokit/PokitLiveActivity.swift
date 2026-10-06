@@ -60,9 +60,11 @@ private struct LiveActivityPayload: Decodable {
 }
 
 /// `upsert`가 동시에 여러 번 들어오면 둘 다 "기존 Activity 없음"으로 판단해 `request`가 두 번 나가
-/// 잠금화면에 동일 카드가 두 줄로 쌓일 수 있음 → actor로 직렬화한다.
+/// 잠금화면에 동일 카드가 두 줄로 쌓일 수 있음 → 메인 액터에서 직렬화한다.
+/// ActivityKit `request`는 포그라운드 메인 스레드에서만 성공한다.
 @available(iOS 16.1, *)
-private actor PokitLiveActivityCoordinator {
+@MainActor
+private final class PokitLiveActivityCoordinator {
   static let shared = PokitLiveActivityCoordinator()
 
   private let decoder: JSONDecoder = {
@@ -253,7 +255,7 @@ private actor PokitLiveActivityCoordinator {
 final class PokitLiveActivity: NSObject {
   @objc
   static func requiresMainQueueSetup() -> Bool {
-    false
+    true
   }
 
   @objc(upsertActivity:)

@@ -44,16 +44,16 @@ import {
 import { resolvePriorityRoutineCategoryKey } from '../lib/priorityRoutineInstance';
 import { isOvernightPriorityWindow } from '../lib/priorityRoutineWindow';
 import {
-  isPriorityPlanRangeExpiredOnDate,
-  isPriorityPlanWindowEnded,
-  priorityEndLandsOnNextCalendarDay,
-} from '../lib/priorityWindowEligibility';
-import {
   buildPrioritySectionCompletionKey,
   migrateCompletionKeyInList,
   parsePrioritySectionCompletionKey,
   toRoutineHistoryCategoryKey,
 } from '../lib/prioritySectionCompletionKey';
+import {
+  isPriorityPlanRangeExpiredOnDate,
+  isPriorityPlanWindowEnded,
+  priorityEndLandsOnNextCalendarDay,
+} from '../lib/priorityWindowEligibility';
 import {
   appendRoutineHistoryPending,
   clearRoutineHistoryPendingForDate,
@@ -498,10 +498,10 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
       prioritySectionsCategoryOrder: resetDailyPlan
         ? []
         : sanitizePriorityCategoryOrderKeys(
-            Array.isArray(raw.prioritySectionsCategoryOrder)
-              ? raw.prioritySectionsCategoryOrder
-              : [],
-          ),
+          Array.isArray(raw.prioritySectionsCategoryOrder)
+            ? raw.prioritySectionsCategoryOrder
+            : [],
+        ),
       priorityEndedTodayKeys: keepDailyProgress
         ? resolveEndedTodayCategoryKeys(
           raw.priorityEndedTodayKeys,
@@ -860,6 +860,13 @@ export const useDayPlanDraftStore = create<DayPlanDraftState>((set, get) => ({
           typeof value === 'function' ? value(s.priorityCategoryOrder) : value,
         ),
       );
+      const prevOrder = s.priorityCategoryOrder;
+      if (
+        prevOrder.length === priorityCategoryOrder.length &&
+        prevOrder.every((key, i) => key === priorityCategoryOrder[i])
+      ) {
+        return s;
+      }
       const today = getLocalDateKey();
       const routineHistoryPlannedKeysByDate =
         shouldTrackRoutineHistoryForDate(s, today) && priorityCategoryOrder.length > 0

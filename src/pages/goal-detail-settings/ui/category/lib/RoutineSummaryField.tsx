@@ -21,12 +21,15 @@ export function RoutineSummaryField({
   palette,
   placeholder: placeholderProp,
   maxLength = 240,
+  underline = true,
 }: {
   value: string;
   onChangeValue: (next: string) => void;
   palette: Palette;
   placeholder?: string;
   maxLength?: number;
+  /** false면 노트 입력 밑줄 생략 — 바로 아래 섹션 실선과 겹칠 때 */
+  underline?: boolean;
 }) {
   const { t } = useTranslation();
   const presentation = useUiSurfacePresentation();
@@ -46,12 +49,12 @@ export function RoutineSummaryField({
   }, [showColorTabs, claimSummaryHost, releaseSummaryHost]);
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, isNote && styles.wrapNote]}>
       <View style={styles.labelBlock}>
+        {showColorTabs ? <RowColorPaletteTabStrip /> : null}
         <ThemedText style={[styles.label, { color: palette.onVariant }]}>
           {t('goalDetail.summaryLabel')}
         </ThemedText>
-        {showColorTabs ? <RowColorPaletteTabStrip /> : null}
       </View>
       <ThemedTextInput
         value={value}
@@ -67,10 +70,13 @@ export function RoutineSummaryField({
         accessibilityLabel={t('goalDetail.summaryLabel')}
         style={[
           isNote ? styles.inputNote : styles.input,
+          isNote && !underline ? styles.inputNoteNoLine : null,
           {
             color: palette.onSurface,
             ...(isNote
-              ? { borderBottomColor: palette.outlineVariant }
+              ? underline
+                ? { borderBottomColor: palette.outlineVariant }
+                : null
               : {
                   borderColor: palette.outlineVariant,
                   backgroundColor: palette.surfaceLowest,
@@ -88,6 +94,7 @@ export function RoutineSummaryField({
 
 const styles = StyleSheet.create({
   wrap: { gap: 8 },
+  wrapNote: { gap: 2 },
   labelBlock: { gap: 6, alignSelf: 'stretch' },
   label: { fontSize: 13, fontWeight: '700', letterSpacing: -0.1, flexShrink: 0 },
   input: {
@@ -103,12 +110,16 @@ const styles = StyleSheet.create({
   inputNote: {
     minHeight: 48,
     paddingHorizontal: 2,
-    paddingTop: 8,
+    paddingTop: 2,
     paddingBottom: 10,
     fontSize: 13,
     lineHeight: 20,
     fontWeight: '500',
     letterSpacing: -0.1,
     borderBottomWidth: 1,
+  },
+  inputNoteNoLine: {
+    borderBottomWidth: 0,
+    paddingBottom: 2,
   },
 });
