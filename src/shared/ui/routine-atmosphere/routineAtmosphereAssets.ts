@@ -5,25 +5,28 @@ import type { ImageSourcePropType, ImageStyle, StyleProp } from 'react-native';
 /**
  * 시티팝 분위기 일러스트 (`assets/routine`).
  * 루틴·히스토리 등 탭 뒤 장식 — 화면별 서로 다른 여러 장.
+ * 파일명은 일러스트 주제와 동일한 kebab-case.
  */
 export const routineAtmosphereAssets = {
-  baking: require('../../../../assets/routine/screen-1.webp') as ImageSourcePropType,
-  guitar: require('../../../../assets/routine/screen-2.webp') as ImageSourcePropType,
-  reading: require('../../../../assets/routine/screen-3.webp') as ImageSourcePropType,
-  stretch: require('../../../../assets/routine/screen-4.webp') as ImageSourcePropType,
-  tea: require('../../../../assets/routine/screen-5.webp') as ImageSourcePropType,
-  desk: require('../../../../assets/routine/screen-6.webp') as ImageSourcePropType,
-  walk: require('../../../../assets/routine/screen-7.webp') as ImageSourcePropType,
-  cook: require('../../../../assets/routine/screen-8.webp') as ImageSourcePropType,
-  plant: require('../../../../assets/routine/screen-9.webp') as ImageSourcePropType,
-  sleep: require('../../../../assets/routine/screen-10.webp') as ImageSourcePropType,
-  journal: require('../../../../assets/routine/screen-11.webp') as ImageSourcePropType,
-  hydrate: require('../../../../assets/routine/screen-12.webp') as ImageSourcePropType,
-  laundry: require('../../../../assets/routine/screen-13.webp') as ImageSourcePropType,
-  commute: require('../../../../assets/routine/screen-14.webp') as ImageSourcePropType,
-  yoga: require('../../../../assets/routine/screen-15.webp') as ImageSourcePropType,
-  music: require('../../../../assets/routine/screen-16.webp') as ImageSourcePropType,
-  sunset: require('../../../../assets/routine/screen-17.webp') as ImageSourcePropType,
+  baking: require('../../../../assets/routine/baking.webp') as ImageSourcePropType,
+  guitar: require('../../../../assets/routine/guitar.webp') as ImageSourcePropType,
+  stretch: require('../../../../assets/routine/stretch.webp') as ImageSourcePropType,
+  drawing: require('../../../../assets/routine/drawing.webp') as ImageSourcePropType,
+  tea: require('../../../../assets/routine/tea.webp') as ImageSourcePropType,
+  flowers: require('../../../../assets/routine/flowers.webp') as ImageSourcePropType,
+  breakfast: require('../../../../assets/routine/breakfast.webp') as ImageSourcePropType,
+  cook: require('../../../../assets/routine/cook.webp') as ImageSourcePropType,
+  dogWalk: require('../../../../assets/routine/dog-walk.webp') as ImageSourcePropType,
+  vinyl: require('../../../../assets/routine/vinyl.webp') as ImageSourcePropType,
+  photo: require('../../../../assets/routine/photo.webp') as ImageSourcePropType,
+  hydrate: require('../../../../assets/routine/hydrate.webp') as ImageSourcePropType,
+  shoes: require('../../../../assets/routine/shoes.webp') as ImageSourcePropType,
+  journal: require('../../../../assets/routine/journal.webp') as ImageSourcePropType,
+  coffee: require('../../../../assets/routine/coffee.webp') as ImageSourcePropType,
+  plants: require('../../../../assets/routine/plants.webp') as ImageSourcePropType,
+  bike: require('../../../../assets/routine/bike.webp') as ImageSourcePropType,
+  reading: require('../../../../assets/routine/reading.webp') as ImageSourcePropType,
+  swim: require('../../../../assets/routine/swim.webp') as ImageSourcePropType,
 } as const;
 
 export type RoutineAtmosphereAssetKey = keyof typeof routineAtmosphereAssets;
@@ -136,7 +139,7 @@ export function headerArtForVariant(
     case 'historyWeek':
       return A.journal;
     case 'historyMonth':
-      return A.sunset;
+      return A.reading;
     case 'catalog':
     default:
       return A.guitar;

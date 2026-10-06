@@ -35,7 +35,7 @@
 
 - `assets/splash.webp` ~ `splash6.webp`
 - `assets/pokit4.webp`, `assets/main.webp`
-- `assets/routine/screen-1.webp` ~ `screen-17.webp`
+- `assets/routine/*.webp` (baking, guitar, stretch, … — 주제별 파일명)
 - quality **80**, 해상도는 유지 (리사이즈 없음)
 
 코드 `require(...png)` → `require(...webp)` 갱신:
