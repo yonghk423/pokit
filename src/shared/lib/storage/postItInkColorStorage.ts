@@ -12,46 +12,72 @@ import { StorageKeys } from './storageKeys';
  * 잠금화면 포스트잇 글자색.
  * `auto` = 면색 밝기에 따라 검정/화이트.
  */
-export type PostItInkColorId =
-  | 'auto'
-  | 'black'
-  | 'white'
-  | 'charcoal'
-  | 'navy'
-  | 'burgundy'
-  | 'forest'
-  | 'teal'
-  | 'coral'
-  | 'orange'
-  | 'gold'
-  | 'sky'
-  | 'purple'
-  | 'hotPink';
-
 export type PostItInkColorPreset = {
-  id: PostItInkColorId;
+  id: string;
   /** 실제 글자색. `auto`는 빈 문자열 — resolve 시 면색 기준 */
   hex: string;
 };
 
-export type PostItInkColorByGroup = Record<string, PostItInkColorId>;
-
-export const POST_IT_INK_COLOR_PRESETS: readonly PostItInkColorPreset[] = [
+export const POST_IT_INK_COLOR_PRESETS = [
   { id: 'auto', hex: '' },
   { id: 'black', hex: POST_IT_DARK_INK },
   { id: 'white', hex: POST_IT_LIGHT_INK },
+  /** 뉴트럴 */
   { id: 'charcoal', hex: '#3A3A42' },
+  { id: 'graphite', hex: '#4A4A55' },
+  { id: 'slate', hex: '#3A4550' },
+  { id: 'stone', hex: '#5C564E' },
+  { id: 'silver', hex: '#8A8A96' },
+  /** 블루 */
   { id: 'navy', hex: '#1E3A5F' },
-  { id: 'burgundy', hex: '#6B2D3C' },
-  { id: 'forest', hex: '#1A4028' },
-  { id: 'teal', hex: '#1A5C5A' },
-  { id: 'coral', hex: '#E85D4C' },
-  { id: 'orange', hex: '#E67E22' },
-  { id: 'gold', hex: '#C9A227' },
+  { id: 'indigo', hex: '#2A3A6E' },
+  { id: 'cobalt', hex: '#1F4E8C' },
   { id: 'sky', hex: '#2E6B9E' },
-  { id: 'purple', hex: '#6B4C9A' },
+  { id: 'azure', hex: '#2F7DB5' },
+  { id: 'denim', hex: '#3D5A80' },
+  { id: 'iceBlue', hex: '#4A7FA0' },
+  /** 그린·틸 */
+  { id: 'forest', hex: '#1A4028' },
+  { id: 'moss', hex: '#3A4A28' },
+  { id: 'olive', hex: '#4A5A28' },
+  { id: 'emerald', hex: '#1E6B48' },
+  { id: 'teal', hex: '#1A5C5A' },
+  { id: 'ocean', hex: '#156B75' },
+  { id: 'seafoam', hex: '#2A7A68' },
+  { id: 'lime', hex: '#5A8A28' },
+  /** 레드·핑크·브라운 */
+  { id: 'burgundy', hex: '#6B2D3C' },
+  { id: 'wine', hex: '#5A2030' },
+  { id: 'crimson', hex: '#A82838' },
+  { id: 'coral', hex: '#E85D4C' },
+  { id: 'rust', hex: '#B04A2E' },
+  { id: 'terracotta', hex: '#C45C3A' },
+  { id: 'copper', hex: '#8A4A28' },
+  { id: 'cocoa', hex: '#4A3428' },
+  { id: 'coffee', hex: '#5C4030' },
+  { id: 'rose', hex: '#C45A78' },
+  { id: 'raspberry', hex: '#B03058' },
   { id: 'hotPink', hex: '#D63B7A' },
-] as const;
+  { id: 'magenta', hex: '#B03A8A' },
+  { id: 'blush', hex: '#D47890' },
+  /** 퍼플 */
+  { id: 'purple', hex: '#6B4C9A' },
+  { id: 'plum', hex: '#4A3560' },
+  { id: 'violet', hex: '#5C3D9E' },
+  { id: 'grape', hex: '#6A4580' },
+  { id: 'lavender', hex: '#7A6AA8' },
+  /** 웜 액센트 */
+  { id: 'orange', hex: '#E67E22' },
+  { id: 'tangerine', hex: '#E06A20' },
+  { id: 'amber', hex: '#D4920A' },
+  { id: 'gold', hex: '#C9A227' },
+  { id: 'mustard', hex: '#B8941E' },
+  { id: 'apricot', hex: '#D4844A' },
+] as const satisfies readonly PostItInkColorPreset[];
+
+export type PostItInkColorId = (typeof POST_IT_INK_COLOR_PRESETS)[number]['id'];
+
+export type PostItInkColorByGroup = Record<string, PostItInkColorId>;
 
 export const DEFAULT_POST_IT_INK_COLOR_ID: PostItInkColorId = 'auto';
 

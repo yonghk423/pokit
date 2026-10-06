@@ -1,6 +1,12 @@
+import { useLayoutEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useTranslation } from '@shared/lib/i18n';
+import {
+  RowColorPaletteActivePanel,
+  RowColorPaletteTabStrip,
+  useRowColorPaletteBridge,
+} from '@shared/ui/color-palette-tabs';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -24,14 +30,29 @@ export function RoutineSummaryField({
 }) {
   const { t } = useTranslation();
   const presentation = useUiSurfacePresentation();
+  const colorBridge = useRowColorPaletteBridge();
   const isNote = presentation === 'note';
   const placeholderText = placeholderProp ?? t('goalDetail.summaryPlaceholder');
+  const showColorTabs = Boolean(isNote && colorBridge && colorBridge.tabs.length > 0);
+
+  const claimSummaryHost = colorBridge?.claimSummaryHost;
+  const releaseSummaryHost = colorBridge?.releaseSummaryHost;
+  useLayoutEffect(() => {
+    if (!showColorTabs || !claimSummaryHost || !releaseSummaryHost) return;
+    claimSummaryHost();
+    return () => {
+      releaseSummaryHost();
+    };
+  }, [showColorTabs, claimSummaryHost, releaseSummaryHost]);
 
   return (
     <View style={styles.wrap}>
-      <ThemedText style={[styles.label, { color: palette.onVariant }]}>
-        {t('goalDetail.summaryLabel')}
-      </ThemedText>
+      <View style={styles.labelBlock}>
+        <ThemedText style={[styles.label, { color: palette.onVariant }]}>
+          {t('goalDetail.summaryLabel')}
+        </ThemedText>
+        {showColorTabs ? <RowColorPaletteTabStrip /> : null}
+      </View>
       <ThemedTextInput
         value={value}
         onChangeText={onChangeValue}
@@ -60,13 +81,15 @@ export function RoutineSummaryField({
         multiline
         textAlignVertical="top"
       />
+      {showColorTabs ? <RowColorPaletteActivePanel /> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { gap: 8 },
-  label: { fontSize: 13, fontWeight: '700', letterSpacing: -0.1 },
+  labelBlock: { gap: 6, alignSelf: 'stretch' },
+  label: { fontSize: 13, fontWeight: '700', letterSpacing: -0.1, flexShrink: 0 },
   input: {
     minHeight: 88,
     borderWidth: 2,

@@ -7,7 +7,6 @@ export { DigitalHhmmInput } from './digital-hhmm-input';
 export type { DigitalHhmmInputHandle, DigitalHhmmInputProps } from './digital-hhmm-input';
 export { NativeHhmmWheelPicker } from './native-hhmm-wheel-picker';
 export type { NativeHhmmWheelPickerProps } from './native-hhmm-wheel-picker';
-export { HsvColorPicker } from './hsv-color-picker';
 export { ExternalLink } from './external-link';
 export { HapticTab } from './haptic-tab';
 export { IconSymbol } from './icon-symbol';

@@ -123,14 +123,15 @@ export function contrastingForeground(
 
 /**
  * 강조 accent를 아이콘 타일용 파스텔로 완화.
- * `amount`↑ → 더 밝고 연한 톤 (0=원색, 1=흰색).
+ * 흰색 블렌드 대신 HSV 채도↓·명도↑ — 색상환 간격이 덜 뭉개진다.
+ * `amount`↑ → 더 연한 톤 (0=원색, 1=최대 완화).
  */
 export function pastelizeAccentHex(hex: string, amount = 0.58): string {
-  const { r, g, b } = hexToRgb(hex);
+  const hsv = hexToHsv(hex);
   const t = clamp01(amount);
-  return rgbToHex({
-    r: r + (255 - r) * t,
-    g: g + (255 - g) * t,
-    b: b + (255 - b) * t,
+  return hsvToHex({
+    h: hsv.h,
+    s: hsv.s * (1 - t * 0.7),
+    v: hsv.v + (1 - hsv.v) * (t * 0.52),
   });
 }

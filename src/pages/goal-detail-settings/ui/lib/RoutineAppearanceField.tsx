@@ -132,7 +132,6 @@ export function RoutineAppearanceField({
           updateDisplayName: false,
         });
       }}
-      onAccentColorPreview={setSelectedAccentColor}
       previewLabel={previewName}
       onChangePreviewLabel={(nextName) => {
         setPreviewName(nextName);

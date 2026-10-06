@@ -2,7 +2,7 @@
   "expo": {
     "name": "POKIT",
     "slug": "pokit",
-    "version": "1.9.1",
+    "version": "1.9.2",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
     "scheme": "pokit",
@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "92",
+      "buildNumber": "93",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -33,8 +33,8 @@
       }
     },
     "android": {
-      "version": "1.9.1",
-      "versionCode": 92,
+      "version": "1.9.2",
+      "versionCode": 93,
       "adaptiveIcon": {
         "backgroundColor": "#CED2EC",
         "foregroundImage": "./assets/app-icon.png"

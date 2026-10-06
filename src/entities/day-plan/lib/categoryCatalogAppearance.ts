@@ -1,4 +1,5 @@
 import { contrastingForeground, pastelizeAccentHex } from '@shared/lib/colorMath';
+import { isRoutineColorPresetLightHex } from '@shared/lib/routineColorPresets';
 import {
   DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
   DEFAULT_CUSTOM_FLOW_ICON,
@@ -100,7 +101,7 @@ const BUILTIN_CATEGORY_ACCENT_COLORS: Record<string, string> = {
   fasting: FASTING_CATALOG_ACCENT,
   reading: '#356668',
   work: '#1e3a8a',
-  other: '#f97316',
+  other: '#ffc078',
 };
 
 function asConfigObj(raw: unknown): Record<string, unknown> {
@@ -202,13 +203,15 @@ export function resolveCategoryCatalogAccentColor(categoryKey: string): string {
   );
 }
 
-/** 담기·루틴 목록 아이콘 칸 — accent를 파스텔로 풀어 쓰고, 글리프는 대비 전경 */
+/** 담기·루틴 목록 아이콘 칸 — 공통 팔레트면 그대로, 그 외(레거시·HSV)만 파스텔화 */
 export function resolveCategoryCatalogIconTile(categoryKey: string): {
   boxBg: string;
   iconColor: string;
 } {
   const accent = resolveCategoryCatalogAccentColor(categoryKey);
-  const boxBg = pastelizeAccentHex(accent);
+  const boxBg = isRoutineColorPresetLightHex(accent)
+    ? accent
+    : pastelizeAccentHex(accent);
   return { boxBg, iconColor: contrastingForeground(boxBg) };
 }
 

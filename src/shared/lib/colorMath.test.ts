@@ -28,11 +28,17 @@ describe('colorMath', () => {
     expect(hueToHex(120)).toBe('#00ff00');
   });
 
-  it('softens accent hex toward pastel', () => {
+  it('softens accent hex toward pastel while keeping hue separation', () => {
     expect(pastelizeAccentHex('#e9a23b', 0)).toBe('#e9a23b');
-    expect(pastelizeAccentHex('#e9a23b', 1)).toBe('#ffffff');
     const soft = pastelizeAccentHex('#dc2626');
     expect(soft).not.toBe('#dc2626');
     expect(soft.toLowerCase()).toMatch(/^#[0-9a-f]{6}$/);
+    const orange = hexToHsv(pastelizeAccentHex('#f97316'));
+    const blue = hexToHsv(pastelizeAccentHex('#3b82f6'));
+    const hueGap = Math.min(
+      Math.abs(orange.h - blue.h),
+      360 - Math.abs(orange.h - blue.h),
+    );
+    expect(hueGap).toBeGreaterThan(80);
   });
 });

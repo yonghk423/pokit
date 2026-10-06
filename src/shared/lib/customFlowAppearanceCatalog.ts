@@ -1,5 +1,7 @@
 /** 사용자 커스텀 플로우 생성·표시용 SF Symbol·강조색 팔레트 */
 
+import { ROUTINE_COLOR_LIGHT_HEXES } from '@shared/lib/routineColorPresets';
+
 import { expandCustomFlowIconSearchTokens } from './customFlowIconSearchAliases';
 import {
   iconMatchesCategory,
@@ -18,11 +20,12 @@ export {
 } from './customFlowIconCategories';
 
 export const DEFAULT_CUSTOM_FLOW_ICON = 'person.fill' as const;
-export const DEFAULT_CUSTOM_FLOW_ACCENT_COLOR = '#f97316' as const;
+/** 메모지 탠저린과 동일 — 공통 팔레트 light hex */
+export const DEFAULT_CUSTOM_FLOW_ACCENT_COLOR = '#ffc078' as const;
 
 /**
  * 피커 기본 노출(추천) — 검색 전 빠른 선택용.
- * 전체 목록은 `CUSTOM_FLOW_ICON_OPTIONS`(큐레이션 ~1000개).
+ * 전체 목록은 `CUSTOM_FLOW_ICON_OPTIONS`(큐레이션 ~2000개).
  */
 export const CUSTOM_FLOW_ICON_RECOMMENDED = [
   'person.fill',
@@ -79,7 +82,7 @@ export const CUSTOM_FLOW_ICON_RECOMMENDED = [
   'chevron.left.forwardslash.chevron.right',
 ] as const;
 
-/** 기기 SF Symbol 중 루틴 피커용으로 큐레이션한 목록 (~1000) */
+/** 기기 SF Symbol 중 루틴 피커용으로 큐레이션한 목록 (~2000) */
 export const CUSTOM_FLOW_ICON_OPTIONS = SF_SYMBOL_ICON_OPTIONS;
 
 /** 저장·표시용 — 런타임 Set으로 검증 (거대 union 타입은 TS 성능상 피함) */
@@ -87,49 +90,11 @@ export type CustomFlowIconOption = string;
 
 export type { SfSymbolIconName };
 
-export const CUSTOM_FLOW_ACCENT_COLOR_OPTIONS = [
-  '#f97316',
-  '#ea580c',
-  '#ff6d00',
-  '#ff8a00',
-  '#f59e0b',
-  '#e9a23b',
-  '#ca8a04',
-  '#eab308',
-  '#dc2626',
-  '#ef4444',
-  '#e11d48',
-  '#f43f5e',
-  '#ec4899',
-  '#ff1493',
-  '#d946ef',
-  '#e040fb',
-  '#a855f7',
-  '#8b5cf6',
-  '#7c4dff',
-  '#6366f1',
-  '#4f46e5',
-  '#3b82f6',
-  '#2563eb',
-  '#2979ff',
-  '#0ea5e9',
-  '#40c4ff',
-  '#0891b2',
-  '#06b6d4',
-  '#14b8a6',
-  '#10b981',
-  '#22c55e',
-  '#16a34a',
-  '#00e676',
-  '#84cc16',
-  '#a3e635',
-  '#64748b',
-  '#475569',
-  '#0f766e',
-  '#1d4ed8',
-  '#7e22ce',
-  '#9f1239',
-] as const;
+/**
+ * 상세설정 아이콘 색 — 루틴 메모지 면색과 동일한 light hex 목록.
+ * @see `ROUTINE_COLOR_PRESETS`
+ */
+export const CUSTOM_FLOW_ACCENT_COLOR_OPTIONS = ROUTINE_COLOR_LIGHT_HEXES;
 
 export type CustomFlowAccentColorOption = string;
 
@@ -161,7 +126,7 @@ export function filterCustomFlowIcons(
   const { category = 'recommended', limit = Number.POSITIVE_INFINITY } = options;
   const q = query.trim();
   const tokens = q ? expandCustomFlowIconSearchTokens(q) : null;
-  // 검색 중에는 추천 탭도 전체(~1000)에서 찾는다. (추천만 보면 축구·휴지통 등이 0건)
+  // 검색 중에는 추천 탭도 전체(~2000)에서 찾는다. (추천만 보면 축구·휴지통 등이 0건)
   const browseCategory = q && category === 'recommended' ? 'all' : category;
 
   const matchesQuery = (name: string) => {

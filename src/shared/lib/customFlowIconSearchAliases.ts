@@ -1,6 +1,6 @@
 /**
  * 아이콘 검색용 로케일 별칭 → SF Symbol 영문 토큰.
- * 큐레이션(~1000) 카탈로그 스템 기준으로 생성·유지.
+ * 큐레이션(~2000) 카탈로그 스템 기준으로 생성·유지.
  */
 export const CUSTOM_FLOW_ICON_SEARCH_ALIASES: Record<string, readonly string[]> = {
   "家": ["house"],
@@ -45,7 +45,10 @@ export const CUSTOM_FLOW_ICON_SEARCH_ALIASES: Record<string, readonly string[]> 
   "곰돌이": ["teddybear"],
   "공간음향": ["spatialaudio"],
   "空間オーディオ": ["spatialaudio"],
-  "공구": ["wrench"],
+  "공구": ["wrench", "hammer", "screwdriver", "gearshape", "toolbox"],
+  "도구": ["wrench", "hammer", "screwdriver", "ruler", "scissors"],
+  "망치": ["hammer"],
+  "드라이버": ["screwdriver"],
   "공기": ["carbon"],
   "공부": ["book", "graduationcap", "pencil"],
   "공연": ["theatermask"],
@@ -253,7 +256,8 @@ export const CUSTOM_FLOW_ICON_SEARCH_ALIASES: Record<string, readonly string[]> 
   "水": ["water"],
   "수구": ["waterpolo"],
   "水球": ["waterpolo"],
-  "수리": ["wrench"],
+  "수리": ["wrench", "hammer", "screwdriver", "wrench.and.screwdriver"],
+  "작업": ["wrench", "hammer", "screwdriver", "helmet", "gearshape"],
   "수면": ["bed", "moon", "zzz"],
   "睡眠": ["zzz"],
   "수액": ["ivfluid"],

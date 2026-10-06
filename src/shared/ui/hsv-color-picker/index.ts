@@ -1,1 +1,0 @@
-export { HsvColorPicker } from './HsvColorPicker';

@@ -101,8 +101,6 @@ function DraggableFixedRoutineRow({
     zIndex: dragging.value ? 50 : 0,
     elevation: 0,
     shadowOpacity: 0,
-    borderWidth: dragging.value ? 2 : 0,
-    borderColor: '#000000',
   }));
 
   return (

@@ -31,7 +31,11 @@ import {
   type PostItInkColorId,
 } from '@shared/lib/storage';
 import { resolveBrutalConfirmPrimaryColors } from '@shared/ui/brutal-confirm-button';
-import { ColorPaletteAccordion } from '@shared/ui/color-palette-accordion';
+import {
+  RowColorPaletteBridgeProvider,
+  RowColorPaletteFallbackHost,
+  type RowColorPaletteTab,
+} from '@shared/ui/color-palette-tabs';
 import { COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT, CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -228,8 +232,6 @@ export function DefaultPriorityOrderRow({
     zIndex: reorderDragging.value ? 220 : 0,
     elevation: 0,
     shadowOpacity: 0,
-    borderWidth: reorderDragging.value ? 2 : 0,
-    borderColor: '#000000',
   }));
 
   const enter = useRef(new Animated.Value(animateOnMount ? 0 : 1)).current;
@@ -444,7 +446,7 @@ export function DefaultPriorityOrderRow({
     </View>
   );
 
-  const renderFacePalette = (compact: boolean) => {
+  const renderFacePalette = (compact: boolean, hideLabel = false) => {
     if (!onSelectItemFaceColor) return null;
     const pick = (color: PostItFaceColorId | null) => {
       void Haptics.selectionAsync();
@@ -455,11 +457,13 @@ export function DefaultPriorityOrderRow({
         style={[styles.importanceMarkBlock, compact && styles.importanceMarkBlockCompact]}
         accessibilityRole="toolbar"
         accessibilityLabel={t('dayPlan.routineFaceColorLabel')}>
-        <ThemedText
-          style={[styles.expandNoteActionText, { color: rowInkMuted }]}
-          numberOfLines={1}>
-          {t('dayPlan.routineFaceColorLabel')}
-        </ThemedText>
+        {hideLabel ? null : (
+          <ThemedText
+            style={[styles.expandNoteActionText, { color: rowInkMuted }]}
+            numberOfLines={1}>
+            {t('dayPlan.routineFaceColorLabel')}
+          </ThemedText>
+        )}
         <View style={styles.importanceMarkChipRow}>
           <Pressable
             accessibilityRole="button"
@@ -552,7 +556,7 @@ export function DefaultPriorityOrderRow({
     );
   };
 
-  const renderInkPalette = (compact: boolean) => {
+  const renderInkPalette = (compact: boolean, hideLabel = false) => {
     if (!onSelectItemInkColor) return null;
     const pick = (color: PostItInkColorId | null) => {
       void Haptics.selectionAsync();
@@ -564,11 +568,13 @@ export function DefaultPriorityOrderRow({
         style={[styles.importanceMarkBlock, compact && styles.importanceMarkBlockCompact]}
         accessibilityRole="toolbar"
         accessibilityLabel={t('dayPlan.routineInkColorLabel')}>
-        <ThemedText
-          style={[styles.expandNoteActionText, { color: rowInkMuted }]}
-          numberOfLines={1}>
-          {t('dayPlan.routineInkColorLabel')}
-        </ThemedText>
+        {hideLabel ? null : (
+          <ThemedText
+            style={[styles.expandNoteActionText, { color: rowInkMuted }]}
+            numberOfLines={1}>
+            {t('dayPlan.routineInkColorLabel')}
+          </ThemedText>
+        )}
         <View style={styles.importanceMarkChipRow}>
           {POST_IT_INK_COLOR_PRESETS.map((preset) => {
             const selected = selectedId === preset.id;
@@ -631,7 +637,7 @@ export function DefaultPriorityOrderRow({
     );
   };
 
-  const renderMarkPalette = (compact: boolean) => {
+  const renderMarkPalette = (compact: boolean, hideLabel = false) => {
     if (!onSelectItemMarkColor) return null;
     const pick = (color: PriorityMarkColorId | null) => {
       void Haptics.selectionAsync();
@@ -642,11 +648,13 @@ export function DefaultPriorityOrderRow({
         style={[styles.importanceMarkBlock, compact && styles.importanceMarkBlockCompact]}
         accessibilityRole="toolbar"
         accessibilityLabel={t('dayPlan.importanceMarkLabel')}>
-        <ThemedText
-          style={[styles.expandNoteActionText, { color: rowInkMuted }]}
-          numberOfLines={1}>
-          {t('dayPlan.importanceMarkLabel')}
-        </ThemedText>
+        {hideLabel ? null : (
+          <ThemedText
+            style={[styles.expandNoteActionText, { color: rowInkMuted }]}
+            numberOfLines={1}>
+            {t('dayPlan.importanceMarkLabel')}
+          </ThemedText>
+        )}
         <View style={styles.importanceMarkChipRow}>
           <Pressable
             accessibilityRole="button"
@@ -812,11 +820,38 @@ export function DefaultPriorityOrderRow({
     </View>
   );
 
-  const noteFaceAction = expandEnabled && onSelectItemFaceColor ? renderFacePalette(false) : null;
-  const noteInkAction = expandEnabled && onSelectItemInkColor ? renderInkPalette(false) : null;
-  const notePriorityAction = expandEnabled && onSelectItemMarkColor
-    ? renderMarkPalette(false)
-    : null;
+  const noteFaceAction =
+    expandEnabled && onSelectItemFaceColor ? renderFacePalette(false, true) : null;
+  const noteInkAction =
+    expandEnabled && onSelectItemInkColor ? renderInkPalette(false, true) : null;
+  const notePriorityAction =
+    expandEnabled && onSelectItemMarkColor ? renderMarkPalette(false, true) : null;
+
+  const colorTabs = useMemo((): RowColorPaletteTab[] => {
+    const tabs: RowColorPaletteTab[] = [];
+    if (noteFaceAction) {
+      tabs.push({
+        id: 'face',
+        label: t('dayPlan.colorTab.face'),
+        panel: noteFaceAction,
+      });
+    }
+    if (noteInkAction) {
+      tabs.push({
+        id: 'ink',
+        label: t('dayPlan.colorTab.ink'),
+        panel: noteInkAction,
+      });
+    }
+    if (notePriorityAction) {
+      tabs.push({
+        id: 'mark',
+        label: t('dayPlan.colorTab.mark'),
+        panel: notePriorityAction,
+      });
+    }
+    return tabs;
+  }, [noteFaceAction, noteInkAction, notePriorityAction, t]);
 
   const noteFinishAction = expandEnabled && onFinishForToday
     ? wrapBrutal(
@@ -1018,31 +1053,24 @@ export function DefaultPriorityOrderRow({
             onLayout={(e) => {
               handleExpandContentLayout(e.nativeEvent.layout.height);
             }}>
-            {expandedContent}
-            {expandInlineActions ? (
-              <View style={styles.expandActionsCol}>
-                {colorSectionActions ? (
-                  <ColorPaletteAccordion
-                    key={expanded ? 'color-open' : 'color-closed'}
-                    ink={rowInk}
-                    isDark={isDark}
-                    headerPaddingHorizontal={2}
-                    shadowColor={actionShadow}>
-                    <View style={styles.colorSectionBody}>
-                      {noteFaceAction}
-                      {noteInkAction}
-                      {notePriorityAction}
+            <RowColorPaletteBridgeProvider
+              tabs={colorTabs}
+              ink={rowInk}
+              muted={rowInkMuted}
+              isDark={isDark}>
+              {expandedContent}
+              {expandInlineActions ? (
+                <View style={styles.expandActionsCol}>
+                  {colorSectionActions ? <RowColorPaletteFallbackHost /> : null}
+                  {noteCompleteAction || noteFinishAction ? (
+                    <View style={styles.expandActionsRow}>
+                      {noteCompleteAction}
+                      {noteFinishAction}
                     </View>
-                  </ColorPaletteAccordion>
-                ) : null}
-                {noteCompleteAction || noteFinishAction ? (
-                  <View style={styles.expandActionsRow}>
-                    {noteCompleteAction}
-                    {noteFinishAction}
-                  </View>
-                ) : null}
-              </View>
-            ) : null}
+                  ) : null}
+                </View>
+              ) : null}
+            </RowColorPaletteBridgeProvider>
           </View>
         </Reanimated.View>
       ) : null}

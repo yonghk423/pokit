@@ -19,6 +19,8 @@ import {
 } from '@features/day-plan-notifications';
 import type { GoalDetailCategoryKey } from '@pages/goal-detail-settings/model/types';
 import { resolveGoalDetailModuleForTarget } from '@pages/goal-detail-settings/ui/category';
+import { RoutineSummaryField } from '@pages/goal-detail-settings/ui/category/lib/RoutineSummaryField';
+import { useGoalDetailSettingsPalette } from '@pages/goal-detail-settings/ui/category/lib/settingsPalette';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { resolvePokitWeekTourTaskLabel } from '@shared/lib/i18n/lib/pokitWeekTourLabels';
@@ -151,6 +153,33 @@ function readChecklist(raw: unknown, template: 'checklist' | 'abstain'): Checkli
 
 function asGoalDetailCategoryKey(key: string): GoalDetailCategoryKey {
   return key as GoalDetailCategoryKey;
+}
+
+function noteSurfaceColors(ink: string, muted: string, line?: string) {
+  const usesLightInk =
+    ink === POST_IT_LIGHT_INK ||
+    ink.toLowerCase() === '#ffffff' ||
+    ink.toLowerCase() === '#fafafa';
+  return {
+    onSurface: ink,
+    onVariant: muted,
+    outline: line,
+    usesLightInk,
+  };
+}
+
+/** 체크리스트 펼침 — 다른 루틴과 동일하게 「요약」+컬러 탭 */
+function ChecklistAccordionSummary({
+  value,
+  onChangeValue,
+  isDark,
+}: {
+  value: string;
+  onChangeValue: (next: string) => void;
+  isDark: boolean;
+}) {
+  const palette = useGoalDetailSettingsPalette(isDark);
+  return <RoutineSummaryField value={value} onChangeValue={onChangeValue} palette={palette} />;
 }
 
 export function PriorityBagRowAccordionPanel({
@@ -582,16 +611,15 @@ export function PriorityBagRowAccordionPanel({
             {t('tour.pokitWeek.listHint')}
           </ThemedText>
         ) : (
-          <ThemedTextInput
-            value={summaryDraft}
-            onChangeText={handleSummaryChange}
-            placeholder={t('goalDetail.summaryPlaceholder')}
-            placeholderTextColor={muted}
-            style={[s.summaryInput, { color: ink }]}
-            multiline
-            textAlignVertical="top"
-            maxLength={240}
-          />
+          <UiSurfacePresentationProvider
+            value="note"
+            noteColors={noteSurfaceColors(ink, muted, line)}>
+            <ChecklistAccordionSummary
+              value={summaryDraft}
+              onChangeValue={handleSummaryChange}
+              isDark={isDark}
+            />
+          </UiSurfacePresentationProvider>
         )}
 
         <View style={[s.noteBlock, { borderTopWidth: StyleSheet.hairlineWidth * 2, borderTopColor: muted, paddingTop: 10 }]}>
@@ -747,15 +775,7 @@ export function PriorityBagRowAccordionPanel({
     <View style={s.root}>
       <UiSurfacePresentationProvider
         value="note"
-        noteColors={{
-          onSurface: ink,
-          onVariant: muted,
-          outline: line,
-          usesLightInk:
-            ink === POST_IT_LIGHT_INK ||
-            ink.toLowerCase() === '#ffffff' ||
-            ink.toLowerCase() === '#fafafa',
-        }}>
+        noteColors={noteSurfaceColors(ink, muted, line)}>
         <Settings
           rhythmTitle={label}
           categoryKey={goalKey}
@@ -774,14 +794,6 @@ const s = StyleSheet.create({
     gap: 4,
     width: '100%',
     alignSelf: 'stretch',
-  },
-  summaryInput: {
-    fontSize: 13,
-    lineHeight: 20,
-    letterSpacing: -0.1,
-    fontWeight: '500',
-    paddingVertical: 2,
-    minHeight: 40,
   },
   tourHint: {
     fontSize: 12,

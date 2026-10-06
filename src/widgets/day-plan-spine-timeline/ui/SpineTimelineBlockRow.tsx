@@ -331,8 +331,6 @@ export function SpineTimelineBlockRow({
     shadowOpacity: reorderDragging.value ? 0.14 : 0,
     shadowRadius: reorderDragging.value ? 10 : 0,
     shadowOffset: { width: 0, height: reorderDragging.value ? 6 : 0 },
-    borderWidth: reorderDragging.value ? 2 : 0,
-    borderColor: '#000000',
   }));
 
   const titleColor = completed ? palette.muted : palette.ink;

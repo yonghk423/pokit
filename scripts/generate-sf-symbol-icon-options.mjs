@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * CoreGlyphs → 루틴 피커용 SF Symbol (~1000개, 사용 빈도·도메인 적합도 기준).
+ * CoreGlyphs → 루틴 피커용 SF Symbol (~2000개, 사용 빈도·도메인 적합도 기준).
  *
  * Usage:
  *   node scripts/generate-sf-symbol-icon-options.mjs
  *   node scripts/generate-sf-symbol-icon-options.mjs --full   # 로케일 제외 전체
- *   node scripts/generate-sf-symbol-icon-options.mjs --limit=1000
+ *   node scripts/generate-sf-symbol-icon-options.mjs --limit=2000
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -76,6 +76,15 @@ const MUST_INCLUDE = [
   'frying.pan.fill',
   'tortoise.fill',
   'chevron.left.forwardslash.chevron.right',
+  'wrench.and.screwdriver.fill',
+  'hammer.fill',
+  'screwdriver.fill',
+  'wrench.adjustable.fill',
+  'gearshape.fill',
+  'scissors',
+  'ruler.fill',
+  'flashlight.on.fill',
+  'paintbrush.pointed.fill',
 ];
 
 /** 일상·루틴·헬스 앱에서 자주 쓰는 접두/키워드 (가산점) */
@@ -211,6 +220,33 @@ const BOOST_TOKENS = [
   'arrow.clockwise',
   'scope',
   'target',
+  // 공구·작업·DIY
+  'wrench',
+  'hammer',
+  'screwdriver',
+  'toolbox',
+  'gearshape',
+  'scissors',
+  'ruler',
+  'flashlight',
+  'compass.drawing',
+  'helmet',
+  'powercord',
+  'ladder',
+  'shovel',
+  'axe',
+  'saw',
+  'drill',
+  'toolbox',
+  'paintbrush',
+  'wrench.and.screwdriver',
+  'wrench.adjustable',
+  'pencil.and.ruler',
+  'book.and.wrench',
+  'display.and.screwdriver',
+  'hammer.fill',
+  'screwdriver.fill',
+  'wrench.fill',
 ];
 
 /** 피커에 거의 안 쓰는 접두 (감점·제외에 가깝게) */
@@ -264,7 +300,6 @@ const PENALTY_PREFIXES = new Set([
   'server',
   'switch',
   'gauge',
-  'level',
   'slider',
   'dial',
   'joystick',
@@ -311,7 +346,7 @@ const HARD_EXCLUDE_RE = [
 
 function parseArgs(argv) {
   let full = false;
-  let limit = 1000;
+  let limit = 2000;
   for (const arg of argv) {
     if (arg === '--full') full = true;
     const m = arg.match(/^--limit=(\d+)$/);

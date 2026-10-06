@@ -21,8 +21,8 @@ import {
   type CustomFlowIconCategoryId,
   type CustomFlowIconOption,
 } from '@shared/lib/customFlowAppearanceCatalog';
+import { resolveRoutineColorSwatch } from '@shared/lib/routineColorPresets';
 import { useTranslation } from '@shared/lib/i18n';
-import { HsvColorPicker } from '@shared/ui/hsv-color-picker';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -45,10 +45,8 @@ export type CustomFlowAppearancePickerProps = {
   icon: CustomFlowIconOption;
   accentColor: string;
   onChangeIcon: (icon: CustomFlowIconOption) => void;
-  /** 프리셋 탭·HSV 확정 시 — 영속화에 적합 */
+  /** 프리셋 선택 시 — 영속화에 적합 */
   onChangeAccentColor: (color: string) => void;
-  /** HSV 드래그 중 미리보기만 (없으면 onChangeAccentColor로 매 프레임 전달) */
-  onAccentColorPreview?: (color: string) => void;
   previewLabel?: string;
   onChangePreviewLabel?: (next: string) => void;
   onPreviewLabelFocus?: () => void;
@@ -67,7 +65,6 @@ export function CustomFlowAppearancePicker({
   accentColor,
   onChangeIcon,
   onChangeAccentColor,
-  onAccentColorPreview,
   previewLabel,
   onChangePreviewLabel,
   onPreviewLabelFocus,
@@ -92,7 +89,9 @@ export function CustomFlowAppearancePicker({
   const cardBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
   const chipIdleBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
   const shadowInk = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
-  const accentOnChip = contrastingForeground(accentColor);
+  /** 메모지 아코디언과 동일 — 공통 팔레트 light/dark 스와치 */
+  const displayAccent = resolveRoutineColorSwatch(accentColor, isDark);
+  const accentOnChip = contrastingForeground(displayAccent);
   const skeletonFace = isDark ? RetroFlatColors.dark.surfaceAlt : '#F3F3F5';
   const skeletonBorder = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.08)';
   const categoryChipIdleBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
@@ -199,7 +198,7 @@ export function CustomFlowAppearancePicker({
             style={[
               styles.previewIconWrap,
               compact && styles.previewIconWrapCompact,
-              { backgroundColor: accentColor },
+              { backgroundColor: displayAccent },
             ]}>
             <IconSymbol name={icon} size={compact ? 18 : 22} color={accentOnChip} />
           </View>
@@ -286,8 +285,8 @@ export function CustomFlowAppearancePicker({
                   style={[
                     styles.categoryChip,
                     {
-                      backgroundColor: selected ? accentColor : categoryChipIdleBg,
-                      borderColor: selected ? accentColor : border,
+                      backgroundColor: selected ? displayAccent : categoryChipIdleBg,
+                      borderColor: selected ? displayAccent : border,
                     },
                   ]}>
                   <ThemedText
@@ -363,7 +362,7 @@ export function CustomFlowAppearancePicker({
                         style={[
                           styles.iconChip,
                           {
-                            backgroundColor: selected ? accentColor : chipIdleBg,
+                            backgroundColor: selected ? displayAccent : chipIdleBg,
                           },
                         ]}>
                         <IconSymbol
@@ -415,6 +414,7 @@ export function CustomFlowAppearancePicker({
           <View style={styles.colorGrid}>
             {CUSTOM_FLOW_ACCENT_COLOR_OPTIONS.map((color) => {
               const selected = accentColor.toLowerCase() === color;
+              const swatch = resolveRoutineColorSwatch(color, isDark);
               return (
                 <View
                   key={color}
@@ -451,14 +451,14 @@ export function CustomFlowAppearancePicker({
                       style={[
                         styles.colorSwatch,
                         {
-                          backgroundColor: color,
+                          backgroundColor: swatch,
                         },
                       ]}>
                       {selected ? (
                         <IconSymbol
                           name="checkmark"
                           size={12}
-                          color={contrastingForeground(color)}
+                          color={contrastingForeground(swatch)}
                         />
                       ) : null}
                     </Pressable>
@@ -468,16 +468,6 @@ export function CustomFlowAppearancePicker({
             })}
           </View>
         </View>
-
-        <HsvColorPicker
-          value={accentColor}
-          onChange={onAccentColorPreview ?? onChangeAccentColor}
-          onChangeEnd={onAccentColorPreview ? onChangeAccentColor : undefined}
-          ink={ink}
-          muted={muted}
-          isDark={isDark}
-          line={border}
-        />
       </View>
     </View>
   );
