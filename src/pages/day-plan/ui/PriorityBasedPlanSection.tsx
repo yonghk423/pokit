@@ -118,6 +118,10 @@ import { DailyQuoteCard } from '@shared/ui/daily-quote-card';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
+import {
+  AppUpdateAvailablePostItNudge,
+  useAppUpdateAvailable,
+} from '@features/app-update-available';
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { MealSlotScheduleEditButton, MealSlotTimelineView } from '@widgets/day-plan-meal-slot-timeline';
@@ -485,6 +489,9 @@ export function PriorityBasedPlanSection({
   const isDark = colorScheme === 'dark';
   const hideDailyQuote = useDayPlanChromeSettingsStore((s) => s.settings.hideDailyQuote);
   const hideCompleteTape = useDayPlanChromeSettingsStore((s) => s.settings.hideCompleteTape);
+  const hideAppUpdateNudge = useDayPlanChromeSettingsStore((s) => s.settings.hideAppUpdateNudge);
+  const updateAvailable = useAppUpdateAvailable(true);
+  const showUpdateNudge = !hideAppUpdateNudge && Boolean(updateAvailable.notice);
   const insets = useSafeAreaInsets();
   const bottomTabBarHeight = useBottomTabBarHeight();
   const { height: windowHeight } = useWindowDimensions();
@@ -3395,7 +3402,8 @@ export function PriorityBasedPlanSection({
                     if (isLikelyPriorityCatalogMonolineTitle(b.title)) return false;
                     return true;
                   });
-                  const hideMainQuoteLayout = isMainDay && hideDailyQuote;
+                  const hideMainQuoteLayout =
+                    isMainDay && hideDailyQuote && !showUpdateNudge;
                   const showMainEmptyHint =
                     isMainDay && bagCount === 0 && !priorityMealSlotLayoutEnabled;
                   const shouldRenderDayRow =
@@ -3460,7 +3468,16 @@ export function PriorityBasedPlanSection({
                               },
                             ]}>
                             {!hideMainQuoteLayout && isMainDay ? (
-                              <DailyQuoteCard dateKey={dk} isDark={isDark} />
+                              showUpdateNudge ? (
+                                <AppUpdateAvailablePostItNudge
+                                  onUpdatePress={() => {
+                                    void updateAvailable.openStore();
+                                  }}
+                                  onDismiss={updateAvailable.dismissLater}
+                                />
+                              ) : (
+                                <DailyQuoteCard dateKey={dk} isDark={isDark} />
+                              )
                             ) : null}
                             {showMainEmptyHint ? (
                               <View

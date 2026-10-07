@@ -26,6 +26,9 @@ describe('toBookstoreWidgetBook', () => {
 
     expect(payload.status).toBe('reading');
     expect(payload.statusLabel.length).toBeGreaterThan(0);
+    // 오늘 목표(targetPage)가 아니라 현재 위치 / 전체 쪽
+    expect(payload.progressLabel).toBe('45 / 144쪽');
+    expect(payload.progressRatio).toBeCloseTo(45 / 144, 5);
     expect(payload.pagesLine).toContain('45P');
     expect(payload.pagesLine).toContain('144P');
     expect(payload.remainingLabel).toContain('99');
@@ -34,6 +37,34 @@ describe('toBookstoreWidgetBook', () => {
     expect(payload.todayGoalLabel).toContain('20');
     expect(payload.todayGoalLabel).toContain('45');
     expect(payload.author).toBe('앙투안 드 생텍쥐페리, 전성자');
+  });
+
+  it('does not use today target as the progress denominator when total pages exist', () => {
+    const payload = toBookstoreWidgetBook({
+      id: 'b-today-target',
+      title: '어린 왕자',
+      startPage: 1,
+      targetPage: 48,
+      status: 'reading',
+      memo: '주말 재독',
+      pageLogs: {
+        '2026-10-07': { startPage: 1, targetPage: 48 },
+      },
+      aladin: {
+        itemId: 1,
+        link: 'https://example.com',
+        coverUrl: '',
+        author: '앙투안 드 생텍쥐페리',
+        totalPages: 144,
+      },
+    });
+
+    expect(payload.currentPage).toBe(48);
+    expect(payload.targetPage).toBe(48);
+    expect(payload.totalPages).toBe(144);
+    expect(payload.progressLabel).toBe('48 / 144쪽');
+    expect(payload.progressRatio).toBeCloseTo(48 / 144, 5);
+    expect(payload.progressLabel).not.toContain('48 / 48');
   });
 
   it('omits remaining when the book is finished', () => {

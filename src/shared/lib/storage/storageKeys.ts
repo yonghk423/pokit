@@ -52,11 +52,9 @@ export const StorageKeys = {
   hiddenStandardCatalogKeys: 'pokit:hidden-standard-catalog-keys',
   /** 데일리 시간대 구간(새벽·아침·점심·저녁·밤) 시작 시각 */
   dayMealSlotSchedule: 'pokit:day-meal-slot-schedule',
-  /** 마지막으로 확인한 앱 마케팅 버전(업데이트 안내용) */
-  lastSeenAppVersion: 'pokit:last-seen-app-version',
   /** 책방 시드(어린 왕자) 리스트 1회 탭 유도 */
   readingBookstoreTapGuide: 'pokit:reading-bookstore-tap-guide',
-  /** 스토어 업데이트 유도 모달을 닫은 최신 버전 */
+  /** 스토어 업데이트 사전 안내(포스트잇)를 닫은 최신 버전 */
   updateAvailableDismissedVersion: 'pokit:update-available-dismissed-version',
   /** 루틴 목록 포스트잇 카드 면 색 */
   postItFaceColor: 'pokit:post-it-face-color',
@@ -109,7 +107,6 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   dismissedCounterPresets: 'lockflow:dismissed-counter-presets',
   hiddenStandardCatalogKeys: 'lockflow:hidden-standard-catalog-keys',
   dayMealSlotSchedule: 'lockflow:day-meal-slot-schedule',
-  lastSeenAppVersion: 'lockflow:last-seen-app-version',
   readingBookstoreTapGuide: 'lockflow:reading-bookstore-tap-guide',
   updateAvailableDismissedVersion: 'lockflow:update-available-dismissed-version',
   postItFaceColor: 'lockflow:post-it-face-color',

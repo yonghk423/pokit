@@ -9,7 +9,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AnalyticsScreenTracker } from '@app/AnalyticsScreenTracker';
 import { AppStatusBar } from '@app/AppStatusBar';
-import { AppUpdateNoticeHost } from '@app/AppUpdateNoticeHost';
 import { useAppBootstrap, useCityPopFonts } from '@app/index';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { i18n } from '@shared/lib/i18n';
@@ -141,7 +140,6 @@ export default function RootLayout() {
                 />
               </Stack>
               <AnalyticsScreenTracker />
-              <AppUpdateNoticeHost appReady={appReady} />
               <AppStatusBar />
             </ThemeProvider>
           ) : null}

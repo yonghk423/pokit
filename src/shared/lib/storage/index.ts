@@ -285,10 +285,6 @@ export {
   saveHorizonWeeklyDayMemo
 } from './horizonWeeklyDayMemosStorage';
 export {
-  loadLastSeenAppVersion,
-  saveLastSeenAppVersion
-} from './lastSeenAppVersionStorage';
-export {
   DEFAULT_POST_IT_FACE_COLOR_ID,
   DEFAULT_TODO_LIST_POST_IT_FACE_COLOR_ID,
   DEFAULT_WIDGET_POST_IT_FACE_COLOR_ID,

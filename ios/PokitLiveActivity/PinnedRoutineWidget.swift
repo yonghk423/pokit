@@ -975,7 +975,7 @@ private struct BookstoreWidgetProvider: AppIntentTimelineProvider {
           targetPage: 120,
           totalPages: 144,
           progressRatio: 0.4,
-          progressLabel: "48 / 120쪽 · 전체 144쪽",
+          progressLabel: "48 / 144쪽",
           memo: "오늘은 60쪽까지 읽기",
           statusLabel: "읽는 중",
           pagesLine: "48P / 144P",

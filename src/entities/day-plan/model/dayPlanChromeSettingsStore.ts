@@ -16,6 +16,7 @@ type DayPlanChromeSettingsState = {
   setHideCompleteTape: (hide: boolean) => void;
   setShowTopAnnouncementsButton: (show: boolean) => void;
   setShowTopContactButton: (show: boolean) => void;
+  setHideAppUpdateNudge: (hide: boolean) => void;
 };
 
 function chromeSettingsEqual(a: DayPlanChromeSettings, b: DayPlanChromeSettings): boolean {
@@ -25,7 +26,8 @@ function chromeSettingsEqual(a: DayPlanChromeSettings, b: DayPlanChromeSettings)
     a.completeInAccordion === b.completeInAccordion &&
     a.hideCompleteTape === b.hideCompleteTape &&
     a.showTopAnnouncementsButton === b.showTopAnnouncementsButton &&
-    a.showTopContactButton === b.showTopContactButton
+    a.showTopContactButton === b.showTopContactButton &&
+    a.hideAppUpdateNudge === b.hideAppUpdateNudge
   );
 }
 
@@ -63,6 +65,11 @@ export const useDayPlanChromeSettingsStore = create<DayPlanChromeSettingsState>(
   },
   setShowTopContactButton: (show) => {
     const next = { ...get().settings, showTopContactButton: show };
+    saveDayPlanChromeSettings(next);
+    set({ settings: next });
+  },
+  setHideAppUpdateNudge: (hide) => {
+    const next = { ...get().settings, hideAppUpdateNudge: hide };
     saveDayPlanChromeSettings(next);
     set({ settings: next });
   },

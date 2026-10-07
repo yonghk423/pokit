@@ -40,6 +40,8 @@ export function LayoutSettingsPage() {
   );
   const showTopContactButton = useDayPlanChromeSettingsStore((s) => s.settings.showTopContactButton);
   const setShowTopContactButton = useDayPlanChromeSettingsStore((s) => s.setShowTopContactButton);
+  const hideAppUpdateNudge = useDayPlanChromeSettingsStore((s) => s.settings.hideAppUpdateNudge);
+  const setHideAppUpdateNudge = useDayPlanChromeSettingsStore((s) => s.setHideAppUpdateNudge);
 
   const topInset =
     insets.top >= 1
@@ -181,6 +183,43 @@ export function LayoutSettingsPage() {
                 ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
                 accessibilityLabel={t('settings.layout.showTopContactButtonA11y', {
                   action: showTopContactButton
+                    ? t('settings.dayPlanView.toggleOff')
+                    : t('settings.dayPlanView.toggleOn'),
+                })}
+              />
+            </View>
+            <View style={[chrome.item, { borderTopColor: p.border }]}>
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon
+                  name="arrow.down.app.fill"
+                  color={p.icon}
+                  boxBg={p.iconBoxBg}
+                  border={p.iconBorder}
+                  shadow={p.shadow}
+                />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]}>
+                    {t('settings.layout.hideAppUpdateNudge')}
+                  </ThemedText>
+                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>
+                    {t('settings.layout.hideAppUpdateNudgeDesc')}
+                  </ThemedText>
+                </View>
+              </View>
+              <Switch
+                value={hideAppUpdateNudge}
+                onValueChange={(next) => {
+                  void Haptics.selectionAsync();
+                  setHideAppUpdateNudge(next);
+                }}
+                trackColor={{
+                  false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
+                  true: '#000000',
+                }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
+                accessibilityLabel={t('settings.layout.hideAppUpdateNudgeA11y', {
+                  action: hideAppUpdateNudge
                     ? t('settings.dayPlanView.toggleOff')
                     : t('settings.dayPlanView.toggleOn'),
                 })}

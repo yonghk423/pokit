@@ -95,7 +95,7 @@ export function RoutineSummaryField({
 const styles = StyleSheet.create({
   wrap: { gap: 8 },
   wrapNote: { gap: 2 },
-  labelBlock: { gap: 6, alignSelf: 'stretch' },
+  labelBlock: { gap: 10, alignSelf: 'stretch' },
   label: { fontSize: 13, fontWeight: '700', letterSpacing: -0.1, flexShrink: 0 },
   input: {
     minHeight: 88,

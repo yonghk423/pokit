@@ -56,7 +56,7 @@ function ColorSectionGlyph({ isDark }: { isDark: boolean }) {
   );
 }
 
-/** 「컬러」타이틀 + 파스텔 칩 아이콘 아코디언 (루틴·나만의 루틴·오늘 탭 공용 컨셉) */
+/** 「메모지 컬러」타이틀 + 파스텔 칩 아이콘 아코디언 (루틴·나만의 루틴·오늘 탭 공용) */
 export function ColorPaletteAccordion({
   ink,
   isDark,

@@ -1,25 +1,29 @@
 {
-  "latestVersion": "1.9.0",
+  "latestVersion": "1.9.3",
   "highlights": [
-    "포킷 둘러보기 다음에 홈 위젯 안내가 이어서 나와요.",
-    "위젯 설명서 이미지가 로딩될 때 스켈레톤으로 보여요.",
-    "튜토리얼·설명서 화면의 테두리를 부드러운 음영으로 바꿨어요."
+    "루틴·메모지 색을 고르기 더 쉽게 다듬었어요.",
+    "홈 위젯에 고정한 루틴이 더 안정적으로 보이도록 고쳤어요.",
+    "오늘·히스토리·루틴 탭이 더 부드럽게 열리도록 성능을 개선했어요.",
+    "히스토리 주간·월간 목록 테두리를 정리해 읽기 쉽게 했어요."
   ],
   "highlightsByLocale": {
     "ko": [
-      "포킷 둘러보기 다음에 홈 위젯 안내가 이어서 나와요.",
-      "위젯 설명서 이미지가 로딩될 때 스켈레톤으로 보여요.",
-      "튜토리얼·설명서 화면의 테두리를 부드러운 음영으로 바꿨어요."
+      "루틴·메모지 색을 고르기 더 쉽게 다듬었어요.",
+      "홈 위젯에 고정한 루틴이 더 안정적으로 보이도록 고쳤어요.",
+      "오늘·히스토리·루틴 탭이 더 부드럽게 열리도록 성능을 개선했어요.",
+      "히스토리 주간·월간 목록 테두리를 정리해 읽기 쉽게 했어요."
     ],
     "en": [
-      "After Trying POKIT, a Home widget tip follows next.",
-      "Widget guide images show a skeleton while loading.",
-      "Tutorial screens use soft shadows instead of heavy borders."
+      "Picking colors for routines and sticky notes is smoother.",
+      "Pinned routines on the Home widget show more reliably.",
+      "Today, History, and Routines tabs open more smoothly.",
+      "Weekly and monthly History row borders are cleaner and easier to scan."
     ],
     "ja": [
-      "POKITを使ってみるのあとに、ホームウィジェット案内が続きます。",
-      "ウィジェットガイドの画像は読み込み中にスケルトン表示になります。",
-      "チュートリアル画面の枠線をやわらかい影に変えました。"
+      "ルーチン・ふせんの色選びを使いやすく整えました。",
+      "ホームウィジェットに固定したルーチンが、より安定して表示されるように直しました。",
+      "今日・ヒストリー・ルーチンのタブが、よりスムーズに開くよう性能を改善しました。",
+      "ヒストリーの週次・月次リストの枠線を整理して、読みやすくしました。"
     ]
   },
   "storeUrls": {

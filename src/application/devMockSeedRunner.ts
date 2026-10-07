@@ -133,7 +133,7 @@ export function formatDevMockSeedAlertMessage(result: DevMockSeedResult): string
     result.templateDemoRoutines != null
       ? '오늘 탭·책방·노트·빠른 메모·위젯 Edit에서 확인하세요.'
       : result.screenshotRoutines != null
-        ? '데이플랜·투두·서재·노트·통계 탭에서 확인하세요.'
+        ? '데이플랜·투두·서재·노트·나만의 루틴·통계 탭에서 확인하세요.'
         : '통계 탭에서 확인하세요.';
   return `[${locale}] ${parts.join(' · ')}\n${hint}`;
 }

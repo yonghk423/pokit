@@ -17,6 +17,8 @@ export type DayPlanChromeSettings = {
   showTopAnnouncementsButton: boolean;
   /** 오늘 탭 상단 문의 바로가기 표시 (기본 OFF) */
   showTopContactButton: boolean;
+  /** 스토어 업데이트 사전 안내 포스트잇 숨김 (기본 OFF = 표시) */
+  hideAppUpdateNudge: boolean;
 };
 
 export const DEFAULT_DAY_PLAN_CHROME_SETTINGS: DayPlanChromeSettings = {
@@ -26,6 +28,7 @@ export const DEFAULT_DAY_PLAN_CHROME_SETTINGS: DayPlanChromeSettings = {
   hideCompleteTape: false,
   showTopAnnouncementsButton: false,
   showTopContactButton: false,
+  hideAppUpdateNudge: false,
 };
 
 /** 공지·문의 상단 버튼 기본 숨김 + 표시 토글 전환 1회 마이그레이션 */
@@ -83,6 +86,9 @@ export function normalizeDayPlanChromeSettings(raw: unknown): DayPlanChromeSetti
     legacyHideTopSupport,
     base.showTopContactButton,
   );
+  if (typeof o.hideAppUpdateNudge === 'boolean') {
+    base.hideAppUpdateNudge = o.hideAppUpdateNudge;
+  }
   return base;
 }
 

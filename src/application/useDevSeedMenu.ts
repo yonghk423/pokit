@@ -69,7 +69,7 @@ export function useDevSeedMenu(): void {
         const result = await screenshotSeedRef.current();
         Alert.alert(
           'Seed 완료',
-          `${formatDevMockSeedAlertMessage(result)}\n\n문구 로케일: ${locale}\n담기·시간대·타임라인·메모·투두·서재·노트·통계가 채워졌어요.\n히스토리 주간이 오늘만 보이면 ◀ 로 지난주를 열어 보세요.`,
+          `${formatDevMockSeedAlertMessage(result)}\n\n문구 로케일: ${locale}\n담기·시간대·타임라인·메모·투두·서재·노트·나만의 루틴·통계가 채워졌어요.\n히스토리 주간이 오늘만 보이면 ◀ 로 지난주를 열어 보세요.`,
         );
       })();
     });

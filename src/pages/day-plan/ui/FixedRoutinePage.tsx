@@ -1221,6 +1221,8 @@ function GroupAccordion({
   const canRenameSet = Boolean(onRenameSet);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(displaySetName);
+  /** 형광펜 색 패널 — 오늘 탭 컬러 관리 탭과 같이 칩으로 열고 닫음 */
+  const [titleMarkTabOpen, setTitleMarkTabOpen] = useState(true);
 
   useEffect(() => {
     if (!isEditingName) {
@@ -1525,111 +1527,148 @@ function GroupAccordion({
             groupAccordion.onContentLayout(event.nativeEvent.layout.height);
           }}>
           {onSelectTitleMarkColor ? (
-            <View
-              style={styles.setTitleMarkBlock}
-              accessibilityRole="toolbar"
-              accessibilityLabel={t('fixedRoutine.titleMarkLabel')}>
-              <ThemedText style={[styles.setTitleMarkLabel, { color: muted }]}>
-                {t('fixedRoutine.titleMarkLabel')}
-              </ThemedText>
-              <View style={styles.setTitleMarkChipRow}>
+            <View style={styles.setTitleMarkBlock} accessibilityRole="tablist">
+              <View style={styles.setTitleMarkTabRow}>
                 <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: groupTitleMark == null }}
-                  accessibilityLabel={t('fixedRoutine.titleMarkClearA11y')}
-                  hitSlop={6}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: titleMarkTabOpen }}
+                  accessibilityLabel={t('fixedRoutine.titleMarkLabel')}
+                  hitSlop={4}
                   onPress={() => {
                     void Haptics.selectionAsync();
-                    onSelectTitleMarkColor(null);
+                    setTitleMarkTabOpen((open) => !open);
                   }}
                   style={({ pressed }) => [
-                    styles.setTitleMarkChipShell,
+                    styles.setTitleMarkTabChip,
                     {
-                      width: TITLE_MARK_SWATCH,
-                      height: TITLE_MARK_SWATCH,
-                      marginRight: TITLE_MARK_SHADOW,
-                      marginBottom: TITLE_MARK_SHADOW,
-                      opacity: pressed ? 0.88 : 1,
+                      borderColor: ink,
+                      backgroundColor: titleMarkTabOpen
+                        ? isDark
+                          ? RetroFlatColors.dark.bgMint
+                          : RetroFlatColors.light.bgMint
+                        : 'transparent',
                     },
+                    pressed && styles.setTitleMarkTabPressed,
                   ]}>
-                  <View
-                    pointerEvents="none"
+                  <ThemedText
                     style={[
-                      styles.setTitleMarkChipShadow,
+                      styles.setTitleMarkTabLabel,
                       {
-                        backgroundColor: actionSoftShadow,
-                        transform: [
-                          { translateX: TITLE_MARK_SHADOW },
-                          { translateY: TITLE_MARK_SHADOW },
-                        ],
+                        color: titleMarkTabOpen
+                          ? isDark
+                            ? RetroFlatColors.dark.primary
+                            : RetroFlatColors.light.primary
+                          : ink,
                       },
                     ]}
-                  />
-                  <View
-                    style={[
-                      styles.setTitleMarkChipFace,
-                      {
-                        backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
-                        borderColor: line,
-                        borderWidth: groupTitleMark == null ? 2 : 1,
-                      },
-                    ]}>
-                    <IconSymbol name="xmark" size={11} color={muted} />
-                  </View>
+                    numberOfLines={1}>
+                    {t('fixedRoutine.titleMarkLabel')}
+                  </ThemedText>
                 </Pressable>
-                {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
-                  const selectedMark = groupTitleMark === preset.id;
-                  const face = isDark ? preset.faceDark : preset.face;
-                  return (
-                    <Pressable
-                      key={preset.id}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: selectedMark }}
-                      accessibilityLabel={t('fixedRoutine.titleMarkColorA11y', {
-                        color: t(`dayPlan.importanceMarkSwatch.${preset.id}` as const),
-                      })}
-                      hitSlop={6}
-                      onPress={() => {
-                        void Haptics.selectionAsync();
-                        onSelectTitleMarkColor(preset.id);
-                      }}
-                      style={({ pressed }) => [
-                        styles.setTitleMarkChipShell,
+              </View>
+              {titleMarkTabOpen ? (
+                <View
+                  style={styles.setTitleMarkChipRow}
+                  accessibilityRole="toolbar"
+                  accessibilityLabel={t('fixedRoutine.titleMarkLabel')}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: groupTitleMark == null }}
+                    accessibilityLabel={t('fixedRoutine.titleMarkClearA11y')}
+                    hitSlop={6}
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      onSelectTitleMarkColor(null);
+                    }}
+                    style={({ pressed }) => [
+                      styles.setTitleMarkChipShell,
+                      {
+                        width: TITLE_MARK_SWATCH,
+                        height: TITLE_MARK_SWATCH,
+                        marginRight: TITLE_MARK_SHADOW,
+                        marginBottom: TITLE_MARK_SHADOW,
+                      },
+                      pressed && styles.setTitleMarkTabPressed,
+                    ]}>
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.setTitleMarkChipShadow,
                         {
-                          width: TITLE_MARK_SWATCH,
-                          height: TITLE_MARK_SWATCH,
-                          marginRight: TITLE_MARK_SHADOW,
-                          marginBottom: TITLE_MARK_SHADOW,
-                          opacity: pressed ? 0.88 : 1,
+                          backgroundColor: actionSoftShadow,
+                          transform: [
+                            { translateX: TITLE_MARK_SHADOW },
+                            { translateY: TITLE_MARK_SHADOW },
+                          ],
+                        },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.setTitleMarkChipFace,
+                        {
+                          backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
+                          borderColor: line,
+                          borderWidth: groupTitleMark == null ? 2 : 1,
                         },
                       ]}>
-                      <View
-                        pointerEvents="none"
-                        style={[
-                          styles.setTitleMarkChipShadow,
+                      <IconSymbol name="xmark" size={11} color={muted} />
+                    </View>
+                  </Pressable>
+                  {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
+                    const selectedMark = groupTitleMark === preset.id;
+                    const face = isDark ? preset.faceDark : preset.face;
+                    return (
+                      <Pressable
+                        key={preset.id}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: selectedMark }}
+                        accessibilityLabel={t('fixedRoutine.titleMarkColorA11y', {
+                          color: t(`dayPlan.importanceMarkSwatch.${preset.id}` as const),
+                        })}
+                        hitSlop={6}
+                        onPress={() => {
+                          void Haptics.selectionAsync();
+                          onSelectTitleMarkColor(preset.id);
+                        }}
+                        style={({ pressed }) => [
+                          styles.setTitleMarkChipShell,
                           {
-                            backgroundColor: actionSoftShadow,
-                            transform: [
-                              { translateX: TITLE_MARK_SHADOW },
-                              { translateY: TITLE_MARK_SHADOW },
-                            ],
+                            width: TITLE_MARK_SWATCH,
+                            height: TITLE_MARK_SWATCH,
+                            marginRight: TITLE_MARK_SHADOW,
+                            marginBottom: TITLE_MARK_SHADOW,
                           },
-                        ]}
-                      />
-                      <View
-                        style={[
-                          styles.setTitleMarkChipFace,
-                          {
-                            backgroundColor: face,
-                            borderColor: selectedMark ? ink : 'transparent',
-                            borderWidth: selectedMark ? 2 : 0,
-                          },
-                        ]}
-                      />
-                    </Pressable>
-                  );
-                })}
-              </View>
+                          pressed && styles.setTitleMarkTabPressed,
+                        ]}>
+                        <View
+                          pointerEvents="none"
+                          style={[
+                            styles.setTitleMarkChipShadow,
+                            {
+                              backgroundColor: actionSoftShadow,
+                              transform: [
+                                { translateX: TITLE_MARK_SHADOW },
+                                { translateY: TITLE_MARK_SHADOW },
+                              ],
+                            },
+                          ]}
+                        />
+                        <View
+                          style={[
+                            styles.setTitleMarkChipFace,
+                            {
+                              backgroundColor: face,
+                              borderColor: selectedMark ? ink : 'transparent',
+                              borderWidth: selectedMark ? 2 : 0,
+                            },
+                          ]}
+                        />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null}
             </View>
           ) : null}
           {onSetApplyWeekdays ? (
@@ -2938,14 +2977,33 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   setTitleMarkBlock: {
-    gap: 6,
+    gap: 12,
     paddingHorizontal: 12,
-    paddingBottom: 8,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
-  setTitleMarkLabel: {
-    fontSize: 11,
+  setTitleMarkTabRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 5,
+    marginBottom: 2,
+  },
+  setTitleMarkTabChip: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderRadius: 0,
+  },
+  setTitleMarkTabLabel: {
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.2,
+    letterSpacing: -0.3,
+    lineHeight: 13,
+  },
+  setTitleMarkTabPressed: {
+    transform: [{ translateX: 0.5 }, { translateY: 0.5 }],
   },
   setTitleMarkChipRow: {
     flexDirection: 'row',

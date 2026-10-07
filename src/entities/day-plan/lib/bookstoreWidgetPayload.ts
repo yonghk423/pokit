@@ -62,11 +62,11 @@ export function toBookstoreWidgetBook(book: ReadingBookEntry): BookstoreWidgetBo
     totalPages != null && totalPages > 0
       ? Math.min(1, Math.max(0, currentPage / totalPages))
       : 0;
+  // 진행 바와 동일하게 「현재 읽은 위치 / 전체 쪽」. targetPage는 오늘 목표라 분모로 쓰면 48/48처럼 보임.
   const progressLabel =
     totalPages != null && totalPages > 0
       ? t('widgetSettings.bookstore.progressWithTotal', {
           current: currentPage,
-          target: Math.max(currentPage, targetPage),
           total: totalPages,
         })
       : t('widgetSettings.bookstore.progress', {

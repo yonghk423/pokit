@@ -6,4 +6,4 @@ export { fetchLatestAppVersionManifest } from './lib/fetchLatestAppVersionManife
 export { openAppStoreListing } from './lib/openAppStoreListing';
 export { useAppUpdateAvailable } from './model/useAppUpdateAvailable';
 export type { AppUpdateAvailableState } from './model/useAppUpdateAvailable';
-export { AppUpdateAvailableModal } from './ui/AppUpdateAvailableModal';
+export { AppUpdateAvailablePostItNudge } from './ui/AppUpdateAvailablePostItNudge';

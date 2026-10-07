@@ -1,5 +1,3 @@
-export { detectAppUpdate } from './lib/detectAppUpdate';
-export type { AppUpdateDetection } from './lib/detectAppUpdate';
 export {
   listRecentReleaseNotes,
   RECENT_RELEASE_NOTES_LIMIT,

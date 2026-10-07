@@ -60,6 +60,11 @@ import { ListRowSkeletonStack, SmoothEnter } from '@shared/ui/list-row-skeleton'
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ColorPaletteAccordion } from '@shared/ui/color-palette-accordion';
+import {
+  RowColorPaletteBridgeProvider,
+  RowColorPaletteFallbackHost,
+  type RowColorPaletteTab,
+} from '@shared/ui/color-palette-tabs';
 import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -494,6 +499,305 @@ function CatalogListRow({
   const spineTimeIconAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 0.92 + spineExpandProgress.value * 0.08 }],
   }));
+
+  const manageColorTabs = useMemo((): RowColorPaletteTab[] => {
+    if (!manageOnly) return [];
+    const tabs: RowColorPaletteTab[] = [];
+    const chipPress = (pressed: boolean) =>
+      pressed ? ({ transform: [{ translateX: 0.5 }, { translateY: 0.5 }] } as const) : null;
+
+    if (onSelectItemFaceColor) {
+      tabs.push({
+        id: 'face',
+        label: t('dayPlan.colorTab.face'),
+        panel: (
+          <View
+            style={styles.catalogImportanceChipRow}
+            accessibilityRole="toolbar"
+            accessibilityLabel={t('dayPlan.colorTab.face')}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: itemFaceColor == null }}
+              accessibilityLabel={t('dayPlan.routineFaceColorClearA11y')}
+              hitSlop={6}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                onSelectItemFaceColor(null);
+              }}
+              style={({ pressed }) => [
+                styles.catalogImportanceChipShell,
+                {
+                  width: MARK_SWATCH,
+                  height: MARK_SWATCH,
+                  marginRight: MARK_SHADOW,
+                  marginBottom: MARK_SHADOW,
+                },
+                chipPress(pressed),
+              ]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.catalogImportanceChipShadow,
+                  {
+                    backgroundColor: markShadow,
+                    transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.catalogImportanceChipFace,
+                  {
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
+                    borderColor: rowLine,
+                    borderWidth: itemFaceColor == null ? 2 : 1,
+                  },
+                ]}>
+                <IconSymbol name="xmark" size={11} color={rowMuted} />
+              </View>
+            </Pressable>
+            {POST_IT_FACE_COLOR_PRESETS.map((preset) => {
+              const selectedFace = itemFaceColor === preset.id;
+              const face = isDark ? preset.dark : preset.light;
+              const colorLabel = t(`catalog.postItColor.${preset.id}` as I18nKey);
+              return (
+                <Pressable
+                  key={preset.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: selectedFace }}
+                  accessibilityLabel={t('dayPlan.routineFaceColorA11y', { color: colorLabel })}
+                  hitSlop={6}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    onSelectItemFaceColor(preset.id);
+                  }}
+                  style={({ pressed }) => [
+                    styles.catalogImportanceChipShell,
+                    {
+                      width: MARK_SWATCH,
+                      height: MARK_SWATCH,
+                      marginRight: MARK_SHADOW,
+                      marginBottom: MARK_SHADOW,
+                    },
+                    chipPress(pressed),
+                  ]}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.catalogImportanceChipShadow,
+                      {
+                        backgroundColor: markShadow,
+                        transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.catalogImportanceChipFace,
+                      {
+                        backgroundColor: face,
+                        borderColor: selectedFace ? rowInk : 'transparent',
+                        borderWidth: selectedFace ? 2 : 0,
+                      },
+                    ]}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+        ),
+      });
+    }
+
+    if (onSelectItemInkColor) {
+      tabs.push({
+        id: 'ink',
+        label: t('dayPlan.colorTab.ink'),
+        panel: (
+          <View
+            style={styles.catalogImportanceChipRow}
+            accessibilityRole="toolbar"
+            accessibilityLabel={t('dayPlan.colorTab.ink')}>
+            {POST_IT_INK_COLOR_PRESETS.map((preset) => {
+              const selectedInk = (itemInkColor ?? 'auto') === preset.id;
+              const isAuto = preset.id === 'auto';
+              const colorLabel = t(`dayPlan.quickMemoInkSwatch.${preset.id}` as I18nKey);
+              return (
+                <Pressable
+                  key={preset.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: selectedInk }}
+                  accessibilityLabel={t('dayPlan.routineInkColorA11y', { color: colorLabel })}
+                  hitSlop={6}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    onSelectItemInkColor(isAuto ? null : preset.id);
+                  }}
+                  style={({ pressed }) => [
+                    styles.catalogImportanceChipShell,
+                    {
+                      width: MARK_SWATCH,
+                      height: MARK_SWATCH,
+                      marginRight: MARK_SHADOW,
+                      marginBottom: MARK_SHADOW,
+                    },
+                    chipPress(pressed),
+                  ]}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.catalogImportanceChipShadow,
+                      {
+                        backgroundColor: markShadow,
+                        transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.catalogImportanceChipFace,
+                      {
+                        backgroundColor: isAuto
+                          ? isDark
+                            ? 'rgba(255,255,255,0.08)'
+                            : '#FFFFFF'
+                          : preset.hex,
+                        borderColor: isAuto || selectedInk ? rowLine : 'transparent',
+                        borderWidth: isAuto ? (selectedInk ? 2 : 1) : selectedInk ? 2 : 0,
+                      },
+                    ]}>
+                    {isAuto ? (
+                      <IconSymbol name="circle.lefthalf.filled" size={12} color={rowMuted} />
+                    ) : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        ),
+      });
+    }
+
+    if (onSelectMarkColor) {
+      tabs.push({
+        id: 'mark',
+        label: t('dayPlan.colorTab.mark'),
+        panel: (
+          <View
+            style={styles.catalogImportanceChipRow}
+            accessibilityRole="toolbar"
+            accessibilityLabel={t('dayPlan.colorTab.mark')}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: markColor == null }}
+              accessibilityLabel={t('dayPlan.importanceMarkClearA11y')}
+              hitSlop={6}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                onSelectMarkColor(null);
+              }}
+              style={({ pressed }) => [
+                styles.catalogImportanceChipShell,
+                {
+                  width: MARK_SWATCH,
+                  height: MARK_SWATCH,
+                  marginRight: MARK_SHADOW,
+                  marginBottom: MARK_SHADOW,
+                },
+                chipPress(pressed),
+              ]}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.catalogImportanceChipShadow,
+                  {
+                    backgroundColor: markShadow,
+                    transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.catalogImportanceChipFace,
+                  {
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
+                    borderColor: rowLine,
+                    borderWidth: markColor == null ? 2 : 1,
+                  },
+                ]}>
+                <IconSymbol name="xmark" size={11} color={rowMuted} />
+              </View>
+            </Pressable>
+            {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
+              const selectedMark = markColor === preset.id;
+              const face = isDark ? preset.faceDark : preset.face;
+              return (
+                <Pressable
+                  key={preset.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: selectedMark }}
+                  accessibilityLabel={t('dayPlan.importanceMarkColorA11y', {
+                    color: t(`dayPlan.importanceMarkSwatch.${preset.id}` as const),
+                  })}
+                  hitSlop={6}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    onSelectMarkColor(preset.id);
+                  }}
+                  style={({ pressed }) => [
+                    styles.catalogImportanceChipShell,
+                    {
+                      width: MARK_SWATCH,
+                      height: MARK_SWATCH,
+                      marginRight: MARK_SHADOW,
+                      marginBottom: MARK_SHADOW,
+                    },
+                    chipPress(pressed),
+                  ]}>
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.catalogImportanceChipShadow,
+                      {
+                        backgroundColor: markShadow,
+                        transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.catalogImportanceChipFace,
+                      {
+                        backgroundColor: face,
+                        borderColor: selectedMark ? rowInk : 'transparent',
+                        borderWidth: selectedMark ? 2 : 0,
+                      },
+                    ]}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+        ),
+      });
+    }
+
+    return tabs;
+  }, [
+    manageOnly,
+    onSelectItemFaceColor,
+    onSelectItemInkColor,
+    onSelectMarkColor,
+    itemFaceColor,
+    itemInkColor,
+    markColor,
+    isDark,
+    markShadow,
+    rowInk,
+    rowMuted,
+    rowLine,
+    t,
+  ]);
 
   return (
     <View
@@ -962,307 +1266,26 @@ function CatalogListRow({
               onLayout={(e) => {
                 handleManageDetailLayout(e.nativeEvent.layout.height);
               }}>
-              {onSelectItemFaceColor ? (
-                <View
-                  style={styles.catalogImportanceBlock}
-                  accessibilityRole="toolbar"
-                  accessibilityLabel={t('dayPlan.routineFaceColorLabel')}>
-                  <ThemedText style={[styles.catalogImportanceLabel, { color: rowMuted }]}>
-                    {t('dayPlan.routineFaceColorLabel')}
-                  </ThemedText>
-                  <View style={styles.catalogImportanceChipRow}>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: itemFaceColor == null }}
-                      accessibilityLabel={t('dayPlan.routineFaceColorClearA11y')}
-                      hitSlop={6}
-                      onPress={() => {
-                        void Haptics.selectionAsync();
-                        onSelectItemFaceColor(null);
-                      }}
-                      style={({ pressed }) => [
-                        styles.catalogImportanceChipShell,
-                        {
-                          width: MARK_SWATCH,
-                          height: MARK_SWATCH,
-                          marginRight: MARK_SHADOW,
-                          marginBottom: MARK_SHADOW,
-                          opacity: pressed ? 0.88 : 1,
-                        },
-                      ]}>
-                      <View
-                        pointerEvents="none"
-                        style={[
-                          styles.catalogImportanceChipShadow,
-                          {
-                            backgroundColor: markShadow,
-                            transform: [
-                              { translateX: MARK_SHADOW },
-                              { translateY: MARK_SHADOW },
-                            ],
-                          },
-                        ]}
-                      />
-                      <View
-                        style={[
-                          styles.catalogImportanceChipFace,
-                          {
-                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
-                            borderColor: rowLine,
-                            borderWidth: itemFaceColor == null ? 2 : 1,
-                          },
-                        ]}>
-                        <IconSymbol name="xmark" size={11} color={rowMuted} />
-                      </View>
-                    </Pressable>
-                    {POST_IT_FACE_COLOR_PRESETS.map((preset) => {
-                      const selectedFace = itemFaceColor === preset.id;
-                      const face = isDark ? preset.dark : preset.light;
-                      const colorLabel = t(`catalog.postItColor.${preset.id}` as I18nKey);
-                      return (
-                        <Pressable
-                          key={preset.id}
-                          accessibilityRole="button"
-                          accessibilityState={{ selected: selectedFace }}
-                          accessibilityLabel={t('dayPlan.routineFaceColorA11y', {
-                            color: colorLabel,
-                          })}
-                          hitSlop={6}
-                          onPress={() => {
-                            void Haptics.selectionAsync();
-                            onSelectItemFaceColor(preset.id);
-                          }}
-                          style={({ pressed }) => [
-                            styles.catalogImportanceChipShell,
-                            {
-                              width: MARK_SWATCH,
-                              height: MARK_SWATCH,
-                              marginRight: MARK_SHADOW,
-                              marginBottom: MARK_SHADOW,
-                              opacity: pressed ? 0.88 : 1,
-                            },
-                          ]}>
-                          <View
-                            pointerEvents="none"
-                            style={[
-                              styles.catalogImportanceChipShadow,
-                              {
-                                backgroundColor: markShadow,
-                                transform: [
-                                  { translateX: MARK_SHADOW },
-                                  { translateY: MARK_SHADOW },
-                                ],
-                              },
-                            ]}
-                          />
-                          <View
-                            style={[
-                              styles.catalogImportanceChipFace,
-                              {
-                                backgroundColor: face,
-                                borderColor: selectedFace ? rowInk : 'transparent',
-                                borderWidth: selectedFace ? 2 : 0,
-                              },
-                            ]}
-                          />
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-              ) : null}
-              {onSelectItemInkColor ? (
-                <View
-                  style={styles.catalogImportanceBlock}
-                  accessibilityRole="toolbar"
-                  accessibilityLabel={t('dayPlan.routineInkColorLabel')}>
-                  <ThemedText style={[styles.catalogImportanceLabel, { color: rowMuted }]}>
-                    {t('dayPlan.routineInkColorLabel')}
-                  </ThemedText>
-                  <View style={styles.catalogImportanceChipRow}>
-                    {POST_IT_INK_COLOR_PRESETS.map((preset) => {
-                      const selectedInk = (itemInkColor ?? 'auto') === preset.id;
-                      const isAuto = preset.id === 'auto';
-                      const colorLabel = t(`dayPlan.quickMemoInkSwatch.${preset.id}` as I18nKey);
-                      return (
-                        <Pressable
-                          key={preset.id}
-                          accessibilityRole="button"
-                          accessibilityState={{ selected: selectedInk }}
-                          accessibilityLabel={t('dayPlan.routineInkColorA11y', {
-                            color: colorLabel,
-                          })}
-                          hitSlop={6}
-                          onPress={() => {
-                            void Haptics.selectionAsync();
-                            onSelectItemInkColor(isAuto ? null : preset.id);
-                          }}
-                          style={({ pressed }) => [
-                            styles.catalogImportanceChipShell,
-                            {
-                              width: MARK_SWATCH,
-                              height: MARK_SWATCH,
-                              marginRight: MARK_SHADOW,
-                              marginBottom: MARK_SHADOW,
-                              opacity: pressed ? 0.88 : 1,
-                            },
-                          ]}>
-                          <View
-                            pointerEvents="none"
-                            style={[
-                              styles.catalogImportanceChipShadow,
-                              {
-                                backgroundColor: markShadow,
-                                transform: [
-                                  { translateX: MARK_SHADOW },
-                                  { translateY: MARK_SHADOW },
-                                ],
-                              },
-                            ]}
-                          />
-                          <View
-                            style={[
-                              styles.catalogImportanceChipFace,
-                              {
-                                backgroundColor: isAuto
-                                  ? isDark
-                                    ? 'rgba(255,255,255,0.08)'
-                                    : '#FFFFFF'
-                                  : preset.hex,
-                                borderColor: isAuto || selectedInk ? rowLine : 'transparent',
-                                borderWidth: isAuto ? (selectedInk ? 2 : 1) : selectedInk ? 2 : 0,
-                              },
-                            ]}>
-                            {isAuto ? (
-                              <IconSymbol
-                                name="circle.lefthalf.filled"
-                                size={12}
-                                color={rowMuted}
-                              />
-                            ) : null}
-                          </View>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-              ) : null}
-              {onSelectMarkColor ? (
-                <View
-                  style={styles.catalogImportanceBlock}
-                  accessibilityRole="toolbar"
-                  accessibilityLabel={t('dayPlan.importanceMarkLabel')}>
-                  <ThemedText style={[styles.catalogImportanceLabel, { color: rowMuted }]}>
-                    {t('dayPlan.importanceMarkLabel')}
-                  </ThemedText>
-                  <View style={styles.catalogImportanceChipRow}>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: markColor == null }}
-                      accessibilityLabel={t('dayPlan.importanceMarkClearA11y')}
-                      hitSlop={6}
-                      onPress={() => {
-                        void Haptics.selectionAsync();
-                        onSelectMarkColor(null);
-                      }}
-                      style={({ pressed }) => [
-                        styles.catalogImportanceChipShell,
-                        {
-                          width: MARK_SWATCH,
-                          height: MARK_SWATCH,
-                          marginRight: MARK_SHADOW,
-                          marginBottom: MARK_SHADOW,
-                          opacity: pressed ? 0.88 : 1,
-                        },
-                      ]}>
-                      <View
-                        pointerEvents="none"
-                        style={[
-                          styles.catalogImportanceChipShadow,
-                          {
-                            backgroundColor: markShadow,
-                            transform: [
-                              { translateX: MARK_SHADOW },
-                              { translateY: MARK_SHADOW },
-                            ],
-                          },
-                        ]}
-                      />
-                      <View
-                        style={[
-                          styles.catalogImportanceChipFace,
-                          {
-                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
-                            borderColor: rowLine,
-                            borderWidth: markColor == null ? 2 : 1,
-                          },
-                        ]}>
-                        <IconSymbol name="xmark" size={11} color={rowMuted} />
-                      </View>
-                    </Pressable>
-                    {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
-                      const selectedMark = markColor === preset.id;
-                      const face = isDark ? preset.faceDark : preset.face;
-                      return (
-                        <Pressable
-                          key={preset.id}
-                          accessibilityRole="button"
-                          accessibilityState={{ selected: selectedMark }}
-                          accessibilityLabel={t('dayPlan.importanceMarkColorA11y', {
-                            color: t(`dayPlan.importanceMarkSwatch.${preset.id}` as const),
-                          })}
-                          hitSlop={6}
-                          onPress={() => {
-                            void Haptics.selectionAsync();
-                            onSelectMarkColor(preset.id);
-                          }}
-                          style={({ pressed }) => [
-                            styles.catalogImportanceChipShell,
-                            {
-                              width: MARK_SWATCH,
-                              height: MARK_SWATCH,
-                              marginRight: MARK_SHADOW,
-                              marginBottom: MARK_SHADOW,
-                              opacity: pressed ? 0.88 : 1,
-                            },
-                          ]}>
-                          <View
-                            pointerEvents="none"
-                            style={[
-                              styles.catalogImportanceChipShadow,
-                              {
-                                backgroundColor: markShadow,
-                                transform: [
-                                  { translateX: MARK_SHADOW },
-                                  { translateY: MARK_SHADOW },
-                                ],
-                              },
-                            ]}
-                          />
-                          <View
-                            style={[
-                              styles.catalogImportanceChipFace,
-                              {
-                                backgroundColor: face,
-                                borderColor: selectedMark ? rowInk : 'transparent',
-                                borderWidth: selectedMark ? 2 : 0,
-                              },
-                            ]}
-                          />
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-              ) : null}
-              <PriorityBagRowAccordionPanel
-                categoryKey={categoryKey}
-                label={label}
+              <RowColorPaletteBridgeProvider
+                tabs={manageColorTabs}
                 ink={rowInk}
                 muted={rowMuted}
-                line={rowLine}
-                isDark={isDark}
-              />
+                isDark={isDark}>
+                <PriorityBagRowAccordionPanel
+                  categoryKey={categoryKey}
+                  label={label}
+                  ink={rowInk}
+                  muted={rowMuted}
+                  line={rowLine}
+                  isDark={isDark}
+                />
+                {/* 요약이 탭을 붙잡지 못할 때만 폴백 (오늘 탭 DefaultPriorityOrderRow 와 동일) */}
+                {manageColorTabs.length > 0 ? (
+                  <View style={styles.catalogColorTabsHost}>
+                    <RowColorPaletteFallbackHost />
+                  </View>
+                ) : null}
+              </RowColorPaletteBridgeProvider>
             </View>
         </Reanimated.View>
       ) : null}
@@ -2664,14 +2687,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 12,
   },
-  catalogImportanceBlock: {
-    gap: 6,
+  catalogColorTabsHost: {
     marginBottom: 10,
-  },
-  catalogImportanceLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    gap: 10,
   },
   catalogImportanceChipRow: {
     flexDirection: 'row',

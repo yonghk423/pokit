@@ -2,6 +2,7 @@ import { getAppLocale, useAppLocaleStore } from '@shared/lib/i18n';
 
 import {
   BUILTIN_ABSTAIN_FLOW_ID,
+  BUILTIN_DAILY_CLEAN_FLOW_ID,
   BUILTIN_DAILY_EXERCISE_FLOW_ID,
   BUILTIN_STRETCHING_FLOW_ID,
 } from '../../defaultPriorityCatalog';
@@ -9,9 +10,12 @@ import { ensureDefaultPriorityCatalog } from '../../ensureDefaultPriorityCatalog
 import { loadDayPlanDraft } from '../../dayPlanDraftStorage';
 import { loadDayPlan } from '../../dayPlanStorage';
 import { loadDayPlanTodos } from '../../dayPlanTodoStorage';
+import { loadFixedFlowSetsState } from '../../fixedFlowSetsStorage';
 import { loadGoalDetailCategoryConfig } from '../../goalDetailSettingsStorage';
 import { listCustomFlowCatalogIds } from '../../customFlowCatalogStorage';
 import { localStorageClient } from '../../localStorageClient';
+import { loadPostItFaceColorByGroup } from '../../postItFaceColorStorage';
+import { loadMyRoutineCollapsedGroupIds } from '../../postItGroupCollapsedStorage';
 import { StorageKeys } from '../../storageKeys';
 
 import { SCREENSHOT_EXTRA_ROUTINES } from './screenshotDemoCopy';
@@ -27,6 +31,9 @@ describe('screenshotDemoMockSeed', () => {
     localStorageClient.removeItem(StorageKeys.dailyRhythmOnboarding);
     localStorageClient.removeItem(StorageKeys.priorityCatalogFixedRoutines);
     localStorageClient.removeItem(StorageKeys.customFlowCatalog);
+    localStorageClient.removeItem(StorageKeys.fixedFlowSets);
+    localStorageClient.removeItem(StorageKeys.myRoutineGroupCollapsed);
+    localStorageClient.removeItem(StorageKeys.postItFaceColor);
     ensureDefaultPriorityCatalog();
   });
 
@@ -112,6 +119,33 @@ describe('screenshotDemoMockSeed', () => {
       fastingEnabled?: boolean;
     } | null;
     expect(fasting?.fastingEnabled).toBe(true);
+    expect(draft?.priorityCategoryImportance?.fasting).toBe('pink');
+
+    const fixed = loadFixedFlowSetsState();
+    const daily = fixed.sets.find((set) => set.id === 'set_daily');
+    const weekend = fixed.sets.find((set) => set.id === 'set_weekend');
+    expect(daily?.items.map((item) => item.categoryKey)).toEqual([
+      'healthIntake',
+      'fasting',
+      BUILTIN_STRETCHING_FLOW_ID,
+      'reading',
+      SCREENSHOT_EXTRA_ROUTINES[0]!.id,
+      SCREENSHOT_EXTRA_ROUTINES[2]!.id,
+    ]);
+    expect(daily?.titleMarkColor).toBe('yellow');
+    expect(daily?.applyWeekdays).toEqual([1, 2, 3, 4, 5]);
+    expect(weekend?.items.map((item) => item.categoryKey)).toEqual([
+      BUILTIN_DAILY_EXERCISE_FLOW_ID,
+      BUILTIN_STRETCHING_FLOW_ID,
+      BUILTIN_DAILY_CLEAN_FLOW_ID,
+      'customFlow:preset_daily_shopping',
+    ]);
+    expect(weekend?.titleMarkColor).toBe('lavender');
+    expect(weekend?.applyWeekdays).toEqual([0, 6]);
+    expect(loadMyRoutineCollapsedGroupIds().has('set_weekend')).toBe(true);
+    expect(loadMyRoutineCollapsedGroupIds().has('set_daily')).toBe(false);
+    expect(loadPostItFaceColorByGroup()['my-routine:set_daily']).toBe('cream');
+    expect(loadPostItFaceColorByGroup()['my-routine:set_weekend']).toBe('lavender');
 
     const work = loadGoalDetailCategoryConfig('work') as {
       document?: { pages?: unknown[] };
@@ -181,5 +215,11 @@ describe('screenshotDemoMockSeed', () => {
     for (const items of Object.values(todos?.todosByDate ?? {})) {
       expect((items ?? []).every((item) => !item.id.startsWith('todo-screenshot-'))).toBe(true);
     }
+
+    const weekend = loadFixedFlowSetsState().sets.find((set) => set.id === 'set_weekend');
+    expect(weekend?.items.map((item) => item.categoryKey)).toEqual([BUILTIN_DAILY_EXERCISE_FLOW_ID]);
+    expect(loadMyRoutineCollapsedGroupIds().size).toBe(0);
+    expect(loadPostItFaceColorByGroup()['my-routine:set_daily']).toBeUndefined();
+    expect(loadPostItFaceColorByGroup()['my-routine:set_weekend']).toBeUndefined();
   });
 });

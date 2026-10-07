@@ -7,16 +7,26 @@ import {
 
 import {
   BUILTIN_ABSTAIN_FLOW_ID,
+  BUILTIN_DAILY_CLEAN_FLOW_ID,
   BUILTIN_DAILY_EXERCISE_FLOW_ID,
   BUILTIN_STRETCHING_FLOW_ID,
   DEFAULT_BUILTIN_CUSTOM_FLOWS,
 } from '../../defaultPriorityCatalog';
+import {
+  BUILTIN_PRESET_SCHEDULE_SET_IDS,
+  createDefaultFixedFlowSetsState,
+} from '../../defaultFixedFlowSets';
 import { markDailyRhythmOnboardingCompleted } from '../../dailyRhythmOnboardingStorage';
 import { loadDayPlanDraft, saveDayPlanDraft } from '../../dayPlanDraftStorage';
 import { saveDayPlanLayoutModeVisibility } from '../../dayPlanLayoutModeVisibility';
 import { loadDayPlan, saveDayPlan } from '../../dayPlanStorage';
 import { loadDayPlanTodos, saveDayPlanTodos } from '../../dayPlanTodoStorage';
 import type { DayMealSlot } from '../../dayMealSlotScheduleStorage';
+import {
+  loadFixedFlowSetsState,
+  saveFixedFlowSetsState,
+} from '../../fixedFlowSetsStorage';
+import { WEEKDAY_PRESET_WEEKDAY, WEEKDAY_PRESET_WEEKEND } from '../../fixedFlowWeekdays';
 import {
   appendGoalDetailCommittedCategoryKeys,
   loadGoalDetailCategoryConfig,
@@ -27,11 +37,18 @@ import {
   appendCustomFlowCatalogEntry,
   removeCustomFlowCatalogId,
 } from '../../customFlowCatalogStorage';
+import { localStorageClient } from '../../localStorageClient';
+import {
+  loadPostItFaceColorByGroup,
+  savePostItFaceColorForGroup,
+} from '../../postItFaceColorStorage';
+import { saveMyRoutineCollapsedGroupIds } from '../../postItGroupCollapsedStorage';
 import {
   appendRoutineCatalogSelectionKeys,
   loadRoutineCatalogSelectionKeys,
   saveRoutineCatalogSelectionKeys,
 } from '../../priorityCatalogFixedRoutinesStorage';
+import { StorageKeys } from '../../storageKeys';
 
 import type { DevMockSeedModule } from '../types';
 import {
@@ -63,6 +80,29 @@ const SCREENSHOT_NOTE_PAGE_IDS = [
 
 const SCREENSHOT_TODO_ID_PREFIX = 'todo-screenshot-';
 const SCREENSHOT_SPINE_ID_PREFIX = 'dpb-screenshot-spine-';
+
+/** 데일리 고정 루틴 — 스크린샷용 다항목 (기본은 단식 1개) */
+const SCREENSHOT_DAILY_CATEGORY_KEYS = [
+  'healthIntake',
+  'fasting',
+  BUILTIN_STRETCHING_FLOW_ID,
+  'reading',
+  SCREENSHOT_EXTRA_ROUTINES[0]!.id, // 일기
+  SCREENSHOT_EXTRA_ROUTINES[2]!.id, // 영어 단어 복습
+] as const;
+
+/** 주말 고정 루틴 — 스크린샷용 4항목 (기본은 러닝 1개) */
+const SCREENSHOT_WEEKEND_CATEGORY_KEYS = [
+  BUILTIN_DAILY_EXERCISE_FLOW_ID,
+  BUILTIN_STRETCHING_FLOW_ID,
+  BUILTIN_DAILY_CLEAN_FLOW_ID,
+  'customFlow:preset_daily_shopping',
+] as const;
+
+const SCREENSHOT_MY_ROUTINE_FACE_KEYS = {
+  daily: 'my-routine:set_daily',
+  weekend: 'my-routine:set_weekend',
+} as const;
 
 function todayDateKey(now = new Date()): string {
   const y = now.getFullYear();
@@ -225,7 +265,11 @@ function seedDayPlanDraft(today: string): void {
     priorityStart: '07:00',
     priorityEnd: '23:00',
     priorityCategoryOrder: order,
-    priorityCategoryImportance: buildImportanceByOrder(order),
+    priorityCategoryImportance: {
+      ...buildImportanceByOrder(order),
+      // 나만의 루틴·담기 행 — 체중조절 핑크 하이라이트 (스크린샷)
+      fasting: 'pink',
+    },
     quickMemoDraft: (() => {
       const copy = getScreenshotDemoCopy(getAppLocale());
       return [copy.quickMemoMarker, ...copy.quickMemoLines].join('\n');
@@ -810,9 +854,76 @@ function restoreBuiltinRoutineLabelsToKo(): void {
     saveGoalDetailCategoryConfig(flow.id, row);
   }
 }
+
+/**
+ * 나만의 루틴 탭 스크린샷 — 데일리(다항목·평일·노란 형광펜) 펼침 + 주말 4항목 접힘.
+ * 면색 팔레트 아코디언 펼침은 저장되지 않아 시드 불가.
+ */
+function seedScreenshotMyRoutines(): void {
+  const prev = loadFixedFlowSetsState();
+  const defaults = createDefaultFixedFlowSetsState();
+  const defaultDaily = defaults.sets.find((set) => set.id === 'set_daily');
+  const defaultWeekend = defaults.sets.find((set) => set.id === 'set_weekend');
+  if (!defaultDaily || !defaultWeekend) return;
+
+  const presetIds = new Set<string>(BUILTIN_PRESET_SCHEDULE_SET_IDS);
+  const customSets = prev.sets.filter((set) => !presetIds.has(set.id));
+  const dismissedBuiltinPresetSetIds = (prev.dismissedBuiltinPresetSetIds ?? []).filter(
+    (id) => !presetIds.has(id),
+  );
+
+  saveFixedFlowSetsState({
+    ...prev,
+    dismissedBuiltinPresetSetIds,
+    sets: [
+      {
+        ...defaultDaily,
+        titleMarkColor: 'yellow',
+        applyWeekdays: [...WEEKDAY_PRESET_WEEKDAY],
+        items: SCREENSHOT_DAILY_CATEGORY_KEYS.map((categoryKey) => ({
+          categoryKey,
+          enabled: true,
+        })),
+      },
+      {
+        ...defaultWeekend,
+        titleMarkColor: 'lavender',
+        applyWeekdays: [...WEEKDAY_PRESET_WEEKEND],
+        items: SCREENSHOT_WEEKEND_CATEGORY_KEYS.map((categoryKey) => ({
+          categoryKey,
+          enabled: true,
+        })),
+      },
+      ...customSets,
+    ],
+  });
+
+  // 데일리 펼침 · 주말 접힘 (헤더만 보이도록)
+  saveMyRoutineCollapsedGroupIds(['set_weekend']);
+  savePostItFaceColorForGroup(SCREENSHOT_MY_ROUTINE_FACE_KEYS.daily, 'cream');
+  savePostItFaceColorForGroup(SCREENSHOT_MY_ROUTINE_FACE_KEYS.weekend, 'lavender');
+}
+
+function clearScreenshotMyRoutines(): void {
+  const prev = loadFixedFlowSetsState();
+  const defaults = createDefaultFixedFlowSetsState();
+  const presetIds = new Set<string>(BUILTIN_PRESET_SCHEDULE_SET_IDS);
+  const customSets = prev.sets.filter((set) => !presetIds.has(set.id));
+  saveFixedFlowSetsState({
+    ...prev,
+    sets: [...defaults.sets, ...customSets],
+  });
+  saveMyRoutineCollapsedGroupIds([]);
+
+  const faceMap = { ...loadPostItFaceColorByGroup() };
+  delete faceMap[SCREENSHOT_MY_ROUTINE_FACE_KEYS.daily];
+  delete faceMap[SCREENSHOT_MY_ROUTINE_FACE_KEYS.weekend];
+  localStorageClient.setJson(StorageKeys.postItFaceColor, faceMap);
+}
+
 export const screenshotDemoMockSeed: DevMockSeedModule = {
   id: 'screenshot-demo',
-  version: 10,
+  version: 12,
   async seed() {
     const today = todayDateKey();
     markDailyRhythmOnboardingCompleted();
@@ -825,6 +936,7 @@ export const screenshotDemoMockSeed: DevMockSeedModule = {
     seedHealthIntakeDetail();
     seedFastingDetail();
     seedDayNotes(today);
+    seedScreenshotMyRoutines();
     return {
       screenshotRoutines: buildPriorityCategoryOrder().length,
       screenshotTodos: getScreenshotDemoCopy(getAppLocale()).todos.length,
@@ -839,6 +951,7 @@ export const screenshotDemoMockSeed: DevMockSeedModule = {
     clearScreenshotReadingLibrary();
     clearScreenshotWorkNote();
     clearScreenshotExtraRoutines();
+    clearScreenshotMyRoutines();
     restoreBuiltinRoutineLabelsToKo();
     clearScreenshotCategoryIfSeeded(
       'healthIntake',

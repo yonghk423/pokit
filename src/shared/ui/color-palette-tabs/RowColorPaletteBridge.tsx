@@ -189,12 +189,12 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
   panel: {
-    marginTop: 6,
+    marginTop: 10,
     alignSelf: 'stretch',
   },
   fallback: {
     alignSelf: 'stretch',
-    gap: 6,
+    gap: 10,
     paddingTop: 4,
   },
 });
