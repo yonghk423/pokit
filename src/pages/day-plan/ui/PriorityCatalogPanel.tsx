@@ -2151,23 +2151,6 @@ export function PriorityCatalogPanel({
     };
     return (
       <View style={styles.root}>
-        {onCreatePress ? (
-          <View pointerEvents="none" style={styles.createTapeRow}>
-            <View
-              style={[
-                styles.createTape,
-                {
-                  backgroundColor: isDark ? 'rgba(255, 236, 179, 0.92)' : '#FFE8A8',
-                },
-              ]}>
-              <ThemedText
-                style={styles.createTapeText}
-                numberOfLines={2}>
-                {t('catalog.createTapTape')}
-              </ThemedText>
-            </View>
-          </View>
-        ) : null}
         <PostItCardShell
           isDark={isDark}
           faceColor={faceColor}
@@ -2274,17 +2257,21 @@ export function PriorityCatalogPanel({
                       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                       onCreatePress();
                     }}
-                    style={[
+                    style={({ pressed }) => [
                       styles.flatSearchAddFace,
                       {
                         backgroundColor: isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF',
                       },
+                      pressed && styles.flatSearchAddPressed,
                     ]}>
-                    <IconSymbol
-                      name="plus"
-                      size={16}
-                      color={faceUsesLightInk ? '#111111' : faceInk}
-                    />
+                    <ThemedText
+                      style={[
+                        styles.flatSearchAddLabel,
+                        { color: faceUsesLightInk ? '#111111' : faceInk },
+                      ]}
+                      numberOfLines={1}>
+                      {t('catalog.createRoutineBtn')}
+                    </ThemedText>
                   </Pressable>
                 </View>
               ) : null}
@@ -2414,40 +2401,6 @@ const styles = StyleSheet.create({
   root: {
     width: '100%',
     overflow: 'visible',
-  },
-  createTapeRow: {
-    alignItems: 'flex-end',
-    paddingRight: 10,
-    marginBottom: -8,
-    zIndex: 8,
-  },
-  createTape: {
-    maxWidth: 220,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 0,
-    borderWidth: 1.5,
-    borderColor: '#111111',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 1,
-        shadowRadius: 0,
-      },
-      android: { elevation: 3 },
-      default: {},
-    }),
-  },
-  createTapeText: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-    color: '#111111',
-    textAlign: 'center',
   },
   sectionBlock: {
     width: '100%',
@@ -2614,12 +2567,22 @@ const styles = StyleSheet.create({
     borderRadius: RETRO_RADIUS,
   },
   flatSearchAddFace: {
-    width: 40,
-    height: 40,
+    minHeight: 40,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: RETRO_RADIUS,
     zIndex: 1,
+  },
+  flatSearchAddLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    lineHeight: 16,
+  },
+  flatSearchAddPressed: {
+    transform: [{ translateY: 1 }],
   },
   flatSearchEmpty: {
     paddingHorizontal: 10,

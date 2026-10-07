@@ -1,29 +1,29 @@
 {
-  "latestVersion": "1.9.3",
+  "latestVersion": "1.9.4",
   "highlights": [
+    "새 버전이 있으면 오늘의 한 줄 자리에 업데이트 안내가 나와요.",
+    "레이아웃 설정에서 업데이트 안내를 숨길 수 있어요.",
     "루틴·메모지 색을 고르기 더 쉽게 다듬었어요.",
-    "홈 위젯에 고정한 루틴이 더 안정적으로 보이도록 고쳤어요.",
-    "오늘·히스토리·루틴 탭이 더 부드럽게 열리도록 성능을 개선했어요.",
-    "히스토리 주간·월간 목록 테두리를 정리해 읽기 쉽게 했어요."
+    "홈 위젯에 고정한 루틴이 더 안정적으로 보이도록 고쳤어요."
   ],
   "highlightsByLocale": {
     "ko": [
+      "새 버전이 있으면 오늘의 한 줄 자리에 업데이트 안내가 나와요.",
+      "레이아웃 설정에서 업데이트 안내를 숨길 수 있어요.",
       "루틴·메모지 색을 고르기 더 쉽게 다듬었어요.",
-      "홈 위젯에 고정한 루틴이 더 안정적으로 보이도록 고쳤어요.",
-      "오늘·히스토리·루틴 탭이 더 부드럽게 열리도록 성능을 개선했어요.",
-      "히스토리 주간·월간 목록 테두리를 정리해 읽기 쉽게 했어요."
+      "홈 위젯에 고정한 루틴이 더 안정적으로 보이도록 고쳤어요."
     ],
     "en": [
+      "When a new version is out, an update tip appears in the daily quote spot.",
+      "You can hide the update tip in Layout settings.",
       "Picking colors for routines and sticky notes is smoother.",
-      "Pinned routines on the Home widget show more reliably.",
-      "Today, History, and Routines tabs open more smoothly.",
-      "Weekly and monthly History row borders are cleaner and easier to scan."
+      "Pinned routines on the Home widget show more reliably."
     ],
     "ja": [
+      "新しいバージョンがあるとき、今日の一言の場所にアップデート案内が出ます。",
+      "レイアウト設定でアップデート案内を隠せます。",
       "ルーチン・ふせんの色選びを使いやすく整えました。",
-      "ホームウィジェットに固定したルーチンが、より安定して表示されるように直しました。",
-      "今日・ヒストリー・ルーチンのタブが、よりスムーズに開くよう性能を改善しました。",
-      "ヒストリーの週次・月次リストの枠線を整理して、読みやすくしました。"
+      "ホームウィジェットに固定したルーチンが、より安定して表示されるように直しました。"
     ]
   },
   "storeUrls": {
