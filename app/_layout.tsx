@@ -102,6 +102,10 @@ export default function RootLayout() {
                   options={{ headerShown: false, presentation: 'card' }}
                 />
                 <Stack.Screen
+                  name="puzzle-guide"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
                   name="welcome-intro"
                   options={{ headerShown: false, presentation: 'card' }}
                 />
@@ -137,6 +141,18 @@ export default function RootLayout() {
                 <Stack.Screen
                   name="activity-session"
                   options={{ headerShown: false, presentation: 'fullScreenModal' }}
+                />
+                <Stack.Screen
+                  name="puzzle-history-start"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="puzzle-history-detail"
+                  options={{ headerShown: false, presentation: 'card' }}
+                />
+                <Stack.Screen
+                  name="puzzle-history-album"
+                  options={{ headerShown: false, presentation: 'card' }}
                 />
               </Stack>
               <AnalyticsScreenTracker />

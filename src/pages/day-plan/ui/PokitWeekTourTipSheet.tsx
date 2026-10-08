@@ -41,12 +41,12 @@ const STEP_TARGETS = [
   },
   {
     icon: 'figure.walk',
-    labelKey: 'tabs.myRoutines',
-    placeKey: 'tour.pokitWeek.targetPlace.bottomTab',
+    labelKey: 'catalog.myRoutinesTab',
+    placeKey: 'tour.pokitWeek.targetPlace.routinesSubTab',
   },
   {
-    icon: 'clock.arrow.circlepath',
-    labelKey: 'tabs.history',
+    icon: 'rectangle.stack',
+    labelKey: 'tabs.puzzle',
     placeKey: 'tour.pokitWeek.targetPlace.bottomTab',
   },
   {

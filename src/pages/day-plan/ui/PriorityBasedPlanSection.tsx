@@ -119,6 +119,10 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import {
+  AnnouncementHomeNudge,
+  useAnnouncementHomeNudge,
+} from '@features/announcement-home-nudge';
+import {
   AppUpdateAvailablePostItNudge,
   useAppUpdateAvailable,
 } from '@features/app-update-available';
@@ -491,7 +495,11 @@ export function PriorityBasedPlanSection({
   const hideCompleteTape = useDayPlanChromeSettingsStore((s) => s.settings.hideCompleteTape);
   const hideAppUpdateNudge = useDayPlanChromeSettingsStore((s) => s.settings.hideAppUpdateNudge);
   const updateAvailable = useAppUpdateAvailable(true);
+  const announcementHome = useAnnouncementHomeNudge();
   const showUpdateNudge = !hideAppUpdateNudge && Boolean(updateAvailable.notice);
+  const showAnnouncementNudge =
+    !showUpdateNudge && Boolean(announcementHome.notice);
+  const showHomeNudge = showUpdateNudge || showAnnouncementNudge;
   const insets = useSafeAreaInsets();
   const bottomTabBarHeight = useBottomTabBarHeight();
   const { height: windowHeight } = useWindowDimensions();
@@ -3403,7 +3411,7 @@ export function PriorityBasedPlanSection({
                     return true;
                   });
                   const hideMainQuoteLayout =
-                    isMainDay && hideDailyQuote && !showUpdateNudge;
+                    isMainDay && hideDailyQuote && !showHomeNudge;
                   const showMainEmptyHint =
                     isMainDay && bagCount === 0 && !priorityMealSlotLayoutEnabled;
                   const shouldRenderDayRow =
@@ -3474,6 +3482,14 @@ export function PriorityBasedPlanSection({
                                     void updateAvailable.openStore();
                                   }}
                                   onDismiss={updateAvailable.dismissLater}
+                                />
+                              ) : showAnnouncementNudge && announcementHome.notice ? (
+                                <AnnouncementHomeNudge
+                                  announcement={announcementHome.notice}
+                                  onDismiss={announcementHome.dismiss}
+                                  onUpdatePress={() => {
+                                    void announcementHome.openStore();
+                                  }}
                                 />
                               ) : (
                                 <DailyQuoteCard dateKey={dk} isDark={isDark} />

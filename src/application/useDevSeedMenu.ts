@@ -110,7 +110,7 @@ export function useDevSeedMenu(): void {
         await clearSeedRef.current();
         Alert.alert(
           'Clear 완료',
-          '목업 데이터를 모두 제거했어요.\n통계·스크린샷 데모·템플릿 체험 루틴이 비어 있어야 정상이에요.',
+          '목업 데이터를 모두 제거했어요.\n통계·스크린샷 데모·템플릿 체험 루틴·Puzzle이 비어 있어야 정상이에요.',
         );
       })();
     });

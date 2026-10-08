@@ -10,6 +10,7 @@ import {
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
+import { clearPuzzleRevealSeen, usePuzzleHistoryStore } from '@entities/puzzle-history';
 import { getAppLocale } from '@shared/lib/i18n';
 import {
   ensureDefaultPriorityCatalog,
@@ -39,6 +40,8 @@ import {
 function reloadStoresAfterDevMockChange(): void {
   useHistoryStore.getState().reloadFromStorage();
   useHorizonCompletionStore.getState().reloadFromStorage();
+  clearPuzzleRevealSeen();
+  usePuzzleHistoryStore.getState().reloadFromStorage();
   useGoalDetailSettingsStore.getState().reloadAllFromStorage();
 
   const fixed = loadFixedFlowSetsState();
@@ -128,13 +131,18 @@ export function formatDevMockSeedAlertMessage(result: DevMockSeedResult): string
   if (result.historyDays != null) parts.push(`데일리 ${result.historyDays}일`);
   if (result.weeklyCompletions != null) parts.push(`위클리 ${result.weeklyCompletions}주`);
   if (result.monthlyCompletions != null) parts.push(`먼슬리 ${result.monthlyCompletions}달`);
+  if (result.puzzleHistories != null) {
+    parts.push(
+      `Puzzle ${result.puzzleHistories}개(진행 ${result.puzzleActive ?? 0} · Album ${result.puzzleAlbum ?? 0})`,
+    );
+  }
   if (parts.length === 0) return `목업 데이터를 추가했어요. (${locale})`;
   const hint =
     result.templateDemoRoutines != null
       ? '오늘 탭·책방·노트·빠른 메모·위젯 Edit에서 확인하세요.'
       : result.screenshotRoutines != null
-        ? '데이플랜·투두·서재·노트·나만의 루틴·통계 탭에서 확인하세요.'
-        : '통계 탭에서 확인하세요.';
+        ? '데이플랜·투두·서재·노트·나만의 루틴·Puzzle·히스토리에서 확인하세요.'
+        : '통계·Puzzle 탭에서 확인하세요.';
   return `[${locale}] ${parts.join(' · ')}\n${hint}`;
 }
 

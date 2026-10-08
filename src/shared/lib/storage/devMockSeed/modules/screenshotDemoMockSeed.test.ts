@@ -34,6 +34,7 @@ describe('screenshotDemoMockSeed', () => {
     localStorageClient.removeItem(StorageKeys.fixedFlowSets);
     localStorageClient.removeItem(StorageKeys.myRoutineGroupCollapsed);
     localStorageClient.removeItem(StorageKeys.postItFaceColor);
+    localStorageClient.removeItem(StorageKeys.puzzleHistory);
     ensureDefaultPriorityCatalog();
   });
 
@@ -44,6 +45,9 @@ describe('screenshotDemoMockSeed', () => {
     expect(result.screenshotTodos).toBe(8);
     expect(result.screenshotBooks).toBe(6);
     expect(result.screenshotNotes).toBe(2);
+    expect(result.puzzleHistories).toBe(11);
+    expect(result.puzzleActive).toBe(4);
+    expect(result.puzzleAlbum).toBe(7);
 
     const draft = loadDayPlanDraft();
     expect(draft?.planMode).toBe('priority');
@@ -75,7 +79,10 @@ describe('screenshotDemoMockSeed', () => {
     );
     expect(draft?.quickMemoDraft).toContain('·하루 메모');
     expect(draft?.isFocusStarted).toBe(true);
-    expect(draft?.completedFocusCategoryKeys?.length).toBeGreaterThanOrEqual(14);
+    expect(draft?.completedFocusCategoryKeys).toEqual([]);
+    const planDateKey = draft?.priorityPlanDateKey;
+    expect(planDateKey).toBeTruthy();
+    expect(draft?.routineHistoryPendingByDate?.[planDateKey!] ?? []).toEqual([]);
 
     for (const row of SCREENSHOT_EXTRA_ROUTINES) {
       expect(listCustomFlowCatalogIds()).toContain(row.id);
@@ -86,6 +93,7 @@ describe('screenshotDemoMockSeed', () => {
     const plan = loadDayPlan<{ id: string; blockOrigin?: string }>();
     const spine = (plan?.blocks ?? []).filter((block) => block.blockOrigin === 'spineTimeline');
     expect(spine.length).toBe(18);
+    expect(plan?.completedBlockIds ?? []).toEqual([]);
 
     const todos = loadDayPlanTodos();
     const todayKeys = Object.keys(todos?.todosByDate ?? {});

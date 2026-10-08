@@ -15,8 +15,10 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 
 const TAB_ICONS: Record<string, string> = {
   'day-plan': 'calendar',
-  'priority-catalog': 'figure.walk',
   'fixed-routines': 'list.bullet.rectangle',
+  /** 퍼즐 History — 기억/사진 스택 느낌 */
+  'puzzle-history': 'rectangle.stack',
+  /** 주간·월간 통계 History */
   'day-plan-statistics': 'clock.arrow.circlepath',
   'pokit-story': 'book',
 };
@@ -56,8 +58,23 @@ export default function TabLayout() {
         <Tabs.Screen name="index" options={{ href: null }} />
         <Tabs.Screen name="day-plan" options={{ title: t('tabs.dayPlan') }} />
         <Tabs.Screen name="fixed-routines" options={{ title: t('tabs.routines') }} />
-        <Tabs.Screen name="priority-catalog" options={{ title: t('tabs.myRoutines') }} />
-        <Tabs.Screen name="day-plan-statistics" options={{ title: t('tabs.history') }} />
+        {/**
+         * 나만의 루틴 — 하단 탭에서 제거하고 루틴 탭 서브탭으로 통합.
+         * 레거시 딥링크는 priority-catalog.tsx에서 리다이렉트.
+         */}
+        <Tabs.Screen
+          name="priority-catalog"
+          options={{ href: null, title: t('tabs.myRoutines') }}
+        />
+        <Tabs.Screen name="puzzle-history" options={{ title: t('tabs.puzzle') }} />
+        {/**
+         * 주간·월간 히스토리 — 하단 탭에서 제거하고 루틴 탭 상단 포스트잇으로 진입.
+         * 라우트는 유지해 deep link / router.push 가능.
+         */}
+        <Tabs.Screen
+          name="day-plan-statistics"
+          options={{ href: null, title: t('tabs.history') }}
+        />
         <Tabs.Screen name="pokit-story" options={{ title: t('tabs.story') }} />
       </Tabs>
     </DayPlanTabBridgeProvider>

@@ -87,11 +87,23 @@ where a.locale = b.locale
   and a.created_at > b.created_at;
 ```
 
+## 오늘 탭 · 앱스토어 연동 안내 vs 새소식 목록
+
+| 표면 | 동작 |
+|---|---|
+| 설정 → **새소식** | 공지를 **계속 쌓아** 목록으로 보여 준다 (전체 히스토리). |
+| 오늘 탭 「오늘의 한 줄」·앱스토어 연동 UI | `important`/`force` 중 제목에 `x.y.z` 버전이 있는 것만 보고, **버전 숫자가 가장 큰 1건**만. 옛 미읽음·낮은 버전으로 폴백하지 않는다. 「나중에」로 닫으면 그 건만 숨긴다. |
+| `info` | 목록에만. 오늘 탭 안내에는 안 나온다. |
+
+- 업데이트 공지 제목은 반드시 버전을 넣는다 (예: `POKIT 1.9.4 업데이트`). 버전 없는 important는 오늘 탭 앱스토어 안내에 안 쓴다.
+- 스토어에 새 버전이 있어 `remote-config` 업데이트 안내가 우선일 때는, 그 안내가 사라진 뒤 최고 버전 공지 카드가 나온다.
+- 구현: `src/features/announcement-home-nudge/lib/pickHomeNudgeAnnouncement.ts` (`compareAppVersions`)
+
 ## 혼동 금지
 
 | 채널 | 용도 |
 |---|---|
-| Supabase `announcements` | 설정 → **새소식** |
-| `remote-config/latest-app-version.json` | 스토어 업데이트 모달 |
+| Supabase `announcements` | 설정 → **새소식** + (important/force 미읽음 시) **오늘 탭** |
+| `remote-config/latest-app-version.json` | 설치 버전 < 최신일 때 스토어 업데이트 안내 |
 
 새소식만 요청하면 remote-config는 건드리지 않는다.

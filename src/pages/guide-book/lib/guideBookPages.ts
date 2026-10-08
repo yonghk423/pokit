@@ -23,6 +23,8 @@ export type GuideBookFigureId =
   | 'routine-templates'
   | 'my-routine'
   | 'my-routine-apply'
+  | 'puzzle'
+  | 'puzzle-start'
   | 'history'
   | 'story'
   | 'settings';
@@ -47,7 +49,7 @@ type PageSpec = {
 };
 
 const PAGE_SPECS: readonly PageSpec[] = [
-  { id: 'cover', chapterKey: 'pokit', figureId: 'tabs-map', callouts: 5, notes: 0, hasLead: true },
+  { id: 'cover', chapterKey: 'pokit', figureId: 'tabs-map', callouts: 4, notes: 1, hasLead: true },
   { id: 'chrome', chapterKey: 'common', figureId: 'chrome-modes', callouts: 5, notes: 2, hasLead: true },
   { id: 'today-overview', chapterKey: 'todayTab', figureId: 'today-overview', callouts: 5, notes: 2, hasLead: true },
   { id: 'today-window', chapterKey: 'todayTab', figureId: 'today-window', callouts: 4, notes: 1, hasLead: true },
@@ -58,6 +60,8 @@ const PAGE_SPECS: readonly PageSpec[] = [
   { id: 'routine-templates', chapterKey: 'routinesTab', figureId: 'routine-templates', callouts: 5, notes: 0, hasLead: true },
   { id: 'my-routine', chapterKey: 'myRoutinesTab', figureId: 'my-routine', callouts: 4, notes: 0, hasLead: true },
   { id: 'my-routine-apply', chapterKey: 'myRoutinesTab', figureId: 'my-routine-apply', callouts: 3, notes: 2, hasLead: true },
+  { id: 'puzzle', chapterKey: 'puzzleTab', figureId: 'puzzle', callouts: 5, notes: 2, hasLead: true },
+  { id: 'puzzle-start', chapterKey: 'puzzleTab', figureId: 'puzzle-start', callouts: 4, notes: 1, hasLead: true },
   { id: 'history', chapterKey: 'historyTab', figureId: 'history', callouts: 4, notes: 2, hasLead: true },
   { id: 'story', chapterKey: 'storyTab', figureId: 'story', callouts: 3, notes: 0, hasLead: true },
   { id: 'settings', chapterKey: 'settings', figureId: 'settings', callouts: 6, notes: 1, hasLead: true },
@@ -65,6 +69,8 @@ const PAGE_SPECS: readonly PageSpec[] = [
 
 export type GuideBookTocSection = {
   chapter: string;
+  /** PAGE_SPECS chapterKey — 딥링크용 */
+  chapterKey: string;
   icon: string;
   subtitle: string;
   pageIndexes: number[];
@@ -76,6 +82,7 @@ const CHAPTER_META: Record<string, { icon: string; subtitleKey: I18nKey }> = {
   todayTab: { icon: 'calendar', subtitleKey: 'guideBook.chapter.todayTab.subtitle' },
   routinesTab: { icon: 'list.bullet.rectangle', subtitleKey: 'guideBook.chapter.routinesTab.subtitle' },
   myRoutinesTab: { icon: 'figure.walk', subtitleKey: 'guideBook.chapter.myRoutinesTab.subtitle' },
+  puzzleTab: { icon: 'rectangle.stack', subtitleKey: 'guideBook.chapter.puzzleTab.subtitle' },
   historyTab: { icon: 'clock.arrow.circlepath', subtitleKey: 'guideBook.chapter.historyTab.subtitle' },
   storyTab: { icon: 'book', subtitleKey: 'guideBook.chapter.storyTab.subtitle' },
   settings: { icon: 'gearshape', subtitleKey: 'guideBook.chapter.settings.subtitle' },
@@ -134,6 +141,7 @@ export function buildGuideBookToc(locale: AppLocale): GuideBookTocSection[] {
     const meta = CHAPTER_META[chapterKey] ?? { icon: 'book', subtitleKey: 'guideBook.chapter.common.subtitle' as I18nKey };
     return {
       chapter,
+      chapterKey,
       icon: meta.icon,
       subtitle: t(meta.subtitleKey, locale),
       pageIndexes: indexes.get(chapter) ?? [],

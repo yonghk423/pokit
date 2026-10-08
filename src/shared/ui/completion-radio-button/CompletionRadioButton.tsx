@@ -1,4 +1,3 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -8,6 +7,7 @@ import Reanimated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
@@ -16,23 +16,35 @@ export const COMPLETION_TOGGLE_ANIM_MS = 280;
 /** soft 모션 기준 — 토글 후 후속 UI 동기화용 */
 export const COMPLETION_TOGGLE_SOFT_ANIM_MS = 420;
 
-/** 완료 채움 — 검정 원/사각 */
-export const COMPLETION_CHECKED_COLOR_LIGHT = '#09090b';
-/** 다크 모드도 동일하게 검정 채움 + 민트 체크 */
-export const COMPLETION_CHECKED_COLOR_DARK = '#09090b';
+/** 완료 채움 — API 호환 (아이콘만 표시하므로 면색은 미사용) */
+export const COMPLETION_CHECKED_COLOR_LIGHT = RetroFlatColors.light.bgMint;
+export const COMPLETION_CHECKED_COLOR_DARK = RetroFlatColors.dark.bgMint;
 
-/** 완료 체크 아이콘 — Soft Mint */
+/** 어두운 채움 위 폴백 체크색 */
 export const COMPLETION_CHECK_ICON_COLOR = RetroFlatColors.light.bgMint;
+
+/** 활성 붓터치 체크 잉크 */
+export const COMPLETION_CHECK_INK = '#0A1628';
+
+/** 붓터치 느낌의 완료 체크 */
+export function BrushCheckMark({ size, color }: { size: number; color: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
+      <Path
+        d="M4.6 12.4c1.1 1.05 2.55 2.55 4.35 4.7 2.05-3.55 5.35-7.85 10.1-11.55-.55-.35-1.05-.55-1.35-.45-3.95 3.05-6.85 6.85-8.55 9.85-1.25-1.35-2.35-2.35-3.55-3.15-.55.35-1 .7-1 .6z"
+        fill={color}
+      />
+    </Svg>
+  );
+}
 
 const CIRCLE_OUTER_SIZE = 30;
 const SQUARE_OUTER_SIZE = 20;
 const HIT_SIZE = 44;
-const BORDER_WIDTH = 2.5;
 const CHECK_ICON_SIZE = 18;
 const SQUARE_CHECK_ICON_SIZE = 14;
 
 const EASE_OUT = Easing.out(Easing.cubic);
-/** 스르륵 — ease-out expo 느낌 */
 const EASE_SOFT = Easing.bezier(0.22, 1, 0.36, 1);
 
 const MOTION = {
@@ -52,7 +64,7 @@ const MOTION = {
   },
 } as const;
 
-/** 완료 채움 위 체크 아이콘 색 — 어두운 채움이면 민트, 밝은 채움이면 검정 */
+/** 완료 채움 위 체크 아이콘 색 — API 호환 유지 */
 export function completionCheckIconColor(fill: string): string {
   const raw = fill.trim().toLowerCase();
   const hex = /^#?([0-9a-f]{6})$/i.exec(raw);
@@ -62,52 +74,50 @@ export function completionCheckIconColor(fill: string): string {
     const g = parseInt(n.slice(2, 4), 16);
     const b = parseInt(n.slice(4, 6), 16);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.55 ? '#09090b' : COMPLETION_CHECK_ICON_COLOR;
+    return luminance > 0.55 ? COMPLETION_CHECK_INK : COMPLETION_CHECK_ICON_COLOR;
   }
   const rgb = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/.exec(raw);
   if (rgb) {
     const luminance =
       (0.299 * Number(rgb[1]) + 0.587 * Number(rgb[2]) + 0.114 * Number(rgb[3])) / 255;
-    return luminance > 0.55 ? '#09090b' : COMPLETION_CHECK_ICON_COLOR;
+    return luminance > 0.55 ? COMPLETION_CHECK_INK : COMPLETION_CHECK_ICON_COLOR;
   }
   const u = fill.toUpperCase();
-  if (u === '#FAFAFA' || u === '#FFFFFF' || u === '#A8DADC') return '#09090b';
+  if (u === '#FAFAFA' || u === '#FFFFFF' || u === '#A8DADC') return COMPLETION_CHECK_INK;
   return COMPLETION_CHECK_ICON_COLOR;
 }
 
 type Props = {
   checked: boolean;
   isDark: boolean;
-  /** circle: 목록 행 · square: 시간대별 타임라인 */
+  /** circle: 목록 행 · square: 시간대별 타임라인 (히트 영역 크기만 영향) */
   shape?: 'circle' | 'square';
-  /** 원/사각 외곽 한 변(px). 미지정 시 shape 기본값 */
+  /** 히트/아이콘 기준 한 변(px) */
   size?: number;
   checkedColor?: string;
   uncheckedColor?: string;
-  /** border: 윤곽선(기본) · shadow: 테두리 없이 솔리드 음영만 */
   outline?: 'border' | 'shadow';
-  /** outline=shadow 일 때 음영 색 */
   shadowColor?: string;
-  /** outline=shadow 일 때 미완료 면색 */
   uncheckedFill?: string;
-  /** default: 짧게 · soft: 스르륵 길게 */
   motion?: keyof typeof MOTION;
   onPress?: () => void;
   accessibilityLabel?: string;
 };
 
-const SOLID_SHADOW_SM = 2;
-
+/**
+ * 완료 토글 — 원형/사각 면 없이 붓터치 체크만.
+ * 미완료: 흐린 체크 · 완료: 진한 체크.
+ */
 export function CompletionRadioButton({
   checked,
   isDark,
   shape = 'circle',
   size,
-  checkedColor = isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT,
-  uncheckedColor,
-  outline = 'border',
-  shadowColor = '#000000',
-  uncheckedFill,
+  checkedColor: _checkedColor,
+  uncheckedColor: _uncheckedColor,
+  outline: _outline,
+  shadowColor: _shadowColor,
+  uncheckedFill: _uncheckedFill,
   motion = 'default',
   onPress,
   accessibilityLabel,
@@ -116,24 +126,17 @@ export function CompletionRadioButton({
   const timing = MOTION[motion];
   const defaultOuter = shape === 'square' ? SQUARE_OUTER_SIZE : CIRCLE_OUTER_SIZE;
   const outerSize = size ?? defaultOuter;
-  const cornerRadius = shape === 'square' ? 0 : outerSize / 2;
   const defaultCheck = shape === 'square' ? SQUARE_CHECK_ICON_SIZE : CHECK_ICON_SIZE;
   const checkIconSize =
-    size != null ? Math.max(10, Math.round(outerSize * 0.58)) : defaultCheck;
-  const useSolidShadow = outline === 'shadow';
-  const borderWidth = useSolidShadow ? 0 : outerSize <= 26 ? 2 : BORDER_WIDTH;
+    size != null ? Math.max(12, Math.round(outerSize * 0.62)) : defaultCheck;
   const hitSize = size != null ? Math.max(outerSize + 12, 36) : HIT_SIZE;
   const scale = useSharedValue(1);
   const fillProgress = useSharedValue(checked ? 1 : 0);
   const prevCheckedRef = useRef(checked);
 
-  const checkIconColor = completionCheckIconColor(checkedColor);
-  const borderIdle =
-    uncheckedColor ??
-    (isDark ? 'rgba(255,255,255,0.42)' : '#9CA3AF');
-  const idleFill = useSolidShadow
-    ? (uncheckedFill ?? (isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF'))
-    : 'transparent';
+  const activeColor = isDark ? '#FAFAFA' : COMPLETION_CHECK_INK;
+  const idleColor = isDark ? 'rgba(255,255,255,0.32)' : 'rgba(10, 22, 40, 0.28)';
+
   useEffect(() => {
     const wasChecked = prevCheckedRef.current;
     prevCheckedRef.current = checked;
@@ -161,14 +164,14 @@ export function CompletionRadioButton({
     transform: [{ scale: scale.value }],
   }));
 
-  const outlineAnimatedStyle = useAnimatedStyle(() => ({
+  const idleAnimatedStyle = useAnimatedStyle(() => ({
     opacity: 1 - fillProgress.value,
-    transform: [{ scale: 0.92 + (1 - fillProgress.value) * 0.08 }],
+    transform: [{ scale: 0.94 + (1 - fillProgress.value) * 0.06 }],
   }));
 
-  const fillAnimatedStyle = useAnimatedStyle(() => ({
+  const activeAnimatedStyle = useAnimatedStyle(() => ({
     opacity: fillProgress.value,
-    transform: [{ scale: 0.72 + fillProgress.value * 0.28 }],
+    transform: [{ scale: 0.86 + fillProgress.value * 0.14 }],
   }));
 
   const handlePress = () => {
@@ -184,7 +187,9 @@ export function CompletionRadioButton({
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
-      accessibilityLabel={accessibilityLabel ?? (checked ? t('common.completeCancel') : t('common.complete'))}
+      accessibilityLabel={
+        accessibilityLabel ?? (checked ? t('common.completeCancel') : t('common.complete'))
+      }
       hitSlop={6}
       onPress={handlePress}
       onPressIn={() => {
@@ -200,70 +205,19 @@ export function CompletionRadioButton({
         });
       }}
       style={[styles.hit, { width: hitSize, height: hitSize }]}>
-      <View
+      <Reanimated.View
         style={[
-          styles.shell,
-          useSolidShadow
-            ? { marginRight: SOLID_SHADOW_SM, marginBottom: SOLID_SHADOW_SM }
-            : null,
+          styles.visualWrap,
+          { width: outerSize, height: outerSize },
+          rootAnimatedStyle,
         ]}>
-        {useSolidShadow ? (
-          <View
-            pointerEvents="none"
-            style={[
-              styles.solidShadow,
-              {
-                width: outerSize,
-                height: outerSize,
-                borderRadius: cornerRadius,
-                backgroundColor: shadowColor,
-                transform: [
-                  { translateX: SOLID_SHADOW_SM },
-                  { translateY: SOLID_SHADOW_SM },
-                ],
-              },
-            ]}
-          />
-        ) : null}
-        <Reanimated.View
-          style={[
-            styles.visualWrap,
-            { width: outerSize, height: outerSize, zIndex: 1 },
-            rootAnimatedStyle,
-          ]}>
-          <Reanimated.View
-            pointerEvents="none"
-            style={[
-              styles.layer,
-              styles.uncheckedOutline,
-              {
-                width: outerSize,
-                height: outerSize,
-                borderRadius: cornerRadius,
-                borderColor: borderIdle,
-                borderWidth,
-                backgroundColor: idleFill,
-              },
-              outlineAnimatedStyle,
-            ]}
-          />
-          <Reanimated.View
-            pointerEvents="none"
-            style={[
-              styles.layer,
-              styles.checkedFill,
-              {
-                width: outerSize,
-                height: outerSize,
-                borderRadius: cornerRadius,
-                backgroundColor: checkedColor,
-              },
-              fillAnimatedStyle,
-            ]}>
-            <MaterialIcons name="check" size={checkIconSize} color={checkIconColor} />
-          </Reanimated.View>
+        <Reanimated.View pointerEvents="none" style={[styles.layer, idleAnimatedStyle]}>
+          <BrushCheckMark size={checkIconSize} color={idleColor} />
         </Reanimated.View>
-      </View>
+        <Reanimated.View pointerEvents="none" style={[styles.layer, activeAnimatedStyle]}>
+          <BrushCheckMark size={Math.round(checkIconSize * 1.08)} color={activeColor} />
+        </Reanimated.View>
+      </Reanimated.View>
     </Pressable>
   );
 }
@@ -275,26 +229,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  shell: {
-    position: 'relative',
-    overflow: 'visible',
-  },
-  solidShadow: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-  },
   visualWrap: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   layer: {
     ...StyleSheet.absoluteFillObject,
-  },
-  uncheckedOutline: {
-    backgroundColor: 'transparent',
-  },
-  checkedFill: {
     alignItems: 'center',
     justifyContent: 'center',
   },

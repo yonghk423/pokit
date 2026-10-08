@@ -27,7 +27,7 @@ export type BrutalConfirmButtonProps = {
   labelColor?: string;
   /** 윤곽선 */
   border?: string;
-  /** 있으면 solid shadow. 생략 시 검정(라이트) / 민트(다크) */
+  /** 있으면 solid shadow. 생략 시 연한 검정(라이트) / 연한 민트(다크) */
   shadowColor?: string;
   disabled?: boolean;
   /** 스크롤 영역에서도 탭이 쉽게 취소되지 않도록 유지할 거리 */
@@ -45,16 +45,17 @@ export function resolveBrutalConfirmPrimaryColors(isDark: boolean) {
   return {
     /** 항상 밝은 민트 면 (다크 모드도 primaryContainer 대신 primary) */
     fill: isDark ? c.primary : c.primaryContainer,
-    /** 민트 위 글자 — 검정 (틸 잉크 대신) */
-    labelColor: isDark ? c.primaryOn : '#000000',
+    /** 민트 위 글자 — 순수 검정 */
+    labelColor: '#000000',
     border: c.border,
-    shadowColor: isDark ? c.solidShadow : c.border,
+    /** solid shadow — 라이트는 연한 잉크 (순수 검정 금지) */
+    shadowColor: isDark ? 'rgba(158, 207, 209, 0.45)' : 'rgba(0, 0, 0, 0.16)',
     /**
      * 비활성도 민트 계열 불투명 색.
      * opacity로 흐리면 solid shadow가 비쳐 검게 보임.
      */
     disabledFill: isDark ? '#6FA8AA' : '#C5E8E9',
-    disabledLabelColor: isDark ? 'rgba(0,32,33,0.55)' : 'rgba(0,0,0,0.45)',
+    disabledLabelColor: 'rgba(0, 0, 0, 0.45)',
   };
 }
 
@@ -125,6 +126,8 @@ export function BrutalConfirmButton({
           },
         ]}>
         <ThemedText
+          lightColor={resolvedLabelColor}
+          darkColor={resolvedLabelColor}
           style={[
             styles.label,
             stretch && styles.labelStretch,

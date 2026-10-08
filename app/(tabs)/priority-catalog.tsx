@@ -1,12 +1,6 @@
-import { DayPlanTabScreenShell, PriorityCatalogPage } from '@pages/day-plan';
-import { freezeHeavyTabScreen } from '@shared/ui/freeze-heavy-tab-screen';
+import { Redirect } from 'expo-router';
 
-const FrozenPriorityCatalogPage = freezeHeavyTabScreen(PriorityCatalogPage);
-
+/** 레거시 「나만의 루틴」탭 → 루틴 탭 서브섹션으로 리다이렉트 */
 export default function PriorityCatalogTabScreen() {
-  return (
-    <DayPlanTabScreenShell>
-      <FrozenPriorityCatalogPage />
-    </DayPlanTabScreenShell>
-  );
+  return <Redirect href={{ pathname: '/(tabs)/fixed-routines', params: { section: 'myRoutines' } }} />;
 }

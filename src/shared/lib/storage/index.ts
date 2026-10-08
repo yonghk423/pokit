@@ -88,9 +88,11 @@ export {
   loadPokitWeekTourLayoutNudgeSeen,
   loadPokitWeekTourSeeded,
   loadPokitWeekTourSeededDate,
+  loadPokitWeekTourPuzzleNudgeSeen,
   loadPokitWeekTourWidgetNudgeSeen,
   markPokitWeekTourFirstTipSeen,
   markPokitWeekTourLayoutNudgeSeen,
+  markPokitWeekTourPuzzleNudgeSeen,
   markPokitWeekTourSeeded,
   markPokitWeekTourWidgetNudgeSeen,
   nextOrderWithPokitWeekTourSeed,
@@ -249,6 +251,20 @@ export type {
   HistoryDailyStatRow,
   HistoryMetaRow
 } from './historyStorage';
+export {
+  clearPuzzleHistoryStorage,
+  loadPuzzleHistoryState,
+  savePuzzleHistoryState,
+} from './puzzleHistoryStorage';
+export type {
+  PuzzleDailyRecordRow,
+  PuzzleHistoryDurationRow,
+  PuzzleHistoryRow,
+  PuzzleHistoryStateRow,
+  PuzzleHistoryStatusRow,
+  PuzzleHistoryTargetRow,
+  PuzzlePieceRow,
+} from './puzzleHistoryStorage';
 export {
   clearMonthlyCompletion,
   clearWeeklyCompletion, listMonthlyCompletions,

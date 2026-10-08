@@ -1,9 +1,11 @@
 export {
+  BrushCheckMark,
   CompletionRadioButton,
   COMPLETION_TOGGLE_ANIM_MS,
   COMPLETION_TOGGLE_SOFT_ANIM_MS,
   COMPLETION_CHECKED_COLOR_LIGHT,
   COMPLETION_CHECKED_COLOR_DARK,
   COMPLETION_CHECK_ICON_COLOR,
+  COMPLETION_CHECK_INK,
   completionCheckIconColor,
 } from './CompletionRadioButton';

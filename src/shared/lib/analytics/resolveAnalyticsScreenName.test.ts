@@ -6,12 +6,14 @@ describe('resolveAnalyticsScreenName', () => {
     expect(resolveAnalyticsScreenName('/fixed-routines')).toBe('routines');
     expect(resolveAnalyticsScreenName('/(tabs)/priority-catalog')).toBe('my_routines');
     expect(resolveAnalyticsScreenName('/(tabs)/day-plan-statistics')).toBe('history');
+    expect(resolveAnalyticsScreenName('/(tabs)/puzzle-history')).toBe('puzzle');
     expect(resolveAnalyticsScreenName('/(tabs)/pokit-story')).toBe('bookstore');
     expect(resolveAnalyticsScreenName('/settings')).toBe('settings');
     expect(resolveAnalyticsScreenName('/release-notes')).toBe('release_notes');
     expect(resolveAnalyticsScreenName('/goal-detail-settings')).toBe('routine_detail');
     expect(resolveAnalyticsScreenName('/activity-session')).toBe('activity_session');
     expect(resolveAnalyticsScreenName('/widget-guide')).toBe('widget_guide');
+    expect(resolveAnalyticsScreenName('/puzzle-guide')).toBe('puzzle_guide');
   });
 
   it('falls back for unknown paths', () => {

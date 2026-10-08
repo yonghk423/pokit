@@ -84,7 +84,7 @@ export function HistoryPeriodTabs({ period, onSelectPeriod, isDark }: Props) {
 const styles = StyleSheet.create({
   root: {
     alignSelf: 'flex-start',
-    marginBottom: 8,
+    flexShrink: 1,
   },
   track: {
     flexDirection: 'row',

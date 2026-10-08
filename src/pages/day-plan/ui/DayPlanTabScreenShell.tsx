@@ -107,6 +107,8 @@ export function DayPlanTabScreenShell({ children }: Props) {
           planMode={planMode}
           onSelectMode={handleSelectMode}
           c={c}
+          /** 빠른메모 힌트는 오늘 탭에서만 — 루틴/퍼즐 등에서 planMode 잔상으로 비치지 않게 */
+          description={isDayPlanTab ? undefined : null}
           trailing={<SettingsTopBarButton c={c} />}
         />
       </View>

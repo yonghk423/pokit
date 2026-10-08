@@ -2,8 +2,10 @@ import { localStorageClient } from './localStorageClient';
 import {
   BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
   hideStandardCatalogKey,
+  loadPokitWeekTourPuzzleNudgeSeen,
   loadPokitWeekTourSeeded,
   loadPokitWeekTourWidgetNudgeSeen,
+  markPokitWeekTourPuzzleNudgeSeen,
   markPokitWeekTourSeeded,
   markPokitWeekTourWidgetNudgeSeen,
   nextOrderWithPokitWeekTourSeed,
@@ -15,6 +17,7 @@ describe('pokitWeekTourStorage', () => {
   beforeEach(() => {
     localStorageClient.removeItem(StorageKeys.pokitWeekTourSeeded);
     localStorageClient.removeItem(StorageKeys.pokitWeekTourWidgetNudgeSeen);
+    localStorageClient.removeItem(StorageKeys.pokitWeekTourPuzzleNudgeSeen);
     localStorageClient.removeItem(StorageKeys.goalDetailSettings);
     localStorageClient.removeItem(StorageKeys.hiddenStandardCatalogKeys);
   });
@@ -66,5 +69,11 @@ describe('pokitWeekTourStorage', () => {
     expect(loadPokitWeekTourWidgetNudgeSeen()).toBe(false);
     markPokitWeekTourWidgetNudgeSeen();
     expect(loadPokitWeekTourWidgetNudgeSeen()).toBe(true);
+  });
+
+  it('tracks puzzle nudge seen flag', () => {
+    expect(loadPokitWeekTourPuzzleNudgeSeen()).toBe(false);
+    markPokitWeekTourPuzzleNudgeSeen();
+    expect(loadPokitWeekTourPuzzleNudgeSeen()).toBe(true);
   });
 });

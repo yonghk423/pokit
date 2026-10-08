@@ -96,6 +96,25 @@ export function markPokitWeekTourWidgetNudgeSeen(): void {
   );
 }
 
+type PersistedPokitWeekTourPuzzleNudge = {
+  seen: boolean;
+};
+
+/** 투어 완료 후 「퍼즐 설명서」안내를 이미 봤는지 */
+export function loadPokitWeekTourPuzzleNudgeSeen(): boolean {
+  const v = localStorageClient.getJson<PersistedPokitWeekTourPuzzleNudge>(
+    StorageKeys.pokitWeekTourPuzzleNudgeSeen,
+  );
+  return v?.seen === true;
+}
+
+export function markPokitWeekTourPuzzleNudgeSeen(): void {
+  localStorageClient.setJson<PersistedPokitWeekTourPuzzleNudge>(
+    StorageKeys.pokitWeekTourPuzzleNudgeSeen,
+    { seen: true },
+  );
+}
+
 /** 체크리스트 7단계가 모두 완료됐는지 — 완료 후에는 빈 담기에 다시 넣지 않는다. */
 export function isPokitWeekTourChecklistComplete(): boolean {
   const raw = loadGoalDetailCategoryConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);

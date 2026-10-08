@@ -13,10 +13,13 @@ describe('devMockSeed', () => {
     localStorageClient.removeItem(StorageKeys.historyMeta);
     localStorageClient.removeItem(StorageKeys.horizonCompletions);
     localStorageClient.removeItem(StorageKeys.horizonGoals);
+    localStorageClient.removeItem(StorageKeys.puzzleHistory);
   });
 
   it('getDevMockSeedBundleVersion reflects registered modules', () => {
-    expect(getDevMockSeedBundleVersion()).toBe('history-daily@9+horizon-completions@5');
+    expect(getDevMockSeedBundleVersion()).toBe(
+      'history-daily@9+horizon-completions@6+puzzle-history@6',
+    );
   });
 
   it('runDevMockSeed writes bundle version key', async () => {
@@ -36,5 +39,6 @@ describe('devMockSeed', () => {
     expect(localStorageClient.getJson(StorageKeys.historyDailyStats)).toBeNull();
     expect(localStorageClient.getJson(StorageKeys.horizonCompletions)).toBeNull();
     expect(localStorageClient.getJson(StorageKeys.horizonGoals)).toBeNull();
+    expect(localStorageClient.getJson(StorageKeys.puzzleHistory)).toBeNull();
   });
 });

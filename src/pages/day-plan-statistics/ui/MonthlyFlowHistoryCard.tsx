@@ -45,7 +45,11 @@ export const MonthlyFlowHistoryCard = memo(function MonthlyFlowHistoryCard({ gro
         </View>
         <View style={styles.metaWrap}>
           {streakDays > 0 ? (
-            <ThemedText style={[styles.streak, { color: palette.ink }]}>
+            <ThemedText
+              style={[
+                styles.streak,
+                { color: isDark ? '#FAFAFA' : '#000000' },
+              ]}>
               {t('history.streak.label', { count: streakDays })}
             </ThemedText>
           ) : null}
@@ -100,9 +104,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   streak: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: -0.25,
   },
   monthCount: {
     fontSize: 12,

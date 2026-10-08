@@ -1,5 +1,5 @@
-/** 네이티브 스플래시와 동일한 배경 — 전환 깜빡임 완화 */
-export const SPLASH_BACKGROUND_COLOR = '#B1C8B6';
+/** 네이티브 스플래시와 동일한 배경 — 퍼즐 벽·회백색 (전환 깜빡임 완화) */
+export const SPLASH_BACKGROUND_COLOR = '#F5F4F2';
 
 /** 스플래시 한 화면에 깔 6장 (2열 × 3행) */
 export const SPLASH_IMAGE_SOURCES = [

@@ -9,6 +9,10 @@ const EXACT_SCREEN_NAMES: Record<string, string> = {
   'fixed-routines': 'routines',
   'priority-catalog': 'my_routines',
   'day-plan-statistics': 'history',
+  'puzzle-history': 'puzzle',
+  'puzzle-history-start': 'days_start',
+  'puzzle-history-detail': 'days_detail',
+  'puzzle-history-album': 'days_album',
   'pokit-story': 'bookstore',
   settings: 'settings',
   'notification-settings': 'notification_settings',
@@ -25,6 +29,7 @@ const EXACT_SCREEN_NAMES: Record<string, string> = {
   'layout-settings': 'layout_settings',
   'guide-book': 'guide_book',
   'widget-guide': 'widget_guide',
+  'puzzle-guide': 'puzzle_guide',
   'welcome-intro': 'welcome_intro',
 };
 

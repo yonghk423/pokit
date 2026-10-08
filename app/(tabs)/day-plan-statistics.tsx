@@ -1,13 +1,6 @@
-import { DayPlanTabScreenShell } from '@pages/day-plan';
-import { DayPlanStatisticsPage } from '@pages/day-plan-statistics';
-import { freezeHeavyTabScreen } from '@shared/ui/freeze-heavy-tab-screen';
+import { Redirect } from 'expo-router';
 
-const FrozenDayPlanStatisticsPage = freezeHeavyTabScreen(DayPlanStatisticsPage);
-
+/** 레거시 딥링크 — 루틴 탭 안 히스토리 섹션으로 보낸다. */
 export default function DayPlanStatisticsTab() {
-  return (
-    <DayPlanTabScreenShell>
-      <FrozenDayPlanStatisticsPage />
-    </DayPlanTabScreenShell>
-  );
+  return <Redirect href="/(tabs)/fixed-routines?section=history" />;
 }

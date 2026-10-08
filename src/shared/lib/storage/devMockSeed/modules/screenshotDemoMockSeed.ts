@@ -52,6 +52,10 @@ import { StorageKeys } from '../../storageKeys';
 
 import type { DevMockSeedModule } from '../types';
 import {
+  clearPuzzleHistoryMockData,
+  seedPuzzleHistoryMockData,
+} from './puzzleHistoryMockSeed';
+import {
   getScreenshotDemoCopy,
   getScreenshotSpineLabel,
   isScreenshotExtraFlowId,
@@ -233,10 +237,6 @@ function clearScreenshotExtraRoutines(): void {
 
 function seedDayPlanDraft(today: string): void {
   const order = buildPriorityCategoryOrder();
-  /** 히스토리 동기화가 시드 완료를 지우지 않도록 오늘 담기 대부분을 완료로 둠 */
-  const completedFocusCategoryKeys = order.filter(
-    (key) => key !== 'fasting' && key !== SCREENSHOT_EXTRA_ROUTINES[11]!.id,
-  );
   const prev = loadDayPlanDraft();
   saveDayPlanDraft({
     ...(prev ?? {
@@ -256,7 +256,7 @@ function seedDayPlanDraft(today: string): void {
     dailyRolloverVersion: 1,
     planMode: 'priority',
     isFocusStarted: true,
-    completedFocusCategoryKeys,
+    completedFocusCategoryKeys: [],
     planCompletionDismissedKeys: [],
     priorityPlanDateKey: today,
     priorityPlanDateKeyEnd: today,
@@ -288,7 +288,7 @@ function seedDayPlanDraft(today: string): void {
     },
     routineHistoryPendingByDate: {
       ...(prev?.routineHistoryPendingByDate ?? {}),
-      [today]: completedFocusCategoryKeys,
+      [today]: [],
     },
   });
   appendRoutineCatalogSelectionKeys(order);
@@ -323,19 +323,10 @@ function seedSpineTimeline(today: string): void {
       blockOrigin: 'spineTimeline' as const,
     };
   });
-  const completedIds = spineBlocks
-    .filter((block) => block.order <= Math.floor(spineBlocks.length * 0.55))
-    .map((block) => block.id);
-
   saveDayPlan({
     dateKey: today,
     blocks: [...kept, ...spineBlocks],
-    completedBlockIds: [
-      ...((prev?.dateKey === today ? prev.completedBlockIds : []) ?? []).filter(
-        (id) => !id.startsWith(SCREENSHOT_SPINE_ID_PREFIX),
-      ),
-      ...completedIds,
-    ],
+    completedBlockIds: [],
     skippedBlockIds:
       prev?.dateKey === today
         ? (prev.skippedBlockIds ?? []).filter((id) => !id.startsWith(SCREENSHOT_SPINE_ID_PREFIX))
@@ -366,7 +357,7 @@ function seedTodos(today: string): void {
       startMinutes: 15 * 60,
       endMinutes: 15 * 60 + 20,
       inProgress: false,
-      isDone: true,
+      isDone: false,
     },
     {
       priority: 'high' as const,
@@ -387,7 +378,7 @@ function seedTodos(today: string): void {
       startMinutes: 19 * 60 + 10,
       endMinutes: 19 * 60 + 30,
       inProgress: false,
-      isDone: true,
+      isDone: false,
     },
     {
       priority: 'high' as const,
@@ -923,7 +914,7 @@ function clearScreenshotMyRoutines(): void {
 
 export const screenshotDemoMockSeed: DevMockSeedModule = {
   id: 'screenshot-demo',
-  version: 12,
+  version: 16,
   async seed() {
     const today = todayDateKey();
     markDailyRhythmOnboardingCompleted();
@@ -937,11 +928,13 @@ export const screenshotDemoMockSeed: DevMockSeedModule = {
     seedFastingDetail();
     seedDayNotes(today);
     seedScreenshotMyRoutines();
+    const puzzlePartial = seedPuzzleHistoryMockData();
     return {
       screenshotRoutines: buildPriorityCategoryOrder().length,
       screenshotTodos: getScreenshotDemoCopy(getAppLocale()).todos.length,
       screenshotBooks: SCREENSHOT_READING_BOOK_IDS.length,
       screenshotNotes: SCREENSHOT_NOTE_PAGE_IDS.length,
+      ...puzzlePartial,
     };
   },
   async clear() {
@@ -952,6 +945,7 @@ export const screenshotDemoMockSeed: DevMockSeedModule = {
     clearScreenshotWorkNote();
     clearScreenshotExtraRoutines();
     clearScreenshotMyRoutines();
+    clearPuzzleHistoryMockData();
     restoreBuiltinRoutineLabelsToKo();
     clearScreenshotCategoryIfSeeded(
       'healthIntake',

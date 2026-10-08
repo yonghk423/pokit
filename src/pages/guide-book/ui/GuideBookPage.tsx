@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,10 +26,23 @@ const SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
 
 type ViewMode = 'toc' | 'read';
 
+function resolveInitialSection(
+  toc: ReturnType<typeof buildGuideBookToc>,
+  sectionParam: string | string[] | undefined,
+): { view: ViewMode; sectionIndex: number } {
+  const raw = Array.isArray(sectionParam) ? sectionParam[0] : sectionParam;
+  const key = raw?.trim();
+  if (!key) return { view: 'toc', sectionIndex: 0 };
+  const idx = toc.findIndex((sec) => sec.chapterKey === key);
+  if (idx < 0) return { view: 'toc', sectionIndex: 0 };
+  return { view: 'read', sectionIndex: idx };
+}
+
 /** 목차로 섹션을 고르고, 섹션 안에서만 이전·다음. 번호는 해당 페이지만. */
 export function GuideBookPage() {
   const { t, locale } = useTranslation();
   const router = useRouter();
+  const { section: sectionParam } = useLocalSearchParams<{ section?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const rf = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
@@ -37,8 +50,11 @@ export function GuideBookPage() {
   const pages = useMemo(() => getGuideBookPages(locale), [locale]);
   const toc = useMemo(() => buildGuideBookToc(locale), [locale]);
 
-  const [view, setView] = useState<ViewMode>('toc');
-  const [sectionIndex, setSectionIndex] = useState(0);
+  const [boot] = useState(() =>
+    resolveInitialSection(buildGuideBookToc(locale), sectionParam),
+  );
+  const [view, setView] = useState<ViewMode>(boot.view);
+  const [sectionIndex, setSectionIndex] = useState(boot.sectionIndex);
   const [pageInSection, setPageInSection] = useState(0);
 
   const section = toc[sectionIndex]!;

@@ -63,8 +63,13 @@ const PERIOD_NAV_SHADOW = 1;
 const PERIOD_NAV_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
 const PERIOD_NAV_SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
 
-/** 하단 히스토리 탭 — 주간·월간 플로우 완료 기록 */
-export function DayPlanStatisticsPage() {
+type DayPlanStatisticsPageProps = {
+  /** 루틴 탭 안에 임베드 — 분위기·풀스크린 셸은 부모가 담당 */
+  embedded?: boolean;
+};
+
+/** 주간·월간 플로우 완료 기록 — 루틴 탭 히스토리 포스트잇 등에서 진입 */
+export function DayPlanStatisticsPage({ embedded = false }: DayPlanStatisticsPageProps = {}) {
   const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
@@ -240,14 +245,14 @@ export function DayPlanStatisticsPage() {
       : t('history.empty.monthBody');
   const atmosphereVariant = period === 'week' ? 'historyWeek' : 'historyMonth';
 
-  return (
-    <ThemedView
-      style={[styles.root, { backgroundColor: palette.pageBg }]}
-      lightColor={palette.pageBg}
-      darkColor={palette.pageBg}>
-      <RoutineTabAtmosphere variant={atmosphereVariant} isDark={isDark} />
+  const body = (
+    <>
       <View style={styles.foreground}>
-        <View style={styles.stickyHeader}>
+        <View
+          style={[
+            styles.stickyHeader,
+            embedded && styles.stickyHeaderEmbedded,
+          ]}>
           <HistoryPeriodTabs
             period={period}
             onSelectPeriod={setPeriod}
@@ -455,6 +460,20 @@ export function DayPlanStatisticsPage() {
         isDark={isDark}
         onClose={() => setDayDetail(null)}
       />
+    </>
+  );
+
+  if (embedded) {
+    return <View style={styles.root}>{body}</View>;
+  }
+
+  return (
+    <ThemedView
+      style={[styles.root, { backgroundColor: palette.pageBg }]}
+      lightColor={palette.pageBg}
+      darkColor={palette.pageBg}>
+      <RoutineTabAtmosphere variant={atmosphereVariant} isDark={isDark} />
+      {body}
     </ThemedView>
   );
 }
@@ -476,6 +495,9 @@ const styles = StyleSheet.create({
     gap: 10,
     zIndex: 2,
     backgroundColor: 'transparent',
+  },
+  stickyHeaderEmbedded: {
+    paddingTop: 0,
   },
   scroll: {
     flex: 1,

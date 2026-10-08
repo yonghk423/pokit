@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Alert,
@@ -1791,6 +1791,8 @@ function GroupAccordion({
   );
 }
 
+type FixedRoutineView = FixedRoutineSection | 'history';
+
 type FixedRoutinePageProps = {
   /** 루틴 탭 내부 — 고정 루틴(프리셋) 커스텀만 표시 */
   embeddedPresetOnly?: boolean;
@@ -1799,6 +1801,8 @@ type FixedRoutinePageProps = {
   /** 상위 화면에서 보기 모드(목록·시간대·타임라인)를 제어할 때 */
   controlledLayoutMode?: DayPlanLayoutMode;
   hideLayoutModeHeader?: boolean;
+  /** 루틴 탭 히스토리 포스트잇 — app 레이어에서 DayPlanStatisticsPage 등을 주입 */
+  historyContent?: ReactNode;
 };
 
 export function FixedRoutinePage({
@@ -1806,6 +1810,7 @@ export function FixedRoutinePage({
   embeddedCustomOnly = false,
   controlledLayoutMode,
   hideLayoutModeHeader = false,
+  historyContent,
 }: FixedRoutinePageProps = {}) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -1814,6 +1819,7 @@ export function FixedRoutinePage({
   const c = useMemo(() => palette(isDark), [isDark]);
 
   const isEmbedded = embeddedPresetOnly || embeddedCustomOnly;
+  const routeParams = useLocalSearchParams<{ section?: string | string[] }>();
   const [catalogTick, setCatalogTick] = useState(0);
   const [customFlowEntries, setCustomFlowEntries] = useState<CustomFlowCatalogEntry[]>(
     () => listAllCustomFlowCatalogEntries(),
@@ -1826,17 +1832,36 @@ export function FixedRoutinePage({
   );
   /** 나만의 루틴: 접힌 id만 저장. 없으면 펼침(기본 전부 열림). */
   const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(() =>
-    embeddedCustomOnly ? loadMyRoutineCollapsedGroupIds() : new Set(),
+    loadMyRoutineCollapsedGroupIds(),
   );
   const collapsedGroupIdsRef = useRef(collapsedGroupIds);
   collapsedGroupIdsRef.current = collapsedGroupIds;
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
-  const [section, setSection] = useState<FixedRoutineSection>('catalog');
+  const [section, setSection] = useState<FixedRoutineView>(() => {
+    const raw = Array.isArray(routeParams.section)
+      ? routeParams.section[0]
+      : routeParams.section;
+    return raw === 'myRoutines' ||
+      raw === 'templates' ||
+      raw === 'catalog' ||
+      raw === 'history'
+      ? raw
+      : 'catalog';
+  });
+  const isHistoryMode = !isEmbedded && section === 'history';
+  /** 임베드 또는 루틴 탭 3번째 서브탭 — 나만의 루틴 본문 */
+  const isMyRoutinesMode = embeddedCustomOnly || section === 'myRoutines';
   const [internalLayoutMode, setInternalLayoutMode] = useState<DayPlanLayoutMode>('bag');
   const layoutMode = controlledLayoutMode ?? internalLayoutMode;
   /** 시안 `px-margin-mobile` 20 */
   const horizontalPad =
-    isEmbedded || section === 'catalog' || section === 'templates' ? 20 : 16;
+    isEmbedded ||
+    section === 'catalog' ||
+    section === 'templates' ||
+    section === 'myRoutines' ||
+    section === 'history'
+      ? 20
+      : 16;
 
   const [priorityWindowSheetOpen, setPriorityWindowSheetOpen] = useState(false);
   const [mealSlotScheduleSheetOpen, setMealSlotScheduleSheetOpen] = useState(false);
@@ -1895,9 +1920,23 @@ export function FixedRoutinePage({
 
   const layoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
   const hydrateLayoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.hydrate);
-  const canManageCustomGroups = embeddedCustomOnly || false;
+  const canManageCustomGroups = isMyRoutinesMode;
   const useSectionsRoutineLayout = layoutMode === 'sections';
   const useSpineRoutineLayout = layoutMode === 'spine';
+
+  useEffect(() => {
+    const raw = Array.isArray(routeParams.section)
+      ? routeParams.section[0]
+      : routeParams.section;
+    if (
+      raw === 'myRoutines' ||
+      raw === 'templates' ||
+      raw === 'catalog' ||
+      raw === 'history'
+    ) {
+      setSection(raw);
+    }
+  }, [routeParams.section]);
 
   const {
     sets,
@@ -2149,10 +2188,10 @@ export function FixedRoutinePage({
 
   const visibleSets = useMemo(() => {
     if (embeddedPresetOnly) return presetSets;
-    // 나만의 루틴 탭 — 데일리·주말(프리셋) + 직접 만든 그룹을 한 목록으로
-    if (embeddedCustomOnly) return [...presetSets, ...customSets];
+    // 나만의 루틴 — 데일리·주말(프리셋) + 직접 만든 그룹을 한 목록으로
+    if (isMyRoutinesMode) return [...presetSets, ...customSets];
     return [];
-  }, [customSets, embeddedCustomOnly, embeddedPresetOnly, presetSets]);
+  }, [customSets, embeddedPresetOnly, isMyRoutinesMode, presetSets]);
 
   useEffect(() => {
     if (controlledLayoutMode !== undefined) return;
@@ -2198,19 +2237,19 @@ export function FixedRoutinePage({
   const expandedItemPaintTotal = useMemo(
     () =>
       visibleSets.reduce((n, setItem) => {
-        const expanded = embeddedCustomOnly
+        const expanded = isMyRoutinesMode
           ? !collapsedGroupIds.has(setItem.id)
           : expandedIds.has(setItem.id);
         return expanded ? n + setItem.items.length : n;
       }, 0),
-    [collapsedGroupIds, embeddedCustomOnly, expandedIds, visibleSets],
+    [collapsedGroupIds, isMyRoutinesMode, expandedIds, visibleSets],
   );
   const groupItemPaintLimit = useChunkedPaintLimit(expandedItemPaintTotal);
   const paintedCountBySetId = useMemo(() => {
     const next = new Map<string, number>();
     let remain = groupItemPaintLimit;
     for (const setItem of visibleSets) {
-      const expanded = embeddedCustomOnly
+      const expanded = isMyRoutinesMode
         ? !collapsedGroupIds.has(setItem.id)
         : expandedIds.has(setItem.id);
       if (!expanded) {
@@ -2224,7 +2263,7 @@ export function FixedRoutinePage({
     return next;
   }, [
     collapsedGroupIds,
-    embeddedCustomOnly,
+    isMyRoutinesMode,
     expandedIds,
     groupItemPaintLimit,
     visibleSets,
@@ -2236,7 +2275,7 @@ export function FixedRoutinePage({
       return;
     }
     const ids = visibleSetIdsKey.split('\0').filter(Boolean);
-    if (embeddedCustomOnly) {
+    if (isMyRoutinesMode) {
       const pruned = pruneMyRoutineCollapsedGroupIds(ids);
       setCollapsedGroupIds((prev) => {
         if (pruned.size === prev.size && [...pruned].every((id) => prev.has(id))) return prev;
@@ -2253,7 +2292,7 @@ export function FixedRoutinePage({
       if (next.size === prev.size && [...next].every((id) => prev.has(id))) return prev;
       return next;
     });
-  }, [embeddedCustomOnly, visibleSetIdsKey]);
+  }, [isMyRoutinesMode, visibleSetIdsKey]);
 
   useEffect(() => {
     if (!canManageCustomGroups) {
@@ -2288,7 +2327,7 @@ export function FixedRoutinePage({
   }, [catalogTick, categoryLabelEpoch, customFlowEntries, customGroups, sets, addItemSetId]);
 
   const toggleExpanded = useCallback((setId: string) => {
-    if (embeddedCustomOnly) {
+    if (isMyRoutinesMode) {
       const collapsing = !collapsedGroupIdsRef.current.has(setId);
       setMyRoutineGroupCollapsed(setId, collapsing);
       setCollapsedGroupIds((prev) => {
@@ -2305,7 +2344,7 @@ export function FixedRoutinePage({
       else next.add(setId);
       return next;
     });
-  }, [embeddedCustomOnly]);
+  }, [isMyRoutinesMode]);
 
   const handleDeleteSet = useCallback(
     (setId: string) => {
@@ -2345,7 +2384,7 @@ export function FixedRoutinePage({
     const created = nextSets[nextSets.length - 1];
     if (created) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      if (embeddedCustomOnly) {
+      if (isMyRoutinesMode) {
         setMyRoutineGroupCollapsed(created.id, false);
         setCollapsedGroupIds((prev) => {
           if (!prev.has(created.id)) return prev;
@@ -2357,7 +2396,7 @@ export function FixedRoutinePage({
         setExpandedIds((prev) => new Set([...prev, created.id]));
       }
     }
-  }, [addSet, embeddedCustomOnly, newGroupName]);
+  }, [addSet, isMyRoutinesMode, newGroupName]);
 
   const openAddItemModal = useCallback((setId: string) => {
     setAddItemSetId(setId);
@@ -2368,19 +2407,21 @@ export function FixedRoutinePage({
 
   const activeSection = embeddedPresetOnly
     ? ('scheduled' as const)
-    : embeddedCustomOnly
+    : isMyRoutinesMode
       ? ('custom' as const)
-      : section;
+      : isHistoryMode
+        ? ('catalog' as const)
+        : section;
   const isCityPopCatalogSurface =
-    activeSection === 'catalog' || activeSection === 'templates';
-  const useBrutalSurface = isEmbedded || isCityPopCatalogSurface;
+    !isHistoryMode &&
+    (activeSection === 'catalog' || activeSection === 'templates');
+  const useBrutalSurface =
+    isEmbedded || isCityPopCatalogSurface || isMyRoutinesMode || isHistoryMode;
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   /** 이전 앱 배경 — warm beige (페이지 배경만 유지) */
   const shellBg =
-    isEmbedded || isCityPopCatalogSurface
-      ? isDark
-        ? tone.bg
-        : tone.bg
+    isEmbedded || isCityPopCatalogSurface || isMyRoutinesMode || isHistoryMode
+      ? tone.bg
       : c.bg;
   const cardBg = useBrutalSurface
     ? isDark
@@ -2438,13 +2479,17 @@ export function FixedRoutinePage({
     [setPriorityCategoryMarkColor],
   );
 
-  const atmosphereVariant: RoutineAtmosphereVariant = embeddedCustomOnly
-    ? 'myRoutines'
-    : embeddedPresetOnly
-      ? 'fixed'
-      : activeSection === 'templates'
-        ? 'templates'
-        : 'catalog';
+  const atmosphereVariant: RoutineAtmosphereVariant = isHistoryMode
+    ? 'historyWeek'
+    : isMyRoutinesMode
+      ? 'myRoutines'
+      : embeddedPresetOnly
+        ? 'fixed'
+        : activeSection === 'templates'
+          ? 'templates'
+          : 'catalog';
+
+  const historyActiveBg = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(24,26,46,0.06)';
 
   const pageBody = (
     <>
@@ -2455,14 +2500,52 @@ export function FixedRoutinePage({
           { paddingHorizontal: horizontalPad, backgroundColor: 'transparent' },
         ]}>
         {!isEmbedded ? (
-          <FixedRoutineSectionTabs
-            section={section}
-            onSelectSection={setSection}
-            c={c}
-            isDark={isDark}
-          />
+          <View style={styles.sectionTabsRow}>
+            <View style={styles.sectionTabsMain}>
+              <FixedRoutineSectionTabs
+                section={section}
+                onSelectSection={(next) => {
+                  setSection(next);
+                  router.setParams({ section: next });
+                }}
+                c={c}
+                isDark={isDark}
+              />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: isHistoryMode }}
+              accessibilityLabel={t('tabs.history')}
+              onPress={() => {
+                if (isHistoryMode) return;
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSection('history');
+                router.setParams({ section: 'history' });
+              }}
+              style={({ pressed }) => [
+                styles.historyPostItHit,
+                pressed && styles.historyPostItPressed,
+              ]}>
+              <PostItCardShell
+                compact
+                isDark={isDark}
+                faceColor={isDark ? tone.surfaceAlt : '#FFFFFF'}
+                shadowColor={isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT}
+                shadowOffset={ACTION_SHADOW}
+                contentStyle={[
+                  styles.historyPostItContent,
+                  isHistoryMode && { backgroundColor: historyActiveBg },
+                ]}>
+                <ThemedText
+                  style={[styles.historyPostItLabel, { color: isDark ? tone.text : '#000000' }]}
+                  numberOfLines={1}>
+                  {t('tabs.history')}
+                </ThemedText>
+              </PostItCardShell>
+            </Pressable>
+          </View>
         ) : null}
-        {canManageCustomGroups ? (
+        {!isHistoryMode && canManageCustomGroups ? (
           isAddingGroup ? (
             <PostItCardShell
               compact
@@ -2562,7 +2645,8 @@ export function FixedRoutinePage({
               </PostItCardShell>
             </Pressable>
           )
-        ) : activeSection !== 'catalog' &&
+        ) : !isHistoryMode &&
+          activeSection !== 'catalog' &&
           activeSection !== 'templates' &&
           (!hideLayoutModeHeader || isEmbedded) ? (
           <ThemedText style={[styles.sectionHint, { color: muted }]}>
@@ -2570,7 +2654,10 @@ export function FixedRoutinePage({
           </ThemedText>
         ) : null}
       </View>
-      {!isEmbedded ? (
+      {isHistoryMode && historyContent ? (
+        <View style={styles.historyPane}>{historyContent}</View>
+      ) : null}
+      {!isHistoryMode && !isEmbedded ? (
         <View
           style={[
             styles.cachedCatalogPane,
@@ -2582,7 +2669,7 @@ export function FixedRoutinePage({
           <RoutineCatalogManageContent />
         </View>
       ) : null}
-      {activeSection !== 'catalog' ? (
+      {!isHistoryMode && activeSection !== 'catalog' ? (
         <KeyboardAvoidingView
           style={styles.scrollKeyboardRoot}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -2659,7 +2746,7 @@ export function FixedRoutinePage({
                           : priorityPlanDateKeyEnd
                       }
                       isExpanded={
-                        embeddedCustomOnly
+                        isMyRoutinesMode
                           ? !collapsedGroupIds.has(setItem.id)
                           : expandedIds.has(setItem.id)
                       }
@@ -2759,7 +2846,7 @@ export function FixedRoutinePage({
                   </ThemedText>
                 ) : null}
                 <RoutineAtmosphereFooterStrip
-                  variant={embeddedCustomOnly ? 'myRoutines' : 'fixed'}
+                  variant={isMyRoutinesMode ? 'myRoutines' : 'fixed'}
                   isDark={isDark}
                 />
               </>
@@ -2858,6 +2945,38 @@ const styles = StyleSheet.create({
     paddingTop: CityPopSpacing.sm,
     paddingBottom: CityPopSpacing.base,
     gap: 10,
+  },
+  sectionTabsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  sectionTabsMain: {
+    flex: 1,
+    minWidth: 0,
+  },
+  historyPostItHit: {
+    marginTop: 0,
+  },
+  historyPostItContent: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  historyPostItLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  historyPostItPressed: {
+    transform: [{ translateY: 1 }],
+  },
+  historyPane: {
+    flex: 1,
+    minHeight: 0,
+    backgroundColor: 'transparent',
   },
   cachedCatalogPane: { flex: 1, backgroundColor: 'transparent' },
   cachedCatalogPaneHidden: { display: 'none' },

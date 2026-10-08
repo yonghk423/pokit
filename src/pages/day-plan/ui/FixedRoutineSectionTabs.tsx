@@ -8,7 +8,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
-export type FixedRoutineSection = 'catalog' | 'templates';
+export type FixedRoutineSection = 'catalog' | 'templates' | 'myRoutines';
 
 type TabDef = {
   key: FixedRoutineSection;
@@ -17,6 +17,7 @@ type TabDef = {
 
 const TABS: TabDef[] = [
   { key: 'catalog', labelKey: 'catalog.routineListTab' },
+  { key: 'myRoutines', labelKey: 'catalog.myRoutinesTab' },
   { key: 'templates', labelKey: 'catalog.routineTemplatesTab' },
 ];
 
@@ -26,7 +27,8 @@ const ACTION_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
 const ACTION_SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
 
 type Props = {
-  section: FixedRoutineSection;
+  /** `history`면 세그먼트 탭은 모두 비활성(히스토리 포스트잇이 활성) */
+  section: FixedRoutineSection | 'history';
   onSelectSection: (section: FixedRoutineSection) => void;
   c: DayPlanPalette;
   isDark: boolean;
@@ -41,7 +43,7 @@ export function FixedRoutineSectionTabs({
 }: Props) {
   const { t } = useTranslation();
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  /** 설정·템플릿 리스트와 같이 흰 면 */
+  /** 설정·템플릿 리스트와 같이 화이트 면 */
   const face = isDark ? tone.surfaceAlt : '#FFFFFF';
   const divider = isDark ? 'rgba(241,239,255,0.22)' : 'rgba(24,26,46,0.12)';
   const activeBg = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(24,26,46,0.06)';
@@ -97,7 +99,7 @@ export function FixedRoutineSectionTabs({
 
 const styles = StyleSheet.create({
   root: {
-    marginBottom: 8,
+    alignSelf: 'flex-start',
   },
   track: {
     flexDirection: 'row',

@@ -9,13 +9,12 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 import type { GuideBookFigureId } from '../lib/guideBookPages';
 
-/** `DayPlanCustomTabBar` 와 동일 */
+/** `DayPlanCustomTabBar` / 하단 탭과 동일 */
 const APP_TABS = [
   { key: 'today', icon: 'calendar', labelKey: 'guideBook.figure.tabToday', n: 1 },
   { key: 'routine', icon: 'list.bullet.rectangle', labelKey: 'guideBook.figure.tabRoutine', n: 2 },
-  { key: 'mine', icon: 'figure.walk', labelKey: 'guideBook.figure.tabMyRoutine', n: 3 },
-  { key: 'history', icon: 'clock.arrow.circlepath', labelKey: 'guideBook.figure.tabHistory', n: 4 },
-  { key: 'story', icon: 'book', labelKey: 'guideBook.figure.tabStory', n: 5 },
+  { key: 'puzzle', icon: 'rectangle.stack', labelKey: 'tabs.puzzle', n: 3 },
+  { key: 'story', icon: 'book', labelKey: 'guideBook.figure.tabStory', n: 4 },
 ] as const;
 
 /** `PlanModeSwitch` 와 동일 */
@@ -645,7 +644,7 @@ function FigureMyRoutine({ tone }: { tone: Tone }) {
   const { t } = useTranslation();
   const pill = tabPillColors(tone.isDark);
   return (
-    <PhoneShell tone={tone} tabActive="mine">
+    <PhoneShell tone={tone} tabActive="routine">
       <View style={[styles.subTabs, { marginBottom: 8 }]}>
         <ThemedText style={[styles.tinyNote, { color: tone.muted, flex: 1 }, cityPopFont('500')]}>
           {t('fixedRoutine.addGroup')}
@@ -716,7 +715,7 @@ function FigureMyRoutineApply({ tone }: { tone: Tone }) {
   const { t } = useTranslation();
   const pill = tabPillColors(tone.isDark);
   return (
-    <PhoneShell tone={tone} tabActive="mine">
+    <PhoneShell tone={tone} tabActive="routine">
       <View
         style={[
           styles.groupCard,
@@ -769,10 +768,122 @@ function FigureMyRoutineApply({ tone }: { tone: Tone }) {
   );
 }
 
+function FigurePuzzle({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
+  const stickyNotes = [
+    { bg: '#FFE08A', done: true },
+    { bg: '#B8E0D2', done: true },
+    { bg: '#F5C6AA', done: false },
+    { bg: '#C9B1FF', done: false },
+  ] as const;
+  return (
+    <PhoneShell tone={tone} tabActive="puzzle">
+      <View style={styles.sheetRow}>
+        <Badge n={1} tone={tone} />
+        <ThemedText style={[styles.sheetTitle, { color: tone.text, flex: 1 }, cityPopFont('800')]}>
+          {t('tabs.puzzle')}
+        </ThemedText>
+        <View
+          style={[
+            styles.miniBtn,
+            { borderColor: tone.border, backgroundColor: tone.primaryContainer },
+          ]}>
+          <Badge n={2} tone={tone} />
+          <ThemedText style={[styles.miniBtnText, { color: tone.text }, cityPopFont('800')]}>
+            {t('history.puzzle.startCta')}
+          </ThemedText>
+        </View>
+      </View>
+      <View
+        style={[
+          styles.puzzleCard,
+          { borderColor: tone.border, backgroundColor: tone.surface },
+        ]}>
+        <View style={styles.sheetRow}>
+          <Badge n={3} tone={tone} />
+          <ThemedText style={[styles.summaryTitle, { color: tone.text }, cityPopFont('800')]}>
+            {t('guideBook.figure.puzzleCardTitle')}
+          </ThemedText>
+          <ThemedText style={[styles.summaryBody, { color: tone.muted }, cityPopFont('600')]}>
+            {t('guideBook.figure.puzzleProgressSample')}
+          </ThemedText>
+        </View>
+        <View style={styles.puzzleGrid}>
+          {stickyNotes.map((note, i) => (
+            <View
+              key={`pz-${i}`}
+              style={[
+                styles.puzzleCell,
+                {
+                  borderColor: tone.border,
+                  backgroundColor: note.done ? note.bg : tone.surfaceAlt,
+                  opacity: note.done ? 1 : 0.55,
+                },
+              ]}>
+              {note.done ? (
+                <IconSymbol name="checkmark" size={12} color={tone.text} />
+              ) : (
+                <View style={[styles.puzzleCellBlank, { borderColor: tone.border }]} />
+              )}
+            </View>
+          ))}
+        </View>
+      </View>
+      <View style={styles.sheetRow}>
+        <Badge n={4} tone={tone} />
+        <IconSymbol name="rectangle.stack" size={16} color={tone.text} />
+        <ThemedText style={[styles.itemText, { color: tone.text }, cityPopFont('700')]}>
+          {t('history.puzzle.albumCta')}
+        </ThemedText>
+        <Badge n={5} tone={tone} />
+        <IconSymbol name="trash" size={14} color={tone.muted} />
+      </View>
+    </PhoneShell>
+  );
+}
+
+function FigurePuzzleStart({ tone }: { tone: Tone }) {
+  const { t } = useTranslation();
+  const steps = [
+    { n: 1, icon: 'flag.fill' as const, labelKey: 'guideBook.figure.puzzleStepTarget' as const },
+    { n: 2, icon: 'photo' as const, labelKey: 'guideBook.figure.puzzleStepPhoto' as const },
+    { n: 3, icon: 'list.bullet.rectangle' as const, labelKey: 'guideBook.figure.puzzleStepRoutines' as const },
+    { n: 4, icon: 'checkmark.circle' as const, labelKey: 'guideBook.figure.puzzleStepPreview' as const },
+  ] as const;
+  return (
+    <PhoneShell tone={tone} tabActive="puzzle">
+      <ThemedText style={[styles.sheetTitle, { color: tone.text }, cityPopFont('800')]}>
+        {t('history.puzzle.startTitle')}
+      </ThemedText>
+      <View style={[styles.flowBox, { borderColor: tone.border, backgroundColor: tone.surface, alignItems: 'stretch' }]}>
+        {steps.map((step) => (
+          <View key={step.n} style={styles.flowStep}>
+            <Badge n={step.n} tone={tone} />
+            <IconSymbol name={step.icon} size={16} color={tone.text} />
+            <ThemedText style={[styles.flowText, { color: tone.text }, cityPopFont('700')]}>
+              {t(step.labelKey)}
+            </ThemedText>
+          </View>
+        ))}
+      </View>
+      <View
+        style={[
+          styles.sheetCta,
+          { borderColor: tone.border, backgroundColor: tone.primaryContainer },
+        ]}>
+        <IconSymbol name="checkmark" size={14} color={tone.text} />
+        <ThemedText style={[styles.sheetCtaText, { color: tone.text }, cityPopFont('800')]}>
+          {t('history.puzzle.confirmStart')}
+        </ThemedText>
+      </View>
+    </PhoneShell>
+  );
+}
+
 function FigureHistory({ tone }: { tone: Tone }) {
   const { t } = useTranslation();
   return (
-    <PhoneShell tone={tone} tabActive="history">
+    <PhoneShell tone={tone} tabActive="puzzle">
       <View style={styles.subTabs}>
         <Badge n={1} tone={tone} />
         <View
@@ -917,6 +1028,8 @@ const FIGURES: Record<GuideBookFigureId, (tone: Tone) => ReactElement> = {
   'routine-templates': (tone) => <FigureRoutineTemplates tone={tone} />,
   'my-routine': (tone) => <FigureMyRoutine tone={tone} />,
   'my-routine-apply': (tone) => <FigureMyRoutineApply tone={tone} />,
+  puzzle: (tone) => <FigurePuzzle tone={tone} />,
+  'puzzle-start': (tone) => <FigurePuzzleStart tone={tone} />,
   history: (tone) => <FigureHistory tone={tone} />,
   story: (tone) => <FigureStory tone={tone} />,
   settings: (tone) => <FigureSettings tone={tone} />,
@@ -1138,6 +1251,21 @@ const styles = StyleSheet.create({
   },
   flowStep: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   flowText: { fontSize: 13 },
+  puzzleCard: { borderWidth: RETRO_BORDER_WIDTH, padding: 10, gap: 8 },
+  puzzleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  puzzleCell: {
+    width: 44,
+    height: 44,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  puzzleCellBlank: {
+    width: 16,
+    height: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderStyle: 'dashed',
+  },
   flowHighlight: {
     borderWidth: RETRO_BORDER_WIDTH,
     paddingHorizontal: 14,

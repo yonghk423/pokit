@@ -36,6 +36,8 @@ type Props = {
   solidShadow?: boolean;
   /** 솔리드 음영 오프셋(px). 생략 시 compact면 2, 아니면 3 */
   shadowOffset?: number;
+  /** 상단 테이프. false면 숨김 (이미지 풀블리드 카드 등) */
+  showTape?: boolean;
 };
 
 /**
@@ -53,34 +55,39 @@ export function PostItCardShell({
   borderWidth = 0,
   solidShadow = true,
   shadowOffset,
+  showTape = true,
 }: Props) {
   const face = faceColor ?? (isDark ? POST_IT_WHITE_DARK : POST_IT_WHITE_LIGHT);
   const shadow = shadowColor ?? POST_IT_SOLID_SHADOW;
   const offset = shadowOffset ?? (compact ? SHADOW_COMPACT : SHADOW);
   const tape = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.78)';
   const outlineW = solidShadow && borderColor ? Math.max(borderWidth, 1) : 0;
+  const tapePad = showTape ? (compact ? 4 : 6) : 0;
 
   return (
     <View
       style={[
         styles.outer,
         compact ? styles.outerCompact : styles.outerFull,
+        { paddingTop: tapePad },
         solidShadow ? { marginRight: offset, marginBottom: offset } : null,
         style,
       ]}>
-      <View
-        pointerEvents="none"
-        style={[styles.tapeWrap, compact && styles.tapeWrapCompact]}>
+      {showTape ? (
         <View
-          style={[styles.tape, compact && styles.tapeCompact, { backgroundColor: tape }]}
-        />
-      </View>
+          pointerEvents="none"
+          style={[styles.tapeWrap, compact && styles.tapeWrapCompact]}>
+          <View
+            style={[styles.tape, compact && styles.tapeCompact, { backgroundColor: tape }]}
+          />
+        </View>
+      ) : null}
       {solidShadow ? (
         <View
           pointerEvents="none"
           style={[
             styles.solidShadow,
-            compact && styles.solidShadowCompact,
+            { top: tapePad },
             {
               backgroundColor: shadow,
               transform: [{ translateX: offset }, { translateY: offset }],
@@ -110,14 +117,12 @@ export function PostItCardShell({
 const styles = StyleSheet.create({
   outer: {
     position: 'relative',
-    paddingTop: 6,
   },
   outerFull: {
     width: '100%',
   },
   outerCompact: {
     alignSelf: 'flex-start',
-    paddingTop: 4,
   },
   tapeWrap: {
     position: 'absolute',
@@ -152,12 +157,8 @@ const styles = StyleSheet.create({
   },
   solidShadow: {
     ...StyleSheet.absoluteFillObject,
-    top: 6,
     borderRadius: 0,
     zIndex: 0,
-  },
-  solidShadowCompact: {
-    top: 4,
   },
   face: {
     borderRadius: 0,

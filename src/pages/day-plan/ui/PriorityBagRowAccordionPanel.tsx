@@ -29,15 +29,18 @@ import {
   loadGoalDetailCategoryConfig,
   loadPokitWeekTourFirstTipSeen,
   loadPokitWeekTourLayoutNudgeSeen,
+  loadPokitWeekTourPuzzleNudgeSeen,
   loadPokitWeekTourWidgetNudgeSeen,
   markPokitWeekTourFirstTipSeen,
   markPokitWeekTourLayoutNudgeSeen,
+  markPokitWeekTourPuzzleNudgeSeen,
   markPokitWeekTourWidgetNudgeSeen,
   POKIT_WEEK_TOUR_STEP_COUNT,
   POST_IT_LIGHT_INK,
   resolvePokitWeekTourStepIndex,
   saveGoalDetailCategoryConfig,
 } from '@shared/lib/storage';
+import { prefetchPuzzleGuideAssets } from '@shared/lib/puzzle-guide-assets';
 import { prefetchWidgetGuideAssets } from '@shared/lib/widget-guide-assets';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { UiSurfacePresentationProvider } from '@shared/ui/presentation';
@@ -46,6 +49,7 @@ import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { PokitWeekTourLayoutNudgeSheet } from './PokitWeekTourLayoutNudgeSheet';
+import { PokitWeekTourPuzzleNudgeSheet } from './PokitWeekTourPuzzleNudgeSheet';
 import { PokitWeekTourTipSheet } from './PokitWeekTourTipSheet';
 import { PokitWeekTourWidgetNudgeSheet } from './PokitWeekTourWidgetNudgeSheet';
 
@@ -208,6 +212,7 @@ export function PriorityBagRowAccordionPanel({
   const [tourTipTaskId, setTourTipTaskId] = useState<string | null>(null);
   const [layoutNudgeVisible, setLayoutNudgeVisible] = useState(false);
   const [widgetNudgeVisible, setWidgetNudgeVisible] = useState(false);
+  const [puzzleNudgeVisible, setPuzzleNudgeVisible] = useState(false);
   const router = useRouter();
   const goalKey = asGoalDetailCategoryKey(categoryKey);
   const summaryPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -451,17 +456,27 @@ export function PriorityBagRowAccordionPanel({
   }, [isWeekTour, persistChecklist, tasks, tourTipStep, tourTipTaskId]);
 
   const widgetNudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const puzzleNudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tourTipStepRef = useRef(tourTipStep);
   const layoutNudgeVisibleRef = useRef(layoutNudgeVisible);
   const widgetNudgeVisibleRef = useRef(widgetNudgeVisible);
+  const puzzleNudgeVisibleRef = useRef(puzzleNudgeVisible);
   tourTipStepRef.current = tourTipStep;
   layoutNudgeVisibleRef.current = layoutNudgeVisible;
   widgetNudgeVisibleRef.current = widgetNudgeVisible;
+  puzzleNudgeVisibleRef.current = puzzleNudgeVisible;
 
   const clearWidgetNudgeTimer = useCallback(() => {
     if (widgetNudgeTimerRef.current) {
       clearTimeout(widgetNudgeTimerRef.current);
       widgetNudgeTimerRef.current = null;
+    }
+  }, []);
+
+  const clearPuzzleNudgeTimer = useCallback(() => {
+    if (puzzleNudgeTimerRef.current) {
+      clearTimeout(puzzleNudgeTimerRef.current);
+      puzzleNudgeTimerRef.current = null;
     }
   }, []);
 
@@ -476,7 +491,24 @@ export function PriorityBagRowAccordionPanel({
     }, 280);
   }, [clearWidgetNudgeTimer, locale]);
 
-  useEffect(() => () => clearWidgetNudgeTimer(), [clearWidgetNudgeTimer]);
+  const queuePuzzleNudgeSoon = useCallback(() => {
+    if (loadPokitWeekTourPuzzleNudgeSeen()) return;
+    clearPuzzleNudgeTimer();
+    void prefetchPuzzleGuideAssets();
+    puzzleNudgeTimerRef.current = setTimeout(() => {
+      puzzleNudgeTimerRef.current = null;
+      if (loadPokitWeekTourPuzzleNudgeSeen()) return;
+      setPuzzleNudgeVisible(true);
+    }, 280);
+  }, [clearPuzzleNudgeTimer]);
+
+  useEffect(
+    () => () => {
+      clearWidgetNudgeTimer();
+      clearPuzzleNudgeTimer();
+    },
+    [clearPuzzleNudgeTimer, clearWidgetNudgeTimer],
+  );
 
   const closeTourTip = useCallback(() => {
     if (tourTipStep === 0) {
@@ -485,13 +517,15 @@ export function PriorityBagRowAccordionPanel({
     setTourTipStep(null);
     setTourTipTaskId(null);
     // 「닫기」「알겠어요」모두 여기로 옴 — 체크리스트 전부 완료 여부와 무관, 1회만
-    // 1) 레이아웃 안내 → 2) 위젯 안내 (이미 본 단계는 건너뜀)
+    // 1) 레이아웃 안내 → 2) 위젯 안내 → 3) 퍼즐 안내 (이미 본 단계는 건너뜀)
     if (!loadPokitWeekTourLayoutNudgeSeen()) {
       setTimeout(() => setLayoutNudgeVisible(true), 280);
-    } else {
+    } else if (!loadPokitWeekTourWidgetNudgeSeen()) {
       queueWidgetNudgeSoon();
+    } else {
+      queuePuzzleNudgeSoon();
     }
-  }, [queueWidgetNudgeSoon, tourTipStep]);
+  }, [queuePuzzleNudgeSoon, queueWidgetNudgeSoon, tourTipStep]);
 
   const confirmTourTip = useCallback(() => {
     closeTourTip();
@@ -507,53 +541,87 @@ export function PriorityBagRowAccordionPanel({
     markPokitWeekTourLayoutNudgeSeen();
     setLayoutNudgeVisible(false);
     clearWidgetNudgeTimer();
+    clearPuzzleNudgeTimer();
     // 복귀 후 useFocusEffect에서 위젯 안내를 띄운다.
     router.push('/layout-settings');
-  }, [clearWidgetNudgeTimer, router]);
+  }, [clearPuzzleNudgeTimer, clearWidgetNudgeTimer, router]);
 
   const dismissWidgetNudge = useCallback(() => {
     markPokitWeekTourWidgetNudgeSeen();
     setWidgetNudgeVisible(false);
-  }, []);
+    queuePuzzleNudgeSoon();
+  }, [queuePuzzleNudgeSoon]);
 
   const openWidgetGuideFromNudge = useCallback(() => {
     markPokitWeekTourWidgetNudgeSeen();
     setWidgetNudgeVisible(false);
+    clearPuzzleNudgeTimer();
+    // 복귀 후 useFocusEffect에서 퍼즐 안내를 띄운다.
     router.push('/widget-guide');
+  }, [clearPuzzleNudgeTimer, router]);
+
+  const dismissPuzzleNudge = useCallback(() => {
+    markPokitWeekTourPuzzleNudgeSeen();
+    setPuzzleNudgeVisible(false);
+  }, []);
+
+  const openPuzzleGuideFromNudge = useCallback(() => {
+    markPokitWeekTourPuzzleNudgeSeen();
+    setPuzzleNudgeVisible(false);
+    router.push('/puzzle-guide');
   }, [router]);
 
   /**
-   * 레이아웃 안내를 본 뒤 위젯 안내 1회.
-   * - 「닫기」: dismissLayoutNudge가 즉시 큐잉
-   * - 「확인해 보기」: 레이아웃 설정에서 돌아온 화면 포커스에서 큐잉
+   * 레이아웃 안내 → 위젯 안내 → 퍼즐 안내.
+   * - 「닫기」: 직전 단계 dismiss가 다음을 즉시 큐잉
+   * - 「확인해 보기」: 설정/설명서에서 돌아온 화면 포커스에서 큐잉
    *   (탭 isDayPlanFocused는 스택 푸시 때 안 바뀌므로 useFocusEffect 사용)
    */
   useFocusEffect(
     useCallback(() => {
       if (!isWeekTour) return;
 
+      const anySheetOpen = () =>
+        tourTipStepRef.current != null ||
+        layoutNudgeVisibleRef.current ||
+        widgetNudgeVisibleRef.current ||
+        puzzleNudgeVisibleRef.current;
+
       const tryShowWidgetNudge = () => {
         if (!loadPokitWeekTourFirstTipSeen()) return;
         if (!loadPokitWeekTourLayoutNudgeSeen()) return;
         if (loadPokitWeekTourWidgetNudgeSeen()) return;
-        if (
-          tourTipStepRef.current != null ||
-          layoutNudgeVisibleRef.current ||
-          widgetNudgeVisibleRef.current
-        ) {
-          return;
-        }
+        if (anySheetOpen()) return;
         queueWidgetNudgeSoon();
       };
 
-      // 레이아웃 설정 푸시 직후 콜백 갱신으로 바로 뜨지 않게 한 틱 뒤
-      const focusTimer = setTimeout(tryShowWidgetNudge, 0);
+      const tryShowPuzzleNudge = () => {
+        if (!loadPokitWeekTourFirstTipSeen()) return;
+        if (!loadPokitWeekTourLayoutNudgeSeen()) return;
+        if (!loadPokitWeekTourWidgetNudgeSeen()) return;
+        if (loadPokitWeekTourPuzzleNudgeSeen()) return;
+        if (anySheetOpen()) return;
+        queuePuzzleNudgeSoon();
+      };
+
+      // 레이아웃/위젯 가이드 푸시 직후 콜백 갱신으로 바로 뜨지 않게 한 틱 뒤
+      const focusTimer = setTimeout(() => {
+        tryShowWidgetNudge();
+        tryShowPuzzleNudge();
+      }, 0);
 
       return () => {
         clearTimeout(focusTimer);
         clearWidgetNudgeTimer();
+        clearPuzzleNudgeTimer();
       };
-    }, [clearWidgetNudgeTimer, isWeekTour, queueWidgetNudgeSoon]),
+    }, [
+      clearPuzzleNudgeTimer,
+      clearWidgetNudgeTimer,
+      isWeekTour,
+      queuePuzzleNudgeSoon,
+      queueWidgetNudgeSoon,
+    ]),
   );
 
   const removeTask = useCallback(
@@ -753,6 +821,12 @@ export function PriorityBagRowAccordionPanel({
           isDark={isDark}
           onClose={dismissWidgetNudge}
           onOpenWidgetGuide={openWidgetGuideFromNudge}
+        />
+        <PokitWeekTourPuzzleNudgeSheet
+          visible={puzzleNudgeVisible}
+          isDark={isDark}
+          onClose={dismissPuzzleNudge}
+          onOpenPuzzleGuide={openPuzzleGuideFromNudge}
         />
 
         <View style={s.toolbar}>

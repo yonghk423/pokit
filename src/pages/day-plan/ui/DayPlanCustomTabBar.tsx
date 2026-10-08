@@ -33,8 +33,7 @@ type TabDef = {
 const TABS: TabDef[] = [
   { route: 'day-plan', icon: 'calendar', size: 22, labelKey: 'tabs.dayPlan' },
   { route: 'fixed-routines', icon: 'list.bullet.rectangle', size: 22, labelKey: 'tabs.routines' },
-  { route: 'priority-catalog', icon: 'figure.walk', size: 22, labelKey: 'tabs.myRoutines' },
-  { route: 'day-plan-statistics', icon: 'clock.arrow.circlepath', size: 22, labelKey: 'tabs.history' },
+  { route: 'puzzle-history', icon: 'rectangle.stack', size: 22, labelKey: 'tabs.puzzle' },
   { route: 'pokit-story', icon: 'book', size: 22, labelKey: 'tabs.story' },
 ];
 
