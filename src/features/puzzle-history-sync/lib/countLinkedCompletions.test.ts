@@ -5,6 +5,7 @@ import {
   countLinkedCompletions,
   desiredPuzzleCompletions,
   linkedRoutineContributionCounts,
+  linkedRoutineCountsByDate,
 } from './countLinkedCompletions';
 
 function row(
@@ -22,6 +23,27 @@ function row(
     categoryCompletions,
   };
 }
+
+describe('linkedRoutineCountsByDate', () => {
+  it('keeps only linked routines on the requested days', () => {
+    const map = {
+      '2026-07-02': row('2026-07-02', { reading: 2, stretch: 1, work: 4 }),
+      '2026-07-03': row('2026-07-03', { work: 1 }),
+    };
+    expect(
+      linkedRoutineCountsByDate({
+        linkedCategoryKeys: ['reading', 'stretch'],
+        dateKeys: ['2026-07-02', '2026-07-03'],
+        dailyStatsByDate: map,
+      }),
+    ).toEqual({
+      '2026-07-02': [
+        { categoryKey: 'reading', count: 2 },
+        { categoryKey: 'stretch', count: 1 },
+      ],
+    });
+  });
+});
 
 describe('countLinkedCompletions', () => {
   it('sums each linked routine completion', () => {

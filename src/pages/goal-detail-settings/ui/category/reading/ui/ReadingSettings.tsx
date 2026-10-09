@@ -200,7 +200,7 @@ function ReadingBookListRow({
                 styles.listCoverFallback,
                 { backgroundColor: c.surfaceLow },
               ]}>
-              <IconSymbol name="book.closed.fill" size={18} color={c.outline} />
+              <IconSymbol name="book.closed.fill" size={14} color={c.outline} />
             </View>
           )}
           <View style={styles.listBody}>
@@ -226,9 +226,9 @@ function ReadingBookListRow({
           </View>
           <View style={styles.listTrailing}>
             {status === 'done' ? (
-              <IconSymbol name="checkmark.circle.fill" size={16} color={isDark ? '#FAFAFA' : '#111111'} />
+              <IconSymbol name="checkmark.circle.fill" size={12} color={isDark ? '#FAFAFA' : '#111111'} />
             ) : null}
-            <IconSymbol name="chevron.right" size={14} color={c.outline} />
+            <IconSymbol name="chevron.right" size={11} color={c.outline} />
           </View>
         </Pressable>
       </View>
@@ -514,7 +514,6 @@ export function ReadingSettings({
 
   return (
     <View style={styles.root}>
-      <ReadingBookstoreAtmosphere isDark={isDark} />
       <View style={styles.libraryCanvas}>
         <View style={styles.libraryHeader}>
           <View style={styles.libraryHeaderLeft}>
@@ -1008,36 +1007,36 @@ const styles = StyleSheet.create({
   listRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    minHeight: 88,
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minHeight: 60,
   },
   listCoverFrame: {
-    width: 52,
-    height: 72,
+    width: 36,
+    height: 50,
     borderWidth: 0,
     overflow: 'hidden',
   },
   listCover: { width: '100%', height: '100%' },
   listCoverFallback: { alignItems: 'center', justifyContent: 'center' },
-  listBody: { flex: 1, minWidth: 0, gap: 4 },
-  listTitle: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2, lineHeight: 20 },
-  listAuthor: { fontSize: 12, fontWeight: '600', lineHeight: 16 },
+  listBody: { flex: 1, minWidth: 0, gap: 1 },
+  listTitle: { fontSize: 13, fontWeight: '800', letterSpacing: -0.2, lineHeight: 16 },
+  listAuthor: { fontSize: 10, fontWeight: '600', lineHeight: 13 },
   listMetaChips: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 2,
+    gap: 5,
+    marginTop: 1,
     flexWrap: 'wrap',
   },
   statusChip: {
     borderWidth: 0,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
   },
-  statusChipText: { fontSize: 10, fontWeight: '800', letterSpacing: -0.1 },
-  pagesChipText: { fontSize: 11, fontWeight: '700', letterSpacing: -0.1 },
+  statusChipText: { fontSize: 8, fontWeight: '800', letterSpacing: -0.1 },
+  pagesChipText: { fontSize: 9, fontWeight: '700', letterSpacing: -0.1 },
   listTrailing: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 
   emptyState: {

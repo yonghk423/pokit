@@ -1,6 +1,8 @@
 export {
+  clearQuickMemoPhotoFromLiveActivity,
   endLiveActivityAndDismiss,
   endPokitLiveActivity,
+  prepareQuickMemoPhotoForLiveActivity,
   suspendPokitApp,
   upsertLiveActivityAndDismiss,
   upsertPokitLiveActivity,

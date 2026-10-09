@@ -64,6 +64,8 @@ export const StorageKeys = {
   postItFaceColor: 'pokit:post-it-face-color',
   /** 잠금화면 포스트잇 글자색 */
   postItInkColor: 'pokit:post-it-ink-color',
+  /** 잠금화면 메모 — 글자 크기·캘린더·사진 URI */
+  quickMemoLockPrefs: 'pokit:quick-memo-lock-prefs',
   /** 특정 날짜에 미리 담아 둘 루틴 (먼슬리·가끔 루틴) */
   scheduledRoutinePlan: 'pokit:scheduled-routine-plan',
   /** 홈 위젯에 고정할 루틴 1개 categoryKey */

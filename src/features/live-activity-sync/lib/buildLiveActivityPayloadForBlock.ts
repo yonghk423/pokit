@@ -3,9 +3,12 @@ import {
   formatMinuteOfDayKo,
   blockDurationSec,
   formatBlockTimeRange,
+  getLocalDateKey,
   isPriorityCompoundBlockTitle,
   normalizeReadingLiveActivityConfig,
   parseNumberedFlowLines,
+  parseQuickMemoChecklist,
+  quickMemoPlainBody,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
 } from '@entities/day-plan';
@@ -13,10 +16,12 @@ import { useDayPlanRuntimeStore, useDayPlanStore } from '@entities/day-plan';
 import { t } from '@shared/lib/i18n';
 import {
   colorHexUsesLightInk,
+  DEFAULT_QUICK_MEMO_FONT_SIZE_PT,
   getPostItFaceColorPreset,
   loadGoalDetailCategoryConfig,
   loadPostItFaceColorIdForGroup,
   loadPostItInkColorIdForGroup,
+  loadQuickMemoLockPrefs,
   QUICK_MEMO_POST_IT_INK_KEY,
   QUICK_MEMO_POST_IT_KEY,
   resolvePostItInkHex,
@@ -28,6 +33,9 @@ import type {
   PokitLiveActivityStatus,
   QuickMemoLiveActivityContent,
 } from '../model/types';
+
+/** App Group에 복사된 잠금화면 메모 사진 상대 경로 */
+export const QUICK_MEMO_LA_PHOTO_RELATIVE_PATH = 'quick-memo/photo.jpg';
 
 function normalizeCategoryLabel(label: string): string {
   return label === '사용쟈' ? '사용자' : label;
@@ -252,14 +260,24 @@ export function buildLiveActivityPayloadForBlock(input: {
     quickMemoFaceId,
     false,
   );
+  const quickMemoPrefs = loadQuickMemoLockPrefs();
+  const quickMemoBodyText = isQuickMemoBlock
+    ? quickMemoPlainBody(parseQuickMemoChecklist(title)) ||
+      (numberedLines.length > 0 ? numberedLines.join('\n') : title)
+    : '';
   const quickMemoLive: QuickMemoLiveActivityContent | null = isQuickMemoBlock
     ? {
-        bodyText: (numberedLines.length > 0 ? numberedLines.join('\n') : title),
+        bodyText: quickMemoBodyText,
         statusLabel: quickMemoStatusLabel(status),
         titleLabel: t('liveActivity.quickMemoTitle'),
         faceHex: quickMemoFaceHex,
         inkHex: quickMemoInkHex,
         usesLightInk: colorHexUsesLightInk(quickMemoFaceHex),
+        checklistItems: [],
+        fontSizePt: quickMemoPrefs.fontSizePt ?? DEFAULT_QUICK_MEMO_FONT_SIZE_PT,
+        photoRelativePath: quickMemoPrefs.photoUri ? QUICK_MEMO_LA_PHOTO_RELATIVE_PATH : null,
+        showCalendar: quickMemoPrefs.showCalendar === true,
+        calendarDateKey: plan.dateKey || getLocalDateKey(),
       }
     : null;
 

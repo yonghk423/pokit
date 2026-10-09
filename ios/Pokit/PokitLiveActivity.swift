@@ -1,5 +1,7 @@
 import ActivityKit
 import Foundation
+import ImageIO
+import React
 import UIKit
 
 private struct LiveActivityPayload: Decodable {
@@ -49,12 +51,22 @@ private struct LiveActivityPayload: Decodable {
   }
   let priorityLive: PriorityLivePayload?
   struct QuickMemoLivePayload: Decodable {
+    struct ChecklistItem: Decodable {
+      let id: String
+      let text: String
+      let checked: Bool
+    }
     let bodyText: String
     let statusLabel: String
     let titleLabel: String?
     let faceHex: String?
     let inkHex: String?
     let usesLightInk: Bool?
+    let checklistItems: [ChecklistItem]?
+    let fontSizePt: Double?
+    let photoRelativePath: String?
+    let showCalendar: Bool?
+    let calendarDateKey: String?
   }
   let quickMemoLive: QuickMemoLivePayload?
 }
@@ -142,7 +154,14 @@ private final class PokitLiveActivityCoordinator {
             titleLabel: $0.titleLabel,
             faceHex: $0.faceHex,
             inkHex: $0.inkHex,
-            usesLightInk: $0.usesLightInk
+            usesLightInk: $0.usesLightInk,
+            checklistItems: $0.checklistItems?.map {
+              .init(id: $0.id, text: $0.text, checked: $0.checked)
+            },
+            fontSizePt: $0.fontSizePt,
+            photoRelativePath: $0.photoRelativePath,
+            showCalendar: $0.showCalendar,
+            calendarDateKey: $0.calendarDateKey
           )
         }
       )
@@ -319,6 +338,99 @@ final class PokitLiveActivity: NSObject {
   @objc(suspendApp)
   func suspendApp() {
     Self.suspendApplication()
+  }
+
+  /// 잠금화면 메모 사진을 App Group에 복사한다. 성공 시 상대 경로를 resolve.
+  @objc(prepareQuickMemoPhoto:resolver:rejecter:)
+  func prepareQuickMemoPhoto(
+    _ sourceUri: String,
+    resolver resolve: @escaping RCTPromiseResolveBlock,
+    rejecter reject: @escaping RCTPromiseRejectBlock
+  ) {
+    let trimmed = sourceUri.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else {
+      reject("E_EMPTY", "empty source uri", nil)
+      return
+    }
+    guard
+      let container = FileManager.default.containerURL(
+        forSecurityApplicationGroupIdentifier: PokitAppGroup.identifier
+      )
+    else {
+      reject("E_APP_GROUP", "app group container unavailable", nil)
+      return
+    }
+
+    let relative = "quick-memo/photo.jpg"
+    let destDir = container.appendingPathComponent("quick-memo", isDirectory: true)
+    let destURL = container.appendingPathComponent(relative)
+    let sourceURL: URL = {
+      if let url = URL(string: trimmed), url.isFileURL {
+        return url
+      }
+      let path = trimmed.hasPrefix("file://")
+        ? (URL(string: trimmed)?.path ?? trimmed.replacingOccurrences(of: "file://", with: ""))
+        : trimmed
+      return URL(fileURLWithPath: path)
+    }()
+
+    do {
+      try FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
+      if FileManager.default.fileExists(atPath: destURL.path) {
+        try FileManager.default.removeItem(at: destURL)
+      }
+      // 잠금화면은 표시 칸(56pt)보다 큰 이미지를 회색 칸으로만 그린다. 긴 변 168px 이하로 저장.
+      guard let jpeg = Self.jpegFittingLiveActivitySlot(at: sourceURL) else {
+        reject("E_DECODE", "could not decode image", nil)
+        return
+      }
+      try jpeg.write(to: destURL, options: .atomic)
+      resolve(relative)
+    } catch {
+      reject("E_COPY", error.localizedDescription, error)
+    }
+  }
+
+  @objc(clearQuickMemoPhoto:rejecter:)
+  func clearQuickMemoPhoto(
+    _ resolve: @escaping RCTPromiseResolveBlock,
+    rejecter reject: @escaping RCTPromiseRejectBlock
+  ) {
+    guard
+      let container = FileManager.default.containerURL(
+        forSecurityApplicationGroupIdentifier: PokitAppGroup.identifier
+      )
+    else {
+      resolve(false)
+      return
+    }
+    let destURL = container.appendingPathComponent("quick-memo/photo.jpg")
+    do {
+      if FileManager.default.fileExists(atPath: destURL.path) {
+        try FileManager.default.removeItem(at: destURL)
+      }
+      resolve(true)
+    } catch {
+      reject("E_CLEAR", error.localizedDescription, error)
+    }
+  }
+
+  /// 잠금화면 사진 슬롯(56pt @3x)에 맞게 줄인 JPEG. 더 크면 Live Activity가 회색 칸만 그린다.
+  private static func jpegFittingLiveActivitySlot(at url: URL) -> Data? {
+    let maxPixel: CGFloat = 56 * 3
+    let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+    guard let source = CGImageSourceCreateWithURL(url as CFURL, sourceOptions) else { return nil }
+    let options: [CFString: Any] = [
+      kCGImageSourceCreateThumbnailFromImageAlways: true,
+      kCGImageSourceCreateThumbnailWithTransform: true,
+      kCGImageSourceThumbnailMaxPixelSize: maxPixel,
+      kCGImageSourceShouldCacheImmediately: true,
+    ]
+    guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+      return nil
+    }
+    let image = UIImage(cgImage: cgImage, scale: 3, orientation: .up)
+    return image.jpegData(compressionQuality: 0.82)
   }
 
   private static func suspendApplication() {

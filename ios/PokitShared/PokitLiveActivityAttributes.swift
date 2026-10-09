@@ -41,6 +41,18 @@ public struct PokitLiveActivityAttributes: ActivityAttributes {
 
     /// 빠른 메모로 저장된 블록 전용 잠금화면 카드
     public struct QuickMemoLiveContent: Codable, Hashable {
+      public struct ChecklistItem: Codable, Hashable {
+        public let id: String
+        public let text: String
+        public let checked: Bool
+
+        public init(id: String, text: String, checked: Bool) {
+          self.id = id
+          self.text = text
+          self.checked = checked
+        }
+      }
+
       public let bodyText: String
       public let statusLabel: String
       /// RN 로케일 제목 — 구버전 페이로드에는 없을 수 있음
@@ -51,6 +63,15 @@ public struct PokitLiveActivityAttributes: ActivityAttributes {
       public let inkHex: String?
       /// 어두운 면 — 흰 글자 (inkHex 없을 때 폴백)
       public let usesLightInk: Bool?
+      /// 줄별 체크박스 — 구버전에는 없을 수 있음
+      public let checklistItems: [ChecklistItem]?
+      /// 본문 pt — 기본 28
+      public let fontSizePt: Double?
+      /// App Group 상대 경로 — 예: `quick-memo/photo.jpg`
+      public let photoRelativePath: String?
+      public let showCalendar: Bool?
+      /// `YYYY-MM-DD`
+      public let calendarDateKey: String?
 
       public init(
         bodyText: String,
@@ -58,7 +79,12 @@ public struct PokitLiveActivityAttributes: ActivityAttributes {
         titleLabel: String? = nil,
         faceHex: String? = nil,
         inkHex: String? = nil,
-        usesLightInk: Bool? = nil
+        usesLightInk: Bool? = nil,
+        checklistItems: [ChecklistItem]? = nil,
+        fontSizePt: Double? = nil,
+        photoRelativePath: String? = nil,
+        showCalendar: Bool? = nil,
+        calendarDateKey: String? = nil
       ) {
         self.bodyText = bodyText
         self.statusLabel = statusLabel
@@ -66,6 +92,11 @@ public struct PokitLiveActivityAttributes: ActivityAttributes {
         self.faceHex = faceHex
         self.inkHex = inkHex
         self.usesLightInk = usesLightInk
+        self.checklistItems = checklistItems
+        self.fontSizePt = fontSizePt
+        self.photoRelativePath = photoRelativePath
+        self.showCalendar = showCalendar
+        self.calendarDateKey = calendarDateKey
       }
     }
 

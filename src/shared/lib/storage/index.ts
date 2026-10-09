@@ -346,6 +346,16 @@ export {
   type PostItInkColorPreset,
 } from './postItInkColorStorage';
 export {
+  DEFAULT_QUICK_MEMO_FONT_SIZE_PT,
+  QUICK_MEMO_FONT_SIZE_OPTIONS,
+  isQuickMemoFontSizePt,
+  loadQuickMemoLockPrefs,
+  saveQuickMemoLockPrefs,
+  updateQuickMemoLockPrefs,
+  type QuickMemoFontSizePt,
+  type QuickMemoLockPrefs,
+} from './quickMemoLockPrefsStorage';
+export {
   getScheduledCategoryKeysForDate,
   loadScheduledRoutinePlan,
   normalizeScheduledRoutinePlan,

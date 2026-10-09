@@ -10,6 +10,7 @@ import { historyDateKeyToday, useHistoryStore } from '@entities/history';
 import { usePuzzleHistoryStore } from '@entities/puzzle-history';
 import {
   linkedRoutineContributionCounts,
+  linkedRoutineCountsByDate,
   syncPuzzleHistoryFromDailyStats,
 } from '@features/puzzle-history-sync';
 import { RetroFlatColors } from '@shared/config/retroFlat';
@@ -23,6 +24,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 import { PuzzleBoard } from '@widgets/puzzle-history-board';
 
+import { PuzzleOpenedDaysCalendar } from './PuzzleOpenedDaysCalendar';
 import { PuzzleRenameSheet } from './PuzzleRenameSheet';
 
 /** 메인 펼침 보드와 동일 회백색 면 */
@@ -44,6 +46,72 @@ function isoToLocalDateKey(iso: string | undefined): string | null {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+const PREVIEW_FIVE = ['reading', 'work', 'water', 'fasting', 'healthIntake'] as const;
+const PREVIEW_TEN = [
+  ...PREVIEW_FIVE,
+  'other',
+  'review',
+  'sampleStretch',
+  'sampleWalk',
+  'sampleMeditation',
+] as const;
+
+/** 목업에서 루틴 개수별 달력을 바로 보게 하는 미리보기. 저장값과 별개다. */
+const MOCK_ROUTINE_PREVIEW: Record<string, readonly string[]> = {
+  ph_dev_mock_album_10_basketball: ['reading', 'work'],
+  ph_dev_mock_album_10_meal: ['reading', 'work', 'water'],
+  ph_dev_mock_album_20_hands_heart: PREVIEW_FIVE,
+  ph_dev_mock_album_10_rocky: PREVIEW_TEN,
+};
+
+function previewRoutineLabel(
+  key: string,
+  translate: (
+    key:
+      | 'history.puzzle.sampleStretch'
+      | 'history.puzzle.sampleWalk'
+      | 'history.puzzle.sampleMeditation',
+  ) => string,
+): string {
+  if (key === 'sampleStretch') return translate('history.puzzle.sampleStretch');
+  if (key === 'sampleWalk') return translate('history.puzzle.sampleWalk');
+  if (key === 'sampleMeditation') return translate('history.puzzle.sampleMeditation');
+  return categoryReminderLabelKo(key);
+}
+
+function mockRoutineCountsByDate(
+  linkedKeys: string[],
+  pieces: Array<{ puzzleIndex: number; dateKey: string | null }>,
+): Record<string, Array<{ categoryKey: string; count: number }>> {
+  const out: Record<string, Array<{ categoryKey: string; count: number }>> = {};
+  const add = (dateKey: string, categoryKey: string) => {
+    const bucket = out[dateKey] ?? [];
+    const found = bucket.find((row) => row.categoryKey === categoryKey);
+    if (found) found.count += 1;
+    else bucket.push({ categoryKey, count: 1 });
+    out[dateKey] = bucket;
+  };
+  for (const piece of pieces) {
+    if (!piece.dateKey || linkedKeys.length === 0) continue;
+    const index = piece.puzzleIndex;
+    if (index === 0) {
+      for (const key of linkedKeys) add(piece.dateKey, key);
+      continue;
+    }
+    const primary = linkedKeys[index % linkedKeys.length];
+    if (primary) add(piece.dateKey, primary);
+    if (linkedKeys.length >= 2 && index % 4 === 0) {
+      const extra = linkedKeys[(index + 1) % linkedKeys.length];
+      if (extra) add(piece.dateKey, extra);
+    }
+    if (linkedKeys.length >= 3 && index % 5 === 0) {
+      const extra = linkedKeys[(index + 2) % linkedKeys.length];
+      if (extra) add(piece.dateKey, extra);
+    }
+  }
+  return out;
 }
 
 function daysBetweenDateKeys(fromKey: string, toKey: string): number {
@@ -134,11 +202,65 @@ export function PuzzleHistoryDetailPage() {
           dateLabel: dateKey ? formatDateKeyDisplay(dateKey, locale) : null,
         };
       });
-    const contributions = linkedRoutineContributionCounts({
+    let contributions = linkedRoutineContributionCounts({
       linkedCategoryKeys: history.linkedCategoryKeys,
       completionBaselineByCategory: history.completionBaselineByCategory,
       dailyStatsByDate,
     });
+    const linkedKeys =
+      MOCK_ROUTINE_PREVIEW[history.id] ?? history.linkedCategoryKeys ?? [];
+    const pieceDateKeys = openedPieces.flatMap((row) => (row.dateKey ? [row.dateKey] : []));
+    let routinesByDate = history.id.startsWith('ph_dev_mock_')
+      ? mockRoutineCountsByDate(linkedKeys, openedPieces)
+      : linkedRoutineCountsByDate({
+          linkedCategoryKeys: linkedKeys,
+          dateKeys: pieceDateKeys,
+          dailyStatsByDate,
+        });
+    const hasDayStats = Object.keys(routinesByDate).length > 0;
+    if (!hasDayStats && linkedKeys.length > 0) {
+      const filled: typeof routinesByDate = {};
+      for (const piece of openedPieces) {
+        if (!piece.dateKey) continue;
+        const categoryKey = linkedKeys[piece.puzzleIndex % linkedKeys.length] ?? linkedKeys[0];
+        if (!categoryKey) continue;
+        const bucket = filled[piece.dateKey] ?? [];
+        const found = bucket.find((row) => row.categoryKey === categoryKey);
+        if (found) found.count += 1;
+        else bucket.push({ categoryKey, count: 1 });
+        filled[piece.dateKey] = bucket;
+      }
+      routinesByDate = filled;
+    } else if (linkedKeys.length === 1) {
+      const categoryKey = linkedKeys[0];
+      if (categoryKey) {
+        for (const piece of openedPieces) {
+          if (!piece.dateKey || routinesByDate[piece.dateKey]) continue;
+          routinesByDate[piece.dateKey] = [{ categoryKey, count: 1 }];
+        }
+      }
+    }
+    if (MOCK_ROUTINE_PREVIEW[history.id]) {
+      contributions = linkedKeys
+        .map((categoryKey) => {
+          let count = 0;
+          for (const rows of Object.values(routinesByDate)) {
+            count += rows.find((row) => row.categoryKey === categoryKey)?.count ?? 0;
+          }
+          return { categoryKey, count };
+        })
+        .filter((row) => row.count > 0);
+    }
+    const labeledRoutinesByDate = Object.fromEntries(
+      Object.entries(routinesByDate).map(([dateKey, rows]) => [
+        dateKey,
+        rows.map((row) => ({
+          key: row.categoryKey,
+          label: previewRoutineLabel(row.categoryKey, t),
+          count: row.count,
+        })),
+      ]),
+    );
     return {
       targetCount,
       completedCount,
@@ -150,8 +272,9 @@ export function PuzzleHistoryDetailPage() {
       dayNumber,
       openedPieces,
       contributions,
+      labeledRoutinesByDate,
     };
-  }, [dailyStatsByDate, history, locale]);
+  }, [dailyStatsByDate, history, locale, t]);
 
   if (!history || !detailMeta) {
     return (
@@ -186,6 +309,7 @@ export function PuzzleHistoryDetailPage() {
     dayNumber,
     openedPieces,
     contributions,
+    labeledRoutinesByDate,
   } = detailMeta;
 
   return (
@@ -366,7 +490,7 @@ export function PuzzleHistoryDetailPage() {
                 key={row.categoryKey}
                 style={[styles.dayLine, { color: c.text }]}>
                 {t('history.puzzle.linkedRoutineContribution', {
-                  label: categoryReminderLabelKo(row.categoryKey),
+                  label: previewRoutineLabel(row.categoryKey, t),
                   count: row.count,
                 })}
               </ThemedText>
@@ -383,20 +507,35 @@ export function PuzzleHistoryDetailPage() {
               {t('history.puzzle.timelineEmpty')}
             </ThemedText>
           ) : (
-            openedPieces.map((row) => (
-              <ThemedText
-                key={`piece-${row.puzzleIndex}`}
-                style={[styles.dayLine, { color: c.text }]}>
-                {row.dateLabel
-                  ? t('history.puzzle.pieceOpened', {
-                      n: row.puzzleIndex + 1,
-                      date: row.dateLabel,
-                    })
-                  : t('history.puzzle.pieceOpenedNoDate', {
-                      n: row.puzzleIndex + 1,
-                    })}
-              </ThemedText>
-            ))
+            <>
+              <PuzzleOpenedDaysCalendar
+                pieces={openedPieces.flatMap((row) =>
+                  row.dateKey ? [{ puzzleIndex: row.puzzleIndex, dateKey: row.dateKey }] : [],
+                )}
+                locale={locale}
+                ink={c.text}
+                muted={c.textMuted}
+                mint={mint}
+                routinesByDate={labeledRoutinesByDate}
+                routineLine={(routine) =>
+                  t('history.puzzle.linkedRoutineContribution', {
+                    label: routine.label,
+                    count: routine.count,
+                  })
+                }
+                emptyDayLabel={t('history.puzzle.dayCompletedNoDetail')}
+                pieceLabel={(n, date) => t('history.puzzle.pieceOpened', { n, date })}
+              />
+              {openedPieces
+                .filter((row) => !row.dateKey)
+                .map((row) => (
+                  <ThemedText
+                    key={`piece-${row.puzzleIndex}`}
+                    style={[styles.dayLine, { color: c.text }]}>
+                    {t('history.puzzle.pieceOpenedNoDate', { n: row.puzzleIndex + 1 })}
+                  </ThemedText>
+                ))}
+            </>
           )}
         </View>
 

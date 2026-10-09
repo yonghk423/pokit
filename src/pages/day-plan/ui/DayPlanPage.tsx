@@ -24,6 +24,8 @@ import {
   isPriorityWindowEndedForToday,
   notifyFixedFlowApplyScheduleChanged,
   parseHHmmToMinutes,
+  parseQuickMemoChecklist,
+  quickMemoPlainBody,
   resolveBlockCategoryKey,
   seedPokitWeekTourIntoTodayIfNeeded,
   syncTodayTabWithFixedRoutineApply,
@@ -42,8 +44,10 @@ import {
 } from '@features/day-plan-notifications';
 import {
   buildLiveActivityPayloadForBlock,
+  clearQuickMemoPhotoFromLiveActivity,
   endLiveActivityAndDismiss,
   endPokitLiveActivity,
+  prepareQuickMemoPhotoForLiveActivity,
   reconcileLiveActivityFromPlan,
   suspendPokitApp,
   upsertLiveActivityAndDismiss,
@@ -54,6 +58,7 @@ import { t } from '@shared/lib/i18n';
 import {
   loadDailyRhythmOnboardingCompleted,
   loadPriorityDayStartAlarm,
+  loadQuickMemoLockPrefs,
   markDailyRhythmOnboardingCompleted,
   markDailyRhythmOnboardingCompletedAndFlush,
   saveRoutineCatalogSelectionKeys,
@@ -507,11 +512,8 @@ export function DayPlanPage({
 
   const onSave = (options?: { silent?: boolean }) => {
     if (planMode === 'quickMemo') {
-      const draftLines = quickMemoDraft
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter((t) => t.length > 0);
-      if (draftLines.length === 0) {
+      const blockTitle = quickMemoPlainBody(parseQuickMemoChecklist(quickMemoDraft));
+      if (blockTitle.length === 0) {
         const planState = useDayPlanStore.getState();
         for (const block of [...planState.blocks].filter((b) => b.blockOrigin === 'quickMemo')) {
           planState.removeBlock(block.id);
@@ -540,7 +542,6 @@ export function DayPlanPage({
         pe = 60;
       }
 
-      const blockTitle = draftLines.join('\n');
       // 이전 퀵메모 블록이 남아 reconcile/upsert가 엇갈리지 않게 먼저 정리
       {
         const planState = useDayPlanStore.getState();
@@ -577,21 +578,27 @@ export function DayPlanPage({
 
       syncScheduledNotifications();
       // reconcile + upsertAndSuspend를 같이 치면 Live Activity가 두 장 쌓일 수 있음 → 저장 경로는 upsert 한 번만.
-      const payload = buildLiveActivityPayloadForBlock({
-        blockId: result.blockId,
-        status: 'active',
-      });
-      if (payload) {
-        void (async () => {
+      void (async () => {
+        const prefs = loadQuickMemoLockPrefs();
+        if (prefs.photoUri) {
+          await prepareQuickMemoPhotoForLiveActivity(prefs.photoUri);
+        } else {
+          await clearQuickMemoPhotoFromLiveActivity();
+        }
+        const payload = buildLiveActivityPayloadForBlock({
+          blockId: result.blockId,
+          status: 'active',
+        });
+        if (payload) {
           const dismissed = await upsertLiveActivityAndDismiss(payload);
           if (!dismissed) {
             await upsertPokitLiveActivity(payload);
             await suspendPokitApp();
           }
-        })();
-      } else {
-        void suspendPokitApp();
-      }
+        } else {
+          await suspendPokitApp();
+        }
+      })();
       return;
     }
 

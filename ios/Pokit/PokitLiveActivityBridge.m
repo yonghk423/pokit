@@ -13,4 +13,11 @@ RCT_EXTERN_METHOD(endAndSuspend)
 
 RCT_EXTERN_METHOD(suspendApp)
 
+RCT_EXTERN_METHOD(prepareQuickMemoPhoto:(NSString *)sourceUri
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(clearQuickMemoPhoto:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
 @end

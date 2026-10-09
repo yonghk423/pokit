@@ -554,4 +554,13 @@ export {
 export { seedRoutineStartTimesFromLegacySources } from './lib/seedRoutineStartTimesFromLegacySources';
 export type { AddBlockResult, PlanMode, UpdateBlockResult } from './model';
 export type { DayPlanBlock, DayPlanQuickMemo, DayPlanTodoItem, DayPlanTodoSubItem, TodoPriority } from './model/types';
+export {
+  checklistRowsFromQuickMemoTitle,
+  createEmptyQuickMemoLine,
+  parseQuickMemoChecklist,
+  quickMemoPlainBody,
+  serializeQuickMemoChecklist,
+  serializeQuickMemoChecklistForSave,
+  type QuickMemoChecklistLine,
+} from './lib/quickMemoChecklist';
 

@@ -86,7 +86,7 @@ function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
       completedCount: 10,
       status: 'completed',
       asset: ASSET_BASKETBALL,
-      linkedCategoryKeys: ['stretch'],
+      linkedCategoryKeys: ['reading', 'work'],
       title: { ko: '한 슛', en: 'One shot', ja: 'ワンショット' },
     },
     {
@@ -95,7 +95,7 @@ function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
       completedCount: 20,
       status: 'completed',
       asset: ASSET_HANDS_HEART,
-      linkedCategoryKeys: ['stretch'],
+      linkedCategoryKeys: ['reading', 'work', 'water', 'fasting', 'healthIntake'],
       title: { ko: '하트 실루엣', en: 'Hands heart', ja: 'ハートの影' },
     },
     {
@@ -122,7 +122,7 @@ function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
       completedCount: 10,
       status: 'completed',
       asset: ASSET_MEAL_PREP,
-      linkedCategoryKeys: ['work'],
+      linkedCategoryKeys: ['reading', 'work', 'water'],
       title: { ko: '식탁 준비', en: 'Meal prep', ja: '食事の準備' },
     },
     {
@@ -158,7 +158,18 @@ function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
       completedCount: 10,
       status: 'completed',
       asset: ASSET_ROCKY_SHORE,
-      linkedCategoryKeys: ['stretch'],
+      linkedCategoryKeys: [
+        'reading',
+        'work',
+        'water',
+        'fasting',
+        'healthIntake',
+        'other',
+        'review',
+        'sampleStretch',
+        'sampleWalk',
+        'sampleMeditation',
+      ],
       title: { ko: '반짝이는 해안', en: 'Rocky shore glow', ja: 'きらめく岸辺' },
     },
   ];
@@ -249,7 +260,7 @@ export function clearPuzzleHistoryMockData(): void {
 
 export const puzzleHistoryMockSeed: DevMockSeedModule = {
   id: 'puzzle-history',
-  version: 20,
+  version: 22,
   async seed() {
     return seedPuzzleHistoryMockData();
   },

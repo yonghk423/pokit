@@ -35,6 +35,12 @@ export type PriorityLiveActivityContent = {
   listRows: PriorityLiveActivityUpcomingRow[];
 };
 
+export type QuickMemoLiveChecklistItem = {
+  id: string;
+  text: string;
+  checked: boolean;
+};
+
 /** 빠른 메모로 저장된 블록 전용 잠금화면 카드(타이머 없음) */
 export type QuickMemoLiveActivityContent = {
   /** 번호 제거 후 줄 단위 본문 */
@@ -49,6 +55,16 @@ export type QuickMemoLiveActivityContent = {
   inkHex: string;
   /** 어두운 면 — 흰 글자/아이콘 (폴백·크롬용) */
   usesLightInk: boolean;
+  /** 줄별 체크박스 */
+  checklistItems: QuickMemoLiveChecklistItem[];
+  /** 본문 글자 크기(pt) — 기본 28 */
+  fontSizePt: number;
+  /** App Group 상대 경로 — 예: `quick-memo/photo.jpg` */
+  photoRelativePath: string | null;
+  /** 잠금화면 우측 미니 캘린더 */
+  showCalendar: boolean;
+  /** 캘린더 하이라이트용 `YYYY-MM-DD` */
+  calendarDateKey: string;
 };
 
 export type PokitLiveActivityPayload = {

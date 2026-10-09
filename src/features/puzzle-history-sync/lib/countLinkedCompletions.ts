@@ -54,6 +54,31 @@ export function countCompletionsByCategory(
 }
 
 /**
+ * 날짜별 연결 루틴 완료 횟수. 기록이 없는 날은 결과에 넣지 않는다.
+ */
+export function linkedRoutineCountsByDate(params: {
+  linkedCategoryKeys: string[] | undefined;
+  dateKeys: string[];
+  dailyStatsByDate: Record<string, HistoryDailyStat | undefined>;
+}): Record<string, Array<{ categoryKey: string; count: number }>> {
+  const originalKeys = normalizeLinkedCategoryKeys(params.linkedCategoryKeys);
+  const out: Record<string, Array<{ categoryKey: string; count: number }>> = {};
+  if (originalKeys.length === 0) return out;
+
+  for (const dateKey of params.dateKeys) {
+    const stat = params.dailyStatsByDate[dateKey];
+    const completions = stat ? getCategoryCompletions(stat) : {};
+    const items = originalKeys.flatMap((originalKey) => {
+      const norm = normalizeHistoryRecordKey(originalKey) || originalKey;
+      const count = Math.max(0, Math.floor(completions[norm] ?? completions[originalKey] ?? 0));
+      return count > 0 ? [{ categoryKey: originalKey, count }] : [];
+    });
+    if (items.length > 0) out[dateKey] = items;
+  }
+  return out;
+}
+
+/**
  * 퍼즐 시작 이후 루틴별 기여 횟수 = 현재 누적 − 시작 baseline.
  * baseline 키가 없으면 0으로 본다(레거시).
  */

@@ -10,6 +10,8 @@ type LiveActivityNativeModule = {
   endAndSuspend?: () => Promise<void> | void;
   suspendApp?: () => Promise<void> | void;
   isAvailable?: () => Promise<boolean> | boolean;
+  prepareQuickMemoPhoto?: (sourceUri: string) => Promise<string>;
+  clearQuickMemoPhoto?: () => Promise<boolean>;
 };
 
 const MODULE_NAME = 'PokitLiveActivity';
@@ -111,4 +113,30 @@ export async function endPokitLiveActivity(blockId?: string): Promise<boolean> {
   if (!module.endActivity) return false;
   await module.endActivity();
   return true;
+}
+
+/** 잠금화면 메모 사진을 App Group에 복사. 성공 시 상대 경로. */
+export async function prepareQuickMemoPhotoForLiveActivity(
+  sourceUri: string,
+): Promise<string | null> {
+  const module = getNativeModule();
+  if (!module?.prepareQuickMemoPhoto) return null;
+  const trimmed = sourceUri.trim();
+  if (!trimmed) return null;
+  try {
+    const relative = await module.prepareQuickMemoPhoto(trimmed);
+    return typeof relative === 'string' && relative.trim().length > 0 ? relative.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearQuickMemoPhotoFromLiveActivity(): Promise<boolean> {
+  const module = getNativeModule();
+  if (!module?.clearQuickMemoPhoto) return false;
+  try {
+    return Boolean(await module.clearQuickMemoPhoto());
+  } catch {
+    return false;
+  }
 }
