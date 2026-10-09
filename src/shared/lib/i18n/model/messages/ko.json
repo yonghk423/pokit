@@ -1365,7 +1365,7 @@
   "history.puzzle.pickErrorBody": "잠시 후 다시 선택해 주세요.",
   "history.puzzle.nextPhoto": "사진 고르기",
   "history.puzzle.routinesHeadline": "어떤 루틴으로 채울까요?",
-  "history.puzzle.routinesBody": "고른 루틴을 완료할 때마다 포스트잇이 붙어요. 여러 루틴을 한데 모을 수도, 루틴마다 사진 하나씩 할 수도 있어요.",
+  "history.puzzle.routinesBody": "오늘 탭에서 진행 중인 루틴만 고를 수 있어요. 고른 루틴을 완료할 때마다 포스트잇이 붙고, 여러 루틴을 한데 모을 수도, 루틴마다 사진 하나씩 할 수도 있어요.",
   "history.puzzle.routinesEmpty": "오늘 탭에 진행 중인 루틴이 없어요. 오늘 탭에 루틴을 담아 주세요.",
   "history.puzzle.routinesNeedOne": "루틴을 하나 이상 골라 주세요.",
   "history.puzzle.nextPreview": "확인",

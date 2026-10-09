@@ -42,9 +42,10 @@ import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
 import { DayMealSlotTargetChips } from './DayMealSlotTargetChips';
 
 const NAME_MAX = 24;
-const INPUT_SHADOW = 2;
-/** 감싸는 레이아웃용 — 안쪽 칩보다 조금 더 뚜렷하게 */
-const BASICS_SHADOW = 3;
+/** 하루 밸런스·루틴 탭과 동일 — 옅은 솔리드 음영 */
+const SHEET_SHADOW = 1;
+const SOFT_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
+const SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
 
 export type CreateCustomFlowSpineSchedule = {
   startMinutes: number;
@@ -216,7 +217,7 @@ export function CreateCustomFlowSheet({
   const canCreate = canProceedBasics && selectedTemplateKey.length > 0;
 
   const cardBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)';
-  const shadowInk = isDark ? RetroFlatColors.dark.solidShadow : '#000000';
+  const shadowInk = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
   const inputFaceBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
 
   const handleCreate = () => {
@@ -311,7 +312,7 @@ export function CreateCustomFlowSheet({
             <View
               style={[
                 styles.basicsShell,
-                { marginRight: BASICS_SHADOW, marginBottom: BASICS_SHADOW },
+                { marginRight: SHEET_SHADOW, marginBottom: SHEET_SHADOW },
               ]}>
               <View
                 pointerEvents="none"
@@ -319,7 +320,7 @@ export function CreateCustomFlowSheet({
                   styles.basicsShadow,
                   {
                     backgroundColor: shadowInk,
-                    transform: [{ translateX: BASICS_SHADOW }, { translateY: BASICS_SHADOW }],
+                    transform: [{ translateX: SHEET_SHADOW }, { translateY: SHEET_SHADOW }],
                   },
                 ]}
               />
@@ -327,7 +328,7 @@ export function CreateCustomFlowSheet({
                 style={[
                   styles.basicsFace,
                   {
-                    borderColor: isDark ? line : '#111111',
+                    borderColor: isDark ? line : 'rgba(0,0,0,0.14)',
                     backgroundColor: isDark ? cardBg : '#FFFFFF',
                   },
                 ]}>
@@ -336,7 +337,7 @@ export function CreateCustomFlowSheet({
                 <View
                   style={[
                     styles.inputShell,
-                    { marginRight: INPUT_SHADOW, marginBottom: INPUT_SHADOW },
+                    { marginRight: SHEET_SHADOW, marginBottom: SHEET_SHADOW },
                   ]}>
                   <View
                     pointerEvents="none"
@@ -344,7 +345,7 @@ export function CreateCustomFlowSheet({
                       styles.inputShadow,
                       {
                         backgroundColor: shadowInk,
-                        transform: [{ translateX: INPUT_SHADOW }, { translateY: INPUT_SHADOW }],
+                        transform: [{ translateX: SHEET_SHADOW }, { translateY: SHEET_SHADOW }],
                       },
                     ]}
                   />

@@ -50,20 +50,64 @@ describe('buildPuzzleRevealLayout (post-it collage)', () => {
     expect(all.every((t) => t.fill === 'image')).toBe(true);
   });
 
-  it('keeps photo windows close to frame so completed collage matches the source', () => {
+  it('keeps photo windows locked to frame so completed collage matches the source', () => {
     const layout = buildPuzzleRevealLayout(50);
     const all = [...layout.seeds, ...layout.units];
-    let sumDx = 0;
-    let sumDy = 0;
     for (const p of all) {
-      sumDx += Math.abs(p.imgX - p.x);
-      sumDy += Math.abs(p.imgY - p.y);
-      expect(Math.abs(p.imgX - p.x)).toBeLessThan(0.02);
-      expect(Math.abs(p.imgY - p.y)).toBeLessThan(0.02);
-      expect(Math.abs(p.imgW - p.w)).toBeLessThan(0.03);
-      expect(Math.abs(p.imgH - p.h)).toBeLessThan(0.03);
+      expect(p.imgX).toBeCloseTo(p.x, 6);
+      expect(p.imgY).toBeCloseTo(p.y, 6);
+      expect(p.imgW).toBeCloseTo(p.w, 6);
+      expect(p.imgH).toBeCloseTo(p.h, 6);
     }
-    expect(sumDx / all.length).toBeLessThan(0.01);
-    expect(sumDy / all.length).toBeLessThan(0.01);
+  });
+
+  it('covers nearly the full board so the completed photo looks filled', () => {
+    for (const target of [10, 20, 50] as const) {
+      const layout = buildPuzzleRevealLayout(target);
+      const all = [...layout.seeds, ...layout.units];
+      const gw = 40;
+      const gh = 48;
+      let covered = 0;
+      for (let gy = 0; gy < gh; gy += 1) {
+        for (let gx = 0; gx < gw; gx += 1) {
+          const x = (gx + 0.5) / gw;
+          const y = (gy + 0.5) / gh;
+          if (all.some((p) => x >= p.x && x < p.x + p.w && y >= p.y && y < p.y + p.h)) {
+            covered += 1;
+          }
+        }
+      }
+      expect(covered / (gw * gh)).toBeGreaterThan(0.9);
+    }
+  });
+
+  it('leaves the center mostly empty on seeds so the silhouette is not spoiled early', () => {
+    const sampleCenter = (
+      tiles: Array<{ x: number; y: number; w: number; h: number }>,
+    ) => {
+      const gw = 24;
+      const gh = 28;
+      const r = 0.22;
+      let hit = 0;
+      let tot = 0;
+      for (let gy = 0; gy < gh; gy += 1) {
+        for (let gx = 0; gx < gw; gx += 1) {
+          const x = (gx + 0.5) / gw;
+          const y = (gy + 0.5) / gh;
+          if (Math.abs(x - 0.5) > r || Math.abs(y - 0.5) > r) continue;
+          tot += 1;
+          if (tiles.some((p) => x >= p.x && x < p.x + p.w && y >= p.y && y < p.y + p.h)) {
+            hit += 1;
+          }
+        }
+      }
+      return tot > 0 ? hit / tot : 0;
+    };
+
+    for (const target of [10, 20, 50] as const) {
+      const layout = buildPuzzleRevealLayout(target);
+      expect(sampleCenter(layout.seeds)).toBeLessThan(0.55);
+      expect(sampleCenter([...layout.seeds, ...layout.units])).toBeGreaterThan(0.9);
+    }
   });
 });

@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -300,21 +300,6 @@ export function PuzzleHistoryTabPage() {
     historyHydrate();
     hydrate();
   }, [historyHydrate, hydrate]);
-
-  /** 막 완료된 퍼즐은 한 번만 펼쳐 마지막 조각·완성 연출을 보여 줌 */
-  const autoExpandedCompletedIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    const justDone = histories.find(
-      (h) =>
-        h.status === 'completed' &&
-        h.completedAt != null &&
-        Date.now() - Date.parse(h.completedAt) < 8_000,
-    );
-    if (!justDone) return;
-    if (autoExpandedCompletedIdRef.current === justDone.id) return;
-    autoExpandedCompletedIdRef.current = justDone.id;
-    setExpandedId(justDone.id);
-  }, [histories]);
 
   useFocusEffect(
     useCallback(() => {

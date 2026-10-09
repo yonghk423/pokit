@@ -131,7 +131,7 @@ function buildSchedulesForSelectedKeys(
   return schedules;
 }
 
-/** 루틴 탭과 동일한 그룹 구조 — 담기·구간 연결·타임라인 갭 추가용 다중 선택 시트 */
+/** 담기·구간 연결·타임라인 갭 추가용 다중 선택 시트 (레거시 그룹 헤더 없이 평면 목록) */
 export function PriorityRoutinePickerSheet({
   visible,
   title,
@@ -157,6 +157,19 @@ export function PriorityRoutinePickerSheet({
   const [defaultBlockMinutes, setDefaultBlockMinutes] = useState(() => loadSpineDefaultBlockMinutes());
 
   const spineTimeEnabled = spineGapAdd != null;
+  /** 구 카테고리(건강/일상/금지…) 헤더 없이 섹션 순서만 유지한 평면 목록 */
+  const flatItems = useMemo(() => {
+    const seen = new Set<string>();
+    const out: AddablePriorityCatalogSection['items'] = [];
+    for (const section of sections) {
+      for (const item of section.items) {
+        if (seen.has(item.key)) continue;
+        seen.add(item.key);
+        out.push(item);
+      }
+    }
+    return out;
+  }, [sections]);
   const baseDateKey = useMemo(() => getLocalDateKey(), []);
   const baseDateLabel = useMemo(() => formatDateKeyCompact(baseDateKey, locale), [baseDateKey, locale]);
   const nextDateLabel = useMemo(
@@ -359,125 +372,120 @@ export function PriorityRoutinePickerSheet({
               <ThemedText style={[styles.rowLabel, { color: ink }]}>{t('fixedRoutine.createNew')}</ThemedText>
             </Pressable>
           ) : null}
-          {sections.map((section) => (
-            <View key={section.groupKey}>
-              <ThemedText style={[styles.sectionTitle, { color: muted }]}>{section.title}</ThemedText>
-              {section.items.map((cat) => {
-                const selected = selectedKeys.has(cat.key);
-                const schedule = scheduleByKey[cat.key];
-                const isTimeExpanded = expandedTimeKey === cat.key;
-                const timeHighlighted = selected && schedule != null;
+          {flatItems.map((cat) => {
+            const selected = selectedKeys.has(cat.key);
+            const schedule = scheduleByKey[cat.key];
+            const isTimeExpanded = expandedTimeKey === cat.key;
+            const timeHighlighted = selected && schedule != null;
 
-                return (
-                  <View key={cat.key} style={[styles.pickRowWrap, { borderBottomColor: line }]}>
+            return (
+              <View key={cat.key} style={[styles.pickRowWrap, { borderBottomColor: line }]}>
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: selected }}
+                  accessibilityLabel={`${cat.label} ${selected ? t('common.selected') : t('common.select')}`}
+                  onPress={() => toggleSelection(cat.key)}
+                  style={({ pressed }) => [
+                    styles.pickRow,
+                    {
+                      backgroundColor: selected
+                        ? isDark
+                          ? 'rgba(255,255,255,0.08)'
+                          : 'rgba(0,0,0,0.04)'
+                        : 'transparent',
+                    },
+                    pressed && { opacity: 0.72 },
+                  ]}>
+                  <IconSymbol
+                    name={resolveCategoryCatalogIcon(cat.key) as 'drop.fill'}
+                    size={18}
+                    color={activeIconColorByCategory(cat.key)}
+                  />
+                  <ThemedText style={[styles.rowLabel, { color: ink }]}>{cat.label}</ThemedText>
+                  {spineTimeEnabled && selected ? (
                     <Pressable
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: selected }}
-                      accessibilityLabel={`${cat.label} ${selected ? t('common.selected') : t('common.select')}`}
-                      onPress={() => toggleSelection(cat.key)}
-                      style={({ pressed }) => [
-                        styles.pickRow,
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: isTimeExpanded, selected: timeHighlighted }}
+                      accessibilityLabel={
+                        schedule
+                          ? t('dayPlan.categoryTimeRangeA11y', {
+                              label: cat.label,
+                              start: formatMinuteOfDay(schedule.startMinutes, locale),
+                              end: formatMinuteOfDay(schedule.endMinutes, locale),
+                            })
+                          : t('fixedRoutine.timePickA11y', { label: cat.label })
+                      }
+                      hitSlop={10}
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setExpandedTimeKey((current) => {
+                          const next = current === cat.key ? null : cat.key;
+                          if (next) {
+                            requestAnimationFrame(() => scrollTimePanelIntoView());
+                          }
+                          return next;
+                        });
+                      }}
+                      style={[
+                        styles.timeBtn,
                         {
-                          backgroundColor: selected
-                            ? isDark
-                              ? 'rgba(255,255,255,0.08)'
-                              : 'rgba(0,0,0,0.04)'
-                            : 'transparent',
+                          borderColor: isTimeExpanded || timeHighlighted ? ink : settingsBorder,
+                          backgroundColor:
+                            isTimeExpanded || timeHighlighted
+                              ? isDark
+                                ? 'rgba(255,255,255,0.14)'
+                                : 'rgba(0,0,0,0.06)'
+                              : settingsBg,
                         },
-                        pressed && { opacity: 0.72 },
                       ]}>
                       <IconSymbol
-                        name={resolveCategoryCatalogIcon(cat.key) as 'drop.fill'}
-                        size={18}
-                        color={activeIconColorByCategory(cat.key)}
+                        name="clock.fill"
+                        size={15}
+                        color={
+                          isTimeExpanded || timeHighlighted
+                            ? ink
+                            : isDark
+                              ? '#FAFAFA'
+                              : PrimaryColor.rgb
+                        }
                       />
-                      <ThemedText style={[styles.rowLabel, { color: ink }]}>{cat.label}</ThemedText>
-                      {spineTimeEnabled && selected ? (
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityState={{ expanded: isTimeExpanded, selected: timeHighlighted }}
-                          accessibilityLabel={
-                            schedule
-                              ? t('dayPlan.categoryTimeRangeA11y', {
-                                  label: cat.label,
-                                  start: formatMinuteOfDay(schedule.startMinutes, locale),
-                                  end: formatMinuteOfDay(schedule.endMinutes, locale),
-                                })
-                              : t('fixedRoutine.timePickA11y', { label: cat.label })
-                          }
-                          hitSlop={10}
-                          onPress={(event) => {
-                            event.stopPropagation();
-                            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            setExpandedTimeKey((current) => {
-                              const next = current === cat.key ? null : cat.key;
-                              if (next) {
-                                requestAnimationFrame(() => scrollTimePanelIntoView());
-                              }
-                              return next;
-                            });
-                          }}
-                          style={[
-                            styles.timeBtn,
-                            {
-                              borderColor: isTimeExpanded || timeHighlighted ? ink : settingsBorder,
-                              backgroundColor:
-                                isTimeExpanded || timeHighlighted
-                                  ? isDark
-                                    ? 'rgba(255,255,255,0.14)'
-                                    : 'rgba(0,0,0,0.06)'
-                                  : settingsBg,
-                            },
-                          ]}>
-                          <IconSymbol
-                            name="clock.fill"
-                            size={15}
-                            color={
-                              isTimeExpanded || timeHighlighted
-                                ? ink
-                                : isDark
-                                  ? '#FAFAFA'
-                                  : PrimaryColor.rgb
-                            }
-                          />
-                        </Pressable>
-                      ) : null}
                     </Pressable>
-                    {spineTimeEnabled && selected && isTimeExpanded && schedule && spineGapAdd ? (
-                      <View
-                        style={[
-                          styles.timePanel,
-                          {
-                            backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)',
-                          },
-                        ]}>
-                        <CatalogRowSpineTimePanel
-                          startMinutes={schedule.startMinutes}
-                          endMinutes={schedule.endMinutes}
-                          endsNextCalendarDay={schedule.endsNextCalendarDay}
-                          startDateLabel={baseDateLabel}
-                          endDateLabelToday={baseDateLabel}
-                          endDateLabelNextDay={nextDateLabel}
-                          ink={ink}
-                          muted={muted}
-                          line={line}
-                          isDark={isDark}
-                          priorityStart={spineGapAdd.priorityStart}
-                          priorityEnd={spineGapAdd.priorityEnd}
-                          onScheduleChange={(startMinutes, endMinutes, endsNextCalendarDay) =>
-                            handleScheduleChange(cat.key, startMinutes, endMinutes, endsNextCalendarDay)
-                          }
-                          onRequestScrollIntoView={scrollTimePanelIntoView}
-                          contentInsetLeft={28}
-                        />
-                      </View>
-                    ) : null}
+                  ) : null}
+                </Pressable>
+                {spineTimeEnabled && selected && isTimeExpanded && schedule && spineGapAdd ? (
+                  <View
+                    style={[
+                      styles.timePanel,
+                      {
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)',
+                      },
+                    ]}>
+                    <CatalogRowSpineTimePanel
+                      startMinutes={schedule.startMinutes}
+                      endMinutes={schedule.endMinutes}
+                      endsNextCalendarDay={schedule.endsNextCalendarDay}
+                      startDateLabel={baseDateLabel}
+                      endDateLabelToday={baseDateLabel}
+                      endDateLabelNextDay={nextDateLabel}
+                      ink={ink}
+                      muted={muted}
+                      line={line}
+                      isDark={isDark}
+                      priorityStart={spineGapAdd.priorityStart}
+                      priorityEnd={spineGapAdd.priorityEnd}
+                      onScheduleChange={(startMinutes, endMinutes, endsNextCalendarDay) =>
+                        handleScheduleChange(cat.key, startMinutes, endMinutes, endsNextCalendarDay)
+                      }
+                      onRequestScrollIntoView={scrollTimePanelIntoView}
+                      contentInsetLeft={28}
+                    />
                   </View>
-                );
-              })}
-            </View>
-          ))}
-          {sections.length === 0 ? (
+                ) : null}
+              </View>
+            );
+          })}
+          {flatItems.length === 0 ? (
             <ThemedText style={[styles.empty, { color: muted }]}>
               {t('fixedRoutine.modalEmpty')}
             </ThemedText>
@@ -570,13 +578,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingVertical: 12,
-  },
-  sectionTitle: {
-    marginTop: 8,
-    marginBottom: 2,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: -0.15,
   },
   pickRowWrap: {
     borderBottomWidth: StyleSheet.hairlineWidth,

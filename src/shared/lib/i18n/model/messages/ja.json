@@ -1202,7 +1202,7 @@
   "history.puzzle.pickErrorBody": "しばらくしてからもう一度選んでください。",
   "history.puzzle.nextPhoto": "写真を選ぶ",
   "history.puzzle.routinesHeadline": "どのルーチンで埋めますか？",
-  "history.puzzle.routinesBody": "つないだルーチンを完了するたびにポストイットが貼られます。複数を1枚にまとめても、ルーチンごとに写真を分けてもOKです。",
+  "history.puzzle.routinesBody": "今日タブで進行中のルーチンだけ選べます。選んだルーチンを完了するたびにポストイットが貼られ、複数を1枚にまとめても、ルーチンごとに写真を分けてもOKです。",
   "history.puzzle.routinesEmpty": "今日タブに進行中のルーチンがありません。先に今日タブへルーチンを追加してください。",
   "history.puzzle.routinesNeedOne": "ルーチンを1つ以上選んでください。",
   "history.puzzle.nextPreview": "確認",

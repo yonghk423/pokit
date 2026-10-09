@@ -227,10 +227,15 @@ export function PuzzleHistoryStartPage() {
       </View>
 
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: Math.max(insets.bottom, 16) + 24 },
+          {
+            paddingBottom:
+              step === 'routines' || step === 'photo' ? 24 : Math.max(insets.bottom, 16) + 24,
+          },
         ]}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         {step === 'routines' ? (
           <View style={styles.section}>
@@ -277,20 +282,6 @@ export function PuzzleHistoryStartPage() {
                 })}
               </View>
             )}
-            <BrutalConfirmButton
-              align="stretch"
-              label={t('history.puzzle.nextPhoto')}
-              disabled={linkedKeys.length === 0}
-              onPress={() => {
-                if (linkedKeys.length === 0) {
-                  Alert.alert(t('history.puzzle.routinesNeedOne'));
-                  return;
-                }
-                void Haptics.selectionAsync();
-                setStep('photo');
-              }}
-              style={{ marginTop: 8 }}
-            />
           </View>
         ) : null}
 
@@ -338,14 +329,6 @@ export function PuzzleHistoryStartPage() {
                 <IconSymbol name="photo" size={36} color={c.textMuted} />
               </View>
             )}
-            <BrutalConfirmButton
-              align="stretch"
-              label={busy ? t('history.puzzle.picking') : t('history.puzzle.pickPhotoCta')}
-              disabled={busy}
-              onPress={() => {
-                void pickPhoto();
-              }}
-            />
             {imageUri && !replaceImage && !busy ? (
               <BrutalConfirmButton
                 align="stretch"
@@ -467,12 +450,61 @@ export function PuzzleHistoryStartPage() {
           </View>
         ) : null}
       </ScrollView>
+
+      {step === 'routines' ? (
+        <View
+          style={[
+            styles.stickyFooter,
+            {
+              paddingBottom: Math.max(insets.bottom, 12),
+              borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+              backgroundColor: c.bg,
+            },
+          ]}>
+          <BrutalConfirmButton
+            align="stretch"
+            label={t('history.puzzle.nextPhoto')}
+            pressRetentionOffset={20}
+            onPress={() => {
+              if (linkedKeys.length === 0) {
+                Alert.alert(t('history.puzzle.routinesNeedOne'));
+                return;
+              }
+              void Haptics.selectionAsync();
+              setStep('photo');
+            }}
+          />
+        </View>
+      ) : null}
+
+      {step === 'photo' ? (
+        <View
+          style={[
+            styles.stickyFooter,
+            {
+              paddingBottom: Math.max(insets.bottom, 12),
+              borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+              backgroundColor: c.bg,
+            },
+          ]}>
+          <BrutalConfirmButton
+            align="stretch"
+            label={busy ? t('history.puzzle.picking') : t('history.puzzle.pickPhotoCta')}
+            disabled={busy}
+            pressRetentionOffset={20}
+            onPress={() => {
+              void pickPhoto();
+            }}
+          />
+        </View>
+      ) : null}
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  scroll: { flex: 1 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -482,6 +514,11 @@ const styles = StyleSheet.create({
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   topTitle: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '700' },
   content: { paddingHorizontal: 20, paddingTop: 8 },
+  stickyFooter: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   section: { gap: 12 },
   headline: { fontSize: 22, fontWeight: '800', lineHeight: 28 },
   sub: { fontSize: 14, lineHeight: 20 },

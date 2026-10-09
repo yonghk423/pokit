@@ -84,17 +84,32 @@ type RawTile = {
   seedScore: number;
 };
 
-/** 시드 = 처음부터 붙어 있는 포스트잇 수 */
+/**
+ * 시드 = 처음부터 붙어 있는 포스트잇 수.
+ * 너무 많으면 가운데까지 미리 채워져 완성 전 윤곽이 드러난다.
+ */
 export function seedCountForTarget(targetCount: PuzzleHistoryTarget): number {
-  if (targetCount === 1) return 5;
-  if (targetCount === 10) return 6;
-  if (targetCount === 20) return 7;
-  if (targetCount === 50) return 8;
-  return 8;
+  if (targetCount === 1) return 4;
+  if (targetCount === 10) return 4;
+  if (targetCount === 20) return 5;
+  if (targetCount === 50) return 6;
+  return 6;
 }
 
-function clamp01(n: number): number {
-  return Math.max(0, Math.min(1, n));
+/** 보드 중심에서 멀수록 큼 — 시드는 가장자리부터, 가운데는 progress로 남긴다 */
+function edgePriority(t: Pick<RawTile, 'x' | 'y' | 'w' | 'h'>): number {
+  const cx = t.x + t.w * 0.5;
+  const cy = t.y + t.h * 0.5;
+  return Math.abs(cx - 0.5) + Math.abs(cy - 0.5);
+}
+
+/** 타일이 보드 중심 사각과 겹치는 면적 (대략) */
+function centerOverlapArea(t: Pick<RawTile, 'x' | 'y' | 'w' | 'h'>): number {
+  const x1 = Math.max(t.x, 0.28);
+  const y1 = Math.max(t.y, 0.28);
+  const x2 = Math.min(t.x + t.w, 0.72);
+  const y2 = Math.min(t.y + t.h, 0.72);
+  return Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
 }
 
 function areaOf(t: Pick<RawTile, 'w' | 'h'>): number {
@@ -109,33 +124,35 @@ function rand(salt: number): number {
 
 /**
  * 레퍼런스처럼 겹치는 큰 포스트잇 몇 장으로 시작.
+ * 가장자리까지 덮어 완성 시 원본 구도가 보드에 다 채워지게 한다.
  * 이후 큰 장을 갈라 목표 장수까지 채운다.
  */
 function initialCollageTiles(): RawTile[] {
+  /** seedScore: 가장자리 높음 · 가운데(c/d/f) 낮음 — 초기엔 테두리만 붙게 */
   const base: Array<Omit<RawTile, 'imgX' | 'imgY' | 'imgW' | 'imgH' | 'rotate'>> = [
-    { id: 'a', x: 0.08, y: 0.06, w: 0.42, h: 0.28, z: 2, fill: 'image', seedScore: 8 },
-    { id: 'b', x: 0.38, y: 0.04, w: 0.48, h: 0.26, z: 3, fill: 'image', seedScore: 9 },
-    { id: 'c', x: 0.12, y: 0.26, w: 0.36, h: 0.3, z: 4, fill: 'image', seedScore: 10 },
-    { id: 'd', x: 0.4, y: 0.22, w: 0.44, h: 0.32, z: 5, fill: 'image', seedScore: 11 },
-    { id: 'e', x: 0.06, y: 0.48, w: 0.4, h: 0.28, z: 3, fill: 'image', seedScore: 7 },
-    { id: 'f', x: 0.36, y: 0.46, w: 0.5, h: 0.3, z: 6, fill: 'image', seedScore: 10 },
-    { id: 'g', x: 0.1, y: 0.7, w: 0.38, h: 0.24, z: 2, fill: 'image', seedScore: 6 },
-    { id: 'h', x: 0.42, y: 0.68, w: 0.46, h: 0.26, z: 4, fill: 'image', seedScore: 7 },
-    { id: 'i', x: 0.62, y: 0.34, w: 0.28, h: 0.22, z: 7, fill: 'image', seedScore: 5 },
-    { id: 'j', x: 0.02, y: 0.34, w: 0.22, h: 0.2, z: 1, fill: 'image', seedScore: 4 },
-    { id: 'k', x: 0.72, y: 0.58, w: 0.22, h: 0.2, z: 5, fill: 'image', seedScore: 4 },
-    { id: 'l', x: 0.22, y: 0.12, w: 0.24, h: 0.18, z: 8, fill: 'image', seedScore: 6 },
+    { id: 'a', x: -0.03, y: -0.03, w: 0.52, h: 0.36, z: 2, fill: 'image', seedScore: 10 },
+    { id: 'b', x: 0.38, y: -0.03, w: 0.65, h: 0.34, z: 3, fill: 'image', seedScore: 10 },
+    { id: 'c', x: -0.03, y: 0.22, w: 0.48, h: 0.4, z: 4, fill: 'image', seedScore: 3 },
+    { id: 'd', x: 0.34, y: 0.18, w: 0.58, h: 0.42, z: 5, fill: 'image', seedScore: 1 },
+    { id: 'e', x: -0.03, y: 0.46, w: 0.5, h: 0.38, z: 3, fill: 'image', seedScore: 5 },
+    { id: 'f', x: 0.3, y: 0.42, w: 0.62, h: 0.4, z: 6, fill: 'image', seedScore: 2 },
+    { id: 'g', x: -0.03, y: 0.68, w: 0.52, h: 0.36, z: 2, fill: 'image', seedScore: 9 },
+    { id: 'h', x: 0.36, y: 0.64, w: 0.62, h: 0.4, z: 4, fill: 'image', seedScore: 9 },
+    { id: 'i', x: 0.58, y: 0.28, w: 0.4, h: 0.32, z: 7, fill: 'image', seedScore: 7 },
+    { id: 'j', x: -0.03, y: 0.3, w: 0.32, h: 0.3, z: 1, fill: 'image', seedScore: 8 },
+    { id: 'k', x: 0.66, y: 0.52, w: 0.38, h: 0.32, z: 5, fill: 'image', seedScore: 8 },
+    { id: 'l', x: 0.16, y: 0.06, w: 0.38, h: 0.28, z: 8, fill: 'image', seedScore: 6 },
   ];
 
   return base.map((t, i) => {
-    /** 프레임만 살짝 흔들림 — 완성본이 원본과 크게 어긋나지 않게 */
-    const jx = (rand(i * 3 + 1) - 0.5) * 0.014;
-    const jy = (rand(i * 3 + 2) - 0.5) * 0.014;
-    const rotate = (rand(i * 3 + 3) - 0.5) * 2.8;
-    const x = clamp01(t.x + jx);
-    const y = clamp01(t.y + jy);
-    const w = Math.min(t.w, 1 - x);
-    const h = Math.min(t.h, 1 - y);
+    /** 손 붙인 느낌 — 최소 위치·기울기 */
+    const jx = (rand(i * 3 + 1) - 0.5) * 0.01;
+    const jy = (rand(i * 3 + 2) - 0.5) * 0.01;
+    const rotate = (rand(i * 3 + 3) - 0.5) * 2.4;
+    const x = t.x + jx;
+    const y = t.y + jy;
+    const w = t.w;
+    const h = t.h;
     return {
       ...t,
       x,
@@ -152,30 +169,47 @@ function initialCollageTiles(): RawTile[] {
 }
 
 /**
- * 프레임 좌표에 사진 창을 맞춘다.
- * 완성 시 원본과 같은 구도가 보이도록 하고, 아주 작은 잔여 오프셋만 남긴다.
+ * 프레임 좌표에 사진 창을 1:1로 맞춘다.
+ * 드리프트 없이 맞춰야 완성 콜라주가 원본 구도를 그대로 보여 준다.
  */
-function syncImageWindowToFrame(tile: RawTile, salt: number): RawTile {
-  const drift = 0.005;
-  const dx = (rand(salt + 11) - 0.5) * drift;
-  const dy = (rand(salt + 12) - 0.5) * drift;
-  const imgX = clamp01(tile.x + dx);
-  const imgY = clamp01(tile.y + dy);
-  const imgW = Math.min(tile.w, 1 - imgX);
-  const imgH = Math.min(tile.h, 1 - imgY);
-  return { ...tile, imgX, imgY, imgW, imgH };
+function syncImageWindowToFrame(tile: RawTile, _salt?: number): RawTile {
+  return {
+    ...tile,
+    imgX: tile.x,
+    imgY: tile.y,
+    imgW: tile.w,
+    imgH: tile.h,
+  };
+}
+
+/**
+ * amount > 0 키움 · < 0 줄임.
+ * 아주 약하게 줄여 장 사이 미세한 틈만 남긴다.
+ */
+function inflateTile(tile: RawTile, amount: number): RawTile {
+  const growX = tile.w * amount;
+  const growY = tile.h * amount;
+  const next = {
+    ...tile,
+    x: tile.x - growX / 2,
+    y: tile.y - growY / 2,
+    w: Math.max(0.04, tile.w + growX),
+    h: Math.max(0.04, tile.h + growY),
+  };
+  return syncImageWindowToFrame(next);
 }
 
 function splitTile(tile: RawTile, salt: number): [RawTile, RawTile] {
   const vertical = tile.w >= tile.h;
-  const t = 0.4 + rand(salt) * 0.2;
-  const rotA = (rand(salt + 1) - 0.5) * 2.6;
-  const rotB = (rand(salt + 2) - 0.5) * 2.6;
-  /** 분할 시 프레임 흔들림 — 사진 창은 아래에서 프레임에 재동기화 */
-  const j = 0.006;
+  const t = 0.42 + rand(salt) * 0.16;
+  const rotA = (rand(salt + 1) - 0.5) * 2.2;
+  const rotB = (rand(salt + 2) - 0.5) * 2.2;
+  /** 분할 시 거의 없는 흔들림·틈 */
+  const j = 0.003;
+  const gap = 0.001;
 
   if (vertical) {
-    const w1 = tile.w * t;
+    const w1 = Math.max(0.04, tile.w * t - gap / 2);
     const left = syncImageWindowToFrame(
       {
         ...tile,
@@ -184,8 +218,8 @@ function splitTile(tile: RawTile, salt: number): [RawTile, RawTile] {
         rotate: rotA,
         z: tile.z + 1,
         seedScore: Math.max(0, tile.seedScore - 1),
-        x: clamp01(tile.x + (rand(salt + 3) - 0.5) * j),
-        y: clamp01(tile.y + (rand(salt + 4) - 0.5) * j),
+        x: tile.x + (rand(salt + 3) - 0.5) * j,
+        y: tile.y + (rand(salt + 4) - 0.5) * j,
       },
       salt + 21,
     );
@@ -193,9 +227,9 @@ function splitTile(tile: RawTile, salt: number): [RawTile, RawTile] {
       {
         ...tile,
         id: `${tile.id}-b`,
-        x: clamp01(tile.x + w1 + (rand(salt + 5) - 0.5) * j),
-        y: clamp01(tile.y + (rand(salt + 6) - 0.5) * j),
-        w: tile.w - w1,
+        x: tile.x + w1 + gap + (rand(salt + 5) - 0.5) * j,
+        y: tile.y + (rand(salt + 6) - 0.5) * j,
+        w: Math.max(0.04, tile.w - w1 - gap),
         rotate: rotB,
         z: tile.z + 2,
         seedScore: Math.max(0, tile.seedScore - 1),
@@ -205,7 +239,7 @@ function splitTile(tile: RawTile, salt: number): [RawTile, RawTile] {
     return [left, right];
   }
 
-  const h1 = tile.h * t;
+  const h1 = Math.max(0.04, tile.h * t - gap / 2);
   const top = syncImageWindowToFrame(
     {
       ...tile,
@@ -214,8 +248,8 @@ function splitTile(tile: RawTile, salt: number): [RawTile, RawTile] {
       rotate: rotA,
       z: tile.z + 1,
       seedScore: Math.max(0, tile.seedScore - 1),
-      x: clamp01(tile.x + (rand(salt + 3) - 0.5) * j),
-      y: clamp01(tile.y + (rand(salt + 4) - 0.5) * j),
+      x: tile.x + (rand(salt + 3) - 0.5) * j,
+      y: tile.y + (rand(salt + 4) - 0.5) * j,
     },
     salt + 21,
   );
@@ -223,9 +257,9 @@ function splitTile(tile: RawTile, salt: number): [RawTile, RawTile] {
     {
       ...tile,
       id: `${tile.id}-b`,
-      x: clamp01(tile.x + (rand(salt + 5) - 0.5) * j),
-      y: clamp01(tile.y + h1 + (rand(salt + 6) - 0.5) * j),
-      h: tile.h - h1,
+      x: tile.x + (rand(salt + 5) - 0.5) * j,
+      y: tile.y + h1 + gap + (rand(salt + 6) - 0.5) * j,
+      h: Math.max(0.04, tile.h - h1 - gap),
       rotate: rotB,
       z: tile.z + 2,
       seedScore: Math.max(0, tile.seedScore - 1),
@@ -265,7 +299,8 @@ function collectPool(needed: number): RawTile[] {
     salt += 1;
     pool = [...pool.slice(0, best), a, b, ...pool.slice(best + 1)];
   }
-  return pool;
+  /** 거의 안 줄여 아주 미세한 틈만 */
+  return pool.map((tile) => inflateTile(tile, -0.002));
 }
 
 /**
@@ -280,14 +315,25 @@ export function buildPuzzleRevealLayout(
   const needed = seedCount + targetCount;
   const pool = collectPool(needed);
 
+  /**
+   * 시드: 가장자리·가운데 겹침 적은 장 우선.
+   * progress: 가운데를 메우는 장 → 완성 전에는 중심이 비어 보이게.
+   */
   const ranked = [...pool].sort((a, b) => {
+    const edge = edgePriority(b) - edgePriority(a);
+    if (Math.abs(edge) > 0.04) return edge;
+    const center = centerOverlapArea(a) - centerOverlapArea(b);
+    if (Math.abs(center) > 1e-6) return center;
     if (b.seedScore !== a.seedScore) return b.seedScore - a.seedScore;
-    return areaOf(b) - areaOf(a);
+    return areaOf(a) - areaOf(b);
   });
 
   const seedPieces = ranked.slice(0, seedCount);
   const progressSorted = [...ranked.slice(seedCount, seedCount + targetCount)].sort(
     (a, b) => {
+      /** 가운데부터 채워지도록 — 완료할수록 윤곽이 살아남 */
+      const center = centerOverlapArea(b) - centerOverlapArea(a);
+      if (Math.abs(center) > 1e-6) return center;
       if (a.y !== b.y) return a.y - b.y;
       return a.x - b.x;
     },

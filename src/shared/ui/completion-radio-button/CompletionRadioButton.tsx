@@ -16,14 +16,14 @@ export const COMPLETION_TOGGLE_ANIM_MS = 280;
 /** soft 모션 기준 — 토글 후 후속 UI 동기화용 */
 export const COMPLETION_TOGGLE_SOFT_ANIM_MS = 420;
 
-/** 완료 채움 — API 호환 (아이콘만 표시하므로 면색은 미사용) */
+/** 완료 채움 — 라이트/다크 민트 면 (호출부에서 override 가능) */
 export const COMPLETION_CHECKED_COLOR_LIGHT = RetroFlatColors.light.bgMint;
 export const COMPLETION_CHECKED_COLOR_DARK = RetroFlatColors.dark.bgMint;
 
 /** 어두운 채움 위 폴백 체크색 */
 export const COMPLETION_CHECK_ICON_COLOR = RetroFlatColors.light.bgMint;
 
-/** 활성 붓터치 체크 잉크 */
+/** 붓터치 체크 기본 잉크 */
 export const COMPLETION_CHECK_INK = '#0A1628';
 
 /** 붓터치 느낌의 완료 체크 */
@@ -41,8 +41,10 @@ export function BrushCheckMark({ size, color }: { size: number; color: string })
 const CIRCLE_OUTER_SIZE = 30;
 const SQUARE_OUTER_SIZE = 20;
 const HIT_SIZE = 44;
+const BORDER_WIDTH = 2.5;
 const CHECK_ICON_SIZE = 18;
 const SQUARE_CHECK_ICON_SIZE = 14;
+const SOLID_SHADOW_SM = 2;
 
 const EASE_OUT = Easing.out(Easing.cubic);
 const EASE_SOFT = Easing.bezier(0.22, 1, 0.36, 1);
@@ -64,7 +66,7 @@ const MOTION = {
   },
 } as const;
 
-/** 완료 채움 위 체크 아이콘 색 — API 호환 유지 */
+/** 완료 채움 위 체크 아이콘 색 */
 export function completionCheckIconColor(fill: string): string {
   const raw = fill.trim().toLowerCase();
   const hex = /^#?([0-9a-f]{6})$/i.exec(raw);
@@ -90,12 +92,13 @@ export function completionCheckIconColor(fill: string): string {
 type Props = {
   checked: boolean;
   isDark: boolean;
-  /** circle: 목록 행 · square: 시간대별 타임라인 (히트 영역 크기만 영향) */
+  /** circle: 목록 행 · square: 시간대별 타임라인 */
   shape?: 'circle' | 'square';
-  /** 히트/아이콘 기준 한 변(px) */
+  /** 원/사각 외곽 한 변(px) */
   size?: number;
   checkedColor?: string;
   uncheckedColor?: string;
+  /** border: 윤곽선(기본) · shadow: 테두리 없이 솔리드 음영만 */
   outline?: 'border' | 'shadow';
   shadowColor?: string;
   uncheckedFill?: string;
@@ -105,19 +108,19 @@ type Props = {
 };
 
 /**
- * 완료 토글 — 원형/사각 면 없이 붓터치 체크만.
- * 미완료: 흐린 체크 · 완료: 진한 체크.
+ * 완료 토글 — 원형/사각 면 + 붓터치 체크.
+ * 미완료: 윤곽(또는 면) · 완료: 채움 위 체크.
  */
 export function CompletionRadioButton({
   checked,
   isDark,
   shape = 'circle',
   size,
-  checkedColor: _checkedColor,
-  uncheckedColor: _uncheckedColor,
-  outline: _outline,
-  shadowColor: _shadowColor,
-  uncheckedFill: _uncheckedFill,
+  checkedColor = isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT,
+  uncheckedColor,
+  outline = 'border',
+  shadowColor = '#000000',
+  uncheckedFill,
   motion = 'default',
   onPress,
   accessibilityLabel,
@@ -126,16 +129,23 @@ export function CompletionRadioButton({
   const timing = MOTION[motion];
   const defaultOuter = shape === 'square' ? SQUARE_OUTER_SIZE : CIRCLE_OUTER_SIZE;
   const outerSize = size ?? defaultOuter;
+  const cornerRadius = shape === 'square' ? 0 : outerSize / 2;
   const defaultCheck = shape === 'square' ? SQUARE_CHECK_ICON_SIZE : CHECK_ICON_SIZE;
   const checkIconSize =
-    size != null ? Math.max(12, Math.round(outerSize * 0.62)) : defaultCheck;
+    size != null ? Math.max(10, Math.round(outerSize * 0.58)) : defaultCheck;
+  const useSolidShadow = outline === 'shadow';
+  const borderWidth = useSolidShadow ? 0 : outerSize <= 26 ? 2 : BORDER_WIDTH;
   const hitSize = size != null ? Math.max(outerSize + 12, 36) : HIT_SIZE;
   const scale = useSharedValue(1);
   const fillProgress = useSharedValue(checked ? 1 : 0);
   const prevCheckedRef = useRef(checked);
 
-  const activeColor = isDark ? '#FAFAFA' : COMPLETION_CHECK_INK;
-  const idleColor = isDark ? 'rgba(255,255,255,0.32)' : 'rgba(10, 22, 40, 0.28)';
+  const checkIconColor = completionCheckIconColor(checkedColor);
+  const borderIdle =
+    uncheckedColor ?? (isDark ? 'rgba(255,255,255,0.42)' : '#9CA3AF');
+  const idleFill = useSolidShadow
+    ? (uncheckedFill ?? (isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF'))
+    : 'transparent';
 
   useEffect(() => {
     const wasChecked = prevCheckedRef.current;
@@ -164,14 +174,14 @@ export function CompletionRadioButton({
     transform: [{ scale: scale.value }],
   }));
 
-  const idleAnimatedStyle = useAnimatedStyle(() => ({
+  const outlineAnimatedStyle = useAnimatedStyle(() => ({
     opacity: 1 - fillProgress.value,
-    transform: [{ scale: 0.94 + (1 - fillProgress.value) * 0.06 }],
+    transform: [{ scale: 0.92 + (1 - fillProgress.value) * 0.08 }],
   }));
 
-  const activeAnimatedStyle = useAnimatedStyle(() => ({
+  const fillAnimatedStyle = useAnimatedStyle(() => ({
     opacity: fillProgress.value,
-    transform: [{ scale: 0.86 + fillProgress.value * 0.14 }],
+    transform: [{ scale: 0.72 + fillProgress.value * 0.28 }],
   }));
 
   const handlePress = () => {
@@ -205,19 +215,70 @@ export function CompletionRadioButton({
         });
       }}
       style={[styles.hit, { width: hitSize, height: hitSize }]}>
-      <Reanimated.View
+      <View
         style={[
-          styles.visualWrap,
-          { width: outerSize, height: outerSize },
-          rootAnimatedStyle,
+          styles.shell,
+          useSolidShadow
+            ? { marginRight: SOLID_SHADOW_SM, marginBottom: SOLID_SHADOW_SM }
+            : null,
         ]}>
-        <Reanimated.View pointerEvents="none" style={[styles.layer, idleAnimatedStyle]}>
-          <BrushCheckMark size={checkIconSize} color={idleColor} />
+        {useSolidShadow ? (
+          <View
+            pointerEvents="none"
+            style={[
+              styles.solidShadow,
+              {
+                width: outerSize,
+                height: outerSize,
+                borderRadius: cornerRadius,
+                backgroundColor: shadowColor,
+                transform: [
+                  { translateX: SOLID_SHADOW_SM },
+                  { translateY: SOLID_SHADOW_SM },
+                ],
+              },
+            ]}
+          />
+        ) : null}
+        <Reanimated.View
+          style={[
+            styles.visualWrap,
+            { width: outerSize, height: outerSize, zIndex: 1 },
+            rootAnimatedStyle,
+          ]}>
+          <Reanimated.View
+            pointerEvents="none"
+            style={[
+              styles.layer,
+              {
+                width: outerSize,
+                height: outerSize,
+                borderRadius: cornerRadius,
+                borderColor: borderIdle,
+                borderWidth,
+                backgroundColor: idleFill,
+              },
+              outlineAnimatedStyle,
+            ]}
+          />
+          <Reanimated.View
+            pointerEvents="none"
+            style={[
+              styles.layer,
+              {
+                width: outerSize,
+                height: outerSize,
+                borderRadius: cornerRadius,
+                backgroundColor: checkedColor,
+                alignItems: 'center',
+                justifyContent: 'center',
+              },
+              fillAnimatedStyle,
+            ]}>
+            <BrushCheckMark size={checkIconSize} color={checkIconColor} />
+          </Reanimated.View>
         </Reanimated.View>
-        <Reanimated.View pointerEvents="none" style={[styles.layer, activeAnimatedStyle]}>
-          <BrushCheckMark size={Math.round(checkIconSize * 1.08)} color={activeColor} />
-        </Reanimated.View>
-      </Reanimated.View>
+      </View>
     </Pressable>
   );
 }
@@ -228,6 +289,15 @@ const styles = StyleSheet.create({
     height: HIT_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  shell: {
+    position: 'relative',
+    overflow: 'visible',
+  },
+  solidShadow: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
   },
   visualWrap: {
     alignItems: 'center',

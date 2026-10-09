@@ -118,7 +118,8 @@ function TilePhoto({
           left: -tile.imgX * boardW,
           top: -tile.imgY * boardH,
         }}
-        contentFit="cover"
+        /** cover는 원본을 잘라 완성본이 덜 채워져 보인다. 보드=원본 전체에 fill */
+        contentFit="fill"
         cachePolicy="memory-disk"
         recyclingKey={`${recyclingKey}:${tile.key}:${edge ?? 'f'}`}
         transition={0}
@@ -164,15 +165,17 @@ function StaticPostItTile({
         ]}
       />
       <View style={styles.postItFace}>
-        <TilePhoto
-          tile={tile}
-          boardW={boardW}
-          boardH={boardH}
-          imageUri={imageUri}
-          recyclingKey={recyclingKey}
-          priority={lite ? 'low' : 'high'}
-          decodeEdge={Math.max(boardW, boardH)}
-        />
+        <View style={styles.photoInset}>
+          <TilePhoto
+            tile={tile}
+            boardW={boardW}
+            boardH={boardH}
+            imageUri={imageUri}
+            recyclingKey={recyclingKey}
+            priority={lite ? 'low' : 'high'}
+            decodeEdge={Math.max(boardW, boardH)}
+          />
+        </View>
       </View>
     </View>
   );
@@ -231,15 +234,17 @@ function AnimatedPostItTile({
         ]}
       />
       <View style={styles.postItFace}>
-        <TilePhoto
-          tile={tile}
-          boardW={boardW}
-          boardH={boardH}
-          imageUri={imageUri}
-          recyclingKey={recyclingKey}
-          priority="high"
-          decodeEdge={Math.max(boardW, boardH)}
-        />
+        <View style={styles.photoInset}>
+          <TilePhoto
+            tile={tile}
+            boardW={boardW}
+            boardH={boardH}
+            imageUri={imageUri}
+            recyclingKey={recyclingKey}
+            priority="high"
+            decodeEdge={Math.max(boardW, boardH)}
+          />
+        </View>
       </View>
     </Animated.View>
   );
@@ -597,6 +602,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
     zIndex: 1,
+  },
+  /** 헤어라인 흰 테두리 — 포스트잇 종이 가장자리 */
+  photoInset: {
+    ...StyleSheet.absoluteFillObject,
+    top: StyleSheet.hairlineWidth,
+    right: StyleSheet.hairlineWidth,
+    bottom: StyleSheet.hairlineWidth,
+    left: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
   },
   photoWindow: {
     ...StyleSheet.absoluteFillObject,

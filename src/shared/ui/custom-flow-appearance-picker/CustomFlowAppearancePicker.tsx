@@ -27,7 +27,8 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
-const CHIP_SHADOW = 2;
+/** 하루 밸런스·루틴 탭과 동일 offset */
+const CHIP_SHADOW = 1;
 const ICON_LIST_MAX_H = 220;
 const ICON_COLS = 8;
 /** 색상 칩은 아이콘보다 작게 — 열을 늘려 셀 폭을 줄인다 */

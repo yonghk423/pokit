@@ -1205,7 +1205,7 @@
   "history.puzzle.pickErrorBody": "Please try again in a moment.",
   "history.puzzle.nextPhoto": "Choose a photo",
   "history.puzzle.routinesHeadline": "Which routines fill the puzzle?",
-  "history.puzzle.routinesBody": "Each completion of a linked routine sticks on a post-it. Combine routines on one photo, or give each routine its own.",
+  "history.puzzle.routinesBody": "You can only pick from routines in progress on Today. Each completion sticks on a post-it—combine several on one photo, or give each routine its own.",
   "history.puzzle.routinesEmpty": "No in-progress routines on Today. Add routines to the Today tab first.",
   "history.puzzle.routinesNeedOne": "Pick at least one routine.",
   "history.puzzle.nextPreview": "Confirm",
